@@ -5,8 +5,8 @@ import net.verdagon.vale.astronomer.{AstronomerErrorHumanizer, CodeVarNameA, Con
 import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.OverloadTemplar.{IScoutExpectedFunctionFailureReason, InferFailure, Outscored, ScoutExpectedFunctionFailure, SpecificParamDoesntMatch, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
 import net.verdagon.vale.templar.infer.infer.{IConflictCause, InferSolveFailure}
-import net.verdagon.vale.templar.templata.{CoordTemplata, FunctionBanner2, IPotentialBanner}
-import net.verdagon.vale.templar.types.{Bool2, Constraint, Coord, Float2, Int2, Kind, Own, ParamFilter, Readonly, Readwrite, Share, Str2, StructRef2, Weak}
+import net.verdagon.vale.templar.templata.{CoordTemplata, FunctionBannerT, IPotentialBanner}
+import net.verdagon.vale.templar.types.{BoolT, ConstraintT, CoordT, FloatT, IntT, KindT, OwnT, ParamFilter, ReadonlyT, ReadwriteT, ShareT, StrT, StructRefT, WeakT}
 import net.verdagon.vale.{FileCoordinate, FileCoordinateMap, repeatStr, vimpl}
 
 object TemplarErrorHumanizer {
@@ -15,162 +15,146 @@ object TemplarErrorHumanizer {
       codeMap: FileCoordinateMap[String],
       err: ICompileErrorT):
   String = {
-    err match {
-      case RangedInternalErrorT(range, message) => {
-        humanizePos(codeMap, range.file, range.begin.offset) + " " + message
-      }
-      case CantUseReadonlyReferenceAsReadwrite(range) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Can't make readonly reference into a readwrite one!"
-      }
-      case CantMoveOutOfMemberT(range, name) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Cannot move out of member (" + name + ")"
-      }
-      case CantMutateFinalMember(range, fullName, memberName) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Cannot mutate final member '" + printableVarName(memberName.last) + "' of container " + printableFullName(fullName)
-      }
-      case CantMutateFinalLocal(range, localName) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Cannot mutate final local \"" + printableName(codeMap, localName) + "\"."
-      }
-      case LambdaReturnDoesntMatchInterfaceConstructor(range) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Argument function return type doesn't match interface method param"
-      }
-      case CantUseUnstackifiedLocal(range, name) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Can't use local that was already moved (" + name + ")"
-      }
-      case CannotSubscriptT(range, tyype) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Cannot subscript type: " + tyype + "!"
-      }
-      case CouldntConvertForReturnT(range, expectedType, actualType) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Couldn't convert " + actualType + " to expected return type " + expectedType
-      }
-      case CouldntConvertForMutateT(range, expectedType, actualType) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Mutate couldn't convert " + actualType + " to expected destination type " + expectedType
-      }
-      case CouldntFindMemberT(range, memberName) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Couldn't find member " + memberName + "!"
-      }
-      case BodyResultDoesntMatch(range, functionName, expectedReturnType, resultType) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Function " + printableName(codeMap, functionName) + " return type " + expectedReturnType + " doesn't match body's result: " + resultType
-      }
-      case CouldntFindIdentifierToLoadT(range, name) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Couldn't find anything named `" + name + "`!"
-      }
-      case NonReadonlyReferenceFoundInPureFunctionParameter(range, name) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Parameter `" + name + "` should be readonly, because it's in a pure function."
-      }
-      case CouldntFindTypeT(range, name) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Couldn't find any type named `" + name + "`!"
-      }
-      case ImmStructCantHaveVaryingMember(range, structName, memberName) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Immutable struct (\"" + printableName(codeMap, structName) + "\") cannot have varying member (\"" + memberName + "\")."
-      }
-      case CantDowncastUnrelatedTypes(range, sourceKind, targetKind) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Can't downcast `" + sourceKind + "` to unrelated `" + targetKind + "`"
-      }
-      case CantDowncastToInterface(range, targetKind) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Can't downcast to an interface (" + targetKind + ") yet."
-      }
-      case ArrayElementsHaveDifferentTypes(range, types) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Array's elements have different types: " + types.mkString(", ")
-      }
-      case InitializedWrongNumberOfElements(range, expectedNumElements, numElementsInitialized) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Supplied " + numElementsInitialized + " elements, but expected " + expectedNumElements + "."
-      }
-      case CouldntFindFunctionToCallT(range, ScoutExpectedFunctionFailure(name, args, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction)) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Couldn't find a suitable function named `" +
-          (name match {
-            case GlobalFunctionFamilyNameA(humanName) => humanName
-            case other => other.toString
-          }) +
-          "` with args (" +
-          (if (args.collectFirst({ case ParamFilter(tyype, Some(_)) => }).nonEmpty) {
-            vimpl()
-          } else {
-            args.map({ case ParamFilter(tyype, None) => TemplataNamer.getReferenceIdentifierName(tyype) }).mkString(", ")
-          }) +
-          "):\n" + lineContaining(codeMap, range.file, range.end.offset) + "\n" +
-          (if (outscoredReasonByPotentialBanner.size + rejectedReasonByBanner.size + rejectedReasonByFunction.size == 0) {
-            "No function with that name exists.\nPerhaps you forget to include a file in the command line?\n"
-          } else {
-            (if (outscoredReasonByPotentialBanner.nonEmpty) {
-              "Outscored candidates:\n" + outscoredReasonByPotentialBanner.map({
-                case (potentialBanner, outscoredReason) => {
-                  "  " + TemplataNamer.getFullNameIdentifierName(potentialBanner.banner.fullName) + ":\n" +
-                    humanizeRejectionReason(
-                      2,
-                      verbose,
-                      codeMap,
-                      outscoredReason)
-                }
-              }).mkString("\n")
+    val errorStrBody =
+      err match {
+        case RangedInternalErrorT(range, message) => { " " + message
+        }
+        case CantUseReadonlyReferenceAsReadwrite(range) => {
+            ": Can't make readonly reference into a readwrite one!"
+        }
+        case CantMoveOutOfMemberT(range, name) => {
+            ": Cannot move out of member (" + name + ")"
+        }
+        case CantMutateFinalMember(range, fullName, memberName) => {
+            ": Cannot mutate final member '" + printableVarName(memberName.last) + "' of container " + printableFullName(fullName)
+        }
+        case CantMutateFinalElement(range, fullName) => {
+            ": Cannot change a slot in array " + printableFullName(fullName) + " to point to a different element; it's an array of final references."
+        }
+        case LambdaReturnDoesntMatchInterfaceConstructor(range) => {
+            ": Argument function return type doesn't match interface method param"
+        }
+        case CantUseUnstackifiedLocal(range, name) => {
+            ": Can't use local that was already moved (" + name + ")"
+        }
+        case CantUnstackifyOutsideLocalFromInsideWhile(range, name) => {
+            ": Can't move a local (" + name + ") from inside a while loop."
+        }
+        case CannotSubscriptT(range, tyype) => {
+            ": Cannot subscript type: " + tyype + "!"
+        }
+        case CouldntConvertForReturnT(range, expectedType, actualType) => {
+            ": Couldn't convert " + actualType + " to expected return type " + expectedType
+        }
+        case CouldntConvertForMutateT(range, expectedType, actualType) => {
+            ": Mutate couldn't convert " + actualType + " to expected destination type " + expectedType
+        }
+        case CouldntFindMemberT(range, memberName) => {
+            ": Couldn't find member " + memberName + "!"
+        }
+        case BodyResultDoesntMatch(range, functionName, expectedReturnType, resultType) => {
+            ": Function " + printableName(codeMap, functionName) + " return type " + expectedReturnType + " doesn't match body's result: " + resultType
+        }
+        case CouldntFindIdentifierToLoadT(range, name) => {
+            ": Couldn't find anything named `" + name + "`!"
+        }
+        case NonReadonlyReferenceFoundInPureFunctionParameter(range, name) => {
+            ": Parameter `" + name + "` should be readonly, because it's in a pure function."
+        }
+        case CouldntFindTypeT(range, name) => {
+            ": Couldn't find any type named `" + name + "`!"
+        }
+        case ImmStructCantHaveVaryingMember(range, structName, memberName) => {
+            ": Immutable struct (\"" + printableName(codeMap, structName) + "\") cannot have varying member (\"" + memberName + "\")."
+        }
+        case CantDowncastUnrelatedTypes(range, sourceKind, targetKind) => {
+            ": Can't downcast `" + sourceKind + "` to unrelated `" + targetKind + "`"
+        }
+        case CantDowncastToInterface(range, targetKind) => {
+            ": Can't downcast to an interface (" + targetKind + ") yet."
+        }
+        case ArrayElementsHaveDifferentTypes(range, types) => {
+            ": Array's elements have different types: " + types.mkString(", ")
+        }
+        case InitializedWrongNumberOfElements(range, expectedNumElements, numElementsInitialized) => {
+            ": Supplied " + numElementsInitialized + " elements, but expected " + expectedNumElements + "."
+        }
+        case CouldntFindFunctionToCallT(range, ScoutExpectedFunctionFailure(name, args, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction)) => {
+            ": Couldn't find a suitable function named `" +
+            (name match {
+              case GlobalFunctionFamilyNameA(humanName) => humanName
+              case other => other.toString
+            }) +
+            "` with args (" +
+            (if (args.collectFirst({ case ParamFilter(tyype, Some(_)) => }).nonEmpty) {
+              vimpl()
             } else {
-              ""
-            }) + "\n" +
-              (if (rejectedReasonByBanner.size + rejectedReasonByFunction.size > 0) {
-                "Rejected candidates:\n" +
-                  (rejectedReasonByBanner.map({
-                    case (banner, rejectedReason) => {
-                      "  " + humanizeBanner(codeMap, banner) + "\n" +
-                        humanizeRejectionReason(2, verbose, codeMap, rejectedReason)
-                    }
-                  }) ++
-                    rejectedReasonByFunction.map({
-                      case (functionA, rejectedReason) => {
-                        "  " + printableName(codeMap, functionA.name) + ":\n" +
-                          humanizeRejectionReason(2, verbose, codeMap, rejectedReason)
-                      }
-                    })).mkString("\n") + "\n"
+              args.map({ case ParamFilter(tyype, None) => TemplataNamer.getReferenceIdentifierName(tyype) }).mkString(", ")
+            }) +
+            "):\n" + lineContaining(codeMap, range.file, range.end.offset) + "\n" +
+            (if (outscoredReasonByPotentialBanner.size + rejectedReasonByBanner.size + rejectedReasonByFunction.size == 0) {
+              "No function with that name exists.\nPerhaps you forget to include a file in the command line?\n"
+            } else {
+              (if (outscoredReasonByPotentialBanner.nonEmpty) {
+                "Outscored candidates:\n" + outscoredReasonByPotentialBanner.map({
+                  case (potentialBanner, outscoredReason) => {
+                    "  " + TemplataNamer.getFullNameIdentifierName(potentialBanner.banner.fullName) + ":\n" +
+                      humanizeRejectionReason(
+                        2,
+                        verbose,
+                        codeMap,
+                        outscoredReason)
+                  }
+                }).mkString("\n")
               } else {
                 ""
-              })
-          })
+              }) + "\n" +
+                (if (rejectedReasonByBanner.size + rejectedReasonByFunction.size > 0) {
+                  "Rejected candidates:\n" +
+                    (rejectedReasonByBanner.map({
+                      case (banner, rejectedReason) => {
+                        "  " + humanizeBanner(codeMap, banner) + "\n" +
+                          humanizeRejectionReason(2, verbose, codeMap, rejectedReason)
+                      }
+                    }) ++
+                      rejectedReasonByFunction.map({
+                        case (functionA, rejectedReason) => {
+                          "  " + printableName(codeMap, functionA.name) + ":\n" +
+                            humanizeRejectionReason(2, verbose, codeMap, rejectedReason)
+                        }
+                      })).mkString("\n") + "\n"
+                } else {
+                  ""
+                })
+            })
+        }
+        case FunctionAlreadyExists(oldFunctionRange, newFunctionRange, signature) => {
+            ": Function " + signature.fullName.last + " already exists! Previous declaration at:\n" +
+            humanizePos(codeMap, oldFunctionRange.file, oldFunctionRange.begin.offset)
+        }
+        case IfConditionIsntBoolean(range, actualType) => {
+            ": If condition should be a bool, but was: " + actualType
+        }
+        case WhileConditionIsntBoolean(range, actualType) => {
+            ": If condition should be a bool, but was: " + actualType
+        }
+        case CantImplStruct(range, struct) => {
+            ": Can't extend a struct: (" + struct + ")"
+        }
+        case InferAstronomerError(err) => {
+          AstronomerErrorHumanizer.humanize(codeMap, err)
+        }
       }
-      case FunctionAlreadyExists(oldFunctionRange, newFunctionRange, signature) => {
-        humanizePos(codeMap, newFunctionRange.file, newFunctionRange.begin.offset) +
-          ": Function " + signature.fullName.last + " already exists! Previous declaration at:\n" +
-          humanizePos(codeMap, oldFunctionRange.file, oldFunctionRange.begin.offset)
-      }
-      case IfConditionIsntBoolean(range, actualType) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": If condition should be a bool, but was: " + actualType
-      }
-      case WhileConditionIsntBoolean(range, actualType) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": If condition should be a bool, but was: " + actualType
-      }
-      case CantImplStruct(range, struct) => {
-        humanizePos(codeMap, range.file, range.begin.offset) +
-          ": Can't extend a struct: (" + struct + ")"
-      }
-      case InferAstronomerError(err) => {
-        AstronomerErrorHumanizer.humanize(codeMap, err)
-      }
-    }
+
+    val posStr = humanizePos(codeMap, err.range.file, err.range.begin.offset)
+    val nextStuff = lineContaining(codeMap, err.range.file, err.range.begin.offset)
+    val errorId = "T"
+    f"${posStr} error ${errorId}: ${errorStrBody}\n${nextStuff}\n"
   }
 
   def humanizeBanner(
     codeMap: FileCoordinateMap[String],
-    banner: FunctionBanner2):
+    banner: FunctionBannerT):
   String = {
     banner.originFunction match {
       case None => "(internal)"
@@ -194,42 +178,42 @@ object TemplarErrorHumanizer {
     }
   }
 
-  private def printableCoordName(coord: Coord): String = {
-    val Coord(ownership, permission, kind) = coord
+  private def printableCoordName(coord: CoordT): String = {
+    val CoordT(ownership, permission, kind) = coord
     (ownership match {
-      case Share => ""
-      case Own => ""
-      case Constraint => "&"
-      case Weak => "&&"
+      case ShareT => ""
+      case OwnT => ""
+      case ConstraintT => "&"
+      case WeakT => "&&"
     }) +
     (permission match {
-      case Readonly => ""
-      case Readwrite => "!"
+      case ReadonlyT => ""
+      case ReadwriteT => "!"
     }) +
     printableKindName(kind)
   }
 
-  private def printableKindName(kind: Kind): String = {
+  private def printableKindName(kind: KindT): String = {
     kind match {
-      case Int2() => "int"
-      case Bool2() => "bool"
-      case Float2() => "float"
-      case Str2() => "str"
-      case StructRef2(f) => printableFullName(f)
+      case IntT(bits) => "i" + bits
+      case BoolT() => "bool"
+      case FloatT() => "float"
+      case StrT() => "str"
+      case StructRefT(f) => printableFullName(f)
     }
   }
-  private def printableFullName(fullName2: FullName2[IName2]): String = {
+  private def printableFullName(fullName2: FullNameT[INameT]): String = {
     fullName2.last match {
-      case CitizenName2(humanName, templateArgs) => humanName + (if (templateArgs.isEmpty) "" else "<" + templateArgs.map(_.toString.mkString) + ">")
+      case CitizenNameT(humanName, templateArgs) => humanName + (if (templateArgs.isEmpty) "" else "<" + templateArgs.map(_.toString.mkString) + ">")
       case x => x.toString
     }
   }
 
   private def printableVarName(
-    name: IVarName2):
+    name: IVarNameT):
   String = {
     name match {
-      case CodeVarName2(n) => n
+      case CodeVarNameT(n) => n
     }
   }
 

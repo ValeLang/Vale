@@ -62,9 +62,9 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
   // Remember, for pattern parsers, something *must* be present, don't match empty.
   // Luckily, for this rule, we always have the expr identifier.
   private[parser] def patternCapture: Parser[CaptureP] = {
-    pos ~ existsMW("this.") ~ exprIdentifier ~ opt("!") ~ pos ^^ {
-      case begin ~ None ~ name ~ maybeMutable ~ end => CaptureP(Range(begin, end), LocalNameP(name), if (maybeMutable.nonEmpty) VaryingP else FinalP)
-      case begin ~ Some(thisdot) ~ name ~ maybeMutable ~ end => CaptureP(Range(begin, end), ConstructingMemberNameP(NameP(Range(begin, name.range.end), name.str)), if (maybeMutable.nonEmpty) VaryingP else FinalP)
+    pos ~ existsMW("this.") ~ (exprIdentifier <~ opt("!")) ~ pos ^^ {
+      case begin ~ None ~ name ~ end => CaptureP(Range(begin, end), LocalNameP(name))
+      case begin ~ Some(thisdot) ~ name ~ end => CaptureP(Range(begin, end), ConstructingMemberNameP(NameP(Range(begin, name.range.end), name.str)))
     }
   }
 

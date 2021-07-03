@@ -96,7 +96,7 @@ class RunePredictorTests extends FunSuite with Matchers {
         TypedSR(RangeS.testZero,CodeRuneS("Z"),CoordTypeSR),
         EqualsSR(RangeS.testZero,
           TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Z"))),
-          TemplexSR(RepeaterSequenceST(RangeS.testZero,MutabilityST(RangeS.testZero,MutableP), IntST(RangeS.testZero,5),InterpretedST(RangeS.testZero,ShareP,ReadonlyP,NameST(RangeS.testZero, CodeTypeNameS("int"))))))),
+          TemplexSR(RepeaterSequenceST(RangeS.testZero,MutabilityST(RangeS.testZero,MutableP), VariabilityST(RangeS.testZero,VaryingP), IntST(RangeS.testZero,5),InterpretedST(RangeS.testZero,ShareP,ReadonlyP,NameST(RangeS.testZero, CodeTypeNameS("int"))))))),
       List())
     conclusions shouldEqual Conclusions(Set(CodeRuneS("Z")), Map(CodeRuneS("Z") -> CoordTypeSR))
   }

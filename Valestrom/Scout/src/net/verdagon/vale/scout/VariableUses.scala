@@ -11,8 +11,7 @@ case class VariableUse(
     mutated: Option[IVariableUseCertainty])
 
 case class VariableDeclaration(
-    name: IVarNameS,
-    variability: VariabilityP)
+    name: IVarNameS)
 
 case class VariableDeclarations(vars: List[VariableDeclaration]) {
   vassert(vars.distinct == vars)

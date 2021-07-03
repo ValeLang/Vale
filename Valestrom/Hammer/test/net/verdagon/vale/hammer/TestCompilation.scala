@@ -1,16 +1,16 @@
 package net.verdagon.vale.hammer
 
-import net.verdagon.vale.{Builtins, FileCoordinateMap, Tests}
+import net.verdagon.vale.{Builtins, FileCoordinateMap, PackageCoordinate, Tests}
 
 import scala.collection.immutable.List
 
 object HammerTestCompilation {
   def test(code: String*): HammerCompilation = {
     new HammerCompilation(
-      List("", FileCoordinateMap.TEST_MODULE),
+      List(PackageCoordinate.BUILTIN, PackageCoordinate.TEST_TLD),
       Builtins.getCodeMap()
         .or(FileCoordinateMap.test(code.toList))
-        .or(Tests.getNamespaceToResourceResolver),
+        .or(Tests.getPackageToResourceResolver),
       HammerCompilationOptions())
   }
 }

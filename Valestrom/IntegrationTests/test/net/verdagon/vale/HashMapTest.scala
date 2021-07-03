@@ -1,7 +1,7 @@
 package net.verdagon.vale
 
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.env.ReferenceLocalVariable2
+import net.verdagon.vale.templar.env.ReferenceLocalVariableT
 import net.verdagon.vale.templar.types._
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
@@ -22,7 +22,7 @@ class HashMapTest extends FunSuite with Matchers {
           |}
           |""".stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(108)
+    compile.evalForKind(Vector()) shouldEqual VonInt(108)
   }
 
   test("Hash map collisions") {
@@ -61,7 +61,7 @@ class HashMapTest extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(111)
+    compile.evalForKind(Vector()) shouldEqual VonInt(111)
   }
 
   test("Hash map with functors") {
@@ -79,7 +79,7 @@ class HashMapTest extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(100)
+    compile.evalForKind(Vector()) shouldEqual VonInt(100)
   }
 
   test("Hash map with struct as key") {
@@ -114,7 +114,7 @@ class HashMapTest extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(100)
+    compile.evalForKind(Vector()) shouldEqual VonInt(100)
   }
 
   test("Hash map has") {
@@ -139,7 +139,7 @@ class HashMapTest extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(111)
+    compile.evalForKind(Vector()) shouldEqual VonInt(111)
   }
 
   test("Hash map keys") {
@@ -163,7 +163,7 @@ class HashMapTest extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
+    compile.evalForKind(Vector()) shouldEqual VonInt(1337)
   }
 
   test("Hash map values") {
@@ -187,7 +187,7 @@ class HashMapTest extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
+    compile.evalForKind(Vector()) shouldEqual VonInt(1337)
   }
 
   test("Hash map with mutable values") {
@@ -213,7 +213,7 @@ class HashMapTest extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
+    compile.evalForKind(Vector()) shouldEqual VonInt(1337)
   }
 
   test("Hash map remove") {
@@ -239,7 +239,7 @@ class HashMapTest extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
+    compile.evalForKind(Vector()) shouldEqual VonInt(1337)
   }
 
   test("Hash map remove 2") {
@@ -267,6 +267,6 @@ class HashMapTest extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
+    compile.evalForKind(Vector()) shouldEqual VonInt(1337)
   }
 }

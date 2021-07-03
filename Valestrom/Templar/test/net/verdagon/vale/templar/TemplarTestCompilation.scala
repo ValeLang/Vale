@@ -12,10 +12,10 @@ import scala.collection.mutable
 object TemplarTestCompilation {
   def test(code: String*): TemplarCompilation = {
     new TemplarCompilation(
-      List(FileCoordinateMap.TEST_MODULE),
+      List(PackageCoordinate.TEST_TLD),
       Builtins.getModulizedCodeMap()
         .or(FileCoordinateMap.test(code.toList))
-        .or(Tests.getNamespaceToResourceResolver),
+        .or(Tests.getPackageToResourceResolver),
       TemplarCompilationOptions())
   }
 }

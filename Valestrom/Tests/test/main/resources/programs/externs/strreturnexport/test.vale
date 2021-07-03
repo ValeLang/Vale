@@ -1,0 +1,8 @@
+fn getAStr() str export { "hello!" }
+
+fn runExtCommand() str extern;
+
+fn main() int export {
+  result = runExtCommand();
+  = result.len();
+}

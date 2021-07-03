@@ -1,6 +1,6 @@
 package net.verdagon.vale.metal
 
-import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vimpl}
+import net.verdagon.vale.{PackageCoordinate, PackageCoordinateMap, vassert, vassertSome, vcurious, vfail, vimpl}
 import net.verdagon.von.{IVonData, JsonSyntax, VonArray, VonMember, VonObject, VonPrinter, VonStr, VonSyntax}
 
 import scala.collection.immutable.ListMap
@@ -8,7 +8,7 @@ import scala.collection.immutable.ListMap
 object ProgramH {
   val emptyTupleStructRef =
     // If the templar ever decides to change this things name, update this to match templar's.
-    StructRefH(FullNameH("Tup0", 0, List(VonObject("Tup",None,Vector(VonMember("members",VonArray(None,Vector())))))))
+    StructRefH(FullNameH("Tup0", 0, PackageCoordinate.BUILTIN, List(VonObject("Tup",None,Vector(VonMember("members",VonArray(None,Vector())))))))
 
   def emptyTupleStructType = ReferenceH(ShareH, InlineH, ReadonlyH, emptyTupleStructRef)
 
@@ -18,29 +18,37 @@ object ProgramH {
 
 case class RegionH(
   name: String,
-  referends: List[ReferendH])
+  kinds: List[KindH])
 
+case class Export(
+  nameH: FullNameH,
+  exportedName: String
+)
 
-case class ProgramH(
+case class PackageH(
     // All the interfaces in the program.
     interfaces: List[InterfaceDefinitionH],
     // All the structs in the program.
     structs: List[StructDefinitionH],
-    // All the externs that we're calling into from the program.
-    externs: List[PrototypeH],
+//    // All the externs that we're calling into from the program.
+//    externs: List[PrototypeH],
     // All of the user defined functions (and some from the compiler itself).
     functions: List[FunctionH],
-    knownSizeArrays: List[KnownSizeArrayDefinitionTH],
-    unknownSizeArrays: List[UnknownSizeArrayDefinitionTH],
+    staticSizedArrays: List[StaticSizedArrayDefinitionTH],
+    runtimeSizedArrays: List[RuntimeSizedArrayDefinitionTH],
     // Used for native compilation only, not JVM/CLR/JS/iOS.
     // These are pointing into the specific functions (in the `functions` field)
     // which should be called when we drop a reference to an immutable object.
-    immDestructorsByKind: Map[ReferendH, PrototypeH],
+    immDestructorsByKind: Map[KindH, PrototypeH],
     // Translations for backends to use if they need to export a name.
-    fullNameToExportedNames: Map[FullNameH, List[String]],
-    // All the regions and their referends. There will always be one in here
-    // since every program has at least one region.
-    regions: List[RegionH]) {
+    exportNameToFunction: Map[String, PrototypeH],
+    // Translations for backends to use if they need to export a name.
+    exportNameToKind: Map[String, KindH],
+    // Translations for backends to use if they need to export a name.
+    externNameToFunction: Map[String, PrototypeH],
+    // Translations for backends to use if they need to export a name.
+    externNameToKind: Map[String, KindH]
+) {
 
   // These are convenience functions for the tests to look up various functions.
   def externFunctions = functions.filter(_.isExtern)
@@ -55,11 +63,13 @@ case class ProgramH(
   // Function must be at the top level of the program.
   def lookupFunction(readableName: String) = {
     val matches =
-      fullNameToExportedNames.filter(_._2 == readableName).keys ++
-        functions.filter(_.prototype.fullName.readableName == readableName).map(_.prototype.fullName)
+      (List() ++
+        exportNameToFunction.get(readableName).toList ++
+        functions.filter(_.prototype.fullName.readableName == readableName).map(_.prototype))
+        .distinct
+    vassert(matches.nonEmpty)
     vassert(matches.size <= 1)
-    vassert(matches.size >= 1)
-    functions.find(_.prototype.fullName == matches.head).get
+    functions.find(_.prototype == matches.head).get
   }
 
   // Convenience function for the tests to look up a struct.
@@ -76,6 +86,35 @@ case class ProgramH(
     val matches = interfaces.filter(_.fullName.readableName == humanName)
     vassert(matches.size == 1)
     matches.head
+  }
+}
+
+case class ProgramH(
+  packages: PackageCoordinateMap[PackageH]) {
+
+
+  def lookupPackage(packageCoordinate: PackageCoordinate): PackageH = {
+    vassertSome(packages.get(packageCoordinate))
+  }
+  def lookupFunction(prototype: PrototypeH): FunctionH = {
+    val paackage = lookupPackage(prototype.fullName.packageCoordinate)
+    paackage.functions.find(_.fullName == prototype.fullName).get
+  }
+  def lookupStruct(structRefH: StructRefH): StructDefinitionH = {
+    val paackage = lookupPackage(structRefH.fullName.packageCoordinate)
+    paackage.structs.find(_.getRef == structRefH).get
+  }
+  def lookupInterface(interfaceRefH: InterfaceRefH): InterfaceDefinitionH = {
+    val paackage = lookupPackage(interfaceRefH.fullName.packageCoordinate)
+    paackage.interfaces.find(_.getRef == interfaceRefH).get
+  }
+  def lookupStaticSizedArray(ssaTH: StaticSizedArrayTH): StaticSizedArrayDefinitionTH = {
+    val paackage = lookupPackage(ssaTH.name.packageCoordinate)
+    paackage.staticSizedArrays.find(_.name == ssaTH.name).get
+  }
+  def lookupRuntimeSizedArray(rsaTH: RuntimeSizedArrayTH): RuntimeSizedArrayDefinitionTH = {
+    val paackage = lookupPackage(rsaTH.name.packageCoordinate)
+    paackage.runtimeSizedArrays.find(_.name == rsaTH.name).get
   }
 }
 
@@ -116,7 +155,7 @@ case class StructMemberH(
   // This isn't wired up to anything, feel free to ignore it.
   variability: Variability,
   // The type of the member.
-  tyype: ReferenceH[ReferendH])
+  tyype: ReferenceH[KindH])
 
 // An interface definition containing name, methods, etc.
 case class InterfaceDefinitionH(
@@ -184,7 +223,7 @@ case class FunctionH(
   attributes: List[IFunctionAttributeH],
 
   // The body of the function that contains the actual instructions.
-  body: ExpressionH[ReferendH]) {
+  body: ExpressionH[KindH]) {
 
   def fullName = prototype.fullName
   def isUserFunction = attributes.contains(UserFunctionH)
@@ -193,8 +232,8 @@ case class FunctionH(
 // A wrapper around a function's name, which also has its params and return type.
 case class PrototypeH(
   fullName: FullNameH,
-  params: List[ReferenceH[ReferendH]],
-  returnType: ReferenceH[ReferendH]
+  params: List[ReferenceH[KindH]],
+  returnType: ReferenceH[KindH]
 )
 
 // A unique name for something in the program.
@@ -202,15 +241,16 @@ case class FullNameH(
     readableName: String,
     // -1 means extern and we wont suffix the readableName with the ID.
     id: Int,
+    packageCoordinate: PackageCoordinate,
     parts: List[IVonData]) {
-  def toReadableString(): String = {
-    readableName + (if (id >= 0) "_" + id else "")
-  }
-  def toFullString(): String = { FullNameH.namePartsToString(parts) }
+//  def toReadableString(): String = {
+//    readableName + (if (id >= 0) "_" + id else "")
+//  }
+  def toFullString(): String = { FullNameH.namePartsToString(packageCoordinate, parts) }
 }
 
 object FullNameH {
-  def namePartsToString(parts: List[IVonData]) = {
-    parts.map(MetalPrinter.print).mkString(":")
+  def namePartsToString(packageCoordinate: PackageCoordinate, parts: List[IVonData]) = {
+    packageCoordinate.module + "::" + packageCoordinate.packages.map(_ + "::").mkString("") + parts.map(MetalPrinter.print).mkString(":")
   }
 }

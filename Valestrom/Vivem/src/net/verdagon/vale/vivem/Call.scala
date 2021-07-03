@@ -1,6 +1,6 @@
 package net.verdagon.vale.vivem
 
-import net.verdagon.vale.metal.{ReferenceH, ReferendH}
+import net.verdagon.vale.metal.{ReferenceH, KindH}
 import net.verdagon.vale.{vassert, vassertSome, vfail}
 
 import scala.collection.mutable
@@ -10,7 +10,7 @@ class Call(callId: CallId, in_args: Vector[ReferenceV]) {
 
   private val locals = mutable.HashMap[VariableAddressV, VariableV]()
 
-  def addLocal(varAddr: VariableAddressV, reference: ReferenceV, tyype: ReferenceH[ReferendH]): Unit = {
+  def addLocal(varAddr: VariableAddressV, reference: ReferenceV, tyype: ReferenceH[KindH]): Unit = {
     vassert(varAddr.callId == callId)
     vassert(!locals.contains(varAddr))
     vassert(!locals.exists(_._1.local.id.number == varAddr.local.id.number))
@@ -27,11 +27,12 @@ class Call(callId: CallId, in_args: Vector[ReferenceV]) {
     vassertSome(locals.get(addr))
   }
 
-  def mutateLocal(varAddr: VariableAddressV, reference: ReferenceV, expectedType: ReferenceH[ReferendH]): Unit = {
+  def mutateLocal(varAddr: VariableAddressV, reference: ReferenceV, expectedType: ReferenceH[KindH]): Unit = {
     locals(varAddr).reference = reference
   }
 
   def takeArgument(index: Int): ReferenceV = {
+    vassert(index < args.size)
     args(index) match {
       case Some(ref) => {
         args.put(index, None)

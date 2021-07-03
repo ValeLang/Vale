@@ -72,10 +72,10 @@ class ScoutTests extends FunSuite with Matchers {
   }
 
   test("Lambda") {
-    val program1 = compile("fn main() int export { {_ + _}(4, 6) }")
+    val program1 = compile("fn main() int export { {_ + _}!(4, 6) }")
 
     val CodeBody1(BodySE(_, _, BlockSE(_, _, List(expr)))) = program1.lookupFunction("main").body
-    val FunctionCallSE(_, OwnershippedSE(_,FunctionSE(lambda@FunctionS(_, _, _, _, _, _, _, _, _, _, _, _)), LendConstraintP(None)), _) = expr
+    val FunctionCallSE(_, OwnershippedSE(_,FunctionSE(lambda@FunctionS(_, _, _, _, _, _, _, _, _, _, _, _)), LendConstraintP(Some(ReadwriteP))), _) = expr
     lambda.identifyingRunes match {
       case List(MagicParamRuneS(mp1), MagicParamRuneS(mp2)) => {
         vassert(mp1 != mp2)
@@ -128,13 +128,13 @@ class ScoutTests extends FunSuite with Matchers {
       case List(
       ParameterS(
       AtomSP(_,
-      CaptureS(CodeVarNameS("this"), FinalP),
+      CaptureS(CodeVarNameS("this")),
       Some(AbstractSP),
       ImplicitRuneS(_, 0),
       None)),
       ParameterS(
       AtomSP(_,
-      CaptureS(CodeVarNameS("a"), FinalP),
+      CaptureS(CodeVarNameS("a")),
       None,
       ImplicitRuneS(_, 1),
       None))) =>
@@ -188,12 +188,12 @@ class ScoutTests extends FunSuite with Matchers {
   }
 
   test("Moving method call") {
-    val program1 = compile("fn main() int export { x = 4; = x^.shout(); }")
+    val program1 = compile("fn main() int export { x = 4; = (x).shout(); }")
     val main = program1.lookupFunction("main")
 
     val CodeBody1(BodySE(_, _, block)) = main.body
     block match {
-      case BlockSE(_, _, List(_, FunctionCallSE(_, OutsideLoadSE(_, "shout", _, _), List(LocalLoadSE(_, _, MoveP))))) =>
+      case BlockSE(_, _, List(_, FunctionCallSE(_, OutsideLoadSE(_, "shout", _, _),List(LocalLoadSE(_,CodeVarNameS("x"), UseP))))) =>
     }
   }
 
@@ -212,10 +212,10 @@ class ScoutTests extends FunSuite with Matchers {
     val CodeBody1(BodySE(_, _, block)) = main.body
     val BlockSE(_, _, FunctionSE(lambda1) :: FunctionSE(lambda2) :: _) = block
     lambda1.params match {
-      case List(_, ParameterS(AtomSP(_, CaptureS(MagicParamNameS(_), FinalP), None, MagicParamRuneS(_), None))) =>
+      case List(_, ParameterS(AtomSP(_, CaptureS(MagicParamNameS(_)), None, MagicParamRuneS(_), None))) =>
     }
     lambda2.params match {
-      case List(_, ParameterS(AtomSP(_, CaptureS(CodeVarNameS("a"), FinalP), None, ImplicitRuneS(_, _), None))) =>
+      case List(_, ParameterS(AtomSP(_, CaptureS(CodeVarNameS("a")), None, ImplicitRuneS(_, _), None))) =>
     }
   }
 
@@ -233,21 +233,21 @@ class ScoutTests extends FunSuite with Matchers {
     block match {
       case BlockSE(_,
       List(
-      LocalVariable1(ConstructingMemberNameS("x"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),
-      LocalVariable1(ConstructingMemberNameS("y"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
+      LocalS(ConstructingMemberNameS("x"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),
+      LocalS(ConstructingMemberNameS("y"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
       List(
       LetSE(_,
       _,
       _,
       _,
-      AtomSP(_, CaptureS(ConstructingMemberNameS("x"), FinalP), None, _, None),
-      IntLiteralSE(_, 4)),
+      AtomSP(_, CaptureS(ConstructingMemberNameS("x")), None, _, None),
+      ConstantIntSE(_, 4, _)),
       LetSE(_,
       _,
       _,
       _,
-      AtomSP(_, CaptureS(ConstructingMemberNameS("y"), FinalP), None, _, None),
-      BoolLiteralSE(_, true)),
+      AtomSP(_, CaptureS(ConstructingMemberNameS("y")), None, _, None),
+      ConstantBoolSE(_, true)),
       FunctionCallSE(_,
       OutsideLoadSE(_, "MyStruct", _, _),
       List(
@@ -395,14 +395,14 @@ class ScoutTests extends FunSuite with Matchers {
     block match {
       case BlockSE(_,
       List(
-      LocalVariable1(ConstructingMemberNameS("x"), FinalP, Used, Used, NotUsed, NotUsed, NotUsed, NotUsed),
-      LocalVariable1(ConstructingMemberNameS("y"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
+      LocalS(ConstructingMemberNameS("x"), Used, Used, NotUsed, NotUsed, NotUsed, NotUsed),
+      LocalS(ConstructingMemberNameS("y"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
       List(
       LetSE(_, _, _, _,
-      AtomSP(_, CaptureS(ConstructingMemberNameS("x"), FinalP), None, _, None),
-      IntLiteralSE(_, 4)),
+      AtomSP(_, CaptureS(ConstructingMemberNameS("x")), None, _, None),
+      ConstantIntSE(_, 4, _)),
       LetSE(_, _, _, _,
-      AtomSP(_, CaptureS(ConstructingMemberNameS("y"), FinalP), None, _, None),
+      AtomSP(_, CaptureS(ConstructingMemberNameS("y")), None, _, None),
       LocalLoadSE(_, ConstructingMemberNameS("x"), LendConstraintP(Some(ReadonlyP)))),
       FunctionCallSE(_,
       OutsideLoadSE(_, "MyStruct", _, _),
@@ -425,7 +425,7 @@ class ScoutTests extends FunSuite with Matchers {
       BodySE(_,
       List(),
       BlockSE(_,
-      List(LocalVariable1(CodeVarNameS("this"), FinalP, Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed)),
+      List(LocalS(CodeVarNameS("this"), Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed)),
       List(
       FunctionCallSE(_,
       OutsideLoadSE(_, "println", _, _),
@@ -469,6 +469,18 @@ class ScoutTests extends FunSuite with Matchers {
     }
   }
 
+  test("Reports when extern function has body") {
+    val err = compileForError(
+      """
+        |fn bork() int extern {
+        |  3
+        |}
+        |""".stripMargin)
+    err match {
+      case ExternHasBody(_) =>
+    }
+  }
+
   test("Reports when non-kind struct in impl") {
     val err = compileForError(
       """
@@ -484,7 +496,7 @@ class ScoutTests extends FunSuite with Matchers {
   test("Reports when we forget set") {
     val err = compileForError(
       """
-        |fn main() {
+        |fn main() export {
         |  x = "world!";
         |  x = "changed";
         |}

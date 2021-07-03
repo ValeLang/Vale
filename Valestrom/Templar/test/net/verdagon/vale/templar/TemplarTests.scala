@@ -2,7 +2,7 @@ package net.verdagon.vale.templar
 
 import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier}
 import net.verdagon.vale.scout.{CodeLocationS, CodeVarNameS, ICompileErrorS, ProgramS, RangeS, Scout, VariableNameAlreadyExists}
-import net.verdagon.vale.templar.env.ReferenceLocalVariable2
+import net.verdagon.vale.templar.env.ReferenceLocalVariableT
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale._
@@ -32,24 +32,24 @@ class TemplarTests extends FunSuite with Matchers {
 
     val main = temputs.lookupFunction("main")
     main.only({
-      case FunctionHeader2(simpleName("main"),List(UserFunction2),List(), Coord(Share, Readonly, Int2()), _) => true
+      case FunctionHeaderT(simpleName("main"),List(UserFunction2),List(), CoordT(ShareT, ReadonlyT, IntT.i32), _) => true
     })
-    main.only({ case IntLiteral2(3) => true })
+    main.only({ case ConstantIntTE(3, _) => true })
   }
 
   test("Hardcoding negative numbers") {
     val compile = TemplarTestCompilation.test("fn main() int export {-3}")
     val main = compile.expectTemputs().lookupFunction("main")
-    main.only({ case IntLiteral2(-3) => true })
+    main.only({ case ConstantIntTE(-3, _) => true })
   }
 
   test("Taking an argument and returning it") {
     val compile = TemplarTestCompilation.test("fn main(a int) int {a}")
     val temputs = compile.expectTemputs()
-    temputs.lookupFunction("main").onlyOf(classOf[Parameter2]).tyype == Coord(Share, Readonly, Int2())
-    val lookup = temputs.lookupFunction("main").allOf(classOf[LocalLookup2]).head;
-    lookup.localVariable.id.last shouldEqual CodeVarName2("a")
-    lookup.reference shouldEqual Coord(Share, Readonly, Int2())
+    temputs.lookupFunction("main").onlyOf(classOf[ParameterT]).tyype == CoordT(ShareT, ReadonlyT, IntT.i32)
+    val lookup = temputs.lookupFunction("main").allOf(classOf[LocalLookupT]).head;
+    lookup.localVariable.id.last shouldEqual CodeVarNameT("a")
+    lookup.reference shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
   }
 
   test("Tests adding two numbers") {
@@ -61,14 +61,14 @@ class TemplarTests extends FunSuite with Matchers {
           |""".stripMargin)
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
-    main.only({ case IntLiteral2(2) => true })
-    main.only({ case IntLiteral2(3) => true })
+    main.only({ case ConstantIntTE(2, _) => true })
+    main.only({ case ConstantIntTE(3, _) => true })
     main.only({
-      case FunctionCall2(
+      case FunctionCallTE(
         functionName("+"),
         List(
-          IntLiteral2(2),
-          IntLiteral2(3))) =>
+          ConstantIntTE(2, _),
+          ConstantIntTE(3, _))) =>
     })
   }
 
@@ -85,10 +85,10 @@ class TemplarTests extends FunSuite with Matchers {
     val main = temputs.lookupFunction("main")
     val tyype =
       main.body.only({
-        case LetNormal2(ReferenceLocalVariable2(FullName2(_, CodeVarName2("b")), _, tyype), _) => tyype
+        case LetNormalTE(ReferenceLocalVariableT(FullNameT(_, _, CodeVarNameT("b")), _, tyype), _) => tyype
       })
-    tyype.ownership shouldEqual Constraint
-    tyype.permission shouldEqual Readonly
+    tyype.ownership shouldEqual ConstraintT
+    tyype.permission shouldEqual ReadonlyT
   }
 
   test("Recursion") {
@@ -96,7 +96,7 @@ class TemplarTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
 
     // Make sure it inferred the param type and return type correctly
-    temputs.lookupFunction("main").header.returnType shouldEqual Coord(Share, Readonly, Int2())
+    temputs.lookupFunction("main").header.returnType shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
   }
 
   test("Simple lambda") {
@@ -104,8 +104,8 @@ class TemplarTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
 
     // Make sure it inferred the param type and return type correctly
-    temputs.lookupFunction("__call").header.returnType shouldEqual Coord(Share, Readonly, Int2())
-    temputs.lookupFunction("main").header.returnType shouldEqual Coord(Share, Readonly, Int2())
+    temputs.lookupFunction("__call").header.returnType shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
+    temputs.lookupFunction("main").header.returnType shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
   }
 
 //  test("Infer") {
@@ -114,7 +114,7 @@ class TemplarTests extends FunSuite with Matchers {
 //        """
 //          |struct Ship { }
 //          |fn moo<T>(a &!T) &!T { a }
-//          |fn main() {
+//          |fn main() export {
 //          |  s = Ship();
 //          |  t = moo(&s);
 //          |}
@@ -128,10 +128,10 @@ class TemplarTests extends FunSuite with Matchers {
 
     // Make sure it inferred the param type and return type correctly
     temputs.lookupLambdaIn("main")
-        .only({ case Parameter2(_, None, Coord(Share, Readonly, Int2())) => })
+        .only({ case ParameterT(_, None, CoordT(ShareT, ReadonlyT, IntT.i32)) => })
 
     temputs.lookupLambdaIn("main").header.returnType shouldEqual
-        Coord(Share, Readonly, Int2())
+        CoordT(ShareT, ReadonlyT, IntT.i32)
   }
 
 
@@ -149,12 +149,12 @@ class TemplarTests extends FunSuite with Matchers {
     val lambda = temputs.lookupLambdaIn("main");
 
     // Check that the param type is right
-    lambda.only({ case Parameter2(CodeVarName2("a"), None, Coord(Share, Readonly, Int2())) => {} })
+    lambda.only({ case ParameterT(CodeVarNameT("a"), None, CoordT(ShareT, ReadonlyT, IntT.i32)) => {} })
     // Check the name is right
     vassert(temputs.nameIsLambdaIn(lambda.header.fullName, "main"))
 
     val main = temputs.lookupFunction("main");
-    main.only({ case FunctionCall2(callee, _) if temputs.nameIsLambdaIn(callee.fullName, "main") => })
+    main.only({ case FunctionCallTE(callee, _) if temputs.nameIsLambdaIn(callee.fullName, "main") => })
   }
 
   test("Test overloads") {
@@ -162,7 +162,7 @@ class TemplarTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
 
     temputs.lookupFunction("main").header.returnType shouldEqual
-      Coord(Share, Readonly, Int2())
+      CoordT(ShareT, ReadonlyT, IntT.i32)
   }
 
   test("Test readonly UFCS") {
@@ -258,7 +258,7 @@ class TemplarTests extends FunSuite with Matchers {
         |""".stripMargin)
     compile.getTemputs() match {
       case Err(ArrayElementsHaveDifferentTypes(_, types)) => {
-        types shouldEqual Set(Coord(Share, Readonly, Int2()), Coord(Share, Readonly, Bool2()))
+        types shouldEqual Set(CoordT(ShareT, ReadonlyT, IntT.i32), CoordT(ShareT, ReadonlyT, BoolT()))
       }
     }
   }
@@ -277,21 +277,6 @@ class TemplarTests extends FunSuite with Matchers {
         |""".stripMargin)
     compile.getTemputs() match {
       case Err(InitializedWrongNumberOfElements(_, 4, 3)) =>
-    }
-  }
-
-  test("Report when changing final local") {
-    // https://github.com/ValeLang/Vale/issues/128
-    val compile = TemplarTestCompilation.test(
-      """
-        |fn main() export {
-        |  x = "world!";
-        |  set x = "changed";
-        |  println(x); // => changed
-        |}
-        |""".stripMargin)
-    compile.getTemputs() match {
-      case Err(CantMutateFinalLocal(_, _)) =>
     }
   }
 
@@ -315,7 +300,7 @@ class TemplarTests extends FunSuite with Matchers {
       """.stripMargin)
     val temputs = compile.expectTemputs()
 
-    temputs.functions.collect({ case x @ functionName("do") => x }).head.header.returnType shouldEqual Coord(Share, Readonly, Int2())
+    temputs.functions.collect({ case x @ functionName("do") => x }).head.header.returnType shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
   }
 
   test("Calls destructor on local var") {
@@ -326,14 +311,14 @@ class TemplarTests extends FunSuite with Matchers {
         |  Muta() = m;
         |}
         |
-        |fn main() {
+        |fn main() export {
         |  a = Muta();
         |}
       """.stripMargin)
 
     val main = compile.expectTemputs().lookupFunction("main")
-    main.only({ case FunctionCall2(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => })
-    main.all({ case FunctionCall2(_, _) => }).size shouldEqual 2
+    main.only({ case FunctionCallTE(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => })
+    main.all({ case FunctionCallTE(_, _) => }).size shouldEqual 2
   }
 
   test("Stamps an interface template via a function return") {
@@ -348,7 +333,7 @@ class TemplarTests extends FunSuite with Matchers {
         |  SomeStruct<T>(t)
         |}
         |
-        |fn main() {
+        |fn main() export {
         |  doAThing(4);
         |}
         |""".stripMargin
@@ -377,29 +362,29 @@ class TemplarTests extends FunSuite with Matchers {
 
     // Check the struct was made
     temputs.structs.collectFirst({
-      case StructDefinition2(
+      case StructDefinitionT(
       simpleName("MyStruct"),
       _,
       false,
-      Mutable,
-      List(StructMember2(CodeVarName2("a"), Final, ReferenceMemberType2(Coord(Share, Readonly, Int2())))),
+      MutableT,
+      List(StructMemberT(CodeVarNameT("a"), FinalT, ReferenceMemberTypeT(CoordT(ShareT, ReadonlyT, IntT.i32)))),
       false) =>
     }).get
     // Check there's a constructor
     temputs.lookupFunction("MyStruct").only({
-      case FunctionHeader2(
+      case FunctionHeaderT(
       simpleName("MyStruct"),
       _,
-      List(Parameter2(CodeVarName2("a"), None, Coord(Share, Readonly, Int2()))),
-      Coord(Own,Readwrite, StructRef2(simpleName("MyStruct"))),
+      List(ParameterT(CodeVarNameT("a"), None, CoordT(ShareT, ReadonlyT, IntT.i32))),
+      CoordT(OwnT,ReadwriteT, StructRefT(simpleName("MyStruct"))),
       _) =>
     })
     val main = temputs.lookupFunction("main")
     // Check that we call the constructor
     main.only({
-      case FunctionCall2(
-        Prototype2(simpleName("MyStruct"), _),
-        List(IntLiteral2(7))) =>
+      case FunctionCallTE(
+        PrototypeT(simpleName("MyStruct"), _),
+        List(ConstantIntTE(7, _))) =>
     })
   }
 
@@ -415,12 +400,12 @@ class TemplarTests extends FunSuite with Matchers {
 
     val interfaceDef =
       temputs.interfaces.collectFirst({
-        case id @ InterfaceDefinition2(simpleName("MyInterface"), _, false, Mutable, List()) => id
+        case id @ InterfaceDefinitionT(simpleName("MyInterface"), _, false, MutableT, List()) => id
       }).get
 
     val structDef =
       temputs.structs.collectFirst({
-        case sd @ StructDefinition2(simpleName("MyStruct"), _, false, Mutable, _, false) => sd
+        case sd @ StructDefinitionT(simpleName("MyStruct"), _, false, MutableT, _, false) => sd
       }).get
 
     vassert(temputs.edges.exists(impl => {
@@ -437,10 +422,10 @@ class TemplarTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
 
     temputs.lookupInterface(
-      InterfaceRef2(
-        FullName2(List(), CitizenName2("MyOption", List(CoordTemplata(Coord(Share, Readonly, Int2())))))))
+      InterfaceRefT(
+        FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("MyOption", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))))
     vassert(temputs.lookupFunction("main").header.params.head.tyype ==
-        Coord(Own,Readwrite,InterfaceRef2(FullName2(List(), CitizenName2("MyOption", List(CoordTemplata(Coord(Share, Readonly, Int2()))))))))
+        CoordT(OwnT,ReadwriteT,InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("MyOption", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))))
 
     // Can't run it because there's nothing implementing that interface >_>
   }
@@ -462,7 +447,7 @@ class TemplarTests extends FunSuite with Matchers {
         |""".stripMargin)
     val temputs = compile.expectTemputs()
     val moo = temputs.lookupStruct("Moo")
-    moo.attributes.contains(Export2) shouldEqual true
+    moo.attributes.exists({ case Export2(_) => true }) shouldEqual true
   }
 
   test("Tests exporting interface") {
@@ -472,7 +457,7 @@ class TemplarTests extends FunSuite with Matchers {
         |""".stripMargin)
     val temputs = compile.expectTemputs()
     val moo = temputs.lookupInterface("IMoo")
-    moo.attributes.contains(Export2) shouldEqual true
+    moo.attributes.exists({ case Export2(_) => true }) shouldEqual true
   }
 
   test("Tests stamping a struct and its implemented interface from a function param") {
@@ -487,10 +472,10 @@ class TemplarTests extends FunSuite with Matchers {
 
     val interface =
       temputs.lookupInterface(
-        InterfaceRef2(
-          FullName2(List(), CitizenName2("MyOption", List(CoordTemplata(Coord(Share, Readonly, Int2())))))))
+        InterfaceRefT(
+          FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("MyOption", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))))
 
-    val struct = temputs.lookupStruct(StructRef2(FullName2(List(), CitizenName2("MySome", List(CoordTemplata(Coord(Share, Readonly, Int2())))))));
+    val struct = temputs.lookupStruct(StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("MySome", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))));
 
     temputs.lookupImpl(struct.getRef, interface.getRef)
   }
@@ -500,17 +485,17 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |struct MyThing { value int; }
         |fn moo() MyThing { MyThing(4) }
-        |fn main() { moo(); }
+        |fn main() export { moo(); }
       """.stripMargin)
 
     val temputs = compile.expectTemputs()
     val moo = temputs.lookupFunction("moo")
     moo.header.returnType match {
-      case Coord(Own,Readwrite,StructRef2(simpleName("MyThing"))) =>
+      case CoordT(OwnT,ReadwriteT,StructRefT(simpleName("MyThing"))) =>
     }
     val main = temputs.lookupFunction("main")
     main.header.returnType match {
-      case Coord(Share, Readonly, Void2()) =>
+      case CoordT(ShareT, ReadonlyT, VoidT()) =>
     }
   }
 
@@ -526,21 +511,21 @@ class TemplarTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
 
-    temputs.lookupStruct(StructRef2(FullName2(List(), CitizenName2("MySome", List(CoordTemplata(Coord(Share, Readonly, Int2())))))));
+    temputs.lookupStruct(StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("MySome", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))));
 
     val constructor = temputs.lookupFunction("MySome")
     constructor.header match {
       case
-        FunctionHeader2(
+        FunctionHeaderT(
         simpleName("MySome"),
         _,
         _,
-        Coord(Own,Readwrite,StructRef2(FullName2(List(), CitizenName2("MySome", List(CoordTemplata(Coord(Share, Readonly, Int2()))))))),
+        CoordT(OwnT,ReadwriteT,StructRefT(FullNameT(_, List(), CitizenNameT("MySome", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))),
         _) =>
     }
 
     temputs.lookupFunction("main").only({
-      case FunctionCall2(functionName("MySome"), _) =>
+      case FunctionCallTE(functionName("MySome"), _) =>
     })
   }
 
@@ -550,11 +535,11 @@ class TemplarTests extends FunSuite with Matchers {
 
     val main = temputs.lookupFunction("main")
 
-    main.only({ case ReferenceLocalVariable2(FullName2(_,CodeVarName2("x")),Final,Coord(Own,Readwrite,InterfaceRef2(simpleName("MyInterface")))) => })
+    main.only({ case ReferenceLocalVariableT(FullNameT(_,_,CodeVarNameT("x")),FinalT,CoordT(OwnT,ReadwriteT,InterfaceRefT(simpleName("MyInterface")))) => })
 
-    val upcast = main.onlyOf(classOf[StructToInterfaceUpcast2])
-    vassert(upcast.resultRegister.reference == Coord(Own,Readwrite,InterfaceRef2(FullName2(List(), CitizenName2("MyInterface", List())))))
-    vassert(upcast.innerExpr.resultRegister.reference == Coord(Own,Readwrite,StructRef2(FullName2(List(), CitizenName2("MyStruct", List())))))
+    val upcast = main.onlyOf(classOf[StructToInterfaceUpcastTE])
+    vassert(upcast.resultRegister.reference == CoordT(OwnT,ReadwriteT,InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("MyInterface", List())))))
+    vassert(upcast.innerExpr.resultRegister.reference == CoordT(OwnT,ReadwriteT,StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("MyStruct", List())))))
   }
 
   test("Tests calling a virtual function") {
@@ -563,11 +548,11 @@ class TemplarTests extends FunSuite with Matchers {
 
     val main = temputs.lookupFunction("main")
     main.only({
-      case up @ StructToInterfaceUpcast2(innerExpr, InterfaceRef2(simpleName("Car"))) => {
+      case up @ StructToInterfaceUpcastTE(innerExpr, InterfaceRefT(simpleName("Car"))) => {
         innerExpr.resultRegister.only({
-          case StructRef2(simpleName("Toyota")) =>
+          case StructRefT(simpleName("Toyota")) =>
         })
-        vassert(up.resultRegister.reference.referend == InterfaceRef2(FullName2(List(), CitizenName2("Car", List()))))
+        vassert(up.resultRegister.reference.kind == InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("Car", List()))))
       }
     })
   }
@@ -578,7 +563,7 @@ class TemplarTests extends FunSuite with Matchers {
 
     val main = temputs.lookupFunction("main")
     main.only({
-      case f @ FunctionCall2(Prototype2(simpleName("doCivicDance"),Coord(Share,Readonly,Int2())), _) => {
+      case f @ FunctionCallTE(PrototypeT(simpleName("doCivicDance"),CoordT(ShareT,ReadonlyT,IntT.i32)), _) => {
 //        vassert(f.callable.paramTypes == List(Coord(Borrow,InterfaceRef2(simpleName("Car")))))
       }
     })
@@ -590,7 +575,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |fn moo<T> () rules(T Ref) { }
         |
-        |fn main() {
+        |fn main() export {
         |	moo<int>();
         |}
       """.stripMargin)
@@ -615,14 +600,14 @@ class TemplarTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
 
     temputs.lookupFunction("main").all({
-      case Destroy2(_, _, _) =>
+      case DestroyTE(_, _, _) =>
     }).size shouldEqual 0
 
     // Make sure there's a destroy in its destructor though.
     val destructor =
-        temputs.functions.find(_.header.fullName.last.isInstanceOf[ImmConcreteDestructorName2]).get
+        temputs.functions.find(_.header.fullName.last.isInstanceOf[ImmConcreteDestructorNameT]).get
     destructor.only({
-      case Destroy2(_, StructRef2(FullName2(_, CitizenName2("Vec3i", _))), _) =>
+      case DestroyTE(_, StructRefT(FullNameT(_, _, CitizenNameT("Vec3i", _))), _) =>
     })
   }
 
@@ -647,13 +632,13 @@ class TemplarTests extends FunSuite with Matchers {
     val main = temputs.lookupFunction("main")
 
     main.all({
-      case Destroy2(_, _, _) =>
+      case DestroyTE(_, _, _) =>
     }).size shouldEqual 0
 
     main.only({
-      case ReferenceMemberLookup2(_,
-        SoftLoad2(LocalLookup2(_, _, Coord(_,_,StructRef2(_)), Final), Constraint, Readonly),
-        FullName2(List(CitizenName2("Vec3i",List())),CodeVarName2("x")),Coord(Share,Readonly,Int2()),Readonly,Final) =>
+      case ReferenceMemberLookupT(_,
+        SoftLoadTE(LocalLookupT(_, _, CoordT(_,_,StructRefT(_)), FinalT), ConstraintT, ReadonlyT),
+        FullNameT(_, List(CitizenNameT("Vec3i",List())),CodeVarNameT("x")),CoordT(ShareT,ReadonlyT,IntT.i32),ReadonlyT,FinalT) =>
     })
   }
 
@@ -696,7 +681,7 @@ class TemplarTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
 
     temputs.functions.collectFirst({
-      case Function2(header @ functionName("doThing"), _, _) if header.getAbstractInterface != None => true
+      case FunctionT(header @ functionName("doThing"), _, _) if header.getAbstractInterface != None => true
     }).get
   }
 
@@ -707,7 +692,7 @@ class TemplarTests extends FunSuite with Matchers {
 
     val main = temputs.lookupFunction("main")
     main.only({
-      case f @ FunctionCall2(functionName("forEach"), _) => f
+      case f @ FunctionCallTE(functionName("forEach"), _) => f
     })
 
   }
@@ -733,7 +718,7 @@ class TemplarTests extends FunSuite with Matchers {
         |  y float;
         |}
         |struct Pattern imm {
-        |  patternTiles Array<imm, Vec2>;
+        |  patternTiles Array<imm, final, Vec2>;
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()
@@ -761,7 +746,7 @@ class TemplarTests extends FunSuite with Matchers {
       """.stripMargin)
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
-    main.only({ case Return2(_) => })
+    main.only({ case ReturnTE(_) => })
   }
 
   test("Test return from inside if") {
@@ -778,9 +763,9 @@ class TemplarTests extends FunSuite with Matchers {
       """.stripMargin)
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
-    main.all({ case Return2(_) => }).size shouldEqual 2
-    main.only({ case IntLiteral2(7) => })
-    main.only({ case IntLiteral2(9) => })
+    main.all({ case ReturnTE(_) => }).size shouldEqual 2
+    main.only({ case ConstantIntTE(7, _) => })
+    main.only({ case ConstantIntTE(9, _) => })
   }
 
   test("Test return from inside if destroys locals") {
@@ -802,7 +787,7 @@ class TemplarTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     val destructorCalls =
-      main.all({ case fpc @ FunctionCall2(Prototype2(FullName2(List(), FunctionName2("destructor",List(CoordTemplata(Coord(Own,Readwrite,StructRef2(simpleName("Marine"))))), _)), _),_) => fpc })
+      main.all({ case fpc @ FunctionCallTE(PrototypeT(FullNameT(_, List(), FunctionNameT("destructor",List(CoordTemplata(CoordT(OwnT,ReadwriteT,StructRefT(simpleName("Marine"))))), _)), _),_) => fpc })
     destructorCalls.size shouldEqual 2
   }
 
@@ -815,7 +800,7 @@ class TemplarTests extends FunSuite with Matchers {
   test("Lambda inside template") {
     // This originally didn't work because both helperFunc<int> and helperFunc<Str>
     // made a closure struct called helperFunc:lam1, which collided.
-    // This is what spurred namespace support.
+    // This is what spurred paackage support.
 
     val compile = TemplarTestCompilation.test(
       """
@@ -824,7 +809,7 @@ class TemplarTests extends FunSuite with Matchers {
         |fn helperFunc<T>(x T) {
         |  { print(x); }();
         |}
-        |fn main() {
+        |fn main() export {
         |  helperFunc(4);
         |  helperFunc("bork");
         |}
@@ -848,7 +833,7 @@ class TemplarTests extends FunSuite with Matchers {
         |fn helperFunc(x str) {
         |  { print(x); }();
         |}
-        |fn main() {
+        |fn main() export {
         |  helperFunc(4);
         |  helperFunc("bork");
         |}
@@ -875,7 +860,7 @@ class TemplarTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     compile.getTemputs() match {
-      case Err(NonReadonlyReferenceFoundInPureFunctionParameter(_, CodeVarName2("ship"))) =>
+      case Err(NonReadonlyReferenceFoundInPureFunctionParameter(_, CodeVarNameT("ship"))) =>
     }
   }
 
@@ -898,7 +883,7 @@ class TemplarTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     compile.getTemputs() match {
-      case Err(CantUseUnstackifiedLocal(_, CodeVarName2("newWeapon"))) =>
+      case Err(CantUseUnstackifiedLocal(_, CodeVarNameT("newWeapon"))) =>
     }
   }
 
@@ -921,7 +906,27 @@ class TemplarTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     compile.getTemputs() match {
-      case Err(CantUseUnstackifiedLocal(_, CodeVarName2("newWeapon"))) =>
+      case Err(CantUseUnstackifiedLocal(_, CodeVarNameT("newWeapon"))) =>
+    }
+  }
+
+  test("Reports when moving from inside a while") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |struct Marine {
+        |  ammo int;
+        |}
+        |
+        |fn main() int export {
+        |  m = Marine(7);
+        |  while (false) {
+        |    drop(m);
+        |  }
+        |  = 42;
+        |}
+        |""".stripMargin)
+    compile.getTemputs() match {
+      case Err(CantUnstackifyOutsideLocalFromInsideWhile(_, CodeVarNameT("m"))) =>
     }
   }
 
@@ -938,7 +943,7 @@ class TemplarTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     compile.getTemputs() match {
-      case Err(CannotSubscriptT(_, StructRef2(FullName2(_, CitizenName2("Weapon", List()))))) =>
+      case Err(CannotSubscriptT(_, StructRefT(FullNameT(_, _, CitizenNameT("Weapon", List()))))) =>
     }
   }
 
@@ -949,7 +954,7 @@ class TemplarTests extends FunSuite with Matchers {
         |fn moo() int export { 1448 }
         |""".stripMargin)
     compile.getTemputs() match {
-      case Err(FunctionAlreadyExists(_, _, Signature2(FullName2(List(), FunctionName2("moo", List(), List()))))) =>
+      case Err(FunctionAlreadyExists(_, _, SignatureT(FullNameT(_, List(), FunctionNameT("moo", List(), List()))))) =>
     }
   }
 
@@ -978,37 +983,13 @@ class TemplarTests extends FunSuite with Matchers {
           |interface AFunction1<P> rules(P Ref) {
           |  fn __call(virtual this &AFunction1<P>, a P) int;
           |}
-          |fn main() {
+          |fn main() export {
           |  arr = &AFunction1<int>((_){ true });
           |}
           |""".stripMargin)
 
     compile.getTemputs() match {
       case Err(LambdaReturnDoesntMatchInterfaceConstructor(_)) =>
-    }
-  }
-
-  test("Reports when mutating a tuple") {
-    val compile = TemplarTestCompilation.test(
-      """
-        |fn main() export {
-        |  t2 = [5, true, "V"];
-        |  set t2.1 = false;
-        |}
-        |""".stripMargin)
-    compile.getTemputs() match {
-      case Err(CantMutateFinalMember(_, _, _)) =>
-    }
-
-    val compile2 = TemplarTestCompilation.test(
-      """
-        |fn main() export {
-        |  t2 = [5, true, "V"];
-        |  set t2[1] = false;
-        |}
-        |""".stripMargin)
-    compile2.getTemputs() match {
-      case Err(CantMutateFinalMember(_, _, _)) =>
     }
   }
 
@@ -1040,7 +1021,7 @@ class TemplarTests extends FunSuite with Matchers {
           |  base = Base("Zion");
           |  ship = Spaceship("Neb", &&base);
           |  printShipBase(&ship);
-          |  base^.drop(); // Destroys base.
+          |  (base).drop(); // Destroys base.
           |  printShipBase(&ship);
           |}
           |""".stripMargin)
@@ -1049,14 +1030,14 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Humanize errors") {
-    val fireflyKind = StructRef2(FullName2(List(), CitizenName2("Firefly", List())))
-    val fireflyCoord = Coord(Own,Readwrite,fireflyKind)
-    val serenityKind = StructRef2(FullName2(List(), CitizenName2("Serenity", List())))
-    val serenityCoord = Coord(Own,Readwrite,serenityKind)
-    val ispaceshipKind = InterfaceRef2(FullName2(List(), CitizenName2("ISpaceship", List())))
-    val ispaceshipCoord = Coord(Own,Readwrite,ispaceshipKind)
-    val unrelatedKind = StructRef2(FullName2(List(), CitizenName2("Spoon", List())))
-    val unrelatedCoord = Coord(Own,Readwrite,unrelatedKind)
+    val fireflyKind = StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("Firefly", List())))
+    val fireflyCoord = CoordT(OwnT,ReadwriteT,fireflyKind)
+    val serenityKind = StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("Serenity", List())))
+    val serenityCoord = CoordT(OwnT,ReadwriteT,serenityKind)
+    val ispaceshipKind = InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("ISpaceship", List())))
+    val ispaceshipCoord = CoordT(OwnT,ReadwriteT,ispaceshipKind)
+    val unrelatedKind = StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("Spoon", List())))
+    val unrelatedCoord = CoordT(OwnT,ReadwriteT,unrelatedKind)
 
     val filenamesAndSources = FileCoordinateMap.test("blah blah blah\nblah blah blah")
 
@@ -1114,24 +1095,29 @@ class TemplarTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantMoveOutOfMemberT(
         RangeS.testZero,
-        CodeVarName2("hp")))
+        CodeVarNameT("hp")))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantUseUnstackifiedLocal(
         RangeS.testZero,
-        CodeVarName2("firefly")))
+        CodeVarNameT("firefly")))
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      CantUnstackifyOutsideLocalFromInsideWhile(
+        RangeS.testZero,
+        CodeVarNameT("firefly")))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       FunctionAlreadyExists(
         RangeS.testZero,
         RangeS.testZero,
-        Signature2(FullName2(List(), FunctionName2("myFunc", List(), List())))))
+        SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List(), FunctionNameT("myFunc", List(), List())))))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantMutateFinalMember(
         RangeS.testZero,
         serenityKind.fullName,
-        FullName2(List(), CodeVarName2("bork"))))
+        FullNameT(PackageCoordinate.TEST_TLD, List(), CodeVarNameT("bork"))))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       LambdaReturnDoesntMatchInterfaceConstructor(
@@ -1144,10 +1130,6 @@ class TemplarTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       WhileConditionIsntBoolean(
         RangeS.testZero, fireflyCoord))
-      .nonEmpty)
-    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
-      CantMutateFinalLocal(
-        RangeS.testZero, CodeVarNameA("x")))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantImplStruct(

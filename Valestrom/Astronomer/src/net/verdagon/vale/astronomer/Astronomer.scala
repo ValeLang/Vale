@@ -3,11 +3,11 @@ package net.verdagon.vale.astronomer
 import net.verdagon.vale.astronomer.OrderModules.orderModules
 import net.verdagon.vale.astronomer.builtins._
 import net.verdagon.vale.astronomer.ruletyper._
-import net.verdagon.vale.parser.{CaptureP, FileP, ImmutableP, MutabilityP, MutableP}
-import net.verdagon.vale.scout.{ExportS, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
+import net.verdagon.vale.parser.{CaptureP, FailedParse, FileP, ImmutableP, MutabilityP, MutableP}
+import net.verdagon.vale.scout.{ExportS, ExternS, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS, OverrideSP}
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.{Err, FileCoordinateMap, INamespaceResolver, NamespaceCoordinate, NamespaceCoordinateMap, Ok, Result, vassert, vassertSome, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, Ok, PackageCoordinate, PackageCoordinateMap, Result, vassert, vassertSome, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
@@ -17,18 +17,18 @@ case class Environment(
     maybeName: Option[INameS],
     maybeParentEnv: Option[Environment],
     primitives: Map[String, ITypeSR],
-    codeMap: NamespaceCoordinateMap[ProgramS],
+    codeMap: PackageCoordinateMap[ProgramS],
     typeByRune: Map[IRuneA, ITemplataType],
-    locals: List[LocalVariableA]) {
+    locals: List[LocalA]) {
 
-  val structsS: List[StructS] = codeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.structs)).toList
-  val interfacesS: List[InterfaceS] = codeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.interfaces)).toList
-  val implsS: List[ImplS] = codeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.impls)).toList
-  val functionsS: List[FunctionS] = codeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.implementedFunctions)).toList
-  val exportsS: List[ExportAsS] = codeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.exports)).toList
-  val imports: List[ImportS] = codeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.imports)).toList
+  val structsS: List[StructS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.structs)).toList
+  val interfacesS: List[InterfaceS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.interfaces)).toList
+  val implsS: List[ImplS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.impls)).toList
+  val functionsS: List[FunctionS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.implementedFunctions)).toList
+  val exportsS: List[ExportAsS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.exports)).toList
+  val imports: List[ImportS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.imports)).toList
 
-  def addLocals(newLocals: List[LocalVariableA]): Environment = {
+  def addLocals(newLocals: List[LocalA]): Environment = {
     Environment(maybeName, maybeParentEnv, primitives, codeMap, typeByRune, locals ++ newLocals)
   }
   def addRunes(newTypeByRune: Map[IRuneA, ITemplataType]): Environment = {
@@ -120,13 +120,13 @@ case class Environment(
 
 case class AstroutsBox(var astrouts: Astrouts) {
   def getImpl(name: ImplNameA) = {
-    astrouts.moduleAstrouts.get(name.namespaceCoordinate.module).flatMap(_.impls.get(name))
+    astrouts.moduleAstrouts.get(name.packageCoordinate.module).flatMap(_.impls.get(name))
   }
   def getStruct(name: ITypeDeclarationNameA) = {
-    astrouts.moduleAstrouts.get(name.namespaceCoordinate.module).flatMap(_.structs.get(name))
+    astrouts.moduleAstrouts.get(name.packageCoordinate.module).flatMap(_.structs.get(name))
   }
   def getInterface(name: ITypeDeclarationNameA) = {
-    astrouts.moduleAstrouts.get(name.namespaceCoordinate.module).flatMap(_.interfaces.get(name))
+    astrouts.moduleAstrouts.get(name.packageCoordinate.module).flatMap(_.interfaces.get(name))
   }
 }
 
@@ -143,12 +143,13 @@ object Astronomer {
   val primitives =
     Map(
       "int" -> KindTypeSR,
+      "i64" -> KindTypeSR,
       "str" -> KindTypeSR,
       "bool" -> KindTypeSR,
       "float" -> KindTypeSR,
       "void" -> KindTypeSR,
       "IFunction1" -> TemplateTypeSR(List(MutabilityTypeSR, CoordTypeSR, CoordTypeSR), KindTypeSR),
-      "Array" -> TemplateTypeSR(List(MutabilityTypeSR, CoordTypeSR), KindTypeSR))
+      "Array" -> TemplateTypeSR(List(MutabilityTypeSR, VariabilityTypeSR, CoordTypeSR), KindTypeSR))
 
   def translateRuneType(tyype: ITypeSR): ITemplataType = {
     tyype match {
@@ -213,23 +214,23 @@ object Astronomer {
     val (structsS, interfacesS) = env.lookupType(name)
 
     if (structsS.isEmpty && interfacesS.isEmpty) {
-      throw CompileErrorExceptionA(RangedInternalErrorA(range, "Nothing found with name " + name))
+      ErrorReporter.report(RangedInternalErrorA(range, "Nothing found with name " + name))
     }
     if (structsS.size.signum + interfacesS.size.signum > 1) {
-      throw CompileErrorExceptionA(RangedInternalErrorA(range, "Name doesn't correspond to only one of primitive or struct or interface: " + name))
+      ErrorReporter.report(RangedInternalErrorA(range, "Name doesn't correspond to only one of primitive or struct or interface: " + name))
     }
 
     if (structsS.nonEmpty) {
       val types = structsS.map(lookupStructType(astrouts, env, _))
       if (types.toSet.size > 1) {
-        throw CompileErrorExceptionA(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
+        ErrorReporter.report(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
       }
       val tyype = types.head
       tyype
     } else if (interfacesS.nonEmpty) {
       val types = interfacesS.map(lookupInterfaceType(astrouts, env, _))
       if (types.toSet.size > 1) {
-        throw CompileErrorExceptionA(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
+        ErrorReporter.report(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
       }
       val tyype = types.head
       tyype
@@ -248,7 +249,7 @@ object Astronomer {
       ErrorReporter.report(CouldntFindTypeA(range, name.name))
     }
     if (primitivesS.size.signum + structsS.size.signum + interfacesS.size.signum > 1) {
-      throw CompileErrorExceptionA(RangedInternalErrorA(range, "Name doesn't correspond to only one of primitive or struct or interface: " + name))
+      ErrorReporter.report(RangedInternalErrorA(range, "Name doesn't correspond to only one of primitive or struct or interface: " + name))
     }
 
     if (primitivesS.nonEmpty) {
@@ -257,14 +258,14 @@ object Astronomer {
     } else if (structsS.nonEmpty) {
       val types = structsS.map(lookupStructType(astrouts, env, _))
       if (types.toSet.size > 1) {
-        throw CompileErrorExceptionA(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
+        ErrorReporter.report(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
       }
       val tyype = types.head
       tyype
     } else if (interfacesS.nonEmpty) {
       val types = interfacesS.map(lookupInterfaceType(astrouts, env, _))
       if (types.toSet.size > 1) {
-        throw CompileErrorExceptionA(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
+        ErrorReporter.report(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
       }
       val tyype = types.head
       tyype
@@ -304,7 +305,7 @@ object Astronomer {
 
     val (conclusions, rulesA) =
       makeRuleTyper().solve(astrouts, env, rules, rangeS, List(), Some(localRunesA ++ knowableRunesA)) match {
-        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
+        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(rangeS, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
 
@@ -338,15 +339,15 @@ object Astronomer {
 
   def translateCitizenAttributes(attrsS: List[ICitizenAttributeS]) = {
     attrsS.map({
-      case ExportS => ExportA
+      case ExportS(packageCoordinate) => ExportA(packageCoordinate)
       case x => vimpl(x.toString)
     })
   }
 
   def translateFunctionAttributes(attrsS: List[IFunctionAttributeS]): List[IFunctionAttributeA] = {
     attrsS.flatMap({
-      case ExportS => List(ExportA)
-      case ExternS => List(ExternA)
+      case ExportS(packageCoordinate) => List(ExportA(packageCoordinate))
+      case ExternS(packageCoordinate) => List(ExternA(packageCoordinate))
       case PureS => List(PureA)
       case BuiltinS(_) => List()
       case x => vimpl(x.toString)
@@ -372,7 +373,7 @@ object Astronomer {
 
     val (conclusions, rulesA) =
       makeRuleTyper().solve(astrouts, env, rules, range, List(), Some(knowableRunesA ++ localRunesA)) match {
-        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
+        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(range, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
 
@@ -416,12 +417,12 @@ object Astronomer {
 
     val (conclusionsForRulesFromStructDirection, rulesFromStructDirectionA) =
       makeRuleTyper().solve(astrouts, env, rulesFromStructDirection, range, List(), Some(knowableRunesA ++ localRunesA)) match {
-        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
+        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(range, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
     val (conclusionsForRulesFromInterfaceDirection, rulesFromInterfaceDirectionA) =
       makeRuleTyper().solve(astrouts, env, rulesFromInterfaceDirection, range, List(), Some(knowableRunesA ++ localRunesA)) match {
-        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
+        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(range, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
     vassert(conclusionsForRulesFromStructDirection == conclusionsForRulesFromInterfaceDirection)
@@ -447,7 +448,7 @@ object Astronomer {
 
     val (conclusions, rulesA) =
       makeRuleTyper().solve(astrouts, env, rulesS, range, List(), Some(Set(runeA))) match {
-        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
+        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(range, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
 
@@ -460,7 +461,7 @@ object Astronomer {
   }
 
   def translateAtom(env: Environment, atomS: AtomSP): AtomAP = {
-    val AtomSP(range, CaptureS(nameS, variability), virtualityS, coordRuneS, destructureS) = atomS
+    val AtomSP(range, CaptureS(nameS), virtualityS, coordRuneS, destructureS) = atomS
     val nameA = translateVarNameStep(nameS)
 
     val virtualityA =
@@ -492,10 +493,9 @@ object Astronomer {
           // We make some LocalVariableA here to appease translateParameter which expects some locals in the env.
           paramsS.map(_.pattern.name)
             .map({
-              case CaptureS(name, variability) => {
-                LocalVariableA(
+              case CaptureS(name) => {
+                LocalA(
                   Astronomer.translateVarNameStep(name),
-                  variability,
                   NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed)
               }
             })
@@ -507,7 +507,9 @@ object Astronomer {
 
     val (conclusions, rulesA) =
       makeRuleTyper().solve(astrouts, env, templateRules, rangeS, List(), Some(localRunesA)) match {
-        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
+        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => {
+          ErrorReporter.report(CouldntSolveRulesA(rangeS, rtsf))
+        }
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
 
@@ -675,7 +677,7 @@ object Astronomer {
   }
 
   def translateProgram(
-      codeMap: NamespaceCoordinateMap[ProgramS],
+      codeMap: PackageCoordinateMap[ProgramS],
       primitives: Map[String, ITypeSR],
       suppliedFunctions: List[FunctionA],
       suppliedInterfaces: List[InterfaceA]):
@@ -712,16 +714,16 @@ object Astronomer {
 
   val wrapperFunctions =
     List(
-      Arrays.makeArrayFunction(),
+//      Arrays.makeArrayFunction(),
       RefCounting.checkmemberrc,
       RefCounting.checkvarrc)
 
   def runAstronomer(separateProgramsS: FileCoordinateMap[ProgramS]):
-  Either[NamespaceCoordinateMap[ProgramA], ICompileErrorA] = {
+  Either[PackageCoordinateMap[ProgramA], ICompileErrorA] = {
     val mergedProgramS =
-      NamespaceCoordinateMap(
-        separateProgramsS.moduleToNamespacesToFilenameToContents.mapValues(namespacesToFilenameToContents => {
-          namespacesToFilenameToContents.mapValues(filenameToContents => {
+      PackageCoordinateMap(
+        separateProgramsS.moduleToPackagesToFilenameToContents.mapValues(packagesToFilenameToContents => {
+          packagesToFilenameToContents.mapValues(filenameToContents => {
             ProgramS(
               filenameToContents.values.flatMap(_.structs).toList,
               filenameToContents.values.flatMap(_.interfaces).toList,
@@ -741,36 +743,36 @@ object Astronomer {
         Astronomer.translateProgram(
           mergedProgramS, primitives, suppliedFunctions, suppliedInterfaces)
 
-      val namespaceToStructsA = structsA.groupBy(_.name.codeLocation.file.namespaceCoordinate)
-      val namespaceToInterfacesA = interfacesA.groupBy(_.name.codeLocation.file.namespaceCoordinate)
-      val namespaceToFunctionsA = functionsA.groupBy(_.name.namespaceCoordinate)
-      val namespaceToImplsA = implsA.groupBy(_.name.codeLocation.file.namespaceCoordinate)
-      val namespaceToExportsA = exportsA.groupBy(_.range.file.namespaceCoordinate)
+      val packageToStructsA = structsA.groupBy(_.name.codeLocation.file.packageCoordinate)
+      val packageToInterfacesA = interfacesA.groupBy(_.name.codeLocation.file.packageCoordinate)
+      val packageToFunctionsA = functionsA.groupBy(_.name.packageCoordinate)
+      val packageToImplsA = implsA.groupBy(_.name.codeLocation.file.packageCoordinate)
+      val packageToExportsA = exportsA.groupBy(_.range.file.packageCoordinate)
 
-      val allNamespaces =
-        namespaceToStructsA.keySet ++
-        namespaceToInterfacesA.keySet ++
-        namespaceToFunctionsA.keySet ++
-        namespaceToImplsA.keySet ++
-        namespaceToExportsA.keySet
-      val namespaceToContents =
-        allNamespaces.map(namespace => {
+      val allPackages =
+        packageToStructsA.keySet ++
+        packageToInterfacesA.keySet ++
+        packageToFunctionsA.keySet ++
+        packageToImplsA.keySet ++
+        packageToExportsA.keySet
+      val packageToContents =
+        allPackages.map(paackage => {
           val contents =
             ProgramA(
-              namespaceToStructsA.getOrElse(namespace, List()),
-              namespaceToInterfacesA.getOrElse(namespace, List()),
-              namespaceToImplsA.getOrElse(namespace, List()),
-              namespaceToFunctionsA.getOrElse(namespace, List()),
-              namespaceToExportsA.getOrElse(namespace, List()))
-          (namespace -> contents)
+              packageToStructsA.getOrElse(paackage, List()),
+              packageToInterfacesA.getOrElse(paackage, List()),
+              packageToImplsA.getOrElse(paackage, List()),
+              packageToFunctionsA.getOrElse(paackage, List()),
+              packageToExportsA.getOrElse(paackage, List()))
+          (paackage -> contents)
         }).toMap
-      val moduleToNamespaceToContents =
-        namespaceToContents.keys.toList.groupBy(_.module).mapValues(namespaceCoordinates => {
-          namespaceCoordinates.map(namespaceCoordinate => {
-            (namespaceCoordinate.namespaces -> namespaceToContents(namespaceCoordinate))
+      val moduleToPackageToContents =
+        packageToContents.keys.toList.groupBy(_.module).mapValues(packageCoordinates => {
+          packageCoordinates.map(packageCoordinate => {
+            (packageCoordinate.packages -> packageToContents(packageCoordinate))
           }).toMap
         })
-      Left(NamespaceCoordinateMap(moduleToNamespaceToContents))
+      Left(PackageCoordinateMap(moduleToPackageToContents))
     } catch {
       case CompileErrorExceptionA(err) => {
         Right(err)
@@ -780,22 +782,21 @@ object Astronomer {
 }
 
 class AstronomerCompilation(
-  modulesToBuild: List[String],
-  namespaceToContentsResolver: INamespaceResolver[Map[String, String]]) {
-  var scoutCompilation = new ScoutCompilation(modulesToBuild, namespaceToContentsResolver)
-  var astroutsCache: Option[NamespaceCoordinateMap[ProgramA]] = None
+  packagesToBuild: List[PackageCoordinate],
+  packageToContentsResolver: IPackageResolver[Map[String, String]]) {
+  var scoutCompilation = new ScoutCompilation(packagesToBuild, packageToContentsResolver)
+  var astroutsCache: Option[PackageCoordinateMap[ProgramA]] = None
 
-  def getCodeMap(): FileCoordinateMap[String] = scoutCompilation.getCodeMap()
-  def getParseds(): FileCoordinateMap[(FileP, List[(Int, Int)])] = scoutCompilation.getParseds()
-  def getVpstMap(): FileCoordinateMap[String] = scoutCompilation.getVpstMap()
+  def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = scoutCompilation.getCodeMap()
+  def getParseds(): Result[FileCoordinateMap[(FileP, List[(Int, Int)])], FailedParse] = scoutCompilation.getParseds()
+  def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = scoutCompilation.getVpstMap()
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = scoutCompilation.getScoutput()
-  def expectScoutput(): FileCoordinateMap[ProgramS] = scoutCompilation.expectScoutput()
 
-  def getAstrouts(): Result[NamespaceCoordinateMap[ProgramA], ICompileErrorA] = {
+  def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = {
     astroutsCache match {
       case Some(astrouts) => Ok(astrouts)
       case None => {
-        Astronomer.runAstronomer(expectScoutput()) match {
+        Astronomer.runAstronomer(scoutCompilation.getScoutput().getOrDie()) match {
           case Right(err) => Err(err)
           case Left(astrouts) => {
             astroutsCache = Some(astrouts)
@@ -805,7 +806,7 @@ class AstronomerCompilation(
       }
     }
   }
-  def expectAstrouts(): NamespaceCoordinateMap[ProgramA] = {
+  def expectAstrouts(): PackageCoordinateMap[ProgramA] = {
     getAstrouts().getOrDie()
   }
 }

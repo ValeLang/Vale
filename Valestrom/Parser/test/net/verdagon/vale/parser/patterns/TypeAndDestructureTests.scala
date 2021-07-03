@@ -92,7 +92,7 @@ class TypeAndDestructureTests extends FunSuite with Matchers with Collector {
       case PatternPP(_,_,
           None,
           Some(NameOrRunePT(NameP(_, "Muta"))),
-          Some(DestructureP(_,List(PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "b")),FinalP)),None,None,None)))),
+          Some(DestructureP(_,List(PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "b")))),None,None,None)))),
           None) =>
     }
   }
@@ -101,7 +101,7 @@ class TypeAndDestructureTests extends FunSuite with Matchers with Collector {
       case PatternPP(_,_,
           None,
           Some(NameOrRunePT(NameP(_, "Muta"))),
-          Some(DestructureP(_,List(PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "b")),FinalP)),Some(NameOrRunePT(NameP(_, "Marine"))),None,None)))),
+          Some(DestructureP(_,List(PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "b")))),Some(NameOrRunePT(NameP(_, "Marine"))),None,None)))),
           None) =>
     }
   }

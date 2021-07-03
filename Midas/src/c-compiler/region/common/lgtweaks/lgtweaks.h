@@ -11,8 +11,8 @@ class LgtWeaks {
 public:
   LgtWeaks(
       GlobalState* globalState,
-      IReferendStructsSource* referendStructsSource,
-      IWeakRefStructsSource* weakRefStructsSource,
+      KindStructs* kindStructsSource,
+      KindStructs* weakRefStructsSource,
       bool elideChecksForKnownLive);
 
   Ref assembleWeakRef(
@@ -26,9 +26,9 @@ public:
       FunctionState *functionState,
       LLVMBuilderRef builder,
       WeakFatPtrLE sourceRefLE,
-      StructReferend *sourceStructReferendM,
+      StructKind *sourceStructKindM,
       Reference *sourceStructTypeM,
-      InterfaceReferend *targetInterfaceReferendM,
+      InterfaceKind *targetInterfaceKindM,
       Reference *targetInterfaceTypeM);
 
   // Makes a non-weak interface ref into a weak interface ref
@@ -37,7 +37,7 @@ public:
       LLVMBuilderRef builder,
       Reference* sourceType,
       Reference* targetType,
-      InterfaceReferend* interfaceReferendM,
+      InterfaceKind* interfaceKindM,
       InterfaceFatPtrLE sourceInterfaceFatPtrLE);
 
   WeakFatPtrLE assembleStructWeakRef(
@@ -45,23 +45,23 @@ public:
       LLVMBuilderRef builder,
       Reference* structTypeM,
       Reference* targetTypeM,
-      StructReferend* structReferendM,
+      StructKind* structKindM,
       WrapperPtrLE objPtrLE);
 
-  WeakFatPtrLE assembleKnownSizeArrayWeakRef(
+  WeakFatPtrLE assembleStaticSizedArrayWeakRef(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* sourceKSAMT,
-      KnownSizeArrayT* knownSizeArrayMT,
-      Reference* targetKSAWeakRefMT,
+      Reference* sourceSSAMT,
+      StaticSizedArrayT* staticSizedArrayMT,
+      Reference* targetSSAWeakRefMT,
       WrapperPtrLE objPtrLE);
 
-  WeakFatPtrLE assembleUnknownSizeArrayWeakRef(
+  WeakFatPtrLE assembleRuntimeSizedArrayWeakRef(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceType,
-      UnknownSizeArrayT* unknownSizeArrayMT,
-      Reference* targetUSAWeakRefMT,
+      RuntimeSizedArrayT* runtimeSizedArrayMT,
+      Reference* targetRSAWeakRefMT,
       WrapperPtrLE sourceRefLE);
 
   LLVMValueRef lockLgtiFatPtr(
@@ -110,8 +110,8 @@ public:
   LLVMValueRef fillWeakableControlBlock(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      IReferendStructsSource* structs,
-      Referend* referendM,
+      KindStructs* structs,
+      Kind* kindM,
       LLVMValueRef controlBlockLE);
 
   WeakFatPtrLE weakInterfaceRefToWeakStructRef(
@@ -136,8 +136,8 @@ public:
 private:
   LLVMValueRef getTargetGenFromWeakRef(
       LLVMBuilderRef builder,
-      IWeakRefStructsSource* weakRefStructsSource,
-      Referend* referend,
+      KindStructs* weakRefStructsSource,
+      Kind* kind,
       WeakFatPtrLE weakRefLE);
 
   LLVMValueRef getLgtiFromWeakRef(
@@ -168,8 +168,8 @@ private:
 
   GlobalState* globalState = nullptr;
   FatWeaks fatWeaks_;
-  IReferendStructsSource* referendStructsSource;
-  IWeakRefStructsSource* weakRefStructsSource;
+  KindStructs* kindStructsSource;
+  KindStructs* weakRefStructsSource;
   bool elideChecksForKnownLive;
 
   LLVMValueRef lgtTablePtrLE = nullptr;

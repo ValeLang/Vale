@@ -1,10 +1,10 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale.scout.{CodeLocationS, RangeS}
-import net.verdagon.vale.templar.env.{FunctionEnvironment, NamespaceEnvironment}
-import net.verdagon.vale.templar.templata.{Prototype2, Signature2}
-import net.verdagon.vale.templar.types.{CitizenDefinition2, CitizenRef2, Coord, Immutable, InterfaceDefinition2, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, Never2, RawArrayT2, Share, StructDefinition2, StructRef2, UnknownSizeArrayT2}
-import net.verdagon.vale.{vassert, vassertSome, vfail}
+import net.verdagon.vale.templar.env.{FunctionEnvironment, PackageEnvironment}
+import net.verdagon.vale.templar.templata.{PrototypeT, SignatureT}
+import net.verdagon.vale.templar.types.{CitizenDefinitionT, CitizenRefT, CoordT, ImmutableT, InterfaceDefinitionT, InterfaceRefT, KindT, StaticSizedArrayTT, MutabilityT, NeverT, RawArrayTT, ShareT, StructDefinitionT, StructRefT, RuntimeSizedArrayTT}
+import net.verdagon.vale.{PackageCoordinate, vassert, vassertSome, vfail}
 
 import scala.collection.immutable.{List, Map}
 import scala.collection.mutable
@@ -13,56 +13,61 @@ case class Temputs() {
   // Signatures that have already started to be compiled.
   // The value is a location for checking where a given function came from, which is useful
   // for detecting when the user makes two functions with identical signatures.
-  private val declaredSignatures: mutable.HashMap[Signature2, RangeS] = mutable.HashMap()
+  private val declaredSignatures: mutable.HashMap[SignatureT, RangeS] = mutable.HashMap()
 
   // Not all signatures/banners will have a return type here, it might not have been processed yet.
-  private val returnTypesBySignature: mutable.HashMap[Signature2, Coord] = mutable.HashMap()
+  private val returnTypesBySignature: mutable.HashMap[SignatureT, CoordT] = mutable.HashMap()
 
   // Not all signatures/banners or even return types will have a function here, it might not have
   // been processed yet.
-  private val functions: mutable.ArrayBuffer[Function2] = mutable.ArrayBuffer()
-  private val envByFunctionSignature: mutable.HashMap[Signature2, FunctionEnvironment] = mutable.HashMap()
+  private val functions: mutable.ArrayBuffer[FunctionT] = mutable.ArrayBuffer()
+  private val envByFunctionSignature: mutable.HashMap[SignatureT, FunctionEnvironment] = mutable.HashMap()
 
-  // Prototypes for extern functions
-  private val externPrototypes: mutable.HashSet[Prototype2] = mutable.HashSet()
+//  // Prototypes for extern functions
+//  private val packageToExternNameToExtern: mutable.HashMap[PackageCoordinate, mutable.HashMap[String, Prototype2]] = mutable.HashMap()
 
   // One must fill this in when putting things into declaredStructs/Interfaces.
-  private val mutabilitiesByCitizenRef: mutable.HashMap[CitizenRef2, Mutability] = mutable.HashMap()
+  private val mutabilitiesByCitizenRef: mutable.HashMap[CitizenRefT, MutabilityT] = mutable.HashMap()
 
   // declaredStructs is the structs that we're currently in the process of defining
   // Things will appear here before they appear in structDefsByRef
   // This is to prevent infinite recursion / stack overflow when templaring recursive types
   // Not too sure about the type of declaredStructs, we might need something else
-  private val declaredStructs: mutable.HashSet[StructRef2] = mutable.HashSet()
-  private val structDefsByRef: mutable.HashMap[StructRef2, StructDefinition2] = mutable.HashMap()
-  private val envByStructRef: mutable.HashMap[StructRef2, NamespaceEnvironment[IName2]] = mutable.HashMap()
+  private val declaredStructs: mutable.HashSet[StructRefT] = mutable.HashSet()
+  private val structDefsByRef: mutable.HashMap[StructRefT, StructDefinitionT] = mutable.HashMap()
+  private val envByStructRef: mutable.HashMap[StructRefT, PackageEnvironment[INameT]] = mutable.HashMap()
   // declaredInterfaces is the interfaces that we're currently in the process of defining
   // Things will appear here before they appear in interfaceDefsByRef
   // This is to prevent infinite recursion / stack overflow when templaring recursive types
   // Not too sure about the type of declaredInterfaces, we might need something else
-  private val declaredInterfaces: mutable.HashSet[InterfaceRef2] = mutable.HashSet()
-  private val interfaceDefsByRef: mutable.HashMap[InterfaceRef2, InterfaceDefinition2] = mutable.HashMap()
-  private val envByInterfaceRef: mutable.HashMap[InterfaceRef2, NamespaceEnvironment[IName2]] = mutable.HashMap()
+  private val declaredInterfaces: mutable.HashSet[InterfaceRefT] = mutable.HashSet()
+  private val interfaceDefsByRef: mutable.HashMap[InterfaceRefT, InterfaceDefinitionT] = mutable.HashMap()
+  private val envByInterfaceRef: mutable.HashMap[InterfaceRefT, PackageEnvironment[INameT]] = mutable.HashMap()
 
-  private val impls: mutable.ArrayBuffer[Impl2] = mutable.ArrayBuffer()
+  private val impls: mutable.ArrayBuffer[ImplT] = mutable.ArrayBuffer()
 
-  private val exports: mutable.ArrayBuffer[ExportAs2] = mutable.ArrayBuffer()
+  private val kindExports: mutable.ArrayBuffer[KindExportT] = mutable.ArrayBuffer()
+  private val functionExports: mutable.ArrayBuffer[FunctionExportT] = mutable.ArrayBuffer()
+  private val kindExterns: mutable.ArrayBuffer[KindExternT] = mutable.ArrayBuffer()
+  private val functionExterns: mutable.ArrayBuffer[FunctionExternT] = mutable.ArrayBuffer()
 
   // Only PackTemplar can make a PackT2.
-  private val packTypes: mutable.HashMap[List[Coord], StructRef2] = mutable.HashMap()
+  private val packTypes: mutable.HashMap[List[CoordT], StructRefT] = mutable.HashMap()
   // Only ArrayTemplar can make an RawArrayT2.
-  private val arraySequenceTypes: mutable.HashMap[(Int, RawArrayT2), KnownSizeArrayT2] = mutable.HashMap()
+  private val staticSizedArrayTypes: mutable.HashMap[(Int, RawArrayTT), StaticSizedArrayTT] = mutable.HashMap()
   // Only ArrayTemplar can make an RawArrayT2.
-  private val unknownSizeArrayTypes: mutable.HashMap[RawArrayT2, UnknownSizeArrayT2] = mutable.HashMap()
-  
-  def lookupFunction(signature2: Signature2): Option[Function2] = {
+  private val runtimeSizedArrayTypes: mutable.HashMap[RawArrayTT, RuntimeSizedArrayTT] = mutable.HashMap()
+
+  private val kindToDestructor: mutable.HashMap[KindT, PrototypeT] = mutable.HashMap()
+
+  def lookupFunction(signature2: SignatureT): Option[FunctionT] = {
     functions.find(_.header.toSignature == signature2)
   }
 
   // This means we've at least started to evaluate this function's body.
   // We use this to cut short any infinite looping that might happen when,
   // for example, there's a recursive function call.
-  def declareFunctionSignature(range: RangeS, signature: Signature2, maybeEnv: Option[FunctionEnvironment]): Unit = {
+  def declareFunctionSignature(range: RangeS, signature: SignatureT, maybeEnv: Option[FunctionEnvironment]): Unit = {
     // The only difference between this and declareNonGlobalFunctionSignature is
     // that we put an environment in here.
 
@@ -74,7 +79,7 @@ case class Temputs() {
     this
   }
 
-  def declareFunctionReturnType(signature: Signature2, returnType2: Coord): Unit = {
+  def declareFunctionReturnType(signature: SignatureT, returnType2: CoordT): Unit = {
     returnTypesBySignature.get(signature) match {
       case None =>
       case Some(existingReturnType2) => vassert(existingReturnType2 == returnType2)
@@ -85,15 +90,15 @@ case class Temputs() {
     returnTypesBySignature += (signature -> returnType2)
   }
 
-  def addFunction(function: Function2): Unit = {
+  def addFunction(function: FunctionT): Unit = {
     vassert(declaredSignatures.contains(function.header.toSignature))
     vassert(
-      function.body.resultRegister.reference.referend == Never2() ||
+      function.body.resultRegister.reference.kind == NeverT() ||
       function.body.resultRegister.reference == function.header.returnType)
     function.all({
-      case Return2(innerExpr) => {
+      case ReturnTE(innerExpr) => {
         vassert(
-          innerExpr.resultRegister.reference.referend == Never2() ||
+          innerExpr.resultRegister.reference.kind == NeverT() ||
           innerExpr.resultRegister.reference == function.header.returnType)
       }
     })
@@ -108,15 +113,15 @@ case class Temputs() {
   // We can't declare the struct at the same time as we declare its mutability or environment,
   // see MFDBRE.
   def declareStruct(
-    structRef: StructRef2
+    structRef: StructRefT
   ): Unit = {
     vassert(!declaredStructs.contains(structRef))
     declaredStructs += structRef
   }
 
   def declareStructMutability(
-    structRef: StructRef2,
-    mutability: Mutability
+    structRef: StructRefT,
+    mutability: MutabilityT
   ): Unit = {
     vassert(declaredStructs.contains(structRef))
     vassert(!mutabilitiesByCitizenRef.contains(structRef))
@@ -124,22 +129,22 @@ case class Temputs() {
   }
 
   def declareStructEnv(
-    structRef: StructRef2,
-    env: NamespaceEnvironment[ICitizenName2],
+    structRef: StructRefT,
+    env: PackageEnvironment[ICitizenNameT],
   ): Unit = {
     vassert(declaredStructs.contains(structRef))
     vassert(!envByStructRef.contains(structRef))
     envByStructRef += (structRef -> env)
   }
 
-  def declareInterface(interfaceRef: InterfaceRef2): Unit = {
+  def declareInterface(interfaceRef: InterfaceRefT): Unit = {
     vassert(!declaredInterfaces.contains(interfaceRef))
     declaredInterfaces += interfaceRef
   }
 
   def declareInterfaceMutability(
-    interfaceRef: InterfaceRef2,
-    mutability: Mutability
+    interfaceRef: InterfaceRefT,
+    mutability: MutabilityT
   ): Unit = {
     vassert(declaredInterfaces.contains(interfaceRef))
     vassert(!mutabilitiesByCitizenRef.contains(interfaceRef))
@@ -147,21 +152,21 @@ case class Temputs() {
   }
 
   def declareInterfaceEnv(
-    interfaceRef: InterfaceRef2,
-    env: NamespaceEnvironment[CitizenName2]
+    interfaceRef: InterfaceRefT,
+    env: PackageEnvironment[CitizenNameT]
   ): Unit = {
     vassert(declaredInterfaces.contains(interfaceRef))
     vassert(!envByInterfaceRef.contains(interfaceRef))
     envByInterfaceRef += (interfaceRef -> env)
   }
 
-  def declarePack(members: List[Coord], understructRef2: StructRef2): Unit = {
+  def declarePack(members: List[CoordT], understructRef2: StructRefT): Unit = {
     packTypes += (members -> understructRef2)
   }
 
-  def add(structDef: StructDefinition2): Unit = {
-    if (structDef.mutability == Immutable) {
-      if (structDef.members.exists(_.tyype.reference.ownership != Share)) {
+  def add(structDef: StructDefinitionT): Unit = {
+    if (structDef.mutability == ImmutableT) {
+      if (structDef.members.exists(_.tyype.reference.ownership != ShareT)) {
         vfail("ImmutableP contains a non-immutable!")
       }
     }
@@ -169,39 +174,52 @@ case class Temputs() {
     structDefsByRef += (structDef.getRef -> structDef)
   }
 
-  def add(interfaceDef: InterfaceDefinition2): Unit = {
+  def add(interfaceDef: InterfaceDefinitionT): Unit = {
     vassert(!interfaceDefsByRef.contains(interfaceDef.getRef))
     interfaceDefsByRef += (interfaceDef.getRef -> interfaceDef)
   }
 
-  def addArraySequence(size: Int, array2: KnownSizeArrayT2): Unit = {
-    arraySequenceTypes += ((size, array2.array) -> array2)
+  def addStaticSizedArray(array2: StaticSizedArrayTT): Unit = {
+    staticSizedArrayTypes += ((array2.size, array2.array) -> array2)
   }
 
-  def addUnknownSizeArray(array2: UnknownSizeArrayT2): Unit = {
-    unknownSizeArrayTypes += (array2.array -> array2)
+  def addRuntimeSizedArray(array2: RuntimeSizedArrayTT): Unit = {
+    runtimeSizedArrayTypes += (array2.array -> array2)
   }
 
-  def addImpl(structRef2: StructRef2, interfaceRef2: InterfaceRef2): Unit = {
-    impls += Impl2(structRef2, interfaceRef2)
+  def addImpl(structRef2: StructRefT, interfaceRef2: InterfaceRefT): Unit = {
+    impls += ImplT(structRef2, interfaceRef2)
   }
 
-  def addExport(kind: Kind, exportedName: String): Unit = {
-    exports += ExportAs2(kind, exportedName)
+  def addKindExport(kind: KindT, packageCoord: PackageCoordinate, exportedName: String): Unit = {
+    kindExports += KindExportT(kind, packageCoord, exportedName)
   }
 
-  def addExternPrototype(prototype2: Prototype2): Unit = {
-    prototype2.fullName.last match {
-      case n @ ExternFunctionName2(_, _) => {
-        vassert(!externPrototypes.exists(_.toSignature.fullName.last == n))
-      }
-    }
-    externPrototypes += prototype2
+  def addFunctionExport(function: PrototypeT, packageCoord: PackageCoordinate, exportedName: String): Unit = {
+    functionExports += FunctionExportT(function, packageCoord, exportedName)
   }
 
-  def structDeclared(fullName: FullName2[ICitizenName2]): Option[StructRef2] = {
+  def addKindExtern(kind: KindT, packageCoord: PackageCoordinate, exportedName: String): Unit = {
+    kindExterns += KindExternT(kind, packageCoord, exportedName)
+  }
+
+  def addFunctionExtern(function: PrototypeT, packageCoord: PackageCoordinate, exportedName: String): Unit = {
+    functionExterns += FunctionExternT(function, packageCoord, exportedName)
+  }
+
+  def addDestructor(kind: KindT, destructor: PrototypeT): Unit = {
+    vassert(!kindToDestructor.contains(kind))
+    vassert(prototypeDeclared(destructor.fullName).nonEmpty)
+    kindToDestructor.put(kind, destructor)
+  }
+
+  def getDestructor(kind: KindT): PrototypeT = {
+    vassertSome(kindToDestructor.get(kind))
+  }
+
+  def structDeclared(fullName: FullNameT[ICitizenNameT]): Option[StructRefT] = {
     // This is the only place besides StructDefinition2 and declareStruct thats allowed to make one of these
-    val structRef = StructRef2(fullName)
+    val structRef = StructRefT(fullName)
     if (declaredStructs.contains(structRef)) {
       Some(structRef)
     } else {
@@ -209,19 +227,19 @@ case class Temputs() {
     }
   }
 
-  def prototypeDeclared(fullName: FullName2[IFunctionName2]): Option[Prototype2] = {
+  def prototypeDeclared(fullName: FullNameT[IFunctionNameT]): Option[PrototypeT] = {
     declaredSignatures.find(_._1.fullName == fullName) match {
       case None => None
       case Some((sig, _)) => {
         returnTypesBySignature.get(sig) match {
           case None => None
-          case Some(ret) => Some(Prototype2(sig.fullName, ret))
+          case Some(ret) => Some(PrototypeT(sig.fullName, ret))
         }
       }
     }
   }
 
-  def lookupMutability(citizenRef2: CitizenRef2): Mutability = {
+  def lookupMutability(citizenRef2: CitizenRefT): MutabilityT = {
     // If it has a structRef, then we've at least started to evaluate this citizen
     mutabilitiesByCitizenRef.get(citizenRef2) match {
       case None => vfail("Still figuring out mutability for struct: " + citizenRef2) // See MFDBRE
@@ -229,23 +247,23 @@ case class Temputs() {
     }
   }
 
-  def lookupStruct(structRef: StructRef2): StructDefinition2 = {
+  def lookupStruct(structRef: StructRefT): StructDefinitionT = {
     // If it has a structRef, then we're done (or at least have started) stamping it
     // If this throws an error, then you should not use this function, you should
     // do structDefsByRef.get(structRef) yourself and handle the None case
     vassertSome(structDefsByRef.get(structRef))
   }
 
-  def lookupCitizen(citizenRef: CitizenRef2): CitizenDefinition2 = {
+  def lookupCitizen(citizenRef: CitizenRefT): CitizenDefinitionT = {
     citizenRef match {
-      case s @ StructRef2(_) => lookupStruct(s)
-      case i @ InterfaceRef2(_) => lookupInterface(i)
+      case s @ StructRefT(_) => lookupStruct(s)
+      case i @ InterfaceRefT(_) => lookupInterface(i)
     }
   }
 
-  def interfaceDeclared(fullName: FullName2[CitizenName2]): Option[InterfaceRef2] = {
+  def interfaceDeclared(fullName: FullNameT[CitizenNameT]): Option[InterfaceRefT] = {
     // This is the only place besides InterfaceDefinition2 and declareInterface thats allowed to make one of these
-    val interfaceRef = InterfaceRef2(fullName)
+    val interfaceRef = InterfaceRefT(fullName)
     if (declaredInterfaces.contains(interfaceRef)) {
       Some(interfaceRef)
     } else {
@@ -253,7 +271,7 @@ case class Temputs() {
     }
   }
 
-  def lookupInterface(interfaceRef: InterfaceRef2): InterfaceDefinition2 = {
+  def lookupInterface(interfaceRef: InterfaceRefT): InterfaceDefinitionT = {
     // If it has a interfaceRef, then we're done (or at least have started) stamping it.
     // If this throws an error, then you should not use this function, you should
     // do interfaceDefsByRef.get(interfaceRef) yourself and handle the None case
@@ -274,48 +292,57 @@ case class Temputs() {
   //    matchingFunctions.headOption
   //  }
 
-  def getAllStructs(): Iterable[StructDefinition2] = structDefsByRef.values
-  def getAllInterfaces(): Iterable[InterfaceDefinition2] = interfaceDefsByRef.values
-  def getAllFunctions(): Iterable[Function2] = functions
-  def getAllImpls(): Iterable[Impl2] = impls
+  def getAllStructs(): Iterable[StructDefinitionT] = structDefsByRef.values
+  def getAllInterfaces(): Iterable[InterfaceDefinitionT] = interfaceDefsByRef.values
+  def getAllFunctions(): Iterable[FunctionT] = functions
+  def getAllImpls(): Iterable[ImplT] = impls
+  def getAllStaticSizedArrays(): Iterable[StaticSizedArrayTT] = staticSizedArrayTypes.values
+  def getAllRuntimeSizedArrays(): Iterable[RuntimeSizedArrayTT] = runtimeSizedArrayTypes.values
+  def getKindToDestructorMap(): Map[KindT, PrototypeT] = kindToDestructor.toMap
 
-  def getArraySequenceType(size: Int, array: RawArrayT2): Option[KnownSizeArrayT2] = {
-    arraySequenceTypes.get((size, array))
+  def getStaticSizedArrayType(size: Int, array: RawArrayTT): Option[StaticSizedArrayTT] = {
+    staticSizedArrayTypes.get((size, array))
   }
-  def getEnvForFunctionSignature(sig: Signature2): FunctionEnvironment = {
+  def getEnvForFunctionSignature(sig: SignatureT): FunctionEnvironment = {
     envByFunctionSignature(sig)
   }
-  def getEnvForInterfaceRef(sr: InterfaceRef2): NamespaceEnvironment[IName2] = {
+  def getEnvForInterfaceRef(sr: InterfaceRefT): PackageEnvironment[INameT] = {
     envByInterfaceRef(sr)
   }
-  def getEnvForStructRef(sr: StructRef2): NamespaceEnvironment[IName2] = {
+  def getEnvForStructRef(sr: StructRefT): PackageEnvironment[INameT] = {
     envByStructRef(sr)
   }
-  def getInterfaceDefForRef(ir: InterfaceRef2): InterfaceDefinition2 = {
+  def getInterfaceDefForRef(ir: InterfaceRefT): InterfaceDefinitionT = {
     interfaceDefsByRef(ir)
   }
-  def getPackType(coords: List[Coord]): Option[StructRef2] = {
+  def getPackType(coords: List[CoordT]): Option[StructRefT] = {
     packTypes.get(coords)
   }
-  def getReturnTypeForSignature(sig: Signature2): Option[Coord] = {
+  def getReturnTypeForSignature(sig: SignatureT): Option[CoordT] = {
     returnTypesBySignature.get(sig)
   }
-  def getDeclaredSignatureOrigin(sig: Signature2): Option[RangeS] = {
+  def getDeclaredSignatureOrigin(sig: SignatureT): Option[RangeS] = {
     declaredSignatures.get(sig)
   }
-  def getDeclaredSignatureOrigin(name: FullName2[IFunctionName2]): Option[RangeS] = {
-    declaredSignatures.get(Signature2(name))
+  def getDeclaredSignatureOrigin(name: FullNameT[IFunctionNameT]): Option[RangeS] = {
+    declaredSignatures.get(SignatureT(name))
   }
-  def getStructDefForRef(sr: StructRef2): StructDefinition2 = {
+  def getStructDefForRef(sr: StructRefT): StructDefinitionT = {
     structDefsByRef(sr)
   }
-  def getUnknownSizeArray(array: RawArrayT2): Option[UnknownSizeArrayT2] = {
-    unknownSizeArrayTypes.get(array)
+  def getRuntimeSizedArray(array: RawArrayTT): Option[RuntimeSizedArrayTT] = {
+    runtimeSizedArrayTypes.get(array)
   }
-  def getExternPrototypes: List[Prototype2] = {
-    externPrototypes.toList
+  def getKindExports: List[KindExportT] = {
+    kindExports.toList
   }
-  def getExports: List[ExportAs2] = {
-    exports.toList
+  def getFunctionExports: List[FunctionExportT] = {
+    functionExports.toList
+  }
+  def getKindExterns: List[KindExternT] = {
+    kindExterns.toList
+  }
+  def getFunctionExterns: List[FunctionExternT] = {
+    functionExterns.toList
   }
 }

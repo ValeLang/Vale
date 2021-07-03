@@ -2,7 +2,7 @@ package net.verdagon.vale.hammer
 
 import net.verdagon.vale.astronomer.{ICompileErrorA, ProgramA}
 import net.verdagon.vale.hinputs.Hinputs
-import net.verdagon.vale.{FileCoordinateMap, NamespaceCoordinate, NamespaceCoordinateMap, Result, Tests, vassert}
+import net.verdagon.vale.{FileCoordinateMap, PackageCoordinate, PackageCoordinateMap, Result, Tests, vassert}
 import net.verdagon.vale.templar._
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.metal.{FunctionH, ProgramH, StackifyH, VariableIdH}
@@ -42,7 +42,8 @@ class HammerTest extends FunSuite with Matchers {
           |}
           |""".stripMargin)
     val hamuts = compile.getHamuts()
-    val main = hamuts.functions.find(_.`export`).get
+    val main = hamuts.lookupPackage(PackageCoordinate.TEST_TLD).lookupFunction("main")
+    vassert(main.`export`)
     val stackifies = recursiveCollect(main, { case s @ StackifyH(_, _, _) => s })
     val localIds = stackifies.map(_.local.id.number).sorted
     localIds shouldEqual localIds.distinct

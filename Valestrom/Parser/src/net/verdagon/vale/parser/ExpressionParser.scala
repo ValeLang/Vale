@@ -1,7 +1,7 @@
 package net.verdagon.vale.parser
 
 import net.verdagon.vale.parser.patterns.PatternParser
-import net.verdagon.vale.{vassert, vcheck, vfail}
+import net.verdagon.vale.{vassert, vcheck, vcurious, vfail}
 import org.apache.commons.lang.StringEscapeUtils
 
 import scala.util.parsing.combinator.RegexParsers
@@ -102,7 +102,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   private[parser] def not: Parser[IExpressionPE] = {
     pos ~ (pstr("not") <~ white) ~ postfixableExpressions ~ pos ^^ {
       case begin ~ not ~ expr ~ end => {
-        FunctionCallPE(Range(begin, end), None, Range(begin, begin), false, LookupPE(not, None), List(expr), LendConstraintP(None))
+        FunctionCallPE(Range(begin, end), None, Range(begin, begin), false, LookupPE(not, None), List(expr), LendConstraintP(Some(ReadonlyP)))
       }
     }
   }
@@ -232,21 +232,27 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     ("block" ~> optWhite ~> bracedBlock)
   }
 
+  private[parser] def fourDigitHexNumber: Parser[Int] = {
+    "([0-9a-fA-F]{4})".r ^^ { s =>
+      Integer.parseInt(s, 16)
+    }
+  }
 
   private[parser] def shortStringPart: Parser[IExpressionPE] = {
 //    ("\"" ~> failure("ended string")) |
-    (pos ~ "\\t" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\t") }) |
-    (pos ~ "\\r" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\r") }) |
-    (pos ~ "\\n" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\n") }) |
-    (pos ~ "\\\"" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\"") }) |
-    (pos ~ "\\\\" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\\") }) |
-    (pos ~ "\\/" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "/") }) |
-    (pos ~ "\\{" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "{") }) |
-    (pos ~ "\\}" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "}") }) |
-    (pos ~ "\n" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\n") }) |
-    (pos ~ "\r" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\r") }) |
+    (pos ~ "\\t" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\t") }) |
+    (pos ~ "\\r" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\r") }) |
+    (pos ~ "\\n" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\n") }) |
+    (pos ~ ("\\u" ~> fourDigitHexNumber) ~ pos ^^ { case begin ~ s ~ end => ConstantStrPE(Range(begin, end), s.toChar.toString) }) |
+    (pos ~ "\\\"" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\"") }) |
+    (pos ~ "\\\\" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\\") }) |
+    (pos ~ "\\/" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "/") }) |
+    (pos ~ "\\{" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "{") }) |
+    (pos ~ "\\}" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "}") }) |
+    (pos ~ "\n" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\n") }) |
+    (pos ~ "\r" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\r") }) |
     ("{" ~> expression <~ "}") |
-    (pos ~ (not("\"") ~> ".".r) ~ pos ^^ { case begin ~ thing ~ end => StrLiteralPE(Range(begin, end), thing) })
+    (pos ~ (not("\\") ~> not("\"") ~> ".".r) ~ pos ^^ { case begin ~ thing ~ end => ConstantStrPE(Range(begin, end), thing) })
   }
 
   private[parser] def shortStringExpr: Parser[IExpressionPE] = {
@@ -259,18 +265,18 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
 
   private[parser] def longStringPart: Parser[IExpressionPE] = {
     ("\"\"\"" ~> failure("ended string")) |
-    (pos ~ "\\t" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\t") }) |
-    (pos ~ "\\r" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\r") }) |
-    (pos ~ "\\n" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\n") }) |
-    (pos ~ "\\\"" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\"") }) |
-    (pos ~ "\\\\" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\\") }) |
-    (pos ~ "\\/" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "/") }) |
-    (pos ~ "\\{" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "{") }) |
-    (pos ~ "\\}" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "}") }) |
-    (pos ~ "\n" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\n") }) |
-    (pos ~ "\r" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\r") }) |
+    (pos ~ "\\t" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\t") }) |
+    (pos ~ "\\r" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\r") }) |
+    (pos ~ "\\n" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\n") }) |
+    (pos ~ "\\\"" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\"") }) |
+    (pos ~ "\\\\" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\\") }) |
+    (pos ~ "\\/" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "/") }) |
+    (pos ~ "\\{" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "{") }) |
+    (pos ~ "\\}" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "}") }) |
+    (pos ~ "\n" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\n") }) |
+    (pos ~ "\r" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\r") }) |
     ("{" ~> expression <~ "}") |
-    (pos ~ (not("\"\"\"") ~> ".".r) ~ pos ^^ { case begin ~ thing ~ end => StrLiteralPE(Range(begin, end), thing) })
+    (pos ~ (not("\"\"\"") ~> ".".r) ~ pos ^^ { case begin ~ thing ~ end => ConstantStrPE(Range(begin, end), thing) })
   }
 
   private[parser] def longStringExpr: Parser[IExpressionPE] = {
@@ -284,8 +290,8 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   def simplifyStringInterpolate(stringExpr: StrInterpolatePE) = {
     def combine(previousReversed: List[IExpressionPE], next: List[IExpressionPE]): List[IExpressionPE] = {
       (previousReversed, next) match {
-        case (StrLiteralPE(Range(prevBegin, _), prev) :: earlier, StrLiteralPE(Range(_, nextEnd), next) :: later) => {
-          combine(StrLiteralPE(Range(prevBegin, nextEnd), prev + next) :: earlier, later)
+        case (ConstantStrPE(Range(prevBegin, _), prev) :: earlier, ConstantStrPE(Range(_, nextEnd), next) :: later) => {
+          combine(ConstantStrPE(Range(prevBegin, nextEnd), prev + next) :: earlier, later)
         }
         case (earlier, next :: later) => {
           combine(next :: earlier, later)
@@ -297,8 +303,8 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     val StrInterpolatePE(range, parts) = stringExpr
 
     combine(List(), parts).reverse match {
-      case List() => StrLiteralPE(range, "")
-      case List(s @ StrLiteralPE(_, _)) => s
+      case List() => ConstantStrPE(range, "")
+      case List(s @ ConstantStrPE(_, _)) => s
       case multiple => StrInterpolatePE(range, multiple)
     }
   }
@@ -333,10 +339,16 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
 //    }
 //  }
 
+  private[parser] def integerExpression: Parser[ConstantIntPE] = {
+    pos ~ long ~ opt("i" ~> long) ~ pos ^^ {
+      case begin ~ n ~ maybeBits ~ end => ConstantIntPE(Range(begin, end), n, maybeBits.getOrElse(32L).toInt)
+    }
+  }
+
   private[parser] def expressionElementLevel1: Parser[IExpressionPE] = {
     (pos ~ ("..." ~> pos) ^^ { case begin ~ end => LookupPE(NameP(Range(begin, end), "..."), None) }) |
     stringExpr |
-      integer |
+      integerExpression |
       bool |
       lambda |
       (pos ~ ("()" ~> pos) ^^ { // hack for shortcalling syntax highlighting
@@ -354,8 +366,8 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
 //      callNamed |
 //      callCallable |
       (pos ~ packExpr ~ pos ^^ {
-        case begin ~ List(inner) ~ end => inner
-        case begin ~ inners ~ end => ShortcallPE(Range(begin, end), inners)
+        case begin ~ (p @ PackPE(_, List(inner))) ~ end => p
+        case begin ~ inners ~ end => ShortcallPE(Range(begin, end), inners.inners)
       }) |
       arrayOrTuple |
       templateSpecifiedLookup |
@@ -371,7 +383,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     case class MethodCallStep(
       stepRange: Range,
       operatorRange: Range,
-      callableTargetOwnership: LoadAsP,
+      containerReadwrite: Boolean,
       isMapCall: Boolean,
       lookup: LookupPE,
       args: List[IExpressionPE]
@@ -385,7 +397,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     case class CallStep(
       stepRange: Range,
       operatorRange: Range,
-      callableTargetOwnership: LoadAsP,
+      containerReadwrite: Boolean,
       isMapCall: Boolean,
       args: List[IExpressionPE]
     ) extends IStep
@@ -395,44 +407,33 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     ) extends IStep
     def step: Parser[IStep] = {
       def afterDot = {
-        (integer ^^ { case IntLiteralPE(range, value) => LookupPE(NameP(range, value.toString), None) }) |
+        (integerExpression ^^ { case ConstantIntPE(range, value, bits) => LookupPE(NameP(range, value.toString), None) }) |
         templateSpecifiedLookup |
         lookup
       }
 
-      ((pos <~ optWhite) ~ (opt("^") ~ opt("!") ~ opt("*") <~ ".") ~ (pos <~ optWhite) ~ (optWhite ~> afterDot) ~ opt(optWhite ~> packExpr) ~ pos ^^ {
-        case begin ~ (moveContainer ~ readwriteContainer ~ mapCall) ~ opEnd ~ lookup ~ None ~ end => {
-          vassert(moveContainer.isEmpty)
+      ((pos <~ optWhite) ~ (opt("!") ~ opt("*") <~ ".") ~ (pos <~ optWhite) ~ (optWhite ~> afterDot) ~ opt(optWhite ~> packExpr) ~ pos ^^ {
+        case begin ~ (readwriteContainer ~ mapCall) ~ opEnd ~ lookup ~ None ~ end => {
           MemberAccessStep(Range(begin, end), Range(begin, opEnd), mapCall.nonEmpty, lookup)
         }
-        case begin ~ (moveContainer ~ readwriteContainer ~ mapCall) ~ opEnd ~ name ~ Some(args) ~ end => {
-          val loadAs =
-            if (moveContainer.nonEmpty) {
-              MoveP
-            } else {
-              if (readwriteContainer.nonEmpty) {
-                LendConstraintP(Some(ReadwriteP))
-              } else {
-                LendConstraintP(Some(ReadonlyP))
-              }
-            }
+        case begin ~ (readwriteContainer ~ mapCall) ~ opEnd ~ name ~ Some(args) ~ end => {
           MethodCallStep(
             Range(begin, end),
             Range(begin, opEnd),
-            loadAs,
+            readwriteContainer.nonEmpty,
             mapCall.nonEmpty,
             name,
-            args)
+            args.inners)
         }
       }) |
-      (pos ~ opt("^") ~ opt("!") ~ pos ~ packExpr ~ pos ^^ {
-        case begin ~ moveContainer ~ readwriteContainer ~ opEnd ~ pack ~ end => {
+      (pos ~ opt("!") ~ pos ~ packExpr ~ pos ^^ {
+        case begin ~ readwriteContainer ~ opEnd ~ pack ~ end => {
           CallStep(
             Range(begin, end),
             Range(begin, opEnd),
-            if (moveContainer.nonEmpty) MoveP else LendConstraintP(None),
+            readwriteContainer.nonEmpty,
             false,
-            pack)
+            pack.inners)
         }
       }) |
       ((pos <~ optWhite) ~ indexExpr ~ pos ^^ { case begin ~ i ~ end => IndexStep(Range(begin, end), i) })
@@ -447,11 +448,52 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
       case begin ~ maybeInline ~ first ~ restWithDots ~ end => {
         val (_, expr) =
           restWithDots.foldLeft((maybeInline, first))({
-            case ((prevInline, prev), MethodCallStep(stepRange, operatorRange, borrowContainer, isMapCall, lookup, args)) => {
-              (None, MethodCallPE(Range(begin, stepRange.end), prevInline, prev, operatorRange, borrowContainer, isMapCall, lookup, args))
+            case ((prevInline, prev), MethodCallStep(stepRange, operatorRange, subjectReadwrite, isMapCall, lookup, args)) => {
+//              val subjectLoadAs =
+//                (prev, subjectReadwrite) match {
+//                  case (LookupPE(_, _), false) => LendConstraintP(Some(ReadonlyP)) // This is like moo.bork()
+//                  case (LookupPE(_, _), true) => LendConstraintP(Some(ReadwriteP)) // This is like moo!.bork()
+//                  case (DotPE(_, _, _, _, _), false) => LendConstraintP(Some(ReadonlyP)) // This is like foo.moo.bork()
+//                  case (DotPE(_, _, _, _, _), true) => LendConstraintP(Some(ReadwriteP)) // This is like foo.moo!.bork()
+//                  case (IndexPE(_, _, _), false) => LendConstraintP(Some(ReadonlyP)) // This is like foo[3].bork()
+//                  case (IndexPE(_, _, _), true) => LendConstraintP(Some(ReadwriteP)) // This is like foo[3]!.bork()
+//                  case (LendPE(_, LookupPE(_, _), _), false) => vcurious() // This shouldnt be possible in our syntax
+//                  case (LendPE(_, LookupPE(_, _), _), true) => vcurious() // This shouldnt be possible in our syntax
+//                  case (_, false) => UseP // this is like (moo).bork();
+//                  case (_, true) => vcurious() // this is like (moo)!.bork(), which seems needless?
+//                }
+
+              val subjectLoadAs =
+                (prev, subjectReadwrite) match {
+                  case (PackPE(_, _), _) => UseP // This is like (moo).bork()
+                  case (_, false) => LendConstraintP(Some(ReadonlyP)) // This is like moo.bork()
+                  case (_, true) => LendConstraintP(Some(ReadwriteP)) // This is like moo!.bork()
+                }
+              (None, MethodCallPE(Range(begin, stepRange.end), prevInline, prev, operatorRange, subjectLoadAs, isMapCall, lookup, args))
             }
-            case ((prevInline, prev), CallStep(stepRange, operatorRange, borrowCallable, isMapCall, args)) => {
-              (None, FunctionCallPE(Range(begin, stepRange.end), prevInline, operatorRange, isMapCall, prev, args, borrowCallable))
+            case ((prevInline, prev), CallStep(stepRange, operatorRange, subjectReadwrite, isMapCall, args)) => {
+//              val subjectLoadAs =
+//                (prev, subjectReadwrite) match {
+//                  case (LookupPE(_, _), false) => LendConstraintP(Some(ReadonlyP)) // This is like moo()
+//                  case (LookupPE(_, _), true) => LendConstraintP(Some(ReadwriteP)) // This is like moo!()
+//                  case (DotPE(_, _, _, _, _), false) => vcurious() // This would be like foo.moo(), but that should become a method call
+//                  case (DotPE(_, _, _, _, _), true) => vcurious() // This would be like foo.moo!(), but that should become a method call
+//                  case (IndexPE(_, _, _), false) => LendConstraintP(Some(ReadonlyP)) // This is like foo[3]()
+//                  case (IndexPE(_, _, _), true) => LendConstraintP(Some(ReadwriteP)) // This is like foo[3]!()
+//                  case (LendPE(_, LookupPE(_, _), _), false) => vcurious() // This shouldnt be possible in our syntax
+//                  case (LendPE(_, LookupPE(_, _), _), true) => vcurious() // This shouldnt be possible in our syntax
+//                  case (_, false) => UseP // this is like (moo)();
+//                  case (_, true) => vcurious() // this is like (moo)!(), which seems needless?
+//                }
+
+              val subjectLoadAs =
+                (prev, subjectReadwrite) match {
+                  case (PackPE(_, _), false) => UseP // This is like (moo).bork()
+                  case (PackPE(_, _), true) => UseP  // This is like (moo)!.bork(), which doesnt make much sense, the owned thing is already readwrite
+                  case (_, false) => LendConstraintP(Some(ReadonlyP)) // This is like moo()
+                  case (_, true) => LendConstraintP(Some(ReadwriteP)) // This is like moo!()
+                }
+              (None, FunctionCallPE(Range(begin, stepRange.end), prevInline, operatorRange, isMapCall, prev, args, subjectLoadAs))
             }
             case ((None, prev), MemberAccessStep(stepRange, operatorRange, isMapCall, name)) => {
               (None, DotPE(Range(begin, stepRange.end), prev, operatorRange, isMapCall, name.name))
@@ -505,7 +547,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
         white ~> (pstr("*") | pstr("/")) <~ white,
         (range, op: NameP, left, right) => {
           FunctionCallPE(
-            range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), List(left, right), LendConstraintP(None))
+            range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), List(left, right), LendConstraintP(Some(ReadonlyP)))
         })
 
     val withAddSubtract =
@@ -514,7 +556,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
         white ~> (pstr("+") | pstr("-")) <~ white,
         (range, op: NameP, left, right) => {
           FunctionCallPE(
-            range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), List(left, right), LendConstraintP(None))
+            range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), List(left, right), LendConstraintP(Some(ReadonlyP)))
         })
 
 //    val withAnd =
@@ -537,7 +579,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
           not(white ~> conjunctionOperators <~ white) ~>
           (white ~> infixFunctionIdentifier <~ white),
         (range, funcName: NameP, left, right) => {
-          FunctionCallPE(range, None, Range(funcName.range.begin, funcName.range.end), false, LookupPE(funcName, None), List(left, right), LendConstraintP(None))
+          FunctionCallPE(range, None, Range(funcName.range.begin, funcName.range.end), false, LookupPE(funcName, None), List(left, right), LendConstraintP(Some(ReadonlyP)))
         })
 
     val withComparisons =
@@ -546,7 +588,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
         not(white ~> conjunctionOperators <~ white) ~>
           white ~> comparisonOperators <~ white,
         (range, op: NameP, left, right) => {
-          FunctionCallPE(range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), List(left, right), LendConstraintP(None))
+          FunctionCallPE(range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), List(left, right), LendConstraintP(Some(ReadonlyP)))
         })
 
     val withConjunctions =
@@ -617,7 +659,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   private[parser] def arrayOrTuple: Parser[IExpressionPE] = {
     // Static arrays have to come before tuples, because the beginning of static array looks kind of like a tuple.
     constructArrayExpr |
-//    runtimeArrayExpr |
+//    runtimeSizedArrayExpr |
     tuupleExpr
   }
 
@@ -626,21 +668,37 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
       (opt(templex) ^^ StaticSizedP)
   }
 
+  private[parser] def arrayHeader: Parser[(Option[ITemplexPT], Option[ITemplexPT], IArraySizeP)] = {
+    ((("[" ~> optWhite ~> opt(mutabilityAtomTemplex <~ optWhite)) ~
+        (opt(variabilityAtomTemplex <~ optWhite)) ~
+        (arraySize <~ optWhite <~ "]")) ^^ {
+      case maybeMutability ~ maybeVariability ~ maybeSize => {
+        (maybeMutability, maybeVariability, maybeSize)
+      }
+    }) |
+    ((("[" ~> optWhite) ~>
+      (opt(templex <~ optWhite) <~ "," <~ optWhite) ~
+      (opt(templex <~ optWhite) <~ "," <~ optWhite) ~
+      (arraySize <~ optWhite <~ "]")) ^^ {
+      case maybeMutability ~ maybeVariability ~ maybeSize => {
+        (maybeMutability, maybeVariability, maybeSize)
+      }
+    })
+  }
+
   private[parser] def constructArrayExpr: Parser[IExpressionPE] = {
     pos ~
-      (("[" ~> optWhite ~> opt(mutabilityAtomTemplex <~ optWhite)) ~
-        (opt(variabilityAtomTemplex <~ optWhite)) ~
-        (arraySize <~ optWhite <~ "]") <~ optWhite) ~
+      (arrayHeader <~ optWhite) ~
       (("[" ~ (optWhite ~> repsep(expression, optWhite ~> "," <~ optWhite) <~ optWhite <~ "]")) |
         ("(" ~ (optWhite ~> repsep(expression, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")"))) ~
       pos ^^ {
-      case begin ~ (maybeMutability ~ maybeVariability ~ maybeSize) ~ (argsType ~ valueExprs) ~ end => {
+      case begin ~ ((maybeMutability, maybeVariability, size)) ~ (argsType ~ valueExprs) ~ end => {
         val initializingIndividualElements = argsType match { case "[" => true case "(" => false }
         ConstructArrayPE(
           Range(begin, end),
           maybeMutability,
           maybeVariability,
-          maybeSize,
+          size,
           initializingIndividualElements,
           valueExprs)
       }
@@ -655,8 +713,10 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     }
   }
 
-  private[parser] def packExpr: Parser[List[IExpressionPE]] = {
-    "(" ~> optWhite ~> ("..." ^^^ List() | repsep(expression, optWhite ~> "," <~ optWhite)) <~ optWhite <~ ")"
+  private[parser] def packExpr: Parser[PackPE] = {
+    pos ~ ("(" ~> optWhite ~> ("..." ^^^ List() | repsep(expression, optWhite ~> "," <~ optWhite)) <~ optWhite <~ ")") ~ pos ^^ {
+      case begin ~ inners ~ end => PackPE(Range(begin, end), inners)
+    }
   }
 
   private[parser] def indexExpr: Parser[List[IExpressionPE]] = {

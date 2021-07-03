@@ -2,30 +2,23 @@
 #include <string.h>
 #include <assert.h>
 
-// These are exposed by the compiled vale .obj/.o, they're
-// the start of a Vale native API.
-typedef struct ValeStr {
-  uint64_t length;
-  char chars[0];
-} ValeStr;
-ValeStr* ValeStrNew(char* source, int64_t begin, int64_t length);
-
+#include "ValeBuiltins.h"
 
 #define TRUE 1
 #define FALSE 0
 
-int64_t vstr_indexOf(
-    ValeStr* haystackContainerStr, int64_t haystackBegin, int64_t haystackEnd,
-    ValeStr* needleContainerStr, int64_t needleBegin, int64_t needleEnd) {
+ValeInt vstr_indexOf(
+    ValeStr* haystackContainerStr, ValeInt haystackBegin, ValeInt haystackEnd,
+    ValeStr* needleContainerStr, ValeInt needleBegin, ValeInt needleEnd) {
   char* haystackContainerChars = haystackContainerStr->chars;
   char* haystack = haystackContainerChars + haystackBegin;
-  int64_t haystackLen = haystackEnd - haystackBegin;
+  ValeInt haystackLen = haystackEnd - haystackBegin;
 
   char* needleContainerChars = needleContainerStr->chars;
   char* needle = needleContainerChars + needleBegin;
-  int64_t needleLen = needleEnd - needleBegin;
+  ValeInt needleLen = needleEnd - needleBegin;
 
-  for (int64_t i = 0; i < haystackLen - needleLen; i++) {
+  for (ValeInt i = 0; i < haystackLen - needleLen; i++) {
     if (strncmp(needle, haystack + i, needleLen) == 0) {
       return i;
     }
@@ -36,8 +29,8 @@ int64_t vstr_indexOf(
 
 ValeStr* vstr_substring(
     ValeStr* str,
-    int64_t begin,
-    int64_t length) {
+    ValeInt begin,
+    ValeInt length) {
   // printf("calling getstrchars\n");
   char* strChars = str->chars;
 
@@ -51,23 +44,23 @@ ValeStr* vstr_substring(
 
 char vstr_eq(
     ValeStr* aContainerStr,
-    int64_t aBegin,
-    int64_t aEnd,
+    ValeInt aBegin,
+    ValeInt aEnd,
     ValeStr* bContainerStr,
-    int64_t bBegin,
-    int64_t bEnd) {
+    ValeInt bBegin,
+    ValeInt bEnd) {
   char* aContainerChars = aContainerStr->chars;
   char* a = aContainerChars + aBegin;
-  int64_t aLen = aEnd - aBegin;
+  ValeInt aLen = aEnd - aBegin;
 
   char* bContainerChars = bContainerStr->chars;
   char* b = bContainerChars + bBegin;
-  int64_t bLen = bEnd - bBegin;
+  ValeInt bLen = bEnd - bBegin;
 
   if (aLen != bLen) {
     return FALSE;
   }
-  int64_t len = aLen;
+  ValeInt len = aLen;
 
   for (int i = 0; i < len; i++) {
     if (a[i] != b[i]) {
@@ -77,20 +70,20 @@ char vstr_eq(
   return TRUE;
 }
 
-int64_t vstr_cmp(
+ValeInt vstr_cmp(
     ValeStr* aContainerStr,
-    int64_t aBegin,
-    int64_t aEnd,
+    ValeInt aBegin,
+    ValeInt aEnd,
     ValeStr* bContainerStr,
-    int64_t bBegin,
-    int64_t bEnd) {
+    ValeInt bBegin,
+    ValeInt bEnd) {
   char* aContainerChars = aContainerStr->chars;
   char* a = aContainerChars + aBegin;
-  int64_t aLen = aEnd - aBegin;
+  ValeInt aLen = aEnd - aBegin;
 
   char* bContainerChars = bContainerStr->chars;
   char* b = bContainerChars + bBegin;
-  int64_t bLen = bEnd - bBegin;
+  ValeInt bLen = bEnd - bBegin;
 
   for (int i = 0; ; i++) {
     if (i >= aLen && i >= bLen) {

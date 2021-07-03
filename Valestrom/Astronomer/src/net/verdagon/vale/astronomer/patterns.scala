@@ -7,7 +7,7 @@ import scala.collection.immutable.List
 
 case class AtomAP(
   range: RangeS,
-  capture: LocalVariableA,
+  capture: LocalA,
   virtuality: Option[VirtualityAP],
   coordRune: IRuneA,
   destructure: Option[List[AtomAP]])

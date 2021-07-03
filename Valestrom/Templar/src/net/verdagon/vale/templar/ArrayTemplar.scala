@@ -20,8 +20,8 @@ trait IArrayTemplarDelegate {
   def getArrayDestructor(
     env: IEnvironment,
     temputs: Temputs,
-    type2: Coord):
-  (Prototype2)
+    type2: CoordT):
+  (PrototypeT)
 }
 
 class ArrayTemplar(
@@ -41,16 +41,16 @@ class ArrayTemplar(
     sizeRuneA: IRuneA,
     maybeMutabilityRune: Option[IRuneA],
     maybeVariabilityRune: Option[IRuneA],
-    callableTE: ReferenceExpression2):
-  StaticArrayFromCallable2 = {
+    callableTE: ReferenceExpressionTE):
+  StaticArrayFromCallableTE = {
     val templatas =
       inferTemplar.inferOrdinaryRules(fate.snapshot, temputs, rules, typeByRune, Set(sizeRuneA) ++ maybeMutabilityRune ++ maybeVariabilityRune)
     val IntegerTemplata(size) = vassertSome(templatas.get(NameTranslator.translateRune(sizeRuneA)))
-    val mutability = maybeMutabilityRune.map(getArrayMutability(templatas, _)).getOrElse(Mutable)
-    val variability = maybeVariabilityRune.map(getArrayVariability(templatas, _))
+    val mutability = maybeMutabilityRune.map(getArrayMutability(templatas, _)).getOrElse(MutableT)
+    val variability = maybeVariabilityRune.map(getArrayVariability(templatas, _)).getOrElse(FinalT)
     val prototype = overloadTemplar.getArrayGeneratorPrototype(temputs, fate, range, callableTE)
-    val ksaMT = KnownSizeArrayT2(size, RawArrayT2(prototype.returnType, mutability))
-    val expr2 = StaticArrayFromCallable2(ksaMT, callableTE, prototype)
+    val ssaMT = getStaticSizedArrayKind(fate.snapshot, temputs, mutability, variability, size.toInt, prototype.returnType)
+    val expr2 = StaticArrayFromCallableTE(ssaMT, callableTE, prototype)
     expr2
   }
 
@@ -62,16 +62,16 @@ class ArrayTemplar(
     typeByRune: Map[IRuneA, ITemplataType],
     maybeMutabilityRune: Option[IRuneA],
     maybeVariabilityRune: Option[IRuneA],
-    sizeTE: ReferenceExpression2,
-    callableTE: ReferenceExpression2):
-  ConstructArray2 = {
+    sizeTE: ReferenceExpressionTE,
+    callableTE: ReferenceExpressionTE):
+  ConstructArrayTE = {
     val templatas =
       inferTemplar.inferOrdinaryRules(fate.snapshot, temputs, rules, typeByRune, Set() ++ maybeMutabilityRune ++ maybeVariabilityRune)
-    val mutability = maybeMutabilityRune.map(getArrayMutability(templatas, _)).getOrElse(Mutable)
-    val variability = maybeVariabilityRune.map(getArrayVariability(templatas, _))
+    val mutability = maybeMutabilityRune.map(getArrayMutability(templatas, _)).getOrElse(MutableT)
+    val variability = maybeVariabilityRune.map(getArrayVariability(templatas, _)).getOrElse(FinalT)
     val prototype = overloadTemplar.getArrayGeneratorPrototype(temputs, fate, range, callableTE)
-    val ksaMT = UnknownSizeArrayT2(RawArrayT2(prototype.returnType, mutability))
-    val expr2 = ConstructArray2(ksaMT, sizeTE, callableTE, prototype)
+    val rsaMT = getRuntimeSizedArrayKind(fate.snapshot, temputs, prototype.returnType, mutability, variability)
+    val expr2 = ConstructArrayTE(rsaMT, sizeTE, callableTE, prototype)
     expr2
   }
 
@@ -84,8 +84,8 @@ class ArrayTemplar(
       maybeSizeRuneA: Option[IRuneA],
       maybeMutabilityRuneA: Option[IRuneA],
       maybeVariabilityRuneA: Option[IRuneA],
-      exprs2: List[ReferenceExpression2]):
-   StaticArrayFromValues2 = {
+      exprs2: List[ReferenceExpressionTE]):
+   StaticArrayFromValuesTE = {
     val memberTypes = exprs2.map(_.resultRegister.reference).toSet
     if (memberTypes.size > 1) {
       throw CompileErrorExceptionT(ArrayElementsHaveDifferentTypes(range, memberTypes))
@@ -96,8 +96,8 @@ class ArrayTemplar(
       inferTemplar.inferOrdinaryRules(
         fate.snapshot, temputs, rules, typeByRune, Set() ++ maybeSizeRuneA ++ maybeMutabilityRuneA ++ maybeVariabilityRuneA)
     val maybeSize = maybeSizeRuneA.map(getArraySize(templatas, _))
-    val mutability = maybeMutabilityRuneA.map(getArrayMutability(templatas, _)).getOrElse(Mutable)
-    val maybeVariability = maybeVariabilityRuneA.map(getArrayVariability(templatas, _))
+    val mutability = maybeMutabilityRuneA.map(getArrayMutability(templatas, _)).getOrElse(MutableT)
+    val variability = maybeVariabilityRuneA.map(getArrayVariability(templatas, _)).getOrElse(FinalT)
 
     maybeSize match {
       case None =>
@@ -108,65 +108,101 @@ class ArrayTemplar(
       }
     }
 
-    val arraySequenceType = makeArraySequenceType(fate.snapshot, temputs, mutability, exprs2.size, memberType)
-    val ownership = if (arraySequenceType.array.mutability == Mutable) Own else Share
-    val permission = if (arraySequenceType.array.mutability == Mutable) Readwrite else Readonly
-    val finalExpr = StaticArrayFromValues2(exprs2, Coord(ownership, permission, arraySequenceType), arraySequenceType)
+    val staticSizedArrayType = getStaticSizedArrayKind(fate.snapshot, temputs, mutability, variability, exprs2.size, memberType)
+    val ownership = if (staticSizedArrayType.array.mutability == MutableT) OwnT else ShareT
+    val permission = if (staticSizedArrayType.array.mutability == MutableT) ReadwriteT else ReadonlyT
+    val finalExpr = StaticArrayFromValuesTE(exprs2, CoordT(ownership, permission, staticSizedArrayType), staticSizedArrayType)
     (finalExpr)
   }
 
-  def makeArraySequenceType(env: IEnvironment, temputs: Temputs, mutability: Mutability, size: Int, type2: Coord):
-  (KnownSizeArrayT2) = {
+  def getStaticSizedArrayKind(
+    env: IEnvironment,
+    temputs: Temputs,
+    mutability: MutabilityT,
+    variability: VariabilityT,
+    size: Int,
+    type2: CoordT):
+  (StaticSizedArrayTT) = {
 //    val tupleMutability =
 //      StructTemplarCore.getCompoundTypeMutability(temputs, List(type2))
-//    val tupleMutability = Templar.getMutability(temputs, type2.referend)
-    val rawArrayT2 = RawArrayT2(type2, mutability)
+//    val tupleMutability = Templar.getMutability(temputs, type2.kind)
+    val rawArrayT2 = RawArrayTT(type2, mutability, variability)
 
-    temputs.getArraySequenceType(size, rawArrayT2) match {
-      case Some(arraySequenceT2) => (arraySequenceT2)
+    temputs.getStaticSizedArrayType(size, rawArrayT2) match {
+      case Some(staticSizedArrayT2) => (staticSizedArrayT2)
       case None => {
-        val arraySeqType = KnownSizeArrayT2(size, rawArrayT2)
-        val arraySeqOwnership = if (mutability == Mutable) Own else Share
-        val arraySeqPermission = if (mutability == Mutable) Readwrite else Readonly
-        val arraySequenceRefType2 = Coord(arraySeqOwnership, arraySeqPermission, arraySeqType)
-        val _ = delegate.getArrayDestructor(env, temputs, arraySequenceRefType2)
-        (arraySeqType)
+        val staticSizedArrayType = StaticSizedArrayTT(size, rawArrayT2)
+        temputs.addStaticSizedArray(staticSizedArrayType)
+        val staticSizedArrayOwnership = if (mutability == MutableT) OwnT else ShareT
+        val staticSizedArrayPermission = if (mutability == MutableT) ReadwriteT else ReadonlyT
+        val staticSizedArrayRefType2 = CoordT(staticSizedArrayOwnership, staticSizedArrayPermission, staticSizedArrayType)
+        val prototype = delegate.getArrayDestructor(env, temputs, staticSizedArrayRefType2)
+        temputs.addDestructor(staticSizedArrayType, prototype)
+        (staticSizedArrayType)
       }
     }
   }
 
-  def makeUnknownSizeArrayType(env: IEnvironment, temputs: Temputs, type2: Coord, arrayMutability: Mutability):
-  (UnknownSizeArrayT2) = {
-    val rawArrayT2 = RawArrayT2(type2, arrayMutability)
+  def getRuntimeSizedArrayKind(env: IEnvironment, temputs: Temputs, type2: CoordT, arrayMutability: MutabilityT, arrayVariability: VariabilityT):
+  (RuntimeSizedArrayTT) = {
+    val rawArrayT2 = RawArrayTT(type2, arrayMutability, arrayVariability)
 
-    temputs.getUnknownSizeArray(rawArrayT2) match {
-      case Some(arraySequenceT2) => (arraySequenceT2)
+    temputs.getRuntimeSizedArray(rawArrayT2) match {
+      case Some(staticSizedArrayT2) => (staticSizedArrayT2)
       case None => {
-        val runtimeArrayType = UnknownSizeArrayT2(rawArrayT2)
-        val runtimeArrayRefType2 =
-          Coord(
-            if (arrayMutability == Mutable) Own else Share,
-            if (arrayMutability == Mutable) Readwrite else Readonly,
-            runtimeArrayType)
-        val _ =
+        val runtimeSizedArrayType = RuntimeSizedArrayTT(rawArrayT2)
+        temputs.addRuntimeSizedArray(runtimeSizedArrayType)
+        val runtimeSizedArrayRefType2 =
+          CoordT(
+            if (arrayMutability == MutableT) OwnT else ShareT,
+            if (arrayMutability == MutableT) ReadwriteT else ReadonlyT,
+            runtimeSizedArrayType)
+        val prototype =
           delegate.getArrayDestructor(
-            env, temputs, runtimeArrayRefType2)
-        (runtimeArrayType)
+            env, temputs, runtimeSizedArrayRefType2)
+        temputs.addDestructor(runtimeSizedArrayType, prototype)
+        (runtimeSizedArrayType)
       }
     }
   }
 
-  private def getArrayVariability(templatas: Map[IRune2, ITemplata], variabilityRuneA: IRuneA) = {
+  private def getArrayVariability(templatas: Map[IRuneT, ITemplata], variabilityRuneA: IRuneA) = {
     val VariabilityTemplata(m) = vassertSome(templatas.get(NameTranslator.translateRune(variabilityRuneA)))
     m
   }
 
-  private def getArrayMutability(templatas: Map[IRune2, ITemplata], mutabilityRuneA: IRuneA) = {
+  private def getArrayMutability(templatas: Map[IRuneT, ITemplata], mutabilityRuneA: IRuneA) = {
     val MutabilityTemplata(m) = vassertSome(templatas.get(NameTranslator.translateRune(mutabilityRuneA)))
     m
   }
-  private def getArraySize(templatas: Map[IRune2, ITemplata], sizeRuneA: IRuneA): Int = {
+  private def getArraySize(templatas: Map[IRuneT, ITemplata], sizeRuneA: IRuneA): Int = {
     val IntegerTemplata(m) = vassertSome(templatas.get(NameTranslator.translateRune(sizeRuneA)))
-    m
+    m.toInt
   }
+
+  def lookupInStaticSizedArray(range: RangeS, containerExpr2: ReferenceExpressionTE, indexExpr2: ReferenceExpressionTE, at: StaticSizedArrayTT) = {
+    val RawArrayTT(memberType, mutability, variability) = at.array
+    val (effectiveVariability, targetPermission) =
+      Templar.factorVariabilityAndPermission(
+        containerExpr2.resultRegister.reference.permission,
+        variability,
+        memberType.permission)
+    StaticSizedArrayLookupT(range, containerExpr2, at, indexExpr2, targetPermission, effectiveVariability)
+  }
+
+  def lookupInUnknownSizedArray(
+    range: RangeS,
+    containerExpr2: ReferenceExpressionTE,
+    indexExpr2: ReferenceExpressionTE,
+    rsa: RuntimeSizedArrayTT
+  ): RuntimeSizedArrayLookupT = {
+    val RawArrayTT(memberType, mutability, variability) = rsa.array
+    val (effectiveVariability, targetPermission) =
+      Templar.factorVariabilityAndPermission(
+        containerExpr2.resultRegister.reference.permission,
+        variability,
+        memberType.permission)
+    RuntimeSizedArrayLookupT(range, containerExpr2, rsa, indexExpr2, targetPermission, effectiveVariability)
+  }
+
 }

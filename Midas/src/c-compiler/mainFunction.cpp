@@ -33,9 +33,9 @@ Prototype* makeValeMainFunction(
   auto voidPtrLT = LLVMPointerType(int8LT, 0);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
-  auto valeMainName = globalState->metalCache->getName("__Vale_Main");
+  auto valeMainName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__Vale_Main");
   auto valeMainProto =
-      globalState->metalCache->getPrototype(valeMainName, globalState->metalCache->intRef, {});
+      globalState->metalCache->getPrototype(valeMainName, globalState->metalCache->i64Ref, {});
   declareAndDefineExtraFunction(
       globalState, valeMainProto, valeMainName->name,
       [globalState, stringSetupFunctionL, mainSetupFuncProto, userMainFunctionPrototype, mainCleanupFunctionPrototype](
@@ -44,19 +44,19 @@ Prototype* makeValeMainFunction(
 
         LLVMBuildCall(entryBuilder, stringSetupFunctionL, nullptr, 0, "");
         LLVMBuildCall(entryBuilder, globalState->lookupFunction(mainSetupFuncProto), nullptr, 0, "");
-
-        LLVMBuildStore(
-            entryBuilder,
-            LLVMBuildUDiv(
-                entryBuilder,
-                LLVMBuildPointerCast(
-                    entryBuilder,
-                    globalState->writeOnlyGlobal,
-                    LLVMInt64TypeInContext(globalState->context),
-                    "ptrAsIntToWriteOnlyGlobal"),
-                constI64LE(globalState, 8),
-                "ram64IndexToWriteOnlyGlobal"),
-            globalState->ram64IndexToWriteOnlyGlobal);
+//
+//        LLVMBuildStore(
+//            entryBuilder,
+//            LLVMBuildUDiv(
+//                entryBuilder,
+//                LLVMBuildPointerCast(
+//                    entryBuilder,
+//                    globalState->writeOnlyGlobal,
+//                    LLVMInt64TypeInContext(globalState->context),
+//                    "ptrAsIntToWriteOnlyGlobal"),
+//                constI64LE(globalState, 8),
+//                "ram64IndexToWriteOnlyGlobal"),
+//            globalState->ram64IndexToWriteOnlyGlobal);
 
         buildFlare(FL(), globalState, functionState, entryBuilder);
         if (globalState->opt->census) {
@@ -69,7 +69,7 @@ Prototype* makeValeMainFunction(
                 LLVMBuildBitCast(
                     entryBuilder, itablePtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
 
-            buildFlare(FL(), globalState, functionState, entryBuilder, ptrToIntLE(globalState, entryBuilder, itablePtrAsVoidPtrLE));
+            //buildFlare(FL(), globalState, functionState, entryBuilder, ptrToIntLE(globalState, entryBuilder, itablePtrAsVoidPtrLE));
             LLVMBuildCall(entryBuilder, globalState->externs->censusAdd, &itablePtrAsVoidPtrLE, 1, "");
           }
           buildFlare(FL(), globalState, functionState, entryBuilder);
@@ -108,22 +108,25 @@ Prototype* makeValeMainFunction(
           }
           buildFlare(FL(), globalState, functionState, entryBuilder);
 
-          LLVMValueRef args[3] = {
+          LLVMValueRef numLiveObjAssertArgs[3] = {
               LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false),
               LLVMBuildLoad(entryBuilder, globalState->liveHeapObjCounter, "numLiveObjs"),
               globalState->getOrMakeStringConstant("Memory leaks!"),
           };
-          LLVMBuildCall(entryBuilder, globalState->externs->assertI64Eq, args, 3, "");
+          LLVMBuildCall(entryBuilder, globalState->externs->assertI64Eq, numLiveObjAssertArgs, 3, "");
         }
         buildFlare(FL(), globalState, functionState, entryBuilder);
 
-        if (userMainFunctionPrototype->returnType->referend == globalState->metalCache->emptyTupleStruct) {
+        if (userMainFunctionPrototype->returnType->kind == globalState->metalCache->emptyTupleStruct) {
           buildFlare(FL(), globalState, functionState, entryBuilder);
           LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, true));
-        } else if (userMainFunctionPrototype->returnType->referend == globalState->metalCache->innt) {
+        } else if (userMainFunctionPrototype->returnType->kind == globalState->metalCache->i64) {
           buildFlare(FL(), globalState, functionState, entryBuilder, userMainResultLE);
           LLVMBuildRet(entryBuilder, userMainResultLE);
-        } else if (userMainFunctionPrototype->returnType->referend == globalState->metalCache->never) {
+        } else if (userMainFunctionPrototype->returnType->kind == globalState->metalCache->i32) {
+          buildFlare(FL(), globalState, functionState, entryBuilder, userMainResultLE);
+          LLVMBuildRet(entryBuilder, LLVMBuildZExt(entryBuilder, userMainResultLE, LLVMInt64TypeInContext(globalState->context), "extended"));
+        } else if (userMainFunctionPrototype->returnType->kind == globalState->metalCache->never) {
           buildFlare(FL(), globalState, functionState, entryBuilder);
           LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, true));
         } else {

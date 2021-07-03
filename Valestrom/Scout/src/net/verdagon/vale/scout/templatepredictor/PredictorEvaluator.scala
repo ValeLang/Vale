@@ -162,14 +162,16 @@ object PredictorEvaluator {
           evaluateTemplexes(conclusions, memberTemplexes)
         membersKnown.forall(_ == true)
       }
-      case RepeaterSequenceST(_, mutabilityTemplex, sizeTemplex, elementTemplex) => {
+      case RepeaterSequenceST(_, mutabilityTemplex, variabilityTemplex, sizeTemplex, elementTemplex) => {
         val mutabilityKnown =
           evaluateTemplex(conclusions, mutabilityTemplex)
+        val variabilityKnown =
+          evaluateTemplex(conclusions, variabilityTemplex)
         val sizeKnown =
           evaluateTemplex(conclusions, sizeTemplex)
         val elementKnown =
           evaluateTemplex(conclusions, elementTemplex)
-        mutabilityKnown && sizeKnown && elementKnown
+        mutabilityKnown && variabilityKnown && sizeKnown && elementKnown
       }
       case ManualSequenceST(_, elementsTemplexes) => {
         val membersKnown =

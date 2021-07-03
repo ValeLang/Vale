@@ -3,7 +3,7 @@ package net.verdagon.vale
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.citizen.WeakableImplingMismatch
-import net.verdagon.vale.templar.env.ReferenceLocalVariable2
+import net.verdagon.vale.templar.env.ReferenceLocalVariableT
 import net.verdagon.vale.templar.expression.TookWeakRefOfNonWeakableError
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.vivem.ConstraintViolatedException
@@ -17,21 +17,21 @@ class WeakTests extends FunSuite with Matchers {
 
     val main = compile.expectTemputs().lookupFunction("main")
     main.only({
-      case LetNormal2(ReferenceLocalVariable2(FullName2(_,CodeVarName2("weakMuta")),Final,Coord(Weak, Readonly, _)),refExpr) => {
+      case LetNormalTE(ReferenceLocalVariableT(FullNameT(_, _,CodeVarNameT("weakMuta")),FinalT,CoordT(WeakT, ReadonlyT, _)),refExpr) => {
         refExpr.resultRegister.reference match {
-          case Coord(Weak, Readonly, StructRef2(simpleName("Muta"))) =>
+          case CoordT(WeakT, ReadonlyT, StructRefT(simpleName("Muta"))) =>
         }
       }
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+    compile.evalForKind(Vector()) shouldEqual VonInt(7)
   }
 
   test("Destroy own then locking gives none, with struct") {
     val compile = RunCompilation.test(
         Tests.loadExpected("programs/weaks/dropThenLockStruct.vale"))
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Drop while locked, with struct") {
@@ -39,7 +39,7 @@ class WeakTests extends FunSuite with Matchers {
         Tests.loadExpected("programs/weaks/dropWhileLockedStruct.vale"))
 
     try {
-      compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+      compile.evalForKind(Vector()) shouldEqual VonInt(42)
       vfail()
     } catch {
       case ConstraintViolatedException(_) =>
@@ -53,9 +53,9 @@ class WeakTests extends FunSuite with Matchers {
 
     val main = compile.expectTemputs().lookupFunction("main")
 
-    vassert(main.body.all({ case SoftLoad2(_, Weak, Readonly) => true }).size >= 1)
+    vassert(main.body.all({ case SoftLoadTE(_, WeakT, ReadonlyT) => true }).size >= 1)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+    compile.evalForKind(Vector()) shouldEqual VonInt(7)
   }
 
   test("Make and lock weak ref from borrow then destroy own, with struct") {
@@ -64,34 +64,34 @@ class WeakTests extends FunSuite with Matchers {
 
     val main = compile.expectTemputs().lookupFunction("main")
 
-    vassert(main.body.all({ case SoftLoad2(_, Weak, Readonly) => true }).size >= 1)
+    vassert(main.body.all({ case SoftLoadTE(_, WeakT, ReadonlyT) => true }).size >= 1)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+    compile.evalForKind(Vector()) shouldEqual VonInt(7)
   }
 
   test("Make weak ref from temporary") {
     val compile = RunCompilation.test(
         """
           |struct Muta weakable { hp int; }
-          |fn getHp(weakMuta &&Muta) int { lock(weakMuta)^.get().hp }
+          |fn getHp(weakMuta &&Muta) int { (lock(weakMuta)).get().hp }
           |fn main() int export { getHp(&&Muta(7)) }
           |""".stripMargin)
 
     val main = compile.expectTemputs().lookupFunction("main")
-    main.body.only({ case WeakAlias2(_) => })
-    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+    main.body.only({ case WeakAliasTE(_) => })
+    compile.evalForKind(Vector()) shouldEqual VonInt(7)
   }
 
   test("Cant make weak ref to non-weakable") {
     val compile = RunCompilation.test(
         """
           |struct Muta { hp int; }
-          |fn getHp(weakMuta &&Muta) { lock(weakMuta)^.get().hp }
+          |fn getHp(weakMuta &&Muta) { (lock(weakMuta)).get().hp }
           |fn main() int export { getHp(&&Muta(7)) }
           |""".stripMargin)
 
     try {
-      compile.expectTemputs().lookupFunction("main")
+       compile.expectTemputs().lookupFunction("main")
       vfail()
     } catch {
       case TookWeakRefOfNonWeakableError() =>
@@ -110,7 +110,7 @@ class WeakTests extends FunSuite with Matchers {
           |""".stripMargin)
 
     try {
-      compile.expectTemputs().lookupFunction("main")
+       compile.expectTemputs().lookupFunction("main")
       vfail()
     } catch {
       case WeakableImplingMismatch(true, false) =>
@@ -128,7 +128,7 @@ class WeakTests extends FunSuite with Matchers {
           |""".stripMargin)
 
     try {
-      compile.expectTemputs().lookupFunction("main")
+       compile.expectTemputs().lookupFunction("main")
       vfail()
     } catch {
       case WeakableImplingMismatch(false, true) =>
@@ -146,21 +146,21 @@ class WeakTests extends FunSuite with Matchers {
 
     val main = compile.expectTemputs().lookupFunction("main")
     main.only({
-      case LetNormal2(ReferenceLocalVariable2(FullName2(_,CodeVarName2("weakUnit")),Final,Coord(Weak, _, _)),refExpr) => {
+      case LetNormalTE(ReferenceLocalVariableT(FullNameT(_, _,CodeVarNameT("weakUnit")),FinalT,CoordT(WeakT, _, _)),refExpr) => {
         refExpr.resultRegister.reference match {
-          case Coord(Weak, Readonly, InterfaceRef2(simpleName("IUnit"))) =>
+          case CoordT(WeakT, ReadonlyT, InterfaceRefT(simpleName("IUnit"))) =>
         }
       }
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+    compile.evalForKind(Vector()) shouldEqual VonInt(7)
   }
 
   test("Destroy own then locking gives none, with interface") {
     val compile = RunCompilation.test(
         Tests.loadExpected("programs/weaks/dropThenLockInterface.vale"))
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Drop while locked, with interface") {
@@ -168,7 +168,7 @@ class WeakTests extends FunSuite with Matchers {
         Tests.loadExpected("programs/weaks/dropWhileLockedInterface.vale"))
 
     try {
-      compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+      compile.evalForKind(Vector()) shouldEqual VonInt(42)
       vfail()
     } catch {
       case ConstraintViolatedException(_) =>
@@ -182,9 +182,9 @@ class WeakTests extends FunSuite with Matchers {
 
     val main = compile.expectTemputs().lookupFunction("main")
 
-    vassert(main.body.all({ case SoftLoad2(_, Weak, Readonly) => true }).size >= 1)
+    vassert(main.body.all({ case SoftLoadTE(_, WeakT, ReadonlyT) => true }).size >= 1)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+    compile.evalForKind(Vector()) shouldEqual VonInt(7)
   }
 
   test("Make and lock weak ref from borrow then destroy own, with interface") {
@@ -193,9 +193,9 @@ class WeakTests extends FunSuite with Matchers {
 
     val main = compile.expectTemputs().lookupFunction("main")
 
-    vassert(main.body.all({ case SoftLoad2(_, Weak, Readonly) => true }).size >= 1)
+    vassert(main.body.all({ case SoftLoadTE(_, WeakT, ReadonlyT) => true }).size >= 1)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+    compile.evalForKind(Vector()) shouldEqual VonInt(7)
   }
 
   test("Call weak-self method, after drop") {
@@ -204,11 +204,11 @@ class WeakTests extends FunSuite with Matchers {
 
     val main = compile.expectTemputs().lookupFunction("main")
 
-    vassert(main.body.all({ case SoftLoad2(_, Weak, Readonly) => true }).size >= 1)
+    vassert(main.body.all({ case SoftLoadTE(_, WeakT, ReadonlyT) => true }).size >= 1)
 
     val hamuts = compile.getHamuts()
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(0)
+    compile.evalForKind(Vector()) shouldEqual VonInt(0)
   }
 
   test("Call weak-self method, while alive") {
@@ -217,11 +217,11 @@ class WeakTests extends FunSuite with Matchers {
 
     val main = compile.expectTemputs().lookupFunction("main")
 
-    vassert(main.body.all({ case SoftLoad2(_, Weak, Readonly) => true }).size >= 1)
+    vassert(main.body.all({ case SoftLoadTE(_, WeakT, ReadonlyT) => true }).size >= 1)
 
     val hamuts = compile.getHamuts()
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Weak yonder member") {
@@ -237,7 +237,7 @@ class WeakTests extends FunSuite with Matchers {
           |  base = Base(73);
           |  ship = Spaceship(&&base);
           |
-          |  base^.drop(); // Destroys base.
+          |  (base).drop(); // Destroys base.
           |
           |  maybeOrigin = lock(ship.origin); «14»«15»
           |  if (not maybeOrigin.isEmpty()) { «16»
@@ -253,7 +253,7 @@ class WeakTests extends FunSuite with Matchers {
 
     val hamuts = compile.getHamuts()
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
 

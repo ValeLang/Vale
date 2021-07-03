@@ -7,7 +7,7 @@ fn __call(this &!MyEquals9Functor impl IFunction1<mut, int, bool>, i int) bool {
 
 fn main() bool export {
   a Opt<int> = Some(9);
-  f = MyEquals9Functor();
+  f = MyEquals9Functor!();
   b Opt<bool> = a.map<int, bool>(&!f);
   = b.getOr<bool>(false);
 }

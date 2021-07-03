@@ -118,7 +118,7 @@ case class IsaAR(
 sealed trait ITemplexA {
   def resultType: ITemplataType
 }
-case class IntAT(range: RangeS, value: Int) extends ITemplexA {
+case class IntAT(range: RangeS, value: Long) extends ITemplexA {
   override def resultType: ITemplataType = IntegerTemplataType
 }
 case class StringAT(range: RangeS, value: String) extends ITemplexA {
@@ -223,6 +223,7 @@ case class PrototypeAT(
 case class RepeaterSequenceAT(
   rangeS: RangeS,
   mutability: ITemplexA,
+  variability: ITemplexA,
   size: ITemplexA,
   element: ITemplexA,
   // This is here because we might want to coerce the result. We do this for

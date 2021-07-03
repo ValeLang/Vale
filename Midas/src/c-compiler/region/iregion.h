@@ -89,9 +89,9 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       WeakFatPtrLE sourceRefLE,
-      StructReferend* sourceStructReferendM,
+      StructKind* sourceStructKindM,
       Reference* sourceStructTypeM,
-      InterfaceReferend* targetInterfaceReferendM,
+      InterfaceKind* targetInterfaceKindM,
       Reference* targetInterfaceTypeM) = 0;
 
   virtual Ref upcast(
@@ -99,11 +99,11 @@ public:
       LLVMBuilderRef builder,
 
       Reference* sourceStructMT,
-      StructReferend* sourceStructReferendM,
+      StructKind* sourceStructKindM,
       Ref sourceRefLE,
 
       Reference* targetInterfaceTypeM,
-      InterfaceReferend* targetInterfaceReferendM) = 0;
+      InterfaceKind* targetInterfaceKindM) = 0;
 
   virtual Ref lockWeak(
       FunctionState* functionState,
@@ -121,28 +121,25 @@ public:
   virtual Ref asSubtype(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      bool thenResultIsNever,
-      bool elseResultIsNever,
       Reference* resultOptTypeM,
-      Reference* constraintRefM,
       Reference* sourceInterfaceRefMT,
       Ref sourceInterfaceRefLE,
       bool sourceRefKnownLive,
-      Referend* targetReferend,
+      Kind* targetKind,
       std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
       std::function<Ref(LLVMBuilderRef)> buildElse) = 0;
 
-  virtual Ref constructKnownSizeArray(
+  virtual Ref constructStaticSizedArray(
       Ref regionInstanceRef,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* referenceM,
-      KnownSizeArrayT* referendM) = 0;
+      StaticSizedArrayT* kindM) = 0;
 
-  virtual Ref getUnknownSizeArrayLength(
+  virtual Ref getRuntimeSizedArrayLength(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* usaRefMT,
+      Reference* rsaRefMT,
       Ref arrayRef,
       bool arrayRefKnownLive) = 0;
 
@@ -162,16 +159,26 @@ public:
 
   virtual LLVMTypeRef translateType(Reference* referenceM) = 0;
 
-  virtual std::string getMemberArbitraryRefNameCSeeMMEDT(
-      Reference* refMT) = 0;
-  virtual void generateStructDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* refMT) = 0;
-  virtual void generateInterfaceDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, InterfaceDefinition* refMT) = 0;
-  virtual void generateKnownSizeArrayDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, KnownSizeArrayDefinitionT* ksaDefM) = 0;
-  virtual void generateUnknownSizeArrayDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, UnknownSizeArrayDefinitionT* usaDefM) = 0;
+
+  virtual std::string getExportName(
+      Package* package,
+      Reference* reference,
+      bool includeProjectName) = 0;
+
+//  virtual std::string getMemberArbitraryRefNameCSeeMMEDT(
+//      Reference* refMT) = 0;
+  virtual std::string generateStructDefsC(
+    Package* currentPackage,
+      StructDefinition* refMT) = 0;
+  virtual std::string generateInterfaceDefsC(
+    Package* currentPackage,
+      InterfaceDefinition* refMT) = 0;
+  virtual std::string generateStaticSizedArrayDefsC(
+    Package* currentPackage,
+      StaticSizedArrayDefinitionT* ssaDefM) = 0;
+  virtual std::string generateRuntimeSizedArrayDefsC(
+    Package* currentPackage,
+      RuntimeSizedArrayDefinitionT* rsaDefM) = 0;
 
   virtual void declareStruct(StructDefinition* structM) = 0;
   virtual void declareStructExtraFunctions(StructDefinition* structM) = 0;
@@ -183,15 +190,15 @@ public:
   virtual void defineInterface(InterfaceDefinition* interfaceM) = 0;
   virtual void defineInterfaceExtraFunctions(InterfaceDefinition* structM) = 0;
 
-  virtual void declareKnownSizeArray(KnownSizeArrayDefinitionT* knownSizeArrayDefinitionMT) = 0;
-  virtual void declareKnownSizeArrayExtraFunctions(KnownSizeArrayDefinitionT* structM) = 0;
-  virtual void defineKnownSizeArray(KnownSizeArrayDefinitionT* knownSizeArrayDefinitionMT) = 0;
-  virtual void defineKnownSizeArrayExtraFunctions(KnownSizeArrayDefinitionT* structM) = 0;
+  virtual void declareStaticSizedArray(StaticSizedArrayDefinitionT* staticSizedArrayDefinitionMT) = 0;
+  virtual void declareStaticSizedArrayExtraFunctions(StaticSizedArrayDefinitionT* structM) = 0;
+  virtual void defineStaticSizedArray(StaticSizedArrayDefinitionT* staticSizedArrayDefinitionMT) = 0;
+  virtual void defineStaticSizedArrayExtraFunctions(StaticSizedArrayDefinitionT* structM) = 0;
 
-  virtual void declareUnknownSizeArray(UnknownSizeArrayDefinitionT* unknownSizeArrayDefinitionMT) = 0;
-  virtual void declareUnknownSizeArrayExtraFunctions(UnknownSizeArrayDefinitionT* structM) = 0;
-  virtual void defineUnknownSizeArray(UnknownSizeArrayDefinitionT* usaDefM) = 0;
-  virtual void defineUnknownSizeArrayExtraFunctions(UnknownSizeArrayDefinitionT* structM) = 0;
+  virtual void declareRuntimeSizedArray(RuntimeSizedArrayDefinitionT* runtimeSizedArrayDefinitionMT) = 0;
+  virtual void declareRuntimeSizedArrayExtraFunctions(RuntimeSizedArrayDefinitionT* structM) = 0;
+  virtual void defineRuntimeSizedArray(RuntimeSizedArrayDefinitionT* rsaDefM) = 0;
+  virtual void defineRuntimeSizedArrayExtraFunctions(RuntimeSizedArrayDefinitionT* structM) = 0;
 
   virtual void declareEdge(Edge* edge) = 0;
   virtual void defineEdge(Edge* edge) = 0;
@@ -252,11 +259,11 @@ public:
       Ref weakRef,
       bool knownLive) = 0;
 
-  virtual LoadResult loadElementFromUSA(
+  virtual LoadResult loadElementFromRSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* usaRefMT,
-      UnknownSizeArrayT* usaMT,
+      Reference* rsaRefMT,
+      RuntimeSizedArrayT* rsaMT,
       Ref arrayRef,
       bool arrayRefKnownLive,
       Ref indexRef) = 0;
@@ -269,58 +276,58 @@ public:
       Ref ref) = 0;
 
 
-  virtual Ref constructUnknownSizeArray(
+  virtual Ref constructRuntimeSizedArray(
       Ref regionInstanceRef,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* usaMT,
-      UnknownSizeArrayT* unknownSizeArrayT,
+      Reference* rsaMT,
+      RuntimeSizedArrayT* runtimeSizedArrayT,
       Ref sizeRef,
       const std::string& typeName) = 0;
 
-  virtual void initializeElementInUSA(
+  virtual void initializeElementInRSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* usaRefMT,
-      UnknownSizeArrayT* usaMT,
+      Reference* rsaRefMT,
+      RuntimeSizedArrayT* rsaMT,
       Ref arrayRef,
       bool arrayRefKnownLive,
       Ref indexRef,
       Ref elementRef) = 0;
 
-  virtual Ref deinitializeElementFromUSA(
+  virtual Ref deinitializeElementFromRSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* usaRefMT,
-      UnknownSizeArrayT* usaMT,
+      Reference* rsaRefMT,
+      RuntimeSizedArrayT* rsaMT,
       Ref arrayRef,
       bool arrayRefKnownLive,
       Ref indexRef) = 0;
 
-  virtual void initializeElementInKSA(
+  virtual void initializeElementInSSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* ksaRefMT,
-      KnownSizeArrayT* ksaMT,
+      Reference* ssaRefMT,
+      StaticSizedArrayT* ssaMT,
       Ref arrayRef,
       bool arrayRefKnownLive,
       Ref indexRef,
       Ref elementRef) = 0;
 
-  virtual Ref deinitializeElementFromKSA(
+  virtual Ref deinitializeElementFromSSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* ksaRefMT,
-      KnownSizeArrayT* ksaMT,
+      Reference* ssaRefMT,
+      StaticSizedArrayT* ssaMT,
       Ref arrayRef,
       bool arrayRefKnownLive,
       Ref indexRef) = 0;
 
-  virtual Ref storeElementInUSA(
+  virtual Ref storeElementInRSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* usaRefMT,
-      UnknownSizeArrayT* usaMT,
+      Reference* rsaRefMT,
+      RuntimeSizedArrayT* rsaMT,
       Ref arrayRef,
       bool arrayRefKnownLive,
       Ref indexRef,
@@ -341,13 +348,13 @@ public:
 
   // For instance regions, this will return the handle's type.
   // For value regions, we'll just be returning linear's translateType.
-  virtual Reference* getExternalType(Reference* refMT) = 0;
+  virtual LLVMTypeRef getExternalType(Reference* refMT) = 0;
 
-  virtual LoadResult loadElementFromKSA(
+  virtual LoadResult loadElementFromSSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* ksaRefMT,
-      KnownSizeArrayT* ksaMT,
+      Reference* ssaRefMT,
+      StaticSizedArrayT* ssaMT,
       Ref arrayRef,
       bool arrayRefKnownLive,
       Ref indexRef) = 0;
@@ -366,10 +373,10 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRefMT,
-      Ref sourceRef) = 0;
+      LLVMValueRef sourceRefLE) = 0;
 
   // Encrypts and sends a reference to an object in this region.
-  virtual Ref encryptAndSendFamiliarReference(
+  virtual LLVMValueRef encryptAndSendFamiliarReference(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRefMT,
@@ -394,7 +401,7 @@ public:
 
   virtual RegionId* getRegionId() = 0;
 
-  virtual Weakability getReferendWeakability(Referend* referend) = 0;
+  virtual Weakability getKindWeakability(Kind* kind) = 0;
 
   virtual LLVMValueRef stackify(
       FunctionState* functionState, LLVMBuilderRef builder, Local* local, Ref refToStore,

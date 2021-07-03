@@ -3,7 +3,7 @@ package net.verdagon.vale.scout
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.patterns.{AtomSP, PatternSUtils, VirtualitySP}
 import net.verdagon.vale.scout.rules.{IRulexSR, ITypeSR, RuleSUtils, TypedSR}
-import net.verdagon.vale.{FileCoordinate, vassert, vwat}
+import net.verdagon.vale.{FileCoordinate, PackageCoordinate, vassert, vwat}
 
 import scala.collection.immutable.List
 
@@ -98,10 +98,10 @@ case class RangeS(begin: CodeLocationS, end: CodeLocationS) {
 
 sealed trait ICitizenAttributeS
 sealed trait IFunctionAttributeS
-case object ExternS extends IFunctionAttributeS with ICitizenAttributeS
+case class ExternS(packageCoord: PackageCoordinate) extends IFunctionAttributeS with ICitizenAttributeS
 case object PureS extends IFunctionAttributeS with ICitizenAttributeS
 case class BuiltinS(generatorName: String) extends IFunctionAttributeS with ICitizenAttributeS
-case object ExportS extends IFunctionAttributeS with ICitizenAttributeS
+case class ExportS(packageCoordinate: PackageCoordinate) extends IFunctionAttributeS with ICitizenAttributeS
 case object UserFunctionS extends IFunctionAttributeS // Whether it was written by a human. Mostly for tests right now.
 
 case class StructS(
@@ -153,7 +153,7 @@ case class ExportAsS(
 case class ImportS(
   range: RangeS,
   moduleName: String,
-  namespaceNames: List[String],
+  packageNames: List[String],
   importeeName: String)
 
 case class InterfaceS(

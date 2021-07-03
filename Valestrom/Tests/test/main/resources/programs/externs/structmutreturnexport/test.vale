@@ -1,0 +1,14 @@
+struct Thing export {
+  a str;
+  b int;
+}
+fn makeThing(a str, b int) Thing export {
+  Thing(a, b)
+}
+
+fn runExtCommand() Thing extern;
+
+fn main() int export {
+  res = runExtCommand();
+  ret len(res.a) + res.b;
+}

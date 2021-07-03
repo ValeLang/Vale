@@ -1,15 +1,15 @@
 package net.verdagon.vale.astronomer
 
-import net.verdagon.vale.scout.ProgramS
-import net.verdagon.vale.{NamespaceCoordinateMap, vassert}
+import net.verdagon.vale.scout.{ProgramS, RangeS}
+import net.verdagon.vale.{PackageCoordinateMap, vassert}
 
 import scala.collection.immutable.List
 
 object OrderModules {
-  def orderModules(mergedProgramS: NamespaceCoordinateMap[ProgramS]): List[String] = {
+  def orderModules(mergedProgramS: PackageCoordinateMap[ProgramS]): List[String] = {
     val dependentAndDependeeModule: List[(String, String)] =
-      mergedProgramS.moduleToNamespacesToFilenameToContents.map({ case (dependentModuleName, namespacesToFilenameToContents) =>
-        val dependeeModules = namespacesToFilenameToContents.values.flatMap(_.imports.map(_.moduleName))
+      mergedProgramS.moduleToPackagesToContents.map({ case (dependentModuleName, packagesToFilenameToContents) =>
+        val dependeeModules = packagesToFilenameToContents.values.flatMap(_.imports.map(_.moduleName))
         dependeeModules.map(dependeeName => (dependentModuleName -> dependeeName))
       }).flatten.toList
     orderModules(dependentAndDependeeModule)
@@ -32,7 +32,7 @@ object OrderModules {
         // Find a module that depends on nothing
         dependentToDependeeModule.find(_._2.isEmpty) match {
           case None => {
-            throw CompileErrorExceptionA(CircularModuleDependency(dependeeToDependentModule.keySet))
+            throw CompileErrorExceptionA(CircularModuleDependency(RangeS.internal(-123), dependeeToDependentModule.keySet))
           }
           case Some((thisModule, dependentModules)) => {
             vassert(dependentModules.isEmpty)

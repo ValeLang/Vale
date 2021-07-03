@@ -154,7 +154,7 @@ object ParserVonifier {
   }
 
   def vonifyImport(exportAs: ImportP): VonObject = {
-    val ImportP(range, moduleName, namespaceSteps, importeeName) = exportAs
+    val ImportP(range, moduleName, packageSteps, importeeName) = exportAs
 
     VonObject(
       "Import",
@@ -162,7 +162,7 @@ object ParserVonifier {
       Vector(
         VonMember("range", vonifyRange(range)),
         VonMember("moduleName", vonifyName(moduleName)),
-        VonMember("namespaceSteps", VonArray(None, namespaceSteps.map(vonifyName).toVector)),
+        VonMember("packageSteps", VonArray(None, packageSteps.map(vonifyName).toVector)),
         VonMember("importeeName", vonifyName(importeeName))))
   }
 
@@ -235,14 +235,13 @@ object ParserVonifier {
   }
 
   def vonifyCapture(thing: CaptureP): VonObject = {
-    val CaptureP(range, captureName, variability) = thing
+    val CaptureP(range, captureName) = thing
     VonObject(
       "Capture",
       None,
       Vector(
         VonMember("range", vonifyRange(range)),
-        VonMember("captureName", vonifyCaptureName(captureName)),
-        VonMember("variability", vonifyVariability(variability))))
+        VonMember("captureName", vonifyCaptureName(captureName))))
   }
 
   def vonifyCaptureName(thing: ICaptureNameP): VonObject = {
@@ -503,7 +502,7 @@ object ParserVonifier {
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
-            VonMember("inner", VonInt(value))))
+            VonMember("inner", VonStr(value.toString))))
       }
       case LocationPT(range, location) => {
         VonObject(
@@ -527,7 +526,7 @@ object ParserVonifier {
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
-            VonMember("inner", vonifyMutability(mutability))))
+            VonMember("mutability", vonifyMutability(mutability))))
       }
       case NameOrRunePT(rune) => {
         VonObject(
@@ -570,13 +569,14 @@ object ParserVonifier {
             VonMember("range", vonifyRange(range)),
             VonMember("permission", vonifyPermission(permission))))
       }
-      case RepeaterSequencePT(range, mutability, size, element) => {
+      case RepeaterSequencePT(range, mutability, variability, size, element) => {
         VonObject(
           "RepeaterSequenceT",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
             VonMember("mutability", vonifyTemplex(mutability)),
+            VonMember("variability", vonifyTemplex(variability)),
             VonMember("size", vonifyTemplex(size)),
             VonMember("element", vonifyTemplex(element))))
       }
@@ -714,9 +714,9 @@ object ParserVonifier {
 
   def vonifyExpression(thing: IExpressionPE): VonObject = {
     thing match {
-      case BoolLiteralPE(range, value) => {
+      case ConstantBoolPE(range, value) => {
         VonObject(
-          "BoolLiteral",
+          "ConstantBool",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
@@ -733,9 +733,9 @@ object ParserVonifier {
             VonMember("isMapAccess", VonBool(isMapAccess)),
             VonMember("member", vonifyName(member))))
       }
-      case FloatLiteralPE(range, value) => {
+      case ConstantFloatPE(range, value) => {
         VonObject(
-          "FloatLiteral",
+          "ConstantFloat",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
@@ -753,6 +753,14 @@ object ParserVonifier {
             VonMember("callableExpr", vonifyExpression(callableExpr)),
             VonMember("argExprs", VonArray(None, argExprs.map(vonifyExpression).toVector)),
             VonMember("callableTargetOwnership", vonifyLoadAs(callableTargetOwnership))))
+      }
+      case PackPE(range, innersPE) => {
+        VonObject(
+          "Pack",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("innerExprs", VonArray(None, innersPE.map(vonifyExpression).toVector))))
       }
       case MethodCallPE(range, inline, subjectExpr, operatorRange, subjectTargetOwnership, isMapCall, methodLookup, argExprs) => {
         VonObject(
@@ -795,13 +803,14 @@ object ParserVonifier {
             VonMember("left", vonifyExpression(left)),
             VonMember("args", VonArray(None, args.map(vonifyExpression).toVector))))
       }
-      case IntLiteralPE(range, value) => {
+      case ConstantIntPE(range, value, bits) => {
         VonObject(
-          "IntLiteral",
+          "ConstantInt",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
-            VonMember("value", VonInt(value))))
+            VonMember("value", VonStr(value.toString)),
+            VonMember("bits", VonInt(bits))))
       }
       case LendPE(range, inner, targetOwnership) => {
         VonObject(
@@ -854,9 +863,9 @@ object ParserVonifier {
             VonMember("range", vonifyRange(range)),
             VonMember("expr", vonifyExpression(expr))))
       }
-      case StrLiteralPE(range, value) => {
+      case ConstantStrPE(range, value) => {
         VonObject(
-          "StrLiteral",
+          "ConstantStr",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),

@@ -6,94 +6,114 @@ import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env.IEnvironment
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{vassert, vcurious, vfail}
+import net.verdagon.vale.{PackageCoordinate, vassert, vcurious, vfail}
 
 import scala.collection.immutable.List
 
-sealed trait Ownership extends Queriable2 {
+sealed trait OwnershipT extends QueriableT {
   def order: Int;
 }
-case object Share extends Ownership {
+case object ShareT   extends OwnershipT {
   override def order: Int = 1;
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }
+
+  override def toString: String = "share"
 }
-case object Own extends Ownership {
+case object OwnT extends OwnershipT {
   override def order: Int = 2;
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }
+
+  override def toString: String = "own"
 }
-case object Constraint extends Ownership {
+case object ConstraintT extends OwnershipT {
   override def order: Int = 3;
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }
+
+  override def toString: String = "constraint"
 }
-case object Weak extends Ownership {
+case object WeakT extends OwnershipT {
   override def order: Int = 4;
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }
+
+  override def toString: String = "weak"
 }
 
-sealed trait Mutability extends Queriable2 {
+sealed trait MutabilityT extends QueriableT {
   def order: Int;
 }
-case object Mutable extends Mutability {
+case object MutableT extends MutabilityT {
   override def order: Int = 1;
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }
+
+  override def toString: String = "mut"
 }
-case object Immutable extends Mutability {
+case object ImmutableT extends MutabilityT {
   override def order: Int = 2;
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }
+
+  override def toString: String = "imm"
 }
 
-sealed trait Variability extends Queriable2 {
+sealed trait VariabilityT extends QueriableT {
   def order: Int;
 }
-case object Final extends Variability {
+case object FinalT extends VariabilityT {
   override def order: Int = 1;
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }
+
+  override def toString: String = "final"
 }
-case object Varying extends Variability {
+case object VaryingT extends VariabilityT {
   override def order: Int = 2;
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }
+
+  override def toString: String = "vary"
 }
 
-sealed trait Permission extends Queriable2 {
+sealed trait PermissionT extends QueriableT {
   def order: Int;
 }
-case object Readonly extends Permission {
+case object ReadonlyT extends PermissionT {
   override def order: Int = 1;
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }
+
+  override def toString: String = "ro"
 }
-case object Readwrite extends Permission {
+case object ReadwriteT extends PermissionT {
   override def order: Int = 2;
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }
+
+  override def toString: String = "rw"
 }
 //case object ExclusiveReadwrite extends Permission {
 //  override def order: Int = 3;
@@ -103,45 +123,49 @@ case object Readwrite extends Permission {
 //  }
 //}
 
-sealed trait Location extends Queriable2 {
+sealed trait LocationT extends QueriableT {
   def order: Int;
 }
-case object Inline extends Location {
+case object InlineT extends LocationT {
   override def order: Int = 1;
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }
+
+  override def toString: String = "inl"
 }
-case object Yonder extends Location {
+case object YonderT extends LocationT {
   override def order: Int = 1;
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }
+
+  override def toString: String = "heap"
 }
 
 
-case class Coord(ownership: Ownership, permission: Permission, referend: Kind) extends Queriable2 {
-  referend match {
-    case Int2() | Bool2() | Str2() | Float2() | Void2() | Never2() => {
-      vassert(ownership == Share)
+case class CoordT(ownership: OwnershipT, permission: PermissionT, kind: KindT) extends QueriableT {
+  kind match {
+    case IntT(_) | BoolT() | StrT() | FloatT() | VoidT() | NeverT() => {
+      vassert(ownership == ShareT)
     }
     case _ =>
   }
-  if (ownership == Share) {
-    vassert(permission == Readonly)
+  if (ownership == ShareT) {
+    vassert(permission == ReadonlyT)
   }
-  if (ownership == Own) {
+  if (ownership == OwnT) {
     // See CSHROOR for why we don't assert this.
     // vassert(permission == Readwrite)
   }
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
-    List(this).collect(func) ++ ownership.all(func) ++ referend.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
+    List(this).collect(func) ++ ownership.all(func) ++ kind.all(func)
   }
 }
-sealed trait Kind extends Queriable2 {
+sealed trait KindT extends QueriableT {
   def order: Int;
 
   // Note, we don't have a mutability: Mutability in here because this Kind
@@ -150,147 +174,153 @@ sealed trait Kind extends Queriable2 {
 }
 
 // like Scala's Nothing. No instance of this can ever happen.
-case class Never2() extends Kind {
+case class NeverT() extends KindT {
   override def order: Int = 6;
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = List(this).collect(func)
 }
 
 // Mostly for interoperability with extern functions
-case class Void2() extends Kind {
+case class VoidT() extends KindT {
   override def order: Int = 16;
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = List(this).collect(func)
 }
 
-case class Int2() extends Kind {
+object IntT {
+  val i32: IntT = IntT(32)
+  val i64: IntT = IntT(64)
+}
+case class IntT(bits: Int) extends KindT {
   override def order: Int = 8;
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = List(this).collect(func)
 }
 
-case class Bool2() extends Kind {
+case class BoolT() extends KindT {
   override def order: Int = 9;
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = List(this).collect(func)
 }
 
-case class Str2() extends Kind {
+case class StrT() extends KindT {
   override def order: Int = 10;
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = List(this).collect(func)
 }
 
-case class Float2() extends Kind {
+case class FloatT() extends KindT {
   override def order: Int = 11;
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = List(this).collect(func)
 }
 
-case class PackT2(members: List[Coord], underlyingStruct: StructRef2) extends Kind {
+case class PackTT(members: List[CoordT], underlyingStruct: StructRefT) extends KindT {
   override def order: Int = 21;
 
   underlyingStruct.all({
-    case AddressMemberType2(_) => vfail("Packs' underlying structs cant have addressibles in them!")
+    case AddressMemberTypeT(_) => vfail("Packs' underlying structs cant have addressibles in them!")
   })
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ members.flatMap(_.all(func)) ++ underlyingStruct.all(func)
   }
 }
 
-case class TupleT2(members: List[Coord], underlyingStruct: StructRef2) extends Kind {
+case class TupleTT(members: List[CoordT], underlyingStruct: StructRefT) extends KindT {
   override def order: Int = 20;
 
   underlyingStruct.all({
-    case AddressMemberType2(_) => vfail("Tuples' underlying structs cant have addressibles in them!")
+    case AddressMemberTypeT(_) => vfail("Tuples' underlying structs cant have addressibles in them!")
   })
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ members.flatMap(_.all(func)) ++ underlyingStruct.all(func)
   }
 }
 
-case class RawArrayT2(
-  memberType: Coord,
-  mutability: Mutability) extends Queriable2 {
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+case class RawArrayTT(
+  memberType: CoordT,
+  mutability: MutabilityT,
+  variability: VariabilityT
+) extends QueriableT {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ memberType.all(func)
   }
 }
 
-case class KnownSizeArrayT2(size: Int, array: RawArrayT2) extends Kind {
+case class StaticSizedArrayTT(size: Int, array: RawArrayTT) extends KindT {
   override def order: Int = 12;
 
-  def name: FullName2[KnownSizeArrayName2] = FullName2(List(), KnownSizeArrayName2(size, RawArrayName2(array.mutability, array.memberType)))
+  def name: FullNameT[StaticSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, List(), StaticSizedArrayNameT(size, RawArrayNameT(array.mutability, array.memberType)))
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ array.all(func)
   }
 }
 
-case class UnknownSizeArrayT2(array: RawArrayT2) extends Kind {
+case class RuntimeSizedArrayTT(array: RawArrayTT) extends KindT {
   override def order: Int = 19;
 
-  def name: FullName2[UnknownSizeArrayName2] = FullName2(List(), UnknownSizeArrayName2(RawArrayName2(array.mutability, array.memberType)))
+  def name: FullNameT[RuntimeSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, List(), RuntimeSizedArrayNameT(RawArrayNameT(array.mutability, array.memberType)))
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ array.all(func)
   }
 }
 
-case class StructMember2(
-  name: IVarName2,
+case class StructMemberT(
+  name: IVarNameT,
   // In the case of address members, this refers to the variability of the pointee variable.
-  variability: Variability,
-  tyype: IMemberType2
-) extends Queriable2 {
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  variability: VariabilityT,
+  tyype: IMemberTypeT
+) extends QueriableT {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ tyype.all(func)
   }
 }
 
-sealed trait IMemberType2 extends Queriable2 {
-  def reference: Coord
+sealed trait IMemberTypeT extends QueriableT {
+  def reference: CoordT
 
-  def expectReferenceMember(): ReferenceMemberType2 = {
+  def expectReferenceMember(): ReferenceMemberTypeT = {
     this match {
-      case r @ ReferenceMemberType2(_) => r
-      case a @ AddressMemberType2(_) => vfail("Expected reference member, was address member!")
+      case r @ ReferenceMemberTypeT(_) => r
+      case a @ AddressMemberTypeT(_) => vfail("Expected reference member, was address member!")
     }
   }
-  def expectAddressMember(): AddressMemberType2 = {
+  def expectAddressMember(): AddressMemberTypeT = {
     this match {
-      case r @ ReferenceMemberType2(_) => vfail("Expected reference member, was address member!")
-      case a @ AddressMemberType2(_) => a
+      case r @ ReferenceMemberTypeT(_) => vfail("Expected reference member, was address member!")
+      case a @ AddressMemberTypeT(_) => a
     }
   }
 }
-case class AddressMemberType2(reference: Coord) extends IMemberType2 {
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+case class AddressMemberTypeT(reference: CoordT) extends IMemberTypeT {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ reference.all(func)
   }
 }
-case class ReferenceMemberType2(reference: Coord) extends IMemberType2 {
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+case class ReferenceMemberTypeT(reference: CoordT) extends IMemberTypeT {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ reference.all(func)
   }
 }
 
-trait CitizenDefinition2 {
-  def getRef: CitizenRef2;
+trait CitizenDefinitionT {
+  def getRef: CitizenRefT;
 }
 
 
 // We include templateArgTypes to aid in looking this up... same reason we have name
-case class StructDefinition2(
-  fullName: FullName2[ICitizenName2],
+case class StructDefinitionT(
+  fullName: FullNameT[ICitizenNameT],
   attributes: List[ICitizenAttribute2],
   weakable: Boolean,
-  mutability: Mutability,
-  members: List[StructMember2],
+  mutability: MutabilityT,
+  members: List[StructMemberT],
   isClosure: Boolean
-) extends CitizenDefinition2 with Queriable2 {
+) extends CitizenDefinitionT with QueriableT {
   // debt: move this to somewhere else. let's allow packs to have packs, just nothing else.
 //  all({
 //    case StructMember2(_, _, ReferenceMemberType2(Coord(_, PackT2(_, _)))) => {
@@ -298,58 +328,58 @@ case class StructDefinition2(
 //    }
 //  })
 
-  override def getRef: StructRef2 = StructRef2(fullName)
+  override def getRef: StructRefT = StructRefT(fullName)
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++
       fullName.all(func) ++
       members.flatMap(_.all(func))
   }
 
-  def getMember(memberName: String): StructMember2 = {
+  def getMember(memberName: String): StructMemberT = {
     members.find(p => p.name.equals(memberName)) match {
       case None => vfail("Couldn't find member " + memberName)
       case Some(member) => member
     }
   }
 
-  private def getIndex(memberName: IVarName2): Int = {
+  private def getIndex(memberName: IVarNameT): Int = {
     members.zipWithIndex.find(p => p._1.name.equals(memberName)) match {
       case None => vfail("wat")
       case Some((member, index)) => index
     }
   }
 
-  def getMemberAndIndex(memberName: IVarName2): Option[(StructMember2, Int)] = {
+  def getMemberAndIndex(memberName: IVarNameT): Option[(StructMemberT, Int)] = {
     members.zipWithIndex.find(p => p._1.name.equals(memberName))
   }
 }
 
-case class InterfaceDefinition2(
-    fullName: FullName2[CitizenName2],
+case class InterfaceDefinitionT(
+    fullName: FullNameT[CitizenNameT],
     attributes: List[ICitizenAttribute2],
     weakable: Boolean,
-    mutability: Mutability,
+    mutability: MutabilityT,
     // This does not include abstract functions declared outside the interface.
     // See IMRFDI for why we need to remember only the internal methods here.
-    internalMethods: List[FunctionHeader2]
-) extends CitizenDefinition2 with Queriable2 {
-  override def getRef = InterfaceRef2(fullName)
+    internalMethods: List[FunctionHeaderT]
+) extends CitizenDefinitionT with QueriableT {
+  override def getRef = InterfaceRefT(fullName)
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ fullName.all(func) ++ internalMethods.flatMap(_.all(func))
   }
 }
 
-trait CitizenRef2 extends Kind {
-  def fullName: FullName2[ICitizenName2]
+trait CitizenRefT extends KindT {
+  def fullName: FullNameT[ICitizenNameT]
 }
 
 // These should only be made by struct templar, which puts the definition into temputs at the same time
-case class StructRef2(fullName: FullName2[ICitizenName2]) extends CitizenRef2 {
+case class StructRefT(fullName: FullNameT[ICitizenNameT]) extends CitizenRefT {
   override def order: Int = 14;
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ fullName.all(func)
   }
 }
@@ -360,15 +390,15 @@ case class StructRef2(fullName: FullName2[ICitizenName2]) extends CitizenRef2 {
 case class OverloadSet(
     env: IEnvironment,
     name: GlobalFunctionFamilyNameA,
-    voidStructRef: StructRef2
-) extends Kind {
+    voidStructRef: StructRefT
+) extends KindT {
   override def order: Int = 19;
 
   if (name == GlobalFunctionFamilyNameA("true")) {
     vcurious()
   }
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }
 }
@@ -401,50 +431,53 @@ case class OverloadSet(
 //  }
 //}
 
-case class InterfaceRef2(
-  fullName: FullName2[ICitizenName2]
-) extends CitizenRef2 with Queriable2 {
+case class InterfaceRefT(
+  fullName: FullNameT[ICitizenNameT]
+) extends CitizenRefT with QueriableT {
   override def order: Int = 15;
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ fullName.all(func)
   }
 }
 
 // This is what we use to search for overloads.
 case class ParamFilter(
-    tyype: Coord,
-    virtuality: Option[Virtuality2]) {
+    tyype: CoordT,
+    virtuality: Option[VirtualityT]) {
   def debugString: String = {
     tyype.toString + virtuality.map(" impl " + _.toString).getOrElse("")
   }
 }
 
 
-object ReferenceComparator extends Ordering[Coord] {
-  override def compare(a: Coord, b: Coord): Int = {
+object ReferenceComparator extends Ordering[CoordT] {
+  override def compare(a: CoordT, b: CoordT): Int = {
     val orderDiff = a.ownership.order compare b.ownership.order;
     if (orderDiff != 0) {
       orderDiff
     } else {
-      ReferendComparator.compare(a.referend, b.referend)
+      KindComparator.compare(a.kind, b.kind)
     }
   }
 }
 
-object ReferendComparator extends Ordering[Kind] {
-  override def compare(a: Kind, b: Kind): Int = {
+object KindComparator extends Ordering[KindT] {
+  override def compare(a: KindT, b: KindT): Int = {
     val orderDiff = a.order compare b.order;
     if (orderDiff != 0) {
       orderDiff
     } else {
       a match {
-        case Int2() => 0
-        case Bool2() => 0
-        case Str2() => 0
-        case PackT2(innerTypes, underlyingStruct) => compare(underlyingStruct, b.asInstanceOf[PackT2].underlyingStruct)
-        case StructRef2(thisFullName) => {
-          val StructRef2(thatFullName) = b.asInstanceOf[StructRef2];
+        case IntT(aBits) => {
+          val IntT(bBits) = b
+          aBits compare bBits
+        }
+        case BoolT() => 0
+        case StrT() => 0
+        case PackTT(innerTypes, underlyingStruct) => compare(underlyingStruct, b.asInstanceOf[PackTT].underlyingStruct)
+        case StructRefT(thisFullName) => {
+          val StructRefT(thatFullName) = b.asInstanceOf[StructRefT];
           FullNameComparator.compare(thisFullName, thatFullName)
         }
         case _ => vfail("wat " + a)
@@ -453,8 +486,8 @@ object ReferendComparator extends Ordering[Kind] {
   }
 }
 
-object FullNameComparator extends Ordering[FullName2[IName2]] {
-  override def compare(a: FullName2[IName2], b: FullName2[IName2]): Int = {
+object FullNameComparator extends Ordering[FullNameT[INameT]] {
+  override def compare(a: FullNameT[INameT], b: FullNameT[INameT]): Int = {
     val aSteps = a.steps
     val bSteps = b.steps
 
@@ -473,23 +506,23 @@ object FullNameComparator extends Ordering[FullName2[IName2]] {
           humanNameDiff
         } else {
           (aSteps.head, bSteps.head) match {
-            case (ImplDeclareName2(subCitizenHumanNameA, codeLocationA), ImplDeclareName2(subCitizenHumanName2, codeLocationB)) => {
+            case (ImplDeclareNameT(subCitizenHumanNameA, codeLocationA), ImplDeclareNameT(subCitizenHumanName2, codeLocationB)) => {
               val nameDiff = subCitizenHumanNameA.compareTo(subCitizenHumanName2)
               if (nameDiff != 0)
                 return nameDiff
               compare(codeLocationA, codeLocationB)
             }
-            case (LetName2(codeLocationA), LetName2(codeLocationB)) => compare(codeLocationA, codeLocationB)
-            case (UnnamedLocalName2(codeLocationA), UnnamedLocalName2(codeLocationB)) => compare(codeLocationA, codeLocationB)
-            case (ClosureParamName2(), ClosureParamName2()) => 0
-            case (MagicParamName2(codeLocationA), MagicParamName2(codeLocationB)) => compare(codeLocationA, codeLocationB)
-            case (CodeVarName2(nameA), CodeVarName2(nameB)) => nameA.compareTo(nameB)
+            case (LetNameT(codeLocationA), LetNameT(codeLocationB)) => compare(codeLocationA, codeLocationB)
+            case (UnnamedLocalNameT(codeLocationA), UnnamedLocalNameT(codeLocationB)) => compare(codeLocationA, codeLocationB)
+            case (ClosureParamNameT(), ClosureParamNameT()) => 0
+            case (MagicParamNameT(codeLocationA), MagicParamNameT(codeLocationB)) => compare(codeLocationA, codeLocationB)
+            case (CodeVarNameT(nameA), CodeVarNameT(nameB)) => nameA.compareTo(nameB)
 //            case (CodeRune2(nameA), CodeRune2(nameB)) => nameA.compareTo(nameB)
 //            case (ImplicitRune2(nameA), ImplicitRune2(nameB)) => nameA.compareTo(nameB)
 //            case (MemberRune2(memberIndexA), MemberRune2(memberIndexB)) => memberIndexA.compareTo(memberIndexB)
 //            case (MagicImplicitRune2(magicParamIndexA), MagicImplicitRune2(magicParamIndexB)) => magicParamIndexA.compareTo(magicParamIndexB)
 //            case (ReturnRune2(), ReturnRune2()) => 0
-            case (FunctionName2(humanNameA, templateArgsA, parametersA), FunctionName2(humanNameB, templateArgsB, parametersB)) => {
+            case (FunctionNameT(humanNameA, templateArgsA, parametersA), FunctionNameT(humanNameB, templateArgsB, parametersB)) => {
               val nameDiff = humanNameA.compareTo(humanNameB)
               if (nameDiff != 0)
                 return nameDiff
@@ -507,19 +540,19 @@ object FullNameComparator extends Ordering[FullName2[IName2]] {
 //                return templateArgsDiff
 //              TemplataTypeListComparator.compare(parametersA.map(CoordTemplata), parametersB.map(CoordTemplata))
 //            }
-            case (CitizenName2(humanNameA, templateArgsA), CitizenName2(humanNameB, templateArgsB)) => {
+            case (CitizenNameT(humanNameA, templateArgsA), CitizenNameT(humanNameB, templateArgsB)) => {
               val nameDiff = humanNameA.compareTo(humanNameB)
               if (nameDiff != 0)
                 return nameDiff
               TemplataTypeListComparator.compare(templateArgsA, templateArgsB)
             }
-            case (TupleName2(membersA), TupleName2(membersB)) => {
+            case (TupleNameT(membersA), TupleNameT(membersB)) => {
               TemplataTypeListComparator.compare(membersA.map(CoordTemplata), membersB.map(CoordTemplata))
             }
-            case (LambdaCitizenName2(codeLocationA), LambdaCitizenName2(codeLocationB)) => {
+            case (LambdaCitizenNameT(codeLocationA), LambdaCitizenNameT(codeLocationB)) => {
               compare(codeLocationA, codeLocationB)
             }
-            case (CitizenName2(humanNameA, templateArgsA), CitizenName2(humanNameB, templateArgsB)) => {
+            case (CitizenNameT(humanNameA, templateArgsA), CitizenNameT(humanNameB, templateArgsB)) => {
               val nameDiff = humanNameA.compareTo(humanNameB)
               if (nameDiff != 0)
                 return nameDiff
@@ -531,7 +564,7 @@ object FullNameComparator extends Ordering[FullName2[IName2]] {
     }
   }
 
-  def compare(a: CodeLocation2, b: CodeLocation2): Int = {
+  def compare(a: CodeLocationT, b: CodeLocationT): Int = {
     val fileDiff = a.file.compareTo(b.file)
     if (fileDiff != 0)
       return fileDiff
@@ -557,8 +590,8 @@ object TemplataTypeComparator extends Ordering[ITemplata] {
   }
 }
 
-object ReferenceListComparator extends Ordering[List[Coord]] {
-  override def compare(a: List[Coord], b: List[Coord]):Int = {
+object ReferenceListComparator extends Ordering[List[CoordT]] {
+  override def compare(a: List[CoordT], b: List[CoordT]):Int = {
     if (a.length == 0) {
       if (b.length == 0) {
         0

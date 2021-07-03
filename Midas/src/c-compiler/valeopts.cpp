@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <iostream>
 
 // List of option ids
 enum
@@ -17,7 +18,6 @@ enum
     OPT_STRIP,
     OPT_PATHS,
     OPT_OUTPUT_DIR,
-    OPT_EXPORTS_DIR,
     OPT_LIBRARY,
     OPT_RUNTIMEBC,
     OPT_PIC,
@@ -69,7 +69,6 @@ static opt_arg_t args[] =
     { "strip", 's', OPT_ARG_NONE, OPT_STRIP },
     { "path", 'p', OPT_ARG_REQUIRED, OPT_PATHS },
     { "output-dir", '\0', OPT_ARG_REQUIRED, OPT_OUTPUT_DIR },
-    { "exports-dir", '\0', OPT_ARG_REQUIRED, OPT_EXPORTS_DIR },
     { "library", 'l', OPT_ARG_NONE, OPT_LIBRARY },
     { "runtimebc", '\0', OPT_ARG_NONE, OPT_RUNTIMEBC },
     { "pic", '\0', OPT_ARG_NONE, OPT_PIC },
@@ -110,7 +109,7 @@ static opt_arg_t args[] =
     OPT_ARGS_FINISH
 };
 
-static void usage()
+static void rsage()
 {
     printf("%s\n%s\n%s\n%s\n%s\n%s", // for complying with -Woverlength-strings
         "valec [OPTIONS] <source_file>\n"
@@ -126,7 +125,8 @@ static void usage()
         "  --strip, -s     Strip debug info.\n"
         "  --path, -p      Add an additional search path.\n"
         "    =path         Used to find packages and libraries.\n"
-        "  --output, -o    Write output to this directory.\n"
+        "  --o             Name the resulting executable.\n"
+        "  --output-dir    Write output to this directory.\n"
         "    =path         Defaults to the current directory.\n"
         "  --library, -l   Generate a C-API compatible static library.\n"
         "  --runtimebc     Compile with the LLVM bitcode file for the runtime.\n"
@@ -181,7 +181,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
     opt_state_t s;
     int id;
     int ok = 1;
-    int print_usage = 0;
+    int print_rsage = 0;
     int i;
 
     // options->limit = PASS_ALL;
@@ -202,12 +202,11 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
             return 0;
 
         case OPT_HELP:
-            usage();
+            rsage();
             return 0;
 
         case OPT_DEBUG: opt->release = 0; break;
-        case OPT_OUTPUT_DIR: opt->output = s.arg_val; break;
-        case OPT_EXPORTS_DIR: opt->exportsDir = s.arg_val; break;
+        case OPT_OUTPUT_DIR: opt->outputDir = s.arg_val; break;
         case OPT_LIBRARY: opt->library = 1; break;
         case OPT_PIC: opt->pic = 1; break;
         case OPT_NOPIC: opt->pic = 0; break;
@@ -301,11 +300,15 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
             opt->regionOverride = RegionOverride::RESILIENT_V4;
 //          } else if (s.arg_val == std::string("resilient-limit")) {
 //            opt->regionOverride = RegionOverride::RESILIENT_LIMIT;
-          } else assert(false);
+          } else {
+            std::cerr << "Unknown region: " << s.arg_val << std::endl;
+            exit(1);
+            assert(false);
+          }
           break;
         }
 
-        default: usage(); return -1;
+        default: rsage(); return -1;
         }
     }
 
@@ -313,14 +316,14 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
         if (argv[i][0] == '-') {
             printf("Unrecognised option: %s\n", argv[i]);
             ok = 0;
-            print_usage = 1;
+            print_rsage = 1;
         }
     }
 
     if (!ok) {
         // errors_print(opt.check.errors);
-        if (print_usage)
-            usage();
+        if (print_rsage)
+            rsage();
         return -1;
     }
     return 1;

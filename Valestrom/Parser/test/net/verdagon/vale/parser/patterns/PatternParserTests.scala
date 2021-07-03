@@ -50,7 +50,7 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
   }
   test("Name-only Capture") {
     compile(atomPattern,"a") match {
-      case PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "a")), FinalP)), None, None, None) =>
+      case PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "a")))), None, None, None) =>
     }
   }
   test("Empty pattern list") {
@@ -77,7 +77,7 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
     compile("a Moo(a, b)") shouldHave {
       case PatternPP(
           _,_,
-          Some(CaptureP(_,LocalNameP(NameP(_, "a")),FinalP)),
+          Some(CaptureP(_,LocalNameP(NameP(_, "a")))),
           Some(NameOrRunePT(NameP(_, "Moo"))),
           Some(DestructureP(_,List(capture("a"),capture("b")))),
           None) =>
@@ -90,9 +90,9 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
     compile("moo T(a int)") shouldHave {
       case PatternPP(
           _,_,
-          Some(CaptureP(_,LocalNameP(NameP(_, "moo")),FinalP)),
+          Some(CaptureP(_,LocalNameP(NameP(_, "moo")))),
           Some(NameOrRunePT(NameP(_, "T"))),
-          Some(DestructureP(_,List(PatternPP(_,_, Some(CaptureP(_,LocalNameP(NameP(_, "a")),FinalP)),Some(NameOrRunePT(NameP(_, "int"))),None,None)))),
+          Some(DestructureP(_,List(PatternPP(_,_, Some(CaptureP(_,LocalNameP(NameP(_, "a")))),Some(NameOrRunePT(NameP(_, "int"))),None,None)))),
           None) =>
     }
   }
@@ -101,7 +101,7 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
     compile("a [int, bool](a, b)") shouldHave {
       case PatternPP(
           _,_,
-          Some(CaptureP(_,LocalNameP(NameP(_, "a")),FinalP)),
+          Some(CaptureP(_,LocalNameP(NameP(_, "a")))),
           Some(
             ManualSequencePT(_,
                   List(
@@ -114,7 +114,7 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
 
   test("Virtual function") {
     compile(CombinatorParsers.atomPattern, "virtual this Car") shouldHave {
-      case PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "this")),FinalP)),Some(NameOrRunePT(NameP(_, "Car"))),None,Some(AbstractP)) =>
+      case PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "this")))),Some(NameOrRunePT(NameP(_, "Car"))),None,Some(AbstractP)) =>
     }
   }
 }

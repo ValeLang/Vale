@@ -9,12 +9,17 @@ trait TemplexParser extends RegexParsers with ParserUtils {
   def repeaterSeqTemplex: Parser[ITemplexPT] = {
     (pos ~ ("[" ~> optWhite ~> templex) ~ (white ~> "*" ~> white ~> templex <~ optWhite <~ "]") ~ pos ^^ {
       case begin ~ numElements ~ elementType ~ end => {
-        RepeaterSequencePT(Range(begin, end), MutabilityPT(Range(begin, end), MutableP), numElements, elementType)
+        RepeaterSequencePT(Range(begin, end), MutabilityPT(Range(begin, end), MutableP), VariabilityPT(Range(begin, end), FinalP), numElements, elementType)
       }
     }) |
     (pos ~ ("[<" ~> optWhite ~> atomTemplex <~ optWhite <~ ">") ~ (optWhite ~> templex) ~ (optWhite ~> "*" ~> optWhite ~> templex <~ optWhite <~ "]") ~ pos ^^ {
       case begin ~  mutability ~ numElements ~ elementType ~ end => {
-        RepeaterSequencePT(Range(begin, end), mutability, numElements, elementType)
+        RepeaterSequencePT(Range(begin, end), mutability, VariabilityPT(Range(begin, end), FinalP), numElements, elementType)
+      }
+    }) |
+    (pos ~ ("[<" ~> optWhite ~> atomTemplex <~ optWhite <~ ",") ~ (optWhite ~> atomTemplex <~ optWhite <~ ">") ~ (optWhite ~> templex) ~ (optWhite ~> "*" ~> optWhite ~> templex <~ optWhite <~ "]") ~ pos ^^ {
+      case begin ~  mutability ~ variability ~ numElements ~ elementType ~ end => {
+        RepeaterSequencePT(Range(begin, end), mutability, variability, numElements, elementType)
       }
     })
   }
@@ -29,7 +34,7 @@ trait TemplexParser extends RegexParsers with ParserUtils {
     ("(" ~> optWhite ~> templex <~ optWhite <~ ")") |
     repeaterSeqTemplex |
     manualSeqTemplex |
-    (pos ~ int ~ pos ^^ { case begin ~ value ~ end => IntPT(Range(begin, end), value) }) |
+    (pos ~ long ~ pos ^^ { case begin ~ value ~ end => IntPT(Range(begin, end), value) }) |
     pos ~ "true" ~ pos ^^ { case begin ~ _ ~ end => BoolPT(Range(begin, end), true) } |
     pos ~ "false" ~ pos ^^ { case begin ~ _ ~ end => BoolPT(Range(begin, end), false) } |
     pos ~ "own" ~ pos ^^ { case begin ~ _ ~ end => OwnershipPT(Range(begin, end), OwnP) } |
@@ -53,8 +58,8 @@ trait TemplexParser extends RegexParsers with ParserUtils {
   }
 
   def variabilityAtomTemplex: Parser[VariabilityPT] = {
-    pos ~ "var" ~ pos ^^ { case begin ~ _ ~ end => VariabilityPT(Range(begin, end), VaryingP) } |
-    pos ~ "fin" ~ pos ^^ { case begin ~ _ ~ end => VariabilityPT(Range(begin, end), FinalP) }
+    pos ~ "vary" ~ pos ^^ { case begin ~ _ ~ end => VariabilityPT(Range(begin, end), VaryingP) } |
+    pos ~ "final" ~ pos ^^ { case begin ~ _ ~ end => VariabilityPT(Range(begin, end), FinalP) }
   }
 
   private[parser] def unariedTemplex: Parser[ITemplexPT] = {

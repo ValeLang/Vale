@@ -124,7 +124,14 @@ object RuleScout {
       case PrototypePT(range, NameP(_, name), parameters, returnType) => PrototypeST(evalRange(range), name, parameters.map(translateTemplex(env, ruleState, userDeclaredRunes, _)), translateTemplex(env, ruleState, userDeclaredRunes, returnType))
       case PackPT(range, members) => PackST(evalRange(range), members.map(translateTemplex(env, ruleState, userDeclaredRunes, _)))
       case BorrowPT(range, inner) => BorrowST(evalRange(range), translateTemplex(env, ruleState, userDeclaredRunes, inner))
-      case RepeaterSequencePT(range, mutability, size, element) => RepeaterSequenceST(evalRange(range), translateTemplex(env, ruleState, userDeclaredRunes, mutability), translateTemplex(env, ruleState, userDeclaredRunes, size), translateTemplex(env, ruleState, userDeclaredRunes, element))
+      case RepeaterSequencePT(range, mutability, variability, size, element) => {
+        RepeaterSequenceST(
+          evalRange(range),
+          translateTemplex(env, ruleState, userDeclaredRunes, mutability),
+          translateTemplex(env, ruleState, userDeclaredRunes, variability),
+          translateTemplex(env, ruleState, userDeclaredRunes, size),
+          translateTemplex(env, ruleState, userDeclaredRunes, element))
+      }
       case ManualSequencePT(range, elements) => ManualSequenceST(evalRange(range), elements.map(translateTemplex(env, ruleState, userDeclaredRunes, _)))
     }
   }

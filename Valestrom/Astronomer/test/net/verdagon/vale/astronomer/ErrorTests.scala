@@ -2,7 +2,7 @@ package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.parser.{FileP, ParseFailure, ParseSuccess, Parser, Range}
 import net.verdagon.vale.scout.{CodeLocationS, ProgramS, RangeS, Scout}
-import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, NamespaceCoordinateMap, Ok, vassert, vfail}
+import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, PackageCoordinateMap, Ok, vassert, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
 class ErrorTests extends FunSuite with Matchers  {
@@ -46,7 +46,7 @@ class ErrorTests extends FunSuite with Matchers  {
       }
     }
 
-    def getAstrouts(): Either[NamespaceCoordinateMap[ProgramA], ICompileErrorA] = {
+    def getAstrouts(): Either[PackageCoordinateMap[ProgramA], ICompileErrorA] = {
       Astronomer.runAstronomer(FileCoordinateMap.test(getScoutput()))
     }
   }
@@ -61,7 +61,7 @@ class ErrorTests extends FunSuite with Matchers  {
   test("Report type not found") {
     val compilation =
       new Compilation(
-      """fn main() {
+      """fn main() export {
         |  a Bork = 5;
         |}
         |""".stripMargin)
@@ -70,10 +70,27 @@ class ErrorTests extends FunSuite with Matchers  {
     compileProgramForError(compilation) match {
       case e @ CouldntFindTypeA(_, "Bork") => {
         val errorText = AstronomerErrorHumanizer.humanize(compilation.getFileMap(), e)
-        errorText shouldEqual
-          """test.vale:2:5: Couldn't find type `Bork`:
-            |  a Bork = 5;
-            |""".stripMargin
+        vassert(errorText.contains("Couldn't find type `Bork`"))
+      }
+    }
+  }
+
+  test("Report couldnt solve rules") {
+    val compilation =
+      new Compilation(
+        """
+          |fn moo<A>(x int) {
+          |  42
+          |}
+          |fn main() export {
+          |  moo();
+          |}
+          |""".stripMargin)
+
+    compileProgramForError(compilation) match {
+      case e @ CouldntSolveRulesA(range, failure) => {
+        val errorText = AstronomerErrorHumanizer.humanize(compilation.getFileMap(), e)
+        vassert(errorText.contains("olve"))
       }
     }
   }

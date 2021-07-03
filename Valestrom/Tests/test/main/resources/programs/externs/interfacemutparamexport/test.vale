@@ -1,0 +1,21 @@
+interface IShip export { }
+
+struct Spaceship export { fuel int; }
+impl IShip for Spaceship;
+
+struct Seaship export { leftFuel int; rightFuel int; }
+impl IShip for Seaship;
+
+fn getShipFuelInner(virtual s &IShip) int abstract;
+fn getShipFuelInner(s &Spaceship impl IShip) int { s.fuel }
+fn getShipFuelInner(s &Seaship impl IShip) int { s.leftFuel + s.rightFuel }
+
+fn valeGetShipFuel(s &IShip) int export {
+  getShipFuelInner(s)
+}
+
+fn cGetTripleShipFuel(s &IShip) int extern;
+
+fn main() int export {
+  cGetTripleShipFuel(&Seaship(9, 5))
+}

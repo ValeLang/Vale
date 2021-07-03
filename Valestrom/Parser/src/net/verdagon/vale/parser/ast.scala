@@ -49,7 +49,7 @@ case class ExportAsP(
 case class ImportP(
   range: Range,
   moduleName: NameP,
-  namespaceSteps: List[NameP],
+  packageSteps: List[NameP],
   importeeName: NameP)
 
 sealed trait ICitizenAttributeP
@@ -58,13 +58,13 @@ case class WeakableP(range: Range) extends ICitizenAttributeP
 case class SealedP(range: Range) extends ICitizenAttributeP
 
 case class StructP(
-                    range: Range,
-                    name: NameP,
-                    attributes: List[ICitizenAttributeP],
-                    mutability: MutabilityP,
-                    identifyingRunes: Option[IdentifyingRunesP],
-                    templateRules: Option[TemplateRulesP],
-                    members: StructMembersP)
+  range: Range,
+  name: NameP,
+  attributes: List[ICitizenAttributeP],
+  mutability: MutabilityP,
+  identifyingRunes: Option[IdentifyingRunesP],
+  templateRules: Option[TemplateRulesP],
+  members: StructMembersP)
 
 case class StructMembersP(
   range: Range,
@@ -132,18 +132,18 @@ case class FunctionHeaderP(
 
 
 sealed trait MutabilityP
-case object MutableP extends MutabilityP
-case object ImmutableP extends MutabilityP
+case object MutableP extends MutabilityP { override def toString: String = "mut" }
+case object ImmutableP extends MutabilityP { override def toString: String = "imm" }
 
 sealed trait VariabilityP
-case object FinalP extends VariabilityP
-case object VaryingP extends VariabilityP
+case object FinalP extends VariabilityP { override def toString: String = "final" }
+case object VaryingP extends VariabilityP { override def toString: String = "vary" }
 
 sealed trait OwnershipP
-case object OwnP extends OwnershipP
-case object ConstraintP extends OwnershipP
-case object WeakP extends OwnershipP
-case object ShareP extends OwnershipP
+case object OwnP extends OwnershipP { override def toString: String = "own" }
+case object ConstraintP extends OwnershipP { override def toString: String = "constraint" }
+case object WeakP extends OwnershipP { override def toString: String = "weak" }
+case object ShareP extends OwnershipP { override def toString: String = "share" }
 
 // This represents how to load something.
 // If something's a Share, then nothing will happen,
@@ -162,10 +162,10 @@ case class LendWeakP(permission: PermissionP) extends LoadAsP
 case object UseP extends LoadAsP
 
 sealed trait PermissionP
-case object ReadonlyP extends PermissionP
-case object ReadwriteP extends PermissionP
-case object ExclusiveReadwriteP extends PermissionP
+case object ReadonlyP extends PermissionP { override def toString: String = "ro" }
+case object ReadwriteP extends PermissionP { override def toString: String = "rw" }
+case object ExclusiveReadwriteP extends PermissionP { override def toString: String = "xrw" }
 
 sealed trait LocationP
-case object InlineP extends LocationP
-case object YonderP extends LocationP
+case object InlineP extends LocationP { override def toString: String = "inl" }
+case object YonderP extends LocationP { override def toString: String = "heap" }

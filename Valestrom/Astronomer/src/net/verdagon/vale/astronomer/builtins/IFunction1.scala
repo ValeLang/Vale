@@ -1,7 +1,7 @@
 package net.verdagon.vale.astronomer.builtins
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.parser.{ConstraintP, CaptureP, FinalP, MutableP, ReadwriteP}
+import net.verdagon.vale.parser.{ConstraintP, CaptureP, MutableP, ReadwriteP}
 import net.verdagon.vale.scout.{CodeLocationS, MaybeUsed, NotUsed, ParameterS, RangeS}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP}
 
@@ -41,8 +41,8 @@ object IFunction1 {
             CodeRuneA("BorrowThis") -> CoordTemplataType,
             CodeRuneA("ThisK") -> CoordTemplataType),
           List(
-            ParameterA(AtomAP(RangeS.internal(-119), LocalVariableA(CodeVarNameA("this"), FinalP, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed), Some(AbstractAP), CodeRuneA("BorrowThis"), None)),
-            ParameterA(AtomAP(RangeS.internal(-120), LocalVariableA(CodeVarNameA("p1"), FinalP, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed), None, CodeRuneA("P1"), None))),
+            ParameterA(AtomAP(RangeS.internal(-119), LocalA(CodeVarNameA("this"), MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed), Some(AbstractAP), CodeRuneA("BorrowThis"), None)),
+            ParameterA(AtomAP(RangeS.internal(-120), LocalA(CodeVarNameA("p1"), MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed), None, CodeRuneA("P1"), None))),
           Some(CodeRuneA("R")),
           List(
             EqualsAR(

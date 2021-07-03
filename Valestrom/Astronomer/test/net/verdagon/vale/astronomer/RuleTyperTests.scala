@@ -39,7 +39,7 @@ class RuleTyperTests extends FunSuite with Matchers {
     SimpleEnvironment(
       Map(
         "ImmInterface" -> List(KindTemplataType),
-        "Array" -> List(TemplateTemplataType(List(MutabilityTemplataType, CoordTemplataType), KindTemplataType)),
+        "Array" -> List(TemplateTemplataType(List(MutabilityTemplataType, VariabilityTemplataType, CoordTemplataType), KindTemplataType)),
         "MutTStruct" -> List(TemplateTemplataType(List(CoordTemplataType), KindTemplataType)),
         "MutTInterface" -> List(TemplateTemplataType(List(CoordTemplataType), KindTemplataType)),
         "MutStruct" -> List(KindTemplataType),
@@ -269,7 +269,7 @@ class RuleTyperTests extends FunSuite with Matchers {
                 TemplexSR(PermissionST(RangeS.testZero,ReadonlyP)),
                 TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Q")))))),
           RangeS.testZero,
-          List(AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("m"),FinalP),None,CodeRuneS("Z"),None)),
+          List(AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("m")),None,CodeRuneS("Z"),None)),
           None)
 
     conclusions.typeByRune(CodeRuneA("T")) shouldEqual CoordTemplataType
@@ -285,7 +285,7 @@ class RuleTyperTests extends FunSuite with Matchers {
             TypedSR(RangeS.testZero,CodeRuneS("__Let0_"),CoordTypeSR),
             EqualsSR(RangeS.testZero,TemplexSR(RuneST(RangeS.testZero,CodeRuneS("__Let0_"))),CallSR(RangeS.testZero,"toRef", List(TemplexSR(NameST(RangeS.testZero, CodeTypeNameS("MutInterface"))))))),
           RangeS.testZero,
-          List(AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("x"),FinalP),None,CodeRuneS("__Let0_"),None)),
+          List(AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("x")),None,CodeRuneS("__Let0_"),None)),
           None)
 
     vassert(conclusions.typeByRune(CodeRuneA("__Let0_")) == CoordTemplataType)
@@ -301,7 +301,7 @@ class RuleTyperTests extends FunSuite with Matchers {
             TypedSR(RangeS.testZero,CodeRuneS("__Let0_"),CoordTypeSR),
             EqualsSR(RangeS.testZero,TemplexSR(RuneST(RangeS.testZero,CodeRuneS("__Let0_"))),CallSR(RangeS.testZero,"toRef", List(TemplexSR(CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("MutTInterface")), List(RuneST(RangeS.testZero,CodeRuneS("T"))))))))),
           RangeS.testZero,
-          List(AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("x"),FinalP),None,CodeRuneS("__Let0_"),None)),
+          List(AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("x")),None,CodeRuneS("__Let0_"),None)),
           None)
 
     vassert(conclusions.typeByRune(CodeRuneA("__Let0_")) == CoordTemplataType)
@@ -324,7 +324,7 @@ class RuleTyperTests extends FunSuite with Matchers {
             CallSR(RangeS.testZero,"passThroughIfConcrete",List(TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Z"))))))),
         EqualsSR(RangeS.testZero,TypedSR(RangeS.testZero,CodeRuneS("V"),CoordTypeSR),CallSR(RangeS.testZero,"toRef",List(TemplexSR(NameST(RangeS.testZero, CodeTypeNameS("void")))))))
     val atoms =
-      List(AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("this"),FinalP),None,CodeRuneS("T"),None))
+      List(AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("this")),None,CodeRuneS("T"),None))
 
     // Test that it does match a pack
     val (conclusions, RuleTyperSolveSuccess(_)) =
@@ -348,7 +348,7 @@ class RuleTyperTests extends FunSuite with Matchers {
             CallSR(RangeS.testZero,"passThroughIfInterface",List(TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Z"))))))),
         EqualsSR(RangeS.testZero,TypedSR(RangeS.testZero,CodeRuneS("V"),CoordTypeSR),CallSR(RangeS.testZero,"toRef",List(TemplexSR(NameST(RangeS.testZero, CodeTypeNameS("void")))))))
     val atoms =
-      List(AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("this"),FinalP),None,CodeRuneS("T"),None))
+      List(AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("this")),None,CodeRuneS("T"),None))
 
     // Test that it does match an interface
     val (conclusions, RuleTyperSolveSuccess(_)) =
@@ -372,7 +372,7 @@ class RuleTyperTests extends FunSuite with Matchers {
             TemplexSR(PermissionST(RangeS.testZero,ReadonlyP)),
             CallSR(RangeS.testZero,"passThroughIfStruct",List(TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Z"))))))))
     val atoms =
-      List(AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("this"),FinalP),None,CodeRuneS("T"),None))
+      List(AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("this")),None,CodeRuneS("T"),None))
 
     val (conclusions, RuleTyperSolveSuccess(_)) = makeCannedRuleTyper().solve(FakeState(), makeCannedEnvironment(), rules, RangeS.testZero,atoms,None)
     vassert(conclusions.typeByRune(CodeRuneA("T")) == CoordTemplataType)
@@ -390,7 +390,7 @@ class RuleTyperTests extends FunSuite with Matchers {
           TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Z"))),
           TemplexSR(CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("MutTStruct")),List(NameST(RangeS.testZero, CodeTypeNameS("int")))))))
     val atoms =
-      List(AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("this"),FinalP),None,CodeRuneS("T"),None))
+      List(AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("this")),None,CodeRuneS("T"),None))
 
     val (conclusions, RuleTyperSolveSuccess(_)) =
       makeCannedRuleTyper().solve(FakeState(), makeCannedEnvironment(), rules, RangeS.testZero,atoms, None)
@@ -410,7 +410,7 @@ class RuleTyperTests extends FunSuite with Matchers {
           TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Z"))),
           TemplexSR(CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("MutTStruct")),List(InterpretedST(RangeS.testZero,ShareP,ReadonlyP,NameST(RangeS.testZero, CodeTypeNameS("int"))))))))
     val atoms =
-      List(AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("this"),FinalP),None,CodeRuneS("T"),None))
+      List(AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("this")),None,CodeRuneS("T"),None))
 
     val (conclusions, RuleTyperSolveSuccess(_)) =
       makeCannedRuleTyper().solve(FakeState(), makeCannedEnvironment(), rules, RangeS.testZero,atoms, None)
@@ -425,7 +425,7 @@ class RuleTyperTests extends FunSuite with Matchers {
         TypedSR(RangeS.testZero,CodeRuneS("__Par0"),CoordTypeSR),
         EqualsSR(RangeS.testZero,TemplexSR(RuneST(RangeS.testZero,CodeRuneS("__Par0"))),TemplexSR(NameST(RangeS.testZero, CodeTypeNameS("MutStruct")))))
     val atoms =
-      List(AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("this"),FinalP),None,CodeRuneS("T"),None))
+      List(AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("this")),None,CodeRuneS("T"),None))
 
     val (conclusions, RuleTyperSolveSuccess(_)) =
       makeCannedRuleTyper().solve(FakeState(), makeCannedEnvironment(), rules, RangeS.testZero,atoms, None)
@@ -444,7 +444,7 @@ class RuleTyperTests extends FunSuite with Matchers {
         makeCannedEnvironment(),
         rules,
         RangeS.testZero,
-        List(AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("x"),FinalP),Some(AbstractSP),CodeRuneS("Z"),None)),
+        List(AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("x")),Some(AbstractSP),CodeRuneS("Z"),None)),
         None)
     conclusions.typeByRune(CodeRuneA("Z")) shouldEqual CoordTemplataType
   }
@@ -462,13 +462,13 @@ class RuleTyperTests extends FunSuite with Matchers {
         List(
           AtomSP(
             RangeS.testZero,
-            CaptureS(CodeVarNameS("x"), FinalP),
+            CaptureS(CodeVarNameS("x")),
             None,
             CodeRuneS("__Let0_"),
             Some(
               List(
-                AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("x"),FinalP),None,CodeRuneS("__Let0__Mem_0"),None),
-                AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("y"),FinalP),None,CodeRuneS("__Let0__Mem_1"),None))))),
+                AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("x")),None,CodeRuneS("__Let0__Mem_0"),None),
+                AtomSP(RangeS.testZero, CaptureS(CodeVarNameS("y")),None,CodeRuneS("__Let0__Mem_1"),None))))),
         Some(Set(CodeRuneA("__Let0__Mem_0"), CodeRuneA("__Let0__Mem_1"), CodeRuneA("__Let0_"))))
     conclusions.typeByRune(CodeRuneA("__Let0_")) shouldEqual CoordTemplataType
     conclusions.typeByRune(CodeRuneA("__Let0__Mem_0")) shouldEqual CoordTemplataType
@@ -484,7 +484,12 @@ class RuleTyperTests extends FunSuite with Matchers {
           TypedSR(RangeS.testZero,CodeRuneS("Z"),CoordTypeSR),
           EqualsSR(RangeS.testZero,
             TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Z"))),
-            TemplexSR(RepeaterSequenceST(RangeS.testZero,MutabilityST(RangeS.testZero,MutableP), IntST(RangeS.testZero,5),InterpretedST(RangeS.testZero,ShareP,ReadonlyP,NameST(RangeS.testZero, CodeTypeNameS("int"))))))),
+            TemplexSR(
+              RepeaterSequenceST(
+                RangeS.testZero,
+                MutabilityST(RangeS.testZero,MutableP),
+                VariabilityST(RangeS.testZero,VaryingP),
+                IntST(RangeS.testZero,5),InterpretedST(RangeS.testZero,ShareP,ReadonlyP,NameST(RangeS.testZero, CodeTypeNameS("int"))))))),
         RangeS.testZero,
         List(),
         None)
@@ -519,14 +524,16 @@ class RuleTyperTests extends FunSuite with Matchers {
         List(
           EqualsSR(RangeS.testZero,
             TypedSR(RangeS.testZero,CodeRuneS("K"), KindTypeSR),
-            TemplexSR(CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("Array")),List(MutabilityST(RangeS.testZero,MutableP), NameST(RangeS.testZero, CodeTypeNameS("int")))))),
+            TemplexSR(
+              CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("Array")),List(MutabilityST(RangeS.testZero,MutableP), VariabilityST(RangeS.testZero,VaryingP), NameST(RangeS.testZero, CodeTypeNameS("int")))))),
           EqualsSR(RangeS.testZero,
             TypedSR(RangeS.testZero,CodeRuneS("K"), KindTypeSR),
-            TemplexSR(CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("Array")),List(RuneST(RangeS.testZero,CodeRuneS("M")), RuneST(RangeS.testZero,CodeRuneS("T"))))))),
+            TemplexSR(CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("Array")),List(RuneST(RangeS.testZero,CodeRuneS("M")), RuneST(RangeS.testZero,CodeRuneS("V")), RuneST(RangeS.testZero,CodeRuneS("T"))))))),
         RangeS.testZero,
         List(),
         None)
     conclusions.typeByRune(CodeRuneA("M")) shouldEqual MutabilityTemplataType
+    conclusions.typeByRune(CodeRuneA("V")) shouldEqual VariabilityTemplataType
     conclusions.typeByRune(CodeRuneA("T")) shouldEqual CoordTemplataType
   }
 

@@ -3,18 +3,19 @@ package net.verdagon.vale
 import scala.io.Source
 
 object Builtins {
-  val NAMESPACE_COORD = NamespaceCoordinate("", List())
+  val NAMESPACE_COORD = PackageCoordinate("", List())
 
   val moduleToFilename =
     Map(
       "arith" -> "arith.vale",
       "logic" -> "logic.vale",
       "str" -> "str.vale",
-      "main" -> "main.vale",
+      "mainargs" -> "mainargs.vale",
       "as" -> "as.vale",
       "print" -> "print.vale",
       "panic" -> "panic.vale",
       "opt" -> "opt.vale",
+      "result" -> "result.vale",
       "sameinstance" -> "sameinstance.vale")
 
   def load(resourceFilename: String): String = {
@@ -40,13 +41,13 @@ object Builtins {
   }
 
   // Add an empty v.builtins.whatever so that the aforementioned imports still work.
-  // But load the actual files all inside the root namespace.
+  // But load the actual files all inside the root paackage.
   def getCodeMap(): FileCoordinateMap[String] = {
     moduleToFilename.foldLeft(FileCoordinateMap[String](Map()))({
       case (prev, (moduleName, filename)) => {
         prev
           .add("v", List("builtins", moduleName), filename, "")
-          .add(NAMESPACE_COORD.module, NAMESPACE_COORD.namespaces, filename, load(filename))
+          .add(NAMESPACE_COORD.module, NAMESPACE_COORD.packages, filename, load(filename))
       }
     })
   }

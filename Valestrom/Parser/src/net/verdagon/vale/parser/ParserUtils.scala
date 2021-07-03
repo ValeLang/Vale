@@ -38,10 +38,6 @@ trait ParserUtils extends RegexParsers {
   private[parser] def white: Parser[Unit] = { "\\s+".r ^^^ () }
   private[parser] def optWhite: Parser[Unit] = { opt(white) ^^^ () }
 
-  // soon, give special treatment to ^
-  // we want marine^.item to explode marine and extract its item
-  // but, we don't want it to parse it as (marine^).item
-  // so, we need to look ahead a bit and see if there's a . after it.
   private[parser] def exprIdentifier: Parser[NameP] = {
     pos ~ """[^\s\.\!\$\&\,\:\(\)\;\[\]\{\}\'\*\^\"\<\>\=\`]+""".r ~ pos ^^ {
       case begin ~ str ~ end => NameP(Range(begin, end), str)
@@ -74,27 +70,23 @@ trait ParserUtils extends RegexParsers {
     ("_" ^^^ { val x: Option[T] = None; x } | parser ^^ (a => Some(a)))
   }
 
-  private[parser] def int: Parser[Int] = {
+  private[parser] def long: Parser[Long] = {
     raw"^-?\d+".r ^^ {
-      case thingStr => thingStr.toInt
+      case thingStr => thingStr.toLong
     }
-  }
-
-  private[parser] def integer: Parser[IExpressionPE] = {
-    pos ~ int ~ pos ^^ { case begin ~ n ~ end => IntLiteralPE(Range(begin, end), n) }
   }
 
   private[parser] def bool: Parser[IExpressionPE] = {
     pos ~ ("true"|"false") ~ pos ^^ {
-      case begin ~ "true" ~ end => BoolLiteralPE(Range(begin, end), true)
-      case begin ~ "false" ~ end => BoolLiteralPE(Range(begin, end), false)
+      case begin ~ "true" ~ end => ConstantBoolPE(Range(begin, end), true)
+      case begin ~ "false" ~ end => ConstantBoolPE(Range(begin, end), false)
     }
   }
 
 
   private[parser] def float: Parser[IExpressionPE] = {
     pos ~ raw"^-?\d+\.\d*".r ~ pos ^^ {
-      case begin ~ thingStr ~ end => FloatLiteralPE(Range(begin, end), thingStr.toFloat)
+      case begin ~ thingStr ~ end => ConstantFloatPE(Range(begin, end), thingStr.toFloat)
     }
   }
 

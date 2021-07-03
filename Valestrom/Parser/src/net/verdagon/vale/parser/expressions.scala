@@ -1,12 +1,17 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.vassert
+import net.verdagon.vale.{vassert, vpass}
 
 trait IExpressionPE {
   def range: Range
 }
 
 case class VoidPE(range: Range) extends IExpressionPE {}
+
+// We have this because it sometimes even a single-member pack can change the semantics.
+// (moo).someMethod() will move moo, and moo.someMethod() will lend moo.
+// There's probably a better way to distinguish this...
+case class PackPE(range: Range, inners: List[IExpressionPE]) extends IExpressionPE {}
 
 case class LendPE(
     range: Range,
@@ -61,10 +66,10 @@ case class ConstructArrayPE(
   args: List[IExpressionPE]
 ) extends IExpressionPE
 
-case class IntLiteralPE(range: Range, value: Int) extends IExpressionPE
-case class BoolLiteralPE(range: Range, value: Boolean) extends IExpressionPE
-case class StrLiteralPE(range: Range, value: String) extends IExpressionPE
-case class FloatLiteralPE(range: Range, value: Double) extends IExpressionPE
+case class ConstantIntPE(range: Range, value: Long, bits: Int) extends IExpressionPE
+case class ConstantBoolPE(range: Range, value: Boolean) extends IExpressionPE
+case class ConstantStrPE(range: Range, value: String) extends IExpressionPE
+case class ConstantFloatPE(range: Range, value: Double) extends IExpressionPE
 
 case class StrInterpolatePE(range: Range, parts: List[IExpressionPE]) extends IExpressionPE
 
@@ -99,7 +104,9 @@ case class MethodCallPE(
   isMapCall: Boolean,
   methodLookup: LookupPE,
   argExprs: List[IExpressionPE]
-) extends IExpressionPE
+) extends IExpressionPE {
+  vpass()
+}
 
 case class TemplateArgsP(range: Range, args: List[ITemplexPT])
 case class LookupPE(

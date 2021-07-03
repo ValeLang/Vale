@@ -302,10 +302,16 @@ class RuleTyperMatcher[Env, State](
           }
         }
       }
-      case (RepeaterSequenceST(range, mutabilityTemplexS, sizeTemplexS, elementTemplexS), KindTemplataType | CoordTemplataType) => {
+      case (RepeaterSequenceST(range, mutabilityTemplexS, variabilityTemplexS, sizeTemplexS, elementTemplexS), KindTemplataType | CoordTemplataType) => {
         val maybeMutabilityTemplexT =
           matchTypeAgainstTemplexS(state, env, conclusions, MutabilityTemplataType, mutabilityTemplexS) match {
             case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperMatchConflict(conclusions.conclusions, range, "Conflict in mutability part!", List(rtmc)))
+            case RuleTyperMatchUnknown() => (None)
+            case (RuleTyperMatchSuccess(sizeTemplexT)) => (Some(sizeTemplexT))
+          }
+        val maybeVariabilityTemplexT =
+          matchTypeAgainstTemplexS(state, env, conclusions, VariabilityTemplataType, variabilityTemplexS) match {
+            case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperMatchConflict(conclusions.conclusions, range, "Conflict in variability part!", List(rtmc)))
             case RuleTyperMatchUnknown() => (None)
             case (RuleTyperMatchSuccess(sizeTemplexT)) => (Some(sizeTemplexT))
           }
@@ -321,11 +327,11 @@ class RuleTyperMatcher[Env, State](
             case RuleTyperMatchUnknown() => (None)
             case (RuleTyperMatchSuccess(elementTemplexT)) => (Some(elementTemplexT))
           }
-        (maybeMutabilityTemplexT, maybeSizeTemplexT, maybeElementTemplexT) match {
-          case (Some(mutabilityTemplexT), Some(sizeTemplexT), (Some(elementTemplexT))) => {
-            (RuleTyperMatchSuccess(RepeaterSequenceAT(range, mutabilityTemplexT, sizeTemplexT, elementTemplexT, expectedType)))
+        (maybeMutabilityTemplexT, maybeVariabilityTemplexT, maybeSizeTemplexT, maybeElementTemplexT) match {
+          case (Some(mutabilityTemplexT), Some(variabilityTemplexT), Some(sizeTemplexT), (Some(elementTemplexT))) => {
+            (RuleTyperMatchSuccess(RepeaterSequenceAT(range, mutabilityTemplexT, variabilityTemplexT, sizeTemplexT, elementTemplexT, expectedType)))
           }
-          case (_, _, _) => {
+          case (_, _, _, _) => {
             RuleTyperMatchUnknown()
           }
         }
@@ -364,6 +370,7 @@ class RuleTyperMatcher[Env, State](
     tyype match {
       case KindTemplataType =>
       case MutabilityTemplataType =>
+      case VariabilityTemplataType =>
       case CoordTemplataType =>
       case TemplateTemplataType(_, _) => // We check for strict equality, nothing fancy here.
       case _ => vfail()
@@ -374,9 +381,10 @@ class RuleTyperMatcher[Env, State](
       case KindTemplataType =>
       case CoordTemplataType =>
       case MutabilityTemplataType =>
+      case VariabilityTemplataType =>
       case IntegerTemplataType =>
       case TemplateTemplataType(_, _) => // We check for strict equality, nothing fancy here.
-      case _ => throw CompileErrorExceptionA(RangedInternalErrorA(range, expectedType.toString))
+      case _ => vfail(expectedType.toString)
     }
     // When something's missing, consider all of the combinations it has with everything
     // else, then once youve considered them, add them to the above matches.
@@ -388,6 +396,9 @@ class RuleTyperMatcher[Env, State](
         (RuleTyperMatchConflict(conclusions.conclusions, range, "Expected an int, but was " + nonIntType, List()))
       }
       case (MutabilityTemplataType, MutabilityTemplataType) => {
+        (RuleTyperMatchSuccess(()))
+      }
+      case (VariabilityTemplataType, VariabilityTemplataType) => {
         (RuleTyperMatchSuccess(()))
       }
       case (CoordTemplataType, CoordTemplataType) => {
@@ -488,6 +499,7 @@ class RuleTyperMatcher[Env, State](
       case CoordTemplataType =>
       case KindTemplataType =>
       case MutabilityTemplataType =>
+      case VariabilityTemplataType =>
       case OwnershipTemplataType =>
       case PermissionTemplataType =>
       case PrototypeTemplataType =>
@@ -499,6 +511,7 @@ class RuleTyperMatcher[Env, State](
       case CoordTypeSR =>
       case KindTypeSR =>
       case MutabilityTypeSR =>
+      case VariabilityTypeSR =>
       case OwnershipTypeSR =>
       case PermissionTypeSR =>
       case PrototypeTypeSR =>
@@ -509,6 +522,7 @@ class RuleTyperMatcher[Env, State](
       case (IntegerTemplataType, IntTypeSR) =>
       case (KindTemplataType, KindTypeSR) =>
       case (MutabilityTemplataType, MutabilityTypeSR) =>
+      case (VariabilityTemplataType, VariabilityTypeSR) =>
       case (OwnershipTemplataType, OwnershipTypeSR) =>
       case (PermissionTemplataType, PermissionTypeSR) =>
       case (PrototypeTemplataType, PrototypeTypeSR) =>

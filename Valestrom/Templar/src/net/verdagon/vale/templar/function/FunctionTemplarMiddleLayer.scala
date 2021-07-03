@@ -33,7 +33,7 @@ class FunctionTemplarMiddleLayer(
     runedEnv: BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs,
     temputs: Temputs,
     function1: FunctionA):
-  (FunctionBanner2) = {
+  (FunctionBannerT) = {
 
     // Check preconditions
     function1.typeByRune.keySet.foreach(templateParam => {
@@ -47,7 +47,7 @@ class FunctionTemplarMiddleLayer(
     val params2 = assembleFunctionParams(runedEnv, temputs, function1.params)
     val maybeReturnType = getMaybeReturnType(runedEnv, function1.maybeRetCoordRune)
     val namedEnv = makeNamedEnv(runedEnv, params2.map(_.tyype), maybeReturnType)
-    val banner = FunctionBanner2(Some(function1), namedEnv.fullName, params2)
+    val banner = FunctionBannerT(Some(function1), namedEnv.fullName, params2)
     banner
   }
 
@@ -55,18 +55,18 @@ class FunctionTemplarMiddleLayer(
       env: IEnvironment,
       temputs: Temputs,
       maybeVirtuality1: Option[VirtualityAP]):
-  (Option[Virtuality2]) = {
+  (Option[VirtualityT]) = {
     maybeVirtuality1 match {
       case None => (None)
-      case Some(AbstractAP) => (Some(Abstract2))
+      case Some(AbstractAP) => (Some(AbstractT$))
       case Some(OverrideAP(range, interfaceRuneA)) => {
         env.getNearestTemplataWithAbsoluteName2(NameTranslator.translateRune(interfaceRuneA), Set(TemplataLookupContext)) match {
           case None => vcurious()
-          case Some(KindTemplata(ir @ InterfaceRef2(_))) => (Some(Override2(ir)))
+          case Some(KindTemplata(ir @ InterfaceRefT(_))) => (Some(OverrideT(ir)))
           case Some(it @ InterfaceTemplata(_, _)) => {
             val ir =
               structTemplar.getInterfaceRef(temputs, range, it, List())
-            (Some(Override2(ir)))
+            (Some(OverrideT(ir)))
           }
         }
       }
@@ -82,7 +82,7 @@ class FunctionTemplarMiddleLayer(
     temputs: Temputs,
     callRange: RangeS,
     function1: FunctionA):
-  (FunctionBanner2) = {
+  (FunctionBannerT) = {
 
     // Check preconditions
     function1.typeByRune.keySet.foreach(templateParam => {
@@ -93,7 +93,7 @@ class FunctionTemplarMiddleLayer(
 
     val maybeReturnType = getMaybeReturnType(runedEnv, function1.maybeRetCoordRune)
     val namedEnv = makeNamedEnv(runedEnv, params2.map(_.tyype), maybeReturnType)
-    val banner = FunctionBanner2(Some(function1), namedEnv.fullName, params2)
+    val banner = FunctionBannerT(Some(function1), namedEnv.fullName, params2)
 
     // Now we want to add its Function2 into the temputs.
     temputs.getDeclaredSignatureOrigin(banner.toSignature) match {
@@ -132,7 +132,7 @@ class FunctionTemplarMiddleLayer(
     temputs: Temputs,
     callRange: RangeS,
     function1: FunctionA):
-  (FunctionHeader2) = {
+  (FunctionHeaderT) = {
 
     // Check preconditions
     function1.typeByRune.keySet.foreach(templateParam => {
@@ -146,9 +146,9 @@ class FunctionTemplarMiddleLayer(
 
     val paramTypes2 = evaluateFunctionParamTypes(runedEnv, function1.params);
     val functionFullName = assembleName(runedEnv.fullName, paramTypes2)
-    val needleSignature = Signature2(functionFullName)
+    val needleSignature = SignatureT(functionFullName)
     temputs.lookupFunction(needleSignature) match {
-      case Some(Function2(header, _, _)) => {
+      case Some(FunctionT(header, _, _)) => {
         (header)
       }
       case None => {
@@ -195,7 +195,7 @@ class FunctionTemplarMiddleLayer(
     temputs: Temputs,
     callRange: RangeS,
     function1: FunctionA):
-  (Prototype2) = {
+  (PrototypeT) = {
 
     // Check preconditions
     function1.typeByRune.keySet.foreach(templateParam => {
@@ -208,7 +208,7 @@ class FunctionTemplarMiddleLayer(
     val paramTypes2 = evaluateFunctionParamTypes(runedEnv, function1.params)
     val maybeReturnType = getMaybeReturnType(runedEnv, function1.maybeRetCoordRune)
     val namedEnv = makeNamedEnv(runedEnv, paramTypes2, maybeReturnType)
-    val needleSignature = Signature2(namedEnv.fullName)
+    val needleSignature = SignatureT(namedEnv.fullName)
 
     temputs.getDeclaredSignatureOrigin(needleSignature) match {
       case None => {
@@ -229,7 +229,7 @@ class FunctionTemplarMiddleLayer(
         }
         temputs.getReturnTypeForSignature(needleSignature) match {
           case Some(returnType2) => {
-            (Prototype2(namedEnv.fullName, returnType2))
+            (PrototypeT(namedEnv.fullName, returnType2))
           }
           case None => {
             throw CompileErrorExceptionT(RangedInternalErrorT(runedEnv.function.range, "Need return type for " + needleSignature + ", cycle found"))
@@ -244,7 +244,7 @@ class FunctionTemplarMiddleLayer(
   private def evaluateFunctionParamTypes(
     env: IEnvironment,
     params1: List[ParameterA]):
-  List[Coord] = {
+  List[CoordT] = {
     params1.map(param1 => {
       val CoordTemplata(coord) =
         env
@@ -260,8 +260,8 @@ class FunctionTemplarMiddleLayer(
     env: IEnvironment,
     temputs: Temputs,
     params1: List[ParameterA]):
-  (List[Parameter2]) = {
-    params1.foldLeft((List[Parameter2]()))({
+  (List[ParameterT]) = {
+    params1.foldLeft((List[ParameterT]()))({
       case ((previousParams2), param1) => {
         val CoordTemplata(coord) =
           env
@@ -272,7 +272,7 @@ class FunctionTemplarMiddleLayer(
         val maybeVirtuality =
           evaluateMaybeVirtuality(env, temputs, param1.pattern.virtuality)
         val newParam2 =
-          Parameter2(
+          ParameterT(
             NameTranslator.translateVarNameStep(param1.pattern.capture.varName),
             maybeVirtuality,
             coord)
@@ -313,8 +313,8 @@ class FunctionTemplarMiddleLayer(
 
   def makeNamedEnv(
     runedEnv: BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs,
-    paramTypes: List[Coord],
-    maybeReturnType: Option[Coord]
+    paramTypes: List[CoordT],
+    maybeReturnType: Option[CoordT]
   ): FunctionEnvironment = {
     val BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs(parentEnv, oldName, function, variables, entries) = runedEnv
 
@@ -325,34 +325,34 @@ class FunctionTemplarMiddleLayer(
   }
 
   private def assembleName(
-    name: FullName2[BuildingFunctionNameWithClosuredsAndTemplateArgs2],
-    params: List[Coord]):
-  FullName2[IFunctionName2] = {
-    val BuildingFunctionNameWithClosuredsAndTemplateArgs2(templateName, templateArgs) = name.last
+    name: FullNameT[BuildingFunctionNameWithClosuredsAndTemplateArgsT],
+    params: List[CoordT]):
+  FullNameT[IFunctionNameT] = {
+    val BuildingFunctionNameWithClosuredsAndTemplateArgsT(templateName, templateArgs) = name.last
     val newLastStep =
       templateName match {
-        case ConstructorTemplateName2(_) => vimpl() // no idea
-        case FunctionTemplateName2(humanName, _) => FunctionName2(humanName, templateArgs, params)
-        case LambdaTemplateName2(_) => FunctionName2(CallTemplar.CALL_FUNCTION_NAME, templateArgs, params)
-        case ImmConcreteDestructorTemplateName2() => {
-          val List(Coord(Share, Readonly, immRef)) = params
-          ImmConcreteDestructorName2(immRef)
+        case ConstructorTemplateNameT(_) => vimpl() // no idea
+        case FunctionTemplateNameT(humanName, _) => FunctionNameT(humanName, templateArgs, params)
+        case LambdaTemplateNameT(_) => FunctionNameT(CallTemplar.CALL_FUNCTION_NAME, templateArgs, params)
+        case ImmConcreteDestructorTemplateNameT() => {
+          val List(CoordT(ShareT, ReadonlyT, immRef)) = params
+          ImmConcreteDestructorNameT(immRef)
         }
-        case ImmInterfaceDestructorTemplateName2() => {
-          ImmInterfaceDestructorName2(templateArgs, params)
+        case ImmInterfaceDestructorTemplateNameT() => {
+          ImmInterfaceDestructorNameT(templateArgs, params)
         }
-        case ImmDropTemplateName2() => {
-          val List(Coord(Share, Readonly, kind)) = params
-          ImmDropName2(kind)
+        case ImmDropTemplateNameT() => {
+          val List(CoordT(ShareT, ReadonlyT, kind)) = params
+          ImmDropNameT(kind)
         }
       }
-    FullName2(name.initSteps, newLastStep)
+    FullNameT(name.packageCoord, name.initSteps, newLastStep)
   }
 
   private def getMaybeReturnType(
     nearEnv: BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs,
     maybeRetCoordRune: Option[IRuneA]
-  ): Option[Coord] = {
+  ): Option[CoordT] = {
     maybeRetCoordRune.map(retCoordRuneA => {
       val retCoordRune = NameTranslator.translateRune(retCoordRuneA)
       nearEnv.getNearestTemplataWithAbsoluteName2(retCoordRune, Set(TemplataLookupContext)) match {

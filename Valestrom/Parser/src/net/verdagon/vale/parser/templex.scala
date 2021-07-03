@@ -17,7 +17,7 @@ case class CallPT(range: Range, template: ITemplexPT, args: List[ITemplexPT]) ex
 // Mutability is Optional because they can leave it out, and mut will be assumed.
 case class FunctionPT(range: Range, mutability: Option[ITemplexPT], parameters: PackPT, returnType: ITemplexPT) extends ITemplexPT
 case class InlinePT(range: Range, inner: ITemplexPT) extends ITemplexPT
-case class IntPT(range: Range, value: Int) extends ITemplexPT
+case class IntPT(range: Range, value: Long) extends ITemplexPT
 case class LocationPT(range: Range, location: LocationP) extends ITemplexPT
 case class ManualSequencePT(range: Range, elements: List[ITemplexPT]) extends ITemplexPT
 case class MutabilityPT(range: Range, mutability: MutabilityP) extends ITemplexPT
@@ -31,7 +31,13 @@ case class PackPT(range: Range, members: List[ITemplexPT]) extends ITemplexPT
 //case class PermissionedPT(range: Range, permission: PermissionP, inner: ITemplexPT) extends ITemplexPT
 case class PermissionPT(range: Range, permission: PermissionP) extends ITemplexPT
 case class PrototypePT(range: Range, name: NameP, parameters: List[ITemplexPT], returnType: ITemplexPT) extends ITemplexPT
-case class RepeaterSequencePT(range: Range, mutability: ITemplexPT, size: ITemplexPT, element: ITemplexPT) extends ITemplexPT
+case class RepeaterSequencePT(
+  range: Range,
+  mutability: ITemplexPT,
+  variability: ITemplexPT,
+  size: ITemplexPT,
+  element: ITemplexPT
+) extends ITemplexPT
 case class SharePT(range: Range, inner: ITemplexPT) extends ITemplexPT
 case class StringPT(range: Range, str: String) extends ITemplexPT
 case class TypedRunePT(range: Range, rune: NameP, tyype: ITypePR) extends ITemplexPT

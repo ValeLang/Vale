@@ -117,6 +117,9 @@ object FunctionScout {
       if (attributes.collectFirst({ case AbstractAttributeP(_) => }).nonEmpty) {
         AbstractBody1
       } else if (attributes.collectFirst({ case ExternAttributeP(_) => }).nonEmpty) {
+        if (maybeBody0.nonEmpty) {
+          throw CompileErrorExceptionS(ExternHasBody(Scout.evalRange(file, range)))
+        }
         ExternBody1
       } else if (attributes.collectFirst({ case BuiltinAttributeP(_, _) => }).nonEmpty) {
         GeneratedBody1(attributes.collectFirst({ case BuiltinAttributeP(_, generatorId) => generatorId}).head.str)
@@ -187,7 +190,7 @@ object FunctionScout {
         Some(FunctionTypeSR)
       }
 
-    val attrsS = translateFunctionAttributes(attributes.filter({ case AbstractAttributeP(_) => false case _ => true}))
+    val attrsS = translateFunctionAttributes(file, attributes.filter({ case AbstractAttributeP(_) => false case _ => true}))
 
     FunctionS(
       Scout.evalRange(file, range),
@@ -204,11 +207,11 @@ object FunctionScout {
       body1)
   }
 
-  def translateFunctionAttributes(attrsP: List[IFunctionAttributeP]): List[IFunctionAttributeS] = {
+  def translateFunctionAttributes(file: FileCoordinate, attrsP: List[IFunctionAttributeP]): List[IFunctionAttributeS] = {
     attrsP.map({
       case AbstractAttributeP(_) => vwat() // Should have been filtered out, templar cares about abstract directly
-      case ExportAttributeP(_) => ExportS
-      case ExternAttributeP(_) => ExternS
+      case ExportAttributeP(_) => ExportS(file.packageCoordinate)
+      case ExternAttributeP(_) => ExternS(file.packageCoordinate)
       case PureAttributeP(_) => PureS
       case BuiltinAttributeP(_, generatorName) => BuiltinS(generatorName.str)
       case x => vimpl(x.toString)
@@ -257,7 +260,7 @@ object FunctionScout {
     val closureParamName = ClosureParamNameS()
 
     val closureDeclaration =
-      VariableDeclarations(List(VariableDeclaration(closureParamName, FinalP)))
+      VariableDeclarations(List(VariableDeclaration(closureParamName)))
 
     val paramDeclarations =
       explicitParams1.map(_.pattern)
@@ -290,7 +293,7 @@ object FunctionScout {
       ParameterS(
         AtomSP(
           closureParamRange,
-          CaptureS(closureParamName,FinalP),None,closureParamTypeRune,None))
+          CaptureS(closureParamName),None,closureParamTypeRune,None))
 
     val (magicParamsRules, magicParams) =
         lambdaMagicParamNames.map({
@@ -302,7 +305,7 @@ object FunctionScout {
               ParameterS(
                 AtomSP(
                   magicParamRange,
-                  CaptureS(mpn,FinalP),None,magicParamRune,None))
+                  CaptureS(mpn),None,magicParamRune,None))
             (ruleS, paramS)
           }
         })
@@ -401,7 +404,7 @@ object FunctionScout {
       FunctionS(
         Scout.evalRange(parentStackFrame.file, range),
         lambdaName,
-        translateFunctionAttributes(attrsP),
+        translateFunctionAttributes(parentStackFrame.file, attrsP),
         knowableValueRunes,
         identifyingRunes,
         localRunes,
@@ -439,13 +442,12 @@ object FunctionScout {
       childUses.uses.map(_.name).collect({ case mpn @ MagicParamNameS(_) => mpn }).isEmpty)
     val magicParamNames =
       selfUses.uses.map(_.name).collect({ case mpn @ MagicParamNameS(_) => mpn })
-    val magicParamVars = magicParamNames.map(n => VariableDeclaration(n, FinalP))
+    val magicParamVars = magicParamNames.map(n => VariableDeclaration(n))
 
     val magicParamLocals =
       magicParamVars.map({ declared =>
-        LocalVariable1(
+        LocalS(
           declared.name,
-          declared.variability,
           selfUses.isBorrowed(declared.name),
           selfUses.isMoved(declared.name),
           selfUses.isMutated(declared.name),
@@ -607,7 +609,7 @@ object FunctionScout {
     FunctionS(
       Scout.evalRange(functionEnv.file, range),
       funcName,
-      translateFunctionAttributes(attrsP),
+      translateFunctionAttributes(functionEnv.file, attrsP),
       knowableValueRunes,
       identifyingRunes,
       localRunes,

@@ -1,7 +1,7 @@
 package net.verdagon.vale
 
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.env.ReferenceLocalVariable2
+import net.verdagon.vale.templar.env.ReferenceLocalVariableT
 import net.verdagon.vale.templar.types._
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
@@ -17,7 +17,7 @@ class OptTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) shouldEqual VonInt(9)
   }
 
   test("Test empty and get for None") {
@@ -30,7 +30,7 @@ class OptTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(0)
+    compile.evalForKind(Vector()) shouldEqual VonInt(0)
   }
 
   test("Test empty and get for borrow") {
@@ -48,6 +48,6 @@ class OptTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 }

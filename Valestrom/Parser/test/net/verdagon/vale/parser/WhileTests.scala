@@ -15,7 +15,7 @@ class WhileTests extends FunSuite with Matchers with Collector with TestParseUti
     compile(CombinatorParsers.blockExprs,"while () {} = false;") shouldHave {
       case List(
       WhilePE(_, BlockPE(_, List(VoidPE(_))), BlockPE(_, List(VoidPE(_)))),
-      BoolLiteralPE(_, false)) =>
+      ConstantBoolPE(_, false)) =>
     }
   }
 }

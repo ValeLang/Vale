@@ -4,6 +4,8 @@
 #include <llvm-c/Analysis.h>
 #include <llvm-c/IRReader.h>
 
+#include <sys/stat.h>
+
 #include <assert.h>
 #include <string>
 #include <vector>
@@ -70,8 +72,7 @@ LLVMValueRef makeEntryFunction(
 
 LLVMValueRef declareFunction(
   GlobalState* globalState,
-  Function* functionM,
-  bool skipExporting);
+  Function* functionM);
 
 void initInternalExterns(GlobalState* globalState) {
 //  auto voidLT = LLVMVoidTypeInContext(globalState->context);
@@ -167,91 +168,151 @@ void initInternalExterns(GlobalState* globalState) {
           });
 }
 
+std::string generateFunctionSignature(GlobalState* globalState, Package* package, const std::string& outsideName, Prototype* prototype) {
+  bool usingRetOutParam = typeNeedsPointerParameter(globalState, prototype->returnType);
+  std::stringstream s;
+  std::cout << "Generating signature for " << prototype->name->name << std::endl;
+  auto returnExportName = globalState->getRegion(prototype->returnType)->getExportName(package, prototype->returnType, true);
+  s << "extern ";
+  if (usingRetOutParam) {
+    s << "void ";
+  } else {
+    s << returnExportName << " ";
+  }
+  s << package->packageCoordinate->projectName << "_" << outsideName << "(";
+  bool addedAnyParam = false;
+  if (usingRetOutParam) {
+    s << returnExportName << "* ret";
+    addedAnyParam = true;
+  }
+  for (int i = 0; i < prototype->params.size(); i++) {
+    if (addedAnyParam) {
+      s << ", ";
+    }
+    auto paramExportName = globalState->getRegion(prototype->params[i])->getExportName(package, prototype->params[i], true);
+    s << paramExportName;
+    if (typeNeedsPointerParameter(globalState, prototype->params[i])) {
+      s << "*";
+    }
+    s << " param" << i;
+    addedAnyParam = true;
+  }
+  s << ");" << std::endl;
+
+  return s.str();
+}
+
 void generateExports(GlobalState* globalState, Prototype* mainM) {
   auto program = globalState->program;
-  auto cByExportedName = std::unordered_map<std::string, std::string>();
-  for (auto p : program->structs) {
-    auto structM = p.second;
-    // can we think of this in terms of regions? it's kind of like we're
-    // generating some stuff for the outside to point inside.
-    if (globalState->program->isExported(structM->name)) {
-      if (structM->mutability == Mutability::IMMUTABLE) {
-        globalState->linearRegion->generateStructDefsC(&cByExportedName, structM);
+  auto packageCoordToHeaderNameToC =
+      std::unordered_map<
+          PackageCoordinate*,
+          std::unordered_map<std::string, std::stringstream>,
+          AddressHasher<PackageCoordinate*>>(
+      0, globalState->addressNumberer->makeHasher<PackageCoordinate*>());
+
+  std::stringstream builtinExportsCode;
+  builtinExportsCode << "#include <stdint.h>" << std::endl;
+  builtinExportsCode << "#include <stdlib.h>" << std::endl;
+  builtinExportsCode << "#include <string.h>" << std::endl;
+  builtinExportsCode << "typedef int32_t ValeInt;" << std::endl;
+  builtinExportsCode << "typedef struct { ValeInt length; char chars[0]; } ValeStr;" << std::endl;
+  builtinExportsCode << "ValeStr* ValeStrNew(ValeInt length);" << std::endl;
+  builtinExportsCode << "ValeStr* ValeStrFrom(char* source);" << std::endl;
+  builtinExportsCode << "#define ValeReleaseMessage(msg) (free(*((void**)(msg) - 2)))" << std::endl;
+
+  {
+    packageCoordToHeaderNameToC[globalState->metalCache->builtinPackageCoord]
+        .emplace("ValeBuiltins", std::stringstream()).first->second
+        << builtinExportsCode.str();
+  }
+
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto[exportName, kind] : package->exportNameToKind) {
+      if (auto structMT = dynamic_cast<StructKind*>(kind)) {
+        auto structDefM = globalState->program->getStruct(structMT);
+        // can we think of this in terms of regions? it's kind of like we're
+        // generating some stuff for the outside to point inside.
+        auto region = (structDefM->mutability == Mutability::IMMUTABLE ? globalState->linearRegion : globalState->mutRegion);
+        auto defString = region->generateStructDefsC(package, structDefM);
+        packageCoordToHeaderNameToC[packageCoord].emplace(exportName, std::stringstream()).first->second << defString;
+      } else if (auto interfaceMT = dynamic_cast<InterfaceKind*>(kind)) {
+        auto interfaceDefM = globalState->program->getInterface(interfaceMT);
+        auto region = (interfaceDefM->mutability == Mutability::IMMUTABLE ? globalState->linearRegion : globalState->mutRegion);
+        auto defString = region->generateInterfaceDefsC(package, interfaceDefM);
+        packageCoordToHeaderNameToC[packageCoord].emplace(exportName, std::stringstream()).first->second << defString;
+      } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(kind)) {
+        auto ssaDefM = globalState->program->getStaticSizedArray(ssaMT);
+        // can we think of this in terms of regions? it's kind of like we're
+        // generating some stuff for the outside to point inside.
+        auto region = (ssaDefM->rawArray->mutability == Mutability::IMMUTABLE ? globalState->linearRegion : globalState->mutRegion);
+        auto defString = region->generateStaticSizedArrayDefsC(package, ssaDefM);
+        packageCoordToHeaderNameToC[packageCoord].emplace(exportName, std::stringstream()).first->second << defString;
+      } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(kind)) {
+        auto rsaDefM = globalState->program->getRuntimeSizedArray(rsaMT);
+        // can we think of this in terms of regions? it's kind of like we're
+        // generating some stuff for the outside to point inside.
+        auto region = (rsaDefM->rawArray->mutability == Mutability::IMMUTABLE ? globalState->linearRegion : globalState->mutRegion);
+        auto defString = region->generateRuntimeSizedArrayDefsC(package, rsaDefM);
+        packageCoordToHeaderNameToC[packageCoord].emplace(exportName, std::stringstream()).first->second << defString;
       } else {
-        globalState->mutRegion->generateStructDefsC(&cByExportedName, structM);
+        std::cerr << "Unknown exportee: " << typeid(*kind).name() << std::endl;
+        assert(false);
+        exit(1);
       }
     }
   }
-  for (auto p : program->knownSizeArrays) {
-    auto ksaDefM = p.second;
-    // can we think of this in terms of regions? it's kind of like we're
-    // generating some stuff for the outside to point inside.
-    if (globalState->program->isExported(ksaDefM->name)) {
-      if (ksaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
-        globalState->linearRegion->generateKnownSizeArrayDefsC(&cByExportedName, ksaDefM);
-      } else {
-        globalState->mutRegion->generateKnownSizeArrayDefsC(&cByExportedName, ksaDefM);
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto[exportName, prototype] : package->exportNameToFunction) {
+      bool skipExporting = exportName == "main";
+      if (!skipExporting) {
+        auto s = generateFunctionSignature(globalState, package, exportName, prototype);
+        packageCoordToHeaderNameToC[packageCoord].emplace(exportName, std::stringstream()).first->second << s << std::endl;
       }
     }
   }
-  for (auto p : program->unknownSizeArrays) {
-    auto usaDefM = p.second;
-    // can we think of this in terms of regions? it's kind of like we're
-    // generating some stuff for the outside to point inside.
-    if (globalState->program->isExported(usaDefM->name)) {
-      if (usaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
-        globalState->linearRegion->generateUnknownSizeArrayDefsC(&cByExportedName, usaDefM);
-      } else {
-        globalState->mutRegion->generateUnknownSizeArrayDefsC(&cByExportedName, usaDefM);
-      }
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto[externName, prototype] : package->externNameToFunction) {
+      auto s = generateFunctionSignature(globalState, package, externName, prototype);
+      packageCoordToHeaderNameToC[packageCoord].emplace(externName, std::stringstream()).first->second << s << std::endl;
     }
   }
-  for (auto p : program->interfaces) {
-    auto interfaceM = p.second;
-    if (globalState->program->isExported(interfaceM->name)) {
-      if (interfaceM->mutability == Mutability::IMMUTABLE) {
-        globalState->linearRegion->generateInterfaceDefsC(&cByExportedName, interfaceM);
-      } else {
-        globalState->mutRegion->generateInterfaceDefsC(&cByExportedName, interfaceM);
+  for (auto& [packageCoord, headerNameToC] : packageCoordToHeaderNameToC) {
+    for (auto& [exportedName, exportCode] : headerNameToC) {
+      if (globalState->opt->outputDir.empty()) {
+        std::cerr << "Must specify --output-dir!" << std::endl;
+        assert(false);
       }
-    }
-  }
-  for (auto p : program->functions) {
-    auto functionM = p.second;
-    if (functionM->prototype->name != mainM->name &&
-        globalState->program->isExported(functionM->prototype->name)) {
-      for (auto exportedName : program->getExportedNames(functionM->prototype->name)) {
-        std::stringstream s;
-        auto externReturnType = globalState->getRegion(functionM->prototype->returnType)->getExternalType(functionM->prototype->returnType);
-        s << "extern " << globalState->getRegion(externReturnType)->getMemberArbitraryRefNameCSeeMMEDT(externReturnType) << " ";
-        s << exportedName << "(";
-        for (int i = 0; i < functionM->prototype->params.size(); i++) {
-          if (i > 0) {
-            s << ", ";
+      std::string moduleExternsDirectory = globalState->opt->outputDir;
+      if (!packageCoord->projectName.empty()) {
+        moduleExternsDirectory += "/" + packageCoord->projectName;
+        int failed = mkdir(moduleExternsDirectory.c_str(), 0700);
+        if (failed) {
+          int error = errno;
+          if (error == EEXIST) {
+            // do nothing
+            std::cerr << "Directory " << moduleExternsDirectory << " already exists, continuing." << std::endl;
+          } else {
+            std::cerr << "Couldn't make directory: " << moduleExternsDirectory << " (" << error << ")" << std::endl;
+            exit(1);
           }
-          auto hostParamRefMT = globalState->getRegion(functionM->prototype->params[i])->getExternalType(functionM->prototype->params[i]);
-          s << globalState->getRegion(hostParamRefMT)->getMemberArbitraryRefNameCSeeMMEDT(hostParamRefMT) << " param" << i;
         }
-        s << ");" << std::endl;
-        cByExportedName.insert(std::make_pair(exportedName, s.str()));
       }
+
+      std::string filepath = moduleExternsDirectory + "/" + exportedName + ".h";
+      std::ofstream out(filepath, std::ofstream::out);
+      if (!out) {
+        std::cerr << "Couldn't make file '" << filepath << std::endl;
+        exit(1);
+      }
+      // std::cout << "Writing " << filepath << std::endl;
+
+      out << "#ifndef VALE_EXPORTS_" << exportedName << "_H_" << std::endl;
+      out << "#define VALE_EXPORTS_" << exportedName << "_H_" << std::endl;
+      out << "#include \"ValeBuiltins.h\"" << std::endl;
+      out << exportCode.str();
+      out << "#endif" << std::endl;
     }
-  }
-  for (auto p : cByExportedName) {
-    auto exportedName = p.first;
-    auto c = p.second;
-    std::string filepath = "";
-    if (!globalState->opt->exportsDir.empty()) {
-      filepath = globalState->opt->exportsDir + "/";
-    }
-    filepath += exportedName + ".h";
-    std::ofstream out(filepath, std::ofstream::out);
-    if (!out) {
-      std::cerr << "Couldn't make file '" << filepath << std::endl;
-      exit(1);
-    }
-    std::cout << "Writing " << filepath << std::endl;
-    out << c;
   }
 }
 
@@ -262,6 +323,36 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   auto int32LT = LLVMInt32TypeInContext(globalState->context);
   auto int32PtrLT = LLVMPointerType(int32LT, 0);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
+
+  {
+    globalState->concreteHandleLT = LLVMStructCreateNamed(globalState->context, "__ExternConcreteHandle");
+    std::vector<LLVMTypeRef> memberTypesL = {
+        LLVMInt64TypeInContext(globalState->context), // region ID
+        LLVMInt64TypeInContext(globalState->context), // object pointer
+        LLVMInt32TypeInContext(globalState->context), // generation
+        LLVMInt32TypeInContext(globalState->context), // offset to generation
+    };
+    LLVMStructSetBody(globalState->concreteHandleLT, memberTypesL.data(), memberTypesL.size(), false);
+
+    auto actualSize = LLVMABISizeOfType(globalState->dataLayout, globalState->concreteHandleLT);
+    assert(actualSize == 24);
+  }
+
+  {
+    globalState->interfaceHandleLT = LLVMStructCreateNamed(globalState->context, "__ExternInterfaceHandle");
+    std::vector<LLVMTypeRef> memberTypesL = {
+        LLVMInt64TypeInContext(globalState->context), // region ID
+        LLVMInt64TypeInContext(globalState->context), // itable pointer
+        LLVMInt64TypeInContext(globalState->context), // object pointer
+        LLVMInt32TypeInContext(globalState->context), // generation
+        LLVMInt32TypeInContext(globalState->context), // offset to generation
+    };
+    LLVMStructSetBody(globalState->interfaceHandleLT, memberTypesL.data(), memberTypesL.size(), false);
+
+    auto actualSize = LLVMABISizeOfType(globalState->dataLayout, globalState->interfaceHandleLT);
+    assert(actualSize == 32);
+  }
+
 
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
       globalState->opt->regionOverride == RegionOverride::RESILIENT_V4) {
@@ -357,18 +448,13 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   std::tie(stringSetupFunctionL, stringConstantBuilder) = makeStringSetupFunction(globalState);
   globalState->stringConstantBuilder = stringConstantBuilder;
 
-  globalState->ram64Struct =
-      LLVMStructCreateNamed(globalState->context, "__Ram64Struct");
-  LLVMTypeRef memberI64 = LLVMInt64TypeInContext(globalState->context);
-  LLVMStructSetBody(globalState->ram64Struct, &memberI64, 1, false);
-
 
   globalState->program = program;
 
-  globalState->serializeName = globalState->metalCache->getName("__vale_serialize");
-  globalState->serializeThunkName = globalState->metalCache->getName("__vale_serialize_thunk");
-  globalState->unserializeName = globalState->metalCache->getName("__vale_unserialize");
-  globalState->unserializeThunkName = globalState->metalCache->getName("__vale_unserialize_thunk");
+  globalState->serializeName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__vale_serialize");
+  globalState->serializeThunkName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__vale_serialize_thunk");
+  globalState->unserializeName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__vale_unserialize");
+  globalState->unserializeThunkName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__vale_unserialize_thunk");
 
   Externs externs(globalState->mod, globalState->context);
   globalState->externs = &externs;
@@ -389,6 +475,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
   globalState->liveHeapObjCounter =
       LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__liveHeapObjCounter");
+  LLVMSetLinkage(globalState->mainArgs, LLVMExternalLinkage);
   LLVMSetInitializer(globalState->liveHeapObjCounter, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
 
   globalState->writeOnlyGlobal =
@@ -398,14 +485,6 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   globalState->crashGlobal =
       LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0), "__crashGlobal");
   LLVMSetInitializer(globalState->crashGlobal, LLVMConstNull(LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0)));
-
-  globalState->ram64 =
-      LLVMAddGlobal(globalState->mod, LLVMPointerType(globalState->ram64Struct, 0), "__ram64");
-  LLVMSetInitializer(globalState->ram64, LLVMConstNull(LLVMPointerType(globalState->ram64Struct, 0)));
-
-  globalState->ram64IndexToWriteOnlyGlobal =
-      LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__ram64IndexToWriteOnlyGlobal");
-  LLVMSetInitializer(globalState->ram64IndexToWriteOnlyGlobal, constI64LE(globalState, 0));
 
   globalState->objIdCounter =
       LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__objIdCounter");
@@ -444,105 +523,121 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   Linear linearRegion(globalState);
   globalState->linearRegion = &linearRegion;
   globalState->regions.emplace(globalState->linearRegion->getRegionId(), globalState->linearRegion);
-  
   ResilientV3 resilientV3Region(globalState, globalState->metalCache->resilientV3RegionId);
   globalState->resilientV3Region = &resilientV3Region;
   globalState->regions.emplace(globalState->resilientV3Region->getRegionId(), globalState->resilientV3Region);
-  /*ResilientV4 resilientV4Region(globalState, globalState->metalCache->resilientV4RegionId);
+  ResilientV4 resilientV4Region(globalState, globalState->metalCache->resilientV4RegionId);
   globalState->resilientV4Region = &resilientV4Region;
   globalState->regions.emplace(globalState->resilientV4Region->getRegionId(), globalState->resilientV4Region);
-  */
-//  Mega megaRegion(globalState);
+
   globalState->mutRegion = globalState->getRegion(metalCache.mutRegionId);
 
 
   assert(LLVMTypeOf(globalState->neverPtr) == globalState->getRegion(globalState->metalCache->neverRef)->translateType(globalState->metalCache->neverRef));
 
-  auto mainSetupFuncName = globalState->metalCache->getName("__Vale_mainSetup");
+  auto mainSetupFuncName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__Vale_mainSetup");
   auto mainSetupFuncProto =
-      globalState->metalCache->getPrototype(mainSetupFuncName, globalState->metalCache->intRef, {});
+      globalState->metalCache->getPrototype(mainSetupFuncName, globalState->metalCache->i64Ref, {});
   declareAndDefineExtraFunction(
       globalState, mainSetupFuncProto, mainSetupFuncName->name,
       [globalState](FunctionState* functionState, LLVMBuilderRef builder) {
-        buildFlare(FL(), globalState, functionState, builder);
         for (auto i : globalState->regions) {
-          buildFlare(FL(), globalState, functionState, builder);
           i.second->mainSetup(functionState, builder);
-          buildFlare(FL(), globalState, functionState, builder);
         }
-        buildFlare(FL(), globalState, functionState, builder);
         LLVMBuildRet(builder, constI64LE(globalState, 0));
       });
 
-  for (auto p : program->structs) {
-    auto name = p.first;
-    auto structM = p.second;
-    globalState->getRegion(structM->regionId)->declareStruct(structM);
-    if (structM->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->declareStruct(structM);
+  for (auto packageCoordAndPackage : program->packages) {
+    auto[packageCoord, package] = packageCoordAndPackage;
+    for (auto p : package->structs) {
+      auto name = p.first;
+      auto structM = p.second;
+      auto region = globalState->getRegion(structM->regionId);
+      region->declareStruct(structM);
+      if (structM->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->declareStruct(structM);
+      }
     }
   }
 
-  for (auto p : program->interfaces) {
-    auto name = p.first;
-    auto interfaceM = p.second;
-    globalState->getRegion(interfaceM->regionId)->declareInterface(interfaceM);
-    if (interfaceM->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->declareInterface(interfaceM);
+  for (auto packageCoordAndPackage : program->packages) {
+    auto[packageCoord, package] = packageCoordAndPackage;
+    for (auto p : package->interfaces) {
+      auto name = p.first;
+      auto interfaceM = p.second;
+      globalState->getRegion(interfaceM->regionId)->declareInterface(interfaceM);
+      if (interfaceM->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->declareInterface(interfaceM);
+      }
     }
   }
 
-  for (auto p : program->knownSizeArrays) {
-    auto name = p.first;
-    auto arrayM = p.second;
-    globalState->getRegion(arrayM->rawArray->regionId)->declareKnownSizeArray(arrayM);
-    if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->declareKnownSizeArray(arrayM);
+  for (auto packageCoordAndPackage : program->packages) {
+    auto[packageCoord, package] = packageCoordAndPackage;
+    for (auto p : package->staticSizedArrays) {
+      auto name = p.first;
+      auto arrayM = p.second;
+      globalState->getRegion(arrayM->rawArray->regionId)->declareStaticSizedArray(arrayM);
+      if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->declareStaticSizedArray(arrayM);
+      }
     }
   }
 
-  for (auto p : program->unknownSizeArrays) {
-    auto name = p.first;
-    auto arrayM = p.second;
-    globalState->getRegion(arrayM->rawArray->regionId)->declareUnknownSizeArray(arrayM);
-    if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->declareUnknownSizeArray(arrayM);
+  for (auto packageCoordAndPackage : program->packages) {
+    auto[packageCoord, package] = packageCoordAndPackage;
+    for (auto p : package->runtimeSizedArrays) {
+      auto name = p.first;
+      auto arrayM = p.second;
+      globalState->getRegion(arrayM->rawArray->regionId)->declareRuntimeSizedArray(arrayM);
+      if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->declareRuntimeSizedArray(arrayM);
+      }
     }
   }
 
-  for (auto p : program->structs) {
-    auto name = p.first;
-    auto structM = p.second;
-    globalState->getRegion(structM->regionId)->declareStructExtraFunctions(structM);
-    if (structM->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->declareStructExtraFunctions(structM);
+  for (auto packageCoordAndPackage : program->packages) {
+    auto[packageCoord, package] = packageCoordAndPackage;
+    for (auto p : package->structs) {
+      auto name = p.first;
+      auto structM = p.second;
+      globalState->getRegion(structM->regionId)->declareStructExtraFunctions(structM);
+      if (structM->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->declareStructExtraFunctions(structM);
+      }
     }
   }
 
-  for (auto p : program->interfaces) {
-    auto name = p.first;
-    auto interfaceM = p.second;
-    globalState->getRegion(interfaceM->regionId)->declareInterfaceExtraFunctions(interfaceM);
-    if (interfaceM->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->declareInterfaceExtraFunctions(interfaceM);
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto p : package->interfaces) {
+      auto name = p.first;
+      auto interfaceM = p.second;
+      globalState->getRegion(interfaceM->regionId)->declareInterfaceExtraFunctions(interfaceM);
+      if (interfaceM->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->declareInterfaceExtraFunctions(interfaceM);
+      }
     }
   }
 
-  for (auto p : program->knownSizeArrays) {
-    auto name = p.first;
-    auto arrayM = p.second;
-    globalState->getRegion(arrayM->rawArray->regionId)->declareKnownSizeArrayExtraFunctions(arrayM);
-    if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->declareKnownSizeArrayExtraFunctions(arrayM);
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto p : package->staticSizedArrays) {
+      auto name = p.first;
+      auto arrayM = p.second;
+      globalState->getRegion(arrayM->rawArray->regionId)->declareStaticSizedArrayExtraFunctions(arrayM);
+      if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->declareStaticSizedArrayExtraFunctions(arrayM);
+      }
     }
   }
 
-  for (auto p : program->unknownSizeArrays) {
-    auto name = p.first;
-    auto arrayM = p.second;
-    globalState->getRegion(arrayM->rawArray->regionId)->declareUnknownSizeArrayExtraFunctions(arrayM);
-    if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->declareUnknownSizeArrayExtraFunctions(arrayM);
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto p : package->runtimeSizedArrays) {
+      auto name = p.first;
+      auto arrayM = p.second;
+      globalState->getRegion(arrayM->rawArray->regionId)->declareRuntimeSizedArrayExtraFunctions(arrayM);
+      if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->declareRuntimeSizedArrayExtraFunctions(arrayM);
+      }
     }
   }
 
@@ -551,53 +646,63 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   //    region's extra functions need to know all the substructs for interfaces so it can number
   //    them, which is used in supporting its interface calling.
   // 2. Everything else is declared here too and it seems consistent
-  for (auto p : program->structs) {
-    auto name = p.first;
-    auto structM = p.second;
-    for (auto e : structM->edges) {
-      globalState->getRegion(structM->regionId)->declareEdge(e);
-      if (structM->mutability == Mutability::IMMUTABLE) {
-        globalState->linearRegion->declareEdge(e);
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto p : package->structs) {
+      auto name = p.first;
+      auto structM = p.second;
+      for (auto e : structM->edges) {
+        globalState->getRegion(structM->regionId)->declareEdge(e);
+        if (structM->mutability == Mutability::IMMUTABLE) {
+          globalState->linearRegion->declareEdge(e);
+        }
       }
     }
   }
 
-  for (auto p : program->structs) {
-    auto name = p.first;
-    auto structM = p.second;
-    assert(name == structM->name->name);
-    globalState->getRegion(structM->regionId)->defineStruct(structM);
-    if (structM->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->defineStruct(structM);
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto p : package->structs) {
+      auto name = p.first;
+      auto structM = p.second;
+      assert(name == structM->name->name);
+      globalState->getRegion(structM->regionId)->defineStruct(structM);
+      if (structM->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->defineStruct(structM);
+      }
     }
   }
 
   // This must be before we start defining extra functions, because some of them might rely
   // on knowing the interface tables' layouts to make interface calls.
-  for (auto p : program->interfaces) {
-    auto name = p.first;
-    auto interfaceM = p.second;
-    globalState->getRegion(interfaceM->regionId)->defineInterface(interfaceM);
-    if (interfaceM->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->defineInterface(interfaceM);
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto p : package->interfaces) {
+      auto name = p.first;
+      auto interfaceM = p.second;
+      globalState->getRegion(interfaceM->regionId)->defineInterface(interfaceM);
+      if (interfaceM->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->defineInterface(interfaceM);
+      }
     }
   }
 
-  for (auto p : program->knownSizeArrays) {
-    auto name = p.first;
-    auto arrayM = p.second;
-    globalState->getRegion(arrayM->rawArray->regionId)->defineKnownSizeArray(arrayM);
-    if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->defineKnownSizeArray(arrayM);
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto p : package->staticSizedArrays) {
+      auto name = p.first;
+      auto arrayM = p.second;
+      globalState->getRegion(arrayM->rawArray->regionId)->defineStaticSizedArray(arrayM);
+      if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->defineStaticSizedArray(arrayM);
+      }
     }
   }
 
-  for (auto p : program->unknownSizeArrays) {
-    auto name = p.first;
-    auto arrayM = p.second;
-    globalState->getRegion(arrayM->rawArray->regionId)->defineUnknownSizeArray(arrayM);
-    if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->defineUnknownSizeArray(arrayM);
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto p : package->runtimeSizedArrays) {
+      auto name = p.first;
+      auto arrayM = p.second;
+      globalState->getRegion(arrayM->rawArray->regionId)->defineRuntimeSizedArray(arrayM);
+      if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->defineRuntimeSizedArray(arrayM);
+      }
     }
   }
 
@@ -610,31 +715,37 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     region.second->declareExtraFunctions();
   }
 
-  for (auto p : program->structs) {
-    auto name = p.first;
-    auto structM = p.second;
-    assert(name == structM->name->name);
-    globalState->getRegion(structM->regionId)->defineStructExtraFunctions(structM);
-    if (structM->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->defineStructExtraFunctions(structM);
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto p : package->structs) {
+      auto name = p.first;
+      auto structM = p.second;
+      assert(name == structM->name->name);
+      globalState->getRegion(structM->regionId)->defineStructExtraFunctions(structM);
+      if (structM->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->defineStructExtraFunctions(structM);
+      }
     }
   }
 
-  for (auto p : program->knownSizeArrays) {
-    auto name = p.first;
-    auto arrayM = p.second;
-    globalState->getRegion(arrayM->rawArray->regionId)->defineKnownSizeArrayExtraFunctions(arrayM);
-    if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->defineKnownSizeArrayExtraFunctions(arrayM);
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto p : package->staticSizedArrays) {
+      auto name = p.first;
+      auto arrayM = p.second;
+      globalState->getRegion(arrayM->rawArray->regionId)->defineStaticSizedArrayExtraFunctions(arrayM);
+      if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->defineStaticSizedArrayExtraFunctions(arrayM);
+      }
     }
   }
 
-  for (auto p : program->unknownSizeArrays) {
-    auto name = p.first;
-    auto arrayM = p.second;
-    globalState->getRegion(arrayM->rawArray->regionId)->defineUnknownSizeArrayExtraFunctions(arrayM);
-    if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->defineUnknownSizeArrayExtraFunctions(arrayM);
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto p : package->runtimeSizedArrays) {
+      auto name = p.first;
+      auto arrayM = p.second;
+      globalState->getRegion(arrayM->rawArray->regionId)->defineRuntimeSizedArrayExtraFunctions(arrayM);
+      if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->defineRuntimeSizedArrayExtraFunctions(arrayM);
+      }
     }
   }
 
@@ -642,12 +753,14 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   // started compiling interfaces.
   globalState->interfacesOpen = false;
 
-  for (auto p : program->interfaces) {
-    auto name = p.first;
-    auto interfaceM = p.second;
-    globalState->getRegion(interfaceM->regionId)->defineInterfaceExtraFunctions(interfaceM);
-    if (interfaceM->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->defineInterfaceExtraFunctions(interfaceM);
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto p : package->interfaces) {
+      auto name = p.first;
+      auto interfaceM = p.second;
+      globalState->getRegion(interfaceM->regionId)->defineInterfaceExtraFunctions(interfaceM);
+      if (interfaceM->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->defineInterfaceExtraFunctions(interfaceM);
+      }
     }
   }
 
@@ -655,47 +768,59 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     region.second->defineExtraFunctions();
   }
 
-  for (auto p : program->externs) {
-    auto name = p.first;
-    auto prototype = p.second;
-    declareExternFunction(globalState, prototype);
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto[externName, prototype] : package->externNameToFunction) {
+      declareExternFunction(globalState, package, prototype);
+    }
   }
 
-
-  for (auto p : program->functions) {
-    auto name = p.first;
-    auto function = p.second;
-    bool skipExporting = program->isExportedAs(function->prototype->name, "main");
-    declareFunction(globalState, function, skipExporting);
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto[name, function] : package->functions) {
+      declareFunction(globalState, function);
+    }
   }
 
-  for (auto p : program->functions) {
-    auto name = p.first;
-    auto function = p.second;
-    translateFunction(globalState, function);
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto[exportName, prototype] : package->exportNameToFunction) {
+      bool skipExporting = exportName == "main";
+      if (!skipExporting) {
+        auto function = program->getFunction(prototype->name);
+        exportFunction(globalState, package, function);
+      }
+    }
+  }
+
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto p : package->functions) {
+      auto name = p.first;
+      auto function = p.second;
+      translateFunction(globalState, function);
+    }
   }
 
   // We translate the edges after the functions are declared because the
   // functions have to exist for the itables to point to them.
-  for (auto p : program->structs) {
-    auto name = p.first;
-    auto structM = p.second;
-    for (auto e : structM->edges) {
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto p : package->structs) {
+      auto name = p.first;
+      auto structM = p.second;
+      for (auto e : structM->edges) {
 
-      if (structM->mutability == Mutability::IMMUTABLE) {
-        globalState->rcImm->defineEdge(e);
-        globalState->linearRegion->defineEdge(e);
-      } else {
-        globalState->mutRegion->defineEdge(e);
+        if (structM->mutability == Mutability::IMMUTABLE) {
+          globalState->rcImm->defineEdge(e);
+          globalState->linearRegion->defineEdge(e);
+        } else {
+          globalState->mutRegion->defineEdge(e);
+        }
       }
     }
   }
 
 
 
-  auto mainCleanupFuncName = globalState->metalCache->getName("__Vale_mainCleanup");
+  auto mainCleanupFuncName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__Vale_mainCleanup");
   auto mainCleanupFuncProto =
-      globalState->metalCache->getPrototype(mainCleanupFuncName, globalState->metalCache->intRef, {});
+      globalState->metalCache->getPrototype(mainCleanupFuncName, globalState->metalCache->i64Ref, {});
   declareAndDefineExtraFunction(
       globalState, mainCleanupFuncProto, mainCleanupFuncName->name,
       [globalState](FunctionState* functionState, LLVMBuilderRef builder) {
@@ -708,13 +833,13 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
 
   Prototype* mainM = nullptr;
-  int numFuncs = program->functions.size();
-  for (auto p : program->functions) {
-    auto name = p.first;
-    auto function = p.second;
-    bool isExportedMain = program->isExportedAs(function->prototype->name, "main");
-    if (isExportedMain) {
-      mainM = function->prototype;
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto[exportName, prototype] : package->exportNameToFunction) {
+      auto function = program->getFunction(prototype->name);
+      bool isExportedMain = exportName == "main";
+      if (isExportedMain) {
+        mainM = function->prototype;
+      }
     }
   }
   if (mainM == nullptr) {
@@ -847,7 +972,7 @@ void generateModule(GlobalState *globalState) {
 
   // Serialize the LLVM IR, if requested
   if (globalState->opt->print_llvmir) {
-    auto outputFilePath = fileMakePath(globalState->opt->output.c_str(), globalState->opt->srcNameNoExt.c_str(), "ll");
+    auto outputFilePath = fileMakePath(globalState->opt->outputDir.c_str(), globalState->opt->srcNameNoExt.c_str(), "ll");
     std::cout << "Printing file " << outputFilePath << std::endl;
     if (LLVMPrintModuleToFile(globalState->mod, outputFilePath.c_str(), &err) != 0) {
       std::cerr << "Could not emit pre-ir file: " << err << std::endl;
@@ -884,7 +1009,7 @@ void generateModule(GlobalState *globalState) {
 
   // Serialize the LLVM IR, if requested
   if (globalState->opt->print_llvmir) {
-    auto outputFilePath = fileMakePath(globalState->opt->output.c_str(), globalState->opt->srcNameNoExt.c_str(), "opt.ll");
+    auto outputFilePath = fileMakePath(globalState->opt->outputDir.c_str(), globalState->opt->srcNameNoExt.c_str(), "opt.ll");
     std::cout << "Printing file " << outputFilePath << std::endl;
     if (LLVMPrintModuleToFile(globalState->mod, outputFilePath.c_str(), &err) != 0) {
       std::cerr << "Could not emit ir file: " << err << std::endl;
@@ -895,10 +1020,10 @@ void generateModule(GlobalState *globalState) {
   // Transform IR to target's ASM and OBJ
   if (globalState->machine) {
     auto objpath =
-        fileMakePath(globalState->opt->output.c_str(), globalState->opt->srcNameNoExt.c_str(),
+        fileMakePath(globalState->opt->outputDir.c_str(), globalState->opt->srcNameNoExt.c_str(),
             globalState->opt->wasm ? "wasm" : objext);
     auto asmpath =
-        fileMakePath(globalState->opt->output.c_str(),
+        fileMakePath(globalState->opt->outputDir.c_str(),
             globalState->opt->srcNameNoExt.c_str(),
             globalState->opt->wasm ? "wat" : asmext);
     generateOutput(

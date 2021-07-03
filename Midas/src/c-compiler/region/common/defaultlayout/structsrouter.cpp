@@ -2,242 +2,247 @@
 #include <region/rcimm/rcimm.h>
 #include "structsrouter.h"
 
-ReferendStructsRouter::ReferendStructsRouter(
-    GlobalState* globalState_,
-    GetReferendStructsSource getReferendStructsSource_)
-  : globalState(globalState_),
-    getReferendStructsSource(getReferendStructsSource_) {}
-
-ControlBlock* ReferendStructsRouter::getControlBlock(Referend* referend) {
-  return getReferendStructsSource(referend)->getControlBlock(referend);
-}
-LLVMTypeRef ReferendStructsRouter::getInnerStruct(StructReferend* structReferend) {
-  return getReferendStructsSource(structReferend)->getInnerStruct(structReferend);
-}
-LLVMTypeRef ReferendStructsRouter::getWrapperStruct(StructReferend* structReferend) {
-  return getReferendStructsSource(structReferend)->getWrapperStruct(structReferend);
-}
-LLVMTypeRef ReferendStructsRouter::getKnownSizeArrayWrapperStruct(KnownSizeArrayT* ksaMT) {
-  return getReferendStructsSource(ksaMT)->getKnownSizeArrayWrapperStruct(ksaMT);
-}
-LLVMTypeRef ReferendStructsRouter::getUnknownSizeArrayWrapperStruct(UnknownSizeArrayT* usaMT) {
-  return getReferendStructsSource(usaMT)->getUnknownSizeArrayWrapperStruct(usaMT);
-}
-LLVMTypeRef ReferendStructsRouter::getInterfaceRefStruct(InterfaceReferend* interfaceReferend) {
-  return getReferendStructsSource(interfaceReferend)->getInterfaceRefStruct(interfaceReferend);
-}
-LLVMTypeRef ReferendStructsRouter::getInterfaceTableStruct(InterfaceReferend* interfaceReferend) {
-  return getReferendStructsSource(interfaceReferend)->getInterfaceTableStruct(interfaceReferend);
-}
-LLVMTypeRef ReferendStructsRouter::getStringWrapperStruct() {
-  return getReferendStructsSource(globalState->metalCache->str)->getStringWrapperStruct();
-}
-void ReferendStructsRouter::defineStruct(StructReferend* structM, std::vector<LLVMTypeRef> membersLT) {
-  return getReferendStructsSource(structM)->defineStruct(structM, membersLT);
-}
-void ReferendStructsRouter::declareStruct(StructReferend* structM) {
-  return getReferendStructsSource(structM)->declareStruct(structM);
-}
-void ReferendStructsRouter::declareEdge(Edge* edge) {
-  return getReferendStructsSource(edge->structName)->declareEdge(edge);
-}
-void ReferendStructsRouter::defineEdge(
-    Edge* edge,
-    std::vector<LLVMTypeRef> interfaceFunctionsLT,
-    std::vector<LLVMValueRef> functions) {
-  return getReferendStructsSource(edge->structName)->defineEdge(edge, interfaceFunctionsLT, functions);
-}
-void ReferendStructsRouter::declareInterface(InterfaceDefinition* interfaceM) {
-  return getReferendStructsSource(interfaceM->referend)->declareInterface(interfaceM);
-}
-void ReferendStructsRouter::defineInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL) {
-  return getReferendStructsSource(interface->referend)->defineInterface(interface, interfaceMethodTypesL);
-}
-void ReferendStructsRouter::declareKnownSizeArray(KnownSizeArrayDefinitionT* knownSizeArrayMT) {
-  return getReferendStructsSource(knownSizeArrayMT->referend)->declareKnownSizeArray(knownSizeArrayMT);
-}
-void ReferendStructsRouter::declareUnknownSizeArray(UnknownSizeArrayDefinitionT* unknownSizeArrayMT) {
-  return getReferendStructsSource(unknownSizeArrayMT->referend)->declareUnknownSizeArray(unknownSizeArrayMT);
-}
-void ReferendStructsRouter::defineUnknownSizeArray(UnknownSizeArrayDefinitionT* unknownSizeArrayMT, LLVMTypeRef elementLT) {
-  return getReferendStructsSource(unknownSizeArrayMT->referend)->defineUnknownSizeArray(unknownSizeArrayMT, elementLT);
-}
-void ReferendStructsRouter::defineKnownSizeArray(KnownSizeArrayDefinitionT* knownSizeArrayMT, LLVMTypeRef elementLT) {
-  return getReferendStructsSource(knownSizeArrayMT->referend)->defineKnownSizeArray(knownSizeArrayMT, elementLT);
-}
-
-ControlBlockPtrLE ReferendStructsRouter::getConcreteControlBlockPtr(
-    AreaAndFileAndLine from,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* reference,
-    WrapperPtrLE wrapperPtrLE) {
-  return getReferendStructsSource(reference->referend)->getConcreteControlBlockPtr(from, functionState, builder, reference, wrapperPtrLE);
-}
-
-
-WrapperPtrLE ReferendStructsRouter::makeWrapperPtr(
-    AreaAndFileAndLine checkerAFL,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* referenceM,
-    LLVMValueRef ptrLE) {
-  return getReferendStructsSource(referenceM->referend)->makeWrapperPtr(checkerAFL, functionState, builder, referenceM, ptrLE);
-}
-
-InterfaceFatPtrLE ReferendStructsRouter::makeInterfaceFatPtr(
-    AreaAndFileAndLine checkerAFL,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* referenceM,
-    LLVMValueRef ptrLE) {
-  return getReferendStructsSource(referenceM->referend)->makeInterfaceFatPtr(checkerAFL, functionState, builder, referenceM, ptrLE);
-}
-
-InterfaceFatPtrLE ReferendStructsRouter::makeInterfaceFatPtrWithoutChecking(
-    AreaAndFileAndLine checkerAFL,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* referenceM,
-    LLVMValueRef ptrLE) {
-  return getReferendStructsSource(referenceM->referend)->makeInterfaceFatPtrWithoutChecking(checkerAFL, functionState, builder, referenceM, ptrLE);
-}
-
-//ControlBlockPtrLE ReferendStructsRouter::makeControlBlockPtr(
+//KindStructsRouter::KindStructsRouter(
+//    GlobalState* globalState_,
+//    GetKindStructsSource getKindStructsSource_)
+//  : globalState(globalState_),
+//    getKindStructsSource(getKindStructsSource_) {}
+//
+//ControlBlock* KindStructsRouter::getControlBlock(Kind* kind) {
+//  return getKindStructsSource(kind)->getControlBlock(kind);
+//}
+//LLVMTypeRef KindStructsRouter::getInnerStruct(StructKind* structKind) {
+//  return getKindStructsSource(structKind)->getInnerStruct(structKind);
+//}
+//LLVMTypeRef KindStructsRouter::getWrapperStruct(StructKind* structKind) {
+//  return getKindStructsSource(structKind)->getWrapperStruct(structKind);
+//}
+//LLVMTypeRef KindStructsRouter::getStaticSizedArrayWrapperStruct(StaticSizedArrayT* ssaMT) {
+//  return getKindStructsSource(ssaMT)->getStaticSizedArrayWrapperStruct(ssaMT);
+//}
+//LLVMTypeRef KindStructsRouter::getRuntimeSizedArrayWrapperStruct(RuntimeSizedArrayT* rsaMT) {
+//  return getKindStructsSource(rsaMT)->getRuntimeSizedArrayWrapperStruct(rsaMT);
+//}
+//LLVMTypeRef KindStructsRouter::getInterfaceRefStruct(InterfaceKind* interfaceKind) {
+//  return getKindStructsSource(interfaceKind)->getInterfaceRefStruct(interfaceKind);
+//}
+//LLVMTypeRef KindStructsRouter::getInterfaceTableStruct(InterfaceKind* interfaceKind) {
+//  return getKindStructsSource(interfaceKind)->getInterfaceTableStruct(interfaceKind);
+//}
+//LLVMTypeRef KindStructsRouter::getStringWrapperStruct() {
+//  return getKindStructsSource(globalState->metalCache->str)->getStringWrapperStruct();
+//}
+//void KindStructsRouter::defineStruct(StructKind* structM, std::vector<LLVMTypeRef> membersLT) {
+//  return getKindStructsSource(structM)->defineStruct(structM, membersLT);
+//}
+//void KindStructsRouter::declareStruct(StructKind* structM) {
+//  return getKindStructsSource(structM)->declareStruct(structM);
+//}
+//void KindStructsRouter::declareEdge(Edge* edge) {
+//  return getKindStructsSource(edge->structName)->declareEdge(edge);
+//}
+//void KindStructsRouter::defineEdge(
+//    Edge* edge,
+//    std::vector<LLVMTypeRef> interfaceFunctionsLT,
+//    std::vector<LLVMValueRef> functions) {
+//  return getKindStructsSource(edge->structName)->defineEdge(edge, interfaceFunctionsLT, functions);
+//}
+//void KindStructsRouter::declareInterface(InterfaceDefinition* interfaceM) {
+//  return getKindStructsSource(interfaceM->kind)->declareInterface(interfaceM);
+//}
+//void KindStructsRouter::defineInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL) {
+//  return getKindStructsSource(interface->kind)->defineInterface(interface, interfaceMethodTypesL);
+//}
+//void KindStructsRouter::declareStaticSizedArray(StaticSizedArrayDefinitionT* staticSizedArrayMT) {
+//  return getKindStructsSource(staticSizedArrayMT->kind)->declareStaticSizedArray(staticSizedArrayMT);
+//}
+//void KindStructsRouter::declareRuntimeSizedArray(RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT) {
+//  return getKindStructsSource(runtimeSizedArrayMT->kind)->declareRuntimeSizedArray(runtimeSizedArrayMT);
+//}
+//void KindStructsRouter::defineRuntimeSizedArray(RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT, LLVMTypeRef elementLT) {
+//  return getKindStructsSource(runtimeSizedArrayMT->kind)->defineRuntimeSizedArray(runtimeSizedArrayMT, elementLT);
+//}
+//void KindStructsRouter::defineStaticSizedArray(StaticSizedArrayDefinitionT* staticSizedArrayMT, LLVMTypeRef elementLT) {
+//  return getKindStructsSource(staticSizedArrayMT->kind)->defineStaticSizedArray(staticSizedArrayMT, elementLT);
+//}
+//
+//ControlBlockPtrLE KindStructsRouter::getConcreteControlBlockPtr(
+//    AreaAndFileAndLine from,
+//    FunctionState* functionState,
+//    LLVMBuilderRef builder,
+//    Reference* reference,
+//    WrapperPtrLE wrapperPtrLE) {
+//  return getKindStructsSource(reference->kind)->getConcreteControlBlockPtr(from, functionState, builder, reference, wrapperPtrLE);
+//}
+//
+//
+//WrapperPtrLE KindStructsRouter::makeWrapperPtr(
 //    AreaAndFileAndLine checkerAFL,
 //    FunctionState* functionState,
 //    LLVMBuilderRef builder,
-//    Referend* referendM,
+//    Reference* referenceM,
 //    LLVMValueRef ptrLE) {
-//  return getReferendStructsSource(referendM)->makeControlBlockPtr(checkerAFL, functionState, builder, referendM, ptrLE);
+//  return getKindStructsSource(referenceM->kind)->makeWrapperPtr(checkerAFL, functionState, builder, referenceM, ptrLE);
 //}
-
-LLVMValueRef ReferendStructsRouter::getStringBytesPtr(
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    WrapperPtrLE ptrLE) {
-  return getReferendStructsSource(globalState->metalCache->str)->getStringBytesPtr(functionState, builder, ptrLE);
-}
-
-LLVMValueRef ReferendStructsRouter::getStringLen(FunctionState* functionState, LLVMBuilderRef builder, WrapperPtrLE ptrLE) {
-  return getReferendStructsSource(globalState->metalCache->str)->getStringLen(functionState, builder, ptrLE);
-}
-
-ControlBlockPtrLE ReferendStructsRouter::getControlBlockPtr(
-    AreaAndFileAndLine from,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Referend* referendM,
-    InterfaceFatPtrLE interfaceFatPtrLE) {
-  return getReferendStructsSource(referendM)->getControlBlockPtr(from, functionState, builder, referendM, interfaceFatPtrLE);
-}
-
-ControlBlockPtrLE ReferendStructsRouter::getControlBlockPtrWithoutChecking(
-    AreaAndFileAndLine from,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Referend* referendM,
-    InterfaceFatPtrLE interfaceFatPtrLE) {
-  return getReferendStructsSource(referendM)->getControlBlockPtrWithoutChecking(from, functionState, builder, referendM, interfaceFatPtrLE);
-}
-
-ControlBlockPtrLE ReferendStructsRouter::getControlBlockPtr(
-    AreaAndFileAndLine from,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    // This will be a pointer if a mutable struct, or a fat ref if an interface.
-    Ref ref,
-    Reference* referenceM) {
-  return getReferendStructsSource(referenceM->referend)->getControlBlockPtr(from, functionState, builder, ref, referenceM);
-}
-
-LLVMValueRef ReferendStructsRouter::getStructContentsPtr(
-    LLVMBuilderRef builder,
-    Referend* referend,
-    WrapperPtrLE wrapperPtrLE) {
-  return getReferendStructsSource(referend)->getStructContentsPtr(builder, referend, wrapperPtrLE);
-}
-
-ControlBlockPtrLE ReferendStructsRouter::getControlBlockPtr(
-    AreaAndFileAndLine from,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    // This will be a pointer if a mutable struct, or a fat ref if an interface.
-    LLVMValueRef ref,
-    Reference* referenceM) {
-  return getReferendStructsSource(referenceM->referend)->getControlBlockPtr(from, functionState, builder, ref, referenceM);
-}
-
-ControlBlockPtrLE ReferendStructsRouter::getControlBlockPtrWithoutChecking(
-    AreaAndFileAndLine from,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    // This will be a pointer if a mutable struct, or a fat ref if an interface.
-    LLVMValueRef ref,
-    Reference* referenceM) {
-  return getReferendStructsSource(referenceM->referend)->getControlBlockPtrWithoutChecking(
-      from, functionState, builder, ref, referenceM);
-}
-
-LLVMValueRef ReferendStructsRouter::getVoidPtrFromInterfacePtr(
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* virtualParamMT,
-    InterfaceFatPtrLE virtualArgLE) {
-  return getReferendStructsSource(virtualParamMT->referend)->getVoidPtrFromInterfacePtr(functionState, builder, virtualParamMT, virtualArgLE);
-}
-
-LLVMValueRef ReferendStructsRouter::getObjIdFromControlBlockPtr(
-    LLVMBuilderRef builder,
-    Referend* referendM,
-    ControlBlockPtrLE controlBlockPtr) {
-  return getReferendStructsSource(referendM)->getObjIdFromControlBlockPtr(builder, referendM, controlBlockPtr);
-}
-
-LLVMValueRef ReferendStructsRouter::getStrongRcPtrFromControlBlockPtr(
-    LLVMBuilderRef builder,
-    Reference* refM,
-    ControlBlockPtrLE controlBlockPtr) {
-  return getReferendStructsSource(refM->referend)->getStrongRcPtrFromControlBlockPtr(builder, refM, controlBlockPtr);
-}
-
-LLVMValueRef ReferendStructsRouter::getStrongRcFromControlBlockPtr(
-    LLVMBuilderRef builder,
-    Reference* refM,
-    ControlBlockPtrLE controlBlockPtr) {
-  return getReferendStructsSource(refM->referend)->getStrongRcFromControlBlockPtr(builder, refM, controlBlockPtr);
-}
-
-
-LLVMTypeRef WeakRefStructsRouter::getStructWeakRefStruct(StructReferend* structReferend) {
-  return getWeakRefStructsSource(structReferend)->getStructWeakRefStruct(structReferend);
-}
-LLVMTypeRef WeakRefStructsRouter::getKnownSizeArrayWeakRefStruct(KnownSizeArrayT* ksaMT) {
-  return getWeakRefStructsSource(ksaMT)->getKnownSizeArrayWeakRefStruct(ksaMT);
-}
-LLVMTypeRef WeakRefStructsRouter::getUnknownSizeArrayWeakRefStruct(UnknownSizeArrayT* usaMT) {
-  return getWeakRefStructsSource(usaMT)->getUnknownSizeArrayWeakRefStruct(usaMT);
-}
-LLVMTypeRef WeakRefStructsRouter::getInterfaceWeakRefStruct(InterfaceReferend* interfaceReferend) {
-  return getWeakRefStructsSource(interfaceReferend)->getInterfaceWeakRefStruct(interfaceReferend);
-}
-WeakFatPtrLE WeakRefStructsRouter::makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) {
-  return getWeakRefStructsSource(referenceM_->referend)->makeWeakFatPtr(referenceM_, ptrLE);
-}
-
-
-WeakFatPtrLE WeakRefStructsRouter::downcastWeakFatPtr(
-    LLVMBuilderRef builder,
-    StructReferend* targetStructReferend,
-    Reference* targetRefMT,
-    LLVMValueRef sourceWeakFatPtrLE) {
-  return getWeakRefStructsSource(targetStructReferend)->downcastWeakFatPtr(
-      builder, targetStructReferend, targetRefMT, sourceWeakFatPtrLE);
-}
-
-LLVMTypeRef WeakRefStructsRouter::getWeakRefHeaderStruct(Referend* referend) {
-  return getWeakRefStructsSource(referend)->getWeakRefHeaderStruct(referend);
-}
-LLVMTypeRef WeakRefStructsRouter::getWeakVoidRefStruct(Referend* referend) {
-  return getWeakRefStructsSource(referend)->getWeakVoidRefStruct(referend);
-}
+//
+//InterfaceFatPtrLE KindStructsRouter::makeInterfaceFatPtr(
+//    AreaAndFileAndLine checkerAFL,
+//    FunctionState* functionState,
+//    LLVMBuilderRef builder,
+//    Reference* referenceM,
+//    LLVMValueRef ptrLE) {
+//  return getKindStructsSource(referenceM->kind)->makeInterfaceFatPtr(checkerAFL, functionState, builder, referenceM, ptrLE);
+//}
+//
+//InterfaceFatPtrLE KindStructsRouter::makeInterfaceFatPtrWithoutChecking(
+//    AreaAndFileAndLine checkerAFL,
+//    FunctionState* functionState,
+//    LLVMBuilderRef builder,
+//    Reference* referenceM,
+//    LLVMValueRef ptrLE) {
+//  return getKindStructsSource(referenceM->kind)->makeInterfaceFatPtrWithoutChecking(checkerAFL, functionState, builder, referenceM, ptrLE);
+//}
+//
+////ControlBlockPtrLE KindStructsRouter::makeControlBlockPtr(
+////    AreaAndFileAndLine checkerAFL,
+////    FunctionState* functionState,
+////    LLVMBuilderRef builder,
+////    Kind* kindM,
+////    LLVMValueRef ptrLE) {
+////  return getKindStructsSource(kindM)->makeControlBlockPtr(checkerAFL, functionState, builder, kindM, ptrLE);
+////}
+//
+//LLVMValueRef KindStructsRouter::getStringBytesPtr(
+//    FunctionState* functionState,
+//    LLVMBuilderRef builder,
+//    WrapperPtrLE ptrLE) {
+//  return getKindStructsSource(globalState->metalCache->str)->getStringBytesPtr(functionState, builder, ptrLE);
+//}
+//
+//LLVMValueRef KindStructsRouter::getStringLen(FunctionState* functionState, LLVMBuilderRef builder, WrapperPtrLE ptrLE) {
+//  return getKindStructsSource(globalState->metalCache->str)->getStringLen(functionState, builder, ptrLE);
+//}
+//
+//ControlBlockPtrLE KindStructsRouter::getControlBlockPtr(
+//    AreaAndFileAndLine from,
+//    FunctionState* functionState,
+//    LLVMBuilderRef builder,
+//    Kind* kindM,
+//    InterfaceFatPtrLE interfaceFatPtrLE) {
+//  return getKindStructsSource(kindM)->getControlBlockPtr(from, functionState, builder, kindM, interfaceFatPtrLE);
+//}
+//
+//ControlBlockPtrLE KindStructsRouter::getControlBlockPtrWithoutChecking(
+//    AreaAndFileAndLine from,
+//    FunctionState* functionState,
+//    LLVMBuilderRef builder,
+//    Kind* kindM,
+//    InterfaceFatPtrLE interfaceFatPtrLE) {
+//  return getKindStructsSource(kindM)->getControlBlockPtrWithoutChecking(from, functionState, builder, kindM, interfaceFatPtrLE);
+//}
+//
+//ControlBlockPtrLE KindStructsRouter::getControlBlockPtr(
+//    AreaAndFileAndLine from,
+//    FunctionState* functionState,
+//    LLVMBuilderRef builder,
+//    // This will be a pointer if a mutable struct, or a fat ref if an interface.
+//    Ref ref,
+//    Reference* referenceM) {
+//  return getKindStructsSource(referenceM->kind)->getControlBlockPtr(from, functionState, builder, ref, referenceM);
+//}
+//
+//LLVMValueRef KindStructsRouter::getStructContentsPtr(
+//    LLVMBuilderRef builder,
+//    Kind* kind,
+//    WrapperPtrLE wrapperPtrLE) {
+//  return getKindStructsSource(kind)->getStructContentsPtr(builder, kind, wrapperPtrLE);
+//}
+//
+//ControlBlockPtrLE KindStructsRouter::getControlBlockPtr(
+//    AreaAndFileAndLine from,
+//    FunctionState* functionState,
+//    LLVMBuilderRef builder,
+//    // This will be a pointer if a mutable struct, or a fat ref if an interface.
+//    LLVMValueRef ref,
+//    Reference* referenceM) {
+//  return getKindStructsSource(referenceM->kind)->getControlBlockPtr(from, functionState, builder, ref, referenceM);
+//}
+//
+//ControlBlockPtrLE KindStructsRouter::getControlBlockPtrWithoutChecking(
+//    AreaAndFileAndLine from,
+//    FunctionState* functionState,
+//    LLVMBuilderRef builder,
+//    // This will be a pointer if a mutable struct, or a fat ref if an interface.
+//    LLVMValueRef ref,
+//    Reference* referenceM) {
+//  return getKindStructsSource(referenceM->kind)->getControlBlockPtrWithoutChecking(
+//      from, functionState, builder, ref, referenceM);
+//}
+//
+//LLVMValueRef KindStructsRouter::getVoidPtrFromInterfacePtr(
+//    FunctionState* functionState,
+//    LLVMBuilderRef builder,
+//    Reference* virtualParamMT,
+//    InterfaceFatPtrLE virtualArgLE) {
+//  return getKindStructsSource(virtualParamMT->kind)->getVoidPtrFromInterfacePtr(functionState, builder, virtualParamMT, virtualArgLE);
+//}
+//
+//LLVMValueRef KindStructsRouter::getObjIdFromControlBlockPtr(
+//    LLVMBuilderRef builder,
+//    Kind* kindM,
+//    ControlBlockPtrLE controlBlockPtr) {
+//  return getKindStructsSource(kindM)->getObjIdFromControlBlockPtr(builder, kindM, controlBlockPtr);
+//}
+//
+//LLVMValueRef KindStructsRouter::getStrongRcPtrFromControlBlockPtr(
+//    LLVMBuilderRef builder,
+//    Reference* refM,
+//    ControlBlockPtrLE controlBlockPtr) {
+//  return getKindStructsSource(refM->kind)->getStrongRcPtrFromControlBlockPtr(builder, refM, controlBlockPtr);
+//}
+//
+//LLVMValueRef KindStructsRouter::getStrongRcFromControlBlockPtr(
+//    LLVMBuilderRef builder,
+//    Reference* refM,
+//    ControlBlockPtrLE controlBlockPtr) {
+//  return getKindStructsSource(refM->kind)->getStrongRcFromControlBlockPtr(builder, refM, controlBlockPtr);
+//}
+//
+//LLVMValueRef KindStructsRouter::downcastPtr(
+//    LLVMBuilderRef builder, Reference* resultStructRefMT, LLVMValueRef unknownPossibilityPtrLE) {
+//  return getKindStructsSource(resultStructRefMT->kind)->downcastPtr(builder, resultStructRefMT, unknownPossibilityPtrLE);
+//}
+//
+//
+//LLVMTypeRef WeakRefStructsRouter::getStructWeakRefStruct(StructKind* structKind) {
+//  return getWeakRefStructsSource(structKind)->getStructWeakRefStruct(structKind);
+//}
+//LLVMTypeRef WeakRefStructsRouter::getStaticSizedArrayWeakRefStruct(StaticSizedArrayT* ssaMT) {
+//  return getWeakRefStructsSource(ssaMT)->getStaticSizedArrayWeakRefStruct(ssaMT);
+//}
+//LLVMTypeRef WeakRefStructsRouter::getRuntimeSizedArrayWeakRefStruct(RuntimeSizedArrayT* rsaMT) {
+//  return getWeakRefStructsSource(rsaMT)->getRuntimeSizedArrayWeakRefStruct(rsaMT);
+//}
+//LLVMTypeRef WeakRefStructsRouter::getInterfaceWeakRefStruct(InterfaceKind* interfaceKind) {
+//  return getWeakRefStructsSource(interfaceKind)->getInterfaceWeakRefStruct(interfaceKind);
+//}
+//WeakFatPtrLE WeakRefStructsRouter::makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) {
+//  return getWeakRefStructsSource(referenceM_->kind)->makeWeakFatPtr(referenceM_, ptrLE);
+//}
+//
+//
+//WeakFatPtrLE WeakRefStructsRouter::downcastWeakFatPtr(
+//    LLVMBuilderRef builder,
+//    StructKind* targetStructKind,
+//    Reference* targetRefMT,
+//    LLVMValueRef sourceWeakFatPtrLE) {
+//  return getWeakRefStructsSource(targetStructKind)->downcastWeakFatPtr(
+//      builder, targetStructKind, targetRefMT, sourceWeakFatPtrLE);
+//}
+//
+//LLVMTypeRef WeakRefStructsRouter::getWeakRefHeaderStruct(Kind* kind) {
+//  return getWeakRefStructsSource(kind)->getWeakRefHeaderStruct(kind);
+//}
+//LLVMTypeRef WeakRefStructsRouter::getWeakVoidRefStruct(Kind* kind) {
+//  return getWeakRefStructsSource(kind)->getWeakVoidRefStruct(kind);
+//}

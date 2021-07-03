@@ -5,7 +5,7 @@ import net.verdagon.vale.{vassert, vcheck, vcurious, vpass, vwat}
 
 import scala.collection.immutable.List
 
-// We namespace runes with a full name so we don't have to worry about collisions
+// We paackage runes with a full name so we don't have to worry about collisions
 // between, for example, two ImplicitRune(0)s.
 
 // We have this INameS stuff so we don't have to have prefixes and names like
@@ -70,7 +70,7 @@ case class ImpreciseCodeVarNameS(name: String) extends IImpreciseNameStepS
 
 // See PVSBUFI
 sealed trait ITemplexS { def range: RangeS }
-case class IntST(range: RangeS, value: Int) extends ITemplexS
+case class IntST(range: RangeS, value: Long) extends ITemplexS
 case class StringST(range: RangeS, value: String) extends ITemplexS
 case class MutabilityST(range: RangeS, mutability: MutabilityP) extends ITemplexS
 case class PermissionST(range: RangeS, permission: PermissionP) extends ITemplexS
@@ -110,6 +110,7 @@ case class BorrowST(
 case class RepeaterSequenceST(
   range: RangeS,
   mutability: ITemplexS,
+  variability: ITemplexS,
   size: ITemplexS,
   element: ITemplexS
 ) extends ITemplexS
@@ -143,8 +144,8 @@ object TemplexSUtils {
       case PackST(_, members) => {
         members.flatMap(getDistinctOrderedRunesForTemplex).distinct
       }
-      case RepeaterSequenceST(_, mutability, size, element) => {
-        List(mutability, size, element).flatMap(getDistinctOrderedRunesForTemplex).distinct
+      case RepeaterSequenceST(_, mutability, variability, size, element) => {
+        List(mutability, variability, size, element).flatMap(getDistinctOrderedRunesForTemplex).distinct
       }
       case ManualSequenceST(_, elements) => {
         elements.flatMap(getDistinctOrderedRunesForTemplex).distinct

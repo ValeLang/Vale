@@ -103,7 +103,7 @@ class Profiler extends IProfiler {
         FinishedFrame(newProfile.currentFrame.timer.nanosecondsSoFar, newProfile.currentFrame.children.toMap))
 
     // Don't add it to the parent frame's children, instead add it to the profiles list
-    var profilesWithThisName = profiles.getOrElse(profileName, List())
+    var profilesWithThisName = profiles.getOrElse(profileName, List.empty)
     profilesWithThisName = finishedProfileRootFrame :: profilesWithThisName
     profiles += (profileName -> profilesWithThisName)
 
@@ -126,7 +126,7 @@ class Profiler extends IProfiler {
     val finishedFrame = FinishedFrame(newFrame.timer.nanosecondsSoFar, newFrame.children.toMap)
 
     // Add it to the parent frame's children
-    var childFramesWithThisName = parentFrame.children.getOrElse(frameName, List())
+    var childFramesWithThisName = parentFrame.children.getOrElse(frameName, List.empty)
     childFramesWithThisName = finishedFrame :: childFramesWithThisName
     parentFrame.children += (frameName -> childFramesWithThisName)
 

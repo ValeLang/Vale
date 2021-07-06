@@ -159,7 +159,7 @@ object Hammer {
       functionExterns) = hinputs
 
 
-    val hamuts = HamutsBox(Hamuts(Map(), Map(), Map(), List(), List(), List(), Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map()))
+    val hamuts = HamutsBox(Hamuts(Map(), Map(), Map(), List.empty, List.empty, List.empty, Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map()))
     val emptyPackStructRefH = StructHammer.translateStructRef(hinputs, hamuts, emptyPackStructRef)
     vassert(emptyPackStructRefH == ProgramH.emptyTupleStructRef)
 
@@ -264,10 +264,10 @@ object Hammer {
         packageCoord ->
           PackageH(
             packageToInterfaceDefs.getOrElse(packageCoord, Map()).values.toList,
-            packageToStructDefs.getOrElse(packageCoord, List()),
-            packageToFunctionDefs.getOrElse(packageCoord, List()),
-            packageToStaticSizedArrays.getOrElse(packageCoord, List()),
-            packageToRuntimeSizedArrays.getOrElse(packageCoord, List()),
+            packageToStructDefs.getOrElse(packageCoord, List.empty),
+            packageToFunctionDefs.getOrElse(packageCoord, List.empty),
+            packageToStaticSizedArrays.getOrElse(packageCoord, List.empty),
+            packageToRuntimeSizedArrays.getOrElse(packageCoord, List.empty),
             packageToImmDestructorPrototypes.getOrElse(packageCoord, Map()),
             packageToExportNameToFunction.getOrElse(packageCoord, Map()),
             packageToExportNameToKind.getOrElse(packageCoord, Map()),

@@ -3,7 +3,7 @@ package net.verdagon.vale
 import scala.io.Source
 
 object Builtins {
-  val NAMESPACE_COORD = PackageCoordinate("", List())
+  val NAMESPACE_COORD = PackageCoordinate("", List.empty)
 
   val moduleToFilename =
     Map(

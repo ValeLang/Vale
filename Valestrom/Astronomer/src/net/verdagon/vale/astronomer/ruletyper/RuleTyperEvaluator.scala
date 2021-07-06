@@ -72,7 +72,7 @@ class RuleTyperEvaluator[Env, State](
           conclusions,
           invocationRange,
           "Couldn't figure out types of all rules! Couldn't figure out rules at indices: " + unknownIndices,
-          List()))
+          List.empty))
     }
 
     val unfiguredOutRunes = maybeNeededRunes.getOrElse(Set()) -- conclusions.typeByRune.keySet
@@ -83,7 +83,7 @@ class RuleTyperEvaluator[Env, State](
           conclusions,
           invocationRange,
           "Couldn't figure out types of all runes! Couldn't figure out: " + unfiguredOutRunes,
-          List()))
+          List.empty))
     }
 
     (conclusions.conclusions, RuleTyperSolveSuccess(knowns))
@@ -148,7 +148,7 @@ class RuleTyperEvaluator[Env, State](
     rules: List[IRulexSR],
   ): (IRuleTyperEvaluateResult[List[IRulexAR]]) = {
     val initialResult: IRuleTyperEvaluateResult[List[IRulexAR]] =
-      RuleTyperEvaluateSuccess(List())
+      RuleTyperEvaluateSuccess(List.empty)
     rules.zipWithIndex.foldLeft((initialResult))({
       case (RuleTyperEvaluateUnknown(), (rule, index)) => {
         evaluateRule(state, env, conclusions, rule) match {

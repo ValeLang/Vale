@@ -34,9 +34,9 @@ class DestructorTemplar(
           } else {
             GlobalFunctionFamilyNameA(CallTemplar.MUT_DESTRUCTOR_NAME)
           },
-          List(),
+          List.empty,
           List(ParamFilter(type2, None)),
-          List(),
+          List.empty,
           true) match {
           case (seff@ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
             throw CompileErrorExceptionT(RangedInternalErrorT(RangeS.internal(-1674), "Couldn't find concrete destructor!\n" + seff.toString))
@@ -54,9 +54,9 @@ class DestructorTemplar(
           } else {
             GlobalFunctionFamilyNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME)
           },
-          List(),
+          List.empty,
           List(ParamFilter(type2, None)),
-          List(),
+          List.empty,
           true) match {
           case (seff@ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
             throw CompileErrorExceptionT(RangedInternalErrorT(RangeS.internal(-1674), "Couldn't find interface destructor!\n" + seff.toString))
@@ -84,9 +84,9 @@ class DestructorTemplar(
       } else {
         GlobalFunctionFamilyNameA(CallTemplar.MUT_DESTRUCTOR_NAME)
       },
-      List(),
+      List.empty,
       List(ParamFilter(type2, None)),
-      List(),
+      List.empty,
       true) match {
       case (seff@ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
         throw CompileErrorExceptionT(RangedInternalErrorT(RangeS.internal(-1674), "Couldn't find array destructor!\n" + seff.toString))
@@ -111,9 +111,9 @@ class DestructorTemplar(
       } else {
         GlobalFunctionFamilyNameA(CallTemplar.MUT_DROP_FUNCTION_NAME)
       },
-      List(),
+      List.empty,
       List(ParamFilter(type2, None)),
-      List(),
+      List.empty,
       true) match {
       case (seff@ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
         throw CompileErrorExceptionT(RangedInternalErrorT(RangeS.internal(-1674), "Couldn't find drop function!\n" + seff.toString))
@@ -225,11 +225,11 @@ class DestructorTemplar(
     val header =
       FunctionHeaderT(
         bodyEnv.fullName,
-        List(),
+        List.empty,
         List(ParameterT(CodeVarNameT("x"), None, type2)),
         CoordT(ShareT, ReadonlyT, VoidT()),
         Some(originFunction1))
-    val function2 = FunctionT(header, List(), BlockTE(List(dropExpr2, ReturnTE(VoidLiteralTE()))))
+    val function2 = FunctionT(header, List.empty, BlockTE(List(dropExpr2, ReturnTE(VoidLiteralTE()))))
     temputs.declareFunctionReturnType(header.toSignature, CoordT(ShareT, ReadonlyT, VoidT()))
     temputs.addFunction(function2)
     vassert(temputs.getDeclaredSignatureOrigin(bodyEnv.fullName) == Some(originFunction1.range))
@@ -256,7 +256,7 @@ class DestructorTemplar(
     val header =
       FunctionHeaderT(
         destructorFullName,
-        List(),
+        List.empty,
         params2,
         CoordT(ShareT, ReadonlyT, VoidT()),
         Some(originFunction1));
@@ -273,7 +273,7 @@ class DestructorTemplar(
         case StructMemberT(name, variability, AddressMemberTypeT(reference)) => {
           // See Destructure2 and its handling of addressible members for why
           // we don't include these in the destination variables.
-          List()
+          List.empty
         }
       })
 
@@ -318,7 +318,7 @@ class DestructorTemplar(
 
     val ifunctionExpression =
       StructToInterfaceUpcastTE(
-        FunctionCallTE(constructorPrototype, List()),
+        FunctionCallTE(constructorPrototype, List.empty),
         ifunction1InterfaceRef)
 
 
@@ -326,9 +326,9 @@ class DestructorTemplar(
       overloadTemplar.scoutExpectedFunctionForPrototype(
         env, temputs, RangeS.internal(-108),
         GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME),
-        List(),
+        List.empty,
         List(ParamFilter(ifunctionExpression.resultRegister.reference, None), ParamFilter(sequence.array.memberType, None)),
-        List(), true) match {
+        List.empty, true) match {
         case seff@ScoutExpectedFunctionFailure(_, _, _, _, _) => {
           vimpl()
         }
@@ -339,11 +339,11 @@ class DestructorTemplar(
       FunctionT(
         FunctionHeaderT(
           env.fullName,
-          List(),
+          List.empty,
           List(ParameterT(CodeVarNameT("this"), None, arrayRefType)),
           CoordT(ShareT, ReadonlyT, VoidT()),
           maybeOriginFunction1),
-        List(),
+        List.empty,
         BlockTE(
           List(
             DestroyStaticSizedArrayIntoFunctionTE(
@@ -375,16 +375,16 @@ class DestructorTemplar(
 
     val ifunctionExpression =
       StructToInterfaceUpcastTE(
-        FunctionCallTE(constructorPrototype, List()),
+        FunctionCallTE(constructorPrototype, List.empty),
         ifunction1InterfaceRef)
 
     val consumerMethod2 =
       overloadTemplar.scoutExpectedFunctionForPrototype(
         env, temputs, RangeS.internal(-108),
         GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME),
-        List(),
+        List.empty,
         List(ParamFilter(ifunctionExpression.resultRegister.reference, None), ParamFilter(array.array.memberType, None)),
-        List(), true) match {
+        List.empty, true) match {
         case seff@ScoutExpectedFunctionFailure(_, _, _, _, _) => {
           vimpl(seff.toString)
         }
@@ -395,11 +395,11 @@ class DestructorTemplar(
       FunctionT(
         FunctionHeaderT(
           env.fullName,
-          List(),
+          List.empty,
           List(ParameterT(CodeVarNameT("this"), None, arrayRefType2)),
           CoordT(ShareT, ReadonlyT, VoidT()),
           maybeOriginFunction1),
-        List(),
+        List.empty,
         BlockTE(
           List(
             DestroyRuntimeSizedArrayTE(
@@ -426,9 +426,9 @@ class DestructorTemplar(
       temputs,
       RangeS.internal(-1673),
       ImmConcreteDestructorImpreciseNameA(),
-      List(),
+      List.empty,
       List(ParamFilter(CoordT(ShareT, ReadonlyT, structRef2), None)),
-      List(),
+      List.empty,
       true) match {
       case (seff@ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
         throw CompileErrorExceptionT(CouldntFindFunctionToCallT(RangeS.internal(-49), seff))
@@ -450,9 +450,9 @@ class DestructorTemplar(
         temputs,
         RangeS.internal(-1677),
         ImmInterfaceDestructorImpreciseNameA(),
-        List(),
+        List.empty,
         List(ParamFilter(CoordT(ShareT, ReadonlyT, interfaceRef2), None)),
-        List(),
+        List.empty,
         true) match {
         case (seff@ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
           throw CompileErrorExceptionT(CouldntFindFunctionToCallT(RangeS.internal(-48), seff))
@@ -477,9 +477,9 @@ class DestructorTemplar(
         temputs,
         RangeS.internal(-1674),
         ImmInterfaceDestructorImpreciseNameA(),
-        List(),
+        List.empty,
         List(ParamFilter(CoordT(ShareT, ReadonlyT, structRef2), Some(OverrideT(implementedInterfaceRefT)))),
-        List(),
+        List.empty,
         true)
     sefResult match {
       case ScoutExpectedFunctionSuccess(prototype) => prototype

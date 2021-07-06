@@ -417,9 +417,9 @@ class DestructorTemplar(
   def getImmConcreteDestructor(
     temputs: Temputs,
     env: IEnvironment,
-    structRef2: StructRefT):
+    structRefT: StructRefT):
   PrototypeT = {
-    vassert(Templar.getMutability(temputs, structRef2) == ImmutableT)
+    vassert(Templar.getMutability(temputs, structRefT) == ImmutableT)
 
     overloadTemplar.scoutExpectedFunctionForPrototype(
       env,
@@ -427,7 +427,7 @@ class DestructorTemplar(
       RangeS.internal(-1673),
       ImmConcreteDestructorImpreciseNameA(),
       List(),
-      List(ParamFilter(CoordT(ShareT, ReadonlyT, structRef2), None)),
+      List(ParamFilter(CoordT(ShareT, ReadonlyT, structRefT), None)),
       List(),
       true) match {
       case (seff@ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
@@ -465,10 +465,10 @@ class DestructorTemplar(
   def getImmInterfaceDestructorOverride(
     temputs: Temputs,
     env: IEnvironment,
-    structRef2: StructRefT,
+    structRefT: StructRefT,
     implementedInterfaceRefT: InterfaceRefT):
   PrototypeT = {
-    vassert(Templar.getMutability(temputs, structRef2) == ImmutableT)
+    vassert(Templar.getMutability(temputs, structRefT) == ImmutableT)
     vassert(Templar.getMutability(temputs, implementedInterfaceRefT) == ImmutableT)
 
     val sefResult =
@@ -478,7 +478,7 @@ class DestructorTemplar(
         RangeS.internal(-1674),
         ImmInterfaceDestructorImpreciseNameA(),
         List(),
-        List(ParamFilter(CoordT(ShareT, ReadonlyT, structRef2), Some(OverrideT(implementedInterfaceRefT)))),
+        List(ParamFilter(CoordT(ShareT, ReadonlyT, structRefT), Some(OverrideT(implementedInterfaceRefT)))),
         List(),
         true)
     sefResult match {
@@ -722,21 +722,21 @@ object DestructorTemplar {
           // However, the template arguments are, and idestructor's template argument
           // is the interface we're overriding.
           val List(
-          CoordTemplata(CoordT(_, _, overridingStructRef2FromTemplateArg @ StructRefT(_))),
+          CoordTemplata(CoordT(_, _, overridingstructRefTFromTemplateArg @ StructRefT(_))),
           KindTemplata(implementedInterfaceRef2 @ InterfaceRefT(_))) =
           namedEnv.fullName.last.templateArgs
 
           params.map(_.tyype) match {
-            case List(CoordT(_, _, structRef2 @ StructRefT(_))) => {
-              vassert(overridingStructRef2FromTemplateArg == structRef2)
-              val structDef2 = temputs.lookupStruct(structRef2)
-              val ownership = if (structDef2.mutability == MutableT) OwnT else ShareT
-              val permission = if (structDef2.mutability == MutableT) ReadwriteT else ReadonlyT
-              val structType2 = CoordT(ownership, permission, structRef2)
+            case List(CoordT(_, _, structRefT @ StructRefT(_))) => {
+              vassert(overridingstructRefTFromTemplateArg == structRefT)
+              val structDefT = temputs.lookupStruct(structRefT)
+              val ownership = if (structDefT.mutability == MutableT) OwnT else ShareT
+              val permission = if (structDefT.mutability == MutableT) ReadwriteT else ReadonlyT
+              val structType2 = CoordT(ownership, permission, structRefT)
               val structDestructor =
                 destructorTemplar.getCitizenDestructor(namedEnv, temputs, structType2)
               functionTemplarCore.makeImplDestructor(
-                namedEnv, temputs, maybeOriginFunction1, structDef2, implementedInterfaceRef2, structDestructor)
+                namedEnv, temputs, maybeOriginFunction1, structDefT, implementedInterfaceRef2, structDestructor)
             }
             case _ => {
               vfail("wot")

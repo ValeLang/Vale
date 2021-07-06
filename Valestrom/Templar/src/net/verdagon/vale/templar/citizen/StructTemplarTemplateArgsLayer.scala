@@ -48,8 +48,8 @@ class StructTemplarTemplateArgsLayer(
       val fullName = env.fullName.addStep(structLastName)
 
       temputs.structDeclared(fullName) match {
-        case Some(structRef2) => {
-          (structRef2)
+        case Some(structRefT) => {
+          (structRefT)
         }
         case None => {
           // not sure if this is okay or not, do we allow this?

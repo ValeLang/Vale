@@ -207,10 +207,10 @@ class FunctionTemplarCore(
 //        vassert(rightParamType == tyype)
 //
 //      }
-      case FunctionNameT(humanName, List(), params) => {
+      case FunctionNameT(humanName, Nil, params) => {
         val header = FunctionHeaderT(fullName, Extern2(range.file.packageCoordinate) :: attributes, params2, returnType2, maybeOrigin)
 
-        val externFullName = FullNameT(fullName.packageCoord, List(), ExternFunctionNameT(humanName, params))
+        val externFullName = FullNameT(fullName.packageCoord, List.empty, ExternFunctionNameT(humanName, params))
         val externPrototype = PrototypeT(externFullName, header.returnType)
         temputs.addFunctionExtern(externPrototype, fullName.packageCoord, humanName)
 
@@ -219,7 +219,7 @@ class FunctionTemplarCore(
         val function2 =
           FunctionT(
             header,
-            List(),
+            List.empty,
             ReturnTE(ExternFunctionCallTE(externPrototype, argLookups)))
 
         temputs.declareFunctionReturnType(header.toSignature, header.returnType)
@@ -250,14 +250,14 @@ class FunctionTemplarCore(
     val header =
       FunctionHeaderT(
         env.fullName,
-        List(),
+        List.empty,
         params2,
         returnReferenceType2,
         origin)
     val function2 =
       FunctionT(
         header,
-        List(),
+        List.empty,
         BlockTE(
           List(
             ReturnTE(
@@ -291,11 +291,11 @@ class FunctionTemplarCore(
       FunctionT(
         FunctionHeaderT(
           env.fullName,
-          List(),
+          List.empty,
           List(ParameterT(CodeVarNameT("this"), Some(OverrideT(interfaceRef2)), structType2)),
           CoordT(ShareT, ReadonlyT, VoidT()),
           maybeOriginFunction1),
-        List(),
+        List.empty,
         BlockTE(
           List(
             ReturnTE(

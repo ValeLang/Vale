@@ -11,7 +11,7 @@ case class FileCoordinate(module: String, packages: List[String], filepath: Stri
 }
 
 object FileCoordinate extends Ordering[FileCoordinate] {
-  val test = FileCoordinate("test", List(), "test.vale")
+  val test = FileCoordinate("test", List.empty, "test.vale")
 
   override def compare(a: FileCoordinate, b: FileCoordinate):Int = {
     val diff = a.packageCoordinate.compareTo(b.packageCoordinate)
@@ -30,11 +30,11 @@ case class PackageCoordinate(module: String, packages: List[String]) {
 }
 
 object PackageCoordinate extends Ordering[PackageCoordinate] {
-  val TEST_TLD = PackageCoordinate("test", List())
+  val TEST_TLD = PackageCoordinate("test", List.empty)
 
-  val BUILTIN = PackageCoordinate("", List())
+  val BUILTIN = PackageCoordinate("", List.empty)
 
-  val internal = PackageCoordinate("", List())
+  val internal = PackageCoordinate("", List.empty)
 
   override def compare(a: PackageCoordinate, b: PackageCoordinate):Int = {
     val lenDiff = a.packages.length - b.packages.length
@@ -56,14 +56,14 @@ object PackageCoordinate extends Ordering[PackageCoordinate] {
 object FileCoordinateMap {
   val TEST_MODULE = "test"
   def test[T](contents: T): FileCoordinateMap[T] = {
-    FileCoordinateMap(Map()).add(TEST_MODULE, List(), "test.vale", contents)
+    FileCoordinateMap(Map()).add(TEST_MODULE, List.empty, "test.vale", contents)
   }
   def test[T](contents: List[T]): FileCoordinateMap[T] = {
     test(contents.zipWithIndex.map({ case (code, index) => (index + ".vale", code) }).toMap)
   }
   def test[T](contents: Map[String, T]): FileCoordinateMap[T] = {
     contents.foldLeft(FileCoordinateMap[T](Map()))({
-      case (prev, (filename, c)) => prev.add(TEST_MODULE, List(), filename, c)
+      case (prev, (filename, c)) => prev.add(TEST_MODULE, List.empty, filename, c)
     })
   }
 }
@@ -216,7 +216,7 @@ case class PackageCoordinateMap[Contents](
   }
 
   def test[T](contents: T): PackageCoordinateMap[T] = {
-    PackageCoordinateMap(Map()).add("test", List(), contents)
+    PackageCoordinateMap(Map()).add("test", List.empty, contents)
   }
 
   def expectOne(): Contents = {

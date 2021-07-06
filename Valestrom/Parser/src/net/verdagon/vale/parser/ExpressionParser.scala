@@ -20,7 +20,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   }
 
   private[parser] def lookup: Parser[LookupPE] = {
-//    ("`" ~> "[^`]+".r <~ "`" ^^ (i => LookupPE(i, List()))) |
+//    ("`" ~> "[^`]+".r <~ "`" ^^ (i => LookupPE(i, List.empty))) |
     (exprIdentifier ^^ (i => LookupPE(i, None)))
   }
 
@@ -61,7 +61,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
         pos ^^ {
       case LetBegin(begin, pattern) ~ expr ~ end => {
         // We just threw away the topLevelRunes because let statements cant have them.
-        LetPE(Range(begin, end), /*maybeTemplateRules.getOrElse(List())*/None, pattern, expr)
+        LetPE(Range(begin, end), /*maybeTemplateRules.getOrElse(List.empty)*/None, pattern, expr)
       }
     }
   }
@@ -302,8 +302,8 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
 
     val StrInterpolatePE(range, parts) = stringExpr
 
-    combine(List(), parts).reverse match {
-      case List() => ConstantStrPE(range, "")
+    combine(List.empty, parts).reverse match {
+      case Nil => ConstantStrPE(range, "")
       case List(s @ ConstantStrPE(_, _)) => s
       case multiple => StrInterpolatePE(range, multiple)
     }
@@ -359,7 +359,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
             Range(begin, begin),
             false,
             LookupPE(NameP(Range(begin, begin), ""), None),
-            List(),
+            List.empty,
             LendConstraintP((None)))
         }
       }) |
@@ -631,7 +631,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     rep1sep(statementOrResult, optWhite) ~ pos ^^ {
       case statements ~ end => {
         statements match {
-          case List() => List(VoidPE(Range(end, end)))
+          case Nil => List(VoidPE(Range(end, end)))
           case resultsOrStatements => {
             if (resultsOrStatements.init.exists(_._2)) {
               vfail("wot")
@@ -714,7 +714,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   }
 
   private[parser] def packExpr: Parser[PackPE] = {
-    pos ~ ("(" ~> optWhite ~> ("..." ^^^ List() | repsep(expression, optWhite ~> "," <~ optWhite)) <~ optWhite <~ ")") ~ pos ^^ {
+    pos ~ ("(" ~> optWhite ~> ("..." ^^^ List.empty | repsep(expression, optWhite ~> "," <~ optWhite)) <~ optWhite <~ ")") ~ pos ^^ {
       case begin ~ inners ~ end => PackPE(Range(begin, end), inners)
     }
   }
@@ -755,7 +755,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
             Range(begin, end),
             FunctionHeaderP(
               Range(begin, headerEnd),
-              None, List(), None, None, maybeParams, FunctionReturnP(Range(headerEnd, headerEnd), None, None)),
+              None, List.empty, None, None, maybeParams, FunctionReturnP(Range(headerEnd, headerEnd), None, None)),
             Some(block)))
       }
     }
@@ -782,7 +782,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
             Range(begin, end),
             FunctionHeaderP(
               Range(begin, paramsEnd),
-              None, List(), None, None,
+              None, List.empty, None, None,
               Some(ParamsP(Range(begin, paramsEnd), List(param))),
               FunctionReturnP(Range(end, end), None, None)), Some(body)))
       }

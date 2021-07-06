@@ -12,7 +12,7 @@ object IFunction1 {
     InterfaceA(
       RangeS.internal(-69),
       TopLevelCitizenDeclarationNameA("IFunction1", CodeLocationS.internal(-7)),
-      List(),
+      List.empty,
       false,
       CodeRuneA("M"),
       None,
@@ -32,10 +32,10 @@ object IFunction1 {
         FunctionA(
           RangeS.internal(-5633),
           FunctionNameA("__call", CodeLocationS.internal(-8)),
-          List(),
+          List.empty,
           FunctionTemplataType,
           Set(),
-          List(),
+          List.empty,
           Set(CodeRuneA("BorrowThis"), CodeRuneA("ThisK")),
           Map(
             CodeRuneA("BorrowThis") -> CoordTemplataType,

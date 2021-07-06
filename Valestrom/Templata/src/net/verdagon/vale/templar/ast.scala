@@ -78,10 +78,10 @@ case class EdgeT(
   methods: List[PrototypeT])
 
 object Program2 {
-  val emptyTupleStructRef = StructRefT(FullNameT(PackageCoordinate.BUILTIN, List(), TupleNameT(List())))
-  val emptyTupleType: PackTT = PackTT(List(), Program2.emptyTupleStructRef)
+  val emptyTupleStructRef = StructRefT(FullNameT(PackageCoordinate.BUILTIN, List.empty, TupleNameT(List.empty)))
+  val emptyTupleType: PackTT = PackTT(List.empty, Program2.emptyTupleStructRef)
   val emptyTupleReference: CoordT = CoordT(ShareT, ReadonlyT, emptyTupleType)
-  val emptyPackExpression: PackTE = PackTE(List(), CoordT(ShareT, ReadonlyT, Program2.emptyTupleType), Program2.emptyTupleType)
+  val emptyPackExpression: PackTE = PackTE(List.empty, CoordT(ShareT, ReadonlyT, Program2.emptyTupleType), Program2.emptyTupleType)
 
   val intType = CoordT(ShareT, ReadonlyT, IntT.i32)
   val boolType = CoordT(ShareT, ReadonlyT, BoolT())

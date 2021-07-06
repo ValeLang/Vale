@@ -26,8 +26,8 @@ object PatternSUtils {
   def getDistinctOrderedRunesForPattern(pattern: AtomSP): List[IRuneS] = {
     val runesFromVirtuality =
       pattern.virtuality match {
-        case None => List()
-        case Some(AbstractSP) => List()
+        case None => List.empty
+        case Some(AbstractSP) => List.empty
         case Some(OverrideSP(range, kindRune)) => List(kindRune)
       }
     val runesFromDestructures =

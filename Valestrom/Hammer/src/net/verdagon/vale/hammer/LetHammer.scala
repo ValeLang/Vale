@@ -285,12 +285,12 @@ object LetHammer {
       locals: LocalsBox,
       des2: DestroyTE):
   ExpressionH[KindH] = {
-    val DestroyTE(sourceExpr2, structRef2, destinationReferenceLocalVariables) = des2
+    val DestroyTE(sourceExpr2, structRefT, destinationReferenceLocalVariables) = des2
 
     val (sourceExprResultLine, sourceExprDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2);
 
-    val structDef2 = hinputs.lookupStruct(structRef2)
+    val structDefT = hinputs.lookupStruct(structRefT)
 
     // Destructure2 will immediately destroy any addressible references inside it
     // (see Destructure2 comments).
@@ -304,7 +304,7 @@ object LetHammer {
     // We put List() here to make sure that we've consumed all the destination
     // reference local variables.
     val (List(), localTypes, localIndices) =
-      structDef2.members.foldLeft((destinationReferenceLocalVariables, List[ReferenceH[KindH]](), List[Local]()))({
+      structDefT.members.foldLeft((destinationReferenceLocalVariables, List[ReferenceH[KindH]](), List[Local]()))({
         case ((remainingDestinationReferenceLocalVariables, previousLocalTypes, previousLocalIndices), member2) => {
           member2.tyype match {
             case ReferenceMemberTypeT(memberRefType2) => {
@@ -345,7 +345,7 @@ object LetHammer {
           localIndices.toVector)
 
     val unboxingsH =
-      structDef2.members.zip(localTypes.zip(localIndices)).flatMap({
+      structDefT.members.zip(localTypes.zip(localIndices)).flatMap({
         case (structMember2, (localType, local)) => {
           structMember2.tyype match {
             case ReferenceMemberTypeT(_) => List()

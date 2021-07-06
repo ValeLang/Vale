@@ -284,12 +284,12 @@ class FunctionTemplarMiddleLayer(
 //  def makeImplDestructor(
 //    env: IEnvironment,
 //    temputs: Temputs,
-//    structDef2: StructDefinition2,
+//    structDefT: StructDefinition2,
 //    interfaceRef2: InterfaceRef2):
 //  Temputs = {
-//    val ownership = if (structDef2.mutability == MutableP) Own else Share
-//    val structRef2 = structDef2.getRef
-//    val structType2 = Coord(ownership, structRef2)
+//    val ownership = if (structDefT.mutability == MutableP) Own else Share
+//    val structRefT = structDefT.getRef
+//    val structType2 = Coord(ownership, structRefT)
 //    val interfaceType2 = Coord(ownership, interfaceRef2)
 //    val signature2 =
 //      Signature2(
@@ -300,7 +300,7 @@ class FunctionTemplarMiddleLayer(
 //
 //    val header =
 //      core.makeImplDestructor(
-//        env, temputs, structDef2, interfaceRef2)
+//        env, temputs, structDefT, interfaceRef2)
 //
 //
 //      VirtualTemplar.evaluateParent(env, temputs, header)

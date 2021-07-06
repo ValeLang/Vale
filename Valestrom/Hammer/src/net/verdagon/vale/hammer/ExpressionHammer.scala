@@ -210,7 +210,7 @@ object ExpressionHammer {
         (newStructAndDeferredsExprH, List())
       }
 
-      case ConstructTE(structRef2, resultType2, memberExprs) => {
+      case ConstructTE(structRefT, resultType2, memberExprs) => {
         val (memberResultLines, deferreds) =
           translateExpressions(hinputs, hamuts, currentFunctionHeader, locals, memberExprs);
 
@@ -218,7 +218,7 @@ object ExpressionHammer {
           TypeHammer.translateReference(hinputs, hamuts, resultType2)
 
 
-        val structDefH = hamuts.structDefsByRef2(structRef2)
+        val structDefH = hamuts.structDefsByRef2(structRefT)
         vassert(memberResultLines.size == structDefH.members.size)
         memberResultLines.zip(structDefH.members).foreach({ case (memberResultLine, memberH ) =>
           vassert(memberResultLine.resultType == memberH.tyype)
@@ -241,13 +241,13 @@ object ExpressionHammer {
         (loadedAccessH, deferreds)
       }
 
-      case lookup2 @ LocalLookupT(_,AddressibleLocalVariableT(_, _, _), _, _) => {
+      case lookup2 @ LocalLookupTE(_,AddressibleLocalVariableT(_, _, _), _, _) => {
         val loadBoxAccess =
           LoadHammer.translateLocalAddress(hinputs, hamuts, currentFunctionHeader, locals, lookup2)
         (loadBoxAccess, List())
       }
 
-      case lookup2 @ AddressMemberLookupT(_,_, _, _, _) => {
+      case lookup2 @ AddressMemberLookupTE(_,_, _, _, _) => {
         val (loadBoxAccess, deferreds) =
           LoadHammer.translateMemberAddress(hinputs, hamuts, currentFunctionHeader, locals, lookup2)
         (loadBoxAccess, deferreds)

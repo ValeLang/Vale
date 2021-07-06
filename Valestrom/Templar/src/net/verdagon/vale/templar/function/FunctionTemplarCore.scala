@@ -277,15 +277,15 @@ class FunctionTemplarCore(
     env: FunctionEnvironment,
     temputs: Temputs,
     maybeOriginFunction1: Option[FunctionA],
-    structDef2: StructDefinitionT,
+    structDefT: StructDefinitionT,
     interfaceRef2: InterfaceRefT,
     structDestructor: PrototypeT,
   ):
   (FunctionHeaderT) = {
-    val ownership = if (structDef2.mutability == MutableT) OwnT else ShareT
-    val permission = if (structDef2.mutability == MutableT) ReadwriteT else ReadonlyT
-    val structRef2 = structDef2.getRef
-    val structType2 = CoordT(ownership, permission, structRef2)
+    val ownership = if (structDefT.mutability == MutableT) OwnT else ShareT
+    val permission = if (structDefT.mutability == MutableT) ReadwriteT else ReadonlyT
+    val structRefT = structDefT.getRef
+    val structType2 = CoordT(ownership, permission, structRefT)
 
     val destructor2 =
       FunctionT(

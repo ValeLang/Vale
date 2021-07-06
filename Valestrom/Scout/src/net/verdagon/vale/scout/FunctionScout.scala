@@ -293,7 +293,7 @@ object FunctionScout {
       ParameterS(
         AtomSP(
           closureParamRange,
-          CaptureS(closureParamName),None,closureParamTypeRune,None))
+          Some(CaptureS(closureParamName)),None,closureParamTypeRune,None))
 
     val (magicParamsRules, magicParams) =
         lambdaMagicParamNames.map({
@@ -305,7 +305,7 @@ object FunctionScout {
               ParameterS(
                 AtomSP(
                   magicParamRange,
-                  CaptureS(mpn),None,magicParamRune,None))
+                  Some(CaptureS(mpn)),None,magicParamRune,None))
             (ruleS, paramS)
           }
         })

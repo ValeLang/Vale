@@ -99,58 +99,58 @@ object StructHammer {
   }
 
   def translateStructs(hinputs: Hinputs, hamuts: HamutsBox): Unit = {
-    hinputs.structs.foreach(structDef2 => translateStructRef(hinputs, hamuts, structDef2.getRef))
+    hinputs.structs.foreach(structDefT => translateStructRef(hinputs, hamuts, structDefT.getRef))
   }
 
   def translateStructRef(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-      structRef2: StructRefT):
+      structRefT: StructRefT):
   (StructRefH) = {
-    hamuts.structRefsByRef2.get(structRef2) match {
+    hamuts.structRefsByRef2.get(structRefT) match {
       case Some(structRefH) => structRefH
       case None => {
-        val (fullNameH) = NameHammer.translateFullName(hinputs, hamuts, structRef2.fullName)
+        val (fullNameH) = NameHammer.translateFullName(hinputs, hamuts, structRefT.fullName)
         // This is the only place besides StructDefinitionH that can make a StructRefH
         val temporaryStructRefH = StructRefH(fullNameH);
-        hamuts.forwardDeclareStruct(structRef2, temporaryStructRefH)
-        val structDef2 = hinputs.lookupStruct(structRef2);
+        hamuts.forwardDeclareStruct(structRefT, temporaryStructRefH)
+        val structDefT = hinputs.lookupStruct(structRefT);
         val (membersH) =
-          TypeHammer.translateMembers(hinputs, hamuts, structDef2.fullName, structDef2.members)
+          TypeHammer.translateMembers(hinputs, hamuts, structDefT.fullName, structDefT.members)
 
-        val (edgesH) = translateEdgesForStruct(hinputs, hamuts, temporaryStructRefH, structRef2)
+        val (edgesH) = translateEdgesForStruct(hinputs, hamuts, temporaryStructRefH, structRefT)
 
         // Make sure there's a destructor for this shared struct.
-        structDef2.mutability match {
+        structDefT.mutability match {
           case MutableT => None
           case ImmutableT => {
-            if (structRef2 != Program2.emptyTupleStructRef) {
+            if (structRefT != Program2.emptyTupleStructRef) {
               vassertSome(
                 hinputs.functions.find(function => {
-                  function.header.fullName == FullNameT(PackageCoordinate.BUILTIN, List(), ImmConcreteDestructorNameT(structRef2))
+                  function.header.fullName == FullNameT(PackageCoordinate.BUILTIN, List(), ImmConcreteDestructorNameT(structRefT))
                 }))
             }
           }
         }
 
-        val maybeExport = structDef2.attributes.collectFirst { case Export2(packageCoord) => packageCoord }
+        val maybeExport = structDefT.attributes.collectFirst { case Export2(packageCoord) => packageCoord }
 
         val structDefH =
           StructDefinitionH(
             fullNameH,
             maybeExport.nonEmpty,
-            structDef2.weakable,
-            Conversions.evaluateMutability(structDef2.mutability),
+            structDefT.weakable,
+            Conversions.evaluateMutability(structDefT.mutability),
             edgesH,
             membersH);
-        hamuts.addStructOriginatingFromTemplar(structRef2, structDefH)
+        hamuts.addStructOriginatingFromTemplar(structRefT, structDefH)
         vassert(structDefH.getRef == temporaryStructRefH)
 
         maybeExport match {
           case None =>
           case Some(exportPackageCoord) => {
             val exportedName =
-              structRef2.fullName.last match {
+              structRefT.fullName.last match {
                 case CitizenNameT(humanName, _) => humanName
                 case _ => vfail("Can't export something that doesn't have a human readable name!")
               }
@@ -205,9 +205,9 @@ object StructHammer {
   private def translateEdgesForStruct(
       hinputs: Hinputs, hamuts: HamutsBox,
       structRefH: StructRefH,
-      structRef2: StructRefT):
+      structRefT: StructRefT):
   (List[EdgeH]) = {
-    val edges2 = hinputs.edges.filter(_.struct == structRef2)
+    val edges2 = hinputs.edges.filter(_.struct == structRefT)
     translateEdgesForStruct(hinputs, hamuts, structRefH, edges2.toList)
   }
 

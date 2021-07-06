@@ -24,7 +24,7 @@ case class LambdaStructNameS(lambdaName: LambdaNameS) extends INameS
 case class ImplNameS(subCitizenHumanName: String, codeLocation: CodeLocationS) extends INameS
 case class ExportAsNameS(codeLocation: CodeLocationS) extends INameS
 case class LetNameS(codeLocation: CodeLocationS) extends INameS
-case class UnnamedLocalNameS(codeLocation: CodeLocationS) extends IVarNameS
+//case class UnnamedLocalNameS(codeLocation: CodeLocationS) extends IVarNameS
 case class ClosureParamNameS() extends IVarNameS
 case class MagicParamNameS(codeLocation: CodeLocationS) extends IVarNameS
 case class CodeVarNameS(name: String) extends IVarNameS {

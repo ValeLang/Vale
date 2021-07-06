@@ -141,7 +141,7 @@ class ScoutTests extends FunSuite with Matchers {
     }
 
     // Yes, even though the user didnt specify any. See CCAUIR.
-    blork.identifyingRunes shouldEqual List()
+    blork.identifyingRunes shouldEqual List.empty
   }
 
   test("Impl") {
@@ -356,7 +356,7 @@ class ScoutTests extends FunSuite with Matchers {
     val CodeBody1(BodySE(_, _, block)) = main.body
     block match {
       case BlockSE(
-      _,List(),
+      _,Nil,
       List(
       DotSE(_,OutsideLoadSE(_,moo,None,LendConstraintP(None)),x,true))) =>
     }
@@ -374,7 +374,7 @@ class ScoutTests extends FunSuite with Matchers {
     val CodeBody1(BodySE(_, _, block)) = main.body
     block match {
       case BlockSE(
-      _,List(),
+      _,Nil,
       List(
       OwnershippedSE(_,
       DotSE(_,OutsideLoadSE(_,moo,None,LendConstraintP(None)),x,true),LendConstraintP(Some(ReadonlyP))))) =>
@@ -423,7 +423,7 @@ class ScoutTests extends FunSuite with Matchers {
     main.body match {
       case CodeBody1(
       BodySE(_,
-      List(),
+      Nil,
       BlockSE(_,
       List(LocalS(CodeVarNameS("this"), Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed)),
       List(

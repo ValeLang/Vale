@@ -446,7 +446,7 @@ struct FunctionHeaderP {
   // attributes List<IFunctionAttributeP>;
 
   // If this is None, then the function had no identifying runes.
-  // If it's Some(List()) it might represent the <> in `fn moo<>(a int, b bool) { ... }`
+  // If it's Some(List.empty) it might represent the <> in `fn moo<>(a int, b bool) { ... }`
   // If it's Some(List(...)) then it's the <T, Y> in `fn moo<T, Y>(a T, b Y) { ... }`
   maybeUserSpecifiedIdentifyingRunes Opt<IdentifyingRunesP>;
 

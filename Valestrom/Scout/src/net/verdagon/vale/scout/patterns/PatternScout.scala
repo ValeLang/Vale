@@ -42,7 +42,7 @@ case class LetRuleState(
 object PatternScout {
   def getParameterCaptures(pattern: AtomSP): List[VariableDeclaration] = {
     val AtomSP(_, maybeCapture, _, _, maybeDestructure) = pattern
-    List() ++
+    List.empty ++
         getCaptureCaptures(maybeCapture) ++
         maybeDestructure.toList.flatten.flatMap(getParameterCaptures)
   }
@@ -83,8 +83,8 @@ object PatternScout {
 
     val (newRulesFromVirtuality, maybeVirtualityS) =
       maybeVirtualityP match {
-        case None => (List(), None)
-        case Some(AbstractP) => (List(), Some(AbstractSP))
+        case None => (List.empty, None)
+        case Some(AbstractP) => (List.empty, Some(AbstractSP))
         case Some(OverrideP(range, typeP)) => {
           typeP match {
             case InterpretedPT(range, _, _, _) => {
@@ -110,7 +110,7 @@ object PatternScout {
 
     val (newRulesFromDestructures, maybePatternsS) =
       maybeDestructureP match {
-        case None => (List(), None)
+        case None => (List.empty, None)
         case Some(DestructureP(_, destructureP)) => {
           val (newRulesFromDestructures, patternsS) =
             destructureP.foldLeft((List[IRulexSR](), List[AtomSP]()))({
@@ -198,7 +198,7 @@ object PatternScout {
     runeOnLeft: Boolean = true):
   (List[IRulexSR], Option[IRuneS]) = {
     if (maybeTypeP.isEmpty) {
-      (List(), None)
+      (List.empty, None)
     } else {
       val (newRules, rune) =
         translateMaybeTypeIntoRune(
@@ -248,19 +248,19 @@ object PatternScout {
     templexP match {
       case AnonymousRunePT(range) => {
         val rune = rulesS.newImplicitRune()
-        (List(), RuneST(evalRange(range), rune), Some(rune))
+        (List.empty, RuneST(evalRange(range), rune), Some(rune))
       }
-      case IntPT(range,value) => (List(), IntST(evalRange(range), value), None)
-      case BoolPT(range,value) => (List(), BoolST(evalRange(range), value), None)
+      case IntPT(range,value) => (List.empty, IntST(evalRange(range), value), None)
+      case BoolPT(range,value) => (List.empty, BoolST(evalRange(range), value), None)
       case NameOrRunePT(NameP(range, nameOrRune)) => {
         if (env.allUserDeclaredRunes().contains(CodeRuneS(nameOrRune))) {
-          (List(), RuneST(evalRange(range), CodeRuneS(nameOrRune)), Some(CodeRuneS(nameOrRune)))
+          (List.empty, RuneST(evalRange(range), CodeRuneS(nameOrRune)), Some(CodeRuneS(nameOrRune)))
         } else {
-          (List(), NameST(Scout.evalRange(env.file, range), CodeTypeNameS(nameOrRune)), None)
+          (List.empty, NameST(Scout.evalRange(env.file, range), CodeTypeNameS(nameOrRune)), None)
         }
       }
-      case MutabilityPT(range, mutability) => (List(), MutabilityST(evalRange(range), mutability), None)
-      case VariabilityPT(range, variability) => (List(), VariabilityST(evalRange(range), variability), None)
+      case MutabilityPT(range, mutability) => (List.empty, MutabilityST(evalRange(range), mutability), None)
+      case VariabilityPT(range, variability) => (List.empty, VariabilityST(evalRange(range), variability), None)
       case InterpretedPT(range,ownership,permission, innerP) => {
         val (newRules, innerS, _) =
           translatePatternTemplex(env, rulesS, innerP)

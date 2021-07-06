@@ -122,7 +122,7 @@ case class FunctionHeaderP(
                             name: Option[NameP],
                             attributes: List[IFunctionAttributeP],
 
-                            // If Some(List()), should show up like the <> in fn moo<>(a int, b bool)
+                            // If Some(List.empty), should show up like the <> in fn moo<>(a int, b bool)
                             maybeUserSpecifiedIdentifyingRunes: Option[IdentifyingRunesP],
                             templateRules: Option[TemplateRulesP],
 

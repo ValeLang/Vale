@@ -63,7 +63,7 @@ case class PackageH(
   // Function must be at the top level of the program.
   def lookupFunction(readableName: String) = {
     val matches =
-      (List() ++
+      (List.empty ++
         exportNameToFunction.get(readableName).toList ++
         functions.filter(_.prototype.fullName.readableName == readableName).map(_.prototype))
         .distinct

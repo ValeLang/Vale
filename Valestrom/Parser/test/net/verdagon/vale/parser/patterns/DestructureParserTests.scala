@@ -39,7 +39,7 @@ class DestructureParserTests extends FunSuite with Matchers with Collector {
 
   test("Only empty destructure") {
     compile("()") shouldHave {
-      case withDestructure(List()) =>
+      case withDestructure(Nil) =>
     }
   }
   test("One element destructure") {

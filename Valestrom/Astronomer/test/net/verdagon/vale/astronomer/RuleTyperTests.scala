@@ -91,7 +91,7 @@ class RuleTyperTests extends FunSuite with Matchers {
               TemplexSR(
                 InterpretedST(RangeS.testZero,ConstraintP,ReadonlyP,NameST(RangeS.testZero, CodeTypeNameS("ImmInterface")))))),
           RangeS.testZero,
-          List(),
+          List.empty,
           None)
 
     vassert(conclusions.typeByRune(CodeRuneA("__C")) == CoordTemplataType)
@@ -112,7 +112,7 @@ class RuleTyperTests extends FunSuite with Matchers {
                 InterpretedST(
                   RangeS.testZero,WeakP,ReadonlyP,NameST(RangeS.testZero, CodeTypeNameS("ImmInterface")))))),
           RangeS.testZero,
-          List(),
+          List.empty,
           None)
 
     vassert(conclusions.typeByRune(CodeRuneA("__C")) == CoordTemplataType)
@@ -126,7 +126,7 @@ class RuleTyperTests extends FunSuite with Matchers {
           makeCannedEnvironment(),
           List(TypedSR(RangeS.testZero,CodeRuneS("C"), CoordTypeSR)),
           RangeS.testZero,
-          List(),
+          List.empty,
           None)
 
     vassert(conclusions.typeByRune(CodeRuneA("C")) == CoordTemplataType)
@@ -140,7 +140,7 @@ class RuleTyperTests extends FunSuite with Matchers {
           makeCannedEnvironment(),
           List(EqualsSR(RangeS.testZero,TypedSR(RangeS.testZero,CodeRuneS("C"), CoordTypeSR), TypedSR(RangeS.testZero,CodeRuneS("C"), KindTypeSR))),
           RangeS.testZero,
-          List(),
+          List.empty,
           None)
 
     vassert(isf.toString.contains("but previously concluded"))
@@ -154,7 +154,7 @@ class RuleTyperTests extends FunSuite with Matchers {
           makeCannedEnvironment(),
           List(EqualsSR(RangeS.testZero,TypedSR(RangeS.testZero,CodeRuneS("C"), CoordTypeSR), CallSR(RangeS.testZero,"toRef", List(TypedSR(RangeS.testZero,CodeRuneS("A"), KindTypeSR))))),
           RangeS.testZero,
-          List(),
+          List.empty,
           None)
 
     conclusions.typeByRune(CodeRuneA("C")) shouldEqual CoordTemplataType
@@ -170,7 +170,7 @@ class RuleTyperTests extends FunSuite with Matchers {
             TypedSR(RangeS.testZero,CodeRuneS("Z"),CoordTypeSR),
             EqualsSR(RangeS.testZero,TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Z"))),TemplexSR(NameST(RangeS.testZero, CodeTypeNameS("int"))))),
           RangeS.testZero,
-          List(),
+          List.empty,
           None)
 
     conclusions.typeByRune(CodeRuneA("Z")) shouldEqual CoordTemplataType
@@ -185,7 +185,7 @@ class RuleTyperTests extends FunSuite with Matchers {
           List(
             EqualsSR(RangeS.testZero,TemplexSR(RuneST(RangeS.testZero,CodeRuneS("__RetRune"))),CallSR(RangeS.testZero,"toRef",List(TemplexSR(NameST(RangeS.testZero, CodeTypeNameS("MutStruct"))))))),
           RangeS.testZero,
-          List(),
+          List.empty,
           None)
 
     conclusions.typeByRune(CodeRuneA("__RetRune")) shouldEqual CoordTemplataType
@@ -201,7 +201,7 @@ class RuleTyperTests extends FunSuite with Matchers {
             TypedSR(RangeS.testZero,CodeRuneS("Z"),CoordTypeSR),
             EqualsSR(RangeS.testZero,TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Z"))),CallSR(RangeS.testZero,"toRef", List(TemplexSR(NameST(RangeS.testZero, CodeTypeNameS("int"))))))),
           RangeS.testZero,
-          List(),
+          List.empty,
           None)
 
     vassert(conclusions.typeByRune(CodeRuneA("Z")) == CoordTemplataType)
@@ -218,7 +218,7 @@ class RuleTyperTests extends FunSuite with Matchers {
               TypedSR(RangeS.testZero,CodeRuneS("K"), KindTypeSR),
               TemplexSR(CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("MutTInterface")),List(RuneST(RangeS.testZero,CodeRuneS("T"))))))),
           RangeS.testZero,
-          List(),
+          List.empty,
           None)
 
     vassert(conclusions.typeByRune(CodeRuneA("T")) == CoordTemplataType)
@@ -236,7 +236,7 @@ class RuleTyperTests extends FunSuite with Matchers {
               TypedSR(RangeS.testZero,CodeRuneS("X"),KindTypeSR),
               TemplexSR(CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("MutTInterface")),List(RuneST(RangeS.testZero,CodeRuneS("T"))))))),
           RangeS.testZero,
-          List(),
+          List.empty,
           None)
 
     vassert(conclusions.typeByRune(CodeRuneA("T")) == CoordTemplataType)
@@ -491,7 +491,7 @@ class RuleTyperTests extends FunSuite with Matchers {
                 VariabilityST(RangeS.testZero,VaryingP),
                 IntST(RangeS.testZero,5),InterpretedST(RangeS.testZero,ShareP,ReadonlyP,NameST(RangeS.testZero, CodeTypeNameS("int"))))))),
         RangeS.testZero,
-        List(),
+        List.empty,
         None)
     conclusions.typeByRune(CodeRuneA("Z")) shouldEqual CoordTemplataType
   }
@@ -511,7 +511,7 @@ class RuleTyperTests extends FunSuite with Matchers {
                   InterpretedST(RangeS.testZero,ShareP,ReadonlyP, NameST(RangeS.testZero, CodeTypeNameS("int"))),
                   InterpretedST(RangeS.testZero,ShareP,ReadonlyP, NameST(RangeS.testZero, CodeTypeNameS("int")))))))),
         RangeS.testZero,
-        List(),
+        List.empty,
         None)
     conclusions.typeByRune(CodeRuneA("Z")) shouldEqual CoordTemplataType
   }
@@ -530,7 +530,7 @@ class RuleTyperTests extends FunSuite with Matchers {
             TypedSR(RangeS.testZero,CodeRuneS("K"), KindTypeSR),
             TemplexSR(CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("Array")),List(RuneST(RangeS.testZero,CodeRuneS("M")), RuneST(RangeS.testZero,CodeRuneS("V")), RuneST(RangeS.testZero,CodeRuneS("T"))))))),
         RangeS.testZero,
-        List(),
+        List.empty,
         None)
     conclusions.typeByRune(CodeRuneA("M")) shouldEqual MutabilityTemplataType
     conclusions.typeByRune(CodeRuneA("V")) shouldEqual VariabilityTemplataType
@@ -548,7 +548,7 @@ class RuleTyperTests extends FunSuite with Matchers {
               TemplexSR(RuneST(RangeS.testZero,CodeRuneS("K"))),
               TemplexSR(NameST(RangeS.testZero, CodeTypeNameS("MutInterface"))))),
           RangeS.testZero,
-          List(),
+          List.empty,
           None)
     conclusions.typeByRune(CodeRuneA("K")) shouldEqual KindTemplataType
   }
@@ -568,7 +568,7 @@ class RuleTyperTests extends FunSuite with Matchers {
                 TemplexSR(PackST(RangeS.testZero,List(RuneST(RangeS.testZero,CodeRuneS("B"))))),
                 TemplexSR(RuneST(RangeS.testZero,CodeRuneS("C")))))),
           RangeS.testZero,
-          List(),
+          List.empty,
           None)
     conclusions.typeByRune(CodeRuneA("X")) shouldEqual PrototypeTemplataType
     conclusions.typeByRune(CodeRuneA("A")) shouldEqual StringTemplataType

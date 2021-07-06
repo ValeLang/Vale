@@ -29,16 +29,16 @@ class VirtualTests extends FunSuite with Matchers {
             SignatureT(
               FullNameT(
                 PackageCoordinate.TEST_TLD,
-                List(),
+                List.empty,
                 FunctionNameT(
                   "doThing",
-                  List(),
+                  List.empty,
                   List(
                     CoordT(
                       OwnT,
                       ReadwriteT,
                       InterfaceRefT(
-                        FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("I", List()))))))))))
+                        FullNameT(PackageCoordinate.TEST_TLD, List.empty, CitizenNameT("I", List.empty))))))))))
       vassert(doThing.header.params(0).virtuality.get == AbstractT$)
     }
 
@@ -63,16 +63,16 @@ class VirtualTests extends FunSuite with Matchers {
           SignatureT(
             FullNameT(
               PackageCoordinate.TEST_TLD,
-              List(),
+              List.empty,
               FunctionNameT(
                 "doThing",
-                List(),
+                List.empty,
                 List(
                   CoordT(
                     OwnT,
                     ReadwriteT,
                     InterfaceRefT(
-                      FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("I", List()))))))))))
+                      FullNameT(PackageCoordinate.TEST_TLD, List.empty, CitizenNameT("I", List.empty))))))))))
     vassert(doThing.header.params(0).virtuality.get == AbstractT$)
   }
 
@@ -96,7 +96,7 @@ class VirtualTests extends FunSuite with Matchers {
       vassertSome(
         temputs.lookupFunction(
           SignatureT(
-            FullNameT(PackageCoordinate.TEST_TLD, List(CitizenNameT("I",List())),FunctionNameT("doThing",List(),List(CoordT(OwnT,ReadwriteT,InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, List(),CitizenNameT("I",List()))))))))))
+            FullNameT(PackageCoordinate.TEST_TLD, List(CitizenNameT("I",List.empty)),FunctionNameT("doThing",List.empty,List(CoordT(OwnT,ReadwriteT,InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, List.empty,CitizenNameT("I",List.empty))))))))))
     vassert(doThing.header.params(0).virtuality.get == AbstractT$)
   }
 

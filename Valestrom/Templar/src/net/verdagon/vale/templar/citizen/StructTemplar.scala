@@ -126,7 +126,7 @@ class StructTemplar(
           case KindTemplataType => FunctionTemplataType
           case TemplateTemplataType(params, KindTemplataType) => TemplateTemplataType(params, FunctionTemplataType)
         },
-        struct1.knowableRunes ++ (if (isTemplate) List() else List(retRune)),
+        struct1.knowableRunes ++ (if (isTemplate) List.empty else List(retRune)),
         struct1.identifyingRunes,
         struct1.localRunes ++ List(retRune),
         struct1.typeByRune + (retRune -> CoordTemplataType),
@@ -187,7 +187,7 @@ class StructTemplar(
 
       val templateParams =
         (interfaceA.tyype match {
-          case KindTemplataType => List()
+          case KindTemplataType => List.empty
           case TemplateTemplataType(params, KindTemplataType) => params
         }) ++
           interfaceA.internalMethods.map(meth => CoordTemplataType)
@@ -200,7 +200,7 @@ class StructTemplar(
         FunctionNameA(name, codeLocation),
         List(UserFunctionA),
         functionType,
-        interfaceA.knowableRunes ++ functorRunes ++ (if (isTemplate) List() else List(AnonymousSubstructParentInterfaceRuneA())),
+        interfaceA.knowableRunes ++ functorRunes ++ (if (isTemplate) List.empty else List(AnonymousSubstructParentInterfaceRuneA())),
         identifyingRunes,
         interfaceA.localRunes ++ functorRunes ++ List(AnonymousSubstructParentInterfaceRuneA()),
         typeByRune,
@@ -323,7 +323,7 @@ class StructTemplar(
       val constructorName =
         interfaceRef2.fullName
           .addStep(AnonymousSubstructNameT(List(functionStructType)))
-          .addStep(ConstructorNameT(List()))
+          .addStep(ConstructorNameT(List.empty))
       temputs.prototypeDeclared(constructorName) match {
         case Some(func) => return (anonymousSubstructRef, func)
         case None =>
@@ -334,11 +334,11 @@ class StructTemplar(
         FunctionT(
           FunctionHeaderT(
             constructorName,
-            List(),
-            List(),
+            List.empty,
+            List.empty,
             anonymousSubstructType,
             None),
-          List(),
+          List.empty,
           BlockTE(
             List(
               ReturnTE(
@@ -349,7 +349,7 @@ class StructTemplar(
                     ConstructTE(
                       functionStructRef,
                       CoordT(ShareT, ReadonlyT, functionStructRef),
-                      List())))))))
+                      List.empty)))))))
       temputs.declareFunctionSignature(range, constructor2.header.toSignature, None)
       temputs.declareFunctionReturnType(constructor2.header.toSignature, constructor2.header.returnType)
       temputs.addFunction(constructor2);

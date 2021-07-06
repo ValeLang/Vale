@@ -10,7 +10,7 @@ object RefCounting {
     FunctionA(
       RangeS.internal(-60),
       FunctionNameA("__checkvarrc", CodeLocationS.internal(-11)),
-      List(),
+      List.empty,
       TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
       Set(CodeRuneA("V"), CodeRuneA("I")),
       List(CodeRuneA("T")),
@@ -41,7 +41,7 @@ object RefCounting {
       CodeBodyA(
         BodyAE(
           RangeS.internal(-35),
-          List(),
+          List.empty,
           BlockAE(
             RangeS.internal(-35),
             List(
@@ -63,7 +63,7 @@ object RefCounting {
     FunctionA(
       RangeS.internal(-59),
       checkMemberRcName,
-      List(),
+      List.empty,
       TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
       Set(CodeRuneA("V"), CodeRuneA("I")),
       List(CodeRuneA("T")),
@@ -84,7 +84,7 @@ object RefCounting {
       CodeBodyA(
         BodyAE(
           RangeS.internal(-35),
-          List(),
+          List.empty,
           BlockAE(
             RangeS.internal(-35),
             List(

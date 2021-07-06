@@ -14,7 +14,7 @@ class TemplarProjectTests extends FunSuite with Matchers {
       TemplarTestCompilation.test("fn main() export { }")
     val temputs = compile.expectTemputs()
 
-    val fullName = FullNameT(PackageCoordinate.TEST_TLD, List(), FunctionNameT("main", List(), List()))
+    val fullName = FullNameT(PackageCoordinate.TEST_TLD, Nil, FunctionNameT("main", Nil, Nil))
     vassertSome(temputs.lookupFunction(SignatureT(fullName)))
   }
 
@@ -23,14 +23,14 @@ class TemplarProjectTests extends FunSuite with Matchers {
       TemplarTestCompilation.test("fn main() export { {}!() }")
     val temputs = compile.expectTemputs()
 
-//    val fullName = FullName2(PackageCoordinate.TEST_TLD, List(), FunctionName2("lamb", List(), List()))
+//    val fullName = FullName2(PackageCoordinate.TEST_TLD, Nil, FunctionName2("lamb", Nil, Nil))
 
     val lamFunc = temputs.lookupFunction("__call")
     lamFunc.header.fullName match {
       case FullNameT(
         PackageCoordinate.TEST_TLD,
-        List(FunctionNameT("main",List(),List()), LambdaCitizenNameT(_)),
-        FunctionNameT("__call",List(),List(CoordT(ShareT,ReadonlyT,_)))) =>
+        List(FunctionNameT("main",Nil,Nil), LambdaCitizenNameT(_)),
+        FunctionNameT("__call",Nil,List(CoordT(ShareT,ReadonlyT,_)))) =>
     }
   }
 
@@ -41,7 +41,7 @@ class TemplarProjectTests extends FunSuite with Matchers {
 
     val struct = temputs.lookupStruct("MyStruct")
     struct.fullName match {
-      case FullNameT(PackageCoordinate.TEST_TLD,List(),CitizenNameT("MyStruct",List())) =>
+      case FullNameT(PackageCoordinate.TEST_TLD,Nil,CitizenNameT("MyStruct",Nil)) =>
     }
   }
 }

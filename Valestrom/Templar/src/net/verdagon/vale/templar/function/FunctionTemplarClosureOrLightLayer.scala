@@ -153,7 +153,7 @@ class FunctionTemplarClosureOrLightLayer(
     vassert(!function.isTemplate)
 
     val name = makeNameWithClosureds(outerEnv, function.name)
-    val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, List(), newTemplataStore())
+    val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, List.empty, newTemplataStore())
     ordinaryOrTemplatedLayer.evaluateOrdinaryFunctionFromNonCallForPrototype(
       newEnv, temputs, callRange)
   }
@@ -246,7 +246,7 @@ class FunctionTemplarClosureOrLightLayer(
     function: FunctionA
   ): BuildingFunctionEnvironmentWithClosureds = {
     val name = makeNameWithClosureds(outerEnv, function.name)
-    BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, List(), newTemplataStore())
+    BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, List.empty, newTemplataStore())
   }
 
   private def makeNameWithClosureds(

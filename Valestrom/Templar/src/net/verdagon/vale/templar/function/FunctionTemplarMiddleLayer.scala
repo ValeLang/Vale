@@ -65,7 +65,7 @@ class FunctionTemplarMiddleLayer(
           case Some(KindTemplata(ir @ InterfaceRefT(_))) => (Some(OverrideT(ir)))
           case Some(it @ InterfaceTemplata(_, _)) => {
             val ir =
-              structTemplar.getInterfaceRef(temputs, range, it, List())
+              structTemplar.getInterfaceRef(temputs, range, it, List.empty)
             (Some(OverrideT(ir)))
           }
         }

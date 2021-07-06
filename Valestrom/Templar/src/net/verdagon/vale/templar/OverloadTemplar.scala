@@ -201,17 +201,17 @@ class OverloadTemplar(
             templata match {
               case KindTemplata(OverloadSet(overloadsEnv, nameInOverloadsEnv, _)) => {
                 getCandidateBanners(
-                  overloadsEnv, temputs, callRange, nameInOverloadsEnv, explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List(), exact)
+                  overloadsEnv, temputs, callRange, nameInOverloadsEnv, explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List.empty, exact)
               }
               case KindTemplata(sr @ StructRefT(_)) => {
                 val structEnv = temputs.getEnvForStructRef(sr)
                 getCandidateBanners(
-                  structEnv, temputs, callRange, GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME), explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List(), exact)
+                  structEnv, temputs, callRange, GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME), explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List.empty, exact)
               }
               case KindTemplata(sr @ InterfaceRefT(_)) => {
                 val interfaceEnv = temputs.getEnvForInterfaceRef(sr)
                 getCandidateBanners(
-                  interfaceEnv, temputs, callRange, GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME), explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List(), exact)
+                  interfaceEnv, temputs, callRange, GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME), explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List.empty, exact)
               }
               case ExternFunctionTemplata(header) => {
                 paramsMatch(temputs, paramFilters, header.params, exact) match {
@@ -219,7 +219,7 @@ class OverloadTemplar(
                     (List(PotentialBannerFromExternFunction(header)), Map(), Map())
                   }
                   case (Some(rejectionReason)) => {
-                    (List(), Map(header.toBanner -> rejectionReason), Map())
+                    (List.empty, Map(header.toBanner -> rejectionReason), Map())
                   }
                 }
               }
@@ -277,13 +277,13 @@ class OverloadTemplar(
                         // And now that we know the types that are expected of these template arguments, we can
                         // run these template argument templexes through the solver so it can evaluate them in
                         // context of the current environment and spit out some templatas.
-                        ruleTyper.solve(temputs, env, equalsRules, callRange, List(), Some(templateArgRuneNamesA.toSet))
+                        ruleTyper.solve(temputs, env, equalsRules, callRange, List.empty, Some(templateArgRuneNamesA.toSet))
                       } catch {
                         case CompileErrorExceptionA(err) => throw CompileErrorExceptionT(InferAstronomerError(err))
                       }) match {
                         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => {
                           val reason = WrongNumberOfTemplateArguments(identifyingRuneTemplataTypes.size, explicitlySpecifiedTemplateArgTemplexesS.size)
-                          (List(), Map(), Map(function -> reason))
+                          (List.empty, Map(), Map(function -> reason))
                         }
                         case (runeTypeConclusions, RuleTyperSolveSuccess(rulesA)) => {
                           // rulesA is the equals rules, but rule typed. Now we'll run them through the solver to get
@@ -294,9 +294,9 @@ class OverloadTemplar(
                           // We only want to solve the template arg runes
                           profiler.childFrame("late astronoming", () => {
                             inferTemplar.inferFromExplicitTemplateArgs(
-                                env, temputs, List(), rulesA, runeTypeConclusions.typeByRune, templateArgRuneNamesA.toSet, List(), None, callRange, List()) match {
+                                env, temputs, List.empty, rulesA, runeTypeConclusions.typeByRune, templateArgRuneNamesA.toSet, List.empty, None, callRange, List.empty) match {
                               case (isf @ InferSolveFailure(_, _, _, _, _, _, _)) => {
-                                (List(), Map(), Map(function -> InferFailure(isf)))
+                                (List.empty, Map(), Map(function -> InferFailure(isf)))
                               }
                               case (InferSolveSuccess(inferences)) => {
                                 val explicitlySpecifiedTemplateArgTemplatas = templateArgRuneNames2.map(inferences.templatasByRune)
@@ -304,12 +304,12 @@ class OverloadTemplar(
                                 functionTemplar.evaluateTemplatedFunctionFromCallForBanner(
                                   temputs, callRange, ft, explicitlySpecifiedTemplateArgTemplatas, paramFilters) match {
                                   case (EvaluateFunctionFailure(reason)) => {
-                                    (List(), Map(), Map(function -> reason))
+                                    (List.empty, Map(), Map(function -> reason))
                                   }
                                   case (EvaluateFunctionSuccess(banner)) => {
                                     paramsMatch(temputs, paramFilters, banner.params, exact) match {
                                       case (Some(rejectionReason)) => {
-                                        (List(), Map(banner -> rejectionReason), Map())
+                                        (List.empty, Map(banner -> rejectionReason), Map())
                                       }
                                       case (None) => {
                                         (List(PotentialBannerFromFunctionS(banner, ft)), Map(), Map())
@@ -327,14 +327,14 @@ class OverloadTemplar(
                       // So it's not a template, but it's a template in context. We'll still need to
                       // feed it into the inferer.
                       functionTemplar.evaluateTemplatedFunctionFromCallForBanner(
-                        temputs, callRange, ft, List(), paramFilters) match {
+                        temputs, callRange, ft, List.empty, paramFilters) match {
                         case (EvaluateFunctionFailure(reason)) => {
-                          (List(), Map(), Map(function -> reason))
+                          (List.empty, Map(), Map(function -> reason))
                         }
                         case (EvaluateFunctionSuccess(banner)) => {
                           paramsMatch(temputs, paramFilters, banner.params, exact) match {
                             case (Some(rejectionReason)) => {
-                              (List(), Map(banner -> rejectionReason), Map())
+                              (List.empty, Map(banner -> rejectionReason), Map())
                             }
                             case (None) => {
                               (List(PotentialBannerFromFunctionS(banner, ft)), Map(), Map())
@@ -353,7 +353,7 @@ class OverloadTemplar(
                         (List(PotentialBannerFromFunctionS(banner, ft)), Map(), Map())
                       }
                       case (Some(rejectionReason)) => {
-                        (List(), Map(banner -> rejectionReason), Map())
+                        (List.empty, Map(banner -> rejectionReason), Map())
                       }
                     }
                 }
@@ -372,11 +372,11 @@ class OverloadTemplar(
       (tyype.kind match {
         case sr @ StructRefT(_) => List(temputs.getEnvForStructRef(sr))
         case ir @ InterfaceRefT(_) => List(temputs.getEnvForInterfaceRef(ir))
-        case _ => List()
+        case _ => List.empty
       }) ++
         (virtuality match {
-          case None => List()
-          case Some(AbstractT$) => List()
+          case None => List.empty
+          case Some(AbstractT$) => List.empty
           case Some(OverrideT(ir)) => List(temputs.getEnvForInterfaceRef(ir))
         })
     })
@@ -521,16 +521,16 @@ class OverloadTemplar(
 
 
     val bannerWithBestScore =
-      if (bannerByIsBestScore.getOrElse(true, List()).isEmpty) {
+      if (bannerByIsBestScore.getOrElse(true, List.empty).isEmpty) {
         vfail("wat")
-      } else if (bannerByIsBestScore.getOrElse(true, List()).size > 1) {
+      } else if (bannerByIsBestScore.getOrElse(true, List.empty).size > 1) {
         throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Can't resolve between:\n" + bannerByIsBestScore.mapValues(_.mkString("\n")).mkString("\n")))
       } else {
         bannerByIsBestScore(true).head._1
       };
 
     val rejectedBanners =
-      bannerByIsBestScore.getOrElse(false, List()).map(_._1)
+      bannerByIsBestScore.getOrElse(false, List.empty).map(_._1)
     val rejectionReasonByBanner =
       rejectedBanners.map((_, Outscored())).toMap
 
@@ -548,7 +548,7 @@ class OverloadTemplar(
         if (ft.function.isTemplate) {
           val (EvaluateFunctionSuccess(banner)) =
             functionTemplar.evaluateTemplatedLightFunctionFromCallForBanner(
-              temputs, callRange, ft, List(), signature.paramTypes.map(p => ParamFilter(p, None)));
+              temputs, callRange, ft, List.empty, signature.paramTypes.map(p => ParamFilter(p, None)));
           (banner)
         } else {
           functionTemplar.evaluateOrdinaryFunctionFromNonCallForBanner(
@@ -603,7 +603,7 @@ class OverloadTemplar(
         ParamFilter(CoordT(ShareT, ReadonlyT, IntT.i32), None))
     val prototype =
       scoutExpectedFunctionForPrototype(
-        fate.snapshot, temputs, range, funcName, List(), paramFilters, List(), false) match {
+        fate.snapshot, temputs, range, funcName, List.empty, paramFilters, List.empty, false) match {
         case seff@ScoutExpectedFunctionFailure(name, args, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction) => {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
         }

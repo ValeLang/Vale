@@ -32,10 +32,10 @@ object makeSimpleFunction {
     FunctionA(
       RangeS.internal(-53),
       name,
-      List(),
+      List.empty,
       FunctionTemplataType,
       knowableRunes,
-      List(),
+      List.empty,
       localRunes,
       runeByType
         .map({ case (_, rune) => (rune, CoordTemplataType) })

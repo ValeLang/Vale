@@ -611,7 +611,7 @@ object Parser {
       if (werePreviousExprs) {
         return Some(Err(BadExpressionEnd(iter.getPos())))
       } else {
-        return Some(Ok(List()))
+        return Some(Ok(List.empty))
       }
     }
 
@@ -738,7 +738,7 @@ object ParserCompilation {
 
     val combinedProgramPMap = alreadyParsedProgramPMap.mergeNonOverlapping(newProgramPMap)
 
-    loadAndParseIteration(List(), combinedCodeMap, combinedProgramPMap, resolver)
+    loadAndParseIteration(List.empty, combinedCodeMap, combinedProgramPMap, resolver)
   }
 }
 

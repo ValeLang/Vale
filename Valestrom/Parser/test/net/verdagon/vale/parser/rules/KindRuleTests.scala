@@ -193,7 +193,7 @@ class KindRuleTests extends FunSuite with Matchers with Collector {
 
   test("Regular sequence") {
     compile(manualSeqRulePR, "[]") shouldHave {
-        case ManualSequencePT(_,List()) =>
+        case ManualSequencePT(_,Nil) =>
     }
     compile(manualSeqRulePR, "[int]") shouldHave {
         case ManualSequencePT(_,List(NameOrRunePT(NameP(_, "int")))) =>

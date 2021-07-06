@@ -17,7 +17,7 @@ object ExpressionVivem {
   def makeVoid(programH: ProgramH, heap: Heap, callId: CallId) = {
     val emptyPackStructRefH = ProgramH.emptyTupleStructRef
     val emptyPackStructDefH = programH.lookupStruct(emptyPackStructRefH)
-    val void = heap.newStruct(emptyPackStructDefH, ReferenceH(ShareH, InlineH, ReadonlyH, emptyPackStructRefH), List())
+    val void = heap.newStruct(emptyPackStructDefH, ReferenceH(ShareH, InlineH, ReadonlyH, emptyPackStructRefH), List.empty)
     heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, ShareH), void)
     void
   }

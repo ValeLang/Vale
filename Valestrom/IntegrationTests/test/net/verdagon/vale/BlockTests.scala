@@ -17,7 +17,7 @@ class BlockTests extends FunSuite with Matchers {
         |  = 3;
         |}
       """.stripMargin)
-    val scoutput = compile.getScoutput().getOrDie().moduleToPackagesToFilenameToContents("test")(List())("0.vale")
+    val scoutput = compile.getScoutput().getOrDie().moduleToPackagesToFilenameToContents("test")(List.empty)("0.vale")
     val main = scoutput.lookupFunction("main")
     main.body match { case CodeBody1(BodySE(_, _,BlockSE(_, _,List(BlockSE(_, _,_), _)))) => }
 
@@ -33,7 +33,7 @@ class BlockTests extends FunSuite with Matchers {
         |  = 3;
         |}
       """.stripMargin)
-    val scoutput = compile.getScoutput().getOrDie().moduleToPackagesToFilenameToContents("test")(List())("0.vale")
+    val scoutput = compile.getScoutput().getOrDie().moduleToPackagesToFilenameToContents("test")(List.empty)("0.vale")
     val main = scoutput.lookupFunction("main")
     val block = main.body match { case CodeBody1(BodySE(_, _,BlockSE(_, _,List(b @ BlockSE(_, _,_), _)))) => b }
     vassert(block.locals.size == 1)

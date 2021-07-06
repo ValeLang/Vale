@@ -116,7 +116,7 @@ object ExpressionAstronomer {
         val runesA = maybeMutabilityRuneA.toList ++ maybeVariabilityRuneA.toList ++ maybeSizeRuneA.toList
 
         val (conclusions, rulesA) =
-          makeRuleTyper().solve(astrouts, env, rules, range, List(), Some(runesA.toSet)) match {
+          makeRuleTyper().solve(astrouts, env, rules, range, List.empty, Some(runesA.toSet)) match {
             case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
             case (c, RuleTyperSolveSuccess(r)) => (c, r)
           }
@@ -141,7 +141,7 @@ object ExpressionAstronomer {
         val runesA = maybeMutabilityRuneA.toList ++ maybeVariabilityRuneA.toList ++ List(sizeRuneA)
 
         val (conclusions, rulesA) =
-          makeRuleTyper().solve(astrouts, env, rules, range, List(), Some(runesA.toSet)) match {
+          makeRuleTyper().solve(astrouts, env, rules, range, List.empty, Some(runesA.toSet)) match {
             case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
             case (c, RuleTyperSolveSuccess(r)) => (c, r)
           }
@@ -164,7 +164,7 @@ object ExpressionAstronomer {
         val runesA = maybeMutabilityRuneA.toList ++ maybeVariabilityRuneA.toList
 
         val (conclusions, rulesA) =
-          makeRuleTyper().solve(astrouts, env, rules, range, List(), Some(runesA.toSet)) match {
+          makeRuleTyper().solve(astrouts, env, rules, range, List.empty, Some(runesA.toSet)) match {
             case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
             case (c, RuleTyperSolveSuccess(r)) => (c, r)
           }

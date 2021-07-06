@@ -57,7 +57,7 @@ object BuiltInFunctions {
         CodeBodyA(
           BodyAE(
             RangeS.internal(-62),
-            List(),
+            List.empty,
             BlockAE(
               RangeS.internal(-62),
               List(
@@ -104,7 +104,7 @@ object BuiltInFunctions {
         CodeBodyA(
           BodyAE(
             RangeS.internal(-62),
-            List(),
+            List.empty,
             BlockAE(
               RangeS.internal(-62),
               List(
@@ -115,10 +115,10 @@ object BuiltInFunctions {
         List(UserFunctionA),
         FunctionTemplataType,
         Set(),
-        List(),
+        List.empty,
         Set(CodeRuneA("N")),
         Map(CodeRuneA("N") -> CoordTemplataType),
-        List(),
+        List.empty,
         Some(CodeRuneA("N")),
         List(
           EqualsAR(RangeS.internal(-9125),
@@ -151,7 +151,7 @@ object BuiltInFunctions {
         CodeBodyA(
           BodyAE(
             RangeS.internal(-62),
-            List(),
+            List.empty,
             BlockAE(
               RangeS.internal(-62),
               List(

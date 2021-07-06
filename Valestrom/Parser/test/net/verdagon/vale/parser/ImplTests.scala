@@ -12,7 +12,7 @@ class ImplTests extends FunSuite with Matchers with Collector with TestParseUtil
         |impl<T> MyInterface<T> for SomeStruct<T>;
       """.stripMargin) shouldHave {
       case ImplP(_,
-      Some(IdentifyingRunesP(_, List(IdentifyingRuneP(_, NameP(_, "T"), List())))),
+      Some(IdentifyingRunesP(_, List(IdentifyingRuneP(_, NameP(_, "T"), Nil)))),
       None,
       CallPT(_,NameOrRunePT(NameP(_, "SomeStruct")), List(NameOrRunePT(NameP(_, "T")))),
       CallPT(_,NameOrRunePT(NameP(_, "MyInterface")), List(NameOrRunePT(NameP(_, "T"))))) =>

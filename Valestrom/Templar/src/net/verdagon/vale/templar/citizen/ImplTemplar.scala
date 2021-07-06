@@ -49,7 +49,7 @@ class AncestorHelper(
           rules,
           typeByRune,
           localRunes,
-          List(),
+          List.empty,
           None,
           RangeS.internal(-1875),
           List(KindTemplata(childCitizenRef)))
@@ -70,7 +70,7 @@ class AncestorHelper(
           }
           case it @ InterfaceTemplata(_, _) => {
             val interfaceRef =
-              delegate.getInterfaceRef(temputs, vimpl(), it, List())
+              delegate.getInterfaceRef(temputs, vimpl(), it, List.empty)
             (Some(interfaceRef))
           }
         }
@@ -84,7 +84,7 @@ class AncestorHelper(
   (List[InterfaceRefT]) = {
     val needleImplName =
       NameTranslator.getImplNameForName(opts.useOptimization, childCitizenRef) match {
-        case None => return List()
+        case None => return List.empty
         case Some(x) => x
       }
 
@@ -96,7 +96,7 @@ class AncestorHelper(
     citizenEnv.getAllTemplatasWithName(profiler, needleImplName, Set(TemplataLookupContext, ExpressionLookupContext))
       .flatMap({
         case it @ ImplTemplata(_, _) => getMaybeImplementedInterface(temputs, childCitizenRef, it).toList
-        case ExternImplTemplata(structRef, interfaceRef) => if (structRef == childCitizenRef) List(interfaceRef) else List()
+        case ExternImplTemplata(structRef, interfaceRef) => if (structRef == childCitizenRef) List(interfaceRef) else List.empty
         case other => vwat(other.toString)
       })
   }

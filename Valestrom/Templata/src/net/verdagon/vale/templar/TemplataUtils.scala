@@ -4,7 +4,7 @@ import net.verdagon.vale.templar.templata.{FunctionHeaderT, PrototypeT}
 
 object simpleName {
 //  def apply(name: String): FullName2 = {
-//    FullName2(List(FunctionNamePart2(name, Some(List()), None, None)))
+//    FullName2(List(FunctionNamePart2(name, Some(List.empty), None, None)))
 //  }
   def unapply(fullName: FullNameT[INameT]): Option[String] = {
     fullName.last match {

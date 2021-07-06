@@ -231,15 +231,15 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
 
         override def lookupMemberTypes(state: Temputs, kind: KindT, expectedNumMembers: Int): Option[List[CoordT]] = {
           profiler.childFrame("InferTemplarDelegate.lookupMemberTypes", () => {
-            val underlyingStructRef2 =
+            val underlyingstructRefT =
               kind match {
                 case sr@StructRefT(_) => sr
                 case TupleTT(_, underlyingStruct) => underlyingStruct
                 case PackTT(_, underlyingStruct) => underlyingStruct
                 case _ => return None
               }
-            val structDef2 = state.lookupStruct(underlyingStructRef2)
-            val structMemberTypes = structDef2.members.map(_.tyype.reference)
+            val structDefT = state.lookupStruct(underlyingstructRefT)
+            val structMemberTypes = structDefT.members.map(_.tyype.reference)
             Some(structMemberTypes)
           })
         }
@@ -401,20 +401,20 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
           overloadTemplar.scoutExpectedFunctionForPrototype(env, temputs, callRange, functionName, explicitlySpecifiedTemplateArgTemplexesS, args, extraEnvsToLookIn, exact)
         }
 
-        override def makeImmConcreteDestructor(temputs: Temputs, env: IEnvironment, structRef2: StructRefT): PrototypeT = {
-          destructorTemplar.getImmConcreteDestructor(temputs, env, structRef2)
+        override def makeImmConcreteDestructor(temputs: Temputs, env: IEnvironment, structRefT: StructRefT): PrototypeT = {
+          destructorTemplar.getImmConcreteDestructor(temputs, env, structRefT)
         }
 
-        override def getImmInterfaceDestructorOverride(temputs: Temputs, env: IEnvironment, structRef2: StructRefT, implementedInterfaceRefT: InterfaceRefT): PrototypeT = {
-          destructorTemplar.getImmInterfaceDestructorOverride(temputs, env, structRef2, implementedInterfaceRefT)
+        override def getImmInterfaceDestructorOverride(temputs: Temputs, env: IEnvironment, structRefT: StructRefT, implementedInterfaceRefT: InterfaceRefT): PrototypeT = {
+          destructorTemplar.getImmInterfaceDestructorOverride(temputs, env, structRefT, implementedInterfaceRefT)
         }
 
         override def getImmInterfaceDestructor(temputs: Temputs, env: IEnvironment, interfaceRef2: InterfaceRefT): PrototypeT = {
           destructorTemplar.getImmInterfaceDestructor(temputs, env, interfaceRef2)
         }
 
-        override def getImmConcreteDestructor(temputs: Temputs, env: IEnvironment, structRef2: StructRefT): PrototypeT = {
-          destructorTemplar.getImmConcreteDestructor(temputs, env, structRef2)
+        override def getImmConcreteDestructor(temputs: Temputs, env: IEnvironment, structRefT: StructRefT): PrototypeT = {
+          destructorTemplar.getImmConcreteDestructor(temputs, env, structRefT)
         }
       })
 

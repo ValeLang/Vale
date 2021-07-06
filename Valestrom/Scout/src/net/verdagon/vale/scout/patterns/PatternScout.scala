@@ -43,7 +43,7 @@ object PatternScout {
   def getParameterCaptures(pattern: AtomSP): List[VariableDeclaration] = {
     val AtomSP(_, maybeCapture, _, _, maybeDestructure) = pattern
     List() ++
-        getCaptureCaptures(maybeCapture) ++
+      maybeCapture.toList.flatMap(getCaptureCaptures) ++
         maybeDestructure.toList.flatten.flatMap(getParameterCaptures)
   }
   private def getCaptureCaptures(capture: CaptureS): List[VariableDeclaration] = {
@@ -127,17 +127,17 @@ object PatternScout {
     val captureS =
       maybeCaptureP match {
         case None => {
-          val codeLocation = Scout.evalPos(stackFrame.file, patternPP.range.begin)
-          CaptureS(UnnamedLocalNameS(codeLocation))
+//          val codeLocation = Scout.evalPos(stackFrame.file, patternPP.range.begin)
+          None
         }
         case Some(CaptureP(_,LocalNameP(NameP(_, name)))) => {
           if (name == "set" || name == "mut") {
             throw CompileErrorExceptionS(CantUseThatLocalName(Scout.evalRange(stackFrame.file, range), name))
           }
-          CaptureS(CodeVarNameS(name))
+          Some(CaptureS(CodeVarNameS(name)))
         }
         case Some(CaptureP(_,ConstructingMemberNameP(NameP(_, name)))) => {
-          CaptureS(ConstructingMemberNameS(name))
+          Some(CaptureS(ConstructingMemberNameS(name)))
         }
       }
 

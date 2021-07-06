@@ -132,7 +132,7 @@ class InfererEquator[Env, State](
       }
 //      case (ArrayTypeSR, KindTemplata(StaticSizedArrayT2(_, _))) => true
 //      case (ArrayTypeSR, KindTemplata(RuntimeSizedArrayT2(_))) => true
-//      case (StructTypeSR, KindTemplata(StructRef2(_))) => true
+//      case (StructTypeSR, KindTemplata(structRefT(_))) => true
 //      case (StructTypeSR, StructTemplata(_, structS)) => {
 //        if (PredictingEvaluator.structIsTemplate(structS)) {
 //          // It's a struct template, not a struct.
@@ -154,7 +154,7 @@ class InfererEquator[Env, State](
 //      case (PackTypeSR, KindTemplata(PackT2(_, _))) => true
 //      case (SequenceTypeSR, KindTemplata(RuntimeSizedArrayT2(_))) => true
 //      case (CallableTypeSR, KindTemplata(FunctionT2(_, _))) => true
-//      case (CallableTypeSR, KindTemplata(StructRef2(_))) => {
+//      case (CallableTypeSR, KindTemplata(structRefT(_))) => {
 //        // do we want to consider closures here? i think so?
 //        vfail()
 //      }

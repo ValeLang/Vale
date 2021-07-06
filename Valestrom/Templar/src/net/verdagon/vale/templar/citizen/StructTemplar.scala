@@ -38,13 +38,13 @@ trait IStructTemplarDelegate {
   def makeImmConcreteDestructor(
     temputs: Temputs,
     env: IEnvironment,
-    structRef2: StructRefT):
+    structRefT: StructRefT):
   PrototypeT
 
   def getImmInterfaceDestructorOverride(
     temputs: Temputs,
     env: IEnvironment,
-    structRef2: StructRefT,
+    structRefT: StructRefT,
     implementedInterfaceRefT: InterfaceRefT):
   PrototypeT
 
@@ -57,7 +57,7 @@ trait IStructTemplarDelegate {
   def getImmConcreteDestructor(
     temputs: Temputs,
     env: IEnvironment,
-    structRef2: StructRefT):
+    structRefT: StructRefT):
   PrototypeT
 }
 
@@ -293,7 +293,7 @@ class StructTemplar(
       val structFullName = prototype.fullName.addStep(LambdaCitizenNameT(CodeLocationT.internal(-13)))
 
       temputs.structDeclared(structFullName) match {
-        case Some(structRef2) => return structRef2
+        case Some(structRefT) => return structRefT
         case None =>
       }
 
@@ -365,7 +365,7 @@ class StructTemplar(
 //    outerEnv: IEnvironment,
 //    temputs: Temputs,
 //    header: FunctionHeader2):
-//  StructRef2 = {
+//  structRefT = {
 //    templateArgsLayer.functionToLambda(outerEnv, temputs, header)
 //  }
 
@@ -385,7 +385,7 @@ class StructTemplar(
 //    env: IEnvironment,
 //    temputs: Temputs,
 //    header: FunctionHeader2):
-//  StructRef2 = {
+//  structRefT = {
 //    val (paramType, returnType) =
 //      header.toPrototype match {
 //        case Prototype2(_, List(paramType), returnType) => (paramType, returnType)
@@ -464,9 +464,9 @@ object StructTemplar {
             paramCoords: List[ParameterT],
             maybeRetCoord: Option[CoordT]):
           (FunctionHeaderT) = {
-            val Some(CoordT(_, _, structRef2 @ StructRefT(_))) = maybeRetCoord
-            val structDef2 = temputs.lookupStruct(structRef2)
-            structTemplar.makeStructConstructor(temputs, originFunction, structDef2, env.fullName)
+            val Some(CoordT(_, _, structRefT @ StructRefT(_))) = maybeRetCoord
+            val structDefT = temputs.lookupStruct(structRefT)
+            structTemplar.makeStructConstructor(temputs, originFunction, structDefT, env.fullName)
           }
         },
       "interfaceConstructorGenerator" ->
@@ -489,10 +489,10 @@ object StructTemplar {
                 case _ => vwat()
               }
 
-            val structRef2 =
+            val structRefT =
               structTemplar.makeAnonymousSubstruct(
                 temputs, callRange, interfaceRef2, paramCoords.map(_.tyype))
-            val structDef = temputs.lookupStruct(structRef2)
+            val structDef = temputs.lookupStruct(structRefT)
 
             val constructorFullName = env.fullName
             val constructor =

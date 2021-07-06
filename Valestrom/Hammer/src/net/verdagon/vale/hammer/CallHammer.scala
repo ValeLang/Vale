@@ -377,13 +377,13 @@ object CallHammer {
 //              argLines)
 //          (functionNodeLine)
 //        }
-//        case (Parameter2(_, Some(_), Coord(_, structRef2@ StructRef2(_))), _) => {
+//        case (Parameter2(_, Some(_), Coord(_, structRefT@ structRefT(_))), _) => {
 //          val (functionRegister) =
 //            translateInterfaceFunctionLookupWithStruct(
 //              hinputs,
 //              hamuts,
 //              nodesByLine,
-//              structRef2,
+//              structRefT,
 //              superFamilyRootBanner)
 //          val callResultNode =
 //            addNode(
@@ -414,11 +414,11 @@ object CallHammer {
 //      hinputs: Hinputs,
 //      hamuts: HamutsBox,
 //      nodesByLine: NodesBox,
-//      structRef2: StructRef2,
+//      structRefT: structRefT,
 //      superFamilyRootBanner: FunctionBanner2):
 //  (Vector[NodeH], NodeH[FunctionTH]) = {
 //    val prototype2 =
-//      getPrototypeForStructInterfaceCall(hinputs, structRef2, superFamilyRootBanner)
+//      getPrototypeForStructInterfaceCall(hinputs, structRefT, superFamilyRootBanner)
 //
 //    val (functionRefH) =
 //      FunctionHammer.translateFunctionRef(hinputs, hamuts, currentFunctionHeader, prototype2);
@@ -473,13 +473,13 @@ object CallHammer {
 
 //  private def getPrototypeForStructInterfaceCall(
 //      hinputs: Hinputs,
-//      structRef2: StructRef2,
+//      structRefT: structRefT,
 //      superFamilyRootBanner: FunctionBanner2):
 //  Prototype2 = {
 //
-//    val structDef2 = hinputs.lookupStruct(structRef2)
+//    val structDefT = hinputs.lookupStruct(structRefT)
 //    val ancestorInterfaces2 =
-//      hinputs.impls.filter(impl => impl.struct == structDef2.getRef).map(_.interface)
+//      hinputs.impls.filter(impl => impl.struct == structDefT.getRef).map(_.interface)
 //    val edgeBlueprints = ancestorInterfaces2.map(hinputs.edgeBlueprintsByInterface)
 //    val matchingEdgeBlueprint =
 //      edgeBlueprints.find(_.superFamilyRootBanners.contains(superFamilyRootBanner)).get;
@@ -489,7 +489,7 @@ object CallHammer {
 //
 //    val edge =
 //      hinputs.edges.find(
-//        edge => edge.interface == matchingEdgeBlueprint.interface && edge.struct == structRef2).get;
+//        edge => edge.interface == matchingEdgeBlueprint.interface && edge.struct == structRefT).get;
 //    val methodPrototype2 = edge.methods(indexInEdgeBlueprint)
 //    methodPrototype2
 //  }

@@ -128,13 +128,13 @@ class ScoutTests extends FunSuite with Matchers {
       case List(
       ParameterS(
       AtomSP(_,
-      CaptureS(CodeVarNameS("this")),
+      Some(CaptureS(CodeVarNameS("this"))),
       Some(AbstractSP),
       ImplicitRuneS(_, 0),
       None)),
       ParameterS(
       AtomSP(_,
-      CaptureS(CodeVarNameS("a")),
+      Some(CaptureS(CodeVarNameS("a"))),
       None,
       ImplicitRuneS(_, 1),
       None))) =>
@@ -212,10 +212,10 @@ class ScoutTests extends FunSuite with Matchers {
     val CodeBody1(BodySE(_, _, block)) = main.body
     val BlockSE(_, _, FunctionSE(lambda1) :: FunctionSE(lambda2) :: _) = block
     lambda1.params match {
-      case List(_, ParameterS(AtomSP(_, CaptureS(MagicParamNameS(_)), None, MagicParamRuneS(_), None))) =>
+      case List(_, ParameterS(AtomSP(_, Some(CaptureS(MagicParamNameS(_))), None, MagicParamRuneS(_), None))) =>
     }
     lambda2.params match {
-      case List(_, ParameterS(AtomSP(_, CaptureS(CodeVarNameS("a")), None, ImplicitRuneS(_, _), None))) =>
+      case List(_, ParameterS(AtomSP(_, Some(CaptureS(CodeVarNameS("a"))), None, ImplicitRuneS(_, _), None))) =>
     }
   }
 

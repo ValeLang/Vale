@@ -88,8 +88,8 @@ case class StackFrame(
 }
 
 object Scout {
-  def noVariableUses = VariableUses(List())
-  def noDeclarations = VariableDeclarations(List())
+  def noVariableUses = VariableUses(List.empty)
+  def noDeclarations = VariableDeclarations(List.empty)
 
 //  val unnamedParamNamePrefix = "__param_"
 //  val unrunedParamOverrideRuneSuffix = "Override"
@@ -136,8 +136,8 @@ object Scout {
       RuleScout.translateRulexes(implEnv, rate, implEnv.allUserDeclaredRunes(), templateRulesP)
 
     // We gather all the runes from the scouted rules to be consistent with the function scout.
-    val allRunes = PredictorEvaluator.getAllRunes(identifyingRunes, userRulesS, List(), None)
-    val Conclusions(knowableValueRunes, _) = PredictorEvaluator.solve(Set(), userRulesS, List())
+    val allRunes = PredictorEvaluator.getAllRunes(identifyingRunes, userRulesS, List.empty, None)
+    val Conclusions(knowableValueRunes, _) = PredictorEvaluator.solve(Set(), userRulesS, List.empty)
     val localRunes = allRunes
     val isTemplate = knowableValueRunes != allRunes
 
@@ -180,7 +180,7 @@ object Scout {
       implName,
       rulesFromStructDirectionS,
       rulesFromInterfaceDirectionS,
-      knowableValueRunes ++ (if (isTemplate) List() else List(structRune, interfaceRune)),
+      knowableValueRunes ++ (if (isTemplate) List.empty else List(structRune, interfaceRune)),
       localRunes ++ List(structRune, interfaceRune),
       isTemplate,
       structRune,
@@ -249,8 +249,8 @@ object Scout {
           TemplexSR(MutabilityST(structRangeS, mutability)))
 
     // We gather all the runes from the scouted rules to be consistent with the function scout.
-    val allRunes = PredictorEvaluator.getAllRunes(identifyingRunes, rulesS, List(), None)
-    val Conclusions(knowableValueRunes, predictedTypeByRune) = PredictorEvaluator.solve(Set(), rulesS, List())
+    val allRunes = PredictorEvaluator.getAllRunes(identifyingRunes, rulesS, List.empty, None)
+    val Conclusions(knowableValueRunes, predictedTypeByRune) = PredictorEvaluator.solve(Set(), rulesS, List.empty)
     val localRunes = allRunes
     val isTemplate = knowableValueRunes != allRunes
 
@@ -261,7 +261,7 @@ object Scout {
         }
         case (StructMethodP(_), memberRune) => {
           // Implement struct methods one day
-          List()
+          List.empty
         }
       })
 
@@ -333,9 +333,9 @@ object Scout {
         TemplexSR(MutabilityST(interfaceRangeS, mutability)))
 
     // We gather all the runes from the scouted rules to be consistent with the function scout.
-    val allRunes = PredictorEvaluator.getAllRunes(identifyingRunes, rulesS, List(), None)
+    val allRunes = PredictorEvaluator.getAllRunes(identifyingRunes, rulesS, List.empty, None)
     val Conclusions(knowableValueRunes, predictedTypeByRune) =
-      PredictorEvaluator.solve(Set(), rulesS, List())
+      PredictorEvaluator.solve(Set(), rulesS, List.empty)
     val localRunes = allRunes
     val isTemplate = knowableValueRunes != allRunes.toSet
 

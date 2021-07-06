@@ -134,7 +134,7 @@ class BlockTemplar(
     expr1: List[IExpressionAE]):
   (List[ReferenceExpressionTE], Set[CoordT]) = {
     expr1 match {
-      case Nil => (List(), Set())
+      case Nil => (List.empty, Set())
       case first1 :: rest1 => {
         val (perhapsUndestructedFirstExpr2, returnsFromFirst) =
           delegate.evaluateAndCoerceToReferenceExpression(
@@ -167,7 +167,7 @@ class BlockTemplar(
     variables: List[ILocalVariableT]):
   (List[ReferenceExpressionTE]) = {
     variables match {
-      case Nil => (List())
+      case Nil => (List.empty)
       case head :: tail => {
         val unlet = UnreachableMootTE(localHelper.unletLocal(fate, head))
         val tailExprs2 = mootAll(temputs, fate, tail)

@@ -47,7 +47,7 @@ object EdgeTemplar {
                     case _ => vwat()
                   }
                 }
-                case Some(List()) => vfail("wot")
+                case Some(Nil) => vfail("wot")
                 case Some(List(onlyOverride)) => FoundFunction(onlyOverride.header.toPrototype)
                 case Some(multipleOverrides) => {
                   vfail("Multiple overrides for struct " + struct + " for interface " + superInterface + ": " + multipleOverrides.map(_.header.toSignature).mkString(", "))
@@ -67,7 +67,7 @@ object EdgeTemplar {
   ): Map[(StructRefT, InterfaceRefT), List[(FunctionT, Int)]] = {
     temputs.getAllFunctions().toList.flatMap({ case overrideFunction =>
       overrideFunction.header.getOverride match {
-        case None => List()
+        case None => List.empty
         case Some((struct, superInterface)) => {
           // Make sure that the struct actually overrides that function
           if (!temputs.getAllImpls().exists(impl => impl.struct == struct && impl.interface == superInterface)) {
@@ -132,7 +132,7 @@ object EdgeTemplar {
     val abstractFunctionHeadersByInterfaceWithoutEmpties =
       temputs.getAllFunctions().flatMap({ case function =>
         function.header.getAbstractInterface match {
-          case None => List()
+          case None => List.empty
           case Some(abstractInterface) => List(abstractInterface -> function)
         }
       })

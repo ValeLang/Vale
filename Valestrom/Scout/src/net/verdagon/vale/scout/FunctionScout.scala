@@ -95,7 +95,7 @@ object FunctionScout {
           val rule = EqualsSR(rangeS, TemplexSR(NameST(rangeS, CodeTypeNameS("void"))), TypedSR(rangeS, rune, CoordTypeSR))
           (List(rule), Some(rune))
         }
-        case (Some(_), None) => (List(), None) // Infer the return
+        case (Some(_), None) => (List.empty, None) // Infer the return
         case (None, Some(retTypePT)) => {
           PatternScout.translateMaybeTypeIntoMaybeRune(
             functionEnv,
@@ -125,7 +125,7 @@ object FunctionScout {
         GeneratedBody1(attributes.collectFirst({ case BuiltinAttributeP(_, generatorId) => generatorId}).head.str)
       } else {
         vassert(maybeBody0.nonEmpty)
-        val (body1, _, List()) = scoutBody(myStackFrame, maybeBody0.get, captureDeclarations)
+        val (body1, _, Nil) = scoutBody(myStackFrame, maybeBody0.get, captureDeclarations)
         vassert(body1.closuredNames.isEmpty)
         CodeBody1(body1)
       }
@@ -165,7 +165,7 @@ object FunctionScout {
 //          if (paramP.templex.isEmpty) {
 //            List(explicitParamPatternS.coordRune)
 //          } else {
-//            List()
+//            List.empty
 //          }
 //        }
 //      })
@@ -324,7 +324,7 @@ object FunctionScout {
 
     val (implicitRulesFromReturn, maybeRetCoordRune) =
       (maybeInferRet, maybeRetType) match {
-        case (_, None) => (List(), None) // Infer the return
+        case (_, None) => (List.empty, None) // Infer the return
         case (None, Some(retTypePT)) => {
           PatternScout.translateMaybeTypeIntoMaybeRune(
             functionEnv,
@@ -375,7 +375,7 @@ object FunctionScout {
 //          if (paramP.templex.isEmpty) {
 //            List(explicitParamPatternS.coordRune)
 //          } else {
-//            List()
+//            List.empty
 //          }
 //        }
 //      })

@@ -54,7 +54,7 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
     }
   }
   test("Empty pattern list") {
-    compile(patternPrototypeParams,"()").patterns shouldEqual List()
+    compile(patternPrototypeParams,"()").patterns shouldEqual List.empty
   }
   test("Pattern list with only two captures") {
     val list = compile(patternPrototypeParams, "(a, b)")

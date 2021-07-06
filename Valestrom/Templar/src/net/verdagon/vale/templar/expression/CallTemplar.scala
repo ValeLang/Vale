@@ -69,7 +69,7 @@ class CallTemplar(
               functionName,
               explicitlySpecifiedTemplateArgTemplexesS,
               argsParamFilters,
-              List(),
+              List.empty,
               false) match {
             case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
               throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, seff))
@@ -135,7 +135,7 @@ class CallTemplar(
         functionName,
         explicitlySpecifiedTemplateArgTemplexesS,
         argsParamFilters,
-        List(),
+        List.empty,
         false) match {
         case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
           ErrorReporter.report(CouldntFindFunctionToCallT(range, seff))
@@ -205,7 +205,7 @@ class CallTemplar(
         argsTypes2.map(argType => ParamFilter(argType, None))
     val prototype2 =
       overloadTemplar.scoutExpectedFunctionForPrototype(
-        env, temputs, range, GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME), explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List(), false) match {
+        env, temputs, range, GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME), explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List.empty, false) match {
         case ScoutExpectedFunctionSuccess(p) => p
         case seff @ ScoutExpectedFunctionFailure(_, _, _, _, _) => {
           throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, seff))

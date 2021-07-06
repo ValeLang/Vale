@@ -46,7 +46,7 @@ object FunctionHammer {
               Set[VariableIdH](),
               Map[VariableIdH,Local](),
               1));
-        val (bodyH, List()) =
+        val (bodyH, Nil) =
           ExpressionHammer.translate(hinputs, hamuts, header, locals, body)
         vassert(locals.unstackifiedVars.size == locals.locals.size)
         val resultCoord = bodyH.resultType

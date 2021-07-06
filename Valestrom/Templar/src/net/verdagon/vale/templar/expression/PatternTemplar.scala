@@ -75,7 +75,7 @@ class PatternTemplar(
     profiler.newProfile("nonCheckingInferAndTranslate", fate.fullName.toString, () => {
 
       val templatasByRune =
-        inferTemplar.inferFromArgCoords(fate.snapshot, temputs, List(), rules, typeByRune, localRunes, List(pattern), None, pattern.range, List(), List(ParamFilter(inputExpr.resultRegister.reference, None))) match {
+        inferTemplar.inferFromArgCoords(fate.snapshot, temputs, List.empty, rules, typeByRune, localRunes, List(pattern), None, pattern.range, List.empty, List(ParamFilter(inputExpr.resultRegister.reference, None))) match {
           case (isf@InferSolveFailure(_, _, _, _, range, _, _)) => {
             throw CompileErrorExceptionT(RangedInternalErrorT(range, "Couldn't figure out runes for pattern!\n" + isf))
           }
@@ -223,7 +223,7 @@ class PatternTemplar(
 //        // Don't need output, since we're just doing a compile time check here
 //        ConvertHelper.convert(env, temputs, inputExpr, expectedPointerType)
 //
-//        (temputs, fate, List(), List())
+//        (temputs, fate, List.empty, List.empty)
 //      }
 //      case TypeOfSP(type1) => {
 //        val unborrowedTargetReference =
@@ -244,7 +244,7 @@ class PatternTemplar(
 //        // Don't need output, since we're just doing a compile time check here
 //        ConvertHelper.convert(env, temputs, inputExpr, targetReference)
 //
-//        (temputs, fate, List(), List())
+//        (temputs, fate, List.empty, List.empty)
 //      }
 //      case CaptureSP(name, variability, _, None) => already moved
 //      case CaptureSP(name, variability, _, Some(TypeOfSP(expectedType1))) => {

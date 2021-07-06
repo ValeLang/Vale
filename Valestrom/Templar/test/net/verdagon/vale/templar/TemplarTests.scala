@@ -32,7 +32,7 @@ class TemplarTests extends FunSuite with Matchers {
 
     val main = temputs.lookupFunction("main")
     main.only({
-      case FunctionHeaderT(simpleName("main"),List(UserFunction2),List(), CoordT(ShareT, ReadonlyT, IntT.i32), _) => true
+      case FunctionHeaderT(simpleName("main"),List(UserFunction2),Nil, CoordT(ShareT, ReadonlyT, IntT.i32), _) => true
     })
     main.only({ case ConstantIntTE(3, _) => true })
   }
@@ -400,7 +400,7 @@ class TemplarTests extends FunSuite with Matchers {
 
     val interfaceDef =
       temputs.interfaces.collectFirst({
-        case id @ InterfaceDefinitionT(simpleName("MyInterface"), _, false, MutableT, List()) => id
+        case id @ InterfaceDefinitionT(simpleName("MyInterface"), _, false, MutableT, Nil) => id
       }).get
 
     val structDef =
@@ -423,9 +423,9 @@ class TemplarTests extends FunSuite with Matchers {
 
     temputs.lookupInterface(
       InterfaceRefT(
-        FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("MyOption", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))))
+        FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MyOption", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))))
     vassert(temputs.lookupFunction("main").header.params.head.tyype ==
-        CoordT(OwnT,ReadwriteT,InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("MyOption", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))))
+        CoordT(OwnT,ReadwriteT,InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MyOption", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))))
 
     // Can't run it because there's nothing implementing that interface >_>
   }
@@ -473,9 +473,9 @@ class TemplarTests extends FunSuite with Matchers {
     val interface =
       temputs.lookupInterface(
         InterfaceRefT(
-          FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("MyOption", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))))
+          FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MyOption", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))))
 
-    val struct = temputs.lookupStruct(StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("MySome", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))));
+    val struct = temputs.lookupStruct(StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MySome", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))));
 
     temputs.lookupImpl(struct.getRef, interface.getRef)
   }
@@ -511,7 +511,7 @@ class TemplarTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
 
-    temputs.lookupStruct(StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("MySome", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))));
+    temputs.lookupStruct(StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MySome", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))));
 
     val constructor = temputs.lookupFunction("MySome")
     constructor.header match {
@@ -520,7 +520,7 @@ class TemplarTests extends FunSuite with Matchers {
         simpleName("MySome"),
         _,
         _,
-        CoordT(OwnT,ReadwriteT,StructRefT(FullNameT(_, List(), CitizenNameT("MySome", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))),
+        CoordT(OwnT,ReadwriteT,StructRefT(FullNameT(_, Nil, CitizenNameT("MySome", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))),
         _) =>
     }
 
@@ -538,8 +538,8 @@ class TemplarTests extends FunSuite with Matchers {
     main.only({ case ReferenceLocalVariableT(FullNameT(_,_,CodeVarNameT("x")),FinalT,CoordT(OwnT,ReadwriteT,InterfaceRefT(simpleName("MyInterface")))) => })
 
     val upcast = main.onlyOf(classOf[StructToInterfaceUpcastTE])
-    vassert(upcast.resultRegister.reference == CoordT(OwnT,ReadwriteT,InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("MyInterface", List())))))
-    vassert(upcast.innerExpr.resultRegister.reference == CoordT(OwnT,ReadwriteT,StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("MyStruct", List())))))
+    vassert(upcast.resultRegister.reference == CoordT(OwnT,ReadwriteT,InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MyInterface", Nil)))))
+    vassert(upcast.innerExpr.resultRegister.reference == CoordT(OwnT,ReadwriteT,StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MyStruct", Nil)))))
   }
 
   test("Tests calling a virtual function") {
@@ -552,7 +552,7 @@ class TemplarTests extends FunSuite with Matchers {
         innerExpr.resultRegister.only({
           case StructRefT(simpleName("Toyota")) =>
         })
-        vassert(up.resultRegister.reference.kind == InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("Car", List()))))
+        vassert(up.resultRegister.reference.kind == InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("Car", Nil))))
       }
     })
   }
@@ -638,7 +638,7 @@ class TemplarTests extends FunSuite with Matchers {
     main.only({
       case ReferenceMemberLookupT(_,
         SoftLoadTE(LocalLookupT(_, _, CoordT(_,_,StructRefT(_)), FinalT), ConstraintT, ReadonlyT),
-        FullNameT(_, List(CitizenNameT("Vec3i",List())),CodeVarNameT("x")),CoordT(ShareT,ReadonlyT,IntT.i32),ReadonlyT,FinalT) =>
+        FullNameT(_, List(CitizenNameT("Vec3i",Nil)),CodeVarNameT("x")),CoordT(ShareT,ReadonlyT,IntT.i32),ReadonlyT,FinalT) =>
     })
   }
 
@@ -787,7 +787,7 @@ class TemplarTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     val destructorCalls =
-      main.all({ case fpc @ FunctionCallTE(PrototypeT(FullNameT(_, List(), FunctionNameT("destructor",List(CoordTemplata(CoordT(OwnT,ReadwriteT,StructRefT(simpleName("Marine"))))), _)), _),_) => fpc })
+      main.all({ case fpc @ FunctionCallTE(PrototypeT(FullNameT(_, Nil, FunctionNameT("destructor",List(CoordTemplata(CoordT(OwnT,ReadwriteT,StructRefT(simpleName("Marine"))))), _)), _),_) => fpc })
     destructorCalls.size shouldEqual 2
   }
 
@@ -943,7 +943,7 @@ class TemplarTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     compile.getTemputs() match {
-      case Err(CannotSubscriptT(_, StructRefT(FullNameT(_, _, CitizenNameT("Weapon", List()))))) =>
+      case Err(CannotSubscriptT(_, StructRefT(FullNameT(_, _, CitizenNameT("Weapon", Nil))))) =>
     }
   }
 
@@ -954,7 +954,7 @@ class TemplarTests extends FunSuite with Matchers {
         |fn moo() int export { 1448 }
         |""".stripMargin)
     compile.getTemputs() match {
-      case Err(FunctionAlreadyExists(_, _, SignatureT(FullNameT(_, List(), FunctionNameT("moo", List(), List()))))) =>
+      case Err(FunctionAlreadyExists(_, _, SignatureT(FullNameT(_, Nil, FunctionNameT("moo", Nil, Nil))))) =>
     }
   }
 
@@ -1030,13 +1030,13 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Humanize errors") {
-    val fireflyKind = StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("Firefly", List())))
+    val fireflyKind = StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("Firefly", Nil)))
     val fireflyCoord = CoordT(OwnT,ReadwriteT,fireflyKind)
-    val serenityKind = StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("Serenity", List())))
+    val serenityKind = StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("Serenity", Nil)))
     val serenityCoord = CoordT(OwnT,ReadwriteT,serenityKind)
-    val ispaceshipKind = InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("ISpaceship", List())))
+    val ispaceshipKind = InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("ISpaceship", Nil)))
     val ispaceshipCoord = CoordT(OwnT,ReadwriteT,ispaceshipKind)
-    val unrelatedKind = StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("Spoon", List())))
+    val unrelatedKind = StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("Spoon", Nil)))
     val unrelatedCoord = CoordT(OwnT,ReadwriteT,unrelatedKind)
 
     val filenamesAndSources = FileCoordinateMap.test("blah blah blah\nblah blah blah")
@@ -1048,14 +1048,14 @@ class TemplarTests extends FunSuite with Matchers {
         RangeS.testZero,
         ScoutExpectedFunctionFailure(
           CodeTypeNameA("someFunc"),
-          List(),
+          Nil,
           Map(),
           Map(),
           Map()))).nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindFunctionToCallT(
         RangeS.testZero,
-        ScoutExpectedFunctionFailure(GlobalFunctionFamilyNameA(""), List(), Map(), Map(), Map())))
+        ScoutExpectedFunctionFailure(GlobalFunctionFamilyNameA(""), Nil, Map(), Map(), Map())))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CannotSubscriptT(
@@ -1111,13 +1111,13 @@ class TemplarTests extends FunSuite with Matchers {
       FunctionAlreadyExists(
         RangeS.testZero,
         RangeS.testZero,
-        SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List(), FunctionNameT("myFunc", List(), List())))))
+        SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Nil, FunctionNameT("myFunc", Nil, Nil)))))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantMutateFinalMember(
         RangeS.testZero,
         serenityKind.fullName,
-        FullNameT(PackageCoordinate.TEST_TLD, List(), CodeVarNameT("bork"))))
+        FullNameT(PackageCoordinate.TEST_TLD, Nil, CodeVarNameT("bork"))))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       LambdaReturnDoesntMatchInterfaceConstructor(

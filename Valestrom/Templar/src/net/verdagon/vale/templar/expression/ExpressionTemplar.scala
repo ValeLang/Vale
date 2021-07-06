@@ -66,7 +66,7 @@ class ExpressionTemplar(
       exprs1: List[IExpressionAE]):
   (List[ReferenceExpressionTE], Set[CoordT]) = {
     exprs1 match {
-      case Nil => (List(), Set())
+      case Nil => (List.empty, Set())
       case first1 :: rest1 => {
         val (first2, returnsFromFirst) =
           evaluateAndCoerceToReferenceExpression(temputs, fate, first1);
@@ -377,7 +377,7 @@ class ExpressionTemplar(
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsPackExpr1)
           val callExpr2 =
-            callTemplar.evaluateNamedPrefixCall(temputs, fate, range, GlobalFunctionFamilyNameA(name), List(), argsExprs2)
+            callTemplar.evaluateNamedPrefixCall(temputs, fate, range, GlobalFunctionFamilyNameA(name), List.empty, argsExprs2)
           (callExpr2, returnsFromArgs)
         }
         case FunctionCallAE(range, callableExpr1, argsExprs1) => {
@@ -390,7 +390,7 @@ class ExpressionTemplar(
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsExprs1)
           val functionPointerCall2 =
-            callTemplar.evaluatePrefixCall(temputs, fate, range, decayedCallableReferenceExpr2, List(), argsExprs2)
+            callTemplar.evaluatePrefixCall(temputs, fate, range, decayedCallableReferenceExpr2, List.empty, argsExprs2)
           (functionPointerCall2, returnsFromCallable ++ returnsFromArgs)
         }
 
@@ -495,7 +495,7 @@ class ExpressionTemplar(
               case things if things.size > 1 => {
                 throw CompileErrorExceptionT(RangedInternalErrorT(range, "Found too many different things named \"" + name + "\" in env:\n" + things.map("\n" + _)))
               }
-              case List() => {
+              case Nil => {
                 //              println("members: " + fate.getAllTemplatasWithName(name, Set(ExpressionLookupContext, TemplataLookupContext)))
                 throw CompileErrorExceptionT(CouldntFindIdentifierToLoadT(range, name))
                 throw CompileErrorExceptionT(RangedInternalErrorT(range, "Couldn't find anything named \"" + name + "\" in env:\n" + fate))
@@ -1091,7 +1091,7 @@ class ExpressionTemplar(
       }
     val noneConstructor =
       delegate.evaluateTemplatedFunctionFromCallForPrototype(
-        temputs, range, noneConstructorTemplata, List(CoordTemplata(containedCoord)), List()) match {
+        temputs, range, noneConstructorTemplata, List(CoordTemplata(containedCoord)), List.empty) match {
         case seff@EvaluateFunctionFailure(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
         case EvaluateFunctionSuccess(p) => p
       }

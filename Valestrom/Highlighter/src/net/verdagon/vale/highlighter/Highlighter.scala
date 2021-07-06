@@ -6,7 +6,7 @@ import net.verdagon.vale.{vassert, vfail}
 object Highlighter {
   def min(positions: List[Int]): Int = {
     positions match {
-      case List() => vfail()
+      case Nil => vfail()
       case List(p) => p
       case head :: tail => {
         val minOfTail = min(tail)

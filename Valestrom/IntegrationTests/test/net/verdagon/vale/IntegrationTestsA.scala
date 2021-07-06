@@ -509,11 +509,11 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |""".stripMargin)
     val hinputs = compile.expectTemputs()
 
-    vassertSome(hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List(), FunctionNameT("helperFunc", List(), List(CoordT(ShareT, ReadonlyT, IntT.i32)))))))
+    vassertSome(hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List.empty, FunctionNameT("helperFunc", List.empty, List(CoordT(ShareT, ReadonlyT, IntT.i32)))))))
 
-    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List(), FunctionNameT("bork", List(), List(CoordT(ShareT, ReadonlyT, StrT())))))))
+    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List.empty, FunctionNameT("bork", List.empty, List(CoordT(ShareT, ReadonlyT, StrT())))))))
 
-    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List(), FunctionNameT("helperFunc", List(), List(CoordT(ShareT, ReadonlyT, StrT())))))))
+    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List.empty, FunctionNameT("helperFunc", List.empty, List(CoordT(ShareT, ReadonlyT, StrT())))))))
   }
 
 //  test("Test overloading between borrow and own") {
@@ -562,11 +562,11 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Test extern functions") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/externs/extern.vale"))
 
-    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate("math", List()))
+    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate("math", List.empty))
 
     // The extern we make should have the name we expect
     vassertSome(packageH.externNameToFunction.get("sqrt")) match {
-      case PrototypeH(FullNameH("sqrt",_,PackageCoordinate("math",List()),_),_,_) =>
+      case PrototypeH(FullNameH("sqrt",_,PackageCoordinate("math",Nil),_),_,_) =>
     }
 
     // We also made an internal function that contains an extern call

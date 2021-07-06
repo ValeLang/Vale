@@ -23,7 +23,7 @@ class InferTemplateTests extends FunSuite with Matchers {
       case List(ParameterT(CodeVarNameT("m"), _, CoordT(ConstraintT,ReadonlyT, _))) =>
     }
     moo.header.fullName.last.templateArgs shouldEqual
-      List(CoordTemplata(CoordT(OwnT,ReadwriteT,StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(),CitizenNameT("Muta",List()))))), CoordTemplata(CoordT(ConstraintT,ReadonlyT,StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(),CitizenNameT("Muta",List()))))))
+      List(CoordTemplata(CoordT(OwnT,ReadwriteT,StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List.empty,CitizenNameT("Muta",List.empty))))), CoordTemplata(CoordT(ConstraintT,ReadonlyT,StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List.empty,CitizenNameT("Muta",List.empty))))))
 
     compile.evalForKind(Vector()) shouldEqual VonInt(10)
   }

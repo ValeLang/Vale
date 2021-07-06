@@ -223,6 +223,6 @@ object CodeLocationT {
   val zero = CodeLocationT.internal(-1)
   def internal(internalNum: Int): CodeLocationT = {
     vassert(internalNum < 0)
-    CodeLocationT(FileCoordinate("", List(), "internal"), internalNum)
+    CodeLocationT(FileCoordinate("", List.empty, "internal"), internalNum)
   }
 }

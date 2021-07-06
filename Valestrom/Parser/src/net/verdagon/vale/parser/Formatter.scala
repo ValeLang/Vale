@@ -26,7 +26,7 @@ object Formatter {
 //  val s = w(" ")
 //  val ls = List(s)
 //  def may(b: Boolean, span: Span*): List[Span] = {
-//    if (b) span.toList else List()
+//    if (b) span.toList else List.empty
 //  }
 //
 //  def toHTML(element: IElement): String = {

@@ -133,7 +133,7 @@ object PatternPUtils {
 //
 //  private def getOrderedRunesFromVirtualityWithDuplicates(virtuality: IVirtualityP): List[String] = {
 //    virtuality match {
-//      case AbstractP => List()
+//      case AbstractP => List.empty
 //      case OverrideP(tyype: ITemplexPT) => getOrderedRunesFromTemplexWithDuplicates(tyype)
 //    }
 //  }
@@ -145,10 +145,10 @@ object PatternPUtils {
 
 //  def getOrderedRunesFromTemplexWithDuplicates(templex: ITemplexPT): List[String] = {
 //    templex match {
-//      case IntPT(value) => List()
-//      case BoolPT(value) => List()
-//      case NameOrRunePT(name) => List()
-//      case MutabilityPT(_) => List()
+//      case IntPT(value) => List.empty
+//      case BoolPT(value) => List.empty
+//      case NameOrRunePT(name) => List.empty
+//      case MutabilityPT(_) => List.empty
 //      case OwnershippedPT(_, inner) => getOrderedRunesFromTemplexWithDuplicates(inner)
 //      case CallPT(template, args) => getOrderedRunesFromTemplexesWithDuplicates((template :: args))
 //      case RepeaterSequencePT(mutability, size, element) => getOrderedRunesFromTemplexesWithDuplicates(List(mutability, size, element))

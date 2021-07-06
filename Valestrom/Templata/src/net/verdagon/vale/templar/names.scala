@@ -20,7 +20,7 @@ case class FullNameT[+T <: INameT](
   vassert(!initSteps.contains(PackageTopLevelNameT()))
 
   this match {
-    case FullNameT(PackageCoordinate.TEST_TLD, List(), FunctionNameT("main", List(), List())) =>
+    case FullNameT(PackageCoordinate.TEST_TLD, Nil, FunctionNameT("main", Nil, Nil)) =>
     case _ =>
   }
 
@@ -153,7 +153,7 @@ case class ExternFunctionNameT(
   humanName: String,
   parameters: List[CoordT]
 ) extends IFunctionNameT {
-  override def templateArgs: List[ITemplata] = List()
+  override def templateArgs: List[ITemplata] = List.empty
 
   def order = 46;
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -221,7 +221,7 @@ case class ConstructorNameT(
   parameters: List[CoordT]
 ) extends IFunctionNameT {
   def order = 21;
-  def templateArgs: List[ITemplata] = List()
+  def templateArgs: List[ITemplata] = List.empty
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }
@@ -272,7 +272,7 @@ case class LambdaCitizenNameT(
 ) extends ICitizenNameT {
   vpass()
 
-  def templateArgs: List[ITemplata] = List()
+  def templateArgs: List[ITemplata] = List.empty
   def order = 17;
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ templateArgs.toList.flatMap(_.all(func))

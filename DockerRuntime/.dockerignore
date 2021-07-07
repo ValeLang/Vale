@@ -1,0 +1,11 @@
+build-linux.sh
+LICENSE
+Dockerfile
+
+.*
+**/*.idea
+**/*.md
+**/*.bat
+**/.gitignore
+**/.git
+**/.DS_Store

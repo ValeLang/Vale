@@ -1014,11 +1014,11 @@ class InfererMatcher[Env, State](
 
 //
 //  private[infer] def matchStructAgainstOverrideSP(
-//      structRef2: StructRef2,
+//      structRefT: structRefT,
 //      overrideRule: Override1):
 //  Boolean = {
-//    val structDef2 = State.lookupStruct(structRef2)
-//    val superInterfaces = structDef2.getAncestorInterfacesNotIncludingSelf(State)
+//    val structDefT = State.lookupStruct(structRefT)
+//    val superInterfaces = structDefT.getAncestorInterfacesNotIncludingSelf(State)
 //    val matchingInterfacesAndSubTemplars =
 //      superInterfaces
 //        .flatMap(interfaceRef2 => {
@@ -1031,7 +1031,7 @@ class InfererMatcher[Env, State](
 //          }
 //        })
 //    if (matchingInterfacesAndSubTemplars.size > 1) {
-//      vfail("Can't figure for struct " + structRef2 + " which of these interfaces it implements! " + matchingInterfacesAndSubTemplars.map(_._1))
+//      vfail("Can't figure for struct " + structRefT + " which of these interfaces it implements! " + matchingInterfacesAndSubTemplars.map(_._1))
 //    }
 //    matchingInterfacesAndSubTemplars.headOption match {
 //      case None => false
@@ -1043,8 +1043,8 @@ class InfererMatcher[Env, State](
 //    }
 //  }
 
-//  private[infer] def matchStructAgainstCitizenTemplate(instance: StructRef2, rule: CitizenTerrySP) = {
-//    val StructRef2(instanceHumanName, instanceTemplateArgs) = instance
+//  private[infer] def matchStructAgainstCitizenTemplate(instance: structRefT, rule: CitizenTerrySP) = {
+//    val structRefT(instanceHumanName, instanceTemplateArgs) = instance
 //    val CitizenTerrySP(citizenTemplateRule, templateArgRules) = rule
 //
 //    if (instanceTemplateArgs.size == templateArgRules.size) {

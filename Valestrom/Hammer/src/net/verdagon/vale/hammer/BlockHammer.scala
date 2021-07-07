@@ -18,25 +18,9 @@ object BlockHammer {
   (BlockH) = {
     val blockLocals = LocalsBox(parentLocals.snapshot)
 
-    val unfilteredExprsH =
-      ExpressionHammer.translateExpressionsAndDeferreds(
-        hinputs, hamuts, currentFunctionHeader, blockLocals, block2.exprs);
-
-    val indexOfFirstNever = unfilteredExprsH.indexWhere(_.resultType.kind == NeverH())
-    // If there's an expression returning a Never, then remove all the expressions after that.
-    val exprsH =
-      if (indexOfFirstNever >= 0) {
-        unfilteredExprsH.slice(0, indexOfFirstNever + 1)
-      } else {
-        unfilteredExprsH
-      }
-    vassert(exprsH.nonEmpty)
-
     val exprH =
-      exprsH match {
-        case List(onlyExprH) => onlyExprH
-        case zeroOrOneExprs => ConsecutorH(zeroOrOneExprs)
-      }
+      ExpressionHammer.translateExpressionsAndDeferreds(
+        hinputs, hamuts, currentFunctionHeader, blockLocals, List(block2.inner));
 
     // We dont vassert(deferreds.isEmpty) here, see BMHD for why.
 

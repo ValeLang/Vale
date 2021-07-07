@@ -7,7 +7,8 @@ import scala.collection.immutable.List
 
 case class AtomAP(
   range: RangeS,
-  capture: LocalA,
+  // This is an Option so Templar can destroy incoming ignored vars immediately, see DIPRA.
+  capture: Option[LocalA],
   virtuality: Option[VirtualityAP],
   coordRune: IRuneA,
   destructure: Option[List[AtomAP]])

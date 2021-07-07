@@ -71,7 +71,7 @@ class StructTemplarTemplateArgsLayer(
               structA.rules,
               structA.typeByRune,
               structA.localRunes,
-              List(),
+              List.empty,
               None,
               callRange,
               templateArgs)
@@ -137,7 +137,7 @@ class StructTemplarTemplateArgsLayer(
               interfaceS.rules,
               interfaceS.typeByRune,
               interfaceS.localRunes,
-              List(),
+              List.empty,
               None,
               callRange,
               templateArgs)

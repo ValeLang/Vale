@@ -115,7 +115,7 @@ class ClosureTests extends FunSuite with Matchers {
         ReferenceLocalVariableT(
           FullNameT(_, List(FunctionNameT("main",_,_), LambdaCitizenNameT(_), FunctionNameT("__call",_,_)), ClosureParamNameT()),
           FinalT,
-          CoordT(ShareT,ReadonlyT,StructRefT(FullNameT(_, List(FunctionNameT("main",List(),List())),LambdaCitizenNameT(_))))),
+          CoordT(ShareT,ReadonlyT,StructRefT(FullNameT(_, List(FunctionNameT("main",Nil, Nil)),LambdaCitizenNameT(_))))),
         ReferenceLocalVariableT(
           FullNameT(_, List(FunctionNameT("main",_,_), LambdaCitizenNameT(_), FunctionNameT("__call",_,_)),TemplarBlockResultVarNameT(0)),
           FinalT,
@@ -154,14 +154,14 @@ class ClosureTests extends FunSuite with Matchers {
           }
         }))
     lambdaCall.header.paramTypes.head match {
-      case CoordT(ShareT, ReadonlyT, StructRefT(FullNameT(_, List(FunctionNameT("main",List(),List())),LambdaCitizenNameT(_)))) =>
+      case CoordT(ShareT, ReadonlyT, StructRefT(FullNameT(_, List(FunctionNameT("main",Nil,Nil)),LambdaCitizenNameT(_)))) =>
     }
     lambdaCall.header.returnType shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
 
     // Make sure we make it with a function pointer and a constructed vars struct
     val main = temputs.lookupFunction("main")
     main.only({
-      case ConstructTE(StructRefT(FullNameT(_, List(FunctionNameT("main",List(),List())),LambdaCitizenNameT(_))), _, _) =>
+      case ConstructTE(StructRefT(FullNameT(_, List(FunctionNameT("main",Nil,Nil)),LambdaCitizenNameT(_))), _, _) =>
     })
 
     // Make sure we call the function somewhere
@@ -193,7 +193,7 @@ class ClosureTests extends FunSuite with Matchers {
     val lambda = temputs.lookupLambdaIn("main")
     lambda.only({
       case MutateTE(
-        AddressMemberLookupTE(_,_,FullNameT(_, List(FunctionNameT("main",List(),List()), LambdaCitizenNameT(_)),CodeVarNameT("x")),CoordT(ShareT,ReadonlyT, IntT.i32), _),
+        AddressMemberLookupTE(_,_,FullNameT(_, List(FunctionNameT("main",Nil,Nil), LambdaCitizenNameT(_)),CodeVarNameT("x")),CoordT(ShareT,ReadonlyT, IntT.i32), _),
         _) =>
     })
 

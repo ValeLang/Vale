@@ -45,7 +45,7 @@ class TypeAndDestructureTests extends FunSuite with Matchers with Collector {
       case PatternPP(_,_,
           None,
           Some(NameOrRunePT(NameP(_, "Muta"))),
-          Some(DestructureP(_,List())),
+          Some(DestructureP(_,Nil)),
           None) =>
     }
   }
@@ -58,7 +58,7 @@ class TypeAndDestructureTests extends FunSuite with Matchers with Collector {
             CallPT(_,
               NameOrRunePT(NameP(_, "Muta")),
               List(NameOrRunePT(NameP(_, "int"))))),
-          Some(DestructureP(_,List())),
+          Some(DestructureP(_,Nil)),
           None) =>
     }
     compile("_ Muta<R>()") shouldHave {
@@ -68,7 +68,7 @@ class TypeAndDestructureTests extends FunSuite with Matchers with Collector {
             CallPT(_,
               NameOrRunePT(NameP(_, "Muta")),
               List(NameOrRunePT(NameP(_, "R"))))),
-          Some(DestructureP(_,List())),
+          Some(DestructureP(_,Nil)),
           None) =>
     }
   }

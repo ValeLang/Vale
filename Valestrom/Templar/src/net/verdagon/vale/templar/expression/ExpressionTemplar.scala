@@ -66,7 +66,7 @@ class ExpressionTemplar(
       exprs1: List[IExpressionAE]):
   (List[ReferenceExpressionTE], Set[CoordT]) = {
     exprs1 match {
-      case Nil => (List(), Set())
+      case Nil => (List.empty, Set())
       case first1 :: rest1 => {
         val (first2, returnsFromFirst) =
           evaluateAndCoerceToReferenceExpression(temputs, fate, first1);
@@ -377,7 +377,7 @@ class ExpressionTemplar(
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsPackExpr1)
           val callExpr2 =
-            callTemplar.evaluateNamedPrefixCall(temputs, fate, range, GlobalFunctionFamilyNameA(name), List(), argsExprs2)
+            callTemplar.evaluateNamedPrefixCall(temputs, fate, range, GlobalFunctionFamilyNameA(name), List.empty, argsExprs2)
           (callExpr2, returnsFromArgs)
         }
         case FunctionCallAE(range, callableExpr1, argsExprs1) => {
@@ -390,7 +390,7 @@ class ExpressionTemplar(
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsExprs1)
           val functionPointerCall2 =
-            callTemplar.evaluatePrefixCall(temputs, fate, range, decayedCallableReferenceExpr2, List(), argsExprs2)
+            callTemplar.evaluatePrefixCall(temputs, fate, range, decayedCallableReferenceExpr2, List.empty, argsExprs2)
           (functionPointerCall2, returnsFromCallable ++ returnsFromArgs)
         }
 
@@ -495,7 +495,7 @@ class ExpressionTemplar(
               case things if things.size > 1 => {
                 throw CompileErrorExceptionT(RangedInternalErrorT(range, "Found too many different things named \"" + name + "\" in env:\n" + things.map("\n" + _)))
               }
-              case List() => {
+              case Nil => {
                 //              println("members: " + fate.getAllTemplatasWithName(name, Set(ExpressionLookupContext, TemplataLookupContext)))
                 throw CompileErrorExceptionT(CouldntFindIdentifierToLoadT(range, name))
                 throw CompileErrorExceptionT(RangedInternalErrorT(range, "Couldn't find anything named \"" + name + "\" in env:\n" + fate))
@@ -786,14 +786,12 @@ class ExpressionTemplar(
           val (sourceExpr2, returnsFromSource) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, sourceExpr1)
 
-          val fateSnapshot = fate.snapshot
-          val lets2 =
-            patternTemplar.nonCheckingInferAndTranslate(
-              temputs, fate, rulesA, typeByRune, localRunesA, pattern, sourceExpr2)
+          val resultTE =
+            patternTemplar.inferAndTranslatePattern(
+              temputs, fate, rulesA, typeByRune, localRunesA, pattern, sourceExpr2,
+              (temputs, fate, liveCaptureLocals) => VoidLiteralTE())
 
-          val resultExprBlock2 = ConsecutorTE(lets2)
-
-          (resultExprBlock2, returnsFromSource)
+          (resultTE, returnsFromSource)
         }
         case RuneLookupAE(range, runeA, tyype) => {
           val templata = vassertSome(fate.getNearestTemplataWithAbsoluteName2(NameTranslator.translateRune(runeA), Set(TemplataLookupContext)))
@@ -929,15 +927,15 @@ class ExpressionTemplar(
             if (uncoercedBodyBlock2.kind == NeverT()) {
               uncoercedBodyBlock2
             } else {
-              BlockTE(List(uncoercedBodyBlock2, ConstantBoolTE(true)))
+              BlockTE(Templar.consecutive(List(uncoercedBodyBlock2, ConstantBoolTE(true))))
             }
 
           val ifExpr2 =
             IfTE(
               conditionExpr,
               thenBody,
-              BlockTE(List(ConstantBoolTE(false))))
-          val whileExpr2 = WhileTE(BlockTE(List(ifExpr2)))
+              BlockTE(ConstantBoolTE(false)))
+          val whileExpr2 = WhileTE(BlockTE(ifExpr2))
           (whileExpr2, returnsFromCondition ++ bodyReturnsFromExprs)
         }
         case BlockAE(range, blockExprs) => {
@@ -1022,7 +1020,7 @@ class ExpressionTemplar(
           val getResultExpr =
             localHelper.unletLocal(fate, resultVariable)
 
-          val consecutor = ConsecutorTE(List(resultLet) ++ destructExprs ++ List(getResultExpr))
+          val consecutor = Templar.consecutive(List(resultLet) ++ destructExprs ++ List(getResultExpr))
 
           val returns = returnsFromInnerExpr + innerExpr2.resultRegister.reference
 
@@ -1092,7 +1090,7 @@ class ExpressionTemplar(
       }
     val noneConstructor =
       delegate.evaluateTemplatedFunctionFromCallForPrototype(
-        temputs, range, noneConstructorTemplata, List(CoordTemplata(containedCoord)), List()) match {
+        temputs, range, noneConstructorTemplata, List(CoordTemplata(containedCoord)), List.empty) match {
         case seff@EvaluateFunctionFailure(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
         case EvaluateFunctionSuccess(p) => p
       }
@@ -1173,7 +1171,7 @@ class ExpressionTemplar(
         val localVar = ReferenceLocalVariableT(varId, FinalT, onlyMember)
         val destroy2 = DestroyTE(refExpr, understruct, List(localVar))
         val unletExpr = localHelper.unletLocal(fate, localVar)
-        (ConsecutorTE(List(destroy2, unletExpr)))
+        (Templar.consecutive(List(destroy2, unletExpr)))
       }
       case _ => (refExpr)
     }
@@ -1252,11 +1250,13 @@ class ExpressionTemplar(
 
   def evaluateBlockStatements(
     temputs: Temputs, startingFate: FunctionEnvironment, fate: FunctionEnvironmentBox, exprs: List[IExpressionAE]):
-  (List[ReferenceExpressionTE], Set[CoordT]) = {
+  (ReferenceExpressionTE, Set[CoordT]) = {
     blockTemplar.evaluateBlockStatements(temputs, startingFate, fate, exprs)
   }
 
-  def nonCheckingTranslateList(temputs: Temputs, fate: FunctionEnvironmentBox, patterns1: List[AtomAP], patternInputExprs2: List[ReferenceExpressionTE]): List[ReferenceExpressionTE] = {
-    patternTemplar.nonCheckingTranslateList(temputs, fate, patterns1, patternInputExprs2)
+  def translatePatternList(temputs: Temputs, fate: FunctionEnvironmentBox, patterns1: List[AtomAP], patternInputExprs2: List[ReferenceExpressionTE]): ReferenceExpressionTE = {
+    patternTemplar.translatePatternList(
+      temputs, fate, patterns1, patternInputExprs2,
+      (temputs, fate, liveCaptureLocals) => VoidLiteralTE())
   }
 }

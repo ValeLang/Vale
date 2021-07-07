@@ -12,7 +12,7 @@ object IFunction1 {
     InterfaceA(
       RangeS.internal(-69),
       TopLevelCitizenDeclarationNameA("IFunction1", CodeLocationS.internal(-7)),
-      List(),
+      List.empty,
       false,
       CodeRuneA("M"),
       None,
@@ -32,17 +32,17 @@ object IFunction1 {
         FunctionA(
           RangeS.internal(-5633),
           FunctionNameA("__call", CodeLocationS.internal(-8)),
-          List(),
+          List.empty,
           FunctionTemplataType,
           Set(),
-          List(),
+          List.empty,
           Set(CodeRuneA("BorrowThis"), CodeRuneA("ThisK")),
           Map(
             CodeRuneA("BorrowThis") -> CoordTemplataType,
             CodeRuneA("ThisK") -> CoordTemplataType),
           List(
-            ParameterA(AtomAP(RangeS.internal(-119), LocalA(CodeVarNameA("this"), MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed), Some(AbstractAP), CodeRuneA("BorrowThis"), None)),
-            ParameterA(AtomAP(RangeS.internal(-120), LocalA(CodeVarNameA("p1"), MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed), None, CodeRuneA("P1"), None))),
+            ParameterA(AtomAP(RangeS.internal(-119), Some(LocalA(CodeVarNameA("this"), MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed)), Some(AbstractAP), CodeRuneA("BorrowThis"), None)),
+            ParameterA(AtomAP(RangeS.internal(-120), Some(LocalA(CodeVarNameA("p1"), MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed)), None, CodeRuneA("P1"), None))),
           Some(CodeRuneA("R")),
           List(
             EqualsAR(

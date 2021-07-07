@@ -113,7 +113,7 @@ case class TemplatasStore(
   //  private var entriesByHumanName = Map[String, List[IEnvEntry]]()
 
   def entryToTemplata(env: IEnvironment, entry: IEnvEntry): ITemplata = {
-//    vassert(env.fullName != FullName2(PackageCoordinate.BUILTIN, List(), PackageTopLevelName2()))
+//    vassert(env.fullName != FullName2(PackageCoordinate.BUILTIN, List.empty, PackageTopLevelName2()))
     entry match {
       case FunctionEnvEntry(func) => FunctionTemplata.make(env, func)
       case StructEnvEntry(struct) => StructTemplata.make(env, struct)
@@ -325,7 +325,7 @@ case class TemplatasStore(
       .flatten
       .filter(entryMatchesFilter(_, lookupFilter)) match {
       case List(entry) => Some(entryToTemplata(from, entry))
-      case List() => from.getParentEnv().flatMap(_.getNearestTemplataWithAbsoluteName2(name, lookupFilter))
+      case Nil => from.getParentEnv().flatMap(_.getNearestTemplataWithAbsoluteName2(name, lookupFilter))
       case multiple => vfail("Too many things named " + name + ":" + multiple);
     }
   }
@@ -338,7 +338,7 @@ case class TemplatasStore(
   List[ITemplata] = {
     profiler.childFrame("getAllTemplatasWithName", () => {
       entriesByImpreciseNameA
-        .getOrElse(name, List())
+        .getOrElse(name, List.empty)
         .filter(entryMatchesFilter(_, lookupFilter))
         .map(x => entryToTemplata(from, x))
         .toList ++
@@ -352,10 +352,10 @@ case class TemplatasStore(
     lookupFilter: Set[ILookupContext]):
   Option[ITemplata] = {
     entriesByImpreciseNameA
-      .getOrElse(name, List())
+      .getOrElse(name, List.empty)
       .filter(entryMatchesFilter(_, lookupFilter)) match {
       case List(entry) => Some(entryToTemplata(from, entry))
-      case List() => from.getParentEnv().flatMap(_.getNearestTemplataWithName(name, lookupFilter))
+      case Nil => from.getParentEnv().flatMap(_.getNearestTemplataWithName(name, lookupFilter))
       case multiple => vfail("Too many things named " + name + ":" + multiple);
     }
   }

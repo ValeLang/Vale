@@ -143,7 +143,7 @@ object CombinatorParsers
         // A hack to do region highlighting
         opt("'" ~> optWhite ~> exprIdentifier <~ optWhite) ~
         (pos <~ "{" <~ optWhite) ~
-        ("..." <~ optWhite ^^^ List() | repsep(structContent, optWhite)) ~
+        ("..." <~ optWhite ^^^ List.empty | repsep(structContent, optWhite)) ~
         (optWhite ~> "}" ~> pos) ^^ {
       case begin ~ name ~ identifyingRunes ~ attributes ~ imm ~ maybeTemplateRules ~ defaultRegion ~ membersBegin ~ members ~ end => {
         val mutability = if (imm == Some("imm")) ImmutableP else MutableP

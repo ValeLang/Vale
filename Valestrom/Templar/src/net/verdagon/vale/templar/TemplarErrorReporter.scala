@@ -34,7 +34,7 @@ case class FunctionAlreadyExists(oldFunctionRange: RangeS, newFunctionRange: Ran
 }
 case class CantMutateFinalMember(range: RangeS, fullName2: FullNameT[INameT], memberName: FullNameT[IVarNameT]) extends ICompileErrorT
 case class CantMutateFinalElement(range: RangeS, fullName2: FullNameT[INameT]) extends ICompileErrorT
-//case class CantMutateReadonlyMember(range: RangeS, structRef2: StructRef2, memberName: FullName2[IVarName2]) extends ICompileErrorT
+//case class CantMutateReadonlyMember(range: RangeS, structRefT: structRefT, memberName: FullName2[IVarName2]) extends ICompileErrorT
 case class CantUseReadonlyReferenceAsReadwrite(range: RangeS) extends ICompileErrorT
 case class LambdaReturnDoesntMatchInterfaceConstructor(range: RangeS) extends ICompileErrorT
 case class IfConditionIsntBoolean(range: RangeS, actualType: CoordT) extends ICompileErrorT

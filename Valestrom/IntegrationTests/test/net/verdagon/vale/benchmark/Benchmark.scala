@@ -1,7 +1,9 @@
 package net.verdagon.vale.benchmark
 
+import net.verdagon.vale.astronomer.AstronomerErrorHumanizer
 import net.verdagon.vale.driver.FullCompilationOptions
-import net.verdagon.vale.{Builtins, FileCoordinateMap, PackageCoordinate, Profiler, RunCompilation, Tests}
+import net.verdagon.vale.templar.TemplarErrorHumanizer
+import net.verdagon.vale.{Builtins, Err, FileCoordinateMap, Ok, PackageCoordinate, Profiler, RunCompilation, Tests}
 
 import scala.collection.immutable.List
 
@@ -12,12 +14,20 @@ object Benchmark {
       new RunCompilation(
         List(PackageCoordinate.BUILTIN, PackageCoordinate.TEST_TLD),
         Builtins.getCodeMap()
-          .or(FileCoordinateMap.test(Tests.loadExpected("programs/scratch.vale")))
+          .or(FileCoordinateMap.test(Tests.loadExpected("programs/roguelike.vale")))
           .or(Tests.getPackageToResourceResolver),
         FullCompilationOptions(
           debugOut = (_) => {},
           profiler = profiler,
           useOptimization = useOptimization))
+    compile.getAstrouts() match {
+      case Err(e) => println(AstronomerErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), e))
+      case Ok(t) =>
+    }
+    compile.getTemputs() match {
+      case Err(e) => println(TemplarErrorHumanizer.humanize(true, compile.getCodeMap().getOrDie(), e))
+      case Ok(t) =>
+    }
     compile.getHamuts()
     profiler
   }

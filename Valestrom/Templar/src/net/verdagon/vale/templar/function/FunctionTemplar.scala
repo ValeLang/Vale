@@ -24,11 +24,11 @@ trait IFunctionTemplarDelegate {
     startingFate: FunctionEnvironment,
     fate: FunctionEnvironmentBox,
     exprs: List[IExpressionAE]):
-  (List[ReferenceExpressionTE], Set[CoordT])
+  (ReferenceExpressionTE, Set[CoordT])
 
-  def nonCheckingTranslateList(
+  def translatePatternList(
     temputs: Temputs, fate: FunctionEnvironmentBox, patterns1: List[AtomAP], patternInputExprs2: List[ReferenceExpressionTE]):
-  List[ReferenceExpressionTE]
+  ReferenceExpressionTE
 
   def evaluateParent(
     env: IEnvironment, temputs: Temputs, sparkHeader: FunctionHeaderT):

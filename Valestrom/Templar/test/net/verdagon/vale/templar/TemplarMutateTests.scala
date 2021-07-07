@@ -27,9 +27,9 @@ class TemplarMutateTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test("fn main() export {a! = 3; set a = 4; }")
     val temputs = compile.expectTemputs();
     val main = temputs.lookupFunction("main")
-    main.only({ case MutateTE(LocalLookupT(_,ReferenceLocalVariableT(FullNameT(_,_, CodeVarNameT("a")), VaryingT, _), _, VaryingT), ConstantIntTE(4, _)) => })
+    main.only({ case MutateTE(LocalLookupTE(_,ReferenceLocalVariableT(FullNameT(_,_, CodeVarNameT("a")), VaryingT, _), _, VaryingT), ConstantIntTE(4, _)) => })
 
-    val lookup = main.only({ case l @ LocalLookupT(range, localVariable, reference, variability) => l })
+    val lookup = main.only({ case l @ LocalLookupTE(range, localVariable, reference, variability) => l })
     val resultCoord = lookup.resultRegister.reference
     resultCoord shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
   }
@@ -48,7 +48,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs();
     val main = temputs.lookupFunction("main")
 
-    val lookup = main.only({ case l @ ReferenceMemberLookupT(_, _, _, _, _, _) => l })
+    val lookup = main.only({ case l @ ReferenceMemberLookupTE(_, _, _, _, _, _) => l })
     val resultCoord = lookup.resultRegister.reference
     // See RMLRMO, it should result in the same type as the member.
     resultCoord match {
@@ -114,8 +114,8 @@ class TemplarMutateTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     compile.getTemputs() match {
-      case Err(CantMutateFinalMember(_, structRef2, memberName)) => {
-        structRef2.last match {
+      case Err(CantMutateFinalMember(_, structRefT, memberName)) => {
+        structRefT.last match {
           case CitizenNameT("Vec3", Nil) =>
         }
         memberName.last match {
@@ -135,8 +135,8 @@ class TemplarMutateTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     compile.getTemputs() match {
-      case Err(CantMutateFinalMember(_, structRef2, memberName)) => {
-        structRef2.last match {
+      case Err(CantMutateFinalMember(_, structRefT, memberName)) => {
+        structRefT.last match {
           case CitizenNameT("Vec3", Nil) =>
         }
         memberName.last match {

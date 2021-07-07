@@ -205,7 +205,7 @@ object Astronomer {
       case LambdaStructNameS(_) => return KindTemplataType
       case ImplNameS(_, _) => vwat()
       case LetNameS(_) => vwat()
-      case UnnamedLocalNameS(_) => vwat()
+//      case UnnamedLocalNameS(_) => vwat()
       case ClosureParamNameS() => vwat()
       case MagicParamNameS(_) => vwat()
       case CodeVarNameS(_) => vwat()
@@ -461,8 +461,7 @@ object Astronomer {
   }
 
   def translateAtom(env: Environment, atomS: AtomSP): AtomAP = {
-    val AtomSP(range, CaptureS(nameS), virtualityS, coordRuneS, destructureS) = atomS
-    val nameA = translateVarNameStep(nameS)
+    val AtomSP(range, maybeCaptureS, virtualityS, coordRuneS, destructureS) = atomS
 
     val virtualityA =
       virtualityS.map({
@@ -474,9 +473,17 @@ object Astronomer {
 
     val destructureA = destructureS.map(_.map(translateAtom(env, _)))
 
-    val local = env.locals.find(_.varName == nameA).get
+    val maybeCaptureA =
+      maybeCaptureS match {
+        case None => None
+        case Some(CaptureS(nameS)) => {
+          val nameA = translateVarNameStep(nameS)
+          val local = env.locals.find(_.varName == nameA).get
+          Some(local)
+        }
+      }
 
-    AtomAP(range, local, virtualityA, coordRuneA, destructureA)
+    AtomAP(range, maybeCaptureA, virtualityA, coordRuneA, destructureA)
   }
 
   def translateFunction(astrouts: AstroutsBox, outerEnv: Environment, functionS: FunctionS): FunctionA = {
@@ -491,7 +498,7 @@ object Astronomer {
         case CodeBody1(body) => body.block.locals.map(ExpressionAstronomer.translateLocalVariable)
         case _ => {
           // We make some LocalVariableA here to appease translateParameter which expects some locals in the env.
-          paramsS.map(_.pattern.name)
+          paramsS.flatMap(_.pattern.name)
             .map({
               case CaptureS(name) => {
                 LocalA(
@@ -628,7 +635,7 @@ object Astronomer {
       case LambdaStructNameS(lambdaName) => LambdaStructNameA(translateLambdaNameStep(lambdaName))
       case i @ ImplNameS(_, _) => translateImplName(i)
       case LetNameS(codeLocation) => LetNameA(codeLocation)
-      case UnnamedLocalNameS(codeLocation) => UnnamedLocalNameA(codeLocation)
+//      case UnnamedLocalNameS(codeLocation) => UnnamedLocalNameA(codeLocation)
       case ClosureParamNameS() => ClosureParamNameA()
       case MagicParamNameS(codeLocation) => MagicParamNameA(codeLocation)
       case CodeVarNameS(name) => CodeVarNameA(name)
@@ -663,7 +670,7 @@ object Astronomer {
 
   def translateVarNameStep(name: IVarNameS): IVarNameA = {
     name match {
-      case UnnamedLocalNameS(codeLocation) => UnnamedLocalNameA(codeLocation)
+//      case UnnamedLocalNameS(codeLocation) => UnnamedLocalNameA(codeLocation)
       case ClosureParamNameS() => ClosureParamNameA()
       case ConstructingMemberNameS(n) => ConstructingMemberNameA(n)
       case MagicParamNameS(magicParamNumber) => MagicParamNameA(magicParamNumber)

@@ -1,3 +1,8 @@
+import hashmap.*;
+import array.each.*;
+import string.*;
+import ioutils.*;
+
 // roguelike.vale - A simple Roguelike game, made in Vale.
 //
 // To build:
@@ -27,10 +32,10 @@ struct Goblin {
   location Vec<2, int>;
 }
 
-fn makeBoard() Array<mut, final, Array<mut, vary, str>> {
+fn makeBoard() Array<mut, final, Array<mut, final, str>> {
   ret
     MakeArray(10, (row){
-      MakeVaryArray(10, (col){
+      MakeArray(10, (col){
         = if (row == 0) { "#" }
           else if (col == 0) { "#" }
           else if (row == 9) { "#" }
@@ -41,34 +46,33 @@ fn makeBoard() Array<mut, final, Array<mut, vary, str>> {
 }
 
 fn display(
-    board &Array<mut, Array<mut, str>>,
+    board &Array<mut, final, Array<mut, final, str>>,
     goblins &HashMap<int, Goblin, IntHasher, IntEquator>,
     playerRow int,
     playerCol int)
 {
   toPrint! = "";
-  eachI (&board) (rowI, row){
-    eachI (&row) (cellI, cell){
+  board.eachI((rowI, row){
+    row.eachI((cellI, cell){
       charToPrint! = cell;
 
-      if (and(rowI == playerRow, cellI == playerCol)) {
+      if (rowI == playerRow and cellI == playerCol) {
         set charToPrint = "@";
-      }
-      else {
+      } else {
         goblins.keys().each((key){
           goblin? = goblins.get(key);
           goblin = (goblin?).get(); // TODO try getting rid of this ^, doesnt wanna find the get function
 
-          if (and(rowI == goblin.location.values.1, cellI == goblin.location.values.0)) {
+          if (rowI == goblin.location.values.1 and cellI == goblin.location.values.0) {
             set charToPrint = "g";
           }
         });
       }
 
       set toPrint = toPrint + charToPrint;
-    }
+    });
     set toPrint = toPrint + "\n";
-  }
+  });
   print(toPrint);
 }
 
@@ -104,7 +108,7 @@ bool {
   a = goblins.get(goblinKey);
   b = (a).get();
   (goblinCol, goblinRow) = b.location.values;
-  ret and(row == goblinRow, col == goblinCol);
+  ret row == goblinRow and col == goblinCol;
 }
 
 
@@ -125,16 +129,16 @@ fn main() int export {
   playerCol! = 3;
 
   goblins = HashMap<int, Goblin, IntHasher, IntEquator>(IntHasher(), IntEquator());
-  goblins.add(13, Goblin(Vec([6, 3])));
-  goblins.add(14, Goblin(Vec([2, 6])));
-  goblins.add(15, Goblin(Vec([5, 7])));
-  goblins.add(17, Goblin(Vec([2, 5])));
-  goblins.add(19, Goblin(Vec([7, 1])));
-  goblins.add(23, Goblin(Vec([3, 3])));
-  goblins.add(24, Goblin(Vec([1, 7])));
-  goblins.add(25, Goblin(Vec([7, 6])));
-  goblins.add(27, Goblin(Vec([4, 6])));
-  goblins.add(29, Goblin(Vec([7, 4])));
+  goblins!.add(13, Goblin(Vec([imm][6, 3])));
+  goblins!.add(14, Goblin(Vec([imm][2, 6])));
+  goblins!.add(15, Goblin(Vec([imm][5, 7])));
+  goblins!.add(17, Goblin(Vec([imm][2, 5])));
+  goblins!.add(19, Goblin(Vec([imm][7, 1])));
+  goblins!.add(23, Goblin(Vec([imm][3, 3])));
+  goblins!.add(24, Goblin(Vec([imm][1, 7])));
+  goblins!.add(25, Goblin(Vec([imm][7, 6])));
+  goblins!.add(27, Goblin(Vec([imm][4, 6])));
+  goblins!.add(29, Goblin(Vec([imm][7, 4])));
 
   running! = true;
   while (running) {
@@ -162,7 +166,7 @@ fn main() int export {
     killedGoblin! = false;
     goblins.keys().each((key){
       if (goblinAt?(&goblins, key, newPlayerRow, newPlayerCol)) {
-        goblins.remove(key);
+        goblins!.remove(key);
         set killedGoblin = true;
       }
     });

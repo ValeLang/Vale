@@ -23,7 +23,7 @@ class StructTemplarCore(
   def addBuiltInStructs(env: PackageEnvironment[INameT], temputs: Temputs): Unit = {
     val emptyTupleFullName = Program2.emptyTupleStructRef.fullName
     val emptyTupleEnv = PackageEnvironment(Some(env), emptyTupleFullName, newTemplataStore())
-    val structDefT = StructDefinitionT(emptyTupleFullName, List(), false, ImmutableT, List(), false)
+    val structDefT = StructDefinitionT(emptyTupleFullName, List(), false, ImmutableT, List.empty, false)
     temputs.declareStruct(structDefT.getRef)
     temputs.declareStructMutability(structDefT.getRef, ImmutableT)
     temputs.declareStructEnv(structDefT.getRef, emptyTupleEnv)
@@ -31,7 +31,7 @@ class StructTemplarCore(
     // Normally after adding a struct we would add its destructor. Void is the only one we don't
     // have a destructor for.
 
-    temputs.declarePack(List(), structDefT.getRef)
+    temputs.declarePack(List.empty, structDefT.getRef)
   }
 
   def makeStruct(
@@ -117,9 +117,9 @@ class StructTemplarCore(
                   temputs,
                   struct1.range,
                   GlobalFunctionFamilyNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME),
-                  List(),
+                  List.empty,
                   List(ParamFilter(CoordT(OwnT,ReadwriteT, structDefT.getRef), Some(OverrideT(implementedInterfaceRefT)))),
-                  List(),
+                  List.empty,
                   true)
               sefResult match {
                 case ScoutExpectedFunctionSuccess(_) =>
@@ -287,7 +287,7 @@ class StructTemplarCore(
 //    val mutability = Immutable
 //
 //    val nearName = FunctionScout.CLOSURE_STRUCT_NAME // For example "__Closure<main>:lam1"
-//    val fullName = FullName2(header.fullName.steps :+ NamePart2(nearName, Some(List()), None, None))
+//    val fullName = FullName2(header.fullName.steps :+ NamePart2(nearName, Some(List.empty), None, None))
 //
 //    val structRef = structRefT(fullName)
 //
@@ -308,7 +308,7 @@ class StructTemplarCore(
 //    temputs.declareStructMutability(structRef, mutability)
 //    temputs.declareStructEnv(structRef, structEnv);
 //
-//    val closureStructDefinition = StructDefinition2(fullName, mutability, List(), true);
+//    val closureStructDefinition = StructDefinition2(fullName, mutability, List.empty, true);
 //    temputs.add(closureStructDefinition)
 //
 //    val closuredVarsStructRef = closureStructDefinition.getRef;
@@ -373,7 +373,7 @@ class StructTemplarCore(
     temputs.declareStructMutability(structRef, mutability)
     temputs.declareStructEnv(structRef, structEnv);
 
-    val closureStructDefinition = StructDefinitionT(fullName, List(), false, mutability, members, true);
+    val closureStructDefinition = StructDefinitionT(fullName, List.empty, false, mutability, members, true);
     temputs.add(closureStructDefinition)
 
     // If it's immutable, make sure there's a zero-arg destructor.
@@ -412,7 +412,7 @@ class StructTemplarCore(
         fullName,
         newTemplataStore())
 
-    val newStructDef = StructDefinitionT(structInnerEnv.fullName, List(), false, packMutability, members, false);
+    val newStructDef = StructDefinitionT(structInnerEnv.fullName, List.empty, false, packMutability, members, false);
     if (memberCoords.isEmpty && packMutability != ImmutableT)
       vfail("curiosity")
 
@@ -478,11 +478,11 @@ class StructTemplarCore(
 
           val FunctionNameT(humanName, _, _) = superFunctionName.last
           val fowarderName =
-            anonymousSubstructName.addStep(FunctionNameT(humanName, List(), params.map(_.tyype)))
+            anonymousSubstructName.addStep(FunctionNameT(humanName, List.empty, params.map(_.tyype)))
           val forwarderHeader =
             FunctionHeaderT(
               fowarderName,
-              List(),
+              List.empty,
               params,
               superReturnType,
               None)
@@ -523,7 +523,7 @@ class StructTemplarCore(
     val structDef =
       StructDefinitionT(
         anonymousSubstructName,
-        List(),
+        List.empty,
         interfaceDef.weakable,
         mutability,
         callables.zipWithIndex.map({ case (lambda, index) =>
@@ -561,9 +561,9 @@ class StructTemplarCore(
             temputs,
             range,
             GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME),
-            List(),
+            List.empty,
             forwardedCallArgs,
-            List(),
+            List.empty,
             true) match {
             case seff@ScoutExpectedFunctionFailure(_, _, _, _, _) => throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
             case ScoutExpectedFunctionSuccess(prototype) => prototype
@@ -605,9 +605,8 @@ class StructTemplarCore(
             forwarderHeader,
             localVariables,
             BlockTE(
-              List(
                 ReturnTE(
-                  FunctionCallTE(lambdaFunctionPrototype, argExpressions)))))
+                  FunctionCallTE(lambdaFunctionPrototype, argExpressions))))
         temputs.addFunction(forwarderFunction)
       }
     })
@@ -641,8 +640,8 @@ class StructTemplarCore(
       })
     val forwarderHeader =
       FunctionHeaderT(
-        structFullName.addStep(FunctionNameT(CallTemplar.CALL_FUNCTION_NAME, List(), forwarderParams.map(_.tyype))),
-        List(),
+        structFullName.addStep(FunctionNameT(CallTemplar.CALL_FUNCTION_NAME, List.empty, forwarderParams.map(_.tyype))),
+        List.empty,
         forwarderParams,
         prototype.returnType,
         None)
@@ -660,10 +659,10 @@ class StructTemplarCore(
     val structDef =
       StructDefinitionT(
         structFullName,
-        List(),
+        List.empty,
         false,
         ImmutableT,
-        List(),
+        List.empty,
         false)
     temputs.add(structDef)
 
@@ -677,16 +676,17 @@ class StructTemplarCore(
     val forwarderFunction =
       FunctionT(
         forwarderHeader,
-        List(),
+        List.empty,
         BlockTE(
-          List(
-            DiscardTE(ArgLookupTE(0, CoordT(ShareT, ReadonlyT, structRef))),
-            ReturnTE(
-              FunctionCallTE(
-                prototype,
-                forwarderHeader.params.tail.zipWithIndex.map({ case (param, index) =>
-                  ArgLookupTE(index + 1, param.tyype)
-                }))))))
+          Templar.consecutive(
+            List(
+              DiscardTE(ArgLookupTE(0, CoordT(ShareT, ReadonlyT, structRef))),
+              ReturnTE(
+                FunctionCallTE(
+                  prototype,
+                  forwarderHeader.params.tail.zipWithIndex.map({ case (param, index) =>
+                    ArgLookupTE(index + 1, param.tyype)
+                  })))))))
     temputs.addFunction(forwarderFunction)
 
     structRef
@@ -713,18 +713,17 @@ class StructTemplarCore(
       FunctionT(
         FunctionHeaderT(
           constructorFullName,
-          List(),
+          List.empty,
           constructorParams,
           constructorReturnType,
           maybeConstructorOriginFunctionA),
-        List(),
+        List.empty,
         BlockTE(
-          List(
             ReturnTE(
               ConstructTE(
                 structDef.getRef,
                 constructorReturnType,
-                constructorParams.zipWithIndex.map({ case (p, index) => ArgLookupTE(index, p.tyype) }))))))
+                constructorParams.zipWithIndex.map({ case (p, index) => ArgLookupTE(index, p.tyype) })))))
 
     // we cant make the destructor here because they might have a user defined one somewhere
     temputs.declareFunctionReturnType(constructor2.header.toSignature, constructor2.header.returnType)

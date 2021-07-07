@@ -32,7 +32,7 @@ object BuiltInFunctions {
           CodeRuneA("__1") -> CoordTemplataType,
           CodeRuneA("I") -> CoordTemplataType),
         List(
-          ParameterA(AtomAP(RangeS.internal(-1337), LocalA(CodeVarNameA("arr"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("T"), None))),
+          ParameterA(AtomAP(RangeS.internal(-1337), Some(LocalA(CodeVarNameA("arr"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)), None, CodeRuneA("T"), None))),
         Some(CodeRuneA("I")),
         List(
           EqualsAR(RangeS.internal(-9101),
@@ -57,7 +57,7 @@ object BuiltInFunctions {
         CodeBodyA(
           BodyAE(
             RangeS.internal(-62),
-            List(),
+            List.empty,
             BlockAE(
               RangeS.internal(-62),
               List(
@@ -80,7 +80,7 @@ object BuiltInFunctions {
           CodeRuneA("M") -> MutabilityTemplataType,
           CodeRuneA("V") -> VariabilityTemplataType),
         List(
-          ParameterA(AtomAP(RangeS.internal(-1338), LocalA(CodeVarNameA("arr"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("A"), None))),
+          ParameterA(AtomAP(RangeS.internal(-1338), Some(LocalA(CodeVarNameA("arr"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)), None, CodeRuneA("A"), None))),
         Some(CodeRuneA("I")),
         List(
           EqualsAR(RangeS.internal(-9115),
@@ -104,7 +104,7 @@ object BuiltInFunctions {
         CodeBodyA(
           BodyAE(
             RangeS.internal(-62),
-            List(),
+            List.empty,
             BlockAE(
               RangeS.internal(-62),
               List(
@@ -115,10 +115,10 @@ object BuiltInFunctions {
         List(UserFunctionA),
         FunctionTemplataType,
         Set(),
-        List(),
+        List.empty,
         Set(CodeRuneA("N")),
         Map(CodeRuneA("N") -> CoordTemplataType),
-        List(),
+        List.empty,
         Some(CodeRuneA("N")),
         List(
           EqualsAR(RangeS.internal(-9125),
@@ -134,7 +134,7 @@ object BuiltInFunctions {
         List(CodeRuneA("OwningRune")),
         Set(CodeRuneA("OwningRune"), CodeRuneA("OptBorrowRune"), CodeRuneA("WeakRune")),
         Map(CodeRuneA("OwningRune") -> CoordTemplataType, CodeRuneA("OptBorrowRune") -> CoordTemplataType, CodeRuneA("WeakRune") -> CoordTemplataType),
-        List(ParameterA(AtomAP(RangeS.internal(-1350), LocalA(CodeVarNameA("weakRef"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("WeakRune"), None))),
+        List(ParameterA(AtomAP(RangeS.internal(-1350), Some(LocalA(CodeVarNameA("weakRef"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)), None, CodeRuneA("WeakRune"), None))),
         Some(CodeRuneA("OptBorrowRune")),
         List(
           EqualsAR(RangeS.internal(-9128),
@@ -151,7 +151,7 @@ object BuiltInFunctions {
         CodeBodyA(
           BodyAE(
             RangeS.internal(-62),
-            List(),
+            List.empty,
             BlockAE(
               RangeS.internal(-62),
               List(

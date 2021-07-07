@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar.expression
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.parser.UseP
+import net.verdagon.vale.parser.{LendConstraintP, UseP}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.DestructorTemplar
@@ -9,14 +9,9 @@ import net.verdagon.vale.templar.infer.infer.{InferSolveFailure, InferSolveSucce
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar._
-import net.verdagon.vale.{IProfiler, vfail}
+import net.verdagon.vale.{IProfiler, vassert, vassertSome, vfail}
 
 import scala.collection.immutable.List
-
-// either want:
-// 1. (nonchecking) thing that just trusts its good and extracts it into locals. (for lets)
-// 2. (checking) thing that checks it matches, returns None if not, otherwise returns
-//    a struct containing it all (for signatures)
 
 class PatternTemplar(
     opts: TemplarOptions,
@@ -27,94 +22,111 @@ class PatternTemplar(
     destructorTemplar: DestructorTemplar,
     localHelper: LocalHelper) {
   // Note: This will unlet/drop the input expressions. Be warned.
-  // patternInputExprs2 is a list of reference expression because they're coming in from
+  // patternInputsTE is a list of reference expression because they're coming in from
   // god knows where... arguments, the right side of a let, a variable, don't know!
   // If a pattern needs to send it to multiple places, the pattern is free to put it into
   // a local variable.
   // PatternTemplar must be sure to NOT USE IT TWICE! That would mean copying the entire
   // expression subtree that it contains!
-  // Has "InferAnd" because we evaluate the template rules too.
-  // Returns:
-  // - Temputs
-  // - Function state
-  // - Exports, to toss into the environment
-  // - Local variables
-  def nonCheckingTranslateList(
+  def translatePatternList(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
-      patterns1: List[AtomAP],
-      patternInputExprs2: List[ReferenceExpressionTE]):
-  (List[ReferenceExpressionTE]) = {
-    profiler.newProfile("nonCheckingTranslateList", fate.fullName.toString, () => {
-      patterns1.zip(patternInputExprs2) match {
-        case Nil => (Nil)
-        case (pattern1, patternInputExpr2) :: _ => {
-          val headLets =
-            innerNonCheckingTranslate(
-              temputs, fate, pattern1, patternInputExpr2);
-          val tailLets =
-            nonCheckingTranslateList(
-              temputs, fate, patterns1.tail, patternInputExprs2.tail)
-          (headLets ++ tailLets)
-        }
-        case _ => vfail("wat")
-      }
+    patternsA: List[AtomAP],
+    patternInputsTE: List[ReferenceExpressionTE],
+    // This would be a continuation-ish lambda that evaluates:
+    // - The body of an if-let statement
+    // - The body of a match's case statement
+    // - The rest of the pattern that contains this pattern
+    // But if we're doing a regular let statement, then it doesn't need to contain everything past it.
+    afterPatternsSuccessContinuation: (Temputs, FunctionEnvironmentBox, List[ILocalVariableT]) => ReferenceExpressionTE):
+  ReferenceExpressionTE = {
+    profiler.newProfile("translatePatternList", fate.fullName.toString, () => {
+      iterateTranslateListAndMaybeContinue(
+        temputs, fate, List(), patternsA, patternInputsTE, afterPatternsSuccessContinuation)
     })
   }
 
+  def iterateTranslateListAndMaybeContinue(
+    temputs: Temputs,
+    fate: FunctionEnvironmentBox,
+    liveCaptureLocals: List[ILocalVariableT],
+    patternsA: List[AtomAP],
+    patternInputsTE: List[ReferenceExpressionTE],
+    // This would be a continuation-ish lambda that evaluates:
+    // - The body of an if-let statement
+    // - The body of a match's case statement
+    // - The rest of the pattern that contains this pattern
+    // But if we're doing a regular let statement, then it doesn't need to contain everything past it.
+    afterPatternsSuccessContinuation: (Temputs, FunctionEnvironmentBox, List[ILocalVariableT]) => ReferenceExpressionTE):
+  ReferenceExpressionTE = {
+    vassert(liveCaptureLocals == liveCaptureLocals.distinct)
+
+    (patternsA, patternInputsTE) match {
+      case (Nil, Nil) => afterPatternsSuccessContinuation(temputs, fate, liveCaptureLocals)
+      case (headPatternA :: tailPatternsA, headPatternInputTE :: tailPatternInputsTE) => {
+        innerTranslateSubPatternAndMaybeContinue(
+          temputs, fate, headPatternA, liveCaptureLocals, headPatternInputTE,
+          (temputs, fate, liveCaptureLocals) => {
+            vassert(liveCaptureLocals == liveCaptureLocals.distinct)
+
+            iterateTranslateListAndMaybeContinue(
+              temputs, fate, liveCaptureLocals, tailPatternsA, tailPatternInputsTE, afterPatternsSuccessContinuation)
+          })
+      }
+      case _ => vfail("wat")
+    }
+  }
+
   // Note: This will unlet/drop the input expression. Be warned.
-  def nonCheckingInferAndTranslate(
+  def inferAndTranslatePattern(
       temputs: Temputs,
       fate: FunctionEnvironmentBox,
       rules: List[IRulexAR],
       typeByRune: Map[IRuneA, ITemplataType],
-    localRunes: Set[IRuneA],
+      localRunes: Set[IRuneA],
       pattern: AtomAP,
-      inputExpr: ReferenceExpressionTE):
-  (List[ReferenceExpressionTE]) = {
-    profiler.newProfile("nonCheckingInferAndTranslate", fate.fullName.toString, () => {
-
+      inputExpr: ReferenceExpressionTE,
+      // This would be a continuation-ish lambda that evaluates:
+      // - The body of an if-let statement
+      // - The body of a match's case statement
+      // - The rest of the pattern that contains this pattern
+      // But if we're doing a regular let statement, then it doesn't need to contain everything past it.
+      afterPatternsSuccessContinuation: (Temputs, FunctionEnvironmentBox, List[ILocalVariableT]) => ReferenceExpressionTE):
+  ReferenceExpressionTE = {
+    profiler.newProfile("inferAndTranslatePattern", fate.fullName.toString, () => {
       val templatasByRune =
-        inferTemplar.inferFromArgCoords(fate.snapshot, temputs, List(), rules, typeByRune, localRunes, List(pattern), None, pattern.range, List(), List(ParamFilter(inputExpr.resultRegister.reference, None))) match {
-          case (isf@InferSolveFailure(_, _, _, _, range, _, _)) => {
+        inferTemplar.inferFromArgCoords(fate.snapshot, temputs, List.empty, rules, typeByRune, localRunes, List(pattern), None, pattern.range, List.empty, List(ParamFilter(inputExpr.resultRegister.reference, None))) match {
+          case isf @ InferSolveFailure(_, _, _, _, range, _, _) => {
             throw CompileErrorExceptionT(RangedInternalErrorT(range, "Couldn't figure out runes for pattern!\n" + isf))
           }
-          case (InferSolveSuccess(tbr)) => (tbr.templatasByRune.mapValues(v => List(TemplataEnvEntry(v))))
+          case InferSolveSuccess(tbr) => (tbr.templatasByRune.mapValues(v => List(TemplataEnvEntry(v))))
         }
 
       fate.addEntries(opts.useOptimization, templatasByRune.map({ case (key, value) => (key, value) }).toMap)
 
-      innerNonCheckingTranslate(
-        temputs, fate, pattern, inputExpr)
+      innerTranslateSubPatternAndMaybeContinue(temputs, fate, pattern, List(), inputExpr, afterPatternsSuccessContinuation)
     })
   }
 
-  // Note: This will unlet/drop the input expression. Be warned.
-  def nonCheckingTranslate(
-      temputs: Temputs,
-      fate: FunctionEnvironmentBox,
-      pattern: AtomAP,
-      inputExpr: ReferenceExpressionTE):
-  (List[ReferenceExpressionTE]) = {
-    innerNonCheckingTranslate(
-      temputs, fate, pattern, inputExpr)
-  }
-
-  // the #1 case above
   // returns:
-  // - the temputs
-  // - the new seq num
-  // - a bunch of lets.
-  // - exports, to toss into the env
-  // - function state
-  private def innerNonCheckingTranslate(
+  // - All captures that have happened so far. We'll drop these if a subsequent pattern match fails.
+  // -
+  private def innerTranslateSubPatternAndMaybeContinue(
       temputs: Temputs,
       fate: FunctionEnvironmentBox,
       pattern: AtomAP,
-      unconvertedInputExpr: ReferenceExpressionTE):
-  (List[ReferenceExpressionTE]) = {
+      previousLiveCaptureLocals: List[ILocalVariableT],
+      unconvertedInputExpr: ReferenceExpressionTE,
+      // This would be a continuation-ish lambda that evaluates:
+      // - The body of an if-let statement
+      // - The body of a match's case statement
+      // - The rest of the pattern that contains this pattern
+      // But if we're doing a regular let statement, then it doesn't need to contain everything past it.
+      afterSubPatternSuccessContinuation: (Temputs, FunctionEnvironmentBox, List[ILocalVariableT]) => ReferenceExpressionTE):
+  ReferenceExpressionTE = {
+    vassert(previousLiveCaptureLocals == previousLiveCaptureLocals.distinct)
 
-    val AtomAP(range, lv @ LocalA(varName, _, _, _, _, _, _), maybeVirtuality, coordRuneA, maybeDestructure) = pattern
+    val AtomAP(range, maybeCaptureLocalVarA, maybeVirtuality, coordRuneA, maybeDestructure) = pattern
 
     if (maybeVirtuality.nonEmpty) {
       // This is actually to be expected for when we translate the patterns from the
@@ -135,143 +147,271 @@ class PatternTemplar(
       convertHelper.convert(fate.snapshot, temputs, range, unconvertedInputExpr, expectedCoord);
 
     // We make it here instead of down in the maybeDestructure clauses because whether we destructure it or not
-    // is unrelated to wheter we destructure it.
-    val export =
-      localHelper.makeUserLocalVariable(
-        temputs, fate, range, lv, expectedCoord)
-    val let = LetNormalTE(export, inputExpr);
-    fate.addVariable(export)
-    val lets0 = List(let)
+    // is unrelated to whether we destructure it.
 
-    maybeDestructure match {
-      case None => {
-        List(destructorTemplar.drop(fate, temputs, inputExpr))
+
+    var currentInstructions = List[ReferenceExpressionTE]()
+
+    val (maybeCaptureLocalVarT, exprToDestructureOrDropOrPassTE) =
+      maybeCaptureLocalVarA match {
+        case None => (None, inputExpr)
+        case Some(captureLocalVar) => {
+          val localT = localHelper.makeUserLocalVariable(temputs, fate, range, captureLocalVar, expectedCoord)
+          currentInstructions = currentInstructions :+ LetNormalTE(localT, inputExpr)
+          val capturedLocalAliasTE =
+            localHelper.softLoad(fate, range, LocalLookupTE(range, localT, localT.reference, FinalT), LendConstraintP(None))
+          (Some(localT), capturedLocalAliasTE)
+        }
       }
-      case Some(listOfMaybeDestructureMemberPatterns) => {
-        val CoordT(expectedContainerOwnership, expectedContainerPermission, expectedContainerKind) = expectedCoord
-        expectedContainerOwnership match {
-          case OwnT => {
-            expectedContainerKind match {
-              case StructRefT(_) => {
-                // Example:
-                //   struct Marine { bork: Bork; }
-                //   Marine(b) = m;
-                // In this case, expectedStructType1 = TypeName1("Marine") and
-                // destructureMemberPatterns = List(CaptureSP("b", FinalP, None)).
-                // Since we're receiving an owning reference, and we're *not* capturing
-                // it in a variable, it will be destroyed and we will harvest its parts.
-                nonCheckingTranslateDestroyStructInner(
-                  temputs, fate, range, listOfMaybeDestructureMemberPatterns, expectedCoord, inputExpr)
-              }
-              case PackTT(_, underlyingStruct@StructRefT(_)) => {
-                val structType2 = CoordT(expectedContainerOwnership, expectedContainerPermission, underlyingStruct)
-                val reinterpretExpr2 = TemplarReinterpretTE(inputExpr, structType2)
-                nonCheckingTranslateDestroyStructInner(
-                  temputs, fate, range, listOfMaybeDestructureMemberPatterns, structType2, reinterpretExpr2)
-              }
-              case TupleTT(_, underlyingStruct@StructRefT(_)) => {
-                val structType2 = CoordT(expectedCoord.ownership, expectedCoord.permission, underlyingStruct)
-                val reinterpretExpr2 = TemplarReinterpretTE(inputExpr, structType2)
-                nonCheckingTranslateDestroyStructInner(
-                  temputs, fate, range, listOfMaybeDestructureMemberPatterns, structType2, reinterpretExpr2)
-              }
-              case staticSizedArrayT@StaticSizedArrayTT(size, RawArrayTT(elementType, _, _)) => {
-                if (size != listOfMaybeDestructureMemberPatterns.size) {
-                  throw CompileErrorExceptionT(RangedInternalErrorT(range, "Wrong num exprs!"))
-                }
+    // If we captured it as a local, then the exprToDestructureOrDropOrPassTE should be a non-owning alias of it
+    if (maybeCaptureLocalVarT.nonEmpty) {
+      vassert(exprToDestructureOrDropOrPassTE.resultRegister.reference.ownership != OwnT)
+    }
 
-                val memberTypes = (0 until size).toList.map(_ => elementType)
-                val memberLocalVariables = makeLocals(fate, memberTypes)
-                val destroyTE = DestroyStaticSizedArrayIntoLocalsTE(inputExpr, staticSizedArrayT, memberLocalVariables)
-                val lets = makeLetsForOwn(temputs, fate, listOfMaybeDestructureMemberPatterns, memberLocalVariables)
-                (destroyTE :: lets)
-              }
-              case _ => vfail("impl!")
+    val liveCaptureLocals = previousLiveCaptureLocals ++ maybeCaptureLocalVarT.toList
+    vassert(liveCaptureLocals == liveCaptureLocals.distinct)
+
+    Templar.consecutive(
+      currentInstructions :+
+        (maybeDestructure match {
+        case None => {
+          // Do nothing
+          afterSubPatternSuccessContinuation(temputs, fate, liveCaptureLocals)
+        }
+        case Some(listOfMaybeDestructureMemberPatterns) => {
+          exprToDestructureOrDropOrPassTE.resultRegister.reference.ownership match {
+            case OwnT => {
+              // We aren't capturing the var, so the destructuring should consume the incoming value.
+              destructureOwning(
+                temputs, fate, range, liveCaptureLocals, expectedCoord, exprToDestructureOrDropOrPassTE, listOfMaybeDestructureMemberPatterns, afterSubPatternSuccessContinuation)
+            }
+            case ConstraintT | ShareT => {
+              destructureNonOwningAndMaybeContinue(
+                temputs, fate, range, liveCaptureLocals, expectedCoord, exprToDestructureOrDropOrPassTE, listOfMaybeDestructureMemberPatterns, afterSubPatternSuccessContinuation)
             }
           }
-          case ConstraintT | ShareT => {
-            // This can be used however many times we want, it's only aliasing, not moving.
-            val containerAliasingExprTE =
-              localHelper.softLoad(
-                fate, range, LocalLookupTE(range, export, inputExpr.resultRegister.reference, FinalT), UseP)
-
-            val CoordT(expectedContainerOwnership, expectedContainerPermission, expectedContainerKind) = expectedCoord
-
-//            val arrSeqLocalVariable = localHelper.makeTemporaryLocal(fate, inputArraySeqExpr.resultRegister.reference)
-//            val arrSeqLet = LetNormalTE(arrSeqLocalVariable, inputArraySeqExpr);
-
-            val innerLets =
-              listOfMaybeDestructureMemberPatterns.zipWithIndex
-                .flatMap({
-                  case (innerPattern, index) => {
-                    val memberAddrExprTE =
-                      expectedContainerKind match {
-                        case structRefT@StructRefT(_) => {
-                          // Example:
-                          //   struct Marine { bork: Bork; }
-                          //   Marine(b) = m;
-                          // In this case, expectedStructType1 = TypeName1("Marine") and
-                          // destructureMemberPatterns = List(CaptureSP("b", FinalP, None)).
-                          // Since we're receiving an owning reference, and we're *not* capturing
-                          // it in a variable, it will be destroyed and we will harvest its parts.
-
-                          loadFromStruct(temputs, range, expectedContainerPermission, containerAliasingExprTE, structRefT, index)
-                        }
-                        case PackTT(_, underlyingStruct@StructRefT(_)) => {
-                          val reinterpretedStructRefT = CoordT(expectedContainerOwnership, expectedContainerPermission, underlyingStruct)
-                          val reinterpretedContainerAliasingExprTE = TemplarReinterpretTE(containerAliasingExprTE, reinterpretedStructRefT)
-                          loadFromStruct(
-                            temputs, range, expectedContainerPermission, reinterpretedContainerAliasingExprTE, underlyingStruct, index)
-                        }
-                        case TupleTT(_, underlyingStruct@StructRefT(_)) => {
-                          val reinterpretedStructRefT = CoordT(expectedContainerOwnership, expectedContainerPermission, underlyingStruct)
-                          val reinterpretedContainerAliasingExprTE = TemplarReinterpretTE(containerAliasingExprTE, reinterpretedStructRefT)
-                          loadFromStruct(
-                            temputs, range, expectedContainerPermission, reinterpretedContainerAliasingExprTE, underlyingStruct, index)
-                        }
-                        case staticSizedArrayT@StaticSizedArrayTT(size, RawArrayTT(elementType, _, _)) => {
-                          if (size != listOfMaybeDestructureMemberPatterns.size) {
-                            throw CompileErrorExceptionT(RangedInternalErrorT(range, "Wrong num exprs!"))
-                          }
-                          loadFromStaticSizedArray(range, staticSizedArrayT, expectedCoord, expectedContainerOwnership, expectedContainerPermission, containerAliasingExprTE, index)
-                        }
-                        case _ => vfail("impl!")
-                      }
-
-                    val memberOwnershipInStruct = memberAddrExprTE.resultRegister.reference.ownership
-                    val coerceToOwnership = loadResultOwnership(memberOwnershipInStruct)
-                    val loadExpr = SoftLoadTE(memberAddrExprTE, coerceToOwnership, expectedContainerPermission)
-                    innerNonCheckingTranslate(temputs, fate, innerPattern, loadExpr)
-                  }
-                })
-
-            val packUnlet = localHelper.unletLocal(fate, `export`)
-            val dropExpr = destructorTemplar.drop(fate, temputs, packUnlet)
-
-            (lets0 ++ innerLets) :+ dropExpr
-          }
         }
+      }))
+  }
+
+  private def destructureOwning(
+      temputs: Temputs,
+      fate: FunctionEnvironmentBox,
+      range: RangeS,
+      initialLiveCaptureLocals: List[ILocalVariableT],
+      expectedCoord: CoordT,
+      inputExpr: ReferenceExpressionTE,
+      listOfMaybeDestructureMemberPatterns: List[AtomAP],
+      afterDestructureSuccessContinuation: (Temputs, FunctionEnvironmentBox, List[ILocalVariableT]) => ReferenceExpressionTE
+  ): ReferenceExpressionTE = {
+    vassert(initialLiveCaptureLocals == initialLiveCaptureLocals.distinct)
+
+    val CoordT(OwnT, expectedContainerPermission, expectedContainerKind) = expectedCoord
+    expectedContainerKind match {
+      case StructRefT(_) => {
+        // Example:
+        //   struct Marine { bork: Bork; }
+        //   Marine(b) = m;
+        // In this case, expectedStructType1 = TypeName1("Marine") and
+        // destructureMemberPatterns = List(CaptureSP("b", FinalP, None)).
+        // Since we're receiving an owning reference, and we're *not* capturing
+        // it in a variable, it will be destroyed and we will harvest its parts.
+        translateDestroyStructInnerAndMaybeContinue(
+          temputs, fate, range, initialLiveCaptureLocals, listOfMaybeDestructureMemberPatterns, expectedCoord, inputExpr, afterDestructureSuccessContinuation)
+      }
+      case PackTT(_, underlyingStruct@StructRefT(_)) => {
+        val structType2 = CoordT(OwnT, expectedContainerPermission, underlyingStruct)
+        val reinterpretExpr2 = TemplarReinterpretTE(inputExpr, structType2)
+        translateDestroyStructInnerAndMaybeContinue(
+          temputs, fate, range, initialLiveCaptureLocals, listOfMaybeDestructureMemberPatterns, structType2, reinterpretExpr2, afterDestructureSuccessContinuation)
+      }
+      case TupleTT(_, underlyingStruct@StructRefT(_)) => {
+        val structType2 = CoordT(OwnT, expectedContainerPermission, underlyingStruct)
+        val reinterpretExpr2 = TemplarReinterpretTE(inputExpr, structType2)
+        translateDestroyStructInnerAndMaybeContinue(
+          temputs, fate, range, initialLiveCaptureLocals, listOfMaybeDestructureMemberPatterns, structType2, reinterpretExpr2, afterDestructureSuccessContinuation)
+      }
+      case staticSizedArrayT@StaticSizedArrayTT(size, RawArrayTT(elementType, _, _)) => {
+        if (size != listOfMaybeDestructureMemberPatterns.size) {
+          throw CompileErrorExceptionT(RangedInternalErrorT(range, "Wrong num exprs!"))
+        }
+
+        val elementLocals = (0 until size).map(_ => localHelper.makeTemporaryLocal(fate, elementType)).toList
+        val destroyTE = DestroyStaticSizedArrayIntoLocalsTE(inputExpr, staticSizedArrayT, elementLocals)
+        val liveCaptureLocals = initialLiveCaptureLocals ++ elementLocals
+        vassert(liveCaptureLocals == liveCaptureLocals.distinct)
+
+        val lets = makeLetsForOwnAndMaybeContinue(temputs, fate, liveCaptureLocals, elementLocals, listOfMaybeDestructureMemberPatterns, afterDestructureSuccessContinuation)
+        Templar.consecutive(List(destroyTE, lets))
+      }
+      case _ => vfail("impl!")
+    }
+  }
+
+  private def destructureNonOwningAndMaybeContinue(
+      temputs: Temputs,
+      fate: FunctionEnvironmentBox,
+      range: RangeS,
+      liveCaptureLocals: List[ILocalVariableT],
+      expectedCoord: CoordT,
+      containerTE: ReferenceExpressionTE,
+      listOfMaybeDestructureMemberPatterns: List[AtomAP],
+      afterDestructureSuccessContinuation: (Temputs, FunctionEnvironmentBox, List[ILocalVariableT]) => ReferenceExpressionTE
+  ): ReferenceExpressionTE = {
+    vassert(liveCaptureLocals == liveCaptureLocals.distinct)
+
+    val localT = localHelper.makeTemporaryLocal(fate, expectedCoord)
+    val letTE = LetNormalTE(localT, containerTE)
+    val containerAliasingExprTE =
+      localHelper.softLoad(fate, range, LocalLookupTE(range, localT, localT.reference, FinalT), LendConstraintP(None))
+
+    Templar.consecutive(
+      List(
+        letTE,
+        iterateDestructureNonOwningAndMaybeContinue(
+          temputs, fate, range, liveCaptureLocals, expectedCoord, containerAliasingExprTE, 0, listOfMaybeDestructureMemberPatterns, afterDestructureSuccessContinuation)))
+  }
+
+  private def iterateDestructureNonOwningAndMaybeContinue(
+    temputs: Temputs,
+    fate: FunctionEnvironmentBox,
+    range: RangeS,
+    liveCaptureLocals: List[ILocalVariableT],
+    expectedContainerCoord: CoordT,
+    containerAliasingExprTE: ReferenceExpressionTE,
+    memberIndex: Int,
+    listOfMaybeDestructureMemberPatterns: List[AtomAP],
+    afterDestructureSuccessContinuation: (Temputs, FunctionEnvironmentBox, List[ILocalVariableT]) => ReferenceExpressionTE
+  ): ReferenceExpressionTE = {
+    vassert(liveCaptureLocals == liveCaptureLocals.distinct)
+
+    val CoordT(expectedContainerOwnership, expectedContainerPermission, expectedContainerKind) = expectedContainerCoord
+
+    listOfMaybeDestructureMemberPatterns match {
+      case Nil => afterDestructureSuccessContinuation(temputs, fate, liveCaptureLocals)
+      case headMaybeDestructureMemberPattern :: tailDestructureMemberPatternMaybes => {
+        val memberAddrExprTE =
+          expectedContainerKind match {
+            case structRefT@StructRefT(_) => {
+              // Example:
+              //   struct Marine { bork: Bork; }
+              //   Marine(b) = m;
+              // In this case, expectedStructType1 = TypeName1("Marine") and
+              // destructureMemberPatterns = List(CaptureSP("b", FinalP, None)).
+              // Since we're receiving an owning reference, and we're *not* capturing
+              // it in a variable, it will be destroyed and we will harvest its parts.
+
+              loadFromStruct(temputs, range, expectedContainerPermission, containerAliasingExprTE, structRefT, memberIndex)
+            }
+            case PackTT(_, underlyingStruct@StructRefT(_)) => {
+              val reinterpretedStructRefT = CoordT(expectedContainerOwnership, expectedContainerPermission, underlyingStruct)
+              val reinterpretedContainerAliasingExprTE = TemplarReinterpretTE(containerAliasingExprTE, reinterpretedStructRefT)
+              loadFromStruct(
+                temputs, range, expectedContainerPermission, reinterpretedContainerAliasingExprTE, underlyingStruct, memberIndex)
+            }
+            case TupleTT(_, underlyingStruct@StructRefT(_)) => {
+              val reinterpretedStructRefT = CoordT(expectedContainerOwnership, expectedContainerPermission, underlyingStruct)
+              val reinterpretedContainerAliasingExprTE = TemplarReinterpretTE(containerAliasingExprTE, reinterpretedStructRefT)
+              loadFromStruct(
+                temputs, range, expectedContainerPermission, reinterpretedContainerAliasingExprTE, underlyingStruct, memberIndex)
+            }
+            case staticSizedArrayT@StaticSizedArrayTT(size, RawArrayTT(elementType, _, _)) => {
+              if (size != listOfMaybeDestructureMemberPatterns.size) {
+                throw CompileErrorExceptionT(RangedInternalErrorT(range, "Wrong num exprs!"))
+              }
+              loadFromStaticSizedArray(range, staticSizedArrayT, expectedContainerCoord, expectedContainerOwnership, expectedContainerPermission, containerAliasingExprTE, memberIndex)
+            }
+            case _ => vfail("impl!")
+          }
+
+        val memberOwnershipInStruct = memberAddrExprTE.resultRegister.reference.ownership
+        val coerceToOwnership = loadResultOwnership(memberOwnershipInStruct)
+        val loadExpr = SoftLoadTE(memberAddrExprTE, coerceToOwnership, expectedContainerPermission)
+        innerTranslateSubPatternAndMaybeContinue(
+          temputs, fate, headMaybeDestructureMemberPattern, liveCaptureLocals, loadExpr,
+          (temputs, fate, liveCaptureLocals) => {
+            vassert(liveCaptureLocals == liveCaptureLocals.distinct)
+
+            val nextMemberIndex = memberIndex + 1
+            iterateDestructureNonOwningAndMaybeContinue(
+              temputs,
+              fate,
+              range,
+              liveCaptureLocals,
+              expectedContainerCoord,
+              containerAliasingExprTE,
+              nextMemberIndex,
+              tailDestructureMemberPatternMaybes,
+              afterDestructureSuccessContinuation)
+          })
       }
     }
   }
 
-  private def nonCheckingTranslateDestroyStructInner(
+  private def translateDestroyStructInnerAndMaybeContinue(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
     range: RangeS,
+    initialLiveCaptureLocals: List[ILocalVariableT],
     innerPatternMaybes: List[AtomAP],
     structType2: CoordT,
-    inputStructExpr: ReferenceExpressionTE):
-  (List[ReferenceExpressionTE]) = {
-    val CoordT(structOwnership, structPermission, structRefT @ StructRefT(_)) = structType2
+    inputStructExpr: ReferenceExpressionTE,
+    afterDestroySuccessContinuation: (Temputs, FunctionEnvironmentBox, List[ILocalVariableT]) => ReferenceExpressionTE
+  ): ReferenceExpressionTE = {
+    vassert(initialLiveCaptureLocals == initialLiveCaptureLocals.distinct)
+
+    val CoordT(_, _, structRefT @ StructRefT(_)) = structType2
     val structDefT = temputs.getStructDefForRef(structRefT)
     // We don't pattern match against closure structs.
 
-    val memberLocalVariables =
-      makeLocals(fate, structDefT.members.map(_.tyype.expectReferenceMember().reference))
-    val destroy2 = DestroyTE(inputStructExpr, structRefT, memberLocalVariables)
-    val lets = makeLetsForOwn(temputs, fate, innerPatternMaybes, memberLocalVariables)
-    (destroy2 :: lets)
+    val memberLocals =
+      structDefT.members
+        .map(_.tyype.expectReferenceMember().reference)
+        .map(memberType => localHelper.makeTemporaryLocal(fate, memberType)).toList
+    val destroyTE = DestroyTE(inputStructExpr, structRefT, memberLocals)
+    val liveCaptureLocals = initialLiveCaptureLocals ++ memberLocals
+    vassert(liveCaptureLocals == liveCaptureLocals.distinct)
+
+    val restTE =
+      makeLetsForOwnAndMaybeContinue(
+        temputs,
+        fate,
+        liveCaptureLocals,
+        memberLocals,
+        innerPatternMaybes,
+        afterDestroySuccessContinuation)
+    Templar.consecutive(List(destroyTE, restTE))
+  }
+
+  private def makeLetsForOwnAndMaybeContinue(
+    temputs: Temputs,
+    fate: FunctionEnvironmentBox,
+    initialLiveCaptureLocals: List[ILocalVariableT],
+    memberLocalVariables: List[ILocalVariableT],
+    innerPatternMaybes: List[AtomAP],
+    afterLetsSuccessContinuation: (Temputs, FunctionEnvironmentBox, List[ILocalVariableT]) => ReferenceExpressionTE
+  ): ReferenceExpressionTE = {
+    vassert(initialLiveCaptureLocals == initialLiveCaptureLocals.distinct)
+
+    (memberLocalVariables, innerPatternMaybes) match {
+      case (Nil, Nil) => {
+        afterLetsSuccessContinuation(temputs, fate, initialLiveCaptureLocals)
+      }
+      case (headMemberLocalVariable :: tailMemberLocalVariables, headMaybeInnerPattern :: tailInnerPatternMaybes) => {
+        val unletExpr = localHelper.unletLocal(fate, headMemberLocalVariable)
+        val liveCaptureLocals = initialLiveCaptureLocals.filter(_ != headMemberLocalVariable)
+        vassert(liveCaptureLocals.size == initialLiveCaptureLocals.size - 1)
+
+        innerTranslateSubPatternAndMaybeContinue(
+          temputs, fate, headMaybeInnerPattern, liveCaptureLocals, unletExpr,
+          (temputs, fate, liveCaptureLocals) => {
+            vassert(initialLiveCaptureLocals == initialLiveCaptureLocals.distinct)
+
+            makeLetsForOwnAndMaybeContinue(
+              temputs, fate, liveCaptureLocals, tailMemberLocalVariables, tailInnerPatternMaybes, afterLetsSuccessContinuation)
+          })
+      }
+    }
   }
 
   private def loadResultOwnership(memberOwnershipInStruct: OwnershipT): OwnershipT = {
@@ -284,12 +424,12 @@ class PatternTemplar(
   }
 
   private def loadFromStruct(
-      temputs: Temputs,
-      range: RangeS,
-      structPermission: PermissionT,
-      containerAlias: ReferenceExpressionTE,
-      structRefT: StructRefT,
-      index: Int) = {
+    temputs: Temputs,
+    range: RangeS,
+    structPermission: PermissionT,
+    containerAlias: ReferenceExpressionTE,
+    structRefT: StructRefT,
+    index: Int) = {
     val structDefT = temputs.getStructDefForRef(structRefT)
 
     val member = structDefT.members(index)
@@ -309,38 +449,13 @@ class PatternTemplar(
   }
 
   private def loadFromStaticSizedArray(
-      range: RangeS,
-      staticSizedArrayT: StaticSizedArrayTT,
-      localCoord: CoordT,
-      structOwnership: OwnershipT,
-      structPermission: PermissionT,
-      containerAlias: ReferenceExpressionTE,
-      index: Int) = {
+    range: RangeS,
+    staticSizedArrayT: StaticSizedArrayTT,
+    localCoord: CoordT,
+    structOwnership: OwnershipT,
+    structPermission: PermissionT,
+    containerAlias: ReferenceExpressionTE,
+    index: Int) = {
     arrayTemplar.lookupInStaticSizedArray(range, containerAlias, ConstantIntTE(index, 32), staticSizedArrayT)
-  }
-
-  private def makeLocals(
-    fate: FunctionEnvironmentBox,
-    memberTypes: List[CoordT]
-  ): List[ReferenceLocalVariableT] = {
-    memberTypes.map({
-      case memberType => {
-        localHelper.makeTemporaryLocal(fate, memberType)
-      }
-    })
-  }
-
-  private def makeLetsForOwn(
-    temputs: Temputs,
-    fate: FunctionEnvironmentBox,
-    innerPatternMaybes: List[AtomAP],
-    memberLocalVariables: List[ReferenceLocalVariableT]
-  ): List[ReferenceExpressionTE] = {
-    innerPatternMaybes.zip(memberLocalVariables).flatMap({
-      case ((innerPattern, localVariable)) => {
-        val unletExpr = localHelper.unletLocal(fate, localVariable)
-        innerNonCheckingTranslate(temputs, fate, innerPattern, unletExpr)
-      }
-    })
   }
 }

@@ -46,7 +46,7 @@ case class Environment(
       case _ => vimpl()
     }
 
-//    val envNameSteps = maybeName.map(_.steps).getOrElse(List())
+//    val envNameSteps = maybeName.map(_.steps).getOrElse(List.empty)
 //
 //    // See MINAAN for what we're doing here.
 //    absoluteNameEndsWithImpreciseName(absoluteName, needleImpreciseNameS) match {
@@ -86,7 +86,7 @@ case class Environment(
       return (nearPrimitives, nearStructs.toList, nearInterfaces.toList)
     }
     maybeParentEnv match {
-      case None => (None, List(), List())
+      case None => (None, List.empty, List.empty)
       case Some(parentEnv) => parentEnv.lookupType(needleImpreciseNameS)
     }
   }
@@ -100,7 +100,7 @@ case class Environment(
       return (nearStructs.toList, nearInterfaces.toList)
     }
     maybeParentEnv match {
-      case None => (List(), List())
+      case None => (List.empty, List.empty)
       case Some(parentEnv) => parentEnv.lookupType(name)
     }
   }
@@ -304,7 +304,7 @@ object Astronomer {
     }
 
     val (conclusions, rulesA) =
-      makeRuleTyper().solve(astrouts, env, rules, rangeS, List(), Some(localRunesA ++ knowableRunesA)) match {
+      makeRuleTyper().solve(astrouts, env, rules, rangeS, List.empty, Some(localRunesA ++ knowableRunesA)) match {
         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(rangeS, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
@@ -349,7 +349,7 @@ object Astronomer {
       case ExportS(packageCoordinate) => List(ExportA(packageCoordinate))
       case ExternS(packageCoordinate) => List(ExternA(packageCoordinate))
       case PureS => List(PureA)
-      case BuiltinS(_) => List()
+      case BuiltinS(_) => List.empty
       case x => vimpl(x.toString)
     })
   }
@@ -372,7 +372,7 @@ object Astronomer {
     }
 
     val (conclusions, rulesA) =
-      makeRuleTyper().solve(astrouts, env, rules, range, List(), Some(knowableRunesA ++ localRunesA)) match {
+      makeRuleTyper().solve(astrouts, env, rules, range, List.empty, Some(knowableRunesA ++ localRunesA)) match {
         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(range, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
@@ -416,12 +416,12 @@ object Astronomer {
     }
 
     val (conclusionsForRulesFromStructDirection, rulesFromStructDirectionA) =
-      makeRuleTyper().solve(astrouts, env, rulesFromStructDirection, range, List(), Some(knowableRunesA ++ localRunesA)) match {
+      makeRuleTyper().solve(astrouts, env, rulesFromStructDirection, range, List.empty, Some(knowableRunesA ++ localRunesA)) match {
         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(range, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
     val (conclusionsForRulesFromInterfaceDirection, rulesFromInterfaceDirectionA) =
-      makeRuleTyper().solve(astrouts, env, rulesFromInterfaceDirection, range, List(), Some(knowableRunesA ++ localRunesA)) match {
+      makeRuleTyper().solve(astrouts, env, rulesFromInterfaceDirection, range, List.empty, Some(knowableRunesA ++ localRunesA)) match {
         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(range, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
@@ -447,7 +447,7 @@ object Astronomer {
     val rulesS = List(EqualsSR(range, TypedSR(range, runeS, KindTypeSR), TemplexSR(templexS)))
 
     val (conclusions, rulesA) =
-      makeRuleTyper().solve(astrouts, env, rulesS, range, List(), Some(Set(runeA))) match {
+      makeRuleTyper().solve(astrouts, env, rulesS, range, List.empty, Some(Set(runeA))) match {
         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(range, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
@@ -479,7 +479,7 @@ object Astronomer {
         case Some(CaptureS(nameS)) => {
           val nameA = translateVarNameStep(nameS)
           val local = env.locals.find(_.varName == nameA).get
-          Some(CaptureA(local))
+          Some(local)
         }
       }
 
@@ -498,7 +498,7 @@ object Astronomer {
         case CodeBody1(body) => body.block.locals.map(ExpressionAstronomer.translateLocalVariable)
         case _ => {
           // We make some LocalVariableA here to appease translateParameter which expects some locals in the env.
-          paramsS.map(_.pattern.name)
+          paramsS.flatMap(_.pattern.name)
             .map({
               case CaptureS(name) => {
                 LocalA(
@@ -513,7 +513,7 @@ object Astronomer {
     val paramsA = paramsS.map(translateParameter(env, _))
 
     val (conclusions, rulesA) =
-      makeRuleTyper().solve(astrouts, env, templateRules, rangeS, List(), Some(localRunesA)) match {
+      makeRuleTyper().solve(astrouts, env, templateRules, rangeS, List.empty, Some(localRunesA)) match {
         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => {
           ErrorReporter.report(CouldntSolveRulesA(rangeS, rtsf))
         }
@@ -635,7 +635,7 @@ object Astronomer {
       case LambdaStructNameS(lambdaName) => LambdaStructNameA(translateLambdaNameStep(lambdaName))
       case i @ ImplNameS(_, _) => translateImplName(i)
       case LetNameS(codeLocation) => LetNameA(codeLocation)
-      case UnnamedLocalNameS(codeLocation) => UnnamedLocalNameA(codeLocation)
+//      case UnnamedLocalNameS(codeLocation) => UnnamedLocalNameA(codeLocation)
       case ClosureParamNameS() => ClosureParamNameA()
       case MagicParamNameS(codeLocation) => MagicParamNameA(codeLocation)
       case CodeVarNameS(name) => CodeVarNameA(name)
@@ -670,7 +670,7 @@ object Astronomer {
 
   def translateVarNameStep(name: IVarNameS): IVarNameA = {
     name match {
-      case UnnamedLocalNameS(codeLocation) => UnnamedLocalNameA(codeLocation)
+//      case UnnamedLocalNameS(codeLocation) => UnnamedLocalNameA(codeLocation)
       case ClosureParamNameS() => ClosureParamNameA()
       case ConstructingMemberNameS(n) => ConstructingMemberNameA(n)
       case MagicParamNameS(magicParamNumber) => MagicParamNameA(magicParamNumber)
@@ -691,7 +691,7 @@ object Astronomer {
   ProgramA = {
     val astrouts = AstroutsBox(Astrouts(Map()))
 
-    val env = Environment(None, None, primitives, codeMap, Map(), List())
+    val env = Environment(None, None, primitives, codeMap, Map(), List.empty)
 
     val structsA = env.structsS.map(translateStruct(astrouts, env, _))
 
@@ -766,11 +766,11 @@ object Astronomer {
         allPackages.map(paackage => {
           val contents =
             ProgramA(
-              packageToStructsA.getOrElse(paackage, List()),
-              packageToInterfacesA.getOrElse(paackage, List()),
-              packageToImplsA.getOrElse(paackage, List()),
-              packageToFunctionsA.getOrElse(paackage, List()),
-              packageToExportsA.getOrElse(paackage, List()))
+              packageToStructsA.getOrElse(paackage, List.empty),
+              packageToInterfacesA.getOrElse(paackage, List.empty),
+              packageToImplsA.getOrElse(paackage, List.empty),
+              packageToFunctionsA.getOrElse(paackage, List.empty),
+              packageToExportsA.getOrElse(paackage, List.empty))
           (paackage -> contents)
         }).toMap
       val moduleToPackageToContents =

@@ -65,12 +65,12 @@ case class FunctionTemplata(
 //  this match {
 //    case FunctionTemplata(
 //      env,
-//      FunctionA(_, ImmConcreteDestructorNameA(PackageCoordinate(_,List())),_, _, _, _, _, _, _, _, _, _))
-//    if env.fullName == FullName2(PackageCoordinate.TEST_TLD,List(),PackageTopLevelName2()) => vfail()
+//      FunctionA(_, ImmConcreteDestructorNameA(PackageCoordinate(_,List.empty)),_, _, _, _, _, _, _, _, _, _))
+//    if env.fullName == FullName2(PackageCoordinate.TEST_TLD,List.empty,PackageTopLevelName2()) => vfail()
 //    case _ =>
 //  }
 //  this match {
-//    case FunctionTemplata(env, _) if env.fullName == FullName2(PackageCoordinate.TEST_TLD,List(),PackageTopLevelName2()) => vfail()
+//    case FunctionTemplata(env, _) if env.fullName == FullName2(PackageCoordinate.TEST_TLD,List.empty,PackageTopLevelName2()) => vfail()
 //    case _ =>
 //  }
 

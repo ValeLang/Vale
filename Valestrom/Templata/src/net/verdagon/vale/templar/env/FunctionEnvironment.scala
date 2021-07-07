@@ -162,10 +162,10 @@ case class FunctionEnvironment(
       if (includeAncestorEnvs) {
         parentEnv match {
           case parentFuncEnv@FunctionEnvironment(_, _, _, _, _, _, _, _) => parentFuncEnv.getAllLocals(includeAncestorEnvs)
-          case _ => List()
+          case _ => List.empty
         }
       } else {
-        List()
+        List.empty
       }
     val liveLocals = locals.collect({ case i : ILocalVariableT => i })
     parentLiveLocals ++ liveLocals
@@ -176,10 +176,10 @@ case class FunctionEnvironment(
       if (includeAncestorEnvs) {
         parentEnv match {
           case parentFuncEnv@FunctionEnvironment(_, _, _, _, _, _, _, _) => parentFuncEnv.getAllUnstackifiedLocals(includeAncestorEnvs)
-          case _ => List()
+          case _ => List.empty
         }
       } else {
-        List()
+        List.empty
       }
     parentUnstackifiedLocals ++ unstackifieds
   }
@@ -192,7 +192,7 @@ case class FunctionEnvironment(
       newTemplataStore(),
       maybeReturnType,
       varCounter,
-      List(),
+      List.empty,
       Set())
   }
 

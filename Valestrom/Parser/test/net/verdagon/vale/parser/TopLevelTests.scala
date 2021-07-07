@@ -58,14 +58,14 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
   test("import wildcard") {
     val program = compileProgram("import somemodule.*;")
     program.topLevelThings(0) match {
-      case TopLevelImportP(ImportP(_, NameP(_, "somemodule"), List(), NameP(_, "*"))) =>
+      case TopLevelImportP(ImportP(_, NameP(_, "somemodule"), Nil, NameP(_, "*"))) =>
     }
   }
 
   test("import just module and thing") {
     val program = compileProgram("import somemodule.List;")
     program.topLevelThings(0) match {
-      case TopLevelImportP(ImportP(_, NameP(_, "somemodule"), List(), NameP(_, "List"))) =>
+      case TopLevelImportP(ImportP(_, NameP(_, "somemodule"), Nil, NameP(_, "List"))) =>
     }
   }
 

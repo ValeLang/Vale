@@ -277,7 +277,7 @@ case class ReturnTE(
 
   def getFinalExpr(expression2: ExpressionT): Unit = {
     expression2 match {
-      case BlockTE(exprs) => getFinalExpr(exprs.last)
+      case BlockTE(expr) => getFinalExpr(expr)
     }
   }
 
@@ -296,10 +296,34 @@ case class ReturnTE(
 
 // Block2 is required to unlet all the variables it introduces.
 case class BlockTE(
-    exprs: List[ReferenceExpressionTE]
+    inner: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
 
-  vassert(exprs.last.isInstanceOf[ReferenceExpressionTE])
+  override def resultRegister = inner.resultRegister
+
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
+    List(this).collect(func) ++ inner.all(func)
+  }
+}
+
+case class ConsecutorTE(exprs: List[ReferenceExpressionTE]) extends ReferenceExpressionTE {
+  // There shouldn't be a 0-element consecutor.
+  // If we want a consecutor that returns nothing, put a VoidLiteralTE in it.
+  vassert(exprs.nonEmpty)
+
+  // There shouldn't be a 1-element consecutor.
+  // This isn't a hard technical requirement, but it does simplify the resulting AST a bit.
+  // Call Templar.consecutive to conform to this.
+  vassert(exprs.size >= 2)
+
+  // A consecutor should never contain another consecutor.
+  // This isn't a hard technical requirement, but it does simplify the resulting AST a bit.
+  // Call Templar.consecutive to make new consecutors in a way that conforms to this.
+  exprs.collect({ case ConsecutorTE(_) => vfail() })
+
+  // Everything but the last should result in a Void or a Never.
+  // The last can be anything, even a Void or a Never.
+  exprs.init.foreach(expr => vassert(expr.kind == VoidT() || expr.kind == NeverT()))
 
   // If there's a Never2() anywhere, then the entire block should end in an unreachable
   // or panic or something.
@@ -310,19 +334,6 @@ case class BlockTE(
   vassert(exprs.collect({
     case ReturnTE(_) =>
   }).size <= 1)
-
-  def lastReferenceExpr = exprs.last
-  override def resultRegister = lastReferenceExpr.resultRegister
-
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ exprs.flatMap(_.all(func))
-  }
-}
-
-case class ConsecutorTE(exprs: List[ReferenceExpressionTE]) extends ReferenceExpressionTE {
-  // Everything but the last should result in a Void.
-  // The last can be anything, even a Void or a Never.
-  exprs.init.foreach(expr => vassert(expr.kind == VoidT()))
 
   def lastReferenceExpr = exprs.last
   override def resultRegister = lastReferenceExpr.resultRegister

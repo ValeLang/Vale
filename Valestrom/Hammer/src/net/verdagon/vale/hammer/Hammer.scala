@@ -159,7 +159,7 @@ object Hammer {
       functionExterns) = hinputs
 
 
-    val hamuts = HamutsBox(Hamuts(Map(), Map(), Map(), List(), List(), List(), Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map()))
+    val hamuts = HamutsBox(Hamuts(Map(), Map(), Map(), List.empty, List.empty, List.empty, Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map()))
     val emptyPackStructRefH = StructHammer.translateStructRef(hinputs, hamuts, emptyPackStructRef)
     vassert(emptyPackStructRefH == ProgramH.emptyTupleStructRef)
 
@@ -264,10 +264,10 @@ object Hammer {
         packageCoord ->
           PackageH(
             packageToInterfaceDefs.getOrElse(packageCoord, Map()).values.toList,
-            packageToStructDefs.getOrElse(packageCoord, List()),
-            packageToFunctionDefs.getOrElse(packageCoord, List()),
-            packageToStaticSizedArrays.getOrElse(packageCoord, List()),
-            packageToRuntimeSizedArrays.getOrElse(packageCoord, List()),
+            packageToStructDefs.getOrElse(packageCoord, List.empty),
+            packageToFunctionDefs.getOrElse(packageCoord, List.empty),
+            packageToStaticSizedArrays.getOrElse(packageCoord, List.empty),
+            packageToRuntimeSizedArrays.getOrElse(packageCoord, List.empty),
             packageToImmDestructorPrototypes.getOrElse(packageCoord, Map()),
             packageToExportNameToFunction.getOrElse(packageCoord, Map()),
             packageToExportNameToKind.getOrElse(packageCoord, Map()),
@@ -282,25 +282,32 @@ object Hammer {
     ProgramH(PackageCoordinateMap(packages))
   }
 
-//  def exportName(hamuts: HamutsBox, packageCoord: PackageCoordinate, fullName2: FullName2[IName2], fullNameH: FullNameH) = {
-//    val exportedName =
-//      fullName2.last match {
-//        case FunctionName2(humanName, _, _) => humanName
-//        case CitizenName2(humanName, _) => humanName
-//        case _ => vfail("Can't export something that doesn't have a human readable name!")
-//      }
-//    hamuts.packageCoordToExportNameToFullName.get(packageCoord) match {
-//      case None =>
-//      case Some(exportNameToFullName) => {
-//        exportNameToFullName.get(exportedName) match {
-//          case None =>
-//          case Some(existingFullName) => {
-//            vfail("Can't export " + fullNameH + " as " + exportedName + ", that exported name already taken by " + existingFullName)
-//          }
-//        }
-//      }
-//    }
-//    hamuts.addExport(fullNameH, packageCoord, exportedName)
-//  }
+  def consecutive(unfilteredExprsH: List[ExpressionH[KindH]]): ExpressionH[KindH] = {
+    val indexOfFirstNever = unfilteredExprsH.indexWhere(_.resultType.kind == NeverH())
+    // If there's an expression returning a Never, then remove all the expressions after that.
+    val exprsH =
+      unfilteredExprsH.zipWithIndex
+        // It comes after a Never statement, take it out.
+        .filter({ case (expr, index) => indexOfFirstNever < 0 || index <= indexOfFirstNever })
+        // If this isnt the last expr, and its just making a void, take it out.
+        .filter({ case (expr, index) =>
+          if (index < unfilteredExprsH.size - 1) {
+            expr match {
+              case NewStructH(List(), List(), ReferenceH(_, InlineH, _, _)) => false
+              case _ => true
+            }
+          } else {
+            true
+          }
+        }).map(_._1)
+
+    vassert(exprsH.nonEmpty)
+
+    exprsH match {
+      case Nil => vwat("Cant have empty consecutive")
+      case List(only) => only
+      case multiple => ConsecutorH(multiple)
+    }
+  }
 }
 

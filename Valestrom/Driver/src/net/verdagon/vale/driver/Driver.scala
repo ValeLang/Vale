@@ -18,13 +18,13 @@ import scala.io.Source
 import scala.util.matching.Regex
 
 object Driver {
-  val DEFAULT_PACKAGE_COORD = PackageCoordinate("my_module", List())
+  val DEFAULT_PACKAGE_COORD = PackageCoordinate("my_module", List.empty)
 
   sealed trait IValestromInput {
     def packageCoord: PackageCoordinate
   }
   case class ModulePathInput(moduleName: String, path: String) extends IValestromInput {
-    override def packageCoord: PackageCoordinate = PackageCoordinate(moduleName, List())
+    override def packageCoord: PackageCoordinate = PackageCoordinate(moduleName, List.empty)
   }
   case class DirectFilePathInput(packageCoord: PackageCoordinate, path: String) extends IValestromInput
   case class SourceInput(
@@ -93,7 +93,7 @@ object Driver {
                 val packageCoordinateParts = packageCoordStr.split("\\.")
                 PackageCoordinate(packageCoordinateParts.head, packageCoordinateParts.tail.toList)
               } else {
-                PackageCoordinate(packageCoordStr, List())
+                PackageCoordinate(packageCoordStr, List.empty)
               }
             val input =
               if (path.endsWith(".vale") || path.endsWith(".vpst")) {
@@ -133,7 +133,7 @@ object Driver {
 
     val sourceInputs =
       inputs.zipWithIndex.filter(_._1.packageCoord.module == module).flatMap({
-        case (SourceInput(_, name, code), index) if (packages == List()) => {
+        case (SourceInput(_, name, code), index) if (packages == List.empty) => {
           // All .vpst and .vale direct inputs are considered part of the root paackage.
           List((index + "(" + name + ")" -> code))
         }
@@ -238,7 +238,7 @@ object Driver {
 //        val paackage = List[String]()
 //        val filepathToCode =
 //          loadedInputsInModule.groupBy(_.path).map({
-//            case (path, List()) => vfail("No files with path: " + path)
+//            case (path, List.empty) => vfail("No files with path: " + path)
 //            case (path, List(onlyCodeWithThisFilename)) => (path -> onlyCodeWithThisFilename.code)
 //            case (path, multipleCodeWithThisFilename) => vfail("Multiple files with path " + path + ": " + multipleCodeWithThisFilename.mkString(", "))
 //          })
@@ -265,7 +265,7 @@ object Driver {
 //            }
 //          }
 //        } else if (filepath.endsWith(".vpst")) {
-//          (contents, List())
+//          (contents, List.empty)
 //        } else {
 //          throw new InputException("Unknown input type: " + filepath)
 //        }
@@ -429,7 +429,7 @@ object Driver {
 
   def main(args: Array[String]): Unit = {
     try {
-      val opts = parseOpts(Options(List(), List(), None, false, true, true, false, true, None, false), args.toList)
+      val opts = parseOpts(Options(List.empty, List.empty, None, false, true, true, false, true, None, false), args.toList)
       vcheck(opts.mode.nonEmpty, "No mode!", InputException)
       vcheck(opts.inputs.nonEmpty, "No input files!", InputException)
 
@@ -466,7 +466,7 @@ object Driver {
 
           val code =
             valeCodeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toList match {
-              case List() => throw InputException("No vale code given to highlight!")
+              case Nil => throw InputException("No vale code given to highlight!")
               case List(x) => x
               case _ => throw InputException("No vale code given to highlight!")
             }

@@ -252,7 +252,7 @@ case class RawArrayTT(
 case class StaticSizedArrayTT(size: Int, array: RawArrayTT) extends KindT {
   override def order: Int = 12;
 
-  def name: FullNameT[StaticSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, List(), StaticSizedArrayNameT(size, RawArrayNameT(array.mutability, array.memberType)))
+  def name: FullNameT[StaticSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, List.empty, StaticSizedArrayNameT(size, RawArrayNameT(array.mutability, array.memberType)))
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ array.all(func)
@@ -262,7 +262,7 @@ case class StaticSizedArrayTT(size: Int, array: RawArrayTT) extends KindT {
 case class RuntimeSizedArrayTT(array: RawArrayTT) extends KindT {
   override def order: Int = 19;
 
-  def name: FullNameT[RuntimeSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, List(), RuntimeSizedArrayNameT(RawArrayNameT(array.mutability, array.memberType)))
+  def name: FullNameT[RuntimeSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, List.empty, RuntimeSizedArrayNameT(RawArrayNameT(array.mutability, array.memberType)))
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ array.all(func)

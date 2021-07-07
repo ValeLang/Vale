@@ -247,18 +247,18 @@ object CallHammer {
   ExpressionH[KindH] = {
     val IfTE(condition2, thenBlock2, elseBlock2) = if2
 
-    val (conditionBlockH, List()) =
+    val (conditionBlockH, Nil) =
       ExpressionHammer.translate(hinputs, hamuts, currentFunctionHeader, parentLocals, condition2);
     vassert(conditionBlockH.resultType == ReferenceH(m.ShareH, InlineH, ReadonlyH, BoolH()))
 
     val thenLocals = LocalsBox(parentLocals.snapshot)
-    val (thenBlockH, List()) =
+    val (thenBlockH, Nil) =
       ExpressionHammer.translate(hinputs, hamuts, currentFunctionHeader, thenLocals, thenBlock2);
     val thenResultCoord = thenBlockH.resultType
     parentLocals.setNextLocalIdNumber(thenLocals.nextLocalIdNumber)
 
     val elseLocals = LocalsBox(parentLocals.snapshot)
-    val (elseBlockH, List()) =
+    val (elseBlockH, Nil) =
       ExpressionHammer.translate(hinputs, hamuts, currentFunctionHeader, elseLocals, elseBlock2);
     val elseResultCoord = elseBlockH.resultType
     parentLocals.setNextLocalIdNumber(elseLocals.nextLocalIdNumber)

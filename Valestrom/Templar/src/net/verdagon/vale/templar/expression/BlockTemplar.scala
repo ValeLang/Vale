@@ -53,18 +53,24 @@ class BlockTemplar(
     startingFate: FunctionEnvironment,
     fate: FunctionEnvironmentBox,
     exprs: List[IExpressionAE]):
-  (List[ReferenceExpressionTE], Set[CoordT]) = {
+  (ReferenceExpressionTE, Set[CoordT]) = {
     val (unneveredUnresultifiedUndestructedExpressions, returnsFromExprs) =
       evaluateBlockStatementsInner(temputs, fate, exprs);
 
     val unreversedVariablesToDestruct = getUnmovedVariablesIntroducedSince(startingFate, fate)
 
     val unresultifiedUndestructedExpressions =
-      if (unneveredUnresultifiedUndestructedExpressions.exists(_.kind == NeverT()) &&
-          unneveredUnresultifiedUndestructedExpressions.last.kind != NeverT()) {
-        unneveredUnresultifiedUndestructedExpressions :+ UnreachableMootTE(VoidLiteralTE())
-      } else {
-        unneveredUnresultifiedUndestructedExpressions
+      unneveredUnresultifiedUndestructedExpressions.indexWhere(_.kind == NeverT()) match {
+        case -1 => unneveredUnresultifiedUndestructedExpressions
+        case indexOfFirstNever => {
+          unneveredUnresultifiedUndestructedExpressions.zipWithIndex.map({ case (e, i) =>
+            if (i <= indexOfFirstNever) {
+              e
+            } else {
+              UnreachableMootTE(e)
+            }
+          })
+        }
       }
 
     val newExpressionsList =
@@ -84,7 +90,7 @@ class BlockTemplar(
         (resultifiedExpressions ++ destroyExpressions) :+ localHelper.unletLocal(fate, resultLocalVariable)
       }
 
-    (newExpressionsList, returnsFromExprs)
+    (Templar.consecutive(newExpressionsList), returnsFromExprs)
   }
 
   def getUnmovedVariablesIntroducedSince(

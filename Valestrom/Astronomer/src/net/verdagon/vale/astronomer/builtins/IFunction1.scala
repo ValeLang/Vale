@@ -41,8 +41,8 @@ object IFunction1 {
             CodeRuneA("BorrowThis") -> CoordTemplataType,
             CodeRuneA("ThisK") -> CoordTemplataType),
           List(
-            ParameterA(AtomAP(RangeS.internal(-119), LocalA(CodeVarNameA("this"), MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed), Some(AbstractAP), CodeRuneA("BorrowThis"), None)),
-            ParameterA(AtomAP(RangeS.internal(-120), LocalA(CodeVarNameA("p1"), MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed), None, CodeRuneA("P1"), None))),
+            ParameterA(AtomAP(RangeS.internal(-119), Some(LocalA(CodeVarNameA("this"), MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed)), Some(AbstractAP), CodeRuneA("BorrowThis"), None)),
+            ParameterA(AtomAP(RangeS.internal(-120), Some(LocalA(CodeVarNameA("p1"), MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed)), None, CodeRuneA("P1"), None))),
           Some(CodeRuneA("R")),
           List(
             EqualsAR(

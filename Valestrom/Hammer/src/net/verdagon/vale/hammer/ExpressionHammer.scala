@@ -100,13 +100,9 @@ object ExpressionHammer {
       }
 
       case ConsecutorTE(exprs) => {
-        val (resultLines, deferreds) =
-          translateExpressions(hinputs, hamuts, currentFunctionHeader, locals, exprs);
-        resultLines.init.foreach(nonLastResultLine => {
-          vassert(nonLastResultLine.resultType == ProgramH.emptyTupleStructType)
-        })
-        vassert(deferreds.isEmpty) // curiosity, would we have any here?
-        (ConsecutorH(resultLines), List.empty)
+        val expression =
+          translateExpressionsAndDeferreds(hinputs, hamuts, currentFunctionHeader, locals, exprs);
+        (expression, List.empty)
       }
 
       case PackTE(exprs, resultType, resultPackType) => {
@@ -210,7 +206,7 @@ object ExpressionHammer {
         (newStructAndDeferredsExprH, List.empty)
       }
 
-      case ConstructTE(structRef2, resultType2, memberExprs) => {
+      case ConstructTE(structRefT, resultType2, memberExprs) => {
         val (memberResultLines, deferreds) =
           translateExpressions(hinputs, hamuts, currentFunctionHeader, locals, memberExprs);
 
@@ -218,7 +214,7 @@ object ExpressionHammer {
           TypeHammer.translateReference(hinputs, hamuts, resultType2)
 
 
-        val structDefH = hamuts.structDefsByRef2(structRef2)
+        val structDefH = hamuts.structDefsByRef2(structRefT)
         vassert(memberResultLines.size == structDefH.members.size)
         memberResultLines.zip(structDefH.members).foreach({ case (memberResultLine, memberH ) =>
           vassert(memberResultLine.resultType == memberH.tyype)
@@ -241,13 +237,13 @@ object ExpressionHammer {
         (loadedAccessH, deferreds)
       }
 
-      case lookup2 @ LocalLookupT(_,AddressibleLocalVariableT(_, _, _), _, _) => {
+      case lookup2 @ LocalLookupTE(_,AddressibleLocalVariableT(_, _, _), _, _) => {
         val loadBoxAccess =
           LoadHammer.translateLocalAddress(hinputs, hamuts, currentFunctionHeader, locals, lookup2)
         (loadBoxAccess, List.empty)
       }
 
-      case lookup2 @ AddressMemberLookupT(_,_, _, _, _) => {
+      case lookup2 @ AddressMemberLookupTE(_,_, _, _, _) => {
         val (loadBoxAccess, deferreds) =
           LoadHammer.translateMemberAddress(hinputs, hamuts, currentFunctionHeader, locals, lookup2)
         (loadBoxAccess, deferreds)
@@ -451,7 +447,9 @@ object ExpressionHammer {
         // theyll never get run anyway.
         // We only translated them above to mark unstackified things unstackified.
 
-        (innerWithDeferredsH, List.empty)
+        val void = NewStructH(List.empty, List.empty, ProgramH.emptyTupleStructType)
+
+        (void, List.empty)
       }
 
       case WeakAliasTE(innerExpr) => {
@@ -576,21 +574,15 @@ object ExpressionHammer {
     currentFunctionHeader: FunctionHeaderT,
     locals: LocalsBox,
     exprs2: List[ExpressionT]):
-  List[ExpressionH[KindH]] = {
-    exprs2 match {
-      case Nil => List.empty
-      case firstExpr :: restExprs => {
+  ExpressionH[KindH] = {
+    val exprs =
+      exprs2.map({ case expr2 =>
         val (firstResultLine, firstDeferreds) =
-          translate(hinputs, hamuts, currentFunctionHeader, locals, firstExpr);
+          translate(hinputs, hamuts, currentFunctionHeader, locals, expr2);
         val firstExprWithDeferredsH =
           translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, firstResultLine, firstDeferreds)
-
-        val restResultLines =
-          translateExpressionsAndDeferreds(hinputs, hamuts, currentFunctionHeader, locals, restExprs);
-
-        val resultLines = firstExprWithDeferredsH :: restResultLines
-        (resultLines)
-      }
-    }
+        firstExprWithDeferredsH
+      })
+    Hammer.consecutive(exprs)
   }
 }

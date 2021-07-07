@@ -114,7 +114,12 @@ object ExpressionVivem {
         val sourceRef =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
             case r @ NodeReturn(_) => {
-              vcurious()
+              // This can happen if we do for example:
+              //   ret if (true) {
+              //         ret 7;
+              //       } else {
+              //         8
+              //       };
               return r
             }
             case NodeContinue(r) => r

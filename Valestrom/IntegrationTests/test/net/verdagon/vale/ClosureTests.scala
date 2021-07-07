@@ -141,7 +141,7 @@ class ClosureTests extends FunSuite with Matchers {
     // Make sure we're doing a referencememberlookup, since it's a reference member
     // in the closure struct.
     lambda.only({
-      case ReferenceMemberLookupT(_,_, FullNameT(_, _, CodeVarNameT("x")), _, _, _) =>
+      case ReferenceMemberLookupTE(_,_, FullNameT(_, _, CodeVarNameT("x")), _, _, _) =>
     })
 
     // Make sure there's a function that takes in the closured vars struct, and returns an int
@@ -168,7 +168,7 @@ class ClosureTests extends FunSuite with Matchers {
     main.onlyOf(classOf[FunctionCallTE])
 
     lambda.only({
-      case LocalLookupT(_,ReferenceLocalVariableT(FullNameT(_, _,ClosureParamNameT()),FinalT,_),_, _) =>
+      case LocalLookupTE(_,ReferenceLocalVariableT(FullNameT(_, _,ClosureParamNameT()),FinalT,_),_, _) =>
     })
 
     compile.evalForKind(Vector()) shouldEqual VonInt(4)
@@ -193,7 +193,7 @@ class ClosureTests extends FunSuite with Matchers {
     val lambda = temputs.lookupLambdaIn("main")
     lambda.only({
       case MutateTE(
-        AddressMemberLookupT(_,_,FullNameT(_, List(FunctionNameT("main",Nil,Nil), LambdaCitizenNameT(_)),CodeVarNameT("x")),CoordT(ShareT,ReadonlyT, IntT.i32), _),
+        AddressMemberLookupTE(_,_,FullNameT(_, List(FunctionNameT("main",Nil,Nil), LambdaCitizenNameT(_)),CodeVarNameT("x")),CoordT(ShareT,ReadonlyT, IntT.i32), _),
         _) =>
     })
 

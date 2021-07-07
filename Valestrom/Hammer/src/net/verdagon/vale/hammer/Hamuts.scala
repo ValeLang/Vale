@@ -24,12 +24,12 @@ case class HamutsBox(var inner: Hamuts) {
   def staticSizedArrays: List[StaticSizedArrayDefinitionTH] = inner.staticSizedArrays
   def runtimeSizedArrays: List[RuntimeSizedArrayDefinitionTH] = inner.runtimeSizedArrays
 
-  def forwardDeclareStruct(structRef2: StructRefT, structRefH: StructRefH): Unit = {
-    inner = inner.forwardDeclareStruct(structRef2, structRefH)
+  def forwardDeclareStruct(structRefT: StructRefT, structRefH: StructRefH): Unit = {
+    inner = inner.forwardDeclareStruct(structRefT, structRefH)
   }
 
-  def addStructOriginatingFromTemplar(structRef2: StructRefT, structDefH: StructDefinitionH): Unit = {
-    inner = inner.addStructOriginatingFromTemplar(structRef2, structDefH)
+  def addStructOriginatingFromTemplar(structRefT: StructRefT, structDefH: StructDefinitionH): Unit = {
+    inner = inner.addStructOriginatingFromTemplar(structRefT, structDefH)
   }
 
   def addStructOriginatingFromHammer(structDefH: StructDefinitionH): Unit = {
@@ -105,10 +105,10 @@ case class Hamuts(
     packageCoordToExportNameToKind: Map[PackageCoordinate, Map[String, KindH]],
     packageCoordToExternNameToFunction: Map[PackageCoordinate, Map[String, PrototypeH]],
     packageCoordToExternNameToKind: Map[PackageCoordinate, Map[String, KindH]]) {
-  def forwardDeclareStruct(structRef2: StructRefT, structRefH: StructRefH): Hamuts = {
+  def forwardDeclareStruct(structRefT: StructRefT, structRefH: StructRefH): Hamuts = {
     Hamuts(
       idByFullNameByHumanName,
-      structRefsByRef2 + (structRef2 -> structRefH),
+      structRefsByRef2 + (structRefT -> structRefH),
       structDefsByRef2,
       structDefs,
       staticSizedArrays,
@@ -123,12 +123,12 @@ case class Hamuts(
       packageCoordToExternNameToKind)
   }
 
-  def addStructOriginatingFromTemplar(structRef2: StructRefT, structDefH: StructDefinitionH): Hamuts = {
-    vassert(structRefsByRef2.contains(structRef2))
+  def addStructOriginatingFromTemplar(structRefT: StructRefT, structDefH: StructDefinitionH): Hamuts = {
+    vassert(structRefsByRef2.contains(structRefT))
     Hamuts(
       idByFullNameByHumanName,
       structRefsByRef2,
-      structDefsByRef2 + (structRef2 -> structDefH),
+      structDefsByRef2 + (structRefT -> structDefH),
       structDefs :+ structDefH,
       staticSizedArrays,
       runtimeSizedArrays,

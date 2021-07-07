@@ -11,9 +11,9 @@ case class CaptureS(
 case class AtomSP(
   range: RangeS,
   // This is an option because in PatternTemplar, if it's None, we'll explode the
-  // expression into the destructure, and if it's Some, we'll make this variable
-  // an owning ref.
-  name: CaptureS,
+  // expression into the destructure or throw the incoming thing away right now (see DIPRA),
+  // and if it's Some, we'll make this variable an owning ref.
+  name: Option[CaptureS],
   virtuality: Option[VirtualitySP],
   coordRune: IRuneS,
   destructure: Option[List[AtomSP]])

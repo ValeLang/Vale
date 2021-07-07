@@ -94,9 +94,9 @@ object Program2 {
 //  def getAllFunctions: Set[Function2]
 //  def getAllCitizens: Set[CitizenDefinition2] = getAllInterfaces ++ getAllStructs
 //  def getAllExterns: Set[FunctionHeader2]
-//  def emptyPackStructRef: StructRef2
+//  def emptyPackStructRef: structRefT
 //
-//  def lookupStruct(structRef: StructRef2): StructDefinition2;
+//  def lookupStruct(structRef: structRefT): StructDefinition2;
 //  def lookupInterface(interfaceRef: InterfaceRef2): InterfaceDefinition2;
 //  def lookupCitizen(citizenRef: CitizenRef2): CitizenDefinition2;
 //  def lookupFunction(signature2: Signature2): Option[Function2];
@@ -115,10 +115,8 @@ case class FunctionT(
   variables: List[ILocalVariableT],
   body: ReferenceExpressionTE) extends QueriableT {
 
-  vassert(
-    body.resultRegister.kind == NeverT() ||
-    header.returnType.kind == NeverT() ||
-    body.resultRegister.reference == header.returnType)
+  // We always end a function with a return, whose result is a Never.
+  vassert(body.resultRegister.kind == NeverT())
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ header.all(func) ++ variables.flatMap(_.all(func)) ++ body.all(func)

@@ -21,12 +21,22 @@ class FunctionTemplarCore(
     convertHelper: ConvertHelper,
     delegate: IFunctionTemplarDelegate) {
   val bodyTemplar = new BodyTemplar(opts, profiler, newTemplataStore, templataTemplar, convertHelper, new IBodyTemplarDelegate {
-    override def evaluateBlockStatements(temputs: Temputs, startingFate: FunctionEnvironment, fate: FunctionEnvironmentBox, exprs: List[IExpressionAE]): (List[ReferenceExpressionTE], Set[CoordT]) = {
+    override def evaluateBlockStatements(
+        temputs: Temputs,
+        startingFate: FunctionEnvironment,
+        fate: FunctionEnvironmentBox,
+        exprs: List[IExpressionAE]
+    ): (ReferenceExpressionTE, Set[CoordT]) = {
       delegate.evaluateBlockStatements(temputs, startingFate, fate, exprs)
     }
 
-    override def nonCheckingTranslateList(temputs: Temputs, fate: FunctionEnvironmentBox, patterns1: List[AtomAP], patternInputExprs2: List[ReferenceExpressionTE]): List[ReferenceExpressionTE] = {
-      delegate.nonCheckingTranslateList(temputs, fate, patterns1, patternInputExprs2)
+    override def translatePatternList(
+        temputs: Temputs,
+        fate: FunctionEnvironmentBox,
+        patterns1: List[AtomAP],
+        patternInputExprs2: List[ReferenceExpressionTE]
+    ): ReferenceExpressionTE = {
+      delegate.translatePatternList(temputs, fate, patterns1, patternInputExprs2)
     }
   })
 
@@ -259,12 +269,11 @@ class FunctionTemplarCore(
         header,
         List.empty,
         BlockTE(
-          List(
             ReturnTE(
               InterfaceFunctionCallTE(
                 header,
                 header.returnType,
-                header.params.zipWithIndex.map({ case (param2, index) => ArgLookupTE(index, param2.tyype) }))))))
+                header.params.zipWithIndex.map({ case (param2, index) => ArgLookupTE(index, param2.tyype) })))))
 
       temputs
         .declareFunctionReturnType(header.toSignature, returnReferenceType2)
@@ -277,15 +286,15 @@ class FunctionTemplarCore(
     env: FunctionEnvironment,
     temputs: Temputs,
     maybeOriginFunction1: Option[FunctionA],
-    structDef2: StructDefinitionT,
+    structDefT: StructDefinitionT,
     interfaceRef2: InterfaceRefT,
     structDestructor: PrototypeT,
   ):
   (FunctionHeaderT) = {
-    val ownership = if (structDef2.mutability == MutableT) OwnT else ShareT
-    val permission = if (structDef2.mutability == MutableT) ReadwriteT else ReadonlyT
-    val structRef2 = structDef2.getRef
-    val structType2 = CoordT(ownership, permission, structRef2)
+    val ownership = if (structDefT.mutability == MutableT) OwnT else ShareT
+    val permission = if (structDefT.mutability == MutableT) ReadwriteT else ReadonlyT
+    val structRefT = structDefT.getRef
+    val structType2 = CoordT(ownership, permission, structRefT)
 
     val destructor2 =
       FunctionT(
@@ -297,11 +306,10 @@ class FunctionTemplarCore(
           maybeOriginFunction1),
         List.empty,
         BlockTE(
-          List(
             ReturnTE(
               FunctionCallTE(
                 structDestructor,
-                List(ArgLookupTE(0, structType2)))))))
+                List(ArgLookupTE(0, structType2))))))
 
     // If this fails, then the signature the FunctionTemplarMiddleLayer made for us doesn't
     // match what we just made

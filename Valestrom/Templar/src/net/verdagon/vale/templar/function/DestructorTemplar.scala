@@ -229,7 +229,7 @@ class DestructorTemplar(
         List(ParameterT(CodeVarNameT("x"), None, type2)),
         CoordT(ShareT, ReadonlyT, VoidT()),
         Some(originFunction1))
-    val function2 = FunctionT(header, List.empty, BlockTE(List(dropExpr2, ReturnTE(VoidLiteralTE()))))
+    val function2 = FunctionT(header, List.empty, BlockTE(Templar.consecutive(List(dropExpr2, ReturnTE(VoidLiteralTE())))))
     temputs.declareFunctionReturnType(header.toSignature, CoordT(ShareT, ReadonlyT, VoidT()))
     temputs.addFunction(function2)
     vassert(temputs.getDeclaredSignatureOrigin(bodyEnv.fullName) == Some(originFunction1.range))
@@ -292,7 +292,9 @@ class DestructorTemplar(
       FunctionT(
         header,
         memberLocalVariables,
-        BlockTE(List(destroyedUnletStruct) ++ destructMemberExprs :+ returnVoid))
+        BlockTE(
+          Templar.consecutive(
+            List(destroyedUnletStruct) ++ destructMemberExprs :+ returnVoid)))
     temputs.addFunction(function2)
     (function2.header)
   }
@@ -345,13 +347,14 @@ class DestructorTemplar(
           maybeOriginFunction1),
         List.empty,
         BlockTE(
-          List(
-            DestroyStaticSizedArrayIntoFunctionTE(
-              ArgLookupTE(0, arrayRefType),
-              sequence,
-              ifunctionExpression,
-              consumerMethod2),
-            ReturnTE(VoidLiteralTE()))))
+          Templar.consecutive(
+            List(
+              DestroyStaticSizedArrayIntoFunctionTE(
+                ArgLookupTE(0, arrayRefType),
+                sequence,
+                ifunctionExpression,
+                consumerMethod2),
+              ReturnTE(VoidLiteralTE())))))
 
     temputs.declareFunctionReturnType(function2.header.toSignature, function2.header.returnType)
     temputs.addFunction(function2)
@@ -401,13 +404,14 @@ class DestructorTemplar(
           maybeOriginFunction1),
         List.empty,
         BlockTE(
-          List(
-            DestroyRuntimeSizedArrayTE(
-              ArgLookupTE(0, arrayRefType2),
-              array,
-              ifunctionExpression,
-              consumerMethod2),
-            ReturnTE(VoidLiteralTE()))))
+          Templar.consecutive(
+            List(
+              DestroyRuntimeSizedArrayTE(
+                ArgLookupTE(0, arrayRefType2),
+                array,
+                ifunctionExpression,
+                consumerMethod2),
+              ReturnTE(VoidLiteralTE())))))
 
     temputs.declareFunctionReturnType(function2.header.toSignature, function2.header.returnType)
     temputs.addFunction(function2)
@@ -417,9 +421,9 @@ class DestructorTemplar(
   def getImmConcreteDestructor(
     temputs: Temputs,
     env: IEnvironment,
-    structRef2: StructRefT):
+    structRefT: StructRefT):
   PrototypeT = {
-    vassert(Templar.getMutability(temputs, structRef2) == ImmutableT)
+    vassert(Templar.getMutability(temputs, structRefT) == ImmutableT)
 
     overloadTemplar.scoutExpectedFunctionForPrototype(
       env,
@@ -427,7 +431,7 @@ class DestructorTemplar(
       RangeS.internal(-1673),
       ImmConcreteDestructorImpreciseNameA(),
       List.empty,
-      List(ParamFilter(CoordT(ShareT, ReadonlyT, structRef2), None)),
+      List(ParamFilter(CoordT(ShareT, ReadonlyT, structRefT), None)),
       List.empty,
       true) match {
       case (seff@ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
@@ -465,10 +469,10 @@ class DestructorTemplar(
   def getImmInterfaceDestructorOverride(
     temputs: Temputs,
     env: IEnvironment,
-    structRef2: StructRefT,
+    structRefT: StructRefT,
     implementedInterfaceRefT: InterfaceRefT):
   PrototypeT = {
-    vassert(Templar.getMutability(temputs, structRef2) == ImmutableT)
+    vassert(Templar.getMutability(temputs, structRefT) == ImmutableT)
     vassert(Templar.getMutability(temputs, implementedInterfaceRefT) == ImmutableT)
 
     val sefResult =
@@ -478,7 +482,7 @@ class DestructorTemplar(
         RangeS.internal(-1674),
         ImmInterfaceDestructorImpreciseNameA(),
         List.empty,
-        List(ParamFilter(CoordT(ShareT, ReadonlyT, structRef2), Some(OverrideT(implementedInterfaceRefT)))),
+        List(ParamFilter(CoordT(ShareT, ReadonlyT, structRefT), Some(OverrideT(implementedInterfaceRefT)))),
         List.empty,
         true)
     sefResult match {
@@ -512,7 +516,7 @@ object DestructorTemplar {
         CodeRuneA("T") -> CoordTemplataType,
         CodeRuneA("V") -> CoordTemplataType),
       List(
-        ParameterA(AtomAP(RangeS.internal(-1339), LocalA(CodeVarNameA("this"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("T"), None))),
+        ParameterA(AtomAP(RangeS.internal(-1339), Some(LocalA(CodeVarNameA("this"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)), None, CodeRuneA("T"), None))),
       Some(CodeRuneA("V")),
       List(
         EqualsAR(RangeS.internal(-16722),
@@ -597,7 +601,7 @@ object DestructorTemplar {
           CodeRuneA("V") -> CoordTemplataType,
           CodeRuneA("XX") -> KindTemplataType),
         List(
-          ParameterA(AtomAP(RangeS.internal(-1340), LocalA(CodeVarNameA("this"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), Some(AbstractAP), CodeRuneA("T"), None))),
+          ParameterA(AtomAP(RangeS.internal(-1340), Some(LocalA(CodeVarNameA("this"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)), Some(AbstractAP), CodeRuneA("T"), None))),
         Some(CodeRuneA("V")),
         List(
           EqualsAR(RangeS.internal(-167214),
@@ -677,7 +681,7 @@ object DestructorTemplar {
           CodeRuneA("V") -> CoordTemplataType,
           CodeRuneA("XX") -> KindTemplataType),
         List(
-          ParameterA(AtomAP(RangeS.internal(-1341), LocalA(CodeVarNameA("this"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), Some(OverrideAP(RangeS.internal(-1133), CodeRuneA("I"))), CodeRuneA("T"), None))),
+          ParameterA(AtomAP(RangeS.internal(-1341), Some(LocalA(CodeVarNameA("this"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)), Some(OverrideAP(RangeS.internal(-1133), CodeRuneA("I"))), CodeRuneA("T"), None))),
         Some(CodeRuneA("V")),
         List(
           EqualsAR(RangeS.internal(-167230),
@@ -722,21 +726,21 @@ object DestructorTemplar {
           // However, the template arguments are, and idestructor's template argument
           // is the interface we're overriding.
           val List(
-          CoordTemplata(CoordT(_, _, overridingStructRef2FromTemplateArg @ StructRefT(_))),
+          CoordTemplata(CoordT(_, _, overridingstructRefTFromTemplateArg @ StructRefT(_))),
           KindTemplata(implementedInterfaceRef2 @ InterfaceRefT(_))) =
           namedEnv.fullName.last.templateArgs
 
           params.map(_.tyype) match {
-            case List(CoordT(_, _, structRef2 @ StructRefT(_))) => {
-              vassert(overridingStructRef2FromTemplateArg == structRef2)
-              val structDef2 = temputs.lookupStruct(structRef2)
-              val ownership = if (structDef2.mutability == MutableT) OwnT else ShareT
-              val permission = if (structDef2.mutability == MutableT) ReadwriteT else ReadonlyT
-              val structType2 = CoordT(ownership, permission, structRef2)
+            case List(CoordT(_, _, structRefT @ StructRefT(_))) => {
+              vassert(overridingstructRefTFromTemplateArg == structRefT)
+              val structDefT = temputs.lookupStruct(structRefT)
+              val ownership = if (structDefT.mutability == MutableT) OwnT else ShareT
+              val permission = if (structDefT.mutability == MutableT) ReadwriteT else ReadonlyT
+              val structType2 = CoordT(ownership, permission, structRefT)
               val structDestructor =
                 destructorTemplar.getCitizenDestructor(namedEnv, temputs, structType2)
               functionTemplarCore.makeImplDestructor(
-                namedEnv, temputs, maybeOriginFunction1, structDef2, implementedInterfaceRef2, structDestructor)
+                namedEnv, temputs, maybeOriginFunction1, structDefT, implementedInterfaceRef2, structDestructor)
             }
             case _ => {
               vfail("wot")
@@ -774,7 +778,7 @@ object DestructorTemplar {
         CodeRuneA("O") -> OwnershipTemplataType,
         CodeRuneA("P") -> PermissionTemplataType),
       List(
-        ParameterA(AtomAP(RangeS.internal(-1342), LocalA(CodeVarNameA("x"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("T"), None))),
+        ParameterA(AtomAP(RangeS.internal(-1342), Some(LocalA(CodeVarNameA("x"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)), None, CodeRuneA("T"), None))),
       Some(CodeRuneA("V")),
       List(
         EqualsAR(RangeS.internal(-167248),

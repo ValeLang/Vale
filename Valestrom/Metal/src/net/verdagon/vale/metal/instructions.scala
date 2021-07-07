@@ -493,22 +493,34 @@ case class WhileH(
 // A collection of instructions. The last one will be used as the block's result.
 case class ConsecutorH(
   // The instructions to run.
-  nodes: List[ExpressionH[KindH]],
+  exprs: List[ExpressionH[KindH]],
 ) extends ExpressionH[KindH] {
   // We should simplify these away
-  vassert(nodes.nonEmpty)
-  // The init ones should always return void structs.
-  nodes.init.foreach(n => n.resultType.kind match { case StructRefH(_) => case NeverH() => })
+  vassert(exprs.nonEmpty)
 
-  val indexOfFirstNever = nodes.indexWhere(_.resultType.kind == NeverH())
+  exprs.init.foreach(nonLastResultLine => {
+    // The init ones should never just be VoidLiteralHs, those should be stripped out.
+    // Use Hammer.consecutive to conform to this.
+    nonLastResultLine match {
+      case NewStructH(List(), List(), ReferenceH(_, InlineH, _, _)) => vfail("Should be no creating voids in the middle of a consecutor!")
+      case _ =>
+    }
+
+    // The init ones should always return void structs.
+    // If there's a never somewhere in there, then there should be nothing afterward.
+    // Use Hammer.consecutive to conform to this.
+    vassert(nonLastResultLine.resultType == ProgramH.emptyTupleStructType)
+  })
+
+  val indexOfFirstNever = exprs.indexWhere(_.resultType.kind == NeverH())
   if (indexOfFirstNever >= 0) {
     // The first never should be the last line. There shouldn't be anything after never.
-    if (indexOfFirstNever != nodes.size - 1) {
+    if (indexOfFirstNever != exprs.size - 1) {
       vfail()
     }
   }
 
-  override def resultType: ReferenceH[KindH] = nodes.last.resultType
+  override def resultType: ReferenceH[KindH] = exprs.last.resultType
 }
 
 // An expression where all locals declared inside will be destroyed by the time we exit.

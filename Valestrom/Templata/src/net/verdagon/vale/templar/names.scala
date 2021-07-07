@@ -20,7 +20,7 @@ case class FullNameT[+T <: INameT](
   vassert(!initSteps.contains(PackageTopLevelNameT()))
 
   this match {
-    case FullNameT(PackageCoordinate.TEST_TLD, List(), FunctionNameT("main", List(), List())) =>
+    case FullNameT(PackageCoordinate.TEST_TLD, Nil, FunctionNameT("main", Nil, Nil)) =>
     case _ =>
   }
 
@@ -73,6 +73,7 @@ case class TemplarBlockResultVarNameT(num: Int) extends IVarNameT { def order = 
 case class TemplarFunctionResultVarNameT() extends IVarNameT { def order = 19; def all[T](func: PartialFunction[QueriableT, T]): List[T] = { List(this).collect(func) } }
 case class TemplarTemporaryVarNameT(num: Int) extends IVarNameT { def order = 20; def all[T](func: PartialFunction[QueriableT, T]): List[T] = { List(this).collect(func) } }
 case class TemplarPatternMemberNameT(num: Int, memberIndex: Int) extends IVarNameT { def order = 23; def all[T](func: PartialFunction[QueriableT, T]): List[T] = { List(this).collect(func) } }
+case class TemplarIgnoredParamNameT(num: Int) extends IVarNameT { def order = 53; def all[T](func: PartialFunction[QueriableT, T]): List[T] = { List(this).collect(func) } }
 case class TemplarPatternDestructureeNameT(num: Int) extends IVarNameT { def order = 23; def all[T](func: PartialFunction[QueriableT, T]): List[T] = { List(this).collect(func) } }
 case class UnnamedLocalNameT(codeLocation: CodeLocationT) extends IVarNameT { def order = 3; def all[T](func: PartialFunction[QueriableT, T]): List[T] = { List(this).collect(func) ++ codeLocation.all(func) } }
 case class ClosureParamNameT() extends IVarNameT { def order = 41; def all[T](func: PartialFunction[QueriableT, T]): List[T] = { List(this).collect(func) } }
@@ -153,7 +154,7 @@ case class ExternFunctionNameT(
   humanName: String,
   parameters: List[CoordT]
 ) extends IFunctionNameT {
-  override def templateArgs: List[ITemplata] = List()
+  override def templateArgs: List[ITemplata] = List.empty
 
   def order = 46;
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -221,7 +222,7 @@ case class ConstructorNameT(
   parameters: List[CoordT]
 ) extends IFunctionNameT {
   def order = 21;
-  def templateArgs: List[ITemplata] = List()
+  def templateArgs: List[ITemplata] = List.empty
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }
@@ -272,7 +273,7 @@ case class LambdaCitizenNameT(
 ) extends ICitizenNameT {
   vpass()
 
-  def templateArgs: List[ITemplata] = List()
+  def templateArgs: List[ITemplata] = List.empty
   def order = 17;
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ templateArgs.toList.flatMap(_.all(func))

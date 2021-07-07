@@ -59,7 +59,7 @@ class LocalHelper(
     variables: List[ILocalVariableT]):
   (List[ReferenceExpressionTE]) = {
     variables match {
-      case Nil => (List())
+      case Nil => (List.empty)
       case head :: tail => {
         val unlet = unletLocal(fate, head)
         val maybeHeadExpr2 =
@@ -101,6 +101,7 @@ class LocalHelper(
       } else {
         ReferenceLocalVariableT(fullVarName, variability, referenceType2)
       }
+    fate.addVariable(localVar)
     localVar
   }
 

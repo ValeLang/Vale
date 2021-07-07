@@ -71,7 +71,7 @@ object CodeLocationS {
   val testZero = CodeLocationS.internal(-1)
   def internal(internalNum: Int): CodeLocationS = {
     vassert(internalNum < 0)
-    CodeLocationS(FileCoordinate("", List(), "internal"), internalNum)
+    CodeLocationS(FileCoordinate("", List.empty, "internal"), internalNum)
   }
 }
 
@@ -299,7 +299,7 @@ case class FunctionS(
 //  // See SSRR.
 //  private def orderedRunes: List[String] = {
 //    (
-//      maybeUserSpecifiedIdentifyingRunes.getOrElse(List()) ++
+//      maybeUserSpecifiedIdentifyingRunes.getOrElse(List.empty) ++
 //      params.map(_.pattern).flatMap(PatternSUtils.getDistinctOrderedRunesForPattern) ++
 //      RuleSUtils.getDistinctOrderedRunesForRulexes(templateRules) ++
 //      maybeRetCoordRune.toList

@@ -47,7 +47,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     val inferences =
       inferTemplar.inferOrdinaryRules(
         nearEnv, temputs, function.templateRules, function.typeByRune, function.localRunes)
-    val runedEnv = addRunedDataToNearEnv(nearEnv, List(), inferences)
+    val runedEnv = addRunedDataToNearEnv(nearEnv, List.empty, inferences)
 
     middleLayer.predictOrdinaryFunctionBanner(
       runedEnv, temputs, function)
@@ -66,7 +66,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     val inferences =
       inferTemplar.inferOrdinaryRules(
         nearEnv, temputs, function.templateRules, function.typeByRune, function.localRunes)
-    val runedEnv = addRunedDataToNearEnv(nearEnv, List(), inferences)
+    val runedEnv = addRunedDataToNearEnv(nearEnv, List.empty, inferences)
 
     middleLayer.getOrEvaluateFunctionForBanner(runedEnv, temputs, callRange, function)
   }
@@ -97,7 +97,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
 //        function.params.map(_.pattern),
 //        function.maybeRetCoordRune,
 //        callRange,
-//        List(),
+//        List.empty,
 //        argTypes2.map(arg => ParamFilter(arg, None)))
 //    val InferSolveSuccess(inferredTemplatas) = maybeInferredTemplatas
 //
@@ -215,7 +215,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
 //    checkClosureConcernsHandled(nearEnv)
 //    vassert(nearEnv.function.isTemplate)
 //
-//    vassert(nearEnv.function.identifyingRunes.size == List().size);
+//    vassert(nearEnv.function.identifyingRunes.size == List.empty.size);
 //
 //    val result =
 //      inferTemplar.inferFromExplicitTemplateArgs(
@@ -228,7 +228,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
 //        function.params.map(_.pattern),
 //        callRange,
 //        function.maybeRetCoordRune,
-//        List())
+//        List.empty)
 //    val inferences =
 //      result match {
 //        case isf @ InferSolveFailure(_, _, _, _, _, _, _) => {
@@ -237,7 +237,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
 //        case InferSolveSuccess(i) => i
 //      }
 //
-//    val runedEnv = addRunedDataToNearEnv(nearEnv, List(), inferences.templatasByRune)
+//    val runedEnv = addRunedDataToNearEnv(nearEnv, List.empty, inferences.templatasByRune)
 //
 //    middleLayer.getOrEvaluateFunctionForHeader(runedEnv, temputs, function)
 //  }
@@ -259,7 +259,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     val inferences =
       inferTemplar.inferOrdinaryRules(
         nearEnv, temputs, function.templateRules, function.typeByRune, function.localRunes)
-    val runedEnv = addRunedDataToNearEnv(nearEnv, List(), inferences)
+    val runedEnv = addRunedDataToNearEnv(nearEnv, List.empty, inferences)
 
     middleLayer.getOrEvaluateFunctionForHeader(
       runedEnv, temputs, callRange, function)
@@ -282,7 +282,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     val inferences =
       inferTemplar.inferOrdinaryRules(
         nearEnv, temputs, function.templateRules, function.typeByRune, function.localRunes)
-    val runedEnv = addRunedDataToNearEnv(nearEnv, List(), inferences)
+    val runedEnv = addRunedDataToNearEnv(nearEnv, List.empty, inferences)
 
     middleLayer.getOrEvaluateFunctionForPrototype(
       runedEnv, temputs, callRange, function)

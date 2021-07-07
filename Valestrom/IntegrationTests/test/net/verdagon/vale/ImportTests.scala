@@ -27,12 +27,12 @@ class ImportTests extends FunSuite with Matchers {
 
     val compile =
       new RunCompilation(
-        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List())),
+        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List.empty)),
         Builtins.getCodeMap()
           .or(
             FileCoordinateMap(Map())
-              .add("moduleA", List(), "moduleA.vale", moduleACode)
-              .add("moduleB", List(), "moduleB.vale", moduleBCode))
+              .add("moduleA", List.empty, "moduleA.vale", moduleACode)
+              .add("moduleB", List.empty, "moduleB.vale", moduleBCode))
           .or(Tests.getPackageToResourceResolver),
         FullCompilationOptions())
 
@@ -55,12 +55,12 @@ class ImportTests extends FunSuite with Matchers {
 
     val compile =
       new RunCompilation(
-        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List())),
+        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List.empty)),
         Builtins.getCodeMap()
           .or(
             FileCoordinateMap(Map())
-              .add("moduleA", List(), "moduleA.vale", moduleACode)
-              .add("moduleB", List(), "moduleB.vale", moduleBCode))
+              .add("moduleA", List.empty, "moduleA.vale", moduleACode)
+              .add("moduleB", List.empty, "moduleB.vale", moduleBCode))
           .or(Tests.getPackageToResourceResolver),
         FullCompilationOptions())
 
@@ -87,11 +87,11 @@ class ImportTests extends FunSuite with Matchers {
 
     val compile =
       new RunCompilation(
-        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List())),
+        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List.empty)),
         Builtins.getCodeMap()
           .or(
             FileCoordinateMap(Map())
-              .add("moduleA", List(), "moduleA.vale", moduleACode)
+              .add("moduleA", List.empty, "moduleA.vale", moduleACode)
               .add("moduleB", List("bork"), "moduleB.vale", moduleBCode))
           .or(Tests.getPackageToResourceResolver),
         FullCompilationOptions())
@@ -112,12 +112,12 @@ class ImportTests extends FunSuite with Matchers {
 
     val compile =
       new RunCompilation(
-        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List())),
+        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List.empty)),
         Builtins.getCodeMap()
           .or(Tests.getPackageToResourceResolver)
           .or(
             FileCoordinateMap(Map())
-              .add("moduleA", List(), "moduleA.vale", moduleACode))
+              .add("moduleA", List.empty, "moduleA.vale", moduleACode))
           .or({ case PackageCoordinate("moduleB", List("bork")) => Some(Map()) }),
     FullCompilationOptions())
 

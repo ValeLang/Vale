@@ -122,16 +122,16 @@ case class ManualSequenceST(
 object TemplexSUtils {
   def getDistinctOrderedRunesForTemplex(templex: ITemplexS): List[IRuneS] = {
     templex match {
-      case StringST(_, _) => List()
-      case IntST(_, _) => List()
-      case MutabilityST(_, _) => List()
-      case PermissionST(_, _) => List()
-      case LocationST(_, _) => List()
-      case OwnershipST(_, _) => List()
-      case VariabilityST(_, _) => List()
-      case BoolST(_, _) => List()
-      case NameST(_, _) => List()
-      case AbsoluteNameST(_, _) => List()
+      case StringST(_, _) => List.empty
+      case IntST(_, _) => List.empty
+      case MutabilityST(_, _) => List.empty
+      case PermissionST(_, _) => List.empty
+      case LocationST(_, _) => List.empty
+      case OwnershipST(_, _) => List.empty
+      case VariabilityST(_, _) => List.empty
+      case BoolST(_, _) => List.empty
+      case NameST(_, _) => List.empty
+      case AbsoluteNameST(_, _) => List.empty
       case RuneST(_, rune) => List(rune)
       case InterpretedST(_, _, _, inner) => getDistinctOrderedRunesForTemplex(inner)
       case BorrowST(_, inner) => getDistinctOrderedRunesForTemplex(inner)
@@ -157,7 +157,7 @@ object TemplexSUtils {
 //  // we do elsewhere.
 //  def templexNamesToRunes(envName: INameS, runes: Set[IRuneS])(templex: ITemplexS): ITemplexS = {
 //    templex match {
-//      case NameST(ImpreciseNameS(List(), CodeTypeNameS(name))) if (runes.exists(_.last == CodeRuneS(name))) => RuneST(envName.addStep(CodeRuneS(name)))
+//      case NameST(ImpreciseNameS(List.empty, CodeTypeNameS(name))) if (runes.exists(_.last == CodeRuneS(name))) => RuneST(envName.addStep(CodeRuneS(name)))
 //      case NameST(iname) => NameST(iname)
 //      case IntST(value) => IntST(value)
 //      case MutabilityST(mutability) => MutabilityST(mutability)

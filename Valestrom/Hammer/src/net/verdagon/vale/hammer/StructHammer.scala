@@ -76,7 +76,7 @@ object StructHammer {
             maybeExport.nonEmpty,
             interfaceDef2.weakable,
             Conversions.evaluateMutability(interfaceDef2.mutability),
-            List() /* super interfaces */,
+            List.empty /* super interfaces */,
             methodsH)
         hamuts.addInterface(interfaceRef2, interfaceDefH)
         vassert(interfaceDefH.getRef == temporaryInterfaceRefH)
@@ -127,7 +127,7 @@ object StructHammer {
             if (structRefT != Program2.emptyTupleStructRef) {
               vassertSome(
                 hinputs.functions.find(function => {
-                  function.header.fullName == FullNameT(PackageCoordinate.BUILTIN, List(), ImmConcreteDestructorNameT(structRefT))
+                  function.header.fullName == FullNameT(PackageCoordinate.BUILTIN, List.empty, ImmConcreteDestructorNameT(structRefT))
                 }))
             }
           }
@@ -170,7 +170,7 @@ object StructHammer {
     type2: CoordT,
     typeH: ReferenceH[KindH]):
   (StructRefH) = {
-    val boxFullName2 = FullNameT(PackageCoordinate.BUILTIN, List(), CitizenNameT(BOX_HUMAN_NAME, List(CoordTemplata(type2))))
+    val boxFullName2 = FullNameT(PackageCoordinate.BUILTIN, List.empty, CitizenNameT(BOX_HUMAN_NAME, List(CoordTemplata(type2))))
     val boxFullNameH = NameHammer.translateFullName(hinputs, hamuts, boxFullName2)
     hamuts.structDefsByRef2.find(_._2.fullName == boxFullNameH) match {
       case Some((_, structDefH)) => (structDefH.getRef)
@@ -193,7 +193,7 @@ object StructHammer {
             false,
             false,
             m.Mutable,
-            List(),
+            List.empty,
             List(memberH));
         hamuts.addStructOriginatingFromHammer(structDefH)
         vassert(structDefH.getRef == temporaryStructRefH)

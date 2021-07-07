@@ -31,7 +31,7 @@ class RuleTyperMatcher[Env, State](
         if (existing == tyype) {
           RuleTyperMatchSuccess(())
         } else {
-          RuleTyperMatchConflict(conclusions.conclusions, range, "Disagreement about rune " + rune + "! " + existing + " and " + tyype, List())
+          RuleTyperMatchConflict(conclusions.conclusions, range, "Disagreement about rune " + rune + "! " + existing + " and " + tyype, List.empty)
         }
       }
     }
@@ -100,7 +100,7 @@ class RuleTyperMatcher[Env, State](
 //  IRuleTyperMatchResult = {
 //    val actualTemplate =
 //      delegate.lookupTemplata(env, actualTemplateName) match {
-//        case None => return (RuleTyperMatchConflict(conclusions.conclusions, s"Couldn't find template '${actualTemplateName}'", List()))
+//        case None => return (RuleTyperMatchConflict(conclusions.conclusions, s"Couldn't find template '${actualTemplateName}'", List.empty))
 //        case Some(x) => x
 //      }
 //    // Check to see that the actual template matches the expected template
@@ -233,14 +233,14 @@ class RuleTyperMatcher[Env, State](
             val templexTemplateType =
               templateTemplexT.resultType match {
                 case ttt @ TemplateTemplataType(_, _) => ttt
-                case _ => return (RuleTyperMatchConflict(conclusions.conclusions, range, "Expected template call callee's to be a template but was " + templateTemplexT.resultType, List()))
+                case _ => return (RuleTyperMatchConflict(conclusions.conclusions, range, "Expected template call callee's to be a template but was " + templateTemplexT.resultType, List.empty))
               }
 
             (templexTemplateType.returnType, expectedType) match {
               case (a, b) if a == b =>
               // We can coerce kinds to coords, that's fine
               case (KindTemplataType, CoordTemplataType) =>
-              case _ => return (RuleTyperMatchConflict(conclusions.conclusions, range, "Expected template call callee's return type to be " + expectedType + " but was " + templexTemplateType.returnType, List()))
+              case _ => return (RuleTyperMatchConflict(conclusions.conclusions, range, "Expected template call callee's return type to be " + expectedType + " but was " + templexTemplateType.returnType, List.empty))
             }
             matchTypeAgainstTemplexesS(state, env, conclusions, range, templexTemplateType.paramTypes, templateArgs) match {
               case (rtec @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperMatchConflict(conclusions.conclusions, range, "Couldn't evaluate template call args!", List(rtec)))
@@ -288,7 +288,7 @@ class RuleTyperMatcher[Env, State](
 //      }
 //      case (OwnershipST(ownershipP), OwnershipTemplata(ownershipT)) => {
 //        if (ownershipT != Conversions.evaluateOwnership(ownershipP)) {
-//          (RuleTyperMatchConflict(conclusions.conclusions, s"Ownerships don't match: ${ownershipP} and ${ownershipT}", List()))
+//          (RuleTyperMatchConflict(conclusions.conclusions, s"Ownerships don't match: ${ownershipP} and ${ownershipT}", List.empty))
 //        } else {
 //          (RuleTyperMatchContinue(conclusions))
 //        }
@@ -393,7 +393,7 @@ class RuleTyperMatcher[Env, State](
         (RuleTyperMatchSuccess(()))
       }
       case (nonIntType, IntegerTemplataType) => {
-        (RuleTyperMatchConflict(conclusions.conclusions, range, "Expected an int, but was " + nonIntType, List()))
+        (RuleTyperMatchConflict(conclusions.conclusions, range, "Expected an int, but was " + nonIntType, List.empty))
       }
       case (MutabilityTemplataType, MutabilityTemplataType) => {
         (RuleTyperMatchSuccess(()))
@@ -409,20 +409,20 @@ class RuleTyperMatcher[Env, State](
       }
       case (TemplateTemplataType(paramTypes, returnType), TemplateTemplataType(expectedParamTypes, expectedReturnType)) => {
         if (paramTypes.size != expectedParamTypes.size) {
-          return (RuleTyperMatchConflict(conclusions.conclusions, range, "Received " + paramTypes.size + " template params but expected " + expectedParamTypes.size, List()))
+          return (RuleTyperMatchConflict(conclusions.conclusions, range, "Received " + paramTypes.size + " template params but expected " + expectedParamTypes.size, List.empty))
         }
         if (paramTypes != expectedParamTypes) {
-          return (RuleTyperMatchConflict(conclusions.conclusions, range, "Received " + paramTypes + " template params but expected " + expectedParamTypes, List()))
+          return (RuleTyperMatchConflict(conclusions.conclusions, range, "Received " + paramTypes + " template params but expected " + expectedParamTypes, List.empty))
         }
         if (returnType != expectedReturnType) {
-          return (RuleTyperMatchConflict(conclusions.conclusions, range, "Received " + returnType + " return type but expected " + expectedReturnType, List()))
+          return (RuleTyperMatchConflict(conclusions.conclusions, range, "Received " + returnType + " return type but expected " + expectedReturnType, List.empty))
         }
         (RuleTyperMatchSuccess(()))
       }
       //          // Is this right? Can't we look it up as a coord, like we did with KindTemplata/CoordTemplataType?
       //          case (InterfaceTemplata(_, interfaceS), KindTemplataType | CoordTemplataType) => {
       //            if (Inferer.interfaceIsTemplate(interfaceS)) {
-      //              RuleTyperMatchConflict(conclusions.conclusions, range, "Tried making a '" + name + "' but it's a template and no arguments were supplied!", List())
+      //              RuleTyperMatchConflict(conclusions.conclusions, range, "Tried making a '" + name + "' but it's a template and no arguments were supplied!", List.empty)
       //            } else {
       //              RuleTyperMatchSuccess(NameAT(name, expectedType))
       //            }
@@ -430,7 +430,7 @@ class RuleTyperMatcher[Env, State](
       //          // Is this right? Can't we look it up as a coord, like we did with KindTemplata/CoordTemplataType?
       //          case (StructTemplata(_, structS), KindTemplataType | CoordTemplataType) => {
       //            if (Inferer.structIsTemplate(structS)) {
-      //              RuleTyperMatchConflict(conclusions.conclusions, range, "Tried making a '" + name + "' but it's a template and no arguments were supplied!", List())
+      //              RuleTyperMatchConflict(conclusions.conclusions, range, "Tried making a '" + name + "' but it's a template and no arguments were supplied!", List.empty)
       //            } else {
       //              RuleTyperMatchSuccess(NameAT(name, expectedType))
       //            }
@@ -443,7 +443,7 @@ class RuleTyperMatcher[Env, State](
       //            val TemplateTemplataType(paramTypes, resultType) = delegate.getStructTemplataType(st)
       //            vimpl()
       //          }
-      case _ => (RuleTyperMatchConflict(conclusions.conclusions, range, "Given name doesn't match needed " + expectedType, List()))
+      case _ => (RuleTyperMatchConflict(conclusions.conclusions, range, "Given name doesn't match needed " + expectedType, List.empty))
     }
   }
 
@@ -528,7 +528,7 @@ class RuleTyperMatcher[Env, State](
       case (PrototypeTemplataType, PrototypeTypeSR) =>
       // When you add a case here, make sure you consider all combinations, and
       // add it to the above matches to note that you did.
-      case _ => return (RuleTyperMatchConflict(conclusions.conclusions, range, "Type from above (" + expectedType + ") didn't match type from rule (" + zrule.tyype + ")", List()))
+      case _ => return (RuleTyperMatchConflict(conclusions.conclusions, range, "Type from above (" + expectedType + ") didn't match type from rule (" + zrule.tyype + ")", List.empty))
     }
 
     val runeA = Astronomer.translateRune(rune)
@@ -560,7 +560,7 @@ class RuleTyperMatcher[Env, State](
     name match {
       case "passThroughIfConcrete" => {
         if (expectedType != KindTemplataType) {
-          return (RuleTyperMatchConflict(conclusions.conclusions, range, "passThroughIfConcrete returns a kind, but tried to match " + expectedType, List()))
+          return (RuleTyperMatchConflict(conclusions.conclusions, range, "passThroughIfConcrete returns a kind, but tried to match " + expectedType, List.empty))
         }
         val List(argRule) = argRules
         matchTypeAgainstRulexSR(state, env, conclusions, KindTemplataType, argRule) match {
@@ -570,7 +570,7 @@ class RuleTyperMatcher[Env, State](
       }
       case "passThroughIfInterface" => {
         if (expectedType != KindTemplataType) {
-          return (RuleTyperMatchConflict(conclusions.conclusions, range, "passThroughIfInterface returns a kind, but tried to match " + expectedType, List()))
+          return (RuleTyperMatchConflict(conclusions.conclusions, range, "passThroughIfInterface returns a kind, but tried to match " + expectedType, List.empty))
         }
         val List(argRule) = argRules
         matchTypeAgainstRulexSR(state, env, conclusions, KindTemplataType, argRule) match {
@@ -580,7 +580,7 @@ class RuleTyperMatcher[Env, State](
       }
       case "passThroughIfStruct" => {
         if (expectedType != KindTemplataType) {
-          return (RuleTyperMatchConflict(conclusions.conclusions, range, "passThroughIfStruct returns a kind, but tried to match " + expectedType, List()))
+          return (RuleTyperMatchConflict(conclusions.conclusions, range, "passThroughIfStruct returns a kind, but tried to match " + expectedType, List.empty))
         }
         val List(argRule) = argRules
         matchTypeAgainstRulexSR(state, env, conclusions, KindTemplataType, argRule) match {

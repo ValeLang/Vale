@@ -316,9 +316,6 @@ class PatternTemplar(
                 temputs, range, expectedContainerPermission, reinterpretedContainerAliasingExprTE, underlyingStruct, memberIndex)
             }
             case staticSizedArrayT@StaticSizedArrayTT(size, RawArrayTT(elementType, _, _)) => {
-              if (size != listOfMaybeDestructureMemberPatterns.size) {
-                throw CompileErrorExceptionT(RangedInternalErrorT(range, "Wrong num exprs!"))
-              }
               loadFromStaticSizedArray(range, staticSizedArrayT, expectedContainerCoord, expectedContainerOwnership, expectedContainerPermission, containerAliasingExprTE, memberIndex)
             }
             case _ => vfail("impl!")

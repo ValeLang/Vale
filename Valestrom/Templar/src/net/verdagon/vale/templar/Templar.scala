@@ -87,7 +87,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
             FunctionT(
               header,
               List.empty,
-              BlockTE(List(ReturnTE(IsSameInstanceTE(ArgLookupTE(0, paramCoords(0).tyype), ArgLookupTE(1, paramCoords(1).tyype)))))))
+              BlockTE(ReturnTE(IsSameInstanceTE(ArgLookupTE(0, paramCoords(0).tyype), ArgLookupTE(1, paramCoords(1).tyype))))))
           header
         }
       }) +
@@ -162,7 +162,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
               }
             }
 
-          temputs.addFunction(FunctionT(header, List.empty, BlockTE(List(ReturnTE(asSubtypeExpr)))))
+          temputs.addFunction(FunctionT(header, List.empty, BlockTE(ReturnTE(asSubtypeExpr))))
           header
         }
       })
@@ -231,15 +231,15 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
 
         override def lookupMemberTypes(state: Temputs, kind: KindT, expectedNumMembers: Int): Option[List[CoordT]] = {
           profiler.childFrame("InferTemplarDelegate.lookupMemberTypes", () => {
-            val underlyingStructRef2 =
+            val underlyingstructRefT =
               kind match {
                 case sr@StructRefT(_) => sr
                 case TupleTT(_, underlyingStruct) => underlyingStruct
                 case PackTT(_, underlyingStruct) => underlyingStruct
                 case _ => return None
               }
-            val structDef2 = state.lookupStruct(underlyingStructRef2)
-            val structMemberTypes = structDef2.members.map(_.tyype.reference)
+            val structDefT = state.lookupStruct(underlyingstructRefT)
+            val structMemberTypes = structDefT.members.map(_.tyype.reference)
             Some(structMemberTypes)
           })
         }
@@ -401,32 +401,37 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
           overloadTemplar.scoutExpectedFunctionForPrototype(env, temputs, callRange, functionName, explicitlySpecifiedTemplateArgTemplexesS, args, extraEnvsToLookIn, exact)
         }
 
-        override def makeImmConcreteDestructor(temputs: Temputs, env: IEnvironment, structRef2: StructRefT): PrototypeT = {
-          destructorTemplar.getImmConcreteDestructor(temputs, env, structRef2)
+        override def makeImmConcreteDestructor(temputs: Temputs, env: IEnvironment, structRefT: StructRefT): PrototypeT = {
+          destructorTemplar.getImmConcreteDestructor(temputs, env, structRefT)
         }
 
-        override def getImmInterfaceDestructorOverride(temputs: Temputs, env: IEnvironment, structRef2: StructRefT, implementedInterfaceRefT: InterfaceRefT): PrototypeT = {
-          destructorTemplar.getImmInterfaceDestructorOverride(temputs, env, structRef2, implementedInterfaceRefT)
+        override def getImmInterfaceDestructorOverride(temputs: Temputs, env: IEnvironment, structRefT: StructRefT, implementedInterfaceRefT: InterfaceRefT): PrototypeT = {
+          destructorTemplar.getImmInterfaceDestructorOverride(temputs, env, structRefT, implementedInterfaceRefT)
         }
 
         override def getImmInterfaceDestructor(temputs: Temputs, env: IEnvironment, interfaceRef2: InterfaceRefT): PrototypeT = {
           destructorTemplar.getImmInterfaceDestructor(temputs, env, interfaceRef2)
         }
 
-        override def getImmConcreteDestructor(temputs: Temputs, env: IEnvironment, structRef2: StructRefT): PrototypeT = {
-          destructorTemplar.getImmConcreteDestructor(temputs, env, structRef2)
+        override def getImmConcreteDestructor(temputs: Temputs, env: IEnvironment, structRefT: StructRefT): PrototypeT = {
+          destructorTemplar.getImmConcreteDestructor(temputs, env, structRefT)
         }
       })
 
   val functionTemplar: FunctionTemplar =
     new FunctionTemplar(opts, profiler, newTemplataStore, templataTemplar, inferTemplar, convertHelper, structTemplar,
       new IFunctionTemplarDelegate {
-    override def evaluateBlockStatements(temputs: Temputs, startingFate: FunctionEnvironment, fate: FunctionEnvironmentBox, exprs: List[IExpressionAE]): (List[ReferenceExpressionTE], Set[CoordT]) = {
+    override def evaluateBlockStatements(
+        temputs: Temputs,
+        startingFate: FunctionEnvironment,
+        fate: FunctionEnvironmentBox,
+        exprs: List[IExpressionAE]
+    ): (ReferenceExpressionTE, Set[CoordT]) = {
       expressionTemplar.evaluateBlockStatements(temputs, startingFate, fate, exprs)
     }
 
-    override def nonCheckingTranslateList(temputs: Temputs, fate: FunctionEnvironmentBox, patterns1: List[AtomAP], patternInputExprs2: List[ReferenceExpressionTE]): List[ReferenceExpressionTE] = {
-      expressionTemplar.nonCheckingTranslateList(temputs, fate, patterns1, patternInputExprs2)
+    override def translatePatternList(temputs: Temputs, fate: FunctionEnvironmentBox, patterns1: List[AtomAP], patternInputExprs2: List[ReferenceExpressionTE]): ReferenceExpressionTE = {
+      expressionTemplar.translatePatternList(temputs, fate, patterns1, patternInputExprs2)
     }
 
     override def evaluateParent(env: IEnvironment, temputs: Temputs, sparkHeader: FunctionHeaderT): Unit = {
@@ -841,6 +846,21 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
 }
 
 object Templar {
+  // Flattens any nested ConsecutorTEs
+  def consecutive(exprs: List[ReferenceExpressionTE]): ReferenceExpressionTE = {
+    exprs match {
+      case Nil => vwat("Shouldn't have zero-element consecutors!")
+      case List(only) => only
+      case _ => {
+        ConsecutorTE(
+          exprs.flatMap({
+            case ConsecutorTE(exprs) => exprs
+            case other => List(other)
+          }))
+      }
+    }
+  }
+
   def getMutabilities(temputs: Temputs, concreteValues2: List[KindT]):
   List[MutabilityT] = {
     concreteValues2.map(concreteValue2 => getMutability(temputs, concreteValue2))

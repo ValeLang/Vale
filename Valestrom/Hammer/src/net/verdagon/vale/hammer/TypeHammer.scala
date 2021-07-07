@@ -78,8 +78,8 @@ object TypeHammer {
 //      // to the Templar.
 //      case OrdinaryClosure2(_, handleStructRef, prototype) => translate(hinputs, hamuts, currentFunctionHeader, handleStructRef)
 //      case TemplatedClosure2(_, handleStructRef, terry) => translate(hinputs, hamuts, currentFunctionHeader, handleStructRef)
-      case OverloadSet(_, _, understructRef2) => {
-        StructHammer.translateStructRef(hinputs, hamuts, understructRef2)
+      case OverloadSet(_, _, understructRefT) => {
+        StructHammer.translateStructRef(hinputs, hamuts, understructRefT)
       }
 
       // A PackT2 is really just a struct ref under the hood. The dinstinction is only meaningful

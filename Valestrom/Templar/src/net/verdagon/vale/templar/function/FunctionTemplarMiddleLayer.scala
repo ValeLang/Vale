@@ -261,35 +261,32 @@ class FunctionTemplarMiddleLayer(
     temputs: Temputs,
     params1: List[ParameterA]):
   (List[ParameterT]) = {
-    params1.foldLeft((List[ParameterT]()))({
-      case ((previousParams2), param1) => {
+    params1.zipWithIndex.map({ case (param1, index) =>
         val CoordTemplata(coord) =
           env
             .getNearestTemplataWithAbsoluteName2(
               NameTranslator.translateRune(param1.pattern.coordRune),
               Set(TemplataLookupContext))
             .get
-        val maybeVirtuality =
-          evaluateMaybeVirtuality(env, temputs, param1.pattern.virtuality)
-        val newParam2 =
-          ParameterT(
-            NameTranslator.translateVarNameStep(param1.pattern.capture.varName),
-            maybeVirtuality,
-            coord)
-        (previousParams2 :+ newParam2)
-      }
-    })
+        val maybeVirtuality = evaluateMaybeVirtuality(env, temputs, param1.pattern.virtuality)
+        val nameT =
+          param1.pattern.capture match {
+            case None => TemplarIgnoredParamNameT(index)
+            case Some(x) => NameTranslator.translateVarNameStep(x.varName)
+          }
+        ParameterT(nameT, maybeVirtuality, coord)
+      })
   }
 
 //  def makeImplDestructor(
 //    env: IEnvironment,
 //    temputs: Temputs,
-//    structDef2: StructDefinition2,
+//    structDefT: StructDefinition2,
 //    interfaceRef2: InterfaceRef2):
 //  Temputs = {
-//    val ownership = if (structDef2.mutability == MutableP) Own else Share
-//    val structRef2 = structDef2.getRef
-//    val structType2 = Coord(ownership, structRef2)
+//    val ownership = if (structDefT.mutability == MutableP) Own else Share
+//    val structRefT = structDefT.getRef
+//    val structType2 = Coord(ownership, structRefT)
 //    val interfaceType2 = Coord(ownership, interfaceRef2)
 //    val signature2 =
 //      Signature2(
@@ -300,7 +297,7 @@ class FunctionTemplarMiddleLayer(
 //
 //    val header =
 //      core.makeImplDestructor(
-//        env, temputs, structDef2, interfaceRef2)
+//        env, temputs, structDefT, interfaceRef2)
 //
 //
 //      VirtualTemplar.evaluateParent(env, temputs, header)

@@ -422,7 +422,7 @@ case class OverloadSet(
 //// The containing lambda number would be 7.
 //case class OrdinaryClosure2(
 //    containingFunctionLambdaNumber: Int,
-//    structRef: StructRef2,
+//    structRef: structRefT,
 //    prototype2: Prototype2) extends Kind {
 //  override def order: Int = 17;
 //

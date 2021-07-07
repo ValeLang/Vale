@@ -160,8 +160,8 @@ case class Temputs() {
     envByInterfaceRef += (interfaceRef -> env)
   }
 
-  def declarePack(members: List[CoordT], understructRef2: StructRefT): Unit = {
-    packTypes += (members -> understructRef2)
+  def declarePack(members: List[CoordT], understructRefT: StructRefT): Unit = {
+    packTypes += (members -> understructRefT)
   }
 
   def add(structDef: StructDefinitionT): Unit = {
@@ -187,8 +187,8 @@ case class Temputs() {
     runtimeSizedArrayTypes += (array2.array -> array2)
   }
 
-  def addImpl(structRef2: StructRefT, interfaceRef2: InterfaceRefT): Unit = {
-    impls += ImplT(structRef2, interfaceRef2)
+  def addImpl(structRefT: StructRefT, interfaceRef2: InterfaceRefT): Unit = {
+    impls += ImplT(structRefT, interfaceRef2)
   }
 
   def addKindExport(kind: KindT, packageCoord: PackageCoordinate, exportedName: String): Unit = {

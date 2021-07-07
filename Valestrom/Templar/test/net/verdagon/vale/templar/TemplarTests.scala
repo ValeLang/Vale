@@ -43,11 +43,24 @@ class TemplarTests extends FunSuite with Matchers {
     main.only({ case ConstantIntTE(-3, _) => true })
   }
 
+  test("Tests panic return type") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |fn main() infer-ret export {
+        |  __panic();
+        |  a = 42;
+        |  = a;
+        |}
+    """.stripMargin)
+    val main = compile.expectTemputs().lookupFunction("main")
+    vassert(main.header.returnType.kind == NeverT())
+  }
+
   test("Taking an argument and returning it") {
     val compile = TemplarTestCompilation.test("fn main(a int) int {a}")
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").onlyOf(classOf[ParameterT]).tyype == CoordT(ShareT, ReadonlyT, IntT.i32)
-    val lookup = temputs.lookupFunction("main").allOf(classOf[LocalLookupT]).head;
+    val lookup = temputs.lookupFunction("main").allOf(classOf[LocalLookupTE]).head;
     lookup.localVariable.id.last shouldEqual CodeVarNameT("a")
     lookup.reference shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
   }
@@ -636,8 +649,8 @@ class TemplarTests extends FunSuite with Matchers {
     }).size shouldEqual 0
 
     main.only({
-      case ReferenceMemberLookupT(_,
-        SoftLoadTE(LocalLookupT(_, _, CoordT(_,_,StructRefT(_)), FinalT), ConstraintT, ReadonlyT),
+      case ReferenceMemberLookupTE(_,
+        SoftLoadTE(LocalLookupTE(_, _, CoordT(_,_,StructRefT(_)), FinalT), ConstraintT, ReadonlyT),
         FullNameT(_, List(CitizenNameT("Vec3i",Nil)),CodeVarNameT("x")),CoordT(ShareT,ReadonlyT,IntT.i32),ReadonlyT,FinalT) =>
     })
   }

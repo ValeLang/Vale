@@ -28,6 +28,7 @@ case class CouldntFindFunctionToCallT(range: RangeS, seff: ScoutExpectedFunction
 case class ExportedFunctionDependedOnNonExportedKind(range: RangeS, paackage: PackageCoordinate, signature: SignatureT, nonExportedKind: KindT) extends ICompileErrorT
 case class ExternFunctionDependedOnNonExportedKind(range: RangeS, paackage: PackageCoordinate, signature: SignatureT, nonExportedKind: KindT) extends ICompileErrorT
 case class ExportedKindDependedOnNonExportedKind(range: RangeS, paackage: PackageCoordinate, exportedKind: KindT, nonExportedKind: KindT) extends ICompileErrorT
+case class TypeExportedMultipleTimes(range: RangeS, paackage: PackageCoordinate, exports: List[KindExportT]) extends ICompileErrorT
 case class CantUseUnstackifiedLocal(range: RangeS, localId: IVarNameT) extends ICompileErrorT
 case class CantUnstackifyOutsideLocalFromInsideWhile(range: RangeS, localId: IVarNameT) extends ICompileErrorT
 case class FunctionAlreadyExists(oldFunctionRange: RangeS, newFunctionRange: RangeS, signature: SignatureT) extends ICompileErrorT {

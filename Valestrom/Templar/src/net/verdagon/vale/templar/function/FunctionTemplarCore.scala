@@ -222,7 +222,7 @@ class FunctionTemplarCore(
 
       maybeExplicitReturnCoord match {
         case None => {
-          println("Eagerly evaluating function: " + functionFullName)
+          opts.debugOut("Eagerly evaluating function: " + functionFullName)
           val header =
             finishFunctionMaybeDeferred(
               temputs,
@@ -239,12 +239,12 @@ class FunctionTemplarCore(
         case Some(explicitReturnCoord) => {
           fullEnv.setReturnType(Some(explicitReturnCoord))
           val header = finalizeHeader(fullEnv, temputs, attributesT, paramsT, explicitReturnCoord)
-          println("Deferring function: " + header.fullName)
+          opts.debugOut("Deferring function: " + header.fullName)
           temputs.deferEvaluatingFunction(
             DeferredEvaluatingFunction(
               header.toPrototype,
               (temputs) => {
-                println("Finishing function: " + header.fullName)
+                opts.debugOut("Finishing function: " + header.fullName)
                 finishFunctionMaybeDeferred(
                   temputs,
                   fullEnv.snapshot,

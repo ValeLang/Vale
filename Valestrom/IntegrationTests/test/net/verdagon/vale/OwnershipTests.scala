@@ -24,9 +24,9 @@ class OwnershipTests extends FunSuite with Matchers {
 
     val main = compile.expectTemputs().lookupFunction("main")
     main.only({
-      case LetAndLendTE(ReferenceLocalVariableT(FullNameT(_, List(FunctionNameT("main",List(),List())),TemplarTemporaryVarNameT(0)),FinalT,_),refExpr) => {
+      case LetAndLendTE(ReferenceLocalVariableT(FullNameT(_, List(FunctionNameT("main",Nil,Nil)),TemplarTemporaryVarNameT(0)),FinalT,_),refExpr) => {
         refExpr.resultRegister.reference match {
-          case CoordT(OwnT, ReadwriteT, StructRefT(simpleName("Muta"))) =>
+          case CoordT(OwnT, ReadwriteT, StructTT(simpleName("Muta"))) =>
         }
       }
     })
@@ -243,7 +243,7 @@ class OwnershipTests extends FunSuite with Matchers {
     val main = compile.expectTemputs().lookupFunction("main")
     // Only one variable containing a Muta
     main.only({
-      case LetNormalTE(ReferenceLocalVariableT(_,FinalT,CoordT(OwnT,ReadwriteT,StructRefT(FullNameT(_, List(),CitizenNameT("Muta",List()))))),_) =>
+      case LetNormalTE(ReferenceLocalVariableT(_,FinalT,CoordT(OwnT,ReadwriteT,StructTT(FullNameT(_, Nil,CitizenNameT("Muta",Nil))))),_) =>
     })
 
     compile.run(Vector())

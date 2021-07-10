@@ -16,24 +16,12 @@ class SequenceTemplar(
     temputs: Temputs,
     exprs2: List[ReferenceExpressionTE]):
   (ExpressionT) = {
-
     val types2 = exprs2.map(_.resultRegister.expectReference().reference)
-//    if (types2.toSet.size == 1) {
-//      val memberType = types2.toSet.head
-//      // Theyre all the same type, so make it an array.
-//      val mutability = StructTemplar.getCompoundTypeMutability(List(memberType))
-//      val staticSizedArrayType = arrayTemplar.getStaticSizedArrayKind(env.snapshot, temputs, mutability, types2.size, memberType)
-//      val ownership = if (staticSizedArrayType.array.mutability == Mutable) Own else Share
-//      val permission = if (staticSizedArrayType.array.mutability == Mutable) Readwrite else Readonly
-//      val finalExpr = StaticSizedArrayE2(exprs2, Coord(ownership, permission, staticSizedArrayType), staticSizedArrayType)
-//      (finalExpr)
-//    } else {
-      val (tupleType2, mutability) = makeTupleType(env.globalEnv, temputs, types2)
-      val ownership = if (mutability == MutableT) OwnT else ShareT
-      val permission = if (mutability == MutableT) ReadwriteT else ReadonlyT
-      val finalExpr = TupleTE(exprs2, CoordT(ownership, permission, tupleType2), tupleType2)
-      (finalExpr)
-//    }
+    val (tupleType2, mutability) = makeTupleType(env.globalEnv, temputs, types2)
+    val ownership = if (mutability == MutableT) OwnT else ShareT
+    val permission = if (mutability == MutableT) ReadwriteT else ReadonlyT
+    val finalExpr = TupleTE(exprs2, CoordT(ownership, permission, tupleType2), tupleType2)
+    (finalExpr)
   }
 
   def makeTupleType(
@@ -41,23 +29,23 @@ class SequenceTemplar(
     temputs: Temputs,
     types2: List[CoordT]):
   (TupleTT, MutabilityT) = {
-    val (structRef, mutability) =
+    val (structTT, mutability) =
       structTemplar.makeSeqOrPackUnderstruct(env.globalEnv, temputs, types2, TupleNameT(types2))
 
     if (types2.isEmpty)
-      vassert(temputs.lookupStruct(structRef).mutability == ImmutableT)
+      vassert(temputs.lookupStruct(structTT).mutability == ImmutableT)
     // Make sure it's in there
-    Templar.getMutability(temputs, structRef)
+    Templar.getMutability(temputs, structTT)
 
     val reference =
       CoordT(
         if (mutability == MutableT) OwnT else ShareT,
         if (mutability == MutableT) ReadwriteT else ReadonlyT,
-        structRef)
+        structTT)
 
     val _ =
       destructorTemplar.getCitizenDestructor(env, temputs, reference)
 
-    (TupleTT(types2, structRef), mutability)
+    (TupleTT(types2, structTT), mutability)
   }
 }

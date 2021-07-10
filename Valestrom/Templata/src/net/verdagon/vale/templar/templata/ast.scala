@@ -52,7 +52,7 @@ case object AbstractT$ extends VirtualityT {
     List(this).collect(func)
   }
 }
-case class OverrideT(interface: InterfaceRefT) extends VirtualityT {
+case class OverrideT(interface: InterfaceTT) extends VirtualityT {
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ interface.all(func)
   }
@@ -108,19 +108,19 @@ case class FunctionBannerT(
   def toSignature: SignatureT = SignatureT(fullName)
   def paramTypes: List[CoordT] = params.map(_.tyype)
 
-  def getAbstractInterface: Option[InterfaceRefT] = {
+  def getAbstractInterface: Option[InterfaceTT] = {
     val abstractInterfaces =
       params.collect({
-        case ParameterT(_, Some(AbstractT$), CoordT(_, _, ir @ InterfaceRefT(_))) => ir
+        case ParameterT(_, Some(AbstractT$), CoordT(_, _, ir @ InterfaceTT(_))) => ir
       })
     vassert(abstractInterfaces.size <= 1)
     abstractInterfaces.headOption
   }
 
-  def getOverride: Option[(StructRefT, InterfaceRefT)] = {
+  def getOverride: Option[(StructTT, InterfaceTT)] = {
     val overrides =
       params.collect({
-        case ParameterT(_, Some(OverrideT(ir)), CoordT(_, _, sr @ StructRefT(_))) => (sr, ir)
+        case ParameterT(_, Some(OverrideT(ir)), CoordT(_, _, sr @ StructTT(_))) => (sr, ir)
       })
     vassert(overrides.size <= 1)
     overrides.headOption
@@ -153,7 +153,8 @@ case class FunctionBannerT(
 sealed trait IFunctionAttribute2
 sealed trait ICitizenAttribute2
 case class Extern2(packageCoord: PackageCoordinate) extends IFunctionAttribute2 with ICitizenAttribute2 // For optimization later
-case class Export2(packageCoord: PackageCoordinate) extends IFunctionAttribute2 with ICitizenAttribute2
+// There's no Export2 here, we use separate KindExport and FunctionExport constructs.
+//case class Export2(packageCoord: PackageCoordinate) extends IFunctionAttribute2 with ICitizenAttribute2
 case object Pure2 extends IFunctionAttribute2 with ICitizenAttribute2
 case object UserFunction2 extends IFunctionAttribute2 // Whether it was written by a human. Mostly for tests right now.
 
@@ -170,10 +171,10 @@ case class FunctionHeaderT(
   vassert(fullName.last.parameters == paramTypes)
 
   def isExtern = attributes.exists({ case Extern2(_) => true case _ => false })
-  def isExport = attributes.exists({ case Export2(_) => true case _ => false })
+//  def isExport = attributes.exists({ case Export2(_) => true case _ => false })
   def isUserFunction = attributes.contains(UserFunction2)
-  def getAbstractInterface: Option[InterfaceRefT] = toBanner.getAbstractInterface
-  def getOverride: Option[(StructRefT, InterfaceRefT)] = toBanner.getOverride
+  def getAbstractInterface: Option[InterfaceTT] = toBanner.getAbstractInterface
+  def getOverride: Option[(StructTT, InterfaceTT)] = toBanner.getOverride
   def getVirtualIndex: Option[Int] = toBanner.getVirtualIndex
 
   maybeOriginFunction.foreach(originFunction => {
@@ -223,6 +224,6 @@ object CodeLocationT {
   val zero = CodeLocationT.internal(-1)
   def internal(internalNum: Int): CodeLocationT = {
     vassert(internalNum < 0)
-    CodeLocationT(FileCoordinate("", List(), "internal"), internalNum)
+    CodeLocationT(FileCoordinate("", List.empty, "internal"), internalNum)
   }
 }

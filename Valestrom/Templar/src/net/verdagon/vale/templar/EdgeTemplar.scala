@@ -14,8 +14,8 @@ object EdgeTemplar {
   case class FoundFunction(prototype: PrototypeT) extends IMethod
 
   case class PartialEdgeT(
-    struct: StructRefT,
-    interface: InterfaceRefT,
+    struct: StructTT,
+    interface: InterfaceTT,
     methods: List[IMethod])
 
   def assemblePartialEdges(temputs: Temputs): List[PartialEdgeT] = {
@@ -47,7 +47,7 @@ object EdgeTemplar {
                     case _ => vwat()
                   }
                 }
-                case Some(List()) => vfail("wot")
+                case Some(Nil) => vfail("wot")
                 case Some(List(onlyOverride)) => FoundFunction(onlyOverride.header.toPrototype)
                 case Some(multipleOverrides) => {
                   vfail("Multiple overrides for struct " + struct + " for interface " + superInterface + ": " + multipleOverrides.map(_.header.toSignature).mkString(", "))
@@ -64,10 +64,10 @@ object EdgeTemplar {
   def doBlah(
     temputs: Temputs,
     interfaceEdgeBlueprints: Vector[InterfaceEdgeBlueprint]
-  ): Map[(StructRefT, InterfaceRefT), List[(FunctionT, Int)]] = {
+  ): Map[(StructTT, InterfaceTT), List[(FunctionT, Int)]] = {
     temputs.getAllFunctions().toList.flatMap({ case overrideFunction =>
       overrideFunction.header.getOverride match {
-        case None => List()
+        case None => List.empty
         case Some((struct, superInterface)) => {
           // Make sure that the struct actually overrides that function
           if (!temputs.getAllImpls().exists(impl => impl.struct == struct && impl.interface == superInterface)) {
@@ -132,24 +132,24 @@ object EdgeTemplar {
     val abstractFunctionHeadersByInterfaceWithoutEmpties =
       temputs.getAllFunctions().flatMap({ case function =>
         function.header.getAbstractInterface match {
-          case None => List()
+          case None => List.empty
           case Some(abstractInterface) => List(abstractInterface -> function)
         }
       })
         .groupBy(_._1)
         .mapValues(_.map(_._2))
-        .map({ case (interfaceRef, functions) =>
+        .map({ case (interfaceTT, functions) =>
           // Sort so that the interface's internal methods are first and in the same order
           // they were declared in. It feels right, and vivem also depends on it
           // when it calls array generators/consumers' first method.
-          val interfaceDef = temputs.getAllInterfaces().find(_.getRef == interfaceRef).get
+          val interfaceDef = temputs.getAllInterfaces().find(_.getRef == interfaceTT).get
           // Make sure `functions` has everything that the interface def wanted.
           vassert((interfaceDef.internalMethods.toSet -- functions.map(_.header).toSet).isEmpty)
           // Move all the internal methods to the front.
           val orderedMethods =
             interfaceDef.internalMethods ++
               functions.map(_.header).filter(!interfaceDef.internalMethods.contains(_))
-          (interfaceRef -> orderedMethods)
+          (interfaceTT -> orderedMethods)
         })
     // Some interfaces would be empty and they wouldn't be in
     // abstractFunctionsByInterfaceWithoutEmpties, so we add them here.
@@ -161,9 +161,9 @@ object EdgeTemplar {
 
     val interfaceEdgeBlueprints =
       abstractFunctionHeadersByInterface
-        .map({ case (interfaceRef2, functionHeaders2) =>
+        .map({ case (interfaceTT, functionHeaders2) =>
           InterfaceEdgeBlueprint(
-            interfaceRef2,
+            interfaceTT,
             // This is where they're given order and get an implied index
             functionHeaders2.map(_.toBanner).toList)
         })

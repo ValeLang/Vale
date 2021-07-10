@@ -34,7 +34,7 @@ object ScoutErrorHumanizer {
 
   def humanizeVarName(varName: IVarNameS): String = {
     varName match {
-      case UnnamedLocalNameS(codeLocation) => "(unnamed)"
+//      case UnnamedLocalNameS(codeLocation) => "(unnamed)"
       case ClosureParamNameS() => "(closure)"
       case MagicParamNameS(codeLocation) => "(magic)"
       case CodeVarNameS(name) => name

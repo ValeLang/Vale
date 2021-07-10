@@ -47,7 +47,7 @@ trait ITemplataTemplarInnerDelegate[Env, State] {
   def getAncestorInterfaceDistance(
     temputs: State,
     descendantCitizenRef: CitizenRefT,
-    ancestorInterfaceRef: InterfaceRefT):
+    ancestorInterfaceRef: InterfaceTT):
   (Option[Int])
 
   def getStaticSizedArrayKind(
@@ -78,43 +78,6 @@ trait ITemplataTemplarInnerDelegate[Env, State] {
 }
 
 class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[Env, State]) {
-
-//  def coerceTemplataToKind(
-//    env: Env,
-//    state: State,
-//    templata: ITemplata,
-//    ownershipIfMutable: Ownership):
-//  (Kind) = {
-//    templata match {
-//      case CoordTemplata(Coord(_, kind)) => (kind)
-//      case KindTemplata(kind) => (kind)
-//      case st @ StructTemplata(_, _) => delegate.evaluateStructTemplata(state, st, List())
-//      case it @ InterfaceTemplata(_, _) => delegate.evaluateInterfaceTemplata(state, it, List())
-//      case _ => vfail("not yet")
-//    }
-//  }
-//  def coerceTemplataToReference(
-//    env: Env,
-//    state: State,
-//    templata: ITemplata,
-//    ownershipIfMutable: Ownership):
-//  (Coord) = {
-//    templata match {
-//      case CoordTemplata(reference) => (reference)
-//      case KindTemplata(kind) => {
-//        (pointifyKind(state, kind, ownershipIfMutable))
-//      }
-//      case st @ StructTemplata(_, _) => {
-//        val kind = delegate.evaluateStructTemplata(state, st, List())
-//        (pointifyKind(state, kind, ownershipIfMutable))
-//      }
-//      case it @ InterfaceTemplata(_, _) => {
-//        val kind = delegate.evaluateInterfaceTemplata(state, it, List())
-//        (pointifyKind(state, kind, ownershipIfMutable))
-//      }
-//      case _ => vfail("not yet")
-//    }
-//  }
 
   def evaluateTemplex(
     env: Env,
@@ -179,13 +142,6 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
           }
         }
       }
-//      case PackAT(memberTypeTemplexesS, resultType) => {
-//        val memberTemplatas = evaluateTemplexes(env, state, memberTypeTemplexesS)
-//        vassert(memberTemplatas.forall(_.tyype == CoordTemplataType))
-//        val memberCoords = memberTemplatas.map({ case CoordTemplata(c) => c })
-//        val (packKind, _) = delegate.getPackKind(env, state, memberCoords)
-//        coerce(state, KindTemplata(packKind), resultType)
-//      }
       case x => {
         vfail("not yet " + x)
       }
@@ -242,23 +198,23 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
           case (_, IntT(_)) => return (None)
           case (_, BoolT()) => return (None)
           case (_, StrT()) => return (None)
-          case (_, StructRefT(_)) => return (None)
-          case (a @ StructRefT(_), b @ InterfaceRefT(_)) => {
+          case (_, StructTT(_)) => return (None)
+          case (a @ StructTT(_), b @ InterfaceTT(_)) => {
             delegate.getAncestorInterfaceDistance(temputs, a, b) match {
               case (None) => return (None)
               case (Some(distance)) => (distance)
             }
           }
-          case (a @ InterfaceRefT(_), b @ InterfaceRefT(_)) => {
+          case (a @ InterfaceTT(_), b @ InterfaceTT(_)) => {
             delegate.getAncestorInterfaceDistance(temputs, a, b) match {
               case (None) => return (None)
               case (Some(distance)) => (distance)
             }
           }
-          case (PackTT(List(), _), VoidT()) => vfail("figure out void<->emptypack")
-          case (VoidT(), PackTT(List(), _)) => vfail("figure out void<->emptypack")
-          case (PackTT(List(), _), _) => return (None)
-          case (_, PackTT(List(), _)) => return (None)
+          case (PackTT(Nil, _), VoidT()) => vfail("figure out void<->emptypack")
+          case (VoidT(), PackTT(Nil, _)) => vfail("figure out void<->emptypack")
+          case (PackTT(Nil, _), _) => return (None)
+          case (_, PackTT(Nil, _)) => return (None)
           case (_ : CitizenRefT, IntT(_) | BoolT() | StrT() | FloatT()) => return (None)
           case (IntT(_) | BoolT() | StrT() | FloatT(), _ : CitizenRefT) => return (None)
           case _ => {
@@ -332,23 +288,23 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
         case (_, BoolT()) => return (false)
         case (_, StrT()) => return (false)
         case (_, StaticSizedArrayTT(_, _)) => return (false)
-        case (_, StructRefT(_)) => return (false)
-        case (a @ StructRefT(_), b @ InterfaceRefT(_)) => {
+        case (_, StructTT(_)) => return (false)
+        case (a @ StructTT(_), b @ InterfaceTT(_)) => {
           delegate.getAncestorInterfaceDistance(temputs, a, b) match {
             case (None) => return (false)
             case (Some(_)) =>
           }
         }
-        case (a @ InterfaceRefT(_), b @ InterfaceRefT(_)) => {
+        case (a @ InterfaceTT(_), b @ InterfaceTT(_)) => {
           delegate.getAncestorInterfaceDistance(temputs, a, b) match {
             case (None) => return (false)
             case (Some(_)) =>
           }
         }
-        case (PackTT(List(), _), VoidT()) => vfail("figure out void<->emptypack")
-        case (VoidT(), PackTT(List(), _)) => vfail("figure out void<->emptypack")
-        case (PackTT(List(), _), _) => return (false)
-        case (_, PackTT(List(), _)) => return (false)
+        case (PackTT(Nil, _), VoidT()) => vfail("figure out void<->emptypack")
+        case (VoidT(), PackTT(Nil, _)) => vfail("figure out void<->emptypack")
+        case (PackTT(Nil, _), _) => return (false)
+        case (_, PackTT(Nil, _)) => return (false)
         case (_ : CitizenRefT, IntT(_) | BoolT() | StrT() | FloatT()) => return (false)
         case (IntT(_) | BoolT() | StrT() | FloatT(), _ : CitizenRefT) => return (false)
         case _ => {
@@ -382,10 +338,10 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
       case a @ PackTT(_, underlyingStruct) => {
         CoordT(ownership, permission, a)
       }
-      case s @ StructRefT(_) => {
+      case s @ StructTT(_) => {
         CoordT(ownership, permission, s)
       }
-      case i @ InterfaceRefT(_) => {
+      case i @ InterfaceTT(_) => {
         CoordT(ownership, permission, i)
       }
       case VoidT() => {
@@ -551,7 +507,7 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
           vfail("Can't coerce " + structA.name + " to be a kind, is a template!")
         }
         val kind =
-          delegate.evaluateStructTemplata(state, range, st, List())
+          delegate.evaluateStructTemplata(state, range, st, List.empty)
         (KindTemplata(kind))
       }
       case (it @ InterfaceTemplata(_, interfaceA), KindTemplataType) => {
@@ -559,7 +515,7 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
           vfail("Can't coerce " + interfaceA.name + " to be a kind, is a template!")
         }
         val kind =
-          delegate.evaluateInterfaceTemplata(state, range, it, List())
+          delegate.evaluateInterfaceTemplata(state, range, it, List.empty)
         (KindTemplata(kind))
       }
       case (st @ StructTemplata(_, structA), ttt @ TemplateTemplataType(_, _)) => {
@@ -572,7 +528,7 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
           vfail("Can't coerce " + structA.name + " to be a coord, is a template!")
         }
         val kind =
-          delegate.evaluateStructTemplata(state, range, st, List())
+          delegate.evaluateStructTemplata(state, range, st, List.empty)
         val mutability = delegate.getMutability(state, kind)
 
         // Default ownership is own for mutables, share for imms
@@ -587,7 +543,7 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
           vfail("Can't coerce " + interfaceA.name + " to be a coord, is a template!")
         }
         val kind =
-          delegate.evaluateInterfaceTemplata(state, range, it, List())
+          delegate.evaluateInterfaceTemplata(state, range, it, List.empty)
         val mutability = delegate.getMutability(state, kind)
         val coerced =
           CoordTemplata(
@@ -633,27 +589,27 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
       case (KindTemplata(_) | CoordTemplata(_), KindTemplata(_) | CoordTemplata(_)) => {
         a == coerce(state, RangeS.internal(-1345), b, bExpectedType)
       }
-      case (KindTemplata(actualStructRef @ StructRefT(_)), expectedStructTemplata @ StructTemplata(_, _)) => {
+      case (KindTemplata(actualStructRef @ StructTT(_)), expectedStructTemplata @ StructTemplata(_, _)) => {
         vassert(bExpectedType == KindTemplataType)
-        citizenMatchesTemplata(actualStructRef, expectedStructTemplata, List())
+        citizenMatchesTemplata(actualStructRef, expectedStructTemplata, List.empty)
       }
-      case (CoordTemplata(CoordT(ShareT | OwnT, actualPermission, actualStructRef @ StructRefT(_))), expectedStructTemplata @ StructTemplata(_, _)) => {
+      case (CoordTemplata(CoordT(ShareT | OwnT, actualPermission, actualStructRef @ StructTT(_))), expectedStructTemplata @ StructTemplata(_, _)) => {
         vassert(bExpectedType == CoordTemplataType)
         val mutability = delegate.getMutability(state, actualStructRef)
         val expectedPermission = if (mutability == MutableT) ReadwriteT else ReadonlyT
         val permissionMatches = expectedPermission == actualPermission
-        permissionMatches && citizenMatchesTemplata(actualStructRef, expectedStructTemplata, List())
+        permissionMatches && citizenMatchesTemplata(actualStructRef, expectedStructTemplata, List.empty)
       }
-      case (KindTemplata(actualInterfaceRef @ InterfaceRefT(_)), expectedInterfaceTemplata @ InterfaceTemplata(_, _)) => {
+      case (KindTemplata(actualInterfaceRef @ InterfaceTT(_)), expectedInterfaceTemplata @ InterfaceTemplata(_, _)) => {
         vassert(bExpectedType == KindTemplataType)
-        citizenMatchesTemplata(actualInterfaceRef, expectedInterfaceTemplata, List())
+        citizenMatchesTemplata(actualInterfaceRef, expectedInterfaceTemplata, List.empty)
       }
-      case (CoordTemplata(CoordT(ShareT | OwnT, actualPermission, actualInterfaceRef @ InterfaceRefT(_))), expectedInterfaceTemplata @ InterfaceTemplata(_, _)) => {
+      case (CoordTemplata(CoordT(ShareT | OwnT, actualPermission, actualInterfaceRef @ InterfaceTT(_))), expectedInterfaceTemplata @ InterfaceTemplata(_, _)) => {
         vassert(bExpectedType == CoordTemplataType)
         val mutability = delegate.getMutability(state, actualInterfaceRef)
         val expectedPermission = if (mutability == MutableT) ReadwriteT else ReadonlyT
         val permissionMatches = expectedPermission == actualPermission
-        permissionMatches && citizenMatchesTemplata(actualInterfaceRef, expectedInterfaceTemplata, List())
+        permissionMatches && citizenMatchesTemplata(actualInterfaceRef, expectedInterfaceTemplata, List.empty)
       }
       case (ArrayTemplateTemplata(), ArrayTemplateTemplata()) => true
       case (KindTemplata(RuntimeSizedArrayTT(_)), ArrayTemplateTemplata()) => true

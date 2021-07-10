@@ -215,7 +215,7 @@ case class FloatT() extends KindT {
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = List(this).collect(func)
 }
 
-case class PackTT(members: List[CoordT], underlyingStruct: StructRefT) extends KindT {
+case class PackTT(members: List[CoordT], underlyingStruct: StructTT) extends KindT {
   override def order: Int = 21;
 
   underlyingStruct.all({
@@ -227,7 +227,7 @@ case class PackTT(members: List[CoordT], underlyingStruct: StructRefT) extends K
   }
 }
 
-case class TupleTT(members: List[CoordT], underlyingStruct: StructRefT) extends KindT {
+case class TupleTT(members: List[CoordT], underlyingStruct: StructTT) extends KindT {
   override def order: Int = 20;
 
   underlyingStruct.all({
@@ -252,7 +252,7 @@ case class RawArrayTT(
 case class StaticSizedArrayTT(size: Int, array: RawArrayTT) extends KindT {
   override def order: Int = 12;
 
-  def name: FullNameT[StaticSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, List(), StaticSizedArrayNameT(size, RawArrayNameT(array.mutability, array.memberType)))
+  def name: FullNameT[StaticSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, List.empty, StaticSizedArrayNameT(size, RawArrayNameT(array.mutability, array.memberType)))
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ array.all(func)
@@ -262,7 +262,7 @@ case class StaticSizedArrayTT(size: Int, array: RawArrayTT) extends KindT {
 case class RuntimeSizedArrayTT(array: RawArrayTT) extends KindT {
   override def order: Int = 19;
 
-  def name: FullNameT[RuntimeSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, List(), RuntimeSizedArrayNameT(RawArrayNameT(array.mutability, array.memberType)))
+  def name: FullNameT[RuntimeSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, List.empty, RuntimeSizedArrayNameT(RawArrayNameT(array.mutability, array.memberType)))
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ array.all(func)
@@ -328,7 +328,7 @@ case class StructDefinitionT(
 //    }
 //  })
 
-  override def getRef: StructRefT = StructRefT(fullName)
+  override def getRef: StructTT = StructTT(fullName)
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++
@@ -364,7 +364,7 @@ case class InterfaceDefinitionT(
     // See IMRFDI for why we need to remember only the internal methods here.
     internalMethods: List[FunctionHeaderT]
 ) extends CitizenDefinitionT with QueriableT {
-  override def getRef = InterfaceRefT(fullName)
+  override def getRef = InterfaceTT(fullName)
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ fullName.all(func) ++ internalMethods.flatMap(_.all(func))
@@ -376,7 +376,7 @@ trait CitizenRefT extends KindT {
 }
 
 // These should only be made by struct templar, which puts the definition into temputs at the same time
-case class StructRefT(fullName: FullNameT[ICitizenNameT]) extends CitizenRefT {
+case class StructTT(fullName: FullNameT[ICitizenNameT]) extends CitizenRefT {
   override def order: Int = 14;
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -390,7 +390,7 @@ case class StructRefT(fullName: FullNameT[ICitizenNameT]) extends CitizenRefT {
 case class OverloadSet(
     env: IEnvironment,
     name: GlobalFunctionFamilyNameA,
-    voidStructRef: StructRefT
+    voidStructRef: StructTT
 ) extends KindT {
   override def order: Int = 19;
 
@@ -403,35 +403,7 @@ case class OverloadSet(
   }
 }
 
-//// In the case of:
-//// fn main() int export {
-////   x = 3;
-////   {
-////     println(x);
-////     x = 6;
-////     {
-////       println(x);
-////       x = 6;
-////     }();
-////   }();
-//// }
-//// main has a lambda number of 0,
-//// the first lambda might have a lambda number of, say, 7
-//// the inner lambda might have a lambda number of like 12
-//// Let's say this TemplatedClosure2 represents the inner lambda.
-//// The containing lambda number would be 7.
-//case class OrdinaryClosure2(
-//    containingFunctionLambdaNumber: Int,
-//    structRef: StructRef2,
-//    prototype2: Prototype2) extends Kind {
-//  override def order: Int = 17;
-//
-//  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
-//    List(this).collect(func) ++ structRef.all(func)
-//  }
-//}
-
-case class InterfaceRefT(
+case class InterfaceTT(
   fullName: FullNameT[ICitizenNameT]
 ) extends CitizenRefT with QueriableT {
   override def order: Int = 15;
@@ -476,8 +448,8 @@ object KindComparator extends Ordering[KindT] {
         case BoolT() => 0
         case StrT() => 0
         case PackTT(innerTypes, underlyingStruct) => compare(underlyingStruct, b.asInstanceOf[PackTT].underlyingStruct)
-        case StructRefT(thisFullName) => {
-          val StructRefT(thatFullName) = b.asInstanceOf[StructRefT];
+        case StructTT(thisFullName) => {
+          val StructTT(thatFullName) = b.asInstanceOf[StructTT];
           FullNameComparator.compare(thisFullName, thatFullName)
         }
         case _ => vfail("wat " + a)
@@ -517,11 +489,6 @@ object FullNameComparator extends Ordering[FullNameT[INameT]] {
             case (ClosureParamNameT(), ClosureParamNameT()) => 0
             case (MagicParamNameT(codeLocationA), MagicParamNameT(codeLocationB)) => compare(codeLocationA, codeLocationB)
             case (CodeVarNameT(nameA), CodeVarNameT(nameB)) => nameA.compareTo(nameB)
-//            case (CodeRune2(nameA), CodeRune2(nameB)) => nameA.compareTo(nameB)
-//            case (ImplicitRune2(nameA), ImplicitRune2(nameB)) => nameA.compareTo(nameB)
-//            case (MemberRune2(memberIndexA), MemberRune2(memberIndexB)) => memberIndexA.compareTo(memberIndexB)
-//            case (MagicImplicitRune2(magicParamIndexA), MagicImplicitRune2(magicParamIndexB)) => magicParamIndexA.compareTo(magicParamIndexB)
-//            case (ReturnRune2(), ReturnRune2()) => 0
             case (FunctionNameT(humanNameA, templateArgsA, parametersA), FunctionNameT(humanNameB, templateArgsB, parametersB)) => {
               val nameDiff = humanNameA.compareTo(humanNameB)
               if (nameDiff != 0)
@@ -531,15 +498,6 @@ object FullNameComparator extends Ordering[FullNameT[INameT]] {
                 return templateArgsDiff
               TemplataTypeListComparator.compare(parametersA.map(CoordTemplata), parametersB.map(CoordTemplata))
             }
-//            case (LambdaName2(codeLocationA, templateArgsA, parametersA), LambdaName2(codeLocationB, templateArgsB, parametersB)) => {
-//              val locDiff = compare(codeLocationA, codeLocationB)
-//              if (locDiff != 0)
-//                return locDiff
-//              val templateArgsDiff = TemplataTypeListComparator.compare(templateArgsA, templateArgsB)
-//              if (templateArgsDiff != 0)
-//                return templateArgsDiff
-//              TemplataTypeListComparator.compare(parametersA.map(CoordTemplata), parametersB.map(CoordTemplata))
-//            }
             case (CitizenNameT(humanNameA, templateArgsA), CitizenNameT(humanNameB, templateArgsB)) => {
               val nameDiff = humanNameA.compareTo(humanNameB)
               if (nameDiff != 0)

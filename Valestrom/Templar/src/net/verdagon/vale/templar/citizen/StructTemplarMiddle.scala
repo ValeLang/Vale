@@ -38,7 +38,7 @@ class StructTemplarMiddle(
     callRange: RangeS,
     structS: StructA,
     templatasByRune: Map[IRuneT, ITemplata]):
-  (StructRefT) = {
+  (StructTT) = {
     val coercedFinalTemplateArgs2 = structS.identifyingRunes.map(NameTranslator.translateRune).map(templatasByRune)
 
     val localEnv =
@@ -58,7 +58,7 @@ class StructTemplarMiddle(
     callRange: RangeS,
     interfaceA: InterfaceA,
     templatasByRune: Map[IRuneT, ITemplata]):
-  (InterfaceRefT) = {
+  (InterfaceTT) = {
     val coercedFinalTemplateArgs2 = interfaceA.identifyingRunes.map(NameTranslator.translateRune).map(templatasByRune)
 
     val localEnv =
@@ -87,7 +87,7 @@ class StructTemplarMiddle(
     name: LambdaNameA,
     functionS: FunctionA,
     members: List[StructMemberT]):
-  (StructRefT, MutabilityT, FunctionTemplata) = {
+  (StructTT, MutabilityT, FunctionTemplata) = {
     core.makeClosureUnderstruct(containingFunctionEnv, temputs, name, functionS, members)
   }
 
@@ -97,7 +97,7 @@ class StructTemplarMiddle(
     temputs: Temputs,
     memberTypes2: List[CoordT],
     name: ICitizenNameT):
-  (StructRefT, MutabilityT) = {
+  (StructTT, MutabilityT) = {
     core.makeSeqOrPackUnderstruct(env, temputs, memberTypes2, name)
   }
 
@@ -106,9 +106,9 @@ class StructTemplarMiddle(
     interfaceEnv: IEnvironment,
     temputs: Temputs,
     range: RangeS,
-    interfaceRef: InterfaceRefT,
+    interfaceTT: InterfaceTT,
     substructName: FullNameT[AnonymousSubstructNameT]):
-  (StructRefT, MutabilityT) = {
+  (StructTT, MutabilityT) = {
 
 //    val anonymousSubstructName: FullName2[AnonymousSubCitizenName2] =
 //      functionFullName.addStep(AnonymousSubCitizenName2())
@@ -122,7 +122,7 @@ class StructTemplarMiddle(
       temputs,
       range,
       substructName,
-      interfaceRef)
+      interfaceTT)
   }
 
   // Makes an anonymous substruct of the given interface, which just forwards its method to the given prototype.
@@ -132,7 +132,7 @@ class StructTemplarMiddle(
     range: RangeS,
     prototype: PrototypeT,
     structFullName: FullNameT[ICitizenNameT]):
-  StructRefT = {
+  StructTT = {
     core.prototypeToAnonymousStruct(
       outerEnv, temputs, range, prototype, structFullName)
   }

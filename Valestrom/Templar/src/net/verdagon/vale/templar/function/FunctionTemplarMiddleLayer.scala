@@ -62,10 +62,10 @@ class FunctionTemplarMiddleLayer(
       case Some(OverrideAP(range, interfaceRuneA)) => {
         env.getNearestTemplataWithAbsoluteName2(NameTranslator.translateRune(interfaceRuneA), Set(TemplataLookupContext)) match {
           case None => vcurious()
-          case Some(KindTemplata(ir @ InterfaceRefT(_))) => (Some(OverrideT(ir)))
+          case Some(KindTemplata(ir @ InterfaceTT(_))) => (Some(OverrideT(ir)))
           case Some(it @ InterfaceTemplata(_, _)) => {
             val ir =
-              structTemplar.getInterfaceRef(temputs, range, it, List())
+              structTemplar.getInterfaceRef(temputs, range, it, List.empty)
             (Some(OverrideT(ir)))
           }
         }
@@ -148,7 +148,7 @@ class FunctionTemplarMiddleLayer(
     val functionFullName = assembleName(runedEnv.fullName, paramTypes2)
     val needleSignature = SignatureT(functionFullName)
     temputs.lookupFunction(needleSignature) match {
-      case Some(FunctionT(header, _, _)) => {
+      case Some(FunctionT(header, _)) => {
         (header)
       }
       case None => {
@@ -261,36 +261,33 @@ class FunctionTemplarMiddleLayer(
     temputs: Temputs,
     params1: List[ParameterA]):
   (List[ParameterT]) = {
-    params1.foldLeft((List[ParameterT]()))({
-      case ((previousParams2), param1) => {
+    params1.zipWithIndex.map({ case (param1, index) =>
         val CoordTemplata(coord) =
           env
             .getNearestTemplataWithAbsoluteName2(
               NameTranslator.translateRune(param1.pattern.coordRune),
               Set(TemplataLookupContext))
             .get
-        val maybeVirtuality =
-          evaluateMaybeVirtuality(env, temputs, param1.pattern.virtuality)
-        val newParam2 =
-          ParameterT(
-            NameTranslator.translateVarNameStep(param1.pattern.capture.varName),
-            maybeVirtuality,
-            coord)
-        (previousParams2 :+ newParam2)
-      }
-    })
+        val maybeVirtuality = evaluateMaybeVirtuality(env, temputs, param1.pattern.virtuality)
+        val nameT =
+          param1.pattern.capture match {
+            case None => TemplarIgnoredParamNameT(index)
+            case Some(x) => NameTranslator.translateVarNameStep(x.varName)
+          }
+        ParameterT(nameT, maybeVirtuality, coord)
+      })
   }
 
 //  def makeImplDestructor(
 //    env: IEnvironment,
 //    temputs: Temputs,
-//    structDef2: StructDefinition2,
-//    interfaceRef2: InterfaceRef2):
+//    structDefT: StructDefinition2,
+//    interfaceTT: InterfaceRef2):
 //  Temputs = {
-//    val ownership = if (structDef2.mutability == MutableP) Own else Share
-//    val structRef2 = structDef2.getRef
-//    val structType2 = Coord(ownership, structRef2)
-//    val interfaceType2 = Coord(ownership, interfaceRef2)
+//    val ownership = if (structDefT.mutability == MutableP) Own else Share
+//    val structTT = structDefT.getRef
+//    val structType2 = Coord(ownership, structTT)
+//    val interfaceType2 = Coord(ownership, interfaceTT)
 //    val signature2 =
 //      Signature2(
 //        CallTemplar.INTERFACE_DESTRUCTOR_NAME,
@@ -300,7 +297,7 @@ class FunctionTemplarMiddleLayer(
 //
 //    val header =
 //      core.makeImplDestructor(
-//        env, temputs, structDef2, interfaceRef2)
+//        env, temputs, structDefT, interfaceTT)
 //
 //
 //      VirtualTemplar.evaluateParent(env, temputs, header)

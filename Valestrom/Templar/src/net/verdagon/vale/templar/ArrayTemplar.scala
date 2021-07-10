@@ -180,14 +180,18 @@ class ArrayTemplar(
     m.toInt
   }
 
-  def lookupInStaticSizedArray(range: RangeS, containerExpr2: ReferenceExpressionTE, indexExpr2: ReferenceExpressionTE, at: StaticSizedArrayTT) = {
+  def lookupInStaticSizedArray(
+      range: RangeS,
+      containerExpr2: ReferenceExpressionTE,
+      indexExpr2: ReferenceExpressionTE,
+      at: StaticSizedArrayTT) = {
     val RawArrayTT(memberType, mutability, variability) = at.array
     val (effectiveVariability, targetPermission) =
       Templar.factorVariabilityAndPermission(
         containerExpr2.resultRegister.reference.permission,
         variability,
         memberType.permission)
-    StaticSizedArrayLookupT(range, containerExpr2, at, indexExpr2, targetPermission, effectiveVariability)
+    StaticSizedArrayLookupTE(range, containerExpr2, at, indexExpr2, targetPermission, effectiveVariability)
   }
 
   def lookupInUnknownSizedArray(
@@ -195,14 +199,14 @@ class ArrayTemplar(
     containerExpr2: ReferenceExpressionTE,
     indexExpr2: ReferenceExpressionTE,
     rsa: RuntimeSizedArrayTT
-  ): RuntimeSizedArrayLookupT = {
+  ): RuntimeSizedArrayLookupTE = {
     val RawArrayTT(memberType, mutability, variability) = rsa.array
     val (effectiveVariability, targetPermission) =
       Templar.factorVariabilityAndPermission(
         containerExpr2.resultRegister.reference.permission,
         variability,
         memberType.permission)
-    RuntimeSizedArrayLookupT(range, containerExpr2, rsa, indexExpr2, targetPermission, effectiveVariability)
+    RuntimeSizedArrayLookupTE(range, containerExpr2, rsa, indexExpr2, targetPermission, effectiveVariability)
   }
 
 }

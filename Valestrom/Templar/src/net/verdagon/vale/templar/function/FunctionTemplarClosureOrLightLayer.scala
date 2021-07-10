@@ -3,7 +3,7 @@ package net.verdagon.vale.templar.function
 import net.verdagon.vale.astronomer.{AbstractBodyA, CodeBodyA, ExternBodyA, FunctionA, GeneratedBodyA, IFunctionDeclarationNameA}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
-import net.verdagon.vale.scout.{CodeBody1, RangeS}
+import net.verdagon.vale.scout.{CodeBodyS, RangeS}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
@@ -63,7 +63,7 @@ class FunctionTemplarClosureOrLightLayer(
     outerEnv: IEnvironment,
       temputs: Temputs,
     callRange: RangeS,
-      closureStructRef: StructRefT,
+      closureStructRef: StructTT,
     function: FunctionA,
     alreadySpecifiedTemplateArgs: List[ITemplata],
       argTypes2: List[ParamFilter]):
@@ -82,7 +82,7 @@ class FunctionTemplarClosureOrLightLayer(
     outerEnv: IEnvironment,
     temputs: Temputs,
     callRange: RangeS,
-    closureStructRef: StructRefT,
+    closureStructRef: StructTT,
     function: FunctionA,
     alreadySpecifiedTemplateArgs: List[ITemplata],
     argTypes2: List[ParamFilter]):
@@ -153,7 +153,7 @@ class FunctionTemplarClosureOrLightLayer(
     vassert(!function.isTemplate)
 
     val name = makeNameWithClosureds(outerEnv, function.name)
-    val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, List(), newTemplataStore())
+    val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, List.empty, newTemplataStore())
     ordinaryOrTemplatedLayer.evaluateOrdinaryFunctionFromNonCallForPrototype(
       newEnv, temputs, callRange)
   }
@@ -162,7 +162,7 @@ class FunctionTemplarClosureOrLightLayer(
     outerEnv: IEnvironment,
     temputs: Temputs,
     callRange: RangeS,
-    closureStructRef: StructRefT,
+    closureStructRef: StructTT,
     function: FunctionA):
   (FunctionBannerT) = {
     vassert(!function.isTemplate)
@@ -178,7 +178,7 @@ class FunctionTemplarClosureOrLightLayer(
       outerEnv: IEnvironment,
       temputs: Temputs,
     callRange: RangeS,
-      closureStructRef: StructRefT,
+      closureStructRef: StructTT,
     function: FunctionA):
   (FunctionHeaderT) = {
     // We dont here because it knows from how many variables
@@ -246,7 +246,7 @@ class FunctionTemplarClosureOrLightLayer(
     function: FunctionA
   ): BuildingFunctionEnvironmentWithClosureds = {
     val name = makeNameWithClosureds(outerEnv, function.name)
-    BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, List(), newTemplataStore())
+    BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, List.empty, newTemplataStore())
   }
 
   private def makeNameWithClosureds(
@@ -268,7 +268,7 @@ class FunctionTemplarClosureOrLightLayer(
     }
   }
 
-  private def makeClosureVariablesAndEntries(temputs: Temputs, closureStructRef: StructRefT):
+  private def makeClosureVariablesAndEntries(temputs: Temputs, closureStructRef: StructTT):
   (List[IVariableT], Map[INameT, List[IEnvEntry]]) = {
     val closureStructDef = temputs.lookupStruct(closureStructRef);
     val variables =

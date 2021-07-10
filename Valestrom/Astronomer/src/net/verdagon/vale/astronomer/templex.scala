@@ -42,16 +42,16 @@ import scala.collection.immutable.List
 //object TemplexSUtils {
 //  def getDistinctOrderedRunesForTemplex(templex: ITemplexA): List[String] = {
 //    templex match {
-//      case IntAT(value) => List()
-//      case MutabilityAT(mutability) => List()
-//      case PermissionAT(permission) => List()
-//      case LocationAT(location) => List()
-//      case OwnershipAT(ownership) => List()
-//      case VariabilityAT(variability) => List()
-//      case BoolAT(value) => List()
-//      case NameAT(name) => List()
+//      case IntAT(value) => List.empty
+//      case MutabilityAT(mutability) => List.empty
+//      case PermissionAT(permission) => List.empty
+//      case LocationAT(location) => List.empty
+//      case OwnershipAT(ownership) => List.empty
+//      case VariabilityAT(variability) => List.empty
+//      case BoolAT(value) => List.empty
+//      case NameAT(name) => List.empty
 //      case RuneAT(rune) => List(rune)
-//      case AnonymousRuneAT() => List()
+//      case AnonymousRuneAT() => List.empty
 //      case InterpretedAT(_, inner) => getDistinctOrderedRunesForTemplex(inner)
 //      case CallAT(template, args) => {
 //        (template :: args).flatMap(getDistinctOrderedRunesForTemplex).distinct

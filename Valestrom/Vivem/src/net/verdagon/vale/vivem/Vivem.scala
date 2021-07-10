@@ -75,7 +75,7 @@ object Vivem {
       programH.packages.flatMap({ case (packageCoord, paackage) =>
         paackage.exportNameToFunction.get("main").map(prototype => paackage.functions.find(_.prototype == prototype).get).toList
       }).flatten match {
-        case List() => vfail()
+        case Nil=> vfail()
         case List(m) => m
         case _ => vfail()
       }

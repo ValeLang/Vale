@@ -17,7 +17,6 @@ class LocalHelper(
   destructorTemplar: DestructorTemplar) {
 
   def makeTemporaryLocal(
-    temputs: Temputs,
     fate: FunctionEnvironmentBox,
     coord: CoordT):
   ReferenceLocalVariableT = {
@@ -35,7 +34,7 @@ class LocalHelper(
     fate: FunctionEnvironmentBox,
     r: ReferenceExpressionTE):
   (DeferTE) = {
-    val rlv = makeTemporaryLocal(temputs, fate, r.resultRegister.reference)
+    val rlv = makeTemporaryLocal(fate, r.resultRegister.reference)
     val letExpr2 = LetAndLendTE(rlv, r)
 
     val unlet = unletLocal(fate, rlv)
@@ -60,7 +59,7 @@ class LocalHelper(
     variables: List[ILocalVariableT]):
   (List[ReferenceExpressionTE]) = {
     variables match {
-      case Nil => (List())
+      case Nil => (List.empty)
       case head :: tail => {
         val unlet = unletLocal(fate, head)
         val maybeHeadExpr2 =
@@ -102,6 +101,7 @@ class LocalHelper(
       } else {
         ReferenceLocalVariableT(fullVarName, variability, referenceType2)
       }
+    fate.addVariable(localVar)
     localVar
   }
 
@@ -111,7 +111,7 @@ class LocalHelper(
   ReferenceExpressionTE = {
     expr2 match {
       case e : ReferenceExpressionTE => e
-      case e : AddressExpressionT => borrowSoftLoad(temputs, e)
+      case e : AddressExpressionTE => borrowSoftLoad(temputs, e)
     }
   }
 
@@ -130,7 +130,7 @@ class LocalHelper(
   def softLoad(
       fate: FunctionEnvironmentBox,
       loadRange: RangeS,
-      a: AddressExpressionT,
+      a: AddressExpressionTE,
       loadAsP: LoadAsP):
   ReferenceExpressionTE = {
     a.resultRegister.reference.ownership match {
@@ -141,27 +141,27 @@ class LocalHelper(
         loadAsP match {
           case UseP => {
             a match {
-              case LocalLookupT(_, lv, _, _) => {
+              case LocalLookupTE(_, lv, _, _) => {
                 fate.markLocalUnstackified(lv.id)
                 UnletTE(lv)
               }
               // See CSHROOR for why these aren't just Readwrite.
-              case l @ RuntimeSizedArrayLookupT(_, _, _, _, _, _) => SoftLoadTE(l, ConstraintT, a.resultRegister.reference.permission)
-              case l @ StaticSizedArrayLookupT(_, _, _, _, _, _) => SoftLoadTE(l, ConstraintT, a.resultRegister.reference.permission)
-              case l @ ReferenceMemberLookupT(_,_, _, _, _, _) => SoftLoadTE(l, ConstraintT, a.resultRegister.reference.permission)
-              case l @ AddressMemberLookupT(_, _, _, _, _) => SoftLoadTE(l, ConstraintT, a.resultRegister.reference.permission)
+              case l @ RuntimeSizedArrayLookupTE(_, _, _, _, _, _) => SoftLoadTE(l, ConstraintT, a.resultRegister.reference.permission)
+              case l @ StaticSizedArrayLookupTE(_, _, _, _, _, _) => SoftLoadTE(l, ConstraintT, a.resultRegister.reference.permission)
+              case l @ ReferenceMemberLookupTE(_,_, _, _, _, _) => SoftLoadTE(l, ConstraintT, a.resultRegister.reference.permission)
+              case l @ AddressMemberLookupTE(_, _, _, _, _) => SoftLoadTE(l, ConstraintT, a.resultRegister.reference.permission)
             }
           }
           case MoveP => {
             a match {
-              case LocalLookupT(_, lv, _, _) => {
+              case LocalLookupTE(_, lv, _, _) => {
                 fate.markLocalUnstackified(lv.id)
                 UnletTE(lv)
               }
-              case ReferenceMemberLookupT(_,_, name, _, _, _) => {
+              case ReferenceMemberLookupTE(_,_, name, _, _, _) => {
                 throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name.last))
               }
-              case AddressMemberLookupT(_, _, name, _, _) => {
+              case AddressMemberLookupTE(_, _, name, _, _) => {
                 throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name.last))
               }
             }
@@ -192,7 +192,7 @@ class LocalHelper(
     }
   }
 
-  def borrowSoftLoad(temputs: Temputs, expr2: AddressExpressionT):
+  def borrowSoftLoad(temputs: Temputs, expr2: AddressExpressionTE):
   ReferenceExpressionTE = {
     val ownership = getBorrowOwnership(temputs, expr2.resultRegister.reference.kind)
     SoftLoadTE(expr2, ownership, expr2.resultRegister.reference.permission)
@@ -221,19 +221,19 @@ class LocalHelper(
       case RuntimeSizedArrayTT(RawArrayTT(_, mutability, _)) => {
         if (mutability == MutableT) ConstraintT else ShareT
       }
-      //      case TemplatedClosure2(_, structRef, _) => {
-      //        val mutability = Templar.getMutability(temputs, structRef)
+      //      case TemplatedClosure2(_, structTT, _) => {
+      //        val mutability = Templar.getMutability(temputs, structTT)
       //        if (mutability == Mutable) Borrow else Share
       //      }
-      //      case OrdinaryClosure2(_, structRef, _) => {
-      //        val mutability = Templar.getMutability(temputs, structRef)
+      //      case OrdinaryClosure2(_, structTT, _) => {
+      //        val mutability = Templar.getMutability(temputs, structTT)
       //        if (mutability == Mutable) Borrow else Share
       //      }
-      case sr2 @ StructRefT(_) => {
+      case sr2 @ StructTT(_) => {
         val mutability = Templar.getMutability(temputs, sr2)
         if (mutability == MutableT) ConstraintT else ShareT
       }
-      case ir2 @ InterfaceRefT(_) => {
+      case ir2 @ InterfaceTT(_) => {
         val mutability = Templar.getMutability(temputs, ir2)
         if (mutability == MutableT) ConstraintT else ShareT
       }

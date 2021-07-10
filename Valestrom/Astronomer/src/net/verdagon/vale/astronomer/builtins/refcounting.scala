@@ -10,7 +10,7 @@ object RefCounting {
     FunctionA(
       RangeS.internal(-60),
       FunctionNameA("__checkvarrc", CodeLocationS.internal(-11)),
-      List(),
+      List.empty,
       TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
       Set(CodeRuneA("V"), CodeRuneA("I")),
       List(CodeRuneA("T")),
@@ -22,8 +22,8 @@ object RefCounting {
         CodeRuneA("TK") -> KindTemplataType
       ),
       List(
-        ParameterA(AtomAP(RangeS.internal(-117), LocalA(CodeVarNameA("obj"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("T"), None)),
-        ParameterA(AtomAP(RangeS.internal(-118), LocalA(CodeVarNameA("num"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("I"), None))),
+        ParameterA(AtomAP(RangeS.internal(-117), Some(LocalA(CodeVarNameA("obj"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)), None, CodeRuneA("T"), None)),
+        ParameterA(AtomAP(RangeS.internal(-118), Some(LocalA(CodeVarNameA("num"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)), None, CodeRuneA("I"), None))),
       Some(CodeRuneA("V")),
       List(
         EqualsAR(RangeS.internal(-1418),TemplexAR(RuneAT(RangeS.internal(-5650),CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-5651),CodeTypeNameA("int"), CoordTemplataType))),
@@ -41,7 +41,7 @@ object RefCounting {
       CodeBodyA(
         BodyAE(
           RangeS.internal(-35),
-          List(),
+          List.empty,
           BlockAE(
             RangeS.internal(-35),
             List(
@@ -63,7 +63,7 @@ object RefCounting {
     FunctionA(
       RangeS.internal(-59),
       checkMemberRcName,
-      List(),
+      List.empty,
       TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
       Set(CodeRuneA("V"), CodeRuneA("I")),
       List(CodeRuneA("T")),
@@ -74,8 +74,8 @@ object RefCounting {
         CodeRuneA("V") -> CoordTemplataType,
         CodeRuneA("TK") -> KindTemplataType),
       List(
-        ParameterA(AtomAP(RangeS.internal(-115), LocalA(CodeVarNameA("obj"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("T"), None)),
-        ParameterA(AtomAP(RangeS.internal(-116), LocalA(CodeVarNameA("num"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("I"), None))),
+        ParameterA(AtomAP(RangeS.internal(-115), Some(LocalA(CodeVarNameA("obj"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)), None, CodeRuneA("T"), None)),
+        ParameterA(AtomAP(RangeS.internal(-116), Some(LocalA(CodeVarNameA("num"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)), None, CodeRuneA("I"), None))),
       Some(CodeRuneA("V")),
       List(
         EqualsAR(RangeS.internal(-1421),TemplexAR(RuneAT(RangeS.internal(-5658),CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-5659),CodeTypeNameA("int"), CoordTemplataType))),
@@ -84,7 +84,7 @@ object RefCounting {
       CodeBodyA(
         BodyAE(
           RangeS.internal(-35),
-          List(),
+          List.empty,
           BlockAE(
             RangeS.internal(-35),
             List(

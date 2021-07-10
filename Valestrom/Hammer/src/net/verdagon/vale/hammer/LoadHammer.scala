@@ -24,24 +24,24 @@ object LoadHammer {
 
     val (loadedAccessH, sourceDeferreds) =
       sourceExpr2 match {
-        case LocalLookupT(_,ReferenceLocalVariableT(varId, variability, reference), varType2, _) => {
+        case LocalLookupTE(_,ReferenceLocalVariableT(varId, variability, reference), varType2, _) => {
           vassert(reference == varType2)
           translateMundaneLocalLoad(hinputs, hamuts, currentFunctionHeader, locals, varId, reference, targetOwnership, targetPermission)
         }
-        case LocalLookupT(_,AddressibleLocalVariableT(varId, variability, localReference2), varType2, _) => {
+        case LocalLookupTE(_,AddressibleLocalVariableT(varId, variability, localReference2), varType2, _) => {
           vassert(localReference2 == varType2)
           translateAddressibleLocalLoad(hinputs, hamuts, currentFunctionHeader, locals, varId, variability, localReference2, targetOwnership, targetPermission)
         }
-        case ReferenceMemberLookupT(_,structExpr2, memberName, memberType2, _, _) => {
+        case ReferenceMemberLookupTE(_,structExpr2, memberName, memberType2, _, _) => {
           translateMundaneMemberLoad(hinputs, hamuts, currentFunctionHeader, locals, structExpr2, memberType2, memberName, targetOwnership, targetPermission)
         }
-        case AddressMemberLookupT(_,structExpr2, memberName, memberType2, _) => {
+        case AddressMemberLookupTE(_,structExpr2, memberName, memberType2, _) => {
           translateAddressibleMemberLoad(hinputs, hamuts, currentFunctionHeader, locals, structExpr2, memberName, memberType2, targetOwnership, targetPermission)
         }
-        case RuntimeSizedArrayLookupT(_, arrayExpr2, _, indexExpr2, _, _) => {
+        case RuntimeSizedArrayLookupTE(_, arrayExpr2, _, indexExpr2, _, _) => {
           translateMundaneRuntimeSizedArrayLoad(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2, indexExpr2, targetOwnership, targetPermission)
         }
-        case StaticSizedArrayLookupT(_, arrayExpr2, _, indexExpr2, _, _) => {
+        case StaticSizedArrayLookupTE(_, arrayExpr2, _, indexExpr2, _, _) => {
           translateMundaneStaticSizedArrayLoad(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2, indexExpr2, targetOwnership, targetPermission)
         }
       }
@@ -162,16 +162,16 @@ object LoadHammer {
     val (structResultLine, structDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
-    val structRef2 =
+    val structTT =
       structExpr2.resultRegister.reference.kind match {
-        case sr @ StructRefT(_) => sr
+        case sr @ StructTT(_) => sr
         case TupleTT(_, sr) => sr
         case PackTT(_, sr) => sr
       }
-    val structDef2 = hinputs.lookupStruct(structRef2)
-    val memberIndex = structDef2.members.indexWhere(member => structDef2.fullName.addStep(member.name) == memberName)
+    val structDefT = hinputs.lookupStruct(structTT)
+    val memberIndex = structDefT.members.indexWhere(member => structDefT.fullName.addStep(member.name) == memberName)
     vassert(memberIndex >= 0)
-    val member2 = structDef2.members(memberIndex)
+    val member2 = structDefT.members(memberIndex)
 
     val variability = member2.variability
 
@@ -234,14 +234,14 @@ object LoadHammer {
 //    val (resultTypeH) =
 //      TypeHammer.translateReference(hinputs, hamuts, resultCoord);
 
-    val structRef2 =
+    val structTT =
       structExpr2.resultRegister.reference.kind match {
-        case sr @ StructRefT(_) => sr
+        case sr @ StructTT(_) => sr
         case TupleTT(_, sr) => sr
         case PackTT(_, sr) => sr
       }
-    val structDef2 = hinputs.lookupStruct(structRef2)
-    val memberIndex = structDef2.members.indexWhere(member => structDef2.fullName.addStep(member.name) == memberName)
+    val structDefT = hinputs.lookupStruct(structTT)
+    val memberIndex = structDefT.members.indexWhere(member => structDefT.fullName.addStep(member.name) == memberName)
     vassert(memberIndex >= 0)
 
     val targetOwnership = Conversions.evaluateOwnership(targetOwnershipT)
@@ -301,7 +301,7 @@ object LoadHammer {
           localTypeH,
           loadResultType,
           NameHammer.addStep(hamuts, boxStructRefH.fullName, StructHammer.BOX_MEMBER_NAME))
-    (loadedNode, List())
+    (loadedNode, List.empty)
   }
 
   def translateMundaneLocalLoad(
@@ -336,7 +336,7 @@ object LoadHammer {
           targetOwnership,
           targetPermission,
           NameHammer.translateFullName(hinputs, hamuts, varId))
-    (loadedNode, List())
+    (loadedNode, List.empty)
   }
 
   def translateLocalAddress(
@@ -344,9 +344,9 @@ object LoadHammer {
       hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      lookup2: LocalLookupT):
+      lookup2: LocalLookupTE):
   (ExpressionH[KindH]) = {
-    val LocalLookupT(_,localVar, type2, _) = lookup2;
+    val LocalLookupTE(_,localVar, type2, _) = lookup2;
     vassert(type2 == localVar.reference)
 
     val local = locals.get(localVar.id).get
@@ -374,23 +374,23 @@ object LoadHammer {
       hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      lookup2: AddressMemberLookupT):
+      lookup2: AddressMemberLookupTE):
   (ExpressionH[KindH], List[ExpressionT]) = {
-    val AddressMemberLookupT(_,structExpr2, memberName, resultType2, _) = lookup2;
+    val AddressMemberLookupTE(_,structExpr2, memberName, resultType2, _) = lookup2;
 
     val (structResultLine, structDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
-    val structRef2 =
+    val structTT =
       structExpr2.resultRegister.reference.kind match {
-        case sr @ StructRefT(_) => sr
+        case sr @ StructTT(_) => sr
         case TupleTT(_, sr) => sr
         case PackTT(_, sr) => sr
       }
-    val structDef2 = hinputs.lookupStruct(structRef2)
-    val memberIndex = structDef2.members.indexWhere(member => structDef2.fullName.addStep(member.name) == memberName)
+    val structDefT = hinputs.lookupStruct(structTT)
+    val memberIndex = structDefT.members.indexWhere(member => structDefT.fullName.addStep(member.name) == memberName)
     vassert(memberIndex >= 0)
-    val member2 = structDef2.members(memberIndex)
+    val member2 = structDefT.members(memberIndex)
 
     val variability = member2.variability
     vassert(variability == VaryingT, "Expected varying for member " + memberName) // curious

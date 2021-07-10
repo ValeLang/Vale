@@ -65,12 +65,12 @@ case class FunctionTemplata(
 //  this match {
 //    case FunctionTemplata(
 //      env,
-//      FunctionA(_, ImmConcreteDestructorNameA(PackageCoordinate(_,List())),_, _, _, _, _, _, _, _, _, _))
-//    if env.fullName == FullName2(PackageCoordinate.TEST_TLD,List(),PackageTopLevelName2()) => vfail()
+//      FunctionA(_, ImmConcreteDestructorNameA(PackageCoordinate(_,List.empty)),_, _, _, _, _, _, _, _, _, _))
+//    if env.fullName == FullName2(PackageCoordinate.TEST_TLD,List.empty,PackageTopLevelName2()) => vfail()
 //    case _ =>
 //  }
 //  this match {
-//    case FunctionTemplata(env, _) if env.fullName == FullName2(PackageCoordinate.TEST_TLD,List(),PackageTopLevelName2()) => vfail()
+//    case FunctionTemplata(env, _) if env.fullName == FullName2(PackageCoordinate.TEST_TLD,List.empty,PackageTopLevelName2()) => vfail()
 //    case _ =>
 //  }
 
@@ -334,7 +334,7 @@ case class ExternFunctionTemplata(header: FunctionHeaderT) extends ITemplata {
   }
 }
 
-case class ExternImplTemplata(struct: StructRefT, interface: InterfaceRefT) extends ITemplata {
+case class ExternImplTemplata(struct: StructTT, interface: InterfaceTT) extends ITemplata {
   override def order: Int = 1338
   override def tyype: ITemplataType = vfail()
 

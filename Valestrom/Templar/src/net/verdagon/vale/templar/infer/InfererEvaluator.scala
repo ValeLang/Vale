@@ -22,16 +22,16 @@ private[infer] trait IInfererEvaluatorDelegate[Env, State] {
 
   def getMutability(state: State, kind: KindT): MutabilityT
 
-  def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceRefT): (Option[Int])
+  def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT): (Option[Int])
 
-  def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRefT): Set[InterfaceRefT]
+  def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRefT): Set[InterfaceTT]
 
   def lookupTemplata(env: Env, range: RangeS, rune: INameT): ITemplata
   def lookupTemplata(profiler: IProfiler, env: Env, range: RangeS, name: IImpreciseNameStepA): ITemplata
 
-  def getMemberCoords(state: State, structRef: StructRefT): List[CoordT]
+  def getMemberCoords(state: State, structTT: StructTT): List[CoordT]
 
-  def structIsClosure(state: State, structRef: StructRefT): Boolean
+  def structIsClosure(state: State, structTT: StructTT): Boolean
 
   def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: List[CoordT]): PrototypeT
 }
@@ -70,7 +70,7 @@ class InfererEvaluator[Env, State](
         case ((rune, directInputTemplata)) => {
           val expectedType = vassertSome(typeByRune.get(rune))
           if (directInputTemplata.tyype != expectedType) {
-            return (InferSolveFailure(typeByRune, directInputs, maybeParamInputs, inferences.inferences, invocationRange, "Input for rune " + rune + " has type " + directInputTemplata.tyype + " that doesn't match expected type: " + expectedType, List()))
+            return (InferSolveFailure(typeByRune, directInputs, maybeParamInputs, inferences.inferences, invocationRange, "Input for rune " + rune + " has type " + directInputTemplata.tyype + " that doesn't match expected type: " + expectedType, List.empty))
           }
           inferences.addConclusion(rune, directInputTemplata)
         }
@@ -92,7 +92,7 @@ class InfererEvaluator[Env, State](
 
     val rulesAndAddedRunesTypeByRuneFromParamInputs =
       maybeParamInputs match {
-        case None => List()
+        case None => List.empty
         case Some(paramInputs) => {
           if (paramAtoms.size != paramInputs.size) {
             return InferSolveFailure(
@@ -104,7 +104,7 @@ class InfererEvaluator[Env, State](
               "Expected " + paramAtoms.size + " args but got " + paramInputs.size + "\n" +
               "Expected:\n" + paramAtoms.zipWithIndex.map({ case (paramAtom, i) => "  " + i + " " + paramAtom }).mkString("\n") + "\n" +
               "Got:\n" + paramInputs.zipWithIndex.map({ case (paramInput, i) => "  " + i + " " + paramInput }).mkString("\n"),
-              List())
+              List.empty)
           }
           paramAtoms.zip(paramInputs).zipWithIndex.map({
             case (((paramAtom, paramFilterInstance), paramIndex)) => {
@@ -137,11 +137,11 @@ class InfererEvaluator[Env, State](
       val neededRunes = localRunes
       if ((neededRunes -- inferences.inferences.templatasByRune.keySet).nonEmpty) {
         val message = "Not enough to solve! Couldn't figure out: " + (neededRunes -- inferences.inferences.templatasByRune.keySet)
-        return (InferSolveFailure(combinedTypeByRune, directInputs, maybeParamInputs, inferences.inferences, invocationRange, message, List()))
+        return (InferSolveFailure(combinedTypeByRune, directInputs, maybeParamInputs, inferences.inferences, invocationRange, message, List.empty))
       }
     }
     if (!deeplySatisfied) {
-      return (InferSolveFailure(combinedTypeByRune, directInputs, maybeParamInputs, inferences.inferences, invocationRange, "Not deeply satisfied!", List()))
+      return (InferSolveFailure(combinedTypeByRune, directInputs, maybeParamInputs, inferences.inferences, invocationRange, "Not deeply satisfied!", List.empty))
     }
 
     (InferSolveSuccess(inferences.inferences))
@@ -207,13 +207,13 @@ class InfererEvaluator[Env, State](
             case _ =>
           }
           inferences.addConclusion(patternCoordRune2, CoordTemplata(paramFilterInstance.tyype))
-          (List(), Map[IRuneT, ITemplataType]())
+          (List.empty, Map[IRuneT, ITemplataType]())
         }
       }
     val rulesFromVirtuality =
       (paramFilterInstance.virtuality, patternVirtuality) match {
-        case (None, _) => List()
-        case (Some(AbstractT$), Some(AbstractAP)) => List()
+        case (None, _) => List.empty
+        case (Some(AbstractT$), Some(AbstractAP)) => List.empty
         case (Some(OverrideT(superInterface)), Some(OverrideAP(range, superInterfaceRune))) => {
           // We might already have this superInterface figured out.
           inferences.templatasByRune.get(NameTranslator.translateRune(superInterfaceRune)) match {
@@ -223,11 +223,11 @@ class InfererEvaluator[Env, State](
               inferences.addPossibilities(
                 NameTranslator.translateRune(superInterfaceRune),
                 selfAndAncestors.map(KindTemplata))
-              List()
+              List.empty
             }
             case Some(existingInference) => {
               vassert(existingInference == KindTemplata(superInterface))
-              List()
+              List.empty
             }
           }
         }
@@ -241,12 +241,12 @@ class InfererEvaluator[Env, State](
             Map())
         }
       }
-    vcurious(rulesFromVirtuality == List()) // do no rules come from virtuality?
+    vcurious(rulesFromVirtuality == List.empty) // do no rules come from virtuality?
     val rulesFromPatternDestructure =
       maybePatternDestructure match {
-        case None => List()
+        case None => List.empty
         case Some(patternDestructures) => {
-          addDestructureRules(state, inferences, invocationRange, paramFilterInstance.tyype, patternDestructures, paramLocation) match {
+          addDestructureRules(state, inferences, invocationRange, patternCoordRune2, paramFilterInstance.tyype, patternDestructures, paramLocation) match {
             case iec @ InferEvaluateConflict(_, _, _, _) => return (iec, Map())
             case InferEvaluateSuccess(r, _) => r
           }
@@ -259,6 +259,7 @@ class InfererEvaluator[Env, State](
     state: State,
     inferences: InferencesBox,
     invocationRange: RangeS,
+    expectedContainerTypeRune: IRuneT,
     incomingContainerCoord: CoordT,
     patternDestructures: List[AtomAP],
     paramLocation: List[Int]
@@ -300,10 +301,10 @@ class InfererEvaluator[Env, State](
 
           val rulesFromPatternDestructure =
             maybePatternDestructure match {
-              case None => List()
+              case None => List.empty
               case Some(patternDestructures) => {
                 val memberLocation = paramLocation :+ memberIndex
-                addDestructureRules(state, inferences, range, memberCoord, patternDestructures, memberLocation) match {
+                addDestructureRules(state, inferences, range, patternCoordRune2, memberCoord, patternDestructures, memberLocation) match {
                   case iec @ InferEvaluateConflict(_, _, _, _) => {
                     return InferEvaluateConflict(inferences.inferences, range, "Failed to add parameter " + memberLocation.mkString("/"), List(iec))
                   }
@@ -357,7 +358,7 @@ class InfererEvaluator[Env, State](
 //          println("possibilities to try:\n" + possibilities.mkString("\n"))
 
           possibilities match {
-            case List() => vwat()
+            case Nil => vwat()
             case List(onlyPossibility) => {
               inferences.addConclusion(rune, onlyPossibility)
               solveUntilSettled(env, state, rules, typeByRune, localRunes, inferences, invocationRange)
@@ -388,7 +389,7 @@ class InfererEvaluator[Env, State](
                       case (iss @ InferEvaluateSuccess(_, _)) => {
 //                        println("it worked!")
                         inferences.inferences = alternateUniverseInferencesBox.inferences
-                        (List(), Some(iss))
+                        (List.empty, Some(iss))
                       }
                     }
                   }
@@ -438,7 +439,7 @@ class InfererEvaluator[Env, State](
     rules: List[IRulexTR],
   ): (IInferEvaluateResult[List[ITemplata]]) = {
     val initialResult: IInferEvaluateResult[List[ITemplata]] =
-      InferEvaluateSuccess(List(), true)
+      InferEvaluateSuccess(List.empty, true)
     rules.zipWithIndex.foldLeft((initialResult))({
       case ((InferEvaluateUnknown(deeplySatisfiedSoFar)), (rule, index)) => {
         evaluateRule(env, state, typeByRune, localRunes, inferences, rule) match {
@@ -553,10 +554,10 @@ class InfererEvaluator[Env, State](
           }
         val List(templata) = argTemplatas
         templata match {
-          case k @ KindTemplata(StructRefT(_) | PackTT(_, _) | TupleTT(_, _) | StaticSizedArrayTT(_, _) | RuntimeSizedArrayTT(_)) => {
+          case k @ KindTemplata(StructTT(_) | PackTT(_, _) | TupleTT(_, _) | StaticSizedArrayTT(_, _) | RuntimeSizedArrayTT(_)) => {
             (InferEvaluateSuccess(k, deeplySatisfied))
           }
-          case _ => return (InferEvaluateConflict(inferences.inferences, range, "passThroughIfConcrete expected concrete kind, but got " + templata, List()))
+          case _ => return (InferEvaluateConflict(inferences.inferences, range, "passThroughIfConcrete expected concrete kind, but got " + templata, List.empty))
         }
       }
       case "passThroughIfInterface" => {
@@ -578,11 +579,11 @@ class InfererEvaluator[Env, State](
           }
         val List(templata) = argTemplatas
         templata match {
-          case k @ KindTemplata(InterfaceRefT(_)) => {
+          case k @ KindTemplata(InterfaceTT(_)) => {
             (InferEvaluateSuccess(k, deeplySatisfied))
           }
           case _ => {
-            return (InferEvaluateConflict(inferences.inferences, range, "passThroughIfInterface expected interface kind, but got " + templata, List()))
+            return (InferEvaluateConflict(inferences.inferences, range, "passThroughIfInterface expected interface kind, but got " + templata, List.empty))
           }
         }
       }
@@ -605,11 +606,11 @@ class InfererEvaluator[Env, State](
           }
         val List(templata) = argTemplatas
         templata match {
-          case k @ KindTemplata(StructRefT(_)) => {
+          case k @ KindTemplata(StructTT(_)) => {
             (InferEvaluateSuccess(k, deeplySatisfied))
           }
           case _ => {
-            return (InferEvaluateConflict(inferences.inferences, range, "passThroughIfStruct expected struct kind, but got " + templata, List()))
+            return (InferEvaluateConflict(inferences.inferences, range, "passThroughIfStruct expected struct kind, but got " + templata, List.empty))
           }
         }
       }
@@ -659,7 +660,7 @@ class InfererEvaluator[Env, State](
           inferences.templatasByRune.get(rune) match {
             case Some(templata) => {
               if (templata.tyype != expectedType) {
-                return (InferEvaluateConflict(inferences.inferences, range, "Rune " + rune + " is of type " + expectedType + ", but it received a " + templata.tyype + ", specifically " + templata, List()))
+                return (InferEvaluateConflict(inferences.inferences, range, "Rune " + rune + " is of type " + expectedType + ", but it received a " + templata.tyype + ", specifically " + templata, List.empty))
               }
               (InferEvaluateSuccess(templata, true))
             }
@@ -673,7 +674,7 @@ class InfererEvaluator[Env, State](
           // such as when we do spaceship.fly() in TMRE.
           val templata = delegate.lookupTemplata(env, range, rune)
           if (templata.tyype != expectedType) {
-            return (InferEvaluateConflict(inferences.inferences, range, "Rune " + rune + " is of type " + expectedType + ", but it received a " + templata.tyype + ", specifically " + templata, List()))
+            return (InferEvaluateConflict(inferences.inferences, range, "Rune " + rune + " is of type " + expectedType + ", but it received a " + templata.tyype + ", specifically " + templata, List.empty))
           }
           (InferEvaluateSuccess(templata, true))
         }
@@ -694,21 +695,21 @@ class InfererEvaluator[Env, State](
 
             val resultingOwnership =
               (innerCoordOwnership, targetOwnership) match {
-                case (OwnT, ShareP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a share, but was an own!", List()))
+                case (OwnT, ShareP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a share, but was an own!", List.empty))
                 case (OwnT, OwnP) => OwnT // No change, allow it
                 case (OwnT, ConstraintP) => ConstraintT // Can borrow an own, allow it
                 case (OwnT, WeakP) => WeakT // Can weak an own, allow it
-                case (ConstraintT, ShareP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a share, but was a borrow!", List()))
+                case (ConstraintT, ShareP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a share, but was a borrow!", List.empty))
                 case (ConstraintT, OwnP) => OwnT // Can turn a borrow into an own, allow it
                 case (ConstraintT, ConstraintP) => ConstraintT // No change, allow it
                 case (ConstraintT, WeakP) => WeakT // Can weak a borrow, allow it
-                case (WeakT, ShareP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a share, but was a weak!", List()))
-                case (WeakT, OwnP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a own, but was a weak!", List()))
-                case (WeakT, ConstraintP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a borrow, but was a weak!", List()))
+                case (WeakT, ShareP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a share, but was a weak!", List.empty))
+                case (WeakT, OwnP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a own, but was a weak!", List.empty))
+                case (WeakT, ConstraintP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a borrow, but was a weak!", List.empty))
                 case (WeakT, WeakP) => WeakT // No change, allow it
                 case (ShareT, OwnP) => ShareT // Can own a share, just becomes another share.
                 case (ShareT, ConstraintP) => ShareT // Can borrow a share, just becomes another share.
-                case (ShareT, WeakP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a weak, but was a share!", List())) // Cant get a weak ref to a share because it doesnt have lock().
+                case (ShareT, WeakP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a weak, but was a share!", List.empty)) // Cant get a weak ref to a share because it doesnt have lock().
                 case (ShareT, ShareP) => ShareT // No change, allow it
               }
 
@@ -1024,7 +1025,7 @@ class InfererEvaluator[Env, State](
       }
 
     (maybeSub, maybeConcept) match {
-      case (Some(KindTemplata(sub : CitizenRefT)), Some(KindTemplata(suuper : InterfaceRefT))) => {
+      case (Some(KindTemplata(sub : CitizenRefT)), Some(KindTemplata(suuper : InterfaceTT))) => {
         val supers = delegate.getAncestorInterfaces(state, sub)
 
         if (supers.contains(suuper)) {
@@ -1032,7 +1033,7 @@ class InfererEvaluator[Env, State](
           val deeplySatisfied = subDeeplySatisfied && conceptDeeplySatisfied && isaSatisfied
           (InferEvaluateSuccess(KindTemplata(sub), deeplySatisfied))
         } else {
-          return (InferEvaluateConflict(inferences.inferences, range, "Isa failed!\nSub: " + sub + "\nSuper: " + suuper, List()))
+          return (InferEvaluateConflict(inferences.inferences, range, "Isa failed!\nSub: " + sub + "\nSuper: " + suuper, List.empty))
         }
       }
       case (Some(_), Some(_)) => vfail()
@@ -1279,7 +1280,7 @@ class InfererEvaluator[Env, State](
       equator,
       evaluateRule,
       new IInfererMatcherDelegate[Env, State] {
-        override def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceRefT) = {
+        override def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT) = {
           delegate.getAncestorInterfaceDistance(temputs, descendantCitizenRef, ancestorInterfaceRef)
         }
 
@@ -1291,12 +1292,12 @@ class InfererEvaluator[Env, State](
           delegate.lookupMemberTypes(state, kind, expectedNumMembers)
         }
 
-        override def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRefT): Set[InterfaceRefT] = {
+        override def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRefT): Set[InterfaceTT] = {
           delegate.getAncestorInterfaces(temputs, descendantCitizenRef)
         }
 
-        override def structIsClosure(state: State, structRef: StructRefT): Boolean = {
-          delegate.structIsClosure(state, structRef)
+        override def structIsClosure(state: State, structTT: StructTT): Boolean = {
+          delegate.structIsClosure(state, structTT)
         }
 
         override def lookupTemplata(env: Env, range: RangeS, name: INameT): ITemplata = {
@@ -1318,22 +1319,22 @@ class InfererEvaluator[Env, State](
     expectedNumMembers: Int):
   IInferEvaluateResult[List[CoordT]] = {
     kind match {
-      case sr @ StructRefT(_) => {
+      case sr @ StructTT(_) => {
         val memberCoords = delegate.getMemberCoords(state, sr)
         if (memberCoords.size != expectedNumMembers) {
-          return InferEvaluateConflict(inferences.inferences, range, "Expected something with " + expectedNumMembers + " members but received " + kind, List())
+          return InferEvaluateConflict(inferences.inferences, range, "Expected something with " + expectedNumMembers + " members but received " + kind, List.empty)
         }
         InferEvaluateSuccess(memberCoords, true)
       }
       case PackTT(members, _) => {
         if (members.size != expectedNumMembers) {
-          return InferEvaluateConflict(inferences.inferences, range, "Expected something with " + expectedNumMembers + " members but received " + kind, List())
+          return InferEvaluateConflict(inferences.inferences, range, "Expected something with " + expectedNumMembers + " members but received " + kind, List.empty)
         }
         InferEvaluateSuccess(members, true)
       }
       case TupleTT(members, _) => {
         if (members.size != expectedNumMembers) {
-          return InferEvaluateConflict(inferences.inferences, range, "Expected something with " + expectedNumMembers + " members but received " + kind, List())
+          return InferEvaluateConflict(inferences.inferences, range, "Expected something with " + expectedNumMembers + " members but received " + kind, List.empty)
         }
         InferEvaluateSuccess(members, true)
       }
@@ -1341,12 +1342,12 @@ class InfererEvaluator[Env, State](
         // We need to do this check right here because right after this we're making an array of size `size`
         // which we just received as an integer from the user.
         if (size != expectedNumMembers) {
-          return InferEvaluateConflict(inferences.inferences, range, "Expected something with " + expectedNumMembers + " members but received " + kind, List())
+          return InferEvaluateConflict(inferences.inferences, range, "Expected something with " + expectedNumMembers + " members but received " + kind, List.empty)
         }
         InferEvaluateSuccess((0 until size).toList.map(_ => memberType), true)
       }
       case _ => {
-        return InferEvaluateConflict(inferences.inferences, range, "Expected something destructurable but received " + kind, List())
+        return InferEvaluateConflict(inferences.inferences, range, "Expected something destructurable but received " + kind, List.empty)
       }
     }
   }

@@ -61,7 +61,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
     // This test is here because we had a bug where we didn't check that there
     // was whitespace after a "ret".
     compile(CombinatorParsers.statement, "retcode();") shouldHave {
-      case FunctionCallPE(_,_,_,_,LookupPE(NameP(_,"retcode"),None),List(),_) =>
+      case FunctionCallPE(_,_,_,_,LookupPE(NameP(_,"retcode"),None),Nil,_) =>
     }
   }
 
@@ -113,7 +113,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
 
   test("Let with destructuring pattern") {
     compile(CombinatorParsers.statement, "Muta() = m;") shouldHave {
-      case LetPE(_,None,PatternPP(_,_,None,Some(NameOrRunePT(NameP(_, "Muta"))),Some(DestructureP(_,List())),None),LookupPE(NameP(_, "m"), None)) =>
+      case LetPE(_,None,PatternPP(_,_,None,Some(NameOrRunePT(NameP(_, "Muta"))),Some(DestructureP(_,Nil)),None),LookupPE(NameP(_, "m"), None)) =>
     }
   }
 
@@ -133,7 +133,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
           LambdaPE(_,
             FunctionP(_,
               FunctionHeaderP(_,
-                None,List(),None,None,
+                None,Nil,None,None,
                 Some(
                   ParamsP(_,
                     List(
@@ -154,7 +154,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
           LambdaPE(_,
             FunctionP(_,
               FunctionHeaderP(
-                _,None,List(),None,None,
+                _,None,Nil,None,None,
                 Some(
                   ParamsP(_,
                     List(
@@ -168,11 +168,11 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
 
   test("Test block's trailing void presence") {
     compile(CombinatorParsers.filledBody, "{ moo() }") shouldHave {
-      case BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "moo"), None), List(), LendConstraintP(Some(ReadonlyP))))) =>
+      case BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "moo"), None), Nil, LendConstraintP(Some(ReadonlyP))))) =>
     }
 
     compile(CombinatorParsers.filledBody, "{ moo(); }") shouldHave {
-      case BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "moo"), None), List(), LendConstraintP(Some(ReadonlyP))), VoidPE(_))) =>
+      case BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "moo"), None), Nil, LendConstraintP(Some(ReadonlyP))), VoidPE(_))) =>
     }
   }
 

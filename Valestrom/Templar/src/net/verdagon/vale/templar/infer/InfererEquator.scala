@@ -21,7 +21,7 @@ class InfererEquator[Env, State](
     (left, right) match {
       case (KindTemplata(leftKind), rightStructTemplata @ StructTemplata(_, _)) => {
         val rightKind =
-          templataTemplarInner.evaluateStructTemplata(state, range, rightStructTemplata, List(), expectedType)
+          templataTemplarInner.evaluateStructTemplata(state, range, rightStructTemplata, List.empty, expectedType)
         (leftKind == rightKind)
       }
       case (KindTemplata(leftKind), KindTemplata(rightKind)) => {
@@ -92,8 +92,8 @@ class InfererEquator[Env, State](
       case LocationTemplata(_) =>
       case CoordTemplata(_) =>
       case KindTemplata(_) =>
-      case KindTemplata(StructRefT(_)) =>
-      case KindTemplata(InterfaceRefT(_)) =>
+      case KindTemplata(StructTT(_)) =>
+      case KindTemplata(InterfaceTT(_)) =>
       case KindTemplata(StaticSizedArrayTT(_, _)) =>
       case KindTemplata(PackTT(_, _)) =>
       case KindTemplata(RuntimeSizedArrayTT(_)) =>
@@ -132,7 +132,7 @@ class InfererEquator[Env, State](
       }
 //      case (ArrayTypeSR, KindTemplata(StaticSizedArrayT2(_, _))) => true
 //      case (ArrayTypeSR, KindTemplata(RuntimeSizedArrayT2(_))) => true
-//      case (StructTypeSR, KindTemplata(StructRef2(_))) => true
+//      case (StructTypeSR, KindTemplata(structTT(_))) => true
 //      case (StructTypeSR, StructTemplata(_, structS)) => {
 //        if (PredictingEvaluator.structIsTemplate(structS)) {
 //          // It's a struct template, not a struct.
@@ -154,7 +154,7 @@ class InfererEquator[Env, State](
 //      case (PackTypeSR, KindTemplata(PackT2(_, _))) => true
 //      case (SequenceTypeSR, KindTemplata(RuntimeSizedArrayT2(_))) => true
 //      case (CallableTypeSR, KindTemplata(FunctionT2(_, _))) => true
-//      case (CallableTypeSR, KindTemplata(StructRef2(_))) => {
+//      case (CallableTypeSR, KindTemplata(structTT(_))) => {
 //        // do we want to consider closures here? i think so?
 //        vfail()
 //      }

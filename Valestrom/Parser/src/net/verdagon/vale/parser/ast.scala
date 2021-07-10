@@ -2,7 +2,7 @@
 
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.vassert
+import net.verdagon.vale.{vassert, vpass}
 
 case class Range(begin: Int, end: Int) {
   vassert(begin == end || begin <= end)
@@ -95,7 +95,9 @@ case class PureAttributeP(range: Range) extends IFunctionAttributeP
 
 sealed trait IRuneAttributeP
 case class TypeRuneAttributeP(range: Range, tyype: ITypePR) extends IRuneAttributeP
-case class ReadOnlyRuneAttributeP(range: Range) extends IRuneAttributeP
+case class ReadOnlyRuneAttributeP(range: Range) extends IRuneAttributeP {
+  vpass()
+}
 case class PoolRuneAttributeP(range: Range) extends IRuneAttributeP
 case class ArenaRuneAttributeP(range: Range) extends IRuneAttributeP
 case class BumpRuneAttributeP(range: Range) extends IRuneAttributeP
@@ -122,7 +124,7 @@ case class FunctionHeaderP(
                             name: Option[NameP],
                             attributes: List[IFunctionAttributeP],
 
-                            // If Some(List()), should show up like the <> in fn moo<>(a int, b bool)
+                            // If Some(List.empty), should show up like the <> in fn moo<>(a int, b bool)
                             maybeUserSpecifiedIdentifyingRunes: Option[IdentifyingRunesP],
                             templateRules: Option[TemplateRulesP],
 

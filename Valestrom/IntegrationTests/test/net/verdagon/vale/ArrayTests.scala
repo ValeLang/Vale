@@ -33,7 +33,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case StaticSizedArrayLookupT(_,_,_,_, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,_,_, _, _) => {
       }
     })
 
@@ -52,7 +52,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case StaticSizedArrayLookupT(_,_,arrayType, _, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
         arrayType.array.mutability shouldEqual MutableT
       }
     })
@@ -65,7 +65,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case StaticSizedArrayLookupT(_,_,arrayType, _, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
         arrayType.array.mutability shouldEqual ImmutableT
       }
     })
@@ -78,7 +78,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case StaticSizedArrayLookupT(_,_,arrayType, _, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
         arrayType.array.mutability shouldEqual MutableT
       }
     })
@@ -91,7 +91,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case StaticSizedArrayLookupT(_,_,arrayType, _, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
         arrayType.array.mutability shouldEqual ImmutableT
       }
     })
@@ -104,7 +104,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case StaticSizedArrayLookupT(_,_,arrayType, _, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
         arrayType.array.mutability shouldEqual MutableT
       }
     })
@@ -124,7 +124,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case RuntimeSizedArrayLookupT(_,_,arrayType, _, _, _) => {
+      case RuntimeSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
         arrayType.array.mutability shouldEqual MutableT
       }
     })
@@ -137,7 +137,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case RuntimeSizedArrayLookupT(_,_,arrayType, _, _, _) => {
+      case RuntimeSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
         arrayType.array.mutability shouldEqual ImmutableT
       }
     })
@@ -150,7 +150,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case RuntimeSizedArrayLookupT(_,_,arrayType, _, _, _) => {
+      case RuntimeSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
         arrayType.array.mutability shouldEqual MutableT
       }
     })

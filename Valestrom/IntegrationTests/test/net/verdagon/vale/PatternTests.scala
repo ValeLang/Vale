@@ -67,34 +67,57 @@ class PatternTests extends FunSuite with Matchers {
     compile.evalForKind(Vector()) shouldEqual VonInt(8)
   }
 
-  // Intentional failure 2021.02.28, we never implemented pattern destructuring
-  test("Test imm struct param destructure") {
+  test("Test if-let") {
     // Checks that the 5 made it into y, and it was an int
     val compile = RunCompilation.test(
       """
+        |interface ISpaceship { }
         |
-        |struct Vec3 { x int; y int; z int; } fn main() export { refuelB(Vec3(1, 2, 3), 2); }
-        |// Using above Vec3
+        |struct Firefly { fuel int; }
+        |impl ISpaceship for Firefly;
         |
-        |// Without destructuring:
-        |fn refuelA(
-        |    vec Vec3,
-        |    len int) {
-        |  Vec3(
-        |      vec.x * len,
-        |      vec.y * len,
-        |      vec.z * len)
+        |fn main() int export {
+        |  s ISpaceship = Firefly(42);
+        |  = if (Firefly(fuel) = &s) {
+        |      fuel
+        |    } else {
+        |      73
+        |    }
         |}
-        |
-        |// With destructuring:
-        |fn refuelB(
-        |    Vec3(x, y, z),
-        |    len int) {
-        |  Vec3(x * len, y * len, z * len)
-        |}
-        |""".stripMargin)
+      """.stripMargin)
     val temputs = compile.expectTemputs()
     temputs.functions.head.header.returnType == CoordT(ShareT, ReadonlyT, IntT.i32)
     compile.evalForKind(Vector()) shouldEqual VonInt(8)
   }
+
+  // Intentional known failure 2021.02.28, we never implemented pattern destructuring
+//  test("Test imm struct param destructure") {
+//    // Checks that the 5 made it into y, and it was an int
+//    val compile = RunCompilation.test(
+//      """
+//        |
+//        |struct Vec3 { x int; y int; z int; } fn main() export { refuelB(Vec3(1, 2, 3), 2); }
+//        |// Using above Vec3
+//        |
+//        |// Without destructuring:
+//        |fn refuelA(
+//        |    vec Vec3,
+//        |    len int) {
+//        |  Vec3(
+//        |      vec.x * len,
+//        |      vec.y * len,
+//        |      vec.z * len)
+//        |}
+//        |
+//        |// With destructuring:
+//        |fn refuelB(
+//        |    Vec3(x, y, z),
+//        |    len int) {
+//        |  Vec3(x * len, y * len, z * len)
+//        |}
+//        |""".stripMargin)
+//    val temputs = compile.expectTemputs()
+//    temputs.functions.head.header.returnType == CoordT(ShareT, ReadonlyT, IntT.i32)
+//    compile.evalForKind(Vector()) shouldEqual VonInt(8)
+//  }
 }

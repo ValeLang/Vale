@@ -47,7 +47,7 @@ trait ReferenceExpressionTE extends ExpressionT {
 }
 // This is an Expression2 because we sometimes take an address and throw it
 // directly into a struct (closures!), which can have addressible members.
-trait AddressExpressionT extends ExpressionT {
+trait AddressExpressionTE extends ExpressionT {
   override def resultRegister: AddressResultT
   override def kind = resultRegister.reference.kind
 
@@ -259,7 +259,7 @@ case class WhileTE(block: BlockTE) extends ReferenceExpressionTE {
 }
 
 case class MutateTE(
-  destinationExpr: AddressExpressionT,
+  destinationExpr: AddressExpressionTE,
   sourceExpr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
   override def resultRegister = ReferenceResultT(destinationExpr.resultRegister.reference)
@@ -277,7 +277,7 @@ case class ReturnTE(
 
   def getFinalExpr(expression2: ExpressionT): Unit = {
     expression2 match {
-      case BlockTE(exprs) => getFinalExpr(exprs.last)
+      case BlockTE(expr) => getFinalExpr(expr)
     }
   }
 
@@ -296,10 +296,34 @@ case class ReturnTE(
 
 // Block2 is required to unlet all the variables it introduces.
 case class BlockTE(
-    exprs: List[ReferenceExpressionTE]
+    inner: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
 
-  vassert(exprs.last.isInstanceOf[ReferenceExpressionTE])
+  override def resultRegister = inner.resultRegister
+
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
+    List(this).collect(func) ++ inner.all(func)
+  }
+}
+
+case class ConsecutorTE(exprs: List[ReferenceExpressionTE]) extends ReferenceExpressionTE {
+  // There shouldn't be a 0-element consecutor.
+  // If we want a consecutor that returns nothing, put a VoidLiteralTE in it.
+  vassert(exprs.nonEmpty)
+
+  // There shouldn't be a 1-element consecutor.
+  // This isn't a hard technical requirement, but it does simplify the resulting AST a bit.
+  // Call Templar.consecutive to conform to this.
+  vassert(exprs.size >= 2)
+
+  // A consecutor should never contain another consecutor.
+  // This isn't a hard technical requirement, but it does simplify the resulting AST a bit.
+  // Call Templar.consecutive to make new consecutors in a way that conforms to this.
+  exprs.collect({ case ConsecutorTE(_) => vfail() })
+
+  // Everything but the last should result in a Void or a Never.
+  // The last can be anything, even a Void or a Never.
+  exprs.init.foreach(expr => vassert(expr.kind == VoidT() || expr.kind == NeverT()))
 
   // If there's a Never2() anywhere, then the entire block should end in an unreachable
   // or panic or something.
@@ -310,19 +334,6 @@ case class BlockTE(
   vassert(exprs.collect({
     case ReturnTE(_) =>
   }).size <= 1)
-
-  def lastReferenceExpr = exprs.last
-  override def resultRegister = lastReferenceExpr.resultRegister
-
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ exprs.flatMap(_.all(func))
-  }
-}
-
-case class ConsecutorTE(exprs: List[ReferenceExpressionTE]) extends ReferenceExpressionTE {
-  // Everything but the last should result in a Void.
-  // The last can be anything, even a Void or a Never.
-  exprs.init.foreach(expr => vassert(expr.kind == VoidT()))
 
   def lastReferenceExpr = exprs.last
   override def resultRegister = lastReferenceExpr.resultRegister
@@ -451,12 +462,12 @@ case class ConstantFloatTE(value: Double) extends ReferenceExpressionTE {
   }
 }
 
-case class LocalLookupT(
+case class LocalLookupTE(
   range: RangeS,
   localVariable: ILocalVariableT,
   reference: CoordT,
   variability: VariabilityT
-) extends AddressExpressionT {
+) extends AddressExpressionTE {
   override def resultRegister = AddressResultT(reference)
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -490,7 +501,7 @@ case class ArgLookupTE(
 //  }
 //}
 
-case class StaticSizedArrayLookupT(
+case class StaticSizedArrayLookupTE(
   range: RangeS,
     arrayExpr: ReferenceExpressionTE,
     arrayType: StaticSizedArrayTT,
@@ -499,7 +510,7 @@ case class StaticSizedArrayLookupT(
     // See RMLHTP why we can have this here.
     targetPermission: PermissionT,
     variability: VariabilityT
-) extends AddressExpressionT {
+) extends AddressExpressionTE {
   vassert(arrayExpr.resultRegister.reference.kind == arrayType)
 
   override def resultRegister = AddressResultT(arrayType.array.memberType)
@@ -509,7 +520,7 @@ case class StaticSizedArrayLookupT(
   }
 }
 
-case class RuntimeSizedArrayLookupT(
+case class RuntimeSizedArrayLookupTE(
   range: RangeS,
     arrayExpr: ReferenceExpressionTE,
     arrayType: RuntimeSizedArrayTT,
@@ -518,7 +529,7 @@ case class RuntimeSizedArrayLookupT(
   // See RMLHTP why we can have this here.
   targetPermission: PermissionT,
   variability: VariabilityT
-) extends AddressExpressionT {
+) extends AddressExpressionTE {
   vassert(arrayExpr.resultRegister.reference.kind == arrayType)
 
   override def resultRegister = AddressResultT(arrayType.array.memberType)
@@ -535,7 +546,7 @@ case class ArrayLengthTE(arrayExpr: ReferenceExpressionTE) extends ReferenceExpr
   }
 }
 
-case class ReferenceMemberLookupT(
+case class ReferenceMemberLookupTE(
     range: RangeS,
     structExpr: ReferenceExpressionTE,
     memberName: FullNameT[IVarNameT],
@@ -543,7 +554,7 @@ case class ReferenceMemberLookupT(
     // See RMLRMO for why we dont have a targetOwnership field here.
     // See RMLHTP why we can have this here.
     targetPermission: PermissionT,
-    variability: VariabilityT) extends AddressExpressionT {
+    variability: VariabilityT) extends AddressExpressionTE {
   override def resultRegister = {
     if (structExpr.resultRegister.reference.permission == ReadonlyT) {
       vassert(targetPermission == ReadonlyT)
@@ -559,12 +570,12 @@ case class ReferenceMemberLookupT(
     List(this).collect(func) ++ structExpr.all(func) ++ memberName.all(func) ++ memberReference.all(func)
   }
 }
-case class AddressMemberLookupT(
+case class AddressMemberLookupTE(
     range: RangeS,
     structExpr: ReferenceExpressionTE,
     memberName: FullNameT[IVarNameT],
     resultType2: CoordT,
-    variability: VariabilityT) extends AddressExpressionT {
+    variability: VariabilityT) extends AddressExpressionTE {
   override def resultRegister = AddressResultT(resultType2)
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -666,7 +677,7 @@ case class TemplarReinterpretTE(
 }
 
 case class ConstructTE(
-    structRef: StructRefT,
+    structTT: StructTT,
     resultReference: CoordT,
     args: List[ExpressionT]) extends ReferenceExpressionTE {
   vpass()
@@ -674,7 +685,7 @@ case class ConstructTE(
   override def resultRegister = ReferenceResultT(resultReference)
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ structRef.all(func) ++ args.flatMap(_.all(func))
+    List(this).collect(func) ++ structTT.all(func) ++ args.flatMap(_.all(func))
   }
 }
 
@@ -768,7 +779,7 @@ case class DestroyRuntimeSizedArrayTE(
 
 case class InterfaceToInterfaceUpcastTE(
     innerExpr: ReferenceExpressionTE,
-    targetInterfaceRef: InterfaceRefT) extends ReferenceExpressionTE {
+    targetInterfaceRef: InterfaceTT) extends ReferenceExpressionTE {
   def resultRegister: ReferenceResultT = {
     ReferenceResultT(
       CoordT(
@@ -782,7 +793,7 @@ case class InterfaceToInterfaceUpcastTE(
   }
 }
 
-case class StructToInterfaceUpcastTE(innerExpr: ReferenceExpressionTE, targetInterfaceRef: InterfaceRefT) extends ReferenceExpressionTE {
+case class StructToInterfaceUpcastTE(innerExpr: ReferenceExpressionTE, targetInterfaceRef: InterfaceTT) extends ReferenceExpressionTE {
   def resultRegister: ReferenceResultT = {
     ReferenceResultT(
       CoordT(
@@ -802,7 +813,7 @@ case class StructToInterfaceUpcastTE(innerExpr: ReferenceExpressionTE, targetInt
 // If the source was an own and target is borrow, that's a lend
 
 case class SoftLoadTE(
-    expr: AddressExpressionT, targetOwnership: OwnershipT, targetPermission: PermissionT) extends ReferenceExpressionTE {
+    expr: AddressExpressionTE, targetOwnership: OwnershipT, targetPermission: PermissionT) extends ReferenceExpressionTE {
 
   vassert((targetOwnership == ShareT) == (expr.resultRegister.reference.ownership == ShareT))
   vassert(targetOwnership != OwnT) // need to unstackify or destroy to get an owning reference
@@ -833,7 +844,7 @@ case class SoftLoadTE(
 // We also destroy shared things with this, see DDSOT.
 case class DestroyTE(
     expr: ReferenceExpressionTE,
-    structRef2: StructRefT,
+    structTT: StructTT,
     destinationReferenceVariables: List[ReferenceLocalVariableT]
 ) extends ReferenceExpressionTE {
   override def resultRegister: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))

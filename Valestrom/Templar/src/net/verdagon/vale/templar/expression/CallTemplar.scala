@@ -40,13 +40,13 @@ class CallTemplar(
       case NeverT() | BoolT() => {
         throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot " + callableExpr.resultRegister.reference.kind))
       }
-      case structRef @ StructRefT(_) => {
+      case structTT @ StructTT(_) => {
         evaluateClosureCall(
-          fate, temputs, range, structRef, explicitlySpecifiedTemplateArgTemplexesS, callableExpr, givenArgsExprs2)
+          fate, temputs, range, structTT, explicitlySpecifiedTemplateArgTemplexesS, callableExpr, givenArgsExprs2)
       }
-      case interfaceRef @ InterfaceRefT(_) => {
+      case interfaceTT @ InterfaceTT(_) => {
         evaluateClosureCall(
-          fate, temputs, range, interfaceRef, explicitlySpecifiedTemplateArgTemplexesS, callableExpr, givenArgsExprs2)
+          fate, temputs, range, interfaceTT, explicitlySpecifiedTemplateArgTemplexesS, callableExpr, givenArgsExprs2)
       }
       case OverloadSet(_, functionName, _) => {
         val unconvertedArgsPointerTypes2 =
@@ -69,7 +69,7 @@ class CallTemplar(
               functionName,
               explicitlySpecifiedTemplateArgTemplexesS,
               argsParamFilters,
-              List(),
+              List.empty,
               false) match {
             case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
               throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, seff))
@@ -135,7 +135,7 @@ class CallTemplar(
         functionName,
         explicitlySpecifiedTemplateArgTemplexesS,
         argsParamFilters,
-        List(),
+        List.empty,
         false) match {
         case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
           ErrorReporter.report(CouldntFindFunctionToCallT(range, seff))
@@ -190,8 +190,8 @@ class CallTemplar(
 
     val env =
       citizenRef match {
-        case sr @ StructRefT(_) => temputs.getEnvForStructRef(sr) // temputs.envByStructRef(sr)
-        case ir @ InterfaceRefT(_) => temputs.getEnvForInterfaceRef(ir) // temputs.envByInterfaceRef(ir)
+        case sr @ StructTT(_) => temputs.getEnvForStructRef(sr) // temputs.envByStructRef(sr)
+        case ir @ InterfaceTT(_) => temputs.getEnvForInterfaceRef(ir) // temputs.envByInterfaceRef(ir)
       }
 
     val argsTypes2 = givenArgsExprs2.map(_.resultRegister.reference)
@@ -205,7 +205,7 @@ class CallTemplar(
         argsTypes2.map(argType => ParamFilter(argType, None))
     val prototype2 =
       overloadTemplar.scoutExpectedFunctionForPrototype(
-        env, temputs, range, GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME), explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List(), false) match {
+        env, temputs, range, GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME), explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List.empty, false) match {
         case ScoutExpectedFunctionSuccess(p) => p
         case seff @ ScoutExpectedFunctionFailure(_, _, _, _, _) => {
           throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, seff))

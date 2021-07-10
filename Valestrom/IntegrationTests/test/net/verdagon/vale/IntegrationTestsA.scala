@@ -79,6 +79,15 @@ class RunCompilation(
 }
 
 class IntegrationTestsA extends FunSuite with Matchers {
+//  test("Scratch scratch") {
+//    val compile =
+//      RunCompilation.test(
+//        """
+//          |scratch code here
+//          |""".stripMargin)
+//    compile.evalForKind(Vector())
+//  }
+
   test("Simple program returning an int") {
     val compile = RunCompilation.test("fn main() int export {3}")
     compile.evalForKind(Vector()) shouldEqual VonInt(3)
@@ -259,45 +268,45 @@ class IntegrationTestsA extends FunSuite with Matchers {
   // (Yes, abstract functions have a body, specifically only containing an InterfaceCall2 on the param)
   // So, if there's *already* a body there, we won't be making the InterfaceCall2 instruction.
   // Short term, let's disallow default implementations.
-  test("Tests virtual doesn't get called if theres a better override") {
-    val compile = RunCompilation.test(
-      """
-        |interface MyOption { }
-        |
-        |struct MySome {
-        |  value MyList;
-        |}
-        |impl MyOption for MySome;
-        |
-        |struct MyNone { }
-        |impl MyOption for MyNone;
-        |
-        |
-        |struct MyList {
-        |  value int;
-        |  next MyOption;
-        |}
-        |
-        |fn sum(list &MyList) int {
-        |  list.value + sum(list.next)
-        |}
-        |
-        |fn sum(virtual opt &MyOption) int { panic("called virtual sum!") }
-        |fn sum(opt &MyNone impl MyOption) int { 0 }
-        |fn sum(opt &MySome impl MyOption) int {
-        |   sum(opt.value)
-        |}
-        |
-        |
-        |fn main() int export {
-        |  list = MyList(10, MySome(MyList(20, MySome(MyList(30, MyNone())))));
-        |  = sum(&list);
-        |}
-        |
-        |""".stripMargin)
-    val hamuts = compile.getHamuts();
-    compile.evalForKind(Vector()) shouldEqual VonInt(60)
-  }
+//  test("Tests virtual doesn't get called if theres a better override") {
+//    val compile = RunCompilation.test(
+//      """
+//        |interface MyOption { }
+//        |
+//        |struct MySome {
+//        |  value MyList;
+//        |}
+//        |impl MyOption for MySome;
+//        |
+//        |struct MyNone { }
+//        |impl MyOption for MyNone;
+//        |
+//        |
+//        |struct MyList {
+//        |  value int;
+//        |  next MyOption;
+//        |}
+//        |
+//        |fn sum(list &MyList) int {
+//        |  list.value + sum(list.next)
+//        |}
+//        |
+//        |fn sum(virtual opt &MyOption) int { panic("called virtual sum!") }
+//        |fn sum(opt &MyNone impl MyOption) int { 0 }
+//        |fn sum(opt &MySome impl MyOption) int {
+//        |   sum(opt.value)
+//        |}
+//        |
+//        |
+//        |fn main() int export {
+//        |  list = MyList(10, MySome(MyList(20, MySome(MyList(30, MyNone())))));
+//        |  = sum(&list);
+//        |}
+//        |
+//        |""".stripMargin)
+//    val hamuts = compile.getHamuts();
+//    compile.evalForKind(Vector()) shouldEqual VonInt(60)
+//  }
 
   test("Tests single expression and single statement functions' returns") {
     val compile = RunCompilation.test(
@@ -509,11 +518,11 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |""".stripMargin)
     val hinputs = compile.expectTemputs()
 
-    vassertSome(hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List(), FunctionNameT("helperFunc", List(), List(CoordT(ShareT, ReadonlyT, IntT.i32)))))))
+    vassertSome(hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List.empty, FunctionNameT("helperFunc", List.empty, List(CoordT(ShareT, ReadonlyT, IntT.i32)))))))
 
-    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List(), FunctionNameT("bork", List(), List(CoordT(ShareT, ReadonlyT, StrT())))))))
+    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List.empty, FunctionNameT("bork", List.empty, List(CoordT(ShareT, ReadonlyT, StrT())))))))
 
-    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List(), FunctionNameT("helperFunc", List(), List(CoordT(ShareT, ReadonlyT, StrT())))))))
+    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List.empty, FunctionNameT("helperFunc", List.empty, List(CoordT(ShareT, ReadonlyT, StrT())))))))
   }
 
 //  test("Test overloading between borrow and own") {
@@ -562,11 +571,11 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Test extern functions") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/externs/extern.vale"))
 
-    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate("math", List()))
+    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate("math", List.empty))
 
     // The extern we make should have the name we expect
     vassertSome(packageH.externNameToFunction.get("sqrt")) match {
-      case PrototypeH(FullNameH("sqrt",_,PackageCoordinate("math",List()),_),_,_) =>
+      case PrototypeH(FullNameH("sqrt",_,PackageCoordinate("math",Nil),_),_,_) =>
     }
 
     // We also made an internal function that contains an extern call

@@ -175,7 +175,7 @@ object VonHammer {
   }
 
   def vonifyInterface(interface: InterfaceDefinitionH): IVonData = {
-    val InterfaceDefinitionH(fullName, export, weakable, mutability, superInterfaces, prototypes) = interface
+    val InterfaceDefinitionH(fullName, weakable, mutability, superInterfaces, prototypes) = interface
 
     VonObject(
       "Interface",
@@ -183,7 +183,6 @@ object VonHammer {
       Vector(
         VonMember("name", vonifyName(fullName)),
         VonMember("kind", vonifyInterfaceRef(interface.getRef)),
-        VonMember("export", VonBool(export)),
         VonMember("weakable", VonBool(weakable)),
         VonMember("mutability", vonifyMutability(mutability)),
         VonMember("superInterfaces", VonArray(None, superInterfaces.map(vonifyInterfaceRef).toVector)),
@@ -191,7 +190,7 @@ object VonHammer {
   }
 
   def vonfiyStruct(struct: StructDefinitionH): IVonData = {
-    val StructDefinitionH(fullName, export, weakable, mutability, edges, members) = struct
+    val StructDefinitionH(fullName, weakable, mutability, edges, members) = struct
 
     VonObject(
       "Struct",
@@ -200,7 +199,6 @@ object VonHammer {
         VonMember("name", vonifyName(fullName)),
         VonMember("kind", vonifyStructRef(struct.getRef)),
         VonMember("weakable", VonBool(weakable)),
-        VonMember("export", VonBool(export)),
         VonMember("mutability", vonifyMutability(mutability)),
         VonMember("edges", VonArray(None, edges.map(edge => vonifyEdge(edge)).toVector)),
         VonMember("members", VonArray(None, members.map(vonifyStructMember).toVector))))
@@ -391,14 +389,13 @@ object VonHammer {
   }
 
   def vonifyFunction(functionH: FunctionH): IVonData = {
-    val FunctionH(prototype, export, _, _, _, body) = functionH
+    val FunctionH(prototype, _, _, _, body) = functionH
 
     VonObject(
       "Function",
       None,
       Vector(
         VonMember("prototype", vonifyPrototype(prototype)),
-        VonMember("export", VonBool(export)),
         // TODO: rename block to body
         VonMember("block", vonifyExpression(body))))
   }

@@ -52,17 +52,17 @@ trait IInfererDelegate[Env, State] {
 
   def getTupleKind(env: Env, state: State, elements: List[CoordT]): TupleTT
 
-  def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceRefT): (Option[Int])
+  def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT): (Option[Int])
 
   def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRefT):
-  (Set[InterfaceRefT])
+  (Set[InterfaceTT])
 
   def getInterfaceTemplataType(it: InterfaceTemplata): ITemplataType
   def getStructTemplataType(st: StructTemplata): ITemplataType
 
-  def getMemberCoords(state: State, structRef: StructRefT): List[CoordT]
+  def getMemberCoords(state: State, structTT: StructTT): List[CoordT]
 
-  def structIsClosure(state: State, structRef: StructRefT): Boolean
+  def structIsClosure(state: State, structTT: StructTT): Boolean
 
   def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: List[CoordT]): PrototypeT
 }
@@ -109,7 +109,7 @@ object Inferer {
     delegate: IInfererDelegate[Env, State]):
   (ITemplataTemplarInnerDelegate[Env, State]) = {
     new ITemplataTemplarInnerDelegate[Env, State] {
-      override def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceRefT): (Option[Int]) = {
+      override def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT): (Option[Int]) = {
         delegate.getAncestorInterfaceDistance(temputs, descendantCitizenRef, ancestorInterfaceRef)
       }
       override def getMutability(state: State, kind: KindT): MutabilityT = {
@@ -167,7 +167,7 @@ object Inferer {
   private def makeEvaluatorDelegate[Env, State](delegate: IInfererDelegate[Env, State]):
   IInfererEvaluatorDelegate[Env, State] = {
     new IInfererEvaluatorDelegate[Env, State] {
-      override def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRefT): (Set[InterfaceRefT]) = {
+      override def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRefT): (Set[InterfaceTT]) = {
         delegate.getAncestorInterfaces(temputs, descendantCitizenRef)
       }
 
@@ -187,16 +187,16 @@ object Inferer {
         delegate.getMutability(state: State, kind: KindT)
       }
 
-      override def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceRefT): (Option[Int]) = {
+      override def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT): (Option[Int]) = {
         delegate.getAncestorInterfaceDistance(temputs, descendantCitizenRef, ancestorInterfaceRef)
       }
 
-      override def getMemberCoords(state: State, structRef: StructRefT): List[CoordT] = {
-        delegate.getMemberCoords(state, structRef)
+      override def getMemberCoords(state: State, structTT: StructTT): List[CoordT] = {
+        delegate.getMemberCoords(state, structTT)
       }
 
-      override def structIsClosure(state: State, structRef: StructRefT): Boolean = {
-        delegate.structIsClosure(state, structRef)
+      override def structIsClosure(state: State, structTT: StructTT): Boolean = {
+        delegate.structIsClosure(state, structTT)
       }
 
       override def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: List[CoordT]): PrototypeT = {

@@ -14,16 +14,15 @@ class VivemTests extends FunSuite with Matchers {
             "main",
             0,
             PackageCoordinate.TEST_TLD,
-            List(VonObject("F",None,Vector(VonMember("humanName",VonStr("main")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector())))))),List(),ReferenceH(m.ShareH,InlineH,ReadonlyH,IntH.i32)),
+            List(VonObject("F",None,Vector(VonMember("humanName",VonStr("main")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector())))))),List.empty,ReferenceH(m.ShareH,InlineH,ReadonlyH,IntH.i32)),
         true,
-        false,
         false,
         List(UserFunctionH),
         BlockH(ConstantIntH(7, 32)))
     val programH =
       ProgramH(
         PackageCoordinateMap(Map())
-          .add(PackageCoordinate.TEST_TLD, PackageH(List(), List(), List(main), List(), List(), Map(), Map("main" -> main.prototype), Map(), Map(), Map())))
+          .add(PackageCoordinate.TEST_TLD, PackageH(List.empty, List.empty, List(main), List.empty, List.empty, Map(), Map("main" -> main.prototype), Map(), Map(), Map())))
     val result =
       Vivem.executeWithPrimitiveArgs(programH, Vector(), System.out, Vivem.emptyStdin, Vivem.nullStdout)
     result shouldEqual VonInt(7)
@@ -49,9 +48,8 @@ class VivemTests extends FunSuite with Matchers {
             "main",
             0,
             PackageCoordinate.TEST_TLD,
-            List(VonObject("F",None,Vector(VonMember("humanName",VonStr("main")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector())))))),List(),ReferenceH(m.ShareH,InlineH,ReadonlyH,IntH.i32)),
+            List(VonObject("F",None,Vector(VonMember("humanName",VonStr("main")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector())))))),List.empty,ReferenceH(m.ShareH,InlineH,ReadonlyH,IntH.i32)),
         true,
-        false,
         false,
         List(UserFunctionH),
         BlockH(
@@ -68,15 +66,14 @@ class VivemTests extends FunSuite with Matchers {
       FunctionH(
         addPrototype,
         false,
-        false,
         true,
-        List(),
+        List.empty,
         BlockH(ConstantIntH(133337, 32)))
     val programH =
       ProgramH(
         PackageCoordinateMap(Map())
-          .add(PackageCoordinate.BUILTIN, PackageH(List(), List(), List(addExtern), List(), List(), Map(), Map(), Map(), Map("__addI32" -> addPrototype), Map()))
-          .add(PackageCoordinate.TEST_TLD, PackageH(List(), List(), List(main), List(), List(), Map(), Map("main" -> main.prototype), Map(), Map(), Map())))
+          .add(PackageCoordinate.BUILTIN, PackageH(List.empty, List.empty, List(addExtern), List.empty, List.empty, Map(), Map(), Map(), Map("__addI32" -> addPrototype), Map()))
+          .add(PackageCoordinate.TEST_TLD, PackageH(List.empty, List.empty, List(main), List.empty, List.empty, Map(), Map("main" -> main.prototype), Map(), Map(), Map())))
     val result =
       Vivem.executeWithPrimitiveArgs(programH, Vector(), System.out, Vivem.emptyStdin, Vivem.nullStdout)
     result shouldEqual VonInt(159)

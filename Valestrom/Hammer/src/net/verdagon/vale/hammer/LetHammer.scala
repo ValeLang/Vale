@@ -115,7 +115,7 @@ object LetHammer {
     val stackifyH =
       translateAddressibleLet(
         hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, sourceResultPointerTypeH, varId, variability, reference)
-    val (borrowAccess, List()) =
+    val (borrowAccess, Nil) =
       LoadHammer.translateAddressibleLocalLoad(
         hinputs,
         hamuts,
@@ -173,7 +173,7 @@ object LetHammer {
           varId,
           variability)
 
-    val (borrowAccess, List()) =
+    val (borrowAccess, Nil) =
       LoadHammer.translateMundaneLocalLoad(
         hinputs,
         hamuts,
@@ -285,12 +285,12 @@ object LetHammer {
       locals: LocalsBox,
       des2: DestroyTE):
   ExpressionH[KindH] = {
-    val DestroyTE(sourceExpr2, structRef2, destinationReferenceLocalVariables) = des2
+    val DestroyTE(sourceExpr2, structTT, destinationReferenceLocalVariables) = des2
 
     val (sourceExprResultLine, sourceExprDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2);
 
-    val structDef2 = hinputs.lookupStruct(structRef2)
+    val structDefT = hinputs.lookupStruct(structTT)
 
     // Destructure2 will immediately destroy any addressible references inside it
     // (see Destructure2 comments).
@@ -301,10 +301,10 @@ object LetHammer {
     // However, the templar only supplied variables for the reference members,
     // so we need to introduce our own local variables here.
 
-    // We put List() here to make sure that we've consumed all the destination
+    // We put List.empty here to make sure that we've consumed all the destination
     // reference local variables.
-    val (List(), localTypes, localIndices) =
-      structDef2.members.foldLeft((destinationReferenceLocalVariables, List[ReferenceH[KindH]](), List[Local]()))({
+    val (Nil, localTypes, localIndices) =
+      structDefT.members.foldLeft((destinationReferenceLocalVariables, List[ReferenceH[KindH]](), List[Local]()))({
         case ((remainingDestinationReferenceLocalVariables, previousLocalTypes, previousLocalIndices), member2) => {
           member2.tyype match {
             case ReferenceMemberTypeT(memberRefType2) => {
@@ -345,10 +345,10 @@ object LetHammer {
           localIndices.toVector)
 
     val unboxingsH =
-      structDef2.members.zip(localTypes.zip(localIndices)).flatMap({
+      structDefT.members.zip(localTypes.zip(localIndices)).flatMap({
         case (structMember2, (localType, local)) => {
           structMember2.tyype match {
-            case ReferenceMemberTypeT(_) => List()
+            case ReferenceMemberTypeT(_) => List.empty
             case AddressMemberTypeT(_) => {
               // localType is the box type.
               // First, unlet it, then discard the contents.

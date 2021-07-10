@@ -10,7 +10,7 @@ object Arrays {
 //    FunctionA(
 //      RangeS.internal(-57),
 //      FunctionNameA("__Array", CodeLocationS.internal(-4)),
-//      List(),
+//      List.empty,
 //      TemplateTemplataType(List(MutabilityTemplataType, CoordTemplataType, CoordTemplataType, PrototypeTemplataType), FunctionTemplataType),
 //      Set(CodeRuneA("IntType")),
 //      List(CodeRuneA("ArrayMutability"), CodeRuneA("ArrayMutability"), CodeRuneA("ElementType"), CodeRuneA("GeneratorType"), CodeRuneA("GeneratorPrototype")),
@@ -56,7 +56,7 @@ object Arrays {
 //      CodeBodyA(
 //        BodyAE(
 //          RangeS.internal(-5621),
-//          List(),
+//          List.empty,
 //          BlockAE(
 //            RangeS.internal(-5622),
 //            List(

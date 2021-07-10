@@ -6,7 +6,7 @@ import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.OverloadTemplar.{IScoutExpectedFunctionFailureReason, InferFailure, Outscored, ScoutExpectedFunctionFailure, SpecificParamDoesntMatch, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
 import net.verdagon.vale.templar.infer.infer.{IConflictCause, InferSolveFailure}
 import net.verdagon.vale.templar.templata.{CoordTemplata, FunctionBannerT, IPotentialBanner}
-import net.verdagon.vale.templar.types.{BoolT, ConstraintT, CoordT, FloatT, IntT, KindT, OwnT, ParamFilter, ReadonlyT, ReadwriteT, ShareT, StrT, StructRefT, WeakT}
+import net.verdagon.vale.templar.types.{BoolT, ConstraintT, CoordT, FloatT, IntT, KindT, OwnT, ParamFilter, ReadonlyT, ReadwriteT, ShareT, StrT, StructTT, WeakT}
 import net.verdagon.vale.{FileCoordinate, FileCoordinateMap, repeatStr, vimpl}
 
 object TemplarErrorHumanizer {
@@ -75,6 +75,15 @@ object TemplarErrorHumanizer {
         }
         case ArrayElementsHaveDifferentTypes(range, types) => {
             ": Array's elements have different types: " + types.mkString(", ")
+        }
+        case ExportedFunctionDependedOnNonExportedKind(range, paackage, signature, nonExportedKind) => {
+          ": Exported function " + signature + " depends on kind " + nonExportedKind + " that wasn't exported from package " + paackage
+        }
+        case ExternFunctionDependedOnNonExportedKind(range, paackage, signature, nonExportedKind) => {
+          ": Extern function " + signature + " depends on kind " + nonExportedKind + " that wasn't exported from package " + paackage
+        }
+        case ExportedKindDependedOnNonExportedKind(range, paackage, signature, nonExportedKind) => {
+          ": Exported kind " + signature + " depends on kind " + nonExportedKind + " that wasn't exported from package " + paackage
         }
         case InitializedWrongNumberOfElements(range, expectedNumElements, numElementsInitialized) => {
             ": Supplied " + numElementsInitialized + " elements, but expected " + expectedNumElements + "."
@@ -199,7 +208,7 @@ object TemplarErrorHumanizer {
       case BoolT() => "bool"
       case FloatT() => "float"
       case StrT() => "str"
-      case StructRefT(f) => printableFullName(f)
+      case StructTT(f) => printableFullName(f)
     }
   }
   private def printableFullName(fullName2: FullNameT[INameT]): String = {

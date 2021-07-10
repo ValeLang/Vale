@@ -194,8 +194,32 @@ public:
       return "ValeStr*";
     } else {
       auto iter = kindToExportName.find(kind);
-      assert(iter != kindToExportName.end());
+      if (iter == kindToExportName.end()) {
+        std::cerr << "Couldn't find export name for: " << getKindHumanName(kind) << std::endl;
+        exit(1);
+      }
       return (includeProjectName && !packageCoordinate->projectName.empty() ? packageCoordinate->projectName + "_" : "") + iter->second;
+    }
+  }
+  std::string getKindHumanName(Kind* kind) const {
+    if (auto innt = dynamic_cast<Int *>(kind)) {
+      return std::string() + "i" + std::to_string(innt->bits);
+    } else if (dynamic_cast<Bool *>(kind)) {
+      return "bool";
+    } else if (dynamic_cast<Float *>(kind)) {
+      return "double";
+    } else if (dynamic_cast<Str *>(kind)) {
+      return "str";
+    } else if (auto struuct = dynamic_cast<StructKind *>(kind)) {
+      return struuct->fullName->name;
+    } else if (auto interface = dynamic_cast<InterfaceKind *>(kind)) {
+      return interface->fullName->name;
+    } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT *>(kind)) {
+      return ssaMT->name->name;
+    } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT *>(kind)) {
+      return rsaMT->name->name;
+    } else {
+      assert(false);
     }
   }
   std::string getFunctionExportName(Prototype* kind) const {

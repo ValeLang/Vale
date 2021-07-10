@@ -17,7 +17,7 @@ object ExpressionVivem {
   def makeVoid(programH: ProgramH, heap: Heap, callId: CallId) = {
     val emptyPackStructRefH = ProgramH.emptyTupleStructRef
     val emptyPackStructDefH = programH.lookupStruct(emptyPackStructRefH)
-    val void = heap.newStruct(emptyPackStructDefH, ReferenceH(ShareH, InlineH, ReadonlyH, emptyPackStructRefH), List())
+    val void = heap.newStruct(emptyPackStructDefH, ReferenceH(ShareH, InlineH, ReadonlyH, emptyPackStructRefH), List.empty)
     heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, ShareH), void)
     void
   }
@@ -114,7 +114,12 @@ object ExpressionVivem {
         val sourceRef =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
             case r @ NodeReturn(_) => {
-              vcurious()
+              // This can happen if we do for example:
+              //   ret if (true) {
+              //         ret 7;
+              //       } else {
+              //         8
+              //       };
               return r
             }
             case NodeContinue(r) => r

@@ -52,7 +52,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     val resultCoord = lookup.resultRegister.reference
     // See RMLRMO, it should result in the same type as the member.
     resultCoord match {
-      case CoordT(OwnT, ReadwriteT, StructRefT(_)) =>
+      case CoordT(OwnT, ReadwriteT, StructTT(_)) =>
       case x => vfail(x.toString)
     }
   }
@@ -114,8 +114,8 @@ class TemplarMutateTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     compile.getTemputs() match {
-      case Err(CantMutateFinalMember(_, structRefT, memberName)) => {
-        structRefT.last match {
+      case Err(CantMutateFinalMember(_, structTT, memberName)) => {
+        structTT.last match {
           case CitizenNameT("Vec3", Nil) =>
         }
         memberName.last match {
@@ -135,8 +135,8 @@ class TemplarMutateTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     compile.getTemputs() match {
-      case Err(CantMutateFinalMember(_, structRefT, memberName)) => {
-        structRefT.last match {
+      case Err(CantMutateFinalMember(_, structTT, memberName)) => {
+        structTT.last match {
           case CitizenNameT("Vec3", Nil) =>
         }
         memberName.last match {
@@ -197,9 +197,9 @@ class TemplarMutateTests extends FunSuite with Matchers {
   }
 
   test("Humanize errors") {
-    val fireflyKind = StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List.empty, CitizenNameT("Firefly", List.empty)))
+    val fireflyKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, List.empty, CitizenNameT("Firefly", List.empty)))
     val fireflyCoord = CoordT(OwnT,ReadwriteT,fireflyKind)
-    val serenityKind = StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List.empty, CitizenNameT("Serenity", List.empty)))
+    val serenityKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, List.empty, CitizenNameT("Serenity", List.empty)))
     val serenityCoord = CoordT(OwnT,ReadwriteT,serenityKind)
 
     val filenamesAndSources = FileCoordinateMap.test("blah blah blah\nblah blah blah")

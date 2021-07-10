@@ -43,6 +43,7 @@ class SignatureTests extends FunSuite with Matchers with Collector with TestPars
     }
   }
 
+
   test("Identifying runes") {
     compile(
       CombinatorParsers.topLevelFunction,

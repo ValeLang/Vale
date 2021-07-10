@@ -1,6 +1,7 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale.astronomer.FunctionA
+import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
@@ -20,8 +21,8 @@ import scala.collection.mutable
 // - If not in declared banners, then tell FunctionTemplar to start evaluating it.
 
 case class ImplT(
-  struct: StructRefT,
-  interface: InterfaceRefT
+  struct: StructTT,
+  interface: InterfaceTT
 ) extends QueriableT {
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     struct.all(func) ++ interface.all(func)
@@ -29,6 +30,7 @@ case class ImplT(
 }
 
 case class KindExportT(
+  range: RangeS,
   tyype: KindT,
   packageCoordinate: PackageCoordinate,
   exportedName: String
@@ -39,6 +41,7 @@ case class KindExportT(
 }
 
 case class FunctionExportT(
+  range: RangeS,
   prototype: PrototypeT,
   packageCoordinate: PackageCoordinate,
   exportedName: String
@@ -59,6 +62,7 @@ case class KindExternT(
 }
 
 case class FunctionExternT(
+  range: RangeS,
   prototype: PrototypeT,
   packageCoordinate: PackageCoordinate,
   externName: String
@@ -69,16 +73,16 @@ case class FunctionExternT(
 }
 
 case class InterfaceEdgeBlueprint(
-  interface: InterfaceRefT,
+  interface: InterfaceTT,
   superFamilyRootBanners: List[FunctionBannerT])
 
 case class EdgeT(
-  struct: StructRefT,
-  interface: InterfaceRefT,
+  struct: StructTT,
+  interface: InterfaceTT,
   methods: List[PrototypeT])
 
 object Program2 {
-  val emptyTupleStructRef = StructRefT(FullNameT(PackageCoordinate.BUILTIN, List.empty, TupleNameT(List.empty)))
+  val emptyTupleStructRef = StructTT(FullNameT(PackageCoordinate.BUILTIN, List.empty, TupleNameT(List.empty)))
   val emptyTupleType: PackTT = PackTT(List.empty, Program2.emptyTupleStructRef)
   val emptyTupleReference: CoordT = CoordT(ShareT, ReadonlyT, emptyTupleType)
   val emptyPackExpression: PackTE = PackTE(List.empty, CoordT(ShareT, ReadonlyT, Program2.emptyTupleType), Program2.emptyTupleType)
@@ -94,10 +98,10 @@ object Program2 {
 //  def getAllFunctions: Set[Function2]
 //  def getAllCitizens: Set[CitizenDefinition2] = getAllInterfaces ++ getAllStructs
 //  def getAllExterns: Set[FunctionHeader2]
-//  def emptyPackStructRef: structRefT
+//  def emptyPackStructRef: structTT
 //
-//  def lookupStruct(structRef: structRefT): StructDefinition2;
-//  def lookupInterface(interfaceRef: InterfaceRef2): InterfaceDefinition2;
+//  def lookupStruct(structTT: structTT): StructDefinition2;
+//  def lookupInterface(interfaceTT: InterfaceRef2): InterfaceDefinition2;
 //  def lookupCitizen(citizenRef: CitizenRef2): CitizenDefinition2;
 //  def lookupFunction(signature2: Signature2): Option[Function2];
 //

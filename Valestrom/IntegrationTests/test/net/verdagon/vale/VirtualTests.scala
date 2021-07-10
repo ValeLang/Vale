@@ -37,7 +37,7 @@ class VirtualTests extends FunSuite with Matchers {
                     CoordT(
                       OwnT,
                       ReadwriteT,
-                      InterfaceRefT(
+                      InterfaceTT(
                         FullNameT(PackageCoordinate.TEST_TLD, List.empty, CitizenNameT("I", List.empty))))))))))
       vassert(doThing.header.params(0).virtuality.get == AbstractT$)
     }
@@ -71,7 +71,7 @@ class VirtualTests extends FunSuite with Matchers {
                   CoordT(
                     OwnT,
                     ReadwriteT,
-                    InterfaceRefT(
+                    InterfaceTT(
                       FullNameT(PackageCoordinate.TEST_TLD, List.empty, CitizenNameT("I", List.empty))))))))))
     vassert(doThing.header.params(0).virtuality.get == AbstractT$)
   }
@@ -96,7 +96,7 @@ class VirtualTests extends FunSuite with Matchers {
       vassertSome(
         temputs.lookupFunction(
           SignatureT(
-            FullNameT(PackageCoordinate.TEST_TLD, List(CitizenNameT("I",List.empty)),FunctionNameT("doThing",List.empty,List(CoordT(OwnT,ReadwriteT,InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, List.empty,CitizenNameT("I",List.empty))))))))))
+            FullNameT(PackageCoordinate.TEST_TLD, List(CitizenNameT("I",List.empty)),FunctionNameT("doThing",List.empty,List(CoordT(OwnT,ReadwriteT,InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, List.empty,CitizenNameT("I",List.empty))))))))))
     vassert(doThing.header.params(0).virtuality.get == AbstractT$)
   }
 

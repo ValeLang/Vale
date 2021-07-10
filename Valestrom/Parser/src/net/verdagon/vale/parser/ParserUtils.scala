@@ -57,7 +57,7 @@ trait ParserUtils extends RegexParsers {
   }
 
   private[parser] def typeIdentifier: Parser[NameP] = {
-    pos ~ """[^\s\.\!\*\?\#\$\&\,\:\|\;\(\)\[\]\{\}=\<\>\`]+""".r ~ pos ^^ {
+    pos ~ """[^\s\'\.\!\*\?\#\$\&\,\:\|\;\(\)\[\]\{\}=\<\>\`]+""".r ~ pos ^^ {
       case begin ~ str ~ end => NameP(Range(begin, end), str)
     }
   }

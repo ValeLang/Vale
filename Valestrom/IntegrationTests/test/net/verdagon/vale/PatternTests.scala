@@ -67,6 +67,29 @@ class PatternTests extends FunSuite with Matchers {
     compile.evalForKind(Vector()) shouldEqual VonInt(8)
   }
 
+  test("Test if-let") {
+    // Checks that the 5 made it into y, and it was an int
+    val compile = RunCompilation.test(
+      """
+        |interface ISpaceship { }
+        |
+        |struct Firefly { fuel int; }
+        |impl ISpaceship for Firefly;
+        |
+        |fn main() int export {
+        |  s ISpaceship = Firefly(42);
+        |  = if (Firefly(fuel) = &s) {
+        |      fuel
+        |    } else {
+        |      73
+        |    }
+        |}
+      """.stripMargin)
+    val temputs = compile.expectTemputs()
+    temputs.functions.head.header.returnType == CoordT(ShareT, ReadonlyT, IntT.i32)
+    compile.evalForKind(Vector()) shouldEqual VonInt(8)
+  }
+
   // Intentional known failure 2021.02.28, we never implemented pattern destructuring
 //  test("Test imm struct param destructure") {
 //    // Checks that the 5 made it into y, and it was an int

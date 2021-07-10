@@ -26,12 +26,12 @@ trait IInfererMatcherDelegate[Env, State] {
   def getAncestorInterfaceDistance(
     temputs: State,
     descendantCitizenRef: CitizenRefT,
-    ancestorInterfaceRef: InterfaceRefT):
+    ancestorInterfaceRef: InterfaceTT):
   (Option[Int])
 
-  def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRefT): Set[InterfaceRefT]
+  def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRefT): Set[InterfaceTT]
 
-  def structIsClosure(state: State, structRef: StructRefT): Boolean
+  def structIsClosure(state: State, structTT: StructTT): Boolean
 
   def lookupTemplata(env: Env, range: RangeS, name: INameT): ITemplata
   def lookupTemplata(profiler: IProfiler, env: Env, range: RangeS, name: IImpreciseNameStepA): ITemplata
@@ -401,7 +401,7 @@ class InfererMatcher[Env, State](
           case ims @ InferMatchSuccess(_) => ims
         }
       }
-      case (ct @ CallTT(range, _, _, resultType), CoordTemplata(CoordT(ownership, permission, structRef @ StructRefT(_)))) => {
+      case (ct @ CallTT(range, _, _, resultType), CoordTemplata(CoordT(ownership, permission, structTT @ StructTT(_)))) => {
         vassert(instance.tyype == ct.resultType)
 
         // This check is to help with NMORFI temporarily. It assumes that we'll never have any templates that return
@@ -415,7 +415,7 @@ class InfererMatcher[Env, State](
           }
         }
 
-//        if (delegate.structIsClosure(state, structRef)) {
+//        if (delegate.structIsClosure(state, structTT)) {
 //          // If it's a closure, see if we can conform it to the receiving interface.
 //
 //          // We can make this smarter later, but for now, require that we have enough information
@@ -436,7 +436,7 @@ class InfererMatcher[Env, State](
 //        } else {
           // If its not a closure, then there's nothing special to do here.
 
-          matchCitizenAgainstCallTT(env, state, typeByRune, localRunes, inferences, range, ct, structRef)
+          matchCitizenAgainstCallTT(env, state, typeByRune, localRunes, inferences, range, ct, structTT)
 //        }
 
 
@@ -450,7 +450,7 @@ class InfererMatcher[Env, State](
         // We'll then get the return type of the function, and then set the rune.
         // Then we'll know the full IFunction1, and can proceed to glory.
       }
-      case (ct @ CallTT(range, _, _, resultType), CoordTemplata(CoordT(ownership, permission, cit @ InterfaceRefT(_)))) => {
+      case (ct @ CallTT(range, _, _, resultType), CoordTemplata(CoordT(ownership, permission, cit @ InterfaceTT(_)))) => {
         vassert(instance.tyype == ct.resultType)
 
         // This check is to help with NMORFI temporarily. It assumes that we'll never have any templates that return
@@ -466,10 +466,10 @@ class InfererMatcher[Env, State](
 
         matchCitizenAgainstCallTT(env, state, typeByRune, localRunes, inferences, range, ct, cit)
       }
-      case (ct @ CallTT(range, _, _, _), KindTemplata(structRef @ StructRefT(_))) => {
+      case (ct @ CallTT(range, _, _, _), KindTemplata(structTT @ StructTT(_))) => {
         vassert(instance.tyype == ct.resultType)
 
-//        if (delegate.structIsClosure(state, structRef)) {
+//        if (delegate.structIsClosure(state, structTT)) {
 //          // If it's a closure, see if we can conform it to the receiving interface.
 //
 //          // We can make this smarter later, but for now, require that we have enough information
@@ -490,7 +490,7 @@ class InfererMatcher[Env, State](
 //        } else {
           // If its not a closure, then there's nothing special to do here.
 
-          matchCitizenAgainstCallTT(env, state, typeByRune, localRunes, inferences, range, ct, structRef)
+          matchCitizenAgainstCallTT(env, state, typeByRune, localRunes, inferences, range, ct, structTT)
 //        }
 
 
@@ -504,7 +504,7 @@ class InfererMatcher[Env, State](
         // We'll then get the return type of the function, and then set the rune.
         // Then we'll know the full IFunction1, and can proceed to glory.
       }
-      case (ct @ CallTT(range, _, _, _), KindTemplata(cit @ InterfaceRefT(_))) => {
+      case (ct @ CallTT(range, _, _, _), KindTemplata(cit @ InterfaceTT(_))) => {
         vassert(instance.tyype == ct.resultType)
         matchCitizenAgainstCallTT(env, state, typeByRune, localRunes, inferences, range, ct, cit)
       }
@@ -809,7 +809,7 @@ class InfererMatcher[Env, State](
       case "passThroughIfConcrete" => {
         val List(kindRule) = args
         instance match {
-          case KindTemplata(StructRefT(_) | PackTT(_, _) | TupleTT(_, _) | StaticSizedArrayTT(_, _) | RuntimeSizedArrayTT(_)) => {
+          case KindTemplata(StructTT(_) | PackTT(_, _) | TupleTT(_, _) | StaticSizedArrayTT(_, _) | RuntimeSizedArrayTT(_)) => {
             matchTemplataAgainstRulexTR(env, state, typeByRune, localRunes, inferences, instance, kindRule)
           }
           case _ => return (InferMatchConflict(inferences.inferences, range, "Bad arguments to passThroughIfConcrete: " + args, List.empty))
@@ -818,7 +818,7 @@ class InfererMatcher[Env, State](
       case "passThroughIfInterface" => {
         val List(kindRule) = args
         instance match {
-          case KindTemplata(InterfaceRefT(_)) => {
+          case KindTemplata(InterfaceTT(_)) => {
             matchTemplataAgainstRulexTR(env, state, typeByRune, localRunes, inferences, instance, kindRule)
           }
           case _ => return (InferMatchConflict(inferences.inferences, range, "Bad arguments to passThroughIfInterface: " + args, List.empty))
@@ -827,7 +827,7 @@ class InfererMatcher[Env, State](
       case "passThroughIfStruct" => {
         val List(kindRule) = args
         instance match {
-          case KindTemplata(StructRefT(_)) => {
+          case KindTemplata(StructTT(_)) => {
             matchTemplataAgainstRulexTR(env, state, typeByRune, localRunes, inferences, instance, kindRule)
           }
           case _ => return (InferMatchConflict(inferences.inferences, range, "Bad arguments to passThroughIfStruct: " + instance, List.empty))
@@ -968,7 +968,7 @@ class InfererMatcher[Env, State](
           }
           case (InferEvaluateSuccess(conceptTemplata, conceptDeeplySatisfied)) => {
             val KindTemplata(sub : CitizenRefT) = subTemplata
-            val KindTemplata(interface @ InterfaceRefT(_)) = conceptTemplata
+            val KindTemplata(interface @ InterfaceTT(_)) = conceptTemplata
 
             val supers = delegate.getAncestorInterfaces(state, sub)
 
@@ -1014,24 +1014,24 @@ class InfererMatcher[Env, State](
 
 //
 //  private[infer] def matchStructAgainstOverrideSP(
-//      structRefT: structRefT,
+//      structTT: structTT,
 //      overrideRule: Override1):
 //  Boolean = {
-//    val structDefT = State.lookupStruct(structRefT)
+//    val structDefT = State.lookupStruct(structTT)
 //    val superInterfaces = structDefT.getAncestorInterfacesNotIncludingSelf(State)
 //    val matchingInterfacesAndSubTemplars =
 //      superInterfaces
-//        .flatMap(interfaceRef2 => {
+//        .flatMap(interfaceTT => {
 //          println("dont do this?")
 //          val subTemplar = new InferTemplarMatcher(env, State, delegate, rules, inferences)
-//          if (subTemplar.matchKind2AgainstKindRefSP(interfaceRef2, Some(overrideRule.tyype))) {
-//            List((interfaceRef2, subTemplar))
+//          if (subTemplar.matchKind2AgainstKindRefSP(interfaceTT, Some(overrideRule.tyype))) {
+//            List((interfaceTT, subTemplar))
 //          } else {
 //            List.empty
 //          }
 //        })
 //    if (matchingInterfacesAndSubTemplars.size > 1) {
-//      vfail("Can't figure for struct " + structRefT + " which of these interfaces it implements! " + matchingInterfacesAndSubTemplars.map(_._1))
+//      vfail("Can't figure for struct " + structTT + " which of these interfaces it implements! " + matchingInterfacesAndSubTemplars.map(_._1))
 //    }
 //    matchingInterfacesAndSubTemplars.headOption match {
 //      case None => false
@@ -1043,8 +1043,8 @@ class InfererMatcher[Env, State](
 //    }
 //  }
 
-//  private[infer] def matchStructAgainstCitizenTemplate(instance: structRefT, rule: CitizenTerrySP) = {
-//    val structRefT(instanceHumanName, instanceTemplateArgs) = instance
+//  private[infer] def matchStructAgainstCitizenTemplate(instance: structTT, rule: CitizenTerrySP) = {
+//    val structTT(instanceHumanName, instanceTemplateArgs) = instance
 //    val CitizenTerrySP(citizenTemplateRule, templateArgRules) = rule
 //
 //    if (instanceTemplateArgs.size == templateArgRules.size) {

@@ -221,19 +221,19 @@ class LocalHelper(
       case RuntimeSizedArrayTT(RawArrayTT(_, mutability, _)) => {
         if (mutability == MutableT) ConstraintT else ShareT
       }
-      //      case TemplatedClosure2(_, structRef, _) => {
-      //        val mutability = Templar.getMutability(temputs, structRef)
+      //      case TemplatedClosure2(_, structTT, _) => {
+      //        val mutability = Templar.getMutability(temputs, structTT)
       //        if (mutability == Mutable) Borrow else Share
       //      }
-      //      case OrdinaryClosure2(_, structRef, _) => {
-      //        val mutability = Templar.getMutability(temputs, structRef)
+      //      case OrdinaryClosure2(_, structTT, _) => {
+      //        val mutability = Templar.getMutability(temputs, structTT)
       //        if (mutability == Mutable) Borrow else Share
       //      }
-      case sr2 @ StructRefT(_) => {
+      case sr2 @ StructTT(_) => {
         val mutability = Templar.getMutability(temputs, sr2)
         if (mutability == MutableT) ConstraintT else ShareT
       }
-      case ir2 @ InterfaceRefT(_) => {
+      case ir2 @ InterfaceTT(_) => {
         val mutability = Templar.getMutability(temputs, ir2)
         if (mutability == MutableT) ConstraintT else ShareT
       }

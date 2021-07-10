@@ -285,12 +285,12 @@ object LetHammer {
       locals: LocalsBox,
       des2: DestroyTE):
   ExpressionH[KindH] = {
-    val DestroyTE(sourceExpr2, structRefT, destinationReferenceLocalVariables) = des2
+    val DestroyTE(sourceExpr2, structTT, destinationReferenceLocalVariables) = des2
 
     val (sourceExprResultLine, sourceExprDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2);
 
-    val structDefT = hinputs.lookupStruct(structRefT)
+    val structDefT = hinputs.lookupStruct(structTT)
 
     // Destructure2 will immediately destroy any addressible references inside it
     // (see Destructure2 comments).

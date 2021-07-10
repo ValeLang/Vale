@@ -162,13 +162,13 @@ object LoadHammer {
     val (structResultLine, structDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
-    val structRefT =
+    val structTT =
       structExpr2.resultRegister.reference.kind match {
-        case sr @ StructRefT(_) => sr
+        case sr @ StructTT(_) => sr
         case TupleTT(_, sr) => sr
         case PackTT(_, sr) => sr
       }
-    val structDefT = hinputs.lookupStruct(structRefT)
+    val structDefT = hinputs.lookupStruct(structTT)
     val memberIndex = structDefT.members.indexWhere(member => structDefT.fullName.addStep(member.name) == memberName)
     vassert(memberIndex >= 0)
     val member2 = structDefT.members(memberIndex)
@@ -234,13 +234,13 @@ object LoadHammer {
 //    val (resultTypeH) =
 //      TypeHammer.translateReference(hinputs, hamuts, resultCoord);
 
-    val structRefT =
+    val structTT =
       structExpr2.resultRegister.reference.kind match {
-        case sr @ StructRefT(_) => sr
+        case sr @ StructTT(_) => sr
         case TupleTT(_, sr) => sr
         case PackTT(_, sr) => sr
       }
-    val structDefT = hinputs.lookupStruct(structRefT)
+    val structDefT = hinputs.lookupStruct(structTT)
     val memberIndex = structDefT.members.indexWhere(member => structDefT.fullName.addStep(member.name) == memberName)
     vassert(memberIndex >= 0)
 
@@ -381,13 +381,13 @@ object LoadHammer {
     val (structResultLine, structDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
-    val structRefT =
+    val structTT =
       structExpr2.resultRegister.reference.kind match {
-        case sr @ StructRefT(_) => sr
+        case sr @ StructTT(_) => sr
         case TupleTT(_, sr) => sr
         case PackTT(_, sr) => sr
       }
-    val structDefT = hinputs.lookupStruct(structRefT)
+    val structDefT = hinputs.lookupStruct(structTT)
     val memberIndex = structDefT.members.indexWhere(member => structDefT.fullName.addStep(member.name) == memberName)
     vassert(memberIndex >= 0)
     val member2 = structDefT.members(memberIndex)

@@ -24,10 +24,10 @@ object InfererTestUtils {
     kind match {
       case VoidT() => ImmutableT
       case IntT(_) => ImmutableT
-      case StructRefT(FullNameT(_, _, CitizenNameT(humanName, _))) if humanName.startsWith("Imm") => ImmutableT
-      case StructRefT(FullNameT(_, _, CitizenNameT(humanName, _))) if humanName.startsWith("Mut") => MutableT
-      case InterfaceRefT(FullNameT(_, _, CitizenNameT(humanName, _))) if humanName.startsWith("Imm") => ImmutableT
-      case InterfaceRefT(FullNameT(_, _, CitizenNameT(humanName, _))) if humanName.startsWith("Mut") => MutableT
+      case StructTT(FullNameT(_, _, CitizenNameT(humanName, _))) if humanName.startsWith("Imm") => ImmutableT
+      case StructTT(FullNameT(_, _, CitizenNameT(humanName, _))) if humanName.startsWith("Mut") => MutableT
+      case InterfaceTT(FullNameT(_, _, CitizenNameT(humanName, _))) if humanName.startsWith("Imm") => ImmutableT
+      case InterfaceTT(FullNameT(_, _, CitizenNameT(humanName, _))) if humanName.startsWith("Mut") => MutableT
       case StaticSizedArrayTT(_, RawArrayTT(_, mutability, _)) => mutability
       case RuntimeSizedArrayTT(RawArrayTT(_, mutability, _)) => mutability
     }
@@ -55,11 +55,11 @@ case class SimpleEnvironment(templatas: TemplatasStore) extends IEnvironment {
 }
 
 class FakeInfererEvaluatorDelegate extends IInfererEvaluatorDelegate[SimpleEnvironment, FakeState] {
-  override def getAncestorInterfaceDistance(temputs: FakeState, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceRefT): (Option[Int]) = {
+  override def getAncestorInterfaceDistance(temputs: FakeState, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT): (Option[Int]) = {
     vfail()
   }
 
-  override def getAncestorInterfaces(temputs: FakeState, descendantCitizenRef: CitizenRefT): (Set[InterfaceRefT]) = {
+  override def getAncestorInterfaces(temputs: FakeState, descendantCitizenRef: CitizenRefT): (Set[InterfaceTT]) = {
     vfail()
   }
 
@@ -71,11 +71,11 @@ class FakeInfererEvaluatorDelegate extends IInfererEvaluatorDelegate[SimpleEnvir
     vfail()
   }
 
-  override def getMemberCoords(state: FakeState, structRef: StructRefT): List[CoordT] = {
+  override def getMemberCoords(state: FakeState, structTT: StructTT): List[CoordT] = {
     vfail()
   }
 
-  override def structIsClosure(state: FakeState, structRef: StructRefT): Boolean = {
+  override def structIsClosure(state: FakeState, structTT: StructTT): Boolean = {
     vfail()
   }
 
@@ -107,7 +107,7 @@ class FakeTemplataTemplarInnerDelegate extends ITemplataTemplarInnerDelegate[Sim
   override def evaluateStructTemplata(state: FakeState, callRange: RangeS, templata: StructTemplata, templateArgs: List[ITemplata]): (KindT) = {
     vfail()
   }
-  override def getAncestorInterfaceDistance(state: FakeState, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceRefT): (Option[Int]) = {
+  override def getAncestorInterfaceDistance(state: FakeState, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT): (Option[Int]) = {
     vfail()
   }
   override def getMutability(state: FakeState, kind: KindT): MutabilityT = {
@@ -260,13 +260,13 @@ class InfererTests extends FunSuite with Matchers {
           List(EqualsAR(RangeS.testZero,TemplexAR(RuneAT(RangeS.testZero,CodeRuneA("M"), MutabilityTemplataType)), TemplexAR(MutabilityAT(RangeS.testZero,MutableP)))),
           Nil)))
     entries = entries.addEntry(true, CitizenNameT("MutStructConstraint", Nil),
-      TemplataEnvEntry(CoordTemplata(CoordT(ConstraintT,ReadonlyT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil)))))))
+      TemplataEnvEntry(CoordTemplata(CoordT(ConstraintT,ReadonlyT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil)))))))
     entries = entries.addEntry(true, CitizenNameT("MutStructConstraintRW", Nil),
-      TemplataEnvEntry(CoordTemplata(CoordT(ConstraintT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil)))))))
+      TemplataEnvEntry(CoordTemplata(CoordT(ConstraintT,ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil)))))))
     entries = entries.addEntry(true, CitizenNameT("MutStructWeak", Nil),
-      TemplataEnvEntry(CoordTemplata(CoordT(WeakT, ReadonlyT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil)))))))
+      TemplataEnvEntry(CoordTemplata(CoordT(WeakT, ReadonlyT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil)))))))
     entries = entries.addEntry(true, CitizenNameT("MutStructWeakRW", Nil),
-      TemplataEnvEntry(CoordTemplata(CoordT(WeakT, ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil)))))))
+      TemplataEnvEntry(CoordTemplata(CoordT(WeakT, ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil)))))))
     entries = entries.addEntry(true, CitizenNameT("MutStaticSizedArrayOf4Int", Nil),
       TemplataEnvEntry(KindTemplata(StaticSizedArrayTT(4, RawArrayTT(CoordT(ShareT, ReadonlyT, IntT.i32), MutableT, VaryingT)))))
     // Tuples are normally addressed by TupleNameT, but that's a detail this test doesn't need to care about.
@@ -276,7 +276,7 @@ class InfererTests extends FunSuite with Matchers {
           TupleTT(
             List(Program2.intType, Program2.boolType),
             // Normally this would be backed by a struct simply named "Tup"
-            StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("ImmStruct", Nil)))))))
+            StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("ImmStruct", Nil)))))))
     val callPrototype = PrototypeTemplata(incrementPrototype)
     entries = entries.addEntry(true, callPrototype.value.fullName.last, TemplataEnvEntry(callPrototype))
     SimpleEnvironment(entries)
@@ -288,27 +288,27 @@ class InfererTests extends FunSuite with Matchers {
       new FakeTemplataTemplarInnerDelegate() {
         override def getMutability(state: FakeState, kind: KindT): MutabilityT = {
           kind match {
-            case StructRefT(FullNameT(_, _, CitizenNameT(humanName, _))) if humanName.startsWith("Mut") => MutableT
-            case StructRefT(FullNameT(_, _, CitizenNameT(humanName, _))) if humanName.startsWith("Imm") => ImmutableT
-            case InterfaceRefT(FullNameT(_, _, CitizenNameT(humanName, _))) if humanName.startsWith("Mut") => MutableT
-            case InterfaceRefT(FullNameT(_, _, CitizenNameT(humanName, _))) if humanName.startsWith("Imm") => ImmutableT
+            case StructTT(FullNameT(_, _, CitizenNameT(humanName, _))) if humanName.startsWith("Mut") => MutableT
+            case StructTT(FullNameT(_, _, CitizenNameT(humanName, _))) if humanName.startsWith("Imm") => ImmutableT
+            case InterfaceTT(FullNameT(_, _, CitizenNameT(humanName, _))) if humanName.startsWith("Mut") => MutableT
+            case InterfaceTT(FullNameT(_, _, CitizenNameT(humanName, _))) if humanName.startsWith("Imm") => ImmutableT
             case IntT(_) | VoidT() | BoolT() => ImmutableT
             case StaticSizedArrayTT(_, RawArrayTT(_, mutability, _)) => mutability
             case RuntimeSizedArrayTT(RawArrayTT(_, mutability, _)) => mutability
-            case TupleTT(_, StructRefT(FullNameT(_, _, CitizenNameT(humanName, _)))) if humanName.startsWith("Imm") => ImmutableT
+            case TupleTT(_, StructTT(FullNameT(_, _, CitizenNameT(humanName, _)))) if humanName.startsWith("Imm") => ImmutableT
             case _ => vfail()
           }
         }
         override def evaluateInterfaceTemplata(state: FakeState, callRange: RangeS, templata: InterfaceTemplata, templateArgs: List[ITemplata]): (KindT) = {
           (templata, templateArgs) match {
             case (InterfaceTemplata(_,interfaceName(TopLevelCitizenDeclarationNameA("MutTInterface", _))), List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)) )) => {
-              InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutTInterface", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))
+              InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutTInterface", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))
             }
             case (InterfaceTemplata(_,interfaceName(TopLevelCitizenDeclarationNameA("MutInterface", _))), Nil) => {
-              InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutInterface", Nil)))
+              InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutInterface", Nil)))
             }
             case (InterfaceTemplata(_,interfaceName(TopLevelCitizenDeclarationNameA("ImmInterface", _))), Nil) => {
-              InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("ImmInterface", Nil)))
+              InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("ImmInterface", Nil)))
             }
           }
         }
@@ -316,10 +316,10 @@ class InfererTests extends FunSuite with Matchers {
         override def evaluateStructTemplata(state: FakeState, callRange: RangeS, templata: StructTemplata, templateArgs: List[ITemplata]): (KindT) = {
           (templata, templateArgs) match {
             case (StructTemplata(_,structName(TopLevelCitizenDeclarationNameA("MutTStruct", _))), List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)) )) => {
-              StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutTStruct", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))
+              StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutTStruct", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))
             }
             case (StructTemplata(_,structName(TopLevelCitizenDeclarationNameA("MutStruct", _))), Nil) => {
-              StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil)))
+              StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil)))
             }
           }
         }
@@ -342,17 +342,17 @@ class InfererTests extends FunSuite with Matchers {
 
         override def getTupleKind(env: SimpleEnvironment, state: FakeState, elements: List[CoordT]): TupleTT = {
           // Theres only one tuple in this test, and its backed by the ImmStruct.
-          TupleTT(elements, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("ImmStruct", Nil))))
+          TupleTT(elements, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("ImmStruct", Nil))))
         }
       }
     val delegate =
       new FakeInfererEvaluatorDelegate() {
-        override def getAncestorInterfaces(state: FakeState, descendantCitizenRef: CitizenRefT): (Set[InterfaceRefT]) = {
+        override def getAncestorInterfaces(state: FakeState, descendantCitizenRef: CitizenRefT): (Set[InterfaceTT]) = {
           descendantCitizenRef match {
-            case StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutTStruct",List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))) => Set(InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutTInterface", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))))
-            case StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct",Nil))) => Set(InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutInterface", Nil))))
-            case InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutInterface",Nil))) => Set()
-            case StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutSoloStruct",Nil))) => Set()
+            case StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutTStruct",List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))) => Set(InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutTInterface", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))))
+            case StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct",Nil))) => Set(InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutInterface", Nil))))
+            case InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutInterface",Nil))) => Set()
+            case StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutSoloStruct",Nil))) => Set()
             case _ => vfail(descendantCitizenRef.toString)
           }
         }
@@ -410,7 +410,7 @@ class InfererTests extends FunSuite with Matchers {
 
     vassert(
       inferences.templatasByRune(CodeRuneT("__C")) ==
-        CoordTemplata(CoordT(ShareT, ReadonlyT, InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("ImmInterface", Nil))))))
+        CoordTemplata(CoordT(ShareT, ReadonlyT, InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("ImmInterface", Nil))))))
   }
 
   test("Can infer coord rune from an incoming kind") {
@@ -423,7 +423,7 @@ class InfererTests extends FunSuite with Matchers {
           RangeS.testZero,
           Map(CodeRuneT("C") -> CoordTemplataType),
           Set(CodeRuneT("C")),
-          Map(CodeRuneT("C") -> KindTemplata(InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("ImmInterface",List(KindTemplata(IntT.i32))))))),
+          Map(CodeRuneT("C") -> KindTemplata(InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("ImmInterface",List(KindTemplata(IntT.i32))))))),
           Nil,
           None,
           true)
@@ -512,7 +512,7 @@ class InfererTests extends FunSuite with Matchers {
           true)
 
     conclusions.templatasByRune(CodeRuneT("__RetRune")) shouldEqual
-      CoordTemplata(CoordT(OwnT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil)))))
+      CoordTemplata(CoordT(OwnT,ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil)))))
   }
 
   test("Can infer from simple rules") {
@@ -548,7 +548,7 @@ class InfererTests extends FunSuite with Matchers {
           RangeS.testZero,
           Map(CodeRuneT("X") -> KindTemplataType, CodeRuneT("T") -> CoordTemplataType),
           Set(CodeRuneT("X"), CodeRuneT("T")),
-          Map(CodeRuneT("X") -> KindTemplata(InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutTInterface",List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))))),
+          Map(CodeRuneT("X") -> KindTemplata(InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutTInterface",List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))))),
           Nil,
           None,
           true)
@@ -592,10 +592,10 @@ class InfererTests extends FunSuite with Matchers {
           Set(CodeRuneT("1337"), CodeRuneT("0"), CodeRuneT("T")),
           Map(),
           List(AtomAP(RangeS.testZero,Some(LocalA(CodeVarNameA("m"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),None,CodeRuneA("0"),None)),
-          Some(List(ParamFilter(CoordT(ConstraintT,ReadonlyT, InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutInterface", Nil)))),None))),
+          Some(List(ParamFilter(CoordT(ConstraintT,ReadonlyT, InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutInterface", Nil)))),None))),
           true)
 
-    vassert(inferences.templatasByRune(CodeRuneT("T")) == CoordTemplata(CoordT(OwnT,ReadwriteT, InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutInterface", Nil))))))
+    vassert(inferences.templatasByRune(CodeRuneT("T")) == CoordTemplata(CoordT(OwnT,ReadwriteT, InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutInterface", Nil))))))
   }
 
   test("Rune 0 upcasts to right type, simple") {
@@ -614,10 +614,10 @@ class InfererTests extends FunSuite with Matchers {
           Set(CodeRuneT("__Let0_")),
           Map(),
           List(AtomAP(RangeS.testZero,Some(LocalA(CodeVarNameA("x"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),None,CodeRuneA("__Let0_"),None)),
-          Some(List(ParamFilter(CoordT(OwnT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct",Nil)))),None))),
+          Some(List(ParamFilter(CoordT(OwnT,ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct",Nil)))),None))),
           true)
 
-    vassert(inferences.templatasByRune(CodeRuneT("__Let0_")) == CoordTemplata(CoordT(OwnT,ReadwriteT, InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutInterface", Nil))))))
+    vassert(inferences.templatasByRune(CodeRuneT("__Let0_")) == CoordTemplata(CoordT(OwnT,ReadwriteT, InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutInterface", Nil))))))
   }
 
   test("Rune 0 upcasts to right type templated") {
@@ -644,12 +644,12 @@ class InfererTests extends FunSuite with Matchers {
           Set(CodeRuneT("__Let0_"), CodeRuneT("T")),
           Map(),
           List(AtomAP(RangeS.testZero,Some(LocalA(CodeVarNameA("x"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),None,CodeRuneA("__Let0_"),None)),
-          Some(List(ParamFilter(CoordT(OwnT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutTStruct",List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))),None))),
+          Some(List(ParamFilter(CoordT(OwnT,ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutTStruct",List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))),None))),
           true)
 
     vassert(
       inferences.templatasByRune(CodeRuneT("__Let0_")) ==
-        CoordTemplata(CoordT(OwnT,ReadwriteT, InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutTInterface", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))))))
+        CoordTemplata(CoordT(OwnT,ReadwriteT, InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutTInterface", List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))))))
     vassert(
       inferences.templatasByRune(CodeRuneT("T")) ==
         CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))
@@ -691,12 +691,12 @@ class InfererTests extends FunSuite with Matchers {
       }
 
     // Test that it does match a pack
-    val packCoord = CoordT(ShareT, ReadonlyT,PackTT(Nil,StructRefT(FullNameT(PackageCoordinate.BUILTIN, Nil, CitizenNameT("__Pack",Nil)))))
+    val packCoord = CoordT(ShareT, ReadonlyT,PackTT(Nil,StructTT(FullNameT(PackageCoordinate.BUILTIN, Nil, CitizenNameT("__Pack",Nil)))))
     val (InferSolveSuccess(inferencesA)) = solve(ParamFilter(packCoord,None))
     vassert(inferencesA.templatasByRune(CodeRuneT("T")) == CoordTemplata(packCoord))
 
     // Test that it does match a struct
-    val structCoord = CoordT(OwnT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct",Nil))))
+    val structCoord = CoordT(OwnT,ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct",Nil))))
     val (InferSolveSuccess(inferencesD)) = solve(ParamFilter(structCoord,None))
     vassert(inferencesD.templatasByRune(CodeRuneT("T")) == CoordTemplata(structCoord))
 
@@ -706,7 +706,7 @@ class InfererTests extends FunSuite with Matchers {
     vassert(isfE.toString.contains("Bad arguments to passThroughIfConcrete"))
 
     // Test that it doesn't match an interface
-    val interfaceCoord = CoordT(OwnT,ReadwriteT, InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutInterface",Nil))))
+    val interfaceCoord = CoordT(OwnT,ReadwriteT, InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutInterface",Nil))))
     val (isfF @ InferSolveFailure(_, _, _,_,_, _, _)) = solve(ParamFilter(interfaceCoord,None))
     vassert(isfF.toString.contains("Bad arguments to passThroughIfConcrete"))
   }
@@ -749,7 +749,7 @@ class InfererTests extends FunSuite with Matchers {
       }
 
     // Test that it does match an interface
-    val interfaceCoord = CoordT(OwnT,ReadwriteT, InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutInterface",Nil))))
+    val interfaceCoord = CoordT(OwnT,ReadwriteT, InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutInterface",Nil))))
     val (InferSolveSuccess(inferencesD)) = solve(ParamFilter(interfaceCoord,None))
     vassert(inferencesD.templatasByRune(CodeRuneT("T")) == CoordTemplata(interfaceCoord))
 
@@ -798,7 +798,7 @@ class InfererTests extends FunSuite with Matchers {
       }
 
     // Test that it does match a struct
-    val structCoord = CoordT(OwnT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct",Nil))))
+    val structCoord = CoordT(OwnT,ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct",Nil))))
     val (InferSolveSuccess(inferencesD)) = solve(ParamFilter(structCoord,None))
     vassert(inferencesD.templatasByRune(CodeRuneT("T")) == CoordTemplata(structCoord))
 
@@ -808,12 +808,12 @@ class InfererTests extends FunSuite with Matchers {
     vassert(isfE.toString.contains("Bad arguments to passThroughIfStruct"))
 
     // Test that it doesn't match an interface
-    val interfaceCoord = CoordT(OwnT,ReadwriteT, InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutInterface",Nil))))
+    val interfaceCoord = CoordT(OwnT,ReadwriteT, InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutInterface",Nil))))
     val (isfF @ InferSolveFailure(_, _, _,_,_, _, _)) = solve(ParamFilter(interfaceCoord,None))
     vassert(isfF.toString.contains("Bad arguments to passThroughIfStruct"))
 
     // Test that it doesn't match an pack
-    val packCoord = CoordT(ShareT, ReadonlyT,PackTT(Nil,StructRefT(FullNameT(PackageCoordinate.BUILTIN, Nil, CitizenNameT("__Pack",Nil)))))
+    val packCoord = CoordT(ShareT, ReadonlyT,PackTT(Nil,StructTT(FullNameT(PackageCoordinate.BUILTIN, Nil, CitizenNameT("__Pack",Nil)))))
     val (isfG @ InferSolveFailure(_, _, _,_,_, _, _)) = solve(ParamFilter(packCoord,None))
     vassert(isfG.toString.contains("Bad arguments to passThroughIfStruct"))
   }
@@ -850,7 +850,7 @@ class InfererTests extends FunSuite with Matchers {
         true)
 
     inferencesD.templatasByRune(CodeRuneT("Z")) shouldEqual
-      CoordTemplata(CoordT(OwnT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutTStruct",List(CoordTemplata(CoordT(ShareT, ReadonlyT,IntT.i32))))))))
+      CoordTemplata(CoordT(OwnT,ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutTStruct",List(CoordTemplata(CoordT(ShareT, ReadonlyT,IntT.i32))))))))
   }
 
 
@@ -875,7 +875,7 @@ class InfererTests extends FunSuite with Matchers {
         None,
         true)
     inferencesD.templatasByRune(CodeRuneT("__Par0")) shouldEqual
-      CoordTemplata(CoordT(OwnT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct",Nil)))))
+      CoordTemplata(CoordT(OwnT,ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct",Nil)))))
   }
 
   test("Matching a CoordTemplataType onto a CallAT") {
@@ -900,10 +900,10 @@ class InfererTests extends FunSuite with Matchers {
         Set(CodeRuneT("0"), CodeRuneT("T")),
         Map(),
         List(AtomAP(RangeS.testZero,Some(LocalA(CodeVarNameA("x"),NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),Some(AbstractAP),CodeRuneA("0"),None)),
-        Some(List(ParamFilter(CoordT(OwnT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutTStruct",List(CoordTemplata(CoordT(ShareT, ReadonlyT,IntT.i32))))))),None))),
+        Some(List(ParamFilter(CoordT(OwnT,ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutTStruct",List(CoordTemplata(CoordT(ShareT, ReadonlyT,IntT.i32))))))),None))),
         true)
     inferencesD.templatasByRune(CodeRuneT("0")) shouldEqual
-      CoordTemplata(CoordT(OwnT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutTStruct",List(CoordTemplata(CoordT(ShareT, ReadonlyT,IntT.i32))))))))
+      CoordTemplata(CoordT(OwnT,ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutTStruct",List(CoordTemplata(CoordT(ShareT, ReadonlyT,IntT.i32))))))))
   }
 
   test("Test destructuring") {
@@ -928,7 +928,7 @@ class InfererTests extends FunSuite with Matchers {
               List(
                 AtomAP(RangeS.testZero,Some(LocalA(CodeVarNameA("x"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),None,CodeRuneA("__Let0__Mem_0"),None),
                 AtomAP(RangeS.testZero,Some(LocalA(CodeVarNameA("y"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),None,CodeRuneA("__Let0__Mem_1"),None))))),
-        Some(List(ParamFilter(CoordT(ShareT, ReadonlyT,PackTT(List(CoordT(ShareT, ReadonlyT,IntT.i32), CoordT(ShareT, ReadonlyT,IntT.i32)),StructRefT(FullNameT(PackageCoordinate.BUILTIN, Nil, CitizenNameT("__Pack",List(CoordTemplata(CoordT(ShareT, ReadonlyT,IntT.i32)), CoordTemplata(CoordT(ShareT, ReadonlyT,IntT.i32)))))))),None))),
+        Some(List(ParamFilter(CoordT(ShareT, ReadonlyT,PackTT(List(CoordT(ShareT, ReadonlyT,IntT.i32), CoordT(ShareT, ReadonlyT,IntT.i32)),StructTT(FullNameT(PackageCoordinate.BUILTIN, Nil, CitizenNameT("__Pack",List(CoordTemplata(CoordT(ShareT, ReadonlyT,IntT.i32)), CoordTemplata(CoordT(ShareT, ReadonlyT,IntT.i32)))))))),None))),
         true)
     inferencesD.templatasByRune(CodeRuneT("__Let0_")) shouldEqual
       CoordTemplata(
@@ -937,7 +937,7 @@ class InfererTests extends FunSuite with Matchers {
           ReadonlyT,
           PackTT(
             List(CoordT(ShareT, ReadonlyT,IntT.i32), CoordT(ShareT, ReadonlyT,IntT.i32)),
-            StructRefT(FullNameT(PackageCoordinate.BUILTIN, Nil, CitizenNameT("__Pack",List(CoordTemplata(CoordT(ShareT, ReadonlyT,IntT.i32)), CoordTemplata(CoordT(ShareT, ReadonlyT,IntT.i32)))))))))
+            StructTT(FullNameT(PackageCoordinate.BUILTIN, Nil, CitizenNameT("__Pack",List(CoordTemplata(CoordT(ShareT, ReadonlyT,IntT.i32)), CoordTemplata(CoordT(ShareT, ReadonlyT,IntT.i32)))))))))
     inferencesD.templatasByRune(CodeRuneT("__Let0__Mem_0")) shouldEqual
       CoordTemplata(CoordT(ShareT, ReadonlyT,IntT.i32))
     inferencesD.templatasByRune(CodeRuneT("__Let0__Mem_1")) shouldEqual
@@ -1054,7 +1054,7 @@ class InfererTests extends FunSuite with Matchers {
           ReadonlyT,
           TupleTT(
             List(CoordT(ShareT, ReadonlyT,IntT.i32), CoordT(ShareT, ReadonlyT,BoolT())),
-            StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil,CitizenNameT("ImmStruct",Nil))))))
+            StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil,CitizenNameT("ImmStruct",Nil))))))
   }
 
   test("Test matching manual sequence as coord") {
@@ -1159,7 +1159,7 @@ class InfererTests extends FunSuite with Matchers {
           RangeS.testZero,
           Map(CodeRuneT("K") -> KindTemplataType),
           Set(CodeRuneT("K")),
-          Map(CodeRuneT("K") -> KindTemplata(StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))),
+          Map(CodeRuneT("K") -> KindTemplata(StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))),
           Nil,
           None,
           true)
@@ -1176,7 +1176,7 @@ class InfererTests extends FunSuite with Matchers {
           RangeS.testZero,
           Map(CodeRuneT("K") -> KindTemplataType),
           Set(CodeRuneT("K")),
-          Map(CodeRuneT("K") -> KindTemplata(StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutSoloStruct", Nil))))),
+          Map(CodeRuneT("K") -> KindTemplata(StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutSoloStruct", Nil))))),
           Nil,
           None,
           true)
@@ -1198,7 +1198,7 @@ class InfererTests extends FunSuite with Matchers {
           RangeS.testZero,
           Map(CodeRuneT("K") -> KindTemplataType),
           Set(CodeRuneT("K"), CodeRuneT("Z")),
-          Map(CodeRuneT("K") -> KindTemplata(StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))),
+          Map(CodeRuneT("K") -> KindTemplata(StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))),
           Nil,
           None,
           true)
@@ -1215,7 +1215,7 @@ class InfererTests extends FunSuite with Matchers {
           RangeS.testZero,
           Map(CodeRuneT("K") -> KindTemplataType),
           Set(CodeRuneT("K")),
-          Map(CodeRuneT("K") -> KindTemplata(StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutSoloStruct", Nil))))),
+          Map(CodeRuneT("K") -> KindTemplata(StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutSoloStruct", Nil))))),
           Nil,
           None,
           true)
@@ -1352,43 +1352,43 @@ class InfererTests extends FunSuite with Matchers {
     expectSuccess(run("int", ShareP, ReadwriteP)) shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
 
     vassert(expectFail(run("MutStruct", ShareP, ReadonlyP)).contains("Expected a share, but was an own"))
-    expectSuccess(run("MutStruct", OwnP, ReadwriteP)) shouldEqual CoordT(OwnT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
-    expectSuccess(run("MutStruct", ConstraintP, ReadonlyP)) shouldEqual CoordT(ConstraintT,ReadonlyT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
-    expectSuccess(run("MutStruct", ConstraintP, ReadwriteP)) shouldEqual CoordT(ConstraintT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
-    expectSuccess(run("MutStruct", WeakP, ReadonlyP)) shouldEqual CoordT(WeakT, ReadonlyT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
-    expectSuccess(run("MutStruct", WeakP, ReadwriteP)) shouldEqual CoordT(WeakT, ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStruct", OwnP, ReadwriteP)) shouldEqual CoordT(OwnT,ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStruct", ConstraintP, ReadonlyP)) shouldEqual CoordT(ConstraintT,ReadonlyT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStruct", ConstraintP, ReadwriteP)) shouldEqual CoordT(ConstraintT,ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStruct", WeakP, ReadonlyP)) shouldEqual CoordT(WeakT, ReadonlyT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStruct", WeakP, ReadwriteP)) shouldEqual CoordT(WeakT, ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
 
     vassert(expectFail(run("MutStructConstraint", ShareP, ReadonlyP)).contains("Expected a share, but was a borrow"))
-    expectSuccess(run("MutStructConstraint", OwnP, ReadwriteP)) shouldEqual CoordT(OwnT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
-    expectSuccess(run("MutStructConstraint", ConstraintP, ReadonlyP)) shouldEqual CoordT(ConstraintT,ReadonlyT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStructConstraint", OwnP, ReadwriteP)) shouldEqual CoordT(OwnT,ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStructConstraint", ConstraintP, ReadonlyP)) shouldEqual CoordT(ConstraintT,ReadonlyT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
     // &!T given a &Spaceship should give a &T, it should make the ro into a Readwrite.
-    expectSuccess(run("MutStructConstraint", ConstraintP, ReadwriteP)) shouldEqual CoordT(ConstraintT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
-    expectSuccess(run("MutStructConstraint", WeakP, ReadonlyP)) shouldEqual CoordT(WeakT, ReadonlyT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStructConstraint", ConstraintP, ReadwriteP)) shouldEqual CoordT(ConstraintT,ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStructConstraint", WeakP, ReadonlyP)) shouldEqual CoordT(WeakT, ReadonlyT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
     // &&!T given a &Spaceship should give a &T, it should make the ro into a Readwrite, and the borrow into a weak.
-    expectSuccess(run("MutStructConstraint", WeakP, ReadwriteP)) shouldEqual CoordT(WeakT, ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStructConstraint", WeakP, ReadwriteP)) shouldEqual CoordT(WeakT, ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
 
     vassert(expectFail(run("MutStructConstraintRW", ShareP, ReadonlyP)).contains("Expected a share, but was a borrow"))
-    expectSuccess(run("MutStructConstraintRW", OwnP, ReadwriteP)) shouldEqual CoordT(OwnT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStructConstraintRW", OwnP, ReadwriteP)) shouldEqual CoordT(OwnT,ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
     // &T given a &!Spaceship should give a &T, it should make the Readwrite into a Readonly.
-    expectSuccess(run("MutStructConstraintRW", ConstraintP, ReadonlyP)) shouldEqual CoordT(ConstraintT,ReadonlyT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
-    expectSuccess(run("MutStructConstraintRW", ConstraintP, ReadwriteP)) shouldEqual CoordT(ConstraintT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
-    expectSuccess(run("MutStructConstraintRW", WeakP, ReadonlyP)) shouldEqual CoordT(WeakT, ReadonlyT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStructConstraintRW", ConstraintP, ReadonlyP)) shouldEqual CoordT(ConstraintT,ReadonlyT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStructConstraintRW", ConstraintP, ReadwriteP)) shouldEqual CoordT(ConstraintT,ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStructConstraintRW", WeakP, ReadonlyP)) shouldEqual CoordT(WeakT, ReadonlyT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
     // &&T given a &!Spaceship should give a &T, it should make the Readwrite into a Readonly, and the borrow into a weak.
-    expectSuccess(run("MutStructConstraintRW", WeakP, ReadwriteP)) shouldEqual CoordT(WeakT, ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStructConstraintRW", WeakP, ReadwriteP)) shouldEqual CoordT(WeakT, ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
 
     vassert(expectFail(run("MutStructWeak", ShareP, ReadonlyP)).contains("Expected a share, but was a weak"))
     vassert(expectFail(run("MutStructWeak", OwnP, ReadwriteP)).contains("Expected a own, but was a weak"))
     vassert(expectFail(run("MutStructWeak", ConstraintP, ReadonlyP)).contains("Expected a borrow, but was a weak"))
     vassert(expectFail(run("MutStructWeak", ConstraintP, ReadwriteP)).contains("Expected a borrow, but was a weak"))
-    expectSuccess(run("MutStructWeak", WeakP, ReadonlyP)) shouldEqual CoordT(WeakT, ReadonlyT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
-    expectSuccess(run("MutStructWeak", WeakP, ReadwriteP)) shouldEqual CoordT(WeakT, ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStructWeak", WeakP, ReadonlyP)) shouldEqual CoordT(WeakT, ReadonlyT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStructWeak", WeakP, ReadwriteP)) shouldEqual CoordT(WeakT, ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
 
     vassert(expectFail(run("MutStructWeakRW", ShareP, ReadonlyP)).contains("Expected a share, but was a weak"))
     vassert(expectFail(run("MutStructWeakRW", OwnP, ReadwriteP)).contains("Expected a own, but was a weak"))
     vassert(expectFail(run("MutStructWeakRW", ConstraintP, ReadonlyP)).contains("Expected a borrow, but was a weak"))
     vassert(expectFail(run("MutStructWeakRW", ConstraintP, ReadwriteP)).contains("Expected a borrow, but was a weak"))
-    expectSuccess(run("MutStructWeakRW", WeakP, ReadonlyP)) shouldEqual CoordT(WeakT, ReadonlyT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
-    expectSuccess(run("MutStructWeakRW", WeakP, ReadwriteP)) shouldEqual CoordT(WeakT, ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStructWeakRW", WeakP, ReadonlyP)) shouldEqual CoordT(WeakT, ReadonlyT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStructWeakRW", WeakP, ReadwriteP)) shouldEqual CoordT(WeakT, ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
 
     expectSuccess(run("void", ShareP, ReadonlyP)) shouldEqual CoordT(ShareT, ReadonlyT, VoidT())
     expectSuccess(run("void", OwnP, ReadwriteP)) shouldEqual CoordT(ShareT, ReadonlyT, VoidT())
@@ -1445,7 +1445,7 @@ class InfererTests extends FunSuite with Matchers {
 
     vassert(expectFail(run("MutStruct", ShareP, ReadonlyP)).contains("Couldn't match incoming own against expected share"))
     // Takes the own off the incoming own coord, ends up as another own.
-    expectSuccess(run("MutStruct", OwnP, ReadwriteP)) shouldEqual CoordT(OwnT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStruct", OwnP, ReadwriteP)) shouldEqual CoordT(OwnT,ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
     // Tries to take the borrow off the incoming own coord... fails.
     vassert(expectFail(run("MutStruct", ConstraintP, ReadonlyP)).contains("Couldn't match incoming own against expected constraint"))
     vassert(expectFail(run("MutStruct", ConstraintP, ReadwriteP)).contains("Couldn't match incoming own against expected constraint"))
@@ -1455,7 +1455,7 @@ class InfererTests extends FunSuite with Matchers {
     // Tries to take the own off the incoming borrow coord... fails.
     vassert(expectFail(run("MutStructConstraint", OwnP, ReadwriteP)).contains("Couldn't match incoming constraint against expected own"))
     // Takes the borrow off the incoming borrow coord, succeeds and gives us an own.
-    expectSuccess(run("MutStructConstraint", ConstraintP, ReadonlyP)) shouldEqual CoordT(OwnT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStructConstraint", ConstraintP, ReadonlyP)) shouldEqual CoordT(OwnT,ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
     vassert(expectFail(run("MutStructConstraint", ConstraintP, ReadwriteP)).contains("Couldn't match incoming ro against expected rw"))
     // Takes the weak off the incoming borrow coord... fails.
     vassert(expectFail(run("MutStructConstraint", WeakP, ReadonlyP)).contains("Couldn't match incoming constraint against expected weak"))
@@ -1466,7 +1466,7 @@ class InfererTests extends FunSuite with Matchers {
     vassert(expectFail(run("MutStructConstraintRW", OwnP, ReadwriteP)).contains("Couldn't match incoming constraint against expected own"))
     vassert(expectFail(run("MutStructConstraintRW", ConstraintP, ReadonlyP)).contains("Couldn't match incoming rw against expected ro"))
     // Takes the borrow off the incoming borrow coord, succeeds and gives us an own.
-    expectSuccess(run("MutStructConstraintRW", ConstraintP, ReadwriteP)) shouldEqual CoordT(OwnT,ReadwriteT,StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil,CitizenNameT("MutStruct",Nil))))
+    expectSuccess(run("MutStructConstraintRW", ConstraintP, ReadwriteP)) shouldEqual CoordT(OwnT,ReadwriteT,StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil,CitizenNameT("MutStruct",Nil))))
     // Takes the weak off the incoming borrow coord... fails.
     vassert(expectFail(run("MutStructConstraintRW", WeakP, ReadonlyP)).contains("Couldn't match incoming constraint against expected weak"))
     vassert(expectFail(run("MutStructConstraintRW", WeakP, ReadwriteP)).contains("Couldn't match incoming constraint against expected weak"))
@@ -1478,7 +1478,7 @@ class InfererTests extends FunSuite with Matchers {
     vassert(expectFail(run("MutStructWeak", ConstraintP, ReadonlyP)).contains("Couldn't match incoming weak against expected constraint"))
     vassert(expectFail(run("MutStructWeak", ConstraintP, ReadwriteP)).contains("Couldn't match incoming weak against expected constraint"))
     // Takes the weak off the incoming weak coord, succeeds and gives us an own.
-    expectSuccess(run("MutStructWeak", WeakP, ReadonlyP)) shouldEqual CoordT(OwnT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStructWeak", WeakP, ReadonlyP)) shouldEqual CoordT(OwnT,ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
     vassert(expectFail(run("MutStructWeak", WeakP, ReadwriteP)).contains("Couldn't match incoming ro against expected rw"))
     vassert(expectFail(run("MutStructWeak", ShareP, ReadonlyP)).contains("Couldn't match incoming weak against expected share"))
 
@@ -1489,7 +1489,7 @@ class InfererTests extends FunSuite with Matchers {
     vassert(expectFail(run("MutStructWeakRW", ConstraintP, ReadwriteP)).contains("Couldn't match incoming weak against expected constraint"))
     vassert(expectFail(run("MutStructWeakRW", WeakP, ReadonlyP)).contains("Couldn't match incoming rw against expected ro"))
     // Takes the weak off the incoming weak coord, succeeds and gives us an own.
-    expectSuccess(run("MutStructWeakRW", WeakP, ReadwriteP)) shouldEqual CoordT(OwnT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
+    expectSuccess(run("MutStructWeakRW", WeakP, ReadwriteP)) shouldEqual CoordT(OwnT,ReadwriteT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("MutStruct", Nil))))
     vassert(expectFail(run("MutStructWeakRW", ShareP, ReadonlyP)).contains("Couldn't match incoming weak against expected share"))
   }
 }

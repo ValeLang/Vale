@@ -38,20 +38,22 @@ class BodyTemplar(
     convertHelper: ConvertHelper,
     delegate: IBodyTemplarDelegate) {
 
+  // Returns:
+  // - IF we had to infer it, the return type.
+  // - The body.
   def declareAndEvaluateFunctionBody(
       funcOuterEnv: FunctionEnvironmentBox,
       temputs: Temputs,
       bfunction1: BFunctionA,
+      maybeExplicitReturnCoord: Option[CoordT],
       params2: List[ParameterT],
       isDestructor: Boolean):
-  (FunctionHeaderT, BlockTE) = {
+  (Option[CoordT], BlockTE) = {
     val BFunctionA(function1, _) = bfunction1;
-    val functionFullName = funcOuterEnv.fullName
 
     profiler.childFrame("evaluate body", () => {
-      function1.maybeRetCoordRune match {
+      maybeExplicitReturnCoord match {
         case None => {
-          val banner = FunctionBannerT(Some(function1), functionFullName, params2)
           val (body2, returns) =
             evaluateFunctionBody(
                 funcOuterEnv, temputs, bfunction1.origin.params, params2, bfunction1.body, isDestructor, None) match {
@@ -74,24 +76,9 @@ class BodyTemplar(
               returns.head
             }
 
-          temputs.declareFunctionReturnType(banner.toSignature, returnType2)
-          val attributesA = translateAttributes(function1.attributes)
-          val header = FunctionHeaderT(functionFullName, attributesA, params2, returnType2, Some(function1));
-
-          (header, body2)
+          (Some(returnType2), body2)
         }
-        case Some(expectedRetCoordRune) => {
-          val CoordTemplata(expectedRetCoord) =
-            vassertSome(
-              funcOuterEnv.getNearestTemplataWithAbsoluteName2(
-                NameTranslator.translateRune(expectedRetCoordRune),
-                Set(TemplataLookupContext)))
-          val header = FunctionHeaderT(functionFullName, translateAttributes(function1.attributes), params2, expectedRetCoord, Some(function1));
-          temputs.declareFunctionReturnType(header.toSignature, expectedRetCoord)
-
-          funcOuterEnv.setReturnType(Some(expectedRetCoord))
-
-          val funcOuterEnvSnapshot = funcOuterEnv.snapshot
+        case Some(explicitRetCoord) => {
           val (body2, returns) =
             evaluateFunctionBody(
                 funcOuterEnv,
@@ -100,14 +87,14 @@ class BodyTemplar(
                 params2,
                 bfunction1.body,
                 isDestructor,
-                Some(expectedRetCoord)) match {
+                Some(explicitRetCoord)) match {
               case Err(ResultTypeMismatchError(expectedType, actualType)) => {
                 throw CompileErrorExceptionT(BodyResultDoesntMatch(bfunction1.origin.range, bfunction1.origin.name, expectedType, actualType))
               }
               case Ok((body, returns)) => (body, returns)
             }
 
-          if (returns == Set(expectedRetCoord)) {
+          if (returns == Set(explicitRetCoord)) {
             // Let it through, it returns the expected type.
           } else if (returns == Set(CoordT(ShareT, ReadonlyT, NeverT()))) {
             // Let it through, it returns a never but we expect something else, that's fine
@@ -115,20 +102,12 @@ class BodyTemplar(
             // Let it through, it doesn't return anything yet it results in a never, which means
             // we called panic or something from inside.
           } else {
-            throw CompileErrorExceptionT(CouldntConvertForReturnT(bfunction1.body.range, expectedRetCoord, returns.head))
+            throw CompileErrorExceptionT(CouldntConvertForReturnT(bfunction1.body.range, explicitRetCoord, returns.head))
           }
 
-          (header, body2)
+          (None, body2)
         }
       }
-    })
-  }
-
-  def translateAttributes(attributesA: List[IFunctionAttributeA]) = {
-    attributesA.map({
-      case ExportA(packageCoord) => Export2(packageCoord)
-      case UserFunctionA => UserFunction2
-      case PureA => Pure2
     })
   }
 

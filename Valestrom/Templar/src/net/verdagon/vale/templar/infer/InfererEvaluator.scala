@@ -22,16 +22,16 @@ private[infer] trait IInfererEvaluatorDelegate[Env, State] {
 
   def getMutability(state: State, kind: KindT): MutabilityT
 
-  def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceRefT): (Option[Int])
+  def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT): (Option[Int])
 
-  def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRefT): Set[InterfaceRefT]
+  def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRefT): Set[InterfaceTT]
 
   def lookupTemplata(env: Env, range: RangeS, rune: INameT): ITemplata
   def lookupTemplata(profiler: IProfiler, env: Env, range: RangeS, name: IImpreciseNameStepA): ITemplata
 
-  def getMemberCoords(state: State, structRef: StructRefT): List[CoordT]
+  def getMemberCoords(state: State, structTT: StructTT): List[CoordT]
 
-  def structIsClosure(state: State, structRef: StructRefT): Boolean
+  def structIsClosure(state: State, structTT: StructTT): Boolean
 
   def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: List[CoordT]): PrototypeT
 }
@@ -246,7 +246,7 @@ class InfererEvaluator[Env, State](
       maybePatternDestructure match {
         case None => List.empty
         case Some(patternDestructures) => {
-          addDestructureRules(state, inferences, invocationRange, paramFilterInstance.tyype, patternDestructures, paramLocation) match {
+          addDestructureRules(state, inferences, invocationRange, patternCoordRune2, paramFilterInstance.tyype, patternDestructures, paramLocation) match {
             case iec @ InferEvaluateConflict(_, _, _, _) => return (iec, Map())
             case InferEvaluateSuccess(r, _) => r
           }
@@ -259,6 +259,7 @@ class InfererEvaluator[Env, State](
     state: State,
     inferences: InferencesBox,
     invocationRange: RangeS,
+    expectedContainerTypeRune: IRuneT,
     incomingContainerCoord: CoordT,
     patternDestructures: List[AtomAP],
     paramLocation: List[Int]
@@ -303,7 +304,7 @@ class InfererEvaluator[Env, State](
               case None => List.empty
               case Some(patternDestructures) => {
                 val memberLocation = paramLocation :+ memberIndex
-                addDestructureRules(state, inferences, range, memberCoord, patternDestructures, memberLocation) match {
+                addDestructureRules(state, inferences, range, patternCoordRune2, memberCoord, patternDestructures, memberLocation) match {
                   case iec @ InferEvaluateConflict(_, _, _, _) => {
                     return InferEvaluateConflict(inferences.inferences, range, "Failed to add parameter " + memberLocation.mkString("/"), List(iec))
                   }
@@ -553,7 +554,7 @@ class InfererEvaluator[Env, State](
           }
         val List(templata) = argTemplatas
         templata match {
-          case k @ KindTemplata(StructRefT(_) | PackTT(_, _) | TupleTT(_, _) | StaticSizedArrayTT(_, _) | RuntimeSizedArrayTT(_)) => {
+          case k @ KindTemplata(StructTT(_) | PackTT(_, _) | TupleTT(_, _) | StaticSizedArrayTT(_, _) | RuntimeSizedArrayTT(_)) => {
             (InferEvaluateSuccess(k, deeplySatisfied))
           }
           case _ => return (InferEvaluateConflict(inferences.inferences, range, "passThroughIfConcrete expected concrete kind, but got " + templata, List.empty))
@@ -578,7 +579,7 @@ class InfererEvaluator[Env, State](
           }
         val List(templata) = argTemplatas
         templata match {
-          case k @ KindTemplata(InterfaceRefT(_)) => {
+          case k @ KindTemplata(InterfaceTT(_)) => {
             (InferEvaluateSuccess(k, deeplySatisfied))
           }
           case _ => {
@@ -605,7 +606,7 @@ class InfererEvaluator[Env, State](
           }
         val List(templata) = argTemplatas
         templata match {
-          case k @ KindTemplata(StructRefT(_)) => {
+          case k @ KindTemplata(StructTT(_)) => {
             (InferEvaluateSuccess(k, deeplySatisfied))
           }
           case _ => {
@@ -1024,7 +1025,7 @@ class InfererEvaluator[Env, State](
       }
 
     (maybeSub, maybeConcept) match {
-      case (Some(KindTemplata(sub : CitizenRefT)), Some(KindTemplata(suuper : InterfaceRefT))) => {
+      case (Some(KindTemplata(sub : CitizenRefT)), Some(KindTemplata(suuper : InterfaceTT))) => {
         val supers = delegate.getAncestorInterfaces(state, sub)
 
         if (supers.contains(suuper)) {
@@ -1279,7 +1280,7 @@ class InfererEvaluator[Env, State](
       equator,
       evaluateRule,
       new IInfererMatcherDelegate[Env, State] {
-        override def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceRefT) = {
+        override def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT) = {
           delegate.getAncestorInterfaceDistance(temputs, descendantCitizenRef, ancestorInterfaceRef)
         }
 
@@ -1291,12 +1292,12 @@ class InfererEvaluator[Env, State](
           delegate.lookupMemberTypes(state, kind, expectedNumMembers)
         }
 
-        override def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRefT): Set[InterfaceRefT] = {
+        override def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRefT): Set[InterfaceTT] = {
           delegate.getAncestorInterfaces(temputs, descendantCitizenRef)
         }
 
-        override def structIsClosure(state: State, structRef: StructRefT): Boolean = {
-          delegate.structIsClosure(state, structRef)
+        override def structIsClosure(state: State, structTT: StructTT): Boolean = {
+          delegate.structIsClosure(state, structTT)
         }
 
         override def lookupTemplata(env: Env, range: RangeS, name: INameT): ITemplata = {
@@ -1318,7 +1319,7 @@ class InfererEvaluator[Env, State](
     expectedNumMembers: Int):
   IInferEvaluateResult[List[CoordT]] = {
     kind match {
-      case sr @ StructRefT(_) => {
+      case sr @ StructTT(_) => {
         val memberCoords = delegate.getMemberCoords(state, sr)
         if (memberCoords.size != expectedNumMembers) {
           return InferEvaluateConflict(inferences.inferences, range, "Expected something with " + expectedNumMembers + " members but received " + kind, List.empty)

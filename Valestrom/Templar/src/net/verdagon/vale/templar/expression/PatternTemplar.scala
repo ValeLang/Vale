@@ -208,7 +208,7 @@ class PatternTemplar(
 
     val CoordT(OwnT, expectedContainerPermission, expectedContainerKind) = expectedCoord
     expectedContainerKind match {
-      case StructRefT(_) => {
+      case StructTT(_) => {
         // Example:
         //   struct Marine { bork: Bork; }
         //   Marine(b) = m;
@@ -219,13 +219,13 @@ class PatternTemplar(
         translateDestroyStructInnerAndMaybeContinue(
           temputs, fate, range, initialLiveCaptureLocals, listOfMaybeDestructureMemberPatterns, expectedCoord, inputExpr, afterDestructureSuccessContinuation)
       }
-      case PackTT(_, underlyingStruct@StructRefT(_)) => {
+      case PackTT(_, underlyingStruct@StructTT(_)) => {
         val structType2 = CoordT(OwnT, expectedContainerPermission, underlyingStruct)
         val reinterpretExpr2 = TemplarReinterpretTE(inputExpr, structType2)
         translateDestroyStructInnerAndMaybeContinue(
           temputs, fate, range, initialLiveCaptureLocals, listOfMaybeDestructureMemberPatterns, structType2, reinterpretExpr2, afterDestructureSuccessContinuation)
       }
-      case TupleTT(_, underlyingStruct@StructRefT(_)) => {
+      case TupleTT(_, underlyingStruct@StructTT(_)) => {
         val structType2 = CoordT(OwnT, expectedContainerPermission, underlyingStruct)
         val reinterpretExpr2 = TemplarReinterpretTE(inputExpr, structType2)
         translateDestroyStructInnerAndMaybeContinue(
@@ -292,7 +292,7 @@ class PatternTemplar(
       case headMaybeDestructureMemberPattern :: tailDestructureMemberPatternMaybes => {
         val memberAddrExprTE =
           expectedContainerKind match {
-            case structRefT@StructRefT(_) => {
+            case structTT@StructTT(_) => {
               // Example:
               //   struct Marine { bork: Bork; }
               //   Marine(b) = m;
@@ -301,15 +301,15 @@ class PatternTemplar(
               // Since we're receiving an owning reference, and we're *not* capturing
               // it in a variable, it will be destroyed and we will harvest its parts.
 
-              loadFromStruct(temputs, range, expectedContainerPermission, containerAliasingExprTE, structRefT, memberIndex)
+              loadFromStruct(temputs, range, expectedContainerPermission, containerAliasingExprTE, structTT, memberIndex)
             }
-            case PackTT(_, underlyingStruct@StructRefT(_)) => {
+            case PackTT(_, underlyingStruct@StructTT(_)) => {
               val reinterpretedStructRefT = CoordT(expectedContainerOwnership, expectedContainerPermission, underlyingStruct)
               val reinterpretedContainerAliasingExprTE = TemplarReinterpretTE(containerAliasingExprTE, reinterpretedStructRefT)
               loadFromStruct(
                 temputs, range, expectedContainerPermission, reinterpretedContainerAliasingExprTE, underlyingStruct, memberIndex)
             }
-            case TupleTT(_, underlyingStruct@StructRefT(_)) => {
+            case TupleTT(_, underlyingStruct@StructTT(_)) => {
               val reinterpretedStructRefT = CoordT(expectedContainerOwnership, expectedContainerPermission, underlyingStruct)
               val reinterpretedContainerAliasingExprTE = TemplarReinterpretTE(containerAliasingExprTE, reinterpretedStructRefT)
               loadFromStruct(
@@ -357,15 +357,15 @@ class PatternTemplar(
   ): ReferenceExpressionTE = {
     vassert(initialLiveCaptureLocals == initialLiveCaptureLocals.distinct)
 
-    val CoordT(_, _, structRefT @ StructRefT(_)) = structType2
-    val structDefT = temputs.getStructDefForRef(structRefT)
+    val CoordT(_, _, structTT @ StructTT(_)) = structType2
+    val structDefT = temputs.getStructDefForRef(structTT)
     // We don't pattern match against closure structs.
 
     val memberLocals =
       structDefT.members
         .map(_.tyype.expectReferenceMember().reference)
         .map(memberType => localHelper.makeTemporaryLocal(fate, memberType)).toList
-    val destroyTE = DestroyTE(inputStructExpr, structRefT, memberLocals)
+    val destroyTE = DestroyTE(inputStructExpr, structTT, memberLocals)
     val liveCaptureLocals = initialLiveCaptureLocals ++ memberLocals
     vassert(liveCaptureLocals == liveCaptureLocals.distinct)
 
@@ -425,9 +425,9 @@ class PatternTemplar(
     range: RangeS,
     structPermission: PermissionT,
     containerAlias: ReferenceExpressionTE,
-    structRefT: StructRefT,
+    structTT: StructTT,
     index: Int) = {
-    val structDefT = temputs.getStructDefForRef(structRefT)
+    val structDefT = temputs.getStructDefForRef(structTT)
 
     val member = structDefT.members(index)
 

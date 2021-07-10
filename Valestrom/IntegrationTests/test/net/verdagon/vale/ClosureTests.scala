@@ -115,7 +115,7 @@ class ClosureTests extends FunSuite with Matchers {
         ReferenceLocalVariableT(
           FullNameT(_, List(FunctionNameT("main",_,_), LambdaCitizenNameT(_), FunctionNameT("__call",_,_)), ClosureParamNameT()),
           FinalT,
-          CoordT(ShareT,ReadonlyT,StructRefT(FullNameT(_, List(FunctionNameT("main",Nil, Nil)),LambdaCitizenNameT(_))))),
+          CoordT(ShareT,ReadonlyT,StructTT(FullNameT(_, List(FunctionNameT("main",Nil, Nil)),LambdaCitizenNameT(_))))),
         ReferenceLocalVariableT(
           FullNameT(_, List(FunctionNameT("main",_,_), LambdaCitizenNameT(_), FunctionNameT("__call",_,_)),TemplarBlockResultVarNameT(0)),
           FinalT,
@@ -154,14 +154,14 @@ class ClosureTests extends FunSuite with Matchers {
           }
         }))
     lambdaCall.header.paramTypes.head match {
-      case CoordT(ShareT, ReadonlyT, StructRefT(FullNameT(_, List(FunctionNameT("main",Nil,Nil)),LambdaCitizenNameT(_)))) =>
+      case CoordT(ShareT, ReadonlyT, StructTT(FullNameT(_, List(FunctionNameT("main",Nil,Nil)),LambdaCitizenNameT(_)))) =>
     }
     lambdaCall.header.returnType shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
 
     // Make sure we make it with a function pointer and a constructed vars struct
     val main = temputs.lookupFunction("main")
     main.only({
-      case ConstructTE(StructRefT(FullNameT(_, List(FunctionNameT("main",Nil,Nil)),LambdaCitizenNameT(_))), _, _) =>
+      case ConstructTE(StructTT(FullNameT(_, List(FunctionNameT("main",Nil,Nil)),LambdaCitizenNameT(_))), _, _) =>
     })
 
     // Make sure we call the function somewhere

@@ -163,12 +163,12 @@ object Hammer {
     val emptyPackStructRefH = StructHammer.translateStructRef(hinputs, hamuts, emptyPackStructRef)
     vassert(emptyPackStructRefH == ProgramH.emptyTupleStructRef)
 
-    kindExports.foreach({ case KindExportT(tyype, packageCoordinate, exportName) =>
+    kindExports.foreach({ case KindExportT(_, tyype, packageCoordinate, exportName) =>
       val kindH = TypeHammer.translateKind(hinputs, hamuts, tyype)
       hamuts.addKindExport(kindH, packageCoordinate, exportName)
     })
 
-    functionExports.foreach({ case FunctionExportT(prototype, packageCoordinate, exportName) =>
+    functionExports.foreach({ case FunctionExportT(_, prototype, packageCoordinate, exportName) =>
       val prototypeH = FunctionHammer.translatePrototype(hinputs, hamuts, prototype)
       hamuts.addFunctionExport(prototypeH, packageCoordinate, exportName)
     })
@@ -178,7 +178,7 @@ object Hammer {
       hamuts.addKindExtern(kindH, packageCoordinate, exportName)
     })
 
-    functionExterns.foreach({ case FunctionExternT(prototype, packageCoordinate, exportName) =>
+    functionExterns.foreach({ case FunctionExternT(_, prototype, packageCoordinate, exportName) =>
       val prototypeH = FunctionHammer.translatePrototype(hinputs, hamuts, prototype)
       hamuts.addFunctionExtern(prototypeH, packageCoordinate, exportName)
     })

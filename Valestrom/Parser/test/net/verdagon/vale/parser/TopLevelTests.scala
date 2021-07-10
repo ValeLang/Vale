@@ -75,4 +75,14 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
       case TopLevelImportP(ImportP(_, NameP(_, "somemodule"), List(NameP(_, "subpackage")), NameP(_, "List"))) =>
     }
   }
+
+  test("Return with region generics") {
+    val program = compileProgram(
+      """
+        |fn strongestDesire() IDesire<'r, 'i> { }
+        |""".stripMargin)
+    program.topLevelThings(0) match {
+      case TopLevelFunctionP(func) =>
+    }
+  }
 }

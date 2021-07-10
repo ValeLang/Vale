@@ -78,8 +78,8 @@ object TemplataNamer {
       case PackTT(_, underlyingStruct) => {
         getKindIdentifierName(underlyingStruct)
       }
-      case StructRefT(fullName) => "𝕊" + getFullNameIdentifierName(fullName)
-      case InterfaceRefT(fullName) => "𝕋" + getFullNameIdentifierName(fullName)
+      case StructTT(fullName) => "𝕊" + getFullNameIdentifierName(fullName)
+      case InterfaceTT(fullName) => "𝕋" + getFullNameIdentifierName(fullName)
       case OverloadSet(env, name, _) => {
         "𝔾" + " " + env + " " + name
       }
@@ -93,8 +93,8 @@ object TemplataNamer {
       case MutabilityTemplata(MutableT) => "ㄊmut"
       case MutabilityTemplata(ImmutableT) => "ㄊimm"
       case IntegerTemplata(num) => "ㄊ" + num
-//      case StructTemplateTemplata(struct1) => "ㄊ𝕊" + struct1.struct1Id
-//      case InterfaceTemplateTemplata(interface1) => "ㄊ𝕋" + interface1.interface1Id
+//      case StructTemplateTemplata(structA) => "ㄊ𝕊" + structA.struct1Id
+//      case InterfaceTemplateTemplata(interfaceA) => "ㄊ𝕋" + interfaceA.interface1Id
     }
   }
 

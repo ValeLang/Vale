@@ -2,7 +2,7 @@ package net.verdagon.vale.hinputs
 
 import net.verdagon.vale.templar.{CitizenNameT, EdgeT, FullNameT, FunctionT, FunctionExportT, FunctionExternT, FunctionNameT, IFunctionNameT, ImplT, InterfaceEdgeBlueprint, KindExportT, KindExternT, LambdaCitizenNameT, Program2, simpleName}
 import net.verdagon.vale.templar.templata.{FunctionBannerT, PrototypeT, SignatureT}
-import net.verdagon.vale.templar.types.{InterfaceDefinitionT, InterfaceRefT, KindT, StructDefinitionT, StructRefT}
+import net.verdagon.vale.templar.types.{InterfaceDefinitionT, InterfaceTT, KindT, StructDefinitionT, StructTT}
 import net.verdagon.vale.{PackageCoordinate, vassertSome, vfail}
 
 import scala.collection.immutable.List
@@ -10,24 +10,24 @@ import scala.collection.immutable.List
 case class Hinputs(
     interfaces: List[InterfaceDefinitionT],
     structs: List[StructDefinitionT],
-    emptyPackStructRef: StructRefT,
+    emptyPackStructRef: StructTT,
     functions: List[FunctionT],
     kindToDestructor: Map[KindT, PrototypeT],
-    edgeBlueprintsByInterface: Map[InterfaceRefT, InterfaceEdgeBlueprint],
+    edgeBlueprintsByInterface: Map[InterfaceTT, InterfaceEdgeBlueprint],
     edges: List[EdgeT],
     kindExports: List[KindExportT],
     functionExports: List[FunctionExportT],
     kindExterns: List[KindExternT],
     functionExterns: List[FunctionExternT]) {
 
-  def lookupStruct(structRef: StructRefT): StructDefinitionT = {
-    structs.find(_.getRef == structRef) match {
-      case None => vfail("Couldn't find struct: " + structRef)
+  def lookupStruct(structTT: StructTT): StructDefinitionT = {
+    structs.find(_.getRef == structTT) match {
+      case None => vfail("Couldn't find struct: " + structTT)
       case Some(s) => s
     }
   }
-  def lookupInterface(interfaceRef: InterfaceRefT): InterfaceDefinitionT = {
-    vassertSome(interfaces.find(_.getRef == interfaceRef))
+  def lookupInterface(interfaceTT: InterfaceTT): InterfaceDefinitionT = {
+    vassertSome(interfaces.find(_.getRef == interfaceTT))
   }
   def lookupFunction(signature2: SignatureT): Option[FunctionT] = {
     functions.find(_.header.toSignature == signature2).headOption
@@ -63,8 +63,8 @@ case class Hinputs(
     matches.head
   }
 
-  def lookupImpl(structRef: StructRefT, interfaceRef: InterfaceRefT): EdgeT = {
-    edges.find(impl => impl.struct == structRef && impl.interface == interfaceRef).get
+  def lookupImpl(structTT: StructTT, interfaceTT: InterfaceTT): EdgeT = {
+    edges.find(impl => impl.struct == structTT && impl.interface == interfaceTT).get
   }
 
   def lookupInterface(humanName: String): InterfaceDefinitionT = {

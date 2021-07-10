@@ -123,8 +123,6 @@ case class ProgramH(
 case class StructDefinitionH(
     // Name of the struct. Guaranteed to be unique in the entire program.
     fullName: FullNameH,
-    // Whether we should export this for use by clients.
-    export: Boolean,
     // Whether we can take weak references to this object.
     // On native, this means an extra "weak ref count" will be included for the object.
     // On JVM/CLR/JS, this means the object will have an extra tiny object pointing
@@ -160,8 +158,6 @@ case class StructMemberH(
 // An interface definition containing name, methods, etc.
 case class InterfaceDefinitionH(
   fullName: FullNameH,
-  // Whether we should export this for use by clients.
-  export: Boolean,
   // Whether we can take weak references to this interface.
   // On native, this means an extra "weak ref count" will be included for the object.
   // On JVM/CLR/JS, this means the object should extend the IWeakable interface,
@@ -212,8 +208,6 @@ case class FunctionH(
   // Describes the function's name, params, and return type.
   prototype: PrototypeH,
 
-  // Whether we should export this for use by clients.
-  export: Boolean,
   // Whether this has a body. If true, the body will simply contain an InterfaceCallH instruction.
   isAbstract: Boolean,
   // Whether this has a body. If true, the body will simply contain an ExternCallH instruction to the same

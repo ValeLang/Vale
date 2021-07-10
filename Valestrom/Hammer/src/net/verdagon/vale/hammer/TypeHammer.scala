@@ -70,16 +70,16 @@ object TypeHammer {
       case FloatT() => FloatH()
       case StrT() => StrH()
       case VoidT() => ProgramH.emptyTupleStructRef
-      case s @ StructRefT(_) => StructHammer.translateStructRef(hinputs, hamuts, s)
+      case s @ StructTT(_) => StructHammer.translateStructRef(hinputs, hamuts, s)
 
-      case i @ InterfaceRefT(_) => StructHammer.translateInterfaceRef(hinputs, hamuts, i)
+      case i @ InterfaceTT(_) => StructHammer.translateInterfaceRef(hinputs, hamuts, i)
 
 //      // A Closure2 is really just a struct ref under the hood. The dinstinction is only meaningful
 //      // to the Templar.
 //      case OrdinaryClosure2(_, handleStructRef, prototype) => translate(hinputs, hamuts, currentFunctionHeader, handleStructRef)
 //      case TemplatedClosure2(_, handleStructRef, terry) => translate(hinputs, hamuts, currentFunctionHeader, handleStructRef)
-      case OverloadSet(_, _, understructRefT) => {
-        StructHammer.translateStructRef(hinputs, hamuts, understructRefT)
+      case OverloadSet(_, _, understructTT) => {
+        StructHammer.translateStructRef(hinputs, hamuts, understructTT)
       }
 
       // A PackT2 is really just a struct ref under the hood. The dinstinction is only meaningful
@@ -105,7 +105,7 @@ object TypeHammer {
         case (ShareT, OverloadSet(_, _, _)) => InlineH
         case (ShareT, PackTT(_, _)) => InlineH
         case (ShareT, TupleTT(_, _)) => InlineH
-        case (ShareT, StructRefT(FullNameT(_, _, TupleNameT(_)))) => InlineH
+        case (ShareT, StructTT(FullNameT(_, _, TupleNameT(_)))) => InlineH
         case (ShareT, VoidT()) => InlineH
         case (ShareT, IntT(_)) => InlineH
         case (ShareT, BoolT()) => InlineH

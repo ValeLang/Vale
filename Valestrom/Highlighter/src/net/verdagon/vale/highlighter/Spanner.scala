@@ -212,6 +212,12 @@ object Spanner {
       case DestructPE(range, expr) => {
         makeSpan(Destruct, range, List(forExpression(expr)))
       }
+      case StrInterpolatePE(range, parts) => {
+        makeSpan(
+          Str,
+          range,
+          parts.map(forExpression))
+      }
       case DotPE(range, left, operatorRange, _, member) => {
         makeSpan(
           MemberAccess,

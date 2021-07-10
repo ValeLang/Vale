@@ -72,7 +72,7 @@ trait TemplexParser extends RegexParsers with ParserUtils {
     (pos ~ ("&" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), ConstraintP, ReadonlyP, inner) }) |
     (pos ~ ("inl" ~> white ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InlinePT(Range(begin, end), inner) }) |
     // A hack to do region highlighting
-    ((pos ~ ("'" ~> optWhite ~> exprIdentifier <~ optWhite) ~ templex ~ pos) ^^ { case begin ~ regionName ~ inner ~ end => inner }) |
+    ((pos ~ ("'" ~> optWhite ~> exprIdentifier <~ white) ~ templex ~ pos) ^^ { case begin ~ regionName ~ inner ~ end => inner }) |
     (pos ~ ((atomTemplex <~ optWhite) ~ ("<" ~> optWhite ~> repsep(templex, optWhite ~ "," ~ optWhite) <~ optWhite <~ ">")) ~ pos ^^ {
       case begin ~ (template ~ args) ~ end => CallPT(Range(begin, end), template, args)
     }) |

@@ -45,7 +45,7 @@ object ParserVonifier {
     thing match {
       case TypeRuneAttributeP(range, tyype) => {
         VonObject(
-          "ReadOnlyRuneAttribute",
+          "TypeRuneAttribute",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),

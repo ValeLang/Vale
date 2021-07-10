@@ -50,6 +50,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
 
   test("String with apostrophe inside") {
     compile(CombinatorParsers.expression, """"m'oo"""") shouldHave { case ConstantStrPE(_, "m'oo") => }
+    compile(CombinatorParsers.expression, "\"\"\"m\'oo\"\"\"") shouldHave { case ConstantStrPE(_, "m'oo") => }
   }
 
   test("Short string interpolating") {

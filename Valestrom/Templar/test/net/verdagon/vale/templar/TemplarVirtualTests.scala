@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale.templar.templata.CoordTemplata
-import net.verdagon.vale.templar.types.{ConstraintT, CoordT, InterfaceRefT, OwnT, ReadonlyT, ReadwriteT, StructRefT}
+import net.verdagon.vale.templar.types.{ConstraintT, CoordT, InterfaceTT, OwnT, ReadonlyT, ReadwriteT, StructTT}
 import net.verdagon.vale.{vassert, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -29,16 +29,16 @@ class TemplarVirtualTests extends FunSuite with Matchers {
     temputs.lookupFunction("as").only({
       case as @ AsSubtypeTE(sourceExpr, targetSubtype, resultOptType, okConstructor, errConstructor) => {
         sourceExpr.resultRegister.reference match {
-          case CoordT(ConstraintT,ReadonlyT,InterfaceRefT(FullNameT(_, Nil,CitizenNameT("IShip",Nil)))) =>
+          case CoordT(ConstraintT,ReadonlyT,InterfaceTT(FullNameT(_, Nil,CitizenNameT("IShip",Nil)))) =>
         }
         targetSubtype match {
-          case StructRefT(FullNameT(_, Nil,CitizenNameT("Raza",Nil))) =>
+          case StructTT(FullNameT(_, Nil,CitizenNameT("Raza",Nil))) =>
         }
         val (firstGenericArg, secondGenericArg) =
           resultOptType match {
             case CoordT(
               OwnT,ReadwriteT,
-              InterfaceRefT(
+              InterfaceTT(
                 FullNameT(
                   _, Nil,
                   CitizenNameT(
@@ -49,13 +49,13 @@ class TemplarVirtualTests extends FunSuite with Matchers {
           case CoordTemplata(
             CoordT(
               ConstraintT,ReadonlyT,
-              StructRefT(FullNameT(_, Nil,CitizenNameT("Raza",Nil))))) =>
+              StructTT(FullNameT(_, Nil,CitizenNameT("Raza",Nil))))) =>
         }
         secondGenericArg match {
           case CoordTemplata(
             CoordT(
               ConstraintT,ReadonlyT,
-              InterfaceRefT(FullNameT(_, Nil,CitizenNameT("IShip",Nil))))) =>
+              InterfaceTT(FullNameT(_, Nil,CitizenNameT("IShip",Nil))))) =>
         }
         vassert(okConstructor.paramTypes.head.kind == targetSubtype)
         vassert(errConstructor.paramTypes.head == sourceExpr.resultRegister.reference)

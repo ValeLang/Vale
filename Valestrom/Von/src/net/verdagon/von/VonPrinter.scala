@@ -30,7 +30,11 @@ class VonPrinter(
   def escape(value: String): String = {
     syntax match {
       case VonSyntax(_, _, _, _) => StringEscapeUtils.escapeJava(value)
-      case JsonSyntax => StringEscapeUtils.escapeJavaScript(value)
+      case JsonSyntax => {
+        // We couldn't use escapeJavaScript because it escapes single quotes, and lift-json
+        // has a bug where \' turns into \
+        StringEscapeUtils.escapeJava(value)
+      }
     }
   }
 
@@ -42,7 +46,10 @@ class VonPrinter(
     data match {
       case VonInt(value) => value.toString
       case VonBool(value) => value.toString
-      case VonStr(value) => "\"" + escape(value) + "\""
+      case VonStr(value) => {
+        val escaped = escape(value)
+        "\"" + escaped + "\""
+      }
       case VonReference(id) => vimpl()
       case o @ VonObject(_, _, _) => printObjectMultiline(o, indentation)
       case a @ VonArray(_, _) => printArrayMultiline(a, indentation)
@@ -147,7 +154,10 @@ class VonPrinter(
       case VonInt(value) => Some(value.toString)
       case VonBool(value) => Some(value.toString)
       case VonFloat(value) => Some(value.toString)
-      case VonStr(value) => Some("\"" + escape(value) + "\"")
+      case VonStr(value) => {
+        val escaped = escape(value)
+        Some("\"" + escaped + "\"")
+      }
       case VonReference(id) => vimpl()
       case o @ VonObject(_, _, _) => printObjectSingleLine(o, lineWidthRemaining)
       case a @ VonArray(_, _) => printArraySingleLine(a, lineWidthRemaining)

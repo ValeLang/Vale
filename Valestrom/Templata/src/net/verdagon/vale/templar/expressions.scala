@@ -145,7 +145,7 @@ case class LetNormalTE(
   }
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ expr.all(func)
+    List(this).collect(func) ++ variable.all(func) ++ expr.all(func)
   }
 }
 

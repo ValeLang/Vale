@@ -985,6 +985,18 @@ class TemplarTests extends FunSuite with Matchers {
     }
   }
 
+  test("Tests export struct twice") {
+    // See MMEDT why this is an error
+    val compile = TemplarTestCompilation.test(
+      """
+        |struct Moo export { }
+        |export Moo as Bork;
+        |""".stripMargin)
+    compile.getTemputs() match {
+      case Err(TypeExportedMultipleTimes(_, _, List(_, _))) =>
+    }
+  }
+
   test("Reports when reading after moving") {
     val compile = TemplarTestCompilation.test(
       """
@@ -1137,7 +1149,8 @@ class TemplarTests extends FunSuite with Matchers {
     val unrelatedKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, Nil, CitizenNameT("Spoon", Nil)))
     val unrelatedCoord = CoordT(OwnT,ReadwriteT,unrelatedKind)
     val fireflySignature = SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Nil, FunctionNameT("myFunc", Nil, List(fireflyCoord))))
-
+    val fireflyExport = KindExportT(RangeS.testZero, fireflyKind, PackageCoordinate.TEST_TLD, "Firefly");
+    val serenityExport = KindExportT(RangeS.testZero, fireflyKind, PackageCoordinate.TEST_TLD, "Serenity");
 
     val filenamesAndSources = FileCoordinateMap.test("blah blah blah\nblah blah blah")
 
@@ -1255,6 +1268,10 @@ class TemplarTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       ExternFunctionDependedOnNonExportedKind(
         RangeS.testZero, PackageCoordinate.TEST_TLD, fireflySignature, fireflyKind))
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      TypeExportedMultipleTimes(
+        RangeS.testZero, PackageCoordinate.TEST_TLD, List(fireflyExport, serenityExport)))
       .nonEmpty)
   }
 }

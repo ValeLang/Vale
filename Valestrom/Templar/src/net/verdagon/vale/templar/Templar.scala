@@ -762,7 +762,18 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         .mapValues(
           _.map(x => (x._2, x._3))
             .groupBy(_._1)
-            .mapValues(vassertOne(_)._2))
+            .mapValues({
+              case Nil => vwat()
+              case List(only) => only
+              case multiple => {
+                val exports = multiple.map(_._2)
+                throw CompileErrorExceptionT(
+                  TypeExportedMultipleTimes(
+                    exports.head.range,
+                    exports.head.packageCoordinate,
+                    exports))
+              }
+            }))
 
     temputs.getFunctionExports.foreach(funcExport => {
       val exportedKindToExport = packageToKindToExport.getOrElse(funcExport.packageCoordinate, Map())
@@ -787,7 +798,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         })
     })
     packageToKindToExport.foreach({ case (packageCoord, exportedKindToExport) =>
-      exportedKindToExport.foreach({ case (exportedKind, export) =>
+      exportedKindToExport.foreach({ case (exportedKind, (kind, export)) =>
         exportedKind match {
           case sr@StructTT(_) => {
             val structDef = temputs.getStructDefForRef(sr)
@@ -950,6 +961,7 @@ object Templar {
   def isPrimitive(kind: KindT): Boolean = {
     kind match {
       case VoidT() | IntT(_) | BoolT() | StrT() | NeverT() | FloatT() => true
+      case TupleTT(_, understruct) => isPrimitive(understruct)
       case sr @ StructTT(_) => sr == Program2.emptyTupleStructRef
       case InterfaceTT(_) => false
       case StaticSizedArrayTT(_, _) => false

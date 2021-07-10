@@ -79,6 +79,13 @@ object TemplarErrorHumanizer {
         case ExportedFunctionDependedOnNonExportedKind(range, paackage, signature, nonExportedKind) => {
           ": Exported function " + signature + " depends on kind " + nonExportedKind + " that wasn't exported from package " + paackage
         }
+        case TypeExportedMultipleTimes(range, paackage, exports) => {
+          ": Type exported multiple times:" + exports.map(export => {
+            val posStr = humanizePos(codeMap, export.range.file, export.range.begin.offset)
+            val line = lineContaining(codeMap, export.range.file, export.range.begin.offset)
+            s"\n  ${posStr}: ${line}"
+          })
+        }
         case ExternFunctionDependedOnNonExportedKind(range, paackage, signature, nonExportedKind) => {
           ": Extern function " + signature + " depends on kind " + nonExportedKind + " that wasn't exported from package " + paackage
         }

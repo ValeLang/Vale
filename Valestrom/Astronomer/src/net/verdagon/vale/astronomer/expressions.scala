@@ -1,7 +1,7 @@
 package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.parser.{ConstraintP, LendConstraintP, LendWeakP, LoadAsP, MoveP, MutabilityP, OwnershipP, VariabilityP, WeakP}
-import net.verdagon.vale.scout.{CodeLocationS, ITemplexS, IVariableUseCertainty, LocalVariable1, RangeS, RefCountCategory}
+import net.verdagon.vale.scout.{CodeLocationS, ITemplexS, IVariableUseCertainty, LocalS, RangeS, RefCountCategory}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.IRulexSR
 import net.verdagon.vale.{vassert, vpass, vwat}
@@ -132,13 +132,13 @@ case class RepeaterPackAE(range: RangeS, expression: IExpressionAE) extends IExp
 // Results in a pack, represents the differences between the elements
 case class RepeaterPackIteratorAE(range: RangeS, expression: IExpressionAE) extends IExpressionAE
 
-case class IntLiteralAE(range: RangeS, value: Int) extends IExpressionAE
+case class ConstantIntAE(range: RangeS, value: Long, bits: Int) extends IExpressionAE
 
-case class BoolLiteralAE(range: RangeS, value: Boolean) extends IExpressionAE
+case class ConstantBoolAE(range: RangeS, value: Boolean) extends IExpressionAE
 
-case class StrLiteralAE(range: RangeS, value: String) extends IExpressionAE
+case class ConstantStrAE(range: RangeS, value: String) extends IExpressionAE
 
-case class FloatLiteralAE(range: RangeS, value: Double) extends IExpressionAE
+case class ConstantFloatAE(range: RangeS, value: Double) extends IExpressionAE
 
 case class FunctionAE(name: LambdaNameA, function: FunctionA) extends IExpressionAE {
   override def range: RangeS = function.range
@@ -165,9 +165,8 @@ case class UnletAE(range: RangeS, name: String) extends IExpressionAE
 case class ArrayLengthAE(range: RangeS, arrayExpr: IExpressionAE) extends IExpressionAE
 
 
-case class LocalVariableA(
+case class LocalA(
   varName: IVarNameA,
-  variability: VariabilityP,
   selfBorrowed: IVariableUseCertainty, // unused
   selfMoved: IVariableUseCertainty, // used to know whether to box, if we have branching.
   selfMutated: IVariableUseCertainty, // unused

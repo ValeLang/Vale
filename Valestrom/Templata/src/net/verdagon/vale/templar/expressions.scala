@@ -2,116 +2,116 @@ package net.verdagon.vale.templar
 
 import net.verdagon.vale.astronomer.IVarNameA
 import net.verdagon.vale.scout.RangeS
-import net.verdagon.vale.templar.env.{ILocalVariable2, ReferenceLocalVariable2}
+import net.verdagon.vale.templar.env.{ILocalVariableT, ReferenceLocalVariableT}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.{vassert, vfail, vpass, vwat}
 
-trait IExpressionResult2 extends Queriable2 {
-  def expectReference(): ReferenceResult2 = {
+trait IExpressionResultT extends QueriableT {
+  def expectReference(): ReferenceResultT = {
     this match {
-      case r @ ReferenceResult2(_) => r
-      case AddressResult2(_) => vfail("Expected a reference as a result, but got an address!")
+      case r @ ReferenceResultT(_) => r
+      case AddressResultT(_) => vfail("Expected a reference as a result, but got an address!")
     }
   }
-  def expectAddress(): AddressResult2 = {
+  def expectAddress(): AddressResultT = {
     this match {
-      case a @ AddressResult2(_) => a
-      case ReferenceResult2(_) => vfail("Expected an address as a result, but got a reference!")
+      case a @ AddressResultT(_) => a
+      case ReferenceResultT(_) => vfail("Expected an address as a result, but got a reference!")
     }
   }
-  def underlyingReference: Coord
-  def referend: Kind
+  def underlyingReference: CoordT
+  def kind: KindT
 }
-case class AddressResult2(reference: Coord) extends IExpressionResult2 {
-  override def underlyingReference: Coord = reference
-  override def referend = reference.referend
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+case class AddressResultT(reference: CoordT) extends IExpressionResultT {
+  override def underlyingReference: CoordT = reference
+  override def kind = reference.kind
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ reference.all(func)
   }
 }
-case class ReferenceResult2(reference: Coord) extends IExpressionResult2 {
-  override def underlyingReference: Coord = reference
-  override def referend = reference.referend
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+case class ReferenceResultT(reference: CoordT) extends IExpressionResultT {
+  override def underlyingReference: CoordT = reference
+  override def kind = reference.kind
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ reference.all(func)
   }
 }
-trait Expression2 extends Queriable2 {
-  def resultRegister: IExpressionResult2
-  def referend: Kind
+trait ExpressionT extends QueriableT {
+  def resultRegister: IExpressionResultT
+  def kind: KindT
 }
-trait ReferenceExpression2 extends Expression2 {
-  override def resultRegister: ReferenceResult2
-  override def referend = resultRegister.reference.referend
+trait ReferenceExpressionTE extends ExpressionT {
+  override def resultRegister: ReferenceResultT
+  override def kind = resultRegister.reference.kind
 }
 // This is an Expression2 because we sometimes take an address and throw it
 // directly into a struct (closures!), which can have addressible members.
-trait AddressExpression2 extends Expression2 {
-  override def resultRegister: AddressResult2
-  override def referend = resultRegister.reference.referend
+trait AddressExpressionTE extends ExpressionT {
+  override def resultRegister: AddressResultT
+  override def kind = resultRegister.reference.kind
 
   def range: RangeS
 
   // Whether or not we can change where this address points to
-  def variability: Variability
+  def variability: VariabilityT
 }
 
-case class LetAndLend2(
-    variable: ILocalVariable2,
-    expr: ReferenceExpression2
-) extends ReferenceExpression2 {
+case class LetAndLendTE(
+    variable: ILocalVariableT,
+    expr: ReferenceExpressionTE
+) extends ReferenceExpressionTE {
   vassert(variable.reference == expr.resultRegister.reference)
 
-  override def resultRegister: ReferenceResult2 = {
-    val Coord(ownership, permission, kind) = expr.resultRegister.reference
-    ReferenceResult2(Coord(if (ownership == Share) Share else Constraint, permission, kind))
+  override def resultRegister: ReferenceResultT = {
+    val CoordT(ownership, permission, kind) = expr.resultRegister.reference
+    ReferenceResultT(CoordT(if (ownership == ShareT) ShareT else ConstraintT, permission, kind))
   }
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ expr.all(func)
   }
 }
 
-case class NarrowPermission2(
-    expr: ReferenceExpression2,
-    targetPermission: Permission
-) extends ReferenceExpression2 {
+case class NarrowPermissionTE(
+    expr: ReferenceExpressionTE,
+    targetPermission: PermissionT
+) extends ReferenceExpressionTE {
   expr.resultRegister.reference.ownership match {
-    case Own => vfail() // This only works on non owning references
-    case Share => vfail() // Share only has readonly
-    case Constraint | Weak => // fine
+    case OwnT => vfail() // This only works on non owning references
+    case ShareT => vfail() // Share only has readonly
+    case ConstraintT | WeakT => // fine
   }
   // Only thing we support so far is Readwrite -> Readonly
-  vassert(expr.resultRegister.reference.permission == Readwrite)
-  vassert(targetPermission == Readonly)
+  vassert(expr.resultRegister.reference.permission == ReadwriteT)
+  vassert(targetPermission == ReadonlyT)
 
-  override def resultRegister: ReferenceResult2 = {
-    val Coord(ownership, permission, kind) = expr.resultRegister.reference
-    ReferenceResult2(Coord(ownership, targetPermission, kind))
+  override def resultRegister: ReferenceResultT = {
+    val CoordT(ownership, permission, kind) = expr.resultRegister.reference
+    ReferenceResultT(CoordT(ownership, targetPermission, kind))
   }
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ expr.all(func)
   }
 }
 
-case class LockWeak2(
-  innerExpr: ReferenceExpression2,
+case class LockWeakTE(
+  innerExpr: ReferenceExpressionTE,
   // We could just calculate this, but it feels better to let the StructTemplar
   // make it, so we're sure it's created.
-  resultOptBorrowType: Coord,
+  resultOptBorrowType: CoordT,
 
   // Function to give a borrow ref to to make a Some(borrow ref)
-  someConstructor: Prototype2,
+  someConstructor: PrototypeT,
   // Function to make a None of the right type
-  noneConstructor: Prototype2,
-) extends ReferenceExpression2 {
-  override def resultRegister: ReferenceResult2 = {
-    ReferenceResult2(resultOptBorrowType)
+  noneConstructor: PrototypeT,
+) extends ReferenceExpressionTE {
+  override def resultRegister: ReferenceResultT = {
+    ReferenceResultT(resultOptBorrowType)
   }
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ resultOptBorrowType.all(func)
   }
 }
@@ -119,41 +119,41 @@ case class LockWeak2(
 // Turns a constraint ref into a weak ref
 // Note that we can also get a weak ref from LocalLoad2'ing a
 // constraint ref local into a weak ref.
-case class WeakAlias2(
-  innerExpr: ReferenceExpression2
-) extends ReferenceExpression2 {
-  vassert(innerExpr.resultRegister.reference.ownership == Constraint)
+case class WeakAliasTE(
+  innerExpr: ReferenceExpressionTE
+) extends ReferenceExpressionTE {
+  vassert(innerExpr.resultRegister.reference.ownership == ConstraintT)
 
-  override def resultRegister: ReferenceResult2 = {
-    ReferenceResult2(Coord(Weak, innerExpr.resultRegister.reference.permission, innerExpr.referend))
+  override def resultRegister: ReferenceResultT = {
+    ReferenceResultT(CoordT(WeakT, innerExpr.resultRegister.reference.permission, innerExpr.kind))
   }
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ innerExpr.all(func)
   }
 }
 
-case class LetNormal2(
-    variable: ILocalVariable2,
-    expr: ReferenceExpression2
-) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(Coord(Share, Readonly, Void2()))
+case class LetNormalTE(
+    variable: ILocalVariableT,
+    expr: ReferenceExpressionTE
+) extends ReferenceExpressionTE {
+  override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
   expr match {
-    case Return2(_) => vwat()
+    case ReturnTE(_) => vwat()
     case _ =>
   }
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ expr.all(func)
   }
 }
 
 // Only ExpressionTemplar.unletLocal should make these
-case class Unlet2(variable: ILocalVariable2) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(variable.reference)
+case class UnletTE(variable: ILocalVariableT) extends ReferenceExpressionTE {
+  override def resultRegister = ReferenceResultT(variable.reference)
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ variable.reference.all(func)
   }
 }
@@ -166,43 +166,43 @@ case class Unlet2(variable: ILocalVariable2) extends ReferenceExpression2 {
 // or a decrement+maybedestruct (like for RC'd backends)
 // See DINSIE for why this isnt three instructions, and why we dont have the
 // destructor in here for shareds.
-case class Discard2(
-  expr: ReferenceExpression2
-) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(Coord(Share, Readonly, Void2()))
+case class DiscardTE(
+  expr: ReferenceExpressionTE
+) extends ReferenceExpressionTE {
+  override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
   expr.resultRegister.reference.ownership match {
-    case Constraint =>
-    case Share =>
-    case Weak =>
+    case ConstraintT =>
+    case ShareT =>
+    case WeakT =>
   }
 
   expr match {
-    case Consecutor2(exprs) => {
+    case ConsecutorTE(exprs) => {
       exprs.last match {
-        case Discard2(_) => vwat()
+        case DiscardTE(_) => vwat()
         case _ =>
       }
     }
     case _ =>
   }
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ expr.all(func)
   }
 }
 
-case class Defer2(
-  innerExpr: ReferenceExpression2,
+case class DeferTE(
+  innerExpr: ReferenceExpressionTE,
   // Every deferred expression should discard its result, IOW, return Void.
-  deferredExpr: ReferenceExpression2
-) extends ReferenceExpression2 {
+  deferredExpr: ReferenceExpressionTE
+) extends ReferenceExpressionTE {
 
-  override def resultRegister = ReferenceResult2(innerExpr.resultRegister.reference)
+  override def resultRegister = ReferenceResultT(innerExpr.resultRegister.reference)
 
-  vassert(deferredExpr.resultRegister.reference == Coord(Share, Readonly, Void2()))
+  vassert(deferredExpr.resultRegister.reference == CoordT(ShareT, ReadonlyT, VoidT()))
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ innerExpr.all(func) ++ deferredExpr.all(func)
   }
 }
@@ -211,30 +211,30 @@ case class Defer2(
 // Eventually, when we want to do if-let, we'll have a different construct
 // entirely. See comment below If2.
 // These are blocks because we don't want inner locals to escape.
-case class If2(
-    condition: ReferenceExpression2,
-    thenCall: ReferenceExpression2,
-    elseCall: ReferenceExpression2) extends ReferenceExpression2 {
+case class IfTE(
+    condition: ReferenceExpressionTE,
+    thenCall: ReferenceExpressionTE,
+    elseCall: ReferenceExpressionTE) extends ReferenceExpressionTE {
   private val conditionResultCoord = condition.resultRegister.reference
   private val thenResultCoord = thenCall.resultRegister.reference
   private val elseResultCoord = elseCall.resultRegister.reference
 
-  vassert(conditionResultCoord == Coord(Share, Readonly, Bool2()))
+  vassert(conditionResultCoord == CoordT(ShareT, ReadonlyT, BoolT()))
   vassert(
-    thenResultCoord.referend == Never2() ||
-      elseResultCoord.referend == Never2() ||
+    thenResultCoord.kind == NeverT() ||
+      elseResultCoord.kind == NeverT() ||
       thenResultCoord == elseResultCoord)
 
   private val commonSupertype =
-    if (thenResultCoord.referend == Never2()) {
+    if (thenResultCoord.kind == NeverT()) {
       elseResultCoord
     } else {
       thenResultCoord
     }
 
-  override def resultRegister = ReferenceResult2(commonSupertype)
+  override def resultRegister = ReferenceResultT(commonSupertype)
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ condition.all(func) ++ thenCall.all(func) ++ elseCall.all(func)
   }
 }
@@ -250,38 +250,38 @@ case class If2(
 
 // The block is expected to return a boolean (false = stop, true = keep going).
 // The block will probably contain an If2(the condition, the body, false)
-case class While2(block: Block2) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(Coord(Share, Readonly, Void2()))
+case class WhileTE(block: BlockTE) extends ReferenceExpressionTE {
+  override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ block.all(func)
   }
 }
 
-case class Mutate2(
-  destinationExpr: AddressExpression2,
-  sourceExpr: ReferenceExpression2
-) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(destinationExpr.resultRegister.reference)
+case class MutateTE(
+  destinationExpr: AddressExpressionTE,
+  sourceExpr: ReferenceExpressionTE
+) extends ReferenceExpressionTE {
+  override def resultRegister = ReferenceResultT(destinationExpr.resultRegister.reference)
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ destinationExpr.all(func) ++ sourceExpr.all(func)
   }
 }
 
 
-case class Return2(
-  sourceExpr: ReferenceExpression2
-) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(Coord(Share, Readonly, Never2()))
+case class ReturnTE(
+  sourceExpr: ReferenceExpressionTE
+) extends ReferenceExpressionTE {
+  override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, NeverT()))
 
-  def getFinalExpr(expression2: Expression2): Unit = {
+  def getFinalExpr(expression2: ExpressionT): Unit = {
     expression2 match {
-      case Block2(exprs) => getFinalExpr(exprs.last)
+      case BlockTE(expr) => getFinalExpr(expr)
     }
   }
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ sourceExpr.all(func)
   }
 }
@@ -295,59 +295,70 @@ case class Return2(
 // later we can optimize it to only have the things we use
 
 // Block2 is required to unlet all the variables it introduces.
-case class Block2(
-    exprs: List[ReferenceExpression2]
-) extends ReferenceExpression2 {
+case class BlockTE(
+    inner: ReferenceExpressionTE
+) extends ReferenceExpressionTE {
 
-  vassert(exprs.last.isInstanceOf[ReferenceExpression2])
+  override def resultRegister = inner.resultRegister
+
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
+    List(this).collect(func) ++ inner.all(func)
+  }
+}
+
+case class ConsecutorTE(exprs: List[ReferenceExpressionTE]) extends ReferenceExpressionTE {
+  // There shouldn't be a 0-element consecutor.
+  // If we want a consecutor that returns nothing, put a VoidLiteralTE in it.
+  vassert(exprs.nonEmpty)
+
+  // There shouldn't be a 1-element consecutor.
+  // This isn't a hard technical requirement, but it does simplify the resulting AST a bit.
+  // Call Templar.consecutive to conform to this.
+  vassert(exprs.size >= 2)
+
+  // A consecutor should never contain another consecutor.
+  // This isn't a hard technical requirement, but it does simplify the resulting AST a bit.
+  // Call Templar.consecutive to make new consecutors in a way that conforms to this.
+  exprs.collect({ case ConsecutorTE(_) => vfail() })
+
+  // Everything but the last should result in a Void or a Never.
+  // The last can be anything, even a Void or a Never.
+  exprs.init.foreach(expr => vassert(expr.kind == VoidT() || expr.kind == NeverT()))
 
   // If there's a Never2() anywhere, then the entire block should end in an unreachable
   // or panic or something.
-  if (exprs.exists(_.referend == Never2())) {
-    vassert(exprs.last.referend == Never2())
+  if (exprs.exists(_.kind == NeverT())) {
+    vassert(exprs.last.kind == NeverT())
   }
 
   vassert(exprs.collect({
-    case Return2(_) =>
+    case ReturnTE(_) =>
   }).size <= 1)
 
   def lastReferenceExpr = exprs.last
   override def resultRegister = lastReferenceExpr.resultRegister
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ exprs.flatMap(_.all(func))
   }
 }
 
-case class Consecutor2(exprs: List[ReferenceExpression2]) extends ReferenceExpression2 {
-  // Everything but the last should result in a Void.
-  // The last can be anything, even a Void or a Never.
-  exprs.init.foreach(expr => vassert(expr.referend == Void2()))
-
-  def lastReferenceExpr = exprs.last
-  override def resultRegister = lastReferenceExpr.resultRegister
-
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
-    List(this).collect(func) ++ exprs.flatMap(_.all(func))
-  }
-}
-
-case class PackE2(
-    elements: List[ReferenceExpression2],
-    resultReference: Coord,
-    packType: PackT2) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(resultReference)
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+case class PackTE(
+    elements: List[ReferenceExpressionTE],
+    resultReference: CoordT,
+    packType: PackTT) extends ReferenceExpressionTE {
+  override def resultRegister = ReferenceResultT(resultReference)
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ elements.flatMap(_.all(func)) ++ packType.all(func)
   }
 }
 
-case class TupleE2(
-    elements: List[ReferenceExpression2],
-    resultReference: Coord,
-    tupleType: TupleT2) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(resultReference)
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+case class TupleTE(
+    elements: List[ReferenceExpressionTE],
+    resultReference: CoordT,
+    tupleType: TupleTT) extends ReferenceExpressionTE {
+  override def resultRegister = ReferenceResultT(resultReference)
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ elements.flatMap(_.all(func)) ++ tupleType.all(func)
   }
 }
@@ -360,117 +371,117 @@ case class TupleE2(
 //     __panic();
 //     println("hi");
 //   }
-case class UnreachableMootE2(innerExpr: ReferenceExpression2) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(Coord(Share, Readonly, Never2()))
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+case class UnreachableMootTE(innerExpr: ReferenceExpressionTE) extends ReferenceExpressionTE {
+  override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, NeverT()))
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ innerExpr.all(func)
   }
 }
 
-case class StaticArrayFromValues2(
-    elements: List[ReferenceExpression2],
-    resultReference: Coord,
-    arrayType: KnownSizeArrayT2) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(resultReference)
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+case class StaticArrayFromValuesTE(
+    elements: List[ReferenceExpressionTE],
+    resultReference: CoordT,
+    arrayType: StaticSizedArrayTT) extends ReferenceExpressionTE {
+  override def resultRegister = ReferenceResultT(resultReference)
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ elements.flatMap(_.all(func)) ++ arrayType.all(func)
   }
 }
 
-case class ArraySize2(array: ReferenceExpression2) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(Coord(Share, Readonly, Int2()))
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+case class ArraySizeTE(array: ReferenceExpressionTE) extends ReferenceExpressionTE {
+  override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, IntT.i32))
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ array.all(func)
   }
 }
 
-case class IsSameInstance2(left: ReferenceExpression2, right: ReferenceExpression2) extends ReferenceExpression2 {
+case class IsSameInstanceTE(left: ReferenceExpressionTE, right: ReferenceExpressionTE) extends ReferenceExpressionTE {
   vassert(left.resultRegister.reference == right.resultRegister.reference)
 
-  override def resultRegister = ReferenceResult2(Coord(Share, Readonly, Bool2()))
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, BoolT()))
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ left.all(func) ++ right.all(func)
   }
 }
 
-case class AsSubtype2(
-    sourceExpr: ReferenceExpression2,
-    targetSubtype: Kind,
+case class AsSubtypeTE(
+    sourceExpr: ReferenceExpressionTE,
+    targetSubtype: KindT,
 
     // We could just calculate this, but it feels better to let the StructTemplar
     // make it, so we're sure it's created.
-    resultResultType: Coord,
+    resultResultType: CoordT,
     // Function to give a borrow ref to to make a Some(borrow ref)
-    okConstructor: Prototype2,
+    okConstructor: PrototypeT,
     // Function to make a None of the right type
-    errConstructor: Prototype2,
-) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(resultResultType)
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+    errConstructor: PrototypeT,
+) extends ReferenceExpressionTE {
+  override def resultRegister = ReferenceResultT(resultResultType)
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ sourceExpr.all(func) ++ targetSubtype.all(func) ++ resultResultType.all(func) ++ okConstructor.all(func) ++ errConstructor.all(func)
   }
 }
 
-case class VoidLiteral2() extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(Coord(Share, Readonly, Void2()))
+case class VoidLiteralTE() extends ReferenceExpressionTE {
+  override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }
 }
 
-case class IntLiteral2(value: Int) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(Coord(Share, Readonly, Int2()))
+case class ConstantIntTE(value: Long, bits: Int) extends ReferenceExpressionTE {
+  override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, IntT(bits)))
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }
 }
 
-case class BoolLiteral2(value: Boolean) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(Coord(Share, Readonly, Bool2()))
+case class ConstantBoolTE(value: Boolean) extends ReferenceExpressionTE {
+  override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, BoolT()))
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }
 }
 
-case class StrLiteral2(value: String) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(Coord(Share, Readonly, Str2()))
+case class ConstantStrTE(value: String) extends ReferenceExpressionTE {
+  override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, StrT()))
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }
 }
 
-case class FloatLiteral2(value: Double) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(Coord(Share, Readonly, Float2()))
+case class ConstantFloatTE(value: Double) extends ReferenceExpressionTE {
+  override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, FloatT()))
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }
 }
 
-case class LocalLookup2(
+case class LocalLookupTE(
   range: RangeS,
-  localVariable: ILocalVariable2,
-  reference: Coord,
-  variability: Variability
-) extends AddressExpression2 {
-  override def resultRegister = AddressResult2(reference)
+  localVariable: ILocalVariableT,
+  reference: CoordT,
+  variability: VariabilityT
+) extends AddressExpressionTE {
+  override def resultRegister = AddressResultT(reference)
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ reference.all(func)
   }
 }
 
-case class ArgLookup2(
+case class ArgLookupTE(
     paramIndex: Int,
-    reference: Coord
-) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(reference)
+    reference: CoordT
+) extends ReferenceExpressionTE {
+  override def resultRegister = ReferenceResultT(reference)
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ reference.all(func)
   }
 }
@@ -490,84 +501,84 @@ case class ArgLookup2(
 //  }
 //}
 
-case class StaticSizedArrayLookup2(
+case class StaticSizedArrayLookupTE(
   range: RangeS,
-    arrayExpr: ReferenceExpression2,
-    arrayType: KnownSizeArrayT2,
-    indexExpr: ReferenceExpression2,
+    arrayExpr: ReferenceExpressionTE,
+    arrayType: StaticSizedArrayTT,
+    indexExpr: ReferenceExpressionTE,
     // See RMLRMO for why we dont have a targetOwnership field here.
     // See RMLHTP why we can have this here.
-    targetPermission: Permission,
-    variability: Variability
-) extends AddressExpression2 {
-  vassert(arrayExpr.resultRegister.reference.referend == arrayType)
+    targetPermission: PermissionT,
+    variability: VariabilityT
+) extends AddressExpressionTE {
+  vassert(arrayExpr.resultRegister.reference.kind == arrayType)
 
-  override def resultRegister = AddressResult2(arrayType.array.memberType)
+  override def resultRegister = AddressResultT(arrayType.array.memberType)
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ arrayExpr.all(func) ++ indexExpr.all(func) ++ arrayType.all(func)
   }
 }
 
-case class UnknownSizeArrayLookup2(
+case class RuntimeSizedArrayLookupTE(
   range: RangeS,
-    arrayExpr: ReferenceExpression2,
-    arrayType: UnknownSizeArrayT2,
-    indexExpr: ReferenceExpression2,
+    arrayExpr: ReferenceExpressionTE,
+    arrayType: RuntimeSizedArrayTT,
+    indexExpr: ReferenceExpressionTE,
   // See RMLRMO for why we dont have a targetOwnership field here.
   // See RMLHTP why we can have this here.
-  targetPermission: Permission,
-  variability: Variability
-) extends AddressExpression2 {
-  vassert(arrayExpr.resultRegister.reference.referend == arrayType)
+  targetPermission: PermissionT,
+  variability: VariabilityT
+) extends AddressExpressionTE {
+  vassert(arrayExpr.resultRegister.reference.kind == arrayType)
 
-  override def resultRegister = AddressResult2(arrayType.array.memberType)
+  override def resultRegister = AddressResultT(arrayType.array.memberType)
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ arrayExpr.all(func) ++ indexExpr.all(func) ++ arrayType.all(func)
   }
 }
 
-case class ArrayLength2(arrayExpr: ReferenceExpression2) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(Coord(Share, Readonly, Int2()))
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+case class ArrayLengthTE(arrayExpr: ReferenceExpressionTE) extends ReferenceExpressionTE {
+  override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, IntT.i32))
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ arrayExpr.all(func)
   }
 }
 
-case class ReferenceMemberLookup2(
+case class ReferenceMemberLookupTE(
     range: RangeS,
-    structExpr: ReferenceExpression2,
-    memberName: FullName2[IVarName2],
-    memberReference: Coord,
+    structExpr: ReferenceExpressionTE,
+    memberName: FullNameT[IVarNameT],
+    memberReference: CoordT,
     // See RMLRMO for why we dont have a targetOwnership field here.
     // See RMLHTP why we can have this here.
-    targetPermission: Permission,
-    variability: Variability) extends AddressExpression2 {
+    targetPermission: PermissionT,
+    variability: VariabilityT) extends AddressExpressionTE {
   override def resultRegister = {
-    if (structExpr.resultRegister.reference.permission == Readonly) {
-      vassert(targetPermission == Readonly)
+    if (structExpr.resultRegister.reference.permission == ReadonlyT) {
+      vassert(targetPermission == ReadonlyT)
     }
-    if (targetPermission == Readwrite) {
-      vassert(structExpr.resultRegister.reference.permission == Readwrite)
+    if (targetPermission == ReadwriteT) {
+      vassert(structExpr.resultRegister.reference.permission == ReadwriteT)
     }
     // See RMLRMO why we just return the member type.
-    AddressResult2(memberReference.copy(permission = targetPermission))
+    AddressResultT(memberReference.copy(permission = targetPermission))
   }
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ structExpr.all(func) ++ memberName.all(func) ++ memberReference.all(func)
   }
 }
-case class AddressMemberLookup2(
+case class AddressMemberLookupTE(
     range: RangeS,
-    structExpr: ReferenceExpression2,
-    memberName: FullName2[IVarName2],
-    resultType2: Coord,
-    variability: Variability) extends AddressExpression2 {
-  override def resultRegister = AddressResult2(resultType2)
+    structExpr: ReferenceExpressionTE,
+    memberName: FullNameT[IVarNameT],
+    resultType2: CoordT,
+    variability: VariabilityT) extends AddressExpressionTE {
+  override def resultRegister = AddressResultT(resultType2)
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ structExpr.all(func) ++ resultType2.all(func)
   }
 }
@@ -582,21 +593,21 @@ case class AddressMemberLookup2(
 //  }
 //}
 
-case class InterfaceFunctionCall2(
-    superFunctionHeader: FunctionHeader2,
-    resultReference: Coord,
-    args: List[ReferenceExpression2]) extends ReferenceExpression2 {
-  override def resultRegister: ReferenceResult2 =
-    ReferenceResult2(resultReference)
+case class InterfaceFunctionCallTE(
+    superFunctionHeader: FunctionHeaderT,
+    resultReference: CoordT,
+    args: List[ReferenceExpressionTE]) extends ReferenceExpressionTE {
+  override def resultRegister: ReferenceResultT =
+    ReferenceResultT(resultReference)
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ superFunctionHeader.all(func) ++ resultReference.all(func) ++ args.flatMap(_.all(func))
   }
 }
 
-case class ExternFunctionCall2(
-    prototype2: Prototype2,
-    args: List[ReferenceExpression2]) extends ReferenceExpression2 {
+case class ExternFunctionCallTE(
+    prototype2: PrototypeT,
+    args: List[ReferenceExpressionTE]) extends ReferenceExpressionTE {
   // We dont:
   //   vassert(prototype2.fullName.last.templateArgs.isEmpty)
   // because we totally can have extern templates.
@@ -604,131 +615,131 @@ case class ExternFunctionCall2(
   // lock<T>, which is generated by the backend.
 
   prototype2.fullName.last match {
-    case ExternFunctionName2(_, _) =>
+    case ExternFunctionNameT(_, _) =>
     case _ => vwat()
   }
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ args.flatMap(_.all(func))
   }
 
-  override def resultRegister = ReferenceResult2(prototype2.returnType)
+  override def resultRegister = ReferenceResultT(prototype2.returnType)
 }
 
-case class FunctionCall2(
-    callable: Prototype2,
-    args: List[ReferenceExpression2]) extends ReferenceExpression2 {
+case class FunctionCallTE(
+    callable: PrototypeT,
+    args: List[ReferenceExpressionTE]) extends ReferenceExpressionTE {
 
   vassert(callable.paramTypes.size == args.size)
   vassert(callable.paramTypes == args.map(_.resultRegister.reference))
 
-  override def resultRegister: ReferenceResult2 = {
-    ReferenceResult2(callable.returnType)
+  override def resultRegister: ReferenceResultT = {
+    ReferenceResultT(callable.returnType)
   }
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ callable.all(func) ++ args.flatMap(_.all(func))
   }
 }
-case class Tuple2(
-    elements: List[ReferenceExpression2],
-    tupleReference: Coord) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(tupleReference)
-
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
-    List(this).collect(func) ++ elements.flatMap(_.all(func)) ++ tupleReference.all(func)
-  }
-}
+//case class TupleTE(
+//    elements: List[ReferenceExpressionTE],
+//    tupleReference: CoordT) extends ReferenceExpressionTE {
+//  override def resultRegister = ReferenceResultT(tupleReference)
+//
+//  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
+//    List(this).collect(func) ++ elements.flatMap(_.all(func)) ++ tupleReference.all(func)
+//  }
+//}
 
 // A templar reinterpret is interpreting a type as a different one which is hammer-equivalent.
 // For example, a pack and a struct are the same thing to hammer.
 // Also, a closure and a struct are the same thing to hammer.
 // But, Templar attaches different meanings to these things. The templar is free to reinterpret
 // between hammer-equivalent things as it wants.
-case class TemplarReinterpret2(
-    expr: ReferenceExpression2,
-    resultReference: Coord) extends ReferenceExpression2 {
+case class TemplarReinterpretTE(
+    expr: ReferenceExpressionTE,
+    resultReference: CoordT) extends ReferenceExpressionTE {
   vassert(expr.resultRegister.reference != resultReference)
 
-  override def resultRegister = ReferenceResult2(resultReference)
+  override def resultRegister = ReferenceResultT(resultReference)
 
   // Unless it's a Never...
-  if (expr.resultRegister.reference.referend != Never2()) {
+  if (expr.resultRegister.reference.kind != NeverT()) {
     if (resultReference.ownership != expr.resultRegister.reference.ownership) {
       // Cant reinterpret to a different ownership!
       vfail("wat");
     }
   }
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ expr.all(func) ++ resultReference.all(func)
   }
 }
 
-case class Construct2(
-    structRef: StructRef2,
-    resultReference: Coord,
-    args: List[Expression2]) extends ReferenceExpression2 {
+case class ConstructTE(
+    structTT: StructTT,
+    resultReference: CoordT,
+    args: List[ExpressionT]) extends ReferenceExpressionTE {
   vpass()
 
-  override def resultRegister = ReferenceResult2(resultReference)
+  override def resultRegister = ReferenceResultT(resultReference)
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
-    List(this).collect(func) ++ structRef.all(func) ++ args.flatMap(_.all(func))
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
+    List(this).collect(func) ++ structTT.all(func) ++ args.flatMap(_.all(func))
   }
 }
 
 // Note: the functionpointercall's last argument is a Placeholder2,
 // it's up to later stages to replace that with an actual index
-case class ConstructArray2(
-    arrayType: UnknownSizeArrayT2,
-    sizeExpr: ReferenceExpression2,
-    generator: ReferenceExpression2,
-    generatorMethod: Prototype2
-) extends ReferenceExpression2 {
-  override def resultRegister: ReferenceResult2 = {
-    ReferenceResult2(
-      Coord(
-        if (arrayType.array.mutability == Mutable) Own else Share,
-        if (arrayType.array.mutability == Mutable) Readwrite else Readonly,
+case class ConstructArrayTE(
+    arrayType: RuntimeSizedArrayTT,
+    sizeExpr: ReferenceExpressionTE,
+    generator: ReferenceExpressionTE,
+    generatorMethod: PrototypeT
+) extends ReferenceExpressionTE {
+  override def resultRegister: ReferenceResultT = {
+    ReferenceResultT(
+      CoordT(
+        if (arrayType.array.mutability == MutableT) OwnT else ShareT,
+        if (arrayType.array.mutability == MutableT) ReadwriteT else ReadonlyT,
         arrayType))
   }
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ arrayType.all(func) ++ sizeExpr.all(func) ++ generator.all(func)
   }
 }
 
-case class StaticArrayFromCallable2(
-  arrayType: KnownSizeArrayT2,
-  generator: ReferenceExpression2,
-  generatorMethod: Prototype2
-) extends ReferenceExpression2 {
-  override def resultRegister: ReferenceResult2 = {
-    ReferenceResult2(
-      Coord(
-        if (arrayType.array.mutability == Mutable) Own else Share,
-        if (arrayType.array.mutability == Mutable) Readwrite else Readonly,
+case class StaticArrayFromCallableTE(
+  arrayType: StaticSizedArrayTT,
+  generator: ReferenceExpressionTE,
+  generatorMethod: PrototypeT
+) extends ReferenceExpressionTE {
+  override def resultRegister: ReferenceResultT = {
+    ReferenceResultT(
+      CoordT(
+        if (arrayType.array.mutability == MutableT) OwnT else ShareT,
+        if (arrayType.array.mutability == MutableT) ReadwriteT else ReadonlyT,
         arrayType))
   }
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ arrayType.all(func) ++ generator.all(func) ++ generatorMethod.all(func)
   }
 }
 
 // Note: the functionpointercall's last argument is a Placeholder2,
 // it's up to later stages to replace that with an actual index
-// This returns nothing, as opposed to DrainArraySequence2 which returns a
+// This returns nothing, as opposed to DrainStaticSizedArray2 which returns a
 // sequence of results from the call.
-case class DestroyArraySequenceIntoFunction2(
-    arrayExpr: ReferenceExpression2,
-    arrayType: KnownSizeArrayT2,
-    consumer: ReferenceExpression2,
-    consumerMethod: Prototype2) extends ReferenceExpression2 {
-  override def resultRegister: ReferenceResult2 = ReferenceResult2(Coord(Share, Readonly, Void2()))
+case class DestroyStaticSizedArrayIntoFunctionTE(
+    arrayExpr: ReferenceExpressionTE,
+    arrayType: StaticSizedArrayTT,
+    consumer: ReferenceExpressionTE,
+    consumerMethod: PrototypeT) extends ReferenceExpressionTE {
+  override def resultRegister: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ arrayType.all(func) ++ arrayExpr.all(func) ++ consumer.all(func)
   }
 }
@@ -736,62 +747,62 @@ case class DestroyArraySequenceIntoFunction2(
 // We destroy both Share and Own things
 // If the struct contains any addressibles, those die immediately and aren't stored
 // in the destination variables, which is why it's a list of ReferenceLocalVariable2.
-case class DestroyArraySequenceIntoLocals2(
-  expr: ReferenceExpression2,
-  arraySeq: KnownSizeArrayT2,
-  destinationReferenceVariables: List[ReferenceLocalVariable2]
-) extends ReferenceExpression2 {
-  override def resultRegister: ReferenceResult2 = ReferenceResult2(Coord(Share, Readonly, Void2()))
+case class DestroyStaticSizedArrayIntoLocalsTE(
+  expr: ReferenceExpressionTE,
+  staticSizedArray: StaticSizedArrayTT,
+  destinationReferenceVariables: List[ReferenceLocalVariableT]
+) extends ReferenceExpressionTE {
+  override def resultRegister: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
-  vassert(expr.referend == arraySeq)
-  if (expr.resultRegister.reference.ownership == Constraint) {
+  vassert(expr.kind == staticSizedArray)
+  if (expr.resultRegister.reference.ownership == ConstraintT) {
     vfail("wot")
   }
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ expr.all(func)
   }
 }
 
-case class DestroyUnknownSizeArray2(
-    arrayExpr: ReferenceExpression2,
-    arrayType: UnknownSizeArrayT2,
-    consumer: ReferenceExpression2,
-    consumerMethod: Prototype2
-) extends ReferenceExpression2 {
-  override def resultRegister: ReferenceResult2 = ReferenceResult2(Coord(Share, Readonly, Void2()))
+case class DestroyRuntimeSizedArrayTE(
+    arrayExpr: ReferenceExpressionTE,
+    arrayType: RuntimeSizedArrayTT,
+    consumer: ReferenceExpressionTE,
+    consumerMethod: PrototypeT
+) extends ReferenceExpressionTE {
+  override def resultRegister: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ arrayType.all(func) ++ arrayExpr.all(func) ++ consumer.all(func)
   }
 }
 
-case class InterfaceToInterfaceUpcast2(
-    innerExpr: ReferenceExpression2,
-    targetInterfaceRef: InterfaceRef2) extends ReferenceExpression2 {
-  def resultRegister: ReferenceResult2 = {
-    ReferenceResult2(
-      Coord(
+case class InterfaceToInterfaceUpcastTE(
+    innerExpr: ReferenceExpressionTE,
+    targetInterfaceRef: InterfaceTT) extends ReferenceExpressionTE {
+  def resultRegister: ReferenceResultT = {
+    ReferenceResultT(
+      CoordT(
         innerExpr.resultRegister.reference.ownership,
         innerExpr.resultRegister.reference.permission,
         targetInterfaceRef))
   }
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ innerExpr.all(func) ++ targetInterfaceRef.all(func)
   }
 }
 
-case class StructToInterfaceUpcast2(innerExpr: ReferenceExpression2, targetInterfaceRef: InterfaceRef2) extends ReferenceExpression2 {
-  def resultRegister: ReferenceResult2 = {
-    ReferenceResult2(
-      Coord(
+case class StructToInterfaceUpcastTE(innerExpr: ReferenceExpressionTE, targetInterfaceRef: InterfaceTT) extends ReferenceExpressionTE {
+  def resultRegister: ReferenceResultT = {
+    ReferenceResultT(
+      CoordT(
         innerExpr.resultRegister.reference.ownership,
         innerExpr.resultRegister.reference.permission,
         targetInterfaceRef))
   }
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ innerExpr.all(func) ++ targetInterfaceRef.all(func)
   }
 }
@@ -801,27 +812,27 @@ case class StructToInterfaceUpcast2(innerExpr: ReferenceExpression2, targetInter
 
 // If the source was an own and target is borrow, that's a lend
 
-case class SoftLoad2(
-    expr: AddressExpression2, targetOwnership: Ownership, targetPermission: Permission) extends ReferenceExpression2 {
+case class SoftLoadTE(
+    expr: AddressExpressionTE, targetOwnership: OwnershipT, targetPermission: PermissionT) extends ReferenceExpressionTE {
 
-  vassert((targetOwnership == Share) == (expr.resultRegister.reference.ownership == Share))
-  vassert(targetOwnership != Own) // need to unstackify or destroy to get an owning reference
+  vassert((targetOwnership == ShareT) == (expr.resultRegister.reference.ownership == ShareT))
+  vassert(targetOwnership != OwnT) // need to unstackify or destroy to get an owning reference
   // This is just here to try the asserts inside Coord's constructor
-  Coord(targetOwnership, targetPermission, expr.resultRegister.reference.referend)
+  CoordT(targetOwnership, targetPermission, expr.resultRegister.reference.kind)
 
   (expr.resultRegister.reference.permission, targetPermission) match {
-    case (Readonly, Readonly) =>
-    case (Readwrite, Readonly) =>
-    case (Readwrite, Readwrite) =>
-    case (Readonly, Readwrite) =>
+    case (ReadonlyT, ReadonlyT) =>
+    case (ReadwriteT, ReadonlyT) =>
+    case (ReadwriteT, ReadwriteT) =>
+    case (ReadonlyT, ReadwriteT) =>
     case _ => vwat()
   }
 
-  override def resultRegister: ReferenceResult2 = {
-    ReferenceResult2(Coord(targetOwnership, targetPermission, expr.resultRegister.reference.referend))
+  override def resultRegister: ReferenceResultT = {
+    ReferenceResultT(CoordT(targetOwnership, targetPermission, expr.resultRegister.reference.kind))
   }
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ expr.all(func)
   }
 }
@@ -831,18 +842,18 @@ case class SoftLoad2(
 // in the destination variables, which is why it's a list of ReferenceLocalVariable2.
 //
 // We also destroy shared things with this, see DDSOT.
-case class Destroy2(
-    expr: ReferenceExpression2,
-    structRef2: StructRef2,
-    destinationReferenceVariables: List[ReferenceLocalVariable2]
-) extends ReferenceExpression2 {
-  override def resultRegister: ReferenceResult2 = ReferenceResult2(Coord(Share, Readonly, Void2()))
+case class DestroyTE(
+    expr: ReferenceExpressionTE,
+    structTT: StructTT,
+    destinationReferenceVariables: List[ReferenceLocalVariableT]
+) extends ReferenceExpressionTE {
+  override def resultRegister: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
-  if (expr.resultRegister.reference.ownership == Constraint) {
+  if (expr.resultRegister.reference.ownership == ConstraintT) {
     vfail("wot")
   }
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ expr.all(func)
   }
 }
@@ -861,13 +872,13 @@ case class Destroy2(
 //  }
 //}
 
-case class CheckRefCount2(
-    refExpr: ReferenceExpression2,
+case class CheckRefCountTE(
+    refExpr: ReferenceExpressionTE,
     category: types.RefCountCategory,
-    numExpr: ReferenceExpression2) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(Coord(Share, Readonly, Void2()))
+    numExpr: ReferenceExpressionTE) extends ReferenceExpressionTE {
+  override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ refExpr.all(func) ++ numExpr.all(func)
   }
 }

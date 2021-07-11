@@ -4,13 +4,13 @@
 #include "globalstate.h"
 #include "boundary.h"
 
-Ref sendHostObjectIntoVale(
+Ref receiveHostObjectIntoVale(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* hostRefMT,
     Reference* valeRefMT,
-    LLVMValueRef hostRef);
+    LLVMValueRef hostRefLE);
 
 LLVMValueRef sendValeObjectIntoHost(
     GlobalState* globalState,

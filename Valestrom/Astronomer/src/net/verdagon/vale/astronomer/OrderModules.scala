@@ -8,7 +8,7 @@ import scala.collection.immutable.List
 object OrderModules {
   def orderModules(mergedProgramS: PackageCoordinateMap[ProgramS]): List[String] = {
     val dependentAndDependeeModule: List[(String, String)] =
-      mergedProgramS.moduleToPackagesToFilenameToContents.map({ case (dependentModuleName, packagesToFilenameToContents) =>
+      mergedProgramS.moduleToPackagesToContents.map({ case (dependentModuleName, packagesToFilenameToContents) =>
         val dependeeModules = packagesToFilenameToContents.values.flatMap(_.imports.map(_.moduleName))
         dependeeModules.map(dependeeName => (dependentModuleName -> dependeeName))
       }).flatten.toList

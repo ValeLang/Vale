@@ -2,7 +2,7 @@
 
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.vassert
+import net.verdagon.vale.{vassert, vpass}
 
 case class Range(begin: Int, end: Int) {
   vassert(begin == end || begin <= end)
@@ -95,7 +95,9 @@ case class PureAttributeP(range: Range) extends IFunctionAttributeP
 
 sealed trait IRuneAttributeP
 case class TypeRuneAttributeP(range: Range, tyype: ITypePR) extends IRuneAttributeP
-case class ReadOnlyRuneAttributeP(range: Range) extends IRuneAttributeP
+case class ReadOnlyRuneAttributeP(range: Range) extends IRuneAttributeP {
+  vpass()
+}
 case class PoolRuneAttributeP(range: Range) extends IRuneAttributeP
 case class ArenaRuneAttributeP(range: Range) extends IRuneAttributeP
 case class BumpRuneAttributeP(range: Range) extends IRuneAttributeP
@@ -122,7 +124,7 @@ case class FunctionHeaderP(
                             name: Option[NameP],
                             attributes: List[IFunctionAttributeP],
 
-                            // If Some(List()), should show up like the <> in fn moo<>(a int, b bool)
+                            // If Some(List.empty), should show up like the <> in fn moo<>(a int, b bool)
                             maybeUserSpecifiedIdentifyingRunes: Option[IdentifyingRunesP],
                             templateRules: Option[TemplateRulesP],
 
@@ -132,18 +134,18 @@ case class FunctionHeaderP(
 
 
 sealed trait MutabilityP
-case object MutableP extends MutabilityP
-case object ImmutableP extends MutabilityP
+case object MutableP extends MutabilityP { override def toString: String = "mut" }
+case object ImmutableP extends MutabilityP { override def toString: String = "imm" }
 
 sealed trait VariabilityP
-case object FinalP extends VariabilityP
-case object VaryingP extends VariabilityP
+case object FinalP extends VariabilityP { override def toString: String = "final" }
+case object VaryingP extends VariabilityP { override def toString: String = "vary" }
 
 sealed trait OwnershipP
-case object OwnP extends OwnershipP
-case object ConstraintP extends OwnershipP
-case object WeakP extends OwnershipP
-case object ShareP extends OwnershipP
+case object OwnP extends OwnershipP { override def toString: String = "own" }
+case object ConstraintP extends OwnershipP { override def toString: String = "constraint" }
+case object WeakP extends OwnershipP { override def toString: String = "weak" }
+case object ShareP extends OwnershipP { override def toString: String = "share" }
 
 // This represents how to load something.
 // If something's a Share, then nothing will happen,
@@ -162,10 +164,10 @@ case class LendWeakP(permission: PermissionP) extends LoadAsP
 case object UseP extends LoadAsP
 
 sealed trait PermissionP
-case object ReadonlyP extends PermissionP
-case object ReadwriteP extends PermissionP
-case object ExclusiveReadwriteP extends PermissionP
+case object ReadonlyP extends PermissionP { override def toString: String = "ro" }
+case object ReadwriteP extends PermissionP { override def toString: String = "rw" }
+case object ExclusiveReadwriteP extends PermissionP { override def toString: String = "xrw" }
 
 sealed trait LocationP
-case object InlineP extends LocationP
-case object YonderP extends LocationP
+case object InlineP extends LocationP { override def toString: String = "inl" }
+case object YonderP extends LocationP { override def toString: String = "heap" }

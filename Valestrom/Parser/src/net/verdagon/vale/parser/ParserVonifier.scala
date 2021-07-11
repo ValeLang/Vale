@@ -45,7 +45,7 @@ object ParserVonifier {
     thing match {
       case TypeRuneAttributeP(range, tyype) => {
         VonObject(
-          "ReadOnlyRuneAttribute",
+          "TypeRuneAttribute",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
@@ -235,14 +235,13 @@ object ParserVonifier {
   }
 
   def vonifyCapture(thing: CaptureP): VonObject = {
-    val CaptureP(range, captureName, variability) = thing
+    val CaptureP(range, captureName) = thing
     VonObject(
       "Capture",
       None,
       Vector(
         VonMember("range", vonifyRange(range)),
-        VonMember("captureName", vonifyCaptureName(captureName)),
-        VonMember("variability", vonifyVariability(variability))))
+        VonMember("captureName", vonifyCaptureName(captureName))))
   }
 
   def vonifyCaptureName(thing: ICaptureNameP): VonObject = {
@@ -503,7 +502,7 @@ object ParserVonifier {
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
-            VonMember("inner", VonInt(value))))
+            VonMember("inner", VonStr(value.toString))))
       }
       case LocationPT(range, location) => {
         VonObject(
@@ -715,9 +714,9 @@ object ParserVonifier {
 
   def vonifyExpression(thing: IExpressionPE): VonObject = {
     thing match {
-      case BoolLiteralPE(range, value) => {
+      case ConstantBoolPE(range, value) => {
         VonObject(
-          "BoolLiteral",
+          "ConstantBool",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
@@ -734,9 +733,9 @@ object ParserVonifier {
             VonMember("isMapAccess", VonBool(isMapAccess)),
             VonMember("member", vonifyName(member))))
       }
-      case FloatLiteralPE(range, value) => {
+      case ConstantFloatPE(range, value) => {
         VonObject(
-          "FloatLiteral",
+          "ConstantFloat",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
@@ -804,13 +803,14 @@ object ParserVonifier {
             VonMember("left", vonifyExpression(left)),
             VonMember("args", VonArray(None, args.map(vonifyExpression).toVector))))
       }
-      case IntLiteralPE(range, value) => {
+      case ConstantIntPE(range, value, bits) => {
         VonObject(
-          "IntLiteral",
+          "ConstantInt",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
-            VonMember("value", VonInt(value))))
+            VonMember("value", VonStr(value.toString)),
+            VonMember("bits", VonInt(bits))))
       }
       case LendPE(range, inner, targetOwnership) => {
         VonObject(
@@ -863,9 +863,9 @@ object ParserVonifier {
             VonMember("range", vonifyRange(range)),
             VonMember("expr", vonifyExpression(expr))))
       }
-      case StrLiteralPE(range, value) => {
+      case ConstantStrPE(range, value) => {
         VonObject(
-          "StrLiteral",
+          "ConstantStr",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),

@@ -11,7 +11,7 @@ case class FileCoordinate(module: String, packages: List[String], filepath: Stri
 }
 
 object FileCoordinate extends Ordering[FileCoordinate] {
-  val test = FileCoordinate("test", List(), "test.vale")
+  val test = FileCoordinate("test", List.empty, "test.vale")
 
   override def compare(a: FileCoordinate, b: FileCoordinate):Int = {
     val diff = a.packageCoordinate.compareTo(b.packageCoordinate)
@@ -30,11 +30,11 @@ case class PackageCoordinate(module: String, packages: List[String]) {
 }
 
 object PackageCoordinate extends Ordering[PackageCoordinate] {
-  val TEST_TLD = PackageCoordinate("test", List())
+  val TEST_TLD = PackageCoordinate("test", List.empty)
 
-  val BUILTIN = PackageCoordinate("", List())
+  val BUILTIN = PackageCoordinate("", List.empty)
 
-  val internal = PackageCoordinate("", List())
+  val internal = PackageCoordinate("", List.empty)
 
   override def compare(a: PackageCoordinate, b: PackageCoordinate):Int = {
     val lenDiff = a.packages.length - b.packages.length
@@ -56,14 +56,14 @@ object PackageCoordinate extends Ordering[PackageCoordinate] {
 object FileCoordinateMap {
   val TEST_MODULE = "test"
   def test[T](contents: T): FileCoordinateMap[T] = {
-    FileCoordinateMap(Map()).add(TEST_MODULE, List(), "test.vale", contents)
+    FileCoordinateMap(Map()).add(TEST_MODULE, List.empty, "test.vale", contents)
   }
   def test[T](contents: List[T]): FileCoordinateMap[T] = {
     test(contents.zipWithIndex.map({ case (code, index) => (index + ".vale", code) }).toMap)
   }
   def test[T](contents: Map[String, T]): FileCoordinateMap[T] = {
     contents.foldLeft(FileCoordinateMap[T](Map()))({
-      case (prev, (filename, c)) => prev.add(TEST_MODULE, List(), filename, c)
+      case (prev, (filename, c)) => prev.add(TEST_MODULE, List.empty, filename, c)
     })
   }
 }
@@ -194,22 +194,41 @@ trait IPackageResolver[T] {
 }
 
 case class PackageCoordinateMap[Contents](
-  moduleToPackagesToFilenameToContents: Map[String, Map[List[String], Contents]]) {
+  moduleToPackagesToContents: Map[String, Map[List[String], Contents]]) {
+
   def add(module: String, packages: List[String], contents: Contents):
   PackageCoordinateMap[Contents] = {
-    val packagesToContents = moduleToPackagesToFilenameToContents.getOrElse(module, Map())
+    val packagesToContents = moduleToPackagesToContents.getOrElse(module, Map())
     vassert(!packagesToContents.contains(packages))
     val newPackagesToFilenameToContents = packagesToContents + (packages -> contents)
-    val newModuleToPackagesToFilenameToContents = moduleToPackagesToFilenameToContents + (module -> newPackagesToFilenameToContents)
+    val newModuleToPackagesToFilenameToContents = moduleToPackagesToContents + (module -> newPackagesToFilenameToContents)
     PackageCoordinateMap(newModuleToPackagesToFilenameToContents)
   }
 
+  def add(packageCoordinate: PackageCoordinate, contents: Contents):
+  PackageCoordinateMap[Contents] = {
+    add(packageCoordinate.module, packageCoordinate.packages, contents)
+  }
+
+  def get(packageCoord: PackageCoordinate): Option[Contents] = {
+    val PackageCoordinate(module, packageSteps) = packageCoord
+    moduleToPackagesToContents.getOrElse(module, Map()).get(packageSteps)
+  }
+
   def test[T](contents: T): PackageCoordinateMap[T] = {
-    PackageCoordinateMap(Map()).add("test", List(), contents)
+    PackageCoordinateMap(Map()).add("test", List.empty, contents)
   }
 
   def expectOne(): Contents = {
-    val List(only) = moduleToPackagesToFilenameToContents.values.flatMap(_.values)
+    val List(only) = moduleToPackagesToContents.values.flatMap(_.values)
     only
+  }
+
+  def flatMap[T](func: (PackageCoordinate, Contents) => T): Iterable[T] = {
+    moduleToPackagesToContents.flatMap({ case (module, packagesToFilenameToContents) =>
+      packagesToFilenameToContents.map({ case (packages, contents) =>
+        func(PackageCoordinate(module, packages), contents)
+      })
+    })
   }
 }

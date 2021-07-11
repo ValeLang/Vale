@@ -11,12 +11,10 @@ class HybridGenerationalMemory {
 public:
   HybridGenerationalMemory(
       GlobalState* globalState_,
-      ControlBlock* controlBlock_,
-      IReferendStructsSource* referendStructsSource_,
-      IWeakRefStructsSource* weakRefStructsSource_,
+      KindStructs* kindStructs_,
       bool elideChecksForKnownLive_,
       bool limitMode_,
-      StructReferend* anyMT);
+      StructKind* anyMT);
 
   void mainSetup(FunctionState* functionState, LLVMBuilderRef builder);
   void mainCleanup(FunctionState* functionState, LLVMBuilderRef builder);
@@ -33,9 +31,9 @@ public:
       FunctionState *functionState,
       LLVMBuilderRef builder,
       WeakFatPtrLE sourceRefLE,
-      StructReferend *sourceStructReferendM,
+      StructKind *sourceStructKindM,
       Reference *sourceStructTypeM,
-      InterfaceReferend *targetInterfaceReferendM,
+      InterfaceKind *targetInterfaceKindM,
       Reference *targetInterfaceTypeM);
 
   // Makes a non-weak interface ref into a weak interface ref
@@ -44,7 +42,15 @@ public:
       LLVMBuilderRef builder,
       Reference* sourceType,
       Reference* targetType,
-      InterfaceReferend* interfaceReferendM,
+      InterfaceKind* interfaceKindM,
+      InterfaceFatPtrLE sourceInterfaceFatPtrLE);
+
+  WeakFatPtrLE assembleInterfaceWeakRef(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* targetType,
+      InterfaceKind* interfaceKindM,
+      LLVMValueRef currentGenLE,
       InterfaceFatPtrLE sourceInterfaceFatPtrLE);
 
   WeakFatPtrLE assembleStructWeakRef(
@@ -52,24 +58,48 @@ public:
       LLVMBuilderRef builder,
       Reference* structTypeM,
       Reference* targetTypeM,
-      StructReferend* structReferendM,
+      StructKind* structKindM,
       WrapperPtrLE objPtrLE);
 
-  WeakFatPtrLE assembleKnownSizeArrayWeakRef(
+  WeakFatPtrLE assembleStructWeakRef(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* sourceKSAMT,
-      KnownSizeArrayT* knownSizeArrayMT,
-      Reference* targetKSAWeakRefMT,
+      Reference* targetTypeM,
+      StructKind* structKindM,
+      LLVMValueRef currentGenLE,
       WrapperPtrLE objPtrLE);
 
-  WeakFatPtrLE assembleUnknownSizeArrayWeakRef(
+  WeakFatPtrLE assembleStaticSizedArrayWeakRef(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* sourceType,
-      UnknownSizeArrayT* unknownSizeArrayMT,
-      Reference* targetUSAWeakRefMT,
-      WrapperPtrLE sourceRefLE);
+      Reference* sourceSSAMT,
+      StaticSizedArrayT* staticSizedArrayMT,
+      Reference* targetSSAWeakRefMT,
+      WrapperPtrLE objPtrLE);
+
+  WeakFatPtrLE assembleStaticSizedArrayWeakRef(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* targetTypeM,
+      StaticSizedArrayT* staticSizedArrayMT,
+      LLVMValueRef currentGenLE,
+      WrapperPtrLE objPtrLE);
+
+  WeakFatPtrLE assembleRuntimeSizedArrayWeakRef(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* sourceSSAMT,
+      RuntimeSizedArrayT* staticSizedArrayMT,
+      Reference* targetSSAWeakRefMT,
+      WrapperPtrLE objPtrLE);
+
+  WeakFatPtrLE assembleRuntimeSizedArrayWeakRef(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* targetTypeM,
+      RuntimeSizedArrayT* staticSizedArrayMT,
+      LLVMValueRef currentGenLE,
+      WrapperPtrLE objPtrLE);
 
   LLVMValueRef lockGenFatPtr(
       AreaAndFileAndLine from,
@@ -117,7 +147,7 @@ public:
   LLVMValueRef fillWeakableControlBlock(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Referend* referendM,
+      Kind* kindM,
       LLVMValueRef controlBlockLE);
 
   WeakFatPtrLE weakInterfaceRefToWeakStructRef(
@@ -144,11 +174,23 @@ public:
       Reference* refMT,
       WrapperPtrLE uncastedObjWrapperPtrLE);
 
+  LLVMValueRef implodeConcreteHandle(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* weakRefM,
+      Ref weakRef);
+
+  LLVMValueRef implodeInterfaceHandle(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* weakRefM,
+      Ref weakRef);
+
 private:
   LLVMValueRef getTargetGenFromWeakRef(
       LLVMBuilderRef builder,
-      IWeakRefStructsSource* weakRefStructsSource,
-      Referend* referend,
+      KindStructs* weakRefStructsSource,
+      Kind* kind,
       WeakFatPtrLE weakRefLE);
 
   Prototype* makeCleanupLoopFunction();
@@ -161,10 +203,10 @@ private:
   Prototype* cleanupIterPrototype = nullptr;
 
   GlobalState* globalState = nullptr;
-  ControlBlock* controlBlock = nullptr;
+//  ControlBlock* controlBlock = nullptr;
   FatWeaks fatWeaks;
-  IReferendStructsSource* referendStructsSource;
-  IWeakRefStructsSource* weakRefStructsSource;
+  KindStructs* kindStructs;
+//  KindStructs* weakRefStructsSource;
 
   LLVMBuilderRef setupBuilder = nullptr;
 
@@ -172,11 +214,11 @@ private:
   LLVMValueRef undeadCycleHeadNodePtrPtrLE = nullptr;
 
   bool elideChecksForKnownLive = false;
-
-  // If true, then pretend all references are known live, dont fill in any generations, basically
-  // pretend to be unsafe mode as much as possible.
-  // This is to see the theoretical maximum speed of HGM, and where its slowdowns are.
-  bool limitMode = false;
+//
+//  // If true, then pretend all references are known live, dont fill in any generations, basically
+//  // pretend to be unsafe mode as much as possible.
+//  // This is to see the theoretical maximum speed of HGM, and where its slowdowns are.
+//  bool limitMode = false;
 
   // Points to an object whose control block is in an unprotected page, and the contents of the object
   // is in a protected page.
@@ -184,9 +226,9 @@ private:
   // This is so we have an object whose tethered bit we can modify but no other part of it.
   LLVMValueRef halfProtectedI8PtrPtrLE = nullptr;
 
-  StructReferend* anyMT = nullptr;
+  StructKind* anyMT = nullptr;
 
-  std::unordered_map<Referend*, LLVMValueRef, AddressHasher<Referend*>> globalNullPtrPtrByReferend;
+  std::unordered_map<Kind*, LLVMValueRef, AddressHasher<Kind*>> globalNullPtrPtrByKind;
 };
 
 #endif

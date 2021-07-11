@@ -7,7 +7,8 @@ import scala.collection.immutable.List
 
 case class AtomAP(
   range: RangeS,
-  capture: LocalVariableA,
+  // This is an Option so Templar can destroy incoming ignored vars immediately, see DIPRA.
+  capture: Option[LocalA],
   virtuality: Option[VirtualityAP],
   coordRune: IRuneA,
   destructure: Option[List[AtomAP]])
@@ -20,8 +21,8 @@ object PatternSUtils {
   def getDistinctOrderedRunesForPattern(pattern: AtomAP): List[IRuneA] = {
     val runesFromVirtuality =
       pattern.virtuality match {
-        case None => List()
-        case Some(AbstractAP) => List()
+        case None => List.empty
+        case Some(AbstractAP) => List.empty
         case Some(OverrideAP(range, kindRune)) => List(kindRune)
       }
     val runesFromDestructures =

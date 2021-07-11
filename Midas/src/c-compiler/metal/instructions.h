@@ -23,13 +23,16 @@ public:
 //    virtual Reference* getResultType() const = 0;
 };
 
-class ConstantI64 : public Expression {
+class ConstantInt : public Expression {
 public:
-  int value;
+  int64_t value;
+  int bits;
 
-  ConstantI64(
-      int value_)
-      : value(value_) {}
+  ConstantInt(
+      int64_t value_,
+      int bits_)
+      : value(value_),
+        bits(bits_) {}
 };
 
 class ConstantBool : public Expression {
@@ -133,27 +136,27 @@ class StructToInterfaceUpcast : public Expression {
 public:
   Expression* sourceExpr;
   Reference* sourceStructType;
-  StructReferend* sourceStructReferend;
+  StructKind* sourceStructKind;
   Reference* targetInterfaceType;
-  InterfaceReferend* targetInterfaceReferend;
+  InterfaceKind* targetInterfaceKind;
 
   StructToInterfaceUpcast(
       Expression* sourceExpr_,
       Reference* sourceStructType_,
-      StructReferend* sourceStructReferend_,
+      StructKind* sourceStructKind_,
       Reference* targetInterfaceType_,
-      InterfaceReferend* targetInterfaceReferend_) :
+      InterfaceKind* targetInterfaceKind_) :
       sourceExpr(sourceExpr_),
       sourceStructType(sourceStructType_),
-      sourceStructReferend(sourceStructReferend_),
+      sourceStructKind(sourceStructKind_),
       targetInterfaceType(targetInterfaceType_),
-      targetInterfaceReferend(targetInterfaceReferend_) {}
+      targetInterfaceKind(targetInterfaceKind_) {}
 };
 
 class InterfaceToInterfaceUpcast : public Expression {
 public:
   Expression* sourceExpr;
-  InterfaceReferend* targetInterfaceRef;
+  InterfaceKind* targetInterfaceRef;
 };
 
 class LocalStore : public Expression {
@@ -195,17 +198,17 @@ class WeakAlias : public Expression {
 public:
   Expression* sourceExpr;
   Reference* sourceType;
-  Referend* sourceReferend;
+  Kind* sourceKind;
   Reference* resultType;
 
   WeakAlias(
       Expression* sourceExpr_,
       Reference* sourceType_,
-      Referend* sourceReferend_,
+      Kind* sourceKind_,
       Reference* resultType_) :
     sourceExpr(sourceExpr_),
     sourceType(sourceType_),
-    sourceReferend(sourceReferend_),
+    sourceKind(sourceKind_),
     resultType(resultType_) {}
 };
 
@@ -250,7 +253,7 @@ public:
 class MemberLoad : public Expression {
 public:
   Expression* structExpr;
-  StructReferend* structId;
+  StructKind* structId;
   Reference* structType;
   bool structKnownLive;
   int memberIndex;
@@ -261,7 +264,7 @@ public:
 
   MemberLoad(
       Expression* structExpr_,
-      StructReferend* structId_,
+      StructKind* structId_,
       Reference* structType_,
       bool structKnownLive_,
       int memberIndex_,
@@ -285,19 +288,19 @@ class NewArrayFromValues : public Expression {
 public:
   std::vector<Expression*> sourceExprs;
   Reference* arrayRefType;
-  KnownSizeArrayT* arrayReferend;
+  StaticSizedArrayT* arrayKind;
 
   NewArrayFromValues(
       std::vector<Expression*> sourceExprs_,
       Reference* arrayRefType_,
-      KnownSizeArrayT* arrayReferend_) :
+      StaticSizedArrayT* arrayKind_) :
       sourceExprs(sourceExprs_),
       arrayRefType(arrayRefType_),
-      arrayReferend(arrayReferend_) {}
+      arrayKind(arrayKind_) {}
 };
 
 
-class KnownSizeArrayStore : public Expression {
+class StaticSizedArrayStore : public Expression {
 public:
   Expression* arrayExpr;
   Expression* indexExpr;
@@ -305,85 +308,85 @@ public:
 };
 
 
-class UnknownSizeArrayStore : public Expression {
+class RuntimeSizedArrayStore : public Expression {
 public:
   Expression* arrayExpr;
   Reference* arrayType;
-  UnknownSizeArrayT* arrayReferend;
+  RuntimeSizedArrayT* arrayKind;
   bool arrayKnownLive;
   Expression* indexExpr;
   Reference* indexType;
-  Referend* indexReferend;
+  Kind* indexKind;
   Expression* sourceExpr;
   Reference* sourceType;
-  Referend* sourceReferend;
+  Kind* sourceKind;
 
-  UnknownSizeArrayStore(
+  RuntimeSizedArrayStore(
       Expression* arrayExpr_,
       Reference* arrayType_,
-      UnknownSizeArrayT* arrayReferend_,
+      RuntimeSizedArrayT* arrayKind_,
       bool arrayKnownLive_,
       Expression* indexExpr_,
       Reference* indexType_,
-      Referend* indexReferend_,
+      Kind* indexKind_,
       Expression* sourceExpr_,
       Reference* sourceType_,
-      Referend* sourceReferend_) :
+      Kind* sourceKind_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
-    arrayReferend(arrayReferend_),
+    arrayKind(arrayKind_),
     arrayKnownLive(arrayKnownLive_),
     indexExpr(indexExpr_),
     indexType(indexType_),
-    indexReferend(indexReferend_),
+    indexKind(indexKind_),
     sourceExpr(sourceExpr_),
     sourceType(sourceType_),
-    sourceReferend(sourceReferend_) {}
+    sourceKind(sourceKind_) {}
 };
 
 
-class UnknownSizeArrayLoad : public Expression {
+class RuntimeSizedArrayLoad : public Expression {
 public:
   Expression* arrayExpr;
   Reference* arrayType;
-  UnknownSizeArrayT* arrayReferend;
+  RuntimeSizedArrayT* arrayKind;
   bool arrayKnownLive;
   Expression* indexExpr;
   Reference* indexType;
-  Referend* indexReferend;
+  Kind* indexKind;
   Reference* resultType;
   Ownership targetOwnership;
   Reference* arrayElementType;
 
-  UnknownSizeArrayLoad(
+  RuntimeSizedArrayLoad(
       Expression* arrayExpr_,
       Reference* arrayType_,
-      UnknownSizeArrayT* arrayReferend_,
+      RuntimeSizedArrayT* arrayKind_,
       bool arrayKnownLive_,
       Expression* indexExpr_,
       Reference* indexType_,
-      Referend* indexReferend_,
+      Kind* indexKind_,
       Reference* resultType_,
       Ownership targetOwnership_,
       Reference* arrayElementType_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
-    arrayReferend(arrayReferend_),
+    arrayKind(arrayKind_),
     arrayKnownLive(arrayKnownLive_),
     indexExpr(indexExpr_),
     indexType(indexType_),
-    indexReferend(indexReferend_),
+    indexKind(indexKind_),
     resultType(resultType_),
     targetOwnership(targetOwnership_),
     arrayElementType(arrayElementType_) {}
 };
 
 
-class KnownSizeArrayLoad : public Expression {
+class StaticSizedArrayLoad : public Expression {
 public:
   Expression* arrayExpr;
   Reference* arrayType;
-  KnownSizeArrayT* arrayReferend;
+  StaticSizedArrayT* arrayKind;
   bool arrayKnownLive;
   Expression* indexExpr;
   Reference* resultType;
@@ -391,10 +394,10 @@ public:
   Reference* arrayElementType;
   int arraySize;
 
-  KnownSizeArrayLoad(
+  StaticSizedArrayLoad(
       Expression* arrayExpr_,
       Reference* arrayType_,
-      KnownSizeArrayT* arrayReferend_,
+      StaticSizedArrayT* arrayKind_,
       bool arrayKnownLive_,
       Expression* indexExpr_,
       Reference* resultType_,
@@ -403,7 +406,7 @@ public:
       int arraySize_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
-    arrayReferend(arrayReferend_),
+    arrayKind(arrayKind_),
     arrayKnownLive(arrayKnownLive_),
     indexExpr(indexExpr_),
     resultType(resultType_),
@@ -445,14 +448,14 @@ class InterfaceCall : public Expression {
 public:
   std::vector<Expression*> argExprs;
   int virtualParamIndex;
-  InterfaceReferend* interfaceRef;
+  InterfaceKind* interfaceRef;
   int indexInEdge;
   Prototype* functionType;
 
   InterfaceCall(
       std::vector<Expression*> argExprs_,
       int virtualParamIndex_,
-      InterfaceReferend* interfaceRef_,
+      InterfaceKind* interfaceRef_,
       int indexInEdge_,
       Prototype* functionType_) :
     argExprs(argExprs_),
@@ -526,36 +529,36 @@ public:
 };
 
 
-class ConstructUnknownSizeArray : public Expression {
+class ConstructRuntimeSizedArray : public Expression {
 public:
   Expression* sizeExpr;
   Reference* sizeType;
-  Referend* sizeReferend;
+  Kind* sizeKind;
   Expression* generatorExpr;
   Reference* generatorType;
-  Referend* generatorReferend;
+  Kind* generatorKind;
   Prototype* generatorMethod;
   bool generatorKnownLive;
   Reference* arrayRefType;
   Reference* elementType;
 
-  ConstructUnknownSizeArray(
+  ConstructRuntimeSizedArray(
       Expression* sizeExpr_,
       Reference* sizeType_,
-      Referend* sizeReferend_,
+      Kind* sizeKind_,
       Expression* generatorExpr_,
       Reference* generatorType_,
-      Referend* generatorReferend_,
+      Kind* generatorKind_,
       Prototype* generatorMethod_,
       bool generatorKnownLive_,
       Reference* arrayRefType_,
       Reference* elementType_) :
     sizeExpr(sizeExpr_),
     sizeType(sizeType_),
-    sizeReferend(sizeReferend_),
+    sizeKind(sizeKind_),
     generatorExpr(generatorExpr_),
     generatorType(generatorType_),
-    generatorReferend(generatorReferend_),
+    generatorKind(generatorKind_),
     generatorMethod(generatorMethod_),
     generatorKnownLive(generatorKnownLive_),
     arrayRefType(arrayRefType_),
@@ -566,7 +569,7 @@ class StaticArrayFromCallable : public Expression {
 public:
   Expression* generatorExpr;
   Reference* generatorType;
-  Referend* generatorReferend;
+  Kind* generatorKind;
   Prototype* generatorMethod;
   bool generatorKnownLive;
   Reference* arrayRefType;
@@ -575,25 +578,25 @@ public:
   StaticArrayFromCallable(
       Expression* generatorExpr_,
       Reference* generatorType_,
-      Referend* generatorReferend_,
+      Kind* generatorKind_,
       Prototype* generatorMethod_,
       bool generatorKnownLive_,
       Reference* arrayRefType_,
       Reference* elementType_) :
       generatorExpr(generatorExpr_),
       generatorType(generatorType_),
-      generatorReferend(generatorReferend_),
+      generatorKind(generatorKind_),
       generatorMethod(generatorMethod_),
       generatorKnownLive(generatorKnownLive_),
       arrayRefType(arrayRefType_),
       elementType(elementType_) {}
 };
 
-class DestroyKnownSizeArrayIntoFunction : public Expression {
+class DestroyStaticSizedArrayIntoFunction : public Expression {
 public:
   Expression* arrayExpr;
   Reference* arrayType;
-  KnownSizeArrayT* arrayReferend;
+  StaticSizedArrayT* arrayKind;
   Expression* consumerExpr;
   Reference* consumerType;
   Prototype* consumerMethod;
@@ -601,10 +604,10 @@ public:
   Reference* elementType;
   int arraySize;
 
-  DestroyKnownSizeArrayIntoFunction(
+  DestroyStaticSizedArrayIntoFunction(
       Expression* arrayExpr_,
       Reference* arrayType_,
-      KnownSizeArrayT* arrayReferend_,
+      StaticSizedArrayT* arrayKind_,
       Expression* consumerExpr_,
       Reference* consumerType_,
       Prototype* consumerMethod_,
@@ -613,7 +616,7 @@ public:
       int arraySize_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
-    arrayReferend(arrayReferend_),
+    arrayKind(arrayKind_),
     consumerExpr(consumerExpr_),
     consumerType(consumerType_),
     consumerMethod(consumerMethod_),
@@ -622,38 +625,38 @@ public:
     arraySize(arraySize_) {}
 };
 
-class DestroyKnownSizeArrayIntoLocals : public Expression {
+class DestroyStaticSizedArrayIntoLocals : public Expression {
 public:
   Expression* arrayExpr;
   Expression* consumerExpr;
 };
 
-class DestroyUnknownSizeArray : public Expression {
+class DestroyRuntimeSizedArray : public Expression {
 public:
   Expression* arrayExpr;
   Reference* arrayType;
-  UnknownSizeArrayT* arrayReferend;
+  RuntimeSizedArrayT* arrayKind;
   Expression* consumerExpr;
   Reference* consumerType;
-  InterfaceReferend* consumerReferend;
+  InterfaceKind* consumerKind;
   Prototype* consumerMethod;
   bool consumerKnownLive;
 
-  DestroyUnknownSizeArray(
+  DestroyRuntimeSizedArray(
       Expression* arrayExpr_,
       Reference* arrayType_,
-      UnknownSizeArrayT* arrayReferend_,
+      RuntimeSizedArrayT* arrayKind_,
       Expression* consumerExpr_,
       Reference* consumerType_,
-      InterfaceReferend* consumerReferend_,
+      InterfaceKind* consumerKind_,
       Prototype* consumerMethod_,
       bool consumerKnownLive_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
-    arrayReferend(arrayReferend_),
+    arrayKind(arrayKind_),
     consumerExpr(consumerExpr_),
     consumerType(consumerType_),
-    consumerReferend(consumerReferend_),
+    consumerKind(consumerKind_),
     consumerMethod(consumerMethod_),
     consumerKnownLive(consumerKnownLive_) {}
 };
@@ -712,14 +715,14 @@ public:
 
   Prototype* someConstructor;
   Reference* someType;
-  StructReferend* someReferend;
+  StructKind* someKind;
 
   Prototype* noneConstructor;
   Reference* noneType;
-  StructReferend* noneReferend;
+  StructKind* noneKind;
 
   Reference* resultOptType;
-  InterfaceReferend* resultOptReferend;
+  InterfaceKind* resultOptKind;
 
   LockWeak(
       Expression* sourceExpr_,
@@ -727,23 +730,23 @@ public:
       bool sourceKnownLive_,
       Prototype* someConstructor_,
       Reference* someType_,
-      StructReferend* someReferend_,
+      StructKind* someKind_,
       Prototype* noneConstructor_,
       Reference* noneType_,
-      StructReferend* noneReferend_,
+      StructKind* noneKind_,
       Reference* resultOptType_,
-      InterfaceReferend* resultOptReferend_) :
+      InterfaceKind* resultOptKind_) :
     sourceExpr(sourceExpr_),
     sourceType(sourceType_),
     sourceKnownLive(sourceKnownLive_),
     someConstructor(someConstructor_),
     someType(someType_),
-    someReferend(someReferend_),
+    someKind(someKind_),
     noneConstructor(noneConstructor_),
     noneType(noneType_),
-    noneReferend(noneReferend_),
+    noneKind(noneKind_),
     resultOptType(resultOptType_),
-    resultOptReferend(resultOptReferend_) {}
+    resultOptKind(resultOptKind_) {}
 };
 
 class AsSubtype : public Expression {
@@ -752,44 +755,44 @@ public:
   Reference* sourceType;
   bool sourceKnownLive;
 
-  Referend* targetReferend;
+  Kind* targetKind;
 
   Prototype* okConstructor;
   Reference* okType;
-  StructReferend* okReferend;
+  StructKind* okKind;
 
   Prototype* errConstructor;
   Reference* errType;
-  StructReferend* errReferend;
+  StructKind* errKind;
 
   Reference* resultResultType;
-  InterfaceReferend* resultResultReferend;
+  InterfaceKind* resultResultKind;
 
   AsSubtype(
       Expression* sourceExpr_,
       Reference* sourceType_,
       bool sourceKnownLive_,
-      Referend* targetReferend_,
+      Kind* targetKind_,
       Prototype* okConstructor_,
       Reference* okType_,
-      StructReferend* okReferend_,
+      StructKind* okKind_,
       Prototype* errConstructor_,
       Reference* errType_,
-      StructReferend* errReferend_,
+      StructKind* errKind_,
       Reference* resultResultType_,
-      InterfaceReferend* resultResultReferend_) :
+      InterfaceKind* resultResultKind_) :
     sourceExpr(sourceExpr_),
     sourceType(sourceType_),
     sourceKnownLive(sourceKnownLive_),
-    targetReferend(targetReferend_),
+    targetKind(targetKind_),
     okConstructor(okConstructor_),
     okType(okType_),
-    okReferend(okReferend_),
+    okKind(okKind_),
     errConstructor(errConstructor_),
     errType(errType_),
-    errReferend(errReferend_),
+    errKind(errKind_),
     resultResultType(resultResultType_),
-    resultResultReferend(resultResultReferend_) {}
+    resultResultKind(resultResultKind_) {}
 };
 
 #endif

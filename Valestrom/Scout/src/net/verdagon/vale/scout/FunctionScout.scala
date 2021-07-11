@@ -60,6 +60,8 @@ object FunctionScout {
       userSpecifiedIdentifyingRuneNames
         .toList
         .flatMap(_.runes)
+        // Filter out any regions, we dont do those yet
+        .filter({ case IdentifyingRuneP(_, _, attributes) => !attributes.exists({ case TypeRuneAttributeP(_, RegionTypePR) => true case _ => false }) })
         .map({ case IdentifyingRuneP(_, NameP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
     val userRunesFromRules =
       templateRulesP
@@ -95,7 +97,7 @@ object FunctionScout {
           val rule = EqualsSR(rangeS, TemplexSR(NameST(rangeS, CodeTypeNameS("void"))), TypedSR(rangeS, rune, CoordTypeSR))
           (List(rule), Some(rune))
         }
-        case (Some(_), None) => (List(), None) // Infer the return
+        case (Some(_), None) => (List.empty, None) // Infer the return
         case (None, Some(retTypePT)) => {
           PatternScout.translateMaybeTypeIntoMaybeRune(
             functionEnv,
@@ -115,19 +117,19 @@ object FunctionScout {
 
     val body1 =
       if (attributes.collectFirst({ case AbstractAttributeP(_) => }).nonEmpty) {
-        AbstractBody1
+        AbstractBodyS
       } else if (attributes.collectFirst({ case ExternAttributeP(_) => }).nonEmpty) {
         if (maybeBody0.nonEmpty) {
           throw CompileErrorExceptionS(ExternHasBody(Scout.evalRange(file, range)))
         }
-        ExternBody1
+        ExternBodyS
       } else if (attributes.collectFirst({ case BuiltinAttributeP(_, _) => }).nonEmpty) {
-        GeneratedBody1(attributes.collectFirst({ case BuiltinAttributeP(_, generatorId) => generatorId}).head.str)
+        GeneratedBodyS(attributes.collectFirst({ case BuiltinAttributeP(_, generatorId) => generatorId}).head.str)
       } else {
         vassert(maybeBody0.nonEmpty)
-        val (body1, _, List()) = scoutBody(myStackFrame, maybeBody0.get, captureDeclarations)
+        val (body1, _, Nil) = scoutBody(myStackFrame, maybeBody0.get, captureDeclarations)
         vassert(body1.closuredNames.isEmpty)
-        CodeBody1(body1)
+        CodeBodyS(body1)
       }
 
     val allRunes =
@@ -165,7 +167,7 @@ object FunctionScout {
 //          if (paramP.templex.isEmpty) {
 //            List(explicitParamPatternS.coordRune)
 //          } else {
-//            List()
+//            List.empty
 //          }
 //        }
 //      })
@@ -231,6 +233,8 @@ object FunctionScout {
       userSpecifiedIdentifyingRuneNames
         .toList
         .flatMap(_.runes)
+        // Filter out any regions, we dont do those yet
+        .filter({ case IdentifyingRuneP(_, _, attributes) => !attributes.exists({ case TypeRuneAttributeP(_, RegionTypePR) => true case _ => false }) })
         .map({ case IdentifyingRuneP(_, NameP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
 
     val lambdaName = LambdaNameS(/*parentStackFrame.name,*/ codeLocation)
@@ -260,7 +264,7 @@ object FunctionScout {
     val closureParamName = ClosureParamNameS()
 
     val closureDeclaration =
-      VariableDeclarations(List(VariableDeclaration(closureParamName, FinalP)))
+      VariableDeclarations(List(VariableDeclaration(closureParamName)))
 
     val paramDeclarations =
       explicitParams1.map(_.pattern)
@@ -293,7 +297,7 @@ object FunctionScout {
       ParameterS(
         AtomSP(
           closureParamRange,
-          CaptureS(closureParamName,FinalP),None,closureParamTypeRune,None))
+          Some(CaptureS(closureParamName)),None,closureParamTypeRune,None))
 
     val (magicParamsRules, magicParams) =
         lambdaMagicParamNames.map({
@@ -305,7 +309,7 @@ object FunctionScout {
               ParameterS(
                 AtomSP(
                   magicParamRange,
-                  CaptureS(mpn,FinalP),None,magicParamRune,None))
+                  Some(CaptureS(mpn)),None,magicParamRune,None))
             (ruleS, paramS)
           }
         })
@@ -324,7 +328,7 @@ object FunctionScout {
 
     val (implicitRulesFromReturn, maybeRetCoordRune) =
       (maybeInferRet, maybeRetType) match {
-        case (_, None) => (List(), None) // Infer the return
+        case (_, None) => (List.empty, None) // Infer the return
         case (None, Some(retTypePT)) => {
           PatternScout.translateMaybeTypeIntoMaybeRune(
             functionEnv,
@@ -375,7 +379,7 @@ object FunctionScout {
 //          if (paramP.templex.isEmpty) {
 //            List(explicitParamPatternS.coordRune)
 //          } else {
-//            List()
+//            List.empty
 //          }
 //        }
 //      })
@@ -413,7 +417,7 @@ object FunctionScout {
         maybeRetCoordRune,
         isTemplate,
         rulesS,
-        CodeBody1(body1))
+        CodeBodyS(body1))
     (function1, variableUses)
   }
 
@@ -442,13 +446,12 @@ object FunctionScout {
       childUses.uses.map(_.name).collect({ case mpn @ MagicParamNameS(_) => mpn }).isEmpty)
     val magicParamNames =
       selfUses.uses.map(_.name).collect({ case mpn @ MagicParamNameS(_) => mpn })
-    val magicParamVars = magicParamNames.map(n => VariableDeclaration(n, FinalP))
+    val magicParamVars = magicParamNames.map(n => VariableDeclaration(n))
 
     val magicParamLocals =
       magicParamVars.map({ declared =>
-        LocalVariable1(
+        LocalS(
           declared.name,
-          declared.variability,
           selfUses.isBorrowed(declared.name),
           selfUses.isMoved(declared.name),
           selfUses.isMutated(declared.name),
@@ -530,6 +533,8 @@ object FunctionScout {
       userSpecifiedIdentifyingRuneNames
           .toList
         .flatMap(_.runes)
+        // Filter out any regions, we dont do those yet
+        .filter({ case IdentifyingRuneP(_, _, attributes) => !attributes.exists({ case TypeRuneAttributeP(_, RegionTypePR) => true case _ => false }) })
         .map({ case IdentifyingRuneP(_, NameP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
 
     val rate = RuleStateBox(RuleState(funcName, 0))
@@ -619,6 +624,6 @@ object FunctionScout {
       maybeReturnRune,
       isTemplate,
       rulesS,
-      AbstractBody1);
+      AbstractBodyS);
   }
 }

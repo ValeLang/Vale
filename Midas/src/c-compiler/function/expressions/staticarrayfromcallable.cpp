@@ -21,10 +21,10 @@ Ref translateStaticArrayFromCallable(
   auto generatorExpr = staticArrayFromCallable->generatorExpr;
   auto elementType = staticArrayFromCallable->elementType;
   auto arrayRefType = staticArrayFromCallable->arrayRefType;
-  auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT*>(staticArrayFromCallable->arrayRefType->referend);
+  auto staticSizedArrayMT = dynamic_cast<StaticSizedArrayT*>(staticArrayFromCallable->arrayRefType->kind);
 
-  auto ksaDefMT = globalState->program->getKnownSizeArray(knownSizeArrayMT->name);
-  auto sizeRef = globalState->constI64(ksaDefMT->size);
+  auto ssaDefMT = globalState->program->getStaticSizedArray(staticSizedArrayMT);
+  auto sizeRef = globalState->constI32(ssaDefMT->size);
 
   auto generatorRef = translateExpression(globalState, functionState, blockState, builder, generatorExpr);
   globalState->getRegion(generatorType)->checkValidReference(FL(), functionState, builder,
@@ -33,41 +33,41 @@ Ref translateStaticArrayFromCallable(
   std::unique_ptr<Ref> result;
   if (staticArrayFromCallable->arrayRefType->location == Location::INLINE) {
 //        auto valStructL =
-//            globalState->getInnerStruct(structReferend->fullName);
+//            globalState->getInnerStruct(structKind->fullName);
 //        return constructInnerStruct(
 //            builder, structM, valStructL, membersLE);
     assert(false);
   } else {
     // If we get here, arrayLT is a pointer to our counted struct.
-    auto ksaRef =
-        globalState->getRegion(staticArrayFromCallable->arrayRefType)->constructKnownSizeArray(
+    auto ssaRef =
+        globalState->getRegion(staticArrayFromCallable->arrayRefType)->constructStaticSizedArray(
             makeEmptyTupleRef(globalState),
             functionState,
             builder,
             staticArrayFromCallable->arrayRefType,
-            knownSizeArrayMT);
+            staticSizedArrayMT);
 
     buildFlare(FL(), globalState, functionState, builder);
-    fillKnownSizeArrayFromCallable(
+    fillStaticSizedArrayFromCallable(
         globalState,
         functionState,
         builder,
         arrayRefType,
-        knownSizeArrayMT,
+        staticSizedArrayMT,
         elementType,
         generatorType,
         staticArrayFromCallable->generatorMethod,
         generatorRef,
         sizeRef,
-        ksaRef);//getUnknownSizeArrayContentsPtr(builder, usaWrapperPtrLE));
+        ssaRef);//getRuntimeSizedArrayContentsPtr(builder, rsaWrapperPtrLE));
     buildFlare(FL(), globalState, functionState, builder);
 
     globalState->getRegion(staticArrayFromCallable->arrayRefType)->checkValidReference(FL(), functionState, builder,
-        staticArrayFromCallable->arrayRefType, ksaRef);
-    result.reset(new Ref(ksaRef));
+        staticArrayFromCallable->arrayRefType, ssaRef);
+    result.reset(new Ref(ssaRef));
   }
 
-  globalState->getRegion(generatorType)->dealias(AFL("ConstructUSA"), functionState, builder, generatorType, generatorRef);
+  globalState->getRegion(generatorType)->dealias(AFL("ConstructRSA"), functionState, builder, generatorType, generatorRef);
 
   return std::move(*result);
 }

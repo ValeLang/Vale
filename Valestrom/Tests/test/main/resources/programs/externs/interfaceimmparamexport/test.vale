@@ -1,0 +1,21 @@
+interface IShip export imm { }
+
+struct Spaceship export imm { fuel int; }
+impl IShip for Spaceship;
+
+struct Seaship export imm { leftFuel int; rightFuel int; }
+impl IShip for Seaship;
+
+fn getFuel(virtual this IShip) int abstract;
+fn getFuel(this Spaceship impl IShip) int { this.fuel }
+fn getFuel(this Seaship impl IShip) int { this.leftFuel + this.rightFuel }
+
+fn valeGetShipFuel(s IShip) int export {
+  ret s.getFuel();
+}
+
+fn cGetShipFuel(s IShip) int extern;
+
+fn main() int export {
+   cGetShipFuel(Seaship(37, 5))
+}

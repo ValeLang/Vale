@@ -1,6 +1,6 @@
 package net.verdagon.vale.scout
 
-import net.verdagon.vale.parser.{CombinatorParsers, FinalP, ParseFailure, ParseSuccess, Parser, VaryingP}
+import net.verdagon.vale.parser.{CombinatorParsers,  ParseFailure, ParseSuccess, Parser, VaryingP}
 import net.verdagon.vale.{Err, FileCoordinate, Ok, vassert, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -34,95 +34,84 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Regular variable") {
     val program1 = compile("fn main() int export { x = 4; }")
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     vassert(body.block.locals.size == 1)
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
       CodeVarNameS("x"),
-      FinalP, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+      NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
   test("Reports defining same-name variable") {
-    compileProgramForError("fn main() { x = 4; x = 5; }") match {
+    compileProgramForError("fn main() export { x = 4; x = 5; }") match {
       case VariableNameAlreadyExists(_, CodeVarNameS("x")) =>
-    }
-  }
-
-  test("MutableP variable") {
-    val program1 = compile("fn main() int export { x! = 4; }")
-    val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
-    body.block.locals.head match {
-      case LocalVariable1(
-      CodeVarNameS("x"),
-      VaryingP, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
   test("Self is lending to function") {
     val program1 = compile("fn main() int export { x = 4; doBlarks(&x); }")
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
       CodeVarNameS("x"),
-      FinalP,Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+      Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
   test("Self is lending to method") {
     val program1 = compile("fn main() int export { x = 4; x.doBlarks(); }")
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
       CodeVarNameS("x"),
-      FinalP,Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+      Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
   test("Self is moving to function") {
     val program1 = compile("fn main() int export { x = 4; doBlarks(x); }")
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
       CodeVarNameS("x"),
-      FinalP,NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed) =>
+      NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
   test("Self is moving to method") {
     val program1 = compile("fn main() int export { x = 4; (x).doBlarks(); }")
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
       CodeVarNameS("x"),
-      FinalP,NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed) =>
+      NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
   test("Self is mutating mutable") {
     val program1 = compile("fn main() int export { x! = 4; set x = 6; }")
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
       CodeVarNameS("x"),
-      VaryingP, NotUsed, NotUsed, Used, NotUsed, NotUsed, NotUsed) =>
+       NotUsed, NotUsed, Used, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
   test("Self is moving and mutating same variable") {
     val program1 = compile("fn main() int export { x! = 4; set x = x + 1; }")
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
       CodeVarNameS("x"),
-      VaryingP, NotUsed, Used, Used, NotUsed, NotUsed, NotUsed) =>
+       NotUsed, Used, Used, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -135,11 +124,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP, NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed, NotUsed) =>
+           NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -152,11 +141,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP, NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed) =>
+           NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed) =>
     }
   }
 
@@ -169,11 +158,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed) =>
+           NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed) =>
     }
   }
 
@@ -186,11 +175,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP, MaybeUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+           MaybeUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -203,11 +192,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP, NotUsed, MaybeUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+           NotUsed, MaybeUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -220,11 +209,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP, NotUsed, NotUsed, MaybeUsed, NotUsed, NotUsed, NotUsed) =>
+           NotUsed, NotUsed, MaybeUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -237,11 +226,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP,NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed, NotUsed) =>
+          NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -254,11 +243,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP,NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed) =>
+          NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed) =>
     }
   }
 
@@ -271,11 +260,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP,NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed) =>
+          NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed) =>
     }
   }
 
@@ -288,11 +277,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP, Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+           Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -305,11 +294,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP,NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed, NotUsed) =>
+          NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -322,11 +311,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed) =>
+           NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -339,11 +328,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP,NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed) =>
+          NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed) =>
     }
   }
 
@@ -356,11 +345,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP, NotUsed, NotUsed, Used, NotUsed, NotUsed, NotUsed) =>
+           NotUsed, NotUsed, Used, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -373,11 +362,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed) =>
+           NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed) =>
     }
   }
 
@@ -390,11 +379,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP, MaybeUsed, MaybeUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+           MaybeUsed, MaybeUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -407,11 +396,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP,NotUsed, NotUsed, NotUsed, MaybeUsed, MaybeUsed, NotUsed) =>
+          NotUsed, NotUsed, NotUsed, MaybeUsed, MaybeUsed, NotUsed) =>
     }
   }
 
@@ -424,11 +413,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP, NotUsed, MaybeUsed, MaybeUsed, NotUsed, NotUsed, NotUsed) =>
+           NotUsed, MaybeUsed, MaybeUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -441,33 +430,33 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP, NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed, MaybeUsed) =>
+           NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed, MaybeUsed) =>
     }
   }
 
   test("Self moving and mutating same variable") {
     val program1 = compile("fn main() int export { x! = 4; set x = x + 1; }")
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          VaryingP, NotUsed, Used, Used, NotUsed, NotUsed, NotUsed) =>
+           NotUsed, Used, Used, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
   test("Children moving and mutating same variable") {
     val program1 = compile("fn main() int export { x! = 4; { set x = x + 1; }(); }")
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          VaryingP, NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed, MaybeUsed) =>
+           NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed, MaybeUsed) =>
     }
   }
 
@@ -479,11 +468,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP, Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+           Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -495,11 +484,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP,NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed, NotUsed) =>
+          NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -512,11 +501,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP, MaybeUsed, MaybeUsed, MaybeUsed, NotUsed, NotUsed, NotUsed) =>
+           MaybeUsed, MaybeUsed, MaybeUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -529,11 +518,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP, NotUsed, NotUsed, NotUsed, MaybeUsed, MaybeUsed, MaybeUsed) =>
+           NotUsed, NotUsed, NotUsed, MaybeUsed, MaybeUsed, MaybeUsed) =>
     }
   }
 
@@ -547,11 +536,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """.stripMargin)
     val main = program1.lookupFunction("main")
     // x is always borrowed because the condition of a while is always run
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP, Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+           Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -564,11 +553,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
-    val CodeBody1(body) = main.body
+    val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalVariable1(
+      case LocalS(
           CodeVarNameS("x"),
-          FinalP, MaybeUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+           MaybeUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -582,15 +571,15 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """.stripMargin)
     val scoutput = program1
     val main = scoutput.lookupFunction("main")
-    val CodeBody1(BodySE(_, _, mainBlock)) = main.body
+    val CodeBodyS(BodySE(_, _, mainBlock)) = main.body
     // __Closure is shown as not used... we could change scout to automatically
     // borrow it whenever we try to access a closure variable?
     val lamBlock =
       mainBlock.exprs.collect({
-        case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, _, _, _, CodeBody1(innerBody))), _), _) => innerBody.block
+        case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, _, _, _, CodeBodyS(innerBody))), _), _) => innerBody.block
       }).head
     lamBlock.locals.head match {
-      case LocalVariable1(name, FinalP,NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) => {
+      case LocalS(name, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) => {
         name match {
           case ClosureParamNameS() =>
         }
@@ -607,17 +596,17 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """.stripMargin)
     val scoutput = program1
     val main = scoutput.lookupFunction("main")
-    val CodeBody1(BodySE(_, _, mainBlock)) = main.body
+    val CodeBodyS(BodySE(_, _, mainBlock)) = main.body
     // __Closure is shown as not used... we could change scout to automatically
     // borrow it whenever we try to access a closure variable?
     val lamBlock =
     mainBlock.exprs.collect({
-      case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, _, _, _, CodeBody1(innerBody))), _), _) => innerBody.block
+      case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, _, _, _, CodeBodyS(innerBody))), _), _) => innerBody.block
     }).head
     val locals = lamBlock.locals
     locals.find(_.varName == ClosureParamNameS()).get match {
-      case LocalVariable1(ClosureParamNameS(),
-        FinalP,NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+      case LocalS(ClosureParamNameS(),
+        NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 }

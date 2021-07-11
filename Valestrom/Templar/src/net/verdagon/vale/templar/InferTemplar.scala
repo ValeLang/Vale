@@ -59,9 +59,9 @@ class InferTemplar(
     rules: List[IRulexAR],
     typeByRune: Map[IRuneA, ITemplataType],
     localRunes: Set[IRuneA],
-  ): (Map[IRune2, ITemplata]) = {
+  ): (Map[IRuneT, ITemplata]) = {
     profiler.childFrame("inferOrdinaryRules", () => {
-      solve(env0, temputs, rules, typeByRune, localRunes, RangeS.internal(-13337), Map(), List(), None, true) match {
+      solve(env0, temputs, rules, typeByRune, localRunes, RangeS.internal(-13337), Map(), List.empty, None, true) match {
         case (InferSolveSuccess(inferences)) => {
           (inferences.templatasByRune)
         }

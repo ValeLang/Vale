@@ -21,16 +21,16 @@ class StructTemplarTemplateArgsLayer(
     delegate: IStructTemplarDelegate) {
   val middle = new StructTemplarMiddle(opts, profiler, newTemplataStore, ancestorHelper, delegate)
 
-  def addBuiltInStructs(env: PackageEnvironment[IName2], temputs: Temputs): Unit = {
+  def addBuiltInStructs(env: PackageEnvironment[INameT], temputs: Temputs): Unit = {
     middle.addBuiltInStructs(env, temputs)
   }
 
   def makeStructConstructor(
     temputs: Temputs,
     maybeConstructorOriginFunctionA: Option[FunctionA],
-    structDef: StructDefinition2,
-    constructorFullName: FullName2[IFunctionName2]):
-  FunctionHeader2 = {
+    structDef: StructDefinitionT,
+    constructorFullName: FullNameT[IFunctionNameT]):
+  FunctionHeaderT = {
     middle.makeStructConstructor(temputs, maybeConstructorOriginFunctionA, structDef, constructorFullName)
   }
 
@@ -39,7 +39,7 @@ class StructTemplarTemplateArgsLayer(
     callRange: RangeS,
     structTemplata: StructTemplata,
     templateArgs: List[ITemplata]):
-  (StructRef2) = {
+  (StructTT) = {
     profiler.newProfile("getStructRef", structTemplata.debugString + "<" + templateArgs.map(_.toString).mkString(", ") + ">", () => {
       val StructTemplata(env, structA) = structTemplata
       val TopLevelCitizenDeclarationNameA(humanName, codeLocation) = structA.name
@@ -48,15 +48,15 @@ class StructTemplarTemplateArgsLayer(
       val fullName = env.fullName.addStep(structLastName)
 
       temputs.structDeclared(fullName) match {
-        case Some(structRef2) => {
-          (structRef2)
+        case Some(structTT) => {
+          (structTT)
         }
         case None => {
           // not sure if this is okay or not, do we allow this?
           if (templateArgs.size != structA.identifyingRunes.size) {
             vfail("wat?")
           }
-          val temporaryStructRef = StructRef2(fullName)
+          val temporaryStructRef = StructTT(fullName)
           temputs.declareStruct(temporaryStructRef)
 
           structA.maybePredictedMutability match {
@@ -71,7 +71,7 @@ class StructTemplarTemplateArgsLayer(
               structA.rules,
               structA.typeByRune,
               structA.localRunes,
-              List(),
+              List.empty,
               None,
               callRange,
               templateArgs)
@@ -103,7 +103,7 @@ class StructTemplarTemplateArgsLayer(
     callRange: RangeS,
     interfaceTemplata: InterfaceTemplata,
     templateArgs: List[ITemplata]):
-  (InterfaceRef2) = {
+  (InterfaceTT) = {
     profiler.newProfile("getInterfaceRef", interfaceTemplata.debugString + "<" + templateArgs.map(_.toString).mkString(", ") + ">", () => {
       val InterfaceTemplata(env, interfaceS) = interfaceTemplata
       val TopLevelCitizenDeclarationNameA(humanName, codeLocation) = interfaceS.name
@@ -112,15 +112,15 @@ class StructTemplarTemplateArgsLayer(
       val fullName = env.fullName.addStep(interfaceLastName)
 
       temputs.interfaceDeclared(fullName) match {
-        case Some(interfaceRef2) => {
-          (interfaceRef2)
+        case Some(interfaceTT) => {
+          (interfaceTT)
         }
         case None => {
           // not sure if this is okay or not, do we allow this?
           if (templateArgs.size != interfaceS.identifyingRunes.size) {
             vfail("wat?")
           }
-          val temporaryInterfaceRef = InterfaceRef2(fullName)
+          val temporaryInterfaceRef = InterfaceTT(fullName)
           temputs.declareInterface(temporaryInterfaceRef)
 
 
@@ -137,7 +137,7 @@ class StructTemplarTemplateArgsLayer(
               interfaceS.rules,
               interfaceS.typeByRune,
               interfaceS.localRunes,
-              List(),
+              List.empty,
               None,
               callRange,
               templateArgs)
@@ -170,14 +170,14 @@ class StructTemplarTemplateArgsLayer(
     temputs: Temputs,
     name: LambdaNameA,
     functionS: FunctionA,
-    members: List[StructMember2]):
-  (StructRef2, Mutability, FunctionTemplata) = {
+    members: List[StructMemberT]):
+  (StructTT, MutabilityT, FunctionTemplata) = {
     middle.makeClosureUnderstruct(containingFunctionEnv, temputs, name, functionS, members)
   }
 
   // Makes a struct to back a pack or tuple
-  def makeSeqOrPackUnerstruct(env: PackageEnvironment[IName2], temputs: Temputs, memberTypes2: List[Coord], name: ICitizenName2):
-  (StructRef2, Mutability) = {
+  def makeSeqOrPackUnerstruct(env: PackageEnvironment[INameT], temputs: Temputs, memberTypes2: List[CoordT], name: ICitizenNameT):
+  (StructTT, MutabilityT) = {
     middle.makeSeqOrPackUnderstruct(env, temputs, memberTypes2, name)
   }
 
@@ -186,14 +186,14 @@ class StructTemplarTemplateArgsLayer(
     interfaceEnv: IEnvironment,
     temputs: Temputs,
     range: RangeS,
-    interfaceRef: InterfaceRef2,
-    substructName: FullName2[AnonymousSubstructName2]):
-  (StructRef2, Mutability) = {
+    interfaceTT: InterfaceTT,
+    substructName: FullNameT[AnonymousSubstructNameT]):
+  (StructTT, MutabilityT) = {
     middle.makeAnonymousSubstruct(
       interfaceEnv,
       temputs,
       range,
-      interfaceRef,
+      interfaceTT,
       substructName)
   }
 
@@ -202,9 +202,9 @@ class StructTemplarTemplateArgsLayer(
     outerEnv: IEnvironment,
     temputs: Temputs,
     range: RangeS,
-    prototype: Prototype2,
-    structFullName: FullName2[ICitizenName2]):
-  StructRef2 = {
+    prototype: PrototypeT,
+    structFullName: FullNameT[ICitizenNameT]):
+  StructTT = {
     middle.prototypeToAnonymousStruct(
       outerEnv, temputs, range, prototype, structFullName)
   }

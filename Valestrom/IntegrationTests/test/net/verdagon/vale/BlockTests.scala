@@ -3,7 +3,7 @@ package net.verdagon.vale
 import net.verdagon.vale.parser.{FinalP, VariabilityP}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.types.{Bool2, Coord, Int2, Share}
+import net.verdagon.vale.templar.types.{BoolT, CoordT, IntT, ShareT}
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 
@@ -17,11 +17,11 @@ class BlockTests extends FunSuite with Matchers {
         |  = 3;
         |}
       """.stripMargin)
-    val scoutput = compile.getScoutput().getOrDie().moduleToPackagesToFilenameToContents("test")(List())("0.vale")
+    val scoutput = compile.getScoutput().getOrDie().moduleToPackagesToFilenameToContents("test")(List.empty)("0.vale")
     val main = scoutput.lookupFunction("main")
-    main.body match { case CodeBody1(BodySE(_, _,BlockSE(_, _,List(BlockSE(_, _,_), _)))) => }
+    main.body match { case CodeBodyS(BodySE(_, _,BlockSE(_, _,List(BlockSE(_, _,_), _)))) => }
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
   test("Simple block with a variable") {
     val compile = RunCompilation.test(
@@ -33,15 +33,15 @@ class BlockTests extends FunSuite with Matchers {
         |  = 3;
         |}
       """.stripMargin)
-    val scoutput = compile.getScoutput().getOrDie().moduleToPackagesToFilenameToContents("test")(List())("0.vale")
+    val scoutput = compile.getScoutput().getOrDie().moduleToPackagesToFilenameToContents("test")(List.empty)("0.vale")
     val main = scoutput.lookupFunction("main")
-    val block = main.body match { case CodeBody1(BodySE(_, _,BlockSE(_, _,List(b @ BlockSE(_, _,_), _)))) => b }
+    val block = main.body match { case CodeBodyS(BodySE(_, _,BlockSE(_, _,List(b @ BlockSE(_, _,_), _)))) => b }
     vassert(block.locals.size == 1)
     block.locals.head match {
-      case LocalVariable1(CodeVarNameS("y"), FinalP, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+      case LocalS(CodeVarNameS("y"), NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
   test("Simple block with a variable, another variable outside with same name") {
     val compile = RunCompilation.test(
@@ -56,6 +56,6 @@ class BlockTests extends FunSuite with Matchers {
       """.stripMargin)
     val scoutput = compile.getScoutput().getOrDie()
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 }

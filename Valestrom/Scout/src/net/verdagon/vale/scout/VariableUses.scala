@@ -11,8 +11,7 @@ case class VariableUse(
     mutated: Option[IVariableUseCertainty])
 
 case class VariableDeclaration(
-    name: IVarNameS,
-    variability: VariabilityP)
+    name: IVarNameS)
 
 case class VariableDeclarations(vars: List[VariableDeclaration]) {
   vassert(vars.distinct == vars)
@@ -25,7 +24,7 @@ case class VariableDeclarations(vars: List[VariableDeclaration]) {
       case CodeVarNameS(humanName) => humanName == needle
       case ConstructingMemberNameS(_) => false
       case ClosureParamNameS() => false
-      case UnnamedLocalNameS(_) => false
+//      case UnnamedLocalNameS(_) => false
       case MagicParamNameS(_) => false
     })
   }

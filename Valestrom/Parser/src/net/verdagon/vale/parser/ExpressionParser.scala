@@ -20,7 +20,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   }
 
   private[parser] def lookup: Parser[LookupPE] = {
-//    ("`" ~> "[^`]+".r <~ "`" ^^ (i => LookupPE(i, List()))) |
+//    ("`" ~> "[^`]+".r <~ "`" ^^ (i => LookupPE(i, List.empty))) |
     (exprIdentifier ^^ (i => LookupPE(i, None)))
   }
 
@@ -61,7 +61,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
         pos ^^ {
       case LetBegin(begin, pattern) ~ expr ~ end => {
         // We just threw away the topLevelRunes because let statements cant have them.
-        LetPE(Range(begin, end), /*maybeTemplateRules.getOrElse(List())*/None, pattern, expr)
+        LetPE(Range(begin, end), /*maybeTemplateRules.getOrElse(List.empty)*/None, pattern, expr)
       }
     }
   }
@@ -232,21 +232,27 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     ("block" ~> optWhite ~> bracedBlock)
   }
 
+  private[parser] def fourDigitHexNumber: Parser[Int] = {
+    "([0-9a-fA-F]{4})".r ^^ { s =>
+      Integer.parseInt(s, 16)
+    }
+  }
 
   private[parser] def shortStringPart: Parser[IExpressionPE] = {
 //    ("\"" ~> failure("ended string")) |
-    (pos ~ "\\t" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\t") }) |
-    (pos ~ "\\r" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\r") }) |
-    (pos ~ "\\n" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\n") }) |
-    (pos ~ "\\\"" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\"") }) |
-    (pos ~ "\\\\" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\\") }) |
-    (pos ~ "\\/" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "/") }) |
-    (pos ~ "\\{" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "{") }) |
-    (pos ~ "\\}" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "}") }) |
-    (pos ~ "\n" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\n") }) |
-    (pos ~ "\r" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\r") }) |
+    (pos ~ "\\t" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\t") }) |
+    (pos ~ "\\r" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\r") }) |
+    (pos ~ "\\n" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\n") }) |
+    (pos ~ ("\\u" ~> fourDigitHexNumber) ~ pos ^^ { case begin ~ s ~ end => ConstantStrPE(Range(begin, end), s.toChar.toString) }) |
+    (pos ~ "\\\"" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\"") }) |
+    (pos ~ "\\\\" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\\") }) |
+    (pos ~ "\\/" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "/") }) |
+    (pos ~ "\\{" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "{") }) |
+    (pos ~ "\\}" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "}") }) |
+    (pos ~ "\n" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\n") }) |
+    (pos ~ "\r" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\r") }) |
     ("{" ~> expression <~ "}") |
-    (pos ~ (not("\"") ~> ".".r) ~ pos ^^ { case begin ~ thing ~ end => StrLiteralPE(Range(begin, end), thing) })
+    (pos ~ (not("\\") ~> not("\"") ~> ".".r) ~ pos ^^ { case begin ~ thing ~ end => ConstantStrPE(Range(begin, end), thing) })
   }
 
   private[parser] def shortStringExpr: Parser[IExpressionPE] = {
@@ -259,18 +265,18 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
 
   private[parser] def longStringPart: Parser[IExpressionPE] = {
     ("\"\"\"" ~> failure("ended string")) |
-    (pos ~ "\\t" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\t") }) |
-    (pos ~ "\\r" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\r") }) |
-    (pos ~ "\\n" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\n") }) |
-    (pos ~ "\\\"" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\"") }) |
-    (pos ~ "\\\\" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\\") }) |
-    (pos ~ "\\/" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "/") }) |
-    (pos ~ "\\{" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "{") }) |
-    (pos ~ "\\}" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "}") }) |
-    (pos ~ "\n" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\n") }) |
-    (pos ~ "\r" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\r") }) |
+    (pos ~ "\\t" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\t") }) |
+    (pos ~ "\\r" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\r") }) |
+    (pos ~ "\\n" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\n") }) |
+    (pos ~ "\\\"" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\"") }) |
+    (pos ~ "\\\\" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\\") }) |
+    (pos ~ "\\/" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "/") }) |
+    (pos ~ "\\{" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "{") }) |
+    (pos ~ "\\}" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "}") }) |
+    (pos ~ "\n" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\n") }) |
+    (pos ~ "\r" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\r") }) |
     ("{" ~> expression <~ "}") |
-    (pos ~ (not("\"\"\"") ~> ".".r) ~ pos ^^ { case begin ~ thing ~ end => StrLiteralPE(Range(begin, end), thing) })
+    (pos ~ (not("\"\"\"") ~> ".".r) ~ pos ^^ { case begin ~ thing ~ end => ConstantStrPE(Range(begin, end), thing) })
   }
 
   private[parser] def longStringExpr: Parser[IExpressionPE] = {
@@ -284,8 +290,8 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   def simplifyStringInterpolate(stringExpr: StrInterpolatePE) = {
     def combine(previousReversed: List[IExpressionPE], next: List[IExpressionPE]): List[IExpressionPE] = {
       (previousReversed, next) match {
-        case (StrLiteralPE(Range(prevBegin, _), prev) :: earlier, StrLiteralPE(Range(_, nextEnd), next) :: later) => {
-          combine(StrLiteralPE(Range(prevBegin, nextEnd), prev + next) :: earlier, later)
+        case (ConstantStrPE(Range(prevBegin, _), prev) :: earlier, ConstantStrPE(Range(_, nextEnd), next) :: later) => {
+          combine(ConstantStrPE(Range(prevBegin, nextEnd), prev + next) :: earlier, later)
         }
         case (earlier, next :: later) => {
           combine(next :: earlier, later)
@@ -296,9 +302,9 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
 
     val StrInterpolatePE(range, parts) = stringExpr
 
-    combine(List(), parts).reverse match {
-      case List() => StrLiteralPE(range, "")
-      case List(s @ StrLiteralPE(_, _)) => s
+    combine(List.empty, parts).reverse match {
+      case Nil => ConstantStrPE(range, "")
+      case List(s @ ConstantStrPE(_, _)) => s
       case multiple => StrInterpolatePE(range, multiple)
     }
   }
@@ -333,10 +339,16 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
 //    }
 //  }
 
+  private[parser] def integerExpression: Parser[ConstantIntPE] = {
+    pos ~ long ~ opt("i" ~> long) ~ pos ^^ {
+      case begin ~ n ~ maybeBits ~ end => ConstantIntPE(Range(begin, end), n, maybeBits.getOrElse(32L).toInt)
+    }
+  }
+
   private[parser] def expressionElementLevel1: Parser[IExpressionPE] = {
     (pos ~ ("..." ~> pos) ^^ { case begin ~ end => LookupPE(NameP(Range(begin, end), "..."), None) }) |
     stringExpr |
-      integer |
+      integerExpression |
       bool |
       lambda |
       (pos ~ ("()" ~> pos) ^^ { // hack for shortcalling syntax highlighting
@@ -347,7 +359,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
             Range(begin, begin),
             false,
             LookupPE(NameP(Range(begin, begin), ""), None),
-            List(),
+            List.empty,
             LendConstraintP((None)))
         }
       }) |
@@ -395,7 +407,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     ) extends IStep
     def step: Parser[IStep] = {
       def afterDot = {
-        (integer ^^ { case IntLiteralPE(range, value) => LookupPE(NameP(range, value.toString), None) }) |
+        (integerExpression ^^ { case ConstantIntPE(range, value, bits) => LookupPE(NameP(range, value.toString), None) }) |
         templateSpecifiedLookup |
         lookup
       }
@@ -619,7 +631,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     rep1sep(statementOrResult, optWhite) ~ pos ^^ {
       case statements ~ end => {
         statements match {
-          case List() => List(VoidPE(Range(end, end)))
+          case Nil => List(VoidPE(Range(end, end)))
           case resultsOrStatements => {
             if (resultsOrStatements.init.exists(_._2)) {
               vfail("wot")
@@ -647,7 +659,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   private[parser] def arrayOrTuple: Parser[IExpressionPE] = {
     // Static arrays have to come before tuples, because the beginning of static array looks kind of like a tuple.
     constructArrayExpr |
-//    runtimeArrayExpr |
+//    runtimeSizedArrayExpr |
     tuupleExpr
   }
 
@@ -702,7 +714,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   }
 
   private[parser] def packExpr: Parser[PackPE] = {
-    pos ~ ("(" ~> optWhite ~> ("..." ^^^ List() | repsep(expression, optWhite ~> "," <~ optWhite)) <~ optWhite <~ ")") ~ pos ^^ {
+    pos ~ ("(" ~> optWhite ~> ("..." ^^^ List.empty | repsep(expression, optWhite ~> "," <~ optWhite)) <~ optWhite <~ ")") ~ pos ^^ {
       case begin ~ inners ~ end => PackPE(Range(begin, end), inners)
     }
   }
@@ -743,7 +755,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
             Range(begin, end),
             FunctionHeaderP(
               Range(begin, headerEnd),
-              None, List(), None, None, maybeParams, FunctionReturnP(Range(headerEnd, headerEnd), None, None)),
+              None, List.empty, None, None, maybeParams, FunctionReturnP(Range(headerEnd, headerEnd), None, None)),
             Some(block)))
       }
     }
@@ -770,7 +782,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
             Range(begin, end),
             FunctionHeaderP(
               Range(begin, paramsEnd),
-              None, List(), None, None,
+              None, List.empty, None, None,
               Some(ParamsP(Range(begin, paramsEnd), List(param))),
               FunctionReturnP(Range(end, end), None, None)), Some(body)))
       }

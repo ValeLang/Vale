@@ -5,9 +5,9 @@
 
 //void declareExtraInterfaceMethod(
 //    GlobalState* globalState,
-//    InterfaceReferend* referend,
+//    InterfaceKind* kind,
 //    InterfaceMethod* newMethod,
 //    std::function<LLVMValueRef(Prototype*)> declarer,
-//    std::function<void(StructReferend*, Prototype*)> bodyGenerator);
+//    std::function<void(StructKind*, Prototype*)> bodyGenerator);
 
 #endif

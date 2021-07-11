@@ -1,7 +1,7 @@
 package net.verdagon.vale
 
-import net.verdagon.vale.templar.{StaticArrayFromValues2, PackE2, TupleE2}
-import net.verdagon.vale.templar.types.{Int2, PackT2}
+import net.verdagon.vale.templar.{StaticArrayFromValuesTE, PackTE, TupleTE}
+import net.verdagon.vale.templar.types.{IntT, PackTT}
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 
@@ -17,9 +17,9 @@ class PackTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
-    main.all({ case TupleE2(List(_, _, _), _, _) => }).size shouldEqual 1
+    main.all({ case TupleTE(List(_, _, _), _, _) => }).size shouldEqual 1
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
   test("Nested seqs") {
@@ -34,15 +34,15 @@ class PackTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     main.all({
-      case TupleE2(
+      case TupleTE(
         List(
-          TupleE2(List(_, _), _, _),
-          TupleE2(List(_, _), _, _)),
+          TupleTE(List(_, _), _, _),
+          TupleTE(List(_, _), _, _)),
         _,
         _) =>
     }).size shouldEqual 1
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(6)
+    compile.evalForKind(Vector()) shouldEqual VonInt(6)
   }
 
   test("Nested tuples") {
@@ -56,9 +56,9 @@ class PackTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
-    main .all({ case TupleE2(List(_, TupleE2(List(_, _), _, _)), _, _) => }).size shouldEqual 1
+    main .all({ case TupleTE(List(_, TupleTE(List(_, _), _, _)), _, _) => }).size shouldEqual 1
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
 }

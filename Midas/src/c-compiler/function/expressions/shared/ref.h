@@ -21,12 +21,12 @@ struct WrapperPtrLE {
 
 
 struct ControlBlockPtrLE {
-  Referend* const referendM;
+  Kind* const kindM;
   // TODO rename to ptrLE
   LLVMValueRef const refLE;
 
-  ControlBlockPtrLE(Referend* refM_, LLVMValueRef refLE_)
-    : referendM(refM_), refLE(refLE_) { }
+  ControlBlockPtrLE(Kind* refM_, LLVMValueRef refLE_)
+    : kindM(refM_), refLE(refLE_) { }
 };
 
 

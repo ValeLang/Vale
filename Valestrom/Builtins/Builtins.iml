@@ -8,8 +8,8 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="scala-sdk-2.12.6" level="application" />
     <orderEntry type="module" module-name="Utils" />
     <orderEntry type="module" module-name="Von" />
+    <orderEntry type="library" name="scala-sdk-2.12.6" level="application" />
   </component>
 </module>

@@ -3,4 +3,4 @@ import v.builtins.str.*;
 
 fn ~(a int, b int) infer-ret {+(a, b)}
 fn ~(a str, b str) infer-ret {+(a, b)}
-fn main() infer-ret {3 ~ 3}
+fn main() infer-ret export {3 ~ 3}

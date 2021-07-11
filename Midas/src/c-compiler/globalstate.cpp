@@ -9,24 +9,23 @@
 GlobalState::GlobalState(AddressNumberer* addressNumberer_) :
     addressNumberer(addressNumberer_),
     interfaceTablePtrs(0, addressNumberer->makeHasher<Edge*>()),
-    interfaceExtraMethods(0, addressNumberer->makeHasher<InterfaceReferend*>()),
-    overridesBySubstructByInterface(0, addressNumberer->makeHasher<InterfaceReferend*>()),
+    interfaceExtraMethods(0, addressNumberer->makeHasher<InterfaceKind*>()),
+    overridesBySubstructByInterface(0, addressNumberer->makeHasher<InterfaceKind*>()),
     extraFunctions(0, addressNumberer->makeHasher<Prototype*>()),
     regions(0, addressNumberer->makeHasher<RegionId*>()),
-    regionIdByReferend(0, addressNumberer->makeHasher<Referend*>())
+    regionIdByKind(0, addressNumberer->makeHasher<Kind*>())
 {}
 
-std::vector<LLVMTypeRef> GlobalState::getInterfaceFunctionTypes(InterfaceReferend* referend) {
-  auto interfaceDefMIter = program->interfaces.find(referend->fullName->name);
+std::vector<LLVMTypeRef> GlobalState::getInterfaceFunctionTypes(InterfaceKind* kind) {
   std::vector<LLVMTypeRef> interfaceFunctionsLT;
-  if (interfaceDefMIter != program->interfaces.end()) {
-    auto interfaceDefM = interfaceDefMIter->second;
+  if (auto maybeInterfaceDefM = program->getMaybeInterface(kind)) {
+    auto interfaceDefM = *maybeInterfaceDefM;
     for (auto method : interfaceDefM->methods) {
       auto interfaceFunctionLT = translateInterfaceMethodToFunctionType(this, method);
       interfaceFunctionsLT.push_back(LLVMPointerType(interfaceFunctionLT, 0));
     }
   }
-  for (auto interfaceExtraMethod : interfaceExtraMethods[referend]) {
+  for (auto interfaceExtraMethod : interfaceExtraMethods[kind]) {
     auto interfaceFunctionLT =
         translateInterfaceMethodToFunctionType(this, interfaceExtraMethod);
     interfaceFunctionsLT.push_back(LLVMPointerType(interfaceFunctionLT, 0));
@@ -36,7 +35,7 @@ std::vector<LLVMTypeRef> GlobalState::getInterfaceFunctionTypes(InterfaceReferen
 }
 
 std::vector<LLVMValueRef> GlobalState::getEdgeFunctions(Edge* edge) {
-  auto interfaceM = program->getInterface(edge->interfaceName->fullName);
+  auto interfaceM = program->getInterface(edge->interfaceName);
 
   assert(edge->structPrototypesByInterfaceMethod.size() == interfaceM->methods.size());
 
@@ -85,23 +84,23 @@ std::vector<LLVMValueRef> GlobalState::getEdgeFunctions(Edge* edge) {
 }
 
 IRegion* GlobalState::getRegion(Reference* referenceM) {
-  return getRegion(referenceM->referend);
+  return getRegion(referenceM->kind);
 }
 
-IRegion* GlobalState::getRegion(Referend* referendM) {
-  if (auto innt = dynamic_cast<Int*>(referendM)) {
+IRegion* GlobalState::getRegion(Kind* kindM) {
+  if (auto innt = dynamic_cast<Int*>(kindM)) {
     return getRegion(innt->regionId);
-  } else if (auto boool = dynamic_cast<Bool*>(referendM)) {
+  } else if (auto boool = dynamic_cast<Bool*>(kindM)) {
     return getRegion(boool->regionId);
-  } else if (auto flooat = dynamic_cast<Float*>(referendM)) {
+  } else if (auto flooat = dynamic_cast<Float*>(kindM)) {
     return getRegion(flooat->regionId);
-  } else if (auto never = dynamic_cast<Never*>(referendM)) {
+  } else if (auto never = dynamic_cast<Never*>(kindM)) {
     return getRegion(never->regionId);
-  } else if (auto str = dynamic_cast<Str*>(referendM)) {
+  } else if (auto str = dynamic_cast<Str*>(kindM)) {
     return getRegion(str->regionId);
   } else {
-    auto iter = regionIdByReferend.find(referendM);
-    assert(iter != regionIdByReferend.end());
+    auto iter = regionIdByKind.find(kindM);
+    assert(iter != regionIdByKind.end());
     auto regionId = iter->second;
     return getRegion(regionId);
   }
@@ -155,46 +154,49 @@ LLVMValueRef GlobalState::getOrMakeStringConstant(const std::string& str) {
 }
 
 Ref GlobalState::constI64(int64_t x) {
-  return wrap(getRegion(metalCache->intRef), metalCache->intRef, constI64LE(this, x));
+  return wrap(getRegion(metalCache->i64Ref), metalCache->i64Ref, constI64LE(this, x));
+}
+Ref GlobalState::constI32(int32_t x) {
+  return wrap(getRegion(metalCache->i32Ref), metalCache->i32Ref, constI32LE(this, x));
 }
 Ref GlobalState::constI1(bool b) {
   return wrap(getRegion(metalCache->boolRef), metalCache->boolRef, constI1LE(this, b));
 }
 Ref GlobalState::buildAdd(FunctionState* functionState, LLVMBuilderRef builder, Ref a, Ref b) {
-  auto intMT = metalCache->intRef;
-  auto addPrototype = metalCache->getPrototype(metalCache->getName("__addIntInt"), intMT, {intMT, intMT});
+  auto intMT = metalCache->i32Ref;
+  auto addPrototype = metalCache->getPrototype(metalCache->getName(metalCache->builtinPackageCoord, "__addI32"), intMT, {intMT, intMT});
   return buildExternCall(this, functionState, builder, addPrototype, { a, b });
 }
 Ref GlobalState::buildMod(FunctionState* functionState, LLVMBuilderRef builder, Ref a, Ref b) {
-  auto intMT = metalCache->intRef;
-  auto addPrototype = metalCache->getPrototype(metalCache->getName("__mod"), intMT, {intMT, intMT});
+  auto intMT = metalCache->i32Ref;
+  auto addPrototype = metalCache->getPrototype(metalCache->getName(metalCache->builtinPackageCoord, "__mod"), intMT, {intMT, intMT});
   return buildExternCall(this, functionState, builder, addPrototype, { a, b });
 }
 Ref GlobalState::buildDivide(FunctionState* functionState, LLVMBuilderRef builder, Ref a, Ref b) {
-  auto intMT = metalCache->intRef;
-  auto addPrototype = metalCache->getPrototype(metalCache->getName("__divideIntInt"), intMT, {intMT, intMT});
+  auto intMT = metalCache->i32Ref;
+  auto addPrototype = metalCache->getPrototype(metalCache->getName(metalCache->builtinPackageCoord, "__divideI32"), intMT, {intMT, intMT});
   return buildExternCall(this, functionState, builder, addPrototype, { a, b });
 }
 
 Ref GlobalState::buildMultiply(FunctionState* functionState, LLVMBuilderRef builder, Ref a, Ref b) {
-  auto intMT = metalCache->intRef;
-  auto addPrototype = metalCache->getPrototype(metalCache->getName("__multiplyIntInt"), intMT, {intMT, intMT});
+  auto intMT = metalCache->i32Ref;
+  auto addPrototype = metalCache->getPrototype(metalCache->getName(metalCache->builtinPackageCoord, "__multiplyIntInt"), intMT, {intMT, intMT});
   return buildExternCall(this, functionState, builder, addPrototype, { a, b });
 }
 
-Name* GlobalState::getReferendName(Referend* referend) {
-  if (auto structReferend = dynamic_cast<StructReferend*>(referend)) {
-    return structReferend->fullName;
-  } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(referend)) {
-    return interfaceReferend->fullName;
-  } else if (auto ksaMT = dynamic_cast<KnownSizeArrayT*>(referend)) {
-    return ksaMT->name;
-  } else if (auto usaMT = dynamic_cast<UnknownSizeArrayT*>(referend)) {
-    return usaMT->name;
+Name* GlobalState::getKindName(Kind* kind) {
+  if (auto structKind = dynamic_cast<StructKind*>(kind)) {
+    return structKind->fullName;
+  } else if (auto interfaceKind = dynamic_cast<InterfaceKind*>(kind)) {
+    return interfaceKind->fullName;
+  } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(kind)) {
+    return ssaMT->name;
+  } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(kind)) {
+    return rsaMT->name;
   } else assert(false);
   return nullptr;
 }
 
-Weakability GlobalState::getReferendWeakability(Referend* referend) {
-  return getRegion(referend)->getReferendWeakability(referend);
+Weakability GlobalState::getKindWeakability(Kind* kind) {
+  return getRegion(kind)->getKindWeakability(kind);
 }

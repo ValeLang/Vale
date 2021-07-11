@@ -34,6 +34,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
     // Int must be after Interface, otherwise we'll have a hanging "erface"
     // Same with Kint and KindTemplate
     "int" ^^^ IntTypePR |
+    "i64" ^^^ IntTypePR |
     "Kind" ^^^ KindTypePR
   }
 
@@ -107,7 +108,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
       case begin ~ maybeIsRegion ~ name ~ regionAttributes ~ end => {
         val isRegionAttrInList =
           maybeIsRegion match {
-            case None => List()
+            case None => List.empty
             case Some(NameP(range, _)) => List(TypeRuneAttributeP(range, RegionTypePR))
           }
         IdentifyingRuneP(Range(begin, end), name, isRegionAttrInList ++ regionAttributes)

@@ -2,7 +2,7 @@ package net.verdagon.vale.templar
 
 import net.verdagon.vale.scout.CodeLocationS
 import net.verdagon.vale.templar.templata.{CodeLocationT, CoordTemplata, ITemplata, QueriableT}
-import net.verdagon.vale.templar.types.{CoordT, IntT, InterfaceRefT, KindT, StaticSizedArrayTT, MutabilityT, ReadonlyT, ShareT, StructRefT, RuntimeSizedArrayTT}
+import net.verdagon.vale.templar.types.{CoordT, IntT, InterfaceTT, KindT, StaticSizedArrayTT, MutabilityT, ReadonlyT, ShareT, StructTT, RuntimeSizedArrayTT}
 import net.verdagon.vale.{PackageCoordinate, vassert, vfail, vpass, vwat}
 
 import scala.collection.immutable.List
@@ -119,7 +119,7 @@ case class ImmConcreteDestructorNameT(kind: KindT) extends IFunctionNameT {
   override def parameters: List[CoordT] = List(CoordT(ShareT, ReadonlyT, kind))
 
   kind match {
-    case InterfaceRefT(_) => vwat()
+    case InterfaceTT(_) => vwat()
     case _ =>
   }
 

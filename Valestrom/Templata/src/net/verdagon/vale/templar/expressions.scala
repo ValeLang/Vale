@@ -677,7 +677,7 @@ case class TemplarReinterpretTE(
 }
 
 case class ConstructTE(
-    structRef: StructRefT,
+    structTT: StructTT,
     resultReference: CoordT,
     args: List[ExpressionT]) extends ReferenceExpressionTE {
   vpass()
@@ -685,7 +685,7 @@ case class ConstructTE(
   override def resultRegister = ReferenceResultT(resultReference)
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ structRef.all(func) ++ args.flatMap(_.all(func))
+    List(this).collect(func) ++ structTT.all(func) ++ args.flatMap(_.all(func))
   }
 }
 
@@ -779,7 +779,7 @@ case class DestroyRuntimeSizedArrayTE(
 
 case class InterfaceToInterfaceUpcastTE(
     innerExpr: ReferenceExpressionTE,
-    targetInterfaceRef: InterfaceRefT) extends ReferenceExpressionTE {
+    targetInterfaceRef: InterfaceTT) extends ReferenceExpressionTE {
   def resultRegister: ReferenceResultT = {
     ReferenceResultT(
       CoordT(
@@ -793,7 +793,7 @@ case class InterfaceToInterfaceUpcastTE(
   }
 }
 
-case class StructToInterfaceUpcastTE(innerExpr: ReferenceExpressionTE, targetInterfaceRef: InterfaceRefT) extends ReferenceExpressionTE {
+case class StructToInterfaceUpcastTE(innerExpr: ReferenceExpressionTE, targetInterfaceRef: InterfaceTT) extends ReferenceExpressionTE {
   def resultRegister: ReferenceResultT = {
     ReferenceResultT(
       CoordT(
@@ -844,7 +844,7 @@ case class SoftLoadTE(
 // We also destroy shared things with this, see DDSOT.
 case class DestroyTE(
     expr: ReferenceExpressionTE,
-    structRefT: StructRefT,
+    structTT: StructTT,
     destinationReferenceVariables: List[ReferenceLocalVariableT]
 ) extends ReferenceExpressionTE {
   override def resultRegister: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))

@@ -35,7 +35,7 @@ class TemplarPermissionTests extends FunSuite with Matchers {
 
     val main = temputs.lookupFunction("main")
     main.only({
-      case FunctionHeaderT(simpleName("main"),List(UserFunction2),List(ParameterT(_, _, CoordT(ConstraintT, ReadonlyT, StructRefT(_)))), _, _) => true
+      case FunctionHeaderT(simpleName("main"),List(UserFunction2),List(ParameterT(_, _, CoordT(ConstraintT, ReadonlyT, StructTT(_)))), _, _) => true
     })
   }
 
@@ -50,7 +50,7 @@ class TemplarPermissionTests extends FunSuite with Matchers {
 
     val main = temputs.lookupFunction("main")
     main.only({
-      case FunctionHeaderT(simpleName("main"),List(UserFunction2),List(ParameterT(_, _, CoordT(ConstraintT, ReadwriteT, StructRefT(_)))), _, _) => true
+      case FunctionHeaderT(simpleName("main"),List(UserFunction2),List(ParameterT(_, _, CoordT(ConstraintT, ReadwriteT, StructTT(_)))), _, _) => true
     })
   }
 

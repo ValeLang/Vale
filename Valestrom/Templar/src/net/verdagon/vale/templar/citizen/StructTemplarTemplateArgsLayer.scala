@@ -39,7 +39,7 @@ class StructTemplarTemplateArgsLayer(
     callRange: RangeS,
     structTemplata: StructTemplata,
     templateArgs: List[ITemplata]):
-  (StructRefT) = {
+  (StructTT) = {
     profiler.newProfile("getStructRef", structTemplata.debugString + "<" + templateArgs.map(_.toString).mkString(", ") + ">", () => {
       val StructTemplata(env, structA) = structTemplata
       val TopLevelCitizenDeclarationNameA(humanName, codeLocation) = structA.name
@@ -48,15 +48,15 @@ class StructTemplarTemplateArgsLayer(
       val fullName = env.fullName.addStep(structLastName)
 
       temputs.structDeclared(fullName) match {
-        case Some(structRefT) => {
-          (structRefT)
+        case Some(structTT) => {
+          (structTT)
         }
         case None => {
           // not sure if this is okay or not, do we allow this?
           if (templateArgs.size != structA.identifyingRunes.size) {
             vfail("wat?")
           }
-          val temporaryStructRef = StructRefT(fullName)
+          val temporaryStructRef = StructTT(fullName)
           temputs.declareStruct(temporaryStructRef)
 
           structA.maybePredictedMutability match {
@@ -103,7 +103,7 @@ class StructTemplarTemplateArgsLayer(
     callRange: RangeS,
     interfaceTemplata: InterfaceTemplata,
     templateArgs: List[ITemplata]):
-  (InterfaceRefT) = {
+  (InterfaceTT) = {
     profiler.newProfile("getInterfaceRef", interfaceTemplata.debugString + "<" + templateArgs.map(_.toString).mkString(", ") + ">", () => {
       val InterfaceTemplata(env, interfaceS) = interfaceTemplata
       val TopLevelCitizenDeclarationNameA(humanName, codeLocation) = interfaceS.name
@@ -112,15 +112,15 @@ class StructTemplarTemplateArgsLayer(
       val fullName = env.fullName.addStep(interfaceLastName)
 
       temputs.interfaceDeclared(fullName) match {
-        case Some(interfaceRef2) => {
-          (interfaceRef2)
+        case Some(interfaceTT) => {
+          (interfaceTT)
         }
         case None => {
           // not sure if this is okay or not, do we allow this?
           if (templateArgs.size != interfaceS.identifyingRunes.size) {
             vfail("wat?")
           }
-          val temporaryInterfaceRef = InterfaceRefT(fullName)
+          val temporaryInterfaceRef = InterfaceTT(fullName)
           temputs.declareInterface(temporaryInterfaceRef)
 
 
@@ -171,13 +171,13 @@ class StructTemplarTemplateArgsLayer(
     name: LambdaNameA,
     functionS: FunctionA,
     members: List[StructMemberT]):
-  (StructRefT, MutabilityT, FunctionTemplata) = {
+  (StructTT, MutabilityT, FunctionTemplata) = {
     middle.makeClosureUnderstruct(containingFunctionEnv, temputs, name, functionS, members)
   }
 
   // Makes a struct to back a pack or tuple
   def makeSeqOrPackUnerstruct(env: PackageEnvironment[INameT], temputs: Temputs, memberTypes2: List[CoordT], name: ICitizenNameT):
-  (StructRefT, MutabilityT) = {
+  (StructTT, MutabilityT) = {
     middle.makeSeqOrPackUnderstruct(env, temputs, memberTypes2, name)
   }
 
@@ -186,14 +186,14 @@ class StructTemplarTemplateArgsLayer(
     interfaceEnv: IEnvironment,
     temputs: Temputs,
     range: RangeS,
-    interfaceRef: InterfaceRefT,
+    interfaceTT: InterfaceTT,
     substructName: FullNameT[AnonymousSubstructNameT]):
-  (StructRefT, MutabilityT) = {
+  (StructTT, MutabilityT) = {
     middle.makeAnonymousSubstruct(
       interfaceEnv,
       temputs,
       range,
-      interfaceRef,
+      interfaceTT,
       substructName)
   }
 
@@ -204,7 +204,7 @@ class StructTemplarTemplateArgsLayer(
     range: RangeS,
     prototype: PrototypeT,
     structFullName: FullNameT[ICitizenNameT]):
-  StructRefT = {
+  StructTT = {
     middle.prototypeToAnonymousStruct(
       outerEnv, temputs, range, prototype, structFullName)
   }

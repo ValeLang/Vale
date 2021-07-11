@@ -4,7 +4,7 @@ import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal._
 import net.verdagon.vale.{vassert, vassertSome, vfail, vimpl, vwat, metal => m}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.templata.{Export2, Extern2, FunctionHeaderT, IFunctionAttribute2, PrototypeT, Pure2, UserFunction2}
+import net.verdagon.vale.templar.templata.{Extern2, FunctionHeaderT, IFunctionAttribute2, PrototypeT, Pure2, UserFunction2}
 
 object FunctionHammer {
 
@@ -57,24 +57,11 @@ object FunctionHammer {
             "Body's result: " + resultCoord)
         }
 
-        val maybeExportNsCoord = function2.header.attributes.collectFirst({ case Export2(packageCoord) => packageCoord })
         val isAbstract = header.getAbstractInterface.nonEmpty
         val isExtern = header.attributes.exists({ case Extern2(packageCoord) => true case _ => false })
-        val attrsH = translateFunctionAttributes(attrs2.filter(a => !a.isInstanceOf[Extern2] && !a.isInstanceOf[Export2]))
-        val functionH = FunctionH(prototypeH, maybeExportNsCoord.nonEmpty, isAbstract, isExtern, attrsH, bodyH);
+        val attrsH = translateFunctionAttributes(attrs2.filter(a => !a.isInstanceOf[Extern2]))
+        val functionH = FunctionH(prototypeH, isAbstract, isExtern, attrsH, bodyH);
         hamuts.addFunction(header.toPrototype, functionH)
-
-        maybeExportNsCoord match {
-          case None =>
-          case Some(exportPackageCoord) => {
-            val exportedName =
-              humanName.last match {
-                case FunctionNameT(humanName, _, _) => humanName
-                case _ => vfail("Can't export something that doesn't have a human readable name!")
-              }
-            hamuts.addFunctionExport(prototypeH, exportPackageCoord, exportedName)
-          }
-        }
 
         (temporaryFunctionRefH)
       }
@@ -86,7 +73,6 @@ object FunctionHammer {
       case UserFunction2 => UserFunctionH
       case Pure2 => PureH
       case Extern2(_) => vwat() // Should have been filtered out, hammer cares about extern directly
-      case Export2(_) => vwat() // Should have been filtered out, hammer cares about export directly
       case x => vimpl(x.toString)
     })
   }

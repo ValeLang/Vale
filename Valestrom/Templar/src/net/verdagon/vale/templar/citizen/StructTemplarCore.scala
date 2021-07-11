@@ -38,12 +38,20 @@ class StructTemplarCore(
     // The environment that the struct was defined in.
     structRunesEnv: PackageEnvironment[INameT],
     temputs: Temputs,
-    struct1: StructA,
+    structA: StructA,
     coercedFinalTemplateArgs: List[ITemplata]):
   (StructDefinitionT) = {
-    val TopLevelCitizenDeclarationNameA(humanName, codeLocation) = struct1.name
+    val TopLevelCitizenDeclarationNameA(humanName, codeLocation) = structA.name
     val fullName = structRunesEnv.fullName.addStep(CitizenNameT(humanName, coercedFinalTemplateArgs))
-    val temporaryStructRef = StructRefT(fullName)
+    val temporaryStructRef = StructTT(fullName)
+
+    val attributesWithoutExport =
+      structA.attributes.filter({
+        case ExportA(_) => false
+        case _ => true
+      })
+    val maybeExport =
+      structA.attributes.collectFirst { case e@ExportA(_) => e }
 
     val structInnerEnv =
       PackageEnvironment(
@@ -51,7 +59,7 @@ class StructTemplarCore(
         fullName,
         newTemplataStore())
     // when we have structs that contain functions, add this back in
-//        struct1.members
+//        structA.members
 //          .map(_.origin)
 //          .map(FunctionEnvEntry)
 //          .groupBy(_.function.name))
@@ -62,11 +70,11 @@ class StructTemplarCore(
           temporaryStructRef,
           structInnerEnv)
 
-    val members = makeStructMembers(structInnerEnv, temputs, struct1.members)
+    val members = makeStructMembers(structInnerEnv, temputs, structA.members)
 
     val mutability =
       structInnerEnv.getNearestTemplataWithAbsoluteName2(
-        NameTranslator.translateRune(struct1.mutabilityRune),
+        NameTranslator.translateRune(structA.mutabilityRune),
         Set(TemplataLookupContext)) match {
         case Some(MutabilityTemplata(m)) => m
         case Some(_) => vwat()
@@ -78,9 +86,9 @@ class StructTemplarCore(
       if (member.variability == VaryingT) {
           throw CompileErrorExceptionT(
             ImmStructCantHaveVaryingMember(
-              struct1.members(index).range,
-              struct1.name,
-              struct1.members(index).name))
+              structA.members(index).range,
+              structA.name,
+              structA.members(index).name))
         }
       })
     }
@@ -88,13 +96,29 @@ class StructTemplarCore(
     val structDefT =
       StructDefinitionT(
         fullName,
-        translateCitizenAttributes(struct1.attributes),
-        struct1.weakable,
+        translateCitizenAttributes(attributesWithoutExport),
+        structA.weakable,
         mutability,
         members,
         false)
 
     temputs.add(structDefT);
+
+    maybeExport match {
+      case None =>
+      case Some(exportPackageCoord) => {
+        val exportedName =
+          fullName.last match {
+            case CitizenNameT(humanName, _) => humanName
+            case _ => vfail("Can't export something that doesn't have a human readable name!")
+          }
+        temputs.addKindExport(
+          structA.range,
+          structDefT.getRef,
+          exportPackageCoord.packageCoord,
+          exportedName)
+      }
+    }
 
     // If it's immutable, make sure there's a zero-arg destructor.
     if (mutability == ImmutableT) {
@@ -115,7 +139,7 @@ class StructTemplarCore(
                 delegate.scoutExpectedFunctionForPrototype(
                   structInnerEnv,
                   temputs,
-                  struct1.range,
+                  structA.range,
                   GlobalFunctionFamilyNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME),
                   List.empty,
                   List(ParamFilter(CoordT(OwnT,ReadwriteT, structDefT.getRef), Some(OverrideT(implementedInterfaceRefT)))),
@@ -124,7 +148,7 @@ class StructTemplarCore(
               sefResult match {
                 case ScoutExpectedFunctionSuccess(_) =>
                 case ScoutExpectedFunctionFailure(_, _, _, _, _) => {
-                  throw CompileErrorExceptionT(RangedInternalErrorT(struct1.range, sefResult.toString))
+                  throw CompileErrorExceptionT(RangedInternalErrorT(structA.range, sefResult.toString))
                 }
               }
             }
@@ -155,7 +179,6 @@ class StructTemplarCore(
 
   def translateCitizenAttributes(attrs: List[ICitizenAttributeA]): List[ICitizenAttribute2] = {
     attrs.map({
-      case ExportA(packageCoord) => Export2(packageCoord)
       case x => vimpl(x.toString)
     })
   }
@@ -173,7 +196,15 @@ class StructTemplarCore(
   (InterfaceDefinitionT) = {
     val TopLevelCitizenDeclarationNameA(humanName, codeLocation) = interfaceA.name
     val fullName = interfaceRunesEnv.fullName.addStep(CitizenNameT(humanName, coercedFinalTemplateArgs2))
-    val temporaryInferfaceRef = InterfaceRefT(fullName)
+    val temporaryInferfaceRef = InterfaceTT(fullName)
+
+    val attributesWithoutExport =
+      interfaceA.attributes.filter({
+        case ExportA(_) => false
+        case _ => true
+      })
+    val maybeExport =
+      interfaceA.attributes.collectFirst { case e@ExportA(_) => e }
 
     val interfaceInnerEnv0 =
       PackageEnvironment(
@@ -224,11 +255,27 @@ class StructTemplarCore(
     val interfaceDef2 =
       InterfaceDefinitionT(
         fullName,
-        translateCitizenAttributes(interfaceA.attributes),
+        translateCitizenAttributes(attributesWithoutExport),
         interfaceA.weakable,
         mutability,
         internalMethods2)
     temputs.add(interfaceDef2)
+
+    maybeExport match {
+      case None =>
+      case Some(exportPackageCoord) => {
+        val exportedName =
+          fullName.last match {
+            case CitizenNameT(humanName, _) => humanName
+            case _ => vfail("Can't export something that doesn't have a human readable name!")
+          }
+        temputs.addKindExport(
+          interfaceA.range,
+          interfaceDef2.getRef,
+          exportPackageCoord.packageCoord,
+          exportedName)
+      }
+    }
 
     // If it's immutable, make sure there's a zero-arg destructor.
     if (mutability == ImmutableT) {
@@ -241,7 +288,7 @@ class StructTemplarCore(
       val _ = ancestorHelper.getParentInterfaces(temputs, temporaryInferfaceRef)
 
       //
-      //      interface1.internalMethods.foldLeft(temputs)({
+      //      interfaceA.internalMethods.foldLeft(temputs)({
       //        case (ntvFunction1) => {
       //          if (ntvFunction1.isTemplate) {
       //            // Do nothing, can't evaluate it now
@@ -283,13 +330,13 @@ class StructTemplarCore(
 //    outerEnv: IEnvironment,
 //    temputs: Temputs,
 //    header: FunctionHeader2):
-//  structRefT = {
+//  structTT = {
 //    val mutability = Immutable
 //
 //    val nearName = FunctionScout.CLOSURE_STRUCT_NAME // For example "__Closure<main>:lam1"
 //    val fullName = FullName2(header.fullName.steps :+ NamePart2(nearName, Some(List.empty), None, None))
 //
-//    val structRef = structRefT(fullName)
+//    val structTT = structTT(fullName)
 //
 //    // We declare the function into the environment that we use to compile the
 //    // struct, so that those who use the struct can reach into its environment
@@ -301,12 +348,12 @@ class StructTemplarCore(
 //        fullName,
 //        Map(
 //          CallTemplar.CALL_FUNCTION_NAME -> List(TemplataEnvEntry(ExternFunctionTemplata(header))),
-//          nearName -> List(TemplataEnvEntry(KindTemplata(structRef))),
-//          FunctionScout.CLOSURE_STRUCT_ENV_ENTRY_NAME -> List(TemplataEnvEntry(KindTemplata(structRef)))))
+//          nearName -> List(TemplataEnvEntry(KindTemplata(structTT))),
+//          FunctionScout.CLOSURE_STRUCT_ENV_ENTRY_NAME -> List(TemplataEnvEntry(KindTemplata(structTT)))))
 //
-//    temputs.declareStruct(structRef);
-//    temputs.declareStructMutability(structRef, mutability)
-//    temputs.declareStructEnv(structRef, structEnv);
+//    temputs.declareStruct(structTT);
+//    temputs.declareStructMutability(structTT, mutability)
+//    temputs.declareStructEnv(structTT, structEnv);
 //
 //    val closureStructDefinition = StructDefinition2(fullName, mutability, List.empty, true);
 //    temputs.add(closureStructDefinition)
@@ -323,7 +370,7 @@ class StructTemplarCore(
     name: LambdaNameA,
     functionA: FunctionA,
     members: List[StructMemberT]):
-  (StructRefT, MutabilityT, FunctionTemplata) = {
+  (StructTT, MutabilityT, FunctionTemplata) = {
     val isMutable =
       members.exists({ case StructMemberT(name, variability, tyype) =>
         if (variability == VaryingT) {
@@ -345,7 +392,7 @@ class StructTemplarCore(
     val nearName = LambdaCitizenNameT(NameTranslator.translateCodeLocation(name.codeLocation))
     val fullName = containingFunctionEnv.fullName.addStep(nearName)
 
-    val structRef = StructRefT(fullName)
+    val structTT = StructTT(fullName)
 
     // We declare the function into the environment that we use to compile the
     // struct, so that those who use the struct can reach into its environment
@@ -360,8 +407,8 @@ class StructTemplarCore(
             opts.useOptimization,
             Map(
               FunctionTemplateNameT(CallTemplar.CALL_FUNCTION_NAME, CodeLocationT.internal(-14)) -> List(FunctionEnvEntry(functionA)),
-              nearName -> List(TemplataEnvEntry(KindTemplata(structRef))),
-              ClosureParamNameT() -> List(TemplataEnvEntry(KindTemplata(structRef))))))
+              nearName -> List(TemplataEnvEntry(KindTemplata(structTT))),
+              ClosureParamNameT() -> List(TemplataEnvEntry(KindTemplata(structTT))))))
     // We return this from the function in case we want to eagerly compile it (which we do
     // if it's not a template).
     val functionTemplata =
@@ -369,9 +416,9 @@ class StructTemplarCore(
           structEnv,
           functionA)
 
-    temputs.declareStruct(structRef);
-    temputs.declareStructMutability(structRef, mutability)
-    temputs.declareStructEnv(structRef, structEnv);
+    temputs.declareStruct(structTT);
+    temputs.declareStructMutability(structTT, mutability)
+    temputs.declareStructEnv(structTT, structEnv);
 
     val closureStructDefinition = StructDefinitionT(fullName, List.empty, false, mutability, members, true);
     temputs.add(closureStructDefinition)
@@ -394,9 +441,9 @@ class StructTemplarCore(
     temputs: Temputs,
     memberCoords: List[CoordT],
     name: ICitizenNameT):
-  (StructRefT, MutabilityT) = {
+  (StructTT, MutabilityT) = {
     temputs.getPackType(memberCoords) match {
-      case Some(structRefT) => return (structRefT, temputs.lookupStruct(structRefT).mutability)
+      case Some(structTT) => return (structTT, temputs.lookupStruct(structTT).mutability)
       case None =>
     }
     val packMutability = StructTemplar.getCompoundTypeMutability(memberCoords)
@@ -440,11 +487,11 @@ class StructTemplarCore(
       temputs: Temputs,
     range: RangeS,
       anonymousSubstructName: FullNameT[AnonymousSubstructNameT],
-      interfaceRef: InterfaceRefT):
-  (StructRefT, MutabilityT) = {
+      interfaceTT: InterfaceTT):
+  (StructTT, MutabilityT) = {
     val callables = anonymousSubstructName.last.callables
 
-    val interfaceDef = temputs.lookupInterface(interfaceRef)
+    val interfaceDef = temputs.lookupInterface(interfaceTT)
 
     // We don't do:
     //   val mutability = getCompoundTypeMutability(temputs, callables)
@@ -453,7 +500,7 @@ class StructTemplarCore(
     //   f = IFunction1<mut, Int, Int>({_})
     // which wouldnt work if we just did the compound mutability of the closureds
     // (which is imm in this case).
-    val mutability = temputs.lookupMutability(interfaceRef)
+    val mutability = temputs.lookupMutability(interfaceTT)
 
     // Dont want any mutables in our immutable interface's substruct
     if (mutability == ImmutableT) {
@@ -462,7 +509,7 @@ class StructTemplarCore(
       }
     }
 
-    val structRef = StructRefT(anonymousSubstructName)
+    val structTT = StructTT(anonymousSubstructName)
 
     val forwarderFunctionHeaders =
       interfaceDef.internalMethods.zipWithIndex.map({
@@ -470,8 +517,8 @@ class StructTemplarCore(
           val params =
             superParams.map({
               case ParameterT(name, Some(AbstractT$), CoordT(ownership, permission, ir)) => {
-                vassert(ir == interfaceRef)
-                ParameterT(name, Some(OverrideT(interfaceRef)), CoordT(ownership, permission, structRef))
+                vassert(ir == interfaceTT)
+                ParameterT(name, Some(OverrideT(interfaceTT)), CoordT(ownership, permission, structTT))
               }
               case otherParam => otherParam
             })
@@ -501,10 +548,10 @@ class StructTemplarCore(
         .mapValues(_.map(_._2))
         .toMap ++
       Map(
-        ImplDeclareNameT(NameTranslator.getImplNameForName(opts.useOptimization, interfaceRef).get.subCitizenHumanName, CodeLocationT.internal(-15)) -> List(TemplataEnvEntry(ExternImplTemplata(structRef, interfaceRef))),
+        ImplDeclareNameT(NameTranslator.getImplNameForName(opts.useOptimization, interfaceTT).get.subCitizenHumanName, CodeLocationT.internal(-15)) -> List(TemplataEnvEntry(ExternImplTemplata(structTT, interfaceTT))),
         // This is used later by the interface constructor generator to know what interface to impl.
-        AnonymousSubstructParentInterfaceRuneT() -> List(TemplataEnvEntry(KindTemplata(interfaceRef))),
-        AnonymousSubstructImplNameT() -> List(TemplataEnvEntry(ExternImplTemplata(structRef, interfaceRef))))
+        AnonymousSubstructParentInterfaceRuneT() -> List(TemplataEnvEntry(KindTemplata(interfaceTT))),
+        AnonymousSubstructImplNameT() -> List(TemplataEnvEntry(ExternImplTemplata(structTT, interfaceTT))))
     val structInnerEnv =
       PackageEnvironment(
         Some(interfaceEnv),
@@ -512,11 +559,11 @@ class StructTemplarCore(
         newTemplataStore().addEntries(opts.useOptimization, structInnerEnvEntries))
 
 
-    temputs.addImpl(structRef, interfaceRef)
+    temputs.addImpl(structTT, interfaceTT)
 
-    temputs.declareStruct(structRef)
-    temputs.declareStructMutability(structRef, mutability)
-    temputs.declareStructEnv(structRef, structInnerEnv)
+    temputs.declareStruct(structTT)
+    temputs.declareStructMutability(structTT, mutability)
+    temputs.declareStructEnv(structTT, structInnerEnv)
 
     vassert(interfaceDef.internalMethods.size == callables.size)
 
@@ -611,7 +658,7 @@ class StructTemplarCore(
       }
     })
 
-    (structRef, mutability)
+    (structTT, mutability)
   }
 
   // Makes an anonymous substruct of the given interface, which just forwards its method to the given prototype.
@@ -621,11 +668,11 @@ class StructTemplarCore(
     range: RangeS,
     prototype: PrototypeT,
     structFullName: FullNameT[ICitizenNameT]):
-  StructRefT = {
-    val structRef = StructRefT(structFullName)
+  StructTT = {
+    val structTT = StructTT(structFullName)
 
-    temputs.declareStruct(structRef)
-    temputs.declareStructMutability(structRef, ImmutableT)
+    temputs.declareStruct(structTT)
+    temputs.declareStructMutability(structTT, ImmutableT)
 
     val forwarderParams =
       ParameterT(
@@ -634,7 +681,7 @@ class StructTemplarCore(
         CoordT(
           ShareT,
           ReadonlyT,
-          structRef)) ::
+          structTT)) ::
       prototype.paramTypes.zipWithIndex.map({ case (paramType, index) =>
         ParameterT(TemplarTemporaryVarNameT(index), None, paramType)
       })
@@ -654,7 +701,7 @@ class StructTemplarCore(
         newTemplataStore().addEntries(
           opts.useOptimization,
           Map(forwarderHeader.fullName.last -> List(TemplataEnvEntry(ExternFunctionTemplata(forwarderHeader))))))
-    temputs.declareStructEnv(structRef, structInnerEnv)
+    temputs.declareStructEnv(structTT, structInnerEnv)
 
     val structDef =
       StructDefinitionT(
@@ -680,7 +727,7 @@ class StructTemplarCore(
         BlockTE(
           Templar.consecutive(
             List(
-              DiscardTE(ArgLookupTE(0, CoordT(ShareT, ReadonlyT, structRef))),
+              DiscardTE(ArgLookupTE(0, CoordT(ShareT, ReadonlyT, structTT))),
               ReturnTE(
                 FunctionCallTE(
                   prototype,
@@ -689,7 +736,7 @@ class StructTemplarCore(
                   })))))))
     temputs.addFunction(forwarderFunction)
 
-    structRef
+    structTT
   }
 
   def makeStructConstructor(

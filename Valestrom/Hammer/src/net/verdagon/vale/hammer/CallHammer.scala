@@ -336,12 +336,12 @@ object CallHammer {
         hinputs, hamuts, currentFunctionHeader, locals, argsExprs2);
 
     val virtualParamIndex = superFunctionHeader.getVirtualIndex.get
-    val CoordT(_, _, interfaceRef2 @ InterfaceRefT(_)) =
+    val CoordT(_, _, interfaceTT @ InterfaceTT(_)) =
       superFunctionHeader.paramTypes(virtualParamIndex)
     val (interfaceRefH) =
-      StructHammer.translateInterfaceRef(hinputs, hamuts, interfaceRef2)
-    val edge = hinputs.edgeBlueprintsByInterface(interfaceRef2)
-    vassert(edge.interface == interfaceRef2)
+      StructHammer.translateInterfaceRef(hinputs, hamuts, interfaceTT)
+    val edge = hinputs.edgeBlueprintsByInterface(interfaceTT)
+    vassert(edge.interface == interfaceTT)
     val indexInEdge = edge.superFamilyRootBanners.indexOf(superFunctionHeader.toBanner)
     vassert(indexInEdge >= 0)
 
@@ -361,9 +361,9 @@ object CallHammer {
     //
 //    val (callResultLine) =
 //      superFamilyRootBanner.params.zipWithIndex.collectFirst({
-//        case (Parameter2(_, Some(_), Coord(_, interfaceRef2 : InterfaceRef2)), paramIndex) => {
+//        case (Parameter2(_, Some(_), Coord(_, interfaceTT : InterfaceRef2)), paramIndex) => {
 //          val (interfaceRefH) =
-//            StructHammer.translateInterfaceRef(hinputs, hamuts, currentFunctionHeader, interfaceRef2)
+//            StructHammer.translateInterfaceRef(hinputs, hamuts, currentFunctionHeader, interfaceTT)
 //
 //          val (functionNodeLine) =
 //            translateInterfaceFunctionCallWithInterface(
@@ -377,13 +377,13 @@ object CallHammer {
 //              argLines)
 //          (functionNodeLine)
 //        }
-//        case (Parameter2(_, Some(_), Coord(_, structRefT@ structRefT(_))), _) => {
+//        case (Parameter2(_, Some(_), Coord(_, structTT@ structTT(_))), _) => {
 //          val (functionRegister) =
 //            translateInterfaceFunctionLookupWithStruct(
 //              hinputs,
 //              hamuts,
 //              nodesByLine,
-//              structRefT,
+//              structTT,
 //              superFamilyRootBanner)
 //          val callResultNode =
 //            addNode(
@@ -414,11 +414,11 @@ object CallHammer {
 //      hinputs: Hinputs,
 //      hamuts: HamutsBox,
 //      nodesByLine: NodesBox,
-//      structRefT: structRefT,
+//      structTT: structTT,
 //      superFamilyRootBanner: FunctionBanner2):
 //  (Vector[NodeH], NodeH[FunctionTH]) = {
 //    val prototype2 =
-//      getPrototypeForStructInterfaceCall(hinputs, structRefT, superFamilyRootBanner)
+//      getPrototypeForStructInterfaceCall(hinputs, structTT, superFamilyRootBanner)
 //
 //    val (functionRefH) =
 //      FunctionHammer.translateFunctionRef(hinputs, hamuts, currentFunctionHeader, prototype2);
@@ -473,11 +473,11 @@ object CallHammer {
 
 //  private def getPrototypeForStructInterfaceCall(
 //      hinputs: Hinputs,
-//      structRefT: structRefT,
+//      structTT: structTT,
 //      superFamilyRootBanner: FunctionBanner2):
 //  Prototype2 = {
 //
-//    val structDefT = hinputs.lookupStruct(structRefT)
+//    val structDefT = hinputs.lookupStruct(structTT)
 //    val ancestorInterfaces2 =
 //      hinputs.impls.filter(impl => impl.struct == structDefT.getRef).map(_.interface)
 //    val edgeBlueprints = ancestorInterfaces2.map(hinputs.edgeBlueprintsByInterface)
@@ -489,7 +489,7 @@ object CallHammer {
 //
 //    val edge =
 //      hinputs.edges.find(
-//        edge => edge.interface == matchingEdgeBlueprint.interface && edge.struct == structRefT).get;
+//        edge => edge.interface == matchingEdgeBlueprint.interface && edge.struct == structTT).get;
 //    val methodPrototype2 = edge.methods(indexInEdgeBlueprint)
 //    methodPrototype2
 //  }

@@ -334,7 +334,7 @@ case class ExternFunctionTemplata(header: FunctionHeaderT) extends ITemplata {
   }
 }
 
-case class ExternImplTemplata(struct: StructRefT, interface: InterfaceRefT) extends ITemplata {
+case class ExternImplTemplata(struct: StructTT, interface: InterfaceTT) extends ITemplata {
   override def order: Int = 1338
   override def tyype: ITemplataType = vfail()
 

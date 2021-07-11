@@ -79,6 +79,15 @@ class RunCompilation(
 }
 
 class IntegrationTestsA extends FunSuite with Matchers {
+//  test("Scratch scratch") {
+//    val compile =
+//      RunCompilation.test(
+//        """
+//          |scratch code here
+//          |""".stripMargin)
+//    compile.evalForKind(Vector())
+//  }
+
   test("Simple program returning an int") {
     val compile = RunCompilation.test("fn main() int export {3}")
     compile.evalForKind(Vector()) shouldEqual VonInt(3)

@@ -206,7 +206,7 @@ object ExpressionHammer {
         (newStructAndDeferredsExprH, List.empty)
       }
 
-      case ConstructTE(structRefT, resultType2, memberExprs) => {
+      case ConstructTE(structTT, resultType2, memberExprs) => {
         val (memberResultLines, deferreds) =
           translateExpressions(hinputs, hamuts, currentFunctionHeader, locals, memberExprs);
 
@@ -214,7 +214,7 @@ object ExpressionHammer {
           TypeHammer.translateReference(hinputs, hamuts, resultType2)
 
 
-        val structDefH = hamuts.structDefsByRef2(structRefT)
+        val structDefH = hamuts.structDefsByRef2(structTT)
         vassert(memberResultLines.size == structDefH.members.size)
         memberResultLines.zip(structDefH.members).foreach({ case (memberResultLine, memberH ) =>
           vassert(memberResultLine.resultType == memberH.tyype)

@@ -4,7 +4,7 @@ import net.verdagon.vale.astronomer._
 import net.verdagon.vale.scout.LocalS
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.templata.{ITemplata, QueriableT}
-import net.verdagon.vale.templar.types.{CoordT, StructRefT, VariabilityT}
+import net.verdagon.vale.templar.types.{CoordT, StructTT, VariabilityT}
 import net.verdagon.vale.{IProfiler, vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.{List, Map, Set}
@@ -334,7 +334,7 @@ case class ReferenceLocalVariableT(
 }
 case class AddressibleClosureVariableT(
   id: FullNameT[IVarNameT],
-  closuredVarsStructType: StructRefT,
+  closuredVarsStructType: StructTT,
   variability: VariabilityT,
   reference: CoordT
 ) extends IVariableT {
@@ -344,7 +344,7 @@ case class AddressibleClosureVariableT(
 }
 case class ReferenceClosureVariableT(
   id: FullNameT[IVarNameT],
-  closuredVarsStructType: StructRefT,
+  closuredVarsStructType: StructTT,
   variability: VariabilityT,
   reference: CoordT
 ) extends IVariableT {

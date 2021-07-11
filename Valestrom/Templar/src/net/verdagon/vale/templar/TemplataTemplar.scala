@@ -16,7 +16,7 @@ trait ITemplataTemplarDelegate {
   def getAncestorInterfaceDistance(
     temputs: Temputs,
     descendantCitizenRef: CitizenRefT,
-    ancestorInterfaceRef: InterfaceRefT):
+    ancestorInterfaceRef: InterfaceTT):
   Option[Int]
 
   def getStructRef(
@@ -24,7 +24,7 @@ trait ITemplataTemplarDelegate {
     callRange: RangeS,
     structTemplata: StructTemplata,
     uncoercedTemplateArgs: List[ITemplata]):
-  StructRefT
+  StructTT
 
   def getInterfaceRef(
     temputs: Temputs,
@@ -33,7 +33,7 @@ trait ITemplataTemplarDelegate {
     // their rules as needed
     interfaceTemplata: InterfaceTemplata,
     uncoercedTemplateArgs: List[ITemplata]):
-  InterfaceRefT
+  InterfaceTT
 
   def getStaticSizedArrayKind(
     env: IEnvironment,
@@ -132,7 +132,7 @@ class TemplataTemplar(
         override def getAncestorInterfaceDistance(
           temputs: Temputs,
           descendantCitizenRef: CitizenRefT,
-          ancestorInterfaceRef: InterfaceRefT):
+          ancestorInterfaceRef: InterfaceTT):
         (Option[Int]) = {
           delegate.getAncestorInterfaceDistance(temputs, descendantCitizenRef, ancestorInterfaceRef)
         }

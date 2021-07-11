@@ -34,7 +34,9 @@ object ParsedLoader {
   }
   def getStringField(jobj: JObject, fieldName: String): String = {
     getField(jobj, fieldName) match {
-      case JString(s) => s
+      case JString(s) => {
+        s
+      }
       case _ => throw BadVPSTException(BadVPSTError("Field " + fieldName + " wasn't a string!"))
     }
   }

@@ -17,7 +17,6 @@ class VivemTests extends FunSuite with Matchers {
             List(VonObject("F",None,Vector(VonMember("humanName",VonStr("main")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector())))))),List.empty,ReferenceH(m.ShareH,InlineH,ReadonlyH,IntH.i32)),
         true,
         false,
-        false,
         List(UserFunctionH),
         BlockH(ConstantIntH(7, 32)))
     val programH =
@@ -52,7 +51,6 @@ class VivemTests extends FunSuite with Matchers {
             List(VonObject("F",None,Vector(VonMember("humanName",VonStr("main")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector())))))),List.empty,ReferenceH(m.ShareH,InlineH,ReadonlyH,IntH.i32)),
         true,
         false,
-        false,
         List(UserFunctionH),
         BlockH(
           CallH(
@@ -67,7 +65,6 @@ class VivemTests extends FunSuite with Matchers {
     val addExtern =
       FunctionH(
         addPrototype,
-        false,
         false,
         true,
         List.empty,

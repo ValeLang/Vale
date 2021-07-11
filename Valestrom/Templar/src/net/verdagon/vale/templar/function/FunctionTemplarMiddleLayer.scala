@@ -62,7 +62,7 @@ class FunctionTemplarMiddleLayer(
       case Some(OverrideAP(range, interfaceRuneA)) => {
         env.getNearestTemplataWithAbsoluteName2(NameTranslator.translateRune(interfaceRuneA), Set(TemplataLookupContext)) match {
           case None => vcurious()
-          case Some(KindTemplata(ir @ InterfaceRefT(_))) => (Some(OverrideT(ir)))
+          case Some(KindTemplata(ir @ InterfaceTT(_))) => (Some(OverrideT(ir)))
           case Some(it @ InterfaceTemplata(_, _)) => {
             val ir =
               structTemplar.getInterfaceRef(temputs, range, it, List.empty)
@@ -282,12 +282,12 @@ class FunctionTemplarMiddleLayer(
 //    env: IEnvironment,
 //    temputs: Temputs,
 //    structDefT: StructDefinition2,
-//    interfaceRef2: InterfaceRef2):
+//    interfaceTT: InterfaceRef2):
 //  Temputs = {
 //    val ownership = if (structDefT.mutability == MutableP) Own else Share
-//    val structRefT = structDefT.getRef
-//    val structType2 = Coord(ownership, structRefT)
-//    val interfaceType2 = Coord(ownership, interfaceRef2)
+//    val structTT = structDefT.getRef
+//    val structType2 = Coord(ownership, structTT)
+//    val interfaceType2 = Coord(ownership, interfaceTT)
 //    val signature2 =
 //      Signature2(
 //        CallTemplar.INTERFACE_DESTRUCTOR_NAME,
@@ -297,7 +297,7 @@ class FunctionTemplarMiddleLayer(
 //
 //    val header =
 //      core.makeImplDestructor(
-//        env, temputs, structDefT, interfaceRef2)
+//        env, temputs, structDefT, interfaceTT)
 //
 //
 //      VirtualTemplar.evaluateParent(env, temputs, header)

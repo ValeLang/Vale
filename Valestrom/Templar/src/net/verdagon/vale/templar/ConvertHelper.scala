@@ -15,7 +15,7 @@ trait IConvertHelperDelegate {
   def isAncestor(
     temputs: Temputs,
     descendantCitizenRef: CitizenRefT,
-    ancestorInterfaceRef: InterfaceRefT):
+    ancestorInterfaceRef: InterfaceTT):
   Boolean
 }
 
@@ -110,7 +110,7 @@ class ConvertHelper(
         sourceExpr
       } else {
         (sourceType, targetType) match {
-          case (s @ StructRefT(_), i : InterfaceRefT) => {
+          case (s @ StructTT(_), i : InterfaceTT) => {
             convert(env.globalEnv, temputs, range, sourceExpr, s, i)
           }
           case _ => vfail()
@@ -125,8 +125,8 @@ class ConvertHelper(
     temputs: Temputs,
     range: RangeS,
     sourceExpr: ReferenceExpressionTE,
-    sourceStructRef: StructRefT,
-    targetInterfaceRef: InterfaceRefT):
+    sourceStructRef: StructTT,
+    targetInterfaceRef: InterfaceTT):
   (ReferenceExpressionTE) = {
     if (delegate.isAncestor(temputs, sourceStructRef, targetInterfaceRef)) {
       StructToInterfaceUpcastTE(sourceExpr, targetInterfaceRef)

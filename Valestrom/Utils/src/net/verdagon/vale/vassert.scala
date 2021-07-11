@@ -60,6 +60,18 @@ object vassertSome {
   }
 }
 
+object vassertOne {
+  def apply[T](thing: List[T], message: String): T = {
+    thing match {
+      case List(x) => x
+      case _ => vfail(message)
+    }
+  }
+  def apply[T](thing: List[T]): T = {
+    apply(thing, "Expected exactly one element!")
+  }
+}
+
 object vfail {
   def apply(message: String): Nothing = {
     throw new RuntimeException(message)

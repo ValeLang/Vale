@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar
 
-import net.verdagon.vale.templar.templata.{CoordTemplata, Export2, SignatureT}
+import net.verdagon.vale.templar.templata.{CoordTemplata, SignatureT}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.{PackageCoordinate, vassertSome, vcurious}
 
@@ -8,10 +8,10 @@ import scala.collection.mutable
 
 class Reachables(
   val functions: mutable.Set[SignatureT],
-  val structs: mutable.Set[StructRefT],
+  val structs: mutable.Set[StructTT],
   val staticSizedArrays: mutable.Set[StaticSizedArrayTT],
   val runtimeSizedArrays: mutable.Set[RuntimeSizedArrayTT],
-  val interfaces: mutable.Set[InterfaceRefT],
+  val interfaces: mutable.Set[InterfaceTT],
   val edges: mutable.Set[EdgeT]
 ) {
   def size = functions.size + structs.size + staticSizedArrays.size + runtimeSizedArrays.size + interfaces.size + edges.size
@@ -22,6 +22,8 @@ object Reachability {
     val structs = program.getAllStructs()
     val interfaces = program.getAllInterfaces()
     val functions = program.getAllFunctions()
+    val exportedKinds = program.getKindExports.map(_.tyype).toSet
+    val exportedFunctionSignatures = program.getFunctionExports.map(_.prototype.toSignature).toSet
 
     val exposedFunctions =
       functions.filter(func => {
@@ -29,10 +31,10 @@ object Reachability {
           case FunctionNameT("main", _, _) => true
           case _ => false
         }) ||
-        func.header.isExport
+        exportedFunctionSignatures.contains(func.header.toSignature)
       })
-    val exposedStructs = structs.filter(_.attributes.exists({ case Export2(_) => true }))
-    val exposedInterfaces = interfaces.filter(_.attributes.exists({ case Export2(_) => true }))
+    val exposedStructs = structs.filter(struct => exportedKinds.contains(struct.getRef))
+    val exposedInterfaces = interfaces.filter(interface => exportedKinds.contains(interface.getRef))
     val reachables = new Reachables(mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set())
     var sizeBefore = 0
     do {
@@ -56,8 +58,8 @@ object Reachability {
       case ConstructArrayTE(_, _, _, calleePrototype) => visitFunction(program, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
       case StaticArrayFromCallableTE(_, _, calleePrototype) => visitFunction(program, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
       case DestroyStaticSizedArrayIntoFunctionTE(_, _, _, calleePrototype) => visitFunction(program, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
-      case sr @ StructRefT(_) => visitStruct(program, edgeBlueprints, edges, reachables, sr)
-      case ir @ InterfaceRefT(_) => visitInterface(program, edgeBlueprints, edges, reachables, ir)
+      case sr @ StructTT(_) => visitStruct(program, edgeBlueprints, edges, reachables, sr)
+      case ir @ InterfaceTT(_) => visitInterface(program, edgeBlueprints, edges, reachables, ir)
       case ssa @ StaticSizedArrayTT(_, _) => visitStaticSizedArray(program, edgeBlueprints, edges, reachables, ssa)
       case rsa @ RuntimeSizedArrayTT(_) => visitRuntimeSizedArray(program, edgeBlueprints, edges, reachables, rsa)
       case LockWeakTE(_, _, someConstructor, noneConstructor) => {
@@ -71,45 +73,45 @@ object Reachability {
     })
   }
 
-  def visitStruct(program: Temputs, edgeBlueprints: List[InterfaceEdgeBlueprint], edges: List[EdgeT], reachables: Reachables, structRef: StructRefT): Unit = {
-    if (reachables.structs.contains(structRef)) {
+  def visitStruct(program: Temputs, edgeBlueprints: List[InterfaceEdgeBlueprint], edges: List[EdgeT], reachables: Reachables, structTT: StructTT): Unit = {
+    if (reachables.structs.contains(structTT)) {
       return
     }
-    reachables.structs.add(structRef)
-    val structDef = program.lookupStruct(structRef)
+    reachables.structs.add(structTT)
+    val structDef = program.lookupStruct(structTT)
     // Make sure the destructor got in, because for immutables, it's implicitly called by lots of instructions
     // that let go of a reference.
-    if (structDef.mutability == ImmutableT && structRef != Program2.emptyTupleStructRef) {
-      val destructorSignature = program.getDestructor(structRef).toSignature
+    if (structDef.mutability == ImmutableT && structTT != Program2.emptyTupleStructRef) {
+      val destructorSignature = program.getDestructor(structTT).toSignature
       visitFunction(program, edgeBlueprints, edges, reachables, destructorSignature)
     }
     structDef.all({
-      case sr @ StructRefT(_) => visitStruct(program, edgeBlueprints, edges, reachables, sr)
-      case ir @ InterfaceRefT(_) => visitInterface(program, edgeBlueprints, edges, reachables, ir)
+      case sr @ StructTT(_) => visitStruct(program, edgeBlueprints, edges, reachables, sr)
+      case ir @ InterfaceTT(_) => visitInterface(program, edgeBlueprints, edges, reachables, ir)
     })
-    edges.filter(_.struct == structRef).foreach(visitImpl(program, edgeBlueprints, edges, reachables, _))
+    edges.filter(_.struct == structTT).foreach(visitImpl(program, edgeBlueprints, edges, reachables, _))
   }
 
-  def visitInterface(program: Temputs, edgeBlueprints: List[InterfaceEdgeBlueprint], edges: List[EdgeT], reachables: Reachables, interfaceRef: InterfaceRefT): Unit = {
-    if (reachables.interfaces.contains(interfaceRef)) {
+  def visitInterface(program: Temputs, edgeBlueprints: List[InterfaceEdgeBlueprint], edges: List[EdgeT], reachables: Reachables, interfaceTT: InterfaceTT): Unit = {
+    if (reachables.interfaces.contains(interfaceTT)) {
       return
     }
-    reachables.interfaces.add(interfaceRef)
-    val interfaceDef = program.lookupInterface(interfaceRef)
+    reachables.interfaces.add(interfaceTT)
+    val interfaceDef = program.lookupInterface(interfaceTT)
     // Make sure the destructor got in, because for immutables, it's implicitly called by lots of instructions
     // that let go of a reference.
     if (interfaceDef.mutability == ImmutableT) {
-      val destructorSignature = program.getDestructor(interfaceRef).toSignature
+      val destructorSignature = program.getDestructor(interfaceTT).toSignature
       visitFunction(program, edgeBlueprints, edges, reachables, destructorSignature)
     }
     interfaceDef.all({
-      case sr @ StructRefT(_) => visitStruct(program, edgeBlueprints, edges, reachables, sr)
-      case ir @ InterfaceRefT(_) => visitInterface(program, edgeBlueprints, edges, reachables, ir)
+      case sr @ StructTT(_) => visitStruct(program, edgeBlueprints, edges, reachables, sr)
+      case ir @ InterfaceTT(_) => visitInterface(program, edgeBlueprints, edges, reachables, ir)
     })
-    edgeBlueprints.find(_.interface == interfaceRef).get.superFamilyRootBanners.foreach(f => {
+    edgeBlueprints.find(_.interface == interfaceTT).get.superFamilyRootBanners.foreach(f => {
       visitFunction(program, edgeBlueprints, edges, reachables, f.toSignature)
     })
-    edges.filter(_.interface == interfaceRef).foreach(visitImpl(program, edgeBlueprints, edges, reachables, _))
+    edges.filter(_.interface == interfaceTT).foreach(visitImpl(program, edgeBlueprints, edges, reachables, _))
   }
 
   def visitImpl(program: Temputs, edgeBlueprints: List[InterfaceEdgeBlueprint], edges: List[EdgeT], reachables: Reachables, edge: EdgeT): Unit = {

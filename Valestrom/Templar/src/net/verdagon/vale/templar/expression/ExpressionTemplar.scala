@@ -32,7 +32,7 @@ trait IExpressionTemplarDelegate {
     callRange: RangeS,
     name: LambdaNameA,
     function1: BFunctionA):
-  StructRefT
+  StructTT
 }
 
 class ExpressionTemplar(
@@ -233,7 +233,7 @@ class ExpressionTemplar(
       temputs: Temputs,
       fate: FunctionEnvironmentBox,
       range: RangeS,
-      closureStructRef: StructRefT):
+      closureStructRef: StructTT):
   (ReferenceExpressionTE) = {
     val closureStructDef = temputs.lookupStruct(closureStructRef);
     // Note, this is where the unordered closuredNames set becomes ordered.
@@ -539,7 +539,7 @@ class ExpressionTemplar(
             destinationExpr2 match {
               case ReferenceMemberLookupTE(range, structExpr, memberName, _, _, _) => {
                 structExpr.kind match {
-                  case s @ StructRefT(_) => {
+                  case s @ StructTT(_) => {
                     throw CompileErrorExceptionT(CantMutateFinalMember(range, s.fullName, memberName))
                   }
                   case s @ TupleTT(_, _) => {
@@ -562,7 +562,7 @@ class ExpressionTemplar(
 //              destinationExpr2 match {
 //                case ReferenceMemberLookup2(range, structExpr, memberName, _, _) => {
 //                  structExpr.kind match {
-//                    case s @ structRefT(_) => {
+//                    case s @ structTT(_) => {
 //                      throw CompileErrorExceptionT(CantMutateReadonlyMember(range, s, memberName))
 //                    }
 //                    case _ => vimpl()
@@ -635,7 +635,7 @@ class ExpressionTemplar(
                   case _ => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Struct random access not implemented yet!"))
                 }
               }
-              case sr@StructRefT(_) => {
+              case sr@StructTT(_) => {
                 throw CompileErrorExceptionT(CannotSubscriptT(range, containerExpr2.resultRegister.reference.kind))
               }
               case _ => vwat()
@@ -652,8 +652,8 @@ class ExpressionTemplar(
 
           val expr2 =
             containerExpr2.resultRegister.reference.kind match {
-              case structRef@StructRefT(_) => {
-                val structDef = temputs.lookupStruct(structRef)
+              case structTT@StructTT(_) => {
+                val structDef = temputs.lookupStruct(structTT)
                 val (structMember, memberIndex) =
                   structDef.getMemberAndIndex(memberName) match {
                     case None => throw CompileErrorExceptionT(CouldntFindMemberT(range, memberName.name))
@@ -672,8 +672,8 @@ class ExpressionTemplar(
 
                 ReferenceMemberLookupTE(range, containerExpr2, memberFullName, memberType, targetPermission, effectiveVariability)
               }
-              case TupleTT(_, structRef) => {
-                temputs.lookupStruct(structRef) match {
+              case TupleTT(_, structTT) => {
+                temputs.lookupStruct(structTT) match {
                   case structDef@StructDefinitionT(_, _, _, _, _, _) => {
                     val (structMember, memberIndex) = vassertSome(structDef.getMemberAndIndex(memberName))
                     val memberFullName = structDef.fullName.addStep(structDef.members(memberIndex).name)
@@ -965,11 +965,11 @@ class ExpressionTemplar(
 
           val destroy2 =
             innerExpr2.kind match {
-              case structRef@StructRefT(_) => {
-                val structDef = temputs.lookupStruct(structRef)
+              case structTT@StructTT(_) => {
+                val structDef = temputs.lookupStruct(structTT)
                 DestroyTE(
                   innerExpr2,
-                  structRef,
+                  structTT,
                   structDef.members.map(_.tyype).map({
                     case ReferenceMemberTypeT(reference) =>
                       val rlv = localHelper.makeTemporaryLocal(fate, reference)
@@ -977,7 +977,7 @@ class ExpressionTemplar(
                     case _ => vfail()
                   }))
               }
-              case interfaceRef @ InterfaceRefT(_) => {
+              case interfaceTT @ InterfaceTT(_) => {
                 destructorTemplar.drop(fate, temputs, innerExpr2)
               }
               case _ => vfail("Can't destruct type: " + innerExpr2.kind)
@@ -1148,11 +1148,11 @@ class ExpressionTemplar(
 
   def weakAlias(temputs: Temputs, expr: ReferenceExpressionTE): ReferenceExpressionTE = {
     expr.kind match {
-      case sr @ StructRefT(_) => {
+      case sr @ StructTT(_) => {
         val structDef = temputs.lookupStruct(sr)
         vcheck(structDef.weakable, TookWeakRefOfNonWeakableError)
       }
-      case ir @ InterfaceRefT(_) => {
+      case ir @ InterfaceTT(_) => {
         val interfaceDef = temputs.lookupInterface(ir)
         vcheck(interfaceDef.weakable, TookWeakRefOfNonWeakableError)
       }
@@ -1213,12 +1213,12 @@ class ExpressionTemplar(
       function1: BFunctionA):
   (ReferenceExpressionTE) = {
 
-    val closurestructRefT =
+    val closurestructTT =
       delegate.evaluateClosureStruct(temputs, fate.snapshot, range, name, function1);
     val closureCoord =
-      templataTemplar.pointifyKind(temputs, closurestructRefT, OwnT)
+      templataTemplar.pointifyKind(temputs, closurestructTT, OwnT)
 
-    val constructExpr2 = makeClosureStructConstructExpression(temputs, fate, function1.origin.range, closurestructRefT)
+    val constructExpr2 = makeClosureStructConstructExpression(temputs, fate, function1.origin.range, closurestructTT)
     vassert(constructExpr2.resultRegister.reference == closureCoord)
     // The result of a constructor is always an own or a share.
 

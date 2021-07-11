@@ -2,7 +2,7 @@ package net.verdagon.vale
 
 import net.verdagon.vale.templar.{CitizenNameT, CodeVarNameT, FullNameT, simpleName}
 import net.verdagon.vale.templar.templata.{CoordTemplata, ParameterT}
-import net.verdagon.vale.templar.types.{ConstraintT, CoordT, OwnT, ReadonlyT, ReadwriteT, StructRefT}
+import net.verdagon.vale.templar.types.{ConstraintT, CoordT, OwnT, ReadonlyT, ReadwriteT, StructTT}
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 
@@ -23,7 +23,7 @@ class InferTemplateTests extends FunSuite with Matchers {
       case List(ParameterT(CodeVarNameT("m"), _, CoordT(ConstraintT,ReadonlyT, _))) =>
     }
     moo.header.fullName.last.templateArgs shouldEqual
-      List(CoordTemplata(CoordT(OwnT,ReadwriteT,StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List.empty,CitizenNameT("Muta",List.empty))))), CoordTemplata(CoordT(ConstraintT,ReadonlyT,StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List.empty,CitizenNameT("Muta",List.empty))))))
+      List(CoordTemplata(CoordT(OwnT,ReadwriteT,StructTT(FullNameT(PackageCoordinate.TEST_TLD, List.empty,CitizenNameT("Muta",List.empty))))), CoordTemplata(CoordT(ConstraintT,ReadonlyT,StructTT(FullNameT(PackageCoordinate.TEST_TLD, List.empty,CitizenNameT("Muta",List.empty))))))
 
     compile.evalForKind(Vector()) shouldEqual VonInt(10)
   }

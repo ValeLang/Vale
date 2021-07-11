@@ -203,12 +203,12 @@ class OverloadTemplar(
                 getCandidateBanners(
                   overloadsEnv, temputs, callRange, nameInOverloadsEnv, explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List.empty, exact)
               }
-              case KindTemplata(sr @ StructRefT(_)) => {
+              case KindTemplata(sr @ StructTT(_)) => {
                 val structEnv = temputs.getEnvForStructRef(sr)
                 getCandidateBanners(
                   structEnv, temputs, callRange, GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME), explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List.empty, exact)
               }
-              case KindTemplata(sr @ InterfaceRefT(_)) => {
+              case KindTemplata(sr @ InterfaceTT(_)) => {
                 val interfaceEnv = temputs.getEnvForInterfaceRef(sr)
                 getCandidateBanners(
                   interfaceEnv, temputs, callRange, GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME), explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List.empty, exact)
@@ -370,8 +370,8 @@ class OverloadTemplar(
   List[IEnvironment] = {
     paramFilters.flatMap({ case ParamFilter(tyype, virtuality) =>
       (tyype.kind match {
-        case sr @ StructRefT(_) => List(temputs.getEnvForStructRef(sr))
-        case ir @ InterfaceRefT(_) => List(temputs.getEnvForInterfaceRef(ir))
+        case sr @ StructTT(_) => List(temputs.getEnvForStructRef(sr))
+        case ir @ InterfaceTT(_) => List(temputs.getEnvForInterfaceRef(ir))
         case _ => List.empty
       }) ++
         (virtuality match {
@@ -398,7 +398,7 @@ class OverloadTemplar(
   // exist that takes in these parameter types, and returns what the signature *would* look like.
   // Only considers when arguments match exactly.
   // If given something in maybeSuperInterfaceRef2, it will search for a function that
-  // overrides that interfaceRef2 in that position. If we ever support multimethods we
+  // overrides that interfaceTT in that position. If we ever support multimethods we
   // might need to take a list of these, same length as the arg types... or combine
   // them somehow.
   def scoutPotentialFunction(

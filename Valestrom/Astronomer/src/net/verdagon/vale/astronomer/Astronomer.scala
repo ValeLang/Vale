@@ -495,7 +495,7 @@ object Astronomer {
 
     val locals =
       bodyS match {
-        case CodeBody1(body) => body.block.locals.map(ExpressionAstronomer.translateLocalVariable)
+        case CodeBodyS(body) => body.block.locals.map(ExpressionAstronomer.translateLocalVariable)
         case _ => {
           // We make some LocalVariableA here to appease translateParameter which expects some locals in the env.
           paramsS.flatMap(_.pattern.name)
@@ -548,12 +548,12 @@ object Astronomer {
       bodyA)
   }
 
-  def translateBody(astrouts: AstroutsBox, env: Environment, body: IBody1): IBodyA = {
+  def translateBody(astrouts: AstroutsBox, env: Environment, body: IBodyS): IBodyA = {
     body match {
-      case ExternBody1 => ExternBodyA
-      case AbstractBody1 => AbstractBodyA
-      case GeneratedBody1(generatorId) => GeneratedBodyA(generatorId)
-      case CodeBody1(BodySE(range, closuredNamesS, blockS)) => {
+      case ExternBodyS => ExternBodyA
+      case AbstractBodyS => AbstractBodyA
+      case GeneratedBodyS(generatorId) => GeneratedBodyA(generatorId)
+      case CodeBodyS(BodySE(range, closuredNamesS, blockS)) => {
         val blockA = ExpressionAstronomer.translateBlock(env, astrouts, blockS)
         CodeBodyA(BodyAE(range, closuredNamesS.map(translateVarNameStep), blockA))
       }

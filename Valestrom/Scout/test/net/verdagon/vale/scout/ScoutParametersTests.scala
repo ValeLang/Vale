@@ -150,4 +150,12 @@ class ScoutParametersTests extends FunSuite with Matchers {
     // See CCAUIR.
     main.identifyingRunes shouldEqual List(tRune)
   }
+
+  test("Regioned pure function") {
+    val bork = compile("fn main<'r ro>(ship 'r &Spaceship) pure 't { }")
+
+    val main = bork.lookupFunction("main")
+    // We dont support regions yet, so scout should filter them out.
+    main.identifyingRunes.size shouldEqual 0
+  }
 }

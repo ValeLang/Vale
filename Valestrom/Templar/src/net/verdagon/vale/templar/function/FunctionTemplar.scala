@@ -112,7 +112,7 @@ class FunctionTemplar(
     callRange: RangeS,
       name: LambdaNameA,
       function1: BFunctionA):
-  (StructRefT) = {
+  (StructTT) = {
 
     val closuredNames = function1.body.closuredNames;
 
@@ -122,7 +122,7 @@ class FunctionTemplar(
         .map(name => determineClosureVariableMember(containingFunctionEnv, temputs, name))
         .toList;
 
-    val (structRef, _, functionTemplata) =
+    val (structTT, _, functionTemplata) =
       structTemplar.makeClosureUnderstruct(
         containingFunctionEnv, temputs, name, function1.origin, closuredVarNamesAndTypes)
 
@@ -132,10 +132,10 @@ class FunctionTemplar(
     } else {
       val _ =
         evaluateOrdinaryClosureFunctionFromNonCallForHeader(
-          functionTemplata.outerEnv, temputs, callRange, structRef, function1.origin)
+          functionTemplata.outerEnv, temputs, callRange, structTT, function1.origin)
     }
 
-    (structRef)
+    (structTT)
   }
 
   def evaluateOrdinaryFunctionFromNonCallForHeader(
@@ -150,7 +150,7 @@ class FunctionTemplar(
           evaluateOrdinaryLightFunctionFromNonCallForHeader(
             env, temputs, callRange, function)
         } else {
-          val Some(KindTemplata(closureStructRef@StructRefT(_))) =
+          val Some(KindTemplata(closureStructRef@StructTT(_))) =
             env.getNearestTemplataWithName(
               vimpl(), //FunctionScout.CLOSURE_STRUCT_ENV_ENTRY_NAME,
               Set(TemplataLookupContext))
@@ -183,7 +183,7 @@ class FunctionTemplar(
               case _ => vwat()
             }
 
-          val KindTemplata(closureStructRef@StructRefT(_)) =
+          val KindTemplata(closureStructRef@StructTT(_)) =
             vassertSome(
               env.getNearestTemplataWithAbsoluteName2(
                 lambdaCitizenName2,
@@ -215,7 +215,7 @@ class FunctionTemplar(
               case _ => vwat()
             }
 
-          val KindTemplata(closureStructRef@StructRefT(_)) =
+          val KindTemplata(closureStructRef@StructTT(_)) =
             vassertSome(
               env.getNearestTemplataWithAbsoluteName2(
                 lambdaCitizenName2,
@@ -257,7 +257,7 @@ class FunctionTemplar(
               case _ => vwat()
             }
 
-          val KindTemplata(closureStructRef@StructRefT(_)) =
+          val KindTemplata(closureStructRef@StructTT(_)) =
             vassertSome(
               env.getNearestTemplataWithAbsoluteName2(
                 lambdaCitizenName2,
@@ -275,7 +275,7 @@ class FunctionTemplar(
       env: IEnvironment,
       temputs: Temputs,
       callRange: RangeS,
-      closureStructRef: StructRefT,
+      closureStructRef: StructTT,
     function: FunctionA,
     alreadySpecifiedTemplateArgs: List[ITemplata],
       argTypes2: List[ParamFilter]):
@@ -305,7 +305,7 @@ class FunctionTemplar(
       env: IEnvironment,
       temputs: Temputs,
     callRange: RangeS,
-      closureStructRef: StructRefT,
+      closureStructRef: StructTT,
     function: FunctionA):
   (FunctionHeaderT) = {
     closureOrLightLayer.evaluateOrdinaryClosureFunctionFromNonCallForHeader(
@@ -316,7 +316,7 @@ class FunctionTemplar(
     env: IEnvironment,
     temputs: Temputs,
     callRange: RangeS,
-    closureStructRef: StructRefT,
+    closureStructRef: StructTT,
     function: FunctionA):
   (FunctionBannerT) = {
     closureOrLightLayer.evaluateOrdinaryClosureFunctionFromNonCallForBanner(
@@ -406,7 +406,7 @@ class FunctionTemplar(
         case LambdaNameA(codeLocation) => LambdaCitizenNameT(NameTranslator.translateCodeLocation(codeLocation))
         case _ => vwat()
       }
-    val KindTemplata(closureStructRef @ StructRefT(_)) =
+    val KindTemplata(closureStructRef @ StructTT(_)) =
       vassertSome(
         env.getNearestTemplataWithAbsoluteName2(
           lambdaCitizenName2,

@@ -42,7 +42,9 @@ case class ConstructingMemberNameS(name: String) extends IVarNameS
 // We have all these subclasses instead of a string so we don't have to have
 // prefixes and names like __implicit_0, __paramRune_0, etc.
 sealed trait IRuneS
-case class CodeRuneS(name: String) extends IRuneS
+case class CodeRuneS(name: String) extends IRuneS {
+  vpass()
+}
 case class ImplicitRuneS(containerName: INameS, name: Int) extends IRuneS {
   vpass()
 }

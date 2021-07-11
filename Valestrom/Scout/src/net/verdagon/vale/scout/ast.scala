@@ -7,31 +7,6 @@ import net.verdagon.vale.{FileCoordinate, PackageCoordinate, vassert, vwat}
 
 import scala.collection.immutable.List
 
-
-//sealed trait MutabilityP
-//case object MutableS extends MutabilityP
-//case object ImmutableS extends MutabilityP
-//
-//sealed trait VariabilityP
-//case object FinalP extends VariabilityP
-//case object VaryingP extends VariabilityP
-//
-//sealed trait OwnershipS
-//case object OwnS extends OwnershipS
-//case object BorrowS extends OwnershipS
-//case object ShareS extends OwnershipS
-//case object RawS extends OwnershipS
-//
-//sealed trait PermissionS
-//case object ReadonlyS extends PermissionS
-//case object ReadwriteS extends PermissionS
-//case object ExclusiveReadwriteS extends PermissionS
-//
-//sealed trait LocationS
-//case object InlineS extends LocationS
-//case object YonderS extends LocationS
-
-
 trait IExpressionSE {
   def range: RangeS
 }
@@ -214,17 +189,17 @@ case class ParameterS(
     pattern: AtomSP) {
 }
 
-case class SimpleParameter1(
+case class SimpleParameterS(
     origin: Option[AtomSP],
     name: String,
     virtuality: Option[VirtualitySP],
     tyype: ITemplexS)
 
-sealed trait IBody1
-case object ExternBody1 extends IBody1
-case object AbstractBody1 extends IBody1
-case class GeneratedBody1(generatorId: String) extends IBody1
-case class CodeBody1(body1: BodySE) extends IBody1
+sealed trait IBodyS
+case object ExternBodyS extends IBodyS
+case object AbstractBodyS extends IBodyS
+case class GeneratedBodyS(generatorId: String) extends IBodyS
+case class CodeBodyS(body: BodySE) extends IBodyS
 
 // template params.
 
@@ -251,7 +226,7 @@ case class FunctionS(
 
     isTemplate: Boolean,
     templateRules: List[IRulexSR],
-    body: IBody1
+    body: IBodyS
 ) {
 
   // Make sure we have to solve all identifying runes
@@ -260,14 +235,14 @@ case class FunctionS(
   vassert(isTemplate == identifyingRunes.nonEmpty)
 
   body match {
-    case ExternBody1 | AbstractBody1 | GeneratedBody1(_) => {
+    case ExternBodyS | AbstractBodyS | GeneratedBodyS(_) => {
       name match {
         case LambdaNameS(_) => vwat()
         case _ =>
       }
     }
-    case CodeBody1(body1) => {
-      if (body1.closuredNames.nonEmpty) {
+    case CodeBodyS(body) => {
+      if (body.closuredNames.nonEmpty) {
         name match {
           case LambdaNameS(_) =>
           case _ => vwat()
@@ -278,8 +253,8 @@ case class FunctionS(
 
   def isLight(): Boolean = {
     body match {
-      case ExternBody1 | AbstractBody1 | GeneratedBody1(_) => false
-      case CodeBody1(body1) => body1.closuredNames.nonEmpty
+      case ExternBodyS | AbstractBodyS | GeneratedBodyS(_) => false
+      case CodeBodyS(bodyS) => bodyS.closuredNames.nonEmpty
     }
   }
 

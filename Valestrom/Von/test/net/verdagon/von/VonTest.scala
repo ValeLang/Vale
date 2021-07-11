@@ -10,6 +10,12 @@ class VonTest extends FunSuite with Matchers {
       "MyObj(mem = 42)"
   }
 
+  test("Json escape apostrophe") {
+    val data = VonStr("yes'nt")
+    new VonPrinter(JsonSyntax, 30).print(data) shouldEqual
+      ("yes" + "\\" + "'" + "nt")
+  }
+
   test("Test 2") {
     val data = VonObject("MySuperSuperLongObject", None, Vector(VonMember("member", VonInt(42))))
     new VonPrinter(VonSyntax(), 30).print(data) shouldEqual

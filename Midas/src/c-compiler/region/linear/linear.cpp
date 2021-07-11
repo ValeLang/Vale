@@ -195,6 +195,7 @@ Ref Linear::asSubtype(
     std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
     std::function<Ref(LLVMBuilderRef)> buildElse) {
   assert(false);
+  exit(1);
 }
 
 LLVMTypeRef Linear::translateType(Reference* referenceM) {

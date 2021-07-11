@@ -1153,6 +1153,7 @@ std::string Linear::generateStaticSizedArrayDefsC(
 
 LLVMTypeRef Linear::getExternalType(Reference* refMT) {
   assert(false);
+  exit(1);
 //  return refMT;
 }
 

@@ -4,12 +4,12 @@ import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal._
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.templata.FunctionHeader2
+import net.verdagon.vale.templar.templata.FunctionHeaderT
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.vfail
 
 object TypeHammer {
-  def translateMembers(hinputs: Hinputs, hamuts: HamutsBox, structName: FullName2[IName2], members: List[StructMember2]):
+  def translateMembers(hinputs: Hinputs, hamuts: HamutsBox, structName: FullNameT[INameT], members: List[StructMemberT]):
   (List[StructMemberH]) = {
     members match {
       case Nil => Nil
@@ -21,14 +21,14 @@ object TypeHammer {
     }
   }
 
-  def translateMember(hinputs: Hinputs, hamuts: HamutsBox, structName: FullName2[IName2], member2: StructMember2):
+  def translateMember(hinputs: Hinputs, hamuts: HamutsBox, structName: FullNameT[INameT], member2: StructMemberT):
   (StructMemberH) = {
     val (memberH) =
       member2.tyype match {
-        case ReferenceMemberType2(coord) => {
+        case ReferenceMemberTypeT(coord) => {
           TypeHammer.translateReference(hinputs, hamuts, coord)
         }
-        case AddressMemberType2(coord) => {
+        case AddressMemberTypeT(coord) => {
           val (referenceH) =
             TypeHammer.translateReference(hinputs, hamuts, coord)
           val (boxStructRefH) =
@@ -61,63 +61,63 @@ object TypeHammer {
   //  def translatePointer(tyype: Coord): PointerH = {
   //  }
 
-  def translateKind(hinputs: Hinputs, hamuts: HamutsBox, tyype: Kind):
-  (ReferendH) = {
+  def translateKind(hinputs: Hinputs, hamuts: HamutsBox, tyype: KindT):
+  (KindH) = {
     tyype match {
-      case Never2() => NeverH()
-      case Int2() => IntH()
-      case Bool2() => BoolH()
-      case Float2() => FloatH()
-      case Str2() => StrH()
-      case Void2() => ProgramH.emptyTupleStructRef
-      case s @ StructRef2(_) => StructHammer.translateStructRef(hinputs, hamuts, s)
+      case NeverT() => NeverH()
+      case IntT(bits) => IntH(bits)
+      case BoolT() => BoolH()
+      case FloatT() => FloatH()
+      case StrT() => StrH()
+      case VoidT() => ProgramH.emptyTupleStructRef
+      case s @ StructTT(_) => StructHammer.translateStructRef(hinputs, hamuts, s)
 
-      case i @ InterfaceRef2(_) => StructHammer.translateInterfaceRef(hinputs, hamuts, i)
+      case i @ InterfaceTT(_) => StructHammer.translateInterfaceRef(hinputs, hamuts, i)
 
 //      // A Closure2 is really just a struct ref under the hood. The dinstinction is only meaningful
 //      // to the Templar.
 //      case OrdinaryClosure2(_, handleStructRef, prototype) => translate(hinputs, hamuts, currentFunctionHeader, handleStructRef)
 //      case TemplatedClosure2(_, handleStructRef, terry) => translate(hinputs, hamuts, currentFunctionHeader, handleStructRef)
-      case OverloadSet(_, _, understructRef2) => {
-        StructHammer.translateStructRef(hinputs, hamuts, understructRef2)
+      case OverloadSet(_, _, understructTT) => {
+        StructHammer.translateStructRef(hinputs, hamuts, understructTT)
       }
 
       // A PackT2 is really just a struct ref under the hood. The dinstinction is only meaningful
       // to the Templar.
-      case p @ PackT2(_, underlyingStruct) => StructHammer.translateStructRef(hinputs, hamuts, underlyingStruct)
-      case p @ TupleT2(_, underlyingStruct) => StructHammer.translateStructRef(hinputs, hamuts, underlyingStruct)
-      case a @ KnownSizeArrayT2(_, _) => translateKnownSizeArray(hinputs, hamuts, a)
-      case a @ UnknownSizeArrayT2(_) => translateUnknownSizeArray(hinputs, hamuts, a)
+      case p @ PackTT(_, underlyingStruct) => StructHammer.translateStructRef(hinputs, hamuts, underlyingStruct)
+      case p @ TupleTT(_, underlyingStruct) => StructHammer.translateStructRef(hinputs, hamuts, underlyingStruct)
+      case a @ StaticSizedArrayTT(_, _) => translateStaticSizedArray(hinputs, hamuts, a)
+      case a @ RuntimeSizedArrayTT(_) => translateRuntimeSizedArray(hinputs, hamuts, a)
     }
   }
 
   def translateReference(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-      coord: Coord):
-  (ReferenceH[ReferendH]) = {
-    val Coord(ownership, permission, innerType) = coord;
+      coord: CoordT):
+  (ReferenceH[KindH]) = {
+    val CoordT(ownership, permission, innerType) = coord;
     val location = {
       (ownership, innerType) match {
-        case (Own, _) => YonderH
-        case (Constraint, _) => YonderH
-        case (Weak, _) => YonderH
-        case (Share, OverloadSet(_, _, _)) => InlineH
-        case (Share, PackT2(_, _)) => InlineH
-        case (Share, TupleT2(_, _)) => InlineH
-        case (Share, StructRef2(FullName2(_, TupleName2(_)))) => InlineH
-        case (Share, Void2()) => InlineH
-        case (Share, Int2()) => InlineH
-        case (Share, Bool2()) => InlineH
-        case (Share, Float2()) => InlineH
-        case (Share, Never2()) => InlineH
-        case (Share, Str2()) => YonderH
-        case (Share, _) => YonderH
+        case (OwnT, _) => YonderH
+        case (ConstraintT, _) => YonderH
+        case (WeakT, _) => YonderH
+        case (ShareT, OverloadSet(_, _, _)) => InlineH
+        case (ShareT, PackTT(_, _)) => InlineH
+        case (ShareT, TupleTT(_, _)) => InlineH
+        case (ShareT, StructTT(FullNameT(_, _, TupleNameT(_)))) => InlineH
+        case (ShareT, VoidT()) => InlineH
+        case (ShareT, IntT(_)) => InlineH
+        case (ShareT, BoolT()) => InlineH
+        case (ShareT, FloatT()) => InlineH
+        case (ShareT, NeverT()) => InlineH
+        case (ShareT, StrT()) => YonderH
+        case (ShareT, _) => YonderH
       }
     }
     val permissionH = permission match {
-      case Readwrite => ReadwriteH
-      case Readonly => ReadonlyH
+      case ReadwriteT => ReadwriteH
+      case ReadonlyT => ReadonlyH
     }
     val (innerH) = translateKind(hinputs, hamuts, innerType);
     (ReferenceH(Conversions.evaluateOwnership(ownership), location, permissionH, innerH))
@@ -126,8 +126,8 @@ object TypeHammer {
   def translateReferences(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-      references2: List[Coord]):
-  (List[ReferenceH[ReferendH]]) = {
+      references2: List[CoordT]):
+  (List[ReferenceH[KindH]]) = {
     references2 match {
       case Nil => Nil
       case headReference2 :: tailPointers2 => {
@@ -145,35 +145,35 @@ object TypeHammer {
 //    }
 //  }
 
-  def checkConversion(expected: ReferenceH[ReferendH], actual: ReferenceH[ReferendH]): Unit = {
+  def checkConversion(expected: ReferenceH[KindH], actual: ReferenceH[KindH]): Unit = {
     if (actual != expected) {
       vfail("Expected a " + expected + " but was a " + actual);
     }
   }
 
-  def translateKnownSizeArray(
+  def translateStaticSizedArray(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-      type2: KnownSizeArrayT2):
-  KnownSizeArrayTH = {
+      type2: StaticSizedArrayTT):
+  StaticSizedArrayTH = {
     val name = NameHammer.translateFullName(hinputs, hamuts, type2.name)
-    val KnownSizeArrayT2(_, RawArrayT2(memberType, mutabilityT, variabilityT)) = type2
+    val StaticSizedArrayTT(_, RawArrayTT(memberType, mutabilityT, variabilityT)) = type2
     val memberReferenceH = TypeHammer.translateReference(hinputs, hamuts, memberType)
     val mutability = Conversions.evaluateMutability(mutabilityT)
     val variability = Conversions.evaluateVariability(variabilityT)
-    val definition = KnownSizeArrayDefinitionTH(name, type2.size, RawArrayTH(mutability, variability, memberReferenceH))
-    hamuts.addKnownSizeArray(definition)
-    KnownSizeArrayTH(name)
+    val definition = StaticSizedArrayDefinitionTH(name, type2.size, RawArrayTH(mutability, variability, memberReferenceH))
+    hamuts.addStaticSizedArray(definition)
+    StaticSizedArrayTH(name)
   }
 
-  def translateUnknownSizeArray(hinputs: Hinputs, hamuts: HamutsBox, type2: UnknownSizeArrayT2): UnknownSizeArrayTH = {
+  def translateRuntimeSizedArray(hinputs: Hinputs, hamuts: HamutsBox, type2: RuntimeSizedArrayTT): RuntimeSizedArrayTH = {
     val nameH = NameHammer.translateFullName(hinputs, hamuts, type2.name)
-    val UnknownSizeArrayT2(RawArrayT2(memberType, mutabilityT, variabilityT)) = type2
+    val RuntimeSizedArrayTT(RawArrayTT(memberType, mutabilityT, variabilityT)) = type2
     val memberReferenceH = TypeHammer.translateReference(hinputs, hamuts, memberType)
     val mutability = Conversions.evaluateMutability(mutabilityT)
     val variability = Conversions.evaluateVariability(variabilityT)
-    val definition = UnknownSizeArrayDefinitionTH(nameH, RawArrayTH(mutability, variability, memberReferenceH))
-    hamuts.addUnknownSizeArray(definition)
-    UnknownSizeArrayTH(nameH)
+    val definition = RuntimeSizedArrayDefinitionTH(nameH, RawArrayTH(mutability, variability, memberReferenceH))
+    hamuts.addRuntimeSizedArray(definition)
+    RuntimeSizedArrayTH(nameH)
   }
 }

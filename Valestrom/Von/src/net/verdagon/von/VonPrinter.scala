@@ -27,6 +27,17 @@ class VonPrinter(
     }
   }
 
+  def escape(value: String): String = {
+    syntax match {
+      case VonSyntax(_, _, _, _) => StringEscapeUtils.escapeJava(value)
+      case JsonSyntax => {
+        // We couldn't use escapeJavaScript because it escapes single quotes, and lift-json
+        // has a bug where \' turns into \
+        StringEscapeUtils.escapeJava(value)
+      }
+    }
+  }
+
   def printMultiline(
     data: IVonData,
     indentation: Int):
@@ -36,10 +47,8 @@ class VonPrinter(
       case VonInt(value) => value.toString
       case VonBool(value) => value.toString
       case VonStr(value) => {
-        syntax match {
-          case VonSyntax(_, _, _, _) => "\"" + StringEscapeUtils.escapeJava(value) + "\""
-          case JsonSyntax => "\"" + StringEscapeUtils.escapeJava(value) + "\""
-        }
+        val escaped = escape(value)
+        "\"" + escaped + "\""
       }
       case VonReference(id) => vimpl()
       case o @ VonObject(_, _, _) => printObjectMultiline(o, indentation)
@@ -78,7 +87,7 @@ class VonPrinter(
       case VonSyntax(_, _, true, _) => mappedType + "("
       case VonSyntax(_, _, false, _) => mappedType + (if (hasMembers) "(" else "")
       case JsonSyntax => {
-        "{\"__type\": " + "\"" + StringEscapeUtils.escapeJava(mappedType) + "\"" + (if (hasMembers) memberSeparator else "")
+        "{\"__type\": " + "\"" + escape(mappedType) + "\"" + (if (hasMembers) memberSeparator else "")
       }
     }
   }
@@ -146,11 +155,8 @@ class VonPrinter(
       case VonBool(value) => Some(value.toString)
       case VonFloat(value) => Some(value.toString)
       case VonStr(value) => {
-        Some(
-          syntax match {
-            case VonSyntax(_, _, _, _) => "\"" + StringEscapeUtils.escapeJava(value) + "\""
-            case JsonSyntax => "\"" + StringEscapeUtils.escapeJava(value) + "\""
-          })
+        val escaped = escape(value)
+        Some("\"" + escaped + "\"")
       }
       case VonReference(id) => vimpl()
       case o @ VonObject(_, _, _) => printObjectSingleLine(o, lineWidthRemaining)

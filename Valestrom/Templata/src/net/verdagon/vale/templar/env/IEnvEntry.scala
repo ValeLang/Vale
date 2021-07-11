@@ -1,8 +1,8 @@
 package net.verdagon.vale.templar.env
 
 import net.verdagon.vale.astronomer.{FunctionA, ImplA, InterfaceA, StructA}
-import net.verdagon.vale.templar.templata.{FunctionHeader2, IContainer, ITemplata}
-import net.verdagon.vale.templar.types.{InterfaceRef2, StructRef2}
+import net.verdagon.vale.templar.templata.{FunctionHeaderT, IContainer, ITemplata}
+import net.verdagon.vale.templar.types.{InterfaceTT, StructTT}
 
 sealed trait IEnvEntry
 // We dont have the unevaluatedContainers in here because see TMRE

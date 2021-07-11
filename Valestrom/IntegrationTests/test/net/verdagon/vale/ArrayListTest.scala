@@ -1,8 +1,8 @@
 package net.verdagon.vale
 
-import net.verdagon.vale.templar.{CodeVarName2, FullName2}
-import net.verdagon.vale.templar.env.AddressibleLocalVariable2
-import net.verdagon.vale.templar.types.Varying
+import net.verdagon.vale.templar.{CodeVarNameT, FullNameT}
+import net.verdagon.vale.templar.env.AddressibleLocalVariableT
+import net.verdagon.vale.templar.types.VaryingT
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 
@@ -47,7 +47,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) shouldEqual VonInt(9)
   }
 
   test("Array list with optionals") {
@@ -71,7 +71,7 @@ class ArrayListTest extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) shouldEqual VonInt(9)
   }
 
   test("Array list zero-constructor") {
@@ -87,7 +87,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) shouldEqual VonInt(9)
   }
 
   test("Array list len") {
@@ -103,7 +103,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
   test("Array list set") {
@@ -120,7 +120,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(11)
+    compile.evalForKind(Vector()) shouldEqual VonInt(11)
   }
 
   test("Array list with optionals with mutable element") {
@@ -145,7 +145,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) shouldEqual VonInt(9)
   }
 
   test("Mutate mutable from in lambda") {
@@ -166,9 +166,9 @@ class ArrayListTest extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main");
-    main.variables.collect({ case AddressibleLocalVariable2(FullName2(_, CodeVarName2("m")), Varying, _) => })
+    main.variables.collect({ case AddressibleLocalVariableT(FullNameT(_, _, CodeVarNameT("m")), VaryingT, _) => })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) shouldEqual VonInt(9)
   }
 
   test("Move mutable from in lambda") {
@@ -188,9 +188,9 @@ class ArrayListTest extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main");
-    main.variables.collect({ case AddressibleLocalVariable2(FullName2(_, CodeVarName2("m")), Varying, _) => })
+    main.variables.collect({ case AddressibleLocalVariableT(FullNameT(_, _, CodeVarNameT("m")), VaryingT, _) => })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(6)
+    compile.evalForKind(Vector()) shouldEqual VonInt(6)
   }
 
 
@@ -200,7 +200,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |import panicutils.*;
           |struct Marine { hp int; }
           |
-          |fn main() {
+          |fn main() export {
           |  l = List<Marine>();
           |  add(&!l, Marine(5));
           |  add(&!l, Marine(7));
@@ -215,7 +215,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector())
+    compile.evalForKind(Vector())
   }
 
 
@@ -227,7 +227,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |import panicutils.*;
           |struct Marine { hp int; }
           |
-          |fn main() {
+          |fn main() export {
           |  l = List<Marine>();
           |  add(&!l, Marine(5));
           |  add(&!l, Marine(7));
@@ -237,6 +237,6 @@ class ArrayListTest extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector())
+    compile.evalForKind(Vector())
   }
 }

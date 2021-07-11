@@ -19,16 +19,16 @@ case class Environment(
     primitives: Map[String, ITypeSR],
     codeMap: PackageCoordinateMap[ProgramS],
     typeByRune: Map[IRuneA, ITemplataType],
-    locals: List[LocalVariableA]) {
+    locals: List[LocalA]) {
 
-  val structsS: List[StructS] = codeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.structs)).toList
-  val interfacesS: List[InterfaceS] = codeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.interfaces)).toList
-  val implsS: List[ImplS] = codeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.impls)).toList
-  val functionsS: List[FunctionS] = codeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.implementedFunctions)).toList
-  val exportsS: List[ExportAsS] = codeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.exports)).toList
-  val imports: List[ImportS] = codeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.imports)).toList
+  val structsS: List[StructS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.structs)).toList
+  val interfacesS: List[InterfaceS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.interfaces)).toList
+  val implsS: List[ImplS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.impls)).toList
+  val functionsS: List[FunctionS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.implementedFunctions)).toList
+  val exportsS: List[ExportAsS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.exports)).toList
+  val imports: List[ImportS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.imports)).toList
 
-  def addLocals(newLocals: List[LocalVariableA]): Environment = {
+  def addLocals(newLocals: List[LocalA]): Environment = {
     Environment(maybeName, maybeParentEnv, primitives, codeMap, typeByRune, locals ++ newLocals)
   }
   def addRunes(newTypeByRune: Map[IRuneA, ITemplataType]): Environment = {
@@ -46,7 +46,7 @@ case class Environment(
       case _ => vimpl()
     }
 
-//    val envNameSteps = maybeName.map(_.steps).getOrElse(List())
+//    val envNameSteps = maybeName.map(_.steps).getOrElse(List.empty)
 //
 //    // See MINAAN for what we're doing here.
 //    absoluteNameEndsWithImpreciseName(absoluteName, needleImpreciseNameS) match {
@@ -86,7 +86,7 @@ case class Environment(
       return (nearPrimitives, nearStructs.toList, nearInterfaces.toList)
     }
     maybeParentEnv match {
-      case None => (None, List(), List())
+      case None => (None, List.empty, List.empty)
       case Some(parentEnv) => parentEnv.lookupType(needleImpreciseNameS)
     }
   }
@@ -100,7 +100,7 @@ case class Environment(
       return (nearStructs.toList, nearInterfaces.toList)
     }
     maybeParentEnv match {
-      case None => (List(), List())
+      case None => (List.empty, List.empty)
       case Some(parentEnv) => parentEnv.lookupType(name)
     }
   }
@@ -143,6 +143,7 @@ object Astronomer {
   val primitives =
     Map(
       "int" -> KindTypeSR,
+      "i64" -> KindTypeSR,
       "str" -> KindTypeSR,
       "bool" -> KindTypeSR,
       "float" -> KindTypeSR,
@@ -204,7 +205,7 @@ object Astronomer {
       case LambdaStructNameS(_) => return KindTemplataType
       case ImplNameS(_, _) => vwat()
       case LetNameS(_) => vwat()
-      case UnnamedLocalNameS(_) => vwat()
+//      case UnnamedLocalNameS(_) => vwat()
       case ClosureParamNameS() => vwat()
       case MagicParamNameS(_) => vwat()
       case CodeVarNameS(_) => vwat()
@@ -303,7 +304,7 @@ object Astronomer {
     }
 
     val (conclusions, rulesA) =
-      makeRuleTyper().solve(astrouts, env, rules, rangeS, List(), Some(localRunesA ++ knowableRunesA)) match {
+      makeRuleTyper().solve(astrouts, env, rules, rangeS, List.empty, Some(localRunesA ++ knowableRunesA)) match {
         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(rangeS, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
@@ -348,7 +349,7 @@ object Astronomer {
       case ExportS(packageCoordinate) => List(ExportA(packageCoordinate))
       case ExternS(packageCoordinate) => List(ExternA(packageCoordinate))
       case PureS => List(PureA)
-      case BuiltinS(_) => List()
+      case BuiltinS(_) => List.empty
       case x => vimpl(x.toString)
     })
   }
@@ -371,7 +372,7 @@ object Astronomer {
     }
 
     val (conclusions, rulesA) =
-      makeRuleTyper().solve(astrouts, env, rules, range, List(), Some(knowableRunesA ++ localRunesA)) match {
+      makeRuleTyper().solve(astrouts, env, rules, range, List.empty, Some(knowableRunesA ++ localRunesA)) match {
         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(range, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
@@ -415,12 +416,12 @@ object Astronomer {
     }
 
     val (conclusionsForRulesFromStructDirection, rulesFromStructDirectionA) =
-      makeRuleTyper().solve(astrouts, env, rulesFromStructDirection, range, List(), Some(knowableRunesA ++ localRunesA)) match {
+      makeRuleTyper().solve(astrouts, env, rulesFromStructDirection, range, List.empty, Some(knowableRunesA ++ localRunesA)) match {
         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(range, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
     val (conclusionsForRulesFromInterfaceDirection, rulesFromInterfaceDirectionA) =
-      makeRuleTyper().solve(astrouts, env, rulesFromInterfaceDirection, range, List(), Some(knowableRunesA ++ localRunesA)) match {
+      makeRuleTyper().solve(astrouts, env, rulesFromInterfaceDirection, range, List.empty, Some(knowableRunesA ++ localRunesA)) match {
         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(range, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
@@ -446,7 +447,7 @@ object Astronomer {
     val rulesS = List(EqualsSR(range, TypedSR(range, runeS, KindTypeSR), TemplexSR(templexS)))
 
     val (conclusions, rulesA) =
-      makeRuleTyper().solve(astrouts, env, rulesS, range, List(), Some(Set(runeA))) match {
+      makeRuleTyper().solve(astrouts, env, rulesS, range, List.empty, Some(Set(runeA))) match {
         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(range, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
@@ -460,8 +461,7 @@ object Astronomer {
   }
 
   def translateAtom(env: Environment, atomS: AtomSP): AtomAP = {
-    val AtomSP(range, CaptureS(nameS, variability), virtualityS, coordRuneS, destructureS) = atomS
-    val nameA = translateVarNameStep(nameS)
+    val AtomSP(range, maybeCaptureS, virtualityS, coordRuneS, destructureS) = atomS
 
     val virtualityA =
       virtualityS.map({
@@ -473,9 +473,17 @@ object Astronomer {
 
     val destructureA = destructureS.map(_.map(translateAtom(env, _)))
 
-    val local = env.locals.find(_.varName == nameA).get
+    val maybeCaptureA =
+      maybeCaptureS match {
+        case None => None
+        case Some(CaptureS(nameS)) => {
+          val nameA = translateVarNameStep(nameS)
+          val local = env.locals.find(_.varName == nameA).get
+          Some(local)
+        }
+      }
 
-    AtomAP(range, local, virtualityA, coordRuneA, destructureA)
+    AtomAP(range, maybeCaptureA, virtualityA, coordRuneA, destructureA)
   }
 
   def translateFunction(astrouts: AstroutsBox, outerEnv: Environment, functionS: FunctionS): FunctionA = {
@@ -487,15 +495,14 @@ object Astronomer {
 
     val locals =
       bodyS match {
-        case CodeBody1(body) => body.block.locals.map(ExpressionAstronomer.translateLocalVariable)
+        case CodeBodyS(body) => body.block.locals.map(ExpressionAstronomer.translateLocalVariable)
         case _ => {
           // We make some LocalVariableA here to appease translateParameter which expects some locals in the env.
-          paramsS.map(_.pattern.name)
+          paramsS.flatMap(_.pattern.name)
             .map({
-              case CaptureS(name, variability) => {
-                LocalVariableA(
+              case CaptureS(name) => {
+                LocalA(
                   Astronomer.translateVarNameStep(name),
-                  variability,
                   NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed)
               }
             })
@@ -506,7 +513,7 @@ object Astronomer {
     val paramsA = paramsS.map(translateParameter(env, _))
 
     val (conclusions, rulesA) =
-      makeRuleTyper().solve(astrouts, env, templateRules, rangeS, List(), Some(localRunesA)) match {
+      makeRuleTyper().solve(astrouts, env, templateRules, rangeS, List.empty, Some(localRunesA)) match {
         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => {
           ErrorReporter.report(CouldntSolveRulesA(rangeS, rtsf))
         }
@@ -541,12 +548,12 @@ object Astronomer {
       bodyA)
   }
 
-  def translateBody(astrouts: AstroutsBox, env: Environment, body: IBody1): IBodyA = {
+  def translateBody(astrouts: AstroutsBox, env: Environment, body: IBodyS): IBodyA = {
     body match {
-      case ExternBody1 => ExternBodyA
-      case AbstractBody1 => AbstractBodyA
-      case GeneratedBody1(generatorId) => GeneratedBodyA(generatorId)
-      case CodeBody1(BodySE(range, closuredNamesS, blockS)) => {
+      case ExternBodyS => ExternBodyA
+      case AbstractBodyS => AbstractBodyA
+      case GeneratedBodyS(generatorId) => GeneratedBodyA(generatorId)
+      case CodeBodyS(BodySE(range, closuredNamesS, blockS)) => {
         val blockA = ExpressionAstronomer.translateBlock(env, astrouts, blockS)
         CodeBodyA(BodyAE(range, closuredNamesS.map(translateVarNameStep), blockA))
       }
@@ -628,7 +635,7 @@ object Astronomer {
       case LambdaStructNameS(lambdaName) => LambdaStructNameA(translateLambdaNameStep(lambdaName))
       case i @ ImplNameS(_, _) => translateImplName(i)
       case LetNameS(codeLocation) => LetNameA(codeLocation)
-      case UnnamedLocalNameS(codeLocation) => UnnamedLocalNameA(codeLocation)
+//      case UnnamedLocalNameS(codeLocation) => UnnamedLocalNameA(codeLocation)
       case ClosureParamNameS() => ClosureParamNameA()
       case MagicParamNameS(codeLocation) => MagicParamNameA(codeLocation)
       case CodeVarNameS(name) => CodeVarNameA(name)
@@ -663,7 +670,7 @@ object Astronomer {
 
   def translateVarNameStep(name: IVarNameS): IVarNameA = {
     name match {
-      case UnnamedLocalNameS(codeLocation) => UnnamedLocalNameA(codeLocation)
+//      case UnnamedLocalNameS(codeLocation) => UnnamedLocalNameA(codeLocation)
       case ClosureParamNameS() => ClosureParamNameA()
       case ConstructingMemberNameS(n) => ConstructingMemberNameA(n)
       case MagicParamNameS(magicParamNumber) => MagicParamNameA(magicParamNumber)
@@ -684,7 +691,7 @@ object Astronomer {
   ProgramA = {
     val astrouts = AstroutsBox(Astrouts(Map()))
 
-    val env = Environment(None, None, primitives, codeMap, Map(), List())
+    val env = Environment(None, None, primitives, codeMap, Map(), List.empty)
 
     val structsA = env.structsS.map(translateStruct(astrouts, env, _))
 
@@ -759,11 +766,11 @@ object Astronomer {
         allPackages.map(paackage => {
           val contents =
             ProgramA(
-              packageToStructsA.getOrElse(paackage, List()),
-              packageToInterfacesA.getOrElse(paackage, List()),
-              packageToImplsA.getOrElse(paackage, List()),
-              packageToFunctionsA.getOrElse(paackage, List()),
-              packageToExportsA.getOrElse(paackage, List()))
+              packageToStructsA.getOrElse(paackage, List.empty),
+              packageToInterfacesA.getOrElse(paackage, List.empty),
+              packageToImplsA.getOrElse(paackage, List.empty),
+              packageToFunctionsA.getOrElse(paackage, List.empty),
+              packageToExportsA.getOrElse(paackage, List.empty))
           (paackage -> contents)
         }).toMap
       val moduleToPackageToContents =

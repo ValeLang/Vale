@@ -2,7 +2,7 @@ package net.verdagon.vale.templar.infer
 
 import net.verdagon.vale.astronomer.ITemplataType
 import net.verdagon.vale.scout.RangeS
-import net.verdagon.vale.templar.IRune2
+import net.verdagon.vale.templar.IRuneT
 import net.verdagon.vale.templar.templata.ITemplata
 import net.verdagon.vale.templar.types.ParamFilter
 import net.verdagon.vale.vassert
@@ -23,8 +23,8 @@ package object infer {
 
   sealed trait IInferSolveResult
   case class InferSolveFailure(
-    typeByRune: Map[IRune2, ITemplataType],
-    directInputs: Map[IRune2, ITemplata],
+    typeByRune: Map[IRuneT, ITemplataType],
+    directInputs: Map[IRuneT, ITemplata],
     maybeParamInputs: Option[List[ParamFilter]],
     inferences: Inferences,
     range: RangeS,

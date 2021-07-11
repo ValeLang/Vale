@@ -25,11 +25,11 @@ Ref translateDestructure(
 
   buildFlare(FL(), globalState, functionState, builder);
 
-  auto structReferend =
-      dynamic_cast<StructReferend *>(destructureM->structType->referend);
-  assert(structReferend);
+  auto structKind =
+      dynamic_cast<StructKind *>(destructureM->structType->kind);
+  assert(structKind);
 
-  auto structM = globalState->program->getStruct(structReferend->fullName);
+  auto structM = globalState->program->getStruct(structKind);
 
   for (int i = 0; i < structM->members.size(); i++) {
     buildFlare(FL(), globalState, functionState, builder);

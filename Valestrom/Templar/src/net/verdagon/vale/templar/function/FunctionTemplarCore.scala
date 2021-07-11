@@ -9,7 +9,7 @@ import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.templata.TemplataTemplar
-import net.verdagon.vale.{IProfiler, vassert, vassertSome, vcheck, vcurious, vfail, vimpl}
+import net.verdagon.vale.{IProfiler, vassert, vassertOne, vassertSome, vcheck, vcurious, vfail, vimpl, vwat}
 
 import scala.collection.immutable.{List, Set}
 
@@ -21,12 +21,22 @@ class FunctionTemplarCore(
     convertHelper: ConvertHelper,
     delegate: IFunctionTemplarDelegate) {
   val bodyTemplar = new BodyTemplar(opts, profiler, newTemplataStore, templataTemplar, convertHelper, new IBodyTemplarDelegate {
-    override def evaluateBlockStatements(temputs: Temputs, startingFate: FunctionEnvironment, fate: FunctionEnvironmentBox, exprs: List[IExpressionAE]): (List[ReferenceExpression2], Set[Coord]) = {
+    override def evaluateBlockStatements(
+        temputs: Temputs,
+        startingFate: FunctionEnvironment,
+        fate: FunctionEnvironmentBox,
+        exprs: List[IExpressionAE]
+    ): (ReferenceExpressionTE, Set[CoordT]) = {
       delegate.evaluateBlockStatements(temputs, startingFate, fate, exprs)
     }
 
-    override def nonCheckingTranslateList(temputs: Temputs, fate: FunctionEnvironmentBox, patterns1: List[AtomAP], patternInputExprs2: List[ReferenceExpression2]): List[ReferenceExpression2] = {
-      delegate.nonCheckingTranslateList(temputs, fate, patterns1, patternInputExprs2)
+    override def translatePatternList(
+        temputs: Temputs,
+        fate: FunctionEnvironmentBox,
+        patterns1: List[AtomAP],
+        patternInputExprs2: List[ReferenceExpressionTE]
+    ): ReferenceExpressionTE = {
+      delegate.translatePatternList(temputs, fate, patterns1, patternInputExprs2)
     }
   })
 
@@ -38,8 +48,8 @@ class FunctionTemplarCore(
     startingFullEnv: FunctionEnvironment,
       temputs: Temputs,
     callRange: RangeS,
-      params2: List[Parameter2]):
-  (FunctionHeader2) = {
+      params2: List[ParameterT]):
+  (FunctionHeaderT) = {
     val fullEnv = FunctionEnvironmentBox(startingFullEnv)
 
 
@@ -47,18 +57,73 @@ class FunctionTemplarCore(
 
     val isDestructor =
       params2.nonEmpty &&
-      params2.head.tyype.ownership == Own &&
+      params2.head.tyype.ownership == OwnT &&
       (startingFullEnv.fullName.last match {
-        case FunctionName2(humanName, _, _) if humanName == CallTemplar.MUT_DESTRUCTOR_NAME => true
+        case FunctionNameT(humanName, _, _) if humanName == CallTemplar.MUT_DESTRUCTOR_NAME => true
         case _ => false
       })
+
+    val attributesWithoutExport =
+      startingFullEnv.function.attributes.filter({
+        case ExportA(_) => false
+        case _ => true
+      })
+    val maybeExport =
+      startingFullEnv.function.attributes.collectFirst { case e@ExportA(_) => e }
+
 
     val header =
       startingFullEnv.function.body match {
         case CodeBodyA(body) => {
-          val (header, body2) =
+          val attributesA = translateAttributes(attributesWithoutExport)
+
+          val createHeader =
+            (env: FunctionEnvironmentBox, temputs: Temputs, returnCoord: CoordT) => {
+              val header = FunctionHeaderT(fullEnv.fullName, attributesA, params2, returnCoord, Some(startingFullEnv.function));
+              temputs.declareFunctionReturnType(header.toSignature, returnCoord)
+              header
+            }
+
+          val maybeExplicitReturnCoord =
+            startingFullEnv.function.maybeRetCoordRune match {
+              case Some(retCoordRune) => {
+                val maybeRetTemplata =
+                    startingFullEnv.getNearestTemplataWithAbsoluteName2(
+                      NameTranslator.translateRune(retCoordRune),
+                      Set(TemplataLookupContext))
+                val retCoord =
+                  maybeRetTemplata match {
+                    case None => vwat()
+                    case Some(CoordTemplata(retCoord)) => retCoord
+                    case Some(_) => vwat()
+                  }
+                Some(retCoord)
+              }
+              case None => None
+            }
+
+          val maybePreKnownHeader =
+            maybeExplicitReturnCoord match {
+              case None => None
+              case Some(explicitReturnCoord) => {
+                fullEnv.setReturnType(Some(explicitReturnCoord))
+                Some(createHeader(fullEnv, temputs, explicitReturnCoord))
+              }
+            }
+
+          val (maybeInferredReturnCoord, body2) =
             bodyTemplar.declareAndEvaluateFunctionBody(
-              fullEnv, temputs, BFunctionA(startingFullEnv.function, body), params2, isDestructor)
+              fullEnv, temputs, BFunctionA(startingFullEnv.function, body), maybeExplicitReturnCoord, params2, isDestructor)
+
+          val maybePostKnownHeader =
+            maybeInferredReturnCoord match {
+              case None => None
+              case Some(explicitReturnCoord) => {
+                Some(createHeader(fullEnv, temputs, explicitReturnCoord))
+              }
+            }
+
+          val header = vassertOne(maybePreKnownHeader.toList ++ maybePostKnownHeader.toList)
 
           // Funny story... let's say we're current instantiating a constructor,
           // for example MySome<T>().
@@ -78,13 +143,13 @@ class FunctionTemplarCore(
             fullEnv.locals
               .drop(startingFullEnv.locals.size)
               .collect({
-                case x @ ReferenceLocalVariable2(_, _, _) => x
-                case x @ AddressibleLocalVariable2(_, _, _) => x
+                case x @ ReferenceLocalVariableT(_, _, _) => x
+                case x @ AddressibleLocalVariableT(_, _, _) => x
               })
 
           temputs.lookupFunction(header.toSignature) match {
             case None => {
-              val function2 = Function2(header, introducedLocals, body2);
+              val function2 = FunctionT(header, introducedLocals, body2);
               temputs.addFunction(function2)
               (function2.header)
             }
@@ -128,7 +193,7 @@ class FunctionTemplarCore(
           (header)
         }
         case GeneratedBodyA(generatorId) => {
-          val signature2 = Signature2(fullEnv.fullName);
+          val signature2 = SignatureT(fullEnv.fullName);
           val maybeRetTemplata =
             startingFullEnv.function.maybeRetCoordRune match {
               case None => (None)
@@ -175,10 +240,25 @@ class FunctionTemplarCore(
         }
       }
 
+    maybeExport match {
+      case None =>
+      case Some(exportPackageCoord) => {
+        val exportedName =
+          startingFullEnv.fullName.last match {
+            case FunctionNameT(humanName, _, _) => humanName
+            case _ => vfail("Can't export something that doesn't have a human readable name!")
+          }
+        temputs.addFunctionExport(
+          startingFullEnv.function.range,
+          header.toPrototype,
+          exportPackageCoord.packageCoord,
+          exportedName)
+      }
+    }
 
     if (header.attributes.contains(Pure2)) {
       header.params.foreach(param => {
-        if (param.tyype.permission != Readonly) {
+        if (param.tyype.permission != ReadonlyT) {
           throw CompileErrorExceptionT(NonReadonlyReferenceFoundInPureFunctionParameter(startingFullEnv.function.range, param.name))
         }
       })
@@ -187,15 +267,23 @@ class FunctionTemplarCore(
     header
   }
 
+  def translateAttributes(attributesA: List[IFunctionAttributeA]) = {
+    attributesA.map({
+      //      case ExportA(packageCoord) => Export2(packageCoord)
+      case UserFunctionA => UserFunction2
+      case PureA => Pure2
+    })
+  }
+
   def makeExternFunction(
       temputs: Temputs,
-      fullName: FullName2[IFunctionName2],
+      fullName: FullNameT[IFunctionNameT],
       range: RangeS,
       attributes: List[IFunctionAttribute2],
-      params2: List[Parameter2],
-      returnType2: Coord,
+      params2: List[ParameterT],
+      returnType2: CoordT,
       maybeOrigin: Option[FunctionA]):
-  (FunctionHeader2) = {
+  (FunctionHeaderT) = {
     fullName.last match {
 //      case FunctionName2("===", templateArgs, paramTypes) => {
 //        vcheck(templateArgs.size == 1, () => CompileErrorExceptionT(RangedInternalErrorT(range, "=== should have 1 template params!")))
@@ -207,20 +295,20 @@ class FunctionTemplarCore(
 //        vassert(rightParamType == tyype)
 //
 //      }
-      case FunctionName2(humanName, List(), params) => {
-        val header = FunctionHeader2(fullName, Extern2(range.file.packageCoordinate) :: attributes, params2, returnType2, maybeOrigin)
+      case FunctionNameT(humanName, Nil, params) => {
+        val header = FunctionHeaderT(fullName, Extern2(range.file.packageCoordinate) :: attributes, params2, returnType2, maybeOrigin)
 
-        val externFullName = FullName2(List(), ExternFunctionName2(humanName, params))
-        val externPrototype = Prototype2(externFullName, header.returnType)
-        temputs.addExternPrototype(range.file.packageCoordinate, externPrototype)
+        val externFullName = FullNameT(fullName.packageCoord, List.empty, ExternFunctionNameT(humanName, params))
+        val externPrototype = PrototypeT(externFullName, header.returnType)
+        temputs.addFunctionExtern(range, externPrototype, fullName.packageCoord, humanName)
 
         val argLookups =
-          header.params.zipWithIndex.map({ case (param2, index) => ArgLookup2(index, param2.tyype) })
+          header.params.zipWithIndex.map({ case (param2, index) => ArgLookupTE(index, param2.tyype) })
         val function2 =
-          Function2(
+          FunctionT(
             header,
-            List(),
-            Return2(ExternFunctionCall2(externPrototype, argLookups)))
+            List.empty,
+            ReturnTE(ExternFunctionCallTE(externPrototype, argLookups)))
 
         temputs.declareFunctionReturnType(header.toSignature, header.returnType)
         temputs.addFunction(function2)
@@ -243,28 +331,27 @@ class FunctionTemplarCore(
     env: FunctionEnvironment,
     temputs: Temputs,
     origin: Option[FunctionA],
-    params2: List[Parameter2],
-    returnReferenceType2: Coord):
-  (FunctionHeader2) = {
-    vassert(params2.exists(_.virtuality == Some(Abstract2)))
+    params2: List[ParameterT],
+    returnReferenceType2: CoordT):
+  (FunctionHeaderT) = {
+    vassert(params2.exists(_.virtuality == Some(AbstractT$)))
     val header =
-      FunctionHeader2(
+      FunctionHeaderT(
         env.fullName,
-        List(),
+        List.empty,
         params2,
         returnReferenceType2,
         origin)
     val function2 =
-      Function2(
+      FunctionT(
         header,
-        List(),
-        Block2(
-          List(
-            Return2(
-              InterfaceFunctionCall2(
+        List.empty,
+        BlockTE(
+            ReturnTE(
+              InterfaceFunctionCallTE(
                 header,
                 header.returnType,
-                header.params.zipWithIndex.map({ case (param2, index) => ArgLookup2(index, param2.tyype) }))))))
+                header.params.zipWithIndex.map({ case (param2, index) => ArgLookupTE(index, param2.tyype) })))))
 
       temputs
         .declareFunctionReturnType(header.toSignature, returnReferenceType2)
@@ -277,31 +364,30 @@ class FunctionTemplarCore(
     env: FunctionEnvironment,
     temputs: Temputs,
     maybeOriginFunction1: Option[FunctionA],
-    structDef2: StructDefinition2,
-    interfaceRef2: InterfaceRef2,
-    structDestructor: Prototype2,
+    structDefT: StructDefinitionT,
+    interfaceTT: InterfaceTT,
+    structDestructor: PrototypeT,
   ):
-  (FunctionHeader2) = {
-    val ownership = if (structDef2.mutability == Mutable) Own else Share
-    val permission = if (structDef2.mutability == Mutable) Readwrite else Readonly
-    val structRef2 = structDef2.getRef
-    val structType2 = Coord(ownership, permission, structRef2)
+  (FunctionHeaderT) = {
+    val ownership = if (structDefT.mutability == MutableT) OwnT else ShareT
+    val permission = if (structDefT.mutability == MutableT) ReadwriteT else ReadonlyT
+    val structTT = structDefT.getRef
+    val structType2 = CoordT(ownership, permission, structTT)
 
     val destructor2 =
-      Function2(
-        FunctionHeader2(
+      FunctionT(
+        FunctionHeaderT(
           env.fullName,
-          List(),
-          List(Parameter2(CodeVarName2("this"), Some(Override2(interfaceRef2)), structType2)),
-          Coord(Share, Readonly, Void2()),
+          List.empty,
+          List(ParameterT(CodeVarNameT("this"), Some(OverrideT(interfaceTT)), structType2)),
+          CoordT(ShareT, ReadonlyT, VoidT()),
           maybeOriginFunction1),
-        List(),
-        Block2(
-          List(
-            Return2(
-              FunctionCall2(
+        List.empty,
+        BlockTE(
+            ReturnTE(
+              FunctionCallTE(
                 structDestructor,
-                List(ArgLookup2(0, structType2)))))))
+                List(ArgLookupTE(0, structType2))))))
 
     // If this fails, then the signature the FunctionTemplarMiddleLayer made for us doesn't
     // match what we just made

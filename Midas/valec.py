@@ -65,19 +65,22 @@ class ValeCompiler:
               o_files: List[Path],
               o_files_dir: Path,
               exe_file: Path,
+              census: bool,
               include_path: Optional[Path]) -> subprocess.CompletedProcess:
         if self.windows:
-            args = [
-                "cl.exe", '/ENTRY:"main"', '/SUBSYSTEM:CONSOLE', "/Fe:" + str(exe_file),
-                "/fsanitize=address", "clang_rt.asan_dynamic-x86_64.lib", "clang_rt.asan_dynamic_runtime_thunk-x86_64.lib"
-            ] + list(str(x) for x in o_files)
+            args = ["cl.exe", '/ENTRY:"main"', '/SUBSYSTEM:CONSOLE', "/Fe:" + str(exe_file)]
+            if census:
+                args = args + ["/fsanitize=address", "clang_rt.asan_dynamic-x86_64.lib", "clang_rt.asan_dynamic_runtime_thunk-x86_64.lib"]
+            args = args + list(str(x) for x in o_files)
             if include_path is not None:
                 args.append("-I" + str(include_path))
             return procrun(args)
         else:
             clang = "clang-11" if shutil.which("clang-11") is not None else "clang"
-            # "-fsanitize=address", "-fno-omit-frame-pointer", "-g",
-            args = [clang, "-O3", "-lm", "-o", str(exe_file)] + list(str(x) for x in o_files)
+            args = [clang, "-O3", "-lm", "-o", str(exe_file)]
+            if census:
+                args = args + ["-fsanitize=address", "-fsanitize=leak", "-fno-omit-frame-pointer", "-g"]
+            args = args + list(str(x) for x in o_files)
             if include_path is not None:
                 args.append("-I" + str(include_path))
             return procrun(args)
@@ -175,6 +178,7 @@ class ValeCompiler:
 
         print_help = False
         print_version = False
+        census = False
         valestrom_options = []
         midas_options = []
         if "--flares" in args:
@@ -187,6 +191,7 @@ class ValeCompiler:
             args.remove("--gen-heap")
             midas_options.append("--gen-heap")
         if "--census" in args:
+            census = True
             args.remove("--census")
             midas_options.append("--census")
         if "--print-mem-overhead" in args:
@@ -328,13 +333,15 @@ class ValeCompiler:
                     if len(parts) != 2:
                         print("Unrecognized input: " + arg)
                         sys.exit(22)
-                    module_name = parts[0]
+                    project_name = parts[0]
                     contents_path = Path(parts[1]).expanduser()
                     if str(contents_path).endswith(".vale"):
-                        user_valestrom_inputs.append([module_name, contents_path])
+                        user_valestrom_inputs.append([project_name, contents_path])
                     elif str(contents_path).endswith(".vpst"):
-                        user_valestrom_inputs.append([module_name, contents_path])
+                        user_valestrom_inputs.append([project_name, contents_path])
                     elif str(contents_path).endswith(".c"):
+                        user_c_files.append(contents_path)
+                    elif str(contents_path).endswith(".a"):
                         user_c_files.append(contents_path)
                     elif contents_path.is_dir():
                         # for vale_file in contents_path.rglob('*.vale'):
@@ -343,9 +350,9 @@ class ValeCompiler:
                         #         if ("export" in contents) or ("extern" in contents):
                         #             print("Contains export: " + str(vale_file))
                             # user_vale_files.append(Path(vale_file))
-                        user_valestrom_inputs.append([module_name, contents_path])
+                        user_valestrom_inputs.append([project_name, contents_path])
                     else:
-                        print("Unrecognized input: " + arg + " (should be module name, then a colon, then a directory or file ending in .vale, .vpst, .vast, .c)")
+                        print("Unrecognized input: " + arg + " (should be project name, then a colon, then a directory or file ending in .vale, .vpst, .vast, .c)")
                         sys.exit(22)
                 elif str(arg).endswith(".vast"):
                     user_vast_files.append(Path(arg))
@@ -395,39 +402,50 @@ class ValeCompiler:
 
             with open(str(vast_file), 'r') as vast:
                 json_root = json.loads(vast.read())
-                if "moduleNameToExternedNameToExtern" not in json_root:
-                    print("Couldn't find moduleNameToExternedNameToExtern in .vast!")
+                if "packages" not in json_root:
+                    print("Couldn't find packages in .vast!")
                     sys.exit(1)
-                module_name_to_externed_name_to_extern = json_root["moduleNameToExternedNameToExtern"]
 
                 package_coords_with_externs = []
 
-                for module_name_to_externed_name_to_extern_entry in module_name_to_externed_name_to_extern:
-                    module_name = module_name_to_externed_name_to_extern_entry["moduleName"]
-                    if module_name == "":
-                        # We have lots of externs for adding, subtracting, etc. They all use the "" module.
-                        continue
+                packages = json_root["packages"]
+                for package_entry in packages:
+                    package = package_entry["package"]
+                    externed_name_to_function = package["externNameToFunction"]
 
-                    externed_name_to_extern = module_name_to_externed_name_to_extern_entry["externedNameToExtern"]
-                    for externed_name_to_extern_entry in externed_name_to_extern:
+                    # for project_name_to_externed_name_to_extern_entry in project_name_to_externed_name_to_extern:
+                    #     project_name = project_name_to_externed_name_to_extern_entry["projectName"]
+                    #     if project_name == "":
+                    #         # We have lots of externs for adding, subtracting, etc. They all use the "" project.
+                    #         continue
+                    #externed_name_to_extern = project_name_to_externed_name_to_extern_entry["externedNameToExtern"]
+                    for externed_name_to_function_entry in externed_name_to_function:
                         # externed_name = externed_name_to_extern_entry["externedName"]
-                        module = externed_name_to_extern_entry["module"]
-                        package_steps = externed_name_to_extern_entry["packageSteps"]
+                        externName = externed_name_to_function_entry["externName"]
+                        prototype = externed_name_to_function_entry["prototype"]
+                        prototype_package_coord = prototype["name"]["packageCoordinate"]
+
+                        project_name = prototype_package_coord["project"]
+                        package_steps = prototype_package_coord["packageSteps"]
                         # full_name = externed_name_to_extern_entry["fullName"]
 
-                        package_coords_with_externs.append([module, package_steps])
+                        if project_name == "":
+                            # We have lots of externs for adding, subtracting, etc. They all use the "" project.
+                            continue
+
+                        package_coords_with_externs.append([project_name, package_steps])
 
                 directories_with_c = []
                 for package_coord in package_coords_with_externs:
-                    directory_for_module = None
+                    directory_for_project = None
                     for user_valestrom_input in user_valestrom_inputs:
                         if user_valestrom_input[0] == package_coord[0]:
-                            directory_for_module = user_valestrom_input[1]
-                    if directory_for_module == None:
-                        print("Couldn't find directory for module: " + package_coord[0])
+                            directory_for_project = user_valestrom_input[1]
+                    if directory_for_project == None:
+                        print("Couldn't find directory for project: " + package_coord[0])
                         sys.exit(1)
 
-                    native_directory = directory_for_module
+                    native_directory = directory_for_project
                     for package_step in package_coord[1]:
                         native_directory = native_directory / package_step
                     native_directory = native_directory / "native"
@@ -464,6 +482,7 @@ class ValeCompiler:
                 [str(n) for n in clang_inputs],
                 self.build_dir,
                 self.build_dir / exe_file,
+                census,
                 self.build_dir if add_exports_include_path else None)
             # print(proc.stdout)
             # print(proc.stderr)

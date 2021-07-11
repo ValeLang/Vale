@@ -70,6 +70,24 @@ fn each<E, F>(list &!List<E>, func F) void {
   }
 }
 
+fn eachI<E, F>(list &List<E>, func F) void {
+  i! = 0;
+  l = len(&list);
+  while (i < l) {
+    func(i, list.get(i));
+    set i = i + 1;
+  }
+}
+
+fn eachI<E, F>(list &!List<E>, func F) void {
+  i! = 0;
+  l = len(&list);
+  while (i < l) {
+    func(i, list.get(i));
+    set i = i + 1;
+  }
+}
+
 fn contains<E>(list &List<E>, element E) bool {
   i! = 0;
   l = len(&list);

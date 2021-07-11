@@ -34,13 +34,22 @@ object ParsedLoader {
   }
   def getStringField(jobj: JObject, fieldName: String): String = {
     getField(jobj, fieldName) match {
-      case JString(s) => s
+      case JString(s) => {
+        s
+      }
       case _ => throw BadVPSTException(BadVPSTError("Field " + fieldName + " wasn't a string!"))
     }
   }
-  def getIntegerField(jobj: JObject, fieldName: String): Int = {
+  def getIntField(jobj: JObject, fieldName: String): Int = {
     getField(jobj, fieldName) match {
       case JInt(s) => s.toInt
+      case _ => throw BadVPSTException(BadVPSTError("Field " + fieldName + " wasn't a number!"))
+    }
+  }
+  def getLongField(jobj: JObject, fieldName: String): Long = {
+    getField(jobj, fieldName) match {
+      case JInt(s) => s.toLong
+      case JString(s) if s.toLong.toString == s => s.toLong
       case _ => throw BadVPSTException(BadVPSTError("Field " + fieldName + " wasn't a number!"))
     }
   }
@@ -74,8 +83,8 @@ object ParsedLoader {
   def loadRange(jobj: JObject): Range = {
     expectType(jobj, "Range")
     Range(
-      getIntegerField(jobj, "begin"),
-      getIntegerField(jobj, "end"))
+      getIntField(jobj, "begin"),
+      getIntField(jobj, "end"))
   }
   def loadName(jobj: JObject): NameP = {
     expectType(jobj, "Name")
@@ -194,8 +203,7 @@ object ParsedLoader {
   def loadCapture(jobj: JObject): CaptureP = {
     CaptureP(
       loadRange(getObjectField(jobj, "range")),
-      loadCaptureName(getObjectField(jobj, "captureName")),
-      loadVariability(getObjectField(jobj, "variability")))
+      loadCaptureName(getObjectField(jobj, "captureName")))
   }
 
   def loadCaptureName(jobj: JObject): ICaptureNameP = {
@@ -275,23 +283,24 @@ object ParsedLoader {
         MagicParamLookupPE(
           loadRange(getObjectField(jobj, "range")))
       }
-      case "IntLiteral" => {
-        IntLiteralPE(
+      case "ConstantInt" => {
+        ConstantIntPE(
           loadRange(getObjectField(jobj, "range")),
-          getIntegerField(jobj, "value"))
+          getLongField(jobj, "value"),
+          getIntField(jobj, "bits"))
       }
-      case "FloatLiteral" => {
-        FloatLiteralPE(
+      case "ConstantFloat" => {
+        ConstantFloatPE(
           loadRange(getObjectField(jobj, "range")),
           getFloatField(jobj, "value"))
       }
-      case "StrLiteral" => {
-        StrLiteralPE(
+      case "ConstantStr" => {
+        ConstantStrPE(
           loadRange(getObjectField(jobj, "range")),
           getStringField(jobj, "value"))
       }
-      case "BoolLiteral" => {
-        BoolLiteralPE(
+      case "ConstantBool" => {
+        ConstantBoolPE(
           loadRange(getObjectField(jobj, "range")),
           getBooleanField(jobj, "value"))
       }
@@ -644,7 +653,7 @@ object ParsedLoader {
       case "IntT" => {
         IntPT(
           loadRange(getObjectField(jobj, "range")),
-          getIntegerField(jobj, "inner"))
+          getLongField(jobj, "inner"))
       }
       case "AnonymousRuneT" => {
         AnonymousRunePT(

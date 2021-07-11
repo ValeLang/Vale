@@ -61,7 +61,7 @@ class ErrorTests extends FunSuite with Matchers  {
   test("Report type not found") {
     val compilation =
       new Compilation(
-      """fn main() {
+      """fn main() export {
         |  a Bork = 5;
         |}
         |""".stripMargin)
@@ -70,10 +70,7 @@ class ErrorTests extends FunSuite with Matchers  {
     compileProgramForError(compilation) match {
       case e @ CouldntFindTypeA(_, "Bork") => {
         val errorText = AstronomerErrorHumanizer.humanize(compilation.getFileMap(), e)
-        errorText shouldEqual
-          """test.vale:2:5: Couldn't find type `Bork`:
-            |  a Bork = 5;
-            |""".stripMargin
+        vassert(errorText.contains("Couldn't find type `Bork`"))
       }
     }
   }
@@ -85,7 +82,7 @@ class ErrorTests extends FunSuite with Matchers  {
           |fn moo<A>(x int) {
           |  42
           |}
-          |fn main() {
+          |fn main() export {
           |  moo();
           |}
           |""".stripMargin)

@@ -3,7 +3,7 @@ package net.verdagon.vale
 import com.sun.tools.javac.util.ArrayUtils
 import net.verdagon.vale.parser.ImmutableP
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.env.ReferenceLocalVariable2
+import net.verdagon.vale.templar.env.ReferenceLocalVariableT
 import net.verdagon.vale.templar.types._
 import net.verdagon.von.{VonBool, VonInt, VonStr}
 import org.scalatest.{FunSuite, Matchers}
@@ -18,7 +18,7 @@ class ArrayTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
   test("Simple static array and runtime index lookup") {
@@ -33,11 +33,11 @@ class ArrayTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case StaticSizedArrayLookup2(_,_,_,_, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,_,_, _, _) => {
       }
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) shouldEqual VonInt(4)
   }
 
   test("Unspecified-mutability static array from lambda defaults to mutable") {
@@ -52,64 +52,64 @@ class ArrayTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case StaticSizedArrayLookup2(_,_,arrayType, _, _, _) => {
-        arrayType.array.mutability shouldEqual Mutable
+      case StaticSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
+        arrayType.array.mutability shouldEqual MutableT
       }
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Immutable static array from lambda") {
-    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/immksafromcallable.vale"))
+    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/ssaimmfromcallable.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case StaticSizedArrayLookup2(_,_,arrayType, _, _, _) => {
-        arrayType.array.mutability shouldEqual Immutable
+      case StaticSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
+        arrayType.array.mutability shouldEqual ImmutableT
       }
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Mutable static array from lambda") {
-    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/mutksafromcallable.vale"))
+    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/ssamutfromcallable.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case StaticSizedArrayLookup2(_,_,arrayType, _, _, _) => {
-        arrayType.array.mutability shouldEqual Mutable
+      case StaticSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
+        arrayType.array.mutability shouldEqual MutableT
       }
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Immutable static array from values") {
-    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/immksafromvalues.vale"))
+    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/ssaimmfromvalues.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case StaticSizedArrayLookup2(_,_,arrayType, _, _, _) => {
-        arrayType.array.mutability shouldEqual Immutable
+      case StaticSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
+        arrayType.array.mutability shouldEqual ImmutableT
       }
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Mutable static array from values") {
-    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/mutksafromvalues.vale"))
+    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/ssamutfromvalues.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case StaticSizedArrayLookup2(_,_,arrayType, _, _, _) => {
-        arrayType.array.mutability shouldEqual Mutable
+      case StaticSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
+        arrayType.array.mutability shouldEqual MutableT
       }
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Unspecified-mutability runtime array from lambda defaults to mutable") {
@@ -124,38 +124,38 @@ class ArrayTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case UnknownSizeArrayLookup2(_,_,arrayType, _, _, _) => {
-        arrayType.array.mutability shouldEqual Mutable
+      case RuntimeSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
+        arrayType.array.mutability shouldEqual MutableT
       }
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Immutable runtime array from lambda") {
-    val compile = RunCompilation.test(Tests.loadExpected("programs/arrays/immusafromcallable.vale"))
+    val compile = RunCompilation.test(Tests.loadExpected("programs/arrays/rsaimmfromcallable.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case UnknownSizeArrayLookup2(_,_,arrayType, _, _, _) => {
-        arrayType.array.mutability shouldEqual Immutable
+      case RuntimeSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
+        arrayType.array.mutability shouldEqual ImmutableT
       }
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Mutable runtime array from lambda") {
-    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/mutusafromcallable.vale"))
+    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/rsamutfromcallable.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case UnknownSizeArrayLookup2(_,_,arrayType, _, _, _) => {
-        arrayType.array.mutability shouldEqual Mutable
+      case RuntimeSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
+        arrayType.array.mutability shouldEqual MutableT
       }
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   //m [<mut> 3 * [<mut> 3 * int]] = [mut][ [mut][1, 2, 3], [mut][4, 5, 6], [mut][7, 8, 9] ];
@@ -171,7 +171,7 @@ class ArrayTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
   test("Borrow arraysequence as a parameter") {
@@ -190,7 +190,7 @@ class ArrayTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) shouldEqual VonInt(4)
   }
 
   // the argument to __Array doesnt even have to be a struct or a lambda or an
@@ -209,10 +209,10 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     main.only({
-      case ConstructArray2(UnknownSizeArrayT2(RawArrayT2(Coord(Share, Readonly, Int2()), Immutable, _)), _, _, _) =>
+      case ConstructArrayTE(RuntimeSizedArrayTT(RawArrayTT(CoordT(ShareT, ReadonlyT, IntT(_)), ImmutableT, _)), _, _, _) =>
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
   test("array map with lambda") {
@@ -232,10 +232,10 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     main.only({
-      case ConstructArray2(UnknownSizeArrayT2(RawArrayT2(Coord(Share, Readonly, Int2()), Immutable, _)), _, _, _) =>
+      case ConstructArrayTE(RuntimeSizedArrayTT(RawArrayTT(CoordT(ShareT, ReadonlyT, IntT(_)), ImmutableT, _)), _, _, _) =>
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
   test("MakeArray map with struct") {
@@ -252,7 +252,7 @@ class ArrayTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
   test("MakeArray map with lambda") {
@@ -265,7 +265,7 @@ class ArrayTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
   test("array map with interface") {
@@ -280,10 +280,10 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("MakeImmArray")
     main.only({
-      case ConstructArray2(UnknownSizeArrayT2(RawArrayT2(Coord(Share, Readonly, Int2()), Immutable, _)), _, _, _) =>
+      case ConstructArrayTE(RuntimeSizedArrayTT(RawArrayTT(CoordT(ShareT, ReadonlyT, IntT(_)), ImmutableT, _)), _, _, _) =>
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
   test("Array map taking a closure which captures something") {
@@ -295,7 +295,7 @@ class ArrayTests extends FunSuite with Matchers {
           |  = a.3;
           |}
         """.stripMargin)
-    compile.evalForReferend(Vector()) shouldEqual VonInt(10)
+    compile.evalForKind(Vector()) shouldEqual VonInt(10)
   }
 
   test("Simple array map with runtime index lookup") {
@@ -320,7 +320,7 @@ class ArrayTests extends FunSuite with Matchers {
 //        |}
 //      """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
   test("Nested array") {
@@ -331,7 +331,7 @@ class ArrayTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(2)
+    compile.evalForKind(Vector()) shouldEqual VonInt(2)
   }
 
 
@@ -347,7 +347,7 @@ class ArrayTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
   test("Array with capture") {
@@ -364,10 +364,9 @@ class ArrayTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+    compile.evalForKind(Vector()) shouldEqual VonInt(7)
   }
 
-  // Known failure 2020-08-20
   test("Capture") {
     val compile = RunCompilation.test(
       """
@@ -389,7 +388,7 @@ class ArrayTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+    compile.evalForKind(Vector()) shouldEqual VonInt(7)
   }
 
 
@@ -415,7 +414,7 @@ class ArrayTests extends FunSuite with Matchers {
 //        |}
 //      """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
+    compile.evalForKind(Vector()) shouldEqual VonInt(1337)
   }
 
   test("Capture mutable array") {
@@ -424,7 +423,7 @@ class ArrayTests extends FunSuite with Matchers {
           |struct MyIntIdentity {}
           |impl IFunction1<mut, int, int> for MyIntIdentity;
           |fn __call(this &!MyIntIdentity impl IFunction1<mut, int, int>, i int) int { i }
-          |fn main() {
+          |fn main() export {
           |  m = MyIntIdentity();
           |  arr = MakeArray(10, &!m);
           |  lam = { print(str(arr.6)); };
@@ -451,7 +450,7 @@ class ArrayTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) shouldEqual VonInt(4)
   }
 
 
@@ -463,7 +462,7 @@ class ArrayTests extends FunSuite with Matchers {
           |  = len(&a);
           |}
         """.stripMargin)
-    compile.evalForReferend(Vector()) shouldEqual VonInt(11)
+    compile.evalForKind(Vector()) shouldEqual VonInt(11)
   }
 
   test("Map using array construct") {
@@ -505,7 +504,7 @@ class ArrayTests extends FunSuite with Matchers {
 //        |}
 //      """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) shouldEqual VonInt(4)
   }
 
   test("Map from hardcoded values") {
@@ -520,7 +519,7 @@ class ArrayTests extends FunSuite with Matchers {
           |  [imm][6, 4, 3, 5, 2, 8].toArray<mut>()[3]
           |}
           |""".stripMargin)
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
   test("Nested imm arrays") {
@@ -531,10 +530,9 @@ class ArrayTests extends FunSuite with Matchers {
         |  [imm][[imm][6, 60].toImmArray(), [imm][4, 40].toImmArray(), [imm][3, 30].toImmArray()].toImmArray()[2][1]
         |}
         |""".stripMargin)
-    compile.evalForReferend(Vector()) shouldEqual VonInt(30)
+    compile.evalForKind(Vector()) shouldEqual VonInt(30)
   }
 
-  // Known failure 2020-08-05
   test("Array foreach") {
     val compile = RunCompilation.test(
       """
@@ -546,7 +544,7 @@ class ArrayTests extends FunSuite with Matchers {
         |  = sum;
         |}
         |""".stripMargin)
-    compile.evalForReferend(Vector()) shouldEqual VonInt(169)
+    compile.evalForKind(Vector()) shouldEqual VonInt(169)
   }
 
   test("Array has") {
@@ -557,7 +555,7 @@ class ArrayTests extends FunSuite with Matchers {
           |  [][6, 60, 103].has(103)
           |}
           |""".stripMargin)
-    compile.evalForReferend(Vector()) shouldEqual VonBool(true)
+    compile.evalForKind(Vector()) shouldEqual VonBool(true)
   }
 
 
@@ -566,7 +564,7 @@ class ArrayTests extends FunSuite with Matchers {
         """
           |import array.make.*;
           |import array.each.*;
-          |fn main() {
+          |fn main() export {
           |  planets = []["Venus", "Earth", "Mars"];
           |  each planets (planet){
           |    print(planet);
@@ -586,7 +584,7 @@ class ArrayTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonStr("3")
+    compile.evalForKind(Vector()) shouldEqual VonStr("3")
   }
 
 //  test("Destroy lambda with mutable captures") {
@@ -608,7 +606,7 @@ class ArrayTests extends FunSuite with Matchers {
 //          |  = newArray.0;
 //          |}
 //          |""".stripMargin)
-//    compile.evalForReferend(Vector()) shouldEqual VonInt(0)
+//    compile.evalForKind(Vector()) shouldEqual VonInt(0)
 //  }
 
 
@@ -617,7 +615,7 @@ class ArrayTests extends FunSuite with Matchers {
 //    val compile = RunCompilation.test(
 //      """
 //        |fn map
-//        |:(n: Int, T: reference, F: referend)
+//        |:(n: Int, T: reference, F: kind)
 //        |(arr: &[n T], generator: &F) {
 //        |  Array<mut>(n, (i){ generator(arr.(i))})
 //        |}
@@ -628,7 +626,7 @@ class ArrayTests extends FunSuite with Matchers {
 //        |}
 //      """.stripMargin)
 //
-//    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+//    compile.evalForKind(Vector()) shouldEqual VonInt(3)
 //  }
 
 

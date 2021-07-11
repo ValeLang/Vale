@@ -149,11 +149,13 @@ void translateFunction(
 
 LLVMValueRef declareFunction(
     GlobalState* globalState,
-    Function* functionM,
-    bool skipExporting);
+    Function* functionM);
+
+void exportFunction(GlobalState* globalState, Package* package, Function* functionM);
 
 LLVMValueRef declareExternFunction(
     GlobalState* globalState,
+    Package* package,
     Prototype* prototypeM);
 
 //LLVMTypeRef translateExternType(GlobalState* globalState, Reference* reference);
@@ -174,5 +176,8 @@ void declareAndDefineExtraFunction(
     Prototype* prototype,
     std::string llvmName,
     std::function<void(FunctionState*, LLVMBuilderRef)> definer);
+
+bool typeNeedsPointerParameter(GlobalState* globalState, Reference* returnMT);
+LLVMTypeRef translateReturnType(GlobalState* globalState, Reference* returnMT);
 
 #endif

@@ -54,9 +54,8 @@ case object Used extends IVariableUseCertainty
 case object NotUsed extends IVariableUseCertainty
 case object MaybeUsed extends IVariableUseCertainty
 
-case class LocalVariable1(
+case class LocalS(
     varName: IVarNameS,
-    variability: VariabilityP,
     selfBorrowed: IVariableUseCertainty,
     selfMoved: IVariableUseCertainty,
     selfMutated: IVariableUseCertainty,
@@ -76,7 +75,7 @@ case class BodySE(
 
 case class BlockSE(
   range: RangeS,
-  locals: List[LocalVariable1],
+  locals: List[LocalS],
 
   exprs: List[IExpressionSE],
 ) extends IExpressionSE {
@@ -143,13 +142,13 @@ case class RepeaterPackSE(range: RangeS, expression: IExpressionSE) extends IExp
 // Results in a pack, represents the differences between the elements
 case class RepeaterPackIteratorSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE
 
-case class IntLiteralSE(range: RangeS, value: Int) extends IExpressionSE
+case class ConstantIntSE(range: RangeS, value: Long, bits: Int) extends IExpressionSE
 
-case class BoolLiteralSE(range: RangeS, value: Boolean) extends IExpressionSE
+case class ConstantBoolSE(range: RangeS, value: Boolean) extends IExpressionSE
 
-case class StrLiteralSE(range: RangeS, value: String) extends IExpressionSE
+case class ConstantStrSE(range: RangeS, value: String) extends IExpressionSE
 
-case class FloatLiteralSE(range: RangeS, value: Double) extends IExpressionSE
+case class ConstantFloatSE(range: RangeS, value: Double) extends IExpressionSE
 
 case class DestructSE(range: RangeS, inner: IExpressionSE) extends IExpressionSE
 

@@ -1,25 +1,25 @@
 package net.verdagon.vale.metal
 
-import net.verdagon.vale.{FileCoordinate, vassert, vfail}
+import net.verdagon.vale.{FileCoordinate, PackageCoordinate, vassert, vfail}
 
 // Represents a reference type.
 // A reference contains these things:
-// - The referend; the thing that this reference points at.
-// - The ownership; this reference's relationship to the referend. This can be:
-//   - Share, which means the references all share ownership of the referend. This
-//     means that the referend will only be deallocated once all references to it are
-//     gone. Share references can only point at immutable referends, and immutable
-//     referends can *only* be pointed at by share references.
+// - The kind; the thing that this reference points at.
+// - The ownership; this reference's relationship to the kind. This can be:
+//   - Share, which means the references all share ownership of the kind. This
+//     means that the kind will only be deallocated once all references to it are
+//     gone. Share references can only point at immutable kinds, and immutable
+//     kinds can *only* be pointed at by share references.
 //   - Owning, which means this reference owns the object, and when this reference
 //     disappears (without being moved), the object should disappear (this is taken
-//     care of by the typing stage). Owning refs can only point at mutable referends.
-//   - Constraint, which means this reference doesn't own the referend. The referend
+//     care of by the typing stage). Owning refs can only point at mutable kinds.
+//   - Constraint, which means this reference doesn't own the kind. The kind
 //     is guaranteed not to die while this constraint ref is active (indeed if it did
-//     the program would panic). Constraint refs can only point at mutable referends.
+//     the program would panic). Constraint refs can only point at mutable kinds.
 //   - Raw, which is a weird ownership and should go away. We point at Void with this.
 //     TODO: Get rid of raw.
 //   - (in the future) Weak, which is a reference that will null itself out when the
-//     referend is destroyed. Weak refs can only point at mutable referends.
+//     kind is destroyed. Weak refs can only point at mutable kinds.
 // - Permission, how one can modify the object through this reference.
 //   - Readonly, we cannot modify the object through this reference.
 //   - Readwrite, we can.
@@ -27,7 +27,7 @@ import net.verdagon.vale.{FileCoordinate, vassert, vfail}
 //   isn't actually a pointer, it's just the value itself, like C's Car vs Car*.
 // In previous stages, this is referred to as a "coord", because these four things can be
 // thought of as dimensions of a coordinate.
-case class ReferenceH[+T <: ReferendH](
+case class ReferenceH[+T <: KindH](
     ownership: OwnershipH, location: LocationH, permission: PermissionH, kind: T) {
   (ownership, location) match {
     case (OwnH, YonderH) =>
@@ -38,7 +38,7 @@ case class ReferenceH[+T <: ReferendH](
   }
 
   kind match {
-    case IntH() | BoolH() | FloatH() | NeverH() => {
+    case IntH(_) | BoolH() | FloatH() | NeverH() => {
       // Make sure that if we're pointing at a primitives, it's via a Share reference.
       vassert(ownership == ShareH)
       vassert(location == InlineH)
@@ -49,8 +49,8 @@ case class ReferenceH[+T <: ReferendH](
       vassert(location == YonderH)
     }
     case StructRefH(name) => {
-      val isBox = name.toFullString.startsWith("C(\"__Box\"")
-      val isTup = name.toFullString.startsWith("Tup")
+      val isBox = name.toFullString.startsWith("::C(\"__Box\"")
+      val isTup = name.toFullString.startsWith("::Tup")
 
       if (isBox) {
         vassert(ownership == OwnH || ownership == BorrowH)
@@ -66,17 +66,17 @@ case class ReferenceH[+T <: ReferendH](
   }
 
   // Convenience function for casting this to a Reference which the compiler knows
-  // points at a known size array.
-  def expectKnownSizeArrayReference() = {
+  // points at a static sized array.
+  def expectStaticSizedArrayReference() = {
     kind match {
-      case atH @ KnownSizeArrayTH(_) => ReferenceH[KnownSizeArrayTH](ownership, location, permission, atH)
+      case atH @ StaticSizedArrayTH(_) => ReferenceH[StaticSizedArrayTH](ownership, location, permission, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
-  // points at an unknown size array.
-  def expectUnknownSizeArrayReference() = {
+  // points at an unstatic sized array.
+  def expectRuntimeSizedArrayReference() = {
     kind match {
-      case atH @ UnknownSizeArrayTH(_) => ReferenceH[UnknownSizeArrayTH](ownership, location, permission, atH)
+      case atH @ RuntimeSizedArrayTH(_) => ReferenceH[RuntimeSizedArrayTH](ownership, location, permission, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
@@ -96,40 +96,60 @@ case class ReferenceH[+T <: ReferendH](
 }
 
 // A value, a thing that can be pointed at. See ReferenceH for more information.
-sealed trait ReferendH
-
-case class IntH() extends ReferendH
-case class BoolH() extends ReferendH
-case class StrH() extends ReferendH
-case class FloatH() extends ReferendH
+sealed trait KindH {
+  def packageCoord: PackageCoordinate
+}
+object IntH {
+  val i32 = IntH(32)
+}
+case class IntH(bits: Int) extends KindH {
+  override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
+}
+case class BoolH() extends KindH {
+  override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
+}
+case class StrH() extends KindH {
+  override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
+}
+case class FloatH() extends KindH {
+  override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
+}
 // A primitive which can never be instantiated. If something returns this, it
 // means that it will never actually return. For example, the return type of
 // __panic() is a NeverH.
-// TODO: This feels weird being a referend in metal. Figure out a way to not
-// have this? Perhaps replace all referends with Optional[Optional[ReferendH]],
+// TODO: This feels weird being a kind in metal. Figure out a way to not
+// have this? Perhaps replace all kinds with Optional[Optional[KindH]],
 // where None is never, Some(None) is Void, and Some(Some(_)) is a normal thing.
-case class NeverH() extends ReferendH
+case class NeverH() extends KindH {
+  override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
+}
 
 case class InterfaceRefH(
   // Unique identifier for the interface.
   fullName: FullNameH
-) extends ReferendH
+) extends KindH {
+  override def packageCoord: PackageCoordinate = fullName.packageCoordinate
+}
 
 case class StructRefH(
   // Unique identifier for the interface.
   fullName: FullNameH
-) extends ReferendH
+) extends KindH {
+  override def packageCoord: PackageCoordinate = fullName.packageCoordinate
+}
 
 // An array whose size is known at compile time, and therefore doesn't need to
 // carry around its size at runtime.
-case class KnownSizeArrayTH(
+case class StaticSizedArrayTH(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
-) extends ReferendH
+) extends KindH {
+  override def packageCoord: PackageCoordinate = name.packageCoordinate
+}
 
 // An array whose size is known at compile time, and therefore doesn't need to
 // carry around its size at runtime.
-case class KnownSizeArrayDefinitionTH(
+case class StaticSizedArrayDefinitionTH(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
   // The size of the array.
@@ -137,29 +157,31 @@ case class KnownSizeArrayDefinitionTH(
   // The underlying array.
   rawArray: RawArrayTH
 ) {
-  def referend = KnownSizeArrayTH(name)
+  def kind = StaticSizedArrayTH(name)
 }
 
-case class UnknownSizeArrayTH(
+case class RuntimeSizedArrayTH(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
-) extends ReferendH
+) extends KindH {
+  override def packageCoord: PackageCoordinate = name.packageCoordinate
+}
 
-case class UnknownSizeArrayDefinitionTH(
+case class RuntimeSizedArrayDefinitionTH(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
   // The underlying array.
   rawArray: RawArrayTH
 ) {
-  def referend = UnknownSizeArrayTH(name)
+  def kind = RuntimeSizedArrayTH(name)
 }
 
-// This is not a referend, but instead has the common fields of UnknownSizeArrayTH/KnownSizeArrayTH,
+// This is not a kind, but instead has the common fields of RuntimeSizedArrayTH/StaticSizedArrayTH,
 // and lets us handle their code similarly.
 case class RawArrayTH(
   mutability: Mutability,
   variability: Variability,
-  elementType: ReferenceH[ReferendH])
+  elementType: ReferenceH[KindH])
 
 // Place in the original source code that something came from. Useful for uniquely
 // identifying templates.
@@ -167,7 +189,7 @@ case class CodeLocation(
   file: FileCoordinate,
   offset: Int)
 
-// Ownership is the way a reference relates to the referend's lifetime, see
+// Ownership is the way a reference relates to the kind's lifetime, see
 // ReferenceH for explanation.
 sealed trait OwnershipH
 case object OwnH extends OwnershipH
@@ -181,16 +203,16 @@ sealed trait PermissionH
 case object ReadonlyH extends PermissionH
 case object ReadwriteH extends PermissionH
 
-//// Permission says whether a reference can modify the referend it's pointing at.
+//// Permission says whether a reference can modify the kind it's pointing at.
 //// See ReferenceH for explanation.
 //sealed trait Permission
 //case object Readonly extends Permission
 //case object Readwrite extends Permission
 //case object ExclusiveReadwrite extends Permission
 
-// Location says whether a reference contains the referend's location (yonder) or
-// contains the referend itself (inline).
-// Yes, it's weird to consider a reference containing a referend, but it makes a
+// Location says whether a reference contains the kind's location (yonder) or
+// contains the kind itself (inline).
+// Yes, it's weird to consider a reference containing a kind, but it makes a
 // lot of things simpler for the language.
 // Examples (with C++ translations):
 //   This will create a variable `car` that lives on the stack ("inline"):
@@ -210,9 +232,9 @@ case object ReadwriteH extends PermissionH
 // Note that the compiler will often automatically add an `inl` onto whatever
 // local variables it can, to speed up the program.
 sealed trait LocationH
-// Means that the referend will be in the containing stack frame or struct.
+// Means that the kind will be in the containing stack frame or struct.
 case object InlineH extends LocationH
-// Means that the referend will be allocated separately, in the heap.
+// Means that the kind will be allocated separately, in the heap.
 case object YonderH extends LocationH
 
 // Used to say whether an object can be modified or not.
@@ -252,8 +274,8 @@ case object Mutable extends Mutability
 //       x->numWheels = 6;
 // In other words, variability affects whether the variable (or member) can be
 // changed to point at something different, but it doesn't affect whether we can
-// change anything inside the referend (this reference's permission and the
-// referend struct's member's variability affect that).
+// change anything inside the kind (this reference's permission and the
+// kind struct's member's variability affect that).
 sealed trait Variability
 case object Final extends Variability
 case object Varying extends Variability

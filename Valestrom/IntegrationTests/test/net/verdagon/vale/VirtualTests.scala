@@ -1,7 +1,7 @@
 package net.verdagon.vale
 
-import net.verdagon.vale.templar.{CitizenName2, FullName2, FunctionName2, simpleName}
-import net.verdagon.vale.templar.templata.{Abstract2, Signature2}
+import net.verdagon.vale.templar.{CitizenNameT, FullNameT, FunctionNameT, simpleName}
+import net.verdagon.vale.templar.templata.{AbstractT$, SignatureT}
 import net.verdagon.vale.templar.types._
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.vivem.IntV
@@ -21,24 +21,25 @@ class VirtualTests extends FunSuite with Matchers {
       val temputs = compile.expectTemputs()
 
       vassert(temputs.getAllUserFunctions.size == 2)
-      vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Readonly, Int2()))
+      vassert(temputs.lookupFunction("main").header.returnType == CoordT(ShareT, ReadonlyT, IntT.i32))
 
       val doThing =
         vassertSome(
           temputs.lookupFunction(
-            Signature2(
-              FullName2(
-                List(),
-                FunctionName2(
+            SignatureT(
+              FullNameT(
+                PackageCoordinate.TEST_TLD,
+                List.empty,
+                FunctionNameT(
                   "doThing",
-                  List(),
+                  List.empty,
                   List(
-                    Coord(
-                      Own,
-                      Readwrite,
-                      InterfaceRef2(
-                        FullName2(List(), CitizenName2("I", List()))))))))))
-      vassert(doThing.header.params(0).virtuality.get == Abstract2)
+                    CoordT(
+                      OwnT,
+                      ReadwriteT,
+                      InterfaceTT(
+                        FullNameT(PackageCoordinate.TEST_TLD, List.empty, CitizenNameT("I", List.empty))))))))))
+      vassert(doThing.header.params(0).virtuality.get == AbstractT$)
     }
 
   test("Can call virtual function") {
@@ -53,25 +54,26 @@ class VirtualTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
 
     vassert(temputs.getAllUserFunctions.size == 2)
-    vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Readonly, Int2()))
+    vassert(temputs.lookupFunction("main").header.returnType == CoordT(ShareT, ReadonlyT, IntT.i32))
 
 
     val doThing =
       vassertSome(
         temputs.lookupFunction(
-          Signature2(
-            FullName2(
-              List(),
-              FunctionName2(
+          SignatureT(
+            FullNameT(
+              PackageCoordinate.TEST_TLD,
+              List.empty,
+              FunctionNameT(
                 "doThing",
-                List(),
+                List.empty,
                 List(
-                  Coord(
-                    Own,
-                    Readwrite,
-                    InterfaceRef2(
-                      FullName2(List(), CitizenName2("I", List()))))))))))
-    vassert(doThing.header.params(0).virtuality.get == Abstract2)
+                  CoordT(
+                    OwnT,
+                    ReadwriteT,
+                    InterfaceTT(
+                      FullNameT(PackageCoordinate.TEST_TLD, List.empty, CitizenNameT("I", List.empty))))))))))
+    vassert(doThing.header.params(0).virtuality.get == AbstractT$)
   }
 
   test("Can call interface env's function from outside") {
@@ -87,15 +89,15 @@ class VirtualTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
 
     vassert(temputs.getAllUserFunctions.size == 1)
-    vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Readonly, Int2()))
+    vassert(temputs.lookupFunction("main").header.returnType == CoordT(ShareT, ReadonlyT, IntT.i32))
 
 
     val doThing =
       vassertSome(
         temputs.lookupFunction(
-          Signature2(
-            FullName2(List(CitizenName2("I",List())),FunctionName2("doThing",List(),List(Coord(Own,Readwrite,InterfaceRef2(FullName2(List(),CitizenName2("I",List()))))))))))
-    vassert(doThing.header.params(0).virtuality.get == Abstract2)
+          SignatureT(
+            FullNameT(PackageCoordinate.TEST_TLD, List(CitizenNameT("I",List.empty)),FunctionNameT("doThing",List.empty,List(CoordT(OwnT,ReadwriteT,InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, List.empty,CitizenNameT("I",List.empty))))))))))
+    vassert(doThing.header.params(0).virtuality.get == AbstractT$)
   }
 
 
@@ -139,31 +141,31 @@ class VirtualTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
     val temputs = compile.getHamuts()
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
   test("Successful constraint downcast with as") {
     val compile = RunCompilation.test(
       Tests.loadExpected("programs/downcast/downcastConstraintSuccessful.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Failed constraint downcast with as") {
     val compile = RunCompilation.test(
       Tests.loadExpected("programs/downcast/downcastConstraintFailed.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Successful owning downcast with as") {
     val compile = RunCompilation.test(
       Tests.loadExpected("programs/downcast/downcastOwningSuccessful.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Failed owning downcast with as") {
     val compile = RunCompilation.test(
       Tests.loadExpected("programs/downcast/downcastOwningFailed.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
 }

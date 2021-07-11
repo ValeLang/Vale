@@ -3,14 +3,14 @@ package net.verdagon.vale
 import scala.io.Source
 
 object Builtins {
-  val NAMESPACE_COORD = PackageCoordinate("", List())
+  val NAMESPACE_COORD = PackageCoordinate("", List.empty)
 
   val moduleToFilename =
     Map(
       "arith" -> "arith.vale",
       "logic" -> "logic.vale",
       "str" -> "str.vale",
-      "main" -> "main.vale",
+      "mainargs" -> "mainargs.vale",
       "as" -> "as.vale",
       "print" -> "print.vale",
       "panic" -> "panic.vale",

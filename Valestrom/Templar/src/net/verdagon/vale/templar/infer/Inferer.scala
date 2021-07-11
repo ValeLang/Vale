@@ -2,7 +2,7 @@ package net.verdagon.vale.templar.infer
 
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.scout.RangeS
-import net.verdagon.vale.templar.{IName2, IRune2}
+import net.verdagon.vale.templar.{INameT, IRuneT}
 import net.verdagon.vale.templar.infer.infer.IInferSolveResult
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
@@ -19,15 +19,15 @@ trait IInfererDelegate[Env, State] {
 
   def lookupMemberTypes(
     state: State,
-    kind: Kind,
+    kind: KindT,
     // This is here so that the predictor can just give us however many things
     // we expect.
     expectedNumMembers: Int
-  ): Option[List[Coord]]
+  ): Option[List[CoordT]]
 
-  def getMutability(state: State, kind: Kind): Mutability
+  def getMutability(state: State, kind: KindT): MutabilityT
 
-  def lookupTemplata(env: Env, range: RangeS, name: IName2): ITemplata
+  def lookupTemplata(env: Env, range: RangeS, name: INameT): ITemplata
   def lookupTemplataImprecise(env: Env, range: RangeS, name: IImpreciseNameStepA): ITemplata
 
   def evaluateStructTemplata(
@@ -35,36 +35,36 @@ trait IInfererDelegate[Env, State] {
     callRange: RangeS,
     templata: StructTemplata,
     templateArgs: List[ITemplata]):
-  (Kind)
+  (KindT)
 
   def evaluateInterfaceTemplata(
     state: State,
     callRange: RangeS,
     templata: InterfaceTemplata,
     templateArgs: List[ITemplata]):
-  (Kind)
+  (KindT)
 
 //  def getPackKind(env: Env, state: State, members: List[Coord]): (PackT2, Mutability)
 
-  def getArraySequenceKind(env: Env, state: State, mutability: Mutability, variability: Variability, size: Int, element: Coord): (KnownSizeArrayT2)
+  def getStaticSizedArrayKind(env: Env, state: State, mutability: MutabilityT, variability: VariabilityT, size: Int, element: CoordT): (StaticSizedArrayTT)
 
-  def makeUnknownSizeArrayType(env: Env, state: State, type2: Coord, arrayMutability: Mutability, arrayVariability: Variability): UnknownSizeArrayT2
+  def getRuntimeSizedArrayKind(env: Env, state: State, type2: CoordT, arrayMutability: MutabilityT, arrayVariability: VariabilityT): RuntimeSizedArrayTT
 
-  def getTupleKind(env: Env, state: State, elements: List[Coord]): TupleT2
+  def getTupleKind(env: Env, state: State, elements: List[CoordT]): TupleTT
 
-  def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRef2, ancestorInterfaceRef: InterfaceRef2): (Option[Int])
+  def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT): (Option[Int])
 
-  def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRef2):
-  (Set[InterfaceRef2])
+  def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRefT):
+  (Set[InterfaceTT])
 
   def getInterfaceTemplataType(it: InterfaceTemplata): ITemplataType
   def getStructTemplataType(st: StructTemplata): ITemplataType
 
-  def getMemberCoords(state: State, structRef: StructRef2): List[Coord]
+  def getMemberCoords(state: State, structTT: StructTT): List[CoordT]
 
-  def structIsClosure(state: State, structRef: StructRef2): Boolean
+  def structIsClosure(state: State, structTT: StructTT): Boolean
 
-  def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: List[Coord]): Prototype2
+  def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: List[CoordT]): PrototypeT
 }
 
 // This is the public API for the outside world to use the Infer code.
@@ -75,10 +75,10 @@ object Inferer {
     env: Env,
     state: State,
     rules: List[IRulexTR],
-    typeByRune: Map[IRune2, ITemplataType],
-    localRunes: Set[IRune2],
+    typeByRune: Map[IRuneT, ITemplataType],
+    localRunes: Set[IRuneT],
     invocationRange: RangeS,
-    directInputs: Map[IRune2, ITemplata],
+    directInputs: Map[IRuneT, ITemplata],
     paramAtoms: List[AtomAP],
     maybeParamInputs: Option[List[ParamFilter]],
     checkAllRunesPresent: Boolean):
@@ -109,10 +109,10 @@ object Inferer {
     delegate: IInfererDelegate[Env, State]):
   (ITemplataTemplarInnerDelegate[Env, State]) = {
     new ITemplataTemplarInnerDelegate[Env, State] {
-      override def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRef2, ancestorInterfaceRef: InterfaceRef2): (Option[Int]) = {
+      override def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT): (Option[Int]) = {
         delegate.getAncestorInterfaceDistance(temputs, descendantCitizenRef, ancestorInterfaceRef)
       }
-      override def getMutability(state: State, kind: Kind): Mutability = {
+      override def getMutability(state: State, kind: KindT): MutabilityT = {
         delegate.getMutability(state, kind)
       }
 
@@ -120,7 +120,7 @@ object Inferer {
 //        delegate.getPackKind(env, state, members)
 //      }
 
-      override def lookupTemplata(env: Env, range: RangeS, name: IName2): ITemplata = {
+      override def lookupTemplata(env: Env, range: RangeS, name: INameT): ITemplata = {
         delegate.lookupTemplata(env, range, name)
       }
 
@@ -128,23 +128,23 @@ object Inferer {
         delegate.lookupTemplataImprecise(env, range, name)
       }
 
-      override def evaluateInterfaceTemplata(state: State, callRange: RangeS, templata: InterfaceTemplata, templateArgs: List[ITemplata]): (Kind) = {
+      override def evaluateInterfaceTemplata(state: State, callRange: RangeS, templata: InterfaceTemplata, templateArgs: List[ITemplata]): (KindT) = {
         delegate.evaluateInterfaceTemplata(state, callRange, templata, templateArgs)
       }
 
-      override def evaluateStructTemplata(state: State, callRange: RangeS, templata: StructTemplata, templateArgs: List[ITemplata]): (Kind) = {
+      override def evaluateStructTemplata(state: State, callRange: RangeS, templata: StructTemplata, templateArgs: List[ITemplata]): (KindT) = {
         delegate.evaluateStructTemplata(state, callRange, templata, templateArgs)
       }
 
-      override def getArraySequenceKind(env: Env, state: State, mutability: Mutability, variability: Variability, size: Int, element: Coord): (KnownSizeArrayT2) = {
-        delegate.getArraySequenceKind(env, state, mutability, variability, size, element)
+      override def getStaticSizedArrayKind(env: Env, state: State, mutability: MutabilityT, variability: VariabilityT, size: Int, element: CoordT): (StaticSizedArrayTT) = {
+        delegate.getStaticSizedArrayKind(env, state, mutability, variability, size, element)
       }
 
-      override def makeUnknownSizeArrayType(env: Env, state: State, type2: Coord, arrayMutability: Mutability, arrayVariability: Variability): UnknownSizeArrayT2 = {
-        delegate.makeUnknownSizeArrayType(env, state, type2, arrayMutability, arrayVariability)
+      override def getRuntimeSizedArrayKind(env: Env, state: State, type2: CoordT, arrayMutability: MutabilityT, arrayVariability: VariabilityT): RuntimeSizedArrayTT = {
+        delegate.getRuntimeSizedArrayKind(env, state, type2, arrayMutability, arrayVariability)
       }
 
-      override def getTupleKind(env: Env, state: State, elements: List[Coord]): TupleT2 = {
+      override def getTupleKind(env: Env, state: State, elements: List[CoordT]): TupleTT = {
         delegate.getTupleKind(env, state, elements)
       }
 
@@ -167,39 +167,39 @@ object Inferer {
   private def makeEvaluatorDelegate[Env, State](delegate: IInfererDelegate[Env, State]):
   IInfererEvaluatorDelegate[Env, State] = {
     new IInfererEvaluatorDelegate[Env, State] {
-      override def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRef2): (Set[InterfaceRef2]) = {
+      override def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRefT): (Set[InterfaceTT]) = {
         delegate.getAncestorInterfaces(temputs, descendantCitizenRef)
       }
 
-      override def lookupTemplata(env: Env, range: RangeS, name: IName2): ITemplata = {
+      override def lookupTemplata(env: Env, range: RangeS, name: INameT): ITemplata = {
         delegate.lookupTemplata(env, range, name)
       }
       override def lookupTemplata(profiler: IProfiler, env: Env, range: RangeS, name: IImpreciseNameStepA): ITemplata = {
         delegate.lookupTemplataImprecise(env, range, name)
       }
 
-      override def lookupMemberTypes(state: State, kind: Kind, expectedNumMembers: Int):
-      Option[List[Coord]] = {
+      override def lookupMemberTypes(state: State, kind: KindT, expectedNumMembers: Int):
+      Option[List[CoordT]] = {
         delegate.lookupMemberTypes(state, kind, expectedNumMembers)
       }
 
-      override def getMutability(state: State, kind: Kind): Mutability = {
-        delegate.getMutability(state: State, kind: Kind)
+      override def getMutability(state: State, kind: KindT): MutabilityT = {
+        delegate.getMutability(state: State, kind: KindT)
       }
 
-      override def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRef2, ancestorInterfaceRef: InterfaceRef2): (Option[Int]) = {
+      override def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT): (Option[Int]) = {
         delegate.getAncestorInterfaceDistance(temputs, descendantCitizenRef, ancestorInterfaceRef)
       }
 
-      override def getMemberCoords(state: State, structRef: StructRef2): List[Coord] = {
-        delegate.getMemberCoords(state, structRef)
+      override def getMemberCoords(state: State, structTT: StructTT): List[CoordT] = {
+        delegate.getMemberCoords(state, structTT)
       }
 
-      override def structIsClosure(state: State, structRef: StructRef2): Boolean = {
-        delegate.structIsClosure(state, structRef)
+      override def structIsClosure(state: State, structTT: StructTT): Boolean = {
+        delegate.structIsClosure(state, structTT)
       }
 
-      override def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: List[Coord]): Prototype2 = {
+      override def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: List[CoordT]): PrototypeT = {
         delegate.resolveExactSignature(env, state, range, name, coords)
       }
     }

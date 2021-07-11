@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.4.3)
 project(valec)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++17")
 
 find_package(LLVM 11.1 REQUIRED CONFIG)
 add_definitions(${LLVM_DEFINITIONS})

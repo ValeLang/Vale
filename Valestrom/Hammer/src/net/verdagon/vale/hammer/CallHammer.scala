@@ -5,7 +5,7 @@ import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vwat, metal => m}
 import net.verdagon.vale.metal.{ShareH => _, _}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.templata.{FunctionBanner2, FunctionHeader2, Prototype2}
+import net.verdagon.vale.templar.templata.{FunctionBannerT, FunctionHeaderT, PrototypeT}
 import net.verdagon.vale.templar.types._
 
 object CallHammer {
@@ -13,11 +13,11 @@ object CallHammer {
   def translateExternFunctionCall(
     hinputs: Hinputs,
     hamuts: HamutsBox,
-      currentFunctionHeader: FunctionHeader2,
+      currentFunctionHeader: FunctionHeaderT,
     locals: LocalsBox,
-    prototype2: Prototype2,
-    argsExprs2: List[ReferenceExpression2]):
-  (ExpressionH[ReferendH]) = {
+    prototype2: PrototypeT,
+    argsExprs2: List[ReferenceExpressionTE]):
+  (ExpressionH[KindH]) = {
     val (argsResultLines, argsDeferreds) =
       ExpressionHammer.translateExpressions(
         hinputs, hamuts, currentFunctionHeader, locals, argsExprs2);
@@ -39,12 +39,12 @@ object CallHammer {
   def translateFunctionPointerCall(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-      currentFunctionHeader: FunctionHeader2,
+      currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      function: Prototype2,
-      args: List[Expression2],
-      resultType2: Coord):
-  ExpressionH[ReferendH] = {
+      function: PrototypeT,
+      args: List[ExpressionT],
+      resultType2: CoordT):
+  ExpressionH[KindH] = {
     val returnType2 = function.returnType
     val paramTypes = function.paramTypes
     val (argLines, argsDeferreds) =
@@ -72,11 +72,11 @@ object CallHammer {
 
   def translateConstructArray(
       hinputs: Hinputs, hamuts: HamutsBox,
-      currentFunctionHeader: FunctionHeader2,
+      currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      constructArray2: ConstructArray2):
-  (ExpressionH[ReferendH]) = {
-    val ConstructArray2(arrayType2, sizeExpr2, generatorExpr2, generatorMethod) = constructArray2;
+      constructArray2: ConstructArrayTE):
+  (ExpressionH[KindH]) = {
+    val ConstructArrayTE(arrayType2, sizeExpr2, generatorExpr2, generatorMethod) = constructArray2;
 
     val (sizeRegisterId, sizeDeferreds) =
       ExpressionHammer.translate(
@@ -91,21 +91,21 @@ object CallHammer {
         hinputs, hamuts, constructArray2.resultRegister.reference)
 
     val (arrayTypeH) =
-      TypeHammer.translateUnknownSizeArray(hinputs, hamuts, arrayType2)
-    vassert(arrayRefTypeH.expectUnknownSizeArrayReference().kind == arrayTypeH)
+      TypeHammer.translateRuntimeSizedArray(hinputs, hamuts, arrayType2)
+    vassert(arrayRefTypeH.expectRuntimeSizedArrayReference().kind == arrayTypeH)
 
-    val elementType = hamuts.getUnknownSizeArray(arrayTypeH).rawArray.elementType
+    val elementType = hamuts.getRuntimeSizedArray(arrayTypeH).rawArray.elementType
 
     val generatorMethodH =
       FunctionHammer.translatePrototype(hinputs, hamuts, generatorMethod)
 
     val constructArrayCallNode =
-        ConstructUnknownSizeArrayH(
+        ConstructRuntimeSizedArrayH(
           sizeRegisterId.expectIntAccess(),
           generatorRegisterId,
           generatorMethodH,
           elementType,
-          arrayRefTypeH.expectUnknownSizeArrayReference())
+          arrayRefTypeH.expectRuntimeSizedArrayReference())
 
     ExpressionHammer.translateDeferreds(
       hinputs, hamuts, currentFunctionHeader, locals, constructArrayCallNode, generatorDeferreds ++ sizeDeferreds)
@@ -114,11 +114,11 @@ object CallHammer {
   def translateStaticArrayFromCallable(
     hinputs: Hinputs,
     hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeader2,
+    currentFunctionHeader: FunctionHeaderT,
     locals: LocalsBox,
-    exprTE: StaticArrayFromCallable2):
-  (ExpressionH[ReferendH]) = {
-    val StaticArrayFromCallable2(arrayType2, generatorExpr2, generatorMethod) = exprTE;
+    exprTE: StaticArrayFromCallableTE):
+  (ExpressionH[KindH]) = {
+    val StaticArrayFromCallableTE(arrayType2, generatorExpr2, generatorMethod) = exprTE;
 
     val (generatorRegisterId, generatorDeferreds) =
       ExpressionHammer.translate(
@@ -129,10 +129,10 @@ object CallHammer {
         hinputs, hamuts, exprTE.resultRegister.reference)
 
     val (arrayTypeH) =
-      TypeHammer.translateKnownSizeArray(hinputs, hamuts, arrayType2)
-    vassert(arrayRefTypeH.expectKnownSizeArrayReference().kind == arrayTypeH)
+      TypeHammer.translateStaticSizedArray(hinputs, hamuts, arrayType2)
+    vassert(arrayRefTypeH.expectStaticSizedArrayReference().kind == arrayTypeH)
 
-    val elementType = hamuts.getKnownSizeArray(arrayTypeH).rawArray.elementType
+    val elementType = hamuts.getStaticSizedArray(arrayTypeH).rawArray.elementType
 
     val generatorMethodH =
       FunctionHammer.translatePrototype(hinputs, hamuts, generatorMethod)
@@ -142,26 +142,26 @@ object CallHammer {
         generatorRegisterId,
         generatorMethodH,
         elementType,
-        arrayRefTypeH.expectKnownSizeArrayReference())
+        arrayRefTypeH.expectStaticSizedArrayReference())
 
     ExpressionHammer.translateDeferreds(
       hinputs, hamuts, currentFunctionHeader, locals, constructArrayCallNode, generatorDeferreds)
   }
 
-  def translateDestroyArraySequence(
+  def translateDestroyStaticSizedArray(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-      currentFunctionHeader: FunctionHeader2,
+      currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      das2: DestroyArraySequenceIntoFunction2):
-  ExpressionH[ReferendH] = {
-    val DestroyArraySequenceIntoFunction2(arrayExpr2, arraySequenceType, consumerExpr2, consumerMethod2) = das2;
+      das2: DestroyStaticSizedArrayIntoFunctionTE):
+  ExpressionH[KindH] = {
+    val DestroyStaticSizedArrayIntoFunctionTE(arrayExpr2, staticSizedArrayType, consumerExpr2, consumerMethod2) = das2;
 
     val (arrayTypeH) =
-      TypeHammer.translateKnownSizeArray(hinputs, hamuts, arraySequenceType)
+      TypeHammer.translateStaticSizedArray(hinputs, hamuts, staticSizedArrayType)
     val (arrayRefTypeH) =
       TypeHammer.translateReference(hinputs, hamuts, arrayExpr2.resultRegister.reference)
-    vassert(arrayRefTypeH.expectKnownSizeArrayReference().kind == arrayTypeH)
+    vassert(arrayRefTypeH.expectStaticSizedArrayReference().kind == arrayTypeH)
 
     val (arrayExprResultLine, arrayExprDeferreds) =
       ExpressionHammer.translate(
@@ -171,45 +171,45 @@ object CallHammer {
       ExpressionHammer.translate(
         hinputs, hamuts, currentFunctionHeader, locals, consumerExpr2);
 
-    val knownSizeArrayDef = hamuts.getKnownSizeArray(arrayTypeH)
+    val staticSizedArrayDef = hamuts.getStaticSizedArray(arrayTypeH)
 
     val consumerInterfaceRef = consumerCallableResultLine.expectInterfaceAccess().resultType.kind;
     val consumerInterfaceDef = vassertSome(hamuts.interfaceDefs.values.find(_.getRef == consumerInterfaceRef))
     vassert(consumerInterfaceDef.methods.head.prototypeH.params.size == 2)
     vassert(consumerInterfaceDef.methods.head.prototypeH.params(0).kind == consumerInterfaceRef)
-    vassert(consumerInterfaceDef.methods.head.prototypeH.params(1) == knownSizeArrayDef.rawArray.elementType)
+    vassert(consumerInterfaceDef.methods.head.prototypeH.params(1) == staticSizedArrayDef.rawArray.elementType)
 
     val consumerMethod =
       FunctionHammer.translatePrototype(hinputs, hamuts, consumerMethod2)
 
-    val destroyArraySequenceCallNode =
-        DestroyKnownSizeArrayIntoFunctionH(
-          arrayExprResultLine.expectKnownSizeArrayAccess(),
+    val destroyStaticSizedArrayCallNode =
+        DestroyStaticSizedArrayIntoFunctionH(
+          arrayExprResultLine.expectStaticSizedArrayAccess(),
           consumerCallableResultLine.expectInterfaceAccess(),
           consumerMethod,
-          knownSizeArrayDef.rawArray.elementType,
-          knownSizeArrayDef.size)
+          staticSizedArrayDef.rawArray.elementType,
+          staticSizedArrayDef.size)
 
     ExpressionHammer.translateDeferreds(
-      hinputs, hamuts, currentFunctionHeader, locals, destroyArraySequenceCallNode, consumerCallableDeferreds ++ arrayExprDeferreds)
+      hinputs, hamuts, currentFunctionHeader, locals, destroyStaticSizedArrayCallNode, consumerCallableDeferreds ++ arrayExprDeferreds)
   }
 
-  def translateDestroyUnknownSizeArray(
+  def translateDestroyRuntimeSizedArray(
     hinputs: Hinputs,
     hamuts: HamutsBox,
-      currentFunctionHeader: FunctionHeader2,
+      currentFunctionHeader: FunctionHeaderT,
     locals: LocalsBox,
-    das2: DestroyUnknownSizeArray2):
-  ExpressionH[ReferendH] = {
-    val DestroyUnknownSizeArray2(arrayExpr2, unknownSizeArrayType2, consumerExpr2, consumerMethod2) = das2;
+    das2: DestroyRuntimeSizedArrayTE):
+  ExpressionH[KindH] = {
+    val DestroyRuntimeSizedArrayTE(arrayExpr2, runtimeSizedArrayType2, consumerExpr2, consumerMethod2) = das2;
 
-//    val UnknownSizeArrayT2(RawArrayT2(memberType2, mutability)) = unknownSizeArrayType2
+//    val RuntimeSizedArrayT2(RawArrayT2(memberType2, mutability)) = runtimeSizedArrayType2
 
     val (arrayTypeH) =
-      TypeHammer.translateUnknownSizeArray(hinputs, hamuts, unknownSizeArrayType2)
+      TypeHammer.translateRuntimeSizedArray(hinputs, hamuts, runtimeSizedArrayType2)
     val (arrayRefTypeH) =
       TypeHammer.translateReference(hinputs, hamuts, arrayExpr2.resultRegister.reference)
-    vassert(arrayRefTypeH.expectUnknownSizeArrayReference().kind == arrayTypeH)
+    vassert(arrayRefTypeH.expectRuntimeSizedArrayReference().kind == arrayTypeH)
 
     val (arrayExprResultLine, arrayExprDeferreds) =
       ExpressionHammer.translate(
@@ -223,42 +223,42 @@ object CallHammer {
       FunctionHammer.translatePrototype(hinputs, hamuts, consumerMethod2)
 
     val elementType =
-      hamuts.getUnknownSizeArray(
-          arrayExprResultLine.expectUnknownSizeArrayAccess().resultType.kind)
+      hamuts.getRuntimeSizedArray(
+          arrayExprResultLine.expectRuntimeSizedArrayAccess().resultType.kind)
         .rawArray.elementType
 
-    val destroyArraySequenceCallNode =
-        DestroyUnknownSizeArrayH(
-          arrayExprResultLine.expectUnknownSizeArrayAccess(),
+    val destroyStaticSizedArrayCallNode =
+        DestroyRuntimeSizedArrayH(
+          arrayExprResultLine.expectRuntimeSizedArrayAccess(),
           consumerCallableResultLine.expectInterfaceAccess(),
           consumerMethod,
           elementType)
 
     ExpressionHammer.translateDeferreds(
-      hinputs, hamuts, currentFunctionHeader, locals, destroyArraySequenceCallNode, consumerCallableDeferreds ++ arrayExprDeferreds)
+      hinputs, hamuts, currentFunctionHeader, locals, destroyStaticSizedArrayCallNode, consumerCallableDeferreds ++ arrayExprDeferreds)
   }
 
   def translateIf(
     hinputs: Hinputs,
     hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeader2,
+    currentFunctionHeader: FunctionHeaderT,
     parentLocals: LocalsBox,
-    if2: If2):
-  ExpressionH[ReferendH] = {
-    val If2(condition2, thenBlock2, elseBlock2) = if2
+    if2: IfTE):
+  ExpressionH[KindH] = {
+    val IfTE(condition2, thenBlock2, elseBlock2) = if2
 
-    val (conditionBlockH, List()) =
+    val (conditionBlockH, Nil) =
       ExpressionHammer.translate(hinputs, hamuts, currentFunctionHeader, parentLocals, condition2);
     vassert(conditionBlockH.resultType == ReferenceH(m.ShareH, InlineH, ReadonlyH, BoolH()))
 
     val thenLocals = LocalsBox(parentLocals.snapshot)
-    val (thenBlockH, List()) =
+    val (thenBlockH, Nil) =
       ExpressionHammer.translate(hinputs, hamuts, currentFunctionHeader, thenLocals, thenBlock2);
     val thenResultCoord = thenBlockH.resultType
     parentLocals.setNextLocalIdNumber(thenLocals.nextLocalIdNumber)
 
     val elseLocals = LocalsBox(parentLocals.snapshot)
-    val (elseBlockH, List()) =
+    val (elseBlockH, Nil) =
       ExpressionHammer.translate(hinputs, hamuts, currentFunctionHeader, elseLocals, elseBlock2);
     val elseResultCoord = elseBlockH.resultType
     parentLocals.setNextLocalIdNumber(elseLocals.nextLocalIdNumber)
@@ -304,12 +304,12 @@ object CallHammer {
 
   def translateWhile(
       hinputs: Hinputs, hamuts: HamutsBox,
-      currentFunctionHeader: FunctionHeader2,
+      currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      while2: While2):
+      while2: WhileTE):
   WhileH = {
 
-    val While2(bodyExpr2) = while2
+    val WhileTE(bodyExpr2) = while2
 
     val (exprWithoutDeferreds, deferreds) =
       ExpressionHammer.translate(hinputs, hamuts, currentFunctionHeader, locals, bodyExpr2);
@@ -325,23 +325,23 @@ object CallHammer {
   def translateInterfaceFunctionCall(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-      currentFunctionHeader: FunctionHeader2,
+      currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      superFunctionHeader: FunctionHeader2,
-      resultType2: Coord,
-      argsExprs2: List[Expression2]):
-  ExpressionH[ReferendH] = {
+      superFunctionHeader: FunctionHeaderT,
+      resultType2: CoordT,
+      argsExprs2: List[ExpressionT]):
+  ExpressionH[KindH] = {
     val (argLines, argsDeferreds) =
       ExpressionHammer.translateExpressions(
         hinputs, hamuts, currentFunctionHeader, locals, argsExprs2);
 
     val virtualParamIndex = superFunctionHeader.getVirtualIndex.get
-    val Coord(_, _, interfaceRef2 @ InterfaceRef2(_)) =
+    val CoordT(_, _, interfaceTT @ InterfaceTT(_)) =
       superFunctionHeader.paramTypes(virtualParamIndex)
     val (interfaceRefH) =
-      StructHammer.translateInterfaceRef(hinputs, hamuts, interfaceRef2)
-    val edge = hinputs.edgeBlueprintsByInterface(interfaceRef2)
-    vassert(edge.interface == interfaceRef2)
+      StructHammer.translateInterfaceRef(hinputs, hamuts, interfaceTT)
+    val edge = hinputs.edgeBlueprintsByInterface(interfaceTT)
+    vassert(edge.interface == interfaceTT)
     val indexInEdge = edge.superFamilyRootBanners.indexOf(superFunctionHeader.toBanner)
     vassert(indexInEdge >= 0)
 
@@ -361,9 +361,9 @@ object CallHammer {
     //
 //    val (callResultLine) =
 //      superFamilyRootBanner.params.zipWithIndex.collectFirst({
-//        case (Parameter2(_, Some(_), Coord(_, interfaceRef2 : InterfaceRef2)), paramIndex) => {
+//        case (Parameter2(_, Some(_), Coord(_, interfaceTT : InterfaceRef2)), paramIndex) => {
 //          val (interfaceRefH) =
-//            StructHammer.translateInterfaceRef(hinputs, hamuts, currentFunctionHeader, interfaceRef2)
+//            StructHammer.translateInterfaceRef(hinputs, hamuts, currentFunctionHeader, interfaceTT)
 //
 //          val (functionNodeLine) =
 //            translateInterfaceFunctionCallWithInterface(
@@ -377,13 +377,13 @@ object CallHammer {
 //              argLines)
 //          (functionNodeLine)
 //        }
-//        case (Parameter2(_, Some(_), Coord(_, structRef2@ StructRef2(_))), _) => {
+//        case (Parameter2(_, Some(_), Coord(_, structTT@ structTT(_))), _) => {
 //          val (functionRegister) =
 //            translateInterfaceFunctionLookupWithStruct(
 //              hinputs,
 //              hamuts,
 //              nodesByLine,
-//              structRef2,
+//              structTT,
 //              superFamilyRootBanner)
 //          val callResultNode =
 //            addNode(
@@ -414,11 +414,11 @@ object CallHammer {
 //      hinputs: Hinputs,
 //      hamuts: HamutsBox,
 //      nodesByLine: NodesBox,
-//      structRef2: StructRef2,
+//      structTT: structTT,
 //      superFamilyRootBanner: FunctionBanner2):
 //  (Vector[NodeH], NodeH[FunctionTH]) = {
 //    val prototype2 =
-//      getPrototypeForStructInterfaceCall(hinputs, structRef2, superFamilyRootBanner)
+//      getPrototypeForStructInterfaceCall(hinputs, structTT, superFamilyRootBanner)
 //
 //    val (functionRefH) =
 //      FunctionHammer.translateFunctionRef(hinputs, hamuts, currentFunctionHeader, prototype2);
@@ -438,8 +438,8 @@ object CallHammer {
 //      firstVirtualParamIndex: Int,
 //      firstVirtualParamInterface: InterfaceRefH,
 //      functionTypeH: FunctionTH,
-//      argLines: List[NodeH[ReferendH]]):
-//  (Vector[NodeH], Option[NodeH[ReferendH]]) = {
+//      argLines: List[NodeH[KindH]]):
+//  (Vector[NodeH], Option[NodeH[KindH]]) = {
 //    val interfaceId = firstVirtualParamInterface.interfaceId
 //
 //    val edgeBlueprint =
@@ -473,13 +473,13 @@ object CallHammer {
 
 //  private def getPrototypeForStructInterfaceCall(
 //      hinputs: Hinputs,
-//      structRef2: StructRef2,
+//      structTT: structTT,
 //      superFamilyRootBanner: FunctionBanner2):
 //  Prototype2 = {
 //
-//    val structDef2 = hinputs.lookupStruct(structRef2)
+//    val structDefT = hinputs.lookupStruct(structTT)
 //    val ancestorInterfaces2 =
-//      hinputs.impls.filter(impl => impl.struct == structDef2.getRef).map(_.interface)
+//      hinputs.impls.filter(impl => impl.struct == structDefT.getRef).map(_.interface)
 //    val edgeBlueprints = ancestorInterfaces2.map(hinputs.edgeBlueprintsByInterface)
 //    val matchingEdgeBlueprint =
 //      edgeBlueprints.find(_.superFamilyRootBanners.contains(superFamilyRootBanner)).get;
@@ -489,7 +489,7 @@ object CallHammer {
 //
 //    val edge =
 //      hinputs.edges.find(
-//        edge => edge.interface == matchingEdgeBlueprint.interface && edge.struct == structRef2).get;
+//        edge => edge.interface == matchingEdgeBlueprint.interface && edge.struct == structTT).get;
 //    val methodPrototype2 = edge.methods(indexInEdgeBlueprint)
 //    methodPrototype2
 //  }

@@ -446,7 +446,7 @@ struct FunctionHeaderP {
   // attributes List<IFunctionAttributeP>;
 
   // If this is None, then the function had no identifying runes.
-  // If it's Some(List()) it might represent the <> in `fn moo<>(a int, b bool) { ... }`
+  // If it's Some(List.empty) it might represent the <> in `fn moo<>(a int, b bool) { ... }`
   // If it's Some(List(...)) then it's the <T, Y> in `fn moo<T, Y>(a T, b Y) { ... }`
   maybeUserSpecifiedIdentifyingRunes Opt<IdentifyingRunesP>;
 
@@ -464,29 +464,29 @@ struct FunctionHeaderP {
 
 
 // A reference contains these things:
-// - The referend; the thing that this reference points at.
-// - The ownership; this reference's relationship to the referend. This can be:
-//   - Share, which means the references all share ownership of the referend. This
-//     means that the referend will only be deallocated once all references to it are
-//     gone. Share references can only point at immutable referends, and immutable
-//     referends can *only* be pointed at by share references.
+// - The kind; the thing that this reference points at.
+// - The ownership; this reference's relationship to the kind. This can be:
+//   - Share, which means the references all share ownership of the kind. This
+//     means that the kind will only be deallocated once all references to it are
+//     gone. Share references can only point at immutable kinds, and immutable
+//     kinds can *only* be pointed at by share references.
 //   - Owning, which means this reference owns the object, and when this reference
 //     disappears (without being moved), the object should disappear (this is taken
-//     care of by the typing stage). Owning refs can only point at mutable referends.
-//   - Constraint, which means this reference doesn't own the referend. The referend
+//     care of by the typing stage). Owning refs can only point at mutable kinds.
+//   - Constraint, which means this reference doesn't own the kind. The kind
 //     is guaranteed not to die while this constraint ref is active (indeed if it did
-//     the program would panic). Constraint refs can only point at mutable referends.
+//     the program would panic). Constraint refs can only point at mutable kinds.
 //   - Raw, which is a weird ownership and should go away. We point at Void with this.
 //     TODO: Get rid of raw.
 //   - (in the future) Weak, which is a reference that will null itself out when the
-//     referend is destroyed. Weak refs can only point at mutable referends.
+//     kind is destroyed. Weak refs can only point at mutable kinds.
 // - (in the future) Permission, either readonly or readwrite.
 // - (in the future) Location, either inline or yonder. Inline means that this reference
 //   isn't actually a pointer, it's just the value itself, like C's Car vs Car*.
 // In previous stages, this is referred to as a "coord", because these four things can be
 // thought of as dimensions of a coordinate.
 
-// // Ownership is the way a reference relates to the referend's lifetime, see the
+// // Ownership is the way a reference relates to the kind's lifetime, see the
 // // above reference explanation.
 interface OwnershipP {}
 struct OwnP {}
@@ -498,7 +498,7 @@ impl OwnershipP for BorrowP;
 struct ShareP {}
 impl OwnershipP for ShareP;
 
-// Permission says whether a reference can modify the referend it's pointing at.
+// Permission says whether a reference can modify the kind it's pointing at.
 // See above reference explanation.
 interface PermissionP {}
 struct NormalP {}
@@ -508,9 +508,9 @@ impl PermissionP for NormalP;
 struct ExclusiveReadwriteP {}
 impl PermissionP for ExclusiveReadwriteP;
 
-// Location says whether a reference contains the referend's location (yonder) or
-// contains the referend itself (inline).
-// Yes, it's weird to consider a reference containing a referend, but it makes a
+// Location says whether a reference contains the kind's location (yonder) or
+// contains the kind itself (inline).
+// Yes, it's weird to consider a reference containing a kind, but it makes a
 // lot of things simpler for the language.
 // Examples (with C++ translations):
 //   This will create a variable `car` that lives on the stack ("inline"):
@@ -531,11 +531,11 @@ impl PermissionP for ExclusiveReadwriteP;
 // local variables it can, to speed up the program.
 interface LocationP {}
 
-// Means that the referend will be in the containing stack frame or struct.
+// Means that the kind will be in the containing stack frame or struct.
 struct InlineP {}
 impl LocationP for InlineP;
 
-// Means that the referend will be allocated separately, in the heap.
+// Means that the kind will be allocated separately, in the heap.
 struct YonderP {}
 impl LocationP for YonderP;
 
@@ -583,8 +583,8 @@ impl MutabilityP for ImmutableP;
 //       x->numWheels = 6;
 // In other words, variability affects whether the variable (or member) can be
 // changed to point at something different, but it doesn't affect whether we can
-// change anything inside the referend (this reference's permission and the
-// referend struct's member's variability affect that).
+// change anything inside the kind (this reference's permission and the
+// kind struct's member's variability affect that).
 interface VariabilityP {}
 struct FinalP {}
 impl VariabilityP for FinalP;
@@ -1123,32 +1123,32 @@ struct SequencePE {
 impl IExpressionPE for SequencePE;
 
 // A simple integer, like the `5` in `println(5);`
-struct IntLiteralPE {
+struct ConstantIntPE {
   range Range;
   value int;
 }
-impl IExpressionPE for IntLiteralPE;
+impl IExpressionPE for ConstantIntPE;
 
 // A simple boolean, like the `false` in `println(false);`
-struct BoolLiteralPE {
+struct ConstantBoolPE {
   range Range;
   value bool;
 }
-impl IExpressionPE for BoolLiteralPE;
+impl IExpressionPE for ConstantBoolPE;
 
 // A simple string, like the "hello" in `println("hello");`
-struct StrLiteralPE {
+struct ConstantStrPE {
   range Range;
   value str;
 }
-impl IExpressionPE for StrLiteralPE;
+impl IExpressionPE for ConstantStrPE;
 
 // A simple integer, like the `5.2` in `println(5.2);`
-struct FloatLiteralPE {
+struct ConstantFloatPE {
   range Range;
   value float;
 }
-impl IExpressionPE for FloatLiteralPE;
+impl IExpressionPE for ConstantFloatPE;
 
 // Accesses a member of the struct on the left side, like `mySpaceship.fuel`.
 struct DotPE {

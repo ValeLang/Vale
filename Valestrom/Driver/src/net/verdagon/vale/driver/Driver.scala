@@ -1,29 +1,30 @@
 package net.verdagon.vale.driver
 
-import java.io.{BufferedWriter, File, FileNotFoundException, FileWriter, OutputStream, PrintStream}
+import java.io.{BufferedWriter, File, FileNotFoundException, FileOutputStream, FileWriter, OutputStream, PrintStream}
 import java.util.InputMismatchException
 import net.verdagon.vale.astronomer.{Astronomer, AstronomerErrorHumanizer, ProgramA}
 import net.verdagon.vale.hammer.{Hammer, Hamuts, VonHammer}
 import net.verdagon.vale.highlighter.{Highlighter, Spanner}
 import net.verdagon.vale.metal.ProgramH
-import net.verdagon.vale.parser.{CombinatorParsers, FailedParse, FileP, InputException, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier, Vonifier}
+import net.verdagon.vale.parser.{CombinatorParsers, FailedParse, FileP, InputException, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier}
 import net.verdagon.vale.scout.{Scout, ScoutErrorHumanizer}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
 import net.verdagon.vale.vivem.Vivem
 import net.verdagon.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, NullProfiler, Ok, PackageCoordinate, Result, vassert, vassertSome, vcheck, vfail, vwat}
 import net.verdagon.von.{IVonData, JsonSyntax, VonInt, VonPrinter}
 
+import java.nio.charset.Charset
 import scala.io.Source
 import scala.util.matching.Regex
 
 object Driver {
-  val DEFAULT_PACKAGE_COORD = PackageCoordinate("my_module", List())
+  val DEFAULT_PACKAGE_COORD = PackageCoordinate("my_module", List.empty)
 
   sealed trait IValestromInput {
     def packageCoord: PackageCoordinate
   }
   case class ModulePathInput(moduleName: String, path: String) extends IValestromInput {
-    override def packageCoord: PackageCoordinate = PackageCoordinate(moduleName, List())
+    override def packageCoord: PackageCoordinate = PackageCoordinate(moduleName, List.empty)
   }
   case class DirectFilePathInput(packageCoord: PackageCoordinate, path: String) extends IValestromInput
   case class SourceInput(
@@ -92,7 +93,7 @@ object Driver {
                 val packageCoordinateParts = packageCoordStr.split("\\.")
                 PackageCoordinate(packageCoordinateParts.head, packageCoordinateParts.tail.toList)
               } else {
-                PackageCoordinate(packageCoordStr, List())
+                PackageCoordinate(packageCoordStr, List.empty)
               }
             val input =
               if (path.endsWith(".vale") || path.endsWith(".vpst")) {
@@ -122,25 +123,6 @@ object Driver {
     }
   }
 
-  def readCode(path: String): String = {
-    if (path == "stdin:") {
-      val allLines = new StringBuilder()
-      var ok = true
-      while (ok) {
-        val ln = scala.io.StdIn.readLine()
-        ok = ln != null
-        if (ok) allLines.append(ln + "\n")
-      }
-      allLines.toString()
-    } else {
-      val file = path
-      val bufferedSource = Source.fromFile(file)
-      val code = bufferedSource.getLines.mkString("\n")
-      bufferedSource.close
-      code
-    }
-  }
-
   def resolvePackageContents(
       inputs: List[IValestromInput],
       packageCoord: PackageCoordinate):
@@ -151,7 +133,7 @@ object Driver {
 
     val sourceInputs =
       inputs.zipWithIndex.filter(_._1.packageCoord.module == module).flatMap({
-        case (SourceInput(_, name, code), index) if (packages == List()) => {
+        case (SourceInput(_, name, code), index) if (packages == List.empty) => {
           // All .vpst and .vale direct inputs are considered part of the root paackage.
           List((index + "(" + name + ")" -> code))
         }
@@ -256,7 +238,7 @@ object Driver {
 //        val paackage = List[String]()
 //        val filepathToCode =
 //          loadedInputsInModule.groupBy(_.path).map({
-//            case (path, List()) => vfail("No files with path: " + path)
+//            case (path, List.empty) => vfail("No files with path: " + path)
 //            case (path, List(onlyCodeWithThisFilename)) => (path -> onlyCodeWithThisFilename.code)
 //            case (path, multipleCodeWithThisFilename) => vfail("Multiple files with path " + path + ": " + multipleCodeWithThisFilename.mkString(", "))
 //          })
@@ -283,7 +265,7 @@ object Driver {
 //            }
 //          }
 //        } else if (filepath.endsWith(".vpst")) {
-//          (contents, List())
+//          (contents, List.empty)
 //        } else {
 //          throw new InputException("Unknown input type: " + filepath)
 //        }
@@ -423,20 +405,6 @@ object Driver {
       }
   }
 
-  def outputParseds(outputFile: String, program0: FileP): Unit = {
-    val program0J = Vonifier.vonifyProgram(program0)
-    val json = new VonPrinter(JsonSyntax, 120).print(program0J)
-    println("Wrote to file " + outputFile)
-    writeFile(outputFile, json)
-  }
-
-  def outputHamuts(outputFile: String, programH: ProgramH): Unit = {
-    val programV = VonHammer.vonifyProgram(programH)
-    val json = new VonPrinter(JsonSyntax, 120).print(programV)
-    println("Wrote to file " + outputFile)
-    writeFile(outputFile, json)
-  }
-
   def run(program: ProgramH, verbose: Boolean): IVonData = {
     if (verbose) {
       Vivem.executeWithPrimitiveArgs(
@@ -461,7 +429,7 @@ object Driver {
 
   def main(args: Array[String]): Unit = {
     try {
-      val opts = parseOpts(Options(List(), List(), None, false, true, true, false, true, None, false), args.toList)
+      val opts = parseOpts(Options(List.empty, List.empty, None, false, true, true, false, true, None, false), args.toList)
       vcheck(opts.mode.nonEmpty, "No mode!", InputException)
       vcheck(opts.inputs.nonEmpty, "No input files!", InputException)
 
@@ -498,7 +466,7 @@ object Driver {
 
           val code =
             valeCodeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toList match {
-              case List() => throw InputException("No vale code given to highlight!")
+              case Nil => throw InputException("No vale code given to highlight!")
               case List(x) => x
               case _ => throw InputException("No vale code given to highlight!")
             }
@@ -577,10 +545,10 @@ object Driver {
     if (filepath == "stdout:") {
       println(s)
     } else {
-      val file = new File(filepath)
-      val bw = new BufferedWriter(new FileWriter(file))
-      bw.write(s)
-      bw.close()
+      val bytes = s.getBytes(Charset.forName("UTF-8"))
+      val outputStream = new FileOutputStream(filepath)
+      outputStream.write(bytes)
+      outputStream.close()
     }
   }
 }

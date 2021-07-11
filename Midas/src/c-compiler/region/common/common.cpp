@@ -494,7 +494,11 @@ WrapperPtrLE mallocStr(
   fillControlBlock(
       builder,
       kindStructs->getConcreteControlBlockPtr(FL(), functionState, builder, globalState->metalCache->strRef, newStrWrapperPtrLE));
-  LLVMBuildStore(builder, LLVMBuildZExt(builder, lenI32LE, LLVMInt32TypeInContext(globalState->context), ""), getLenPtrFromStrWrapperPtr(builder, newStrWrapperPtrLE));
+  assert(LLVMTypeOf(lenI32LE) == LLVMInt32TypeInContext(globalState->context));
+  LLVMBuildStore(
+      builder,
+      lenI32LE,
+      getLenPtrFromStrWrapperPtr(builder, newStrWrapperPtrLE));
 
   // Set the null terminating character to the 0th spot and the end spot, just to guard against bugs
   auto charsBeginPtr = getCharsPtrFromWrapperPtr(globalState, builder, newStrWrapperPtrLE);

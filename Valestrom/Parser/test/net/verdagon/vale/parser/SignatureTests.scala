@@ -12,25 +12,25 @@ class SignatureTests extends FunSuite with Matchers with Collector with TestPars
       "fn maxHp(this Marine impl IUnit) { 5 }") shouldHave {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "maxHp")),List(), None, None,
+          Some(NameP(_, "maxHp")),Nil, None, None,
           Some(
             ParamsP(
               _,
               List(
                 PatternPP(_,_,
-                  Some(CaptureP(_,LocalNameP(NameP(_, "this")),FinalP)),
+                  Some(CaptureP(_,LocalNameP(NameP(_, "this")))),
                   Some(NameOrRunePT(NameP(_, "Marine"))),
                   None,
                   Some(OverrideP(_,NameOrRunePT(NameP(_, "IUnit")))))))),
           FunctionReturnP(_, None,None)),
-        Some(BlockPE(_, List(IntLiteralPE(_, 5))))) =>
+        Some(BlockPE(_, List(ConstantIntPE(_, 5, _))))) =>
     }
   }
 
   test("Param") {
     val program = compileProgram("fn call(f F){f()}")
     program shouldHave {
-      case PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "f")),FinalP)),Some(NameOrRunePT(NameP(_, "F"))),None,None) =>
+      case PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "f")))),Some(NameOrRunePT(NameP(_, "F"))),None,None) =>
     }
   }
 
@@ -38,10 +38,11 @@ class SignatureTests extends FunSuite with Matchers with Collector with TestPars
     compile(CombinatorParsers.topLevelFunction, "fn sum () rules() {3}") shouldHave {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "sum")), List(), None, Some(_), Some(_), FunctionReturnP(_, None, None)),
-        Some(BlockPE(_, List(IntLiteralPE(_, 3))))) =>
+          Some(NameP(_, "sum")), Nil, None, Some(_), Some(_), FunctionReturnP(_, None, None)),
+        Some(BlockPE(_, List(ConstantIntPE(_, 3, _))))) =>
     }
   }
+
 
   test("Identifying runes") {
     compile(
@@ -49,12 +50,12 @@ class SignatureTests extends FunSuite with Matchers with Collector with TestPars
       "fn wrap<A, F>(a A) { }") shouldHave {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "wrap")), List(),
+          Some(NameP(_, "wrap")), Nil,
           Some(
             IdentifyingRunesP(_,
               List(
-              IdentifyingRuneP(_, NameP(_, "A"), List()),
-              IdentifyingRuneP(_, NameP(_, "F"), List())))),
+              IdentifyingRuneP(_, NameP(_, "A"), Nil),
+              IdentifyingRuneP(_, NameP(_, "F"), Nil)))),
           None,
           Some(ParamsP(_, List(Patterns.capturedWithTypeRune("a", "A")))),
           FunctionReturnP(_, None, None)),

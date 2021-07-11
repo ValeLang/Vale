@@ -222,9 +222,7 @@ case class ParameterA(
   pattern: AtomAP) {
 }
 
-case class CaptureA(
-  local: LocalVariableA,
-  variability: VariabilityP)
+case class CaptureA(local: LocalA)
 
 sealed trait IBodyA
 case object ExternBodyA extends IBodyA

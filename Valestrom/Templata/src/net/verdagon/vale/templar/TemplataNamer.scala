@@ -9,77 +9,77 @@ object TemplataNamer {
   // by Hammer types, such as template args. Hammer will sometimes output many functions
   // with the same signature because of this.
 
-  def getReferenceIdentifierName(reference: Coord): String = {
-    val Coord(ownership, permission, referend) = reference;
+  def getReferenceIdentifierName(reference: CoordT): String = {
+    val CoordT(ownership, permission, kind) = reference;
     val ownershipString =
       ownership match {
-        case Share => ""//"*"
-        case Constraint => "&"
-        case Weak => "&&"
-        case Own => ""//"^"
+        case ShareT => ""//"*"
+        case ConstraintT => "&"
+        case WeakT => "&&"
+        case OwnT => ""//"^"
       }
     val permissionString =
       permission match {
-        case Readonly => "#"
-        case Readwrite => "!"
+        case ReadonlyT => "#"
+        case ReadwriteT => "!"
 //        case ExclusiveReadwrite => "!!"
       }
-    ownershipString + permissionString + getReferendIdentifierName(referend)
+    ownershipString + permissionString + getKindIdentifierName(kind)
   }
 
   def stringifyTemplateArgs(templateArgs: List[ITemplata]): String = {
     "<" + templateArgs.map(templateArg => getIdentifierName(templateArg)).mkString(", ") + ">"
   }
 
-  def stringifyParametersArgs(parameters: List[Coord]): String = {
+  def stringifyParametersArgs(parameters: List[CoordT]): String = {
     "(" + parameters.map(parameter => getReferenceIdentifierName(parameter)).mkString(", ") + ")"
   }
 
-  def getFullNameIdentifierName(fullName: FullName2[IName2]): String = {
+  def getFullNameIdentifierName(fullName: FullNameT[INameT]): String = {
     // Some nice rune symbols: ᚠᚢᚣᚥᚨᚫᚬᚮᚱᚳᚴᚻᛃᛄᛇᛈᛉᛊᛋᛒᛗᛘᛝᛞᛟᛥ
     // Here's the ones we haven't used below: ᚢᚨᚬᚮᚳᚴᛃᛄᛇ
     // We should probably not use these long term since they're super unrecognizable,
     // we can switch to nicer symbols once things settle.
     fullName.steps.map({
-      case ImplDeclareName2(subCitizenHumanName, codeLocation) => "ᚠ" + subCitizenHumanName + "@" + codeLocation
-      case LetName2(codeLocation) => "ᚥ" + codeLocation
-      case UnnamedLocalName2(codeLocation) => "ᚣ" + codeLocation
-      case ClosureParamName2() => "ᛋ"
-      case MagicParamName2(magicParamNumber) => "ᛞ" + magicParamNumber
-      case CodeVarName2(name) => "ᛗ" + name
+      case ImplDeclareNameT(subCitizenHumanName, codeLocation) => "ᚠ" + subCitizenHumanName + "@" + codeLocation
+      case LetNameT(codeLocation) => "ᚥ" + codeLocation
+      case UnnamedLocalNameT(codeLocation) => "ᚣ" + codeLocation
+      case ClosureParamNameT() => "ᛋ"
+      case MagicParamNameT(magicParamNumber) => "ᛞ" + magicParamNumber
+      case CodeVarNameT(name) => "ᛗ" + name
 //      case CodeRune2(name) => "ᛝ" + name
 //      case ImplicitRune2(name) => "ᚻ" + name
 //      case MemberRune2(memberIndex) => "ᛒ" + memberIndex
 //      case MagicImplicitRune2(magicParamIndex) => "ᛥ" + magicParamIndex
 //      case ReturnRune2() => "ᚱ"
-      case FunctionName2(humanName, templateArgs, parameters) => "ᚫ" + humanName + stringifyTemplateArgs(templateArgs) + stringifyParametersArgs(parameters)
+      case FunctionNameT(humanName, templateArgs, parameters) => "ᚫ" + humanName + stringifyTemplateArgs(templateArgs) + stringifyParametersArgs(parameters)
 //      case LambdaName2(codeLocation, templateArgs, parameters) => "ᛈ" + codeLocation + stringifyTemplateArgs(templateArgs) + stringifyParametersArgs(parameters)
 //      case CitizenName2(humanName, templateArgs) => "ᛟ" + humanName + stringifyTemplateArgs(templateArgs)
-      case CitizenName2(humanName, templateArgs) => "ᛘ" + humanName + stringifyTemplateArgs(templateArgs)
-      case LambdaCitizenName2(codeLocation) => "ᛊ" + codeLocation
-      case AnonymousSubstructName2(thing) =>
-      case TupleName2(members) => "tup#"
-      case ImmDropName2(kind) => "drop*" + getReferendIdentifierName(kind)
+      case CitizenNameT(humanName, templateArgs) => "ᛘ" + humanName + stringifyTemplateArgs(templateArgs)
+      case LambdaCitizenNameT(codeLocation) => "ᛊ" + codeLocation
+      case AnonymousSubstructNameT(thing) =>
+      case TupleNameT(members) => "tup#"
+      case ImmDropNameT(kind) => "drop*" + getKindIdentifierName(kind)
       case x => vimpl(x.toString)
     }).mkString(".")
   }
 
-  def getReferendIdentifierName(tyype: Kind): String = {
+  def getKindIdentifierName(tyype: KindT): String = {
     tyype match {
-      case Int2() => "int"//"𝒾"
-      case Float2() => "float"//"𝒻"
-      case Bool2() => "bool"// "𝒷"
-      case Str2() => "str"// "𝓈"
-      case Void2() => "void" // "∅"
-      case TupleT2(_, _) => "tup"
-      case Never2() => "never"
-      case UnknownSizeArrayT2(array) => "𝔸" + getReferenceIdentifierName(array.memberType)
-      case KnownSizeArrayT2(size, arrayT2) => "𝔸" + size + getReferenceIdentifierName(arrayT2.memberType)
-      case PackT2(_, underlyingStruct) => {
-        getReferendIdentifierName(underlyingStruct)
+      case IntT(bits) => "i" + bits //"𝒾"
+      case FloatT() => "float"//"𝒻"
+      case BoolT() => "bool"// "𝒷"
+      case StrT() => "str"// "𝓈"
+      case VoidT() => "void" // "∅"
+      case TupleTT(_, _) => "tup"
+      case NeverT() => "never"
+      case RuntimeSizedArrayTT(array) => "𝔸" + getReferenceIdentifierName(array.memberType)
+      case StaticSizedArrayTT(size, arrayT2) => "𝔸" + size + getReferenceIdentifierName(arrayT2.memberType)
+      case PackTT(_, underlyingStruct) => {
+        getKindIdentifierName(underlyingStruct)
       }
-      case StructRef2(fullName) => "𝕊" + getFullNameIdentifierName(fullName)
-      case InterfaceRef2(fullName) => "𝕋" + getFullNameIdentifierName(fullName)
+      case StructTT(fullName) => "𝕊" + getFullNameIdentifierName(fullName)
+      case InterfaceTT(fullName) => "𝕋" + getFullNameIdentifierName(fullName)
       case OverloadSet(env, name, _) => {
         "𝔾" + " " + env + " " + name
       }
@@ -88,18 +88,18 @@ object TemplataNamer {
 
   private def getIdentifierName(tyype: ITemplata): String = {
     tyype match {
-      case KindTemplata(referend) => "ㄊ" + getReferendIdentifierName(referend)
+      case KindTemplata(kind) => "ㄊ" + getKindIdentifierName(kind)
       case CoordTemplata(reference) => "ㄊ" + getReferenceIdentifierName(reference)
-      case MutabilityTemplata(Mutable) => "ㄊmut"
-      case MutabilityTemplata(Immutable) => "ㄊimm"
+      case MutabilityTemplata(MutableT) => "ㄊmut"
+      case MutabilityTemplata(ImmutableT) => "ㄊimm"
       case IntegerTemplata(num) => "ㄊ" + num
-//      case StructTemplateTemplata(struct1) => "ㄊ𝕊" + struct1.struct1Id
-//      case InterfaceTemplateTemplata(interface1) => "ㄊ𝕋" + interface1.interface1Id
+//      case StructTemplateTemplata(structA) => "ㄊ𝕊" + structA.struct1Id
+//      case InterfaceTemplateTemplata(interfaceA) => "ㄊ𝕋" + interfaceA.interface1Id
     }
   }
 
-  def getIdentifierName(prototype: Prototype2): String = {
-    val Prototype2(fullName, returnType2) = prototype;
+  def getIdentifierName(prototype: PrototypeT): String = {
+    val PrototypeT(fullName, returnType2) = prototype;
     "𝔽" + getFullNameIdentifierName(fullName) +
         getReferenceIdentifierName(returnType2)
   }
@@ -109,8 +109,8 @@ object TemplataNamer {
     getReferenceIdentifierName(tyype) +
       (virtuality match {
         case None => ""
-        case Some(Abstract2) => " abstract"
-        case Some(Override2(kind)) => " impl " + getReferendIdentifierName(kind)
+        case Some(AbstractT$) => " abstract"
+        case Some(OverrideT(kind)) => " impl " + getKindIdentifierName(kind)
       })
   }
 }

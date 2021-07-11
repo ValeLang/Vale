@@ -1,10 +1,11 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale.astronomer.FunctionA
+import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{PackageCoordinate, vassert, vassertSome, vfail, vwat}
+import net.verdagon.vale.{PackageCoordinate, vassert, vassertSome, vfail, vpass, vwat}
 
 import scala.collection.immutable._
 import scala.collection.mutable
@@ -19,42 +20,75 @@ import scala.collection.mutable
 //   type to avoid a cyclical definition.
 // - If not in declared banners, then tell FunctionTemplar to start evaluating it.
 
-case class Impl2(
-  struct: StructRef2,
-  interface: InterfaceRef2
-) extends Queriable2 {
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+case class ImplT(
+  struct: StructTT,
+  interface: InterfaceTT
+) extends QueriableT {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     struct.all(func) ++ interface.all(func)
   }
 }
 
-case class ExportAs2(
-  tyype: Kind,
+case class KindExportT(
+  range: RangeS,
+  tyype: KindT,
   packageCoordinate: PackageCoordinate,
   exportedName: String
-) extends Queriable2 {
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+) extends QueriableT {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     tyype.all(func)
   }
 }
 
-case class InterfaceEdgeBlueprint(
-  interface: InterfaceRef2,
-  superFamilyRootBanners: List[FunctionBanner2])
+case class FunctionExportT(
+  range: RangeS,
+  prototype: PrototypeT,
+  packageCoordinate: PackageCoordinate,
+  exportedName: String
+) extends QueriableT {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
+    prototype.all(func)
+  }
+}
 
-case class Edge2(
-  struct: StructRef2,
-  interface: InterfaceRef2,
-  methods: List[Prototype2])
+case class KindExternT(
+  tyype: KindT,
+  packageCoordinate: PackageCoordinate,
+  externName: String
+) extends QueriableT {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
+    tyype.all(func)
+  }
+}
+
+case class FunctionExternT(
+  range: RangeS,
+  prototype: PrototypeT,
+  packageCoordinate: PackageCoordinate,
+  externName: String
+) extends QueriableT {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
+    prototype.all(func)
+  }
+}
+
+case class InterfaceEdgeBlueprint(
+  interface: InterfaceTT,
+  superFamilyRootBanners: List[FunctionBannerT])
+
+case class EdgeT(
+  struct: StructTT,
+  interface: InterfaceTT,
+  methods: List[PrototypeT])
 
 object Program2 {
-  val emptyTupleStructRef = StructRef2(FullName2(List(), TupleName2(List())))
-  val emptyTupleType: PackT2 = PackT2(List(), Program2.emptyTupleStructRef)
-  val emptyTupleReference: Coord = Coord(Share, Readonly, emptyTupleType)
-  val emptyPackExpression: PackE2 = PackE2(List(), Coord(Share, Readonly, Program2.emptyTupleType), Program2.emptyTupleType)
+  val emptyTupleStructRef = StructTT(FullNameT(PackageCoordinate.BUILTIN, List.empty, TupleNameT(List.empty)))
+  val emptyTupleType: PackTT = PackTT(List.empty, Program2.emptyTupleStructRef)
+  val emptyTupleReference: CoordT = CoordT(ShareT, ReadonlyT, emptyTupleType)
+  val emptyPackExpression: PackTE = PackTE(List.empty, CoordT(ShareT, ReadonlyT, Program2.emptyTupleType), Program2.emptyTupleType)
 
-  val intType = Coord(Share, Readonly, Int2())
-  val boolType = Coord(Share, Readonly, Bool2())
+  val intType = CoordT(ShareT, ReadonlyT, IntT.i32)
+  val boolType = CoordT(ShareT, ReadonlyT, BoolT())
 }
 
 //trait Program2 {
@@ -64,10 +98,10 @@ object Program2 {
 //  def getAllFunctions: Set[Function2]
 //  def getAllCitizens: Set[CitizenDefinition2] = getAllInterfaces ++ getAllStructs
 //  def getAllExterns: Set[FunctionHeader2]
-//  def emptyPackStructRef: StructRef2
+//  def emptyPackStructRef: structTT
 //
-//  def lookupStruct(structRef: StructRef2): StructDefinition2;
-//  def lookupInterface(interfaceRef: InterfaceRef2): InterfaceDefinition2;
+//  def lookupStruct(structTT: structTT): StructDefinition2;
+//  def lookupInterface(interfaceTT: InterfaceRef2): InterfaceDefinition2;
 //  def lookupCitizen(citizenRef: CitizenRef2): CitizenDefinition2;
 //  def lookupFunction(signature2: Signature2): Option[Function2];
 //
@@ -79,18 +113,16 @@ object Program2 {
 //  }
 //}
 
-case class Function2(
-  header: FunctionHeader2,
+case class FunctionT(
+  header: FunctionHeaderT,
   // Used for testing
-  variables: List[ILocalVariable2],
-  body: ReferenceExpression2) extends Queriable2 {
+  variables: List[ILocalVariableT],
+  body: ReferenceExpressionTE) extends QueriableT {
 
-  vassert(
-    body.resultRegister.referend == Never2() ||
-    header.returnType.referend == Never2() ||
-    body.resultRegister.reference == header.returnType)
+  // We always end a function with a return, whose result is a Never.
+  vassert(body.resultRegister.kind == NeverT())
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ header.all(func) ++ variables.flatMap(_.all(func)) ++ body.all(func)
   }
 }

@@ -16,3 +16,5 @@ fn signum(a int) int {
     else if (a > 0) { 1 }
     else { 0 }
 }
+
+fn sqrt(x float) float extern;

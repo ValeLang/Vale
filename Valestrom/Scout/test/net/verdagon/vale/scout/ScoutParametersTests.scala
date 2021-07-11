@@ -42,7 +42,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
       param match {
         case ParameterS(
           AtomSP(_,
-            CaptureS(CodeVarNameS("moo"),FinalP),
+            Some(CaptureS(CodeVarNameS("moo"))),
             None,
             tcr @ ImplicitRuneS(_,_),
             None)) => tcr
@@ -67,7 +67,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
       param match {
         case ParameterS(
           AtomSP(_,
-            CaptureS(UnnamedLocalNameS(_),FinalP),
+          None,
             None,
             pr @ ImplicitRuneS(_, 0),
             None)) => pr
@@ -94,7 +94,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
       param match {
         case ParameterS(
          AtomSP(_,
-          CaptureS(UnnamedLocalNameS(_),FinalP),
+          None,
           None,
           pr @ ImplicitRuneS(_, 0),
           None)) => pr
@@ -121,13 +121,13 @@ class ScoutParametersTests extends FunSuite with Matchers {
       param match {
         case ParameterS(
             AtomSP(_,
-              CaptureS(CodeVarNameS("moo"),FinalP),
+            Some(CaptureS(CodeVarNameS("moo"))),
               None,
               tr @ CodeRuneS("T"),
               Some(
                 List(
                   AtomSP(_,
-                    CaptureS(CodeVarNameS("a"),FinalP),
+                  Some(CaptureS(CodeVarNameS("a"))),
                     None,
                     ar @ ImplicitRuneS(_, 0),
                     None))))) => (ar, tr)
@@ -149,5 +149,13 @@ class ScoutParametersTests extends FunSuite with Matchers {
 
     // See CCAUIR.
     main.identifyingRunes shouldEqual List(tRune)
+  }
+
+  test("Regioned pure function") {
+    val bork = compile("fn main<'r ro>(ship 'r &Spaceship) pure 't { }")
+
+    val main = bork.lookupFunction("main")
+    // We dont support regions yet, so scout should filter them out.
+    main.identifyingRunes.size shouldEqual 0
   }
 }

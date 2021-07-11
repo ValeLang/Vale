@@ -21,8 +21,8 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
     compile(CombinatorParsers.topLevelFunction, "fn sum() int {3}") match {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "sum")), List(), None, None, Some(ParamsP(_,List())), FunctionReturnP(_, None, Some(_))),
-        Some(BlockPE(_, List(IntLiteralPE(_, 3))))) =>
+          Some(NameP(_, "sum")), Nil, None, None, Some(ParamsP(_,Nil)), FunctionReturnP(_, None, Some(_))),
+        Some(BlockPE(_, List(ConstantIntPE(_, 3, _))))) =>
     }
   }
 
@@ -30,8 +30,8 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
     compile(CombinatorParsers.topLevelFunction, "fn sum() pure {3}") match {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "sum")), List(PureAttributeP(_)), None, None, Some(ParamsP(_,List())), FunctionReturnP(_, None, None)),
-        Some(BlockPE(_, List(IntLiteralPE(_, 3))))) =>
+          Some(NameP(_, "sum")), List(PureAttributeP(_)), None, None, Some(ParamsP(_,Nil)), FunctionReturnP(_, None, None)),
+        Some(BlockPE(_, List(ConstantIntPE(_, 3, _))))) =>
     }
   }
 
@@ -39,7 +39,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
     compile(CombinatorParsers.topLevelFunction, "fn sum() extern;") match {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "sum")), List(ExternAttributeP(_)), None, None, Some(ParamsP(_,List())), FunctionReturnP(_, None, None)),
+          Some(NameP(_, "sum")), List(ExternAttributeP(_)), None, None, Some(ParamsP(_,Nil)), FunctionReturnP(_, None, None)),
         None) =>
     }
   }
@@ -48,7 +48,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
     compile(CombinatorParsers.topLevelFunction, "fn sum() abstract;") match {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "sum")), List(AbstractAttributeP(_)), None, None, Some(ParamsP(_,List())), FunctionReturnP(_, None, None)),
+          Some(NameP(_, "sum")), List(AbstractAttributeP(_)), None, None, Some(ParamsP(_,Nil)), FunctionReturnP(_, None, None)),
         None) =>
     }
   }
@@ -64,7 +64,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
           List(PureAttributeP(_)),
           None,
           None,
-          Some(ParamsP(_,List())),
+          Some(ParamsP(_,Nil)),
           FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_,"int"))))),
         Some(BlockPE(_,List(VoidPE(_))))) =>
     }
@@ -78,7 +78,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
           List(AbstractAttributeP(_)),
           None,
           None,
-          Some(ParamsP(_,List())),
+          Some(ParamsP(_,Nil)),
           FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_,"Int"))))),
         None) =>
     }
@@ -92,7 +92,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
           List(AbstractAttributeP(_)),
           None,
           None,
-          Some(ParamsP(_,List())),
+          Some(ParamsP(_,Nil)),
           FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_,"Int"))))),
         None) =>
     }
@@ -101,7 +101,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
   test("Simple function with identifying rune") {
     val func = compile(CombinatorParsers.topLevelFunction, "fn sum<A>(a A){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
-      case IdentifyingRuneP(_, NameP(_, "A"), List()) =>
+      case IdentifyingRuneP(_, NameP(_, "A"), Nil) =>
     }
   }
 
@@ -168,8 +168,8 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
       """.stripMargin) shouldHave {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "doCivicDance")), List(), None, None,
-          Some(ParamsP(_, List(PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "this")), FinalP)), Some(NameOrRunePT(NameP(_, "Car"))), None, Some(AbstractP))))),
+          Some(NameP(_, "doCivicDance")), Nil, None, None,
+          Some(ParamsP(_, List(PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "this")))), Some(NameOrRunePT(NameP(_, "Car"))), None, Some(AbstractP))))),
           FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_, "int"))))),
         None) =>
     }

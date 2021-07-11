@@ -10,51 +10,51 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.vale.vimpl
 
 object Conversions {
-  def evaluateMutability(mutability: MutabilityP): Mutability = {
+  def evaluateMutability(mutability: MutabilityP): MutabilityT = {
     mutability match {
-      case MutableP => Mutable
-      case ImmutableP => Immutable
+      case MutableP => MutableT
+      case ImmutableP => ImmutableT
     }
   }
 
-  def evaluatePermission(permission: PermissionP): Permission = {
+  def evaluatePermission(permission: PermissionP): PermissionT = {
     permission match {
-      case ReadonlyP => Readonly
-      case ReadwriteP => Readwrite
+      case ReadonlyP => ReadonlyT
+      case ReadwriteP => ReadwriteT
 //      case ExclusiveReadwriteP => ExclusiveReadwrite
       case _ => vimpl()
     }
   }
 
-  def evaluateLocation(location: LocationP): Location = {
+  def evaluateLocation(location: LocationP): LocationT = {
     location match {
-      case InlineP => Inline
-      case YonderP => Yonder
+      case InlineP => InlineT
+      case YonderP => YonderT
     }
   }
 
-  def evaluateVariability(variability: VariabilityP): Variability = {
+  def evaluateVariability(variability: VariabilityP): VariabilityT = {
     variability match {
-      case FinalP => Final
-      case VaryingP => Varying
+      case FinalP => FinalT
+      case VaryingP => VaryingT
     }
   }
 
-  def evaluateOwnership(ownership: OwnershipP): Ownership = {
+  def evaluateOwnership(ownership: OwnershipP): OwnershipT = {
     ownership match {
-      case OwnP => Own
-      case ConstraintP => Constraint
-      case WeakP => Weak
-      case ShareP => Share
+      case OwnP => OwnT
+      case ConstraintP => ConstraintT
+      case WeakP => WeakT
+      case ShareP => ShareT
     }
   }
 
-  def evaluateMaybeOwnership(maybeOwnership: Option[OwnershipP]): Option[Ownership] = {
+  def evaluateMaybeOwnership(maybeOwnership: Option[OwnershipP]): Option[OwnershipT] = {
     maybeOwnership.map({
-      case OwnP => Own
-      case ConstraintP => Constraint
-      case WeakP => Weak
-      case ShareP => Share
+      case OwnP => OwnT
+      case ConstraintP => ConstraintT
+      case WeakP => WeakT
+      case ShareP => ShareT
     })
   }
 
@@ -66,27 +66,27 @@ object Conversions {
     }
   }
 
-  def unevaluateOwnership(ownership: Ownership): OwnershipP = {
+  def unevaluateOwnership(ownership: OwnershipT): OwnershipP = {
     ownership match {
-      case Own => OwnP
-      case Constraint => ConstraintP
-      case Weak => WeakP
-      case Share => ShareP
+      case OwnT => OwnP
+      case ConstraintT => ConstraintP
+      case WeakT => WeakP
+      case ShareT => ShareP
     }
   }
 
-  def unevaluatePermission(permission: Permission): PermissionP = {
+  def unevaluatePermission(permission: PermissionT): PermissionP = {
     permission match {
-      case Readonly => ReadonlyP
-      case Readwrite => ReadwriteP
+      case ReadonlyT => ReadonlyP
+      case ReadwriteT => ReadwriteP
 //      case ExclusiveReadwrite => ExclusiveReadwriteP
     }
   }
 
-  def unevaluateMutability(mutability: Mutability): MutabilityP = {
+  def unevaluateMutability(mutability: MutabilityT): MutabilityP = {
     mutability match {
-      case Mutable => MutableP
-      case Immutable => ImmutableP
+      case MutableT => MutableP
+      case ImmutableT => ImmutableP
     }
   }
 

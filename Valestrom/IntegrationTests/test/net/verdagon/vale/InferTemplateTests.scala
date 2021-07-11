@@ -1,8 +1,8 @@
 package net.verdagon.vale
 
-import net.verdagon.vale.templar.{CitizenName2, CodeVarName2, FullName2, simpleName}
-import net.verdagon.vale.templar.templata.{CoordTemplata, Parameter2}
-import net.verdagon.vale.templar.types.{Constraint, Coord, Own, Readonly, Readwrite, StructRef2}
+import net.verdagon.vale.templar.{CitizenNameT, CodeVarNameT, FullNameT, simpleName}
+import net.verdagon.vale.templar.templata.{CoordTemplata, ParameterT}
+import net.verdagon.vale.templar.types.{ConstraintT, CoordT, OwnT, ReadonlyT, ReadwriteT, StructTT}
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 
@@ -20,14 +20,14 @@ class InferTemplateTests extends FunSuite with Matchers {
 
     val moo = compile.expectTemputs().lookupFunction("moo")
     moo.header.params match {
-      case List(Parameter2(CodeVarName2("m"), _, Coord(Constraint,Readonly, _))) =>
+      case List(ParameterT(CodeVarNameT("m"), _, CoordT(ConstraintT,ReadonlyT, _))) =>
     }
     moo.header.fullName.last.templateArgs shouldEqual
-      List(CoordTemplata(Coord(Own,Readwrite,StructRef2(FullName2(List(),CitizenName2("Muta",List()))))), CoordTemplata(Coord(Constraint,Readonly,StructRef2(FullName2(List(),CitizenName2("Muta",List()))))))
+      List(CoordTemplata(CoordT(OwnT,ReadwriteT,StructTT(FullNameT(PackageCoordinate.TEST_TLD, List.empty,CitizenNameT("Muta",List.empty))))), CoordTemplata(CoordT(ConstraintT,ReadonlyT,StructTT(FullNameT(PackageCoordinate.TEST_TLD, List.empty,CitizenNameT("Muta",List.empty))))))
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(10)
+    compile.evalForKind(Vector()) shouldEqual VonInt(10)
   }
-  test("Test inferring a borrowed known size array") {
+  test("Test inferring a borrowed static sized array") {
     val compile = RunCompilation.test(
       """
         |struct Muta { hp int; }
@@ -38,9 +38,9 @@ class InferTemplateTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(10)
+    compile.evalForKind(Vector()) shouldEqual VonInt(10)
   }
-  test("Test inferring an owning known size array") {
+  test("Test inferring an owning static sized array") {
     val compile = RunCompilation.test(
       """
         |struct Muta { hp int; }
@@ -51,6 +51,6 @@ class InferTemplateTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(10)
+    compile.evalForKind(Vector()) shouldEqual VonInt(10)
   }
 }

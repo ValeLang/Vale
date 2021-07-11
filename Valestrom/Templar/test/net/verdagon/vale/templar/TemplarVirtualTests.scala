@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale.templar.templata.CoordTemplata
-import net.verdagon.vale.templar.types.{Constraint, Coord, InterfaceRef2, Own, Readonly, Readwrite, StructRef2}
+import net.verdagon.vale.templar.types.{ConstraintT, CoordT, InterfaceTT, OwnT, ReadonlyT, ReadwriteT, StructTT}
 import net.verdagon.vale.{vassert, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -27,37 +27,37 @@ class TemplarVirtualTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
 
     temputs.lookupFunction("as").only({
-      case as @ AsSubtype2(sourceExpr, targetSubtype, resultOptType, okConstructor, errConstructor) => {
+      case as @ AsSubtypeTE(sourceExpr, targetSubtype, resultOptType, okConstructor, errConstructor) => {
         sourceExpr.resultRegister.reference match {
-          case Coord(Constraint,Readonly,InterfaceRef2(FullName2(List(),CitizenName2("IShip",List())))) =>
+          case CoordT(ConstraintT,ReadonlyT,InterfaceTT(FullNameT(_, Nil,CitizenNameT("IShip",Nil)))) =>
         }
         targetSubtype match {
-          case StructRef2(FullName2(List(),CitizenName2("Raza",List()))) =>
+          case StructTT(FullNameT(_, Nil,CitizenNameT("Raza",Nil))) =>
         }
         val (firstGenericArg, secondGenericArg) =
           resultOptType match {
-            case Coord(
-              Own,Readwrite,
-              InterfaceRef2(
-                FullName2(
-                  List(),
-                  CitizenName2(
+            case CoordT(
+              OwnT,ReadwriteT,
+              InterfaceTT(
+                FullNameT(
+                  _, Nil,
+                  CitizenNameT(
                     "Result",
                     List(firstGenericArg, secondGenericArg))))) => (firstGenericArg, secondGenericArg)
           }
         firstGenericArg match {
           case CoordTemplata(
-            Coord(
-              Constraint,Readonly,
-              StructRef2(FullName2(List(),CitizenName2("Raza",List()))))) =>
+            CoordT(
+              ConstraintT,ReadonlyT,
+              StructTT(FullNameT(_, Nil,CitizenNameT("Raza",Nil))))) =>
         }
         secondGenericArg match {
           case CoordTemplata(
-            Coord(
-              Constraint,Readonly,
-              InterfaceRef2(FullName2(List(),CitizenName2("IShip",List()))))) =>
+            CoordT(
+              ConstraintT,ReadonlyT,
+              InterfaceTT(FullNameT(_, Nil,CitizenNameT("IShip",Nil))))) =>
         }
-        vassert(okConstructor.paramTypes.head.referend == targetSubtype)
+        vassert(okConstructor.paramTypes.head.kind == targetSubtype)
         vassert(errConstructor.paramTypes.head == sourceExpr.resultRegister.reference)
         as
       }
@@ -72,7 +72,7 @@ class TemplarVirtualTests extends FunSuite with Matchers {
         |impl IBork for Bork;
         |
         |fn rebork(virtual result &IBork) bool { true }
-        |fn main() {
+        |fn main() export {
         |  rebork(&Bork());
         |}
         |""".stripMargin)

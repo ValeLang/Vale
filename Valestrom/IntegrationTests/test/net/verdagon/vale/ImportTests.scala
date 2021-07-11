@@ -27,16 +27,16 @@ class ImportTests extends FunSuite with Matchers {
 
     val compile =
       new RunCompilation(
-        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List())),
+        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List.empty)),
         Builtins.getCodeMap()
           .or(
             FileCoordinateMap(Map())
-              .add("moduleA", List(), "moduleA.vale", moduleACode)
-              .add("moduleB", List(), "moduleB.vale", moduleBCode))
+              .add("moduleA", List.empty, "moduleA.vale", moduleACode)
+              .add("moduleB", List.empty, "moduleB.vale", moduleBCode))
           .or(Tests.getPackageToResourceResolver),
         FullCompilationOptions())
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Tests non-imported module isn't brought in") {
@@ -55,18 +55,18 @@ class ImportTests extends FunSuite with Matchers {
 
     val compile =
       new RunCompilation(
-        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List())),
+        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List.empty)),
         Builtins.getCodeMap()
           .or(
             FileCoordinateMap(Map())
-              .add("moduleA", List(), "moduleA.vale", moduleACode)
-              .add("moduleB", List(), "moduleB.vale", moduleBCode))
+              .add("moduleA", List.empty, "moduleA.vale", moduleACode)
+              .add("moduleB", List.empty, "moduleB.vale", moduleBCode))
           .or(Tests.getPackageToResourceResolver),
         FullCompilationOptions())
 
     vassert(!compile.getParseds().getOrDie().moduleToPackagesToFilenameToContents.contains("moduleB"))
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Tests import with paackage") {
@@ -87,16 +87,16 @@ class ImportTests extends FunSuite with Matchers {
 
     val compile =
       new RunCompilation(
-        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List())),
+        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List.empty)),
         Builtins.getCodeMap()
           .or(
             FileCoordinateMap(Map())
-              .add("moduleA", List(), "moduleA.vale", moduleACode)
+              .add("moduleA", List.empty, "moduleA.vale", moduleACode)
               .add("moduleB", List("bork"), "moduleB.vale", moduleBCode))
           .or(Tests.getPackageToResourceResolver),
         FullCompilationOptions())
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Tests import of directory with no vale files") {
@@ -112,16 +112,16 @@ class ImportTests extends FunSuite with Matchers {
 
     val compile =
       new RunCompilation(
-        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List())),
+        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List.empty)),
         Builtins.getCodeMap()
           .or(Tests.getPackageToResourceResolver)
           .or(
             FileCoordinateMap(Map())
-              .add("moduleA", List(), "moduleA.vale", moduleACode))
+              .add("moduleA", List.empty, "moduleA.vale", moduleACode))
           .or({ case PackageCoordinate("moduleB", List("bork")) => Some(Map()) }),
     FullCompilationOptions())
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
 }

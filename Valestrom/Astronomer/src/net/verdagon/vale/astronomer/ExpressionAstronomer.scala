@@ -14,10 +14,10 @@ object ExpressionAstronomer {
     BlockAE(range, exprsA)
   }
 
-  def translateLocalVariable(varS: LocalVariable1): LocalVariableA = {
-    val LocalVariable1(varNameS, variability, selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated) = varS
+  def translateLocalVariable(varS: LocalS): LocalA = {
+    val LocalS(varNameS, selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated) = varS
     val varNameA = Astronomer.translateVarNameStep(varNameS)
-    LocalVariableA(varNameA, variability, selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated)
+    LocalA(varNameA, selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated)
   }
 
   def translateExpression(env: Environment, astrouts: AstroutsBox, iexprS: IExpressionSE): IExpressionAE = {
@@ -116,7 +116,7 @@ object ExpressionAstronomer {
         val runesA = maybeMutabilityRuneA.toList ++ maybeVariabilityRuneA.toList ++ maybeSizeRuneA.toList
 
         val (conclusions, rulesA) =
-          makeRuleTyper().solve(astrouts, env, rules, range, List(), Some(runesA.toSet)) match {
+          makeRuleTyper().solve(astrouts, env, rules, range, List.empty, Some(runesA.toSet)) match {
             case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
             case (c, RuleTyperSolveSuccess(r)) => (c, r)
           }
@@ -141,7 +141,7 @@ object ExpressionAstronomer {
         val runesA = maybeMutabilityRuneA.toList ++ maybeVariabilityRuneA.toList ++ List(sizeRuneA)
 
         val (conclusions, rulesA) =
-          makeRuleTyper().solve(astrouts, env, rules, range, List(), Some(runesA.toSet)) match {
+          makeRuleTyper().solve(astrouts, env, rules, range, List.empty, Some(runesA.toSet)) match {
             case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
             case (c, RuleTyperSolveSuccess(r)) => (c, r)
           }
@@ -164,7 +164,7 @@ object ExpressionAstronomer {
         val runesA = maybeMutabilityRuneA.toList ++ maybeVariabilityRuneA.toList
 
         val (conclusions, rulesA) =
-          makeRuleTyper().solve(astrouts, env, rules, range, List(), Some(runesA.toSet)) match {
+          makeRuleTyper().solve(astrouts, env, rules, range, List.empty, Some(runesA.toSet)) match {
             case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
             case (c, RuleTyperSolveSuccess(r)) => (c, r)
           }
@@ -187,10 +187,10 @@ object ExpressionAstronomer {
         val tyype = env.lookupRune(runeA)
         RuneLookupAE(range, runeA, tyype)
       }
-      case IntLiteralSE(range, value) => IntLiteralAE(range, value)
-      case BoolLiteralSE(range, value) => BoolLiteralAE(range, value)
-      case StrLiteralSE(range, value) => StrLiteralAE(range, value)
-      case FloatLiteralSE(range, value) => FloatLiteralAE(range, value)
+      case ConstantIntSE(range, value, bits) => ConstantIntAE(range, value, bits)
+      case ConstantBoolSE(range, value) => ConstantBoolAE(range, value)
+      case ConstantStrSE(range, value) => ConstantStrAE(range, value)
+      case ConstantFloatSE(range, value) => ConstantFloatAE(range, value)
       case FunctionSE(functionS) => {
         val functionA = Astronomer.translateFunction(astrouts, env, functionS)
         val lambdaName = functionA.name match { case n @ LambdaNameA(_) => n }

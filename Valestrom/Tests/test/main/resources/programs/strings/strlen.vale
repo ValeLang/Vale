@@ -1,4 +1,6 @@
 
 fn main() int export {
-  len("sprogwoggle")
+  // This tests string length, but also tests that special characters
+  // made it all the way through all the stages of the compiler
+  len("sprog\u001bwoggle")
 }

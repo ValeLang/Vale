@@ -1,10 +1,10 @@
 package net.verdagon.vale.templar.expression
 
-import net.verdagon.vale.astronomer.LocalVariableA
+import net.verdagon.vale.astronomer.LocalA
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.{MaybeUsed, NotUsed, RangeS}
-import net.verdagon.vale.templar.env.{AddressibleLocalVariable2, FunctionEnvironmentBox, ILocalVariable2, ReferenceLocalVariable2}
-import net.verdagon.vale.templar.function.DropHelper
+import net.verdagon.vale.templar.env.{AddressibleLocalVariableT, FunctionEnvironmentBox, ILocalVariableT, ReferenceLocalVariableT}
+import net.verdagon.vale.templar.function.DestructorTemplar
 import net.verdagon.vale.templar.templata.Conversions
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar._
@@ -14,16 +14,15 @@ import scala.collection.immutable.List
 
 class LocalHelper(
     opts: TemplarOptions,
-  dropHelper: DropHelper) {
+  destructorTemplar: DestructorTemplar) {
 
   def makeTemporaryLocal(
-    temputs: Temputs,
     fate: FunctionEnvironmentBox,
-    coord: Coord):
-  ReferenceLocalVariable2 = {
+    coord: CoordT):
+  ReferenceLocalVariableT = {
     val varNameCounter = fate.nextVarCounter()
-    val varId = fate.functionEnvironment.fullName.addStep(TemplarTemporaryVarName2(varNameCounter))
-    val rlv = ReferenceLocalVariable2(varId, Final, coord)
+    val varId = fate.functionEnvironment.fullName.addStep(TemplarTemporaryVarNameT(varNameCounter))
+    val rlv = ReferenceLocalVariableT(varId, FinalT, coord)
     fate.addVariable(rlv)
     rlv
   }
@@ -33,38 +32,38 @@ class LocalHelper(
   def makeTemporaryLocal(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
-    r: ReferenceExpression2):
-  (Defer2) = {
-    val rlv = makeTemporaryLocal(temputs, fate, r.resultRegister.reference)
-    val letExpr2 = LetAndLend2(rlv, r)
+    r: ReferenceExpressionTE):
+  (DeferTE) = {
+    val rlv = makeTemporaryLocal(fate, r.resultRegister.reference)
+    val letExpr2 = LetAndLendTE(rlv, r)
 
     val unlet = unletLocal(fate, rlv)
     val destructExpr2 =
-      dropHelper.drop(fate, temputs, unlet)
-    vassert(destructExpr2.referend == Void2())
+      destructorTemplar.drop(fate, temputs, unlet)
+    vassert(destructExpr2.kind == VoidT())
 
     // No Discard here because the destructor already returns void.
 
-    (Defer2(letExpr2, destructExpr2))
+    (DeferTE(letExpr2, destructExpr2))
   }
 
-  def unletLocal(fate: FunctionEnvironmentBox, localVar: ILocalVariable2):
-  (Unlet2) = {
+  def unletLocal(fate: FunctionEnvironmentBox, localVar: ILocalVariableT):
+  (UnletTE) = {
     fate.markLocalUnstackified(localVar.id)
-    Unlet2(localVar)
+    UnletTE(localVar)
   }
 
   def unletAll(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
-    variables: List[ILocalVariable2]):
-  (List[ReferenceExpression2]) = {
+    variables: List[ILocalVariableT]):
+  (List[ReferenceExpressionTE]) = {
     variables match {
-      case Nil => (List())
+      case Nil => (List.empty)
       case head :: tail => {
         val unlet = unletLocal(fate, head)
         val maybeHeadExpr2 =
-          dropHelper.drop(fate, temputs, unlet)
+          destructorTemplar.drop(fate, temputs, unlet)
         val tailExprs2 =
           unletAll(temputs, fate, tail)
         (maybeHeadExpr2 :: tailExprs2)
@@ -81,36 +80,38 @@ class LocalHelper(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
     range: RangeS,
-    localVariableA: LocalVariableA,
-    referenceType2: Coord):
-  ILocalVariable2 = {
+    localVariableA: LocalA,
+    referenceType2: CoordT):
+  ILocalVariableT = {
     val varId = NameTranslator.translateVarNameStep(localVariableA.varName)
-    val variability = Conversions.evaluateVariability(localVariableA.variability)
 
     if (fate.getVariable(varId).nonEmpty) {
       throw CompileErrorExceptionT(RangedInternalErrorT(range, "There's already a variable named " + varId))
     }
 
-    val mutable = Templar.getMutability(temputs, referenceType2.referend)
+    val variability = LocalHelper.determineLocalVariability(localVariableA)
+
+    val mutable = Templar.getMutability(temputs, referenceType2.kind)
     val addressible = LocalHelper.determineIfLocalIsAddressible(mutable, localVariableA)
 
     val fullVarName = fate.fullName.addStep(varId)
     val localVar =
       if (addressible) {
-        AddressibleLocalVariable2(fullVarName, variability, referenceType2)
+        AddressibleLocalVariableT(fullVarName, variability, referenceType2)
       } else {
-        ReferenceLocalVariable2(fullVarName, variability, referenceType2)
+        ReferenceLocalVariableT(fullVarName, variability, referenceType2)
       }
+    fate.addVariable(localVar)
     localVar
   }
 
   def maybeBorrowSoftLoad(
       temputs: Temputs,
-      expr2: Expression2):
-  ReferenceExpression2 = {
+      expr2: ExpressionT):
+  ReferenceExpressionTE = {
     expr2 match {
-      case e : ReferenceExpression2 => e
-      case e : AddressExpression2 => borrowSoftLoad(temputs, e)
+      case e : ReferenceExpressionTE => e
+      case e : AddressExpressionTE => borrowSoftLoad(temputs, e)
     }
   }
 
@@ -129,128 +130,135 @@ class LocalHelper(
   def softLoad(
       fate: FunctionEnvironmentBox,
       loadRange: RangeS,
-      a: AddressExpression2,
+      a: AddressExpressionTE,
       loadAsP: LoadAsP):
-  ReferenceExpression2 = {
+  ReferenceExpressionTE = {
     a.resultRegister.reference.ownership match {
-      case Share => {
-        SoftLoad2(a, Share, Readonly)
+      case ShareT => {
+        SoftLoadTE(a, ShareT, ReadonlyT)
       }
-      case Own => {
+      case OwnT => {
         loadAsP match {
           case UseP => {
             a match {
-              case LocalLookup2(_, lv, _, _) => {
+              case LocalLookupTE(_, lv, _, _) => {
                 fate.markLocalUnstackified(lv.id)
-                Unlet2(lv)
+                UnletTE(lv)
               }
               // See CSHROOR for why these aren't just Readwrite.
-              case l @ UnknownSizeArrayLookup2(_, _, _, _, _, _) => SoftLoad2(l, Constraint, a.resultRegister.reference.permission)
-              case l @ StaticSizedArrayLookup2(_, _, _, _, _, _) => SoftLoad2(l, Constraint, a.resultRegister.reference.permission)
-              case l @ ReferenceMemberLookup2(_,_, _, _, _, _) => SoftLoad2(l, Constraint, a.resultRegister.reference.permission)
-              case l @ AddressMemberLookup2(_, _, _, _, _) => SoftLoad2(l, Constraint, a.resultRegister.reference.permission)
+              case l @ RuntimeSizedArrayLookupTE(_, _, _, _, _, _) => SoftLoadTE(l, ConstraintT, a.resultRegister.reference.permission)
+              case l @ StaticSizedArrayLookupTE(_, _, _, _, _, _) => SoftLoadTE(l, ConstraintT, a.resultRegister.reference.permission)
+              case l @ ReferenceMemberLookupTE(_,_, _, _, _, _) => SoftLoadTE(l, ConstraintT, a.resultRegister.reference.permission)
+              case l @ AddressMemberLookupTE(_, _, _, _, _) => SoftLoadTE(l, ConstraintT, a.resultRegister.reference.permission)
             }
           }
           case MoveP => {
             a match {
-              case LocalLookup2(_, lv, _, _) => {
+              case LocalLookupTE(_, lv, _, _) => {
                 fate.markLocalUnstackified(lv.id)
-                Unlet2(lv)
+                UnletTE(lv)
               }
-              case ReferenceMemberLookup2(_,_, name, _, _, _) => {
+              case ReferenceMemberLookupTE(_,_, name, _, _, _) => {
                 throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name.last))
               }
-              case AddressMemberLookup2(_, _, name, _, _) => {
+              case AddressMemberLookupTE(_, _, name, _, _) => {
                 throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name.last))
               }
             }
           }
-          case LendConstraintP(None) => SoftLoad2(a, Constraint, a.resultRegister.reference.permission)
-          case LendConstraintP(Some(permission)) => SoftLoad2(a, Constraint, Conversions.evaluatePermission(permission))
-          case LendWeakP(permission) => SoftLoad2(a, Weak, Conversions.evaluatePermission(permission))
+          case LendConstraintP(None) => SoftLoadTE(a, ConstraintT, a.resultRegister.reference.permission)
+          case LendConstraintP(Some(permission)) => SoftLoadTE(a, ConstraintT, Conversions.evaluatePermission(permission))
+          case LendWeakP(permission) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
         }
       }
-      case Constraint => {
+      case ConstraintT => {
         loadAsP match {
           case MoveP => vfail()
-          case UseP => SoftLoad2(a, Constraint, a.resultRegister.reference.permission)
-          case LendConstraintP(None) => SoftLoad2(a, Constraint, a.resultRegister.reference.permission)
-          case LendConstraintP(Some(permission)) => SoftLoad2(a, Constraint, Conversions.evaluatePermission(permission))
-          case LendWeakP(permission) => SoftLoad2(a, Weak, Conversions.evaluatePermission(permission))
+          case UseP => SoftLoadTE(a, ConstraintT, a.resultRegister.reference.permission)
+          case LendConstraintP(None) => SoftLoadTE(a, ConstraintT, a.resultRegister.reference.permission)
+          case LendConstraintP(Some(permission)) => SoftLoadTE(a, ConstraintT, Conversions.evaluatePermission(permission))
+          case LendWeakP(permission) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
         }
       }
-      case Weak => {
+      case WeakT => {
         loadAsP match {
-          case UseP => SoftLoad2(a, Weak, a.resultRegister.reference.permission)
+          case UseP => SoftLoadTE(a, WeakT, a.resultRegister.reference.permission)
           case MoveP => vfail()
-          case LendConstraintP(None) => SoftLoad2(a, Weak, a.resultRegister.reference.permission)
-          case LendConstraintP(Some(permission)) => SoftLoad2(a, Weak, Conversions.evaluatePermission(permission))
-          case LendWeakP(permission) => SoftLoad2(a, Weak, Conversions.evaluatePermission(permission))
+          case LendConstraintP(None) => SoftLoadTE(a, WeakT, a.resultRegister.reference.permission)
+          case LendConstraintP(Some(permission)) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
+          case LendWeakP(permission) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
         }
       }
     }
   }
 
-  def borrowSoftLoad(temputs: Temputs, expr2: AddressExpression2):
-  ReferenceExpression2 = {
-    val ownership = getBorrowOwnership(temputs, expr2.resultRegister.reference.referend)
-    SoftLoad2(expr2, ownership, expr2.resultRegister.reference.permission)
+  def borrowSoftLoad(temputs: Temputs, expr2: AddressExpressionTE):
+  ReferenceExpressionTE = {
+    val ownership = getBorrowOwnership(temputs, expr2.resultRegister.reference.kind)
+    SoftLoadTE(expr2, ownership, expr2.resultRegister.reference.permission)
   }
 
-  def getBorrowOwnership(temputs: Temputs, referend: Kind):
-  Ownership = {
-    referend match {
-      case Int2() => Share
-      case Bool2() => Share
-      case Float2() => Share
-      case Str2() => Share
-      case Void2() => Share
+  def getBorrowOwnership(temputs: Temputs, kind: KindT):
+  OwnershipT = {
+    kind match {
+      case IntT(_) => ShareT
+      case BoolT() => ShareT
+      case FloatT() => ShareT
+      case StrT() => ShareT
+      case VoidT() => ShareT
       //      case FunctionT2(_, _) => Raw
-      case PackT2(_, understruct2) => {
+      case PackTT(_, understruct2) => {
         val mutability = Templar.getMutability(temputs, understruct2)
-        if (mutability == Mutable) Constraint else Share
+        if (mutability == MutableT) ConstraintT else ShareT
       }
-      case TupleT2(_, understruct2) => {
+      case TupleTT(_, understruct2) => {
         val mutability = Templar.getMutability(temputs, understruct2)
-        if (mutability == Mutable) Constraint else Share
+        if (mutability == MutableT) ConstraintT else ShareT
       }
-      case KnownSizeArrayT2(_, RawArrayT2(_, mutability, _)) => {
-        if (mutability == Mutable) Constraint else Share
+      case StaticSizedArrayTT(_, RawArrayTT(_, mutability, _)) => {
+        if (mutability == MutableT) ConstraintT else ShareT
       }
-      case UnknownSizeArrayT2(RawArrayT2(_, mutability, _)) => {
-        if (mutability == Mutable) Constraint else Share
+      case RuntimeSizedArrayTT(RawArrayTT(_, mutability, _)) => {
+        if (mutability == MutableT) ConstraintT else ShareT
       }
-      //      case TemplatedClosure2(_, structRef, _) => {
-      //        val mutability = Templar.getMutability(temputs, structRef)
+      //      case TemplatedClosure2(_, structTT, _) => {
+      //        val mutability = Templar.getMutability(temputs, structTT)
       //        if (mutability == Mutable) Borrow else Share
       //      }
-      //      case OrdinaryClosure2(_, structRef, _) => {
-      //        val mutability = Templar.getMutability(temputs, structRef)
+      //      case OrdinaryClosure2(_, structTT, _) => {
+      //        val mutability = Templar.getMutability(temputs, structTT)
       //        if (mutability == Mutable) Borrow else Share
       //      }
-      case sr2 @ StructRef2(_) => {
+      case sr2 @ StructTT(_) => {
         val mutability = Templar.getMutability(temputs, sr2)
-        if (mutability == Mutable) Constraint else Share
+        if (mutability == MutableT) ConstraintT else ShareT
       }
-      case ir2 @ InterfaceRef2(_) => {
+      case ir2 @ InterfaceTT(_) => {
         val mutability = Templar.getMutability(temputs, ir2)
-        if (mutability == Mutable) Constraint else Share
+        if (mutability == MutableT) ConstraintT else ShareT
       }
       case OverloadSet(_, _, voidStructRef) => {
         getBorrowOwnership(temputs, voidStructRef)
       }
     }
   }
-
 }
 
 object LocalHelper {
   // See ClosureTests for requirements here
-  def determineIfLocalIsAddressible(mutability: Mutability, variable1: LocalVariableA): Boolean = {
-    if (mutability == Mutable) {
-      variable1.childMutated != NotUsed || variable1.selfMoved == MaybeUsed || variable1.childMoved != NotUsed
+  def determineIfLocalIsAddressible(mutability: MutabilityT, localA: LocalA): Boolean = {
+    if (mutability == MutableT) {
+      localA.childMutated != NotUsed || localA.selfMoved == MaybeUsed || localA.childMoved != NotUsed
     } else {
-      variable1.childMutated != NotUsed
+      localA.childMutated != NotUsed
+    }
+  }
+
+  def determineLocalVariability(localA: LocalA): VariabilityT = {
+    if (localA.selfMutated != NotUsed || localA.childMutated != NotUsed) {
+      VaryingT
+    } else {
+      FinalT
     }
   }
 }

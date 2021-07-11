@@ -15,14 +15,14 @@ class IfTests extends FunSuite with Matchers {
         |  = if (true) { 3 } else { 5 }
         |}
       """.stripMargin)
-    val programS = compile.getScoutput().getOrDie().moduleToPackagesToFilenameToContents("test")(List())("0.vale")
+    val programS = compile.getScoutput().getOrDie().moduleToPackagesToFilenameToContents("test")(List.empty)("0.vale")
     val main = programS.lookupFunction("main")
-    val CodeBody1(BodySE(_, _, BlockSE(_, _, List(IfSE(_, _, _, _))))) = main.body
+    val CodeBodyS(BodySE(_, _, BlockSE(_, _, List(IfSE(_, _, _, _))))) = main.body
 
     val temputs = compile.expectTemputs()
-    temputs.lookupFunction("main").only({ case If2(_, _, _) => })
+    temputs.lookupFunction("main").only({ case IfTE(_, _, _) => })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
   test("Simple false branch returning an int") {
@@ -33,7 +33,7 @@ class IfTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
   test("Ladder") {
@@ -45,18 +45,18 @@ class IfTests extends FunSuite with Matchers {
       """.stripMargin)
 
     val temputs = compile.expectTemputs()
-    val ifs = temputs.lookupFunction("main").all({ case if2 @ If2(_, _, _) => if2 })
-    ifs.foreach(iff => iff.resultRegister.reference shouldEqual Coord(Share, Readonly, Int2()))
+    val ifs = temputs.lookupFunction("main").all({ case if2 @ IfTE(_, _, _) => if2 })
+    ifs.foreach(iff => iff.resultRegister.reference shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32))
     ifs.size shouldEqual 2
     val userFuncs = temputs.getAllUserFunctions
     userFuncs.foreach(func => {
       func.header.returnType match {
-        case Coord(Share, Readonly, Int2()) =>
-        case Coord(Share, Readonly, Bool2()) =>
+        case CoordT(ShareT, ReadonlyT, IntT.i32) =>
+        case CoordT(ShareT, ReadonlyT, BoolT()) =>
       }
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
   test("Moving from inside if") {
@@ -76,24 +76,24 @@ class IfTests extends FunSuite with Matchers {
       """.stripMargin)
 
     val temputs = compile.expectTemputs()
-    val ifs = temputs.lookupFunction("main").all({ case if2 @ If2(_, _, _) => if2 })
-    ifs.foreach(iff => iff.resultRegister.reference shouldEqual Coord(Share, Readonly, Int2()))
+    val ifs = temputs.lookupFunction("main").all({ case if2 @ IfTE(_, _, _) => if2 })
+    ifs.foreach(iff => iff.resultRegister.reference shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32))
     val userFuncs = temputs.getAllUserFunctions
     userFuncs.foreach(func => {
       func.header.returnType match {
-        case Coord(Share, Readonly, Int2()) =>
-        case Coord(Share, Readonly, Bool2()) =>
+        case CoordT(ShareT, ReadonlyT, IntT.i32) =>
+        case CoordT(ShareT, ReadonlyT, BoolT()) =>
       }
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
   test("If with complex condition") {
     val compile = RunCompilation.test(
       """
         |struct Marine { x int; }
-        |fn main() str {
+        |fn main() str export {
         |  m = Marine(5);
         |  = if (m.x == 5) { "#" }
         |  else if (0 == 0) { "?" }
@@ -102,10 +102,10 @@ class IfTests extends FunSuite with Matchers {
       """.stripMargin)
 
     val temputs = compile.expectTemputs()
-    val ifs = temputs.lookupFunction("main").all({ case if2 @ If2(_, _, _) => if2 })
-    ifs.foreach(iff => iff.resultRegister.reference shouldEqual Coord(Share, Readonly, Str2()))
+    val ifs = temputs.lookupFunction("main").all({ case if2 @ IfTE(_, _, _) => if2 })
+    ifs.foreach(iff => iff.resultRegister.reference shouldEqual CoordT(ShareT, ReadonlyT, StrT()))
 
-    compile.evalForReferend(Vector()) shouldEqual VonStr("#")
+    compile.evalForKind(Vector()) shouldEqual VonStr("#")
   }
 
   test("Ret from inside if will destroy locals") {
@@ -173,7 +173,7 @@ class IfTests extends FunSuite with Matchers {
         |  bork Bork;
         |}
         |
-        |fn main() {
+        |fn main() export {
         |  zork! = 0;
         |  while (zork < 4) {
         |    moo = Moo(Bork(5));
@@ -194,7 +194,7 @@ class IfTests extends FunSuite with Matchers {
 
   test("If nevers") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/if/ifnevers.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Toast") {
@@ -213,7 +213,7 @@ class IfTests extends FunSuite with Matchers {
         |""".stripMargin)
 
     val main = compile.expectTemputs().lookupFunction("main")
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
 }

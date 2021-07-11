@@ -9,6 +9,7 @@
 LLVMValueRef adjustCounter(
     GlobalState* globalState,
     LLVMBuilderRef builder,
+    Int* innt,
     LLVMValueRef counterPtrLE,
     int adjustAmount);
 

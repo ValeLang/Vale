@@ -68,21 +68,22 @@ void intRangeLoopReverse(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Int* innt,
     Ref sizeRef,
     std::function<void(Ref, LLVMBuilderRef)> iterationBuilder);
 
-LLVMValueRef getKnownSizeArrayContentsPtr(
+LLVMValueRef getStaticSizedArrayContentsPtr(
     LLVMBuilderRef builder,
-    WrapperPtrLE knownSizeArrayWrapperPtrLE);
+    WrapperPtrLE staticSizedArrayWrapperPtrLE);
 
-LLVMValueRef getUnknownSizeArrayContentsPtr(
+LLVMValueRef getRuntimeSizedArrayContentsPtr(
     LLVMBuilderRef builder,
     WrapperPtrLE arrayWrapperPtrLE);
 
-LLVMValueRef getUnknownSizeArrayLengthPtr(
+LLVMValueRef getRuntimeSizedArrayLengthPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    WrapperPtrLE unknownSizeArrayWrapperPtrLE);
+    WrapperPtrLE runtimeSizedArrayWrapperPtrLE);
 
 void storeInnerArrayMember(
     GlobalState* globalState,

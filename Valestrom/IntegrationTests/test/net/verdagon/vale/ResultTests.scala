@@ -18,7 +18,7 @@ class ResultTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Test is_err and borrow expect_err for Err") {
@@ -34,7 +34,7 @@ class ResultTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonStr("file not found!")
+    compile.evalForKind(Vector()) shouldEqual VonStr("file not found!")
   }
 
   test("Test owning expect") {
@@ -49,7 +49,7 @@ class ResultTests extends FunSuite with Matchers {
         |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Test owning expect_err") {
@@ -64,7 +64,7 @@ class ResultTests extends FunSuite with Matchers {
         |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonStr("file not found!")
+    compile.evalForKind(Vector()) shouldEqual VonStr("file not found!")
   }
 
   test("Test expect() panics for Err") {
@@ -80,7 +80,7 @@ class ResultTests extends FunSuite with Matchers {
         """.stripMargin)
 
     try {
-      compile.evalForReferend(Vector())
+      compile.evalForKind(Vector())
       vfail()
     } catch {
       case PanicException() =>
@@ -100,7 +100,7 @@ class ResultTests extends FunSuite with Matchers {
         """.stripMargin)
 
     try {
-      compile.evalForReferend(Vector())
+      compile.evalForKind(Vector())
       vfail()
     } catch {
       case PanicException() =>

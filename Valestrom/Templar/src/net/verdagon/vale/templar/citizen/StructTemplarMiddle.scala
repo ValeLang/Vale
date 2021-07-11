@@ -19,26 +19,26 @@ class StructTemplarMiddle(
     delegate: IStructTemplarDelegate) {
   val core = new StructTemplarCore(opts, profiler, newTemplataStore, ancestorHelper, delegate)
 
-  def addBuiltInStructs(env: PackageEnvironment[IName2], temputs: Temputs): Unit = {
+  def addBuiltInStructs(env: PackageEnvironment[INameT], temputs: Temputs): Unit = {
     core.addBuiltInStructs(env, temputs)
   }
 
   def makeStructConstructor(
     temputs: Temputs,
     maybeConstructorOriginFunctionA: Option[FunctionA],
-    structDef: StructDefinition2,
-    constructorFullName: FullName2[IFunctionName2]):
-  FunctionHeader2 = {
+    structDef: StructDefinitionT,
+    constructorFullName: FullNameT[IFunctionNameT]):
+  FunctionHeaderT = {
     core.makeStructConstructor(temputs, maybeConstructorOriginFunctionA, structDef, constructorFullName)
   }
 
   def getStructRef(
-    structOuterEnv: PackageEnvironment[IName2],
+    structOuterEnv: PackageEnvironment[INameT],
     temputs: Temputs,
     callRange: RangeS,
     structS: StructA,
-    templatasByRune: Map[IRune2, ITemplata]):
-  (StructRef2) = {
+    templatasByRune: Map[IRuneT, ITemplata]):
+  (StructTT) = {
     val coercedFinalTemplateArgs2 = structS.identifyingRunes.map(NameTranslator.translateRune).map(templatasByRune)
 
     val localEnv =
@@ -46,19 +46,19 @@ class StructTemplarMiddle(
         opts.useOptimization,
         templatasByRune.map({ case (rune, templata) => (rune, List(TemplataEnvEntry(templata))) }))
     val structDefinition2 =
-      core.maakeStruct(
+      core.makeStruct(
         localEnv, temputs, structS, coercedFinalTemplateArgs2);
 
     (structDefinition2.getRef)
   }
 
   def getInterfaceRef(
-    interfaceOuterEnv: PackageEnvironment[IName2],
+    interfaceOuterEnv: PackageEnvironment[INameT],
     temputs: Temputs,
     callRange: RangeS,
     interfaceA: InterfaceA,
-    templatasByRune: Map[IRune2, ITemplata]):
-  (InterfaceRef2) = {
+    templatasByRune: Map[IRuneT, ITemplata]):
+  (InterfaceTT) = {
     val coercedFinalTemplateArgs2 = interfaceA.identifyingRunes.map(NameTranslator.translateRune).map(templatasByRune)
 
     val localEnv =
@@ -86,18 +86,18 @@ class StructTemplarMiddle(
     temputs: Temputs,
     name: LambdaNameA,
     functionS: FunctionA,
-    members: List[StructMember2]):
-  (StructRef2, Mutability, FunctionTemplata) = {
+    members: List[StructMemberT]):
+  (StructTT, MutabilityT, FunctionTemplata) = {
     core.makeClosureUnderstruct(containingFunctionEnv, temputs, name, functionS, members)
   }
 
   // Makes a struct to back a pack or tuple
   def makeSeqOrPackUnderstruct(
-    env: PackageEnvironment[IName2],
+    env: PackageEnvironment[INameT],
     temputs: Temputs,
-    memberTypes2: List[Coord],
-    name: ICitizenName2):
-  (StructRef2, Mutability) = {
+    memberTypes2: List[CoordT],
+    name: ICitizenNameT):
+  (StructTT, MutabilityT) = {
     core.makeSeqOrPackUnderstruct(env, temputs, memberTypes2, name)
   }
 
@@ -106,9 +106,9 @@ class StructTemplarMiddle(
     interfaceEnv: IEnvironment,
     temputs: Temputs,
     range: RangeS,
-    interfaceRef: InterfaceRef2,
-    substructName: FullName2[AnonymousSubstructName2]):
-  (StructRef2, Mutability) = {
+    interfaceTT: InterfaceTT,
+    substructName: FullNameT[AnonymousSubstructNameT]):
+  (StructTT, MutabilityT) = {
 
 //    val anonymousSubstructName: FullName2[AnonymousSubCitizenName2] =
 //      functionFullName.addStep(AnonymousSubCitizenName2())
@@ -122,7 +122,7 @@ class StructTemplarMiddle(
       temputs,
       range,
       substructName,
-      interfaceRef)
+      interfaceTT)
   }
 
   // Makes an anonymous substruct of the given interface, which just forwards its method to the given prototype.
@@ -130,9 +130,9 @@ class StructTemplarMiddle(
     outerEnv: IEnvironment,
     temputs: Temputs,
     range: RangeS,
-    prototype: Prototype2,
-    structFullName: FullName2[ICitizenName2]):
-  StructRef2 = {
+    prototype: PrototypeT,
+    structFullName: FullNameT[ICitizenNameT]):
+  StructTT = {
     core.prototypeToAnonymousStruct(
       outerEnv, temputs, range, prototype, structFullName)
   }

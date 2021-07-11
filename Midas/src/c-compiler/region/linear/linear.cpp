@@ -190,6 +190,7 @@ Ref Linear::asSubtype(
     std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
     std::function<Ref(LLVMBuilderRef)> buildElse) {
   assert(false);
+  exit(1);
 }
 
 LLVMTypeRef Linear::translateType(Reference* referenceM) {
@@ -1152,6 +1153,7 @@ std::string Linear::generateStaticSizedArrayDefsC(
 
 LLVMTypeRef Linear::getExternalType(Reference* refMT) {
   assert(false);
+  exit(1);
 //  return refMT;
 }
 

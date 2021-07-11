@@ -18,6 +18,7 @@
 #include <memory>
 #include <unordered_map>
 #include <iostream>
+#include <optional>
 
 using std::move;
 

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.4.3)
-project(valec)
+project(midas)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++17")
 
@@ -31,7 +31,7 @@ llvm_map_components_to_libnames(llvm_libs ${LLVM_LINK_COMPONENTS})
 
 # llvm_map_components_to_libnames(llvm_libs support core irreader)
 
-add_executable(valec
+add_executable(midas
 		src/c-compiler/vale.cpp
 		src/c-compiler/globalstate.cpp
 		src/c-compiler/metal/ast.cpp
@@ -93,6 +93,6 @@ add_executable(valec
         src/c-compiler/fileio.cpp
         src/c-compiler/options.cpp src/c-compiler/mainFunction.cpp src/c-compiler/externs.cpp)
 
-target_link_libraries(valec ${llvm_libs})
+target_link_libraries(midas ${llvm_libs})
 
-target_compile_features(valec PRIVATE cxx_std_17)
+target_compile_features(midas PRIVATE cxx_std_17)

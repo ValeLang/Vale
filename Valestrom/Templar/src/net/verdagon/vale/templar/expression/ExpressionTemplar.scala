@@ -956,6 +956,27 @@ class ExpressionTemplar(
             evaluateAndCoerceToReferenceExpression(temputs, fate, arrayExprA);
           (ArrayLengthTE(arrayExpr2), returnsFromArrayExpr)
         }
+        case DestroyArrayIntoCallableAE(range, arrAE, consumerAE) => {
+          val (arrTE, returnsFromArr) =
+            evaluateAndCoerceToReferenceExpression(temputs, fate, arrAE);
+          val (consumerTE, returnsFromConsumer) =
+            evaluateAndCoerceToReferenceExpression(temputs, fate, consumerAE);
+          val destroyTE =
+            arrTE.kind match {
+              case StaticSizedArrayTT(_, _) => {
+                arrayTemplar.evaluateDestroyStaticSizedArrayIntoCallable(
+                  temputs, fate, range, arrTE, consumerTE)
+              }
+              case RuntimeSizedArrayTT(_) => {
+                arrayTemplar.evaluateDestroyRuntimeSizedArrayIntoCallable(
+                  temputs, fate, range, arrTE, consumerTE)
+              }
+              case _ => {
+                throw CompileErrorExceptionT(RangedInternalErrorT(range, "DestroyArrayIntoCallableAE given a non-array!"))
+              }
+            }
+          (destroyTE, returnsFromArr ++ returnsFromConsumer)
+        }
         case DestructAE(range, innerAE) => {
           val (innerExpr2, returnsFromArrayExpr) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, innerAE);

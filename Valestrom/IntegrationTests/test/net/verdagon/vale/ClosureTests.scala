@@ -110,17 +110,19 @@ class ClosureTests extends FunSuite with Matchers {
     val compile = RunCompilation.test("fn main() int export { x = 4; = {x}(); }")
     val temputs = compile.expectTemputs()
 
-    temputs.lookupLambdaIn("main").variables match {
-      case List(
-        ReferenceLocalVariableT(
-          FullNameT(_, List(FunctionNameT("main",_,_), LambdaCitizenNameT(_), FunctionNameT("__call",_,_)), ClosureParamNameT()),
-          FinalT,
-          CoordT(ShareT,ReadonlyT,StructTT(FullNameT(_, List(FunctionNameT("main",Nil, Nil)),LambdaCitizenNameT(_))))),
-        ReferenceLocalVariableT(
+    val main = temputs.lookupLambdaIn("main")
+    main.only({
+      case ReferenceLocalVariableT(
+        FullNameT(_, List(FunctionNameT("main", _, _), LambdaCitizenNameT(_), FunctionNameT("__call", _, _)), ClosureParamNameT()),
+        FinalT,
+        CoordT(ShareT, ReadonlyT, StructTT(FullNameT(_, List(FunctionNameT("main", List(), List())), LambdaCitizenNameT(_))))) =>
+    })
+    main.only({
+      case ReferenceLocalVariableT(
           FullNameT(_, List(FunctionNameT("main",_,_), LambdaCitizenNameT(_), FunctionNameT("__call",_,_)),TemplarBlockResultVarNameT(0)),
           FinalT,
-          CoordT(ShareT,ReadonlyT, IntT.i32))) =>
-    }
+          CoordT(ShareT,ReadonlyT, IntT.i32)) =>
+    })
   }
 
   test("Test returning a nonmutable closured variable from the closure") {
@@ -201,9 +203,9 @@ class ClosureTests extends FunSuite with Matchers {
     main.only({
       case LetNormalTE(AddressibleLocalVariableT(_, VaryingT, _), _) =>
     })
-    main.variables.collect({
+    main.only({
       case AddressibleLocalVariableT(_, VaryingT, _) =>
-    }).size shouldEqual 1
+    })
 
     compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }

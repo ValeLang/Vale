@@ -338,7 +338,6 @@ class StructTemplar(
             List.empty,
             anonymousSubstructType,
             None),
-          List.empty,
           BlockTE(
               ReturnTE(
                 ConstructTE(

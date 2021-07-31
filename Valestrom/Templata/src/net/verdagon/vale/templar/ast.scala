@@ -115,14 +115,14 @@ object Program2 {
 
 case class FunctionT(
   header: FunctionHeaderT,
-  // Used for testing
-  variables: List[ILocalVariableT],
+//  // Used for testing
+//  variables: List[ILocalVariableT],
   body: ReferenceExpressionTE) extends QueriableT {
 
   // We always end a function with a return, whose result is a Never.
   vassert(body.resultRegister.kind == NeverT())
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ header.all(func) ++ variables.flatMap(_.all(func)) ++ body.all(func)
+    List(this).collect(func) ++ header.all(func) ++ body.all(func)// ++ variables.flatMap(_.all(func))
   }
 }

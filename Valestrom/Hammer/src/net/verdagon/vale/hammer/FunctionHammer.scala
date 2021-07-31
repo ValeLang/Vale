@@ -32,7 +32,6 @@ object FunctionHammer {
       case None => {
         val FunctionT(
             header @ FunctionHeaderT(humanName, attrs2, params2, returnType2, _),
-            locals2,
             body) = function2;
 
         val (prototypeH) = translatePrototype(hinputs, hamuts, header.toPrototype);

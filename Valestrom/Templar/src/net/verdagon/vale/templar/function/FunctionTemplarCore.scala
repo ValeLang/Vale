@@ -2,16 +2,17 @@ package net.verdagon.vale.templar.function
 
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.templar.templata._
+import net.verdagon.vale.templar.templata.{IFunctionAttribute2, TemplataTemplar, _}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.expression.CallTemplar
-import net.verdagon.vale.templar.templata.TemplataTemplar
-import net.verdagon.vale.{IProfiler, vassert, vassertOne, vassertSome, vcheck, vcurious, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, IProfiler, Ok, vassert, vassertOne, vassertSome, vcheck, vcurious, vfail, vimpl, vwat}
 
 import scala.collection.immutable.{List, Set}
+
+case class ResultTypeMismatchError(expectedType: CoordT, actualType: CoordT)
 
 class FunctionTemplarCore(
     opts: TemplarOptions,
@@ -52,7 +53,6 @@ class FunctionTemplarCore(
   (FunctionHeaderT) = {
     val fullEnv = FunctionEnvironmentBox(startingFullEnv)
 
-
     opts.debugOut("Evaluating function " + fullEnv.fullName)
 
     val isDestructor =
@@ -63,11 +63,6 @@ class FunctionTemplarCore(
         case _ => false
       })
 
-    val attributesWithoutExport =
-      startingFullEnv.function.attributes.filter({
-        case ExportA(_) => false
-        case _ => true
-      })
     val maybeExport =
       startingFullEnv.function.attributes.collectFirst { case e@ExportA(_) => e }
 
@@ -75,88 +70,8 @@ class FunctionTemplarCore(
     val header =
       startingFullEnv.function.body match {
         case CodeBodyA(body) => {
-          val attributesA = translateAttributes(attributesWithoutExport)
-
-          val createHeader =
-            (env: FunctionEnvironmentBox, temputs: Temputs, returnCoord: CoordT) => {
-              val header = FunctionHeaderT(fullEnv.fullName, attributesA, params2, returnCoord, Some(startingFullEnv.function));
-              temputs.declareFunctionReturnType(header.toSignature, returnCoord)
-              header
-            }
-
-          val maybeExplicitReturnCoord =
-            startingFullEnv.function.maybeRetCoordRune match {
-              case Some(retCoordRune) => {
-                val maybeRetTemplata =
-                    startingFullEnv.getNearestTemplataWithAbsoluteName2(
-                      NameTranslator.translateRune(retCoordRune),
-                      Set(TemplataLookupContext))
-                val retCoord =
-                  maybeRetTemplata match {
-                    case None => vwat()
-                    case Some(CoordTemplata(retCoord)) => retCoord
-                    case Some(_) => vwat()
-                  }
-                Some(retCoord)
-              }
-              case None => None
-            }
-
-          val maybePreKnownHeader =
-            maybeExplicitReturnCoord match {
-              case None => None
-              case Some(explicitReturnCoord) => {
-                fullEnv.setReturnType(Some(explicitReturnCoord))
-                Some(createHeader(fullEnv, temputs, explicitReturnCoord))
-              }
-            }
-
-          val (maybeInferredReturnCoord, body2) =
-            bodyTemplar.declareAndEvaluateFunctionBody(
-              fullEnv, temputs, BFunctionA(startingFullEnv.function, body), maybeExplicitReturnCoord, params2, isDestructor)
-
-          val maybePostKnownHeader =
-            maybeInferredReturnCoord match {
-              case None => None
-              case Some(explicitReturnCoord) => {
-                Some(createHeader(fullEnv, temputs, explicitReturnCoord))
-              }
-            }
-
-          val header = vassertOne(maybePreKnownHeader.toList ++ maybePostKnownHeader.toList)
-
-          // Funny story... let's say we're current instantiating a constructor,
-          // for example MySome<T>().
-          // The constructor returns a MySome<T>, which means when we do the above
-          // evaluating of the function body, we stamp the MySome<T> struct.
-          // That ends up stamping the entire struct, including the constructor.
-          // That's what we were originally here for, and evaluating the body above
-          // just did it for us O_o
-          // So, here we check to see if we accidentally already did it.
-
-          // Get the variables by diffing the function environment.
-          // Remember, the near env contains closure variables, which we
-          // don't care about here. So find the difference between the near
-          // env and our latest env.
-          vassert(fullEnv.locals.startsWith(startingFullEnv.locals))
-          val introducedLocals =
-            fullEnv.locals
-              .drop(startingFullEnv.locals.size)
-              .collect({
-                case x @ ReferenceLocalVariableT(_, _, _) => x
-                case x @ AddressibleLocalVariableT(_, _, _) => x
-              })
-
-          temputs.lookupFunction(header.toSignature) match {
-            case None => {
-              val function2 = FunctionT(header, introducedLocals, body2);
-              temputs.addFunction(function2)
-              (function2.header)
-            }
-            case Some(function2) => {
-              (function2.header)
-            }
-          }
+          declareAndEvaluateFunctionBodyAndAdd(
+              startingFullEnv, fullEnv, temputs, BFunctionA(startingFullEnv.function, body), params2, isDestructor)
         }
         case AbstractBodyA => {
           val maybeRetCoord =
@@ -267,6 +182,151 @@ class FunctionTemplarCore(
     header
   }
 
+  def declareAndEvaluateFunctionBodyAndAdd(
+    startingFullEnv: FunctionEnvironment,
+    fullEnv: FunctionEnvironmentBox,
+    temputs: Temputs,
+    bfunction1: BFunctionA,
+    paramsT: List[ParameterT],
+    isDestructor: Boolean):
+  FunctionHeaderT = {
+    val BFunctionA(function1, _) = bfunction1;
+    val functionFullName = fullEnv.fullName
+
+    val attributesWithoutExport =
+      startingFullEnv.function.attributes.filter({
+        case ExportA(_) => false
+        case _ => true
+      })
+
+    profiler.childFrame("evaluate body", () => {
+      val attributesT = translateAttributes(attributesWithoutExport)
+
+      val maybeExplicitReturnCoord =
+        startingFullEnv.function.maybeRetCoordRune match {
+          case Some(retCoordRune) => {
+            val maybeRetTemplata =
+              startingFullEnv.getNearestTemplataWithAbsoluteName2(
+                NameTranslator.translateRune(retCoordRune),
+                Set(TemplataLookupContext))
+            val retCoord =
+              maybeRetTemplata match {
+                case None => vwat()
+                case Some(CoordTemplata(retCoord)) => retCoord
+                case Some(_) => vwat()
+              }
+            Some(retCoord)
+          }
+          case None => None
+        }
+
+      maybeExplicitReturnCoord match {
+        case None => {
+          opts.debugOut("Eagerly evaluating function: " + functionFullName)
+          val header =
+            finishFunctionMaybeDeferred(
+              temputs,
+              fullEnv.snapshot,
+              startingFullEnv,
+              bfunction1,
+              attributesT,
+              paramsT,
+              isDestructor,
+              maybeExplicitReturnCoord,
+              None)
+          header
+        }
+        case Some(explicitReturnCoord) => {
+          fullEnv.setReturnType(Some(explicitReturnCoord))
+          val header = finalizeHeader(fullEnv, temputs, attributesT, paramsT, explicitReturnCoord)
+          opts.debugOut("Deferring function: " + header.fullName)
+          temputs.deferEvaluatingFunction(
+            DeferredEvaluatingFunction(
+              header.toPrototype,
+              (temputs) => {
+                opts.debugOut("Finishing function: " + header.fullName)
+                finishFunctionMaybeDeferred(
+                  temputs,
+                  fullEnv.snapshot,
+                  startingFullEnv,
+                  bfunction1,
+                  attributesT,
+                  paramsT,
+                  isDestructor,
+                  maybeExplicitReturnCoord,
+                  Some(header))
+              }))
+          header
+        }
+      }
+    })
+  }
+
+  def finalizeHeader(
+      fullEnv: FunctionEnvironmentBox,
+      temputs: Temputs,
+      attributesT: List[IFunctionAttribute2],
+      paramsT: List[ParameterT],
+      returnCoord: CoordT) = {
+    val header = FunctionHeaderT(fullEnv.fullName, attributesT, paramsT, returnCoord, Some(fullEnv.function));
+    temputs.declareFunctionReturnType(header.toSignature, returnCoord)
+    header
+  }
+
+  // By MaybeDeferred we mean that this function might be called later, to reduce reentrancy.
+  private def finishFunctionMaybeDeferred(
+      temputs: Temputs,
+      fullEnvSnapshot: FunctionEnvironment,
+      startingFullEnvSnapshot: FunctionEnvironment,
+      bfunction1: BFunctionA,
+      attributesT: List[IFunctionAttribute2],
+      paramsT: List[ParameterT],
+      isDestructor: Boolean,
+      maybeExplicitReturnCoord: Option[CoordT],
+      maybePreKnownHeader: Option[FunctionHeaderT]):
+  FunctionHeaderT = {
+    val fullEnv = FunctionEnvironmentBox(fullEnvSnapshot)
+    val (maybeInferredReturnCoord, body2) =
+      bodyTemplar.declareAndEvaluateFunctionBody(
+        fullEnv, temputs, BFunctionA(fullEnv.function, bfunction1.body), maybeExplicitReturnCoord, paramsT, isDestructor)
+
+    val maybePostKnownHeader =
+      maybeInferredReturnCoord match {
+        case None => None
+        case Some(explicitReturnCoord) => {
+          Some(finalizeHeader(fullEnv, temputs, attributesT, paramsT, explicitReturnCoord))
+        }
+      }
+
+    val header = vassertOne(maybePreKnownHeader.toList ++ maybePostKnownHeader.toList)
+
+    // Funny story... let's say we're current instantiating a constructor,
+    // for example MySome<T>().
+    // The constructor returns a MySome<T>, which means when we do the above
+    // evaluating of the function body, we stamp the MySome<T> struct.
+    // That ends up stamping the entire struct, including the constructor.
+    // That's what we were originally here for, and evaluating the body above
+    // just did it for us O_o
+    // So, here we check to see if we accidentally already did it.
+
+    // Get the variables by diffing the function environment.
+    // Remember, the near env contains closure variables, which we
+    // don't care about here. So find the difference between the near
+    // env and our latest env.
+    vassert(fullEnv.locals.startsWith(startingFullEnvSnapshot.locals))
+
+    temputs.lookupFunction(header.toSignature) match {
+      case None => {
+        val function2 = FunctionT(header, body2);
+        temputs.addFunction(function2)
+        (function2.header)
+      }
+      case Some(function2) => {
+        (function2.header)
+      }
+    }
+  }
+
   def translateAttributes(attributesA: List[IFunctionAttributeA]) = {
     attributesA.map({
       //      case ExportA(packageCoord) => Export2(packageCoord)
@@ -307,7 +367,6 @@ class FunctionTemplarCore(
         val function2 =
           FunctionT(
             header,
-            List.empty,
             ReturnTE(ExternFunctionCallTE(externPrototype, argLookups)))
 
         temputs.declareFunctionReturnType(header.toSignature, header.returnType)
@@ -345,7 +404,6 @@ class FunctionTemplarCore(
     val function2 =
       FunctionT(
         header,
-        List.empty,
         BlockTE(
             ReturnTE(
               InterfaceFunctionCallTE(
@@ -382,7 +440,6 @@ class FunctionTemplarCore(
           List(ParameterT(CodeVarNameT("this"), Some(OverrideT(interfaceTT)), structType2)),
           CoordT(ShareT, ReadonlyT, VoidT()),
           maybeOriginFunction1),
-        List.empty,
         BlockTE(
             ReturnTE(
               FunctionCallTE(

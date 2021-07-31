@@ -193,6 +193,9 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |fn doAThing<T>(s SomeStruct<T>) { }
         |impl<T> MyInterface<T> for SomeStruct<T>;
         |
+        |export MyInterface<int> as SomeIntInterface;
+        |export SomeStruct<int> as SomeIntStruct;
+        |
         |fn main(a SomeStruct<int>) export {
         |  doAThing<int>(a);
         |}

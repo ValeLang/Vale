@@ -11,6 +11,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 
 #include "json.hpp"
 #include "function/expressions/shared/shared.h"
@@ -286,16 +287,20 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
       std::string moduleExternsDirectory = globalState->opt->outputDir;
       if (!packageCoord->projectName.empty()) {
         moduleExternsDirectory += "/" + packageCoord->projectName;
-        int failed = mkdir(moduleExternsDirectory.c_str(), 0700);
-        if (failed) {
-          int error = errno;
-          if (error == EEXIST) {
-            // do nothing
-            std::cerr << "Directory " << moduleExternsDirectory << " already exists, continuing." << std::endl;
+        try {
+          if (std::filesystem::is_directory(std::filesystem::path(moduleExternsDirectory))) {
+            // Do nothing, just re-use it
           } else {
-            std::cerr << "Couldn't make directory: " << moduleExternsDirectory << " (" << error << ")" << std::endl;
-            exit(1);
+            bool success = std::filesystem::create_directory(std::filesystem::path(moduleExternsDirectory));
+            if (!success) {
+              std::cerr << "Couldn't make directory: " << moduleExternsDirectory << " (unknown error)" << std::endl;
+              exit(1);
+            }
           }
+        }
+        catch (const std::filesystem::filesystem_error& err) {
+          std::cerr << "Couldn't make directory: " << moduleExternsDirectory << " (" << err.what() << ")" << std::endl;
+          exit(1);
         }
       }
 
@@ -706,7 +711,6 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-  // This has to come after we declare all the other structs, because we
   // add functions for all the known structs and interfaces.
   // It also has to be after we *define* them, because they want to access members.
   // But it has to be before we translate interfaces, because thats when we manifest

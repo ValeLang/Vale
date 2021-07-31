@@ -612,4 +612,28 @@ class OverloadTemplar(
     prototype
   }
 
+  def getArrayConsumerPrototype(
+    temputs: Temputs,
+    fate: FunctionEnvironmentBox,
+    range: RangeS,
+    callableTE: ReferenceExpressionTE,
+    elementType: CoordT):
+  PrototypeT = {
+    val funcName = GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME)
+    val paramFilters =
+      List(
+        ParamFilter(callableTE.resultRegister.underlyingReference, None),
+//        ParamFilter(CoordT(ShareT, ReadonlyT, IntT.i32), None),
+        ParamFilter(elementType, None))
+    val prototype =
+      scoutExpectedFunctionForPrototype(
+        fate.snapshot, temputs, range, funcName, List.empty, paramFilters, List.empty, false) match {
+        case seff@ScoutExpectedFunctionFailure(name, args, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction) => {
+          throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
+        }
+        case ScoutExpectedFunctionSuccess(p) => p
+      }
+    prototype
+  }
+
 }

@@ -40,6 +40,34 @@ class ArrayTests extends FunSuite with Matchers {
     compile.evalForKind(Vector()) shouldEqual VonInt(4)
   }
 
+  test("Destroy SSA into function") {
+    val compile = RunCompilation.test(
+      """
+        |fn main() int export {
+        |  a = [][2, 3, 4, 5, 6];
+        |  sum = 0;
+        |  drop_into(a, &!(e){ set sum = sum + e; });
+        |  = sum;
+        |}
+      """.stripMargin)
+
+    compile.evalForKind(Vector()) shouldEqual VonInt(20)
+  }
+
+  test("Destroy RSA into function") {
+    val compile = RunCompilation.test(
+      """
+        |fn main() int export {
+        |  a = [*](5, {_ + 1});
+        |  sum = 0;
+        |  drop_into(a, &!(e){ set sum = sum + e; });
+        |  = sum;
+        |}
+      """.stripMargin)
+
+    compile.evalForKind(Vector()) shouldEqual VonInt(15)
+  }
+
   test("Unspecified-mutability static array from lambda defaults to mutable") {
     val compile = RunCompilation.test(
       """

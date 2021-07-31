@@ -116,6 +116,13 @@ case class StaticArrayFromCallableAE(
   maybeVariabilityRune: Option[IRuneA],
   callable: IExpressionAE
 ) extends IExpressionAE
+
+case class DestroyArrayIntoCallableAE(
+  range: RangeS,
+  array: IExpressionAE,
+  callable: IExpressionAE
+) extends IExpressionAE
+
 case class RuntimeArrayFromCallableAE(
   range: RangeS,
   rules: List[IRulexAR],

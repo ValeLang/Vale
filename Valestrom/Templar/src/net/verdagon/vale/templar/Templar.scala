@@ -16,7 +16,7 @@ import net.verdagon.vale.templar.infer.IInfererDelegate
 
 import scala.collection.immutable.{List, ListMap, Map, Set}
 import scala.collection.mutable
-
+import scala.util.control.Breaks._
 trait IFunctionGenerator {
   def generate(
     // These serve as the API that a function generator can use.
@@ -86,7 +86,6 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
           temputs.addFunction(
             FunctionT(
               header,
-              List.empty,
               BlockTE(ReturnTE(IsSameInstanceTE(ArgLookupTE(0, paramCoords(0).tyype), ArgLookupTE(1, paramCoords(1).tyype))))))
           header
         }
@@ -162,7 +161,8 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
               }
             }
 
-          temputs.addFunction(FunctionT(header, List.empty, BlockTE(ReturnTE(asSubtypeExpr))))
+          temputs.addFunction(FunctionT(header, BlockTE(ReturnTE(asSubtypeExpr))))
+
           header
         }
       })
@@ -622,17 +622,47 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
             }
         })
 
-        profiler.newProfile("StampOverridesUntilSettledProbe", "", () => {
-//          Split.enter(classOf[ValeSplitProbe], "stamp needed overrides")
-          stampNeededOverridesUntilSettled(env11, temputs)
-//          Split.exit()
-        })
+        breakable {
+          while (true) {
+            temputs.getAllStructs().foreach(struct => {
+              if (struct.mutability == ImmutableT && struct.getRef != Program2.emptyTupleStructRef) {
+                temputs.getDestructor(struct.getRef)
+              }
+            })
+            temputs.getAllInterfaces().foreach(interface => {
+              if (interface.mutability == ImmutableT) {
+                temputs.getDestructor(interface.getRef)
+              }
+            })
+            temputs.getAllRuntimeSizedArrays().foreach(rsa => {
+              if (rsa.array.mutability == ImmutableT) {
+                temputs.getDestructor(rsa)
+              }
+            })
+            temputs.getAllStaticSizedArrays().foreach(ssa => {
+              if (ssa.array.mutability == ImmutableT) {
+                temputs.getDestructor(ssa)
+              }
+            })
 
-//        // Should get a conflict if there are more than one.
-//        val (maybeNoArgMain, _, _, _) =
-//          overloadTemplar.scoutMaybeFunctionForPrototype(
-//            env11, temputs, RangeS.internal(-1398), GlobalFunctionFamilyNameA("main"), List.empty, List.empty, List.empty, true)
+            val stampedOverrides =
+              profiler.newProfile("StampOverridesUntilSettledProbe", "", () => {
+                stampKnownNeededOverrides(env11, temputs)
+              })
 
+            var deferredFunctionsEvaluated = 0
+            while (temputs.peekNextDeferredEvaluatingFunction().nonEmpty) {
+              val nextDeferredEvaluatingFunction = temputs.peekNextDeferredEvaluatingFunction().get
+              deferredFunctionsEvaluated += 1
+              // No, IntelliJ, I assure you this has side effects
+              (nextDeferredEvaluatingFunction.call) (temputs)
+              temputs.markDeferredFunctionEvaluated(nextDeferredEvaluatingFunction.prototypeT)
+            }
+
+            if (stampedOverrides + deferredFunctionsEvaluated == 0)
+              break
+          }
+        }
 
         val edgeBlueprints = EdgeTemplar.makeInterfaceEdgeBlueprints(temputs)
         val partialEdges = EdgeTemplar.assemblePartialEdges(temputs)
@@ -654,27 +684,6 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
 
         edgeBlueprintsByInterface.foreach({ case (interfaceTT, edgeBlueprint) =>
           vassert(edgeBlueprint.interface == interfaceTT)
-        })
-
-        temputs.getAllStructs().foreach(struct => {
-          if (struct.mutability == ImmutableT && struct.getRef != Program2.emptyTupleStructRef) {
-            temputs.getDestructor(struct.getRef)
-          }
-        })
-        temputs.getAllInterfaces().foreach(interface => {
-          if (interface.mutability == ImmutableT) {
-            temputs.getDestructor(interface.getRef)
-          }
-        })
-        temputs.getAllRuntimeSizedArrays().foreach(rsa => {
-          if (rsa.array.mutability == ImmutableT) {
-            temputs.getDestructor(rsa)
-          }
-        })
-        temputs.getAllStaticSizedArrays().foreach(ssa => {
-          if (ssa.array.mutability == ImmutableT) {
-            temputs.getDestructor(ssa)
-          }
         })
 
         ensureDeepExports(temputs)
@@ -753,7 +762,18 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         .mapValues(
           _.map(x => (x._2, x._3))
             .groupBy(_._1)
-            .mapValues(vassertOne(_)._2))
+            .mapValues({
+              case Nil => vwat()
+              case List(only) => only
+              case multiple => {
+                val exports = multiple.map(_._2)
+                throw CompileErrorExceptionT(
+                  TypeExportedMultipleTimes(
+                    exports.head.range,
+                    exports.head.packageCoordinate,
+                    exports))
+              }
+            }))
 
     temputs.getFunctionExports.foreach(funcExport => {
       val exportedKindToExport = packageToKindToExport.getOrElse(funcExport.packageCoordinate, Map())
@@ -778,7 +798,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         })
     })
     packageToKindToExport.foreach({ case (packageCoord, exportedKindToExport) =>
-      exportedKindToExport.foreach({ case (exportedKind, export) =>
+      exportedKindToExport.foreach({ case (exportedKind, (kind, export)) =>
         exportedKind match {
           case sr@StructTT(_) => {
             val structDef = temputs.getStructDefForRef(sr)
@@ -881,7 +901,11 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
     env2
   }
 
-  def stampNeededOverridesUntilSettled(env: PackageEnvironment[INameT], temputs: Temputs): Unit = {
+  // Returns the number of overrides stamped
+  // This doesnt actually stamp *all* overrides, just the ones we can immediately
+  // see missing. We don't know if, in the process of stamping these, we'll find more.
+  // Also note, these don't stamp them right now, they defer them for later evaluating.
+  def stampKnownNeededOverrides(env: PackageEnvironment[INameT], temputs: Temputs): Int = {
     val neededOverrides =
       profiler.childFrame("assemble partial edges", () => {
         val partialEdges = EdgeTemplar.assemblePartialEdges(temputs)
@@ -890,9 +914,6 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
           case FoundFunction(_) => List.empty
         }))
       })
-    if (neededOverrides.isEmpty) {
-      return
-    }
 
     // right now we're just assuming global env, but it might not be there...
     // perhaps look in the struct's env and the function's env? cant think of where else to look.
@@ -917,7 +938,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
       }
     })
 
-    stampNeededOverridesUntilSettled(env, temputs)
+    neededOverrides.size
   }
 }
 
@@ -940,6 +961,7 @@ object Templar {
   def isPrimitive(kind: KindT): Boolean = {
     kind match {
       case VoidT() | IntT(_) | BoolT() | StrT() | NeverT() | FloatT() => true
+      case TupleTT(_, understruct) => isPrimitive(understruct)
       case sr @ StructTT(_) => sr == Program2.emptyTupleStructRef
       case InterfaceTT(_) => false
       case StaticSizedArrayTT(_, _) => false

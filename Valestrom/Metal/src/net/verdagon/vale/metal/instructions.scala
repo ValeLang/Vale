@@ -596,12 +596,8 @@ case class DestroyStaticSizedArrayIntoFunctionH(
   // Expression containing the array we'll destroy.
   // This is an owning reference.
   arrayExpression: ExpressionH[StaticSizedArrayTH],
-  // Expression containing the IFunction<T, Void> interface reference which we'll
-  // call to destroy each element of the array.
-  // More specifically, we'll call the "__call" function on the interface, which
-  // should be the only function on it.
-  // This is a constraint reference.
-  consumerExpression: ExpressionH[InterfaceRefH],
+  // Expression containing the argument we'll pass to consumerMethod with the element.
+  consumerExpression: ExpressionH[KindH],
   // The prototype for the "__call" function to call on the interface for each element.
   consumerMethod: PrototypeH,
   arrayElementType: ReferenceH[KindH],
@@ -615,12 +611,8 @@ case class DestroyRuntimeSizedArrayH(
   // Expression containing the array we'll destroy.
   // This is an owning reference.
   arrayExpression: ExpressionH[RuntimeSizedArrayTH],
-  // Expression containing the IFunction<T, Void> interface reference which we'll
-  // call to destroy each element of the array.
-  // More specifically, we'll call the "__call" function on the interface, which
-  // should be the only function on it.
-  // This is a constraint reference.
-  consumerExpression: ExpressionH[InterfaceRefH],
+  // Expression containing the argument we'll pass to consumerMethod with the element.
+  consumerExpression: ExpressionH[KindH],
   // The prototype for the "__call" function to call on the interface for each element.
   consumerMethod: PrototypeH,
   arrayElementType: ReferenceH[KindH],

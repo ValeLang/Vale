@@ -1,13 +1,20 @@
 package net.verdagon.vale.templar
 
+import net.verdagon.vale.astronomer.BFunctionA
 import net.verdagon.vale.scout.{CodeLocationS, RangeS}
 import net.verdagon.vale.templar.env.{FunctionEnvironment, PackageEnvironment}
-import net.verdagon.vale.templar.templata.{PrototypeT, SignatureT}
-import net.verdagon.vale.templar.types.{CitizenDefinitionT, CitizenRefT, CoordT, ImmutableT, InterfaceDefinitionT, InterfaceTT, KindT, StaticSizedArrayTT, MutabilityT, NeverT, RawArrayTT, ShareT, StructDefinitionT, StructTT, RuntimeSizedArrayTT}
+import net.verdagon.vale.templar.templata.{FunctionHeaderT, PrototypeT, SignatureT}
+import net.verdagon.vale.templar.types.{CitizenDefinitionT, CitizenRefT, CoordT, ImmutableT, InterfaceDefinitionT, InterfaceTT, KindT, MutabilityT, NeverT, RawArrayTT, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StructDefinitionT, StructTT}
 import net.verdagon.vale.{PackageCoordinate, vassert, vassertSome, vfail}
 
 import scala.collection.immutable.{List, Map}
 import scala.collection.mutable
+
+
+case class DeferredEvaluatingFunction(
+  prototypeT: PrototypeT,
+  call: (Temputs) => Unit)
+
 
 case class Temputs() {
   // Signatures that have already started to be compiled.
@@ -59,6 +66,20 @@ case class Temputs() {
   private val runtimeSizedArrayTypes: mutable.HashMap[RawArrayTT, RuntimeSizedArrayTT] = mutable.HashMap()
 
   private val kindToDestructor: mutable.HashMap[KindT, PrototypeT] = mutable.HashMap()
+
+  // A queue of functions that our code uses, but we don't need to compile them right away.
+  // We can compile them later. Perhaps in parallel, someday!
+  private val deferredEvaluatingFunctions: mutable.LinkedHashMap[PrototypeT, DeferredEvaluatingFunction] = mutable.LinkedHashMap()
+  private var evaluatedDeferredFunctions: mutable.LinkedHashSet[PrototypeT] = mutable.LinkedHashSet()
+
+  def peekNextDeferredEvaluatingFunction(): Option[DeferredEvaluatingFunction] = {
+    deferredEvaluatingFunctions.headOption.map(_._2)
+  }
+  def markDeferredFunctionEvaluated(prototypeT: PrototypeT): Unit = {
+    vassert(prototypeT == vassertSome(deferredEvaluatingFunctions.headOption)._1)
+    evaluatedDeferredFunctions += prototypeT
+    deferredEvaluatingFunctions -= prototypeT
+  }
 
   def lookupFunction(signature2: SignatureT): Option[FunctionT] = {
     functions.find(_.header.toSignature == signature2)
@@ -211,6 +232,10 @@ case class Temputs() {
     vassert(!kindToDestructor.contains(kind))
     vassert(prototypeDeclared(destructor.fullName).nonEmpty)
     kindToDestructor.put(kind, destructor)
+  }
+
+  def deferEvaluatingFunction(devf: DeferredEvaluatingFunction): Unit = {
+    deferredEvaluatingFunctions.put(devf.prototypeT, devf)
   }
 
   def getDestructor(kind: KindT): PrototypeT = {

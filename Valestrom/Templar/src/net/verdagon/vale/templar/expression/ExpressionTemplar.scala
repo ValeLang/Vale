@@ -595,7 +595,7 @@ class ExpressionTemplar(
         }
         case TemplateSpecifiedLookupAE(range, name, templateArgs1, targetOwnership) => {
           // So far, we only allow these when they're immediately called like functions
-          vfail("unimplemented")
+          throw CompileErrorExceptionT(RangedInternalErrorT(range, "Raw template specified lookups unimplemented!"))
         }
         case IndexAE(range, containerExpr1, indexExpr1) => {
           val (unborrowedContainerExpr2, returnsFromContainerExpr) =
@@ -955,6 +955,27 @@ class ExpressionTemplar(
           val (arrayExpr2, returnsFromArrayExpr) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, arrayExprA);
           (ArrayLengthTE(arrayExpr2), returnsFromArrayExpr)
+        }
+        case DestroyArrayIntoCallableAE(range, arrAE, consumerAE) => {
+          val (arrTE, returnsFromArr) =
+            evaluateAndCoerceToReferenceExpression(temputs, fate, arrAE);
+          val (consumerTE, returnsFromConsumer) =
+            evaluateAndCoerceToReferenceExpression(temputs, fate, consumerAE);
+          val destroyTE =
+            arrTE.kind match {
+              case StaticSizedArrayTT(_, _) => {
+                arrayTemplar.evaluateDestroyStaticSizedArrayIntoCallable(
+                  temputs, fate, range, arrTE, consumerTE)
+              }
+              case RuntimeSizedArrayTT(_) => {
+                arrayTemplar.evaluateDestroyRuntimeSizedArrayIntoCallable(
+                  temputs, fate, range, arrTE, consumerTE)
+              }
+              case _ => {
+                throw CompileErrorExceptionT(RangedInternalErrorT(range, "DestroyArrayIntoCallableAE given a non-array!"))
+              }
+            }
+          (destroyTE, returnsFromArr ++ returnsFromConsumer)
         }
         case DestructAE(range, innerAE) => {
           val (innerExpr2, returnsFromArrayExpr) =

@@ -720,8 +720,8 @@ object Astronomer {
 //      Printing.printlnStr)
 
   val wrapperFunctions =
+    Arrays.makeArrayFunctions() ++
     List(
-//      Arrays.makeArrayFunction(),
       RefCounting.checkmemberrc,
       RefCounting.checkvarrc)
 

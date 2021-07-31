@@ -145,7 +145,7 @@ case class LetNormalTE(
   }
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ expr.all(func)
+    List(this).collect(func) ++ variable.all(func) ++ expr.all(func)
   }
 }
 
@@ -737,6 +737,10 @@ case class DestroyStaticSizedArrayIntoFunctionTE(
     arrayType: StaticSizedArrayTT,
     consumer: ReferenceExpressionTE,
     consumerMethod: PrototypeT) extends ReferenceExpressionTE {
+  vassert(consumerMethod.paramTypes.size == 2)
+  vassert(consumerMethod.paramTypes(0) == consumer.resultRegister.reference)
+  vassert(consumerMethod.paramTypes(1) == arrayType.array.memberType)
+
   override def resultRegister: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -770,6 +774,11 @@ case class DestroyRuntimeSizedArrayTE(
     consumer: ReferenceExpressionTE,
     consumerMethod: PrototypeT
 ) extends ReferenceExpressionTE {
+  vassert(consumerMethod.paramTypes.size == 2)
+  vassert(consumerMethod.paramTypes(0) == consumer.resultRegister.reference)
+//  vassert(consumerMethod.paramTypes(1) == Program2.intType)
+  vassert(consumerMethod.paramTypes(1) == arrayType.array.memberType)
+
   override def resultRegister: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {

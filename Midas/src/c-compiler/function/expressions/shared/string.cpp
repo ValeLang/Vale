@@ -47,7 +47,7 @@ Ref buildConstantVStr(
     LLVMBuilderRef builder,
     const std::string& contents) {
 
-  auto lengthLE = constI64LE(globalState, contents.length());
+  auto lengthLE = constI32LE(globalState, contents.length());
 
   auto strRef =
       globalState->getRegion(globalState->metalCache->strRef)

@@ -173,11 +173,11 @@ object CallHammer {
 
     val staticSizedArrayDef = hamuts.getStaticSizedArray(arrayTypeH)
 
-    val consumerInterfaceRef = consumerCallableResultLine.expectInterfaceAccess().resultType.kind;
-    val consumerInterfaceDef = vassertSome(hamuts.interfaceDefs.values.find(_.getRef == consumerInterfaceRef))
-    vassert(consumerInterfaceDef.methods.head.prototypeH.params.size == 2)
-    vassert(consumerInterfaceDef.methods.head.prototypeH.params(0).kind == consumerInterfaceRef)
-    vassert(consumerInterfaceDef.methods.head.prototypeH.params(1) == staticSizedArrayDef.rawArray.elementType)
+//    val consumerInterfaceRef = consumerCallableResultLine.expectInterfaceAccess().resultType.kind;
+//    val consumerInterfaceDef = vassertSome(hamuts.interfaceDefs.values.find(_.getRef == consumerInterfaceRef))
+//    vassert(consumerInterfaceDef.methods.head.prototypeH.params.size == 2)
+//    vassert(consumerInterfaceDef.methods.head.prototypeH.params(0).kind == consumerInterfaceRef)
+//    vassert(consumerInterfaceDef.methods.head.prototypeH.params(1) == staticSizedArrayDef.rawArray.elementType)
 
     val consumerMethod =
       FunctionHammer.translatePrototype(hinputs, hamuts, consumerMethod2)
@@ -185,7 +185,7 @@ object CallHammer {
     val destroyStaticSizedArrayCallNode =
         DestroyStaticSizedArrayIntoFunctionH(
           arrayExprResultLine.expectStaticSizedArrayAccess(),
-          consumerCallableResultLine.expectInterfaceAccess(),
+          consumerCallableResultLine,
           consumerMethod,
           staticSizedArrayDef.rawArray.elementType,
           staticSizedArrayDef.size)
@@ -230,7 +230,7 @@ object CallHammer {
     val destroyStaticSizedArrayCallNode =
         DestroyRuntimeSizedArrayH(
           arrayExprResultLine.expectRuntimeSizedArrayAccess(),
-          consumerCallableResultLine.expectInterfaceAccess(),
+          consumerCallableResultLine,
           consumerMethod,
           elementType)
 

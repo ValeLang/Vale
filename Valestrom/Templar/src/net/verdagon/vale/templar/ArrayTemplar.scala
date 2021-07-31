@@ -115,6 +115,58 @@ class ArrayTemplar(
     (finalExpr)
   }
 
+  def evaluateDestroyStaticSizedArrayIntoCallable(
+    temputs: Temputs,
+    fate: FunctionEnvironmentBox,
+    range: RangeS,
+    arrTE: ReferenceExpressionTE,
+    callableTE: ReferenceExpressionTE):
+  DestroyStaticSizedArrayIntoFunctionTE = {
+    val arrayTT =
+      arrTE.resultRegister.reference match {
+        case CoordT(_, _, s @ StaticSizedArrayTT(_, RawArrayTT(_, _, _))) => s
+        case other => {
+          throw CompileErrorExceptionT(RangedInternalErrorT(range, "Destroying a non-array with a callable! Destroying: " + other))
+        }
+      }
+
+    val prototype =
+      overloadTemplar.getArrayConsumerPrototype(
+        temputs, fate, range, callableTE, arrayTT.array.memberType)
+
+    DestroyStaticSizedArrayIntoFunctionTE(
+      arrTE,
+      arrayTT,
+      callableTE,
+      prototype)
+  }
+
+  def evaluateDestroyRuntimeSizedArrayIntoCallable(
+    temputs: Temputs,
+    fate: FunctionEnvironmentBox,
+    range: RangeS,
+    arrTE: ReferenceExpressionTE,
+    callableTE: ReferenceExpressionTE):
+  DestroyRuntimeSizedArrayTE = {
+    val arrayTT =
+      arrTE.resultRegister.reference match {
+        case CoordT(_, _, s @ RuntimeSizedArrayTT(RawArrayTT(_, _, _))) => s
+        case other => {
+          throw CompileErrorExceptionT(RangedInternalErrorT(range, "Destroying a non-array with a callable! Destroying: " + other))
+        }
+      }
+
+    val prototype =
+      overloadTemplar.getArrayConsumerPrototype(
+        temputs, fate, range, callableTE, arrayTT.array.memberType)
+
+    DestroyRuntimeSizedArrayTE(
+      arrTE,
+      arrayTT,
+      callableTE,
+      prototype)
+  }
+
   def getStaticSizedArrayKind(
     env: IEnvironment,
     temputs: Temputs,

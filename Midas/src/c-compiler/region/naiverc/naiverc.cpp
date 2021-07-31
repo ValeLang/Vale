@@ -839,12 +839,14 @@ std::string NaiveRC::generateStaticSizedArrayDefsC(
     Package* currentPackage,
     StaticSizedArrayDefinitionT* ssaDefM) {
   assert(false);
+  exit(1);
 }
 
 std::string NaiveRC::generateStructDefsC(
     Package* currentPackage,
      StructDefinition* structDefM) {
   assert(false);
+  exit(1);
 }
 
 std::string NaiveRC::generateInterfaceDefsC(
@@ -856,6 +858,7 @@ std::string NaiveRC::generateInterfaceDefsC(
 
 LLVMTypeRef NaiveRC::getExternalType(Reference* refMT) {
   assert(false);
+  exit(1);
 //  return refMT;
 }
 
@@ -866,6 +869,7 @@ Ref NaiveRC::receiveAndDecryptFamiliarReference(
     LLVMValueRef sourceRefLE) {
   // Naive shouldnt do exports, its just for benchmarking
   assert(false);
+  exit(1);
 }
 
 LLVMTypeRef NaiveRC::getInterfaceMethodVirtualParamAnyType(Reference* reference) {
@@ -916,6 +920,7 @@ LLVMValueRef NaiveRC::encryptAndSendFamiliarReference(
     Ref sourceRef) {
 //  return sourceRef;
   assert(false); // naive shouldnt be externing
+  exit(1);
 }
 
 void NaiveRC::initializeElementInRSA(

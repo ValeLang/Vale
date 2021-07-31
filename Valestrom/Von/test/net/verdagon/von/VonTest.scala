@@ -10,10 +10,11 @@ class VonTest extends FunSuite with Matchers {
       "MyObj(mem = 42)"
   }
 
-  test("Json escape apostrophe") {
+  test("Json doesnt escape apostrophe") {
+    // We dont want it to escape apostrophes because Lift can't handle reading
+    // an escaped one like "yes\'nt".
     val data = VonStr("yes'nt")
-    new VonPrinter(JsonSyntax, 30).print(data) shouldEqual
-      ("yes" + "\\" + "'" + "nt")
+    new VonPrinter(JsonSyntax, 30).print(data) shouldEqual "\"yes'nt\""
   }
 
   test("Test 2") {

@@ -58,6 +58,7 @@ object Reachability {
       case ConstructArrayTE(_, _, _, calleePrototype) => visitFunction(program, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
       case StaticArrayFromCallableTE(_, _, calleePrototype) => visitFunction(program, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
       case DestroyStaticSizedArrayIntoFunctionTE(_, _, _, calleePrototype) => visitFunction(program, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
+      case DestroyRuntimeSizedArrayTE(_, _, _, calleePrototype) => visitFunction(program, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
       case sr @ StructTT(_) => visitStruct(program, edgeBlueprints, edges, reachables, sr)
       case ir @ InterfaceTT(_) => visitInterface(program, edgeBlueprints, edges, reachables, ir)
       case ssa @ StaticSizedArrayTT(_, _) => visitStaticSizedArray(program, edgeBlueprints, edges, reachables, ssa)

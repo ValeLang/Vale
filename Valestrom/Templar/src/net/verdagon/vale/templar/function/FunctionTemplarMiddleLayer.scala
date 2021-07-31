@@ -148,7 +148,7 @@ class FunctionTemplarMiddleLayer(
     val functionFullName = assembleName(runedEnv.fullName, paramTypes2)
     val needleSignature = SignatureT(functionFullName)
     temputs.lookupFunction(needleSignature) match {
-      case Some(FunctionT(header, _, _)) => {
+      case Some(FunctionT(header, _)) => {
         (header)
       }
       case None => {

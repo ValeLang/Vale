@@ -117,18 +117,6 @@ class HammerTests extends FunSuite with Matchers {
     packageH.exportNameToKind("Moo") shouldEqual moo.getRef
   }
 
-  test("Tests export struct twice") {
-    val compile = RunCompilation.test(
-      """
-        |struct Moo export { }
-        |export Moo as Bork;
-        |""".stripMargin)
-    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
-    val moo = packageH.lookupStruct("Moo")
-    packageH.exportNameToKind("Moo") shouldEqual moo.getRef
-    packageH.exportNameToKind("Bork") shouldEqual moo.getRef
-  }
-
   test("Tests export interface") {
     val compile = RunCompilation.test(
       """

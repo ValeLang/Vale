@@ -229,7 +229,8 @@ class DestructorTemplar(
         List(ParameterT(CodeVarNameT("x"), None, type2)),
         CoordT(ShareT, ReadonlyT, VoidT()),
         Some(originFunction1))
-    val function2 = FunctionT(header, List.empty, BlockTE(Templar.consecutive(List(dropExpr2, ReturnTE(VoidLiteralTE())))))
+
+    val function2 = FunctionT(header, BlockTE(Templar.consecutive(List(dropExpr2, ReturnTE(VoidLiteralTE())))))
     temputs.declareFunctionReturnType(header.toSignature, CoordT(ShareT, ReadonlyT, VoidT()))
     temputs.addFunction(function2)
     vassert(temputs.getDeclaredSignatureOrigin(bodyEnv.fullName) == Some(originFunction1.range))
@@ -291,7 +292,6 @@ class DestructorTemplar(
     val function2 =
       FunctionT(
         header,
-        memberLocalVariables,
         BlockTE(
           Templar.consecutive(
             List(destroyedUnletStruct) ++ destructMemberExprs :+ returnVoid)))
@@ -345,7 +345,6 @@ class DestructorTemplar(
           List(ParameterT(CodeVarNameT("this"), None, arrayRefType)),
           CoordT(ShareT, ReadonlyT, VoidT()),
           maybeOriginFunction1),
-        List.empty,
         BlockTE(
           Templar.consecutive(
             List(
@@ -402,7 +401,6 @@ class DestructorTemplar(
           List(ParameterT(CodeVarNameT("this"), None, arrayRefType2)),
           CoordT(ShareT, ReadonlyT, VoidT()),
           maybeOriginFunction1),
-        List.empty,
         BlockTE(
           Templar.consecutive(
             List(

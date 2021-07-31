@@ -588,10 +588,10 @@ class StructTemplarCore(
 
     forwarderFunctionHeaders.zip(callables).zipWithIndex.foreach({
       case ((forwarderHeader, lambda), methodIndex) => {
-        val localVariables =
-          forwarderHeader.params.map(param => {
-            ReferenceLocalVariableT(forwarderHeader.fullName.addStep(param.name), FinalT, param.tyype)
-          })
+//        val localVariables =
+//          forwarderHeader.params.map(param => {
+//            ReferenceLocalVariableT(forwarderHeader.fullName.addStep(param.name), FinalT, param.tyype)
+//          })
 
         // The args for the call inside the forwarding function.
         val lambdaCoord = CoordT(if (lambda.ownership == ShareT) ShareT else ConstraintT, lambda.permission, lambda.kind)
@@ -650,7 +650,6 @@ class StructTemplarCore(
         val forwarderFunction =
           FunctionT(
             forwarderHeader,
-            localVariables,
             BlockTE(
                 ReturnTE(
                   FunctionCallTE(lambdaFunctionPrototype, argExpressions))))
@@ -723,7 +722,6 @@ class StructTemplarCore(
     val forwarderFunction =
       FunctionT(
         forwarderHeader,
-        List.empty,
         BlockTE(
           Templar.consecutive(
             List(
@@ -764,7 +762,6 @@ class StructTemplarCore(
           constructorParams,
           constructorReturnType,
           maybeConstructorOriginFunctionA),
-        List.empty,
         BlockTE(
             ReturnTE(
               ConstructTE(

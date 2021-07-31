@@ -304,14 +304,14 @@ class PatternTemplar(
               loadFromStruct(temputs, range, expectedContainerPermission, containerAliasingExprTE, structTT, memberIndex)
             }
             case PackTT(_, underlyingStruct@StructTT(_)) => {
-              val reinterpretedStructRefT = CoordT(expectedContainerOwnership, expectedContainerPermission, underlyingStruct)
-              val reinterpretedContainerAliasingExprTE = TemplarReinterpretTE(containerAliasingExprTE, reinterpretedStructRefT)
+              val reinterpretedStructTT = CoordT(expectedContainerOwnership, expectedContainerPermission, underlyingStruct)
+              val reinterpretedContainerAliasingExprTE = TemplarReinterpretTE(containerAliasingExprTE, reinterpretedStructTT)
               loadFromStruct(
                 temputs, range, expectedContainerPermission, reinterpretedContainerAliasingExprTE, underlyingStruct, memberIndex)
             }
             case TupleTT(_, underlyingStruct@StructTT(_)) => {
-              val reinterpretedStructRefT = CoordT(expectedContainerOwnership, expectedContainerPermission, underlyingStruct)
-              val reinterpretedContainerAliasingExprTE = TemplarReinterpretTE(containerAliasingExprTE, reinterpretedStructRefT)
+              val reinterpretedStructTT = CoordT(expectedContainerOwnership, expectedContainerPermission, underlyingStruct)
+              val reinterpretedContainerAliasingExprTE = TemplarReinterpretTE(containerAliasingExprTE, reinterpretedStructTT)
               loadFromStruct(
                 temputs, range, expectedContainerPermission, reinterpretedContainerAliasingExprTE, underlyingStruct, memberIndex)
             }

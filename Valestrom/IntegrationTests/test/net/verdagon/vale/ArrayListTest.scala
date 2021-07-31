@@ -166,7 +166,7 @@ class ArrayListTest extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main");
-    main.variables.collect({ case AddressibleLocalVariableT(FullNameT(_, _, CodeVarNameT("m")), VaryingT, _) => })
+    main.only({ case AddressibleLocalVariableT(FullNameT(_, _, CodeVarNameT("m")), VaryingT, _) => })
 
     compile.evalForKind(Vector()) shouldEqual VonInt(9)
   }
@@ -188,7 +188,7 @@ class ArrayListTest extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main");
-    main.variables.collect({ case AddressibleLocalVariableT(FullNameT(_, _, CodeVarNameT("m")), VaryingT, _) => })
+    main.only({ case AddressibleLocalVariableT(FullNameT(_, _, CodeVarNameT("m")), VaryingT, _) => })
 
     compile.evalForKind(Vector()) shouldEqual VonInt(6)
   }

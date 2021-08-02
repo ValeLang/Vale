@@ -1,20 +1,15 @@
 #ifdef _WIN32
-
 #include <windows.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <tchar.h>
 #include <signal.h>
-
 #else
-
-#include <stdio.h>
-#include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <stdlib.h>
-
 #endif
+#include <string.h>
+#include <stdio.h>
 
 
 int pageSize() {

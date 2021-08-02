@@ -46,6 +46,8 @@ void HybridGenerationalMemory::mainSetup(FunctionState* functionState, LLVMBuild
     halfProtectedI8PtrPtrLE = LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "halfProtectedI8Ptr");
     LLVMSetInitializer(halfProtectedI8PtrPtrLE, LLVMConstNull(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)));
 
+    buildFlare(FL(), globalState, functionState, builder, "Half protected ptr: ", ptrToIntLE(globalState, builder, halfProtectedI8PtrPtrLE));
+
     auto setupFuncProto = makeMainSetupFunction();
     auto setupFuncL = globalState->extraFunctions.find(setupFuncProto)->second;
     LLVMBuildCall(builder, setupFuncL, nullptr, 0, "");

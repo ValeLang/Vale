@@ -54,12 +54,12 @@ class ValeCompiler:
             ] + namespaces_to_build + valestrom_options + list((x[0] + ":" + str(x[1])) for x in valestrom_inputs)
         )
 
-    def valec(self,
+    def midas(self,
               vast_file: Path,
               o_files_dir: str,
               midas_options: List[str]) -> subprocess.CompletedProcess:
         return procrun(
-            [str(self.valec_path), "--verify", "--output-dir", o_files_dir, str(vast_file)] + midas_options)
+            [str(self.midas_path), "--verify", "--output-dir", o_files_dir, str(vast_file)] + midas_options)
 
     def clang(self,
               o_files: List[Path],
@@ -114,30 +114,30 @@ class ValeCompiler:
             self.builtins_path = cwd
 
         # Maybe we can add a command line param here too, relying on environments is always irksome.
-        self.valec_path: Path = cwd
+        self.midas_path: Path = cwd
         if len(os.environ.get('VALEC_PATH', '')) > 0:
-            print(f"Using valec at {self.valec_path}. ", file=sys.stderr)
-            self.valec_path = Path(os.environ.get('VALEC_PATH', ''))
-        elif shutil.which("valec") != None:
-            self.valec_path = Path(shutil.which("valec"))
-        elif path.exists(cwd / "valec"):
-            self.valec_path = cwd / "valec"
-        elif path.exists(cwd / "valec.exe"):
-            self.valec_path = cwd / "valec.exe"
-        elif path.exists(cwd / "cmake-build-debug/valec"):
-            self.valec_path = cwd / "cmake-build-debug/valec"
-        elif path.exists(cwd / "build/valec"):
-            self.valec_path = cwd / "build/valec"
-        elif path.exists(cwd / "build/valec.exe"):
-            self.valec_path = cwd / "build/valec.exe"
-        elif path.exists(cwd / "build/Debug/valec.exe"):
-            self.valec_path = cwd / "build/Debug/valec.exe"
-        elif path.exists(cwd / "build/Release/valec.exe"):
-            self.valec_path = cwd / "build/Release/valec.exe"
-        elif path.exists(cwd / "x64/Debug/valec.exe"):
-            self.valec_path = cwd / "x64/Debug/valec.exe"
-        elif path.exists(cwd / "x64/Release/valec.exe"):
-            self.valec_path = cwd / "x64/Release/valec.exe"
+            print(f"Using midas at {self.midas_path}. ", file=sys.stderr)
+            self.midas_path = Path(os.environ.get('VALEC_PATH', ''))
+        elif shutil.which("midas") != None:
+            self.midas_path = Path(shutil.which("midas"))
+        elif path.exists(cwd / "midas"):
+            self.midas_path = cwd / "midas"
+        elif path.exists(cwd / "midas.exe"):
+            self.midas_path = cwd / "midas.exe"
+        elif path.exists(cwd / "cmake-build-debug/midas"):
+            self.midas_path = cwd / "cmake-build-debug/midas"
+        elif path.exists(cwd / "build/midas"):
+            self.midas_path = cwd / "build/midas"
+        elif path.exists(cwd / "build/midas.exe"):
+            self.midas_path = cwd / "build/midas.exe"
+        elif path.exists(cwd / "build/Debug/midas.exe"):
+            self.midas_path = cwd / "build/Debug/midas.exe"
+        elif path.exists(cwd / "build/Release/midas.exe"):
+            self.midas_path = cwd / "build/Release/midas.exe"
+        elif path.exists(cwd / "x64/Debug/midas.exe"):
+            self.midas_path = cwd / "x64/Debug/midas.exe"
+        elif path.exists(cwd / "x64/Release/midas.exe"):
+            self.midas_path = cwd / "x64/Release/midas.exe"
         else:
             print("No VALEC_PATH in env, and couldn't find one nearby, aborting!", file=sys.stderr)
             sys.exit(1)
@@ -298,24 +298,24 @@ class ValeCompiler:
             sys.exit(22)
 
         if print_version or args[0] == "version":
-            with open(str(self.valestrom_path / "valec-version.txt"), 'r') as f:
+            with open(str(self.valestrom_path / "midas-version.txt"), 'r') as f:
                 print(f.read())
         elif print_help or args[0] == "help":
             if len(args) < 2:
-                with open(str(self.valestrom_path / "valec-version.txt"), 'r') as f:
+                with open(str(self.valestrom_path / "midas-version.txt"), 'r') as f:
                     print(f.read())
-                with open(str(self.valestrom_path / "valec-help.txt"), 'r') as f:
+                with open(str(self.valestrom_path / "midas-help.txt"), 'r') as f:
                     print(f.read())
             elif args[1] == "build":
-                with open(str(self.valestrom_path / "valec-help-build.txt"), 'r') as f:
+                with open(str(self.valestrom_path / "midas-help-build.txt"), 'r') as f:
                     print(f.read())
             elif args[1] == "run":
-                with open(str(self.valestrom_path / "valec-help-run.txt"), 'r') as f:
+                with open(str(self.valestrom_path / "midas-help-run.txt"), 'r') as f:
                     print(f.read())
             elif args[1] == "paths":
                 print("Valestrom path: " + str(self.valestrom_path))
                 print("Builtins path: " + str(self.builtins_path))
-                print("valec path: " + str(self.valec_path))
+                print("midas path: " + str(self.midas_path))
             else:
                 print("Unknown subcommand: " + args[1])
             sys.exit(0)
@@ -390,7 +390,7 @@ class ValeCompiler:
                 if len(user_valestrom_inputs) > 0:
                     print("You've declared where some projects are (via the projectname:path/to/project),")
                     print("but you'll still need to specify one to start building. Example:")
-                    print("  python3 valec.py markvale markvale:~/markvale stdlib:~/stdlib")
+                    print("  python3 midas.py markvale markvale:~/markvale stdlib:~/stdlib")
                     print("Note how even though we already specify where markvale is, we still need to")
                     print("say `markvale` as a lone argument, to start building from there.")
                     print("")
@@ -454,11 +454,11 @@ class ValeCompiler:
                         directories_with_c.append(native_directory)
                         print("Adding dir with native: " + str(native_directory))
 
-            proc = self.valec(str(vast_file), str(self.build_dir), midas_options)
+            proc = self.midas(str(vast_file), str(self.build_dir), midas_options)
             # print(proc.stdout)
             # print(proc.stderr)
             if proc.returncode != 0:
-                print(f"valec couldn't compile {vast_file}:\n" + proc.stdout + "\n" + proc.stderr, file=sys.stderr)
+                print(f"midas couldn't compile {vast_file}:\n" + proc.stdout + "\n" + proc.stderr, file=sys.stderr)
                 sys.exit(1)
 
             for directory_with_c in directories_with_c:

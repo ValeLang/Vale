@@ -246,8 +246,8 @@ Ref translateExpressionInner(
     globalState->getRegion(consumerType)
         ->checkValidReference(FL(), functionState, builder, consumerType, consumerRef);
 
-    intRangeLoop(
-        globalState, functionState, builder, sizeRef,
+    intRangeLoopReverse(
+        globalState, functionState, builder, globalState->metalCache->i32, sizeRef,
         [globalState, functionState, elementType, consumerType, consumerMethod, arrayType, arrayKind, consumerRef, arrayRef, arrayKnownLive](
             Ref indexRef, LLVMBuilderRef bodyBuilder) {
           globalState->getRegion(consumerType)->alias(
@@ -264,14 +264,16 @@ Ref translateExpressionInner(
                   FL(), functionState, bodyBuilder, elementType, elementRef);
           std::vector<Ref> argExprRefs = { consumerRef, elementRef };
 
-          auto consumerInterfaceMT = dynamic_cast<InterfaceKind*>(consumerType->kind);
-          assert(consumerInterfaceMT);
-          int indexInEdge = globalState->getInterfaceMethodIndex(consumerInterfaceMT, consumerMethod);
-          auto methodFunctionPtrLE =
-              globalState->getRegion(consumerType)
-                  ->getInterfaceMethodFunctionPtr(functionState, bodyBuilder, consumerType, consumerRef, indexInEdge);
-          buildInterfaceCall(
-              globalState, functionState, bodyBuilder, consumerMethod, methodFunctionPtrLE, argExprRefs, 0);
+          buildCall(globalState, functionState, bodyBuilder, consumerMethod, argExprRefs);
+//
+//          auto consumerInterfaceMT = dynamic_cast<InterfaceKind*>(consumerType->kind);
+//          assert(consumerInterfaceMT);
+//          int indexInEdge = globalState->getInterfaceMethodIndex(consumerInterfaceMT, consumerMethod);
+//          auto methodFunctionPtrLE =
+//              globalState->getRegion(consumerType)
+//                  ->getInterfaceMethodFunctionPtr(functionState, bodyBuilder, consumerType, consumerRef, indexInEdge);
+//          buildInterfaceCall(
+//              globalState, functionState, bodyBuilder, consumerMethod, methodFunctionPtrLE, argExprRefs, 0);
         });
 
     if (arrayType->ownership == Ownership::OWN) {
@@ -333,13 +335,15 @@ Ref translateExpressionInner(
                       functionState, bodyBuilder, arrayType, arrayKind, arrayRef, arrayKnownLive, indexRef);
           std::vector<Ref> argExprRefs = { consumerRef, elementRef };
 
-          auto consumerInterfaceMT = dynamic_cast<InterfaceKind*>(consumerType->kind);
-          assert(consumerInterfaceMT);
-          int indexInEdge = globalState->getInterfaceMethodIndex(consumerInterfaceMT, consumerMethod);
-          auto methodFunctionPtrLE =
-              globalState->getRegion(consumerType)
-                  ->getInterfaceMethodFunctionPtr(functionState, bodyBuilder, consumerType, consumerRef, indexInEdge);
-          buildInterfaceCall(globalState, functionState, bodyBuilder, consumerMethod, methodFunctionPtrLE, argExprRefs, 0);
+          buildCall(globalState, functionState, bodyBuilder, consumerMethod, argExprRefs);
+
+//          auto consumerInterfaceMT = dynamic_cast<InterfaceKind*>(consumerType->kind);
+//          assert(consumerInterfaceMT);
+//          int indexInEdge = globalState->getInterfaceMethodIndex(consumerInterfaceMT, consumerMethod);
+//          auto methodFunctionPtrLE =
+//              globalState->getRegion(consumerType)
+//                  ->getInterfaceMethodFunctionPtr(functionState, bodyBuilder, consumerType, consumerRef, indexInEdge);
+//          buildInterfaceCall(globalState, functionState, bodyBuilder, consumerMethod, methodFunctionPtrLE, argExprRefs, 0);
         });
 
     if (arrayType->ownership == Ownership::OWN) {

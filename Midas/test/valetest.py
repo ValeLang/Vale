@@ -436,6 +436,28 @@ class ValeTest(unittest.TestCase):
     def test_naiverc_rsamut(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/rsamut.vale"], "naive-rc", 3)
 
+    def test_assist_rsamutdestroyintocallable(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/rsamutdestroyintocallable.vale"], "assist", 42)
+    def test_unsafefast_rsamutdestroyintocallable(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/rsamutdestroyintocallable.vale"], "unsafe-fast", 42)
+    def test_resilientv4_rsamutdestroyintocallable(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/rsamutdestroyintocallable.vale"], "resilient-v4", 42)
+    def test_resilientv3_rsamutdestroyintocallable(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/rsamutdestroyintocallable.vale"], "resilient-v3", 42)
+    def test_naiverc_rsamutdestroyintocallable(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/rsamutdestroyintocallable.vale"], "naive-rc", 42)
+
+    def test_assist_ssamutdestroyintocallable(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/ssamutdestroyintocallable.vale"], "assist", 42)
+    def test_unsafefast_ssamutdestroyintocallable(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/ssamutdestroyintocallable.vale"], "unsafe-fast", 42)
+    def test_resilientv4_ssamutdestroyintocallable(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/ssamutdestroyintocallable.vale"], "resilient-v4", 42)
+    def test_resilientv3_ssamutdestroyintocallable(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/ssamutdestroyintocallable.vale"], "resilient-v3", 42)
+    def test_naiverc_ssamutdestroyintocallable(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/ssamutdestroyintocallable.vale"], "naive-rc", 42)
+
     def test_assist_interfacemutreturnexport(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/interfacemutreturnexport"], "assist", 42)
     def test_unsafefast_interfacemutreturnexport(self) -> None:

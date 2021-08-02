@@ -65,7 +65,8 @@ class ValeTest(unittest.TestCase):
             extra_flags: List[str]) -> subprocess.CompletedProcess:
         first_vale_filepath = in_filepaths[0]
         file_name_without_extension = os.path.splitext(os.path.basename(first_vale_filepath))[0]
-        build_dir = f"test/test_build/{file_name_without_extension}_build"
+        test_dir_name = f"{file_name_without_extension}_{region_override}"
+        build_dir = f"test/test_build/{test_dir_name}_build"
 
         module_name = "tmod"
         for i in range(0, len(in_filepaths)):

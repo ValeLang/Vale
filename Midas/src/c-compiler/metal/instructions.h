@@ -638,7 +638,7 @@ public:
   RuntimeSizedArrayT* arrayKind;
   Expression* consumerExpr;
   Reference* consumerType;
-  InterfaceKind* consumerKind;
+  Kind* consumerKind;
   Prototype* consumerMethod;
   bool consumerKnownLive;
 
@@ -648,7 +648,7 @@ public:
       RuntimeSizedArrayT* arrayKind_,
       Expression* consumerExpr_,
       Reference* consumerType_,
-      InterfaceKind* consumerKind_,
+      Kind* consumerKind_,
       Prototype* consumerMethod_,
       bool consumerKnownLive_) :
     arrayExpr(arrayExpr_),

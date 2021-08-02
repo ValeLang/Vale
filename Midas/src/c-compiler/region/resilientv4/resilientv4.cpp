@@ -1121,7 +1121,7 @@ void ResilientV4::storeAndTether(
   auto tetherI32LE = LLVMBuildLoad(builder, tetherPtrLE, "tetherI32");
   auto wasTetheredLE = LLVMBuildTrunc(builder, tetherI32LE, LLVMInt1TypeInContext(globalState->context), "wasAlive");
 
-  buildFlare(FL(), globalState, functionState, builder, "Tethering!");
+  buildFlare(FL(), globalState, functionState, builder, "Tethering! Is alive: ", LLVMBuildZExt(builder, isAliveLE, LLVMInt64TypeInContext(globalState->context), ""), " resuting ptr: ", ptrToIntLE(globalState, builder, newWrapperPtrLE.refLE), " halfprotptr: ", ptrToIntLE(globalState, builder, halfProtectedWrapperPtrLE.refLE));
   LLVMBuildStore(builder, constI32LE(globalState, 1), tetherPtrLE);
 
   auto refMemberPtrLE = LLVMBuildStructGEP(builder, localAddr, 0, "refMemberPtr");

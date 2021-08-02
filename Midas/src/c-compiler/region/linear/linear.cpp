@@ -985,7 +985,7 @@ LoadResult Linear::loadMember(
     return LoadResult{wrap(globalState->getRegion(expectedMemberType), expectedMemberType, memberLE)};
   } else {
     auto structPtrLE = structRefLE;
-    return loadInnerInnerStructMember(globalState, builder, structPtrLE, memberIndex, expectedMemberType, memberName);
+    return loadInnerInnerStructMember(globalState, functionState, builder, structPtrLE, memberIndex, expectedMemberType, memberName);
   }
 }
 

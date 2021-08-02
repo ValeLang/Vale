@@ -31,8 +31,8 @@ char* __vale_initTwinPages() {
   // Set up the signal to catch the seg fault.
   // This is especially nice for windows, which otherwise just silently fails.
   typedef void (*SignalHandlerPointer)(int);
-  SignalHandlerPointer previousHandler;
-  previousHandler = signal(SIGSEGV , SignalHandler);
+  SignalHandlerPointer previousSigsegvHandler = signal(SIGSEGV, SignalHandler);
+  SignalHandlerPointer previousBusErrorHandler = signal(SIGBUS, SignalHandler);
 
   size_t pageSize = getOSPageSize();
 

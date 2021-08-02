@@ -5,7 +5,7 @@ interface IShip export imm { }
 struct Spaceship export imm { engine Engine; }
 impl IShip for Spaceship;
 
-struct Seaship export imm { }
+struct Seaship export imm { unused int; }
 impl IShip for Seaship;
 
 fn getFuel(virtual this IShip) int abstract;

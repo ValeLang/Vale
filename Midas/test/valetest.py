@@ -36,7 +36,7 @@ class ValeTest(unittest.TestCase):
              module_name,
              "--verify",
              "--llvmir",
-             "--census",
+             #"--census",
              "--flares",
              "--region-override", region_override,
              "--output-dir", o_files_dir,
@@ -193,6 +193,8 @@ class ValeTest(unittest.TestCase):
 
     def test_resilientv4_tether(self) -> None:
         self.compile_and_execute_and_expect_return_code(["test/tether.vale"], "resilient-v4", 0)
+    def test_resilientv4_tethercrash(self) -> None:
+        self.compile_and_execute_and_expect_return_code(["test/tethercrash.vale"], "resilient-v4", 11)
 
     def test_assist_mutswaplocals(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "assist", 42)

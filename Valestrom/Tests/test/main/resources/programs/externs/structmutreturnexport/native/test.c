@@ -2,9 +2,11 @@
 #include <string.h>
 
 #include "tmod/Thing.h"
+#include "tmod/makeThing.h"
+#include "tmod/runExtCommand.h"
 
-extern tmod_ThingRef tmod_makeThing(ValeStr* a, ValeInt b);
+extern void tmod_makeThing(tmod_ThingRef* result, ValeStr* a, ValeInt b);
 
-tmod_ThingRef tmod_runExtCommand() {
-  return tmod_makeThing(ValeStrFrom("hello"), 37);
+void tmod_runExtCommand(tmod_ThingRef* result) {
+  tmod_makeThing(result, ValeStrFrom("hello"), 37);
 }

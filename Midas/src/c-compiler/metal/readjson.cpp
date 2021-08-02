@@ -466,7 +466,7 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readRuntimeSizedArray(cache, expression["arrayKind"]),
         readExpression(cache, expression["consumerExpr"]),
         readReference(cache, expression["consumerType"]),
-        readInterfaceKind(cache, expression["consumerKind"]),
+        readKind(cache, expression["consumerKind"]),
         readPrototype(cache, expression["consumerMethod"]),
         expression["consumerKnownLive"]);
   } else if (type == "ArrayLength") {

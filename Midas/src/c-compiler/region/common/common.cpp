@@ -92,6 +92,7 @@ LLVMTypeRef translateWeakReference(GlobalState* globalState, KindStructs* weakRe
 
 LoadResult loadInnerInnerStructMember(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef innerStructPtrLE,
     int memberIndex,
@@ -99,11 +100,13 @@ LoadResult loadInnerInnerStructMember(
     std::string memberName) {
   assert(LLVMGetTypeKind(LLVMTypeOf(innerStructPtrLE)) == LLVMPointerTypeKind);
 
+  auto ptrToMemberLE =
+      LLVMBuildStructGEP(builder, innerStructPtrLE, memberIndex, memberName.c_str());
+  buildFlare(FL(), globalState, functionState, builder, "Ptr to member: ", ptrToIntLE(globalState, builder, ptrToMemberLE));
   auto result =
       LLVMBuildLoad(
           builder,
-          LLVMBuildStructGEP(
-              builder, innerStructPtrLE, memberIndex, memberName.c_str()),
+          ptrToMemberLE,
           memberName.c_str());
   return LoadResult{wrap(globalState->getRegion(expectedType), expectedType, result)};
 }
@@ -1376,7 +1379,7 @@ LoadResult resilientLoadWeakMember(
   auto innerStructPtrLE = kindStructs->getStructContentsPtr(builder,
       structRefMT->kind, wrapperPtrLE);
   return loadInnerInnerStructMember(
-      globalState, builder, innerStructPtrLE, memberIndex, expectedMemberType, memberName);
+      globalState, functionState, builder, innerStructPtrLE, memberIndex, expectedMemberType, memberName);
 }
 
 Ref upcastStrong(
@@ -1579,7 +1582,7 @@ LoadResult regularLoadStrongMember(
 
   auto memberLE =
       loadInnerInnerStructMember(
-          globalState, builder, innerStructPtrLE, memberIndex, expectedMemberType,
+          globalState, functionState, builder, innerStructPtrLE, memberIndex, expectedMemberType,
           memberName);
   return memberLE;
 }

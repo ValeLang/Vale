@@ -40,32 +40,62 @@ class ArrayTests extends FunSuite with Matchers {
     compile.evalForKind(Vector()) shouldEqual VonInt(4)
   }
 
-  test("Destroy SSA into function") {
+  test("Destroy SSA of imms into function") {
     val compile = RunCompilation.test(
       """
         |fn main() int export {
-        |  a = [][2, 3, 4, 5, 6];
+        |  a = [][13, 14, 15];
         |  sum = 0;
         |  drop_into(a, &!(e){ set sum = sum + e; });
         |  = sum;
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(20)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
-  test("Destroy RSA into function") {
+  test("Destroy RSA of imms into function") {
     val compile = RunCompilation.test(
       """
         |fn main() int export {
-        |  a = [*](5, {_ + 1});
+        |  a = [*](3, {13 + _});
         |  sum = 0;
         |  drop_into(a, &!(e){ set sum = sum + e; });
         |  = sum;
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(15)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+  }
+
+  test("Destroy SSA of muts into function") {
+    val compile = RunCompilation.test(
+      """
+        |struct Spaceship { fuel int; }
+        |fn main() int export {
+        |  a = [][Spaceship(13), Spaceship(14), Spaceship(15)];
+        |  sum = 0;
+        |  drop_into(a, &!(e){ set sum = sum + e.fuel; });
+        |  = sum;
+        |}
+      """.stripMargin)
+
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+  }
+
+  test("Destroy RSA of muts into function") {
+    val compile = RunCompilation.test(
+      """
+        |struct Spaceship { fuel int; }
+        |fn main() int export {
+        |  a = [*](3, {Spaceship(13 + _)});
+        |  sum = 0;
+        |  drop_into(a, &!(e){ set sum = sum + e.fuel; });
+        |  = sum;
+        |}
+      """.stripMargin)
+
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Unspecified-mutability static array from lambda defaults to mutable") {

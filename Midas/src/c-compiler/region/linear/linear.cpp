@@ -985,7 +985,7 @@ LoadResult Linear::loadMember(
     return LoadResult{wrap(globalState->getRegion(expectedMemberType), expectedMemberType, memberLE)};
   } else {
     auto structPtrLE = structRefLE;
-    return loadInnerInnerStructMember(globalState, builder, structPtrLE, memberIndex, expectedMemberType, memberName);
+    return loadInnerInnerStructMember(globalState, functionState, builder, structPtrLE, memberIndex, expectedMemberType, memberName);
   }
 }
 
@@ -1100,19 +1100,21 @@ std::string Linear::generateInterfaceDefsC(
   auto hostInterfaceKind = dynamic_cast<InterfaceKind*>(hostKind);
   assert(hostInterfaceKind);
 
-  s << "typedef enum " << interfaceName << "_" << "Type {" << std::endl;
+  // Cant use an enum for this because platforms CANT AGREE ON A SIZE FOR
+  // AN ENUM, I HATE C
+  // Even adding a 0x7FFFFFFFFFFFFFFF entry didn't work for windows!
+
+  int i = 0;
   for (auto hostStructKind : structs.getOrderedSubstructs(hostInterfaceKind)) {
     auto valeKind = valeKindByHostKind.find(hostStructKind)->second;
     auto valeStructKind = dynamic_cast<StructKind*>(valeKind);
     assert(valeStructKind);
-    s << "  " << interfaceName << "_Type_" << currentPackage->getKindExportName(valeStructKind, false) << "," << std::endl;
+    s << "#define " << interfaceName << "_Type_" << currentPackage->getKindExportName(valeStructKind, false) << " " << i << std::endl;
+    i++;
   }
-  // Forces the enum to be a 64 bit integer
-  s << "  " << interfaceName << "_Type_FORCE_64_BIT_ENUM = 0x7FFFFFFFFFFFFFFF," << std::endl;
 
-  s << "} " << interfaceName << "_Type;" << std::endl;
   s << "typedef struct " << interfaceName << " {" << std::endl;
-  s << "void* obj; " << interfaceName << "_Type type;" << std::endl;
+  s << "void* obj; uint64_t type;" << std::endl;
   s << "} " << interfaceName << ";" << std::endl;
 
   return s.str();

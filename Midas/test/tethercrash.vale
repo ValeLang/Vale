@@ -1,0 +1,11 @@
+
+struct Spaceship {
+  fuel int;
+}
+fn main() int export {
+  s = Spaceship(42);
+  b = &s;
+  drop(s);
+  s__tether = b;
+  = s__tether.fuel;
+}

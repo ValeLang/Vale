@@ -79,7 +79,9 @@ Ref translateExpressionInner(
     return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, resultLE);
   } else if (auto discardM = dynamic_cast<Discard*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
-    return translateDiscard(globalState, functionState, blockState, builder, discardM);
+    Ref result = translateDiscard(globalState, functionState, blockState, builder, discardM);
+    buildFlare(FL(), globalState, functionState, builder, std::string("/") + typeid(*expr).name());
+    return result;
   } else if (auto ret = dynamic_cast<Return*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto sourceRef = translateExpression(globalState, functionState, blockState, builder, ret->sourceExpr);
@@ -536,6 +538,7 @@ Ref translateExpressionInner(
   } else if (auto call = dynamic_cast<Call*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name(), " ", call->function->name->name);
     auto resultLE = translateCall(globalState, functionState, blockState, builder, call);
+    buildFlare(FL(), globalState, functionState, builder, "/", typeid(*expr).name(), " ", call->function->name->name);
     return resultLE;
   } else if (auto externCall = dynamic_cast<ExternCall*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());

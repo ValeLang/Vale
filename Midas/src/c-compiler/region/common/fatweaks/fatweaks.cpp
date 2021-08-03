@@ -59,13 +59,6 @@ LLVMValueRef FatWeaks::getInnerRefFromWeakRefWithoutCheck(
       break;
   }
 
-  assert(
-  // Resilient V2/3 does this so it can reach into a dead object to see its generation,
-  // which generational heap guarantees is unchanged.
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_V4 ||
-      // Census does this to get at a weak interface ref's itable, even for a dead object.
-      globalState->opt->census);
   auto innerRefLE = LLVMBuildExtractValue(builder, weakRefLE.refLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR, "");
   // We dont check that its valid because if it's a weak ref, it might *not* be pointing at
   // a valid reference.

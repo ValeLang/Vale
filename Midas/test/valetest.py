@@ -65,7 +65,8 @@ class ValeTest(unittest.TestCase):
             extra_flags: List[str]) -> subprocess.CompletedProcess:
         first_vale_filepath = in_filepaths[0]
         file_name_without_extension = os.path.splitext(os.path.basename(first_vale_filepath))[0]
-        build_dir = f"test/test_build/{file_name_without_extension}_build"
+        test_dir_name = f"{file_name_without_extension}_{region_override}"
+        build_dir = f"test/test_build/{test_dir_name}_build"
 
         module_name = "tmod"
         for i in range(0, len(in_filepaths)):
@@ -95,7 +96,8 @@ class ValeTest(unittest.TestCase):
         if proc.returncode != expected_return_code:
             first_vale_filepath = vale_files[0]
             file_name_without_extension = os.path.splitext(os.path.basename(first_vale_filepath))[0]
-            build_dir = f"test/test_build/{file_name_without_extension}_build"
+            test_dir_name = f"{file_name_without_extension}_{region_override}"
+            build_dir = f"test/test_build/{test_dir_name}_build"
             textfile = open(build_dir + "/stdout.txt", "w")
             a = textfile.write(proc.stdout)
             textfile.close()
@@ -176,9 +178,25 @@ class ValeTest(unittest.TestCase):
     def test_resilientv3_kldc(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/structs/deadmutstruct.vale"], "resilient-v3", 116, ["--override-known-live-true"])
 
-    def test_twinpages(self) -> None:
-        proc = procrun(["clang", "test/testtwinpages.c", "-o", "test/test_build/testtwinpages"])
-        self.assertEqual(proc.returncode, 0, f"Twin pages test failed!")
+    def test_twinpages_noattemptbadwrite(self) -> None:
+        if platform.system() == 'Windows':
+            proc = procrun(["cl.exe", "test/twinpages/test.c", "-o", "test/test_build/testtwinpages.exe"])
+            proc = procrun(["test/test_build/testtwinpages.exe", "noattemptbadwrite"])
+            self.assertEqual(proc.returncode, 0, f"Twin pages test failed!")
+        else:
+            proc = procrun(["clang", "test/twinpages/test.c", "-o", "test/test_build/testtwinpages"])
+            proc = procrun(["test/test_build/testtwinpages", "noattemptbadwrite"])
+            self.assertEqual(proc.returncode, 0, f"Twin pages test failed!")
+
+    def test_twinpages_attemptbadwrite(self) -> None:
+        if platform.system() == 'Windows':
+            proc = procrun(["cl.exe", "test/twinpages/test.c", "-o", "test/test_build/testtwinpages.exe"])
+            proc = procrun(["test/test_build/testtwinpages.exe", "attemptbadwrite"])
+            self.assertEqual(proc.returncode, 42, f"Twin pages test failed!")
+        else:
+            proc = procrun(["clang", "test/twinpages/test.c", "-o", "test/test_build/testtwinpages"])
+            proc = procrun(["test/test_build/testtwinpages", "attemptbadwrite"])
+            self.assertEqual(proc.returncode, 42, f"Twin pages test failed!")
 
     def test_assist_addret(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/addret.vale"], "assist", 7)
@@ -885,12 +903,11 @@ class ValeTest(unittest.TestCase):
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/strings/strlen.vale"], "naive-rc", 12)
 
     # no assist test: Cant get an invalid access in assist mode, a constraint ref catches it first
-    def test_unsafefast_invalidaccess(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/invalidaccess.vale"], "unsafe-fast", 14)
+    # no unsafe test: It's undefined behavior, so we can't test it reliably
     def test_resilientv4_invalidaccess(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/invalidaccess.vale"], "resilient-v4", -11)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/invalidaccess.vale"], "resilient-v4", 11)
     def test_resilientv3_invalidaccess(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/invalidaccess.vale"], "resilient-v3", -11)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/invalidaccess.vale"], "resilient-v3", 11)
     # def test_naiverc_invalidaccess(self) -> None:
     #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/invalidaccess.vale"], "naive-rc", 255)
 

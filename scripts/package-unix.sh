@@ -9,4 +9,4 @@ cp -r ../Midas/vstl ../release-unix/vstl
 cp ../Midas/valec.py ../release-unix/valec.py
 cp releaseREADME.txt ../release-unix/README.txt
 cp valec-* ../release-unix
-cp ../Midas/build/valec ../release-unix/valec
+cp ../Midas/build/midas ../release-unix/midas

@@ -24,10 +24,11 @@ int pageSize() {
 }
 
 
-void SignalHandler(int signal)
-{
-    printf("Memory violation! Signal %d\n", signal);
+void SignalHandler(int signal) {
+  printf("Memory violation! Signal %d\n", signal);
+  exit(42);
 }
+
 
 const char attemptbadwritestr[] = "attemptbadwrite";
 const char noattemptbadwritestr[] = "noattemptbadwrite";
@@ -43,13 +44,6 @@ int main(int argc, char** argv) {
     return 1;
   }
   int attemptBadWrite = strncmp(argv[1], attemptbadwritestr, strlen(attemptbadwritestr)) == 0;
-
-  // Set up the signal to catch the seg fault.
-  // This is nice for windows, which otherwise just silently fails.
-  typedef void (*SignalHandlerPointer)(int);
-  SignalHandlerPointer previousHandler;
-  previousHandler = signal(SIGSEGV , SignalHandler);
-
 
   size_t pagesize = pageSize();
 
@@ -98,6 +92,24 @@ int main(int argc, char** argv) {
   printf("Got: %lld\n", result);
 
   if (attemptBadWrite) {
+    printf("Setting up signal handlers!\n");
+    // Set up the signal to catch the seg fault.
+    // This is especially nice for windows, which otherwise just silently fails.
+    typedef void (*SignalHandlerPointer)(int);
+    SignalHandlerPointer previousSigsegvHandler = signal(SIGSEGV, SignalHandler);
+    if (previousSigsegvHandler == SIG_ERR) {
+      perror("Could not register segfault handler!");
+      exit(1);
+    }
+    // Mac has bus faults, not seg faults, when we do the below access
+#ifndef _WIN32
+    SignalHandlerPointer previousBusErrorHandler = signal(SIGBUS, SignalHandler);
+    if (previousSigsegvHandler == SIG_ERR) {
+      perror("Could not register busfault handler!");
+      exit(1);
+    }
+#endif
+
     printf("Writing to the beginning of the protected twin page, should crash!\n");
     allocationPtr[pagesize] = 73LL;
   }

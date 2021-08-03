@@ -18,7 +18,7 @@ Externs::Externs(LLVMModuleRef mod, LLVMContextRef context) {
   censusRemove = addExtern(mod, "__vcensusRemove", voidLT, {voidPtrLT});
   malloc = addExtern(mod, "malloc", int8PtrLT, {int64LT});
   free = addExtern(mod, "free", voidLT, {int8PtrLT});
-  exit = addExtern(mod, "exit", voidLT, {int8LT});
+  exit = addExtern(mod, "exit", voidLT, {int64LT});
   assert = addExtern(mod, "__vassert", voidLT, {int1LT, int8PtrLT});
   assertI64Eq = addExtern(mod, "__vassertI64Eq", voidLT, {int64LT, int64LT, int8PtrLT});
   printCStr = addExtern(mod, "__vprintCStr", voidLT, {int8PtrLT});

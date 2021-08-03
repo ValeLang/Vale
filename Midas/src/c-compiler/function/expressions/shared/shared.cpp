@@ -179,7 +179,7 @@ void buildAssertWithExitCode(
       globalState, functionState, builder, isZeroLE(builder, conditionLE),
       [globalState, exitCode, failMessage](LLVMBuilderRef thenBuilder) {
         buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
-        auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), exitCode, false);
+        auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), exitCode, false);
         LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
       });
 }
@@ -204,7 +204,7 @@ void buildAssertIntEq(
         buildPrint(globalState, thenBuilder, ".\n");
         buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
         // See MPESC for status codes
-        auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 1, false);
+        auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 1, false);
         LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
       });
 }
@@ -287,7 +287,7 @@ void buildAssertCensusContains(
               buildPrintAreaAndFileAndLine(globalState, thenBuilder, checkerAFL);
               buildPrint(globalState, thenBuilder, "Object null, so not in census, exiting!\n");
               // See MPESC for status codes
-              auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 14, false);
+              auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 14, false);
               LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
             });
 
@@ -304,7 +304,7 @@ void buildAssertCensusContains(
           buildPrint(globalState, thenBuilder, ptrToIntLE(globalState, thenBuilder, ptrLE));
           buildPrint(globalState, thenBuilder, " not registered with census, exiting!\n");
           // See MPESC for status codes
-          auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 14, false);
+          auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 14, false);
           LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
         });
   }

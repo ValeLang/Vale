@@ -30,10 +30,10 @@ tar xf ~/llvm11.tar.xz
 # Install dependencies
 sudo apt install -y git clang cmake zlib1g-dev
 # Add vars to .zshrc (or .bashrc)
-echo 'export LDFLAGS="-L~/llvm11/lib -Wl,-rpath,~/llvm11/lib"' >> ~/.bashrc
-echo 'export CPPFLAGS="-I~/llvm11/include"' >> ~/.bashrc
-echo 'export PATH=~/llvm11/bin:$PATH' >> ~/.bashrc
+# echo 'export LDFLAGS="-L~/llvm11/lib -Wl,-rpath,~/llvm11/lib"' >> ~/.bashrc
+# echo 'export CPPFLAGS="-I~/llvm11/include"' >> ~/.bashrc
+# echo 'export PATH=~/llvm11/bin:$PATH' >> ~/.bashrc
 
 # Read from .bashrc to pick up the above vars.
-source ~/.bashrc
+# source ~/.bashrc
 

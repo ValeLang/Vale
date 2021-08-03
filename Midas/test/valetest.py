@@ -178,9 +178,25 @@ class ValeTest(unittest.TestCase):
     def test_resilientv3_kldc(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/structs/deadmutstruct.vale"], "resilient-v3", 116, ["--override-known-live-true"])
 
-    def test_twinpages(self) -> None:
-        proc = procrun(["clang", "test/testtwinpages.c", "-o", "test/test_build/testtwinpages"])
-        self.assertEqual(proc.returncode, 0, f"Twin pages test failed!")
+    def test_twinpages_noattemptbadwrite(self) -> None:
+        if platform.system() == 'Windows':
+            proc = procrun(["cl.exe", "test/twinpages/test.c", "-o", "test/test_build/testtwinpages.exe"])
+            proc = procrun(["test/test_build/testtwinpages.exe", "noattemptbadwrite"])
+            self.assertEqual(proc.returncode, 0, f"Twin pages test failed!")
+        else:
+            proc = procrun(["clang", "test/twinpages/test.c", "-o", "test/test_build/testtwinpages"])
+            proc = procrun(["test/test_build/testtwinpages", "noattemptbadwrite"])
+            self.assertEqual(proc.returncode, 0, f"Twin pages test failed!")
+
+    def test_twinpages_attemptbadwrite(self) -> None:
+        if platform.system() == 'Windows':
+            proc = procrun(["cl.exe", "test/twinpages/test.c", "-o", "test/test_build/testtwinpages.exe"])
+            proc = procrun(["test/test_build/testtwinpages.exe", "attemptbadwrite"])
+            self.assertEqual(proc.returncode, 42, f"Twin pages test failed!")
+        else:
+            proc = procrun(["clang", "test/twinpages/test.c", "-o", "test/test_build/testtwinpages"])
+            proc = procrun(["test/test_build/testtwinpages", "attemptbadwrite"])
+            self.assertEqual(proc.returncode, 42, f"Twin pages test failed!")
 
     def test_assist_addret(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/addret.vale"], "assist", 7)

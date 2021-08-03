@@ -32,7 +32,10 @@ char* __vale_initTwinPages() {
   // This is especially nice for windows, which otherwise just silently fails.
   typedef void (*SignalHandlerPointer)(int);
   SignalHandlerPointer previousSigsegvHandler = signal(SIGSEGV, SignalHandler);
+  // Mac can have bus faults, not seg faults, when we do bad accesses
+#ifndef _WIN32
   SignalHandlerPointer previousBusErrorHandler = signal(SIGBUS, SignalHandler);
+#endif
 
   size_t pageSize = getOSPageSize();
 

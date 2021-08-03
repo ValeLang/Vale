@@ -101,11 +101,14 @@ int main(int argc, char** argv) {
       perror("Could not register segfault handler!");
       exit(1);
     }
+    // Mac has bus faults, not seg faults, when we do the below access
+#ifndef _WIN32
     SignalHandlerPointer previousBusErrorHandler = signal(SIGBUS, SignalHandler);
     if (previousSigsegvHandler == SIG_ERR) {
       perror("Could not register busfault handler!");
       exit(1);
     }
+#endif
 
     printf("Writing to the beginning of the protected twin page, should crash!\n");
     allocationPtr[pagesize] = 73LL;

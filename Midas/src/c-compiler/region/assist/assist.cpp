@@ -296,7 +296,7 @@ void Assist::noteWeakableDestroyed(
       [this](LLVMBuilderRef thenBuilder) {
         buildPrint(globalState, thenBuilder, "Error: Dangling pointers detected!");
         // See MPESC for status codes
-        auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 1, false);
+        auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 1, false);
         LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
       });
 

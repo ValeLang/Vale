@@ -12,3 +12,4 @@ copy releaseREADME.txt ..\release-windows\README.txt
 copy valec-help* ..\release-windows
 copy ..\Midas\build\Debug\midas.exe ..\release-windows\midas.exe
 copy ..\Midas\LLVM-C.dll ..\release-windows\LLVM-C.dll
+git clone https://github.com/ValeLang/stdlib ../release-unix/stdlib

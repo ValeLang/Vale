@@ -6,6 +6,8 @@
 
 ## Prerequisites
 
+sudo apt install -y curl
+
 # Install Java
 wget -qO - https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | sudo apt-key add -
 sudo add-apt-repository --yes https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/
@@ -26,7 +28,7 @@ curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-11.1.0/cl
 tar xf ~/llvm11.tar.xz
 
 # Install dependencies
-sudo apt install -y curl git cmake zlib1g-dev
+sudo apt install -y git cmake zlib1g-dev
 # Add vars to .zshrc (or .bashrc)
 echo 'export LDFLAGS="-L~/llvm11/lib -Wl,-rpath,~/llvm11/lib"' >> ~/.bashrc
 echo 'export CPPFLAGS="-I~/llvm11/include"' >> ~/.bashrc

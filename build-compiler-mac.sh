@@ -7,7 +7,9 @@ sbt assembly
 
 cd ../Midas
 
-cmake -B build
+LLVM_CMAKE_DIR="/usr/local/Cellar/llvm@11/`ls /usr/local/Cellar/llvm@11`/lib/cmake/llvm"
+
+cmake -B build -D LLVM_DIR="$LLVM_CMAKE_DIR"
 
 cd build
 

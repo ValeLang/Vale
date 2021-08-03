@@ -2,6 +2,7 @@
 
 # WARNING: There are sudo commands below! Review all sudo commands before running them.
 
+# Install misc dependencies
 sudo apt install -y curl git clang cmake zlib1g-dev
 
 # Install Java

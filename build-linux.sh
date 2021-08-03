@@ -1,4 +1,3 @@
-## Building the Vale Compiler
 
 cd Valestrom
 
@@ -6,7 +5,7 @@ sbt assembly
 
 cd ../Midas
 
-cmake -D CMAKE_CXX_COMPILER=clang++-11 -B build
+cmake -B build -D LLVM_DIR="~/clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10/lib/cmake/llvm"
 
 cd build
 

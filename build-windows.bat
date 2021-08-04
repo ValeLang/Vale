@@ -1,7 +1,7 @@
 
 cd Valestrom
 
-sbt assembly
+call sbt assembly
 
 cd ..
 
@@ -21,7 +21,7 @@ python -m unittest -f -k assist
 
 cd ..\scripts
 
-package-windows.bat
+call package-windows.bat
 
 cd ..\release-windows
 

@@ -11,3 +11,4 @@ cp releaseREADME.txt ../release-unix/README.txt
 cp valec-* ../release-unix
 cp ../Midas/build/midas ../release-unix/midas
 git clone https://github.com/ValeLang/stdlib ../release-unix/stdlib
+cp -r helloworld ../release-unix/samples/helloworld

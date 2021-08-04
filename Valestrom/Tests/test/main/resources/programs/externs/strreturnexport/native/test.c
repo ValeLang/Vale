@@ -7,7 +7,6 @@
 ValeStr* tmod_runExtCommand() {
   ValeStr* str = tmod_getAStr();
 
-  printf("got str result: %p\n", str);
   assert(str->length == 6);
   int diff = strncmp(str->chars, "hello!", 6);
   assert(diff == 0);

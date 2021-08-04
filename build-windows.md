@@ -29,13 +29,15 @@ Depending on where visual studio is:
  * If in Program Files (x86), use the program "x86_64 Cross Tools Command Prompt for VS 2019"
  * If in Program Files, use the program "Developer Command Prompt for VS 2019"
 
-mkdir C:\Users\Valerian\llvm11
+`mkdir C:\Users\Valerian\llvm11`
 
-cd C:\Users\Valerian\llvm11
+`cd C:\Users\Valerian\llvm11`
 
-cmake "C:\Users\Valerian\Downloads\llvm-project-llvmorg-11.0.1\llvm" -D "CMAKE_INSTALL_PATH=C:\Users\Valerian\llvm11" -D CMAKE_BUILD_TYPE=Release -G "Visual Studio 16 2019" -Thost=x64 -A x64
+`cmake "C:\Users\Valerian\Downloads\llvm-project-llvmorg-11.0.1\llvm" -D "CMAKE_INSTALL_PATH=C:\Users\Valerian\llvm11" -D CMAKE_BUILD_TYPE=Release -G "Visual Studio 16 2019" -Thost=x64 -A x64`
 
-cmake --build .
+`cmake --build .`
+
+`cmake --build . --target install`
 
 
 ## Vale Compiler

@@ -12,5 +12,5 @@ copy releaseREADME.txt ..\release-windows\README.txt
 copy valec-help* ..\release-windows
 copy ..\Midas\build\Debug\midas.exe ..\release-windows\midas.exe
 copy ..\Midas\LLVM-C.dll ..\release-windows\LLVM-C.dll
-git clone https://github.com/ValeLang/stdlib ../release-unix/stdlib
-echo d | xcopy /s /e /y helloworld ..\release-unix\samples\helloworld
+git clone https://github.com/ValeLang/stdlib ../release-windows/stdlib
+echo d | xcopy /s /e /y helloworld ..\release-windows\samples\helloworld

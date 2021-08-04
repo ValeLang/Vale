@@ -1,8 +1,5 @@
-cd C:\Users\Valerian
 
-git clone https://github.com/ValeLang/Vale
-
-cd Vale/Valestrom
+cd Valestrom
 
 sbt assembly
 
@@ -10,7 +7,7 @@ cd ..
 
 cd Midas
 
-cmake -B build -D LLVM_DIR="C:\Users\Valerian\llvm11\lib\cmake\llvm"
+cmake -B build -D LLVM_DIR="C:\llvm-install-minimum\lib\cmake\llvm"
 
 cd build
 
@@ -18,7 +15,7 @@ cmake --build .
 
 cd ..
 
-copy C:\Users\Valerian\llvm11\Debug\bin\LLVM-C.dll .
+copy C:\llvm-install-minimum\bin\LLVM-C.dll .
 
 python -m unittest -f -k assist
 

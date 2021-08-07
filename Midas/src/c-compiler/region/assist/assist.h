@@ -420,7 +420,7 @@ public:
   LLVMTypeRef getExternalType(
       Reference* refMT) override;
 
-  Ref receiveUnencryptedAlienReference(
+  std::pair<Ref, Ref> receiveUnencryptedAlienReference(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRefMT,

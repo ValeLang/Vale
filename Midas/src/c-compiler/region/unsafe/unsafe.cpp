@@ -812,7 +812,7 @@ LLVMTypeRef Unsafe::getInterfaceMethodVirtualParamAnyType(Reference* reference) 
   }
 }
 
-Ref Unsafe::receiveUnencryptedAlienReference(
+std::pair<Ref, Ref> Unsafe::receiveUnencryptedAlienReference(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* sourceRefMT,

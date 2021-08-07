@@ -12,7 +12,8 @@ Ref receiveHostObjectIntoVale(
     Reference* valeRefMT,
     LLVMValueRef hostRefLE);
 
-LLVMValueRef sendValeObjectIntoHost(
+// Returns the object and the size.
+std::pair<LLVMValueRef, LLVMValueRef> sendValeObjectIntoHost(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,

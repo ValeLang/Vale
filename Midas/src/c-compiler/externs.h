@@ -24,4 +24,6 @@ public:
   Externs(LLVMModuleRef mod, LLVMContextRef context);
 };
 
+bool includeSizeParam(GlobalState* globalState, Prototype* prototype, int paramIndex);
+
 #endif

@@ -147,7 +147,7 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
          globalState->linearRegion->linearizeReference(valeReturnMT) :
          valeReturnMT);
 
-    auto hostReturnRefLE =
+    auto [hostReturnRefLE, hostReturnSizeLE] =
         sendValeObjectIntoHost(
             globalState, &functionState, builder, valeReturnMT, hostReturnMT, valeReturnRef);
 
@@ -186,6 +186,12 @@ LLVMValueRef declareExternFunction(
       externParamTypesL.push_back(LLVMPointerType(hostParamRefLT, 0));
     } else {
       externParamTypesL.push_back(hostParamRefLT);
+    }
+  }
+
+  for (int i = 0; i < prototypeM->params.size(); i++) {
+    if (includeSizeParam(globalState, prototypeM, i)) {
+      externParamTypesL.push_back(LLVMInt32TypeInContext(globalState->context));
     }
   }
 

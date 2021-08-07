@@ -222,6 +222,8 @@ Ref buildExternCall(
     auto hostArgsLE = std::vector<LLVMValueRef>{};
     hostArgsLE.reserve(args.size() + 1);
 
+    auto sizeArgsLE = std::vector<LLVMValueRef>{};
+    sizeArgsLE.reserve(args.size() + 1);
 
     for (int i = 0; i < args.size(); i++) {
       auto valeArgRefMT = prototype->params[i];
@@ -231,7 +233,7 @@ Ref buildExternCall(
               valeArgRefMT);
 
       auto valeArg = valeArgRefs[i];
-      auto hostArgRefLE =
+      auto [hostArgRefLE, argSizeLE] =
           sendValeObjectIntoHost(
               globalState, functionState, builder, valeArgRefMT, hostArgRefMT, valeArg);
       if (typeNeedsPointerParameter(globalState, valeArgRefMT)) {
@@ -241,7 +243,13 @@ Ref buildExternCall(
       } else {
         hostArgsLE.push_back(hostArgRefLE);
       }
+      if (includeSizeParam(globalState, prototype, i)) {
+        sizeArgsLE.push_back(argSizeLE);
+      }
     }
+
+    hostArgsLE.insert(hostArgsLE.end(), sizeArgsLE.begin(), sizeArgsLE.end());
+    sizeArgsLE.clear();
 
     auto externFuncIter = globalState->externFunctions.find(prototype->name->name);
     assert(externFuncIter != globalState->externFunctions.end());

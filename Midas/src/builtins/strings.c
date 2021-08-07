@@ -37,13 +37,13 @@ ValeInt vstr_indexOf(
 
   for (ValeInt i = 0; i <= haystackLen - needleLen; i++) {
     if (strncmp(needle, haystack + i, needleLen) == 0) {
-      ValeReleaseMessage(haystackContainerStr);
-      ValeReleaseMessage(needleContainerStr);
+      free(haystackContainerStr);
+      free(needleContainerStr);
       return i;
     }
   }
-  ValeReleaseMessage(haystackContainerStr);
-  ValeReleaseMessage(needleContainerStr);
+  free(haystackContainerStr);
+  free(needleContainerStr);
   return -1;
 }
 
@@ -60,7 +60,7 @@ ValeStr* vstr_substring(
   ValeStr* result = ValeStrNew(length);
   char* resultChars = result->chars;
   strncpy(resultChars, sourceChars + begin, length);
-  ValeReleaseMessage(sourceStr);
+  free(sourceStr);
   return result;
 }
 
@@ -80,22 +80,22 @@ char vstr_eq(
   ValeInt bLen = bEnd - bBegin;
 
   if (aLen != bLen) {
-    ValeReleaseMessage(aStr);
-    ValeReleaseMessage(bStr);
+    free(aStr);
+    free(bStr);
     return FALSE;
   }
   ValeInt len = aLen;
 
   for (int i = 0; i < len; i++) {
     if (a[i] != b[i]) {
-      ValeReleaseMessage(aStr);
-      ValeReleaseMessage(bStr);
+      free(aStr);
+      free(bStr);
       return FALSE;
     }
   }
 
-  ValeReleaseMessage(aStr);
-  ValeReleaseMessage(bStr);
+  free(aStr);
+  free(bStr);
   return TRUE;
 }
 
@@ -119,28 +119,28 @@ ValeInt vstr_cmp(
       break;
     }
     if (i >= aLen && i < bLen) {
-      ValeReleaseMessage(aStr);
-      ValeReleaseMessage(bStr);
+      free(aStr);
+      free(bStr);
       return -1;
     }
     if (i < aLen && i >= bLen) {
-      ValeReleaseMessage(aStr);
-      ValeReleaseMessage(bStr);
+      free(aStr);
+      free(bStr);
       return 1;
     }
     if (a[i] < b[i]) {
-      ValeReleaseMessage(aStr);
-      ValeReleaseMessage(bStr);
+      free(aStr);
+      free(bStr);
       return -1;
     }
     if (a[i] > b[i]) {
-      ValeReleaseMessage(aStr);
-      ValeReleaseMessage(bStr);
+      free(aStr);
+      free(bStr);
       return 1;
     }
   }
-  ValeReleaseMessage(aStr);
-  ValeReleaseMessage(bStr);
+  free(aStr);
+  free(bStr);
   return 0;
 }
 
@@ -164,8 +164,8 @@ ValeStr* __vaddStr(
   // (Midas also adds this in case we didn't do it here)
   dest[aLength + bLength] = 0;
 
-  ValeReleaseMessage(aStr);
-  ValeReleaseMessage(bStr);
+  free(aStr);
+  free(bStr);
   return result;
 }
 
@@ -194,14 +194,14 @@ extern ValeStr* __castFloatStr(double f) {
 void __vprintStr(ValeStr* s, ValeInt start, ValeInt length) {
   char* chars = s->chars;
   fwrite(chars + start, 1, length, stdout);
-  ValeReleaseMessage(s);
+  free(s);
 }
 
 ValeInt vstr_toascii(ValeStr* s, ValeInt begin, ValeInt end) {
   assert(begin + 1 <= end);
   char* chars = s->chars;
   ValeInt result = (ValeInt)*(chars + begin);
-  ValeReleaseMessage(s);
+  free(s);
   return result;
 }
 

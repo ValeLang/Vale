@@ -7,6 +7,6 @@
 
 ValeInt tmod_extFunc(tmod_Flamscrankle* flam) {
   ValeInt result = flam->a + flam->c;
-  ValeReleaseMessage(flam);
+  free(flam);
   return result;
 }

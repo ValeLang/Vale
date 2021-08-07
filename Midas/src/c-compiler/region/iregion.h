@@ -361,7 +361,7 @@ public:
 
   // Receives a regular reference to an object in another region, so we can move
   // (or copy) it.
-  virtual Ref receiveUnencryptedAlienReference(
+  virtual std::pair<Ref, Ref> receiveUnencryptedAlienReference(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRefMT,

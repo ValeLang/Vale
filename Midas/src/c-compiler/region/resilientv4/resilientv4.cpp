@@ -916,7 +916,7 @@ LLVMTypeRef ResilientV4::getInterfaceMethodVirtualParamAnyType(Reference *refere
   }
 }
 
-Ref ResilientV4::receiveUnencryptedAlienReference(
+std::pair<Ref, Ref> ResilientV4::receiveUnencryptedAlienReference(
     FunctionState *functionState,
     LLVMBuilderRef builder,
     Reference *sourceRefMT,

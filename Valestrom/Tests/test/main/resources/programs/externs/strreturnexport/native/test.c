@@ -13,7 +13,7 @@ ValeStr* tmod_runExtCommand() {
 
   ValeStr* result = ValeStrFrom(str->chars);
 
-  ValeReleaseMessage(str);
+  free(str);
 
   return result;
 }

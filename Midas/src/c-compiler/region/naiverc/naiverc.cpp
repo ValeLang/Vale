@@ -903,7 +903,7 @@ LLVMTypeRef NaiveRC::getInterfaceMethodVirtualParamAnyType(Reference* reference)
   }
 }
 
-Ref NaiveRC::receiveUnencryptedAlienReference(
+std::pair<Ref, Ref> NaiveRC::receiveUnencryptedAlienReference(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* sourceRefMT,

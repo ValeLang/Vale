@@ -35,18 +35,29 @@ LLVMValueRef hexRoundDown(
   return LLVMBuildAnd(builder, n, mask, "rounded");
 }
 
-LLVMValueRef lowerAndHexRoundDownPointer(
+LLVMValueRef hexRoundUp(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    LLVMValueRef rawPtrLE,
-    LLVMValueRef subtractIntLE) {
-  auto rawPtrIntLE =
-      LLVMBuildPtrToInt(
-          builder, rawPtrLE, LLVMInt64TypeInContext(globalState->context), "rawPtrInt");
-  auto loweredRawPointerIntLE = LLVMBuildSub(builder, rawPtrIntLE, subtractIntLE, "loweredRawPtrInt");
-  auto roundedLoweredRawPointerIntLE = hexRoundDown(globalState, builder, loweredRawPointerIntLE);
-  return LLVMBuildIntToPtr(builder, roundedLoweredRawPointerIntLE, LLVMTypeOf(rawPtrLE), "loweredRoundedRawPtr");
+    LLVMValueRef n) {
+  return LLVMBuildAdd(builder,
+      LLVMBuildOr(builder,
+          LLVMBuildSub(builder, n, constI64LE(globalState, 1), "subd1"),
+          constI64LE(globalState, 15), "ord"),
+      constI64LE(globalState, 1), "subd2");
 }
+
+//LLVMValueRef lowerAndHexRoundDownPointer(
+//    GlobalState* globalState,
+//    LLVMBuilderRef builder,
+//    LLVMValueRef rawPtrLE,
+//    LLVMValueRef subtractIntLE) {
+//  auto rawPtrIntLE =
+//      LLVMBuildPtrToInt(
+//          builder, rawPtrLE, LLVMInt64TypeInContext(globalState->context), "rawPtrInt");
+//  auto loweredRawPointerIntLE = LLVMBuildSub(builder, rawPtrIntLE, subtractIntLE, "loweredRawPtrInt");
+//  auto roundedLoweredRawPointerIntLE = hexRoundDown(globalState, builder, loweredRawPointerIntLE);
+//  return LLVMBuildIntToPtr(builder, roundedLoweredRawPointerIntLE, LLVMTypeOf(rawPtrLE), "loweredRoundedRawPtr");
+//}
 
 Linear::Linear(GlobalState* globalState_)
   : globalState(globalState_),
@@ -68,41 +79,42 @@ Linear::Linear(GlobalState* globalState_)
       LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
       // Offset into the destination buffer to write to
       LLVMInt64TypeInContext(globalState->context),
-      // "rootMetadataBytesNeeded", the number of bytes needed after the next thing is serialized, see MAPOWN.
-      LLVMInt64TypeInContext(globalState->context),
+//      // "rootMetadataBytesNeeded", the number of bytes needed after the next thing is serialized, see MAPOWN.
+//      LLVMInt64TypeInContext(globalState->context),
+      // Eventually we might want a hash map or something in here, if we want to avoid serialize duplicates
   });
 
-  startMetadataKind =
-      globalState->metalCache->getStructKind(
-          globalState->metalCache->getName(
-              globalState->metalCache->builtinPackageCoord, namePrefix + "_StartMetadata"));
-  startMetadataRefMT =
-      globalState->metalCache->getReference(
-          Ownership::BORROW, Location::YONDER, startMetadataKind);
-  globalState->regionIdByKind.emplace(startMetadataKind, globalState->metalCache->linearRegionId);
-  structs.declareStruct(startMetadataKind);
-  structs.defineStruct(startMetadataKind, {
-      // Size
-      LLVMInt64TypeInContext(globalState->context),
-      // Start address, to subtract from all pointers
-      LLVMInt64TypeInContext(globalState->context),
-      // Root object address, to start reading from
-      LLVMInt64TypeInContext(globalState->context),
-  });
-
-  rootMetadataKind =
-      globalState->metalCache->getStructKind(
-          globalState->metalCache->getName(
-              globalState->metalCache->builtinPackageCoord, namePrefix + "_RootMetadata"));
-  rootMetadataRefMT =
-      globalState->metalCache->getReference(
-          Ownership::BORROW, Location::YONDER, rootMetadataKind);
-  globalState->regionIdByKind.emplace(rootMetadataKind, globalState->metalCache->linearRegionId);
-  structs.declareStruct(rootMetadataKind);
-  structs.defineStruct(rootMetadataKind, {
-      LLVMInt64TypeInContext(globalState->context),
-      LLVMInt64TypeInContext(globalState->context),
-  });
+//  startMetadataKind =
+//      globalState->metalCache->getStructKind(
+//          globalState->metalCache->getName(
+//              globalState->metalCache->builtinPackageCoord, namePrefix + "_StartMetadata"));
+//  startMetadataRefMT =
+//      globalState->metalCache->getReference(
+//          Ownership::BORROW, Location::YONDER, startMetadataKind);
+//  globalState->regionIdByKind.emplace(startMetadataKind, globalState->metalCache->linearRegionId);
+//  structs.declareStruct(startMetadataKind);
+//  structs.defineStruct(startMetadataKind, {
+//      // Size
+//      LLVMInt64TypeInContext(globalState->context),
+//      // Start address, to subtract from all pointers
+//      LLVMInt64TypeInContext(globalState->context),
+//      // Root object address, to start reading from
+//      LLVMInt64TypeInContext(globalState->context),
+//  });
+//
+//  rootMetadataKind =
+//      globalState->metalCache->getStructKind(
+//          globalState->metalCache->getName(
+//              globalState->metalCache->builtinPackageCoord, namePrefix + "_RootMetadata"));
+//  rootMetadataRefMT =
+//      globalState->metalCache->getReference(
+//          Ownership::BORROW, Location::YONDER, rootMetadataKind);
+//  globalState->regionIdByKind.emplace(rootMetadataKind, globalState->metalCache->linearRegionId);
+//  structs.declareStruct(rootMetadataKind);
+//  structs.defineStruct(rootMetadataKind, {
+//      LLVMInt64TypeInContext(globalState->context),
+//      LLVMInt64TypeInContext(globalState->context),
+//  });
 
   linearStr = globalState->metalCache->getStr(globalState->metalCache->linearRegionId);
   linearStrRefMT =
@@ -586,7 +598,6 @@ Ref Linear::innerAllocate(
   // We reserve some space for it before we serialize its members
   LLVMValueRef substructSizeIntLE =
       predictShallowSize(functionState, builder, true, hostStructRefMT->kind, constI64LE(globalState, 0));
-  bumpDestinationOffset(functionState, builder, regionInstanceRef, substructSizeIntLE);
   buildFlare(FL(), globalState, functionState, builder);
   auto destinationStructRef = getDestinationRef(functionState, builder, regionInstanceRef, hostStructRefMT);
 
@@ -600,7 +611,8 @@ Ref Linear::innerAllocate(
 
   auto destinationPtrLE = checkValidReference(FL(), functionState, builder, hostStructRefMT, destinationStructRef);
 
-  reserveRootMetadataBytesIfNeeded(functionState, builder, regionInstanceRef);
+//  reserveRootMetadataBytesIfNeeded(functionState, builder, regionInstanceRef);
+  bumpDestinationOffset(functionState, builder, regionInstanceRef, substructSizeIntLE); // moved
 
   return destinationStructRef;
 }
@@ -828,7 +840,6 @@ Ref Linear::innerConstructStaticSizedArray(
 
   auto valeSsaDefM = globalState->program->getStaticSizedArray(valeSsaMT);
   auto sizeLE = predictShallowSize(functionState, builder, true, hostSsaMT, constI64LE(globalState, valeSsaDefM->size));
-  bumpDestinationOffset(functionState, builder, regionInstanceRef, sizeLE);
   buildFlare(FL(), globalState, functionState, builder);
 
   auto ssaRef = getDestinationRef(functionState, builder, regionInstanceRef, ssaRefMT);
@@ -849,7 +860,8 @@ Ref Linear::innerConstructStaticSizedArray(
         // Caller still needs to initialize the elements!
       });
 
-  reserveRootMetadataBytesIfNeeded(functionState, builder, regionInstanceRef);
+//  reserveRootMetadataBytesIfNeeded(functionState, builder, regionInstanceRef);
+  bumpDestinationOffset(functionState, builder, regionInstanceRef, sizeLE); // moved
 
   buildFlare(FL(), globalState, functionState, builder);
 
@@ -876,7 +888,6 @@ Ref Linear::innerConstructRuntimeSizedArray(
   auto lenI64LE = LLVMBuildZExt(builder, lenI32LE, LLVMInt64TypeInContext(globalState->context), "");
 
   auto sizeLE = predictShallowSize(functionState, builder, true, rsaMT, lenI64LE);
-  bumpDestinationOffset(functionState, builder, regionInstanceRef, sizeLE);
   buildFlare(FL(), globalState, functionState, builder);
 
   auto rsaRef = getDestinationRef(functionState, builder, regionInstanceRef, rsaRefMT);
@@ -897,7 +908,8 @@ Ref Linear::innerConstructRuntimeSizedArray(
         // Caller still needs to initialize the elements!
       });
 
-  reserveRootMetadataBytesIfNeeded(functionState, builder, regionInstanceRef);
+//  reserveRootMetadataBytesIfNeeded(functionState, builder, regionInstanceRef);
+  bumpDestinationOffset(functionState, builder, regionInstanceRef, sizeLE); // moved
 
   buildFlare(FL(), globalState, functionState, builder);
 
@@ -925,7 +937,6 @@ Ref Linear::innerMallocStr(
   auto lenI64LE = LLVMBuildZExt(builder, lenI32LE, LLVMInt64TypeInContext(globalState->context), "");
 
   auto sizeLE = predictShallowSize(functionState, builder, true, linearStr, lenI32LE);
-  bumpDestinationOffset(functionState, builder, regionInstanceRef, sizeLE);
   buildFlare(FL(), globalState, functionState, builder);
 
   buildFlare(FL(), globalState, functionState, builder, "bumping by size: ", lenI64LE);
@@ -961,6 +972,8 @@ Ref Linear::innerMallocStr(
 
         return strRef;
       });
+
+  bumpDestinationOffset(functionState, builder, regionInstanceRef, sizeLE); // moved
 
   return strRef;
 }
@@ -1159,15 +1172,15 @@ LLVMTypeRef Linear::getExternalType(Reference* refMT) {
 //  return refMT;
 }
 
-Ref Linear::topLevelSerialize(
+std::pair<Ref, Ref> Linear::topLevelSerialize(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Kind* valeKind,
     Ref ref) {
-  auto rootMetadataSize =
-      LLVMABISizeOfType(globalState->dataLayout, structs.getStructStruct(rootMetadataKind));
-  auto startMetadataSize =
-      LLVMABISizeOfType(globalState->dataLayout, structs.getStructStruct(startMetadataKind));
+//  auto rootMetadataSize =
+//      LLVMABISizeOfType(globalState->dataLayout, structs.getStructStruct(rootMetadataKind));
+//  auto startMetadataSize =
+//      LLVMABISizeOfType(globalState->dataLayout, structs.getStructStruct(startMetadataKind));
 
   auto valeRefMT =
       globalState->metalCache->getReference(
@@ -1175,40 +1188,36 @@ Ref Linear::topLevelSerialize(
   auto hostRefMT = linearizeReference(valeRefMT);
 
   auto nullLT = LLVMConstNull(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0));
-  // This is an arbitrary number, 0xFFFFFFFF * 1000000, which is 4294967296000000 or 0xF424000000000.
-  // If we see it somewhere in a bug, all the 0s might be a hint to search for it and find it here.
-  auto dryRunCounterBeginLE = constI64LE(globalState, 0xFFFFFFFFULL * 1000000ULL);
-  // We'll keep subtracting from this (similar to how a program stack works) and the final address
-  // will be subtracted from this number to find the needed size.
+  auto dryRunCounterBeginLE = constI64LE(globalState, 0);
 
   auto regionLT = structs.getStructStruct(regionKind);
 
   auto dryRunInitialRegionStructLE = LLVMGetUndef(regionLT);
   dryRunInitialRegionStructLE = LLVMBuildInsertValue(builder, dryRunInitialRegionStructLE, nullLT, 0, "regionStruct");
   dryRunInitialRegionStructLE = LLVMBuildInsertValue(builder, dryRunInitialRegionStructLE, dryRunCounterBeginLE, 1, "regionStruct");
-  dryRunInitialRegionStructLE = LLVMBuildInsertValue(builder, dryRunInitialRegionStructLE, constI64LE(globalState, rootMetadataSize), 2, "regionStruct");
+//  dryRunInitialRegionStructLE = LLVMBuildInsertValue(builder, dryRunInitialRegionStructLE, constI64LE(globalState, rootMetadataSize), 2, "regionStruct");
   auto dryRunRegionInstancePtrLE = makeMidasLocal(functionState, builder, regionLT, "region", dryRunInitialRegionStructLE);
   auto dryRunRegionInstanceRef = wrap(this, regionRefMT, dryRunRegionInstancePtrLE);
 
   callSerialize(functionState, builder, valeKind, dryRunRegionInstanceRef, ref, globalState->constI1(true));
 
-  // Reserve some space for the beginning metadata block
-  bumpDestinationOffset(functionState, builder, dryRunRegionInstanceRef, constI64LE(globalState, startMetadataSize));
-  buildFlare(FL(), globalState, functionState, builder);
+//  // Reserve some space for the beginning metadata block
+//  bumpDestinationOffset(functionState, builder, dryRunRegionInstanceRef, constI64LE(globalState, startMetadataSize));
+//  buildFlare(FL(), globalState, functionState, builder);
 
   auto dryRunFinalOffsetLE = getDestinationOffset(builder, dryRunRegionInstancePtrLE);
-  auto sizeIntLE = LLVMBuildSub(builder, dryRunCounterBeginLE, dryRunFinalOffsetLE, "size");
+  auto sizeIntLE = dryRunFinalOffsetLE;//LLVMBuildSub(builder, dryRunCounterBeginLE, dryRunFinalOffsetLE, "size");
 
   LLVMValueRef bufferBeginPtrLE = callMalloc(globalState, builder, sizeIntLE);
 //  buildFlare(FL(), globalState, functionState, builder, "malloced ", sizeIntLE, " got ptr ", ptrToIntLE(globalState, builder, bufferBeginPtrLE));
 
   auto initialRegionStructLE = LLVMGetUndef(regionLT);
   initialRegionStructLE = LLVMBuildInsertValue(builder, initialRegionStructLE, bufferBeginPtrLE, 0, "regionStruct");
-  initialRegionStructLE = LLVMBuildInsertValue(builder, initialRegionStructLE, sizeIntLE, 1, "regionStruct");
-  initialRegionStructLE = LLVMBuildInsertValue(builder, initialRegionStructLE, constI64LE(globalState, rootMetadataSize), 2, "regionStruct");
+  initialRegionStructLE = LLVMBuildInsertValue(builder, initialRegionStructLE, constI64LE(globalState, 0), 1, "regionStruct");
+//  initialRegionStructLE = LLVMBuildInsertValue(builder, initialRegionStructLE, constI64LE(globalState, rootMetadataSize), 2, "regionStruct");
   auto regionInstancePtrLE = makeMidasLocal(functionState, builder, regionLT, "region", initialRegionStructLE);
   auto regionInstanceRef = wrap(this, regionRefMT, regionInstancePtrLE);
-//
+
 //  bumpDestinationOffset(functionState, builder, regionInstanceRef, constI64LE(globalState, 0x10));
 //  auto trailingBeginPtrI8PtrLE = getDestinationPtr(functionState, builder, regionInstanceRef);
 //  auto trailingBeginPtrPtrLE =
@@ -1226,41 +1235,47 @@ Ref Linear::topLevelSerialize(
       (dynamic_cast<InterfaceKind*>(valeKind) != nullptr ?
           std::get<1>(explodeInterfaceRef(functionState, builder, hostRefMT, resultRef)) :
           checkValidReference(FL(), functionState, builder, hostRefMT, resultRef));
-  auto rootMetadataPtrLE =
-      LLVMBuildPointerCast(builder,
-          lowerAndHexRoundDownPointer(globalState, builder, rootObjectPtrLE, constI64LE(globalState, rootMetadataSize)),
-          translateType(rootMetadataRefMT),
-          "rootMetadataPtr");
+//  auto rootMetadataPtrLE =
+//      LLVMBuildPointerCast(builder,
+//          lowerAndHexRoundDownPointer(globalState, builder, rootObjectPtrLE, constI64LE(globalState, rootMetadataSize)),
+//          translateType(rootMetadataRefMT),
+//          "rootMetadataPtr");
 
-  bumpDestinationOffset(functionState, builder, regionInstanceRef, constI64LE(globalState, startMetadataSize));
+//  bumpDestinationOffset(functionState, builder, regionInstanceRef, constI64LE(globalState, startMetadataSize));
 //  buildFlare(FL(), globalState, functionState, builder, "done with serialization, result ptr ", ptrToIntLE(globalState, builder, rootObjectPtrLE));
-  auto startMetadataRef = getDestinationRef(functionState, builder, regionInstanceRef, startMetadataRefMT);
-  auto startMetadataPtrLE = checkValidReference(FL(), functionState, builder, startMetadataRefMT, startMetadataRef);
-  LLVMBuildStore(builder,
-      sizeIntLE,
-      LLVMBuildStructGEP(builder, startMetadataPtrLE, 0, "sizePtr"));
-  LLVMBuildStore(builder,
-      ptrToIntLE(globalState, builder, bufferBeginPtrLE),
-      LLVMBuildStructGEP(builder, startMetadataPtrLE, 1, "startIntPtr"));
-  LLVMBuildStore(builder,
-      ptrToIntLE(globalState, builder, rootObjectPtrLE),
-      LLVMBuildStructGEP(builder, startMetadataPtrLE, 2, "rootIntPtr"));
+//  auto startMetadataRef = getDestinationRef(functionState, builder, regionInstanceRef, startMetadataRefMT);
+//  auto startMetadataPtrLE = checkValidReference(FL(), functionState, builder, startMetadataRefMT, startMetadataRef);
+//  LLVMBuildStore(builder,
+//      sizeIntLE,
+//      LLVMBuildStructGEP(builder, startMetadataPtrLE, 0, "sizePtr"));
+//  LLVMBuildStore(builder,
+//      ptrToIntLE(globalState, builder, bufferBeginPtrLE),
+//      LLVMBuildStructGEP(builder, startMetadataPtrLE, 1, "startIntPtr"));
+//  LLVMBuildStore(builder,
+//      ptrToIntLE(globalState, builder, rootObjectPtrLE),
+//      LLVMBuildStructGEP(builder, startMetadataPtrLE, 2, "rootIntPtr"));
 
-  LLVMBuildStore(builder,
-      ptrToIntLE(globalState, builder, startMetadataPtrLE),
-      LLVMBuildStructGEP(builder, rootMetadataPtrLE, 0, "rootIntPtr"));
-  LLVMBuildStore(builder,
-      sizeIntLE,
-      LLVMBuildStructGEP(builder, rootMetadataPtrLE, 1, "rootIntPtr"));
+//  LLVMBuildStore(builder,
+//      ptrToIntLE(globalState, builder, startMetadataPtrLE),
+//      LLVMBuildStructGEP(builder, rootMetadataPtrLE, 0, "rootIntPtr"));
+//  LLVMBuildStore(builder,
+//      sizeIntLE,
+//      LLVMBuildStructGEP(builder, rootMetadataPtrLE, 1, "rootIntPtr"));
 
   auto destinationIntLE = getDestinationOffset(builder, regionInstancePtrLE);
-  auto condLE = LLVMBuildICmp(builder, LLVMIntEQ, destinationIntLE, constI64LE(globalState, 0), "cond");
+  auto condLE = LLVMBuildICmp(builder, LLVMIntEQ, destinationIntLE, sizeIntLE, "cond");
   buildAssert(globalState, functionState, builder, condLE, "Serialization start mismatch!");
 
-  return resultRef;
+  auto sizeRef =
+      wrap(
+          globalState->getRegion(globalState->metalCache->i32Ref),
+          globalState->metalCache->i32Ref,
+          LLVMBuildTrunc(builder, sizeIntLE, LLVMInt32TypeInContext(globalState->context), "truncd"));
+
+  return std::make_pair(resultRef, sizeRef);
 }
 
-Ref Linear::receiveUnencryptedAlienReference(
+std::pair<Ref, Ref> Linear::receiveUnencryptedAlienReference(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* sourceRefMT,
@@ -1277,12 +1292,18 @@ Ref Linear::receiveUnencryptedAlienReference(
           ->checkValidReference(FL(), functionState, builder, sourceRefMT, sourceRef);
 
   if (dynamic_cast<Int*>(sourceRefMT->kind)) {
-    return wrap(globalState->getRegion(sourceRefMT), targetRefMT, sourceRefLE);
+    auto resultRef = wrap(globalState->getRegion(sourceRefMT), targetRefMT, sourceRefLE);
+    auto sizeRef = globalState->constI32(LLVMABISizeOfType(globalState->dataLayout, translateType(targetRefMT)));
+    return std::make_pair(resultRef, sizeRef);
   } else if (dynamic_cast<Bool*>(sourceRefMT->kind)) {
     auto resultLE = LLVMBuildZExt(builder, sourceRefLE, LLVMInt8TypeInContext(globalState->context), "boolAsI8");
-    return wrap(globalState->getRegion(sourceRefMT), targetRefMT, resultLE);
+    auto resultRef = wrap(globalState->getRegion(sourceRefMT), targetRefMT, resultLE);
+    auto sizeRef = globalState->constI32(LLVMABISizeOfType(globalState->dataLayout, translateType(targetRefMT)));
+    return std::make_pair(resultRef, sizeRef);
   } else if (dynamic_cast<Float*>(sourceRefMT->kind)) {
-    return wrap(globalState->getRegion(sourceRefMT), targetRefMT, sourceRefLE);
+    auto resultRef = wrap(globalState->getRegion(sourceRefMT), targetRefMT, sourceRefLE);
+    auto sizeRef = globalState->constI32(LLVMABISizeOfType(globalState->dataLayout, translateType(targetRefMT)));
+    return std::make_pair(resultRef, sizeRef);
   } else if (dynamic_cast<Str*>(sourceRefMT->kind) ||
       dynamic_cast<StructKind*>(sourceRefMT->kind) ||
       dynamic_cast<InterfaceKind*>(sourceRefMT->kind) ||
@@ -1291,7 +1312,9 @@ Ref Linear::receiveUnencryptedAlienReference(
     if (sourceRefMT->location == Location::INLINE) {
       if (sourceRefMT == globalState->metalCache->emptyTupleStructRef) {
         auto emptyTupleRefMT = linearizeReference(globalState->metalCache->emptyTupleStructRef);
-        return wrap(this, emptyTupleRefMT, LLVMGetUndef(translateType(emptyTupleRefMT)));
+        auto resultRef = wrap(this, emptyTupleRefMT, LLVMGetUndef(translateType(emptyTupleRefMT)));
+        auto sizeRef = globalState->constI32(LLVMABISizeOfType(globalState->dataLayout, translateType(targetRefMT)));
+        return std::make_pair(resultRef, sizeRef);
       } else {
         assert(false);
       }
@@ -1412,28 +1435,29 @@ void Linear::bumpDestinationOffset(
   auto destinationOffsetPtrLE =
       LLVMBuildStructGEP(builder, regionInstancePtrLE, 1, "destinationOffsetPtr");
   auto destinationOffsetLE = LLVMBuildLoad(builder, destinationOffsetPtrLE, "destinationOffset");
-  destinationOffsetLE = LLVMBuildSub(builder, destinationOffsetLE, sizeIntLE, "bumpedDestinationOffset");
-  buildFlare(FL(), globalState, functionState, builder, "subtracted: ", destinationOffsetLE);
-  destinationOffsetLE = hexRoundDown(globalState, builder, destinationOffsetLE);
-  buildFlare(FL(), globalState, functionState, builder, "rounded: ", destinationOffsetLE);
+  destinationOffsetLE =
+      LLVMBuildAdd(
+//      LLVMBuildSub(
+          builder, destinationOffsetLE, sizeIntLE, "bumpedDestinationOffset");
+  destinationOffsetLE = hexRoundUp(globalState, builder, destinationOffsetLE);
   LLVMBuildStore(builder, destinationOffsetLE, destinationOffsetPtrLE);
   buildFlare(FL(), globalState, functionState, builder);
 }
 
-void Linear::reserveRootMetadataBytesIfNeeded(
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Ref regionInstanceRef) {
-  auto regionInstancePtrLE =
-      checkValidReference(FL(), functionState, builder, regionRefMT, regionInstanceRef);
-  auto rootMetadataBytesNeededPtrLE =
-      LLVMBuildStructGEP(builder, regionInstancePtrLE, 2, "rootMetadataBytesNeeded");
-  auto rootMetadataBytesNeededLE = LLVMBuildLoad(builder, rootMetadataBytesNeededPtrLE, "rootMetadataBytesNeeded");
-  bumpDestinationOffset(functionState, builder, regionInstanceRef, rootMetadataBytesNeededLE);
-  buildFlare(FL(), globalState, functionState, builder);
-  // Reset it to zero, we only need it once. This will make the next calls not reserve it. See MAPOWN for more.
-  LLVMBuildStore(builder, constI64LE(globalState, 0), rootMetadataBytesNeededPtrLE);
-}
+//void Linear::reserveRootMetadataBytesIfNeeded(
+//    FunctionState* functionState,
+//    LLVMBuilderRef builder,
+//    Ref regionInstanceRef) {
+//  auto regionInstancePtrLE =
+//      checkValidReference(FL(), functionState, builder, regionRefMT, regionInstanceRef);
+//  auto rootMetadataBytesNeededPtrLE =
+//      LLVMBuildStructGEP(builder, regionInstancePtrLE, 2, "rootMetadataBytesNeeded");
+//  auto rootMetadataBytesNeededLE = LLVMBuildLoad(builder, rootMetadataBytesNeededPtrLE, "rootMetadataBytesNeeded");
+//  bumpDestinationOffset(functionState, builder, regionInstanceRef, rootMetadataBytesNeededLE);
+//  buildFlare(FL(), globalState, functionState, builder);
+//  // Reset it to zero, we only need it once. This will make the next calls not reserve it. See MAPOWN for more.
+//  LLVMBuildStore(builder, constI64LE(globalState, 0), rootMetadataBytesNeededPtrLE);
+//}
 
 LLVMValueRef Linear::getDestinationOffset(
     LLVMBuilderRef builder,
@@ -1628,8 +1652,8 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
 
           buildFlare(FL(), globalState, functionState, builder);
 
-          intRangeLoopReverse(
-              globalState, functionState, builder, globalState->metalCache->i32, lengthRef,
+          intRangeLoop(
+              globalState, functionState, builder, lengthRef,
               [this, functionState, hostObjectRefMT, boolMT, hostRsaRef, valeObjectRefMT, hostRsaMT, valeRsaMT, valeObjectRef, valeMemberRefMT, regionInstanceRef, serializeMemberOrElement, dryRunBoolRef](
                   Ref indexRef, LLVMBuilderRef bodyBuilder){
                 buildFlare(FL(), globalState, functionState, bodyBuilder, "In serialize iteration!");
@@ -1679,8 +1703,8 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
 
           buildFlare(FL(), globalState, functionState, builder);
 
-          intRangeLoopReverse(
-              globalState, functionState, builder, globalState->metalCache->i32, lengthRef,
+          intRangeLoop(
+              globalState, functionState, builder, lengthRef,
               [this, functionState, hostObjectRefMT, boolMT, hostSsaRef, valeObjectRefMT, hostSsaMT, valeSsaMT, valeObjectRef, valeMemberRefMT, regionInstanceRef, serializeMemberOrElement, dryRunBoolRef](
                   Ref indexRef, LLVMBuilderRef bodyBuilder){
                 buildFlare(FL(), globalState, functionState, bodyBuilder, "In serialize iteration!");

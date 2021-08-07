@@ -882,7 +882,7 @@ LLVMTypeRef Assist::getInterfaceMethodVirtualParamAnyType(Reference* reference) 
   }
 }
 
-Ref Assist::receiveUnencryptedAlienReference(
+std::pair<Ref, Ref> Assist::receiveUnencryptedAlienReference(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* sourceRefMT,

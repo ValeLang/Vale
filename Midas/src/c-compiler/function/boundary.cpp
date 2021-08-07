@@ -30,9 +30,12 @@ Ref receiveHostObjectIntoVale(
     buildFlare(FL(), globalState, functionState, builder);
     auto hostRef =
         wrap(globalState->getRegion(hostRefMT), hostRefMT, hostRefLE);
-    return globalState->getRegion(valeRefMT)
-        ->receiveUnencryptedAlienReference(
-            functionState, builder, hostRefMT, valeRefMT, hostRef);
+    auto objRefAndSizeRef =
+        globalState->getRegion(valeRefMT)
+            ->receiveUnencryptedAlienReference(
+                functionState, builder, hostRefMT, valeRefMT, hostRef);
+    // Vale doesn't really care about the size of the thing, only the object.
+    return objRefAndSizeRef.first;
   } else {
     if (dynamic_cast<InterfaceKind*>(hostRefMT->kind)) {
       // Interface external handles should be 32 bytes
@@ -46,7 +49,7 @@ Ref receiveHostObjectIntoVale(
   }
 }
 
-LLVMValueRef sendValeObjectIntoHost(
+std::pair<LLVMValueRef, LLVMValueRef> sendValeObjectIntoHost(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -70,7 +73,7 @@ LLVMValueRef sendValeObjectIntoHost(
   //   receiveUnencryptedAlienReference. HOWEVER, we don't yet support
   //   moving instances between regions, so this is only for vals for now.
   if (valeRefMT->ownership == Ownership::SHARE) {
-    auto hostArgRef =
+    auto [hostArgRef, sizeRef] =
         globalState->getRegion(hostRefMT)
             ->receiveUnencryptedAlienReference(
                 functionState, builder, valeRefMT, hostRefMT, valeRef);
@@ -79,8 +82,10 @@ LLVMValueRef sendValeObjectIntoHost(
     auto hostArgLE =
         globalState->getRegion(hostRefMT)
             ->checkValidReference(FL(), functionState, builder, hostRefMT, hostArgRef);
-
-    return hostArgLE;
+    auto sizeLE =
+        globalState->getRegion(hostRefMT)
+            ->checkValidReference(FL(), functionState, builder, globalState->metalCache->i32Ref, sizeRef);
+    return std::make_pair(hostArgLE, sizeLE);
   } else {
     auto encryptedValeRefLE =
         globalState->getRegion(valeRefMT)
@@ -90,14 +95,17 @@ LLVMValueRef sendValeObjectIntoHost(
 //        globalState->getRegion(valeRefMT)
 //            ->checkValidReference(FL(), functionState, builder, valeRefMT, encryptedValeRef);
 
+    int expectedSizeLE = 0;
     if (dynamic_cast<InterfaceKind*>(hostRefMT->kind)) {
       // Interface external handles should be 32 bytes
-      assert(LLVMABISizeOfType(globalState->dataLayout, LLVMTypeOf(encryptedValeRefLE)) == 32);
+      expectedSizeLE = 32;
     } else {
       // Struct and array external handles should be 24 bytes
-      assert(LLVMABISizeOfType(globalState->dataLayout, LLVMTypeOf(encryptedValeRefLE)) == 24);
+      expectedSizeLE = 24;
     }
+    assert(LLVMABISizeOfType(globalState->dataLayout, LLVMTypeOf(encryptedValeRefLE)) == expectedSizeLE);
+    auto sizeLE = constI32LE(globalState, expectedSizeLE);
 
-    return encryptedValeRefLE;
+    return std::make_pair(encryptedValeRefLE, sizeLE);
   }
 }

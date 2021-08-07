@@ -25,6 +25,6 @@ ValeInt tmod_cGetShipFuel(tmod_IShip* sPtr) {
     default:
       exit(1);
   }
-  ValeReleaseMessage(s.obj);
+  free(s.obj);
   return result;
 }

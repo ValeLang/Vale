@@ -198,6 +198,15 @@ std::string generateFunctionSignature(GlobalState* globalState, Package* package
     s << " param" << i;
     addedAnyParam = true;
   }
+  for (int i = 0; i < prototype->params.size(); i++) {
+    if (includeSizeParam(globalState, prototype, i)) {
+      if (addedAnyParam) {
+        s << ", ";
+      }
+      s << "ValeInt param" << i << "size";
+      addedAnyParam = true;
+    }
+  }
   s << ");" << std::endl;
 
   return s.str();
@@ -220,7 +229,6 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
   builtinExportsCode << "typedef struct { ValeInt length; char chars[0]; } ValeStr;" << std::endl;
   builtinExportsCode << "ValeStr* ValeStrNew(ValeInt length);" << std::endl;
   builtinExportsCode << "ValeStr* ValeStrFrom(char* source);" << std::endl;
-  builtinExportsCode << "#define ValeReleaseMessage(msg) (free(*((void**)(msg) - 2)))" << std::endl;
 
   {
     packageCoordToHeaderNameToC[globalState->metalCache->builtinPackageCoord]

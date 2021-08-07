@@ -917,7 +917,7 @@ LLVMTypeRef RCImm::getExternalType(Reference* refMT) {
 }
 
 
-Ref RCImm::receiveUnencryptedAlienReference(
+std::pair<Ref, Ref> RCImm::receiveUnencryptedAlienReference(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* hostRefMT,
@@ -932,14 +932,20 @@ Ref RCImm::receiveUnencryptedAlienReference(
   auto sourceRefLE = sourceRegion->checkValidReference(FL(), functionState, builder, hostRefMT, sourceRef);
 
   if (dynamic_cast<Int*>(hostRefMT->kind)) {
-    return wrap(globalState->getRegion(hostRefMT), valeRefMT, sourceRefLE);
+    auto resultRef = wrap(globalState->getRegion(hostRefMT), valeRefMT, sourceRefLE);
+    // Vale doesn't care about the size, only extern (linear) does, so just return zero.
+    return std::make_pair(resultRef, globalState->constI32(0));
   } else if (dynamic_cast<Bool*>(hostRefMT->kind)) {
     auto asI1LE =
         LLVMBuildTrunc(
             builder, sourceRefLE, LLVMInt1TypeInContext(globalState->context), "boolAsI1");
-    return wrap(this, valeRefMT, asI1LE);
+    auto resultRef = wrap(this, valeRefMT, asI1LE);
+    // Vale doesn't care about the size, only extern (linear) does, so just return zero.
+    return std::make_pair(resultRef, globalState->constI32(0));
   } else if (dynamic_cast<Float*>(hostRefMT->kind)) {
-    return wrap(globalState->getRegion(hostRefMT), valeRefMT, sourceRefLE);
+    auto resultRef = wrap(globalState->getRegion(hostRefMT), valeRefMT, sourceRefLE);
+    // Vale doesn't care about the size, only extern (linear) does, so just return zero.
+    return std::make_pair(resultRef, globalState->constI32(0));
   } else if (dynamic_cast<Str*>(hostRefMT->kind)) {
     auto strLenLE = sourceRegion->getStringLen(functionState, builder, sourceRef);
     auto strLenBytesPtrLE = sourceRegion->getStringBytesPtr(functionState, builder, sourceRef);
@@ -952,7 +958,8 @@ Ref RCImm::receiveUnencryptedAlienReference(
 
     sourceRegion->dealias(FL(), functionState, builder, hostRefMT, sourceRef);
 
-    return vstrRef;
+    // Vale doesn't care about the size, only extern (linear) does, so just return zero.
+    return std::make_pair(vstrRef, globalState->constI32(0));
   } else if (dynamic_cast<Str*>(hostRefMT->kind) ||
              dynamic_cast<StructKind*>(hostRefMT->kind) ||
              dynamic_cast<InterfaceKind*>(hostRefMT->kind) ||
@@ -962,12 +969,16 @@ Ref RCImm::receiveUnencryptedAlienReference(
     if (hostRefMT->location == Location::INLINE) {
       if (hostRefMT == globalState->metalCache->emptyTupleStructRef) {
         auto emptyTupleRefMT = globalState->linearRegion->unlinearizeReference(globalState->metalCache->emptyTupleStructRef);
-        return wrap(this, emptyTupleRefMT, LLVMGetUndef(translateType(emptyTupleRefMT)));
+        auto resultRef = wrap(this, emptyTupleRefMT, LLVMGetUndef(translateType(emptyTupleRefMT)));
+        // Vale doesn't care about the size, only extern (linear) does, so just return zero.
+        return std::make_pair(resultRef, globalState->constI32(0));
       } else {
         assert(false);
       }
     } else {
-      return topLevelUnserialize(functionState, builder, valeRefMT->kind, sourceRef);
+      auto resultRef = topLevelUnserialize(functionState, builder, valeRefMT->kind, sourceRef);
+      // Vale doesn't care about the size, only extern (linear) does, so just return zero.
+      return std::make_pair(resultRef, globalState->constI32(0));
     }
   } else assert(false);
 

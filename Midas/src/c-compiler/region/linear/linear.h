@@ -371,7 +371,7 @@ public:
   LLVMTypeRef getExternalType(
       Reference* refMT) override;
 
-  Ref receiveUnencryptedAlienReference(
+  std::pair<Ref, Ref> receiveUnencryptedAlienReference(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRefMT,
@@ -499,7 +499,8 @@ private:
 
   // Does the entire serialization process: measuring the length, allocating a buffer, and
   // serializing into it.
-  Ref topLevelSerialize(
+  // Returns the pointer to it and the size.
+  std::pair<Ref, Ref> topLevelSerialize(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Kind* valeKind,
@@ -511,10 +512,10 @@ private:
       Ref regionInstanceRef,
       LLVMValueRef sizeIntLE);
 
-  void reserveRootMetadataBytesIfNeeded(
-      FunctionState* functionState,
-      LLVMBuilderRef builder,
-      Ref regionInstanceRef);
+//  void reserveRootMetadataBytesIfNeeded(
+//      FunctionState* functionState,
+//      LLVMBuilderRef builder,
+//      Ref regionInstanceRef);
 
   LLVMValueRef getDestinationPtr(
       FunctionState* functionState,
@@ -554,11 +555,11 @@ private:
   StructKind* regionKind = nullptr;
   Reference* regionRefMT = nullptr;
 
-  StructKind* startMetadataKind = nullptr;
-  Reference* startMetadataRefMT = nullptr;
-
-  StructKind* rootMetadataKind = nullptr;
-  Reference* rootMetadataRefMT = nullptr;
+//  StructKind* startMetadataKind = nullptr;
+//  Reference* startMetadataRefMT = nullptr;
+//
+//  StructKind* rootMetadataKind = nullptr;
+//  Reference* rootMetadataRefMT = nullptr;
 
   Str* linearStr = nullptr;
   Reference* linearStrRefMT = nullptr;

@@ -75,6 +75,19 @@ LLVMValueRef declareFunction(
   GlobalState* globalState,
   Function* functionM);
 
+std::string makeModuleDirectory(const GlobalState *globalState, PackageCoordinate *packageCoord);
+
+std::ofstream makeCFile(const std::string &filepath);
+
+void makeExternOrExportFunction(
+    GlobalState *globalState,
+    std::stringstream* headerC,
+    std::stringstream* sourceC,
+    const PackageCoordinate *packageCoord, Package *package,
+    const std::string &externName,
+    Prototype *prototype,
+    bool isExport);
+
 void initInternalExterns(GlobalState* globalState) {
 //  auto voidLT = LLVMVoidTypeInContext(globalState->context);
   auto int1LT = LLVMInt1TypeInContext(globalState->context);
@@ -169,33 +182,125 @@ void initInternalExterns(GlobalState* globalState) {
           });
 }
 
-std::string generateFunctionSignature(GlobalState* globalState, Package* package, const std::string& outsideName, Prototype* prototype) {
-  bool usingRetOutParam = typeNeedsPointerParameter(globalState, prototype->returnType);
+enum class CFuncLineMode {
+  EXTERN_INTERMEDIATE_PROTOTYPE,
+  EXPORT_INTERMEDIATE_PROTOTYPE,
+  EXTERN_USER_PROTOTYPE,
+  EXPORT_USER_PROTOTYPE,
+  EXTERN_INTERMEDIATE_BODY,
+  EXPORT_INTERMEDIATE_BODY,
+};
+
+// Returns the header C code and the source C code
+std::string generateFunctionC(
+    GlobalState* globalState,
+    Package* package,
+    const std::string& outsideName,
+    Prototype* prototype,
+    CFuncLineMode lineMode,
+    bool isExport) {
+  auto returnTypeExportName =
+      globalState->getRegion(prototype->returnType)->getExportName(package, prototype->returnType, true);
+  auto projectName = package->packageCoordinate->projectName;
+  std::string userFuncName =
+      (!package->packageCoordinate->projectName.empty() ? package->packageCoordinate->projectName + "_" : "") +
+      outsideName;
+  std::string abiFuncName = std::string("vale_abi_") + userFuncName;
+
+  bool abiUsingRetOutParam = typeNeedsPointerParameter(globalState, prototype->returnType);
+
   std::stringstream s;
-  std::cout << "Generating signature for " << prototype->name->name << std::endl;
-  auto returnExportName = globalState->getRegion(prototype->returnType)->getExportName(package, prototype->returnType, true);
-  s << "extern ";
-  if (usingRetOutParam) {
-    s << "void ";
-  } else {
-    s << returnExportName << " ";
+  std::cout << "Generating line for " << prototype->name->name << std::endl;
+  switch (lineMode) {
+    case CFuncLineMode::EXTERN_INTERMEDIATE_PROTOTYPE:
+    case CFuncLineMode::EXPORT_USER_PROTOTYPE: {
+      s << "extern " << (abiUsingRetOutParam ? "void " : returnTypeExportName) << " " << abiFuncName << "(";
+      break;
+    }
+    case CFuncLineMode::EXTERN_USER_PROTOTYPE:
+    case CFuncLineMode::EXPORT_INTERMEDIATE_PROTOTYPE: {
+      s << "extern " << returnTypeExportName << " " << userFuncName << "(";
+      break;
+    }
+    case CFuncLineMode::EXTERN_INTERMEDIATE_BODY: {
+      if (translatesToCVoid(globalState, prototype->returnType)) {
+        s << userFuncName << "(";
+      } else {
+        if (abiUsingRetOutParam) {
+          // User function will return it directly, but we need to stuff it into the out-ptr for the boundary
+          s << "*__ret = " << userFuncName << "(";
+        } else {
+          // It's something like an int, just return it directly
+          s << "return " << userFuncName << "(";
+        }
+      }
+      break;
+    }
+    case CFuncLineMode::EXPORT_INTERMEDIATE_BODY: {
+      if (translatesToCVoid(globalState, prototype->returnType)) {
+        s << abiFuncName << "(";
+      } else {
+        if (abiUsingRetOutParam) {
+          s << returnTypeExportName << " __ret = { 0 };" << std::endl;
+          s << abiFuncName << "(";
+        } else {
+          // It's something like an int, just return it directly
+          s << "return " << abiFuncName << "(";
+        }
+      }
+      break;
+    }
   }
-  s << package->packageCoordinate->projectName << "_" << outsideName << "(";
+
   bool addedAnyParam = false;
-  if (usingRetOutParam) {
-    s << returnExportName << "* ret";
-    addedAnyParam = true;
+
+  switch (lineMode) {
+    case CFuncLineMode::EXPORT_USER_PROTOTYPE:
+    case CFuncLineMode::EXTERN_INTERMEDIATE_PROTOTYPE: {
+      if (abiUsingRetOutParam) {
+        s << returnTypeExportName << "* __ret";
+        addedAnyParam = true;
+      }
+      break;
+    }
+    case CFuncLineMode::EXPORT_INTERMEDIATE_PROTOTYPE:
+    case CFuncLineMode::EXTERN_USER_PROTOTYPE:
+      // Do nothing, user header has no return parameter nonsense
+      break;
+    case CFuncLineMode::EXTERN_INTERMEDIATE_BODY:
+      // Do nothing, we're calling the user function now, and it has no return parameter
+      break;
+    case CFuncLineMode::EXPORT_INTERMEDIATE_BODY:
+      if (abiUsingRetOutParam) {
+        s << "&__ret";
+        addedAnyParam = true;
+      }
+      break;
   }
+
   for (int i = 0; i < prototype->params.size(); i++) {
     if (addedAnyParam) {
       s << ", ";
     }
-    auto paramExportName = globalState->getRegion(prototype->params[i])->getExportName(package, prototype->params[i], true);
-    s << paramExportName;
-    if (typeNeedsPointerParameter(globalState, prototype->params[i])) {
-      s << "*";
+    auto paramTypeExportName =
+        globalState->getRegion(prototype->params[i])->getExportName(package, prototype->params[i], true);
+    auto abiUsesPointer = typeNeedsPointerParameter(globalState, prototype->params[i]);
+    switch (lineMode) {
+      case CFuncLineMode::EXTERN_INTERMEDIATE_PROTOTYPE:
+      case CFuncLineMode::EXPORT_USER_PROTOTYPE:
+        s << paramTypeExportName << (abiUsesPointer ? "*" : "") << " param" << i;
+        break;
+      case CFuncLineMode::EXTERN_USER_PROTOTYPE:
+      case CFuncLineMode::EXPORT_INTERMEDIATE_PROTOTYPE:
+        s << paramTypeExportName << " param" << i;
+        break;
+      case CFuncLineMode::EXTERN_INTERMEDIATE_BODY:
+        s << (abiUsesPointer ? "*" : "") << " param" << i;
+        break;
+      case CFuncLineMode::EXPORT_INTERMEDIATE_BODY:
+        s << (abiUsesPointer ? "&" : "") << " param" << i;
+        break;
     }
-    s << " param" << i;
     addedAnyParam = true;
   }
   for (int i = 0; i < prototype->params.size(); i++) {
@@ -203,12 +308,37 @@ std::string generateFunctionSignature(GlobalState* globalState, Package* package
       if (addedAnyParam) {
         s << ", ";
       }
-      s << "ValeInt param" << i << "size";
+      switch (lineMode) {
+        case CFuncLineMode::EXTERN_INTERMEDIATE_PROTOTYPE:
+        case CFuncLineMode::EXTERN_USER_PROTOTYPE:
+        case CFuncLineMode::EXPORT_INTERMEDIATE_PROTOTYPE:
+        case CFuncLineMode::EXPORT_USER_PROTOTYPE:
+          s << "ValeInt param" << i << "size";
+          break;
+        case CFuncLineMode::EXTERN_INTERMEDIATE_BODY:
+        case CFuncLineMode::EXPORT_INTERMEDIATE_BODY:
+          s << "param" << i << "size";
+          break;
+      }
       addedAnyParam = true;
     }
   }
-  s << ");" << std::endl;
+  s << ")";
 
+  switch (lineMode) {
+    case CFuncLineMode::EXPORT_USER_PROTOTYPE:
+    case CFuncLineMode::EXTERN_INTERMEDIATE_PROTOTYPE:
+    case CFuncLineMode::EXPORT_INTERMEDIATE_PROTOTYPE:
+    case CFuncLineMode::EXTERN_USER_PROTOTYPE:
+    case CFuncLineMode::EXTERN_INTERMEDIATE_BODY:
+      // Do nothing, need no extra statements
+      break;
+    case CFuncLineMode::EXPORT_INTERMEDIATE_BODY:
+      if (abiUsingRetOutParam) {
+        s << ";  return __ret;" << std::endl;
+      }
+      break;
+  }
   return s.str();
 }
 
@@ -220,6 +350,12 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
           std::unordered_map<std::string, std::stringstream>,
           AddressHasher<PackageCoordinate*>>(
       0, globalState->addressNumberer->makeHasher<PackageCoordinate*>());
+  auto packageCoordToSourceNameToC =
+      std::unordered_map<
+          PackageCoordinate*,
+          std::unordered_map<std::string, std::stringstream>,
+          AddressHasher<PackageCoordinate*>>(
+          0, globalState->addressNumberer->makeHasher<PackageCoordinate*>());
 
   std::stringstream builtinExportsCode;
   builtinExportsCode << "#include <stdint.h>" << std::endl;
@@ -238,32 +374,84 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
 
   for (auto[packageCoord, package] : program->packages) {
     for (auto[exportName, kind] : package->exportNameToKind) {
+      auto& resultC = packageCoordToHeaderNameToC[packageCoord].emplace(exportName, std::stringstream()).first->second;
+
       if (auto structMT = dynamic_cast<StructKind*>(kind)) {
-        auto structDefM = globalState->program->getStruct(structMT);
+        auto structDefM = program->getStruct(structMT);
+        for (auto member : structDefM->members) {
+          auto kind = member->type->kind;
+          if (dynamic_cast<Int *>(kind) ||
+              dynamic_cast<Bool *>(kind) ||
+              dynamic_cast<Float *>(kind) ||
+              dynamic_cast<Str *>(kind)) {
+            // Do nothing, no need to include anything for these
+          } else {
+            auto paramTypeExportName = package->getKindExportName(kind, true);
+            if (ownershipToMutability(member->type->ownership) == Mutability::MUTABLE) {
+              paramTypeExportName += "Ref";
+            }
+            resultC << "typedef struct " << paramTypeExportName << " " << paramTypeExportName << ";" << std::endl;
+          }
+        }
+
         // can we think of this in terms of regions? it's kind of like we're
         // generating some stuff for the outside to point inside.
         auto region = (structDefM->mutability == Mutability::IMMUTABLE ? globalState->linearRegion : globalState->mutRegion);
         auto defString = region->generateStructDefsC(package, structDefM);
-        packageCoordToHeaderNameToC[packageCoord].emplace(exportName, std::stringstream()).first->second << defString;
+        resultC << defString;
       } else if (auto interfaceMT = dynamic_cast<InterfaceKind*>(kind)) {
         auto interfaceDefM = globalState->program->getInterface(interfaceMT);
         auto region = (interfaceDefM->mutability == Mutability::IMMUTABLE ? globalState->linearRegion : globalState->mutRegion);
         auto defString = region->generateInterfaceDefsC(package, interfaceDefM);
-        packageCoordToHeaderNameToC[packageCoord].emplace(exportName, std::stringstream()).first->second << defString;
+        resultC << defString;
       } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(kind)) {
         auto ssaDefM = globalState->program->getStaticSizedArray(ssaMT);
+
+        {
+          auto kind = ssaDefM->rawArray->elementType->kind;
+          if (dynamic_cast<Int *>(kind) ||
+              dynamic_cast<Bool *>(kind) ||
+              dynamic_cast<Float *>(kind) ||
+              dynamic_cast<Str *>(kind)) {
+            // Do nothing, no need to include anything for these
+          } else {
+            auto paramTypeExportName = package->getKindExportName(kind, true);
+            if (ownershipToMutability(ssaDefM->rawArray->elementType->ownership) == Mutability::MUTABLE) {
+              paramTypeExportName += "Ref";
+            }
+            resultC << "typedef struct " << paramTypeExportName << " " << paramTypeExportName << ";" << std::endl;
+          }
+        }
+
         // can we think of this in terms of regions? it's kind of like we're
         // generating some stuff for the outside to point inside.
         auto region = (ssaDefM->rawArray->mutability == Mutability::IMMUTABLE ? globalState->linearRegion : globalState->mutRegion);
         auto defString = region->generateStaticSizedArrayDefsC(package, ssaDefM);
-        packageCoordToHeaderNameToC[packageCoord].emplace(exportName, std::stringstream()).first->second << defString;
+        resultC << defString;
       } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(kind)) {
         auto rsaDefM = globalState->program->getRuntimeSizedArray(rsaMT);
+
+        {
+          auto kind = rsaDefM->rawArray->elementType->kind;
+          if (dynamic_cast<Int *>(kind) ||
+              dynamic_cast<Bool *>(kind) ||
+              dynamic_cast<Float *>(kind) ||
+              dynamic_cast<Str *>(kind)) {
+            // Do nothing, no need to include anything for these
+          } else {
+            auto paramTypeExportName = package->getKindExportName(kind, true);
+            if (ownershipToMutability(rsaDefM->rawArray->elementType->ownership) == Mutability::MUTABLE) {
+              paramTypeExportName += "Ref";
+            }
+            resultC << "typedef struct " << paramTypeExportName << " " << paramTypeExportName << ";" << std::endl;
+          }
+        }
+
         // can we think of this in terms of regions? it's kind of like we're
         // generating some stuff for the outside to point inside.
         auto region = (rsaDefM->rawArray->mutability == Mutability::IMMUTABLE ? globalState->linearRegion : globalState->mutRegion);
         auto defString = region->generateRuntimeSizedArrayDefsC(package, rsaDefM);
-        packageCoordToHeaderNameToC[packageCoord].emplace(exportName, std::stringstream()).first->second << defString;
+        resultC << defString;
       } else {
         std::cerr << "Unknown exportee: " << typeid(*kind).name() << std::endl;
         assert(false);
@@ -274,59 +462,143 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
   for (auto[packageCoord, package] : program->packages) {
     for (auto[exportName, prototype] : package->exportNameToFunction) {
       bool skipExporting = exportName == "main";
-      if (!skipExporting) {
-        auto s = generateFunctionSignature(globalState, package, exportName, prototype);
-        packageCoordToHeaderNameToC[packageCoord].emplace(exportName, std::stringstream()).first->second << s << std::endl;
-      }
+      if (skipExporting)
+        continue;
+
+      auto* headerC = &packageCoordToHeaderNameToC[packageCoord].emplace(exportName, std::stringstream()).first->second;
+      auto* sourceC = &packageCoordToSourceNameToC[packageCoord].emplace(exportName, std::stringstream()).first->second;
+      makeExternOrExportFunction(globalState, headerC, sourceC, packageCoord, package, exportName, prototype, true);
     }
   }
   for (auto[packageCoord, package] : program->packages) {
     for (auto[externName, prototype] : package->externNameToFunction) {
-      auto s = generateFunctionSignature(globalState, package, externName, prototype);
-      packageCoordToHeaderNameToC[packageCoord].emplace(externName, std::stringstream()).first->second << s << std::endl;
+      if (prototype->name->name.rfind("__vbi_") == 0) {
+        // Dont generate C code for built in externs
+        continue;
+      }
+      auto* headerC = &packageCoordToHeaderNameToC[packageCoord].emplace(externName, std::stringstream()).first->second;
+      auto* sourceC = &packageCoordToSourceNameToC[packageCoord].emplace(externName, std::stringstream()).first->second;
+      makeExternOrExportFunction(globalState, headerC, sourceC, packageCoord, package, externName, prototype, false);
     }
   }
+  if (globalState->opt->outputDir.empty()) {
+    std::cerr << "Must specify --output-dir!" << std::endl;
+    assert(false);
+  }
   for (auto& [packageCoord, headerNameToC] : packageCoordToHeaderNameToC) {
-    for (auto& [exportedName, exportCode] : headerNameToC) {
-      if (globalState->opt->outputDir.empty()) {
-        std::cerr << "Must specify --output-dir!" << std::endl;
-        assert(false);
-      }
-      std::string moduleExternsDirectory = globalState->opt->outputDir;
-      if (!packageCoord->projectName.empty()) {
-        moduleExternsDirectory += "/" + packageCoord->projectName;
-        try {
-          if (std::filesystem::is_directory(std::filesystem::path(moduleExternsDirectory))) {
-            // Do nothing, just re-use it
-          } else {
-            bool success = std::filesystem::create_directory(std::filesystem::path(moduleExternsDirectory));
-            if (!success) {
-              std::cerr << "Couldn't make directory: " << moduleExternsDirectory << " (unknown error)" << std::endl;
-              exit(1);
-            }
-          }
-        }
-        catch (const std::filesystem::filesystem_error& err) {
-          std::cerr << "Couldn't make directory: " << moduleExternsDirectory << " (" << err.what() << ")" << std::endl;
-          exit(1);
-        }
-      }
+    for (auto& [headerName, headerCode] : headerNameToC) {
+      std::string moduleExternsDirectory = makeModuleDirectory(globalState, packageCoord);
 
-      std::string filepath = moduleExternsDirectory + "/" + exportedName + ".h";
-      std::ofstream out(filepath, std::ofstream::out);
-      if (!out) {
-        std::cerr << "Couldn't make file '" << filepath << std::endl;
-        exit(1);
-      }
+      std::string filepath = moduleExternsDirectory + "/" + headerName + ".h";
+      std::ofstream out = makeCFile(filepath);
       // std::cout << "Writing " << filepath << std::endl;
 
-      out << "#ifndef VALE_EXPORTS_" << exportedName << "_H_" << std::endl;
-      out << "#define VALE_EXPORTS_" << exportedName << "_H_" << std::endl;
+      out << "#ifndef VALE_EXPORTS_" << headerName << "_H_" << std::endl;
+      out << "#define VALE_EXPORTS_" << headerName << "_H_" << std::endl;
       out << "#include \"ValeBuiltins.h\"" << std::endl;
-      out << exportCode.str();
+      out << headerCode.str();
       out << "#endif" << std::endl;
     }
   }
+  for (auto& [packageCoord, sourceNameToC] : packageCoordToSourceNameToC) {
+    for (auto& [sourceName, sourceCode] : sourceNameToC) {
+      std::string moduleExternsDirectory = makeModuleDirectory(globalState, packageCoord);
+
+      std::string filepath = moduleExternsDirectory + "/" + sourceName + ".c";
+      std::ofstream out = makeCFile(filepath);
+      // std::cout << "Writing " << filepath << std::endl;
+
+      out << "#include \"" << sourceName << ".h\"" << std::endl;
+      out << sourceCode.str();
+    }
+  }
+}
+
+void makeExternOrExportFunction(
+    GlobalState *globalState,
+    std::stringstream* headerC,
+    std::stringstream* sourceC,
+    const PackageCoordinate *packageCoord,
+    Package *package,
+    const std::string &externName,
+    Prototype *prototype,
+    bool isExport) {
+  for (auto param : prototype->params) {
+    auto kind = param->kind;
+    if (translatesToCVoid(globalState, param) ||
+        dynamic_cast<Int *>(kind) ||
+        dynamic_cast<Bool *>(kind) ||
+        dynamic_cast<Float *>(kind) ||
+        dynamic_cast<Str *>(kind)) {
+      // Do nothing, no need to include anything for these
+    } else {
+      auto paramTypeExportName = package->getKindExportName(kind, false);
+//      if (ownershipToMutability(param->ownership) == Mutability::MUTABLE) {
+//        paramTypeExportName += "Ref";
+//      }
+      (*headerC) << "#include \"" << paramTypeExportName << ".h\"" << std::endl;
+    }
+  }
+  {
+    auto kind = prototype->returnType->kind;
+    if (translatesToCVoid(globalState, prototype->returnType) ||
+        dynamic_cast<Int *>(kind) ||
+        dynamic_cast<Bool *>(kind) ||
+        dynamic_cast<Float *>(kind) ||
+        dynamic_cast<Str *>(kind)) {
+      // Do nothing, no need to include anything for these
+    } else {
+      // We need to include the actual header for interfaces, because the user func hands them around by value
+      auto paramTypeExportName = package->getKindExportName(kind, false);
+//      if (ownershipToMutability(prototype->returnType->ownership) == Mutability::MUTABLE) {
+//        paramTypeExportName += "Ref";
+//      }
+      (*headerC) << "#include \"" << paramTypeExportName << ".h\"" << std::endl;
+    }
+  }
+  auto userHeaderC = generateFunctionC(globalState, package, externName, prototype, isExport ? CFuncLineMode::EXPORT_USER_PROTOTYPE : CFuncLineMode::EXTERN_USER_PROTOTYPE, isExport);
+  auto abiHeaderC = generateFunctionC(globalState, package, externName, prototype, isExport ? CFuncLineMode::EXPORT_INTERMEDIATE_PROTOTYPE : CFuncLineMode::EXTERN_INTERMEDIATE_PROTOTYPE, isExport);
+  (*headerC) << userHeaderC << ";" << std::endl;
+  (*headerC) << abiHeaderC << ";" << std::endl;
+
+  auto userSourceC = std::stringstream{};
+  userSourceC << "#include \"" << externName << ".h\"" << std::endl;
+  userSourceC << generateFunctionC(globalState, package, externName, prototype, isExport ? CFuncLineMode::EXPORT_INTERMEDIATE_PROTOTYPE : CFuncLineMode::EXTERN_INTERMEDIATE_PROTOTYPE, isExport) << " {" << std::endl;
+  userSourceC << "  " << generateFunctionC(globalState, package, externName, prototype, isExport ? CFuncLineMode::EXPORT_INTERMEDIATE_BODY : CFuncLineMode::EXTERN_INTERMEDIATE_BODY, isExport) << ";" << std::endl;
+  userSourceC << "}" << std::endl;
+  (*sourceC) << userSourceC.str();
+}
+
+std::ofstream makeCFile(const std::string &filepath) {
+  std::ofstream out(filepath, std::ofstream::out);
+  if (!out) {
+    std::cerr << "Couldn't make file '" << filepath << std::endl;
+    exit(1);
+  }
+  return out;
+}
+
+std::string makeModuleDirectory(const GlobalState *globalState, PackageCoordinate *packageCoord) {
+  std::string moduleExternsDirectory = globalState->opt->outputDir;
+  if (!packageCoord->projectName.empty()) {
+    moduleExternsDirectory += "/" + packageCoord->projectName;
+    try {
+      if (std::filesystem::is_directory(std::filesystem::path(moduleExternsDirectory))) {
+        // Do nothing, just re-use it
+      } else {
+        bool success = std::filesystem::create_directory(std::filesystem::path(moduleExternsDirectory));
+        if (!success) {
+          std::cerr << "Couldn't make directory: " << moduleExternsDirectory << " (unknown error)" << std::endl;
+          exit(1);
+        }
+      }
+    }
+    catch (const std::filesystem::filesystem_error& err) {
+      std::cerr << "Couldn't make directory: " << moduleExternsDirectory << " (" << err.what() << ")" << std::endl;
+      exit(1);
+    }
+  }
+  return moduleExternsDirectory;
 }
 
 void compileValeCode(GlobalState* globalState, const std::string& filename) {

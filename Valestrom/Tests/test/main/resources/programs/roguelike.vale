@@ -95,7 +95,7 @@ fn inputKey() int {
     }
     // Continue
   }
-  __panic();
+  __vbi_panic();
 }
 
 

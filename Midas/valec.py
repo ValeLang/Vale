@@ -70,14 +70,14 @@ class ValeCompiler:
         if self.windows:
             args = ["cl.exe", '/ENTRY:"main"', '/SUBSYSTEM:CONSOLE', "/Fe:" + str(exe_file)]
             if census:
-                args = args + ["/fsanitize=address", "clang_rt.asan_dynamic-x86_64.lib", "clang_rt.asan_dynamic_runtime_thunk-x86_64.lib"]
+                args = args + ["/fsanitize=address", "clang_rt.asan_dynamic-x86_64.lib", "clang_rt.asan_dynamic_runtime_thunk-x86_64.lib", "-Wall", "-Werror"]
             args = args + list(str(x) for x in o_files)
             if include_path is not None:
                 args.append("-I" + str(include_path))
             return procrun(args)
         else:
             clang = "clang-11" if shutil.which("clang-11") is not None else "clang"
-            args = [clang, "-O3", "-lm", "-o", str(exe_file)]
+            args = [clang, "-O3", "-lm", "-o", str(exe_file), "-Wall", "-Werror"]
             if census:
                 args = args + ["-fsanitize=address", "-fsanitize=leak", "-fno-omit-frame-pointer", "-g"]
             args = args + list(str(x) for x in o_files)
@@ -173,7 +173,6 @@ class ValeCompiler:
         self.build_dir = Path(f".")
         exe_file = ("main.exe" if self.windows else "a.out")
         self.parseds_output_dir = None
-        add_exports_include_path = False
 
 
         print_help = False
@@ -264,10 +263,6 @@ class ValeCompiler:
             del args[ind]
             valestrom_options.append("--output-vpst")
             valestrom_options.append(val)
-        if "--add-exports-include-path" in args:
-            ind = args.index("--add-exports-include-path")
-            del args[ind]
-            add_exports_include_path = True
         if "-o" in args:
             ind = args.index("-o")
             del args[ind]
@@ -465,7 +460,7 @@ class ValeCompiler:
                 for c_file in directory_with_c.rglob('*.c'):
                     user_c_files.append(Path(c_file))
 
-            c_files = user_c_files.copy() + glob.glob(str(self.builtins_path / "*.c"))
+            c_files = user_c_files.copy() + glob.glob(str(self.builtins_path / "*.c")) + glob.glob(str(self.build_dir) + "/*.c") + glob.glob(str(self.build_dir) + "/*/*.c")
 
             # Get .o or .obj
             o_files = glob.glob(str(vast_file.with_suffix(".o"))) + glob.glob(str(vast_file.with_suffix(".obj")))
@@ -483,7 +478,7 @@ class ValeCompiler:
                 self.build_dir,
                 self.build_dir / exe_file,
                 census,
-                self.build_dir if add_exports_include_path else None)
+                self.build_dir)
             # print(proc.stdout)
             # print(proc.stderr)
             if proc.returncode != 0:

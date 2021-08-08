@@ -1,93 +1,93 @@
 
-fn float(x int) float { __castI32Float(x) }
-fn __castI32Float(x int) float extern;
+fn float(x int) float { __vbi_castI32Float(x) }
+fn __vale_castI32Float(x int) float extern;
 
-fn int(x float) int { __castFloatI32(x) }
-fn __castFloatI32(x float) int extern;
+fn int(x float) int { __vale_castFloatI32(x) }
+fn __vale_castFloatI32(x float) int extern;
 
-fn -(x int) int { __negateI32(x) }
-fn __negateI32(x int) int extern;
+fn -(x int) int { __vbi_negateI32(x) }
+fn __vbi_negateI32(x int) int extern;
 
-fn -(x float) float { __negateFloat(x) }
-fn __negateFloat(x float) float extern;
+fn -(x float) float { __vbi_negateFloat(x) }
+fn __vbi_negateFloat(x float) float extern;
 
-fn +(left int, right int) int { __addI32(left, right) }
-fn __addI32(left int, right int) int extern;
+fn +(left int, right int) int { __vbi_addI32(left, right) }
+fn __vbi_addI32(left int, right int) int extern;
 
-fn +(left i64, right i64) i64 { __addI64(left, right) }
-fn __addI64(left i64, right i64) i64 extern;
+fn +(left i64, right i64) i64 { __vbi_addI64(left, right) }
+fn __vbi_addI64(left i64, right i64) i64 extern;
 
-fn +(left float, right float) float { __addFloatFloat(left, right) }
-fn __addFloatFloat(left float, right float) float extern;
+fn +(left float, right float) float { __vbi_addFloatFloat(left, right) }
+fn __vbi_addFloatFloat(left float, right float) float extern;
 
-fn *(left int, right int) int { __multiplyI32(left, right) }
-fn __multiplyI32(left int, right int) int extern;
+fn *(left int, right int) int { __vbi_multiplyI32(left, right) }
+fn __vbi_multiplyI32(left int, right int) int extern;
 
-fn *(left i64, right i64) i64 { __multiplyI64(left, right) }
-fn __multiplyI64(left i64, right i64) i64 extern;
+fn *(left i64, right i64) i64 { __vbi_multiplyI64(left, right) }
+fn __vbi_multiplyI64(left i64, right i64) i64 extern;
 
-fn *(left float, right float) float { __multiplyFloatFloat(left, right) }
-fn __multiplyFloatFloat(left float, right float) float extern;
+fn *(left float, right float) float { __vbi_multiplyFloatFloat(left, right) }
+fn __vbi_multiplyFloatFloat(left float, right float) float extern;
 
-fn -(left int, right int) int { __subtractI32(left, right) }
-fn __subtractI32(left int, right int) int extern;
+fn -(left int, right int) int { __vbi_subtractI32(left, right) }
+fn __vbi_subtractI32(left int, right int) int extern;
 
-fn -(left i64, right i64) i64 { __subtractI64(left, right) }
-fn __subtractI64(left i64, right i64) i64 extern;
+fn -(left i64, right i64) i64 { __vbi_subtractI64(left, right) }
+fn __vbi_subtractI64(left i64, right i64) i64 extern;
 
-fn -(left float, right float) float { __subtractFloatFloat(left, right) }
-fn __subtractFloatFloat(left float, right float) float extern;
+fn -(left float, right float) float { __vbi_subtractFloatFloat(left, right) }
+fn __vbi_subtractFloatFloat(left float, right float) float extern;
 
-fn /(left int, right int) int { __divideI32(left, right) }
-fn __divideI32(left int, right int) int extern;
+fn /(left int, right int) int { __vbi_divideI32(left, right) }
+fn __vbi_divideI32(left int, right int) int extern;
 
-fn /(left i64, right i64) i64 { __divideI64(left, right) }
-fn __divideI64(left i64, right i64) i64 extern;
+fn /(left i64, right i64) i64 { __vbi_divideI64(left, right) }
+fn __vbi_divideI64(left i64, right i64) i64 extern;
 
-fn /(left float, right float) float { __divideFloatFloat(left, right) }
-fn __divideFloatFloat(left float, right float) float extern;
+fn /(left float, right float) float { __vbi_divideFloatFloat(left, right) }
+fn __vbi_divideFloatFloat(left float, right float) float extern;
 
-fn <(left float, right float) bool { __lessThanFloat(left, right) }
-fn __lessThanFloat(left float, right float) bool extern;
+fn <(left float, right float) bool { __vbi_lessThanFloat(left, right) }
+fn __vbi_lessThanFloat(left float, right float) bool extern;
 
-fn <(left i64, right i64) bool { __lessThanI64(left, right) }
-fn __lessThanI64(left i64, right i64) bool extern;
+fn <(left i64, right i64) bool { __vbi_lessThanI64(left, right) }
+fn __vbi_lessThanI64(left i64, right i64) bool extern;
 
-fn <(left int, right int) bool { __lessThanI32(left, right) }
-fn __lessThanI32(left int, right int) bool extern;
+fn <(left int, right int) bool { __vbi_lessThanI32(left, right) }
+fn __vbi_lessThanI32(left int, right int) bool extern;
 
-fn >(left float, right float) bool { __greaterThanFloat(left, right) }
-fn __greaterThanFloat(left float, right float) bool extern;
+fn >(left float, right float) bool { __vbi_greaterThanFloat(left, right) }
+fn __vbi_greaterThanFloat(left float, right float) bool extern;
 
-fn >(left i64, right i64) bool { __greaterThanI64(left, right) }
-fn __greaterThanI64(left i64, right i64) bool extern;
+fn >(left i64, right i64) bool { __vbi_greaterThanI64(left, right) }
+fn __vbi_greaterThanI64(left i64, right i64) bool extern;
 
-fn >(left int, right int) bool { __greaterThanI32(left, right) }
-fn __greaterThanI32(left int, right int) bool extern;
+fn >(left int, right int) bool { __vbi_greaterThanI32(left, right) }
+fn __vbi_greaterThanI32(left int, right int) bool extern;
 
-fn <=(left int, right int) bool { __lessThanOrEqI32(left, right) }
-fn __lessThanOrEqI32(left int, right int) bool extern;
+fn <=(left int, right int) bool { __vbi_lessThanOrEqI32(left, right) }
+fn __vbi_lessThanOrEqI32(left int, right int) bool extern;
 
-fn <=(left i64, right i64) bool { __lessThanOrEqI64(left, right) }
-fn __lessThanOrEqI64(left i64, right i64) bool extern;
+fn <=(left i64, right i64) bool { __vbi_lessThanOrEqI64(left, right) }
+fn __vbi_lessThanOrEqI64(left i64, right i64) bool extern;
 
-fn >=(left int, right int) bool { __greaterThanOrEqI32(left, right) }
-fn __greaterThanOrEqI32(left int, right int) bool extern;
+fn >=(left int, right int) bool { __vbi_greaterThanOrEqI32(left, right) }
+fn __vbi_greaterThanOrEqI32(left int, right int) bool extern;
 
-fn >=(left i64, right i64) bool { __greaterThanOrEqI64(left, right) }
-fn __greaterThanOrEqI64(left i64, right i64) bool extern;
+fn >=(left i64, right i64) bool { __vbi_greaterThanOrEqI64(left, right) }
+fn __vbi_greaterThanOrEqI64(left i64, right i64) bool extern;
 
-fn ==(left int, right int) bool { __eqI32(left, right) }
-fn __eqI32(left int, right int) bool extern;
+fn ==(left int, right int) bool { __vbi_eqI32(left, right) }
+fn __vbi_eqI32(left int, right int) bool extern;
 
-fn ==(left i64, right i64) bool { __eqI64(left, right) }
-fn __eqI64(left i64, right i64) bool extern;
+fn ==(left i64, right i64) bool { __vbi_eqI64(left, right) }
+fn __vbi_eqI64(left i64, right i64) bool extern;
 
-fn ==(left float, right float) bool { __eqFloatFloat(left, right) }
-fn __eqFloatFloat(left float, right float) bool extern;
+fn ==(left float, right float) bool { __vbi_eqFloatFloat(left, right) }
+fn __vbi_eqFloatFloat(left float, right float) bool extern;
 
-fn mod(left int, right int) int { __modI32(left, right) }
-fn __modI32(left int, right int) int extern;
+fn mod(left int, right int) int { __vbi_modI32(left, right) }
+fn __vbi_modI32(left int, right int) int extern;
 
-fn mod(left i64, right i64) i64 { __modI64(left, right) }
-fn __modI64(left i64, right i64) i64 extern;
+fn mod(left i64, right i64) i64 { __vbi_modI64(left, right) }
+fn __vbi_modI64(left i64, right i64) i64 extern;

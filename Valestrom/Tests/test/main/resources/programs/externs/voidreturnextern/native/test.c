@@ -3,6 +3,6 @@
 #include "tmod/MyBox.h"
 #include "tmod/changeInBox.h"
 
-void tmod_runExtCommand(tmod_MyBoxRef* b) {
+void tmod_runExtCommand(tmod_MyBoxRef b) {
   tmod_changeInBox(b);
 }

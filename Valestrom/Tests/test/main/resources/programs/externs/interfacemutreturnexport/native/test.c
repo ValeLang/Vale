@@ -6,9 +6,6 @@
 #include "tmod/runExtCommand.h"
 #include "tmod/makeFirefly.h"
 
-void tmod_runExtCommand(tmod_IShipRef* resultShipRefPtr) {
-  tmod_IShipRef shipRef = { 0 };
-  tmod_makeFirefly(&shipRef, 42);
-
-  *resultShipRefPtr = shipRef;
+tmod_IShipRef tmod_runExtCommand() {
+  return tmod_makeFirefly(42);
 }

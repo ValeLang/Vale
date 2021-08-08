@@ -1,7 +1,7 @@
 
 fn main() int export {
   if (false) {
-    __panic();
+    __vbi_panic();
   }
   = 42;
 }

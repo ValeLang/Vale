@@ -8,6 +8,6 @@
 #include "tmod/valeGetShipFuel.h"
 #include "tmod/cGetTripleShipFuel.h"
 
-ValeInt tmod_cGetTripleShipFuel(tmod_IShipRef* sPtr) {
-  return tmod_valeGetShipFuel(sPtr) * 3;
+ValeInt tmod_cGetTripleShipFuel(tmod_IShipRef s) {
+  return tmod_valeGetShipFuel(s) * 3;
 }

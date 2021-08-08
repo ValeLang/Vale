@@ -8,8 +8,7 @@
 #include "tmod/IShip.h"
 #include "tmod/cGetShipFuel.h"
 
-ValeInt tmod_cGetShipFuel(tmod_IShip* sPtr) {
-  tmod_IShip s = *sPtr;
+ValeInt tmod_cGetShipFuel(tmod_IShip s) {
   ValeInt result = 0;
   switch (s.type) {
     case tmod_IShip_Type_Seaship: {

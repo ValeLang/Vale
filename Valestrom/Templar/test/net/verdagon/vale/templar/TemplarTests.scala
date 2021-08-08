@@ -47,7 +47,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |fn main() infer-ret export {
-        |  __panic();
+        |  __vbi_panic();
         |  a = 42;
         |  = a;
         |}
@@ -776,7 +776,7 @@ class TemplarTests extends FunSuite with Matchers {
         |  } else {
         |    ret 9;
         |  }
-        |  = __panic();
+        |  = __vbi_panic();
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()

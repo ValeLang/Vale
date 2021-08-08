@@ -5,6 +5,6 @@
 #include "tmod/valeMakeSSA.h"
 #include "tmod/cMakeSSA.h"
 
-void tmod_cMakeSSA(tmod_MutIntArrayRef* result) {
-  tmod_valeMakeSSA(result);
+tmod_MutIntArrayRef tmod_cMakeSSA() {
+  return tmod_valeMakeSSA();
 }

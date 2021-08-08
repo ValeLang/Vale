@@ -81,7 +81,7 @@ static void censusExpand() {
   int64_t oldNumEntries = census.capacity;
   CensusEntry* oldEntries = census.entries;
 
-  int64_t oldCapacity = census.capacity;
+  //int64_t oldCapacity = census.capacity;
 
   census.indexInSizeList++;
   census.capacity = hashTableSizeList[census.indexInSizeList];

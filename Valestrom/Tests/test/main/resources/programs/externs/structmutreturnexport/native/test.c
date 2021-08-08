@@ -5,8 +5,6 @@
 #include "tmod/makeThing.h"
 #include "tmod/runExtCommand.h"
 
-extern void tmod_makeThing(tmod_ThingRef* result, ValeStr* a, ValeInt b);
-
-void tmod_runExtCommand(tmod_ThingRef* result) {
-  tmod_makeThing(result, ValeStrFrom("hello"), 37);
+tmod_ThingRef tmod_runExtCommand() {
+  return tmod_makeThing(ValeStrFrom("hello"), 37);
 }

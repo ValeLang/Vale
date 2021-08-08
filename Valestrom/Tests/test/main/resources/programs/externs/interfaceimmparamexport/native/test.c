@@ -8,6 +8,6 @@
 #include "tmod/cGetShipFuel.h"
 #include "tmod/valeGetShipFuel.h"
 
-extern ValeInt tmod_cGetShipFuel(tmod_IShip* s) {
+extern ValeInt tmod_cGetShipFuel(tmod_IShip s) {
   return tmod_valeGetShipFuel(s);
 }

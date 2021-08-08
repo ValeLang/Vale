@@ -602,7 +602,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |impl<T> XOpt<T> for XNone<T>;
         |
         |fn get<T>(virtual opt XOpt<T>) int abstract;
-        |fn get<T>(opt XNone<T> impl XOpt<T>) int { __panic() }
+        |fn get<T>(opt XNone<T> impl XOpt<T>) int { __vbi_panic() }
         |
         |fn get<T>(virtual opt &XOpt<T>) int abstract;
         |fn get<T>(opt &XNone<T> impl XOpt<T>) int { 42 }

@@ -1,15 +1,15 @@
 
-fn +(a str, b str) str { __vaddStr(a, 0, len(a), b, 0, len(b)) }
-fn __vaddStr(a str, aBegin int, aEnd int, b str, bBegin int, bEnd int) str extern;
+fn +(a str, b str) str { __vale_addStr(a, 0, len(a), b, 0, len(b)) }
+fn __vale_addStr(a str, aBegin int, aEnd int, b str, bBegin int, bEnd int) str extern;
 
-fn str(x int) str { __castI32Str(x) }
-fn __castI32Str(x int) str extern;
+fn str(x int) str { __vale_castI32Str(x) }
+fn __vale_castI32Str(x int) str extern;
 
-fn str(x float) str { __castFloatStr(x) }
-fn __castFloatStr(x float) str extern;
+fn str(x float) str { __vale_castFloatStr(x) }
+fn __vale_castFloatStr(x float) str extern;
 
-fn len(s str) int { __strLength(s) }
-fn __strLength(s str) int extern;
+fn len(s str) int { __vbi_strLength(s) }
+fn __vbi_strLength(s str) int extern;
 
 fn vstr_toascii(s str, begin int, end int) int extern;
 fn vstr_fromascii(code int) str extern;

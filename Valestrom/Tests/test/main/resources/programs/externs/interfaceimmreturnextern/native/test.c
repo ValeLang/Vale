@@ -6,7 +6,7 @@
 #include "tmod/Firefly.h"
 #include "tmod/cMakeShip.h"
 
-void tmod_cMakeShip(tmod_IShip* resultShipRefPtr) {
+tmod_IShip tmod_cMakeShip() {
   tmod_Firefly* firefly = (tmod_Firefly*)malloc(sizeof(tmod_Firefly));
   firefly->fuel = 42;
 
@@ -23,5 +23,5 @@ void tmod_cMakeShip(tmod_IShip* resultShipRefPtr) {
   shipRef.obj = firefly;
   shipRef.type = tmod_IShip_Type_Firefly;
 
-  *resultShipRefPtr = shipRef;
+  return shipRef;
 }

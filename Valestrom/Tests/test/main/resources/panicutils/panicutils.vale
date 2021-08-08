@@ -1,6 +1,6 @@
 import printutils.*;
 
-fn __pretend<T>() T { __panic() }
+fn __pretend<T>() T { __vbi_panic() }
 
 fn vassert(cond bool) {
   vassert(cond, "Assertion failed!");
@@ -8,7 +8,7 @@ fn vassert(cond bool) {
 fn vassert(cond bool, msg str) {
   if (cond == false) {
     println(msg);
-    __panic();
+    __vbi_panic();
   }
 }
 

@@ -30,11 +30,13 @@ int getOSPageSize() {
 char* __vale_initTwinPages() {
   // Set up the signal to catch the seg fault.
   // This is especially nice for windows, which otherwise just silently fails.
-  typedef void (*SignalHandlerPointer)(int);
-  SignalHandlerPointer previousSigsegvHandler = signal(SIGSEGV, SignalHandler);
+  //typedef void (*SignalHandlerPointer)(int);
+  //SignalHandlerPointer previousSigsegvHandler =
+      signal(SIGSEGV, SignalHandler);
   // Mac can have bus faults, not seg faults, when we do bad accesses
 #ifndef _WIN32
-  SignalHandlerPointer previousBusErrorHandler = signal(SIGBUS, SignalHandler);
+  //SignalHandlerPointer previousBusErrorHandler =
+      signal(SIGBUS, SignalHandler);
 #endif
 
   size_t pageSize = getOSPageSize();
@@ -66,8 +68,9 @@ char* __vale_initTwinPages() {
     exit(1);
   }
 #endif
-  // Just do a couple writes, just to be sure.
+  // Do a write just to be sure.
   *(long long*)&allocationPtr[pageSize - sizeof(long long)] = 42LL;
-  long long result = *(long long*)&allocationPtr[pageSize - sizeof(long long)];
+//  long long result =
+//      *(long long*)&allocationPtr[pageSize - sizeof(long long)];
   return allocationPtr + pageSize;
 }

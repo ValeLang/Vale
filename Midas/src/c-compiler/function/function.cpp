@@ -29,18 +29,24 @@ LLVMValueRef declareFunction(
   return valeFunctionL;
 }
 
-bool typeNeedsPointerParameter(GlobalState* globalState, Reference* returnMT) {
+bool translatesToCVoid(GlobalState* globalState, Reference* returnMT) {
   if (returnMT == globalState->metalCache->neverRef) {
-    return false;
+    return true;
   } else if (returnMT == globalState->metalCache->emptyTupleStructRef) {
-    return false;
+    return true;
   } else {
-    auto logicalReturnTypeL = globalState->getRegion(returnMT)->getExternalType(returnMT);
-    if (LLVMGetTypeKind(logicalReturnTypeL) == LLVMStructTypeKind) {
-      return true;
-    } else {
-      return false;
-    }
+    return false;
+  }
+}
+bool typeNeedsPointerParameter(GlobalState* globalState, Reference* returnMT) {
+  if (translatesToCVoid(globalState, returnMT)) {
+    return false;
+  }
+  auto logicalReturnTypeL = globalState->getRegion(returnMT)->getExternalType(returnMT);
+  if (LLVMGetTypeKind(logicalReturnTypeL) == LLVMStructTypeKind) {
+    return true;
+  } else {
+    return false;
   }
 }
 
@@ -85,7 +91,8 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
   LLVMTypeRef exportFunctionTypeL =
       LLVMFunctionType(exportReturnLT, exportParamTypesL.data(), exportParamTypesL.size(), 0);
 
-  auto exportName = package->getFunctionExportName(functionM->prototype);
+  auto exportName = std::string("vale_abi_") + package->getFunctionExportName(functionM->prototype);
+
   // The full name should end in _0, _1, etc. The exported name shouldnt.
   assert(exportName != functionM->prototype->name->name);
   // This is a thunk function that correctly aliases the objects that come in from the
@@ -195,11 +202,12 @@ LLVMValueRef declareExternFunction(
     }
   }
 
-  auto nameL = package->getFunctionExternName(prototypeM);
+  auto userFuncNameL = package->getFunctionExternName(prototypeM);
+  auto abiFuncNameL = std::string("vale_abi_") + userFuncNameL;
 
   LLVMTypeRef functionTypeL =
       LLVMFunctionType(externReturnLT, externParamTypesL.data(), externParamTypesL.size(), 0);
-  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, nameL.c_str(), functionTypeL);
+  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, abiFuncNameL.c_str(), functionTypeL);
 
   assert(globalState->externFunctions.count(prototypeM->name->name) == 0);
   globalState->externFunctions.emplace(prototypeM->name->name, functionL);

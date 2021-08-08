@@ -111,7 +111,7 @@ object BuiltInFunctions {
                 RuneLookupAE(RangeS.internal(-62),CodeRuneA("N"), IntegerTemplataType)))))),
       FunctionA(
         RangeS.internal(-67),
-        FunctionNameA("__panic", s.CodeLocationS.internal(-22)),
+        FunctionNameA("__vbi_panic", s.CodeLocationS.internal(-22)),
         List(UserFunctionA),
         FunctionTemplataType,
         Set(),

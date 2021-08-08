@@ -5,6 +5,6 @@
 #include "tmod/valeMakeRSA.h"
 #include "tmod/cMakeRSA.h"
 
-void tmod_cMakeRSA(tmod_MutIntArrayRef* result) {
-  tmod_valeMakeRSA(result);
+tmod_MutIntArrayRef tmod_cMakeRSA() {
+  return tmod_valeMakeRSA();
 }

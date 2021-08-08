@@ -7,9 +7,6 @@
 #include "tmod/cMakeShip.h"
 #include "tmod/valeMakeShip.h"
 
-void tmod_cMakeShip(tmod_IShip* resultShipRefPtr) {
-  tmod_IShip myRef = { 0 };
-  tmod_valeMakeShip(&myRef);
-
-  *resultShipRefPtr = myRef;
+extern tmod_IShip tmod_cMakeShip() {
+  return tmod_valeMakeShip();
 }

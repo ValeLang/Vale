@@ -83,7 +83,7 @@ class HammerTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |fn main() int export {
-        |  __panic();
+        |  __vbi_panic();
         |  a = 42;
         |  = a;
         |}
@@ -92,7 +92,7 @@ class HammerTests extends FunSuite with Matchers {
     val main = packageH.lookupFunction("main")
     main.body match {
       case BlockH(CallH(PrototypeH(fullNameH, Nil, ReferenceH(_, _, ReadonlyH, NeverH())), Nil)) => {
-        vassert(fullNameH.toFullString().contains("__panic"))
+        vassert(fullNameH.toFullString().contains("__vbi_panic"))
       }
     }
   }

@@ -144,7 +144,7 @@ ValeInt vstr_cmp(
   return 0;
 }
 
-ValeStr* __vaddStr(
+ValeStr* __vale_addStr(
     ValeStr* aStr, ValeInt aBegin, ValeInt aLength,
     ValeStr* bStr, ValeInt bBegin, ValeInt bLength) {
   char* a = aStr->chars;
@@ -178,11 +178,11 @@ extern ValeStr* __castI64Str(int64_t n) {
   return result;
 }
 
-extern ValeStr* __castI32Str(int32_t n) {
+extern ValeStr* __vale_castI32Str(int32_t n) {
   return __castI64Str((int64_t)n);
 }
 
-extern ValeStr* __castFloatStr(double f) {
+extern ValeStr* __vale_castFloatStr(double f) {
   char tempBuffer[100] = { 0 };
   int charsWritten = snprintf(tempBuffer, 100, "%lf", f);
   ValeStr* result = ValeStrNew(charsWritten);

@@ -6,5 +6,5 @@ fn main() int export {
     }
     // Continue
   }
-  __panic();
+  __vbi_panic();
 }

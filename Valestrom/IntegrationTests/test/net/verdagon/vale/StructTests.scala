@@ -162,7 +162,7 @@ class StructTests extends FunSuite with Matchers {
         |impl<T> XOpt<T> for XNone<T>;
         |
         |fn get<T>(virtual opt &XOpt<T>) &T abstract;
-        |fn get<T>(opt &XNone<T> impl XOpt<T>) &T { __panic() }
+        |fn get<T>(opt &XNone<T> impl XOpt<T>) &T { __vbi_panic() }
         |fn get<T>(opt &XSome<T> impl XOpt<T>) &T { opt.value }
         |
         |fn main() int export {

@@ -283,7 +283,7 @@ object TemplarErrorHumanizer {
       reason.inferences.templatasByRune.map({ case (key, value) => repeatStr("  ", indentations) + "- " + key + " = " + value + "\n" }).mkString("") +
       reason.inferences.typeByRune
         .filter(x => !reason.inferences.templatasByRune.contains(x._1))
-        .map({ case (rune, _) => "  ".repeat(indentations) + "- " + rune + " = unknown" + "\n" }).mkString("") +
+        .map({ case (rune, _) => repeatStr("  ", indentations) + "- " + rune + " = unknown" + "\n" }).mkString("") +
       reason.causes.map(humanizeConflictCause(indentations + 1, codeMap, _)).mkString("")
   }
 }

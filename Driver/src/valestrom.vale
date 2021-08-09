@@ -1,0 +1,77 @@
+
+
+struct ModuleDependency {
+  depender_module_global_name str;
+  depender_name_for_dependee str;
+  dependee_module_global_name str;
+}
+
+struct ModuleDirectoryDeclaration {
+  module_global_name str;
+  directory str;
+}
+
+struct ModuleValeInputDeclaration {
+  module_global_name str;
+  directory str;
+}
+
+struct ModuleNonValeInputDeclaration {
+  module_global_name str;
+  directory str;
+}
+
+struct ValestromInvocation {
+  module_dependencies List<ModuleDependency>;
+  module_directories List<ModuleDirectoryDeclaration>;
+  module_vale_inputs List<ModuleValeInputDeclaration>;
+  module_non_vale_inputs List<ModuleNonValeInputDeclaration>;
+  benchmark bool;
+  verbose bool;
+  include_builtins bool;
+  output_vast bool;
+  output_vpst bool;
+}
+
+
+// def procrun(args: List[str], **kwargs) -> subprocess.CompletedProcess:
+//     print("Running: " + " ".join(args))
+//     return subprocess.run(args, stdout=PIPE, stderr=PIPE, text=True, **kwargs)
+// 
+// 
+// class ValeCompiler:
+fn valestrom(
+  self &ValeCompiler,
+  command str,
+  namespaces_to_build &List<str>,
+  user_valestrom_inputs &List<Path>,
+  valestrom_options &List<str>)
+ExecResult {
+  valestrom_inputs = user_valestrom_inputs;
+  if (self.build_dir != Path(".")) {
+    if (self.build_dir.exists()) {
+      shutil.rmtree(self.build_dir);
+    }
+    os.makedirs(self.build_dir);
+  }
+  valestrom_options.append("--output-dir");
+  valestrom_options.append(str(self.build_dir));
+  if (self.parseds_output_dir != None) {
+    valestrom_options.append("-op");
+    valestrom_options.append(str(self.parseds_output_dir));
+  }
+
+  args = List<str>();
+  args.AddAll(valestrom_options);
+
+
+  ret procrun(
+    [][
+      "java",
+      "-cp",
+      valestrom_path./("Valestrom.jar").str(),
+      "net.verdagon.vale.driver.Driver",
+      command
+    ] + namespaces_to_build + valestrom_options + list((x[0] + ":" + str(x[1])) for x in valestrom_inputs)
+  );
+}

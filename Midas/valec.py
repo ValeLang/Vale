@@ -170,7 +170,7 @@ class ValeCompiler:
         #                     help='sum the integers (default: find the max)')
         # args = parser.parse_args()
 
-        self.build_dir = Path(f".")
+        self.build_dir = None
         exe_file = ("main.exe" if self.windows else "a.out")
         self.parseds_output_dir = None
 
@@ -287,6 +287,10 @@ class ValeCompiler:
             ind = args.index("--version")
             del args[ind]
             print_version = True
+
+        if self.build_dir is None:
+            print("Must specify an output dir with --output-dir.")
+            sys.exit(1)
 
         if len(args) == 0:
             print("Must supply a command, such as 'help', 'build`, 'run', 'version'.")

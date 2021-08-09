@@ -1,5 +1,5 @@
 
-fn float(x int) float { __vbi_castI32Float(x) }
+fn float(x int) float { __vale_castI32Float(x) }
 fn __vale_castI32Float(x int) float extern;
 
 fn int(x float) int { __vale_castFloatI32(x) }

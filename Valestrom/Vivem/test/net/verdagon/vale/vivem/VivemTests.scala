@@ -35,10 +35,10 @@ class VivemTests extends FunSuite with Matchers {
     val addPrototype =
       PrototypeH(
         FullNameH(
-          "__addI32",
+          "__vbi_addI32",
           0,
           PackageCoordinate.BUILTIN,
-          List(VonObject("F",None,Vector(VonMember("humanName",VonStr("__addI32")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector(intRef, intRef))))))),
+          List(VonObject("F",None,Vector(VonMember("humanName",VonStr("__vbi_addI32")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector(intRef, intRef))))))),
         List(ReferenceH(ShareH,InlineH,ReadonlyH,IntH.i32), ReferenceH(ShareH,InlineH,ReadonlyH,IntH.i32)),
         ReferenceH(ShareH,InlineH,ReadonlyH,IntH.i32))
     val main =
@@ -72,7 +72,7 @@ class VivemTests extends FunSuite with Matchers {
     val programH =
       ProgramH(
         PackageCoordinateMap(Map())
-          .add(PackageCoordinate.BUILTIN, PackageH(List.empty, List.empty, List(addExtern), List.empty, List.empty, Map(), Map(), Map(), Map("__addI32" -> addPrototype), Map()))
+          .add(PackageCoordinate.BUILTIN, PackageH(List.empty, List.empty, List(addExtern), List.empty, List.empty, Map(), Map(), Map(), Map("__vbi_addI32" -> addPrototype), Map()))
           .add(PackageCoordinate.TEST_TLD, PackageH(List.empty, List.empty, List(main), List.empty, List.empty, Map(), Map("main" -> main.prototype), Map(), Map(), Map())))
     val result =
       Vivem.executeWithPrimitiveArgs(programH, Vector(), System.out, Vivem.emptyStdin, Vivem.nullStdout)

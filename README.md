@@ -5,30 +5,29 @@ Compiler for the Vale programming language.
 
 ## Vale
 
-Vale is the fast, fearless, and flexible programming language. It aims to be as fast as Rust, while being as easy as Java, as safe as Javascript.
+Vale is the fast, fearless, and flexible programming language. It aims to be as fast as Rust, as easy as Java, and as safe as Javascript.
 
 See http://vale.dev/ for samples and more information on the language!
 
-
-## Building and Running
-
-For instructions for building the compiler itself, see:
-
- * [Building the Vale Compiler (Linux)](build-linux.sh)
- * [Building the Vale Compiler (Mac)](build-mac.sh)
- * [Building the Vale Compiler (Windows)](build-windows.md)
-
-If you just want to build and run Vale programs, go to the [download](https://vale.dev/download) page instead.
+See also our [treasure trove of working examples](https://github.com/Ivo-Balbaert/Vale_Examples), grouped by functionality.
 
 
-## Guide
+## Building a Vale Program
+
+ 1. Download the latest binary at http://vale.dev/download
+ 1. Unzip it into, for example, `~/Vale`, and `cd` into it.
+ 1. Compile a program: `python3 valec.py build hello hello:./samples/helloworld stdlib:./stdlib/src`
+ 1. Run the program: `./a.out`
+
+
+## Learning Vale
 
 See [the Guide](https://vale.dev/guide/introduction) for how to use Vale.
 
 
-## Vale code examples
+## Building the compiler itself
 
-A number of working examples grouped by functionality can be found [here](https://github.com/Ivo-Balbaert/Vale_Examples)
+For instructions for building the compiler itself, see [Building the Compiler](build-compiler.md).
 
 
 ## Editor plugins

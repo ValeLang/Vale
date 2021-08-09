@@ -17,7 +17,7 @@ cd ..
 
 copy C:\llvm-install-minimum\bin\LLVM-C.dll .
 
-python -m unittest -f -k assist
+python -m unittest -f -v -k assist_add
 
 cd ..\scripts
 

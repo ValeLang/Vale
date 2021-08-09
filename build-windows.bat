@@ -25,5 +25,6 @@ call package-windows.bat
 
 cd ..\release-windows
 
+PATH=%PATH%;C:\Program Files\7-Zip
 PATH=%PATH%;C:\Program Files\7-Zip\7z.exe
 7z a ValeCompiler.zip *

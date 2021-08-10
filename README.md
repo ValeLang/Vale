@@ -36,6 +36,17 @@ A number of working examples grouped by functionality can be found [here](https:
 - [VSCode plugin](https://marketplace.visualstudio.com/items?itemName=pacifio.vale-lang): Syntax-highlighting and basic autocompletion.
 - [Vim plugin](https://github.com/jfecher/vale.vim): Syntax-highlighting
 
+
+## Editing GitHub CI Workflows
+
+Do not edit `.github/workflows/*.yml` directly. To support yaml anchors/aliasing, we can edit `.github/*.yml` and feed it as source to `.github/gwp.py`.
+
+- Install [yq](https://mikefarah.gitbook.io/yq/#install) if not already installed and put it on the PATH
+- Edit the desired `.github/*.yml`
+- cd into `.github` and run `python gwp.py`. This will glob for all `*.yml` in the cwd, expand out the aliases, and dump it to `.github/workflows`
+
+
 # Notes
 
 Vale started in January 2013, and back then we called it "VLang", though there's now another language with that name. We then called it GelLLVM, in honor of Gel, the first language to offer constraint references. Since then, we've settled on the name "Vale". Note that Vale and Vala are two different languages.
+

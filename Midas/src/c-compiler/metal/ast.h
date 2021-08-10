@@ -269,7 +269,14 @@ public:
 
   Package* getPackage(PackageCoordinate* packageCoord) {
     auto iter = packages.find(packageCoord);
-    assert(iter != packages.end());
+    if (iter == packages.end()) {
+      std::cerr << "Couldn't find package: " << packageCoord->projectName;
+      for (auto i : packageCoord->packageSteps) {
+        std::cerr << "." << i;
+      }
+      std::cerr << ", aborting." << std::endl;
+      exit(1);
+    }
     return iter->second;
   }
 

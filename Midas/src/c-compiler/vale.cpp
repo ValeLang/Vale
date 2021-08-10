@@ -52,6 +52,20 @@
 
 // for convenience
 using json = nlohmann::json;
+template <typename Out>
+void split(const std::string &s, char delim, Out result) {
+  std::istringstream iss(s);
+  std::string item;
+  while (std::getline(iss, item, delim)) {
+    *result++ = item;
+  }
+}
+
+std::vector<std::string> split(const std::string &s, char delim) {
+  std::vector<std::string> elems;
+  split(s, delim, std::back_inserter(elems));
+  return elems;
+}
 
 std::string genMallocName(int bytes) {
   return std::string("__genMalloc") + std::to_string(bytes) + std::string("B");
@@ -210,7 +224,6 @@ std::string generateFunctionC(
   bool abiUsingRetOutParam = typeNeedsPointerParameter(globalState, prototype->returnType);
 
   std::stringstream s;
-  std::cout << "Generating line for " << prototype->name->name << std::endl;
   switch (lineMode) {
     case CFuncLineMode::EXTERN_INTERMEDIATE_PROTOTYPE:
     case CFuncLineMode::EXPORT_USER_PROTOTYPE: {
@@ -601,7 +614,7 @@ std::string makeModuleDirectory(const GlobalState *globalState, PackageCoordinat
   return moduleExternsDirectory;
 }
 
-void compileValeCode(GlobalState* globalState, const std::string& filename) {
+void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFilepaths) {
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
@@ -642,7 +655,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
       globalState->opt->regionOverride == RegionOverride::RESILIENT_V4) {
     if (!globalState->opt->genHeap) {
-      std::cerr << "Error: using resilient without generational heap, overriding generational heap to true!" << std::endl;
+      std::cerr << "Warning: using resilient without generational heap, overriding generational heap to true!" << std::endl;
       globalState->opt->genHeap = true;
     }
   }
@@ -682,13 +695,6 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   }
 
 
-  std::ifstream instream(filename);
-  std::string str(std::istreambuf_iterator<char>{instream}, {});
-  if (str.size() == 0) {
-    std::cerr << "Nothing found in " << filename << std::endl;
-    exit(1);
-  }
-
 
   AddressNumberer addressNumberer;
   MetalCache metalCache(&addressNumberer);
@@ -714,15 +720,43 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
       assert(false);
   }
 
-  json programJ;
-  try {
-    programJ = json::parse(str.c_str());
+  Program program(
+      std::unordered_map<PackageCoordinate*, Package*, AddressHasher<PackageCoordinate*>, std::equal_to<PackageCoordinate*>>(
+          0,
+          addressNumberer.makeHasher<PackageCoordinate*>(),
+          std::equal_to<PackageCoordinate*>()));
+  for (auto inputFilepath : inputFilepaths) {
+    std::cout << "Reading input file: " << inputFilepath << std::endl;
+    auto stem = std::filesystem::path(inputFilepath).stem();
+    auto package_coord_parts = split(stem, '.');
+    auto project_name = package_coord_parts[0];
+    package_coord_parts.erase(package_coord_parts.begin());
+    auto package_steps = package_coord_parts;
+
+    if (stem == "vale") {
+      project_name = "";
+      package_steps.clear();
+    }
+
+    auto package_coord = metalCache.getPackageCoordinate(project_name, package_steps);
+
+    try {
+      std::ifstream instream(inputFilepath);
+      std::string str(std::istreambuf_iterator<char>{instream}, {});
+      if (str.size() == 0) {
+        std::cerr << "Nothing found in " << inputFilepath << std::endl;
+        exit(1);
+      }
+      auto packageJ = json::parse(str.c_str());
+      auto packageM = readPackage(&metalCache, packageJ);
+
+      program.packages.emplace(package_coord, packageM);
+    }
+    catch (const nlohmann::detail::parse_error &error) {
+      std::cerr << "Error while parsing json: " << error.what() << std::endl;
+      exit(1);
+    }
   }
-  catch (const nlohmann::detail::parse_error& error) {
-    std::cerr << "Error while parsing json: " << error.what() << std::endl;
-    exit(1);
-  }
-  auto program = readProgram(&metalCache, programJ);
 
   assert(globalState->metalCache->emptyTupleStruct != nullptr);
   assert(globalState->metalCache->emptyTupleStructRef != nullptr);
@@ -734,7 +768,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   globalState->stringConstantBuilder = stringConstantBuilder;
 
 
-  globalState->program = program;
+  globalState->program = &program;
 
   globalState->serializeName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__vale_serialize");
   globalState->serializeThunkName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__vale_serialize_thunk");
@@ -832,7 +866,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
         LLVMBuildRet(builder, constI64LE(globalState, 0));
       });
 
-  for (auto packageCoordAndPackage : program->packages) {
+  for (auto packageCoordAndPackage : program.packages) {
     auto[packageCoord, package] = packageCoordAndPackage;
     for (auto p : package->structs) {
       auto name = p.first;
@@ -845,7 +879,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-  for (auto packageCoordAndPackage : program->packages) {
+  for (auto packageCoordAndPackage : program.packages) {
     auto[packageCoord, package] = packageCoordAndPackage;
     for (auto p : package->interfaces) {
       auto name = p.first;
@@ -857,7 +891,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-  for (auto packageCoordAndPackage : program->packages) {
+  for (auto packageCoordAndPackage : program.packages) {
     auto[packageCoord, package] = packageCoordAndPackage;
     for (auto p : package->staticSizedArrays) {
       auto name = p.first;
@@ -869,7 +903,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-  for (auto packageCoordAndPackage : program->packages) {
+  for (auto packageCoordAndPackage : program.packages) {
     auto[packageCoord, package] = packageCoordAndPackage;
     for (auto p : package->runtimeSizedArrays) {
       auto name = p.first;
@@ -881,7 +915,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-  for (auto packageCoordAndPackage : program->packages) {
+  for (auto packageCoordAndPackage : program.packages) {
     auto[packageCoord, package] = packageCoordAndPackage;
     for (auto p : package->structs) {
       auto name = p.first;
@@ -893,7 +927,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-  for (auto[packageCoord, package] : program->packages) {
+  for (auto[packageCoord, package] : program.packages) {
     for (auto p : package->interfaces) {
       auto name = p.first;
       auto interfaceM = p.second;
@@ -904,7 +938,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-  for (auto[packageCoord, package] : program->packages) {
+  for (auto[packageCoord, package] : program.packages) {
     for (auto p : package->staticSizedArrays) {
       auto name = p.first;
       auto arrayM = p.second;
@@ -915,7 +949,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-  for (auto[packageCoord, package] : program->packages) {
+  for (auto[packageCoord, package] : program.packages) {
     for (auto p : package->runtimeSizedArrays) {
       auto name = p.first;
       auto arrayM = p.second;
@@ -931,7 +965,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   //    region's extra functions need to know all the substructs for interfaces so it can number
   //    them, which is used in supporting its interface calling.
   // 2. Everything else is declared here too and it seems consistent
-  for (auto[packageCoord, package] : program->packages) {
+  for (auto[packageCoord, package] : program.packages) {
     for (auto p : package->structs) {
       auto name = p.first;
       auto structM = p.second;
@@ -944,7 +978,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-  for (auto[packageCoord, package] : program->packages) {
+  for (auto[packageCoord, package] : program.packages) {
     for (auto p : package->structs) {
       auto name = p.first;
       auto structM = p.second;
@@ -958,7 +992,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
   // This must be before we start defining extra functions, because some of them might rely
   // on knowing the interface tables' layouts to make interface calls.
-  for (auto[packageCoord, package] : program->packages) {
+  for (auto[packageCoord, package] : program.packages) {
     for (auto p : package->interfaces) {
       auto name = p.first;
       auto interfaceM = p.second;
@@ -969,7 +1003,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-  for (auto[packageCoord, package] : program->packages) {
+  for (auto[packageCoord, package] : program.packages) {
     for (auto p : package->staticSizedArrays) {
       auto name = p.first;
       auto arrayM = p.second;
@@ -980,7 +1014,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-  for (auto[packageCoord, package] : program->packages) {
+  for (auto[packageCoord, package] : program.packages) {
     for (auto p : package->runtimeSizedArrays) {
       auto name = p.first;
       auto arrayM = p.second;
@@ -999,7 +1033,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     region.second->declareExtraFunctions();
   }
 
-  for (auto[packageCoord, package] : program->packages) {
+  for (auto[packageCoord, package] : program.packages) {
     for (auto p : package->structs) {
       auto name = p.first;
       auto structM = p.second;
@@ -1011,7 +1045,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-  for (auto[packageCoord, package] : program->packages) {
+  for (auto[packageCoord, package] : program.packages) {
     for (auto p : package->staticSizedArrays) {
       auto name = p.first;
       auto arrayM = p.second;
@@ -1022,7 +1056,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-  for (auto[packageCoord, package] : program->packages) {
+  for (auto[packageCoord, package] : program.packages) {
     for (auto p : package->runtimeSizedArrays) {
       auto name = p.first;
       auto arrayM = p.second;
@@ -1037,7 +1071,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   // started compiling interfaces.
   globalState->interfacesOpen = false;
 
-  for (auto[packageCoord, package] : program->packages) {
+  for (auto[packageCoord, package] : program.packages) {
     for (auto p : package->interfaces) {
       auto name = p.first;
       auto interfaceM = p.second;
@@ -1052,29 +1086,29 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     region.second->defineExtraFunctions();
   }
 
-  for (auto[packageCoord, package] : program->packages) {
+  for (auto[packageCoord, package] : program.packages) {
     for (auto[externName, prototype] : package->externNameToFunction) {
       declareExternFunction(globalState, package, prototype);
     }
   }
 
-  for (auto[packageCoord, package] : program->packages) {
+  for (auto[packageCoord, package] : program.packages) {
     for (auto[name, function] : package->functions) {
       declareFunction(globalState, function);
     }
   }
 
-  for (auto[packageCoord, package] : program->packages) {
+  for (auto[packageCoord, package] : program.packages) {
     for (auto[exportName, prototype] : package->exportNameToFunction) {
       bool skipExporting = exportName == "main";
       if (!skipExporting) {
-        auto function = program->getFunction(prototype->name);
+        auto function = program.getFunction(prototype->name);
         exportFunction(globalState, package, function);
       }
     }
   }
 
-  for (auto[packageCoord, package] : program->packages) {
+  for (auto[packageCoord, package] : program.packages) {
     for (auto p : package->functions) {
       auto name = p.first;
       auto function = p.second;
@@ -1084,7 +1118,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
   // We translate the edges after the functions are declared because the
   // functions have to exist for the itables to point to them.
-  for (auto[packageCoord, package] : program->packages) {
+  for (auto[packageCoord, package] : program.packages) {
     for (auto p : package->structs) {
       auto name = p.first;
       auto structM = p.second;
@@ -1117,9 +1151,9 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
 
   Prototype* mainM = nullptr;
-  for (auto[packageCoord, package] : program->packages) {
+  for (auto[packageCoord, package] : program.packages) {
     for (auto[exportName, prototype] : package->exportNameToFunction) {
-      auto function = program->getFunction(prototype->name);
+      auto function = program.getFunction(prototype->name);
       bool isExportedMain = exportName == "main";
       if (isExportedMain) {
         mainM = function->prototype;
@@ -1138,8 +1172,8 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   generateExports(globalState, mainM);
 }
 
-void createModule(GlobalState *globalState) {
-  globalState->mod = LLVMModuleCreateWithNameInContext(globalState->opt->srcDirAndNameNoExt.c_str(), globalState->context);
+void createModule(std::vector<std::string>& inputFilepaths, GlobalState *globalState) {
+  globalState->mod = LLVMModuleCreateWithNameInContext("build", globalState->context);
   if (!globalState->opt->release) {
     globalState->dibuilder = LLVMCreateDIBuilder(globalState->mod);
     globalState->difile = LLVMDIBuilderCreateFile(globalState->dibuilder, "main.vale", 9, ".", 1);
@@ -1150,7 +1184,7 @@ void createModule(GlobalState *globalState) {
             13, 0, "", 0, 0, "", 0, LLVMDWARFEmissionFull, 0, 0, 0,
             "isysroothere", strlen("isysroothere"), "sdkhere", strlen("sdkhere"));
   }
-  compileValeCode(globalState, globalState->opt->srcpath);
+  compileValeCode(globalState, inputFilepaths);
   if (!globalState->opt->release)
     LLVMDIBuilderFinalize(globalState->dibuilder);
 }
@@ -1248,15 +1282,15 @@ void generateOutput(
 //}
 
 // Generate IR nodes into LLVM IR using LLVM
-void generateModule(GlobalState *globalState) {
+void generateModule(std::vector<std::string>& inputFilepaths, GlobalState *globalState) {
   char *err;
 
   // Generate IR to LLVM IR
-  createModule(globalState);
+  createModule(inputFilepaths, globalState);
 
   // Serialize the LLVM IR, if requested
   if (globalState->opt->print_llvmir) {
-    auto outputFilePath = fileMakePath(globalState->opt->outputDir.c_str(), globalState->opt->srcNameNoExt.c_str(), "ll");
+    auto outputFilePath = fileMakePath(globalState->opt->outputDir.c_str(), "build", "ll");
     std::cout << "Printing file " << outputFilePath << std::endl;
     if (LLVMPrintModuleToFile(globalState->mod, outputFilePath.c_str(), &err) != 0) {
       std::cerr << "Could not emit pre-ir file: " << err << std::endl;
@@ -1293,7 +1327,7 @@ void generateModule(GlobalState *globalState) {
 
   // Serialize the LLVM IR, if requested
   if (globalState->opt->print_llvmir) {
-    auto outputFilePath = fileMakePath(globalState->opt->outputDir.c_str(), globalState->opt->srcNameNoExt.c_str(), "opt.ll");
+    auto outputFilePath = fileMakePath(globalState->opt->outputDir.c_str(), "build", "opt.ll");
     std::cout << "Printing file " << outputFilePath << std::endl;
     if (LLVMPrintModuleToFile(globalState->mod, outputFilePath.c_str(), &err) != 0) {
       std::cerr << "Could not emit ir file: " << err << std::endl;
@@ -1304,11 +1338,11 @@ void generateModule(GlobalState *globalState) {
   // Transform IR to target's ASM and OBJ
   if (globalState->machine) {
     auto objpath =
-        fileMakePath(globalState->opt->outputDir.c_str(), globalState->opt->srcNameNoExt.c_str(),
+        fileMakePath(globalState->opt->outputDir.c_str(), "build",
             globalState->opt->wasm ? "wasm" : objext);
     auto asmpath =
         fileMakePath(globalState->opt->outputDir.c_str(),
-            globalState->opt->srcNameNoExt.c_str(),
+            "build",
             globalState->opt->wasm ? "wat" : asmext);
     generateOutput(
         objpath.c_str(), globalState->opt->print_asm ? asmpath : "",
@@ -1352,10 +1386,17 @@ int main(int argc, char **argv) {
   }
   if (argc < 2)
     errorExit(ExitCode::BadOpts, "Specify a Vale program to compile.");
-  valeOptions.srcpath = argv[1];
-  valeOptions.srcDir = std::string(fileDirectory(valeOptions.srcpath));
-  valeOptions.srcNameNoExt = std::string(getFileNameNoExt(valeOptions.srcpath));
-  valeOptions.srcDirAndNameNoExt = std::string(valeOptions.srcDir + valeOptions.srcNameNoExt);
+
+  auto inputFilepaths = std::vector<std::string>{};
+  for (int i = 1; i < argc; i++) {
+    std::cout << "Midas found file: " << argv[i] << std::endl;
+    inputFilepaths.emplace_back(argv[i]);
+  }
+
+//  valeOptions.srcpath = argv[1];
+//  valeOptions.srcDir = std::string(fileDirectory(valeOptions.srcpath));
+//  valeOptions.srcNameNoExt = std::string(getFileNameNoExt(valeOptions.srcpath));
+//  valeOptions.srcDirAndNameNoExt = std::string(valeOptions.srcDir + valeOptions.srcNameNoExt);
 
   // We set up generation early because we need target info, e.g.: pointer size
   AddressNumberer addressNumberer;
@@ -1365,7 +1406,7 @@ int main(int argc, char **argv) {
   // Parse source file, do semantic analysis, and generate code
 //    ModuleNode *modnode = NULL;
 //    if (!errors)
-  generateModule(&globalState);
+  generateModule(inputFilepaths, &globalState);
 
   closeGlobalState(&globalState);
 //    errorSummary();

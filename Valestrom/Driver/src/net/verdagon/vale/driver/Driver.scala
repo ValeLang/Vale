@@ -5,7 +5,7 @@ import java.util.InputMismatchException
 import net.verdagon.vale.astronomer.{Astronomer, AstronomerErrorHumanizer, ProgramA}
 import net.verdagon.vale.hammer.{Hammer, Hamuts, VonHammer}
 import net.verdagon.vale.highlighter.{Highlighter, Spanner}
-import net.verdagon.vale.metal.ProgramH
+import net.verdagon.vale.metal.{PackageH, ProgramH}
 import net.verdagon.vale.parser.{CombinatorParsers, FailedParse, FileP, InputException, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier}
 import net.verdagon.vale.scout.{Scout, ScoutErrorHumanizer}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
@@ -36,7 +36,7 @@ object Driver {
   case class Options(
     inputs: List[IValestromInput],
 //    modulePaths: Map[String, String],
-    packagesToBuild: List[PackageCoordinate],
+//    packagesToBuild: List[PackageCoordinate],
     outputDirPath: Option[String],
     benchmark: Boolean,
     outputVPST: Boolean,
@@ -106,17 +106,18 @@ object Driver {
               }
             parseOpts(opts.copy(inputs = opts.inputs :+ input), tail)
           } else {
-            if (value.endsWith(".vale") || value.endsWith(".vpst")) {
-              throw InputException(".vale and .vpst inputs must be prefixed with their module name and a colon.")
-            }
-            val parts =
-              if (value.contains(".")) {
-                value.split("\\.").toList
-              } else {
-                List(value)
-              }
-            val packageCoord = PackageCoordinate(parts.head, parts.tail)
-            parseOpts(opts.copy(packagesToBuild = opts.packagesToBuild :+ packageCoord), tail)
+            throw InputException("Unrecognized input: " + value)
+//            if (value.endsWith(".vale") || value.endsWith(".vpst")) {
+//              throw InputException(".vale and .vpst inputs must be prefixed with their module name and a colon.")
+//            }
+//            val parts =
+//              if (value.contains(".")) {
+//                value.split("\\.").toList
+//              } else {
+//                List(value)
+//              }
+//            val packageCoord = PackageCoordinate(parts.head, parts.tail)
+//            parseOpts(opts.copy(packagesToBuild = opts.packagesToBuild :+ packageCoord), tail)
           }
         }
       }
@@ -144,19 +145,20 @@ object Driver {
           val directory = new java.io.File(directoryPath)
           val filesInDirectory = directory.listFiles()
           if (filesInDirectory == null) {
-            return None
+            List()
+          } else {
+            val inputFiles =
+              filesInDirectory.filter(_.getName.endsWith(".vale")) ++
+                filesInDirectory.filter(_.getName.endsWith(".vpst"))
+            //          println("found files: " + inputFiles)
+            val inputFilePaths = inputFiles.map(_.getPath)
+            inputFilePaths.toList.map(filepath => {
+              val bufferedSource = Source.fromFile(filepath)
+              val code = bufferedSource.getLines.mkString("\n")
+              bufferedSource.close
+              (filepath -> code)
+            })
           }
-          val inputFiles =
-            filesInDirectory.filter(_.getName.endsWith(".vale")) ++
-              filesInDirectory.filter(_.getName.endsWith(".vpst"))
-//          println("found files: " + inputFiles)
-          val inputFilePaths = inputFiles.map(_.getPath)
-          inputFilePaths.toList.map(filepath => {
-            val bufferedSource = Source.fromFile(filepath)
-            val code = bufferedSource.getLines.mkString("\n")
-            bufferedSource.close
-            (filepath -> code)
-          })
         }
         case (DirectFilePathInput(_, path), _) => {
           val file = path
@@ -294,11 +296,13 @@ object Driver {
 
   def build(opts: Options):
   Result[Option[ProgramH], String] = {
+    new java.io.File(opts.outputDirPath.get).mkdir()
+
     val startTime = java.lang.System.currentTimeMillis()
 
     val compilation =
       new FullCompilation(
-        PackageCoordinate.BUILTIN :: opts.packagesToBuild,
+        PackageCoordinate.BUILTIN :: opts.inputs.map(_.packageCoord).distinct,
         Builtins.getCodeMap().or(packageCoord => resolvePackageContents(opts.inputs, packageCoord)),
         FullCompilationOptions(
           if (opts.verbose) {
@@ -376,15 +380,30 @@ object Driver {
         println("Hammer phase duration: " + (finishTime - startHammerTime))
       }
 
-      val outputVastFilepath = opts.outputDirPath.get + "/build.vast"
-      val json = jsonifyProgram(programH)
-      writeFile(outputVastFilepath, json)
-      println("Wrote VAST to file " + outputVastFilepath)
+      programH.packages.flatMap({ case (packageCoord, paackage) =>
+        val outputVastFilepath =
+          opts.outputDirPath.get + "/" +
+          (if (packageCoord.isInternal) {
+            "vale"
+          } else {
+            packageCoord.module + packageCoord.packages.map("." + _).mkString("")
+          }) +
+          ".vast"
+        val json = jsonifyPackage(packageCoord, paackage)
+        writeFile(outputVastFilepath, json)
+        println("Wrote VAST to file " + outputVastFilepath)
+      })
 
       Ok(Some(programH))
     } else {
       Ok(None)
     }
+  }
+
+  def jsonifyPackage(packageCoord: PackageCoordinate, packageH: PackageH): String = {
+    val programV = VonHammer.vonifyPackage(packageCoord, packageH)
+    val json = new VonPrinter(JsonSyntax, 120).print(programV)
+    json
   }
 
   def jsonifyProgram(programH: ProgramH): String = {
@@ -429,7 +448,7 @@ object Driver {
 
   def main(args: Array[String]): Unit = {
     try {
-      val opts = parseOpts(Options(List.empty, List.empty, None, false, true, true, false, true, None, false), args.toList)
+      val opts = parseOpts(Options(List.empty, None, false, true, true, false, true, None, false), args.toList)
       vcheck(opts.mode.nonEmpty, "No mode!", InputException)
       vcheck(opts.inputs.nonEmpty, "No input files!", InputException)
 
@@ -440,7 +459,7 @@ object Driver {
 
           val compilation =
             new FullCompilation(
-              opts.packagesToBuild,
+              opts.inputs.map(_.packageCoord).distinct,
               Builtins.getCodeMap().or(packageCoord => resolvePackageContents(opts.inputs, packageCoord)),
               FullCompilationOptions(
                 if (opts.verbose) {

@@ -148,6 +148,32 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
     }
   }
 
+  output_dir = Path(parsed_flags.get_string_flag("--output_dir", "build"));
+
+  benchmark = parsed_flags.get_bool_flag("--benchmark", false);
+  verbose = parsed_flags.get_bool_flag("--verbose", false);
+  include_builtins = parsed_flags.get_bool_flag("--include_builtins", true);
+  output_vast = parsed_flags.get_bool_flag("--output_vast", true);
+  reuse_vast = parsed_flags.get_bool_flag("--reuse_vast", false);
+  output_vpst = parsed_flags.get_bool_flag("--output_vpst", true);
+
+  maybe_region_override = parsed_flags.get_string_flag("--region_override");
+  maybe_cpu = parsed_flags.get_string_flag("--cpu");
+  executable_name = parsed_flags.get_string_flag("-o", "main");
+  flares = parsed_flags.get_bool_flag("--flares", false);
+  gen_heap = parsed_flags.get_bool_flag("--gen_heap", false);
+  census = parsed_flags.get_bool_flag("--census", false);
+  verify = parsed_flags.get_bool_flag("--verify", false);
+  debug_symbols = parsed_flags.get_nothing_flag("-g");
+  llvm_ir = parsed_flags.get_bool_flag("--llvm_ir", false);
+  print_mem_overhead = parsed_flags.get_bool_flag("--print_mem_overhead", false);
+  elide_checks_for_known_live = parsed_flags.get_bool_flag("--elide_checks_for_known_live", false);
+  override_known_live_true = parsed_flags.get_bool_flag("--override_known_live_true", false);
+
+  if (verbose) {
+    println("Parsing command line inputs...")
+  }
+
   parsed_flags.unrecognized_inputs!.remove(0);
 
   project_directory_declarations = List<ProjectDirectoryDeclaration>();
@@ -180,28 +206,9 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
     }
   }
 
-  output_dir = Path(parsed_flags.get_string_flag("--output_dir", "build"));
-
-  benchmark = parsed_flags.get_bool_flag("--benchmark", false);
-  verbose = parsed_flags.get_bool_flag("--verbose", false);
-  include_builtins = parsed_flags.get_bool_flag("--include_builtins", true);
-  output_vast = parsed_flags.get_bool_flag("--output_vast", true);
-  reuse_vast = parsed_flags.get_bool_flag("--reuse_vast", false);
-  output_vpst = parsed_flags.get_bool_flag("--output_vpst", true);
-
-  maybe_region_override = parsed_flags.get_string_flag("--region_override");
-  maybe_cpu = parsed_flags.get_string_flag("--cpu");
-  executable_name = parsed_flags.get_string_flag("-o", "main");
-  flares = parsed_flags.get_bool_flag("--flares", false);
-  gen_heap = parsed_flags.get_bool_flag("--gen_heap", false);
-  census = parsed_flags.get_bool_flag("--census", false);
-  verify = parsed_flags.get_bool_flag("--verify", false);
-  debug_symbols = parsed_flags.get_nothing_flag("-g");
-  llvm_ir = parsed_flags.get_bool_flag("--llvm_ir", false);
-  print_mem_overhead = parsed_flags.get_bool_flag("--print_mem_overhead", false);
-  elide_checks_for_known_live = parsed_flags.get_bool_flag("--elide_checks_for_known_live", false);
-  override_known_live_true = parsed_flags.get_bool_flag("--override_known_live_true", false);
-
+  if (verbose) {
+    println("Invoking Valestrom...")
+  }
 
   if (reuse_vast) {
     if (list_vasts(&output_dir).len() == 0) {
@@ -252,6 +259,10 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
 //                print(f"Both a .vast and non-vast files were specified! If a .vast is specified, it must be the only input.")
 //                sys.exit(1)
 
+  if (verbose) {
+    println("Invoking Midas...")
+  }
+
   vast_files = list_vasts(&output_dir);
 
   midas_process =
@@ -274,6 +285,10 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
   midas_return_code = (midas_process).print_and_join();
   if (midas_return_code != 0) {
     panic("Midas returned error code {midas_return_code}, aborting.");
+  }
+
+  if (verbose) {
+    println("Collecting cc inputs...")
   }
 
   clang_inputs = List<Path>();
@@ -355,6 +370,10 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
       }
     });
   });
+
+  if (verbose) {
+    println("Invoking cc...")
+  }
 
   clang_process =
       invoke_clang(

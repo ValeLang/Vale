@@ -728,7 +728,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
   for (auto inputFilepath : inputFilepaths) {
     std::cout << "Reading input file: " << inputFilepath << std::endl;
     auto stem = std::filesystem::path(inputFilepath).stem();
-    auto package_coord_parts = split(stem, '.');
+    auto package_coord_parts = split(stem.string(), '.');
     auto project_name = package_coord_parts[0];
     package_coord_parts.erase(package_coord_parts.begin());
     auto package_steps = package_coord_parts;

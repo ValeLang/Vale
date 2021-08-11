@@ -11,7 +11,7 @@ fn invoke_valestrom(
   output_vpst bool,
   output_dir &Path)
 Subprocess {
-  program = "java";
+  program = if (IsWindows()) { "java.exe" } else { "java" };
 
   command_line_args = List<str>();
   command_line_args!.add("-cp");

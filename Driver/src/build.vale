@@ -19,12 +19,14 @@ struct ProjectNonValeInputDeclaration {
 
 fn list_vasts(output_dir &Path) List<Path> {
   vast_files = List<Path>();
+  println("in list_vasts");
   output_dir.iterdir().each((child){
     if (child.name().endsWith(".vast")) {
       //println("found vast: {child.str()}");
       vast_files!.add(child.clone());
     }
   });
+  println("done list_vasts");
   ret vast_files;
 }
 
@@ -134,7 +136,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
   maybe_midas_dir_override = parsed_flags.get_string_flag("--midas_dir_override");
   if (not maybe_midas_dir_override.isEmpty()) {
     set midas_dir = Path(maybe_midas_dir_override.get());
-    if (not valestrom_dir.is_dir()) {
+    if (not midas_dir.is_dir()) {
       panic("Error: --midas_dir_override's value ({midas_dir.str()}) is not a directory.");
     }
   }
@@ -207,7 +209,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
   }
 
   if (verbose) {
-    println("Invoking Valestrom...")
+    println("Invoking Valestrom...");
   }
 
   if (reuse_vast) {
@@ -215,6 +217,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
       panic("Error: --reuse_vast specified, but no .vast files found in " + output_dir.str() + ".");
     }
   } else {
+    println("calling invoke_valestrom");
     valestrom_process =
         invoke_valestrom(
             &valestrom_dir,

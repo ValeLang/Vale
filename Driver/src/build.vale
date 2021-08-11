@@ -210,6 +210,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
 
   if (verbose) {
     println("Invoking Valestrom...");
+    println("zorkle");
   }
 
   if (reuse_vast) {

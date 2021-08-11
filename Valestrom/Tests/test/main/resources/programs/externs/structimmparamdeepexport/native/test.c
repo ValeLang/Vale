@@ -4,11 +4,11 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "tmod/Bogglewoggle.h"
-#include "tmod/Flamscrankle.h"
+#include "vtest/Bogglewoggle.h"
+#include "vtest/Flamscrankle.h"
 
-extern ValeInt tmod_expFunc(tmod_Flamscrankle* flam);
+extern ValeInt vtest_expFunc(vtest_Flamscrankle* flam);
 
-ValeInt tmod_extFunc(tmod_Flamscrankle* flam) {
-  return tmod_expFunc(flam);
+ValeInt vtest_extFunc(vtest_Flamscrankle* flam) {
+  return vtest_expFunc(flam);
 }

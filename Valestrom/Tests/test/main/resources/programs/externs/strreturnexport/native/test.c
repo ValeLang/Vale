@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "tmod/getAStr.h"
+#include "vtest/getAStr.h"
 
-ValeStr* tmod_runExtCommand() {
-  ValeStr* str = tmod_getAStr();
+ValeStr* vtest_runExtCommand() {
+  ValeStr* str = vtest_getAStr();
 
   assert(str->length == 6);
   int diff = strncmp(str->chars, "hello!", 6);

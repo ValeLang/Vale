@@ -1,8 +1,8 @@
 #include <stdint.h>
 
-#include "tmod/MyBox.h"
-#include "tmod/changeInBox.h"
+#include "vtest/MyBox.h"
+#include "vtest/changeInBox.h"
 
-void tmod_runExtCommand(tmod_MyBoxRef b) {
-  tmod_changeInBox(b);
+void vtest_runExtCommand(vtest_MyBoxRef b) {
+  vtest_changeInBox(b);
 }

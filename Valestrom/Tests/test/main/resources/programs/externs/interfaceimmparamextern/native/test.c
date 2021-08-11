@@ -2,21 +2,21 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "tmod/Spaceship.h"
-#include "tmod/Seaship.h"
-#include "tmod/IShip.h"
-#include "tmod/cGetShipFuel.h"
+#include "vtest/Spaceship.h"
+#include "vtest/Seaship.h"
+#include "vtest/IShip.h"
+#include "vtest/cGetShipFuel.h"
 
-ValeInt tmod_cGetShipFuel(tmod_IShip s) {
+ValeInt vtest_cGetShipFuel(vtest_IShip s) {
   ValeInt result = 0;
   switch (s.type) {
-    case tmod_IShip_Type_Seaship: {
-      tmod_Seaship* ship = (tmod_Seaship*)s.obj;
+    case vtest_IShip_Type_Seaship: {
+      vtest_Seaship* ship = (vtest_Seaship*)s.obj;
       result = ship->leftFuel + ship->rightFuel;
       break;
     }
-    case tmod_IShip_Type_Spaceship: {
-      tmod_Spaceship* ship = (tmod_Spaceship*)s.obj;
+    case vtest_IShip_Type_Spaceship: {
+      vtest_Spaceship* ship = (vtest_Spaceship*)s.obj;
       result = ship->fuel;
       break;
     }

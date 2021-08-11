@@ -1,10 +1,10 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "tmod/ImmIntArray.h"
-#include "tmod/valeMakeSSA.h"
-#include "tmod/cMakeSSA.h"
+#include "vtest/ImmIntArray.h"
+#include "vtest/valeMakeSSA.h"
+#include "vtest/cMakeSSA.h"
 
-tmod_ImmIntArray* tmod_cMakeSSA() {
-  return tmod_valeMakeSSA();
+vtest_ImmIntArray* vtest_cMakeSSA() {
+  return vtest_valeMakeSSA();
 }

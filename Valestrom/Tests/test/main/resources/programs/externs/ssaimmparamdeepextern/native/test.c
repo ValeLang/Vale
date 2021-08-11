@@ -2,13 +2,13 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
-#include "tmod/Spaceship.h"
-#include "tmod/ImmSpaceshipArray.h"
-#include "tmod/cSumFuel.h"
+#include "vtest/Spaceship.h"
+#include "vtest/ImmSpaceshipArray.h"
+#include "vtest/cSumFuel.h"
 
-extern ValeInt tmod_cSumFuel(tmod_ImmSpaceshipArray* arr) {
+extern ValeInt vtest_cSumFuel(vtest_ImmSpaceshipArray* arr) {
   ValeInt total = 0;
-  for (int i = 0; i < tmod_ImmSpaceshipArray_SIZE; i++) {
+  for (int i = 0; i < vtest_ImmSpaceshipArray_SIZE; i++) {
     total += arr->elements[i]->fuel;
   }
   return total;

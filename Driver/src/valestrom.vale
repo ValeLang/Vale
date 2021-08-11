@@ -45,5 +45,5 @@ Subprocess {
     command_line_args!.add(declaration.project_name + ":" + declaration.path.resolve().str());
   });
 
-  ret Subprocess(program, &command_line_args);
+  ret (Subprocess(program, &command_line_args)).expect();
 }

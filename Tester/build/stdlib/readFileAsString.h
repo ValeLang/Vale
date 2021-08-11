@@ -1,0 +1,6 @@
+#ifndef VALE_EXPORTS_readFileAsString_H_
+#define VALE_EXPORTS_readFileAsString_H_
+#include "ValeBuiltins.h"
+extern ValeStr* stdlib_readFileAsString(ValeStr* param0);
+extern ValeStr* vale_abi_stdlib_readFileAsString(ValeStr* param0);
+#endif

@@ -1,0 +1,399 @@
+import stdlib.command.*;
+import stdlib.flagger.*;
+
+
+//interface Test {
+//  fn name(virtual self &Test) str;
+//  fn await(virtual self &Test) Result<[], str>;
+//}
+
+fn matches_filters(name str, filters &List<str>) bool {
+  i = 0;
+  while (i < filters.len()) {
+    if (not name.has(filters.get(i))) {
+      ret false;
+    }
+    set i = i + 1;
+  }
+  ret true;
+}
+
+fn main() export {
+  all_args_list = List<str>();
+  i! = 0;
+  while (i < numMainArgs()) {
+    all_args_list!.add(getMainArg(i));
+    mut i = i + 1;
+  }
+  all_args = all_args_list.toImmArray();
+
+
+  driver_path = Path(all_args_list.get(0)).resolve();
+  cwd = driver_path.directory();
+  compiler_dir = cwd.clone();
+
+  flags =
+      [][
+        Flag(
+          "--concurrent",
+          FLAG_INT(),
+          "How many tests to run in parallel.",
+          "10",
+          "How many tests to run in parallel."),
+        Flag(
+          "--midas_dir_override",
+          FLAG_STR(),
+          "Directory containing Midas.",
+          "../Midas/build",
+          "Alternate path for Midas, the codegen phase binary."),
+        Flag(
+          "--midas_tests_dir",
+          FLAG_STR(),
+          "Directory containing Midas tests.",
+          "../Midas/build",
+          "Directory containing Midas tests."),
+        Flag(
+          "--valestrom_dir_override",
+          FLAG_STR(),
+          "Directory containing Valestrom.",
+          "../Valestrom",
+          "Alternate path for Valestrom, the frontend phase binary."),
+        Flag(
+          "--builtins_dir_override",
+          FLAG_STR(),
+          "Directory containing Midas builtins.",
+          "../Midas/src/builtins",
+          "Alternate path for the temporary C builtin functions."),
+        Flag(
+          "--valec_dir_override",
+          FLAG_STR(),
+          "Directory containing valec.",
+          "../Midas/src/builtins",
+          "Alternate path for valec."),
+        Flag(
+          "--name_include",
+          FLAG_STR(),
+          "Filters tests by name.",
+          "assist",
+          "Filters tests by name."),
+        Flag(
+          "--region_include",
+          FLAG_STR(),
+          "Runs all the matching tests with the given region.",
+          "assist",
+          "Runs all the matching tests with the given region.")];
+  parsed_flags = flags.parse_all_flags(all_args);
+
+
+  common_build_args = List<str>();
+  common_build_args!.add("build");
+
+  max_concurrent_tests = parsed_flags.get_int_flag("--concurrent", 10);
+
+  valestrom_dir = compiler_dir.clone();
+  maybe_valestrom_dir_override = parsed_flags.get_string_flag("--valestrom_dir_override");
+  if (not maybe_valestrom_dir_override.isEmpty()) {
+    set valestrom_dir = maybe_valestrom_dir_override.get().Path();
+    common_build_args!.add("--valestrom_dir_override");
+    common_build_args!.add(valestrom_dir.str());
+  }
+
+  midas_dir = compiler_dir.clone();
+  maybe_midas_dir_override = parsed_flags.get_string_flag("--midas_dir_override");
+  if (not maybe_midas_dir_override.isEmpty()) {
+    set midas_dir = maybe_midas_dir_override.get().Path();
+    common_build_args!.add("--midas_dir_override");
+    common_build_args!.add(midas_dir.str());
+  }
+
+
+  maybe_builtins_dir_override = parsed_flags.get_string_flag("--builtins_dir_override");
+  if (not maybe_builtins_dir_override.isEmpty()) {
+    common_build_args!.add("--builtins_dir_override");
+    common_build_args!.add(maybe_builtins_dir_override.get());
+  }
+
+
+  valec_dir = compiler_dir.clone();
+  maybe_valec_dir_override = parsed_flags.get_string_flag("--valec_dir_override");
+  if (not maybe_valec_dir_override.isEmpty()) {
+    set valec_dir = maybe_valec_dir_override.get().Path();
+  }
+
+  midas_tests_dir = Path(parsed_flags.expect_string_flag(&flags, "--midas_tests_dir"));
+
+
+  build_program = valec_dir./("valec");
+
+  include_regions = List<str>();
+  test_filters = List<str>();
+
+
+  input_i = 1;
+  while (input_i < parsed_flags.unrecognized_inputs.len()) {
+    unrecognized_input = parsed_flags.unrecognized_inputs.get(input_i);
+    if (unrecognized_input.startsWith("@")) {
+      include_regions!.add(unrecognized_input.slice(1).str());
+    } else {
+      test_filters!.add(unrecognized_input);
+    }
+    set input_i = input_i + 1;
+  }
+
+  samples_path = valestrom_dir./("Tests/test/main/resources").resolve();
+
+  if (include_regions.len() == 0) {
+    include_regions!.add("assist");
+    include_regions!.add("naive-rc");
+    include_regions!.add("resilient-v3");
+    include_regions!.add("resilient-v4");
+    include_regions!.add("unsafe-fast");
+  }
+
+  //open_processes = List<[str, Subprocess]>
+
+  test_instances = List<TestInstance>();
+
+  if (include_regions.exists({ _ == "assist" })) {
+    region = "assist";
+    StartTest(7, "addret", samples_path./("programs/addret.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "add64ret", samples_path./("programs/add64ret.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "floatarithmetic", samples_path./("programs/floatarithmetic.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "floateq", samples_path./("programs/floateq.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "concatstrfloat", samples_path./("programs/concatstrfloat.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(11, "strlenextern", samples_path./("programs/externs/strlenextern"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "voidreturnexport", samples_path./("programs/externs/voidreturnexport"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "structimmparamextern", samples_path./("programs/externs/structimmparamextern"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "structimmparamexport", samples_path./("programs/externs/structimmparamexport"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "structimmparamdeepextern", samples_path./("programs/externs/structimmparamdeepextern"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "structimmparamdeepexport", samples_path./("programs/externs/structimmparamdeepexport"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "interfaceimmparamextern", samples_path./("programs/externs/interfaceimmparamextern"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "interfaceimmparamexport", samples_path./("programs/externs/interfaceimmparamexport"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "interfaceimmparamdeepextern", samples_path./("programs/externs/interfaceimmparamdeepextern"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "interfaceimmparamdeepexport", samples_path./("programs/externs/interfaceimmparamdeepexport"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "rsaimmreturnextern", samples_path./("programs/externs/rsaimmreturnextern"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "rsaimmreturnexport", samples_path./("programs/externs/rsaimmreturnexport"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(10, "rsaimmparamextern", samples_path./("programs/externs/rsaimmparamextern"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(10, "rsaimmparamexport", samples_path./("programs/externs/rsaimmparamexport"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(20, "rsaimmparamdeepextern", samples_path./("programs/externs/rsaimmparamdeepextern"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "rsaimmparamdeepexport", samples_path./("programs/externs/rsaimmparamdeepexport"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "ssaimmparamextern", samples_path./("programs/externs/ssaimmparamextern"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "ssaimmparamexport", samples_path./("programs/externs/ssaimmparamexport"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "ssaimmreturnextern", samples_path./("programs/externs/ssaimmreturnextern"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "ssaimmreturnexport", samples_path./("programs/externs/ssaimmreturnexport"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "ssaimmparamdeepextern", samples_path./("programs/externs/ssaimmparamdeepextern"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "ssaimmparamdeepexport", samples_path./("programs/externs/ssaimmparamdeepexport"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(6, "strreturnexport", samples_path./("programs/externs/strreturnexport"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "smallstr", samples_path./("programs/strings/smallstr.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "immtupleaccess", samples_path./("programs/tuples/immtupleaccess.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "ssaimmfromcallable", samples_path./("programs/arrays/ssaimmfromcallable.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "ssaimmfromvalues", samples_path./("programs/arrays/ssaimmfromvalues.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+  }
+
+  if (include_regions.exists({ _ == "resilient-v3" })) {
+    region = "resilient-v3";
+    StartTest(116, "kldc", samples_path./("programs/structs/deadmutstruct.vale"), &List([]["--override-known-live-true"]), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+  }
+
+  if (include_regions.exists({ _ == "resilient-v4" })) {
+    region = "resilient-v4";
+    StartTest(0, "tether", midas_tests_dir./("tether.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(11, "tethercrash", midas_tests_dir./("tethercrash.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+  }
+
+  include_regions.each((region){
+    StartTest(42, "mutswaplocals", samples_path./("programs/mutswaplocals.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(5, "structimm", samples_path./("programs/structs/structimm.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(5, "memberrefcount", samples_path./("programs/structs/memberrefcount.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "bigstructimm", samples_path./("programs/structs/bigstructimm.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(8, "structmut", samples_path./("programs/structs/structmut.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "lambda", samples_path./("programs/lambdas/lambda.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "if", samples_path./("programs/if/if.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "upcastif", samples_path./("programs/if/upcastif.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "ifnevers", samples_path./("programs/if/ifnevers.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "mutlocal", samples_path./("programs/mutlocal.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "while", samples_path./("programs/while/while.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(8, "constraintRef", samples_path./("programs/constraintRef.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "ssamutfromcallable", samples_path./("programs/arrays/ssamutfromcallable.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "ssamutfromvalues", samples_path./("programs/arrays/ssamutfromvalues.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "interfaceimm", samples_path./("programs/virtuals/interfaceimm.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "interfacemut", samples_path./("programs/virtuals/interfacemut.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "structmutstore", samples_path./("programs/structs/structmutstore.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "structmutstoreinner", samples_path./("programs/structs/structmutstoreinner.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(3, "rsaimm", samples_path./("programs/arrays/rsaimm.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(3, "rsamut", samples_path./("programs/arrays/rsamut.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "rsamutdestroyintocallable", samples_path./("programs/arrays/rsamutdestroyintocallable.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "ssamutdestroyintocallable", samples_path./("programs/arrays/ssamutdestroyintocallable.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(5, "rsamutlen", samples_path./("programs/arrays/rsamutlen.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "stradd", samples_path./("programs/strings/stradd.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "strneq", samples_path./("programs/strings/strneq.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "lambdamut", samples_path./("programs/lambdas/lambdamut.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "strprint", samples_path./("programs/strings/strprint.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(4, "inttostr", samples_path./("programs/strings/inttostr.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "nestedif", samples_path./("programs/if/nestedif.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "unstackifyret", samples_path./("programs/unstackifyret.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "swaprsamutdestroy", samples_path./("programs/arrays/swaprsamutdestroy.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "downcastConstraintSuccessful", samples_path./("programs/downcast/downcastConstraintSuccessful.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "downcastConstraintFailed", samples_path./("programs/downcast/downcastConstraintFailed.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "downcastOwningSuccessful", samples_path./("programs/downcast/downcastOwningSuccessful.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "downcastOwningFailed", samples_path./("programs/downcast/downcastOwningFailed.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "unreachablemoot", samples_path./("programs/unreachablemoot.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(1, "panic", samples_path./("programs/panic.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "panicnot", samples_path./("programs/panicnot.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "nestedblocks", samples_path./("programs/nestedblocks.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "weakDropThenLockStruct", samples_path./("programs/weaks/dropThenLockStruct.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(7, "weakLockWhileLiveStruct", samples_path./("programs/weaks/lockWhileLiveStruct.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(7, "weakFromLocalCRefStruct", samples_path./("programs/weaks/weakFromLocalCRefStruct.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(7, "weakFromCRefStruct", samples_path./("programs/weaks/weakFromCRefStruct.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(7, "loadFromWeakable", samples_path./("programs/weaks/loadFromWeakable.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "weakDropThenLockInterface", samples_path./("programs/weaks/dropThenLockInterface.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(7, "weakLockWhileLiveInterface", samples_path./("programs/weaks/lockWhileLiveInterface.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(7, "weakFromLocalCRefInterface", samples_path./("programs/weaks/weakFromLocalCRefInterface.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(7, "weakFromCRefInterface", samples_path./("programs/weaks/weakFromCRefInterface.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(42, "weakSelfMethodCallWhileLive", samples_path./("programs/weaks/callWeakSelfMethodWhileLive.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(0, "weakSelfMethodCallAfterDrop", samples_path./("programs/weaks/callWeakSelfMethodAfterDrop.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+
+    if (region != "naive-rc") {
+      StartTest(42, "interfacemutreturnexport", samples_path./("programs/externs/interfacemutreturnexport"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+      StartTest(42, "interfacemutparamexport", samples_path./("programs/externs/interfacemutparamexport"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+      StartTest(42, "structmutreturnexport", samples_path./("programs/externs/structmutreturnexport"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+      StartTest(42, "structmutparamexport", samples_path./("programs/externs/structmutparamexport"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+      StartTest(10, "rsamutparamexport", samples_path./("programs/externs/rsamutparamexport"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+      StartTest(42, "rsamutreturnexport", samples_path./("programs/externs/rsamutreturnexport"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+      StartTest(10, "ssamutparamexport", samples_path./("programs/externs/ssamutparamexport"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+      StartTest(42, "ssamutreturnexport", samples_path./("programs/externs/ssamutreturnexport"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    }
+  });
+
+  if (include_regions.exists({ _ == "resilient-v3" }) or include_regions.exists({ _ == "resilient-v4" })) {
+    println("Starting twinpages...");
+    cwd./("testbuild").makeDirectory();
+    test_build_dir = cwd./("testbuild/twinpages");
+    test_build_dir.makeDirectory();
+    process =
+        (Subprocess(
+            "clang",
+            &List([][
+                midas_tests_dir./("twinpages/test.c").str(),
+                "-o",
+                test_build_dir./("main").str()
+            ]))).expect();
+    test_instances!.add(
+        TestInstance("twinpages", "resilient-v3", 0, test_build_dir, process, List([]["noattemptbadwrite"])));
+
+    //def test_twinpages_noattemptbadwrite(self) -> None:
+    //    if platform.system() == 'Windows':
+    //        proc = procrun(["cl.exe", "test/twinpages/test.c", "-o", "test/test_build/testtwinpages.exe"])
+    //        proc = procrun(["test/test_build/testtwinpages.exe", "noattemptbadwrite"])
+    //        self.assertEqual(proc.returncode, 0, f"Twin pages test failed!")
+    //    else:
+    //        proc = procrun(["clang", "test/twinpages/test.c", "-o", "test/test_build/testtwinpages"])
+    //        proc = procrun(["test/test_build/testtwinpages", "noattemptbadwrite"])
+    //        self.assertEqual(proc.returncode, 0, f"Twin pages test failed!")
+
+  }
+
+  FinishTests(0, &!test_instances);
+
+  println("done!");
+}
+
+fn FinishTests(until_this_many_left int, test_instances &!List<TestInstance>) {
+  while (test_instances.len() > until_this_many_left) {
+    build_instance = test_instances!.remove(0);
+    (test_name, region, expected_return_code, test_build_dir, build_process, run_args) = build_instance;
+
+    build_result = (build_process).capture_and_join();
+    if (build_result.return_code != 0) {
+      println("Error {build_result.return_code} building test {test_name} (region {region}).");
+      if (build_result.stdout.len() > 0) {
+        println("stdout:");
+        println(build_result.stdout);
+      }
+      if (build_result.stderr.len() > 0) {
+        println("stderr:");
+        println(build_result.stderr);
+      }
+    } else {
+      run_program = test_build_dir./("main").str();
+
+      run_process = (Subprocess(run_program, &run_args)).expect();
+      run_result = (run_process).capture_and_join();
+      if (run_result.return_code != expected_return_code) {
+        println("Invalid result for test {test_name} (region {region}). Expected {expected_return_code} but got {run_result.return_code}.");
+        if (run_result.stdout.len() > 0) {
+          println("stdout:");
+          println(run_result.stdout);
+        }
+        if (run_result.stderr.len() > 0) {
+          println("stderr:");
+          println(run_result.stderr);
+        }
+      } else {
+        println("Test {test_name} (region {region}) succeeded!")
+      }
+    }
+  }
+}
+
+struct TestInstance {
+  test_name str;
+  region str;
+  expected_return_code int;
+  test_build_dir Path;
+  process Subprocess;
+  run_args List<str>;
+}
+
+fn StartBuild(
+    build_program str,
+    common_build_args &List<str>,
+    test_name str,
+    vale_code_path Path,
+    extra_build_flags &List<str>,
+    test_build_dir &Path,
+    region str)
+Subprocess {
+  println("Starting {test_name}, region {region}...");
+
+  build_args = List<str>();
+  common_build_args.each((arg){ build_args!.add(arg); });
+  build_args!.add("vtest=" + vale_code_path.str());
+  build_args!.add("--output_dir");
+  build_args!.add(test_build_dir.str());
+  build_args!.add("--region_override");
+  build_args!.add(region);
+
+  extra_build_flags.each((flag){
+    build_args!.add(flag);
+  });
+
+  ret (Subprocess(build_program, &build_args)).expect();
+}
+
+fn StartTest(
+    expected_return_code int,
+    test_name str,
+    vale_input Path,
+    extra_build_flags &List<str>,
+    region str,
+    cwd &Path,
+    build_program str,
+    common_build_args &List<str>,
+    test_filters &List<str>,
+    test_instances &!List<TestInstance>,
+    max_concurrent_tests int) {
+  FinishTests(max_concurrent_tests - 1, test_instances);
+
+  if (matches_filters(test_name, &test_filters)) {
+    test_build_dir = cwd./("testbuild/{test_name}_{region}");
+    build_process =
+        StartBuild(
+            build_program, &common_build_args, test_name, vale_input, &extra_build_flags, &test_build_dir, region);
+    test_instances!.add(
+        TestInstance(
+            test_name, region, expected_return_code, test_build_dir, build_process, List<str>()));
+  } else {
+    drop(vale_input);
+  }
+}

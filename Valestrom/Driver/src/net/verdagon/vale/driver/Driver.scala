@@ -296,7 +296,7 @@ object Driver {
 
   def build(opts: Options):
   Result[Option[ProgramH], String] = {
-    new java.io.File(opts.outputDirPath.get).mkdir()
+    new java.io.File(opts.outputDirPath.get).mkdirs()
 
     val startTime = java.lang.System.currentTimeMillis()
 
@@ -391,7 +391,7 @@ object Driver {
           ".vast"
         val json = jsonifyPackage(packageCoord, paackage)
         writeFile(outputVastFilepath, json)
-        println("Wrote VAST to file " + outputVastFilepath)
+//        println("Wrote VAST to file " + outputVastFilepath)
       })
 
       Ok(Some(programH))

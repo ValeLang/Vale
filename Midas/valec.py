@@ -51,7 +51,7 @@ class ValeCompiler:
                 str(self.valestrom_path / "Valestrom.jar"),
                 "net.verdagon.vale.driver.Driver",
                 command
-            ] + namespaces_to_build + valestrom_options + list((x[0] + ":" + str(x[1])) for x in valestrom_inputs)
+            ] + valestrom_options + list((x[0] + ":" + str(x[1])) for x in valestrom_inputs)
         )
 
     def midas(self,

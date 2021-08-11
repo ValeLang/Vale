@@ -1,5 +1,6 @@
 import stdlib.command.*;
 import stdlib.flagger.*;
+import stdlib.path.*;
 
 
 fn main() export {

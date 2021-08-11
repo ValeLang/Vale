@@ -1,3 +1,6 @@
+import stdlib.command.*;
+import stdlib.flagger.*;
+import stdlib.path.*;
 
 struct ProjectDirectoryDeclaration {
   project_name str;
@@ -18,7 +21,7 @@ fn list_vasts(output_dir &Path) List<Path> {
   vast_files = List<Path>();
   output_dir.iterdir().each((child){
     if (child.name().endsWith(".vast")) {
-      println("found vast: {child.str()}");
+      //println("found vast: {child.str()}");
       vast_files!.add(child.clone());
     }
   });
@@ -292,37 +295,62 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
     }
   });
 
+  project_names = List<str>();
+
   vast_files.each((vast_file){
+    println("figuring out vast file: " + vast_file.name());
     package_coord_str = vast_file.name().slice(0, vast_file.name().len() - ".vast".len());
+    println("package coord str: " + package_coord_str);
     package_coord_parts = package_coord_str.split(".");
     project_name = package_coord_parts.get(0);
     package_coord_parts!.remove(0);
     package_steps = package_coord_parts;
+    println("num package steps: " + package_steps.len());
+
+    if (not project_names.exists({ _ == project_name })) {
+      println("Found new project name: " + project_name);
+      project_names!.add(project_name.str());
+    }
 
     project_directory_declarations.each((project_directory_declaration){
       if (project_directory_declaration.project_name == project_name) {
-        possible_native_dir = project_directory_declaration.path / "native";
+        package_native_dir = project_directory_declaration.path.clone();
+        package_steps.each((package_step){
+          set package_native_dir = package_native_dir./(package_step.str());
+        });
+        possible_native_dir = package_native_dir./("native");
+
+        println("Looking for native dir: " + possible_native_dir.str());
         if (possible_native_dir.exists()) {
+          println("It exists!");
           possible_native_dir.iterdir().each((native_dir_child){
             if (native_dir_child.name().endsWith(".c")) {
-              clang_inputs!.add(native_dir_child.clone());
-            }
-          });
-        }
-
-        possible_generated_dir = output_dir./(project_name.str());
-        if (possible_generated_dir.exists()) {
-          possible_generated_dir.iterdir().each((native_dir_child){
-            if (native_dir_child.name().endsWith(".c")) {
+              println("Adding native file: " + native_dir_child.str());
               clang_inputs!.add(native_dir_child.clone());
             }
           });
         }
       }
     });
+  });
+
+  project_names.each((project_name){
+    println("Processing project name: " + project_name);
+
+    possible_generated_dir = output_dir./(project_name);
+    if (possible_generated_dir.exists()) {
+      println("Generated dir exists!");
+      possible_generated_dir.iterdir().each((native_dir_child){
+        if (native_dir_child.name().endsWith(".c")) {
+          println("Adding c file: " + native_dir_child.str());
+          clang_inputs!.add(native_dir_child.clone());
+        }
+      });
+    }
 
     project_non_vale_input_declarations.each((project_non_vale_input_declaration){
       if (project_non_vale_input_declaration.project_name == project_name) {
+        println("Adding non vale input: " + project_non_vale_input_declaration.path.str());
         clang_inputs!.add(project_non_vale_input_declaration.path.clone());
       }
     });

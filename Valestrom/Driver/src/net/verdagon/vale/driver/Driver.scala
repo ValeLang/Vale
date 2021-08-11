@@ -81,9 +81,9 @@ object Driver {
         if (opts.mode.isEmpty) {
           parseOpts(opts.copy(mode = Some(value)), tail)
         } else {
-          if (value.contains(":")) {
-            val packageCoordAndPath = value.split(":")
-            vcheck(packageCoordAndPath.size == 2, "Arguments can only have 1 colon. Saw: " + value, InputException)
+          if (value.contains("=")) {
+            val packageCoordAndPath = value.split("=")
+            vcheck(packageCoordAndPath.size == 2, "Arguments can only have 1 equals. Saw: " + value, InputException)
             vcheck(packageCoordAndPath(0) != "", "Must have a module name before a colon. Saw: " + value, InputException)
             vcheck(packageCoordAndPath(1) != "", "Must have a file path after a colon. Saw: " + value, InputException)
             val Array(packageCoordStr, path) = packageCoordAndPath
@@ -297,6 +297,8 @@ object Driver {
   def build(opts: Options):
   Result[Option[ProgramH], String] = {
     new java.io.File(opts.outputDirPath.get).mkdirs()
+    new java.io.File(opts.outputDirPath.get + "/vast").mkdir()
+    new java.io.File(opts.outputDirPath.get + "/vpst").mkdir()
 
     val startTime = java.lang.System.currentTimeMillis()
 
@@ -332,7 +334,7 @@ object Driver {
         val von = ParserVonifier.vonifyFile(programP)
         val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
         val parts = filepath.split("[/\\\\]")
-        val vpstFilepath = opts.outputDirPath.get + "/" + parts.last.replaceAll("\\.vale", ".vpst")
+        val vpstFilepath = opts.outputDirPath.get + "/vpst/" + parts.last.replaceAll("\\.vale", ".vpst")
         writeFile(vpstFilepath, vpstJson)
       })
     }
@@ -382,9 +384,9 @@ object Driver {
 
       programH.packages.flatMap({ case (packageCoord, paackage) =>
         val outputVastFilepath =
-          opts.outputDirPath.get + "/" +
+          opts.outputDirPath.get + "/vast/" +
           (if (packageCoord.isInternal) {
-            "vale"
+            "__vale"
           } else {
             packageCoord.module + packageCoord.packages.map("." + _).mkString("")
           }) +

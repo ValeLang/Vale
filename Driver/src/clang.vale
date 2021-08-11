@@ -28,7 +28,7 @@ Subprocess {
     args!.add(exe_file.str());
   }
 
-  args!.add("-I" + output_dir.str());
+  args!.add("-I" + output_dir./("include").str());
   args!.add("-Wall");
   args!.add("-Werror");
   args!.add("-O3");

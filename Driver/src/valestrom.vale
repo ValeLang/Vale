@@ -44,11 +44,11 @@ Subprocess {
   }
 
   project_directories.each((declaration){
-    command_line_args!.add(declaration.project_name + ":" + declaration.path.resolve().str());
+    command_line_args!.add(declaration.project_name + "=" + declaration.path.resolve().str());
   });
 
   project_vale_inputs.each((declaration){
-    command_line_args!.add(declaration.project_name + ":" + declaration.path.resolve().str());
+    command_line_args!.add(declaration.project_name + "=" + declaration.path.resolve().str());
   });
 
   println("invoke_valestrom calling Subprocess");

@@ -89,7 +89,10 @@ LLVMValueRef declareFunction(
   GlobalState* globalState,
   Function* functionM);
 
-std::string makeModuleDirectory(const GlobalState *globalState, PackageCoordinate *packageCoord);
+
+std::string makeIncludeDirectory(GlobalState* globalState);
+std::string makeModuleIncludeDirectory(const GlobalState *globalState, PackageCoordinate *packageCoord);
+std::string makeModuleAbiDirectory(const GlobalState *globalState, PackageCoordinate *packageCoord);
 
 std::ofstream makeCFile(const std::string &filepath);
 
@@ -370,21 +373,6 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
           AddressHasher<PackageCoordinate*>>(
           0, globalState->addressNumberer->makeHasher<PackageCoordinate*>());
 
-  std::stringstream builtinExportsCode;
-  builtinExportsCode << "#include <stdint.h>" << std::endl;
-  builtinExportsCode << "#include <stdlib.h>" << std::endl;
-  builtinExportsCode << "#include <string.h>" << std::endl;
-  builtinExportsCode << "typedef int32_t ValeInt;" << std::endl;
-  builtinExportsCode << "typedef struct { ValeInt length; char chars[0]; } ValeStr;" << std::endl;
-  builtinExportsCode << "ValeStr* ValeStrNew(ValeInt length);" << std::endl;
-  builtinExportsCode << "ValeStr* ValeStrFrom(char* source);" << std::endl;
-
-  {
-    packageCoordToHeaderNameToC[globalState->metalCache->builtinPackageCoord]
-        .emplace("ValeBuiltins", std::stringstream()).first->second
-        << builtinExportsCode.str();
-  }
-
   for (auto[packageCoord, package] : program->packages) {
     for (auto[exportName, kind] : package->exportNameToKind) {
       auto& resultC = packageCoordToHeaderNameToC[packageCoord].emplace(exportName, std::stringstream()).first->second;
@@ -500,11 +488,11 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
   }
   for (auto& [packageCoord, headerNameToC] : packageCoordToHeaderNameToC) {
     for (auto& [headerName, headerCode] : headerNameToC) {
-      std::string moduleExternsDirectory = makeModuleDirectory(globalState, packageCoord);
+      std::string moduleIncludeDirectory = makeModuleIncludeDirectory(globalState, packageCoord);
 
-      std::string filepath = moduleExternsDirectory + "/" + headerName + ".h";
+      std::string filepath = moduleIncludeDirectory + "/" + headerName + ".h";
       std::ofstream out = makeCFile(filepath);
-      // std::cout << "Writing " << filepath << std::endl;
+       std::cout << "Writing " << filepath << std::endl;
 
       out << "#ifndef VALE_EXPORTS_" << headerName << "_H_" << std::endl;
       out << "#define VALE_EXPORTS_" << headerName << "_H_" << std::endl;
@@ -515,16 +503,33 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
   }
   for (auto& [packageCoord, sourceNameToC] : packageCoordToSourceNameToC) {
     for (auto& [sourceName, sourceCode] : sourceNameToC) {
-      std::string moduleExternsDirectory = makeModuleDirectory(globalState, packageCoord);
+      std::string moduleAbiDirectory = makeModuleAbiDirectory(globalState, packageCoord);
 
-      std::string filepath = moduleExternsDirectory + "/" + sourceName + ".c";
+      std::string filepath = moduleAbiDirectory + "/" + sourceName + ".c";
       std::ofstream out = makeCFile(filepath);
-      // std::cout << "Writing " << filepath << std::endl;
+      std::cout << "Writing " << filepath << ", including " << packageCoord->projectName << "/" << sourceName << ".h " << std::endl;
 
-      out << "#include \"" << sourceName << ".h\"" << std::endl;
+      out << "#include \"" << packageCoord->projectName << "/" << sourceName << ".h\"" << std::endl;
       out << sourceCode.str();
     }
   }
+
+  std::stringstream builtinExportsCode;
+  builtinExportsCode << "#ifndef VALE_BUILTINS_H_" << std::endl;
+  builtinExportsCode << "#define VALE_BUILTINS_H_" << std::endl;
+  builtinExportsCode << "#include <stdint.h>" << std::endl;
+  builtinExportsCode << "#include <stdlib.h>" << std::endl;
+  builtinExportsCode << "#include <string.h>" << std::endl;
+  builtinExportsCode << "typedef int32_t ValeInt;" << std::endl;
+  builtinExportsCode << "typedef struct { ValeInt length; char chars[0]; } ValeStr;" << std::endl;
+  builtinExportsCode << "ValeStr* ValeStrNew(ValeInt length);" << std::endl;
+  builtinExportsCode << "ValeStr* ValeStrFrom(char* source);" << std::endl;
+  builtinExportsCode << "#endif" << std::endl;
+
+  std::string builtinsFilePath = makeIncludeDirectory(globalState) + "/ValeBuiltins.h";
+  std::cout << "Writing " << builtinsFilePath << std::endl;
+  std::ofstream out = makeCFile(builtinsFilePath);
+  out << builtinExportsCode.str();
 }
 
 void makeExternOrExportFunction(
@@ -549,7 +554,7 @@ void makeExternOrExportFunction(
 //      if (ownershipToMutability(param->ownership) == Mutability::MUTABLE) {
 //        paramTypeExportName += "Ref";
 //      }
-      (*headerC) << "#include \"" << paramTypeExportName << ".h\"" << std::endl;
+      (*headerC) << "#include \"" << packageCoord->projectName << "/" << paramTypeExportName << ".h\"" << std::endl;
     }
   }
   {
@@ -566,7 +571,7 @@ void makeExternOrExportFunction(
 //      if (ownershipToMutability(prototype->returnType->ownership) == Mutability::MUTABLE) {
 //        paramTypeExportName += "Ref";
 //      }
-      (*headerC) << "#include \"" << paramTypeExportName << ".h\"" << std::endl;
+      (*headerC) << "#include \"" << packageCoord->projectName << "/" << paramTypeExportName << ".h\"" << std::endl;
     }
   }
   auto userHeaderC = generateFunctionC(globalState, package, externName, prototype, isExport ? CFuncLineMode::EXPORT_USER_PROTOTYPE : CFuncLineMode::EXTERN_USER_PROTOTYPE, isExport);
@@ -575,7 +580,7 @@ void makeExternOrExportFunction(
   (*headerC) << abiHeaderC << ";" << std::endl;
 
   auto userSourceC = std::stringstream{};
-  userSourceC << "#include \"" << externName << ".h\"" << std::endl;
+  userSourceC << "#include \"" << packageCoord->projectName << "/" << externName << ".h\"" << std::endl;
   userSourceC << generateFunctionC(globalState, package, externName, prototype, isExport ? CFuncLineMode::EXPORT_INTERMEDIATE_PROTOTYPE : CFuncLineMode::EXTERN_INTERMEDIATE_PROTOTYPE, isExport) << " {" << std::endl;
   userSourceC << "  " << generateFunctionC(globalState, package, externName, prototype, isExport ? CFuncLineMode::EXPORT_INTERMEDIATE_BODY : CFuncLineMode::EXTERN_INTERMEDIATE_BODY, isExport) << ";" << std::endl;
   userSourceC << "}" << std::endl;
@@ -591,27 +596,49 @@ std::ofstream makeCFile(const std::string &filepath) {
   return out;
 }
 
-std::string makeModuleDirectory(const GlobalState *globalState, PackageCoordinate *packageCoord) {
-  std::string moduleExternsDirectory = globalState->opt->outputDir;
-  if (!packageCoord->projectName.empty()) {
-    moduleExternsDirectory += "/" + packageCoord->projectName;
-    try {
-      if (std::filesystem::is_directory(std::filesystem::path(moduleExternsDirectory))) {
+void makeDirectory(const std::string& dir, bool reuse) {
+  try {
+    if (std::filesystem::is_directory(std::filesystem::path(dir))) {
+      if (reuse) {
         // Do nothing, just re-use it
       } else {
-        bool success = std::filesystem::create_directory(std::filesystem::path(moduleExternsDirectory));
-        if (!success) {
-          std::cerr << "Couldn't make directory: " << moduleExternsDirectory << " (unknown error)" << std::endl;
-          exit(1);
-        }
+        std::cerr << "Couldn't make directory: " << dir << ", already exists!" << std::endl;
+        exit(1);
+      }
+    } else {
+      bool success = std::filesystem::create_directory(std::filesystem::path(dir));
+      if (!success) {
+        std::cerr << "Couldn't make directory: " << dir << " (unknown error)" << std::endl;
+        exit(1);
       }
     }
-    catch (const std::filesystem::filesystem_error& err) {
-      std::cerr << "Couldn't make directory: " << moduleExternsDirectory << " (" << err.what() << ")" << std::endl;
-      exit(1);
-    }
   }
-  return moduleExternsDirectory;
+  catch (const std::filesystem::filesystem_error& err) {
+    std::cerr << "Couldn't make directory: " << dir << " (" << err.what() << ")" << std::endl;
+    exit(1);
+  }
+}
+
+std::string makeIncludeDirectory(GlobalState* globalState) {
+  return globalState->opt->outputDir + "/include";
+}
+
+std::string makeModuleIncludeDirectory(const GlobalState *globalState, PackageCoordinate *packageCoord) {
+  std::string moduleExternsDirectory = globalState->opt->outputDir;
+  auto includeDirectory = moduleExternsDirectory + "/include";
+  makeDirectory(includeDirectory, true);
+  auto moduleIncludeDirectory = includeDirectory + "/" + packageCoord->projectName;
+  makeDirectory(moduleIncludeDirectory, true);
+  return moduleIncludeDirectory;
+}
+
+std::string makeModuleAbiDirectory(const GlobalState *globalState, PackageCoordinate *packageCoord) {
+  std::string moduleExternsDirectory = globalState->opt->outputDir;
+  auto includeDirectory = moduleExternsDirectory + "/abi";
+  makeDirectory(includeDirectory, true);
+  auto moduleIncludeDirectory = includeDirectory + "/" + packageCoord->projectName;
+  makeDirectory(moduleIncludeDirectory, true);
+  return moduleIncludeDirectory;
 }
 
 void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFilepaths) {
@@ -732,11 +759,6 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
     auto project_name = package_coord_parts[0];
     package_coord_parts.erase(package_coord_parts.begin());
     auto package_steps = package_coord_parts;
-
-    if (stem == "vale") {
-      project_name = "";
-      package_steps.clear();
-    }
 
     auto package_coord = metalCache.getPackageCoordinate(project_name, package_steps);
 
@@ -873,6 +895,14 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
       auto structM = p.second;
       auto region = globalState->getRegion(structM->regionId);
       region->declareStruct(structM);
+
+      std::cout << "Declaring struct " << packageCoord->projectName;
+      for (auto step : packageCoord->packageSteps) {
+        std::cout << "." << step;
+      }
+      std::cout << "." << name;
+      std::cout << std::endl;
+
       if (structM->mutability == Mutability::IMMUTABLE) {
         globalState->linearRegion->declareStruct(structM);
       }

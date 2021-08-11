@@ -230,6 +230,7 @@ fn main() export {
     StartTest(42, "lambdamut", samples_path./("programs/lambdas/lambdamut.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
     StartTest(42, "strprint", samples_path./("programs/strings/strprint.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
     StartTest(4, "inttostr", samples_path./("programs/strings/inttostr.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
+    StartTest(4, "i64tostr", samples_path./("programs/strings/i64tostr.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
     StartTest(42, "nestedif", samples_path./("programs/if/nestedif.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
     StartTest(42, "unstackifyret", samples_path./("programs/unstackifyret.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);
     StartTest(42, "swaprsamutdestroy", samples_path./("programs/arrays/swaprsamutdestroy.vale"), &List<str>(), region, &cwd, build_program.str(), &common_build_args, &test_filters, &!test_instances, max_concurrent_tests);

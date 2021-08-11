@@ -5,7 +5,7 @@ fn main() int export {
   combined = a + b;
 
   other = "Glory to the Lizard People";
-  = if (vstr_eq(combined, 0, len(combined), other, 0, len(other))) {
+  = if (streq(combined, 0, len(combined), other, 0, len(other))) {
       42
     } else {
       1

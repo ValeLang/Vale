@@ -22,6 +22,8 @@
 
 using std::move;
 
+extern const std::string BUILTIN_PROJECT_NAME;
+
 // Defined elsewhere
 class Block;
 class Expression;

@@ -84,7 +84,7 @@ public:
       interfaceMethods(0, addressNumberer->makeHasher<Prototype*>()),
       locals(0, addressNumberer->makeHasher<VariableId*>()) {
 
-    builtinPackageCoord = getPackageCoordinate("", {});
+    builtinPackageCoord = getPackageCoordinate(BUILTIN_PROJECT_NAME, {});
     rcImmRegionId = getRegionId(builtinPackageCoord, "rcimm");
     linearRegionId = getRegionId(builtinPackageCoord, "linear");
     unsafeRegionId = getRegionId(builtinPackageCoord, "unsafe");

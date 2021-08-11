@@ -20,7 +20,7 @@ struct ProjectNonValeInputDeclaration {
 fn list_vasts(output_dir &Path) List<Path> {
   vast_files = List<Path>();
   println("in list_vasts");
-  output_dir.iterdir().each((child){
+  output_dir./("vast").iterdir().each((child){
     if (child.name().endsWith(".vast")) {
       //println("found vast: {child.str()}");
       vast_files!.add(child.clone());
@@ -363,10 +363,12 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
     });
   });
 
+  abi_dir = output_dir./("abi");
+
   project_names.each((project_name){
     println("Processing project name: " + project_name);
 
-    possible_generated_dir = output_dir./(project_name);
+    possible_generated_dir = abi_dir./(project_name);
     if (possible_generated_dir.exists()) {
       println("Generated dir exists!");
       if (not possible_generated_dir.is_dir()) {

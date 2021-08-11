@@ -1,20 +1,23 @@
 
-fn +(a str, b str) str { __vale_addStr(a, 0, len(a), b, 0, len(b)) }
-fn __vale_addStr(a str, aBegin int, aEnd int, b str, bBegin int, bEnd int) str extern;
+fn +(a str, b str) str { addStr(a, 0, len(a), b, 0, len(b)) }
+fn addStr(a str, aBegin int, aEnd int, b str, bBegin int, bEnd int) str extern;
 
-fn str(x int) str { __vale_castI32Str(x) }
-fn __vale_castI32Str(x int) str extern;
+fn str(x int) str { castI32Str(x) }
+fn castI32Str(x int) str extern;
 
-fn str(x float) str { __vale_castFloatStr(x) }
-fn __vale_castFloatStr(x float) str extern;
+fn str(x i64) str { castI64Str(x) }
+fn castI64Str(x i64) str extern;
+
+fn str(x float) str { castFloatStr(x) }
+fn castFloatStr(x float) str extern;
 
 fn len(s str) int { __vbi_strLength(s) }
 fn __vbi_strLength(s str) int extern;
 
-fn vstr_toascii(s str, begin int, end int) int extern;
-fn vstr_fromascii(code int) str extern;
+fn strtoascii(s str, begin int, end int) int extern;
+fn strfromascii(code int) str extern;
 
-fn vstr_indexOf(
+fn strindexof(
   haystackContainer str,
   haystackBegin int,
   haystackEnd int,
@@ -23,13 +26,13 @@ fn vstr_indexOf(
   needleEnd int)
 int extern;
 
-fn vstr_substring(
+fn substring(
   haystackContainer str,
   begin int,
   end int)
 str extern;
 
-fn vstr_eq(
+fn streq(
   aContainerStr str,
   aBegin int,
   aEnd int,
@@ -38,7 +41,7 @@ fn vstr_eq(
   bEnd int)
 bool extern;
 
-fn vstr_cmp(
+fn strcmp(
   aContainerStr str,
   aBegin int,
   aEnd int,

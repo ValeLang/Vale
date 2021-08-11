@@ -1,4 +1,6 @@
 
+git clone --single-branch --branch ${2:-master} ${1:-https://github.com/ValeLang/stdlib}
+
 cd Valestrom
 
 call sbt assembly
@@ -13,11 +15,15 @@ cd build
 
 cmake --build .
 
-cd ..
+cd ..\..\Driver
 
-copy C:\llvm-install-minimum\bin\LLVM-C.dll .
+call build.bat
 
-python -m unittest -f -v -k assist_add
+cd ..\Tester
+
+call build.bat
+
+build\tester build --valestrom_dir_override ..\Valestrom --midas_dir_override ..\Midas\build --builtins_dir_override ..\Midas\src\builtins --valec_dir_override ..\Driver\build --midas_tests_dir ..\Midas\test --concurrent 6 @assist
 
 cd ..\scripts
 

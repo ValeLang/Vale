@@ -39,7 +39,11 @@ source ~/.zshrc
 # or the following, which reads command line arguments.
 git clone --single-branch --branch ${2:-master} ${1:-https://github.com/ValeLang/Vale}
 
-cd Vale/Valestrom
+cd Vale
+
+git clone --single-branch --branch ${2:-master} ${1:-https://github.com/ValeLang/stdlib}
+
+cd Valestrom
 
 sbt assembly
 

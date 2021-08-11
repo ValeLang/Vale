@@ -1,1 +1,1 @@
-python3 ~/Vale/release-unix/valec.py build tester tester:src stdlib:~/stdlib/src --output-dir build -o tester
+../Driver/build/valec build tester=src stdlib=../stdlib/src --output_dir build -o tester --builtins_dir_override ../Midas/src/builtins --valestrom_dir_override ../Valestrom --midas_dir_override ../Midas/build

@@ -208,6 +208,16 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
     }
   }
 
+  if (not valestrom_dir.exists()) {
+    panic("Cannot find Valestrom directory: " + valestrom_dir.str());
+  }
+  if (not midas_dir.exists()) {
+    panic("Cannot find Midas directory: " + midas_dir.str());
+  }
+  if (not builtins_dir.exists()) {
+    panic("Cannot find builtins directory: " + builtins_dir.str());
+  }
+
   if (verbose) {
     println("Invoking Valestrom...");
     println("zorkle");
@@ -359,6 +369,10 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
     possible_generated_dir = output_dir./(project_name);
     if (possible_generated_dir.exists()) {
       println("Generated dir exists!");
+      if (not possible_generated_dir.is_dir()) {
+        panic("Generated dir is not a directory: " + possible_generated_dir.str());
+      }
+
       possible_generated_dir.iterdir().each((native_dir_child){
         if (native_dir_child.name().endsWith(".c")) {
           println("Adding c file: " + native_dir_child.str());

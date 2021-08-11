@@ -14,6 +14,11 @@ Subprocess {
   println("In invoke_valestrom");
   program = if (IsWindows()) { "java.exe" } else { "java" };
 
+  valestrom_path = valestrom_dir./("Valestrom.jar");
+  if (not valestrom_path.exists()) {
+    panic("Cannot find Valestrom.jar at: " + valestrom_path.str());
+  }
+
   command_line_args = List<str>();
   command_line_args!.add("-cp");
   command_line_args!.add(valestrom_dir./("Valestrom.jar").str());

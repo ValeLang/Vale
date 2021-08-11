@@ -47,11 +47,6 @@ fn main() export {
   } else if (all_args_list.get(1) == "build") {
     build_stuff(&compiler_dir, &all_args);
   } else {
-    
+    println("Unknown subcommand, specify `build`, `run`, etc. Use `help` for more.")
   }
-
 }
-
-//        else:
-//            print("Unknown subcommand, specify `build`, `run`, etc. Use `help` for more.")
-//            sys.exit(1)

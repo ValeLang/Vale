@@ -15,7 +15,7 @@ fn invoke_midas(
   elide_checks_for_known_live bool,
   override_known_live_true bool)
 Subprocess {
-  program_name = if (IsWindows()) { "midas.exe" } else { "midas" }
+  program_name = if (IsWindows()) { "midas.exe" } else { "midas" };
   program = midas_dir./(program_name).str();
 
   command_line_args = List<str>();

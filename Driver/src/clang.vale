@@ -19,19 +19,33 @@ Subprocess {
 
   args = List<str>();
 
+  args!.add("-I" + output_dir./("include").str());
+  args!.add("-O3");
+
   if (windows) {
     args!.add("/ENTRY:\"main\"");
     args!.add("/SUBSYSTEM:CONSOLE");
     args!.add("/Fe:{exe_file.str()}");
+
+    // On the command line this might look like:
+    //     /Fo.\build\\
+    // See https://stackoverflow.com/questions/7706490/visual-c-command-line-compiler-cl-exe-redirect-obj-files/9550218
+    // for why this is needed.
+    // Another factor, subprocess.h:
+    // - wraps all arguments in quotes,
+    // - escapes whatever quotes were already in them,
+    // - combines them into one string.
+    // So it kind of limits our options here.
+    // This also works, for local paths:
+    //   args!.add("/Fo:.\\{output_dir.str()}\\\\");
+    // But it wouldn't work for absolute dirs, so we just use absolute dirs here.
+    args!.add("/Fo:{output_dir.resolve().str()}\\\\");
   } else {
     args!.add("-o");
     args!.add(exe_file.str());
     args!.add("-Wall");
     args!.add("-Werror");
   }
-
-  args!.add("-I" + output_dir./("include").str());
-  args!.add("-O3");
 
   if (debug_symbols) {
     args!.add("-g");

@@ -379,19 +379,21 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
 
       if (auto structMT = dynamic_cast<StructKind*>(kind)) {
         auto structDefM = program->getStruct(structMT);
-        for (auto member : structDefM->members) {
-          auto kind = member->type->kind;
-          if (dynamic_cast<Int *>(kind) ||
-              dynamic_cast<Bool *>(kind) ||
-              dynamic_cast<Float *>(kind) ||
-              dynamic_cast<Str *>(kind)) {
-            // Do nothing, no need to include anything for these
-          } else {
-            auto paramTypeExportName = package->getKindExportName(kind, true);
-            if (ownershipToMutability(member->type->ownership) == Mutability::MUTABLE) {
-              paramTypeExportName += "Ref";
+        if (structDefM->mutability == Mutability::IMMUTABLE) {
+          for (auto member : structDefM->members) {
+            auto kind = member->type->kind;
+            if (dynamic_cast<Int *>(kind) ||
+                dynamic_cast<Bool *>(kind) ||
+                dynamic_cast<Float *>(kind) ||
+                dynamic_cast<Str *>(kind)) {
+              // Do nothing, no need to include anything for these
+            } else {
+              auto paramTypeExportName = package->getKindExportName(kind, true);
+              if (ownershipToMutability(member->type->ownership) == Mutability::MUTABLE) {
+                paramTypeExportName += "Ref";
+              }
+              resultC << "typedef struct " << paramTypeExportName << " " << paramTypeExportName << ";" << std::endl;
             }
-            resultC << "typedef struct " << paramTypeExportName << " " << paramTypeExportName << ";" << std::endl;
           }
         }
 
@@ -408,7 +410,7 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
       } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(kind)) {
         auto ssaDefM = globalState->program->getStaticSizedArray(ssaMT);
 
-        {
+        if (ssaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
           auto kind = ssaDefM->rawArray->elementType->kind;
           if (dynamic_cast<Int *>(kind) ||
               dynamic_cast<Bool *>(kind) ||
@@ -432,7 +434,7 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
       } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(kind)) {
         auto rsaDefM = globalState->program->getRuntimeSizedArray(rsaMT);
 
-        {
+        if (rsaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
           auto kind = rsaDefM->rawArray->elementType->kind;
           if (dynamic_cast<Int *>(kind) ||
               dynamic_cast<Bool *>(kind) ||

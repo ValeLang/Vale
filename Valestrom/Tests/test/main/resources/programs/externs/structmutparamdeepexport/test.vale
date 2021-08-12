@@ -1,0 +1,14 @@
+
+struct Spaceship export {
+  engine Engine;
+}
+// Not exported
+struct Engine { fuel int; }
+
+fn valeGetFuel(s &Spaceship) int export { s.engine.fuel }
+
+fn cGetFuel(s &Spaceship) int extern;
+
+fn main() int export {
+  ret cGetFuel(&Spaceship(Engine(42));
+}

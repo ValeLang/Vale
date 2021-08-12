@@ -10,7 +10,8 @@ import stdlib.flagger.*;
 fn matches_filters(name str, filters &List<str>) bool {
   i = 0;
   while (i < filters.len()) {
-    if (not name.has(filters.get(i))) {
+    filter = filters.get(i);
+    if (not name.has(filter)) {
       ret false;
     }
     set i = i + 1;
@@ -129,11 +130,14 @@ fn main() export {
   test_filters = List<str>();
 
 
-  input_i = 1;
+  input_i = 0;
   while (input_i < parsed_flags.unrecognized_inputs.len()) {
     unrecognized_input = parsed_flags.unrecognized_inputs.get(input_i);
-    if (unrecognized_input.startsWith("@")) {
-      include_regions!.add(unrecognized_input.slice(1).str());
+    if (unrecognized_input.startsWith("--")) {
+      panic("Unrecognized input: " + unrecognized_input);
+    } else if (unrecognized_input.startsWith("@")) {
+      region = unrecognized_input.slice(1).str();
+      include_regions!.add(region);
     } else {
       test_filters!.add(unrecognized_input);
     }
@@ -142,6 +146,7 @@ fn main() export {
 
   samples_path = valestrom_dir./("Tests/test/main/resources").resolve();
 
+
   if (include_regions.len() == 0) {
     include_regions!.add("assist");
     include_regions!.add("naive-rc");
@@ -149,8 +154,6 @@ fn main() export {
     include_regions!.add("resilient-v4");
     include_regions!.add("unsafe-fast");
   }
-
-  //open_processes = List<[str, Subprocess]>
 
   test_instances = List<TestInstance>();
 
@@ -269,35 +272,39 @@ fn main() export {
 
   if (include_regions.exists({ _ == "resilient-v3" }) or include_regions.exists({ _ == "resilient-v4" })) {
     println("Starting twinpages...");
-    cwd./("testbuild").makeDirectory();
-    test_build_dir = cwd./("testbuild/twinpages");
-    test_build_dir.makeDirectory();
-    process =
-        (Subprocess(
-            "clang",
-            &List([][
-                midas_tests_dir./("twinpages/test.c").str(),
-                "-o",
-                test_build_dir./("main").str()
-            ]))).expect();
-    test_instances!.add(
-        TestInstance("twinpages", "resilient-v3", 0, test_build_dir, process, List([]["noattemptbadwrite"])));
 
-    //def test_twinpages_noattemptbadwrite(self) -> None:
-    //    if platform.system() == 'Windows':
-    //        proc = procrun(["cl.exe", "test/twinpages/test.c", "-o", "test/test_build/testtwinpages.exe"])
-    //        proc = procrun(["test/test_build/testtwinpages.exe", "noattemptbadwrite"])
-    //        self.assertEqual(proc.returncode, 0, f"Twin pages test failed!")
-    //    else:
-    //        proc = procrun(["clang", "test/twinpages/test.c", "-o", "test/test_build/testtwinpages"])
-    //        proc = procrun(["test/test_build/testtwinpages", "noattemptbadwrite"])
-    //        self.assertEqual(proc.returncode, 0, f"Twin pages test failed!")
+    if (matches_filters("twinpages", &test_filters)) {
+      FinishTests(max_concurrent_tests - 1, &!test_instances);
 
+      cwd./("testbuild").makeDirectory();
+      test_build_dir = cwd./("testbuild/twinpages");
+      test_build_dir.makeDirectory();
+      process =
+          (Subprocess(
+              if (IsWindows()) { "cl.exe" } else { "clang" },
+              &List([][
+                  midas_tests_dir./("twinpages/test.c").str(),
+                  "-o",
+                  test_build_dir./("main").str()
+              ]))).expect();
+      test_instances!.add(
+          TestInstance("twinpages", "resilient-v3", 0, test_build_dir, process, List([]["noattemptbadwrite"])));
+
+      //def test_twinpages_noattemptbadwrite(self) -> None:
+      //    if platform.system() == 'Windows':
+      //        proc = procrun(["cl.exe", "test/twinpages/test.c", "-o", "test/test_build/testtwinpages.exe"])
+      //        proc = procrun(["test/test_build/testtwinpages.exe", "noattemptbadwrite"])
+      //        self.assertEqual(proc.returncode, 0, f"Twin pages test failed!")
+      //    else:
+      //        proc = procrun(["clang", "test/twinpages/test.c", "-o", "test/test_build/testtwinpages"])
+      //        proc = procrun(["test/test_build/testtwinpages", "noattemptbadwrite"])
+      //        self.assertEqual(proc.returncode, 0, f"Twin pages test failed!")
+    }
   }
 
   FinishTests(0, &!test_instances);
 
-  println("done!");
+  println("Done!");
 }
 
 fn FinishTests(until_this_many_left int, test_instances &!List<TestInstance>) {
@@ -317,7 +324,8 @@ fn FinishTests(until_this_many_left int, test_instances &!List<TestInstance>) {
         println(build_result.stderr);
       }
     } else {
-      run_program = test_build_dir./("main").str();
+      program_name = if (IsWindows()) { "main.exe" } else { "main" };
+      run_program = test_build_dir./(program_name).str();
 
       run_process = (Subprocess(run_program, &run_args)).expect();
       run_result = (run_process).capture_and_join();
@@ -385,9 +393,9 @@ fn StartTest(
     test_filters &List<str>,
     test_instances &!List<TestInstance>,
     max_concurrent_tests int) {
-  FinishTests(max_concurrent_tests - 1, test_instances);
-
   if (matches_filters(test_name, &test_filters)) {
+    FinishTests(max_concurrent_tests - 1, test_instances);
+
     test_build_dir = cwd./("testbuild/{test_name}_{region}");
     build_process =
         StartBuild(

@@ -19,7 +19,7 @@ Subprocess {
   midas_program_path = midas_dir./(midas_program_name);
 
   if (not midas_program_path.exists()) {
-    panic("Cannot find Valestrom.jar at: " + midas_program_path.str());
+    panic("Cannot find {midas_program_name} at: " + midas_program_path.str());
   }
 
   command_line_args = List<str>();

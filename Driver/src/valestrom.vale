@@ -11,7 +11,6 @@ fn invoke_valestrom(
   output_vpst bool,
   output_dir &Path)
 Subprocess {
-  println("In invoke_valestrom");
   program = if (IsWindows()) { "java.exe" } else { "java" };
 
   valestrom_path = valestrom_dir./("Valestrom.jar");
@@ -51,8 +50,6 @@ Subprocess {
     command_line_args!.add(declaration.project_name + "=" + declaration.path.resolve().str());
   });
 
-  println("invoke_valestrom calling Subprocess");
   x = (Subprocess(program, &command_line_args)).expect();
-  println("In invoke_valestrom, returning!");
   ret x;
 }

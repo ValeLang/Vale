@@ -494,7 +494,7 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
 
       std::string filepath = moduleIncludeDirectory + "/" + headerName + ".h";
       std::ofstream out = makeCFile(filepath);
-       std::cout << "Writing " << filepath << std::endl;
+       //std::cout << "Writing " << filepath << std::endl;
 
       out << "#ifndef VALE_EXPORTS_" << headerName << "_H_" << std::endl;
       out << "#define VALE_EXPORTS_" << headerName << "_H_" << std::endl;
@@ -509,7 +509,7 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
 
       std::string filepath = moduleAbiDirectory + "/" + sourceName + ".c";
       std::ofstream out = makeCFile(filepath);
-      std::cout << "Writing " << filepath << ", including " << packageCoord->projectName << "/" << sourceName << ".h " << std::endl;
+      //std::cout << "Writing " << filepath << ", including " << packageCoord->projectName << "/" << sourceName << ".h " << std::endl;
 
       out << "#include \"" << packageCoord->projectName << "/" << sourceName << ".h\"" << std::endl;
       out << sourceCode.str();
@@ -529,7 +529,7 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
   builtinExportsCode << "#endif" << std::endl;
 
   std::string builtinsFilePath = makeIncludeDirectory(globalState) + "/ValeBuiltins.h";
-  std::cout << "Writing " << builtinsFilePath << std::endl;
+  //std::cout << "Writing " << builtinsFilePath << std::endl;
   std::ofstream out = makeCFile(builtinsFilePath);
   out << builtinExportsCode.str();
 }
@@ -755,7 +755,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
           addressNumberer.makeHasher<PackageCoordinate*>(),
           std::equal_to<PackageCoordinate*>()));
   for (auto inputFilepath : inputFilepaths) {
-    std::cout << "Reading input file: " << inputFilepath << std::endl;
+    //std::cout << "Reading input file: " << inputFilepath << std::endl;
     auto stem = std::filesystem::path(inputFilepath).stem();
     auto package_coord_parts = split(stem.string(), '.');
     auto project_name = package_coord_parts[0];
@@ -898,12 +898,12 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
       auto region = globalState->getRegion(structM->regionId);
       region->declareStruct(structM);
 
-      std::cout << "Declaring struct " << packageCoord->projectName;
-      for (auto step : packageCoord->packageSteps) {
-        std::cout << "." << step;
-      }
-      std::cout << "." << name;
-      std::cout << std::endl;
+      // std::cout << "Declaring struct " << packageCoord->projectName;
+      // for (auto step : packageCoord->packageSteps) {
+      //   std::cout << "." << step;
+      // }
+      // std::cout << "." << name;
+      // std::cout << std::endl;
 
       if (structM->mutability == Mutability::IMMUTABLE) {
         globalState->linearRegion->declareStruct(structM);
@@ -1421,7 +1421,7 @@ int main(int argc, char **argv) {
 
   auto inputFilepaths = std::vector<std::string>{};
   for (int i = 1; i < argc; i++) {
-    std::cout << "Midas found file: " << argv[i] << std::endl;
+    //std::cout << "Midas found file: " << argv[i] << std::endl;
     inputFilepaths.emplace_back(argv[i]);
   }
 

@@ -195,7 +195,6 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
     opt->overrideKnownLiveTrue = false;
     opt->census = false;
 
-  std::cout << "bork " << __LINE__ << std::endl;
 
   while ((id = optNext(&s)) != -1) {
         switch (id) {
@@ -314,7 +313,6 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
         }
     }
 
-  std::cout << "bork " << __LINE__ << std::endl;
 
   for (i = 1; i < *argc; i++) {
         if (argv[i][0] == '-') {
@@ -324,17 +322,14 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
         }
     }
 
-  std::cout << "bork " << __LINE__ << std::endl;
 
   if (!ok) {
-    std::cout << "bork " << __LINE__ << std::endl;
 
     // errors_print(opt.check.errors);
         if (print_usage)
             usage();
         return -1;
     }
-  std::cout << "bork " << __LINE__ << std::endl;
 
   return 1;
 }

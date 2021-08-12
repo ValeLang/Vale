@@ -123,7 +123,7 @@ fn main() export {
   midas_tests_dir = Path(parsed_flags.expect_string_flag(&flags, "--midas_tests_dir"));
 
 
-  build_program = valec_dir./("valec");
+  build_program = valec_dir./(if (IsWindows()) { "valec.exe" } else { "valec" });
 
   include_regions = List<str>();
   test_filters = List<str>();

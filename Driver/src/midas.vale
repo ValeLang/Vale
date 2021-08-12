@@ -15,8 +15,12 @@ fn invoke_midas(
   elide_checks_for_known_live bool,
   override_known_live_true bool)
 Subprocess {
-  program_name = if (IsWindows()) { "midas.exe" } else { "midas" };
-  program = midas_dir./(program_name).str();
+  midas_program_name = if (IsWindows()) { "midas.exe" } else { "midas" };
+  midas_program_path = midas_dir./(midas_program_name);
+
+  if (not midas_program_path.exists()) {
+    panic("Cannot find Valestrom.jar at: " + midas_program_path.str());
+  }
 
   command_line_args = List<str>();
   command_line_args!.add("--verify");
@@ -60,5 +64,5 @@ Subprocess {
     command_line_args!.add(vast_file.str());
   });
 
-  ret (Subprocess(program, &command_line_args)).expect();
+  ret (Subprocess(midas_program_path.str(), &command_line_args)).expect();
 }

@@ -31,6 +31,9 @@ fn list_vasts(output_dir &Path) List<Path> {
 }
 
 fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
+
+  println("in build_stuff");
+
   windows = IsWindows();
 
   // self.vs_path: str = ''
@@ -122,6 +125,8 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
           "Sets all regions to use the given allocator.")];
 
   parsed_flags = flags.parse_all_flags(all_args);
+
+  println("parsed flags");
 
   valestrom_dir = compiler_dir.clone();
   maybe_valestrom_dir_override = parsed_flags.get_string_flag("--valestrom_dir_override");

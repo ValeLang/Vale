@@ -13,8 +13,12 @@ fn main() export {
   all_args = all_args_list.toImmArray();
 
 
+  println("about to get compiler_dir");
+
   driver_path = Path(all_args_list.get(0)).resolve();
   compiler_dir = driver_path.directory();
+
+  println("got compiler_dir");
 
   if (all_args_list.len() < 2) {
     panic("Must specify a command (build or help).");

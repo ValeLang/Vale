@@ -1,5 +1,5 @@
 
-git clone --single-branch --branch ${2:-master} ${1:-https://github.com/ValeLang/stdlib}
+git clone --single-branch --branch master https://github.com/ValeLang/stdlib
 
 cd Valestrom
 

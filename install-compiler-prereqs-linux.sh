@@ -9,13 +9,6 @@ if [ "$LLVM_DIR" == "" ]; then
   exit
 fi
 
-LLVM_CMAKE_DIR="$LLVM_DIR/lib/cmake/llvm"
-if [ ! -d "$LLVM_CMAKE_DIR" ]; then
-  echo "Directory not found: $LLVM_CMAKE_DIR"
-  echo "Are you sure you specified the right LLVM directory?"
-  exit
-fi
-
 BOOTSTRAPPING_VALEC_DIR="$2"
 if [ "$BOOTSTRAPPING_VALEC_DIR" == "" ]; then
   echo "Second arg must be path to unzip a bootstrapping stable Vale compiler to."

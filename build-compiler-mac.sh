@@ -36,13 +36,13 @@ cd ../Tester
 echo Compiling Tester...
 ./build.sh $BOOTSTRAPPING_VALEC_DIR || { echo 'Tester build failed, aborting.' ; exit 1; }
 
-echo Running Tester...
-build/testvalec --valestrom_dir_override ../Valestrom --midas_dir_override ../Midas/build --builtins_dir_override ../Midas/src/builtins --valec_dir_override ../Driver/build --midas_tests_dir ../Midas/test --concurrent 6 @assist || { echo 'Tests failed, aborting.' ; exit 1; }
-
 cd ../scripts
 
 ./package-unix.sh
 
-cd ../release-unix
+cd ..
 
-zip -r ValeCompiler.zip *
+unzip ./release-unix/ValeCompiler.zip -d ./ValeCompiler
+
+echo Running Tester...
+Tester/build/testvalec --valestrom_dir_override ./ValeCompiler --midas_dir_override ./ValeCompiler --builtins_dir_override ./ValeCompiler/builtins --valec_dir_override ./ValeCompiler --midas_tests_dir ../Midas/test --concurrent 6 @assist || { echo 'Tests failed, aborting.' ; exit 1; }

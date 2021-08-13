@@ -54,7 +54,3 @@ build/testvalec --valestrom_dir_override ../Valestrom --midas_dir_override ../Mi
 cd ../scripts
 
 ./package-unix.sh
-
-cd ../release-unix
-
-zip -r ValeCompiler.zip *

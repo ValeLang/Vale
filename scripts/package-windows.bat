@@ -13,3 +13,9 @@ echo d | xcopy /s /e /y helloworld ..\release-windows\samples\helloworld
 copy ..\Driver\build\valec.exe ..\release-windows\valec.exe
 
 copy %1\bin\LLVM-C.dll ..\release-windows\LLVM-C.dll
+
+cd ..\release-windows
+
+PATH=%PATH%;C:\Program Files\7-Zip
+PATH=%PATH%;C:\Program Files\7-Zip\7z.exe
+7z a ValeCompiler.zip *

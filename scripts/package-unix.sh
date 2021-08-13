@@ -11,3 +11,6 @@ cp ../Midas/build/midas ../release-unix/midas
 git clone https://github.com/ValeLang/stdlib ../release-unix/stdlib
 cp -r helloworld ../release-unix/samples/helloworld
 cp ../Driver/build/valec ../release-unix/valec
+
+cd ../release-unix
+zip -r ValeCompiler.zip *

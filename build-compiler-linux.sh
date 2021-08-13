@@ -1,12 +1,10 @@
 # This script builds the Vale compiler, runs some tests on it, and also packages up a release zip file.
 # It assumes we've already ran prereqs-linux.sh, or otherwise installed all the dependencies.
 
-git clone --single-branch ${2:-https://github.com/ValeLang/stdlib} --branch ${3:-master}
-
 LLVM_DIR="$1"
 if [ "$LLVM_DIR" == "" ]; then
   echo "Please supply the LLVM directory."
-  echo "Example: $0 ~/clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10"
+  echo "Example: ~/clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10"
   exit
 fi
 
@@ -14,6 +12,13 @@ LLVM_CMAKE_DIR="$LLVM_DIR/lib/cmake/llvm"
 if [ ! -d "$LLVM_CMAKE_DIR" ]; then
   echo "Directory not found: $LLVM_CMAKE_DIR"
   echo "Are you sure you specified the right LLVM directory?"
+  exit
+fi
+
+BOOTSTRAPPING_VALEC_DIR="$2"
+if [ "$BOOTSTRAPPING_VALEC_DIR" == "" ]; then
+  echo "Please supply the bootstrapping valec directory."
+  echo "Example: ~/ValeCompiler-0.1.3.3-Ubuntu"
   exit
 fi
 
@@ -36,7 +41,7 @@ make
 cd ../../Driver
 
 echo Compiling Driver...
-./build-linux.sh || { echo 'Driver build failed, aborting.' ; exit 1; }
+./build-linux.sh $BOOTSTRAPPING_VALEC_DIR || { echo 'Driver build failed, aborting.' ; exit 1; }
 
 cd ../Tester
 

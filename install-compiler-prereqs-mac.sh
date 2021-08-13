@@ -10,14 +10,19 @@ xcode-select --install
 curl -L https://github.com/AdoptOpenJDK/openjdk11-binaries/releases/download/jdk-11.0.10%2B9/OpenJDK11U-jre_x64_mac_hotspot_11.0.10_9.tar.gz --output adoptopenjdk.tar.gz
 tar xzf adoptopenjdk.tar.gz
 # Add vars to .zshrc (or .bashrc)
-echo 'export PATH=~/jdk-11.0.10+9-jre/Contents/Home/bin:$PATH' >> ~/.zshrc
+echo 'export PATH=$PATH:~/jdk-11.0.10+9-jre/Contents/Home/bin' >> ~/.zshrc
 
 # Installs brew, like said on https://brew.sh/
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 # (press return)
 
+# Install stable valec, for the .vale parts of the compiler
+curl -L https://vale.dev/releases/ValeCompiler-0.1.3.3-Mac.zip
+unzip ValeCompiler-0.1.3.3-Mac.zip
+echo 'export PATH=$PATH:~/ValeCompiler-0.1.3.3-Mac' >> ~/.zshrc
+
 # Install misc dependencies
 brew install llvm@11 sbt cmake
-echo 'export PATH=/usr/local/Cellar/llvm@11/11.1.0_2/bin:$PATH' >> ~/.zshrc
+echo 'export PATH=$PATH:/usr/local/Cellar/llvm@11/11.1.0_2/bin' >> ~/.zshrc
 
 source ~/.zshrc

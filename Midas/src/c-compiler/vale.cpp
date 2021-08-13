@@ -758,6 +758,9 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   LLVMSetLinkage(globalState->mainArgs, LLVMExternalLinkage);
   LLVMSetInitializer(globalState->mainArgs, LLVMConstNull(mainArgsLT));
 
+  std::cerr << "I'm a bug!" << std::endl;
+  exit(1);
+
   globalState->liveHeapObjCounter =
       LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__liveHeapObjCounter");
   LLVMSetLinkage(globalState->mainArgs, LLVMExternalLinkage);

@@ -1,5 +1,5 @@
 
-git clone --single-branch --branch master https://github.com/ValeLang/stdlib
+git clone --single-branch https://github.com/Verdagon/stdlib --branch stdlib
 
 cd Valestrom
 

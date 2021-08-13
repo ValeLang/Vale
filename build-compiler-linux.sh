@@ -1,6 +1,8 @@
 # This script builds the Vale compiler, runs some tests on it, and also packages up a release zip file.
 # It assumes we've already ran prereqs-linux.sh, or otherwise installed all the dependencies.
 
+git clone --single-branch ${2:-https://github.com/ValeLang/stdlib} --branch ${3:-master}
+
 LLVM_DIR="$1"
 if [ "$LLVM_DIR" == "" ]; then
   echo "Please supply the LLVM directory."

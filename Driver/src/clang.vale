@@ -43,8 +43,8 @@ Subprocess {
   } else {
     args!.add("-o");
     args!.add(exe_file.str());
-    args!.add("-Wall");
-    args!.add("-Werror");
+    //args!.add("-Wall");
+    //args!.add("-Werror");
   }
 
   if (debug_symbols) {

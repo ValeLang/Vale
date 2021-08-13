@@ -5,6 +5,7 @@ git clone --single-branch ${1:-https://github.com/ValeLang/stdlib} --branch ${2:
 
 cd Valestrom
 
+echo Compiling Valestrom...
 sbt assembly || { echo 'Valestrom build failed, aborting.' ; exit 1; }
 
 cd ../Midas
@@ -15,16 +16,20 @@ cmake -B build -D LLVM_DIR="$LLVM_CMAKE_DIR" || { echo 'Midas build failed, abor
 
 cd build
 
+echo Compiling Midas...
 make
 
 cd ../../Driver
 
+echo Compiling Driver...
 ./build.sh || { echo 'Driver build failed, aborting.' ; exit 1; }
 
 cd ../Tester
 
+echo Compiling Tester...
 ./build.sh || { echo 'Tester build failed, aborting.' ; exit 1; }
 
+echo Running Tester...
 build/tester build --valestrom_dir_override ../Valestrom --midas_dir_override ../Midas/build --builtins_dir_override ../Midas/src/builtins --valec_dir_override ../Driver/build --midas_tests_dir ../Midas/test --concurrent 6 @assist || { echo 'Tests failed, aborting.' ; exit 1; }
 
 cd ../scripts

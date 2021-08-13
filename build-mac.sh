@@ -39,7 +39,11 @@ source ~/.zshrc
 # or the following, which reads command line arguments.
 git clone --single-branch --branch ${2:-master} ${1:-https://github.com/ValeLang/Vale}
 
-cd Vale/Valestrom
+cd Vale
+
+git clone --single-branch --branch ${2:-master} ${1:-https://github.com/ValeLang/stdlib}
+
+cd Valestrom
 
 sbt assembly
 
@@ -51,9 +55,15 @@ cd build
 
 make
 
-cd ..
+cd ../../Driver
 
-python3 -m unittest -f -k assist
+./build.sh
+
+cd ../Tester
+
+./build.sh
+
+build/tester build --valestrom_dir_override ../Valestrom --midas_dir_override ../Midas/build --builtins_dir_override ../Midas/src/builtins --valec_dir_override ../Driver/build --midas_tests_dir ../Midas/test --concurrent 6 @assist
 
 cd ../scripts
 

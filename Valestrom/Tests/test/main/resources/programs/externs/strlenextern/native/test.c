@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 
-ValeInt tmod_extStrLen(ValeStr* haystackContainerStr) {
+ValeInt vtest_extStrLen(ValeStr* haystackContainerStr) {
   char* haystackContainerChars = haystackContainerStr->chars;
   ValeInt result = strlen(haystackContainerChars);
   return result;

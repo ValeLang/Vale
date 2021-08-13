@@ -1,9 +1,9 @@
 
-fn float(x int) float { __vale_castI32Float(x) }
-fn __vale_castI32Float(x int) float extern;
+fn float(x int) float { castI32Float(x) }
+fn castI32Float(x int) float extern;
 
-fn int(x float) int { __vale_castFloatI32(x) }
-fn __vale_castFloatI32(x float) int extern;
+fn int(x float) int { castFloatI32(x) }
+fn castFloatI32(x float) int extern;
 
 fn -(x int) int { __vbi_negateI32(x) }
 fn __vbi_negateI32(x int) int extern;

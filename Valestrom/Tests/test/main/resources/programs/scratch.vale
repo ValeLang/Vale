@@ -30,7 +30,7 @@ fn println(s StrSlice) void {
 fn !=(a str, b StrSlice) bool { a.slice() != b }
 fn !=(a StrSlice, b str) bool { a != b.slice() }
 fn !=(a StrSlice, b StrSlice) bool {
-  vstr_eq(a.string, a.begin, a.end, b.string, b.begin, b.end) == false
+  streq(a.string, a.begin, a.end, b.string, b.begin, b.end) == false
 }
 //
 

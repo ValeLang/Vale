@@ -743,16 +743,16 @@ std::pair<PackageCoordinate*, Package*> readPackageCoordinateAndPackageEntry(Met
       readPackage(cache, edge["package"]));
 }
 
-Program* readProgram(MetalCache* cache, const json& program) {
-  assert(program.is_object());
-  assert(program["__type"] == "Program");
-  return new Program(
-      readArrayIntoMap<PackageCoordinate*, Package*, AddressHasher<PackageCoordinate*>, std::equal_to<PackageCoordinate*>>(
-          cache,
-          cache->addressNumberer->makeHasher<PackageCoordinate*>(),
-          std::equal_to<PackageCoordinate*>(),
-          program["packages"],
-          [](MetalCache* cache, json j){
-            return readPackageCoordinateAndPackageEntry(cache, j);
-          }));
-}
+//Program* readProgram(MetalCache* cache, const json& program) {
+//  assert(program.is_object());
+//  assert(program["__type"] == "Program");
+//  return new Program(
+//      readArrayIntoMap<PackageCoordinate*, Package*, AddressHasher<PackageCoordinate*>, std::equal_to<PackageCoordinate*>>(
+//          cache,
+//          cache->addressNumberer->makeHasher<PackageCoordinate*>(),
+//          std::equal_to<PackageCoordinate*>(),
+//          program["packages"],
+//          [](MetalCache* cache, json j){
+//            return readPackageCoordinateAndPackageEntry(cache, j);
+//          }));
+//}

@@ -47,7 +47,6 @@ class HammerCompilation(
       case Some(hamuts) => hamuts
       case None => {
         val hamuts = Hammer.translate(templarCompilation.expectTemputs())
-        VonHammer.vonifyProgram(hamuts)
         hamutsCache = Some(hamuts)
         hamuts
       }

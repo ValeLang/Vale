@@ -89,7 +89,7 @@ object TemplarErrorHumanizer {
         case ExternFunctionDependedOnNonExportedKind(range, paackage, signature, nonExportedKind) => {
           ": Extern function " + signature + " depends on kind " + nonExportedKind + " that wasn't exported from package " + paackage
         }
-        case ExportedKindDependedOnNonExportedKind(range, paackage, signature, nonExportedKind) => {
+        case ExportedImmutableKindDependedOnNonExportedKind(range, paackage, signature, nonExportedKind) => {
           ": Exported kind " + signature + " depends on kind " + nonExportedKind + " that wasn't exported from package " + paackage
         }
         case InitializedWrongNumberOfElements(range, expectedNumElements, numElementsInitialized) => {

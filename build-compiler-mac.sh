@@ -29,7 +29,7 @@ make
 cd ../../Driver
 
 echo Compiling Driver...
-./build-mac.sh $BOOTSTRAPPING_VALEC_DIR || { echo 'Driver build failed, aborting.' ; exit 1; }
+./build.sh $BOOTSTRAPPING_VALEC_DIR || { echo 'Driver build failed, aborting.' ; exit 1; }
 
 cd ../Tester
 

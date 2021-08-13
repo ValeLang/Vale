@@ -39,7 +39,7 @@ static int64_t censusFindIndexOf(void* obj) {
       return -1;
     }
   }
-  assert(0); // We shouldnt get here, it would mean the table is full.
+  exit(1); // We shouldnt get here, it would mean the table is full.
 }
 
 int64_t __vcensusContains(void* obj) {
@@ -62,7 +62,7 @@ static int64_t censusFindOpenSpaceIndexFor(void* obj) {
       return indexInTable;
     }
   }
-  assert(0); // We shouldnt get here, it would mean the table is full.
+  exit(1); // We shouldnt get here, it would mean the table is full.
 }
 
 // Doesnt expand or increment size.

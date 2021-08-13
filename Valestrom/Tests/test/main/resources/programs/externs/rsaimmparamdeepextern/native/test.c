@@ -2,23 +2,23 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
-#include "tmod/Spaceship.h"
-#include "tmod/ImmSpaceshipArray.h"
-#include "tmod/cSumFuel_vasp.h"
+#include "vtest/Spaceship.h"
+#include "vtest/ImmSpaceshipArray.h"
+#include "vtest/cSumFuel_vasp.h"
 
 int64_t nextMultipleOf16(int64_t x) {
   return ((x - 1) | 15) + 1;
 }
 
-extern ValeInt tmod_cSumFuel_vasp(tmod_ImmSpaceshipArray* arr, ValeInt arrSize) {
+extern ValeInt vtest_cSumFuel_vasp(vtest_ImmSpaceshipArray* arr, ValeInt arrSize) {
   assert(arr->length == 5);
   int64_t arrayAddr = (int64_t)(void*)arr;
-  int64_t arrayShallowSize = sizeof(tmod_ImmSpaceshipArray) + sizeof(tmod_Spaceship*) * arr->length;
+  int64_t arrayShallowSize = sizeof(vtest_ImmSpaceshipArray) + sizeof(vtest_Spaceship*) * arr->length;
   // AP = And Padding; to get the next multiple of 16 from the end of the array's header struct.
   int64_t arrayShallowAPEndAddr = nextMultipleOf16(arrayAddr + arrayShallowSize);
 
   int64_t firstElementAddr = arrayShallowAPEndAddr;
-  int64_t firstElementAPEndAddr = nextMultipleOf16(firstElementAddr + sizeof(tmod_Spaceship));
+  int64_t firstElementAPEndAddr = nextMultipleOf16(firstElementAddr + sizeof(vtest_Spaceship));
 
   int64_t stride = firstElementAPEndAddr - firstElementAddr;
 

@@ -1,9 +1,9 @@
 #include <stdint.h>
 #include <stdio.h>
-#include "tmod/ImmIntArray.h"
+#include "vtest/ImmIntArray.h"
 
-extern ValeInt tmod_expSumBytes(tmod_ImmIntArray* arr);
+extern ValeInt vtest_expSumBytes(vtest_ImmIntArray* arr);
 
-ValeInt tmod_extSumBytes(tmod_ImmIntArray* arr) {
-  return tmod_expSumBytes(arr);
+ValeInt vtest_extSumBytes(vtest_ImmIntArray* arr) {
+  return vtest_expSumBytes(arr);
 }

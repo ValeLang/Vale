@@ -5,30 +5,29 @@ Compiler for the Vale programming language.
 
 ## Vale
 
-Vale is the fast, fearless, and flexible programming language. It aims to be as fast as Rust, while being as easy as Java, as safe as Javascript.
+Vale is the fast, fearless, and flexible programming language. It aims to be as fast as Rust, as easy as Java, and as safe as Javascript.
 
 See http://vale.dev/ for samples and more information on the language!
 
-
-## Building and Running
-
-For instructions for building the compiler itself, see:
-
- * [Building the Vale Compiler (Linux)](build-linux.sh)
- * [Building the Vale Compiler (Mac)](build-mac.sh)
- * [Building the Vale Compiler (Windows)](build-windows.md)
-
-If you just want to build and run Vale programs, go to the [download](https://vale.dev/download) page instead.
+See also our [treasure trove of working examples](https://github.com/Ivo-Balbaert/Vale_Examples), grouped by functionality.
 
 
-## Guide
+## Building a Vale Program
+
+ 1. Download the latest binary at http://vale.dev/download
+ 1. Unzip it into, for example, `~/Vale`, and `cd` into it.
+ 1. Compile a program: `python3 valec.py build hello hello:./samples/helloworld stdlib:./stdlib/src`
+ 1. Run the program: `./a.out`
+
+
+## Learning Vale
 
 See [the Guide](https://vale.dev/guide/introduction) for how to use Vale.
 
 
-## Vale code examples
+## Building the compiler itself
 
-A number of working examples grouped by functionality can be found [here](https://github.com/Ivo-Balbaert/Vale_Examples)
+For instructions for building the compiler itself, see [Building the Compiler](build-compiler.md).
 
 
 ## Editor plugins
@@ -36,17 +35,6 @@ A number of working examples grouped by functionality can be found [here](https:
 - [VSCode plugin](https://marketplace.visualstudio.com/items?itemName=pacifio.vale-lang): Syntax-highlighting and basic autocompletion.
 - [Vim plugin](https://github.com/jfecher/vale.vim): Syntax-highlighting
 
-
-## Editing GitHub CI Workflows
-
-Do not edit `.github/workflows/*.yml` directly. To support yaml anchors/aliasing, we can edit `.github/*.yml` and feed it as source to `.github/gwp.py`.
-
-- Install [yq](https://mikefarah.gitbook.io/yq/#install) if not already installed and put it on the PATH
-- Edit the desired `.github/*.yml`
-- cd into `.github` and run `python gwp.py`. This will glob for all `*.yml` in the cwd, expand out the aliases, and dump it to `.github/workflows`
-
-
 # Notes
 
 Vale started in January 2013, and back then we called it "VLang", though there's now another language with that name. We then called it GelLLVM, in honor of Gel, the first language to offer constraint references. Since then, we've settled on the name "Vale". Note that Vale and Vala are two different languages.
-

@@ -76,8 +76,7 @@ Ref buildExternCall(
     auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
     auto result = LLVMBuildSDiv(builder, leftLE, rightLE,"add");
     return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
-  } else
-  if (prototype->name->name == "__vbi_addI64") {
+  } else if (prototype->name->name == "__vbi_addI64") {
     assert(args.size() == 2);
     auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
     auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);

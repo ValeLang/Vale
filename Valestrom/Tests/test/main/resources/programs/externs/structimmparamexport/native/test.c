@@ -3,10 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "tmod/Flamscrankle.h"
-#include "tmod/expFunc.h"
+#include "vtest/Flamscrankle.h"
+#include "vtest/expFunc.h"
 
-ValeInt tmod_extFunc(tmod_Flamscrankle* flam) {
-  ValeInt result = tmod_expFunc(flam);
+ValeInt vtest_extFunc(vtest_Flamscrankle* flam) {
+  ValeInt result = vtest_expFunc(flam);
   return result;
 }

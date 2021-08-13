@@ -2,12 +2,12 @@
 #include <string.h>
 #include <assert.h>
 
-#include "tmod/ImmIntArray.h"
-#include "tmod/cMakeRSA.h"
+#include "vtest/ImmIntArray.h"
+#include "vtest/cMakeRSA.h"
 
-tmod_ImmIntArray* tmod_cMakeRSA() {
-  assert(tmod_ImmIntArray_SIZE == 3);
-  tmod_ImmIntArray* arr = malloc(sizeof(tmod_ImmIntArray) + sizeof(ValeInt) * tmod_ImmIntArray_SIZE);
+vtest_ImmIntArray* vtest_cMakeRSA() {
+  assert(vtest_ImmIntArray_SIZE == 3);
+  vtest_ImmIntArray* arr = malloc(sizeof(vtest_ImmIntArray) + sizeof(ValeInt) * vtest_ImmIntArray_SIZE);
   arr->elements[0] = 13;
   arr->elements[1] = 14;
   arr->elements[2] = 15;

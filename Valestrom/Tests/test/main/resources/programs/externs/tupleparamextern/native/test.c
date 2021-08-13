@@ -1,10 +1,10 @@
 #include <stdint.h>
 
-typedef struct tmod_TwoInts {
+typedef struct vtest_TwoInts {
   ValeInt a;
   ValeInt b;
-} tmod_TwoInts;
+} vtest_TwoInts;
 
-int tmod_extGetFromTuple(tmod_TwoInts ints) {
+int vtest_extGetFromTuple(vtest_TwoInts ints) {
   return ints.b;
 }

@@ -45,4 +45,4 @@ cd ..
 unzip ./release-unix/ValeCompiler.zip -d ./BuiltValeCompiler
 
 echo Running Tester...
-Tester/build/testvalec --valestrom_dir_override ./BuiltValeCompiler --midas_dir_override ./BuiltValeCompiler --builtins_dir_override ./BuiltValeCompiler/builtins --valec_dir_override ./BuiltValeCompiler --midas_tests_dir ../Midas/test --concurrent 6 @assist || { echo 'Tests failed, aborting.' ; exit 1; }
+Tester/build/testvalec --valestrom_dir_override ./Valestrom --midas_dir_override ./BuiltValeCompiler --builtins_dir_override ./BuiltValeCompiler/builtins --valec_dir_override ./BuiltValeCompiler --midas_tests_dir ../Midas/test --concurrent 6 @assist || { echo 'Tests failed, aborting.' ; exit 1; }

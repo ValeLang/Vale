@@ -10,8 +10,8 @@ sbt assembly || { echo 'Valestrom build failed, aborting.' ; exit 1; }
 
 cd ../Midas
 
+echo Generating Midas...
 LLVM_CMAKE_DIR="/usr/local/Cellar/llvm@11/`ls /usr/local/Cellar/llvm@11`/lib/cmake/llvm"
-
 cmake -B build -D LLVM_DIR="$LLVM_CMAKE_DIR" || { echo 'Midas build failed, aborting.' ; exit 1; }
 
 cd build

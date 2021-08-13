@@ -19,11 +19,11 @@ make
 
 cd ../../Driver
 
-call build.bat
+build.sh
 
 cd ../Tester
 
-call build.bat
+build.sh
 
 build/tester build --valestrom_dir_override ../Valestrom --midas_dir_override ../Midas/build --builtins_dir_override ../Midas/src/builtins --valec_dir_override ../Driver/build --midas_tests_dir ../Midas/test --concurrent 6 @assist
 

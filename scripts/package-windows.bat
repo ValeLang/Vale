@@ -10,6 +10,6 @@ copy valec* ..\release-windows
 copy ..\Midas\build\Debug\midas.exe ..\release-windows\midas.exe
 git clone https://github.com/ValeLang/stdlib ../release-windows/stdlib
 echo d | xcopy /s /e /y helloworld ..\release-windows\samples\helloworld
-copy ..\Driver\build\valec ..\release-windows\valec
+copy ..\Driver\build\valec.exe ..\release-windows\valec.exe
 
 copy %1\bin\LLVM-C.dll ..\release-windows\LLVM-C.dll

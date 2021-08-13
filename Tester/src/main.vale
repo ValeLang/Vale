@@ -4,7 +4,7 @@ import stdlib.flagger.*;
 
 struct TestSuite {
   cwd Path;
-  build_program str;
+  valec_path str;
   common_build_args List<str>;
   test_filters List<str>;
   max_concurrent_tests int;
@@ -69,13 +69,13 @@ fn main() int export {
           FLAG_STR(),
           "Directory containing Midas builtins.",
           "../Midas/src/builtins",
-          "Alternate path for the temporary C builtin functions."),,
+          "Alternate path for the temporary C builtin functions."),
         Flag(
-          "--valec_dir",
+          "--valec_path",
           FLAG_STR(),
-          "Directory containing valec.",
+          "Path to valec executable.",
           "../Driver/build/valec",
-          "Alternate path for valec."),
+          "Path to valec executable."),
         Flag(
           "--midas_tests_dir",
           FLAG_STR(),
@@ -102,25 +102,22 @@ fn main() int export {
 
   max_concurrent_tests = parsed_flags.get_int_flag("--concurrent", 10);
 
-  valestrom_path = parsed_flags.expect_string_flag(&all_args, "--valestrom_path");
+  valestrom_path = Path(parsed_flags.expect_string_flag(&flags, "--valestrom_path"));
   common_build_args!.add("--valestrom_path_override");
   common_build_args!.add(valestrom_path.str());
 
-  midas_path = parsed_flags.expect_string_flag(&all_args, "--midas_path");
+  midas_path = Path(parsed_flags.expect_string_flag(&flags, "--midas_path"));
   common_build_args!.add("--midas_path_override");
   common_build_args!.add(midas_path.str());
 
-  builtins_dir = parsed_flags.expect_string_flag(&all_args, "--builtins_dir");
+  builtins_dir = Path(parsed_flags.expect_string_flag(&flags, "--builtins_dir"));
   common_build_args!.add("--builtins_dir_override");
   common_build_args!.add(builtins_dir.str());
 
-  valec_path = parsed_flags.expect_string_flag(&all_args, "--valec_path");
+  valec_path = Path(parsed_flags.expect_string_flag(&flags, "--valec_path"));
 
   midas_tests_dir = Path(parsed_flags.expect_string_flag(&flags, "--midas_tests_dir"));
   valestrom_tests_dir = Path(parsed_flags.expect_string_flag(&flags, "--valestrom_tests_dir"));
-
-
-  build_program = valec_path./(if (IsWindows()) { "valec.exe" } else { "valec" });
 
   include_regions = List<str>();
   test_filters = List<str>();
@@ -154,7 +151,7 @@ fn main() int export {
   suite =
       TestSuite(
           cwd,
-          build_program.str(),
+          valec_path.str(),
           common_build_args,
           test_filters,
           max_concurrent_tests,
@@ -381,7 +378,7 @@ Subprocess {
     build_args!.add(flag);
   });
 
-  ret (Subprocess(suite.build_program, &build_args)).expect();
+  ret (Subprocess(suite.valec_path, &build_args)).expect();
 }
 
 fn StartTest(

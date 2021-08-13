@@ -127,8 +127,8 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
   maybe_valestrom_path_override = parsed_flags.get_string_flag("--valestrom_path_override");
   if (not maybe_valestrom_path_override.isEmpty()) {
     set valestrom_path = Path(maybe_valestrom_path_override.get());
-    if (not valestrom_path.is_dir()) {
-      panic("Error: --valestrom_path_override's value ({valestrom_path.str()}) is not a directory.");
+    if (not valestrom_path.is_file()) {
+      panic("Error: --valestrom_path_override's value ({valestrom_path.str()}) is not a file.");
     }
   }
 
@@ -137,8 +137,8 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
   maybe_midas_path_override = parsed_flags.get_string_flag("--midas_path_override");
   if (not maybe_midas_path_override.isEmpty()) {
     set midas_path = Path(maybe_midas_path_override.get());
-    if (not midas_path.is_dir()) {
-      panic("Error: --midas_path_override's value ({midas_path.str()}) is not a directory.");
+    if (not midas_path.is_file()) {
+      panic("Error: --midas_path_override's value ({midas_path.str()}) is not a file.");
     }
   }
 

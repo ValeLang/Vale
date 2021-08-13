@@ -43,14 +43,16 @@ cd ../../Driver
 echo Compiling Driver...
 ./build.sh $BOOTSTRAPPING_VALEC_DIR || { echo 'Driver build failed, aborting.' ; exit 1; }
 
+cd ../scripts
+
+./package-unix.sh
+
 cd ../Tester
+
+unzip ../release-unix/ValeCompiler.zip -d ./BuiltValeCompiler
 
 echo Compiling Tester...
 ./build.sh $BOOTSTRAPPING_VALEC_DIR || { echo 'Tester build failed, aborting.' ; exit 1; }
 
 echo Running Tester...
-build/testvalec --valestrom_dir_override ../Valestrom --midas_dir_override ../Midas/build --builtins_dir_override ../Midas/src/builtins --valec_dir_override ../Driver/build --midas_tests_dir ../Midas/test --concurrent 6 @assist || { echo 'Tests failed, aborting.' ; exit 1; }
-
-cd ../scripts
-
-./package-unix.sh
+./build/testvalec --valestrom_path ./BuiltValeCompiler/Valestrom.jar --midas_path ./BuiltValeCompiler/midas --builtins_dir ./BuiltValeCompiler/builtins --valec_path ./BuiltValeCompiler/valec --midas_tests_dir ../Midas/test --valestrom_tests_dir ../Valestrom --concurrent 6 @assist || { echo 'Tests failed, aborting.' ; exit 1; }

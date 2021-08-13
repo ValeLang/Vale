@@ -19,12 +19,12 @@ cd ../Midas
 
 echo Generating Midas...
 LLVM_CMAKE_DIR="/usr/local/Cellar/llvm@11/`ls /usr/local/Cellar/llvm@11`/lib/cmake/llvm"
-cmake -B build -D LLVM_DIR="$LLVM_CMAKE_DIR" || { echo 'Midas build failed, aborting.' ; exit 1; }
+cmake -B build -D LLVM_DIR="$LLVM_CMAKE_DIR" || { echo 'Midas generate failed, aborting.' ; exit 1; }
 
 cd build
 
 echo Compiling Midas...
-make
+make || { echo 'Midas build failed, aborting.' ; exit 1; }
 
 cd ../../Driver
 

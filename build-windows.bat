@@ -20,19 +20,31 @@ cd build
 echo Compiling Midas...
 cmake --build .
 
+
+
+
 cd ..\..\Driver
 
 echo Compiling Driver...
 call build.bat %2
 
+
+
+cd ..\scripts
+
+call package-windows.bat
+
+
+
 cd ..\Tester
+
+
+mkdir ./BuiltValeCompiler
+tar -xf ../release-unix/ValeCompiler.zip -C ./BuiltValeCompiler
+
 
 echo Compiling Tester...
 call build.bat %2
 
 echo Running Tester...
-build\tester --valestrom_dir_override ..\Valestrom --midas_dir_override ..\Midas\build\Debug --builtins_dir_override ..\Midas\src\builtins --valec_dir_override ..\Driver\build --midas_tests_dir ..\Midas\test --concurrent 6 @assist
-
-cd ..\scripts
-
-call package-windows.bat
+build\tester --valestrom_path .\BuiltValeCompiler\Valestrom.jar --midas_path .\BuiltValeCompiler\midas --builtins_dir .\BuiltValeCompiler\builtins --valec_path .\BuiltValeCompiler\valec --midas_tests_dir ..\Midas\test --valestrom_tests_dir ..\Valestrom --concurrent 6 @assist

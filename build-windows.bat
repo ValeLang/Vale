@@ -1,6 +1,4 @@
 
-git clone --single-branch https://github.com/ValeLang/stdlib --branch master
-
 cd Valestrom
 
 echo Compiling Valestrom...
@@ -11,7 +9,7 @@ cd ..
 cd Midas
 
 echo Generating Midas...
-cmake -B build -D LLVM_DIR="C:\llvm-install-minimum\lib\cmake\llvm"
+cmake -B build -D LLVM_DIR="%1\lib\cmake\llvm"
 
 cd build
 
@@ -21,12 +19,12 @@ cmake --build .
 cd ..\..\Driver
 
 echo Compiling Driver...
-call build.bat
+call build.bat %2
 
 cd ..\Tester
 
 echo Compiling Tester...
-call build.bat
+call build.bat %2
 
 echo Running Tester...
 build\tester --valestrom_dir_override ..\Valestrom --midas_dir_override ..\Midas\build\Debug --builtins_dir_override ..\Midas\src\builtins --valec_dir_override ..\Driver\build --midas_tests_dir ..\Midas\test --concurrent 6 @assist

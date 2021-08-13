@@ -8,6 +8,8 @@ if [ "$BOOTSTRAPPING_VALEC_DIR" == "" ]; then
   exit
 fi
 
+source ~/.zshrc
+
 cd Valestrom
 
 echo Compiling Valestrom...

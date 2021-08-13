@@ -19,7 +19,7 @@ echo Installing Java...
 curl -L https://github.com/AdoptOpenJDK/openjdk11-binaries/releases/download/jdk-11.0.10%2B9/OpenJDK11U-jre_x64_mac_hotspot_11.0.10_9.tar.gz --output adoptopenjdk.tar.gz
 tar xzf adoptopenjdk.tar.gz
 # Add vars to .zshrc (or .bashrc)
-echo 'export PATH=$PATH:~/jdk-11.0.10+9-jre/Contents/Home/bin' >> ~/.zshrc
+echo 'export PATH=~/jdk-11.0.10+9-jre/Contents/Home/bin:$PATH' >> ~/.zshrc
 
 # Installs brew, like said on https://brew.sh/
 echo Installing brew...

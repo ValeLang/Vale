@@ -1,5 +1,5 @@
 
-git clone --single-branch https://github.com/Verdagon/stdlib --branch stdlib
+git clone --single-branch https://github.com/Verdagon/stdlib --branch staging
 
 cd Valestrom
 

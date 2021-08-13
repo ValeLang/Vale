@@ -47,7 +47,7 @@ char* __vale_initTwinPages() {
           NULL, pageSize * 2, MEM_RESERVE | MEM_COMMIT, PAGE_NOACCESS);
   if(allocationPtr == NULL) {
     _tprintf(TEXT("VirtualAlloc failed. Error: %ld\n"), GetLastError());
-    return 1;
+    exit(1);
   }
   DWORD oldFlags = 0;
   int virtualProtectSuccess =

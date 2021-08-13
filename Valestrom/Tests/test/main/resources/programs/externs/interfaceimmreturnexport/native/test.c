@@ -2,11 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "tmod/IShip.h"
-#include "tmod/Firefly.h"
-#include "tmod/cMakeShip.h"
-#include "tmod/valeMakeShip.h"
+#include "vtest/IShip.h"
+#include "vtest/Firefly.h"
+#include "vtest/cMakeShip.h"
+#include "vtest/valeMakeShip.h"
 
-extern tmod_IShip tmod_cMakeShip() {
-  return tmod_valeMakeShip();
+extern vtest_IShip vtest_cMakeShip() {
+  return vtest_valeMakeShip();
 }

@@ -1,11 +1,11 @@
 #include <stdint.h>
 
-typedef struct tmod_TwoInts {
+typedef struct vtest_TwoInts {
   ValeInt a;
   ValeInt b;
-} tmod_TwoInts;
+} vtest_TwoInts;
 
-TwoInts tmod_extMakeTuple(int i) {
-  tmod_TwoInts result = { i * 2, i * 3 };
+TwoInts vtest_extMakeTuple(int i) {
+  vtest_TwoInts result = { i * 2, i * 3 };
   return result;
 }

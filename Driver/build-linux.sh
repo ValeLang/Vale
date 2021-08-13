@@ -6,4 +6,4 @@ if [ "$BOOTSTRAPPING_VALEC_DIR" == "" ]; then
   exit
 fi
 
-$BOOTSTRAPPING_VALEC_DIR/valec build driver=src stdlib=$BOOTSTRAPPING_VALEC_DIR/stdlib/src --output_dir build -o build/valec
+$BOOTSTRAPPING_VALEC_DIR/valec build driver=src stdlib=$BOOTSTRAPPING_VALEC_DIR/stdlib/src --output_dir build -o valec

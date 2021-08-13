@@ -53,17 +53,29 @@ fn main() int export {
   flags =
       [][
         Flag(
-          "--concurrent",
-          FLAG_INT(),
-          "How many tests to run in parallel.",
-          "10",
-          "How many tests to run in parallel."),
-        Flag(
-          "--midas_dir_override",
+          "--midas_path",
           FLAG_STR(),
-          "Directory containing Midas.",
+          "Path to Midas executable.",
           "../Midas/build",
           "Alternate path for Midas, the codegen phase binary."),
+        Flag(
+          "--valestrom_path",
+          FLAG_STR(),
+          "Path to Valestrom jar.",
+          "../Valestrom",
+          "Alternate path for Valestrom, the frontend phase binary."),
+        Flag(
+          "--builtins_dir",
+          FLAG_STR(),
+          "Directory containing Midas builtins.",
+          "../Midas/src/builtins",
+          "Alternate path for the temporary C builtin functions."),,
+        Flag(
+          "--valec_dir",
+          FLAG_STR(),
+          "Directory containing valec.",
+          "../Driver/build/valec",
+          "Alternate path for valec."),
         Flag(
           "--midas_tests_dir",
           FLAG_STR(),
@@ -71,35 +83,17 @@ fn main() int export {
           "../Midas/build",
           "Directory containing Midas tests."),
         Flag(
-          "--valestrom_dir_override",
+          "--valestrom_tests_dir",
           FLAG_STR(),
-          "Directory containing Valestrom.",
+          "Directory containing Valestrom's tests.",
           "../Valestrom",
-          "Alternate path for Valestrom, the frontend phase binary."),
+          "Directory containing Valestrom's tests."),
         Flag(
-          "--builtins_dir_override",
-          FLAG_STR(),
-          "Directory containing Midas builtins.",
-          "../Midas/src/builtins",
-          "Alternate path for the temporary C builtin functions."),
-        Flag(
-          "--valec_dir_override",
-          FLAG_STR(),
-          "Directory containing valec.",
-          "../Midas/src/builtins",
-          "Alternate path for valec."),
-        Flag(
-          "--name_include",
-          FLAG_STR(),
-          "Filters tests by name.",
-          "assist",
-          "Filters tests by name."),
-        Flag(
-          "--region_include",
-          FLAG_STR(),
-          "Runs all the matching tests with the given region.",
-          "assist",
-          "Runs all the matching tests with the given region.")];
+          "--concurrent",
+          FLAG_INT(),
+          "How many tests to run in parallel.",
+          "10",
+          "How many tests to run in parallel.")];
   parsed_flags = flags.parse_all_flags(all_args);
 
 
@@ -108,40 +102,25 @@ fn main() int export {
 
   max_concurrent_tests = parsed_flags.get_int_flag("--concurrent", 10);
 
-  valestrom_dir = compiler_dir.clone();
-  maybe_valestrom_dir_override = parsed_flags.get_string_flag("--valestrom_dir_override");
-  if (not maybe_valestrom_dir_override.isEmpty()) {
-    set valestrom_dir = maybe_valestrom_dir_override.get().Path();
-    common_build_args!.add("--valestrom_dir_override");
-    common_build_args!.add(valestrom_dir.str());
-  }
+  valestrom_path = parsed_flags.expect_string_flag(&all_args, "--valestrom_path");
+  common_build_args!.add("--valestrom_path_override");
+  common_build_args!.add(valestrom_path.str());
 
-  midas_dir = compiler_dir.clone();
-  maybe_midas_dir_override = parsed_flags.get_string_flag("--midas_dir_override");
-  if (not maybe_midas_dir_override.isEmpty()) {
-    set midas_dir = maybe_midas_dir_override.get().Path();
-    common_build_args!.add("--midas_dir_override");
-    common_build_args!.add(midas_dir.str());
-  }
+  midas_path = parsed_flags.expect_string_flag(&all_args, "--midas_path");
+  common_build_args!.add("--midas_path_override");
+  common_build_args!.add(midas_path.str());
 
+  builtins_dir = parsed_flags.expect_string_flag(&all_args, "--builtins_dir");
+  common_build_args!.add("--builtins_dir_override");
+  common_build_args!.add(builtins_dir.str());
 
-  maybe_builtins_dir_override = parsed_flags.get_string_flag("--builtins_dir_override");
-  if (not maybe_builtins_dir_override.isEmpty()) {
-    common_build_args!.add("--builtins_dir_override");
-    common_build_args!.add(maybe_builtins_dir_override.get());
-  }
-
-
-  valec_dir = compiler_dir.clone();
-  maybe_valec_dir_override = parsed_flags.get_string_flag("--valec_dir_override");
-  if (not maybe_valec_dir_override.isEmpty()) {
-    set valec_dir = maybe_valec_dir_override.get().Path();
-  }
+  valec_path = parsed_flags.expect_string_flag(&all_args, "--valec_path");
 
   midas_tests_dir = Path(parsed_flags.expect_string_flag(&flags, "--midas_tests_dir"));
+  valestrom_tests_dir = Path(parsed_flags.expect_string_flag(&flags, "--valestrom_tests_dir"));
 
 
-  build_program = valec_dir./(if (IsWindows()) { "valec.exe" } else { "valec" });
+  build_program = valec_path./(if (IsWindows()) { "valec.exe" } else { "valec" });
 
   include_regions = List<str>();
   test_filters = List<str>();
@@ -161,7 +140,7 @@ fn main() int export {
     set input_i = input_i + 1;
   }
 
-  samples_path = valestrom_dir./("Tests/test/main/resources").resolve();
+  samples_path = valestrom_tests_dir./("Tests/test/main/resources").resolve();
 
 
   if (include_regions.len() == 0) {

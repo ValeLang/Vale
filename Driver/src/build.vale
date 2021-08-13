@@ -48,13 +48,13 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
   flags =
       [][
         Flag(
-          "--midas_dir_override",
+          "--midas_path_override",
           FLAG_STR(),
           "Directory containing Midas.",
           "../Midas/build",
           "Alternate path for Midas, the codegen phase binary."),
         Flag(
-          "--valestrom_dir_override",
+          "--valestrom_path_override",
           FLAG_STR(),
           "Directory containing Valestrom.",
           "../Valestrom",
@@ -123,21 +123,22 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
   parsed_flags = flags.parse_all_flags(all_args);
 
 
-  valestrom_dir = compiler_dir.clone();
-  maybe_valestrom_dir_override = parsed_flags.get_string_flag("--valestrom_dir_override");
-  if (not maybe_valestrom_dir_override.isEmpty()) {
-    set valestrom_dir = Path(maybe_valestrom_dir_override.get());
-    if (not valestrom_dir.is_dir()) {
-      panic("Error: --valestrom_dir_override's value ({valestrom_dir.str()}) is not a directory.");
+  valestrom_path = compiler_dir./("Valestrom.jar");
+  maybe_valestrom_path_override = parsed_flags.get_string_flag("--valestrom_path_override");
+  if (not maybe_valestrom_path_override.isEmpty()) {
+    set valestrom_path = Path(maybe_valestrom_path_override.get());
+    if (not valestrom_path.is_dir()) {
+      panic("Error: --valestrom_path_override's value ({valestrom_path.str()}) is not a directory.");
     }
   }
 
-  midas_dir = compiler_dir.clone();
-  maybe_midas_dir_override = parsed_flags.get_string_flag("--midas_dir_override");
-  if (not maybe_midas_dir_override.isEmpty()) {
-    set midas_dir = Path(maybe_midas_dir_override.get());
-    if (not midas_dir.is_dir()) {
-      panic("Error: --midas_dir_override's value ({midas_dir.str()}) is not a directory.");
+  midas_program_name = if (IsWindows()) { "midas.exe" } else { "midas" };
+  midas_path = compiler_dir./(midas_program_name);
+  maybe_midas_path_override = parsed_flags.get_string_flag("--midas_path_override");
+  if (not maybe_midas_path_override.isEmpty()) {
+    set midas_path = Path(maybe_midas_path_override.get());
+    if (not midas_path.is_dir()) {
+      panic("Error: --midas_path_override's value ({midas_path.str()}) is not a directory.");
     }
   }
 
@@ -208,11 +209,11 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
     }
   }
 
-  if (not valestrom_dir.exists()) {
-    panic("Cannot find Valestrom directory: " + valestrom_dir.str());
+  if (not valestrom_path.exists()) {
+    panic("Cannot find Valestrom directory: " + valestrom_path.str());
   }
-  if (not midas_dir.exists()) {
-    panic("Cannot find Midas directory: " + midas_dir.str());
+  if (not midas_path.exists()) {
+    panic("Cannot find Midas directory: " + midas_path.str());
   }
   if (not builtins_dir.exists()) {
     panic("Cannot find builtins directory: " + builtins_dir.str());
@@ -229,7 +230,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
   } else {
     valestrom_process =
         invoke_valestrom(
-            &valestrom_dir,
+            &valestrom_path,
             &project_directory_declarations,
             &project_vale_input_declarations,
             &project_non_vale_input_declarations,
@@ -279,7 +280,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
 
   midas_process =
       invoke_midas(
-          &midas_dir,
+          &midas_path,
           &vast_files,
           &output_dir,
           &maybe_region_override,

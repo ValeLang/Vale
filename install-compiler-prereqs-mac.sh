@@ -28,9 +28,10 @@ echo Installing brew...
 
 # Install stable valec, for the .vale parts of the compiler
 echo "Downloading and unzipping stable bootstrapping valec to $BOOTSTRAPPING_VALEC_DIR..."
-curl -L https://vale.dev/releases/ValeCompiler-0.1.3.3-Mac.zip
-unzip ValeCompiler-0.1.3.3-Mac.zip
-echo 'export PATH=$PATH:~/ValeCompiler-0.1.3.3-Mac' >> ~/.zshrc
+curl -L https://vale.dev/releases/ValeCompiler-0.1.3.3-Ubuntu.zip
+unzip ValeCompiler-0.1.3.3-Ubuntu.zip -d $BOOTSTRAPPING_VALEC_DIR
+# Doesnt work, see https://github.com/ValeLang/Vale/issues/306
+# echo 'export PATH=$PATH:~/ValeCompiler-0.1.3.3-Ubuntu' >> ~/.bashrc
 
 # Install misc dependencies
 echo "Downloading and unzipping depdendencies and LLVM..."

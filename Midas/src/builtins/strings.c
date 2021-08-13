@@ -24,7 +24,7 @@ ValeStr* ValeStrFrom(char* source) {
   return result;
 }
 
-ValeInt vstr_indexOf(
+ValeInt __vale_strindexof(
     ValeStr* haystackContainerStr, ValeInt haystackBegin, ValeInt haystackEnd,
     ValeStr* needleContainerStr, ValeInt needleBegin, ValeInt needleEnd) {
   char* haystackContainerChars = haystackContainerStr->chars;
@@ -48,7 +48,7 @@ ValeInt vstr_indexOf(
 }
 
 
-ValeStr* vstr_substring(
+ValeStr* __vale_substring(
     ValeStr* sourceStr,
     ValeInt begin,
     ValeInt length) {
@@ -64,7 +64,7 @@ ValeStr* vstr_substring(
   return result;
 }
 
-char vstr_eq(
+char __vale_streq(
     ValeStr* aStr,
     ValeInt aBegin,
     ValeInt aEnd,
@@ -99,7 +99,7 @@ char vstr_eq(
   return TRUE;
 }
 
-ValeInt vstr_cmp(
+ValeInt __vale_strcmp(
     ValeStr* aStr,
     ValeInt aBegin,
     ValeInt aEnd,
@@ -169,7 +169,7 @@ ValeStr* __vale_addStr(
   return result;
 }
 
-extern ValeStr* __castI64Str(int64_t n) {
+extern ValeStr* __vale_castI64Str(int64_t n) {
   char tempBuffer[100] = { 0 };
   int charsWritten = snprintf(tempBuffer, 100, "%lld", n);
   ValeStr* result = ValeStrNew(charsWritten);
@@ -179,7 +179,7 @@ extern ValeStr* __castI64Str(int64_t n) {
 }
 
 extern ValeStr* __vale_castI32Str(int32_t n) {
-  return __castI64Str((int64_t)n);
+  return __vale_castI64Str((int64_t)n);
 }
 
 extern ValeStr* __vale_castFloatStr(double f) {
@@ -191,13 +191,13 @@ extern ValeStr* __vale_castFloatStr(double f) {
   return result;
 }
 
-void __vprintStr(ValeStr* s, ValeInt start, ValeInt length) {
+void __vale_printstr(ValeStr* s, ValeInt start, ValeInt length) {
   char* chars = s->chars;
   fwrite(chars + start, 1, length, stdout);
   free(s);
 }
 
-ValeInt vstr_toascii(ValeStr* s, ValeInt begin, ValeInt end) {
+ValeInt __vale_strtoascii(ValeStr* s, ValeInt begin, ValeInt end) {
   assert(begin + 1 <= end);
   char* chars = s->chars;
   ValeInt result = (ValeInt)*(chars + begin);
@@ -205,7 +205,7 @@ ValeInt vstr_toascii(ValeStr* s, ValeInt begin, ValeInt end) {
   return result;
 }
 
-ValeStr* vstr_fromascii(ValeInt code) {
+ValeStr* __vale_strfromascii(ValeInt code) {
   ValeStr* result = ValeStrNew(1);
   char* dest = result->chars;
   *dest = code;

@@ -699,6 +699,7 @@ object ParserCompilation {
     if (neededPackageCoords.isEmpty) {
       return Ok((alreadyFoundCodeMap, alreadyParsedProgramPMap))
     }
+//    println("Need packages: " + neededPackageCoords.mkString(", "))
 
     val neededCodeMapFlat =
       neededPackageCoords.flatMap(neededPackageCoord => {

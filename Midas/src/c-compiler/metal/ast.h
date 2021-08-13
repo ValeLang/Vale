@@ -22,6 +22,8 @@
 
 using std::move;
 
+extern const std::string BUILTIN_PROJECT_NAME;
+
 // Defined elsewhere
 class Block;
 class Expression;
@@ -269,7 +271,14 @@ public:
 
   Package* getPackage(PackageCoordinate* packageCoord) {
     auto iter = packages.find(packageCoord);
-    assert(iter != packages.end());
+    if (iter == packages.end()) {
+      std::cerr << "Couldn't find package: " << packageCoord->projectName;
+      for (auto i : packageCoord->packageSteps) {
+        std::cerr << "." << i;
+      }
+      std::cerr << ", aborting." << std::endl;
+      exit(1);
+    }
     return iter->second;
   }
 

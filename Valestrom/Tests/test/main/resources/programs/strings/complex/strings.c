@@ -42,7 +42,7 @@ ValeStr* vstr_substring(
   return ValeStrNew(strChars, begin, length);
 }
 
-char vstr_eq(
+char streq(
     ValeStr* aContainerStr,
     ValeInt aBegin,
     ValeInt aEnd,

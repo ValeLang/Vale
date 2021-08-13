@@ -18,3 +18,6 @@ echo 'export PATH=~/jdk-11.0.10+9-jre/Contents/Home/bin:$PATH' >> ~/.zshrc
 
 # Install misc dependencies
 brew install llvm@11 sbt cmake
+echo 'export PATH=/usr/local/Cellar/llvm@11/11.1.0_2/bin:$PATH' >> ~/.zshrc
+
+source ~/.zshrc

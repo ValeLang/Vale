@@ -8,6 +8,7 @@
 #include "instructions.h"
 #include "metalcache.h"
 
-Program* readProgram(MetalCache* cache, const nlohmann::json& program);
+//Program* readProgram(MetalCache* cache, const nlohmann::json& program);
+Package* readPackage(MetalCache* cache, const nlohmann::json& program);
 
 #endif

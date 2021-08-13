@@ -51,7 +51,7 @@ class ValeCompiler:
                 str(self.valestrom_path / "Valestrom.jar"),
                 "net.verdagon.vale.driver.Driver",
                 command
-            ] + namespaces_to_build + valestrom_options + list((x[0] + ":" + str(x[1])) for x in valestrom_inputs)
+            ] + valestrom_options + list((x[0] + "=" + str(x[1])) for x in valestrom_inputs)
         )
 
     def midas(self,
@@ -327,8 +327,8 @@ class ValeCompiler:
             user_c_files = []
 
             for arg in args:
-                if ":" in arg:
-                    parts = arg.split(":")
+                if "=" in arg:
+                    parts = arg.split("=")
                     if len(parts) != 2:
                         print("Unrecognized input: " + arg)
                         sys.exit(22)
@@ -359,7 +359,7 @@ class ValeCompiler:
                     namespaces_to_build.append(arg)
 
             # for user_valestrom_input in user_valestrom_inputs:
-            #     print("Valestrom input: " + user_valestrom_input[0] + ":" + str(user_valestrom_input[1]))
+            #     print("Valestrom input: " + user_valestrom_input[0] + "=" + str(user_valestrom_input[1]))
             # for user_vast_file in user_vast_files:
             #     print("VAST input: " + str(user_vast_file))
             # for namespace_to_build in namespaces_to_build:

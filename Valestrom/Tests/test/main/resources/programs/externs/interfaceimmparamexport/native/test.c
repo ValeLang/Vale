@@ -2,12 +2,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "tmod/Spaceship.h"
-#include "tmod/Seaship.h"
-#include "tmod/IShip.h"
-#include "tmod/cGetShipFuel.h"
-#include "tmod/valeGetShipFuel.h"
+#include "vtest/Spaceship.h"
+#include "vtest/Seaship.h"
+#include "vtest/IShip.h"
+#include "vtest/cGetShipFuel.h"
+#include "vtest/valeGetShipFuel.h"
 
-extern ValeInt tmod_cGetShipFuel(tmod_IShip s) {
-  return tmod_valeGetShipFuel(s);
+extern ValeInt vtest_cGetShipFuel(vtest_IShip s) {
+  return vtest_valeGetShipFuel(s);
 }

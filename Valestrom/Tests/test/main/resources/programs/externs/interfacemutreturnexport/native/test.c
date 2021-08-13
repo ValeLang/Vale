@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "tmod/IShip.h"
-#include "tmod/runExtCommand.h"
-#include "tmod/makeFirefly.h"
+#include "vtest/IShip.h"
+#include "vtest/runExtCommand.h"
+#include "vtest/makeFirefly.h"
 
-tmod_IShipRef tmod_runExtCommand() {
-  return tmod_makeFirefly(42);
+vtest_IShipRef vtest_runExtCommand() {
+  return vtest_makeFirefly(42);
 }

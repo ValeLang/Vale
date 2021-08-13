@@ -1,0 +1,4 @@
+
+fn main() int export {
+  len(str(1337i64))
+}

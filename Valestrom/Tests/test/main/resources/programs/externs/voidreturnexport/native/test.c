@@ -1,6 +1,6 @@
 #include <stdint.h>
-#include "tmod/donothing.h"
+#include "vtest/donothing.h"
 
-void tmod_runExtCommand() {
-  tmod_donothing();
+void vtest_runExtCommand() {
+  vtest_donothing();
 }

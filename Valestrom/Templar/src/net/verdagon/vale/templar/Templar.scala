@@ -804,24 +804,24 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
             val structDef = temputs.getStructDefForRef(sr)
             structDef.members.foreach({ case StructMemberT(_, _, member) =>
               val CoordT(_, _, memberKind) = member.reference
-              if (!Templar.isPrimitive(memberKind) && !exportedKindToExport.contains(memberKind)) {
+              if (structDef.mutability == ImmutableT && !Templar.isPrimitive(memberKind) && !exportedKindToExport.contains(memberKind)) {
                 throw CompileErrorExceptionT(
-                  ExportedKindDependedOnNonExportedKind(
+                  ExportedImmutableKindDependedOnNonExportedKind(
                     export.range, packageCoord, exportedKind, memberKind))
               }
             })
           }
-          case StaticSizedArrayTT(_, RawArrayTT(CoordT(_, _, elementKind), _, _)) => {
-            if (!Templar.isPrimitive(elementKind) && !exportedKindToExport.contains(elementKind)) {
+          case StaticSizedArrayTT(_, RawArrayTT(CoordT(_, _, elementKind), mutability, _)) => {
+            if (mutability == ImmutableT && !Templar.isPrimitive(elementKind) && !exportedKindToExport.contains(elementKind)) {
               throw CompileErrorExceptionT(
-                ExportedKindDependedOnNonExportedKind(
+                ExportedImmutableKindDependedOnNonExportedKind(
                   export.range, packageCoord, exportedKind, elementKind))
             }
           }
-          case RuntimeSizedArrayTT(RawArrayTT(CoordT(_, _, elementKind), _, _)) => {
-            if (!Templar.isPrimitive(elementKind) && !exportedKindToExport.contains(elementKind)) {
+          case RuntimeSizedArrayTT(RawArrayTT(CoordT(_, _, elementKind), mutability, _)) => {
+            if (mutability == ImmutableT && !Templar.isPrimitive(elementKind) && !exportedKindToExport.contains(elementKind)) {
               throw CompileErrorExceptionT(
-                ExportedKindDependedOnNonExportedKind(
+                ExportedImmutableKindDependedOnNonExportedKind(
                   export.range, packageCoord, exportedKind, elementKind))
             }
           }

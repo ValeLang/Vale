@@ -153,7 +153,7 @@ GenHeap* getGenHeapForDesiredSize(int desiredBytesNotMultipleOf8) {
     return &__gen_2_pow_24B_heap;
   } else {
     fprintf(stderr, "Tried to allocate %d bytes!\n", desiredBytesNotMultipleOf8);
-    assert(0);
+    exit(1);
   }
 }
 

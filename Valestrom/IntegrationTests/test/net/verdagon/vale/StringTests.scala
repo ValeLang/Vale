@@ -54,6 +54,16 @@ class StringTests extends FunSuite with Matchers {
     result shouldEqual "sprog\u001bwoggle"
   }
 
+  test("int to string") {
+    val compile = RunCompilation.test( Tests.loadExpected("programs/strings/inttostr.vale"))
+    compile.evalForKind(Vector()) shouldEqual VonInt(4)
+  }
+
+  test("i64 to string") {
+    val compile = RunCompilation.test( Tests.loadExpected("programs/strings/i64tostr.vale"))
+    compile.evalForKind(Vector()) shouldEqual VonInt(4)
+  }
+
   test("String length") {
     val compile = RunCompilation.test( Tests.loadExpected("programs/strings/strlen.vale"))
 

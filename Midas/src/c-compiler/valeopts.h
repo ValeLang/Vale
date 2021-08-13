@@ -20,10 +20,10 @@ enum class RegionOverride {
 
 // Compiler options
 struct ValeOptions {
-    std::string srcpath;    // Full path
-    std::string srcDir;    // Just the directory
-    std::string srcNameNoExt;    // Just the name of the file, without extension
-    std::string srcDirAndNameNoExt;    // Just the name of the file, without extension
+//    std::string srcpath;    // Full path
+//    std::string srcDir;    // Just the directory
+//    std::string srcNameNoExt;    // Just the name of the file, without extension
+//    std::string srcDirAndNameNoExt;    // Just the name of the file, without extension
 
     std::string outputDir;
 

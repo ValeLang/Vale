@@ -1,0 +1,71 @@
+import stdlib.os.*;
+
+fn invoke_clang(
+  windows bool,
+  clang_inputs &List<Path>,
+  exe_name str,
+  census bool,
+  debug_symbols bool,
+  output_dir &Path)
+Subprocess {
+  program =
+    if (windows) {
+      "cl.exe"
+    } else {
+      = if (not FindProgramInPath("clang-11").isEmpty()) { "clang-11" } else { "clang" }
+    };
+
+  exe_file = output_dir / exe_name;
+
+  args = List<str>();
+
+  args!.add("-I" + output_dir./("include").str());
+  args!.add("-O3");
+
+  if (windows) {
+    args!.add("/ENTRY:\"main\"");
+    args!.add("/SUBSYSTEM:CONSOLE");
+    args!.add("/Fe:{exe_file.str()}");
+
+    // On the command line this might look like:
+    //     /Fo.\build\\
+    // See https://stackoverflow.com/questions/7706490/visual-c-command-line-compiler-cl-exe-redirect-obj-files/9550218
+    // for why this is needed.
+    // Another factor, subprocess.h:
+    // - wraps all arguments in quotes,
+    // - escapes whatever quotes were already in them,
+    // - combines them into one string.
+    // So it kind of limits our options here.
+    // This also works, for local paths:
+    //   args!.add("/Fo:.\\{output_dir.str()}\\\\");
+    // But it wouldn't work for absolute dirs, so we just use absolute dirs here.
+    args!.add("/Fo:{output_dir.resolve().str()}\\\\");
+  } else {
+    args!.add("-o");
+    args!.add(exe_file.str());
+    //args!.add("-Wall");
+    //args!.add("-Werror");
+  }
+
+  if (debug_symbols) {
+    args!.add("-g");
+  }
+
+  if (census) {
+    if (windows) {
+      args!.add("/fsanitize=address");
+      args!.add("clang_rt.asan_dynamic-x86_64.lib");
+      args!.add("clang_rt.asan_dynamic_runtime_thunk-x86_64.lib");
+    } else {
+      args!.add("-fsanitize=address");
+      args!.add("-fsanitize=leak");
+      args!.add("-fno-omit-frame-pointer");
+    }
+  }
+
+  clang_inputs.each((clang_input){
+    args!.add(clang_input.str());
+  });
+
+  ret (Subprocess(program, &args)).expect();
+}

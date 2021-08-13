@@ -40,7 +40,7 @@ cd ..\Tester
 
 
 mkdir .\BuiltValeCompiler
-tar -xf ..\release-unix\ValeCompiler.zip -C .\BuiltValeCompiler
+tar -xf ..\release-windows\ValeCompiler.zip -C .\BuiltValeCompiler
 
 
 echo Compiling Tester...

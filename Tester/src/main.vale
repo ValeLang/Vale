@@ -4,6 +4,7 @@ import stdlib.flagger.*;
 
 struct TestSuite {
   cwd Path;
+  verbose bool;
   valec_path str;
   common_build_args List<str>;
   test_filters List<str>;
@@ -93,7 +94,13 @@ fn main() int export {
           FLAG_INT(),
           "How many tests to run in parallel.",
           "10",
-          "How many tests to run in parallel.")];
+          "How many tests to run in parallel."),
+        Flag(
+          "--verbose",
+          FLAG_INT(),
+          "Print more progress details.",
+          "true",
+          "Print more progress details.")];
   parsed_flags = flags.parse_all_flags(all_args);
 
 
@@ -119,9 +126,15 @@ fn main() int export {
   midas_tests_dir = Path(parsed_flags.expect_string_flag(&flags, "--midas_tests_dir"));
   valestrom_tests_dir = Path(parsed_flags.expect_string_flag(&flags, "--valestrom_tests_dir"));
 
+  verbose = parsed_flags.get_bool_flag("--verbose", false);
+
   include_regions = List<str>();
   test_filters = List<str>();
 
+
+  if (verbose) {
+    println("Parsing command line inputs...")
+  }
 
   input_i = 0;
   while (input_i < parsed_flags.unrecognized_inputs.len()) {
@@ -148,9 +161,14 @@ fn main() int export {
     include_regions!.add("unsafe-fast");
   }
 
+  if (verbose) {
+    println("Parsed command line inputs...");
+  }
+
   suite =
       TestSuite(
           cwd,
+          verbose,
           valec_path.str(),
           common_build_args,
           test_filters,
@@ -378,6 +396,10 @@ Subprocess {
     build_args!.add(flag);
   });
 
+  if (suite.verbose) {
+    println("Starting subprocess...");
+  }
+
   ret (Subprocess(suite.valec_path, &build_args)).expect();
 }
 
@@ -388,6 +410,10 @@ fn StartTest(
     vale_input Path,
     extra_build_flags &List<str>,
     region str) {
+  if (suite.verbose) {
+    println("Considering test {test_name}...");
+  }
+
   if (matches_filters(test_name, &suite.test_filters)) {
     suite!.FinishTests(suite.max_concurrent_tests - 1);
 

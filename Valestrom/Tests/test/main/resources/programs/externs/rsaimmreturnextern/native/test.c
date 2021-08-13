@@ -1,11 +1,11 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "tmod/ImmIntArray.h"
-#include "tmod/cMakeRSA.h"
+#include "vtest/ImmIntArray.h"
+#include "vtest/cMakeRSA.h"
 
-tmod_ImmIntArray* tmod_cMakeRSA() {
-  tmod_ImmIntArray* arr = malloc(sizeof(tmod_ImmIntArray) + sizeof(ValeInt) * 5);
+vtest_ImmIntArray* vtest_cMakeRSA() {
+  vtest_ImmIntArray* arr = malloc(sizeof(vtest_ImmIntArray) + sizeof(ValeInt) * 5);
   arr->length = 5;
   arr->elements[0] = 5;
   arr->elements[1] = 7;

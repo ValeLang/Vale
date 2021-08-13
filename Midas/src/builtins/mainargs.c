@@ -8,10 +8,10 @@
 
 extern int64_t __main_num_args;
 extern char** __main_args;
-int64_t numMainArgs() {
+int64_t __vale_numMainArgs() {
   return __main_num_args;
 }
-ValeStr* getMainArg(int64_t i) {
+ValeStr* __vale_getMainArg(int64_t i) {
   char* argCStr = __main_args[i];
   int64_t len = strlen(argCStr);
   ValeStr* vstr = ValeStrNew(len);

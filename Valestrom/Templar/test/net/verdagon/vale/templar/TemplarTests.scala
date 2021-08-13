@@ -896,7 +896,7 @@ class TemplarTests extends FunSuite with Matchers {
   test("Reports when extern function depends on non-exported return") {
     val compile = TemplarTestCompilation.test(
       """
-        |struct Firefly { }
+        |struct Firefly imm { }
         |fn moo() &Firefly extern;
         |""".stripMargin)
     compile.getTemputs() match {
@@ -907,35 +907,35 @@ class TemplarTests extends FunSuite with Matchers {
   test("Reports when exported struct depends on non-exported member") {
     val compile = TemplarTestCompilation.test(
       """
-        |struct Firefly export {
+        |struct Firefly export imm {
         |  raza Raza;
         |}
-        |struct Raza { }
+        |struct Raza imm { }
         |""".stripMargin)
     compile.getTemputs() match {
-      case Err(ExportedKindDependedOnNonExportedKind(_, _, _, _)) =>
+      case Err(ExportedImmutableKindDependedOnNonExportedKind(_, _, _, _)) =>
     }
   }
 
   test("Reports when exported RSA depends on non-exported element") {
     val compile = TemplarTestCompilation.test(
       """
-        |export Array<mut, vary, Raza> as RazaArray;
-        |struct Raza { }
+        |export Array<imm, final, Raza> as RazaArray;
+        |struct Raza imm { }
         |""".stripMargin)
     compile.getTemputs() match {
-      case Err(ExportedKindDependedOnNonExportedKind(_, _, _, _)) =>
+      case Err(ExportedImmutableKindDependedOnNonExportedKind(_, _, _, _)) =>
     }
   }
 
   test("Reports when exported SSA depends on non-exported element") {
     val compile = TemplarTestCompilation.test(
       """
-        |export [5 * Raza] as RazaArray;
-        |struct Raza { }
+        |export [<imm> 5 * Raza] as RazaArray;
+        |struct Raza imm { }
         |""".stripMargin)
     compile.getTemputs() match {
-      case Err(ExportedKindDependedOnNonExportedKind(_, _, _, _)) =>
+      case Err(ExportedImmutableKindDependedOnNonExportedKind(_, _, _, _)) =>
     }
   }
 
@@ -1262,7 +1262,7 @@ class TemplarTests extends FunSuite with Matchers {
         RangeS.testZero, PackageCoordinate.TEST_TLD, fireflySignature, fireflyKind))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
-      ExportedKindDependedOnNonExportedKind(
+      ExportedImmutableKindDependedOnNonExportedKind(
         RangeS.testZero, PackageCoordinate.TEST_TLD, serenityKind, fireflyKind))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,

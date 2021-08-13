@@ -1,0 +1,68 @@
+
+fn invoke_midas(
+  midas_dir &Path,
+  vast_files &List<Path>,
+  output_dir &Path,
+  maybe_region_override &Opt<str>,
+  maybe_cpu &Opt<str>,
+  executable_name str,
+  flares bool,
+  gen_heap bool,
+  census bool,
+  verify bool,
+  llvm_ir bool,
+  print_mem_overhead bool,
+  elide_checks_for_known_live bool,
+  override_known_live_true bool)
+Subprocess {
+  midas_program_name = if (IsWindows()) { "midas.exe" } else { "midas" };
+  midas_program_path = midas_dir./(midas_program_name);
+
+  if (not midas_program_path.exists()) {
+    panic("Cannot find {midas_program_name} at: " + midas_program_path.str());
+  }
+
+  command_line_args = List<str>();
+  command_line_args!.add("--verify");
+  command_line_args!.add("--output-dir");
+  command_line_args!.add(output_dir.str());
+
+  if (not maybe_region_override.isEmpty()) {
+    command_line_args!.add("--region-override");
+    command_line_args!.add(maybe_region_override.get());
+  }
+  if (not maybe_cpu.isEmpty()) {
+    command_line_args!.add("--cpu");
+    command_line_args!.add(maybe_cpu.get());
+  }
+  if (flares) {
+    command_line_args!.add("--flares");
+  }
+  if (gen_heap) {
+    command_line_args!.add("--gen_heap");
+  }
+  if (census) {
+    command_line_args!.add("--census");
+  }
+  if (verify) {
+    command_line_args!.add("--verify");
+  }
+  if (llvm_ir) {
+    command_line_args!.add("--llvm_ir");
+  }
+  if (print_mem_overhead) {
+    command_line_args!.add("--print_mem_overhead");
+  }
+  if (elide_checks_for_known_live) {
+    command_line_args!.add("--elide_checks_for_known_live");
+  }
+  if (override_known_live_true) {
+    command_line_args!.add("--override_known_live_true");
+  }
+
+  vast_files.each((vast_file){
+    command_line_args!.add(vast_file.str());
+  });
+
+  ret (Subprocess(midas_program_path.str(), &command_line_args)).expect();
+}

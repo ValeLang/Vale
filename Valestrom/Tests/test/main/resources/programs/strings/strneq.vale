@@ -1,6 +1,6 @@
 
 fn main() int export {
-  = if (vstr_eq("abc", 0, 3, "def", 0, 3)) {
+  = if (streq("abc", 0, 3, "def", 0, 3)) {
       73
     } else {
       42

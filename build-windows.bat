@@ -1,4 +1,8 @@
 
+powershell -c "$ProgressPreference = 'SilentlyContinue' ; Invoke-WebRequest -Uri 'https://vale.dev/releases/ValeCompiler-0.1.3.3-Win.zip' -OutFile '%temp%\ValeCompiler-0.1.3.3-Win.zip'"
+mkdir %2
+tar xf "%temp%\ValeCompiler-0.1.3.3-Win.zip" -C %2
+
 cd Valestrom
 
 echo Compiling Valestrom...

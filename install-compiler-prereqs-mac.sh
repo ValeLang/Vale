@@ -23,8 +23,9 @@ echo 'export PATH=~/jdk-11.0.10+9-jre/Contents/Home/bin:$PATH' >> ~/.zshrc
 
 # Installs brew, like said on https://brew.sh/
 echo Installing brew...
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-# (press return)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" </dev/null
+# See https://stackoverflow.com/questions/25535407/bypassing-prompt-to-press-return-in-homebrew-install-script
+# for why we do </dev/null
 
 # Install stable valec, for the .vale parts of the compiler
 echo "Downloading and unzipping stable bootstrapping valec to $BOOTSTRAPPING_VALEC_DIR..."

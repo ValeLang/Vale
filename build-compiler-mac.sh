@@ -30,7 +30,7 @@ echo Compiling Tester...
 ./build.sh || { echo 'Tester build failed, aborting.' ; exit 1; }
 
 echo Running Tester...
-build/tester build --valestrom_dir_override ../Valestrom --midas_dir_override ../Midas/build --builtins_dir_override ../Midas/src/builtins --valec_dir_override ../Driver/build --midas_tests_dir ../Midas/test --concurrent 6 @assist || { echo 'Tests failed, aborting.' ; exit 1; }
+build/tester --valestrom_dir_override ../Valestrom --midas_dir_override ../Midas/build --builtins_dir_override ../Midas/src/builtins --valec_dir_override ../Driver/build --midas_tests_dir ../Midas/test --concurrent 6 @assist || { echo 'Tests failed, aborting.' ; exit 1; }
 
 cd ../scripts
 
@@ -39,4 +39,3 @@ cd ../scripts
 cd ../release-unix
 
 zip -r ValeCompiler.zip *
-

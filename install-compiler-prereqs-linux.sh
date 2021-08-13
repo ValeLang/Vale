@@ -34,5 +34,6 @@ unzip ValeCompiler-0.1.3.3-Ubuntu.zip -d $2
 
 # Install LLVM 11.1.0 (from https://github.com/llvm/llvm-project/releases/tag/llvmorg-11.1.0)
 curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-11.1.0/clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10.tar.xz --output /tmp/clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10.tar.xz
+mkdir -p $1
 tar xf /tmp/clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10.tar.xz -C $1
 # Later, we'll need to feed this to a cmake command so it knows where the LLVM libraries are.

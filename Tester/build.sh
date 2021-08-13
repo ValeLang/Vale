@@ -1,1 +1,9 @@
-../Driver/build/valec build tester=src stdlib=../stdlib/src --output_dir build -o tester --builtins_dir_override ../Midas/src/builtins --valestrom_dir_override ../Valestrom --midas_dir_override ../Midas/build || { echo 'build failed' ; exit 1; }
+BOOTSTRAPPING_VALEC_DIR="$1"
+if [ "$BOOTSTRAPPING_VALEC_DIR" == "" ]; then
+  echo "Please supply the bootstrapping valec directory."
+  echo "Example: ~/ValeCompiler-0.1.3.3-Ubuntu"
+  exit
+fi
+
+
+$BOOTSTRAPPING_VALEC_DIR/valec build tester=src stdlib=$BOOTSTRAPPING_VALEC_DIR/stdlib/src --output_dir build -o valectest || { echo 'build failed' ; exit 1; }

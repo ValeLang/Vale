@@ -97,7 +97,7 @@ fn main() int export {
           "How many tests to run in parallel."),
         Flag(
           "--verbose",
-          FLAG_INT(),
+          FLAG_BOOL(),
           "Print more progress details.",
           "true",
           "Print more progress details.")];

@@ -22,7 +22,7 @@ make
 cd ../../Driver
 
 echo Compiling Driver...
-./build.sh || { echo 'Driver build failed, aborting.' ; exit 1; }
+./build-mac.sh || { echo 'Driver build failed, aborting.' ; exit 1; }
 
 cd ../Tester
 

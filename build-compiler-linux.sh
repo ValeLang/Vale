@@ -35,7 +35,7 @@ make
 cd ../../Driver
 
 echo Compiling Driver...
-./build.sh || { echo 'Driver build failed, aborting.' ; exit 1; }
+./build-linux.sh || { echo 'Driver build failed, aborting.' ; exit 1; }
 
 cd ../Tester
 

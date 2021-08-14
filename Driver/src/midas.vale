@@ -1,6 +1,6 @@
 
 fn invoke_midas(
-  midas_dir &Path,
+  midas_program_path &Path,
   vast_files &List<Path>,
   output_dir &Path,
   maybe_region_override &Opt<str>,
@@ -15,11 +15,11 @@ fn invoke_midas(
   elide_checks_for_known_live bool,
   override_known_live_true bool)
 Subprocess {
-  midas_program_name = if (IsWindows()) { "midas.exe" } else { "midas" };
-  midas_program_path = midas_dir./(midas_program_name);
+  //midas_program_name = if (IsWindows()) { "midas.exe" } else { "midas" };
+  //midas_program_path = midas_path./(midas_program_name);
 
   if (not midas_program_path.exists()) {
-    panic("Cannot find {midas_program_name} at: " + midas_program_path.str());
+    panic("Cannot find Midas at: " + midas_program_path.str());
   }
 
   command_line_args = List<str>();

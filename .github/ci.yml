@@ -20,15 +20,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
-      - name: fetch llvm
-        run: Invoke-WebRequest "https://firebasestorage.googleapis.com/v0/b/valesite.appspot.com/o/llvm-install-minimum.zip?alt=media&token=1022ffea-c43b-4fea-a5e9-696c6f0d0175" -OutFile "C:\llvm-install-minimum.zip"
-      - name: unpack "C:\llvm-install-minimum.zip"
-        working-directory: C:\
-        run: |
-          7z x llvm-install-minimum.zip
-          rm llvm-install-minimum.zip
-      - name: run vcvars and build-windows.bat
-        run: cmd /c '"C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && .\build-windows.bat'
+      - name: install prereqs
+        run: cmd /c '.\install-compiler-prereqs-windows.bat C:\llvm-install-minimum C:\ValeCompiler-0.1.3.4-Win'
+      - name: run vcvars and build-compiler-windows.bat
+        run: cmd /c '"C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && .\build-compiler-windows.bat C:\llvm-install-minimum C:\ValeCompiler-0.1.3.4-Win'
 
   build_and_test_ubuntu:
     runs-on: ubuntu-latest

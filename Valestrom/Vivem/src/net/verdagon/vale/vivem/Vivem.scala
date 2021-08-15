@@ -7,8 +7,8 @@ import net.verdagon.von.IVonData
 
 import scala.collection.immutable.List
 
-case class PanicException() extends Throwable
-case class ConstraintViolatedException(msg: String) extends Throwable
+case class PanicException() extends Throwable { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class ConstraintViolatedException(msg: String) extends Throwable { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 object Vivem {
   def executeWithPrimitiveArgs(

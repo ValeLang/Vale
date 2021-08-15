@@ -1,24 +1,25 @@
 package net.verdagon.vale.scout.rules
 
 import net.verdagon.vale.scout._
+import net.verdagon.vale.{vcurious, vimpl}
 
 import scala.collection.immutable.List
 
 sealed trait IRulexSR {
   def range: RangeS
 }
-case class EqualsSR(range: RangeS, left: IRulexSR, right: IRulexSR) extends IRulexSR
-case class IsaSR(range: RangeS, sub: IRulexSR, suuper: IRulexSR) extends IRulexSR
-case class OrSR(range: RangeS, alternatives: List[IRulexSR]) extends IRulexSR
+case class EqualsSR(range: RangeS, left: IRulexSR, right: IRulexSR) extends IRulexSR { override def hashCode(): Int = vcurious() }
+case class IsaSR(range: RangeS, sub: IRulexSR, suuper: IRulexSR) extends IRulexSR { override def hashCode(): Int = vcurious() }
+case class OrSR(range: RangeS, alternatives: List[IRulexSR]) extends IRulexSR { override def hashCode(): Int = vcurious() }
 case class ComponentsSR(
   range: RangeS,
   // This is a TypedSR so that we can know the type, so we can know whether this is
   // a kind components rule or a coord components rule.
   container: TypedSR,
   components: List[IRulexSR]
-) extends IRulexSR
-//case class PackSR(elements: List[IRulexSR]) extends IRulexSR
-case class TypedSR(range: RangeS, rune: IRuneS, tyype: ITypeSR) extends IRulexSR
+) extends IRulexSR { override def hashCode(): Int = vcurious() }
+//case class PackSR(elements: List[IRulexSR]) extends IRulexSR { override def hashCode(): Int = vcurious() }
+case class TypedSR(range: RangeS, rune: IRuneS, tyype: ITypeSR) extends IRulexSR { override def hashCode(): Int = vcurious() }
 case class TemplexSR(templex: ITemplexS) extends IRulexSR {
   override def range: RangeS = templex.range
 }
@@ -37,7 +38,7 @@ case object LocationTypeSR extends ITypeSR
 case object CoordTypeSR extends ITypeSR
 case object KindTypeSR extends ITypeSR
 case object FunctionTypeSR extends ITypeSR
-case class TemplateTypeSR(params: List[ITypeSR], result: ITypeSR) extends ITypeSR
+case class TemplateTypeSR(params: List[ITypeSR], result: ITypeSR) extends ITypeSR { override def hashCode(): Int = vcurious() }
 case object VariabilityTypeSR extends ITypeSR
 //case object StructTypeSR extends ITypeSR
 //case object SequenceTypeSR extends ITypeSR

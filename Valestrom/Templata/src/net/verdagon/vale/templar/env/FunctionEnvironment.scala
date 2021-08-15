@@ -5,7 +5,7 @@ import net.verdagon.vale.scout.LocalS
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.templata.{ITemplata, QueriableT}
 import net.verdagon.vale.templar.types.{CoordT, StructTT, VariabilityT}
-import net.verdagon.vale.{IProfiler, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{IProfiler, vassert, vcurious, vfail, vimpl, vwat}
 
 import scala.collection.immutable.{List, Map, Set}
 
@@ -16,6 +16,15 @@ case class BuildingFunctionEnvironmentWithClosureds(
   variables: List[IVariableT],
   templatas: TemplatasStore
 ) extends IEnvironment {
+
+  val hash = runtime.ScalaRunTime._hashCode(fullName); override def hashCode(): Int = hash;
+  override def equals(obj: Any): Boolean = {
+    if (!obj.isInstanceOf[IEnvironment]) {
+      return false
+    }
+    return fullName.equals(obj.asInstanceOf[IEnvironment].fullName)
+  }
+
   override def getParentEnv(): Option[IEnvironment] = Some(parentEnv)
   override def globalEnv: PackageEnvironment[INameT] = parentEnv.globalEnv
   override def getAllTemplatasWithAbsoluteName2(name: INameT, lookupFilter: Set[ILookupContext]): List[ITemplata] = {
@@ -39,6 +48,15 @@ case class BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs(
   variables: List[IVariableT],
   templatas: TemplatasStore
 ) extends IEnvironment {
+
+  val hash = runtime.ScalaRunTime._hashCode(fullName); override def hashCode(): Int = hash;
+  override def equals(obj: Any): Boolean = {
+    if (!obj.isInstanceOf[IEnvironment]) {
+      return false
+    }
+    return fullName.equals(obj.asInstanceOf[IEnvironment].fullName)
+  }
+
   override def getParentEnv(): Option[IEnvironment] = Some(parentEnv)
   override def globalEnv: PackageEnvironment[INameT] = parentEnv.globalEnv
   override def getAllTemplatasWithAbsoluteName2(name: INameT, lookupFilter: Set[ILookupContext]): List[ITemplata] = {
@@ -76,6 +94,15 @@ case class FunctionEnvironment(
   // See AENS for some more thoughts on environment vs state.
 
 ) extends IEnvironment {
+
+  val hash = runtime.ScalaRunTime._hashCode(fullName); override def hashCode(): Int = hash;
+  override def equals(obj: Any): Boolean = {
+    if (!obj.isInstanceOf[IEnvironment]) {
+      return false
+    }
+    return fullName.equals(obj.asInstanceOf[IEnvironment].fullName)
+  }
+
   vassert(fullName.steps.startsWith(parentEnv.fullName.steps))
 
   vassert(locals == locals.distinct)
@@ -200,6 +227,8 @@ case class FunctionEnvironment(
 }
 
 case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) extends IEnvironmentBox {
+  override def hashCode(): Int = vfail() // Shouldnt hash, is mutable
+
   override def snapshot: FunctionEnvironment = functionEnvironment
   def parentEnv: IEnvironment = functionEnvironment.parentEnv
   def fullName: FullNameT[IFunctionNameT] = functionEnvironment.fullName
@@ -319,6 +348,7 @@ case class AddressibleLocalVariableT(
   variability: VariabilityT,
   reference: CoordT
 ) extends ILocalVariableT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ id.all(func) ++ variability.all(func) ++ reference.all(func)
   }
@@ -328,6 +358,7 @@ case class ReferenceLocalVariableT(
   variability: VariabilityT,
   reference: CoordT
 ) extends ILocalVariableT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ id.all(func) ++ variability.all(func) ++ reference.all(func)
   }
@@ -348,6 +379,7 @@ case class ReferenceClosureVariableT(
   variability: VariabilityT,
   reference: CoordT
 ) extends IVariableT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ id.all(func) ++ closuredVarsStructType.all(func) ++ variability.all(func) ++ reference.all(func)
   }

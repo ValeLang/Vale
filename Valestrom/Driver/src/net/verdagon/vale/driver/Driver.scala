@@ -10,7 +10,7 @@ import net.verdagon.vale.parser.{CombinatorParsers, FailedParse, FileP, InputExc
 import net.verdagon.vale.scout.{Scout, ScoutErrorHumanizer}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
 import net.verdagon.vale.vivem.Vivem
-import net.verdagon.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, NullProfiler, Ok, PackageCoordinate, Result, vassert, vassertSome, vcheck, vfail, vwat}
+import net.verdagon.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, NullProfiler, Ok, PackageCoordinate, Result, vassert, vassertSome, vcheck, vfail, vimpl, vwat}
 import net.verdagon.von.{IVonData, JsonSyntax, VonInt, VonPrinter}
 
 import java.nio.charset.Charset
@@ -24,14 +24,15 @@ object Driver {
     def packageCoord: PackageCoordinate
   }
   case class ModulePathInput(moduleName: String, path: String) extends IValestromInput {
+    val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
     override def packageCoord: PackageCoordinate = PackageCoordinate(moduleName, List.empty)
   }
-  case class DirectFilePathInput(packageCoord: PackageCoordinate, path: String) extends IValestromInput
+  case class DirectFilePathInput(packageCoord: PackageCoordinate, path: String) extends IValestromInput { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
   case class SourceInput(
       packageCoord: PackageCoordinate,
       // Name isnt guaranteed to be unique, we sometimes hand in strings like "builtins.vale"
       name: String,
-      code: String) extends IValestromInput
+      code: String) extends IValestromInput { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
   case class Options(
     inputs: List[IValestromInput],
@@ -45,7 +46,7 @@ object Driver {
     includeBuiltins: Boolean,
     mode: Option[String], // build v run etc
     verbose: Boolean,
-  )
+  ) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
   def parseOpts(opts: Options, list: List[String]) : Options = {
     list match {

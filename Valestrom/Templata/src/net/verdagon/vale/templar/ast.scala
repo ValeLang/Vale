@@ -5,7 +5,7 @@ import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{PackageCoordinate, vassert, vassertSome, vfail, vpass, vwat}
+import net.verdagon.vale.{PackageCoordinate, vassert, vassertSome, vcurious, vfail, vimpl, vpass, vwat}
 
 import scala.collection.immutable._
 import scala.collection.mutable
@@ -24,6 +24,7 @@ case class ImplT(
   struct: StructTT,
   interface: InterfaceTT
 ) extends QueriableT {
+  override def hashCode(): Int = vcurious()
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     struct.all(func) ++ interface.all(func)
   }
@@ -35,6 +36,7 @@ case class KindExportT(
   packageCoordinate: PackageCoordinate,
   exportedName: String
 ) extends QueriableT {
+  override def hashCode(): Int = vcurious()
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     tyype.all(func)
   }
@@ -46,6 +48,7 @@ case class FunctionExportT(
   packageCoordinate: PackageCoordinate,
   exportedName: String
 ) extends QueriableT {
+  override def hashCode(): Int = vcurious()
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     prototype.all(func)
   }
@@ -56,6 +59,7 @@ case class KindExternT(
   packageCoordinate: PackageCoordinate,
   externName: String
 ) extends QueriableT {
+  override def hashCode(): Int = vcurious()
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     tyype.all(func)
   }
@@ -67,6 +71,7 @@ case class FunctionExternT(
   packageCoordinate: PackageCoordinate,
   externName: String
 ) extends QueriableT {
+  override def hashCode(): Int = vcurious()
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     prototype.all(func)
   }
@@ -74,12 +79,12 @@ case class FunctionExternT(
 
 case class InterfaceEdgeBlueprint(
   interface: InterfaceTT,
-  superFamilyRootBanners: List[FunctionBannerT])
+  superFamilyRootBanners: List[FunctionBannerT]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 case class EdgeT(
   struct: StructTT,
   interface: InterfaceTT,
-  methods: List[PrototypeT])
+  methods: List[PrototypeT]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 object Program2 {
   val emptyTupleStructRef = StructTT(FullNameT(PackageCoordinate.BUILTIN, List.empty, TupleNameT(List.empty)))
@@ -118,6 +123,7 @@ case class FunctionT(
 //  // Used for testing
 //  variables: List[ILocalVariableT],
   body: ReferenceExpressionTE) extends QueriableT {
+  override def hashCode(): Int = vcurious()
 
   // We always end a function with a return, whose result is a Never.
   vassert(body.resultRegister.kind == NeverT())

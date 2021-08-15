@@ -3,6 +3,8 @@ package net.verdagon.vale
 import scala.collection.immutable.List
 
 case class FileCoordinate(module: String, packages: List[String], filepath: String) {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+
   def isInternal = module == ""
 
   def packageCoordinate = PackageCoordinate(module, packages)
@@ -24,6 +26,8 @@ object FileCoordinate extends Ordering[FileCoordinate] {
 }
 
 case class PackageCoordinate(module: String, packages: List[String]) {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+
   def isInternal = module == ""
 
   def compareTo(that: PackageCoordinate) = PackageCoordinate.compare(this, that)
@@ -71,6 +75,8 @@ object FileCoordinateMap {
 case class FileCoordinateMap[Contents](
     moduleToPackagesToFilenameToContents: Map[String, Map[List[String], Map[String, Contents]]])
 extends IPackageResolver[Map[String, Contents]] {
+  override def hashCode(): Int = vcurious()
+
   def apply(coord: FileCoordinate): Contents = {
     vassertSome(
       vassertSome(
@@ -195,6 +201,8 @@ trait IPackageResolver[T] {
 
 case class PackageCoordinateMap[Contents](
   moduleToPackagesToContents: Map[String, Map[List[String], Contents]]) {
+  override def hashCode(): Int = vcurious()
+
 
   def add(module: String, packages: List[String], contents: Contents):
   PackageCoordinateMap[Contents] = {

@@ -570,10 +570,10 @@ class InfererMatcher[Env, State](
         matchTupleKind(env, state, typeByRune, localRunes, inferences, expectedElementTemplexesT, elements)
       }
       case (ManualSequenceTT(range, _, _), KindTemplata(otherKind)) => {
-        (InferMatchConflict(inferences.inferences, range, "Expected repeater sequence, was: " + otherKind, List.empty))
+        (InferMatchConflict(inferences.inferences, range, "Expected manual sequence, was: " + otherKind, List.empty))
       }
       case (ManualSequenceTT(range, _, _), CoordTemplata(otherCoord)) => {
-        (InferMatchConflict(inferences.inferences, range, "Expected repeater sequence, was: " + otherCoord, List.empty))
+        (InferMatchConflict(inferences.inferences, range, "Expected manual sequence, was: " + otherCoord, List.empty))
       }
       case (OwnershipTT(range, ownershipP), OwnershipTemplata(ownershipT)) => {
         if (ownershipT == ShareT) {

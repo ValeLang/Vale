@@ -4,7 +4,7 @@ import net.verdagon.vale.astronomer._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.templata._
-import net.verdagon.vale.{IProfiler, PackageCoordinate, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{IProfiler, PackageCoordinate, vassert, vcurious, vfail, vimpl, vwat}
 
 import scala.collection.immutable.{List, Map}
 
@@ -44,6 +44,15 @@ case class PackageEnvironment[+T <: INameT](
   fullName: FullNameT[T],
   templatas: TemplatasStore
 ) extends IEnvironment {
+  val hash = runtime.ScalaRunTime._hashCode(fullName); override def hashCode(): Int = hash;
+  override def equals(obj: Any): Boolean = {
+    if (!obj.isInstanceOf[IEnvironment]) {
+      return false
+    }
+    return fullName.equals(obj.asInstanceOf[IEnvironment].fullName)
+  }
+
+
   maybeParentEnv match {
     case None =>
     case Some(parentEnv) => vassert(fullName.steps.startsWith(parentEnv.fullName.steps))
@@ -109,6 +118,8 @@ case class TemplatasStore(
   entriesByNameT: Map[INameT, List[IEnvEntry]],
   entriesByImpreciseNameA: Map[IImpreciseNameStepA, List[IEnvEntry]]
 ) {
+  override def hashCode(): Int = vcurious()
+
   //  // The above map, indexed by human name. If it has no human name, it won't be in here.
   //  private var entriesByHumanName = Map[String, List[IEnvEntry]]()
 

@@ -3,20 +3,20 @@ package net.verdagon.vale.templar
 import net.verdagon.vale.astronomer.{GlobalFunctionFamilyNameA, IImpreciseNameStepA, INameA, ImmConcreteDestructorImpreciseNameA, ImmConcreteDestructorNameA, ImmInterfaceDestructorImpreciseNameA}
 import net.verdagon.vale.templar.templata.{FunctionBannerT, OverrideT, PrototypeT, SignatureT}
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{vassert, vfail, vwat}
+import net.verdagon.vale.{vassert, vfail, vimpl, vwat}
 
 object EdgeTemplar {
   sealed trait IMethod
   case class NeededOverride(
     name: IImpreciseNameStepA,
     paramFilters: List[ParamFilter]
-  ) extends IMethod
-  case class FoundFunction(prototype: PrototypeT) extends IMethod
+  ) extends IMethod { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+  case class FoundFunction(prototype: PrototypeT) extends IMethod { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
   case class PartialEdgeT(
     struct: StructTT,
     interface: InterfaceTT,
-    methods: List[IMethod])
+    methods: List[IMethod]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
   def assemblePartialEdges(temputs: Temputs): List[PartialEdgeT] = {
     val interfaceEdgeBlueprints = makeInterfaceEdgeBlueprints(temputs)

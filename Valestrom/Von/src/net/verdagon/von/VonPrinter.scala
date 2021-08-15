@@ -9,7 +9,7 @@ case class VonSyntax(
   squareBracesForArrays: Boolean = true,
   includeEmptyParams: Boolean = true,
   includeEmptyArrayMembersAtEnd: Boolean = true,
-) extends ISyntax
+) extends ISyntax { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 case object JsonSyntax extends ISyntax
 
 class VonPrinter(

@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.vimpl
+import net.verdagon.vale.{vcurious, vimpl}
 import net.verdagon.von._
 
 object Formatter {
@@ -19,8 +19,8 @@ object Formatter {
       Span(classs, elements.toList)
     }
   }
-  case class Span(classs: IClass, elements: List[IElement]) extends IElement
-  case class Text(string: String) extends IElement
+  case class Span(classs: IClass, elements: List[IElement]) extends IElement { override def hashCode(): Int = vcurious(); }
+  case class Text(string: String) extends IElement { override def hashCode(): Int = vcurious(); }
 //
 //  def w(str: String) = Span(W, str)
 //  val s = w(" ")

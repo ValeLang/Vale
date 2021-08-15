@@ -16,8 +16,8 @@ import org.scalatest.{FunSuite, Matchers}
 
 import scala.collection.immutable.List
 
-case class FakeEnv()
-case class FakeState()
+case class FakeEnv() { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class FakeState() { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 object InfererTestUtils {
   def getMutability(kind: KindT): MutabilityT = {

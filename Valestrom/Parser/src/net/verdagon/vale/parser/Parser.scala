@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, IProfiler, PackageCoordinate, NullProfiler, Ok, Result, repeatStr, vassert, vassertSome, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, Ok, PackageCoordinate, Result, repeatStr, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 import net.verdagon.von.{JsonSyntax, VonPrinter}
 
 import scala.collection.immutable.{List, Map}
@@ -12,14 +12,18 @@ sealed trait IParseResult[T] {
   def get(): T
 }
 case class ParseFailure[T](error: IParseError) extends IParseResult[T] {
+  override def hashCode(): Int = vcurious();
   override def get(): T = { vfail() }
 }
 case class ParseSuccess[T](result: T) extends IParseResult[T] {
+  override def hashCode(): Int = vcurious();
   override def get(): T = result
 }
 
 object Parser {
   case class ParsingIterator(code: String, var position: Int = 0) {
+    override def hashCode(): Int = vcurious();
+
     def currentChar(): Char = code.charAt(position)
     def advance() { position = position + 1 }
 
@@ -809,5 +813,6 @@ class ParserCompilation(
 }
 
 case class InputException(message: String) extends Throwable {
+  override def hashCode(): Int = vcurious();
   override def toString: String = message
 }

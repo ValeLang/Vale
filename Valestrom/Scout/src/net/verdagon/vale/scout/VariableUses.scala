@@ -1,19 +1,25 @@
 package net.verdagon.vale.scout
 
 import net.verdagon.vale.parser.VariabilityP
-import net.verdagon.vale.{vassert, vfail}
+import net.verdagon.vale.{vassert, vcurious, vfail, vimpl}
 
 
 case class VariableUse(
     name: IVarNameS,
     borrowed: Option[IVariableUseCertainty],
     moved: Option[IVariableUseCertainty],
-    mutated: Option[IVariableUseCertainty])
+    mutated: Option[IVariableUseCertainty]) {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+}
 
 case class VariableDeclaration(
-    name: IVarNameS)
+    name: IVarNameS) {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+}
 
 case class VariableDeclarations(vars: List[VariableDeclaration]) {
+  override def hashCode(): Int = vcurious()
+
   vassert(vars.distinct == vars)
 
   def ++(that: VariableDeclarations): VariableDeclarations = {
@@ -31,6 +37,8 @@ case class VariableDeclarations(vars: List[VariableDeclaration]) {
 }
 
 case class VariableUses(uses: List[VariableUse]) {
+  override def hashCode(): Int = vcurious()
+
   vassert(uses.distinct == uses)
 
   def allUsedNames: List[IVarNameS] = uses.map(_.name)

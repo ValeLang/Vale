@@ -3,8 +3,12 @@ package net.verdagon.vale
 import scala.collection.immutable.HashMap
 import scala.collection.mutable
 
-case class FinishedProfile(args: String, profileTotalNanoseconds: Long, rootFrame: FinishedFrame)
+case class FinishedProfile(args: String, profileTotalNanoseconds: Long, rootFrame: FinishedFrame) {
+  override def hashCode(): Int = vcurious()
+}
 case class FinishedFrame(nanoseconds: Long, children: Map[String, List[FinishedFrame]]) {
+  override def hashCode(): Int = vcurious()
+
   def totalTime: Long = nanoseconds + children.map(_._2.map(_.totalTime).sum).sum
 }
 

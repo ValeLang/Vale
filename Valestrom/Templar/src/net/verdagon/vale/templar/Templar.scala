@@ -42,7 +42,9 @@ case class TemplarOptions(
   }),
   verboseErrors: Boolean = false,
   useOptimization: Boolean = false,
-)
+) {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+}
 
 
 

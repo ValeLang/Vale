@@ -15,6 +15,7 @@ sealed trait ITemplata extends QueriableT {
 }
 
 case class CoordTemplata(reference: CoordT) extends ITemplata {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 1;
   override def tyype: ITemplataType = CoordTemplataType
 
@@ -23,6 +24,7 @@ case class CoordTemplata(reference: CoordT) extends ITemplata {
   }
 }
 case class KindTemplata(kind: KindT) extends ITemplata {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 2;
   override def tyype: ITemplataType = KindTemplataType
 
@@ -31,6 +33,7 @@ case class KindTemplata(kind: KindT) extends ITemplata {
   }
 }
 case class ArrayTemplateTemplata() extends ITemplata {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 3;
   override def tyype: ITemplataType = TemplateTemplataType(List(MutabilityTemplataType, VariabilityTemplataType, CoordTemplataType), KindTemplataType)
 
@@ -58,6 +61,7 @@ case class FunctionTemplata(
   // structs and interfaces. See NTKPRR for more.
   function: FunctionA
 ) extends ITemplata {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
   override def order: Int = 6
   override def tyype: ITemplataType = vfail()
@@ -143,6 +147,7 @@ case class StructTemplata(
   // structs and interfaces. See NTKPRR for more.
   originStruct: StructA,
 ) extends ITemplata {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 7
   override def tyype: ITemplataType = originStruct.tyype
 
@@ -168,10 +173,10 @@ case class StructTemplata(
 }
 
 sealed trait IContainer
-case class ContainerInterface(interface: InterfaceA) extends IContainer
-case class ContainerStruct(struct: StructA) extends IContainer
-case class ContainerFunction(function: FunctionA) extends IContainer
-case class ContainerImpl(impl: ImplA) extends IContainer
+case class ContainerInterface(interface: InterfaceA) extends IContainer { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class ContainerStruct(struct: StructA) extends IContainer { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class ContainerFunction(function: FunctionA) extends IContainer { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class ContainerImpl(impl: ImplA) extends IContainer { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 case class InterfaceTemplata(
   // The paackage this interface was declared in.
@@ -189,6 +194,7 @@ case class InterfaceTemplata(
   // structs and interfaces. See NTKPRR for more.
   originInterface: InterfaceA
 ) extends ITemplata {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 8
   override def tyype: ITemplataType = originInterface.tyype
 
@@ -228,6 +234,7 @@ case class ImplTemplata(
   // structs and interfaces. See NTKPRR for more.
   impl: ImplA
 ) extends ITemplata {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 9
   override def tyype: ITemplataType = vfail()
 
@@ -237,6 +244,7 @@ case class ImplTemplata(
 }
 
 case class OwnershipTemplata(ownership: OwnershipT) extends ITemplata {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 10;
   override def tyype: ITemplataType = OwnershipTemplataType
 
@@ -245,6 +253,7 @@ case class OwnershipTemplata(ownership: OwnershipT) extends ITemplata {
   }
 }
 case class VariabilityTemplata(variability: VariabilityT) extends ITemplata {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 11;
   override def tyype: ITemplataType = VariabilityTemplataType
 
@@ -253,6 +262,7 @@ case class VariabilityTemplata(variability: VariabilityT) extends ITemplata {
   }
 }
 case class MutabilityTemplata(mutability: MutabilityT) extends ITemplata {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 12;
   override def tyype: ITemplataType = MutabilityTemplataType
 
@@ -261,6 +271,7 @@ case class MutabilityTemplata(mutability: MutabilityT) extends ITemplata {
   }
 }
 case class PermissionTemplata(mutability: PermissionT) extends ITemplata {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 13;
   override def tyype: ITemplataType = PermissionTemplataType
 
@@ -269,6 +280,7 @@ case class PermissionTemplata(mutability: PermissionT) extends ITemplata {
   }
 }
 case class LocationTemplata(mutability: LocationT) extends ITemplata {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 14;
   override def tyype: ITemplataType = LocationTemplataType
 
@@ -278,6 +290,7 @@ case class LocationTemplata(mutability: LocationT) extends ITemplata {
 }
 
 case class BooleanTemplata(value: Boolean) extends ITemplata {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 15;
   override def tyype: ITemplataType = BooleanTemplataType
 
@@ -286,6 +299,7 @@ case class BooleanTemplata(value: Boolean) extends ITemplata {
   }
 }
 case class IntegerTemplata(value: Long) extends ITemplata {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 16;
   override def tyype: ITemplataType = IntegerTemplataType
 
@@ -294,6 +308,7 @@ case class IntegerTemplata(value: Long) extends ITemplata {
   }
 }
 case class StringTemplata(value: String) extends ITemplata {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 17;
   override def tyype: ITemplataType = StringTemplataType
 
@@ -302,6 +317,7 @@ case class StringTemplata(value: String) extends ITemplata {
   }
 }
 case class PrototypeTemplata(value: PrototypeT) extends ITemplata {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 18;
   override def tyype: ITemplataType = PrototypeTemplataType
 
@@ -310,6 +326,7 @@ case class PrototypeTemplata(value: PrototypeT) extends ITemplata {
   }
 }
 case class CoordListTemplata(value: List[CoordT]) extends ITemplata {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 18;
   override def tyype: ITemplataType = PackTemplataType(CoordTemplataType)
 
@@ -326,6 +343,7 @@ case class CoordListTemplata(value: List[CoordT]) extends ITemplata {
 // by plugins, but theyre also used internally.
 
 case class ExternFunctionTemplata(header: FunctionHeaderT) extends ITemplata {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 1337
   override def tyype: ITemplataType = vfail()
 
@@ -335,6 +353,7 @@ case class ExternFunctionTemplata(header: FunctionHeaderT) extends ITemplata {
 }
 
 case class ExternImplTemplata(struct: StructTT, interface: InterfaceTT) extends ITemplata {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 1338
   override def tyype: ITemplataType = vfail()
 

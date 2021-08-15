@@ -15,7 +15,7 @@ import net.verdagon.vale.templar.OverloadTemplar.IScoutExpectedFunctionResult
 
 import scala.collection.immutable.List
 
-case class WeakableImplingMismatch(structWeakable: Boolean, interfaceWeakable: Boolean) extends Throwable
+case class WeakableImplingMismatch(structWeakable: Boolean, interfaceWeakable: Boolean) extends Throwable { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 trait IStructTemplarDelegate {
   def evaluateOrdinaryFunctionFromNonCallForHeader(

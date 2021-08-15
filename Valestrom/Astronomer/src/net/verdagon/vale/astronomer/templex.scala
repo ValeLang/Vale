@@ -7,18 +7,18 @@ import scala.collection.immutable.List
 
 //// See PVSBUFI
 //sealed trait ITemplexA
-//case class IntAT(value: Int) extends ITemplexA
-//case class MutabilityAT(mutability: MutabilityP) extends ITemplexA
-//case class PermissionAT(permission: PermissionP) extends ITemplexA
-//case class LocationAT(location: LocationP) extends ITemplexA
-//case class OwnershipAT(ownership: OwnershipP) extends ITemplexA
-//case class VariabilityAT(variability: VariabilityP) extends ITemplexA
-//case class BoolAT(value: Boolean) extends ITemplexA
-//case class NameAT(name: String) extends ITemplexA
-//case class RuneAT(rune: String) extends ITemplexA
-//case class AnonymousRuneAT() extends ITemplexA
-//case class InterpretedAT(ownership: OwnershipP, inner: ITemplexA) extends ITemplexA
-//case class NullableAT(inner: ITemplexA) extends ITemplexA
+//case class IntAT(value: Int) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+//case class MutabilityAT(mutability: MutabilityP) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+//case class PermissionAT(permission: PermissionP) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+//case class LocationAT(location: LocationP) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+//case class OwnershipAT(ownership: OwnershipP) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+//case class VariabilityAT(variability: VariabilityP) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+//case class BoolAT(value: Boolean) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+//case class NameAT(name: String) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+//case class RuneAT(rune: String) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+//case class AnonymousRuneAT() extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+//case class InterpretedAT(ownership: OwnershipP, inner: ITemplexA) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+//case class NullableAT(inner: ITemplexA) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 //case class CallAT(
 //    template: ITemplexA,
 //    args: List[ITemplexA]) extends ITemplexA {
@@ -27,17 +27,17 @@ import scala.collection.immutable.List
 //  name: String,
 //  parameters: List[ITemplexA],
 //  returnType: ITemplexA
-//) extends ITemplexA
+//) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 //case class PackAT(
 //  members: List[ITemplexA]
-//) extends ITemplexA
+//) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 //case class RepeaterSequenceAT(
 //  size: ITemplexA,
 //  element: ITemplexA
-//) extends ITemplexA
+//) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 //case class ManualSequenceAT(
 //  elements: List[ITemplexA]
-//) extends ITemplexA
+//) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 //
 //object TemplexSUtils {
 //  def getDistinctOrderedRunesForTemplex(templex: ITemplexA): List[String] = {

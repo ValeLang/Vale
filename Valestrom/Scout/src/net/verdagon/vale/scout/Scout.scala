@@ -5,30 +5,30 @@ import net.verdagon.vale.scout.patterns.{PatternScout, RuleState, RuleStateBox}
 import net.verdagon.vale.scout.predictor.Conclusions
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.scout.templatepredictor.PredictorEvaluator
-import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, IPackageResolver, IProfiler, PackageCoordinate, NullProfiler, Ok, Result, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, Ok, PackageCoordinate, Result, vcurious, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 import scala.util.parsing.input.OffsetPosition
 
-case class CompileErrorExceptionS(err: ICompileErrorS) extends RuntimeException
+case class CompileErrorExceptionS(err: ICompileErrorS) extends RuntimeException { override def hashCode(): Int = vcurious() }
 
 sealed trait ICompileErrorS { def range: RangeS }
-case class CouldntFindVarToMutateS(range: RangeS, name: String) extends ICompileErrorS
-case class ForgotSetKeywordError(range: RangeS) extends ICompileErrorS
-case class CantUseThatLocalName(range: RangeS, name: String) extends ICompileErrorS
-case class ExternHasBody(range: RangeS) extends ICompileErrorS
-case class CantInitializeIndividualElementsOfRuntimeSizedArray(range: RangeS) extends ICompileErrorS
-case class InitializingRuntimeSizedArrayRequiresSizeAndCallable(range: RangeS) extends ICompileErrorS
-case class InitializingStaticSizedArrayRequiresSizeAndCallable(range: RangeS) extends ICompileErrorS
-case class InitializingStaticSizedArrayFromCallableNeedsSizeTemplex(range: RangeS) extends ICompileErrorS
-case class CantOwnershipInterfaceInImpl(range: RangeS) extends ICompileErrorS
-case class CantOwnershipStructInImpl(range: RangeS) extends ICompileErrorS
-case class CantOverrideOwnershipped(range: RangeS) extends ICompileErrorS
-case class VariableNameAlreadyExists(range: RangeS, name: IVarNameS) extends ICompileErrorS
-case class InterfaceMethodNeedsSelf(range: RangeS) extends ICompileErrorS
-case class VirtualAndAbstractGoTogether(range: RangeS) extends ICompileErrorS
+case class CouldntFindVarToMutateS(range: RangeS, name: String) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
+case class ForgotSetKeywordError(range: RangeS) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
+case class CantUseThatLocalName(range: RangeS, name: String) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
+case class ExternHasBody(range: RangeS) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
+case class CantInitializeIndividualElementsOfRuntimeSizedArray(range: RangeS) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
+case class InitializingRuntimeSizedArrayRequiresSizeAndCallable(range: RangeS) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
+case class InitializingStaticSizedArrayRequiresSizeAndCallable(range: RangeS) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
+case class InitializingStaticSizedArrayFromCallableNeedsSizeTemplex(range: RangeS) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
+case class CantOwnershipInterfaceInImpl(range: RangeS) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
+case class CantOwnershipStructInImpl(range: RangeS) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
+case class CantOverrideOwnershipped(range: RangeS) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
+case class VariableNameAlreadyExists(range: RangeS, name: IVarNameS) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
+case class InterfaceMethodNeedsSelf(range: RangeS) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
+case class VirtualAndAbstractGoTogether(range: RangeS) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
 
-case class RangedInternalErrorS(range: RangeS, message: String) extends ICompileErrorS
+case class RangedInternalErrorS(range: RangeS, message: String) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
 
 sealed trait IEnvironment {
   def file: FileCoordinate
@@ -43,6 +43,7 @@ case class Environment(
     name: INameS,
     userDeclaredRunes: Set[IRuneS]
 ) extends IEnvironment {
+  override def hashCode(): Int = vcurious()
   override def allUserDeclaredRunes(): Set[IRuneS] = {
     userDeclaredRunes ++ parentEnv.toList.flatMap(pe => pe.allUserDeclaredRunes())
   }
@@ -57,6 +58,7 @@ case class FunctionEnvironment(
     // params to get the final param index.
     numExplicitParams: Int
 ) extends IEnvironment {
+  override def hashCode(): Int = vcurious()
   override def allUserDeclaredRunes(): Set[IRuneS] = {
     userDeclaredRunes ++ parentEnv.toList.flatMap(_.allUserDeclaredRunes())
   }
@@ -68,6 +70,7 @@ case class StackFrame(
     parentEnv: FunctionEnvironment,
     maybeParent: Option[StackFrame],
     locals: VariableDeclarations) {
+  override def hashCode(): Int = vcurious()
   def ++(newVars: VariableDeclarations): StackFrame = {
     StackFrame(file, name, parentEnv, maybeParent, locals ++ newVars)
   }

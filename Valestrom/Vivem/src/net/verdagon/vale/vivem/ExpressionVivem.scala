@@ -11,8 +11,8 @@ object ExpressionVivem {
   // returned to the parent node, it's not deallocated from its ref count
   // going to 0.
   sealed trait INodeExecuteResult
-  case class NodeContinue(resultRef: ReferenceV) extends INodeExecuteResult
-  case class NodeReturn(returnRef: ReferenceV) extends INodeExecuteResult
+  case class NodeContinue(resultRef: ReferenceV) extends INodeExecuteResult { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+  case class NodeReturn(returnRef: ReferenceV) extends INodeExecuteResult { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
   def makeVoid(programH: ProgramH, heap: Heap, callId: CallId) = {
     val emptyPackStructRefH = ProgramH.emptyTupleStructRef

@@ -6,7 +6,7 @@ import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env.IEnvironment
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{PackageCoordinate, vassert, vcurious, vfail}
+import net.verdagon.vale.{PackageCoordinate, vassert, vcurious, vfail, vimpl}
 
 import scala.collection.immutable.List
 
@@ -147,6 +147,8 @@ case object YonderT extends LocationT {
 
 
 case class CoordT(ownership: OwnershipT, permission: PermissionT, kind: KindT) extends QueriableT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+
   kind match {
     case IntT(_) | BoolT() | StrT() | FloatT() | VoidT() | NeverT() => {
       vassert(ownership == ShareT)
@@ -175,6 +177,7 @@ sealed trait KindT extends QueriableT {
 
 // like Scala's Nothing. No instance of this can ever happen.
 case class NeverT() extends KindT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 6;
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = List(this).collect(func)
@@ -182,6 +185,7 @@ case class NeverT() extends KindT {
 
 // Mostly for interoperability with extern functions
 case class VoidT() extends KindT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 16;
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = List(this).collect(func)
@@ -192,30 +196,35 @@ object IntT {
   val i64: IntT = IntT(64)
 }
 case class IntT(bits: Int) extends KindT {
+  val hash = 546325456 + bits; override def hashCode(): Int = hash;
   override def order: Int = 8;
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = List(this).collect(func)
 }
 
 case class BoolT() extends KindT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 9;
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = List(this).collect(func)
 }
 
 case class StrT() extends KindT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 10;
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = List(this).collect(func)
 }
 
 case class FloatT() extends KindT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 11;
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = List(this).collect(func)
 }
 
 case class PackTT(members: List[CoordT], underlyingStruct: StructTT) extends KindT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 21;
 
   underlyingStruct.all({
@@ -228,6 +237,7 @@ case class PackTT(members: List[CoordT], underlyingStruct: StructTT) extends Kin
 }
 
 case class TupleTT(members: List[CoordT], underlyingStruct: StructTT) extends KindT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 20;
 
   underlyingStruct.all({
@@ -244,12 +254,14 @@ case class RawArrayTT(
   mutability: MutabilityT,
   variability: VariabilityT
 ) extends QueriableT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ memberType.all(func)
   }
 }
 
 case class StaticSizedArrayTT(size: Int, array: RawArrayTT) extends KindT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 12;
 
   def name: FullNameT[StaticSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, List.empty, StaticSizedArrayNameT(size, RawArrayNameT(array.mutability, array.memberType)))
@@ -260,6 +272,7 @@ case class StaticSizedArrayTT(size: Int, array: RawArrayTT) extends KindT {
 }
 
 case class RuntimeSizedArrayTT(array: RawArrayTT) extends KindT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 19;
 
   def name: FullNameT[RuntimeSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, List.empty, RuntimeSizedArrayNameT(RawArrayNameT(array.mutability, array.memberType)))
@@ -275,6 +288,7 @@ case class StructMemberT(
   variability: VariabilityT,
   tyype: IMemberTypeT
 ) extends QueriableT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ tyype.all(func)
   }
@@ -297,11 +311,13 @@ sealed trait IMemberTypeT extends QueriableT {
   }
 }
 case class AddressMemberTypeT(reference: CoordT) extends IMemberTypeT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ reference.all(func)
   }
 }
 case class ReferenceMemberTypeT(reference: CoordT) extends IMemberTypeT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ reference.all(func)
   }
@@ -321,6 +337,7 @@ case class StructDefinitionT(
   members: List[StructMemberT],
   isClosure: Boolean
 ) extends CitizenDefinitionT with QueriableT {
+  override def hashCode(): Int = vcurious()
   // debt: move this to somewhere else. let's allow packs to have packs, just nothing else.
 //  all({
 //    case StructMember2(_, _, ReferenceMemberType2(Coord(_, PackT2(_, _)))) => {
@@ -364,6 +381,7 @@ case class InterfaceDefinitionT(
     // See IMRFDI for why we need to remember only the internal methods here.
     internalMethods: List[FunctionHeaderT]
 ) extends CitizenDefinitionT with QueriableT {
+  override def hashCode(): Int = vcurious()
   override def getRef = InterfaceTT(fullName)
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -377,6 +395,7 @@ trait CitizenRefT extends KindT {
 
 // These should only be made by struct templar, which puts the definition into temputs at the same time
 case class StructTT(fullName: FullNameT[ICitizenNameT]) extends CitizenRefT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 14;
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -392,6 +411,8 @@ case class OverloadSet(
     name: GlobalFunctionFamilyNameA,
     voidStructRef: StructTT
 ) extends KindT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+
   override def order: Int = 19;
 
   if (name == GlobalFunctionFamilyNameA("true")) {
@@ -406,6 +427,8 @@ case class OverloadSet(
 case class InterfaceTT(
   fullName: FullNameT[ICitizenNameT]
 ) extends CitizenRefT with QueriableT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+
   override def order: Int = 15;
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -417,6 +440,8 @@ case class InterfaceTT(
 case class ParamFilter(
     tyype: CoordT,
     virtuality: Option[VirtualityT]) {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+
   def debugString: String = {
     tyype.toString + virtuality.map(" impl " + _.toString).getOrElse("")
   }

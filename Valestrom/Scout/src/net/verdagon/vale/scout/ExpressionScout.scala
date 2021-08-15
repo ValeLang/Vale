@@ -1,7 +1,7 @@
 package net.verdagon.vale.scout
 
 import net.verdagon.vale.parser.{RuntimeSizedP, _}
-import net.verdagon.vale.{scout, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{scout, vassert, vcurious, vfail, vimpl, vwat}
 import net.verdagon.vale.scout.Scout.{noDeclarations, noVariableUses}
 import net.verdagon.vale.scout.patterns.{LetRuleState, PatternScout, RuleState, RuleStateBox}
 import net.verdagon.vale.scout.predictor.Conclusions
@@ -11,15 +11,21 @@ import net.verdagon.vale.scout.templatepredictor.PredictorEvaluator
 object ExpressionScout {
   sealed trait IScoutResult[+T <: IExpressionSE]
   // Will contain the address of a local.
-  case class LocalLookupResult(range: RangeS, name: IVarNameS) extends IScoutResult[IExpressionSE]
+  case class LocalLookupResult(range: RangeS, name: IVarNameS) extends IScoutResult[IExpressionSE] {
+    override def hashCode(): Int = vcurious()
+  }
   // Looks up something that's not a local.
   // Should be just a function, but its also super likely that the user just forgot
   // to declare a variable, and we interpreted it as an outside lookup.
-  case class OutsideLookupResult(range: RangeS, name: String, templateArgs: Option[List[ITemplexS]]) extends IScoutResult[IExpressionSE]
+  case class OutsideLookupResult(range: RangeS, name: String, templateArgs: Option[List[ITemplexS]]) extends IScoutResult[IExpressionSE] {
+    override def hashCode(): Int = vcurious()
+  }
   // Anything else, such as:
   // - Result of a function call
   // - Address inside a struct
-  case class NormalResult[+T <: IExpressionSE](range: RangeS, expr: T) extends IScoutResult[T]
+  case class NormalResult[+T <: IExpressionSE](range: RangeS, expr: T) extends IScoutResult[T] {
+    override def hashCode(): Int = vcurious()
+  }
 
 
   def scoutBlock(

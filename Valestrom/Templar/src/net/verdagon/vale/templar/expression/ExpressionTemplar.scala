@@ -15,7 +15,7 @@ import net.verdagon.vale.templar.types._
 
 import scala.collection.immutable.{List, Nil, Set}
 
-case class TookWeakRefOfNonWeakableError() extends Throwable
+case class TookWeakRefOfNonWeakableError() extends Throwable { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 trait IExpressionTemplarDelegate {
   def evaluateTemplatedFunctionFromCallForPrototype(

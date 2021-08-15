@@ -12,7 +12,7 @@ import net.verdagon.vale.{Err, IProfiler, Ok, vassert, vassertOne, vassertSome, 
 
 import scala.collection.immutable.{List, Set}
 
-case class ResultTypeMismatchError(expectedType: CoordT, actualType: CoordT)
+case class ResultTypeMismatchError(expectedType: CoordT, actualType: CoordT) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 class FunctionTemplarCore(
     opts: TemplarOptions,

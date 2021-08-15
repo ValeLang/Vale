@@ -6,16 +6,19 @@ import net.verdagon.vale.metal._
 import net.verdagon.vale.parser.{FileP, VariabilityP}
 import net.verdagon.vale.scout.{ICompileErrorS, ProgramS}
 import net.verdagon.vale.templar.{CitizenNameT, ExternFunctionNameT, FullNameT, FunctionExportT, FunctionExternT, FunctionNameT, ICompileErrorT, INameT, IVarNameT, ImmConcreteDestructorNameT, ImmInterfaceDestructorNameT, KindExportT, KindExternT, TemplarCompilation, TemplarCompilationOptions, types => t}
-import net.verdagon.vale.{Builtins, FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, PackageCoordinate, PackageCoordinateMap, Result, vassert, vfail, vwat}
+import net.verdagon.vale.{Builtins, FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, PackageCoordinate, PackageCoordinateMap, Result, vassert, vcurious, vfail, vwat}
 
 import scala.collection.immutable.List
 
 case class FunctionRefH(prototype: PrototypeH) {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   //  def functionType = prototype.functionType
   def fullName = prototype.fullName
 }
 
 case class LocalsBox(var inner: Locals) {
+  override def hashCode(): Int = vfail() // Shouldnt hash, is mutable
+
   def snapshot = inner
 
   def templarLocals: Map[FullNameT[IVarNameT], VariableIdH] = inner.templarLocals
@@ -74,6 +77,7 @@ case class Locals(
      locals: Map[VariableIdH, Local],
 
      nextLocalIdNumber: Int) {
+  override def hashCode(): Int = vcurious()
 
   def addTemplarLocal(
     hinputs: Hinputs,

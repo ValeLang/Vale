@@ -2,11 +2,14 @@ package net.verdagon.vale.scout.patterns
 
 import net.verdagon.vale.parser.{CaptureP, VariabilityP}
 import net.verdagon.vale.scout._
+import net.verdagon.vale.{vcurious, vimpl}
 
 import scala.collection.immutable.List
 
 case class CaptureS(
-  name: IVarNameS)
+  name: IVarNameS) {
+  override def hashCode(): Int = vcurious()
+}
 
 case class AtomSP(
   range: RangeS,
@@ -16,11 +19,15 @@ case class AtomSP(
   name: Option[CaptureS],
   virtuality: Option[VirtualitySP],
   coordRune: IRuneS,
-  destructure: Option[List[AtomSP]])
+  destructure: Option[List[AtomSP]]) {
+  override def hashCode(): Int = vcurious()
+}
 
 sealed trait VirtualitySP
 case object AbstractSP extends VirtualitySP
-case class OverrideSP(range: RangeS, kindRune: IRuneS) extends VirtualitySP
+case class OverrideSP(range: RangeS, kindRune: IRuneS) extends VirtualitySP {
+  override def hashCode(): Int = vcurious()
+}
 
 object PatternSUtils {
   def getDistinctOrderedRunesForPattern(pattern: AtomSP): List[IRuneS] = {

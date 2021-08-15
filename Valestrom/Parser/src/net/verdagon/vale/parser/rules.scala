@@ -1,28 +1,30 @@
 package net.verdagon.vale.parser
 
+import net.verdagon.vale.{vcurious, vimpl}
+
 import scala.collection.immutable.List
 
 sealed trait IRulexPR {
   def range: Range
 }
-case class EqualsPR(range: Range, left: IRulexPR, right: IRulexPR) extends IRulexPR
-case class OrPR(range: Range, possibilities: List[IRulexPR]) extends IRulexPR
-case class DotPR(range: Range, container: IRulexPR, memberName: NameP) extends IRulexPR
+case class EqualsPR(range: Range, left: IRulexPR, right: IRulexPR) extends IRulexPR { override def hashCode(): Int = vcurious() }
+case class OrPR(range: Range, possibilities: List[IRulexPR]) extends IRulexPR { override def hashCode(): Int = vcurious() }
+case class DotPR(range: Range, container: IRulexPR, memberName: NameP) extends IRulexPR { override def hashCode(): Int = vcurious() }
 case class ComponentsPR(
   range: Range,
   // This is a TypedPR so that we can know the type, so we can know whether this is
   // a kind components rule or a coord components rule.
   container: TypedPR,
   components: List[IRulexPR]
-) extends IRulexPR
-case class TypedPR(range: Range, rune: Option[NameP], tyype: ITypePR) extends IRulexPR
+) extends IRulexPR { override def hashCode(): Int = vcurious() }
+case class TypedPR(range: Range, rune: Option[NameP], tyype: ITypePR) extends IRulexPR { override def hashCode(): Int = vcurious() }
 case class TemplexPR(templex: ITemplexPT) extends IRulexPR {
   def range = templex.range
 }
 // This is for built-in parser functions, such as exists() or isBaseOf() etc.
-case class CallPR(range: Range, name: NameP, args: List[IRulexPR]) extends IRulexPR
-case class ResolveSignaturePR(range: Range, nameStrRule: IRulexPR, argsPackRule: PackPR) extends IRulexPR
-case class PackPR(range: Range, elements: List[IRulexPR]) extends IRulexPR
+case class CallPR(range: Range, name: NameP, args: List[IRulexPR]) extends IRulexPR { override def hashCode(): Int = vcurious() }
+case class ResolveSignaturePR(range: Range, nameStrRule: IRulexPR, argsPackRule: PackPR) extends IRulexPR { override def hashCode(): Int = vcurious() }
+case class PackPR(range: Range, elements: List[IRulexPR]) extends IRulexPR { override def hashCode(): Int = vcurious() }
 
 sealed trait ITypePR
 case object IntTypePR extends ITypePR

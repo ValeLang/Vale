@@ -1,7 +1,7 @@
 package net.verdagon.vale.highlighter
 
 import net.verdagon.vale.parser._
-import net.verdagon.vale.vimpl
+import net.verdagon.vale.{vcurious, vimpl}
 
 sealed trait IClass
 case object Prog extends IClass
@@ -54,7 +54,7 @@ case object Ownership extends IClass
 case object Permission extends IClass
 case object Match extends IClass
 
-case class Span(classs: IClass, range: Range, children: List[Span])
+case class Span(classs: IClass, range: Range, children: List[Span]) { override def hashCode(): Int = vcurious() }
 
 object Spanner {
   def forProgram(program: FileP): Span = {

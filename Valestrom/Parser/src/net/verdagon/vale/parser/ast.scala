@@ -2,9 +2,10 @@
 
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.{vassert, vpass}
+import net.verdagon.vale.{vassert, vcurious, vimpl, vpass}
 
 case class Range(begin: Int, end: Int) {
+  override def hashCode(): Int = vcurious()
   vassert(begin == end || begin <= end)
 }
 object Range {
@@ -12,10 +13,11 @@ object Range {
 }
 // Something that exists in the source code. An Option[UnitP] is better than a boolean
 // because it also contains the range it was found.
-case class UnitP(range: Range)
-case class NameP(range: Range, str: String)
+case class UnitP(range: Range) { override def hashCode(): Int = vcurious() }
+case class NameP(range: Range, str: String) { override def hashCode(): Int = vcurious() }
 
 case class FileP(topLevelThings: List[ITopLevelThingP]) {
+  override def hashCode(): Int = vcurious()
   def lookupFunction(name: String) = {
     val results =
       topLevelThings.collect({
@@ -27,35 +29,35 @@ case class FileP(topLevelThings: List[ITopLevelThingP]) {
 }
 
 sealed trait ITopLevelThingP
-case class TopLevelFunctionP(function: FunctionP) extends ITopLevelThingP
-case class TopLevelStructP(struct: StructP) extends ITopLevelThingP
-case class TopLevelInterfaceP(interface: InterfaceP) extends ITopLevelThingP
-case class TopLevelImplP(impl: ImplP) extends ITopLevelThingP
-case class TopLevelExportAsP(export: ExportAsP) extends ITopLevelThingP
-case class TopLevelImportP(imporrt: ImportP) extends ITopLevelThingP
+case class TopLevelFunctionP(function: FunctionP) extends ITopLevelThingP { override def hashCode(): Int = vcurious() }
+case class TopLevelStructP(struct: StructP) extends ITopLevelThingP { override def hashCode(): Int = vcurious() }
+case class TopLevelInterfaceP(interface: InterfaceP) extends ITopLevelThingP { override def hashCode(): Int = vcurious() }
+case class TopLevelImplP(impl: ImplP) extends ITopLevelThingP { override def hashCode(): Int = vcurious() }
+case class TopLevelExportAsP(export: ExportAsP) extends ITopLevelThingP { override def hashCode(): Int = vcurious() }
+case class TopLevelImportP(imporrt: ImportP) extends ITopLevelThingP { override def hashCode(): Int = vcurious() }
 
 case class ImplP(
   range: Range,
   identifyingRunes: Option[IdentifyingRunesP],
   rules: Option[TemplateRulesP],
   struct: ITemplexPT,
-  interface: ITemplexPT)
+  interface: ITemplexPT) { override def hashCode(): Int = vcurious() }
 
 case class ExportAsP(
   range: Range,
   struct: ITemplexPT,
-  exportedName: NameP)
+  exportedName: NameP) { override def hashCode(): Int = vcurious() }
 
 case class ImportP(
   range: Range,
   moduleName: NameP,
   packageSteps: List[NameP],
-  importeeName: NameP)
+  importeeName: NameP) { override def hashCode(): Int = vcurious() }
 
 sealed trait ICitizenAttributeP
-case class ExportP(range: Range) extends ICitizenAttributeP
-case class WeakableP(range: Range) extends ICitizenAttributeP
-case class SealedP(range: Range) extends ICitizenAttributeP
+case class ExportP(range: Range) extends ICitizenAttributeP { override def hashCode(): Int = vcurious() }
+case class WeakableP(range: Range) extends ICitizenAttributeP { override def hashCode(): Int = vcurious() }
+case class SealedP(range: Range) extends ICitizenAttributeP { override def hashCode(): Int = vcurious() }
 
 case class StructP(
   range: Range,
@@ -64,18 +66,18 @@ case class StructP(
   mutability: MutabilityP,
   identifyingRunes: Option[IdentifyingRunesP],
   templateRules: Option[TemplateRulesP],
-  members: StructMembersP)
+  members: StructMembersP) { override def hashCode(): Int = vcurious() }
 
 case class StructMembersP(
   range: Range,
-  contents: List[IStructContent])
+  contents: List[IStructContent]) { override def hashCode(): Int = vcurious() }
 sealed trait IStructContent
-case class StructMethodP(func: FunctionP) extends IStructContent
+case class StructMethodP(func: FunctionP) extends IStructContent { override def hashCode(): Int = vcurious() }
 case class StructMemberP(
   range: Range,
   name: NameP,
   variability: VariabilityP,
-  tyype: ITemplexPT) extends IStructContent
+  tyype: ITemplexPT) extends IStructContent { override def hashCode(): Int = vcurious() }
 
 case class InterfaceP(
                        range: Range,
@@ -84,40 +86,40 @@ case class InterfaceP(
                        mutability: MutabilityP,
                        maybeIdentifyingRunes: Option[IdentifyingRunesP],
                        templateRules: Option[TemplateRulesP],
-                       members: List[FunctionP])
+                       members: List[FunctionP]) { override def hashCode(): Int = vcurious() }
 
 sealed trait IFunctionAttributeP
-case class AbstractAttributeP(range: Range) extends IFunctionAttributeP
-case class ExternAttributeP(range: Range) extends IFunctionAttributeP
-case class BuiltinAttributeP(range: Range, generatorName: NameP) extends IFunctionAttributeP
-case class ExportAttributeP(range: Range) extends IFunctionAttributeP
-case class PureAttributeP(range: Range) extends IFunctionAttributeP
+case class AbstractAttributeP(range: Range) extends IFunctionAttributeP { override def hashCode(): Int = vcurious() }
+case class ExternAttributeP(range: Range) extends IFunctionAttributeP { override def hashCode(): Int = vcurious() }
+case class BuiltinAttributeP(range: Range, generatorName: NameP) extends IFunctionAttributeP { override def hashCode(): Int = vcurious() }
+case class ExportAttributeP(range: Range) extends IFunctionAttributeP { override def hashCode(): Int = vcurious() }
+case class PureAttributeP(range: Range) extends IFunctionAttributeP { override def hashCode(): Int = vcurious() }
 
 sealed trait IRuneAttributeP
-case class TypeRuneAttributeP(range: Range, tyype: ITypePR) extends IRuneAttributeP
+case class TypeRuneAttributeP(range: Range, tyype: ITypePR) extends IRuneAttributeP { override def hashCode(): Int = vcurious() }
 case class ReadOnlyRuneAttributeP(range: Range) extends IRuneAttributeP {
   vpass()
 }
-case class PoolRuneAttributeP(range: Range) extends IRuneAttributeP
-case class ArenaRuneAttributeP(range: Range) extends IRuneAttributeP
-case class BumpRuneAttributeP(range: Range) extends IRuneAttributeP
+case class PoolRuneAttributeP(range: Range) extends IRuneAttributeP { override def hashCode(): Int = vcurious() }
+case class ArenaRuneAttributeP(range: Range) extends IRuneAttributeP { override def hashCode(): Int = vcurious() }
+case class BumpRuneAttributeP(range: Range) extends IRuneAttributeP { override def hashCode(): Int = vcurious() }
 
-case class IdentifyingRuneP(range: Range, name: NameP, attributes: List[IRuneAttributeP])
+case class IdentifyingRuneP(range: Range, name: NameP, attributes: List[IRuneAttributeP]) { override def hashCode(): Int = vcurious() }
 
-case class IdentifyingRunesP(range: Range, runes: List[IdentifyingRuneP])
-case class TemplateRulesP(range: Range, rules: List[IRulexPR])
-case class ParamsP(range: Range, patterns: List[PatternPP])
+case class IdentifyingRunesP(range: Range, runes: List[IdentifyingRuneP]) { override def hashCode(): Int = vcurious() }
+case class TemplateRulesP(range: Range, rules: List[IRulexPR]) { override def hashCode(): Int = vcurious() }
+case class ParamsP(range: Range, patterns: List[PatternPP]) { override def hashCode(): Int = vcurious() }
 
 case class FunctionP(
   range: Range,
   header: FunctionHeaderP,
-  body: Option[BlockPE])
+  body: Option[BlockPE]) { override def hashCode(): Int = vcurious() }
 
 case class FunctionReturnP(
   range: Range,
   inferRet: Option[UnitP],
   retType: Option[ITemplexPT]
-)
+) { override def hashCode(): Int = vcurious() }
 
 case class FunctionHeaderP(
                             range: Range,
@@ -130,7 +132,9 @@ case class FunctionHeaderP(
 
                             params: Option[ParamsP],
                             ret: FunctionReturnP
-)
+) {
+  override def hashCode(): Int = vcurious()
+}
 
 
 sealed trait MutabilityP
@@ -157,9 +161,9 @@ case object MoveP extends LoadAsP
 // probably become a BorrowP or ShareP.
 // If permission is None, then we're probably in a dot. For example, x.launch()
 // should be mapped to launch(&!x) if x is mutable, or launch(&x) if it's readonly.
-case class LendConstraintP(permission: Option[PermissionP]) extends LoadAsP
+case class LendConstraintP(permission: Option[PermissionP]) extends LoadAsP { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 // This means we want to get a weak reference to it. Thisll become a WeakP.
-case class LendWeakP(permission: PermissionP) extends LoadAsP
+case class LendWeakP(permission: PermissionP) extends LoadAsP { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 // This represents unspecified. It basically means, use whatever ownership already there.
 case object UseP extends LoadAsP
 

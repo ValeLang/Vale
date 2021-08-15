@@ -4,12 +4,12 @@ package net.verdagon.vale.vivem
 //import net.verdagon.vale.scout.{MemberRefCount, RefCountCategory, RegisterRefCount, VariableRefCount}
 //import net.verdagon.vale.templar.types.Ownership
 import net.verdagon.vale.metal._
-import net.verdagon.vale.{vassert, vcheck, vfail}
+import net.verdagon.vale.{vassert, vcheck, vfail, vimpl}
 
 // RR = Runtime Result. Don't use these to determine behavior, just use
 // these to check that things are as we expect.
-case class RRReference(hamut: ReferenceH[KindH])
-case class RRKind(hamut: KindH)
+case class RRReference(hamut: ReferenceH[KindH]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class RRKind(hamut: KindH) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 class Allocation(
     val reference: ReferenceV, // note that this cannot change
@@ -244,14 +244,14 @@ case class ReferenceV(
 sealed trait IObjectReferrer {
   def ownership: OwnershipH
 }
-case class VariableToObjectReferrer(varAddr: VariableAddressV, ownership: OwnershipH) extends IObjectReferrer
-case class MemberToObjectReferrer(memberAddr: MemberAddressV, ownership: OwnershipH) extends IObjectReferrer
-case class ElementToObjectReferrer(elementAddr: ElementAddressV, ownership: OwnershipH) extends IObjectReferrer
-case class RegisterToObjectReferrer(callId: CallId, ownership: OwnershipH) extends IObjectReferrer
+case class VariableToObjectReferrer(varAddr: VariableAddressV, ownership: OwnershipH) extends IObjectReferrer { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class MemberToObjectReferrer(memberAddr: MemberAddressV, ownership: OwnershipH) extends IObjectReferrer { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class ElementToObjectReferrer(elementAddr: ElementAddressV, ownership: OwnershipH) extends IObjectReferrer { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class RegisterToObjectReferrer(callId: CallId, ownership: OwnershipH) extends IObjectReferrer { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 // This is us holding onto something during a while loop or array generator call, so the called functions dont eat them and deallocate them
-case class RegisterHoldToObjectReferrer(expressionId: ExpressionId, ownership: OwnershipH) extends IObjectReferrer
-//case class ResultToObjectReferrer(callId: CallId) extends IObjectReferrer
-case class ArgumentToObjectReferrer(argumentId: ArgumentId, ownership: OwnershipH) extends IObjectReferrer
+case class RegisterHoldToObjectReferrer(expressionId: ExpressionId, ownership: OwnershipH) extends IObjectReferrer { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+//case class ResultToObjectReferrer(callId: CallId) extends IObjectReferrer { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class ArgumentToObjectReferrer(argumentId: ArgumentId, ownership: OwnershipH) extends IObjectReferrer { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 case class VariableAddressV(callId: CallId, local: Local) {
   override def toString: String = "&v:" + callId + "#v" + local.id.number
@@ -268,8 +268,8 @@ case class CallId(callDepth: Int, function: PrototypeH) {
   override def toString: String = "ƒ" + callDepth + "/" + (function.fullName.readableName + "_" + function.fullName.id)
   override def hashCode(): Int = callDepth + function.fullName.id
 }
-//case class RegisterId(blockId: BlockId, lineInBlock: Int)
-case class ArgumentId(callId: CallId, index: Int)
+//case class RegisterId(blockId: BlockId, lineInBlock: Int) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class ArgumentId(callId: CallId, index: Int) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 case class VariableV(
     id: VariableAddressV,
     var reference: ReferenceV,
@@ -293,7 +293,7 @@ sealed trait RegisterV {
     }
   }
 }
-case class ReferenceRegisterV(reference: ReferenceV) extends RegisterV
+case class ReferenceRegisterV(reference: ReferenceV) extends RegisterV { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 
 case class VivemPanic(message: String) extends Exception

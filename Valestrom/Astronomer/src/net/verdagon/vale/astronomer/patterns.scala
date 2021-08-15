@@ -2,6 +2,7 @@ package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.parser.{CaptureP, VariabilityP}
 import net.verdagon.vale.scout.RangeS
+import net.verdagon.vale.{vcurious, vimpl}
 
 import scala.collection.immutable.List
 
@@ -11,11 +12,11 @@ case class AtomAP(
   capture: Option[LocalA],
   virtuality: Option[VirtualityAP],
   coordRune: IRuneA,
-  destructure: Option[List[AtomAP]])
+  destructure: Option[List[AtomAP]]) { override def hashCode(): Int = vcurious() }
 
 sealed trait VirtualityAP
 case object AbstractAP extends VirtualityAP
-case class OverrideAP(range: RangeS, kindRune: IRuneA) extends VirtualityAP
+case class OverrideAP(range: RangeS, kindRune: IRuneA) extends VirtualityAP { override def hashCode(): Int = vcurious() }
 
 object PatternSUtils {
   def getDistinctOrderedRunesForPattern(pattern: AtomAP): List[IRuneA] = {

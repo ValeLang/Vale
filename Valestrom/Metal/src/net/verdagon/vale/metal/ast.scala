@@ -18,12 +18,12 @@ object ProgramH {
 
 case class RegionH(
   name: String,
-  kinds: List[KindH])
+  kinds: List[KindH]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 case class Export(
   nameH: FullNameH,
   exportedName: String
-)
+) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 case class PackageH(
     // All the interfaces in the program.
@@ -49,6 +49,7 @@ case class PackageH(
     // Translations for backends to use if they need to export a name.
     externNameToKind: Map[String, KindH]
 ) {
+  override def hashCode(): Int = vfail() // Would need a really good reason to hash something this big
 
   // These are convenience functions for the tests to look up various functions.
   def externFunctions = functions.filter(_.isExtern)
@@ -91,6 +92,7 @@ case class PackageH(
 
 case class ProgramH(
   packages: PackageCoordinateMap[PackageH]) {
+  override def hashCode(): Int = vfail() // Would need a really good reason to hash something this big
 
 
   def lookupPackage(packageCoordinate: PackageCoordinate): PackageH = {
@@ -140,7 +142,7 @@ case class StructDefinitionH(
     edges: List[EdgeH],
     // The members of the struct, in order.
     members: List[StructMemberH]) {
-
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def getRef: StructRefH = StructRefH(fullName)
 }
 
@@ -153,7 +155,7 @@ case class StructMemberH(
   // This isn't wired up to anything, feel free to ignore it.
   variability: Variability,
   // The type of the member.
-  tyype: ReferenceH[KindH])
+  tyype: ReferenceH[KindH]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 // An interface definition containing name, methods, etc.
 case class InterfaceDefinitionH(
@@ -174,7 +176,7 @@ case class InterfaceDefinitionH(
   superInterfaces: List[InterfaceRefH],
   // All the methods that we can call on this interface.
   methods: List[InterfaceMethodH]) {
-
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def getRef = InterfaceRefH(fullName)
 }
 
@@ -185,6 +187,7 @@ case class InterfaceMethodH(
   // Describes which param is the one that will have the vtable.
   // Currently this is always assumed to be zero.
   virtualParamIndex: Int) {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(virtualParamIndex >= 0)
 }
 
@@ -197,7 +200,7 @@ case class EdgeH(
   interface: InterfaceRefH,
   // Map whose key is an interface method, and whose value is the method of the struct
   // that it's overriding.
-  structPrototypesByInterfaceMethod: ListMap[InterfaceMethodH, PrototypeH])
+  structPrototypesByInterfaceMethod: ListMap[InterfaceMethodH, PrototypeH]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 sealed trait IFunctionAttributeH
 case object UserFunctionH extends IFunctionAttributeH // Whether it was written by a human. Mostly for tests right now.
@@ -218,7 +221,7 @@ case class FunctionH(
 
   // The body of the function that contains the actual instructions.
   body: ExpressionH[KindH]) {
-
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def fullName = prototype.fullName
   def isUserFunction = attributes.contains(UserFunctionH)
 }
@@ -228,7 +231,7 @@ case class PrototypeH(
   fullName: FullNameH,
   params: List[ReferenceH[KindH]],
   returnType: ReferenceH[KindH]
-)
+) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 // A unique name for something in the program.
 case class FullNameH(
@@ -237,6 +240,7 @@ case class FullNameH(
     id: Int,
     packageCoordinate: PackageCoordinate,
     parts: List[IVonData]) {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 //  def toReadableString(): String = {
 //    readableName + (if (id >= 0) "_" + id else "")
 //  }

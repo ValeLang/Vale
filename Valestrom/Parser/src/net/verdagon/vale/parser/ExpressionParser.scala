@@ -1,7 +1,7 @@
 package net.verdagon.vale.parser
 
 import net.verdagon.vale.parser.patterns.PatternParser
-import net.verdagon.vale.{vassert, vcheck, vcurious, vfail}
+import net.verdagon.vale.{vassert, vcheck, vcurious, vfail, vimpl}
 import org.apache.commons.lang.StringEscapeUtils
 
 import scala.util.parsing.combinator.RegexParsers
@@ -38,9 +38,9 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     }
   }
 
-  case class BadLetBegin(range: Range)
+  case class BadLetBegin(range: Range) { override def hashCode(): Int = vcurious() }
 
-  case class LetBegin(begin: Int, patternPP: PatternPP)
+  case class LetBegin(begin: Int, patternPP: PatternPP) { override def hashCode(): Int = vcurious() }
 
   private[parser] def letBegin: Parser[LetBegin] = {
     pos ~ (atomPattern <~ white <~ "=" <~ white) ^^ {
@@ -387,24 +387,24 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
       isMapCall: Boolean,
       lookup: LookupPE,
       args: List[IExpressionPE]
-    ) extends IStep
+    ) extends IStep { override def hashCode(): Int = vcurious() }
     case class MemberAccessStep(
       stepRange: Range,
       operatorRange: Range,
       isMapCall: Boolean,
       name: LookupPE
-    ) extends IStep
+    ) extends IStep { override def hashCode(): Int = vcurious() }
     case class CallStep(
       stepRange: Range,
       operatorRange: Range,
       containerReadwrite: Boolean,
       isMapCall: Boolean,
       args: List[IExpressionPE]
-    ) extends IStep
+    ) extends IStep { override def hashCode(): Int = vcurious() }
     case class IndexStep(
       stepRange: Range,
       args: List[IExpressionPE]
-    ) extends IStep
+    ) extends IStep { override def hashCode(): Int = vcurious() }
     def step: Parser[IStep] = {
       def afterDot = {
         (integerExpression ^^ { case ConstantIntPE(range, value, bits) => LookupPE(NameP(range, value.toString), None) }) |

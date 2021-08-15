@@ -3,7 +3,7 @@ package net.verdagon.vale.scout
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.patterns.{AtomSP, PatternSUtils, VirtualitySP}
 import net.verdagon.vale.scout.rules.{IRulexSR, ITypeSR, RuleSUtils, TypedSR}
-import net.verdagon.vale.{FileCoordinate, PackageCoordinate, vassert, vwat}
+import net.verdagon.vale.{FileCoordinate, PackageCoordinate, vassert, vcurious, vimpl, vwat}
 
 import scala.collection.immutable.List
 
@@ -18,6 +18,8 @@ case class ProgramS(
     implementedFunctions: List[FunctionS],
     exports: List[ExportAsS],
     imports: List[ImportS]) {
+  override def hashCode(): Int = vcurious()
+
   def lookupFunction(name: String): FunctionS = {
     val matches =
       implementedFunctions
@@ -64,8 +66,10 @@ case class CodeLocationS(
   // The index in the original source code files list.
   // If negative, it means it came from some internal non-file code.
   file: FileCoordinate,
-  offset: Int)
+  offset: Int) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+
 case class RangeS(begin: CodeLocationS, end: CodeLocationS) {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(begin.file == end.file)
   vassert(begin.offset <= end.offset)
   def file: FileCoordinate = begin.file
@@ -73,10 +77,16 @@ case class RangeS(begin: CodeLocationS, end: CodeLocationS) {
 
 sealed trait ICitizenAttributeS
 sealed trait IFunctionAttributeS
-case class ExternS(packageCoord: PackageCoordinate) extends IFunctionAttributeS with ICitizenAttributeS
+case class ExternS(packageCoord: PackageCoordinate) extends IFunctionAttributeS with ICitizenAttributeS {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+}
 case object PureS extends IFunctionAttributeS with ICitizenAttributeS
-case class BuiltinS(generatorName: String) extends IFunctionAttributeS with ICitizenAttributeS
-case class ExportS(packageCoordinate: PackageCoordinate) extends IFunctionAttributeS with ICitizenAttributeS
+case class BuiltinS(generatorName: String) extends IFunctionAttributeS with ICitizenAttributeS {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+}
+case class ExportS(packageCoordinate: PackageCoordinate) extends IFunctionAttributeS with ICitizenAttributeS {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+}
 case object UserFunctionS extends IFunctionAttributeS // Whether it was written by a human. Mostly for tests right now.
 
 case class StructS(
@@ -97,6 +107,8 @@ case class StructS(
     isTemplate: Boolean,
     rules: List[IRulexSR],
     members: List[StructMemberS]) {
+  override def hashCode(): Int = vcurious()
+
   vassert(isTemplate == identifyingRunes.nonEmpty)
 }
 
@@ -104,7 +116,9 @@ case class StructMemberS(
     range: RangeS,
     name: String,
     variability: VariabilityP,
-    typeRune: IRuneS)
+    typeRune: IRuneS) {
+  override def hashCode(): Int = vcurious()
+}
 
 case class ImplS(
     range: RangeS,
@@ -117,19 +131,25 @@ case class ImplS(
     localRunes: Set[IRuneS],
     isTemplate: Boolean,
     structKindRune: IRuneS,
-    interfaceKindRune: IRuneS)
+    interfaceKindRune: IRuneS) {
+  override def hashCode(): Int = vcurious()
+}
 
 case class ExportAsS(
     range: RangeS,
     exportName: ExportAsNameS,
     templexS: ITemplexS,
-    exportedName: String)
+    exportedName: String) {
+  override def hashCode(): Int = vcurious()
+}
 
 case class ImportS(
   range: RangeS,
   moduleName: String,
   packageNames: List[String],
-  importeeName: String)
+  importeeName: String) {
+  override def hashCode(): Int = vcurious()
+}
 
 case class InterfaceS(
     range: RangeS,
@@ -150,6 +170,7 @@ case class InterfaceS(
     rules: List[IRulexSR],
     // See IMRFDI
     internalMethods: List[FunctionS]) {
+  override def hashCode(): Int = vcurious()
   vassert(isTemplate == identifyingRunes.nonEmpty)
 
   internalMethods.foreach(internalMethod => {
@@ -187,19 +208,26 @@ object structSName {
 case class ParameterS(
     // Note the lack of a VariabilityP here. The only way to get a variability is with a Capture.
     pattern: AtomSP) {
+  override def hashCode(): Int = vcurious()
 }
 
 case class SimpleParameterS(
     origin: Option[AtomSP],
     name: String,
     virtuality: Option[VirtualitySP],
-    tyype: ITemplexS)
+    tyype: ITemplexS) {
+  override def hashCode(): Int = vcurious()
+}
 
 sealed trait IBodyS
 case object ExternBodyS extends IBodyS
 case object AbstractBodyS extends IBodyS
-case class GeneratedBodyS(generatorId: String) extends IBodyS
-case class CodeBodyS(body: BodySE) extends IBodyS
+case class GeneratedBodyS(generatorId: String) extends IBodyS {
+  override def hashCode(): Int = vcurious()
+}
+case class CodeBodyS(body: BodySE) extends IBodyS {
+  override def hashCode(): Int = vcurious()
+}
 
 // template params.
 
@@ -228,6 +256,7 @@ case class FunctionS(
     templateRules: List[IRulexSR],
     body: IBodyS
 ) {
+  override def hashCode(): Int = vcurious()
 
   // Make sure we have to solve all identifying runes
   vassert((identifyingRunes.toSet -- localRunes).isEmpty)
@@ -285,5 +314,7 @@ case class FunctionS(
 case class BFunctionS(
   origin: FunctionS,
   name: String,
-  body: BodySE)
+  body: BodySE) {
+  override def hashCode(): Int = vcurious()
+}
 

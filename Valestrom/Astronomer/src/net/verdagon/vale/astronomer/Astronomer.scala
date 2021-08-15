@@ -7,7 +7,7 @@ import net.verdagon.vale.parser.{CaptureP, FailedParse, FileP, ImmutableP, Mutab
 import net.verdagon.vale.scout.{ExportS, ExternS, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS, OverrideSP}
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, Ok, PackageCoordinate, PackageCoordinateMap, Result, vassert, vassertSome, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, Ok, PackageCoordinate, PackageCoordinateMap, Result, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
@@ -20,6 +20,7 @@ case class Environment(
     codeMap: PackageCoordinateMap[ProgramS],
     typeByRune: Map[IRuneA, ITemplataType],
     locals: List[LocalA]) {
+  override def hashCode(): Int = vcurious()
 
   val structsS: List[StructS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.structs)).toList
   val interfacesS: List[InterfaceS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.interfaces)).toList
@@ -119,6 +120,8 @@ case class Environment(
 }
 
 case class AstroutsBox(var astrouts: Astrouts) {
+  override def hashCode(): Int = vfail() // This is mutable, so definitely dont hash it
+
   def getImpl(name: ImplNameA) = {
     astrouts.moduleAstrouts.get(name.packageCoordinate.module).flatMap(_.impls.get(name))
   }
@@ -131,13 +134,15 @@ case class AstroutsBox(var astrouts: Astrouts) {
 }
 
 case class Astrouts(
-  moduleAstrouts: Map[String, ModuleAstrouts])
+    moduleAstrouts: Map[String, ModuleAstrouts]) {
+  override def hashCode(): Int = vfail(); // We'd need a really good reason to hash this entire thing.
+}
 
 case class ModuleAstrouts(
   structs: Map[ITypeDeclarationNameA, StructA],
   interfaces: Map[ITypeDeclarationNameA, InterfaceA],
   impls: Map[ImplNameA, ImplA],
-  functions: Map[IFunctionDeclarationNameA, FunctionA])
+  functions: Map[IFunctionDeclarationNameA, FunctionA]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 object Astronomer {
   val primitives =
@@ -763,7 +768,7 @@ object Astronomer {
         packageToImplsA.keySet ++
         packageToExportsA.keySet
       val packageToContents =
-        allPackages.map(paackage => {
+        allPackages.toList.map(paackage => {
           val contents =
             ProgramA(
               packageToStructsA.getOrElse(paackage, List.empty),

@@ -7,17 +7,17 @@ import net.verdagon.vale.{vassert, vimpl, vwat}
 import scala.collection.immutable.List
 
 //sealed trait IRulexAR
-//case class EqualsAR(left: IRulexAR, right: IRulexAR) extends IRulexAR
-//case class IsaAR(sub: IRulexAR, suuper: IRulexAR) extends IRulexAR
-//case class OrAR(alternatives: List[IRulexAR]) extends IRulexAR
+//case class EqualsAR(left: IRulexAR, right: IRulexAR) extends IRulexAR { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+//case class IsaAR(sub: IRulexAR, suuper: IRulexAR) extends IRulexAR { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+//case class OrAR(alternatives: List[IRulexAR]) extends IRulexAR { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 //case class ComponentsAR(
 //  // This is a TypedAR so that we can know the type, so we can know whether this is
 //  // a kind components rule or a coord components rule.
 //  container: TypedAR,
 //  components: List[IRulexAR]
-//) extends IRulexAR
-//case class TypedAR(rune: Option[String], tyype: ITypeAR) extends IRulexAR
-//case class TemplexAR(templex: ITemplexS) extends IRulexAR
+//) extends IRulexAR { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+//case class TypedAR(rune: Option[String], tyype: ITypeAR) extends IRulexAR { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+//case class TemplexAR(templex: ITemplexS) extends IRulexAR { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 //// This is for built-in parser functions, such as exists() or isBaseOf() etc.
 //case class CallAR(name: String, args: List[IRulexAR]) extends IRulexAR {
 //}
@@ -82,9 +82,11 @@ sealed trait IRulexAR {
   def resultType: ITemplataType
 }
 case class EqualsAR(range: RangeS, left: IRulexAR, right: IRulexAR) extends IRulexAR {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ITemplataType = left.resultType
 }
 case class OrAR(range: RangeS, possibilities: List[IRulexAR]) extends IRulexAR {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(possibilities.nonEmpty)
   override def resultType: ITemplataType = possibilities.head.resultType
 }
@@ -93,9 +95,11 @@ case class ComponentsAR(
   tyype: ITemplataType,
   components: List[IRulexAR]
 ) extends IRulexAR {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ITemplataType = tyype
 }
 case class TemplexAR(templex: ITemplexA) extends IRulexAR {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ITemplataType = templex.resultType
 }
 // This is for built-in parser functions, such as exists() or isBaseOf() etc.
@@ -104,13 +108,14 @@ case class CallAR(
   name: String,
   args: List[IRulexAR],
   resultType: ITemplataType
-) extends IRulexAR
+) extends IRulexAR { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 case class IsaAR(
   range: RangeS,
   subRule: IRulexAR,
   interfaceRule: IRulexAR
 ) extends IRulexAR {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ITemplataType = subRule.resultType
 }
 
@@ -119,30 +124,39 @@ sealed trait ITemplexA {
   def resultType: ITemplataType
 }
 case class IntAT(range: RangeS, value: Long) extends ITemplexA {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ITemplataType = IntegerTemplataType
 }
 case class StringAT(range: RangeS, value: String) extends ITemplexA {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ITemplataType = StringTemplataType
 }
 case class BoolAT(range: RangeS, value: Boolean) extends ITemplexA {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ITemplataType = BooleanTemplataType
 }
 case class MutabilityAT(range: RangeS, mutability: MutabilityP) extends ITemplexA {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ITemplataType = MutabilityTemplataType
 }
 case class PermissionAT(range: RangeS, permission: PermissionP) extends ITemplexA {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ITemplataType = PermissionTemplataType
 }
 case class LocationAT(range: RangeS, location: LocationP) extends ITemplexA {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ITemplataType = LocationTemplataType
 }
 case class OwnershipAT(range: RangeS, ownership: OwnershipP) extends ITemplexA {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ITemplataType = OwnershipTemplataType
 }
 case class VariabilityAT(range: RangeS, variability: VariabilityP) extends ITemplexA {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ITemplataType = VariabilityTemplataType
 }
 case class CoordListAT(range: RangeS, elements: List[ITemplexA]) extends ITemplexA {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ITemplataType = PackTemplataType(CoordTemplataType)
 }
 
@@ -151,6 +165,7 @@ case class NameAT(
   name: IImpreciseNameStepA,
   resultType: ITemplataType
 ) extends ITemplexA {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 //  println("hi")
 }
 
@@ -159,6 +174,7 @@ case class AbsoluteNameAT(
   name: INameA,
   resultType: ITemplataType
 ) extends ITemplexA {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 //  println("hi")
 }
 
@@ -171,7 +187,7 @@ case class RuneAT(
   rangeS: RangeS,
   rune: IRuneA,
   resultType: ITemplataType
-) extends ITemplexA
+) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 case class InterpretedAT(
   rangeS: RangeS,
@@ -179,6 +195,7 @@ case class InterpretedAT(
   permission: PermissionP,
   inner: ITemplexA
 ) extends ITemplexA {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(inner.resultType == CoordTemplataType)
   override def resultType: ITemplataType = CoordTemplataType
 }
@@ -186,6 +203,7 @@ case class InterpretedAT(
 case class NullableAT(
   rangeS: RangeS,
   inner: ITemplexA) extends ITemplexA {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ITemplataType = KindTemplataType
 }
 
@@ -196,13 +214,13 @@ case class CallAT(
   // This is here because we might want to coerce the result. We do this for
   // calls, packs, etc.
   resultType: ITemplataType
-) extends ITemplexA
+) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 //case class FunctionAT(
 //  mutability: Option[ITemplexA],
 //  parameters: List[Option[ITemplexA]],
 //  returnType: Option[ITemplexA]
-//) extends ITemplexA
+//) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 case class PrototypeAT(
   rangeS: RangeS,
@@ -210,6 +228,7 @@ case class PrototypeAT(
   parameters: List[ITemplexA],
   returnType: ITemplexA
 ) extends ITemplexA {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ITemplataType = vimpl()
 }
 
@@ -218,7 +237,7 @@ case class PrototypeAT(
 //  // This is here because we might want to coerce the result. We do this for
 //  // calls, packs, etc.
 //  resultType: ITemplataType
-//) extends ITemplexA
+//) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 case class RepeaterSequenceAT(
   rangeS: RangeS,
@@ -229,7 +248,7 @@ case class RepeaterSequenceAT(
   // This is here because we might want to coerce the result. We do this for
   // calls, packs, etc.
   resultType: ITemplataType
-) extends ITemplexA
+) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 case class ManualSequenceAT(
   rangeS: RangeS,
@@ -237,4 +256,4 @@ case class ManualSequenceAT(
   // This is here because we might want to coerce the result. We do this for
   // calls, packs, etc.
   resultType: ITemplataType
-) extends ITemplexA
+) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }

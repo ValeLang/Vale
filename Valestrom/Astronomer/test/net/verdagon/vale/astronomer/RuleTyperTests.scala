@@ -11,10 +11,11 @@ import org.scalatest.{FunSuite, Matchers}
 
 import scala.collection.immutable.List
 
-case class FakeEnv()
-case class FakeState()
+case class FakeEnv() { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class FakeState() { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 case class SimpleEnvironment(entries: Map[String, List[ITemplataType]]) {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def lookupType(name: String): ITemplataType = {
     val List(thing) = entries(name)
     thing

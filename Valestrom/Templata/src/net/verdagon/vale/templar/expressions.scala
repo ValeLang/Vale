@@ -5,7 +5,7 @@ import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.env.{ILocalVariableT, ReferenceLocalVariableT}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{vassert, vfail, vpass, vwat}
+import net.verdagon.vale.{vassert, vcurious, vfail, vpass, vwat}
 
 trait IExpressionResultT extends QueriableT {
   def expectReference(): ReferenceResultT = {
@@ -24,6 +24,8 @@ trait IExpressionResultT extends QueriableT {
   def kind: KindT
 }
 case class AddressResultT(reference: CoordT) extends IExpressionResultT {
+  override def hashCode(): Int = vcurious()
+
   override def underlyingReference: CoordT = reference
   override def kind = reference.kind
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -31,6 +33,8 @@ case class AddressResultT(reference: CoordT) extends IExpressionResultT {
   }
 }
 case class ReferenceResultT(reference: CoordT) extends IExpressionResultT {
+  override def hashCode(): Int = vcurious()
+
   override def underlyingReference: CoordT = reference
   override def kind = reference.kind
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -61,6 +65,7 @@ case class LetAndLendTE(
     variable: ILocalVariableT,
     expr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   vassert(variable.reference == expr.resultRegister.reference)
 
   override def resultRegister: ReferenceResultT = {
@@ -77,6 +82,7 @@ case class NarrowPermissionTE(
     expr: ReferenceExpressionTE,
     targetPermission: PermissionT
 ) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   expr.resultRegister.reference.ownership match {
     case OwnT => vfail() // This only works on non owning references
     case ShareT => vfail() // Share only has readonly
@@ -107,6 +113,7 @@ case class LockWeakTE(
   // Function to make a None of the right type
   noneConstructor: PrototypeT,
 ) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister: ReferenceResultT = {
     ReferenceResultT(resultOptBorrowType)
   }
@@ -122,6 +129,7 @@ case class LockWeakTE(
 case class WeakAliasTE(
   innerExpr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   vassert(innerExpr.resultRegister.reference.ownership == ConstraintT)
 
   override def resultRegister: ReferenceResultT = {
@@ -137,6 +145,7 @@ case class LetNormalTE(
     variable: ILocalVariableT,
     expr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
   expr match {
@@ -151,6 +160,7 @@ case class LetNormalTE(
 
 // Only ExpressionTemplar.unletLocal should make these
 case class UnletTE(variable: ILocalVariableT) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(variable.reference)
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -169,6 +179,7 @@ case class UnletTE(variable: ILocalVariableT) extends ReferenceExpressionTE {
 case class DiscardTE(
   expr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
   expr.resultRegister.reference.ownership match {
@@ -197,6 +208,7 @@ case class DeferTE(
   // Every deferred expression should discard its result, IOW, return Void.
   deferredExpr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
 
   override def resultRegister = ReferenceResultT(innerExpr.resultRegister.reference)
 
@@ -215,6 +227,7 @@ case class IfTE(
     condition: ReferenceExpressionTE,
     thenCall: ReferenceExpressionTE,
     elseCall: ReferenceExpressionTE) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   private val conditionResultCoord = condition.resultRegister.reference
   private val thenResultCoord = thenCall.resultRegister.reference
   private val elseResultCoord = elseCall.resultRegister.reference
@@ -251,6 +264,7 @@ case class IfTE(
 // The block is expected to return a boolean (false = stop, true = keep going).
 // The block will probably contain an If2(the condition, the body, false)
 case class WhileTE(block: BlockTE) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -262,6 +276,7 @@ case class MutateTE(
   destinationExpr: AddressExpressionTE,
   sourceExpr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(destinationExpr.resultRegister.reference)
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -273,6 +288,7 @@ case class MutateTE(
 case class ReturnTE(
   sourceExpr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, NeverT()))
 
   def getFinalExpr(expression2: ExpressionT): Unit = {
@@ -298,6 +314,7 @@ case class ReturnTE(
 case class BlockTE(
     inner: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
 
   override def resultRegister = inner.resultRegister
 
@@ -307,6 +324,7 @@ case class BlockTE(
 }
 
 case class ConsecutorTE(exprs: List[ReferenceExpressionTE]) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   // There shouldn't be a 0-element consecutor.
   // If we want a consecutor that returns nothing, put a VoidLiteralTE in it.
   vassert(exprs.nonEmpty)
@@ -347,6 +365,7 @@ case class PackTE(
     elements: List[ReferenceExpressionTE],
     resultReference: CoordT,
     packType: PackTT) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(resultReference)
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ elements.flatMap(_.all(func)) ++ packType.all(func)
@@ -357,6 +376,7 @@ case class TupleTE(
     elements: List[ReferenceExpressionTE],
     resultReference: CoordT,
     tupleType: TupleTT) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(resultReference)
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ elements.flatMap(_.all(func)) ++ tupleType.all(func)
@@ -372,6 +392,7 @@ case class TupleTE(
 //     println("hi");
 //   }
 case class UnreachableMootTE(innerExpr: ReferenceExpressionTE) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, NeverT()))
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ innerExpr.all(func)
@@ -382,6 +403,7 @@ case class StaticArrayFromValuesTE(
     elements: List[ReferenceExpressionTE],
     resultReference: CoordT,
     arrayType: StaticSizedArrayTT) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(resultReference)
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ elements.flatMap(_.all(func)) ++ arrayType.all(func)
@@ -389,6 +411,7 @@ case class StaticArrayFromValuesTE(
 }
 
 case class ArraySizeTE(array: ReferenceExpressionTE) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, IntT.i32))
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ array.all(func)
@@ -396,6 +419,7 @@ case class ArraySizeTE(array: ReferenceExpressionTE) extends ReferenceExpression
 }
 
 case class IsSameInstanceTE(left: ReferenceExpressionTE, right: ReferenceExpressionTE) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   vassert(left.resultRegister.reference == right.resultRegister.reference)
 
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, BoolT()))
@@ -416,6 +440,7 @@ case class AsSubtypeTE(
     // Function to make a None of the right type
     errConstructor: PrototypeT,
 ) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(resultResultType)
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ sourceExpr.all(func) ++ targetSubtype.all(func) ++ resultResultType.all(func) ++ okConstructor.all(func) ++ errConstructor.all(func)
@@ -423,6 +448,7 @@ case class AsSubtypeTE(
 }
 
 case class VoidLiteralTE() extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -431,6 +457,7 @@ case class VoidLiteralTE() extends ReferenceExpressionTE {
 }
 
 case class ConstantIntTE(value: Long, bits: Int) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, IntT(bits)))
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -439,6 +466,7 @@ case class ConstantIntTE(value: Long, bits: Int) extends ReferenceExpressionTE {
 }
 
 case class ConstantBoolTE(value: Boolean) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, BoolT()))
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -447,6 +475,7 @@ case class ConstantBoolTE(value: Boolean) extends ReferenceExpressionTE {
 }
 
 case class ConstantStrTE(value: String) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, StrT()))
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -455,6 +484,7 @@ case class ConstantStrTE(value: String) extends ReferenceExpressionTE {
 }
 
 case class ConstantFloatTE(value: Double) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, FloatT()))
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -468,6 +498,7 @@ case class LocalLookupTE(
   reference: CoordT,
   variability: VariabilityT
 ) extends AddressExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = AddressResultT(reference)
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -479,6 +510,7 @@ case class ArgLookupTE(
     paramIndex: Int,
     reference: CoordT
 ) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(reference)
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -511,6 +543,7 @@ case class StaticSizedArrayLookupTE(
     targetPermission: PermissionT,
     variability: VariabilityT
 ) extends AddressExpressionTE {
+  override def hashCode(): Int = vcurious()
   vassert(arrayExpr.resultRegister.reference.kind == arrayType)
 
   override def resultRegister = AddressResultT(arrayType.array.memberType)
@@ -530,6 +563,7 @@ case class RuntimeSizedArrayLookupTE(
   targetPermission: PermissionT,
   variability: VariabilityT
 ) extends AddressExpressionTE {
+  override def hashCode(): Int = vcurious()
   vassert(arrayExpr.resultRegister.reference.kind == arrayType)
 
   override def resultRegister = AddressResultT(arrayType.array.memberType)
@@ -540,6 +574,7 @@ case class RuntimeSizedArrayLookupTE(
 }
 
 case class ArrayLengthTE(arrayExpr: ReferenceExpressionTE) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, IntT.i32))
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ arrayExpr.all(func)
@@ -555,6 +590,7 @@ case class ReferenceMemberLookupTE(
     // See RMLHTP why we can have this here.
     targetPermission: PermissionT,
     variability: VariabilityT) extends AddressExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = {
     if (structExpr.resultRegister.reference.permission == ReadonlyT) {
       vassert(targetPermission == ReadonlyT)
@@ -576,6 +612,7 @@ case class AddressMemberLookupTE(
     memberName: FullNameT[IVarNameT],
     resultType2: CoordT,
     variability: VariabilityT) extends AddressExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = AddressResultT(resultType2)
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
@@ -597,6 +634,7 @@ case class InterfaceFunctionCallTE(
     superFunctionHeader: FunctionHeaderT,
     resultReference: CoordT,
     args: List[ReferenceExpressionTE]) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister: ReferenceResultT =
     ReferenceResultT(resultReference)
 
@@ -608,6 +646,7 @@ case class InterfaceFunctionCallTE(
 case class ExternFunctionCallTE(
     prototype2: PrototypeT,
     args: List[ReferenceExpressionTE]) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   // We dont:
   //   vassert(prototype2.fullName.last.templateArgs.isEmpty)
   // because we totally can have extern templates.
@@ -629,6 +668,7 @@ case class ExternFunctionCallTE(
 case class FunctionCallTE(
     callable: PrototypeT,
     args: List[ReferenceExpressionTE]) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
 
   vassert(callable.paramTypes.size == args.size)
   vassert(callable.paramTypes == args.map(_.resultRegister.reference))
@@ -659,6 +699,7 @@ case class FunctionCallTE(
 case class TemplarReinterpretTE(
     expr: ReferenceExpressionTE,
     resultReference: CoordT) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   vassert(expr.resultRegister.reference != resultReference)
 
   override def resultRegister = ReferenceResultT(resultReference)
@@ -680,6 +721,7 @@ case class ConstructTE(
     structTT: StructTT,
     resultReference: CoordT,
     args: List[ExpressionT]) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   vpass()
 
   override def resultRegister = ReferenceResultT(resultReference)
@@ -697,6 +739,7 @@ case class ConstructArrayTE(
     generator: ReferenceExpressionTE,
     generatorMethod: PrototypeT
 ) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister: ReferenceResultT = {
     ReferenceResultT(
       CoordT(
@@ -715,6 +758,7 @@ case class StaticArrayFromCallableTE(
   generator: ReferenceExpressionTE,
   generatorMethod: PrototypeT
 ) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister: ReferenceResultT = {
     ReferenceResultT(
       CoordT(
@@ -737,6 +781,7 @@ case class DestroyStaticSizedArrayIntoFunctionTE(
     arrayType: StaticSizedArrayTT,
     consumer: ReferenceExpressionTE,
     consumerMethod: PrototypeT) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   vassert(consumerMethod.paramTypes.size == 2)
   vassert(consumerMethod.paramTypes(0) == consumer.resultRegister.reference)
   vassert(consumerMethod.paramTypes(1) == arrayType.array.memberType)
@@ -756,6 +801,7 @@ case class DestroyStaticSizedArrayIntoLocalsTE(
   staticSizedArray: StaticSizedArrayTT,
   destinationReferenceVariables: List[ReferenceLocalVariableT]
 ) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
   vassert(expr.kind == staticSizedArray)
@@ -774,6 +820,7 @@ case class DestroyRuntimeSizedArrayTE(
     consumer: ReferenceExpressionTE,
     consumerMethod: PrototypeT
 ) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   vassert(consumerMethod.paramTypes.size == 2)
   vassert(consumerMethod.paramTypes(0) == consumer.resultRegister.reference)
 //  vassert(consumerMethod.paramTypes(1) == Program2.intType)
@@ -789,6 +836,7 @@ case class DestroyRuntimeSizedArrayTE(
 case class InterfaceToInterfaceUpcastTE(
     innerExpr: ReferenceExpressionTE,
     targetInterfaceRef: InterfaceTT) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   def resultRegister: ReferenceResultT = {
     ReferenceResultT(
       CoordT(
@@ -803,6 +851,7 @@ case class InterfaceToInterfaceUpcastTE(
 }
 
 case class StructToInterfaceUpcastTE(innerExpr: ReferenceExpressionTE, targetInterfaceRef: InterfaceTT) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   def resultRegister: ReferenceResultT = {
     ReferenceResultT(
       CoordT(
@@ -823,6 +872,7 @@ case class StructToInterfaceUpcastTE(innerExpr: ReferenceExpressionTE, targetInt
 
 case class SoftLoadTE(
     expr: AddressExpressionTE, targetOwnership: OwnershipT, targetPermission: PermissionT) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
 
   vassert((targetOwnership == ShareT) == (expr.resultRegister.reference.ownership == ShareT))
   vassert(targetOwnership != OwnT) // need to unstackify or destroy to get an owning reference
@@ -856,6 +906,7 @@ case class DestroyTE(
     structTT: StructTT,
     destinationReferenceVariables: List[ReferenceLocalVariableT]
 ) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
   if (expr.resultRegister.reference.ownership == ConstraintT) {
@@ -885,6 +936,7 @@ case class CheckRefCountTE(
     refExpr: ReferenceExpressionTE,
     category: types.RefCountCategory,
     numExpr: ReferenceExpressionTE) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {

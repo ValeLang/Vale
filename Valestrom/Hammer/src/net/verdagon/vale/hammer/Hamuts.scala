@@ -9,6 +9,7 @@ import net.verdagon.von.IVonData
 
 
 case class HamutsBox(var inner: Hamuts) {
+  override def hashCode(): Int = vfail() // Shouldnt hash, is mutable
 
   def packageCoordToExportNameToFunction: Map[PackageCoordinate, Map[String, PrototypeH]] = inner.packageCoordToExportNameToFunction
   def packageCoordToExportNameToKind: Map[PackageCoordinate, Map[String, KindH]] = inner.packageCoordToExportNameToKind
@@ -105,6 +106,8 @@ case class Hamuts(
     packageCoordToExportNameToKind: Map[PackageCoordinate, Map[String, KindH]],
     packageCoordToExternNameToFunction: Map[PackageCoordinate, Map[String, PrototypeH]],
     packageCoordToExternNameToKind: Map[PackageCoordinate, Map[String, KindH]]) {
+  override def hashCode(): Int = vfail() // Would need a really good reason to hash something this big
+
   def forwardDeclareStruct(structTT: StructTT, structRefH: StructRefH): Hamuts = {
     Hamuts(
       idByFullNameByHumanName,

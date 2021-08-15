@@ -1,13 +1,13 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.{vassert, vcheck}
+import net.verdagon.vale.{vassert, vcheck, vcurious, vimpl}
 
 import scala.collection.immutable.List
 import scala.util.parsing.input.Positional
 
 sealed trait IVirtualityP
 case object AbstractP extends IVirtualityP
-case class OverrideP(range: Range, tyype: ITemplexPT) extends IVirtualityP
+case class OverrideP(range: Range, tyype: ITemplexPT) extends IVirtualityP { override def hashCode(): Int = vcurious() }
 
 case class PatternPP(
     range: Range,
@@ -34,29 +34,29 @@ case class PatternPP(
 
 case class DestructureP(
   range: Range,
-  patterns: List[PatternPP])
+  patterns: List[PatternPP]) { override def hashCode(): Int = vcurious() }
 
 sealed trait ICaptureNameP
-case class LocalNameP(name: NameP) extends ICaptureNameP
-case class ConstructingMemberNameP(name: NameP) extends ICaptureNameP
+case class LocalNameP(name: NameP) extends ICaptureNameP { override def hashCode(): Int = vcurious() }
+case class ConstructingMemberNameP(name: NameP) extends ICaptureNameP { override def hashCode(): Int = vcurious() }
 
 case class CaptureP(
     range: Range,
-    name: ICaptureNameP)
+    name: ICaptureNameP) { override def hashCode(): Int = vcurious() }
 
 //sealed trait ITemplexPT
-//case class IntPT(range: Range, value: Int) extends ITemplexPT
-//case class BoolPT(value: Boolean) extends ITemplexPT
-//case class AnonymousRunePT() extends ITemplexPT
-//case class NameOrRunePT(name: StringP) extends ITemplexPT
-//case class MutabilityPT(mutability: MutabilityP) extends ITemplexPT
-//case class OwnershippedPT(range: Range, ownership: OwnershipP, inner: ITemplexPT) extends ITemplexPT
-//case class CallPT(template: ITemplexPT, args: List[ITemplexPT]) extends ITemplexPT
+//case class IntPT(range: Range, value: Int) extends ITemplexPT { override def hashCode(): Int = vcurious() }
+//case class BoolPT(value: Boolean) extends ITemplexPT { override def hashCode(): Int = vcurious() }
+//case class AnonymousRunePT() extends ITemplexPT { override def hashCode(): Int = vcurious() }
+//case class NameOrRunePT(name: StringP) extends ITemplexPT { override def hashCode(): Int = vcurious() }
+//case class MutabilityPT(mutability: MutabilityP) extends ITemplexPT { override def hashCode(): Int = vcurious() }
+//case class OwnershippedPT(range: Range, ownership: OwnershipP, inner: ITemplexPT) extends ITemplexPT { override def hashCode(): Int = vcurious() }
+//case class CallPT(template: ITemplexPT, args: List[ITemplexPT]) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 //// We could phrase these all as ICallTemplexPPs but we want to be able to reconstruct
 //// a program from this AST.
-//case class RepeaterSequencePT(range: Range, mutability: ITemplexPT, size: ITemplexPT, element: ITemplexPT) extends ITemplexPT
-//case class ManualSequencePT(members: List[ITemplexPT]) extends ITemplexPT
-//case class FunctionPT(mutable: Option[ITemplexPT], params: List[ITemplexPT], ret: ITemplexPT) extends ITemplexPT
+//case class RepeaterSequencePT(range: Range, mutability: ITemplexPT, size: ITemplexPT, element: ITemplexPT) extends ITemplexPT { override def hashCode(): Int = vcurious() }
+//case class ManualSequencePT(members: List[ITemplexPT]) extends ITemplexPT { override def hashCode(): Int = vcurious() }
+//case class FunctionPT(mutable: Option[ITemplexPT], params: List[ITemplexPT], ret: ITemplexPT) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 
 object Patterns {
   object capturedWithTypeRune {

@@ -5,12 +5,13 @@ import net.verdagon.vale.parser.ShareP
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar.{AnonymousSubstructNameT, CitizenNameT, INameT, LambdaCitizenNameT, NameTranslator, TupleNameT}
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{vassert, vcurious, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
 // Order of these members matters for comparison
 case class TypeDistance(upcastDistance: Int, ownershipDistance: Int, permissionDistance: Int) {
+  override def hashCode(): Int = vcurious()
   def lessThanOrEqualTo(that: TypeDistance): Boolean = {
     if (this.upcastDistance < that.upcastDistance) return true;
     if (this.upcastDistance > that.upcastDistance) return false;

@@ -19,6 +19,7 @@ case class Hinputs(
     functionExports: List[FunctionExportT],
     kindExterns: List[KindExternT],
     functionExterns: List[FunctionExternT]) {
+  override def hashCode(): Int = vfail() // Would need a really good reason to hash something this big
 
   def lookupStruct(structTT: StructTT): StructDefinitionT = {
     structs.find(_.getRef == structTT) match {

@@ -12,23 +12,23 @@ import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.function.FunctionTemplar
 import net.verdagon.vale.templar.function.FunctionTemplar.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
 import net.verdagon.vale.templar.infer.infer.{InferSolveFailure, InferSolveSuccess}
-import net.verdagon.vale.{IProfiler, vassert, vfail}
+import net.verdagon.vale.{IProfiler, vassert, vcurious, vfail, vimpl}
 
 import scala.collection.immutable.List
 
 object OverloadTemplar {
 
   sealed trait IScoutExpectedFunctionFailureReason
-  case class WrongNumberOfArguments(supplied: Int, expected: Int) extends IScoutExpectedFunctionFailureReason
-  case class WrongNumberOfTemplateArguments(supplied: Int, expected: Int) extends IScoutExpectedFunctionFailureReason
-  case class SpecificParamDoesntMatch(index: Int, reason: String) extends IScoutExpectedFunctionFailureReason
-  case class SpecificParamVirtualityDoesntMatch(index: Int) extends IScoutExpectedFunctionFailureReason
-  case class Outscored() extends IScoutExpectedFunctionFailureReason
-  case class InferFailure(reason: InferSolveFailure) extends IScoutExpectedFunctionFailureReason
+  case class WrongNumberOfArguments(supplied: Int, expected: Int) extends IScoutExpectedFunctionFailureReason { override def hashCode(): Int = vcurious() }
+  case class WrongNumberOfTemplateArguments(supplied: Int, expected: Int) extends IScoutExpectedFunctionFailureReason { override def hashCode(): Int = vcurious() }
+  case class SpecificParamDoesntMatch(index: Int, reason: String) extends IScoutExpectedFunctionFailureReason { override def hashCode(): Int = vcurious() }
+  case class SpecificParamVirtualityDoesntMatch(index: Int) extends IScoutExpectedFunctionFailureReason { override def hashCode(): Int = vcurious() }
+  case class Outscored() extends IScoutExpectedFunctionFailureReason { override def hashCode(): Int = vcurious() }
+  case class InferFailure(reason: InferSolveFailure) extends IScoutExpectedFunctionFailureReason { override def hashCode(): Int = vcurious() }
 
 
   sealed trait IScoutExpectedFunctionResult
-  case class ScoutExpectedFunctionSuccess(prototype: PrototypeT) extends IScoutExpectedFunctionResult
+  case class ScoutExpectedFunctionSuccess(prototype: PrototypeT) extends IScoutExpectedFunctionResult { override def hashCode(): Int = vcurious() }
   case class ScoutExpectedFunctionFailure(
     name: IImpreciseNameStepA,
     args: List[ParamFilter],
@@ -39,6 +39,7 @@ object OverloadTemplar {
     // All the FunctionA we rejected, and the reason why
     rejectedReasonByFunction: Map[FunctionA, IScoutExpectedFunctionFailureReason]
   ) extends IScoutExpectedFunctionResult {
+    override def hashCode(): Int = vcurious()
     override def toString = {
       "Couldn't find a fn " + name + "(" + args.map(TemplataNamer.getIdentifierName(_)).mkString(", ") + ")\n" +
         "Outscored:\n" + outscoredReasonByPotentialBanner.map({

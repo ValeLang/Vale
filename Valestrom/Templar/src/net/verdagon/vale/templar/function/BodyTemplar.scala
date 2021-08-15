@@ -111,7 +111,7 @@ class BodyTemplar(
     })
   }
 
-  case class ResultTypeMismatchError(expectedType: CoordT, actualType: CoordT)
+  case class ResultTypeMismatchError(expectedType: CoordT, actualType: CoordT) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
   private def evaluateFunctionBody(
       funcOuterEnv: FunctionEnvironmentBox,

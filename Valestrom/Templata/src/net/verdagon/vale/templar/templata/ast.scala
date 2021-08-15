@@ -6,11 +6,6 @@ import net.verdagon.vale.templar.{FullNameT, FunctionNameT, IFunctionNameT, IVar
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.{FileCoordinate, PackageCoordinate, vassert, vassertSome, vfail, vimpl}
 
-case class CovariantFamily(
-    root: PrototypeT,
-    covariantParamIndices: List[Int],
-    overrides: List[PrototypeT])
-
 trait QueriableT {
   def all[T](func: PartialFunction[QueriableT, T]): List[T];
 
@@ -53,6 +48,7 @@ case object AbstractT$ extends VirtualityT {
   }
 }
 case class OverrideT(interface: InterfaceTT) extends VirtualityT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ interface.all(func)
   }
@@ -62,6 +58,7 @@ case class ParameterT(
     name: IVarNameT,
     virtuality: Option[VirtualityT],
     tyype: CoordT) extends QueriableT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ virtuality.toList.flatMap(_.all(func)) ++ tyype.all(func)
   }
@@ -74,11 +71,12 @@ sealed trait IPotentialBanner {
 case class PotentialBannerFromFunctionS(
   banner: FunctionBannerT,
   function: FunctionTemplata
-) extends IPotentialBanner
+) extends IPotentialBanner { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 case class PotentialBannerFromExternFunction(
   header: FunctionHeaderT
 ) extends IPotentialBanner {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def banner: FunctionBannerT = header.toBanner
 }
 
@@ -95,6 +93,7 @@ case class PotentialBannerFromExternFunction(
 // it takes a complete templar evaluate to deduce a function's return type.
 
 case class SignatureT(fullName: FullNameT[IFunctionNameT]) {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def paramTypes: List[CoordT] = fullName.last.parameters
 }
 
@@ -102,6 +101,7 @@ case class FunctionBannerT(
     originFunction: Option[FunctionA],
     fullName: FullNameT[IFunctionNameT],
     params: List[ParameterT]) extends QueriableT  {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
   vassert(fullName.last.parameters == params.map(_.tyype))
 
@@ -152,7 +152,9 @@ case class FunctionBannerT(
 
 sealed trait IFunctionAttribute2
 sealed trait ICitizenAttribute2
-case class Extern2(packageCoord: PackageCoordinate) extends IFunctionAttribute2 with ICitizenAttribute2 // For optimization later
+case class Extern2(packageCoord: PackageCoordinate) extends IFunctionAttribute2 with ICitizenAttribute2 { // For optimization later
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+}
 // There's no Export2 here, we use separate KindExport and FunctionExport constructs.
 //case class Export2(packageCoord: PackageCoordinate) extends IFunctionAttribute2 with ICitizenAttribute2
 case object Pure2 extends IFunctionAttribute2 with ICitizenAttribute2
@@ -164,6 +166,7 @@ case class FunctionHeaderT(
     params: List[ParameterT],
     returnType: CoordT,
     maybeOriginFunction: Option[FunctionA]) extends QueriableT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
   // Make sure there's no duplicate names
   vassert(params.map(_.name).toSet.size == params.size);
@@ -200,6 +203,7 @@ case class FunctionHeaderT(
 case class PrototypeT(
     fullName: FullNameT[IFunctionNameT],
     returnType: CoordT) extends QueriableT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def paramTypes: List[CoordT] = fullName.last.parameters
   def toSignature: SignatureT = SignatureT(fullName)
 
@@ -212,6 +216,7 @@ case class CodeLocationT(
   file: FileCoordinate,
   offset: Int
 ) extends QueriableT {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func)
   }

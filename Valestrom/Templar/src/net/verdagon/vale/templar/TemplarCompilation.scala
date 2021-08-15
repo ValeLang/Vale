@@ -16,7 +16,7 @@ case class TemplarCompilationOptions(
   verbose: Boolean = true,
   profiler: IProfiler = new NullProfiler(),
   useOptimization: Boolean = false,
-)
+) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 class TemplarCompilation(
   packagesToBuild: List[PackageCoordinate],

@@ -3,12 +3,14 @@ package net.verdagon.vale.templar.infer
 import net.verdagon.vale.astronomer.{CoordTemplataType, ITemplataType, IntegerTemplataType, KindTemplataType, MutabilityTemplataType, OwnershipTemplataType, PackTemplataType, PermissionTemplataType, PrototypeTemplataType, StringTemplataType, VariabilityTemplataType}
 import net.verdagon.vale.templar.IRuneT
 import net.verdagon.vale.templar.templata.{CoordListTemplata, CoordTemplata, ITemplata, IntegerTemplata, KindTemplata, MutabilityTemplata, OwnershipTemplata, PermissionTemplata, PrototypeTemplata, StringTemplata, VariabilityTemplata}
-import net.verdagon.vale.{vassert, vwat}
+import net.verdagon.vale.{vassert, vcurious, vfail, vwat}
 
 case class Inferences(
-  typeByRune: Map[IRuneT, ITemplataType], // Here for doublechecking
-  templatasByRune: Map[IRuneT, ITemplata],
-  possibilitiesByRune: Map[IRuneT, List[ITemplata]]) {
+    typeByRune: Map[IRuneT, ITemplataType], // Here for doublechecking
+    templatasByRune: Map[IRuneT, ITemplata],
+    possibilitiesByRune: Map[IRuneT, List[ITemplata]]) {
+  override def hashCode(): Int = vcurious()
+
   def addConclusion(rune: IRuneT, templata: ITemplata): Inferences = {
     templatasByRune.get(rune) match {
       case None =>
@@ -62,6 +64,8 @@ case class Inferences(
 }
 
 case class InferencesBox(var inferences: Inferences) {
+  override def hashCode(): Int = vfail() // Shouldnt hash, is mutable
+
   def templatasByRune: Map[IRuneT, ITemplata] = inferences.templatasByRune
   def possibilitiesByRune: Map[IRuneT, List[ITemplata]] = inferences.possibilitiesByRune
 

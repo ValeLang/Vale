@@ -9,7 +9,7 @@ object Arrays {
   def makeArrayFunctions(): List[FunctionA] = {
     List(
       FunctionA(
-        RangeS.internal(-57),
+        RangeS.internal(-54),
         FunctionNameA("drop_into", CodeLocationS.internal(-4)),
         List.empty,
         TemplateTemplataType(List(MutabilityTemplataType, VariabilityTemplataType, CoordTemplataType), FunctionTemplataType),

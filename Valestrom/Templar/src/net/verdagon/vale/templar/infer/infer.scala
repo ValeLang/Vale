@@ -5,14 +5,14 @@ import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.IRuneT
 import net.verdagon.vale.templar.templata.ITemplata
 import net.verdagon.vale.templar.types.ParamFilter
-import net.verdagon.vale.vassert
+import net.verdagon.vale.{vassert, vcurious, vimpl}
 
 import scala.collection.immutable.List
 
 package object infer {
   // When the user says "int", that's assumed to be a Kind.
   // It can sometimes be coerced to a coord, see CCKTC.
-  case class UncoercedTemplata(templata: ITemplata)
+  case class UncoercedTemplata(templata: ITemplata) { override def hashCode(): Int = vcurious() }
 
   trait IConflictCause {
     def range: RangeS
@@ -31,11 +31,12 @@ package object infer {
     message: String,
     causes: List[IConflictCause]
   ) extends IInferSolveResult with IConflictCause {
+    override def hashCode(): Int = vcurious()
     vassert(message.nonEmpty || causes.nonEmpty)
   }
   case class InferSolveSuccess(
     inferences: Inferences
-  ) extends IInferSolveResult
+  ) extends IInferSolveResult { override def hashCode(): Int = vcurious() }
 
   sealed trait IInferEvaluateResult[+T]
   case class InferEvaluateConflict[T](
@@ -47,6 +48,7 @@ package object infer {
     message: String,
     causes: List[IConflictCause]
   ) extends IInferEvaluateResult[T] with IConflictCause {
+    override def hashCode(): Int = vcurious()
     vassert(message.nonEmpty || causes.nonEmpty)
   }
   case class InferEvaluateUnknown[T](
@@ -56,7 +58,9 @@ package object infer {
     // `(Bork like ISomething<#T>)` rule.
     // See IEUNDS for why unknowns need deeplySatisfied.
     deeplySatisfied: Boolean,
-  ) extends IInferEvaluateResult[T]
+  ) extends IInferEvaluateResult[T] {
+    override def hashCode(): Int = vcurious()
+  }
   case class InferEvaluateSuccess[T](
     templata: T,
 
@@ -65,7 +69,9 @@ package object infer {
     // when we don't know #T yet, but we do know the result of the
     // `(Bork like ISomething<#T>)` rule.
     deeplySatisfied: Boolean,
-  ) extends IInferEvaluateResult[T]
+  ) extends IInferEvaluateResult[T] {
+    override def hashCode(): Int = vcurious()
+  }
 
 
   sealed trait IInferMatchResult
@@ -79,6 +85,7 @@ package object infer {
     // For an Or rule, this will contain all the conflicts for each branch.
     causes: List[IConflictCause]
   ) extends IInferMatchResult with IConflictCause {
+    override def hashCode(): Int = vcurious()
     vassert(message.nonEmpty || causes.nonEmpty)
     override def toString: String = {
       // The # signals the reader that we overrode toString
@@ -91,5 +98,7 @@ package object infer {
     // when we don't know #T yet, but we do know the result of the
     // `(Bork like ISomething<#T>)` rule.
     deeplySatisfied: Boolean
-  ) extends IInferMatchResult
+  ) extends IInferMatchResult {
+    override def hashCode(): Int = vcurious()
+  }
 }

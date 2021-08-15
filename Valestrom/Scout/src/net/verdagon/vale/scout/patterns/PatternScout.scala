@@ -3,11 +3,13 @@ package net.verdagon.vale.scout.patterns
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, _}
-import net.verdagon.vale.{vassert, vassertSome, vfail, vwat}
+import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
 case class RuleStateBox(var rate: IRuleState) {
+  override def hashCode(): Int = vfail() // Shouldnt hash, is mutable
+
   def newImplicitRune(): IRuneS = {
     val (newRate, rune) = rate.newImplicitRune()
     rate = newRate
@@ -23,6 +25,7 @@ sealed trait IRuleState {
 case class RuleState(
     containerName: INameS,
     nextImplicitRune: Int) extends IRuleState {
+  override def hashCode(): Int = vcurious()
   def newImplicitRune(): (RuleState, IRuneS) = {
     (RuleState(containerName, nextImplicitRune + 1),
       ImplicitRuneS(containerName, nextImplicitRune))
@@ -32,6 +35,7 @@ case class LetRuleState(
     envFullName: INameS,
     letCodeLocation: CodeLocationS,
     nextImplicitRune: Int) extends IRuleState {
+  override def hashCode(): Int = vcurious()
   def newImplicitRune(): (LetRuleState, IRuneS) = {
     (
       LetRuleState(envFullName, letCodeLocation, nextImplicitRune + 1),
@@ -69,7 +73,7 @@ object PatternScout {
 
   sealed trait INameRequirement
   case object NameNotRequired extends INameRequirement
-  case class NameRequired(nameSuggestion: String) extends INameRequirement
+  case class NameRequired(nameSuggestion: String) extends INameRequirement { override def hashCode(): Int = vcurious() }
 
   // Returns:
   // - Rules, which are likely just TypedSR

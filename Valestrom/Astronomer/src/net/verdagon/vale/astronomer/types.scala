@@ -1,6 +1,6 @@
 package net.verdagon.vale.astronomer
 
-import net.verdagon.vale.vassert
+import net.verdagon.vale.{vassert, vimpl}
 
 import scala.collection.immutable.List
 
@@ -17,12 +17,13 @@ case object PermissionTemplataType extends ITemplataType
 case object LocationTemplataType extends ITemplataType
 case object OwnershipTemplataType extends ITemplataType
 case object VariabilityTemplataType extends ITemplataType
-case class PackTemplataType(elementType: ITemplataType) extends ITemplataType
+case class PackTemplataType(elementType: ITemplataType) extends ITemplataType { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 // This is CitizenTemplataType instead of separate ones for struct and interface
 // because the RuleTyper doesn't care whether something's a struct or an interface.
 case class TemplateTemplataType(
   paramTypes: List[ITemplataType],
   returnType: ITemplataType
 ) extends ITemplataType {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(paramTypes.nonEmpty)
 }

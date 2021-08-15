@@ -1,6 +1,6 @@
 package net.verdagon.vale.hammer
 
-import net.verdagon.vale.{FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, PackageCoordinate, PackageCoordinateMap, Result}
+import net.verdagon.vale.{FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, PackageCoordinate, PackageCoordinateMap, Result, vimpl}
 import net.verdagon.vale.astronomer.{ICompileErrorA, ProgramA}
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal.ProgramH
@@ -17,7 +17,7 @@ case class HammerCompilationOptions(
   verbose: Boolean = true,
   profiler: IProfiler = new NullProfiler(),
   useOptimization: Boolean = false,
-)
+) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 class HammerCompilation(
   packagesToBuild: List[PackageCoordinate],

@@ -1,6 +1,7 @@
 package net.verdagon.vale.parser
 
 import net.verdagon.vale.parser.CombinatorParsers.opt
+import net.verdagon.vale.{vcurious, vimpl}
 import org.apache.commons.lang.StringEscapeUtils
 
 import scala.util.parsing.combinator.RegexParsers
@@ -8,7 +9,7 @@ import scala.util.parsing.input.{OffsetPosition, Position, Positional}
 
 trait ParserUtils extends RegexParsers {
 
-  case class PosWrapper(u: Unit) extends Positional
+  case class PosWrapper(u: Unit) extends Positional { override def hashCode(): Int = vcurious() }
   private[parser] def pos: Parser[Int] = {
     positioned(success() ^^ PosWrapper) ^^ (x => x.pos.asInstanceOf[OffsetPosition].offset)
   }

@@ -56,10 +56,10 @@ class VirtualTemplar(opts: TemplarOptions, overloadTemplar: OverloadTemplar) {
 
         // See MLIOET
         val superInterfaceEnv = temputs.getEnvForInterfaceRef(superInterfaceRef2)
-        val extraEnvsToLookIn = List(superInterfaceEnv)
+        val extraEnvsToLookIn = Vector(superInterfaceEnv)
 
         overloadTemplar.scoutExpectedFunctionForPrototype(
-          env, temputs, RangeS.internal(-1388), nameToScoutFor, List.empty, needleSuperFunctionParamFilters, extraEnvsToLookIn, true) match {
+          env, temputs, RangeS.internal(-1388), nameToScoutFor, Vector.empty, needleSuperFunctionParamFilters, extraEnvsToLookIn, true) match {
           case (ScoutExpectedFunctionSuccess(_)) => {
             // Throw away the prototype, we just want it to be in the temputs.
 

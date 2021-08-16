@@ -7,7 +7,7 @@ import net.verdagon.vale.scout.patterns.AtomSP
 object makeSimpleFunction {
   def apply(
     name: FunctionNameA,
-    params: List[(String, String)],
+    params: Vector[(String, String)],
     retType: String,
     body: IBodyA):
   FunctionA = {
@@ -23,8 +23,8 @@ object makeSimpleFunction {
       params.map({ case (paramName, tyype) => simpleParam(CodeVarNameA(paramName), runeByType(tyype)) })
 
     val returnRune = ReturnRuneA()
-    val paramRules = runeByType.map({ case (tyype, rune) => simpleCoordRuneAR(rune, tyype) }).toList
-    val allRules = simpleCoordRuneAR(returnRune, retType) :: paramRules
+    val paramRules = runeByType.map({ case (tyype, rune) => simpleCoordRuneAR(rune, tyype) }).toVector
+    val allRules = Vector(simpleCoordRuneAR(returnRune, retType)) ++ paramRules
 
     val knowableRunes = runeByType.values.toSet[IRuneA] + returnRune
     val localRunes = runeByType.values.toSet[IRuneA] + returnRune
@@ -32,10 +32,10 @@ object makeSimpleFunction {
     FunctionA(
       RangeS.internal(-53),
       name,
-      List.empty,
+      Vector.empty,
       FunctionTemplataType,
       knowableRunes,
-      List.empty,
+      Vector.empty,
       localRunes,
       runeByType
         .map({ case (_, rune) => (rune, CoordTemplataType) })

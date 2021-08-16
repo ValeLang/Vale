@@ -92,7 +92,7 @@ object LetHammer {
 
     StackifyH(
       NewStructH(
-        List(sourceExprResultLine),
+        Vector(sourceExprResultLine),
         hamuts.structDefs.find(_.getRef == boxStructRefH).get.members.map(_.name),
         expectedLocalBoxType),
       local,
@@ -115,7 +115,7 @@ object LetHammer {
     val stackifyH =
       translateAddressibleLet(
         hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, sourceResultPointerTypeH, varId, variability, reference)
-    val (borrowAccess, Nil) =
+    val (borrowAccess, Vector()) =
       LoadHammer.translateAddressibleLocalLoad(
         hinputs,
         hamuts,
@@ -126,7 +126,7 @@ object LetHammer {
         sourceExpr2.resultRegister.reference,
         let2.resultRegister.reference.ownership,
         let2.resultRegister.reference.permission)
-    ConsecutorH(List(stackifyH, borrowAccess))
+    ConsecutorH(Vector(stackifyH, borrowAccess))
   }
 
   private def translateMundaneLet(
@@ -173,7 +173,7 @@ object LetHammer {
           varId,
           variability)
 
-    val (borrowAccess, Nil) =
+    val (borrowAccess, Vector()) =
       LoadHammer.translateMundaneLocalLoad(
         hinputs,
         hamuts,
@@ -184,7 +184,7 @@ object LetHammer {
         let2.resultRegister.reference.ownership,
         let2.resultRegister.reference.permission)
 
-      ConsecutorH(List(stackifyH, borrowAccess))
+      ConsecutorH(Vector(stackifyH, borrowAccess))
   }
 
   def translateUnlet(
@@ -222,13 +222,13 @@ object LetHammer {
         val desH =
           DestroyH(
             unstackifyBoxNode.expectStructAccess(),
-            List(innerTypeH),
+            Vector(innerTypeH),
             Vector(innerLocal))
         locals.markUnstackified(innerLocal.id)
 
         val unstackifyContentsNode = UnstackifyH(innerLocal)
 
-        ConsecutorH(List(desH, unstackifyContentsNode))
+        ConsecutorH(Vector(desH, unstackifyContentsNode))
       }
     }
   }
@@ -301,10 +301,10 @@ object LetHammer {
     // However, the templar only supplied variables for the reference members,
     // so we need to introduce our own local variables here.
 
-    // We put List.empty here to make sure that we've consumed all the destination
+    // We put Vector.empty here to make sure that we've consumed all the destination
     // reference local variables.
-    val (Nil, localTypes, localIndices) =
-      structDefT.members.foldLeft((destinationReferenceLocalVariables, List[ReferenceH[KindH]](), List[Local]()))({
+    val (Vector(), localTypes, localIndices) =
+      structDefT.members.foldLeft((destinationReferenceLocalVariables, Vector[ReferenceH[KindH]](), Vector[Local]()))({
         case ((remainingDestinationReferenceLocalVariables, previousLocalTypes, previousLocalIndices), member2) => {
           member2.tyype match {
             case ReferenceMemberTypeT(memberRefType2) => {
@@ -348,7 +348,7 @@ object LetHammer {
       structDefT.members.zip(localTypes.zip(localIndices)).flatMap({
         case (structMember2, (localType, local)) => {
           structMember2.tyype match {
-            case ReferenceMemberTypeT(_) => List.empty
+            case ReferenceMemberTypeT(_) => Vector.empty
             case AddressMemberTypeT(_) => {
               // localType is the box type.
               // First, unlet it, then discard the contents.
@@ -358,13 +358,13 @@ object LetHammer {
               locals.markUnstackified(local.id)
 
               val discardNode = DiscardH(unstackifyNode)
-              List(discardNode)
+              Vector(discardNode)
             }
           }
         }
       })
 
-    val destructureAndUnboxings = ConsecutorH(destructureH :: unboxingsH)
+    val destructureAndUnboxings = ConsecutorH(Vector(destructureH) ++ unboxingsH)
 
     ExpressionHammer.translateDeferreds(
       hinputs, hamuts, currentFunctionHeader, locals, destructureAndUnboxings, sourceExprDeferreds)

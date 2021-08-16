@@ -91,7 +91,7 @@ class HammerTests extends FunSuite with Matchers {
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
     val main = packageH.lookupFunction("main")
     main.body match {
-      case BlockH(CallH(PrototypeH(fullNameH, Nil, ReferenceH(_, _, ReadonlyH, NeverH())), Nil)) => {
+      case BlockH(CallH(PrototypeH(fullNameH, Vector(), ReferenceH(_, _, ReadonlyH, NeverH())), Vector())) => {
         vassert(fullNameH.toFullString().contains("__vbi_panic"))
       }
     }
@@ -130,20 +130,20 @@ class HammerTests extends FunSuite with Matchers {
   test("Tests exports from two modules, different names") {
     val compile =
       new RunCompilation(
-        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List.empty), PackageCoordinate("moduleB", List.empty)),
+        Vector(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", Vector.empty), PackageCoordinate("moduleB", Vector.empty)),
         Builtins.getCodeMap()
           .or(
             FileCoordinateMap(Map())
-              .add("moduleA", List.empty, "StructA.vale", "struct StructA export { a int; }")
-              .add("moduleB", List.empty, "StructB.vale", "struct StructB export { a int; }"))
+              .add("moduleA", Vector.empty, "StructA.vale", "struct StructA export { a int; }")
+              .add("moduleB", Vector.empty, "StructB.vale", "struct StructB export { a int; }"))
           .or(Tests.getPackageToResourceResolver),
         FullCompilationOptions())
     val hamuts = compile.getHamuts()
 
-    val packageA = hamuts.lookupPackage(PackageCoordinate("moduleA", List.empty))
+    val packageA = hamuts.lookupPackage(PackageCoordinate("moduleA", Vector.empty))
     val fullNameA = vassertSome(packageA.exportNameToKind.get("StructA"))
 
-    val packageB = hamuts.lookupPackage(PackageCoordinate("moduleB", List.empty))
+    val packageB = hamuts.lookupPackage(PackageCoordinate("moduleB", Vector.empty))
     val fullNameB = vassertSome(packageB.exportNameToKind.get("StructB"))
 
     vassert(fullNameA != fullNameB)
@@ -153,20 +153,20 @@ class HammerTests extends FunSuite with Matchers {
 //  test("Tests exports from two modules, same name") {
 //    val compile =
 //      new RunCompilation(
-//        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List.empty), PackageCoordinate("moduleB", List.empty)),
+//        Vector(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", Vector.empty), PackageCoordinate("moduleB", Vector.empty)),
 //        Builtins.getCodeMap()
 //          .or(
 //            FileCoordinateMap(Map())
-//              .add("moduleA", List.empty, "MyStruct.vale", "struct MyStruct export { a int; }")
-//              .add("moduleB", List.empty, "MyStruct.vale", "struct MyStruct export { a int; }"))
+//              .add("moduleA", Vector.empty, "MyStruct.vale", "struct MyStruct export { a int; }")
+//              .add("moduleB", Vector.empty, "MyStruct.vale", "struct MyStruct export { a int; }"))
 //          .or(Tests.getPackageToResourceResolver),
 //        FullCompilationOptions())
 //    val hamuts = compile.getHamuts()
 //
-//    val packageA = hamuts.lookupPackage(PackageCoordinate("moduleA", List.empty))
+//    val packageA = hamuts.lookupPackage(PackageCoordinate("moduleA", Vector.empty))
 //    val fullNameA = vassertSome(packageA.exportNameToKind.get("StructA"))
 //
-//    val packageB = hamuts.lookupPackage(PackageCoordinate("moduleB", List.empty))
+//    val packageB = hamuts.lookupPackage(PackageCoordinate("moduleB", Vector.empty))
 //    val fullNameB = vassertSome(packageB.exportNameToKind.get("StructA"))
 //
 //    vassert(fullNameA != fullNameB)

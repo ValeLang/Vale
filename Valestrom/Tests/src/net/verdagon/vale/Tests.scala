@@ -16,11 +16,13 @@ object Tests {
   }
 
   def resolvePackageToResource(packageCoord: PackageCoordinate): Option[Map[String, String]] = {
-    val directory = (packageCoord.module :: packageCoord.packages)
+    val directory = Vector(packageCoord.module) ++ packageCoord.packages
     val filename = directory.last + ".vale"
     val filepath = (directory :+ filename).mkString("/")
     load(filepath) match {
-      case None => None
+      case None => {
+        None
+      }
       case Some(source) => Some(Map(filename -> source))
     }
   }

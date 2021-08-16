@@ -1,6 +1,6 @@
 package net.verdagon.vale.metal
 
-import net.verdagon.vale.{FileCoordinate, PackageCoordinate, vassert, vfail}
+import net.verdagon.vale.{FileCoordinate, PackageCoordinate, vassert, vfail, vimpl}
 
 // Represents a reference type.
 // A reference contains these things:
@@ -29,6 +29,8 @@ import net.verdagon.vale.{FileCoordinate, PackageCoordinate, vassert, vfail}
 // thought of as dimensions of a coordinate.
 case class ReferenceH[+T <: KindH](
     ownership: OwnershipH, location: LocationH, permission: PermissionH, kind: T) {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+
   (ownership, location) match {
     case (OwnH, YonderH) =>
     case (ShareH, _) =>
@@ -103,15 +105,19 @@ object IntH {
   val i32 = IntH(32)
 }
 case class IntH(bits: Int) extends KindH {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
 }
 case class BoolH() extends KindH {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
 }
 case class StrH() extends KindH {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
 }
 case class FloatH() extends KindH {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
 }
 // A primitive which can never be instantiated. If something returns this, it
@@ -121,6 +127,7 @@ case class FloatH() extends KindH {
 // have this? Perhaps replace all kinds with Optional[Optional[KindH]],
 // where None is never, Some(None) is Void, and Some(Some(_)) is a normal thing.
 case class NeverH() extends KindH {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
 }
 
@@ -128,6 +135,7 @@ case class InterfaceRefH(
   // Unique identifier for the interface.
   fullName: FullNameH
 ) extends KindH {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord: PackageCoordinate = fullName.packageCoordinate
 }
 
@@ -135,6 +143,7 @@ case class StructRefH(
   // Unique identifier for the interface.
   fullName: FullNameH
 ) extends KindH {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord: PackageCoordinate = fullName.packageCoordinate
 }
 
@@ -144,6 +153,7 @@ case class StaticSizedArrayTH(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
 ) extends KindH {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord: PackageCoordinate = name.packageCoordinate
 }
 
@@ -157,6 +167,7 @@ case class StaticSizedArrayDefinitionTH(
   // The underlying array.
   rawArray: RawArrayTH
 ) {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def kind = StaticSizedArrayTH(name)
 }
 
@@ -164,6 +175,7 @@ case class RuntimeSizedArrayTH(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
 ) extends KindH {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord: PackageCoordinate = name.packageCoordinate
 }
 
@@ -173,6 +185,7 @@ case class RuntimeSizedArrayDefinitionTH(
   // The underlying array.
   rawArray: RawArrayTH
 ) {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def kind = RuntimeSizedArrayTH(name)
 }
 
@@ -181,13 +194,13 @@ case class RuntimeSizedArrayDefinitionTH(
 case class RawArrayTH(
   mutability: Mutability,
   variability: Variability,
-  elementType: ReferenceH[KindH])
+  elementType: ReferenceH[KindH]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 // Place in the original source code that something came from. Useful for uniquely
 // identifying templates.
 case class CodeLocation(
   file: FileCoordinate,
-  offset: Int)
+  offset: Int) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 // Ownership is the way a reference relates to the kind's lifetime, see
 // ReferenceH for explanation.

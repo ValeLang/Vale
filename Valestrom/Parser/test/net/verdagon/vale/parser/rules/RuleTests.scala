@@ -60,16 +60,16 @@ class RuleTests extends FunSuite with Matchers with Collector {
 
   test("Relations") {
     compile(rulePR, "implements(MyObject, IObject)") shouldHave {
-      case CallPR(_, NameP(_, "implements"),List(TemplexPR(NameOrRunePT(NameP(_, "MyObject"))), TemplexPR(NameOrRunePT(NameP(_, "IObject"))))) =>
+      case CallPR(_, NameP(_, "implements"),Vector(TemplexPR(NameOrRunePT(NameP(_, "MyObject"))), TemplexPR(NameOrRunePT(NameP(_, "IObject"))))) =>
     }
     compile(rulePR, "implements(R, IObject)") shouldHave {
-        case CallPR(_, NameP(_, "implements"),List(TemplexPR(NameOrRunePT(NameP(_, "R"))), TemplexPR(NameOrRunePT(NameP(_, "IObject"))))) =>
+        case CallPR(_, NameP(_, "implements"),Vector(TemplexPR(NameOrRunePT(NameP(_, "R"))), TemplexPR(NameOrRunePT(NameP(_, "IObject"))))) =>
     }
     compile(rulePR, "implements(MyObject, T)") shouldHave {
-        case CallPR(_, NameP(_, "implements"),List(TemplexPR(NameOrRunePT(NameP(_, "MyObject"))), TemplexPR(NameOrRunePT(NameP(_, "T"))))) =>
+        case CallPR(_, NameP(_, "implements"),Vector(TemplexPR(NameOrRunePT(NameP(_, "MyObject"))), TemplexPR(NameOrRunePT(NameP(_, "T"))))) =>
     }
     compile(rulePR, "exists(fn +(T)int)") shouldHave {
-        case CallPR(_, NameP(_, "exists"), List(TemplexPR(PrototypePT(_,NameP(_, "+"), List(NameOrRunePT(NameP(_, "T"))), NameOrRunePT(NameP(_, "int")))))) =>
+        case CallPR(_, NameP(_, "exists"), Vector(TemplexPR(PrototypePT(_,NameP(_, "+"), Vector(NameOrRunePT(NameP(_, "T"))), NameOrRunePT(NameP(_, "int")))))) =>
     }
   }
 
@@ -82,9 +82,9 @@ class RuleTests extends FunSuite with Matchers with Collector {
 //        TemplexPR(NameOrRunePT(StringP(_, "C"))),
 //        CallPR(
 //          "resolveExactSignature",
-//          List(
+//          Vector(
 //            TemplexPR(StringPT("__call")),
-//            PackPR(List(TemplexPR(BorrowPT(NameOrRunePT(StringP(_, "F")))), TemplexPR(NameOrRunePT(StringP(_, "int"))))))))
+//            PackPR(Vector(TemplexPR(BorrowPT(NameOrRunePT(StringP(_, "F")))), TemplexPR(NameOrRunePT(StringP(_, "int"))))))))
 //  }
 
   test("destructure prototype") {
@@ -92,7 +92,7 @@ class RuleTests extends FunSuite with Matchers with Collector {
       case EqualsPR(_,
         ComponentsPR(_,
           TypedPR(_,None,PrototypeTypePR),
-          List(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)), TemplexPR(NameOrRunePT(NameP(_, "T"))))),
+          Vector(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)), TemplexPR(NameOrRunePT(NameP(_, "T"))))),
         TemplexPR(NameOrRunePT(NameP(_, "moo")))) =>
     }
   }
@@ -101,9 +101,9 @@ class RuleTests extends FunSuite with Matchers with Collector {
     compile(rulePR, "Prot(_, (int, bool), _)") shouldHave {
       case ComponentsPR(_,
         TypedPR(_,None,PrototypeTypePR),
-        List(
+        Vector(
           TemplexPR(AnonymousRunePT(_)),
-          TemplexPR(PackPT(_,List(NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "bool"))))),
+          TemplexPR(PackPT(_,Vector(NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "bool"))))),
           TemplexPR(AnonymousRunePT(_)))) =>
     }
   }

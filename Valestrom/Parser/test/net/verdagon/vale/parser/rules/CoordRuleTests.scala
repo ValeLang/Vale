@@ -49,18 +49,18 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
 
   test("Coord with destructure only") {
     compile(rulePR, "Ref(_, _)") shouldHave {
-      case ComponentsPR(_,TypedPR(_,None,CoordTypePR),List(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))) =>
+      case ComponentsPR(_,TypedPR(_,None,CoordTypePR),Vector(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))) =>
     }
   }
 
   test("Coord with rune and destructure") {
     compile(rulePR, "T Ref(_, _)") shouldHave {
-      case ComponentsPR(_,TypedPR(_,Some(NameP(_, "T")),CoordTypePR),List(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))) =>
+      case ComponentsPR(_,TypedPR(_,Some(NameP(_, "T")),CoordTypePR),Vector(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))) =>
     }
     compile(rulePR, "T Ref(own, _)") shouldHave {
         case ComponentsPR(_,
           TypedPR(_,Some(NameP(_, "T")),CoordTypePR),
-          List(TemplexPR(OwnershipPT(_,OwnP)), TemplexPR(AnonymousRunePT(_)))) =>
+          Vector(TemplexPR(OwnershipPT(_,OwnP)), TemplexPR(AnonymousRunePT(_)))) =>
     }
   }
 
@@ -77,7 +77,7 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
     compile(rulePR, "int") shouldHave {
       case TemplexPR(NameOrRunePT(NameP(_, "int"))) =>
     }
-//        CoordPR(None,None,None,None,None,Some(List(NameTemplexPR("int"))))
+//        CoordPR(None,None,None,None,None,Some(Vector(NameTemplexPR("int"))))
 
   }
 
@@ -85,7 +85,7 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
     compile(rulePR, "T Ref(_, int)") shouldHave {
       case ComponentsPR(_,
           TypedPR(_,Some(NameP(_, "T")),CoordTypePR),
-          List(TemplexPR(AnonymousRunePT(_)), TemplexPR(NameOrRunePT(NameP(_, "int"))))) =>
+          Vector(TemplexPR(AnonymousRunePT(_)), TemplexPR(NameOrRunePT(NameP(_, "int"))))) =>
     }
 //      runedTCoordWithEnvKind("T", "int")
 
@@ -95,10 +95,10 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
     compile(rulePR, "T Ref(_, Kind(mut))") shouldHave {
       case ComponentsPR(_,
           TypedPR(_,Some(NameP(_, "T")),CoordTypePR),
-          List(
+          Vector(
             TemplexPR(AnonymousRunePT(_)),
             ComponentsPR(_,
-              TypedPR(_,None,KindTypePR),List(TemplexPR(MutabilityPT(_,MutableP)))))) =>
+              TypedPR(_,None,KindTypePR),Vector(TemplexPR(MutabilityPT(_,MutableP)))))) =>
     }
   }
 
@@ -113,7 +113,7 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
   test("Coord with destructure and value") {
     compile(rulePR, "T Ref(_, _) = int") shouldHave {
       case EqualsPR(_,
-          ComponentsPR(_,TypedPR(_,Some(NameP(_, "T")),CoordTypePR),List(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))),
+          ComponentsPR(_,TypedPR(_,Some(NameP(_, "T")),CoordTypePR),Vector(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))),
           TemplexPR(NameOrRunePT(NameP(_, "int")))) =>
     }
 //        runedTCoordWithValue("T", NameTemplexPR("int"))
@@ -125,7 +125,7 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
           TypedPR(_,Some(NameP(_, "T")),CoordTypePR),
           TemplexPR(
             ManualSequencePT(_,
-              List(NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "bool")))))) =>
+              Vector(NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "bool")))))) =>
     }
   }
 
@@ -133,7 +133,7 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
     compile(rulePR, "[int, bool]") shouldHave {
       case TemplexPR(
           ManualSequencePT(_,
-            List(NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "bool"))))) =>
+            Vector(NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "bool"))))) =>
         }
   }
 }

@@ -29,16 +29,16 @@ class VirtualTests extends FunSuite with Matchers {
             SignatureT(
               FullNameT(
                 PackageCoordinate.TEST_TLD,
-                List.empty,
+                Vector.empty,
                 FunctionNameT(
                   "doThing",
-                  List.empty,
-                  List(
+                  Vector.empty,
+                  Vector(
                     CoordT(
                       OwnT,
                       ReadwriteT,
                       InterfaceTT(
-                        FullNameT(PackageCoordinate.TEST_TLD, List.empty, CitizenNameT("I", List.empty))))))))))
+                        FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, CitizenNameT("I", Vector.empty))))))))))
       vassert(doThing.header.params(0).virtuality.get == AbstractT$)
     }
 
@@ -63,16 +63,16 @@ class VirtualTests extends FunSuite with Matchers {
           SignatureT(
             FullNameT(
               PackageCoordinate.TEST_TLD,
-              List.empty,
+              Vector.empty,
               FunctionNameT(
                 "doThing",
-                List.empty,
-                List(
+                Vector.empty,
+                Vector(
                   CoordT(
                     OwnT,
                     ReadwriteT,
                     InterfaceTT(
-                      FullNameT(PackageCoordinate.TEST_TLD, List.empty, CitizenNameT("I", List.empty))))))))))
+                      FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, CitizenNameT("I", Vector.empty))))))))))
     vassert(doThing.header.params(0).virtuality.get == AbstractT$)
   }
 
@@ -96,7 +96,7 @@ class VirtualTests extends FunSuite with Matchers {
       vassertSome(
         temputs.lookupFunction(
           SignatureT(
-            FullNameT(PackageCoordinate.TEST_TLD, List(CitizenNameT("I",List.empty)),FunctionNameT("doThing",List.empty,List(CoordT(OwnT,ReadwriteT,InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, List.empty,CitizenNameT("I",List.empty))))))))))
+            FullNameT(PackageCoordinate.TEST_TLD, Vector(CitizenNameT("I",Vector.empty)),FunctionNameT("doThing",Vector.empty,Vector(CoordT(OwnT,ReadwriteT,InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty,CitizenNameT("I",Vector.empty))))))))))
     vassert(doThing.header.params(0).virtuality.get == AbstractT$)
   }
 

@@ -116,7 +116,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     compile.getTemputs() match {
       case Err(CantMutateFinalMember(_, structTT, memberName)) => {
         structTT.last match {
-          case CitizenNameT("Vec3", Nil) =>
+          case CitizenNameT("Vec3", Vector()) =>
         }
         memberName.last match {
           case CodeVarNameT("x") =>
@@ -137,7 +137,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     compile.getTemputs() match {
       case Err(CantMutateFinalMember(_, structTT, memberName)) => {
         structTT.last match {
-          case CitizenNameT("Vec3", Nil) =>
+          case CitizenNameT("Vec3", Vector()) =>
         }
         memberName.last match {
           case CodeVarNameT("x") =>
@@ -197,9 +197,9 @@ class TemplarMutateTests extends FunSuite with Matchers {
   }
 
   test("Humanize errors") {
-    val fireflyKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, List.empty, CitizenNameT("Firefly", List.empty)))
+    val fireflyKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, CitizenNameT("Firefly", Vector.empty)))
     val fireflyCoord = CoordT(OwnT,ReadwriteT,fireflyKind)
-    val serenityKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, List.empty, CitizenNameT("Serenity", List.empty)))
+    val serenityKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, CitizenNameT("Serenity", Vector.empty)))
     val serenityCoord = CoordT(OwnT,ReadwriteT,serenityKind)
 
     val filenamesAndSources = FileCoordinateMap.test("blah blah blah\nblah blah blah")
@@ -209,7 +209,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindFunctionToCallT(
         RangeS.testZero,
-        ScoutExpectedFunctionFailure(GlobalFunctionFamilyNameA(""), List.empty, Map(), Map(), Map())))
+        ScoutExpectedFunctionFailure(GlobalFunctionFamilyNameA(""), Vector.empty, Map(), Map(), Map())))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CannotSubscriptT(
@@ -260,13 +260,13 @@ class TemplarMutateTests extends FunSuite with Matchers {
       FunctionAlreadyExists(
         RangeS.testZero,
         RangeS.testZero,
-        SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List.empty, FunctionNameT("myFunc", List.empty, List.empty)))))
+        SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, FunctionNameT("myFunc", Vector.empty, Vector.empty)))))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantMutateFinalMember(
         RangeS.testZero,
         serenityKind.fullName,
-        FullNameT(PackageCoordinate.TEST_TLD, List.empty, CodeVarNameT("bork"))))
+        FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, CodeVarNameT("bork"))))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       LambdaReturnDoesntMatchInterfaceConstructor(

@@ -12,7 +12,7 @@ object Benchmark {
     val profiler = new Profiler()
     val compile =
       new RunCompilation(
-        List(PackageCoordinate.BUILTIN, PackageCoordinate.TEST_TLD),
+        Vector(PackageCoordinate.BUILTIN, PackageCoordinate.TEST_TLD),
         Builtins.getCodeMap()
           .or(FileCoordinateMap.test(Tests.loadExpected("programs/roguelike.vale")))
           .or(Tests.getPackageToResourceResolver),
@@ -33,20 +33,36 @@ object Benchmark {
   }
 
   def main(args: Array[String]): Unit = {
+    val compareOptimization = false
+
     println("Starting benchmarking...")
-    // Do one run, since the first run always takes longer due to class loading, loading things into the instruction
-    // cache, etc.
-    // Eventually, we'll want a benchmarking program that does take these things into account, such as by invoking the
-    // driver over and over, because class loading, icache, etc are all totally valid things that we care about.
-    // For now though, this will do.
-    go(true)
-    go(false)
-    val timesForOldAndNew = (0 until 10).map(_ => (go(false).totalNanoseconds, go(true).totalNanoseconds))
-    val timesForOld = timesForOldAndNew.map(_._1)
-    val timesForNew = timesForOldAndNew.map(_._2)
-    val averageTimeForOld = timesForOld.sum / timesForOld.size
-    val averageTimeForNew = timesForNew.sum / timesForNew.size
-    println("Done benchmarking! Old: " + averageTimeForOld + ", New: " + averageTimeForNew)
+    if (compareOptimization) {
+      // Do one run, since the first run always takes longer due to class loading, loading things into the instruction
+      // cache, etc.
+      // Eventually, we'll want a benchmarking program that does take these things into account, such as by invoking the
+      // driver over and over, because class loading, icache, etc are all totally valid things that we care about.
+      // For now though, this will do.
+      go(true)
+      go(false)
+      val timesForOldAndNew = (0 until 10).map(_ => (go(false).totalNanoseconds, go(true).totalNanoseconds))
+      val timesForOld = timesForOldAndNew.map(_._1)
+      val timesForNew = timesForOldAndNew.map(_._2)
+      val averageTimeForOld = timesForOld.sum / timesForOld.size
+      val averageTimeForNew = timesForNew.sum / timesForNew.size
+      println("Done benchmarking! Old: " + averageTimeForOld + ", New: " + averageTimeForNew)
+    } else {
+      // Do one run, since the first run always takes longer due to class loading, loading things into the instruction
+      // cache, etc.
+      // Eventually, we'll want a benchmarking program that does take these things into account, such as by invoking the
+      // driver over and over, because class loading, icache, etc are all totally valid things that we care about.
+      // For now though, this will do.
+      go(true)
+      val profiles = (0 until 10).map(_ => go(true))
+      val times = profiles.map(_.totalNanoseconds)
+      val averageTime = times.sum / times.size
+      println("Done benchmarking! Total: " + averageTime)
+      println(profiles.last.assembleResults())
+    }
 
 //    println(go(true).assembleResults())
   }

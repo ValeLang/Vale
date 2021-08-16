@@ -29,10 +29,10 @@ class TemplarVirtualTests extends FunSuite with Matchers {
     temputs.lookupFunction("as").only({
       case as @ AsSubtypeTE(sourceExpr, targetSubtype, resultOptType, okConstructor, errConstructor) => {
         sourceExpr.resultRegister.reference match {
-          case CoordT(ConstraintT,ReadonlyT,InterfaceTT(FullNameT(_, Nil,CitizenNameT("IShip",Nil)))) =>
+          case CoordT(ConstraintT,ReadonlyT,InterfaceTT(FullNameT(_, Vector(),CitizenNameT("IShip",Vector())))) =>
         }
         targetSubtype match {
-          case StructTT(FullNameT(_, Nil,CitizenNameT("Raza",Nil))) =>
+          case StructTT(FullNameT(_, Vector(),CitizenNameT("Raza",Vector()))) =>
         }
         val (firstGenericArg, secondGenericArg) =
           resultOptType match {
@@ -40,22 +40,22 @@ class TemplarVirtualTests extends FunSuite with Matchers {
               OwnT,ReadwriteT,
               InterfaceTT(
                 FullNameT(
-                  _, Nil,
+                  _, Vector(),
                   CitizenNameT(
                     "Result",
-                    List(firstGenericArg, secondGenericArg))))) => (firstGenericArg, secondGenericArg)
+                    Vector(firstGenericArg, secondGenericArg))))) => (firstGenericArg, secondGenericArg)
           }
         firstGenericArg match {
           case CoordTemplata(
             CoordT(
               ConstraintT,ReadonlyT,
-              StructTT(FullNameT(_, Nil,CitizenNameT("Raza",Nil))))) =>
+              StructTT(FullNameT(_, Vector(),CitizenNameT("Raza",Vector()))))) =>
         }
         secondGenericArg match {
           case CoordTemplata(
             CoordT(
               ConstraintT,ReadonlyT,
-              InterfaceTT(FullNameT(_, Nil,CitizenNameT("IShip",Nil))))) =>
+              InterfaceTT(FullNameT(_, Vector(),CitizenNameT("IShip",Vector()))))) =>
         }
         vassert(okConstructor.paramTypes.head.kind == targetSubtype)
         vassert(errConstructor.paramTypes.head == sourceExpr.resultRegister.reference)

@@ -23,7 +23,7 @@ trait ITemplataTemplarDelegate {
     temputs: Temputs,
     callRange: RangeS,
     structTemplata: StructTemplata,
-    uncoercedTemplateArgs: List[ITemplata]):
+    uncoercedTemplateArgs: Vector[ITemplata]):
   StructTT
 
   def getInterfaceRef(
@@ -32,7 +32,7 @@ trait ITemplataTemplarDelegate {
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
     interfaceTemplata: InterfaceTemplata,
-    uncoercedTemplateArgs: List[ITemplata]):
+    uncoercedTemplateArgs: Vector[ITemplata]):
   InterfaceTT
 
   def getStaticSizedArrayKind(
@@ -46,7 +46,7 @@ trait ITemplataTemplarDelegate {
 
   def getRuntimeSizedArrayKind(env: IEnvironment, state: Temputs, element: CoordT, arrayMutability: MutabilityT, arrayVariability: VariabilityT): RuntimeSizedArrayTT
 
-  def getTupleKind(env: IEnvironment, state: Temputs, elements: List[CoordT]): TupleTT
+  def getTupleKind(env: IEnvironment, state: Temputs, elements: Vector[CoordT]): TupleTT
 }
 
 class TemplataTemplar(
@@ -69,8 +69,8 @@ class TemplataTemplar(
     makeInner().evaluateTemplex(env, temputs, templex)
   }
 
-  def evaluateTemplexes(env: IEnvironment, temputs: Temputs, templexes: List[ITemplexA]):
-  (List[ITemplata]) = {
+  def evaluateTemplexes(env: IEnvironment, temputs: Temputs, templexes: Vector[ITemplexA]):
+  (Vector[ITemplata]) = {
     makeInner().evaluateTemplexes(env, temputs, templexes)
   }
 
@@ -119,12 +119,12 @@ class TemplataTemplar(
           Templar.getMutability(temputs, kind)
         }
 
-        override def evaluateInterfaceTemplata(state: Temputs, callRange: RangeS, templata: InterfaceTemplata, templateArgs: List[ITemplata]):
+        override def evaluateInterfaceTemplata(state: Temputs, callRange: RangeS, templata: InterfaceTemplata, templateArgs: Vector[ITemplata]):
         (KindT) = {
           delegate.getInterfaceRef(state, callRange, templata, templateArgs)
         }
 
-        override def evaluateStructTemplata(state: Temputs, callRange: RangeS, templata: StructTemplata, templateArgs: List[ITemplata]):
+        override def evaluateStructTemplata(state: Temputs, callRange: RangeS, templata: StructTemplata, templateArgs: Vector[ITemplata]):
         (KindT) = {
           delegate.getStructRef(state, callRange, templata, templateArgs)
         }
@@ -145,7 +145,7 @@ class TemplataTemplar(
           delegate.getRuntimeSizedArrayKind(env, state, element, arrayMutability, arrayVariability)
         }
 
-        override def getTupleKind(env: IEnvironment, state: Temputs, elements: List[CoordT]): TupleTT = {
+        override def getTupleKind(env: IEnvironment, state: Temputs, elements: Vector[CoordT]): TupleTT = {
           delegate.getTupleKind(env, state, elements)
         }
 

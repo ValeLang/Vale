@@ -65,8 +65,8 @@ class FunctionTemplarClosureOrLightLayer(
     callRange: RangeS,
       closureStructRef: StructTT,
     function: FunctionA,
-    alreadySpecifiedTemplateArgs: List[ITemplata],
-      argTypes2: List[ParamFilter]):
+    alreadySpecifiedTemplateArgs: Vector[ITemplata],
+      argTypes2: Vector[ParamFilter]):
   (IEvaluateFunctionResult[FunctionBannerT]) = {
     vassert(function.isTemplate)
 
@@ -84,8 +84,8 @@ class FunctionTemplarClosureOrLightLayer(
     callRange: RangeS,
     closureStructRef: StructTT,
     function: FunctionA,
-    alreadySpecifiedTemplateArgs: List[ITemplata],
-    argTypes2: List[ParamFilter]):
+    alreadySpecifiedTemplateArgs: Vector[ITemplata],
+    argTypes2: Vector[ParamFilter]):
   (IEvaluateFunctionResult[PrototypeT]) = {
     vassert(function.isTemplate)
 
@@ -100,7 +100,7 @@ class FunctionTemplarClosureOrLightLayer(
 //      ourEnv: IEnvironment,
 //      temputs: Temputs,
 //    function: FunctionA,
-//      explicitTemplateArgs: List[ITemplata]):
+//      explicitTemplateArgs: Vector[ITemplata]):
 //  (FunctionHeader2) = {
 //    vassert(function.isTemplate)
 //    vassert(function.identifyingRunes.size == explicitTemplateArgs.size);
@@ -116,8 +116,8 @@ class FunctionTemplarClosureOrLightLayer(
       temputs: Temputs,
     callRange: RangeS,
     function: FunctionA,
-      explicitTemplateArgs: List[ITemplata],
-      args: List[ParamFilter]):
+      explicitTemplateArgs: Vector[ITemplata],
+      args: Vector[ParamFilter]):
   (IEvaluateFunctionResult[PrototypeT]) = {
     checkNotClosure(function);
     vassert(function.isTemplate)
@@ -153,7 +153,7 @@ class FunctionTemplarClosureOrLightLayer(
     vassert(!function.isTemplate)
 
     val name = makeNameWithClosureds(outerEnv, function.name)
-    val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, List.empty, newTemplataStore())
+    val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, Vector.empty, newTemplataStore())
     ordinaryOrTemplatedLayer.evaluateOrdinaryFunctionFromNonCallForPrototype(
       newEnv, temputs, callRange)
   }
@@ -201,8 +201,8 @@ class FunctionTemplarClosureOrLightLayer(
       temputs: Temputs,
     callRange: RangeS,
       function: FunctionA,
-      explicitTemplateArgs: List[ITemplata],
-      args: List[ParamFilter]):
+      explicitTemplateArgs: Vector[ITemplata],
+      args: Vector[ParamFilter]):
   (IEvaluateFunctionResult[FunctionBannerT]) = {
     checkNotClosure(function)
     vassert(function.isTemplate)
@@ -217,8 +217,8 @@ class FunctionTemplarClosureOrLightLayer(
       temputs: Temputs,
       function: FunctionA,
     callRange: RangeS,
-      alreadySpecifiedTemplateArgs: List[ITemplata],
-      paramFilters: List[ParamFilter]):
+      alreadySpecifiedTemplateArgs: Vector[ITemplata],
+      paramFilters: Vector[ParamFilter]):
   (IEvaluateFunctionResult[FunctionBannerT]) = {
     vassert(function.isTemplate)
 
@@ -230,7 +230,7 @@ class FunctionTemplarClosureOrLightLayer(
 //  def scanOrdinaryInterfaceMember(
 //    env1: IEnvironment,
 //    temputs: Temputs,
-//    interfaceExplicitTemplateArgs: List[ITemplata],
+//    interfaceExplicitTemplateArgs: Vector[ITemplata],
 //    function: FunctionA):
 //  (FunctionHeader2) = {
 //
@@ -246,7 +246,7 @@ class FunctionTemplarClosureOrLightLayer(
     function: FunctionA
   ): BuildingFunctionEnvironmentWithClosureds = {
     val name = makeNameWithClosureds(outerEnv, function.name)
-    BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, List.empty, newTemplataStore())
+    BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, Vector.empty, newTemplataStore())
   }
 
   private def makeNameWithClosureds(
@@ -269,7 +269,7 @@ class FunctionTemplarClosureOrLightLayer(
   }
 
   private def makeClosureVariablesAndEntries(temputs: Temputs, closureStructRef: StructTT):
-  (List[IVariableT], Map[INameT, List[IEnvEntry]]) = {
+  (Vector[IVariableT], Map[INameT, Vector[IEnvEntry]]) = {
     val closureStructDef = temputs.lookupStruct(closureStructRef);
     val variables =
       closureStructDef.members.map(member => {
@@ -284,9 +284,9 @@ class FunctionTemplarClosureOrLightLayer(
         }
       })
     val entries =
-      Map[INameT, List[IEnvEntry]](
+      Map[INameT, Vector[IEnvEntry]](
         closureStructRef.fullName.last ->
-          List(TemplataEnvEntry(KindTemplata(closureStructRef))))
+          Vector(TemplataEnvEntry(KindTemplata(closureStructRef))))
     (variables, entries)
   }
 }

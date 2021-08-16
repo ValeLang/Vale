@@ -12,18 +12,18 @@ class SignatureTests extends FunSuite with Matchers with Collector with TestPars
       "fn maxHp(this Marine impl IUnit) { 5 }") shouldHave {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "maxHp")),Nil, None, None,
+          Some(NameP(_, "maxHp")),Vector(), None, None,
           Some(
             ParamsP(
               _,
-              List(
+              Vector(
                 PatternPP(_,_,
                   Some(CaptureP(_,LocalNameP(NameP(_, "this")))),
                   Some(NameOrRunePT(NameP(_, "Marine"))),
                   None,
                   Some(OverrideP(_,NameOrRunePT(NameP(_, "IUnit")))))))),
           FunctionReturnP(_, None,None)),
-        Some(BlockPE(_, List(ConstantIntPE(_, 5, _))))) =>
+        Some(BlockPE(_, Vector(ConstantIntPE(_, 5, _))))) =>
     }
   }
 
@@ -38,8 +38,8 @@ class SignatureTests extends FunSuite with Matchers with Collector with TestPars
     compile(CombinatorParsers.topLevelFunction, "fn sum () rules() {3}") shouldHave {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "sum")), Nil, None, Some(_), Some(_), FunctionReturnP(_, None, None)),
-        Some(BlockPE(_, List(ConstantIntPE(_, 3, _))))) =>
+          Some(NameP(_, "sum")), Vector(), None, Some(_), Some(_), FunctionReturnP(_, None, None)),
+        Some(BlockPE(_, Vector(ConstantIntPE(_, 3, _))))) =>
     }
   }
 
@@ -50,16 +50,16 @@ class SignatureTests extends FunSuite with Matchers with Collector with TestPars
       "fn wrap<A, F>(a A) { }") shouldHave {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "wrap")), Nil,
+          Some(NameP(_, "wrap")), Vector(),
           Some(
             IdentifyingRunesP(_,
-              List(
-              IdentifyingRuneP(_, NameP(_, "A"), Nil),
-              IdentifyingRuneP(_, NameP(_, "F"), Nil)))),
+              Vector(
+              IdentifyingRuneP(_, NameP(_, "A"), Vector()),
+              IdentifyingRuneP(_, NameP(_, "F"), Vector())))),
           None,
-          Some(ParamsP(_, List(Patterns.capturedWithTypeRune("a", "A")))),
+          Some(ParamsP(_, Vector(Patterns.capturedWithTypeRune("a", "A")))),
           FunctionReturnP(_, None, None)),
-        Some(BlockPE(_, List(VoidPE(_))))) =>
+        Some(BlockPE(_, Vector(VoidPE(_))))) =>
     }
   }
 }

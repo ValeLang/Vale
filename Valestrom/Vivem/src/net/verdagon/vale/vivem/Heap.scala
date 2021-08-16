@@ -35,7 +35,7 @@ class AdapterForExterns(
   def makeVoid(): ReferenceV = {
     val emptyPackStructRefH = ProgramH.emptyTupleStructRef
     val emptyPackStructDefH = programH.lookupStruct(emptyPackStructRefH)
-    heap.newStruct(emptyPackStructDefH, ReferenceH(ShareH, InlineH, ReadonlyH, emptyPackStructRefH), List.empty)
+    heap.newStruct(emptyPackStructDefH, ReferenceH(ShareH, InlineH, ReadonlyH, emptyPackStructRefH), Vector.empty)
   }
 }
 
@@ -627,7 +627,7 @@ class Heap(in_vivemDout: PrintStream) {
   def newStruct(
       structDefH: StructDefinitionH,
       structRefH: ReferenceH[StructRefH],
-      memberReferences: List[ReferenceV]):
+      memberReferences: Vector[ReferenceV]):
   ReferenceV = {
     val instance = StructInstanceV(structDefH, Some(memberReferences.toVector))
     val reference = add(structRefH.ownership, structRefH.location, structRefH.permission, instance)
@@ -675,7 +675,7 @@ class Heap(in_vivemDout: PrintStream) {
 //    ref
 //  }
 //
-//  def takeReferencesFromRegistersInReverse(blockId: BlockId, expressionIds: List[RegisterAccessH[KindH]]): List[ReferenceV] = {
+//  def takeReferencesFromRegistersInReverse(blockId: BlockId, expressionIds: Vector[RegisterAccessH[KindH]]): Vector[ReferenceV] = {
 //    expressionIds
 //        .reverse
 //        .map({
@@ -711,7 +711,7 @@ class Heap(in_vivemDout: PrintStream) {
   def addArray(
     arrayDefinitionTH: StaticSizedArrayDefinitionTH,
     arrayRefType: ReferenceH[StaticSizedArrayTH],
-    memberRefs: List[ReferenceV]):
+    memberRefs: Vector[ReferenceV]):
   (ReferenceV, ArrayInstanceV) = {
     val instance = ArrayInstanceV(arrayRefType, arrayDefinitionTH.rawArray.elementType, memberRefs.size, memberRefs.toVector)
     val reference = add(arrayRefType.ownership, arrayRefType.location, arrayRefType.permission, instance)

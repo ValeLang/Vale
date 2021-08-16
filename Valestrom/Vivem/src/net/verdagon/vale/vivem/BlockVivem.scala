@@ -6,9 +6,9 @@
 //import net.verdagon.vale.vivem.ExpressionVivem.{NodeContinue, NodeReturn}
 //
 //sealed trait IBlockExecuteResult
-//case class BlockContinue(resultRef: Option[ReturnV]) extends IBlockExecuteResult
+//case class BlockContinue(resultRef: Option[ReturnV]) extends IBlockExecuteResult { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 //// None means VoidH
-//case class BlockReturn(returnRef: Option[ReturnV]) extends IBlockExecuteResult
+//case class BlockReturn(returnRef: Option[ReturnV]) extends IBlockExecuteResult { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 //
 //object BlockVivem {
 //  def executeBlock(

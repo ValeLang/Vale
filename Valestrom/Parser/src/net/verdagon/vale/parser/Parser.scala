@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, IProfiler, PackageCoordinate, NullProfiler, Ok, Result, repeatStr, vassert, vassertSome, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, Ok, PackageCoordinate, Result, repeatStr, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 import net.verdagon.von.{JsonSyntax, VonPrinter}
 
 import scala.collection.immutable.{List, Map}
@@ -12,14 +12,18 @@ sealed trait IParseResult[T] {
   def get(): T
 }
 case class ParseFailure[T](error: IParseError) extends IParseResult[T] {
+  override def hashCode(): Int = vcurious();
   override def get(): T = { vfail() }
 }
 case class ParseSuccess[T](result: T) extends IParseResult[T] {
+  override def hashCode(): Int = vcurious();
   override def get(): T = result
 }
 
 object Parser {
   case class ParsingIterator(code: String, var position: Int = 0) {
+    override def hashCode(): Int = vcurious();
+
     def currentChar(): Char = code.charAt(position)
     def advance() { position = position + 1 }
 
@@ -92,9 +96,9 @@ object Parser {
     }
   }
 
-  def runParserForProgramAndCommentRanges(codeWithComments: String): IParseResult[(FileP, List[(Int, Int)])] = {
+  def runParserForProgramAndCommentRanges(codeWithComments: String): IParseResult[(FileP, Vector[(Int, Int)])] = {
     val regex = "(//[^\\r\\n]*|«\\w+»)".r
-    val commentRanges = regex.findAllMatchIn(codeWithComments).map(mat => (mat.start, mat.end)).toList
+    val commentRanges = regex.findAllMatchIn(codeWithComments).map(mat => (mat.start, mat.end)).toVector
     var code = codeWithComments
     commentRanges.foreach({ case (begin, end) =>
       code = code.substring(0, begin) + repeatStr(" ", (end - begin)) + code.substring(end)
@@ -103,7 +107,7 @@ object Parser {
 
     runParser(codeWithoutComments) match {
       case f @ ParseFailure(err) => ParseFailure(err)
-      case ParseSuccess(program0) => ParseSuccess(program0, commentRanges)
+      case ParseSuccess(program0) => ParseSuccess((program0, commentRanges))
     }
   }
 
@@ -150,7 +154,7 @@ object Parser {
       iter.consumeWhitespace()
     }
 
-    val program0 = FileP(topLevelThings.toList)
+    val program0 = FileP(topLevelThings.toVector)
     ParseSuccess(program0)
   }
 
@@ -202,7 +206,7 @@ object Parser {
     iter.consumeWhitespace()
     val condition =
       parseBlockContents(iter) match {
-        case ParseSuccess(result) => BlockPE(Range(condBegin, iter.getPos()), result)
+        case ParseSuccess(result) => BlockPE(Range(condBegin, iter.getPos()), result.toVector)
         case ParseFailure(cpe) => return ParseFailure(cpe)
       }
     iter.consumeWhitespace()
@@ -231,8 +235,8 @@ object Parser {
     ParseSuccess(
       WhilePE(
         Range(whileBegin, whileEnd),
-        BlockPE(Range(condBegin, condEnd), List(condition)),
-        BlockPE(Range(bodyBegin, bodyEnd), body)))
+        BlockPE(Range(condBegin, condEnd), Vector(condition)),
+        BlockPE(Range(bodyBegin, bodyEnd), body.toVector)))
   }
 
   private def parseIfLadder(iter: ParsingIterator): IParseResult[IfPE] = {
@@ -270,7 +274,7 @@ object Parser {
         iter.consumeWhitespace()
         val elseEnd = iter.getPos()
         if (!iter.tryConsume("^\\}".r)) { return ParseFailure(BadEndOfElseBody(iter.getPos())) }
-        Some(BlockPE(Range(elseBegin, elseEnd), elseBody))
+        Some(BlockPE(Range(elseBegin, elseEnd), elseBody.toVector))
       } else {
         None
       }
@@ -279,7 +283,7 @@ object Parser {
 
     val finalElse: BlockPE =
       maybeElseBlock match {
-        case None => BlockPE(Range(ifLadderEnd, ifLadderEnd), List(VoidPE(Range(ifLadderEnd, ifLadderEnd))))
+        case None => BlockPE(Range(ifLadderEnd, ifLadderEnd), Vector(VoidPE(Range(ifLadderEnd, ifLadderEnd))))
         case Some(block) => block
       }
     val rootElseBlock =
@@ -287,7 +291,7 @@ object Parser {
         case ((condBlock, thenBlock), elseBlock) => {
           BlockPE(
             Range(condBlock.range.begin, thenBlock.range.end),
-            List(
+            Vector(
               IfPE(
                 Range(condBlock.range.begin, thenBlock.range.end),
                 condBlock, thenBlock, elseBlock)))
@@ -438,11 +442,11 @@ object Parser {
 
     ParseSuccess(
       (
-        BlockPE(Range(condBegin, condEnd), List(condition)),
-        BlockPE(Range(bodyBegin, bodyEnd), body)))
+        BlockPE(Range(condBegin, condEnd), Vector(condition)),
+        BlockPE(Range(bodyBegin, bodyEnd), body.toVector)))
   }
 
-  private def parseBlockContents(iter: ParsingIterator): IParseResult[List[IExpressionPE]] = {
+  private def parseBlockContents(iter: ParsingIterator): IParseResult[Vector[IExpressionPE]] = {
     val statements = new mutable.MutableList[IExpressionPE]
 
     // Just ignore this if we see it (as a hack for the syntax highlighter).
@@ -534,7 +538,7 @@ object Parser {
             endExpression(iter, werePreviousStatements) match {
               case Some(Ok(toAdd)) => {
                 statements ++= toAdd
-                return ParseSuccess(statements.toList)
+                return ParseSuccess(statements.toVector)
               }
               case Some(Err(e)) => return ParseFailure(e)
               case None => // continue
@@ -571,7 +575,7 @@ object Parser {
             endExpression(iter, werePreviousStatements) match {
               case Some(Ok(toAdd)) => {
                 statements ++= toAdd
-                return ParseSuccess(statements.toList)
+                return ParseSuccess(statements.toVector)
               }
               case Some(Err(e)) => return ParseFailure(e)
               case None => // continue
@@ -587,7 +591,7 @@ object Parser {
       statements += VoidPE(Range(iter.getPos(), iter.getPos()))
     }
 
-    ParseSuccess(statements.toList)
+    ParseSuccess(statements.toVector)
   }
 
   // If returns Some(Err), then thats what the caller should return
@@ -596,14 +600,14 @@ object Parser {
   private def endExpression(
     iter: ParsingIterator,
     werePreviousExprs: Boolean
-  ): Option[Result[List[IExpressionPE], BadExpressionEnd]] = {
+  ): Option[Result[Vector[IExpressionPE], BadExpressionEnd]] = {
     if (iter.peek("^\\s*;\\s*[)}]".r)) {
       iter.consumeWhitespace()
       if (!iter.tryConsume("^;".r)) {
         vwat()
       }
       iter.consumeWhitespace()
-      return Some(Ok(List(VoidPE(Range(iter.getPos(), iter.getPos())))))
+      return Some(Ok(Vector(VoidPE(Range(iter.getPos(), iter.getPos())))))
     }
 
     if (iter.peek("^\\s*[)}]".r)) {
@@ -611,7 +615,7 @@ object Parser {
       if (werePreviousExprs) {
         return Some(Err(BadExpressionEnd(iter.getPos())))
       } else {
-        return Some(Ok(List.empty))
+        return Some(Ok(Vector.empty))
       }
     }
 
@@ -654,9 +658,9 @@ object Parser {
     val bodyEnd = iter.getPos()
     val body =
       if (statements.nonEmpty) {
-        BlockPE(Range(bodyBegin, bodyEnd), statements.toList)
+        BlockPE(Range(bodyBegin, bodyEnd), statements.toVector)
       } else {
-        BlockPE(Range(bodyBegin, bodyEnd), List(VoidPE(Range(bodyBegin, bodyEnd))))
+        BlockPE(Range(bodyBegin, bodyEnd), Vector(VoidPE(Range(bodyBegin, bodyEnd))))
       }
 
     ParseSuccess(FunctionP(Range(funcBegin, bodyEnd), header, Some(body)))
@@ -666,9 +670,9 @@ object Parser {
 object ParserCompilation {
 
   def loadAndParse(
-    neededPackages: List[PackageCoordinate],
+    neededPackages: Vector[PackageCoordinate],
     resolver: IPackageResolver[Map[String, String]]):
-  Result[(FileCoordinateMap[String], FileCoordinateMap[(FileP, List[(Int, Int)])]), FailedParse] = {
+  Result[(FileCoordinateMap[String], FileCoordinateMap[(FileP, Vector[(Int, Int)])]), FailedParse] = {
     vassert(neededPackages.size == neededPackages.distinct.size, "Duplicate modules in: " + neededPackages.mkString(", "))
 
 //    neededPackages.foreach(x => println("Originally requested package: " + x))
@@ -677,11 +681,11 @@ object ParserCompilation {
   }
 
   def loadAndParseIteration(
-    neededPackages: List[PackageCoordinate],
+    neededPackages: Vector[PackageCoordinate],
     alreadyFoundCodeMap: FileCoordinateMap[String],
-    alreadyParsedProgramPMap: FileCoordinateMap[(FileP, List[(Int, Int)])],
+    alreadyParsedProgramPMap: FileCoordinateMap[(FileP, Vector[(Int, Int)])],
     resolver: IPackageResolver[Map[String, String]]):
-  Result[(FileCoordinateMap[String], FileCoordinateMap[(FileP, List[(Int, Int)])]), FailedParse] = {
+  Result[(FileCoordinateMap[String], FileCoordinateMap[(FileP, Vector[(Int, Int)])]), FailedParse] = {
     val neededPackageCoords =
       neededPackages ++
         alreadyParsedProgramPMap.flatMap({ case (fileCoord, file) =>
@@ -690,7 +694,7 @@ object ParserCompilation {
               PackageCoordinate(moduleName.str, packageSteps.map(_.str))
             }
           })
-        }).toList.flatten.filter(packageCoord => {
+        }).toVector.flatten.filter(packageCoord => {
           !alreadyParsedProgramPMap.moduleToPackagesToFilenameToContents
             .getOrElse(packageCoord.module, Map())
             .contains(packageCoord.packages)
@@ -712,7 +716,7 @@ object ParserCompilation {
           }
 
         // Note that filepathsAndContents *can* be empty, see ImportTests.
-        List((neededPackageCoord.module, neededPackageCoord.packages, filepathsAndContents))
+        Vector((neededPackageCoord.module, neededPackageCoord.packages, filepathsAndContents))
       })
     val grouped =
       neededCodeMapFlat.groupBy(_._1).mapValues(_.groupBy(_._2).mapValues(_.map(_._3).head))
@@ -739,16 +743,16 @@ object ParserCompilation {
 
     val combinedProgramPMap = alreadyParsedProgramPMap.mergeNonOverlapping(newProgramPMap)
 
-    loadAndParseIteration(List.empty, combinedCodeMap, combinedProgramPMap, resolver)
+    loadAndParseIteration(Vector(), combinedCodeMap, combinedProgramPMap, resolver)
   }
 }
 
 class ParserCompilation(
-  packagesToBuild: List[PackageCoordinate],
+  packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]]) {
   var codeMapCache: Option[FileCoordinateMap[String]] = None
   var vpstMapCache: Option[FileCoordinateMap[String]] = None
-  var parsedsCache: Option[FileCoordinateMap[(FileP, List[(Int, Int)])]] = None
+  var parsedsCache: Option[FileCoordinateMap[(FileP, Vector[(Int, Int)])]] = None
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = {
     getParseds() match {
@@ -760,7 +764,7 @@ class ParserCompilation(
     getCodeMap().getOrDie()
   }
 
-  def getParseds(): Result[FileCoordinateMap[(FileP, List[(Int, Int)])], FailedParse] = {
+  def getParseds(): Result[FileCoordinateMap[(FileP, Vector[(Int, Int)])], FailedParse] = {
     parsedsCache match {
       case Some(parseds) => Ok(parseds)
       case None => {
@@ -776,7 +780,7 @@ class ParserCompilation(
       }
     }
   }
-  def expectParseds(): FileCoordinateMap[(FileP, List[(Int, Int)])] = {
+  def expectParseds(): FileCoordinateMap[(FileP, Vector[(Int, Int)])] = {
     getParseds() match {
       case Err(FailedParse(codeMap, fileCoord, err)) => {
         vfail(ParseErrorHumanizer.humanize(codeMap, fileCoord, err))
@@ -809,5 +813,6 @@ class ParserCompilation(
 }
 
 case class InputException(message: String) extends Throwable {
+  override def hashCode(): Int = vcurious();
   override def toString: String = message
 }

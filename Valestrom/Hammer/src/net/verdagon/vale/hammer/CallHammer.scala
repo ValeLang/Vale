@@ -16,7 +16,7 @@ object CallHammer {
       currentFunctionHeader: FunctionHeaderT,
     locals: LocalsBox,
     prototype2: PrototypeT,
-    argsExprs2: List[ReferenceExpressionTE]):
+    argsExprs2: Vector[ReferenceExpressionTE]):
   (ExpressionH[KindH]) = {
     val (argsResultLines, argsDeferreds) =
       ExpressionHammer.translateExpressions(
@@ -42,7 +42,7 @@ object CallHammer {
       currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
       function: PrototypeT,
-      args: List[ExpressionT],
+      args: Vector[ExpressionT],
       resultType2: CoordT):
   ExpressionH[KindH] = {
     val returnType2 = function.returnType
@@ -247,18 +247,18 @@ object CallHammer {
   ExpressionH[KindH] = {
     val IfTE(condition2, thenBlock2, elseBlock2) = if2
 
-    val (conditionBlockH, Nil) =
+    val (conditionBlockH, Vector()) =
       ExpressionHammer.translate(hinputs, hamuts, currentFunctionHeader, parentLocals, condition2);
     vassert(conditionBlockH.resultType == ReferenceH(m.ShareH, InlineH, ReadonlyH, BoolH()))
 
     val thenLocals = LocalsBox(parentLocals.snapshot)
-    val (thenBlockH, Nil) =
+    val (thenBlockH, Vector()) =
       ExpressionHammer.translate(hinputs, hamuts, currentFunctionHeader, thenLocals, thenBlock2);
     val thenResultCoord = thenBlockH.resultType
     parentLocals.setNextLocalIdNumber(thenLocals.nextLocalIdNumber)
 
     val elseLocals = LocalsBox(parentLocals.snapshot)
-    val (elseBlockH, Nil) =
+    val (elseBlockH, Vector()) =
       ExpressionHammer.translate(hinputs, hamuts, currentFunctionHeader, elseLocals, elseBlock2);
     val elseResultCoord = elseBlockH.resultType
     parentLocals.setNextLocalIdNumber(elseLocals.nextLocalIdNumber)
@@ -329,7 +329,7 @@ object CallHammer {
       locals: LocalsBox,
       superFunctionHeader: FunctionHeaderT,
       resultType2: CoordT,
-      argsExprs2: List[ExpressionT]):
+      argsExprs2: Vector[ExpressionT]):
   ExpressionH[KindH] = {
     val (argLines, argsDeferreds) =
       ExpressionHammer.translateExpressions(
@@ -438,7 +438,7 @@ object CallHammer {
 //      firstVirtualParamIndex: Int,
 //      firstVirtualParamInterface: InterfaceRefH,
 //      functionTypeH: FunctionTH,
-//      argLines: List[NodeH[KindH]]):
+//      argLines: Vector[NodeH[KindH]]):
 //  (Vector[NodeH], Option[NodeH[KindH]]) = {
 //    val interfaceId = firstVirtualParamInterface.interfaceId
 //

@@ -1,7 +1,7 @@
 package net.verdagon.vale.parser.patterns
 
 import net.verdagon.vale.parser.{ITemplexPT, _}
-import net.verdagon.vale.vfail
+import net.verdagon.vale.{vcurious, vfail, vimpl}
 
 import scala.util.parsing.combinator.RegexParsers
 
@@ -71,7 +71,8 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
   // Add any new rules to the "Nothing matches empty string" test!
 
   // Remember, for pattern parsers, something *must* be present, don't match empty.
-  case class PatternTypePPI(ownership: Option[OwnershipP], runeOrKind: ITemplexPT)
+  case class PatternTypePPI(ownership: Option[OwnershipP], runeOrKind: ITemplexPT) {   override def hashCode(): Int = vcurious()
+  }
   private[parser] def patternType: Parser[PatternTypePPI] = {
     opt(patternOwnership <~ optWhite) ~ runeOrKindPattern ^^ {
       case maybeOwnershipP ~ maybeRuneOrKind => {
@@ -84,7 +85,7 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
 
   private[parser] def destructure: Parser[DestructureP] = {
     pos ~ ("(" ~> optWhite ~> repsep(atomPattern, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")") ~ pos ^^ {
-      case begin ~ inners ~ end => DestructureP(Range(begin, end), inners)
+      case begin ~ inners ~ end => DestructureP(Range(begin, end), inners.toVector)
     }
   }
 

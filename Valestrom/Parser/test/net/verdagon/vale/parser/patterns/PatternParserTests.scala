@@ -54,12 +54,12 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
     }
   }
   test("Empty pattern list") {
-    compile(patternPrototypeParams,"()").patterns shouldEqual List.empty
+    compile(patternPrototypeParams,"()").patterns shouldEqual Vector.empty
   }
   test("Pattern list with only two captures") {
     val list = compile(patternPrototypeParams, "(a, b)")
     list.patterns shouldHave {
-      case List(capture("a"), capture("b")) =>
+      case Vector(capture("a"), capture("b")) =>
     }
   }
   test("Simple pattern doesn't eat = after it") {
@@ -79,7 +79,7 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
           _,_,
           Some(CaptureP(_,LocalNameP(NameP(_, "a")))),
           Some(NameOrRunePT(NameP(_, "Moo"))),
-          Some(DestructureP(_,List(capture("a"),capture("b")))),
+          Some(DestructureP(_,Vector(capture("a"),capture("b")))),
           None) =>
     }
   }
@@ -92,7 +92,7 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
           _,_,
           Some(CaptureP(_,LocalNameP(NameP(_, "moo")))),
           Some(NameOrRunePT(NameP(_, "T"))),
-          Some(DestructureP(_,List(PatternPP(_,_, Some(CaptureP(_,LocalNameP(NameP(_, "a")))),Some(NameOrRunePT(NameP(_, "int"))),None,None)))),
+          Some(DestructureP(_,Vector(PatternPP(_,_, Some(CaptureP(_,LocalNameP(NameP(_, "a")))),Some(NameOrRunePT(NameP(_, "int"))),None,None)))),
           None) =>
     }
   }
@@ -104,10 +104,10 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
           Some(CaptureP(_,LocalNameP(NameP(_, "a")))),
           Some(
             ManualSequencePT(_,
-                  List(
+                  Vector(
                     NameOrRunePT(NameP(_, "int")),
                     NameOrRunePT(NameP(_, "bool"))))),
-          Some(DestructureP(_,List(capture("a"), capture("b")))),
+          Some(DestructureP(_,Vector(capture("a"), capture("b")))),
           None) =>
     }
   }

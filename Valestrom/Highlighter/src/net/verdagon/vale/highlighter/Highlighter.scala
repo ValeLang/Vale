@@ -33,7 +33,7 @@ object Highlighter {
     }
   }
 
-  class CommentingCodeIter(code: String, var commentRanges: List[(Int, Int)], builder: StringBuilder) {
+  class CommentingCodeIter(code: String, var commentRanges: Vector[(Int, Int)], builder: StringBuilder) {
     val iter = new CodeIter(code)
 
     // Advances the underlying CodeIter until we get to untilPos, but also
@@ -80,7 +80,7 @@ object Highlighter {
       .replaceAll("\\n", "<br />")
   }
 
-  def toHTML(code: String, span: Span, commentRanges: List[(Int, Int)]): String = {
+  def toHTML(code: String, span: Span, commentRanges: Vector[(Int, Int)]): String = {
     val builder = new StringBuilder()
     val iter = new CommentingCodeIter(code, commentRanges, builder)
     toHTML(builder, iter, span)

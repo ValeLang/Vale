@@ -6,23 +6,23 @@ import net.verdagon.vale.{PackageCoordinateMap, vassert}
 import scala.collection.immutable.List
 
 object OrderModules {
-  def orderModules(mergedProgramS: PackageCoordinateMap[ProgramS]): List[String] = {
-    val dependentAndDependeeModule: List[(String, String)] =
+  def orderModules(mergedProgramS: PackageCoordinateMap[ProgramS]): Vector[String] = {
+    val dependentAndDependeeModule: Vector[(String, String)] =
       mergedProgramS.moduleToPackagesToContents.map({ case (dependentModuleName, packagesToFilenameToContents) =>
         val dependeeModules = packagesToFilenameToContents.values.flatMap(_.imports.map(_.moduleName))
         dependeeModules.map(dependeeName => (dependentModuleName -> dependeeName))
-      }).flatten.toList
+      }).flatten.toVector
     orderModules(dependentAndDependeeModule)
   }
 
-  def orderModules(dependentAndDependeeModule: List[(String, String)]): List[String] = {
+  def orderModules(dependentAndDependeeModule: Vector[(String, String)]): Vector[String] = {
     var dependentToDependeeModule: Map[String, Set[String]] =
       dependentAndDependeeModule.groupBy(_._1).mapValues(_.map(_._2).toSet)
 
     var dependeeToDependentModule: Map[String, Set[String]] =
       dependentAndDependeeModule.groupBy(_._2).mapValues(_.map(_._1).toSet)
 
-    var orderedModulesReversed = List[String]()
+    var orderedModulesReversed = Vector[String]()
 
     val maxNumPasses = dependentToDependeeModule.size
     0.until(maxNumPasses).foreach(_ => {
@@ -36,7 +36,7 @@ object OrderModules {
           }
           case Some((thisModule, dependentModules)) => {
             vassert(dependentModules.isEmpty)
-            orderedModulesReversed = thisModule :: orderedModulesReversed
+            orderedModulesReversed = Vector(thisModule) ++ orderedModulesReversed
             dependentToDependeeModule = dependentToDependeeModule - thisModule
             val modulesDependingOnThisOne = dependeeToDependentModule(thisModule)
             dependeeToDependentModule = dependeeToDependentModule - thisModule

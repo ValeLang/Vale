@@ -20,7 +20,7 @@ object BlockHammer {
 
     val exprH =
       ExpressionHammer.translateExpressionsAndDeferreds(
-        hinputs, hamuts, currentFunctionHeader, blockLocals, List(block2.inner));
+        hinputs, hamuts, currentFunctionHeader, blockLocals, Vector(block2.inner));
 
     // We dont vassert(deferreds.isEmpty) here, see BMHD for why.
 

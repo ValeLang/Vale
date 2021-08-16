@@ -65,9 +65,9 @@ object ParsedLoader {
       case _ => throw BadVPSTException(BadVPSTError("Field " + fieldName + " wasn't a boolean!"))
     }
   }
-  def getArrayField(jobj: JObject, fieldName: String): List[JValue] = {
+  def getArrayField(jobj: JObject, fieldName: String): Vector[JValue] = {
     getField(jobj, fieldName) match {
-      case JArray(arr) => arr
+      case JArray(arr) => arr.toVector
       case _ => throw BadVPSTException(BadVPSTError("Field " + fieldName + " wasn't an array!"))
     }
   }

@@ -42,14 +42,14 @@ class RulesEnumsTests extends FunSuite with Matchers with Collector {
     compile(rulePR, "X Ownership = own|borrow|weak") shouldHave {
       case EqualsPR(_,
           TypedPR(_,Some(NameP(_, "X")),OwnershipTypePR),
-          OrPR(_,List(TemplexPR(OwnershipPT(_,OwnP)), TemplexPR(OwnershipPT(_,ConstraintP)), TemplexPR(OwnershipPT(_,WeakP))))) =>
+          OrPR(_,Vector(TemplexPR(OwnershipPT(_,OwnP)), TemplexPR(OwnershipPT(_,ConstraintP)), TemplexPR(OwnershipPT(_,WeakP))))) =>
     }
     compile(rulePR, "_ Ownership") shouldHave { case TypedPR(_,None,OwnershipTypePR) => }
     compile(rulePR, "own") shouldHave { case TemplexPR(OwnershipPT(_,OwnP)) => }
     compile(rulePR, "_ Ownership = own|share") shouldHave {
       case EqualsPR(_,
           TypedPR(_,None,OwnershipTypePR),
-          OrPR(_,List(TemplexPR(OwnershipPT(_,OwnP)), TemplexPR(OwnershipPT(_,ShareP))))) =>
+          OrPR(_,Vector(TemplexPR(OwnershipPT(_,OwnP)), TemplexPR(OwnershipPT(_,ShareP))))) =>
     }
   }
 
@@ -67,7 +67,7 @@ class RulesEnumsTests extends FunSuite with Matchers with Collector {
     compile(rulePR, "_ Mutability = mut|imm") shouldHave {
       case EqualsPR(_,
           TypedPR(_,None,MutabilityTypePR),
-          OrPR(_,List(TemplexPR(MutabilityPT(_,MutableP)), TemplexPR(MutabilityPT(_,ImmutableP))))) =>
+          OrPR(_,Vector(TemplexPR(MutabilityPT(_,MutableP)), TemplexPR(MutabilityPT(_,ImmutableP))))) =>
     }
   }
 
@@ -85,7 +85,7 @@ class RulesEnumsTests extends FunSuite with Matchers with Collector {
     compile(rulePR, "_ Location = inl|yon") shouldHave {
       case EqualsPR(_,
           TypedPR(_,None,LocationTypePR),
-          OrPR(_,List(TemplexPR(LocationPT(_,InlineP)), TemplexPR(LocationPT(_,YonderP))))) =>
+          OrPR(_,Vector(TemplexPR(LocationPT(_,InlineP)), TemplexPR(LocationPT(_,YonderP))))) =>
     }
   }
 
@@ -104,7 +104,7 @@ class RulesEnumsTests extends FunSuite with Matchers with Collector {
       case EqualsPR(_,
           TypedPR(_,None,PermissionTypePR),
           OrPR(_,
-            List(
+            Vector(
               TemplexPR(PermissionPT(_,ExclusiveReadwriteP)),
               TemplexPR(PermissionPT(_,ReadwriteP)),
               TemplexPR(PermissionPT(_,ReadonlyP))))) =>

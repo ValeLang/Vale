@@ -29,7 +29,7 @@ import net.verdagon.vale.vassert
 //case class Table[K](members: Array[Option[K]])
 //case class BucketTable[K](bucketIndex: Int, table: Table[K])
 //
-//case class DirectoryEntry(indexInTable: Int, size: Int)
+//case class DirectoryEntry(indexInTable: Int, size: Int) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 //
 //case class IntermediateTetrisTable[K](
 //  bucketStartIndexByBucketIndex: Map[Int, Int],

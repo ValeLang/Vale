@@ -44,7 +44,7 @@ class StructTemplarMiddle(
     val localEnv =
       structOuterEnv.addEntries(
         opts.useOptimization,
-        templatasByRune.map({ case (rune, templata) => (rune, List(TemplataEnvEntry(templata))) }))
+        templatasByRune.map({ case (rune, templata) => (rune, Vector(TemplataEnvEntry(templata))) }))
     val structDefinition2 =
       core.makeStruct(
         localEnv, temputs, structS, coercedFinalTemplateArgs2);
@@ -64,7 +64,7 @@ class StructTemplarMiddle(
     val localEnv =
       interfaceOuterEnv.addEntries(
         opts.useOptimization,
-        templatasByRune.map({ case (rune, templata) => (rune, List(TemplataEnvEntry(templata))) }))
+        templatasByRune.map({ case (rune, templata) => (rune, Vector(TemplataEnvEntry(templata))) }))
     val interfaceDefinition2 =
       core.makeInterface(
         localEnv, temputs, interfaceA, coercedFinalTemplateArgs2);
@@ -86,7 +86,7 @@ class StructTemplarMiddle(
     temputs: Temputs,
     name: LambdaNameA,
     functionS: FunctionA,
-    members: List[StructMemberT]):
+    members: Vector[StructMemberT]):
   (StructTT, MutabilityT, FunctionTemplata) = {
     core.makeClosureUnderstruct(containingFunctionEnv, temputs, name, functionS, members)
   }
@@ -95,7 +95,7 @@ class StructTemplarMiddle(
   def makeSeqOrPackUnderstruct(
     env: PackageEnvironment[INameT],
     temputs: Temputs,
-    memberTypes2: List[CoordT],
+    memberTypes2: Vector[CoordT],
     name: ICitizenNameT):
   (StructTT, MutabilityT) = {
     core.makeSeqOrPackUnderstruct(env, temputs, memberTypes2, name)

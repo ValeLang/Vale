@@ -47,7 +47,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     val inferences =
       inferTemplar.inferOrdinaryRules(
         nearEnv, temputs, function.templateRules, function.typeByRune, function.localRunes)
-    val runedEnv = addRunedDataToNearEnv(nearEnv, List.empty, inferences)
+    val runedEnv = addRunedDataToNearEnv(nearEnv, Vector.empty, inferences)
 
     middleLayer.predictOrdinaryFunctionBanner(
       runedEnv, temputs, function)
@@ -66,7 +66,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     val inferences =
       inferTemplar.inferOrdinaryRules(
         nearEnv, temputs, function.templateRules, function.typeByRune, function.localRunes)
-    val runedEnv = addRunedDataToNearEnv(nearEnv, List.empty, inferences)
+    val runedEnv = addRunedDataToNearEnv(nearEnv, Vector.empty, inferences)
 
     middleLayer.getOrEvaluateFunctionForBanner(runedEnv, temputs, callRange, function)
   }
@@ -79,7 +79,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
 //      nearEnv: BuildingFunctionEnvironmentWithClosureds,
 //      temputs: Temputs,
 //      callRange: RangeS,
-//      argTypes2: List[Coord]):
+//      argTypes2: Vector[Coord]):
 //  (FunctionHeader2) = {
 //    val function = nearEnv.function
 //    // Check preconditions
@@ -97,7 +97,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
 //        function.params.map(_.pattern),
 //        function.maybeRetCoordRune,
 //        callRange,
-//        List.empty,
+//        Vector.empty,
 //        argTypes2.map(arg => ParamFilter(arg, None)))
 //    val InferSolveSuccess(inferredTemplatas) = maybeInferredTemplatas
 //
@@ -121,8 +121,8 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     nearEnv: BuildingFunctionEnvironmentWithClosureds,
     temputs: Temputs,
     callRange: RangeS,
-    explicitTemplateArgs: List[ITemplata],
-    args: List[ParamFilter]):
+    explicitTemplateArgs: Vector[ITemplata],
+    args: Vector[ParamFilter]):
   (IEvaluateFunctionResult[PrototypeT]) = {
     val function = nearEnv.function
     // Check preconditions
@@ -165,8 +165,8 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
       nearEnv: BuildingFunctionEnvironmentWithClosureds,
       temputs: Temputs,
       callRange: RangeS,
-      alreadySpecifiedTemplateArgs: List[ITemplata],
-      paramFilters: List[ParamFilter]):
+      alreadySpecifiedTemplateArgs: Vector[ITemplata],
+      paramFilters: Vector[ParamFilter]):
   (IEvaluateFunctionResult[FunctionBannerT]) = {
     val function = nearEnv.function
     // Check preconditions
@@ -215,7 +215,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
 //    checkClosureConcernsHandled(nearEnv)
 //    vassert(nearEnv.function.isTemplate)
 //
-//    vassert(nearEnv.function.identifyingRunes.size == List.empty.size);
+//    vassert(nearEnv.function.identifyingRunes.size == Vector.empty.size);
 //
 //    val result =
 //      inferTemplar.inferFromExplicitTemplateArgs(
@@ -228,7 +228,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
 //        function.params.map(_.pattern),
 //        callRange,
 //        function.maybeRetCoordRune,
-//        List.empty)
+//        Vector.empty)
 //    val inferences =
 //      result match {
 //        case isf @ InferSolveFailure(_, _, _, _, _, _, _) => {
@@ -237,7 +237,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
 //        case InferSolveSuccess(i) => i
 //      }
 //
-//    val runedEnv = addRunedDataToNearEnv(nearEnv, List.empty, inferences.templatasByRune)
+//    val runedEnv = addRunedDataToNearEnv(nearEnv, Vector.empty, inferences.templatasByRune)
 //
 //    middleLayer.getOrEvaluateFunctionForHeader(runedEnv, temputs, function)
 //  }
@@ -259,7 +259,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     val inferences =
       inferTemplar.inferOrdinaryRules(
         nearEnv, temputs, function.templateRules, function.typeByRune, function.localRunes)
-    val runedEnv = addRunedDataToNearEnv(nearEnv, List.empty, inferences)
+    val runedEnv = addRunedDataToNearEnv(nearEnv, Vector.empty, inferences)
 
     middleLayer.getOrEvaluateFunctionForHeader(
       runedEnv, temputs, callRange, function)
@@ -282,7 +282,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     val inferences =
       inferTemplar.inferOrdinaryRules(
         nearEnv, temputs, function.templateRules, function.typeByRune, function.localRunes)
-    val runedEnv = addRunedDataToNearEnv(nearEnv, List.empty, inferences)
+    val runedEnv = addRunedDataToNearEnv(nearEnv, Vector.empty, inferences)
 
     middleLayer.getOrEvaluateFunctionForPrototype(
       runedEnv, temputs, callRange, function)
@@ -297,8 +297,8 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
       nearEnv: BuildingFunctionEnvironmentWithClosureds,
       temputs: Temputs,
     callRange: RangeS,
-      explicitTemplateArgs: List[ITemplata],
-      args: List[ParamFilter]):
+      explicitTemplateArgs: Vector[ITemplata],
+      args: Vector[ParamFilter]):
   (IEvaluateFunctionResult[FunctionBannerT]) = {
     val function = nearEnv.function
     // Check preconditions
@@ -355,7 +355,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
   // IOW, add the necessary data to turn the near env into the runed env.
   private def addRunedDataToNearEnv(
     nearEnv: BuildingFunctionEnvironmentWithClosureds,
-    identifyingRunes: List[IRuneA],
+    identifyingRunes: Vector[IRuneA],
     templatasByRune: Map[IRuneT, ITemplata]
   ): BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs = {
     val BuildingFunctionEnvironmentWithClosureds(parentEnv, fullName, function, variables, templatas) = nearEnv
@@ -375,7 +375,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
       variables,
       templatas.addEntries(
         opts.useOptimization,
-        templatasByRune.map({ case (k, v) => (k, List(TemplataEnvEntry(v))) })
-        .toMap[INameT, List[IEnvEntry]]))
+        templatasByRune.map({ case (k, v) => (k, Vector(TemplataEnvEntry(v))) })
+        .toMap[INameT, Vector[IEnvEntry]]))
   }
 }

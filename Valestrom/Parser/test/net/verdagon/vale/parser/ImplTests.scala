@@ -12,10 +12,10 @@ class ImplTests extends FunSuite with Matchers with Collector with TestParseUtil
         |impl<T> MyInterface<T> for SomeStruct<T>;
       """.stripMargin) shouldHave {
       case ImplP(_,
-      Some(IdentifyingRunesP(_, List(IdentifyingRuneP(_, NameP(_, "T"), Nil)))),
+      Some(IdentifyingRunesP(_, Vector(IdentifyingRuneP(_, NameP(_, "T"), Vector())))),
       None,
-      CallPT(_,NameOrRunePT(NameP(_, "SomeStruct")), List(NameOrRunePT(NameP(_, "T")))),
-      CallPT(_,NameOrRunePT(NameP(_, "MyInterface")), List(NameOrRunePT(NameP(_, "T"))))) =>
+      CallPT(_,NameOrRunePT(NameP(_, "SomeStruct")), Vector(NameOrRunePT(NameP(_, "T")))),
+      CallPT(_,NameOrRunePT(NameP(_, "MyInterface")), Vector(NameOrRunePT(NameP(_, "T"))))) =>
     }
   }
 
@@ -29,7 +29,7 @@ class ImplTests extends FunSuite with Matchers with Collector with TestParseUtil
       None,
       None,
       NameOrRunePT(NameP(_, "MyIntIdentity")),
-      CallPT(_,NameOrRunePT(NameP(_, "IFunction1")), List(MutabilityPT(_,MutableP), NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "int"))))) =>
+      CallPT(_,NameOrRunePT(NameP(_, "IFunction1")), Vector(MutabilityPT(_,MutableP), NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "int"))))) =>
     }
   }
 

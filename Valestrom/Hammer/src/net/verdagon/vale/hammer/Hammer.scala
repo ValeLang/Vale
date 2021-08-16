@@ -6,16 +6,19 @@ import net.verdagon.vale.metal._
 import net.verdagon.vale.parser.{FileP, VariabilityP}
 import net.verdagon.vale.scout.{ICompileErrorS, ProgramS}
 import net.verdagon.vale.templar.{CitizenNameT, ExternFunctionNameT, FullNameT, FunctionExportT, FunctionExternT, FunctionNameT, ICompileErrorT, INameT, IVarNameT, ImmConcreteDestructorNameT, ImmInterfaceDestructorNameT, KindExportT, KindExternT, TemplarCompilation, TemplarCompilationOptions, types => t}
-import net.verdagon.vale.{Builtins, FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, PackageCoordinate, PackageCoordinateMap, Result, vassert, vfail, vwat}
+import net.verdagon.vale.{Builtins, FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, PackageCoordinate, PackageCoordinateMap, Result, vassert, vcurious, vfail, vwat}
 
 import scala.collection.immutable.List
 
 case class FunctionRefH(prototype: PrototypeH) {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   //  def functionType = prototype.functionType
   def fullName = prototype.fullName
 }
 
 case class LocalsBox(var inner: Locals) {
+  override def hashCode(): Int = vfail() // Shouldnt hash, is mutable
+
   def snapshot = inner
 
   def templarLocals: Map[FullNameT[IVarNameT], VariableIdH] = inner.templarLocals
@@ -74,6 +77,7 @@ case class Locals(
      locals: Map[VariableIdH, Local],
 
      nextLocalIdNumber: Int) {
+  override def hashCode(): Int = vcurious()
 
   def addTemplarLocal(
     hinputs: Hinputs,
@@ -159,7 +163,7 @@ object Hammer {
       functionExterns) = hinputs
 
 
-    val hamuts = HamutsBox(Hamuts(Map(), Map(), Map(), List.empty, List.empty, List.empty, Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map()))
+    val hamuts = HamutsBox(Hamuts(Map(), Map(), Map(), Vector.empty, Vector.empty, Vector.empty, Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map()))
     val emptyPackStructRefH = StructHammer.translateStructRef(hinputs, hamuts, emptyPackStructRef)
     vassert(emptyPackStructRefH == ProgramH.emptyTupleStructRef)
 
@@ -201,12 +205,12 @@ object Hammer {
 //          })
 //      })
 //    val externPrototypesH =
-//      packageToExternNameToPrototypeH.values.flatMap(_.values.toList)
+//      packageToExternNameToPrototypeH.values.flatMap(_.values.toVector)
 
     StructHammer.translateInterfaces(hinputs, hamuts);
     StructHammer.translateStructs(hinputs, hamuts)
-    val userFunctions = functions.filter(f => f.header.isUserFunction).toList
-    val nonUserFunctions = functions.filter(f => !f.header.isUserFunction).toList
+    val userFunctions = functions.filter(f => f.header.isUserFunction).toVector
+    val nonUserFunctions = functions.filter(f => !f.header.isUserFunction).toVector
     FunctionHammer.translateFunctions(hinputs, hamuts, userFunctions)
     FunctionHammer.translateFunctions(hinputs, hamuts, nonUserFunctions)
 
@@ -221,7 +225,7 @@ object Hammer {
       vassert(immDestructorPrototypeH.params.head.kind == kindH)
     }})
 
-//    val fullNameToExportedNames = .groupBy(_._2).map({ case (k, v) => (k, v.keys.toList) })
+//    val fullNameToExportedNames = .groupBy(_._2).map({ case (k, v) => (k, v.keys.toVector) })
 //    if (fullNameToExportedNames.size != hamuts.exportedNameToFullName.size) {
 //      fullNameToExportedNames.foreach({ case (fullName, exportedName) =>
 //        if (hamuts.exportedNameToFullName(exportedName) != fullName) {
@@ -238,7 +242,7 @@ object Hammer {
 
     val packageToInterfaceDefs = hamuts.interfaceDefs.groupBy(_._1.fullName.packageCoord)
     val packageToStructDefs = hamuts.structDefs.groupBy(_.fullName.packageCoordinate)
-    val packageToFunctionDefs = hamuts.functionDefs.groupBy(_._1.fullName.packageCoord).mapValues(_.values.toList)
+    val packageToFunctionDefs = hamuts.functionDefs.groupBy(_._1.fullName.packageCoord).mapValues(_.values.toVector)
     val packageToStaticSizedArrays = hamuts.staticSizedArrays.groupBy(_.name.packageCoordinate)
     val packageToRuntimeSizedArrays = hamuts.runtimeSizedArrays.groupBy(_.name.packageCoordinate)
     val packageToImmDestructorPrototypes = immDestructorPrototypesH.groupBy(_._1.packageCoord)
@@ -260,14 +264,14 @@ object Hammer {
       packageToExternNameToKind.keySet
 
     val packages =
-      allPackageCoords.toList.map(packageCoord => {
+      allPackageCoords.toVector.map(packageCoord => {
         packageCoord ->
           PackageH(
-            packageToInterfaceDefs.getOrElse(packageCoord, Map()).values.toList,
-            packageToStructDefs.getOrElse(packageCoord, List.empty),
-            packageToFunctionDefs.getOrElse(packageCoord, List.empty),
-            packageToStaticSizedArrays.getOrElse(packageCoord, List.empty),
-            packageToRuntimeSizedArrays.getOrElse(packageCoord, List.empty),
+            packageToInterfaceDefs.getOrElse(packageCoord, Map()).values.toVector,
+            packageToStructDefs.getOrElse(packageCoord, Vector.empty),
+            packageToFunctionDefs.getOrElse(packageCoord, Vector.empty),
+            packageToStaticSizedArrays.getOrElse(packageCoord, Vector.empty),
+            packageToRuntimeSizedArrays.getOrElse(packageCoord, Vector.empty),
             packageToImmDestructorPrototypes.getOrElse(packageCoord, Map()),
             packageToExportNameToFunction.getOrElse(packageCoord, Map()),
             packageToExportNameToKind.getOrElse(packageCoord, Map()),
@@ -282,7 +286,7 @@ object Hammer {
     ProgramH(PackageCoordinateMap(packages))
   }
 
-  def consecutive(unfilteredExprsH: List[ExpressionH[KindH]]): ExpressionH[KindH] = {
+  def consecutive(unfilteredExprsH: Vector[ExpressionH[KindH]]): ExpressionH[KindH] = {
     val indexOfFirstNever = unfilteredExprsH.indexWhere(_.resultType.kind == NeverH())
     // If there's an expression returning a Never, then remove all the expressions after that.
     val exprsH =
@@ -293,7 +297,7 @@ object Hammer {
         .filter({ case (expr, index) =>
           if (index < unfilteredExprsH.size - 1) {
             expr match {
-              case NewStructH(List(), List(), ReferenceH(_, InlineH, _, _)) => false
+              case NewStructH(Vector(), Vector(), ReferenceH(_, InlineH, _, _)) => false
               case _ => true
             }
           } else {
@@ -304,8 +308,8 @@ object Hammer {
     vassert(exprsH.nonEmpty)
 
     exprsH match {
-      case Nil => vwat("Cant have empty consecutive")
-      case List(only) => only
+      case Vector() => vwat("Cant have empty consecutive")
+      case Vector(only) => only
       case multiple => ConsecutorH(multiple)
     }
   }

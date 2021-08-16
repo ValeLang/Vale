@@ -13,8 +13,8 @@ object RuleScout {
     env: IEnvironment,
     ruleState: RuleStateBox,
     userDeclaredRunes: Set[IRuneS],
-    rulesP: List[IRulexPR]):
-  List[IRulexSR] = {
+    rulesP: Vector[IRulexPR]):
+  Vector[IRulexSR] = {
     rulesP.map(translateRulex(env, ruleState, userDeclaredRunes, _))
   }
   def translateRulex(
@@ -116,7 +116,7 @@ object RuleScout {
         CallST(
           evalRange(range),
           NameST(Scout.evalRange(env.file, range), CodeTypeNameS("IFunction")),
-          List(
+          Vector(
             mutability match { case None => MutabilityST(evalRange(range), MutableP) case Some(m) => translateTemplex(env, ruleState, userDeclaredRunes, m) },
             translateTemplex(env, ruleState, userDeclaredRunes, paramsPack),
             translateTemplex(env, ruleState, userDeclaredRunes, returnType)))

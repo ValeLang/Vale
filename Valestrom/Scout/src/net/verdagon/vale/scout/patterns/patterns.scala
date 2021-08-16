@@ -2,11 +2,14 @@ package net.verdagon.vale.scout.patterns
 
 import net.verdagon.vale.parser.{CaptureP, VariabilityP}
 import net.verdagon.vale.scout._
+import net.verdagon.vale.{vcurious, vimpl}
 
 import scala.collection.immutable.List
 
 case class CaptureS(
-  name: IVarNameS)
+  name: IVarNameS) {
+  override def hashCode(): Int = vcurious()
+}
 
 case class AtomSP(
   range: RangeS,
@@ -16,22 +19,26 @@ case class AtomSP(
   name: Option[CaptureS],
   virtuality: Option[VirtualitySP],
   coordRune: IRuneS,
-  destructure: Option[List[AtomSP]])
+  destructure: Option[Vector[AtomSP]]) {
+  override def hashCode(): Int = vcurious()
+}
 
 sealed trait VirtualitySP
 case object AbstractSP extends VirtualitySP
-case class OverrideSP(range: RangeS, kindRune: IRuneS) extends VirtualitySP
+case class OverrideSP(range: RangeS, kindRune: IRuneS) extends VirtualitySP {
+  override def hashCode(): Int = vcurious()
+}
 
 object PatternSUtils {
-  def getDistinctOrderedRunesForPattern(pattern: AtomSP): List[IRuneS] = {
+  def getDistinctOrderedRunesForPattern(pattern: AtomSP): Vector[IRuneS] = {
     val runesFromVirtuality =
       pattern.virtuality match {
-        case None => List.empty
-        case Some(AbstractSP) => List.empty
-        case Some(OverrideSP(range, kindRune)) => List(kindRune)
+        case None => Vector.empty
+        case Some(AbstractSP) => Vector.empty
+        case Some(OverrideSP(range, kindRune)) => Vector(kindRune)
       }
     val runesFromDestructures =
-      pattern.destructure.toList.flatten.flatMap(getDistinctOrderedRunesForPattern)
+      pattern.destructure.toVector.flatten.flatMap(getDistinctOrderedRunesForPattern)
     (runesFromVirtuality ++ runesFromDestructures :+ pattern.coordRune).distinct
   }
 }

@@ -22,7 +22,7 @@ class StructTests extends FunSuite with Matchers with Collector {
     compile(
       CombinatorParsers.structMember,
       "a *ListNode<T>;") shouldHave {
-      case StructMemberP(_, NameP(_, "a"), FinalP, InterpretedPT(_,ShareP,ReadonlyP,CallPT(_,NameOrRunePT(NameP(_, "ListNode")), List(NameOrRunePT(NameP(_, "T")))))) =>
+      case StructMemberP(_, NameP(_, "a"), FinalP, InterpretedPT(_,ShareP,ReadonlyP,CallPT(_,NameOrRunePT(NameP(_, "ListNode")), Vector(NameOrRunePT(NameP(_, "T")))))) =>
     }
   }
 
@@ -30,31 +30,31 @@ class StructTests extends FunSuite with Matchers with Collector {
     compile(
       CombinatorParsers.structMember,
       "a Array<imm, final, T>;") shouldHave {
-      case StructMemberP(_, NameP(_, "a"), FinalP, CallPT(_,NameOrRunePT(NameP(_, "Array")), List(MutabilityPT(_,ImmutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, "T"))))) =>
+      case StructMemberP(_, NameP(_, "a"), FinalP, CallPT(_,NameOrRunePT(NameP(_, "Array")), Vector(MutabilityPT(_,ImmutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, "T"))))) =>
     }
   }
 
   test("Simple struct") {
     compile(CombinatorParsers.struct, "struct Moo { x &int; }") shouldHave {
-      case StructP(_, NameP(_, "Moo"), Nil, MutableP, None, None, StructMembersP(_, List(StructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,ConstraintP,ReadonlyP,NameOrRunePT(NameP(_, "int"))))))) =>
+      case StructP(_, NameP(_, "Moo"), Vector(), MutableP, None, None, StructMembersP(_, Vector(StructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,ConstraintP,ReadonlyP,NameOrRunePT(NameP(_, "int"))))))) =>
     }
   }
 
   test("Struct with weak") {
     compile(CombinatorParsers.struct, "struct Moo { x &&int; }") shouldHave {
-      case StructP(_, NameP(_, "Moo"), Nil, MutableP, None, None, StructMembersP(_, List(StructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,WeakP,ReadonlyP,NameOrRunePT(NameP(_, "int"))))))) =>
+      case StructP(_, NameP(_, "Moo"), Vector(), MutableP, None, None, StructMembersP(_, Vector(StructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,WeakP,ReadonlyP,NameOrRunePT(NameP(_, "int"))))))) =>
     }
   }
 
   test("Struct with inl") {
     compile(CombinatorParsers.struct, "struct Moo { x inl Marine; }") shouldHave {
-      case StructP(_,NameP(_,"Moo"),Nil, MutableP,None,None,StructMembersP(_,List(StructMemberP(_,NameP(_,"x"),FinalP,InlinePT(_,NameOrRunePT(NameP(_,"Marine"))))))) =>
+      case StructP(_,NameP(_,"Moo"),Vector(), MutableP,None,None,StructMembersP(_,Vector(StructMemberP(_,NameP(_,"x"),FinalP,InlinePT(_,NameOrRunePT(NameP(_,"Marine"))))))) =>
     }
   }
 
   test("Export struct") {
     compile(CombinatorParsers.struct, "struct Moo export { x &int; }") shouldHave {
-      case StructP(_, NameP(_, "Moo"), List(ExportP(_)), MutableP, None, None, StructMembersP(_, List(StructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,ConstraintP,ReadonlyP,NameOrRunePT(NameP(_, "int"))))))) =>
+      case StructP(_, NameP(_, "Moo"), Vector(ExportP(_)), MutableP, None, None, StructMembersP(_, Vector(StructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,ConstraintP,ReadonlyP,NameOrRunePT(NameP(_, "int"))))))) =>
     }
   }
 
@@ -69,14 +69,14 @@ class StructTests extends FunSuite with Matchers with Collector {
       case StructP(
         _,
         NameP(_, "ListNode"),
-        Nil,
+        Vector(),
         MutableP,
-        Some(IdentifyingRunesP(_, List(IdentifyingRuneP(_, NameP(_, "E"), Nil)))),
+        Some(IdentifyingRunesP(_, Vector(IdentifyingRuneP(_, NameP(_, "E"), Vector())))),
         None,
         StructMembersP(_,
-          List(
+          Vector(
             StructMemberP(_,NameP(_, "value"),FinalP,NameOrRunePT(NameP(_, "E"))),
-            StructMemberP(_,NameP(_, "next"),FinalP,CallPT(_,NameOrRunePT(NameP(_, "ListNode")),List(NameOrRunePT(NameP(_, "E")))))))) =>
+            StructMemberP(_,NameP(_, "next"),FinalP,CallPT(_,NameOrRunePT(NameP(_, "ListNode")),Vector(NameOrRunePT(NameP(_, "E")))))))) =>
     }
   }
 
@@ -93,11 +93,11 @@ class StructTests extends FunSuite with Matchers with Collector {
       case StructP(
         _,
         NameP(_, "Vecf"),
-        Nil,
+        Vector(),
         MutableP,
-        Some(IdentifyingRunesP(_, List(IdentifyingRuneP(_, NameP(_, "N"), Nil)))),
-        Some(TemplateRulesP(_, List(TypedPR(_,Some(NameP(_, "N")), IntTypePR)))),
-        StructMembersP(_, List(StructMemberP(_,NameP(_, "values"), FinalP, RepeaterSequencePT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, "N")), NameOrRunePT(NameP(_, "float"))))))) =>
+        Some(IdentifyingRunesP(_, Vector(IdentifyingRuneP(_, NameP(_, "N"), Vector())))),
+        Some(TemplateRulesP(_, Vector(TypedPR(_,Some(NameP(_, "N")), IntTypePR)))),
+        StructMembersP(_, Vector(StructMemberP(_,NameP(_, "values"), FinalP, RepeaterSequencePT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, "N")), NameOrRunePT(NameP(_, "float"))))))) =>
     }
   }
 
@@ -114,11 +114,11 @@ class StructTests extends FunSuite with Matchers with Collector {
       case StructP(
           _,
           NameP(_, "Vecf"),
-          Nil,
+          Vector(),
           MutableP,
-          Some(IdentifyingRunesP(_, List(IdentifyingRuneP(_, NameP(_, "N"), Nil)))),
-          Some(TemplateRulesP(_, List(TypedPR(_,Some(NameP(_, "N")),IntTypePR)))),
-          StructMembersP(_, List(StructMemberP(_,NameP(_, "values"),FinalP,RepeaterSequencePT(_,MutabilityPT(_,ImmutableP), VariabilityPT(_, FinalP), NameOrRunePT(NameP(_, "N")), NameOrRunePT(NameP(_, "float"))))))) =>
+          Some(IdentifyingRunesP(_, Vector(IdentifyingRuneP(_, NameP(_, "N"), Vector())))),
+          Some(TemplateRulesP(_, Vector(TypedPR(_,Some(NameP(_, "N")),IntTypePR)))),
+          StructMembersP(_, Vector(StructMemberP(_,NameP(_, "values"),FinalP,RepeaterSequencePT(_,MutabilityPT(_,ImmutableP), VariabilityPT(_, FinalP), NameOrRunePT(NameP(_, "N")), NameOrRunePT(NameP(_, "float"))))))) =>
     }
   }
 }

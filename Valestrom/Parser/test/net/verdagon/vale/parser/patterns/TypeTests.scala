@@ -45,7 +45,7 @@ class TypeTests extends FunSuite with Matchers with Collector {
 //      case withType(
 //          FunctionPT(
 //            None,
-//            List(NameOrRunePT(StringP(_, "T"))),
+//            Vector(NameOrRunePT(StringP(_, "T"))),
 //            NameOrRunePT(StringP(_, "void")))) =>
 //    }
 //  }
@@ -86,7 +86,7 @@ class TypeTests extends FunSuite with Matchers with Collector {
     compile("_ [int, bool]") shouldHave {
       case withType(
           ManualSequencePT(_,
-            List(
+            Vector(
               NameOrRunePT(NameP(_, "int")),
               NameOrRunePT(NameP(_, "bool"))))) =>
     }
@@ -133,10 +133,10 @@ class TypeTests extends FunSuite with Matchers with Collector {
           CallPT(
             _,
             NameOrRunePT(NameP(_, "MyOption")),
-            List(
+            Vector(
               CallPT(_,
                 NameOrRunePT(NameP(_, "MyList")),
-                List(
+                Vector(
                   NameOrRunePT(NameP(_, "int"))))))),
         None,
         None) =>

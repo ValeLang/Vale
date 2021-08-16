@@ -21,16 +21,9 @@ object StructHammer {
   private def translateInterfaceRefs(
       hinputs: Hinputs,
     hamuts: HamutsBox,
-      interfaceRefs2: List[InterfaceTT]):
-  (List[InterfaceRefH]) = {
-    interfaceRefs2 match {
-      case Nil => Nil
-      case head2 :: tail2 => {
-        val (headH) = translateInterfaceRef(hinputs, hamuts, head2)
-        val (tailH) = translateInterfaceRefs(hinputs, hamuts, tail2)
-        (headH :: tailH)
-      }
-    }
+      interfaceRefs2: Vector[InterfaceTT]):
+  (Vector[InterfaceRefH]) = {
+    interfaceRefs2.map(translateInterfaceRef(hinputs, hamuts, _))
   }
 
   def translateInterfaceMethods(
@@ -73,7 +66,7 @@ object StructHammer {
             fullNameH,
             interfaceDef2.weakable,
             Conversions.evaluateMutability(interfaceDef2.mutability),
-            List.empty /* super interfaces */,
+            Vector.empty /* super interfaces */,
             methodsH)
         hamuts.addInterface(interfaceTT, interfaceDefH)
         vassert(interfaceDefH.getRef == temporaryInterfaceRefH)
@@ -112,7 +105,7 @@ object StructHammer {
             if (structTT != Program2.emptyTupleStructRef) {
               vassertSome(
                 hinputs.functions.find(function => {
-                  function.header.fullName == FullNameT(PackageCoordinate.BUILTIN, List.empty, ImmConcreteDestructorNameT(structTT))
+                  function.header.fullName == FullNameT(PackageCoordinate.BUILTIN, Vector.empty, ImmConcreteDestructorNameT(structTT))
                 }))
             }
           }
@@ -140,7 +133,7 @@ object StructHammer {
     type2: CoordT,
     typeH: ReferenceH[KindH]):
   (StructRefH) = {
-    val boxFullName2 = FullNameT(PackageCoordinate.BUILTIN, List.empty, CitizenNameT(BOX_HUMAN_NAME, List(CoordTemplata(type2))))
+    val boxFullName2 = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, CitizenNameT(BOX_HUMAN_NAME, Vector(CoordTemplata(type2))))
     val boxFullNameH = NameHammer.translateFullName(hinputs, hamuts, boxFullName2)
     hamuts.structDefsByRef2.find(_._2.fullName == boxFullNameH) match {
       case Some((_, structDefH)) => (structDefH.getRef)
@@ -162,8 +155,8 @@ object StructHammer {
             boxFullNameH,
             false,
             m.Mutable,
-            List.empty,
-            List(memberH));
+            Vector.empty,
+            Vector(memberH));
         hamuts.addStructOriginatingFromHammer(structDefH)
         vassert(structDefH.getRef == temporaryStructRefH)
         (structDefH.getRef)
@@ -175,25 +168,17 @@ object StructHammer {
       hinputs: Hinputs, hamuts: HamutsBox,
       structRefH: StructRefH,
       structTT: StructTT):
-  (List[EdgeH]) = {
+  (Vector[EdgeH]) = {
     val edges2 = hinputs.edges.filter(_.struct == structTT)
-    translateEdgesForStruct(hinputs, hamuts, structRefH, edges2.toList)
+    translateEdgesForStruct(hinputs, hamuts, structRefH, edges2.toVector)
   }
 
   private def translateEdgesForStruct(
       hinputs: Hinputs, hamuts: HamutsBox,
       structRefH: StructRefH,
-      edges2: List[EdgeT]):
-  (List[EdgeH]) = {
-    edges2 match {
-      case Nil => Nil
-      case headEdge2 :: tailEdges2 => {
-        val interfaceTT = headEdge2.interface
-        val (headEdgeH) = translateEdge(hinputs, hamuts, structRefH, interfaceTT, headEdge2)
-        val (tailEdgesH) = translateEdgesForStruct(hinputs, hamuts, structRefH, tailEdges2)
-        (headEdgeH :: tailEdgesH)
-      }
-    }
+      edges2: Vector[EdgeT]):
+  (Vector[EdgeH]) = {
+    edges2.map(e => translateEdge(hinputs, hamuts, structRefH, e.interface, e))
   }
 
 

@@ -15,15 +15,15 @@ import net.verdagon.vale.templar.types._
 
 import scala.collection.immutable.{List, Nil, Set}
 
-case class TookWeakRefOfNonWeakableError() extends Throwable
+case class TookWeakRefOfNonWeakableError() extends Throwable { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 trait IExpressionTemplarDelegate {
   def evaluateTemplatedFunctionFromCallForPrototype(
     temputs: Temputs,
     callRange: RangeS,
     functionTemplata: FunctionTemplata,
-    explicitTemplateArgs: List[ITemplata],
-    args: List[ParamFilter]):
+    explicitTemplateArgs: Vector[ITemplata],
+    args: Vector[ParamFilter]):
   IEvaluateFunctionResult[PrototypeT]
 
   def evaluateClosureStruct(
@@ -63,18 +63,10 @@ class ExpressionTemplar(
   def evaluateAndCoerceToReferenceExpressions(
       temputs: Temputs,
       fate: FunctionEnvironmentBox,
-      exprs1: List[IExpressionAE]):
-  (List[ReferenceExpressionTE], Set[CoordT]) = {
-    exprs1 match {
-      case Nil => (List.empty, Set())
-      case first1 :: rest1 => {
-        val (first2, returnsFromFirst) =
-          evaluateAndCoerceToReferenceExpression(temputs, fate, first1);
-        val (rest2, returnsFromRest) =
-          evaluateAndCoerceToReferenceExpressions(temputs, fate, rest1);
-        (first2 :: rest2, returnsFromFirst ++ returnsFromRest)
-      }
-    }
+      exprs1: Vector[IExpressionAE]):
+  (Vector[ReferenceExpressionTE], Set[CoordT]) = {
+    val things = exprs1.map(evaluateAndCoerceToReferenceExpression(temputs, fate, _))
+    (things.map(_._1), things.map(_._2).flatten.toSet)
   }
 
   private def evaluateLookupForLoad(
@@ -377,7 +369,7 @@ class ExpressionTemplar(
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsPackExpr1)
           val callExpr2 =
-            callTemplar.evaluateNamedPrefixCall(temputs, fate, range, GlobalFunctionFamilyNameA(name), List.empty, argsExprs2)
+            callTemplar.evaluateNamedPrefixCall(temputs, fate, range, GlobalFunctionFamilyNameA(name), Vector(), argsExprs2)
           (callExpr2, returnsFromArgs)
         }
         case FunctionCallAE(range, callableExpr1, argsExprs1) => {
@@ -390,7 +382,7 @@ class ExpressionTemplar(
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsExprs1)
           val functionPointerCall2 =
-            callTemplar.evaluatePrefixCall(temputs, fate, range, decayedCallableReferenceExpr2, List.empty, argsExprs2)
+            callTemplar.evaluatePrefixCall(temputs, fate, range, decayedCallableReferenceExpr2, Vector(), argsExprs2)
           (functionPointerCall2, returnsFromCallable ++ returnsFromArgs)
         }
 
@@ -484,8 +476,8 @@ class ExpressionTemplar(
 
           val templataFromEnv =
             fate.getAllTemplatasWithName(profiler, GlobalFunctionFamilyNameA(name), Set(ExpressionLookupContext)) match {
-              case List(BooleanTemplata(value)) => ConstantBoolTE(value)
-              case List(IntegerTemplata(value)) => ConstantIntTE(value, 32)
+              case Vector(BooleanTemplata(value)) => ConstantBoolTE(value)
+              case Vector(IntegerTemplata(value)) => ConstantIntTE(value, 32)
               case templatas if templatas.nonEmpty && templatas.collect({ case FunctionTemplata(_, _) => case ExternFunctionTemplata(_) => }).size == templatas.size => {
                 if (targetOwnership == MoveP) {
                   throw CompileErrorExceptionT(CantMoveFromGlobal(range, "Can't move from globals. Name: " + name))
@@ -495,7 +487,7 @@ class ExpressionTemplar(
               case things if things.size > 1 => {
                 throw CompileErrorExceptionT(RangedInternalErrorT(range, "Found too many different things named \"" + name + "\" in env:\n" + things.map("\n" + _)))
               }
-              case Nil => {
+              case Vector() => {
                 //              println("members: " + fate.getAllTemplatasWithName(name, Set(ExpressionLookupContext, TemplataLookupContext)))
                 throw CompileErrorExceptionT(CouldntFindIdentifierToLoadT(range, name))
                 throw CompileErrorExceptionT(RangedInternalErrorT(range, "Couldn't find anything named \"" + name + "\" in env:\n" + fate))
@@ -910,7 +902,7 @@ class ExpressionTemplar(
 
 
           val (bodyExpressionsWithResult, bodyReturnsFromExprs) =
-            evaluateBlockStatements(temputs, whileBlockFate.snapshot, whileBlockFate, List(body1))
+            evaluateBlockStatements(temputs, whileBlockFate.snapshot, whileBlockFate, Vector(body1))
           val uncoercedBodyBlock2 = BlockTE(bodyExpressionsWithResult)
 
           val bodyContinues = uncoercedBodyBlock2.resultRegister.reference.kind != NeverT()
@@ -927,7 +919,7 @@ class ExpressionTemplar(
             if (uncoercedBodyBlock2.kind == NeverT()) {
               uncoercedBodyBlock2
             } else {
-              BlockTE(Templar.consecutive(List(uncoercedBodyBlock2, ConstantBoolTE(true))))
+              BlockTE(Templar.consecutive(Vector(uncoercedBodyBlock2, ConstantBoolTE(true))))
             }
 
           val ifExpr2 =
@@ -1041,7 +1033,7 @@ class ExpressionTemplar(
           val getResultExpr =
             localHelper.unletLocal(fate, resultVariable)
 
-          val consecutor = Templar.consecutive(List(resultLet) ++ destructExprs ++ List(getResultExpr))
+          val consecutor = Templar.consecutive(Vector(resultLet) ++ destructExprs ++ Vector(getResultExpr))
 
           val returns = returnsFromInnerExpr + innerExpr2.resultRegister.reference
 
@@ -1089,7 +1081,7 @@ class ExpressionTemplar(
         case _ => vfail()
       }
     val optInterfaceRef =
-      structTemplar.getInterfaceRef(temputs, range, interfaceTemplata, List(CoordTemplata(containedCoord)))
+      structTemplar.getInterfaceRef(temputs, range, interfaceTemplata, Vector(CoordTemplata(containedCoord)))
     val ownOptCoord = CoordT(OwnT, ReadwriteT, optInterfaceRef)
 
     val someConstructorTemplata =
@@ -1099,7 +1091,7 @@ class ExpressionTemplar(
       }
     val someConstructor =
       delegate.evaluateTemplatedFunctionFromCallForPrototype(
-        temputs, range, someConstructorTemplata, List(CoordTemplata(containedCoord)), List(ParamFilter(containedCoord, None))) match {
+        temputs, range, someConstructorTemplata, Vector(CoordTemplata(containedCoord)), Vector(ParamFilter(containedCoord, None))) match {
         case seff@EvaluateFunctionFailure(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
         case EvaluateFunctionSuccess(p) => p
       }
@@ -1111,7 +1103,7 @@ class ExpressionTemplar(
       }
     val noneConstructor =
       delegate.evaluateTemplatedFunctionFromCallForPrototype(
-        temputs, range, noneConstructorTemplata, List(CoordTemplata(containedCoord)), List.empty) match {
+        temputs, range, noneConstructorTemplata, Vector(CoordTemplata(containedCoord)), Vector()) match {
         case seff@EvaluateFunctionFailure(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
         case EvaluateFunctionSuccess(p) => p
       }
@@ -1126,7 +1118,7 @@ class ExpressionTemplar(
         case _ => vfail()
       }
     val resultInterfaceRef =
-      structTemplar.getInterfaceRef(temputs, range, interfaceTemplata, List(CoordTemplata(containedSuccessCoord), CoordTemplata(containedFailCoord)))
+      structTemplar.getInterfaceRef(temputs, range, interfaceTemplata, Vector(CoordTemplata(containedSuccessCoord), CoordTemplata(containedFailCoord)))
     val ownResultCoord = CoordT(OwnT, ReadwriteT, resultInterfaceRef)
 
     val okConstructorTemplata =
@@ -1136,7 +1128,7 @@ class ExpressionTemplar(
       }
     val okConstructor =
       delegate.evaluateTemplatedFunctionFromCallForPrototype(
-        temputs, range, okConstructorTemplata, List(CoordTemplata(containedSuccessCoord), CoordTemplata(containedFailCoord)), List(ParamFilter(containedSuccessCoord, None))) match {
+        temputs, range, okConstructorTemplata, Vector(CoordTemplata(containedSuccessCoord), CoordTemplata(containedFailCoord)), Vector(ParamFilter(containedSuccessCoord, None))) match {
         case seff@EvaluateFunctionFailure(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
         case EvaluateFunctionSuccess(p) => p
       }
@@ -1148,7 +1140,7 @@ class ExpressionTemplar(
       }
     val errConstructor =
       delegate.evaluateTemplatedFunctionFromCallForPrototype(
-        temputs, range, errConstructorTemplata, List(CoordTemplata(containedSuccessCoord), CoordTemplata(containedFailCoord)), List(ParamFilter(containedFailCoord, None))) match {
+        temputs, range, errConstructorTemplata, Vector(CoordTemplata(containedSuccessCoord), CoordTemplata(containedFailCoord)), Vector(ParamFilter(containedFailCoord, None))) match {
         case seff@EvaluateFunctionFailure(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
         case EvaluateFunctionSuccess(p) => p
       }
@@ -1186,13 +1178,13 @@ class ExpressionTemplar(
   private def decaySoloPack(fate: FunctionEnvironmentBox, refExpr: ReferenceExpressionTE):
   (ReferenceExpressionTE) = {
     refExpr.resultRegister.reference.kind match {
-      case PackTT(List(onlyMember), understruct) => {
+      case PackTT(Vector(onlyMember), understruct) => {
         val varNameCounter = fate.nextVarCounter()
         val varId = fate.fullName.addStep(TemplarTemporaryVarNameT(varNameCounter))
         val localVar = ReferenceLocalVariableT(varId, FinalT, onlyMember)
-        val destroy2 = DestroyTE(refExpr, understruct, List(localVar))
+        val destroy2 = DestroyTE(refExpr, understruct, Vector(localVar))
         val unletExpr = localHelper.unletLocal(fate, localVar)
-        (Templar.consecutive(List(destroy2, unletExpr)))
+        (Templar.consecutive(Vector(destroy2, unletExpr)))
       }
       case _ => (refExpr)
     }
@@ -1270,12 +1262,12 @@ class ExpressionTemplar(
   }
 
   def evaluateBlockStatements(
-    temputs: Temputs, startingFate: FunctionEnvironment, fate: FunctionEnvironmentBox, exprs: List[IExpressionAE]):
+    temputs: Temputs, startingFate: FunctionEnvironment, fate: FunctionEnvironmentBox, exprs: Vector[IExpressionAE]):
   (ReferenceExpressionTE, Set[CoordT]) = {
     blockTemplar.evaluateBlockStatements(temputs, startingFate, fate, exprs)
   }
 
-  def translatePatternList(temputs: Temputs, fate: FunctionEnvironmentBox, patterns1: List[AtomAP], patternInputExprs2: List[ReferenceExpressionTE]): ReferenceExpressionTE = {
+  def translatePatternList(temputs: Temputs, fate: FunctionEnvironmentBox, patterns1: Vector[AtomAP], patternInputExprs2: Vector[ReferenceExpressionTE]): ReferenceExpressionTE = {
     patternTemplar.translatePatternList(
       temputs, fate, patterns1, patternInputExprs2,
       (temputs, fate, liveCaptureLocals) => VoidLiteralTE())

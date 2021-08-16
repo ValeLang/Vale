@@ -36,7 +36,7 @@ class ArrayTemplar(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
     range: RangeS,
-    rules: List[IRulexAR],
+    rules: Vector[IRulexAR],
     typeByRune: Map[IRuneA, ITemplataType],
     sizeRuneA: IRuneA,
     maybeMutabilityRune: Option[IRuneA],
@@ -58,7 +58,7 @@ class ArrayTemplar(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
     range: RangeS,
-    rules: List[IRulexAR],
+    rules: Vector[IRulexAR],
     typeByRune: Map[IRuneA, ITemplataType],
     maybeMutabilityRune: Option[IRuneA],
     maybeVariabilityRune: Option[IRuneA],
@@ -79,12 +79,12 @@ class ArrayTemplar(
       temputs: Temputs,
       fate: FunctionEnvironmentBox,
       range: RangeS,
-      rules: List[IRulexAR],
+      rules: Vector[IRulexAR],
       typeByRune: Map[IRuneA, ITemplataType],
       maybeSizeRuneA: Option[IRuneA],
       maybeMutabilityRuneA: Option[IRuneA],
       maybeVariabilityRuneA: Option[IRuneA],
-      exprs2: List[ReferenceExpressionTE]):
+      exprs2: Vector[ReferenceExpressionTE]):
    StaticArrayFromValuesTE = {
     val memberTypes = exprs2.map(_.resultRegister.reference).toSet
     if (memberTypes.size > 1) {
@@ -176,7 +176,7 @@ class ArrayTemplar(
     type2: CoordT):
   (StaticSizedArrayTT) = {
 //    val tupleMutability =
-//      StructTemplarCore.getCompoundTypeMutability(temputs, List(type2))
+//      StructTemplarCore.getCompoundTypeMutability(temputs, Vector(type2))
 //    val tupleMutability = Templar.getMutability(temputs, type2.kind)
     val rawArrayT2 = RawArrayTT(type2, mutability, variability)
 

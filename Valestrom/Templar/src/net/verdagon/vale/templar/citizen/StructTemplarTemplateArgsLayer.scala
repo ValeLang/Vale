@@ -38,7 +38,7 @@ class StructTemplarTemplateArgsLayer(
     temputs: Temputs,
     callRange: RangeS,
     structTemplata: StructTemplata,
-    templateArgs: List[ITemplata]):
+    templateArgs: Vector[ITemplata]):
   (StructTT) = {
     profiler.newProfile("getStructRef", structTemplata.debugString + "<" + templateArgs.map(_.toString).mkString(", ") + ">", () => {
       val StructTemplata(env, structA) = structTemplata
@@ -71,7 +71,7 @@ class StructTemplarTemplateArgsLayer(
               structA.rules,
               structA.typeByRune,
               structA.localRunes,
-              List.empty,
+              Vector.empty,
               None,
               callRange,
               templateArgs)
@@ -102,7 +102,7 @@ class StructTemplarTemplateArgsLayer(
     temputs: Temputs,
     callRange: RangeS,
     interfaceTemplata: InterfaceTemplata,
-    templateArgs: List[ITemplata]):
+    templateArgs: Vector[ITemplata]):
   (InterfaceTT) = {
     profiler.newProfile("getInterfaceRef", interfaceTemplata.debugString + "<" + templateArgs.map(_.toString).mkString(", ") + ">", () => {
       val InterfaceTemplata(env, interfaceS) = interfaceTemplata
@@ -137,7 +137,7 @@ class StructTemplarTemplateArgsLayer(
               interfaceS.rules,
               interfaceS.typeByRune,
               interfaceS.localRunes,
-              List.empty,
+              Vector.empty,
               None,
               callRange,
               templateArgs)
@@ -170,13 +170,13 @@ class StructTemplarTemplateArgsLayer(
     temputs: Temputs,
     name: LambdaNameA,
     functionS: FunctionA,
-    members: List[StructMemberT]):
+    members: Vector[StructMemberT]):
   (StructTT, MutabilityT, FunctionTemplata) = {
     middle.makeClosureUnderstruct(containingFunctionEnv, temputs, name, functionS, members)
   }
 
   // Makes a struct to back a pack or tuple
-  def makeSeqOrPackUnerstruct(env: PackageEnvironment[INameT], temputs: Temputs, memberTypes2: List[CoordT], name: ICitizenNameT):
+  def makeSeqOrPackUnerstruct(env: PackageEnvironment[INameT], temputs: Temputs, memberTypes2: Vector[CoordT], name: ICitizenNameT):
   (StructTT, MutabilityT) = {
     middle.makeSeqOrPackUnderstruct(env, temputs, memberTypes2, name)
   }

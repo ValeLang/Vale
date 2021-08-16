@@ -26,7 +26,7 @@ trait TemplexParser extends RegexParsers with ParserUtils {
 
   private[parser] def manualSeqTemplex: Parser[ITemplexPT] = {
     pos ~ ("[" ~> optWhite ~> repsep(templex, optWhite ~> "," <~ optWhite) <~ optWhite <~ "]") ~ pos ^^ {
-      case begin ~ members ~ end => ManualSequencePT(Range(begin, end), members)
+      case begin ~ members ~ end => ManualSequencePT(Range(begin, end), members.toVector)
     }
   }
 
@@ -74,7 +74,7 @@ trait TemplexParser extends RegexParsers with ParserUtils {
     // A hack to do region highlighting
     ((pos ~ ("'" ~> optWhite ~> exprIdentifier) ~ opt(white ~> templex) ~ pos) ^^ { case begin ~ regionName ~ maybeInner ~ end => maybeInner.getOrElse(IntPT(Range(begin, end), 133742)) }) |
     (pos ~ ((atomTemplex <~ optWhite) ~ ("<" ~> optWhite ~> repsep(templex, optWhite ~ "," ~ optWhite) <~ optWhite <~ ">")) ~ pos ^^ {
-      case begin ~ (template ~ args) ~ end => CallPT(Range(begin, end), template, args)
+      case begin ~ (template ~ args) ~ end => CallPT(Range(begin, end), template, args.toVector)
     }) |
     atomTemplex
   }

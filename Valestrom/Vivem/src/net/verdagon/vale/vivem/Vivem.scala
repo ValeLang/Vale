@@ -7,8 +7,8 @@ import net.verdagon.von.IVonData
 
 import scala.collection.immutable.List
 
-case class PanicException() extends Throwable
-case class ConstraintViolatedException(msg: String) extends Throwable
+case class PanicException() extends Throwable { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class ConstraintViolatedException(msg: String) extends Throwable { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 object Vivem {
   def executeWithPrimitiveArgs(
@@ -47,7 +47,7 @@ object Vivem {
     print(str)
   }
 
-  def stdinFromList(stdinList: List[String]) = {
+  def stdinFromList(stdinList: Vector[String]) = {
     var remainingStdin = stdinList
     val stdin = (() => {
       vassert(remainingStdin.nonEmpty)
@@ -73,10 +73,10 @@ object Vivem {
       stdout: String => Unit): IVonData = {
     val main =
       programH.packages.flatMap({ case (packageCoord, paackage) =>
-        paackage.exportNameToFunction.get("main").map(prototype => paackage.functions.find(_.prototype == prototype).get).toList
+        paackage.exportNameToFunction.get("main").map(prototype => paackage.functions.find(_.prototype == prototype).get).toVector
       }).flatten match {
         case Nil=> vfail()
-        case List(m) => m
+        case Vector(m) => m
         case _ => vfail()
       }
 

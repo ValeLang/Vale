@@ -21,8 +21,8 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
     compile(CombinatorParsers.topLevelFunction, "fn sum() int {3}") match {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "sum")), Nil, None, None, Some(ParamsP(_,Nil)), FunctionReturnP(_, None, Some(_))),
-        Some(BlockPE(_, List(ConstantIntPE(_, 3, _))))) =>
+          Some(NameP(_, "sum")), Vector(), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, Some(_))),
+        Some(BlockPE(_, Vector(ConstantIntPE(_, 3, _))))) =>
     }
   }
 
@@ -30,8 +30,8 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
     compile(CombinatorParsers.topLevelFunction, "fn sum() pure {3}") match {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "sum")), List(PureAttributeP(_)), None, None, Some(ParamsP(_,Nil)), FunctionReturnP(_, None, None)),
-        Some(BlockPE(_, List(ConstantIntPE(_, 3, _))))) =>
+          Some(NameP(_, "sum")), Vector(PureAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
+        Some(BlockPE(_, Vector(ConstantIntPE(_, 3, _))))) =>
     }
   }
 
@@ -39,7 +39,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
     compile(CombinatorParsers.topLevelFunction, "fn sum() extern;") match {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "sum")), List(ExternAttributeP(_)), None, None, Some(ParamsP(_,Nil)), FunctionReturnP(_, None, None)),
+          Some(NameP(_, "sum")), Vector(ExternAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
         None) =>
     }
   }
@@ -48,7 +48,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
     compile(CombinatorParsers.topLevelFunction, "fn sum() abstract;") match {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "sum")), List(AbstractAttributeP(_)), None, None, Some(ParamsP(_,Nil)), FunctionReturnP(_, None, None)),
+          Some(NameP(_, "sum")), Vector(AbstractAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
         None) =>
     }
   }
@@ -61,12 +61,12 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
       case FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_,"findNearbyUnits")),
-          List(PureAttributeP(_)),
+          Vector(PureAttributeP(_)),
           None,
           None,
-          Some(ParamsP(_,Nil)),
+          Some(ParamsP(_,Vector())),
           FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_,"int"))))),
-        Some(BlockPE(_,List(VoidPE(_))))) =>
+        Some(BlockPE(_,Vector(VoidPE(_))))) =>
     }
   }
 
@@ -75,10 +75,10 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
       case FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "sum")),
-          List(AbstractAttributeP(_)),
+          Vector(AbstractAttributeP(_)),
           None,
           None,
-          Some(ParamsP(_,Nil)),
+          Some(ParamsP(_,Vector())),
           FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_,"Int"))))),
         None) =>
     }
@@ -89,10 +89,10 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
       case FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "sum")),
-          List(AbstractAttributeP(_)),
+          Vector(AbstractAttributeP(_)),
           None,
           None,
-          Some(ParamsP(_,Nil)),
+          Some(ParamsP(_,Vector())),
           FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_,"Int"))))),
         None) =>
     }
@@ -101,28 +101,28 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
   test("Simple function with identifying rune") {
     val func = compile(CombinatorParsers.topLevelFunction, "fn sum<A>(a A){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
-      case IdentifyingRuneP(_, NameP(_, "A"), Nil) =>
+      case IdentifyingRuneP(_, NameP(_, "A"), Vector()) =>
     }
   }
 
   test("Simple function with coord-typed identifying rune") {
     val func = compile(CombinatorParsers.topLevelFunction, "fn sum<A coord>(a A){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
-      case IdentifyingRuneP(_, NameP(_, "A"), List(TypeRuneAttributeP(_, CoordTypePR))) =>
+      case IdentifyingRuneP(_, NameP(_, "A"), Vector(TypeRuneAttributeP(_, CoordTypePR))) =>
     }
   }
 
   test("Simple function with region-typed identifying rune") {
     val func = compile(CombinatorParsers.topLevelFunction, "fn sum<A reg>(a A){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
-      case IdentifyingRuneP(_, NameP(_, "A"), List(TypeRuneAttributeP(_, RegionTypePR))) =>
+      case IdentifyingRuneP(_, NameP(_, "A"), Vector(TypeRuneAttributeP(_, RegionTypePR))) =>
     }
   }
 
   test("Simple function with apostrophe region-typed identifying rune") {
     val func = compile(CombinatorParsers.topLevelFunction, "fn sum<'A>(a 'A &Marine){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
-      case IdentifyingRuneP(_, NameP(_, "A"), List(TypeRuneAttributeP(_, RegionTypePR))) =>
+      case IdentifyingRuneP(_, NameP(_, "A"), Vector(TypeRuneAttributeP(_, RegionTypePR))) =>
     }
   }
 
@@ -131,7 +131,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_,
       NameP(_, "A"),
-      List(
+      Vector(
       TypeRuneAttributeP(_, RegionTypePR),
       PoolRuneAttributeP(_))) =>
     }
@@ -142,7 +142,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_,
         NameP(_, "A"),
-        List(
+        Vector(
           TypeRuneAttributeP(_, RegionTypePR),
           ArenaRuneAttributeP(_))) =>
     }
@@ -154,7 +154,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_,
         NameP(_, "A"),
-        List(
+        Vector(
           TypeRuneAttributeP(_, RegionTypePR),
           ReadOnlyRuneAttributeP(_))) =>
     }
@@ -168,8 +168,8 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
       """.stripMargin) shouldHave {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "doCivicDance")), Nil, None, None,
-          Some(ParamsP(_, List(PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "this")))), Some(NameOrRunePT(NameP(_, "Car"))), None, Some(AbstractP))))),
+          Some(NameP(_, "doCivicDance")), Vector(), None, None,
+          Some(ParamsP(_, Vector(PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "this")))), Some(NameOrRunePT(NameP(_, "Car"))), None, Some(AbstractP))))),
           FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_, "int"))))),
         None) =>
     }

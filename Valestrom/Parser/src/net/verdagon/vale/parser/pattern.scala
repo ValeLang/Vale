@@ -1,13 +1,13 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.{vassert, vcheck}
+import net.verdagon.vale.{vassert, vcheck, vcurious, vimpl}
 
 import scala.collection.immutable.List
 import scala.util.parsing.input.Positional
 
 sealed trait IVirtualityP
 case object AbstractP extends IVirtualityP
-case class OverrideP(range: Range, tyype: ITemplexPT) extends IVirtualityP
+case class OverrideP(range: Range, tyype: ITemplexPT) extends IVirtualityP { override def hashCode(): Int = vcurious() }
 
 case class PatternPP(
     range: Range,
@@ -34,29 +34,29 @@ case class PatternPP(
 
 case class DestructureP(
   range: Range,
-  patterns: List[PatternPP])
+  patterns: Vector[PatternPP]) { override def hashCode(): Int = vcurious() }
 
 sealed trait ICaptureNameP
-case class LocalNameP(name: NameP) extends ICaptureNameP
-case class ConstructingMemberNameP(name: NameP) extends ICaptureNameP
+case class LocalNameP(name: NameP) extends ICaptureNameP { override def hashCode(): Int = vcurious() }
+case class ConstructingMemberNameP(name: NameP) extends ICaptureNameP { override def hashCode(): Int = vcurious() }
 
 case class CaptureP(
     range: Range,
-    name: ICaptureNameP)
+    name: ICaptureNameP) { override def hashCode(): Int = vcurious() }
 
 //sealed trait ITemplexPT
-//case class IntPT(range: Range, value: Int) extends ITemplexPT
-//case class BoolPT(value: Boolean) extends ITemplexPT
-//case class AnonymousRunePT() extends ITemplexPT
-//case class NameOrRunePT(name: StringP) extends ITemplexPT
-//case class MutabilityPT(mutability: MutabilityP) extends ITemplexPT
-//case class OwnershippedPT(range: Range, ownership: OwnershipP, inner: ITemplexPT) extends ITemplexPT
-//case class CallPT(template: ITemplexPT, args: List[ITemplexPT]) extends ITemplexPT
+//case class IntPT(range: Range, value: Int) extends ITemplexPT { override def hashCode(): Int = vcurious() }
+//case class BoolPT(value: Boolean) extends ITemplexPT { override def hashCode(): Int = vcurious() }
+//case class AnonymousRunePT() extends ITemplexPT { override def hashCode(): Int = vcurious() }
+//case class NameOrRunePT(name: StringP) extends ITemplexPT { override def hashCode(): Int = vcurious() }
+//case class MutabilityPT(mutability: MutabilityP) extends ITemplexPT { override def hashCode(): Int = vcurious() }
+//case class OwnershippedPT(range: Range, ownership: OwnershipP, inner: ITemplexPT) extends ITemplexPT { override def hashCode(): Int = vcurious() }
+//case class CallPT(template: ITemplexPT, args: Vector[ITemplexPT]) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 //// We could phrase these all as ICallTemplexPPs but we want to be able to reconstruct
 //// a program from this AST.
-//case class RepeaterSequencePT(range: Range, mutability: ITemplexPT, size: ITemplexPT, element: ITemplexPT) extends ITemplexPT
-//case class ManualSequencePT(members: List[ITemplexPT]) extends ITemplexPT
-//case class FunctionPT(mutable: Option[ITemplexPT], params: List[ITemplexPT], ret: ITemplexPT) extends ITemplexPT
+//case class RepeaterSequencePT(range: Range, mutability: ITemplexPT, size: ITemplexPT, element: ITemplexPT) extends ITemplexPT { override def hashCode(): Int = vcurious() }
+//case class ManualSequencePT(members: Vector[ITemplexPT]) extends ITemplexPT { override def hashCode(): Int = vcurious() }
+//case class FunctionPT(mutable: Option[ITemplexPT], params: Vector[ITemplexPT], ret: ITemplexPT) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 
 object Patterns {
   object capturedWithTypeRune {
@@ -89,7 +89,7 @@ object Patterns {
     }
   }
   object withDestructure {
-    def unapply(arg: PatternPP): Option[List[PatternPP]] = {
+    def unapply(arg: PatternPP): Option[Vector[PatternPP]] = {
       arg.destructure match {
         case None => None
         case Some(DestructureP(_, patterns)) => Some(patterns)
@@ -107,7 +107,7 @@ object Patterns {
 }
 
 object PatternPUtils {
-//  def getOrderedIdentifyingRunesFromPattern(atom: PatternPP): List[String] = {
+//  def getOrderedIdentifyingRunesFromPattern(atom: PatternPP): Vector[String] = {
 //    val PatternPP(capture, templex, virtuality, destructures) = atom
 //
 //    // We don't care about capture, it can have no runes.
@@ -120,38 +120,38 @@ object PatternPUtils {
 //    // So we just care about identifying runes from the templex.
 //    // Note, this assumes that we've filled the pattern (it's present, no anonymous runes anywhere in it).
 //    vassert(templex.nonEmpty)
-//    templex.toList.flatMap(getOrderedRunesFromTemplexWithDuplicates).distinct
+//    templex.toVector.flatMap(getOrderedRunesFromTemplexWithDuplicates).distinct
 //  }
 //
-//  def getOrderedRunesFromPatternWithDuplicates(atom: PatternPP): List[String] = {
-//    val destructures = atom.destructure.toList.flatten.flatten
+//  def getOrderedRunesFromPatternWithDuplicates(atom: PatternPP): Vector[String] = {
+//    val destructures = atom.destructure.toVector.flatten.flatten
 //
-//    atom.virtuality.toList.flatMap(getOrderedRunesFromVirtualityWithDuplicates) ++
-//    atom.templex.toList.flatMap(getOrderedRunesFromTemplexWithDuplicates) ++
+//    atom.virtuality.toVector.flatMap(getOrderedRunesFromVirtualityWithDuplicates) ++
+//    atom.templex.toVector.flatMap(getOrderedRunesFromTemplexWithDuplicates) ++
 //    destructures.flatMap(getOrderedRunesFromPatternWithDuplicates)
 //  }
 //
-//  private def getOrderedRunesFromVirtualityWithDuplicates(virtuality: IVirtualityP): List[String] = {
+//  private def getOrderedRunesFromVirtualityWithDuplicates(virtuality: IVirtualityP): Vector[String] = {
 //    virtuality match {
-//      case AbstractP => List.empty
+//      case AbstractP => Vector.empty
 //      case OverrideP(tyype: ITemplexPT) => getOrderedRunesFromTemplexWithDuplicates(tyype)
 //    }
 //  }
-//  private def getOrderedRunesFromTemplexesWithDuplicates(templexes: List[ITemplexPT]): List[String] = {
-//    templexes.foldLeft(List[String]())({
+//  private def getOrderedRunesFromTemplexesWithDuplicates(templexes: Vector[ITemplexPT]): Vector[String] = {
+//    templexes.foldLeft(Vector[String]())({
 //      case (previous, current) => previous ++ getOrderedRunesFromTemplexWithDuplicates(current)
 //    })
 //  }
 
-//  def getOrderedRunesFromTemplexWithDuplicates(templex: ITemplexPT): List[String] = {
+//  def getOrderedRunesFromTemplexWithDuplicates(templex: ITemplexPT): Vector[String] = {
 //    templex match {
-//      case IntPT(value) => List.empty
-//      case BoolPT(value) => List.empty
-//      case NameOrRunePT(name) => List.empty
-//      case MutabilityPT(_) => List.empty
+//      case IntPT(value) => Vector.empty
+//      case BoolPT(value) => Vector.empty
+//      case NameOrRunePT(name) => Vector.empty
+//      case MutabilityPT(_) => Vector.empty
 //      case OwnershippedPT(_, inner) => getOrderedRunesFromTemplexWithDuplicates(inner)
 //      case CallPT(template, args) => getOrderedRunesFromTemplexesWithDuplicates((template :: args))
-//      case RepeaterSequencePT(mutability, size, element) => getOrderedRunesFromTemplexesWithDuplicates(List(mutability, size, element))
+//      case RepeaterSequencePT(mutability, size, element) => getOrderedRunesFromTemplexesWithDuplicates(Vector(mutability, size, element))
 //      case ManualSequencePT(members) => getOrderedRunesFromTemplexesWithDuplicates(members)
 //      case FunctionPT(mutable, params, ret) => getOrderedRunesFromTemplexesWithDuplicates(params :+ ret)
 //    }

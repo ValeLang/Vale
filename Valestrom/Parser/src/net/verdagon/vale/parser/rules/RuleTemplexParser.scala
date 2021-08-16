@@ -35,7 +35,7 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
     (pos ~ ("&" ~> optWhite ~> ruleTemplexPR) ~ pos ^^ { case begin ~ inner ~ end => BorrowPT(Range(begin, end), inner) }) |
     (pos ~ ("*" ~> optWhite ~> ruleTemplexPR) ~ pos ^^ { case begin ~ inner ~ end => SharePT(Range(begin, end), inner) }) |
     (pos ~ (keywordOrIdentifierOrRuneRuleTemplexPR <~ optWhite <~ "<" <~ optWhite) ~ (repsep(ruleTemplexPR, optWhite ~> "," <~ optWhite) <~ optWhite <~ ">") ~ pos ^^ {
-      case begin ~ template ~ args ~ end => CallPT(Range(begin, end), template, args)
+      case begin ~ template ~ args ~ end => CallPT(Range(begin, end), template, args.toVector)
     }) |
     prototypeRulePR |
     callableRulePR |
@@ -46,15 +46,15 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
     keywordOrIdentifierOrRuneRuleTemplexPR
   }
 
-  private[parser] def ruleTemplexSetPR: Parser[List[ITemplexPT]] = {
-    rep1sep(ruleTemplexPR, optWhite ~> "|" <~ optWhite)
+  private[parser] def ruleTemplexSetPR: Parser[Vector[ITemplexPT]] = {
+    rep1sep(ruleTemplexPR, optWhite ~> "|" <~ optWhite) ^^ (a => a.toVector)
   }
 
   // Add any new rules to the "Nothing matches empty string" test!
 
   private[parser] def manualSeqRulePR: Parser[ITemplexPT] = {
     pos ~ ("[" ~> optWhite ~> repsep(ruleTemplexPR, optWhite ~> "," <~ optWhite) <~ optWhite <~ "]") ~ pos ^^ {
-      case begin ~ members ~ end => ManualSequencePT(Range(begin, end), members)
+      case begin ~ members ~ end => ManualSequencePT(Range(begin, end), members.toVector)
     }
   }
 
@@ -86,7 +86,7 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
       (repsep(ruleTemplexPR, optWhite ~ "," ~ optWhite) <~ optWhite <~ ")" <~ optWhite) ~
         ruleTemplexPR ~
       pos ^^ {
-      case begin ~ name ~ params ~ ret ~ end => PrototypePT(Range(begin, end), name, params, ret)
+      case begin ~ name ~ params ~ ret ~ end => PrototypePT(Range(begin, end), name, params.toVector, ret)
     }
   }
 
@@ -94,7 +94,7 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
 
   private[parser] def callableRulePR: Parser[ITemplexPT] = {
     pos ~ ("fn" ~> optWhite ~> opt(":" ~> optWhite ~> ruleTemplexPR) ~ ("(" ~> optWhite ~> repsep(ruleTemplexPR, optWhite ~ "," ~ optWhite) <~ optWhite <~ ")") ~ (optWhite ~> ruleTemplexPR)) ~ pos ^^ {
-      case begin ~ (mutability ~ params ~ ret) ~ end => FunctionPT(Range(begin, end), mutability, PackPT(Range(begin, end), params), ret)
+      case begin ~ (mutability ~ params ~ ret) ~ end => FunctionPT(Range(begin, end), mutability, PackPT(Range(begin, end), params.toVector), ret)
     }
   }
 
@@ -102,7 +102,7 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
 
   private[parser] def packRulePR: Parser[ITemplexPT] = {
     pos ~ ("(" ~> optWhite ~> repsep(ruleTemplexPR, optWhite ~ "," ~ optWhite) <~ optWhite <~ ")") ~ pos ^^ {
-      case begin ~ members ~ end => PackPT(Range(begin, end), members)
+      case begin ~ members ~ end => PackPT(Range(begin, end), members.toVector)
     }
   }
 

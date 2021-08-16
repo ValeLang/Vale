@@ -15,7 +15,7 @@ import net.verdagon.vale.templar.OverloadTemplar.IScoutExpectedFunctionResult
 
 import scala.collection.immutable.List
 
-case class WeakableImplingMismatch(structWeakable: Boolean, interfaceWeakable: Boolean) extends Throwable
+case class WeakableImplingMismatch(structWeakable: Boolean, interfaceWeakable: Boolean) extends Throwable { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 trait IStructTemplarDelegate {
   def evaluateOrdinaryFunctionFromNonCallForHeader(
@@ -29,9 +29,9 @@ trait IStructTemplarDelegate {
     temputs: Temputs,
     callRange: RangeS,
     functionName: IImpreciseNameStepA,
-    explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS],
-    args: List[ParamFilter],
-    extraEnvsToLookIn: List[IEnvironment],
+    explicitlySpecifiedTemplateArgTemplexesS: Vector[ITemplexS],
+    args: Vector[ParamFilter],
+    extraEnvsToLookIn: Vector[IEnvironment],
     exact: Boolean):
   IScoutExpectedFunctionResult
 
@@ -121,14 +121,14 @@ class StructTemplar(
       FunctionA(
         structA.range,
         ConstructorNameA(structA.name),
-        List(UserFunctionA),
+        Vector(UserFunctionA),
         structA.tyype match {
           case KindTemplataType => FunctionTemplataType
           case TemplateTemplataType(params, KindTemplataType) => TemplateTemplataType(params, FunctionTemplataType)
         },
-        structA.knowableRunes ++ (if (isTemplate) List.empty else List(retRune)),
+        structA.knowableRunes ++ (if (isTemplate) Vector.empty else Vector(retRune)),
         structA.identifyingRunes,
-        structA.localRunes ++ List(retRune),
+        structA.localRunes ++ Vector(retRune),
         structA.typeByRune + (retRune -> CoordTemplataType),
         params,
         Some(retRune),
@@ -187,7 +187,7 @@ class StructTemplar(
 
       val templateParams =
         (interfaceA.tyype match {
-          case KindTemplataType => List.empty
+          case KindTemplataType => Vector.empty
           case TemplateTemplataType(params, KindTemplataType) => params
         }) ++
           interfaceA.internalMethods.map(meth => CoordTemplataType)
@@ -198,11 +198,11 @@ class StructTemplar(
       FunctionA(
         interfaceA.range,
         FunctionNameA(name, codeLocation),
-        List(UserFunctionA),
+        Vector(UserFunctionA),
         functionType,
-        interfaceA.knowableRunes ++ functorRunes ++ (if (isTemplate) List.empty else List(AnonymousSubstructParentInterfaceRuneA())),
+        interfaceA.knowableRunes ++ functorRunes ++ (if (isTemplate) Vector.empty else Vector(AnonymousSubstructParentInterfaceRuneA())),
         identifyingRunes,
-        interfaceA.localRunes ++ functorRunes ++ List(AnonymousSubstructParentInterfaceRuneA()),
+        interfaceA.localRunes ++ functorRunes ++ Vector(AnonymousSubstructParentInterfaceRuneA()),
         typeByRune,
         params,
         None,
@@ -215,7 +215,7 @@ class StructTemplar(
     temputs: Temputs,
     callRange: RangeS,
     structTemplata: StructTemplata,
-    uncoercedTemplateArgs: List[ITemplata]):
+    uncoercedTemplateArgs: Vector[ITemplata]):
   (StructTT) = {
     profiler.newProfile("StructTemplarGetStructRef", structTemplata.debugString + "<" + uncoercedTemplateArgs.mkString(", ") + ">", () => {
       templateArgsLayer.getStructRef(
@@ -229,7 +229,7 @@ class StructTemplar(
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
     interfaceTemplata: InterfaceTemplata,
-    uncoercedTemplateArgs: List[ITemplata]):
+    uncoercedTemplateArgs: Vector[ITemplata]):
   (InterfaceTT) = {
 //    profiler.newProfile("StructTemplar-getInterfaceRef", interfaceTemplata.debugString + "<" + uncoercedTemplateArgs.mkString(", ") + ">", () => {
       templateArgsLayer.getInterfaceRef(
@@ -243,7 +243,7 @@ class StructTemplar(
     temputs: Temputs,
     name: LambdaNameA,
     functionS: FunctionA,
-    members: List[StructMemberT]):
+    members: Vector[StructMemberT]):
   (StructTT, MutabilityT, FunctionTemplata) = {
 //    profiler.newProfile("StructTemplar-makeClosureUnderstruct", name.codeLocation.toString, () => {
       templateArgsLayer.makeClosureUnderstruct(containingFunctionEnv, temputs, name, functionS, members)
@@ -251,7 +251,7 @@ class StructTemplar(
   }
 
   // Makes a struct to back a pack or tuple
-  def makeSeqOrPackUnderstruct(env: PackageEnvironment[INameT], temputs: Temputs, memberTypes2: List[CoordT], name: ICitizenNameT):
+  def makeSeqOrPackUnderstruct(env: PackageEnvironment[INameT], temputs: Temputs, memberTypes2: Vector[CoordT], name: ICitizenNameT):
   (StructTT, MutabilityT) = {
 //    profiler.newProfile("StructTemplar-makeSeqOrPackUnderstruct", "[" + memberTypes2.map(_.toString).mkString(", ") + "]", () => {
       templateArgsLayer.makeSeqOrPackUnerstruct(env, temputs, memberTypes2, name)
@@ -263,7 +263,7 @@ class StructTemplar(
     temputs: Temputs,
     range: RangeS,
     interfaceTT: InterfaceTT,
-    members: List[CoordT]):
+    members: Vector[CoordT]):
   StructTT = {
 //    profiler.newProfile("StructTemplar-makeSeqOrPackUnderstruct", "[" + interfaceTT.toString + " " + members.map(_.toString).mkString(", ") + "]", () => {
       val anonymousSubstructName =
@@ -314,7 +314,7 @@ class StructTemplar(
       val functionStructRef = prototypeToAnonymousStruct(temputs, range, prototype)
       val functionStructType = CoordT(ShareT, ReadonlyT, functionStructRef)
 
-      val lambdas = List(functionStructType)
+      val lambdas = Vector(functionStructType)
 
       val anonymousSubstructTT =
         makeAnonymousSubstruct(temputs, range, interfaceTT, lambdas)
@@ -322,8 +322,8 @@ class StructTemplar(
 
       val constructorName =
         interfaceTT.fullName
-          .addStep(AnonymousSubstructNameT(List(functionStructType)))
-          .addStep(ConstructorNameT(List.empty))
+          .addStep(AnonymousSubstructNameT(Vector(functionStructType)))
+          .addStep(ConstructorNameT(Vector.empty))
       temputs.prototypeDeclared(constructorName) match {
         case Some(func) => return (anonymousSubstructTT, func)
         case None =>
@@ -334,8 +334,8 @@ class StructTemplar(
         FunctionT(
           FunctionHeaderT(
             constructorName,
-            List.empty,
-            List.empty,
+            Vector.empty,
+            Vector.empty,
             anonymousSubstructType,
             None),
           BlockTE(
@@ -343,11 +343,11 @@ class StructTemplar(
                 ConstructTE(
                   anonymousSubstructTT,
                   anonymousSubstructType,
-                  List(
+                  Vector(
                     ConstructTE(
                       functionStructRef,
                       CoordT(ShareT, ReadonlyT, functionStructRef),
-                      List.empty))))))
+                      Vector.empty))))))
       temputs.declareFunctionSignature(range, constructor2.header.toSignature, None)
       temputs.declareFunctionReturnType(constructor2.header.toSignature, constructor2.header.returnType)
       temputs.addFunction(constructor2);
@@ -367,7 +367,7 @@ class StructTemplar(
 //    templateArgsLayer.functionToLambda(outerEnv, temputs, header)
 //  }
 
-  def getMemberCoords(temputs: Temputs, structTT: StructTT): List[CoordT] = {
+  def getMemberCoords(temputs: Temputs, structTT: StructTT): Vector[CoordT] = {
     temputs.getStructDefForRef(structTT).members.map(_.tyype).map({
       case ReferenceMemberTypeT(coord) => coord
       case AddressMemberTypeT(_) => {
@@ -386,7 +386,7 @@ class StructTemplar(
 //  structTT = {
 //    val (paramType, returnType) =
 //      header.toPrototype match {
-//        case Prototype2(_, List(paramType), returnType) => (paramType, returnType)
+//        case Prototype2(_, Vector(paramType), returnType) => (paramType, returnType)
 //        case _ => vimpl("Only IFunction1 implemented")
 //      }
 //    val Some(InterfaceTemplata(ifunction1InterfaceEnv, ifunction1InterfaceA)) =
@@ -399,7 +399,7 @@ class StructTemplar(
 //        ifunction1InterfaceEnv,
 //        temputs,
 //        ifunction1InterfaceA,
-//        List(
+//        Vector(
 //          MutabilityTemplata(Immutable),
 //          CoordTemplata(paramType),
 //          CoordTemplata(returnType)))
@@ -415,7 +415,7 @@ class StructTemplar(
   (InterfaceTT, StructTT, PrototypeT) = {
 //    profiler.newProfile("StructTemplar-prototypeToAnonymousIFunctionSubstruct", prototype.toString, () => {
       val returnType = prototype.returnType
-      val List(paramType) = prototype.fullName.last.parameters
+      val Vector(paramType) = prototype.fullName.last.parameters
 
       val Some(ifunction1Templata@InterfaceTemplata(_, _)) =
         env.getNearestTemplataWithName(CodeTypeNameA("IFunction1"), Set(TemplataLookupContext))
@@ -424,7 +424,7 @@ class StructTemplar(
           temputs,
           range,
           ifunction1Templata,
-          List(
+          Vector(
             MutabilityTemplata(ImmutableT),
             CoordTemplata(paramType),
             CoordTemplata(returnType)))
@@ -440,7 +440,7 @@ class StructTemplar(
 
 object StructTemplar {
 
-  def getCompoundTypeMutability(memberTypes2: List[CoordT])
+  def getCompoundTypeMutability(memberTypes2: Vector[CoordT])
   : MutabilityT = {
     val membersOwnerships = memberTypes2.map(_.ownership)
     val allMembersImmutable = membersOwnerships.isEmpty || membersOwnerships.toSet == Set(ShareT)
@@ -459,7 +459,7 @@ object StructTemplar {
             temputs: Temputs,
             callRange: RangeS,
             originFunction: Option[FunctionA],
-            paramCoords: List[ParameterT],
+            paramCoords: Vector[ParameterT],
             maybeRetCoord: Option[CoordT]):
           (FunctionHeaderT) = {
             val Some(CoordT(_, _, structTT @ StructTT(_))) = maybeRetCoord
@@ -477,7 +477,7 @@ object StructTemplar {
             temputs: Temputs,
             callRange: RangeS,
             originFunction: Option[FunctionA],
-            paramCoords: List[ParameterT],
+            paramCoords: Vector[ParameterT],
             maybeRetCoord: Option[CoordT]):
           (FunctionHeaderT) = {
             // The interface should be in the "__Interface" rune of the function environment.

@@ -7,7 +7,7 @@ import net.verdagon.vale.parser.{CaptureP, FailedParse, FileP, ImmutableP, Mutab
 import net.verdagon.vale.scout.{ExportS, ExternS, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS, OverrideSP}
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, Ok, PackageCoordinate, PackageCoordinateMap, Result, vassert, vassertSome, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, Ok, PackageCoordinate, PackageCoordinateMap, Result, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
@@ -19,16 +19,17 @@ case class Environment(
     primitives: Map[String, ITypeSR],
     codeMap: PackageCoordinateMap[ProgramS],
     typeByRune: Map[IRuneA, ITemplataType],
-    locals: List[LocalA]) {
+    locals: Vector[LocalA]) {
+  override def hashCode(): Int = vcurious()
 
-  val structsS: List[StructS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.structs)).toList
-  val interfacesS: List[InterfaceS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.interfaces)).toList
-  val implsS: List[ImplS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.impls)).toList
-  val functionsS: List[FunctionS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.implementedFunctions)).toList
-  val exportsS: List[ExportAsS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.exports)).toList
-  val imports: List[ImportS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.imports)).toList
+  val structsS: Vector[StructS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.structs)).toVector
+  val interfacesS: Vector[InterfaceS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.interfaces)).toVector
+  val implsS: Vector[ImplS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.impls)).toVector
+  val functionsS: Vector[FunctionS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.implementedFunctions)).toVector
+  val exportsS: Vector[ExportAsS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.exports)).toVector
+  val imports: Vector[ImportS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.imports)).toVector
 
-  def addLocals(newLocals: List[LocalA]): Environment = {
+  def addLocals(newLocals: Vector[LocalA]): Environment = {
     Environment(maybeName, maybeParentEnv, primitives, codeMap, typeByRune, locals ++ newLocals)
   }
   def addRunes(newTypeByRune: Map[IRuneA, ITemplataType]): Environment = {
@@ -46,7 +47,7 @@ case class Environment(
       case _ => vimpl()
     }
 
-//    val envNameSteps = maybeName.map(_.steps).getOrElse(List.empty)
+//    val envNameSteps = maybeName.map(_.steps).getOrElse(Vector.empty)
 //
 //    // See MINAAN for what we're doing here.
 //    absoluteNameEndsWithImpreciseName(absoluteName, needleImpreciseNameS) match {
@@ -67,7 +68,7 @@ case class Environment(
   }
 
   def lookupType(needleImpreciseNameS: IImpreciseNameStepS):
-  (Option[ITypeSR], List[StructS], List[InterfaceS]) = {
+  (Option[ITypeSR], Vector[StructS], Vector[InterfaceS]) = {
     // See MINAAN for what we're doing here.
 
     val nearStructs = structsS.filter(struct => {
@@ -83,24 +84,24 @@ case class Environment(
       }
 
     if (nearPrimitives.nonEmpty || nearStructs.nonEmpty || nearInterfaces.nonEmpty) {
-      return (nearPrimitives, nearStructs.toList, nearInterfaces.toList)
+      return (nearPrimitives, nearStructs.toVector, nearInterfaces.toVector)
     }
     maybeParentEnv match {
-      case None => (None, List.empty, List.empty)
+      case None => (None, Vector.empty, Vector.empty)
       case Some(parentEnv) => parentEnv.lookupType(needleImpreciseNameS)
     }
   }
 
   def lookupType(name: INameS):
-  (List[StructS], List[InterfaceS]) = {
+  (Vector[StructS], Vector[InterfaceS]) = {
     val nearStructs = structsS.filter(_.name == name)
     val nearInterfaces = interfacesS.filter(_.name == name)
 
     if (nearStructs.nonEmpty || nearInterfaces.nonEmpty) {
-      return (nearStructs.toList, nearInterfaces.toList)
+      return (nearStructs.toVector, nearInterfaces.toVector)
     }
     maybeParentEnv match {
-      case None => (List.empty, List.empty)
+      case None => (Vector.empty, Vector.empty)
       case Some(parentEnv) => parentEnv.lookupType(name)
     }
   }
@@ -119,6 +120,8 @@ case class Environment(
 }
 
 case class AstroutsBox(var astrouts: Astrouts) {
+  override def hashCode(): Int = vfail() // This is mutable, so definitely dont hash it
+
   def getImpl(name: ImplNameA) = {
     astrouts.moduleAstrouts.get(name.packageCoordinate.module).flatMap(_.impls.get(name))
   }
@@ -131,13 +134,15 @@ case class AstroutsBox(var astrouts: Astrouts) {
 }
 
 case class Astrouts(
-  moduleAstrouts: Map[String, ModuleAstrouts])
+    moduleAstrouts: Map[String, ModuleAstrouts]) {
+  override def hashCode(): Int = vfail(); // We'd need a really good reason to hash this entire thing.
+}
 
 case class ModuleAstrouts(
   structs: Map[ITypeDeclarationNameA, StructA],
   interfaces: Map[ITypeDeclarationNameA, InterfaceA],
   impls: Map[ImplNameA, ImplA],
-  functions: Map[IFunctionDeclarationNameA, FunctionA])
+  functions: Map[IFunctionDeclarationNameA, FunctionA]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 object Astronomer {
   val primitives =
@@ -148,8 +153,8 @@ object Astronomer {
       "bool" -> KindTypeSR,
       "float" -> KindTypeSR,
       "void" -> KindTypeSR,
-      "IFunction1" -> TemplateTypeSR(List(MutabilityTypeSR, CoordTypeSR, CoordTypeSR), KindTypeSR),
-      "Array" -> TemplateTypeSR(List(MutabilityTypeSR, VariabilityTypeSR, CoordTypeSR), KindTypeSR))
+      "IFunction1" -> TemplateTypeSR(Vector(MutabilityTypeSR, CoordTypeSR, CoordTypeSR), KindTypeSR),
+      "Array" -> TemplateTypeSR(Vector(MutabilityTypeSR, VariabilityTypeSR, CoordTypeSR), KindTypeSR))
 
   def translateRuneType(tyype: ITypeSR): ITemplataType = {
     tyype match {
@@ -304,7 +309,7 @@ object Astronomer {
     }
 
     val (conclusions, rulesA) =
-      makeRuleTyper().solve(astrouts, env, rules, rangeS, List.empty, Some(localRunesA ++ knowableRunesA)) match {
+      makeRuleTyper().solve(astrouts, env, rules, rangeS, Vector.empty, Some(localRunesA ++ knowableRunesA)) match {
         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(rangeS, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
@@ -337,19 +342,19 @@ object Astronomer {
       membersA)
   }
 
-  def translateCitizenAttributes(attrsS: List[ICitizenAttributeS]) = {
+  def translateCitizenAttributes(attrsS: Vector[ICitizenAttributeS]) = {
     attrsS.map({
       case ExportS(packageCoordinate) => ExportA(packageCoordinate)
       case x => vimpl(x.toString)
     })
   }
 
-  def translateFunctionAttributes(attrsS: List[IFunctionAttributeS]): List[IFunctionAttributeA] = {
+  def translateFunctionAttributes(attrsS: Vector[IFunctionAttributeS]): Vector[IFunctionAttributeA] = {
     attrsS.flatMap({
-      case ExportS(packageCoordinate) => List(ExportA(packageCoordinate))
-      case ExternS(packageCoordinate) => List(ExternA(packageCoordinate))
-      case PureS => List(PureA)
-      case BuiltinS(_) => List.empty
+      case ExportS(packageCoordinate) => Vector(ExportA(packageCoordinate))
+      case ExternS(packageCoordinate) => Vector(ExternA(packageCoordinate))
+      case PureS => Vector(PureA)
+      case BuiltinS(_) => Vector.empty
       case x => vimpl(x.toString)
     })
   }
@@ -372,7 +377,7 @@ object Astronomer {
     }
 
     val (conclusions, rulesA) =
-      makeRuleTyper().solve(astrouts, env, rules, range, List.empty, Some(knowableRunesA ++ localRunesA)) match {
+      makeRuleTyper().solve(astrouts, env, rules, range, Vector.empty, Some(knowableRunesA ++ localRunesA)) match {
         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(range, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
@@ -416,12 +421,12 @@ object Astronomer {
     }
 
     val (conclusionsForRulesFromStructDirection, rulesFromStructDirectionA) =
-      makeRuleTyper().solve(astrouts, env, rulesFromStructDirection, range, List.empty, Some(knowableRunesA ++ localRunesA)) match {
+      makeRuleTyper().solve(astrouts, env, rulesFromStructDirection, range, Vector.empty, Some(knowableRunesA ++ localRunesA)) match {
         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(range, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
     val (conclusionsForRulesFromInterfaceDirection, rulesFromInterfaceDirectionA) =
-      makeRuleTyper().solve(astrouts, env, rulesFromInterfaceDirection, range, List.empty, Some(knowableRunesA ++ localRunesA)) match {
+      makeRuleTyper().solve(astrouts, env, rulesFromInterfaceDirection, range, Vector.empty, Some(knowableRunesA ++ localRunesA)) match {
         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(range, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
@@ -444,10 +449,10 @@ object Astronomer {
 
     val runeS = ImplicitRuneS(exportName, 0)
     val runeA = translateRune(runeS)
-    val rulesS = List(EqualsSR(range, TypedSR(range, runeS, KindTypeSR), TemplexSR(templexS)))
+    val rulesS = Vector(EqualsSR(range, TypedSR(range, runeS, KindTypeSR), TemplexSR(templexS)))
 
     val (conclusions, rulesA) =
-      makeRuleTyper().solve(astrouts, env, rulesS, range, List.empty, Some(Set(runeA))) match {
+      makeRuleTyper().solve(astrouts, env, rulesS, range, Vector.empty, Some(Set(runeA))) match {
         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(range, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
@@ -513,7 +518,7 @@ object Astronomer {
     val paramsA = paramsS.map(translateParameter(env, _))
 
     val (conclusions, rulesA) =
-      makeRuleTyper().solve(astrouts, env, templateRules, rangeS, List.empty, Some(localRunesA)) match {
+      makeRuleTyper().solve(astrouts, env, templateRules, rangeS, Vector.empty, Some(localRunesA)) match {
         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => {
           ErrorReporter.report(CouldntSolveRulesA(rangeS, rtsf))
         }
@@ -536,7 +541,7 @@ object Astronomer {
     FunctionA(
       rangeS,
       nameA,
-      UserFunctionA :: translateFunctionAttributes(attributesS),
+      translateFunctionAttributes(attributesS) ++ Vector(UserFunctionA),
       tyype,
       knowableRunesA,
       identifyingRunesA,
@@ -686,12 +691,12 @@ object Astronomer {
   def translateProgram(
       codeMap: PackageCoordinateMap[ProgramS],
       primitives: Map[String, ITypeSR],
-      suppliedFunctions: List[FunctionA],
-      suppliedInterfaces: List[InterfaceA]):
+      suppliedFunctions: Vector[FunctionA],
+      suppliedInterfaces: Vector[InterfaceA]):
   ProgramA = {
     val astrouts = AstroutsBox(Astrouts(Map()))
 
-    val env = Environment(None, None, primitives, codeMap, Map(), List.empty)
+    val env = Environment(None, None, primitives, codeMap, Map(), Vector.empty)
 
     val structsA = env.structsS.map(translateStruct(astrouts, env, _))
 
@@ -711,7 +716,7 @@ object Astronomer {
 
 //  val stlFunctions =
 //    Forwarders.forwarders ++
-//    List(
+//    Vector(
 //      NotEquals.function,
 //      Printing.printInt,
 //      Printing.printlnInt,
@@ -721,7 +726,7 @@ object Astronomer {
 
   val wrapperFunctions =
     Arrays.makeArrayFunctions() ++
-    List(
+    Vector(
       RefCounting.checkmemberrc,
       RefCounting.checkvarrc)
 
@@ -732,12 +737,12 @@ object Astronomer {
         separateProgramsS.moduleToPackagesToFilenameToContents.mapValues(packagesToFilenameToContents => {
           packagesToFilenameToContents.mapValues(filenameToContents => {
             ProgramS(
-              filenameToContents.values.flatMap(_.structs).toList,
-              filenameToContents.values.flatMap(_.interfaces).toList,
-              filenameToContents.values.flatMap(_.impls).toList,
-              filenameToContents.values.flatMap(_.implementedFunctions).toList,
-              filenameToContents.values.flatMap(_.exports).toList,
-              filenameToContents.values.flatMap(_.imports).toList)
+              filenameToContents.values.flatMap(_.structs).toVector,
+              filenameToContents.values.flatMap(_.interfaces).toVector,
+              filenameToContents.values.flatMap(_.impls).toVector,
+              filenameToContents.values.flatMap(_.implementedFunctions).toVector,
+              filenameToContents.values.flatMap(_.exports).toVector,
+              filenameToContents.values.flatMap(_.imports).toVector)
           })
         }))
 
@@ -745,7 +750,7 @@ object Astronomer {
 
     try {
       val suppliedFunctions = wrapperFunctions
-      val suppliedInterfaces = List(IFunction1.interface)
+      val suppliedInterfaces = Vector(IFunction1.interface)
       val ProgramA(structsA, interfacesA, implsA, functionsA, exportsA) =
         Astronomer.translateProgram(
           mergedProgramS, primitives, suppliedFunctions, suppliedInterfaces)
@@ -763,18 +768,18 @@ object Astronomer {
         packageToImplsA.keySet ++
         packageToExportsA.keySet
       val packageToContents =
-        allPackages.map(paackage => {
+        allPackages.toVector.map(paackage => {
           val contents =
             ProgramA(
-              packageToStructsA.getOrElse(paackage, List.empty),
-              packageToInterfacesA.getOrElse(paackage, List.empty),
-              packageToImplsA.getOrElse(paackage, List.empty),
-              packageToFunctionsA.getOrElse(paackage, List.empty),
-              packageToExportsA.getOrElse(paackage, List.empty))
+              packageToStructsA.getOrElse(paackage, Vector.empty),
+              packageToInterfacesA.getOrElse(paackage, Vector.empty),
+              packageToImplsA.getOrElse(paackage, Vector.empty),
+              packageToFunctionsA.getOrElse(paackage, Vector.empty),
+              packageToExportsA.getOrElse(paackage, Vector.empty))
           (paackage -> contents)
         }).toMap
       val moduleToPackageToContents =
-        packageToContents.keys.toList.groupBy(_.module).mapValues(packageCoordinates => {
+        packageToContents.keys.toVector.groupBy(_.module).mapValues(packageCoordinates => {
           packageCoordinates.map(packageCoordinate => {
             (packageCoordinate.packages -> packageToContents(packageCoordinate))
           }).toMap
@@ -789,13 +794,13 @@ object Astronomer {
 }
 
 class AstronomerCompilation(
-  packagesToBuild: List[PackageCoordinate],
+  packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]]) {
   var scoutCompilation = new ScoutCompilation(packagesToBuild, packageToContentsResolver)
   var astroutsCache: Option[PackageCoordinateMap[ProgramA]] = None
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = scoutCompilation.getCodeMap()
-  def getParseds(): Result[FileCoordinateMap[(FileP, List[(Int, Int)])], FailedParse] = scoutCompilation.getParseds()
+  def getParseds(): Result[FileCoordinateMap[(FileP, Vector[(Int, Int)])], FailedParse] = scoutCompilation.getParseds()
   def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = scoutCompilation.getVpstMap()
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = scoutCompilation.getScoutput()
 

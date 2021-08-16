@@ -12,9 +12,9 @@ import scala.collection.mutable
 object TemplarTestCompilation {
   def test(code: String*): TemplarCompilation = {
     new TemplarCompilation(
-      List(PackageCoordinate.TEST_TLD),
+      Vector(PackageCoordinate.TEST_TLD),
       Builtins.getModulizedCodeMap()
-        .or(FileCoordinateMap.test(code.toList))
+        .or(FileCoordinateMap.test(code.toVector))
         .or(Tests.getPackageToResourceResolver),
       TemplarCompilationOptions())
   }

@@ -23,7 +23,7 @@ trait IInfererDelegate[Env, State] {
     // This is here so that the predictor can just give us however many things
     // we expect.
     expectedNumMembers: Int
-  ): Option[List[CoordT]]
+  ): Option[Vector[CoordT]]
 
   def getMutability(state: State, kind: KindT): MutabilityT
 
@@ -34,23 +34,23 @@ trait IInfererDelegate[Env, State] {
     state: State,
     callRange: RangeS,
     templata: StructTemplata,
-    templateArgs: List[ITemplata]):
+    templateArgs: Vector[ITemplata]):
   (KindT)
 
   def evaluateInterfaceTemplata(
     state: State,
     callRange: RangeS,
     templata: InterfaceTemplata,
-    templateArgs: List[ITemplata]):
+    templateArgs: Vector[ITemplata]):
   (KindT)
 
-//  def getPackKind(env: Env, state: State, members: List[Coord]): (PackT2, Mutability)
+//  def getPackKind(env: Env, state: State, members: Vector[Coord]): (PackT2, Mutability)
 
   def getStaticSizedArrayKind(env: Env, state: State, mutability: MutabilityT, variability: VariabilityT, size: Int, element: CoordT): (StaticSizedArrayTT)
 
   def getRuntimeSizedArrayKind(env: Env, state: State, type2: CoordT, arrayMutability: MutabilityT, arrayVariability: VariabilityT): RuntimeSizedArrayTT
 
-  def getTupleKind(env: Env, state: State, elements: List[CoordT]): TupleTT
+  def getTupleKind(env: Env, state: State, elements: Vector[CoordT]): TupleTT
 
   def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT): (Option[Int])
 
@@ -60,11 +60,11 @@ trait IInfererDelegate[Env, State] {
   def getInterfaceTemplataType(it: InterfaceTemplata): ITemplataType
   def getStructTemplataType(st: StructTemplata): ITemplataType
 
-  def getMemberCoords(state: State, structTT: StructTT): List[CoordT]
+  def getMemberCoords(state: State, structTT: StructTT): Vector[CoordT]
 
   def structIsClosure(state: State, structTT: StructTT): Boolean
 
-  def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: List[CoordT]): PrototypeT
+  def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: Vector[CoordT]): PrototypeT
 }
 
 // This is the public API for the outside world to use the Infer code.
@@ -74,13 +74,13 @@ object Inferer {
     delegate: IInfererDelegate[Env, State],
     env: Env,
     state: State,
-    rules: List[IRulexTR],
+    rules: Vector[IRulexTR],
     typeByRune: Map[IRuneT, ITemplataType],
     localRunes: Set[IRuneT],
     invocationRange: RangeS,
     directInputs: Map[IRuneT, ITemplata],
-    paramAtoms: List[AtomAP],
-    maybeParamInputs: Option[List[ParamFilter]],
+    paramAtoms: Vector[AtomAP],
+    maybeParamInputs: Option[Vector[ParamFilter]],
     checkAllRunesPresent: Boolean):
   (IInferSolveResult) = {
     val templataTemplar =
@@ -116,7 +116,7 @@ object Inferer {
         delegate.getMutability(state, kind)
       }
 
-//      override def getPackKind(env: Env, state: State, members: List[Coord]): (PackT2, Mutability) = {
+//      override def getPackKind(env: Env, state: State, members: Vector[Coord]): (PackT2, Mutability) = {
 //        delegate.getPackKind(env, state, members)
 //      }
 
@@ -128,11 +128,11 @@ object Inferer {
         delegate.lookupTemplataImprecise(env, range, name)
       }
 
-      override def evaluateInterfaceTemplata(state: State, callRange: RangeS, templata: InterfaceTemplata, templateArgs: List[ITemplata]): (KindT) = {
+      override def evaluateInterfaceTemplata(state: State, callRange: RangeS, templata: InterfaceTemplata, templateArgs: Vector[ITemplata]): (KindT) = {
         delegate.evaluateInterfaceTemplata(state, callRange, templata, templateArgs)
       }
 
-      override def evaluateStructTemplata(state: State, callRange: RangeS, templata: StructTemplata, templateArgs: List[ITemplata]): (KindT) = {
+      override def evaluateStructTemplata(state: State, callRange: RangeS, templata: StructTemplata, templateArgs: Vector[ITemplata]): (KindT) = {
         delegate.evaluateStructTemplata(state, callRange, templata, templateArgs)
       }
 
@@ -144,7 +144,7 @@ object Inferer {
         delegate.getRuntimeSizedArrayKind(env, state, type2, arrayMutability, arrayVariability)
       }
 
-      override def getTupleKind(env: Env, state: State, elements: List[CoordT]): TupleTT = {
+      override def getTupleKind(env: Env, state: State, elements: Vector[CoordT]): TupleTT = {
         delegate.getTupleKind(env, state, elements)
       }
 
@@ -179,7 +179,7 @@ object Inferer {
       }
 
       override def lookupMemberTypes(state: State, kind: KindT, expectedNumMembers: Int):
-      Option[List[CoordT]] = {
+      Option[Vector[CoordT]] = {
         delegate.lookupMemberTypes(state, kind, expectedNumMembers)
       }
 
@@ -191,7 +191,7 @@ object Inferer {
         delegate.getAncestorInterfaceDistance(temputs, descendantCitizenRef, ancestorInterfaceRef)
       }
 
-      override def getMemberCoords(state: State, structTT: StructTT): List[CoordT] = {
+      override def getMemberCoords(state: State, structTT: StructTT): Vector[CoordT] = {
         delegate.getMemberCoords(state, structTT)
       }
 
@@ -199,7 +199,7 @@ object Inferer {
         delegate.structIsClosure(state, structTT)
       }
 
-      override def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: List[CoordT]): PrototypeT = {
+      override def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: Vector[CoordT]): PrototypeT = {
         delegate.resolveExactSignature(env, state, range, name, coords)
       }
     }

@@ -3,12 +3,14 @@ package net.verdagon.vale.templar.infer
 import net.verdagon.vale.astronomer.{CoordTemplataType, ITemplataType, IntegerTemplataType, KindTemplataType, MutabilityTemplataType, OwnershipTemplataType, PackTemplataType, PermissionTemplataType, PrototypeTemplataType, StringTemplataType, VariabilityTemplataType}
 import net.verdagon.vale.templar.IRuneT
 import net.verdagon.vale.templar.templata.{CoordListTemplata, CoordTemplata, ITemplata, IntegerTemplata, KindTemplata, MutabilityTemplata, OwnershipTemplata, PermissionTemplata, PrototypeTemplata, StringTemplata, VariabilityTemplata}
-import net.verdagon.vale.{vassert, vwat}
+import net.verdagon.vale.{vassert, vcurious, vfail, vwat}
 
 case class Inferences(
-  typeByRune: Map[IRuneT, ITemplataType], // Here for doublechecking
-  templatasByRune: Map[IRuneT, ITemplata],
-  possibilitiesByRune: Map[IRuneT, List[ITemplata]]) {
+    typeByRune: Map[IRuneT, ITemplataType], // Here for doublechecking
+    templatasByRune: Map[IRuneT, ITemplata],
+    possibilitiesByRune: Map[IRuneT, Vector[ITemplata]]) {
+  override def hashCode(): Int = vcurious()
+
   def addConclusion(rune: IRuneT, templata: ITemplata): Inferences = {
     templatasByRune.get(rune) match {
       case None =>
@@ -37,7 +39,7 @@ case class Inferences(
       templatasByRune + (rune -> templata),
       possibilitiesByRune - rune)
   }
-  def addPossibilities(rune: IRuneT, possibilities: List[ITemplata]): Inferences = {
+  def addPossibilities(rune: IRuneT, possibilities: Vector[ITemplata]): Inferences = {
     if (possibilities.size == 0) {
       vwat()
     } else if (possibilities.size == 1) {
@@ -55,24 +57,26 @@ case class Inferences(
     }
   }
   // Returns an Inferences without this rune, and gives all the possibilities for that rune
-  def pop(rune: IRuneT): (Inferences, List[ITemplata]) = {
+  def pop(rune: IRuneT): (Inferences, Vector[ITemplata]) = {
     val inferencesWithoutThatRune = Inferences(typeByRune, templatasByRune, possibilitiesByRune - rune)
     (inferencesWithoutThatRune, possibilitiesByRune(rune))
   }
 }
 
 case class InferencesBox(var inferences: Inferences) {
+  override def hashCode(): Int = vfail() // Shouldnt hash, is mutable
+
   def templatasByRune: Map[IRuneT, ITemplata] = inferences.templatasByRune
-  def possibilitiesByRune: Map[IRuneT, List[ITemplata]] = inferences.possibilitiesByRune
+  def possibilitiesByRune: Map[IRuneT, Vector[ITemplata]] = inferences.possibilitiesByRune
 
   def addConclusion(rune: IRuneT, templata: ITemplata): Unit = {
     inferences = inferences.addConclusion(rune, templata)
   }
-  def addPossibilities(rune: IRuneT, possibilities: List[ITemplata]): Unit = {
+  def addPossibilities(rune: IRuneT, possibilities: Vector[ITemplata]): Unit = {
     inferences = inferences.addPossibilities(rune, possibilities)
   }
   // Returns an Inferences without this rune, and gives all the possibilities for that rune
-  def pop(rune: IRuneT): List[ITemplata] = {
+  def pop(rune: IRuneT): Vector[ITemplata] = {
     val (newInferences, result) = inferences.pop(rune)
     inferences = newInferences
     result

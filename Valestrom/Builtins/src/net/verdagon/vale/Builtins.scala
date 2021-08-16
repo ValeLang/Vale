@@ -3,7 +3,7 @@ package net.verdagon.vale
 import scala.io.Source
 
 object Builtins {
-  val NAMESPACE_COORD = PackageCoordinate("", List.empty)
+  val NAMESPACE_COORD = PackageCoordinate("", Vector.empty)
 
   val moduleToFilename =
     Map(
@@ -35,7 +35,7 @@ object Builtins {
   def getModulizedCodeMap(): FileCoordinateMap[String] = {
     moduleToFilename.foldLeft(FileCoordinateMap[String](Map()))({
       case (prev, (moduleName, filename)) => {
-        prev.add("v", List("builtins", moduleName), filename, load(filename))
+        prev.add("v", Vector("builtins", moduleName), filename, load(filename))
       }
     })
   }
@@ -46,7 +46,7 @@ object Builtins {
     moduleToFilename.foldLeft(FileCoordinateMap[String](Map()))({
       case (prev, (moduleName, filename)) => {
         prev
-          .add("v", List("builtins", moduleName), filename, "")
+          .add("v", Vector("builtins", moduleName), filename, "")
           .add(NAMESPACE_COORD.module, NAMESPACE_COORD.packages, filename, load(filename))
       }
     })

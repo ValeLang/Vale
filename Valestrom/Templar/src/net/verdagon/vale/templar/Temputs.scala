@@ -59,7 +59,7 @@ case class Temputs() {
   private val functionExterns: mutable.ArrayBuffer[FunctionExternT] = mutable.ArrayBuffer()
 
   // Only PackTemplar can make a PackT2.
-  private val packTypes: mutable.HashMap[List[CoordT], StructTT] = mutable.HashMap()
+  private val packTypes: mutable.HashMap[Vector[CoordT], StructTT] = mutable.HashMap()
   // Only ArrayTemplar can make an RawArrayT2.
   private val staticSizedArrayTypes: mutable.HashMap[(Int, RawArrayTT), StaticSizedArrayTT] = mutable.HashMap()
   // Only ArrayTemplar can make an RawArrayT2.
@@ -181,7 +181,7 @@ case class Temputs() {
     envByInterfaceRef += (interfaceTT -> env)
   }
 
-  def declarePack(members: List[CoordT], understructTT: StructTT): Unit = {
+  def declarePack(members: Vector[CoordT], understructTT: StructTT): Unit = {
     packTypes += (members -> understructTT)
   }
 
@@ -311,7 +311,7 @@ case class Temputs() {
 //    declaredSignatures.contains(signature) == Some(rangeS)
 //  }
 
-  //  def findFunction(name: String, paramTypes: List[Coord]): Option[FunctionHeader2] = {
+  //  def findFunction(name: String, paramTypes: Vector[Coord]): Option[FunctionHeader2] = {
   //    val matchingFunctions = functions.find(this, name, paramTypes)
   //    vassert(matchingFunctions.size < 2)
   //    matchingFunctions.headOption
@@ -340,7 +340,7 @@ case class Temputs() {
   def getInterfaceDefForRef(ir: InterfaceTT): InterfaceDefinitionT = {
     interfaceDefsByRef(ir)
   }
-  def getPackType(coords: List[CoordT]): Option[StructTT] = {
+  def getPackType(coords: Vector[CoordT]): Option[StructTT] = {
     packTypes.get(coords)
   }
   def getReturnTypeForSignature(sig: SignatureT): Option[CoordT] = {
@@ -358,16 +358,16 @@ case class Temputs() {
   def getRuntimeSizedArray(array: RawArrayTT): Option[RuntimeSizedArrayTT] = {
     runtimeSizedArrayTypes.get(array)
   }
-  def getKindExports: List[KindExportT] = {
-    kindExports.toList
+  def getKindExports: Vector[KindExportT] = {
+    kindExports.toVector
   }
-  def getFunctionExports: List[FunctionExportT] = {
-    functionExports.toList
+  def getFunctionExports: Vector[FunctionExportT] = {
+    functionExports.toVector
   }
-  def getKindExterns: List[KindExternT] = {
-    kindExterns.toList
+  def getKindExterns: Vector[KindExternT] = {
+    kindExterns.toVector
   }
-  def getFunctionExterns: List[FunctionExternT] = {
-    functionExterns.toList
+  def getFunctionExterns: Vector[FunctionExternT] = {
+    functionExterns.toVector
   }
 }

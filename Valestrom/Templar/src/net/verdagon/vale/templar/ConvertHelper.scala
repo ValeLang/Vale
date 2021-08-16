@@ -26,13 +26,13 @@ class ConvertHelper(
       env: IEnvironment,
       temputs: Temputs,
       range: RangeS,
-      sourceExprs: List[ReferenceExpressionTE],
-      targetPointerTypes: List[CoordT]):
-  (List[ReferenceExpressionTE]) = {
+      sourceExprs: Vector[ReferenceExpressionTE],
+      targetPointerTypes: Vector[CoordT]):
+  (Vector[ReferenceExpressionTE]) = {
     if (sourceExprs.size != targetPointerTypes.size) {
       throw CompileErrorExceptionT(RangedInternalErrorT(range, "num exprs mismatch, source:\n" + sourceExprs + "\ntarget:\n" + targetPointerTypes))
     }
-    (sourceExprs zip targetPointerTypes).foldLeft((List[ReferenceExpressionTE]()))({
+    (sourceExprs zip targetPointerTypes).foldLeft((Vector[ReferenceExpressionTE]()))({
       case ((previousRefExprs), (sourceExpr, targetPointerType)) => {
         val refExpr =
           convert(env, temputs, range, sourceExpr, targetPointerType)

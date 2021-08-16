@@ -21,7 +21,7 @@ class InfererEquator[Env, State](
     (left, right) match {
       case (KindTemplata(leftKind), rightStructTemplata @ StructTemplata(_, _)) => {
         val rightKind =
-          templataTemplarInner.evaluateStructTemplata(state, range, rightStructTemplata, List.empty, expectedType)
+          templataTemplarInner.evaluateStructTemplata(state, range, rightStructTemplata, Vector.empty, expectedType)
         (leftKind == rightKind)
       }
       case (KindTemplata(leftKind), KindTemplata(rightKind)) => {

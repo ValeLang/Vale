@@ -26,7 +26,7 @@ object ExpressionAstronomer {
         val allRunesA = allRunesS.map(Astronomer.translateRune)
         val localRunesA = localRunesS.map(Astronomer.translateRune)
         val (conclusions, rulesA) =
-          Astronomer.makeRuleTyper().solve(astrouts, env, rules, range, List(patternS), Some(allRunesA)) match {
+          Astronomer.makeRuleTyper().solve(astrouts, env, rules, range, Vector(patternS), Some(allRunesA)) match {
             case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(RangedInternalErrorA(range, rtsf.toString))
             case (c, RuleTyperSolveSuccess(r)) => (c, r)
           }
@@ -100,23 +100,23 @@ object ExpressionAstronomer {
       }
       case StaticArrayFromValuesSE(range, maybeMutabilityST, maybeVariabilityST, maybeSizeST, elementsS) => {
         val rules =
-          ((maybeMutabilityST.toList.map(mutabilityST => {
+          ((maybeMutabilityST.toVector.map(mutabilityST => {
             EqualsSR(range, TypedSR(range, ArrayMutabilityImplicitRuneS(), MutabilityTypeSR), TemplexSR(mutabilityST))
           })) ++
-          (maybeVariabilityST.toList.map(variabilityST => {
+          (maybeVariabilityST.toVector.map(variabilityST => {
             EqualsSR(range, TypedSR(range, ArrayVariabilityImplicitRuneS(), VariabilityTypeSR), TemplexSR(variabilityST))
           })) ++
-          (maybeSizeST.toList.map(sizeST => {
+          (maybeSizeST.toVector.map(sizeST => {
             EqualsSR(range, TypedSR(range, ArraySizeImplicitRuneS(), IntTypeSR), TemplexSR(sizeST))
           })))
 
         val maybeMutabilityRuneA = maybeMutabilityST.map(_ => ArrayMutabilityImplicitRuneA())
         val maybeVariabilityRuneA = maybeVariabilityST.map(_ => ArrayVariabilityImplicitRuneA())
         val maybeSizeRuneA = maybeSizeST.map(_ => ArraySizeImplicitRuneA())
-        val runesA = maybeMutabilityRuneA.toList ++ maybeVariabilityRuneA.toList ++ maybeSizeRuneA.toList
+        val runesA = maybeMutabilityRuneA.toVector ++ maybeVariabilityRuneA.toVector ++ maybeSizeRuneA.toVector
 
         val (conclusions, rulesA) =
-          makeRuleTyper().solve(astrouts, env, rules, range, List.empty, Some(runesA.toSet)) match {
+          makeRuleTyper().solve(astrouts, env, rules, range, Vector.empty, Some(runesA.toSet)) match {
             case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
             case (c, RuleTyperSolveSuccess(r)) => (c, r)
           }
@@ -127,21 +127,21 @@ object ExpressionAstronomer {
       }
       case StaticArrayFromCallableSE(range, maybeMutabilityST, maybeVariabilityST, sizeST, callableSE) => {
         val rules =
-          ((maybeMutabilityST.toList.map(mutabilityST => {
+          ((maybeMutabilityST.toVector.map(mutabilityST => {
             EqualsSR(range, TypedSR(range, ArrayMutabilityImplicitRuneS(), MutabilityTypeSR), TemplexSR(mutabilityST))
           })) ++
-            (maybeVariabilityST.toList.map(variabilityST => {
+            (maybeVariabilityST.toVector.map(variabilityST => {
               EqualsSR(range, TypedSR(range, ArrayVariabilityImplicitRuneS(), VariabilityTypeSR), TemplexSR(variabilityST))
             })) ++
-            List(EqualsSR(range, TypedSR(range, ArraySizeImplicitRuneS(), IntTypeSR), TemplexSR(sizeST))))
+            Vector(EqualsSR(range, TypedSR(range, ArraySizeImplicitRuneS(), IntTypeSR), TemplexSR(sizeST))))
 
         val maybeMutabilityRuneA = maybeMutabilityST.map(_ => ArrayMutabilityImplicitRuneA())
         val maybeVariabilityRuneA = maybeVariabilityST.map(_ => ArrayVariabilityImplicitRuneA())
         val sizeRuneA = ArraySizeImplicitRuneA()
-        val runesA = maybeMutabilityRuneA.toList ++ maybeVariabilityRuneA.toList ++ List(sizeRuneA)
+        val runesA = maybeMutabilityRuneA.toVector ++ maybeVariabilityRuneA.toVector ++ Vector(sizeRuneA)
 
         val (conclusions, rulesA) =
-          makeRuleTyper().solve(astrouts, env, rules, range, List.empty, Some(runesA.toSet)) match {
+          makeRuleTyper().solve(astrouts, env, rules, range, Vector.empty, Some(runesA.toSet)) match {
             case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
             case (c, RuleTyperSolveSuccess(r)) => (c, r)
           }
@@ -152,19 +152,19 @@ object ExpressionAstronomer {
       }
       case RuntimeArrayFromCallableSE(range, maybeMutabilityST, maybeVariabilityST, sizeSE, callableSE) => {
         val rules =
-          ((maybeMutabilityST.toList.map(mutabilityST => {
+          ((maybeMutabilityST.toVector.map(mutabilityST => {
             EqualsSR(range, TypedSR(range, ArrayMutabilityImplicitRuneS(), MutabilityTypeSR), TemplexSR(mutabilityST))
           })) ++
-          (maybeVariabilityST.toList.map(variabilityST => {
+          (maybeVariabilityST.toVector.map(variabilityST => {
             EqualsSR(range, TypedSR(range, ArrayVariabilityImplicitRuneS(), VariabilityTypeSR), TemplexSR(variabilityST))
           })))
 
         val maybeMutabilityRuneA = maybeMutabilityST.map(_ => ArrayMutabilityImplicitRuneA())
         val maybeVariabilityRuneA = maybeVariabilityST.map(_ => ArrayVariabilityImplicitRuneA())
-        val runesA = maybeMutabilityRuneA.toList ++ maybeVariabilityRuneA.toList
+        val runesA = maybeMutabilityRuneA.toVector ++ maybeVariabilityRuneA.toVector
 
         val (conclusions, rulesA) =
-          makeRuleTyper().solve(astrouts, env, rules, range, List.empty, Some(runesA.toSet)) match {
+          makeRuleTyper().solve(astrouts, env, rules, range, Vector.empty, Some(runesA.toSet)) match {
             case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
             case (c, RuleTyperSolveSuccess(r)) => (c, r)
           }

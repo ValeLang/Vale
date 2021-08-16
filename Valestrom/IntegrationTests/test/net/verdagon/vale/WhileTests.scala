@@ -44,7 +44,7 @@ class WhileTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector(), List("A", "B", "c")) shouldEqual VonInt(99)
+    compile.evalForKind(Vector(), Vector("A", "B", "c")) shouldEqual VonInt(99)
   }
 
   test("Tests a while loop with a != in it") {
@@ -63,7 +63,7 @@ class WhileTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector(), List("A", "B", "c")) shouldEqual VonInt(99)
+    compile.evalForKind(Vector(), Vector("A", "B", "c")) shouldEqual VonInt(99)
   }
 
   test("Return from infinite while loop") {

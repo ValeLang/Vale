@@ -23,11 +23,11 @@ trait IFunctionTemplarDelegate {
     temputs: Temputs,
     startingFate: FunctionEnvironment,
     fate: FunctionEnvironmentBox,
-    exprs: List[IExpressionAE]):
+    exprs: Vector[IExpressionAE]):
   (ReferenceExpressionTE, Set[CoordT])
 
   def translatePatternList(
-    temputs: Temputs, fate: FunctionEnvironmentBox, patterns1: List[AtomAP], patternInputExprs2: List[ReferenceExpressionTE]):
+    temputs: Temputs, fate: FunctionEnvironmentBox, patterns1: Vector[AtomAP], patternInputExprs2: Vector[ReferenceExpressionTE]):
   ReferenceExpressionTE
 
   def evaluateParent(
@@ -42,7 +42,7 @@ trait IFunctionTemplarDelegate {
     callRange: RangeS,
     // We might be able to move these all into the function environment... maybe....
     originFunction: Option[FunctionA],
-    paramCoords: List[ParameterT],
+    paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
   FunctionHeaderT
 }
@@ -120,7 +120,7 @@ class FunctionTemplar(
     val closuredVarNamesAndTypes =
       closuredNames
         .map(name => determineClosureVariableMember(containingFunctionEnv, temputs, name))
-        .toList;
+        .toVector;
 
     val (structTT, _, functionTemplata) =
       structTemplar.makeClosureUnderstruct(
@@ -241,8 +241,8 @@ class FunctionTemplar(
     temputs: Temputs,
     callRange: RangeS,
     functionTemplata: FunctionTemplata,
-    alreadySpecifiedTemplateArgs: List[ITemplata],
-    paramFilters: List[ParamFilter]):
+    alreadySpecifiedTemplateArgs: Vector[ITemplata],
+    paramFilters: Vector[ParamFilter]):
   (IEvaluateFunctionResult[FunctionBannerT]) = {
     val profileName = functionTemplata.debugString + "<" + alreadySpecifiedTemplateArgs.mkString(", ") + ">(" + paramFilters.map(_.debugString).mkString(", ") + ")"
     profiler.newProfile("EvaluateTemplatedFunctionFromCallForBannerProbe", profileName, () => {
@@ -277,8 +277,8 @@ class FunctionTemplar(
       callRange: RangeS,
       closureStructRef: StructTT,
     function: FunctionA,
-    alreadySpecifiedTemplateArgs: List[ITemplata],
-      argTypes2: List[ParamFilter]):
+    alreadySpecifiedTemplateArgs: Vector[ITemplata],
+      argTypes2: Vector[ParamFilter]):
   (IEvaluateFunctionResult[FunctionBannerT]) = {
     closureOrLightLayer.evaluateTemplatedClosureFunctionFromCallForBanner(
       env, temputs, callRange, closureStructRef, function,
@@ -289,8 +289,8 @@ class FunctionTemplar(
     temputs: Temputs,
     callRange: RangeS,
     functionTemplata: FunctionTemplata,
-    alreadySpecifiedTemplateArgs: List[ITemplata],
-    paramFilters: List[ParamFilter]):
+    alreadySpecifiedTemplateArgs: Vector[ITemplata],
+    paramFilters: Vector[ParamFilter]):
   (IEvaluateFunctionResult[FunctionBannerT]) = {
     val profileName = functionTemplata.debugString + "<" + alreadySpecifiedTemplateArgs.mkString(", ") + ">(" + paramFilters.map(_.debugString).mkString(", ") + ")"
     profiler.newProfile("FunctionTemplarEvaluateTemplatedLightFunctionFromCallForBanner", profileName, () => {
@@ -364,8 +364,8 @@ class FunctionTemplar(
     temputs: Temputs,
     callRange: RangeS,
     functionTemplata: FunctionTemplata,
-    explicitTemplateArgs: List[ITemplata],
-    args: List[ParamFilter]):
+    explicitTemplateArgs: Vector[ITemplata],
+    args: Vector[ParamFilter]):
   IEvaluateFunctionResult[PrototypeT] = {
     val profileName = functionTemplata.debugString + "<" + explicitTemplateArgs.mkString(", ") + ">(" + args.mkString(", ") + ")"
     profiler.newProfile("FunctionTemplarEvaluateTemplatedFunctionFromCallForPrototype", profileName, () => {
@@ -386,8 +386,8 @@ class FunctionTemplar(
       temputs: Temputs,
     callRange: RangeS,
     function: FunctionA,
-      explicitTemplateArgs: List[ITemplata],
-      args: List[ParamFilter]):
+      explicitTemplateArgs: Vector[ITemplata],
+      args: Vector[ParamFilter]):
   IEvaluateFunctionResult[PrototypeT] = {
     closureOrLightLayer.evaluateTemplatedLightFunctionFromCallForPrototype2(
         env, temputs, callRange, function, explicitTemplateArgs, args)
@@ -398,8 +398,8 @@ class FunctionTemplar(
     temputs: Temputs,
     callRange: RangeS,
     function: FunctionA,
-    explicitTemplateArgs: List[ITemplata],
-    args: List[ParamFilter]):
+    explicitTemplateArgs: Vector[ITemplata],
+    args: Vector[ParamFilter]):
   IEvaluateFunctionResult[PrototypeT] = {
     val lambdaCitizenName2 =
       function.name match {

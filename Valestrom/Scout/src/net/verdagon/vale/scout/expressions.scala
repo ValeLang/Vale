@@ -3,32 +3,46 @@ package net.verdagon.vale.scout
 import net.verdagon.vale.parser.{ConstraintP, LendConstraintP, LendWeakP, LoadAsP, MoveP, MutabilityP, OwnershipP, PermissionP, VariabilityP, WeakP}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.{IRulexSR, ITypeSR}
-import net.verdagon.vale.{vassert, vpass}
+import net.verdagon.vale.{vassert, vcurious, vimpl, vpass}
 
 // patternId is a unique number, can be used to make temporary variables that wont
 // collide with other things
 case class LetSE(
     range: RangeS,
-    rules: List[IRulexSR],
+    rules: Vector[IRulexSR],
     unknowableRunes: Set[IRuneS],
     localRunes: Set[IRuneS],
     pattern: AtomSP,
-    expr: IExpressionSE) extends IExpressionSE
+    expr: IExpressionSE) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 
 case class IfSE(
   range: RangeS,
   condition: BlockSE,
   thenBody: BlockSE,
   elseBody: BlockSE
-) extends IExpressionSE
+) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 
-case class WhileSE(range: RangeS, condition: BlockSE, body: BlockSE) extends IExpressionSE
+case class WhileSE(range: RangeS, condition: BlockSE, body: BlockSE) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 
-case class ExprMutateSE(range: RangeS, mutatee: IExpressionSE, expr: IExpressionSE) extends IExpressionSE
-case class GlobalMutateSE(range: RangeS, name: ImpreciseCodeVarNameS, expr: IExpressionSE) extends IExpressionSE
-case class LocalMutateSE(range: RangeS, name: IVarNameS, expr: IExpressionSE) extends IExpressionSE
+case class ExprMutateSE(range: RangeS, mutatee: IExpressionSE, expr: IExpressionSE) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
+case class GlobalMutateSE(range: RangeS, name: ImpreciseCodeVarNameS, expr: IExpressionSE) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
+case class LocalMutateSE(range: RangeS, name: IVarNameS, expr: IExpressionSE) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 
 case class OwnershippedSE(range: RangeS, innerExpr1: IExpressionSE, targetOwnership: LoadAsP) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+
   targetOwnership match {
     case LendWeakP(_) =>
     case LendConstraintP(_) =>
@@ -37,11 +51,9 @@ case class OwnershippedSE(range: RangeS, innerExpr1: IExpressionSE, targetOwners
 }
 
 case class PermissionedSE(range: RangeS, innerExpr1: IExpressionSE, targetPermission: PermissionP) extends IExpressionSE {
-
+  override def hashCode(): Int = vcurious()
 }
 
-
-//case class CurriedFuncH(closureExpr: ExpressionH, funcName: String) extends ExpressionH
 
 // when we make a closure, we make a struct full of pointers to all our variables
 // and the first element is our parent closure
@@ -61,39 +73,48 @@ case class LocalS(
     selfMutated: IVariableUseCertainty,
     childBorrowed: IVariableUseCertainty,
     childMoved: IVariableUseCertainty,
-    childMutated: IVariableUseCertainty)
+    childMutated: IVariableUseCertainty) {
+  override def hashCode(): Int = vcurious()
+}
 
 case class BodySE(
     range: RangeS,
     // These are all the variables we use from parent environments.
     // We have these so templar doesn't have to dive through all the functions
     // that it calls (impossible) to figure out what's needed in a closure struct.
-    closuredNames: List[IVarNameS],
+    closuredNames: Vector[IVarNameS],
 
     block: BlockSE
-)// extends IExpressionSE
+) {
+  override def hashCode(): Int = vcurious()
+}
 
 case class BlockSE(
   range: RangeS,
-  locals: List[LocalS],
+  locals: Vector[LocalS],
 
-  exprs: List[IExpressionSE],
+  exprs: Vector[IExpressionSE],
 ) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
   // Every element should have at least one expression, because a block will
   // return the last expression's result as its result.
   // Even empty blocks aren't empty, they have a void() at the end.
   vassert(exprs.size >= 1)
 
-  vassert(locals == locals.distinct)
+  vassert(locals.map(_.varName) == locals.map(_.varName).distinct)
 }
 
-case class ArgLookupSE(range: RangeS, index: Int) extends IExpressionSE
+case class ArgLookupSE(range: RangeS, index: Int) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 
 case class CheckRefCountSE(
   range: RangeS,
     refExpr: IExpressionSE,
     category: RefCountCategory,
-    numExpr: IExpressionSE) extends IExpressionSE
+    numExpr: IExpressionSE) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 // The type of ref count that an object might have. Used with the CheckRefCountH
 // instruction for counting how many references of a certain type there are.
 sealed trait RefCountCategory
@@ -105,79 +126,120 @@ case object MemberRefCount extends RefCountCategory
 case object RegisterRefCount extends RefCountCategory
 
  // These things will be separated by semicolons, and all be joined in a block
-case class RepeaterBlockSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE
+case class RepeaterBlockSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+ }
 
 // Results in a pack, represents the differences between the expressions
-case class RepeaterBlockIteratorSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE
+case class RepeaterBlockIteratorSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 
-case class ReturnSE(range: RangeS, inner: IExpressionSE) extends IExpressionSE
-case class VoidSE(range: RangeS) extends IExpressionSE {}
+case class ReturnSE(range: RangeS, inner: IExpressionSE) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
+case class VoidSE(range: RangeS) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 
-case class TupleSE(range: RangeS, elements: List[IExpressionSE]) extends IExpressionSE
+case class TupleSE(range: RangeS, elements: Vector[IExpressionSE]) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 case class StaticArrayFromValuesSE(
   range: RangeS,
   maybeMutabilityST: Option[ITemplexS],
   maybeVariabilityST: Option[ITemplexS],
   maybeSizeST: Option[ITemplexS],
-  elements: List[IExpressionSE]
-) extends IExpressionSE
+  elements: Vector[IExpressionSE]
+) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 case class StaticArrayFromCallableSE(
   range: RangeS,
   maybeMutabilityST: Option[ITemplexS],
   maybeVariabilityST: Option[ITemplexS],
   sizeST: ITemplexS,
   callable: IExpressionSE
-) extends IExpressionSE
+) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 case class RuntimeArrayFromCallableSE(
   range: RangeS,
   mutabilityST: Option[ITemplexS],
   variabilityST: Option[ITemplexS],
   sizeSE: IExpressionSE,
   callable: IExpressionSE
-) extends IExpressionSE
+) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 
 // This thing will be repeated, separated by commas, and all be joined in a pack
-case class RepeaterPackSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE
+case class RepeaterPackSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 
 // Results in a pack, represents the differences between the elements
-case class RepeaterPackIteratorSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE
+case class RepeaterPackIteratorSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 
-case class ConstantIntSE(range: RangeS, value: Long, bits: Int) extends IExpressionSE
+case class ConstantIntSE(range: RangeS, value: Long, bits: Int) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 
-case class ConstantBoolSE(range: RangeS, value: Boolean) extends IExpressionSE
+case class ConstantBoolSE(range: RangeS, value: Boolean) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 
-case class ConstantStrSE(range: RangeS, value: String) extends IExpressionSE
+case class ConstantStrSE(range: RangeS, value: String) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 
-case class ConstantFloatSE(range: RangeS, value: Double) extends IExpressionSE
+case class ConstantFloatSE(range: RangeS, value: Double) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 
-case class DestructSE(range: RangeS, inner: IExpressionSE) extends IExpressionSE
+case class DestructSE(range: RangeS, inner: IExpressionSE) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 
 case class FunctionSE(function: FunctionS) extends IExpressionSE {
   override def range: RangeS = function.range
 }
 
-case class DotSE(range: RangeS, left: IExpressionSE, member: String, borrowContainer: Boolean) extends IExpressionSE
+case class DotSE(range: RangeS, left: IExpressionSE, member: String, borrowContainer: Boolean) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 
-case class DotCallSE(range: RangeS, left: IExpressionSE, indexExpr: IExpressionSE) extends IExpressionSE
+case class DotCallSE(range: RangeS, left: IExpressionSE, indexExpr: IExpressionSE) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 
-case class FunctionCallSE(range: RangeS, callableExpr: IExpressionSE, argsExprs1: List[IExpressionSE]) extends IExpressionSE
+case class FunctionCallSE(range: RangeS, callableExpr: IExpressionSE, argsExprs1: Vector[IExpressionSE]) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 
-//case class MethodCall0(callableExpr: Expression0, objectExpr: Expression0, argsExpr: Pack0) extends Expression0
 
 case class LocalLoadSE(range: RangeS, name: IVarNameS, targetOwnership: LoadAsP) extends IExpressionSE {
   vpass()
 }
 // Loads a non-local. In well formed code, this will be a function, but the user also likely
 // tried to access a variable they forgot to declare.
-case class OutsideLoadSE(range: RangeS, name: String, maybeTemplateArgs: Option[List[ITemplexS]], targetOwnership: LoadAsP) extends IExpressionSE
-case class RuneLookupSE(range: RangeS, rune: IRuneS) extends IExpressionSE
+case class OutsideLoadSE(range: RangeS, name: String, maybeTemplateArgs: Option[Vector[ITemplexS]], targetOwnership: LoadAsP) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
+case class RuneLookupSE(range: RangeS, rune: IRuneS) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 
-case class UnletSE(range: RangeS, name: String) extends IExpressionSE
+case class UnletSE(range: RangeS, name: String) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
 
 
-//case class Scramble0(elements: List[Expression0]) extends Expression0 {
+//case class Scramble0(elements: Vector[Expression0]) extends Expression0 {
 //  vassert(!elements.isEmpty, "Can't have an empty scramble")
 //}
-//case class Scramble1(elements: List[Expression1]) extends Expression1 {
+//case class Scramble1(elements: Vector[Expression1]) extends Expression1 {
 //  vassert(!elements.isEmpty, "Can't have an empty scramble")
 //}

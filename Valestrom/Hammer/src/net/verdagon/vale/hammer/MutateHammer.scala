@@ -59,7 +59,7 @@ object MutateHammer {
     sourceExprResultLine: ExpressionH[KindH],
     arrayExpr2: ReferenceExpressionTE,
     indexExpr2: ReferenceExpressionTE
-  ): (ExpressionH[KindH], List[ExpressionT]) = {
+  ): (ExpressionH[KindH], Vector[ExpressionT]) = {
     val (destinationResultLine, destinationDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
     val (indexExprResultLine, indexDeferreds) =
@@ -87,7 +87,7 @@ object MutateHammer {
                                                     sourceExprResultLine: ExpressionH[KindH],
                                                     arrayExpr2: ReferenceExpressionTE,
                                                     indexExpr2: ReferenceExpressionTE
-  ): (ExpressionH[KindH], List[ExpressionT]) = {
+  ): (ExpressionH[KindH], Vector[ExpressionT]) = {
     val (destinationResultLine, destinationDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
     val (indexExprResultLine, indexDeferreds) =
@@ -115,7 +115,7 @@ object MutateHammer {
     sourceExprResultLine: ExpressionH[KindH],
     structExpr2: ReferenceExpressionTE,
     memberName: FullNameT[IVarNameT]
-  ): (ExpressionH[KindH], List[ExpressionT]) = {
+  ): (ExpressionH[KindH], Vector[ExpressionT]) = {
     val (destinationResultLine, destinationDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
@@ -179,7 +179,7 @@ object MutateHammer {
     sourceExprResultLine: ExpressionH[KindH],
     structExpr2: ReferenceExpressionTE,
     memberName: FullNameT[IVarNameT]
-  ): (ExpressionH[KindH], List[ExpressionT]) = {
+  ): (ExpressionH[KindH], Vector[ExpressionT]) = {
     val (destinationResultLine, destinationDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
@@ -216,7 +216,7 @@ object MutateHammer {
     varId: FullNameT[IVarNameT],
     variability: VariabilityT,
     reference: CoordT
-  ): (ExpressionH[KindH], List[ExpressionT]) = {
+  ): (ExpressionH[KindH], Vector[ExpressionT]) = {
     val local = locals.get(varId).get
     val (boxStructRefH) =
       StructHammer.makeBox(hinputs, hamuts, variability, reference, sourceResultPointerTypeH)
@@ -240,7 +240,7 @@ object MutateHammer {
           StructHammer.BOX_MEMBER_INDEX,
           sourceExprResultLine,
           NameHammer.addStep(hamuts, boxStructRefH.fullName, StructHammer.BOX_MEMBER_NAME))
-    (storeNode, List.empty)
+    (storeNode, Vector.empty)
   }
 
   private def translateMundaneLocalMutate(
@@ -250,7 +250,7 @@ object MutateHammer {
                                            locals: LocalsBox,
                                            sourceExprResultLine: ExpressionH[KindH],
                                            varId: FullNameT[IVarNameT]
-  ): (ExpressionH[KindH], List[ExpressionT]) = {
+  ): (ExpressionH[KindH], Vector[ExpressionT]) = {
     val local = locals.get(varId).get
     vassert(!locals.unstackifiedVars.contains(local.id))
     val newStoreNode =
@@ -258,6 +258,6 @@ object MutateHammer {
           local,
           sourceExprResultLine,
           NameHammer.translateFullName(hinputs, hamuts, varId))
-    (newStoreNode, List.empty)
+    (newStoreNode, Vector.empty)
   }
 }

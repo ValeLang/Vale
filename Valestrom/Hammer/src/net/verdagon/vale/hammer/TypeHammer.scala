@@ -9,16 +9,9 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.vale.vfail
 
 object TypeHammer {
-  def translateMembers(hinputs: Hinputs, hamuts: HamutsBox, structName: FullNameT[INameT], members: List[StructMemberT]):
-  (List[StructMemberH]) = {
-    members match {
-      case Nil => Nil
-      case headMember2 :: tailMembers2 => {
-        val (headMemberH) = translateMember(hinputs, hamuts, structName, headMember2)
-        val (tailMembersH) = translateMembers(hinputs, hamuts, structName, tailMembers2)
-        (headMemberH :: tailMembersH)
-      }
-    }
+  def translateMembers(hinputs: Hinputs, hamuts: HamutsBox, structName: FullNameT[INameT], members: Vector[StructMemberT]):
+  (Vector[StructMemberH]) = {
+    members.map(translateMember(hinputs, hamuts, structName, _))
   }
 
   def translateMember(hinputs: Hinputs, hamuts: HamutsBox, structName: FullNameT[INameT], member2: StructMemberT):
@@ -126,16 +119,9 @@ object TypeHammer {
   def translateReferences(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-      references2: List[CoordT]):
-  (List[ReferenceH[KindH]]) = {
-    references2 match {
-      case Nil => Nil
-      case headReference2 :: tailPointers2 => {
-        val (headPointerH) = translateReference(hinputs, hamuts, headReference2)
-        val (tailPointersH) = translateReferences(hinputs, hamuts, tailPointers2)
-        (headPointerH :: tailPointersH)
-      }
-    }
+      references2: Vector[CoordT]):
+  (Vector[ReferenceH[KindH]]) = {
+    references2.map(translateReference(hinputs, hamuts, _))
   }
 
 //  def checkReference(baseTypeH: BaseTypeH): ReferenceH = {

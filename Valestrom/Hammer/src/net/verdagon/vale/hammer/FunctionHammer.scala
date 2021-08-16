@@ -11,12 +11,12 @@ object FunctionHammer {
   def translateFunctions(
     hinputs: Hinputs,
     hamuts: HamutsBox,
-    functions2: List[FunctionT]):
-  (List[FunctionRefH]) = {
-    functions2.foldLeft((List[FunctionRefH]()))({
+    functions2: Vector[FunctionT]):
+  (Vector[FunctionRefH]) = {
+    functions2.foldLeft((Vector[FunctionRefH]()))({
       case ((previousFunctionsH), function2) => {
         val (functionH) = translateFunction(hinputs, hamuts, function2)
-        (functionH :: previousFunctionsH)
+        Vector(functionH) ++ previousFunctionsH
       }
     })
   }
@@ -45,7 +45,7 @@ object FunctionHammer {
               Set[VariableIdH](),
               Map[VariableIdH,Local](),
               1));
-        val (bodyH, Nil) =
+        val (bodyH, Vector()) =
           ExpressionHammer.translate(hinputs, hamuts, header, locals, body)
         vassert(locals.unstackifiedVars.size == locals.locals.size)
         val resultCoord = bodyH.resultType
@@ -67,7 +67,7 @@ object FunctionHammer {
     }
   }
 
-  def translateFunctionAttributes(attributes: List[IFunctionAttribute2]) = {
+  def translateFunctionAttributes(attributes: Vector[IFunctionAttribute2]) = {
     attributes.map({
       case UserFunction2 => UserFunctionH
       case Pure2 => PureH
@@ -78,16 +78,9 @@ object FunctionHammer {
 
   def translatePrototypes(
       hinputs: Hinputs, hamuts: HamutsBox,
-      prototypes2: List[PrototypeT]):
-  (List[PrototypeH]) = {
-    prototypes2 match {
-      case Nil => Nil
-      case headPrototype2 :: tailPrototypes2 => {
-        val (headPrototypeH) = translatePrototype(hinputs, hamuts, headPrototype2)
-        val (tailPrototypesH) = translatePrototypes(hinputs, hamuts, tailPrototypes2)
-        (headPrototypeH :: tailPrototypesH)
-      }
-    }
+      prototypes2: Vector[PrototypeT]):
+  (Vector[PrototypeH]) = {
+    prototypes2.map(translatePrototype(hinputs, hamuts, _))
   }
 
   def translatePrototype(

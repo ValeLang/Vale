@@ -17,7 +17,7 @@ class PackTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
-    main.all({ case TupleTE(List(_, _, _), _, _) => }).size shouldEqual 1
+    main.all({ case TupleTE(Vector(_, _, _), _, _) => }).size shouldEqual 1
 
     compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
@@ -35,9 +35,9 @@ class PackTests extends FunSuite with Matchers {
     val main = temputs.lookupFunction("main")
     main.all({
       case TupleTE(
-        List(
-          TupleTE(List(_, _), _, _),
-          TupleTE(List(_, _), _, _)),
+        Vector(
+          TupleTE(Vector(_, _), _, _),
+          TupleTE(Vector(_, _), _, _)),
         _,
         _) =>
     }).size shouldEqual 1
@@ -56,7 +56,7 @@ class PackTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
-    main .all({ case TupleTE(List(_, TupleTE(List(_, _), _, _)), _, _) => }).size shouldEqual 1
+    main .all({ case TupleTE(Vector(_, TupleTE(Vector(_, _), _, _)), _, _) => }).size shouldEqual 1
 
     compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }

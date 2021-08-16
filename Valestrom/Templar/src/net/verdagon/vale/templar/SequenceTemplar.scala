@@ -14,7 +14,7 @@ class SequenceTemplar(
   def evaluate(
     env: FunctionEnvironmentBox,
     temputs: Temputs,
-    exprs2: List[ReferenceExpressionTE]):
+    exprs2: Vector[ReferenceExpressionTE]):
   (ExpressionT) = {
     val types2 = exprs2.map(_.resultRegister.expectReference().reference)
     val (tupleType2, mutability) = makeTupleType(env.globalEnv, temputs, types2)
@@ -27,7 +27,7 @@ class SequenceTemplar(
   def makeTupleType(
     env: IEnvironment,
     temputs: Temputs,
-    types2: List[CoordT]):
+    types2: Vector[CoordT]):
   (TupleTT, MutabilityT) = {
     val (structTT, mutability) =
       structTemplar.makeSeqOrPackUnderstruct(env.globalEnv, temputs, types2, TupleNameT(types2))

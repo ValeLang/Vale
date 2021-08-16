@@ -26,17 +26,17 @@ class ScoutParametersTests extends FunSuite with Matchers {
 
     val runeInRules =
       main.templateRules match {
-        case List(TypedSR(_, rune @ CodeRuneS("T"),CoordTypeSR)) => rune
+        case Vector(TypedSR(_, rune @ CodeRuneS("T"),CoordTypeSR)) => rune
       }
     RuleSUtils.getDistinctOrderedRunesForRulexes(main.templateRules) match {
-      case List(runeFromFunc) => vassert(runeInRules == runeFromFunc)
+      case Vector(runeFromFunc) => vassert(runeInRules == runeFromFunc)
     }
   }
 
   test("Borrowed rune") {
     val program1 = compile("""fn main<T>(moo &T) infer-ret { }""")
     val main = program1.lookupFunction("main")
-    val List(param) = main.params
+    val Vector(param) = main.params
 
     val tCoordRuneFromParams =
       param match {
@@ -50,7 +50,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
 
     val tCoordRuneFromRules =
       main.templateRules match {
-        case List(
+        case Vector(
           EqualsSR(_,
             TypedSR(_,tcr @ ImplicitRuneS(_,_),CoordTypeSR),
             TemplexSR(InterpretedST(_,ConstraintP,ReadonlyP,RuneST(_,CodeRuneS("T")))))) => tcr
@@ -62,7 +62,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
   test("Anonymous typed param") {
     val program1 = compile("""fn main(_ int) infer-ret { }""")
     val main = program1.lookupFunction("main")
-    val List(param) = main.params
+    val Vector(param) = main.params
     val paramRune =
       param match {
         case ParameterS(
@@ -74,7 +74,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
       }
 
     main.templateRules match {
-      case List(
+      case Vector(
         EqualsSR(_,
           TypedSR(_, pr,CoordTypeSR),
           TemplexSR(NameST(_, CodeTypeNameS("int"))))) => {
@@ -83,13 +83,13 @@ class ScoutParametersTests extends FunSuite with Matchers {
     }
 
     RuleSUtils.getDistinctOrderedRunesForRulexes(main.templateRules) shouldEqual
-      List(paramRune)
+      Vector(paramRune)
   }
 
   test("Anonymous untyped param") {
     val program1 = compile("""fn main(_) infer-ret { }""")
     val main = program1.lookupFunction("main")
-    val List(param) = main.params
+    val Vector(param) = main.params
     val paramRune =
       param match {
         case ParameterS(
@@ -101,13 +101,13 @@ class ScoutParametersTests extends FunSuite with Matchers {
       }
 
     main.templateRules match {
-      case List(TypedSR(_, pr,CoordTypeSR)) => {
+      case Vector(TypedSR(_, pr,CoordTypeSR)) => {
         vassert(pr == paramRune)
       }
     }
 
     RuleSUtils.getDistinctOrderedRunesForRulexes(main.templateRules) shouldEqual
-      List(paramRune)
+      Vector(paramRune)
   }
 
   test("Rune destructure") {
@@ -115,7 +115,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
     val program1 = compile("""fn main<T>(moo T(a int)) infer-ret { }""")
     val main = program1.lookupFunction("main")
 
-    val List(param) = main.params
+    val Vector(param) = main.params
 
     val (aRune, tRune) =
       param match {
@@ -125,7 +125,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
               None,
               tr @ CodeRuneS("T"),
               Some(
-                List(
+                Vector(
                   AtomSP(_,
                   Some(CaptureS(CodeVarNameS("a"))),
                     None,
@@ -134,7 +134,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
       }
 
     main.templateRules match {
-      case List(
+      case Vector(
         TypedSR(_, tr,CoordTypeSR),
         EqualsSR(_,
           TypedSR(_, ar,CoordTypeSR),
@@ -145,10 +145,10 @@ class ScoutParametersTests extends FunSuite with Matchers {
     }
 
     RuleSUtils.getDistinctOrderedRunesForRulexes(main.templateRules) shouldEqual
-      List(tRune, aRune)
+      Vector(tRune, aRune)
 
     // See CCAUIR.
-    main.identifyingRunes shouldEqual List(tRune)
+    main.identifyingRunes shouldEqual Vector(tRune)
   }
 
   test("Regioned pure function") {

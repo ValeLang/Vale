@@ -16,17 +16,17 @@ case class TemplarCompilationOptions(
   verbose: Boolean = true,
   profiler: IProfiler = new NullProfiler(),
   useOptimization: Boolean = false,
-)
+) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 class TemplarCompilation(
-  packagesToBuild: List[PackageCoordinate],
+  packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]],
   options: TemplarCompilationOptions = TemplarCompilationOptions()) {
   var astronomerCompilation = new AstronomerCompilation(packagesToBuild, packageToContentsResolver)
   var hinputsCache: Option[Hinputs] = None
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = astronomerCompilation.getCodeMap()
-  def getParseds(): Result[FileCoordinateMap[(FileP, List[(Int, Int)])], FailedParse] = astronomerCompilation.getParseds()
+  def getParseds(): Result[FileCoordinateMap[(FileP, Vector[(Int, Int)])], FailedParse] = astronomerCompilation.getParseds()
   def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = astronomerCompilation.getVpstMap()
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = astronomerCompilation.getScoutput()
 

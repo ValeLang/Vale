@@ -3,22 +3,22 @@ package net.verdagon.vale.templar
 import net.verdagon.vale.astronomer.{GlobalFunctionFamilyNameA, IImpreciseNameStepA, INameA, ImmConcreteDestructorImpreciseNameA, ImmConcreteDestructorNameA, ImmInterfaceDestructorImpreciseNameA}
 import net.verdagon.vale.templar.templata.{FunctionBannerT, OverrideT, PrototypeT, SignatureT}
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{vassert, vfail, vwat}
+import net.verdagon.vale.{vassert, vfail, vimpl, vwat}
 
 object EdgeTemplar {
   sealed trait IMethod
   case class NeededOverride(
     name: IImpreciseNameStepA,
-    paramFilters: List[ParamFilter]
-  ) extends IMethod
-  case class FoundFunction(prototype: PrototypeT) extends IMethod
+    paramFilters: Vector[ParamFilter]
+  ) extends IMethod { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+  case class FoundFunction(prototype: PrototypeT) extends IMethod { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
   case class PartialEdgeT(
     struct: StructTT,
     interface: InterfaceTT,
-    methods: List[IMethod])
+    methods: Vector[IMethod]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
-  def assemblePartialEdges(temputs: Temputs): List[PartialEdgeT] = {
+  def assemblePartialEdges(temputs: Temputs): Vector[PartialEdgeT] = {
     val interfaceEdgeBlueprints = makeInterfaceEdgeBlueprints(temputs)
 
     val overrideFunctionsAndIndicesByStructAndInterface = doBlah(temputs, interfaceEdgeBlueprints)
@@ -28,7 +28,7 @@ object EdgeTemplar {
         .map({ case ((struct, superInterface), overrideFunctionsAndIndices) =>
           val blueprint = interfaceEdgeBlueprints.find(_.interface == superInterface).get
           val overrideFunctionsByIndex =
-            overrideFunctionsAndIndices.groupBy(_._2).mapValues(_.map(_._1).toList)
+            overrideFunctionsAndIndices.groupBy(_._2).mapValues(_.map(_._1).toVector)
           // overrideIndex is the index in the itable
           val methods =
             blueprint.superFamilyRootBanners.zipWithIndex.map({ case (superFunction, overrideIndex) =>
@@ -47,8 +47,8 @@ object EdgeTemplar {
                     case _ => vwat()
                   }
                 }
-                case Some(Nil) => vfail("wot")
-                case Some(List(onlyOverride)) => FoundFunction(onlyOverride.header.toPrototype)
+                case Some(Vector()) => vfail("wot")
+                case Some(Vector(onlyOverride)) => FoundFunction(onlyOverride.header.toPrototype)
                 case Some(multipleOverrides) => {
                   vfail("Multiple overrides for struct " + struct + " for interface " + superInterface + ": " + multipleOverrides.map(_.header.toSignature).mkString(", "))
                 }
@@ -57,17 +57,17 @@ object EdgeTemplar {
           PartialEdgeT(struct, superInterface, methods)
         })
 
-    partialEdges2.toList
+    partialEdges2.toVector
   }
 
 
   def doBlah(
     temputs: Temputs,
     interfaceEdgeBlueprints: Vector[InterfaceEdgeBlueprint]
-  ): Map[(StructTT, InterfaceTT), List[(FunctionT, Int)]] = {
-    temputs.getAllFunctions().toList.flatMap({ case overrideFunction =>
+  ): Map[(StructTT, InterfaceTT), Vector[(FunctionT, Int)]] = {
+    temputs.getAllFunctions().toVector.flatMap({ case overrideFunction =>
       overrideFunction.header.getOverride match {
-        case None => List.empty
+        case None => Vector.empty
         case Some((struct, superInterface)) => {
           // Make sure that the struct actually overrides that function
           if (!temputs.getAllImpls().exists(impl => impl.struct == struct && impl.interface == superInterface)) {
@@ -111,11 +111,11 @@ object EdgeTemplar {
                 namesMatch && possibleSuperFunction.paramTypes == needleSuperFunctionParamTypes
               })
           matchesAndIndices match {
-            case Nil => {
+            case Vector() => {
               vfail("Function " + overrideFunction.header.toSignature + " doesn't override anything in " + superInterface)
             }
-            case List((_, indexInEdge)) => {
-              List((struct, superInterface) -> (overrideFunction, indexInEdge))
+            case Vector((_, indexInEdge)) => {
+              Vector((struct, superInterface) -> (overrideFunction, indexInEdge))
             }
             case _ => {
               vfail("Function " + overrideFunction.header.toSignature + " overrides multiple things in " + superInterface + ": " + matchesAndIndices.map(_._1.toSignature).mkString(", "))
@@ -132,8 +132,8 @@ object EdgeTemplar {
     val abstractFunctionHeadersByInterfaceWithoutEmpties =
       temputs.getAllFunctions().flatMap({ case function =>
         function.header.getAbstractInterface match {
-          case None => List.empty
-          case Some(abstractInterface) => List(abstractInterface -> function)
+          case None => Vector.empty
+          case Some(abstractInterface) => Vector(abstractInterface -> function)
         }
       })
         .groupBy(_._1)
@@ -165,7 +165,7 @@ object EdgeTemplar {
           InterfaceEdgeBlueprint(
             interfaceTT,
             // This is where they're given order and get an implied index
-            functionHeaders2.map(_.toBanner).toList)
+            functionHeaders2.map(_.toBanner).toVector)
         })
     interfaceEdgeBlueprints.toVector
   }

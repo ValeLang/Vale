@@ -16,7 +16,7 @@ class BuildAction extends HttpFunction {
 
     val options =
       Options(
-        List(SourceInput(Driver.DEFAULT_PACKAGE_COORD, "in.vale", code)),
+        Vector(SourceInput(Driver.DEFAULT_PACKAGE_COORD, "in.vale", code)),
         Some(""),
         false, false, true, false, true, None, false)
     val json =

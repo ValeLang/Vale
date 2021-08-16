@@ -8,8 +8,8 @@ trait TestParseUtils {
       case ParseFailure(err) => {
         vfail(
           ParseErrorHumanizer.humanize(
-            FileCoordinateMap(Map()).add("my", List.empty, "0", code),
-            FileCoordinate("my", List.empty, "0"),
+            FileCoordinateMap(Map()).add("my", Vector.empty, "0", code),
+            FileCoordinate("my", Vector.empty, "0"),
             err))
       }
       case ParseSuccess(result) => result._1
@@ -20,8 +20,8 @@ trait TestParseUtils {
       case ParseFailure(err) => {
         vfail(
           ParseErrorHumanizer.humanize(
-            FileCoordinateMap(Map()).add("my", List.empty, "0", code),
-            FileCoordinate("my", List.empty, "0"),
+            FileCoordinateMap(Map()).add("my", Vector.empty, "0", code),
+            FileCoordinate("my", Vector.empty, "0"),
             err))
       }
       case ParseSuccess(result) => result

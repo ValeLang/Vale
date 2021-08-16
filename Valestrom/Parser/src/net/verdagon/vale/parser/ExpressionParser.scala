@@ -1,7 +1,7 @@
 package net.verdagon.vale.parser
 
 import net.verdagon.vale.parser.patterns.PatternParser
-import net.verdagon.vale.{vassert, vcheck, vcurious, vfail}
+import net.verdagon.vale.{vassert, vcheck, vcurious, vfail, vimpl}
 import org.apache.commons.lang.StringEscapeUtils
 
 import scala.util.parsing.combinator.RegexParsers
@@ -20,14 +20,14 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   }
 
   private[parser] def lookup: Parser[LookupPE] = {
-//    ("`" ~> "[^`]+".r <~ "`" ^^ (i => LookupPE(i, List.empty))) |
+//    ("`" ~> "[^`]+".r <~ "`" ^^ (i => LookupPE(i, Vector.empty))) |
     (exprIdentifier ^^ (i => LookupPE(i, None)))
   }
 
   private[parser] def templateArgs: Parser[TemplateArgsP] = {
     pos ~ ("<" ~> optWhite ~> repsep(templex, optWhite ~> "," <~ optWhite) <~ optWhite <~ ">") ~ pos ^^ {
       case begin ~ args ~ end => {
-        TemplateArgsP(Range(begin, end), args)
+        TemplateArgsP(Range(begin, end), args.toVector)
       }
     }
   }
@@ -38,9 +38,9 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     }
   }
 
-  case class BadLetBegin(range: Range)
+  case class BadLetBegin(range: Range) { override def hashCode(): Int = vcurious() }
 
-  case class LetBegin(begin: Int, patternPP: PatternPP)
+  case class LetBegin(begin: Int, patternPP: PatternPP) { override def hashCode(): Int = vcurious() }
 
   private[parser] def letBegin: Parser[LetBegin] = {
     pos ~ (atomPattern <~ white <~ "=" <~ white) ^^ {
@@ -61,7 +61,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
         pos ^^ {
       case LetBegin(begin, pattern) ~ expr ~ end => {
         // We just threw away the topLevelRunes because let statements cant have them.
-        LetPE(Range(begin, end), /*maybeTemplateRules.getOrElse(List.empty)*/None, pattern, expr)
+        LetPE(Range(begin, end), /*maybeTemplateRules.getOrElse(Vector.empty)*/None, pattern, expr)
       }
     }
   }
@@ -102,7 +102,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   private[parser] def not: Parser[IExpressionPE] = {
     pos ~ (pstr("not") <~ white) ~ postfixableExpressions ~ pos ^^ {
       case begin ~ not ~ expr ~ end => {
-        FunctionCallPE(Range(begin, end), None, Range(begin, begin), false, LookupPE(not, None), List(expr), LendConstraintP(Some(ReadonlyP)))
+        FunctionCallPE(Range(begin, end), None, Range(begin, begin), false, LookupPE(not, None), Vector(expr), LendConstraintP(Some(ReadonlyP)))
       }
     }
   }
@@ -148,7 +148,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
           Range(begin, begin),
           false,
           LookupPE(eachI, None),
-          List(collection, lam),
+          Vector(collection, lam),
           LendConstraintP(None))
       }
     }
@@ -168,7 +168,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
         ("{" ~> optWhite ~> repsep(caase, optWhite) <~ optWhite <~ "}") ~
         pos ^^ {
       case begin ~ condExpr ~ lambdas ~ end => {
-        MatchPE(Range(begin, end), condExpr, lambdas)
+        MatchPE(Range(begin, end), condExpr, lambdas.toVector)
       }
     }
   }
@@ -176,7 +176,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   private[parser] def ifPart: Parser[(BlockPE, BlockPE)] = {
     ("if" ~> optWhite ~> pos) ~ ("(" ~> optWhite ~> (let | badLet | expression) <~ optWhite <~ ")") ~ (pos <~ optWhite) ~ bracedBlock ^^ {
       case condBegin ~ condExpr ~ condEnd ~ thenLambda => {
-        (BlockPE(Range(condBegin, condEnd), List(condExpr)), thenLambda)
+        (BlockPE(Range(condBegin, condEnd), Vector(condExpr)), thenLambda)
       }
     }
   }
@@ -190,7 +190,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
       case begin ~ rootIf ~ ifElses ~ maybeElseBlock ~ end => {
         val finalElse: BlockPE =
           maybeElseBlock match {
-            case None => BlockPE(Range(end, end), List(VoidPE(Range(end, end))))
+            case None => BlockPE(Range(end, end), Vector(VoidPE(Range(end, end))))
             case Some(block) => block
           }
         val rootElseBlock =
@@ -198,7 +198,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
             case ((condBlock, thenBlock), elseBlock) => {
               BlockPE(
                 Range(condBlock.range.begin, thenBlock.range.end),
-                List(
+                Vector(
                   IfPE(
                     Range(condBlock.range.begin, thenBlock.range.end),
                     condBlock, thenBlock, elseBlock)))
@@ -258,7 +258,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   private[parser] def shortStringExpr: Parser[IExpressionPE] = {
     pos ~ ("\"" ~> rep(shortStringPart) <~ "\"") ~ pos ^^ {
       case begin ~ parts ~ end => {
-        simplifyStringInterpolate(StrInterpolatePE(Range(begin, end), parts))
+        simplifyStringInterpolate(StrInterpolatePE(Range(begin, end), parts.toVector))
       }
     }
   }
@@ -282,7 +282,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   private[parser] def longStringExpr: Parser[IExpressionPE] = {
     pos ~ ("\"\"\"" ~> rep(longStringPart) <~ "\"\"\"") ~ pos ^^ {
       case begin ~ parts ~ end => {
-        simplifyStringInterpolate(StrInterpolatePE(Range(begin, end), parts))
+        simplifyStringInterpolate(StrInterpolatePE(Range(begin, end), parts.toVector))
       }
     }
   }
@@ -302,10 +302,10 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
 
     val StrInterpolatePE(range, parts) = stringExpr
 
-    combine(List.empty, parts).reverse match {
+    combine(List.empty, parts.toList).reverse match {
       case Nil => ConstantStrPE(range, "")
       case List(s @ ConstantStrPE(_, _)) => s
-      case multiple => StrInterpolatePE(range, multiple)
+      case multiple => StrInterpolatePE(range, multiple.toVector)
     }
   }
 
@@ -359,14 +359,14 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
             Range(begin, begin),
             false,
             LookupPE(NameP(Range(begin, begin), ""), None),
-            List.empty,
+            Vector.empty,
             LendConstraintP((None)))
         }
       }) |
 //      callNamed |
 //      callCallable |
       (pos ~ packExpr ~ pos ^^ {
-        case begin ~ (p @ PackPE(_, List(inner))) ~ end => p
+        case begin ~ (p @ PackPE(_, Vector(inner))) ~ end => p
         case begin ~ inners ~ end => ShortcallPE(Range(begin, end), inners.inners)
       }) |
       arrayOrTuple |
@@ -386,25 +386,25 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
       containerReadwrite: Boolean,
       isMapCall: Boolean,
       lookup: LookupPE,
-      args: List[IExpressionPE]
-    ) extends IStep
+      args: Vector[IExpressionPE]
+    ) extends IStep { override def hashCode(): Int = vcurious() }
     case class MemberAccessStep(
       stepRange: Range,
       operatorRange: Range,
       isMapCall: Boolean,
       name: LookupPE
-    ) extends IStep
+    ) extends IStep { override def hashCode(): Int = vcurious() }
     case class CallStep(
       stepRange: Range,
       operatorRange: Range,
       containerReadwrite: Boolean,
       isMapCall: Boolean,
-      args: List[IExpressionPE]
-    ) extends IStep
+      args: Vector[IExpressionPE]
+    ) extends IStep { override def hashCode(): Int = vcurious() }
     case class IndexStep(
       stepRange: Range,
-      args: List[IExpressionPE]
-    ) extends IStep
+      args: Vector[IExpressionPE]
+    ) extends IStep { override def hashCode(): Int = vcurious() }
     def step: Parser[IStep] = {
       def afterDot = {
         (integerExpression ^^ { case ConstantIntPE(range, value, bits) => LookupPE(NameP(range, value.toString), None) }) |
@@ -547,7 +547,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
         white ~> (pstr("*") | pstr("/")) <~ white,
         (range, op: NameP, left, right) => {
           FunctionCallPE(
-            range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), List(left, right), LendConstraintP(Some(ReadonlyP)))
+            range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), Vector(left, right), LendConstraintP(Some(ReadonlyP)))
         })
 
     val withAddSubtract =
@@ -556,7 +556,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
         white ~> (pstr("+") | pstr("-")) <~ white,
         (range, op: NameP, left, right) => {
           FunctionCallPE(
-            range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), List(left, right), LendConstraintP(Some(ReadonlyP)))
+            range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), Vector(left, right), LendConstraintP(Some(ReadonlyP)))
         })
 
 //    val withAnd =
@@ -579,7 +579,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
           not(white ~> conjunctionOperators <~ white) ~>
           (white ~> infixFunctionIdentifier <~ white),
         (range, funcName: NameP, left, right) => {
-          FunctionCallPE(range, None, Range(funcName.range.begin, funcName.range.end), false, LookupPE(funcName, None), List(left, right), LendConstraintP(Some(ReadonlyP)))
+          FunctionCallPE(range, None, Range(funcName.range.begin, funcName.range.end), false, LookupPE(funcName, None), Vector(left, right), LendConstraintP(Some(ReadonlyP)))
         })
 
     val withComparisons =
@@ -588,7 +588,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
         not(white ~> conjunctionOperators <~ white) ~>
           white ~> comparisonOperators <~ white,
         (range, op: NameP, left, right) => {
-          FunctionCallPE(range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), List(left, right), LendConstraintP(Some(ReadonlyP)))
+          FunctionCallPE(range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), Vector(left, right), LendConstraintP(Some(ReadonlyP)))
         })
 
     val withConjunctions =
@@ -597,8 +597,8 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
         white ~> conjunctionOperators <~ white,
         (range, op: NameP, left, right) => {
           op.str match {
-            case "and" => AndPE(range, BlockPE(left.range, List(left)), BlockPE(right.range, List(right)))
-            case "or" => OrPE(range, BlockPE(left.range, List(left)), BlockPE(right.range, List(right)))
+            case "and" => AndPE(range, BlockPE(left.range, Vector(left)), BlockPE(right.range, Vector(right)))
+            case "or" => OrPE(range, BlockPE(left.range, Vector(left)), BlockPE(right.range, Vector(right)))
           }
         })
 
@@ -625,13 +625,13 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     }
   }
 
-  def multiStatementBlock: Parser[List[IExpressionPE]] = {
+  def multiStatementBlock: Parser[Vector[IExpressionPE]] = {
     // Can't just do a rep(statement <~ optWhite) ~ ("=" ~> optWhite ~> statement) because
     // "= doThings(a);" is actually a valid statement, which looks like doThings(=, a);
     rep1sep(statementOrResult, optWhite) ~ pos ^^ {
       case statements ~ end => {
         statements match {
-          case Nil => List(VoidPE(Range(end, end)))
+          case Nil => Vector(VoidPE(Range(end, end)))
           case resultsOrStatements => {
             if (resultsOrStatements.init.exists(_._2)) {
               vfail("wot")
@@ -642,18 +642,18 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
               } else {
                 resultsOrStatements.map(_._1) :+ VoidPE(Range(end, end))
               }
-            exprs
+            exprs.toVector
           }
         }
       }
     }
   }
 
-  def blockExprs: Parser[List[IExpressionPE]] = {
+  def blockExprs: Parser[Vector[IExpressionPE]] = {
     multiStatementBlock |
-      ((expression) ^^ { case e => List(e) }) |
-      (pos ^^ { case p => List(VoidPE(Range(p, p)))}) |
-      (pos ~ ("..." ~> pos) ^^ { case begin ~ end => List(VoidPE(Range(begin, end))) })
+      ((expression) ^^ { case e => Vector(e) }) |
+      (pos ^^ { case p => Vector(VoidPE(Range(p, p)))}) |
+      (pos ~ ("..." ~> pos) ^^ { case begin ~ end => Vector(VoidPE(Range(begin, end))) })
   }
 
   private[parser] def arrayOrTuple: Parser[IExpressionPE] = {
@@ -700,27 +700,27 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
           maybeVariability,
           size,
           initializingIndividualElements,
-          valueExprs)
+          valueExprs.toVector)
       }
     }
   }
 
   private[parser] def tuupleExpr: Parser[IExpressionPE] = {
     pos ~ ("[" ~> optWhite ~> repsep(expression, optWhite ~> "," <~ optWhite) <~ optWhite <~ "]") ~ pos ^^ {
-      case begin ~ (a:List[IExpressionPE]) ~ end => {
-        TuplePE(Range(begin, end), a)
+      case begin ~ a ~ end => {
+        TuplePE(Range(begin, end), a.toVector)
       }
     }
   }
 
   private[parser] def packExpr: Parser[PackPE] = {
-    pos ~ ("(" ~> optWhite ~> ("..." ^^^ List.empty | repsep(expression, optWhite ~> "," <~ optWhite)) <~ optWhite <~ ")") ~ pos ^^ {
-      case begin ~ inners ~ end => PackPE(Range(begin, end), inners)
+    pos ~ ("(" ~> optWhite ~> ("..." ^^^ Vector.empty | repsep(expression, optWhite ~> "," <~ optWhite)) <~ optWhite <~ ")") ~ pos ^^ {
+      case begin ~ inners ~ end => PackPE(Range(begin, end), inners.toVector)
     }
   }
 
-  private[parser] def indexExpr: Parser[List[IExpressionPE]] = {
-    "[" ~> optWhite ~> repsep(expression, optWhite ~> "," <~ optWhite) <~ optWhite <~ "]"
+  private[parser] def indexExpr: Parser[Vector[IExpressionPE]] = {
+    "[" ~> optWhite ~> repsep(expression, optWhite ~> "," <~ optWhite) <~ optWhite <~ "]" ^^ (a => a.toVector)
   }
 //
 //  private[parser] def filledParamLambda: Parser[FunctionP] = {
@@ -736,13 +736,13 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
 //      case begin ~ patternParams ~ maybeReturn ~ bodyBegin ~ end =>
 //        FunctionP(
 //          Range(begin, end), None, None, None, None, None, Some(patternParams), maybeReturn,
-//          Some(BlockPE(Range(bodyBegin, end), List(VoidPE(Range(end, end))))))
+//          Some(BlockPE(Range(bodyBegin, end), Vector(VoidPE(Range(end, end))))))
 //    }
 //  }
 //
 //  private[parser] def emptyParamLessLambda: Parser[BlockPE] = {
 //    (pos <~ "{" <~ optWhite <~ "}") ~ pos ^^ {
-//      case begin ~ end => BlockPE(Range(begin, end), List(VoidPE(Range(end, end))))
+//      case begin ~ end => BlockPE(Range(begin, end), Vector(VoidPE(Range(end, end))))
 //    }
 //  }
 
@@ -755,7 +755,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
             Range(begin, end),
             FunctionHeaderP(
               Range(begin, headerEnd),
-              None, List.empty, None, None, maybeParams, FunctionReturnP(Range(headerEnd, headerEnd), None, None)),
+              None, Vector.empty, None, None, maybeParams, FunctionReturnP(Range(headerEnd, headerEnd), None, None)),
             Some(block)))
       }
     }
@@ -769,7 +769,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
 
   def patternPrototypeParams: Parser[ParamsP] = {
     pos ~ ("(" ~> optWhite ~> repsep(optWhite ~> patternPrototypeParam, optWhite ~> ",") <~ optWhite <~ ")") ~ pos ^^ {
-      case begin ~ params ~ end => ParamsP(Range(begin, end), params)
+      case begin ~ params ~ end => ParamsP(Range(begin, end), params.toVector)
     }
   }
 
@@ -782,8 +782,8 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
             Range(begin, end),
             FunctionHeaderP(
               Range(begin, paramsEnd),
-              None, List.empty, None, None,
-              Some(ParamsP(Range(begin, paramsEnd), List(param))),
+              None, Vector.empty, None, None,
+              Some(ParamsP(Range(begin, paramsEnd), Vector(param))),
               FunctionReturnP(Range(end, end), None, None)), Some(body)))
       }
     }

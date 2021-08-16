@@ -166,7 +166,7 @@ object NameTranslator {
     ImplDeclareNameT(subCitizenHumanName, translateCodeLocation(l))
   }
 
-  def getImplNameForNameInner(useOptimization: Boolean, nameSteps: List[INameT]): Option[ImplImpreciseNameA] = {
+  def getImplNameForNameInner(useOptimization: Boolean, nameSteps: Vector[INameT]): Option[ImplImpreciseNameA] = {
     nameSteps.last match {
       case CitizenNameT(humanName, templateArgs) => Some(ImplImpreciseNameA(humanName))
       case TupleNameT(_) => None

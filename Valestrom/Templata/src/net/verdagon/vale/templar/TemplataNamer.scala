@@ -27,11 +27,11 @@ object TemplataNamer {
     ownershipString + permissionString + getKindIdentifierName(kind)
   }
 
-  def stringifyTemplateArgs(templateArgs: List[ITemplata]): String = {
+  def stringifyTemplateArgs(templateArgs: Vector[ITemplata]): String = {
     "<" + templateArgs.map(templateArg => getIdentifierName(templateArg)).mkString(", ") + ">"
   }
 
-  def stringifyParametersArgs(parameters: List[CoordT]): String = {
+  def stringifyParametersArgs(parameters: Vector[CoordT]): String = {
     "(" + parameters.map(parameter => getReferenceIdentifierName(parameter)).mkString(", ") + ")"
   }
 

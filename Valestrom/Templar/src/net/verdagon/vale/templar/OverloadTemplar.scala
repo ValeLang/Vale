@@ -80,19 +80,21 @@ class OverloadTemplar(
     // All the FunctionA we rejected, and the reason why
     Map[FunctionA, IScoutExpectedFunctionFailureReason]
   ) = {
-    val (maybePotentialBanner, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction) =
-      scoutPotentialFunction(
-        env, temputs, callRange, functionName, explicitlySpecifiedTemplateArgTemplexesS, args, extraEnvsToLookIn, exact)
-    maybePotentialBanner match {
-      case None => {
-        (None, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction)
+    profiler.newProfile("scoutMaybeFunctionForPrototype", "", () => {
+      val (maybePotentialBanner, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction) =
+        scoutPotentialFunction(
+          env, temputs, callRange, functionName, explicitlySpecifiedTemplateArgTemplexesS, args, extraEnvsToLookIn, exact)
+      maybePotentialBanner match {
+        case None => {
+          (None, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction)
+        }
+        case Some(potentialBanner) => {
+          val thing =
+            stampPotentialFunctionForPrototype(temputs, callRange, potentialBanner, args)
+          (Some(thing), outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction)
+        }
       }
-      case Some(potentialBanner) => {
-        val thing =
-          stampPotentialFunctionForPrototype(temputs, callRange, potentialBanner, args)
-        (Some(thing), outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction)
-      }
-    }
+    })
   }
 
   def scoutExpectedFunctionForPrototype(
@@ -421,19 +423,17 @@ class OverloadTemplar(
     // All the FunctionA we rejected, and the reason why
     Map[FunctionA, IScoutExpectedFunctionFailureReason]
   ) = {
-    profiler.childFrame("scout potential function", () => {
-      val (candidateBanners, rejectionReasonByBanner, rejectionReasonByFunction) =
-        getCandidateBanners(env, temputs, callRange, functionName, explicitlySpecifiedTemplateArgTemplexesS, args, extraEnvsToLookIn, exact);
-      if (candidateBanners.isEmpty) {
-        (None, Map(), rejectionReasonByBanner, rejectionReasonByFunction)
-      } else if (candidateBanners.size == 1) {
-        (Some(candidateBanners.head), Map(), rejectionReasonByBanner, rejectionReasonByFunction)
-      } else {
-        val (best, outscoreReasonByBanner) =
-          narrowDownCallableOverloads(temputs, callRange, candidateBanners, args.map(_.tyype))
-        (Some(best), outscoreReasonByBanner, rejectionReasonByBanner, rejectionReasonByFunction)
-      }
-    })
+    val (candidateBanners, rejectionReasonByBanner, rejectionReasonByFunction) =
+      getCandidateBanners(env, temputs, callRange, functionName, explicitlySpecifiedTemplateArgTemplexesS, args, extraEnvsToLookIn, exact);
+    if (candidateBanners.isEmpty) {
+      (None, Map(), rejectionReasonByBanner, rejectionReasonByFunction)
+    } else if (candidateBanners.size == 1) {
+      (Some(candidateBanners.head), Map(), rejectionReasonByBanner, rejectionReasonByFunction)
+    } else {
+      val (best, outscoreReasonByBanner) =
+        narrowDownCallableOverloads(temputs, callRange, candidateBanners, args.map(_.tyype))
+      (Some(best), outscoreReasonByBanner, rejectionReasonByBanner, rejectionReasonByFunction)
+    }
   }
 
   private def getBannerParamScores(

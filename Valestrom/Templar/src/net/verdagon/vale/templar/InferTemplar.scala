@@ -29,7 +29,7 @@ class InferTemplar(
     maybeParamInputs: Option[List[ParamFilter]],
     checkAllRunesPresent: Boolean,
   ): (IInferSolveResult) = {
-    profiler.childFrame("infer", () => {
+    profiler.newProfile("infer", "", () => {
       Inferer.solve[IEnvironment, Temputs](
         profiler,
         delegate,

@@ -57,9 +57,11 @@ object Benchmark {
       // driver over and over, because class loading, icache, etc are all totally valid things that we care about.
       // For now though, this will do.
       go(true)
-      val times = (0 until 10).map(_ => go(true).totalNanoseconds)
+      val profiles = (0 until 10).map(_ => go(true))
+      val times = profiles.map(_.totalNanoseconds)
       val averageTime = times.sum / times.size
       println("Done benchmarking! Total: " + averageTime)
+      println(profiles.last.assembleResults())
     }
 
 //    println(go(true).assembleResults())

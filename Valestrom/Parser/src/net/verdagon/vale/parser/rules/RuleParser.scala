@@ -43,13 +43,13 @@ trait RuleParser extends RegexParsers with ParserUtils {
       (typePR <~ "(" <~ optWhite) ~
       repsep(rulePR, optWhite ~> "," <~ optWhite) ~
       pos <~ optWhite <~ ")" ^^ {
-      case begin ~ tyype ~ components ~ end => ComponentsPR(Range(begin, end), TypedPR(Range(begin, end), None, tyype), components)
+      case begin ~ tyype ~ components ~ end => ComponentsPR(Range(begin, end), TypedPR(Range(begin, end), None, tyype), components.toVector)
     }) |
     (pos ~
       (typedPR <~ "(" <~ optWhite) ~
       repsep(rulePR, optWhite ~> "," <~ optWhite) ~
       pos <~ optWhite <~ ")" ^^ {
-      case begin ~ container ~ components ~ end => ComponentsPR(Range(begin, end), container, components)
+      case begin ~ container ~ components ~ end => ComponentsPR(Range(begin, end), container, components.toVector)
     })
   }
 
@@ -61,7 +61,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
 
   private[parser] def orPR(inner: Parser[IRulexPR]): Parser[IRulexPR] = {
     pos ~ (inner <~ optWhite <~ "|" <~ optWhite) ~ rep1sep(inner, optWhite ~> "|" <~ optWhite) ~ pos ^^ {
-      case begin ~ firstPossibility ~ restPossibilities ~ end => OrPR(Range(begin, end), firstPossibility :: restPossibilities)
+      case begin ~ firstPossibility ~ restPossibilities ~ end => OrPR(Range(begin, end), Vector(firstPossibility) ++ restPossibilities)
     }
   }
 
@@ -108,8 +108,8 @@ trait RuleParser extends RegexParsers with ParserUtils {
       case begin ~ maybeIsRegion ~ name ~ regionAttributes ~ end => {
         val isRegionAttrInList =
           maybeIsRegion match {
-            case None => List.empty
-            case Some(NameP(range, _)) => List(TypeRuneAttributeP(range, RegionTypePR))
+            case None => Vector.empty
+            case Some(NameP(range, _)) => Vector(TypeRuneAttributeP(range, RegionTypePR))
           }
         IdentifyingRuneP(Range(begin, end), name, isRegionAttrInList ++ regionAttributes)
       }
@@ -120,7 +120,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
 
   private[parser] def identifyingRunesPR: Parser[IdentifyingRunesP] = {
     pos ~ ("<" ~> optWhite ~> repsep(identifyingRune, optWhite ~> "," <~ optWhite) <~ optWhite <~ ">") ~ pos ^^ {
-      case begin ~ runes ~ end => IdentifyingRunesP(Range(begin, end), runes)
+      case begin ~ runes ~ end => IdentifyingRunesP(Range(begin, end), runes.toVector)
     }
   }
 
@@ -128,7 +128,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
 
   def templateRulesPR: Parser[TemplateRulesP] = {
     pos ~ ("rules" ~> optWhite ~> "(" ~> optWhite ~> repsep(rulePR, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")") ~ pos ^^ {
-      case begin ~ rules ~ end => TemplateRulesP(Range(begin, end), rules)
+      case begin ~ rules ~ end => TemplateRulesP(Range(begin, end), rules.toVector)
     }
   }
 
@@ -138,7 +138,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
   private[parser] def implementsPR: Parser[IRulexPR] = {
     pos ~ pstr("implements") ~ (optWhite ~> "(" ~> optWhite ~> rulePR <~ optWhite <~ "," <~ optWhite) ~
         (rulePR <~ optWhite <~ ")") ~ pos ^^ {
-      case begin ~ impl ~ struct ~ interface ~ end => CallPR(Range(begin, end), impl, List(struct, interface))
+      case begin ~ impl ~ struct ~ interface ~ end => CallPR(Range(begin, end), impl, Vector(struct, interface))
     }
   }
 
@@ -147,7 +147,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
   // Atomic means no neighboring, see parser doc.
   private[parser] def existsPR: Parser[IRulexPR] = {
     pos ~ pstr("exists") ~ (optWhite ~> "(" ~> optWhite ~> rulePR <~ optWhite <~ ")") ~ pos ^^ {
-      case begin ~ exists ~ thing ~ end => CallPR(Range(begin, end), exists, List(thing))
+      case begin ~ exists ~ thing ~ end => CallPR(Range(begin, end), exists, Vector(thing))
     }
   }
 
@@ -155,7 +155,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
 
   private[parser] def packPR: Parser[PackPR] = {
     pos ~ ("(" ~> optWhite ~> repsep(rulePR, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")") ~ pos ^^ {
-      case begin ~ thing ~ end => PackPR(Range(begin, end), thing)
+      case begin ~ thing ~ end => PackPR(Range(begin, end), thing.toVector)
     }
   }
 

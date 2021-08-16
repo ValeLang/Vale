@@ -36,15 +36,15 @@ class IfTests extends FunSuite with Matchers with Collector {
   test("ifs") {
     compile(CombinatorParsers.ifLadder, "if (true) { doBlarks(&x) } else { }") shouldHave {
       case IfPE(_,
-        BlockPE(_, List(ConstantBoolPE(_, true))),
+        BlockPE(_, Vector(ConstantBoolPE(_, true))),
         BlockPE(_,
-          List(
+          Vector(
             FunctionCallPE(_,
               None, _, false, LookupPE(NameP(_, "doBlarks"), None),
-              List(
+              Vector(
                 LendPE(_,LookupPE(NameP(_, "x"), None), LendConstraintP(Some(ReadonlyP)))),
               LendConstraintP(Some(ReadonlyP))))),
-        BlockPE(_, List(VoidPE(_)))) =>
+        BlockPE(_, Vector(VoidPE(_)))) =>
     }
   }
 
@@ -52,17 +52,17 @@ class IfTests extends FunSuite with Matchers with Collector {
     compile(CombinatorParsers.ifLadder, "if ((u) = a) {}") shouldHave {
       case IfPE(_,
         BlockPE(_,
-          List(
+          Vector(
             LetPE(_,None,
               PatternPP(_,None,None,None,
                 Some(
                   DestructureP(_,
-                    List(
+                    Vector(
                       PatternPP(_,None,Some(CaptureP(_,LocalNameP(NameP(_,"u")))),None,None,None)))),
                 None),
               LookupPE(NameP(_,"a"),None)))),
-        BlockPE(_,List(VoidPE(_))),
-        BlockPE(_,List(VoidPE(_)))) =>
+        BlockPE(_,Vector(VoidPE(_))),
+        BlockPE(_,Vector(VoidPE(_)))) =>
     }
   }
 
@@ -73,9 +73,9 @@ class IfTests extends FunSuite with Matchers with Collector {
       None,
       PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "newLen")))), None, None, None),
       IfPE(_,
-      BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "=="), None), List(LookupPE(NameP(_, "num"), None), ConstantIntPE(_, 0, _)), LendConstraintP(Some(ReadonlyP))))),
-      BlockPE(_, List(ConstantIntPE(_, 1, _))),
-      BlockPE(_, List(ConstantIntPE(_, 2, _))))) =>
+      BlockPE(_, Vector(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "=="), None), Vector(LookupPE(NameP(_, "num"), None), ConstantIntPE(_, 0, _)), LendConstraintP(Some(ReadonlyP))))),
+      BlockPE(_, Vector(ConstantIntPE(_, 1, _))),
+      BlockPE(_, Vector(ConstantIntPE(_, 2, _))))) =>
     }
   }
 }

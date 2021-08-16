@@ -23,14 +23,14 @@ package object ruletyper {
   trait IConflictCause {
     def range: RangeS
   }
-  case class MultipleCauses(causes: List[IConflictCause]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+  case class MultipleCauses(causes: Vector[IConflictCause]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
   sealed trait IRuleTyperSolveResult[T]
   case class RuleTyperSolveFailure[T](
     conclusions: ConclusionsBox,
     range: RangeS,
     message: String,
-    inner: List[IConflictCause]
+    inner: Vector[IConflictCause]
   ) extends IRuleTyperSolveResult[T] with IConflictCause {
     override def hashCode(): Int = vcurious()
   }
@@ -73,7 +73,7 @@ package object ruletyper {
     range: RangeS,
     message: String,
     // For an Or rule, this will contain all the conflicts for each branch.
-    causes: List[IConflictCause]
+    causes: Vector[IConflictCause]
   ) extends IRuleTyperMatchResult[T] with IConflictCause {
     override def hashCode(): Int = vcurious()
     override def toString: String = {

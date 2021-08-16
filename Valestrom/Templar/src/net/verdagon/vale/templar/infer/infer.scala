@@ -18,18 +18,18 @@ package object infer {
     def range: RangeS
     def inferences: Inferences
     def message: String
-    def causes: List[IConflictCause]
+    def causes: Vector[IConflictCause]
   }
 
   sealed trait IInferSolveResult
   case class InferSolveFailure(
     typeByRune: Map[IRuneT, ITemplataType],
     directInputs: Map[IRuneT, ITemplata],
-    maybeParamInputs: Option[List[ParamFilter]],
+    maybeParamInputs: Option[Vector[ParamFilter]],
     inferences: Inferences,
     range: RangeS,
     message: String,
-    causes: List[IConflictCause]
+    causes: Vector[IConflictCause]
   ) extends IInferSolveResult with IConflictCause {
     override def hashCode(): Int = vcurious()
     vassert(message.nonEmpty || causes.nonEmpty)
@@ -46,7 +46,7 @@ package object infer {
     inferences: Inferences,
     range: RangeS,
     message: String,
-    causes: List[IConflictCause]
+    causes: Vector[IConflictCause]
   ) extends IInferEvaluateResult[T] with IConflictCause {
     override def hashCode(): Int = vcurious()
     vassert(message.nonEmpty || causes.nonEmpty)
@@ -83,7 +83,7 @@ package object infer {
     range: RangeS,
     message: String,
     // For an Or rule, this will contain all the conflicts for each branch.
-    causes: List[IConflictCause]
+    causes: Vector[IConflictCause]
   ) extends IInferMatchResult with IConflictCause {
     override def hashCode(): Int = vcurious()
     vassert(message.nonEmpty || causes.nonEmpty)

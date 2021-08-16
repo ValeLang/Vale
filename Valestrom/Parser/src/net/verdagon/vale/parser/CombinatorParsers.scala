@@ -35,7 +35,7 @@ object CombinatorParsers
     // A hack to do region highlighting
     pos ~ opt("'" ~> optWhite ~> exprIdentifier <~ optWhite) ~
     ("{" ~> optWhite ~> pos <~ optWhite <~ "}") ~ pos ^^ {
-      case begin ~ maybeRegion ~ middle ~ end => BlockPE(Range(begin, end), List(VoidPE(Range(middle, middle))))
+      case begin ~ maybeRegion ~ middle ~ end => BlockPE(Range(begin, end), Vector(VoidPE(Range(middle, middle))))
     }
   }
 
@@ -79,9 +79,9 @@ object CombinatorParsers
         FunctionHeaderP(
           Range(begin, end),
           Some(name),
-          attributesBeforeReturn ++ attributesBeforeBody,
+          (attributesBeforeReturn ++ attributesBeforeBody).toVector,
           identifyingRunes,
-          (maybeTemplateRulesBeforeReturn.toList ++ maybeTemplateRulesAfterReturn.toList).headOption,
+          (maybeTemplateRulesBeforeReturn.toVector ++ maybeTemplateRulesAfterReturn.toVector).headOption,
           Some(patternParams),
           FunctionReturnP(Range(retBegin, retEnd), maybeInferRet, maybeRetType))
       }
@@ -123,7 +123,7 @@ object CombinatorParsers
         (optWhite ~> "}" ~> pos) ^^ {
       case begin ~ name ~ maybeIdentifyingRunes ~ seealed ~ imm ~ maybeTemplateRules ~ defaultRegion ~ members ~ end => {
         val mutability = if (imm == Some("imm")) ImmutableP else MutableP
-        InterfaceP(Range(begin, end), name, seealed, mutability, maybeIdentifyingRunes, maybeTemplateRules, members)
+        InterfaceP(Range(begin, end), name, seealed.toVector, mutability, maybeIdentifyingRunes, maybeTemplateRules, members.toVector)
       }
     }
   }
@@ -143,11 +143,11 @@ object CombinatorParsers
         // A hack to do region highlighting
         opt("'" ~> optWhite ~> exprIdentifier <~ optWhite) ~
         (pos <~ "{" <~ optWhite) ~
-        ("..." <~ optWhite ^^^ List.empty | repsep(structContent, optWhite)) ~
+        ("..." <~ optWhite ^^^ Vector.empty | repsep(structContent, optWhite)) ~
         (optWhite ~> "}" ~> pos) ^^ {
       case begin ~ name ~ identifyingRunes ~ attributes ~ imm ~ maybeTemplateRules ~ defaultRegion ~ membersBegin ~ members ~ end => {
         val mutability = if (imm == Some("imm")) ImmutableP else MutableP
-        StructP(Range(begin, end), name, attributes, mutability, identifyingRunes, maybeTemplateRules, StructMembersP(Range(membersBegin, end), members))
+        StructP(Range(begin, end), name, attributes.toVector, mutability, identifyingRunes, maybeTemplateRules, StructMembersP(Range(membersBegin, end), members.toVector))
       }
     }
   }
@@ -182,7 +182,7 @@ object CombinatorParsers
       case begin ~ steps ~ importee ~ end => {
         val moduleName = steps.head
         val packageSteps = steps.tail
-        ImportP(Range(begin, end), moduleName, packageSteps, importee)
+        ImportP(Range(begin, end), moduleName, packageSteps.toVector, importee)
       }
     }
   }
@@ -199,9 +199,9 @@ object CombinatorParsers
 //  }
 
 
-//  def runOldParser(codeWithComments: String): ParseResult[(Program0, List[(Int, Int)])] = {
+//  def runOldParser(codeWithComments: String): ParseResult[(Program0, Vector[(Int, Int)])] = {
 //    val regex = "(//[^\\r\\n]*|«\\w+»)".r
-//    val commentRanges = regex.findAllMatchIn(codeWithComments).map(mat => (mat.start, mat.end)).toList
+//    val commentRanges = regex.findAllMatchIn(codeWithComments).map(mat => (mat.start, mat.end)).toVector
 //    var code = codeWithComments
 //    commentRanges.foreach({ case (begin, end) =>
 //      code = code.substring(0, begin) + repeatStr(" ", (end - begin)) + code.substring(end)

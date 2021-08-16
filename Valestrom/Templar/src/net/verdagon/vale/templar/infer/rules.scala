@@ -18,7 +18,7 @@ case class EqualsTR(range: RangeS, left: IRulexTR, right: IRulexTR) extends IRul
 
   override def resultType: ITemplataType = left.resultType
 }
-case class OrTR(range: RangeS, possibilities: List[IRulexTR]) extends IRulexTR {
+case class OrTR(range: RangeS, possibilities: Vector[IRulexTR]) extends IRulexTR {
   override def hashCode(): Int = vcurious()
 
   vassert(possibilities.nonEmpty)
@@ -27,7 +27,7 @@ case class OrTR(range: RangeS, possibilities: List[IRulexTR]) extends IRulexTR {
 case class ComponentsTR(
   range: RangeS,
   tyype: ITemplataType,
-  components: List[IRulexTR]
+  components: Vector[IRulexTR]
 ) extends IRulexTR {
   override def hashCode(): Int = vcurious()
 
@@ -42,7 +42,7 @@ case class TemplexTR(templex: ITemplexT) extends IRulexTR {
 case class CallTR(
   range: RangeS,
   name: String,
-  args: List[IRulexTR],
+  args: Vector[IRulexTR],
   resultType: ITemplataType
 ) extends IRulexTR {
   override def hashCode(): Int = vcurious()
@@ -149,7 +149,7 @@ case class NullableTT(
 case class CallTT(
   range: RangeS,
   template: ITemplexT,
-  args: List[ITemplexT],
+  args: Vector[ITemplexT],
   // This is here because we might want to coerce the result. We do this for
   // calls, packs, etc.
   resultType: ITemplataType
@@ -159,7 +159,7 @@ case class CallTT(
 
 //case class FunctionTT(
 //  mutability: Option[ITemplexT],
-//  parameters: List[Option[ITemplexT]],
+//  parameters: Vector[Option[ITemplexT]],
 //  returnType: Option[ITemplexT]
 //) extends ITemplexT {
 // override def hashCode(): Int = vcurious()}
@@ -167,7 +167,7 @@ case class CallTT(
 case class PrototypeTT(
   range: RangeS,
   name: String,
-  parameters: List[ITemplexT],
+  parameters: Vector[ITemplexT],
   returnType: ITemplexT
 ) extends ITemplexT {
   override def hashCode(): Int = vcurious()
@@ -175,7 +175,7 @@ case class PrototypeTT(
 }
 
 //case class PackTT(
-//  members: List[ITemplexT],
+//  members: Vector[ITemplexT],
 //  // This is here because we might want to coerce the result. We do this for
 //  // calls, packs, etc.
 //  resultType: ITemplataType
@@ -197,7 +197,7 @@ case class RepeaterSequenceTT(
 
 case class ManualSequenceTT(
   range: RangeS,
-  elements: List[ITemplexT],
+  elements: Vector[ITemplexT],
   // This is here because we might want to coerce the result. We do this for
   // calls, packs, etc.
   resultType: ITemplataType
@@ -207,7 +207,7 @@ case class ManualSequenceTT(
 
 case class CoordListTT(
   range: RangeS,
-  elements: List[ITemplexT]
+  elements: Vector[ITemplexT]
 ) extends ITemplexT {
   override def hashCode(): Int = vcurious()
   override def resultType: ITemplataType = PackTemplataType(CoordTemplataType)

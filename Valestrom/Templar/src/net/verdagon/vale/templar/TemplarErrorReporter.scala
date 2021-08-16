@@ -28,7 +28,7 @@ case class CouldntFindFunctionToCallT(range: RangeS, seff: ScoutExpectedFunction
 case class ExportedFunctionDependedOnNonExportedKind(range: RangeS, paackage: PackageCoordinate, signature: SignatureT, nonExportedKind: KindT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class ExternFunctionDependedOnNonExportedKind(range: RangeS, paackage: PackageCoordinate, signature: SignatureT, nonExportedKind: KindT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class ExportedImmutableKindDependedOnNonExportedKind(range: RangeS, paackage: PackageCoordinate, exportedKind: KindT, nonExportedKind: KindT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
-case class TypeExportedMultipleTimes(range: RangeS, paackage: PackageCoordinate, exports: List[KindExportT]) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
+case class TypeExportedMultipleTimes(range: RangeS, paackage: PackageCoordinate, exports: Vector[KindExportT]) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class CantUseUnstackifiedLocal(range: RangeS, localId: IVarNameT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class CantUnstackifyOutsideLocalFromInsideWhile(range: RangeS, localId: IVarNameT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class FunctionAlreadyExists(oldFunctionRange: RangeS, newFunctionRange: RangeS, signature: SignatureT) extends ICompileErrorT {

@@ -19,8 +19,8 @@ case class CoordTemplata(reference: CoordT) extends ITemplata {
   override def order: Int = 1;
   override def tyype: ITemplataType = CoordTemplataType
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ reference.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ reference.all(func)
   }
 }
 case class KindTemplata(kind: KindT) extends ITemplata {
@@ -28,17 +28,17 @@ case class KindTemplata(kind: KindT) extends ITemplata {
   override def order: Int = 2;
   override def tyype: ITemplataType = KindTemplataType
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ kind.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ kind.all(func)
   }
 }
 case class ArrayTemplateTemplata() extends ITemplata {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 3;
-  override def tyype: ITemplataType = TemplateTemplataType(List(MutabilityTemplataType, VariabilityTemplataType, CoordTemplataType), KindTemplataType)
+  override def tyype: ITemplataType = TemplateTemplataType(Vector(MutabilityTemplataType, VariabilityTemplataType, CoordTemplataType), KindTemplataType)
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 }
 
@@ -55,7 +55,7 @@ case class FunctionTemplata(
 //  // E.g. if LinkedList has a Node substruct, then the Node's templata will have one
 //  // container, the LinkedList.
 //  // See NTKPRR for why we have these parents.
-//  unevaluatedContainers: List[IContainer],
+//  unevaluatedContainers: Vector[IContainer],
 
   // This is the env entry that the function came from originally. It has all the parent
   // structs and interfaces. See NTKPRR for more.
@@ -69,12 +69,12 @@ case class FunctionTemplata(
 //  this match {
 //    case FunctionTemplata(
 //      env,
-//      FunctionA(_, ImmConcreteDestructorNameA(PackageCoordinate(_,List.empty)),_, _, _, _, _, _, _, _, _, _))
-//    if env.fullName == FullName2(PackageCoordinate.TEST_TLD,List.empty,PackageTopLevelName2()) => vfail()
+//      FunctionA(_, ImmConcreteDestructorNameA(PackageCoordinate(_,Vector.empty)),_, _, _, _, _, _, _, _, _, _))
+//    if env.fullName == FullName2(PackageCoordinate.TEST_TLD,Vector.empty,PackageTopLevelName2()) => vfail()
 //    case _ =>
 //  }
 //  this match {
-//    case FunctionTemplata(env, _) if env.fullName == FullName2(PackageCoordinate.TEST_TLD,List.empty,PackageTopLevelName2()) => vfail()
+//    case FunctionTemplata(env, _) if env.fullName == FullName2(PackageCoordinate.TEST_TLD,Vector.empty,PackageTopLevelName2()) => vfail()
 //    case _ =>
 //  }
 
@@ -88,8 +88,8 @@ case class FunctionTemplata(
     case _ =>
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 
   def getTemplateName(): INameT = {
@@ -141,7 +141,7 @@ case class StructTemplata(
 //  // E.g. if LinkedList has a Node substruct, then the Node's templata will have one
 //  // container, the LinkedList.
 //  // See NTKPRR for why we have these parents.
-//  containers: List[IContainer],
+//  containers: Vector[IContainer],
 
   // This is the env entry that the struct came from originally. It has all the parent
   // structs and interfaces. See NTKPRR for more.
@@ -161,8 +161,8 @@ case class StructTemplata(
     case _ =>
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 
   def getTemplateName(): INameT = {
@@ -188,7 +188,7 @@ case class InterfaceTemplata(
 //  // E.g. if LinkedList has a Node substruct, then the Node's templata will have one
 //  // container, the LinkedList.
 //  // See NTKPRR for why we have these parents.
-//  containers: List[IContainer],
+//  containers: Vector[IContainer],
 
   // This is the env entry that the interface came from originally. It has all the parent
   // structs and interfaces. See NTKPRR for more.
@@ -208,8 +208,8 @@ case class InterfaceTemplata(
     case _ =>
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 
   def getTemplateName(): INameT = {
@@ -228,7 +228,7 @@ case class ImplTemplata(
 //  // E.g. if LinkedList has a Node substruct, then the Node's templata will have one
 //  // container, the LinkedList.
 //  // See NTKPRR for why we have these parents.
-//  containers: List[IContainer],
+//  containers: Vector[IContainer],
 
   // This is the impl that the interface came from originally. It has all the parent
   // structs and interfaces. See NTKPRR for more.
@@ -238,8 +238,8 @@ case class ImplTemplata(
   override def order: Int = 9
   override def tyype: ITemplataType = vfail()
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 }
 
@@ -248,8 +248,8 @@ case class OwnershipTemplata(ownership: OwnershipT) extends ITemplata {
   override def order: Int = 10;
   override def tyype: ITemplataType = OwnershipTemplataType
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ ownership.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ ownership.all(func)
   }
 }
 case class VariabilityTemplata(variability: VariabilityT) extends ITemplata {
@@ -257,8 +257,8 @@ case class VariabilityTemplata(variability: VariabilityT) extends ITemplata {
   override def order: Int = 11;
   override def tyype: ITemplataType = VariabilityTemplataType
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ variability.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ variability.all(func)
   }
 }
 case class MutabilityTemplata(mutability: MutabilityT) extends ITemplata {
@@ -266,8 +266,8 @@ case class MutabilityTemplata(mutability: MutabilityT) extends ITemplata {
   override def order: Int = 12;
   override def tyype: ITemplataType = MutabilityTemplataType
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ mutability.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ mutability.all(func)
   }
 }
 case class PermissionTemplata(mutability: PermissionT) extends ITemplata {
@@ -275,8 +275,8 @@ case class PermissionTemplata(mutability: PermissionT) extends ITemplata {
   override def order: Int = 13;
   override def tyype: ITemplataType = PermissionTemplataType
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ mutability.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ mutability.all(func)
   }
 }
 case class LocationTemplata(mutability: LocationT) extends ITemplata {
@@ -284,8 +284,8 @@ case class LocationTemplata(mutability: LocationT) extends ITemplata {
   override def order: Int = 14;
   override def tyype: ITemplataType = LocationTemplataType
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ mutability.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ mutability.all(func)
   }
 }
 
@@ -294,8 +294,8 @@ case class BooleanTemplata(value: Boolean) extends ITemplata {
   override def order: Int = 15;
   override def tyype: ITemplataType = BooleanTemplataType
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 }
 case class IntegerTemplata(value: Long) extends ITemplata {
@@ -303,8 +303,8 @@ case class IntegerTemplata(value: Long) extends ITemplata {
   override def order: Int = 16;
   override def tyype: ITemplataType = IntegerTemplataType
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 }
 case class StringTemplata(value: String) extends ITemplata {
@@ -312,8 +312,8 @@ case class StringTemplata(value: String) extends ITemplata {
   override def order: Int = 17;
   override def tyype: ITemplataType = StringTemplataType
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 }
 case class PrototypeTemplata(value: PrototypeT) extends ITemplata {
@@ -321,17 +321,17 @@ case class PrototypeTemplata(value: PrototypeT) extends ITemplata {
   override def order: Int = 18;
   override def tyype: ITemplataType = PrototypeTemplataType
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 }
-case class CoordListTemplata(value: List[CoordT]) extends ITemplata {
+case class CoordListTemplata(value: Vector[CoordT]) extends ITemplata {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 18;
   override def tyype: ITemplataType = PackTemplataType(CoordTemplataType)
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 }
 
@@ -347,8 +347,8 @@ case class ExternFunctionTemplata(header: FunctionHeaderT) extends ITemplata {
   override def order: Int = 1337
   override def tyype: ITemplataType = vfail()
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ header.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ header.all(func)
   }
 }
 
@@ -357,7 +357,7 @@ case class ExternImplTemplata(struct: StructTT, interface: InterfaceTT) extends 
   override def order: Int = 1338
   override def tyype: ITemplataType = vfail()
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ struct.all(func) ++ interface.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ struct.all(func) ++ interface.all(func)
   }
 }

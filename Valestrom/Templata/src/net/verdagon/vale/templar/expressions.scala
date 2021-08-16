@@ -28,8 +28,8 @@ case class AddressResultT(reference: CoordT) extends IExpressionResultT {
 
   override def underlyingReference: CoordT = reference
   override def kind = reference.kind
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ reference.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ reference.all(func)
   }
 }
 case class ReferenceResultT(reference: CoordT) extends IExpressionResultT {
@@ -37,8 +37,8 @@ case class ReferenceResultT(reference: CoordT) extends IExpressionResultT {
 
   override def underlyingReference: CoordT = reference
   override def kind = reference.kind
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ reference.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ reference.all(func)
   }
 }
 trait ExpressionT extends QueriableT {
@@ -73,8 +73,8 @@ case class LetAndLendTE(
     ReferenceResultT(CoordT(if (ownership == ShareT) ShareT else ConstraintT, permission, kind))
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ expr.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ expr.all(func)
   }
 }
 
@@ -97,8 +97,8 @@ case class NarrowPermissionTE(
     ReferenceResultT(CoordT(ownership, targetPermission, kind))
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ expr.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ expr.all(func)
   }
 }
 
@@ -118,8 +118,8 @@ case class LockWeakTE(
     ReferenceResultT(resultOptBorrowType)
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ resultOptBorrowType.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ resultOptBorrowType.all(func)
   }
 }
 
@@ -136,8 +136,8 @@ case class WeakAliasTE(
     ReferenceResultT(CoordT(WeakT, innerExpr.resultRegister.reference.permission, innerExpr.kind))
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ innerExpr.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ innerExpr.all(func)
   }
 }
 
@@ -153,8 +153,8 @@ case class LetNormalTE(
     case _ =>
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ variable.all(func) ++ expr.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ variable.all(func) ++ expr.all(func)
   }
 }
 
@@ -163,8 +163,8 @@ case class UnletTE(variable: ILocalVariableT) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(variable.reference)
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ variable.reference.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ variable.reference.all(func)
   }
 }
 
@@ -198,8 +198,8 @@ case class DiscardTE(
     case _ =>
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ expr.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ expr.all(func)
   }
 }
 
@@ -214,8 +214,8 @@ case class DeferTE(
 
   vassert(deferredExpr.resultRegister.reference == CoordT(ShareT, ReadonlyT, VoidT()))
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ innerExpr.all(func) ++ deferredExpr.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ innerExpr.all(func) ++ deferredExpr.all(func)
   }
 }
 
@@ -247,8 +247,8 @@ case class IfTE(
 
   override def resultRegister = ReferenceResultT(commonSupertype)
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ condition.all(func) ++ thenCall.all(func) ++ elseCall.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ condition.all(func) ++ thenCall.all(func) ++ elseCall.all(func)
   }
 }
 
@@ -267,8 +267,8 @@ case class WhileTE(block: BlockTE) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ block.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ block.all(func)
   }
 }
 
@@ -279,8 +279,8 @@ case class MutateTE(
   override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(destinationExpr.resultRegister.reference)
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ destinationExpr.all(func) ++ sourceExpr.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ destinationExpr.all(func) ++ sourceExpr.all(func)
   }
 }
 
@@ -297,8 +297,8 @@ case class ReturnTE(
     }
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ sourceExpr.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ sourceExpr.all(func)
   }
 }
 
@@ -318,12 +318,12 @@ case class BlockTE(
 
   override def resultRegister = inner.resultRegister
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ inner.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ inner.all(func)
   }
 }
 
-case class ConsecutorTE(exprs: List[ReferenceExpressionTE]) extends ReferenceExpressionTE {
+case class ConsecutorTE(exprs: Vector[ReferenceExpressionTE]) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   // There shouldn't be a 0-element consecutor.
   // If we want a consecutor that returns nothing, put a VoidLiteralTE in it.
@@ -356,30 +356,30 @@ case class ConsecutorTE(exprs: List[ReferenceExpressionTE]) extends ReferenceExp
   def lastReferenceExpr = exprs.last
   override def resultRegister = lastReferenceExpr.resultRegister
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ exprs.flatMap(_.all(func))
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ exprs.flatMap(_.all(func))
   }
 }
 
 case class PackTE(
-    elements: List[ReferenceExpressionTE],
+    elements: Vector[ReferenceExpressionTE],
     resultReference: CoordT,
     packType: PackTT) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(resultReference)
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ elements.flatMap(_.all(func)) ++ packType.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ elements.flatMap(_.all(func)) ++ packType.all(func)
   }
 }
 
 case class TupleTE(
-    elements: List[ReferenceExpressionTE],
+    elements: Vector[ReferenceExpressionTE],
     resultReference: CoordT,
     tupleType: TupleTT) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(resultReference)
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ elements.flatMap(_.all(func)) ++ tupleType.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ elements.flatMap(_.all(func)) ++ tupleType.all(func)
   }
 }
 
@@ -394,27 +394,27 @@ case class TupleTE(
 case class UnreachableMootTE(innerExpr: ReferenceExpressionTE) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, NeverT()))
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ innerExpr.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ innerExpr.all(func)
   }
 }
 
 case class StaticArrayFromValuesTE(
-    elements: List[ReferenceExpressionTE],
+    elements: Vector[ReferenceExpressionTE],
     resultReference: CoordT,
     arrayType: StaticSizedArrayTT) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(resultReference)
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ elements.flatMap(_.all(func)) ++ arrayType.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ elements.flatMap(_.all(func)) ++ arrayType.all(func)
   }
 }
 
 case class ArraySizeTE(array: ReferenceExpressionTE) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, IntT.i32))
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ array.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ array.all(func)
   }
 }
 
@@ -423,8 +423,8 @@ case class IsSameInstanceTE(left: ReferenceExpressionTE, right: ReferenceExpress
   vassert(left.resultRegister.reference == right.resultRegister.reference)
 
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, BoolT()))
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ left.all(func) ++ right.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ left.all(func) ++ right.all(func)
   }
 }
 
@@ -442,8 +442,8 @@ case class AsSubtypeTE(
 ) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(resultResultType)
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ sourceExpr.all(func) ++ targetSubtype.all(func) ++ resultResultType.all(func) ++ okConstructor.all(func) ++ errConstructor.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ sourceExpr.all(func) ++ targetSubtype.all(func) ++ resultResultType.all(func) ++ okConstructor.all(func) ++ errConstructor.all(func)
   }
 }
 
@@ -451,8 +451,8 @@ case class VoidLiteralTE() extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 }
 
@@ -460,8 +460,8 @@ case class ConstantIntTE(value: Long, bits: Int) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, IntT(bits)))
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 }
 
@@ -469,8 +469,8 @@ case class ConstantBoolTE(value: Boolean) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, BoolT()))
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 }
 
@@ -478,8 +478,8 @@ case class ConstantStrTE(value: String) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, StrT()))
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 }
 
@@ -487,8 +487,8 @@ case class ConstantFloatTE(value: Double) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, FloatT()))
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 }
 
@@ -501,8 +501,8 @@ case class LocalLookupTE(
   override def hashCode(): Int = vcurious()
   override def resultRegister = AddressResultT(reference)
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ reference.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ reference.all(func)
   }
 }
 
@@ -513,8 +513,8 @@ case class ArgLookupTE(
   override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(reference)
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ reference.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ reference.all(func)
   }
 }
 
@@ -528,8 +528,8 @@ case class ArgLookupTE(
 //    }
 //  }
 //
-//  def all[T](func: PartialFunction[Ast2, T]): List[T] = {
-//    List(this).collect(func) ++ packExpr.all(func)
+//  def all[T](func: PartialFunction[Ast2, T]): Vector[T] = {
+//    Vector(this).collect(func) ++ packExpr.all(func)
 //  }
 //}
 
@@ -548,8 +548,8 @@ case class StaticSizedArrayLookupTE(
 
   override def resultRegister = AddressResultT(arrayType.array.memberType)
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ arrayExpr.all(func) ++ indexExpr.all(func) ++ arrayType.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ arrayExpr.all(func) ++ indexExpr.all(func) ++ arrayType.all(func)
   }
 }
 
@@ -568,16 +568,16 @@ case class RuntimeSizedArrayLookupTE(
 
   override def resultRegister = AddressResultT(arrayType.array.memberType)
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ arrayExpr.all(func) ++ indexExpr.all(func) ++ arrayType.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ arrayExpr.all(func) ++ indexExpr.all(func) ++ arrayType.all(func)
   }
 }
 
 case class ArrayLengthTE(arrayExpr: ReferenceExpressionTE) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, IntT.i32))
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ arrayExpr.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ arrayExpr.all(func)
   }
 }
 
@@ -602,8 +602,8 @@ case class ReferenceMemberLookupTE(
     AddressResultT(memberReference.copy(permission = targetPermission))
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ structExpr.all(func) ++ memberName.all(func) ++ memberReference.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ structExpr.all(func) ++ memberName.all(func) ++ memberReference.all(func)
   }
 }
 case class AddressMemberLookupTE(
@@ -615,8 +615,8 @@ case class AddressMemberLookupTE(
   override def hashCode(): Int = vcurious()
   override def resultRegister = AddressResultT(resultType2)
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ structExpr.all(func) ++ resultType2.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ structExpr.all(func) ++ resultType2.all(func)
   }
 }
 
@@ -625,27 +625,27 @@ case class AddressMemberLookupTE(
 //  override def resultRegister: ReferenceRegister2 =
 //    ReferenceRegister2(Coord(Raw, prototype.functionType))
 //
-//  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
-//    List(this).collect(func) ++ prototype.all(func)
+//  def all[T](func: PartialFunction[Queriable2, T]): Vector[T] = {
+//    Vector(this).collect(func) ++ prototype.all(func)
 //  }
 //}
 
 case class InterfaceFunctionCallTE(
     superFunctionHeader: FunctionHeaderT,
     resultReference: CoordT,
-    args: List[ReferenceExpressionTE]) extends ReferenceExpressionTE {
+    args: Vector[ReferenceExpressionTE]) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def resultRegister: ReferenceResultT =
     ReferenceResultT(resultReference)
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ superFunctionHeader.all(func) ++ resultReference.all(func) ++ args.flatMap(_.all(func))
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ superFunctionHeader.all(func) ++ resultReference.all(func) ++ args.flatMap(_.all(func))
   }
 }
 
 case class ExternFunctionCallTE(
     prototype2: PrototypeT,
-    args: List[ReferenceExpressionTE]) extends ReferenceExpressionTE {
+    args: Vector[ReferenceExpressionTE]) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   // We dont:
   //   vassert(prototype2.fullName.last.templateArgs.isEmpty)
@@ -658,8 +658,8 @@ case class ExternFunctionCallTE(
     case _ => vwat()
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ args.flatMap(_.all(func))
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ args.flatMap(_.all(func))
   }
 
   override def resultRegister = ReferenceResultT(prototype2.returnType)
@@ -667,7 +667,7 @@ case class ExternFunctionCallTE(
 
 case class FunctionCallTE(
     callable: PrototypeT,
-    args: List[ReferenceExpressionTE]) extends ReferenceExpressionTE {
+    args: Vector[ReferenceExpressionTE]) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
 
   vassert(callable.paramTypes.size == args.size)
@@ -677,17 +677,17 @@ case class FunctionCallTE(
     ReferenceResultT(callable.returnType)
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ callable.all(func) ++ args.flatMap(_.all(func))
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ callable.all(func) ++ args.flatMap(_.all(func))
   }
 }
 //case class TupleTE(
-//    elements: List[ReferenceExpressionTE],
+//    elements: Vector[ReferenceExpressionTE],
 //    tupleReference: CoordT) extends ReferenceExpressionTE {
 //  override def resultRegister = ReferenceResultT(tupleReference)
 //
-//  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-//    List(this).collect(func) ++ elements.flatMap(_.all(func)) ++ tupleReference.all(func)
+//  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+//    Vector(this).collect(func) ++ elements.flatMap(_.all(func)) ++ tupleReference.all(func)
 //  }
 //}
 
@@ -712,22 +712,22 @@ case class TemplarReinterpretTE(
     }
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ expr.all(func) ++ resultReference.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ expr.all(func) ++ resultReference.all(func)
   }
 }
 
 case class ConstructTE(
     structTT: StructTT,
     resultReference: CoordT,
-    args: List[ExpressionT]) extends ReferenceExpressionTE {
+    args: Vector[ExpressionT]) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   vpass()
 
   override def resultRegister = ReferenceResultT(resultReference)
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ structTT.all(func) ++ args.flatMap(_.all(func))
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ structTT.all(func) ++ args.flatMap(_.all(func))
   }
 }
 
@@ -748,8 +748,8 @@ case class ConstructArrayTE(
         arrayType))
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ arrayType.all(func) ++ sizeExpr.all(func) ++ generator.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ arrayType.all(func) ++ sizeExpr.all(func) ++ generator.all(func)
   }
 }
 
@@ -767,8 +767,8 @@ case class StaticArrayFromCallableTE(
         arrayType))
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ arrayType.all(func) ++ generator.all(func) ++ generatorMethod.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ arrayType.all(func) ++ generator.all(func) ++ generatorMethod.all(func)
   }
 }
 
@@ -788,8 +788,8 @@ case class DestroyStaticSizedArrayIntoFunctionTE(
 
   override def resultRegister: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ arrayType.all(func) ++ arrayExpr.all(func) ++ consumer.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ arrayType.all(func) ++ arrayExpr.all(func) ++ consumer.all(func)
   }
 }
 
@@ -799,7 +799,7 @@ case class DestroyStaticSizedArrayIntoFunctionTE(
 case class DestroyStaticSizedArrayIntoLocalsTE(
   expr: ReferenceExpressionTE,
   staticSizedArray: StaticSizedArrayTT,
-  destinationReferenceVariables: List[ReferenceLocalVariableT]
+  destinationReferenceVariables: Vector[ReferenceLocalVariableT]
 ) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def resultRegister: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
@@ -809,8 +809,8 @@ case class DestroyStaticSizedArrayIntoLocalsTE(
     vfail("wot")
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ expr.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ expr.all(func)
   }
 }
 
@@ -828,8 +828,8 @@ case class DestroyRuntimeSizedArrayTE(
 
   override def resultRegister: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ arrayType.all(func) ++ arrayExpr.all(func) ++ consumer.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ arrayType.all(func) ++ arrayExpr.all(func) ++ consumer.all(func)
   }
 }
 
@@ -845,8 +845,8 @@ case class InterfaceToInterfaceUpcastTE(
         targetInterfaceRef))
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ innerExpr.all(func) ++ targetInterfaceRef.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ innerExpr.all(func) ++ targetInterfaceRef.all(func)
   }
 }
 
@@ -860,8 +860,8 @@ case class StructToInterfaceUpcastTE(innerExpr: ReferenceExpressionTE, targetInt
         targetInterfaceRef))
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ innerExpr.all(func) ++ targetInterfaceRef.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ innerExpr.all(func) ++ targetInterfaceRef.all(func)
   }
 }
 
@@ -891,8 +891,8 @@ case class SoftLoadTE(
     ReferenceResultT(CoordT(targetOwnership, targetPermission, expr.resultRegister.reference.kind))
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ expr.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ expr.all(func)
   }
 }
 
@@ -904,7 +904,7 @@ case class SoftLoadTE(
 case class DestroyTE(
     expr: ReferenceExpressionTE,
     structTT: StructTT,
-    destinationReferenceVariables: List[ReferenceLocalVariableT]
+    destinationReferenceVariables: Vector[ReferenceLocalVariableT]
 ) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def resultRegister: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
@@ -913,8 +913,8 @@ case class DestroyTE(
     vfail("wot")
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ expr.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ expr.all(func)
   }
 }
 
@@ -927,8 +927,8 @@ case class DestroyTE(
 //    }
 //  }
 //
-//  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
-//    List(this).collect(func) ++ expr.all(func)
+//  def all[T](func: PartialFunction[Queriable2, T]): Vector[T] = {
+//    Vector(this).collect(func) ++ expr.all(func)
 //  }
 //}
 
@@ -939,7 +939,7 @@ case class CheckRefCountTE(
   override def hashCode(): Int = vcurious()
   override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ refExpr.all(func) ++ numExpr.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ refExpr.all(func) ++ numExpr.all(func)
   }
 }

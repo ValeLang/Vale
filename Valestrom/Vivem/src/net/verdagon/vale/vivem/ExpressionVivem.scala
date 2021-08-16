@@ -17,7 +17,7 @@ object ExpressionVivem {
   def makeVoid(programH: ProgramH, heap: Heap, callId: CallId) = {
     val emptyPackStructRefH = ProgramH.emptyTupleStructRef
     val emptyPackStructDefH = programH.lookupStruct(emptyPackStructRefH)
-    val void = heap.newStruct(emptyPackStructDefH, ReferenceH(ShareH, InlineH, ReadonlyH, emptyPackStructRefH), List.empty)
+    val void = heap.newStruct(emptyPackStructDefH, ReferenceH(ShareH, InlineH, ReadonlyH, emptyPackStructRefH), Vector.empty)
     heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, ShareH), void)
     void
   }
@@ -821,7 +821,7 @@ object ExpressionVivem {
         discard(programH, heap, stdout, stdin, callId, generatorExpr.resultType, generatorReference)
 
         val (arrayReference, arrayInstance) =
-          heap.addArray(ssaDef, arrayRefType, elementRefs.toList)
+          heap.addArray(ssaDef, arrayRefType, elementRefs.toVector)
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
 
         heap.vivemDout.print(" o" + arrayReference.num + "=")
@@ -889,7 +889,7 @@ object ExpressionVivem {
 //              stdin,
 //              stdout,
 //              heap,
-//              List(consumerInterfaceRefAlias, elementReference),
+//              Vector(consumerInterfaceRefAlias, elementReference),
 //              virtualParamIndex,
 //              consumerInterfaceExpr.resultType.kind,
 //              indexInEdge,
@@ -974,7 +974,7 @@ object ExpressionVivem {
 //              stdin,
 //              stdout,
 //              heap,
-//              List(consumerInterfaceRefAlias, elementReference),
+//              Vector(consumerInterfaceRefAlias, elementReference),
 //              virtualParamIndex,
 //              consumerInterfaceExpr.resultType.kind,
 //              indexInEdge,
@@ -1095,7 +1095,7 @@ object ExpressionVivem {
       stdin: () => String,
       stdout: String => Unit,
       heap: Heap,
-      undeviewedArgReferences: List[ReferenceV],
+      undeviewedArgReferences: Vector[ReferenceV],
       virtualParamIndex: Int,
       interfaceRefH: InterfaceRefH,
       indexInEdge: Int,
@@ -1116,7 +1116,7 @@ object ExpressionVivem {
     vassert(actualInterfaceKind.hamut == interfaceRefH)
     val structReference = ReferenceV(actualStruct, actualStruct, actualOwnership, actualLocation, actualPermission, allocNum)
 
-    val prototypeH = edge.structPrototypesByInterfaceMethod.values.toList(indexInEdge)
+    val prototypeH = edge.structPrototypesByInterfaceMethod.values.toVector(indexInEdge)
     val functionH = programH.lookupFunction(prototypeH)
 
     val actualPrototype = functionH.prototype
@@ -1185,7 +1185,7 @@ object ExpressionVivem {
               val indexInEdge = programH.lookupInterface(ir).methods.indexWhere(_.prototypeH == prototypeH)
               vassert(indexInEdge >= 0)
               val (functionH, (calleeCallId, retuurn)) =
-                executeInterfaceFunction(programH, stdin, stdout, heap, List(actualReference), 0, ir, indexInEdge, prototypeH)
+                executeInterfaceFunction(programH, stdin, stdout, heap, Vector(actualReference), 0, ir, indexInEdge, prototypeH)
               heap.vivemDout.print("  " * callId.callDepth + "Getting return reference")
               val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
               vassert(returnRef.actualKind.hamut == ProgramH.emptyTupleStructRef)

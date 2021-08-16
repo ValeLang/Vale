@@ -17,7 +17,7 @@ case class VariableDeclaration(
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 }
 
-case class VariableDeclarations(vars: List[VariableDeclaration]) {
+case class VariableDeclarations(vars: Vector[VariableDeclaration]) {
   override def hashCode(): Int = vcurious()
 
   vassert(vars.distinct == vars)
@@ -36,12 +36,12 @@ case class VariableDeclarations(vars: List[VariableDeclaration]) {
   }
 }
 
-case class VariableUses(uses: List[VariableUse]) {
+case class VariableUses(uses: Vector[VariableUse]) {
   override def hashCode(): Int = vcurious()
 
   vassert(uses.distinct == uses)
 
-  def allUsedNames: List[IVarNameS] = uses.map(_.name)
+  def allUsedNames: Vector[IVarNameS] = uses.map(_.name)
   def markBorrowed(name: IVarNameS): VariableUses = {
     merge(VariableUse(name, Some(Used), None, None), thenMerge)
   }

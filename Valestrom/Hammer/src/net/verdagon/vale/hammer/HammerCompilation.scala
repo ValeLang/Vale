@@ -20,7 +20,7 @@ case class HammerCompilationOptions(
 ) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 class HammerCompilation(
-  packagesToBuild: List[PackageCoordinate],
+  packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]],
   options: HammerCompilationOptions = HammerCompilationOptions()) {
   var templarCompilation =
@@ -35,7 +35,7 @@ class HammerCompilation(
   var hamutsCache: Option[ProgramH] = None
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = templarCompilation.getCodeMap()
-  def getParseds(): Result[FileCoordinateMap[(FileP, List[(Int, Int)])], FailedParse] = templarCompilation.getParseds()
+  def getParseds(): Result[FileCoordinateMap[(FileP, Vector[(Int, Int)])], FailedParse] = templarCompilation.getParseds()
   def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = templarCompilation.getVpstMap()
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = templarCompilation.getScoutput()
   def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = templarCompilation.getAstrouts()

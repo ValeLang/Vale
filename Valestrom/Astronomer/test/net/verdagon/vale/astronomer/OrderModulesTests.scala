@@ -10,7 +10,7 @@ import scala.collection.immutable.List
 //class OrderModulesTests extends FunSuite with Matchers {
 //  test("Basic topo sort") {
 //    OrderModules.orderModules(
-//        List(("A", "B"), ("B", "C"), ("C", "D"))) shouldEqual
-//      List("D", "C", "B", "A")
+//        Vector(("A", "B"), ("B", "C"), ("C", "D"))) shouldEqual
+//      Vector("D", "C", "B", "A")
 //  }
 //}

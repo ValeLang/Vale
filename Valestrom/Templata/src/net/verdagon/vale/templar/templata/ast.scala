@@ -7,9 +7,9 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.vale.{FileCoordinate, PackageCoordinate, vassert, vassertSome, vfail, vimpl}
 
 trait QueriableT {
-  def all[T](func: PartialFunction[QueriableT, T]): List[T];
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T];
 
-  def allOf[T](classs: Class[T]): List[T] = {
+  def allOf[T](classs: Class[T]): Vector[T] = {
     all({
       case x if classs.isInstance(x) => classs.cast(x)
     })
@@ -40,17 +40,17 @@ trait QueriableT {
 }
 
 trait VirtualityT extends QueriableT {
-  def all[T](func: PartialFunction[QueriableT, T]): List[T];
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T];
 }
 case object AbstractT$ extends VirtualityT {
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 }
 case class OverrideT(interface: InterfaceTT) extends VirtualityT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ interface.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ interface.all(func)
   }
 }
 
@@ -59,8 +59,8 @@ case class ParameterT(
     virtuality: Option[VirtualityT],
     tyype: CoordT) extends QueriableT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ virtuality.toList.flatMap(_.all(func)) ++ tyype.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ virtuality.toVector.flatMap(_.all(func)) ++ tyype.all(func)
   }
 }
 
@@ -94,19 +94,19 @@ case class PotentialBannerFromExternFunction(
 
 case class SignatureT(fullName: FullNameT[IFunctionNameT]) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  def paramTypes: List[CoordT] = fullName.last.parameters
+  def paramTypes: Vector[CoordT] = fullName.last.parameters
 }
 
 case class FunctionBannerT(
     originFunction: Option[FunctionA],
     fullName: FullNameT[IFunctionNameT],
-    params: List[ParameterT]) extends QueriableT  {
+    params: Vector[ParameterT]) extends QueriableT  {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
   vassert(fullName.last.parameters == params.map(_.tyype))
 
   def toSignature: SignatureT = SignatureT(fullName)
-  def paramTypes: List[CoordT] = params.map(_.tyype)
+  def paramTypes: Vector[CoordT] = params.map(_.tyype)
 
   def getAbstractInterface: Option[InterfaceTT] = {
     val abstractInterfaces =
@@ -136,12 +136,12 @@ case class FunctionBannerT(
     indices.headOption
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ params.flatMap(_.all(func))
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ params.flatMap(_.all(func))
   }
 
   def unapply(arg: FunctionBannerT):
-  Option[(FullNameT[IFunctionNameT], List[ParameterT])] =
+  Option[(FullNameT[IFunctionNameT], Vector[ParameterT])] =
     Some(fullName, params)
 
   override def toString: String = {
@@ -162,8 +162,8 @@ case object UserFunction2 extends IFunctionAttribute2 // Whether it was written 
 
 case class FunctionHeaderT(
     fullName: FullNameT[IFunctionNameT],
-    attributes: List[IFunctionAttribute2],
-    params: List[ParameterT],
+    attributes: Vector[IFunctionAttribute2],
+    params: Vector[ParameterT],
     returnType: CoordT,
     maybeOriginFunction: Option[FunctionA]) extends QueriableT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
@@ -190,13 +190,13 @@ case class FunctionHeaderT(
   def toPrototype: PrototypeT = PrototypeT(fullName, returnType)
   def toSignature: SignatureT = toPrototype.toSignature
 
-  def paramTypes: List[CoordT] = params.map(_.tyype)
+  def paramTypes: Vector[CoordT] = params.map(_.tyype)
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ params.flatMap(_.all(func)) ++ returnType.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ params.flatMap(_.all(func)) ++ returnType.all(func)
   }
 
-  def unapply(arg: FunctionHeaderT): Option[(FullNameT[IFunctionNameT], List[ParameterT], CoordT)] =
+  def unapply(arg: FunctionHeaderT): Option[(FullNameT[IFunctionNameT], Vector[ParameterT], CoordT)] =
     Some(fullName, params, returnType)
 }
 
@@ -204,11 +204,11 @@ case class PrototypeT(
     fullName: FullNameT[IFunctionNameT],
     returnType: CoordT) extends QueriableT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  def paramTypes: List[CoordT] = fullName.last.parameters
+  def paramTypes: Vector[CoordT] = fullName.last.parameters
   def toSignature: SignatureT = SignatureT(fullName)
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ paramTypes.flatMap(_.all(func)) ++ returnType.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ paramTypes.flatMap(_.all(func)) ++ returnType.all(func)
   }
 }
 
@@ -217,8 +217,8 @@ case class CodeLocationT(
   offset: Int
 ) extends QueriableT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 
   override def toString: String = file + ":" + offset
@@ -229,6 +229,6 @@ object CodeLocationT {
   val zero = CodeLocationT.internal(-1)
   def internal(internalNum: Int): CodeLocationT = {
     vassert(internalNum < 0)
-    CodeLocationT(FileCoordinate("", List.empty, "internal"), internalNum)
+    CodeLocationT(FileCoordinate("", Vector.empty, "internal"), internalNum)
   }
 }

@@ -18,7 +18,7 @@ trait IAncestorHelperDelegate {
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
     interfaceTemplata: InterfaceTemplata,
-    uncoercedTemplateArgs: List[ITemplata]):
+    uncoercedTemplateArgs: Vector[ITemplata]):
   InterfaceTT
 }
 
@@ -45,14 +45,14 @@ class AncestorHelper(
         inferTemplar.inferFromExplicitTemplateArgs(
           env,
           temputs,
-          List(structKindRune),
+          Vector(structKindRune),
           rules,
           typeByRune,
           localRunes,
-          List.empty,
+          Vector.empty,
           None,
           RangeS.internal(-1875),
-          List(KindTemplata(childCitizenRef)))
+          Vector(KindTemplata(childCitizenRef)))
       })
 
     result match {
@@ -70,7 +70,7 @@ class AncestorHelper(
           }
           case it @ InterfaceTemplata(_, _) => {
             val interfaceTT =
-              delegate.getInterfaceRef(temputs, vimpl(), it, List.empty)
+              delegate.getInterfaceRef(temputs, vimpl(), it, Vector.empty)
             (Some(interfaceTT))
           }
         }
@@ -81,10 +81,10 @@ class AncestorHelper(
   def getParentInterfaces(
     temputs: Temputs,
     childCitizenRef: CitizenRefT):
-  (List[InterfaceTT]) = {
+  (Vector[InterfaceTT]) = {
     val needleImplName =
       NameTranslator.getImplNameForName(opts.useOptimization, childCitizenRef) match {
-        case None => return List.empty
+        case None => return Vector.empty
         case Some(x) => x
       }
 
@@ -95,8 +95,8 @@ class AncestorHelper(
       }
     citizenEnv.getAllTemplatasWithName(profiler, needleImplName, Set(TemplataLookupContext, ExpressionLookupContext))
       .flatMap({
-        case it @ ImplTemplata(_, _) => getMaybeImplementedInterface(temputs, childCitizenRef, it).toList
-        case ExternImplTemplata(structTT, interfaceTT) => if (structTT == childCitizenRef) List(interfaceTT) else List.empty
+        case it @ ImplTemplata(_, _) => getMaybeImplementedInterface(temputs, childCitizenRef, it).toVector
+        case ExternImplTemplata(structTT, interfaceTT) => if (structTT == childCitizenRef) Vector(interfaceTT) else Vector.empty
         case other => vwat(other.toString)
       })
   }

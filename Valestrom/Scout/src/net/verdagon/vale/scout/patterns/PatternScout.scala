@@ -44,14 +44,14 @@ case class LetRuleState(
 }
 
 object PatternScout {
-  def getParameterCaptures(pattern: AtomSP): List[VariableDeclaration] = {
+  def getParameterCaptures(pattern: AtomSP): Vector[VariableDeclaration] = {
     val AtomSP(_, maybeCapture, _, _, maybeDestructure) = pattern
-  List.empty ++
-      maybeCapture.toList.flatMap(getCaptureCaptures) ++
-        maybeDestructure.toList.flatten.flatMap(getParameterCaptures)
+  Vector.empty ++
+      maybeCapture.toVector.flatMap(getCaptureCaptures) ++
+        maybeDestructure.toVector.flatten.flatMap(getParameterCaptures)
   }
-  private def getCaptureCaptures(capture: CaptureS): List[VariableDeclaration] = {
-    List(VariableDeclaration(capture.name))
+  private def getCaptureCaptures(capture: CaptureS): Vector[VariableDeclaration] = {
+    Vector(VariableDeclaration(capture.name))
   }
 
   // Returns:
@@ -60,9 +60,9 @@ object PatternScout {
   private[scout] def scoutPatterns(
       stackFrame: StackFrame,
       rulesS: RuleStateBox,
-      params: List[PatternPP]):
-  (List[IRulexSR], List[AtomSP]) = {
-    params.foldLeft((List[IRulexSR](), List[AtomSP]()))({
+      params: Vector[PatternPP]):
+  (Vector[IRulexSR], Vector[AtomSP]) = {
+    params.foldLeft((Vector[IRulexSR](), Vector[AtomSP]()))({
       case ((previousNewRulesS, previousPatternsS), patternP) => {
         val (newRulesS, patternS) =
           PatternScout.translatePattern(stackFrame, rulesS, patternP)
@@ -82,13 +82,13 @@ object PatternScout {
     stackFrame: StackFrame,
     ruleState: RuleStateBox,
     patternPP: PatternPP):
-  (List[IRulexSR], AtomSP) = {
+  (Vector[IRulexSR], AtomSP) = {
     val PatternPP(range,_,maybeCaptureP, maybeTypeP, maybeDestructureP, maybeVirtualityP) = patternPP
 
     val (newRulesFromVirtuality, maybeVirtualityS) =
       maybeVirtualityP match {
-        case None => (List.empty, None)
-        case Some(AbstractP) => (List.empty, Some(AbstractSP))
+        case None => (Vector.empty, None)
+        case Some(AbstractP) => (Vector.empty, Some(AbstractSP))
         case Some(OverrideP(range, typeP)) => {
           typeP match {
             case InterpretedPT(range, _, _, _) => {
@@ -114,10 +114,10 @@ object PatternScout {
 
     val (newRulesFromDestructures, maybePatternsS) =
       maybeDestructureP match {
-        case None => (List.empty, None)
+        case None => (Vector.empty, None)
         case Some(DestructureP(_, destructureP)) => {
           val (newRulesFromDestructures, patternsS) =
-            destructureP.foldLeft((List[IRulexSR](), List[AtomSP]()))({
+            destructureP.foldLeft((Vector[IRulexSR](), Vector[AtomSP]()))({
               case ((previousNewRulesS, previousPatternsS), patternP) => {
                 val (newRulesFromDestructure, patternS) =
                   translatePattern(stackFrame, ruleState, patternP)
@@ -159,17 +159,17 @@ object PatternScout {
       // can (unfortunately) affect the order in which the generics engine evaluates things.
       // This is a temporary solution, see DCRC, option A.
       runeOnLeft: Boolean = true):
-  (List[IRulexSR], IRuneS) = {
+  (Vector[IRulexSR], IRuneS) = {
     maybeTypeP match {
       case None => {
         val rune = rulesS.newImplicitRune()
         val newRule = TypedSR(range, rune, RuleScout.translateType(runeType))
-        (List(newRule), rune)
+        (Vector(newRule), rune)
       }
       case Some(NameOrRunePT(NameP(_, nameOrRune))) if env.allUserDeclaredRunes().contains(CodeRuneS(nameOrRune)) => {
         val rune = CodeRuneS(nameOrRune)
         val newRule = TypedSR(range, rune, RuleScout.translateType(runeType))
-        (List(newRule), rune)
+        (Vector(newRule), rune)
       }
       case Some(nonRuneTemplexP) => {
         val (newRulesFromInner, templexS, maybeRune) =
@@ -184,7 +184,7 @@ object PatternScout {
               } else {
                 EqualsSR(templexS.range, TemplexSR(templexS), TypedSR(range, rune, RuleScout.translateType(runeType)))
               }
-            (newRulesFromInner ++ List(newRule), rune)
+            (newRulesFromInner ++ Vector(newRule), rune)
           }
         }
       }
@@ -200,9 +200,9 @@ object PatternScout {
     // can (unfortunately) affect the order in which the generics engine evaluates things.
     // This is a temporary solution, see DCRC, option A.
     runeOnLeft: Boolean = true):
-  (List[IRulexSR], Option[IRuneS]) = {
+  (Vector[IRulexSR], Option[IRuneS]) = {
     if (maybeTypeP.isEmpty) {
-      (List.empty, None)
+      (Vector.empty, None)
     } else {
       val (newRules, rune) =
         translateMaybeTypeIntoRune(
@@ -211,10 +211,10 @@ object PatternScout {
     }
   }
 
-//  private def translatePatternTemplexes(rulesS: WorkingRulesAndRunes, templexesP: List[ITemplexPT]):
-//  (List[IRulexSR], List[ITemplexS]) = {
+//  private def translatePatternTemplexes(rulesS: WorkingRulesAndRunes, templexesP: Vector[ITemplexPT]):
+//  (Vector[IRulexSR], Vector[ITemplexS]) = {
 //    templexesP match {
-//      case Nil => (rulesS, Nil)
+//      case Nil => (rulesS, Vector())
 //      case headTemplexP :: tailTemplexesP => {
 //        val (rulesS, headTemplexS) = translatePatternTemplex(rulesS, headTemplexP)
 //        val (rulesS, tailTemplexesS) = translatePatternTemplexes(rulesS, tailTemplexesP)
@@ -226,16 +226,10 @@ object PatternScout {
   private def translatePatternTemplexes(
     env: IEnvironment,
     rulesS: RuleStateBox,
-    templexesP: List[ITemplexPT]):
-  (List[IRulexSR], List[ITemplexS]) = {
-    templexesP match {
-      case Nil => (Nil, Nil)
-      case headTemplexP :: tailTemplexesP => {
-        val (newRulesFromHead, headTemplexS, _) = translatePatternTemplex(env, rulesS, headTemplexP)
-        val (newRulesFromTail, tailTemplexesS) = translatePatternTemplexes(env, rulesS, tailTemplexesP)
-        (newRulesFromHead ++ newRulesFromTail, headTemplexS :: tailTemplexesS)
-      }
-    }
+    templexesP: Vector[ITemplexPT]):
+  (Vector[IRulexSR], Vector[ITemplexS]) = {
+    val results = templexesP.map(translatePatternTemplex(env, rulesS, _))
+    (results.map(_._1).flatten, results.map(_._2))
   }
 
   // Returns:
@@ -246,25 +240,25 @@ object PatternScout {
       env: IEnvironment,
       rulesS: RuleStateBox,
       templexP: ITemplexPT):
-  (List[IRulexSR], ITemplexS, Option[IRuneS]) = {
+  (Vector[IRulexSR], ITemplexS, Option[IRuneS]) = {
     val evalRange = (range: Range) => Scout.evalRange(env.file, range)
 
     templexP match {
       case AnonymousRunePT(range) => {
         val rune = rulesS.newImplicitRune()
-        (List.empty, RuneST(evalRange(range), rune), Some(rune))
+        (Vector.empty, RuneST(evalRange(range), rune), Some(rune))
       }
-      case IntPT(range,value) => (List.empty, IntST(evalRange(range), value), None)
-      case BoolPT(range,value) => (List.empty, BoolST(evalRange(range), value), None)
+      case IntPT(range,value) => (Vector.empty, IntST(evalRange(range), value), None)
+      case BoolPT(range,value) => (Vector.empty, BoolST(evalRange(range), value), None)
       case NameOrRunePT(NameP(range, nameOrRune)) => {
         if (env.allUserDeclaredRunes().contains(CodeRuneS(nameOrRune))) {
-          (List.empty, RuneST(evalRange(range), CodeRuneS(nameOrRune)), Some(CodeRuneS(nameOrRune)))
+          (Vector.empty, RuneST(evalRange(range), CodeRuneS(nameOrRune)), Some(CodeRuneS(nameOrRune)))
         } else {
-          (List.empty, NameST(Scout.evalRange(env.file, range), CodeTypeNameS(nameOrRune)), None)
+          (Vector.empty, NameST(Scout.evalRange(env.file, range), CodeTypeNameS(nameOrRune)), None)
         }
       }
-      case MutabilityPT(range, mutability) => (List.empty, MutabilityST(evalRange(range), mutability), None)
-      case VariabilityPT(range, variability) => (List.empty, VariabilityST(evalRange(range), variability), None)
+      case MutabilityPT(range, mutability) => (Vector.empty, MutabilityST(evalRange(range), mutability), None)
+      case VariabilityPT(range, variability) => (Vector.empty, VariabilityST(evalRange(range), variability), None)
       case InterpretedPT(range,ownership,permission, innerP) => {
         val (newRules, innerS, _) =
           translatePatternTemplex(env, rulesS, innerP)
@@ -294,7 +288,7 @@ object PatternScout {
 //        vfail("impl!")
 //        CallST(
 //          NameST("IFunction"),
-//          List(
+//          Vector(
 //            mutableS.getOrElse(MutableP),
 //            paramsS,
 //            retS))

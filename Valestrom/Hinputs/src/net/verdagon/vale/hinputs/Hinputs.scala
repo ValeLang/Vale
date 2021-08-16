@@ -8,17 +8,17 @@ import net.verdagon.vale.{PackageCoordinate, vassertSome, vfail}
 import scala.collection.immutable.List
 
 case class Hinputs(
-    interfaces: List[InterfaceDefinitionT],
-    structs: List[StructDefinitionT],
+    interfaces: Vector[InterfaceDefinitionT],
+    structs: Vector[StructDefinitionT],
     emptyPackStructRef: StructTT,
-    functions: List[FunctionT],
+    functions: Vector[FunctionT],
     kindToDestructor: Map[KindT, PrototypeT],
     edgeBlueprintsByInterface: Map[InterfaceTT, InterfaceEdgeBlueprint],
-    edges: List[EdgeT],
-    kindExports: List[KindExportT],
-    functionExports: List[FunctionExportT],
-    kindExterns: List[KindExternT],
-    functionExterns: List[FunctionExternT]) {
+    edges: Vector[EdgeT],
+    kindExports: Vector[KindExportT],
+    functionExports: Vector[FunctionExportT],
+    kindExterns: Vector[KindExternT],
+    functionExterns: Vector[FunctionExternT]) {
   override def hashCode(): Int = vfail() // Would need a really good reason to hash something this big
 
   def lookupStruct(structTT: StructTT): StructDefinitionT = {
@@ -99,7 +99,7 @@ case class Hinputs(
   def nameIsLambdaIn(name: FullNameT[IFunctionNameT], needleFunctionHumanName: String): Boolean = {
     val lastThree = name.steps.slice(name.steps.size - 3, name.steps.size)
     lastThree match {
-      case List(
+      case Vector(
       FunctionNameT(functionHumanName, _, _),
       LambdaCitizenNameT(_),
       FunctionNameT("__call", _, _)) if functionHumanName == needleFunctionHumanName => true

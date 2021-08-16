@@ -12,22 +12,22 @@ case class AtomAP(
   capture: Option[LocalA],
   virtuality: Option[VirtualityAP],
   coordRune: IRuneA,
-  destructure: Option[List[AtomAP]]) { override def hashCode(): Int = vcurious() }
+  destructure: Option[Vector[AtomAP]]) { override def hashCode(): Int = vcurious() }
 
 sealed trait VirtualityAP
 case object AbstractAP extends VirtualityAP
 case class OverrideAP(range: RangeS, kindRune: IRuneA) extends VirtualityAP { override def hashCode(): Int = vcurious() }
 
 object PatternSUtils {
-  def getDistinctOrderedRunesForPattern(pattern: AtomAP): List[IRuneA] = {
+  def getDistinctOrderedRunesForPattern(pattern: AtomAP): Vector[IRuneA] = {
     val runesFromVirtuality =
       pattern.virtuality match {
-        case None => List.empty
-        case Some(AbstractAP) => List.empty
-        case Some(OverrideAP(range, kindRune)) => List(kindRune)
+        case None => Vector.empty
+        case Some(AbstractAP) => Vector.empty
+        case Some(OverrideAP(range, kindRune)) => Vector(kindRune)
       }
     val runesFromDestructures =
-      pattern.destructure.toList.flatten.flatMap(getDistinctOrderedRunesForPattern)
+      pattern.destructure.toVector.flatten.flatMap(getDistinctOrderedRunesForPattern)
     (runesFromVirtuality ++ runesFromDestructures :+ pattern.coordRune).distinct
   }
 

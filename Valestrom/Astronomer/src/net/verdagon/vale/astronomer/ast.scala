@@ -11,11 +11,11 @@ trait IExpressionAE {
 }
 
 case class ProgramA(
-    structs: List[StructA],
-    interfaces: List[InterfaceA],
-    impls: List[ImplA],
-    functions: List[FunctionA],
-    exports: List[ExportAsA]) {
+    structs: Vector[StructA],
+    interfaces: Vector[InterfaceA],
+    impls: Vector[ImplA],
+    functions: Vector[FunctionA],
+    exports: Vector[ExportAsA]) {
   override def hashCode(): Int = vcurious()
 
   def lookupFunction(name: INameA) = {
@@ -47,7 +47,7 @@ trait TypeDefinitionA {
 case class StructA(
     range: RangeS,
     name: TopLevelCitizenDeclarationNameA,
-    attributes: List[ICitizenAttributeA],
+    attributes: Vector[ICitizenAttributeA],
     weakable: Boolean,
     mutabilityRune: IRuneA,
 
@@ -58,11 +58,11 @@ case class StructA(
     maybePredictedMutability: Option[MutabilityP],
     tyype: ITemplataType,
     knowableRunes: Set[IRuneA],
-    identifyingRunes: List[IRuneA],
+    identifyingRunes: Vector[IRuneA],
     localRunes: Set[IRuneA],
     typeByRune: Map[IRuneA, ITemplataType],
-    rules: List[IRulexAR],
-    members: List[StructMemberA]
+    rules: Vector[IRulexAR],
+    members: Vector[StructMemberA]
 ) extends TypeDefinitionA {
   val hash = range.hashCode() + name.hashCode()
   override def hashCode(): Int = hash;
@@ -94,8 +94,8 @@ case class ImplA(
     range: RangeS,
     // The name of an impl is the human name of the subcitizen, see INSHN.
     name: ImplNameA,
-    rulesFromStructDirection: List[IRulexAR],
-    rulesFromInterfaceDirection: List[IRulexAR],
+    rulesFromStructDirection: Vector[IRulexAR],
+    rulesFromInterfaceDirection: Vector[IRulexAR],
     typeByRune: Map[IRuneA, ITemplataType],
     localRunes: Set[IRuneA],
     structKindRune: IRuneA,
@@ -112,7 +112,7 @@ case class ImplA(
 case class ExportAsA(
     range: RangeS,
     exportedName: String,
-    rules: List[IRulexAR],
+    rules: Vector[IRulexAR],
     typeByRune: Map[IRuneA, ITemplataType],
     typeRune: IRuneA) {
   val hash = range.hashCode() + exportedName.hashCode
@@ -126,7 +126,7 @@ case class ExportAsA(
 
 //case class AliasA(
 //  codeLocation: CodeLocation,
-//  rules: List[IRulexAR],
+//  rules: Vector[IRulexAR],
 //  typeByRune: Map[String, ITemplataType],
 //  aliasRune: String,
 //  aliaseeRune: String) { override def hashCode(): Int = vcurious() }
@@ -135,7 +135,7 @@ case class ExportAsA(
 case class InterfaceA(
     range: RangeS,
     name: TopLevelCitizenDeclarationNameA,
-    attributes: List[ICitizenAttributeA],
+    attributes: Vector[ICitizenAttributeA],
     weakable: Boolean,
     mutabilityRune: IRuneA,
     // This is needed for recursive structures like
@@ -145,12 +145,12 @@ case class InterfaceA(
     maybePredictedMutability: Option[MutabilityP],
     tyype: ITemplataType,
     knowableRunes: Set[IRuneA],
-    identifyingRunes: List[IRuneA],
+    identifyingRunes: Vector[IRuneA],
     localRunes: Set[IRuneA],
     typeByRune: Map[IRuneA, ITemplataType],
-    rules: List[IRulexAR],
+    rules: Vector[IRulexAR],
     // See IMRFDI
-    internalMethods: List[FunctionA]) {
+    internalMethods: Vector[FunctionA]) {
   val hash = range.hashCode() + name.hashCode()
   override def hashCode(): Int = hash;
   override def equals(obj: Any): Boolean = {
@@ -187,7 +187,7 @@ object structName {
   }
 }
 
-// remember, by doing a "m", CaptureSP("m", Destructure("Marine", List("hp, "item"))), by having that
+// remember, by doing a "m", CaptureSP("m", Destructure("Marine", Vector("hp, "item"))), by having that
 // CaptureSP/"m" there, we're changing the nature of that Destructure; "hp" and "item" will be
 // borrows rather than owns.
 
@@ -213,23 +213,23 @@ case object UserFunctionA extends IFunctionAttributeA // Whether it was written 
 case class FunctionA(
     range: RangeS,
     name: IFunctionDeclarationNameA,
-    attributes: List[IFunctionAttributeA],
+    attributes: Vector[IFunctionAttributeA],
 
     tyype: ITemplataType,
     knowableRunes: Set[IRuneA],
     // This is not necessarily only what the user specified, the compiler can add
     // things to the end here, see CCAUIR.
-    identifyingRunes: List[IRuneA],
+    identifyingRunes: Vector[IRuneA],
     localRunes: Set[IRuneA],
 
     typeByRune: Map[IRuneA, ITemplataType],
 
-    params: List[ParameterA],
+    params: Vector[ParameterA],
 
     // We need to leave it an option to signal that the compiler can infer the return type.
     maybeRetCoordRune: Option[IRuneA],
 
-    templateRules: List[IRulexAR],
+    templateRules: Vector[IRulexAR],
     body: IBodyA
 ) {
   val hash = range.hashCode() + name.hashCode()

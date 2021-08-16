@@ -9,7 +9,7 @@ import net.verdagon.vale.{vassert, vcurious, vimpl, vpass}
 // collide with other things
 case class LetSE(
     range: RangeS,
-    rules: List[IRulexSR],
+    rules: Vector[IRulexSR],
     unknowableRunes: Set[IRuneS],
     localRunes: Set[IRuneS],
     pattern: AtomSP,
@@ -82,7 +82,7 @@ case class BodySE(
     // These are all the variables we use from parent environments.
     // We have these so templar doesn't have to dive through all the functions
     // that it calls (impossible) to figure out what's needed in a closure struct.
-    closuredNames: List[IVarNameS],
+    closuredNames: Vector[IVarNameS],
 
     block: BlockSE
 ) {
@@ -91,9 +91,9 @@ case class BodySE(
 
 case class BlockSE(
   range: RangeS,
-  locals: List[LocalS],
+  locals: Vector[LocalS],
 
-  exprs: List[IExpressionSE],
+  exprs: Vector[IExpressionSE],
 ) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
   // Every element should have at least one expression, because a block will
@@ -142,7 +142,7 @@ case class VoidSE(range: RangeS) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
 }
 
-case class TupleSE(range: RangeS, elements: List[IExpressionSE]) extends IExpressionSE {
+case class TupleSE(range: RangeS, elements: Vector[IExpressionSE]) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
 }
 case class StaticArrayFromValuesSE(
@@ -150,7 +150,7 @@ case class StaticArrayFromValuesSE(
   maybeMutabilityST: Option[ITemplexS],
   maybeVariabilityST: Option[ITemplexS],
   maybeSizeST: Option[ITemplexS],
-  elements: List[IExpressionSE]
+  elements: Vector[IExpressionSE]
 ) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
 }
@@ -215,7 +215,7 @@ case class DotCallSE(range: RangeS, left: IExpressionSE, indexExpr: IExpressionS
   override def hashCode(): Int = vcurious()
 }
 
-case class FunctionCallSE(range: RangeS, callableExpr: IExpressionSE, argsExprs1: List[IExpressionSE]) extends IExpressionSE {
+case class FunctionCallSE(range: RangeS, callableExpr: IExpressionSE, argsExprs1: Vector[IExpressionSE]) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
 }
 
@@ -225,7 +225,7 @@ case class LocalLoadSE(range: RangeS, name: IVarNameS, targetOwnership: LoadAsP)
 }
 // Loads a non-local. In well formed code, this will be a function, but the user also likely
 // tried to access a variable they forgot to declare.
-case class OutsideLoadSE(range: RangeS, name: String, maybeTemplateArgs: Option[List[ITemplexS]], targetOwnership: LoadAsP) extends IExpressionSE {
+case class OutsideLoadSE(range: RangeS, name: String, maybeTemplateArgs: Option[Vector[ITemplexS]], targetOwnership: LoadAsP) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
 }
 case class RuneLookupSE(range: RangeS, rune: IRuneS) extends IExpressionSE {
@@ -237,9 +237,9 @@ case class UnletSE(range: RangeS, name: String) extends IExpressionSE {
 }
 
 
-//case class Scramble0(elements: List[Expression0]) extends Expression0 {
+//case class Scramble0(elements: Vector[Expression0]) extends Expression0 {
 //  vassert(!elements.isEmpty, "Can't have an empty scramble")
 //}
-//case class Scramble1(elements: List[Expression1]) extends Expression1 {
+//case class Scramble1(elements: Vector[Expression1]) extends Expression1 {
 //  vassert(!elements.isEmpty, "Can't have an empty scramble")
 //}

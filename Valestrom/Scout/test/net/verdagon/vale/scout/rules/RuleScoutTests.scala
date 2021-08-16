@@ -6,7 +6,7 @@ import net.verdagon.vale.{Err, FileCoordinate, Ok, vassert, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
 class RuleScoutTests extends FunSuite with Matchers {
-  private def compile(code: String): List[IRulexSR] = {
+  private def compile(code: String): Vector[IRulexSR] = {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
       case ParseSuccess(program0) => {
@@ -22,16 +22,16 @@ class RuleScoutTests extends FunSuite with Matchers {
 
   test("A") {
     val expectedRulesS =
-      List(
+      Vector(
         EqualsSR(RangeS.testZero,
           TypedSR(RangeS.testZero,CodeRuneS("B"),CoordTypeSR),
-          TemplexSR(CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("List")),List(RuneST(RangeS.testZero,CodeRuneS("A")))))),
+          TemplexSR(CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("List")),Vector(RuneST(RangeS.testZero,CodeRuneS("A")))))),
         EqualsSR(RangeS.testZero,
           TypedSR(RangeS.testZero,CodeRuneS("C"),CoordTypeSR),
-          OrSR(RangeS.testZero,List(TemplexSR(RuneST(RangeS.testZero,CodeRuneS("B"))), TemplexSR(RuneST(RangeS.testZero,CodeRuneS("A"))), TemplexSR(NameST(RangeS.testZero, CodeTypeNameS("int")))))),
+          OrSR(RangeS.testZero,Vector(TemplexSR(RuneST(RangeS.testZero,CodeRuneS("B"))), TemplexSR(RuneST(RangeS.testZero,CodeRuneS("A"))), TemplexSR(NameST(RangeS.testZero, CodeTypeNameS("int")))))),
         TypedSR(RangeS.testZero,CodeRuneS("A"),CoordTypeSR))
     RuleSUtils.getDistinctOrderedRunesForRulexes(expectedRulesS) shouldEqual
-      List(CodeRuneS("B"), CodeRuneS("A"), CodeRuneS("C"))
+      Vector(CodeRuneS("B"), CodeRuneS("A"), CodeRuneS("C"))
 
     val results =
       compile(
@@ -42,13 +42,13 @@ class RuleScoutTests extends FunSuite with Matchers {
           |{ }
           |""".stripMargin)
     results match {
-      case List(
+      case Vector(
         EqualsSR(_,
           TypedSR(_,br1 @ CodeRuneS("B"),CoordTypeSR),
-          TemplexSR(CallST(_,NameST(_, CodeTypeNameS("List")),List(RuneST(_,ar1 @ CodeRuneS("A")))))),
+          TemplexSR(CallST(_,NameST(_, CodeTypeNameS("List")),Vector(RuneST(_,ar1 @ CodeRuneS("A")))))),
         EqualsSR(_,
           TypedSR(_,CodeRuneS("C"),CoordTypeSR),
-          OrSR(_,List(TemplexSR(RuneST(_,br2)), TemplexSR(RuneST(_,ar3)), TemplexSR(NameST(_, CodeTypeNameS("int")))))),
+          OrSR(_,Vector(TemplexSR(RuneST(_,br2)), TemplexSR(RuneST(_,ar3)), TemplexSR(NameST(_, CodeTypeNameS("int")))))),
         TypedSR(_,ar2,CoordTypeSR)) => {
         vassert(br1 == br2)
         vassert(ar1 == ar2)
@@ -60,7 +60,7 @@ class RuleScoutTests extends FunSuite with Matchers {
   test("B") {
     val rulesS = compile("fn main() infer-ret rules(B Ref = List<A>, A Ref, C Ref = B | A | Int) {}")
     RuleSUtils.getDistinctOrderedRunesForRulexes(rulesS) match {
-      case List(
+      case Vector(
         CodeRuneS("B"),
         CodeRuneS("A"),
         CodeRuneS("C")) =>

@@ -56,19 +56,14 @@ class LocalHelper(
   def unletAll(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
-    variables: List[ILocalVariableT]):
-  (List[ReferenceExpressionTE]) = {
-    variables match {
-      case Nil => (List.empty)
-      case head :: tail => {
-        val unlet = unletLocal(fate, head)
-        val maybeHeadExpr2 =
-          destructorTemplar.drop(fate, temputs, unlet)
-        val tailExprs2 =
-          unletAll(temputs, fate, tail)
-        (maybeHeadExpr2 :: tailExprs2)
-      }
-    }
+    variables: Vector[ILocalVariableT]):
+  (Vector[ReferenceExpressionTE]) = {
+    variables.map({ case variable =>
+      val unlet = unletLocal(fate, variable)
+      val maybeHeadExpr2 =
+        destructorTemplar.drop(fate, temputs, unlet)
+      maybeHeadExpr2
+    })
   }
 
   // A user local variable is one that the user can address inside their code.

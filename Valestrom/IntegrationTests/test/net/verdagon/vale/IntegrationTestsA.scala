@@ -23,24 +23,24 @@ import scala.collection.immutable.List
 object RunCompilation {
   def test(code: String*): RunCompilation = {
     new RunCompilation(
-      List(
+      Vector(
         PackageCoordinate.BUILTIN,
         PackageCoordinate.TEST_TLD),
       Builtins.getCodeMap()
-        .or(FileCoordinateMap.test(code.toList))
+        .or(FileCoordinateMap.test(code.toVector))
         .or(Tests.getPackageToResourceResolver),
       FullCompilationOptions())
   }
 }
 
 class RunCompilation(
-  packagesToBuild: List[PackageCoordinate],
+  packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]],
   options: FullCompilationOptions = FullCompilationOptions()) {
   var fullCompilation = new FullCompilation(packagesToBuild, packageToContentsResolver, options)
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = fullCompilation.getCodeMap()
-  def getParseds(): Result[FileCoordinateMap[(FileP, List[(Int, Int)])], FailedParse] = fullCompilation.getParseds()
+  def getParseds(): Result[FileCoordinateMap[(FileP, Vector[(Int, Int)])], FailedParse] = fullCompilation.getParseds()
   def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = fullCompilation.getVpstMap()
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = fullCompilation.getScoutput()
   def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = fullCompilation.getAstrouts()
@@ -62,7 +62,7 @@ class RunCompilation(
   }
   def evalForKind(
     args: Vector[PrimitiveKindV],
-    stdin: List[String]):
+    stdin: Vector[String]):
   IVonData = {
     Vivem.executeWithPrimitiveArgs(getHamuts(), args, System.out, Vivem.stdinFromList(stdin), Vivem.regularStdout)
   }
@@ -521,11 +521,11 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |""".stripMargin)
     val hinputs = compile.expectTemputs()
 
-    vassertSome(hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List.empty, FunctionNameT("helperFunc", List.empty, List(CoordT(ShareT, ReadonlyT, IntT.i32)))))))
+    vassertSome(hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, FunctionNameT("helperFunc", Vector.empty, Vector(CoordT(ShareT, ReadonlyT, IntT.i32)))))))
 
-    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List.empty, FunctionNameT("bork", List.empty, List(CoordT(ShareT, ReadonlyT, StrT())))))))
+    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, FunctionNameT("bork", Vector.empty, Vector(CoordT(ShareT, ReadonlyT, StrT())))))))
 
-    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List.empty, FunctionNameT("helperFunc", List.empty, List(CoordT(ShareT, ReadonlyT, StrT())))))))
+    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, FunctionNameT("helperFunc", Vector.empty, Vector(CoordT(ShareT, ReadonlyT, StrT())))))))
   }
 
 //  test("Test overloading between borrow and own") {
@@ -574,11 +574,11 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Test extern functions") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/externs/extern.vale"))
 
-    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate("math", List.empty))
+    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate("math", Vector.empty))
 
     // The extern we make should have the name we expect
     vassertSome(packageH.externNameToFunction.get("sqrt")) match {
-      case PrototypeH(FullNameH("sqrt",_,PackageCoordinate("math",Nil),_),_,_) =>
+      case PrototypeH(FullNameH("sqrt",_,PackageCoordinate("math",Vector()),_),_,_) =>
     }
 
     // We also made an internal function that contains an extern call

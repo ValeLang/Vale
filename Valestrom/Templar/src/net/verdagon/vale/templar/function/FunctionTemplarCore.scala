@@ -26,7 +26,7 @@ class FunctionTemplarCore(
         temputs: Temputs,
         startingFate: FunctionEnvironment,
         fate: FunctionEnvironmentBox,
-        exprs: List[IExpressionAE]
+        exprs: Vector[IExpressionAE]
     ): (ReferenceExpressionTE, Set[CoordT]) = {
       delegate.evaluateBlockStatements(temputs, startingFate, fate, exprs)
     }
@@ -34,8 +34,8 @@ class FunctionTemplarCore(
     override def translatePatternList(
         temputs: Temputs,
         fate: FunctionEnvironmentBox,
-        patterns1: List[AtomAP],
-        patternInputExprs2: List[ReferenceExpressionTE]
+        patterns1: Vector[AtomAP],
+        patternInputExprs2: Vector[ReferenceExpressionTE]
     ): ReferenceExpressionTE = {
       delegate.translatePatternList(temputs, fate, patterns1, patternInputExprs2)
     }
@@ -49,7 +49,7 @@ class FunctionTemplarCore(
     startingFullEnv: FunctionEnvironment,
       temputs: Temputs,
     callRange: RangeS,
-      params2: List[ParameterT]):
+      params2: Vector[ParameterT]):
   (FunctionHeaderT) = {
     val fullEnv = FunctionEnvironmentBox(startingFullEnv)
 
@@ -187,7 +187,7 @@ class FunctionTemplarCore(
     fullEnv: FunctionEnvironmentBox,
     temputs: Temputs,
     bfunction1: BFunctionA,
-    paramsT: List[ParameterT],
+    paramsT: Vector[ParameterT],
     isDestructor: Boolean):
   FunctionHeaderT = {
     val BFunctionA(function1, _) = bfunction1;
@@ -265,8 +265,8 @@ class FunctionTemplarCore(
   def finalizeHeader(
       fullEnv: FunctionEnvironmentBox,
       temputs: Temputs,
-      attributesT: List[IFunctionAttribute2],
-      paramsT: List[ParameterT],
+      attributesT: Vector[IFunctionAttribute2],
+      paramsT: Vector[ParameterT],
       returnCoord: CoordT) = {
     val header = FunctionHeaderT(fullEnv.fullName, attributesT, paramsT, returnCoord, Some(fullEnv.function));
     temputs.declareFunctionReturnType(header.toSignature, returnCoord)
@@ -279,8 +279,8 @@ class FunctionTemplarCore(
       fullEnvSnapshot: FunctionEnvironment,
       startingFullEnvSnapshot: FunctionEnvironment,
       bfunction1: BFunctionA,
-      attributesT: List[IFunctionAttribute2],
-      paramsT: List[ParameterT],
+      attributesT: Vector[IFunctionAttribute2],
+      paramsT: Vector[ParameterT],
       isDestructor: Boolean,
       maybeExplicitReturnCoord: Option[CoordT],
       maybePreKnownHeader: Option[FunctionHeaderT]):
@@ -298,7 +298,7 @@ class FunctionTemplarCore(
         }
       }
 
-    val header = vassertOne(maybePreKnownHeader.toList ++ maybePostKnownHeader.toList)
+    val header = vassertOne(maybePreKnownHeader.toVector ++ maybePostKnownHeader.toVector)
 
     // Funny story... let's say we're current instantiating a constructor,
     // for example MySome<T>().
@@ -327,7 +327,7 @@ class FunctionTemplarCore(
     }
   }
 
-  def translateAttributes(attributesA: List[IFunctionAttributeA]) = {
+  def translateAttributes(attributesA: Vector[IFunctionAttributeA]) = {
     attributesA.map({
       //      case ExportA(packageCoord) => Export2(packageCoord)
       case UserFunctionA => UserFunction2
@@ -339,8 +339,8 @@ class FunctionTemplarCore(
       temputs: Temputs,
       fullName: FullNameT[IFunctionNameT],
       range: RangeS,
-      attributes: List[IFunctionAttribute2],
-      params2: List[ParameterT],
+      attributes: Vector[IFunctionAttribute2],
+      params2: Vector[ParameterT],
       returnType2: CoordT,
       maybeOrigin: Option[FunctionA]):
   (FunctionHeaderT) = {
@@ -348,17 +348,23 @@ class FunctionTemplarCore(
 //      case FunctionName2("===", templateArgs, paramTypes) => {
 //        vcheck(templateArgs.size == 1, () => CompileErrorExceptionT(RangedInternalErrorT(range, "=== should have 1 template params!")))
 //        vcheck(paramTypes.size == 2, () => CompileErrorExceptionT(RangedInternalErrorT(range, "=== should have 2 params!")))
-//        val List(tyype) = templateArgs
-//        val List(leftParamType, rightParamType) = paramTypes
+//        val Vector(tyype) = templateArgs
+//        val Vector(leftParamType, rightParamType) = paramTypes
 //        vassert(leftParamType == rightParamType, "=== left and right params should be same type")
 //        vassert(leftParamType == tyype)
 //        vassert(rightParamType == tyype)
 //
 //      }
-      case FunctionNameT(humanName, Nil, params) => {
-        val header = FunctionHeaderT(fullName, Extern2(range.file.packageCoordinate) :: attributes, params2, returnType2, maybeOrigin)
+      case FunctionNameT(humanName, Vector(), params) => {
+        val header =
+          FunctionHeaderT(
+            fullName,
+            Vector(Extern2(range.file.packageCoordinate)) ++ attributes,
+            params2,
+            returnType2,
+            maybeOrigin)
 
-        val externFullName = FullNameT(fullName.packageCoord, List.empty, ExternFunctionNameT(humanName, params))
+        val externFullName = FullNameT(fullName.packageCoord, Vector.empty, ExternFunctionNameT(humanName, params))
         val externPrototype = PrototypeT(externFullName, header.returnType)
         temputs.addFunctionExtern(range, externPrototype, fullName.packageCoord, humanName)
 
@@ -377,7 +383,7 @@ class FunctionTemplarCore(
     }
   }
 
-  def translateFunctionAttributes(a: List[IFunctionAttributeA]): List[IFunctionAttribute2] = {
+  def translateFunctionAttributes(a: Vector[IFunctionAttributeA]): Vector[IFunctionAttribute2] = {
     a.map({
       case UserFunctionA => UserFunction2
       case ExternA(packageCoord) => Extern2(packageCoord)
@@ -390,14 +396,14 @@ class FunctionTemplarCore(
     env: FunctionEnvironment,
     temputs: Temputs,
     origin: Option[FunctionA],
-    params2: List[ParameterT],
+    params2: Vector[ParameterT],
     returnReferenceType2: CoordT):
   (FunctionHeaderT) = {
     vassert(params2.exists(_.virtuality == Some(AbstractT$)))
     val header =
       FunctionHeaderT(
         env.fullName,
-        List.empty,
+        Vector.empty,
         params2,
         returnReferenceType2,
         origin)
@@ -436,15 +442,15 @@ class FunctionTemplarCore(
       FunctionT(
         FunctionHeaderT(
           env.fullName,
-          List.empty,
-          List(ParameterT(CodeVarNameT("this"), Some(OverrideT(interfaceTT)), structType2)),
+          Vector.empty,
+          Vector(ParameterT(CodeVarNameT("this"), Some(OverrideT(interfaceTT)), structType2)),
           CoordT(ShareT, ReadonlyT, VoidT()),
           maybeOriginFunction1),
         BlockTE(
             ReturnTE(
               FunctionCallTE(
                 structDestructor,
-                List(ArgLookupTE(0, structType2))))))
+                Vector(ArgLookupTE(0, structType2))))))
 
     // If this fails, then the signature the FunctionTemplarMiddleLayer made for us doesn't
     // match what we just made

@@ -39,29 +39,29 @@ class DestructureParserTests extends FunSuite with Matchers with Collector {
 
   test("Only empty destructure") {
     compile("()") shouldHave {
-      case withDestructure(Nil) =>
+      case withDestructure(Vector()) =>
     }
   }
   test("One element destructure") {
     compile("(a)") shouldHave {
-      case withDestructure(List(capture("a"))) =>
+      case withDestructure(Vector(capture("a"))) =>
     }
   }
   test("One typed element destructure") {
     compile("( _ A )") shouldHave {
-      case withDestructure(List(withType(NameOrRunePT(NameP(_, "A"))))) =>
+      case withDestructure(Vector(withType(NameOrRunePT(NameP(_, "A"))))) =>
     }
   }
   test("Only two-element destructure") {
     compile("(a, b)") shouldHave {
-      case withDestructure(List(capture("a"), capture("b"))) =>
+      case withDestructure(Vector(capture("a"), capture("b"))) =>
     }
   }
   test("Two-element destructure with ignore") {
     compile("(_, b)") shouldHave {
       case PatternPP(_,_,
           None,None,
-          Some(DestructureP(_,List(PatternPP(_,_,None, None, None, None), capture("b")))),
+          Some(DestructureP(_,Vector(PatternPP(_,_,None, None, None, None), capture("b")))),
           None) =>
     }
   }
@@ -70,7 +70,7 @@ class DestructureParserTests extends FunSuite with Matchers with Collector {
       case PatternPP(_,_,
         Some(CaptureP(_,LocalNameP(NameP(_, "a")))),
         None,
-        Some(DestructureP(_,List(capture("x"), capture("y")))),
+        Some(DestructureP(_,Vector(capture("x"), capture("y")))),
         None) =>
     }
   }
@@ -79,7 +79,7 @@ class DestructureParserTests extends FunSuite with Matchers with Collector {
       case PatternPP(_,_,
         None,
         Some(NameOrRunePT(NameP(_, "A"))),
-        Some(DestructureP(_,List(capture("a"), capture("b")))),
+        Some(DestructureP(_,Vector(capture("a"), capture("b")))),
         None) =>
     }
   }
@@ -88,7 +88,7 @@ class DestructureParserTests extends FunSuite with Matchers with Collector {
       case PatternPP(_,_,
         Some(CaptureP(_,LocalNameP(NameP(_, "a")))),
         Some(NameOrRunePT(NameP(_, "A"))),
-        Some(DestructureP(_,List(capture("x"), capture("y")))),
+        Some(DestructureP(_,Vector(capture("x"), capture("y")))),
         None) =>
     }
   }
@@ -97,14 +97,14 @@ class DestructureParserTests extends FunSuite with Matchers with Collector {
       case PatternPP(_,_,
           Some(CaptureP(_,LocalNameP(NameP(_, "a")))),
           None,
-          Some(DestructureP(_,List(fromEnv("int"), fromEnv("bool")))),
+          Some(DestructureP(_,Vector(fromEnv("int"), fromEnv("bool")))),
           None) =>
     }
   }
   test("Destructure with type inside") {
     compile("(a int, b bool)") shouldHave {
       case withDestructure(
-      List(
+      Vector(
           capturedWithType("a", NameOrRunePT(NameP(_, "int"))),
           capturedWithType("b", NameOrRunePT(NameP(_, "bool"))))) =>
     }
@@ -112,10 +112,10 @@ class DestructureParserTests extends FunSuite with Matchers with Collector {
   test("Nested destructures A") {
     compile("(a, (b, c))") shouldHave {
       case withDestructure(
-        List(
+        Vector(
           capture("a"),
           withDestructure(
-          List(
+          Vector(
             capture("b"),
             capture("c"))))) =>
     }
@@ -123,9 +123,9 @@ class DestructureParserTests extends FunSuite with Matchers with Collector {
   test("Nested destructures B") {
     compile("((a), b)") shouldHave {
       case withDestructure(
-      List(
+      Vector(
           withDestructure(
-          List(
+          Vector(
             capture("a"))),
           capture("b"))) =>
     }
@@ -133,11 +133,11 @@ class DestructureParserTests extends FunSuite with Matchers with Collector {
   test("Nested destructures C") {
     compile("(((a)))") shouldHave {
       case withDestructure(
-      List(
+      Vector(
           withDestructure(
-          List(
+          Vector(
             withDestructure(
-            List(
+            Vector(
               capture("a"))))))) =>
     }
   }

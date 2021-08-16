@@ -16,14 +16,14 @@ import scala.collection.immutable.List
 
 object BuiltInFunctions {
   val builtIns =
-    List(
+    Vector(
       FunctionA(
         RangeS.internal(-61),
         FunctionNameA("len", s.CodeLocationS.internal(-20)),
-        List(UserFunctionA),
-        TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
+        Vector(UserFunctionA),
+        TemplateTemplataType(Vector(CoordTemplataType), FunctionTemplataType),
         Set(CodeRuneA("I")),
-        List(CodeRuneA("T")),
+        Vector(CodeRuneA("T")),
         Set(CodeRuneA("T"), CodeRuneA("XX"), CodeRuneA("XY"), CodeRuneA("__1"), CodeRuneA("I")),
         Map(
           CodeRuneA("T") -> CoordTemplataType,
@@ -31,22 +31,22 @@ object BuiltInFunctions {
           CodeRuneA("XY") -> VariabilityTemplataType,
           CodeRuneA("__1") -> CoordTemplataType,
           CodeRuneA("I") -> CoordTemplataType),
-        List(
+        Vector(
           ParameterA(AtomAP(RangeS.internal(-1337), Some(LocalA(CodeVarNameA("arr"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)), None, CodeRuneA("T"), None))),
         Some(CodeRuneA("I")),
-        List(
+        Vector(
           EqualsAR(RangeS.internal(-9101),
             TemplexAR(RuneAT(RangeS.internal(-9102),CodeRuneA("T"), CoordTemplataType)),
             ComponentsAR(
               RangeS.internal(-9103),
               CoordTemplataType,
-              List(
-                OrAR(RangeS.internal(-9104),List(TemplexAR(OwnershipAT(RangeS.internal(-9105),ConstraintP)), TemplexAR(OwnershipAT(RangeS.internal(-9106),ShareP)))),
+              Vector(
+                OrAR(RangeS.internal(-9104),Vector(TemplexAR(OwnershipAT(RangeS.internal(-9105),ConstraintP)), TemplexAR(OwnershipAT(RangeS.internal(-9106),ShareP)))),
                 TemplexAR(PermissionAT(RangeS.internal(-9107), ReadonlyP)),
                 TemplexAR(
                   CallAT(RangeS.internal(-9108),
-                    NameAT(RangeS.internal(-9109),CodeTypeNameA("Array"), TemplateTemplataType(List(MutabilityTemplataType, VariabilityTemplataType, CoordTemplataType), KindTemplataType)),
-                    List(
+                    NameAT(RangeS.internal(-9109),CodeTypeNameA("Array"), TemplateTemplataType(Vector(MutabilityTemplataType, VariabilityTemplataType, CoordTemplataType), KindTemplataType)),
+                    Vector(
                       RuneAT(RangeS.internal(-9110),CodeRuneA("XX"), MutabilityTemplataType),
                       RuneAT(RangeS.internal(-9110),CodeRuneA("XY"), VariabilityTemplataType),
                       RuneAT(RangeS.internal(-9111),CodeRuneA("__1"), CoordTemplataType)),
@@ -57,20 +57,20 @@ object BuiltInFunctions {
         CodeBodyA(
           BodyAE(
             RangeS.internal(-62),
-            List.empty,
+            Vector.empty,
             BlockAE(
               RangeS.internal(-62),
-              List(
+              Vector(
                 ArrayLengthAE(
                   RangeS.internal(-62),
                   LocalLoadAE(RangeS.internal(-62),CodeVarNameA("arr"), UseP))))))),
       FunctionA(
         RangeS.internal(-62),
         FunctionNameA("len", s.CodeLocationS.internal(-21)),
-        List(UserFunctionA),
-        TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
+        Vector(UserFunctionA),
+        TemplateTemplataType(Vector(CoordTemplataType), FunctionTemplataType),
         Set(CodeRuneA("I")),
-        List(CodeRuneA("N"), CodeRuneA("T")),
+        Vector(CodeRuneA("N"), CodeRuneA("T")),
         Set(CodeRuneA("A"), CodeRuneA("N"), CodeRuneA("M"), CodeRuneA("V"), CodeRuneA("T"), CodeRuneA("I")),
         Map(
           CodeRuneA("A") -> CoordTemplataType,
@@ -79,16 +79,16 @@ object BuiltInFunctions {
           CodeRuneA("I") -> CoordTemplataType,
           CodeRuneA("M") -> MutabilityTemplataType,
           CodeRuneA("V") -> VariabilityTemplataType),
-        List(
+        Vector(
           ParameterA(AtomAP(RangeS.internal(-1338), Some(LocalA(CodeVarNameA("arr"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)), None, CodeRuneA("A"), None))),
         Some(CodeRuneA("I")),
-        List(
+        Vector(
           EqualsAR(RangeS.internal(-9115),
             TemplexAR(RuneAT(RangeS.internal(-9116),CodeRuneA("A"), CoordTemplataType)),
             ComponentsAR(
               RangeS.internal(-92),
               CoordTemplataType,
-              List(
+              Vector(
                 TemplexAR(OwnershipAT(RangeS.internal(-9117),ConstraintP)),
                 TemplexAR(PermissionAT(RangeS.internal(-9117),ReadonlyP)),
                 TemplexAR(
@@ -104,23 +104,23 @@ object BuiltInFunctions {
         CodeBodyA(
           BodyAE(
             RangeS.internal(-62),
-            List.empty,
+            Vector.empty,
             BlockAE(
               RangeS.internal(-62),
-              List(
+              Vector(
                 RuneLookupAE(RangeS.internal(-62),CodeRuneA("N"), IntegerTemplataType)))))),
       FunctionA(
         RangeS.internal(-67),
         FunctionNameA("__vbi_panic", s.CodeLocationS.internal(-22)),
-        List(UserFunctionA),
+        Vector(UserFunctionA),
         FunctionTemplataType,
         Set(),
-        List.empty,
+        Vector.empty,
         Set(CodeRuneA("N")),
         Map(CodeRuneA("N") -> CoordTemplataType),
-        List.empty,
+        Vector.empty,
         Some(CodeRuneA("N")),
-        List(
+        Vector(
           EqualsAR(RangeS.internal(-9125),
             TemplexAR(RuneAT(RangeS.internal(-9126),CodeRuneA("N"), CoordTemplataType)),
             TemplexAR(NameAT(RangeS.internal(-9127),CodeTypeNameA("__Never"), CoordTemplataType)))),
@@ -128,21 +128,21 @@ object BuiltInFunctions {
       FunctionA(
         RangeS.internal(-63),
         FunctionNameA("lock", s.CodeLocationS.internal(-23)),
-        List(UserFunctionA),
-        TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
+        Vector(UserFunctionA),
+        TemplateTemplataType(Vector(CoordTemplataType), FunctionTemplataType),
         Set(),
-        List(CodeRuneA("OwningRune")),
+        Vector(CodeRuneA("OwningRune")),
         Set(CodeRuneA("OwningRune"), CodeRuneA("OptBorrowRune"), CodeRuneA("WeakRune")),
         Map(CodeRuneA("OwningRune") -> CoordTemplataType, CodeRuneA("OptBorrowRune") -> CoordTemplataType, CodeRuneA("WeakRune") -> CoordTemplataType),
-        List(ParameterA(AtomAP(RangeS.internal(-1350), Some(LocalA(CodeVarNameA("weakRef"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)), None, CodeRuneA("WeakRune"), None))),
+        Vector(ParameterA(AtomAP(RangeS.internal(-1350), Some(LocalA(CodeVarNameA("weakRef"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)), None, CodeRuneA("WeakRune"), None))),
         Some(CodeRuneA("OptBorrowRune")),
-        List(
+        Vector(
           EqualsAR(RangeS.internal(-9128),
             TemplexAR(RuneAT(RangeS.internal(-9129),CodeRuneA("OptBorrowRune"), CoordTemplataType)),
             TemplexAR(
               CallAT(RangeS.internal(-9130),
-                NameAT(RangeS.internal(-9131),CodeTypeNameA("Opt"), TemplateTemplataType(List(CoordTemplataType), KindTemplataType)),
-                List(InterpretedAT(RangeS.internal(-9132),ConstraintP,ReadonlyP, RuneAT(RangeS.internal(-9133),CodeRuneA("OwningRune"), CoordTemplataType))),
+                NameAT(RangeS.internal(-9131),CodeTypeNameA("Opt"), TemplateTemplataType(Vector(CoordTemplataType), KindTemplataType)),
+                Vector(InterpretedAT(RangeS.internal(-9132),ConstraintP,ReadonlyP, RuneAT(RangeS.internal(-9133),CodeRuneA("OwningRune"), CoordTemplataType))),
                 CoordTemplataType))),
           EqualsAR(RangeS.internal(-9134),
             TemplexAR(RuneAT(RangeS.internal(-9135),CodeRuneA("WeakRune"), CoordTemplataType)),
@@ -151,9 +151,9 @@ object BuiltInFunctions {
         CodeBodyA(
           BodyAE(
             RangeS.internal(-62),
-            List.empty,
+            Vector.empty,
             BlockAE(
               RangeS.internal(-62),
-              List(
+              Vector(
                 LockWeakAE(RangeS.internal(-9138), LocalLoadAE(RangeS.internal(-62),CodeVarNameA("weakRef"), LendWeakP(ReadonlyP)))))))))
 }

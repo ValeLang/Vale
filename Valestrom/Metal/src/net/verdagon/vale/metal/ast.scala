@@ -8,7 +8,7 @@ import scala.collection.immutable.ListMap
 object ProgramH {
   val emptyTupleStructRef =
     // If the templar ever decides to change this things name, update this to match templar's.
-    StructRefH(FullNameH("Tup0", 0, PackageCoordinate.BUILTIN, List(VonObject("Tup",None,Vector(VonMember("members",VonArray(None,Vector())))))))
+    StructRefH(FullNameH("Tup0", 0, PackageCoordinate.BUILTIN, Vector(VonObject("Tup",None,Vector(VonMember("members",VonArray(None,Vector())))))))
 
   def emptyTupleStructType = ReferenceH(ShareH, InlineH, ReadonlyH, emptyTupleStructRef)
 
@@ -18,7 +18,7 @@ object ProgramH {
 
 case class RegionH(
   name: String,
-  kinds: List[KindH]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+  kinds: Vector[KindH]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 case class Export(
   nameH: FullNameH,
@@ -27,15 +27,15 @@ case class Export(
 
 case class PackageH(
     // All the interfaces in the program.
-    interfaces: List[InterfaceDefinitionH],
+    interfaces: Vector[InterfaceDefinitionH],
     // All the structs in the program.
-    structs: List[StructDefinitionH],
+    structs: Vector[StructDefinitionH],
 //    // All the externs that we're calling into from the program.
-//    externs: List[PrototypeH],
+//    externs: Vector[PrototypeH],
     // All of the user defined functions (and some from the compiler itself).
-    functions: List[FunctionH],
-    staticSizedArrays: List[StaticSizedArrayDefinitionTH],
-    runtimeSizedArrays: List[RuntimeSizedArrayDefinitionTH],
+    functions: Vector[FunctionH],
+    staticSizedArrays: Vector[StaticSizedArrayDefinitionTH],
+    runtimeSizedArrays: Vector[RuntimeSizedArrayDefinitionTH],
     // Used for native compilation only, not JVM/CLR/JS/iOS.
     // These are pointing into the specific functions (in the `functions` field)
     // which should be called when we drop a reference to an immutable object.
@@ -64,8 +64,8 @@ case class PackageH(
   // Function must be at the top level of the program.
   def lookupFunction(readableName: String) = {
     val matches =
-      (List.empty ++
-        exportNameToFunction.get(readableName).toList ++
+      (Vector.empty ++
+        exportNameToFunction.get(readableName).toVector ++
         functions.filter(_.prototype.fullName.readableName == readableName).map(_.prototype))
         .distinct
     vassert(matches.nonEmpty)
@@ -139,9 +139,9 @@ case class StructDefinitionH(
     mutability: Mutability,
     // All of the `impl`s, in other words, all of the vtables for this struct for all
     // the interfaces it implements.
-    edges: List[EdgeH],
+    edges: Vector[EdgeH],
     // The members of the struct, in order.
-    members: List[StructMemberH]) {
+    members: Vector[StructMemberH]) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def getRef: StructRefH = StructRefH(fullName)
 }
@@ -173,9 +173,9 @@ case class InterfaceDefinitionH(
   // The interfaces that this interface extends.
   // This isnt hooked up to anything, and can be safely ignored.
   // TODO: Change this to edges, since interfaces impl other interfaces.
-  superInterfaces: List[InterfaceRefH],
+  superInterfaces: Vector[InterfaceRefH],
   // All the methods that we can call on this interface.
-  methods: List[InterfaceMethodH]) {
+  methods: Vector[InterfaceMethodH]) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def getRef = InterfaceRefH(fullName)
 }
@@ -217,7 +217,7 @@ case class FunctionH(
   // prototype describing this function.
   isExtern: Boolean,
 
-  attributes: List[IFunctionAttributeH],
+  attributes: Vector[IFunctionAttributeH],
 
   // The body of the function that contains the actual instructions.
   body: ExpressionH[KindH]) {
@@ -229,7 +229,7 @@ case class FunctionH(
 // A wrapper around a function's name, which also has its params and return type.
 case class PrototypeH(
   fullName: FullNameH,
-  params: List[ReferenceH[KindH]],
+  params: Vector[ReferenceH[KindH]],
   returnType: ReferenceH[KindH]
 ) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
@@ -239,7 +239,7 @@ case class FullNameH(
     // -1 means extern and we wont suffix the readableName with the ID.
     id: Int,
     packageCoordinate: PackageCoordinate,
-    parts: List[IVonData]) {
+    parts: Vector[IVonData]) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 //  def toReadableString(): String = {
 //    readableName + (if (id >= 0) "_" + id else "")
@@ -248,7 +248,7 @@ case class FullNameH(
 }
 
 object FullNameH {
-  def namePartsToString(packageCoordinate: PackageCoordinate, parts: List[IVonData]) = {
+  def namePartsToString(packageCoordinate: PackageCoordinate, parts: Vector[IVonData]) = {
     packageCoordinate.module + "::" + packageCoordinate.packages.map(_ + "::").mkString("") + parts.map(MetalPrinter.print).mkString(":")
   }
 }

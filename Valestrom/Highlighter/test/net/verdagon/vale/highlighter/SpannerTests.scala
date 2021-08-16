@@ -16,12 +16,12 @@ class SpannerTests extends FunSuite with Matchers {
     val program1 = compile("fn main() infer-ret { 3 }")
     val main = program1.lookupFunction("main")
     Spanner.forFunction(main) shouldEqual
-      Span(Fn,Range(0,25),List(
-        Span(FnName,Range(3,7),List.empty),
-        Span(Params,Range(7,9),List.empty),
-        Span(Ret,Range(10,20),List(Span(Ret,Range(10,19),List.empty))),
-        Span(Block,Range(20,25),List(
-          Span(Num,Range(22,23),List.empty)))))
+      Span(Fn,Range(0,25),Vector(
+        Span(FnName,Range(3,7),Vector.empty),
+        Span(Params,Range(7,9),Vector.empty),
+        Span(Ret,Range(10,20),Vector(Span(Ret,Range(10,19),Vector.empty))),
+        Span(Block,Range(20,25),Vector(
+          Span(Num,Range(22,23),Vector.empty)))))
   }
 
 
@@ -35,21 +35,21 @@ class SpannerTests extends FunSuite with Matchers {
     Spanner.forFunction(main) match {
       case Span(
         Fn,_,
-        List(
-          Span(FnName,_,Nil),
-          Span(Params,_,Nil),
-          Span(Ret,_,List(Span(Ret,_,Nil))),
+        Vector(
+          Span(FnName,_,Vector()),
+          Span(Params,_,Vector()),
+          Span(Ret,_,Vector(Span(Ret,_,Vector()))),
           Span(Block,_,
-            List(
+            Vector(
               Span(Call,_,
-                List(
+                Vector(
                   Span(MemberAccess,_,
-                    List(
-                      Span(Lookup,_,Nil),
-                      Span(MemberAccess,_,Nil),
-                      Span(Lookup,_,Nil))),
-                  Span(MemberAccess,_,Nil),
-                  Span(CallLookup,_,Nil))))))) =>
+                    Vector(
+                      Span(Lookup,_,Vector()),
+                      Span(MemberAccess,_,Vector()),
+                      Span(Lookup,_,Vector()))),
+                  Span(MemberAccess,_,Vector()),
+                  Span(CallLookup,_,Vector()))))))) =>
     }
   }
 }

@@ -65,7 +65,7 @@ class FunctionTemplarMiddleLayer(
           case Some(KindTemplata(ir @ InterfaceTT(_))) => (Some(OverrideT(ir)))
           case Some(it @ InterfaceTemplata(_, _)) => {
             val ir =
-              structTemplar.getInterfaceRef(temputs, range, it, List.empty)
+              structTemplar.getInterfaceRef(temputs, range, it, Vector.empty)
             (Some(OverrideT(ir)))
           }
         }
@@ -243,8 +243,8 @@ class FunctionTemplarMiddleLayer(
 
   private def evaluateFunctionParamTypes(
     env: IEnvironment,
-    params1: List[ParameterA]):
-  List[CoordT] = {
+    params1: Vector[ParameterA]):
+  Vector[CoordT] = {
     params1.map(param1 => {
       val CoordTemplata(coord) =
         env
@@ -259,8 +259,8 @@ class FunctionTemplarMiddleLayer(
   def assembleFunctionParams(
     env: IEnvironment,
     temputs: Temputs,
-    params1: List[ParameterA]):
-  (List[ParameterT]) = {
+    params1: Vector[ParameterA]):
+  (Vector[ParameterT]) = {
     params1.zipWithIndex.map({ case (param1, index) =>
         val CoordTemplata(coord) =
           env
@@ -291,8 +291,8 @@ class FunctionTemplarMiddleLayer(
 //    val signature2 =
 //      Signature2(
 //        CallTemplar.INTERFACE_DESTRUCTOR_NAME,
-//        List(CoercedFinalTemplateArg2(ReferenceTemplata(interfaceType2))),
-//        List(structType2))
+//        Vector(CoercedFinalTemplateArg2(ReferenceTemplata(interfaceType2))),
+//        Vector(structType2))
 //    temputs.declareFunctionSignature(signature2)
 //
 //    val header =
@@ -310,7 +310,7 @@ class FunctionTemplarMiddleLayer(
 
   def makeNamedEnv(
     runedEnv: BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs,
-    paramTypes: List[CoordT],
+    paramTypes: Vector[CoordT],
     maybeReturnType: Option[CoordT]
   ): FunctionEnvironment = {
     val BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs(parentEnv, oldName, function, variables, entries) = runedEnv
@@ -323,7 +323,7 @@ class FunctionTemplarMiddleLayer(
 
   private def assembleName(
     name: FullNameT[BuildingFunctionNameWithClosuredsAndTemplateArgsT],
-    params: List[CoordT]):
+    params: Vector[CoordT]):
   FullNameT[IFunctionNameT] = {
     val BuildingFunctionNameWithClosuredsAndTemplateArgsT(templateName, templateArgs) = name.last
     val newLastStep =
@@ -332,14 +332,14 @@ class FunctionTemplarMiddleLayer(
         case FunctionTemplateNameT(humanName, _) => FunctionNameT(humanName, templateArgs, params)
         case LambdaTemplateNameT(_) => FunctionNameT(CallTemplar.CALL_FUNCTION_NAME, templateArgs, params)
         case ImmConcreteDestructorTemplateNameT() => {
-          val List(CoordT(ShareT, ReadonlyT, immRef)) = params
+          val Vector(CoordT(ShareT, ReadonlyT, immRef)) = params
           ImmConcreteDestructorNameT(immRef)
         }
         case ImmInterfaceDestructorTemplateNameT() => {
           ImmInterfaceDestructorNameT(templateArgs, params)
         }
         case ImmDropTemplateNameT() => {
-          val List(CoordT(ShareT, ReadonlyT, kind)) = params
+          val Vector(CoordT(ShareT, ReadonlyT, kind)) = params
           ImmDropNameT(kind)
         }
       }

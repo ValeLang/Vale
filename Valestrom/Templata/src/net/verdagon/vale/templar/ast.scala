@@ -25,7 +25,7 @@ case class ImplT(
   interface: InterfaceTT
 ) extends QueriableT {
   override def hashCode(): Int = vcurious()
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
     struct.all(func) ++ interface.all(func)
   }
 }
@@ -37,7 +37,7 @@ case class KindExportT(
   exportedName: String
 ) extends QueriableT {
   override def hashCode(): Int = vcurious()
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
     tyype.all(func)
   }
 }
@@ -49,7 +49,7 @@ case class FunctionExportT(
   exportedName: String
 ) extends QueriableT {
   override def hashCode(): Int = vcurious()
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
     prototype.all(func)
   }
 }
@@ -60,7 +60,7 @@ case class KindExternT(
   externName: String
 ) extends QueriableT {
   override def hashCode(): Int = vcurious()
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
     tyype.all(func)
   }
 }
@@ -72,25 +72,25 @@ case class FunctionExternT(
   externName: String
 ) extends QueriableT {
   override def hashCode(): Int = vcurious()
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
     prototype.all(func)
   }
 }
 
 case class InterfaceEdgeBlueprint(
   interface: InterfaceTT,
-  superFamilyRootBanners: List[FunctionBannerT]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+  superFamilyRootBanners: Vector[FunctionBannerT]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 case class EdgeT(
   struct: StructTT,
   interface: InterfaceTT,
-  methods: List[PrototypeT]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+  methods: Vector[PrototypeT]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 object Program2 {
-  val emptyTupleStructRef = StructTT(FullNameT(PackageCoordinate.BUILTIN, List.empty, TupleNameT(List.empty)))
-  val emptyTupleType: PackTT = PackTT(List.empty, Program2.emptyTupleStructRef)
+  val emptyTupleStructRef = StructTT(FullNameT(PackageCoordinate.BUILTIN, Vector.empty, TupleNameT(Vector.empty)))
+  val emptyTupleType: PackTT = PackTT(Vector.empty, Program2.emptyTupleStructRef)
   val emptyTupleReference: CoordT = CoordT(ShareT, ReadonlyT, emptyTupleType)
-  val emptyPackExpression: PackTE = PackTE(List.empty, CoordT(ShareT, ReadonlyT, Program2.emptyTupleType), Program2.emptyTupleType)
+  val emptyPackExpression: PackTE = PackTE(Vector.empty, CoordT(ShareT, ReadonlyT, Program2.emptyTupleType), Program2.emptyTupleType)
 
   val intType = CoordT(ShareT, ReadonlyT, IntT.i32)
   val boolType = CoordT(ShareT, ReadonlyT, BoolT())
@@ -99,7 +99,7 @@ object Program2 {
 //trait Program2 {
 //  def getAllInterfaces: Set[InterfaceDefinition2]
 //  def getAllStructs: Set[StructDefinition2]
-//  def getAllImpls: List[Impl2]
+//  def getAllImpls: Vector[Impl2]
 //  def getAllFunctions: Set[Function2]
 //  def getAllCitizens: Set[CitizenDefinition2] = getAllInterfaces ++ getAllStructs
 //  def getAllExterns: Set[FunctionHeader2]
@@ -121,14 +121,14 @@ object Program2 {
 case class FunctionT(
   header: FunctionHeaderT,
 //  // Used for testing
-//  variables: List[ILocalVariableT],
+//  variables: Vector[ILocalVariableT],
   body: ReferenceExpressionTE) extends QueriableT {
   override def hashCode(): Int = vcurious()
 
   // We always end a function with a return, whose result is a Never.
   vassert(body.resultRegister.kind == NeverT())
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ header.all(func) ++ body.all(func)// ++ variables.flatMap(_.all(func))
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ header.all(func) ++ body.all(func)// ++ variables.flatMap(_.all(func))
   }
 }

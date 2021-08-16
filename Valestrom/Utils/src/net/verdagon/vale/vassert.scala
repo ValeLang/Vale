@@ -61,13 +61,13 @@ object vassertSome {
 }
 
 object vassertOne {
-  def apply[T](thing: List[T], message: String): T = {
+  def apply[T](thing: Vector[T], message: String): T = {
     thing match {
-      case List(x) => x
+      case Vector(x) => x
       case _ => vfail(message)
     }
   }
-  def apply[T](thing: List[T]): T = {
+  def apply[T](thing: Vector[T]): T = {
     apply(thing, "Expected exactly one element!")
   }
 }

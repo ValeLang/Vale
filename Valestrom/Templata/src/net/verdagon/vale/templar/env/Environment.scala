@@ -15,9 +15,9 @@ trait IEnvironment {
   }
   def getParentEnv(): Option[IEnvironment]
   def globalEnv: PackageEnvironment[INameT]
-  def getAllTemplatasWithAbsoluteName2(name: INameT, lookupFilter: Set[ILookupContext]): List[ITemplata]
+  def getAllTemplatasWithAbsoluteName2(name: INameT, lookupFilter: Set[ILookupContext]): Vector[ITemplata]
   def getNearestTemplataWithAbsoluteName2(name: INameT, lookupFilter: Set[ILookupContext]): Option[ITemplata]
-  def getAllTemplatasWithName(profiler: IProfiler, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): List[ITemplata]
+  def getAllTemplatasWithName(profiler: IProfiler, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): Vector[ITemplata]
   def getNearestTemplataWithName(name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): Option[ITemplata]
   def fullName: FullNameT[INameT]
 }
@@ -28,9 +28,9 @@ trait IEnvironmentBox {
     "#Environment"
   }
   def globalEnv: PackageEnvironment[INameT]
-  def getAllTemplatasWithAbsoluteName2(name: INameT, lookupFilter: Set[ILookupContext]): List[ITemplata]
+  def getAllTemplatasWithAbsoluteName2(name: INameT, lookupFilter: Set[ILookupContext]): Vector[ITemplata]
   def getNearestTemplataWithAbsoluteName2(name: INameT, lookupFilter: Set[ILookupContext]): Option[ITemplata]
-  def getAllTemplatasWithName(profiler: IProfiler, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): List[ITemplata]
+  def getAllTemplatasWithName(profiler: IProfiler, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): Vector[ITemplata]
   def getNearestTemplataWithName(name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): Option[ITemplata]
   def fullName: FullNameT[INameT]
 }
@@ -68,7 +68,7 @@ case class PackageEnvironment[+T <: INameT](
   override def getAllTemplatasWithAbsoluteName2(
     name: INameT,
     lookupFilter: Set[ILookupContext]):
-  List[ITemplata] = {
+  Vector[ITemplata] = {
     templatas.getAllTemplatasWithAbsoluteName2(this, name, lookupFilter)
   }
 
@@ -79,7 +79,7 @@ case class PackageEnvironment[+T <: INameT](
     templatas.getNearestTemplataWithAbsoluteName2(this, name, lookupFilter)
   }
 
-  override def getAllTemplatasWithName(profiler: IProfiler, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): List[ITemplata] = {
+  override def getAllTemplatasWithName(profiler: IProfiler, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): Vector[ITemplata] = {
     templatas.getAllTemplatasWithName(profiler, this, name, lookupFilter)
   }
 
@@ -104,7 +104,7 @@ case class PackageEnvironment[+T <: INameT](
       templatas.addEntry(useOptimization, name, entry))
   }
 
-  def addEntries(useOptimization: Boolean, newEntries: Map[INameT, List[IEnvEntry]]): PackageEnvironment[T] = {
+  def addEntries(useOptimization: Boolean, newEntries: Map[INameT, Vector[IEnvEntry]]): PackageEnvironment[T] = {
     PackageEnvironment(
       maybeParentEnv,
       fullName,
@@ -115,16 +115,16 @@ case class PackageEnvironment[+T <: INameT](
 }
 
 case class TemplatasStore(
-  entriesByNameT: Map[INameT, List[IEnvEntry]],
-  entriesByImpreciseNameA: Map[IImpreciseNameStepA, List[IEnvEntry]]
+  entriesByNameT: Map[INameT, Vector[IEnvEntry]],
+  entriesByImpreciseNameA: Map[IImpreciseNameStepA, Vector[IEnvEntry]]
 ) {
   override def hashCode(): Int = vcurious()
 
   //  // The above map, indexed by human name. If it has no human name, it won't be in here.
-  //  private var entriesByHumanName = Map[String, List[IEnvEntry]]()
+  //  private var entriesByHumanName = Map[String, Vector[IEnvEntry]]()
 
   def entryToTemplata(env: IEnvironment, entry: IEnvEntry): ITemplata = {
-//    vassert(env.fullName != FullName2(PackageCoordinate.BUILTIN, List.empty, PackageTopLevelName2()))
+//    vassert(env.fullName != FullName2(PackageCoordinate.BUILTIN, Vector.empty, PackageTopLevelName2()))
     entry match {
       case FunctionEnvEntry(func) => FunctionTemplata.make(env, func)
       case StructEnvEntry(struct) => StructTemplata.make(env, struct)
@@ -134,7 +134,7 @@ case class TemplatasStore(
     }
   }
 
-  def addEntries(useOptimization: Boolean, newEntries: Map[INameT, List[IEnvEntry]]): TemplatasStore = {
+  def addEntries(useOptimization: Boolean, newEntries: Map[INameT, Vector[IEnvEntry]]): TemplatasStore = {
     val oldEntries = entriesByNameT
 
     val combinedEntries =
@@ -165,7 +165,7 @@ case class TemplatasStore(
 
     val newEntriesByImpreciseName =
       newEntries
-        .toList
+        .toVector
         .map({ case (key, value) => (getImpreciseName(useOptimization, key), value) })
         .filter(_._1.nonEmpty)
         .map({ case (key, value) => (key.get, value) })
@@ -315,14 +315,14 @@ case class TemplatasStore(
   }
 
 
-  def getAllTemplatasWithAbsoluteName2(from: IEnvironment, name: INameT, lookupFilter: Set[ILookupContext]): List[ITemplata] = {
+  def getAllTemplatasWithAbsoluteName2(from: IEnvironment, name: INameT, lookupFilter: Set[ILookupContext]): Vector[ITemplata] = {
     entriesByNameT
       .get(name)
-      .toList
+      .toVector
       .flatten
       .filter(entryMatchesFilter(_, lookupFilter))
       .map(entryToTemplata(from, _)) ++
-      from.getParentEnv().toList.flatMap(_.getAllTemplatasWithAbsoluteName2(name, lookupFilter))
+      from.getParentEnv().toVector.flatMap(_.getAllTemplatasWithAbsoluteName2(name, lookupFilter))
   }
 
   def getNearestTemplataWithAbsoluteName2(
@@ -332,11 +332,11 @@ case class TemplatasStore(
   Option[ITemplata] = {
     entriesByNameT
       .get(name)
-      .toList
+      .toVector
       .flatten
       .filter(entryMatchesFilter(_, lookupFilter)) match {
-      case List(entry) => Some(entryToTemplata(from, entry))
-      case Nil => from.getParentEnv().flatMap(_.getNearestTemplataWithAbsoluteName2(name, lookupFilter))
+      case Vector(entry) => Some(entryToTemplata(from, entry))
+      case Vector() => from.getParentEnv().flatMap(_.getNearestTemplataWithAbsoluteName2(name, lookupFilter))
       case multiple => vfail("Too many things named " + name + ":" + multiple);
     }
   }
@@ -346,14 +346,14 @@ case class TemplatasStore(
     from: IEnvironment,
     name: IImpreciseNameStepA,
     lookupFilter: Set[ILookupContext]):
-  List[ITemplata] = {
+  Vector[ITemplata] = {
     profiler.childFrame("getAllTemplatasWithName", () => {
       entriesByImpreciseNameA
-        .getOrElse(name, List.empty)
+        .getOrElse(name, Vector.empty)
         .filter(entryMatchesFilter(_, lookupFilter))
         .map(x => entryToTemplata(from, x))
-        .toList ++
-        from.getParentEnv().toList.flatMap(_.getAllTemplatasWithName(profiler, name, lookupFilter))
+        .toVector ++
+        from.getParentEnv().toVector.flatMap(_.getAllTemplatasWithName(profiler, name, lookupFilter))
     })
   }
 
@@ -363,15 +363,15 @@ case class TemplatasStore(
     lookupFilter: Set[ILookupContext]):
   Option[ITemplata] = {
     entriesByImpreciseNameA
-      .getOrElse(name, List.empty)
+      .getOrElse(name, Vector.empty)
       .filter(entryMatchesFilter(_, lookupFilter)) match {
-      case List(entry) => Some(entryToTemplata(from, entry))
-      case Nil => from.getParentEnv().flatMap(_.getNearestTemplataWithName(name, lookupFilter))
+      case Vector(entry) => Some(entryToTemplata(from, entry))
+      case Vector() => from.getParentEnv().flatMap(_.getNearestTemplataWithName(name, lookupFilter))
       case multiple => vfail("Too many things named " + name + ":" + multiple);
     }
   }
 
   def addEntry(useOptimization: Boolean, name: INameT, entry: IEnvEntry): TemplatasStore = {
-    addEntries(useOptimization, Map(name -> List(entry)))
+    addEntries(useOptimization, Map(name -> Vector(entry)))
   }
 }

@@ -12,7 +12,7 @@ object Benchmark {
     val profiler = new Profiler()
     val compile =
       new RunCompilation(
-        List(PackageCoordinate.BUILTIN, PackageCoordinate.TEST_TLD),
+        Vector(PackageCoordinate.BUILTIN, PackageCoordinate.TEST_TLD),
         Builtins.getCodeMap()
           .or(FileCoordinateMap.test(Tests.loadExpected("programs/roguelike.vale")))
           .or(Tests.getPackageToResourceResolver),

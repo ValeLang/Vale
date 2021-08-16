@@ -6,15 +6,15 @@ import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnv
 import net.verdagon.vale.scout.patterns.AtomSP
 
 object Arrays {
-  def makeArrayFunctions(): List[FunctionA] = {
-    List(
+  def makeArrayFunctions(): Vector[FunctionA] = {
+    Vector(
       FunctionA(
         RangeS.internal(-54),
         FunctionNameA("drop_into", CodeLocationS.internal(-4)),
-        List.empty,
-        TemplateTemplataType(List(MutabilityTemplataType, VariabilityTemplataType, CoordTemplataType), FunctionTemplataType),
+        Vector.empty,
+        TemplateTemplataType(Vector(MutabilityTemplataType, VariabilityTemplataType, CoordTemplataType), FunctionTemplataType),
         Set(CodeRuneA("VoidType")),
-        List(CodeRuneA("ArrayMutability"), CodeRuneA("ArrayVariability"), CodeRuneA("ElementType"), CodeRuneA("GeneratorType")),
+        Vector(CodeRuneA("ArrayMutability"), CodeRuneA("ArrayVariability"), CodeRuneA("ElementType"), CodeRuneA("GeneratorType")),
         Set(
           CodeRuneA("VoidType"),
           CodeRuneA("ArrayMutability"),
@@ -33,11 +33,11 @@ object Arrays {
           CodeRuneA("ArrayType") -> CoordTemplataType,
           CodeRuneA("GeneratorType") -> CoordTemplataType,
           CodeRuneA("GeneratorKind") -> KindTemplataType),
-        List(
+        Vector(
           ParameterA(AtomAP(RangeS.internal(-121), Some(LocalA(CodeVarNameA("arr"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)), None, CodeRuneA("ArrayType"), None)),
           ParameterA(AtomAP(RangeS.internal(-122), Some(LocalA(CodeVarNameA("generator"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)), None, CodeRuneA("GeneratorType"), None))),
         Some(CodeRuneA("VoidType")),
-        List(
+        Vector(
           EqualsAR(
             RangeS.internal(-1404),
             TemplexAR(RuneAT(RangeS.internal(-5605),CodeRuneA("VoidType"), CoordTemplataType)),
@@ -48,7 +48,7 @@ object Arrays {
             ComponentsAR(
               RangeS.internal(-1406),
               CoordTemplataType,
-              List(
+              Vector(
                 TemplexAR(OwnershipAT(RangeS.internal(-5617), ConstraintP)),
                 TemplexAR(PermissionAT(RangeS.internal(-5617), ReadwriteP)),
                 TemplexAR(RuneAT(RangeS.internal(-5618),CodeRuneA("GeneratorKind"), KindTemplataType))))),
@@ -66,10 +66,10 @@ object Arrays {
         CodeBodyA(
           BodyAE(
             RangeS.internal(-5621),
-            List.empty,
+            Vector.empty,
             BlockAE(
               RangeS.internal(-5622),
-              List(
+              Vector(
                 DestroyArrayIntoCallableAE(
                   RangeS.internal(-5623),
                   LocalLoadAE(RangeS.internal(-5625),CodeVarNameA("arr"), UseP),
@@ -78,10 +78,10 @@ object Arrays {
       FunctionA(
         RangeS.internal(-57),
         FunctionNameA("drop_into", CodeLocationS.internal(-4)),
-        List.empty,
-        TemplateTemplataType(List(MutabilityTemplataType, VariabilityTemplataType, CoordTemplataType), FunctionTemplataType),
+        Vector.empty,
+        TemplateTemplataType(Vector(MutabilityTemplataType, VariabilityTemplataType, CoordTemplataType), FunctionTemplataType),
         Set(CodeRuneA("VoidType")),
-        List(CodeRuneA("ArrayMutability"), CodeRuneA("ArrayVariability"), CodeRuneA("ElementType"), CodeRuneA("GeneratorType")),
+        Vector(CodeRuneA("ArrayMutability"), CodeRuneA("ArrayVariability"), CodeRuneA("ElementType"), CodeRuneA("GeneratorType")),
         Set(
           CodeRuneA("VoidType"),
           CodeRuneA("ArrayMutability"),
@@ -98,11 +98,11 @@ object Arrays {
           CodeRuneA("ArrayType") -> CoordTemplataType,
           CodeRuneA("GeneratorType") -> CoordTemplataType,
           CodeRuneA("GeneratorKind") -> KindTemplataType),
-        List(
+        Vector(
           ParameterA(AtomAP(RangeS.internal(-121), Some(LocalA(CodeVarNameA("arr"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)), None, CodeRuneA("ArrayType"), None)),
           ParameterA(AtomAP(RangeS.internal(-122), Some(LocalA(CodeVarNameA("generator"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)), None, CodeRuneA("GeneratorType"), None))),
         Some(CodeRuneA("VoidType")),
-        List(
+        Vector(
           EqualsAR(
             RangeS.internal(-1404),
             TemplexAR(RuneAT(RangeS.internal(-5605),CodeRuneA("VoidType"), CoordTemplataType)),
@@ -113,7 +113,7 @@ object Arrays {
             ComponentsAR(
               RangeS.internal(-1406),
               CoordTemplataType,
-              List(
+              Vector(
                 TemplexAR(OwnershipAT(RangeS.internal(-5617), ConstraintP)),
                 TemplexAR(PermissionAT(RangeS.internal(-5617), ReadwriteP)),
                 TemplexAR(RuneAT(RangeS.internal(-5618),CodeRuneA("GeneratorKind"), KindTemplataType))))),
@@ -122,13 +122,13 @@ object Arrays {
             ComponentsAR(
               RangeS.internal(-9103),
               CoordTemplataType,
-              List(
+              Vector(
                 TemplexAR(OwnershipAT(RangeS.internal(-5617), OwnP)),
                 TemplexAR(PermissionAT(RangeS.internal(-5617), ReadwriteP)),
                 TemplexAR(
                   CallAT(RangeS.internal(-9108),
-                    NameAT(RangeS.internal(-9109),CodeTypeNameA("Array"), TemplateTemplataType(List(MutabilityTemplataType, VariabilityTemplataType, CoordTemplataType), KindTemplataType)),
-                    List(
+                    NameAT(RangeS.internal(-9109),CodeTypeNameA("Array"), TemplateTemplataType(Vector(MutabilityTemplataType, VariabilityTemplataType, CoordTemplataType), KindTemplataType)),
+                    Vector(
                       RuneAT(RangeS.internal(-9110),CodeRuneA("ArrayMutability"), MutabilityTemplataType),
                       RuneAT(RangeS.internal(-9110),CodeRuneA("ArrayVariability"), VariabilityTemplataType),
                       RuneAT(RangeS.internal(-9111),CodeRuneA("ElementType"), CoordTemplataType)),
@@ -136,10 +136,10 @@ object Arrays {
         CodeBodyA(
           BodyAE(
             RangeS.internal(-5621),
-            List.empty,
+            Vector.empty,
             BlockAE(
               RangeS.internal(-5622),
-              List(
+              Vector(
                 DestroyArrayIntoCallableAE(
                   RangeS.internal(-5623),
                   LocalLoadAE(RangeS.internal(-5625),CodeVarNameA("arr"), UseP),

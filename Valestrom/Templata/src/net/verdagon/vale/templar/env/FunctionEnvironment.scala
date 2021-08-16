@@ -13,7 +13,7 @@ case class BuildingFunctionEnvironmentWithClosureds(
   parentEnv: IEnvironment,
   fullName: FullNameT[BuildingFunctionNameWithClosuredsT],
   function: FunctionA,
-  variables: List[IVariableT],
+  variables: Vector[IVariableT],
   templatas: TemplatasStore
 ) extends IEnvironment {
 
@@ -27,13 +27,13 @@ case class BuildingFunctionEnvironmentWithClosureds(
 
   override def getParentEnv(): Option[IEnvironment] = Some(parentEnv)
   override def globalEnv: PackageEnvironment[INameT] = parentEnv.globalEnv
-  override def getAllTemplatasWithAbsoluteName2(name: INameT, lookupFilter: Set[ILookupContext]): List[ITemplata] = {
+  override def getAllTemplatasWithAbsoluteName2(name: INameT, lookupFilter: Set[ILookupContext]): Vector[ITemplata] = {
     templatas.getAllTemplatasWithAbsoluteName2(this, name, lookupFilter)
   }
   override def getNearestTemplataWithAbsoluteName2(name: INameT, lookupFilter: Set[ILookupContext]): Option[ITemplata] = {
     templatas.getNearestTemplataWithAbsoluteName2(this, name, lookupFilter)
   }
-  override def getAllTemplatasWithName(profiler: IProfiler, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): List[ITemplata] = {
+  override def getAllTemplatasWithName(profiler: IProfiler, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): Vector[ITemplata] = {
     templatas.getAllTemplatasWithName(profiler, this, name, lookupFilter)
   }
   override def getNearestTemplataWithName(name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): Option[ITemplata] = {
@@ -45,7 +45,7 @@ case class BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs(
   parentEnv: IEnvironment,
   fullName: FullNameT[BuildingFunctionNameWithClosuredsAndTemplateArgsT],
   function: FunctionA,
-  variables: List[IVariableT],
+  variables: Vector[IVariableT],
   templatas: TemplatasStore
 ) extends IEnvironment {
 
@@ -59,13 +59,13 @@ case class BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs(
 
   override def getParentEnv(): Option[IEnvironment] = Some(parentEnv)
   override def globalEnv: PackageEnvironment[INameT] = parentEnv.globalEnv
-  override def getAllTemplatasWithAbsoluteName2(name: INameT, lookupFilter: Set[ILookupContext]): List[ITemplata] = {
+  override def getAllTemplatasWithAbsoluteName2(name: INameT, lookupFilter: Set[ILookupContext]): Vector[ITemplata] = {
     templatas.getAllTemplatasWithAbsoluteName2(this, name, lookupFilter)
   }
   override def getNearestTemplataWithAbsoluteName2(name: INameT, lookupFilter: Set[ILookupContext]): Option[ITemplata] = {
     templatas.getNearestTemplataWithAbsoluteName2(this, name, lookupFilter)
   }
-  override def getAllTemplatasWithName(profiler: IProfiler, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): List[ITemplata] = {
+  override def getAllTemplatasWithName(profiler: IProfiler, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): Vector[ITemplata] = {
     templatas.getAllTemplatasWithName(profiler, this, name, lookupFilter)
   }
   override def getNearestTemplataWithName(name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): Option[ITemplata] = {
@@ -83,7 +83,7 @@ case class FunctionEnvironment(
 
   // The things below are the "state"; they can be different for any given line in a function.
   varCounter: Int,
-  locals: List[IVariableT],
+  locals: Vector[IVariableT],
   // This can refer to vars in parent environments, see UCRTVPE.
   unstackifieds: Set[FullNameT[IVarNameT]]
 
@@ -110,7 +110,7 @@ case class FunctionEnvironment(
   override def getParentEnv(): Option[IEnvironment] = Some(parentEnv)
   override def globalEnv: PackageEnvironment[INameT] = parentEnv.globalEnv
 
-  def addVariables(newVars: List[IVariableT]): FunctionEnvironment = {
+  def addVariables(newVars: Vector[IVariableT]): FunctionEnvironment = {
     FunctionEnvironment(parentEnv, fullName, function, templatas, maybeReturnType, varCounter, locals ++ newVars, unstackifieds)
   }
   def addVariable(newVar: IVariableT): FunctionEnvironment = {
@@ -126,10 +126,10 @@ case class FunctionEnvironment(
     (FunctionEnvironment(parentEnv, fullName, function, templatas, maybeReturnType, varCounter + 1, locals, unstackifieds), varCounter)
   }
   // n is how many values to get
-  def nextCounters(n: Int): (FunctionEnvironment, List[Int]) = {
+  def nextCounters(n: Int): (FunctionEnvironment, Vector[Int]) = {
     (
       FunctionEnvironment(parentEnv, fullName, function, templatas, maybeReturnType, varCounter + n, locals, unstackifieds),
-      (0 until n).map(_ + varCounter).toList)
+      (0 until n).map(_ + varCounter).toVector)
   }
 
   def addEntry(useOptimization: Boolean, name: INameT, entry: IEnvEntry): FunctionEnvironment = {
@@ -143,7 +143,7 @@ case class FunctionEnvironment(
       locals,
       unstackifieds)
   }
-  def addEntries(useOptimization: Boolean, newEntries: Map[INameT, List[IEnvEntry]]): FunctionEnvironment = {
+  def addEntries(useOptimization: Boolean, newEntries: Map[INameT, Vector[IEnvEntry]]): FunctionEnvironment = {
     FunctionEnvironment(
       parentEnv,
       fullName,
@@ -155,13 +155,13 @@ case class FunctionEnvironment(
       unstackifieds)
   }
 
-  override def getAllTemplatasWithAbsoluteName2(name: INameT, lookupFilter: Set[ILookupContext]): List[ITemplata] = {
+  override def getAllTemplatasWithAbsoluteName2(name: INameT, lookupFilter: Set[ILookupContext]): Vector[ITemplata] = {
     templatas.getAllTemplatasWithAbsoluteName2(this, name, lookupFilter)
   }
   override def getNearestTemplataWithAbsoluteName2(name: INameT, lookupFilter: Set[ILookupContext]): Option[ITemplata] = {
     templatas.getNearestTemplataWithAbsoluteName2(this, name, lookupFilter)
   }
-  override def getAllTemplatasWithName(profiler: IProfiler, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): List[ITemplata] = {
+  override def getAllTemplatasWithName(profiler: IProfiler, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): Vector[ITemplata] = {
     templatas.getAllTemplatasWithName(profiler, this, name, lookupFilter)
   }
   override def getNearestTemplataWithName(name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): Option[ITemplata] = {
@@ -184,29 +184,29 @@ case class FunctionEnvironment(
   // See UCRTVPE, child environments would be the ones that know about their unstackifying of locals
   // from parent envs.
 
-  def getAllLocals(includeAncestorEnvs: Boolean): List[ILocalVariableT] = {
+  def getAllLocals(includeAncestorEnvs: Boolean): Vector[ILocalVariableT] = {
     val parentLiveLocals =
       if (includeAncestorEnvs) {
         parentEnv match {
           case parentFuncEnv@FunctionEnvironment(_, _, _, _, _, _, _, _) => parentFuncEnv.getAllLocals(includeAncestorEnvs)
-          case _ => List.empty
+          case _ => Vector.empty
         }
       } else {
-        List.empty
+        Vector.empty
       }
     val liveLocals = locals.collect({ case i : ILocalVariableT => i })
     parentLiveLocals ++ liveLocals
   }
 
-  def getAllUnstackifiedLocals(includeAncestorEnvs: Boolean): List[FullNameT[IVarNameT]] = {
+  def getAllUnstackifiedLocals(includeAncestorEnvs: Boolean): Vector[FullNameT[IVarNameT]] = {
     val parentUnstackifiedLocals =
       if (includeAncestorEnvs) {
         parentEnv match {
           case parentFuncEnv@FunctionEnvironment(_, _, _, _, _, _, _, _) => parentFuncEnv.getAllUnstackifiedLocals(includeAncestorEnvs)
-          case _ => List.empty
+          case _ => Vector.empty
         }
       } else {
-        List.empty
+        Vector.empty
       }
     parentUnstackifiedLocals ++ unstackifieds
   }
@@ -219,7 +219,7 @@ case class FunctionEnvironment(
       newTemplataStore(),
       maybeReturnType,
       varCounter,
-      List.empty,
+      Vector.empty,
       Set())
   }
 
@@ -236,7 +236,7 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
   def templatas: TemplatasStore = functionEnvironment.templatas
   def maybeReturnType: Option[CoordT] = functionEnvironment.maybeReturnType
   def varCounter: Int = functionEnvironment.varCounter
-  def locals: List[IVariableT] = functionEnvironment.locals
+  def locals: Vector[IVariableT] = functionEnvironment.locals
   def unstackifieds: Set[FullNameT[IVarNameT]] = functionEnvironment.unstackifieds
   override def globalEnv: PackageEnvironment[INameT] = parentEnv.globalEnv
 
@@ -244,7 +244,7 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
     functionEnvironment = functionEnvironment.copy(maybeReturnType = returnType)
   }
 
-  def addVariables(newVars: List[IVariableT]): Unit= {
+  def addVariables(newVars: Vector[IVariableT]): Unit= {
     functionEnvironment = functionEnvironment.addVariables(newVars)
   }
   def addVariable(newVar: IVariableT): Unit= {
@@ -259,7 +259,7 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
     varCounter
   }
   // n is how many values to get
-  def nextCounters(n: Int): List[Int] = {
+  def nextCounters(n: Int): Vector[Int] = {
     val (newFunctionEnvironment, counters) = functionEnvironment.nextCounters(n)
     functionEnvironment = newFunctionEnvironment
     counters
@@ -268,11 +268,11 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
   def addEntry(useOptimization: Boolean, name: INameT, entry: IEnvEntry): Unit = {
     functionEnvironment = functionEnvironment.addEntry(useOptimization, name, entry)
   }
-  def addEntries(useOptimization: Boolean, newEntries: Map[INameT, List[IEnvEntry]]): Unit= {
+  def addEntries(useOptimization: Boolean, newEntries: Map[INameT, Vector[IEnvEntry]]): Unit= {
     functionEnvironment = functionEnvironment.addEntries(useOptimization, newEntries)
   }
 
-  override def getAllTemplatasWithAbsoluteName2(name: INameT, lookupFilter: Set[ILookupContext]): List[ITemplata] = {
+  override def getAllTemplatasWithAbsoluteName2(name: INameT, lookupFilter: Set[ILookupContext]): Vector[ITemplata] = {
     functionEnvironment.getAllTemplatasWithAbsoluteName2(name, lookupFilter)
   }
 
@@ -280,7 +280,7 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
     functionEnvironment.getNearestTemplataWithAbsoluteName2(name, lookupFilter)
   }
 
-  override def getAllTemplatasWithName(profiler: IProfiler, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): List[ITemplata] = {
+  override def getAllTemplatasWithName(profiler: IProfiler, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): Vector[ITemplata] = {
     functionEnvironment.getAllTemplatasWithName(profiler, name, lookupFilter)
   }
 
@@ -292,11 +292,11 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
     functionEnvironment.getVariable(name)
   }
 
-  def getAllLocals(includeAncestorEnvs: Boolean): List[ILocalVariableT] = {
+  def getAllLocals(includeAncestorEnvs: Boolean): Vector[ILocalVariableT] = {
     functionEnvironment.getAllLocals(includeAncestorEnvs)
   }
 
-  def getAllUnstackifiedLocals(includeAncestorEnvs: Boolean): List[FullNameT[IVarNameT]] = {
+  def getAllUnstackifiedLocals(includeAncestorEnvs: Boolean): Vector[FullNameT[IVarNameT]] = {
     functionEnvironment.getAllUnstackifiedLocals(includeAncestorEnvs)
   }
 
@@ -349,8 +349,8 @@ case class AddressibleLocalVariableT(
   reference: CoordT
 ) extends ILocalVariableT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ id.all(func) ++ variability.all(func) ++ reference.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ id.all(func) ++ variability.all(func) ++ reference.all(func)
   }
 }
 case class ReferenceLocalVariableT(
@@ -359,8 +359,8 @@ case class ReferenceLocalVariableT(
   reference: CoordT
 ) extends ILocalVariableT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ id.all(func) ++ variability.all(func) ++ reference.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ id.all(func) ++ variability.all(func) ++ reference.all(func)
   }
 }
 case class AddressibleClosureVariableT(
@@ -369,8 +369,8 @@ case class AddressibleClosureVariableT(
   variability: VariabilityT,
   reference: CoordT
 ) extends IVariableT {
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ id.all(func) ++ closuredVarsStructType.all(func) ++ variability.all(func) ++ reference.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ id.all(func) ++ closuredVarsStructType.all(func) ++ variability.all(func) ++ reference.all(func)
   }
 }
 case class ReferenceClosureVariableT(
@@ -380,7 +380,7 @@ case class ReferenceClosureVariableT(
   reference: CoordT
 ) extends IVariableT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ id.all(func) ++ closuredVarsStructType.all(func) ++ variability.all(func) ++ reference.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ id.all(func) ++ closuredVarsStructType.all(func) ++ variability.all(func) ++ reference.all(func)
   }
 }

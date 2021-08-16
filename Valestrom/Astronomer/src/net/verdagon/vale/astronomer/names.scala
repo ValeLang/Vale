@@ -5,9 +5,9 @@ import net.verdagon.vale.{PackageCoordinate, vassert, vimpl, vpass}
 
 //// An absolute name is one where we know *exactly* where it's defined; if parser and scout
 //// put their brains together they could know exactly where the thing is.
-//case class AbsoluteNameA[+T <: INameA](file: String, initSteps: List[INameA], last: T) {// extends IImpreciseNameA[T] {
+//case class AbsoluteNameA[+T <: INameA](file: String, initSteps: Vector[INameA], last: T) {// extends IImpreciseNameA[T] {
 //def addStep[Y <: INameA](newLast: Y): AbsoluteNameA[Y] = AbsoluteNameA[Y](file, initSteps :+ last, newLast)
-//  def steps: List[INameA] = initSteps :+ last
+//  def steps: Vector[INameA] = initSteps :+ last
 //  def init: AbsoluteNameA[INameA] = AbsoluteNameA[INameA](file, initSteps.init, initSteps.last)
 //}
 //// An imprecise name is one where we don't know exactly where the thing is defined.
@@ -17,7 +17,7 @@ import net.verdagon.vale.{PackageCoordinate, vassert, vimpl, vpass}
 ////   }
 //// we don't know exactly where doStuff was defined, that depends on what overload the
 //// typing stage decides.
-//case class ImpreciseNameA[+T <: IImpreciseNameStepA](init: List[IImpreciseNameStepA], last: T) {//extends IImpreciseNameS[T] {
+//case class ImpreciseNameA[+T <: IImpreciseNameStepA](init: Vector[IImpreciseNameStepA], last: T) {//extends IImpreciseNameS[T] {
 //def addStep[Y <: IImpreciseNameStepA](newLast: Y): ImpreciseNameA[Y] = ImpreciseNameA[Y](init :+ last, newLast)
 //}
 

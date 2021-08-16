@@ -16,24 +16,24 @@ import scala.collection.immutable.List
 object PredictorEvaluator {
 
   private[scout] def getAllRunes(
-    userSpecifiedIdentifyingRunes: List[IRuneS],
-    rules: List[IRulexSR],
-    patterns1: List[AtomSP],
+    userSpecifiedIdentifyingRunes: Vector[IRuneS],
+    rules: Vector[IRulexSR],
+    patterns1: Vector[AtomSP],
     maybeRetRune: Option[IRuneS]
   ): Set[IRuneS] = {
     (
       userSpecifiedIdentifyingRunes ++
         patterns1.flatMap(PatternSUtils.getDistinctOrderedRunesForPattern) ++
         RuleSUtils.getDistinctOrderedRunesForRulexes(rules) ++
-        maybeRetRune.toList
+        maybeRetRune.toVector
       ).toSet
   }
 
   private[scout] def solve(
     // See MKKRFA
     knowableRunesFromAbove: Set[IRuneS],
-    rules: List[IRulexSR],
-    paramAtoms: List[AtomSP],
+    rules: Vector[IRulexSR],
+    paramAtoms: Vector[AtomSP],
   ): Conclusions = {
     val conclusionsBox = ConclusionsBox(Conclusions(knowableRunesFromAbove, Map()))
     solveUntilSettled(rules, conclusionsBox)
@@ -41,7 +41,7 @@ object PredictorEvaluator {
   }
 
   private def solveUntilSettled(
-    rules: List[IRulexSR],
+    rules: Vector[IRulexSR],
     conclusions: ConclusionsBox,
   ): Unit = {
     val conclusionsBefore = conclusions.conclusions
@@ -78,8 +78,8 @@ object PredictorEvaluator {
 
   private def evaluateRules(
     conclusions: ConclusionsBox,
-    rules: List[IRulexSR],
-  ): List[Boolean] = {
+    rules: Vector[IRulexSR],
+  ): Vector[Boolean] = {
     rules.map(evaluateRule(conclusions, _))
   }
 
@@ -91,23 +91,23 @@ object PredictorEvaluator {
 
     name match {
       case "toRef" => {
-        val List(kindRule) = argumentRules
+        val Vector(kindRule) = argumentRules
         evaluateRule(conclusions, kindRule)
       }
       case "passThroughIfConcrete" => {
-        val List(kindRule) = argumentRules
+        val Vector(kindRule) = argumentRules
         evaluateRule(conclusions, kindRule)
       }
       case "passThroughIfStruct" => {
-        val List(kindRule) = argumentRules
+        val Vector(kindRule) = argumentRules
         evaluateRule(conclusions, kindRule)
       }
       case "passThroughIfInterface" => {
-        val List(kindRule) = argumentRules
+        val Vector(kindRule) = argumentRules
         evaluateRule(conclusions, kindRule)
       }
 //      case "resolveExactSignature" => {
-//        val List(nameRule, argsRule) = argumentRules
+//        val Vector(nameRule, argsRule) = argumentRules
 //        val evaluateNameSuccess = evaluateRule(conclusions, nameRule)
 //        val evaluateArgsSuccess = evaluateRule(conclusions, argsRule)
 //        evaluateNameSuccess && evaluateArgsSuccess
@@ -117,8 +117,8 @@ object PredictorEvaluator {
   }
   private def evaluateTemplexes(
     conclusions: ConclusionsBox,
-    ruleTemplexes: List[ITemplexS],
-  ): List[Boolean] = {
+    ruleTemplexes: Vector[ITemplexS],
+  ): Vector[Boolean] = {
     val knowns =
       ruleTemplexes.map({
         case (ruleTemplex) => {

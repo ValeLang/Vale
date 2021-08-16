@@ -31,7 +31,7 @@ object FunctionVivem {
 
     heap.vivemDout.println()
 
-    val rootExpressionId = ExpressionId(callId, List.empty)
+    val rootExpressionId = ExpressionId(callId, Vector.empty)
     val returnRef =
       ExpressionVivem.executeNode(programH, stdin, stdout, heap, rootExpressionId, functionH.body) match {
         case NodeReturn(r) => NodeReturn(r)

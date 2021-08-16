@@ -20,13 +20,13 @@ class InferTemplar(
   private def solve(
     env: IEnvironment,
     state: Temputs,
-    rules: List[IRulexAR],
+    rules: Vector[IRulexAR],
     typeByRune: Map[IRuneA, ITemplataType],
     localRunes: Set[IRuneA],
     invocationRange: RangeS,
     directInputs: Map[IRuneA, ITemplata],
-    paramAtoms: List[AtomAP],
-    maybeParamInputs: Option[List[ParamFilter]],
+    paramAtoms: Vector[AtomAP],
+    maybeParamInputs: Option[Vector[ParamFilter]],
     checkAllRunesPresent: Boolean,
   ): (IInferSolveResult) = {
     profiler.newProfile("infer", "", () => {
@@ -56,12 +56,12 @@ class InferTemplar(
   def inferOrdinaryRules(
     env0: IEnvironment,
     temputs: Temputs,
-    rules: List[IRulexAR],
+    rules: Vector[IRulexAR],
     typeByRune: Map[IRuneA, ITemplataType],
     localRunes: Set[IRuneA],
   ): (Map[IRuneT, ITemplata]) = {
     profiler.childFrame("inferOrdinaryRules", () => {
-      solve(env0, temputs, rules, typeByRune, localRunes, RangeS.internal(-13337), Map(), List.empty, None, true) match {
+      solve(env0, temputs, rules, typeByRune, localRunes, RangeS.internal(-13337), Map(), Vector.empty, None, true) match {
         case (InferSolveSuccess(inferences)) => {
           (inferences.templatasByRune)
         }
@@ -75,14 +75,14 @@ class InferTemplar(
   def inferFromExplicitTemplateArgs(
     env0: IEnvironment,
     temputs: Temputs,
-    identifyingRunes: List[IRuneA],
-    rules: List[IRulexAR],
+    identifyingRunes: Vector[IRuneA],
+    rules: Vector[IRulexAR],
     typeByRune: Map[IRuneA, ITemplataType],
     localRunes: Set[IRuneA],
-    patterns1: List[AtomAP],
+    patterns1: Vector[AtomAP],
     maybeRetRune: Option[IRuneA],
     invocationRange: RangeS,
-    explicits: List[ITemplata],
+    explicits: Vector[ITemplata],
   ): (IInferSolveResult) = {
     profiler.childFrame("inferFromExplicitTemplateArgs", () => {
       if (identifyingRunes.size != explicits.size) {
@@ -106,15 +106,15 @@ class InferTemplar(
   def inferFromArgCoords(
     env0: IEnvironment,
     temputs: Temputs,
-    identifyingRunes: List[IRuneA],
-    rules: List[IRulexAR],
+    identifyingRunes: Vector[IRuneA],
+    rules: Vector[IRulexAR],
     typeByRune: Map[IRuneA, ITemplataType],
     localRunes: Set[IRuneA],
-    patterns1: List[AtomAP],
+    patterns1: Vector[AtomAP],
     maybeRetRune: Option[IRuneA],
     invocationRange: RangeS,
-    alreadySpecifiedTemplateArgs: List[ITemplata],
-    patternInputCoords: List[ParamFilter]
+    alreadySpecifiedTemplateArgs: Vector[ITemplata],
+    patternInputCoords: Vector[ParamFilter]
   ): (IInferSolveResult) = {
     profiler.childFrame("inferFromArgCoords", () => {
       solve(
@@ -132,7 +132,7 @@ class InferTemplar(
     })
   }
 
-  def translateRules(rs: List[IRulexAR]): List[IRulexTR] = {
+  def translateRules(rs: Vector[IRulexAR]): Vector[IRulexTR] = {
     rs.map(translateRule)
   }
 

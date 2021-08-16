@@ -8,7 +8,7 @@ case class CompileErrorExceptionA(err: ICompileErrorA) extends RuntimeException 
 
 sealed trait ICompileErrorA { def range: RangeS }
 case class CouldntFindTypeA(range: RangeS, name: String) extends ICompileErrorA { override def hashCode(): Int = vcurious() }
-case class CouldntSolveRulesA(range: RangeS, failure: RuleTyperSolveFailure[List[IRulexAR]]) extends ICompileErrorA {
+case class CouldntSolveRulesA(range: RangeS, failure: RuleTyperSolveFailure[Vector[IRulexAR]]) extends ICompileErrorA {
   override def hashCode(): Int = vcurious()
 }
 case class CircularModuleDependency(range: RangeS, modules: Set[String]) extends ICompileErrorA { override def hashCode(): Int = vcurious() }

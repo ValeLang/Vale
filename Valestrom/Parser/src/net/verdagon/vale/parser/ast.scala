@@ -16,7 +16,7 @@ object Range {
 case class UnitP(range: Range) { override def hashCode(): Int = vcurious() }
 case class NameP(range: Range, str: String) { override def hashCode(): Int = vcurious() }
 
-case class FileP(topLevelThings: List[ITopLevelThingP]) {
+case class FileP(topLevelThings: Vector[ITopLevelThingP]) {
   override def hashCode(): Int = vcurious()
   def lookupFunction(name: String) = {
     val results =
@@ -51,7 +51,7 @@ case class ExportAsP(
 case class ImportP(
   range: Range,
   moduleName: NameP,
-  packageSteps: List[NameP],
+  packageSteps: Vector[NameP],
   importeeName: NameP) { override def hashCode(): Int = vcurious() }
 
 sealed trait ICitizenAttributeP
@@ -62,7 +62,7 @@ case class SealedP(range: Range) extends ICitizenAttributeP { override def hashC
 case class StructP(
   range: Range,
   name: NameP,
-  attributes: List[ICitizenAttributeP],
+  attributes: Vector[ICitizenAttributeP],
   mutability: MutabilityP,
   identifyingRunes: Option[IdentifyingRunesP],
   templateRules: Option[TemplateRulesP],
@@ -70,7 +70,7 @@ case class StructP(
 
 case class StructMembersP(
   range: Range,
-  contents: List[IStructContent]) { override def hashCode(): Int = vcurious() }
+  contents: Vector[IStructContent]) { override def hashCode(): Int = vcurious() }
 sealed trait IStructContent
 case class StructMethodP(func: FunctionP) extends IStructContent { override def hashCode(): Int = vcurious() }
 case class StructMemberP(
@@ -82,11 +82,11 @@ case class StructMemberP(
 case class InterfaceP(
                        range: Range,
                        name: NameP,
-                       attributes: List[ICitizenAttributeP],
+                       attributes: Vector[ICitizenAttributeP],
                        mutability: MutabilityP,
                        maybeIdentifyingRunes: Option[IdentifyingRunesP],
                        templateRules: Option[TemplateRulesP],
-                       members: List[FunctionP]) { override def hashCode(): Int = vcurious() }
+                       members: Vector[FunctionP]) { override def hashCode(): Int = vcurious() }
 
 sealed trait IFunctionAttributeP
 case class AbstractAttributeP(range: Range) extends IFunctionAttributeP { override def hashCode(): Int = vcurious() }
@@ -104,11 +104,11 @@ case class PoolRuneAttributeP(range: Range) extends IRuneAttributeP { override d
 case class ArenaRuneAttributeP(range: Range) extends IRuneAttributeP { override def hashCode(): Int = vcurious() }
 case class BumpRuneAttributeP(range: Range) extends IRuneAttributeP { override def hashCode(): Int = vcurious() }
 
-case class IdentifyingRuneP(range: Range, name: NameP, attributes: List[IRuneAttributeP]) { override def hashCode(): Int = vcurious() }
+case class IdentifyingRuneP(range: Range, name: NameP, attributes: Vector[IRuneAttributeP]) { override def hashCode(): Int = vcurious() }
 
-case class IdentifyingRunesP(range: Range, runes: List[IdentifyingRuneP]) { override def hashCode(): Int = vcurious() }
-case class TemplateRulesP(range: Range, rules: List[IRulexPR]) { override def hashCode(): Int = vcurious() }
-case class ParamsP(range: Range, patterns: List[PatternPP]) { override def hashCode(): Int = vcurious() }
+case class IdentifyingRunesP(range: Range, runes: Vector[IdentifyingRuneP]) { override def hashCode(): Int = vcurious() }
+case class TemplateRulesP(range: Range, rules: Vector[IRulexPR]) { override def hashCode(): Int = vcurious() }
+case class ParamsP(range: Range, patterns: Vector[PatternPP]) { override def hashCode(): Int = vcurious() }
 
 case class FunctionP(
   range: Range,
@@ -124,9 +124,9 @@ case class FunctionReturnP(
 case class FunctionHeaderP(
                             range: Range,
                             name: Option[NameP],
-                            attributes: List[IFunctionAttributeP],
+                            attributes: Vector[IFunctionAttributeP],
 
-                            // If Some(List.empty), should show up like the <> in fn moo<>(a int, b bool)
+                            // If Some(Vector.empty), should show up like the <> in fn moo<>(a int, b bool)
                             maybeUserSpecifiedIdentifyingRunes: Option[IdentifyingRunesP],
                             templateRules: Option[TemplateRulesP],
 

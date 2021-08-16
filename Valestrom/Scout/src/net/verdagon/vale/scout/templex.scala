@@ -94,22 +94,22 @@ case class InterpretedST(range: RangeS, ownership: OwnershipP, permission: Permi
 case class NullableST(range: RangeS, inner: ITemplexS) extends ITemplexS { override def hashCode(): Int = vcurious() }
 case class CallST(range: RangeS,
     template: ITemplexS,
-    args: List[ITemplexS]) extends ITemplexS {
+    args: Vector[ITemplexS]) extends ITemplexS {
 }
 //case class FunctionST(
 //  mutability: Option[ITemplexS],
-//  parameters: List[Option[ITemplexS]],
+//  parameters: Vector[Option[ITemplexS]],
 //  returnType: Option[ITemplexS]
 //) extends ITemplexS {  override def hashCode(): Int = vcurious() }
 case class PrototypeST(
   range: RangeS,
   name: String,
-  parameters: List[ITemplexS],
+  parameters: Vector[ITemplexS],
   returnType: ITemplexS
 ) extends ITemplexS { override def hashCode(): Int = vcurious() }
 case class PackST(
   range: RangeS,
-  members: List[ITemplexS]
+  members: Vector[ITemplexS]
 ) extends ITemplexS { override def hashCode(): Int = vcurious() }
 case class BorrowST(
   range: RangeS,
@@ -124,27 +124,27 @@ case class RepeaterSequenceST(
 ) extends ITemplexS { override def hashCode(): Int = vcurious() }
 case class ManualSequenceST(
   range: RangeS,
-  elements: List[ITemplexS]
+  elements: Vector[ITemplexS]
 ) extends ITemplexS { override def hashCode(): Int = vcurious() }
 
 object TemplexSUtils {
-  def getDistinctOrderedRunesForTemplex(templex: ITemplexS): List[IRuneS] = {
+  def getDistinctOrderedRunesForTemplex(templex: ITemplexS): Vector[IRuneS] = {
     templex match {
-      case StringST(_, _) => List.empty
-      case IntST(_, _) => List.empty
-      case MutabilityST(_, _) => List.empty
-      case PermissionST(_, _) => List.empty
-      case LocationST(_, _) => List.empty
-      case OwnershipST(_, _) => List.empty
-      case VariabilityST(_, _) => List.empty
-      case BoolST(_, _) => List.empty
-      case NameST(_, _) => List.empty
-      case AbsoluteNameST(_, _) => List.empty
-      case RuneST(_, rune) => List(rune)
+      case StringST(_, _) => Vector.empty
+      case IntST(_, _) => Vector.empty
+      case MutabilityST(_, _) => Vector.empty
+      case PermissionST(_, _) => Vector.empty
+      case LocationST(_, _) => Vector.empty
+      case OwnershipST(_, _) => Vector.empty
+      case VariabilityST(_, _) => Vector.empty
+      case BoolST(_, _) => Vector.empty
+      case NameST(_, _) => Vector.empty
+      case AbsoluteNameST(_, _) => Vector.empty
+      case RuneST(_, rune) => Vector(rune)
       case InterpretedST(_, _, _, inner) => getDistinctOrderedRunesForTemplex(inner)
       case BorrowST(_, inner) => getDistinctOrderedRunesForTemplex(inner)
       case CallST(_, template, args) => {
-        (template :: args).flatMap(getDistinctOrderedRunesForTemplex).distinct
+        (Vector(template) ++ args).flatMap(getDistinctOrderedRunesForTemplex).distinct
       }
       case PrototypeST(_, name, parameters, returnType) => {
         (parameters :+ returnType).flatMap(getDistinctOrderedRunesForTemplex).distinct
@@ -153,7 +153,7 @@ object TemplexSUtils {
         members.flatMap(getDistinctOrderedRunesForTemplex).distinct
       }
       case RepeaterSequenceST(_, mutability, variability, size, element) => {
-        List(mutability, variability, size, element).flatMap(getDistinctOrderedRunesForTemplex).distinct
+        Vector(mutability, variability, size, element).flatMap(getDistinctOrderedRunesForTemplex).distinct
       }
       case ManualSequenceST(_, elements) => {
         elements.flatMap(getDistinctOrderedRunesForTemplex).distinct
@@ -165,7 +165,7 @@ object TemplexSUtils {
 //  // we do elsewhere.
 //  def templexNamesToRunes(envName: INameS, runes: Set[IRuneS])(templex: ITemplexS): ITemplexS = {
 //    templex match {
-//      case NameST(ImpreciseNameS(List.empty, CodeTypeNameS(name))) if (runes.exists(_.last == CodeRuneS(name))) => RuneST(envName.addStep(CodeRuneS(name)))
+//      case NameST(ImpreciseNameS(Vector.empty, CodeTypeNameS(name))) if (runes.exists(_.last == CodeRuneS(name))) => RuneST(envName.addStep(CodeRuneS(name)))
 //      case NameST(iname) => NameST(iname)
 //      case IntST(value) => IntST(value)
 //      case MutabilityST(mutability) => MutabilityST(mutability)

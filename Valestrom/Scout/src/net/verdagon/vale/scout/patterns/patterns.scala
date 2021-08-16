@@ -19,7 +19,7 @@ case class AtomSP(
   name: Option[CaptureS],
   virtuality: Option[VirtualitySP],
   coordRune: IRuneS,
-  destructure: Option[List[AtomSP]]) {
+  destructure: Option[Vector[AtomSP]]) {
   override def hashCode(): Int = vcurious()
 }
 
@@ -30,15 +30,15 @@ case class OverrideSP(range: RangeS, kindRune: IRuneS) extends VirtualitySP {
 }
 
 object PatternSUtils {
-  def getDistinctOrderedRunesForPattern(pattern: AtomSP): List[IRuneS] = {
+  def getDistinctOrderedRunesForPattern(pattern: AtomSP): Vector[IRuneS] = {
     val runesFromVirtuality =
       pattern.virtuality match {
-        case None => List.empty
-        case Some(AbstractSP) => List.empty
-        case Some(OverrideSP(range, kindRune)) => List(kindRune)
+        case None => Vector.empty
+        case Some(AbstractSP) => Vector.empty
+        case Some(OverrideSP(range, kindRune)) => Vector(kindRune)
       }
     val runesFromDestructures =
-      pattern.destructure.toList.flatten.flatMap(getDistinctOrderedRunesForPattern)
+      pattern.destructure.toVector.flatten.flatMap(getDistinctOrderedRunesForPattern)
     (runesFromVirtuality ++ runesFromDestructures :+ pattern.coordRune).distinct
   }
 }

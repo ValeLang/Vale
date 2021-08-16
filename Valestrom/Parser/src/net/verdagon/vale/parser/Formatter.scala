@@ -16,17 +16,17 @@ object Formatter {
   sealed trait IElement
   object Span {
     def apply(classs: IClass, elements: IElement*): Span = {
-      Span(classs, elements.toList)
+      Span(classs, elements.toVector)
     }
   }
-  case class Span(classs: IClass, elements: List[IElement]) extends IElement { override def hashCode(): Int = vcurious(); }
+  case class Span(classs: IClass, elements: Vector[IElement]) extends IElement { override def hashCode(): Int = vcurious(); }
   case class Text(string: String) extends IElement { override def hashCode(): Int = vcurious(); }
 //
 //  def w(str: String) = Span(W, str)
 //  val s = w(" ")
-//  val ls = List(s)
-//  def may(b: Boolean, span: Span*): List[Span] = {
-//    if (b) span.toList else List.empty
+//  val ls = Vector(s)
+//  def may(b: Boolean, span: Span*): Vector[Span] = {
+//    if (b) span.toVector else Vector.empty
 //  }
 //
 //  def toHTML(element: IElement): String = {
@@ -38,7 +38,7 @@ object Formatter {
 //    }
 //  }
 //
-//  def repsep(begin: List[Span], end: List[Span], sep: List[Span], items: List[List[Span]]): List[Span] = {
+//  def repsep(begin: Vector[Span], end: Vector[Span], sep: Vector[Span], items: Vector[Vector[Span]]): Vector[Span] = {
 //    if (items.isEmpty) {
 //      begin ++ end
 //    } else {
@@ -46,20 +46,20 @@ object Formatter {
 //    }
 //  }
 //
-//  def printFunctionSingleLine(function: FunctionP): List[Span] = {
+//  def printFunctionSingleLine(function: FunctionP): Vector[Span] = {
 //    val FunctionP(range, Some(name), isExtern, isAbstract, maybeUserSpecifiedIdentifyingRunes, templateRules, params, ret, body) = function
 //
 //    Span(
 //      Fn,
 //      may(isExtern, Span(Ext, "extern"), s) ++
 //      may(isAbstract, Span(Ab, "abstract"), s) ++
-//      List(Span(Fn, "fn"), s, Span(FnName, name)) ++
-//      maybeUserSpecifiedIdentifyingRunes.toList.flatMap(items => {
+//      Vector(Span(Fn, "fn"), s, Span(FnName, name)) ++
+//      maybeUserSpecifiedIdentifyingRunes.toVector.flatMap(items => {
 //        repsep(
-//          List(Span(FnTplSep, "<")),
-//          List(Span(FnTplSep, ">")),
-//          List(Span(FnTplSep, ","), s),
-//          items.map(x => List(Span(Rune, x))))
+//          Vector(Span(FnTplSep, "<")),
+//          Vector(Span(FnTplSep, ">")),
+//          Vector(Span(FnTplSep, ","), s),
+//          items.map(x => Vector(Span(Rune, x))))
 //      }))
 //  }
 //

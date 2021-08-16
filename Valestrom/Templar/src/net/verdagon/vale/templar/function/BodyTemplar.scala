@@ -12,21 +12,21 @@ import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.templata.TemplataTemplar
 
-import scala.collection.immutable.{List, Nil, Set}
+import scala.collection.immutable.{List, Set}
 
 trait IBodyTemplarDelegate {
   def evaluateBlockStatements(
     temputs: Temputs,
     startingFate: FunctionEnvironment,
     fate: FunctionEnvironmentBox,
-    exprs: List[IExpressionAE]):
+    exprs: Vector[IExpressionAE]):
   (ReferenceExpressionTE, Set[CoordT])
 
   def translatePatternList(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
-    patterns1: List[AtomAP],
-    patternInputExprs2: List[ReferenceExpressionTE]):
+    patterns1: Vector[AtomAP],
+    patternInputExprs2: Vector[ReferenceExpressionTE]):
   ReferenceExpressionTE
 }
 
@@ -46,7 +46,7 @@ class BodyTemplar(
       temputs: Temputs,
       bfunction1: BFunctionA,
       maybeExplicitReturnCoord: Option[CoordT],
-      params2: List[ParameterT],
+      params2: Vector[ParameterT],
       isDestructor: Boolean):
   (Option[CoordT], BlockTE) = {
     val BFunctionA(function1, _) = bfunction1;
@@ -116,8 +116,8 @@ class BodyTemplar(
   private def evaluateFunctionBody(
       funcOuterEnv: FunctionEnvironmentBox,
       temputs: Temputs,
-      params1: List[ParameterA],
-      params2: List[ParameterT],
+      params1: Vector[ParameterA],
+      params2: Vector[ParameterT],
       body1: BodyAE,
       isDestructor: Boolean,
       maybeExpectedResultType: Option[CoordT]):
@@ -131,7 +131,7 @@ class BodyTemplar(
     val (statementsFromBlock, returnsFromInsideMaybeWithNever) =
       delegate.evaluateBlockStatements(temputs, startingEnv, funcOuterEnv, body1.block.exprs);
 
-    val unconvertedBodyWithoutReturn = Templar.consecutive(List(patternsTE, statementsFromBlock))
+    val unconvertedBodyWithoutReturn = Templar.consecutive(Vector(patternsTE, statementsFromBlock))
 
 
     val convertedBodyWithoutReturn =
@@ -188,8 +188,8 @@ class BodyTemplar(
       fate: FunctionEnvironmentBox,
       temputs: Temputs,
     range: RangeS,
-      params1: List[ParameterA],
-      params2: List[ParameterT]):
+      params1: Vector[ParameterA],
+      params2: Vector[ParameterT]):
   ReferenceExpressionTE = {
     val paramLookups2 =
       params2.zipWithIndex.map({ case (p, index) => ArgLookupTE(index, p.tyype) })

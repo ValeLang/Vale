@@ -16,8 +16,8 @@ sealed trait OwnershipT extends QueriableT {
 case object ShareT   extends OwnershipT {
   override def order: Int = 1;
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 
   override def toString: String = "share"
@@ -25,8 +25,8 @@ case object ShareT   extends OwnershipT {
 case object OwnT extends OwnershipT {
   override def order: Int = 2;
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 
   override def toString: String = "own"
@@ -34,8 +34,8 @@ case object OwnT extends OwnershipT {
 case object ConstraintT extends OwnershipT {
   override def order: Int = 3;
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 
   override def toString: String = "constraint"
@@ -43,8 +43,8 @@ case object ConstraintT extends OwnershipT {
 case object WeakT extends OwnershipT {
   override def order: Int = 4;
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 
   override def toString: String = "weak"
@@ -56,8 +56,8 @@ sealed trait MutabilityT extends QueriableT {
 case object MutableT extends MutabilityT {
   override def order: Int = 1;
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 
   override def toString: String = "mut"
@@ -65,8 +65,8 @@ case object MutableT extends MutabilityT {
 case object ImmutableT extends MutabilityT {
   override def order: Int = 2;
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 
   override def toString: String = "imm"
@@ -78,8 +78,8 @@ sealed trait VariabilityT extends QueriableT {
 case object FinalT extends VariabilityT {
   override def order: Int = 1;
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 
   override def toString: String = "final"
@@ -87,8 +87,8 @@ case object FinalT extends VariabilityT {
 case object VaryingT extends VariabilityT {
   override def order: Int = 2;
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 
   override def toString: String = "vary"
@@ -100,8 +100,8 @@ sealed trait PermissionT extends QueriableT {
 case object ReadonlyT extends PermissionT {
   override def order: Int = 1;
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 
   override def toString: String = "ro"
@@ -109,8 +109,8 @@ case object ReadonlyT extends PermissionT {
 case object ReadwriteT extends PermissionT {
   override def order: Int = 2;
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 
   override def toString: String = "rw"
@@ -118,8 +118,8 @@ case object ReadwriteT extends PermissionT {
 //case object ExclusiveReadwrite extends Permission {
 //  override def order: Int = 3;
 //
-//  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
-//    List(this).collect(func)
+//  def all[T](func: PartialFunction[Queriable2, T]): Vector[T] = {
+//    Vector(this).collect(func)
 //  }
 //}
 
@@ -129,8 +129,8 @@ sealed trait LocationT extends QueriableT {
 case object InlineT extends LocationT {
   override def order: Int = 1;
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 
   override def toString: String = "inl"
@@ -138,8 +138,8 @@ case object InlineT extends LocationT {
 case object YonderT extends LocationT {
   override def order: Int = 1;
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 
   override def toString: String = "heap"
@@ -163,8 +163,8 @@ case class CoordT(ownership: OwnershipT, permission: PermissionT, kind: KindT) e
     // vassert(permission == Readwrite)
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ ownership.all(func) ++ kind.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ ownership.all(func) ++ kind.all(func)
   }
 }
 sealed trait KindT extends QueriableT {
@@ -180,7 +180,7 @@ case class NeverT() extends KindT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 6;
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = Vector(this).collect(func)
 }
 
 // Mostly for interoperability with extern functions
@@ -188,7 +188,7 @@ case class VoidT() extends KindT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 16;
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = Vector(this).collect(func)
 }
 
 object IntT {
@@ -199,31 +199,31 @@ case class IntT(bits: Int) extends KindT {
   val hash = 546325456 + bits; override def hashCode(): Int = hash;
   override def order: Int = 8;
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = Vector(this).collect(func)
 }
 
 case class BoolT() extends KindT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 9;
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = Vector(this).collect(func)
 }
 
 case class StrT() extends KindT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 10;
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = Vector(this).collect(func)
 }
 
 case class FloatT() extends KindT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 11;
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = Vector(this).collect(func)
 }
 
-case class PackTT(members: List[CoordT], underlyingStruct: StructTT) extends KindT {
+case class PackTT(members: Vector[CoordT], underlyingStruct: StructTT) extends KindT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 21;
 
@@ -231,12 +231,12 @@ case class PackTT(members: List[CoordT], underlyingStruct: StructTT) extends Kin
     case AddressMemberTypeT(_) => vfail("Packs' underlying structs cant have addressibles in them!")
   })
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ members.flatMap(_.all(func)) ++ underlyingStruct.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ members.flatMap(_.all(func)) ++ underlyingStruct.all(func)
   }
 }
 
-case class TupleTT(members: List[CoordT], underlyingStruct: StructTT) extends KindT {
+case class TupleTT(members: Vector[CoordT], underlyingStruct: StructTT) extends KindT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 20;
 
@@ -244,8 +244,8 @@ case class TupleTT(members: List[CoordT], underlyingStruct: StructTT) extends Ki
     case AddressMemberTypeT(_) => vfail("Tuples' underlying structs cant have addressibles in them!")
   })
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ members.flatMap(_.all(func)) ++ underlyingStruct.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ members.flatMap(_.all(func)) ++ underlyingStruct.all(func)
   }
 }
 
@@ -255,8 +255,8 @@ case class RawArrayTT(
   variability: VariabilityT
 ) extends QueriableT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ memberType.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ memberType.all(func)
   }
 }
 
@@ -264,10 +264,10 @@ case class StaticSizedArrayTT(size: Int, array: RawArrayTT) extends KindT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 12;
 
-  def name: FullNameT[StaticSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, List.empty, StaticSizedArrayNameT(size, RawArrayNameT(array.mutability, array.memberType)))
+  def name: FullNameT[StaticSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, StaticSizedArrayNameT(size, RawArrayNameT(array.mutability, array.memberType)))
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ array.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ array.all(func)
   }
 }
 
@@ -275,10 +275,10 @@ case class RuntimeSizedArrayTT(array: RawArrayTT) extends KindT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 19;
 
-  def name: FullNameT[RuntimeSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, List.empty, RuntimeSizedArrayNameT(RawArrayNameT(array.mutability, array.memberType)))
+  def name: FullNameT[RuntimeSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, RuntimeSizedArrayNameT(RawArrayNameT(array.mutability, array.memberType)))
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ array.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ array.all(func)
   }
 }
 
@@ -289,8 +289,8 @@ case class StructMemberT(
   tyype: IMemberTypeT
 ) extends QueriableT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ tyype.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ tyype.all(func)
   }
 }
 
@@ -312,14 +312,14 @@ sealed trait IMemberTypeT extends QueriableT {
 }
 case class AddressMemberTypeT(reference: CoordT) extends IMemberTypeT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ reference.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ reference.all(func)
   }
 }
 case class ReferenceMemberTypeT(reference: CoordT) extends IMemberTypeT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ reference.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ reference.all(func)
   }
 }
 
@@ -331,10 +331,10 @@ trait CitizenDefinitionT {
 // We include templateArgTypes to aid in looking this up... same reason we have name
 case class StructDefinitionT(
   fullName: FullNameT[ICitizenNameT],
-  attributes: List[ICitizenAttribute2],
+  attributes: Vector[ICitizenAttribute2],
   weakable: Boolean,
   mutability: MutabilityT,
-  members: List[StructMemberT],
+  members: Vector[StructMemberT],
   isClosure: Boolean
 ) extends CitizenDefinitionT with QueriableT {
   override def hashCode(): Int = vcurious()
@@ -347,8 +347,8 @@ case class StructDefinitionT(
 
   override def getRef: StructTT = StructTT(fullName)
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++
       fullName.all(func) ++
       members.flatMap(_.all(func))
   }
@@ -374,18 +374,18 @@ case class StructDefinitionT(
 
 case class InterfaceDefinitionT(
     fullName: FullNameT[CitizenNameT],
-    attributes: List[ICitizenAttribute2],
+    attributes: Vector[ICitizenAttribute2],
     weakable: Boolean,
     mutability: MutabilityT,
     // This does not include abstract functions declared outside the interface.
     // See IMRFDI for why we need to remember only the internal methods here.
-    internalMethods: List[FunctionHeaderT]
+    internalMethods: Vector[FunctionHeaderT]
 ) extends CitizenDefinitionT with QueriableT {
   override def hashCode(): Int = vcurious()
   override def getRef = InterfaceTT(fullName)
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ fullName.all(func) ++ internalMethods.flatMap(_.all(func))
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ fullName.all(func) ++ internalMethods.flatMap(_.all(func))
   }
 }
 
@@ -398,8 +398,8 @@ case class StructTT(fullName: FullNameT[ICitizenNameT]) extends CitizenRefT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 14;
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ fullName.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ fullName.all(func)
   }
 }
 
@@ -419,8 +419,8 @@ case class OverloadSet(
     vcurious()
   }
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func)
   }
 }
 
@@ -431,8 +431,8 @@ case class InterfaceTT(
 
   override def order: Int = 15;
 
-  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
-    List(this).collect(func) ++ fullName.all(func)
+  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
+    Vector(this).collect(func) ++ fullName.all(func)
   }
 }
 
@@ -573,8 +573,8 @@ object TemplataTypeComparator extends Ordering[ITemplata] {
   }
 }
 
-object ReferenceListComparator extends Ordering[List[CoordT]] {
-  override def compare(a: List[CoordT], b: List[CoordT]):Int = {
+object ReferenceListComparator extends Ordering[Vector[CoordT]] {
+  override def compare(a: Vector[CoordT], b: Vector[CoordT]):Int = {
     if (a.length == 0) {
       if (b.length == 0) {
         0
@@ -596,8 +596,8 @@ object ReferenceListComparator extends Ordering[List[CoordT]] {
   }
 }
 
-object TemplataTypeListComparator extends Ordering[List[ITemplata]] {
-  override def compare(a: List[ITemplata], b: List[ITemplata]):Int = {
+object TemplataTypeListComparator extends Ordering[Vector[ITemplata]] {
+  override def compare(a: Vector[ITemplata], b: Vector[ITemplata]):Int = {
     if (a.length == 0) {
       if (b.length == 0) {
         0

@@ -14,13 +14,13 @@ import scala.collection.immutable.List
 
 
 class HammerTest extends FunSuite with Matchers {
-  def recursiveCollect[T, R](a: Any, partialFunction: PartialFunction[Any, R]): List[R] = {
+  def recursiveCollect[T, R](a: Any, partialFunction: PartialFunction[Any, R]): Vector[R] = {
     if (partialFunction.isDefinedAt(a)) {
-      return List(partialFunction.apply(a))
+      return Vector(partialFunction.apply(a))
     }
     a match {
-      case p : Product => p.productIterator.flatMap(x => recursiveCollect(x, partialFunction)).toList
-      case _ => List.empty
+      case p : Product => p.productIterator.flatMap(x => recursiveCollect(x, partialFunction)).toVector
+      case _ => Vector.empty
     }
   }
 

@@ -47,7 +47,7 @@ object Vivem {
     print(str)
   }
 
-  def stdinFromList(stdinList: List[String]) = {
+  def stdinFromList(stdinList: Vector[String]) = {
     var remainingStdin = stdinList
     val stdin = (() => {
       vassert(remainingStdin.nonEmpty)
@@ -73,10 +73,10 @@ object Vivem {
       stdout: String => Unit): IVonData = {
     val main =
       programH.packages.flatMap({ case (packageCoord, paackage) =>
-        paackage.exportNameToFunction.get("main").map(prototype => paackage.functions.find(_.prototype == prototype).get).toList
+        paackage.exportNameToFunction.get("main").map(prototype => paackage.functions.find(_.prototype == prototype).get).toVector
       }).flatten match {
         case Nil=> vfail()
-        case List(m) => m
+        case Vector(m) => m
         case _ => vfail()
       }
 

@@ -17,13 +17,13 @@ case class HamutsBox(var inner: Hamuts) {
   def packageCoordToExternNameToKind: Map[PackageCoordinate, Map[String, KindH]] = inner.packageCoordToExternNameToKind
   def structRefsByRef2: Map[StructTT, StructRefH] = inner.structRefsByRef2
   def structDefsByRef2: Map[StructTT, StructDefinitionH] = inner.structDefsByRef2
-  def structDefs: List[StructDefinitionH] = inner.structDefs
+  def structDefs: Vector[StructDefinitionH] = inner.structDefs
   def interfaceRefs: Map[InterfaceTT, InterfaceRefH] = inner.interfaceRefs
   def interfaceDefs: Map[InterfaceTT, InterfaceDefinitionH] = inner.interfaceDefs
   def functionRefs: Map[PrototypeT, FunctionRefH] = inner.functionRefs
   def functionDefs: Map[PrototypeT, FunctionH] = inner.functionDefs
-  def staticSizedArrays: List[StaticSizedArrayDefinitionTH] = inner.staticSizedArrays
-  def runtimeSizedArrays: List[RuntimeSizedArrayDefinitionTH] = inner.runtimeSizedArrays
+  def staticSizedArrays: Vector[StaticSizedArrayDefinitionTH] = inner.staticSizedArrays
+  def runtimeSizedArrays: Vector[RuntimeSizedArrayDefinitionTH] = inner.runtimeSizedArrays
 
   def forwardDeclareStruct(structTT: StructTT, structRefH: StructRefH): Unit = {
     inner = inner.forwardDeclareStruct(structTT, structRefH)
@@ -77,7 +77,7 @@ case class HamutsBox(var inner: Hamuts) {
     inner = inner.addFunctionExtern(prototype, packageCoordinate, exportedName)
   }
 
-  def getNameId(readableName: String, packageCoordinate: PackageCoordinate, parts: List[IVonData]): Int = {
+  def getNameId(readableName: String, packageCoordinate: PackageCoordinate, parts: Vector[IVonData]): Int = {
     val (newInner, id) = inner.getNameId(readableName, packageCoordinate, parts)
     inner = newInner
     id
@@ -95,9 +95,9 @@ case class Hamuts(
     idByFullNameByHumanName: Map[String, Map[String, Int]],
     structRefsByRef2: Map[StructTT, StructRefH],
     structDefsByRef2: Map[StructTT, StructDefinitionH],
-    structDefs: List[StructDefinitionH],
-    staticSizedArrays: List[StaticSizedArrayDefinitionTH],
-    runtimeSizedArrays: List[RuntimeSizedArrayDefinitionTH],
+    structDefs: Vector[StructDefinitionH],
+    staticSizedArrays: Vector[StaticSizedArrayDefinitionTH],
+    runtimeSizedArrays: Vector[RuntimeSizedArrayDefinitionTH],
     interfaceRefs: Map[InterfaceTT, InterfaceRefH],
     interfaceDefs: Map[InterfaceTT, InterfaceDefinitionH],
     functionRefs: Map[PrototypeT, FunctionRefH],
@@ -417,7 +417,7 @@ case class Hamuts(
   // This returns a unique ID for that specific human name.
   // Two things with two different human names could result in the same ID here.
   // This ID is meant to be concatenated onto the human name.
-  def getNameId(readableName: String, packageCoordinate: PackageCoordinate, parts: List[IVonData]): (Hamuts, Int) = {
+  def getNameId(readableName: String, packageCoordinate: PackageCoordinate, parts: Vector[IVonData]): (Hamuts, Int) = {
     val namePartsString = FullNameH.namePartsToString(packageCoordinate, parts)
     val idByFullNameForHumanName =
       idByFullNameByHumanName.get(readableName) match {

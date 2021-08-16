@@ -6,7 +6,7 @@ import scala.collection.mutable
 case class FinishedProfile(args: String, profileTotalNanoseconds: Long, rootFrame: FinishedFrame) {
   override def hashCode(): Int = vcurious()
 }
-case class FinishedFrame(nanoseconds: Long, children: Map[String, List[FinishedFrame]]) {
+case class FinishedFrame(nanoseconds: Long, children: Map[String, Vector[FinishedFrame]]) {
   override def hashCode(): Int = vcurious()
 
   def totalTime: Long = nanoseconds + children.map(_._2.map(_.totalTime).sum).sum
@@ -67,7 +67,7 @@ class InProgressProfile(name: String, args: String, var currentFrame: InProgress
 
 class InProgressFrame(name: String) {
   val timer = new Timer()
-  val children = new mutable.HashMap[String, List[FinishedFrame]]
+  val children = new mutable.HashMap[String, Vector[FinishedFrame]]
 
   def start() = {
     resume()
@@ -87,7 +87,7 @@ class InProgressFrame(name: String) {
 }
 
 class Profiler extends IProfiler {
-  var profiles = new mutable.HashMap[String, List[FinishedProfile]]()
+  var profiles = new mutable.HashMap[String, Vector[FinishedProfile]]()
 
   var currentProfile: Option[InProgressProfile] = None
 
@@ -107,8 +107,8 @@ class Profiler extends IProfiler {
         FinishedFrame(newProfile.currentFrame.timer.nanosecondsSoFar, newProfile.currentFrame.children.toMap))
 
     // Don't add it to the parent frame's children, instead add it to the profiles list
-    var profilesWithThisName = profiles.getOrElse(profileName, List.empty)
-    profilesWithThisName = finishedProfileRootFrame :: profilesWithThisName
+    var profilesWithThisName = profiles.getOrElse(profileName, Vector.empty)
+    profilesWithThisName = profilesWithThisName ++ Vector(finishedProfileRootFrame)
     profiles += (profileName -> profilesWithThisName)
 
     parentProfile.foreach(_.resume())
@@ -130,8 +130,8 @@ class Profiler extends IProfiler {
     val finishedFrame = FinishedFrame(newFrame.timer.nanosecondsSoFar, newFrame.children.toMap)
 
     // Add it to the parent frame's children
-    var childFramesWithThisName = parentFrame.children.getOrElse(frameName, List.empty)
-    childFramesWithThisName = finishedFrame :: childFramesWithThisName
+    var childFramesWithThisName = parentFrame.children.getOrElse(frameName, Vector.empty)
+    childFramesWithThisName = childFramesWithThisName ++ Vector(finishedFrame)
     parentFrame.children += (frameName -> childFramesWithThisName)
 
     parentFrame.resume()
@@ -156,7 +156,7 @@ class Profiler extends IProfiler {
     builder.mkString
   }
 
-  def printFrames(builder: mutable.StringBuilder, indent: Int, name: String, frames: List[FinishedFrame]): Unit = {
+  def printFrames(builder: mutable.StringBuilder, indent: Int, name: String, frames: Vector[FinishedFrame]): Unit = {
     builder.append(repeatStr("  ", indent * 2) + name + ": avg " + frames.map(_.totalTime).sum / frames.size + " sum " + frames.map(_.totalTime).sum + "\n")
     val combinedChildren = frames.flatMap(_.children).groupBy(_._1).mapValues(_.flatMap(_._2))
     combinedChildren.foreach({ case (childName, combinedChildren) =>

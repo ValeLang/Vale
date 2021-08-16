@@ -149,13 +149,13 @@ case class DestroyH(
   structExpression: ExpressionH[StructRefH],
   // A list of types, one for each local variable we'll make.
   // TODO: If the vcurious below doesn't panic, get rid of this redundant member.
-  localTypes: List[ReferenceH[KindH]],
+  localTypes: Vector[ReferenceH[KindH]],
   // The locals to put the struct's members into.
   localIndices: Vector[Local],
 ) extends ExpressionH[StructRefH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(localTypes.size == localIndices.size)
-  vcurious(localTypes == localIndices.map(_.typeH).toList)
+  vcurious(localTypes == localIndices.map(_.typeH).toVector)
 
   override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ReadonlyH, ProgramH.emptyTupleStructRef)
 }
@@ -170,13 +170,13 @@ case class DestroyStaticSizedArrayIntoLocalsH(
   structExpression: ExpressionH[StaticSizedArrayTH],
   // A list of types, one for each local variable we'll make.
   // TODO: If the vcurious below doesn't panic, get rid of this redundant member.
-  localTypes: List[ReferenceH[KindH]],
+  localTypes: Vector[ReferenceH[KindH]],
   // The locals to put the struct's members into.
   localIndices: Vector[Local]
 ) extends ExpressionH[StructRefH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(localTypes.size == localIndices.size)
-  vcurious(localTypes == localIndices.map(_.typeH).toList)
+  vcurious(localTypes == localIndices.map(_.typeH).toVector)
 
   override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
 }
@@ -324,7 +324,7 @@ case class NewArrayFromValuesH(
   // TODO: See if we can infer this from the types in the expressions.
   resultType: ReferenceH[StaticSizedArrayTH],
   // The expressions from which we'll get the values to put into the array.
-  sourceExpressions: List[ExpressionH[KindH]]
+  sourceExpressions: Vector[ExpressionH[KindH]]
 ) extends ExpressionH[StaticSizedArrayTH]
 
 // Loads from the "source" expressions and swaps it into the array from arrayExpression at
@@ -439,7 +439,7 @@ case class CallH(
   // Identifies which function to call.
   function: PrototypeH,
   // Expressions containing the arguments to pass to the function.
-  argsExpressions: List[ExpressionH[KindH]]
+  argsExpressions: Vector[ExpressionH[KindH]]
 ) extends ExpressionH[KindH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ReferenceH[KindH] = function.returnType
@@ -450,7 +450,7 @@ case class ExternCallH(
   // Identifies which function to call.
   function: PrototypeH,
   // Expressions containing the arguments to pass to the function.
-  argsExpressions: List[ExpressionH[KindH]]
+  argsExpressions: Vector[ExpressionH[KindH]]
 ) extends ExpressionH[KindH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ReferenceH[KindH] = function.returnType
@@ -459,7 +459,7 @@ case class ExternCallH(
 // Calls a function on an interface.
 case class InterfaceCallH(
   // Expressions containing the arguments to pass to the function.
-  argsExpressions: List[ExpressionH[KindH]],
+  argsExpressions: Vector[ExpressionH[KindH]],
   // Which parameter has the interface whose table we'll read to get the function.
   virtualParamIndex: Int,
   // The type of the interface.
@@ -516,7 +516,7 @@ case class WhileH(
 // A collection of instructions. The last one will be used as the block's result.
 case class ConsecutorH(
   // The instructions to run.
-  exprs: List[ExpressionH[KindH]],
+  exprs: Vector[ExpressionH[KindH]],
 ) extends ExpressionH[KindH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   // We should simplify these away
@@ -526,7 +526,7 @@ case class ConsecutorH(
     // The init ones should never just be VoidLiteralHs, those should be stripped out.
     // Use Hammer.consecutive to conform to this.
     nonLastResultLine match {
-      case NewStructH(List(), List(), ReferenceH(_, InlineH, _, _)) => vfail("Should be no creating voids in the middle of a consecutor!")
+      case NewStructH(Vector(), Vector(), ReferenceH(_, InlineH, _, _)) => vfail("Should be no creating voids in the middle of a consecutor!")
       case _ =>
     }
 
@@ -653,9 +653,9 @@ case class DestroyRuntimeSizedArrayH(
 // Creates a new struct instance.
 case class NewStructH(
   // Expressions containing the values we'll use as members of the new struct.
-  sourceExpressions: List[ExpressionH[KindH]],
+  sourceExpressions: Vector[ExpressionH[KindH]],
   // Names of the members of the struct, in order.
-  targetMemberNames: List[FullNameH],
+  targetMemberNames: Vector[FullNameH],
   // The type of struct we'll create.
   resultType: ReferenceH[StructRefH]
 ) extends ExpressionH[StructRefH]

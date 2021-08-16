@@ -10,7 +10,7 @@ import net.verdagon.vale.{vassert, vcurious, vimpl, vpass, vwat}
 // collide with other things
 case class LetAE(
     range: RangeS,
-    rules: List[IRulexAR],
+    rules: Vector[IRulexAR],
     typeByRune: Map[IRuneA, ITemplataType],
     localRunes: Set[IRuneA],
     pattern: AtomAP,
@@ -56,7 +56,7 @@ case class BodyAE(
   // These are all the variables we use from parent environments.
   // We have these so templar doesn't have to dive through all the functions
   // that it calls (impossible) to figure out what's needed in a closure struct.
-  closuredNames: List[IVarNameA],
+  closuredNames: Vector[IVarNameA],
 
   block: BlockAE
 ) extends IExpressionAE {
@@ -66,7 +66,7 @@ case class BodyAE(
 case class BlockAE(
   range: RangeS,
 
-  exprs: List[IExpressionAE],
+  exprs: Vector[IExpressionAE],
 ) extends IExpressionAE {
   override def hashCode(): Int = vcurious()
   // Every element should have at least one expression, because a block will
@@ -100,19 +100,19 @@ case class RepeaterBlockIteratorAE(range: RangeS, expression: IExpressionAE) ext
 
 case class VoidAE(range: RangeS) extends IExpressionAE {}
 
-case class TupleAE(range: RangeS, elements: List[IExpressionAE]) extends IExpressionAE { override def hashCode(): Int = vcurious() }
+case class TupleAE(range: RangeS, elements: Vector[IExpressionAE]) extends IExpressionAE { override def hashCode(): Int = vcurious() }
 case class StaticArrayFromValuesAE(
   range: RangeS,
-  rules: List[IRulexAR],
+  rules: Vector[IRulexAR],
   typeByRune: Map[IRuneA, ITemplataType],
   maybeSizeRune: Option[IRuneA],
   maybeMutabilityRune: Option[IRuneA],
   maybeVariabilityRune: Option[IRuneA],
-  elements: List[IExpressionAE]
+  elements: Vector[IExpressionAE]
 ) extends IExpressionAE { override def hashCode(): Int = vcurious() }
 case class StaticArrayFromCallableAE(
   range: RangeS,
-  rules: List[IRulexAR],
+  rules: Vector[IRulexAR],
   typeByRune: Map[IRuneA, ITemplataType],
   sizeRune: IRuneA,
   maybeMutabilityRune: Option[IRuneA],
@@ -128,7 +128,7 @@ case class DestroyArrayIntoCallableAE(
 
 case class RuntimeArrayFromCallableAE(
   range: RangeS,
-  rules: List[IRulexAR],
+  rules: Vector[IRulexAR],
   typeByRune: Map[IRuneA, ITemplataType],
   maybeMutabilityRune: Option[IRuneA],
   maybeVariabilityRune: Option[IRuneA],
@@ -159,11 +159,11 @@ case class DotAE(range: RangeS, left: IExpressionAE, member: String, borrowConta
 
 case class IndexAE(range: RangeS, left: IExpressionAE, indexExpr: IExpressionAE) extends IExpressionAE { override def hashCode(): Int = vcurious() }
 
-case class FunctionCallAE(range: RangeS, callableExpr: IExpressionAE, argsExprs1: List[IExpressionAE]) extends IExpressionAE { override def hashCode(): Int = vcurious() }
+case class FunctionCallAE(range: RangeS, callableExpr: IExpressionAE, argsExprs1: Vector[IExpressionAE]) extends IExpressionAE { override def hashCode(): Int = vcurious() }
 
 //case class MethodCall0(callableExpr: Expression0, objectExpr: Expression0, argsExpr: Pack0) extends Expression0 { override def hashCode(): Int = vcurious() }
 
-case class TemplateSpecifiedLookupAE(range: RangeS, name: String, templateArgs: List[ITemplexS], targetOwnership: LoadAsP) extends IExpressionAE { override def hashCode(): Int = vcurious() }
+case class TemplateSpecifiedLookupAE(range: RangeS, name: String, templateArgs: Vector[ITemplexS], targetOwnership: LoadAsP) extends IExpressionAE { override def hashCode(): Int = vcurious() }
 case class RuneLookupAE(range: RangeS, rune: IRuneA, tyype: ITemplataType) extends IExpressionAE { override def hashCode(): Int = vcurious() }
 
 case class LocalLoadAE(range: RangeS, name: IVarNameA, targetOwnership: LoadAsP) extends IExpressionAE { override def hashCode(): Int = vcurious() }

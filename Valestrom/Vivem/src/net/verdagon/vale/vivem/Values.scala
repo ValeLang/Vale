@@ -55,7 +55,7 @@ class Allocation(
 
   def getRefCount(category: RefCountCategory) = {
     referrers
-      .toList
+      .toVector
       .filter({ case (key, _) => getCategory(key) == category })
       .map(_._2)
       .sum
@@ -73,7 +73,7 @@ class Allocation(
         case None => referrers
         case Some(ownershipFilter) => referrers.filter({ case (key, _) => ownershipFilter.contains(key.ownership)})
       }
-    val matchingReferrers = referrers.toList.map(_._2)
+    val matchingReferrers = referrers.toVector.map(_._2)
     vcheck(
       matchingReferrers.size == expectedNum,
       "Expected " +
@@ -279,7 +279,7 @@ case class VariableV(
 
 case class ExpressionId(
   callId: CallId,
-  path: List[Int]
+  path: Vector[Int]
 ) {
   def addStep(i: Int): ExpressionId = ExpressionId(callId, path :+ i)
 }

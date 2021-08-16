@@ -85,7 +85,7 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
 
   private[parser] def destructure: Parser[DestructureP] = {
     pos ~ ("(" ~> optWhite ~> repsep(atomPattern, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")") ~ pos ^^ {
-      case begin ~ inners ~ end => DestructureP(Range(begin, end), inners)
+      case begin ~ inners ~ end => DestructureP(Range(begin, end), inners.toVector)
     }
   }
 

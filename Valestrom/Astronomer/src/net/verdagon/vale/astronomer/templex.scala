@@ -21,37 +21,37 @@ import scala.collection.immutable.List
 //case class NullableAT(inner: ITemplexA) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 //case class CallAT(
 //    template: ITemplexA,
-//    args: List[ITemplexA]) extends ITemplexA {
+//    args: Vector[ITemplexA]) extends ITemplexA {
 //}
 //case class PrototypeAT(
 //  name: String,
-//  parameters: List[ITemplexA],
+//  parameters: Vector[ITemplexA],
 //  returnType: ITemplexA
 //) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 //case class PackAT(
-//  members: List[ITemplexA]
+//  members: Vector[ITemplexA]
 //) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 //case class RepeaterSequenceAT(
 //  size: ITemplexA,
 //  element: ITemplexA
 //) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 //case class ManualSequenceAT(
-//  elements: List[ITemplexA]
+//  elements: Vector[ITemplexA]
 //) extends ITemplexA { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 //
 //object TemplexSUtils {
-//  def getDistinctOrderedRunesForTemplex(templex: ITemplexA): List[String] = {
+//  def getDistinctOrderedRunesForTemplex(templex: ITemplexA): Vector[String] = {
 //    templex match {
-//      case IntAT(value) => List.empty
-//      case MutabilityAT(mutability) => List.empty
-//      case PermissionAT(permission) => List.empty
-//      case LocationAT(location) => List.empty
-//      case OwnershipAT(ownership) => List.empty
-//      case VariabilityAT(variability) => List.empty
-//      case BoolAT(value) => List.empty
-//      case NameAT(name) => List.empty
-//      case RuneAT(rune) => List(rune)
-//      case AnonymousRuneAT() => List.empty
+//      case IntAT(value) => Vector.empty
+//      case MutabilityAT(mutability) => Vector.empty
+//      case PermissionAT(permission) => Vector.empty
+//      case LocationAT(location) => Vector.empty
+//      case OwnershipAT(ownership) => Vector.empty
+//      case VariabilityAT(variability) => Vector.empty
+//      case BoolAT(value) => Vector.empty
+//      case NameAT(name) => Vector.empty
+//      case RuneAT(rune) => Vector(rune)
+//      case AnonymousRuneAT() => Vector.empty
 //      case InterpretedAT(_, inner) => getDistinctOrderedRunesForTemplex(inner)
 //      case CallAT(template, args) => {
 //        (template :: args).flatMap(getDistinctOrderedRunesForTemplex).distinct
@@ -63,7 +63,7 @@ import scala.collection.immutable.List
 //        members.flatMap(getDistinctOrderedRunesForTemplex).distinct
 //      }
 //      case RepeaterSequenceAT(size, element) => {
-//        List(size, element).flatMap(getDistinctOrderedRunesForTemplex).distinct
+//        Vector(size, element).flatMap(getDistinctOrderedRunesForTemplex).distinct
 //      }
 //      case ManualSequenceAT(elements) => {
 //        elements.flatMap(getDistinctOrderedRunesForTemplex).distinct

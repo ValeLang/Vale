@@ -101,7 +101,7 @@ class VonPrinter(
 
   def printArrayStart(): String = {
     syntax match {
-      case VonSyntax(_, false, _, _) => "List("
+      case VonSyntax(_, false, _, _) => "Vector("
       case VonSyntax(_, true, _, _) => "["
       case JsonSyntax => "["
     }

@@ -13,7 +13,7 @@ case class VoidPE(range: Range) extends IExpressionPE {
 // We have this because it sometimes even a single-member pack can change the semantics.
 // (moo).someMethod() will move moo, and moo.someMethod() will lend moo.
 // There's probably a better way to distinguish this...
-case class PackPE(range: Range, inners: List[IExpressionPE]) extends IExpressionPE {
+case class PackPE(range: Range, inners: Vector[IExpressionPE]) extends IExpressionPE {
   override def hashCode(): Int = vcurious();
 }
 
@@ -48,7 +48,7 @@ case class WhilePE(range: Range, condition: BlockPE, body: BlockPE) extends IExp
 case class DestructPE(range: Range, inner: IExpressionPE) extends IExpressionPE {
   override def hashCode(): Int = vcurious();
 }
-case class MatchPE(range: Range, condition: IExpressionPE, lambdas: List[LambdaPE]) extends IExpressionPE {
+case class MatchPE(range: Range, condition: IExpressionPE, lambdas: Vector[LambdaPE]) extends IExpressionPE {
   override def hashCode(): Int = vcurious();
 }
 case class MutatePE(range: Range, mutatee: IExpressionPE, expr: IExpressionPE) extends IExpressionPE {
@@ -73,7 +73,7 @@ case class BadLetPE(
   override def hashCode(): Int = vcurious();
 }
 
-case class TuplePE(range: Range, elements: List[IExpressionPE]) extends IExpressionPE {
+case class TuplePE(range: Range, elements: Vector[IExpressionPE]) extends IExpressionPE {
   override def hashCode(): Int = vcurious();
 }
 
@@ -89,7 +89,7 @@ case class ConstructArrayPE(
   // True if theyre making it like [3][10, 20, 30]
   // False if theyre making it like [3]({ _ * 10 })
   initializingIndividualElements: Boolean,
-  args: List[IExpressionPE]
+  args: Vector[IExpressionPE]
 ) extends IExpressionPE {
   override def hashCode(): Int = vcurious()
 }
@@ -107,7 +107,7 @@ case class ConstantFloatPE(range: Range, value: Double) extends IExpressionPE {
   override def hashCode(): Int = vcurious();
 }
 
-case class StrInterpolatePE(range: Range, parts: List[IExpressionPE]) extends IExpressionPE {
+case class StrInterpolatePE(range: Range, parts: Vector[IExpressionPE]) extends IExpressionPE {
   override def hashCode(): Int = vcurious();
 }
 
@@ -120,7 +120,7 @@ case class DotPE(
   override def hashCode(): Int = vcurious();
 }
 
-case class IndexPE(range: Range, left: IExpressionPE, args: List[IExpressionPE]) extends IExpressionPE {
+case class IndexPE(range: Range, left: IExpressionPE, args: Vector[IExpressionPE]) extends IExpressionPE {
   override def hashCode(): Int = vcurious();
 }
 
@@ -130,7 +130,7 @@ case class FunctionCallPE(
   operatorRange: Range,
   isMapCall: Boolean,
   callableExpr: IExpressionPE,
-  argExprs: List[IExpressionPE],
+  argExprs: Vector[IExpressionPE],
   // If we're calling a lambda or some other callable struct,
   // the 'this' ptr parameter might want a certain ownership,
   // so the user might specify that.
@@ -147,13 +147,13 @@ case class MethodCallPE(
   subjectTargetOwnership: LoadAsP,
   isMapCall: Boolean,
   methodLookup: LookupPE,
-  argExprs: List[IExpressionPE]
+  argExprs: Vector[IExpressionPE]
 ) extends IExpressionPE {
   override def hashCode(): Int = vcurious();
   vpass()
 }
 
-case class TemplateArgsP(range: Range, args: List[ITemplexPT]) { override def hashCode(): Int = vcurious() }
+case class TemplateArgsP(range: Range, args: Vector[ITemplexPT]) { override def hashCode(): Int = vcurious() }
 case class LookupPE(
                      name: NameP,
                      templateArgs: Option[TemplateArgsP]
@@ -174,7 +174,7 @@ case class LambdaPE(
   override def range: Range = function.range
 }
 
-case class BlockPE(range: Range, elements: List[IExpressionPE]) extends IExpressionPE {
+case class BlockPE(range: Range, elements: Vector[IExpressionPE]) extends IExpressionPE {
   override def hashCode(): Int = vcurious();
   // Every element should have at least one expression, because a block will
   // return the last expression's result as its result.
@@ -182,6 +182,6 @@ case class BlockPE(range: Range, elements: List[IExpressionPE]) extends IExpress
   vassert(elements.size >= 1)
 }
 
-case class ShortcallPE(range: Range, argExprs: List[IExpressionPE]) extends IExpressionPE {
+case class ShortcallPE(range: Range, argExprs: Vector[IExpressionPE]) extends IExpressionPE {
   override def hashCode(): Int = vcurious()
 }

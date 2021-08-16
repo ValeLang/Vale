@@ -14,7 +14,7 @@ import scala.collection.immutable.List
 class RunePredictorTests extends FunSuite with Matchers {
   test("Predict doesnt crash for simple templex") {
     val conclusions =
-      PredictorEvaluator.solve(Set(), List(TemplexSR(NameST(RangeS.testZero, CodeTypeNameS("int")))), List.empty)
+      PredictorEvaluator.solve(Set(), Vector(TemplexSR(NameST(RangeS.testZero, CodeTypeNameS("int")))), Vector.empty)
     conclusions shouldEqual Conclusions(Set(), Map())
   }
 
@@ -22,9 +22,9 @@ class RunePredictorTests extends FunSuite with Matchers {
     val conclusions =
       PredictorEvaluator.solve(
         Set(),
-        List(
+        Vector(
           EqualsSR(RangeS.testZero,TemplexSR(RuneST(RangeS.testZero,CodeRuneS("T"))), TemplexSR(NameST(RangeS.testZero, CodeTypeNameS("int"))))),
-        List.empty)
+        Vector.empty)
     conclusions shouldEqual Conclusions(Set(CodeRuneS("T")), Map())
   }
 
@@ -32,12 +32,12 @@ class RunePredictorTests extends FunSuite with Matchers {
     val conclusions =
       PredictorEvaluator.solve(
         Set(),
-        List(
+        Vector(
           TypedSR(RangeS.testZero,CodeRuneS("Z"),CoordTypeSR),
           EqualsSR(RangeS.testZero,
             TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Z"))),
-            TemplexSR(CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("MyOption")),List(InterpretedST(RangeS.testZero,ShareP,ReadonlyP, NameST(RangeS.testZero, CodeTypeNameS("int")))))))),
-        List.empty)
+            TemplexSR(CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("MyOption")),Vector(InterpretedST(RangeS.testZero,ShareP,ReadonlyP, NameST(RangeS.testZero, CodeTypeNameS("int")))))))),
+        Vector.empty)
     conclusions shouldEqual Conclusions(Set(CodeRuneS("Z")), Map(CodeRuneS("Z") -> CoordTypeSR))
   }
 
@@ -48,15 +48,15 @@ class RunePredictorTests extends FunSuite with Matchers {
     val conclusions =
       PredictorEvaluator.solve(
         Set(),
-        List(
+        Vector(
           ComponentsSR(
             RangeS.internal(-81),
             TypedSR(RangeS.testZero,tRune,CoordTypeSR),
-            List(
-              OrSR(RangeS.testZero,List(TemplexSR(OwnershipST(RangeS.testZero,OwnP)), TemplexSR(OwnershipST(RangeS.testZero,ShareP)))),
+            Vector(
+              OrSR(RangeS.testZero,Vector(TemplexSR(OwnershipST(RangeS.testZero,OwnP)), TemplexSR(OwnershipST(RangeS.testZero,ShareP)))),
               // Not exactly valid but itll do for this test
-              OrSR(RangeS.testZero,List(TypedSR(RangeS.testZero,aRune,KindTypeSR), TypedSR(RangeS.testZero,bRune,CoordTypeSR)))))),
-        List.empty)
+              OrSR(RangeS.testZero,Vector(TypedSR(RangeS.testZero,aRune,KindTypeSR), TypedSR(RangeS.testZero,bRune,CoordTypeSR)))))),
+        Vector.empty)
     conclusions shouldEqual
       Conclusions(Set(), Map(tRune -> CoordTypeSR, aRune -> KindTypeSR, bRune -> CoordTypeSR))
   }
@@ -68,15 +68,15 @@ class RunePredictorTests extends FunSuite with Matchers {
     val conclusions =
     PredictorEvaluator.solve(
       Set(),
-      List(
+      Vector(
         ComponentsSR(
           RangeS.internal(-82),
           TypedSR(RangeS.testZero,CodeRuneS("T"),CoordTypeSR),
-          List(
-            OrSR(RangeS.testZero,List(TemplexSR(OwnershipST(RangeS.testZero,OwnP)), TemplexSR(OwnershipST(RangeS.testZero,ShareP)))),
-            CallSR(RangeS.testZero,"passThroughIfConcrete",List(TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Z"))))))),
-        EqualsSR(RangeS.testZero,TypedSR(RangeS.testZero,CodeRuneS("V"),CoordTypeSR),CallSR(RangeS.testZero,"toRef",List(TemplexSR(NameST(RangeS.testZero, CodeTypeNameS("void"))))))),
-      List.empty)
+          Vector(
+            OrSR(RangeS.testZero,Vector(TemplexSR(OwnershipST(RangeS.testZero,OwnP)), TemplexSR(OwnershipST(RangeS.testZero,ShareP)))),
+            CallSR(RangeS.testZero,"passThroughIfConcrete",Vector(TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Z"))))))),
+        EqualsSR(RangeS.testZero,TypedSR(RangeS.testZero,CodeRuneS("V"),CoordTypeSR),CallSR(RangeS.testZero,"toRef",Vector(TemplexSR(NameST(RangeS.testZero, CodeTypeNameS("void"))))))),
+      Vector.empty)
     conclusions shouldEqual
       Conclusions(
         Set(CodeRuneS("V")),
@@ -92,12 +92,12 @@ class RunePredictorTests extends FunSuite with Matchers {
     val conclusions =
     PredictorEvaluator.solve(
       Set(),
-      List(
+      Vector(
         TypedSR(RangeS.testZero,CodeRuneS("Z"),CoordTypeSR),
         EqualsSR(RangeS.testZero,
           TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Z"))),
           TemplexSR(RepeaterSequenceST(RangeS.testZero,MutabilityST(RangeS.testZero,MutableP), VariabilityST(RangeS.testZero,VaryingP), IntST(RangeS.testZero,5),InterpretedST(RangeS.testZero,ShareP,ReadonlyP,NameST(RangeS.testZero, CodeTypeNameS("int"))))))),
-      List.empty)
+      Vector.empty)
     conclusions shouldEqual Conclusions(Set(CodeRuneS("Z")), Map(CodeRuneS("Z") -> CoordTypeSR))
   }
 
@@ -108,15 +108,15 @@ class RunePredictorTests extends FunSuite with Matchers {
     val conclusions =
     PredictorEvaluator.solve(
       Set(),
-      List(
+      Vector(
         ComponentsSR(
           RangeS.internal(-83),
           TypedSR(RangeS.testZero,CodeRuneS("T"),CoordTypeSR),
-          List(
-            OrSR(RangeS.testZero,List(TemplexSR(OwnershipST(RangeS.testZero,OwnP)), TemplexSR(OwnershipST(RangeS.testZero,ShareP)))),
-            CallSR(RangeS.testZero,"passThroughIfInterface",List(TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Z"))))))),
-        EqualsSR(RangeS.testZero,TypedSR(RangeS.testZero,CodeRuneS("V"),CoordTypeSR),CallSR(RangeS.testZero,"toRef",List(TemplexSR(NameST(RangeS.testZero, CodeTypeNameS("void"))))))),
-      List.empty)
+          Vector(
+            OrSR(RangeS.testZero,Vector(TemplexSR(OwnershipST(RangeS.testZero,OwnP)), TemplexSR(OwnershipST(RangeS.testZero,ShareP)))),
+            CallSR(RangeS.testZero,"passThroughIfInterface",Vector(TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Z"))))))),
+        EqualsSR(RangeS.testZero,TypedSR(RangeS.testZero,CodeRuneS("V"),CoordTypeSR),CallSR(RangeS.testZero,"toRef",Vector(TemplexSR(NameST(RangeS.testZero, CodeTypeNameS("void"))))))),
+      Vector.empty)
     conclusions shouldEqual
       Conclusions(
         Set(CodeRuneS("V")),
@@ -133,15 +133,15 @@ class RunePredictorTests extends FunSuite with Matchers {
     val conclusions =
     PredictorEvaluator.solve(
       Set(),
-      List(
+      Vector(
         ComponentsSR(
           RangeS.internal(-84),
           TypedSR(RangeS.testZero,CodeRuneS("T"),CoordTypeSR),
-          List(
-            OrSR(RangeS.testZero,List(TemplexSR(OwnershipST(RangeS.testZero,OwnP)), TemplexSR(OwnershipST(RangeS.testZero,ShareP)))),
-            CallSR(RangeS.testZero,"passThroughIfStruct",List(TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Z"))))))),
-        CallSR(RangeS.testZero,"passThroughIfInterface",List(TemplexSR(RuneST(RangeS.testZero,CodeRuneS("I")))))),
-      List.empty)
+          Vector(
+            OrSR(RangeS.testZero,Vector(TemplexSR(OwnershipST(RangeS.testZero,OwnP)), TemplexSR(OwnershipST(RangeS.testZero,ShareP)))),
+            CallSR(RangeS.testZero,"passThroughIfStruct",Vector(TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Z"))))))),
+        CallSR(RangeS.testZero,"passThroughIfInterface",Vector(TemplexSR(RuneST(RangeS.testZero,CodeRuneS("I")))))),
+      Vector.empty)
     conclusions shouldEqual Conclusions(Set(), Map(CodeRuneS("T") -> CoordTypeSR))
   }
 
@@ -150,7 +150,7 @@ class RunePredictorTests extends FunSuite with Matchers {
     val conclusions =
       PredictorEvaluator.solve(
         Set(CodeRuneS("P1"), CodeRuneS("R")),
-        List(
+        Vector(
           EqualsSR(RangeS.testZero,
             TypedSR(RangeS.testZero,CodeRuneS("Z"),CoordTypeSR),
             TemplexSR(
@@ -159,12 +159,12 @@ class RunePredictorTests extends FunSuite with Matchers {
                 ReadonlyP,
                 CallST(RangeS.testZero,
                   NameST(RangeS.testZero, CodeTypeNameS("MyIFunction1")),
-                  List(
+                  Vector(
                     RuneST(RangeS.testZero,CodeRuneS("P1")),
                     RuneST(RangeS.testZero,CodeRuneS("R"))))))),
           TypedSR(RangeS.testZero,CodeRuneS("P1"),CoordTypeSR),
           TypedSR(RangeS.testZero,CodeRuneS("R"),CoordTypeSR)),
-        List.empty)
+        Vector.empty)
     vassert(conclusions.knowableValueRunes.contains(CodeRuneS("P1")))
     vassert(conclusions.knowableValueRunes.contains(CodeRuneS("R")))
     vassert(conclusions.knowableValueRunes.contains(CodeRuneS("Z")))

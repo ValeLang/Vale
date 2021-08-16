@@ -21,7 +21,7 @@ case class PackTemplataType(elementType: ITemplataType) extends ITemplataType { 
 // This is CitizenTemplataType instead of separate ones for struct and interface
 // because the RuleTyper doesn't care whether something's a struct or an interface.
 case class TemplateTemplataType(
-  paramTypes: List[ITemplataType],
+  paramTypes: Vector[ITemplataType],
   returnType: ITemplataType
 ) extends ITemplataType {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;

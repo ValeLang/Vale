@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.{vassert, vfail}
+import net.verdagon.vale.{Collector, vassert, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
 class ExpressionTests extends FunSuite with Matchers with Collector with TestParseUtils {

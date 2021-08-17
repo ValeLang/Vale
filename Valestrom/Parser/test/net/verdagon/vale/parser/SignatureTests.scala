@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.{vassert, vimpl}
+import net.verdagon.vale.{Collector, vassert, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
 class SignatureTests extends FunSuite with Matchers with Collector with TestParseUtils {

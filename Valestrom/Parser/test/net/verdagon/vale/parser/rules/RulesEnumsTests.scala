@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser.rules
 
-import net.verdagon.vale.{parser, vfail}
+import net.verdagon.vale.{Collector, parser, vfail}
 import net.verdagon.vale.parser.CombinatorParsers._
 import net.verdagon.vale.parser._
 import org.scalatest.{FunSuite, Matchers}

@@ -74,10 +74,10 @@ object Vivem {
     val main =
       programH.packages.flatMap({ case (packageCoord, paackage) =>
         paackage.exportNameToFunction.get("main").map(prototype => paackage.functions.find(_.prototype == prototype).get).toVector
-      }).flatten match {
-        case Nil=> vfail()
+      }).flatten.toVector match {
+        case Vector() => vfail()
         case Vector(m) => m
-        case _ => vfail()
+        case other => vfail(other)
       }
 
     val callId = CallId(0, main.prototype)

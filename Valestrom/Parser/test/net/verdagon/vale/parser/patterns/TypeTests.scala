@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser.patterns
 
-import net.verdagon.vale.{parser, vfail, vimpl}
+import net.verdagon.vale.{Collector, parser, vfail, vimpl}
 import net.verdagon.vale.parser.Patterns.{fromEnv, withType}
 import net.verdagon.vale.parser.CombinatorParsers._
 import net.verdagon.vale.parser._

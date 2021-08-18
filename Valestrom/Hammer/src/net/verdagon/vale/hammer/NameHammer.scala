@@ -67,7 +67,7 @@ object NameHammer {
       case TemplarBlockResultVarNameT(num) => "blockResult" + num
       case TemplarFunctionResultVarNameT() => "funcResult"
       case TemplarPatternDestructureeNameT(num) => "patDestrName" + num
-      case TemplarPatternMemberNameT(num, memberIndex) => "patMemName" + num + "_" + memberIndex
+      case TemplarPatternMemberNameT(life) => "patMemName" + life
       case TemplarTemporaryVarNameT(num) => "tempVarName" + num
       case TupleNameT(members) => "Tup" + members.size
       case RuntimeSizedArrayNameT(arr) => "rsa"

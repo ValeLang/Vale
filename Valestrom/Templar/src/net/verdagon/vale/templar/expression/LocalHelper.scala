@@ -18,10 +18,10 @@ class LocalHelper(
 
   def makeTemporaryLocal(
     fate: FunctionEnvironmentBox,
+    life: LocationInFunctionEnvironment,
     coord: CoordT):
   ReferenceLocalVariableT = {
-    val varNameCounter = fate.nextVarCounter()
-    val varId = fate.functionEnvironment.fullName.addStep(TemplarTemporaryVarNameT(varNameCounter))
+    val varId = fate.functionEnvironment.fullName.addStep(TemplarTemporaryVarNameT(life))
     val rlv = ReferenceLocalVariableT(varId, FinalT, coord)
     fate.addVariable(rlv)
     rlv
@@ -32,9 +32,10 @@ class LocalHelper(
   def makeTemporaryLocal(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
+    life: LocationInFunctionEnvironment,
     r: ReferenceExpressionTE):
   (DeferTE) = {
-    val rlv = makeTemporaryLocal(fate, r.resultRegister.reference)
+    val rlv = makeTemporaryLocal(fate, life, r.resultRegister.reference)
     val letExpr2 = LetAndLendTE(rlv, r)
 
     val unlet = unletLocal(fate, rlv)

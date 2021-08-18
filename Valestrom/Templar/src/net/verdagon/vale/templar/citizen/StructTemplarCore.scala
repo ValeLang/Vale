@@ -658,6 +658,7 @@ class StructTemplarCore(
   def prototypeToAnonymousStruct(
     outerEnv: IEnvironment,
     temputs: Temputs,
+    life: LocationInFunctionEnvironment,
     range: RangeS,
     prototype: PrototypeT,
     structFullName: FullNameT[ICitizenNameT]):
@@ -670,14 +671,14 @@ class StructTemplarCore(
     val forwarderParams =
       Vector(
         ParameterT(
-          TemplarTemporaryVarNameT(-1),
+          TemplarTemporaryVarNameT(life + -1),
           None,
           CoordT(
             ShareT,
             ReadonlyT,
             structTT))) ++
       prototype.paramTypes.zipWithIndex.map({ case (paramType, index) =>
-        ParameterT(TemplarTemporaryVarNameT(index), None, paramType)
+        ParameterT(TemplarTemporaryVarNameT(life + index), None, paramType)
       })
     val forwarderHeader =
       FunctionHeaderT(

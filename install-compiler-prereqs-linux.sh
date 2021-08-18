@@ -19,7 +19,9 @@ fi
 
 # Install misc dependencies
 echo "Installing dependencies..."
-sudo apt install -y curl git clang cmake zlib1g-dev
+apt install sudo
+sudo apt update -y
+sudo apt install -y software-properties-common curl git clang cmake zlib1g-dev zip unzip wget
 
 # Install Java
 echo "Installing java..."
@@ -38,7 +40,7 @@ sudo apt install -y sbt
 
 echo "Downloading and unzipping stable bootstrapping valec to $BOOTSTRAPPING_VALEC_DIR..."
 # Install stable valec, for the .vale parts of the compiler
-curl -L https://vale.dev/releases/ValeCompiler-0.1.3.3-Ubuntu.zip
+curl -L https://vale.dev/releases/ValeCompiler-0.1.3.3-Ubuntu.zip -o ValeCompiler-0.1.3.3-Ubuntu.zip
 unzip ValeCompiler-0.1.3.3-Ubuntu.zip -d $BOOTSTRAPPING_VALEC_DIR
 # Doesnt work, see https://github.com/ValeLang/Vale/issues/306
 # echo 'export PATH=$PATH:~/ValeCompiler-0.1.3.3-Ubuntu' >> ~/.bashrc

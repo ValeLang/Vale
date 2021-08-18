@@ -1,7 +1,7 @@
 package net.verdagon.vale.parser
 
 import net.liftweb.json._
-import net.verdagon.vale.vassert
+import net.verdagon.vale.{Collector, vassert}
 import net.verdagon.von.{JsonSyntax, VonPrinter}
 import org.scalatest.{FunSuite, Matchers}
 

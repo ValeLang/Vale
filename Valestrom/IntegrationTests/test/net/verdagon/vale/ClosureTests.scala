@@ -119,7 +119,7 @@ class ClosureTests extends FunSuite with Matchers {
     })
     main.only({
       case ReferenceLocalVariableT(
-          FullNameT(_, Vector(FunctionNameT("main",_,_), LambdaCitizenNameT(_), FunctionNameT("__call",_,_)),TemplarBlockResultVarNameT(0)),
+          FullNameT(_, Vector(FunctionNameT("main",_,_), LambdaCitizenNameT(_), FunctionNameT("__call",_,_)),TemplarBlockResultVarNameT(_)),
           FinalT,
           CoordT(ShareT,ReadonlyT, IntT.i32)) =>
     })

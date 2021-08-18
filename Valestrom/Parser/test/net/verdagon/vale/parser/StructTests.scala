@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.vassert
+import net.verdagon.vale.{Collector, vassert}
 import org.scalatest.{FunSuite, Matchers}
 
 

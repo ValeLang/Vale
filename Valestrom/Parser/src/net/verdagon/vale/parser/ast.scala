@@ -122,16 +122,16 @@ case class FunctionReturnP(
 ) { override def hashCode(): Int = vcurious() }
 
 case class FunctionHeaderP(
-                            range: Range,
-                            name: Option[NameP],
-                            attributes: Vector[IFunctionAttributeP],
+  range: Range,
+  name: Option[NameP],
+  attributes: Vector[IFunctionAttributeP],
 
-                            // If Some(Vector.empty), should show up like the <> in fn moo<>(a int, b bool)
-                            maybeUserSpecifiedIdentifyingRunes: Option[IdentifyingRunesP],
-                            templateRules: Option[TemplateRulesP],
+  // If Some(Vector.empty), should show up like the <> in fn moo<>(a int, b bool)
+  maybeUserSpecifiedIdentifyingRunes: Option[IdentifyingRunesP],
+  templateRules: Option[TemplateRulesP],
 
-                            params: Option[ParamsP],
-                            ret: FunctionReturnP
+  params: Option[ParamsP],
+  ret: FunctionReturnP
 ) {
   override def hashCode(): Int = vcurious()
 }

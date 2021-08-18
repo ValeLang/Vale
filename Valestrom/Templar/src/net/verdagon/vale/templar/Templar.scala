@@ -27,6 +27,7 @@ trait IFunctionGenerator {
     destructorTemplar: DestructorTemplar,
     env: FunctionEnvironment,
     temputs: Temputs,
+    life: LocationInFunctionEnvironment,
     callRange: RangeS,
     // We might be able to move these all into the function environment... maybe....
     originFunction: Option[FunctionA],
@@ -77,6 +78,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
           destructorTemplar: DestructorTemplar,
           namedEnv: FunctionEnvironment,
           temputs: Temputs,
+          life: LocationInFunctionEnvironment,
           callRange: RangeS,
           maybeOriginFunction1: Option[FunctionA],
           paramCoords: Vector[ParameterT],
@@ -100,6 +102,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
           destructorTemplar: DestructorTemplar,
           namedEnv: FunctionEnvironment,
           temputs: Temputs,
+          life: LocationInFunctionEnvironment,
           callRange: RangeS,
           maybeOriginFunction1: Option[FunctionA],
           paramCoords: Vector[ParameterT],
@@ -427,13 +430,20 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         temputs: Temputs,
         startingFate: FunctionEnvironment,
         fate: FunctionEnvironmentBox,
+        life: LocationInFunctionEnvironment,
         exprs: Vector[IExpressionAE]
     ): (ReferenceExpressionTE, Set[CoordT]) = {
-      expressionTemplar.evaluateBlockStatements(temputs, startingFate, fate, exprs)
+      expressionTemplar.evaluateBlockStatements(temputs, startingFate, fate, life, exprs)
     }
 
-    override def translatePatternList(temputs: Temputs, fate: FunctionEnvironmentBox, patterns1: Vector[AtomAP], patternInputExprs2: Vector[ReferenceExpressionTE]): ReferenceExpressionTE = {
-      expressionTemplar.translatePatternList(temputs, fate, patterns1, patternInputExprs2)
+    override def translatePatternList(
+      temputs: Temputs,
+      fate: FunctionEnvironmentBox,
+      life: LocationInFunctionEnvironment,
+      patterns1: Vector[AtomAP],
+      patternInputExprs2: Vector[ReferenceExpressionTE]
+    ): ReferenceExpressionTE = {
+      expressionTemplar.translatePatternList(temputs, fate, life, patterns1, patternInputExprs2)
     }
 
     override def evaluateParent(env: IEnvironment, temputs: Temputs, sparkHeader: FunctionHeaderT): Unit = {
@@ -445,13 +455,14 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
       generator: IFunctionGenerator,
       fullEnv: FunctionEnvironment,
       temputs: Temputs,
+      life: LocationInFunctionEnvironment,
       callRange: RangeS,
       originFunction: Option[FunctionA],
       paramCoords: Vector[ParameterT],
       maybeRetCoord: Option[CoordT]):
     FunctionHeaderT = {
       generator.generate(
-        functionTemplarCore, structTemplar, destructorTemplar, fullEnv, temputs, callRange, originFunction, paramCoords, maybeRetCoord)
+        functionTemplarCore, structTemplar, destructorTemplar, fullEnv, temputs, life, callRange, originFunction, paramCoords, maybeRetCoord)
     }
   })
   val overloadTemplar: OverloadTemplar = new OverloadTemplar(opts, profiler, templataTemplar, inferTemplar, functionTemplar)

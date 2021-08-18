@@ -3,7 +3,7 @@ package net.verdagon.vale.parser.patterns
 import net.verdagon.vale.parser.Patterns.{capturedWithType, capturedWithTypeRune}
 import net.verdagon.vale.parser.CombinatorParsers._
 import net.verdagon.vale.parser._
-import net.verdagon.vale.vfail
+import net.verdagon.vale.{Collector, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
 class CaptureAndTypeTests extends FunSuite with Matchers with Collector {

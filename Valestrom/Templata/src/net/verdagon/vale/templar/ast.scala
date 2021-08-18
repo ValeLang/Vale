@@ -132,3 +132,12 @@ case class FunctionT(
     Vector(this).collect(func) ++ header.all(func) ++ body.all(func)// ++ variables.flatMap(_.all(func))
   }
 }
+
+// A unique location in a function. Environment is in the name so it spells LIFE!
+case class LocationInFunctionEnvironment(path: Vector[Int]) {
+  def +(subLocation: Int): LocationInFunctionEnvironment = {
+    LocationInFunctionEnvironment(path :+ subLocation)
+  }
+
+  override def toString: String = path.mkString(".")
+}

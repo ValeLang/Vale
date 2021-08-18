@@ -23,11 +23,16 @@ trait IFunctionTemplarDelegate {
     temputs: Temputs,
     startingFate: FunctionEnvironment,
     fate: FunctionEnvironmentBox,
+    life: LocationInFunctionEnvironment,
     exprs: Vector[IExpressionAE]):
   (ReferenceExpressionTE, Set[CoordT])
 
   def translatePatternList(
-    temputs: Temputs, fate: FunctionEnvironmentBox, patterns1: Vector[AtomAP], patternInputExprs2: Vector[ReferenceExpressionTE]):
+    temputs: Temputs,
+    fate: FunctionEnvironmentBox,
+    life: LocationInFunctionEnvironment,
+    patterns1: Vector[AtomAP],
+    patternInputExprs2: Vector[ReferenceExpressionTE]):
   ReferenceExpressionTE
 
   def evaluateParent(
@@ -39,6 +44,7 @@ trait IFunctionTemplarDelegate {
     generator: IFunctionGenerator,
     env: FunctionEnvironment,
     temputs: Temputs,
+    life: LocationInFunctionEnvironment,
     callRange: RangeS,
     // We might be able to move these all into the function environment... maybe....
     originFunction: Option[FunctionA],

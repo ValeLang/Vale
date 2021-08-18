@@ -82,7 +82,6 @@ case class FunctionEnvironment(
   maybeReturnType: Option[CoordT],
 
   // The things below are the "state"; they can be different for any given line in a function.
-  varCounter: Int,
   locals: Vector[IVariableT],
   // This can refer to vars in parent environments, see UCRTVPE.
   unstackifieds: Set[FullNameT[IVarNameT]]
@@ -111,25 +110,16 @@ case class FunctionEnvironment(
   override def globalEnv: PackageEnvironment[INameT] = parentEnv.globalEnv
 
   def addVariables(newVars: Vector[IVariableT]): FunctionEnvironment = {
-    FunctionEnvironment(parentEnv, fullName, function, templatas, maybeReturnType, varCounter, locals ++ newVars, unstackifieds)
+    FunctionEnvironment(parentEnv, fullName, function, templatas, maybeReturnType, locals ++ newVars, unstackifieds)
   }
   def addVariable(newVar: IVariableT): FunctionEnvironment = {
-    FunctionEnvironment(parentEnv, fullName, function, templatas, maybeReturnType, varCounter, locals :+ newVar, unstackifieds)
+    FunctionEnvironment(parentEnv, fullName, function, templatas, maybeReturnType, locals :+ newVar, unstackifieds)
   }
   def markLocalUnstackified(newUnstackified: FullNameT[IVarNameT]): FunctionEnvironment = {
     vassert(!getAllUnstackifiedLocals(true).contains(newUnstackified))
     vassert(getAllLocals(true).exists(_.id == newUnstackified))
     // Even if the local belongs to a parent env, we still mark it unstackified here, see UCRTVPE.
-    FunctionEnvironment(parentEnv, fullName, function, templatas, maybeReturnType, varCounter, locals, unstackifieds + newUnstackified)
-  }
-  def nextVarCounter(): (FunctionEnvironment, Int) = {
-    (FunctionEnvironment(parentEnv, fullName, function, templatas, maybeReturnType, varCounter + 1, locals, unstackifieds), varCounter)
-  }
-  // n is how many values to get
-  def nextCounters(n: Int): (FunctionEnvironment, Vector[Int]) = {
-    (
-      FunctionEnvironment(parentEnv, fullName, function, templatas, maybeReturnType, varCounter + n, locals, unstackifieds),
-      (0 until n).map(_ + varCounter).toVector)
+    FunctionEnvironment(parentEnv, fullName, function, templatas, maybeReturnType, locals, unstackifieds + newUnstackified)
   }
 
   def addEntry(useOptimization: Boolean, name: INameT, entry: IEnvEntry): FunctionEnvironment = {
@@ -139,7 +129,6 @@ case class FunctionEnvironment(
       function,
       templatas.addEntry(useOptimization, name, entry),
       maybeReturnType,
-      varCounter,
       locals,
       unstackifieds)
   }
@@ -150,7 +139,6 @@ case class FunctionEnvironment(
       function,
       templatas.addEntries(useOptimization, newEntries),
       maybeReturnType,
-      varCounter,
       locals,
       unstackifieds)
   }
@@ -173,7 +161,7 @@ case class FunctionEnvironment(
       case Some(v) => Some(v)
       case None => {
         parentEnv match {
-          case pfe @ FunctionEnvironment(_, _, _, _, _, _, _, _) => pfe.getVariable(name)
+          case pfe @ FunctionEnvironment(_, _, _, _, _, _, _) => pfe.getVariable(name)
           case _ => None
         }
       }
@@ -188,7 +176,7 @@ case class FunctionEnvironment(
     val parentLiveLocals =
       if (includeAncestorEnvs) {
         parentEnv match {
-          case parentFuncEnv@FunctionEnvironment(_, _, _, _, _, _, _, _) => parentFuncEnv.getAllLocals(includeAncestorEnvs)
+          case parentFuncEnv@FunctionEnvironment(_, _, _, _, _, _, _) => parentFuncEnv.getAllLocals(includeAncestorEnvs)
           case _ => Vector.empty
         }
       } else {
@@ -202,7 +190,7 @@ case class FunctionEnvironment(
     val parentUnstackifiedLocals =
       if (includeAncestorEnvs) {
         parentEnv match {
-          case parentFuncEnv@FunctionEnvironment(_, _, _, _, _, _, _, _) => parentFuncEnv.getAllUnstackifiedLocals(includeAncestorEnvs)
+          case parentFuncEnv@FunctionEnvironment(_, _, _, _, _, _, _) => parentFuncEnv.getAllUnstackifiedLocals(includeAncestorEnvs)
           case _ => Vector.empty
         }
       } else {
@@ -218,7 +206,6 @@ case class FunctionEnvironment(
       function,
       newTemplataStore(),
       maybeReturnType,
-      varCounter,
       Vector.empty,
       Set())
   }
@@ -235,7 +222,6 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
   def function: FunctionA = functionEnvironment.function
   def templatas: TemplatasStore = functionEnvironment.templatas
   def maybeReturnType: Option[CoordT] = functionEnvironment.maybeReturnType
-  def varCounter: Int = functionEnvironment.varCounter
   def locals: Vector[IVariableT] = functionEnvironment.locals
   def unstackifieds: Set[FullNameT[IVarNameT]] = functionEnvironment.unstackifieds
   override def globalEnv: PackageEnvironment[INameT] = parentEnv.globalEnv
@@ -252,17 +238,6 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
   }
   def markLocalUnstackified(newMoved: FullNameT[IVarNameT]): Unit= {
     functionEnvironment = functionEnvironment.markLocalUnstackified(newMoved)
-  }
-  def nextVarCounter(): Int = {
-    val (newFunctionEnvironment, varCounter) = functionEnvironment.nextVarCounter()
-    functionEnvironment = newFunctionEnvironment
-    varCounter
-  }
-  // n is how many values to get
-  def nextCounters(n: Int): Vector[Int] = {
-    val (newFunctionEnvironment, counters) = functionEnvironment.nextCounters(n)
-    functionEnvironment = newFunctionEnvironment
-    counters
   }
 
   def addEntry(useOptimization: Boolean, name: INameT, entry: IEnvEntry): Unit = {
@@ -302,21 +277,11 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
 
   // Gets the effects that this environment had on the outside world (on its parent
   // environments).
-  def getEffects(): (Set[FullNameT[IVarNameT]], Int) = {
+  def getEffects(): Set[FullNameT[IVarNameT]] = {
     // We may have unstackified outside locals from inside the block, make sure
     // the parent environment knows about that.
     val unstackifiedAncestorLocals = unstackifieds -- locals.map(_.id)
-
-    // We may have made some temporary vars in the block, make sure we don't accidentally reuse their numbers,
-    // carry the var counter into the original fate.
-    val numVarsMade =
-      varCounter -
-        (parentEnv match {
-          case fe @ FunctionEnvironment(_, _, _, _, _, _, _, _) => fe.varCounter
-          case _ => vwat()
-        })
-
-    (unstackifiedAncestorLocals, numVarsMade)
+    unstackifiedAncestorLocals
   }
 
   def makeChildEnvironment(newTemplataStore: () => TemplatasStore):

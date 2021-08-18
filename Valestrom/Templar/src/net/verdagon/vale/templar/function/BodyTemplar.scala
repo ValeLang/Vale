@@ -19,12 +19,14 @@ trait IBodyTemplarDelegate {
     temputs: Temputs,
     startingFate: FunctionEnvironment,
     fate: FunctionEnvironmentBox,
+    life: LocationInFunctionEnvironment,
     exprs: Vector[IExpressionAE]):
   (ReferenceExpressionTE, Set[CoordT])
 
   def translatePatternList(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
+    life: LocationInFunctionEnvironment,
     patterns1: Vector[AtomAP],
     patternInputExprs2: Vector[ReferenceExpressionTE]):
   ReferenceExpressionTE
@@ -44,6 +46,7 @@ class BodyTemplar(
   def declareAndEvaluateFunctionBody(
       funcOuterEnv: FunctionEnvironmentBox,
       temputs: Temputs,
+    life: LocationInFunctionEnvironment,
       bfunction1: BFunctionA,
       maybeExplicitReturnCoord: Option[CoordT],
       params2: Vector[ParameterT],
@@ -56,7 +59,7 @@ class BodyTemplar(
         case None => {
           val (body2, returns) =
             evaluateFunctionBody(
-                funcOuterEnv, temputs, bfunction1.origin.params, params2, bfunction1.body, isDestructor, None) match {
+                funcOuterEnv, temputs, life, bfunction1.origin.params, params2, bfunction1.body, isDestructor, None) match {
               case Err(ResultTypeMismatchError(expectedType, actualType)) => {
                 throw CompileErrorExceptionT(BodyResultDoesntMatch(bfunction1.origin.range, function1.name, expectedType, actualType))
 
@@ -83,6 +86,7 @@ class BodyTemplar(
             evaluateFunctionBody(
                 funcOuterEnv,
                 temputs,
+                life,
                 bfunction1.origin.params,
                 params2,
                 bfunction1.body,
@@ -114,22 +118,23 @@ class BodyTemplar(
   case class ResultTypeMismatchError(expectedType: CoordT, actualType: CoordT) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
   private def evaluateFunctionBody(
-      funcOuterEnv: FunctionEnvironmentBox,
-      temputs: Temputs,
-      params1: Vector[ParameterA],
-      params2: Vector[ParameterT],
-      body1: BodyAE,
-      isDestructor: Boolean,
-      maybeExpectedResultType: Option[CoordT]):
+    funcOuterEnv: FunctionEnvironmentBox,
+    temputs: Temputs,
+    life: LocationInFunctionEnvironment,
+    params1: Vector[ParameterA],
+    params2: Vector[ParameterT],
+    body1: BodyAE,
+    isDestructor: Boolean,
+    maybeExpectedResultType: Option[CoordT]):
   Result[(BlockTE, Set[CoordT]), ResultTypeMismatchError] = {
     val env = funcOuterEnv.makeChildEnvironment(newTemplataStore)
     val startingEnv = env.functionEnvironment
 
     val patternsTE =
-      evaluateLets(funcOuterEnv, temputs, body1.range, params1, params2);
+      evaluateLets(funcOuterEnv, temputs, life + 0, body1.range, params1, params2);
 
     val (statementsFromBlock, returnsFromInsideMaybeWithNever) =
-      delegate.evaluateBlockStatements(temputs, startingEnv, funcOuterEnv, body1.block.exprs);
+      delegate.evaluateBlockStatements(temputs, startingEnv, funcOuterEnv, life + 1, body1.block.exprs);
 
     val unconvertedBodyWithoutReturn = Templar.consecutive(Vector(patternsTE, statementsFromBlock))
 
@@ -187,6 +192,7 @@ class BodyTemplar(
   private def evaluateLets(
       fate: FunctionEnvironmentBox,
       temputs: Temputs,
+    life: LocationInFunctionEnvironment,
     range: RangeS,
       params1: Vector[ParameterA],
       params2: Vector[ParameterT]):
@@ -195,7 +201,7 @@ class BodyTemplar(
       params2.zipWithIndex.map({ case (p, index) => ArgLookupTE(index, p.tyype) })
     val letExprs2 =
       delegate.translatePatternList(
-        temputs, fate, params1.map(_.pattern), paramLookups2);
+        temputs, fate, life, params1.map(_.pattern), paramLookups2);
 
     // todo: at this point, to allow for recursive calls, add a callable type to the environment
     // for everything inside the body to use

@@ -201,11 +201,12 @@ class StructTemplarTemplateArgsLayer(
   def prototypeToAnonymousStruct(
     outerEnv: IEnvironment,
     temputs: Temputs,
+    life: LocationInFunctionEnvironment,
     range: RangeS,
     prototype: PrototypeT,
     structFullName: FullNameT[ICitizenNameT]):
   StructTT = {
     middle.prototypeToAnonymousStruct(
-      outerEnv, temputs, range, prototype, structFullName)
+      outerEnv, temputs, life, range, prototype, structFullName)
   }
 }

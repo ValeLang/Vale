@@ -2,6 +2,7 @@ package net.verdagon.vale.hammer
 
 import net.verdagon.vale.astronomer.{ICompileErrorA, ProgramA}
 import net.verdagon.vale.hinputs.Hinputs
+import net.verdagon.vale.Collector
 import net.verdagon.vale.{FileCoordinateMap, PackageCoordinate, PackageCoordinateMap, Result, Tests, vassert}
 import net.verdagon.vale.templar._
 import org.scalatest.{FunSuite, Matchers}
@@ -13,17 +14,7 @@ import scala.collection.immutable.List
 
 
 
-class HammerTest extends FunSuite with Matchers {
-  def recursiveCollect[T, R](a: Any, partialFunction: PartialFunction[Any, R]): Vector[R] = {
-    if (partialFunction.isDefinedAt(a)) {
-      return Vector(partialFunction.apply(a))
-    }
-    a match {
-      case p : Product => p.productIterator.flatMap(x => recursiveCollect(x, partialFunction)).toVector
-      case _ => Vector.empty
-    }
-  }
-
+class HammerTest extends FunSuite with Matchers with Collector {
   test("Local IDs unique") {
     val compile = HammerTestCompilation.test(
         """
@@ -49,7 +40,7 @@ class HammerTest extends FunSuite with Matchers {
 
     val stackifies = recursiveCollect(main, { case s @ StackifyH(_, _, _) => s })
     val localIds = stackifies.map(_.local.id.number).sorted
-    localIds shouldEqual localIds.distinct
+    localIds shouldEqual localIds.distinct.toVector
     vassert(localIds.size >= 6)
   }
 }

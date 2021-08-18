@@ -23,21 +23,23 @@ class FunctionTemplarCore(
     delegate: IFunctionTemplarDelegate) {
   val bodyTemplar = new BodyTemplar(opts, profiler, newTemplataStore, templataTemplar, convertHelper, new IBodyTemplarDelegate {
     override def evaluateBlockStatements(
-        temputs: Temputs,
-        startingFate: FunctionEnvironment,
-        fate: FunctionEnvironmentBox,
-        exprs: Vector[IExpressionAE]
+      temputs: Temputs,
+      startingFate: FunctionEnvironment,
+      fate: FunctionEnvironmentBox,
+      life: LocationInFunctionEnvironment,
+      exprs: Vector[IExpressionAE]
     ): (ReferenceExpressionTE, Set[CoordT]) = {
-      delegate.evaluateBlockStatements(temputs, startingFate, fate, exprs)
+      delegate.evaluateBlockStatements(temputs, startingFate, fate, life, exprs)
     }
 
     override def translatePatternList(
         temputs: Temputs,
         fate: FunctionEnvironmentBox,
+      life: LocationInFunctionEnvironment,
         patterns1: Vector[AtomAP],
         patternInputExprs2: Vector[ReferenceExpressionTE]
     ): ReferenceExpressionTE = {
-      delegate.translatePatternList(temputs, fate, patterns1, patternInputExprs2)
+      delegate.translatePatternList(temputs, fate, life, patterns1, patternInputExprs2)
     }
   })
 
@@ -55,6 +57,8 @@ class FunctionTemplarCore(
 
     opts.debugOut("Evaluating function " + fullEnv.fullName)
 
+    val life = LocationInFunctionEnvironment(Vector())
+
     val isDestructor =
       params2.nonEmpty &&
       params2.head.tyype.ownership == OwnT &&
@@ -71,7 +75,7 @@ class FunctionTemplarCore(
       startingFullEnv.function.body match {
         case CodeBodyA(body) => {
           declareAndEvaluateFunctionBodyAndAdd(
-              startingFullEnv, fullEnv, temputs, BFunctionA(startingFullEnv.function, body), params2, isDestructor)
+              startingFullEnv, fullEnv, temputs, life, BFunctionA(startingFullEnv.function, body), params2, isDestructor)
         }
         case AbstractBodyA => {
           val maybeRetCoord =
@@ -143,7 +147,8 @@ class FunctionTemplarCore(
             case None => {
               val generator = opts.functionGeneratorByName(generatorId)
               val header =
-                delegate.generateFunction(this, generator, fullEnv.snapshot, temputs, callRange, Some(startingFullEnv.function), params2, maybeRetCoord)
+                delegate.generateFunction(
+                  this, generator, fullEnv.snapshot, temputs, life, callRange, Some(startingFullEnv.function), params2, maybeRetCoord)
               if (header.toSignature != signature2) {
                 throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Generator made a function whose signature doesn't match the expected one!\n" +
                 "Expected:  " + signature2 + "\n" +
@@ -186,6 +191,7 @@ class FunctionTemplarCore(
     startingFullEnv: FunctionEnvironment,
     fullEnv: FunctionEnvironmentBox,
     temputs: Temputs,
+    life: LocationInFunctionEnvironment,
     bfunction1: BFunctionA,
     paramsT: Vector[ParameterT],
     isDestructor: Boolean):
@@ -228,6 +234,7 @@ class FunctionTemplarCore(
               temputs,
               fullEnv.snapshot,
               startingFullEnv,
+              life,
               bfunction1,
               attributesT,
               paramsT,
@@ -249,6 +256,7 @@ class FunctionTemplarCore(
                   temputs,
                   fullEnv.snapshot,
                   startingFullEnv,
+                  life,
                   bfunction1,
                   attributesT,
                   paramsT,
@@ -278,6 +286,7 @@ class FunctionTemplarCore(
       temputs: Temputs,
       fullEnvSnapshot: FunctionEnvironment,
       startingFullEnvSnapshot: FunctionEnvironment,
+      life: LocationInFunctionEnvironment,
       bfunction1: BFunctionA,
       attributesT: Vector[IFunctionAttribute2],
       paramsT: Vector[ParameterT],
@@ -288,7 +297,7 @@ class FunctionTemplarCore(
     val fullEnv = FunctionEnvironmentBox(fullEnvSnapshot)
     val (maybeInferredReturnCoord, body2) =
       bodyTemplar.declareAndEvaluateFunctionBody(
-        fullEnv, temputs, BFunctionA(fullEnv.function, bfunction1.body), maybeExplicitReturnCoord, paramsT, isDestructor)
+        fullEnv, temputs, life, BFunctionA(fullEnv.function, bfunction1.body), maybeExplicitReturnCoord, paramsT, isDestructor)
 
     val maybePostKnownHeader =
       maybeInferredReturnCoord match {

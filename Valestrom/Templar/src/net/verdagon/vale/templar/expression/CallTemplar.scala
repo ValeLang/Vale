@@ -31,6 +31,7 @@ class CallTemplar(
   private def evaluateCall(
       temputs: Temputs,
       fate: FunctionEnvironmentBox,
+      life: LocationInFunctionEnvironment,
       range: RangeS,
       callableExpr: ReferenceExpressionTE,
       explicitlySpecifiedTemplateArgTemplexesS: Vector[ITemplexS],
@@ -42,11 +43,11 @@ class CallTemplar(
       }
       case structTT @ StructTT(_) => {
         evaluateClosureCall(
-          fate, temputs, range, structTT, explicitlySpecifiedTemplateArgTemplexesS, callableExpr, givenArgsExprs2)
+          fate, temputs, life, range, structTT, explicitlySpecifiedTemplateArgTemplexesS, callableExpr, givenArgsExprs2)
       }
       case interfaceTT @ InterfaceTT(_) => {
         evaluateClosureCall(
-          fate, temputs, range, interfaceTT, explicitlySpecifiedTemplateArgTemplexesS, callableExpr, givenArgsExprs2)
+          fate, temputs, life, range, interfaceTT, explicitlySpecifiedTemplateArgTemplexesS, callableExpr, givenArgsExprs2)
       }
       case OverloadSet(_, functionName, _) => {
         val unconvertedArgsPointerTypes2 =
@@ -172,6 +173,7 @@ class CallTemplar(
   private def evaluateClosureCall(
       fate: FunctionEnvironmentBox,
       temputs: Temputs,
+      life: LocationInFunctionEnvironment,
       range: RangeS,
       citizenRef: CitizenRefT,
       explicitlySpecifiedTemplateArgTemplexesS: Vector[ITemplexS],
@@ -184,7 +186,7 @@ class CallTemplar(
         case CoordT(ConstraintT, _, _) => (givenCallableUnborrowedExpr2)
         case CoordT(ShareT, _, _) => (givenCallableUnborrowedExpr2)
         case CoordT(OwnT, _, _) => {
-          localHelper.makeTemporaryLocal(temputs, fate, givenCallableUnborrowedExpr2)
+          localHelper.makeTemporaryLocal(temputs, fate, life, givenCallableUnborrowedExpr2)
         }
       }
 
@@ -274,13 +276,14 @@ class CallTemplar(
   def evaluatePrefixCall(
       temputs: Temputs,
       fate: FunctionEnvironmentBox,
+    life: LocationInFunctionEnvironment,
     range: RangeS,
       callableReferenceExpr2: ReferenceExpressionTE,
       explicitlySpecifiedTemplateArgTemplexesS: Vector[ITemplexS],
       argsExprs2: Vector[ReferenceExpressionTE]):
   (FunctionCallTE) = {
     val callExpr =
-      evaluateCall(temputs, fate, range, callableReferenceExpr2, explicitlySpecifiedTemplateArgTemplexesS, argsExprs2)
+      evaluateCall(temputs, fate, life, range, callableReferenceExpr2, explicitlySpecifiedTemplateArgTemplexesS, argsExprs2)
     (callExpr)
   }
 

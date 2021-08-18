@@ -1061,12 +1061,12 @@ object VonHammer {
             VonMember("mutability", vonifyMutability(Conversions.evaluateMutability(mutability))),
             VonMember("elementType", vonifyCoord(TypeHammer.translateReference(hinputs, hamuts, elementType)))))
       }
-      case TemplarBlockResultVarNameT(num) => {
+      case TemplarBlockResultVarNameT(life) => {
         VonObject(
           "TemplarBlockResultVarName",
           None,
           Vector(
-            VonMember("num", VonInt(num))))
+            VonMember("life", VonStr(life.toString))))
       }
       case TemplarFunctionResultVarNameT() => {
         VonObject(
@@ -1074,26 +1074,26 @@ object VonHammer {
           None,
           Vector())
       }
-      case TemplarTemporaryVarNameT(num) => {
+      case TemplarTemporaryVarNameT(life) => {
         VonObject(
           "TemplarTemporaryVarName",
           None,
           Vector(
-            VonMember("num", VonInt(num))))
+            VonMember("life", VonStr(life.toString))))
       }
-      case TemplarPatternMemberNameT(num, memberIndex) => {
+      case TemplarPatternMemberNameT(life) => {
         VonObject(
           "TemplarPatternMemberName",
           None,
           Vector(
-            VonMember("num", VonInt(num))))
+            VonMember("life", VonStr(life.toString))))
       }
-      case TemplarPatternDestructureeNameT(num) => {
+      case TemplarPatternDestructureeNameT(life) => {
         VonObject(
           "TemplarPatternPackName",
           None,
           Vector(
-            VonMember("num", VonInt(num))))
+            VonMember("life", VonStr(life.toString))))
       }
       case UnnamedLocalNameT(codeLocation) => {
         VonObject(

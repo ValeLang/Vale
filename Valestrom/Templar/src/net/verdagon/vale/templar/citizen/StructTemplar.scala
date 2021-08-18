@@ -286,6 +286,7 @@ class StructTemplar(
   // This does NOT make a constructor, because its so easy to just Construct2 it.
   def prototypeToAnonymousStruct(
     temputs: Temputs,
+    life: LocationInFunctionEnvironment,
     range: RangeS,
     prototype: PrototypeT):
   StructTT = {
@@ -299,19 +300,20 @@ class StructTemplar(
 
       val outerEnv = temputs.getEnvForFunctionSignature(prototype.toSignature)
       templateArgsLayer.prototypeToAnonymousStruct(
-        outerEnv, temputs, range, prototype, structFullName)
+        outerEnv, temputs, life, range, prototype, structFullName)
 //    })
   }
 
   // This doesnt make a constructor, but its easy enough to make manually.
   def prototypeToAnonymousSubstruct(
       temputs: Temputs,
+    life: LocationInFunctionEnvironment,
       range: RangeS,
       interfaceTT: InterfaceTT,
       prototype: PrototypeT):
   (StructTT, PrototypeT) = {
 //    profiler.newProfile("StructTemplar-prototypeToAnonymousSubstruct", prototype.toString + " " + interfaceTT.toString, () => {
-      val functionStructRef = prototypeToAnonymousStruct(temputs, range, prototype)
+      val functionStructRef = prototypeToAnonymousStruct(temputs, life, range, prototype)
       val functionStructType = CoordT(ShareT, ReadonlyT, functionStructRef)
 
       val lambdas = Vector(functionStructType)
@@ -410,6 +412,7 @@ class StructTemplar(
   def prototypeToAnonymousIFunctionSubstruct(
       env: IEnvironment,
       temputs: Temputs,
+    life: LocationInFunctionEnvironment,
       range: RangeS,
       prototype: PrototypeT):
   (InterfaceTT, StructTT, PrototypeT) = {
@@ -431,7 +434,7 @@ class StructTemplar(
 
       val (elementDropFunctionAsIFunctionSubstructStructRef, constructorPrototype) =
         prototypeToAnonymousSubstruct(
-          temputs, range, ifunction1InterfaceRef, prototype)
+          temputs, life, range, ifunction1InterfaceRef, prototype)
 
       (ifunction1InterfaceRef, elementDropFunctionAsIFunctionSubstructStructRef, constructorPrototype)
 //    })
@@ -457,6 +460,7 @@ object StructTemplar {
             destructorTemplar: DestructorTemplar,
             env: FunctionEnvironment,
             temputs: Temputs,
+            life: LocationInFunctionEnvironment,
             callRange: RangeS,
             originFunction: Option[FunctionA],
             paramCoords: Vector[ParameterT],
@@ -475,6 +479,7 @@ object StructTemplar {
             destructorTemplar: DestructorTemplar,
             env: FunctionEnvironment,
             temputs: Temputs,
+            life: LocationInFunctionEnvironment,
             callRange: RangeS,
             originFunction: Option[FunctionA],
             paramCoords: Vector[ParameterT],

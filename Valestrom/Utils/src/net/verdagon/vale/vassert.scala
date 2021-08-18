@@ -73,8 +73,8 @@ object vassertOne {
 }
 
 object vfail {
-  def apply(message: String): Nothing = {
-    throw new RuntimeException(message)
+  def apply(message: Object): Nothing = {
+    throw new RuntimeException(message.toString)
   }
   def apply(): Nothing = {
     vfail("fail!")

@@ -9,6 +9,18 @@ import scala.collection.immutable.Set
 
 class TemplarVirtualTests extends FunSuite with Matchers {
 
+  test("Basic IFunction1") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |import ifunction.ifunction1.*;
+        |
+        |fn main() int export {
+        |  f = IFunction1<mut, int, int>({_});
+        |  = (f)!(7);
+        |}
+      """.stripMargin)
+    val temputs = compile.expectTemputs()
+  }
   test("Downcast with as") {
     val compile = TemplarTestCompilation.test(
       """

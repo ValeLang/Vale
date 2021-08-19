@@ -210,7 +210,7 @@ object Scout {
   }
 
   private def scoutStruct(file: FileCoordinate, head: StructP): StructS = {
-    val StructP(range, NameP(_, structHumanName), attributesP, mutability, maybeIdentifyingRunes, maybeTemplateRulesP, StructMembersP(_, members)) = head
+    val StructP(range, NameP(_, structHumanName), attributesP, mutabilityPT, maybeIdentifyingRunes, maybeTemplateRulesP, StructMembersP(_, members)) = head
     val codeLocation = Scout.evalPos(file, range.begin)
     val structName = TopLevelCitizenDeclarationNameS(structHumanName, codeLocation)
 
@@ -243,13 +243,21 @@ object Scout {
       RuleScout.translateRulexes(structEnv, rate, structEnv.allUserDeclaredRunes(), templateRulesP) ++
       memberRules
 
+    val mutabilityST =
+      RuleScout.translateTemplex(structEnv, rate, structEnv.allUserDeclaredRunes(), mutabilityPT)
+    val predictedMutability =
+      mutabilityPT match {
+        case MutabilityPT(_, mutability) => Some(mutability)
+        case _ => None
+      }
+
     val mutabilityRune = rate.newImplicitRune()
     val rulesS =
       rulesWithoutMutabilityS :+
         EqualsSR(
           structRangeS,
           TemplexSR(RuneST(structRangeS, mutabilityRune)),
-          TemplexSR(MutabilityST(structRangeS, mutability)))
+          TemplexSR(mutabilityST))
 
     // We gather all the runes from the scouted rules to be consistent with the function scout.
     val allRunes = PredictorEvaluator.getAllRunes(identifyingRunes, rulesS, Vector.empty, None)
@@ -288,7 +296,7 @@ object Scout {
       attrsS,
       weakable,
       mutabilityRune,
-      Some(mutability),
+      predictedMutability,
       knowableValueRunes,
       identifyingRunes,
       localRunes,
@@ -306,7 +314,7 @@ object Scout {
   }
 
   private def scoutInterface(file: FileCoordinate, headP: InterfaceP): InterfaceS = {
-    val InterfaceP(range, NameP(_, interfaceHumanName), attributesP, mutability, maybeIdentifyingRunes, maybeRulesP, internalMethodsP) = headP
+    val InterfaceP(range, NameP(_, interfaceHumanName), attributesP, mutabilityPT, maybeIdentifyingRunes, maybeRulesP, internalMethodsP) = headP
     val codeLocation = Scout.evalPos(file, range.begin)
     val interfaceFullName = TopLevelCitizenDeclarationNameS(interfaceHumanName, codeLocation)
     val rulesP = maybeRulesP.toVector.flatMap(_.rules)
@@ -327,13 +335,21 @@ object Scout {
 
     val rulesWithoutMutabilityS = RuleScout.translateRulexes(interfaceEnv, ruleState, interfaceEnv.allUserDeclaredRunes(), rulesP)
 
+    val mutabilityST =
+      RuleScout.translateTemplex(interfaceEnv, ruleState, interfaceEnv.allUserDeclaredRunes(), mutabilityPT)
+    val predictedMutability =
+      mutabilityPT match {
+        case MutabilityPT(_, mutability) => Some(mutability)
+        case _ => None
+      }
+
     val mutabilityRune = ruleState.newImplicitRune()
     val rulesS =
       rulesWithoutMutabilityS :+
       EqualsSR(
         interfaceRangeS,
         TemplexSR(RuneST(interfaceRangeS, mutabilityRune)),
-        TemplexSR(MutabilityST(interfaceRangeS, mutability)))
+        TemplexSR(mutabilityST))
 
     // We gather all the runes from the scouted rules to be consistent with the function scout.
     val allRunes = PredictorEvaluator.getAllRunes(identifyingRunes, rulesS, Vector.empty, None)
@@ -365,7 +381,7 @@ object Scout {
         attrsS,
         weakable,
         mutabilityRune,
-        Some(mutability),
+        predictedMutability,
         knowableValueRunes,
         identifyingRunes,
         localRunes,

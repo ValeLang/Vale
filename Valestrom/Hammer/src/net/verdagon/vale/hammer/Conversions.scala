@@ -50,14 +50,6 @@ object Conversions {
     }
   }
 
-  def evaluateRefCountCategory(refCountCategory: t.RefCountCategory): m.RefCountCategory = {
-    refCountCategory match {
-      case t.MemberRefCount => m.MemberRefCount
-      case t.VariableRefCount => m.VariableRefCount
-      case t.RegisterRefCount => m.ArgumentRefCount
-    }
-  }
-
   def unevaluateOwnership(ownership: OwnershipH): m.OwnershipH = {
     ownership match {
       case OwnH => m.OwnH

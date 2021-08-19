@@ -149,6 +149,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
   test("Reports when we try to mutate an element in a runtime-sized array of finals") {
     val compile = TemplarTestCompilation.test(
       """
+        |import ifunction.ifunction1.*;
         |fn main() int export {
         |  arr = [*](10, {_});
         |  set arr[4] = 10;
@@ -167,6 +168,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
   test("Reports when we try to mutate an element in a static-sized array of finals") {
     val compile = TemplarTestCompilation.test(
       """
+        |import ifunction.ifunction1.*;
         |fn main() int export {
         |  arr = [10]({_});
         |  set arr[4] = 10;

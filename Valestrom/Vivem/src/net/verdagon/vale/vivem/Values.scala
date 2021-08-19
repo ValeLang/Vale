@@ -44,30 +44,15 @@ class Allocation(
     }
   }
 
-  private def getCategory(referrer: IObjectReferrer) = {
-    referrer match {
-      case VariableToObjectReferrer(_, _) => VariableRefCount
-      case MemberToObjectReferrer(_, _) => MemberRefCount
-      case RegisterToObjectReferrer(_, _) => RegisterRefCount
-      case ArgumentToObjectReferrer(_, _) => ArgumentRefCount
-    }
-  }
-
-  def getRefCount(category: RefCountCategory) = {
+  def getRefCount() = {
     referrers
       .toVector
-      .filter({ case (key, _) => getCategory(key) == category })
       .map(_._2)
       .sum
   }
 
-  def ensureRefCount(maybeCategoryFilter: Option[RefCountCategory], maybeOwnershipFilter: Option[Set[OwnershipH]], expectedNum: Int) = {
+  def ensureRefCount(maybeOwnershipFilter: Option[Set[OwnershipH]], expectedNum: Int) = {
     var referrers = this.referrers
-    referrers =
-      maybeCategoryFilter match {
-        case None => referrers
-        case Some(categoryFilter) => referrers.filter({ case (key, _) => getCategory(key) == categoryFilter })
-      }
     referrers =
       maybeOwnershipFilter match {
         case None => referrers
@@ -78,7 +63,6 @@ class Allocation(
       matchingReferrers.size == expectedNum,
       "Expected " +
         expectedNum + " of " +
-        maybeCategoryFilter.map(_.toString + " ").getOrElse("") +
         maybeOwnershipFilter.map(_.toString + " ").getOrElse("") +
         "but was " + matchingReferrers.size + ":\n" +
         matchingReferrers.mkString("\n"),

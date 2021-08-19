@@ -1,7 +1,7 @@
 package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.astronomer.OrderModules.orderModules
-import net.verdagon.vale.astronomer.builtins._
+//import net.verdagon.vale.astronomer.builtins._
 import net.verdagon.vale.astronomer.ruletyper._
 import net.verdagon.vale.parser.{CaptureP, FailedParse, FileP, ImmutableP, MutabilityP, MutableP}
 import net.verdagon.vale.scout.{ExportS, ExternS, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
@@ -153,7 +153,7 @@ object Astronomer {
       "bool" -> KindTypeSR,
       "float" -> KindTypeSR,
       "void" -> KindTypeSR,
-      "IFunction1" -> TemplateTypeSR(Vector(MutabilityTypeSR, CoordTypeSR, CoordTypeSR), KindTypeSR),
+//      "IFunction1" -> TemplateTypeSR(Vector(MutabilityTypeSR, CoordTypeSR, CoordTypeSR), KindTypeSR),
       "Array" -> TemplateTypeSR(Vector(MutabilityTypeSR, VariabilityTypeSR, CoordTypeSR), KindTypeSR))
 
   def translateRuneType(tyype: ITypeSR): ITemplataType = {
@@ -724,11 +724,7 @@ object Astronomer {
 //      Printing.printlnBool,
 //      Printing.printlnStr)
 
-  val wrapperFunctions =
-    Arrays.makeArrayFunctions() ++
-    Vector(
-      RefCounting.checkmemberrc,
-      RefCounting.checkvarrc)
+//  val wrapperFunctions = Arrays.makeArrayFunctions()
 
   def runAstronomer(separateProgramsS: FileCoordinateMap[ProgramS]):
   Either[PackageCoordinateMap[ProgramA], ICompileErrorA] = {
@@ -749,8 +745,8 @@ object Astronomer {
 //    val orderedModules = orderModules(mergedProgramS)
 
     try {
-      val suppliedFunctions = wrapperFunctions
-      val suppliedInterfaces = Vector(IFunction1.interface)
+      val suppliedFunctions = Vector()
+      val suppliedInterfaces = Vector()
       val ProgramA(structsA, interfacesA, implsA, functionsA, exportsA) =
         Astronomer.translateProgram(
           mergedProgramS, primitives, suppliedFunctions, suppliedInterfaces)

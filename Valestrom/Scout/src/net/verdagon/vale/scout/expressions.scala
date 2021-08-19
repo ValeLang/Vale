@@ -108,23 +108,6 @@ case class ArgLookupSE(range: RangeS, index: Int) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
 }
 
-case class CheckRefCountSE(
-  range: RangeS,
-    refExpr: IExpressionSE,
-    category: RefCountCategory,
-    numExpr: IExpressionSE) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
-}
-// The type of ref count that an object might have. Used with the CheckRefCountH
-// instruction for counting how many references of a certain type there are.
-sealed trait RefCountCategory
-// Used to count how many variables are refering to an object.
-case object VariableRefCount extends RefCountCategory
-// Used to count how many members are refering to an object.
-case object MemberRefCount extends RefCountCategory
-// Used to count how many registers are refering to an object.
-case object RegisterRefCount extends RefCountCategory
-
  // These things will be separated by semicolons, and all be joined in a block
 case class RepeaterBlockSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE {
   override def hashCode(): Int = vcurious()

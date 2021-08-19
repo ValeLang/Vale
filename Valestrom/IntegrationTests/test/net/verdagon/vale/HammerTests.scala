@@ -40,10 +40,10 @@ class HammerTests extends FunSuite with Matchers {
   test("Two templated structs make it into hamuts") {
     val compile = RunCompilation.test(
       """
-        |interface MyOption<T> imm rules(T Ref) { }
-        |struct MyNone<T> imm rules(T Ref) { }
+        |interface MyOption<T> rules(T Ref) imm { }
+        |struct MyNone<T> rules(T Ref) imm { }
         |impl<T> MyOption<T> for MyNone<T>;
-        |struct MySome<T> imm rules(T Ref) { value T; }
+        |struct MySome<T> rules(T Ref) imm { value T; }
         |impl<T> MyOption<T> for MySome<T>;
         |
         |fn main(a *MySome<int>, b *MyNone<int>) {}

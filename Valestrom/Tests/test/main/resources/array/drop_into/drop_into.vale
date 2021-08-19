@@ -1,0 +1,4 @@
+
+fn drop_into<M, V, S, E, F>(arr [<M, V> S * E], consumer F) void extern(vale_drop_into_static_sized_array);
+
+fn drop_into<M, V, E, F>(arr Array<M, V, E>, consumer F) void extern(vale_drop_into_runtime_sized_array);

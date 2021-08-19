@@ -150,30 +150,6 @@ object ExpressionVivem {
 
         NodeContinue(ref)
       }
-      case CheckRefCountH(objExpr, category, numExpr) => {
-
-        val objRef =
-          executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), objExpr) match {
-            case r @ NodeReturn(_) => return r
-            case NodeContinue(r) => r
-          }
-
-        val numRef =
-          executeNode(programH, stdin, stdout, heap, expressionId.addStep(1), numExpr) match {
-            case r @ NodeReturn(_) => return r
-            case NodeContinue(r) => r
-          }
-
-        val num =
-          heap.dereference(numRef) match {
-            case IntV(n, 32) => n.toInt
-          }
-        heap.ensureRefCount(objRef, Some(category), None, num)
-
-        discard(programH, heap, stdout, stdin, callId, objExpr.resultType, objRef)
-        discard(programH, heap, stdout, stdin, callId, numExpr.resultType, numRef)
-        NodeContinue(makeVoid(programH, heap, callId))
-      }
       case BlockH(sourceExpr) => {
         executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr)
       }
@@ -209,7 +185,7 @@ object ExpressionVivem {
           structReference)
 
         // DDSOT
-        heap.ensureRefCount(structReference, None, Some(Set(OwnH, BorrowH)), 0)
+        heap.ensureRefCount(structReference, Some(Set(OwnH, BorrowH)), 0)
 
         val oldMemberReferences = heap.destructure(structReference)
 
@@ -231,7 +207,7 @@ object ExpressionVivem {
         heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId, arrReference.ownership), arrReference)
 
         if (arrExpr.resultType.ownership == OwnH) {
-          heap.ensureRefCount(arrReference, None, None, 0)
+          heap.ensureRefCount(arrReference, None, 0)
         } else {
           // Not doing
           //   heap.ensureTotalRefCount(arrReference, 0)
@@ -848,7 +824,7 @@ object ExpressionVivem {
         // Temporarily reduce to 0. We do this instead of ensure(1) to better detect a bug
         // where there might be one different kind of referrer.
         heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
-        heap.ensureRefCount(arrayReference, None, None, 0)
+        heap.ensureRefCount(arrayReference, None, 0)
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
 
         val ssaDefM = programH.lookupStaticSizedArray(arrayExpr.resultType.kind)
@@ -927,7 +903,7 @@ object ExpressionVivem {
         // Temporarily reduce to 0. We do this instead of ensure(1) to better detect a bug
         // where there might be one different kind of referrer.
         heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
-        heap.ensureRefCount(arrayReference, None, None, 0)
+        heap.ensureRefCount(arrayReference, None, 0)
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
 
         val size =

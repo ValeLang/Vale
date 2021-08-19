@@ -305,15 +305,6 @@ object VonHammer {
     }
   }
 
-  def vonifyRefCountCategory(category: m.RefCountCategory): IVonData = {
-    category match {
-      case m.VariableRefCount => VonObject("VariableRefCount", None, Vector())
-      case m.MemberRefCount => VonObject("MemberRefCount", None, Vector())
-      case m.ArgumentRefCount => VonObject("ArgumentRefCount", None, Vector())
-      case m.RegisterRefCount => VonObject("RegisterRefCount", None, Vector())
-    }
-  }
-
   def vonifyStructMember(structMemberH: StructMemberH): IVonData = {
     val StructMemberH(name, variability, tyype) = structMemberH
 
@@ -556,17 +547,6 @@ object VonHammer {
           Vector(
             VonMember("sourceExpr", vonifyExpression(refExpression)),
             VonMember("targetPermission", vonifyPermission(targetPermission))))
-      }
-      case CheckRefCountH(refExpr, category, numExpr) => {
-        VonObject(
-          "CheckRefCount",
-          None,
-          Vector(
-            VonMember("refExpr", vonifyExpression(refExpr)),
-            VonMember(
-              "category",
-              vonifyRefCountCategory(category)),
-            VonMember("numExpr", vonifyExpression(numExpr))))
       }
       case DestroyStaticSizedArrayIntoFunctionH(arrayExpr, consumerExpr, consumerMethod, arrayElementType, arraySize) => {
         VonObject(

@@ -931,15 +931,3 @@ case class DestroyTE(
 //    Vector(this).collect(func) ++ expr.all(func)
 //  }
 //}
-
-case class CheckRefCountTE(
-    refExpr: ReferenceExpressionTE,
-    category: types.RefCountCategory,
-    numExpr: ReferenceExpressionTE) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
-  override def resultRegister = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
-
-  def all[T](func: PartialFunction[QueriableT, T]): Vector[T] = {
-    Vector(this).collect(func) ++ refExpr.all(func) ++ numExpr.all(func)
-  }
-}

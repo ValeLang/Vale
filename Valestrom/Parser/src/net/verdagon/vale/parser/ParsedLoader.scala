@@ -150,7 +150,7 @@ object ParsedLoader {
       loadRange(getObjectField(jobj, "range")),
       loadName(getObjectField(jobj, "name")),
       getArrayField(jobj, "attributes").map(expectObject).map(loadCitizenAttribute),
-      loadMutability(getObjectField(jobj, "mutability")),
+      loadTemplex(getObjectField(jobj, "mutability")),
       loadOptionalObject(getObjectField(jobj, "identifyingRunes"), loadIdentifyingRunes),
       loadOptionalObject(getObjectField(jobj, "templateRules"), loadTemplateRules),
       loadStructMembers(getObjectField(jobj, "members")))
@@ -161,7 +161,7 @@ object ParsedLoader {
       loadRange(getObjectField(topLevelThing, "range")),
       loadName(getObjectField(topLevelThing, "name")),
       getArrayField(topLevelThing, "attributes").map(expectObject).map(loadCitizenAttribute),
-      loadMutability(getObjectField(topLevelThing, "mutability")),
+      loadTemplex(getObjectField(topLevelThing, "mutability")),
       loadOptionalObject(getObjectField(topLevelThing, "maybeIdentifyingRunes"), loadIdentifyingRunes),
       loadOptionalObject(getObjectField(topLevelThing, "templateRules"), loadTemplateRules),
       getArrayField(topLevelThing, "members").map(expectObject).map(loadFunction))

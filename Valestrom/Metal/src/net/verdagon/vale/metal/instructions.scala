@@ -715,35 +715,6 @@ case class LockWeakH(
   noneConstructor: PrototypeH,
 ) extends ExpressionH[KindH]
 
-// Only used for the VM, or a debug mode. Checks that the reference count
-// is as we expected.
-// This instruction can be safely ignored, it's mainly here for tests.
-case class CheckRefCountH(
-  // Expression containing the reference whose ref count we'll measure.
-  refExpression: ExpressionH[KindH],
-  // The type of ref count to check.
-  category: RefCountCategory,
-  // Expression containing a number, so we can assert it's equal to the object's
-  // ref count.
-  numExpression: ExpressionH[IntH]
-) extends ExpressionH[StructRefH] {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  vassert(numExpression.resultType.kind == IntH.i32)
-
-  override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
-}
-// The type of ref count that an object might have. Used with the CheckRefCountH
-// instruction for counting how many references of a certain type there are.
-sealed trait RefCountCategory
-// Used to count how many variables are refering to an object.
-case object VariableRefCount extends RefCountCategory
-// Used to count how many members are refering to an object.
-case object MemberRefCount extends RefCountCategory
-// Used to count how many arguments are refering to an object.
-case object ArgumentRefCount extends RefCountCategory
-// Used to count how many registers are refering to an object.
-case object RegisterRefCount extends RefCountCategory
-
 // See DINSIE for why this isn't three instructions, and why we don't have the
 // destructor prototype in it.
 case class DiscardH(sourceExpression: ExpressionH[KindH]) extends ExpressionH[StructRefH] {

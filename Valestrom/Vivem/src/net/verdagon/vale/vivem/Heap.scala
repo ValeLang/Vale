@@ -417,14 +417,14 @@ class Heap(in_vivemDout: PrintStream) {
     newRefCount
   }
 
-  def getRefCount(reference: ReferenceV, category: RefCountCategory): Int = {
+  def getRefCount(reference: ReferenceV): Int = {
     if (reference.ownership == WeakH) {
       vassert(containsLiveOrUndeadObject(reference.allocId))
     } else {
       vassert(containsLiveObject(reference.allocId))
     }
     val allocation = objectsById.get(reference.allocId)
-    allocation.getRefCount(category)
+    allocation.getRefCount()
   }
 
   def getTotalRefCount(reference: ReferenceV): Int = {
@@ -437,10 +437,10 @@ class Heap(in_vivemDout: PrintStream) {
     allocation.getTotalRefCount(None)
   }
 
-  def ensureRefCount(reference: ReferenceV, categoryFilter: Option[RefCountCategory], ownershipFilter: Option[Set[OwnershipH]], expectedNum: Int) = {
+  def ensureRefCount(reference: ReferenceV, ownershipFilter: Option[Set[OwnershipH]], expectedNum: Int) = {
     vassert(containsLiveObject(reference.allocId))
     val allocation = objectsById.get(reference.allocId)
-    allocation.ensureRefCount(categoryFilter, ownershipFilter, expectedNum)
+    allocation.ensureRefCount(ownershipFilter, expectedNum)
   }
 
   def add(ownership: OwnershipH, location: LocationH, permission: PermissionH, kind: KindV): ReferenceV = {

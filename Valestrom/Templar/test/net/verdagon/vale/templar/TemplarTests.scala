@@ -480,8 +480,8 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import panicutils.*;
-        |interface MyOption<T> imm rules(T Ref) { }
-        |struct MySome<T> imm rules(T Ref) { value T; }
+        |interface MyOption<T> rules(T Ref) imm { }
+        |struct MySome<T> rules(T Ref) imm { value T; }
         |impl<T> MyOption<T> for MySome<T>;
         |fn moo(a MySome<int>) { }
         |fn main() export { moo(__pretend<MySome<int>>()); }
@@ -719,7 +719,7 @@ class TemplarTests extends FunSuite with Matchers {
   test("Templated imm struct") {
     val compile = TemplarTestCompilation.test(
       """
-        |struct ListNode<T> imm rules(T Ref) {
+        |struct ListNode<T> rules(T Ref) imm {
         |  tail ListNode<T>;
         |}
         |fn main(a ListNode<int>) {}
@@ -746,6 +746,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import array.make.*;
+        |import ifunction.ifunction1.*;
         |
         |fn main() int export {
         |  a = MakeArray(11, {_});
@@ -920,6 +921,7 @@ class TemplarTests extends FunSuite with Matchers {
   test("Reports when exported RSA depends on non-exported element") {
     val compile = TemplarTestCompilation.test(
       """
+        |import ifunction.ifunction1.*;
         |export Array<imm, final, Raza> as RazaArray;
         |struct Raza imm { }
         |""".stripMargin)
@@ -928,9 +930,25 @@ class TemplarTests extends FunSuite with Matchers {
     }
   }
 
+  test("Checks that we stored a borrowed temporary in a local") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |struct Muta { }
+        |fn doSomething(m &Muta, i int) {}
+        |fn main() export {
+        |  doSomething(&Muta(), 1)
+        |}
+      """.stripMargin)
+
+    // Should be a temporary for this object
+    compile.expectTemputs().lookupFunction("main")
+      .allOf(classOf[LetAndLendTE]).size shouldEqual 1
+  }
+
   test("Reports when exported SSA depends on non-exported element") {
     val compile = TemplarTestCompilation.test(
       """
+        |import ifunction.ifunction1.*;
         |export [<imm> 5 * Raza] as RazaArray;
         |struct Raza imm { }
         |""".stripMargin)

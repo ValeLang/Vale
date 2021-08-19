@@ -303,30 +303,6 @@ object ExpressionHammer {
         }
       }
 
-      case CheckRefCountTE(refExpr2, category, numExpr2) => {
-        val (refExprResultLine, refExprDeferreds) =
-          translate(hinputs, hamuts, currentFunctionHeader, locals, refExpr2)
-        val (refExprResultTypeH) =
-          TypeHammer.translateReference(hinputs, hamuts, refExpr2.resultRegister.reference);
-
-        val (numExprResultLine, numExprDeferreds) =
-          translate(hinputs, hamuts, currentFunctionHeader, locals, numExpr2)
-        val (numExprResultTypeH) =
-          TypeHammer.translateReference(hinputs, hamuts, refExpr2.resultRegister.reference);
-
-        val checkRefCountH =
-            CheckRefCountH(
-              refExprResultLine,
-              Conversions.evaluateRefCountCategory(category),
-              numExprResultLine.expectIntAccess())
-
-        val checkRefCountAndDeferredsH =
-            translateDeferreds(
-              hinputs, hamuts, currentFunctionHeader, locals, checkRefCountH, numExprDeferreds ++ refExprDeferreds)
-
-        (checkRefCountAndDeferredsH, Vector.empty)
-      }
-
       case up @ InterfaceToInterfaceUpcastTE(innerExpr, targetInterfaceRef2) => {
         val targetPointerType2 = up.resultRegister.reference;
         val sourcePointerType2 = innerExpr.resultRegister.reference

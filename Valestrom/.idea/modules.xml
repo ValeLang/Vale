@@ -13,6 +13,7 @@
       <module fileurl="file://$PROJECT_DIR$/Metal/Metal.iml" filepath="$PROJECT_DIR$/Metal/Metal.iml" />
       <module fileurl="file://$PROJECT_DIR$/Parser/Parser.iml" filepath="$PROJECT_DIR$/Parser/Parser.iml" />
       <module fileurl="file://$PROJECT_DIR$/Scout/Scout.iml" filepath="$PROJECT_DIR$/Scout/Scout.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Solver/Solver.iml" filepath="$PROJECT_DIR$/Solver/Solver.iml" />
       <module fileurl="file://$PROJECT_DIR$/Templar/Templar.iml" filepath="$PROJECT_DIR$/Templar/Templar.iml" />
       <module fileurl="file://$PROJECT_DIR$/Templata/Templata.iml" filepath="$PROJECT_DIR$/Templata/Templata.iml" />
       <module fileurl="file://$PROJECT_DIR$/Tests/Tests.iml" filepath="$PROJECT_DIR$/Tests/Tests.iml" />

@@ -3,12 +3,13 @@ package net.verdagon.vale.templar;
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.hinputs.Hinputs
+import net.verdagon.vale.parser.UseP
 import net.verdagon.vale.scout.{CodeLocationS, ICompileErrorS, ITemplexS, ProgramS, RangeS}
 import net.verdagon.vale.templar.EdgeTemplar.{FoundFunction, NeededOverride, PartialEdgeT}
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
 import net.verdagon.vale.templar.citizen.{AncestorHelper, IAncestorHelperDelegate, IStructTemplarDelegate, StructTemplar}
 import net.verdagon.vale.templar.env._
-import net.verdagon.vale.templar.expression.{ExpressionTemplar, IExpressionTemplarDelegate}
+import net.verdagon.vale.templar.expression.{ExpressionTemplar, IExpressionTemplarDelegate, LocalHelper}
 import net.verdagon.vale.templar.types.{CoordT, _}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.function.{BuiltInFunctions, DestructorTemplar, FunctionTemplar, FunctionTemplarCore, IFunctionTemplarDelegate, VirtualTemplar}
@@ -17,6 +18,7 @@ import net.verdagon.vale.templar.infer.IInfererDelegate
 import scala.collection.immutable.{List, ListMap, Map, Set}
 import scala.collection.mutable
 import scala.util.control.Breaks._
+
 trait IFunctionGenerator {
   def generate(
     // These serve as the API that a function generator can use.
@@ -25,6 +27,7 @@ trait IFunctionGenerator {
     functionTemplarCore: FunctionTemplarCore,
     structTemplar: StructTemplar,
     destructorTemplar: DestructorTemplar,
+    arrayTemplar: ArrayTemplar,
     env: FunctionEnvironment,
     temputs: Temputs,
     life: LocationInFunctionEnvironment,
@@ -76,6 +79,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
           functionTemplarCore: FunctionTemplarCore,
           structTemplar: StructTemplar,
           destructorTemplar: DestructorTemplar,
+          arrayTemplar: ArrayTemplar,
           namedEnv: FunctionEnvironment,
           temputs: Temputs,
           life: LocationInFunctionEnvironment,
@@ -94,12 +98,79 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
           header
         }
       }) +
+      ("vale_static_sized_array_drop_into" ->
+        new IFunctionGenerator {
+          override def generate(
+            functionTemplarCore: FunctionTemplarCore,
+            structTemplar: StructTemplar,
+            destructorTemplar: DestructorTemplar,
+            arrayTemplar: ArrayTemplar,
+            namedEnv: FunctionEnvironment,
+            temputs: Temputs,
+            life: LocationInFunctionEnvironment,
+            callRange: RangeS,
+            maybeOriginFunction1: Option[FunctionA],
+            paramCoords: Vector[ParameterT],
+            maybeReturnType2: Option[CoordT]):
+          (FunctionHeaderT) = {
+            val header =
+              FunctionHeaderT(namedEnv.fullName, Vector.empty, paramCoords, maybeReturnType2.get, maybeOriginFunction1)
+            temputs.declareFunctionReturnType(header.toSignature, header.returnType)
+            val fate = FunctionEnvironmentBox(namedEnv)
+            temputs.addFunction(
+              FunctionT(
+                header,
+                BlockTE(
+                  ReturnTE(
+                    arrayTemplar.evaluateDestroyStaticSizedArrayIntoCallable(
+                      temputs,
+                      fate,
+                      callRange,
+                      ArgLookupTE(0, paramCoords(0).tyype),
+                      ArgLookupTE(1, paramCoords(1).tyype))))))
+            header
+          }
+        }) +
+    ("vale_runtime_sized_array_drop_into" ->
+      new IFunctionGenerator {
+        override def generate(
+          functionTemplarCore: FunctionTemplarCore,
+          structTemplar: StructTemplar,
+          destructorTemplar: DestructorTemplar,
+          arrayTemplar: ArrayTemplar,
+          namedEnv: FunctionEnvironment,
+          temputs: Temputs,
+          life: LocationInFunctionEnvironment,
+          callRange: RangeS,
+          maybeOriginFunction1: Option[FunctionA],
+          paramCoords: Vector[ParameterT],
+          maybeReturnType2: Option[CoordT]):
+        (FunctionHeaderT) = {
+          val header =
+            FunctionHeaderT(namedEnv.fullName, Vector.empty, paramCoords, maybeReturnType2.get, maybeOriginFunction1)
+          temputs.declareFunctionReturnType(header.toSignature, header.returnType)
+          val fate = FunctionEnvironmentBox(namedEnv)
+          temputs.addFunction(
+            FunctionT(
+              header,
+              BlockTE(
+                ReturnTE(
+                  arrayTemplar.evaluateDestroyRuntimeSizedArrayIntoCallable(
+                    temputs,
+                    fate,
+                    callRange,
+                    ArgLookupTE(0, paramCoords(0).tyype),
+                    ArgLookupTE(1, paramCoords(1).tyype))))))
+          header
+        }
+      }) +
     ("vale_as_subtype" ->
       new IFunctionGenerator {
         override def generate(
           functionTemplarCore: FunctionTemplarCore,
           structTemplar: StructTemplar,
           destructorTemplar: DestructorTemplar,
+          arrayTemplar: ArrayTemplar,
           namedEnv: FunctionEnvironment,
           temputs: Temputs,
           life: LocationInFunctionEnvironment,
@@ -462,7 +533,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
       maybeRetCoord: Option[CoordT]):
     FunctionHeaderT = {
       generator.generate(
-        functionTemplarCore, structTemplar, destructorTemplar, fullEnv, temputs, life, callRange, originFunction, paramCoords, maybeRetCoord)
+        functionTemplarCore, structTemplar, destructorTemplar, arrayTemplar, fullEnv, temputs, life, callRange, originFunction, paramCoords, maybeRetCoord)
     }
   })
   val overloadTemplar: OverloadTemplar = new OverloadTemplar(opts, profiler, templataTemplar, inferTemplar, functionTemplar)

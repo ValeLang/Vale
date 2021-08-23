@@ -53,13 +53,13 @@ def main():
         if not args.dry_run:
             for workflow_file, outfile in zip(workflow_files, outfiles):
                 os.system(
-                    "yq e \""
-                    "explode(.) | "
-                    "del(.anchors) | "
-                    ". headComment="
-                    "\"\"Do_not_edit_directly."
-                    "_See_readme_section_editing_github_workflows\"\""
-                    "\""
+                    r'yq e "'
+                    r"explode(.) | "
+                    r"del(.anchors) | "
+                    r". headComment="
+                    r'\"Do_not_edit_directly.'
+                    r'_See_readme_section_editing_github_workflows\"'
+                    r'"'
                     f" {workflow_file} > {github_dir}\\workflows\\{outfile}")
 
 

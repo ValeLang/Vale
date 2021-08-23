@@ -1,7 +1,7 @@
 package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.parser.{ConstraintP, LendConstraintP, LendWeakP, LoadAsP, MoveP, MutabilityP, OwnershipP, VariabilityP, WeakP}
-import net.verdagon.vale.scout.{CodeLocationS, ITemplexS, IVariableUseCertainty, LocalS, RangeS, RefCountCategory}
+import net.verdagon.vale.scout.{CodeLocationS, ITemplexS, IVariableUseCertainty, LocalS, RangeS}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.IRulexSR
 import net.verdagon.vale.{vassert, vcurious, vimpl, vpass, vwat}
@@ -86,12 +86,6 @@ case class StaticSizedArrayFromCallableAE(
 
 case class ArgLookupAE(range: RangeS, index: Int) extends IExpressionAE { override def hashCode(): Int = vcurious() }
 
-case class CheckRefCountAE(
-  range: RangeS,
-  refExpr: IExpressionAE,
-  category: RefCountCategory,
-  numExpr: IExpressionAE) extends IExpressionAE { override def hashCode(): Int = vcurious() }
-
  // These things will be separated by semicolons, and all be joined in a block
 case class RepeaterBlockAE(range: RangeS, expression: IExpressionAE) extends IExpressionAE { override def hashCode(): Int = vcurious() }
 
@@ -117,12 +111,6 @@ case class StaticArrayFromCallableAE(
   sizeRune: IRuneA,
   maybeMutabilityRune: Option[IRuneA],
   maybeVariabilityRune: Option[IRuneA],
-  callable: IExpressionAE
-) extends IExpressionAE { override def hashCode(): Int = vcurious() }
-
-case class DestroyArrayIntoCallableAE(
-  range: RangeS,
-  array: IExpressionAE,
   callable: IExpressionAE
 ) extends IExpressionAE { override def hashCode(): Int = vcurious() }
 

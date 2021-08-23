@@ -212,43 +212,6 @@ class OwnershipTests extends FunSuite with Matchers {
 
   // test that when we borrow an owning, we hoist its destructor to the end.
 
-  test("Checks that we stored a borrowed temporary in a local") {
-    // Checking for 2 because one for the temporary, and one inside the
-    // templated wrapper function.
-    val compile = RunCompilation.test(
-      """
-        |struct Muta { }
-        |fn main() export {
-        |  __checkvarrc(&Muta(), 1)
-        |}
-      """.stripMargin)
-
-    // Should be a temporary for this object
-    compile.expectTemputs().lookupFunction("main")
-            .allOf(classOf[LetAndLendTE]).size shouldEqual 1
-
-    compile.run(Vector())
-  }
-
-  test("Var RC for one local") {
-    val compile = RunCompilation.test(
-      """
-        |struct Muta { }
-        |fn main() export {
-        |  a = Muta();
-        |  __checkvarrc(&a, 1);
-        |}
-      """.stripMargin)
-
-    val main = compile.expectTemputs().lookupFunction("main")
-    // Only one variable containing a Muta
-    main.only({
-      case LetNormalTE(ReferenceLocalVariableT(_,FinalT,CoordT(OwnT,ReadwriteT,StructTT(FullNameT(_, Vector(),CitizenNameT("Muta",Vector()))))),_) =>
-    })
-
-    compile.run(Vector())
-  }
-
   test("Unstackifies local vars") {
     val compile = RunCompilation.test(
       """

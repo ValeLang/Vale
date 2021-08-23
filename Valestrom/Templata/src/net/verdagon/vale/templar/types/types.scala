@@ -618,13 +618,3 @@ object TemplataTypeListComparator extends Ordering[Vector[ITemplata]] {
     }
   }
 }
-
-// The type of ref count that an object might have. Used with the CheckRefCountH
-// instruction for counting how many references of a certain type there are.
-sealed trait RefCountCategory
-// Used to count how many variables are refering to an object.
-case object VariableRefCount extends RefCountCategory
-// Used to count how many members are refering to an object.
-case object MemberRefCount extends RefCountCategory
-// Used to count how many registers are refering to an object.
-case object RegisterRefCount extends RefCountCategory

@@ -1,18 +1,18 @@
 import v.builtins.opt.*;
 import printutils.*;
 
-interface MyOption<T> imm rules(T Ref) { }
+interface MyOption<T> rules(T Ref) imm { }
 
-struct MySome<T> imm rules(T Ref) {
+struct MySome<T> rules(T Ref) imm {
   value T;
 }
 impl<T> MyOption<T> for MySome<T>;
 
-struct MyNone<T> imm rules(T Ref) { }
+struct MyNone<T> rules(T Ref) imm { }
 impl<T> MyOption<T> for MyNone<T>;
 
 
-struct MyList<T> imm rules(T Ref) {
+struct MyList<T> rules(T Ref) imm {
   value T;
   next *MyOption<*MyList<T>>;
 }

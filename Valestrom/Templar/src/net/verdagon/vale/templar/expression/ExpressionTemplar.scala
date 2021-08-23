@@ -590,13 +590,6 @@ class ExpressionTemplar(
           val mutate2 = MutateTE(destinationExpr2, convertedSourceExpr2);
           (mutate2, returnsFromSource ++ returnsFromDestination)
         }
-        case CheckRefCountAE(range, refExpr1, category, numExpr1) => {
-          val (refExpr2, returnsFromRef) =
-            evaluateAndCoerceToReferenceExpression(temputs, fate, life + 0, refExpr1);
-          val (numExpr2, returnsFromNum) =
-            evaluateAndCoerceToReferenceExpression(temputs, fate, life + 1, numExpr1);
-          (CheckRefCountTE(refExpr2, Conversions.evaluateRefCountCategory(category), numExpr2), returnsFromRef ++ returnsFromNum)
-        }
         case TemplateSpecifiedLookupAE(range, name, templateArgs1, targetOwnership) => {
           // So far, we only allow these when they're immediately called like functions
           throw CompileErrorExceptionT(RangedInternalErrorT(range, "Raw template specified lookups unimplemented!"))
@@ -950,27 +943,6 @@ class ExpressionTemplar(
           val (arrayExpr2, returnsFromArrayExpr) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, life, arrayExprA);
           (ArrayLengthTE(arrayExpr2), returnsFromArrayExpr)
-        }
-        case DestroyArrayIntoCallableAE(range, arrAE, consumerAE) => {
-          val (arrTE, returnsFromArr) =
-            evaluateAndCoerceToReferenceExpression(temputs, fate, life + 0, arrAE);
-          val (consumerTE, returnsFromConsumer) =
-            evaluateAndCoerceToReferenceExpression(temputs, fate, life + 1, consumerAE);
-          val destroyTE =
-            arrTE.kind match {
-              case StaticSizedArrayTT(_, _) => {
-                arrayTemplar.evaluateDestroyStaticSizedArrayIntoCallable(
-                  temputs, fate, range, arrTE, consumerTE)
-              }
-              case RuntimeSizedArrayTT(_) => {
-                arrayTemplar.evaluateDestroyRuntimeSizedArrayIntoCallable(
-                  temputs, fate, range, arrTE, consumerTE)
-              }
-              case _ => {
-                throw CompileErrorExceptionT(RangedInternalErrorT(range, "DestroyArrayIntoCallableAE given a non-array!"))
-              }
-            }
-          (destroyTE, returnsFromArr ++ returnsFromConsumer)
         }
         case DestructAE(range, innerAE) => {
           val (innerExpr2, returnsFromArrayExpr) =

@@ -63,7 +63,7 @@ case class StructP(
   range: Range,
   name: NameP,
   attributes: Vector[ICitizenAttributeP],
-  mutability: MutabilityP,
+  mutability: ITemplexPT,
   identifyingRunes: Option[IdentifyingRunesP],
   templateRules: Option[TemplateRulesP],
   members: StructMembersP) { override def hashCode(): Int = vcurious() }
@@ -80,13 +80,13 @@ case class StructMemberP(
   tyype: ITemplexPT) extends IStructContent { override def hashCode(): Int = vcurious() }
 
 case class InterfaceP(
-                       range: Range,
-                       name: NameP,
-                       attributes: Vector[ICitizenAttributeP],
-                       mutability: MutabilityP,
-                       maybeIdentifyingRunes: Option[IdentifyingRunesP],
-                       templateRules: Option[TemplateRulesP],
-                       members: Vector[FunctionP]) { override def hashCode(): Int = vcurious() }
+  range: Range,
+  name: NameP,
+  attributes: Vector[ICitizenAttributeP],
+  mutability: ITemplexPT,
+  maybeIdentifyingRunes: Option[IdentifyingRunesP],
+  templateRules: Option[TemplateRulesP],
+  members: Vector[FunctionP]) { override def hashCode(): Int = vcurious() }
 
 sealed trait IFunctionAttributeP
 case class AbstractAttributeP(range: Range) extends IFunctionAttributeP { override def hashCode(): Int = vcurious() }

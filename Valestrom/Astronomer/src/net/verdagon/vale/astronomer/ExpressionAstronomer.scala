@@ -80,11 +80,6 @@ object ExpressionAstronomer {
       }
       case blockS @ BlockSE(_, _, _) => translateBlock(env, astrouts, blockS)
       case ArgLookupSE(range, index) => (ArgLookupAE(range, index))
-      case CheckRefCountSE(range, refExprS, category, numExprS) => {
-        val refExprA = translateExpression(env, astrouts, refExprS)
-        val numExprA = translateExpression(env, astrouts, numExprS)
-        (CheckRefCountAE(range, refExprA, category, numExprA))
-      }
       case RepeaterBlockSE(range, exprS) => {
         val exprA = translateExpression(env, astrouts, exprS)
         (RepeaterBlockAE(range, exprA))

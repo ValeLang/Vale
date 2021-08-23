@@ -1,13 +1,13 @@
 
-interface I<T> imm rules(T Ref) { }
+interface I<T> rules(T Ref) imm { }
 
-interface J<T> imm rules(T Ref) { }
+interface J<T> rules(T Ref) imm { }
 impl<T> I<T> for J<T>;
 
-interface K<T> imm rules(T Ref) { }
+interface K<T> rules(T Ref) imm { }
 impl<T> J<T> for K<T>;
 
-struct L<T> imm rules(T Ref) { }
+struct L<T> rules(T Ref) imm { }
 impl<T> K<T> for L<T>;
 
 fn main() int export {

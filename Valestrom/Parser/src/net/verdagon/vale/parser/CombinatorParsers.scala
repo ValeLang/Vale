@@ -110,44 +110,46 @@ object CombinatorParsers
     structMember | (topLevelFunction ^^ StructMethodP)
   }
 
+  def citizenAttribute: Parser[ICitizenAttributeP] = {
+    pos ~ "export" ~ pos ^^ { case begin ~ _ ~ end => ExportP(Range(begin, end)) } |
+      pos ~ "weakable" ~ pos ^^ { case begin ~ _ ~ end => WeakableP(Range(begin, end)) } |
+      pos ~ "sealed" ~ pos ^^ { case begin ~ _ ~ end => SealedP(Range(begin, end)) }
+  }
+
   private[parser] def interface: Parser[InterfaceP] = {
     pos ~
         ("interface " ~> optWhite ~> exprIdentifier <~ optWhite) ~
         opt(identifyingRunesPR <~ optWhite) ~
         (repsep(citizenAttribute, white) <~ optWhite) ~
-        (opt("imm") <~ optWhite) ~
         (opt(templateRulesPR) <~ optWhite) ~
         // A hack to do region highlighting
-        (opt("'" ~> optWhite ~> exprIdentifier <~ optWhite) <~ "{" <~ optWhite) ~
+        opt("'" ~> optWhite ~> exprIdentifier <~ optWhite) ~
+        pos ~
+        (opt(templex) <~ optWhite) ~
+        (pos <~ "{" <~ optWhite) ~
         repsep(topLevelFunction, optWhite) ~
         (optWhite ~> "}" ~> pos) ^^ {
-      case begin ~ name ~ maybeIdentifyingRunes ~ seealed ~ imm ~ maybeTemplateRules ~ defaultRegion ~ members ~ end => {
-        val mutability = if (imm == Some("imm")) ImmutableP else MutableP
-        InterfaceP(Range(begin, end), name, seealed.toVector, mutability, maybeIdentifyingRunes, maybeTemplateRules, members.toVector)
+      case begin ~ name ~ maybeIdentifyingRunes ~ seealed ~ maybeTemplateRules ~ defaultRegion ~ mutabilityBegin ~ maybeMutability ~ mutabilityEnd ~ members ~ end => {
+        InterfaceP(Range(begin, end), name, seealed.toVector, maybeMutability.getOrElse(MutabilityPT(Range(mutabilityBegin, mutabilityEnd), MutableP)), maybeIdentifyingRunes, maybeTemplateRules, members.toVector)
       }
     }
-  }
-
-  def citizenAttribute: Parser[ICitizenAttributeP] = {
-    pos ~ "export" ~ pos ^^ { case begin ~ _ ~ end => ExportP(Range(begin, end)) } |
-    pos ~ "weakable" ~ pos ^^ { case begin ~ _ ~ end => WeakableP(Range(begin, end)) } |
-    pos ~ "sealed" ~ pos ^^ { case begin ~ _ ~ end => SealedP(Range(begin, end)) }
   }
 
   def struct: Parser[StructP] = {
     pos ~ ("struct" ~> optWhite ~> exprIdentifier <~ optWhite) ~
         opt(identifyingRunesPR <~ optWhite) ~
         (repsep(citizenAttribute, white) <~ optWhite) ~
-        (opt("imm") <~ optWhite) ~
         (opt(templateRulesPR) <~ optWhite) ~
         // A hack to do region highlighting
         opt("'" ~> optWhite ~> exprIdentifier <~ optWhite) ~
+        pos ~
+        (opt(templex) <~ optWhite) ~
         (pos <~ "{" <~ optWhite) ~
+        pos ~
         ("..." <~ optWhite ^^^ Vector.empty | repsep(structContent, optWhite)) ~
         (optWhite ~> "}" ~> pos) ^^ {
-      case begin ~ name ~ identifyingRunes ~ attributes ~ imm ~ maybeTemplateRules ~ defaultRegion ~ membersBegin ~ members ~ end => {
-        val mutability = if (imm == Some("imm")) ImmutableP else MutableP
-        StructP(Range(begin, end), name, attributes.toVector, mutability, identifyingRunes, maybeTemplateRules, StructMembersP(Range(membersBegin, end), members.toVector))
+      case begin ~ name ~ identifyingRunes ~ attributes ~ maybeTemplateRules ~ defaultRegion ~ mutabilityBegin ~ maybeMutability ~ mutabilityEnd ~ membersBegin ~ members ~ end => {
+        StructP(Range(begin, end), name, attributes.toVector, maybeMutability.getOrElse(MutabilityPT(Range(mutabilityBegin, mutabilityEnd), MutableP)), identifyingRunes, maybeTemplateRules, StructMembersP(Range(membersBegin, end), members.toVector))
       }
     }
   }

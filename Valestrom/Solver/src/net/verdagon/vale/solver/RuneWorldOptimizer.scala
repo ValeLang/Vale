@@ -5,9 +5,73 @@ import net.verdagon.vale.{solver, vassert, vassertSome, vfail, vimpl}
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
+trait IRunePuzzler[RuleID, Literal, Lookup] {
+  def getPuzzles(rulexAR: IRulexAR[Int, RuleID, Literal, Lookup]): Array[Array[Int]]
+}
+
+// Let's move this out to templar once we've finished migrating templar to it
+object TemplarPuzzler {
+  def apply[RuneID, RuleID, Literal, Lookup](
+    inputRule: IRulexAR[Int, RuleID, Literal, Lookup]
+  ): Array[Array[Int]] = {
+    inputRule match {
+      case LiteralAR(range, canonicalResultRune, value) => {
+        Array(Array())
+      }
+      case LookupAR(range, canonicalResultRune, name) => {
+        Array(Array())
+      }
+      case IsConcreteAR(range, canonicalArgRune) => {
+        Array(Array(canonicalArgRune))
+      }
+      case IsInterfaceAR(range, canonicalArgRune) => {
+        Array(Array(canonicalArgRune))
+      }
+      case IsStructAR(range, canonicalArgRune) => {
+        Array(Array(canonicalArgRune))
+      }
+      case CoerceToCoord(range, coordRune, kindRune) => {
+        Array(Array(kindRune))
+      }
+      case CallAR(range, canonicalResultRune, canonicalTemplateRune, canonicalArgRunes) => {
+        Array(Array(canonicalResultRune, canonicalTemplateRune), (Vector(canonicalTemplateRune) ++ canonicalArgRunes).toArray)
+      }
+      case CoordComponentsAR(range, canonicalCoordRune, canonicalOwnershipRune, canonicalPermissionRune, canonicalKindRune) => {
+        Array(Array(canonicalOwnershipRune, canonicalPermissionRune, canonicalKindRune), Array(canonicalCoordRune))
+      }
+      case CoordListAR(range, canonicalResultRune, canonicalElementRunes) => {
+        Array(Array(canonicalResultRune), canonicalElementRunes)
+      }
+      case AugmentAR(range, canonicalResultRune, literal, canonicalInnerRune) => {
+        Array(Array(canonicalResultRune), Array(canonicalInnerRune))
+      }
+      case IsaAR(range, canonicalSubRune, canonicalInterfaceRune) => {
+        Array(Array(vimpl()))
+      }
+      case KindComponentsAR(range, canonicalKindRune, canonicalMutabilityRune) => {
+        Array(Array(canonicalKindRune), Array(canonicalMutabilityRune))
+      }
+      case ManualSequenceAR(range, canonicalResultRune, canonicalElementRunes) => {
+        Array(Array(canonicalResultRune), canonicalElementRunes)
+      }
+      case OneOfAR(range, canonicalResultRune, possibilities) => {
+        Array(Array(canonicalResultRune))
+      }
+      case PrototypeAR(range, canonicalResultRune, name, canonicalParameterRunes, canonicalReturnRune) => {
+        Array(Array(canonicalResultRune), canonicalParameterRunes :+ canonicalReturnRune)
+      }
+      case RepeaterSequenceAR(range, canonicalResultRune, canonicalMutabilityRune, canonicalVariabilityRune, canonicalSizeRune, canonicalElementRune) => {
+        Array(Array(canonicalResultRune), Array(canonicalMutabilityRune, canonicalVariabilityRune, canonicalSizeRune, canonicalElementRune))
+      }
+      case _ => vfail()
+    }
+  }
+}
+
 object RuneWorldOptimizer {
   def optimize[RuleID, Literal, Lookup](
-    builder: RuneWorldBuilder[RuleID, Literal, Lookup]
+    builder: RuneWorldBuilder[RuleID, Literal, Lookup],
+    puzzler: IRunePuzzler[RuleID, Literal, Lookup]
   ): (mutable.HashMap[TentativeRune, Int], RuneWorldSolverState[RuleID, Literal, Lookup]) = {
     // Right now, the original runes are spaced out. Even if we have 8 original runes, their numbers might be
     // 3, 6, 14, 16, 19, 24, 27, 30.
@@ -31,22 +95,25 @@ object RuneWorldOptimizer {
       }
     })
 
-    val solverState = optimizeInner(builder.rules, runeToCanonicalRune, nextCanonicalRune)
+    val newRules = builder.rules.map(canonicalizeRule(_, runeToCanonicalRune)).toArray
+    val ruleIndexToPuzzles = newRules.map(TemplarPuzzler.apply)
+
+    val kindRuneToBoundingInterfaceRuneAsMap =
+      newRules.collect({ case IsaAR(_, sub, interface) => (sub, interface) }).toMap
+    val kindRuneToBoundingInterfaceRune =
+      (0 until nextCanonicalRune).map(rune => kindRuneToBoundingInterfaceRuneAsMap.getOrElse(rune, -1)).toArray
+
+    val solverState = optimizeInner(newRules, ruleIndexToPuzzles, nextCanonicalRune, kindRuneToBoundingInterfaceRune)
+
     (runeToCanonicalRune, solverState)
   }
 
   def optimizeInner[RuleID, Literal, Lookup](
-    inputRules: Iterable[IRulexAR[TentativeRune, RuleID, Literal, Lookup]],
-    runeToCanonicalRune: TentativeRune => Int,
+    newRules: Array[IRulexAR[Int, RuleID, Literal, Lookup]],
+    ruleIndexToPuzzles: Array[Array[Array[Int]]],
     numCanonicalRunes: Int,
+    kindRuneToBoundingInterfaceRune: Array[Int]
   ): RuneWorldSolverState[RuleID, Literal, Lookup] = {
-    val newRulesAndPuzzles = inputRules.map(optimizeRule(_, runeToCanonicalRune)).toArray
-    val (newRules, ruleIndexToPuzzles) = newRulesAndPuzzles.unzip
-    val kindRuneToBoundingInterfaceRuneAsMap =
-      newRules.collect({ case IsaAR(_, sub, interface) => (sub, interface) }).toMap
-    val kindRuneToBoundingInterfaceRune =
-      (0 until numCanonicalRunes).map(rune => kindRuneToBoundingInterfaceRuneAsMap.getOrElse(rune, -1)).toArray
-
     val puzzlesToRuleAndUnknownRunesAndIndexInNumUnknowns = ArrayBuffer[(Int, Array[Int], Int)]()
     val numUnknownsToPuzzles =
       Array(
@@ -55,7 +122,7 @@ object RuneWorldOptimizer {
         ArrayBuffer[Int](),
         ArrayBuffer[Int](),
         ArrayBuffer[Int]())
-    val ruleToPuzzles = newRules.map(_ => ArrayBuffer[Int]())
+    val ruleToPuzzles = newRules.map(_ => ArrayBuffer[Int]()).toArray
     val runeToPuzzles = (0 until numCanonicalRunes).map(_ => ArrayBuffer[Int]()).toArray
     ruleIndexToPuzzles.zipWithIndex.foreach({ case (puzzlesForRule, ruleIndex) =>
       puzzlesForRule.foreach(puzzleUnknownRunes => {
@@ -79,6 +146,10 @@ object RuneWorldOptimizer {
     val puzzleToIndexInNumUnknowns = puzzlesToRuleAndUnknownRunesAndIndexInNumUnknowns.map(_._3)
 //    val ruleToRunes = ruleToPuzzles.map(puzzles => puzzles.map(puzzleToUnknownRunes).flatten.toArray)
     val puzzleToSatisfied = puzzleToRule.indices.map(_ => false).toArray
+
+    puzzleToUnknownRunes.zipWithIndex.foreach({ case (unknownRunes, puzzle) =>
+      vassert(unknownRunes.length == unknownRunes.distinct.length)
+    })
 
     val runeWorld =
       RuneWorld[Int, RuleID, Literal, Lookup](
@@ -105,125 +176,84 @@ object RuneWorldOptimizer {
       }).toArray)
   }
 
-  def optimizeRule[RuneID, RuleID, Literal, Lookup](
+  def canonicalizeRule[RuneID, RuleID, Literal, Lookup](
     inputRule: IRulexAR[TentativeRune, RuleID, Literal, Lookup],
     runeToCanonicalRune: TentativeRune => Int
-  ): (IRulexAR[Int, RuleID, Literal, Lookup], Array[Array[Int]]) = {
+  ): IRulexAR[Int, RuleID, Literal, Lookup] = {
     inputRule match {
       case LiteralAR(range, uncanonicalResultRune, value) => {
         val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
-        (LiteralAR(range, canonicalResultRune, value), Array(Array()))
+        LiteralAR(range, canonicalResultRune, value)
       }
       case LookupAR(range, uncanonicalResultRune, name) => {
         val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
-        (LookupAR(range, canonicalResultRune, name), Array(Array()))
+        LookupAR(range, canonicalResultRune, name)
       }
-      //      case IntAR(range, uncanonicalResultRune, value) => {
-      //        val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
-      //        (IntAR(range, canonicalResultRune, value), Array(Array()))
-      //      }
-      //      case LocationAR(range, uncanonicalResultRune, location) => {
-      //        val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
-      //        (LocationAR(range, canonicalResultRune, location), Array(Array()))
-      //      }
-      //      case MutabilityAR(range, uncanonicalResultRune, mutability) => {
-      //        val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
-      //        (MutabilityAR(range, canonicalResultRune, mutability), Array(Array()))
-      //      }
-      //      case NameAR(range, uncanonicalResultRune, name) => {
-      //        val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
-      //        (NameAR(range, canonicalResultRune, name), Array(Array()))
-      //      }
-      //      case OwnershipAR(range, uncanonicalResultRune, ownership) => {
-      //        val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
-      //        (OwnershipAR(range, canonicalResultRune, ownership), Array(Array()))
-      //      }
-      //      case PermissionAR(range, uncanonicalResultRune, permission) => {
-      //        val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
-      //        (PermissionAR(range, canonicalResultRune, permission), Array(Array()))
-      //      }
-      //      case StringAR(range, uncanonicalResultRune, value) => {
-      //        val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
-      //        (StringAR(range, canonicalResultRune, value), Array(Array()))
-      //      }
-      //      case VariabilityAR(range, uncanonicalResultRune, variability) => {
-      //        val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
-      //        (VariabilityAR(range, canonicalResultRune, variability), Array(Array()))
-      //      }
-      //      case AbsoluteNameAR(range, uncanonicalResultRune, name) => {
-      //        val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
-      //        (AbsoluteNameAR(range, canonicalResultRune, name), Array(Array()))
-      //      }
-      //      case BoolAR(range, uncanonicalResultRune, value) => {
-      //        val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
-      //        (BoolAR(range, canonicalResultRune, value), Array(Array()))
-      //      }
-      case BuiltinCallAR(range, uncanonicalResultRune, name, args) => {
-        vimpl() // split into actual things
-        //            val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
-        //            (BoolAR(range, canonicalResultRune, value), Array(Array()))
+      case IsConcreteAR(range, uncanonicalRune) => {
+        val canonicalRune = runeToCanonicalRune(uncanonicalRune)
+        IsConcreteAR(range, canonicalRune)
+      }
+      case IsInterfaceAR(range, uncanonicalRune) => {
+        val canonicalRune = runeToCanonicalRune(uncanonicalRune)
+        IsInterfaceAR(range, canonicalRune)
+      }
+      case IsStructAR(range, uncanonicalRune) => {
+        val canonicalRune = runeToCanonicalRune(uncanonicalRune)
+        IsStructAR(range, canonicalRune)
+      }
+      case CoerceToCoord(range, uncanonicalCoordRune, uncanonicalKindRune) => {
+        val canonicalCoordRune = runeToCanonicalRune(uncanonicalCoordRune)
+        val canonicalKindRune = runeToCanonicalRune(uncanonicalKindRune)
+        CoerceToCoord(range, canonicalCoordRune, canonicalKindRune)
       }
       case CallAR(range, uncanonicalResultRune, uncanonicalTemplateRune, uncanonicalArgRunes) => {
         val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
         val canonicalTemplateRune = runeToCanonicalRune(uncanonicalTemplateRune)
         val canonicalArgRunes = uncanonicalArgRunes.map(runeToCanonicalRune).toArray
-        (CallAR(range, canonicalResultRune, canonicalTemplateRune, canonicalArgRunes), Array(Array(canonicalResultRune), canonicalArgRunes))
+        CallAR(range, canonicalResultRune, canonicalTemplateRune, canonicalArgRunes)
       }
       case CoordComponentsAR(range, uncanonicalCoordRune, uncanonicalOwnershipRune, uncanonicalPermissionRune, uncanonicalKindRune) => {
         val canonicalCoordRune = runeToCanonicalRune(uncanonicalCoordRune)
         val canonicalOwnershipRune = runeToCanonicalRune(uncanonicalOwnershipRune)
         val canonicalPermissionRune = runeToCanonicalRune(uncanonicalPermissionRune)
         val canonicalKindRune = runeToCanonicalRune(uncanonicalKindRune)
-        (
-          CoordComponentsAR(
-            range, canonicalCoordRune, canonicalOwnershipRune, canonicalPermissionRune, canonicalKindRune),
-          Array(
-            Array(canonicalOwnershipRune, canonicalPermissionRune, canonicalKindRune),
-            Array(canonicalCoordRune)))
+        CoordComponentsAR(
+          range, canonicalCoordRune, canonicalOwnershipRune, canonicalPermissionRune, canonicalKindRune)
       }
       case CoordListAR(range, uncanonicalResultRune, uncanonicalElementRunes) => {
         val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
         val canonicalElementRunes = uncanonicalElementRunes.map(runeToCanonicalRune).toArray
-        (
-          CoordListAR(range, canonicalResultRune, canonicalElementRunes),
-          Array(Array(canonicalResultRune), canonicalElementRunes))
+        CoordListAR(range, canonicalResultRune, canonicalElementRunes)
       }
       case AugmentAR(range, uncanonicalResultRune, literal, uncanonicalInnerRune) => {
         val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
         val canonicalInnerRune = runeToCanonicalRune(uncanonicalInnerRune)
-        (solver.AugmentAR(range, canonicalResultRune, literal, canonicalInnerRune), Array(Array(canonicalResultRune), Array(canonicalInnerRune)))
+        solver.AugmentAR(range, canonicalResultRune, literal, canonicalInnerRune)
       }
       case IsaAR(range, uncanonicalSubRune, uncanonicalInterfaceRune) => {
         val canonicalSubRune = runeToCanonicalRune(uncanonicalSubRune)
         val canonicalInterfaceRune = runeToCanonicalRune(uncanonicalInterfaceRune)
-        (IsaAR(range, canonicalSubRune, canonicalInterfaceRune), Array(Array(vimpl())))
+        IsaAR(range, canonicalSubRune, canonicalInterfaceRune)
       }
       case KindComponentsAR(range, uncanonicalKindRune, uncanonicalMutabilityRune) => {
         val canonicalKindRune = runeToCanonicalRune(uncanonicalKindRune)
         val canonicalMutabilityRune = runeToCanonicalRune(uncanonicalMutabilityRune)
-        (
-          KindComponentsAR(range, canonicalKindRune, canonicalMutabilityRune),
-          Array(Array(canonicalKindRune), Array(canonicalMutabilityRune)))
+        KindComponentsAR(range, canonicalKindRune, canonicalMutabilityRune)
       }
       case ManualSequenceAR(range, uncanonicalResultRune, uncanonicalElementRunes) => {
         val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
         val canonicalElementRunes = uncanonicalElementRunes.map(runeToCanonicalRune).toArray
-        (
-          ManualSequenceAR(range, canonicalResultRune, canonicalElementRunes),
-          Array(Array(canonicalResultRune), canonicalElementRunes))
+        ManualSequenceAR(range, canonicalResultRune, canonicalElementRunes)
       }
-      case OrAR(range, possibilities) => {
-        vimpl()
-        //            val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
-
+      case OneOfAR(range, uncanonicalResultRune, possibilities) => {
+        val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
+        OneOfAR(range, canonicalResultRune, possibilities)
       }
       case PrototypeAR(range, uncanonicalResultRune, name, uncanonicalParameterRunes, uncanonicalReturnRune) => {
         val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
         val canonicalParameterRunes = uncanonicalParameterRunes.map(runeToCanonicalRune).toArray
         val canonicalReturnRune = runeToCanonicalRune(uncanonicalReturnRune)
-        (
-          PrototypeAR(range, canonicalResultRune, name, canonicalParameterRunes, canonicalReturnRune),
-          Array(Array(canonicalResultRune), canonicalParameterRunes :+ canonicalReturnRune))
+        PrototypeAR(range, canonicalResultRune, name, canonicalParameterRunes, canonicalReturnRune)
       }
       case RepeaterSequenceAR(range, uncanonicalResultRune, uncanonicalMutabilityRune, uncanonicalVariabilityRune, uncanonicalSizeRune, uncanonicalElementRune) => {
         val canonicalResultRune = runeToCanonicalRune(uncanonicalResultRune)
@@ -231,9 +261,7 @@ object RuneWorldOptimizer {
         val canonicalVariabilityRune = runeToCanonicalRune(uncanonicalVariabilityRune)
         val canonicalSizeRune = runeToCanonicalRune(uncanonicalSizeRune)
         val canonicalElementRune = runeToCanonicalRune(uncanonicalElementRune)
-        (
-          RepeaterSequenceAR(range, canonicalResultRune, canonicalMutabilityRune, canonicalVariabilityRune, canonicalSizeRune, canonicalElementRune),
-          Array(Array(canonicalResultRune), Array(canonicalMutabilityRune, canonicalVariabilityRune, canonicalSizeRune, canonicalElementRune)))
+        RepeaterSequenceAR(range, canonicalResultRune, canonicalMutabilityRune, canonicalVariabilityRune, canonicalSizeRune, canonicalElementRune)
       }
       case _ => vfail()
     }

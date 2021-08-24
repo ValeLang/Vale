@@ -1,6 +1,6 @@
 package net.verdagon.vale.solver
 
-import net.verdagon.vale.vfail
+import net.verdagon.vale.{vassert, vfail}
 
 
 case class RuneWorld[RuneID, RuleID, Literal, Lookup](
@@ -56,7 +56,7 @@ case class RuneWorldSolverState[RuleID, Literal, Lookup](
   // - Move a puzzle from one set to the next set if we solve one of its runes
   // - Solve any puzzle that has 0 unknowns left
   numUnknownsToNumPuzzles: Array[Int],
-  numUnknownsToPuzzle: Array[Array[Int]]
+  numUnknownsToPuzzles: Array[Array[Int]]
 ) {
   override def hashCode(): Int = vfail() // is mutable, should never be hashed
 
@@ -68,6 +68,69 @@ case class RuneWorldSolverState[RuleID, Literal, Lookup](
       puzzleToUnknownRunes.map(_.clone()).clone(),
       puzzleToIndexInNumUnknowns.clone(),
       numUnknownsToNumPuzzles.clone(),
-      numUnknownsToPuzzle.map(_.clone()).clone())
+      numUnknownsToPuzzles.map(_.clone()).clone())
+  }
+
+  def sanityCheck[Conclusion](runeToMaybeConclusion: Array[Option[Conclusion]]) = {
+    puzzleToExecuted.zipWithIndex.foreach({ case (executed, puzzle) =>
+      if (executed) {
+        vassert(puzzleToIndexInNumUnknowns(puzzle) == -1)
+        vassert(puzzleToNumUnknownRunes(puzzle) == -1)
+        runeWorld.puzzleToRunes(puzzle).foreach(rune => vassert(runeToMaybeConclusion(rune).nonEmpty))
+        puzzleToUnknownRunes(puzzle).foreach(unknownRune => vassert(unknownRune == -1))
+        numUnknownsToPuzzles.foreach(_.foreach(p => vassert(p != puzzle)))
+      } else {
+        // An un-executed puzzle might have all known runes. It just means that it hasn't been
+        // executed yet, it'll probably be executed very soon.
+
+        vassert(puzzleToIndexInNumUnknowns(puzzle) != -1)
+        vassert(puzzleToNumUnknownRunes(puzzle) != -1)
+
+        // Make sure it only appears in one place in numUnknownsToPuzzles
+        vassert(numUnknownsToPuzzles.flatMap(_.map(p => if (p == puzzle) 1 else 0)).sum == 1)
+      }
+    })
+
+    puzzleToNumUnknownRunes.zipWithIndex.foreach({ case (numUnknownRunes, puzzle) =>
+      if (numUnknownRunes == -1) {
+        // If numUnknownRunes is -1, then it's been marked solved, and it should appear nowhere.
+        vassert(puzzleToUnknownRunes(puzzle).forall(_ == -1))
+        vassert(!numUnknownsToPuzzles.exists(_.contains(puzzle)))
+        vassert(puzzleToIndexInNumUnknowns(puzzle) == -1)
+      } else {
+        vassert(puzzleToUnknownRunes(puzzle).count(_ != -1) == numUnknownRunes)
+        vassert(numUnknownsToPuzzles(numUnknownRunes).count(_ == puzzle) == 1)
+        vassert(puzzleToIndexInNumUnknowns(puzzle) == numUnknownsToPuzzles(numUnknownRunes).indexOf(puzzle))
+      }
+      vassert((numUnknownRunes == -1) == puzzleToExecuted(puzzle))
+    })
+
+    puzzleToUnknownRunes.zipWithIndex.foreach({ case (unknownRunesWithNegs, puzzle) =>
+      val unknownRunes = unknownRunesWithNegs.filter(_ != -1)
+      val numUnknownRunes = unknownRunes.length
+      if (puzzleToExecuted(puzzle)) {
+        vassert(puzzleToNumUnknownRunes(puzzle) == -1)
+      } else {
+        if (numUnknownRunes == 0) {
+          vassert(
+            puzzleToNumUnknownRunes(puzzle) == 0 ||
+            puzzleToNumUnknownRunes(puzzle) == -1)
+        } else {
+          vassert(puzzleToNumUnknownRunes(puzzle) == numUnknownRunes)
+        }
+      }
+      unknownRunes.foreach(rune => vassert(runeToMaybeConclusion(rune).isEmpty))
+    })
+
+    numUnknownsToNumPuzzles.zipWithIndex.foreach({ case (numPuzzles, numUnknowns) =>
+      vassert(puzzleToNumUnknownRunes.count(_ == numUnknowns) == numPuzzles)
+    })
+
+    numUnknownsToPuzzles.zipWithIndex.foreach({ case (puzzlesWithNegs, numUnknowns) =>
+      val puzzles = puzzlesWithNegs.filter(_ != -1)
+      puzzles.foreach(puzzle => {
+        vassert(puzzleToNumUnknownRunes(puzzle) == numUnknowns)
+      })
+    })
   }
 }

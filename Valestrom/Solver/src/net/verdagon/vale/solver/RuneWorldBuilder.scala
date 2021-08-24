@@ -22,10 +22,10 @@ case class RuneWorldBuilder[RuleID, Literal, Lookup](
   var nextTentativeRuneIndex: Int,
   redundantRuneToOriginalRune: mutable.HashMap[TentativeRune, TentativeRune]
 ) {
-  def addRule(rule: IRulexAR[TentativeRune, RuleID, Literal, Lookup]): TentativeRune = {
+  def addRule(rule: IRulexAR[TentativeRune, RuleID, Literal, Lookup]): Int = {
     val ruleIndex = rules.size
     rules += rule
-    TentativeRune(ruleIndex)
+    ruleIndex
   }
   def addRune(): TentativeRune = {
     val tentativeRuneIndex = nextTentativeRuneIndex

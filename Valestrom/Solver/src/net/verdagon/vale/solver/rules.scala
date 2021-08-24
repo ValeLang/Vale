@@ -8,12 +8,13 @@ import net.verdagon.vale.{vassert, vcurious, vimpl, vwat}
 sealed trait IRulexAR[RuneID, RuleID, Literal, Lookup] {
   def range: RuleID
 }
-case class OrAR[RuneID, RuleID, Literal, Lookup](
+case class OneOfAR[RuneID, RuleID, Literal, Lookup](
   range: RuleID,
-  possibilities: Array[RuneWorld[RuneID, RuleID, Literal, Lookup]]
+  resultRune: RuneID,
+  literals: Array[Literal]
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def hashCode(): Int = vcurious()
-  vassert(possibilities.nonEmpty)
+  vassert(literals.nonEmpty)
 }
 case class CoordComponentsAR[RuneID, RuleID, Literal, Lookup](
   range: RuleID,
@@ -31,12 +32,32 @@ case class KindComponentsAR[RuneID, RuleID, Literal, Lookup](
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def hashCode(): Int = vcurious()
 }
-// This is for built-in parser functions, such as exists() or isBaseOf() etc.
-case class BuiltinCallAR[RuneID, RuleID, Literal, Lookup](
+
+case class IsConcreteAR[RuneID, RuleID, Literal, Lookup](
   range: RuleID,
-  resultRune: RuneID,
-  name: String,
-  args: Array[RuneID]
+  rune: RuneID
+) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
+  override def hashCode(): Int = vcurious()
+}
+
+case class IsInterfaceAR[RuneID, RuleID, Literal, Lookup](
+  range: RuleID,
+  rune: RuneID
+) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
+  override def hashCode(): Int = vcurious()
+}
+
+case class IsStructAR[RuneID, RuleID, Literal, Lookup](
+  range: RuleID,
+  rune: RuneID
+) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
+  override def hashCode(): Int = vcurious()
+}
+
+case class CoerceToCoord[RuneID, RuleID, Literal, Lookup](
+  range: RuleID,
+  coordRune: RuneID,
+  kindRune: RuneID
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def hashCode(): Int = vcurious()
 }

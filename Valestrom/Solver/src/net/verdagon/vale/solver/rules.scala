@@ -7,6 +7,7 @@ import net.verdagon.vale.{vassert, vcurious, vimpl, vwat}
 // See PVSBUFI
 sealed trait IRulexAR[RuneID, RuleID, Literal, Lookup] {
   def range: RuleID
+  def allRunes: Vector[RuneID]
 }
 case class OneOfAR[RuneID, RuleID, Literal, Lookup](
   range: RuleID,
@@ -14,6 +15,7 @@ case class OneOfAR[RuneID, RuleID, Literal, Lookup](
   literals: Array[Literal]
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def hashCode(): Int = vcurious()
+  override def allRunes: Vector[RuneID] = Vector(resultRune)
   vassert(literals.nonEmpty)
 }
 case class CoordComponentsAR[RuneID, RuleID, Literal, Lookup](
@@ -24,6 +26,7 @@ case class CoordComponentsAR[RuneID, RuleID, Literal, Lookup](
   kindRune: RuneID,
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def hashCode(): Int = vcurious()
+  override def allRunes: Vector[RuneID] = Vector(coordRune, ownershipRune, permissionRune, kindRune)
 }
 case class KindComponentsAR[RuneID, RuleID, Literal, Lookup](
   range: RuleID,
@@ -31,6 +34,7 @@ case class KindComponentsAR[RuneID, RuleID, Literal, Lookup](
   mutabilityRune: RuneID,
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def hashCode(): Int = vcurious()
+  override def allRunes: Vector[RuneID] = Vector(kindRune, mutabilityRune)
 }
 
 case class IsConcreteAR[RuneID, RuleID, Literal, Lookup](
@@ -38,6 +42,7 @@ case class IsConcreteAR[RuneID, RuleID, Literal, Lookup](
   rune: RuneID
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def hashCode(): Int = vcurious()
+  override def allRunes: Vector[RuneID] = Vector(rune)
 }
 
 case class IsInterfaceAR[RuneID, RuleID, Literal, Lookup](
@@ -45,6 +50,7 @@ case class IsInterfaceAR[RuneID, RuleID, Literal, Lookup](
   rune: RuneID
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def hashCode(): Int = vcurious()
+  override def allRunes: Vector[RuneID] = Vector(rune)
 }
 
 case class IsStructAR[RuneID, RuleID, Literal, Lookup](
@@ -52,6 +58,7 @@ case class IsStructAR[RuneID, RuleID, Literal, Lookup](
   rune: RuneID
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def hashCode(): Int = vcurious()
+  override def allRunes: Vector[RuneID] = Vector(rune)
 }
 
 case class CoerceToCoord[RuneID, RuleID, Literal, Lookup](
@@ -60,6 +67,7 @@ case class CoerceToCoord[RuneID, RuleID, Literal, Lookup](
   kindRune: RuneID
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def hashCode(): Int = vcurious()
+  override def allRunes: Vector[RuneID] = Vector(coordRune, kindRune)
 }
 
 case class IsaAR[RuneID, RuleID, Literal, Lookup](
@@ -68,6 +76,7 @@ case class IsaAR[RuneID, RuleID, Literal, Lookup](
   interfaceRune: RuneID
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def hashCode(): Int = vcurious()
+  override def allRunes: Vector[RuneID] = Vector(subRune, interfaceRune)
 }
 
 case class LiteralAR[RuneID, RuleID, Literal, Lookup](
@@ -76,6 +85,7 @@ case class LiteralAR[RuneID, RuleID, Literal, Lookup](
   literal: Literal
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def hashCode(): Int = vcurious()
+  override def allRunes: Vector[RuneID] = Vector(rune)
 }
 
 case class LookupAR[RuneID, RuleID, Literal, Lookup](
@@ -84,6 +94,7 @@ case class LookupAR[RuneID, RuleID, Literal, Lookup](
   literal: Lookup
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def hashCode(): Int = vcurious()
+  override def allRunes: Vector[RuneID] = Vector(rune)
 }
 
 // InterpretedAR will overwrite inner's permission and ownership to the given ones.
@@ -96,6 +107,7 @@ case class AugmentAR[RuneID, RuleID, Literal, Lookup](
   innerRune: RuneID
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def hashCode(): Int = vcurious()
+  override def allRunes: Vector[RuneID] = Vector(resultRune, innerRune)
 }
 
 //case class NullableAR[RuneID, RuleID, Literal, Lookup](
@@ -112,6 +124,7 @@ case class CallAR[RuneID, RuleID, Literal, Lookup](
   args: Array[RuneID]
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def hashCode(): Int = vcurious()
+  override def allRunes: Vector[RuneID] = Vector(resultRune, templateRune) ++ args
 }
 
 //case class FunctionAR[RuneID, RuleID, Literal, Lookup](
@@ -129,6 +142,7 @@ case class PrototypeAR[RuneID, RuleID, Literal, Lookup](
   returnTypeRune: RuneID
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def hashCode(): Int = vcurious()
+  override def allRunes: Vector[RuneID] = Vector(resultRune) ++ parameters ++ Vector(returnTypeRune)
 }
 
 case class RepeaterSequenceAR[RuneID, RuleID, Literal, Lookup](
@@ -140,6 +154,7 @@ case class RepeaterSequenceAR[RuneID, RuleID, Literal, Lookup](
   elementRune: RuneID
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def hashCode(): Int = vcurious()
+  override def allRunes: Vector[RuneID] = Vector(resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune)
 }
 
 case class ManualSequenceAR[RuneID, RuleID, Literal, Lookup](
@@ -148,6 +163,7 @@ case class ManualSequenceAR[RuneID, RuleID, Literal, Lookup](
   elements: Array[RuneID]
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def hashCode(): Int = vcurious()
+  override def allRunes: Vector[RuneID] = Vector(resultRune) ++ elements
 }
 
 case class CoordListAR[RuneID, RuleID, Literal, Lookup](
@@ -156,4 +172,5 @@ case class CoordListAR[RuneID, RuleID, Literal, Lookup](
   elements: Array[RuneID]
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def hashCode(): Int = vcurious()
+  override def allRunes: Vector[RuneID] = Vector(resultRune) ++ elements
 }

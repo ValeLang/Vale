@@ -7,17 +7,17 @@ import scala.collection.mutable.ArrayBuffer
 
 case class TentativeRune(runeIndex: Int)
 
-object RuneWorldBuilder {
+object Builder {
   def apply[RuleID, Literal, Lookup]():
-  RuneWorldBuilder[RuleID, Literal, Lookup] = {
-    RuneWorldBuilder[RuleID, Literal, Lookup](
+  Builder[RuleID, Literal, Lookup] = {
+    Builder[RuleID, Literal, Lookup](
       mutable.ArrayBuffer[IRulexAR[TentativeRune, RuleID, Literal, Lookup]](),
       0,
       mutable.HashMap[TentativeRune, TentativeRune]())
   }
 }
 
-case class RuneWorldBuilder[RuleID, Literal, Lookup](
+case class Builder[RuleID, Literal, Lookup](
   rules: mutable.ArrayBuffer[IRulexAR[TentativeRune, RuleID, Literal, Lookup]],
   var nextTentativeRuneIndex: Int,
   redundantRuneToOriginalRune: mutable.HashMap[TentativeRune, TentativeRune]

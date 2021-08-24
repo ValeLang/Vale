@@ -3,11 +3,11 @@ package net.verdagon.vale.solver
 import net.verdagon.vale.{vassert, vfail}
 
 
-case class RuneWorld[RuneID, RuleID, Literal, Lookup](
+case class World[RuneID, RuleID, Literal, Lookup](
   rules: Array[IRulexAR[RuneID, RuleID, Literal, Lookup]],
 
   // For each rule, what are all the runes involved in it
-  // ruleToRunes: Array[Array[Int]],
+  ruleToRunes: Array[Array[Int]],
 
   // For example, if rule 7 says:
   //   1 = Ref(2, 3, 4, 5)
@@ -33,8 +33,8 @@ case class RuneWorld[RuneID, RuleID, Literal, Lookup](
   // inherit from.
   kindRuneToBoundingInterfaceRune: Array[Int])
 
-case class RuneWorldSolverState[RuleID, Literal, Lookup](
-  runeWorld: RuneWorld[Int, RuleID, Literal, Lookup], // immutable
+case class PlannerState[RuleID, Literal, Lookup](
+  world: World[Int, RuleID, Literal, Lookup], // immutable
 
   // For each rule, whether it's been actually executed or not
   puzzleToExecuted: Array[Boolean],
@@ -60,9 +60,9 @@ case class RuneWorldSolverState[RuleID, Literal, Lookup](
 ) {
   override def hashCode(): Int = vfail() // is mutable, should never be hashed
 
-  def deepClone(): RuneWorldSolverState[RuleID, Literal, Lookup] = {
-    RuneWorldSolverState(
-      runeWorld,
+  def deepClone(): PlannerState[RuleID, Literal, Lookup] = {
+    PlannerState(
+      world,
       puzzleToExecuted.clone(),
       puzzleToNumUnknownRunes.clone(),
       puzzleToUnknownRunes.map(_.clone()).clone(),
@@ -71,12 +71,12 @@ case class RuneWorldSolverState[RuleID, Literal, Lookup](
       numUnknownsToPuzzles.map(_.clone()).clone())
   }
 
-  def sanityCheck[Conclusion](runeToMaybeConclusion: Array[Option[Conclusion]]) = {
+  def sanityCheck[Conclusion](runeToIsSolved: Array[Boolean]) = {
     puzzleToExecuted.zipWithIndex.foreach({ case (executed, puzzle) =>
       if (executed) {
         vassert(puzzleToIndexInNumUnknowns(puzzle) == -1)
         vassert(puzzleToNumUnknownRunes(puzzle) == -1)
-        runeWorld.puzzleToRunes(puzzle).foreach(rune => vassert(runeToMaybeConclusion(rune).nonEmpty))
+        world.puzzleToRunes(puzzle).foreach(rune => vassert(runeToIsSolved(rune)))
         puzzleToUnknownRunes(puzzle).foreach(unknownRune => vassert(unknownRune == -1))
         numUnknownsToPuzzles.foreach(_.foreach(p => vassert(p != puzzle)))
       } else {
@@ -119,7 +119,7 @@ case class RuneWorldSolverState[RuleID, Literal, Lookup](
           vassert(puzzleToNumUnknownRunes(puzzle) == numUnknownRunes)
         }
       }
-      unknownRunes.foreach(rune => vassert(runeToMaybeConclusion(rune).isEmpty))
+      unknownRunes.foreach(rune => vassert(!runeToIsSolved(rune)))
     })
 
     numUnknownsToNumPuzzles.zipWithIndex.foreach({ case (numPuzzles, numUnknowns) =>

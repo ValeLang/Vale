@@ -1,12 +1,15 @@
 package net.verdagon.vale.scout
 
 import net.verdagon.vale.parser._
-import net.verdagon.vale.scout.ExpressionScout.NormalResult
 import net.verdagon.vale.scout.Scout.noDeclarations
 import net.verdagon.vale.scout.patterns._
-import net.verdagon.vale.scout.predictor.Conclusions
+//import net.verdagon.vale.scout.predictor.{Conclusions, PredictorEvaluator}
+
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+//import net.verdagon.vale.scout.predictor.Conclusions
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.scout.templatepredictor.PredictorEvaluator
+//import net.verdagon.vale.scout.templatepredictor.PredictorEvaluator
 import net.verdagon.vale._
 
 import scala.collection.immutable.{List, Range}
@@ -32,7 +35,16 @@ import scala.collection.immutable.{List, Range}
 //  def countMagicParams(): Int = fate.countMagicParams()
 //}
 
-object FunctionScout {
+class FunctionScout(scout: Scout) {
+  val expressionScout =
+    new ExpressionScout(
+      new IExpressionScoutDelegate {
+        override def scoutLambda(parentStackFrame: StackFrame, lambdaFunction0: FunctionP): (FunctionS, VariableUses) = {
+          FunctionScout.this.scoutLambda(parentStackFrame, lambdaFunction0)
+        }
+      }
+    )
+
 //  // All closure structs start with this
 //  val CLOSURE_STRUCT_NAME = "__Closure:"
 //  // In a closure's environment, we also have this. This lets us easily know
@@ -45,7 +57,7 @@ object FunctionScout {
     val FunctionP(
       range,
       FunctionHeaderP(_,
-        Some(NameP(_, codeName)),
+        Some(NameP(originalNameRange, originalCodeName)),
         attributes,
         userSpecifiedIdentifyingRuneNames,
         templateRulesP,
@@ -53,8 +65,22 @@ object FunctionScout {
         FunctionReturnP(retRange, maybeInferRet, maybeRetType)),
       maybeBody0
     ) = functionP
+
+    val rangeS = Scout.evalRange(file, retRange)
     val codeLocation = Scout.evalPos(file, range.begin)
-    val name = FunctionNameS(codeName, codeLocation)
+    val name =
+      (file, originalCodeName) match {
+        case (FileCoordinate("v", Vector("builtins", "arrays"), "arrays.vale"), "__free_replaced") => {
+          FreeDeclarationNameS(Scout.evalPos(file, originalNameRange.begin))
+        }
+        case (FileCoordinate("", Vector(), "arrays.vale"), "__free_replaced") => {
+          FreeDeclarationNameS(Scout.evalPos(file, originalNameRange.begin))
+        }
+        case (_, n) => FunctionNameS(n, codeLocation)
+      }
+
+
+    val lidb = new LocationInDenizenBuilder(Vector())
 
     val userSpecifiedIdentifyingRunes =
       userSpecifiedIdentifyingRuneNames
@@ -62,58 +88,76 @@ object FunctionScout {
         .flatMap(_.runes)
         // Filter out any regions, we dont do those yet
         .filter({ case IdentifyingRuneP(_, _, attributes) => !attributes.exists({ case TypeRuneAttributeP(_, RegionTypePR) => true case _ => false }) })
-        .map({ case IdentifyingRuneP(_, NameP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
+        .map({ case IdentifyingRuneP(_, NameP(range, identifyingRuneName), _) =>
+          RuneUsage(Scout.evalRange(file, range), CodeRuneS(identifyingRuneName))
+        })
+
+    // See: Must Scan For Declared Runes First (MSFDRF)
     val userRunesFromRules =
       templateRulesP
         .toVector
         .flatMap(rules => RulePUtils.getOrderedRuneDeclarationsFromRulexesWithDuplicates(rules.rules))
-        .map(identifyingRuneName => CodeRuneS(identifyingRuneName))
-    val userDeclaredRunes = userSpecifiedIdentifyingRunes ++ userRunesFromRules
+        .map({ case NameP(range, identifyingRuneName) => RuneUsage(Scout.evalRange(file, range), CodeRuneS(identifyingRuneName)) })
+    val userDeclaredRunes = (userSpecifiedIdentifyingRunes ++ userRunesFromRules).distinct
 
-    val functionEnv = FunctionEnvironment(file, name, None, userDeclaredRunes.toSet, paramsP.size)
+    val functionEnv = FunctionEnvironment(file, name, None, userDeclaredRunes.map(_.rune).toSet, paramsP.size, false)
 
-    val rate = RuleStateBox(RuleState(name, 0))
-    val userRulesS =
-      RuleScout.translateRulexes(
-        functionEnv, rate, functionEnv.allUserDeclaredRunes(), templateRulesP.toVector.flatMap(_.rules))
+    val ruleBuilder = ArrayBuffer[IRulexSR]()
+    val runeToExplicitType = mutable.HashMap[IRuneS, ITemplataType]()
+    RuleScout.translateRulexes(
+      functionEnv,
+      lidb.child(),
+      ruleBuilder,
+      runeToExplicitType,
+      templateRulesP.toVector.flatMap(_.rules))
 
     val myStackFrameWithoutParams = StackFrame(file, name, functionEnv, None, noDeclarations)
-    val (implicitRulesFromPatterns, explicitParamsPatterns1) =
-      PatternScout.scoutPatterns(myStackFrameWithoutParams, rate, paramsP.toVector.flatMap(_.patterns))
+
+    val patternsP =
+      paramsP.toVector.map(_.patterns).flatten.zipWithIndex.map({
+        case (pattern, index) => {
+          if (pattern.templex.isEmpty) {
+            throw CompileErrorExceptionS(LightFunctionMustHaveParamTypes(rangeS, index))
+          }
+          pattern
+        }
+      })
+    val explicitParamsPatterns1 =
+      PatternScout.scoutPatterns(
+        myStackFrameWithoutParams, lidb.child(), ruleBuilder, runeToExplicitType, patternsP)
 
     val explicitParams1 = explicitParamsPatterns1.map(ParameterS)
     val captureDeclarations =
       explicitParams1
         .map(explicitParam1 => VariableDeclarations(PatternScout.getParameterCaptures(explicitParam1.pattern)))
         .foldLeft(noDeclarations)(_ ++ _)
-    val myStackFrame = StackFrame(file, name, functionEnv, None, noDeclarations)
 
-    val (implicitRulesFromRet, maybeRetCoordRune) =
+    val maybeRetCoordRune =
       (maybeInferRet, maybeRetType) match {
         case (None, None) => {
           // If nothing's present, assume void
           val rangeS = Scout.evalRange(file, retRange)
-          val rune = rate.newImplicitRune()
-          val rule = EqualsSR(rangeS, TemplexSR(NameST(rangeS, CodeTypeNameS("void"))), TypedSR(rangeS, rune, CoordTypeSR))
-          (Vector(rule), Some(rune))
+          val rune = RuneUsage(rangeS, ImplicitRuneS(lidb.child().consume()))
+          ruleBuilder += LookupSR(rangeS, rune, CodeNameS("void"))
+          Some(rune)
         }
-        case (Some(_), None) => (Vector.empty, None) // Infer the return
+        case (Some(_), None) => None // Infer the return
         case (None, Some(retTypePT)) => {
-          PatternScout.translateMaybeTypeIntoMaybeRune(
-            functionEnv,
-            rate,
-            Scout.evalRange(file, retRange),
-            Some(retTypePT),
-            CoordTypePR,
-            // The rune should be on the right, see DCRC option A.
-            false)
+          val rune =
+            PatternScout.translateMaybeTypeIntoMaybeRune(
+              functionEnv,
+              lidb,
+              Scout.evalRange(file, retRange),
+              ruleBuilder,
+              runeToExplicitType,
+              Some(retTypePT),
+              // The rune should be on the right, see DCRC option A.
+              false)
+          rune
         }
         case (Some(_), Some(_)) => throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(file, range), "Can't have return type and infer-ret at the same time"))
       }
-
-    val rulesS = userRulesS ++ implicitRulesFromPatterns ++ implicitRulesFromRet
-
-    //    vassert(exportedTemplateParamNames.size == exportedTemplateParamNames.toSet.size)
+    maybeRetCoordRune.foreach(retCoordRune => runeToExplicitType.put(retCoordRune.rune, CoordTemplataType))
 
     val body1 =
       if (attributes.collectFirst({ case AbstractAttributeP(_) => }).nonEmpty) {
@@ -127,85 +171,38 @@ object FunctionScout {
         GeneratedBodyS(attributes.collectFirst({ case BuiltinAttributeP(_, generatorId) => generatorId}).head.str)
       } else {
         vassert(maybeBody0.nonEmpty)
-        val (body1, _, Vector()) = scoutBody(myStackFrame, maybeBody0.get, captureDeclarations)
+        val (body1, _, Vector()) =
+          scoutBody(
+            functionEnv,
+            None,
+            lidb.child(),
+            maybeBody0.get,
+            // We hand these into scoutBody instead of assembling a StackFrame on our own because we want
+            // StackFrame's to be made in one place, where we can centralize the logic for tracking variable
+            // uses and so on.
+            captureDeclarations)
         vassert(body1.closuredNames.isEmpty)
         CodeBodyS(body1)
       }
 
-    val allRunes =
-      PredictorEvaluator.getAllRunes(
-        userSpecifiedIdentifyingRunes,
-        rulesS,
-        explicitParams1.map(_.pattern),
-        maybeRetCoordRune)
-    val Conclusions(knowableValueRunes, predictedTypeByRune) =
-      PredictorEvaluator.solve(
-        Set(),
-        rulesS,
-        explicitParams1.map(_.pattern))
-
-    val localRunes = allRunes
-    val unknowableRunes = allRunes -- knowableValueRunes
-
-    // This cant be:
-    //   val identifyingRunes =
-    //     userSpecifiedIdentifyingRunes ++ (unknowableRunes -- userSpecifiedIdentifyingRunes)
-    // because for example if we had:
-    //   fn moo<T>(m &T) { m.hp }
-    // then userSpecifiedIdentifyingRunes would be
-    //   CodeRuneS("T")
-    // and unknowableRunes would be
-    //   Set(CodeRuneS("T"), ImplicitRuneS(0), ImplicitRuneS(1))
-    // and we'd end up with identifyingRunes as
-    //   Vector(CodeRuneS("T"), ImplicitRuneS(0), ImplicitRuneS(1))
-    // So, what we instead want is like... the original causes of unknowable runes.
-    // I think thats just user specified ones, and implicit template runes from params,
-    // and magic param runes.
-//    val topLevelImplicitRunesS =
-//      paramsP.zip(explicitParamsPatterns1).flatMap({
-//        case (paramP, explicitParamPatternS) => {
-//          if (paramP.templex.isEmpty) {
-//            Vector(explicitParamPatternS.coordRune)
-//          } else {
-//            Vector.empty
-//          }
-//        }
-//      })
-
-    val identifyingParamCoordRunes =
-      explicitParamsPatterns1
-        .map(_.coordRune)
-        .filter(!knowableValueRunes.contains(_))
-        .filter(!userSpecifiedIdentifyingRunes.contains(_))
-    val identifyingRunes = userSpecifiedIdentifyingRunes ++ identifyingParamCoordRunes
-
-    val isTemplate = identifyingRunes.nonEmpty
-
-    val maybePredictedType =
-      if (isTemplate) {
-        if ((identifyingRunes.toSet -- predictedTypeByRune.keySet).isEmpty) {
-          Some(TemplateTypeSR(identifyingRunes.map(predictedTypeByRune), FunctionTypeSR))
-        } else {
-          None
-        }
-      } else {
-        Some(FunctionTypeSR)
-      }
-
     val attrsS = translateFunctionAttributes(file, attributes.filter({ case AbstractAttributeP(_) => false case _ => true}))
+
+    val runeToPredictedType =
+      scout.predictRuneTypes(
+        rangeS,
+        userSpecifiedIdentifyingRunes.map(_.rune),
+        runeToExplicitType.toMap,
+        ruleBuilder.toArray)
 
     FunctionS(
       Scout.evalRange(file, range),
       name,
       attrsS,
-      knowableValueRunes,
-      identifyingRunes,
-      localRunes,
-      maybePredictedType,
+      userSpecifiedIdentifyingRunes,
+      runeToPredictedType,
       explicitParams1,
       maybeRetCoordRune,
-      isTemplate,
-      rulesS,
+      ruleBuilder.toArray,
       body1)
   }
 
@@ -229,36 +226,53 @@ object FunctionScout {
         _, attrsP, userSpecifiedIdentifyingRuneNames, None, paramsP, FunctionReturnP(retRange, maybeInferRet, maybeRetType)),
       Some(body0)) = lambdaFunction0;
     val codeLocation = Scout.evalPos(parentStackFrame.file, range.begin)
-    val userSpecifiedIdentifyingRunes: Vector[IRuneS] =
-      userSpecifiedIdentifyingRuneNames
-        .toVector
-        .flatMap(_.runes)
-        // Filter out any regions, we dont do those yet
-        .filter({ case IdentifyingRuneP(_, _, attributes) => !attributes.exists({ case TypeRuneAttributeP(_, RegionTypePR) => true case _ => false }) })
-        .map({ case IdentifyingRuneP(_, NameP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
 
-    val lambdaName = LambdaNameS(/*parentStackFrame.name,*/ codeLocation)
+    vcurious(userSpecifiedIdentifyingRuneNames.isEmpty)
+
+    val lambdaName = LambdaDeclarationNameS(/*parentStackFrame.name,*/ codeLocation)
     // Every lambda has a closure as its first arg, even if its empty
-    val closureStructName = LambdaStructNameS(lambdaName)
-
-    val rate = RuleStateBox(RuleState(lambdaName, 0))
+    val closureStructName = LambdaStructDeclarationNameS(lambdaName)
 
     val functionEnv =
       FunctionEnvironment(
         parentStackFrame.file,
         lambdaName,
         Some(parentStackFrame.parentEnv),
-        userSpecifiedIdentifyingRunes.toSet,
-        paramsP.size)
+        Set(),
+        paramsP.size,
+        false)
+
 
     val myStackFrameWithoutParams = StackFrame(parentStackFrame.file, lambdaName, functionEnv, None, noDeclarations)
 
-    val (implicitRulesFromParams, explicitParamPatterns1) =
+    val lidb = new LocationInDenizenBuilder(Vector())
+
+    val ruleBuilder = ArrayBuffer[IRulexSR]()
+    val runeToExplicitType = mutable.HashMap[IRuneS, ITemplataType]()
+
+    // We say PerhapsTypeless because they might be anonymous params like in `(_){ true }`
+    // Later on, we'll make identifying runes for these.
+    val explicitParamPatternsPerhapsTypeless =
       PatternScout.scoutPatterns(
         myStackFrameWithoutParams,
-        rate,
-        paramsP.toVector.flatMap(_.patterns));
-    val explicitParams1 = explicitParamPatterns1.map(ParameterS)
+        lidb.child(),
+        ruleBuilder,
+        runeToExplicitType,
+        paramsP.toVector.flatMap(_.patterns))
+
+    val explicitParamPatternsAndIdentifyingRunes =
+      explicitParamPatternsPerhapsTypeless.map({
+        case a @ AtomSP(_, _, _, Some(_), _) => (a, None)
+        case AtomSP(range, name, virtuality, None, destructure) => {
+          val rune = RuneUsage(range, ImplicitRuneS(lidb.child().consume()))
+          runeToExplicitType.put(rune.rune, CoordTemplataType)
+          val newParam = AtomSP(range, name, virtuality, Some(rune), destructure)
+          (newParam, Some(rune))
+        }
+      })
+    val explicitParams = explicitParamPatternsAndIdentifyingRunes.map(_._1).map(ParameterS)
+    val identifyingRunesFromExplicitParams = explicitParamPatternsAndIdentifyingRunes.flatMap(_._2)
+
 //    vassert(exportedTemplateParamNames.size == exportedTemplateParamNames.toSet.size)
 
     val closureParamName = ClosureParamNameS()
@@ -267,156 +281,111 @@ object FunctionScout {
       VariableDeclarations(Vector(VariableDeclaration(closureParamName)))
 
     val paramDeclarations =
-      explicitParams1.map(_.pattern)
+      explicitParams.map(_.pattern)
         .map(pattern1 => VariableDeclarations(PatternScout.getParameterCaptures(pattern1)))
         .foldLeft(closureDeclaration)(_ ++ _)
 
-    val myStackFrame = StackFrame(parentStackFrame.file, lambdaName, parentStackFrame.parentEnv, Some(parentStackFrame), noDeclarations)
+//    val functionBodyStackFrame =
+//      StackFrame(
+//        parentStackFrame.file,
+//        lambdaName,
+//        functionBodyEnv,
+//        Some(parentStackFrame),
+//        // One might expect to hand in paramDeclarations here, but we don't because we want them to be
+//        // not in this block, but
+//        noDeclarations)
 
     val (body1, variableUses, lambdaMagicParamNames) =
       scoutBody(
-        myStackFrame,
+        functionEnv,
+        Some(parentStackFrame),
+        lidb.child(),
         body0,
         paramDeclarations)
 
-    if (lambdaMagicParamNames.nonEmpty && (explicitParams1.nonEmpty)) {
+    if (lambdaMagicParamNames.nonEmpty && (explicitParams.nonEmpty)) {
       throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(parentStackFrame.file, range), "Cant have a lambda with _ and params"))
     }
 
 //    val closurePatternId = fate.nextPatternNumber();
 
     val closureParamRange = Scout.evalRange(parentStackFrame.file, range)
-    val closureParamTypeRune = rate.newImplicitRune()
-    val rulesFromClosureParam =
-      Vector(
-        EqualsSR(
-          closureParamRange,
-          TypedSR(closureParamRange, closureParamTypeRune,CoordTypeSR),
-          TemplexSR(InterpretedST(closureParamRange,ConstraintP,ReadwriteP,AbsoluteNameST(Scout.evalRange(functionEnv.file, range), closureStructName)))))
+    val closureStructRune = RuneUsage(closureParamRange, ImplicitRuneS(lidb.child().consume()))
+    ruleBuilder +=
+      LookupSR(
+        closureParamRange, closureStructRune, closureStructName.getImpreciseName)
+    val closureParamTypeRune = RuneUsage(closureParamRange, ImplicitRuneS(lidb.child().consume()))
+    ruleBuilder +=
+      AugmentSR(
+        closureParamRange,
+        closureParamTypeRune,
+        Vector(OwnershipLiteralSL(ConstraintP),PermissionLiteralSL(ReadwriteP)),
+        closureStructRune)
+
     val closureParamS =
       ParameterS(
         AtomSP(
           closureParamRange,
-          Some(CaptureS(closureParamName)),None,closureParamTypeRune,None))
+          Some(CaptureS(closureParamName)),
+          None,
+          Some(closureParamTypeRune),
+          None))
 
-    val (magicParamsRules, magicParams) =
+    val magicParams =
         lambdaMagicParamNames.map({
           case mpn @ MagicParamNameS(codeLocation) => {
             val magicParamRange = RangeS(codeLocation, codeLocation)
-            val magicParamRune = MagicParamRuneS(codeLocation)
-            val ruleS = TypedSR(magicParamRange, magicParamRune,CoordTypeSR)
+            val magicParamRune = RuneUsage(magicParamRange, MagicParamRuneS(lidb.child().consume()))
+            runeToExplicitType.put(magicParamRune.rune,CoordTemplataType)
             val paramS =
               ParameterS(
                 AtomSP(
                   magicParamRange,
-                  Some(CaptureS(mpn)),None,magicParamRune,None))
-            (ruleS, paramS)
+                  Some(CaptureS(mpn)),None,Some(magicParamRune),None))
+            paramS
           }
         })
-        .unzip
 
-    val userSpecifiedAndMagicParamRunes =
-      (
-        userSpecifiedIdentifyingRunes ++
-        // Patterns can't define runes
-        // filledParamsP.flatMap(PatternPUtils.getOrderedIdentifyingRunesFromPattern) ++
-        // Magic params always go on the end
-        magicParams.map(_.pattern.coordRune)
-      ).distinct
+    // Lambdas identifying runes are determined by their magic params.
+    // See: Lambdas Dont Need Explicit Identifying Runes (LDNEIR)
+    val identifyingRunes =
+      identifyingRunesFromExplicitParams ++
+      magicParams.map(param => vassertSome(param.pattern.coordRune))
 
-    val totalParams = Vector(closureParamS) ++ explicitParams1 ++ magicParams;
+    val totalParams = Vector(closureParamS) ++ explicitParams ++ magicParams;
 
-    val (implicitRulesFromReturn, maybeRetCoordRune) =
+    val maybeRetCoordRune =
       (maybeInferRet, maybeRetType) match {
-        case (_, None) => (Vector.empty, None) // Infer the return
+        case (_, None) => None // Infer the return
         case (None, Some(retTypePT)) => {
           PatternScout.translateMaybeTypeIntoMaybeRune(
             functionEnv,
-            rate,
-            Scout.evalRange(myStackFrame.file, retRange),
+            lidb.child(),
+            Scout.evalRange(myStackFrameWithoutParams.file, retRange),
+            ruleBuilder,
+            runeToExplicitType,
             Some(retTypePT),
-            CoordTypePR)
+            false)
         }
         case (Some(_), Some(_)) => throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(parentStackFrame.file, range), "Can't have return type and infer-ret at the same time"))
       }
-
-    val rulesS = rulesFromClosureParam ++ magicParamsRules ++ implicitRulesFromParams ++ implicitRulesFromReturn
-
-    val allRunes =
-      PredictorEvaluator.getAllRunes(
-        userSpecifiedAndMagicParamRunes,
-        rulesS,
-        explicitParams1.map(_.pattern),
-        maybeRetCoordRune)
-    val Conclusions(knowableValueRunes, predictedTypeByRune) =
-      PredictorEvaluator.solve(
-        parentStackFrame.parentEnv.allUserDeclaredRunes(),
-        rulesS,
-        explicitParams1.map(_.pattern))
-
-
-    val localRunes = allRunes -- myStackFrame.parentEnv.allUserDeclaredRunes()
-    val unknowableRunes = allRunes -- knowableValueRunes
-
-
-    // This cant be:
-    //   val identifyingRunes =
-    //     userSpecifiedIdentifyingRunes ++ (unknowableRunes -- userSpecifiedIdentifyingRunes)
-    // because for example if we had:
-    //   fn moo<T>(m &T) { m.hp }
-    // then userSpecifiedIdentifyingRunes would be
-    //   CodeRuneS("T")
-    // and unknowableRunes would be
-    //   Set(CodeRuneS("T"), ImplicitRuneS(0), ImplicitRuneS(1))
-    // and we'd end up with identifyingRunes as
-    //   Vector(CodeRuneS("T"), ImplicitRuneS(0), ImplicitRuneS(1))
-    // So, what we instead want is like... the original causes of unknowable runes.
-    // I think thats just user specified ones, and implicit template runes from params,
-    // and magic param runes.
-//    val topLevelImplicitRunesS =
-//      paramsP.zip(explicitParams1.map(_.pattern)).flatMap({
-//        case (paramP, explicitParamPatternS) => {
-//          if (paramP.templex.isEmpty) {
-//            Vector(explicitParamPatternS.coordRune)
-//          } else {
-//            Vector.empty
-//          }
-//        }
-//      })
-
-    val identifyingParamCoordRunes =
-      explicitParamPatterns1
-        .map(_.coordRune)
-        .filter(!knowableValueRunes.contains(_))
-        .filter(!userSpecifiedIdentifyingRunes.contains(_))
-    val identifyingRunes = userSpecifiedIdentifyingRunes ++ magicParams.map(_.pattern.coordRune) ++ identifyingParamCoordRunes
-
-    val isTemplate = identifyingRunes.nonEmpty
-
-    val maybePredictedType =
-      if (isTemplate) {
-        if (identifyingRunes.isEmpty) {
-          Some(TemplateTypeSR(identifyingRunes.map(predictedTypeByRune), FunctionTypeSR))
-        } else {
-          None
-        }
-      } else {
-        Some(FunctionTypeSR)
-      }
+    maybeRetCoordRune.foreach(retCoordRune => runeToExplicitType.put(retCoordRune.rune, CoordTemplataType))
 
     val function1 =
       FunctionS(
         Scout.evalRange(parentStackFrame.file, range),
         lambdaName,
         translateFunctionAttributes(parentStackFrame.file, attrsP),
-        knowableValueRunes,
         identifyingRunes,
-        localRunes,
-        maybePredictedType,
+        runeToExplicitType.toMap,
+//        knowableValueRunes,
+//        identifyingRunes,b
+//        localRunes,
+//        maybePredictedType,
         totalParams,
         maybeRetCoordRune,
-        isTemplate,
-        rulesS,
+//        isTemplate,
+        ruleBuilder.toArray,
         CodeBodyS(body1))
     (function1, variableUses)
   }
@@ -426,21 +395,26 @@ object FunctionScout {
   // - Uses of parent variables.
   // - Magic params made/used inside.
   private def scoutBody(
-    stackFrame: StackFrame,
+    functionEnv: FunctionEnvironment,
+    // This might be the block containing the lambda that we're evaluating now.
+    parentStackFrame: Option[StackFrame],
+    lidb: LocationInDenizenBuilder,
     body0: BlockPE,
-    paramDeclarations: VariableDeclarations):
+    initialDeclarations: VariableDeclarations):
   (BodySE, VariableUses, Vector[MagicParamNameS]) = {
+    val functionBodyEnv = functionEnv.child()
+
     // There's an interesting consequence of calling this function here...
     // If we have a lone lookup node, like "m = Marine(); m;" then that
     // 'm' will be turned into an expression, which means that's how it's
     // destroyed. So, thats how we destroy things before their time.
     val (NormalResult(_, block1), selfUses, childUses) =
-      ExpressionScout.scoutBlock(
-        stackFrame,
+      expressionScout.scoutBlock(
+        functionBodyEnv,
+        parentStackFrame,
+        lidb.child(),
         body0,
-        // Aren't making a new stack frame because we already had some nice params populated
-        // stackFrame.
-        paramDeclarations)
+        initialDeclarations)
 
     vcurious(
       childUses.uses.map(_.name).collect({ case mpn @ MagicParamNameS(_) => mpn }).isEmpty)
@@ -459,7 +433,7 @@ object FunctionScout {
           childUses.isMoved(declared.name),
           childUses.isMutated(declared.name))
       })
-    val block1WithParamLocals = BlockSE(Scout.evalRange(stackFrame.file, body0.range), block1.locals ++ magicParamLocals, block1.exprs)
+    val block1WithParamLocals = BlockSE(Scout.evalRange(functionBodyEnv.file, body0.range), block1.locals ++ magicParamLocals, block1.exprs)
 
     val allUses =
       selfUses.combine(childUses, {
@@ -467,12 +441,6 @@ object FunctionScout {
         case (other, None) => other
         case (Some(NotUsed), other) => other
         case (other, Some(NotUsed)) => other
-        // If we perhaps use it, and children perhaps use it, then say maybe used.
-        case (Some(MaybeUsed), Some(MaybeUsed)) => Some(MaybeUsed)
-        // If a child uses it, then count it as used
-        case (Some(MaybeUsed), Some(Used)) => Some(Used)
-        // If a child uses it, then count it as used
-        case (Some(Used), Some(MaybeUsed)) => Some(Used)
         case (Some(Used), Some(Used)) => Some(Used)
       })
 
@@ -502,11 +470,16 @@ object FunctionScout {
         }
       })
 
-    val bodySE = BodySE(Scout.evalRange(stackFrame.file, body0.range), usesOfParentVariables.map(_.name), block1WithParamLocals)
+    val bodySE = BodySE(Scout.evalRange(functionBodyEnv.file, body0.range), usesOfParentVariables.map(_.name), block1WithParamLocals)
     (bodySE, VariableUses(usesOfParentVariables), magicParamNames)
   }
 
-  def scoutInterfaceMember(interfaceEnv: Environment, functionP: FunctionP): FunctionS = {
+  def scoutInterfaceMember(
+    interfaceEnv: Environment,
+    interfaceIdentifyingRunes: Array[RuneUsage],
+    interfaceRules: Array[IRulexSR],
+    interfaceRuneToExplicitType: Map[IRuneS, ITemplataType],
+    functionP: FunctionP): FunctionS = {
     val FunctionP(
       range,
       FunctionHeaderP(_,
@@ -517,11 +490,12 @@ object FunctionScout {
         maybeParamsP,
         FunctionReturnP(retRange, maybeInferRet, maybeRetType)),
       None) = functionP;
+    val retRangeS = Scout.evalRange(interfaceEnv.file, retRange)
 
     maybeParamsP match {
       case None =>
       case Some(paramsP) => {
-        if (!paramsP.patterns.exists(_.virtuality == Some(AbstractP))) {
+        if (!paramsP.patterns.exists(_.virtuality match { case Some(AbstractP(_)) => true case _ => false })) {
           throw CompileErrorExceptionS(InterfaceMethodNeedsSelf(Scout.evalRange(interfaceEnv.file, range)))
         }
       }
@@ -529,33 +503,49 @@ object FunctionScout {
 
     val codeLocation = Scout.evalPos(interfaceEnv.file, range.begin)
     val funcName = FunctionNameS(codeName, codeLocation)
-    val userSpecifiedIdentifyingRunes: Vector[IRuneS] =
+    val explicitIdentifyingRunes: Vector[RuneUsage] =
       userSpecifiedIdentifyingRuneNames
           .toVector
         .flatMap(_.runes)
         // Filter out any regions, we dont do those yet
         .filter({ case IdentifyingRuneP(_, _, attributes) => !attributes.exists({ case TypeRuneAttributeP(_, RegionTypePR) => true case _ => false }) })
-        .map({ case IdentifyingRuneP(_, NameP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
+        .map({ case IdentifyingRuneP(_, NameP(range, identifyingRuneName), _) => RuneUsage(Scout.evalRange(interfaceEnv.file, range), CodeRuneS(identifyingRuneName)) })
 
-    val rate = RuleStateBox(RuleState(funcName, 0))
+    // See: Must Scan For Declared Runes First (MSFDRF)
+    val userRunesFromRules =
+      templateRulesP
+        .toVector
+        .flatMap(rules => RulePUtils.getOrderedRuneDeclarationsFromRulexesWithDuplicates(rules.rules))
+        .map({ case NameP(range, identifyingRuneName) => RuneUsage(Scout.evalRange(interfaceEnv.file, range), CodeRuneS(identifyingRuneName)) })
 
-    val userRulesS = RuleScout.translateRulexes(interfaceEnv, rate, interfaceEnv.allUserDeclaredRunes(), templateRulesP.toVector.flatMap(_.rules))
+    val userDeclaredRunes = (explicitIdentifyingRunes ++ userRunesFromRules).distinct
+    val identifyingRunes = explicitIdentifyingRunes ++ interfaceIdentifyingRunes
 
-    val functionEnv = FunctionEnvironment(interfaceEnv.file, funcName, Some(interfaceEnv), userSpecifiedIdentifyingRunes.toSet, maybeParamsP.size)
+    val lidb = new LocationInDenizenBuilder(Vector())
+
+    val ruleBuilder = ArrayBuffer[IRulexSR]()
+    ruleBuilder ++= interfaceRules
+    val runeToExplicitType = mutable.HashMap[IRuneS, ITemplataType]()
+    runeToExplicitType ++= interfaceRuneToExplicitType
+
+    RuleScout.translateRulexes(interfaceEnv, lidb.child(), ruleBuilder, runeToExplicitType, templateRulesP.toVector.flatMap(_.rules))
+
+    val functionEnv =
+      FunctionEnvironment(
+        interfaceEnv.file, funcName, Some(interfaceEnv), userDeclaredRunes.map(_.rune).toSet, maybeParamsP.size, true)
     val myStackFrame = StackFrame(interfaceEnv.file, funcName, functionEnv, None, noDeclarations)
-    val (implicitRulesFromParams, patternsS) =
-      PatternScout.scoutPatterns(myStackFrame, rate, maybeParamsP.toVector.flatMap(_.patterns))
+    val patternsS =
+      PatternScout.scoutPatterns(myStackFrame, lidb.child(), ruleBuilder, runeToExplicitType, maybeParamsP.toVector.flatMap(_.patterns))
 
     val paramsS = patternsS.map(ParameterS)
 
-    val (implicitRulesFromRet, maybeReturnRune) =
+    val maybeReturnRune =
       (maybeInferRet, maybeRetType) match {
         case (None, None) => {
           // If nothing's present, assume void
-          val rangeS = Scout.evalRange(myStackFrame.file, retRange)
-          val rune = rate.newImplicitRune()
-          val rule = EqualsSR(rangeS, TemplexSR(NameST(rangeS, CodeTypeNameS("void"))), TypedSR(rangeS, rune, CoordTypeSR))
-          (Vector(rule), Some(rune))
+          val rune = RuneUsage(retRangeS, ImplicitRuneS(lidb.child().consume()))
+          ruleBuilder += LookupSR(retRangeS, rune, CodeNameS("void"))
+          Some(rune)
         }
         case (Some(_), None) => {
           throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(myStackFrame.file, range), "Can't infer the return type of an interface method!"))
@@ -563,50 +553,16 @@ object FunctionScout {
         case (None, Some(retTypePT)) => {
           PatternScout.translateMaybeTypeIntoMaybeRune(
             interfaceEnv,
-            rate,
+            lidb.child(),
             Scout.evalRange(myStackFrame.file, retRange),
+            ruleBuilder,
+            runeToExplicitType,
             Some(retTypePT),
-            CoordTypePR)
+            false)
         }
         case (Some(_), Some(_)) => throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(myStackFrame.file, range), "Can't have return type and infer-ret at the same time"))
       }
-
-    val rulesS = userRulesS ++ implicitRulesFromParams ++ implicitRulesFromRet
-
-    val allRunes =
-      PredictorEvaluator.getAllRunes(
-        userSpecifiedIdentifyingRunes,
-        rulesS,
-        paramsS.map(_.pattern),
-        maybeReturnRune)
-    val Conclusions(knowableValueRunes, predictedTypeByRune) =
-      PredictorEvaluator.solve(
-        interfaceEnv.allUserDeclaredRunes(),
-        rulesS,
-        paramsS.map(_.pattern))
-
-    val localRunes = allRunes -- interfaceEnv.allUserDeclaredRunes()
-    val unknowableRunes = allRunes -- knowableValueRunes
-
-    val identifyingParamCoordRunes =
-      patternsS
-        .map(_.coordRune)
-        .filter(!knowableValueRunes.contains(_))
-        .filter(!userSpecifiedIdentifyingRunes.contains(_))
-    val identifyingRunes = userSpecifiedIdentifyingRunes ++ identifyingParamCoordRunes
-    val isTemplate = identifyingRunes.nonEmpty
-    vassert(!isTemplate) // interface members cant be templates
-
-    val maybePredictedType =
-      if (isTemplate) {
-        if ((identifyingRunes.toSet -- predictedTypeByRune.keySet).isEmpty) {
-          Some(TemplateTypeSR(identifyingRunes.map(predictedTypeByRune), FunctionTypeSR))
-        } else {
-          None
-        }
-      } else {
-        Some(FunctionTypeSR)
-      }
+    maybeReturnRune.foreach(retCoordRune => runeToExplicitType.put(retCoordRune.rune, CoordTemplataType))
 
     if (attrsP.collect({ case AbstractAttributeP(_) => true  }).nonEmpty) {
       throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(interfaceEnv.file, range), "Dont need abstract here"))
@@ -616,14 +572,15 @@ object FunctionScout {
       Scout.evalRange(functionEnv.file, range),
       funcName,
       translateFunctionAttributes(functionEnv.file, attrsP),
-      knowableValueRunes,
+//      knowableValueRunes,
       identifyingRunes,
-      localRunes,
-      maybePredictedType,
+      runeToExplicitType.toMap,
+//      localRunes,
+//      maybePredictedType,
       paramsS,
       maybeReturnRune,
-      isTemplate,
-      rulesS,
-      AbstractBodyS);
+//      isTemplate,
+      ruleBuilder.toArray,
+      AbstractBodyS)
   }
 }

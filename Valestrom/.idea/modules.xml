@@ -11,6 +11,7 @@
       <module fileurl="file://$PROJECT_DIR$/Hinputs/Hinputs.iml" filepath="$PROJECT_DIR$/Hinputs/Hinputs.iml" />
       <module fileurl="file://$PROJECT_DIR$/IntegrationTests/IntegrationTests.iml" filepath="$PROJECT_DIR$/IntegrationTests/IntegrationTests.iml" />
       <module fileurl="file://$PROJECT_DIR$/Metal/Metal.iml" filepath="$PROJECT_DIR$/Metal/Metal.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Options/Options.iml" filepath="$PROJECT_DIR$/Options/Options.iml" />
       <module fileurl="file://$PROJECT_DIR$/Parser/Parser.iml" filepath="$PROJECT_DIR$/Parser/Parser.iml" />
       <module fileurl="file://$PROJECT_DIR$/Scout/Scout.iml" filepath="$PROJECT_DIR$/Scout/Scout.iml" />
       <module fileurl="file://$PROJECT_DIR$/Solver/Solver.iml" filepath="$PROJECT_DIR$/Solver/Solver.iml" />

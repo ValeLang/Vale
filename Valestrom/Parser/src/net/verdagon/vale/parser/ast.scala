@@ -59,6 +59,11 @@ case class ExportP(range: Range) extends ICitizenAttributeP { override def hashC
 case class WeakableP(range: Range) extends ICitizenAttributeP { override def hashCode(): Int = vcurious() }
 case class SealedP(range: Range) extends ICitizenAttributeP { override def hashCode(): Int = vcurious() }
 
+sealed trait IMacroInclusion
+case object CallMacro extends IMacroInclusion
+case object DontCallMacro extends IMacroInclusion
+case class MacroCallP(range: Range, inclusion: IMacroInclusion, name: NameP) extends ICitizenAttributeP { override def hashCode(): Int = vcurious() }
+
 case class StructP(
   range: Range,
   name: NameP,
@@ -73,11 +78,17 @@ case class StructMembersP(
   contents: Vector[IStructContent]) { override def hashCode(): Int = vcurious() }
 sealed trait IStructContent
 case class StructMethodP(func: FunctionP) extends IStructContent { override def hashCode(): Int = vcurious() }
-case class StructMemberP(
+case class NormalStructMemberP(
   range: Range,
   name: NameP,
   variability: VariabilityP,
-  tyype: ITemplexPT) extends IStructContent { override def hashCode(): Int = vcurious() }
+  tyype: ITemplexPT
+) extends IStructContent { override def hashCode(): Int = vcurious() }
+case class VariadicStructMemberP(
+  range: Range,
+  variability: VariabilityP,
+  tyype: ITemplexPT
+) extends IStructContent { override def hashCode(): Int = vcurious() }
 
 case class InterfaceP(
   range: Range,
@@ -95,16 +106,16 @@ case class BuiltinAttributeP(range: Range, generatorName: NameP) extends IFuncti
 case class ExportAttributeP(range: Range) extends IFunctionAttributeP { override def hashCode(): Int = vcurious() }
 case class PureAttributeP(range: Range) extends IFunctionAttributeP { override def hashCode(): Int = vcurious() }
 
-sealed trait IRuneAttributeP
-case class TypeRuneAttributeP(range: Range, tyype: ITypePR) extends IRuneAttributeP { override def hashCode(): Int = vcurious() }
-case class ReadOnlyRuneAttributeP(range: Range) extends IRuneAttributeP {
+sealed trait IRuneSttributeP
+case class TypeRuneAttributeP(range: Range, tyype: ITypePR) extends IRuneSttributeP { override def hashCode(): Int = vcurious() }
+case class ReadOnlyRuneAttributeP(range: Range) extends IRuneSttributeP {
   vpass()
 }
-case class PoolRuneAttributeP(range: Range) extends IRuneAttributeP { override def hashCode(): Int = vcurious() }
-case class ArenaRuneAttributeP(range: Range) extends IRuneAttributeP { override def hashCode(): Int = vcurious() }
-case class BumpRuneAttributeP(range: Range) extends IRuneAttributeP { override def hashCode(): Int = vcurious() }
+case class PoolRuneAttributeP(range: Range) extends IRuneSttributeP { override def hashCode(): Int = vcurious() }
+case class ArenaRuneAttributeP(range: Range) extends IRuneSttributeP { override def hashCode(): Int = vcurious() }
+case class BumpRuneAttributeP(range: Range) extends IRuneSttributeP { override def hashCode(): Int = vcurious() }
 
-case class IdentifyingRuneP(range: Range, name: NameP, attributes: Vector[IRuneAttributeP]) { override def hashCode(): Int = vcurious() }
+case class IdentifyingRuneP(range: Range, name: NameP, attributes: Vector[IRuneSttributeP]) { override def hashCode(): Int = vcurious() }
 
 case class IdentifyingRunesP(range: Range, runes: Vector[IdentifyingRuneP]) { override def hashCode(): Int = vcurious() }
 case class TemplateRulesP(range: Range, rules: Vector[IRulexPR]) { override def hashCode(): Int = vcurious() }

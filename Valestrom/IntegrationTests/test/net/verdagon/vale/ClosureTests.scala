@@ -1,15 +1,15 @@
 package net.verdagon.vale
 
-import net.verdagon.vale.astronomer.{CodeVarNameA, LocalA}
 import net.verdagon.vale.parser.{FinalP, ImmutableP, MutableP, VaryingP}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._
+import net.verdagon.vale.templar.ast.{AddressMemberLookupTE, ConstructTE, FunctionCallTE, LetNormalTE, LocalLookupTE, MutateTE, ReferenceMemberLookupTE}
 import net.verdagon.vale.templar.env.{AddressibleLocalVariableT, ReferenceLocalVariableT}
-import net.verdagon.vale.templar.templata.{FunctionHeaderT, ParameterT}
 import net.verdagon.vale.templar.types._
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.templar.expression.LocalHelper
+import net.verdagon.vale.templar.names.{ClosureParamNameT, CodeVarNameT, FullNameT, FunctionNameT, LambdaCitizenNameT, TemplarBlockResultVarNameT}
 
 class ClosureTests extends FunSuite with Matchers {
 
@@ -24,13 +24,13 @@ class ClosureTests extends FunSuite with Matchers {
       val addressibleIfMutable =
         LocalHelper.determineIfLocalIsAddressible(
           MutableT,
-          LocalA(
-            CodeVarNameA("x"), selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated))
+          LocalS(
+            CodeVarNameS("x"), selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated))
       val addressibleIfImmutable =
         LocalHelper.determineIfLocalIsAddressible(
           ImmutableT,
-          LocalA(
-            CodeVarNameA("x"), selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated))
+          LocalS(
+            CodeVarNameS("x"), selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated))
       (addressibleIfMutable, addressibleIfImmutable)
     }
 
@@ -39,25 +39,10 @@ class ClosureTests extends FunSuite with Matchers {
 
     // If we or our children only ever read, it can be just a reference.
     calc(Used, NotUsed, NotUsed,      NotUsed, NotUsed, NotUsed) shouldEqual (false, false)
-    calc(MaybeUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) shouldEqual (false, false)
     calc(NotUsed, NotUsed, NotUsed,   Used, NotUsed, NotUsed) shouldEqual (false, false)
-    calc(NotUsed, NotUsed, NotUsed,   MaybeUsed, NotUsed, NotUsed) shouldEqual (false, false)
 
     // If only we mutate it, it can be just a reference.
     calc(NotUsed, NotUsed, Used, NotUsed, NotUsed, NotUsed) shouldEqual (false, false)
-    calc(NotUsed, NotUsed, MaybeUsed, NotUsed, NotUsed, NotUsed) shouldEqual (false, false)
-
-    // If we're certain it's moved, it can be just a reference.
-    calc(NotUsed, NotUsed, MaybeUsed, NotUsed, NotUsed, NotUsed) shouldEqual (false, false)
-
-    // If we maybe move it, it has to be addressible. Not sure if this is possible
-    // though.
-    // And if its immutable, doesn't have to be addressible because move = copy.
-    calc(NotUsed, MaybeUsed, NotUsed, NotUsed, NotUsed, NotUsed) shouldEqual (true, false)
-
-    // If children might move it, it should be addressible.
-    // If its immutable, doesn't have to be addressible because move = copy.
-    calc(NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed) shouldEqual (true, false)
 
     // Even if we're certain it's moved, it must be addressible.
     // Imagine:
@@ -74,9 +59,6 @@ class ClosureTests extends FunSuite with Matchers {
     // addressibles)
     // However, this doesnt apply to immutable, since move = copy.
     calc(NotUsed, NotUsed, NotUsed, NotUsed, Used, NotUsed) shouldEqual (true, false)
-
-    // If children might mutate it, it has to be addressible.
-    calc(NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed) shouldEqual (true, true)
 
     // If we're certain children mutate it, it also has to be addressible.
     calc(NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, Used) shouldEqual (true, true)
@@ -111,17 +93,21 @@ class ClosureTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
 
     val main = temputs.lookupLambdaIn("main")
-    main.only({
-      case ReferenceLocalVariableT(
-        FullNameT(_, Vector(FunctionNameT("main", _, _), LambdaCitizenNameT(_), FunctionNameT("__call", _, _)), ClosureParamNameT()),
-        FinalT,
-        CoordT(ShareT, ReadonlyT, StructTT(FullNameT(_, Vector(FunctionNameT("main", Vector(), Vector())), LambdaCitizenNameT(_))))) =>
+    Collector.only(main, {
+      case LetNormalTE(
+        ReferenceLocalVariableT(
+          FullNameT(_, Vector(FunctionNameT("main", _, _), LambdaCitizenNameT(_), FunctionNameT("__call", _, _)), ClosureParamNameT()),
+          FinalT,
+          CoordT(ShareT, ReadonlyT, StructTT(FullNameT(_, Vector(FunctionNameT("main", Vector(), Vector())), LambdaCitizenNameT(_))))),
+        _) =>
     })
-    main.only({
-      case ReferenceLocalVariableT(
+    Collector.only(main, {
+      case LetNormalTE(
+        ReferenceLocalVariableT(
           FullNameT(_, Vector(FunctionNameT("main",_,_), LambdaCitizenNameT(_), FunctionNameT("__call",_,_)),TemplarBlockResultVarNameT(_)),
           FinalT,
-          CoordT(ShareT,ReadonlyT, IntT.i32)) =>
+          CoordT(ShareT,ReadonlyT, IntT.i32)),
+        _) =>
     })
   }
 
@@ -142,7 +128,7 @@ class ClosureTests extends FunSuite with Matchers {
     val lambda = temputs.lookupLambdaIn("main")
     // Make sure we're doing a referencememberlookup, since it's a reference member
     // in the closure struct.
-    lambda.only({
+    Collector.only(lambda, {
       case ReferenceMemberLookupTE(_,_, FullNameT(_, _, CodeVarNameT("x")), _, _, _) =>
     })
 
@@ -162,14 +148,14 @@ class ClosureTests extends FunSuite with Matchers {
 
     // Make sure we make it with a function pointer and a constructed vars struct
     val main = temputs.lookupFunction("main")
-    main.only({
+    Collector.only(main, {
       case ConstructTE(StructTT(FullNameT(_, Vector(FunctionNameT("main",Vector(),Vector())),LambdaCitizenNameT(_))), _, _) =>
     })
 
     // Make sure we call the function somewhere
-    main.onlyOf(classOf[FunctionCallTE])
+    Collector.onlyOf(main, classOf[FunctionCallTE])
 
-    lambda.only({
+    Collector.only(lambda, {
       case LocalLookupTE(_,ReferenceLocalVariableT(FullNameT(_, _,ClosureParamNameT()),FinalT,_),_, _) =>
     })
 
@@ -193,18 +179,15 @@ class ClosureTests extends FunSuite with Matchers {
     vassert(closuredVarsStruct.members == expectedMembers)
 
     val lambda = temputs.lookupLambdaIn("main")
-    lambda.only({
+    Collector.only(lambda, {
       case MutateTE(
         AddressMemberLookupTE(_,_,FullNameT(_, Vector(FunctionNameT("main",Vector(),Vector()), LambdaCitizenNameT(_)),CodeVarNameT("x")),CoordT(ShareT,ReadonlyT, IntT.i32), _),
         _) =>
     })
 
     val main = temputs.lookupFunction("main")
-    main.only({
+    Collector.only(main, {
       case LetNormalTE(AddressibleLocalVariableT(_, VaryingT, _), _) =>
-    })
-    main.only({
-      case AddressibleLocalVariableT(_, VaryingT, _) =>
     })
 
     compile.evalForKind(Vector()) shouldEqual VonInt(5)

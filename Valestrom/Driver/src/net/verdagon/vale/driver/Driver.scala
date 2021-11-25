@@ -6,6 +6,7 @@ import net.verdagon.vale.astronomer.{Astronomer, AstronomerErrorHumanizer, Progr
 import net.verdagon.vale.hammer.{Hammer, Hamuts, VonHammer}
 import net.verdagon.vale.highlighter.{Highlighter, Spanner}
 import net.verdagon.vale.metal.{PackageH, ProgramH}
+import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser.{CombinatorParsers, FailedParse, FileP, InputException, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier}
 import net.verdagon.vale.scout.{Scout, ScoutErrorHumanizer}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
@@ -45,7 +46,10 @@ object Driver {
     outputHighlights: Boolean,
     includeBuiltins: Boolean,
     mode: Option[String], // build v run etc
-    verbose: Boolean,
+    sanityCheck: Boolean,
+    useOptimizedSolver: Boolean,
+    verboseErrors: Boolean,
+    debugOutput: Boolean
   ) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
   def parseOpts(opts: Options, list: List[String]) : Options = {
@@ -71,7 +75,7 @@ object Driver {
         parseOpts(opts.copy(outputHighlights = value.toBoolean), tail)
       }
       case ("-v" | "--verbose") :: tail => {
-        parseOpts(opts.copy(verbose = true), tail)
+        parseOpts(opts.copy(verboseErrors = true), tail)
       }
       //          case "--min-size" :: value :: tail =>
       //            parseOpts(opts ++ Map('minsize -> value.toInt), tail)
@@ -308,16 +312,19 @@ object Driver {
         Vector(PackageCoordinate.BUILTIN) ++ opts.inputs.map(_.packageCoord).distinct,
         Builtins.getCodeMap().or(packageCoord => resolvePackageContents(opts.inputs, packageCoord)),
         FullCompilationOptions(
-          if (opts.verbose) {
+          GlobalOptions(
+            opts.sanityCheck,
+            opts.useOptimizedSolver,
+            opts.verboseErrors,
+            opts.debugOutput),
+          if (opts.debugOutput) {
             (x => {
               println("#: " + x)
             })
           } else {
             x => Unit // do nothing with it
           },
-          opts.verbose,
-          new NullProfiler(),
-          false
+          new NullProfiler()
         )
       )
 
@@ -367,7 +374,7 @@ object Driver {
       }
 
       compilation.getTemputs() match {
-        case Err(error) => return Err(TemplarErrorHumanizer.humanize(opts.verbose, valeCodeMap, error))
+        case Err(error) => return Err(TemplarErrorHumanizer.humanize(opts.verboseErrors, valeCodeMap, error))
         case Ok(x) => x
       }
 
@@ -451,7 +458,7 @@ object Driver {
 
   def main(args: Array[String]): Unit = {
     try {
-      val opts = parseOpts(Options(Vector.empty, None, false, true, true, false, true, None, false), args.toList)
+      val opts = parseOpts(Options(Vector.empty, None, false, true, true, false, true, None, false, true, false, false), args.toList)
       vcheck(opts.mode.nonEmpty, "No mode!", InputException)
       vcheck(opts.inputs.nonEmpty, "No input files!", InputException)
 
@@ -465,16 +472,15 @@ object Driver {
               opts.inputs.map(_.packageCoord).distinct,
               Builtins.getCodeMap().or(packageCoord => resolvePackageContents(opts.inputs, packageCoord)),
               FullCompilationOptions(
-                if (opts.verbose) {
+                GlobalOptions(opts.sanityCheck, opts.useOptimizedSolver, opts.verboseErrors, opts.debugOutput),
+                if (opts.verboseErrors) {
                   (x => {
                     println("##: " + x)
                   })
                 } else {
                   x => Unit // do nothing with it
                 },
-                opts.verbose,
-                new NullProfiler(),
-                false))
+                new NullProfiler()))
 
           val parseds =
             compilation.getParseds() match {

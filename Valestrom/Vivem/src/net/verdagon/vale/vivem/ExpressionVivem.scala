@@ -1154,20 +1154,20 @@ object ExpressionVivem {
               heap.zero(actualReference)
               heap.deallocateIfNoWeakRefs(actualReference)
             }
-            case ir @ InterfaceRefH(_) => {
-              heap.vivemDout.println()
-              heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (discard icall)")
-              val prototypeH = programH.lookupPackage(expectedReference.kind.packageCoord).immDestructorsByKind(expectedReference.kind)
-              val indexInEdge = programH.lookupInterface(ir).methods.indexWhere(_.prototypeH == prototypeH)
-              vassert(indexInEdge >= 0)
-              val (functionH, (calleeCallId, retuurn)) =
-                executeInterfaceFunction(programH, stdin, stdout, heap, Vector(actualReference), 0, ir, indexInEdge, prototypeH)
-              heap.vivemDout.print("  " * callId.callDepth + "Getting return reference")
-              val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
-              vassert(returnRef.actualKind.hamut == ProgramH.emptyTupleStructRef)
-              discard(programH, heap, stdout, stdin, callId, prototypeH.returnType, returnRef)
-            }
-            case StructRefH(_) | RuntimeSizedArrayTH(_) | StaticSizedArrayTH(_) => {
+//            case ir @ InterfaceRefH(_) => {
+//              heap.vivemDout.println()
+//              heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (discard icall)")
+//              val prototypeH = programH.lookupPackage(expectedReference.kind.packageCoord).immDestructorsByKind(expectedReference.kind)
+//              val indexInEdge = programH.lookupInterface(ir).methods.indexWhere(_.prototypeH == prototypeH)
+//              vassert(indexInEdge >= 0)
+//              val (functionH, (calleeCallId, retuurn)) =
+//                executeInterfaceFunction(programH, stdin, stdout, heap, Vector(actualReference), 0, ir, indexInEdge, prototypeH)
+//              heap.vivemDout.print("  " * callId.callDepth + "Getting return reference")
+//              val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
+//              vassert(returnRef.actualKind.hamut == ProgramH.emptyTupleStructRef)
+//              discard(programH, heap, stdout, stdin, callId, prototypeH.returnType, returnRef)
+//            }
+            case InterfaceRefH(_) | StructRefH(_) | RuntimeSizedArrayTH(_) | StaticSizedArrayTH(_) => {
               heap.vivemDout.println()
               heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (discard call)")
               val prototypeH = vassertSome(programH.lookupPackage(expectedReference.kind.packageCoord).immDestructorsByKind.get(expectedReference.kind))

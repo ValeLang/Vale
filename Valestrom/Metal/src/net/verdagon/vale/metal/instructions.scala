@@ -1,6 +1,5 @@
 package net.verdagon.vale.metal
 
-import net.verdagon.vale.templar.{FullNameT, IVarNameT, LetNormalTE}
 import net.verdagon.vale.{vassert, vcurious, vfail, vimpl, vwat}
 
 // Common trait for all instructions.

@@ -25,6 +25,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
     "Mutability" ^^^ MutabilityTypePR |
     "Permission" ^^^ PermissionTypePR |
     "Location" ^^^ LocationTypePR |
+    "RefList" ^^^ CoordListTypePR |
     "Ref" ^^^ CoordTypePR |
     "Prot" ^^^ PrototypeTypePR |
 //    "Struct" ^^^ StructTypePR |
@@ -75,6 +76,8 @@ trait RuleParser extends RegexParsers with ParserUtils {
 
   private[parser] def level3PR: Parser[IRulexPR] = {
     implementsPR |
+    refListCompoundMutabilityPR |
+    isInterfacePR |
     existsPR |
     dotPR(level2PR) |
     level2PR
@@ -95,7 +98,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
 
   // Add any new rules to the "Nothing matches empty string" test!
 
-  private[parser] def identifyingRegionRuneAttribute: Parser[IRuneAttributeP] = {
+  private[parser] def identifyingRegionRuneAttribute: Parser[IRuneSttributeP] = {
     pos ~ "ro" ~ pos ^^ { case begin ~ _ ~ end => ReadOnlyRuneAttributeP(Range(begin, end)) } |
     pos ~ "bump" ~ pos ^^ { case begin ~ _ ~ end => BumpRuneAttributeP(Range(begin, end)) } |
     pos ~ "pool" ~ pos ^^ { case begin ~ _ ~ end => PoolRuneAttributeP(Range(begin, end)) } |
@@ -138,7 +141,25 @@ trait RuleParser extends RegexParsers with ParserUtils {
   private[parser] def implementsPR: Parser[IRulexPR] = {
     pos ~ pstr("implements") ~ (optWhite ~> "(" ~> optWhite ~> rulePR <~ optWhite <~ "," <~ optWhite) ~
         (rulePR <~ optWhite <~ ")") ~ pos ^^ {
-      case begin ~ impl ~ struct ~ interface ~ end => CallPR(Range(begin, end), impl, Vector(struct, interface))
+      case begin ~ impl ~ struct ~ interface ~ end => BuiltinCallPR(Range(begin, end), impl, Vector(struct, interface))
+    }
+  }
+
+  // Add any new rules to the "Nothing matches empty string" test!
+
+  // Atomic means no neighboring, see parser doc.
+  private[parser] def refListCompoundMutabilityPR: Parser[IRulexPR] = {
+    pos ~ pstr("refListCompoundMutability") ~ (optWhite ~> "(" ~> optWhite ~> (rulePR <~ optWhite <~ ")")) ~ pos ^^ {
+      case begin ~ name ~ arg ~ end => BuiltinCallPR(Range(begin, end), name, Vector(arg))
+    }
+  }
+
+  // Add any new rules to the "Nothing matches empty string" test!
+
+  // Atomic means no neighboring, see parser doc.
+  private[parser] def isInterfacePR: Parser[IRulexPR] = {
+    pos ~ pstr("isInterface") ~ (optWhite ~> "(" ~> optWhite ~> rulePR <~ optWhite <~ ")") ~ pos ^^ {
+      case begin ~ name ~ arg ~ end => BuiltinCallPR(Range(begin, end), name, Vector(arg))
     }
   }
 
@@ -147,7 +168,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
   // Atomic means no neighboring, see parser doc.
   private[parser] def existsPR: Parser[IRulexPR] = {
     pos ~ pstr("exists") ~ (optWhite ~> "(" ~> optWhite ~> rulePR <~ optWhite <~ ")") ~ pos ^^ {
-      case begin ~ exists ~ thing ~ end => CallPR(Range(begin, end), exists, Vector(thing))
+      case begin ~ exists ~ thing ~ end => BuiltinCallPR(Range(begin, end), exists, Vector(thing))
     }
   }
 

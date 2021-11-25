@@ -5,3 +5,5 @@ fn panic(msg str) infer-ret {
   print("\n");
   = __vbi_panic();
 }
+
+fn __vbi_panic() __Never extern;

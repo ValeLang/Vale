@@ -99,21 +99,33 @@ object CombinatorParsers
     }
   }
 
-  def structMember: Parser[StructMemberP] = {
+  def normalStructMember: Parser[NormalStructMemberP] = {
     pos ~ (exprIdentifier ~ opt("!") <~ optWhite) ~ (templex <~ optWhite <~ ";") ~ pos ^^ {
-      case begin ~ (name ~ None) ~ tyype ~ end => StructMemberP(Range(begin, end), name, FinalP, tyype)
-      case begin ~ (name ~ Some(_)) ~ tyype ~ end => StructMemberP(Range(begin, end), name, VaryingP, tyype)
+      case begin ~ (name ~ None) ~ tyype ~ end => NormalStructMemberP(Range(begin, end), name, FinalP, tyype)
+      case begin ~ (name ~ Some(_)) ~ tyype ~ end => NormalStructMemberP(Range(begin, end), name, VaryingP, tyype)
+    }
+  }
+
+  def variadicStructMember: Parser[VariadicStructMemberP] = {
+    pos ~ ("_" ~> opt("!") <~ white) ~ ("..." ~> optWhite ~> templex <~ optWhite <~ ";") ~ pos ^^ {
+      case begin ~ (None) ~ tyype ~ end => VariadicStructMemberP(Range(begin, end), FinalP, tyype)
+      case begin ~ (Some(_)) ~ tyype ~ end => VariadicStructMemberP(Range(begin, end), VaryingP, tyype)
     }
   }
 
   def structContent: Parser[IStructContent] = {
-    structMember | (topLevelFunction ^^ StructMethodP)
+    variadicStructMember | normalStructMember | (topLevelFunction ^^ StructMethodP)
   }
 
   def citizenAttribute: Parser[ICitizenAttributeP] = {
     pos ~ "export" ~ pos ^^ { case begin ~ _ ~ end => ExportP(Range(begin, end)) } |
       pos ~ "weakable" ~ pos ^^ { case begin ~ _ ~ end => WeakableP(Range(begin, end)) } |
-      pos ~ "sealed" ~ pos ^^ { case begin ~ _ ~ end => SealedP(Range(begin, end)) }
+      pos ~ "sealed" ~ pos ^^ { case begin ~ _ ~ end => SealedP(Range(begin, end)) } |
+      pos ~ ("#" ~> opt("!")) ~ typeIdentifier ~ pos ^^ {
+        case begin ~ dontCall ~ name ~ end => {
+          MacroCallP(Range(begin, end), if (dontCall.isEmpty) CallMacro else DontCallMacro, name)
+        }
+      }
   }
 
   private[parser] def interface: Parser[InterfaceP] = {

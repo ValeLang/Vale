@@ -1,14 +1,18 @@
 package net.verdagon.vale.templar
 
-import net.verdagon.vale.astronomer.{GlobalFunctionFamilyNameA, IImpreciseNameStepA, INameA, ImmConcreteDestructorImpreciseNameA, ImmConcreteDestructorNameA, ImmInterfaceDestructorImpreciseNameA}
-import net.verdagon.vale.templar.templata.{FunctionBannerT, OverrideT, PrototypeT, SignatureT}
+//import net.verdagon.vale.astronomer.{GlobalFunctionFamilyNameS, INameS, INameA, ImmConcreteDestructorImpreciseNameA, ImmConcreteDestructorNameA, ImmInterfaceDestructorImpreciseNameS}
+import net.verdagon.vale.astronomer.VirtualFreeImpreciseNameS
+import net.verdagon.vale.scout.{CodeNameS, CodeVarNameS, GlobalFunctionFamilyNameS, IImpreciseNameS, INameS}
+import net.verdagon.vale.templar.ast.{FunctionT, ImplT, InterfaceEdgeBlueprint, OverrideT, PrototypeT}
+import net.verdagon.vale.templar.expression.CallTemplar
+import net.verdagon.vale.templar.names.{FreeNameT, FunctionNameT, VirtualFreeNameT}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.{vassert, vfail, vimpl, vwat}
 
 object EdgeTemplar {
   sealed trait IMethod
   case class NeededOverride(
-    name: IImpreciseNameStepA,
+    name: IImpreciseNameS,
     paramFilters: Vector[ParamFilter]
   ) extends IMethod { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
   case class FoundFunction(prototype: PrototypeT) extends IMethod { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
@@ -42,9 +46,10 @@ object EdgeTemplar {
                       case (tyype, _) => ParamFilter(tyype, None)
                     })
                   superFunction.fullName.last match {
-                    case FunctionNameT(humanName, _, _) => NeededOverride(GlobalFunctionFamilyNameA(humanName), overrideParamFilters)
-                    case ImmInterfaceDestructorNameT(_, _) => NeededOverride(ImmInterfaceDestructorImpreciseNameA(), overrideParamFilters)
-                    case _ => vwat()
+                    case FunctionNameT(humanName, _, _) => NeededOverride(CodeNameS(humanName), overrideParamFilters)
+                    case VirtualFreeNameT(_, _) => NeededOverride(VirtualFreeImpreciseNameS(), overrideParamFilters)
+//                    case DropNameT(_, _) => NeededOverride(CodeVarNameS(CallTemplar.VIRTUAL_DROP_FUNCTION_NAME), overrideParamFilters)
+                    case other => vwat(other)
                   }
                 }
                 case Some(Vector()) => vfail("wot")
@@ -65,7 +70,10 @@ object EdgeTemplar {
     temputs: Temputs,
     interfaceEdgeBlueprints: Vector[InterfaceEdgeBlueprint]
   ): Map[(StructTT, InterfaceTT), Vector[(FunctionT, Int)]] = {
-    temputs.getAllFunctions().toVector.flatMap({ case overrideFunction =>
+    // This makes an empty entry for all impls. Most of these will be overwritten below.
+    // Without this, if an impl had no functions in it, it wouldn't be included in the result.
+    temputs.getAllImpls().map({ case ImplT(struct, interface) => (struct, interface) -> Vector() }).toMap ++
+    (temputs.getAllFunctions().toVector.flatMap({ case overrideFunction =>
       overrideFunction.header.getOverride match {
         case None => Vector.empty
         case Some((struct, superInterface)) => {
@@ -105,8 +113,17 @@ object EdgeTemplar {
                     case (FunctionNameT(possibleSuperFunctionHumanName, _, _), FunctionNameT(overrideFunctionHumanName, _, _)) => {
                       possibleSuperFunctionHumanName == overrideFunctionHumanName
                     }
-                    case (ImmInterfaceDestructorNameT(_, _), ImmInterfaceDestructorNameT(_, _)) => true
-                    case _ => false
+                    case (FunctionNameT(_, _, _), _) => false
+                    case (_, FunctionNameT(_, _, _)) => false
+                    case (VirtualFreeNameT(_, _), VirtualFreeNameT(_, _)) => true
+                    case (VirtualFreeNameT(_, _), _) => false
+                    case (_, VirtualFreeNameT(_, _)) => false
+                    //                    case (ImmInterfaceDestructorNameT(_, _), ImmInterfaceDestructorNameT(_, _)) => true
+//                    case (DropNameT(_, possibleSuperFunctionCoord), FunctionNameT(humanName, _, parameters)) => {
+//                      humanName == CallTemplar.DROP_FUNCTION_NAME && parameters.size == 1 && possibleSuperFunctionCoord == parameters.head
+//                    }
+                    case other => vimpl(other)
+//                    case _ => false
                   }
                 namesMatch && possibleSuperFunction.paramTypes == needleSuperFunctionParamTypes
               })
@@ -125,7 +142,7 @@ object EdgeTemplar {
       }
     })
       .groupBy(_._1)
-      .mapValues(_.map(_._2))
+      .mapValues(_.map(_._2)))
   }
 
   def makeInterfaceEdgeBlueprints(temputs: Temputs): Vector[InterfaceEdgeBlueprint] = {
@@ -162,7 +179,7 @@ object EdgeTemplar {
     val interfaceEdgeBlueprints =
       abstractFunctionHeadersByInterface
         .map({ case (interfaceTT, functionHeaders2) =>
-          InterfaceEdgeBlueprint(
+          ast.InterfaceEdgeBlueprint(
             interfaceTT,
             // This is where they're given order and get an implied index
             functionHeaders2.map(_.toBanner).toVector)

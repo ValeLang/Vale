@@ -1,12 +1,11 @@
 package net.verdagon.vale.hammer
 
-import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vimpl, metal => m}
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.metal.{ShareH, BorrowH => _, Immutable => _, Mutable => _, OwnH => _, _}
-import net.verdagon.vale.templar._
+import net.verdagon.vale.templar.{Hinputs, _}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.env.AddressibleLocalVariableT
-import net.verdagon.vale.templar.templata.FunctionHeaderT
 import net.verdagon.vale.templar.types._
 
 object ExpressionHammer {
@@ -88,7 +87,7 @@ object ExpressionHammer {
       case call2 @ FunctionCallTE(callableExpr, args) => {
         val access =
           CallHammer.translateFunctionPointerCall(
-            hinputs, hamuts, currentFunctionHeader, locals, callableExpr, args, call2.resultRegister.reference)
+            hinputs, hamuts, currentFunctionHeader, locals, callableExpr, args, call2.result.reference)
         (access, Vector.empty)
       }
 
@@ -105,29 +104,29 @@ object ExpressionHammer {
         (expression, Vector.empty)
       }
 
-      case PackTE(exprs, resultType, resultPackType) => {
-        val (resultLines, deferreds) =
-          translateExpressions(hinputs, hamuts, currentFunctionHeader, locals, exprs)
-        val (underlyingStructRefH) =
-          StructHammer.translateStructRef(hinputs, hamuts, resultPackType.underlyingStruct)
-        val (resultReference) =
-          TypeHammer.translateReference(hinputs, hamuts, resultType)
-        vassert(resultReference.kind == underlyingStructRefH)
-
-        val structDefH = hamuts.structDefsByRef2(resultPackType.underlyingStruct)
-        vassert(resultLines.size == structDefH.members.size)
-        val newStructNode =
-          NewStructH(
-            resultLines,
-            structDefH.members.map(_.name),
-            resultReference.expectStructReference())
-
-        val newStructNodeAndDeferredsExprH =
-            translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, newStructNode, deferreds)
-
-        // Export locals from inside the pack
-        (newStructNodeAndDeferredsExprH, Vector.empty)
-      }
+//      case PackTE(exprs, resultType, resultPackType) => {
+//        val (resultLines, deferreds) =
+//          translateExpressions(hinputs, hamuts, currentFunctionHeader, locals, exprs)
+//        val (underlyingStructRefH) =
+//          StructHammer.translateStructRef(hinputs, hamuts, resultPackType.underlyingStruct)
+//        val (resultReference) =
+//          TypeHammer.translateReference(hinputs, hamuts, resultType)
+//        vassert(resultReference.kind == underlyingStructRefH)
+//
+//        val structDefH = hamuts.structDefsByRef2(resultPackType.underlyingStruct)
+//        vassert(resultLines.size == structDefH.members.size)
+//        val newStructNode =
+//          NewStructH(
+//            resultLines,
+//            structDefH.members.map(_.name),
+//            resultReference.expectStructReference())
+//
+//        val newStructNodeAndDeferredsExprH =
+//            translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, newStructNode, deferreds)
+//
+//        // Export locals from inside the pack
+//        (newStructNodeAndDeferredsExprH, Vector.empty)
+//      }
 
       case ArrayLengthTE(arrayExpr2) => {
         val (resultLine, deferreds) =
@@ -161,16 +160,17 @@ object ExpressionHammer {
         (resultNode, deferreds)
       }
 
-      case TupleTE(exprs, resultType, resultPackType) => {
+      case TupleTE(exprs, resultType) => {
         val (resultLines, deferreds) =
           translateExpressions(hinputs, hamuts, currentFunctionHeader, locals, exprs);
+        val resultStructT = resultType.kind match { case s @ StructTT(_) => s }
         val (underlyingStructRefH) =
-          StructHammer.translateStructRef(hinputs, hamuts, resultPackType.underlyingStruct);
+          StructHammer.translateStructRef(hinputs, hamuts, resultStructT);
         val (resultReference) =
           TypeHammer.translateReference(hinputs, hamuts, resultType)
         vassert(resultReference.kind == underlyingStructRefH)
 
-        val structDefH = hamuts.structDefsByRef2(resultPackType.underlyingStruct)
+        val structDefH = hamuts.structDefsByRefT(resultStructT)
         vassert(resultLines.size == structDefH.members.size)
         val newStructNode =
           NewStructH(
@@ -214,7 +214,7 @@ object ExpressionHammer {
           TypeHammer.translateReference(hinputs, hamuts, resultType2)
 
 
-        val structDefH = hamuts.structDefsByRef2(structTT)
+        val structDefH = hamuts.structDefsByRefT(structTT)
         vassert(memberResultLines.size == structDefH.members.size)
         memberResultLines.zip(structDefH.members).foreach({ case (memberResultLine, memberH ) =>
           vassert(memberResultLine.resultType == memberH.tyype)
@@ -271,7 +271,7 @@ object ExpressionHammer {
 
       case TemplarReinterpretTE(innerExpr, resultType2) => {
         // Check types; it's overkill because reinterprets are rather scary.
-        val innerExprResultType2 = innerExpr.resultRegister.reference
+        val innerExprResultType2 = innerExpr.result.reference
         val (innerExprResultTypeH) = TypeHammer.translateReference(hinputs, hamuts, innerExprResultType2);
         val (resultTypeH) = TypeHammer.translateReference(hinputs, hamuts, resultType2);
         if (innerExprResultTypeH.kind != NeverH()) {
@@ -304,8 +304,8 @@ object ExpressionHammer {
       }
 
       case up @ InterfaceToInterfaceUpcastTE(innerExpr, targetInterfaceRef2) => {
-        val targetPointerType2 = up.resultRegister.reference;
-        val sourcePointerType2 = innerExpr.resultRegister.reference
+        val targetPointerType2 = up.result.reference;
+        val sourcePointerType2 = innerExpr.result.reference
 
         val (sourcePointerTypeH) =
           TypeHammer.translateReference(hinputs, hamuts, sourcePointerType2);
@@ -327,8 +327,8 @@ object ExpressionHammer {
       }
 
       case up @ StructToInterfaceUpcastTE(innerExpr, targetInterfaceRef2) => {
-        val targetPointerType2 = up.resultRegister.reference;
-        val sourcePointerType2 = innerExpr.resultRegister.reference
+        val targetPointerType2 = up.result.reference;
+        val sourcePointerType2 = innerExpr.result.reference
 
         val (sourcePointerTypeH) =
           TypeHammer.translateReference(hinputs, hamuts, sourcePointerType2);
@@ -387,8 +387,8 @@ object ExpressionHammer {
             translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, innerExprResultLine, innerDeferreds)
 
         vassert(
-          innerExpr.resultRegister.kind == NeverT() ||
-          innerExpr.resultRegister.reference == currentFunctionHeader.returnType)
+          innerExpr.result.kind == NeverT() ||
+          innerExpr.result.reference == currentFunctionHeader.returnType)
         (ReturnH(innerWithDeferreds), Vector.empty)
       }
       case ArgLookupTE(paramIndex, type2) => {

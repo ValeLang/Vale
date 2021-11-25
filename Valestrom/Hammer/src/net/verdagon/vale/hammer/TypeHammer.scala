@@ -1,10 +1,10 @@
 package net.verdagon.vale.hammer
 
-import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal._
 import net.verdagon.vale.{metal => m}
-import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.templata.FunctionHeaderT
+import net.verdagon.vale.templar.{Hinputs, _}
+import net.verdagon.vale.templar.names.{CitizenNameT, CitizenTemplateNameT, FullNameT, INameT}
+//import net.verdagon.vale.templar.templata.FunctionHeaderT
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.vfail
 
@@ -77,8 +77,8 @@ object TypeHammer {
 
       // A PackT2 is really just a struct ref under the hood. The dinstinction is only meaningful
       // to the Templar.
-      case p @ PackTT(_, underlyingStruct) => StructHammer.translateStructRef(hinputs, hamuts, underlyingStruct)
-      case p @ TupleTT(_, underlyingStruct) => StructHammer.translateStructRef(hinputs, hamuts, underlyingStruct)
+//      case p @ PackTT(_, underlyingStruct) => StructHammer.translateStructRef(hinputs, hamuts, underlyingStruct)
+//      case p @ TupleTT(_, underlyingStruct) => StructHammer.translateStructRef(hinputs, hamuts, underlyingStruct)
       case a @ StaticSizedArrayTT(_, _) => translateStaticSizedArray(hinputs, hamuts, a)
       case a @ RuntimeSizedArrayTT(_) => translateRuntimeSizedArray(hinputs, hamuts, a)
     }
@@ -96,9 +96,9 @@ object TypeHammer {
         case (ConstraintT, _) => YonderH
         case (WeakT, _) => YonderH
         case (ShareT, OverloadSet(_, _, _)) => InlineH
-        case (ShareT, PackTT(_, _)) => InlineH
-        case (ShareT, TupleTT(_, _)) => InlineH
-        case (ShareT, StructTT(FullNameT(_, _, TupleNameT(_)))) => InlineH
+//        case (ShareT, PackTT(_, _)) => InlineH
+//        case (ShareT, TupleTT(_, _)) => InlineH
+        case (ShareT, StructTT(FullNameT(_, Vector(), CitizenNameT(CitizenTemplateNameT("Tup"), _)))) => InlineH
         case (ShareT, VoidT()) => InlineH
         case (ShareT, IntT(_)) => InlineH
         case (ShareT, BoolT()) => InlineH

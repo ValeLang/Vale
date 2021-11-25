@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.{FileCoordinate, FileCoordinateMap}
+import net.verdagon.vale.{CodeLocationS, FileCoordinate, FileCoordinateMap}
 import net.verdagon.vale.SourceCodeUtils.humanizePos
 import net.verdagon.vale.SourceCodeUtils.nextThingAndRestOfLine
 
@@ -53,7 +53,7 @@ object ParseErrorHumanizer {
         case BadLetDestinationError(pos, cause) => "Parse error somewhere inside this let destination pattern. Imprecise inner error: " + humanizeCombinatorParseError(fileMap, fileCoord, cause)
         case BadLetSourceError(pos, cause) => "Parse error somewhere inside this let source expression. Imprecise inner error: " + humanizeCombinatorParseError(fileMap, fileCoord, cause)
       }
-    val posStr = humanizePos(fileMap, fileCoord, err.pos)
+    val posStr = humanizePos(fileMap, CodeLocationS(fileCoord, err.pos))
     val nextStuff = nextThingAndRestOfLine(fileMap, fileCoord, err.pos)
     f"${posStr} error ${err.errorId}: ${errorStrBody}\n${nextStuff}\n"
   }

@@ -1,9 +1,12 @@
 package net.verdagon.vale.templar.expression
 
-import net.verdagon.vale.astronomer.{BlockAE, IExpressionAE}
-import net.verdagon.vale.templar._
+//import net.verdagon.vale.astronomer.{BlockSE, IExpressionSE}
+import net.verdagon.vale.scout.{BlockSE, IExpressionSE}
+import net.verdagon.vale.templar.{ast, _}
+import net.verdagon.vale.templar.ast.{BlockTE, LetNormalTE, LocationInFunctionEnvironment, ReferenceExpressionTE, UnreachableMootTE}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.DestructorTemplar
+import net.verdagon.vale.templar.names.{FullNameT, IVarNameT, TemplarBlockResultVarNameT}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.vassert
 
@@ -14,13 +17,13 @@ trait IBlockTemplarDelegate {
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
     life: LocationInFunctionEnvironment,
-    expr1: IExpressionAE):
+    expr1: IExpressionSE):
   (ReferenceExpressionTE, Set[CoordT])
 }
 
 class BlockTemplar(
     opts: TemplarOptions,
-    newTemplataStore: () => TemplatasStore,
+
     destructorTemplar: DestructorTemplar,
     localHelper: LocalHelper,
     delegate: IBlockTemplarDelegate) {
@@ -36,9 +39,9 @@ class BlockTemplar(
     parentFate: FunctionEnvironmentBox,
     temputs: Temputs,
     life: LocationInFunctionEnvironment,
-    block1: BlockAE):
+    block1: BlockSE):
   (BlockTE, Set[FullNameT[IVarNameT]], Set[CoordT]) = {
-    val fate = parentFate.makeChildEnvironment(newTemplataStore)
+    val fate = parentFate.makeChildBlockEnvironment(Some(block1))
     val startingFate = fate.snapshot
 
     val (expressionsWithResult, returnsFromExprs) =
@@ -46,7 +49,7 @@ class BlockTemplar(
 
     val block2 = BlockTE(expressionsWithResult)
 
-    val (unstackifiedAncestorLocals) = fate.getEffects()
+    val (unstackifiedAncestorLocals) = fate.getEffectsSince(startingFate)
     (block2, unstackifiedAncestorLocals, returnsFromExprs)
   }
 
@@ -55,7 +58,7 @@ class BlockTemplar(
     startingFate: FunctionEnvironment,
     fate: FunctionEnvironmentBox,
     life: LocationInFunctionEnvironment,
-    exprs: Vector[IExpressionAE]):
+    exprs: Vector[IExpressionSE]):
   (ReferenceExpressionTE, Set[CoordT]) = {
     val (unneveredUnresultifiedUndestructedExpressions, returnsFromExprs) =
       evaluateBlockStatementsInner(temputs, fate, life + 0, exprs.toList);
@@ -101,12 +104,12 @@ class BlockTemplar(
     currentFate: FunctionEnvironmentBox):
   Vector[ILocalVariableT] = {
     val localsAsOfThen =
-      sinceFate.locals.collect({
+      sinceFate.declaredLocals.collect({
         case x @ ReferenceLocalVariableT(_, _, _) => x
         case x @ AddressibleLocalVariableT(_, _, _) => x
       })
     val localsAsOfNow =
-      currentFate.locals.collect({
+      currentFate.declaredLocals.collect({
         case x @ ReferenceLocalVariableT(_, _, _) => x
         case x @ AddressibleLocalVariableT(_, _, _) => x
       })
@@ -133,7 +136,7 @@ class BlockTemplar(
     vassert(exprs.nonEmpty)
     val lastExpr = exprs.last
     val resultVarId = fate.fullName.addStep(TemplarBlockResultVarNameT(life))
-    val resultVariable = ReferenceLocalVariableT(resultVarId, FinalT, lastExpr.resultRegister.reference)
+    val resultVariable = ReferenceLocalVariableT(resultVarId, FinalT, lastExpr.result.reference)
     val resultLet = LetNormalTE(resultVariable, lastExpr)
     fate.addVariable(resultVariable)
     (exprs.init :+ resultLet, resultVariable)
@@ -143,7 +146,7 @@ class BlockTemplar(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
     life: LocationInFunctionEnvironment,
-    expr1: List[IExpressionAE]):
+    expr1: List[IExpressionSE]):
   (List[ReferenceExpressionTE], Set[CoordT]) = {
     expr1 match {
       case Nil => (Nil, Set())
@@ -159,7 +162,7 @@ class BlockTemplar(
             (perhapsUndestructedFirstExpr2) // Do nothing
           } else {
             // This isn't the last expression
-            perhapsUndestructedFirstExpr2.resultRegister.kind match {
+            perhapsUndestructedFirstExpr2.result.kind match {
               case VoidT() => perhapsUndestructedFirstExpr2
               case _ => destructorTemplar.drop(fate, temputs, perhapsUndestructedFirstExpr2)
             }
@@ -179,7 +182,7 @@ class BlockTemplar(
     variables: Vector[ILocalVariableT]):
   (Vector[ReferenceExpressionTE]) = {
     variables.map({ case head =>
-      UnreachableMootTE(localHelper.unletLocal(fate, head))
+      ast.UnreachableMootTE(localHelper.unletLocal(fate, head))
     })
   }
 }

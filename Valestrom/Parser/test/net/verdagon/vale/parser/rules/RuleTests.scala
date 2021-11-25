@@ -44,6 +44,7 @@ class RuleTests extends FunSuite with Matchers with Collector {
     checkFail(level0PR, "")
     checkFail(level1PR, "")
     checkFail(level2PR, "")
+    checkFail(isInterfacePR, "")
     checkFail(level3PR, "")
     checkFail(level4PR, "")
     checkFail(level5PR, "")
@@ -55,21 +56,22 @@ class RuleTests extends FunSuite with Matchers with Collector {
     checkFail(ruleTemplexPR, "")
     checkFail(ruleTemplexSetPR, "")
     checkFail(templateRulesPR, "")
+    checkFail(refListCompoundMutabilityPR, "")
     checkFail(packPR, "")
   }
 
   test("Relations") {
     compile(rulePR, "implements(MyObject, IObject)") shouldHave {
-      case CallPR(_, NameP(_, "implements"),Vector(TemplexPR(NameOrRunePT(NameP(_, "MyObject"))), TemplexPR(NameOrRunePT(NameP(_, "IObject"))))) =>
+      case BuiltinCallPR(_, NameP(_, "implements"),Vector(TemplexPR(NameOrRunePT(NameP(_, "MyObject"))), TemplexPR(NameOrRunePT(NameP(_, "IObject"))))) =>
     }
     compile(rulePR, "implements(R, IObject)") shouldHave {
-        case CallPR(_, NameP(_, "implements"),Vector(TemplexPR(NameOrRunePT(NameP(_, "R"))), TemplexPR(NameOrRunePT(NameP(_, "IObject"))))) =>
+        case BuiltinCallPR(_, NameP(_, "implements"),Vector(TemplexPR(NameOrRunePT(NameP(_, "R"))), TemplexPR(NameOrRunePT(NameP(_, "IObject"))))) =>
     }
     compile(rulePR, "implements(MyObject, T)") shouldHave {
-        case CallPR(_, NameP(_, "implements"),Vector(TemplexPR(NameOrRunePT(NameP(_, "MyObject"))), TemplexPR(NameOrRunePT(NameP(_, "T"))))) =>
+        case BuiltinCallPR(_, NameP(_, "implements"),Vector(TemplexPR(NameOrRunePT(NameP(_, "MyObject"))), TemplexPR(NameOrRunePT(NameP(_, "T"))))) =>
     }
     compile(rulePR, "exists(fn +(T)int)") shouldHave {
-        case CallPR(_, NameP(_, "exists"), Vector(TemplexPR(PrototypePT(_,NameP(_, "+"), Vector(NameOrRunePT(NameP(_, "T"))), NameOrRunePT(NameP(_, "int")))))) =>
+        case BuiltinCallPR(_, NameP(_, "exists"), Vector(TemplexPR(PrototypePT(_,NameP(_, "+"), Vector(NameOrRunePT(NameP(_, "T"))), NameOrRunePT(NameP(_, "int")))))) =>
     }
   }
 

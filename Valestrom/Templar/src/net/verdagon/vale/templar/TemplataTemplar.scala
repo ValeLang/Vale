@@ -1,11 +1,13 @@
-package net.verdagon.vale.templar.templata
+package net.verdagon.vale.templar
 
 import net.verdagon.vale.astronomer._
+import net.verdagon.vale.scout.rules.IRulexSR
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env.{IEnvironment, IEnvironmentBox, TemplataLookupContext}
-import net.verdagon.vale.{vassertSome, vfail}
+import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, CitizenNameT, INameT, NameTranslator}
+import net.verdagon.vale.{IProfiler, RangeS, vassert, vassertOne, vassertSome, vcurious, vfail, vimpl, vwat}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 
@@ -44,13 +46,12 @@ trait ITemplataTemplarDelegate {
     type2: CoordT):
   StaticSizedArrayTT
 
-  def getRuntimeSizedArrayKind(env: IEnvironment, state: Temputs, element: CoordT, arrayMutability: MutabilityT, arrayVariability: VariabilityT): RuntimeSizedArrayTT
-
-  def getTupleKind(env: IEnvironment, state: Temputs, elements: Vector[CoordT]): TupleTT
+  def getRuntimeSizedArrayKind(env: IEnvironment, temputs: Temputs, element: CoordT, arrayMutability: MutabilityT, arrayVariability: VariabilityT): RuntimeSizedArrayTT
 }
 
 class TemplataTemplar(
     opts: TemplarOptions,
+    profiler: IProfiler,
     delegate: ITemplataTemplarDelegate) {
 
   def getTypeDistance(
@@ -58,28 +59,92 @@ class TemplataTemplar(
     sourcePointerType: CoordT,
     targetPointerType: CoordT):
   (Option[TypeDistance]) = {
-    makeInner().getTypeDistance(temputs,sourcePointerType, targetPointerType)
-  }
 
-  def evaluateTemplex(
-    env: IEnvironment,
-    temputs: Temputs,
-    templex: ITemplexA
-  ): (ITemplata) = {
-    makeInner().evaluateTemplex(env, temputs, templex)
-  }
+    val CoordT(targetOwnership, targetPermission, targetType) = targetPointerType;
+    val CoordT(sourceOwnership, sourcePermission, sourceType) = sourcePointerType;
 
-  def evaluateTemplexes(env: IEnvironment, temputs: Temputs, templexes: Vector[ITemplexA]):
-  (Vector[ITemplata]) = {
-    makeInner().evaluateTemplexes(env, temputs, templexes)
-  }
+    if (sourceType == NeverT()) {
+      return (Some(TypeDistance(0, 0, 0)))
+    }
 
-  def pointifyKind(
-    temputs: Temputs,
-    kind: KindT,
-    ownershipIfMutable: OwnershipT):
-  CoordT = {
-    makeInner().pointifyKind(temputs, kind, ownershipIfMutable)
+    val upcastDistance =
+      if (sourceType == targetType) {
+        (0)
+      } else {
+        (sourceType, targetType) match {
+          case (VoidT(), _) => return (None)
+          case (IntT(_), _) => return (None)
+          case (BoolT(), _) => return (None)
+          case (StrT(), _) => return (None)
+          case (_, VoidT()) => return (None)
+          case (_, IntT(_)) => return (None)
+          case (_, BoolT()) => return (None)
+          case (_, StrT()) => return (None)
+          case (_, StructTT(_)) => return (None)
+          case (a @ StructTT(_), b @ InterfaceTT(_)) => {
+            delegate.getAncestorInterfaceDistance(temputs, a, b) match {
+              case (None) => return (None)
+              case (Some(distance)) => (distance)
+            }
+          }
+          case (a @ InterfaceTT(_), b @ InterfaceTT(_)) => {
+            delegate.getAncestorInterfaceDistance(temputs, a, b) match {
+              case (None) => return (None)
+              case (Some(distance)) => (distance)
+            }
+          }
+//          case (PackTT(Vector(), _), VoidT()) => vfail("figure out void<->emptypack")
+//          case (VoidT(), PackTT(Vector(), _)) => vfail("figure out void<->emptypack")
+//          case (PackTT(Vector(), _), _) => return (None)
+//          case (_, PackTT(Vector(), _)) => return (None)
+          case (_ : CitizenRefT, IntT(_) | BoolT() | StrT() | FloatT()) => return (None)
+          case (IntT(_) | BoolT() | StrT() | FloatT(), _ : CitizenRefT) => return (None)
+          case (_, RuntimeSizedArrayTT(_)) => return None
+          case (RuntimeSizedArrayTT(_), _) => return None
+          case (_, StaticSizedArrayTT(_, _)) => return None
+          case (StaticSizedArrayTT(_, _), _) => return None
+          case _ => {
+            vfail("Can't convert from " + sourceType + " to " + targetType)
+          }
+        }
+      }
+
+    val ownershipDistance =
+      (sourceOwnership, targetOwnership) match {
+        case (OwnT, OwnT) => 0
+        case (OwnT, ConstraintT) => 1
+        case (OwnT, WeakT) => 1
+        case (OwnT, ShareT) => return None
+        case (ConstraintT, OwnT) => return (None)
+        case (ConstraintT, ConstraintT) => 0
+        case (ConstraintT, WeakT) => 1
+        case (ConstraintT, ShareT) => return None
+        case (WeakT, OwnT) => return None
+        case (WeakT, ConstraintT) => return None
+        case (WeakT, WeakT) => 0
+        case (WeakT, ShareT) => return None
+        case (ShareT, ShareT) => 0
+        case (ShareT, ConstraintT) => return None
+        case (ShareT, WeakT) => return None
+        case (ShareT, OwnT) => return None
+      }
+
+    val permissionDistance =
+      (sourcePermission, targetPermission) match {
+        case (ReadonlyT, ReadonlyT) => 0
+        case (ReadonlyT, ReadwriteT) => return None
+        // Could eventually make this 1 instead of None, if we want to implicitly
+        // go from readwrite to readonly, that would be nice.
+        case (ReadwriteT, ReadonlyT) => return None
+        case (ReadwriteT, ReadwriteT) => 0
+        //        case (Readonly, ExclusiveReadwrite) => 1
+        //        case (Readwrite, ExclusiveReadwrite) => 1
+        //        case (ExclusiveReadwrite, Readonly) => 1
+        //        case (ExclusiveReadwrite, Readonly) => 1
+        //        case (ExclusiveReadwrite, ExclusiveReadwrite) => 0
+      }
+
+    (Some(TypeDistance(upcastDistance, ownershipDistance, permissionDistance)))
   }
 
   def isTypeConvertible(
@@ -87,7 +152,9 @@ class TemplataTemplar(
     sourcePointerType: CoordT,
     targetPointerType: CoordT):
   (Boolean) = {
-    makeInner().isTypeConvertible(temputs, sourcePointerType, targetPointerType)
+    val maybeDistance =
+      getTypeDistance(temputs, sourcePointerType, targetPointerType)
+    (maybeDistance.nonEmpty)
   }
 
   def isTypeTriviallyConvertible(
@@ -95,68 +162,380 @@ class TemplataTemplar(
     sourcePointerType: CoordT,
     targetPointerType: CoordT):
   (Boolean) = {
-    makeInner().isTypeTriviallyConvertible(temputs, sourcePointerType, targetPointerType)
+    val CoordT(targetOwnership, targetPermission, targetType) = targetPointerType;
+    val CoordT(sourceOwnership, sourcePermission, sourceType) = sourcePointerType;
+
+    if (sourceType == NeverT()) {
+      return (true)
+    }
+
+    if (sourceType == targetType) {
+
+    } else {
+      (sourceType, targetType) match {
+        case (VoidT(), _) => return (false)
+        case (IntT(_), _) => return (false)
+        case (BoolT(), _) => return (false)
+        case (StrT(), _) => return (false)
+        case (RuntimeSizedArrayTT(_), _) => return (false)
+        case (StaticSizedArrayTT(_, _), _) => return (false)
+        case (_, VoidT()) => return (false)
+        case (_, IntT(_)) => return (false)
+        case (_, BoolT()) => return (false)
+        case (_, StrT()) => return (false)
+        case (_, StaticSizedArrayTT(_, _)) => return (false)
+        case (_, StructTT(_)) => return (false)
+        case (a @ StructTT(_), b @ InterfaceTT(_)) => {
+          delegate.getAncestorInterfaceDistance(temputs, a, b) match {
+            case (None) => return (false)
+            case (Some(_)) =>
+          }
+        }
+        case (a @ InterfaceTT(_), b @ InterfaceTT(_)) => {
+          delegate.getAncestorInterfaceDistance(temputs, a, b) match {
+            case (None) => return (false)
+            case (Some(_)) =>
+          }
+        }
+//        case (PackTT(Vector(), _), VoidT()) => vfail("figure out void<->emptypack")
+//        case (VoidT(), PackTT(Vector(), _)) => vfail("figure out void<->emptypack")
+//        case (PackTT(Vector(), _), _) => return (false)
+//        case (_, PackTT(Vector(), _)) => return (false)
+        case (_ : CitizenRefT, IntT(_) | BoolT() | StrT() | FloatT()) => return (false)
+        case (IntT(_) | BoolT() | StrT() | FloatT(), _ : CitizenRefT) => return (false)
+        case _ => {
+          vfail("Can't convert from " + sourceType + " to " + targetType)
+        }
+      }
+    }
+
+    if (sourceOwnership != targetOwnership) {
+      return false
+    }
+
+    if (sourcePermission != targetPermission) {
+      return false
+    }
+
+    true
   }
 
-  def makeInner(): TemplataTemplarInner[IEnvironment, Temputs] = {
-    new TemplataTemplarInner[IEnvironment, Temputs](
-      new ITemplataTemplarInnerDelegate[IEnvironment, Temputs] {
-        override def lookupTemplataImprecise(env: IEnvironment, range: RangeS, name: IImpreciseNameStepA): ITemplata = {
-          // Changed this from AnythingLookupContext to TemplataLookupContext
-          // because this is called from StructTemplar to figure out its members.
-          // We could instead pipe a lookup context through, if this proves problematic.
-          vassertSome(env.getNearestTemplataWithName(name, Set(TemplataLookupContext)))
-        }
-
-        override def lookupTemplata(env: IEnvironment, range: RangeS, name: INameT): ITemplata = {
-          // Changed this from AnythingLookupContext to TemplataLookupContext
-          // because this is called from StructTemplar to figure out its members.
-          // We could instead pipe a lookup context through, if this proves problematic.
-          vassertSome(env.getNearestTemplataWithAbsoluteName2(name, Set(TemplataLookupContext)))
-        }
-
-        override def getMutability(temputs: Temputs, kind: KindT): MutabilityT = {
-          Templar.getMutability(temputs, kind)
-        }
-
-        override def evaluateInterfaceTemplata(state: Temputs, callRange: RangeS, templata: InterfaceTemplata, templateArgs: Vector[ITemplata]):
-        (KindT) = {
-          delegate.getInterfaceRef(state, callRange, templata, templateArgs)
-        }
-
-        override def evaluateStructTemplata(state: Temputs, callRange: RangeS, templata: StructTemplata, templateArgs: Vector[ITemplata]):
-        (KindT) = {
-          delegate.getStructRef(state, callRange, templata, templateArgs)
-        }
-
-        override def getAncestorInterfaceDistance(
-          temputs: Temputs,
-          descendantCitizenRef: CitizenRefT,
-          ancestorInterfaceRef: InterfaceTT):
-        (Option[Int]) = {
-          delegate.getAncestorInterfaceDistance(temputs, descendantCitizenRef, ancestorInterfaceRef)
-        }
-
-        override def getStaticSizedArrayKind(env: IEnvironment, state: Temputs, mutability: MutabilityT, variability: VariabilityT, size: Int, element: CoordT): (StaticSizedArrayTT) = {
-          delegate.getStaticSizedArrayKind(env, state, mutability, variability, size, element)
-        }
-
-        override def getRuntimeSizedArrayKind(env: IEnvironment, state: Temputs, element: CoordT, arrayMutability: MutabilityT, arrayVariability: VariabilityT): RuntimeSizedArrayTT = {
-          delegate.getRuntimeSizedArrayKind(env, state, element, arrayMutability, arrayVariability)
-        }
-
-        override def getTupleKind(env: IEnvironment, state: Temputs, elements: Vector[CoordT]): TupleTT = {
-          delegate.getTupleKind(env, state, elements)
-        }
-
-        override def getInterfaceTemplataType(it: InterfaceTemplata): ITemplataType = {
-          it.originInterface.tyype
-        }
-
-        override def getStructTemplataType(st: StructTemplata): ITemplataType = {
-          st.originStruct.tyype
-        }
-      })
+  def pointifyKind(temputs: Temputs, kind: KindT, ownershipIfMutable: OwnershipT): CoordT = {
+    val mutability = Templar.getMutability(temputs, kind)
+    val ownership = if (mutability == MutableT) ownershipIfMutable else ShareT
+    val permission = if (mutability == MutableT) ReadwriteT else ReadonlyT
+    kind match {
+      case a @ RuntimeSizedArrayTT(array) => {
+        CoordT(ownership, permission, a)
+      }
+      case a @ StaticSizedArrayTT(_, RawArrayTT(_, mutability, variability)) => {
+        CoordT(ownership, permission, a)
+      }
+//      case a @ PackTT(_, underlyingStruct) => {
+//        CoordT(ownership, permission, a)
+//      }
+      case s @ StructTT(_) => {
+        CoordT(ownership, permission, s)
+      }
+      case i @ InterfaceTT(_) => {
+        CoordT(ownership, permission, i)
+      }
+      case VoidT() => {
+        CoordT(ShareT, ReadonlyT, VoidT())
+      }
+      case i @ IntT(_) => {
+        CoordT(ShareT, ReadonlyT, i)
+      }
+      case FloatT() => {
+        CoordT(ShareT, ReadonlyT, FloatT())
+      }
+      case BoolT() => {
+        CoordT(ShareT, ReadonlyT, BoolT())
+      }
+      case StrT() => {
+        CoordT(ShareT, ReadonlyT, StrT())
+      }
+    }
   }
 
+  def evaluateStructTemplata(
+    temputs: Temputs,
+    callRange: RangeS,
+    template: StructTemplata,
+    templateArgs: Vector[ITemplata],
+    expectedType: ITemplataType):
+  (ITemplata) = {
+    val uncoercedTemplata =
+      delegate.getStructRef(temputs, callRange, template, templateArgs)
+    val templata =
+      coerce(temputs, callRange, KindTemplata(uncoercedTemplata), expectedType)
+    (templata)
+  }
+
+  def evaluateInterfaceTemplata(
+    temputs: Temputs,
+    callRange: RangeS,
+    template: InterfaceTemplata,
+    templateArgs: Vector[ITemplata],
+    expectedType: ITemplataType):
+  (ITemplata) = {
+    val uncoercedTemplata =
+      delegate.getInterfaceRef(temputs, callRange, template, templateArgs)
+    val templata =
+      coerce(temputs, callRange, KindTemplata(uncoercedTemplata), expectedType)
+    (templata)
+  }
+
+  def evaluateBuiltinTemplateTemplata(
+    env: IEnvironment,
+    temputs: Temputs,
+    range: RangeS,
+    template: RuntimeSizedArrayTemplateTemplata,
+    templateArgs: Vector[ITemplata],
+    expectedType: ITemplataType):
+  (ITemplata) = {
+    val Vector(MutabilityTemplata(mutability), VariabilityTemplata(variability), CoordTemplata(elementType)) = templateArgs
+    val arrayKindTemplata = delegate.getRuntimeSizedArrayKind(env, temputs, elementType, mutability, variability)
+    val templata =
+      coerce(temputs, range, KindTemplata(arrayKindTemplata), expectedType)
+    (templata)
+  }
+
+  //  def getPackKind(
+  //    env: IEnvironment,
+  //    temputs: Temputs,
+  //    members: Vector[Coord],
+  //    expectedType: ITemplataType):
+  //  (ITemplata) = {
+  //    val (uncoercedTemplata, _) =
+  //      outergetPackKind(env, temputs, members)
+  //    val templata =
+  //      coerce(temputs, KindTemplata(uncoercedTemplata), expectedType)
+  //    (templata)
+  //  }
+
+  def getStaticSizedArrayKind(
+    env: IEnvironment,
+    temputs: Temputs,
+    callRange: RangeS,
+    mutability: MutabilityT,
+    variability: VariabilityT,
+    size: Int,
+    element: CoordT,
+    expectedType: ITemplataType):
+  (ITemplata) = {
+    val uncoercedTemplata =
+      delegate.getStaticSizedArrayKind(env, temputs, mutability, variability, size, element)
+    val templata =
+      coerce(temputs, callRange, KindTemplata(uncoercedTemplata), expectedType)
+    (templata)
+  }
+
+  def lookupTemplata(
+    env: IEnvironment,
+    temputs: Temputs,
+    range: RangeS,
+    name: INameT):
+  (ITemplata) = {
+    // Changed this from AnythingLookupContext to TemplataLookupContext
+    // because this is called from StructTemplar to figure out its members.
+    // We could instead pipe a lookup context through, if this proves problematic.
+    vassertOne(env.lookupNearestWithName(profiler, name, Set(TemplataLookupContext)))
+  }
+
+  def lookupTemplata(
+    env: IEnvironment,
+    temputs: Temputs,
+    range: RangeS,
+    name: IImpreciseNameS):
+  Option[ITemplata] = {
+    // Changed this from AnythingLookupContext to TemplataLookupContext
+    // because this is called from StructTemplar to figure out its members.
+    // We could instead pipe a lookup context through, if this proves problematic.
+    val results = env.lookupNearestWithImpreciseName(profiler, name, Set(TemplataLookupContext))
+    if (results.size > 1) {
+      vfail()
+    }
+    results.headOption
+  }
+
+  def coerceKindToCoord(temputs: Temputs, kind: KindT):
+  CoordT = {
+    val mutability = Templar.getMutability(temputs, kind)
+    CoordT(
+      if (mutability == MutableT) OwnT else ShareT,
+      if (mutability == MutableT) ReadwriteT else ReadonlyT,
+      kind)
+  }
+
+  def coerce(
+    temputs: Temputs,
+    range: RangeS,
+    templata: ITemplata,
+    tyype: ITemplataType):
+  (ITemplata) = {
+    if (templata.tyype == tyype) {
+      templata
+    } else {
+      (templata, tyype) match {
+        case (KindTemplata(kind), CoordTemplataType) => {
+          CoordTemplata(coerceKindToCoord(temputs, kind))
+        }
+        case (st@StructTemplata(_, structA), KindTemplataType) => {
+          if (structA.isTemplate) {
+            vfail("Can't coerce " + structA.name + " to be a kind, is a template!")
+          }
+          val kind =
+            delegate.getStructRef(temputs, range, st, Vector.empty)
+          (KindTemplata(kind))
+        }
+        case (it@InterfaceTemplata(_, interfaceA), KindTemplataType) => {
+          if (interfaceA.isTemplate) {
+            vfail("Can't coerce " + interfaceA.name + " to be a kind, is a template!")
+          }
+          val kind =
+            delegate.getInterfaceRef(temputs, range, it, Vector.empty)
+          (KindTemplata(kind))
+        }
+        case (st@StructTemplata(_, structA), CoordTemplataType) => {
+          if (structA.isTemplate) {
+            vfail("Can't coerce " + structA.name + " to be a coord, is a template!")
+          }
+          val kind =
+            delegate.getStructRef(temputs, range, st, Vector.empty)
+          val mutability = Templar.getMutability(temputs, kind)
+
+          // Default ownership is own for mutables, share for imms
+          val ownership = if (mutability == MutableT) OwnT else ShareT
+          // Default permission is readwrite for mutables, readonly for imms
+          val permission = if (mutability == MutableT) ReadwriteT else ReadonlyT
+          val coerced = CoordTemplata(CoordT(ownership, permission, kind))
+          (coerced)
+        }
+        case (it@InterfaceTemplata(_, interfaceA), CoordTemplataType) => {
+          if (interfaceA.isTemplate) {
+            vfail("Can't coerce " + interfaceA.name + " to be a coord, is a template!")
+          }
+          val kind =
+            delegate.getInterfaceRef(temputs, range, it, Vector.empty)
+          val mutability = Templar.getMutability(temputs, kind)
+          val coerced =
+            CoordTemplata(
+              CoordT(
+                if (mutability == MutableT) OwnT else ShareT,
+                if (mutability == MutableT) ReadwriteT else ReadonlyT,
+                kind))
+          (coerced)
+        }
+        case _ => {
+          vfail("Can't coerce a " + templata.tyype + " to be a " + tyype)
+        }
+      }
+    }
+  }
+
+//  // This is useful for checking if something (a) is equal to something that came from a name (b).
+//  def uncoercedTemplataEquals(env: IEnvironment, temputs: Temputs, a: ITemplata, b: ITemplata, bExpectedType: ITemplataType): Boolean = {
+//    // When we consider a new templata, add it to one of these two following matches, then be VERY careful and make sure
+//    // to consider it against every other type in the other match.
+//    a match {
+//      case KindTemplata(_) =>
+//      case CoordTemplata(_) =>
+//      case ArrayTemplateTemplata() =>
+//      case _ => vimpl()
+//    }
+//    b match {
+//      case KindTemplata(_) =>
+//      case CoordTemplata(_) =>
+//      case StructTemplata(_, _) =>
+//      case InterfaceTemplata(_, _) =>
+//      case ArrayTemplateTemplata() =>
+//      case _ => vimpl()
+//    }
+//
+//    (a, b) match {
+//      case (KindTemplata(_) | CoordTemplata(_), KindTemplata(_) | CoordTemplata(_)) => {
+//        a == coerce(temputs, RangeS.internal(-1345), b, bExpectedType)
+//      }
+//      case (KindTemplata(actualStructRef @ StructTT(_)), expectedStructTemplata @ StructTemplata(_, _)) => {
+//        vassert(bExpectedType == KindTemplataType)
+//        citizenMatchesTemplata(actualStructRef, expectedStructTemplata, Vector.empty)
+//      }
+//      case (CoordTemplata(CoordT(ShareT | OwnT, actualPermission, actualStructRef @ StructTT(_))), expectedStructTemplata @ StructTemplata(_, _)) => {
+//        vassert(bExpectedType == CoordTemplataType)
+//        val mutability = Templar.getMutability(temputs, actualStructRef)
+//        val expectedPermission = if (mutability == MutableT) ReadwriteT else ReadonlyT
+//        val permissionMatches = expectedPermission == actualPermission
+//        permissionMatches && citizenMatchesTemplata(actualStructRef, expectedStructTemplata, Vector.empty)
+//      }
+//      case (KindTemplata(actualInterfaceRef @ InterfaceTT(_)), expectedInterfaceTemplata @ InterfaceTemplata(_, _)) => {
+//        vassert(bExpectedType == KindTemplataType)
+//        citizenMatchesTemplata(actualInterfaceRef, expectedInterfaceTemplata, Vector.empty)
+//      }
+//      case (CoordTemplata(CoordT(ShareT | OwnT, actualPermission, actualInterfaceRef @ InterfaceTT(_))), expectedInterfaceTemplata @ InterfaceTemplata(_, _)) => {
+//        vassert(bExpectedType == CoordTemplataType)
+//        val mutability = Templar.getMutability(temputs, actualInterfaceRef)
+//        val expectedPermission = if (mutability == MutableT) ReadwriteT else ReadonlyT
+//        val permissionMatches = expectedPermission == actualPermission
+//        permissionMatches && citizenMatchesTemplata(actualInterfaceRef, expectedInterfaceTemplata, Vector.empty)
+//      }
+//      case (ArrayTemplateTemplata(), ArrayTemplateTemplata()) => true
+//      case (KindTemplata(RuntimeSizedArrayTT(_)), ArrayTemplateTemplata()) => true
+//      case (CoordTemplata(CoordT(ShareT | OwnT, ReadonlyT, RuntimeSizedArrayTT(_))), ArrayTemplateTemplata()) => true
+//      case (ArrayTemplateTemplata(), ArrayTemplateTemplata()) => true
+//      case (ArrayTemplateTemplata(), KindTemplata(RuntimeSizedArrayTT(_))) => true
+//      case (ArrayTemplateTemplata(), CoordTemplata(CoordT(ShareT | OwnT, ReadonlyT, RuntimeSizedArrayTT(_)))) => true
+//      case _ => false
+//    }
+//  }
+
+  def citizenIsFromTemplate(actualCitizenRef: CitizenRefT, expectedCitizenTemplata: ITemplata): Boolean = {
+    val citizenTemplateFullName =
+      expectedCitizenTemplata match {
+        case StructTemplata(env, originStruct) => {
+          env.fullName.addStep(NameTranslator.translateCitizenName(originStruct.name))
+        }
+        case InterfaceTemplata(env, originInterface) => {
+          env.fullName.addStep(NameTranslator.translateCitizenName(originInterface.name))
+        }
+        case KindTemplata(expectedKind) => return actualCitizenRef == expectedKind
+        case CoordTemplata(CoordT(OwnT | ShareT, ReadonlyT, actualKind)) => return actualCitizenRef == actualKind
+        case _ => return false
+      }
+    if (actualCitizenRef.fullName.initSteps != citizenTemplateFullName.initSteps) {
+      // Packages dont match, bail
+      return false
+    }
+    citizenTemplateFullName.last == actualCitizenRef.fullName.last.template
+  }
+
+//  def citizenMatchesTemplata(actualCitizenRef: CitizenRefT, expectedCitizenTemplata: ITemplata, expectedCitizenTemplateArgs: Vector[ITemplata]): (Boolean) = {
+//    vassert(expectedCitizenTemplateArgs.isEmpty) // implement
+//
+//    if (!citizenIsFromTemplate(actualCitizenRef, expectedCitizenTemplata)) {
+//      return false
+//    }
+//
+//    if (actualCitizenRef.fullName.last.templateArgs.nonEmpty) {
+//      // This function doesnt support template args yet (hence above assert)
+//      // If the actualCitizenRef has template args, it sure doesnt match the template when its made with no args.
+//      return false
+//    }
+//
+//    return true
+//  }
+
+}
+
+case class TypeDistance(upcastDistance: Int, ownershipDistance: Int, permissionDistance: Int) {
+  override def hashCode(): Int = vcurious()
+  def lessThanOrEqualTo(that: TypeDistance): Boolean = {
+    if (this.upcastDistance < that.upcastDistance) return true;
+    if (this.upcastDistance > that.upcastDistance) return false;
+    if (this.ownershipDistance < that.ownershipDistance) return true;
+    if (this.ownershipDistance > that.ownershipDistance) return false;
+    if (this.permissionDistance < that.permissionDistance) return true;
+    if (this.permissionDistance > that.permissionDistance) return false;
+    true
+  }
 }

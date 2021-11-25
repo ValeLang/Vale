@@ -1,7 +1,7 @@
 package net.verdagon.vale.astronomer
 
-import net.verdagon.vale.scout.{ProgramS, RangeS}
-import net.verdagon.vale.{PackageCoordinateMap, vassert}
+import net.verdagon.vale.scout.ProgramS
+import net.verdagon.vale.{PackageCoordinateMap, RangeS, vassert}
 
 import scala.collection.immutable.List
 

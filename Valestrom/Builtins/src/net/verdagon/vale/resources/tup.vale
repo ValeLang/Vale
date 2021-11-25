@@ -1,0 +1,25 @@
+
+struct Tup<T>
+rules(T RefList, M Mutability, M = refListCompoundMutability(T)) M {
+  _ ...T;
+}
+
+//      StructA(
+//        RangeS.internal(-1337),
+//        TopLevelCitizenDeclarationNameS(ProgramT.tupleHumanName, RangeS.internal(-1337)),
+//        Vector(),
+//        false,
+//        RuneUsage(RangeS.internal(-1338), CodeRuneS("M")),
+//        None,
+//        TemplateTemplataType(Vector(PackTemplataType(CoordTemplataType)), KindTemplataType),
+//        Vector(RuneUsage(RangeS.internal(-1339), CodeRuneS("T"))),
+//        Map(
+//          CodeRuneS("T") -> PackTemplataType(CoordTemplataType),
+//          CodeRuneS("M") -> MutabilityTemplataType),
+//        Vector(),
+//        Vector(
+//          StructMemberS(
+//            RangeS.internal(-1339),
+//            "members",
+//            FinalP,
+//            RuneUsage(RangeS.internal(-1340), CodeRuneS("T")))))

@@ -52,7 +52,7 @@ case class ReferenceH[+T <: KindH](
     }
     case StructRefH(name) => {
       val isBox = name.toFullString.startsWith("::C(\"__Box\"")
-      val isTup = name.toFullString.startsWith("::Tup")
+      val isTup = name.toFullString.startsWith("::C(CT(\"Tup\"")
 
       if (isBox) {
         vassert(ownership == OwnH || ownership == BorrowH)

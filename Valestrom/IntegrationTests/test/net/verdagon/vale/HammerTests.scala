@@ -49,13 +49,15 @@ class HammerTests extends FunSuite with Matchers {
         |fn main(a *MySome<int>, b *MyNone<int>) {}
       """.stripMargin)
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
-    packageH.interfaces.find(_.fullName.toFullString() == """test::C("MyOption",[TR(R(*,<,#,i(32)))])""").get;
+    packageH.interfaces.find(interface => {
+      interface.fullName.toFullString() == """test::C(CT("MyOption"),[TR(R(*,<,#,i(32)))])"""
+    }).get;
 
-    val mySome = packageH.structs.find(_.fullName.toFullString() == """test::C("MySome",[TR(R(*,<,#,i(32)))])""").get;
+    val mySome = packageH.structs.find(_.fullName.toFullString() == """test::C(CT("MySome"),[TR(R(*,<,#,i(32)))])""").get;
     vassert(mySome.members.size == 1);
     vassert(mySome.members.head.tyype == ReferenceH[IntH](m.ShareH, InlineH, ReadonlyH, IntH.i32))
 
-    val myNone = packageH.structs.find(_.fullName.toFullString() == """test::C("MyNone",[TR(R(*,<,#,i(32)))])""").get;
+    val myNone = packageH.structs.find(_.fullName.toFullString() == """test::C(CT("MyNone"),[TR(R(*,<,#,i(32)))])""").get;
     vassert(myNone.members.isEmpty);
   }
 

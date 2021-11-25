@@ -2,14 +2,17 @@ package net.verdagon.vale.templar.expression
 
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.parser.{LendConstraintP, UseP}
+import net.verdagon.vale.scout.patterns.AtomSP
+import net.verdagon.vale.scout.rules.{IRulexSR, RuneUsage}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.DestructorTemplar
-import net.verdagon.vale.templar.infer.infer.{InferSolveFailure, InferSolveSuccess}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar._
-import net.verdagon.vale.{IProfiler, vassert, vassertSome, vfail}
+import net.verdagon.vale.templar.ast.{ConstantIntTE, DestroyStaticSizedArrayIntoLocalsTE, DestroyTE, LetNormalTE, LocalLookupTE, LocationInFunctionEnvironment, ReferenceExpressionTE, ReferenceMemberLookupTE, SoftLoadTE, TemplarReinterpretTE}
+import net.verdagon.vale.templar.names.RuneNameT
+import net.verdagon.vale.{IProfiler, RangeS, vassert, vassertSome, vfail}
 
 import scala.collection.immutable.List
 
@@ -32,7 +35,7 @@ class PatternTemplar(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
     life: LocationInFunctionEnvironment,
-    patternsA: Vector[AtomAP],
+    patternsA: Vector[AtomSP],
     patternInputsTE: Vector[ReferenceExpressionTE],
     // This would be a continuation-ish lambda that evaluates:
     // - The body of an if-let statement
@@ -52,7 +55,7 @@ class PatternTemplar(
     fate: FunctionEnvironmentBox,
     life: LocationInFunctionEnvironment,
     liveCaptureLocals: Vector[ILocalVariableT],
-    patternsA: List[AtomAP],
+    patternsA: List[AtomSP],
     patternInputsTE: List[ReferenceExpressionTE],
     // This would be a continuation-ish lambda that evaluates:
     // - The body of an if-let statement
@@ -84,11 +87,10 @@ class PatternTemplar(
       temputs: Temputs,
       fate: FunctionEnvironmentBox,
       life: LocationInFunctionEnvironment,
-      rules: Vector[IRulexAR],
-      typeByRune: Map[IRuneA, ITemplataType],
-      localRunes: Set[IRuneA],
-      pattern: AtomAP,
-      inputExpr: ReferenceExpressionTE,
+      rules: Vector[IRulexSR],
+      runeToType: Map[IRuneS, ITemplataType],
+      pattern: AtomSP,
+      unconvertedInputExpr: ReferenceExpressionTE,
       // This would be a continuation-ish lambda that evaluates:
       // - The body of an if-let statement
       // - The body of a match's case statement
@@ -97,30 +99,50 @@ class PatternTemplar(
       afterPatternsSuccessContinuation: (Temputs, FunctionEnvironmentBox, LocationInFunctionEnvironment, Vector[ILocalVariableT]) => ReferenceExpressionTE):
   ReferenceExpressionTE = {
     profiler.newProfile("inferAndTranslatePattern", fate.fullName.toString, () => {
-      val templatasByRune =
-        inferTemplar.inferFromArgCoords(fate.snapshot, temputs, Vector.empty, rules, typeByRune, localRunes, Vector(pattern), None, pattern.range, Vector.empty, Vector(ParamFilter(inputExpr.resultRegister.reference, None))) match {
-          case isf @ InferSolveFailure(_, _, _, _, range, _, _) => {
-            throw CompileErrorExceptionT(RangedInternalErrorT(range, "Couldn't figure out runes for pattern!\n" + isf))
+
+      // The rules are different depending on the incoming type.
+      // See Impl Rule For Upcasts (IRFU).
+      val convertedInputExpr =
+        pattern.coordRune match {
+          case None => {
+            unconvertedInputExpr
           }
-          case InferSolveSuccess(tbr) => (tbr.templatasByRune.mapValues(v => Vector(TemplataEnvEntry(v))))
+          case Some(receiverRune) => {
+            val templatasByRune =
+              inferTemplar.solveExpectComplete(
+                fate.snapshot,
+                temputs,
+                rules,
+                runeToType,
+                pattern.range,
+                Vector(),
+                Vector(
+                  InitialSend(
+                    RuneUsage(pattern.range, PatternInputRuneS(pattern.range.begin)),
+                    receiverRune,
+                    CoordTemplata(unconvertedInputExpr.result.reference))))
+            fate.addEntries(
+              templatasByRune.toVector
+                .map({ case (key, value) => (RuneNameT(key), TemplataEnvEntry(value)) }))
+            val CoordTemplata(expectedCoord) = vassertSome(templatasByRune.get(receiverRune.rune))
+
+            // Now we convert m to a Marine. This also checks that it *can* be
+            // converted to a Marine.
+            convertHelper.convert(fate.snapshot, temputs, pattern.range, unconvertedInputExpr, expectedCoord)
+          }
         }
 
-      fate.addEntries(opts.useOptimization, templatasByRune.map({ case (key, value) => (key, value) }).toMap)
-
-      innerTranslateSubPatternAndMaybeContinue(temputs, fate, life, pattern, Vector(), inputExpr, afterPatternsSuccessContinuation)
+      innerTranslateSubPatternAndMaybeContinue(temputs, fate, life, pattern, Vector(), convertedInputExpr, afterPatternsSuccessContinuation)
     })
   }
 
-  // returns:
-  // - All captures that have happened so far. We'll drop these if a subsequent pattern match fails.
-  // -
   private def innerTranslateSubPatternAndMaybeContinue(
       temputs: Temputs,
       fate: FunctionEnvironmentBox,
       life: LocationInFunctionEnvironment,
-      pattern: AtomAP,
+      pattern: AtomSP,
       previousLiveCaptureLocals: Vector[ILocalVariableT],
-      unconvertedInputExpr: ReferenceExpressionTE,
+      inputExpr: ReferenceExpressionTE,
       // This would be a continuation-ish lambda that evaluates:
       // - The body of an if-let statement
       // - The body of a match's case statement
@@ -130,25 +152,12 @@ class PatternTemplar(
   ReferenceExpressionTE = {
     vassert(previousLiveCaptureLocals == previousLiveCaptureLocals.distinct)
 
-    val AtomAP(range, maybeCaptureLocalVarA, maybeVirtuality, coordRuneA, maybeDestructure) = pattern
+    val AtomSP(range, maybeCaptureLocalVarA, maybeVirtuality, coordRuneA, maybeDestructure) = pattern
 
     if (maybeVirtuality.nonEmpty) {
       // This is actually to be expected for when we translate the patterns from the
       // function's parameters. Ignore them.
     }
-
-    val expectedTemplata = fate.getNearestTemplataWithAbsoluteName2(NameTranslator.translateRune(coordRuneA), Set(TemplataLookupContext))
-    val expectedCoord =
-      expectedTemplata match {
-        case Some(CoordTemplata(coord)) => coord
-        case Some(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, "not a coord!"))
-        case None => throw CompileErrorExceptionT(RangedInternalErrorT(range, "not found!"))
-      }
-
-    // Now we convert m to a Marine. This also checks that it *can* be
-    // converted to a Marine.
-    val inputExpr =
-      convertHelper.convert(fate.snapshot, temputs, range, unconvertedInputExpr, expectedCoord);
 
     // We make it here instead of down in the maybeDestructure clauses because whether we destructure it or not
     // is unrelated to whether we destructure it.
@@ -159,8 +168,9 @@ class PatternTemplar(
     val (maybeCaptureLocalVarT, exprToDestructureOrDropOrPassTE) =
       maybeCaptureLocalVarA match {
         case None => (None, inputExpr)
-        case Some(captureLocalVar) => {
-          val localT = localHelper.makeUserLocalVariable(temputs, fate, range, captureLocalVar, expectedCoord)
+        case Some(captureS) => {
+          val localS = vassertSome(vassertSome(fate.containingBlockS).locals.find(_.varName == captureS.name))
+          val localT = localHelper.makeUserLocalVariable(temputs, fate, range, localS, inputExpr.result.reference)
           currentInstructions = currentInstructions :+ LetNormalTE(localT, inputExpr)
           val capturedLocalAliasTE =
             localHelper.softLoad(fate, range, LocalLookupTE(range, localT, localT.reference, FinalT), LendConstraintP(None))
@@ -169,7 +179,7 @@ class PatternTemplar(
       }
     // If we captured it as a local, then the exprToDestructureOrDropOrPassTE should be a non-owning alias of it
     if (maybeCaptureLocalVarT.nonEmpty) {
-      vassert(exprToDestructureOrDropOrPassTE.resultRegister.reference.ownership != OwnT)
+      vassert(exprToDestructureOrDropOrPassTE.result.reference.ownership != OwnT)
     }
 
     val liveCaptureLocals = previousLiveCaptureLocals ++ maybeCaptureLocalVarT.toVector
@@ -183,15 +193,15 @@ class PatternTemplar(
           afterSubPatternSuccessContinuation(temputs, fate, life + 0, liveCaptureLocals)
         }
         case Some(listOfMaybeDestructureMemberPatterns) => {
-          exprToDestructureOrDropOrPassTE.resultRegister.reference.ownership match {
+          exprToDestructureOrDropOrPassTE.result.reference.ownership match {
             case OwnT => {
               // We aren't capturing the var, so the destructuring should consume the incoming value.
               destructureOwning(
-                temputs, fate, life + 1, range, liveCaptureLocals, expectedCoord, exprToDestructureOrDropOrPassTE, listOfMaybeDestructureMemberPatterns, afterSubPatternSuccessContinuation)
+                temputs, fate, life + 1, range, liveCaptureLocals, exprToDestructureOrDropOrPassTE, listOfMaybeDestructureMemberPatterns, afterSubPatternSuccessContinuation)
             }
             case ConstraintT | ShareT => {
               destructureNonOwningAndMaybeContinue(
-                temputs, fate, life + 2, range, liveCaptureLocals, expectedCoord, exprToDestructureOrDropOrPassTE, listOfMaybeDestructureMemberPatterns, afterSubPatternSuccessContinuation)
+                temputs, fate, life + 2, range, liveCaptureLocals, exprToDestructureOrDropOrPassTE, listOfMaybeDestructureMemberPatterns, afterSubPatternSuccessContinuation)
             }
           }
         }
@@ -204,14 +214,13 @@ class PatternTemplar(
       life: LocationInFunctionEnvironment,
       range: RangeS,
       initialLiveCaptureLocals: Vector[ILocalVariableT],
-      expectedCoord: CoordT,
       inputExpr: ReferenceExpressionTE,
-      listOfMaybeDestructureMemberPatterns: Vector[AtomAP],
+      listOfMaybeDestructureMemberPatterns: Vector[AtomSP],
       afterDestructureSuccessContinuation: (Temputs, FunctionEnvironmentBox, LocationInFunctionEnvironment, Vector[ILocalVariableT]) => ReferenceExpressionTE
   ): ReferenceExpressionTE = {
     vassert(initialLiveCaptureLocals == initialLiveCaptureLocals.distinct)
 
-    val CoordT(OwnT, expectedContainerPermission, expectedContainerKind) = expectedCoord
+    val CoordT(OwnT, expectedContainerPermission, expectedContainerKind) = inputExpr.result.reference
     expectedContainerKind match {
       case StructTT(_) => {
         // Example:
@@ -222,20 +231,20 @@ class PatternTemplar(
         // Since we're receiving an owning reference, and we're *not* capturing
         // it in a variable, it will be destroyed and we will harvest its parts.
         translateDestroyStructInnerAndMaybeContinue(
-          temputs, fate, life + 0, range, initialLiveCaptureLocals, listOfMaybeDestructureMemberPatterns, expectedCoord, inputExpr, afterDestructureSuccessContinuation)
+          temputs, fate, life + 0, range, initialLiveCaptureLocals, listOfMaybeDestructureMemberPatterns, inputExpr, afterDestructureSuccessContinuation)
       }
-      case PackTT(_, underlyingStruct@StructTT(_)) => {
-        val structType2 = CoordT(OwnT, expectedContainerPermission, underlyingStruct)
-        val reinterpretExpr2 = TemplarReinterpretTE(inputExpr, structType2)
-        translateDestroyStructInnerAndMaybeContinue(
-          temputs, fate, life + 1, range, initialLiveCaptureLocals, listOfMaybeDestructureMemberPatterns, structType2, reinterpretExpr2, afterDestructureSuccessContinuation)
-      }
-      case TupleTT(_, underlyingStruct@StructTT(_)) => {
-        val structType2 = CoordT(OwnT, expectedContainerPermission, underlyingStruct)
-        val reinterpretExpr2 = TemplarReinterpretTE(inputExpr, structType2)
-        translateDestroyStructInnerAndMaybeContinue(
-          temputs, fate, life + 2, range, initialLiveCaptureLocals, listOfMaybeDestructureMemberPatterns, structType2, reinterpretExpr2, afterDestructureSuccessContinuation)
-      }
+//      case PackTT(_, underlyingStruct@StructTT(_)) => {
+//        val structType2 = CoordT(OwnT, expectedContainerPermission, underlyingStruct)
+//        val reinterpretExpr2 = TemplarReinterpretTE(inputExpr, structType2)
+//        translateDestroyStructInnerAndMaybeContinue(
+//          temputs, fate, life + 1, range, initialLiveCaptureLocals, listOfMaybeDestructureMemberPatterns, reinterpretExpr2, afterDestructureSuccessContinuation)
+//      }
+//      case TupleTT(_, underlyingStruct@StructTT(_)) => {
+//        val structType2 = CoordT(OwnT, expectedContainerPermission, underlyingStruct)
+//        val reinterpretExpr2 = TemplarReinterpretTE(inputExpr, structType2)
+//        translateDestroyStructInnerAndMaybeContinue(
+//          temputs, fate, life + 2, range, initialLiveCaptureLocals, listOfMaybeDestructureMemberPatterns, reinterpretExpr2, afterDestructureSuccessContinuation)
+//      }
       case staticSizedArrayT@StaticSizedArrayTT(size, RawArrayTT(elementType, _, _)) => {
         if (size != listOfMaybeDestructureMemberPatterns.size) {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, "Wrong num exprs!"))
@@ -259,14 +268,13 @@ class PatternTemplar(
       life: LocationInFunctionEnvironment,
       range: RangeS,
       liveCaptureLocals: Vector[ILocalVariableT],
-      expectedCoord: CoordT,
       containerTE: ReferenceExpressionTE,
-      listOfMaybeDestructureMemberPatterns: Vector[AtomAP],
+      listOfMaybeDestructureMemberPatterns: Vector[AtomSP],
       afterDestructureSuccessContinuation: (Temputs, FunctionEnvironmentBox, LocationInFunctionEnvironment, Vector[ILocalVariableT]) => ReferenceExpressionTE
   ): ReferenceExpressionTE = {
     vassert(liveCaptureLocals == liveCaptureLocals.distinct)
 
-    val localT = localHelper.makeTemporaryLocal(fate, life + 0, expectedCoord)
+    val localT = localHelper.makeTemporaryLocal(fate, life + 0, containerTE.result.reference)
     val letTE = LetNormalTE(localT, containerTE)
     val containerAliasingExprTE =
       localHelper.softLoad(fate, range, LocalLookupTE(range, localT, localT.reference, FinalT), LendConstraintP(None))
@@ -275,7 +283,7 @@ class PatternTemplar(
       Vector(
         letTE,
         iterateDestructureNonOwningAndMaybeContinue(
-          temputs, fate, life + 1, range, liveCaptureLocals, expectedCoord, containerAliasingExprTE, 0, listOfMaybeDestructureMemberPatterns.toList, afterDestructureSuccessContinuation)))
+          temputs, fate, life + 1, range, liveCaptureLocals, containerTE.result.reference, containerAliasingExprTE, 0, listOfMaybeDestructureMemberPatterns.toList, afterDestructureSuccessContinuation)))
   }
 
   private def iterateDestructureNonOwningAndMaybeContinue(
@@ -287,7 +295,7 @@ class PatternTemplar(
     expectedContainerCoord: CoordT,
     containerAliasingExprTE: ReferenceExpressionTE,
     memberIndex: Int,
-    listOfMaybeDestructureMemberPatterns: List[AtomAP],
+    listOfMaybeDestructureMemberPatterns: List[AtomSP],
     afterDestructureSuccessContinuation: (Temputs, FunctionEnvironmentBox, LocationInFunctionEnvironment, Vector[ILocalVariableT]) => ReferenceExpressionTE
   ): ReferenceExpressionTE = {
     vassert(liveCaptureLocals == liveCaptureLocals.distinct)
@@ -310,25 +318,25 @@ class PatternTemplar(
 
               loadFromStruct(temputs, range, expectedContainerPermission, containerAliasingExprTE, structTT, memberIndex)
             }
-            case PackTT(_, underlyingStruct@StructTT(_)) => {
-              val reinterpretedStructTT = CoordT(expectedContainerOwnership, expectedContainerPermission, underlyingStruct)
-              val reinterpretedContainerAliasingExprTE = TemplarReinterpretTE(containerAliasingExprTE, reinterpretedStructTT)
-              loadFromStruct(
-                temputs, range, expectedContainerPermission, reinterpretedContainerAliasingExprTE, underlyingStruct, memberIndex)
-            }
-            case TupleTT(_, underlyingStruct@StructTT(_)) => {
-              val reinterpretedStructTT = CoordT(expectedContainerOwnership, expectedContainerPermission, underlyingStruct)
-              val reinterpretedContainerAliasingExprTE = TemplarReinterpretTE(containerAliasingExprTE, reinterpretedStructTT)
-              loadFromStruct(
-                temputs, range, expectedContainerPermission, reinterpretedContainerAliasingExprTE, underlyingStruct, memberIndex)
-            }
+//            case PackTT(_, underlyingStruct@StructTT(_)) => {
+//              val reinterpretedStructTT = CoordT(expectedContainerOwnership, expectedContainerPermission, underlyingStruct)
+//              val reinterpretedContainerAliasingExprTE = TemplarReinterpretTE(containerAliasingExprTE, reinterpretedStructTT)
+//              loadFromStruct(
+//                temputs, range, expectedContainerPermission, reinterpretedContainerAliasingExprTE, underlyingStruct, memberIndex)
+//            }
+//            case TupleTT(_, underlyingStruct@StructTT(_)) => {
+//              val reinterpretedStructTT = CoordT(expectedContainerOwnership, expectedContainerPermission, underlyingStruct)
+//              val reinterpretedContainerAliasingExprTE = TemplarReinterpretTE(containerAliasingExprTE, reinterpretedStructTT)
+//              loadFromStruct(
+//                temputs, range, expectedContainerPermission, reinterpretedContainerAliasingExprTE, underlyingStruct, memberIndex)
+//            }
             case staticSizedArrayT@StaticSizedArrayTT(size, RawArrayTT(elementType, _, _)) => {
               loadFromStaticSizedArray(range, staticSizedArrayT, expectedContainerCoord, expectedContainerOwnership, expectedContainerPermission, containerAliasingExprTE, memberIndex)
             }
             case _ => vfail("impl!")
           }
 
-        val memberOwnershipInStruct = memberAddrExprTE.resultRegister.reference.ownership
+        val memberOwnershipInStruct = memberAddrExprTE.result.reference.ownership
         val coerceToOwnership = loadResultOwnership(memberOwnershipInStruct)
         val loadExpr = SoftLoadTE(memberAddrExprTE, coerceToOwnership, expectedContainerPermission)
         innerTranslateSubPatternAndMaybeContinue(
@@ -359,14 +367,13 @@ class PatternTemplar(
     life: LocationInFunctionEnvironment,
     range: RangeS,
     initialLiveCaptureLocals: Vector[ILocalVariableT],
-    innerPatternMaybes: Vector[AtomAP],
-    structType2: CoordT,
+    innerPatternMaybes: Vector[AtomSP],
     inputStructExpr: ReferenceExpressionTE,
     afterDestroySuccessContinuation: (Temputs, FunctionEnvironmentBox, LocationInFunctionEnvironment, Vector[ILocalVariableT]) => ReferenceExpressionTE
   ): ReferenceExpressionTE = {
     vassert(initialLiveCaptureLocals == initialLiveCaptureLocals.distinct)
 
-    val CoordT(_, _, structTT @ StructTT(_)) = structType2
+    val CoordT(_, _, structTT @ StructTT(_)) = inputStructExpr.result.reference
     val structDefT = temputs.getStructDefForRef(structTT)
     // We don't pattern match against closure structs.
 
@@ -397,7 +404,7 @@ class PatternTemplar(
     life: LocationInFunctionEnvironment,
     initialLiveCaptureLocals: Vector[ILocalVariableT],
     memberLocalVariables: List[ILocalVariableT],
-    innerPatternMaybes: List[AtomAP],
+    innerPatternMaybes: List[AtomSP],
     afterLetsSuccessContinuation: (Temputs, FunctionEnvironmentBox, LocationInFunctionEnvironment, Vector[ILocalVariableT]) => ReferenceExpressionTE
   ): ReferenceExpressionTE = {
     vassert(initialLiveCaptureLocals == initialLiveCaptureLocals.distinct)

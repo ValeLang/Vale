@@ -18,7 +18,7 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
   private[parser] def atomPattern: Parser[PatternPP] = positioned {
 
     pos ~
-    opt("virtual" ~> white) ~
+    opt(pstr("virtual") <~ white) ~
     (
       // The order here matters, we don't want the "a" rule to match "a A(_, _)" just because one starts with the other.
 
@@ -48,7 +48,7 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
         val maybeVirtuality =
           (maybeVirtual, maybeInterface) match {
             case (None, None) => None
-            case (Some(_), None) => Some(AbstractP)
+            case (Some(range), None) => Some(AbstractP(range.range))
             case (None, Some(interface)) => Some(OverrideP(Range(begin, end), interface))
             case (Some(_), Some(_)) => vfail()
           }

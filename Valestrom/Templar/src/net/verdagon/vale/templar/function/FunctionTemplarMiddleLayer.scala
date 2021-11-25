@@ -1,27 +1,28 @@
 package net.verdagon.vale.templar.function
 
-import net.verdagon.vale.astronomer.{AbstractAP, CodeBodyA, FunctionA, IRuneA, OverrideAP, ParameterA, VirtualityAP}
+import net.verdagon.vale.astronomer.FunctionA
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AbstractSP, OverrideSP, VirtualitySP}
-import net.verdagon.vale.templar._
+import net.verdagon.vale.templar.{ast, names, _}
+import net.verdagon.vale.templar.ast.{AbstractT, FunctionBannerT, FunctionHeaderT, FunctionT, OverrideT, ParameterT, PrototypeT, SealedT, SignatureT, VirtualityT}
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
-import net.verdagon.vale.{IProfiler, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
+import net.verdagon.vale.{IProfiler, RangeS, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 import net.verdagon.vale.templar.expression.CallTemplar
+import net.verdagon.vale.templar.names.{AnonymousSubstructConstructorNameT, AnonymousSubstructConstructorTemplateNameT, BuildingFunctionNameWithClosuredsAndTemplateArgsT, ConstructorTemplateNameT, FullNameT, FunctionNameT, FunctionTemplateNameT, ICitizenNameT, ICitizenTemplateNameT, IFunctionNameT, LambdaTemplateNameT, NameTranslator, FreeTemplateNameT, TemplarIgnoredParamNameT}
 
 import scala.collection.immutable.{List, Set}
 
 class FunctionTemplarMiddleLayer(
     opts: TemplarOptions,
   profiler: IProfiler,
-  newTemplataStore: () => TemplatasStore,
   templataTemplar: TemplataTemplar,
   convertHelper: ConvertHelper,
     structTemplar: StructTemplar,
     delegate: IFunctionTemplarDelegate) {
-  val core = new FunctionTemplarCore(opts, profiler, newTemplataStore, templataTemplar, convertHelper, delegate)
+  val core = new FunctionTemplarCore(opts, profiler, templataTemplar, convertHelper, delegate)
 
   // This is for the early stages of Templar when it's scanning banners to put in
   // its env. We just want its banner, we don't want to evaluate it.
@@ -36,39 +37,53 @@ class FunctionTemplarMiddleLayer(
   (FunctionBannerT) = {
 
     // Check preconditions
-    function1.typeByRune.keySet.foreach(templateParam => {
-      vassert(runedEnv.getNearestTemplataWithName(vimpl(templateParam.toString), Set(TemplataLookupContext, ExpressionLookupContext)).nonEmpty)
+    function1.runeToType.keySet.foreach(templateParam => {
+      vassert(runedEnv.lookupNearestWithImpreciseName(profiler, vimpl(templateParam.toString), Set(TemplataLookupContext, ExpressionLookupContext)).nonEmpty)
     })
     function1.body match {
-      case CodeBodyA(body1) => vassert(body1.closuredNames.isEmpty)
+      case CodeBodyS(body1) => vassert(body1.closuredNames.isEmpty)
       case _ =>
     }
 
     val params2 = assembleFunctionParams(runedEnv, temputs, function1.params)
-    val maybeReturnType = getMaybeReturnType(runedEnv, function1.maybeRetCoordRune)
+    val maybeReturnType = getMaybeReturnType(runedEnv, function1.maybeRetCoordRune.map(_.rune))
     val namedEnv = makeNamedEnv(runedEnv, params2.map(_.tyype), maybeReturnType)
-    val banner = FunctionBannerT(Some(function1), namedEnv.fullName, params2)
+    val banner = ast.FunctionBannerT(Some(function1), namedEnv.fullName, params2)
     banner
   }
 
   private def evaluateMaybeVirtuality(
       env: IEnvironment,
       temputs: Temputs,
-      maybeVirtuality1: Option[VirtualityAP]):
+      paramKind: KindT,
+      maybeVirtuality1: Option[VirtualitySP]):
   (Option[VirtualityT]) = {
     maybeVirtuality1 match {
       case None => (None)
-      case Some(AbstractAP) => (Some(AbstractT$))
-      case Some(OverrideAP(range, interfaceRuneA)) => {
-        env.getNearestTemplataWithAbsoluteName2(NameTranslator.translateRune(interfaceRuneA), Set(TemplataLookupContext)) match {
-          case None => vcurious()
-          case Some(KindTemplata(ir @ InterfaceTT(_))) => (Some(OverrideT(ir)))
-          case Some(it @ InterfaceTemplata(_, _)) => {
-            val ir =
-              structTemplar.getInterfaceRef(temputs, range, it, Vector.empty)
-            (Some(OverrideT(ir)))
+      case Some(AbstractSP(rangeS, isInternalMethod)) => {
+        val interfaceTT =
+          paramKind match {
+            case i @ InterfaceTT(_) => i
+            case _ => throw CompileErrorExceptionT(RangedInternalErrorT(rangeS, "Can only have virtual parameters for interfaces"))
+          }
+        // Open (non-sealed) interfaces can't have abstract methods defined outside the interface.
+        // See https://github.com/ValeLang/Vale/issues/374
+        if (!isInternalMethod) {
+          val interfaceDef = temputs.getInterfaceDefForRef(interfaceTT)
+          if (!interfaceDef.attributes.contains(SealedT)) {
+            throw CompileErrorExceptionT(AbstractMethodOutsideOpenInterface(rangeS))
           }
         }
+        (Some(AbstractT))
+      }
+      case Some(OverrideSP(range, interfaceRuneA)) => {
+        val interface =
+          env.lookupNearestWithImpreciseName(profiler, RuneNameS(interfaceRuneA.rune), Set(TemplataLookupContext)) match {
+            case None => vcurious()
+            case Some(KindTemplata(ir @ InterfaceTT(_))) => ir
+            case Some(it @ InterfaceTemplata(_, _)) => structTemplar.getInterfaceRef(temputs, range, it, Vector.empty)
+          }
+        Some(OverrideT(interface))
       }
     }
   }
@@ -85,15 +100,15 @@ class FunctionTemplarMiddleLayer(
   (FunctionBannerT) = {
 
     // Check preconditions
-    function1.typeByRune.keySet.foreach(templateParam => {
-      vassert(runedEnv.getNearestTemplataWithAbsoluteName2(NameTranslator.translateRune(templateParam), Set(TemplataLookupContext, ExpressionLookupContext)).nonEmpty);
+    function1.runeToType.keySet.foreach(templateParam => {
+      vassert(runedEnv.lookupNearestWithImpreciseName(profiler, RuneNameS(templateParam), Set(TemplataLookupContext, ExpressionLookupContext)).nonEmpty);
     })
 
     val params2 = assembleFunctionParams(runedEnv, temputs, function1.params)
 
-    val maybeReturnType = getMaybeReturnType(runedEnv, function1.maybeRetCoordRune)
+    val maybeReturnType = getMaybeReturnType(runedEnv, function1.maybeRetCoordRune.map(_.rune))
     val namedEnv = makeNamedEnv(runedEnv, params2.map(_.tyype), maybeReturnType)
-    val banner = FunctionBannerT(Some(function1), namedEnv.fullName, params2)
+    val banner = ast.FunctionBannerT(Some(function1), namedEnv.fullName, params2)
 
     // Now we want to add its Function2 into the temputs.
     temputs.getDeclaredSignatureOrigin(banner.toSignature) match {
@@ -135,11 +150,11 @@ class FunctionTemplarMiddleLayer(
   (FunctionHeaderT) = {
 
     // Check preconditions
-    function1.typeByRune.keySet.foreach(templateParam => {
+    function1.runeToType.keySet.foreach(templateParam => {
       vassert(
         runedEnv
-          .getNearestTemplataWithAbsoluteName2(
-            NameTranslator.translateRune(templateParam),
+          .lookupNearestWithImpreciseName(profiler,
+            RuneNameS(templateParam),
             Set(TemplataLookupContext, ExpressionLookupContext))
           .nonEmpty);
     })
@@ -154,7 +169,7 @@ class FunctionTemplarMiddleLayer(
       case None => {
         val params2 = assembleFunctionParams(runedEnv, temputs, function1.params)
 
-        val maybeReturnType = getMaybeReturnType(runedEnv, function1.maybeRetCoordRune)
+        val maybeReturnType = getMaybeReturnType(runedEnv, function1.maybeRetCoordRune.map(_.rune))
         val namedEnv = makeNamedEnv(runedEnv, params2.map(_.tyype), maybeReturnType)
 
         temputs.declareFunctionSignature(function1.range, needleSignature, Some(namedEnv))
@@ -198,17 +213,17 @@ class FunctionTemplarMiddleLayer(
   (PrototypeT) = {
 
     // Check preconditions
-    function1.typeByRune.keySet.foreach(templateParam => {
+    function1.runeToType.keySet.foreach(templateParam => {
       vassert(
-        runedEnv.getNearestTemplataWithAbsoluteName2(
-          NameTranslator.translateRune(templateParam),
+        runedEnv.lookupNearestWithImpreciseName(profiler,
+          RuneNameS(templateParam),
           Set(TemplataLookupContext, ExpressionLookupContext)).nonEmpty);
     })
 
     val paramTypes2 = evaluateFunctionParamTypes(runedEnv, function1.params)
-    val maybeReturnType = getMaybeReturnType(runedEnv, function1.maybeRetCoordRune)
+    val maybeReturnType = getMaybeReturnType(runedEnv, function1.maybeRetCoordRune.map(_.rune))
     val namedEnv = makeNamedEnv(runedEnv, paramTypes2, maybeReturnType)
-    val needleSignature = SignatureT(namedEnv.fullName)
+    val needleSignature = ast.SignatureT(namedEnv.fullName)
 
     temputs.getDeclaredSignatureOrigin(needleSignature) match {
       case None => {
@@ -229,7 +244,7 @@ class FunctionTemplarMiddleLayer(
         }
         temputs.getReturnTypeForSignature(needleSignature) match {
           case Some(returnType2) => {
-            (PrototypeT(namedEnv.fullName, returnType2))
+            (ast.PrototypeT(namedEnv.fullName, returnType2))
           }
           case None => {
             throw CompileErrorExceptionT(RangedInternalErrorT(runedEnv.function.range, "Need return type for " + needleSignature + ", cycle found"))
@@ -243,13 +258,13 @@ class FunctionTemplarMiddleLayer(
 
   private def evaluateFunctionParamTypes(
     env: IEnvironment,
-    params1: Vector[ParameterA]):
+    params1: Vector[ParameterS]):
   Vector[CoordT] = {
     params1.map(param1 => {
       val CoordTemplata(coord) =
         env
-          .getNearestTemplataWithAbsoluteName2(
-            NameTranslator.translateRune(param1.pattern.coordRune),
+          .lookupNearestWithImpreciseName(profiler,
+            RuneNameS(param1.pattern.coordRune.get.rune),
             Set(TemplataLookupContext))
           .get
       coord
@@ -259,22 +274,23 @@ class FunctionTemplarMiddleLayer(
   def assembleFunctionParams(
     env: IEnvironment,
     temputs: Temputs,
-    params1: Vector[ParameterA]):
+    params1: Vector[ParameterS]):
   (Vector[ParameterT]) = {
     params1.zipWithIndex.map({ case (param1, index) =>
         val CoordTemplata(coord) =
-          env
-            .getNearestTemplataWithAbsoluteName2(
-              NameTranslator.translateRune(param1.pattern.coordRune),
-              Set(TemplataLookupContext))
-            .get
-        val maybeVirtuality = evaluateMaybeVirtuality(env, temputs, param1.pattern.virtuality)
+          vassertSome(
+            env
+              .lookupNearestWithImpreciseName(
+                profiler,
+                RuneNameS(param1.pattern.coordRune.get.rune),
+                Set(TemplataLookupContext)))
+        val maybeVirtuality = evaluateMaybeVirtuality(env, temputs, coord.kind, param1.pattern.virtuality)
         val nameT =
-          param1.pattern.capture match {
+          param1.pattern.name match {
             case None => TemplarIgnoredParamNameT(index)
-            case Some(x) => NameTranslator.translateVarNameStep(x.varName)
+            case Some(x) => NameTranslator.translateVarNameStep(x.name)
           }
-        ParameterT(nameT, maybeVirtuality, coord)
+        ast.ParameterT(nameT, maybeVirtuality, coord)
       })
   }
 
@@ -313,12 +329,12 @@ class FunctionTemplarMiddleLayer(
     paramTypes: Vector[CoordT],
     maybeReturnType: Option[CoordT]
   ): FunctionEnvironment = {
-    val BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs(parentEnv, oldName, function, variables, entries) = runedEnv
+    val BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs(globalEnv, parentEnv, oldName, templatas, function, variables) = runedEnv
 
     // We fill out the params here to get the function's full name.
     val newName = assembleName(oldName, paramTypes)
 
-    FunctionEnvironment(parentEnv, newName, function, entries, maybeReturnType, variables, Set())
+    FunctionEnvironment(globalEnv, parentEnv, newName, templatas, function, maybeReturnType, None, variables, Set())
   }
 
   private def assembleName(
@@ -326,35 +342,26 @@ class FunctionTemplarMiddleLayer(
     params: Vector[CoordT]):
   FullNameT[IFunctionNameT] = {
     val BuildingFunctionNameWithClosuredsAndTemplateArgsT(templateName, templateArgs) = name.last
-    val newLastStep =
-      templateName match {
-        case ConstructorTemplateNameT(_) => vimpl() // no idea
-        case FunctionTemplateNameT(humanName, _) => FunctionNameT(humanName, templateArgs, params)
-        case LambdaTemplateNameT(_) => FunctionNameT(CallTemplar.CALL_FUNCTION_NAME, templateArgs, params)
-        case ImmConcreteDestructorTemplateNameT() => {
-          val Vector(CoordT(ShareT, ReadonlyT, immRef)) = params
-          ImmConcreteDestructorNameT(immRef)
-        }
-        case ImmInterfaceDestructorTemplateNameT() => {
-          ImmInterfaceDestructorNameT(templateArgs, params)
-        }
-        case ImmDropTemplateNameT() => {
-          val Vector(CoordT(ShareT, ReadonlyT, kind)) = params
-          ImmDropNameT(kind)
-        }
-      }
-    FullNameT(name.packageCoord, name.initSteps, newLastStep)
+    val newLastStep = templateName.makeFunctionName(templateArgs, params)
+//      templateName match {
+//        case ConstructorTemplateNameT(_) => vimpl() // no idea
+//        case FunctionTemplateNameT(humanName, _) =>
+//        case LambdaTemplateNameT(_) =>
+//        case AnonymousSubstructConstructorTemplateNameT(template) => AnonymousSubstructConstructorNameT(templateArgs, params)
+//        case StructFreeTemplateNameT(codeLocation) =>
+//      }
+    names.FullNameT(name.packageCoord, name.initSteps, newLastStep)
   }
 
   private def getMaybeReturnType(
     nearEnv: BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs,
-    maybeRetCoordRune: Option[IRuneA]
+    maybeRetCoordRune: Option[IRuneS]
   ): Option[CoordT] = {
     maybeRetCoordRune.map(retCoordRuneA => {
-      val retCoordRune = NameTranslator.translateRune(retCoordRuneA)
-      nearEnv.getNearestTemplataWithAbsoluteName2(retCoordRune, Set(TemplataLookupContext)) match {
+      val retCoordRune = (retCoordRuneA)
+      nearEnv.lookupNearestWithImpreciseName(profiler, RuneNameS(retCoordRune), Set(TemplataLookupContext)) match {
         case Some(CoordTemplata(coord)) => coord
-        case None => vwat(retCoordRune.toString)
+        case _ => vwat(retCoordRune.toString)
       }
     })
   }

@@ -1,5 +1,6 @@
 package net.verdagon.vale.hammer
 
+import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.{Builtins, FileCoordinateMap, PackageCoordinate, Tests}
 
 import scala.collection.immutable.List

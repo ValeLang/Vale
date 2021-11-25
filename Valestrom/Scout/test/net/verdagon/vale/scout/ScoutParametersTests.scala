@@ -1,19 +1,20 @@
 package net.verdagon.vale.scout
 
+import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.{Err, FileCoordinate, Ok, vassert, vfail}
+import net.verdagon.vale.{Collector, Err, FileCoordinate, FileCoordinateMap, Ok, vassert, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
-class ScoutParametersTests extends FunSuite with Matchers {
+class ScoutParametersTests extends FunSuite with Matchers with Collector {
 
   private def compile(code: String): ProgramS = {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
       case ParseSuccess(program0) => {
-        Scout.scoutProgram(FileCoordinate.test, program0) match {
-          case Err(e) => vfail(e.toString)
+        new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
+          case Err(e) => vfail(ScoutErrorHumanizer.humanize(FileCoordinateMap.test(code), e))
           case Ok(t) => t
         }
       }
@@ -24,13 +25,19 @@ class ScoutParametersTests extends FunSuite with Matchers {
     val program1 = compile("""fn main<T>(moo T) infer-ret { }""")
     val main = program1.lookupFunction("main")
 
-    val runeInRules =
-      main.templateRules match {
-        case Vector(TypedSR(_, rune @ CodeRuneS("T"),CoordTypeSR)) => rune
-      }
-    RuleSUtils.getDistinctOrderedRunesForRulexes(main.templateRules) match {
-      case Vector(runeFromFunc) => vassert(runeInRules == runeFromFunc)
+    vassert(main.runeToPredictedType.size == 1)
+
+    main.identifyingRunes match {
+      case Vector(RuneUsage(_, CodeRuneS("T"))) =>
     }
+  }
+
+  test("Returned rune") {
+    val program1 = compile("""fn main<T>(moo T) T { moo }""")
+    val main = program1.lookupFunction("main")
+
+    vassert(main.identifyingRunes.map(_.rune).contains(CodeRuneS("T")))
+    main.maybeRetCoordRune match { case Some(RuneUsage(_, CodeRuneS("T"))) => }
   }
 
   test("Borrowed rune") {
@@ -44,22 +51,19 @@ class ScoutParametersTests extends FunSuite with Matchers {
           AtomSP(_,
             Some(CaptureS(CodeVarNameS("moo"))),
             None,
-            tcr @ ImplicitRuneS(_,_),
+            Some(RuneUsage(_, tcr @ ImplicitRuneS(_))),
             None)) => tcr
       }
 
     val tCoordRuneFromRules =
-      main.templateRules match {
-        case Vector(
-          EqualsSR(_,
-            TypedSR(_,tcr @ ImplicitRuneS(_,_),CoordTypeSR),
-            TemplexSR(InterpretedST(_,ConstraintP,ReadonlyP,RuneST(_,CodeRuneS("T")))))) => tcr
+      main.rules shouldHave {
+        case AugmentSR(_, tcr, Vector(OwnershipLiteralSL(ConstraintP),PermissionLiteralSL(ReadonlyP)), RuneUsage(_, CodeRuneS("T"))) => tcr
       }
 
-    tCoordRuneFromParams shouldEqual tCoordRuneFromRules
+    tCoordRuneFromParams shouldEqual tCoordRuneFromRules.rune
   }
 
-  test("Anonymous typed param") {
+  test("Anonymous, typed param") {
     val program1 = compile("""fn main(_ int) infer-ret { }""")
     val main = program1.lookupFunction("main")
     val Vector(param) = main.params
@@ -69,45 +73,13 @@ class ScoutParametersTests extends FunSuite with Matchers {
           AtomSP(_,
           None,
             None,
-            pr @ ImplicitRuneS(_, 0),
+            Some(RuneUsage(_, pr @ ImplicitRuneS(_))),
             None)) => pr
       }
 
-    main.templateRules match {
-      case Vector(
-        EqualsSR(_,
-          TypedSR(_, pr,CoordTypeSR),
-          TemplexSR(NameST(_, CodeTypeNameS("int"))))) => {
-        vassert(pr == paramRune)
-      }
+    main.rules shouldHave {
+      case LookupSR(_, pr, CodeNameS("int")) => vassert(pr.rune == paramRune)
     }
-
-    RuleSUtils.getDistinctOrderedRunesForRulexes(main.templateRules) shouldEqual
-      Vector(paramRune)
-  }
-
-  test("Anonymous untyped param") {
-    val program1 = compile("""fn main(_) infer-ret { }""")
-    val main = program1.lookupFunction("main")
-    val Vector(param) = main.params
-    val paramRune =
-      param match {
-        case ParameterS(
-         AtomSP(_,
-          None,
-          None,
-          pr @ ImplicitRuneS(_, 0),
-          None)) => pr
-      }
-
-    main.templateRules match {
-      case Vector(TypedSR(_, pr,CoordTypeSR)) => {
-        vassert(pr == paramRune)
-      }
-    }
-
-    RuleSUtils.getDistinctOrderedRunesForRulexes(main.templateRules) shouldEqual
-      Vector(paramRune)
   }
 
   test("Rune destructure") {
@@ -120,35 +92,25 @@ class ScoutParametersTests extends FunSuite with Matchers {
     val (aRune, tRune) =
       param match {
         case ParameterS(
-            AtomSP(_,
+          AtomSP(_,
             Some(CaptureS(CodeVarNameS("moo"))),
-              None,
-              tr @ CodeRuneS("T"),
-              Some(
-                Vector(
-                  AtomSP(_,
+            None,
+            Some(tr),
+            Some(
+              Vector(
+                AtomSP(_,
                   Some(CaptureS(CodeVarNameS("a"))),
-                    None,
-                    ar @ ImplicitRuneS(_, 0),
-                    None))))) => (ar, tr)
+                  None,
+                  Some(RuneUsage(_, ar @ ImplicitRuneS(_))),
+                None))))) => (ar, tr)
       }
 
-    main.templateRules match {
-      case Vector(
-        TypedSR(_, tr,CoordTypeSR),
-        EqualsSR(_,
-          TypedSR(_, ar,CoordTypeSR),
-          TemplexSR(NameST(_, CodeTypeNameS("int"))))) => {
-        vassert(tr == tRune)
-        vassert(ar == aRune)
-      }
+    main.rules shouldHave {
+      case LookupSR(_, air, CodeNameS("int")) => vassert(air.rune == aRune)
     }
 
-    RuleSUtils.getDistinctOrderedRunesForRulexes(main.templateRules) shouldEqual
-      Vector(tRune, aRune)
-
     // See CCAUIR.
-    main.identifyingRunes shouldEqual Vector(tRune)
+    main.identifyingRunes.map(_.rune) shouldEqual Vector(tRune.rune)
   }
 
   test("Regioned pure function") {
@@ -158,4 +120,44 @@ class ScoutParametersTests extends FunSuite with Matchers {
     // We dont support regions yet, so scout should filter them out.
     main.identifyingRunes.size shouldEqual 0
   }
+
+  test("Test param-less lambda identifying runes") {
+    val bork = compile(
+      """
+        |fn main() int export {do({ 3 })}
+        |""".stripMargin)
+
+    val main = bork.lookupFunction("main")
+    // We dont support regions yet, so scout should filter them out.
+    main.identifyingRunes.size shouldEqual 0
+    val lambda = Collector.onlyOf(main.body, classOf[FunctionSE])
+    lambda.function.identifyingRunes.size shouldEqual 0
+  }
+
+  test("Test one-param lambda identifying runes") {
+    val bork = compile(
+      """
+        |fn main() int export {do({ _ })}
+        |""".stripMargin)
+
+    val main = bork.lookupFunction("main")
+    // We dont support regions yet, so scout should filter them out.
+    main.identifyingRunes.size shouldEqual 0
+    val lambda = Collector.onlyOf(main.body, classOf[FunctionSE])
+    lambda.function.identifyingRunes.size shouldEqual 1
+  }
+
+  test("Test one-anonymous-param lambda identifying runes") {
+    val bork = compile(
+      """
+        |fn main() int export {do((_){ true })}
+        |""".stripMargin)
+
+    val main = bork.lookupFunction("main")
+    // We dont support regions yet, so scout should filter them out.
+    main.identifyingRunes.size shouldEqual 0
+    val lambda = Collector.onlyOf(main.body, classOf[FunctionSE])
+    lambda.function.identifyingRunes.size shouldEqual 1
+  }
+
 }

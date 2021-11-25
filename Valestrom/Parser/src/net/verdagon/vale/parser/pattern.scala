@@ -6,7 +6,7 @@ import scala.collection.immutable.List
 import scala.util.parsing.input.Positional
 
 sealed trait IVirtualityP
-case object AbstractP extends IVirtualityP
+case class AbstractP(range: Range) extends IVirtualityP
 case class OverrideP(range: Range, tyype: ITemplexPT) extends IVirtualityP { override def hashCode(): Int = vcurious() }
 
 case class PatternPP(

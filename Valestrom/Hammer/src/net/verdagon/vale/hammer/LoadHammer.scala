@@ -1,13 +1,12 @@
 package net.verdagon.vale.hammer
 
 import net.verdagon.vale.hammer.ExpressionHammer.translate
-import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal.{BorrowH, ShareH, Variability => _, Varying => _, _}
 import net.verdagon.vale.{metal => m}
-import net.verdagon.vale.templar.{types => t}
-import net.verdagon.vale.templar._
+import net.verdagon.vale.templar.{Hinputs, types => t, _}
+import net.verdagon.vale.templar.ast.{AddressMemberLookupTE, ExpressionT, FunctionHeaderT, LocalLookupTE, ReferenceExpressionTE, ReferenceMemberLookupTE, RuntimeSizedArrayLookupTE, SoftLoadTE, StaticSizedArrayLookupTE}
 import net.verdagon.vale.templar.env.{AddressibleLocalVariableT, ReferenceLocalVariableT}
-import net.verdagon.vale.templar.templata.FunctionHeaderT
+import net.verdagon.vale.templar.names.{FullNameT, IVarNameT}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.{vassert, vfail}
 
@@ -163,10 +162,10 @@ object LoadHammer {
       translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val structTT =
-      structExpr2.resultRegister.reference.kind match {
+      structExpr2.result.reference.kind match {
         case sr @ StructTT(_) => sr
-        case TupleTT(_, sr) => sr
-        case PackTT(_, sr) => sr
+//        case TupleTT(_, sr) => sr
+//        case PackTT(_, sr) => sr
       }
     val structDefT = hinputs.lookupStruct(structTT)
     val memberIndex = structDefT.members.indexWhere(member => structDefT.fullName.addStep(member.name) == memberName)
@@ -235,10 +234,10 @@ object LoadHammer {
 //      TypeHammer.translateReference(hinputs, hamuts, resultCoord);
 
     val structTT =
-      structExpr2.resultRegister.reference.kind match {
+      structExpr2.result.reference.kind match {
         case sr @ StructTT(_) => sr
-        case TupleTT(_, sr) => sr
-        case PackTT(_, sr) => sr
+//        case TupleTT(_, sr) => sr
+//        case PackTT(_, sr) => sr
       }
     val structDefT = hinputs.lookupStruct(structTT)
     val memberIndex = structDefT.members.indexWhere(member => structDefT.fullName.addStep(member.name) == memberName)
@@ -382,10 +381,10 @@ object LoadHammer {
       translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val structTT =
-      structExpr2.resultRegister.reference.kind match {
+      structExpr2.result.reference.kind match {
         case sr @ StructTT(_) => sr
-        case TupleTT(_, sr) => sr
-        case PackTT(_, sr) => sr
+//        case TupleTT(_, sr) => sr
+//        case PackTT(_, sr) => sr
       }
     val structDefT = hinputs.lookupStruct(structTT)
     val memberIndex = structDefT.members.indexWhere(member => structDefT.fullName.addStep(member.name) == memberName)

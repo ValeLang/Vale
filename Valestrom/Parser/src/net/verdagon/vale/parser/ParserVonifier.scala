@@ -50,7 +50,7 @@ object ParserVonifier {
     }
   }
 
-  def vonifyRuneAttribute(thing: IRuneSttributeP): VonObject = {
+  def vonifyRuneAttribute(thing: IRuneAttributeP): VonObject = {
     thing match {
       case TypeRuneAttributeP(range, tyype) => {
         VonObject(

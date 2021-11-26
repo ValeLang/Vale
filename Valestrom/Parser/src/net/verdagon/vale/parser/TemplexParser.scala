@@ -41,8 +41,8 @@ trait TemplexParser extends RegexParsers with ParserUtils {
     pos ~ "borrow" ~ pos ^^ { case begin ~ _ ~ end => OwnershipPT(Range(begin, end), ConstraintP) } |
     pos ~ "weak" ~ pos ^^ { case begin ~ _ ~ end => OwnershipPT(Range(begin, end), WeakP) } |
     pos ~ "share" ~ pos ^^ { case begin ~ _ ~ end => OwnershipPT(Range(begin, end), ShareP) } |
-    mutabilityARomTemplex |
-    variabilityARomTemplex |
+    mutabilityAtomTemplex |
+    variabilityAtomTemplex |
     pos ~ "inl" ~ pos ^^ { case begin ~ _ ~ end => LocationPT(Range(begin, end), InlineP) } |
     pos ~ "yon" ~ pos ^^ { case begin ~ _ ~ end => LocationPT(Range(begin, end), YonderP) } |
     pos ~ "xrw" ~ pos ^^ { case begin ~ _ ~ end => PermissionPT(Range(begin, end), ExclusiveReadwriteP) } |
@@ -52,12 +52,12 @@ trait TemplexParser extends RegexParsers with ParserUtils {
     (typeIdentifier ^^ NameOrRunePT)
   }
 
-  def mutabilityARomTemplex: Parser[MutabilityPT] = {
+  def mutabilityAtomTemplex: Parser[MutabilityPT] = {
     pos ~ "mut" ~ pos ^^ { case begin ~ _ ~ end => MutabilityPT(Range(begin, end), MutableP) } |
     pos ~ "imm" ~ pos ^^ { case begin ~ _ ~ end => MutabilityPT(Range(begin, end), ImmutableP) }
   }
 
-  def variabilityARomTemplex: Parser[VariabilityPT] = {
+  def variabilityAtomTemplex: Parser[VariabilityPT] = {
     pos ~ "vary" ~ pos ^^ { case begin ~ _ ~ end => VariabilityPT(Range(begin, end), VaryingP) } |
     pos ~ "final" ~ pos ^^ { case begin ~ _ ~ end => VariabilityPT(Range(begin, end), FinalP) }
   }

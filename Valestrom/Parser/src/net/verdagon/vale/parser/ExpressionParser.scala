@@ -669,8 +669,8 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   }
 
   private[parser] def arrayHeader: Parser[(Option[ITemplexPT], Option[ITemplexPT], IArraySizeP)] = {
-    ((("[" ~> optWhite ~> opt(mutabilityARomTemplex <~ optWhite)) ~
-        (opt(variabilityARomTemplex <~ optWhite)) ~
+    ((("[" ~> optWhite ~> opt(mutabilityAtomTemplex <~ optWhite)) ~
+        (opt(variabilityAtomTemplex <~ optWhite)) ~
         (arraySize <~ optWhite <~ "]")) ^^ {
       case maybeMutability ~ maybeVariability ~ maybeSize => {
         (maybeMutability, maybeVariability, maybeSize)

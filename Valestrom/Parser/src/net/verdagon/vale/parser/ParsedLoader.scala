@@ -578,7 +578,7 @@ object ParsedLoader {
     }
   }
 
-  def loadRuneAttribute(jobj: JObject): IRuneSttributeP = {
+  def loadRuneAttribute(jobj: JObject): IRuneAttributeP = {
     getType(jobj) match {
       case "TypeRuneAttribute" => {
         TypeRuneAttributeP(

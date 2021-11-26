@@ -98,7 +98,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
 
   // Add any new rules to the "Nothing matches empty string" test!
 
-  private[parser] def identifyingRegionRuneAttribute: Parser[IRuneSttributeP] = {
+  private[parser] def identifyingRegionRuneAttribute: Parser[IRuneAttributeP] = {
     pos ~ "ro" ~ pos ^^ { case begin ~ _ ~ end => ReadOnlyRuneAttributeP(Range(begin, end)) } |
     pos ~ "bump" ~ pos ^^ { case begin ~ _ ~ end => BumpRuneAttributeP(Range(begin, end)) } |
     pos ~ "pool" ~ pos ^^ { case begin ~ _ ~ end => PoolRuneAttributeP(Range(begin, end)) } |

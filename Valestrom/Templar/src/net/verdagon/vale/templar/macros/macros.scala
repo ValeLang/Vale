@@ -8,14 +8,6 @@ import net.verdagon.vale.templar.env.{FunctionEnvironment, IEnvEntry}
 import net.verdagon.vale.templar.names.{CitizenTemplateNameT, FullNameT, INameT}
 import net.verdagon.vale.templar.types.{CoordT, InterfaceTT, MutabilityT, RuntimeSizedArrayTT, StructTT}
 
-trait IOnFunctionDefinedMacro {
-  def onFunctionDefined()
-}
-
-trait IOnFunctionGeneratedMacro {
-  def onFunctionDefined()
-}
-
 trait IFunctionBodyMacro {
 //  def generatorId: String
 
@@ -31,16 +23,6 @@ trait IFunctionBodyMacro {
   FunctionHeaderT
 }
 
-trait IOnRuntimeSizedArrayDefinedMacro {
-//  def getRSASiblingEntries(
-//    macroName: String, structName: FullNameT[INameT], structA: RSAA):
-//  Vector[(FullNameT[INameT], IEnvEntry)]
-
-  def getRuntimeSizedArrayChildEntries(
-    rsaName: FullNameT[INameT], rsa: RuntimeSizedArrayTT, mutability: MutabilityT):
-  Vector[(FullNameT[INameT], IEnvEntry)]
-}
-
 trait IOnStructDefinedMacro {
   def getStructSiblingEntries(
     macroName: String, structName: FullNameT[INameT], structA: StructA):
@@ -48,11 +30,6 @@ trait IOnStructDefinedMacro {
 
   def getStructChildEntries(
     macroName: String, structName: FullNameT[INameT], structA: StructA, mutability: MutabilityT):
-  Vector[(FullNameT[INameT], IEnvEntry)]
-}
-
-trait IOnImplicitStructGeneratedMacro {
-  def onImplicitStructGenerated(struct: StructTT):
   Vector[(FullNameT[INameT], IEnvEntry)]
 }
 

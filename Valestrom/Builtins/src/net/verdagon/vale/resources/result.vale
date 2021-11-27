@@ -1,6 +1,6 @@
 import v.builtins.panic.*;
 
-interface Result<OkType, ErrType> rules(OkType Ref, ErrType Ref) { }
+interface Result<OkType, ErrType> sealed rules(OkType Ref, ErrType Ref) { }
 struct Ok<OkType, ErrType> rules(OkType Ref, ErrType Ref) { value OkType; }
 impl<OkType, ErrType> Result<OkType, ErrType> for Ok<OkType, ErrType>;
 struct Err<OkType, ErrType> rules(OkType Ref, ErrType Ref) { value ErrType; }

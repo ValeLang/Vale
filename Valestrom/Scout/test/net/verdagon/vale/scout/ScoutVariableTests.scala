@@ -1,7 +1,8 @@
 package net.verdagon.vale.scout
 
-import net.verdagon.vale.parser.{CombinatorParsers,  ParseFailure, ParseSuccess, Parser, VaryingP}
-import net.verdagon.vale.{Err, FileCoordinate, Ok, vassert, vfail, vimpl}
+import net.verdagon.vale.options.GlobalOptions
+import net.verdagon.vale.parser.{CombinatorParsers, ParseFailure, ParseSuccess, Parser, VaryingP}
+import net.verdagon.vale.{Collector, Err, FileCoordinate, Ok, vassert, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.runtime.Nothing$
@@ -11,7 +12,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
       case ParseSuccess(program0) => {
-        Scout.scoutProgram(FileCoordinate.test, program0) match {
+        new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
           case Ok(_) => vfail("Expected an error")
           case Err(e) => e
         }
@@ -23,7 +24,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
       case ParseSuccess(program0) => {
-        Scout.scoutProgram(FileCoordinate.test, program0) match {
+        new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => vfail(e.toString)
           case Ok(t) => t
         }
@@ -41,6 +42,13 @@ class ScoutVariableTests extends FunSuite with Matchers {
       CodeVarNameS("x"),
       NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
+  }
+
+  test("Type-less local has no coord rune") {
+    val program1 = compile("fn main() int export { x = 4; }")
+    val main = program1.lookupFunction("main")
+    val local = Collector.only(main, { case let @ LetSE(_, rules, pattern, _) => let })
+    local.pattern.coordRune shouldEqual None
   }
 
   test("Reports defining same-name variable") {
@@ -128,7 +136,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalS(
           CodeVarNameS("x"),
-           NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed, NotUsed) =>
+           NotUsed, NotUsed, NotUsed, Used, NotUsed, NotUsed) =>
     }
   }
 
@@ -145,7 +153,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalS(
           CodeVarNameS("x"),
-           NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed) =>
+           NotUsed, NotUsed, NotUsed, NotUsed, Used, NotUsed) =>
     }
   }
 
@@ -162,7 +170,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalS(
           CodeVarNameS("x"),
-           NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed) =>
+           NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, Used) =>
     }
   }
 
@@ -177,9 +185,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     val main = program1.lookupFunction("main")
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalS(
-          CodeVarNameS("x"),
-           MaybeUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+      case LocalS(CodeVarNameS("x"), Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -196,7 +202,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalS(
           CodeVarNameS("x"),
-           NotUsed, MaybeUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+           NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -213,7 +219,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalS(
           CodeVarNameS("x"),
-           NotUsed, NotUsed, MaybeUsed, NotUsed, NotUsed, NotUsed) =>
+           NotUsed, NotUsed, Used, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -230,7 +236,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalS(
           CodeVarNameS("x"),
-          NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed, NotUsed) =>
+          NotUsed, NotUsed, NotUsed, Used, NotUsed, NotUsed) =>
     }
   }
 
@@ -247,7 +253,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalS(
           CodeVarNameS("x"),
-          NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed) =>
+          NotUsed, NotUsed, NotUsed, NotUsed, Used, NotUsed) =>
     }
   }
 
@@ -264,7 +270,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalS(
           CodeVarNameS("x"),
-          NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed) =>
+          NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, Used) =>
     }
   }
 
@@ -298,7 +304,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalS(
           CodeVarNameS("x"),
-          NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed, NotUsed) =>
+          NotUsed, NotUsed, NotUsed, Used, NotUsed, NotUsed) =>
     }
   }
 
@@ -332,7 +338,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalS(
           CodeVarNameS("x"),
-          NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed) =>
+          NotUsed, NotUsed, NotUsed, NotUsed, Used, NotUsed) =>
     }
   }
 
@@ -366,7 +372,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalS(
           CodeVarNameS("x"),
-           NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed) =>
+           NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, Used) =>
     }
   }
 
@@ -383,7 +389,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalS(
           CodeVarNameS("x"),
-           MaybeUsed, MaybeUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+           Used, Used, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -400,7 +406,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalS(
           CodeVarNameS("x"),
-          NotUsed, NotUsed, NotUsed, MaybeUsed, MaybeUsed, NotUsed) =>
+          NotUsed, NotUsed, NotUsed, Used, Used, NotUsed) =>
     }
   }
 
@@ -417,7 +423,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalS(
           CodeVarNameS("x"),
-           NotUsed, MaybeUsed, MaybeUsed, NotUsed, NotUsed, NotUsed) =>
+           NotUsed, Used, Used, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -434,7 +440,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalS(
           CodeVarNameS("x"),
-           NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed, MaybeUsed) =>
+           NotUsed, NotUsed, NotUsed, NotUsed, Used, Used) =>
     }
   }
 
@@ -456,7 +462,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalS(
           CodeVarNameS("x"),
-           NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed, MaybeUsed) =>
+           NotUsed, NotUsed, NotUsed, NotUsed, Used, Used) =>
     }
   }
 
@@ -488,7 +494,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalS(
           CodeVarNameS("x"),
-          NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed, NotUsed) =>
+          NotUsed, NotUsed, NotUsed, Used, NotUsed, NotUsed) =>
     }
   }
 
@@ -505,7 +511,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalS(
           CodeVarNameS("x"),
-           MaybeUsed, MaybeUsed, MaybeUsed, NotUsed, NotUsed, NotUsed) =>
+           Used, Used, Used, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -522,7 +528,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalS(
           CodeVarNameS("x"),
-           NotUsed, NotUsed, NotUsed, MaybeUsed, MaybeUsed, MaybeUsed) =>
+           NotUsed, NotUsed, NotUsed, Used, Used, Used) =>
     }
   }
 
@@ -557,7 +563,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalS(
           CodeVarNameS("x"),
-           MaybeUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+           Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -576,7 +582,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     // borrow it whenever we try to access a closure variable?
     val lamBlock =
       mainBlock.exprs.collect({
-        case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, _, _, _, CodeBodyS(innerBody))), _), _) => innerBody.block
+        case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, CodeBodyS(innerBody))), _), _) => innerBody.block
       }).head
     lamBlock.locals.head match {
       case LocalS(name, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) => {
@@ -601,7 +607,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     // borrow it whenever we try to access a closure variable?
     val lamBlock =
     mainBlock.exprs.collect({
-      case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, _, _, _, CodeBodyS(innerBody))), _), _) => innerBody.block
+      case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, CodeBodyS(innerBody))), _), _) => innerBody.block
     }).head
     val locals = lamBlock.locals
     locals.find(_.varName == ClosureParamNameS()).get match {

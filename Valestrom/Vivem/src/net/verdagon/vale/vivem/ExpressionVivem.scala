@@ -360,13 +360,6 @@ object ExpressionVivem {
 
         NodeContinue(makeVoid(programH, heap, callId))
       }
-//      case LocalLookupH(_, localIndex, resultType, name) => {
-//        // Check that its there
-//        heap.getReferenceFromLocal(VariableAddressV(callId, localIndex), resultType)
-//
-//        heap.setVariableAddressExpr(exprId, VariableAddressV(callId, localIndex))
-//      }
-
       case LocalStoreH(localIndex, sourceExpr, name) => {
         val reference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
@@ -819,8 +812,6 @@ object ExpressionVivem {
           }
         heap.checkReference(consumerME.resultType, consumerReference)
 
-//        heap.incrementReferenceHoldCount(expressionId, consumerInterfaceRef)
-
         // Temporarily reduce to 0. We do this instead of ensure(1) to better detect a bug
         // where there might be one different kind of referrer.
         heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
@@ -831,49 +822,6 @@ object ExpressionVivem {
 
         consumeElements(
           programH, stdin, stdout, heap, expressionId, callId, arrayReference, consumerReference, consumerMethod, ssaDefM.size, (_, _) => {})
-
-//        val consumerInterfaceDefH =
-//          programH.lookupInterface(consumerInterfaceExpr.resultType.kind)
-//
-//        (0 until arraySize).foreach(ascendingI => {
-//          val i = arraySize - ascendingI - 1
-//
-//          heap.vivemDout.println()
-//          heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (consumer)")
-//
-//          // We're assuming here that theres only 1 method in the interface.
-//          val indexInEdge = consumerInterfaceDefH.methods.indexWhere(_.prototypeH == consumerMethod)
-//          vassert(indexInEdge >= 0)
-//          vassert(indexInEdge == 0) // curious. should always be 0, because it's an IFunction1.
-//
-//          // We're assuming that it takes self then the index int as arguments.
-//          val virtualParamIndex = 0
-//
-//          heap.vivemDout.println()
-//
-//          heap.vivemDout.println()
-//          heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (icall)")
-//
-//          val elementReference = heap.deinitializeArrayElement(arrayReference, i)
-//
-//          val consumerInterfaceRefAlias =
-//            heap.alias(consumerInterfaceRef, consumerInterfaceExpr.resultType, consumerInterfaceExpr.resultType)
-//
-//          val (functionH, (calleeCallId, retuurn)) =
-//            executeInterfaceFunction(
-//              programH,
-//              stdin,
-//              stdout,
-//              heap,
-//              Vector(consumerInterfaceRefAlias, elementReference),
-//              virtualParamIndex,
-//              consumerInterfaceExpr.resultType.kind,
-//              indexInEdge,
-//              consumerMethod)
-//
-//          val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
-//          discard(programH, heap, stdout, stdin, callId, functionH.prototype.returnType, returnRef)
-//        });
 
         heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
         heap.zero(arrayReference)
@@ -898,8 +846,6 @@ object ExpressionVivem {
           }
         heap.checkReference(consumerInterfaceExpr.resultType, consumerReference)
 
-        //        heap.incrementReferenceHoldCount(expressionId, consumerInterfaceRef)
-
         // Temporarily reduce to 0. We do this instead of ensure(1) to better detect a bug
         // where there might be one different kind of referrer.
         heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
@@ -913,52 +859,6 @@ object ExpressionVivem {
 
         consumeElements(
           programH, stdin, stdout, heap, expressionId, callId, arrayReference, consumerReference, consumerMethod, size, (_, _) => {})
-
-//        val consumerInterfaceDefH = programH.lookupInterface(consumerInterfaceExpr.resultType.kind)
-//
-//        val size =
-//          heap.dereference(arrayReference) match {
-//            case ArrayInstanceV(_, _, s, _) => s
-//          }
-//        (0 until size).foreach(ascendingI => {
-//          val i = size - ascendingI - 1
-//
-//          heap.vivemDout.println()
-//          heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (consumer)")
-//
-//          // We're assuming here that theres only 1 method in the interface.
-//          val indexInEdge = consumerInterfaceDefH.methods.indexWhere(_.prototypeH == consumerMethod)
-//          vassert(indexInEdge >= 0)
-//          vassert(indexInEdge == 0) // curious. should always be 0, because it's an IFunction1.
-//
-//          // We're assuming that it takes self then the index int as arguments.
-//          val virtualParamIndex = 0
-//
-//          heap.vivemDout.println()
-//
-//          heap.vivemDout.println()
-//          heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (icall)")
-//
-//          val elementReference = heap.deinitializeArrayElement(arrayReference, i)
-//
-//          val consumerInterfaceRefAlias =
-//            heap.alias(consumerInterfaceRef, consumerInterfaceExpr.resultType, consumerInterfaceExpr.resultType)
-//
-//          val (functionH, (calleeCallId, retuurn)) =
-//            executeInterfaceFunction(
-//              programH,
-//              stdin,
-//              stdout,
-//              heap,
-//              Vector(consumerInterfaceRefAlias, elementReference),
-//              virtualParamIndex,
-//              consumerInterfaceExpr.resultType.kind,
-//              indexInEdge,
-//              consumerMethod)
-//
-//          val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
-//          discard(programH, heap, stdout, stdin, callId, functionH.prototype.returnType, returnRef)
-//        });
 
         heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
         heap.zero(arrayReference)
@@ -1154,20 +1054,20 @@ object ExpressionVivem {
               heap.zero(actualReference)
               heap.deallocateIfNoWeakRefs(actualReference)
             }
-            case ir @ InterfaceRefH(_) => {
-              heap.vivemDout.println()
-              heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (discard icall)")
-              val prototypeH = programH.lookupPackage(expectedReference.kind.packageCoord).immDestructorsByKind(expectedReference.kind)
-              val indexInEdge = programH.lookupInterface(ir).methods.indexWhere(_.prototypeH == prototypeH)
-              vassert(indexInEdge >= 0)
-              val (functionH, (calleeCallId, retuurn)) =
-                executeInterfaceFunction(programH, stdin, stdout, heap, Vector(actualReference), 0, ir, indexInEdge, prototypeH)
-              heap.vivemDout.print("  " * callId.callDepth + "Getting return reference")
-              val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
-              vassert(returnRef.actualKind.hamut == ProgramH.emptyTupleStructRef)
-              discard(programH, heap, stdout, stdin, callId, prototypeH.returnType, returnRef)
-            }
-            case StructRefH(_) | RuntimeSizedArrayTH(_) | StaticSizedArrayTH(_) => {
+//            case ir @ InterfaceRefH(_) => {
+//              heap.vivemDout.println()
+//              heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (discard icall)")
+//              val prototypeH = programH.lookupPackage(expectedReference.kind.packageCoord).immDestructorsByKind(expectedReference.kind)
+//              val indexInEdge = programH.lookupInterface(ir).methods.indexWhere(_.prototypeH == prototypeH)
+//              vassert(indexInEdge >= 0)
+//              val (functionH, (calleeCallId, retuurn)) =
+//                executeInterfaceFunction(programH, stdin, stdout, heap, Vector(actualReference), 0, ir, indexInEdge, prototypeH)
+//              heap.vivemDout.print("  " * callId.callDepth + "Getting return reference")
+//              val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
+//              vassert(returnRef.actualKind.hamut == ProgramH.emptyTupleStructRef)
+//              discard(programH, heap, stdout, stdin, callId, prototypeH.returnType, returnRef)
+//            }
+            case InterfaceRefH(_) | StructRefH(_) | RuntimeSizedArrayTH(_) | StaticSizedArrayTH(_) => {
               heap.vivemDout.println()
               heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (discard call)")
               val prototypeH = vassertSome(programH.lookupPackage(expectedReference.kind.packageCoord).immDestructorsByKind.get(expectedReference.kind))

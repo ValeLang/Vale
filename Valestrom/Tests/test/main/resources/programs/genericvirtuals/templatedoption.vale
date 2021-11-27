@@ -1,5 +1,5 @@
 
-interface MyOption<T> rules(T Ref) { }
+interface MyOption<T> sealed rules(T Ref) { }
 
 struct MySome<T> rules(T Ref) {
   value T;

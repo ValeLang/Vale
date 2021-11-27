@@ -169,7 +169,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
       case FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "doCivicDance")), Vector(), None, None,
-          Some(ParamsP(_, Vector(PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "this")))), Some(NameOrRunePT(NameP(_, "Car"))), None, Some(AbstractP))))),
+          Some(ParamsP(_, Vector(PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "this")))), Some(NameOrRunePT(NameP(_, "Car"))), None, Some(AbstractP(_)))))),
           FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_, "int"))))),
         None) =>
     }

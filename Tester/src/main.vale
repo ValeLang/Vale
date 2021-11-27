@@ -349,6 +349,7 @@ fn FinishTests(suite &!TestSuite, until_this_many_left int) {
         println("stderr:");
         println(build_result.stderr);
       }
+      set suite.num_failures = suite.num_failures + 1;
     } else {
       program_name = if (IsWindows()) { "main.exe" } else { "main" };
       run_program = test_build_dir./(program_name).str();

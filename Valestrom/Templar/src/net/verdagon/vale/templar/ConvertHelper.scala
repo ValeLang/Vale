@@ -1,7 +1,8 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale._
-import net.verdagon.vale.astronomer.ITemplexA
+import net.verdagon.vale.templar.ast.{ReferenceExpressionTE, StructToInterfaceUpcastTE}
+//import net.verdagon.vale.astronomer.IRulexSR
 import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env.{IEnvironment, IEnvironmentBox}
 import net.verdagon.vale.templar.templata._
@@ -48,13 +49,13 @@ class ConvertHelper(
       sourceExpr: ReferenceExpressionTE,
       targetPointerType: CoordT):
   (ReferenceExpressionTE) = {
-    val sourcePointerType = sourceExpr.resultRegister.reference
+    val sourcePointerType = sourceExpr.result.reference
 
-    if (sourceExpr.resultRegister.reference == targetPointerType) {
+    if (sourceExpr.result.reference == targetPointerType) {
       return sourceExpr
     }
 
-    if (sourceExpr.resultRegister.reference.kind == NeverT()) {
+    if (sourceExpr.result.reference.kind == NeverT()) {
       return sourceExpr
     }
 
@@ -84,23 +85,10 @@ class ConvertHelper(
     }
 
     (sourcePermission, targetPermission) match {
-//      case (ExclusiveReadwrite, ExclusiveReadwrite) =>
-//      case (Readwrite, ExclusiveReadwrite) => {
-//        throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied a readwrite reference but target wants an xreadwrite!"))
-//      }
-//      case (Readonly, ExclusiveReadwrite) => {
-//        throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied a readonly reference but target wants an xreadwrite!"))
-//      }
-//
-//      case (ExclusiveReadwrite, Readwrite) => {
-////        PermissionedSE(range, sourceExpr, Conversions.unevaluatePermission(targetPermission))
-//      }
       case (ReadwriteT, ReadwriteT) =>
       case (ReadonlyT, ReadwriteT) => {
         throw CompileErrorExceptionT(CantUseReadonlyReferenceAsReadwrite(range))
       }
-
-//      case (ExclusiveReadwrite, Readonly) =>
       case (ReadwriteT, ReadonlyT) =>
       case (ReadonlyT, ReadonlyT) =>
     }
@@ -111,7 +99,7 @@ class ConvertHelper(
       } else {
         (sourceType, targetType) match {
           case (s @ StructTT(_), i : InterfaceTT) => {
-            convert(env.globalEnv, temputs, range, sourceExpr, s, i)
+            convert(env, temputs, range, sourceExpr, s, i)
           }
           case _ => vfail()
         }

@@ -114,7 +114,7 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
 
   test("Virtual function") {
     compile(CombinatorParsers.atomPattern, "virtual this Car") shouldHave {
-      case PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "this")))),Some(NameOrRunePT(NameP(_, "Car"))),None,Some(AbstractP)) =>
+      case PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "this")))),Some(NameOrRunePT(NameP(_, "Car"))),None,Some(AbstractP(_))) =>
     }
   }
 }

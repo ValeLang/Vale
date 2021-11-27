@@ -153,14 +153,15 @@ case class MethodCallPE(
   vpass()
 }
 
-case class TemplateArgsP(range: Range, args: Vector[ITemplexPT]) { override def hashCode(): Int = vcurious() }
 case class LookupPE(
-                     name: NameP,
-                     templateArgs: Option[TemplateArgsP]
+  name: NameP,
+  templateArgs: Option[TemplateArgsP]
 ) extends IExpressionPE {
   override def hashCode(): Int = vcurious();
   override def range: Range = name.range
 }
+case class TemplateArgsP(range: Range, args: Vector[ITemplexPT]) { override def hashCode(): Int = vcurious() }
+
 case class MagicParamLookupPE(range: Range) extends IExpressionPE {
   override def hashCode(): Int = vcurious();
 }
@@ -184,4 +185,6 @@ case class BlockPE(range: Range, elements: Vector[IExpressionPE]) extends IExpre
 
 case class ShortcallPE(range: Range, argExprs: Vector[IExpressionPE]) extends IExpressionPE {
   override def hashCode(): Int = vcurious()
+
+  vpass()
 }

@@ -10,7 +10,6 @@
     <orderEntry type="module" module-name="Utils" />
     <orderEntry type="module" module-name="Von" />
     <orderEntry type="module" module-name="Templar" />
-    <orderEntry type="module" module-name="Templata" />
     <orderEntry type="library" name="scala-sdk-2.12.6" level="application" />
   </component>
 </module>

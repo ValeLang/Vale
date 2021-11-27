@@ -76,39 +76,6 @@ case class VariableUses(uses: Vector[VariableUse]) {
       case Some(use) => use.mutated.getOrElse(NotUsed)
     }
   }
-  // Turns all Used into MaybeUsed. For example:
-  //   fn main() int export {
-  //     m = Marine();
-  //     someFunction({ doThings(m); });
-  //     ...
-  //   }
-  // Inside the lambda, it knows that m has been moved.
-  // However, main() doesn't know if someFunction() *actually* called the lambda.
-  // So, to main(), m is *maybe* moved.
-  //
-  // Note: we even consider a lambda to *maybe* have happened even if it's
-  // immediately called, like:
-  //   fn main() int export {
-  //     m = Marine();
-  //     { doThings(m); }();
-  //     ...
-  //   }
-  // There's no particular reason we do this, and no particular reason to do
-  // otherwise. Nobody should be using immediately-called anonymous blocks in
-  // this language because we have unlet for that.
-  def maybify(): VariableUses = {
-    VariableUses(
-      uses.map({ case VariableUse(name, borrowed, moved, mutated) =>
-        VariableUse(name, maybify(borrowed), maybify(moved), maybify(mutated))
-      }))
-  }
-  def maybify(use: Option[IVariableUseCertainty]) = {
-    use.map({
-      case Used => MaybeUsed
-      case MaybeUsed => MaybeUsed
-      case NotUsed => NotUsed
-    })
-  }
   def combine(
       that: VariableUses,
       certaintyMerger: (Option[IVariableUseCertainty], Option[IVariableUseCertainty]) => Option[IVariableUseCertainty]):
@@ -156,10 +123,8 @@ case class VariableUses(uses: Vector[VariableUse]) {
     (a, b) match {
       case (None, other) => other
       case (other, None) => other
-      case (Some(MaybeUsed), _) => Some(MaybeUsed)
-      case (_, Some(MaybeUsed)) => Some(MaybeUsed)
-      case (Some(NotUsed), Some(Used)) => Some(MaybeUsed)
-      case (Some(Used), Some(NotUsed)) => Some(MaybeUsed)
+      case (Some(NotUsed), Some(Used)) => Some(Used)
+      case (Some(Used), Some(NotUsed)) => Some(Used)
       case (Some(Used), Some(Used)) => Some(Used)
       case (Some(NotUsed), Some(NotUsed)) => Some(NotUsed)
       case _ => vfail("wat")
@@ -174,19 +139,12 @@ case class VariableUses(uses: Vector[VariableUse]) {
     (a, b) match {
       case (None, None) => None
       case (None, Some(NotUsed)) => Some(NotUsed)
-      case (None, Some(MaybeUsed)) => Some(MaybeUsed)
-      case (None, Some(Used)) => Some(MaybeUsed)
+      case (None, Some(Used)) => Some(Used)
       case (Some(NotUsed), None) => Some(NotUsed)
       case (Some(NotUsed), Some(NotUsed)) => Some(NotUsed)
-      case (Some(NotUsed), Some(MaybeUsed)) => Some(MaybeUsed)
-      case (Some(NotUsed), Some(Used)) => Some(MaybeUsed)
-      case (Some(MaybeUsed), None) => Some(MaybeUsed)
-      case (Some(MaybeUsed), Some(NotUsed)) => Some(MaybeUsed)
-      case (Some(MaybeUsed), Some(MaybeUsed)) => Some(MaybeUsed)
-      case (Some(MaybeUsed), Some(Used)) => Some(MaybeUsed)
-      case (Some(Used), None) => Some(MaybeUsed)
-      case (Some(Used), Some(NotUsed)) => Some(MaybeUsed)
-      case (Some(Used), Some(MaybeUsed)) => Some(MaybeUsed)
+      case (Some(NotUsed), Some(Used)) => Some(Used)
+      case (Some(Used), None) => Some(Used)
+      case (Some(Used), Some(NotUsed)) => Some(Used)
       case (Some(Used), Some(Used)) => Some(Used)
     }
   }

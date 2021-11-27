@@ -2,6 +2,7 @@ package net.verdagon.vale
 
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._
+import net.verdagon.vale.templar.ast.IfTE
 import net.verdagon.vale.templar.types._
 import net.verdagon.von.{VonInt, VonStr}
 import org.scalatest.{FunSuite, Matchers}
@@ -20,7 +21,7 @@ class IfTests extends FunSuite with Matchers {
     val CodeBodyS(BodySE(_, _, BlockSE(_, _, Vector(IfSE(_, _, _, _))))) = main.body
 
     val temputs = compile.expectTemputs()
-    temputs.lookupFunction("main").only({ case IfTE(_, _, _) => })
+    Collector.only(temputs.lookupFunction("main"), { case IfTE(_, _, _) => })
 
     compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
@@ -45,8 +46,8 @@ class IfTests extends FunSuite with Matchers {
       """.stripMargin)
 
     val temputs = compile.expectTemputs()
-    val ifs = temputs.lookupFunction("main").all({ case if2 @ IfTE(_, _, _) => if2 })
-    ifs.foreach(iff => iff.resultRegister.reference shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32))
+    val ifs = Collector.all(temputs.lookupFunction("main"), { case if2 @ IfTE(_, _, _) => if2 })
+    ifs.foreach(iff => iff.result.reference shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32))
     ifs.size shouldEqual 2
     val userFuncs = temputs.getAllUserFunctions
     userFuncs.foreach(func => {
@@ -76,8 +77,8 @@ class IfTests extends FunSuite with Matchers {
       """.stripMargin)
 
     val temputs = compile.expectTemputs()
-    val ifs = temputs.lookupFunction("main").all({ case if2 @ IfTE(_, _, _) => if2 })
-    ifs.foreach(iff => iff.resultRegister.reference shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32))
+    val ifs = Collector.all(temputs.lookupFunction("main"), { case if2 @ IfTE(_, _, _) => if2 })
+    ifs.foreach(iff => iff.result.reference shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32))
     val userFuncs = temputs.getAllUserFunctions
     userFuncs.foreach(func => {
       func.header.returnType match {
@@ -102,8 +103,8 @@ class IfTests extends FunSuite with Matchers {
       """.stripMargin)
 
     val temputs = compile.expectTemputs()
-    val ifs = temputs.lookupFunction("main").all({ case if2 @ IfTE(_, _, _) => if2 })
-    ifs.foreach(iff => iff.resultRegister.reference shouldEqual CoordT(ShareT, ReadonlyT, StrT()))
+    val ifs = Collector.all(temputs.lookupFunction("main"), { case if2 @ IfTE(_, _, _) => if2 })
+    ifs.foreach(iff => iff.result.reference shouldEqual CoordT(ShareT, ReadonlyT, StrT()))
 
     compile.evalForKind(Vector()) shouldEqual VonStr("#")
   }
@@ -111,8 +112,8 @@ class IfTests extends FunSuite with Matchers {
   test("Ret from inside if will destroy locals") {
     val compile = RunCompilation.test(
       """import printutils.*;
-        |struct Marine { hp int; }
-        |fn destructor(marine Marine) void {
+        |struct Marine #!DeriveStructDrop { hp int; }
+        |fn drop(marine Marine) void {
         |  println("Destroying marine!");
         |  Marine(weapon) = marine;
         |}
@@ -139,8 +140,8 @@ class IfTests extends FunSuite with Matchers {
       """
         |import printutils.*;
         |
-        |struct Marine { hp int; }
-        |fn destructor(marine Marine) void {
+        |struct Marine #!DeriveStructDrop { hp int; }
+        |fn drop(marine Marine) void {
         |  println("Destroying marine!");
         |  Marine(weapon) = marine;
         |}

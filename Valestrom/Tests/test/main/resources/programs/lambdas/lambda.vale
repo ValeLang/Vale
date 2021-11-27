@@ -1,5 +1,5 @@
 
-fn do(callable) int {
+fn do<F>(callable F) int {
   callable()
 }
 

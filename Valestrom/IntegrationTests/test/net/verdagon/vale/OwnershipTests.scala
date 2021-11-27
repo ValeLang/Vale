@@ -3,14 +3,15 @@ package net.verdagon.vale
 import net.verdagon.vale.parser.{CaptureP, FinalP, VaryingP}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.AtomSP
-import net.verdagon.vale.scout.rules.{CoordTypeSR, TypedSR}
 import net.verdagon.vale.templar._
+import net.verdagon.vale.templar.ast.{FunctionCallTE, LetAndLendTE, LetNormalTE, UnletTE}
 import net.verdagon.vale.templar.env.ReferenceLocalVariableT
-import net.verdagon.vale.templar.templata.{FunctionHeaderT, PrototypeT}
+import net.verdagon.vale.templar.templata.{functionName, simpleName}
 import net.verdagon.vale.templar.types._
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.templar.expression.CallTemplar
+import net.verdagon.vale.templar.names.{FullNameT, FunctionNameT, TemplarTemporaryVarNameT}
 
 class OwnershipTests extends FunSuite with Matchers {
   test("Borrowing a temporary mutable makes a local var") {
@@ -23,9 +24,9 @@ class OwnershipTests extends FunSuite with Matchers {
       """.stripMargin)
 
     val main = compile.expectTemputs().lookupFunction("main")
-    main.only({
+    Collector.only(main, {
       case LetAndLendTE(ReferenceLocalVariableT(FullNameT(_, Vector(FunctionNameT("main",Vector(),Vector())),TemplarTemporaryVarNameT(_)),FinalT,_),refExpr) => {
-        refExpr.resultRegister.reference match {
+        refExpr.result.reference match {
           case CoordT(OwnT, ReadwriteT, StructTT(simpleName("Muta"))) =>
         }
       }
@@ -51,14 +52,33 @@ class OwnershipTests extends FunSuite with Matchers {
     compile.evalForKind(Vector()) shouldEqual VonInt(9)
   }
 
-  test("When statement result is an owning ref, calls destructor") {
+  test("Derive drop") {
     val compile = RunCompilation.test(
       """
         |import printutils.*;
         |
         |struct Muta { }
         |
-        |fn destructor(m ^Muta) void {
+        |fn main() export {
+        |  Muta();
+        |}
+      """.stripMargin)
+
+    val main = compile.expectTemputs().lookupFunction("main")
+    Collector.only(main, { case FunctionCallTE(functionName("drop"), _) => })
+    Collector.all(main, { case FunctionCallTE(_, _) => }).size shouldEqual 2
+
+    compile.evalForKind(Vector())
+  }
+
+  test("Custom drop result is an owning ref, calls destructor") {
+    val compile = RunCompilation.test(
+      """
+        |import printutils.*;
+        |
+        |struct Muta #!DeriveStructDrop { }
+        |
+        |fn drop(m ^Muta) void {
         |  println("Destroying!");
         |  Muta() = m;
         |}
@@ -69,8 +89,8 @@ class OwnershipTests extends FunSuite with Matchers {
       """.stripMargin)
 
     val main = compile.expectTemputs().lookupFunction("main")
-    main.only({ case FunctionCallTE(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => })
-    main.all({ case FunctionCallTE(_, _) => }).size shouldEqual 2
+    Collector.only(main, { case FunctionCallTE(functionName("drop"), _) => })
+    Collector.all(main, { case FunctionCallTE(_, _) => }).size shouldEqual 2
 
     compile.evalForStdout(Vector()) shouldEqual "Destroying!\n"
   }
@@ -80,9 +100,9 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |import printutils.*;
         |
-        |struct Muta { hp int; }
+        |struct Muta #!DeriveStructDrop { hp int; }
         |
-        |fn destructor(m ^Muta) {
+        |fn drop(m ^Muta) {
         |  println("Destroying!");
         |  Muta(hp) = m;
         |}
@@ -93,7 +113,7 @@ class OwnershipTests extends FunSuite with Matchers {
       """.stripMargin)
 
     val main = compile.expectTemputs().lookupFunction("main")
-    main.only({ case FunctionCallTE(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => })
+    Collector.only(main, { case FunctionCallTE(functionName("drop"), _) => })
 
     compile.evalForKindAndStdout(Vector()) shouldEqual (VonInt(10), "Destroying!\n")
   }
@@ -103,9 +123,9 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |import printutils.*;
         |
-        |struct Muta { }
+        |struct Muta #!DeriveStructDrop { }
         |
-        |fn destructor(m ^Muta) {
+        |fn drop(m ^Muta) {
         |  println("Destroying!");
         |  Muta() = m;
         |}
@@ -116,8 +136,8 @@ class OwnershipTests extends FunSuite with Matchers {
       """.stripMargin)
 
     val main = compile.expectTemputs().lookupFunction("main")
-    main.only({ case FunctionCallTE(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => })
-    main.all({ case FunctionCallTE(_, _) => }).size shouldEqual 2
+    Collector.only(main, { case FunctionCallTE(functionName("drop"), _) => })
+    Collector.all(main, { case FunctionCallTE(_, _) => }).size shouldEqual 2
 
     compile.evalForStdout(Vector()) shouldEqual "Destroying!\n"
   }
@@ -128,9 +148,9 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |import printutils.*;
         |
-        |struct Muta { }
+        |struct Muta #!DeriveStructDrop { }
         |
-        |fn destructor(m ^Muta) {
+        |fn drop(m ^Muta) {
         |  println("Destroying!");
         |  Muta() = m;
         |}
@@ -147,20 +167,20 @@ class OwnershipTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
 
     // Destructor should only be calling println, NOT the destructor (itself)
-    val destructor = temputs.lookupUserFunction(CallTemplar.MUT_DESTRUCTOR_NAME)
+    val destructor = temputs.lookupUserFunction("drop")
     // The only function lookup should be println
-    destructor.only({ case FunctionCallTE(functionName("println"), _) => })
+    Collector.only(destructor, { case FunctionCallTE(functionName("println"), _) => })
     // Only one call (the above println)
-    destructor.all({ case FunctionCallTE(_, _) => }).size shouldEqual 1
+    Collector.all(destructor, { case FunctionCallTE(_, _) => }).size shouldEqual 1
 
     // moo should be calling the destructor
     val moo = temputs.lookupFunction("moo")
-    moo.only({ case FunctionCallTE(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => })
-    moo.only({ case FunctionCallTE(_, _) => })
+    Collector.only(moo, { case FunctionCallTE(functionName("drop"), _) => })
+    Collector.only(moo, { case FunctionCallTE(_, _) => })
 
     // main should not be calling the destructor
     val main = temputs.lookupFunction("main")
-    main.all({ case FunctionCallTE(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => true }).size shouldEqual 0
+    Collector.all(main, { case FunctionCallTE(functionName("drop"), _) => true }).size shouldEqual 0
 
     compile.evalForStdout(Vector()) shouldEqual "Destroying!\n"
   }
@@ -170,9 +190,9 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |import printutils.*;
         |
-        |struct Muta { hp int; }
+        |struct Muta #!DeriveStructDrop { hp int; }
         |
-        |fn destructor(m ^Muta) {
+        |fn drop(m ^Muta) {
         |  println("Destroying!");
         |  Muta(hp) = m;
         |}
@@ -184,8 +204,8 @@ class OwnershipTests extends FunSuite with Matchers {
       """.stripMargin)
 
     val main = compile.expectTemputs().lookupFunction("main")
-    main.only({ case FunctionCallTE(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => })
-    main.all({ case FunctionCallTE(_, _) => }).size shouldEqual 2
+    Collector.only(main, { case FunctionCallTE(functionName("drop"), _) => })
+    Collector.all(main, { case FunctionCallTE(_, _) => }).size shouldEqual 2
 
     compile.evalForKindAndStdout(Vector()) shouldEqual (VonInt(10), "Destroying!\n")
   }
@@ -223,30 +243,10 @@ class OwnershipTests extends FunSuite with Matchers {
 
     val main = compile.expectTemputs().lookupFunction("main")
 
-    val numVariables = main.all({ case ReferenceLocalVariableT(_, _, _) => }).size
-    main.all({ case LetAndLendTE(_, _) => case LetNormalTE(_, _) => }).size shouldEqual numVariables
-    main.all({ case UnletTE(_) => }).size shouldEqual numVariables
+    val numVariables = Collector.all(main, { case LetAndLendTE(_, _) => case LetNormalTE(_, _) => }).size
+    Collector.all(main, { case UnletTE(_) => }).size shouldEqual numVariables
   }
 
-
-
-
-
-//
-//  test("Moving doesn't affect ref count") {
-//    val compile = RunCompilation.test(
-//      """
-//        |struct Muta { }
-//        |fn main() int export {
-//        |  a = Muta();
-//        |  b = a;
-//        |  = __varrc(&b);
-//        |}
-//      """.stripMargin)
-//
-//    compile.evalForKind(Vector()) shouldEqual VonInt(1)
-//  }
-//
 //  test("Wingman catches hanging borrow") {
 //    val compile = RunCompilation.test(
 //      """

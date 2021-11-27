@@ -1,6 +1,9 @@
 
-interface MyInterface<T> rules(T Ref) { }
-fn doThing<T>(virtual x MyInterface<T>) int abstract;
+import v.builtins.tup.*;
+
+interface MyInterface<T> rules(T Ref) {
+  fn doThing(virtual x MyInterface<T>) int;
+}
 
 struct MyStruct<T> rules(T Ref) { }
 impl<T> MyInterface<T> for MyStruct<T>;

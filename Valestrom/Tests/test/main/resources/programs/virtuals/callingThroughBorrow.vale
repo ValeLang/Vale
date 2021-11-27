@@ -1,6 +1,9 @@
 
-interface Car { }
-fn doCivicDance(virtual this &Car) int abstract;
+import v.builtins.tup.*;
+
+interface Car {
+  fn doCivicDance(virtual this &Car) int;
+}
 
 struct Civic {}
 impl Car for Civic;

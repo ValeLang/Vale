@@ -1,14 +1,10 @@
 package net.verdagon.vale.templar
 
-import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, Parser}
-import net.verdagon.vale.scout.{CodeLocationS, CodeVarNameS, ProgramS, RangeS, Scout, VariableNameAlreadyExists}
-import net.verdagon.vale.templar.env.ReferenceLocalVariableT
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale._
-import net.verdagon.vale.astronomer.{Astronomer, FunctionNameA, GlobalFunctionFamilyNameA, IFunctionDeclarationNameA, ProgramA}
-import net.verdagon.vale.hinputs.Hinputs
-import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, WrongNumberOfArguments}
+import net.verdagon.vale.templar.OverloadTemplar.{FindFunctionFailure, WrongNumberOfArguments}
+import net.verdagon.vale.templar.ast.{FunctionHeaderT, ParameterT, UserFunctionT}
 import org.scalatest.{FunSuite, Matchers, _}
 
 import scala.collection.immutable.List
@@ -26,7 +22,9 @@ class TemplarPermissionTests extends FunSuite with Matchers {
 
   test("Templex readonly") {
     val compile = TemplarTestCompilation.test(
-      """struct Bork {}
+      """
+        |import v.builtins.tup.*;
+        |struct Bork {}
         |fn main(a &Bork) int {
         |  = 7;
         |}
@@ -34,14 +32,16 @@ class TemplarPermissionTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
 
     val main = temputs.lookupFunction("main")
-    main.only({
-      case FunctionHeaderT(simpleName("main"),Vector(UserFunction2),Vector(ParameterT(_, _, CoordT(ConstraintT, ReadonlyT, StructTT(_)))), _, _) => true
+    Collector.only(main, {
+      case FunctionHeaderT(simpleName("main"),Vector(UserFunctionT),Vector(ParameterT(_, _, CoordT(ConstraintT, ReadonlyT, StructTT(_)))), _, _) => true
     })
   }
 
   test("Templex readwrite") {
     val compile = TemplarTestCompilation.test(
-      """struct Bork {}
+      """
+        |import v.builtins.tup.*;
+        |struct Bork {}
         |fn main(a &!Bork) int {
         |  = 7;
         |}
@@ -49,14 +49,15 @@ class TemplarPermissionTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
 
     val main = temputs.lookupFunction("main")
-    main.only({
-      case FunctionHeaderT(simpleName("main"),Vector(UserFunction2),Vector(ParameterT(_, _, CoordT(ConstraintT, ReadwriteT, StructTT(_)))), _, _) => true
+    Collector.only(main, {
+      case FunctionHeaderT(simpleName("main"),Vector(UserFunctionT),Vector(ParameterT(_, _, CoordT(ConstraintT, ReadwriteT, StructTT(_)))), _, _) => true
     })
   }
 
   test("Borrow readwrite member from a readonly container") {
     val compile = TemplarTestCompilation.test(
       """
+        |import v.builtins.tup.*;
         |struct Engine {}
         |struct Bork {
         |  engine Engine;
@@ -76,6 +77,7 @@ class TemplarPermissionTests extends FunSuite with Matchers {
   test("Borrow-method-call on readwrite member") {
     val compile = TemplarTestCompilation.test(
       """
+        |import v.builtins.tup.*;
         |struct Engine { }
         |struct Bork {
         |  engine Engine;

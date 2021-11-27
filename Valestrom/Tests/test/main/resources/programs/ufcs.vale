@@ -1,3 +1,6 @@
+
+import v.builtins.tup.*;
+
 struct Spaceship {
   fuel! int;
 }

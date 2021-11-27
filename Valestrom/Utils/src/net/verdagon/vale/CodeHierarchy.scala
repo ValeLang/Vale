@@ -10,6 +10,8 @@ case class FileCoordinate(module: String, packages: Vector[String], filepath: St
   def packageCoordinate = PackageCoordinate(module, packages)
 
   def compareTo(that: FileCoordinate) = FileCoordinate.compare(this, that)
+
+//  override def toString: String = vcurious()
 }
 
 object FileCoordinate extends Ordering[FileCoordinate] {
@@ -31,6 +33,14 @@ case class PackageCoordinate(module: String, packages: Vector[String]) {
   def isInternal = module == ""
 
   def compareTo(that: PackageCoordinate) = PackageCoordinate.compare(this, that)
+
+  def parent: Option[PackageCoordinate] = {
+    if (packages.isEmpty) {
+      None
+    } else {
+      Some(PackageCoordinate(module, packages.init))
+    }
+  }
 }
 
 object PackageCoordinate extends Ordering[PackageCoordinate] {
@@ -230,6 +240,17 @@ case class PackageCoordinateMap[Contents](
   def expectOne(): Contents = {
     val Vector(only) = moduleToPackagesToContents.values.flatMap(_.values)
     only
+  }
+
+  def map[T](func: (PackageCoordinate, Contents) => T): PackageCoordinateMap[T] = {
+    PackageCoordinateMap(
+      moduleToPackagesToContents.map({ case (module, packagesToFilenameToContents) =>
+        module ->
+        packagesToFilenameToContents.map({ case (packages, contents) =>
+          packages ->
+          func(PackageCoordinate(module, packages), contents)
+        })
+      }))
   }
 
   def flatMap[T](func: (PackageCoordinate, Contents) => T): Iterable[T] = {

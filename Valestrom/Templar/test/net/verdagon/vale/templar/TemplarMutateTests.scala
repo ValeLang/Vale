@@ -1,12 +1,13 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale._
-import net.verdagon.vale.astronomer.{Astronomer, FunctionNameA, GlobalFunctionFamilyNameA, ProgramA}
-import net.verdagon.vale.hinputs.Hinputs
+import net.verdagon.vale.astronomer.{Astronomer, ProgramA}
 import net.verdagon.vale.parser._
-import net.verdagon.vale.scout.{CodeLocationS, ProgramS, RangeS, Scout}
-import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, WrongNumberOfArguments}
+import net.verdagon.vale.scout.{CodeNameS, FunctionNameS, GlobalFunctionFamilyNameS, ProgramS, Scout}
+import net.verdagon.vale.templar.OverloadTemplar.{FindFunctionFailure, WrongNumberOfArguments}
+import net.verdagon.vale.templar.ast.{ConstantIntTE, LocalLookupTE, MutateTE, ReferenceMemberLookupTE, SignatureT, StructToInterfaceUpcastTE}
 import net.verdagon.vale.templar.env.ReferenceLocalVariableT
+import net.verdagon.vale.templar.names.{CitizenNameT, CitizenTemplateNameT, CodeVarNameT, FullNameT, FunctionNameT, RawArrayNameT, RuntimeSizedArrayNameT, StaticSizedArrayNameT}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import org.scalatest.{FunSuite, Matchers}
@@ -24,13 +25,17 @@ class TemplarMutateTests extends FunSuite with Matchers {
   }
 
   test("Test mutating a local var") {
-    val compile = TemplarTestCompilation.test("fn main() export {a! = 3; set a = 4; }")
+    val compile = TemplarTestCompilation.test(
+      """
+        |import v.builtins.tup.*;
+        |fn main() export {a! = 3; set a = 4; }
+        |""".stripMargin)
     val temputs = compile.expectTemputs();
     val main = temputs.lookupFunction("main")
-    main.only({ case MutateTE(LocalLookupTE(_,ReferenceLocalVariableT(FullNameT(_,_, CodeVarNameT("a")), VaryingT, _), _, VaryingT), ConstantIntTE(4, _)) => })
+    Collector.only(main, { case MutateTE(LocalLookupTE(_,ReferenceLocalVariableT(FullNameT(_,_, CodeVarNameT("a")), VaryingT, _), _, VaryingT), ConstantIntTE(4, _)) => })
 
-    val lookup = main.only({ case l @ LocalLookupTE(range, localVariable, reference, variability) => l })
-    val resultCoord = lookup.resultRegister.reference
+    val lookup = Collector.only(main, { case l @ LocalLookupTE(range, localVariable, reference, variability) => l })
+    val resultCoord = lookup.result.reference
     resultCoord shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
   }
 
@@ -38,6 +43,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     val compile =
       TemplarTestCompilation.test(
         """
+          |import v.builtins.tup.*;
           |struct Engine { fuel int; }
           |struct Spaceship { engine! Engine; }
           |fn main() export {
@@ -48,8 +54,8 @@ class TemplarMutateTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs();
     val main = temputs.lookupFunction("main")
 
-    val lookup = main.only({ case l @ ReferenceMemberLookupTE(_, _, _, _, _, _) => l })
-    val resultCoord = lookup.resultRegister.reference
+    val lookup = Collector.only(main, { case l @ ReferenceMemberLookupTE(_, _, _, _, _, _) => l })
+    val resultCoord = lookup.result.reference
     // See RMLRMO, it should result in the same type as the member.
     resultCoord match {
       case CoordT(OwnT, ReadwriteT, StructTT(_)) =>
@@ -60,6 +66,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
   test("Local-set upcasts") {
     val compile = TemplarTestCompilation.test(
       """
+        |import v.builtins.tup.*;
         |interface IXOption<T> rules(T Ref) { }
         |struct XSome<T> rules(T Ref) { value T; }
         |impl<T> IXOption<T> for XSome<T>;
@@ -74,7 +81,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
-    main.only({
+    Collector.only(main, {
       case MutateTE(_, StructToInterfaceUpcastTE(_, _)) =>
     })
   }
@@ -82,6 +89,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
   test("Expr-set upcasts") {
     val compile = TemplarTestCompilation.test(
       """
+        |import v.builtins.tup.*;
         |interface IXOption<T> rules(T Ref) { }
         |struct XSome<T> rules(T Ref) { value T; }
         |impl<T> IXOption<T> for XSome<T>;
@@ -99,7 +107,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
-    main.only({
+    Collector.only(main, {
       case MutateTE(_, StructToInterfaceUpcastTE(_, _)) =>
     })
   }
@@ -107,6 +115,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
   test("Reports when we try to mutate an imm struct") {
     val compile = TemplarTestCompilation.test(
       """
+        |import v.builtins.tup.*;
         |struct Vec3 imm { x float; y float; z float; }
         |fn main() int export {
         |  v = Vec3(3.0, 4.0, 5.0);
@@ -116,7 +125,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     compile.getTemputs() match {
       case Err(CantMutateFinalMember(_, structTT, memberName)) => {
         structTT.last match {
-          case CitizenNameT("Vec3", Vector()) =>
+          case CitizenNameT(CitizenTemplateNameT("Vec3"), Vector()) =>
         }
         memberName.last match {
           case CodeVarNameT("x") =>
@@ -128,6 +137,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
   test("Reports when we try to mutate a final member in a struct") {
     val compile = TemplarTestCompilation.test(
       """
+        |import v.builtins.tup.*;
         |struct Vec3 { x float; y float; z float; }
         |fn main() int export {
         |  v = Vec3(3.0, 4.0, 5.0);
@@ -137,7 +147,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     compile.getTemputs() match {
       case Err(CantMutateFinalMember(_, structTT, memberName)) => {
         structTT.last match {
-          case CitizenNameT("Vec3", Vector()) =>
+          case CitizenNameT(CitizenTemplateNameT("Vec3"), Vector()) =>
         }
         memberName.last match {
           case CodeVarNameT("x") =>
@@ -149,6 +159,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
   test("Reports when we try to mutate an element in a runtime-sized array of finals") {
     val compile = TemplarTestCompilation.test(
       """
+        |import v.builtins.tup.*;
         |import ifunction.ifunction1.*;
         |fn main() int export {
         |  arr = [*](10, {_});
@@ -168,6 +179,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
   test("Reports when we try to mutate an element in a static-sized array of finals") {
     val compile = TemplarTestCompilation.test(
       """
+        |import v.builtins.tup.*;
         |import ifunction.ifunction1.*;
         |fn main() int export {
         |  arr = [10]({_});
@@ -187,6 +199,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
   test("Reports when we try to mutate a local variable with wrong type") {
     val compile = TemplarTestCompilation.test(
       """
+        |import v.builtins.tup.*;
         |fn main() export {
         |  a! = 5;
         |  set a = "blah";
@@ -199,9 +212,9 @@ class TemplarMutateTests extends FunSuite with Matchers {
   }
 
   test("Humanize errors") {
-    val fireflyKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, CitizenNameT("Firefly", Vector.empty)))
+    val fireflyKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, CitizenNameT(CitizenTemplateNameT("Firefly"), Vector.empty)))
     val fireflyCoord = CoordT(OwnT,ReadwriteT,fireflyKind)
-    val serenityKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, CitizenNameT("Serenity", Vector.empty)))
+    val serenityKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, CitizenNameT(CitizenTemplateNameT("Serenity"), Vector.empty)))
     val serenityCoord = CoordT(OwnT,ReadwriteT,serenityKind)
 
     val filenamesAndSources = FileCoordinateMap.test("blah blah blah\nblah blah blah")
@@ -211,7 +224,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindFunctionToCallT(
         RangeS.testZero,
-        ScoutExpectedFunctionFailure(GlobalFunctionFamilyNameA(""), Vector.empty, Map(), Map(), Map())))
+        FindFunctionFailure(CodeNameS(""), Vector.empty, Map())))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CannotSubscriptT(
@@ -221,7 +234,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindIdentifierToLoadT(
         RangeS.testZero,
-        "spaceship"))
+        CodeNameS("spaceship")))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindMemberT(
@@ -231,7 +244,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       BodyResultDoesntMatch(
         RangeS.testZero,
-        FunctionNameA("myFunc", CodeLocationS.testZero), fireflyCoord, serenityCoord))
+        FunctionNameS("myFunc", CodeLocationS.testZero), fireflyCoord, serenityCoord))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntConvertForReturnT(

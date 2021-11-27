@@ -40,15 +40,7 @@ class TypeTests extends FunSuite with Matchers with Collector {
   test("Ignoring name") {
     compile("_ int") shouldHave { case fromEnv("int") => }
   }
-//  test("Callable type") {
-//    compile("_ fn(T)Void") shouldHave {
-//      case withType(
-//          FunctionPT(
-//            None,
-//            Vector(NameOrRunePT(StringP(_, "T"))),
-//            NameOrRunePT(StringP(_, "void")))) =>
-//    }
-//  }
+
   test("15a") {
     compile("_ [3 * MutableStruct]") shouldHave {
       case withType(

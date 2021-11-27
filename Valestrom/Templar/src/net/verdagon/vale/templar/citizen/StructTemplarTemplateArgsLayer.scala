@@ -1,38 +1,27 @@
 package net.verdagon.vale.templar.citizen
 
 import net.verdagon.vale.astronomer._
+import net.verdagon.vale.scout.rules.RuneUsage
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._
+import net.verdagon.vale.templar.ast.{LocationInFunctionEnvironment, PrototypeT}
+import net.verdagon.vale.templar.citizen.{AncestorHelper, IStructTemplarDelegate, StructTemplarMiddle}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.FunctionTemplar
-import net.verdagon.vale.templar.infer.infer.{InferSolveFailure, InferSolveSuccess}
-import net.verdagon.vale.{IProfiler, vfail, vimpl, vwat}
+import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, FullNameT, ICitizenNameT, INameT, NameTranslator}
+import net.verdagon.vale.{IProfiler, RangeS, vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
 class StructTemplarTemplateArgsLayer(
     opts: TemplarOptions,
     profiler: IProfiler,
-    newTemplataStore: () => TemplatasStore,
     inferTemplar: InferTemplar,
     ancestorHelper: AncestorHelper,
     delegate: IStructTemplarDelegate) {
-  val middle = new StructTemplarMiddle(opts, profiler, newTemplataStore, ancestorHelper, delegate)
-
-  def addBuiltInStructs(env: PackageEnvironment[INameT], temputs: Temputs): Unit = {
-    middle.addBuiltInStructs(env, temputs)
-  }
-
-  def makeStructConstructor(
-    temputs: Temputs,
-    maybeConstructorOriginFunctionA: Option[FunctionA],
-    structDef: StructDefinitionT,
-    constructorFullName: FullNameT[IFunctionNameT]):
-  FunctionHeaderT = {
-    middle.makeStructConstructor(temputs, maybeConstructorOriginFunctionA, structDef, constructorFullName)
-  }
+  val middle = new StructTemplarMiddle(opts, profiler, ancestorHelper, delegate)
 
   def getStructRef(
     temputs: Temputs,
@@ -42,10 +31,10 @@ class StructTemplarTemplateArgsLayer(
   (StructTT) = {
     profiler.newProfile("getStructRef", structTemplata.debugString + "<" + templateArgs.map(_.toString).mkString(", ") + ">", () => {
       val StructTemplata(env, structA) = structTemplata
-      val TopLevelCitizenDeclarationNameA(humanName, codeLocation) = structA.name
       val structTemplateName = NameTranslator.translateCitizenName(structA.name)
-      val structLastName = structTemplateName.makeCitizenName(templateArgs)
-      val fullName = env.fullName.addStep(structLastName)
+      val structName = structTemplateName.makeCitizenName(templateArgs)
+      val fullName = env.fullName.addStep(structName)
+//      val fullName = env.fullName.addStep(structLastName)
 
       temputs.structDeclared(fullName) match {
         case Some(structTT) => {
@@ -57,42 +46,33 @@ class StructTemplarTemplateArgsLayer(
             vfail("wat?")
           }
           val temporaryStructRef = StructTT(fullName)
-          temputs.declareStruct(temporaryStructRef)
+          temputs.declareKind(temporaryStructRef)
 
           structA.maybePredictedMutability match {
             case None =>
-            case Some(predictedMutability) => temputs.declareStructMutability(temporaryStructRef, Conversions.evaluateMutability(predictedMutability))
+            case Some(predictedMutability) => temputs.declareCitizenMutability(temporaryStructRef, Conversions.evaluateMutability(predictedMutability))
           }
-          val result =
-            inferTemplar.inferFromExplicitTemplateArgs(
+          vassert(structA.identifyingRunes.size == templateArgs.size)
+          val inferences =
+            inferTemplar.solveExpectComplete(
               env,
               temputs,
-              structA.identifyingRunes,
               structA.rules,
-              structA.typeByRune,
-              structA.localRunes,
-              Vector.empty,
-              None,
+              structA.runeToType,
               callRange,
-              templateArgs)
-
-          val inferences =
-            result match {
-              case isf@InferSolveFailure(_, _, _, _, _, _, _) => {
-                throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Couldnt figure out template args! Cause:\n" + isf))
-              }
-              case InferSolveSuccess(i) => i
-            }
+              structA.identifyingRunes.map(_.rune).zip(templateArgs)
+                .map({ case (a, b) => InitialKnown(RuneUsage(callRange, a), b) }),
+              Vector())
 
           structA.maybePredictedMutability match {
             case None => {
-              val MutabilityTemplata(mutability) = inferences.templatasByRune(NameTranslator.translateRune(structA.mutabilityRune))
-              temputs.declareStructMutability(temporaryStructRef, mutability)
+              val MutabilityTemplata(mutability) = inferences(structA.mutabilityRune.rune)
+              temputs.declareCitizenMutability(temporaryStructRef, mutability)
             }
             case Some(_) =>
           }
 
-          middle.getStructRef(env, temputs, callRange, structA, inferences.templatasByRune)
+          middle.getStructRef(env, temputs, callRange, structA, inferences)
         }
       }
     })
@@ -105,11 +85,11 @@ class StructTemplarTemplateArgsLayer(
     templateArgs: Vector[ITemplata]):
   (InterfaceTT) = {
     profiler.newProfile("getInterfaceRef", interfaceTemplata.debugString + "<" + templateArgs.map(_.toString).mkString(", ") + ">", () => {
-      val InterfaceTemplata(env, interfaceS) = interfaceTemplata
-      val TopLevelCitizenDeclarationNameA(humanName, codeLocation) = interfaceS.name
-      val interfaceTemplateName = NameTranslator.translateCitizenName(interfaceS.name)
-      val interfaceLastName = interfaceTemplateName.makeCitizenName(templateArgs)
-      val fullName = env.fullName.addStep(interfaceLastName)
+      val InterfaceTemplata(env, interfaceA) = interfaceTemplata
+      val interfaceTemplateName = NameTranslator.translateCitizenName(interfaceA.name)
+      val interfaceName = interfaceTemplateName.makeCitizenName(templateArgs)
+      val fullName = env.fullName.addStep(interfaceName)
+//      val fullName = env.fullName.addStep(interfaceLastName)
 
       temputs.interfaceDeclared(fullName) match {
         case Some(interfaceTT) => {
@@ -117,48 +97,39 @@ class StructTemplarTemplateArgsLayer(
         }
         case None => {
           // not sure if this is okay or not, do we allow this?
-          if (templateArgs.size != interfaceS.identifyingRunes.size) {
+          if (templateArgs.size != interfaceA.identifyingRunes.size) {
             vfail("wat?")
           }
           val temporaryInterfaceRef = InterfaceTT(fullName)
-          temputs.declareInterface(temporaryInterfaceRef)
+          temputs.declareKind(temporaryInterfaceRef)
 
 
-          interfaceS.maybePredictedMutability match {
+          interfaceA.maybePredictedMutability match {
             case None =>
-            case Some(predictedMutability) => temputs.declareInterfaceMutability(temporaryInterfaceRef, Conversions.evaluateMutability(predictedMutability))
+            case Some(predictedMutability) => temputs.declareCitizenMutability(temporaryInterfaceRef, Conversions.evaluateMutability(predictedMutability))
           }
+          vassert(interfaceA.identifyingRunes.size == templateArgs.size)
 
-          val result =
-            inferTemplar.inferFromExplicitTemplateArgs(
+          val inferences =
+            inferTemplar.solveExpectComplete(
               env,
               temputs,
-              interfaceS.identifyingRunes,
-              interfaceS.rules,
-              interfaceS.typeByRune,
-              interfaceS.localRunes,
-              Vector.empty,
-              None,
+              interfaceA.rules,
+              interfaceA.runeToType,
               callRange,
-              templateArgs)
-          val inferences =
-            result match {
-              case isf@InferSolveFailure(_, _, _, _, _, _, _) => {
-                throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Couldnt figure out template args! Cause:\n" + isf))
-              }
-              case InferSolveSuccess(i) => i
-            }
+              interfaceA.identifyingRunes.map(_.rune).zip(templateArgs)
+                .map({ case (a, b) => InitialKnown(RuneUsage(callRange, a), b) }),
+              Vector())
 
-
-          interfaceS.maybePredictedMutability match {
+          interfaceA.maybePredictedMutability match {
             case None => {
-              val MutabilityTemplata(mutability) = inferences.templatasByRune(NameTranslator.translateRune(interfaceS.mutabilityRune))
-              temputs.declareInterfaceMutability(temporaryInterfaceRef, mutability)
+              val MutabilityTemplata(mutability) = inferences(interfaceA.mutabilityRune.rune)
+              temputs.declareCitizenMutability(temporaryInterfaceRef, mutability)
             }
             case Some(_) =>
           }
 
-          middle.getInterfaceRef(env, temputs, callRange, interfaceS, inferences.templatasByRune)
+          middle.getInterfaceRef(env, temputs, callRange, interfaceA, inferences)
         }
       }
     })
@@ -168,45 +139,10 @@ class StructTemplarTemplateArgsLayer(
   def makeClosureUnderstruct(
     containingFunctionEnv: IEnvironment,
     temputs: Temputs,
-    name: LambdaNameA,
+    name: IFunctionDeclarationNameS,
     functionS: FunctionA,
     members: Vector[StructMemberT]):
   (StructTT, MutabilityT, FunctionTemplata) = {
     middle.makeClosureUnderstruct(containingFunctionEnv, temputs, name, functionS, members)
-  }
-
-  // Makes a struct to back a pack or tuple
-  def makeSeqOrPackUnerstruct(env: PackageEnvironment[INameT], temputs: Temputs, memberTypes2: Vector[CoordT], name: ICitizenNameT):
-  (StructTT, MutabilityT) = {
-    middle.makeSeqOrPackUnderstruct(env, temputs, memberTypes2, name)
-  }
-
-  // Makes an anonymous substruct of the given interface, with the given lambdas as its members.
-  def makeAnonymousSubstruct(
-    interfaceEnv: IEnvironment,
-    temputs: Temputs,
-    range: RangeS,
-    interfaceTT: InterfaceTT,
-    substructName: FullNameT[AnonymousSubstructNameT]):
-  (StructTT, MutabilityT) = {
-    middle.makeAnonymousSubstruct(
-      interfaceEnv,
-      temputs,
-      range,
-      interfaceTT,
-      substructName)
-  }
-
-  // Makes an anonymous substruct of the given interface, which just forwards its method to the given prototype.
-  def prototypeToAnonymousStruct(
-    outerEnv: IEnvironment,
-    temputs: Temputs,
-    life: LocationInFunctionEnvironment,
-    range: RangeS,
-    prototype: PrototypeT,
-    structFullName: FullNameT[ICitizenNameT]):
-  StructTT = {
-    middle.prototypeToAnonymousStruct(
-      outerEnv, temputs, life, range, prototype, structFullName)
   }
 }

@@ -1,6 +1,8 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale._
+import net.verdagon.vale.scout.CodeNameS
+import net.verdagon.vale.templar.OverloadTemplar.FindFunctionFailure
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import org.scalatest.{FunSuite, Matchers}
@@ -21,6 +23,7 @@ class TemplarOwnershipTests extends FunSuite with Matchers {
   test("Parenthesized method syntax will move instead of borrow") {
     val compile = TemplarTestCompilation.test(
       """
+        |import v.builtins.tup.*;
         |struct Bork { a int; }
         |fn consumeBork(bork Bork) int {
         |  ret bork.a;
@@ -31,6 +34,22 @@ class TemplarOwnershipTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     val temputs = compile.expectTemputs()
+  }
+
+  test("No derived or custom drop gives error") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |import v.builtins.tup.*;
+        |
+        |struct Muta #!DeriveStructDrop { }
+        |
+        |fn main() export {
+        |  Muta();
+        |}
+      """.stripMargin)
+    compile.getTemputs().expectErr() match {
+      case CouldntFindFunctionToCallT(_, FindFunctionFailure(CodeNameS("drop"), _, _)) =>
+    }
   }
 
 }

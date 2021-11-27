@@ -62,10 +62,6 @@ trait ParserUtils extends RegexParsers {
       case begin ~ str ~ end => NameP(Range(begin, end), str)
     }
   }
-//
-//  private[parser] def stringOr[T](string: String, parser: Parser[T]): Parser[Option[T]] = {
-//    (string ^^ { val x: Option[T] = None; x } | parser ^^ (a => Some(a)))
-//  }
 
   private[parser] def underscoreOr[T](parser: Parser[T]): Parser[Option[T]] = {
     ("_" ^^^ { val x: Option[T] = None; x } | parser ^^ (a => Some(a)))

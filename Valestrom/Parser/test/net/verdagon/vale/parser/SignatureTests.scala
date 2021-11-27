@@ -62,4 +62,15 @@ class SignatureTests extends FunSuite with Matchers with Collector with TestPars
         Some(BlockPE(_, Vector(VoidPE(_))))) =>
     }
   }
+
+  test("Never signature") {
+    // This test is here because we were parsing the first _ of __Never as an anonymous
+    // rune then stopping.
+    compile(
+      CombinatorParsers.topLevelFunction,
+      "fn __vbi_panic() __Never {}") shouldHave {
+      case NameOrRunePT(NameP(_,"__Never")) =>
+    }
+  }
+
 }

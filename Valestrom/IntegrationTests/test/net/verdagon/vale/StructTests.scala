@@ -84,15 +84,15 @@ class StructTests extends FunSuite with Matchers {
       """
         |import printutils.*;
         |
-        |struct Weapon { }
-        |fn destructor(weapon Weapon) {
+        |struct Weapon #!DeriveStructDrop { }
+        |fn drop(weapon Weapon) {
         |  println("Destroying weapon!");
         |  Weapon() = weapon;
         |}
-        |struct Marine {
+        |struct Marine #!DeriveStructDrop {
         |  weapon Weapon;
         |}
-        |fn destructor(marine Marine) {
+        |fn drop(marine Marine) {
         |  println("Destroying marine!");
         |  Marine(weapon) = marine;
         |}
@@ -155,13 +155,15 @@ class StructTests extends FunSuite with Matchers {
   test("Panic function") {
     val compile = RunCompilation.test(
       """
-        |interface XOpt<T> rules(T Ref) { }
+        |interface XOpt<T> rules(T Ref) {
+        |  fn get(virtual opt &XOpt<T>) &T;
+        |}
         |struct XSome<T> rules(T Ref) { value T; }
         |impl<T> XOpt<T> for XSome<T>;
         |struct XNone<T> rules(T Ref) { }
         |impl<T> XOpt<T> for XNone<T>;
         |
-        |fn get<T>(virtual opt &XOpt<T>) &T abstract;
+        |
         |fn get<T>(opt &XNone<T> impl XOpt<T>) &T { __vbi_panic() }
         |fn get<T>(opt &XSome<T> impl XOpt<T>) &T { opt.value }
         |

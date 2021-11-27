@@ -1,12 +1,12 @@
 package net.verdagon.vale.hammer
 
 import net.verdagon.vale.hammer.ExpressionHammer.{translate, translateDeferreds}
-import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal.{BorrowH => _, Variability => _, _}
 import net.verdagon.vale.{metal => m}
-import net.verdagon.vale.templar._
+import net.verdagon.vale.templar.{Hinputs, _}
+import net.verdagon.vale.templar.ast.{AddressMemberLookupTE, ExpressionT, FunctionHeaderT, LocalLookupTE, MutateTE, ReferenceExpressionTE, ReferenceMemberLookupTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE}
 import net.verdagon.vale.templar.env.{AddressibleLocalVariableT, ReferenceLocalVariableT}
-import net.verdagon.vale.templar.templata.FunctionHeaderT
+import net.verdagon.vale.templar.names.{FullNameT, IVarNameT}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.vassert
 
@@ -24,7 +24,7 @@ object MutateHammer {
     val (sourceExprResultLine, sourceDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2);
     val (sourceResultPointerTypeH) =
-      TypeHammer.translateReference(hinputs, hamuts, sourceExpr2.resultRegister.reference)
+      TypeHammer.translateReference(hinputs, hamuts, sourceExpr2.result.reference)
 
     val (oldValueAccess, destinationDeferreds) =
       destinationExpr2 match {
@@ -120,10 +120,10 @@ object MutateHammer {
       translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val structTT =
-      structExpr2.resultRegister.reference.kind match {
+      structExpr2.result.reference.kind match {
         case sr @ StructTT(_) => sr
-        case TupleTT(_, sr) => sr
-        case PackTT(_, sr) => sr
+//        case TupleTT(_, sr) => sr
+//        case PackTT(_, sr) => sr
       }
     val structDefT = hinputs.lookupStruct(structTT)
     val memberIndex = structDefT.members.indexWhere(member => structDefT.fullName.addStep(member.name) == memberName)
@@ -184,7 +184,7 @@ object MutateHammer {
       translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val structTT =
-      structExpr2.resultRegister.reference.kind match {
+      structExpr2.result.reference.kind match {
         case sr @ StructTT(_) => sr
       }
     val structDefT = hinputs.lookupStruct(structTT)
@@ -193,7 +193,7 @@ object MutateHammer {
         .indexWhere(member => structDefT.fullName.addStep(member.name) == memberName)
     vassert(memberIndex >= 0)
 
-    val structDefH = hamuts.structDefsByRef2(structTT)
+    val structDefH = hamuts.structDefsByRefT(structTT)
 
     // We're storing into a regular reference member of a struct.
     val storeNode =

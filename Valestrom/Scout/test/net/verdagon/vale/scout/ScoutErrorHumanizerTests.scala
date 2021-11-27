@@ -1,9 +1,10 @@
 package net.verdagon.vale.scout
 
+import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, Ok, vassert, vfail}
+import net.verdagon.vale.{Collector, Err, FileCoordinate, FileCoordinateMap, Ok, RangeS, vassert, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
 class ScoutErrorHumanizerTests extends FunSuite with Matchers {
@@ -11,7 +12,7 @@ class ScoutErrorHumanizerTests extends FunSuite with Matchers {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
       case ParseSuccess(program0) => {
-        Scout.scoutProgram(FileCoordinate.test, program0) match {
+        new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => vfail(e.toString)
           case Ok(t) => t
         }
@@ -23,11 +24,22 @@ class ScoutErrorHumanizerTests extends FunSuite with Matchers {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
       case ParseSuccess(program0) => {
-        Scout.scoutProgram(FileCoordinate.test, program0) match {
+        new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => e
           case Ok(t) => vfail("Successfully compiled!\n" + t.toString)
         }
       }
+    }
+  }
+
+  test("Should require identifying runes") {
+    val error =
+      compileForError(
+        """
+          |fn do(callable) infer-ret {callable()}
+          |""".stripMargin)
+    error match {
+      case LightFunctionMustHaveParamTypes(_, 0) =>
     }
   }
 
@@ -52,5 +64,9 @@ class ScoutErrorHumanizerTests extends FunSuite with Matchers {
     vassert(ScoutErrorHumanizer.humanize(codeMap,
       CantInitializeIndividualElementsOfRuntimeSizedArray(RangeS.testZero))
       .nonEmpty)
+    vassert(ScoutErrorHumanizer.humanize(codeMap,
+      LightFunctionMustHaveParamTypes(RangeS.testZero, 0))
+      .nonEmpty)
+
   }
 }

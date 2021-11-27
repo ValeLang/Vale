@@ -1,12 +1,12 @@
 package net.verdagon.vale.hammer
 
-import net.verdagon.vale.hammer.NameHammer.translateFileCoordinate
-import net.verdagon.vale.hinputs.Hinputs
+import net.verdagon.vale.hammer.NameHammer.{translateFileCoordinate, translateFullName}
 import net.verdagon.vale.metal._
-import net.verdagon.vale.{PackageCoordinate, vassert, vfail, vimpl, metal => m}
-import net.verdagon.vale.scout.CodeLocationS
+import net.verdagon.vale.{CodeLocationS, PackageCoordinate, vassert, vfail, vimpl, metal => m}
+import net.verdagon.vale.scout._
 import net.verdagon.vale.templar.templata._
-import net.verdagon.vale.templar._
+import net.verdagon.vale.templar.{Hinputs, _}
+import net.verdagon.vale.templar.names._
 import net.verdagon.vale.templar.types._
 import net.verdagon.von._
 
@@ -46,15 +46,6 @@ object VonHammer {
       externNameToFunction,
       externNameToKind,
     ) = paackage
-
-//    val exports =
-//      exportNameToFullName.map({ case (moduleName, exportNameToExportee) =>
-//        exportNameToExportee.map({ case (exportName, (packageCoord, fullName)) =>
-//          (moduleName, (exportName, packageCoord, fullName))
-//        })
-//      })
-//
-//    expo
 
     VonObject(
       "Package",
@@ -248,14 +239,6 @@ object VonHammer {
   def vonifyCoord(coord: ReferenceH[KindH]): IVonData = {
     val ReferenceH(ownership, location, permission, kind) = coord
 
-//    val vonDataWithoutDebugStr =
-//      VonObject(
-//        "Ref",
-//        None,
-//        Vector(
-//          VonMember("ownership", vonifyOwnership(ownership)),
-//          VonMember("location", vonifyLocation(location)),
-//          VonMember("kind", vonifyKind(kind))))
     VonObject(
       "Ref",
       None,
@@ -264,13 +247,6 @@ object VonHammer {
         VonMember("location", vonifyLocation(location)),
         VonMember("permission", vonifyPermission(permission)),
         VonMember("kind", vonifyKind(kind))))
-//        VonMember(
-//          "debugStr",
-//          VonStr(
-//            MetalPrinter.print(vonDataWithoutDebugStr)
-//              // Because all the quotes and backslashes are annoying when debugging
-//              .replace('"'.toString, "")
-//              .replace("\\", "")))))
   }
 
   def vonifyEdge(edgeH: EdgeH): IVonData = {
@@ -902,6 +878,16 @@ object VonHammer {
           Vector(
             VonMember("coord", vonifyCoord(TypeHammer.translateReference(hinputs, hamuts, coord)))))
       }
+      case CoordListTemplata(coords) => {
+        VonObject(
+          "CoordListTemplata",
+          None,
+          Vector(
+            VonMember("coords",
+              VonArray(
+                None,
+                coords.map(coord => vonifyCoord(TypeHammer.translateReference(hinputs, hamuts, coord)))))))
+      }
       case KindTemplata(kind) => {
         VonObject(
           "KindTemplata",
@@ -916,7 +902,7 @@ object VonHammer {
           Vector(
             VonMember("prototype", vonifyPrototype(FunctionHammer.translatePrototype(hinputs, hamuts, prototype)))))
       }
-      case ArrayTemplateTemplata() => VonObject("ArrayTemplateTemplata", None, Vector())
+      case RuntimeSizedArrayTemplateTemplata() => VonObject("ArrayTemplateTemplata", None, Vector())
       case ft @ FunctionTemplata(env, functionA) => {
         VonObject(
           "FunctionTemplata",
@@ -925,7 +911,7 @@ object VonHammer {
             VonMember("envName", vonifyTemplarName(hinputs, hamuts, env.fullName)),
             VonMember(
               "function",
-              translateName(hinputs, hamuts, ft.getTemplateName()))))
+              vonifyName(translateFullName(hinputs, hamuts, ft.getTemplateName())))))
       }
       case st @ StructTemplata(env, struct) => {
         VonObject(
@@ -933,7 +919,7 @@ object VonHammer {
           None,
           Vector(
             VonMember("envName", vonifyTemplarName(hinputs, hamuts, env.fullName)),
-            VonMember("structName", translateName(hinputs, hamuts, st.getTemplateName()))))
+            VonMember("structName", translateName(hinputs, hamuts, NameTranslator.translateCitizenName(st.originStruct.name)))))
       }
       case it @ InterfaceTemplata(env, interface) => {
         VonObject(
@@ -949,7 +935,7 @@ object VonHammer {
           None,
           Vector(
             VonMember("envName", vonifyTemplarName(hinputs, hamuts, env.fullName)),
-            VonMember("subCitizenHumanName", VonStr(impl.name.subCitizenHumanName)),
+            VonMember("subCitizenHumanName", translateName(hinputs, hamuts, NameTranslator.translateNameStep(impl.name))),
             VonMember("location", vonifyCodeLocation2(NameTranslator.translateCodeLocation(impl.name.codeLocation)))))
       }
       case ExternFunctionTemplata(header) => VonObject("ExternFunctionTemplata", None, Vector(VonMember("name", vonifyTemplarName(hinputs, hamuts, header.fullName))))
@@ -973,8 +959,8 @@ object VonHammer {
         VonMember("offset", VonInt(offset))))
   }
 
-  def vonifyCodeLocation2(codeLocation: CodeLocationT): IVonData = {
-    val CodeLocationT(file, offset) = codeLocation
+  def vonifyCodeLocation2(codeLocation: CodeLocationS): IVonData = {
+    val CodeLocationS(file, offset) = codeLocation
     VonObject(
       "CodeLocation",
       None,
@@ -996,19 +982,17 @@ object VonHammer {
           Vector(
             VonMember("name", VonStr(name))))
       }
-      case ImmConcreteDestructorNameT(kind) => {
+      case SelfNameT() => {
         VonObject(
-          "ImmConcreteDestructorName2",
+          "SelfName",
           None,
-          Vector(
-            VonMember("kind", vonifyKind(TypeHammer.translateKind(hinputs, hamuts, kind)))))
+          Vector())
       }
-      case ImplDeclareNameT(subCitizenHumanName, codeLocation) => {
+      case ImplDeclareNameT(codeLocation) => {
         VonObject(
           "ImplDeclareName",
           None,
           Vector(
-            VonMember("subCitizenHumanName", VonStr(subCitizenHumanName)),
             VonMember("codeLocation", vonifyCodeLocation2(codeLocation))))
       }
       case LetNameT(codeLocation) => {
@@ -1102,11 +1086,31 @@ object VonHammer {
           Vector(
             VonMember("name", VonStr(name))))
       }
+      case AnonymousSubstructConstructorNameT(templateArgs, params) => {
+        VonObject(
+          "AnonymousSubstructConstructorName",
+          None,
+          Vector(
+            VonMember(
+              "templateArgs",
+              VonArray(None, templateArgs.map(vonifyTemplata(hinputs, hamuts, _)))),
+            VonMember(
+              "params",
+              VonArray(None, templateArgs.map(vonifyTemplata(hinputs, hamuts, _))))))
+      }
+      case AnonymousSubstructTemplateNameT(interface) => {
+        VonObject(
+          "AnonymousSubstructMemberName",
+          None,
+          Vector(
+            VonMember("interface", translateName(hinputs, hamuts, interface))))
+      }
       case AnonymousSubstructMemberNameT(index) => {
         VonObject(
           "AnonymousSubstructMemberName",
           None,
-          Vector())
+          Vector(
+            VonMember("interface", VonInt(index))))
       }
       case PrimitiveNameT(humanName) => {
         VonObject(
@@ -1128,12 +1132,12 @@ object VonHammer {
           Vector(
             VonMember("humanName", VonStr(humanName))))
       }
-      case FunctionNameT(humanName, templateArgs, parameters) => {
+      case FreeNameT(templateArgs, kind) => {
         VonObject(
-          "F",
+          "StructFreeName",
           None,
           Vector(
-            VonMember("humanName", VonStr(humanName)),
+//            VonMember("codeLoc", vonifyCodeLocation2(NameTranslator.translateCodeLocation(codeLoc))),
             VonMember(
               "templateArgs",
               VonArray(
@@ -1142,28 +1146,31 @@ object VonHammer {
                   .map(templateArg => vonifyTemplata(hinputs, hamuts, templateArg))
                   .toVector)),
             VonMember(
-              "parameters",
-              VonArray(
-                None,
-                parameters
-                  .map(templateArg => TypeHammer.translateReference(hinputs, hamuts, templateArg))
-                  .map(vonifyCoord)
-                  .toVector))))
-      }
-      case ImmDropNameT(kind) => {
-        VonObject(
-          "ImmInterfaceDestructorName",
-          None,
-          Vector(
-            VonMember(
               "kind",
               vonifyKind(TypeHammer.translateKind(hinputs, hamuts, kind)))))
       }
-      case ImmInterfaceDestructorNameT(templateArgs, parameters) => {
+      case VirtualFreeNameT(templateArgs, param) => {
         VonObject(
-          "ImmInterfaceDestructorName",
+          "F",
           None,
           Vector(
+            VonMember(
+              "templateArgs",
+              VonArray(
+                None,
+                templateArgs
+                  .map(templateArg => vonifyTemplata(hinputs, hamuts, templateArg))
+                  .toVector)),
+            VonMember(
+              "param",
+              vonifyKind(TypeHammer.translateKind(hinputs, hamuts, param)))))
+      }
+      case FunctionNameT(humanName, templateArgs, parameters) => {
+        VonObject(
+          "F",
+          None,
+          Vector(
+            VonMember("humanName", VonStr(humanName)),
             VonMember(
               "templateArgs",
               VonArray(
@@ -1195,6 +1202,13 @@ object VonHammer {
           Vector(
             VonMember("codeLocation", vonifyCodeLocation2(codeLocation))))
       }
+      case LambdaCitizenTemplateNameT(codeLocation) => {
+        VonObject(
+          "LambdaCitizenTemplateName",
+          None,
+          Vector(
+            VonMember("codeLocation", vonifyCodeLocation2(codeLocation))))
+      }
       case ConstructorNameT(parameters) => {
         VonObject(
           "ConstructorName",
@@ -1206,7 +1220,7 @@ object VonHammer {
           "CitizenName",
           None,
           Vector(
-            VonMember("humanName", VonStr(humanName)),
+            VonMember("humanName", translateName(hinputs, hamuts, humanName)),
             VonMember(
               "templateArgs",
               VonArray(
@@ -1215,114 +1229,39 @@ object VonHammer {
                   .map(templateArg => vonifyTemplata(hinputs, hamuts, templateArg))
                   .toVector))))
       }
-      case TupleNameT(members) => {
-        VonObject(
-          "Tup",
-          None,
-          Vector(
-            VonMember(
-              "members",
-              VonArray(
-                None,
-                members
-                  .map(coord => TypeHammer.translateReference(hinputs, hamuts, coord))
-                  .map(vonifyCoord)
-                  .toVector))))
-      }
-      case LambdaCitizenNameT(codeLocation) => {
+      case LambdaCitizenNameT(name) => {
         VonObject(
           "LambdaCitizenName",
           None,
           Vector(
-            VonMember("codeLocation", vonifyCodeLocation2(codeLocation))))
+            VonMember("name", translateName(hinputs, hamuts, name))))
       }
-      case CitizenTemplateNameT(humanName, codeLocation) => {
+      case CitizenTemplateNameT(humanName) => {
         VonObject(
           "CitizenTemplateName",
           None,
           Vector(
-            VonMember(humanName, VonStr(humanName)),
-            VonMember("codeLocation", vonifyCodeLocation2(codeLocation))))
+            VonMember(humanName, VonStr(humanName))))
       }
-      case AnonymousSubstructNameT(callables) => {
+      case AnonymousSubstructNameT(template, callables) => {
         VonObject(
           "AnonymousSubstructName",
           None,
           Vector(
             VonMember(
+              "template",
+              translateName(hinputs, hamuts, template)),
+            VonMember(
               "callables",
               VonArray(
                 None,
                 callables
-                  .map(coord => TypeHammer.translateReference(hinputs, hamuts, coord))
-                  .map(vonifyCoord)
+                  .map(coord => vonifyTemplata(hinputs, hamuts, coord))
                   .toVector))))
       }
       case AnonymousSubstructImplNameT() => {
         VonObject(
           "AnonymousSubstructImplName",
-          None,
-          Vector())
-      }
-      case CodeRuneT(name) => {
-        VonObject(
-          "CodeRune",
-          None,
-          Vector(
-            VonMember("name", VonStr(name))))
-      }
-      case ImplicitRuneT(parentName, name) => {
-        VonObject(
-          "ImplicitRune",
-          None,
-          Vector(
-            VonMember("parentName", translateName(hinputs, hamuts, parentName)),
-            VonMember("name", VonInt(name))))
-      }
-      case LetImplicitRuneT(codeLocation, name) => {
-        VonObject(
-          "LetImplicitRune",
-          None,
-          Vector(
-            VonMember("codeLocation", vonifyCodeLocation2(codeLocation))))
-      }
-      case MemberRuneT(memberIndex) => {
-        VonObject(
-          "MemberRune",
-          None,
-          Vector(
-            VonMember("memberIndex", VonInt(memberIndex))))
-      }
-      case MagicImplicitRuneT(codeLocation) => {
-        VonObject(
-          "MagicImplicitRune",
-          None,
-          Vector(
-            VonMember("codeLocation", vonifyCodeLocation2(codeLocation))))
-      }
-      case ReturnRuneT() => {
-        VonObject(
-          "ReturnRune",
-          None,
-          Vector())
-      }
-      case SolverKindRuneT(paramRune) => {
-        VonObject(
-          "SolverKindRune",
-          None,
-          Vector(
-            VonMember("paramRune", translateName(hinputs, hamuts, paramRune))))
-      }
-      case ExplicitTemplateArgRuneT(index) => {
-        VonObject(
-          "ExplicitTemplateArgRune",
-          None,
-          Vector(
-            VonMember("index", VonInt(index))))
-      }
-      case AnonymousSubstructParentInterfaceRuneT() => {
-        VonObject(
-          "AnonymousSubstructParentInterfaceRune",
           None,
           Vector())
       }

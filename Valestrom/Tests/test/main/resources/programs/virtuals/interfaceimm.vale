@@ -1,5 +1,5 @@
 
-interface MyOption imm { }
+interface MyOption sealed imm { }
 
 struct MySome imm {
   value *MyList;

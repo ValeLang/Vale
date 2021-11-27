@@ -1,5 +1,19 @@
 
 fn drop_into<M, V, S, E, F>(arr [<M, V> S * E], consumer &!F) void extern(vale_static_sized_array_drop_into);
+fn drop<V, S, E>(arr [<mut, V> S * E]) void {
+  drop_into(arr, {_;})
+}
+fn drop<V, S, E>(arr [<imm, V> S * E]) void {}
 
-fn drop_into<M, V, E, F>(arr Array<M, V, E>, consumer &!F) void extern(vale_runtime_sized_array_drop_into);
+fn drop_into<V, E, F>(arr Array<mut, V, E>, consumer &!F) void extern(vale_runtime_sized_array_drop_into);
+fn drop<V, E>(arr Array<mut, V, E>) void {
+  drop_into(arr, {_;})
+}
+fn drop<V, E>(arr Array<imm, V, E>) void {}
 
+fn len<M, V, S, E>(arr &[<M, V> S * E]) int extern(vale_static_sized_array_len);
+
+fn len<M, V, E>(arr &Array<M, V, E>) int extern(vale_runtime_sized_array_len);
+
+fn __free_replaced<V, S, E>(arr *[<imm, V> S * E]) extern(vale_static_sized_array_free);
+fn __free_replaced<V, E>(arr *Array<imm, V, E>) extern(vale_runtime_sized_array_free);

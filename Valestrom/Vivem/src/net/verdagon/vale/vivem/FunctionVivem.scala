@@ -15,10 +15,6 @@ object FunctionVivem {
   ): (CallId, NodeReturn) = {
     val callId = heap.pushNewStackFrame(functionH.prototype, args)
 
-//    heap.vivemDout.println("About to execute:")
-//    functionH.nodes.foreach(heap.vivemDout.println)
-//    heap.vivemDout.println("/Function")
-
     heap.vivemDout.print("  " * callId.callDepth + "Entering function " + callId)
 
     // Increment all the args to show that they have arguments referring to them.

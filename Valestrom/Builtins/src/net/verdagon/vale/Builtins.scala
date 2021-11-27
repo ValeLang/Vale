@@ -11,14 +11,17 @@ object Builtins {
       "ifunction1" -> "ifunction1.vale",
       "logic" -> "logic.vale",
       "str" -> "str.vale",
+      "drop" -> "drop.vale",
       "arrays" -> "arrays.vale",
       "mainargs" -> "mainargs.vale",
       "as" -> "as.vale",
       "print" -> "print.vale",
+      "tup" -> "tup.vale",
       "panic" -> "panic.vale",
       "opt" -> "opt.vale",
       "result" -> "result.vale",
-      "sameinstance" -> "sameinstance.vale")
+      "sameinstance" -> "sameinstance.vale",
+      "weak" -> "weak.vale")
 
   def load(resourceFilename: String): String = {
     val stream = getClass().getClassLoader().getResourceAsStream(resourceFilename)

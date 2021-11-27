@@ -1,5 +1,5 @@
 
-interface IShip {}
+interface IShip sealed {}
 
 struct Serenity {}
 impl IShip for Serenity;

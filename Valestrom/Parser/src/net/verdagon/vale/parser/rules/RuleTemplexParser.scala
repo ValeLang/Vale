@@ -22,6 +22,7 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
     pos ~ "xrw" ~ pos ^^ { case begin ~ _ ~ end => PermissionPT(Range(begin, end), ExclusiveReadwriteP) } |
     pos ~ "rw" ~ pos ^^ { case begin ~ _ ~ end => PermissionPT(Range(begin, end), ReadwriteP) } |
     pos ~ "ro" ~ pos ^^ { case begin ~ _ ~ end => PermissionPT(Range(begin, end), ReadonlyP) } |
+    pos ~ ("_\\b".r) ~ pos ^^ { case begin ~ _ ~ end => AnonymousRunePT(Range(begin, end)) } |
     typeIdentifier ^^ { case inner => NameOrRunePT(inner) }
   }
 
@@ -30,7 +31,6 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
   private[parser] def ruleTemplexPR: Parser[ITemplexPT] = {
     // The template calls are first because Moo:(Int, Bool) is ambiguous, that (Int, Bool)
     // could be interpreted as a pack.
-    (pos ~ "_" ~ pos ^^ { case begin ~ inner ~ end => AnonymousRunePT(Range(begin, end)) }) |
     (pos ~ string ~ pos ^^ { case begin ~ inner ~ end => StringPT(Range(begin, end), inner.str) }) |
     (pos ~ ("&" ~> optWhite ~> ruleTemplexPR) ~ pos ^^ { case begin ~ inner ~ end => BorrowPT(Range(begin, end), inner) }) |
     (pos ~ ("*" ~> optWhite ~> ruleTemplexPR) ~ pos ^^ { case begin ~ inner ~ end => SharePT(Range(begin, end), inner) }) |
@@ -43,7 +43,9 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
     manualSeqRulePR |
     repeaterSeqRulePR |
     (pos ~ long ~ pos ^^ { case begin ~ inner ~ end => IntPT(Range(begin, end), inner) }) |
-    keywordOrIdentifierOrRuneRuleTemplexPR
+    keywordOrIdentifierOrRuneRuleTemplexPR |
+    // This is at the end because we dont want to preclude identifiers like __Never
+    (pos ~ "_" ~ pos ^^ { case begin ~ inner ~ end => AnonymousRunePT(Range(begin, end)) })
   }
 
   private[parser] def ruleTemplexSetPR: Parser[Vector[ITemplexPT]] = {

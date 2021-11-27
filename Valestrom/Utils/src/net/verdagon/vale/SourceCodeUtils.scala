@@ -1,12 +1,18 @@
 package net.verdagon.vale
 
 object SourceCodeUtils {
+  def humanizeFile(coordinate: FileCoordinate): String = {
+    val FileCoordinate(module, packages, filepath) = coordinate
+    module + packages.map("." + _).mkString("") + ":" + filepath
+  }
+
   def humanizePos(
     filenamesAndSources: FileCoordinateMap[String],
-    file: FileCoordinate,
-      pos: Int): String = {
+    codeLocationS: CodeLocationS):
+  String = {
+    val CodeLocationS(file, pos) = codeLocationS
     if (file.isInternal) {
-      return "internal(" + file + ")"
+      return humanizeFile(file)
     }
     val source = filenamesAndSources(file)
 
@@ -20,7 +26,7 @@ object SourceCodeUtils {
       }
       i = i + 1
     }
-    file.filepath + ":" + (line + 1) + ":" + (i - lineBegin + 1)
+    humanizeFile(file) + ":" + (line + 1) + ":" + (i - lineBegin + 1)
   }
 
   def nextThingAndRestOfLine(
@@ -32,13 +38,21 @@ object SourceCodeUtils {
     text.slice(position, text.length).trim().split("\\n")(0).trim()
   }
 
-  def lineContaining(
-      filenamesAndSources: FileCoordinateMap[String],
-      file: FileCoordinate,
-      position: Int):
-  String = {
+  def lineBegin(
+    filenamesAndSources: FileCoordinateMap[String],
+    codeLocationS: CodeLocationS):
+  CodeLocationS = {
+    val (begin, end) = lineRangeContaining(filenamesAndSources, codeLocationS)
+    CodeLocationS(codeLocationS.file, begin)
+  }
+
+  def lineRangeContaining(
+    filenamesAndSources: FileCoordinateMap[String],
+    codeLocationS: CodeLocationS):
+  (Int, Int) = {
+    val CodeLocationS(file, offset) = codeLocationS
     if (file.isInternal) {
-      return "(internal(" + file + "))"
+      return (-1, 0)
     }
     val text = filenamesAndSources(file)
     // TODO: can optimize this perhaps
@@ -49,11 +63,23 @@ object SourceCodeUtils {
           case -1 => text.length
           case other => other
         }
-      if (lineBegin <= position && position <= lineEnd) {
-        return text.substring(lineBegin, lineEnd)
+      if (lineBegin <= offset && offset <= lineEnd) {
+        return (lineBegin, lineEnd)
       }
       lineBegin = lineEnd + 1
     }
     vfail()
+  }
+
+  def lineContaining(
+      filenamesAndSources: FileCoordinateMap[String],
+      codeLocationS: CodeLocationS):
+  String = {
+    if (codeLocationS.file.isInternal) {
+      return humanizeFile(codeLocationS.file)
+    }
+    val (lineBegin, lineEnd) = lineRangeContaining(filenamesAndSources, codeLocationS)
+    val text = filenamesAndSources(codeLocationS.file)
+    text.substring(lineBegin, lineEnd)
   }
 }

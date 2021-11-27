@@ -2,14 +2,15 @@ package net.verdagon.vale.hammer
 
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.metal._
+import net.verdagon.vale.scout.{BooleanTemplataType, CoordTemplataType, ITemplataType, IntegerTemplataType, KindTemplataType, LocationTemplataType, MutabilityTemplataType, OwnershipTemplataType, PermissionTemplataType, TemplateTemplataType, VariabilityTemplataType}
 import net.verdagon.vale.scout.rules._
+import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{types => t}
-import net.verdagon.vale.{metal => m}
-import net.verdagon.vale.{vimpl, scout => s}
+import net.verdagon.vale.{CodeLocationS, vimpl, metal => m, scout => s}
 
 object Conversions {
-  def evaluateCodeLocation(loc: s.CodeLocationS): m.CodeLocation = {
-    val s.CodeLocationS(line, col) = loc
+  def evaluateCodeLocation(loc: CodeLocationS): m.CodeLocation = {
+    val CodeLocationS(line, col) = loc
     m.CodeLocation(line, col)
   }
 
@@ -58,17 +59,17 @@ object Conversions {
     }
   }
 
-  def unevaluateTemplataType(tyype: ITemplataType): ITypeSR = {
+  def unevaluateTemplataType(tyype: ITemplataType): ITemplataType = {
     tyype match {
-      case CoordTemplataType => CoordTypeSR
-      case KindTemplataType => KindTypeSR
-      case IntegerTemplataType => IntTypeSR
-      case BooleanTemplataType => BoolTypeSR
-      case MutabilityTemplataType => MutabilityTypeSR
-      case PermissionTemplataType => PermissionTypeSR
-      case LocationTemplataType => LocationTypeSR
-      case OwnershipTemplataType => OwnershipTypeSR
-      case VariabilityTemplataType => VariabilityTypeSR
+      case CoordTemplataType => CoordTemplataType
+      case KindTemplataType => KindTemplataType
+      case IntegerTemplataType => IntegerTemplataType
+      case BooleanTemplataType => BooleanTemplataType
+      case MutabilityTemplataType => MutabilityTemplataType
+      case PermissionTemplataType => PermissionTemplataType
+      case LocationTemplataType => LocationTemplataType
+      case OwnershipTemplataType => OwnershipTemplataType
+      case VariabilityTemplataType => VariabilityTemplataType
       case TemplateTemplataType(_, _) => vimpl() // can we even specify template types in the syntax?
     }
   }

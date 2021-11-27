@@ -46,8 +46,6 @@ object OverloadTemplar {
   case class FindFunctionFailure(
     name: IImpreciseNameS,
     args: Vector[ParamFilter],
-//    // All the ones that could have worked, but were outscored by the best match
-//    outscoredCalleeToReason: Map[IPotentialCallee, IScoutExpectedFunctionFailureReason],
     // All the banners we rejected, and the reason why
     rejectedCalleeToReason: Map[ICalleeCandidate, IFindFunctionFailureReason]
   ) {
@@ -200,13 +198,6 @@ class OverloadTemplar(
               val explicitTemplateArgRuneToType =
               explicitTemplateArgRunesS.zip(identifyingRuneTemplataTypes).toMap
 
-              //                      val connectingRules = Vector()
-              //                        explicitTemplateArgRunesS.zip(function.identifyingRunes).map({
-              //                          case (templateArgRuneS, identifyingRune) => {
-              //                            EqualsSR(callRange, templateArgRuneS, identifyingRune)
-              //                          }
-              //                        })
-
               // And now that we know the types that are expected of these template arguments, we can
               // run these template argument templexes through the solver so it can evaluate them in
               // context of the current environment and spit out some templatas.
@@ -308,35 +299,6 @@ class OverloadTemplar(
       }
     }
   }
-
-//  private def reduceCandidateBanners(
-//    env: IEnvironment,
-//    temputs: Temputs,
-//    callRange: RangeS,
-//    functionName: INameS,
-//    explicitTemplateArgRulesS: Vector[IRulexSR],
-//    explicitTemplateArgRunesS: Array[IRuneS],
-//    paramFilters: Vector[ParamFilter],
-//    candidates: Vector[IPotentialCalleePotentialBanner],
-//    exact: Boolean):
-//  (
-//    Vector[IPotentialCalleePotentialBanner],
-//    // rejection reason by banner
-//    Map[IPotentialCallee, IScoutExpectedFunctionFailureReason]
-//  ) = {
-////            case (Some(rejectionReason)) => {
-//        case ft@FunctionTemplata(_, function) => {
-//        }
-//      })
-//    val (successes, failures) =
-//      results.map({
-//        case Ok(p) => (List(p), List.empty)
-//        case Err(e) => (List(e), List.empty)
-//      }).unzip
-//    (successes.flatten, failures.flatten) match {
-//      case
-//    }
-//  }
 
   // Gets all the environments for all the arguments.
   private def getParamEnvironments(temputs: Temputs, paramFilters: Vector[ParamFilter]):

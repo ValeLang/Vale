@@ -72,18 +72,8 @@ class Astronomer(globalOptions: GlobalOptions) {
     // However, this means that when the lambda function gets to the astronomer, the astronomer doesn't
     // know what to do with it.
     needleImpreciseNameS match {
-//      case LambdaNameS(_) =>
-//      case FunctionNameS(_, _) =>
       case CodeNameS(_) =>
       case RuneNameS(_) =>
-//      case TopLevelCitizenDeclarationNameS(_, _) =>
-//      case LambdaStructNameS(_) => return Vector(KindTemplataType)
-//      case ImplNameS(_, _) => vwat()
-//      case LetNameS(_) => vwat()
-      //      case UnnamedLocalNameS(_) => vwat()
-//      case ClosureParamNameS() => vwat()
-//      case MagicParamNameS(_) => vwat()
-//      case CodeVarNameS(_) => vwat()
     }
 
     needleImpreciseNameS match {
@@ -135,47 +125,6 @@ class Astronomer(globalOptions: GlobalOptions) {
       }
     }
   }
-//
-//  def lookupType(astrouts: Astrouts, env: Environment, range: RangeS, name: CodeTypeNameS): ITemplataType = {
-//    // When the scout comes across a lambda, it doesn't put the e.g. __Closure<main>:lam1 struct into
-//    // the environment or anything, it lets templar to do that (because templar knows the actual types).
-//    // However, this means that when the lambda function gets to the astronomer, the astronomer doesn't
-//    // know what to do with it.
-//
-//    val (primitivesS, typesFromEnv, structsS, interfacesS) = env.lookupType(name)
-//
-//    if (primitivesS.isEmpty && typesFromEnv.isEmpty && structsS.isEmpty && interfacesS.isEmpty) {
-//      ErrorReporter.report(CouldntFindTypeA(range, name))
-//    }
-//    if (primitivesS.size.signum + typesFromEnv.size.signum + structsS.size.signum + interfacesS.size.signum > 1) {
-//      ErrorReporter.report(RangedInternalErrorA(range, "Name doesn't correspond to only one of primitive or struct or interface: " + name))
-//    }
-//
-//    if (primitivesS.nonEmpty) {
-//      vassert(primitivesS.size == 1)
-//      primitivesS.get
-//    } else if (typesFromEnv.nonEmpty) {
-//      if (typesFromEnv.toSet.size > 1) {
-//        ErrorReporter.report(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + typesFromEnv.toSet))
-//      }
-//      val tyype = typesFromEnv.head
-//      tyype
-//    } else if (structsS.nonEmpty) {
-//      val types = structsS.map(getStructType(astrouts, env, _))
-//      if (types.toSet.size > 1) {
-//        ErrorReporter.report(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
-//      }
-//      val tyype = types.head
-//      tyype
-//    } else if (interfacesS.nonEmpty) {
-//      val types = interfacesS.map(getInterfaceType(astrouts, env, _))
-//      if (types.toSet.size > 1) {
-//        ErrorReporter.report(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
-//      }
-//      val tyype = types.head
-//      tyype
-//    } else vfail()
-//  }
 
   def getStructType(
     astrouts: Astrouts,
@@ -358,35 +307,6 @@ class Astronomer(globalOptions: GlobalOptions) {
 
     ExportAsA(rangeS, exportedName, rulesS.toVector, runeSToType, rune)
   }
-//
-//  def translateParameter(env: Environment, paramS: ParameterS): ParameterA = {
-//    val ParameterS(atomS) = paramS
-//    ParameterA(translateAtom(astrouts, env, atomS))
-//  }
-
-//  def translateAtom(env: Environment, atomS: AtomSP): AtomSP = {
-//    val AtomSP(range, maybeCaptureS, virtualityS, coordRuneS, destructureS) = atomS
-//
-//    val virtualityA =
-//      virtualityS.map({
-//        case AbstractSP => AbstractAP
-//        case OverrideSP(range, kindRune) => OverrideAP(range, kindRune)
-//      })
-//
-//    val destructureA = destructureS.map(_.map(translateAtom(astrouts, env, _)))
-//
-//    val maybeCaptureA =
-//      maybeCaptureS match {
-//        case None => None
-//        case Some(CaptureS(nameS)) => {
-//          val nameA = nameS
-//          val local = env.locals.find(_.varName == nameA).get
-//          Some(local)
-//        }
-//      }
-//
-//    AtomSP(range, maybeCaptureA, virtualityA, coordRuneS, destructureA)
-//  }
 
   def translateFunction(astrouts: Astrouts, env: Environment, functionS: FunctionS): FunctionA = {
     val FunctionS(rangeS, nameS, attributesS, identifyingRunesS, runeToExplicitType, paramsS, maybeRetCoordRune, rulesS, bodyS) = functionS
@@ -466,19 +386,6 @@ class Astronomer(globalOptions: GlobalOptions) {
 
     ProgramA(structsA, suppliedInterfaces ++ interfacesA, implsA, suppliedFunctions ++ functionsA, exportsA)
   }
-
-
-//  val stlFunctions =
-//    Forwarders.forwarders ++
-//    Vector(
-//      NotEquals.function,
-//      Printing.printInt,
-//      Printing.printlnInt,
-//      Printing.printBool,
-//      Printing.printlnBool,
-//      Printing.printlnStr)
-
-//  val wrapperFunctions = Arrays.makeArrayFunctions()
 
   def runAstronomer(separateProgramsS: FileCoordinateMap[ProgramS]):
   Either[PackageCoordinateMap[ProgramA], ICompileErrorA] = {

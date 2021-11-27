@@ -367,18 +367,6 @@ class ArrayTests extends FunSuite with Matchers {
           |  = a[i];
           |}
         """.stripMargin)
-//    val compile = RunCompilation.test(
-//      """
-//        |struct MyIntIdentity {}
-//        |impl IFunction1<mut, int, int> for MyIntIdentity;
-//        |fn __call(this: &MyIntIdentity for IFunction1<mut, int, int>, i: Int) int { i }
-//        |fn main() int export {
-//        |  m = MyIntIdentity();
-//        |  a = Array<imm>(10, &m);
-//        |  i = 5;
-//        |  = a.(i);
-//        |}
-//      """.stripMargin)
 
     compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
@@ -461,18 +449,6 @@ class ArrayTests extends FunSuite with Matchers {
           |  = arr.1;
           |}
         """.stripMargin)
-//    val compile = RunCompilation.test(
-//      """
-//        |struct MyIntIdentity {}
-//        |impl IFunction1<mut, int, int> for MyIntIdentity;
-//        |fn __call(this: &MyIntIdentity for IFunction1<mut, int, int>, i: Int) int { i }
-//        |fn main() int export {
-//        |  m = MyIntIdentity();
-//        |  arr = Array<mut>(10, &m);
-//        |  mut arr.(1) = 1337;
-//        |  = arr.1;
-//        |}
-//      """.stripMargin)
 
     compile.evalForKind(Vector()) shouldEqual VonInt(1337)
   }
@@ -538,31 +514,6 @@ class ArrayTests extends FunSuite with Matchers {
           |  = result.2;
           |}
         """.stripMargin)
-//    val compile = RunCompilation.test(
-//      """
-//        |struct MyIntIdentity {}
-//        |impl IFunction1<mut, int, int> for MyIntIdentity;
-//        |fn __call(this: &MyIntIdentity for IFunction1<mut, int, int>, i: Int) int { i }
-//        |
-//        |struct MyMappingFunctor {
-//        |  board: &Array<mut, int>;
-//        |}
-//        |impl IFunction1<mut, int, int> for MyMappingFunctor;
-//        |fn __call(this: &MyMappingFunctor for IFunction1<mut, int, int>, i: Int) int {
-//        |  board = this.board;
-//        |  old = board.(i);
-//        |  = old + 2;
-//        |}
-//        |
-//        |fn main() int export {
-//        |  m = MyIntIdentity();
-//        |  board = Array<mut>(10, &m);
-//        |
-//        |  mapper = MyMappingFunctor(&board);
-//        |  result = Array<mut>(5, &mapper);
-//        |  = result.2;
-//        |}
-//      """.stripMargin)
 
     compile.evalForKind(Vector()) shouldEqual VonInt(4)
   }

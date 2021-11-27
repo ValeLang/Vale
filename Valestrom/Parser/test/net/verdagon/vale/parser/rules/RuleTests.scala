@@ -78,16 +78,6 @@ class RuleTests extends FunSuite with Matchers with Collector {
   test("Super complicated") {
     compile(rulePR, "C = [I * X] | [N * T]") // succeeds
   }
-//
-//  test("resolveExactSignature") {
-//    compile(rulePR, "C = resolveExactSignature(\"__call\", (&F, Int))") shouldHave {//      case EqualsPR(_,
-//        TemplexPR(NameOrRunePT(StringP(_, "C"))),
-//        CallPR(
-//          "resolveExactSignature",
-//          Vector(
-//            TemplexPR(StringPT("__call")),
-//            PackPR(Vector(TemplexPR(BorrowPT(NameOrRunePT(StringP(_, "F")))), TemplexPR(NameOrRunePT(StringP(_, "int"))))))))
-//  }
 
   test("destructure prototype") {
     compile(rulePR, "Prot(_, _, T) = moo") shouldHave {

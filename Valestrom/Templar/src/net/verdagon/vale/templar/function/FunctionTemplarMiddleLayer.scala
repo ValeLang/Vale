@@ -183,21 +183,6 @@ class FunctionTemplarMiddleLayer(
     }
   }
 
-//  def makeInterfaceFunction(
-//     env: BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs,
-//     temputs: Temputs):
-//  (FunctionHeader2) = {
-//    val params2 =
-//      FunctionTemplarMiddleLayer.assembleFunctionParams(
-//        env, temputs, env.function.params)
-//
-//    val returnType = vassertSome(getMaybeReturnType(env, env.function.maybeRetCoordRune))
-//
-//    val newEnv = makeNamedEnv(env, params2.map(_.tyype), Some(returnType))
-//
-//    core.makeInterfaceFunction(newEnv, temputs, Some(env.function), params2, returnType)
-//  }
-
   // We would want only the prototype instead of the entire header if, for example,
   // we were calling the function. This is necessary for a recursive function like
   // fn main():Int{main()}
@@ -294,36 +279,6 @@ class FunctionTemplarMiddleLayer(
       })
   }
 
-//  def makeImplDestructor(
-//    env: IEnvironment,
-//    temputs: Temputs,
-//    structDefT: StructDefinition2,
-//    interfaceTT: InterfaceRef2):
-//  Temputs = {
-//    val ownership = if (structDefT.mutability == MutableP) Own else Share
-//    val structTT = structDefT.getRef
-//    val structType2 = Coord(ownership, structTT)
-//    val interfaceType2 = Coord(ownership, interfaceTT)
-//    val signature2 =
-//      Signature2(
-//        CallTemplar.INTERFACE_DESTRUCTOR_NAME,
-//        Vector(CoercedFinalTemplateArg2(ReferenceTemplata(interfaceType2))),
-//        Vector(structType2))
-//    temputs.declareFunctionSignature(signature2)
-//
-//    val header =
-//      core.makeImplDestructor(
-//        env, temputs, structDefT, interfaceTT)
-//
-//
-//      VirtualTemplar.evaluateParent(env, temputs, header)
-//
-//
-//      VirtualTemplar.evaluateOverrides(env, temputs, header)
-//
-//    temputs
-//  }
-
   def makeNamedEnv(
     runedEnv: BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs,
     paramTypes: Vector[CoordT],
@@ -343,13 +298,6 @@ class FunctionTemplarMiddleLayer(
   FullNameT[IFunctionNameT] = {
     val BuildingFunctionNameWithClosuredsAndTemplateArgsT(templateName, templateArgs) = name.last
     val newLastStep = templateName.makeFunctionName(templateArgs, params)
-//      templateName match {
-//        case ConstructorTemplateNameT(_) => vimpl() // no idea
-//        case FunctionTemplateNameT(humanName, _) =>
-//        case LambdaTemplateNameT(_) =>
-//        case AnonymousSubstructConstructorTemplateNameT(template) => AnonymousSubstructConstructorNameT(templateArgs, params)
-//        case StructFreeTemplateNameT(codeLocation) =>
-//      }
     names.FullNameT(name.packageCoord, name.initSteps, newLastStep)
   }
 

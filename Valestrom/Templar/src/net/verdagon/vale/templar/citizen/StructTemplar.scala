@@ -54,10 +54,6 @@ class StructTemplar(
     new StructTemplarTemplateArgsLayer(
       opts, profiler, inferTemplar, ancestorHelper, delegate)
 
-  def addBuiltInStructs(env: PackageEnvironment[INameT], temputs: Temputs): Unit = {
-    templateArgsLayer.addBuiltInStructs(env, temputs)
-  }
-
   def getStructRef(
     temputs: Temputs,
     callRange: RangeS,
@@ -96,24 +92,6 @@ class StructTemplar(
       templateArgsLayer.makeClosureUnderstruct(containingFunctionEnv, temputs, name, functionS, members)
 //    })
   }
-
-//  // Makes a struct to back a pack or tuple
-//  def makeSeqOrPackUnderstruct(env: PackageEnvironment[INameT], temputs: Temputs, memberTypes2: Vector[CoordT], name: ICitizenNameT):
-//  (StructTT, MutabilityT) = {
-////    profiler.newProfile("StructTemplar-makeSeqOrPackUnderstruct", "[" + memberTypes2.map(_.toString).mkString(", ") + "]", () => {
-//      templateArgsLayer.makeSeqOrPackUnerstruct(env, temputs, memberTypes2, name)
-////    })
-//  }
-
-
-//  // Makes a functor for the given prototype.
-//  def functionToLambda(
-//    outerEnv: IEnvironment,
-//    temputs: Temputs,
-//    header: FunctionHeader2):
-//  structTT = {
-//    templateArgsLayer.functionToLambda(outerEnv, temputs, header)
-//  }
 
   def getMemberCoords(temputs: Temputs, structTT: StructTT): Vector[CoordT] = {
     temputs.getStructDefForRef(structTT).members.map(_.tyype).map({

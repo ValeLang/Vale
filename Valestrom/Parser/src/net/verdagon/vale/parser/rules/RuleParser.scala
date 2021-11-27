@@ -28,10 +28,6 @@ trait RuleParser extends RegexParsers with ParserUtils {
     "RefList" ^^^ CoordListTypePR |
     "Ref" ^^^ CoordTypePR |
     "Prot" ^^^ PrototypeTypePR |
-//    "Struct" ^^^ StructTypePR |
-//    "Seq" ^^^ SequenceTypePR |
-//    "Callable" ^^^ CallableTypePR |
-//    "Interface" ^^^ InterfaceTypePR |
     // Int must be after Interface, otherwise we'll have a hanging "erface"
     // Same with Kint and KindTemplate
     "int" ^^^ IntTypePR |

@@ -238,20 +238,6 @@ class TemplarTests extends FunSuite with Matchers {
     temputs.lookupFunction("main").header.returnType shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
   }
 
-//  test("Infer") {
-//    val compile =
-//      TemplarTestCompilation.test(
-//        """
-//          |struct Ship { }
-//          |fn moo<T>(a &!T) &!T { a }
-//          |fn main() export {
-//          |  s = Ship();
-//          |  t = moo(&s);
-//          |}
-//          |""".stripMargin)
-//    val temputs = compile.expectTemputs()
-//  }
-
   test("Lambda with one magic arg") {
     val compile =
       TemplarTestCompilation.test(
@@ -412,7 +398,7 @@ class TemplarTests extends FunSuite with Matchers {
     )
     val temputs = compile.expectTemputs()
   }
-//
+
 //  test("Constructor is stamped even without calling") {
 //    val compile = RunCompilation.test(
 //      """
@@ -787,15 +773,6 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Tests calling a templated function with an upcast") {
-
-    //vimpl()
-    // it seems to have trouble matching against the idestructor.
-    // idestructor receives any kind of struct, as long as its mutability is whatever,
-    // but we send something in with a Receives rule, which doesn't know how to deal with
-    // that. the receives doesnt really know whether it's receiving into a struct or not.
-    // possible approach: astronomer can predict whether the receiver is an interface, and
-    // only then would we use some receives rules.
-
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;

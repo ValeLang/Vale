@@ -54,24 +54,4 @@ class SequenceTemplar(
   CoordT = {
     templataTemplar.coerceKindToCoord(temputs, makeTupleKind(env, temputs, types2))
   }
-
-//    val (structTT, mutability) =
-//      structTemplar.makeSeqOrPackUnderstruct(vimpl(env.globalEnv), temputs, types2, TupleNameT(types2))
-//
-//    if (types2.isEmpty)
-//      vassert(temputs.lookupStruct(structTT).mutability == ImmutableT)
-//    // Make sure it's in there
-//    Templar.getMutability(temputs, structTT)
-//
-//    val reference =
-//      CoordT(
-//        if (mutability == MutableT) OwnT else ShareT,
-//        if (mutability == MutableT) ReadwriteT else ReadonlyT,
-//        structTT)
-//
-//    val _ =
-//      destructorTemplar.getCitizenDestructor(temputs, reference)
-//
-//    (TupleTT(types2, structTT), mutability)
-//  }
 }

@@ -30,9 +30,6 @@ case class Temputs() {
   private val functions: mutable.ArrayBuffer[FunctionT] = mutable.ArrayBuffer()
   private val envByFunctionSignature: mutable.HashMap[SignatureT, FunctionEnvironment] = mutable.HashMap()
 
-//  // Prototypes for extern functions
-//  private val packageToExternNameToExtern: mutable.HashMap[PackageCoordinate, mutable.HashMap[String, Prototype2]] = mutable.HashMap()
-
   // One must fill this in when putting things into declaredKinds.
   private val mutabilitiesByCitizenRef: mutable.HashMap[CitizenRefT, MutabilityT] = mutable.HashMap()
 
@@ -51,14 +48,10 @@ case class Temputs() {
   private val kindExterns: mutable.ArrayBuffer[KindExternT] = mutable.ArrayBuffer()
   private val functionExterns: mutable.ArrayBuffer[FunctionExternT] = mutable.ArrayBuffer()
 
-  // Only PackTemplar can make a PackT2.
-//  private val packTypes: mutable.HashMap[Vector[CoordT], StructTT] = mutable.HashMap()
   // Only ArrayTemplar can make an RawArrayT2.
   private val staticSizedArrayTypes: mutable.HashMap[(Int, RawArrayTT), StaticSizedArrayTT] = mutable.HashMap()
   // Only ArrayTemplar can make an RawArrayT2.
   private val runtimeSizedArrayTypes: mutable.HashMap[RawArrayTT, RuntimeSizedArrayTT] = mutable.HashMap()
-
-//  private val kindToDestructor: mutable.HashMap[KindT, PrototypeT] = mutable.HashMap()
 
   // A queue of functions that our code uses, but we don't need to compile them right away.
   // We can compile them later. Perhaps in parallel, someday!
@@ -169,10 +162,6 @@ case class Temputs() {
     envByKind += (kindTT -> env)
   }
 
-//  def declarePack(members: Vector[CoordT], understructTT: StructTT): Unit = {
-//    packTypes += (members -> understructTT)
-//  }
-
   def add(structDef: StructDefinitionT): Unit = {
     if (structDef.mutability == ImmutableT) {
       if (structDef.members.exists(_.tyype.reference.ownership != ShareT)) {
@@ -216,19 +205,9 @@ case class Temputs() {
     functionExterns += FunctionExternT(range, function, packageCoord, exportedName)
   }
 
-//  def addDestructor(kind: KindT, destructor: PrototypeT): Unit = {
-//    vassert(!kindToDestructor.contains(kind))
-//    vassert(prototypeDeclared(destructor.fullName).nonEmpty)
-//    kindToDestructor.put(kind, destructor)
-//  }
-
   def deferEvaluatingFunction(devf: DeferredEvaluatingFunction): Unit = {
     deferredEvaluatingFunctions.put(devf.prototypeT, devf)
   }
-
-//  def getDestructor(kind: KindT): PrototypeT = {
-//    vassertSome(kindToDestructor.get(kind))
-//  }
 
   def structDeclared(fullName: FullNameT[ICitizenNameT]): Option[StructTT] = {
     // This is the only place besides StructDefinition2 and declareStruct thats allowed to make one of these
@@ -290,20 +269,6 @@ case class Temputs() {
     // do interfaceDefsByRef.get(interfaceTT) yourself and handle the None case
     interfaceDefsByRef(interfaceTT)
   }
-//
-//  def functionAlreadyDeclared(rangeS: RangeS, fullName: FullName2[IFunctionName2]): Boolean = {
-//    declaredSignatures.get(Signature2(fullName)) == Some(rangeS)
-//  }
-//
-//  def functionAlreadyDeclared(rangeS: RangeS, signature: Signature2): Boolean = {
-//    declaredSignatures.contains(signature) == Some(rangeS)
-//  }
-
-  //  def findFunction(name: String, paramTypes: Vector[Coord]): Option[FunctionHeader2] = {
-  //    val matchingFunctions = functions.find(this, name, paramTypes)
-  //    vassert(matchingFunctions.size < 2)
-  //    matchingFunctions.headOption
-  //  }
 
   def getAllStructs(): Iterable[StructDefinitionT] = structDefsByRef.values
   def getAllInterfaces(): Iterable[InterfaceDefinitionT] = interfaceDefsByRef.values
@@ -325,9 +290,6 @@ case class Temputs() {
   def getInterfaceDefForRef(ir: InterfaceTT): InterfaceDefinitionT = {
     interfaceDefsByRef(ir)
   }
-//  def getPackType(coords: Vector[CoordT]): Option[StructTT] = {
-//    packTypes.get(coords)
-//  }
   def getReturnTypeForSignature(sig: SignatureT): Option[CoordT] = {
     returnTypesBySignature.get(sig)
   }

@@ -589,19 +589,6 @@ object ParsedLoader {
       case "PoolRuneAttribute" => PoolRuneAttributeP(loadRange(getObjectField(jobj, "range")))
       case "ArenaRuneAttribute" => ArenaRuneAttributeP(loadRange(getObjectField(jobj, "range")))
       case "BumpRuneAttribute" => BumpRuneAttributeP(loadRange(getObjectField(jobj, "range")))
-
-//      case TypeRuneAttributeP(range, tyype) => {
-//        VonObject(
-//          "ReadOnlyRuneAttribute",
-//          None,
-//          Vector(
-//            VonMember("range", vonifyRange(range)),
-//            VonMember("type", vonifyRuneType(tyype))))
-//      }
-//      case ReadOnlyRuneAttributeP(range) => VonObject("ReadOnlyRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
-//      case PoolRuneAttributeP(range) => VonObject("PoolRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
-//      case ArenaRuneAttributeP(range) => VonObject("ArenaRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
-//      case BumpRuneAttributeP(range) => VonObject("BumpRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case x => vimpl(x.toString)
     }
   }

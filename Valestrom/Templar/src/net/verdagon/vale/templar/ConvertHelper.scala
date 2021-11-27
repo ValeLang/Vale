@@ -85,23 +85,10 @@ class ConvertHelper(
     }
 
     (sourcePermission, targetPermission) match {
-//      case (ExclusiveReadwrite, ExclusiveReadwrite) =>
-//      case (Readwrite, ExclusiveReadwrite) => {
-//        throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied a readwrite reference but target wants an xreadwrite!"))
-//      }
-//      case (Readonly, ExclusiveReadwrite) => {
-//        throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied a readonly reference but target wants an xreadwrite!"))
-//      }
-//
-//      case (ExclusiveReadwrite, Readwrite) => {
-////        PermissionedSE(range, sourceExpr, Conversions.unevaluatePermission(targetPermission))
-//      }
       case (ReadwriteT, ReadwriteT) =>
       case (ReadonlyT, ReadwriteT) => {
         throw CompileErrorExceptionT(CantUseReadonlyReferenceAsReadwrite(range))
       }
-
-//      case (ExclusiveReadwrite, Readonly) =>
       case (ReadwriteT, ReadonlyT) =>
       case (ReadonlyT, ReadonlyT) =>
     }

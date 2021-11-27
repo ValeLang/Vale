@@ -70,18 +70,9 @@ object ScoutErrorHumanizer {
 
   def humanizeImpreciseName(name: IImpreciseNameS): String = {
     name match {
-      //      case UnnamedLocalNameS(codeLocation) => "(unnamed)"
-//      case ClosureParamNameS() => "(closure)"
       case CodeNameS(n) => n
       case FreeImpreciseNameS() => "(free)"
-//      case GlobalFunctionFamilyNameS(n) => n
-      //      case DropNameS(_) => "(drop)"
-//      case MagicParamNameS(codeLocation) => "(magic)"
-//      case CodeVarNameS(name) => name
-//      case ArbitraryNameS() => "(arbitrary)"
       case RuneNameS(rune) => humanizeRune(rune)
-//      case ConstructingMemberNameS(name) => "member " + name
-//      case FunctionNameS(name, codeLocation) => name
       case AnonymousSubstructTemplateImpreciseNameS(interfaceHumanName) => "(anon substruct template of " + humanizeImpreciseName(interfaceHumanName) + ")"
     }
   }

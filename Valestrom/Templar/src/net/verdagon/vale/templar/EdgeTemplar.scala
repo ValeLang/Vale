@@ -118,12 +118,7 @@ object EdgeTemplar {
                     case (VirtualFreeNameT(_, _), VirtualFreeNameT(_, _)) => true
                     case (VirtualFreeNameT(_, _), _) => false
                     case (_, VirtualFreeNameT(_, _)) => false
-                    //                    case (ImmInterfaceDestructorNameT(_, _), ImmInterfaceDestructorNameT(_, _)) => true
-//                    case (DropNameT(_, possibleSuperFunctionCoord), FunctionNameT(humanName, _, parameters)) => {
-//                      humanName == CallTemplar.DROP_FUNCTION_NAME && parameters.size == 1 && possibleSuperFunctionCoord == parameters.head
-//                    }
                     case other => vimpl(other)
-//                    case _ => false
                   }
                 namesMatch && possibleSuperFunction.paramTypes == needleSuperFunctionParamTypes
               })

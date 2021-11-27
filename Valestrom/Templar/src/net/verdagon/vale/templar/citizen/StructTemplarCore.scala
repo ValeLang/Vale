@@ -23,64 +23,6 @@ class StructTemplarCore(
     profiler: IProfiler,
     ancestorHelper: AncestorHelper,
     delegate: IStructTemplarDelegate) {
-  def addBuiltInStructs(env: PackageEnvironment[INameT], temputs: Temputs): Unit = {
-//    val emptyTupleFullName = ProgramT.emptyTupleStructRef.fullName
-//    val structDefT = StructDefinitionT(emptyTupleFullName, Vector(), false, ImmutableT, Vector.empty, false)
-//    temputs.declareKind(structDefT.getRef)
-//    temputs.declareCitizenMutability(structDefT.getRef, ImmutableT)
-//
-////    val packStructA =
-////      StructA(
-////        RangeS.internal(-1337),
-////        TopLevelCitizenDeclarationNameS(ProgramT.tupleHumanName, RangeS.internal(-1337)),
-////        Vector(),
-////        false,
-////        RuneUsage(RangeS.internal(-1338), CodeRuneS("M")),
-////        None,
-////        TemplateTemplataType(Vector(PackTemplataType(CoordTemplataType)), KindTemplataType),
-////        Vector(RuneUsage(RangeS.internal(-1339), CodeRuneS("T"))),
-////        Map(
-////          CodeRuneS("T") -> PackTemplataType(CoordTemplataType),
-////          CodeRuneS("M") -> MutabilityTemplataType),
-////        Vector(),
-////        Vector(
-////          StructMemberS(
-////            RangeS.internal(-1339),
-////            "members",
-////            FinalP,
-////            RuneUsage(RangeS.internal(-1340), CodeRuneS("T")))))
-//
-////    val functionA =
-////      env.globalEnv.structDropMacro.makeDropFunction(
-////        CodeNameS("Tup"),
-////        RangeS.internal(-1337),
-////        TemplateTemplataType(Vector(PackTemplataType(CoordTemplataType)), KindTemplataType),
-////        Vector(CodeRuneS("M")),
-////        Map(CodeRuneS("M") -> PackTemplataType(CoordTemplataType)))
-//    val tupleEnv =
-//      CitizenEnvironment(
-//        env.globalEnv, env, emptyTupleFullName,
-//        TemplatasStore(emptyTupleFullName, Map(), Map())
-//          .addEntries(
-//            env.globalEnv.structDropMacro.getStructChildEntries(emptyTupleFullName, packStructA)
-////            Vector[(INameT, IEnvEntry)]((NameTranslator.translateFunctionNameToTemplateName(functionA.name), FunctionEnvEntry(functionA)))
-//            .toMap.mapValues(Vector(_))))
-//    temputs
-//      .declareKindEnv(
-//        structDefT.getRef,
-//        tupleEnv)
-//
-//    temputs.add(structDefT)
-//    // Normally after adding a struct we would add its destructor. Void is the only one we don't
-//    // have a destructor for.
-//
-//    env.globalEnv.onStructGeneratedMacros.foreach(maacro => {
-//      maacro.onStructGenerated(structDefT.getRef)
-//    })
-//
-//    temputs.declarePack(Vector.empty, structDefT.getRef)
-  }
-
   def makeStruct(
     // The environment that the struct was defined in.
     structRunesEnv: CitizenEnvironment[INameT],
@@ -204,26 +146,6 @@ class StructTemplarCore(
 
       ancestorImplsAndInterfaces.foreach({
         case (ancestorInterface, implTemplata) => {
-//          if (structDefT.mutability == ImmutableT) {
-//            val freeEnvEntries =
-//              structRunesEnv.globalEnv.implFreeMacro
-//                .getImplStructChildEntries(structDefT.getRef, ancestorInterface, implTemplata.impl)
-//                .map({ case (entryName, value) =>
-//                  vcurious(fullNameT.steps.size + 1 == entryName.steps.size)
-//                  val last = entryName.last
-//                  last -> value
-//                })
-//            val implNameT = structInnerEnv.fullName.addStep(ImplDeclareNameT(implTemplata.impl.name.codeLocation))
-//            val freeEnv =
-//              CitizenEnvironment(
-//                structRunesEnv.globalEnv,
-//                structInnerEnv,
-//                implNameT,
-//                TemplatasStore(implNameT, Map(), Map())
-//                  .addEntries(freeEnvEntries))
-//
-//          }
-
           val interfaceDefinition2 = temputs.lookupInterface(ancestorInterface)
           if (structDefT.weakable != interfaceDefinition2.weakable) {
             throw WeakableImplingMismatch(structDefT.weakable, interfaceDefinition2.weakable)
@@ -374,20 +296,6 @@ class StructTemplarCore(
 
     profiler.childFrame("interface ancestor interfaces", () => {
       val _ = ancestorHelper.getParentInterfaces(temputs, temporaryInferfaceRef)
-
-      //
-      //      interfaceA.internalMethods.foldLeft(temputs)({
-      //        case (ntvFunction1) => {
-      //          if (ntvFunction1.isTemplate) {
-      //            // Do nothing, can't evaluate it now
-      //            temputs
-      //          } else {
-      //            FunctionTemplar.evaluateOrdinaryLightFunctionFromNonCallForTemputs(
-      //              temputs,
-      //              FunctionTemplata(interfaceInnerEnv, ntvFunction1))
-      //          }
-      //        }
-      //      })
     })
 
     (interfaceDef2)
@@ -501,44 +409,4 @@ class StructTemplarCore(
 
     (closuredVarsStructRef, mutability, functionTemplata)
   }
-
-//  // Makes a struct to back a pack or tuple
-//  def makeSeqOrPackUnderstruct(
-//    outerEnv: PackageEnvironment[INameT],
-//    temputs: Temputs,
-//    memberCoords: Vector[CoordT],
-//    name: ICitizenNameT):
-//  (StructTT, MutabilityT) = {
-//    temputs.getPackType(memberCoords) match {
-//      case Some(structTT) => return (structTT, temputs.lookupStruct(structTT).mutability)
-//      case None =>
-//    }
-//    val packMutability = StructTemplar.getCompoundTypeMutability(memberCoords)
-//    val members =
-//      memberCoords.zipWithIndex.map({
-//        case (pointerType, index) => StructMemberT(CodeVarNameT(index.toString), FinalT, ReferenceMemberTypeT(pointerType))
-//      })
-//
-//    val fullName = outerEnv.fullName.addStep(CitizenNameT(tupleHumanName, Vector(CoordListTemplata(memberCoords))))
-//    val structInnerEnv =
-//      CitizenEnvironment(outerEnv.globalEnv, outerEnv, fullName, TemplatasStore(outerEnv.fullName, Map(), Map()))
-//
-//    val newStructDef = StructDefinitionT(structInnerEnv.fullName, Vector.empty, false, packMutability, members, false);
-//    if (memberCoords.isEmpty && packMutability != ImmutableT)
-//      vfail("curiosity")
-//
-//    temputs.declareKind(newStructDef.getRef);
-//    temputs.declareCitizenMutability(newStructDef.getRef, packMutability)
-//    temputs.declareKindEnv(newStructDef.getRef, structInnerEnv);
-//    temputs.add(newStructDef)
-//
-//    outerEnv.globalEnv.onStructGeneratedMacros.foreach(maacro => {
-//      maacro.onStructGenerated(newStructDef.getRef)
-//    })
-//
-//    temputs.declarePack(memberCoords, newStructDef.getRef);
-//
-//    (newStructDef.getRef, packMutability)
-//  }
-
 }

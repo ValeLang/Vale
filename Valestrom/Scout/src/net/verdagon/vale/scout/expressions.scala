@@ -10,9 +10,6 @@ import net.verdagon.vale.{RangeS, vassert, vcurious, vimpl, vpass}
 case class LetSE(
     range: RangeS,
     rules: Array[IRulexSR],
-//    runeSToCanonicalRune: collection.Map[IRuneS, Int],
-//    unknowableRunes: Set[IRuneS],
-//    localRunes: Set[IRuneS],
     pattern: AtomSP,
     expr: IExpressionSE) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
@@ -224,11 +221,3 @@ case class OutsideLoadSE(
 case class RuneLookupSE(range: RangeS, rune: IRuneS) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
 }
-
-
-//case class Scramble0(elements: Vector[Expression0]) extends Expression0 {
-//  vassert(!elements.isEmpty, "Can't have an empty scramble")
-//}
-//case class Scramble1(elements: Vector[Expression1]) extends Expression1 {
-//  vassert(!elements.isEmpty, "Can't have an empty scramble")
-//}

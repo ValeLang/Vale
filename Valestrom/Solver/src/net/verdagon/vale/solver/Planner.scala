@@ -52,26 +52,6 @@ object Planner {
     }
 
     (orderedRules.slice(0, numRulesExecuted), runeToIsSolved)
-
-//    // We're just doublechecking here, we could disable all this
-//    val complete =
-//      plannerState.world.puzzleToRunes.indices.forall({ case puzzleIndex =>
-//        val numUnknownRunes = plannerState.puzzleToNumUnknownRunes(puzzleIndex);
-//        vassert(numUnknownRunes != 0) // Should have been attempted in the main solver loop
-//        if (plannerState.puzzleToNumUnknownRunes(puzzleIndex) == -1) {
-//          vassert(plannerState.puzzleToExecuted(puzzleIndex))
-//          true
-//        } else {
-//          // An incomplete solve
-//          false
-//        }
-//      })
-//
-//    if (complete) {
-//      CompletePlan(runeToIsSolved, orderedRules.slice(0, numRulesExecuted))
-//    } else {
-//      IncompletePlan(runeToIsSolved, orderedRules.slice(0, numRulesExecuted))
-//    }
   }
 
   def markRuneSolved[RuleID, Literal, Lookup](

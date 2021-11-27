@@ -74,12 +74,6 @@ object RuneTypeSolver {
       case PackSR(_, resultRune, members) => {
         // Packs are always lists of coords
         Array(Array())
-//        if (members.nonEmpty) {
-//          Array(Array(resultRune.rune), members.map(_.rune))
-//        } else {
-//          // If there are no members, we wouldn't really know what type this thing is
-//          Array(Array(resultRune.rune))
-//        }
       }
       case CoordIsaSR(_, subRune, superRune) => Array(Array())
       case KindComponentsSR(_, resultRune, mutabilityRune) => Array(Array())
@@ -230,13 +224,6 @@ object RuneTypeSolver {
         stepState.concludeRune(elementRune.rune, CoordTemplataType)
         Ok(())
       }
-//      case ManualSequenceSR(_, resultRune, elements) => {
-//        elements.foreach(element => {
-//          stepState.concludeRune(element.rune, CoordTemplataType)
-//        })
-//        Ok(())
-//      }
-//      case CoordListSR(_, resultRune, elements) => vimpl()
     }
   }
 

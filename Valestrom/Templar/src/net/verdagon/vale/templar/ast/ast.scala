@@ -78,41 +78,13 @@ case class EdgeT(
 object ProgramT {
   val topLevelName = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, PackageTopLevelNameT())
   val tupleHumanName = "Tup"
-//  val emptyTupleStructRef = StructTT(FullNameT(PackageCoordinate.BUILTIN, Vector.empty, CitizenNameT(tupleHumanName, Vector(CoordListTemplata(Vector())))))
-//  val emptyTupleType: PackTT = PackTT(Vector.empty, ProgramT.emptyTupleStructRef)
-//  val emptyTupleReference: CoordT = CoordT(ShareT, ReadonlyT, emptyTupleType)
-//  val emptyPackExpression: PackTE = PackTE(Vector.empty, CoordT(ShareT, ReadonlyT, ProgramT.emptyTupleType), ProgramT.emptyTupleType)
 
   val intType = CoordT(ShareT, ReadonlyT, IntT.i32)
   val boolType = CoordT(ShareT, ReadonlyT, BoolT())
 }
 
-//trait Program2 {
-//  def getAllInterfaces: Set[InterfaceDefinition2]
-//  def getAllStructs: Set[StructDefinition2]
-//  def getAllImpls: Vector[Impl2]
-//  def getAllFunctions: Set[Function2]
-//  def getAllCitizens: Set[CitizenDefinition2] = getAllInterfaces ++ getAllStructs
-//  def getAllExterns: Set[FunctionHeader2]
-//  def emptyPackStructRef: structTT
-//
-//  def lookupStruct(structTT: structTT): StructDefinition2;
-//  def lookupInterface(interfaceTT: InterfaceRef2): InterfaceDefinition2;
-//  def lookupCitizen(citizenRef: CitizenRef2): CitizenDefinition2;
-//  def lookupFunction(signature2: Signature2): Option[Function2];
-//
-//  def getAllNonExternFunctions: Set[Function2] = {
-//    getAllFunctions.filter(!_.header.isExtern)
-//  }
-//  def getAllUserFunctions: Set[Function2] = {
-//    getAllFunctions.filter(_.header.isUserFunction)
-//  }
-//}
-
 case class FunctionT(
   header: FunctionHeaderT,
-//  // Used for testing
-//  variables: Vector[ILocalVariableT],
   body: ReferenceExpressionTE)  {
   override def hashCode(): Int = vcurious()
 
@@ -157,9 +129,6 @@ sealed trait ICalleeCandidate
 case class FunctionCalleeCandidate(ft: FunctionTemplata) extends ICalleeCandidate {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 }
-//case class BannerCalleeCandidate(banner: FunctionBannerT) extends ICalleeCandidate {
-//  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-//}
 case class HeaderCalleeCandidate(header: FunctionHeaderT) extends ICalleeCandidate {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 }

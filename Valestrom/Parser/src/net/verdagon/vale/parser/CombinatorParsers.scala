@@ -20,7 +20,6 @@ object CombinatorParsers
         with ParserUtils
         with TemplexParser
         with PatternParser
-//        with PatternTemplexParser
         with ExpressionParser {
   override def skipWhitespace = false
   //override val whiteSpace = "[ \t\r\f]+".r
@@ -200,37 +199,4 @@ object CombinatorParsers
       }
     }
   }
-
-//  private[parser] def topLevelThing: Parser[ITopLevelThing] = {
-//    struct ^^ TopLevelStruct |
-//    topLevelFunction ^^ TopLevelFunction |
-//    interface ^^ TopLevelInterface |
-//    impl ^^ TopLevelImpl
-//  }
-//
-//  def program: Parser[Program0] = {
-//    optWhite ~> repsep(topLevelThing, optWhite) <~ optWhite ^^ Program0
-//  }
-
-
-//  def runOldParser(codeWithComments: String): ParseResult[(Program0, Vector[(Int, Int)])] = {
-//    val regex = "(//[^\\r\\n]*|«\\w+»)".r
-//    val commentRanges = regex.findAllMatchIn(codeWithComments).map(mat => (mat.start, mat.end)).toVector
-//    var code = codeWithComments
-//    commentRanges.foreach({ case (begin, end) =>
-//      code = code.substring(0, begin) + repeatStr(" ", (end - begin)) + code.substring(end)
-//    })
-//
-//    VParser.parse(VParser.program, code.toCharArray) match {
-//      case VParser.NoSuccess(msg, next) => VParser.Failure(msg, next)
-//      case VParser.Success(program0, rest) => {
-//        if (!rest.atEnd) {
-//          vfail("Unexpected at: " + rest.source)
-//        } else {
-//          vassert(rest.offset == code.length)
-//          VParser.Success((program0, commentRanges), rest)
-//        }
-//      }
-//    }
-//  }
 }

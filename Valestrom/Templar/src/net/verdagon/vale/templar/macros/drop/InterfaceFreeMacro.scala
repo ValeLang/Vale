@@ -51,19 +51,6 @@ class InterfaceFreeMacro(overloadTemplar: OverloadTemplar) extends IOnInterfaceD
             LookupSR(RangeS.internal(-167213), RuneUsage(RangeS.internal(-64002), CodeRuneS("T")), SelfNameS()),
             LookupSR(RangeS.internal(-167213), RuneUsage(RangeS.internal(-64002), CodeRuneS("V")), CodeNameS("void"))),
           GeneratedBodyS(generatorId))
-//          CodeBodyS(
-//            BodySE(RangeS.internal(-167213),
-//              Vector(),
-//              BlockSE(RangeS.internal(-167213),
-//                Vector(LocalS(CodeVarNameS("this"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
-//                Vector(
-//                  FunctionCallSE(RangeS.internal(-167213),
-//                    OutsideLoadSE(RangeS.internal(-167213),
-//                      Array(),
-//                      VirtualFreeImpreciseNameS(),
-//                      None,
-//                      LendConstraintP(None)),
-//                    Vector(LocalLoadSE(RangeS.internal(-167213), CodeVarNameS("this"), MoveP))))))))
 
       val virtualFreeFunctionNameS = VirtualFreeDeclarationNameS(interfaceA.range.begin)
       val virtualFreeFunctionA =
@@ -96,27 +83,6 @@ class InterfaceFreeMacro(overloadTemplar: OverloadTemplar) extends IOnInterfaceD
       Vector()
     }
   }
-
-//  def getImmInterfaceDestructor(
-//    temputs: Temputs,
-//    env: IEnvironment,
-//    interfaceTT: InterfaceTT):
-//  PrototypeT = {
-//    vassert(Templar.getMutability(temputs, interfaceTT) == ImmutableT)
-//
-//    val prototype =
-//      overloadTemplar.findFunction(
-//        env,
-//        temputs,
-//        RangeS.internal(-1677),
-//        ImmInterfaceDestructorImpreciseNameS(),
-//        Vector.empty,
-//        Array.empty,
-//        Vector(ParamFilter(CoordT(ShareT, ReadonlyT, interfaceTT), None)),
-//        Vector.empty,
-//        true)
-//    prototype
-//  }
 
   override def generateFunctionBody(
     env: FunctionEnvironment,

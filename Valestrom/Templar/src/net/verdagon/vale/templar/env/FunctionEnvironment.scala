@@ -245,23 +245,6 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
     functionEnvironment = functionEnvironment.addEntries(newEntries)
   }
 
-
-//  private[env] override def lookupAllWithImpreciseName(
-//    profiler: IProfiler,
-//    nameS: IImpreciseNameS,
-//    lookupFilter: Set[ILookupContext]):
-//  Iterable[ITemplata] = {
-//    functionEnvironment.lookupAllWithImpreciseName(profiler, nameS, lookupFilter)
-//  }
-//
-//  private[env] override def lookupAllWithName(
-//    profiler: IProfiler,
-//    nameS: INameT,
-//    lookupFilter: Set[ILookupContext]):
-//  Iterable[ITemplata] = {
-//    functionEnvironment.lookupAllWithName(profiler, nameS, lookupFilter)
-//  }
-
   override def lookupNearestWithImpreciseName(
     profiler: IProfiler,
     nameS: IImpreciseNameS,
@@ -286,17 +269,9 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
     functionEnvironment.lookupAllWithName(profiler, nameS, lookupFilter)
   }
 
-//  override def lookupWithImpreciseName(profiler: IProfiler, nameS: IImpreciseNameS, lookupFilter: Set[ILookupContext], getOnlyNearest: Boolean): Iterable[ITemplata] = {
-//    vimpl()
-//  }
-
   override private[env] def lookupWithImpreciseNameInner(profiler: IProfiler, nameS: IImpreciseNameS, lookupFilter: Set[ILookupContext], getOnlyNearest: Boolean) = {
     functionEnvironment.lookupWithImpreciseNameInner(profiler, nameS, lookupFilter, getOnlyNearest)
   }
-
-//  override def lookupWithName(profiler: IProfiler, nameS: INameT, lookupFilter: Set[ILookupContext], getOnlyNearest: Boolean): Iterable[ITemplata] = {
-//    vimpl()
-//  }
 
   override private[env] def lookupWithNameInner(profiler: IProfiler, nameS: INameT, lookupFilter: Set[ILookupContext], getOnlyNearest: Boolean) = {
     functionEnvironment.lookupWithNameInner(profiler, nameS, lookupFilter, getOnlyNearest)

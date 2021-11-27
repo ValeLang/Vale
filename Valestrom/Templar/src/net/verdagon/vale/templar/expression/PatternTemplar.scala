@@ -233,18 +233,6 @@ class PatternTemplar(
         translateDestroyStructInnerAndMaybeContinue(
           temputs, fate, life + 0, range, initialLiveCaptureLocals, listOfMaybeDestructureMemberPatterns, inputExpr, afterDestructureSuccessContinuation)
       }
-//      case PackTT(_, underlyingStruct@StructTT(_)) => {
-//        val structType2 = CoordT(OwnT, expectedContainerPermission, underlyingStruct)
-//        val reinterpretExpr2 = TemplarReinterpretTE(inputExpr, structType2)
-//        translateDestroyStructInnerAndMaybeContinue(
-//          temputs, fate, life + 1, range, initialLiveCaptureLocals, listOfMaybeDestructureMemberPatterns, reinterpretExpr2, afterDestructureSuccessContinuation)
-//      }
-//      case TupleTT(_, underlyingStruct@StructTT(_)) => {
-//        val structType2 = CoordT(OwnT, expectedContainerPermission, underlyingStruct)
-//        val reinterpretExpr2 = TemplarReinterpretTE(inputExpr, structType2)
-//        translateDestroyStructInnerAndMaybeContinue(
-//          temputs, fate, life + 2, range, initialLiveCaptureLocals, listOfMaybeDestructureMemberPatterns, reinterpretExpr2, afterDestructureSuccessContinuation)
-//      }
       case staticSizedArrayT@StaticSizedArrayTT(size, RawArrayTT(elementType, _, _)) => {
         if (size != listOfMaybeDestructureMemberPatterns.size) {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, "Wrong num exprs!"))
@@ -318,18 +306,6 @@ class PatternTemplar(
 
               loadFromStruct(temputs, range, expectedContainerPermission, containerAliasingExprTE, structTT, memberIndex)
             }
-//            case PackTT(_, underlyingStruct@StructTT(_)) => {
-//              val reinterpretedStructTT = CoordT(expectedContainerOwnership, expectedContainerPermission, underlyingStruct)
-//              val reinterpretedContainerAliasingExprTE = TemplarReinterpretTE(containerAliasingExprTE, reinterpretedStructTT)
-//              loadFromStruct(
-//                temputs, range, expectedContainerPermission, reinterpretedContainerAliasingExprTE, underlyingStruct, memberIndex)
-//            }
-//            case TupleTT(_, underlyingStruct@StructTT(_)) => {
-//              val reinterpretedStructTT = CoordT(expectedContainerOwnership, expectedContainerPermission, underlyingStruct)
-//              val reinterpretedContainerAliasingExprTE = TemplarReinterpretTE(containerAliasingExprTE, reinterpretedStructTT)
-//              loadFromStruct(
-//                temputs, range, expectedContainerPermission, reinterpretedContainerAliasingExprTE, underlyingStruct, memberIndex)
-//            }
             case staticSizedArrayT@StaticSizedArrayTT(size, RawArrayTT(elementType, _, _)) => {
               loadFromStaticSizedArray(range, staticSizedArrayT, expectedContainerCoord, expectedContainerOwnership, expectedContainerPermission, containerAliasingExprTE, memberIndex)
             }

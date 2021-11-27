@@ -107,20 +107,6 @@ case class SimpleSolverState[Rule, Rune, Conclusion](
       .keySet
       .headOption
   }
-//
-//  def getConclusion(rune: Int): Option[Conclusion] = {
-//    runeToConclusion(rune)
-//  }
-//
-//  def getConclusions(): Array[Option[Conclusion]] = {
-//    runeToConclusion.toArray
-//  }
-//
-//  def userifyConclusions(): Stream[(Rune, Conclusion)] = {
-//    userRuneToCanonicalRune.toStream.flatMap({ case (userRune, canonicalRune) =>
-//      runeToConclusion(canonicalRune).map(userRune -> _)
-//    })
-//  }
 
   override def getUnsolvedRules(): Vector[Rule] = {
     openRuleToPuzzleToRunes.keySet.toVector.map(rules)

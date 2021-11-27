@@ -120,10 +120,6 @@ object TemplarErrorHumanizer {
         case CantImplStruct(range, struct) => {
             ": Can't extend a struct: (" + struct + ")"
         }
-//        case NotEnoughToSolveError(range, conclusions, unknownRunes) => {
-//          humanizeFailedSolve(codeMap, range, IncompleteSolve(conclusions, unknownRunes.toSet))
-////          ": Couldn't solve unknowns: " + unknownRunes.toVector.sortBy({ case CodeRuneS(_) => 0 case _ => 1 }) + " but do know:\n" + conclusions.map({ case (k, v) => "  " + k + ": " + v + "\n" }).mkString("")
-//        }
         case TemplarSolverError(range, failedSolve) => {
           val (text, lineBegins) =
             SolverErrorHumanizer.humanizeFailedSolve(
@@ -239,14 +235,6 @@ object TemplarErrorHumanizer {
       case CodeVarNameT(n) => n
     }
   }
-
-//  private def getFile(potentialBanner: IPotentialBanner): FileCoordinate = {
-//    getFile(potentialBanner.banner)
-//  }
-
-//  private def getFile(banner: FunctionBanner2): FileCoordinate = {
-//    banner.originFunction.map(getFile).getOrElse(FileCoordinate.internal(-76))
-//  }
 
   private def getFile(functionA: FunctionA): FileCoordinate = {
     functionA.range.file
@@ -462,9 +450,6 @@ object TemplarErrorHumanizer {
         "λ:" + humanizePos(codeMap, codeLocation)
       }
       case LambdaCitizenNameT(template) => humanizeName(codeMap, template) + "<>"
-//      case TupleNameT(members) => {
-//        "Tup<" + members.map(CoordTemplata).map(humanizeTemplata(codeMap, _)).mkString(", ") + ">"
-//      }
       case FunctionNameT(humanName, templateArgs, parameters) => {
         humanName +
           (if (templateArgs.nonEmpty) {

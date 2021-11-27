@@ -229,15 +229,6 @@ case class IfTE(
 
 }
 
-// case class IfLet2
-// This would check whether:
-// - The nullable condition expression evaluates to not null, or
-// - The interface condition expression evaluates to the specified sub-citizen
-// It would have to use a new chunk of PatternTemplar which produces an
-// expression which is a ton of if-statements and try-cast things and assigns
-// variables, and puts the given body inside all that.
-
-
 // The block is expected to return a boolean (false = stop, true = keep going).
 // The block will probably contain an If2(the condition, the body, false)
 case class WhileTE(block: BlockTE) extends ReferenceExpressionTE {
@@ -272,9 +263,6 @@ case class ReturnTE(
 
 
 }
-
-
-//case class CurriedFuncH(closureExpr: ExpressionH, funcName: String) extends ExpressionH
 
 // when we make a closure, we make a struct full of pointers to all our variables
 // and the first element is our parent closure
@@ -327,15 +315,6 @@ case class ConsecutorTE(exprs: Vector[ReferenceExpressionTE]) extends ReferenceE
 
 
 }
-
-//case class PackTE(
-//    elements: Vector[ReferenceExpressionTE],
-//    resultReference: CoordT,
-//    packType: PackTT) extends ReferenceExpressionTE {
-//  override def hashCode(): Int = vcurious()
-//  override def resultRegister = ReferenceResultT(resultReference)
-//
-//}
 
 case class TupleTE(
     elements: Vector[ReferenceExpressionTE],
@@ -456,21 +435,6 @@ case class ArgLookupTE(
 
 }
 
-//case class PackLookup2(packExpr: Expression2, index: Int) extends Expression2 {
-//  override def resultType: BaseType2 = {
-//    // A pack can never be in a changeable variable, and so can't be an addressible, so will always
-//    // be a pointer.
-//    // (it can be in a final variable, when its spawned by pattern matching)
-//    TypeUtils.softDecay(packExpr.resultType).innerType match {
-//      case PackT2(memberTypes, underlyingStructRef) => memberTypes(index)
-//    }
-//  }
-//
-//  def all[T](func: PartialFunction[Ast2, T]): Vector[T] = {
-//    Vector(this).collect(func) ++ packExpr.all(func)
-//  }
-//}
-
 case class StaticSizedArrayLookupTE(
   range: RangeS,
     arrayExpr: ReferenceExpressionTE,
@@ -544,29 +508,14 @@ case class AddressMemberLookupTE(
     variability: VariabilityT) extends AddressExpressionTE {
   override def hashCode(): Int = vcurious()
   override def result = AddressResultT(resultType2)
-
-
 }
-
-//
-//case class FunctionLookup2(prototype: Prototype2) extends ReferenceExpression2 {
-//  override def resultRegister: ReferenceRegister2 =
-//    ReferenceRegister2(Coord(Raw, prototype.functionType))
-//
-//  def all[T](func: PartialFunction[Queriable2, T]): Vector[T] = {
-//    Vector(this).collect(func) ++ prototype.all(func)
-//  }
-//}
 
 case class InterfaceFunctionCallTE(
     superFunctionHeader: FunctionHeaderT,
     resultReference: CoordT,
     args: Vector[ReferenceExpressionTE]) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
-  override def result: ReferenceResultT =
-    ReferenceResultT(resultReference)
-
-
+  override def result: ReferenceResultT = ReferenceResultT(resultReference)
 }
 
 case class ExternFunctionCallTE(
@@ -603,13 +552,6 @@ case class FunctionCallTE(
 
 
 }
-//case class TupleTE(
-//    elements: Vector[ReferenceExpressionTE],
-//    tupleReference: CoordT) extends ReferenceExpressionTE {
-//  override def resultRegister = ReferenceResultT(tupleReference)
-//
-//
-//}
 
 // A templar reinterpret is interpreting a type as a different one which is hammer-equivalent.
 // For example, a pack and a struct are the same thing to hammer.
@@ -815,20 +757,6 @@ case class DestroyTE(
 
 
 }
-
-//// If source was an own and target is borrow, that's a lend
-//// (thats the main purpose of this)
-//case class Alias2(expr: ReferenceExpression2, targetOwnership: Ownership) extends ReferenceExpression2 {
-//  override def resultRegister: ReferenceRegister2 = {
-//    expr.resultRegister.reference match {
-//      case Coord(_, innerType) => ReferenceRegister2(Coord(targetOwnership, innerType))
-//    }
-//  }
-//
-//  def all[T](func: PartialFunction[Queriable2, T]): Vector[T] = {
-//    Vector(this).collect(func) ++ expr.all(func)
-//  }
-//}
 
 object referenceExprResultStructName {
   def unapply(expr: ReferenceExpressionTE): Option[String] = {

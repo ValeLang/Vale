@@ -72,45 +72,6 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     middleLayer.getOrEvaluateFunctionForBanner(runedEnv, temputs, callRange, function)
   }
 
-//  // Preconditions:
-//  // - either no closured vars, or they were already added to the env.
-//  // - env is the environment the templated function was made in
-//  def evaluateTemplatedFunctionFromCallForHeader(
-//      // The environment the function was defined in.
-//      nearEnv: BuildingFunctionEnvironmentWithClosureds,
-//      temputs: Temputs,
-//      callRange: RangeS,
-//      argTypes2: Vector[Coord]):
-//  (FunctionHeader2) = {
-//    val function = nearEnv.function
-//    // Check preconditions
-//    checkClosureConcernsHandled(nearEnv)
-//    vassert(nearEnv.function.isTemplate)
-//
-//    val maybeInferredTemplatas =
-//      inferTemplar.inferFromArgCoords(
-//        nearEnv,
-//        temputs,
-//        function.identifyingRunes,
-//        function.templateRules,
-//        function.runeToType,
-//        function.localRunes,
-//        function.params.map(_.pattern),
-//        function.maybeRetCoordRune,
-//        callRange,
-//        Vector.empty,
-//        argTypes2.map(arg => ParamFilter(arg, None)))
-//    val InferSolveSuccess(inferredTemplatas) = maybeInferredTemplatas
-//
-//    val runedEnv =
-//      addRunedDataToNearEnv(
-//        nearEnv,
-//        function.identifyingRunes,
-//        inferredTemplatas.templatasByRune)
-//
-//    middleLayer.getOrEvaluateFunctionForHeader(runedEnv, temputs, callRange, function)
-//  }
-
   // We would want only the prototype instead of the entire header if, for example,
   // we were calling the function. This is necessary for a recursive function like
   // fn main():Int{main()}
@@ -202,46 +163,6 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
         runedEnv, temputs, callRange, function)
     (EvaluateFunctionSuccess(banner))
   }
-
-//  // Preconditions:
-//  // - either no closured vars, or they were already added to the env.
-//  def evaluateTemplatedFunctionFromNonCallForHeader(
-//      // The environment the function was defined in.
-//      nearEnv: BuildingFunctionEnvironmentWithClosureds,
-//      temputs: Temputs):
-//  (FunctionHeader2) = {
-//    val function = nearEnv.function
-//    // Check preconditions
-//
-//    checkClosureConcernsHandled(nearEnv)
-//    vassert(nearEnv.function.isTemplate)
-//
-//    vassert(nearEnv.function.identifyingRunes.size == Vector.empty.size);
-//
-//    val result =
-//      inferTemplar.inferFromExplicitTemplateArgs(
-//        nearEnv,
-//        temputs,
-//        function.identifyingRunes,
-//        function.templateRules,
-//        function.runeToType,
-//        function.localRunes,
-//        function.params.map(_.pattern),
-//        callRange,
-//        function.maybeRetCoordRune,
-//        Vector.empty)
-//    val inferences =
-//      result match {
-//        case isf @ InferSolveFailure(_, _, _, _, _, _, _) => {
-//          vfail("Couldnt figure out template args! Cause:\n" + isf)
-//        }
-//        case InferSolveSuccess(i) => i
-//      }
-//
-//    val runedEnv = addRunedDataToNearEnv(nearEnv, Vector.empty, inferences.templatasByRune)
-//
-//    middleLayer.getOrEvaluateFunctionForHeader(runedEnv, temputs, function)
-//  }
 
   // Preconditions:
   // - either no closured vars, or they were already added to the env.

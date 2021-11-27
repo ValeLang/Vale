@@ -39,12 +39,6 @@ case object PrototypeTypePR extends ITypePR
 case object KindTypePR extends ITypePR
 case object RegionTypePR extends ITypePR
 case object CitizenTemplateTypePR extends ITypePR
-//case object StructTypePR extends ITypePR
-//case object SequenceTypePR extends ITypePR
-//case object ArrayTypePR extends ITypePR
-//case object CallableTypePR extends ITypePR
-//case object InterfaceTypePR extends ITypePR
-
 
 object RulePUtils {
 

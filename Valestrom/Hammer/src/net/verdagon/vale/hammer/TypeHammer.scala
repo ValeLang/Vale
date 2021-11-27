@@ -36,24 +36,6 @@ object TypeHammer {
       memberH)
   }
 
-//
-//  def translateType(hinputs: Hinputs, hamuts: HamutsBox, tyype: BaseType2):
-//  (BaseTypeH) = {
-//    tyype match {
-//      case Addressible2(innerType) => {
-//        val (pointerH) = translatePointer(hinputs, hamuts, currentFunctionHeader, innerType)
-//        (AddressibleH(pointerH))
-//      }
-//      case Coord(ownership, innerType) => {
-//        val (pointerH) = translate(hinputs, hamuts, currentFunctionHeader, innerType)
-//        (PointerH(ownership, pointerH))
-//      }
-//    }
-//  }
-
-  //  def translatePointer(tyype: Coord): PointerH = {
-  //  }
-
   def translateKind(hinputs: Hinputs, hamuts: HamutsBox, tyype: KindT):
   (KindH) = {
     tyype match {
@@ -67,18 +49,10 @@ object TypeHammer {
 
       case i @ InterfaceTT(_) => StructHammer.translateInterfaceRef(hinputs, hamuts, i)
 
-//      // A Closure2 is really just a struct ref under the hood. The dinstinction is only meaningful
-//      // to the Templar.
-//      case OrdinaryClosure2(_, handleStructRef, prototype) => translate(hinputs, hamuts, currentFunctionHeader, handleStructRef)
-//      case TemplatedClosure2(_, handleStructRef, terry) => translate(hinputs, hamuts, currentFunctionHeader, handleStructRef)
       case OverloadSet(_, _, understructTT) => {
         StructHammer.translateStructRef(hinputs, hamuts, understructTT)
       }
 
-      // A PackT2 is really just a struct ref under the hood. The dinstinction is only meaningful
-      // to the Templar.
-//      case p @ PackTT(_, underlyingStruct) => StructHammer.translateStructRef(hinputs, hamuts, underlyingStruct)
-//      case p @ TupleTT(_, underlyingStruct) => StructHammer.translateStructRef(hinputs, hamuts, underlyingStruct)
       case a @ StaticSizedArrayTT(_, _) => translateStaticSizedArray(hinputs, hamuts, a)
       case a @ RuntimeSizedArrayTT(_) => translateRuntimeSizedArray(hinputs, hamuts, a)
     }
@@ -123,13 +97,6 @@ object TypeHammer {
   (Vector[ReferenceH[KindH]]) = {
     references2.map(translateReference(hinputs, hamuts, _))
   }
-
-//  def checkReference(baseTypeH: BaseTypeH): ReferenceH = {
-//    baseTypeH match {
-//      case AddressibleH(_) => vfail("Expected a pointer, was an addressible!")
-//      case p @ ReferenceH(_, _) => p
-//    }
-//  }
 
   def checkConversion(expected: ReferenceH[KindH], actual: ReferenceH[KindH]): Unit = {
     if (actual != expected) {

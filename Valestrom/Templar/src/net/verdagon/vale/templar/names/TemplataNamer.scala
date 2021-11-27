@@ -48,20 +48,11 @@ object TemplataNamer {
       case ClosureParamNameT() => "ᛋ"
       case MagicParamNameT(magicParamNumber) => "ᛞ" + magicParamNumber
       case CodeVarNameT(name) => "ᛗ" + name
-      //      case CodeRune2(name) => "ᛝ" + name
-      //      case ImplicitRune2(name) => "ᚻ" + name
-      //      case MemberRune2(memberIndex) => "ᛒ" + memberIndex
-      //      case MagicImplicitRune2(magicParamIndex) => "ᛥ" + magicParamIndex
-      //      case ReturnRune2() => "ᚱ"
       case FunctionNameT(humanName, templateArgs, parameters) => "ᚫ" + humanName + stringifyTemplateArgs(templateArgs) + stringifyParametersArgs(parameters)
-      //      case LambdaName2(codeLocation, templateArgs, parameters) => "ᛈ" + codeLocation + stringifyTemplateArgs(templateArgs) + stringifyParametersArgs(parameters)
-      //      case CitizenName2(humanName, templateArgs) => "ᛟ" + humanName + stringifyTemplateArgs(templateArgs)
       case CitizenNameT(humanName, templateArgs) => "ᛘ" + humanName + stringifyTemplateArgs(templateArgs)
       case LambdaCitizenTemplateNameT(codeLocation) => "ᛊ" + forLoc(codeLocation)
       case AnonymousSubstructNameT(thing, what) => vimpl()
       case AnonymousSubstructLambdaTemplateNameT(codeLocation) => "ᛘ" + forLoc(codeLocation)
-//      case TupleNameT(members) => "tup#"
-//      case DropNameT(args, coord) => "drop*" + getReferenceIdentifierName(coord)
       case x => vimpl(x.toString)
     }).mkString(".")
   }

@@ -563,14 +563,6 @@ object ParserVonifier {
           Vector(
             VonMember("rune", vonifyName(rune))))
       }
-//      case NullablePT(range, inner) => {
-//        VonObject(
-//          "NullableT",
-//          None,
-//          Vector(
-//            VonMember("range", vonifyRange(range)),
-//            VonMember("inner", vonifyTemplex(inner))))
-//      }
       case InterpretedPT(range, ownership, permission, inner) => {
         VonObject(
           "InterpretedT",
@@ -1028,14 +1020,4 @@ object ParserVonifier {
         VonMember("range", vonifyRange(range)),
         VonMember("args", VonArray(None, args.map(vonifyTemplex).toVector))))
   }
-
-//
-//  def vonifyThing(thing: Thing): VonObject = {
-//    val Thing(range) = thing
-//    VonObject(
-//      "Thing",
-//      None,
-//      Vector(
-//        VonMember("range", vonifyRange(range))))
-//  }
 }

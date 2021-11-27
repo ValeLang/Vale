@@ -21,10 +21,6 @@ class StructTemplarMiddle(
     delegate: IStructTemplarDelegate) {
   val core = new StructTemplarCore(opts, profiler, ancestorHelper, delegate)
 
-  def addBuiltInStructs(env: PackageEnvironment[INameT], temputs: Temputs): Unit = {
-    core.addBuiltInStructs(env, temputs)
-  }
-
   def getStructRef(
     structOuterEnv: IEnvironment,
     temputs: Temputs,
@@ -72,14 +68,6 @@ class StructTemplarMiddle(
       core.makeInterface(
         localEnv, temputs, interfaceA, coercedFinalTemplateArgs2);
 
-// Now that we have an env, we can use it for the internal methods.
-//      interfaceS.internalMethods.foldLeft(temputs)({
-//        case (function) => {
-//          FunctionTemplar.evaluateOrdinaryLightFunctionFromNonCallForTemputs(
-//            temputs, FunctionTemplata(localEnv, function))
-//        }
-//      })
-
     (interfaceDefinition2.getRef)
   }
 
@@ -93,14 +81,4 @@ class StructTemplarMiddle(
   (StructTT, MutabilityT, FunctionTemplata) = {
     core.makeClosureUnderstruct(containingFunctionEnv, temputs, name, functionS, members)
   }
-
-//  // Makes a struct to back a pack or tuple
-//  def makeSeqOrPackUnderstruct(
-//    env: PackageEnvironment[INameT],
-//    temputs: Temputs,
-//    memberTypes2: Vector[CoordT],
-//    name: ICitizenNameT):
-//  (StructTT, MutabilityT) = {
-//    core.makeSeqOrPackUnderstruct(env, temputs, memberTypes2, name)
-//  }
 }

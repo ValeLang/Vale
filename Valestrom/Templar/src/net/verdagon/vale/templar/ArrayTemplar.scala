@@ -203,9 +203,6 @@ class ArrayTemplar(
     size: Int,
     type2: CoordT):
   (StaticSizedArrayTT) = {
-//    val tupleMutability =
-//      StructTemplarCore.getCompoundTypeMutability(temputs, Vector(type2))
-//    val tupleMutability = Templar.getMutability(temputs, type2.kind)
     val rawArrayT2 = RawArrayTT(type2, mutability, variability)
 
     temputs.getStaticSizedArrayType(size, rawArrayT2) match {
@@ -228,11 +225,7 @@ class ArrayTemplar(
             staticSizedArrayType.name,
             TemplatasStore(staticSizedArrayType.name, Map(), Map())
               .addEntries(
-                Vector(
-//                  FunctionTemplateNameT(CallTemplar.DROP_FUNCTION_NAME, CodeLocationS.internal(-74)) ->
-//                    FunctionEnvEntry(globalEnv.structDropMacro.makeImplicitDropFunction(SelfNameS(), RangeS.internal(-74))),
-//                  SelfNameT() -> TemplataEnvEntry(CoordTemplata(staticSizedArrayRefType2))
-                )))
+                Vector()))
         temputs.declareKind(staticSizedArrayType)
         temputs.declareKindEnv(staticSizedArrayType, arrayEnv)
 
@@ -267,11 +260,7 @@ class ArrayTemplar(
             runtimeSizedArrayType.name,
             TemplatasStore(runtimeSizedArrayType.name, Map(), Map())
               .addEntries(
-                Vector(
-//                  FunctionTemplateNameT(CallTemplar.DROP_FUNCTION_NAME, CodeLocationS.internal(-73)) ->
-//                    FunctionEnvEntry(globalEnv.structDropMacro.makeImplicitDropFunction(SelfNameS(), RangeS.internal(-73))),
-//                  SelfNameT() -> TemplataEnvEntry(CoordTemplata(runtimeSizedArrayRefType2))
-                )))
+                Vector()))
         temputs.declareKind(runtimeSizedArrayType)
         temputs.declareKindEnv(runtimeSizedArrayType, arrayEnv)
 

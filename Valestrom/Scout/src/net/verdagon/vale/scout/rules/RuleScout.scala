@@ -31,9 +31,6 @@ object RuleScout {
     val evalRange = (range: Range) => Scout.evalRange(env.file, range)
 
     rulex match {
-      //      case PackPR(elements) => {
-      //        PackSR(translateRulexes(env, lidb.child(), elements))
-      //      }
       case EqualsPR(range, leftP, rightP) => {
         val rune = ImplicitRuneS(lidb.child().consume())
         builder +=
@@ -175,11 +172,6 @@ object RuleScout {
       case CoordTypePR => CoordTemplataType
       case CoordListTypePR => PackTemplataType(CoordTemplataType)
       case KindTypePR => KindTemplataType
-      //      case StructTypePR => KindTypeSR
-      //      case SequenceTypePR => KindTypeSR
-      //      case ArrayTypePR => KindTypeSR
-      //      case CallableTypePR => KindTypeSR
-      //      case InterfaceTypePR => KindTypeSR
     }
   }
 

@@ -173,11 +173,6 @@ object Scout {
 }
 
 class Scout(globalOptions: GlobalOptions) {
-
-//  val unnamedParamNamePrefix = "__param_"
-//  val unrunedParamOverrideRuneSuffix = "Override"
-//  val unnamedMemberNameSeparator = "_mem_"
-
   def scoutProgram(fileCoordinate: FileCoordinate, parsed: FileP): Result[ProgramS, ICompileErrorS] = {
     try {
       val structsS = parsed.topLevelThings.collect({ case TopLevelStructP(s) => s }).map(scoutStruct(fileCoordinate, _));
@@ -234,21 +229,13 @@ class Scout(globalOptions: GlobalOptions) {
 
     RuleScout.translateRulexes(implEnv, lidb.child(), ruleBuilder, runeToExplicitType, templateRulesP)
 
-//    // We gather all the runes from the scouted rules to be consistent with the function scout.
-//    val allRunesS = PredictorEvaluator.getAllRunes(identifyingRunes, userRulesS, Vector.empty, None)
-
-////    val ruleBuilder = ScoutRuleBuilder()
-//    userRulesS.foreach(ruleBuilder.translateRule( _))
-
     val structRune =
       PatternScout.translateMaybeTypeIntoRune(
         implEnv,
         lidb.child(),
         Scout.evalRange(file, range),
         ruleBuilder,
-        runeToExplicitType,
-        Some(struct),
-        true)
+        Some(struct))
 
     val interfaceRune =
       PatternScout.translateMaybeTypeIntoRune(
@@ -256,40 +243,13 @@ class Scout(globalOptions: GlobalOptions) {
         lidb.child(),
         Scout.evalRange(file, range),
         ruleBuilder,
-        runeToExplicitType,
-        Some(interface),
-        true)
-
-//    val (tentativeRuneToCanonicalRune, world) =
-//      Optimizer.optimize(
-//        ruleBuilder.builder,
-//        (inputRule: IRulexSR[Int, RangeS, IValueSR, IValueSR]) => TemplarPuzzler.apply(inputRule))
-//
-//    val structRune = tentativeRuneToCanonicalRune(tentativeStructRune)
-//    val interfaceRune = tentativeRuneToCanonicalRune(tentativeInterfaceRune)
-//
-//    val Conclusions(knowableValueRunes, _) =
-//      PredictorEvaluator.solve(
-//        evalRange(file, range),
-//        ruleBuilder.runeSToTentativeRune,
-//        tentativeRuneToCanonicalRune,
-//        ruleBuilder.tentativeRuneToType,
-//        world)
-//    val localRunesS = allRunesS
-//    val isTemplate = knowableValueRunes != allRunesS
-//
-//    val runeSToCanonicalRune = ruleBuilder.runeSToTentativeRune.mapValues(tentativeRune => tentativeRuneToCanonicalRune(tentativeRune))
+        Some(interface))
 
     ImplS(
       Scout.evalRange(file, range),
       implName,
       identifyingRunes,
       ruleBuilder.toArray,
-//      runeSToCanonicalRune,
-//      knowableValueRunes.map(runeSToCanonicalRune) ++
-//        (if (isTemplate) Vector.empty else Vector(structRune, interfaceRune)),
-//      localRunesS.map(runeSToCanonicalRune) ++ Vector(structRune, interfaceRune),
-//      isTemplate,
       runeToExplicitType.toMap,
       structRune,
       interfaceRune)
@@ -408,13 +368,7 @@ class Scout(globalOptions: GlobalOptions) {
       predictedMutability,
       runeToPredictedType,
       maybePredictedType,
-//      knowableValueRunesS,
-//      identifyingRunesS,
-//      localRunesS,
-//      maybePredictedType,
-//      isTemplate,
       rulesS,
-//      runeSToCanonicalRune,
       membersS)
   }
 
@@ -465,10 +419,6 @@ class Scout(globalOptions: GlobalOptions) {
       maybeIdentifyingRunes
         .toVector.flatMap(_.runes).map(_.name)
         .map({ case NameP(range, identifyingRuneName) => RuneUsage(Scout.evalRange(file, range), CodeRuneS(identifyingRuneName)) })
-//    val runesFromRules =
-//      RulePUtils.getOrderedRuneDeclarationsFromRulexesWithDuplicates(rulesP)
-//        .map(identifyingRuneName => CodeRuneS(identifyingRuneName))
-//    val userDeclaredRunes = (identifyingRunes ++ runesFromRules).toSet
     val interfaceEnv = Environment(file, None, interfaceFullName, explicitIdentifyingRunes.map(_.rune).toSet)
 
     RuleScout.translateRulexes(interfaceEnv, lidb.child(), ruleBuilder, runeToExplicitType, rulesP)

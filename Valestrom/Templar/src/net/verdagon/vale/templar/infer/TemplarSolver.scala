@@ -72,16 +72,9 @@ trait IInfererDelegate[Env, State] {
     templateArgs: Vector[ITemplata]):
   (KindT)
 
-  //  def getPackKind(env: Env, state: State, members: Vector[Coord]): (PackT2, Mutability)
-
   def getStaticSizedArrayKind(env: Env, state: State, mutability: MutabilityT, variability: VariabilityT, size: Int, element: CoordT): (StaticSizedArrayTT)
 
   def getRuntimeSizedArrayKind(env: Env, state: State, type2: CoordT, arrayMutability: MutabilityT, arrayVariability: VariabilityT): RuntimeSizedArrayTT
-
-//  def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT): (Option[Int])
-//
-//  def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRefT):
-//  (Set[InterfaceTT])
 
   def getAncestors(temputs: State, descendant: KindT, includeSelf: Boolean):
   (Set[KindT])
@@ -101,10 +94,6 @@ trait IInfererDelegate[Env, State] {
     actualCitizenRef: KindT,
     expectedCitizenTemplata: ITemplata):
   Boolean
-
-
-  //  // Turns eg Flamethrower:int into Flamethrower. Firefly just stays Firefly.
-//  def getTemplate(state: State, tyype: CoordT): Option[ITemplata]
 }
 
 class TemplarSolver[Env, State](
@@ -169,8 +158,6 @@ class TemplarSolver[Env, State](
       case LiteralSR(_, rune, literal) => Array(Array())
       case AugmentSR(_, resultRune, literals, innerRune) => Array(Array(innerRune.rune), Array(resultRune.rune))
       case RepeaterSequenceSR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(Array(resultRune.rune), Array(mutabilityRune.rune, variabilityRune.rune, sizeRune.rune, elementRune.rune))
-//      case ManualSequenceSR(_, resultRune, elements) => Array(Array(resultRune.rune), elements.map(_.rune))
-//      case CoordListSR(_, resultRune, elements) => Array(Array(resultRune.rune), elements.map(_.rune))
       // See SAIRFU, this will replace itself with other rules.
       case CoordSendSR(_, senderRune, receiverRune) => Array(Array(senderRune.rune), Array(receiverRune.rune))
       case CoordIsaSR(range, senderRune, receiverRune) => Array(Array(senderRune.rune, receiverRune.rune))
@@ -523,10 +510,6 @@ class TemplarSolver[Env, State](
           }
         }
       }
-//      case ManualSequenceSR(_, resultRune, elements) => {
-//
-//      }
-//      case CoordListSR(_, resultRune, elements) => vimpl()
       case RefListCompoundMutabilitySR(range, resultRune, coordListRune) => {
         val CoordListTemplata(coords) = vassertSome(stepState.getConclusion(coordListRune.rune))
         if (coords.forall(_.ownership == ShareT)) {

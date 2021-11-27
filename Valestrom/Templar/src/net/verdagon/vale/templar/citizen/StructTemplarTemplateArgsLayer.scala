@@ -23,10 +23,6 @@ class StructTemplarTemplateArgsLayer(
     delegate: IStructTemplarDelegate) {
   val middle = new StructTemplarMiddle(opts, profiler, ancestorHelper, delegate)
 
-  def addBuiltInStructs(env: PackageEnvironment[INameT], temputs: Temputs): Unit = {
-    middle.addBuiltInStructs(env, temputs)
-  }
-
   def getStructRef(
     temputs: Temputs,
     callRange: RangeS,
@@ -149,10 +145,4 @@ class StructTemplarTemplateArgsLayer(
   (StructTT, MutabilityT, FunctionTemplata) = {
     middle.makeClosureUnderstruct(containingFunctionEnv, temputs, name, functionS, members)
   }
-
-//  // Makes a struct to back a pack or tuple
-//  def makeSeqOrPackUnerstruct(env: PackageEnvironment[INameT], temputs: Temputs, memberTypes2: Vector[CoordT], name: ICitizenNameT):
-//  (StructTT, MutabilityT) = {
-//    middle.makeSeqOrPackUnderstruct(env, temputs, memberTypes2, name)
-//  }
 }

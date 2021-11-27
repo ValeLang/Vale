@@ -203,14 +203,6 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
       }
       case LookupPE(NameP(range, templateName), Some(TemplateArgsP(_, templateArgs))) => {
 
-//        val ruleState = RuleStateBox(RuleState(vimpl(), 0))
-//        val ruleBuilder = mutable.ArrayBuffer[IRulexSR]()
-//        val userDeclaredRunes = stackFrame0.parentEnv.allUserDeclaredRunes()
-//        val argRunes =
-//          templateArgs.map(
-//            TemplexScout.translateTemplex(
-//              stackFrame0.parentEnv, lidb.child(), ruleBuilder, _))
-
         val result =
           OutsideLookupResult(
             evalRange(range),
@@ -443,19 +435,6 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
         val patternS =
           PatternScout.translatePattern(
             stackFrame1, lidb.child(), ruleBuilder, runeToExplicitType, patternP)
-//
-//        val (tentativeRuneToCanonicalRune, world) =
-//          Optimizer.optimize(
-//            ruleBuilder.builder,
-//            (inputRule: IRulexSR[Int, RangeS, IValueSR, IValueSR]) => TemplarPuzzler.apply(inputRule))
-//
-//        val Conclusions(knowableValueRunesS, predictedruneToType) =
-//          PredictorEvaluator.solve(
-//            evalRange(range),
-//            ruleBuilder.runeSToTentativeRune,
-//            tentativeRuneToCanonicalRune,
-//            ruleBuilder.tentativeRuneToType,
-//            world)
 
         val declarationsFromPattern = VariableDeclarations(PatternScout.getParameterCaptures(patternS))
 
@@ -581,13 +560,4 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
       }
     }
   }
-
-//  private def flattenScramble(elements: Vector[Expression1]): Vector[Expression1] = {
-//    elements.map((expr: Expression1) => {
-//      expr match {
-//        case Scramble1(elementElements) => flattenScramble(elementElements)
-//        case _ => Vector(expr)
-//      }
-//    }).foldLeft(Vector[Expression1]())(_ ++ _)
-//  }
 }

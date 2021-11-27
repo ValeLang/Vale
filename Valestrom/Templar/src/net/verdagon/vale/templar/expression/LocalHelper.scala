@@ -112,18 +112,6 @@ class LocalHelper(
     }
   }
 
-//  def maybeSoftLoad(
-//    fate: FunctionEnvironmentBox,
-//    range: RangeS,
-//    expr2: Expression2,
-//    specifiedTargetOwnership: Option[Ownership]):
-//  (ReferenceExpression2) = {
-//    expr2 match {
-//      case e : ReferenceExpression2 => (e)
-//      case e : AddressExpression2 => softLoad(fate, range, e, specifiedTargetOwnership)
-//    }
-//  }
-
   def softLoad(
       fate: FunctionEnvironmentBox,
       loadRange: RangeS,
@@ -203,29 +191,12 @@ class LocalHelper(
       case FloatT() => ShareT
       case StrT() => ShareT
       case VoidT() => ShareT
-      //      case FunctionT2(_, _) => Raw
-//      case PackTT(_, understruct2) => {
-//        val mutability = Templar.getMutability(temputs, understruct2)
-//        if (mutability == MutableT) ConstraintT else ShareT
-//      }
-//      case TupleTT(_, understruct2) => {
-//        val mutability = Templar.getMutability(temputs, understruct2)
-//        if (mutability == MutableT) ConstraintT else ShareT
-//      }
       case StaticSizedArrayTT(_, RawArrayTT(_, mutability, _)) => {
         if (mutability == MutableT) ConstraintT else ShareT
       }
       case RuntimeSizedArrayTT(RawArrayTT(_, mutability, _)) => {
         if (mutability == MutableT) ConstraintT else ShareT
       }
-      //      case TemplatedClosure2(_, structTT, _) => {
-      //        val mutability = Templar.getMutability(temputs, structTT)
-      //        if (mutability == Mutable) Borrow else Share
-      //      }
-      //      case OrdinaryClosure2(_, structTT, _) => {
-      //        val mutability = Templar.getMutability(temputs, structTT)
-      //        if (mutability == Mutable) Borrow else Share
-      //      }
       case sr2 @ StructTT(_) => {
         val mutability = Templar.getMutability(temputs, sr2)
         if (mutability == MutableT) ConstraintT else ShareT

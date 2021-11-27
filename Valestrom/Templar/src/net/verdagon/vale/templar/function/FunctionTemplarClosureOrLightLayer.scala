@@ -113,21 +113,6 @@ class FunctionTemplarClosureOrLightLayer(
       newEnv, temputs, callRange, alreadySpecifiedTemplateArgs, argTypes2)
   }
 
-//  def evaluateTemplatedLightFunctionFromNonCallForHeader(
-//      ourEnv: IEnvironment,
-//      temputs: Temputs,
-//    function: FunctionA,
-//      explicitTemplateArgs: Vector[ITemplata]):
-//  (FunctionHeader2) = {
-//    vassert(function.isTemplate)
-//    vassert(function.identifyingRunes.size == explicitTemplateArgs.size);
-//    checkNotClosure(function)
-//
-//    val newEnv = makeEnvWithoutClosureStuff(ourEnv, function)
-//    ordinaryOrTemplatedLayer.evaluateTemplatedFunctionFromNonCallForHeader(
-//      newEnv, temputs)
-//  }
-
   def evaluateTemplatedLightFunctionFromCallForPrototype2(
       ourEnv: IEnvironment,
       temputs: Temputs,
@@ -299,20 +284,6 @@ class FunctionTemplarClosureOrLightLayer(
     ordinaryOrTemplatedLayer.evaluateTemplatedFunctionFromCallForBanner(
         newEnv, temputs, callRange, alreadySpecifiedTemplateArgs, paramFilters)
   }
-
-//  def scanOrdinaryInterfaceMember(
-//    env1: IEnvironment,
-//    temputs: Temputs,
-//    interfaceExplicitTemplateArgs: Vector[ITemplata],
-//    function: FunctionA):
-//  (FunctionHeader2) = {
-//
-//    vassert(!function.isTemplate)
-//
-//    val newEnv = makeEnvWithoutClosureStuff(env1, function)
-//    ordinaryOrTemplatedLayer.scanOrdinaryInterfaceMember(
-//      newEnv, temputs, interfaceExplicitTemplateArgs)
-//  }
 
   private def makeEnvWithoutClosureStuff(
     outerEnv: IEnvironment,

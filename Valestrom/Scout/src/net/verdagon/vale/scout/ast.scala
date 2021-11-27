@@ -78,13 +78,7 @@ case class StructS(
     predictedRuneToType: Map[IRuneS, ITemplataType],
     maybePredictedType: Option[ITemplataType],
 
-//    knowableRunes: Set[IRuneS],
-//    identifyingRunes: Vector[IRuneS],
-//    localRunes: Set[IRuneS],
-//    maybePredictedType: Option[ITypeSR],
-//    isTemplate: Boolean,
     rules: Array[IRulexSR],
-//    runeSToCanonicalRune: collection.Map[IRuneS, Int],
     members: Vector[IStructMemberS]) {
   override def hashCode(): Int = vcurious()
 
@@ -127,20 +121,10 @@ case class InterfaceS(
   predictedRuneToType: Map[IRuneS, ITemplataType],
   maybePredictedType: Option[ITemplataType],
 
-//  knowableRunes: Set[IRuneS],
-//  identifyingRunes: Vector[IRuneS],
-//  localRunes: Set[IRuneS],
-//  isTemplate: Boolean,
   rules: Array[IRulexSR],
-//  runeSToCanonicalRune: collection.Map[IRuneS, Int],
   // See IMRFDI
   internalMethods: Vector[FunctionS]) {
   override def hashCode(): Int = vcurious()
-//  vassert(isTemplate == identifyingRunes.nonEmpty)
-
-//  internalMethods.foreach(internalMethod => {
-//    vassert(!internalMethod.isTemplate)
-//  })
 }
 
 case class ImplS(
@@ -149,10 +133,6 @@ case class ImplS(
     name: ImplDeclarationNameS,
     userSpecifiedIdentifyingRunes: Vector[RuneUsage],
     rules: Array[IRulexSR],
-//    runeSToCanonicalRune: collection.Map[IRuneS, Int],
-//    knowableRunes: Set[Int],
-//    localRunes: Set[Int],
-//    isTemplate: Boolean,
   runeToExplicitType: Map[IRuneS, ITemplataType],
     structKindRune: RuneUsage,
     interfaceKindRune: RuneUsage) {
@@ -240,32 +220,16 @@ case class FunctionS(
     identifyingRunes: Vector[RuneUsage],
     runeToPredictedType: Map[IRuneS, ITemplataType],
 
-//    // Runes that we can know without looking at args or template args.
-//    knowableRunes: Set[IRuneS],
-//    // This is not necessarily only what the user specified, the compiler can add
-//    // things to the end here, see CCAUIR.
-//    identifyingRunes: Vector[IRuneS],
-//    // Runes that we need the args or template args to indirectly figure out.
-////    localRunes: Set[IRuneS],
-//
-//    maybePredictedType: Option[ITypeSR],
-
     params: Vector[ParameterS],
 
     // We need to leave it an option to signal that the compiler can infer the return type.
     maybeRetCoordRune: Option[RuneUsage],
 
-//    isTemplate: Boolean,
     rules: Array[IRulexSR],
     body: IBodyS
 ) {
   override def hashCode(): Int = vcurious()
   vpass()
-
-  // Make sure we have to solve all identifying runes
-//  vassert((identifyingRunes.toSet -- localRunes).isEmpty)
-
-//  vassert(isTemplate == identifyingRunes.nonEmpty)
 
   body match {
     case ExternBodyS | AbstractBodyS | GeneratedBodyS(_) => {
@@ -290,29 +254,6 @@ case class FunctionS(
       case CodeBodyS(bodyS) => bodyS.closuredNames.nonEmpty
     }
   }
-
-  //  def orderedIdentifyingRunes: Vector[String] = {
-//    maybeUserSpecifiedIdentifyingRunes match {
-//      case Some(userSpecifiedIdentifyingRunes) => userSpecifiedIdentifyingRunes
-//      case None => {
-//        // Grab the ones from the patterns.
-//        // We don't use the ones from the return type because we won't identify a function
-//        // from its return type, see CIFFRT.
-//        params.map(_.pattern).flatMap(PatternSUtils.getDistinctOrderedRunesForPattern)
-//      }
-//    }
-//  }
-
-//  // This should start with the original runes from the FunctionP in the same order,
-//  // See SSRR.
-//  private def orderedRunes: Vector[String] = {
-//    (
-//      maybeUserSpecifiedIdentifyingRunes.getOrElse(Vector.empty) ++
-//      params.map(_.pattern).flatMap(PatternSUtils.getDistinctOrderedRunesForPattern) ++
-//      RuleSUtils.getDistinctOrderedRunesForRulexes(templateRules) ++
-//      maybeRetCoordRune.toVector
-//    ).distinct
-//  }
 }
 
 // A Denizen is a thing at the top level of a file, like structs, functions, impls, exports, etc.

@@ -7,10 +7,6 @@ import net.verdagon.vale.{PackageCoordinate, RangeS, vassert, vcurious, vimpl, v
 
 import scala.collection.immutable.List
 
-//trait IExpressionSE {
-//  def range: RangeS
-//}
-
 case class ProgramA(
     structs: Vector[StructA],
     interfaces: Vector[InterfaceA],
@@ -78,9 +74,7 @@ case class StructA(
     //   }
     maybePredictedMutability: Option[MutabilityP],
     tyype: ITemplataType,
-//    knowableRunes: Set[IRuneS],
     identifyingRunes: Vector[RuneUsage],
-//    localRunes: Set[IRuneS],
     runeToType: Map[IRuneS, ITemplataType],
     rules: Vector[IRulexSR],
     members: Vector[IStructMemberS]
@@ -105,14 +99,6 @@ case class StructA(
     case _ => vwat()
   }
 }
-
-//case class StructMemberA(
-//    range: RangeS,
-//    name: String,
-//    variability: VariabilityP,
-//    typeRune: RuneUsage) {
-//  override def hashCode(): Int = vcurious()
-//}
 
 case class ImplA(
   range: RangeS,
@@ -149,14 +135,6 @@ case class ExportAsA(
     return range == that.range && exportedName == that.exportedName;
   }
 }
-
-//case class AliasA(
-//  codeLocation: CodeLocation,
-//  rules: RuneWorldSolverState,
-//  runeToType: Map[String, ITemplataType],
-//  aliasRune: String,
-//  aliaseeRune: String) { override def hashCode(): Int = vcurious() }
-
 
 case class InterfaceA(
     range: RangeS,
@@ -227,15 +205,6 @@ object structName {
 
 // Also remember, if a parameter has no name, it can't be varying.
 
-
-//sealed trait ICitizenAttributeA
-//sealed trait IFunctionAttributeA
-//case class ExternA(packageCoord: PackageCoordinate) extends IFunctionAttributeA with ICitizenAttributeA { override def hashCode(): Int = vcurious() }
-//case class ExportA(packageCoord: PackageCoordinate) extends IFunctionAttributeA with ICitizenAttributeA { override def hashCode(): Int = vcurious() }
-//case object PureA extends IFunctionAttributeA with ICitizenAttributeA
-//case object UserFunctionA extends IFunctionAttributeA // Whether it was written by a human. Mostly for tests right now.
-
-
 // Underlying class for all XYZFunctionS types
 case class FunctionA(
     range: RangeS,
@@ -297,22 +266,3 @@ case class FunctionA(
     case _ => vwat()
   }
 }
-
-
-//case class ParameterA(
-//    // Note the lack of a VariabilityP here. The only way to get a variability is with a Capture.
-//    pattern: AtomSP) {
-//  override def hashCode(): Int = vcurious()
-//}
-
-//case class CaptureA(local: LocalA) { override def hashCode(): Int = vcurious() }
-
-//sealed trait IBodyS
-//case object ExternBodyS extends IBodyS
-//case object AbstractBodyS extends IBodyS
-//case class GeneratedBodyS(generatorId: String) extends IBodyS { override def hashCode(): Int = vcurious() }
-//case class CodeBodyS(bodyA: BodySE) extends IBodyS { override def hashCode(): Int = vcurious() }
-//
-//case class BFunctionA(
-//  origin: FunctionA,
-//  body: BodySE) { override def hashCode(): Int = vcurious() }

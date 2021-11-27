@@ -104,30 +104,6 @@ object ExpressionHammer {
         (expression, Vector.empty)
       }
 
-//      case PackTE(exprs, resultType, resultPackType) => {
-//        val (resultLines, deferreds) =
-//          translateExpressions(hinputs, hamuts, currentFunctionHeader, locals, exprs)
-//        val (underlyingStructRefH) =
-//          StructHammer.translateStructRef(hinputs, hamuts, resultPackType.underlyingStruct)
-//        val (resultReference) =
-//          TypeHammer.translateReference(hinputs, hamuts, resultType)
-//        vassert(resultReference.kind == underlyingStructRefH)
-//
-//        val structDefH = hamuts.structDefsByRef2(resultPackType.underlyingStruct)
-//        vassert(resultLines.size == structDefH.members.size)
-//        val newStructNode =
-//          NewStructH(
-//            resultLines,
-//            structDefH.members.map(_.name),
-//            resultReference.expectStructReference())
-//
-//        val newStructNodeAndDeferredsExprH =
-//            translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, newStructNode, deferreds)
-//
-//        // Export locals from inside the pack
-//        (newStructNodeAndDeferredsExprH, Vector.empty)
-//      }
-
       case ArrayLengthTE(arrayExpr2) => {
         val (resultLine, deferreds) =
           translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);

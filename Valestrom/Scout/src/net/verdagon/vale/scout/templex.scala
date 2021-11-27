@@ -74,7 +74,6 @@ case class CodeVarNameS(name: String) extends IVarNameS {
 }
 case class ConstructingMemberNameS(name: String) extends IVarNameS { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 case class RuneNameS(rune: IRuneS) extends INameS with IImpreciseNameS { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
-//case class DropNameS(packageCoordinate: PackageCoordinate) extends IFunctionDeclarationNameS { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 // We differentiate rune names from regular names, we scout out what's actually
 // a rune so we can inform the templar. The templar wants to know so it can know

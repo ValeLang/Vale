@@ -89,21 +89,6 @@ class CallTemplar(
 
         (FunctionCallTE(prototype, argsExprs2))
       }
-//      case ft @ FunctionT2(_, _) => {
-//        vcurious() // do we ever use this? do we ever deal with function pointers?
-//
-//        val argsExprs2 =
-//          convertHelper.convertExprs(
-//            fate.snapshot, temputs, givenArgsExprs2, ft.paramTypes)
-//
-//        val argsPointerTypes2 = argsExprs2.map(_.resultRegister.expectReference().reference)
-//
-//        val callableType = callableExpr.resultRegister.reference.kind.asInstanceOf[FunctionT2]
-//
-//        checkTypes(temputs, callableType.paramTypes, argsPointerTypes2, exact = true);
-//
-//        (FunctionPointerCall2(callableExpr, argsExprs2))
-//      }
     }
   }
 
@@ -208,10 +193,6 @@ class CallTemplar(
 
     val mutability = Templar.getMutability(temputs, citizenRef)
     val ownership = if (mutability == MutableT) ConstraintT else ShareT
-//    val permission = if (mutability == Mutable) Readwrite else Readonly // See LHRSP
-//    if (givenCallableBorrowExpr2.resultRegister.reference.permission != Readwrite) {
-//      throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can only call readwrite callables! (LHRSP)"))
-//    }
     vassert(givenCallableBorrowExpr2.result.reference.ownership == ownership)
     val actualCallableExpr2 = givenCallableBorrowExpr2
 

@@ -83,26 +83,4 @@ class InterfaceDropMacro(overloadTemplar: OverloadTemplar) extends IOnInterfaceD
       interfaceName.addStep(FunctionTemplateNameT(CallTemplar.VIRTUAL_DROP_FUNCTION_NAME, CodeLocationS.internal(-77))) ->
         FunctionEnvEntry(virtualDropFunctionA))
   }
-
-//  def getImmInterfaceDestructor(
-//    temputs: Temputs,
-//    env: IEnvironment,
-//    interfaceTT: InterfaceTT):
-//  PrototypeT = {
-//    vassert(Templar.getMutability(temputs, interfaceTT) == ImmutableT)
-//
-//    val prototype =
-//      overloadTemplar.findFunction(
-//        env,
-//        temputs,
-//        RangeS.internal(-1677),
-//        ImmInterfaceDestructorImpreciseNameS(),
-//        Vector.empty,
-//        Array.empty,
-//        Vector(ParamFilter(CoordT(ShareT, ReadonlyT, interfaceTT), None)),
-//        Vector.empty,
-//        true)
-//    prototype
-//  }
-
 }

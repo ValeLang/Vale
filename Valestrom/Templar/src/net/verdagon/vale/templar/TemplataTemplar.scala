@@ -93,10 +93,6 @@ class TemplataTemplar(
               case (Some(distance)) => (distance)
             }
           }
-//          case (PackTT(Vector(), _), VoidT()) => vfail("figure out void<->emptypack")
-//          case (VoidT(), PackTT(Vector(), _)) => vfail("figure out void<->emptypack")
-//          case (PackTT(Vector(), _), _) => return (None)
-//          case (_, PackTT(Vector(), _)) => return (None)
           case (_ : CitizenRefT, IntT(_) | BoolT() | StrT() | FloatT()) => return (None)
           case (IntT(_) | BoolT() | StrT() | FloatT(), _ : CitizenRefT) => return (None)
           case (_, RuntimeSizedArrayTT(_)) => return None
@@ -137,11 +133,6 @@ class TemplataTemplar(
         // go from readwrite to readonly, that would be nice.
         case (ReadwriteT, ReadonlyT) => return None
         case (ReadwriteT, ReadwriteT) => 0
-        //        case (Readonly, ExclusiveReadwrite) => 1
-        //        case (Readwrite, ExclusiveReadwrite) => 1
-        //        case (ExclusiveReadwrite, Readonly) => 1
-        //        case (ExclusiveReadwrite, Readonly) => 1
-        //        case (ExclusiveReadwrite, ExclusiveReadwrite) => 0
       }
 
     (Some(TypeDistance(upcastDistance, ownershipDistance, permissionDistance)))
@@ -197,10 +188,6 @@ class TemplataTemplar(
             case (Some(_)) =>
           }
         }
-//        case (PackTT(Vector(), _), VoidT()) => vfail("figure out void<->emptypack")
-//        case (VoidT(), PackTT(Vector(), _)) => vfail("figure out void<->emptypack")
-//        case (PackTT(Vector(), _), _) => return (false)
-//        case (_, PackTT(Vector(), _)) => return (false)
         case (_ : CitizenRefT, IntT(_) | BoolT() | StrT() | FloatT()) => return (false)
         case (IntT(_) | BoolT() | StrT() | FloatT(), _ : CitizenRefT) => return (false)
         case _ => {
@@ -231,9 +218,6 @@ class TemplataTemplar(
       case a @ StaticSizedArrayTT(_, RawArrayTT(_, mutability, variability)) => {
         CoordT(ownership, permission, a)
       }
-//      case a @ PackTT(_, underlyingStruct) => {
-//        CoordT(ownership, permission, a)
-//      }
       case s @ StructTT(_) => {
         CoordT(ownership, permission, s)
       }
@@ -300,19 +284,6 @@ class TemplataTemplar(
       coerce(temputs, range, KindTemplata(arrayKindTemplata), expectedType)
     (templata)
   }
-
-  //  def getPackKind(
-  //    env: IEnvironment,
-  //    temputs: Temputs,
-  //    members: Vector[Coord],
-  //    expectedType: ITemplataType):
-  //  (ITemplata) = {
-  //    val (uncoercedTemplata, _) =
-  //      outergetPackKind(env, temputs, members)
-  //    val templata =
-  //      coerce(temputs, KindTemplata(uncoercedTemplata), expectedType)
-  //    (templata)
-  //  }
 
   def getStaticSizedArrayKind(
     env: IEnvironment,
@@ -434,61 +405,6 @@ class TemplataTemplar(
     }
   }
 
-//  // This is useful for checking if something (a) is equal to something that came from a name (b).
-//  def uncoercedTemplataEquals(env: IEnvironment, temputs: Temputs, a: ITemplata, b: ITemplata, bExpectedType: ITemplataType): Boolean = {
-//    // When we consider a new templata, add it to one of these two following matches, then be VERY careful and make sure
-//    // to consider it against every other type in the other match.
-//    a match {
-//      case KindTemplata(_) =>
-//      case CoordTemplata(_) =>
-//      case ArrayTemplateTemplata() =>
-//      case _ => vimpl()
-//    }
-//    b match {
-//      case KindTemplata(_) =>
-//      case CoordTemplata(_) =>
-//      case StructTemplata(_, _) =>
-//      case InterfaceTemplata(_, _) =>
-//      case ArrayTemplateTemplata() =>
-//      case _ => vimpl()
-//    }
-//
-//    (a, b) match {
-//      case (KindTemplata(_) | CoordTemplata(_), KindTemplata(_) | CoordTemplata(_)) => {
-//        a == coerce(temputs, RangeS.internal(-1345), b, bExpectedType)
-//      }
-//      case (KindTemplata(actualStructRef @ StructTT(_)), expectedStructTemplata @ StructTemplata(_, _)) => {
-//        vassert(bExpectedType == KindTemplataType)
-//        citizenMatchesTemplata(actualStructRef, expectedStructTemplata, Vector.empty)
-//      }
-//      case (CoordTemplata(CoordT(ShareT | OwnT, actualPermission, actualStructRef @ StructTT(_))), expectedStructTemplata @ StructTemplata(_, _)) => {
-//        vassert(bExpectedType == CoordTemplataType)
-//        val mutability = Templar.getMutability(temputs, actualStructRef)
-//        val expectedPermission = if (mutability == MutableT) ReadwriteT else ReadonlyT
-//        val permissionMatches = expectedPermission == actualPermission
-//        permissionMatches && citizenMatchesTemplata(actualStructRef, expectedStructTemplata, Vector.empty)
-//      }
-//      case (KindTemplata(actualInterfaceRef @ InterfaceTT(_)), expectedInterfaceTemplata @ InterfaceTemplata(_, _)) => {
-//        vassert(bExpectedType == KindTemplataType)
-//        citizenMatchesTemplata(actualInterfaceRef, expectedInterfaceTemplata, Vector.empty)
-//      }
-//      case (CoordTemplata(CoordT(ShareT | OwnT, actualPermission, actualInterfaceRef @ InterfaceTT(_))), expectedInterfaceTemplata @ InterfaceTemplata(_, _)) => {
-//        vassert(bExpectedType == CoordTemplataType)
-//        val mutability = Templar.getMutability(temputs, actualInterfaceRef)
-//        val expectedPermission = if (mutability == MutableT) ReadwriteT else ReadonlyT
-//        val permissionMatches = expectedPermission == actualPermission
-//        permissionMatches && citizenMatchesTemplata(actualInterfaceRef, expectedInterfaceTemplata, Vector.empty)
-//      }
-//      case (ArrayTemplateTemplata(), ArrayTemplateTemplata()) => true
-//      case (KindTemplata(RuntimeSizedArrayTT(_)), ArrayTemplateTemplata()) => true
-//      case (CoordTemplata(CoordT(ShareT | OwnT, ReadonlyT, RuntimeSizedArrayTT(_))), ArrayTemplateTemplata()) => true
-//      case (ArrayTemplateTemplata(), ArrayTemplateTemplata()) => true
-//      case (ArrayTemplateTemplata(), KindTemplata(RuntimeSizedArrayTT(_))) => true
-//      case (ArrayTemplateTemplata(), CoordTemplata(CoordT(ShareT | OwnT, ReadonlyT, RuntimeSizedArrayTT(_)))) => true
-//      case _ => false
-//    }
-//  }
-
   def citizenIsFromTemplate(actualCitizenRef: CitizenRefT, expectedCitizenTemplata: ITemplata): Boolean = {
     val citizenTemplateFullName =
       expectedCitizenTemplata match {
@@ -508,23 +424,6 @@ class TemplataTemplar(
     }
     citizenTemplateFullName.last == actualCitizenRef.fullName.last.template
   }
-
-//  def citizenMatchesTemplata(actualCitizenRef: CitizenRefT, expectedCitizenTemplata: ITemplata, expectedCitizenTemplateArgs: Vector[ITemplata]): (Boolean) = {
-//    vassert(expectedCitizenTemplateArgs.isEmpty) // implement
-//
-//    if (!citizenIsFromTemplate(actualCitizenRef, expectedCitizenTemplata)) {
-//      return false
-//    }
-//
-//    if (actualCitizenRef.fullName.last.templateArgs.nonEmpty) {
-//      // This function doesnt support template args yet (hence above assert)
-//      // If the actualCitizenRef has template args, it sure doesnt match the template when its made with no args.
-//      return false
-//    }
-//
-//    return true
-//  }
-
 }
 
 case class TypeDistance(upcastDistance: Int, ownershipDistance: Int, permissionDistance: Int) {

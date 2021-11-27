@@ -47,15 +47,6 @@ object VonHammer {
       externNameToKind,
     ) = paackage
 
-//    val exports =
-//      exportNameToFullName.map({ case (moduleName, exportNameToExportee) =>
-//        exportNameToExportee.map({ case (exportName, (packageCoord, fullName)) =>
-//          (moduleName, (exportName, packageCoord, fullName))
-//        })
-//      })
-//
-//    expo
-
     VonObject(
       "Package",
       None,
@@ -248,14 +239,6 @@ object VonHammer {
   def vonifyCoord(coord: ReferenceH[KindH]): IVonData = {
     val ReferenceH(ownership, location, permission, kind) = coord
 
-//    val vonDataWithoutDebugStr =
-//      VonObject(
-//        "Ref",
-//        None,
-//        Vector(
-//          VonMember("ownership", vonifyOwnership(ownership)),
-//          VonMember("location", vonifyLocation(location)),
-//          VonMember("kind", vonifyKind(kind))))
     VonObject(
       "Ref",
       None,
@@ -264,13 +247,6 @@ object VonHammer {
         VonMember("location", vonifyLocation(location)),
         VonMember("permission", vonifyPermission(permission)),
         VonMember("kind", vonifyKind(kind))))
-//        VonMember(
-//          "debugStr",
-//          VonStr(
-//            MetalPrinter.print(vonDataWithoutDebugStr)
-//              // Because all the quotes and backslashes are annoying when debugging
-//              .replace('"'.toString, "")
-//              .replace("\\", "")))))
   }
 
   def vonifyEdge(edgeH: EdgeH): IVonData = {
@@ -1012,13 +988,6 @@ object VonHammer {
           None,
           Vector())
       }
-//      case ImmConcreteDestructorNameT(kind) => {
-//        VonObject(
-//          "ImmConcreteDestructorName2",
-//          None,
-//          Vector(
-//            VonMember("kind", vonifyKind(TypeHammer.translateKind(hinputs, hamuts, kind)))))
-//      }
       case ImplDeclareNameT(codeLocation) => {
         VonObject(
           "ImplDeclareName",
@@ -1218,36 +1187,6 @@ object VonHammer {
                   .map(vonifyCoord)
                   .toVector))))
       }
-//      case DropNameT(kind) => {
-//        VonObject(
-//          "ImmInterfaceDestructorName",
-//          None,
-//          Vector(
-//            VonMember(
-//              "kind",
-//              vonifyKind(TypeHammer.translateKind(hinputs, hamuts, kind)))))
-//      }
-//      case ImmInterfaceDestructorNameT(templateArgs, parameters) => {
-//        VonObject(
-//          "ImmInterfaceDestructorName",
-//          None,
-//          Vector(
-//            VonMember(
-//              "templateArgs",
-//              VonArray(
-//                None,
-//                templateArgs
-//                  .map(templateArg => vonifyTemplata(hinputs, hamuts, templateArg))
-//                  .toVector)),
-//            VonMember(
-//              "parameters",
-//              VonArray(
-//                None,
-//                parameters
-//                  .map(templateArg => TypeHammer.translateReference(hinputs, hamuts, templateArg))
-//                  .map(vonifyCoord)
-//                  .toVector))))
-//      }
       case FunctionTemplateNameT(humanName, codeLocation) => {
         VonObject(
           "FunctionTemplateName",
@@ -1290,20 +1229,6 @@ object VonHammer {
                   .map(templateArg => vonifyTemplata(hinputs, hamuts, templateArg))
                   .toVector))))
       }
-//      case TupleNameT(members) => {
-//        VonObject(
-//          "Tup",
-//          None,
-//          Vector(
-//            VonMember(
-//              "members",
-//              VonArray(
-//                None,
-//                members
-//                  .map(coord => TypeHammer.translateReference(hinputs, hamuts, coord))
-//                  .map(vonifyCoord)
-//                  .toVector))))
-//      }
       case LambdaCitizenNameT(name) => {
         VonObject(
           "LambdaCitizenName",
@@ -1317,7 +1242,6 @@ object VonHammer {
           None,
           Vector(
             VonMember(humanName, VonStr(humanName))))
-//            VonMember("codeLocation", vonifyCodeLocation2(codeLocation))))
       }
       case AnonymousSubstructNameT(template, callables) => {
         VonObject(
@@ -1341,68 +1265,6 @@ object VonHammer {
           None,
           Vector())
       }
-//      case CodeRuneS(name) => {
-//        VonObject(
-//          "CodeRune",
-//          None,
-//          Vector(
-//            VonMember("name", VonStr(name))))
-//      }
-//      case ImplicitRuneS(parentName, name) => {
-//        VonObject(
-//          "ImplicitRune",
-//          None,
-//          Vector(
-//            VonMember("parentName", translateName(hinputs, hamuts, parentName)),
-//            VonMember("name", VonInt(name))))
-//      }
-//      case LetImplicitRuneS(codeLocation, name) => {
-//        VonObject(
-//          "LetImplicitRune",
-//          None,
-//          Vector(
-//            VonMember("codeLocation", vonifyCodeLocation2(codeLocation))))
-//      }
-//      case MemberRuneS(memberIndex) => {
-//        VonObject(
-//          "MemberRune",
-//          None,
-//          Vector(
-//            VonMember("memberIndex", VonInt(memberIndex))))
-//      }
-//      case MagicImplicitRuneS(codeLocation) => {
-//        VonObject(
-//          "MagicImplicitRune",
-//          None,
-//          Vector(
-//            VonMember("codeLocation", vonifyCodeLocation2(codeLocation))))
-//      }
-//      case ReturnRuneS() => {
-//        VonObject(
-//          "ReturnRune",
-//          None,
-//          Vector())
-//      }
-//      case SolverKindRuneS(paramRune) => {
-//        VonObject(
-//          "SolverKindRune",
-//          None,
-//          Vector(
-//            VonMember("paramRune", translateName(hinputs, hamuts, paramRune))))
-//      }
-//      case ExplicitTemplateArgRuneS(index) => {
-//        VonObject(
-//          "ExplicitTemplateArgRune",
-//          None,
-//          Vector(
-//            VonMember("index", VonInt(index))))
-//      }
-//      case AnonymousSubstructParentInterfaceRuneS() => {
-//        VonObject(
-//          "AnonymousSubstructParentInterfaceRune",
-//          None,
-//          Vector())
-//      }
     }
   }
 

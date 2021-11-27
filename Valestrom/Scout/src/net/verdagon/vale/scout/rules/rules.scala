@@ -218,32 +218,6 @@ case class RepeaterSequenceSR(
   override def runeUsages: Array[RuneUsage] = Array(resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune)
 }
 
-//case class ManualSequenceSR(
-//  range: RangeS,
-//  resultRune: RuneUsage,
-//  elements: Array[RuneUsage]
-//) extends IRulexSR {
-//  override def hashCode(): Int = vcurious()
-//  override def runeUsages: Array[RuneUsage] = Array(resultRune) ++ elements
-//}
-
-//case class ReceiveSR(
-//  range: RangeS,
-//  receiverRune: RuneUsage,
-//  senderRune: RuneUsage
-//) extends IRulexSR {
-//  override def hashCode(): Int = vcurious()
-//  override def runeUsages: Array[RuneUsage] = Array(receiverRune, senderRune)
-//}
-//case class ImplementsSR(
-//  range: RangeS,
-//  subRune: RuneUsage,
-//  superRune: RuneUsage
-//) extends IRulexSR {
-//  override def hashCode(): Int = vcurious()
-//  override def runeUsages: Array[RuneUsage] = Array(subRune, superRune)
-//}
-
 sealed trait ILiteralSL {
   def getType(): ITemplataType
 }

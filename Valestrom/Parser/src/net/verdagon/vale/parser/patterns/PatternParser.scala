@@ -100,9 +100,5 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
 
   private[parser] def runeOrKindPattern: Parser[ITemplexPT] = {
     templex
-//    callableKindPattern |
-//        repeaterSequenceKindPattern |
-//        manualSequenceKindPattern |
-//        kindPatternAtomic
   }
 }

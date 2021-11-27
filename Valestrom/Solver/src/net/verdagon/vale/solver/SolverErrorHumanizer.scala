@@ -35,10 +35,6 @@ object SolverErrorHumanizer {
 
     val verbose = true
     val rulesToSummarize = result.unsolvedRules.filter(!getRuleRange(_).file.isInternal)
-//    // To describe a rule means to print it out specifically, instead of just showing the
-//    // line and all the runes involved.
-//    val builtinRulesToDescribe = if (verbose) rulesToSummarize else rulesToSummarize.filter(getRuleRange(_).file.isInternal)
-//    val userRulesToDescribe = if (verbose) rulesToSummarize else rulesToSummarize.filter(!getRuleRange(_).file.isInternal)
 
     val allLineBeginLocs =
       rulesToSummarize.flatMap(rule => {
@@ -75,13 +71,8 @@ object SolverErrorHumanizer {
                 val numSpaces = range.begin.offset - lineBegin
                 val numArrows = range.end.offset - range.begin.offset
                 val runeName = humanizeRune(rune)
-//                (if (runeName.length + 4 < numSpaces) {
-//                  "  " + runeName + ": " +
-//                    repeatStr(" ", numSpaces - runeName.length - 4) + repeatStr("^", numArrows) + " "
-//                } else {
                   repeatStr(" ", numSpaces) + repeatStr("^", numArrows) + " " +
                     runeName + ": " +
-//                }) +
                   incompleteConclusions.get(rune).map(humanizeTemplata(codeMap, _)).getOrElse("(unknown)") +
                   "\n"
               }).mkString("")
@@ -112,19 +103,6 @@ object SolverErrorHumanizer {
           ""
         })
 
-//    val textFromBuiltinRules =
-//      builtinRulesToDescribe.map(rule => {
-//        ruleToString(rule) + "\n"
-//      }).mkString("") +
-//        builtinRulesToDescribe
-//          .flatMap(rule => getRuneUsages(rule))
-//          .map(_._1)
-//          .distinct
-//          .map(rune => {
-//            "  " + humanizeRune(rune) + ": " +
-//              result.incompleteConclusions.get(rune).map(humanizeTemplata(codeMap, _)).getOrElse("(unknown)") + "\n"
-//          })
-//          .mkString("")
     val text = errorBody + "\n" + textFromUserRules + textFromSteps
     (text, allLineBeginLocs.toVector)
   }

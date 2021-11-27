@@ -101,21 +101,6 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
       opts,
       profiler,
       new IInfererDelegate[IEnvironment, Temputs] {
-//        override def getTemplate(
-//          temputs: Temputs,
-//          tyype: CoordT):
-//        Option[FullNameT[CitizenTemplateNameT]] = {
-//          tyype.kind match {
-//            case IntT(_) | BoolT() | StrT() | VoidT() | FloatT() => None
-//            case StaticSizedArrayTT(_, _) => Some(StaticSizedArrayTemplateTemplata())
-//            case RuntimeSizedArrayTT(_) => Some(rsana())
-//            case StructTT(fullName @ FullNameT(_, _, CitizenNameT(humanName, _))) => {
-//              Some(fullName.copy(last = CitizenTemplateNameT(humanName)))
-//            }
-//            case other => vimpl(other)
-//          }
-//        }
-
         override def lookupTemplata(
           env: IEnvironment,
           temputs: Temputs,
@@ -178,10 +163,6 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
           })
         }
 
-        //      override def getPackKind(env: IEnvironment, state: Temputs, members: Vector[Coord]): (PackT2, Mutability) = {
-        //        PackTemplar.makePackType(env.globalEnv, state, members)
-        //      }
-
         override def getStaticSizedArrayKind(env: IEnvironment, state: Temputs, mutability: MutabilityT, variability: VariabilityT, size: Int, element: CoordT): (StaticSizedArrayTT) = {
           profiler.childFrame("InferTemplarDelegate.getStaticSizedArrayKind", () => {
             arrayTemplar.getStaticSizedArrayKind(env.globalEnv, state, mutability, variability, size, element)
@@ -215,18 +196,6 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
             structTemplar.getStructRef(state, callRange, templata, templateArgs)
           })
         }
-
-//        override def getAncestorInterfaceDistance(temputs: Temputs, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT):
-//        (Option[Int]) = {
-//          profiler.childFrame("InferTemplarDelegate.getAncestorInterfaceDistance", () => {
-//            ancestorHelper.getAncestorInterfaceDistance(temputs, descendantCitizenRef, ancestorInterfaceRef)
-//          })
-//        }
-//        override def getAncestorInterfaces(temputs: Temputs, descendantCitizenRef: CitizenRefT): (Set[InterfaceTT]) = {
-//          profiler.childFrame("InferTemplarDelegate.getAncestorInterfaces", () => {
-//            ancestorHelper.getAncestorInterfaces(temputs, descendantCitizenRef)
-//          })
-//        }
 
         override def kindIsFromTemplate(
           temputs: Temputs,
@@ -738,10 +707,6 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
             })
             .toVector
         val reachableImmKindToDestructor = reachableImmKinds.zip(reachableImmKinds.map(temputs.findImmDestructor)).toMap
-//        val reachableDestructors = categorizedDestructors.getOrElse(true, Vector.empty)
-//        val unreachableDestructors = categorizedDestructors.getOrElse(false, Vector.empty)
-//        unreachableDestructors.foreach(f => debugOut("Shaking out unreachable: " + f))
-//        reachableDestructors.foreach(f => debugOut("Including: " + f))
 
         val hinputs =
           Hinputs(
@@ -863,53 +828,6 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
   def isRootInterface(interfaceA: InterfaceA): Boolean = {
     interfaceA.attributes.exists({ case ExportS(_) => true case _ => false })
   }
-
-//  // (Once we add packages, this will probably change)
-//  def addInterfaceEnvironmentEntries(
-//    env0: PackageEnvironment[PackageTopLevelNameT],
-//    interfaceA: InterfaceA
-//  ): PackageEnvironment[PackageTopLevelNameT] = {
-//    val interfaceEnvEntry = InterfaceEnvEntry(interfaceA)
-//
-//    val TopLevelCitizenDeclarationNameS(humanName, rangeS) = interfaceA.name
-//    val name = CitizenTemplateNameT(humanName, NameTranslator.translateCodeLocation(rangeS.begin))
-//
-//    val env1 = env0.addEntry(opts.useOptimization, name, interfaceEnvEntry)
-//    val env2 =
-//      env1.addUnevaluatedFunction(
-//        opts.useOptimization,
-//        structTemplar.getInterfaceConstructor(interfaceA))
-//
-//    // Once we have sub-interfaces and sub-structs, we could recursively call this function.
-//    // We'll put our interfaceA onto the top of the list of every entry from the sub-struct/sub-interface.
-//
-//    env2
-//  }
-
-//  // (Once we add packages, this will probably change)
-//  def makeStructEnvironmentEntries(
-//    env0: PackageEnvironment[PackageTopLevelNameT],
-//    structA: StructA
-//  ): PackageEnvironment[PackageTopLevelNameT] = {
-//    val structEnvEntry = StructEnvEntry(structA)
-//
-//    val env1 = env0.addEntry(opts.useOptimization, NameTranslator.translateNameStep(structA.name), structEnvEntry)
-//    val env2 =
-//      env1.addUnevaluatedFunction(
-//        opts.useOptimization,
-//        structTemplar.getConstructor(structA))
-//
-//    // To add once we have methods inside structs:
-//    //    val env4 =
-//    //      structA.internalMethods.foldLeft(env2)({
-//    //        case (env3, internalMethodA) => EnvironmentUtils.addFunction(env3, Some(interfaceEnvEntry), internalMethodA)
-//    //      })
-//
-//    // Once we have sub-interfaces and sub-structs, we could recursively call this function.
-//    // We'll put our structA onto the top of the list of every entry from the sub-struct/sub-interface.
-//
-//    env2
-//  }
 
   // Returns the number of overrides stamped
   // This doesnt actually stamp *all* overrides, just the ones we can immediately

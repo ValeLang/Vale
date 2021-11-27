@@ -14,27 +14,6 @@ import net.verdagon.vale._
 
 import scala.collection.immutable.{List, Range}
 
-//// Fate is short for Function State. It tracks how many magic params have been used.
-//// This is similar to StackFrame, which tracks all the locals that have been declared.
-//
-//// Maybe we should combine them?
-//// As of this writing, we use fate to keep track of magic params, and StackFrame at the
-//// block level receives (via return type) declarations from the individual expressions
-//// to accumulate them itself.
-//case class ScoutFate(private val magicParams: Set[MagicParamNameS]) {
-//  def addMagicParam(magicParam: MagicParamNameS): ScoutFate = {
-//    ScoutFate(magicParams + magicParam)
-//  }
-//  def countMagicParams() = magicParams.size
-//}
-//
-//case class ScoutFateBox(var fate: ScoutFate) {
-//  def addMagicParam(codeLocation: MagicParamNameS): Unit = {
-//    fate = fate.addMagicParam(codeLocation)
-//  }
-//  def countMagicParams(): Int = fate.countMagicParams()
-//}
-
 class FunctionScout(scout: Scout) {
   val expressionScout =
     new ExpressionScout(
@@ -44,14 +23,6 @@ class FunctionScout(scout: Scout) {
         }
       }
     )
-
-//  // All closure structs start with this
-//  val CLOSURE_STRUCT_NAME = "__Closure:"
-//  // In a closure's environment, we also have this. This lets us easily know
-//  // what the StructRef for a given closure is.
-//  val CLOSURE_STRUCT_ENV_ENTRY_NAME = "__Closure"
-//  // Name of anonymous substructs. They're more identified by their CodeLocation though.
-//  val ANONYMOUS_SUBSTRUCT_NAME = "__AnonymousSubstruct"
 
   def scoutTopLevelFunction(file: FileCoordinate, functionP: FunctionP): FunctionS = {
     val FunctionP(
@@ -285,16 +256,6 @@ class FunctionScout(scout: Scout) {
         .map(pattern1 => VariableDeclarations(PatternScout.getParameterCaptures(pattern1)))
         .foldLeft(closureDeclaration)(_ ++ _)
 
-//    val functionBodyStackFrame =
-//      StackFrame(
-//        parentStackFrame.file,
-//        lambdaName,
-//        functionBodyEnv,
-//        Some(parentStackFrame),
-//        // One might expect to hand in paramDeclarations here, but we don't because we want them to be
-//        // not in this block, but
-//        noDeclarations)
-
     val (body1, variableUses, lambdaMagicParamNames) =
       scoutBody(
         functionEnv,
@@ -378,13 +339,8 @@ class FunctionScout(scout: Scout) {
         translateFunctionAttributes(parentStackFrame.file, attrsP),
         identifyingRunes,
         runeToExplicitType.toMap,
-//        knowableValueRunes,
-//        identifyingRunes,b
-//        localRunes,
-//        maybePredictedType,
         totalParams,
         maybeRetCoordRune,
-//        isTemplate,
         ruleBuilder.toArray,
         CodeBodyS(body1))
     (function1, variableUses)

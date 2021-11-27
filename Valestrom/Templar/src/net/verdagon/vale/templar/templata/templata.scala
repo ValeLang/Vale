@@ -64,18 +64,6 @@ case class FunctionTemplata(
 
   vpass()
 
-//  this match {
-//    case FunctionTemplata(
-//      env,
-//      FunctionA(_, ImmConcreteDestructorNameS(PackageCoordinate(_,Vector.empty)),_, _, _, _, _, _, _, _, _, _))
-//    if env.fullName == FullName2(PackageCoordinate.TEST_TLD,Vector.empty,PackageTopLevelName2()) => vfail()
-//    case _ =>
-//  }
-//  this match {
-//    case FunctionTemplata(env, _) if env.fullName == FullName2(PackageCoordinate.TEST_TLD,Vector.empty,PackageTopLevelName2()) => vfail()
-//    case _ =>
-//  }
-
   // Make sure we didn't accidentally code something to include the function's name as
   // the last step.
   // This assertion is helpful now, but will false-positive trip when someone
@@ -94,54 +82,6 @@ case class FunctionTemplata(
 
   def debugString: String = outerEnv.fullName + ":" + function.name
 }
-
-//object FunctionTemplata {
-//  def make(globalEnv: GlobalEnvironment, namespaceName: FullNameT[INameT], function: FunctionA) = {
-//    // THIS IS TEMPORARY, it pulls in all global namespaces!
-//    // See https://github.com/ValeLang/Vale/issues/356
-//
-//    hello
-//    // when we pull something from the templatas store, we need to pair it with the environment
-//    // that created it. easy for structs and interfaces, those we can look up in the temputs.
-//    // but for functions... how do we do that.
-//    // an interesting case is closure functions, which are found in their struct's environment.
-//    // when we look those up, we need to pair it with that struct's environment.
-//    // or maybe i shouldnt be using the word environment, perhaps namespace.
-//    // we need to establish an environment with the struct's namespace?
-//    // and some namespaces can be anonymous.
-//    // i think?
-//
-//    val definingEnv = PackageEnvironment.makeTopLevelEnvironment(globalEnv, namespaceName)
-//    FunctionTemplata(definingEnv, function)
-//  }
-//}
-//
-//object StructTemplata {
-//  def make(globalEnv: GlobalEnvironment, namespaceName: FullNameT[INameT], struct: StructA) = {
-//    // THIS IS TEMPORARY, it pulls in all global namespaces!
-//    // See https://github.com/ValeLang/Vale/issues/356
-//    val definingEnv = PackageEnvironment.makeTopLevelEnvironment(globalEnv, namespaceName)
-//    StructTemplata(definingEnv, struct)
-//  }
-//}
-//
-//object InterfaceTemplata {
-//  def make(globalEnv: GlobalEnvironment, namespaceName: FullNameT[INameT], interface: InterfaceA) = {
-//    // THIS IS TEMPORARY, it pulls in all global namespaces!
-//    // See https://github.com/ValeLang/Vale/issues/356
-//    val definingEnv = PackageEnvironment.makeTopLevelEnvironment(globalEnv, namespaceName)
-//    InterfaceTemplata(definingEnv, interface)
-//  }
-//}
-//
-//object ImplTemplata {
-//  def make(globalEnv: GlobalEnvironment, namespaceName: FullNameT[INameT], impl: ImplA) = {
-//    // THIS IS TEMPORARY, it pulls in all global namespaces!
-//    // See https://github.com/ValeLang/Vale/issues/356
-//    val definingEnv = PackageEnvironment.makeTopLevelEnvironment(globalEnv, namespaceName)
-//    ImplTemplata(definingEnv, impl)
-//  }
-//}
 
 case class StructTemplata(
   // The paackage this interface was declared in.
@@ -173,12 +113,6 @@ case class StructTemplata(
     case _ =>
   }
 
-
-
-//  def getTemplateName(): INameT = {
-//    CitizenTemplateNameT(originStruct.name.name)//, NameTranslator.translateCodeLocation(originStruct.name.range.begin))
-//  }
-
   def debugString: String = env.fullName + ":" + originStruct.name
 }
 
@@ -193,12 +127,6 @@ case class InterfaceTemplata(
   // Has the name of the surrounding environment, does NOT include interface's name.
   // See TMRE for more on these environments.
   env: IEnvironment,
-//
-//  // The containers are the structs/interfaces/impls/functions that this thing is inside.
-//  // E.g. if LinkedList has a Node substruct, then the Node's templata will have one
-//  // container, the LinkedList.
-//  // See NTKPRR for why we have these parents.
-//  containers: Vector[IContainer],
 
   // This is the env entry that the interface came from originally. It has all the parent
   // structs and interfaces. See NTKPRR for more.
@@ -342,11 +270,3 @@ case class ExternFunctionTemplata(header: FunctionHeaderT) extends ITemplata {
 
 
 }
-
-//case class ExternImplTemplata(struct: StructTT, interface: InterfaceTT) extends ITemplata {
-//  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-//  override def order: Int = 1338
-//  override def tyype: ITemplataType = vfail()
-//
-//
-//}

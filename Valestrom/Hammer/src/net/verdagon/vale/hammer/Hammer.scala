@@ -226,21 +226,6 @@ object Hammer {
       vassert(immDestructorPrototypeH.params.head.kind == kindH)
     }})
 
-//    val fullNameToExportedNames = .groupBy(_._2).map({ case (k, v) => (k, v.keys.toVector) })
-//    if (fullNameToExportedNames.size != hamuts.exportedNameToFullName.size) {
-//      fullNameToExportedNames.foreach({ case (fullName, exportedName) =>
-//        if (hamuts.exportedNameToFullName(exportedName) != fullName) {
-//          vfail("Exported name conflict: " + exportedName + ": " + fullName + " and " + hamuts.exportedNameToFullName(exportedName))
-//        }
-//      })
-//
-//      // If we get here, something went very wrong
-//      hamuts.exportedNameToFullName.foreach({ case (exportedName, fullName) =>
-//        println(exportedName + ": " + fullName)
-//      })
-//      vfail()
-//    }
-
     val packageToInterfaceDefs = hamuts.interfaceDefs.groupBy(_._1.fullName.packageCoord)
     val packageToStructDefs = hamuts.structDefs.groupBy(_.fullName.packageCoordinate)
     val packageToFunctionDefs = hamuts.functionDefs.groupBy(_._1.fullName.packageCoord).mapValues(_.values.toVector)

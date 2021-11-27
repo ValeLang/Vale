@@ -99,10 +99,6 @@ class ScoutTests extends FunSuite with Matchers with Collector {
     val program1 = compile("interface IMoo<T> { fn blork(virtual this &IMoo, a T)void; }")
     val imoo = program1.lookupInterface("IMoo")
 
-    //    imoo.rules match {
-    //      case Vector(EqualsSR(_, RuneSR(_, ImplicitRuneS(_)), MutabilitySR(_, MutableP))) =>
-    //    }
-
     val blork = imoo.internalMethods.head
     blork.name match {
       case FunctionNameS("blork", _) =>

@@ -272,15 +272,6 @@ class SolverTests extends FunSuite with Matchers with Collector {
           Lookup(-1, "Firefly"),
           Literal(-2, "1337"),
           Call(-3, -1, -2)) // X = Firefly<A>
-//      val (numCanonicalRunes, userRuneToCanonicalRune, ruleExecutionOrder, canonicalRuneToIsSolved) =
-//        Planner.plan(
-//          rules,
-//          Set(),
-//          (rule: IRule) => rule.allRunes,
-//          puzzler,
-//          Set(), {
-//            case Equals(a, b) => (a, b)
-//          }: PartialFunction[IRule, (Long, Long)])
 
       val solverState =
         Solver.makeInitialSolverState[IRule, Long, String](
@@ -328,16 +319,6 @@ class SolverTests extends FunSuite with Matchers with Collector {
 
   private def expectSolveFailure(rules: IndexedSeq[IRule]):
   FailedSolve[IRule, Long, String, String] = {
-//    val (numCanonicalRunes, userRuneToCanonicalRune, ruleExecutionOrder, canonicalRuneToIsSolved) =
-////      Solv.plan(
-//        rules.toIterable,
-//        List(),
-//        (rule: IRule) => rule.allRunes,
-//        (rule: IRule) => rule.allPuzzles,
-//        Set(), {
-//          case Equals(a, b) => (a, b)
-//        }//: PartialFunction[IRule, (Long, Long)])
-
     val solverState =
       Solver.makeInitialSolverState[IRule, Long, String](
         true,

@@ -99,21 +99,6 @@ class FunctionTemplarCore(
               Some(startingFullEnv.function))
           (header)
         }
-//        case AbstractBodyS => {
-//          val maybeRetCoord =
-//            startingFullEnv.function.maybeRetCoordRune match {
-//              case None => throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Need return type for abstract function!"))
-//              case Some(r) => fullEnv.lookupWithImpreciseName(profiler, RuneNameS(r.rune), Set(TemplataLookupContext), true).headOption
-//            }
-//          val retCoord =
-//            maybeRetCoord match {
-//              case None => vfail("wat")
-//              case Some(CoordTemplata(r)) => r
-//            }
-//          val header =
-//            makeInterfaceFunction(fullEnv.snapshot, temputs, Some(startingFullEnv.function), params2, retCoord)
-//          (header)
-//        }
         case AbstractBodyS | GeneratedBodyS(_) => {
           val generatorId =
             startingFullEnv.function.body match {
@@ -354,16 +339,6 @@ class FunctionTemplarCore(
       maybeOrigin: Option[FunctionA]):
   (FunctionHeaderT) = {
     fullName.last match {
-//      case FunctionName2("===", templateArgs, paramTypes) => {
-//        vcheck(templateArgs.size == 1, () => CompileErrorExceptionT(RangedInternalErrorT(range, "=== should have 1 template params!")))
-//        vcheck(paramTypes.size == 2, () => CompileErrorExceptionT(RangedInternalErrorT(range, "=== should have 2 params!")))
-//        val Vector(tyype) = templateArgs
-//        val Vector(leftParamType, rightParamType) = paramTypes
-//        vassert(leftParamType == rightParamType, "=== left and right params should be same type")
-//        vassert(leftParamType == tyype)
-//        vassert(rightParamType == tyype)
-//
-//      }
       case FunctionNameT(humanName, Vector(), params) => {
         val header =
           ast.FunctionHeaderT(

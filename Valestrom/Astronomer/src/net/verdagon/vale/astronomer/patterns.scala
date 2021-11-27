@@ -20,16 +20,4 @@ object PatternSUtils {
     (runesFromVirtuality ++ runesFromDestructures ++ pattern.coordRune.map(_.rune -> CoordTemplataType)).distinct
   }
 
-//  def getDistinctOrderedRunesForPattern(pattern: AtomSP): Vector[IRuneS] = {
-//    val runesFromVirtuality =
-//      pattern.virtuality match {
-//        case None => Vector.empty
-//        case Some(AbstractAP) => Vector.empty
-//        case Some(OverrideAP(range, kindRune)) => Vector(kindRune)
-//      }
-//    val runesFromDestructures =
-//      pattern.destructure.toVector.flatten.flatMap(getDistinctOrderedRunesForPattern)
-//    (runesFromVirtuality ++ runesFromDestructures :+ pattern.coordRune).distinct
-//  }
-
 }

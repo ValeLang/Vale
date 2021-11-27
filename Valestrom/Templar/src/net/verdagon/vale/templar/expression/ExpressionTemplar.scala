@@ -459,19 +459,6 @@ class ExpressionTemplar(
             }
           (resultExpr2, returnsFromInner)
         }
-//        case LockWeakSE(range, innerExpr1) => {
-//          val (innerExpr2, returnsFromInner) =
-//            evaluateAndCoerceToReferenceExpression(temputs, fate, life, innerExpr1);
-//          vcheck(innerExpr2.resultRegister.reference.ownership == WeakT, "Can only lock a weak")
-//
-//          val borrowCoord = CoordT(ConstraintT, ReadonlyT, innerExpr2.kind)
-//
-//          val (optCoord, someConstructor, noneConstructor) =
-//            getOption(temputs, fate.snapshot, range, borrowCoord)
-//
-//          val resultExpr2 = LockWeakTE(innerExpr2, optCoord, someConstructor, noneConstructor)
-//          (resultExpr2, returnsFromInner)
-//        }
         case LocalLoadSE(range, nameA, targetOwnership) => {
           val name = NameTranslator.translateVarNameStep(nameA)
           val lookupExpr1 =
@@ -552,9 +539,6 @@ class ExpressionTemplar(
                   case s @ StructTT(_) => {
                     throw CompileErrorExceptionT(CantMutateFinalMember(range, s.fullName, memberName))
                   }
-//                  case s @ TupleTT(_, _) => {
-//                    throw CompileErrorExceptionT(CantMutateFinalMember(range, s.underlyingStruct.fullName, memberName))
-//                  }
                   case _ => vimpl(structExpr.kind.toString)
                 }
               }
@@ -567,23 +551,6 @@ class ExpressionTemplar(
               case x => vimpl(x.toString)
             }
           }
-//          destinationExpr2.resultRegister.reference.permission match {
-//            case Readonly => {
-//              destinationExpr2 match {
-//                case ReferenceMemberLookup2(range, structExpr, memberName, _, _) => {
-//                  structExpr.kind match {
-//                    case s @ structTT(_) => {
-//                      throw CompileErrorExceptionT(CantMutateReadonlyMember(range, s, memberName))
-//                    }
-//                    case _ => vimpl()
-//                  }
-//                }
-//                case _ => vimpl()
-//              }
-//            }
-//            case Readwrite =>
-//            case _ => vfail()
-//          }
 
           val isConvertible =
             templataTemplar.isTypeConvertible(temputs, unconvertedSourceExpr2.result.reference, destinationExpr2.result.reference)
@@ -736,34 +703,6 @@ class ExpressionTemplar(
               temputs, fate, range, rulesA.toVector, mutabilityRune.rune, variabilityRune.rune, sizeTE, callableTE)
           (expr2, returnsFromSize ++ returnsFromCallable)
         }
-//        case StaticSizedArrayFromCallableAE(range, mutabilityTemplex, variabilityTemplex, elementCoordTemplex, generatorPrototypeTemplex, sizeExpr1, generatorExpr1) => {
-//          val (MutabilityTemplata(arrayMutability)) = templataTemplar.evaluateTemplex(fate.snapshot, temputs, mutabilityTemplex)
-//          val (VariabilityTemplata(arrayVariability)) = templataTemplar.evaluateTemplex(fate.snapshot, temputs, variabilityTemplex)
-//          val (CoordTemplata(elementCoord)) = templataTemplar.evaluateTemplex(fate.snapshot, temputs, elementCoordTemplex)
-//          val (PrototypeTemplata(generatorPrototype)) = templataTemplar.evaluateTemplex(fate.snapshot, temputs, generatorPrototypeTemplex)
-//
-//          val (sizeExpr2, returnsFromSize) =
-//            evaluate(temputs, fate, life + 0, sizeExpr1);
-//
-//          val (generatorExpr2, returnsFromGenerator) =
-//            evaluateAndCoerceToReferenceExpression(temputs, fate, life + 1, generatorExpr1);
-//
-//          checkArray(
-//            temputs, range, arrayMutability, elementCoord, generatorPrototype, generatorExpr2.resultRegister.reference)
-//          val arrayType = arrayTemplar.getRuntimeSizedArrayKind(fate.snapshot, temputs, elementCoord, arrayMutability, arrayVariability)
-//
-//          val sizeRefExpr2 = coerceToReferenceExpression(fate, sizeExpr2)
-//          vassert(sizeRefExpr2.resultRegister.expectReference().reference == CoordT(ShareT, ReadonlyT, IntT.i32))
-//
-//          val generatorMethod2 = generatorPrototype
-//          val constructExpr2 =
-//            ConstructArrayTE(
-//              arrayType,
-//              sizeRefExpr2,
-//              generatorExpr2,
-//              generatorMethod2)
-//          (constructExpr2, returnsFromSize ++ returnsFromGenerator)
-//        }
         case LetSE(range, rulesA, pattern, sourceExpr1) => {
           val (sourceExpr2, returnsFromSource) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, life + 0, sourceExpr1)
@@ -946,11 +885,6 @@ class ExpressionTemplar(
 
           (block2, returnsFromExprs)
         }
-//        case ArrayLengthSE(range, arrayExprA) => {
-//          val (arrayExpr2, returnsFromArrayExpr) =
-//            evaluateAndCoerceToReferenceExpression(temputs, fate, life, arrayExprA);
-//          (ArrayLengthTE(arrayExpr2), returnsFromArrayExpr)
-//        }
         case DestructSE(range, innerAE) => {
           val (innerExpr2, returnsFromArrayExpr) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, life + 0, innerAE);
@@ -1158,23 +1092,6 @@ class ExpressionTemplar(
 
     WeakAliasTE(expr)
   }
-
-//  private def decaySoloPack(
-//    fate: FunctionEnvironmentBox,
-//    life: LocationInFunctionEnvironment,
-//    refExpr: ReferenceExpressionTE):
-//  (ReferenceExpressionTE) = {
-//    refExpr.resultRegister.reference.kind match {
-//      case PackTT(Vector(onlyMember), understruct) => {
-//        val varId = fate.fullName.addStep(TemplarTemporaryVarNameT(life))
-//        val localVar = ReferenceLocalVariableT(varId, FinalT, onlyMember)
-//        val destroy2 = DestroyTE(refExpr, understruct, Vector(localVar))
-//        val unletExpr = localHelper.unletLocal(fate, localVar)
-//        (Templar.consecutive(Vector(destroy2, unletExpr)))
-//      }
-//      case _ => (refExpr)
-//    }
-//  }
 
   // Borrow like the . does. If it receives an owning reference, itll make a temporary.
   // If it receives an owning address, that's fine, just borrowsoftload from it.

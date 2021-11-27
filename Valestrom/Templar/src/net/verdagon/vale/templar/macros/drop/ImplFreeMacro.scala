@@ -81,52 +81,8 @@ class ImplFreeMacro(overloadTemplar: OverloadTemplar) extends IOnStructDefinedMa
               Vector(
                 ReturnSE(RangeS.internal(-167213), VoidSE(RangeS.internal(-167214)))
               )))))
-//                FunctionCallSE(RangeS.internal(-167213),
-//                  OutsideLoadSE(RangeS.internal(-167213),
-//                    Array(),
-//                    FreeImpreciseNameS(),
-//                    None,
-//                    LendConstraintP(None)),
-//                  Vector(LocalLoadSE(RangeS.internal(-167213), CodeVarNameS("this"), MoveP))))))))
     Vector((
       structName.addStep(NameTranslator.translateFunctionNameToTemplateName(virtualFreeFunctionA.name)),
       FunctionEnvEntry(virtualFreeFunctionA)))
   }
-
-
-//  override def generateFunctionBody(
-//    fate: env.FunctionEnvironment,
-//    temputs: Temputs,
-//    generatorId: String,
-//    life: LocationInFunctionEnvironment,
-//    callRange: RangeS,
-//    originFunction: Option[FunctionA],
-//    params2: Vector[ParameterT],
-//    maybeRetCoord: Option[CoordT]):
-//  FunctionHeaderT = {
-//    val ret = CoordT(ShareT, ReadonlyT, VoidT())
-//    val header = FunctionHeaderT(fate.fullName, Vector.empty, params2, ret, originFunction)
-//
-//    temputs.declareFunctionReturnType(header.toSignature, header.returnType)
-//
-//    val coord = vassertOne(params2.map(_.tyype))
-//
-//    val func =
-//      overloadTemplar.findFunction(
-//        fate,
-//        temputs,
-//        callRange,
-//        FreeImpreciseNameS(),
-//        Vector(),
-//        Array(),
-//        Vector(ParamFilter(coord, None)),
-//        Vector(),
-//        true)
-//    val expr =
-//      FunctionCallTE(func, Vector(ArgLookupTE(0, coord)))
-//
-//    val function2 = FunctionT(header, BlockTE(Templar.consecutive(Vector(expr, ReturnTE(VoidLiteralTE())))))
-//    temputs.addFunction(function2)
-//    function2.header
-//  }
 }

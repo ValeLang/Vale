@@ -4,7 +4,7 @@ import net.verdagon.vale.metal.{Immutable => _, Mutable => _, Variability => _, 
 import net.verdagon.vale.{PackageCoordinate, vassert, vassertSome, vfail, vimpl, metal => m}
 import net.verdagon.vale.templar.{Hinputs, _}
 import net.verdagon.vale.templar.ast.{EdgeT, ProgramT}
-import net.verdagon.vale.templar.names.{CitizenNameT, CitizenTemplateNameT, FullNameT}
+import net.verdagon.vale.templar.names.{CitizenNameT, CitizenTemplateNameT, FreeNameT, FullNameT}
 import net.verdagon.vale.templar.templata.CoordTemplata
 import net.verdagon.vale.templar.types._
 
@@ -57,7 +57,7 @@ object StructHammer {
         // This is the only place besides InterfaceDefinitionH that can make a InterfaceRefH
         val temporaryInterfaceRefH = InterfaceRefH(fullNameH);
         hamuts.forwardDeclareInterface(interfaceTT, temporaryInterfaceRefH)
-        val interfaceDef2 = hinputs.lookupInterface(interfaceTT);
+        val interfaceDefT = hinputs.lookupInterface(interfaceTT);
 
 
         val methodsH = translateInterfaceMethods(hinputs, hamuts, interfaceTT)
@@ -65,12 +65,26 @@ object StructHammer {
         val interfaceDefH =
           InterfaceDefinitionH(
             fullNameH,
-            interfaceDef2.weakable,
-            Conversions.evaluateMutability(interfaceDef2.mutability),
+            interfaceDefT.weakable,
+            Conversions.evaluateMutability(interfaceDefT.mutability),
             Vector.empty /* super interfaces */,
             methodsH)
         hamuts.addInterface(interfaceTT, interfaceDefH)
         vassert(interfaceDefH.getRef == temporaryInterfaceRefH)
+
+        // Make sure there's a destructor for this shared interface.
+        interfaceDefT.mutability match {
+          case MutableT => None
+          case ImmutableT => {
+            vassert(
+              hinputs.functions.exists(function => {
+                function.header.fullName match {
+                  case FullNameT(_, _, FreeNameT(_, k)) if k == interfaceDefT.getRef => true
+                  case _ => false
+                }
+              }))
+          }
+        }
 
         (interfaceDefH.getRef)
       }
@@ -109,18 +123,21 @@ object StructHammer {
         hamuts.addStructOriginatingFromTemplar(structTT, structDefH)
         vassert(structDefH.getRef == temporaryStructRefH)
 
-//        // Make sure there's a destructor for this shared struct.
-//        structDefT.mutability match {
-//          case MutableT => None
-//          case ImmutableT => {
-//            if (structDefH.getRef != ProgramH.emptyTupleStructRef) {
-//              vassertSome(
-//                hinputs.functions.find(function => {
-//                  function.header.fullName == FullNameT(PackageCoordinate.BUILTIN, Vector.empty, ImmConcreteDestructorNameT(structTT))
-//                }))
-//            }
-//          }
-//        }
+        // Make sure there's a destructor for this shared struct.
+        structDefT.mutability match {
+          case MutableT => None
+          case ImmutableT => {
+            if (structDefH.getRef != ProgramH.emptyTupleStructRef) {
+              vassert(
+                hinputs.functions.exists(function => {
+                  function.header.fullName match {
+                    case FullNameT(_, _, FreeNameT(_, k)) if k == structDefT.getRef => true
+                    case _ => false
+                  }
+                }))
+            }
+          }
+        }
 
 
         (structDefH.getRef)

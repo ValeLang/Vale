@@ -263,11 +263,6 @@ case class OptimizedSolverState[Rule, RuneID, Conclusion](
     Ok(numNewConclusions)
   }
 
-
-//  override def getConclusions(): Array[Option[Conclusion]] = {
-//    runeToConclusion.toArray
-//  }
-
   override def userifyConclusions(): Stream[(RuneID, Conclusion)] = {
     userRuneToCanonicalRune.toStream.flatMap({ case (userRune, canonicalRune) =>
       runeToConclusion(canonicalRune).map(userRune -> _)

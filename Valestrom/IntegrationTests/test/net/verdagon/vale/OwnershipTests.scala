@@ -247,25 +247,6 @@ class OwnershipTests extends FunSuite with Matchers {
     Collector.all(main, { case UnletTE(_) => }).size shouldEqual numVariables
   }
 
-
-
-
-
-//
-//  test("Moving doesn't affect ref count") {
-//    val compile = RunCompilation.test(
-//      """
-//        |struct Muta { }
-//        |fn main() int export {
-//        |  a = Muta();
-//        |  b = a;
-//        |  = __varrc(&b);
-//        |}
-//      """.stripMargin)
-//
-//    compile.evalForKind(Vector()) shouldEqual VonInt(1)
-//  }
-//
 //  test("Wingman catches hanging borrow") {
 //    val compile = RunCompilation.test(
 //      """

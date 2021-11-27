@@ -67,9 +67,7 @@ object PatternScout {
               lidb.child(),
               Scout.evalRange(stackFrame.file, range),
               ruleBuilder,
-              runeToExplicitType,
-              Some(typeP),
-              true)
+              Some(typeP))
           runeToExplicitType.put(runeS.rune, KindTemplataType)
           Some(OverrideSP(Scout.evalRange(stackFrame.file, range), runeS))
         }
@@ -83,9 +81,7 @@ object PatternScout {
             lidb.child(),
             Scout.evalRange(stackFrame.file, range),
             ruleBuilder,
-            runeToExplicitType,
-            maybeTypeP,
-            false)
+            maybeTypeP)
         runeToExplicitType.put(runeS.rune, CoordTemplataType)
         runeS
       })
@@ -124,14 +120,8 @@ object PatternScout {
   def translateTypeIntoRune(
     env: IEnvironment,
     lidb: LocationInDenizenBuilder,
-    range: RangeS,
     ruleBuilder: ArrayBuffer[IRulexSR],
-    runeToExplicitType: mutable.HashMap[IRuneS, ITemplataType],
-    typeP: ITemplexPT,
-    // Determines whether the rune is on the left or the right in the Equals rule, which
-    // can (unfortunately) affect the order in which the generics engine evaluates things.
-    // This is a temporary solution, see DCRC, option A.
-    runeOnLeft: Boolean = true):
+    typeP: ITemplexPT):
   RuneUsage = {
     typeP match {
       case NameOrRunePT(NameP(range, nameOrRune)) if env.allDeclaredRunes().contains(CodeRuneS(nameOrRune)) => {
@@ -150,12 +140,7 @@ object PatternScout {
       lidb: LocationInDenizenBuilder,
       range: RangeS,
       ruleBuilder: ArrayBuffer[IRulexSR],
-      runeToExplicitType: mutable.HashMap[IRuneS, ITemplataType],
-      maybeTypeP: Option[ITemplexPT],
-      // Determines whether the rune is on the left or the right in the Equals rule, which
-      // can (unfortunately) affect the order in which the generics engine evaluates things.
-      // This is a temporary solution, see DCRC, option A.
-      runeOnLeft: Boolean = true):
+      maybeTypeP: Option[ITemplexPT]):
   RuneUsage = {
     maybeTypeP match {
       case None => {
@@ -163,7 +148,7 @@ object PatternScout {
         resultRuneS
       }
       case Some(typeP) => {
-        translateTypeIntoRune(env, lidb, range, ruleBuilder, runeToExplicitType, typeP, runeOnLeft)
+        translateTypeIntoRune(env, lidb, ruleBuilder, typeP)
       }
     }
   }
@@ -184,7 +169,7 @@ object PatternScout {
     } else {
       Some(
         translateMaybeTypeIntoRune(
-          env, lidb.child(), range, ruleBuilder, runeToExplicitType, maybeTypeP, runeOnLeft))
+          env, lidb.child(), range, ruleBuilder, maybeTypeP))
     }
   }
 }

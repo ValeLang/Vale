@@ -31,8 +31,6 @@ case class PackageH(
     interfaces: Vector[InterfaceDefinitionH],
     // All the structs in the program.
     structs: Vector[StructDefinitionH],
-//    // All the externs that we're calling into from the program.
-//    externs: Vector[PrototypeH],
     // All of the user defined functions (and some from the compiler itself).
     functions: Vector[FunctionH],
     staticSizedArrays: Vector[StaticSizedArrayDefinitionTH],
@@ -242,9 +240,6 @@ case class FullNameH(
     packageCoordinate: PackageCoordinate,
     parts: Vector[IVonData]) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-//  def toReadableString(): String = {
-//    readableName + (if (id >= 0) "_" + id else "")
-//  }
   def toFullString(): String = { FullNameH.namePartsToString(packageCoordinate, parts) }
 }
 

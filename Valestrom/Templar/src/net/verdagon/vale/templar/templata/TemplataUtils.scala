@@ -4,9 +4,6 @@ import net.verdagon.vale.templar.ast.{FunctionHeaderT, FunctionT, PrototypeT}
 import net.verdagon.vale.templar.names._
 
 object simpleName {
-//  def apply(name: String): FullName2 = {
-//    FullName2(Vector(FunctionNamePart2(name, Some(Vector.empty), None, None)))
-//  }
   def unapply(fullName: FullNameT[INameT]): Option[String] = {
     fullName.last match {
       case ImplDeclareNameT(_) => None
@@ -15,21 +12,10 @@ object simpleName {
       case FreeNameT(_, _) => None
       case ClosureParamNameT() => None
       case MagicParamNameT(_) => None
-//      case DropNameT(_, _) => None
       case CodeVarNameT(name) => Some(name)
-//      case CodeRune2(name) => Some(name)
-//      case ImplicitRune2(_) => None
-//      case MemberRune2(_) => None
-//      case MagicImplicitRune2(_) => None
-//      case ReturnRune2() => None
       case FunctionNameT(humanName, _, _) => Some(humanName)
-//      case LambdaName2(_, _, _) => None
-//      case CitizenName2(humanName, _) => Some(humanName)
-//      case TupleNameT(_) => None
       case LambdaCitizenNameT(_) => None
       case CitizenNameT(CitizenTemplateNameT(humanName), _) => Some(humanName)
-//      case ImmConcreteDestructorNameT(_) => None
-//      case ImmInterfaceDestructorNameT(_, _) => None
     }
   }
 }

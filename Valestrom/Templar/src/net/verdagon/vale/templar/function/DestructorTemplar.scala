@@ -123,14 +123,6 @@ class DestructorTemplar(
                 val understructReference2 = undestructedExpr2.result.reference.copy(kind = voidStructRef)
                 destroySharedCitizen(temputs, understructReference2)
               }
-//              case PackTT(_, understruct2) => {
-//                val understructReference2 = undestructedExpr2.resultRegister.reference.copy(kind = understruct2)
-//                destroySharedCitizen(temputs, understructReference2)
-//              }
-//              case TupleTT(_, understruct2) => {
-//                val understructReference2 = undestructedExpr2.resultRegister.reference.copy(kind = understruct2)
-//                destroySharedCitizen(temputs, understructReference2)
-//              }
               case StructTT(_) | InterfaceTT(_) => {
                 destroySharedCitizen(temputs, undestructedExpr2.result.reference)
               }
@@ -166,25 +158,4 @@ class DestructorTemplar(
     vassert(temputs.getDeclaredSignatureOrigin(bodyEnv.fullName) == Some(originFunction1.range))
     header
   }
-
-//  def getImmInterfaceDestructorOverride(
-//    temputs: Temputs,
-//    env: IEnvironment,
-//    structTT: StructTT,
-//    implementedInterfaceRefT: InterfaceTT):
-//  PrototypeT = {
-//    vassert(Templar.getMutability(temputs, structTT) == ImmutableT)
-//    vassert(Templar.getMutability(temputs, implementedInterfaceRefT) == ImmutableT)
-//
-//    overloadTemplar.findFunction(
-//      env,
-//      temputs,
-//      RangeS.internal(-1674),
-//      ImmInterfaceDestructorImpreciseNameS(),
-//      Vector.empty,
-//      Array.empty,
-//      Vector(ParamFilter(CoordT(ShareT, ReadonlyT, structTT), Some(OverrideT(implementedInterfaceRefT)))),
-//      Vector.empty,
-//      true)
-//  }
 }

@@ -216,13 +216,6 @@ sealed trait PermissionH
 case object ReadonlyH extends PermissionH
 case object ReadwriteH extends PermissionH
 
-//// Permission says whether a reference can modify the kind it's pointing at.
-//// See ReferenceH for explanation.
-//sealed trait Permission
-//case object Readonly extends Permission
-//case object Readwrite extends Permission
-//case object ExclusiveReadwrite extends Permission
-
 // Location says whether a reference contains the kind's location (yonder) or
 // contains the kind itself (inline).
 // Yes, it's weird to consider a reference containing a kind, but it makes a

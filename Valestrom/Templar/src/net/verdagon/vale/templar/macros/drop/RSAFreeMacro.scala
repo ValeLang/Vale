@@ -8,7 +8,7 @@ import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env.{FunctionEnvEntry, FunctionEnvironment, FunctionEnvironmentBox, IEnvEntry, ReferenceLocalVariableT, TemplataLookupContext}
 import net.verdagon.vale.templar.function.DestructorTemplar
-import net.verdagon.vale.templar.macros.{IFunctionBodyMacro, IOnRuntimeSizedArrayDefinedMacro, IOnStructDefinedMacro}
+import net.verdagon.vale.templar.macros.{IFunctionBodyMacro, IOnStructDefinedMacro}
 import net.verdagon.vale.templar.names.{FullNameT, INameT, NameTranslator}
 import net.verdagon.vale.templar.templata.{CoordTemplata, MutabilityTemplata, PrototypeTemplata, StructTemplata}
 import net.verdagon.vale.templar.types._

@@ -29,11 +29,6 @@ ValeInt vtest_extFunc_vasp(vtest_Flamscrankle* flam, ValeInt flamMessageSize) {
   // AP = And Padding; to get the next multiple of 16 from the end of the Flamscrankle.
   size_t flamAPEndAddr = nextMultipleOf16(flamAddr + sizeof(vtest_Flamscrankle));
 
-//  // The root object (Flamscrankle here) always has a 16B "metadata block" before it, which contains
-//  // the start address and the size of the message.
-//  size_t rootMetadataAPEndAddr = flamAddr;
-//  size_t rootMetadataAddr = floorMultipleOf16(rootMetadataAPEndAddr - 16);
-
   // Bogglewoggle is after the Flamscrankle, but at a multiple of 16.
   size_t bogAddr = flamAPEndAddr;
   size_t bogAPEndAddr = nextMultipleOf16(bogAddr + sizeof(vtest_Bogglewoggle));
@@ -41,10 +36,6 @@ ValeInt vtest_extFunc_vasp(vtest_Flamscrankle* flam, ValeInt flamMessageSize) {
   // Spigglewigget is after the Bogglewoggle, but at a multiple of 16.
   size_t spigAddr = bogAPEndAddr;
   size_t spigAPEndAddr = nextMultipleOf16(spigAddr + sizeof(vtest_Spigglewigget));
-
-//  // Start metadata is before the Spigglewigget, but at a multiple of 16.
-//  size_t startMetadataAPEndAddr = spigAddr;
-//  size_t startMetadataAddr = floorMultipleOf16(startMetadataAPEndAddr - 24);
 
   {
     // The things in this block more just test the test itself, but thats fine.

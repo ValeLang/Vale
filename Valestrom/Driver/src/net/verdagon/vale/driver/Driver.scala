@@ -6,6 +6,7 @@ import net.verdagon.vale.astronomer.{Astronomer, AstronomerErrorHumanizer, Progr
 import net.verdagon.vale.hammer.{Hammer, Hamuts, VonHammer}
 import net.verdagon.vale.highlighter.{Highlighter, Spanner}
 import net.verdagon.vale.metal.{PackageH, ProgramH}
+import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser.{CombinatorParsers, FailedParse, FileP, InputException, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier}
 import net.verdagon.vale.scout.{Scout, ScoutErrorHumanizer}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
@@ -45,7 +46,10 @@ object Driver {
     outputHighlights: Boolean,
     includeBuiltins: Boolean,
     mode: Option[String], // build v run etc
-    verbose: Boolean,
+    sanityCheck: Boolean,
+    useOptimizedSolver: Boolean,
+    verboseErrors: Boolean,
+    debugOutput: Boolean
   ) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
   def parseOpts(opts: Options, list: List[String]) : Options = {
@@ -71,12 +75,8 @@ object Driver {
         parseOpts(opts.copy(outputHighlights = value.toBoolean), tail)
       }
       case ("-v" | "--verbose") :: tail => {
-        parseOpts(opts.copy(verbose = true), tail)
+        parseOpts(opts.copy(verboseErrors = true), tail)
       }
-      //          case "--min-size" :: value :: tail =>
-      //            parseOpts(opts ++ Map('minsize -> value.toInt), tail)
-      //          case string :: opt2 :: tail if isSwitch(opt2) =>
-      //            parseOpts(opts ++ Map('infile -> string), list.tail)
       case value :: _ if value.startsWith("-") => throw InputException("Unknown option " + value)
       case value :: tail => {
         if (opts.mode.isEmpty) {
@@ -108,17 +108,6 @@ object Driver {
             parseOpts(opts.copy(inputs = opts.inputs :+ input), tail)
           } else {
             throw InputException("Unrecognized input: " + value)
-//            if (value.endsWith(".vale") || value.endsWith(".vpst")) {
-//              throw InputException(".vale and .vpst inputs must be prefixed with their module name and a colon.")
-//            }
-//            val parts =
-//              if (value.contains(".")) {
-//                value.split("\\.").toVector
-//              } else {
-//                Vector(value)
-//              }
-//            val packageCoord = PackageCoordinate(parts.head, parts.tail)
-//            parseOpts(opts.copy(packagesToBuild = opts.packagesToBuild :+ packageCoord), tail)
           }
         }
       }
@@ -174,127 +163,6 @@ object Driver {
     Some(filepathToSource)
   }
 
-//  def loadAndParseInputs(
-//    startTime: Long,
-//    benchmark: Boolean,
-//    compilation: Compilation):
-//  Result[
-//    (FileCoordinateMap[String],
-//      FileCoordinateMap[(String, Vector[(Int, Int)])],
-//      FileCoordinateMap[FileP],
-//      Long),
-//    String] = {
-//
-//    val expandedInputs =
-//      inputs.flatMap({
-//        case si @ SourceInput(_, _, _) => {
-//          Vector(si)
-//        }
-//        case pi @ PathInput(moduleName, path) => {
-//          if (path.endsWith(".vale")) {
-//            Vector(pi)
-//          } else if (path.endsWith(".vpst")) {
-//            Vector(pi)
-//          } else {
-//            try {
-//              val directory = new java.io.File(path)
-//              val filesInDirectory = directory.listFiles
-//              val inputFiles =
-//                filesInDirectory.filter(_.getName.endsWith(".vale")) ++
-//                  filesInDirectory.filter(_.getName.endsWith(".vpst"))
-//              inputFiles.map(_.getPath).map(x => PathInput(moduleName, x)).toVector
-//            } catch {
-//              case _ : FileNotFoundException => {
-//                throw InputException("Couldn't find file or folder: " + path)
-//              }
-//            }
-//          }
-//        }
-//      })
-
-    //    val moduleToExpandedInputs =
-    //      moduleAndExpandedInputPairs.groupBy(_.moduleName)
-//
-//    val loadedInputs =
-//      expandedInputs.map({
-//        case si@SourceInput(_, _, _) => si
-//        case PathInput(moduleName, path) => {
-//          val contents =
-//            (try {
-//              val file = new java.io.File(path)
-//              val lineSource = Source.fromFile(file)
-//              val source = lineSource.getLines().mkString("\n")
-//              lineSource.close()
-//              source
-//            } catch {
-//              case _: FileNotFoundException => {
-//                throw InputException("Couldn't find file or folder: " + path)
-//              }
-//            })
-//          SourceInput(moduleName, path, contents)
-//        }
-//        case other => vwat(other.toString)
-//      })
-//
-//    val moduleToPackageToFilepathToCode =
-//      loadedInputs.groupBy(_.moduleName).mapValues(loadedInputsInModule => {
-//        val paackage = Vector[String]()
-//        val filepathToCode =
-//          loadedInputsInModule.groupBy(_.path).map({
-//            case (path, Vector.empty) => vfail("No files with path: " + path)
-//            case (path, Vector(onlyCodeWithThisFilename)) => (path -> onlyCodeWithThisFilename.code)
-//            case (path, multipleCodeWithThisFilename) => vfail("Multiple files with path " + path + ": " + multipleCodeWithThisFilename.mkString(", "))
-//          })
-//        val packageToFilepathToCode = Map(paackage -> filepathToCode)
-//        packageToFilepathToCode
-//      })
-//    val valeCodeMap = FileCoordinateMap(moduleToPackageToFilepathToCode)
-
-//    val startParsingTime = java.lang.System.currentTimeMillis()
-//    if (benchmark) {
-//      println("Load duration: " + (startParsingTime - startTime))
-//    }
-//
-//    val vpstCodeMap =
-//      valeCodeMap.map({ case (fileCoord @ FileCoordinate(_, _, filepath), contents) =>
-//        //        println("Parsing " + filepath + "...")
-//        if (filepath.endsWith(".vale")) {
-//          Parser.runParserForProgramAndCommentRanges(contents) match {
-//            case ParseFailure(error) => return Err(ParseErrorHumanizer.humanize(valeCodeMap, fileCoord, error))
-//            case ParseSuccess((program0, commentRanges)) => {
-//              val von = ParserVonifier.vonifyFile(program0)
-//              val json = new VonPrinter(JsonSyntax, 120).print(von)
-//              (json, commentRanges)
-//            }
-//          }
-//        } else if (filepath.endsWith(".vpst")) {
-//          (contents, Vector.empty)
-//        } else {
-//          throw new InputException("Unknown input type: " + filepath)
-//        }
-//      })
-//
-//    val startLoadingVpstTime = java.lang.System.currentTimeMillis()
-//    if (benchmark) {
-//      println("Parse .vale duration: " + (startLoadingVpstTime - startParsingTime))
-//    }
-//
-//    val parsedsMap =
-//      vpstCodeMap.map({ case (fileCoord, (vpstJson, commentRanges)) =>
-//        ParsedLoader.load(vpstJson) match {
-//          case ParseFailure(error) => return Err(ParseErrorHumanizer.humanize(valeCodeMap, fileCoord, error))
-//          case ParseSuccess(program0) => program0
-//        }
-//      })
-//
-//    val doneParsingVpstTime = java.lang.System.currentTimeMillis()
-//    if (benchmark) {
-//      println("Parse .vpst duration: " + (doneParsingVpstTime - startLoadingVpstTime))
-//    }
-//
-//    Ok((valeCodeMap, vpstCodeMap, parsedsMap, doneParsingVpstTime))
-//  }
-
   def build(opts: Options):
   Result[Option[ProgramH], String] = {
     new java.io.File(opts.outputDirPath.get).mkdirs()
@@ -308,16 +176,19 @@ object Driver {
         Vector(PackageCoordinate.BUILTIN) ++ opts.inputs.map(_.packageCoord).distinct,
         Builtins.getCodeMap().or(packageCoord => resolvePackageContents(opts.inputs, packageCoord)),
         FullCompilationOptions(
-          if (opts.verbose) {
+          GlobalOptions(
+            opts.sanityCheck,
+            opts.useOptimizedSolver,
+            opts.verboseErrors,
+            opts.debugOutput),
+          if (opts.debugOutput) {
             (x => {
               println("#: " + x)
             })
           } else {
             x => Unit // do nothing with it
           },
-          opts.verbose,
-          new NullProfiler(),
-          false
+          new NullProfiler()
         )
       )
 
@@ -367,7 +238,7 @@ object Driver {
       }
 
       compilation.getTemputs() match {
-        case Err(error) => return Err(TemplarErrorHumanizer.humanize(opts.verbose, valeCodeMap, error))
+        case Err(error) => return Err(TemplarErrorHumanizer.humanize(opts.verboseErrors, valeCodeMap, error))
         case Ok(x) => x
       }
 
@@ -451,7 +322,7 @@ object Driver {
 
   def main(args: Array[String]): Unit = {
     try {
-      val opts = parseOpts(Options(Vector.empty, None, false, true, true, false, true, None, false), args.toList)
+      val opts = parseOpts(Options(Vector.empty, None, false, true, true, false, true, None, false, true, false, false), args.toList)
       vcheck(opts.mode.nonEmpty, "No mode!", InputException)
       vcheck(opts.inputs.nonEmpty, "No input files!", InputException)
 
@@ -465,16 +336,15 @@ object Driver {
               opts.inputs.map(_.packageCoord).distinct,
               Builtins.getCodeMap().or(packageCoord => resolvePackageContents(opts.inputs, packageCoord)),
               FullCompilationOptions(
-                if (opts.verbose) {
+                GlobalOptions(opts.sanityCheck, opts.useOptimizedSolver, opts.verboseErrors, opts.debugOutput),
+                if (opts.verboseErrors) {
                   (x => {
                     println("##: " + x)
                   })
                 } else {
                   x => Unit // do nothing with it
                 },
-                opts.verbose,
-                new NullProfiler(),
-                false))
+                new NullProfiler()))
 
           val parseds =
             compilation.getParseds() match {
@@ -511,48 +381,6 @@ object Driver {
         }
         case "run" => {
           throw InputException("Run command has been disabled.");
-
-//          vcheck(args.size >= 2, "Need name!", InputException)
-//
-//          val optsWithForcedCompile =
-//            opts.outputVastFilepath match {
-//              case None => opts.copy(outputVastFilepath = Some(""))
-//              case Some(_) => opts
-//            }
-//
-//          val program =
-//            build(optsWithForcedCompile) match {
-//              case Ok(Some(programH)) => programH
-//              case Err(error) => {
-//                System.err.println(error)
-//                System.exit(22)
-//                vfail()
-//              }
-//            }
-//
-//          val verbose = args.slice(2, args.length).contains("--verbose")
-//          val result =
-//            if (verbose) {
-//              Vivem.executeWithPrimitiveArgs(
-//                program, Vector(), System.out, Vivem.emptyStdin, Vivem.nullStdout)
-//            } else {
-//              Vivem.executeWithPrimitiveArgs(
-//                program,
-//                Vector(),
-//                new PrintStream(new OutputStream() {
-//                  override def write(b: Int): Unit = {
-//                    // System.out.write(b)
-//                  }
-//                }),
-//                () => {
-//                  scala.io.StdIn.readLine()
-//                },
-//                (str: String) => {
-//                  print(str)
-//                })
-//            }
-//          println("Program result: " + result)
-//          println()
         }
       }
     } catch {

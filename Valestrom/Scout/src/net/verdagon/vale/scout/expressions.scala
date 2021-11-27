@@ -2,16 +2,14 @@ package net.verdagon.vale.scout
 
 import net.verdagon.vale.parser.{ConstraintP, LendConstraintP, LendWeakP, LoadAsP, MoveP, MutabilityP, OwnershipP, PermissionP, VariabilityP, WeakP}
 import net.verdagon.vale.scout.patterns.AtomSP
-import net.verdagon.vale.scout.rules.{IRulexSR, ITypeSR}
-import net.verdagon.vale.{vassert, vcurious, vimpl, vpass}
+import net.verdagon.vale.scout.rules.{ILiteralSL, IRulexSR, RuneUsage}
+import net.verdagon.vale.{RangeS, vassert, vcurious, vimpl, vpass}
 
 // patternId is a unique number, can be used to make temporary variables that wont
 // collide with other things
 case class LetSE(
     range: RangeS,
-    rules: Vector[IRulexSR],
-    unknowableRunes: Set[IRuneS],
-    localRunes: Set[IRuneS],
+    rules: Array[IRulexSR],
     pattern: AtomSP,
     expr: IExpressionSE) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
@@ -64,7 +62,6 @@ case class PermissionedSE(range: RangeS, innerExpr1: IExpressionSE, targetPermis
 sealed trait IVariableUseCertainty
 case object Used extends IVariableUseCertainty
 case object NotUsed extends IVariableUseCertainty
-case object MaybeUsed extends IVariableUseCertainty
 
 case class LocalS(
     varName: IVarNameS,
@@ -130,26 +127,29 @@ case class TupleSE(range: RangeS, elements: Vector[IExpressionSE]) extends IExpr
 }
 case class StaticArrayFromValuesSE(
   range: RangeS,
-  maybeMutabilityST: Option[ITemplexS],
-  maybeVariabilityST: Option[ITemplexS],
-  maybeSizeST: Option[ITemplexS],
+  rules: Array[IRulexSR],
+  mutabilityST: RuneUsage,
+  variabilityST: RuneUsage,
+  sizeST: RuneUsage,
   elements: Vector[IExpressionSE]
 ) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
 }
 case class StaticArrayFromCallableSE(
   range: RangeS,
-  maybeMutabilityST: Option[ITemplexS],
-  maybeVariabilityST: Option[ITemplexS],
-  sizeST: ITemplexS,
+  rules: Array[IRulexSR],
+  mutabilityST: RuneUsage,
+  variabilityST: RuneUsage,
+  sizeST: RuneUsage,
   callable: IExpressionSE
 ) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
 }
 case class RuntimeArrayFromCallableSE(
   range: RangeS,
-  mutabilityST: Option[ITemplexS],
-  variabilityST: Option[ITemplexS],
+  rules: Array[IRulexSR],
+  mutabilityST: RuneUsage,
+  variabilityST: RuneUsage,
   sizeSE: IExpressionSE,
   callable: IExpressionSE
 ) extends IExpressionSE {
@@ -194,7 +194,7 @@ case class DotSE(range: RangeS, left: IExpressionSE, member: String, borrowConta
   override def hashCode(): Int = vcurious()
 }
 
-case class DotCallSE(range: RangeS, left: IExpressionSE, indexExpr: IExpressionSE) extends IExpressionSE {
+case class IndexSE(range: RangeS, left: IExpressionSE, indexExpr: IExpressionSE) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
 }
 
@@ -208,21 +208,16 @@ case class LocalLoadSE(range: RangeS, name: IVarNameS, targetOwnership: LoadAsP)
 }
 // Loads a non-local. In well formed code, this will be a function, but the user also likely
 // tried to access a variable they forgot to declare.
-case class OutsideLoadSE(range: RangeS, name: String, maybeTemplateArgs: Option[Vector[ITemplexS]], targetOwnership: LoadAsP) extends IExpressionSE {
+case class OutsideLoadSE(
+  range: RangeS,
+  rules: Array[IRulexSR],
+  name: IImpreciseNameS,
+  maybeTemplateArgs: Option[Array[RuneUsage]],
+  targetOwnership: LoadAsP
+) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
+  vpass()
 }
 case class RuneLookupSE(range: RangeS, rune: IRuneS) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
 }
-
-case class UnletSE(range: RangeS, name: String) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
-}
-
-
-//case class Scramble0(elements: Vector[Expression0]) extends Expression0 {
-//  vassert(!elements.isEmpty, "Can't have an empty scramble")
-//}
-//case class Scramble1(elements: Vector[Expression1]) extends Expression1 {
-//  vassert(!elements.isEmpty, "Can't have an empty scramble")
-//}

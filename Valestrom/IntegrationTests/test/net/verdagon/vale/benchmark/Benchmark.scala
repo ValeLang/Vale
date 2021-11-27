@@ -2,6 +2,7 @@ package net.verdagon.vale.benchmark
 
 import net.verdagon.vale.astronomer.AstronomerErrorHumanizer
 import net.verdagon.vale.driver.FullCompilationOptions
+import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.templar.TemplarErrorHumanizer
 import net.verdagon.vale.{Builtins, Err, FileCoordinateMap, Ok, PackageCoordinate, Profiler, RunCompilation, Tests}
 
@@ -17,9 +18,9 @@ object Benchmark {
           .or(FileCoordinateMap.test(Tests.loadExpected("programs/roguelike.vale")))
           .or(Tests.getPackageToResourceResolver),
         FullCompilationOptions(
+          GlobalOptions(false, useOptimization, false, false),
           debugOut = (_) => {},
-          profiler = profiler,
-          useOptimization = useOptimization))
+          profiler = profiler))
     compile.getAstrouts() match {
       case Err(e) => println(AstronomerErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), e))
       case Ok(t) =>

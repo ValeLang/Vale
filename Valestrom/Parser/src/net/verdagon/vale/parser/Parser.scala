@@ -56,10 +56,6 @@ object Parser {
       }
     }
 
-//    private def at(str: String): Boolean = {
-//      code.slice(position, position + str.length) == str
-//    }
-
     private def at(regex: Regex): Boolean = {
       vassert(regex.pattern.pattern().startsWith("^"))
       regex.findFirstIn(code.slice(position, code.length)).nonEmpty

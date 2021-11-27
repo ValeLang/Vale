@@ -1,11 +1,12 @@
 package net.verdagon.vale.hammer
 
 import net.verdagon.vale.astronomer.{ICompileErrorA, ProgramA}
-import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal._
 import net.verdagon.vale.parser.{FileP, VariabilityP}
 import net.verdagon.vale.scout.{ICompileErrorS, ProgramS}
-import net.verdagon.vale.templar.{CitizenNameT, ExternFunctionNameT, FullNameT, FunctionExportT, FunctionExternT, FunctionNameT, ICompileErrorT, INameT, IVarNameT, ImmConcreteDestructorNameT, ImmInterfaceDestructorNameT, KindExportT, KindExternT, TemplarCompilation, TemplarCompilationOptions, types => t}
+import net.verdagon.vale.templar.ast.{FunctionExportT, FunctionExternT, KindExportT, KindExternT}
+import net.verdagon.vale.templar.names.{FullNameT, IVarNameT}
+import net.verdagon.vale.templar.{Hinputs, ICompileErrorT, TemplarCompilation, TemplarCompilationOptions, types => t}
 import net.verdagon.vale.{Builtins, FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, PackageCoordinate, PackageCoordinateMap, Result, vassert, vcurious, vfail, vwat}
 
 import scala.collection.immutable.List
@@ -224,21 +225,6 @@ object Hammer {
     immDestructorPrototypesH.foreach({ case (kindH, immDestructorPrototypeH) => {
       vassert(immDestructorPrototypeH.params.head.kind == kindH)
     }})
-
-//    val fullNameToExportedNames = .groupBy(_._2).map({ case (k, v) => (k, v.keys.toVector) })
-//    if (fullNameToExportedNames.size != hamuts.exportedNameToFullName.size) {
-//      fullNameToExportedNames.foreach({ case (fullName, exportedName) =>
-//        if (hamuts.exportedNameToFullName(exportedName) != fullName) {
-//          vfail("Exported name conflict: " + exportedName + ": " + fullName + " and " + hamuts.exportedNameToFullName(exportedName))
-//        }
-//      })
-//
-//      // If we get here, something went very wrong
-//      hamuts.exportedNameToFullName.foreach({ case (exportedName, fullName) =>
-//        println(exportedName + ": " + fullName)
-//      })
-//      vfail()
-//    }
 
     val packageToInterfaceDefs = hamuts.interfaceDefs.groupBy(_._1.fullName.packageCoord)
     val packageToStructDefs = hamuts.structDefs.groupBy(_.fullName.packageCoordinate)

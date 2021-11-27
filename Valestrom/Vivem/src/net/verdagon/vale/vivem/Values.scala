@@ -1,8 +1,5 @@
 package net.verdagon.vale.vivem
 
-//import net.verdagon.vale.hammer._
-//import net.verdagon.vale.scout.{MemberRefCount, RefCountCategory, RegisterRefCount, VariableRefCount}
-//import net.verdagon.vale.templar.types.Ownership
 import net.verdagon.vale.metal._
 import net.verdagon.vale.{vassert, vcheck, vfail, vimpl}
 
@@ -68,14 +65,6 @@ class Allocation(
         matchingReferrers.mkString("\n"),
       ConstraintViolatedException)
   }
-//
-//  def ensureTotalRefCount(expectedNum: Int) = {
-//    if (referrers.size != expectedNum) {
-//      vfail(
-//        "o" + reference.allocId.num + " expected " + expectedNum + " but was " + referrers.size + ":\n" +
-//            referrers.mkString("\n") + "\nKind:\n" + kind)
-//    }
-//  }
 
   def printRefs() = {
     if (getTotalRefCount(None) > 0) {

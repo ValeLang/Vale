@@ -110,13 +110,6 @@ case class AugmentAR[RuneID, RuleID, Literal, Lookup](
   override def allRunes: Vector[RuneID] = Vector(resultRune, innerRune)
 }
 
-//case class NullableAR[RuneID, RuleID, Literal, Lookup](
-//  range: RuleID,
-//  resultRune: RuneID,
-//  inner: Int) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
-//  override def hashCode(): Int = vcurious()
-//}
-
 case class CallAR[RuneID, RuleID, Literal, Lookup](
   range: RuleID,
   resultRune: RuneID,
@@ -126,13 +119,6 @@ case class CallAR[RuneID, RuleID, Literal, Lookup](
   override def hashCode(): Int = vcurious()
   override def allRunes: Vector[RuneID] = Vector(resultRune, templateRune) ++ args
 }
-
-//case class FunctionAR[RuneID, RuleID, Literal, Lookup](
-//  mutability: Option[IRulexAR],
-//  parameters: Array[Option[IRulexAR]],
-//  returnType: Option[IRulexAR]
-//) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
-// override def hashCode(): Int = vcurious()}
 
 case class PrototypeAR[RuneID, RuleID, Literal, Lookup](
   range: RuleID,

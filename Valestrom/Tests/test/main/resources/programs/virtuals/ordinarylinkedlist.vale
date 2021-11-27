@@ -1,6 +1,8 @@
+
+import v.builtins.tup.*;
 import printutils.*;
 
-interface MyOption imm { }
+interface MyOption sealed imm { }
 
 struct MySome imm {
   value *MyList;

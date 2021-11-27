@@ -3,18 +3,18 @@ package net.verdagon.vale
 import net.verdagon.vale.astronomer.{ICompileErrorA, ProgramA}
 
 import java.io.FileNotFoundException
-import net.verdagon.vale.templar._
+import net.verdagon.vale.templar.{Hinputs, ast, _}
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.vivem.{ConstraintViolatedException, Heap, IntV, PrimitiveKindV, ReferenceV, StructInstanceV, Vivem}
 import net.verdagon.von.{IVonData, VonBool, VonFloat, VonInt, VonObject}
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.{FullCompilation, FullCompilationOptions}
 import net.verdagon.vale.hammer.VonHammer
-import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal.{FullNameH, IntH, ProgramH, PrototypeH, ReadonlyH, ReadwriteH, YonderH}
 import net.verdagon.vale.parser.{FailedParse, FileP}
 import net.verdagon.vale.scout.{ICompileErrorS, ProgramS}
-import net.verdagon.vale.templar.templata.SignatureT
+import net.verdagon.vale.templar.ast.{SignatureT, StructToInterfaceUpcastTE}
+import net.verdagon.vale.templar.names.{FullNameT, FunctionNameT}
 import net.verdagon.vale.templar.types.{CoordT, IntT, ReadonlyT, ShareT, StrT}
 
 import scala.collection.immutable.List
@@ -177,7 +177,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Test taking a callable param") {
     val compile = RunCompilation.test(
       """
-        |fn do(callable) infer-ret {callable()}
+        |fn do<T>(callable T) infer-ret {callable()}
         |fn main() int export {do({ 3 })}
       """.stripMargin)
     compile.evalForKind(Vector()) shouldEqual VonInt(3)
@@ -431,11 +431,11 @@ class IntegrationTestsA extends FunSuite with Matchers {
   // Virtual starts a function family.
   // So, this checks that it and its three ancestors are all stamped and all get their own
   // function families.
-  test("Stamp multiple ancestors") {
-    val compile = RunCompilation.test(Tests.loadExpected("programs/genericvirtuals/stampMultipleAncestors.vale"))
-    val temputs = compile.expectTemputs()
-    compile.evalForKind(Vector())
-  }
+//  test("Stamp multiple ancestors") {
+//    val compile = RunCompilation.test(Tests.loadExpected("programs/genericvirtuals/stampMultipleAncestors.vale"))
+//    val temputs = compile.expectTemputs()
+//    compile.evalForKind(Vector())
+//  }
 
   test("Tests recursion") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/functions/recursion.vale"))
@@ -480,7 +480,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     val doIt = temputs.lookupFunction("doIt")
-    doIt.only({
+    Collector.only(doIt, {
       case StructToInterfaceUpcastTE(_, _) =>
     })
 
@@ -492,7 +492,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     val doIt = temputs.lookupFunction("doIt")
-    doIt.only({
+    Collector.only(doIt, {
       case StructToInterfaceUpcastTE(_, _) =>
     })
 
@@ -523,9 +523,9 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
     vassertSome(hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, FunctionNameT("helperFunc", Vector.empty, Vector(CoordT(ShareT, ReadonlyT, IntT.i32)))))))
 
-    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, FunctionNameT("bork", Vector.empty, Vector(CoordT(ShareT, ReadonlyT, StrT())))))))
+    vassert(None == hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, FunctionNameT("bork", Vector.empty, Vector(CoordT(ShareT, ReadonlyT, StrT())))))))
 
-    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, FunctionNameT("helperFunc", Vector.empty, Vector(CoordT(ShareT, ReadonlyT, StrT())))))))
+    vassert(None == hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, FunctionNameT("helperFunc", Vector.empty, Vector(CoordT(ShareT, ReadonlyT, StrT())))))))
   }
 
 //  test("Test overloading between borrow and own") {
@@ -597,7 +597,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
       """
         |import panicutils.*;
         |
-        |interface XOpt<T> rules(T Ref) { }
+        |interface XOpt<T> sealed rules(T Ref) { }
         |struct XNone<T> rules(T Ref) { }
         |impl<T> XOpt<T> for XNone<T>;
         |

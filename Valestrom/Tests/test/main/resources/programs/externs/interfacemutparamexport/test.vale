@@ -1,4 +1,4 @@
-interface IShip export { }
+interface IShip sealed export { }
 
 struct Spaceship export { fuel int; }
 impl IShip for Spaceship;

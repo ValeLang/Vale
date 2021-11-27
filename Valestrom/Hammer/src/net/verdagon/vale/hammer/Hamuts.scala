@@ -1,9 +1,8 @@
 package net.verdagon.vale.hammer
 
 import net.verdagon.vale.metal._
-import net.verdagon.vale.templar.{FullNameT, INameT}
-import net.verdagon.vale.templar.templata.PrototypeT
-import net.verdagon.vale.templar.types.{InterfaceTT, PackTT, StructTT}
+import net.verdagon.vale.templar.ast.PrototypeT
+import net.verdagon.vale.templar.types.{InterfaceTT, StructTT}
 import net.verdagon.vale.{PackageCoordinate, vassert, vfail, vimpl}
 import net.verdagon.von.IVonData
 
@@ -16,7 +15,7 @@ case class HamutsBox(var inner: Hamuts) {
   def packageCoordToExternNameToFunction: Map[PackageCoordinate, Map[String, PrototypeH]] = inner.packageCoordToExternNameToFunction
   def packageCoordToExternNameToKind: Map[PackageCoordinate, Map[String, KindH]] = inner.packageCoordToExternNameToKind
   def structRefsByRef2: Map[StructTT, StructRefH] = inner.structRefsByRef2
-  def structDefsByRef2: Map[StructTT, StructDefinitionH] = inner.structDefsByRef2
+  def structDefsByRefT: Map[StructTT, StructDefinitionH] = inner.structDefsByRef2
   def structDefs: Vector[StructDefinitionH] = inner.structDefs
   def interfaceRefs: Map[InterfaceTT, InterfaceRefH] = inner.interfaceRefs
   def interfaceDefs: Map[InterfaceTT, InterfaceDefinitionH] = inner.interfaceDefs

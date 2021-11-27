@@ -1,6 +1,6 @@
 struct Engine export imm { fuel int; }
 
-interface IShip export imm { }
+interface IShip sealed export imm { }
 
 struct Spaceship export imm { engine Engine; }
 impl IShip for Spaceship;

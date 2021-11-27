@@ -48,7 +48,7 @@ trait TemplexParser extends RegexParsers with ParserUtils {
     pos ~ "xrw" ~ pos ^^ { case begin ~ _ ~ end => PermissionPT(Range(begin, end), ExclusiveReadwriteP) } |
     pos ~ "rw" ~ pos ^^ { case begin ~ _ ~ end => PermissionPT(Range(begin, end), ReadwriteP) } |
     pos ~ "ro" ~ pos ^^ { case begin ~ _ ~ end => PermissionPT(Range(begin, end), ReadonlyP) } |
-    pos ~ "_" ~ pos ^^ { case begin ~ _ ~ end => AnonymousRunePT(Range(begin, end)) } |
+    pos ~ ("_\\b".r) ~ pos ^^ { case begin ~ _ ~ end => AnonymousRunePT(Range(begin, end)) } |
     (typeIdentifier ^^ NameOrRunePT)
   }
 
@@ -63,7 +63,7 @@ trait TemplexParser extends RegexParsers with ParserUtils {
   }
 
   private[parser] def unariedTemplex: Parser[ITemplexPT] = {
-    (pos ~ ("?" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => NullablePT(Range(begin, end), inner) }) |
+//    (pos ~ ("?" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => NullablePT(Range(begin, end), inner) }) |
     (pos ~ ("^" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), OwnP, ReadwriteP, inner) }) |
     (pos ~ ("*" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), ShareP, ReadonlyP, inner) }) |
     (pos ~ ("&&!" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), WeakP, ReadwriteP, inner) }) |
@@ -72,7 +72,10 @@ trait TemplexParser extends RegexParsers with ParserUtils {
     (pos ~ ("&" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), ConstraintP, ReadonlyP, inner) }) |
     (pos ~ ("inl" ~> white ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InlinePT(Range(begin, end), inner) }) |
     // A hack to do region highlighting
-    ((pos ~ ("'" ~> optWhite ~> exprIdentifier) ~ opt(white ~> templex) ~ pos) ^^ { case begin ~ regionName ~ maybeInner ~ end => maybeInner.getOrElse(IntPT(Range(begin, end), 133742)) }) |
+    ((pos ~ ("'" ~> optWhite ~> exprIdentifier) ~ opt(white ~> templex) ~ pos) ^^ {
+      case begin ~ regionName ~ None ~ end =>  RegionRune(Range(begin, end), regionName)
+      case begin ~ regionName ~ Some(inner) ~ end => inner
+    }) |
     (pos ~ ((atomTemplex <~ optWhite) ~ ("<" ~> optWhite ~> repsep(templex, optWhite ~ "," ~ optWhite) <~ optWhite <~ ">")) ~ pos ^^ {
       case begin ~ (template ~ args) ~ end => CallPT(Range(begin, end), template, args.toVector)
     }) |

@@ -59,6 +59,11 @@ case class ExportP(range: Range) extends ICitizenAttributeP { override def hashC
 case class WeakableP(range: Range) extends ICitizenAttributeP { override def hashCode(): Int = vcurious() }
 case class SealedP(range: Range) extends ICitizenAttributeP { override def hashCode(): Int = vcurious() }
 
+sealed trait IMacroInclusion
+case object CallMacro extends IMacroInclusion
+case object DontCallMacro extends IMacroInclusion
+case class MacroCallP(range: Range, inclusion: IMacroInclusion, name: NameP) extends ICitizenAttributeP { override def hashCode(): Int = vcurious() }
+
 case class StructP(
   range: Range,
   name: NameP,
@@ -73,11 +78,17 @@ case class StructMembersP(
   contents: Vector[IStructContent]) { override def hashCode(): Int = vcurious() }
 sealed trait IStructContent
 case class StructMethodP(func: FunctionP) extends IStructContent { override def hashCode(): Int = vcurious() }
-case class StructMemberP(
+case class NormalStructMemberP(
   range: Range,
   name: NameP,
   variability: VariabilityP,
-  tyype: ITemplexPT) extends IStructContent { override def hashCode(): Int = vcurious() }
+  tyype: ITemplexPT
+) extends IStructContent { override def hashCode(): Int = vcurious() }
+case class VariadicStructMemberP(
+  range: Range,
+  variability: VariabilityP,
+  tyype: ITemplexPT
+) extends IStructContent { override def hashCode(): Int = vcurious() }
 
 case class InterfaceP(
   range: Range,

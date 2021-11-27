@@ -104,14 +104,6 @@ class KindRuleTests extends FunSuite with Matchers with Collector {
     }
   }
 
-//  test("Simple kind filters") {
-//    compile(rulePR, ":Struct") shouldHave {//        case TypedPR(_,None,StructTypePR)
-//    compile(rulePR, ":Interface") shouldHave {//        case TypedPR(_,None,InterfaceTypePR)
-////    compile(rulePR, ":Callable") shouldHave {////        case TypedPR(_,None,CallableTypePR)
-//    compile(rulePR, ":KindTemplate") shouldHave {//        case TypedPR(_,None,CitizenTemplateTypePR)
-//    compile(rulePR, ":Seq") shouldHave {//        case TypedPR(_,None,SequenceTypePR)
-//  }
-
   test("Templated struct, one arg") {
     compile(rulePR,"Moo<int>") shouldHave {
       case TemplexPR(CallPT(_,NameOrRunePT(NameP(_, "Moo")),Vector(NameOrRunePT(NameP(_, "int"))))) =>

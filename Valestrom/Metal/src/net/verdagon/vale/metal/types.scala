@@ -52,7 +52,7 @@ case class ReferenceH[+T <: KindH](
     }
     case StructRefH(name) => {
       val isBox = name.toFullString.startsWith("::C(\"__Box\"")
-      val isTup = name.toFullString.startsWith("::Tup")
+      val isTup = name.toFullString.startsWith("::C(CT(\"Tup\"")
 
       if (isBox) {
         vassert(ownership == OwnH || ownership == BorrowH)
@@ -215,13 +215,6 @@ case object ShareH extends OwnershipH
 sealed trait PermissionH
 case object ReadonlyH extends PermissionH
 case object ReadwriteH extends PermissionH
-
-//// Permission says whether a reference can modify the kind it's pointing at.
-//// See ReferenceH for explanation.
-//sealed trait Permission
-//case object Readonly extends Permission
-//case object Readwrite extends Permission
-//case object ExclusiveReadwrite extends Permission
 
 // Location says whether a reference contains the kind's location (yonder) or
 // contains the kind itself (inline).

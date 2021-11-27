@@ -702,34 +702,8 @@ void RCImm::discard(
           buildFlare(from, globalState, functionState, thenBuilder, "Freeing shared str!");
           innerDeallocate(from, globalState, functionState, &kindStructs, thenBuilder, sourceMT, sourceRef);
         });
-  } else if (auto interfaceRnd = dynamic_cast<InterfaceKind *>(sourceRnd)) {
-    buildFlare(FL(), globalState, functionState, builder);
-    assert(sourceMT->ownership == Ownership::SHARE);
-    if (sourceMT->location == Location::INLINE) {
-      assert(false); // impl
-    } else {
-      auto rcLE =
-          adjustStrongRc(
-              from, globalState, functionState, &kindStructs, builder, sourceRef, sourceMT, -1);
-      buildIf(
-          globalState, functionState,
-          builder,
-          isZeroLE(builder, rcLE),
-          [globalState, functionState, sourceRef, interfaceRnd, sourceMT](
-              LLVMBuilderRef thenBuilder) {
-            auto immDestructor = globalState->program->getImmDestructor(sourceMT->kind);
-
-//            auto virtualArgRefMT = functionType->params[virtualParamIndex];
-//            auto virtualArgRef = argsLE[virtualParamIndex];
-            int indexInEdge = globalState->getInterfaceMethodIndex(interfaceRnd, immDestructor);
-            auto methodFunctionPtrLE =
-                globalState->getRegion(sourceMT)
-                    ->getInterfaceMethodFunctionPtr(functionState, thenBuilder, sourceMT, sourceRef, indexInEdge);
-            buildInterfaceCall(
-                globalState, functionState, thenBuilder, immDestructor, methodFunctionPtrLE, {sourceRef}, 0);
-          });
-    }
-  } else if (dynamic_cast<StructKind *>(sourceRnd) ||
+  } else if (dynamic_cast<InterfaceKind *>(sourceRnd) ||
+      dynamic_cast<StructKind *>(sourceRnd) ||
       dynamic_cast<StaticSizedArrayT *>(sourceRnd) ||
       dynamic_cast<RuntimeSizedArrayT *>(sourceRnd)) {
     buildFlare(FL(), globalState, functionState, builder);

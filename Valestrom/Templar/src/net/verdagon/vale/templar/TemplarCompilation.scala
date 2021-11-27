@@ -2,27 +2,24 @@ package net.verdagon.vale.templar
 
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.hinputs.Hinputs
+import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser.{FailedParse, FileP}
-import net.verdagon.vale.scout.{CodeLocationS, ICompileErrorS, ITemplexS, ProgramS, RangeS}
+import net.verdagon.vale.scout.{ICompileErrorS, ProgramS}
 
 import scala.collection.immutable.{List, ListMap, Map, Set}
 import scala.collection.mutable
 
 case class TemplarCompilationOptions(
-  debugOut: String => Unit = (x => {
-    println("##: " + x)
-  }),
-  verbose: Boolean = true,
+  globalOptions: GlobalOptions = GlobalOptions(),
+  debugOut: (=> String) => Unit = DefaultPrintyThing.print,
   profiler: IProfiler = new NullProfiler(),
-  useOptimization: Boolean = false,
 ) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 class TemplarCompilation(
   packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]],
   options: TemplarCompilationOptions = TemplarCompilationOptions()) {
-  var astronomerCompilation = new AstronomerCompilation(packagesToBuild, packageToContentsResolver)
+  var astronomerCompilation = new AstronomerCompilation(options.globalOptions, packagesToBuild, packageToContentsResolver)
   var hinputsCache: Option[Hinputs] = None
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = astronomerCompilation.getCodeMap()
@@ -36,8 +33,8 @@ class TemplarCompilation(
     hinputsCache match {
       case Some(temputs) => Ok(temputs)
       case None => {
-        val templar = new Templar(options.debugOut, options.verbose, options.profiler, options.useOptimization)
-        templar.evaluate(astronomerCompilation.getAstrouts().getOrDie()) match {
+        val templar = new Templar(options.debugOut, options.profiler, options.globalOptions)
+        templar.evaluate(astronomerCompilation.expectAstrouts()) match {
           case Err(e) => Err(e)
           case Ok(hinputs) => {
             hinputsCache = Some(hinputs)

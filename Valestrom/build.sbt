@@ -23,13 +23,13 @@ logLevel := Level.Debug
     (baseDirectory.value / "Driver" / "src"),
     (baseDirectory.value / "Hammer" / "src"),
     (baseDirectory.value / "Highlighter" / "src"),
-    (baseDirectory.value / "Hinputs" / "src"),
+    (baseDirectory.value / "Options" / "src"),
     (baseDirectory.value / "Builtins" / "src"),
     (baseDirectory.value / "Metal" / "src"),
     (baseDirectory.value / "Samples" / "src"),
     (baseDirectory.value / "Scout" / "src"),
+    (baseDirectory.value / "Solver" / "src"),
     (baseDirectory.value / "Templar" / "src"),
-    (baseDirectory.value / "Templata" / "src"),
     (baseDirectory.value / "Vivem" / "src"))
     // (baseDirectory.value / "src2"))
 

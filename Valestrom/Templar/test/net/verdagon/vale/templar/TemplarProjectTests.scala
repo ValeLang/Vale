@@ -1,6 +1,8 @@
 package net.verdagon.vale.templar
 
-import net.verdagon.vale.templar.templata.{CoordTemplata, SignatureT}
+import net.verdagon.vale.templar.ast.SignatureT
+import net.verdagon.vale.templar.names.{CitizenNameT, CitizenTemplateNameT, FullNameT, FunctionNameT, LambdaCitizenNameT}
+import net.verdagon.vale.templar.templata.CoordTemplata
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.{Builtins, FileCoordinateMap, PackageCoordinate, Tests, vassert, vassertSome, vimpl}
 import org.scalatest.{FunSuite, Matchers}
@@ -11,7 +13,11 @@ class TemplarProjectTests extends FunSuite with Matchers {
 
   test("Function has correct name") {
     val compile =
-      TemplarTestCompilation.test("fn main() export { }")
+      TemplarTestCompilation.test(
+        """
+          |import v.builtins.tup.*;
+          |fn main() export { }
+          """.stripMargin)
     val temputs = compile.expectTemputs()
 
     val fullName = FullNameT(PackageCoordinate.TEST_TLD, Vector(), FunctionNameT("main", Vector(), Vector()))
@@ -20,7 +26,11 @@ class TemplarProjectTests extends FunSuite with Matchers {
 
   test("Lambda has correct name") {
     val compile =
-      TemplarTestCompilation.test("fn main() export { {}!() }")
+      TemplarTestCompilation.test(
+        """
+          |import v.builtins.tup.*;
+          |fn main() export { {}!() }
+          """.stripMargin)
     val temputs = compile.expectTemputs()
 
 //    val fullName = FullName2(PackageCoordinate.TEST_TLD, Vector(), FunctionName2("lamb", Vector(), Vector()))
@@ -36,12 +46,16 @@ class TemplarProjectTests extends FunSuite with Matchers {
 
   test("Struct has correct name") {
     val compile =
-      TemplarTestCompilation.test("struct MyStruct export { a int; }")
+      TemplarTestCompilation.test(
+        """
+          |import v.builtins.tup.*;
+          |struct MyStruct export { a int; }
+          |""".stripMargin)
     val temputs = compile.expectTemputs()
 
     val struct = temputs.lookupStruct("MyStruct")
     struct.fullName match {
-      case FullNameT(PackageCoordinate.TEST_TLD,Vector(),CitizenNameT("MyStruct",Vector())) =>
+      case FullNameT(PackageCoordinate.TEST_TLD,Vector(),CitizenNameT(CitizenTemplateNameT("MyStruct"),Vector())) =>
     }
   }
 }

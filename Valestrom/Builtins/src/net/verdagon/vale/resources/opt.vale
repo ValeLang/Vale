@@ -1,6 +1,6 @@
 import v.builtins.panic.*;
 
-interface Opt<T> rules(T Ref) { }
+interface Opt<T> sealed rules(T Ref) { }
 struct Some<T> rules(T Ref) { value T; }
 impl<T> Opt<T> for Some<T>;
 struct None<T> rules(T Ref) { }

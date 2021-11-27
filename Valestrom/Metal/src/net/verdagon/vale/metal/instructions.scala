@@ -1,6 +1,5 @@
 package net.verdagon.vale.metal
 
-import net.verdagon.vale.templar.{FullNameT, IVarNameT, LetNormalTE}
 import net.verdagon.vale.{vassert, vcurious, vfail, vimpl, vwat}
 
 // Common trait for all instructions.
@@ -294,13 +293,6 @@ case class MemberLoadH(
   structExpression: ExpressionH[StructRefH],
   // Which member to read from, starting at 0.
   memberIndex: Int,
-//  // The ownership to load as. For example, we might load a constraint reference from a
-//  // owning Car reference member.
-//  targetOwnership: OwnershipH,
-//  // The permission of the resulting reference. This doesn't have to
-//  // match the ownership of the source reference. For example, we might want
-//  // to load a constraint reference from an owning local.
-//  targetPermission: PermissionH,
   // The type we expect the member to be. This can easily be looked up, but is provided
   // here to be convenient for LLVM.
   expectedMemberType: ReferenceH[KindH],
@@ -387,16 +379,6 @@ case class RuntimeSizedArrayLoadH(
 ) extends ExpressionH[KindH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(indexExpression.resultType.kind == IntH.i32)
-//
-//  override def resultType: ReferenceH[KindH] = {
-//    val location =
-//      (targetOwnership, arrayExpression.resultType.kind.rawArray.elementType.location) match {
-//        case (BorrowH, _) => YonderH
-//        case (OwnH, location) => location
-//        case (ShareH, location) => location
-//      }
-//    ReferenceH(targetOwnership, location, arrayExpression.resultType.kind.rawArray.elementType.kind)
-//  }
 }
 
 // Loads from the array in arrayExpression at the index in indexExpression, and stores
@@ -422,16 +404,6 @@ case class StaticSizedArrayLoadH(
 ) extends ExpressionH[KindH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(indexExpression.resultType.kind == IntH.i32)
-
-//  override def resultType: ReferenceH[KindH] = {
-//    val location =
-//      (targetOwnership, arrayExpression.resultType.kind.rawArray.elementType.location) match {
-//        case (BorrowH, _) => YonderH
-//        case (OwnH, location) => location
-//        case (ShareH, location) => location
-//      }
-//    ReferenceH(targetOwnership, location, arrayExpression.resultType.kind.rawArray.elementType.kind)
-//  }
 }
 
 // Calls a function.

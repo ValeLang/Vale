@@ -1,7 +1,9 @@
+
+import v.builtins.tup.*;
 import v.builtins.opt.*;
 import printutils.*;
 
-interface MyOption<T> rules(T Ref) imm { }
+interface MyOption<T> sealed rules(T Ref) imm { }
 
 struct MySome<T> rules(T Ref) imm {
   value T;

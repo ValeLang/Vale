@@ -377,7 +377,7 @@ impl IFunctionAttributeP for PureAttributeP;
 
 // Attributes on a rune.
 // A rune is a template param, like the T in `fn sum<T>(a T, b T) { a + b }`
-interface IRuneAttributeP {}
+interface IRuneSttributeP {}
 
 // What kind of rune this is. Most runes are Coord runes (coord means reference), but
 // they can also be integers, booleans, etc.
@@ -385,23 +385,23 @@ struct TypeRuneAttributeP {
   range Range;
   type ITypePR;
 }
-impl IRuneAttributeP for TypeRuneAttributeP;
+impl IRuneSttributeP for TypeRuneAttributeP;
 
 // This rune describes a region, specifically a readonly one.
 struct ReadOnlyRuneAttributeP { range Range; }
-impl IRuneAttributeP for ReadOnlyRuneAttributeP;
+impl IRuneSttributeP for ReadOnlyRuneAttributeP;
 
 // This rune describes a region, specifically a pool region.
 struct PoolRuneAttributeP { range Range; }
-impl IRuneAttributeP for PoolRuneAttributeP;
+impl IRuneSttributeP for PoolRuneAttributeP;
 
 // This rune describes a region, specifically an arena region.
 struct ArenaRuneAttributeP { range Range; }
-impl IRuneAttributeP for ArenaRuneAttributeP;
+impl IRuneSttributeP for ArenaRuneAttributeP;
 
 // This rune describes a region, specifically a bump region.
 struct BumpRuneAttributeP { range Range; }
-impl IRuneAttributeP for BumpRuneAttributeP;
+impl IRuneSttributeP for BumpRuneAttributeP;
 
 // An identifying rune
 // A rune is a template param, like the T in `fn sum<T>(a T, b T) { a + b }`
@@ -412,7 +412,7 @@ impl IRuneAttributeP for BumpRuneAttributeP;
 struct IdentifyingRuneP {
   range Range;
   name NameP;
-  attributes List<IRuneAttributeP>;
+  attributes List<IRuneSttributeP>;
 }
 
 struct IdentifyingRunesP {

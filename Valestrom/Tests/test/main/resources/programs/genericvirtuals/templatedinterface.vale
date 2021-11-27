@@ -1,3 +1,5 @@
+
+import v.builtins.tup.*;
 import v.builtins.arith.*;
 import printutils.*;
 

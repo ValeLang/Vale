@@ -127,12 +127,6 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     }
   }
 
-//  private[parser] def swap: Parser[IExpressionPE] = {
-//    ("exch" ~> optWhite ~> (expression <~ optWhite <~ "," <~ optWhite) ~ (expression <~ optWhite)) ^^ {
-//      case leftExpr ~ rightExpr => SwapPE(leftExpr, rightExpr)
-//    }
-//  }
-
   private[parser] def bracedBlock: Parser[BlockPE] = {
     pos ~ ("{" ~> optWhite ~> blockExprs <~ optWhite <~ "}") ~ pos ^^ {
       case begin ~ exprs ~ end => BlockPE(Range(begin, end), exprs)
@@ -313,32 +307,6 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     longStringExpr | shortStringExpr
   }
 
-//  private[parser] def callCallable: Parser[IExpressionPE] = {
-//    (pos <~ "(" <~ optWhite) ~
-//      (expression <~ optWhite <~ ")" <~ optWhite) ~
-//      packExpr ~
-//      pos ^^ {
-//      case begin ~ callable ~ args ~ end => {
-//        FunctionCallPE(Range(begin, end), None, Range(begin, end), false, callable, args, LendConstraintP(None))
-//      }
-//    }
-//  }
-//
-//  private[parser] def callNamed: Parser[IExpressionPE] = {
-//    pos ~
-//      (existsW("inl") <~ optWhite) ~
-//      // We dont have the optWhite here because we dont want to allow spaces before calls.
-//      // We dont want to allow moo (4) because we want each statements like this:
-//      //   each moo (x){ println(x); }
-//      ((templateSpecifiedLookup | lookup) /*SEE ABOVE <~ optWhite*/) ~
-//      packExpr ~
-//      pos ^^ {
-//      case begin ~ maybeInl ~ callable ~ args ~ end => {
-//        FunctionCallPE(Range(begin, end), maybeInl, Range(begin, end), false, callable, args, LendConstraintP(None))
-//      }
-//    }
-//  }
-
   private[parser] def integerExpression: Parser[ConstantIntPE] = {
     pos ~ long ~ opt("i" ~> long) ~ pos ^^ {
       case begin ~ n ~ maybeBits ~ end => ConstantIntPE(Range(begin, end), n, maybeBits.getOrElse(32L).toInt)
@@ -449,20 +417,6 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
         val (_, expr) =
           restWithDots.foldLeft((maybeInline, first))({
             case ((prevInline, prev), MethodCallStep(stepRange, operatorRange, subjectReadwrite, isMapCall, lookup, args)) => {
-//              val subjectLoadAs =
-//                (prev, subjectReadwrite) match {
-//                  case (LookupPE(_, _), false) => LendConstraintP(Some(ReadonlyP)) // This is like moo.bork()
-//                  case (LookupPE(_, _), true) => LendConstraintP(Some(ReadwriteP)) // This is like moo!.bork()
-//                  case (DotPE(_, _, _, _, _), false) => LendConstraintP(Some(ReadonlyP)) // This is like foo.moo.bork()
-//                  case (DotPE(_, _, _, _, _), true) => LendConstraintP(Some(ReadwriteP)) // This is like foo.moo!.bork()
-//                  case (IndexPE(_, _, _), false) => LendConstraintP(Some(ReadonlyP)) // This is like foo[3].bork()
-//                  case (IndexPE(_, _, _), true) => LendConstraintP(Some(ReadwriteP)) // This is like foo[3]!.bork()
-//                  case (LendPE(_, LookupPE(_, _), _), false) => vcurious() // This shouldnt be possible in our syntax
-//                  case (LendPE(_, LookupPE(_, _), _), true) => vcurious() // This shouldnt be possible in our syntax
-//                  case (_, false) => UseP // this is like (moo).bork();
-//                  case (_, true) => vcurious() // this is like (moo)!.bork(), which seems needless?
-//                }
-
               val subjectLoadAs =
                 (prev, subjectReadwrite) match {
                   case (PackPE(_, _), _) => UseP // This is like (moo).bork()
@@ -472,20 +426,6 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
               (None, MethodCallPE(Range(begin, stepRange.end), prevInline, prev, operatorRange, subjectLoadAs, isMapCall, lookup, args))
             }
             case ((prevInline, prev), CallStep(stepRange, operatorRange, subjectReadwrite, isMapCall, args)) => {
-//              val subjectLoadAs =
-//                (prev, subjectReadwrite) match {
-//                  case (LookupPE(_, _), false) => LendConstraintP(Some(ReadonlyP)) // This is like moo()
-//                  case (LookupPE(_, _), true) => LendConstraintP(Some(ReadwriteP)) // This is like moo!()
-//                  case (DotPE(_, _, _, _, _), false) => vcurious() // This would be like foo.moo(), but that should become a method call
-//                  case (DotPE(_, _, _, _, _), true) => vcurious() // This would be like foo.moo!(), but that should become a method call
-//                  case (IndexPE(_, _, _), false) => LendConstraintP(Some(ReadonlyP)) // This is like foo[3]()
-//                  case (IndexPE(_, _, _), true) => LendConstraintP(Some(ReadwriteP)) // This is like foo[3]!()
-//                  case (LendPE(_, LookupPE(_, _), _), false) => vcurious() // This shouldnt be possible in our syntax
-//                  case (LendPE(_, LookupPE(_, _), _), true) => vcurious() // This shouldnt be possible in our syntax
-//                  case (_, false) => UseP // this is like (moo)();
-//                  case (_, true) => vcurious() // this is like (moo)!(), which seems needless?
-//                }
-
               val subjectLoadAs =
                 (prev, subjectReadwrite) match {
                   case (PackPE(_, _), false) => UseP // This is like (moo).bork()
@@ -558,18 +498,6 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
           FunctionCallPE(
             range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), Vector(left, right), LendConstraintP(Some(ReadonlyP)))
         })
-
-//    val withAnd =
-//      binariableExpression(
-//        withAddSubtract,
-//        "and".r,
-//        (_: String, left, right) => AndPE(left, right))
-//
-//    val withOr =
-//      binariableExpression(
-//        withAnd,
-//        "or".r,
-//        (_: String, left, right) => OrPE(left, right))
 
     val withCustomBinaries =
       binariableExpression(
@@ -722,29 +650,6 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   private[parser] def indexExpr: Parser[Vector[IExpressionPE]] = {
     "[" ~> optWhite ~> repsep(expression, optWhite ~> "," <~ optWhite) <~ optWhite <~ "]" ^^ (a => a.toVector)
   }
-//
-//  private[parser] def filledParamLambda: Parser[FunctionP] = {
-//    pos ~ (patternPrototypeParams <~ optWhite) ~ opt(":" ~> optWhite ~> templex <~ optWhite) ~ bracedBlock ~ pos ^^ {
-//      case begin ~ patternParams ~ maybeReturn ~ body ~ end =>
-//        FunctionP(
-//          Range(begin, end), None, None, None, None, None, Some(patternParams), maybeReturn, Some(body))
-//    }
-//  }
-//
-//  private[parser] def emptyParamLambda: Parser[FunctionP] = {
-//    pos ~ (patternPrototypeParams <~ optWhite) ~ opt(":" ~> optWhite ~> templex <~ optWhite) ~ (pos <~ "{" <~ optWhite <~ "}") ~ pos ^^ {
-//      case begin ~ patternParams ~ maybeReturn ~ bodyBegin ~ end =>
-//        FunctionP(
-//          Range(begin, end), None, None, None, None, None, Some(patternParams), maybeReturn,
-//          Some(BlockPE(Range(bodyBegin, end), Vector(VoidPE(Range(end, end))))))
-//    }
-//  }
-//
-//  private[parser] def emptyParamLessLambda: Parser[BlockPE] = {
-//    (pos <~ "{" <~ optWhite <~ "}") ~ pos ^^ {
-//      case begin ~ end => BlockPE(Range(begin, end), Vector(VoidPE(Range(end, end))))
-//    }
-//  }
 
   private[parser] def lambda: Parser[LambdaPE] = {
     pos ~ existsMW("[]") ~ opt(patternPrototypeParams) ~ pos ~ bracedBlock ~ pos ^^ {

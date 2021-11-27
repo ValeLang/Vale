@@ -106,13 +106,13 @@ object Spanner {
 
   def forStructContent(c: IStructContent): Span = {
     c match {
-      case m @ StructMemberP(_, _, _, _) => forMember(m)
+      case m @ NormalStructMemberP(_, _, _, _) => forMember(m)
       case StructMethodP(f) => forFunction(f)
     }
   }
 
-  def forMember(member: StructMemberP): Span = {
-    val StructMemberP(range, NameP(nameRange, _), _, tyype) = member
+  def forMember(member: NormalStructMemberP): Span = {
+    val NormalStructMemberP(range, NameP(nameRange, _), _, tyype) = member
     makeSpan(
       Memb,
       range,

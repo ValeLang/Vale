@@ -181,6 +181,7 @@ public:
         return numMetalMethods + i;
       }
     }
+    std::cerr << "Couldn't find method " << prototype->name->name << " in interface " << interfaceKindM->fullName->name << std::endl;
     assert(false);
   }
 

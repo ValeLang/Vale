@@ -1,5 +1,15 @@
 package net.verdagon.vale
 
+// We use this instead of a regular RuntimeException because ScalaTest likes to print out
+// theException.getMessage then theException.toString then theException.printStackTrace().
+// Since RuntimeException's getMessage and toString both return the message, it means
+// ScalaTest prints out its message twice. Rather irksome to see a giant error message twice
+// when debugging test failures.
+class VAssertionFailException(message: String) extends RuntimeException {
+  override def getMessage: String = message
+  override def toString: String = "Assertion failed!"
+}
+
 // A condition that reflects a user error.
 object vcheck {
   def apply[T <: Throwable](condition: Boolean, message: String): Unit = {
@@ -22,10 +32,10 @@ object vcheck {
 
 // A condition that reflects a programmer error.
 object vassert {
-  def apply(condition: Boolean): Unit = {
+  def apply(condition: => Boolean): Unit = {
     vassert(condition, "Assertion failed!")
   }
-  def apply(condition: Boolean, message: String): Unit = {
+  def apply(condition: => Boolean, message: => String): Unit = {
     if (!condition) {
       vfail(message)
     }
@@ -61,20 +71,20 @@ object vassertSome {
 }
 
 object vassertOne {
-  def apply[T](thing: Vector[T], message: String): T = {
-    thing match {
-      case Vector(x) => x
+  def apply[T](thing: Iterable[T], message: String): T = {
+    thing.toList match {
+      case List(x) => x
       case _ => vfail(message)
     }
   }
-  def apply[T](thing: Vector[T]): T = {
+  def apply[T](thing: Iterable[T]): T = {
     apply(thing, "Expected exactly one element!")
   }
 }
 
 object vfail {
   def apply(message: Object): Nothing = {
-    throw new RuntimeException(message.toString)
+    throw new VAssertionFailException(message.toString)
   }
   def apply(): Nothing = {
     vfail("fail!")
@@ -85,8 +95,8 @@ object vwat {
   def apply(): Nothing = {
     vfail("wat")
   }
-  def apply(message: String): Nothing = {
-    vfail("wat: " + message)
+  def apply(message: Object): Nothing = {
+    vfail("wat: " + message.toString)
   }
 }
 
@@ -94,8 +104,8 @@ object vimpl {
   def apply(): Nothing = {
     vfail("impl")
   }
-  def apply(message: String): Nothing = {
-    vfail(message)
+  def apply(message: Object): Nothing = {
+    vfail(message.toString)
   }
 
   def unapply(thing: Any): Option[Nothing] = {

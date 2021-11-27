@@ -18,7 +18,7 @@ class BuildAction extends HttpFunction {
       Options(
         Vector(SourceInput(Driver.DEFAULT_PACKAGE_COORD, "in.vale", code)),
         Some(""),
-        false, false, true, false, true, None, false)
+        false, false, true, false, true, None, false, true, true, true)
     val json =
       Driver.build(options) match {
         case Ok(Some(programH)) => jsonifyProgram(programH)

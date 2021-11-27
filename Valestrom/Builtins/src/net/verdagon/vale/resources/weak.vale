@@ -1,0 +1,2 @@
+
+fn lock<T>(weak &&T) Opt<&T> extern(vale_lock_weak);

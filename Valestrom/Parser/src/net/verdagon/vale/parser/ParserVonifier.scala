@@ -38,6 +38,15 @@ object ParserVonifier {
       case WeakableP(range) => VonObject("WeakableAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case SealedP(range) => VonObject("SealedAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case ExportP(range) => VonObject("ExportAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+      case MacroCallP(range, dontCall, name) => {
+        VonObject(
+          "MacroCall",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("dontCall", VonBool(dontCall == DontCallMacro)),
+            VonMember("name", vonifyName(name))))
+      }
     }
   }
 
@@ -87,18 +96,30 @@ object ParserVonifier {
   def vonifyStructContents(thing: IStructContent) = {
     thing match {
       case sm @ StructMethodP(_) => vonifyStructMethod(sm)
-      case sm @ StructMemberP(_, _, _, _) => vonifyStructMember(sm)
+      case sm @ NormalStructMemberP(_, _, _, _) => vonifyStructMember(sm)
+      case sm @ VariadicStructMemberP(_, _, _) => vonifyVariadicStructMember(sm)
     }
   }
 
-  def vonifyStructMember(thing: StructMemberP) = {
-    val StructMemberP(range, name, variability, tyype) = thing
+  def vonifyStructMember(thing: NormalStructMemberP) = {
+    val NormalStructMemberP(range, name, variability, tyype) = thing
     VonObject(
-      "StructMember",
+      "NormalStructMember",
       None,
       Vector(
         VonMember("range", vonifyRange(range)),
         VonMember("name", vonifyName(name)),
+        VonMember("variability", vonifyVariability(variability)),
+        VonMember("type", vonifyTemplex(tyype))))
+  }
+
+  def vonifyVariadicStructMember(thing: VariadicStructMemberP) = {
+    val VariadicStructMemberP(range, variability, tyype) = thing
+    VonObject(
+      "VariadicStructMember",
+      None,
+      Vector(
+        VonMember("range", vonifyRange(range)),
         VonMember("variability", vonifyVariability(variability)),
         VonMember("type", vonifyTemplex(tyype))))
   }
@@ -260,7 +281,13 @@ object ParserVonifier {
 
   def vonifyVirtuality(thing: IVirtualityP): VonObject = {
     thing match {
-      case AbstractP => VonObject("Abstract", None, Vector())
+      case AbstractP(range) => {
+        VonObject(
+          "Abstract",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range))))
+      }
       case ov @ OverrideP(_, _) => vonifyOverride(ov)
     }
   }
@@ -380,9 +407,9 @@ object ParserVonifier {
           Vector(
             VonMember("templex", vonifyTemplex(templex))))
       }
-      case CallPR(range, name, args) => {
+      case BuiltinCallPR(range, name, args) => {
         VonObject(
-          "CallPR",
+          "BuiltinCallPR",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
@@ -424,6 +451,7 @@ object ParserVonifier {
       case PermissionTypePR => VonObject("PermissionTypePR", None, Vector())
       case LocationTypePR => VonObject("LocationTypePR", None, Vector())
       case CoordTypePR => VonObject("CoordTypePR", None, Vector())
+      case CoordListTypePR => VonObject("CoordListTypePR", None, Vector())
       case PrototypeTypePR => VonObject("PrototypeTypePR", None, Vector())
       case KindTypePR => VonObject("KindTypePR", None, Vector())
       case RegionTypePR => VonObject("RegionTypePR", None, Vector())
@@ -534,14 +562,6 @@ object ParserVonifier {
           None,
           Vector(
             VonMember("rune", vonifyName(rune))))
-      }
-      case NullablePT(range, inner) => {
-        VonObject(
-          "NullableT",
-          None,
-          Vector(
-            VonMember("range", vonifyRange(range)),
-            VonMember("inner", vonifyTemplex(inner))))
       }
       case InterpretedPT(range, ownership, permission, inner) => {
         VonObject(
@@ -1000,14 +1020,4 @@ object ParserVonifier {
         VonMember("range", vonifyRange(range)),
         VonMember("args", VonArray(None, args.map(vonifyTemplex).toVector))))
   }
-
-//
-//  def vonifyThing(thing: Thing): VonObject = {
-//    val Thing(range) = thing
-//    VonObject(
-//      "Thing",
-//      None,
-//      Vector(
-//        VonMember("range", vonifyRange(range))))
-//  }
 }

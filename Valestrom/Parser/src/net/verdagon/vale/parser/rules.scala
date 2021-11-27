@@ -22,7 +22,7 @@ case class TemplexPR(templex: ITemplexPT) extends IRulexPR {
   def range = templex.range
 }
 // This is for built-in parser functions, such as exists() or isBaseOf() etc.
-case class CallPR(range: Range, name: NameP, args: Vector[IRulexPR]) extends IRulexPR { override def hashCode(): Int = vcurious() }
+case class BuiltinCallPR(range: Range, name: NameP, args: Vector[IRulexPR]) extends IRulexPR { override def hashCode(): Int = vcurious() }
 case class ResolveSignaturePR(range: Range, nameStrRule: IRulexPR, argsPackRule: PackPR) extends IRulexPR { override def hashCode(): Int = vcurious() }
 case class PackPR(range: Range, elements: Vector[IRulexPR]) extends IRulexPR { override def hashCode(): Int = vcurious() }
 
@@ -34,25 +34,20 @@ case object MutabilityTypePR extends ITypePR
 case object PermissionTypePR extends ITypePR
 case object LocationTypePR extends ITypePR
 case object CoordTypePR extends ITypePR
+case object CoordListTypePR extends ITypePR
 case object PrototypeTypePR extends ITypePR
 case object KindTypePR extends ITypePR
 case object RegionTypePR extends ITypePR
 case object CitizenTemplateTypePR extends ITypePR
-//case object StructTypePR extends ITypePR
-//case object SequenceTypePR extends ITypePR
-//case object ArrayTypePR extends ITypePR
-//case object CallableTypePR extends ITypePR
-//case object InterfaceTypePR extends ITypePR
-
 
 object RulePUtils {
 
   def getOrderedRuneDeclarationsFromRulexesWithDuplicates(rulexes: Vector[IRulexPR]):
-  Vector[String] = {
+  Vector[NameP] = {
     rulexes.flatMap(getOrderedRuneDeclarationsFromRulexWithDuplicates)
   }
 
-  def getOrderedRuneDeclarationsFromRulexWithDuplicates(rulex: IRulexPR): Vector[String] = {
+  def getOrderedRuneDeclarationsFromRulexWithDuplicates(rulex: IRulexPR): Vector[NameP] = {
     rulex match {
       case PackPR(range, elements) => getOrderedRuneDeclarationsFromRulexesWithDuplicates(elements)
       case ResolveSignaturePR(range, nameStrRule, argsPackRule) =>getOrderedRuneDeclarationsFromRulexWithDuplicates(nameStrRule) ++ getOrderedRuneDeclarationsFromRulexWithDuplicates(argsPackRule)
@@ -60,17 +55,17 @@ object RulePUtils {
       case OrPR(range, possibilities) => getOrderedRuneDeclarationsFromRulexesWithDuplicates(possibilities)
       case DotPR(range, container, memberName) => getOrderedRuneDeclarationsFromRulexWithDuplicates(container)
       case ComponentsPR(_, container, components) => getOrderedRuneDeclarationsFromRulexesWithDuplicates(Vector(container) ++ components)
-      case TypedPR(range, maybeRune, tyype) => maybeRune.map(_.str).toVector
+      case TypedPR(range, maybeRune, tyype) => maybeRune.toVector
       case TemplexPR(templex) => getOrderedRuneDeclarationsFromTemplexWithDuplicates(templex)
-      case CallPR(range, name, args) => getOrderedRuneDeclarationsFromRulexesWithDuplicates(args)
+      case BuiltinCallPR(range, name, args) => getOrderedRuneDeclarationsFromRulexesWithDuplicates(args)
     }
   }
 
-  def getOrderedRuneDeclarationsFromTemplexesWithDuplicates(templexes: Vector[ITemplexPT]): Vector[String] = {
+  def getOrderedRuneDeclarationsFromTemplexesWithDuplicates(templexes: Vector[ITemplexPT]): Vector[NameP] = {
     templexes.flatMap(getOrderedRuneDeclarationsFromTemplexWithDuplicates)
   }
 
-  def getOrderedRuneDeclarationsFromTemplexWithDuplicates(templex: ITemplexPT): Vector[String] = {
+  def getOrderedRuneDeclarationsFromTemplexWithDuplicates(templex: ITemplexPT): Vector[NameP] = {
     templex match {
       case BorrowPT(_, inner) => getOrderedRuneDeclarationsFromTemplexWithDuplicates(inner)
       case StringPT(_, value) => Vector.empty
@@ -82,7 +77,7 @@ object RulePUtils {
       case OwnershipPT(_, ownership) => Vector.empty
       case BoolPT(_, value) => Vector.empty
       case NameOrRunePT(name) => Vector.empty
-      case TypedRunePT(_, name, tyype) => Vector(name.str)
+      case TypedRunePT(_, name, tyype) => Vector(name)
       case AnonymousRunePT(_) => Vector.empty
       case CallPT(_, template, args) => getOrderedRuneDeclarationsFromTemplexesWithDuplicates((Vector(template) ++ args))
       case FunctionPT(range, mutability, parameters, returnType) => {

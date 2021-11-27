@@ -1,16 +1,18 @@
 package net.verdagon.vale.templar.function
 
 
-import net.verdagon.vale.astronomer.{AtomAP, BFunctionA, BodyAE, ExportA, IExpressionAE, IFunctionAttributeA, LocalA, ParameterA, PureA, UserFunctionA}
+//import net.verdagon.vale.astronomer.{AtomSP, FunctionA, BodySE, ExportA, IExpressionSE, IFunctionAttributeA, LocalA, ParameterS, PureA, UserFunctionA}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.parser.CaptureP
 import net.verdagon.vale._
+import net.verdagon.vale.astronomer.FunctionA
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS}
 import net.verdagon.vale.templar._
+import net.verdagon.vale.templar.ast.{ArgLookupTE, BlockTE, LocationInFunctionEnvironment, ParameterT, ReferenceExpressionTE, ReturnTE}
 import net.verdagon.vale.templar.env._
-import net.verdagon.vale.templar.templata.TemplataTemplar
+import net.verdagon.vale.templar.names.NameTranslator
 
 import scala.collection.immutable.{List, Set}
 
@@ -20,14 +22,14 @@ trait IBodyTemplarDelegate {
     startingFate: FunctionEnvironment,
     fate: FunctionEnvironmentBox,
     life: LocationInFunctionEnvironment,
-    exprs: Vector[IExpressionAE]):
+    exprs: Vector[IExpressionSE]):
   (ReferenceExpressionTE, Set[CoordT])
 
   def translatePatternList(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
     life: LocationInFunctionEnvironment,
-    patterns1: Vector[AtomAP],
+    patterns1: Vector[AtomSP],
     patternInputExprs2: Vector[ReferenceExpressionTE]):
   ReferenceExpressionTE
 }
@@ -35,7 +37,7 @@ trait IBodyTemplarDelegate {
 class BodyTemplar(
   opts: TemplarOptions,
   profiler: IProfiler,
-  newTemplataStore: () => TemplatasStore,
+
     templataTemplar: TemplataTemplar,
     convertHelper: ConvertHelper,
     delegate: IBodyTemplarDelegate) {
@@ -46,35 +48,39 @@ class BodyTemplar(
   def declareAndEvaluateFunctionBody(
       funcOuterEnv: FunctionEnvironmentBox,
       temputs: Temputs,
-    life: LocationInFunctionEnvironment,
-      bfunction1: BFunctionA,
+      life: LocationInFunctionEnvironment,
+      function1: FunctionA,
       maybeExplicitReturnCoord: Option[CoordT],
       params2: Vector[ParameterT],
       isDestructor: Boolean):
   (Option[CoordT], BlockTE) = {
-    val BFunctionA(function1, _) = bfunction1;
+    val bodyS =
+      function1.body match {
+        case CodeBodyS(b) => b
+        case _ => vwat()
+      }
 
     profiler.childFrame("evaluate body", () => {
       maybeExplicitReturnCoord match {
         case None => {
           val (body2, returns) =
             evaluateFunctionBody(
-                funcOuterEnv, temputs, life, bfunction1.origin.params, params2, bfunction1.body, isDestructor, None) match {
+                funcOuterEnv, temputs, life, function1.params, params2, bodyS, isDestructor, None) match {
               case Err(ResultTypeMismatchError(expectedType, actualType)) => {
-                throw CompileErrorExceptionT(BodyResultDoesntMatch(bfunction1.origin.range, function1.name, expectedType, actualType))
+                throw CompileErrorExceptionT(BodyResultDoesntMatch(function1.range, function1.name, expectedType, actualType))
 
               }
               case Ok((body, returns)) => (body, returns)
             }
 
           val returnType2 =
-            if (returns.isEmpty && body2.resultRegister.kind == NeverT()) {
+            if (returns.isEmpty && body2.result.kind == NeverT()) {
               // No returns yet the body results in a Never. This can happen if we call panic from inside.
-              body2.resultRegister.reference
+              body2.result.reference
             } else {
               vassert(returns.nonEmpty)
               if (returns.size > 1) {
-                throw CompileErrorExceptionT(RangedInternalErrorT(bfunction1.body.range, "Can't infer return type because " + returns.size + " types are returned:" + returns.map("\n" + _)))
+                throw CompileErrorExceptionT(RangedInternalErrorT(bodyS.range, "Can't infer return type because " + returns.size + " types are returned:" + returns.map("\n" + _)))
               }
               returns.head
             }
@@ -87,13 +93,13 @@ class BodyTemplar(
                 funcOuterEnv,
                 temputs,
                 life,
-                bfunction1.origin.params,
+                function1.params,
                 params2,
-                bfunction1.body,
+                bodyS,
                 isDestructor,
                 Some(explicitRetCoord)) match {
               case Err(ResultTypeMismatchError(expectedType, actualType)) => {
-                throw CompileErrorExceptionT(BodyResultDoesntMatch(bfunction1.origin.range, bfunction1.origin.name, expectedType, actualType))
+                throw CompileErrorExceptionT(BodyResultDoesntMatch(function1.range, function1.name, expectedType, actualType))
               }
               case Ok((body, returns)) => (body, returns)
             }
@@ -102,11 +108,11 @@ class BodyTemplar(
             // Let it through, it returns the expected type.
           } else if (returns == Set(CoordT(ShareT, ReadonlyT, NeverT()))) {
             // Let it through, it returns a never but we expect something else, that's fine
-          } else if (returns == Set() && body2.resultRegister.kind == NeverT()) {
+          } else if (returns == Set() && body2.result.kind == NeverT()) {
             // Let it through, it doesn't return anything yet it results in a never, which means
             // we called panic or something from inside.
           } else {
-            throw CompileErrorExceptionT(CouldntConvertForReturnT(bfunction1.body.range, explicitRetCoord, returns.head))
+            throw CompileErrorExceptionT(CouldntConvertForReturnT(bodyS.range, explicitRetCoord, returns.head))
           }
 
           (None, body2)
@@ -121,20 +127,20 @@ class BodyTemplar(
     funcOuterEnv: FunctionEnvironmentBox,
     temputs: Temputs,
     life: LocationInFunctionEnvironment,
-    params1: Vector[ParameterA],
+    params1: Vector[ParameterS],
     params2: Vector[ParameterT],
-    body1: BodyAE,
+    body1: BodySE,
     isDestructor: Boolean,
     maybeExpectedResultType: Option[CoordT]):
   Result[(BlockTE, Set[CoordT]), ResultTypeMismatchError] = {
-    val env = funcOuterEnv.makeChildEnvironment(newTemplataStore)
+    val env = funcOuterEnv.makeChildBlockEnvironment(Some(body1.block))
     val startingEnv = env.functionEnvironment
 
     val patternsTE =
-      evaluateLets(funcOuterEnv, temputs, life + 0, body1.range, params1, params2);
+      evaluateLets(env, temputs, life + 0, body1.range, params1, params2);
 
     val (statementsFromBlock, returnsFromInsideMaybeWithNever) =
-      delegate.evaluateBlockStatements(temputs, startingEnv, funcOuterEnv, life + 1, body1.block.exprs);
+      delegate.evaluateBlockStatements(temputs, startingEnv, env, life + 1, body1.block.exprs);
 
     val unconvertedBodyWithoutReturn = Templar.consecutive(Vector(patternsTE, statementsFromBlock))
 
@@ -143,14 +149,14 @@ class BodyTemplar(
       maybeExpectedResultType match {
         case None => unconvertedBodyWithoutReturn
         case Some(expectedResultType) => {
-          if (templataTemplar.isTypeTriviallyConvertible(temputs, unconvertedBodyWithoutReturn.resultRegister.reference, expectedResultType)) {
+          if (templataTemplar.isTypeTriviallyConvertible(temputs, unconvertedBodyWithoutReturn.result.reference, expectedResultType)) {
             if (unconvertedBodyWithoutReturn.kind == NeverT()) {
               unconvertedBodyWithoutReturn
             } else {
               convertHelper.convert(funcOuterEnv.snapshot, temputs, body1.range, unconvertedBodyWithoutReturn, expectedResultType);
             }
           } else {
-            return Err(ResultTypeMismatchError(expectedResultType, unconvertedBodyWithoutReturn.resultRegister.reference))
+            return Err(ResultTypeMismatchError(expectedResultType, unconvertedBodyWithoutReturn.result.reference))
           }
         }
       }
@@ -161,7 +167,7 @@ class BodyTemplar(
       if (convertedBodyWithoutReturn.kind == NeverT()) {
         (convertedBodyWithoutReturn, returnsFromInsideMaybeWithNever)
       } else {
-        (ReturnTE(convertedBodyWithoutReturn), returnsFromInsideMaybeWithNever + convertedBodyWithoutReturn.resultRegister.reference)
+        (ReturnTE(convertedBodyWithoutReturn), returnsFromInsideMaybeWithNever + convertedBodyWithoutReturn.result.reference)
       }
     // If we already had a return, then the above will add a Never to the returns, but that's fine, it will be filtered
     // out below.
@@ -180,7 +186,7 @@ class BodyTemplar(
       // We don't want the user to accidentally just move it somewhere, they need to
       // promise it gets destroyed.
       val destructeeName = params2.head.name
-      if (!funcOuterEnv.unstackifieds.exists(_.last == destructeeName)) {
+      if (!env.unstackifieds.exists(_.last == destructeeName)) {
         throw CompileErrorExceptionT(RangedInternalErrorT(body1.range, "Destructee wasn't moved/destroyed!"))
       }
     }
@@ -194,7 +200,7 @@ class BodyTemplar(
       temputs: Temputs,
     life: LocationInFunctionEnvironment,
     range: RangeS,
-      params1: Vector[ParameterA],
+      params1: Vector[ParameterS],
       params2: Vector[ParameterT]):
   ReferenceExpressionTE = {
     val paramLookups2 =
@@ -207,8 +213,8 @@ class BodyTemplar(
     // for everything inside the body to use
 
     params1.foreach({
-      case ParameterA(AtomAP(_, Some(LocalA(name, _, _, _, _, _, _)), _, _, _)) => {
-        if (!fate.locals.exists(_.id.last == NameTranslator.translateVarNameStep(name))) {
+      case ParameterS(AtomSP(_, Some(CaptureS(name)), _, _, _)) => {
+        if (!fate.declaredLocals.exists(_.id.last == NameTranslator.translateVarNameStep(name))) {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot couldnt find " + name))
         }
       }

@@ -1,0 +1,7 @@
+
+fn drop(x int) {}
+fn drop(x bool) {}
+fn drop(x float) {}
+fn drop(x void) {}
+fn drop(x i64) {}
+fn drop(x str) {}

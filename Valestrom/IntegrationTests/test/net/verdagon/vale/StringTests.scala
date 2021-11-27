@@ -1,6 +1,7 @@
 package net.verdagon.vale
 
 import net.verdagon.vale.templar._
+import net.verdagon.vale.templar.ast.ConstantStrTE
 import net.verdagon.von.{VonInt, VonStr}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -14,7 +15,7 @@ class StringTests extends FunSuite with Matchers {
       """.stripMargin)
 
     val temputs = compile.expectTemputs()
-    temputs.lookupFunction("main").only({ case ConstantStrTE("sprogwoggle") => })
+    Collector.only(temputs.lookupFunction("main"), { case ConstantStrTE("sprogwoggle") => })
 
     compile.evalForKind(Vector()) shouldEqual VonStr("sprogwoggle")
   }
@@ -28,7 +29,7 @@ class StringTests extends FunSuite with Matchers {
         |""".stripMargin)
 
     val temputs = compile.expectTemputs()
-    temputs.lookupFunction("main").only({ case ConstantStrTE("sprog\nwoggle") => })
+    Collector.only(temputs.lookupFunction("main"), { case ConstantStrTE("sprog\nwoggle") => })
 
     compile.evalForKind(Vector()) shouldEqual VonStr("sprog\nwoggle")
   }
@@ -43,7 +44,7 @@ class StringTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(code)
 
     val temputs = compile.expectTemputs()
-    temputs.lookupFunction("main").only({
+    Collector.only(temputs.lookupFunction("main"), {
       case ConstantStrTE(x) => {
         x shouldEqual "sprog\u001bwoggle"
       }

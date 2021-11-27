@@ -15,5 +15,7 @@
     <orderEntry type="module" module-name="Utils" />
     <orderEntry type="library" name="org.scalatest:scalatest_2.12:3.0.8" level="project" />
     <orderEntry type="library" name="scala-sdk-2.12.6" level="application" />
+    <orderEntry type="module" module-name="Solver" />
+    <orderEntry type="module" module-name="Options" />
   </component>
 </module>

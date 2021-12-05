@@ -67,8 +67,6 @@ case class LetAndLendTE(
     val CoordT(ownership, permission, kind) = expr.result.reference
     ReferenceResultT(CoordT(if (ownership == ShareT) ShareT else ConstraintT, permission, kind))
   }
-
-
 }
 
 case class NarrowPermissionTE(
@@ -89,8 +87,6 @@ case class NarrowPermissionTE(
     val CoordT(ownership, permission, kind) = expr.result.reference
     ReferenceResultT(CoordT(ownership, targetPermission, kind))
   }
-
-
 }
 
 case class LockWeakTE(
@@ -108,8 +104,6 @@ case class LockWeakTE(
   override def result: ReferenceResultT = {
     ReferenceResultT(resultOptBorrowType)
   }
-
-
 }
 
 // Turns a constraint ref into a weak ref
@@ -124,8 +118,6 @@ case class WeakAliasTE(
   override def result: ReferenceResultT = {
     ReferenceResultT(CoordT(WeakT, innerExpr.result.reference.permission, innerExpr.kind))
   }
-
-
 }
 
 case class LetNormalTE(
@@ -139,8 +131,6 @@ case class LetNormalTE(
     case ReturnTE(_) => vwat()
     case _ =>
   }
-
-
 }
 
 // Only ExpressionTemplar.unletLocal should make these
@@ -180,8 +170,6 @@ case class DiscardTE(
     }
     case _ =>
   }
-
-
 }
 
 case class DeferTE(
@@ -194,8 +182,6 @@ case class DeferTE(
   override def result = ReferenceResultT(innerExpr.result.reference)
 
   vassert(deferredExpr.result.reference == CoordT(ShareT, ReadonlyT, VoidT()))
-
-
 }
 
 
@@ -225,8 +211,6 @@ case class IfTE(
     }
 
   override def result = ReferenceResultT(commonSupertype)
-
-
 }
 
 // The block is expected to return a boolean (false = stop, true = keep going).
@@ -234,8 +218,6 @@ case class IfTE(
 case class WhileTE(block: BlockTE) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
-
-
 }
 
 case class MutateTE(
@@ -244,8 +226,6 @@ case class MutateTE(
 ) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(destinationExpr.result.reference)
-
-
 }
 
 
@@ -260,8 +240,6 @@ case class ReturnTE(
       case BlockTE(expr) => getFinalExpr(expr)
     }
   }
-
-
 }
 
 // when we make a closure, we make a struct full of pointers to all our variables
@@ -381,36 +359,26 @@ case class AsSubtypeTE(
 case class VoidLiteralTE() extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
-
-
 }
 
 case class ConstantIntTE(value: Long, bits: Int) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, IntT(bits)))
-
-
 }
 
 case class ConstantBoolTE(value: Boolean) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, BoolT()))
-
-
 }
 
 case class ConstantStrTE(value: String) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, StrT()))
-
-
 }
 
 case class ConstantFloatTE(value: Double) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, FloatT()))
-
-
 }
 
 case class LocalLookupTE(
@@ -421,8 +389,6 @@ case class LocalLookupTE(
 ) extends AddressExpressionTE {
   override def hashCode(): Int = vcurious()
   override def result = AddressResultT(reference)
-
-
 }
 
 case class ArgLookupTE(
@@ -431,8 +397,6 @@ case class ArgLookupTE(
 ) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(reference)
-
-
 }
 
 case class StaticSizedArrayLookupTE(
@@ -448,9 +412,7 @@ case class StaticSizedArrayLookupTE(
   override def hashCode(): Int = vcurious()
   vassert(arrayExpr.result.reference.kind == arrayType)
 
-  override def result = AddressResultT(arrayType.array.elementType)
-
-
+  override def result = AddressResultT(arrayType.elementType)
 }
 
 case class RuntimeSizedArrayLookupTE(
@@ -466,9 +428,7 @@ case class RuntimeSizedArrayLookupTE(
   override def hashCode(): Int = vcurious()
   vassert(arrayExpr.result.reference.kind == arrayType)
 
-  override def result = AddressResultT(arrayType.array.elementType)
-
-
+  override def result = AddressResultT(arrayType.elementType)
 }
 
 case class ArrayLengthTE(arrayExpr: ReferenceExpressionTE) extends ReferenceExpressionTE {
@@ -497,8 +457,6 @@ case class ReferenceMemberLookupTE(
     // See RMLRMO why we just return the member type.
     AddressResultT(memberReference.copy(permission = targetPermission))
   }
-
-
 }
 case class AddressMemberLookupTE(
     range: RangeS,
@@ -549,8 +507,6 @@ case class FunctionCallTE(
   override def result: ReferenceResultT = {
     ReferenceResultT(callable.returnType)
   }
-
-
 }
 
 // A templar reinterpret is interpreting a type as a different one which is hammer-equivalent.
@@ -573,8 +529,6 @@ case class TemplarReinterpretTE(
       vfail("wat");
     }
   }
-
-
 }
 
 case class ConstructTE(
@@ -585,28 +539,22 @@ case class ConstructTE(
   vpass()
 
   override def result = ReferenceResultT(resultReference)
-
-
 }
 
 // Note: the functionpointercall's last argument is a Placeholder2,
 // it's up to later stages to replace that with an actual index
-case class ConstructArrayTE(
-    arrayType: RuntimeSizedArrayTT,
-    sizeExpr: ReferenceExpressionTE,
-    generator: ReferenceExpressionTE,
-    generatorMethod: PrototypeT
+case class NewMutRuntimeSizedArrayTE(
+  arrayType: RuntimeSizedArrayTT,
+  capacityExpr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def result: ReferenceResultT = {
     ReferenceResultT(
       CoordT(
-        if (arrayType.array.mutability == MutableT) OwnT else ShareT,
-        if (arrayType.array.mutability == MutableT) ReadwriteT else ReadonlyT,
+        if (arrayType.mutability == MutableT) OwnT else ShareT,
+        if (arrayType.mutability == MutableT) ReadwriteT else ReadonlyT,
         arrayType))
   }
-
-
 }
 
 case class StaticArrayFromCallableTE(
@@ -618,12 +566,10 @@ case class StaticArrayFromCallableTE(
   override def result: ReferenceResultT = {
     ReferenceResultT(
       CoordT(
-        if (arrayType.array.mutability == MutableT) OwnT else ShareT,
-        if (arrayType.array.mutability == MutableT) ReadwriteT else ReadonlyT,
+        if (arrayType.mutability == MutableT) OwnT else ShareT,
+        if (arrayType.mutability == MutableT) ReadwriteT else ReadonlyT,
         arrayType))
   }
-
-
 }
 
 // Note: the functionpointercall's last argument is a Placeholder2,
@@ -638,11 +584,9 @@ case class DestroyStaticSizedArrayIntoFunctionTE(
   override def hashCode(): Int = vcurious()
   vassert(consumerMethod.paramTypes.size == 2)
   vassert(consumerMethod.paramTypes(0) == consumer.result.reference)
-  vassert(consumerMethod.paramTypes(1) == arrayType.array.elementType)
+  vassert(consumerMethod.paramTypes(1) == arrayType.elementType)
 
   override def result: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
-
-
 }
 
 // We destroy both Share and Own things
@@ -660,25 +604,38 @@ case class DestroyStaticSizedArrayIntoLocalsTE(
   if (expr.result.reference.ownership == ConstraintT) {
     vfail("wot")
   }
-
-
 }
 
-case class DestroyRuntimeSizedArrayTE(
-    arrayExpr: ReferenceExpressionTE,
-    arrayType: RuntimeSizedArrayTT,
-    consumer: ReferenceExpressionTE,
-    consumerMethod: PrototypeT
+case class DestroyMutRuntimeSizedArrayTE(
+  arrayExpr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
-  vassert(consumerMethod.paramTypes.size == 2)
-  vassert(consumerMethod.paramTypes(0) == consumer.result.reference)
-//  vassert(consumerMethod.paramTypes(1) == Program2.intType)
-  vassert(consumerMethod.paramTypes(1) == arrayType.array.elementType)
-
   override def result: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
+}
 
+case class RuntimeSizedArrayCapacityTE(
+  arrayExpr: ReferenceExpressionTE
+) extends ReferenceExpressionTE {
+  override def result: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, IntT(32)))
+}
 
+case class PushRuntimeSizedArrayTE(
+  arrayExpr: ReferenceExpressionTE,
+//  arrayType: RuntimeSizedArrayTT,
+  newElementExpr: ReferenceExpressionTE,
+//  newElementType: CoordT,
+) extends ReferenceExpressionTE {
+  override def result: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
+}
+
+case class PopRuntimeSizedArrayTE(
+  arrayExpr: ReferenceExpressionTE
+) extends ReferenceExpressionTE {
+  private val elementType =
+    arrayExpr.result.reference.kind match {
+      case RuntimeSizedArrayTT(_, e) => e
+      case other => vwat(other)
+    }
+  override def result: ReferenceResultT = ReferenceResultT(elementType)
 }
 
 case class InterfaceToInterfaceUpcastTE(
@@ -692,8 +649,6 @@ case class InterfaceToInterfaceUpcastTE(
         innerExpr.result.reference.permission,
         targetInterfaceRef))
   }
-
-
 }
 
 case class StructToInterfaceUpcastTE(innerExpr: ReferenceExpressionTE, targetInterfaceRef: InterfaceTT) extends ReferenceExpressionTE {
@@ -705,8 +660,6 @@ case class StructToInterfaceUpcastTE(innerExpr: ReferenceExpressionTE, targetInt
         innerExpr.result.reference.permission,
         targetInterfaceRef))
   }
-
-
 }
 
 // A soft load is one that turns an int** into an int*. a hard load turns an int* into an int.
@@ -734,8 +687,6 @@ case class SoftLoadTE(
   override def result: ReferenceResultT = {
     ReferenceResultT(CoordT(targetOwnership, targetPermission, expr.result.reference.kind))
   }
-
-
 }
 
 // Destroy an object.
@@ -754,8 +705,43 @@ case class DestroyTE(
   if (expr.result.reference.ownership == ConstraintT) {
     vfail("wot")
   }
+}
 
+case class DestroyImmRuntimeSizedArrayTE(
+  arrayExpr: ReferenceExpressionTE,
+  arrayType: RuntimeSizedArrayTT,
+  consumer: ReferenceExpressionTE,
+  consumerMethod: PrototypeT
+) extends ReferenceExpressionTE {
+  vassert(arrayType.mutability == ImmutableT)
 
+  override def hashCode(): Int = vcurious()
+  vassert(consumerMethod.paramTypes.size == 2)
+  vassert(consumerMethod.paramTypes(0) == consumer.result.reference)
+  //  vassert(consumerMethod.paramTypes(1) == Program2.intType)
+  vassert(consumerMethod.paramTypes(1) == arrayType.elementType)
+
+  override def result: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
+}
+
+// Note: the functionpointercall's last argument is a Placeholder2,
+// it's up to later stages to replace that with an actual index
+case class NewImmRuntimeSizedArrayTE(
+  arrayType: RuntimeSizedArrayTT,
+  sizeExpr: ReferenceExpressionTE,
+  generator: ReferenceExpressionTE,
+  generatorMethod: PrototypeT
+) extends ReferenceExpressionTE {
+  vassert(arrayType.mutability == ImmutableT)
+
+  override def hashCode(): Int = vcurious()
+  override def result: ReferenceResultT = {
+    ReferenceResultT(
+      CoordT(
+        if (arrayType.mutability == MutableT) OwnT else ShareT,
+        if (arrayType.mutability == MutableT) ReadwriteT else ReadonlyT,
+        arrayType))
+  }
 }
 
 object referenceExprResultStructName {

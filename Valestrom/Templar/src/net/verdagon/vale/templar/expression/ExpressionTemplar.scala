@@ -692,7 +692,7 @@ class ExpressionTemplar(
               temputs, fate, range, rules.toVector, sizeRuneA.rune, maybeMutabilityRune.rune, maybeVariabilityRune.rune, callableTE)
           (expr2, returnsFromCallable)
         }
-        case RuntimeArrayFromCallableSE(range, rulesA, mutabilityRune, variabilityRune, sizeAE, callableAE) => {
+        case RuntimeArrayFromCallableSE(range, rulesA, mutabilityRune, sizeAE, callableAE) => {
           val (sizeTE, returnsFromSize) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, life + 0, sizeAE);
           val (callableTE, returnsFromCallable) =
@@ -700,7 +700,7 @@ class ExpressionTemplar(
 
           val expr2 =
             arrayTemplar.evaluateRuntimeSizedArrayFromCallable(
-              temputs, fate, range, rulesA.toVector, mutabilityRune.rune, variabilityRune.rune, sizeTE, callableTE)
+              temputs, fate, range, rulesA.toVector, mutabilityRune.rune, sizeTE, callableTE)
           (expr2, returnsFromSize ++ returnsFromCallable)
         }
         case LetSE(range, rulesA, pattern, sourceExpr1) => {

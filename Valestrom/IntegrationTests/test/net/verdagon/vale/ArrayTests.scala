@@ -3,7 +3,7 @@ package net.verdagon.vale
 import com.sun.tools.javac.util.ArrayUtils
 import net.verdagon.vale.parser.ImmutableP
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.ast.{ConstructArrayTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE}
+import net.verdagon.vale.templar.ast.{NewImmRuntimeSizedArrayTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE}
 import net.verdagon.vale.templar.env.ReferenceLocalVariableT
 import net.verdagon.vale.templar.types._
 import net.verdagon.von.{VonBool, VonInt, VonStr}
@@ -59,7 +59,7 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |fn main() int export {
-        |  a = [*](3, {13 + _});
+        |  a = Array<imm>(3, {13 + _});
         |  sum = 0;
         |  drop_into(a, &!(e){ set sum = sum + e; });
         |  = sum;
@@ -87,9 +87,10 @@ class ArrayTests extends FunSuite with Matchers {
   test("Destroy RSA of muts into function") {
     val compile = RunCompilation.test(
       """
+        |import array.make.*;
         |struct Spaceship { fuel int; }
         |fn main() int export {
-        |  a = [*](3, {Spaceship(13 + _)});
+        |  a = MakeVaryArray(3, &!{Spaceship(13 + _)});
         |  sum = 0;
         |  drop_into(a, &!(e){ set sum = sum + e.fuel; });
         |  = sum;
@@ -112,7 +113,7 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), {
       case StaticSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
-        arrayType.array.mutability shouldEqual MutableT
+        arrayType.mutability shouldEqual MutableT
       }
     })
 
@@ -125,7 +126,7 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), {
       case StaticSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
-        arrayType.array.mutability shouldEqual ImmutableT
+        arrayType.mutability shouldEqual ImmutableT
       }
     })
 
@@ -138,7 +139,7 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), {
       case StaticSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
-        arrayType.array.mutability shouldEqual MutableT
+        arrayType.mutability shouldEqual MutableT
       }
     })
 
@@ -151,7 +152,7 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), {
       case StaticSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
-        arrayType.array.mutability shouldEqual ImmutableT
+        arrayType.mutability shouldEqual ImmutableT
       }
     })
 
@@ -164,7 +165,7 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), {
       case StaticSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
-        arrayType.array.mutability shouldEqual MutableT
+        arrayType.mutability shouldEqual MutableT
       }
     })
 
@@ -174,9 +175,10 @@ class ArrayTests extends FunSuite with Matchers {
   test("Unspecified-mutability runtime array from lambda defaults to mutable") {
     val compile = RunCompilation.test(
       """
+        |import array.make.*;
         |fn main() int export {
         |  i = 3;
-        |  a = [*](5, &!{_ * 42});
+        |  a = MakeVaryArray(5, &!{_ * 42});
         |  = a[1];
         |}
         |""".stripMargin)
@@ -184,7 +186,7 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), {
       case RuntimeSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
-        arrayType.array.mutability shouldEqual MutableT
+        arrayType.mutability shouldEqual MutableT
       }
     })
 
@@ -197,7 +199,7 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), {
       case RuntimeSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
-        arrayType.array.mutability shouldEqual ImmutableT
+        arrayType.mutability shouldEqual ImmutableT
       }
     })
 
@@ -205,12 +207,14 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Mutable runtime array from lambda") {
-    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/rsamutfromcallable.vale"))
+    val compile =
+      RunCompilation.test(
+        Tests.loadExpected("programs/arrays/rsamutfromcallable.vale"))
 
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), {
       case RuntimeSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
-        arrayType.array.mutability shouldEqual MutableT
+        arrayType.mutability shouldEqual MutableT
       }
     })
 
@@ -268,7 +272,7 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     Collector.only(main, {
-      case ConstructArrayTE(RuntimeSizedArrayTT(RawArrayTT(CoordT(ShareT, ReadonlyT, IntT(_)), ImmutableT, _)), _, _, _) =>
+      case NewImmRuntimeSizedArrayTE(RuntimeSizedArrayTT(ImmutableT, CoordT(ShareT, ReadonlyT, IntT(_))), _, _, _) =>
     })
 
     compile.evalForKind(Vector()) shouldEqual VonInt(3)
@@ -291,7 +295,7 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     Collector.only(main, {
-      case ConstructArrayTE(RuntimeSizedArrayTT(RawArrayTT(CoordT(ShareT, ReadonlyT, IntT(_)), ImmutableT, _)), _, _, _) =>
+      case NewImmRuntimeSizedArrayTE(RuntimeSizedArrayTT(ImmutableT, CoordT(ShareT, ReadonlyT, IntT(_))), _, _, _) =>
     })
 
     compile.evalForKind(Vector()) shouldEqual VonInt(3)
@@ -331,16 +335,17 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """
           |import array.make.*;
+          |import ifunction.ifunction1.*;
           |fn main() int export {
-          |  a = MakeImmArray(10, &!IFunction1<imm, int, int>({_}));
+          |  a = Array<imm, int>(10, &!IFunction1<imm, int, int>({_}));
           |  = a.3;
           |}
           |""".stripMargin)
 
     val temputs = compile.expectTemputs()
-    val main = temputs.lookupFunction("MakeImmArray")
+    val main = temputs.lookupFunction("Array")
     Collector.only(main, {
-      case ConstructArrayTE(RuntimeSizedArrayTT(RawArrayTT(CoordT(ShareT, ReadonlyT, IntT(_)), ImmutableT, _)), _, _, _) =>
+      case NewImmRuntimeSizedArrayTE(RuntimeSizedArrayTT(ImmutableT, CoordT(ShareT, ReadonlyT, IntT(_))), _, _, _) =>
     })
 
     compile.evalForKind(Vector()) shouldEqual VonInt(3)
@@ -456,6 +461,7 @@ class ArrayTests extends FunSuite with Matchers {
   test("Capture mutable array") {
     val compile = RunCompilation.test(
         """import array.make.*;
+          |import ifunction.ifunction1.*;
           |struct MyIntIdentity {}
           |impl IFunction1<mut, int, int> for MyIntIdentity;
           |fn __call(this &!MyIntIdentity impl IFunction1<mut, int, int>, i int) int { i }
@@ -473,6 +479,7 @@ class ArrayTests extends FunSuite with Matchers {
   test("Swap out of array") {
     val compile = RunCompilation.test(
         """import array.make.*;
+          |import ifunction.ifunction1.*;
           |struct Goblin { }
           |
           |struct GoblinMaker {}
@@ -522,7 +529,7 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """
           |import array.make.*;
-          |fn toArray<M, N, E>(seq &[<_> N * E]) Array<M, final, E>
+          |fn toArray<M, N, E>(seq &[<_> N * E]) Array<M, E>
           |rules(M Mutability) {
           |  MakeArray(N, { seq[_] })
           |}
@@ -549,6 +556,7 @@ class ArrayTests extends FunSuite with Matchers {
       """
         |import array.make.*;
         |import array.each.*;
+        |import ifunction.ifunction1.*;
         |fn main() int export {
         |  sum! = 0;
         |  [][6, 60, 103].each(&!IFunction1<mut, int, void>({ set sum = sum + _; }));

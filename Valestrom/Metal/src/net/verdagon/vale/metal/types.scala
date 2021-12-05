@@ -71,14 +71,14 @@ case class ReferenceH[+T <: KindH](
   // points at a static sized array.
   def expectStaticSizedArrayReference() = {
     kind match {
-      case atH @ StaticSizedArrayTH(_) => ReferenceH[StaticSizedArrayTH](ownership, location, permission, atH)
+      case atH @ StaticSizedArrayHT(_) => ReferenceH[StaticSizedArrayHT](ownership, location, permission, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
   // points at an unstatic sized array.
   def expectRuntimeSizedArrayReference() = {
     kind match {
-      case atH @ RuntimeSizedArrayTH(_) => ReferenceH[RuntimeSizedArrayTH](ownership, location, permission, atH)
+      case atH @ RuntimeSizedArrayHT(_) => ReferenceH[RuntimeSizedArrayHT](ownership, location, permission, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
@@ -149,7 +149,7 @@ case class StructRefH(
 
 // An array whose size is known at compile time, and therefore doesn't need to
 // carry around its size at runtime.
-case class StaticSizedArrayTH(
+case class StaticSizedArrayHT(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
 ) extends KindH {
@@ -164,14 +164,15 @@ case class StaticSizedArrayDefinitionTH(
   name: FullNameH,
   // The size of the array.
   size: Int,
-  // The underlying array.
-  rawArray: RawArrayTH
+  mutability: Mutability,
+  variability: Variability,
+  elementType: ReferenceH[KindH]
 ) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  def kind = StaticSizedArrayTH(name)
+  def kind = StaticSizedArrayHT(name)
 }
 
-case class RuntimeSizedArrayTH(
+case class RuntimeSizedArrayHT(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
 ) extends KindH {
@@ -182,19 +183,12 @@ case class RuntimeSizedArrayTH(
 case class RuntimeSizedArrayDefinitionTH(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
-  // The underlying array.
-  rawArray: RawArrayTH
+  mutability: Mutability,
+  elementType: ReferenceH[KindH]
 ) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  def kind = RuntimeSizedArrayTH(name)
+  def kind = RuntimeSizedArrayHT(name)
 }
-
-// This is not a kind, but instead has the common fields of RuntimeSizedArrayTH/StaticSizedArrayTH,
-// and lets us handle their code similarly.
-case class RawArrayTH(
-  mutability: Mutability,
-  variability: Variability,
-  elementType: ReferenceH[KindH]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 // Place in the original source code that something came from. Useful for uniquely
 // identifying templates.

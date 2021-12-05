@@ -551,6 +551,7 @@ object ParsedLoader {
       case "BoolTypePR" => BoolTypePR
       case "OwnershipTypePR" => OwnershipTypePR
       case "MutabilityTypePR" => MutabilityTypePR
+      case "VariabilityTypePR" => VariabilityTypePR
       case "PermissionTypePR" => PermissionTypePR
       case "LocationTypePR" => LocationTypePR
       case "CoordTypePR" => CoordTypePR

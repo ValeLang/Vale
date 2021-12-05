@@ -1,4 +1,4 @@
-package net.verdagon.vale.templar.macros.drop
+package net.verdagon.vale.templar.macros.rsa
 
 import net.verdagon.vale.RangeS
 import net.verdagon.vale.astronomer.FunctionA
@@ -8,8 +8,8 @@ import net.verdagon.vale.templar.macros.IFunctionBodyMacro
 import net.verdagon.vale.templar.types.CoordT
 import net.verdagon.vale.templar.{ArrayTemplar, Temputs, ast}
 
-class SSADropIntoMacro(arrayTemplar: ArrayTemplar) extends IFunctionBodyMacro {
-  val generatorId: String = "vale_static_sized_array_drop_into"
+class RSADropIntoMacro(arrayTemplar: ArrayTemplar) extends IFunctionBodyMacro {
+  val generatorId: String = "vale_runtime_sized_array_drop_into"
 
   def generateFunctionBody(
     env: FunctionEnvironment,
@@ -30,7 +30,7 @@ class SSADropIntoMacro(arrayTemplar: ArrayTemplar) extends IFunctionBodyMacro {
         header,
         BlockTE(
           ReturnTE(
-            arrayTemplar.evaluateDestroyStaticSizedArrayIntoCallable(
+            arrayTemplar.evaluateDestroyRuntimeSizedArrayIntoCallable(
               temputs,
               fate,
               callRange,

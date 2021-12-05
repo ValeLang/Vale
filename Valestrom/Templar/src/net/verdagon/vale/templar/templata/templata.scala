@@ -33,7 +33,7 @@ case class KindTemplata(kind: KindT) extends ITemplata {
 case class RuntimeSizedArrayTemplateTemplata() extends ITemplata {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 3;
-  override def tyype: ITemplataType = TemplateTemplataType(Vector(MutabilityTemplataType, VariabilityTemplataType, CoordTemplataType), KindTemplataType)
+  override def tyype: ITemplataType = TemplateTemplataType(Vector(MutabilityTemplataType, CoordTemplataType), KindTemplataType)
 }
 case class StaticSizedArrayTemplateTemplata() extends ITemplata {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;

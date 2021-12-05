@@ -1,4 +1,4 @@
-package net.verdagon.vale.templar.macros.drop
+package net.verdagon.vale.templar.macros.citizen
 
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer.{FunctionA, ImplA, StructA, VirtualFreeDeclarationNameS}

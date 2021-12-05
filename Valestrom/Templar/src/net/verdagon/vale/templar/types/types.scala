@@ -147,16 +147,12 @@ sealed trait KindT  {
 case class NeverT() extends KindT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 6;
-
-
 }
 
 // Mostly for interoperability with extern functions
 case class VoidT() extends KindT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 16;
-
-
 }
 
 object IntT {
@@ -166,56 +162,43 @@ object IntT {
 case class IntT(bits: Int) extends KindT {
   val hash = 546325456 + bits; override def hashCode(): Int = hash;
   override def order: Int = 8;
-
-
 }
 
 case class BoolT() extends KindT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 9;
-
-
 }
 
 case class StrT() extends KindT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 10;
-
-
 }
 
 case class FloatT() extends KindT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 11;
-
-
 }
 
-case class RawArrayTT(
-  elementType: CoordT,
+case class StaticSizedArrayTT(
+  size: Int,
   mutability: MutabilityT,
-  variability: VariabilityT
-)  {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-
-}
-
-case class StaticSizedArrayTT(size: Int, array: RawArrayTT) extends KindT {
+  variability: VariabilityT,
+  elementType: CoordT
+) extends KindT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 12;
 
-  def name: FullNameT[StaticSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, StaticSizedArrayNameT(size, RawArrayNameT(array.mutability, array.elementType)))
-
-
+  def name: FullNameT[StaticSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, StaticSizedArrayNameT(size, RawArrayNameT(mutability, elementType)))
 }
 
-case class RuntimeSizedArrayTT(array: RawArrayTT) extends KindT {
+case class RuntimeSizedArrayTT(
+  mutability: MutabilityT,
+  elementType: CoordT
+) extends KindT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 19;
 
-  def name: FullNameT[RuntimeSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, RuntimeSizedArrayNameT(RawArrayNameT(array.mutability, array.elementType)))
-
-
+  def name: FullNameT[RuntimeSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, RuntimeSizedArrayNameT(RawArrayNameT(mutability, elementType)))
 }
 
 case class StructMemberT(
@@ -303,8 +286,6 @@ case class InterfaceDefinitionT(
 ) extends CitizenDefinitionT  {
   override def hashCode(): Int = vcurious()
   override def getRef = InterfaceTT(fullName)
-
-
 }
 
 trait CitizenRefT extends KindT {
@@ -329,8 +310,6 @@ case class OverloadSet(
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
   override def order: Int = 19;
-
-
 }
 
 case class InterfaceTT(
@@ -339,8 +318,6 @@ case class InterfaceTT(
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
   override def order: Int = 15;
-
-
 }
 
 // This is what we use to search for overloads.

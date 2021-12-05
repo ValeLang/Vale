@@ -46,7 +46,7 @@ trait ITemplataTemplarDelegate {
     type2: CoordT):
   StaticSizedArrayTT
 
-  def getRuntimeSizedArrayKind(env: IEnvironment, temputs: Temputs, element: CoordT, arrayMutability: MutabilityT, arrayVariability: VariabilityT): RuntimeSizedArrayTT
+  def getRuntimeSizedArrayKind(env: IEnvironment, temputs: Temputs, element: CoordT, arrayMutability: MutabilityT): RuntimeSizedArrayTT
 }
 
 class TemplataTemplar(
@@ -95,10 +95,10 @@ class TemplataTemplar(
           }
           case (_ : CitizenRefT, IntT(_) | BoolT() | StrT() | FloatT()) => return (None)
           case (IntT(_) | BoolT() | StrT() | FloatT(), _ : CitizenRefT) => return (None)
-          case (_, RuntimeSizedArrayTT(_)) => return None
-          case (RuntimeSizedArrayTT(_), _) => return None
-          case (_, StaticSizedArrayTT(_, _)) => return None
-          case (StaticSizedArrayTT(_, _), _) => return None
+          case (_, RuntimeSizedArrayTT(_, _)) => return None
+          case (RuntimeSizedArrayTT(_, _), _) => return None
+          case (_, StaticSizedArrayTT(_, _, _, _)) => return None
+          case (StaticSizedArrayTT(_, _, _, _), _) => return None
           case _ => {
             vfail("Can't convert from " + sourceType + " to " + targetType)
           }
@@ -168,13 +168,13 @@ class TemplataTemplar(
         case (IntT(_), _) => return (false)
         case (BoolT(), _) => return (false)
         case (StrT(), _) => return (false)
-        case (RuntimeSizedArrayTT(_), _) => return (false)
-        case (StaticSizedArrayTT(_, _), _) => return (false)
+        case (RuntimeSizedArrayTT(_, _), _) => return (false)
+        case (StaticSizedArrayTT(_, _, _, _), _) => return (false)
         case (_, VoidT()) => return (false)
         case (_, IntT(_)) => return (false)
         case (_, BoolT()) => return (false)
         case (_, StrT()) => return (false)
-        case (_, StaticSizedArrayTT(_, _)) => return (false)
+        case (_, StaticSizedArrayTT(_, _, _, _)) => return (false)
         case (_, StructTT(_)) => return (false)
         case (a @ StructTT(_), b @ InterfaceTT(_)) => {
           delegate.getAncestorInterfaceDistance(temputs, a, b) match {
@@ -212,10 +212,10 @@ class TemplataTemplar(
     val ownership = if (mutability == MutableT) ownershipIfMutable else ShareT
     val permission = if (mutability == MutableT) ReadwriteT else ReadonlyT
     kind match {
-      case a @ RuntimeSizedArrayTT(array) => {
+      case a @ RuntimeSizedArrayTT(_, _) => {
         CoordT(ownership, permission, a)
       }
-      case a @ StaticSizedArrayTT(_, RawArrayTT(_, mutability, variability)) => {
+      case a @ StaticSizedArrayTT(_, _, _, _) => {
         CoordT(ownership, permission, a)
       }
       case s @ StructTT(_) => {
@@ -278,8 +278,8 @@ class TemplataTemplar(
     templateArgs: Vector[ITemplata],
     expectedType: ITemplataType):
   (ITemplata) = {
-    val Vector(MutabilityTemplata(mutability), VariabilityTemplata(variability), CoordTemplata(elementType)) = templateArgs
-    val arrayKindTemplata = delegate.getRuntimeSizedArrayKind(env, temputs, elementType, mutability, variability)
+    val Vector(MutabilityTemplata(mutability), CoordTemplata(elementType)) = templateArgs
+    val arrayKindTemplata = delegate.getRuntimeSizedArrayKind(env, temputs, elementType, mutability)
     val templata =
       coerce(temputs, range, KindTemplata(arrayKindTemplata), expectedType)
     (templata)

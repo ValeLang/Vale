@@ -291,7 +291,7 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
               }
               val List(sizeSE, callableSE) = argsSE
 
-              RuntimeArrayFromCallableSE(rangeS, ruleBuilder.toArray, mutabilityRuneS, variabilityRuneS, sizeSE, callableSE)
+              RuntimeArrayFromCallableSE(rangeS, ruleBuilder.toArray, mutabilityRuneS, sizeSE, callableSE)
             }
             case StaticSizedP(maybeSizePT) => {
               val maybeSizeRuneS =

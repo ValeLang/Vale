@@ -11,9 +11,14 @@ object SourceCodeUtils {
     codeLocationS: CodeLocationS):
   String = {
     val CodeLocationS(file, pos) = codeLocationS
-    if (file.isInternal) {
-      return humanizeFile(file)
+//    if (file.isInternal) {
+//      return humanizeFile(file)
+//    }
+
+    if (codeLocationS.offset < 0) {
+      return humanizeFile(file) + ":" + codeLocationS.offset.toString
     }
+
     val source = filenamesAndSources(file)
 
     var line = 0

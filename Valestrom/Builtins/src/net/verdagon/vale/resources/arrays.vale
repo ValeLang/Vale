@@ -1,19 +1,76 @@
+import v.builtins.arith.*;
 
-fn drop_into<M, V, S, E, F>(arr [<M, V> S * E], consumer &!F) void extern(vale_static_sized_array_drop_into);
+fn drop_into<V, S, E, F>(arr [<imm, V> S * E], consumer &!F) void {}
+
+fn drop_into<V, S, E, F>(arr [<mut, V> S * E], consumer &!F) void
+extern(vale_static_sized_array_drop_into);
+
 fn drop<V, S, E>(arr [<mut, V> S * E]) void {
-  drop_into(arr, {_;})
+  drop_into(arr, {_;});
 }
 fn drop<V, S, E>(arr [<imm, V> S * E]) void {}
 
-fn drop_into<V, E, F>(arr Array<mut, V, E>, consumer &!F) void extern(vale_runtime_sized_array_drop_into);
-fn drop<V, E>(arr Array<mut, V, E>) void {
-  drop_into(arr, {_;})
+fn drop_into<E, F>(arr Array<mut, E>, consumer &!F) void {
+  while (arr.len() > 0) {
+    consumer!(arr!.pop());
+  }
+  () = arr;
 }
-fn drop<V, E>(arr Array<imm, V, E>) void {}
+fn drop<E>(arr Array<mut, E>) void {
+  drop_into(arr, {_;});
+}
+
+fn drop_into<E, F>(arr Array<imm, E>, consumer &!F) void {
+  i = arr.len() - 1;
+  while (i >= 0) {
+    consumer!(arr[i]);
+    set i = i - 1;
+  }
+}
+fn drop<E>(arr Array<imm, E>) void {
+  drop_into(arr, &!{_;});
+}
 
 fn len<M, V, S, E>(arr &[<M, V> S * E]) int extern(vale_static_sized_array_len);
 
-fn len<M, V, E>(arr &Array<M, V, E>) int extern(vale_runtime_sized_array_len);
+fn len<M, E>(arr &Array<M, E>) int extern(vale_runtime_sized_array_len);
 
 fn __free_replaced<V, S, E>(arr *[<imm, V> S * E]) extern(vale_static_sized_array_free);
-fn __free_replaced<V, E>(arr *Array<imm, V, E>) extern(vale_runtime_sized_array_free);
+fn __free_replaced<E>(arr *Array<imm, E>) extern(vale_runtime_sized_array_free);
+
+fn capacity<E>(arr &Array<mut, E>) int
+extern(vale_runtime_sized_array_capacity);
+
+fn push<E>(arr &!Array<mut, E>, newElement E) void
+extern(vale_runtime_sized_array_push);
+
+fn pop<E>(arr &!Array<mut, E>) E
+extern(vale_runtime_sized_array_pop);
+
+fn Array<M, E>(size int) Array<M, E>
+rules(M Mutability = mut, E Ref)
+extern(vale_runtime_sized_array_mut_new);
+
+fn Array<M, E, G>(n int, generator G) Array<M, E>
+rules(
+  M Mutability = mut,
+  T Ref,
+  G Ref(share | borrow, _, _),
+  F Prot = Prot("__call", (G, int), T))
+{
+  arr = Array<mut, E>(n);
+  i! = 0;
+  while (i < n) {
+    arr!.push(generator!(i));
+    set i = i + 1;
+  }
+  ret arr;
+}
+
+fn Array<M, E, G>(n int, generator G) Array<M, E>
+rules(
+  M Mutability = imm,
+  E Ref,
+  G Ref(share | borrow, _, _),
+  F Prot = Prot("__call", (G, int), E))
+extern(vale_runtime_sized_array_imm_new);

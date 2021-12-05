@@ -295,18 +295,19 @@ object VonHammer {
   }
 
   def vonifyRuntimeSizedArrayDefinition(rsaDef: RuntimeSizedArrayDefinitionTH): IVonData = {
-    val RuntimeSizedArrayDefinitionTH(name, rawArray) = rsaDef
+    val RuntimeSizedArrayDefinitionTH(name, mutability, elementType) = rsaDef
     VonObject(
       "RuntimeSizedArrayDefinition",
       None,
       Vector(
         VonMember("name", vonifyName(name)),
         VonMember("kind", vonifyKind(rsaDef.kind)),
-        VonMember("array", vonifyRawArray(rawArray))))
+        VonMember("mutability", vonifyMutability(mutability)),
+        VonMember("elementType", vonifyCoord(elementType))))
   }
 
   def vonifyStaticSizedArrayDefinition(ssaDef: StaticSizedArrayDefinitionTH): IVonData = {
-    val StaticSizedArrayDefinitionTH(name, size, rawArray) = ssaDef
+    val StaticSizedArrayDefinitionTH(name, size, mutability, variability, elementType) = ssaDef
     VonObject(
       "StaticSizedArrayDefinition",
       None,
@@ -314,7 +315,9 @@ object VonHammer {
         VonMember("name", vonifyName(name)),
         VonMember("kind", vonifyKind(ssaDef.kind)),
         VonMember("size", VonInt(size)),
-        VonMember("array", vonifyRawArray(rawArray))))
+        VonMember("mutability", vonifyMutability(mutability)),
+        VonMember("variability", vonifyVariability(variability)),
+        VonMember("elementType", vonifyCoord(elementType))))
   }
 
   def vonifyKind(kind: KindH): IVonData = {
@@ -326,14 +329,14 @@ object VonHammer {
       case FloatH() => VonObject("Float", None, Vector())
       case ir @ InterfaceRefH(_) => vonifyInterfaceRef(ir)
       case sr @ StructRefH(_) => vonifyStructRef(sr)
-      case RuntimeSizedArrayTH(name) => {
+      case RuntimeSizedArrayHT(name) => {
         VonObject(
           "RuntimeSizedArray",
           None,
           Vector(
             VonMember("name", vonifyName(name))))
       }
-      case StaticSizedArrayTH(name) => {
+      case StaticSizedArrayHT(name) => {
         VonObject(
           "StaticSizedArray",
           None,
@@ -341,18 +344,6 @@ object VonHammer {
             VonMember("name", vonifyName(name))))
       }
     }
-  }
-
-  def vonifyRawArray(t: RawArrayTH): IVonData = {
-    val RawArrayTH(mutability, variability, elementType) = t
-
-    VonObject(
-      "Array",
-      None,
-      Vector(
-        VonMember("mutability", vonifyMutability(mutability)),
-        VonMember("variability", vonifyVariability(variability)),
-        VonMember("elementType", vonifyCoord(elementType))))
   }
 
   def vonifyFunction(functionH: FunctionH): IVonData = {
@@ -569,7 +560,7 @@ object VonHammer {
               "localsKnownLives",
               VonArray(None, locals.map(local => VonBool(false))))))
       }
-      case DestroyRuntimeSizedArrayH(arrayExpr, consumerExpr, consumerMethod, arrayElementType) => {
+      case DestroyImmRuntimeSizedArrayH(arrayExpr, consumerExpr, consumerMethod, arrayElementType) => {
         VonObject(
           "DestroyRuntimeSizedArray",
           None,
@@ -695,7 +686,7 @@ object VonHammer {
             VonMember("expectedElementType", vonifyCoord(expectedElementType)),
             VonMember("resultType", vonifyCoord(resultType))))
       }
-      case ConstructRuntimeSizedArrayH(sizeExpr, generatorExpr, generatorMethod, elementType, resultType) => {
+      case NewImmRuntimeSizedArrayH(sizeExpr, generatorExpr, generatorMethod, elementType, resultType) => {
         VonObject(
           "ConstructRuntimeSizedArray",
           None,

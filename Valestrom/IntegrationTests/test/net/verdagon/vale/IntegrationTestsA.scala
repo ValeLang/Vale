@@ -332,6 +332,28 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForKind(Vector())
   }
 
+  test("Test array push, pop, len, capacity, drop") {
+    val compile = RunCompilation.test(
+      """
+        |import castutils.*;
+        |import printutils.*;
+        |import array.make.*;
+        |import ifunction.ifunction1.*;
+        |
+        |fn main() int export {
+        |  arr = Array<mut, int>(9);
+        |  arr!.push(420);
+        |  arr!.push(421);
+        |  arr!.push(422);
+        |  arr.len();
+        |  ret arr.capacity();
+        |  // implicit drop with pops
+        |}
+      """.stripMargin)
+    val temputs = compile.expectTemputs()
+    compile.evalForKind(Vector()) shouldEqual VonInt(9)
+  }
+
   test("Test int generic") {
     val compile = RunCompilation.test(
       """
@@ -675,13 +697,13 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("exporting array") {
-    val compilation = RunCompilation.test("export Array<mut, vary, int> as IntArray;")
+    val compilation = RunCompilation.test("export Array<mut, int> as IntArray;")
     val hamuts = compilation.getHamuts()
     val testPackage = hamuts.lookupPackage(PackageCoordinate.TEST_TLD)
     val kindH = vassertSome(testPackage.exportNameToKind.get("IntArray"))
 
     val builtinPackage = hamuts.lookupPackage(PackageCoordinate.BUILTIN)
     val rsa = vassertSome(builtinPackage.runtimeSizedArrays.find(_.kind == kindH))
-    rsa.rawArray.elementType.kind shouldEqual IntH.i32
+    rsa.elementType.kind shouldEqual IntH.i32
   }
 }

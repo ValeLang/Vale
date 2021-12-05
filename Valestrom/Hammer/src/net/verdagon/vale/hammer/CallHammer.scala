@@ -4,7 +4,7 @@ import net.verdagon.vale.hammer.ExpressionHammer.translateDeferreds
 import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vwat, metal => m}
 import net.verdagon.vale.metal.{ShareH => _, _}
 import net.verdagon.vale.templar.{Hinputs, _}
-import net.verdagon.vale.templar.ast.{ConstructArrayTE, DestroyRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoFunctionTE, ExpressionT, FunctionHeaderT, IfTE, PrototypeT, ReferenceExpressionTE, StaticArrayFromCallableTE, WhileTE}
+import net.verdagon.vale.templar.ast.{DestroyImmRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoFunctionTE, ExpressionT, FunctionHeaderT, IfTE, NewImmRuntimeSizedArrayTE, NewMutRuntimeSizedArrayTE, PrototypeT, ReferenceExpressionTE, StaticArrayFromCallableTE, WhileTE}
 import net.verdagon.vale.templar.types._
 
 object CallHammer {
@@ -69,13 +69,45 @@ object CallHammer {
       hinputs, hamuts, currentFunctionHeader, locals, callResultNode, argsDeferreds)
   }
 
-  def translateConstructArray(
+  def translateNewMutRuntimeSizedArray(
+    hinputs: Hinputs, hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeaderT,
+    locals: LocalsBox,
+    constructArray2: NewMutRuntimeSizedArrayTE):
+  (ExpressionH[KindH]) = {
+    val NewMutRuntimeSizedArrayTE(arrayType2, capacityExpr2) = constructArray2;
+
+    val (capacityRegisterId, capacityDeferreds) =
+      ExpressionHammer.translate(
+        hinputs, hamuts, currentFunctionHeader, locals, capacityExpr2);
+
+    val (arrayRefTypeH) =
+      TypeHammer.translateReference(
+        hinputs, hamuts, constructArray2.result.reference)
+
+    val (arrayTypeH) =
+      TypeHammer.translateRuntimeSizedArray(hinputs, hamuts, arrayType2)
+    vassert(arrayRefTypeH.expectRuntimeSizedArrayReference().kind == arrayTypeH)
+
+    val elementType = hamuts.getRuntimeSizedArray(arrayTypeH).elementType
+
+    val constructArrayCallNode =
+      NewMutRuntimeSizedArrayH(
+        capacityRegisterId.expectIntAccess(),
+        elementType,
+        arrayRefTypeH.expectRuntimeSizedArrayReference())
+
+    ExpressionHammer.translateDeferreds(
+      hinputs, hamuts, currentFunctionHeader, locals, constructArrayCallNode, capacityDeferreds)
+  }
+
+  def translateNewImmRuntimeSizedArray(
       hinputs: Hinputs, hamuts: HamutsBox,
       currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      constructArray2: ConstructArrayTE):
+      constructArray2: NewImmRuntimeSizedArrayTE):
   (ExpressionH[KindH]) = {
-    val ConstructArrayTE(arrayType2, sizeExpr2, generatorExpr2, generatorMethod) = constructArray2;
+    val NewImmRuntimeSizedArrayTE(arrayType2, sizeExpr2, generatorExpr2, generatorMethod) = constructArray2;
 
     val (sizeRegisterId, sizeDeferreds) =
       ExpressionHammer.translate(
@@ -93,13 +125,13 @@ object CallHammer {
       TypeHammer.translateRuntimeSizedArray(hinputs, hamuts, arrayType2)
     vassert(arrayRefTypeH.expectRuntimeSizedArrayReference().kind == arrayTypeH)
 
-    val elementType = hamuts.getRuntimeSizedArray(arrayTypeH).rawArray.elementType
+    val elementType = hamuts.getRuntimeSizedArray(arrayTypeH).elementType
 
     val generatorMethodH =
       FunctionHammer.translatePrototype(hinputs, hamuts, generatorMethod)
 
     val constructArrayCallNode =
-        ConstructRuntimeSizedArrayH(
+        NewImmRuntimeSizedArrayH(
           sizeRegisterId.expectIntAccess(),
           generatorRegisterId,
           generatorMethodH,
@@ -131,7 +163,7 @@ object CallHammer {
       TypeHammer.translateStaticSizedArray(hinputs, hamuts, arrayType2)
     vassert(arrayRefTypeH.expectStaticSizedArrayReference().kind == arrayTypeH)
 
-    val elementType = hamuts.getStaticSizedArray(arrayTypeH).rawArray.elementType
+    val elementType = hamuts.getStaticSizedArray(arrayTypeH).elementType
 
     val generatorMethodH =
       FunctionHammer.translatePrototype(hinputs, hamuts, generatorMethod)
@@ -180,7 +212,7 @@ object CallHammer {
           arrayExprResultLine.expectStaticSizedArrayAccess(),
           consumerCallableResultLine,
           consumerMethod,
-          staticSizedArrayDef.rawArray.elementType,
+          staticSizedArrayDef.elementType,
           staticSizedArrayDef.size)
 
     ExpressionHammer.translateDeferreds(
@@ -192,9 +224,9 @@ object CallHammer {
     hamuts: HamutsBox,
       currentFunctionHeader: FunctionHeaderT,
     locals: LocalsBox,
-    das2: DestroyRuntimeSizedArrayTE):
+    das2: DestroyImmRuntimeSizedArrayTE):
   ExpressionH[KindH] = {
-    val DestroyRuntimeSizedArrayTE(arrayExpr2, runtimeSizedArrayType2, consumerExpr2, consumerMethod2) = das2;
+    val DestroyImmRuntimeSizedArrayTE(arrayExpr2, runtimeSizedArrayType2, consumerExpr2, consumerMethod2) = das2;
 
 //    val RuntimeSizedArrayT2(RawArrayT2(memberType2, mutability)) = runtimeSizedArrayType2
 
@@ -218,10 +250,10 @@ object CallHammer {
     val elementType =
       hamuts.getRuntimeSizedArray(
           arrayExprResultLine.expectRuntimeSizedArrayAccess().resultType.kind)
-        .rawArray.elementType
+        .elementType
 
     val destroyStaticSizedArrayCallNode =
-        DestroyRuntimeSizedArrayH(
+        DestroyImmRuntimeSizedArrayH(
           arrayExprResultLine.expectRuntimeSizedArrayAccess(),
           consumerCallableResultLine,
           consumerMethod,

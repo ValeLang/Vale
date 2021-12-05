@@ -1,26 +1,20 @@
-package net.verdagon.vale.templar.macros.drop
+package net.verdagon.vale.templar.macros.ssa
 
-import net.verdagon.vale.astronomer.{FunctionA, StructA}
-import net.verdagon.vale.scout._
-import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS}
-import net.verdagon.vale.scout.rules.{CallSR, EqualsSR, LookupSR, RuneUsage}
+import net.verdagon.vale.RangeS
+import net.verdagon.vale.astronomer.FunctionA
 import net.verdagon.vale.templar.ast._
-import net.verdagon.vale.templar.citizen.StructTemplar
-import net.verdagon.vale.templar.env.{FunctionEnvEntry, FunctionEnvironment, FunctionEnvironmentBox, IEnvEntry, ReferenceLocalVariableT, TemplataLookupContext}
+import net.verdagon.vale.templar.env.{FunctionEnvironment, FunctionEnvironmentBox}
 import net.verdagon.vale.templar.function.DestructorTemplar
-import net.verdagon.vale.templar.macros.{IFunctionBodyMacro, IOnStructDefinedMacro}
-import net.verdagon.vale.templar.names.{FullNameT, INameT, NameTranslator}
-import net.verdagon.vale.templar.templata.{CoordTemplata, MutabilityTemplata, PrototypeTemplata, StructTemplata}
+import net.verdagon.vale.templar.macros.IFunctionBodyMacro
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.templar.{ArrayTemplar, OverloadTemplar, Templar, Temputs}
-import net.verdagon.vale.{Profiler, RangeS, vwat}
+import net.verdagon.vale.templar.{ArrayTemplar, Templar, Temputs}
 
-class RSAFreeMacro(
+class SSAFreeMacro(
   arrayTemplar: ArrayTemplar,
   destructorTemplar: DestructorTemplar
 ) extends IFunctionBodyMacro {
 
-  val generatorId: String = "vale_runtime_sized_array_free"
+  val generatorId: String = "vale_static_sized_array_free"
 
   override def generateFunctionBody(
     env: FunctionEnvironment,
@@ -34,7 +28,7 @@ class RSAFreeMacro(
   FunctionHeaderT = {
     val bodyEnv = FunctionEnvironmentBox(env)
 
-    val Vector(rsaCoord @ CoordT(ShareT, ReadonlyT, RuntimeSizedArrayTT(RawArrayTT(elementCoord, _, _)))) = params2.map(_.tyype)
+    val Vector(rsaCoord @ CoordT(ShareT, ReadonlyT, StaticSizedArrayTT(_, _, _, elementCoord))) = params2.map(_.tyype)
 
     val ret = CoordT(ShareT, ReadonlyT, VoidT())
     val header = FunctionHeaderT(env.fullName, Vector.empty, params2, ret, originFunction1)
@@ -46,7 +40,7 @@ class RSAFreeMacro(
       env.globalEnv.functorHelper.getFunctorForPrototype(env, temputs, callRange, elementDropFunction)
 
     val expr =
-      arrayTemplar.evaluateDestroyRuntimeSizedArrayIntoCallable(
+      arrayTemplar.evaluateDestroyStaticSizedArrayIntoCallable(
         temputs, bodyEnv, originFunction1.get.range,
         ArgLookupTE(0, rsaCoord),
         elementDropFunctorTE)

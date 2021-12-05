@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar
 
-import net.verdagon.vale.templar.ast.{AsSubtypeTE, ConstructArrayTE, DestroyRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoFunctionTE, EdgeT, FunctionCallTE, FunctionT, InterfaceEdgeBlueprint, LockWeakTE, ProgramT, SignatureT, StaticArrayFromCallableTE, getFunctionLastName}
+import net.verdagon.vale.templar.ast.{AsSubtypeTE, DestroyImmRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoFunctionTE, EdgeT, FunctionCallTE, FunctionT, InterfaceEdgeBlueprint, LockWeakTE, NewImmRuntimeSizedArrayTE, ProgramT, SignatureT, StaticArrayFromCallableTE, getFunctionLastName}
 import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.names.{FreeNameT, FullNameT, FunctionNameT, IFunctionNameT, VirtualFreeNameT}
 import net.verdagon.vale.templar.templata.CoordTemplata
@@ -62,14 +62,14 @@ object Reachability {
         vpass()
         visitFunction(program, emptyTupleStruct, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
       }
-      case ConstructArrayTE(_, _, _, calleePrototype) => visitFunction(program, emptyTupleStruct, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
+      case NewImmRuntimeSizedArrayTE(_, _, _, calleePrototype) => visitFunction(program, emptyTupleStruct, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
       case StaticArrayFromCallableTE(_, _, calleePrototype) => visitFunction(program, emptyTupleStruct, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
       case DestroyStaticSizedArrayIntoFunctionTE(_, _, _, calleePrototype) => visitFunction(program, emptyTupleStruct, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
-      case DestroyRuntimeSizedArrayTE(_, _, _, calleePrototype) => visitFunction(program, emptyTupleStruct, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
+      case DestroyImmRuntimeSizedArrayTE(_, _, _, calleePrototype) => visitFunction(program, emptyTupleStruct, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
       case sr @ StructTT(_) => visitStruct(program, emptyTupleStruct, edgeBlueprints, edges, reachables, sr)
       case ir @ InterfaceTT(_) => visitInterface(program, emptyTupleStruct, edgeBlueprints, edges, reachables, ir)
-      case ssa @ StaticSizedArrayTT(_, _) => visitStaticSizedArray(program, emptyTupleStruct, edgeBlueprints, edges, reachables, ssa)
-      case rsa @ RuntimeSizedArrayTT(_) => visitRuntimeSizedArray(program, emptyTupleStruct, edgeBlueprints, edges, reachables, rsa)
+      case ssa @ StaticSizedArrayTT(_, _, _, _) => visitStaticSizedArray(program, emptyTupleStruct, edgeBlueprints, edges, reachables, ssa)
+      case rsa @ RuntimeSizedArrayTT(_, _) => visitRuntimeSizedArray(program, emptyTupleStruct, edgeBlueprints, edges, reachables, rsa)
       case LockWeakTE(_, _, someConstructor, noneConstructor) => {
         visitFunction(program, emptyTupleStruct, edgeBlueprints, edges, reachables, someConstructor.toSignature)
         visitFunction(program, emptyTupleStruct, edgeBlueprints, edges, reachables, noneConstructor.toSignature)
@@ -177,7 +177,7 @@ object Reachability {
 
     // Make sure the destructor got in, because for immutables, it's implicitly called by lots of instructions
     // that let go of a reference.
-    if (ssa.array.mutability == ImmutableT) {
+    if (ssa.mutability == ImmutableT) {
       val destructorSignature =
         vassertOne(
           program.getAllFunctions().find(func => {
@@ -206,7 +206,7 @@ object Reachability {
 
     // Make sure the destructor got in, because for immutables, it's implicitly called by lots of instructions
     // that let go of a reference.
-    if (rsa.array.mutability == ImmutableT) {
+    if (rsa.mutability == ImmutableT) {
       val destructorSignature =
         vassertOne(
           program.getAllFunctions().find(func => {

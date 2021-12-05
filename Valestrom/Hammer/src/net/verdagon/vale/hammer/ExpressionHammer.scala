@@ -116,6 +116,18 @@ object ExpressionHammer {
         (arrayLengthAndDeferredsExprH, Vector.empty)
       }
 
+      case RuntimeSizedArrayCapacityTE(arrayExpr2) => {
+        val (resultLine, deferreds) =
+          translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
+
+        val lengthResultNode = ArrayCapacityH(resultLine);
+
+        val arrayLengthAndDeferredsExprH =
+          translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, lengthResultNode, deferreds)
+
+        (arrayLengthAndDeferredsExprH, Vector.empty)
+      }
+
       case LockWeakTE(innerExpr2, resultOptBorrowType2, someConstructor, noneConstructor) => {
         val (resultLine, deferreds) =
           translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr2);
@@ -231,10 +243,60 @@ object ExpressionHammer {
         (maybeAccess, Vector.empty)
       }
 
-      case ca2 @ ConstructArrayTE(_, _, _, _) => {
+      case prsaTE @ PushRuntimeSizedArrayTE(_, _) => {
+
+        val PushRuntimeSizedArrayTE(arrayTE, newcomerTE) = prsaTE;
+
+        val (arrayHE, arrayDeferreds) =
+          ExpressionHammer.translate(
+            hinputs, hamuts, currentFunctionHeader, locals, arrayTE);
+        val rsaHE = arrayHE.expectRuntimeSizedArrayAccess()
+        val rsaDefH = hamuts.getRuntimeSizedArray(rsaHE.resultType.kind)
+
+        val (newcomerHE, newcomerDeferreds) =
+          ExpressionHammer.translate(
+            hinputs, hamuts, currentFunctionHeader, locals, newcomerTE);
+
+        vassert(newcomerHE.resultType == rsaDefH.elementType)
+
+        val constructArrayCallNode = PushRuntimeSizedArrayH(rsaHE, newcomerHE)
+
         val access =
-          CallHammer.translateConstructArray(
-            hinputs, hamuts, currentFunctionHeader, locals, ca2)
+          ExpressionHammer.translateDeferreds(
+            hinputs, hamuts, currentFunctionHeader, locals, constructArrayCallNode, arrayDeferreds ++ newcomerDeferreds)
+
+        (access, Vector.empty)
+      }
+
+      case prsaTE @ PopRuntimeSizedArrayTE(_) => {
+        val PopRuntimeSizedArrayTE(arrayTE) = prsaTE;
+
+        val (arrayHE, arrayDeferreds) =
+          ExpressionHammer.translate(
+            hinputs, hamuts, currentFunctionHeader, locals, arrayTE);
+        val rsaHE = arrayHE.expectRuntimeSizedArrayAccess()
+        val rsaDefH = hamuts.getRuntimeSizedArray(rsaHE.resultType.kind)
+
+        val constructArrayCallNode = PopRuntimeSizedArrayH(rsaHE, rsaDefH.elementType)
+
+        val access =
+          ExpressionHammer.translateDeferreds(
+            hinputs, hamuts, currentFunctionHeader, locals, constructArrayCallNode, arrayDeferreds)
+
+        (access, Vector.empty)
+      }
+
+      case nmrsaTE @ NewMutRuntimeSizedArrayTE(_, _) => {
+        val access =
+          CallHammer.translateNewMutRuntimeSizedArray(
+            hinputs, hamuts, currentFunctionHeader, locals, nmrsaTE)
+        (access, Vector.empty)
+      }
+
+      case nirsaTE @ NewImmRuntimeSizedArrayTE(_, _, _, _) => {
+        val access =
+          CallHammer.translateNewImmRuntimeSizedArray(
+            hinputs, hamuts, currentFunctionHeader, locals, nirsaTE)
         (access, Vector.empty)
       }
 
@@ -382,7 +444,7 @@ object ExpressionHammer {
         (dasH, Vector.empty)
       }
 
-      case das2 @ DestroyRuntimeSizedArrayTE(_, _, _, _) => {
+      case das2 @ DestroyImmRuntimeSizedArrayTE(_, _, _, _) => {
         val drsaH =
             CallHammer.translateDestroyRuntimeSizedArray(
               hinputs, hamuts, currentFunctionHeader, locals, das2)
@@ -448,6 +510,17 @@ object ExpressionHammer {
             someConstructorH.prototype,
             noneConstructorH.prototype);
         (resultNode, deferreds)
+      }
+
+      case DestroyMutRuntimeSizedArrayTE(rsaTE) => {
+        val (rsaHE, rsaDeferreds) =
+          translate(hinputs, hamuts, currentFunctionHeader, locals, rsaTE);
+
+        val destroyHE =
+          DestroyMutRuntimeSizedArrayH(rsaHE.expectRuntimeSizedArrayAccess())
+
+        val expr = translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, destroyHE, rsaDeferreds)
+        (expr, Vector.empty)
       }
 
       case _ => {

@@ -31,6 +31,7 @@ fn drop<E>(arr Array<imm, E>) void {
   drop_into(arr, &!{_;});
 }
 
+
 fn len<M, V, S, E>(arr &[<M, V> S * E]) int extern(vale_static_sized_array_len);
 
 fn len<M, E>(arr &Array<M, E>) int extern(vale_runtime_sized_array_len);

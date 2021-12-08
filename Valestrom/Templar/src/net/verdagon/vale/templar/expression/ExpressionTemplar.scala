@@ -578,10 +578,10 @@ class ExpressionTemplar(
 
           val exprTemplata =
             containerExpr2.result.reference.kind match {
-              case rsa @ RuntimeSizedArrayTT(_) => {
+              case rsa @ RuntimeSizedArrayTT(_, _) => {
                 arrayTemplar.lookupInUnknownSizedArray(range, containerExpr2, indexExpr2, rsa)
               }
-              case at@StaticSizedArrayTT(_, _) => {
+              case at@StaticSizedArrayTT(_, _, _, _) => {
                 arrayTemplar.lookupInStaticSizedArray(range, containerExpr2, indexExpr2, at)
               }
               case at@StructTT(FullNameT(ProgramT.topLevelName, Vector(), CitizenNameT(CitizenTemplateNameT(ProgramT.tupleHumanName), _))) => {
@@ -642,14 +642,14 @@ class ExpressionTemplar(
 
                 ast.ReferenceMemberLookupTE(range, containerExpr2, memberFullName, memberType, targetPermission, effectiveVariability)
               }
-              case as@StaticSizedArrayTT(_, _) => {
+              case as@StaticSizedArrayTT(_, _, _, _) => {
                 if (memberNameStr.forall(Character.isDigit)) {
                   arrayTemplar.lookupInStaticSizedArray(range, containerExpr2, ConstantIntTE(memberNameStr.toInt, 32), as)
                 } else {
                   throw CompileErrorExceptionT(RangedInternalErrorT(range, "Sequence has no member named " + memberNameStr))
                 }
               }
-              case at@RuntimeSizedArrayTT(_) => {
+              case at@RuntimeSizedArrayTT(_, _) => {
                 if (memberNameStr.forall(Character.isDigit)) {
                   arrayTemplar.lookupInUnknownSizedArray(range, containerExpr2, ConstantIntTE(memberNameStr.toInt, 32), at)
                 } else {

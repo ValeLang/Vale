@@ -2,14 +2,14 @@ package net.verdagon.vale.templar
 
 import net.verdagon.vale.SourceCodeUtils.{humanizePos, lineBegin, lineContaining, lineRangeContaining}
 import net.verdagon.vale.astronomer.{AstronomerErrorHumanizer, ConstructorNameS, FunctionA, ImmConcreteDestructorNameS, ImmInterfaceDestructorNameS}
-import net.verdagon.vale.scout.ScoutErrorHumanizer.{humanizeImpreciseName, humanizePermission, humanizeRune, humanizeTemplataType}
+import net.verdagon.vale.scout.ScoutErrorHumanizer.{humanizeImpreciseName, humanizeOwnership, humanizePermission, humanizeRune, humanizeTemplataType}
 import net.verdagon.vale.scout.rules.{IRulexSR, RuneUsage}
 import net.verdagon.vale.scout.{ArgumentRuneS, CodeRuneS, CodeVarNameS, FunctionNameS, GlobalFunctionFamilyNameS, INameS, IRuneS, IRuneTypeRuleError, ITemplataType, ImplicitRuneS, LambdaDeclarationNameS, RuneTypeSolveError, ScoutErrorHumanizer, TopLevelCitizenDeclarationNameS}
 import net.verdagon.vale.solver.{FailedSolve, IIncompleteOrFailedSolve, IncompleteSolve, RuleError, SolverConflict, SolverErrorHumanizer}
 import net.verdagon.vale.templar.OverloadTemplar.{FindFunctionFailure, IFindFunctionFailureReason, InferFailure, RuleTypeSolveFailure, SpecificParamDoesntMatchExactly, SpecificParamDoesntSend, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
 import net.verdagon.vale.templar.names.TemplataNamer.getFullNameIdentifierName
 import net.verdagon.vale.templar.ast.{AbstractT, FunctionBannerT, FunctionCalleeCandidate, HeaderCalleeCandidate, ICalleeCandidate, OverrideT, PrototypeT}
-import net.verdagon.vale.templar.infer.{CallResultWasntExpectedType, ITemplarSolverError, KindDoesntImplementInterface, KindIsNotConcrete, KindIsNotInterface, LookupFailed, NoAncestorsSatisfyCall, PermissionDidntMatch, ReceivingDifferentOwnerships}
+import net.verdagon.vale.templar.infer.{CallResultWasntExpectedType, ITemplarSolverError, KindDoesntImplementInterface, KindIsNotConcrete, KindIsNotInterface, LookupFailed, NoAncestorsSatisfyCall, OwnershipDidntMatch, PermissionDidntMatch, ReceivingDifferentOwnerships}
 import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, CitizenNameT, CitizenTemplateNameT, CodeVarNameT, FullNameT, FunctionNameT, INameT, IVarNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT, TemplataNamer}
 import net.verdagon.vale.templar.templata.{Conversions, CoordListTemplata, CoordTemplata, ITemplata, IntegerTemplata, InterfaceTemplata, KindTemplata, MutabilityTemplata, OwnershipTemplata, PermissionTemplata, PrototypeTemplata, RuntimeSizedArrayTemplateTemplata, StaticSizedArrayTemplateTemplata, StringTemplata, StructTemplata, VariabilityTemplata}
 import net.verdagon.vale.templar.types.{BoolT, ConstraintT, CoordT, FinalT, FloatT, ImmutableT, IntT, InterfaceTT, KindT, MutableT, OwnT, ParamFilter, ReadonlyT, ReadwriteT, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StrT, StructTT, VaryingT, VoidT, WeakT}
@@ -309,6 +309,9 @@ object TemplarErrorHumanizer {
       }
       case PermissionDidntMatch(coord, expectedPermission) => {
         "Given type " + humanizeTemplata(codeMap, CoordTemplata(coord)) + " doesn't have expected permission " + humanizePermission(Conversions.unevaluatePermission(expectedPermission))
+      }
+      case OwnershipDidntMatch(coord, expectedOwnership) => {
+        "Given type " + humanizeTemplata(codeMap, CoordTemplata(coord)) + " doesn't have expected ownership " + humanizeOwnership(Conversions.unevaluateOwnership(expectedOwnership))
       }
       case ReceivingDifferentOwnerships(params) => {
         "Received conflicting ownerships: " +

@@ -219,7 +219,7 @@ object CallHammer {
       hinputs, hamuts, currentFunctionHeader, locals, destroyStaticSizedArrayCallNode, consumerCallableDeferreds ++ arrayExprDeferreds)
   }
 
-  def translateDestroyRuntimeSizedArray(
+  def translateDestroyImmRuntimeSizedArray(
     hinputs: Hinputs,
     hamuts: HamutsBox,
       currentFunctionHeader: FunctionHeaderT,

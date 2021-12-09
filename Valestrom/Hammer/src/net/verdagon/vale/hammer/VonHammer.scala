@@ -389,6 +389,15 @@ object VonHammer {
           Vector(
             VonMember("value", VonFloat(value))))
       }
+      case ArrayCapacityH(sourceExpr) => {
+        VonObject(
+          "ArrayCapacity",
+          None,
+          Vector(
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
+            VonMember("sourceType", vonifyCoord(sourceExpr.resultType)),
+            VonMember("sourceKnownLive", VonBool(false))))
+      }
       case ArrayLengthH(sourceExpr) => {
         VonObject(
           "ArrayLength",
@@ -560,9 +569,42 @@ object VonHammer {
               "localsKnownLives",
               VonArray(None, locals.map(local => VonBool(false))))))
       }
+      case PushRuntimeSizedArrayH(arrayExpr, newcomerExpr) => {
+        VonObject(
+          "PushRuntimeSizedArray",
+          None,
+          Vector(
+            VonMember("arrayExpr", vonifyExpression(arrayExpr)),
+            VonMember("arrayType", vonifyCoord(arrayExpr.resultType)),
+            VonMember("arrayKind", vonifyKind(arrayExpr.resultType.kind)),
+            VonMember("newcomerExpr", vonifyExpression(newcomerExpr)),
+            VonMember("newcomerType", vonifyCoord(newcomerExpr.resultType)),
+            VonMember("newcomerKind", vonifyKind(newcomerExpr.resultType.kind)),
+            VonMember("consumerKnownLive", VonBool(false))))
+      }
+      case PopRuntimeSizedArrayH(arrayExpr, arrayElementType) => {
+        VonObject(
+          "PopRuntimeSizedArray",
+          None,
+          Vector(
+            VonMember("arrayExpr", vonifyExpression(arrayExpr)),
+            VonMember("arrayType", vonifyCoord(arrayExpr.resultType)),
+            VonMember("arrayKind", vonifyKind(arrayExpr.resultType.kind)),
+            VonMember("arrayElementType", vonifyCoord(arrayElementType)),
+            VonMember("consumerKnownLive", VonBool(false))))
+      }
+      case DestroyMutRuntimeSizedArrayH(arrayExpr) => {
+        VonObject(
+          "DestroyMutRuntimeSizedArray",
+          None,
+          Vector(
+            VonMember("arrayExpr", vonifyExpression(arrayExpr)),
+            VonMember("arrayType", vonifyCoord(arrayExpr.resultType)),
+            VonMember("arrayKind", vonifyKind(arrayExpr.resultType.kind))))
+      }
       case DestroyImmRuntimeSizedArrayH(arrayExpr, consumerExpr, consumerMethod, arrayElementType) => {
         VonObject(
-          "DestroyRuntimeSizedArray",
+          "DestroyImmRuntimeSizedArray",
           None,
           Vector(
             VonMember("arrayExpr", vonifyExpression(arrayExpr)),
@@ -686,9 +728,20 @@ object VonHammer {
             VonMember("expectedElementType", vonifyCoord(expectedElementType)),
             VonMember("resultType", vonifyCoord(resultType))))
       }
+      case NewMutRuntimeSizedArrayH(capacityExpr, elementType, resultType) => {
+        VonObject(
+          "NewMutRuntimeSizedArray",
+          None,
+          Vector(
+            VonMember("capacityExpr", vonifyExpression(capacityExpr)),
+            VonMember("capacityType", vonifyCoord(capacityExpr.resultType)),
+            VonMember("capacityKind", vonifyKind(capacityExpr.resultType.kind)),
+            VonMember("resultType", vonifyCoord(resultType)),
+            VonMember("elementType", vonifyCoord(elementType))))
+      }
       case NewImmRuntimeSizedArrayH(sizeExpr, generatorExpr, generatorMethod, elementType, resultType) => {
         VonObject(
-          "ConstructRuntimeSizedArray",
+          "NewImmRuntimeSizedArray",
           None,
           Vector(
             VonMember("sizeExpr", vonifyExpression(sizeExpr)),

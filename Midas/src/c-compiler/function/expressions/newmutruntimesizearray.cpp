@@ -10,15 +10,13 @@
 #include "function/expressions/shared/shared.h"
 #include "region/common/heap.h"
 
-Ref translateConstructRuntimeSizedArray(
+Ref translateNewMutRuntimeSizedArray(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    ConstructRuntimeSizedArray* constructRuntimeSizedArray) {
+    NewMutRuntimeSizedArray* constructRuntimeSizedArray) {
 
-  auto generatorType = constructRuntimeSizedArray->generatorType;
-  auto generatorExpr = constructRuntimeSizedArray->generatorExpr;
   auto sizeKind = constructRuntimeSizedArray->sizeKind;
   auto sizeExpr = constructRuntimeSizedArray->sizeExpr;
   auto sizeType = constructRuntimeSizedArray->sizeType;
@@ -27,11 +25,7 @@ Ref translateConstructRuntimeSizedArray(
 
   auto runtimeSizedArrayMT = dynamic_cast<RuntimeSizedArrayT*>(constructRuntimeSizedArray->arrayRefType->kind);
 
-  auto sizeRef = translateExpression(globalState, functionState, blockState, builder, sizeExpr);
-
-  auto generatorRef = translateExpression(globalState, functionState, blockState, builder, generatorExpr);
-  globalState->getRegion(generatorType)->checkValidReference(FL(), functionState, builder,
-      generatorType, generatorRef);
+  auto capacityRef = translateExpression(globalState, functionState, blockState, builder, sizeExpr);
 
   // If we get here, arrayLT is a pointer to our counted struct.
   auto rsaRef =
@@ -41,29 +35,13 @@ Ref translateConstructRuntimeSizedArray(
           builder,
           arrayRefType,
           runtimeSizedArrayMT,
-          sizeRef,
+          capacityRef,
           runtimeSizedArrayMT->name->name);
   buildFlare(FL(), globalState, functionState, builder);
   globalState->getRegion(arrayRefType)->checkValidReference(FL(), functionState, builder,
       arrayRefType, rsaRef);
 
-  buildFlare(FL(), globalState, functionState, builder);
-  fillRuntimeSizedArray(
-      globalState,
-      functionState,
-      builder,
-      arrayRefType,
-      runtimeSizedArrayMT,
-      elementType,
-      generatorType,
-      constructRuntimeSizedArray->generatorMethod,
-      generatorRef,
-      sizeRef,
-      rsaRef);//getRuntimeSizedArrayContentsPtr(builder, rsaWrapperPtrLE));
-  buildFlare(FL(), globalState, functionState, builder);
-
-  globalState->getRegion(sizeType)->dealias(AFL("ConstructRSA"), functionState, builder, sizeType, sizeRef);
-  globalState->getRegion(generatorType)->dealias(AFL("ConstructRSA"), functionState, builder, generatorType, generatorRef);
+  globalState->getRegion(sizeType)->dealias(AFL("ConstructRSA"), functionState, builder, sizeType, capacityRef);
 
   return rsaRef;
 }

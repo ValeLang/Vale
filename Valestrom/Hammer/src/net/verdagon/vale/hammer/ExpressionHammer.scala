@@ -446,7 +446,7 @@ object ExpressionHammer {
 
       case das2 @ DestroyImmRuntimeSizedArrayTE(_, _, _, _) => {
         val drsaH =
-            CallHammer.translateDestroyRuntimeSizedArray(
+            CallHammer.translateDestroyImmRuntimeSizedArray(
               hinputs, hamuts, currentFunctionHeader, locals, das2)
         (drsaH, Vector.empty)
       }

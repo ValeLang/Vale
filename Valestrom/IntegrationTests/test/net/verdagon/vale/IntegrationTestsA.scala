@@ -46,7 +46,11 @@ class RunCompilation(
   def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = fullCompilation.getAstrouts()
   def getTemputs(): Result[Hinputs, ICompileErrorT] = fullCompilation.getTemputs()
   def expectTemputs(): Hinputs = fullCompilation.expectTemputs()
-  def getHamuts(): ProgramH = fullCompilation.getHamuts()
+  def getHamuts(): ProgramH = {
+    val hamuts = fullCompilation.getHamuts()
+    VonHammer.vonifyProgram(hamuts)
+    hamuts
+  }
 
   def evalForKind(heap: Heap, args: Vector[ReferenceV]): IVonData = {
     Vivem.executeWithHeap(getHamuts(), heap, args, System.out, Vivem.emptyStdin, Vivem.regularStdout)
@@ -87,6 +91,29 @@ class IntegrationTestsA extends FunSuite with Matchers {
 //          |""".stripMargin)
 //    compile.evalForKind(Vector())
 //  }
+
+  test("Scratch scratch") {
+    val compile =
+      RunCompilation.test(
+        """
+          |fn valeMakeRSA() Array<mut, int> {
+          |  ssa = [imm][5, 7, 9, 10, 11];
+          |  ret Array<mut, int>(ssa.len(), &!{ ssa[_] });
+          |}
+          |
+          |fn main() int export {
+          |  arr = valeMakeRSA();
+          |  i = 0;
+          |  total = 0;
+          |  while (i < arr.len()) {
+          |    set total = total + arr[i];
+          |    set i = i + 1;
+          |  }
+          |  ret total;
+          |}
+          |""".stripMargin)
+    compile.evalForKind(Vector())
+  }
 
   test("Simple program returning an int") {
     val compile = RunCompilation.test("fn main() int export {3}")
@@ -590,7 +617,6 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     val hamuts = compile.getHamuts()
-    VonHammer.vonifyProgram(hamuts)
   }
 
   test("Test extern functions") {

@@ -102,6 +102,12 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
           "false",
           "Whether to reuse the VAST created by (presumably) the last run."),
         Flag(
+          "--override_known_live_true",
+          FLAG_BOOL(),
+          "Whether to always gen-check, even if known live is true.",
+          "false",
+          "Whether to always gen-check, even if known live is true."),
+        Flag(
           "-o",
           FLAG_STR(),
           "Resulting executablen name",

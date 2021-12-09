@@ -410,8 +410,8 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
       } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(kind)) {
         auto ssaDefM = globalState->program->getStaticSizedArray(ssaMT);
 
-        if (ssaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
-          auto kind = ssaDefM->rawArray->elementType->kind;
+        if (ssaDefM->mutability == Mutability::IMMUTABLE) {
+          auto kind = ssaDefM->elementType->kind;
           if (dynamic_cast<Int *>(kind) ||
               dynamic_cast<Bool *>(kind) ||
               dynamic_cast<Float *>(kind) ||
@@ -419,7 +419,7 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
             // Do nothing, no need to include anything for these
           } else {
             auto paramTypeExportName = package->getKindExportName(kind, true);
-            if (ownershipToMutability(ssaDefM->rawArray->elementType->ownership) == Mutability::MUTABLE) {
+            if (ownershipToMutability(ssaDefM->elementType->ownership) == Mutability::MUTABLE) {
               paramTypeExportName += "Ref";
             }
             resultC << "typedef struct " << paramTypeExportName << " " << paramTypeExportName << ";" << std::endl;
@@ -428,14 +428,14 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
 
         // can we think of this in terms of regions? it's kind of like we're
         // generating some stuff for the outside to point inside.
-        auto region = (ssaDefM->rawArray->mutability == Mutability::IMMUTABLE ? globalState->linearRegion : globalState->mutRegion);
+        auto region = (ssaDefM->mutability == Mutability::IMMUTABLE ? globalState->linearRegion : globalState->mutRegion);
         auto defString = region->generateStaticSizedArrayDefsC(package, ssaDefM);
         resultC << defString;
       } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(kind)) {
         auto rsaDefM = globalState->program->getRuntimeSizedArray(rsaMT);
 
-        if (rsaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
-          auto kind = rsaDefM->rawArray->elementType->kind;
+        if (rsaDefM->mutability == Mutability::IMMUTABLE) {
+          auto kind = rsaDefM->elementType->kind;
           if (dynamic_cast<Int *>(kind) ||
               dynamic_cast<Bool *>(kind) ||
               dynamic_cast<Float *>(kind) ||
@@ -443,7 +443,7 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
             // Do nothing, no need to include anything for these
           } else {
             auto paramTypeExportName = package->getKindExportName(kind, true);
-            if (ownershipToMutability(rsaDefM->rawArray->elementType->ownership) == Mutability::MUTABLE) {
+            if (ownershipToMutability(rsaDefM->elementType->ownership) == Mutability::MUTABLE) {
               paramTypeExportName += "Ref";
             }
             resultC << "typedef struct " << paramTypeExportName << " " << paramTypeExportName << ";" << std::endl;
@@ -452,7 +452,7 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
 
         // can we think of this in terms of regions? it's kind of like we're
         // generating some stuff for the outside to point inside.
-        auto region = (rsaDefM->rawArray->mutability == Mutability::IMMUTABLE ? globalState->linearRegion : globalState->mutRegion);
+        auto region = (rsaDefM->mutability == Mutability::IMMUTABLE ? globalState->linearRegion : globalState->mutRegion);
         auto defString = region->generateRuntimeSizedArrayDefsC(package, rsaDefM);
         resultC << defString;
       } else {
@@ -928,8 +928,8 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
     for (auto p : package->staticSizedArrays) {
       auto name = p.first;
       auto arrayM = p.second;
-      globalState->getRegion(arrayM->rawArray->regionId)->declareStaticSizedArray(arrayM);
-      if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+      globalState->getRegion(arrayM->regionId)->declareStaticSizedArray(arrayM);
+      if (arrayM->mutability == Mutability::IMMUTABLE) {
         globalState->linearRegion->declareStaticSizedArray(arrayM);
       }
     }
@@ -940,8 +940,8 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
     for (auto p : package->runtimeSizedArrays) {
       auto name = p.first;
       auto arrayM = p.second;
-      globalState->getRegion(arrayM->rawArray->regionId)->declareRuntimeSizedArray(arrayM);
-      if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+      globalState->getRegion(arrayM->regionId)->declareRuntimeSizedArray(arrayM);
+      if (arrayM->mutability == Mutability::IMMUTABLE) {
         globalState->linearRegion->declareRuntimeSizedArray(arrayM);
       }
     }
@@ -974,8 +974,8 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
     for (auto p : package->staticSizedArrays) {
       auto name = p.first;
       auto arrayM = p.second;
-      globalState->getRegion(arrayM->rawArray->regionId)->declareStaticSizedArrayExtraFunctions(arrayM);
-      if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+      globalState->getRegion(arrayM->regionId)->declareStaticSizedArrayExtraFunctions(arrayM);
+      if (arrayM->mutability == Mutability::IMMUTABLE) {
         globalState->linearRegion->declareStaticSizedArrayExtraFunctions(arrayM);
       }
     }
@@ -985,8 +985,8 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
     for (auto p : package->runtimeSizedArrays) {
       auto name = p.first;
       auto arrayM = p.second;
-      globalState->getRegion(arrayM->rawArray->regionId)->declareRuntimeSizedArrayExtraFunctions(arrayM);
-      if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+      globalState->getRegion(arrayM->regionId)->declareRuntimeSizedArrayExtraFunctions(arrayM);
+      if (arrayM->mutability == Mutability::IMMUTABLE) {
         globalState->linearRegion->declareRuntimeSizedArrayExtraFunctions(arrayM);
       }
     }
@@ -1039,8 +1039,8 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
     for (auto p : package->staticSizedArrays) {
       auto name = p.first;
       auto arrayM = p.second;
-      globalState->getRegion(arrayM->rawArray->regionId)->defineStaticSizedArray(arrayM);
-      if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+      globalState->getRegion(arrayM->regionId)->defineStaticSizedArray(arrayM);
+      if (arrayM->mutability == Mutability::IMMUTABLE) {
         globalState->linearRegion->defineStaticSizedArray(arrayM);
       }
     }
@@ -1050,8 +1050,8 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
     for (auto p : package->runtimeSizedArrays) {
       auto name = p.first;
       auto arrayM = p.second;
-      globalState->getRegion(arrayM->rawArray->regionId)->defineRuntimeSizedArray(arrayM);
-      if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+      globalState->getRegion(arrayM->regionId)->defineRuntimeSizedArray(arrayM);
+      if (arrayM->mutability == Mutability::IMMUTABLE) {
         globalState->linearRegion->defineRuntimeSizedArray(arrayM);
       }
     }
@@ -1081,8 +1081,8 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
     for (auto p : package->staticSizedArrays) {
       auto name = p.first;
       auto arrayM = p.second;
-      globalState->getRegion(arrayM->rawArray->regionId)->defineStaticSizedArrayExtraFunctions(arrayM);
-      if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+      globalState->getRegion(arrayM->regionId)->defineStaticSizedArrayExtraFunctions(arrayM);
+      if (arrayM->mutability == Mutability::IMMUTABLE) {
         globalState->linearRegion->defineStaticSizedArrayExtraFunctions(arrayM);
       }
     }
@@ -1092,8 +1092,8 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
     for (auto p : package->runtimeSizedArrays) {
       auto name = p.first;
       auto arrayM = p.second;
-      globalState->getRegion(arrayM->rawArray->regionId)->defineRuntimeSizedArrayExtraFunctions(arrayM);
-      if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+      globalState->getRegion(arrayM->regionId)->defineRuntimeSizedArrayExtraFunctions(arrayM);
+      if (arrayM->mutability == Mutability::IMMUTABLE) {
         globalState->linearRegion->defineRuntimeSizedArrayExtraFunctions(arrayM);
       }
     }

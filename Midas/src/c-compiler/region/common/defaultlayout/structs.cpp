@@ -349,7 +349,8 @@ void KindStructs::declareRuntimeSizedArray(
 
 void KindStructs::defineRuntimeSizedArray(
     RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT,
-    LLVMTypeRef elementLT) {
+    LLVMTypeRef elementLT,
+    bool capacityExists) {
   assert(weakRefHeaderStructL);
   Weakability weakable = runtimeSizedArrayIsWeakable(runtimeSizedArrayMT->kind);
 
@@ -360,7 +361,12 @@ void KindStructs::defineRuntimeSizedArray(
 
   elementsL.push_back(weakable == Weakability::WEAKABLE ? weakableControlBlock.getStruct() : nonWeakableControlBlock.getStruct());
 
+  // Size
   elementsL.push_back(LLVMInt32TypeInContext(globalState->context));
+  if (capacityExists) {
+    // Capacity
+    elementsL.push_back(LLVMInt32TypeInContext(globalState->context));
+  }
 
   elementsL.push_back(innerArrayLT);
 

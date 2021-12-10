@@ -7,7 +7,7 @@ object SolverErrorHumanizer {
   def humanizeFailedSolve[Rule, RuneID, Conclusion, ErrType](
     codeMap: FileCoordinateMap[String],
     humanizeRune: RuneID => String,
-    humanizeTemplata: (FileCoordinateMap[String], Conclusion) => String,
+    humanizeConclusion: (FileCoordinateMap[String], Conclusion) => String,
     humanizeRuleError: (FileCoordinateMap[String], ErrType) => String,
     getRuleRange: (Rule) => RangeS,
     getRuneUsages: (Rule) => Iterable[(RuneID, RangeS)],
@@ -24,7 +24,7 @@ object SolverErrorHumanizer {
         case FailedSolve(_, _, error) => {
           error match {
             case SolverConflict(rune, previousConclusion, newConclusion) => {
-              "Conflict, thought rune " + humanizeRune(rune) + " was " + humanizeTemplata(codeMap, previousConclusion) + " but now concluding it's " + humanizeTemplata(codeMap, newConclusion)
+              "Conflict, thought rune " + humanizeRune(rune) + " was " + humanizeConclusion(codeMap, previousConclusion) + " but now concluding it's " + humanizeConclusion(codeMap, newConclusion)
             }
             case RuleError(err) => {
               humanizeRuleError(codeMap, err)
@@ -73,7 +73,7 @@ object SolverErrorHumanizer {
                 val runeName = humanizeRune(rune)
                   repeatStr(" ", numSpaces) + repeatStr("^", numArrows) + " " +
                     runeName + ": " +
-                  incompleteConclusions.get(rune).map(humanizeTemplata(codeMap, _)).getOrElse("(unknown)") +
+                  incompleteConclusions.get(rune).map(humanizeConclusion(codeMap, _)).getOrElse("(unknown)") +
                   "\n"
               }).mkString("")
         }).mkString("")
@@ -88,7 +88,7 @@ object SolverErrorHumanizer {
               (if (complex) "(complex)  " else "") +
               rules.map(_._2).map(ruleToString).mkString("  ") + "\n" +
               (newConclusions -- previouslyPrintedConclusions).map({ case (newRune, newConclusion) =>
-                "  " + humanizeRune(newRune) + ": " + humanizeTemplata(codeMap, newConclusion) + "\n"
+                "  " + humanizeRune(newRune) + ": " + humanizeConclusion(codeMap, newConclusion) + "\n"
               }).mkString("") +
               addedRules.map("  added rule: " + ruleToString(_) + "\n").mkString("")
           (stringSoFar + newString, previouslyPrintedConclusions ++ newConclusions.keySet)

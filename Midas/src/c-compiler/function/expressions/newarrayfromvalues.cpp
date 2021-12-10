@@ -22,9 +22,9 @@ Ref translateNewArrayFromValues(
           globalState, functionState, blockState, builder, newArrayFromValues->sourceExprs);
   auto ssaDefM = globalState->program->getStaticSizedArray(newArrayFromValues->arrayKind);
   for (auto elementLE : elementsLE) {
-    globalState->getRegion(ssaDefM->rawArray->elementType)
+    globalState->getRegion(ssaDefM->elementType)
         ->checkValidReference(
-            FL(), functionState, builder, ssaDefM->rawArray->elementType, elementLE);
+            FL(), functionState, builder, ssaDefM->elementType, elementLE);
   }
 
   auto staticSizedArrayMT = dynamic_cast<StaticSizedArrayT*>(newArrayFromValues->arrayRefType->kind);

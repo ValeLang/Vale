@@ -32,6 +32,7 @@ case object BoolTypePR extends ITypePR
 case object OwnershipTypePR extends ITypePR
 case object MutabilityTypePR extends ITypePR
 case object PermissionTypePR extends ITypePR
+case object VariabilityTypePR extends ITypePR
 case object LocationTypePR extends ITypePR
 case object CoordTypePR extends ITypePR
 case object CoordListTypePR extends ITypePR

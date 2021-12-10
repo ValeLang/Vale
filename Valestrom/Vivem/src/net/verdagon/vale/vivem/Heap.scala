@@ -308,11 +308,11 @@ class Heap(in_vivemDout: PrintStream) {
   def destructureArray(reference: ReferenceV): Vector[ReferenceV] = {
     val allocation = dereference(reference)
     allocation match {
-      case ArrayInstanceV(typeH, elementTypeH, size, elements) => {
+      case ArrayInstanceV(_, _, _, elements) => {
         val elementRefs =
           elements.indices.toVector
             .reverse
-            .map(index => deinitializeArrayElement(reference, index))
+            .map(index => deinitializeArrayElement(reference))
             .reverse
         elementRefs
       }
@@ -544,21 +544,20 @@ class Heap(in_vivemDout: PrintStream) {
       case StructInstanceV(structH, Some(members)) => {
         vivemDout.print(structH.fullName + "{" + members.map("o" + _.allocId.num).mkString(", ") + "}")
       }
-      case ArrayInstanceV(typeH, memberTypeH, size, elements) => vivemDout.print("array:" + size + ":" + memberTypeH + "{" + elements.map("o" + _.allocId.num).mkString(", ") + "}")
+      case ArrayInstanceV(typeH, memberTypeH, capacity, elements) => vivemDout.print("array:" + capacity + ":" + memberTypeH + "{" + elements.map("o" + _.allocId.num).mkString(", ") + "}")
     }
   }
 
   def initializeArrayElement(
       arrayReference: ReferenceV,
-      index: Int,
       ret: ReferenceV) = {
     dereference(arrayReference) match {
       case a @ ArrayInstanceV(_, _, _, _) => {
         incrementReferenceRefCount(
           ElementToObjectReferrer(
-            ElementAddressV(arrayReference.allocId, index), a.elementTypeH.ownership),
+            ElementAddressV(arrayReference.allocId, a.getSize()), a.elementTypeH.ownership),
           ret)
-        a.initializeElement(index, ret)
+        a.initializeElement(ret)
       }
     }
   }
@@ -582,42 +581,42 @@ class Heap(in_vivemDout: PrintStream) {
     reference
   }
 
-  def deinitializeArrayElement(arrayReference: ReferenceV, index: Int) = {
+  def deinitializeArrayElement(arrayReference: ReferenceV) = {
     val arrayInstance @ ArrayInstanceV(_, _, _, _) = dereference(arrayReference)
-    val elementReference = arrayInstance.deinitializeElement(index)
+    val elementReference = arrayInstance.deinitializeElement()
     decrementReferenceRefCount(
-      ElementToObjectReferrer(ElementAddressV(arrayReference.allocId, index), elementReference.ownership),
+      ElementToObjectReferrer(ElementAddressV(arrayReference.allocId, arrayInstance.getSize()), elementReference.ownership),
       elementReference)
     elementReference
   }
 
-  def initializeArrayElementFromRegister(
-      arrayReference: ReferenceV,
-      index: Int,
-      elementReference: ReferenceV) = {
-    val arrayInstance @ ArrayInstanceV(_, _, _, _) = dereference(arrayReference)
-    incrementReferenceRefCount(
-      ElementToObjectReferrer(ElementAddressV(arrayReference.allocId, index), elementReference.ownership),
-      elementReference)
-    arrayInstance.initializeElement(index, elementReference)
-  }
+//  def initializeArrayElementFromRegister(
+//      arrayReference: ReferenceV,
+//      elementReference: ReferenceV) = {
+//    val arrayInstance @ ArrayInstanceV(_, _, _, _) = dereference(arrayReference)
+//    val index = arrayInstance.getSize()
+//    incrementReferenceRefCount(
+//      ElementToObjectReferrer(ElementAddressV(arrayReference.allocId, index), elementReference.ownership),
+//      elementReference)
+//    arrayInstance.initializeElement(elementReference)
+//  }
 
   def addUninitializedArray(
       arrayDefinitionTH: RuntimeSizedArrayDefinitionTH,
-      arrayRefType: ReferenceH[RuntimeSizedArrayTH],
-      size: Int):
+      arrayRefType: ReferenceH[RuntimeSizedArrayHT],
+      capacity: Int):
   (ReferenceV, ArrayInstanceV) = {
-    val instance = ArrayInstanceV(arrayRefType, arrayDefinitionTH.rawArray.elementType, size, Vector())
+    val instance = ArrayInstanceV(arrayRefType, arrayDefinitionTH.elementType, capacity, Vector())
     val reference = add(arrayRefType.ownership, arrayRefType.location, arrayRefType.permission, instance)
     (reference, instance)
   }
 
   def addArray(
     arrayDefinitionTH: StaticSizedArrayDefinitionTH,
-    arrayRefType: ReferenceH[StaticSizedArrayTH],
+    arrayRefType: ReferenceH[StaticSizedArrayHT],
     memberRefs: Vector[ReferenceV]):
   (ReferenceV, ArrayInstanceV) = {
-    val instance = ArrayInstanceV(arrayRefType, arrayDefinitionTH.rawArray.elementType, memberRefs.size, memberRefs.toVector)
+    val instance = ArrayInstanceV(arrayRefType, arrayDefinitionTH.elementType, memberRefs.size, memberRefs.toVector)
     val reference = add(arrayRefType.ownership, arrayRefType.location, arrayRefType.permission, instance)
     memberRefs.zipWithIndex.foreach({ case (memberRef, index) =>
       incrementReferenceRefCount(
@@ -663,12 +662,12 @@ class Heap(in_vivemDout: PrintStream) {
           vfail("Expected " + structRefH + " but was " + structDefH)
         }
       }
-      case (ArrayInstanceV(typeH, actualElementTypeH, _, _), arrayH @ RuntimeSizedArrayTH(_)) => {
+      case (ArrayInstanceV(typeH, actualElementTypeH, _, _), arrayH @ RuntimeSizedArrayHT(_)) => {
         if (typeH.kind != arrayH) {
           vfail("Expected " + arrayH + " but was " + typeH)
         }
       }
-      case (ArrayInstanceV(typeH, actualElementTypeH, _, _), arrayH @ StaticSizedArrayTH(_)) => {
+      case (ArrayInstanceV(typeH, actualElementTypeH, _, _), arrayH @ StaticSizedArrayHT(_)) => {
         if (typeH.kind != arrayH) {
           vfail("Expected " + arrayH + " but was " + typeH)
         }
@@ -747,7 +746,7 @@ class Heap(in_vivemDout: PrintStream) {
       case FloatV(value) => VonFloat(value)
       case BoolV(value) => VonBool(value)
       case StrV(value) => VonStr(value)
-      case ArrayInstanceV(typeH, elementTypeH, size, elements) => {
+      case ArrayInstanceV(_, _, _, elements) => {
         VonArray(None, elements.map(toVon))
       }
       case StructInstanceV(structH, Some(members)) => {

@@ -191,10 +191,10 @@ class LocalHelper(
       case FloatT() => ShareT
       case StrT() => ShareT
       case VoidT() => ShareT
-      case StaticSizedArrayTT(_, RawArrayTT(_, mutability, _)) => {
+      case StaticSizedArrayTT(_, mutability, _, _) => {
         if (mutability == MutableT) ConstraintT else ShareT
       }
-      case RuntimeSizedArrayTT(RawArrayTT(_, mutability, _)) => {
+      case RuntimeSizedArrayTT(mutability, _) => {
         if (mutability == MutableT) ConstraintT else ShareT
       }
       case sr2 @ StructTT(_) => {

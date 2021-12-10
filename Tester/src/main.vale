@@ -218,7 +218,7 @@ fn main() int export {
 
   if (include_regions.exists({ _ == "resilient-v3" })) {
     region = "resilient-v3";
-    suite!.StartTest(116, "kldc", samples_path./("programs/structs/deadmutstruct.vale"), &List([]["--override_known_live_true"]), region);
+    suite!.StartTest(116, "kldc", samples_path./("programs/structs/deadmutstruct.vale"), &List([]["--override_known_live_true", "true"]), region);
   }
 
   if (include_regions.exists({ _ == "resilient-v4" })) {
@@ -326,6 +326,7 @@ fn StartCTest(suite &!TestSuite, test_name str, input_c &Path, flags List<str>, 
                 "-o",
                 test_build_dir./("main").str()
             ]))).expect();
+    // println(process.command);
     suite.test_instances!.add(
         TestInstance(test_name, region, 0, test_build_dir, process, flags));
   } else {
@@ -401,7 +402,9 @@ Subprocess {
     println("Starting subprocess...");
   }
 
-  ret (Subprocess(suite.valec_path, &build_args)).expect();
+  build_process = (Subprocess(suite.valec_path, &build_args)).expect();
+  //println("Build command: " + build_process.command);
+  ret build_process;
 }
 
 fn StartTest(

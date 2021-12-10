@@ -1,6 +1,6 @@
-export Array<imm, final, int> as ImmIntArray;
+export Array<imm, int> as ImmIntArray;
 
-fn sumBytes(arr Array<imm, final, int>) int extern;
+fn sumBytes(arr Array<imm, int>) int extern;
 
 fn main() int export {
   a = [imm *](5, {_});

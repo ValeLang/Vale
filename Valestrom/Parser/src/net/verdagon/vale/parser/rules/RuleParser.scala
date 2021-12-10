@@ -24,6 +24,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
     "Ownership" ^^^ OwnershipTypePR |
     "Mutability" ^^^ MutabilityTypePR |
     "Permission" ^^^ PermissionTypePR |
+    "Variability" ^^^ VariabilityTypePR |
     "Location" ^^^ LocationTypePR |
     "RefList" ^^^ CoordListTypePR |
     "Ref" ^^^ CoordTypePR |

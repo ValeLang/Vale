@@ -265,15 +265,6 @@ Ref translateExpressionInner(
           std::vector<Ref> argExprRefs = { consumerRef, elementRef };
 
           buildCall(globalState, functionState, bodyBuilder, consumerMethod, argExprRefs);
-//
-//          auto consumerInterfaceMT = dynamic_cast<InterfaceKind*>(consumerType->kind);
-//          assert(consumerInterfaceMT);
-//          int indexInEdge = globalState->getInterfaceMethodIndex(consumerInterfaceMT, consumerMethod);
-//          auto methodFunctionPtrLE =
-//              globalState->getRegion(consumerType)
-//                  ->getInterfaceMethodFunctionPtr(functionState, bodyBuilder, consumerType, consumerRef, indexInEdge);
-//          buildInterfaceCall(
-//              globalState, functionState, bodyBuilder, consumerMethod, methodFunctionPtrLE, argExprRefs, 0);
         });
 
     if (arrayType->ownership == Ownership::OWN) {
@@ -289,20 +280,150 @@ Ref translateExpressionInner(
       assert(false);
     }
 
-
     globalState->getRegion(consumerType)
         ->dealias(
             AFL("DestroySSAIntoF"), functionState, builder, consumerType, consumerRef);
 
     return makeEmptyTupleRef(globalState);
-  } else if (auto destroyRuntimeSizedArrayIntoFunction = dynamic_cast<DestroyRuntimeSizedArray*>(expr)) {
+  } else if (auto pushRuntimeSizedArray = dynamic_cast<PushRuntimeSizedArray*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
-    auto consumerType = destroyRuntimeSizedArrayIntoFunction->consumerType;
-    auto arrayKind = destroyRuntimeSizedArrayIntoFunction->arrayKind;
-    auto arrayExpr = destroyRuntimeSizedArrayIntoFunction->arrayExpr;
-    auto consumerExpr = destroyRuntimeSizedArrayIntoFunction->consumerExpr;
-    auto consumerMethod = destroyRuntimeSizedArrayIntoFunction->consumerMethod;
-    auto arrayType = destroyRuntimeSizedArrayIntoFunction->arrayType;
+    auto arrayExpr = pushRuntimeSizedArray->arrayExpr;
+    auto arrayType = pushRuntimeSizedArray->arrayType;
+    auto arrayMT = dynamic_cast<RuntimeSizedArrayT*>(arrayType->kind);
+    assert(arrayMT);
+    bool arrayKnownLive = true;
+    auto newcomerExpr = pushRuntimeSizedArray->newcomerExpr;
+    auto newcomerType = pushRuntimeSizedArray->newcomerType;
+    bool newcomerKnownLive = true;
+
+    auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
+    globalState->getRegion(arrayType)
+        ->checkValidReference(FL(), functionState, builder, arrayType, arrayRef);
+
+    auto arrayLenRef =
+        globalState->getRegion(arrayType)
+            ->getRuntimeSizedArrayLength(
+                functionState, builder, arrayType, arrayRef, arrayKnownLive);
+    auto arrayLenLE =
+        globalState->getRegion(globalState->metalCache->i32Ref)
+            ->checkValidReference(FL(),
+                functionState, builder, globalState->metalCache->i32Ref, arrayLenRef);
+
+    auto arrayCapacityRef =
+        globalState->getRegion(arrayType)
+            ->getRuntimeSizedArrayCapacity(
+                functionState, builder, arrayType, arrayRef, arrayKnownLive);
+    auto arrayCapacityLE =
+        globalState->getRegion(globalState->metalCache->i32Ref)
+            ->checkValidReference(FL(),
+                functionState, builder, globalState->metalCache->i32Ref, arrayCapacityRef);
+
+    auto hasSpaceLE = LLVMBuildICmp(builder, LLVMIntULT, arrayLenLE, arrayCapacityLE, "hasSpace");
+    buildIf(globalState, functionState, builder, hasSpaceLE, [globalState](LLVMBuilderRef bodyBuilder) {
+      buildPrint(globalState, bodyBuilder, "Error: Runtime-sized array has no room for new element!");
+    });
+
+    auto newcomerRef = translateExpression(globalState, functionState, blockState, builder, newcomerExpr);
+    globalState->getRegion(newcomerType)
+        ->checkValidReference(FL(), functionState, builder, newcomerType, newcomerRef);
+
+    globalState->getRegion(arrayType)
+        ->pushRuntimeSizedArrayNoBoundsCheck(functionState, builder, arrayType, arrayMT, arrayRef, arrayKnownLive, arrayLenRef, newcomerRef);
+
+    globalState->getRegion(arrayType)
+        ->dealias(
+            AFL("pushRuntimeSizedArrayNoBoundsCheck"), functionState, builder, arrayType, arrayRef);
+
+    return makeEmptyTupleRef(globalState);
+  } else if (auto popRuntimeSizedArray = dynamic_cast<PopRuntimeSizedArray*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    auto arrayExpr = popRuntimeSizedArray->arrayExpr;
+    auto arrayType = popRuntimeSizedArray->arrayType;
+    auto arrayMT = dynamic_cast<RuntimeSizedArrayT*>(arrayType->kind);
+    assert(arrayMT);
+    bool arrayKnownLive = true;
+
+    auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
+    globalState->getRegion(arrayType)
+        ->checkValidReference(FL(), functionState, builder, arrayType, arrayRef);
+
+    auto arrayLenRef =
+        globalState->getRegion(arrayType)
+            ->getRuntimeSizedArrayLength(
+                functionState, builder, arrayType, arrayRef, arrayKnownLive);
+    auto arrayLenLE =
+        globalState->getRegion(globalState->metalCache->i32Ref)
+            ->checkValidReference(FL(),
+                functionState, builder, globalState->metalCache->i32Ref, arrayLenRef);
+    globalState->getRegion(globalState->metalCache->i32Ref)
+        ->checkValidReference(FL(),
+            functionState, builder, globalState->metalCache->i32Ref, arrayLenRef);
+
+    auto indexLE = LLVMBuildSub(builder, arrayLenLE, constI32LE(globalState, 1), "index");
+    auto indexRef =
+        wrap(globalState->getRegion(globalState->metalCache->i32Ref), globalState->metalCache->i32Ref, indexLE);
+
+    auto hasElementsLE = LLVMBuildICmp(builder, LLVMIntNE, arrayLenLE, constI32LE(globalState, 0), "hasElements");
+    buildIf(globalState, functionState, builder, hasElementsLE, [globalState](LLVMBuilderRef bodyBuilder) {
+      buildPrint(globalState, bodyBuilder, "Error: Cannot pop element from empty runtime-sized array!");
+    });
+
+    auto resultRef =
+        globalState->getRegion(arrayType)
+            ->popRuntimeSizedArrayNoBoundsCheck(functionState, builder, arrayType, arrayMT, arrayRef, arrayKnownLive, indexRef);
+
+    globalState->getRegion(arrayType)
+        ->dealias(
+            AFL("popRuntimeSizedArrayNoBoundsCheck"), functionState, builder, arrayType, arrayRef);
+
+    return resultRef;
+  } else if (auto dmrsa = dynamic_cast<DestroyMutRuntimeSizedArray*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    auto arrayKind = dmrsa->arrayKind;
+    auto arrayExpr = dmrsa->arrayExpr;
+    auto arrayType = dmrsa->arrayType;
+    bool arrayKnownLive = true;
+
+    auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
+    globalState->getRegion(arrayType)
+        ->checkValidReference(FL(), functionState, builder, arrayType, arrayRef);
+    auto arrayLenRef =
+        globalState->getRegion(arrayType)
+            ->getRuntimeSizedArrayLength(
+                functionState, builder, arrayType, arrayRef, arrayKnownLive);
+    auto arrayLenLE =
+        globalState->getRegion(globalState->metalCache->i32Ref)
+            ->checkValidReference(FL(),
+                functionState, builder, globalState->metalCache->i32Ref, arrayLenRef);
+
+    auto hasElementsLE = LLVMBuildICmp(builder, LLVMIntNE, arrayLenLE, constI32LE(globalState, 0), "hasElements");
+    buildIf(globalState, functionState, builder, hasElementsLE, [globalState](LLVMBuilderRef bodyBuilder) {
+      buildPrint(globalState, bodyBuilder, "Error: Destroying non-empty array!");
+    });
+
+    if (arrayType->ownership == Ownership::OWN) {
+      globalState->getRegion(arrayType)
+          ->discardOwningRef(FL(), functionState, blockState, builder, arrayType, arrayRef);
+    } else if (arrayType->ownership == Ownership::SHARE) {
+      // We dont decrement anything here, we're only here because we already hit zero.
+
+      // Free it!
+      globalState->getRegion(arrayType)
+          ->deallocate(
+              AFL("DestroyRSAIntoF"), functionState, builder, arrayType, arrayRef);
+    } else {
+      assert(false);
+    }
+
+    return makeEmptyTupleRef(globalState);
+  } else if (auto dirsa = dynamic_cast<DestroyImmRuntimeSizedArray*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    auto consumerType = dirsa->consumerType;
+    auto arrayKind = dirsa->arrayKind;
+    auto arrayExpr = dirsa->arrayExpr;
+    auto consumerExpr = dirsa->consumerExpr;
+    auto consumerMethod = dirsa->consumerMethod;
+    auto arrayType = dirsa->arrayType;
     bool arrayKnownLive = true;
 
     auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
@@ -331,7 +452,7 @@ Ref translateExpressionInner(
 
           auto elementRef =
               globalState->getRegion(arrayType)
-                  ->deinitializeElementFromRSA(
+                  ->popRuntimeSizedArrayNoBoundsCheck(
                       functionState, bodyBuilder, arrayType, arrayKind, arrayRef, arrayKnownLive, indexRef);
           std::vector<Ref> argExprRefs = { consumerRef, elementRef };
 
@@ -457,7 +578,7 @@ Ref translateExpressionInner(
     auto arrayKind = runtimeSizedArrayStore->arrayKind;
     bool arrayKnownLive = runtimeSizedArrayStore->arrayKnownLive || globalState->opt->overrideKnownLiveTrue;
 
-    auto elementType = globalState->program->getRuntimeSizedArray(arrayKind)->rawArray->elementType;
+    auto elementType = globalState->program->getRuntimeSizedArray(arrayKind)->elementType;
 
     auto arrayRefLE = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
     globalState->getRegion(arrayType)
@@ -533,9 +654,12 @@ Ref translateExpressionInner(
   } else if (auto newArrayFromValues = dynamic_cast<NewArrayFromValues*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     return translateNewArrayFromValues(globalState, functionState, blockState, builder, newArrayFromValues);
-  } else if (auto constructRuntimeSizedArray = dynamic_cast<ConstructRuntimeSizedArray*>(expr)) {
+  } else if (auto nirsa = dynamic_cast<NewImmRuntimeSizedArray*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
-    return translateConstructRuntimeSizedArray(globalState, functionState, blockState, builder, constructRuntimeSizedArray);
+    return translateNewImmRuntimeSizedArray(globalState, functionState, blockState, builder, nirsa);
+  } else if (auto nmrsa = dynamic_cast<NewMutRuntimeSizedArray*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    return translateNewMutRuntimeSizedArray(globalState, functionState, blockState, builder, nmrsa);
   } else if (auto staticArrayFromCallable = dynamic_cast<StaticArrayFromCallable*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     return translateStaticArrayFromCallable(globalState, functionState, blockState, builder, staticArrayFromCallable);

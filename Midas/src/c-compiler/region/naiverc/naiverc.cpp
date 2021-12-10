@@ -296,16 +296,16 @@ void NaiveRC::declareRuntimeSizedArray(
 void NaiveRC::defineRuntimeSizedArray(
     RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT) {
   auto elementLT =
-      globalState->getRegion(runtimeSizedArrayMT->rawArray->elementType)
-          ->translateType(runtimeSizedArrayMT->rawArray->elementType);
-  kindStructs.defineRuntimeSizedArray(runtimeSizedArrayMT, elementLT);
+      globalState->getRegion(runtimeSizedArrayMT->elementType)
+          ->translateType(runtimeSizedArrayMT->elementType);
+  kindStructs.defineRuntimeSizedArray(runtimeSizedArrayMT, elementLT, true);
 }
 
 void NaiveRC::defineStaticSizedArray(
     StaticSizedArrayDefinitionT* staticSizedArrayMT) {
   auto elementLT =
-      globalState->getRegion(staticSizedArrayMT->rawArray->elementType)
-          ->translateType(staticSizedArrayMT->rawArray->elementType);
+      globalState->getRegion(staticSizedArrayMT->elementType)
+          ->translateType(staticSizedArrayMT->elementType);
   kindStructs.defineStaticSizedArray(staticSizedArrayMT, elementLT);
 }
 void NaiveRC::declareStruct(
@@ -454,6 +454,15 @@ Ref NaiveRC::getRuntimeSizedArrayLength(
     Ref arrayRef,
     bool arrayKnownLive) {
   return getRuntimeSizedArrayLengthStrong(globalState, functionState, builder, &kindStructs, rsaRefMT, arrayRef);
+}
+
+Ref NaiveRC::getRuntimeSizedArrayCapacity(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* rsaRefMT,
+    Ref arrayRef,
+    bool arrayKnownLive) {
+  return getRuntimeSizedArrayCapacityStrong(globalState, functionState, builder, &kindStructs, rsaRefMT, arrayRef);
 }
 
 LLVMValueRef NaiveRC::checkValidReference(
@@ -618,7 +627,7 @@ LoadResult NaiveRC::loadElementFromSSA(
     Ref indexRef) {
   auto ssaDef = globalState->program->getStaticSizedArray(ssaMT);
   return regularloadElementFromSSA(
-      globalState, functionState, builder, ssaRefMT, ssaMT, ssaDef->rawArray->elementType, ssaDef->size, ssaDef->rawArray->mutability, arrayRef, arrayKnownLive, indexRef, &kindStructs);
+      globalState, functionState, builder, ssaRefMT, ssaMT, ssaDef->elementType, ssaDef->size, ssaDef->mutability, arrayRef, arrayKnownLive, indexRef, &kindStructs);
 }
 
 LoadResult NaiveRC::loadElementFromRSA(
@@ -631,7 +640,7 @@ LoadResult NaiveRC::loadElementFromRSA(
     Ref indexRef) {
   auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT);
   return regularLoadElementFromRSAWithoutUpgrade(
-      globalState, functionState, builder, &kindStructs, rsaRefMT, rsaMT, rsaDef->rawArray->mutability, rsaDef->rawArray->elementType, arrayRef, arrayKnownLive, indexRef);
+      globalState, functionState, builder, &kindStructs, true, rsaRefMT, rsaMT, rsaDef->mutability, rsaDef->elementType, arrayRef, arrayKnownLive, indexRef);
 }
 
 Ref NaiveRC::storeElementInRSA(
@@ -649,10 +658,10 @@ Ref NaiveRC::storeElementInRSA(
           FL(), functionState, builder, rsaRefMT,
           globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, arrayRef));
   auto sizeRef = ::getRuntimeSizedArrayLength(globalState, functionState, builder, arrayWrapperPtrLE);
-  auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, arrayWrapperPtrLE);
+  auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, true, arrayWrapperPtrLE);
   buildFlare(FL(), globalState, functionState, builder);
   return ::swapElement(
-      globalState, functionState, builder, rsaRefMT->location, rsaDef->rawArray->elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);
+      globalState, functionState, builder, rsaRefMT->location, rsaDef->elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);
 }
 
 Ref NaiveRC::upcast(
@@ -696,17 +705,17 @@ Ref NaiveRC::constructRuntimeSizedArray(
     LLVMBuilderRef builder,
     Reference* rsaMT,
     RuntimeSizedArrayT* runtimeSizedArrayT,
-    Ref sizeRef,
+    Ref capacityRef,
     const std::string& typeName) {
   auto rsaWrapperPtrLT =
       kindStructs.getRuntimeSizedArrayWrapperStruct(runtimeSizedArrayT);
   auto rsaDef = globalState->program->getRuntimeSizedArray(runtimeSizedArrayT);
-  auto elementType = globalState->program->getRuntimeSizedArray(runtimeSizedArrayT)->rawArray->elementType;
+  auto elementType = globalState->program->getRuntimeSizedArray(runtimeSizedArrayT)->elementType;
   auto rsaElementLT = globalState->getRegion(elementType)->translateType(elementType);
   auto resultRef =
       ::constructRuntimeSizedArray(
-          globalState, functionState, builder, &kindStructs, rsaMT, rsaDef->rawArray->elementType, runtimeSizedArrayT,
-          rsaWrapperPtrLT, rsaElementLT, sizeRef, typeName,
+          globalState, functionState, builder, &kindStructs, rsaMT, rsaDef->elementType, runtimeSizedArrayT,
+          rsaWrapperPtrLT, rsaElementLT, globalState->constI32(0), capacityRef, true, typeName,
           [this, functionState, runtimeSizedArrayT, typeName](
               LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
             fillControlBlock(
@@ -827,7 +836,7 @@ std::string NaiveRC::generateRuntimeSizedArrayDefsC(
     Package* currentPackage,
 
     RuntimeSizedArrayDefinitionT* rsaDefM) {
-  if (rsaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
+  if (rsaDefM->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
     auto name = currentPackage->getKindExportName(rsaDefM->kind, true);
@@ -923,7 +932,7 @@ LLVMValueRef NaiveRC::encryptAndSendFamiliarReference(
   exit(1);
 }
 
-void NaiveRC::initializeElementInRSA(
+void NaiveRC::pushRuntimeSizedArrayNoBoundsCheck(
     FunctionState *functionState,
     LLVMBuilderRef builder,
     Reference *rsaRefMT,
@@ -932,10 +941,15 @@ void NaiveRC::initializeElementInRSA(
     bool arrayRefKnownLive,
     Ref indexRef,
     Ref elementRef) {
-  ::initializeElementInRSA(globalState, functionState, builder, &kindStructs, rsaMT, rsaRefMT, rsaRef, indexRef, elementRef);
+  auto arrayWrapperPtrLE =
+      kindStructs.makeWrapperPtr(
+          FL(), functionState, builder, rsaRefMT,
+          globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, rsaRef));
+  ::initializeElementInRSA(
+      globalState, functionState, builder, &kindStructs, true, true, rsaMT, rsaRefMT, arrayWrapperPtrLE, rsaRef, indexRef, elementRef);
 }
 
-Ref NaiveRC::deinitializeElementFromRSA(
+Ref NaiveRC::popRuntimeSizedArrayNoBoundsCheck(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* rsaRefMT,
@@ -944,8 +958,14 @@ Ref NaiveRC::deinitializeElementFromRSA(
     bool arrayRefKnownLive,
     Ref indexRef) {
   auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT);
-  return regularLoadElementFromRSAWithoutUpgrade(
-      globalState, functionState, builder, &kindStructs, rsaRefMT, rsaMT, rsaDef->rawArray->mutability, rsaDef->rawArray->elementType, arrayRef, true, indexRef).move();
+  auto elementLE = regularLoadElementFromRSAWithoutUpgrade(
+      globalState, functionState, builder, &kindStructs, true, rsaRefMT, rsaMT, rsaDef->mutability, rsaDef->elementType, arrayRef, true, indexRef).move();
+  auto rsaWrapperPtrLE =
+      kindStructs.makeWrapperPtr(
+          FL(), functionState, builder, rsaRefMT,
+          globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, arrayRef));
+  decrementRSASize(globalState, functionState, &kindStructs, builder, rsaRefMT, rsaWrapperPtrLE);
+  return elementLE;
 }
 
 void NaiveRC::initializeElementInSSA(
@@ -964,8 +984,9 @@ void NaiveRC::initializeElementInSSA(
           globalState->getRegion(ssaRefMT)->checkValidReference(FL(), functionState, builder, ssaRefMT, arrayRef));
   auto sizeRef = globalState->constI32(ssaDef->size);
   auto arrayElementsPtrLE = getStaticSizedArrayContentsPtr(builder, arrayWrapperPtrLE);
-  ::initializeElement(
-      globalState, functionState, builder, ssaRefMT->location, ssaDef->rawArray->elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);
+  ::initializeElementWithoutIncrementSize(
+      globalState, functionState, builder, ssaRefMT->location, ssaDef->elementType, sizeRef, arrayElementsPtrLE,
+      indexRef, elementRef);
 }
 
 Ref NaiveRC::deinitializeElementFromSSA(

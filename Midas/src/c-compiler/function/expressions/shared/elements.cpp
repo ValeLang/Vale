@@ -41,12 +41,18 @@ LLVMValueRef getStaticSizedArrayContentsPtr(
 
 LLVMValueRef getRuntimeSizedArrayContentsPtr(
     LLVMBuilderRef builder,
+    bool capacityExists,
     WrapperPtrLE arrayWrapperPtrLE) {
+  auto numThingsBefore =
+      1 + // control block
+      1 + // size
+      (capacityExists ? 1 : 0); // capacity
+  int index = numThingsBefore;
 
   return LLVMBuildStructGEP(
       builder,
       arrayWrapperPtrLE.refLE,
-      2, // Array is after the control block and length.
+      index,
       "rsaElemsPtr");
 }
 
@@ -58,10 +64,29 @@ LLVMValueRef getRuntimeSizedArrayLengthPtr(
       LLVMBuildStructGEP(
           builder,
           runtimeSizedArrayWrapperPtrLE.refLE,
-          1, // Length is after the control block and before contents.
+          1, // Length is after the control block and before the capacity.
           "rsaLenPtr");
   assert(LLVMTypeOf(resultLE) == LLVMPointerType(LLVMInt32TypeInContext(globalState->context), 0));
   return resultLE;
+}
+
+LLVMValueRef getRuntimeSizedArrayCapacityPtr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    WrapperPtrLE runtimeSizedArrayWrapperPtrLE) {
+  auto resultLE =
+      LLVMBuildStructGEP(
+          builder,
+          runtimeSizedArrayWrapperPtrLE.refLE,
+          2, // Length is after the control block and before contents.
+          "rsaCapacityPtr");
+  assert(LLVMTypeOf(resultLE) == LLVMPointerType(LLVMInt32TypeInContext(globalState->context), 0));
+  return resultLE;
+}
+
+void decrementRSASize(GlobalState* globalState, FunctionState *functionState, KindStructs* kindStructs, LLVMBuilderRef builder, Reference *rsaRefMT, WrapperPtrLE rsaWrapperPtrLE) {
+  auto sizePtrLE = getRuntimeSizedArrayLengthPtr(globalState, builder, rsaWrapperPtrLE);
+  adjustCounter(globalState, builder, globalState->metalCache->i32, sizePtrLE, -1);
 }
 
 
@@ -151,14 +176,36 @@ Ref swapElement(
   return resultLE.move();
 }
 
-void initializeElement(
+void initializeElementAndIncrementSize(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Location location,
+    Reference* elementRefM,
+    LLVMValueRef sizePtrLE,
+    LLVMValueRef elemsPtrLE,
+    Ref indexRef,
+    Ref sourceRef) {
+  assert(location != Location::INLINE); // impl
+
+  auto sizeLE = adjustCounter(globalState, builder, globalState->metalCache->i32, sizePtrLE, 1);
+  auto sizeRef = wrap(globalState->getRegion(globalState->metalCache->i32), globalState->metalCache->i32Ref, sizeLE);
+
+  auto indexLE = checkIndexInBounds(globalState, functionState, builder, globalState->metalCache->i32, sizeRef, indexRef);
+  auto sourceLE =
+      globalState->getRegion(elementRefM)
+          ->checkValidReference(FL(), functionState, builder, elementRefM, sourceRef);
+  storeInnerArrayMember(globalState, functionState, builder, elemsPtrLE, indexLE, sourceLE);
+}
+
+void initializeElementWithoutIncrementSize(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Location location,
     Reference* elementRefM,
     Ref sizeRef,
-    LLVMValueRef arrayPtrLE,
+    LLVMValueRef elemsPtrLE,
     Ref indexRef,
     Ref sourceRef) {
   assert(location != Location::INLINE); // impl
@@ -167,9 +214,8 @@ void initializeElement(
   auto sourceLE =
       globalState->getRegion(elementRefM)
           ->checkValidReference(FL(), functionState, builder, elementRefM, sourceRef);
-  storeInnerArrayMember(globalState, functionState, builder, arrayPtrLE, indexLE, sourceLE);
+  storeInnerArrayMember(globalState, functionState, builder, elemsPtrLE, indexLE, sourceLE);
 }
-
 
 void intRangeLoop(
     GlobalState* globalState,

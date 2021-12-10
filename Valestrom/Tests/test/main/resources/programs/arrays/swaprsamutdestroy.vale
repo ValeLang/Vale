@@ -2,11 +2,11 @@
 struct Goblin { }
 
 struct GoblinMaker {}
-impl IFunction1<mut, int, Goblin> for GoblinMaker;
-fn __call(this &!GoblinMaker impl IFunction1<mut, int, Goblin>, i int) Goblin { Goblin() }
+fn __call(this &!GoblinMaker, i int) Goblin { Goblin() }
+
 fn main() int export {
   m = GoblinMaker();
-  arr = [vary *](1, &!m);
+  arr = Array<mut, Goblin>(1, &!m);
   set arr.0 = Goblin();
   = 42;
 }

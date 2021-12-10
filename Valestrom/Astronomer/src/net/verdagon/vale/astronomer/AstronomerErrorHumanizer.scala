@@ -3,7 +3,7 @@ package net.verdagon.vale.astronomer
 import net.verdagon.vale.{FileCoordinateMap, RangeS}
 import net.verdagon.vale.SourceCodeUtils.{humanizePos, lineContaining, nextThingAndRestOfLine}
 import net.verdagon.vale.scout.rules.IRulexSR
-import net.verdagon.vale.scout.{IRuneS, ITemplataType, RuneTypeSolveError, ScoutErrorHumanizer}
+import net.verdagon.vale.scout.{IRuneS, IRuneTypeRuleError, ITemplataType, RuneTypeSolveError, ScoutErrorHumanizer}
 import net.verdagon.vale.solver.{FailedSolve, IncompleteSolve, SolverErrorHumanizer}
 
 object AstronomerErrorHumanizer {
@@ -27,7 +27,7 @@ object AstronomerErrorHumanizer {
       filenamesAndSources,
       ScoutErrorHumanizer.humanizeRune,
       (codeMap, tyype: ITemplataType) => tyype.toString,
-      (codeMap, u: Unit) => "",
+      ScoutErrorHumanizer.humanizeRuneTypeError,
       (rule: IRulexSR) => rule.range,
       (rule: IRulexSR) => rule.runeUsages.map(u => (u.rune, u.range)),
       (rule: IRulexSR) => rule.runeUsages.map(_.rune),
@@ -53,7 +53,7 @@ object AstronomerErrorHumanizer {
             filenamesAndSources,
             ScoutErrorHumanizer.humanizeRune,
             (codeMap, tyype: ITemplataType) => ScoutErrorHumanizer.humanizeTemplataType(tyype),
-            (codeMap, u: Unit) => "",
+            ScoutErrorHumanizer.humanizeRuneTypeError,
             (rule: IRulexSR) => rule.range,
             (rule: IRulexSR) => rule.runeUsages.map(u => (u.rune, u.range)),
             (rule: IRulexSR) => rule.runeUsages.map(_.rune),

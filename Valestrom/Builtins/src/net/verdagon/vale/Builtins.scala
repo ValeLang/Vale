@@ -8,7 +8,7 @@ object Builtins {
   val moduleToFilename =
     Map(
       "arith" -> "arith.vale",
-      "ifunction1" -> "ifunction1.vale",
+      "functor1" -> "functor1.vale",
       "logic" -> "logic.vale",
       "str" -> "str.vale",
       "drop" -> "drop.vale",

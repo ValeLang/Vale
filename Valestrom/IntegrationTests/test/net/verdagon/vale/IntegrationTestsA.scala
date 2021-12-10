@@ -46,7 +46,11 @@ class RunCompilation(
   def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = fullCompilation.getAstrouts()
   def getTemputs(): Result[Hinputs, ICompileErrorT] = fullCompilation.getTemputs()
   def expectTemputs(): Hinputs = fullCompilation.expectTemputs()
-  def getHamuts(): ProgramH = fullCompilation.getHamuts()
+  def getHamuts(): ProgramH = {
+    val hamuts = fullCompilation.getHamuts()
+    VonHammer.vonifyProgram(hamuts)
+    hamuts
+  }
 
   def evalForKind(heap: Heap, args: Vector[ReferenceV]): IVonData = {
     Vivem.executeWithHeap(getHamuts(), heap, args, System.out, Vivem.emptyStdin, Vivem.regularStdout)
@@ -87,6 +91,29 @@ class IntegrationTestsA extends FunSuite with Matchers {
 //          |""".stripMargin)
 //    compile.evalForKind(Vector())
 //  }
+
+  test("Scratch scratch") {
+    val compile =
+      RunCompilation.test(
+        """
+          |fn valeMakeRSA() Array<mut, int> {
+          |  ssa = [imm][5, 7, 9, 10, 11];
+          |  ret Array<mut, int>(ssa.len(), &!{ ssa[_] });
+          |}
+          |
+          |fn main() int export {
+          |  arr = valeMakeRSA();
+          |  i = 0;
+          |  total = 0;
+          |  while (i < arr.len()) {
+          |    set total = total + arr[i];
+          |    set i = i + 1;
+          |  }
+          |  ret total;
+          |}
+          |""".stripMargin)
+    compile.evalForKind(Vector())
+  }
 
   test("Simple program returning an int") {
     val compile = RunCompilation.test("fn main() int export {3}")
@@ -332,6 +359,28 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForKind(Vector())
   }
 
+  test("Test array push, pop, len, capacity, drop") {
+    val compile = RunCompilation.test(
+      """
+        |import castutils.*;
+        |import printutils.*;
+        |import array.make.*;
+        |import ifunction.ifunction1.*;
+        |
+        |fn main() int export {
+        |  arr = Array<mut, int>(9);
+        |  arr!.push(420);
+        |  arr!.push(421);
+        |  arr!.push(422);
+        |  arr.len();
+        |  ret arr.capacity();
+        |  // implicit drop with pops
+        |}
+      """.stripMargin)
+    val temputs = compile.expectTemputs()
+    compile.evalForKind(Vector()) shouldEqual VonInt(9)
+  }
+
   test("Test int generic") {
     val compile = RunCompilation.test(
       """
@@ -568,7 +617,6 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     val hamuts = compile.getHamuts()
-    VonHammer.vonifyProgram(hamuts)
   }
 
   test("Test extern functions") {
@@ -675,13 +723,13 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("exporting array") {
-    val compilation = RunCompilation.test("export Array<mut, vary, int> as IntArray;")
+    val compilation = RunCompilation.test("export Array<mut, int> as IntArray;")
     val hamuts = compilation.getHamuts()
     val testPackage = hamuts.lookupPackage(PackageCoordinate.TEST_TLD)
     val kindH = vassertSome(testPackage.exportNameToKind.get("IntArray"))
 
     val builtinPackage = hamuts.lookupPackage(PackageCoordinate.BUILTIN)
     val rsa = vassertSome(builtinPackage.runtimeSizedArrays.find(_.kind == kindH))
-    rsa.rawArray.elementType.kind shouldEqual IntH.i32
+    rsa.elementType.kind shouldEqual IntH.i32
   }
 }

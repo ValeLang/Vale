@@ -2,13 +2,16 @@ package net.verdagon.vale.scout
 
 import net.verdagon.vale._
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.solver.{FailedSolve, IIncompleteOrFailedSolve, ISolveRule, ISolverError, IStepState, IncompleteSolve, Solver}
+import net.verdagon.vale.solver.{FailedSolve, IIncompleteOrFailedSolve, ISolveRule, ISolverError, IStepState, IncompleteSolve, Solver, SolverConflict}
 
 import scala.collection.immutable.Map
 
-case class RuneTypeSolveError(range: RangeS, failedSolve: IIncompleteOrFailedSolve[IRulexSR, IRuneS, ITemplataType, Unit]) {
+case class RuneTypeSolveError(range: RangeS, failedSolve: IIncompleteOrFailedSolve[IRulexSR, IRuneS, ITemplataType, IRuneTypeRuleError]) {
   vpass()
 }
+
+sealed trait IRuneTypeRuleError
+case class LookupDidntMatchExpectedType(range: RangeS, expectedType: ITemplataType, actualType: ITemplataType) extends IRuneTypeRuleError
 
 object RuneTypeSolver {
   def getRunes(rule: IRulexSR): Array[IRuneS] = {
@@ -100,7 +103,7 @@ object RuneTypeSolver {
     ruleIndex: Int,
     rule: IRulexSR,
     stepState: IStepState[IRulexSR, IRuneS, ITemplataType]):
-  Result[Unit, ISolverError[IRuneS, ITemplataType, Unit]] = {
+  Result[Unit, ISolverError[IRuneS, ITemplataType, IRuneTypeRuleError]] = {
     rule match {
       case KindComponentsSR(range, resultRune, mutabilityRune) => {
         stepState.concludeRune(resultRune.rune, KindTemplataType)
@@ -189,7 +192,9 @@ object RuneTypeSolver {
           case (TemplateTemplataType(Vector(), KindTemplataType), CoordTemplataType) =>
           case (TemplateTemplataType(Vector(), result), expected) if result == expected =>
           case (from, to) if from == to =>
-          case (from, to) => vfail((from, to))
+          case (from, to) => {
+            return Err(SolverConflict(rune.rune, to, from))
+          }
         }
         Ok(())
       }
@@ -199,7 +204,9 @@ object RuneTypeSolver {
           case (TemplateTemplataType(Vector(), KindTemplataType), CoordTemplataType) =>
           case (TemplateTemplataType(Vector(), result), expected) if result == expected =>
           case (from, to) if from == to =>
-          case (from, to) => vfail((from, to))
+          case (from, to) => {
+            return Err(SolverConflict(rune.rune, to, from))
+          }
         }
         Ok(())
       }
@@ -263,17 +270,17 @@ object RuneTypeSolver {
       Solver.makeInitialSolverState(
         sanityCheck, useOptimizedSolver, rules, getRunes, (rule: IRulexSR) => getPuzzles(predicting, rule), initiallyKnownRunes)
     val (steps, conclusions) =
-      Solver.solve[IRulexSR, IRuneS, IImpreciseNameS => ITemplataType, Unit, ITemplataType, Unit](
+      Solver.solve[IRulexSR, IRuneS, IImpreciseNameS => ITemplataType, Unit, ITemplataType, IRuneTypeRuleError](
         (rule: IRulexSR) => getPuzzles(predicting, rule),
         Unit,
         env,
         solverState,
-        new ISolveRule[IRulexSR, IRuneS, IImpreciseNameS => ITemplataType, Unit, ITemplataType, Unit] {
-          override def complexSolve(state: Unit, env: IImpreciseNameS => ITemplataType, stepState: IStepState[IRulexSR, IRuneS, ITemplataType]): Result[Unit, ISolverError[IRuneS, ITemplataType, Unit]] = {
+        new ISolveRule[IRulexSR, IRuneS, IImpreciseNameS => ITemplataType, Unit, ITemplataType, IRuneTypeRuleError] {
+          override def complexSolve(state: Unit, env: IImpreciseNameS => ITemplataType, stepState: IStepState[IRulexSR, IRuneS, ITemplataType]): Result[Unit, ISolverError[IRuneS, ITemplataType, IRuneTypeRuleError]] = {
             Ok(())
           }
           override def solve(state: Unit, env: IImpreciseNameS => ITemplataType, ruleIndex: Int, rule: IRulexSR, stepState: IStepState[IRulexSR, IRuneS, ITemplataType]):
-          Result[Unit, ISolverError[IRuneS, ITemplataType, Unit]] = {
+          Result[Unit, ISolverError[IRuneS, ITemplataType, IRuneTypeRuleError]] = {
             solveRule(state, env, ruleIndex, rule, stepState)
           }
         }) match {

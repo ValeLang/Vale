@@ -3,8 +3,8 @@ package net.verdagon.vale.templar
 import net.verdagon.vale.templar.ast.{FunctionExportT, FunctionExternT, FunctionT, ImplT, KindExportT, KindExternT, PrototypeT, ReturnTE, SignatureT, getFunctionLastName}
 import net.verdagon.vale.templar.env.{CitizenEnvironment, FunctionEnvironment, PackageEnvironment}
 import net.verdagon.vale.templar.expression.CallTemplar
-import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, CitizenNameT, CitizenTemplateNameT, FullNameT, FunctionNameT, ICitizenNameT, IFunctionNameT, INameT, FreeNameT, FreeTemplateNameT}
-import net.verdagon.vale.templar.types.{CitizenDefinitionT, CitizenRefT, CoordT, ImmutableT, InterfaceDefinitionT, InterfaceTT, KindT, MutabilityT, NeverT, RawArrayTT, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StructDefinitionT, StructTT}
+import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, CitizenNameT, CitizenTemplateNameT, FreeNameT, FreeTemplateNameT, FullNameT, FunctionNameT, ICitizenNameT, IFunctionNameT, INameT}
+import net.verdagon.vale.templar.types.{CitizenDefinitionT, CitizenRefT, CoordT, ImmutableT, InterfaceDefinitionT, InterfaceTT, KindT, MutabilityT, NeverT, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StructDefinitionT, StructTT, VariabilityT}
 import net.verdagon.vale.{Collector, PackageCoordinate, RangeS, vassert, vassertOne, vassertSome, vfail, vpass}
 
 import scala.collection.immutable.{List, Map}
@@ -49,9 +49,9 @@ case class Temputs() {
   private val functionExterns: mutable.ArrayBuffer[FunctionExternT] = mutable.ArrayBuffer()
 
   // Only ArrayTemplar can make an RawArrayT2.
-  private val staticSizedArrayTypes: mutable.HashMap[(Int, RawArrayTT), StaticSizedArrayTT] = mutable.HashMap()
+  private val staticSizedArrayTypes: mutable.HashMap[(Int, MutabilityT, VariabilityT, CoordT), StaticSizedArrayTT] = mutable.HashMap()
   // Only ArrayTemplar can make an RawArrayT2.
-  private val runtimeSizedArrayTypes: mutable.HashMap[RawArrayTT, RuntimeSizedArrayTT] = mutable.HashMap()
+  private val runtimeSizedArrayTypes: mutable.HashMap[(MutabilityT, CoordT), RuntimeSizedArrayTT] = mutable.HashMap()
 
   // A queue of functions that our code uses, but we don't need to compile them right away.
   // We can compile them later. Perhaps in parallel, someday!
@@ -177,12 +177,14 @@ case class Temputs() {
     interfaceDefsByRef += (interfaceDef.getRef -> interfaceDef)
   }
 
-  def addStaticSizedArray(array2: StaticSizedArrayTT): Unit = {
-    staticSizedArrayTypes += ((array2.size, array2.array) -> array2)
+  def addStaticSizedArray(ssaTT: StaticSizedArrayTT): Unit = {
+    val StaticSizedArrayTT(size, elementType, mutability, variability) = ssaTT
+    staticSizedArrayTypes += ((size, elementType, mutability, variability) -> ssaTT)
   }
 
-  def addRuntimeSizedArray(array2: RuntimeSizedArrayTT): Unit = {
-    runtimeSizedArrayTypes += (array2.array -> array2)
+  def addRuntimeSizedArray(rsaTT: RuntimeSizedArrayTT): Unit = {
+    val RuntimeSizedArrayTT(elementType, mutability) = rsaTT
+    runtimeSizedArrayTypes += ((elementType, mutability) -> rsaTT)
   }
 
   def addImpl(structTT: StructTT, interfaceTT: InterfaceTT): Unit = {
@@ -278,8 +280,8 @@ case class Temputs() {
   def getAllRuntimeSizedArrays(): Iterable[RuntimeSizedArrayTT] = runtimeSizedArrayTypes.values
 //  def getKindToDestructorMap(): Map[KindT, PrototypeT] = kindToDestructor.toMap
 
-  def getStaticSizedArrayType(size: Int, array: RawArrayTT): Option[StaticSizedArrayTT] = {
-    staticSizedArrayTypes.get((size, array))
+  def getStaticSizedArrayType(size: Int, mutability: MutabilityT, variability: VariabilityT, elementType: CoordT): Option[StaticSizedArrayTT] = {
+    staticSizedArrayTypes.get((size, mutability, variability, elementType))
   }
   def getEnvForFunctionSignature(sig: SignatureT): FunctionEnvironment = {
     envByFunctionSignature(sig)
@@ -302,8 +304,8 @@ case class Temputs() {
   def getStructDefForRef(sr: StructTT): StructDefinitionT = {
     structDefsByRef(sr)
   }
-  def getRuntimeSizedArray(array: RawArrayTT): Option[RuntimeSizedArrayTT] = {
-    runtimeSizedArrayTypes.get(array)
+  def getRuntimeSizedArray(mutabilityT: MutabilityT, elementType: CoordT): Option[RuntimeSizedArrayTT] = {
+    runtimeSizedArrayTypes.get((mutabilityT, elementType))
   }
   def getKindExports: Vector[KindExportT] = {
     kindExports.toVector

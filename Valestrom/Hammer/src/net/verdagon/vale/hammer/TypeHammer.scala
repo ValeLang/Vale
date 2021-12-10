@@ -53,8 +53,8 @@ object TypeHammer {
         StructHammer.translateStructRef(hinputs, hamuts, understructTT)
       }
 
-      case a @ StaticSizedArrayTT(_, _) => translateStaticSizedArray(hinputs, hamuts, a)
-      case a @ RuntimeSizedArrayTT(_) => translateRuntimeSizedArray(hinputs, hamuts, a)
+      case a @ StaticSizedArrayTT(_, _, _, _) => translateStaticSizedArray(hinputs, hamuts, a)
+      case a @ RuntimeSizedArrayTT(_, _) => translateRuntimeSizedArray(hinputs, hamuts, a)
     }
   }
 
@@ -108,25 +108,25 @@ object TypeHammer {
       hinputs: Hinputs,
       hamuts: HamutsBox,
       type2: StaticSizedArrayTT):
-  StaticSizedArrayTH = {
+  StaticSizedArrayHT = {
     val name = NameHammer.translateFullName(hinputs, hamuts, type2.name)
-    val StaticSizedArrayTT(_, RawArrayTT(memberType, mutabilityT, variabilityT)) = type2
+    val StaticSizedArrayTT(_, mutabilityT, variabilityT, memberType) = type2
     val memberReferenceH = TypeHammer.translateReference(hinputs, hamuts, memberType)
     val mutability = Conversions.evaluateMutability(mutabilityT)
     val variability = Conversions.evaluateVariability(variabilityT)
-    val definition = StaticSizedArrayDefinitionTH(name, type2.size, RawArrayTH(mutability, variability, memberReferenceH))
+    val definition = StaticSizedArrayDefinitionTH(name, type2.size, mutability, variability, memberReferenceH)
     hamuts.addStaticSizedArray(definition)
-    StaticSizedArrayTH(name)
+    StaticSizedArrayHT(name)
   }
 
-  def translateRuntimeSizedArray(hinputs: Hinputs, hamuts: HamutsBox, type2: RuntimeSizedArrayTT): RuntimeSizedArrayTH = {
+  def translateRuntimeSizedArray(hinputs: Hinputs, hamuts: HamutsBox, type2: RuntimeSizedArrayTT): RuntimeSizedArrayHT = {
     val nameH = NameHammer.translateFullName(hinputs, hamuts, type2.name)
-    val RuntimeSizedArrayTT(RawArrayTT(memberType, mutabilityT, variabilityT)) = type2
+    val RuntimeSizedArrayTT(mutabilityT, memberType) = type2
     val memberReferenceH = TypeHammer.translateReference(hinputs, hamuts, memberType)
     val mutability = Conversions.evaluateMutability(mutabilityT)
-    val variability = Conversions.evaluateVariability(variabilityT)
-    val definition = RuntimeSizedArrayDefinitionTH(nameH, RawArrayTH(mutability, variability, memberReferenceH))
+//    val variability = Conversions.evaluateVariability(variabilityT)
+    val definition = RuntimeSizedArrayDefinitionTH(nameH, mutability, memberReferenceH)
     hamuts.addRuntimeSizedArray(definition)
-    RuntimeSizedArrayTH(nameH)
+    RuntimeSizedArrayHT(nameH)
   }
 }

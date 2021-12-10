@@ -12,19 +12,20 @@ class ArrayListTest extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """
           |struct List<E> rules(E Ref) {
-          |  array! Array<mut, vary, E>;
+          |  array! Array<mut, E>;
           |}
           |fn listLen<E>(list &List<E>) int { len(&list.array) }
           |fn add<E>(list &!List<E>, newElement E) {
-          |  newArray =
-          |      [vary *](listLen(&list) + 1, &!IFunction1<mut, int, int>((index){
-          |        = if (index == listLen(&list)) {
-          |            = newElement;
-          |          } else {
-          |            a = list.array;
-          |            = a[index];
-          |          }
-          |      }));
+          |  newArray = Array<mut, E>(listLen(&list) + 1);
+          |  while (newArray.len() < newArray.capacity()) {
+          |    index = newArray.len();
+          |    if (index == listLen(&list)) {
+          |      newArray!.push(newElement);
+          |    } else {
+          |      a = list.array;
+          |      newArray!.push(a[index]);
+          |    }
+          |  }
           |  set list.array = newArray;
           |}
           |// todo: make that return a &E
@@ -34,13 +35,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |}
           |
           |fn main() int export {
-          |  l =
-          |      List<int>(
-          |           [vary *](
-          |               0,
-          |               &!IFunction1<mut, int, int>((index){
-          |                 index
-          |               })));
+          |  l = List<int>(Array<mut, int>(0));
           |  add(&!l, 5);
           |  add(&!l, 9);
           |  add(&!l, 7);
@@ -51,16 +46,58 @@ class ArrayListTest extends FunSuite with Matchers {
     compile.evalForKind(Vector()) shouldEqual VonInt(9)
   }
 
+  test("Doubling ArrayList, no optionals") {
+    val compile = RunCompilation.test(
+      """
+        |struct List<E> rules(E Ref) {
+        |  array! Array<mut, E>;
+        |}
+        |fn void() {}
+        |fn listLen<E>(list &List<E>) int { len(&list.array) }
+        |fn migrate<E>(from Array<mut, E>, to &!Array<mut, E>) {
+        |  intermediate = Array<mut, E>(from.capacity());
+        |  drop_into(from, &!{ intermediate!.push(_); });
+        |  drop_into(intermediate, &!{ to!.push(_); });
+        |}
+        |fn add<E>(list &!List<E>, newElement E) {
+        |  oldCapacity = list.array.capacity();
+        |  if (list.listLen() == oldCapacity) {
+        |    newCapacity = if (oldCapacity > 0) { oldCapacity * 2 } else { 1 };
+        |    newArray = Array<mut, E>(newCapacity);
+        |    oldArray = set list.array = newArray;
+        |    migrate(oldArray, &!list.array);
+        |  }
+        |  list.array!.push(newElement);
+        |}
+        |// todo: make that return a &E
+        |fn get<E>(list &List<E>, index int) E {
+        |  a = list.array;
+        |  = a[index];
+        |}
+        |
+        |fn main() int export {
+        |  l = List<int>(Array<mut, int>(0));
+        |  add(&!l, 5);
+        |  add(&!l, 9);
+        |  add(&!l, 7);
+        |  = l.get(1);
+        |}
+        """.stripMargin)
+
+    compile.evalForKind(Vector()) shouldEqual VonInt(9)
+  }
+
   test("Array list with optionals") {
     val compile = RunCompilation.test(
       """import list.*;
+        |import ifunction.ifunction1.*;
         |
         |fn main() int export {
         |  l =
         |      List<int>(
         |          MakeVaryArray(
         |              0,
-        |              (index){
+        |              &!(index){
         |                result Opt<int> = Some(index);
         |                = result;
         |              }),

@@ -2,17 +2,17 @@ package net.verdagon.vale.templar
 
 import net.verdagon.vale.SourceCodeUtils.{humanizePos, lineBegin, lineContaining, lineRangeContaining}
 import net.verdagon.vale.astronomer.{AstronomerErrorHumanizer, ConstructorNameS, FunctionA, ImmConcreteDestructorNameS, ImmInterfaceDestructorNameS}
-import net.verdagon.vale.scout.ScoutErrorHumanizer.{humanizeImpreciseName, humanizePermission, humanizeRune}
+import net.verdagon.vale.scout.ScoutErrorHumanizer.{humanizeImpreciseName, humanizeOwnership, humanizePermission, humanizeRune, humanizeTemplataType}
 import net.verdagon.vale.scout.rules.{IRulexSR, RuneUsage}
-import net.verdagon.vale.scout.{ArgumentRuneS, CodeRuneS, CodeVarNameS, FunctionNameS, GlobalFunctionFamilyNameS, INameS, IRuneS, ImplicitRuneS, LambdaDeclarationNameS, ScoutErrorHumanizer, TopLevelCitizenDeclarationNameS}
+import net.verdagon.vale.scout.{ArgumentRuneS, CodeRuneS, CodeVarNameS, FunctionNameS, GlobalFunctionFamilyNameS, INameS, IRuneS, IRuneTypeRuleError, ITemplataType, ImplicitRuneS, LambdaDeclarationNameS, RuneTypeSolveError, ScoutErrorHumanizer, TopLevelCitizenDeclarationNameS}
 import net.verdagon.vale.solver.{FailedSolve, IIncompleteOrFailedSolve, IncompleteSolve, RuleError, SolverConflict, SolverErrorHumanizer}
-import net.verdagon.vale.templar.OverloadTemplar.{FindFunctionFailure, IFindFunctionFailureReason, InferFailure, SpecificParamDoesntMatchExactly, SpecificParamDoesntSend, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
+import net.verdagon.vale.templar.OverloadTemplar.{FindFunctionFailure, IFindFunctionFailureReason, InferFailure, RuleTypeSolveFailure, SpecificParamDoesntMatchExactly, SpecificParamDoesntSend, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
 import net.verdagon.vale.templar.names.TemplataNamer.getFullNameIdentifierName
 import net.verdagon.vale.templar.ast.{AbstractT, FunctionBannerT, FunctionCalleeCandidate, HeaderCalleeCandidate, ICalleeCandidate, OverrideT, PrototypeT}
-import net.verdagon.vale.templar.infer.{CallResultWasntExpectedType, ITemplarSolverError, KindDoesntImplementInterface, KindIsNotConcrete, KindIsNotInterface, LookupFailed, ReceivingDifferentOwnerships}
+import net.verdagon.vale.templar.infer.{CallResultWasntExpectedType, ITemplarSolverError, KindDoesntImplementInterface, KindIsNotConcrete, KindIsNotInterface, LookupFailed, NoAncestorsSatisfyCall, OwnershipDidntMatch, PermissionDidntMatch, ReceivingDifferentOwnerships}
 import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, CitizenNameT, CitizenTemplateNameT, CodeVarNameT, FullNameT, FunctionNameT, INameT, IVarNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT, TemplataNamer}
-import net.verdagon.vale.templar.templata.{Conversions, CoordListTemplata, CoordTemplata, ITemplata, IntegerTemplata, InterfaceTemplata, KindTemplata, MutabilityTemplata, OwnershipTemplata, PermissionTemplata, PrototypeTemplata, RuntimeSizedArrayTemplateTemplata, StaticSizedArrayTemplateTemplata, StructTemplata, VariabilityTemplata}
-import net.verdagon.vale.templar.types.{BoolT, ConstraintT, CoordT, FinalT, FloatT, ImmutableT, IntT, InterfaceTT, KindT, MutableT, OwnT, ParamFilter, RawArrayTT, ReadonlyT, ReadwriteT, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StrT, StructTT, VaryingT, VoidT, WeakT}
+import net.verdagon.vale.templar.templata.{Conversions, CoordListTemplata, CoordTemplata, ITemplata, IntegerTemplata, InterfaceTemplata, KindTemplata, MutabilityTemplata, OwnershipTemplata, PermissionTemplata, PrototypeTemplata, RuntimeSizedArrayTemplateTemplata, StaticSizedArrayTemplateTemplata, StringTemplata, StructTemplata, VariabilityTemplata}
+import net.verdagon.vale.templar.types.{BoolT, ConstraintT, CoordT, FinalT, FloatT, ImmutableT, IntT, InterfaceTT, KindT, MutableT, OwnT, ParamFilter, ReadonlyT, ReadwriteT, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StrT, StructTT, VaryingT, VoidT, WeakT}
 import net.verdagon.vale.{CodeLocationS, FileCoordinate, FileCoordinateMap, RangeS, repeatStr, vimpl}
 
 object TemplarErrorHumanizer {
@@ -50,7 +50,7 @@ object TemplarErrorHumanizer {
             ": Cannot subscript type: " + tyype + "!"
         }
         case CouldntConvertForReturnT(range, expectedType, actualType) => {
-            ": Couldn't convert " + actualType + " to expected return type " + expectedType
+            ": Couldn't convert " + humanizeTemplata(codeMap, CoordTemplata(actualType)) + " to expected return type " + humanizeTemplata(codeMap, CoordTemplata(actualType))
         }
         case CouldntConvertForMutateT(range, expectedType, actualType) => {
             ": Mutate couldn't convert " + actualType + " to expected destination type " + expectedType
@@ -248,6 +248,18 @@ object TemplarErrorHumanizer {
       reason: IFindFunctionFailureReason): String = {
 
     (reason match {
+      case RuleTypeSolveFailure(RuneTypeSolveError(range, failedSolve)) => {
+        SolverErrorHumanizer.humanizeFailedSolve(
+          codeMap,
+          humanizeRune,
+          (codeMap, a: ITemplataType) => humanizeTemplataType(a),
+          (codeMap, a: IRuneTypeRuleError) => ScoutErrorHumanizer.humanizeRuneTypeError(codeMap, a),
+          (rule: IRulexSR) => rule.range,
+          (rule: IRulexSR) => rule.runeUsages.map(usage => (usage.rune, usage.range)),
+          (rule: IRulexSR) => rule.runeUsages.map(_.rune),
+          ScoutErrorHumanizer.humanizeRule,
+          failedSolve)._1
+      }
       case WrongNumberOfArguments(supplied, expected) => {
         "\n" + humanizeCandidate(codeMap, candidate) + "\n" +
         "Number of params doesn't match! Supplied " + supplied + " but function takes " + expected
@@ -295,8 +307,20 @@ object TemplarErrorHumanizer {
       case CallResultWasntExpectedType(expected, actual) => {
         "Expected an instantiation of " + humanizeTemplata(codeMap, expected) + " but got " + humanizeTemplata(codeMap, actual)
       }
+      case PermissionDidntMatch(coord, expectedPermission) => {
+        "Given type " + humanizeTemplata(codeMap, CoordTemplata(coord)) + " doesn't have expected permission " + humanizePermission(Conversions.unevaluatePermission(expectedPermission))
+      }
+      case OwnershipDidntMatch(coord, expectedOwnership) => {
+        "Given type " + humanizeTemplata(codeMap, CoordTemplata(coord)) + " doesn't have expected ownership " + humanizeOwnership(Conversions.unevaluateOwnership(expectedOwnership))
+      }
       case ReceivingDifferentOwnerships(params) => {
         "Received conflicting ownerships: " +
+          params.map({ case (rune, coord) =>
+            humanizeRune(rune) + " = " + humanizeTemplata(codeMap, CoordTemplata(coord))
+          }).mkString(", ")
+      }
+      case NoAncestorsSatisfyCall(params) => {
+        "No ancestors satisfy call: " +
           params.map({ case (rune, coord) =>
             humanizeRune(rune) + " = " + humanizeTemplata(codeMap, CoordTemplata(coord))
           }).mkString(", ")
@@ -325,9 +349,9 @@ object TemplarErrorHumanizer {
     (candidate match {
       case HeaderCalleeCandidate(header) => humanizeName(codeMap, header.fullName)
       case FunctionCalleeCandidate(ft) => {
-        if (ft.function.range.file.isInternal) {
-          ScoutErrorHumanizer.humanizeName(ft.function.name) + " (builtin " + ft.function.range.begin.offset + ")\n"
-        } else {
+//        if (ft.function.range.file.isInternal) {
+//          ScoutErrorHumanizer.humanizeName(ft.function.name) + " (builtin " + ft.function.range.begin.offset + ")\n"
+//        } else {
           val begin = lineBegin(codeMap, ft.function.range.begin)
           humanizePos(codeMap, begin) + ":\n" +
             (if (lineBegins.contains(begin)) {
@@ -335,7 +359,7 @@ object TemplarErrorHumanizer {
             } else {
               lineContaining(codeMap, begin) + "\n"
             })
-        }
+//        }
       }
     }) + text
   }
@@ -356,8 +380,8 @@ object TemplarErrorHumanizer {
     templata: ITemplata):
   String = {
     templata match {
-      case RuntimeSizedArrayTemplateTemplata() => "[*]"
-      case StaticSizedArrayTemplateTemplata() => "[]"
+      case RuntimeSizedArrayTemplateTemplata() => "Array"
+      case StaticSizedArrayTemplateTemplata() => "StaticArray"
       case InterfaceTemplata(env, originInterface) => originInterface.name.name
       case StructTemplata(env, originStruct) => ScoutErrorHumanizer.humanizeName(originStruct.name)
       case VariabilityTemplata(variability) => {
@@ -409,15 +433,15 @@ object TemplarErrorHumanizer {
           case BoolT() => "bool"
           case StrT() => "str"
           case VoidT() => "void"
+          case FloatT() => "float"
           case InterfaceTT(name) => humanizeName(codeMap, name)
           case StructTT(name) => humanizeName(codeMap, name)
-          case RuntimeSizedArrayTT(RawArrayTT(elementType, mutability, variability)) => {
+          case RuntimeSizedArrayTT(mutability, elementType) => {
             "Array<" +
               humanizeTemplata(codeMap, MutabilityTemplata(mutability)) + ", " +
-              humanizeTemplata(codeMap, VariabilityTemplata(variability)) + ", " +
               humanizeTemplata(codeMap, CoordTemplata(elementType)) + ">"
           }
-          case StaticSizedArrayTT(size, RawArrayTT(elementType, mutability, variability)) => {
+          case StaticSizedArrayTT(size, mutability, variability, elementType) => {
             "StaticArray<" +
               humanizeTemplata(codeMap, IntegerTemplata(size)) + ", " +
               humanizeTemplata(codeMap, MutabilityTemplata(mutability)) + ", " +
@@ -430,6 +454,7 @@ object TemplarErrorHumanizer {
         "(" + coords.map(CoordTemplata).map(humanizeTemplata(codeMap, _)).mkString(", ") + ")"
       }
       case PermissionTemplata(permission) => humanizePermission(Conversions.unevaluatePermission(permission))
+      case StringTemplata(value) => "\"" + value + "\""
       case other => vimpl(other)
     }
   }

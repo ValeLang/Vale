@@ -17,8 +17,10 @@ import net.verdagon.vale.templar.types.{CoordT, _}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.function.{DestructorTemplar, FunctionTemplar, FunctionTemplarCore, IFunctionTemplarDelegate, VirtualTemplar}
 import net.verdagon.vale.templar.infer.IInfererDelegate
-import net.verdagon.vale.templar.macros.drop.{ImplDropMacro, ImplFreeMacro, InterfaceDropMacro, InterfaceFreeMacro, RSADropIntoMacro, RSAFreeMacro, SSADropIntoMacro, SSAFreeMacro, StructDropMacro, StructFreeMacro}
-import net.verdagon.vale.templar.macros.{AbstractBodyMacro, AnonymousInterfaceMacro, AsSubtypeMacro, FunctorHelper, LockWeakMacro, RSALenMacro, SSALenMacro, SameInstanceMacro, StructConstructorMacro}
+import net.verdagon.vale.templar.macros.citizen.{ImplDropMacro, ImplFreeMacro, InterfaceDropMacro, InterfaceFreeMacro, StructDropMacro, StructFreeMacro}
+import net.verdagon.vale.templar.macros.rsa.{RSADropIntoMacro, RSAFreeMacro, RSAImmutableNewMacro, RSALenMacro, RSAMutableCapacityMacro, RSAMutableNewMacro, RSAMutablePopMacro, RSAMutablePushMacro}
+import net.verdagon.vale.templar.macros.ssa.{SSADropIntoMacro, SSAFreeMacro, SSALenMacro}
+import net.verdagon.vale.templar.macros.{AbstractBodyMacro, AnonymousInterfaceMacro, AsSubtypeMacro, FunctorHelper, LockWeakMacro, SameInstanceMacro, StructConstructorMacro}
 import net.verdagon.vale.templar.names.{CitizenNameT, CitizenTemplateNameT, FullNameT, INameT, NameTranslator, PackageTopLevelNameT, PrimitiveNameT}
 
 import scala.collection.immutable.{List, ListMap, Map, Set}
@@ -92,8 +94,8 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
           arrayTemplar.getStaticSizedArrayKind(env.globalEnv, temputs, mutability, variability, size, type2)
         }
 
-        override def getRuntimeSizedArrayKind(env: IEnvironment, state: Temputs, element: CoordT, arrayMutability: MutabilityT, arrayVariability: VariabilityT): RuntimeSizedArrayTT = {
-          arrayTemplar.getRuntimeSizedArrayKind(env.globalEnv, state, element, arrayMutability, arrayVariability)
+        override def getRuntimeSizedArrayKind(env: IEnvironment, state: Temputs, element: CoordT, arrayMutability: MutabilityT): RuntimeSizedArrayTT = {
+          arrayTemplar.getRuntimeSizedArrayKind(env.globalEnv, state, element, arrayMutability)
         }
       })
   val inferTemplar: InferTemplar =
@@ -116,9 +118,9 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
           kind: KindT):
         Boolean = {
           kind match {
-            case RuntimeSizedArrayTT(_) => false
+            case RuntimeSizedArrayTT(_, _) => false
             case OverloadSet(_, _, _) => false
-            case StaticSizedArrayTT(_, _) => false
+            case StaticSizedArrayTT(_, _, _, _) => false
             case s @ StructTT(_) => ancestorHelper.getAncestorInterfaces(temputs, s).nonEmpty
             case i @ InterfaceTT(_) => ancestorHelper.getAncestorInterfaces(temputs, i).nonEmpty
             case IntT(_) | BoolT() | StrT() | VoidT() => false
@@ -169,9 +171,9 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
           })
         }
 
-        override def getRuntimeSizedArrayKind(env: IEnvironment, state: Temputs, element: CoordT, arrayMutability: MutabilityT, arrayVariability: VariabilityT): RuntimeSizedArrayTT = {
+        override def getRuntimeSizedArrayKind(env: IEnvironment, state: Temputs, element: CoordT, arrayMutability: MutabilityT): RuntimeSizedArrayTT = {
           profiler.childFrame("InferTemplarDelegate.getRuntimeSizedArrayKind", () => {
-            arrayTemplar.getRuntimeSizedArrayKind(env.globalEnv, state, element, arrayMutability, arrayVariability)
+            arrayTemplar.getRuntimeSizedArrayKind(env.globalEnv, state, element, arrayMutability)
           })
         }
 
@@ -204,8 +206,8 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
         Boolean = {
           actualCitizenRef match {
             case s : CitizenRefT => templataTemplar.citizenIsFromTemplate(s, expectedCitizenTemplata)
-            case RuntimeSizedArrayTT(_) => (expectedCitizenTemplata == RuntimeSizedArrayTemplateTemplata())
-            case StaticSizedArrayTT(_, _) => (expectedCitizenTemplata == StaticSizedArrayTemplateTemplata())
+            case RuntimeSizedArrayTT(_, _) => (expectedCitizenTemplata == RuntimeSizedArrayTemplateTemplata())
+            case StaticSizedArrayTT(_, _, _, _) => (expectedCitizenTemplata == StaticSizedArrayTemplateTemplata())
             case _ => false
           }
         }
@@ -382,6 +384,11 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
   val interfaceFreeMacro = new InterfaceFreeMacro(overloadTemplar)
   val asSubtypeMacro = new AsSubtypeMacro(ancestorHelper, expressionTemplar)
   val rsaLenMacro = new RSALenMacro()
+  val rsaMutNewMacro = new RSAMutableNewMacro(profiler)
+  val rsaImmNewMacro = new RSAImmutableNewMacro(profiler)
+  val rsaPushMacro = new RSAMutablePushMacro(profiler)
+  val rsaPopMacro = new RSAMutablePopMacro(profiler)
+  val rsaCapacityMacro = new RSAMutableCapacityMacro(profiler)
   val ssaLenMacro = new SSALenMacro()
   val rsaDropMacro = new RSADropIntoMacro(arrayTemplar)
   val ssaDropMacro = new SSADropIntoMacro(arrayTemplar)
@@ -468,6 +475,11 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
               interfaceFreeMacro.generatorId -> interfaceFreeMacro,
               structDropMacro.dropGeneratorId -> structDropMacro,
               rsaLenMacro.generatorId -> rsaLenMacro,
+              rsaMutNewMacro.generatorId -> rsaMutNewMacro,
+              rsaImmNewMacro.generatorId -> rsaImmNewMacro,
+              rsaPushMacro.generatorId -> rsaPushMacro,
+              rsaPopMacro.generatorId -> rsaPopMacro,
+              rsaCapacityMacro.generatorId -> rsaCapacityMacro,
               ssaLenMacro.generatorId -> ssaLenMacro,
               rsaDropMacro.generatorId -> rsaDropMacro,
               ssaDropMacro.generatorId -> ssaDropMacro,
@@ -592,13 +604,13 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
               }
             })
             temputs.getAllRuntimeSizedArrays().foreach(rsa => {
-              if (rsa.array.mutability == ImmutableT) {
+              if (rsa.mutability == ImmutableT) {
                 destructorTemplar.getDropFunction(globalEnv, temputs, CoordT(ShareT, ReadonlyT, rsa))
                 destructorTemplar.getFreeFunction(globalEnv, temputs, CoordT(ShareT, ReadonlyT, rsa))
               }
             })
             temputs.getAllStaticSizedArrays().foreach(ssa => {
-              if (ssa.array.mutability == ImmutableT) {
+              if (ssa.mutability == ImmutableT) {
                 destructorTemplar.getDropFunction(globalEnv, temputs, CoordT(ShareT, ReadonlyT, ssa))
                 destructorTemplar.getFreeFunction(globalEnv, temputs, CoordT(ShareT, ReadonlyT, ssa))
               }
@@ -701,8 +713,8 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
               case x if x == emptyTupleStruct => false
               case s @ StructTT(_) => temputs.lookupMutability(s) == ImmutableT
               case i @ InterfaceTT(_) => temputs.lookupMutability(i) == ImmutableT
-              case StaticSizedArrayTT(_, RawArrayTT(_, m, _)) => m == ImmutableT
-              case RuntimeSizedArrayTT(RawArrayTT(_, m, _)) => m == ImmutableT
+              case StaticSizedArrayTT(_, m, _, _) => m == ImmutableT
+              case RuntimeSizedArrayTT(m, _) => m == ImmutableT
               case _ => true
             })
             .toVector
@@ -786,14 +798,14 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
               }
             })
           }
-          case StaticSizedArrayTT(_, RawArrayTT(CoordT(_, _, elementKind), mutability, _)) => {
+          case StaticSizedArrayTT(_, mutability, _, CoordT(_, _, elementKind)) => {
             if (elementKind != emptyTupleStruct && mutability == ImmutableT && !Templar.isPrimitive(elementKind) && !exportedKindToExport.contains(elementKind)) {
               throw CompileErrorExceptionT(
                 ExportedImmutableKindDependedOnNonExportedKind(
                   export.range, packageCoord, exportedKind, elementKind))
             }
           }
-          case RuntimeSizedArrayTT(RawArrayTT(CoordT(_, _, elementKind), mutability, _)) => {
+          case RuntimeSizedArrayTT(mutability, CoordT(_, _, elementKind)) => {
             if (elementKind != emptyTupleStruct && mutability == ImmutableT && !Templar.isPrimitive(elementKind) && !exportedKindToExport.contains(elementKind)) {
               throw CompileErrorExceptionT(
                 ExportedImmutableKindDependedOnNonExportedKind(
@@ -885,8 +897,8 @@ object Templar {
 //      case TupleTT(_, understruct) => isPrimitive(understruct)
       case StructTT(_) => false
       case InterfaceTT(_) => false
-      case StaticSizedArrayTT(_, _) => false
-      case RuntimeSizedArrayTT(_) => false
+      case StaticSizedArrayTT(_, _, _, _) => false
+      case RuntimeSizedArrayTT(_, _) => false
     }
   }
 
@@ -904,8 +916,8 @@ object Templar {
       case BoolT() => ImmutableT
       case StrT() => ImmutableT
       case VoidT() => ImmutableT
-      case RuntimeSizedArrayTT(RawArrayTT(_, mutability, _)) => mutability
-      case StaticSizedArrayTT(_, RawArrayTT(_, mutability, _)) => mutability
+      case RuntimeSizedArrayTT(mutability, _) => mutability
+      case StaticSizedArrayTT(_, mutability, _, _) => mutability
       case sr @ StructTT(_) => temputs.lookupMutability(sr)
       case ir @ InterfaceTT(_) => temputs.lookupMutability(ir)
 //      case PackTT(_, sr) => temputs.lookupMutability(sr)

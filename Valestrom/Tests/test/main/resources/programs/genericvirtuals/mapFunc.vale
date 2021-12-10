@@ -1,5 +1,6 @@
 
 import optutils.*;
+import ifunction.ifunction1.*;
 
 struct MyEquals9Functor { }
 impl IFunction1<mut, int, bool> for MyEquals9Functor;

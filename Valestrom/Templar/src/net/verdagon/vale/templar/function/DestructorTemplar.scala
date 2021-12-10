@@ -68,7 +68,7 @@ class DestructorTemplar(
               case StructTT(_) | InterfaceTT(_) => {
                 getDropFunction(fate.globalEnv, temputs, r)
               }
-              case StaticSizedArrayTT(_, _) | RuntimeSizedArrayTT(_) => {
+              case StaticSizedArrayTT(_, _, _, _) | RuntimeSizedArrayTT(_, _) => {
                 getDropFunction(fate.globalEnv, temputs, r)
               }
             }
@@ -103,7 +103,7 @@ class DestructorTemplar(
               case IntT(_) | StrT() | BoolT() | FloatT() | VoidT() => {
                 DiscardTE(undestructedExpr2)
               }
-              case as@StaticSizedArrayTT(_, _) => {
+              case as@StaticSizedArrayTT(_, _, _, _) => {
                 val underarrayReference2 =
                   CoordT(
                     undestructedExpr2.result.reference.ownership,
@@ -111,7 +111,7 @@ class DestructorTemplar(
                     as)
                 destroySharedArray(temputs, underarrayReference2)
               }
-              case as@RuntimeSizedArrayTT(_) => {
+              case as@RuntimeSizedArrayTT(_, _) => {
                 val underarrayReference2 =
                   CoordT(
                     undestructedExpr2.result.reference.ownership,

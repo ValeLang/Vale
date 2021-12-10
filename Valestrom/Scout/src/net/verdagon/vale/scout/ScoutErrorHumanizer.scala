@@ -2,8 +2,8 @@ package net.verdagon.vale.scout
 
 import net.verdagon.vale.{FileCoordinateMap, vimpl}
 import net.verdagon.vale.SourceCodeUtils.{humanizePos, lineContaining, nextThingAndRestOfLine}
-import net.verdagon.vale.parser.{ConstraintP, ExclusiveReadwriteP, ImmutableP, MutabilityP, MutableP, OwnP, OwnershipP, PermissionP, ReadonlyP, ReadwriteP, ShareP, WeakP}
-import net.verdagon.vale.scout.rules.{AugmentSR, CallSR, CoerceToCoordSR, CoordComponentsSR, CoordIsaSR, CoordSendSR, EqualsSR, ILiteralSL, IRulexSR, IntLiteralSL, IsInterfaceSR, IsStructSR, KindComponentsSR, LiteralSR, LookupSR, MutabilityLiteralSL, OneOfSR, OwnershipLiteralSL, PackSR, PermissionLiteralSL, RefListCompoundMutabilitySR, RuneParentEnvLookupSR}
+import net.verdagon.vale.parser.{ConstraintP, ExclusiveReadwriteP, FinalP, ImmutableP, MutabilityP, MutableP, OwnP, OwnershipP, PermissionP, ReadonlyP, ReadwriteP, ShareP, VariabilityP, VaryingP, WeakP}
+import net.verdagon.vale.scout.rules.{AugmentSR, CallSR, CoerceToCoordSR, CoordComponentsSR, CoordIsaSR, CoordSendSR, EqualsSR, ILiteralSL, IRulexSR, IntLiteralSL, IsInterfaceSR, IsStructSR, KindComponentsSR, LiteralSR, LookupSR, MutabilityLiteralSL, OneOfSR, OwnershipLiteralSL, PackSR, PermissionLiteralSL, PrototypeComponentsSR, RefListCompoundMutabilitySR, RepeaterSequenceSR, RuneParentEnvLookupSR, StringLiteralSL, VariabilityLiteralSL}
 import net.verdagon.vale.solver.SolverErrorHumanizer
 
 object ScoutErrorHumanizer {
@@ -24,7 +24,7 @@ object ScoutErrorHumanizer {
             codeMap,
             ScoutErrorHumanizer.humanizeRune,
             (codeMap, tyype: ITemplataType) => tyype.toString,
-            (codeMap, u: Unit) => "",
+            (codeMap, u: IRuneTypeRuleError) => humanizeRuneTypeError(codeMap, u),
             (rule: IRulexSR) => rule.range,
             (rule: IRulexSR) => rule.runeUsages.map(u => (u.rune, u.range)),
             (rule: IRulexSR) => rule.runeUsages.map(_.rune),
@@ -47,6 +47,12 @@ object ScoutErrorHumanizer {
     val nextStuff = lineContaining(codeMap, err.range.begin)
     val errorId = "S"
     f"${posStr} error ${errorId}: ${errorStrBody}\n${nextStuff}\n"
+  }
+
+  def humanizeRuneTypeError(codeMap: FileCoordinateMap[String], error: IRuneTypeRuleError): String = {
+    error match {
+      case other => vimpl(other)
+    }
   }
 
   def humanizeName(name: INameS): String = {
@@ -74,6 +80,8 @@ object ScoutErrorHumanizer {
       case FreeImpreciseNameS() => "(free)"
       case RuneNameS(rune) => humanizeRune(rune)
       case AnonymousSubstructTemplateImpreciseNameS(interfaceHumanName) => "(anon substruct template of " + humanizeImpreciseName(interfaceHumanName) + ")"
+      case LambdaStructImpreciseNameS(lambdaName) => humanizeImpreciseName(lambdaName) + ".struct"
+      case LambdaImpreciseNameS() => "(lambda)"
     }
   }
 
@@ -142,6 +150,12 @@ object ScoutErrorHumanizer {
       case EqualsSR(range, left, right) => humanizeRune(left.rune) + " = " + humanizeRune(right.rune)
       case RuneParentEnvLookupSR(range, rune) => "inherit " + humanizeRune(rune.rune)
       case PackSR(range, resultRune, members) => humanizeRune(resultRune.rune) + " = (" + members.map(x => humanizeRune(x.rune)).mkString(", ") + ")"
+      case PrototypeComponentsSR(range, resultRune, nameRune, paramsListRune, returnRune) => {
+        humanizeRune(resultRune.rune) + " = Prot(" + humanizeRune(nameRune.rune) + ", " + humanizeRune(paramsListRune.rune) + ", " + humanizeRune(returnRune.rune) + ")"
+      }
+      case RepeaterSequenceSR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => {
+        "[<" + humanizeRune(mutabilityRune.rune) + ", " + humanizeRune(variabilityRune.rune) + "> " + humanizeRune(sizeRune.rune) + " * " + humanizeRune(elementRune.rune) + "]"
+      }
       case other => vimpl(other)
     }
   }
@@ -151,7 +165,9 @@ object ScoutErrorHumanizer {
       case OwnershipLiteralSL(ownership) => humanizeOwnership(ownership)
       case PermissionLiteralSL(permission) => humanizePermission(permission)
       case MutabilityLiteralSL(mutability) => humanizeMutability(mutability)
+      case VariabilityLiteralSL(variability) => humanizeVariability(variability)
       case IntLiteralSL(value) => value.toString
+      case StringLiteralSL(value) => "\"" + value + "\""
       case other => vimpl(other)
     }
   }
@@ -168,6 +184,13 @@ object ScoutErrorHumanizer {
     p match {
       case MutableP => "mut"
       case ImmutableP => "imm"
+    }
+  }
+
+  def humanizeVariability(p: VariabilityP) = {
+    p match {
+      case VaryingP => "vary"
+      case FinalP => "final"
     }
   }
 

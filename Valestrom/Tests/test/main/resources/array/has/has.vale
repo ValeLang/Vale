@@ -1,5 +1,5 @@
 
-fn has<E, F>(arr &Array<_, _, E>, elem E, equator F) bool {
+fn has<E, F>(arr &Array<_, E>, elem E, equator F) bool {
   i! = 0;
   while (i < arr.len()) {
     if (equator!(arr[i], elem)) {
@@ -10,7 +10,7 @@ fn has<E, F>(arr &Array<_, _, E>, elem E, equator F) bool {
   = false;
 }
 
-fn has<E>(arr &Array<_, _, E>, elem E) bool {
+fn has<E>(arr &Array<_, E>, elem E) bool {
   has(arr, elem, ==)
 }
 

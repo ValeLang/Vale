@@ -62,6 +62,7 @@ object FunctionVivem {
       case """::F("__vbi_lessThanI32",[],[R(*,<,#,i(32)),R(*,<,#,i(32))])""" => VivemExterns.lessThanI32
       case """::F("__vbi_lessThanFloat",[],[R(*,<,#,f),R(*,<,#,f)])""" => VivemExterns.lessThanFloat
       case """::F("__vbi_greaterThanOrEqI32",[],[R(*,<,#,i(32)),R(*,<,#,i(32))])""" => VivemExterns.greaterThanOrEqI32
+      case """::F("__vbi_greaterThanI32",[],[R(*,<,#,i(32)),R(*,<,#,i(32))])""" => VivemExterns.greaterThanI32
       case """::F("__vbi_eqI32",[],[R(*,<,#,i(32)),R(*,<,#,i(32))])""" => VivemExterns.eqI32
       case """::F("__vbi_eqBoolBool",[],[R(*,<,#,b),R(*,<,#,b)])""" => VivemExterns.eqBoolBool
       case """::F("printstr",[],[R(*,>,#,s),R(*,<,#,i(32)),R(*,<,#,i(32))])""" => VivemExterns.print

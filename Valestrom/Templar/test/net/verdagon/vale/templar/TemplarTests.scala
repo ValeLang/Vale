@@ -832,7 +832,6 @@ class TemplarTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
   }
 
-
   test("Test Array of StructTemplata") {
     val compile = TemplarTestCompilation.test(
       """
@@ -842,16 +841,39 @@ class TemplarTests extends FunSuite with Matchers {
         |  y float;
         |}
         |struct Pattern imm {
-        |  patternTiles Array<imm, final, Vec2>;
+        |  patternTiles Array<imm, Vec2>;
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()
   }
 
-  test("Test array length") {
+  test("Test array push, pop, len, capacity, drop") {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
+        |import v.builtins.arith.*;
+        |import array.make.*;
+        |import v.builtins.arrays.*;
+        |import ifunction.ifunction1.*;
+        |
+        |fn main() void export {
+        |  arr = Array<mut, int>(9);
+        |  arr!.push(420);
+        |  arr!.push(421);
+        |  arr!.push(422);
+        |  arr.len();
+        |  arr.capacity();
+        |  // implicit drop with pops
+        |}
+      """.stripMargin)
+    val temputs = compile.expectTemputs()
+  }
+
+  test("Test MakeArray") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |import v.builtins.tup.*;
+        |import v.builtins.arith.*;
         |import array.make.*;
         |import v.builtins.arrays.*;
         |import ifunction.ifunction1.*;
@@ -1103,8 +1125,8 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |import v.builtins.arrays.*;
-        |import v.builtins.ifunction1.*;
-        |export Array<imm, final, Raza> as RazaArray;
+        |import v.builtins.functor1.*;
+        |export Array<imm, Raza> as RazaArray;
         |struct Raza imm { }
         |""".stripMargin)
     compile.getTemputs() match {
@@ -1133,7 +1155,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |import v.builtins.arrays.*;
-        |import v.builtins.ifunction1.*;
+        |import v.builtins.functor1.*;
         |export [<imm> 5 * Raza] as RazaArray;
         |struct Raza imm { }
         |""".stripMargin)

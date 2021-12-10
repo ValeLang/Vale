@@ -35,7 +35,7 @@ public:
   void defineInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL);
   void declareStaticSizedArray(StaticSizedArrayT* staticSizedArrayMT, Weakability weakable);
   void declareRuntimeSizedArray(RuntimeSizedArrayT* runtimeSizedArrayMT, Weakability weakable);
-  void defineRuntimeSizedArray(RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT, LLVMTypeRef elementLT);
+  void defineRuntimeSizedArray(RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT, LLVMTypeRef elementLT, bool capacityExists);
   void defineStaticSizedArray(StaticSizedArrayDefinitionT* staticSizedArrayMT, LLVMTypeRef elementLT);
 
   LLVMTypeRef getStructWeakRefStruct(StructKind* structKind);

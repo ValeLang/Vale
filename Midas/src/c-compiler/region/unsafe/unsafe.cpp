@@ -273,16 +273,16 @@ void Unsafe::declareRuntimeSizedArray(
 void Unsafe::defineRuntimeSizedArray(
     RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT) {
   auto elementLT =
-      globalState->getRegion(runtimeSizedArrayMT->rawArray->elementType)
-          ->translateType(runtimeSizedArrayMT->rawArray->elementType);
-  kindStructs.defineRuntimeSizedArray(runtimeSizedArrayMT, elementLT);
+      globalState->getRegion(runtimeSizedArrayMT->elementType)
+          ->translateType(runtimeSizedArrayMT->elementType);
+  kindStructs.defineRuntimeSizedArray(runtimeSizedArrayMT, elementLT, true);
 }
 
 void Unsafe::defineStaticSizedArray(
     StaticSizedArrayDefinitionT* staticSizedArrayMT) {
   auto elementLT =
-      globalState->getRegion(staticSizedArrayMT->rawArray->elementType)
-          ->translateType(staticSizedArrayMT->rawArray->elementType);
+      globalState->getRegion(staticSizedArrayMT->elementType)
+          ->translateType(staticSizedArrayMT->elementType);
   kindStructs.defineStaticSizedArray(staticSizedArrayMT, elementLT);
 }
 
@@ -439,6 +439,15 @@ Ref Unsafe::getRuntimeSizedArrayLength(
     Ref arrayRef,
     bool arrayKnownLive) {
   return getRuntimeSizedArrayLengthStrong(globalState, functionState, builder, &kindStructs, rsaRefMT, arrayRef);
+}
+
+Ref Unsafe::getRuntimeSizedArrayCapacity(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* rsaRefMT,
+    Ref arrayRef,
+    bool arrayKnownLive) {
+  return getRuntimeSizedArrayCapacityStrong(globalState, functionState, builder, &kindStructs, rsaRefMT, arrayRef);
 }
 
 LLVMValueRef Unsafe::checkValidReference(
@@ -613,7 +622,7 @@ LoadResult Unsafe::loadElementFromSSA(
     Ref indexRef) {
   auto ssaDef = globalState->program->getStaticSizedArray(ssaMT);
   return regularloadElementFromSSA(
-      globalState, functionState, builder, ssaRefMT, ssaMT, ssaDef->rawArray->elementType, ssaDef->size, ssaDef->rawArray->mutability, arrayRef, arrayKnownLive, indexRef, &kindStructs);
+      globalState, functionState, builder, ssaRefMT, ssaMT, ssaDef->elementType, ssaDef->size, ssaDef->mutability, arrayRef, arrayKnownLive, indexRef, &kindStructs);
 }
 
 LoadResult Unsafe::loadElementFromRSA(
@@ -626,7 +635,7 @@ LoadResult Unsafe::loadElementFromRSA(
     Ref indexRef) {
   auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT);
   return regularLoadElementFromRSAWithoutUpgrade(
-      globalState, functionState, builder, &kindStructs, rsaRefMT, rsaMT, rsaDef->rawArray->mutability, rsaDef->rawArray->elementType, arrayRef, arrayKnownLive, indexRef);
+      globalState, functionState, builder, &kindStructs, true, rsaRefMT, rsaMT, rsaDef->mutability, rsaDef->elementType, arrayRef, arrayKnownLive, indexRef);
 }
 
 Ref Unsafe::storeElementInRSA(
@@ -644,10 +653,10 @@ Ref Unsafe::storeElementInRSA(
           FL(), functionState, builder, rsaRefMT,
           globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, arrayRef));
   auto sizeRef = ::getRuntimeSizedArrayLength(globalState, functionState, builder, arrayWrapperPtrLE);
-  auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, arrayWrapperPtrLE);
+  auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, true, arrayWrapperPtrLE);
   buildFlare(FL(), globalState, functionState, builder);
   return ::swapElement(
-      globalState, functionState, builder, rsaRefMT->location, rsaDef->rawArray->elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);
+      globalState, functionState, builder, rsaRefMT->location, rsaDef->elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);
 }
 
 Ref Unsafe::upcast(
@@ -691,17 +700,17 @@ Ref Unsafe::constructRuntimeSizedArray(
     LLVMBuilderRef builder,
     Reference* rsaMT,
     RuntimeSizedArrayT* runtimeSizedArrayT,
-    Ref sizeRef,
+    Ref capacityRef,
     const std::string& typeName) {
   auto rsaWrapperPtrLT =
       kindStructs.getRuntimeSizedArrayWrapperStruct(runtimeSizedArrayT);
   auto rsaDef = globalState->program->getRuntimeSizedArray(runtimeSizedArrayT);
-  auto elementType = globalState->program->getRuntimeSizedArray(runtimeSizedArrayT)->rawArray->elementType;
+  auto elementType = globalState->program->getRuntimeSizedArray(runtimeSizedArrayT)->elementType;
   auto rsaElementLT = globalState->getRegion(elementType)->translateType(elementType);
   auto resultRef =
       ::constructRuntimeSizedArray(
-           globalState, functionState, builder, &kindStructs, rsaMT, rsaDef->rawArray->elementType, runtimeSizedArrayT,
-           rsaWrapperPtrLT, rsaElementLT, sizeRef, typeName,
+           globalState, functionState, builder, &kindStructs, rsaMT, rsaDef->elementType, runtimeSizedArrayT,
+           rsaWrapperPtrLT, rsaElementLT, globalState->constI32(0), capacityRef, true, typeName,
           [this, functionState, runtimeSizedArrayT, rsaMT, typeName](
               LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
             fillControlBlock(
@@ -753,14 +762,14 @@ void Unsafe::checkInlineStructType(
 std::string Unsafe::generateRuntimeSizedArrayDefsC(
     Package* currentPackage,
     RuntimeSizedArrayDefinitionT* rsaDefM) {
-  assert(rsaDefM->rawArray->mutability == Mutability::MUTABLE);
+  assert(rsaDefM->mutability == Mutability::MUTABLE);
   return generateMutableConcreteHandleDefC(currentPackage, currentPackage->getKindExportName(rsaDefM->kind, true));
 }
 
 std::string Unsafe::generateStaticSizedArrayDefsC(
     Package* currentPackage,
     StaticSizedArrayDefinitionT* ssaDefM) {
-  assert(ssaDefM->rawArray->mutability == Mutability::MUTABLE);
+  assert(ssaDefM->mutability == Mutability::MUTABLE);
   return generateMutableConcreteHandleDefC(currentPackage, currentPackage->getKindExportName(ssaDefM->kind, true));
 }
 
@@ -832,7 +841,7 @@ LLVMValueRef Unsafe::encryptAndSendFamiliarReference(
       globalState, functionState, builder, &kindStructs, sourceRefMT, sourceRef);
 }
 
-void Unsafe::initializeElementInRSA(
+void Unsafe::pushRuntimeSizedArrayNoBoundsCheck(
     FunctionState *functionState,
     LLVMBuilderRef builder,
     Reference *rsaRefMT,
@@ -846,13 +855,14 @@ void Unsafe::initializeElementInRSA(
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, rsaRefMT,
           globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, rsaRef));
-  auto sizeRef = ::getRuntimeSizedArrayLength(globalState, functionState, builder, arrayWrapperPtrLE);
-  auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, arrayWrapperPtrLE);
-  ::initializeElement(
-      globalState, functionState, builder, rsaRefMT->location, rsaDef->rawArray->elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);
+  auto sizePtrLE = ::getRuntimeSizedArrayLengthPtr(globalState, builder, arrayWrapperPtrLE);
+  auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, true, arrayWrapperPtrLE);
+  ::initializeElementAndIncrementSize(
+      globalState, functionState, builder, rsaRefMT->location, rsaDef->elementType, sizePtrLE, arrayElementsPtrLE,
+      indexRef, elementRef);
 }
 
-Ref Unsafe::deinitializeElementFromRSA(
+Ref Unsafe::popRuntimeSizedArrayNoBoundsCheck(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* rsaRefMT,
@@ -861,8 +871,15 @@ Ref Unsafe::deinitializeElementFromRSA(
     bool arrayRefKnownLive,
     Ref indexRef) {
   auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT);
-  return regularLoadElementFromRSAWithoutUpgrade(
-      globalState, functionState, builder, &kindStructs, rsaRefMT, rsaMT, rsaDef->rawArray->mutability, rsaDef->rawArray->elementType, arrayRef, true, indexRef).move();
+  auto elementLE =
+      regularLoadElementFromRSAWithoutUpgrade(
+          globalState, functionState, builder, &kindStructs, true, rsaRefMT, rsaMT, rsaDef->mutability, rsaDef->elementType, arrayRef, true, indexRef).move();
+  auto rsaWrapperPtrLE =
+      kindStructs.makeWrapperPtr(
+          FL(), functionState, builder, rsaRefMT,
+          globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, arrayRef));
+  decrementRSASize(globalState, functionState, &kindStructs, builder, rsaRefMT, rsaWrapperPtrLE);
+  return elementLE;
 }
 
 void Unsafe::initializeElementInSSA(
@@ -881,8 +898,9 @@ void Unsafe::initializeElementInSSA(
           globalState->getRegion(ssaRefMT)->checkValidReference(FL(), functionState, builder, ssaRefMT, arrayRef));
   auto sizeRef = globalState->constI32(ssaDef->size);
   auto arrayElementsPtrLE = getStaticSizedArrayContentsPtr(builder, arrayWrapperPtrLE);
-  ::initializeElement(
-      globalState, functionState, builder, ssaRefMT->location, ssaDef->rawArray->elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);
+  ::initializeElementWithoutIncrementSize(
+      globalState, functionState, builder, ssaRefMT->location, ssaDef->elementType, sizeRef, arrayElementsPtrLE,
+      indexRef, elementRef);
 }
 
 Ref Unsafe::deinitializeElementFromSSA(

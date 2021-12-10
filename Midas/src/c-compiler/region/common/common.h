@@ -238,6 +238,13 @@ Ref getRuntimeSizedArrayLength(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     WrapperPtrLE arrayRefLE);
+
+Ref getRuntimeSizedArrayCapacity(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    WrapperPtrLE arrayRefLE);
+
 ControlBlock makeAssistAndNaiveRCNonWeakableControlBlock(GlobalState* globalState);
 ControlBlock makeAssistAndNaiveRCWeakableControlBlock(GlobalState* globalState);
 ControlBlock makeFastWeakableControlBlock(GlobalState* globalState);
@@ -313,6 +320,7 @@ LoadResult regularLoadElementFromRSAWithoutUpgrade(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     KindStructs* kindStructs,
+    bool capacityExists,
     Reference* rsaRefMT,
     RuntimeSizedArrayT* rsaMT,
     Mutability mutability,
@@ -326,6 +334,7 @@ LoadResult resilientLoadElementFromRSAWithoutUpgrade(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     KindStructs* kindStructs,
+    bool capacityExists,
     Reference* rsaRefMT,
     Mutability mutability,
     Reference* elementType,
@@ -368,7 +377,9 @@ Ref constructRuntimeSizedArray(
     RuntimeSizedArrayT* runtimeSizedArrayT,
     LLVMTypeRef rsaWrapperPtrLT,
     LLVMTypeRef rsaElementLT,
-    Ref sizeRef,
+    Ref initialSizeRef,
+    Ref capacityRef,
+    bool capacityExists,
     const std::string& typeName,
     std::function<void(LLVMBuilderRef builder, ControlBlockPtrLE controlBlockPtrLE)> fillControlBlock);
 
@@ -491,6 +502,14 @@ Ref getRuntimeSizedArrayLengthStrong(
     Reference* rsaRefMT,
     Ref arrayRef);
 
+Ref getRuntimeSizedArrayCapacityStrong(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    KindStructs* kindStructs,
+    Reference* rsaRefMT,
+    Ref arrayRef);
+
 std::tuple<LLVMValueRef, LLVMValueRef> explodeStrongInterfaceRef(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -582,8 +601,11 @@ void initializeElementInRSA(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     KindStructs* kindStructs,
+    bool capacityExists,
+    bool incrementSize,
     RuntimeSizedArrayT* rsaMT,
     Reference* rsaRefMT,
+    WrapperPtrLE arrayWrapperPtrLE,
     Ref rsaRef,
     Ref indexRef,
     Ref elementRef);

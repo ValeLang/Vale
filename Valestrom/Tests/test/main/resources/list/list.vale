@@ -1,8 +1,9 @@
 import array.make.*;
+import ifunction.ifunction1.*;
 import panicutils.*;
 
 struct List<E> rules(E Ref) {
-  array! Array<mut, vary, Opt<E>>;
+  array! Array<mut, Opt<E>>;
   size! int;
 }
 
@@ -35,16 +36,16 @@ fn get<E>(list &List<E>, index int) &E {
 fn set<E>(list &!List<E>, index int, value E) void {
   set list.array[index] = Some(value);
 }
-fn toArray<E>(list &List<E>) Array<mut, final, E> {
+fn toArray<E>(list &List<E>) Array<mut, E> {
   MakeArray(list.len(), &!(i){ list.get(i) })
 }
-fn toVaryArray<E>(list &List<E>) Array<mut, vary, E> {
+fn toVaryArray<E>(list &List<E>) Array<mut, E> {
   MakeVaryArray(list.len(), &!(i){ list.get(i) })
 }
-fn toImmArray<E>(list &List<E>) Array<imm, final, E> {
+fn toImmArray<E>(list &List<E>) Array<imm, E> {
   MakeImmArray(list.len(), &!(i){ list.get(i) })
 }
-fn toList<E>(arr &Array<_, _, E>) List<E> {
+fn toList<E>(arr &Array<_, E>) List<E> {
   list = List<E>();
   arr each (elem){
     list.add(elem);

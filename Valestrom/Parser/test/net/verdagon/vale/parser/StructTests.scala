@@ -29,8 +29,8 @@ class StructTests extends FunSuite with Matchers with Collector {
   test("18") {
     compile(
       CombinatorParsers.normalStructMember,
-      "a Array<imm, final, T>;") shouldHave {
-      case NormalStructMemberP(_, NameP(_, "a"), FinalP, CallPT(_,NameOrRunePT(NameP(_, "Array")), Vector(MutabilityPT(_,ImmutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, "T"))))) =>
+      "a Array<imm, T>;") shouldHave {
+      case NormalStructMemberP(_, NameP(_, "a"), FinalP, CallPT(_,NameOrRunePT(NameP(_, "Array")), Vector(MutabilityPT(_,ImmutableP), NameOrRunePT(NameP(_, "T"))))) =>
     }
   }
 

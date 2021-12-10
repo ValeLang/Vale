@@ -243,6 +243,20 @@ object ExpressionVivem {
         val lenRef = makePrimitive(heap, callId, InlineH, IntV(arr.getSize(), 32))
         NodeContinue(lenRef)
       }
+      case ArrayCapacityH(arrExpr) => {
+        val arrayReference =
+          executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrExpr) match {
+            case r @ NodeReturn(_) => return r
+            case NodeContinue(r) => r
+          }
+
+        val arr @ ArrayInstanceV(_, _, _, _) = heap.dereference(arrayReference)
+
+        discard(programH, heap, stdout, stdin, callId, arrExpr.resultType, arrayReference)
+
+        val lenRef = makePrimitive(heap, callId, InlineH, IntV(arr.capacity, 32))
+        NodeContinue(lenRef)
+      }
       case waH @ WeakAliasH(sourceExpr) => {
         val constraintRef =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
@@ -732,7 +746,7 @@ object ExpressionVivem {
         }
         NodeContinue(makeVoid(programH, heap, callId))
       }
-      case cac @ ConstructRuntimeSizedArrayH(sizeExpr, generatorExpr, generatorPrototype, _, arrayRefType) => {
+      case cac @ NewImmRuntimeSizedArrayH(sizeExpr, generatorExpr, generatorPrototype, _, arrayRefType) => {
         val sizeReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sizeExpr) match {
             case r @ NodeReturn(_) => return r
@@ -756,7 +770,7 @@ object ExpressionVivem {
           (i, elementRef) => {
             // No need to increment or decrement, we're conceptually moving the return value
             // from the return slot to the array slot
-            heap.initializeArrayElement(arrayReference, i, elementRef)
+            heap.initializeArrayElement(arrayReference, elementRef)
           })
 
         discard(programH, heap, stdout, stdin, callId, generatorExpr.resultType, generatorReference)
@@ -766,6 +780,74 @@ object ExpressionVivem {
         heap.printKind(arrayInstance)
 
         NodeContinue(arrayReference)
+      }
+
+      case NewMutRuntimeSizedArrayH(capacityHE, elementHT, arrayRefType) => {
+        val capacityReference =
+          executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), capacityHE) match {
+            case r @ NodeReturn(_) => return r
+            case NodeContinue(r) => r
+          }
+        val capacityValue = heap.dereference(capacityReference)
+        val IntV(capacity, 32) = capacityValue;
+
+        val rsaDef = programH.lookupRuntimeSizedArray(arrayRefType.kind)
+        val (arrayReference, arrayInstance) =
+          heap.addUninitializedArray(rsaDef, arrayRefType, capacity.toInt)
+        heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
+
+        discard(programH, heap, stdout, stdin, callId, capacityHE.resultType, capacityReference)
+
+        heap.vivemDout.print(" o" + arrayReference.num + "=")
+        heap.printKind(arrayInstance)
+        NodeContinue(arrayReference)
+      }
+
+      case PushRuntimeSizedArrayH(arrayHE, newcomerHE) => {
+        val arrayReference =
+          executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrayHE) match {
+            case r @ NodeReturn(_) => return r
+            case NodeContinue(r) => r
+          }
+        val rsaDef = programH.lookupRuntimeSizedArray(arrayHE.resultType.kind)
+        vassert(rsaDef.elementType == newcomerHE.resultType)
+        val rsa @ ArrayInstanceV(_, _, _, _) = heap.dereference(arrayReference)
+
+        val newcomerReference =
+          executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), newcomerHE) match {
+            case r @ NodeReturn(_) => return r
+            case NodeContinue(r) => r
+          }
+        val newcomerVE = heap.dereference(newcomerReference)
+
+        heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId, newcomerReference.ownership), newcomerReference)
+        heap.initializeArrayElement(arrayReference, newcomerReference)
+
+        discard(programH, heap, stdout, stdin, callId, arrayHE.resultType, arrayReference)
+
+        heap.vivemDout.print(" o" + arrayReference.num + "+=")
+        heap.printKind(newcomerVE)
+        NodeContinue(makeVoid(programH, heap, callId))
+      }
+
+      case PopRuntimeSizedArrayH(arrayHE, elementType) => {
+        val arrayReference =
+          executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrayHE) match {
+            case r @ NodeReturn(_) => return r
+            case NodeContinue(r) => r
+          }
+//        val rsaDef = programH.lookupRuntimeSizedArray(arrayHE.resultType.kind)
+//        val rsa @ ArrayInstanceV(_, _, _, _) = heap.dereference(arrayReference)
+
+        val resultReference = heap.deinitializeArrayElement(arrayReference)
+        heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, resultReference.ownership), resultReference)
+        val resultValue = heap.dereference(resultReference)
+
+        discard(programH, heap, stdout, stdin, callId, arrayHE.resultType, arrayReference)
+
+        heap.vivemDout.print(" o" + arrayReference.num + "-=")
+        heap.printKind(resultValue)
+        NodeContinue(resultReference)
       }
 
       case cac @ StaticArrayFromCallableH(generatorExpr, generatorPrototype, _, arrayRefType) => {
@@ -832,7 +914,7 @@ object ExpressionVivem {
         NodeContinue(makeVoid(programH, heap, callId))
       }
 
-      case cac @ DestroyRuntimeSizedArrayH(arrayExpr, consumerInterfaceExpr, consumerMethod, arrayElementType) => {
+      case cac @ DestroyImmRuntimeSizedArrayH(arrayExpr, consumerInterfaceExpr, consumerMethod, arrayElementType) => {
         val arrayReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrayExpr) match {
             case r @ NodeReturn(_) => return r
@@ -868,6 +950,32 @@ object ExpressionVivem {
 
         NodeContinue(makeVoid(programH, heap, callId))
       }
+
+      case DestroyMutRuntimeSizedArrayH(arrayExpr) => {
+        val arrayReference =
+          executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrayExpr) match {
+            case r @ NodeReturn(_) => return r
+            case NodeContinue(r) => r
+          }
+
+        // Temporarily reduce to 0. We do this instead of ensure(1) to better detect a bug
+        // where there might be one different kind of referrer.
+        heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
+        heap.ensureRefCount(arrayReference, None, 0)
+        heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
+
+        val elements =
+          heap.dereference(arrayReference) match {
+            case ArrayInstanceV(_, _, _, elements) => elements
+          }
+        vassert(elements.size == 0)
+
+        heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
+        heap.zero(arrayReference)
+        heap.deallocateIfNoWeakRefs(arrayReference)
+
+        NodeContinue(makeVoid(programH, heap, callId))
+      }
     }
   }
 
@@ -895,7 +1003,7 @@ object ExpressionVivem {
       heap.vivemDout.println()
 
       heap.vivemDout.print(" *" + ElementAddressV(arrayReference.allocId, i))
-      val elementReference = heap.deinitializeArrayElement(arrayReference, i)
+      val elementReference = heap.deinitializeArrayElement(arrayReference)
       // Not incrementing ref count here because we're moving it from the array
 
       heap.vivemDout.println()
@@ -1067,7 +1175,7 @@ object ExpressionVivem {
 //              vassert(returnRef.actualKind.hamut == ProgramH.emptyTupleStructRef)
 //              discard(programH, heap, stdout, stdin, callId, prototypeH.returnType, returnRef)
 //            }
-            case InterfaceRefH(_) | StructRefH(_) | RuntimeSizedArrayTH(_) | StaticSizedArrayTH(_) => {
+            case InterfaceRefH(_) | StructRefH(_) | RuntimeSizedArrayHT(_) | StaticSizedArrayHT(_) => {
               heap.vivemDout.println()
               heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (discard call)")
               val prototypeH = vassertSome(programH.lookupPackage(expectedReference.kind.packageCoord).immDestructorsByKind.get(expectedReference.kind))

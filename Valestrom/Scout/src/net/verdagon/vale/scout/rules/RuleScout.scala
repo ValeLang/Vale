@@ -167,6 +167,7 @@ object RuleScout {
       case BoolTypePR => BooleanTemplataType
       case OwnershipTypePR => OwnershipTemplataType
       case MutabilityTypePR => MutabilityTemplataType
+      case VariabilityTypePR => VariabilityTemplataType
       case PermissionTypePR => PermissionTemplataType
       case LocationTypePR => LocationTemplataType
       case CoordTypePR => CoordTemplataType

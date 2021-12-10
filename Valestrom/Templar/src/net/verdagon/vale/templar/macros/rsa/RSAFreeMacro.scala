@@ -1,4 +1,4 @@
-package net.verdagon.vale.templar.macros.drop
+package net.verdagon.vale.templar.macros.rsa
 
 import net.verdagon.vale.RangeS
 import net.verdagon.vale.astronomer.FunctionA
@@ -9,12 +9,12 @@ import net.verdagon.vale.templar.macros.IFunctionBodyMacro
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{ArrayTemplar, Templar, Temputs}
 
-class SSAFreeMacro(
+class RSAFreeMacro(
   arrayTemplar: ArrayTemplar,
   destructorTemplar: DestructorTemplar
 ) extends IFunctionBodyMacro {
 
-  val generatorId: String = "vale_static_sized_array_free"
+  val generatorId: String = "vale_runtime_sized_array_free"
 
   override def generateFunctionBody(
     env: FunctionEnvironment,
@@ -28,7 +28,7 @@ class SSAFreeMacro(
   FunctionHeaderT = {
     val bodyEnv = FunctionEnvironmentBox(env)
 
-    val Vector(rsaCoord @ CoordT(ShareT, ReadonlyT, StaticSizedArrayTT(_, RawArrayTT(elementCoord, _, _)))) = params2.map(_.tyype)
+    val Vector(rsaCoord @ CoordT(ShareT, ReadonlyT, RuntimeSizedArrayTT(_, elementCoord))) = params2.map(_.tyype)
 
     val ret = CoordT(ShareT, ReadonlyT, VoidT())
     val header = FunctionHeaderT(env.fullName, Vector.empty, params2, ret, originFunction1)
@@ -40,7 +40,7 @@ class SSAFreeMacro(
       env.globalEnv.functorHelper.getFunctorForPrototype(env, temputs, callRange, elementDropFunction)
 
     val expr =
-      arrayTemplar.evaluateDestroyStaticSizedArrayIntoCallable(
+      arrayTemplar.evaluateDestroyRuntimeSizedArrayIntoCallable(
         temputs, bodyEnv, originFunction1.get.range,
         ArgLookupTE(0, rsaCoord),
         elementDropFunctorTE)

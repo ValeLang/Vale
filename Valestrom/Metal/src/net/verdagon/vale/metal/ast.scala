@@ -109,11 +109,11 @@ case class ProgramH(
     val paackage = lookupPackage(interfaceRefH.fullName.packageCoordinate)
     vassertSome(paackage.interfaces.find(_.getRef == interfaceRefH))
   }
-  def lookupStaticSizedArray(ssaTH: StaticSizedArrayTH): StaticSizedArrayDefinitionTH = {
+  def lookupStaticSizedArray(ssaTH: StaticSizedArrayHT): StaticSizedArrayDefinitionTH = {
     val paackage = lookupPackage(ssaTH.name.packageCoordinate)
     vassertSome(paackage.staticSizedArrays.find(_.name == ssaTH.name))
   }
-  def lookupRuntimeSizedArray(rsaTH: RuntimeSizedArrayTH): RuntimeSizedArrayDefinitionTH = {
+  def lookupRuntimeSizedArray(rsaTH: RuntimeSizedArrayHT): RuntimeSizedArrayDefinitionTH = {
     val paackage = lookupPackage(rsaTH.name.packageCoordinate)
     vassertSome(paackage.runtimeSizedArrays.find(_.name == rsaTH.name))
   }

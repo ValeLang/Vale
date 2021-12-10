@@ -10,7 +10,7 @@ import net.verdagon.vale.templar.function.DestructorTemplar
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.ast.{ConstantIntTE, DestroyStaticSizedArrayIntoLocalsTE, DestroyTE, LetNormalTE, LocalLookupTE, LocationInFunctionEnvironment, ReferenceExpressionTE, ReferenceMemberLookupTE, SoftLoadTE, TemplarReinterpretTE}
+import net.verdagon.vale.templar.ast.{ConstantIntTE, DestroyMutRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoLocalsTE, DestroyTE, LetNormalTE, LocalLookupTE, LocationInFunctionEnvironment, ReferenceExpressionTE, ReferenceMemberLookupTE, SoftLoadTE, TemplarReinterpretTE}
 import net.verdagon.vale.templar.names.RuneNameT
 import net.verdagon.vale.{IProfiler, RangeS, vassert, vassertSome, vfail}
 
@@ -233,7 +233,7 @@ class PatternTemplar(
         translateDestroyStructInnerAndMaybeContinue(
           temputs, fate, life + 0, range, initialLiveCaptureLocals, listOfMaybeDestructureMemberPatterns, inputExpr, afterDestructureSuccessContinuation)
       }
-      case staticSizedArrayT@StaticSizedArrayTT(size, RawArrayTT(elementType, _, _)) => {
+      case staticSizedArrayT @ StaticSizedArrayTT(size, _, _, elementType) => {
         if (size != listOfMaybeDestructureMemberPatterns.size) {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, "Wrong num exprs!"))
         }
@@ -245,6 +245,12 @@ class PatternTemplar(
 
         val lets = makeLetsForOwnAndMaybeContinue(temputs, fate, life + 4, liveCaptureLocals, elementLocals.toList, listOfMaybeDestructureMemberPatterns.toList, afterDestructureSuccessContinuation)
         Templar.consecutive(Vector(destroyTE, lets))
+      }
+      case rsa @ RuntimeSizedArrayTT(_, _) => {
+        if (listOfMaybeDestructureMemberPatterns.nonEmpty) {
+          throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can only destruct RSA with zero destructure targets."))
+        }
+        DestroyMutRuntimeSizedArrayTE(inputExpr)
       }
       case _ => vfail("impl!")
     }
@@ -306,7 +312,7 @@ class PatternTemplar(
 
               loadFromStruct(temputs, range, expectedContainerPermission, containerAliasingExprTE, structTT, memberIndex)
             }
-            case staticSizedArrayT@StaticSizedArrayTT(size, RawArrayTT(elementType, _, _)) => {
+            case staticSizedArrayT@StaticSizedArrayTT(size, _, _, elementType) => {
               loadFromStaticSizedArray(range, staticSizedArrayT, expectedContainerCoord, expectedContainerOwnership, expectedContainerPermission, containerAliasingExprTE, memberIndex)
             }
             case _ => vfail("impl!")

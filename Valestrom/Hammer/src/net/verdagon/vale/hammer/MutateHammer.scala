@@ -67,7 +67,7 @@ object MutateHammer {
     val resultType =
       hamuts.getRuntimeSizedArray(
         destinationResultLine.expectRuntimeSizedArrayAccess().resultType.kind)
-        .rawArray.elementType
+        .elementType
     // We're storing into a regular reference element of an array.
     val storeNode =
         RuntimeSizedArrayStoreH(
@@ -95,7 +95,7 @@ object MutateHammer {
     val resultType =
       hamuts.getStaticSizedArray(
         destinationResultLine.expectStaticSizedArrayAccess().resultType.kind)
-        .rawArray.elementType
+        .elementType
     // We're storing into a regular reference element of an array.
     val storeNode =
         StaticSizedArrayStoreH(

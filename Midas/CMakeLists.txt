@@ -60,7 +60,8 @@ add_executable(midas
 		src/c-compiler/function/expressions/constantstr.cpp
 		src/c-compiler/function/expressions/localload.cpp
 		src/c-compiler/function/expressions/while.cpp
-		src/c-compiler/function/expressions/constructunknownsizearray.cpp
+		src/c-compiler/function/expressions/newimmruntimesizearray.cpp
+		src/c-compiler/function/expressions/newmutruntimesizearray.cpp
 		src/c-compiler/function/expressions/staticarrayfromcallable.cpp
 		src/c-compiler/function/expressions/newarrayfromvalues.cpp
 

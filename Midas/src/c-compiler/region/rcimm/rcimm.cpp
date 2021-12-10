@@ -207,7 +207,7 @@ void RCImm::defineStaticSizedArray(
     StaticSizedArrayDefinitionT* staticSizedArrayMT) {
   auto elementLT =
       translateType(
-          staticSizedArrayMT->rawArray->elementType);
+          staticSizedArrayMT->elementType);
   kindStructs.defineStaticSizedArray(staticSizedArrayMT, elementLT);
 }
 
@@ -230,8 +230,8 @@ void RCImm::defineRuntimeSizedArray(
     RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT) {
   auto elementLT =
       translateType(
-          runtimeSizedArrayMT->rawArray->elementType);
-  kindStructs.defineRuntimeSizedArray(runtimeSizedArrayMT, elementLT);
+          runtimeSizedArrayMT->elementType);
+  kindStructs.defineRuntimeSizedArray(runtimeSizedArrayMT, elementLT, false);
 }
 
 void RCImm::defineRuntimeSizedArrayExtraFunctions(RuntimeSizedArrayDefinitionT* rsaDefM) {
@@ -447,7 +447,7 @@ Ref RCImm::constructStaticSizedArray(
 //                functionState,
 //                innerBuilder,
 //                referenceM->kind,
-//                kindM->rawArray->mutability,
+//                kindM->mutability,
 //                controlBlockPtrLE,
 //                kindM->name->name);
             fillControlBlock(
@@ -465,6 +465,15 @@ Ref RCImm::getRuntimeSizedArrayLength(
     Ref arrayRef,
     bool arrayKnownLive) {
   return getRuntimeSizedArrayLengthStrong(globalState, functionState, builder, &kindStructs, rsaRefMT, arrayRef);
+}
+
+Ref RCImm::getRuntimeSizedArrayCapacity(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* rsaRefMT,
+    Ref arrayRef,
+    bool arrayKnownLive) {
+  return getRuntimeSizedArrayCapacityStrong(globalState, functionState, builder, &kindStructs, rsaRefMT, arrayRef);
 }
 
 LLVMValueRef RCImm::checkValidReference(
@@ -530,7 +539,7 @@ LoadResult RCImm::loadElementFromSSA(
     Ref indexRef) {
   auto ssaDef = globalState->program->getStaticSizedArray(ssaMT);
   return regularloadElementFromSSA(
-      globalState, functionState, builder, ssaRefMT, ssaMT, ssaDef->rawArray->elementType, ssaDef->size, ssaDef->rawArray->mutability, arrayRef, arrayKnownLive, indexRef, &kindStructs);
+      globalState, functionState, builder, ssaRefMT, ssaMT, ssaDef->elementType, ssaDef->size, ssaDef->mutability, arrayRef, arrayKnownLive, indexRef, &kindStructs);
 }
 
 LoadResult RCImm::loadElementFromRSA(
@@ -543,11 +552,11 @@ LoadResult RCImm::loadElementFromRSA(
     Ref indexRef) {
   auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT);
   return regularLoadElementFromRSAWithoutUpgrade(
-      globalState, functionState, builder, &kindStructs, rsaRefMT, rsaMT, rsaDef->rawArray->mutability, rsaDef->rawArray->elementType, arrayRef,
+      globalState, functionState, builder, &kindStructs, false, rsaRefMT, rsaMT, rsaDef->mutability, rsaDef->elementType, arrayRef,
       arrayKnownLive, indexRef);
 }
 
-Ref RCImm::deinitializeElementFromRSA(
+Ref RCImm::popRuntimeSizedArrayNoBoundsCheck(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* rsaRefMT,
@@ -557,7 +566,7 @@ Ref RCImm::deinitializeElementFromRSA(
     Ref indexRef) {
   auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT);
   return regularLoadElementFromRSAWithoutUpgrade(
-      globalState, functionState, builder, &kindStructs, rsaRefMT, rsaMT, rsaDef->rawArray->mutability, rsaDef->rawArray->elementType, arrayRef,
+      globalState, functionState, builder, &kindStructs, false, rsaRefMT, rsaMT, rsaDef->mutability, rsaDef->elementType, arrayRef,
       arrayKnownLive, indexRef).move();
 }
 
@@ -575,7 +584,7 @@ Ref RCImm::storeElementInRSA(
   exit(1);
 }
 
-void RCImm::initializeElementInRSA(
+void RCImm::pushRuntimeSizedArrayNoBoundsCheck(
     FunctionState *functionState,
     LLVMBuilderRef builder,
     Reference *rsaRefMT,
@@ -584,7 +593,7 @@ void RCImm::initializeElementInRSA(
     bool arrayRefKnownLive,
     Ref indexRef,
     Ref elementRef) {
-  auto elementType = globalState->program->getRuntimeSizedArray(rsaMT)->rawArray->elementType;
+  auto elementType = globalState->program->getRuntimeSizedArray(rsaMT)->elementType;
   buildFlare(FL(), globalState, functionState, builder);
 
   auto arrayWrapperPtrLE =
@@ -592,8 +601,8 @@ void RCImm::initializeElementInRSA(
           FL(), functionState, builder, rsaRefMT,
           globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, rsaRef));
   auto sizeRef = ::getRuntimeSizedArrayLength(globalState, functionState, builder, arrayWrapperPtrLE);
-  auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, arrayWrapperPtrLE);
-  ::initializeElement(
+  auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, false, arrayWrapperPtrLE);
+  ::initializeElementWithoutIncrementSize(
       globalState, functionState, builder, rsaRefMT->location,
       elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);
 }
@@ -614,18 +623,18 @@ Ref RCImm::constructRuntimeSizedArray(
     LLVMBuilderRef builder,
     Reference* rsaMT,
     RuntimeSizedArrayT* runtimeSizedArrayT,
-    Ref sizeRef,
+    Ref capacityRef,
     const std::string& typeName) {
   auto rsaWrapperPtrLT =
       kindStructs.getRuntimeSizedArrayWrapperStruct(runtimeSizedArrayT);
   auto rsaDef = globalState->program->getRuntimeSizedArray(runtimeSizedArrayT);
-  auto elementType = globalState->program->getRuntimeSizedArray(runtimeSizedArrayT)->rawArray->elementType;
+  auto elementType = globalState->program->getRuntimeSizedArray(runtimeSizedArrayT)->elementType;
   auto rsaElementLT = globalState->getRegion(elementType)->translateType(elementType);
   buildFlare(FL(), globalState, functionState, builder);
   auto resultRef =
       ::constructRuntimeSizedArray(
-          globalState, functionState, builder, &kindStructs, rsaMT, rsaDef->rawArray->elementType, runtimeSizedArrayT,
-          rsaWrapperPtrLT, rsaElementLT, sizeRef, typeName,
+          globalState, functionState, builder, &kindStructs, rsaMT, rsaDef->elementType, runtimeSizedArrayT,
+          rsaWrapperPtrLT, rsaElementLT, capacityRef, capacityRef, false, typeName,
           [this, functionState, runtimeSizedArrayT, rsaMT, typeName](
               LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
             fillControlBlock(
@@ -800,10 +809,10 @@ LLVMTypeRef RCImm::translateType(GlobalState* globalState, Reference* referenceM
 //    assert(interfaceM->mutability == Mutability::IMMUTABLE);
 //  } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(kind)) {
 //    auto ssaDef = globalState->program->getStaticSizedArray(ssaMT);
-//    assert(ssaDef->rawArray->mutability == Mutability::IMMUTABLE);
+//    assert(ssaDef->mutability == Mutability::IMMUTABLE);
 //  } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(kind)) {
 //    auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT);
-//    assert(rsaDef->rawArray->mutability == Mutability::IMMUTABLE);
+//    assert(rsaDef->mutability == Mutability::IMMUTABLE);
 //  } else if (auto strMT = dynamic_cast<Str*>(kind)) {
 //  } else {
 //    assert(false);
@@ -865,7 +874,7 @@ std::string RCImm::generateInterfaceDefsC(
 std::string RCImm::generateRuntimeSizedArrayDefsC(
     Package* currentPackage,
     RuntimeSizedArrayDefinitionT* rsaDefM) {
-  if (rsaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
+  if (rsaDefM->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
     auto name = currentPackage->getKindExportName(rsaDefM->kind, true);
@@ -876,7 +885,7 @@ std::string RCImm::generateRuntimeSizedArrayDefsC(
 std::string RCImm::generateStaticSizedArrayDefsC(
     Package* currentPackage,
     StaticSizedArrayDefinitionT* ssaDefM) {
-  if (ssaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
+  if (ssaDefM->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
     auto name = currentPackage->getKindExportName(ssaDefM->kind, true);
@@ -991,7 +1000,7 @@ void RCImm::initializeElementInSSA(
     Ref indexRef,
     Ref elementRef) {
   auto ssaDefM = globalState->program->getStaticSizedArray(ssaMT);
-  auto elementType = ssaDefM->rawArray->elementType;
+  auto elementType = ssaDefM->elementType;
   buildFlare(FL(), globalState, functionState, builder);
   regularInitializeElementInSSA(
       globalState, functionState, builder, &kindStructs, ssaRefMT,
@@ -1232,7 +1241,7 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
               constructRuntimeSizedArray(
                   makeEmptyTupleRef(globalState),
                   functionState, builder, valeRsaRefMT, valeRsaMT, lengthRef, "serializedrsa");
-          auto valeMemberRefMT = globalState->program->getRuntimeSizedArray(valeRsaMT)->rawArray->elementType;
+          auto valeMemberRefMT = globalState->program->getRuntimeSizedArray(valeRsaMT)->elementType;
           auto hostMemberRefMT = globalState->linearRegion->linearizeReference(valeMemberRefMT);
 
           intRangeLoopReverse(
@@ -1246,7 +1255,7 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
                 auto valeElementRef =
                     unserializeMemberOrElement(
                         functionState, bodyBuilder, hostMemberRefMT, hostMemberRef);
-                initializeElementInRSA(
+                pushRuntimeSizedArrayNoBoundsCheck(
                     functionState, bodyBuilder, valeObjectRefMT, valeRsaMT, valeRsaRef, true, indexRef, valeElementRef);
               });
 
@@ -1263,7 +1272,7 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
                   functionState, builder, valeSsaRefMT, valeSsaMT);
           auto valeSsaDefM = globalState->program->getStaticSizedArray(valeSsaMT);
           int length = valeSsaDefM->size;
-          auto valeMemberRefMT = valeSsaDefM->rawArray->elementType;
+          auto valeMemberRefMT = valeSsaDefM->elementType;
 
           intRangeLoopReverse(
               globalState, functionState, builder, globalState->metalCache->i32, globalState->constI32(length),

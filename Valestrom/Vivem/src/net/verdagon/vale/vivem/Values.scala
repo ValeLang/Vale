@@ -139,51 +139,39 @@ case class StructInstanceV(
 case class ArrayInstanceV(
     typeH: ReferenceH[KindH],
     elementTypeH: ReferenceH[KindH],
-    private val size: Int,
+    capacity: Int,
     private var elements: Vector[ReferenceV]
 ) extends KindV {
   override def tyype = RRKind(typeH.kind)
 
   def getElement(index: Int): ReferenceV = {
-    // Make sure we're initialized
-    vassert(elements.size == size)
-    if (index < 0 || index >= size) {
+    if (index < 0 || index >= elements.size) {
       throw PanicException();
     }
     elements(index)
   }
 
   def setElement(index: Int, ref: ReferenceV) = {
-    // Make sure we're initialized
-    vassert(elements.size == size)
-    if (index < 0 || index >= size) {
+    if (index < 0 || index >= elements.size) {
       throw PanicException();
     }
     elements = elements.updated(index, ref)
   }
 
-  def initializeElement(index: Int, ref: ReferenceV) = {
-    // Make sure we're not yet initialized
-    vassert(elements.size < size)
-    // Make sure we're initializing the *next* empty slot
-    vassert(index == elements.size)
+  def initializeElement(ref: ReferenceV) = {
+    vassert(elements.size < capacity)
     elements = elements :+ ref
   }
 
-  def deinitializeElement(index: Int) = {
-    // Make sure we're initializing the *next* empty slot
-    if (index != elements.size - 1) {
-      vfail("wot")
-    }
-    val ref = elements(index)
+  def deinitializeElement() = {
+    vassert(elements.nonEmpty)
+    val ref = elements.last
     elements = elements.slice(0, elements.size - 1)
     ref
   }
 
   def getSize() = {
-    // Make sure we're initialized
-    vassert(elements.size == size)
-    size
+    elements.size
   }
 }
 

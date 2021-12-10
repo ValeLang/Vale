@@ -47,7 +47,7 @@ class Astronomer(globalOptions: GlobalOptions) {
       "void" -> KindTemplataType,
       "__Never" -> KindTemplataType,
 //      "IFunction1" -> TemplateTypeSR(Vector(MutabilityTypeSR, CoordTypeSR, CoordTypeSR), KindTypeSR),
-      "Array" -> TemplateTemplataType(Vector(MutabilityTemplataType, VariabilityTemplataType, CoordTemplataType), KindTemplataType))
+      "Array" -> TemplateTemplataType(Vector(MutabilityTemplataType, CoordTemplataType), KindTemplataType))
 
 
 

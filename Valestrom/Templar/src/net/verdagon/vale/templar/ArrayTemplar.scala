@@ -6,7 +6,7 @@ import net.verdagon.vale.parser.MutableP
 import net.verdagon.vale.scout.rules.IRulexSR
 import net.verdagon.vale.scout.{IImpreciseNameS, IRuneS, RuneTypeSolver, SelfNameS}
 import net.verdagon.vale.templar.OverloadTemplar.FindFunctionFailure
-import net.verdagon.vale.templar.ast.{ConstructArrayTE, DestroyRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoFunctionTE, ProgramT, PrototypeT, ReferenceExpressionTE, RuntimeSizedArrayLookupTE, StaticArrayFromCallableTE, StaticArrayFromValuesTE, StaticSizedArrayLookupTE}
+import net.verdagon.vale.templar.ast.{DestroyImmRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoFunctionTE, NewImmRuntimeSizedArrayTE, ProgramT, PrototypeT, ReferenceExpressionTE, RuntimeSizedArrayLookupTE, StaticArrayFromCallableTE, StaticArrayFromValuesTE, StaticSizedArrayLookupTE}
 import net.verdagon.vale.templar.citizen.{StructTemplar, StructTemplarCore}
 import net.verdagon.vale.templar.env.{CitizenEnvironment, FunctionEnvEntry, FunctionEnvironmentBox, GlobalEnvironment, IEnvironment, IEnvironmentBox, PackageEnvironment, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
 import net.verdagon.vale.templar.expression.CallTemplar
@@ -67,10 +67,9 @@ class ArrayTemplar(
     range: RangeS,
     rulesA: Vector[IRulexSR],
     mutabilityRune: IRuneS,
-    variabilityRune: IRuneS,
     sizeTE: ReferenceExpressionTE,
     callableTE: ReferenceExpressionTE):
-  ConstructArrayTE = {
+  NewImmRuntimeSizedArrayTE = {
     val runeToType =
       RuneTypeSolver.solve(
         opts.globalOptions.sanityCheck,
@@ -88,10 +87,18 @@ class ArrayTemplar(
     val templatas =
       inferTemplar.solveExpectComplete(fate.snapshot, temputs, rulesA, runeToType, range, Vector(), Vector())
     val mutability = getArrayMutability(templatas, mutabilityRune)
-    val variability = getArrayVariability(templatas, variabilityRune)
+
+    mutability match {
+      case ImmutableT =>
+      case MutableT => {
+        throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't construct a mutable runtime array from a callable!"))
+      }
+    }
+
+//    val variability = getArrayVariability(templatas, variabilityRune)
     val prototype = overloadTemplar.getArrayGeneratorPrototype(temputs, fate, range, callableTE)
-    val rsaMT = getRuntimeSizedArrayKind(fate.snapshot.globalEnv, temputs, prototype.returnType, mutability, variability)
-    val expr2 = ConstructArrayTE(rsaMT, sizeTE, callableTE, prototype)
+    val rsaMT = getRuntimeSizedArrayKind(fate.snapshot.globalEnv, temputs, prototype.returnType, mutability)
+    val expr2 = NewImmRuntimeSizedArrayTE(rsaMT, sizeTE, callableTE, prototype)
     expr2
   }
 
@@ -137,8 +144,8 @@ class ArrayTemplar(
         }
 
     val staticSizedArrayType = getStaticSizedArrayKind(fate.snapshot.globalEnv, temputs, mutability, variability, exprs2.size, memberType)
-    val ownership = if (staticSizedArrayType.array.mutability == MutableT) OwnT else ShareT
-    val permission = if (staticSizedArrayType.array.mutability == MutableT) ReadwriteT else ReadonlyT
+    val ownership = if (staticSizedArrayType.mutability == MutableT) OwnT else ShareT
+    val permission = if (staticSizedArrayType.mutability == MutableT) ReadwriteT else ReadonlyT
     val finalExpr = StaticArrayFromValuesTE(exprs2, CoordT(ownership, permission, staticSizedArrayType), staticSizedArrayType)
     (finalExpr)
   }
@@ -152,7 +159,7 @@ class ArrayTemplar(
   DestroyStaticSizedArrayIntoFunctionTE = {
     val arrayTT =
       arrTE.result.reference match {
-        case CoordT(_, _, s @ StaticSizedArrayTT(_, RawArrayTT(_, _, _))) => s
+        case CoordT(_, _, s @ StaticSizedArrayTT(_, _, _, _)) => s
         case other => {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, "Destroying a non-array with a callable! Destroying: " + other))
         }
@@ -160,7 +167,7 @@ class ArrayTemplar(
 
     val prototype =
       overloadTemplar.getArrayConsumerPrototype(
-        temputs, fate, range, callableTE, arrayTT.array.elementType)
+        temputs, fate, range, callableTE, arrayTT.elementType)
 
     DestroyStaticSizedArrayIntoFunctionTE(
       arrTE,
@@ -175,20 +182,27 @@ class ArrayTemplar(
     range: RangeS,
     arrTE: ReferenceExpressionTE,
     callableTE: ReferenceExpressionTE):
-  DestroyRuntimeSizedArrayTE = {
+  DestroyImmRuntimeSizedArrayTE = {
     val arrayTT =
       arrTE.result.reference match {
-        case CoordT(_, _, s @ RuntimeSizedArrayTT(RawArrayTT(_, _, _))) => s
+        case CoordT(_, _, s @ RuntimeSizedArrayTT(_, _)) => s
         case other => {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, "Destroying a non-array with a callable! Destroying: " + other))
         }
       }
 
+    arrayTT.mutability match {
+      case ImmutableT =>
+      case MutableT => {
+        throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't destroy a mutable array with a callable!"))
+      }
+    }
+
     val prototype =
       overloadTemplar.getArrayConsumerPrototype(
-        temputs, fate, range, callableTE, arrayTT.array.elementType)
+        temputs, fate, range, callableTE, arrayTT.elementType)
 
-    DestroyRuntimeSizedArrayTE(
+    DestroyImmRuntimeSizedArrayTE(
       arrTE,
       arrayTT,
       callableTE,
@@ -203,12 +217,12 @@ class ArrayTemplar(
     size: Int,
     type2: CoordT):
   (StaticSizedArrayTT) = {
-    val rawArrayT2 = RawArrayTT(type2, mutability, variability)
+//    val rawArrayT2 = RawArrayTT()
 
-    temputs.getStaticSizedArrayType(size, rawArrayT2) match {
+    temputs.getStaticSizedArrayType(size, mutability, variability, type2) match {
       case Some(staticSizedArrayT2) => (staticSizedArrayT2)
       case None => {
-        val staticSizedArrayType = StaticSizedArrayTT(size, rawArrayT2)
+        val staticSizedArrayType = StaticSizedArrayTT(size, mutability, variability, type2)
         temputs.addStaticSizedArray(staticSizedArrayType)
         val staticSizedArrayOwnership = if (mutability == MutableT) OwnT else ShareT
         val staticSizedArrayPermission = if (mutability == MutableT) ReadwriteT else ReadonlyT
@@ -234,14 +248,19 @@ class ArrayTemplar(
     }
   }
 
-  def getRuntimeSizedArrayKind(globalEnv: GlobalEnvironment, temputs: Temputs, type2: CoordT, arrayMutability: MutabilityT, arrayVariability: VariabilityT):
+  def getRuntimeSizedArrayKind(globalEnv: GlobalEnvironment, temputs: Temputs, type2: CoordT, arrayMutability: MutabilityT):
   (RuntimeSizedArrayTT) = {
-    val rawArrayT2 = RawArrayTT(type2, arrayMutability, arrayVariability)
+//    val arrayVariability =
+//      arrayMutability match {
+//        case ImmutableT => FinalT
+//        case MutableT => VaryingT
+//      }
+//    val rawArrayT2 = RuntimeSizedArrayTT()
 
-    temputs.getRuntimeSizedArray(rawArrayT2) match {
+    temputs.getRuntimeSizedArray(arrayMutability, type2) match {
       case Some(staticSizedArrayT2) => (staticSizedArrayT2)
       case None => {
-        val runtimeSizedArrayType = RuntimeSizedArrayTT(rawArrayT2)
+        val runtimeSizedArrayType = RuntimeSizedArrayTT(arrayMutability, type2)
         temputs.addRuntimeSizedArray(runtimeSizedArrayType)
         val runtimeSizedArrayRefType2 =
           CoordT(
@@ -288,7 +307,7 @@ class ArrayTemplar(
       containerExpr2: ReferenceExpressionTE,
       indexExpr2: ReferenceExpressionTE,
       at: StaticSizedArrayTT) = {
-    val RawArrayTT(memberType, mutability, variability) = at.array
+    val StaticSizedArrayTT(size, mutability, variability, memberType) = at
     val (effectiveVariability, targetPermission) =
       Templar.factorVariabilityAndPermission(
         containerExpr2.result.reference.permission,
@@ -303,11 +322,11 @@ class ArrayTemplar(
     indexExpr2: ReferenceExpressionTE,
     rsa: RuntimeSizedArrayTT
   ): RuntimeSizedArrayLookupTE = {
-    val RawArrayTT(memberType, mutability, variability) = rsa.array
+    val RuntimeSizedArrayTT(mutability, memberType) = rsa
     val (effectiveVariability, targetPermission) =
       Templar.factorVariabilityAndPermission(
         containerExpr2.result.reference.permission,
-        variability,
+        mutability match { case ImmutableT => FinalT case MutableT => VaryingT },
         memberType.permission)
     RuntimeSizedArrayLookupTE(range, containerExpr2, rsa, indexExpr2, targetPermission, effectiveVariability)
   }

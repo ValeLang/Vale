@@ -143,6 +143,13 @@ public:
       Ref arrayRef,
       bool arrayRefKnownLive) = 0;
 
+  virtual Ref getRuntimeSizedArrayCapacity(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* rsaRefMT,
+      Ref arrayRef,
+      bool arrayRefKnownLive) = 0;
+
   virtual LLVMValueRef checkValidReference(
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
@@ -282,10 +289,10 @@ public:
       LLVMBuilderRef builder,
       Reference* rsaMT,
       RuntimeSizedArrayT* runtimeSizedArrayT,
-      Ref sizeRef,
+      Ref capacityRef,
       const std::string& typeName) = 0;
 
-  virtual void initializeElementInRSA(
+  virtual void pushRuntimeSizedArrayNoBoundsCheck(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* rsaRefMT,
@@ -295,7 +302,7 @@ public:
       Ref indexRef,
       Ref elementRef) = 0;
 
-  virtual Ref deinitializeElementFromRSA(
+  virtual Ref popRuntimeSizedArrayNoBoundsCheck(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* rsaRefMT,

@@ -107,17 +107,6 @@ InterfaceKind* readInterfaceKind(MetalCache* cache, const json& kind) {
   return cache->getInterfaceKind(interfaceName);
 }
 
-RawArrayT* readRawArray(MetalCache* cache, const json& rawArray) {
-  assert(rawArray["__type"] == "Array");
-
-  auto mutability = readMutability(rawArray["mutability"]);
-  auto variability = readVariability(rawArray["variability"]);
-  auto elementType = readReference(cache, rawArray["elementType"]);
-  auto regionId = mutability == Mutability::IMMUTABLE ? cache->rcImmRegionId : cache->mutRegionId;
-
-  return new RawArrayT(regionId, mutability, variability, elementType);
-}
-
 RuntimeSizedArrayT* readRuntimeSizedArray(MetalCache* cache, const json& kind) {
   auto name = readName(cache, kind["name"]);
 
@@ -127,9 +116,11 @@ RuntimeSizedArrayT* readRuntimeSizedArray(MetalCache* cache, const json& kind) {
 RuntimeSizedArrayDefinitionT* readRuntimeSizedArrayDefinition(MetalCache* cache, const json& rsa) {
   auto name = readName(cache, rsa["name"]);
   auto kind = readRuntimeSizedArray(cache, rsa["kind"]);
-  auto rawArray = readRawArray(cache, rsa["array"]);
+  auto mutability = readMutability(rsa["mutability"]);
+  auto elementType = readReference(cache, rsa["elementType"]);
+  auto regionId = mutability == Mutability::IMMUTABLE ? cache->rcImmRegionId : cache->mutRegionId;
 
-  return new RuntimeSizedArrayDefinitionT(name, kind, rawArray);
+  return new RuntimeSizedArrayDefinitionT(name, kind, regionId, mutability, elementType);
 }
 
 StaticSizedArrayT* readStaticSizedArray(MetalCache* cache, const json& kind) {
@@ -144,10 +135,14 @@ StaticSizedArrayT* readStaticSizedArray(MetalCache* cache, const json& kind) {
 StaticSizedArrayDefinitionT* readStaticSizedArrayDefinition(MetalCache* cache, const json& ssa) {
   auto name = readName(cache, ssa["name"]);
   auto kind = readStaticSizedArray(cache, ssa["kind"]);
-  auto rawArray = readRawArray(cache, ssa["array"]);
+  auto mutability = readMutability(ssa["mutability"]);
+  auto variability = readVariability(ssa["variability"]);
+  auto elementType = readReference(cache, ssa["elementType"]);
+  auto regionId = mutability == Mutability::IMMUTABLE ? cache->rcImmRegionId : cache->mutRegionId;
+
   auto size = ssa["size"].get<int>();
 
-  return new StaticSizedArrayDefinitionT(name, kind, size, rawArray);
+  return new StaticSizedArrayDefinitionT(name, kind, size, regionId, mutability, variability, elementType);
 }
 
 Kind* readKind(MetalCache* cache, const json& kind) {
@@ -438,8 +433,8 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceType"]),
         readKind(cache, expression["sourceKind"]));
-  } else if (type == "ConstructRuntimeSizedArray") {
-    return new ConstructRuntimeSizedArray(
+  } else if (type == "NewImmRuntimeSizedArray") {
+    return new NewImmRuntimeSizedArray(
         readExpression(cache, expression["sizeExpr"]),
         readReference(cache, expression["sizeType"]),
         readKind(cache, expression["sizeKind"]),
@@ -448,6 +443,13 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readKind(cache, expression["generatorKind"]),
         readPrototype(cache, expression["generatorMethod"]),
         expression["generatorKnownLive"],
+        readReference(cache, expression["resultType"]),
+        readReference(cache, expression["elementType"]));
+  } else if (type == "NewMutRuntimeSizedArray") {
+    return new NewMutRuntimeSizedArray(
+        readExpression(cache, expression["capacityExpr"]),
+        readReference(cache, expression["capacityType"]),
+        readKind(cache, expression["capacityKind"]),
         readReference(cache, expression["resultType"]),
         readReference(cache, expression["elementType"]));
   } else if (type == "StaticArrayFromCallable") {
@@ -459,8 +461,13 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         expression["generatorKnownLive"],
         readReference(cache, expression["resultType"]),
         readReference(cache, expression["elementType"]));
-  } else if (type == "DestroyRuntimeSizedArray") {
-    return new DestroyRuntimeSizedArray(
+  } else if (type == "DestroyMutRuntimeSizedArray") {
+    return new DestroyMutRuntimeSizedArray(
+        readExpression(cache, expression["arrayExpr"]),
+        readReference(cache, expression["arrayType"]),
+        readRuntimeSizedArray(cache, expression["arrayKind"]));
+  } else if (type == "DestroyImmRuntimeSizedArray") {
+    return new DestroyImmRuntimeSizedArray(
         readExpression(cache, expression["arrayExpr"]),
         readReference(cache, expression["arrayType"]),
         readRuntimeSizedArray(cache, expression["arrayKind"]),
@@ -469,6 +476,19 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readKind(cache, expression["consumerKind"]),
         readPrototype(cache, expression["consumerMethod"]),
         expression["consumerKnownLive"]);
+  } else if (type == "PushRuntimeSizedArray") {
+    return new PushRuntimeSizedArray(
+        readExpression(cache, expression["arrayExpr"]),
+        readReference(cache, expression["arrayType"]),
+        readKind(cache, expression["arrayKind"]),
+        readExpression(cache, expression["newcomerExpr"]),
+        readReference(cache, expression["newcomerType"]),
+        readKind(cache, expression["newcomerKind"]));
+  } else if (type == "PopRuntimeSizedArray") {
+    return new PopRuntimeSizedArray(
+        readExpression(cache, expression["arrayExpr"]),
+        readReference(cache, expression["arrayType"]),
+        readKind(cache, expression["arrayKind"]));
   } else if (type == "ArrayLength") {
     return new ArrayLength(
         readExpression(cache, expression["sourceExpr"]),

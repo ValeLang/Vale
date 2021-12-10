@@ -149,7 +149,6 @@ case class RuntimeArrayFromCallableSE(
   range: RangeS,
   rules: Array[IRulexSR],
   mutabilityST: RuneUsage,
-  variabilityST: RuneUsage,
   sizeSE: IExpressionSE,
   callable: IExpressionSE
 ) extends IExpressionSE {

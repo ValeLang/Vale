@@ -330,16 +330,16 @@ void ResilientV4::declareRuntimeSizedArray(
 void ResilientV4::defineRuntimeSizedArray(
     RuntimeSizedArrayDefinitionT *runtimeSizedArrayMT) {
   auto elementLT =
-      globalState->getRegion(runtimeSizedArrayMT->rawArray->elementType)
-          ->translateType(runtimeSizedArrayMT->rawArray->elementType);
-  kindStructs.defineRuntimeSizedArray(runtimeSizedArrayMT, elementLT);
+      globalState->getRegion(runtimeSizedArrayMT->elementType)
+          ->translateType(runtimeSizedArrayMT->elementType);
+  kindStructs.defineRuntimeSizedArray(runtimeSizedArrayMT, elementLT, true);
 }
 
 void ResilientV4::defineStaticSizedArray(
     StaticSizedArrayDefinitionT *staticSizedArrayMT) {
   auto elementLT =
-      globalState->getRegion(staticSizedArrayMT->rawArray->elementType)
-          ->translateType(staticSizedArrayMT->rawArray->elementType);
+      globalState->getRegion(staticSizedArrayMT->elementType)
+          ->translateType(staticSizedArrayMT->elementType);
   kindStructs.defineStaticSizedArray(staticSizedArrayMT, elementLT);
 }
 
@@ -503,6 +503,28 @@ Ref ResilientV4::getRuntimeSizedArrayLength(
   }
 }
 
+Ref ResilientV4::getRuntimeSizedArrayCapacity(
+    FunctionState *functionState,
+    LLVMBuilderRef builder,
+    Reference *rsaRefMT,
+    Ref arrayRef,
+    bool arrayKnownLive) {
+  switch (rsaRefMT->ownership) {
+    case Ownership::SHARE:
+    case Ownership::OWN: {
+      return getRuntimeSizedArrayCapacityStrong(globalState, functionState, builder, &kindStructs, rsaRefMT, arrayRef);
+    }
+    case Ownership::BORROW: {
+      auto wrapperPtrLE =
+          lockWeakRef(
+              FL(), functionState, builder, rsaRefMT, arrayRef, arrayKnownLive);
+      return ::getRuntimeSizedArrayCapacity(globalState, functionState, builder, wrapperPtrLE);
+    }
+    case Ownership::WEAK:
+      assert(false); // VIR never loads from a weak ref
+  }
+}
+
 LLVMValueRef ResilientV4::checkValidReference(
     AreaAndFileAndLine checkerAFL,
     FunctionState *functionState,
@@ -642,8 +664,8 @@ LoadResult ResilientV4::loadElementFromSSA(
     Ref indexRef) {
   auto ssaDef = globalState->program->getStaticSizedArray(ssaMT);
   return resilientloadElementFromSSA(
-      globalState, functionState, builder, ssaRefMT, ssaMT, ssaDef->size, ssaDef->rawArray->mutability,
-      ssaDef->rawArray->elementType, arrayRef, arrayKnownLive, indexRef, &kindStructs);
+      globalState, functionState, builder, ssaRefMT, ssaMT, ssaDef->size, ssaDef->mutability,
+      ssaDef->elementType, arrayRef, arrayKnownLive, indexRef, &kindStructs);
 }
 
 LoadResult ResilientV4::loadElementFromRSA(
@@ -656,8 +678,8 @@ LoadResult ResilientV4::loadElementFromRSA(
     Ref indexRef) {
   auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT);
   return resilientLoadElementFromRSAWithoutUpgrade(
-      globalState, functionState, builder, &kindStructs, rsaRefMT, rsaDef->rawArray->mutability,
-      rsaDef->rawArray->elementType, rsaMT, arrayRef, arrayKnownLive, indexRef);
+      globalState, functionState, builder, &kindStructs, true, rsaRefMT, rsaDef->mutability,
+      rsaDef->elementType, rsaMT, arrayRef, arrayKnownLive, indexRef);
 }
 
 Ref ResilientV4::storeElementInRSA(
@@ -672,10 +694,10 @@ Ref ResilientV4::storeElementInRSA(
   auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT);
   auto arrayWrapperPtrLE = lockWeakRef(FL(), functionState, builder, rsaRefMT, arrayRef, arrayKnownLive);
   auto sizeRef = ::getRuntimeSizedArrayLength(globalState, functionState, builder, arrayWrapperPtrLE);
-  auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, arrayWrapperPtrLE);
+  auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, true, arrayWrapperPtrLE);
   buildFlare(FL(), globalState, functionState, builder);
   return ::swapElement(
-      globalState, functionState, builder, rsaRefMT->location, rsaDef->rawArray->elementType, sizeRef,
+      globalState, functionState, builder, rsaRefMT->location, rsaDef->elementType, sizeRef,
       arrayElementsPtrLE,
       indexRef, elementRef);
 }
@@ -774,18 +796,18 @@ Ref ResilientV4::constructRuntimeSizedArray(
     LLVMBuilderRef builder,
     Reference *rsaMT,
     RuntimeSizedArrayT *runtimeSizedArrayT,
-    Ref sizeRef,
+    Ref capacityRef,
     const std::string &typeName) {
   auto rsaWrapperPtrLT =
       kindStructs.getRuntimeSizedArrayWrapperStruct(runtimeSizedArrayT);
   auto rsaDef = globalState->program->getRuntimeSizedArray(runtimeSizedArrayT);
-  auto elementType = globalState->program->getRuntimeSizedArray(runtimeSizedArrayT)->rawArray->elementType;
+  auto elementType = globalState->program->getRuntimeSizedArray(runtimeSizedArrayT)->elementType;
   auto rsaElementLT = globalState->getRegion(elementType)->translateType(elementType);
   auto resultRef =
       ::constructRuntimeSizedArray(
-          globalState, functionState, builder, &kindStructs, rsaMT, rsaDef->rawArray->elementType,
+          globalState, functionState, builder, &kindStructs, rsaMT, rsaDef->elementType,
           runtimeSizedArrayT,
-          rsaWrapperPtrLT, rsaElementLT, sizeRef, typeName,
+          rsaWrapperPtrLT, rsaElementLT, globalState->constI32(0), capacityRef, true, typeName,
           [this, functionState, runtimeSizedArrayT, typeName](
               LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
             fillControlBlock(
@@ -859,14 +881,14 @@ void ResilientV4::checkInlineStructType(
 std::string ResilientV4::generateRuntimeSizedArrayDefsC(
     Package* currentPackage,
     RuntimeSizedArrayDefinitionT* rsaDefM) {
-  assert(rsaDefM->rawArray->mutability == Mutability::MUTABLE);
+  assert(rsaDefM->mutability == Mutability::MUTABLE);
   return generateMutableConcreteHandleDefC(currentPackage, currentPackage->getKindExportName(rsaDefM->kind, true));
 }
 
 std::string ResilientV4::generateStaticSizedArrayDefsC(
     Package* currentPackage,
     StaticSizedArrayDefinitionT* ssaDefM) {
-  assert(ssaDefM->rawArray->mutability == Mutability::MUTABLE);
+  assert(ssaDefM->mutability == Mutability::MUTABLE);
   return generateMutableConcreteHandleDefC(currentPackage, currentPackage->getKindExportName(ssaDefM->kind, true));
 }
 
@@ -936,7 +958,7 @@ LLVMValueRef ResilientV4::encryptAndSendFamiliarReference(
       globalState, functionState, builder, &kindStructs, &hgmWeaks, sourceRefMT, sourceRef);
 }
 
-void ResilientV4::initializeElementInRSA(
+void ResilientV4::pushRuntimeSizedArrayNoBoundsCheck(
     FunctionState *functionState,
     LLVMBuilderRef builder,
     Reference *rsaRefMT,
@@ -945,11 +967,13 @@ void ResilientV4::initializeElementInRSA(
     bool arrayRefKnownLive,
     Ref indexRef,
     Ref elementRef) {
-  ::initializeElementInRSA(globalState, functionState, builder, &kindStructs, rsaMT, rsaRefMT, rsaRef, indexRef,
-      elementRef);
+  auto arrayWrapperPtrLE =
+      lockWeakRef(FL(), functionState, builder, rsaRefMT, rsaRef, arrayRefKnownLive);
+  ::initializeElementInRSA(
+      globalState, functionState, builder, &kindStructs, true, true, rsaMT, rsaRefMT, arrayWrapperPtrLE, rsaRef, indexRef, elementRef);
 }
 
-Ref ResilientV4::deinitializeElementFromRSA(
+Ref ResilientV4::popRuntimeSizedArrayNoBoundsCheck(
     FunctionState *functionState,
     LLVMBuilderRef builder,
     Reference *rsaRefMT,
@@ -958,9 +982,12 @@ Ref ResilientV4::deinitializeElementFromRSA(
     bool arrayRefKnownLive,
     Ref indexRef) {
   auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT);
-  return resilientLoadElementFromRSAWithoutUpgrade(
-      globalState, functionState, builder, &kindStructs, rsaRefMT, rsaDef->rawArray->mutability,
-      rsaDef->rawArray->elementType, rsaMT, arrayRef, true, indexRef).move();
+  auto elementLE = resilientLoadElementFromRSAWithoutUpgrade(
+      globalState, functionState, builder, &kindStructs, true, rsaRefMT, rsaDef->mutability,
+      rsaDef->elementType, rsaMT, arrayRef, true, indexRef).move();
+  auto rsaWrapperPtrLE = lockWeakRef(FL(), functionState, builder, rsaRefMT, arrayRef, arrayRefKnownLive);
+  decrementRSASize(globalState, functionState, &kindStructs, builder, rsaRefMT, rsaWrapperPtrLE);
+  return elementLE;
 }
 
 void ResilientV4::initializeElementInSSA(
@@ -979,8 +1006,9 @@ void ResilientV4::initializeElementInSSA(
           globalState->getRegion(ssaRefMT)->checkValidReference(FL(), functionState, builder, ssaRefMT, arrayRef));
   auto sizeRef = globalState->constI32(ssaDef->size);
   auto arrayElementsPtrLE = getStaticSizedArrayContentsPtr(builder, arrayWrapperPtrLE);
-  ::initializeElement(
-      globalState, functionState, builder, ssaRefMT->location, ssaDef->rawArray->elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);
+  ::initializeElementWithoutIncrementSize(
+      globalState, functionState, builder, ssaRefMT->location, ssaDef->elementType, sizeRef, arrayElementsPtrLE,
+      indexRef, elementRef);
 }
 
 Ref ResilientV4::deinitializeElementFromSSA(
@@ -1269,7 +1297,7 @@ LLVMValueRef ResilientV4::predictShallowSize(FunctionState* functionState, LLVMB
     }
     return sizeLE;
   } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(kind)) {
-    auto elementRefMT = globalState->program->getStaticSizedArray(ssaMT)->rawArray->elementType;
+    auto elementRefMT = globalState->program->getStaticSizedArray(ssaMT)->elementType;
     auto elementRefLT = globalState->getRegion(elementRefMT)->translateType(elementRefMT);
 
     auto sizePerElement = LLVMABISizeOfType(globalState->dataLayout, LLVMArrayType(elementRefLT, 1));
@@ -1286,7 +1314,7 @@ LLVMValueRef ResilientV4::predictShallowSize(FunctionState* functionState, LLVMB
     }
     return sizeLE;
   } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(kind)) {
-    auto elementRefMT = globalState->program->getRuntimeSizedArray(rsaMT)->rawArray->elementType;
+    auto elementRefMT = globalState->program->getRuntimeSizedArray(rsaMT)->elementType;
     auto elementRefLT = globalState->getRegion(elementRefMT)->translateType(elementRefMT);
 
     auto sizePerElement = LLVMABISizeOfType(globalState->dataLayout, LLVMArrayType(elementRefLT, 1));

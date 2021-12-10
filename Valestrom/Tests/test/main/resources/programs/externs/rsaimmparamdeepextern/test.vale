@@ -3,9 +3,9 @@ struct Spaceship export imm {
   wings int;
 }
 
-export Array<imm, final, Spaceship> as ImmSpaceshipArray;
+export Array<imm, Spaceship> as ImmSpaceshipArray;
 
-fn cSumFuel_vasp(arr Array<imm, final, Spaceship>) int extern;
+fn cSumFuel_vasp(arr Array<imm, Spaceship>) int extern;
 
 fn main() int export {
   a = [imm *](5, (i){ Spaceship(i * 2, 7) });

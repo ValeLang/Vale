@@ -32,7 +32,7 @@ struct Goblin {
   location Vec<2, int>;
 }
 
-fn makeBoard() Array<mut, final, Array<mut, final, str>> {
+fn makeBoard() Array<mut, Array<mut, str>> {
   ret
     MakeArray(10, (row){
       MakeArray(10, (col){
@@ -46,7 +46,7 @@ fn makeBoard() Array<mut, final, Array<mut, final, str>> {
 }
 
 fn display(
-    board &Array<mut, final, Array<mut, final, str>>,
+    board &Array<mut, Array<mut, str>>,
     goblins &HashMap<int, Goblin, IntHasher, IntEquator>,
     playerRow int,
     playerCol int)

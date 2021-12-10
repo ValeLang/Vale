@@ -23,17 +23,17 @@ sealed trait ExpressionH[+T <: KindH] {
       }
     }
   }
-  def expectRuntimeSizedArrayAccess(): ExpressionH[RuntimeSizedArrayTH] = {
+  def expectRuntimeSizedArrayAccess(): ExpressionH[RuntimeSizedArrayHT] = {
     resultType match {
-      case ReferenceH(_, _, _, x @ RuntimeSizedArrayTH(_)) => {
-        this.asInstanceOf[ExpressionH[RuntimeSizedArrayTH]]
+      case ReferenceH(_, _, _, x @ RuntimeSizedArrayHT(_)) => {
+        this.asInstanceOf[ExpressionH[RuntimeSizedArrayHT]]
       }
     }
   }
-  def expectStaticSizedArrayAccess(): ExpressionH[StaticSizedArrayTH] = {
+  def expectStaticSizedArrayAccess(): ExpressionH[StaticSizedArrayHT] = {
     resultType match {
-      case ReferenceH(_, _, _, x @ StaticSizedArrayTH(_)) => {
-        this.asInstanceOf[ExpressionH[StaticSizedArrayTH]]
+      case ReferenceH(_, _, _, x @ StaticSizedArrayHT(_)) => {
+        this.asInstanceOf[ExpressionH[StaticSizedArrayHT]]
       }
     }
   }
@@ -166,7 +166,7 @@ case class DestroyH(
 // the values from the dying struct instance.
 case class DestroyStaticSizedArrayIntoLocalsH(
   // The expressions to take the struct from.
-  structExpression: ExpressionH[StaticSizedArrayTH],
+  structExpression: ExpressionH[StaticSizedArrayHT],
   // A list of types, one for each local variable we'll make.
   // TODO: If the vcurious below doesn't panic, get rid of this redundant member.
   localTypes: Vector[ReferenceH[KindH]],
@@ -314,10 +314,10 @@ case class MemberLoadH(
 case class NewArrayFromValuesH(
   // The resulting type of the array.
   // TODO: See if we can infer this from the types in the expressions.
-  resultType: ReferenceH[StaticSizedArrayTH],
+  resultType: ReferenceH[StaticSizedArrayHT],
   // The expressions from which we'll get the values to put into the array.
   sourceExpressions: Vector[ExpressionH[KindH]]
-) extends ExpressionH[StaticSizedArrayTH]
+) extends ExpressionH[StaticSizedArrayHT]
 
 // Loads from the "source" expressions and swaps it into the array from arrayExpression at
 // the position specified by the integer in indexExpression. The old value from the
@@ -327,7 +327,7 @@ case class NewArrayFromValuesH(
 // unknown-size-at-compile-time array, see RuntimeSizedArrayStoreH.
 case class StaticSizedArrayStoreH(
   // Expression containing the array whose element we'll swap out.
-  arrayExpression: ExpressionH[StaticSizedArrayTH],
+  arrayExpression: ExpressionH[StaticSizedArrayHT],
   // Expression containing the index of the element we'll swap out.
   indexExpression: ExpressionH[IntH],
   // Expression containing the value we'll swap into the array.
@@ -346,7 +346,7 @@ case class StaticSizedArrayStoreH(
 // known-size-at-compile-time array, see StaticSizedArrayStoreH.
 case class RuntimeSizedArrayStoreH(
   // Expression containing the array whose element we'll swap out.
-  arrayExpression: ExpressionH[RuntimeSizedArrayTH],
+  arrayExpression: ExpressionH[RuntimeSizedArrayHT],
   // Expression containing the index of the element we'll swap out.
   indexExpression: ExpressionH[IntH],
   // Expression containing the value we'll swap into the array.
@@ -364,7 +364,7 @@ case class RuntimeSizedArrayStoreH(
 // known-size-at-compile-time array, see StaticSizedArrayLoadH.
 case class RuntimeSizedArrayLoadH(
   // Expression containing the array whose element we'll read.
-  arrayExpression: ExpressionH[RuntimeSizedArrayTH],
+  arrayExpression: ExpressionH[RuntimeSizedArrayHT],
   // Expression containing the index of the element we'll read.
   indexExpression: ExpressionH[IntH],
   // The ownership to load as. For example, we might load a constraint reference from a
@@ -388,7 +388,7 @@ case class RuntimeSizedArrayLoadH(
 // known-size-at-compile-time array, see StaticSizedArrayStoreH.
 case class StaticSizedArrayLoadH(
   // Expression containing the array whose element we'll read.
-  arrayExpression: ExpressionH[StaticSizedArrayTH],
+  arrayExpression: ExpressionH[StaticSizedArrayHT],
   // Expression containing the index of the element we'll read.
   indexExpression: ExpressionH[IntH],
   // The ownership to load as. For example, we might load a constraint reference from a
@@ -538,10 +538,10 @@ case class ReturnH(
   override def resultType: ReferenceH[NeverH] = ReferenceH(ShareH, InlineH, ReadonlyH, NeverH())
 }
 
-// Constructs an unknown-size array, whose length is the integer from sizeExpression,
+// Constructs an immutable unknown-size array, whose length is the integer from sizeExpression,
 // whose values are generated from the function from generatorExpression. Puts the
 // result in a new expressions.
-case class ConstructRuntimeSizedArrayH(
+case class NewImmRuntimeSizedArrayH(
   // Expression containing the size of the new array.
   sizeExpression: ExpressionH[IntH],
   // Expression containing the IFunction<int, T> interface reference which we'll
@@ -557,13 +557,52 @@ case class ConstructRuntimeSizedArrayH(
   // The resulting type of the array.
   // TODO: Remove this, it's redundant with the generatorExpression's interface's
   // only method's return type.
-  resultType: ReferenceH[RuntimeSizedArrayTH]
-) extends ExpressionH[RuntimeSizedArrayTH] {
+  resultType: ReferenceH[RuntimeSizedArrayHT]
+) extends ExpressionH[RuntimeSizedArrayHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(
     generatorExpression.resultType.ownership == BorrowH ||
       generatorExpression.resultType.ownership == ShareH)
   vassert(sizeExpression.resultType.kind == IntH.i32)
+}
+
+// Constructs an empty mutable unknown-size array, whose length is the integer from capacityExpression,
+// whose values are generated from the function from generatorExpression. Puts the
+// result in a new expressions.
+case class NewMutRuntimeSizedArrayH(
+  // Expression containing the capacity of the new array.
+  capacityExpression: ExpressionH[IntH],
+
+  elementType: ReferenceH[KindH],
+
+  // The resulting type of the array.
+  resultType: ReferenceH[RuntimeSizedArrayHT]
+) extends ExpressionH[RuntimeSizedArrayHT] {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+}
+
+// Adds a new element to the end of a mutable unknown-size array.
+case class PushRuntimeSizedArrayH(
+  // Expression for the array to add to.
+  arrayExpression: ExpressionH[RuntimeSizedArrayHT],
+  // Expression for the new element.
+  newcomerExpression: ExpressionH[KindH],
+) extends ExpressionH[KindH] {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+
+  override def resultType: ReferenceH[KindH] = ProgramH.emptyTupleStructType
+}
+
+// Adds a new element to the end of a mutable unknown-size array.
+case class PopRuntimeSizedArrayH(
+  // Expression for the array to add to.
+  arrayExpression: ExpressionH[RuntimeSizedArrayHT],
+  // The element type for the array.
+  elementType: ReferenceH[KindH]
+) extends ExpressionH[KindH] {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+
+  override def resultType: ReferenceH[KindH] = elementType
 }
 
 // Constructs an unknown-size array, whose length is the integer from sizeExpression,
@@ -583,8 +622,8 @@ case class StaticArrayFromCallableH(
   // The resulting type of the array.
   // TODO: Remove this, it's redundant with the generatorExpression's interface's
   // only method's return type.
-  resultType: ReferenceH[StaticSizedArrayTH]
-) extends ExpressionH[StaticSizedArrayTH] {
+  resultType: ReferenceH[StaticSizedArrayHT]
+) extends ExpressionH[StaticSizedArrayHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(
     generatorExpression.resultType.ownership == BorrowH ||
@@ -595,7 +634,7 @@ case class StaticArrayFromCallableH(
 case class DestroyStaticSizedArrayIntoFunctionH(
   // Expression containing the array we'll destroy.
   // This is an owning reference.
-  arrayExpression: ExpressionH[StaticSizedArrayTH],
+  arrayExpression: ExpressionH[StaticSizedArrayHT],
   // Expression containing the argument we'll pass to consumerMethod with the element.
   consumerExpression: ExpressionH[KindH],
   // The prototype for the "__call" function to call on the interface for each element.
@@ -608,15 +647,25 @@ case class DestroyStaticSizedArrayIntoFunctionH(
 }
 
 // Destroys an array previously created with ConstructRuntimeSizedArrayH.
-case class DestroyRuntimeSizedArrayH(
+case class DestroyImmRuntimeSizedArrayH(
   // Expression containing the array we'll destroy.
   // This is an owning reference.
-  arrayExpression: ExpressionH[RuntimeSizedArrayTH],
+  arrayExpression: ExpressionH[RuntimeSizedArrayHT],
   // Expression containing the argument we'll pass to consumerMethod with the element.
   consumerExpression: ExpressionH[KindH],
   // The prototype for the "__call" function to call on the interface for each element.
   consumerMethod: PrototypeH,
   arrayElementType: ReferenceH[KindH],
+) extends ExpressionH[StructRefH] {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
+}
+
+// Destroys an array previously created with ConstructRuntimeSizedArrayH.
+case class DestroyMutRuntimeSizedArrayH(
+  // Expression containing the array we'll destroy.
+  // This is an owning reference.
+  arrayExpression: ExpressionH[RuntimeSizedArrayHT]
 ) extends ExpressionH[StructRefH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
@@ -634,6 +683,15 @@ case class NewStructH(
 
 // Gets the length of an unknown-sized array.
 case class ArrayLengthH(
+  // Expression containing the array whose length we'll get.
+  sourceExpression: ExpressionH[KindH],
+) extends ExpressionH[IntH] {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  override def resultType: ReferenceH[IntH] = ReferenceH(ShareH, InlineH, ReadonlyH, IntH.i32)
+}
+
+// Gets the capacity of an unknown-sized array.
+case class ArrayCapacityH(
   // Expression containing the array whose length we'll get.
   sourceExpression: ExpressionH[KindH],
 ) extends ExpressionH[IntH] {

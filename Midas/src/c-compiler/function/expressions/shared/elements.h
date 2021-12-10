@@ -24,16 +24,27 @@
 //    Ref indexLE,
 //    Reference* resultRefM);
 
-void initializeElement(
+void initializeElementAndIncrementSize(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Location location,
     Reference* elementRefM,
-    Ref sizeLE,
-    LLVMValueRef arrayPtrLE,
-    Ref indexLE,
-    Ref sourceLE);
+    LLVMValueRef sizePtrLE,
+    LLVMValueRef elemsPtrLE,
+    Ref indexRef,
+    Ref sourceRef);
+
+void initializeElementWithoutIncrementSize(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Location location,
+    Reference* elementRefM,
+    Ref sizeRef,
+    LLVMValueRef elemsPtrLE,
+    Ref indexRef,
+    Ref sourceRef);
 
 Ref swapElement(
     GlobalState* globalState,
@@ -78,12 +89,21 @@ LLVMValueRef getStaticSizedArrayContentsPtr(
 
 LLVMValueRef getRuntimeSizedArrayContentsPtr(
     LLVMBuilderRef builder,
+    bool capacityExists,
     WrapperPtrLE arrayWrapperPtrLE);
 
 LLVMValueRef getRuntimeSizedArrayLengthPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     WrapperPtrLE runtimeSizedArrayWrapperPtrLE);
+
+LLVMValueRef getRuntimeSizedArrayCapacityPtr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    WrapperPtrLE runtimeSizedArrayWrapperPtrLE);
+
+void decrementRSASize(
+    GlobalState* globalState, FunctionState *functionState, KindStructs* kindStructs, LLVMBuilderRef builder, Reference *rsaRefMT, WrapperPtrLE rsaWrapperPtrLE);
 
 void storeInnerArrayMember(
     GlobalState* globalState,

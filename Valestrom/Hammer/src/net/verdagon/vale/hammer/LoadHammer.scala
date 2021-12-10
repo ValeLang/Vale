@@ -74,7 +74,7 @@ object LoadHammer {
     vassert(targetOwnership == BorrowH || targetOwnership == ShareH)
 
     val rsa = hamuts.getRuntimeSizedArray(arrayAccess.resultType.kind)
-    val expectedElementType = rsa.rawArray.elementType
+    val expectedElementType = rsa.elementType
     val resultType = {
       val location =
         (targetOwnership, expectedElementType.location) match {
@@ -122,7 +122,7 @@ object LoadHammer {
     vassert(targetOwnership == m.BorrowH || targetOwnership == m.ShareH)
 
     val ssa = hamuts.getStaticSizedArray(arrayAccess.resultType.kind)
-    val expectedElementType = ssa.rawArray.elementType
+    val expectedElementType = ssa.elementType
     val resultType = {
       val location =
         (targetOwnership, expectedElementType.location) match {

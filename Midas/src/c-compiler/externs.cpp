@@ -29,7 +29,7 @@ Externs::Externs(LLVMModuleRef mod, LLVMContextRef context) {
   memcpy = addExtern(mod, "memcpy", int8PtrLT, {int8PtrLT, int8PtrLT, int64LT});
   memset = addExtern(mod, "memset", voidLT, {int8PtrLT, int8LT, int64LT});
 
-  initTwinPages = addExtern(mod, "__vale_initTwinPages", int8PtrLT, {});
+//  initTwinPages = addExtern(mod, "__vale_initTwinPages", int8PtrLT, {});
 }
 
 bool hasEnding (std::string const &fullString, std::string const &ending) {

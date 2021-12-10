@@ -1,5 +1,6 @@
 #include <region/common/fatweaks/fatweaks.h>
 #include <region/common/hgm/hgm.h>
+#include <memory>
 #include <optional>
 #include <translatetype.h>
 #include <region/common/common.h>
@@ -57,11 +58,11 @@ ResilientV4::ResilientV4(GlobalState *globalState_, RegionId *regionId_) :
 }
 
 void ResilientV4::mainSetup(FunctionState* functionState, LLVMBuilderRef builder) {
-  hgmWeaks.mainSetup(functionState, builder);
+//  hgmWeaks.mainSetup(functionState, builder);
 }
 
 void ResilientV4::mainCleanup(FunctionState* functionState, LLVMBuilderRef builder) {
-  hgmWeaks.mainCleanup(functionState, builder);
+//  hgmWeaks.mainCleanup(functionState, builder);
 }
 
 RegionId *ResilientV4::getRegionId() {
@@ -751,38 +752,10 @@ void ResilientV4::deallocate(
   buildVoidIfElse(
       globalState, functionState, builder, tetheredLE,
       [this, functionState, sourceContentsPtrLE, refMT, ref, sourceWrapperPtrLE](LLVMBuilderRef thenBuilder) {
-        buildFlare(FL(), globalState, functionState, thenBuilder, "still tethered, undeadifying!");
-        auto sourceContentsI8PtrLE = LLVMBuildPointerCast(thenBuilder, sourceContentsPtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "sourceContentsI8Ptr");
-//        auto structKind = dynamic_cast<StructKind*>(refMT->kind);
-//        assert(structKind);
-//        auto structLT = kindStructs.getInnerStruct(structKind);
-
-        LLVMValueRef numElementsLE = nullptr;
-        if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(refMT->kind)) {
-          buildFlare(FL(), globalState, functionState, thenBuilder);
-          auto lenRef = getRuntimeSizedArrayLength(functionState, thenBuilder, refMT, ref, true);
-          numElementsLE =
-              globalState->getRegion(globalState->metalCache->i32Ref)
-                  ->checkValidReference(FL(), functionState, thenBuilder, globalState->metalCache->i32Ref, lenRef);
-        } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(refMT->kind)) {
-          auto ssaDefM = globalState->program->getStaticSizedArray(ssaMT);
-          buildFlare(FL(), globalState, functionState, thenBuilder);
-          numElementsLE = constI32LE(globalState, ssaDefM->size);
-        } else if (dynamic_cast<StructKind*>(refMT->kind)) {
-          buildFlare(FL(), globalState, functionState, thenBuilder);
-          numElementsLE = constI32LE(globalState, 0);
-        } else if (dynamic_cast<InterfaceKind*>(refMT->kind)) {
-          buildFlare(FL(), globalState, functionState, thenBuilder);
-          numElementsLE = constI32LE(globalState, 0);
-        }
-        auto sizeLE = predictShallowSize(functionState, thenBuilder, false, refMT->kind, numElementsLE);
-        buildFlare(FL(), globalState, functionState, thenBuilder, "size: ", sizeLE);
-
-        std::vector<LLVMValueRef> argsLE = { sourceContentsI8PtrLE, constI8LE(globalState, 0), sizeLE };
-        LLVMBuildCall(thenBuilder, globalState->externs->memset, argsLE.data(), argsLE.size(), "");
-        buildFlare(FL(), globalState, functionState, thenBuilder, "done!");
-
-        hgmWeaks.addToUndeadCycle(functionState, thenBuilder, refMT, sourceWrapperPtrLE);
+        buildPrint(globalState, thenBuilder, "Tried to deallocate an object while borrowed!");
+        // See MPESC for status codes
+        auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 14, false);
+        LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
       },
       [this, from, functionState, refMT, ref](LLVMBuilderRef elseBuilder) {
         buildFlare(FL(), globalState, functionState, elseBuilder);
@@ -1103,28 +1076,26 @@ void ResilientV4::storeAndTether(
   auto innerRefLE = fatWeaks.getInnerRefFromWeakRef(functionState, builder, local->type, weakFatPtrLE);
   auto wrapperPtrLE = kindStructs.makeWrapperPtr(FL(), functionState, builder, local->type, innerRefLE);
 
-  auto halfProtectedWrapperPtrLE =
-      hgmWeaks.getHalfProtectedPtr(functionState, builder, local->type, wrapperStructPtrLT);
-
-  auto isAliveLE =
-      hgmWeaks.getIsAliveFromWeakFatPtr(functionState, builder, local->type, weakFatPtrLE, knownLive);
-  // If it's alive, refLE will point to the object. Dereferencing it is fine.
-  // If it's dead, refLE will point to a half protected object. Can change its tether, but not dereference its contents.
-  assert(wrapperPtrLE.refM == halfProtectedWrapperPtrLE.refM);
-  assert(LLVMTypeOf(wrapperPtrLE.refLE) == LLVMTypeOf(halfProtectedWrapperPtrLE.refLE));
+  hgmWeaks.lockGenFatPtr(FL(), functionState, builder, local->type, weakFatPtrLE, knownLive);
+//  auto isAliveLE =
+//      hgmWeaks.getIsAliveFromWeakFatPtr(functionState, builder, local->type, weakFatPtrLE, knownLive);
+//  // If it's alive, refLE will point to the object. Dereferencing it is fine.
+//  // If it's dead, refLE will point to a half protected object. Can change its tether, but not dereference its contents.
+//  assert(wrapperPtrLE.refM == halfProtectedWrapperPtrLE.refM);
+//  assert(LLVMTypeOf(wrapperPtrLE.refLE) == LLVMTypeOf(halfProtectedWrapperPtrLE.refLE));
   auto newWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, local->type,
-          LLVMBuildSelect(
-              builder, isAliveLE, wrapperPtrLE.refLE, halfProtectedWrapperPtrLE.refLE, "clearableRef"));
+          wrapperPtrLE.refLE);
+//          LLVMBuildSelect(
+//              builder, isAliveLE, wrapperPtrLE.refLE, halfProtectedWrapperPtrLE.refLE, "clearableRef"));
 
   std::unique_ptr<WeakFatPtrLE> newWeakFatPtrU;
   if (auto structRKind = dynamic_cast<StructKind*>(local->type->kind)) {
     newWeakFatPtrU =
-        std::unique_ptr<WeakFatPtrLE>{
-            new WeakFatPtrLE(
-                hgmWeaks.assembleStructWeakRef(
-                    functionState, builder, local->type, local->type, structRKind, newWrapperPtrLE))};
+        std::make_unique<WeakFatPtrLE>(
+            hgmWeaks.assembleStructWeakRef(
+                functionState, builder, local->type, local->type, structRKind, newWrapperPtrLE));
   } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(local->type->kind)) {
     newWeakFatPtrU =
         std::unique_ptr<WeakFatPtrLE>{
@@ -1149,7 +1120,7 @@ void ResilientV4::storeAndTether(
   auto tetherI32LE = LLVMBuildLoad(builder, tetherPtrLE, "tetherI32");
   auto wasTetheredLE = LLVMBuildTrunc(builder, tetherI32LE, LLVMInt1TypeInContext(globalState->context), "wasAlive");
 
-  buildFlare(FL(), globalState, functionState, builder, "Tethering! Is alive: ", LLVMBuildZExt(builder, isAliveLE, LLVMInt64TypeInContext(globalState->context), ""), " resuting ptr: ", ptrToIntLE(globalState, builder, newWrapperPtrLE.refLE), " halfprotptr: ", ptrToIntLE(globalState, builder, halfProtectedWrapperPtrLE.refLE));
+  buildFlare(FL(), globalState, functionState, builder, "Tethering!");
   LLVMBuildStore(builder, constI32LE(globalState, 1), tetherPtrLE);
 
   auto refMemberPtrLE = LLVMBuildStructGEP(builder, localAddr, 0, "refMemberPtr");

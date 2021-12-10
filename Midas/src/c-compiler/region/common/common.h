@@ -693,4 +693,7 @@ std::string generateMutableInterfaceHandleDefC(Package* currentPackage, const st
 
 std::string generateMutableConcreteHandleDefC(Package* currentPackage, const std::string& name);
 
+
+void fastPanic(GlobalState* globalState, AreaAndFileAndLine from, LLVMBuilderRef builder);
+
 #endif

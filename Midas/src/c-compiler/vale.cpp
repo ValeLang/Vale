@@ -115,9 +115,6 @@ void initInternalExterns(GlobalState* globalState) {
   auto voidPtrLT = LLVMPointerType(int8LT, 0);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
-  globalState->genMalloc = addExtern(globalState->mod, "__genMalloc", voidPtrLT, {int64LT});
-  globalState->genFree = addExtern(globalState->mod, "__genFree", LLVMVoidTypeInContext(globalState->context), {voidPtrLT});
-
   {
     globalState->wrcTableStructLT = LLVMStructCreateNamed(globalState->context, "__WRCTable");
     std::vector<LLVMTypeRef> memberTypesL;
@@ -680,15 +677,6 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
     assert(actualSize == 32);
   }
 
-
-  if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_V4) {
-    if (!globalState->opt->genHeap) {
-      std::cerr << "Warning: using resilient without generational heap, overriding generational heap to true!" << std::endl;
-      globalState->opt->genHeap = true;
-    }
-  }
-
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
       std::cout << "Region override: assist" << std::endl;
@@ -714,12 +702,18 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
     if (!globalState->opt->census) {
       std::cout << "Warning: not using census when in assist mode!" << std::endl;
     }
+    if (globalState->opt->fastCrash) {
+      std::cout << "Warning: using fastCrash when in assist mode!" << std::endl;
+    }
   } else {
     if (globalState->opt->flares) {
       std::cout << "Warning: using flares outside of assist mode, will slow things down!" << std::endl;
     }
     if (globalState->opt->census) {
       std::cout << "Warning: using census outside of assist mode, will slow things down!" << std::endl;
+    }
+    if (!globalState->opt->fastCrash) {
+      std::cout << "Warning: not using fashCrash, will slow things down!" << std::endl;
     }
   }
 

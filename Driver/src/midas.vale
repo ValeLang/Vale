@@ -24,11 +24,11 @@ Subprocess {
 
   command_line_args = List<str>();
   command_line_args!.add("--verify");
-  command_line_args!.add("--output-dir");
+  command_line_args!.add("--output_dir");
   command_line_args!.add(output_dir.str());
 
   if (not maybe_region_override.isEmpty()) {
-    command_line_args!.add("--region-override");
+    command_line_args!.add("--region_override");
     command_line_args!.add(maybe_region_override.get());
   }
   if (not maybe_cpu.isEmpty()) {
@@ -48,7 +48,7 @@ Subprocess {
     command_line_args!.add("--verify");
   }
   if (llvm_ir) {
-    command_line_args!.add("--llvm_ir");
+    command_line_args!.add("--llvmir");
   }
   if (print_mem_overhead) {
     command_line_args!.add("--print_mem_overhead");

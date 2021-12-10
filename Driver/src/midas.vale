@@ -48,7 +48,7 @@ Subprocess {
     command_line_args!.add("--verify");
   }
   if (llvm_ir) {
-    command_line_args!.add("--llvm_ir");
+    command_line_args!.add("--llvmir");
   }
   if (print_mem_overhead) {
     command_line_args!.add("--print_mem_overhead");

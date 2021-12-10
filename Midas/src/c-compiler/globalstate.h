@@ -65,7 +65,7 @@ public:
   LLVMTypeRef lgtTableStructLT, lgtEntryStructLT = nullptr; // contains generation and next free
   LLVMValueRef expandLgt = nullptr, checkLgti = nullptr, getNumLiveLgtEntries = nullptr;
 
-  LLVMValueRef genMalloc = nullptr, genFree = nullptr;
+//  LLVMValueRef genMalloc = nullptr, genFree = nullptr;
 
   LLVMTypeRef concreteHandleLT = nullptr; // 24 bytes, for SSA, RSA, and structs
   LLVMTypeRef interfaceHandleLT = nullptr; // 32 bytes, for interfaces. concreteHandleLT plus 8b itable ptr.

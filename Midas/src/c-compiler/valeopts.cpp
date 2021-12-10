@@ -43,6 +43,7 @@ enum
     OPT_IMMERR,
     OPT_VERIFY,
     OPT_FLARES,
+    OPT_FAST_CRASH,
     OPT_GEN_HEAP,
     OPT_ELIDE_CHECKS_FOR_KNOWN_LIVE,
     OPT_OVERRIDE_KNOWN_LIVE_TRUE,
@@ -68,13 +69,13 @@ static opt_arg_t args[] =
     { "define", 'D', OPT_ARG_REQUIRED, OPT_BUILDFLAG },
     { "strip", 's', OPT_ARG_NONE, OPT_STRIP },
     { "path", 'p', OPT_ARG_REQUIRED, OPT_PATHS },
-    { "output-dir", '\0', OPT_ARG_REQUIRED, OPT_OUTPUT_DIR },
+    { "output_dir", '\0', OPT_ARG_REQUIRED, OPT_OUTPUT_DIR },
     { "library", 'l', OPT_ARG_NONE, OPT_LIBRARY },
     { "runtimebc", '\0', OPT_ARG_NONE, OPT_RUNTIMEBC },
     { "pic", '\0', OPT_ARG_NONE, OPT_PIC },
     { "nopic", '\0', OPT_ARG_NONE, OPT_NOPIC },
     { "docs", 'g', OPT_ARG_NONE, OPT_DOCS },
-    { "docs-public", '\0', OPT_ARG_NONE, OPT_DOCS_PUBLIC },
+    { "docs_public", '\0', OPT_ARG_NONE, OPT_DOCS_PUBLIC },
 
     { "safe", '\0', OPT_ARG_OPTIONAL, OPT_SAFE },
     { "cpu", '\0', OPT_ARG_REQUIRED, OPT_CPU },
@@ -82,20 +83,21 @@ static opt_arg_t args[] =
     { "wasm", '\0', OPT_ARG_NONE, OPT_WASM },
     { "triple", '\0', OPT_ARG_REQUIRED, OPT_TRIPLE },
     { "stats", '\0', OPT_ARG_NONE, OPT_STATS },
-    { "link-arch", '\0', OPT_ARG_REQUIRED, OPT_LINK_ARCH },
+    { "link_arch", '\0', OPT_ARG_REQUIRED, OPT_LINK_ARCH },
     { "linker", '\0', OPT_ARG_REQUIRED, OPT_LINKER },
 
     { "verbose", 'V', OPT_ARG_REQUIRED, OPT_VERBOSE },
     { "flares", '\0', OPT_ARG_OPTIONAL, OPT_FLARES },
-    { "gen-heap", '\0', OPT_ARG_OPTIONAL, OPT_GEN_HEAP },
+    { "fast_crash", '\0', OPT_ARG_OPTIONAL, OPT_FLARES },
+    { "gen_heap", '\0', OPT_ARG_OPTIONAL, OPT_GEN_HEAP },
     { "elide_checks_for_known_live", '\0', OPT_ARG_OPTIONAL, OPT_ELIDE_CHECKS_FOR_KNOWN_LIVE },
     { "override_known_live_true", '\0', OPT_ARG_NONE, OPT_OVERRIDE_KNOWN_LIVE_TRUE },
-    { "print-mem-overhead", '\0', OPT_ARG_OPTIONAL, OPT_PRINT_MEM_OVERHEAD },
+    { "print_mem_overhead", '\0', OPT_ARG_OPTIONAL, OPT_PRINT_MEM_OVERHEAD },
     { "census", '\0', OPT_ARG_OPTIONAL, OPT_CENSUS },
-    { "region-override", '\0', OPT_ARG_REQUIRED, OPT_REGION_OVERRIDE },
+    { "region_override", '\0', OPT_ARG_REQUIRED, OPT_REGION_OVERRIDE },
     { "ir", '\0', OPT_ARG_NONE, OPT_IR },
     { "asm", '\0', OPT_ARG_NONE, OPT_ASM },
-    { "llvmir", '\0', OPT_ARG_NONE, OPT_LLVMIR },
+    { "llvm_ir", '\0', OPT_ARG_NONE, OPT_LLVMIR },
     { "trace", 't', OPT_ARG_NONE, OPT_TRACE },
     { "width", 'w', OPT_ARG_REQUIRED, OPT_WIDTH },
     { "immerr", '\0', OPT_ARG_NONE, OPT_IMMERR },
@@ -104,7 +106,7 @@ static opt_arg_t args[] =
     { "checktree", '\0', OPT_ARG_NONE, OPT_CHECKTREE },
     { "extfun", '\0', OPT_ARG_NONE, OPT_EXTFUN },
     { "simplebuiltin", '\0', OPT_ARG_NONE, OPT_SIMPLEBUILTIN },
-    { "lint-llvm", '\0', OPT_ARG_NONE, OPT_LINT_LLVM },
+    { "lint_llvm", '\0', OPT_ARG_NONE, OPT_LINT_LLVM },
 
     OPT_ARGS_FINISH
 };
@@ -126,7 +128,7 @@ static void usage()
         "  --path, -p      Add an additional search path.\n"
         "    =path         Used to find packages and libraries.\n"
         "  --o             Name the resulting executable.\n"
-        "  --output-dir    Write output to this directory.\n"
+        "  --output_dir    Write output to this directory.\n"
         "    =path         Defaults to the current directory.\n"
         "  --library, -l   Generate a C-API compatible static library.\n"
         "  --runtimebc     Compile with the LLVM bitcode file for the runtime.\n"
@@ -134,7 +136,7 @@ static void usage()
         "  --pic           Compile using position independent code.\n"
         "  --nopic         Don't compile using position independent code.\n"
         "  --docs, -g      Generate code documentation.\n"
-        "  --docs-public   Generate code documentation for public types only.\n"
+        "  --docs_public   Generate code documentation for public types only.\n"
         ,
         "Rarely needed options:\n"
         "  --safe          Allow only the listed packages to use C FFI.\n"
@@ -147,7 +149,7 @@ static void usage()
         "  --triple        Set the target triple.\n"
         "    =name         Defaults to the host triple.\n"
         "  --stats         Print some compiler stats.\n"
-        "  --link-arch     Set the linking architecture.\n"
+        "  --link_arch     Set the linking architecture.\n"
         "    =name         Default is the host architecture.\n"
         "  --linker        Set the linker command to use.\n"
         "    =name         Default is the compiler.\n"
@@ -161,7 +163,7 @@ static void usage()
         "    =4            Very low-level detail.\n"
         "  --ir            Output an IR tree for the whole program.\n"
         "  --asm           Output an assembly file.\n"
-        "  --llvmir        Output an LLVM IR file.\n"
+        "  --llvm_ir       Output an LLVM IR file.\n"
         "  --trace, -t     Enable parse trace.\n"
         "  --width, -w     Width to target when printing the IR.\n"
         "    =columns      Defaults to the terminal width.\n"
@@ -171,7 +173,7 @@ static void usage()
         "  --extfun        Set function default linkage to external.\n"
         "  --simplebuiltin Use a minimal builtin package.\n"
         "  --files         Print source file names as each is processed.\n"
-        "  --lint-llvm     Run the LLVM linting pass on generated IR.\n"
+        "  --lint_llvm     Run the LLVM linting pass on generated IR.\n"
         ,
         "" // "Runtime options for Vale programs (not for use with Vale compiler):\n"
     );
@@ -190,7 +192,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
     optInit(args, &s, argc, argv);
     opt->release = 1;
     opt->flares = false;
-    opt->genHeap = false;
+    opt->fastCrash = false;
     opt->elideChecksForKnownLive = false;
     opt->overrideKnownLiveTrue = false;
     opt->census = false;
@@ -233,13 +235,13 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
           break;
         }
 
-          case OPT_GEN_HEAP: {
+          case OPT_FAST_CRASH: {
             if (!s.arg_val) {
-              opt->genHeap = true;
+              opt->fastCrash = true;
             } else if (s.arg_val == std::string("on")) {
-              opt->genHeap = true;
+              opt->fastCrash = true;
             } else if (s.arg_val == std::string("off")) {
-              opt->genHeap = false;
+              opt->fastCrash = false;
             } else assert(false);
             break;
           }

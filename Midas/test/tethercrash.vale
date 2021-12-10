@@ -1,11 +1,16 @@
+import stdlib.*;
 
 struct Spaceship {
   fuel int;
 }
 fn main() int export {
-  s = Spaceship(42);
+  print("Starting...\n");
+  s = Spaceship(73);
   b = &s;
+  print("Dropping...\n");
   drop(s);
+  print("Getting tether...\n");
   s__tether = b;
+  print("Should have failed before here!\n");
   = s__tether.fuel;
 }

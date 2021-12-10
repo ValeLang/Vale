@@ -223,8 +223,7 @@ fn main() int export {
 
   if (include_regions.exists({ _ == "resilient-v4" })) {
     region = "resilient-v4";
-    suite!.StartTest(0, "tether", midas_tests_dir./("tether.vale"), &List<str>(), region);
-    suite!.StartTest(11, "tethercrash", midas_tests_dir./("tethercrash.vale"), &List<str>(), region);
+    suite!.StartTest(14, "tethercrash", midas_tests_dir./("tethercrash.vale"), &List<str>(), region);
   }
 
   include_regions.each((region){
@@ -294,7 +293,7 @@ fn main() int export {
   });
 
   if (include_regions.exists({ _ == "resilient-v3" }) or include_regions.exists({ _ == "resilient-v4" })) {
-    suite!.StartCTest("twinpages", &midas_tests_dir./("twinpages/test.c"), List([]["noattemptbadwrite"]), "resilient-v3");
+    // suite!.StartCTest("twinpages", &midas_tests_dir./("twinpages/test.c"), List([]["noattemptbadwrite"]), "resilient-v3");
   }
 
   suite!.FinishTests(0);
@@ -326,7 +325,9 @@ fn StartCTest(suite &!TestSuite, test_name str, input_c &Path, flags List<str>, 
                 "-o",
                 test_build_dir./("main").str()
             ]))).expect();
-    // println(process.command);
+    if (suite.verbose) {
+      println("Running command: " + process.command);
+    }
     suite.test_instances!.add(
         TestInstance(test_name, region, 0, test_build_dir, process, flags));
   } else {
@@ -345,10 +346,14 @@ fn FinishTests(suite &!TestSuite, until_this_many_left int) {
       if (build_result.stdout.len() > 0) {
         println("stdout:");
         println(build_result.stdout);
+      } else {
+        println("(no stdout)");
       }
       if (build_result.stderr.len() > 0) {
         println("stderr:");
         println(build_result.stderr);
+      } else {
+        println("(no stderr)");
       }
       set suite.num_failures = suite.num_failures + 1;
     } else {
@@ -356,16 +361,23 @@ fn FinishTests(suite &!TestSuite, until_this_many_left int) {
       run_program = test_build_dir./(program_name).str();
 
       run_process = (Subprocess(run_program, &run_args)).expect();
+      if (suite.verbose) {
+        println("Running command: " + run_process.command);
+      }
       run_result = (run_process).capture_and_join();
       if (run_result.return_code != expected_return_code) {
         println("Invalid result for test {test_name} (region {region}). Expected {expected_return_code} but got {run_result.return_code}.");
         if (run_result.stdout.len() > 0) {
           println("stdout:");
           println(run_result.stdout);
+        } else {
+          println("(no stdout)");
         }
         if (run_result.stderr.len() > 0) {
           println("stderr:");
           println(run_result.stderr);
+        } else {
+          println("(no stderr)");
         }
         set suite.num_failures = suite.num_failures + 1;
       } else {
@@ -403,7 +415,9 @@ Subprocess {
   }
 
   build_process = (Subprocess(suite.valec_path, &build_args)).expect();
-  //println("Build command: " + build_process.command);
+  if (suite.verbose) {
+    println("Build command: " + build_process.command);
+  }
   ret build_process;
 }
 

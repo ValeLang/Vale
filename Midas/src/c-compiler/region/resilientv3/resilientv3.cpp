@@ -47,11 +47,11 @@ ResilientV3::ResilientV3(GlobalState *globalState_, RegionId *regionId_) :
 }
 
 void ResilientV3::mainSetup(FunctionState* functionState, LLVMBuilderRef builder) {
-  hgmWeaks.mainSetup(functionState, builder);
+//  hgmWeaks.mainSetup(functionState, builder);
 }
 
 void ResilientV3::mainCleanup(FunctionState* functionState, LLVMBuilderRef builder) {
-  hgmWeaks.mainCleanup(functionState, builder);
+//  hgmWeaks.mainCleanup(functionState, builder);
 }
 
 RegionId *ResilientV3::getRegionId() {

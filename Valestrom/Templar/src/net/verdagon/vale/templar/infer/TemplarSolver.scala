@@ -74,7 +74,7 @@ trait IInfererDelegate[Env, State] {
 
   def getStaticSizedArrayKind(env: Env, state: State, mutability: MutabilityT, variability: VariabilityT, size: Int, element: CoordT): (StaticSizedArrayTT)
 
-  def getRuntimeSizedArrayKind(env: Env, state: State, type2: CoordT, arrayMutability: MutabilityT, arrayVariability: VariabilityT): RuntimeSizedArrayTT
+  def getRuntimeSizedArrayKind(env: Env, state: State, type2: CoordT, arrayMutability: MutabilityT): RuntimeSizedArrayTT
 
   def getAncestors(temputs: State, descendant: KindT, includeSelf: Boolean):
   (Set[KindT])
@@ -491,14 +491,14 @@ class TemplarSolver[Env, State](
           }
           case Some(result) => {
             result match {
-              case KindTemplata(StaticSizedArrayTT(size, RawArrayTT(elementType, mutability, variability))) => {
+              case KindTemplata(StaticSizedArrayTT(size, mutability, variability, elementType)) => {
                 stepState.concludeRune[ITemplarSolverError](elementRune.rune, CoordTemplata(elementType))
                 stepState.concludeRune[ITemplarSolverError](sizeRune.rune, IntegerTemplata(size))
                 stepState.concludeRune[ITemplarSolverError](mutabilityRune.rune, MutabilityTemplata(mutability))
                 stepState.concludeRune[ITemplarSolverError](variabilityRune.rune, VariabilityTemplata(variability))
                 Ok(())
               }
-              case CoordTemplata(CoordT(OwnT | ShareT, _, StaticSizedArrayTT(size, RawArrayTT(elementType, mutability, variability)))) => {
+              case CoordTemplata(CoordT(OwnT | ShareT, _, StaticSizedArrayTT(size, mutability, variability, elementType))) => {
                 stepState.concludeRune[ITemplarSolverError](elementRune.rune, CoordTemplata(elementType))
                 stepState.concludeRune[ITemplarSolverError](sizeRune.rune, IntegerTemplata(size))
                 stepState.concludeRune[ITemplarSolverError](mutabilityRune.rune, MutabilityTemplata(mutability))
@@ -526,17 +526,15 @@ class TemplarSolver[Env, State](
             template match {
               case RuntimeSizedArrayTemplateTemplata() => {
                 result match {
-                  case CoordTemplata(CoordT(ShareT | OwnT, _, RuntimeSizedArrayTT(RawArrayTT(memberType, mutability, variability)))) => {
-                    val Array(mutabilityRune, variabilityRune, elementRune) = argRunes
+                  case CoordTemplata(CoordT(ShareT | OwnT, _, RuntimeSizedArrayTT(mutability, memberType))) => {
+                    val Array(mutabilityRune, elementRune) = argRunes
                     stepState.concludeRune[ITemplarSolverError](mutabilityRune.rune, MutabilityTemplata(mutability))
-                    stepState.concludeRune[ITemplarSolverError](variabilityRune.rune, VariabilityTemplata(variability))
                     stepState.concludeRune[ITemplarSolverError](elementRune.rune, CoordTemplata(memberType))
                     Ok(())
                   }
-                  case KindTemplata(RuntimeSizedArrayTT(RawArrayTT(memberType, mutability, variability))) => {
-                    val Array(mutabilityRune, variabilityRune, elementRune) = argRunes
+                  case KindTemplata(RuntimeSizedArrayTT(mutability, memberType)) => {
+                    val Array(mutabilityRune, elementRune) = argRunes
                     stepState.concludeRune[ITemplarSolverError](mutabilityRune.rune, MutabilityTemplata(mutability))
-                    stepState.concludeRune[ITemplarSolverError](variabilityRune.rune, VariabilityTemplata(variability))
                     stepState.concludeRune[ITemplarSolverError](elementRune.rune, CoordTemplata(memberType))
                     Ok(())
                   }
@@ -613,8 +611,8 @@ class TemplarSolver[Env, State](
             template match {
               case RuntimeSizedArrayTemplateTemplata() => {
                 val args = argRunes.map(argRune => vassertSome(stepState.getConclusion(argRune.rune)))
-                val Array(MutabilityTemplata(mutability), VariabilityTemplata(variability), CoordTemplata(coord)) = args
-                val rsaKind = delegate.getRuntimeSizedArrayKind(env, state, coord, mutability, variability)
+                val Array(MutabilityTemplata(mutability), CoordTemplata(coord)) = args
+                val rsaKind = delegate.getRuntimeSizedArrayKind(env, state, coord, mutability)
                 stepState.concludeRune[ITemplarSolverError](resultRune.rune, KindTemplata(rsaKind))
                 Ok(())
               }

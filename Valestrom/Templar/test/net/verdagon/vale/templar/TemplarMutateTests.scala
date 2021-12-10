@@ -156,24 +156,21 @@ class TemplarMutateTests extends FunSuite with Matchers {
     }
   }
 
-  test("Reports when we try to mutate an element in a runtime-sized array of finals") {
+  test("Can mutate an element in a runtime-sized array") {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |import ifunction.ifunction1.*;
+        |import v.builtins.arrays.*;
         |fn main() int export {
-        |  arr = [*](10, {_});
-        |  set arr[4] = 10;
+        |  arr = Array<mut, int>(3);
+        |  arr!.push(0);
+        |  arr!.push(1);
+        |  arr!.push(2);
+        |  set arr[1] = 10;
         |  ret 73;
         |}
         |""".stripMargin)
-    compile.getTemputs() match {
-      case Err(CantMutateFinalElement(_, arrRef2)) => {
-        arrRef2.last match {
-          case RuntimeSizedArrayNameT(RawArrayNameT(MutableT,_)) =>
-        }
-      }
-    }
+    compile.expectTemputs()
   }
 
   test("Reports when we try to mutate an element in a static-sized array of finals") {

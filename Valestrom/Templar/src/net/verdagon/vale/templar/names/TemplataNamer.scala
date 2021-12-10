@@ -71,8 +71,8 @@ object TemplataNamer {
       case VoidT() => "void" // "∅"
 //      case TupleTT(_, _) => "tup"
       case NeverT() => "never"
-      case RuntimeSizedArrayTT(array) => "𝔸" + getReferenceIdentifierName(array.elementType)
-      case StaticSizedArrayTT(size, arrayT2) => "𝔸" + size + getReferenceIdentifierName(arrayT2.elementType)
+      case RuntimeSizedArrayTT(_, elementType) => "𝔸" + getReferenceIdentifierName(elementType)
+      case StaticSizedArrayTT(size, mutability, variability, elementType) => "𝔸" + size + getReferenceIdentifierName(elementType)
 //      case PackTT(_, underlyingStruct) => {
 //        getKindIdentifierName(underlyingStruct)
 //      }

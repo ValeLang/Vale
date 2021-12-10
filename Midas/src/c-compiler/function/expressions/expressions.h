@@ -98,12 +98,19 @@ Ref translateStaticArrayFromCallable(
     LLVMBuilderRef builder,
     StaticArrayFromCallable* staticArrayFromCallable);
 
-Ref translateConstructRuntimeSizedArray(
+Ref translateNewImmRuntimeSizedArray(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    ConstructRuntimeSizedArray* constructRuntimeSizedArray);
+    NewImmRuntimeSizedArray* constructRuntimeSizedArray);
+
+Ref translateNewMutRuntimeSizedArray(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    BlockState* blockState,
+    LLVMBuilderRef builder,
+    NewMutRuntimeSizedArray* constructRuntimeSizedArray);
 
 Ref translateConstantStr(
     AreaAndFileAndLine from,

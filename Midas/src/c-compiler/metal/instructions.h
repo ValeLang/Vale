@@ -529,7 +529,28 @@ public:
 };
 
 
-class ConstructRuntimeSizedArray : public Expression {
+class NewMutRuntimeSizedArray : public Expression {
+public:
+  Expression* sizeExpr;
+  Reference* sizeType;
+  Kind* sizeKind;
+  Reference* arrayRefType;
+  Reference* elementType;
+
+  NewMutRuntimeSizedArray(
+      Expression* sizeExpr_,
+      Reference* sizeType_,
+      Kind* sizeKind_,
+      Reference* arrayRefType_,
+      Reference* elementType_) :
+      sizeExpr(sizeExpr_),
+      sizeType(sizeType_),
+      sizeKind(sizeKind_),
+      arrayRefType(arrayRefType_),
+      elementType(elementType_) {}
+};
+
+class NewImmRuntimeSizedArray : public Expression {
 public:
   Expression* sizeExpr;
   Reference* sizeType;
@@ -542,7 +563,7 @@ public:
   Reference* arrayRefType;
   Reference* elementType;
 
-  ConstructRuntimeSizedArray(
+  NewImmRuntimeSizedArray(
       Expression* sizeExpr_,
       Reference* sizeType_,
       Kind* sizeKind_,
@@ -631,7 +652,7 @@ public:
   Expression* consumerExpr;
 };
 
-class DestroyRuntimeSizedArray : public Expression {
+class DestroyImmRuntimeSizedArray : public Expression {
 public:
   Expression* arrayExpr;
   Reference* arrayType;
@@ -642,7 +663,7 @@ public:
   Prototype* consumerMethod;
   bool consumerKnownLive;
 
-  DestroyRuntimeSizedArray(
+  DestroyImmRuntimeSizedArray(
       Expression* arrayExpr_,
       Reference* arrayType_,
       RuntimeSizedArrayT* arrayKind_,
@@ -651,14 +672,29 @@ public:
       Kind* consumerKind_,
       Prototype* consumerMethod_,
       bool consumerKnownLive_) :
+      arrayExpr(arrayExpr_),
+      arrayType(arrayType_),
+      arrayKind(arrayKind_),
+      consumerExpr(consumerExpr_),
+      consumerType(consumerType_),
+      consumerKind(consumerKind_),
+      consumerMethod(consumerMethod_),
+      consumerKnownLive(consumerKnownLive_) {}
+};
+
+class DestroyMutRuntimeSizedArray : public Expression {
+public:
+  Expression* arrayExpr;
+  Reference* arrayType;
+  RuntimeSizedArrayT* arrayKind;
+
+  DestroyMutRuntimeSizedArray(
+      Expression* arrayExpr_,
+      Reference* arrayType_,
+      RuntimeSizedArrayT* arrayKind_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
-    arrayKind(arrayKind_),
-    consumerExpr(consumerExpr_),
-    consumerType(consumerType_),
-    consumerKind(consumerKind_),
-    consumerMethod(consumerMethod_),
-    consumerKnownLive(consumerKnownLive_) {}
+    arrayKind(arrayKind_) {}
 };
 
 class NewStruct : public Expression {
@@ -686,6 +722,60 @@ public:
       sourceExpr(sourceExpr_),
       sourceType(sourceType_),
       sourceKnownLive(sourceKnownLive_) {}
+};
+
+class ArrayCapacity : public Expression {
+public:
+  Expression* sourceExpr;
+  Reference* sourceType;
+  bool sourceKnownLive;
+
+  ArrayCapacity(
+      Expression* sourceExpr_,
+      Reference* sourceType_,
+      bool sourceKnownLive_) :
+      sourceExpr(sourceExpr_),
+      sourceType(sourceType_),
+      sourceKnownLive(sourceKnownLive_) {}
+};
+
+class PushRuntimeSizedArray : public Expression {
+public:
+  Expression* arrayExpr;
+  Reference* arrayType;
+  bool arrayKnownLive;
+  Expression* newcomerExpr;
+  Reference* newcomerType;
+  bool newcomerKnownLive;
+
+  PushRuntimeSizedArray(
+      Expression* arrayExpr_,
+      Reference* arrayType_,
+      bool arrayKnownLive_,
+      Expression* newcomerExpr_,
+      Reference* newcomerType_,
+      bool newcomerKnownLive_) :
+      arrayExpr(arrayExpr_),
+      arrayType(arrayType_),
+      arrayKnownLive(arrayKnownLive_),
+      newcomerExpr(newcomerExpr_),
+      newcomerType(newcomerType_),
+      newcomerKnownLive(newcomerKnownLive_){}
+};
+
+class PopRuntimeSizedArray : public Expression {
+public:
+  Expression* arrayExpr;
+  Reference* arrayType;
+  bool arrayKnownLive;
+
+  PopRuntimeSizedArray(
+      Expression* arrayExpr_,
+      Reference* arrayType_,
+      bool arrayKnownLive_) :
+      arrayExpr(arrayExpr_),
+      arrayType(arrayType_),
+      arrayKnownLive(arrayKnownLive_) {}
 };
 
 

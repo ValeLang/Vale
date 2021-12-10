@@ -82,10 +82,10 @@ case class HamutsBox(var inner: Hamuts) {
     id
   }
 
-  def getStaticSizedArray(staticSizedArrayTH: StaticSizedArrayTH): StaticSizedArrayDefinitionTH = {
+  def getStaticSizedArray(staticSizedArrayTH: StaticSizedArrayHT): StaticSizedArrayDefinitionTH = {
     inner.getStaticSizedArray(staticSizedArrayTH)
   }
-  def getRuntimeSizedArray(runtimeSizedArrayTH: RuntimeSizedArrayTH): RuntimeSizedArrayDefinitionTH = {
+  def getRuntimeSizedArray(runtimeSizedArrayTH: RuntimeSizedArrayHT): RuntimeSizedArrayDefinitionTH = {
     inner.getRuntimeSizedArray(runtimeSizedArrayTH)
   }
 }
@@ -449,10 +449,10 @@ case class Hamuts(
     (newHamuts, id)
   }
 
-  def getStaticSizedArray(staticSizedArrayTH: StaticSizedArrayTH): StaticSizedArrayDefinitionTH = {
+  def getStaticSizedArray(staticSizedArrayTH: StaticSizedArrayHT): StaticSizedArrayDefinitionTH = {
     staticSizedArrays.find(_.name == staticSizedArrayTH.name).get
   }
-  def getRuntimeSizedArray(runtimeSizedArrayTH: RuntimeSizedArrayTH): RuntimeSizedArrayDefinitionTH = {
+  def getRuntimeSizedArray(runtimeSizedArrayTH: RuntimeSizedArrayHT): RuntimeSizedArrayDefinitionTH = {
     runtimeSizedArrays.find(_.name == runtimeSizedArrayTH.name).get
   }
 

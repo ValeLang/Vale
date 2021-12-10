@@ -1,10 +1,9 @@
-// immutable runtime-size-array
+// mutable runtime-size-array
 
 struct MyIntIdentity {}
-impl IFunction1<mut, int, int> for MyIntIdentity;
-fn __call(this &!MyIntIdentity impl IFunction1<mut, int, int>, i int) int { i }
+fn __call(this &!MyIntIdentity, i int) int { i }
 
 fn main() int export {
-  a = [*](5, &!MyIntIdentity());
+  a = Array<mut, int>(5, &!MyIntIdentity());
   = a[3];
 }

@@ -448,6 +448,7 @@ object ParserVonifier {
       case BoolTypePR => VonObject("BoolTypePR", None, Vector())
       case OwnershipTypePR => VonObject("OwnershipTypePR", None, Vector())
       case MutabilityTypePR => VonObject("MutabilityTypePR", None, Vector())
+      case VariabilityTypePR => VonObject("VariabilityTypePR", None, Vector())
       case PermissionTypePR => VonObject("PermissionTypePR", None, Vector())
       case LocationTypePR => VonObject("LocationTypePR", None, Vector())
       case CoordTypePR => VonObject("CoordTypePR", None, Vector())

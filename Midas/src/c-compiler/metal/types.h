@@ -183,24 +183,6 @@ public:
   PackageCoordinate* getPackageCoordinate() const override { return fullName->packageCoord; }
 };
 
-// Interned
-class RawArrayT {
-public:
-  RegionId* regionId;
-  Mutability mutability;
-  Variability variability;
-  Reference *elementType;
-
-  RawArrayT(
-      RegionId* regionId_,
-      Mutability mutability_,
-      Variability variability_,
-      Reference* elementType_) :
-      regionId(regionId_),
-      mutability(mutability_),
-      variability(variability_),
-      elementType(elementType_) {}
-};
 
 // Interned
 class StaticSizedArrayT : public Kind {
@@ -219,17 +201,26 @@ public:
   Name* name;
   StaticSizedArrayT* kind;
   int size;
-  RawArrayT* rawArray;
+  RegionId* regionId;
+  Mutability mutability;
+  Variability variability;
+  Reference *elementType;
 
   StaticSizedArrayDefinitionT(
       Name* name_,
       StaticSizedArrayT* kind_,
       int size_,
-      RawArrayT* rawArray_) :
+      RegionId* regionId_,
+      Mutability mutability_,
+      Variability variability_,
+      Reference* elementType_) :
       name(name_),
       kind(kind_),
       size(size_),
-      rawArray(rawArray_) {}
+      regionId(regionId_),
+      mutability(mutability_),
+      variability(variability_),
+      elementType(elementType_) {}
 
 };
 
@@ -251,16 +242,21 @@ class RuntimeSizedArrayDefinitionT {
 public:
   Name* name;
   RuntimeSizedArrayT* kind;
-  RawArrayT* rawArray;
+  RegionId* regionId;
+  Mutability mutability;
+  Reference *elementType;
 
   RuntimeSizedArrayDefinitionT(
       Name* name_,
       RuntimeSizedArrayT* kind_,
-      RawArrayT* rawArray_) :
+      RegionId* regionId_,
+      Mutability mutability_,
+      Reference* elementType_) :
       name(name_),
       kind(kind_),
-      rawArray(rawArray_) {}
-
+      regionId(regionId_),
+      mutability(mutability_),
+      elementType(elementType_) {}
 };
 
 

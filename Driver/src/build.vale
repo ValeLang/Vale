@@ -96,6 +96,12 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
           "false",
           "Whether to output VPST, the code's parsed representation"),
         Flag(
+          "--llvm_ir",
+          FLAG_BOOL(),
+          "Whether to output LLVM IR.",
+          "false",
+          "Whether to output LLVM IR."),
+        Flag(
           "--reuse_vast",
           FLAG_BOOL(),
           "Whether to reuse existing VAST",

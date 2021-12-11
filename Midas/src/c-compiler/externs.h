@@ -16,7 +16,7 @@ public:
   LLVMValueRef strncpy = nullptr;
   LLVMValueRef memcpy = nullptr;
 
-  LLVMValueRef initTwinPages = nullptr;
+//  LLVMValueRef initTwinPages = nullptr;
   LLVMValueRef censusContains = nullptr;
   LLVMValueRef censusAdd = nullptr;
   LLVMValueRef censusRemove = nullptr;

@@ -276,23 +276,13 @@ void callFree(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef ptrLE) {
-  if (globalState->opt->genHeap) {
-    auto concreteAsVoidPtrLE =
-        LLVMBuildBitCast(
-            builder,
-            ptrLE,
-            LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
-            "concreteVoidPtrForFree");
-    LLVMBuildCall(builder, globalState->genFree, &concreteAsVoidPtrLE, 1, "");
-  } else {
-    auto concreteAsCharPtrLE =
-        LLVMBuildBitCast(
-            builder,
-            ptrLE,
-            LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
-            "concreteCharPtrForFree");
-    LLVMBuildCall(builder, globalState->externs->free, &concreteAsCharPtrLE, 1, "");
-  }
+  auto concreteAsCharPtrLE =
+      LLVMBuildBitCast(
+          builder,
+          ptrLE,
+          LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
+          "concreteCharPtrForFree");
+  LLVMBuildCall(builder, globalState->externs->free, &concreteAsCharPtrLE, 1, "");
 }
 
 void innerDeallocateYonder(
@@ -446,11 +436,7 @@ LLVMValueRef callMalloc(
     LLVMBuilderRef builder,
     LLVMValueRef sizeLE) {
   assert(LLVMTypeOf(sizeLE) == LLVMInt64TypeInContext(globalState->context));
-  if (globalState->opt->genHeap) {
-    return LLVMBuildCall(builder, globalState->genMalloc, &sizeLE, 1, "");
-  } else {
-    return LLVMBuildCall(builder, globalState->externs->malloc, &sizeLE, 1, "");
-  }
+  return LLVMBuildCall(builder, globalState->externs->malloc, &sizeLE, 1, "");
 }
 
 WrapperPtrLE mallocStr(
@@ -2240,5 +2226,21 @@ std::string generateMutableConcreteHandleDefC(Package* currentPackage, const std
 
 std::string generateMutableInterfaceHandleDefC(Package* currentPackage, const std::string& name) {
   return std::string() + "typedef struct " + name + "Ref { uint64_t unused0; uint64_t unused1; uint64_t unused2; uint32_t unused3; uint32_t unused4; } " + name + "Ref;\n";
+}
+
+
+void fastPanic(GlobalState* globalState, AreaAndFileAndLine from, LLVMBuilderRef builder) {
+  if (globalState->opt->fastCrash) {
+    auto ptrToWriteToLE = LLVMBuildLoad(builder, globalState->crashGlobal,
+        "crashGlobal");
+    LLVMBuildStore(builder, constI64LE(globalState, 0), ptrToWriteToLE);
+  } else {
+    buildPrintAreaAndFileAndLine(globalState, builder, from);
+    buildPrint(globalState, builder, "Tried dereferencing dangling reference! ");
+    buildPrint(globalState, builder, "Exiting!\n");
+    // See MPESC for status codes
+    auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 14, false);
+    LLVMBuildCall(builder, globalState->externs->exit, &exitCodeIntLE, 1, "");
+  }
 }
 

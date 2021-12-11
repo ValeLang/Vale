@@ -108,19 +108,19 @@ class TemplataTemplar(
     val ownershipDistance =
       (sourceOwnership, targetOwnership) match {
         case (OwnT, OwnT) => 0
-        case (OwnT, ConstraintT) => 1
+        case (OwnT, PointerT) => 1
         case (OwnT, WeakT) => 1
         case (OwnT, ShareT) => return None
-        case (ConstraintT, OwnT) => return (None)
-        case (ConstraintT, ConstraintT) => 0
-        case (ConstraintT, WeakT) => 1
-        case (ConstraintT, ShareT) => return None
+        case (PointerT, OwnT) => return (None)
+        case (PointerT, PointerT) => 0
+        case (PointerT, WeakT) => 1
+        case (PointerT, ShareT) => return None
         case (WeakT, OwnT) => return None
-        case (WeakT, ConstraintT) => return None
+        case (WeakT, PointerT) => return None
         case (WeakT, WeakT) => 0
         case (WeakT, ShareT) => return None
         case (ShareT, ShareT) => 0
-        case (ShareT, ConstraintT) => return None
+        case (ShareT, PointerT) => return None
         case (ShareT, WeakT) => return None
         case (ShareT, OwnT) => return None
       }

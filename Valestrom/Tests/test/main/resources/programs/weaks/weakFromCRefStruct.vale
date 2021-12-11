@@ -3,7 +3,7 @@ struct Muta weakable { hp int; }
 fn main() int export {
   ownMuta = Muta(7);
   print(str(ownMuta.hp));
-  weakMuta = &&(*ownMuta);
+  weakMuta = **(*ownMuta);
   maybeBorrowMuta = lock(weakMuta);
   = maybeBorrowMuta.get().hp;
 }

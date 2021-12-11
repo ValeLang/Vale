@@ -89,8 +89,8 @@ class FunctionTemplar(
           // See "Captured own is borrow" test for why we do this
           val tyype =
             reference.ownership match {
-              case OwnT => ReferenceMemberTypeT(CoordT(ConstraintT, reference.permission, reference.kind))
-              case ConstraintT | ShareT => ReferenceMemberTypeT(reference)
+              case OwnT => ReferenceMemberTypeT(CoordT(PointerT, reference.permission, reference.kind))
+              case PointerT | ShareT => ReferenceMemberTypeT(reference)
             }
           (variability, tyype)
         }
@@ -101,8 +101,8 @@ class FunctionTemplar(
           // See "Captured own is borrow" test for why we do this
           val tyype =
             reference.ownership match {
-              case OwnT => ReferenceMemberTypeT(CoordT(ConstraintT, reference.permission, reference.kind))
-              case ConstraintT | ShareT => ReferenceMemberTypeT(reference)
+              case OwnT => ReferenceMemberTypeT(CoordT(PointerT, reference.permission, reference.kind))
+              case PointerT | ShareT => ReferenceMemberTypeT(reference)
             }
           (variability, tyype)
         }

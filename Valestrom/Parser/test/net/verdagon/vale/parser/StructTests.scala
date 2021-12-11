@@ -36,7 +36,7 @@ class StructTests extends FunSuite with Matchers with Collector {
 
   test("Simple struct") {
     compile(CombinatorParsers.struct, "struct Moo { x *int; }") shouldHave {
-      case StructP(_, NameP(_, "Moo"), Vector(), MutabilityPT(_, MutableP), None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,ConstraintP,ReadonlyP,NameOrRunePT(NameP(_, "int"))))))) =>
+      case StructP(_, NameP(_, "Moo"), Vector(), MutabilityPT(_, MutableP), None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,PointerP,ReadonlyP,NameOrRunePT(NameP(_, "int"))))))) =>
     }
   }
 
@@ -68,7 +68,7 @@ class StructTests extends FunSuite with Matchers with Collector {
 
   test("Export struct") {
     compile(CombinatorParsers.struct, "struct Moo export { x *int; }") shouldHave {
-      case StructP(_, NameP(_, "Moo"), Vector(ExportP(_)), MutabilityPT(_, MutableP), None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,ConstraintP,ReadonlyP,NameOrRunePT(NameP(_, "int"))))))) =>
+      case StructP(_, NameP(_, "Moo"), Vector(ExportP(_)), MutabilityPT(_, MutableP), None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,PointerP,ReadonlyP,NameOrRunePT(NameP(_, "int"))))))) =>
     }
   }
 

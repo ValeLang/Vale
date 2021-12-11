@@ -71,16 +71,16 @@ class ConvertHelper(
 
     (sourceOwnership, targetOwnership) match {
       case (OwnT, OwnT) =>
-      case (ConstraintT, OwnT) => {
+      case (PointerT, OwnT) => {
         throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied a borrow but target wants to own the argument"))
       }
-      case (OwnT, ConstraintT) => {
+      case (OwnT, PointerT) => {
         throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied an owning but target wants to only borrow"))
       }
-      case (ConstraintT, ConstraintT) =>
+      case (PointerT, PointerT) =>
       case (ShareT, ShareT) =>
       case (OwnT, ShareT) => vwat();
-      case (ConstraintT, ShareT) => vwat();
+      case (PointerT, ShareT) => vwat();
       case (WeakT, WeakT) =>
     }
 

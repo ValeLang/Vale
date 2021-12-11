@@ -56,7 +56,7 @@ class CaptureAndTypeTests extends FunSuite with Matchers with Collector {
     compile("arr *R") shouldHave {
       case PatternPP(_,_,
       Some(CaptureP(_,LocalNameP(NameP(_, "arr")))),
-      Some(InterpretedPT(_,ConstraintP,ReadonlyP, NameOrRunePT(NameP(_, "R")))),
+      Some(InterpretedPT(_,PointerP,ReadonlyP, NameOrRunePT(NameP(_, "R")))),
       None,
       None) =>
     }

@@ -45,7 +45,7 @@ object Conversions {
   def evaluateOwnership(ownership: t.OwnershipT): OwnershipH = {
     ownership match {
       case t.OwnT => OwnH
-      case t.ConstraintT => BorrowH
+      case t.PointerT => BorrowH
       case t.ShareT => ShareH
       case t.WeakT => WeakH
     }

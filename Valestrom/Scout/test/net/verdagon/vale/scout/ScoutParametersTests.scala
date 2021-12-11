@@ -57,7 +57,7 @@ class ScoutParametersTests extends FunSuite with Matchers with Collector {
 
     val tCoordRuneFromRules =
       main.rules shouldHave {
-        case AugmentSR(_, tcr, Vector(OwnershipLiteralSL(ConstraintP),PermissionLiteralSL(ReadonlyP)), RuneUsage(_, CodeRuneS("T"))) => tcr
+        case AugmentSR(_, tcr, Vector(OwnershipLiteralSL(PointerP),PermissionLiteralSL(ReadonlyP)), RuneUsage(_, CodeRuneS("T"))) => tcr
       }
 
     tCoordRuneFromParams shouldEqual tCoordRuneFromRules.rune

@@ -633,7 +633,7 @@ object ParsedLoader {
   def loadOwnership(jobj: JObject): OwnershipP = {
     getType(jobj) match {
       case "Own" => OwnP
-      case "Constraint" => ConstraintP
+      case "Pointer" => PointerP
       case "Weak" => WeakP
       case "Share" => ShareP
     }

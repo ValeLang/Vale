@@ -12,7 +12,7 @@ import net.verdagon.vale.templar.ast.{AbstractT, FunctionBannerT, FunctionCallee
 import net.verdagon.vale.templar.infer.{CallResultWasntExpectedType, ITemplarSolverError, KindDoesntImplementInterface, KindIsNotConcrete, KindIsNotInterface, LookupFailed, NoAncestorsSatisfyCall, OwnershipDidntMatch, PermissionDidntMatch, ReceivingDifferentOwnerships}
 import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, CitizenNameT, CitizenTemplateNameT, CodeVarNameT, FullNameT, FunctionNameT, INameT, IVarNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT, TemplataNamer}
 import net.verdagon.vale.templar.templata.{Conversions, CoordListTemplata, CoordTemplata, ITemplata, IntegerTemplata, InterfaceTemplata, KindTemplata, MutabilityTemplata, OwnershipTemplata, PermissionTemplata, PrototypeTemplata, RuntimeSizedArrayTemplateTemplata, StaticSizedArrayTemplateTemplata, StringTemplata, StructTemplata, VariabilityTemplata}
-import net.verdagon.vale.templar.types.{BoolT, ConstraintT, CoordT, FinalT, FloatT, ImmutableT, IntT, InterfaceTT, KindT, MutableT, OwnT, ParamFilter, ReadonlyT, ReadwriteT, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StrT, StructTT, VaryingT, VoidT, WeakT}
+import net.verdagon.vale.templar.types.{BoolT, PointerT, CoordT, FinalT, FloatT, ImmutableT, IntT, InterfaceTT, KindT, MutableT, OwnT, ParamFilter, ReadonlyT, ReadwriteT, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StrT, StructTT, VaryingT, VoidT, WeakT}
 import net.verdagon.vale.{CodeLocationS, FileCoordinate, FileCoordinateMap, RangeS, repeatStr, vimpl}
 
 object TemplarErrorHumanizer {
@@ -202,7 +202,7 @@ object TemplarErrorHumanizer {
     (ownership match {
       case ShareT => ""
       case OwnT => ""
-      case ConstraintT => "*"
+      case PointerT => "*"
       case WeakT => "**"
     }) +
     (permission match {
@@ -400,7 +400,7 @@ object TemplarErrorHumanizer {
       case OwnershipTemplata(ownership) => {
         ownership match {
           case OwnT => "own"
-          case ConstraintT => "constraint"
+          case PointerT => "ptr"
           case WeakT => "weak"
           case ShareT => "share"
         }
@@ -412,7 +412,7 @@ object TemplarErrorHumanizer {
         (ownership match {
           case OwnT => ""
           case ShareT => ""
-          case ConstraintT => {
+          case PointerT => {
             (permission match {
               case ReadonlyT => "*"
               case ReadwriteT => "*!"

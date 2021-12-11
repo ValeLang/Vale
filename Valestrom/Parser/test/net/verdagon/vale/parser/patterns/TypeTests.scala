@@ -89,7 +89,7 @@ class TypeTests extends FunSuite with Matchers with Collector {
         None,
         Some(
           InterpretedPT(_,
-            ConstraintP,
+            PointerP,
             ReadonlyP,
             RepeaterSequencePT(_,
               MutabilityPT(_,MutableP),

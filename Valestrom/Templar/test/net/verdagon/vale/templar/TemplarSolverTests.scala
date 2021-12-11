@@ -153,7 +153,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
     )
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").header.returnType match {
-      case CoordT(ConstraintT, ReadonlyT, StructTT(_)) =>
+      case CoordT(PointerT, ReadonlyT, StructTT(_)) =>
     }
   }
 
@@ -312,7 +312,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
   }
 
-  test("Constraint becomes share if kind is immutable") {
+  test("Pointer becomes share if kind is immutable") {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;

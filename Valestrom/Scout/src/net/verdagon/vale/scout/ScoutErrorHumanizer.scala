@@ -2,7 +2,7 @@ package net.verdagon.vale.scout
 
 import net.verdagon.vale.{FileCoordinateMap, vimpl}
 import net.verdagon.vale.SourceCodeUtils.{humanizePos, lineContaining, nextThingAndRestOfLine}
-import net.verdagon.vale.parser.{ConstraintP, ExclusiveReadwriteP, FinalP, ImmutableP, MutabilityP, MutableP, OwnP, OwnershipP, PermissionP, ReadonlyP, ReadwriteP, ShareP, VariabilityP, VaryingP, WeakP}
+import net.verdagon.vale.parser.{PointerP, ExclusiveReadwriteP, FinalP, ImmutableP, MutabilityP, MutableP, OwnP, OwnershipP, PermissionP, ReadonlyP, ReadwriteP, ShareP, VariabilityP, VaryingP, WeakP}
 import net.verdagon.vale.scout.rules.{AugmentSR, CallSR, CoerceToCoordSR, CoordComponentsSR, CoordIsaSR, CoordSendSR, EqualsSR, ILiteralSL, IRulexSR, IntLiteralSL, IsInterfaceSR, IsStructSR, KindComponentsSR, LiteralSR, LookupSR, MutabilityLiteralSL, OneOfSR, OwnershipLiteralSL, PackSR, PermissionLiteralSL, PrototypeComponentsSR, RefListCompoundMutabilitySR, RepeaterSequenceSR, RuneParentEnvLookupSR, StringLiteralSL, VariabilityLiteralSL}
 import net.verdagon.vale.solver.SolverErrorHumanizer
 
@@ -198,7 +198,7 @@ object ScoutErrorHumanizer {
     p match {
       case OwnP => "^"
       case ShareP => "@"
-      case ConstraintP => "*"
+      case PointerP => "*"
       case WeakP => "**"
     }
   }

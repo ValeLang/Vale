@@ -209,7 +209,7 @@ class TemplarTests extends FunSuite with Matchers {
       Collector.only(main.body, {
         case LetNormalTE(ReferenceLocalVariableT(FullNameT(_, _, CodeVarNameT("b")), _, tyype), _) => tyype
       })
-    tyype.ownership shouldEqual ConstraintT
+    tyype.ownership shouldEqual PointerT
     tyype.permission shouldEqual ReadonlyT
   }
 
@@ -719,7 +719,7 @@ class TemplarTests extends FunSuite with Matchers {
 
     Collector.only(main, {
       case ReferenceMemberLookupTE(_,
-        SoftLoadTE(LocalLookupTE(_, _, CoordT(_,_,StructTT(_)), FinalT), ConstraintT, ReadonlyT),
+        SoftLoadTE(LocalLookupTE(_, _, CoordT(_,_,StructTT(_)), FinalT), PointerT, ReadonlyT),
         FullNameT(_, Vector(CitizenNameT(CitizenTemplateNameT("Vec3i"),Vector())),CodeVarNameT("x")),CoordT(ShareT,ReadonlyT,IntT.i32),ReadonlyT,FinalT) =>
     })
   }

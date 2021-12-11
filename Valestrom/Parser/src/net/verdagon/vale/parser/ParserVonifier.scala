@@ -699,7 +699,7 @@ object ParserVonifier {
     thing match {
       case ShareP => VonObject("Share", None, Vector())
       case OwnP => VonObject("Own", None, Vector())
-      case ConstraintP => VonObject("Constraint", None, Vector())
+      case PointerP => VonObject("Pointer", None, Vector())
       case WeakP => VonObject("Weak", None, Vector())
     }
   }

@@ -15,7 +15,7 @@ object TemplataNamer {
     val ownershipString =
       ownership match {
         case ShareT => "@" //"*"
-        case ConstraintT => "*"
+        case PointerT => "*"
         case WeakT => "**"
         case OwnT => "" //"^"
       }

@@ -6,7 +6,7 @@ fn getHp(self *Muta impl IUnit) int { self.hp }
 
 fn main() int export {
   ownMuta = Muta(7);
-  weakUnit **IUnit = &&(*ownMuta);
+  weakUnit **IUnit = **(*ownMuta);
   maybeBorrowUnit = lock(weakUnit);
   = maybeBorrowUnit.get().getHp();
 }

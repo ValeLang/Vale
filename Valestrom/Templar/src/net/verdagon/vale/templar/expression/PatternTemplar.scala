@@ -199,7 +199,7 @@ class PatternTemplar(
               destructureOwning(
                 temputs, fate, life + 1, range, liveCaptureLocals, exprToDestructureOrDropOrPassTE, listOfMaybeDestructureMemberPatterns, afterSubPatternSuccessContinuation)
             }
-            case ConstraintT | ShareT => {
+            case PointerT | ShareT => {
               destructureNonOwningAndMaybeContinue(
                 temputs, fate, life + 2, range, liveCaptureLocals, exprToDestructureOrDropOrPassTE, listOfMaybeDestructureMemberPatterns, afterSubPatternSuccessContinuation)
             }
@@ -414,8 +414,8 @@ class PatternTemplar(
 
   private def loadResultOwnership(memberOwnershipInStruct: OwnershipT): OwnershipT = {
     memberOwnershipInStruct match {
-      case OwnT => ConstraintT
-      case ConstraintT => ConstraintT
+      case OwnT => PointerT
+      case PointerT => PointerT
       case WeakT => WeakT
       case ShareT => ShareT
     }

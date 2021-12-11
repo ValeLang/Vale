@@ -65,7 +65,7 @@ case class LetAndLendTE(
 
   override def result: ReferenceResultT = {
     val CoordT(ownership, permission, kind) = expr.result.reference
-    ReferenceResultT(CoordT(if (ownership == ShareT) ShareT else ConstraintT, permission, kind))
+    ReferenceResultT(CoordT(if (ownership == ShareT) ShareT else PointerT, permission, kind))
   }
 }
 
@@ -77,7 +77,7 @@ case class NarrowPermissionTE(
   expr.result.reference.ownership match {
     case OwnT => vfail() // This only works on non owning references
     case ShareT => vfail() // Share only has readonly
-    case ConstraintT | WeakT => // fine
+    case PointerT | WeakT => // fine
   }
   // Only thing we support so far is Readwrite -> Readonly
   vassert(expr.result.reference.permission == ReadwriteT)
@@ -113,7 +113,7 @@ case class WeakAliasTE(
   innerExpr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
-  vassert(innerExpr.result.reference.ownership == ConstraintT)
+  vassert(innerExpr.result.reference.ownership == PointerT)
 
   override def result: ReferenceResultT = {
     ReferenceResultT(CoordT(WeakT, innerExpr.result.reference.permission, innerExpr.kind))
@@ -156,7 +156,7 @@ case class DiscardTE(
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
   expr.result.reference.ownership match {
-    case ConstraintT =>
+    case PointerT =>
     case ShareT =>
     case WeakT =>
   }
@@ -601,7 +601,7 @@ case class DestroyStaticSizedArrayIntoLocalsTE(
   override def result: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
   vassert(expr.kind == staticSizedArray)
-  if (expr.result.reference.ownership == ConstraintT) {
+  if (expr.result.reference.ownership == PointerT) {
     vfail("wot")
   }
 }
@@ -702,7 +702,7 @@ case class DestroyTE(
   override def hashCode(): Int = vcurious()
   override def result: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
-  if (expr.result.reference.ownership == ConstraintT) {
+  if (expr.result.reference.ownership == PointerT) {
     vfail("wot")
   }
 }

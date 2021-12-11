@@ -115,7 +115,7 @@ class ExpressionTemplar(
       }
       case Some(AddressibleClosureVariableT(id, closuredVarsStructRef, variability, tyype)) => {
         val mutability = Templar.getMutability(temputs, closuredVarsStructRef)
-        val ownership = if (mutability == MutableT) ConstraintT else ShareT
+        val ownership = if (mutability == MutableT) PointerT else ShareT
         val closuredVarsStructRefPermission = if (mutability == MutableT) ReadwriteT else ReadonlyT // See LHRSP
         val closuredVarsStructRefRef = CoordT(ownership, closuredVarsStructRefPermission, closuredVarsStructRef)
         val name2 = fate.fullName.addStep(ClosureParamNameT())
@@ -138,7 +138,7 @@ class ExpressionTemplar(
       }
       case Some(ReferenceClosureVariableT(varName, closuredVarsStructRef, variability, tyype)) => {
         val mutability = Templar.getMutability(temputs, closuredVarsStructRef)
-        val ownership = if (mutability == MutableT) ConstraintT else ShareT
+        val ownership = if (mutability == MutableT) PointerT else ShareT
         val closuredVarsStructRefPermission = if (mutability == MutableT) ReadwriteT else ReadonlyT // See LHRSP
         val closuredVarsStructRefCoord = CoordT(ownership, closuredVarsStructRefPermission, closuredVarsStructRef)
 //        val closuredVarsStructDef = temputs.lookupStruct(closuredVarsStructRef)
@@ -180,7 +180,7 @@ class ExpressionTemplar(
       }
       case Some(AddressibleClosureVariableT(id, closuredVarsStructRef, variability, tyype)) => {
         val mutability = Templar.getMutability(temputs, closuredVarsStructRef)
-        val ownership = if (mutability == MutableT) ConstraintT else ShareT
+        val ownership = if (mutability == MutableT) PointerT else ShareT
         val closuredVarsStructRefPermission = if (mutability == MutableT) ReadwriteT else ReadonlyT // See LHRSP
         val closuredVarsStructRefRef = CoordT(ownership, closuredVarsStructRefPermission, closuredVarsStructRef)
         val closureParamVarName2 = fate.fullName.addStep(ClosureParamNameT())
@@ -203,7 +203,7 @@ class ExpressionTemplar(
       }
       case Some(ReferenceClosureVariableT(varName, closuredVarsStructRef, variability, tyype)) => {
         val mutability = Templar.getMutability(temputs, closuredVarsStructRef)
-        val ownership = if (mutability == MutableT) ConstraintT else ShareT
+        val ownership = if (mutability == MutableT) PointerT else ShareT
         val closuredVarsStructRefPermission = if (mutability == MutableT) ReadwriteT else ReadonlyT // See LHRSP
         val closuredVarsStructRefCoord = CoordT(ownership, closuredVarsStructRefPermission, closuredVarsStructRef)
         val closuredVarsStructDef = temputs.lookupStruct(closuredVarsStructRef)
@@ -423,7 +423,7 @@ class ExpressionTemplar(
                   case UseP => vcurious()
                 }
               }
-              case ConstraintT => {
+              case PointerT => {
                 loadAsP match {
                   case MoveP => vcurious() // Can we even coerce to an owning reference?
                   case LendConstraintP(None) => innerExpr2
@@ -1110,7 +1110,7 @@ class ExpressionTemplar(
         val unborrowedContainerExpr2 = r// decaySoloPack(fate, life + 0, r)
         unborrowedContainerExpr2.result.reference.ownership match {
           case OwnT => localHelper.makeTemporaryLocal(temputs, fate, life + 1, unborrowedContainerExpr2)
-          case ConstraintT | ShareT => (unborrowedContainerExpr2)
+          case PointerT | ShareT => (unborrowedContainerExpr2)
         }
       }
     }

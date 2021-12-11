@@ -131,10 +131,10 @@ class LocalHelper(
                 UnletTE(lv)
               }
               // See CSHROOR for why these aren't just Readwrite.
-              case l @ RuntimeSizedArrayLookupTE(_, _, _, _, _, _) => SoftLoadTE(l, ConstraintT, a.result.reference.permission)
-              case l @ StaticSizedArrayLookupTE(_, _, _, _, _, _) => SoftLoadTE(l, ConstraintT, a.result.reference.permission)
-              case l @ ReferenceMemberLookupTE(_,_, _, _, _, _) => SoftLoadTE(l, ConstraintT, a.result.reference.permission)
-              case l @ AddressMemberLookupTE(_, _, _, _, _) => SoftLoadTE(l, ConstraintT, a.result.reference.permission)
+              case l @ RuntimeSizedArrayLookupTE(_, _, _, _, _, _) => SoftLoadTE(l, PointerT, a.result.reference.permission)
+              case l @ StaticSizedArrayLookupTE(_, _, _, _, _, _) => SoftLoadTE(l, PointerT, a.result.reference.permission)
+              case l @ ReferenceMemberLookupTE(_,_, _, _, _, _) => SoftLoadTE(l, PointerT, a.result.reference.permission)
+              case l @ AddressMemberLookupTE(_, _, _, _, _) => SoftLoadTE(l, PointerT, a.result.reference.permission)
             }
           }
           case MoveP => {
@@ -151,17 +151,17 @@ class LocalHelper(
               }
             }
           }
-          case LendConstraintP(None) => SoftLoadTE(a, ConstraintT, a.result.reference.permission)
-          case LendConstraintP(Some(permission)) => SoftLoadTE(a, ConstraintT, Conversions.evaluatePermission(permission))
+          case LendConstraintP(None) => SoftLoadTE(a, PointerT, a.result.reference.permission)
+          case LendConstraintP(Some(permission)) => SoftLoadTE(a, PointerT, Conversions.evaluatePermission(permission))
           case LendWeakP(permission) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
         }
       }
-      case ConstraintT => {
+      case PointerT => {
         loadAsP match {
           case MoveP => vfail()
-          case UseP => SoftLoadTE(a, ConstraintT, a.result.reference.permission)
-          case LendConstraintP(None) => SoftLoadTE(a, ConstraintT, a.result.reference.permission)
-          case LendConstraintP(Some(permission)) => SoftLoadTE(a, ConstraintT, Conversions.evaluatePermission(permission))
+          case UseP => SoftLoadTE(a, PointerT, a.result.reference.permission)
+          case LendConstraintP(None) => SoftLoadTE(a, PointerT, a.result.reference.permission)
+          case LendConstraintP(Some(permission)) => SoftLoadTE(a, PointerT, Conversions.evaluatePermission(permission))
           case LendWeakP(permission) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
         }
       }
@@ -192,18 +192,18 @@ class LocalHelper(
       case StrT() => ShareT
       case VoidT() => ShareT
       case StaticSizedArrayTT(_, mutability, _, _) => {
-        if (mutability == MutableT) ConstraintT else ShareT
+        if (mutability == MutableT) PointerT else ShareT
       }
       case RuntimeSizedArrayTT(mutability, _) => {
-        if (mutability == MutableT) ConstraintT else ShareT
+        if (mutability == MutableT) PointerT else ShareT
       }
       case sr2 @ StructTT(_) => {
         val mutability = Templar.getMutability(temputs, sr2)
-        if (mutability == MutableT) ConstraintT else ShareT
+        if (mutability == MutableT) PointerT else ShareT
       }
       case ir2 @ InterfaceTT(_) => {
         val mutability = Templar.getMutability(temputs, ir2)
-        if (mutability == MutableT) ConstraintT else ShareT
+        if (mutability == MutableT) PointerT else ShareT
       }
       case OverloadSet(_, _, voidStructRef) => {
         getBorrowOwnership(temputs, voidStructRef)

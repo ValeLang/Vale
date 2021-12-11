@@ -346,7 +346,7 @@ class StructTemplarCore(
             case AddressMemberTypeT(reference) => true
             case ReferenceMemberTypeT(reference) => {
               reference.ownership match {
-                case OwnT | ConstraintT | WeakT => true
+                case OwnT | PointerT | WeakT => true
                 case ShareT => false
               }
             }

@@ -3,7 +3,7 @@ package net.verdagon.vale.templar
 import net.verdagon.vale.templar.ast.AsSubtypeTE
 import net.verdagon.vale.templar.names.{CitizenNameT, CitizenTemplateNameT, FullNameT}
 import net.verdagon.vale.templar.templata.CoordTemplata
-import net.verdagon.vale.templar.types.{ConstraintT, CoordT, InterfaceTT, OwnT, ReadonlyT, ReadwriteT, StructTT}
+import net.verdagon.vale.templar.types.{PointerT, CoordT, InterfaceTT, OwnT, ReadonlyT, ReadwriteT, StructTT}
 import net.verdagon.vale.{Collector, vassert, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -78,7 +78,7 @@ class TemplarVirtualTests extends FunSuite with Matchers {
     Collector.only(temputs.lookupFunction("as"), {
       case as @ AsSubtypeTE(sourceExpr, targetSubtype, resultOptType, okConstructor, errConstructor) => {
         sourceExpr.result.reference match {
-          case CoordT(ConstraintT,ReadonlyT,InterfaceTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("IShip"),Vector())))) =>
+          case CoordT(PointerT,ReadonlyT,InterfaceTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("IShip"),Vector())))) =>
         }
         targetSubtype match {
           case StructTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("Raza"),Vector()))) =>
@@ -97,13 +97,13 @@ class TemplarVirtualTests extends FunSuite with Matchers {
         firstGenericArg match {
           case CoordTemplata(
             CoordT(
-              ConstraintT,ReadonlyT,
+              PointerT,ReadonlyT,
               StructTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("Raza"),Vector()))))) =>
         }
         secondGenericArg match {
           case CoordTemplata(
             CoordT(
-              ConstraintT,ReadonlyT,
+              PointerT,ReadonlyT,
               InterfaceTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("IShip"),Vector()))))) =>
         }
         vassert(okConstructor.paramTypes.head.kind == targetSubtype)

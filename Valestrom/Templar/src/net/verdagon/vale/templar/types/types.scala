@@ -16,31 +16,19 @@ sealed trait OwnershipT  {
   def order: Int;
 }
 case object ShareT   extends OwnershipT {
-  override def order: Int = 1;
-
-
-
+  override def order: Int = 1
   override def toString: String = "share"
 }
 case object OwnT extends OwnershipT {
-  override def order: Int = 2;
-
-
-
+  override def order: Int = 2
   override def toString: String = "own"
 }
-case object ConstraintT extends OwnershipT {
-  override def order: Int = 3;
-
-
-
-  override def toString: String = "constraint"
+case object PointerT extends OwnershipT {
+  override def order: Int = 3
+  override def toString: String = "ptr"
 }
 case object WeakT extends OwnershipT {
-  override def order: Int = 4;
-
-
-
+  override def order: Int = 4
   override def toString: String = "weak"
 }
 
@@ -48,17 +36,11 @@ sealed trait MutabilityT  {
   def order: Int;
 }
 case object MutableT extends MutabilityT {
-  override def order: Int = 1;
-
-
-
+  override def order: Int = 1
   override def toString: String = "mut"
 }
 case object ImmutableT extends MutabilityT {
-  override def order: Int = 2;
-
-
-
+  override def order: Int = 2
   override def toString: String = "imm"
 }
 
@@ -66,17 +48,11 @@ sealed trait VariabilityT  {
   def order: Int;
 }
 case object FinalT extends VariabilityT {
-  override def order: Int = 1;
-
-
-
+  override def order: Int = 1
   override def toString: String = "final"
 }
 case object VaryingT extends VariabilityT {
-  override def order: Int = 2;
-
-
-
+  override def order: Int = 2
   override def toString: String = "vary"
 }
 
@@ -84,17 +60,11 @@ sealed trait PermissionT  {
   def order: Int;
 }
 case object ReadonlyT extends PermissionT {
-  override def order: Int = 1;
-
-
-
+  override def order: Int = 1
   override def toString: String = "ro"
 }
 case object ReadwriteT extends PermissionT {
-  override def order: Int = 2;
-
-
-
+  override def order: Int = 2
   override def toString: String = "rw"
 }
 
@@ -102,17 +72,11 @@ sealed trait LocationT  {
   def order: Int;
 }
 case object InlineT extends LocationT {
-  override def order: Int = 1;
-
-
-
+  override def order: Int = 1
   override def toString: String = "inl"
 }
 case object YonderT extends LocationT {
-  override def order: Int = 1;
-
-
-
+  override def order: Int = 1
   override def toString: String = "heap"
 }
 

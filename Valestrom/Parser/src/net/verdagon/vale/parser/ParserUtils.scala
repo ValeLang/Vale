@@ -40,7 +40,7 @@ trait ParserUtils extends RegexParsers {
   private[parser] def optWhite: Parser[Unit] = { opt(white) ^^^ () }
 
   private[parser] def exprIdentifier: Parser[NameP] = {
-    pos ~ """[^\s\.\!\$\&\,\:\(\)\;\[\]\{\}\'\*\^\"\<\>\=\`]+""".r ~ pos ^^ {
+    pos ~ """[^\s\.\!\$\&\,\:\(\)\;\[\]\{\}\'\*\@\^\"\<\>\=\`]+""".r ~ pos ^^ {
       case begin ~ str ~ end => NameP(Range(begin, end), str)
     }
   }
@@ -58,7 +58,7 @@ trait ParserUtils extends RegexParsers {
   }
 
   private[parser] def typeIdentifier: Parser[NameP] = {
-    pos ~ """[^\s\'\.\!\*\?\#\$\&\,\:\|\;\(\)\[\]\{\}=\<\>\`]+""".r ~ pos ^^ {
+    pos ~ """[^\s\'\.\!\*\@\?\#\$\&\,\:\|\;\(\)\[\]\{\}=\<\>\`]+""".r ~ pos ^^ {
       case begin ~ str ~ end => NameP(Range(begin, end), str)
     }
   }

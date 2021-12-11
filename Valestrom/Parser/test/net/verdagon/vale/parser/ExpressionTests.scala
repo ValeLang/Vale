@@ -94,7 +94,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("Lending result of function call") {
-    compile(CombinatorParsers.expression,"&Muta()") shouldHave { case LendPE(_,FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "Muta"), None), Vector(),LendConstraintP(Some(ReadonlyP))), LendConstraintP(Some(ReadonlyP))) => }
+    compile(CombinatorParsers.expression,"*Muta()") shouldHave { case LendPE(_,FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "Muta"), None), Vector(),LendConstraintP(Some(ReadonlyP))), LendConstraintP(Some(ReadonlyP))) => }
   }
 
   test("inline call") {
@@ -152,7 +152,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("Templated function call") {
-    compile(CombinatorParsers.expression,"toArray<imm>( &result)") shouldHave {
+    compile(CombinatorParsers.expression,"toArray<imm>( *result)") shouldHave {
       case FunctionCallPE(_,None,_,false,
       LookupPE(NameP(_, "toArray"),Some(TemplateArgsP(_, Vector(MutabilityPT(_,ImmutableP))))),
         Vector(LendPE(_,LookupPE(NameP(_, "result"),None),LendConstraintP(Some(ReadonlyP)))),

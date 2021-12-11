@@ -2,7 +2,7 @@
 struct Functor1<M, F>
 rules(M Mutability, F Prot) M {
 }
-fn __call<M, F>(self &Functor1<M, F>, param1 Param1Type) RetType
+fn __call<M, F>(self *Functor1<M, F>, param1 Param1Type) RetType
 rules(F Prot(_, (Param1Type), RetType), Param1Type Ref, RetType Ref) {
   F(param1)
 }

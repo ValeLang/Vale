@@ -1,7 +1,7 @@
 struct Muta weakable { hp int; }
 fn main() int export {
   ownMuta = Muta(7);
-  weakMuta = &&ownMuta;
+  weakMuta = **ownMuta;
   maybeBorrowMuta = lock(weakMuta);
   = if (maybeBorrowMuta.isEmpty()) {
       = 73;

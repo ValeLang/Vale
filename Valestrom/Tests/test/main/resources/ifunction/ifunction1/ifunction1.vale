@@ -1,5 +1,5 @@
 
 interface IFunction1<M, P1, R>
 rules(M Mutability, P1 Ref, R Ref) M {
-  fn __call(virtual self &!IFunction1<M, P1, R>, p1 P1) R;
+  fn __call(virtual self *!IFunction1<M, P1, R>, p1 P1) R;
 }

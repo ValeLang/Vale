@@ -5,10 +5,10 @@ struct Spaceship export {
 // Not exported
 struct Engine { fuel int; }
 
-fn valeGetFuel(s &Spaceship) int export { s.engine.fuel }
+fn valeGetFuel(s *Spaceship) int export { s.engine.fuel }
 
-fn cGetFuel(s &Spaceship) int extern;
+fn cGetFuel(s *Spaceship) int extern;
 
 fn main() int export {
-  ret cGetFuel(&Spaceship(Engine(42)));
+  ret cGetFuel(*Spaceship(Engine(42)));
 }

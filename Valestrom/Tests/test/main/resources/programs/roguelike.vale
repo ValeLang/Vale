@@ -46,8 +46,8 @@ fn makeBoard() Array<mut, Array<mut, str>> {
 }
 
 fn display(
-    board &Array<mut, Array<mut, str>>,
-    goblins &HashMap<int, Goblin, IntHasher, IntEquator>,
+    board *Array<mut, Array<mut, str>>,
+    goblins *HashMap<int, Goblin, IntHasher, IntEquator>,
     playerRow int,
     playerCol int)
 {
@@ -100,7 +100,7 @@ fn inputKey() int {
 
 
 fn goblinAt?(
-  goblins &HashMap<int, Goblin, IntHasher, IntEquator>,
+  goblins *HashMap<int, Goblin, IntHasher, IntEquator>,
   goblinKey int,
   row int,
   col int)
@@ -143,8 +143,8 @@ fn main() int export {
   running! = true;
   while (running) {
     display(
-        &board,
-        &goblins,
+        *board,
+        *goblins,
         playerRow,
         playerCol);
 
@@ -165,7 +165,7 @@ fn main() int export {
 
     killedGoblin! = false;
     goblins.keys().each((key){
-      if (goblinAt?(&goblins, key, newPlayerRow, newPlayerCol)) {
+      if (goblinAt?(*goblins, key, newPlayerRow, newPlayerCol)) {
         goblins!.remove(key);
         set killedGoblin = true;
       }

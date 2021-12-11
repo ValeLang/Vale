@@ -9,11 +9,11 @@ impl<T> MyOption<T> for MySome<T>;
 struct MyNone<T> rules(T Ref) { }
 impl<T> MyOption<T> for MyNone<T>;
 
-fn len<T>(virtual opt &MyOption<T>) int abstract;
-fn len<T>(opt &MyNone<T> impl MyOption<T>) int { 0 }
-fn len<T>(opt &MySome<T> impl MyOption<T>) int { 1 }
+fn len<T>(virtual opt *MyOption<T>) int abstract;
+fn len<T>(opt *MyNone<T> impl MyOption<T>) int { 0 }
+fn len<T>(opt *MySome<T> impl MyOption<T>) int { 1 }
 
 fn main() int export {
   myOpt MyOption<int> = MySome<int>(4);
-  = len(&myOpt);
+  = len(*myOpt);
 }

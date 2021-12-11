@@ -1,2 +1,2 @@
 
-fn ===<T>(left &T, right &T) bool extern(vale_same_instance);
+fn ===<T>(left *T, right *T) bool extern(vale_same_instance);

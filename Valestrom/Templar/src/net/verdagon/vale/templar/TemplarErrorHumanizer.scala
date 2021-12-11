@@ -202,8 +202,8 @@ object TemplarErrorHumanizer {
     (ownership match {
       case ShareT => ""
       case OwnT => ""
-      case ConstraintT => "&"
-      case WeakT => "&&"
+      case ConstraintT => "*"
+      case WeakT => "**"
     }) +
     (permission match {
       case ReadonlyT => ""
@@ -414,14 +414,14 @@ object TemplarErrorHumanizer {
           case ShareT => ""
           case ConstraintT => {
             (permission match {
-              case ReadonlyT => "&"
-              case ReadwriteT => "&!"
+              case ReadonlyT => "*"
+              case ReadwriteT => "*!"
             })
           }
           case WeakT => {
             (permission match {
-              case ReadonlyT => "&&"
-              case ReadwriteT => "&&!"
+              case ReadonlyT => "**"
+              case ReadwriteT => "**!"
             })
           }
         }) +

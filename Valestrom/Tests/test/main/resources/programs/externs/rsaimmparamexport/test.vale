@@ -3,7 +3,7 @@ export Array<imm, int> as ImmIntArray;
 fn each<F>(arr A, func F) void
 rules(A Ref(_, _, Array<_, _>)) {
   i! = 0;
-  l = len(&arr);
+  l = len(*arr);
   while (i < l) {
     func!(arr[i]);
     set i = i + 1;

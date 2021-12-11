@@ -32,8 +32,8 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
     // The template calls are first because Moo:(Int, Bool) is ambiguous, that (Int, Bool)
     // could be interpreted as a pack.
     (pos ~ string ~ pos ^^ { case begin ~ inner ~ end => StringPT(Range(begin, end), inner.str) }) |
-    (pos ~ ("&" ~> optWhite ~> ruleTemplexPR) ~ pos ^^ { case begin ~ inner ~ end => BorrowPT(Range(begin, end), inner) }) |
-    (pos ~ ("*" ~> optWhite ~> ruleTemplexPR) ~ pos ^^ { case begin ~ inner ~ end => SharePT(Range(begin, end), inner) }) |
+    (pos ~ ("*" ~> optWhite ~> ruleTemplexPR) ~ pos ^^ { case begin ~ inner ~ end => BorrowPT(Range(begin, end), inner) }) |
+    (pos ~ ("@" ~> optWhite ~> ruleTemplexPR) ~ pos ^^ { case begin ~ inner ~ end => SharePT(Range(begin, end), inner) }) |
     (pos ~ (keywordOrIdentifierOrRuneRuleTemplexPR <~ optWhite <~ "<" <~ optWhite) ~ (repsep(ruleTemplexPR, optWhite ~> "," <~ optWhite) <~ optWhite <~ ">") ~ pos ^^ {
       case begin ~ template ~ args ~ end => CallPT(Range(begin, end), template, args.toVector)
     }) |

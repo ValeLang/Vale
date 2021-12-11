@@ -46,7 +46,7 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
   }
   test("Pattern Templexes") {
     compile(patternType,"int") shouldHave { case PatternTypePPI(None, NameOrRunePT(NameP(_, "int"))) => }
-    compile(patternType,"*int") shouldHave { case PatternTypePPI(Some(ShareP), NameOrRunePT(NameP(_, "int"))) => }
+    compile(patternType,"@int") shouldHave { case PatternTypePPI(Some(ShareP), NameOrRunePT(NameP(_, "int"))) => }
   }
   test("Name-only Capture") {
     compile(atomPattern,"a") match {

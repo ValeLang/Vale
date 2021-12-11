@@ -38,22 +38,22 @@ rules(
   Array<imm, T>(n, generator)
 }
 
-fn toImmArray<N, E>(seq &[<_, _> N * E]) Array<imm, E> {
+fn toImmArray<N, E>(seq *[<_, _> N * E]) Array<imm, E> {
   MakeImmArray(N, { seq[_] })
 }
 
-fn toImmArray<T>(source &Array<_, T>) Array<imm, &T> {
-  MakeImmArray(source.len(), &!{ source[_] })
+fn toImmArray<T>(source *Array<_, T>) Array<imm, *T> {
+  MakeImmArray(source.len(), *!{ source[_] })
 }
 
-fn toVaryArray<N, E, SM>(seq &[<SM> N * E]) Array<mut, E> {
+fn toVaryArray<N, E, SM>(seq *[<SM> N * E]) Array<mut, E> {
   MakeVaryArray(N, { seq[_] })
 }
 
-fn toVaryArray<T>(source &Array<_, T>) Array<mut, &T> {
-  MakeVaryArray(source.len(), &!{ source[_] })
+fn toVaryArray<T>(source *Array<_, T>) Array<mut, *T> {
+  MakeVaryArray(source.len(), *!{ source[_] })
 }
 
-fn toArray<T>(source &Array<_, T>) Array<mut, &T> {
+fn toArray<T>(source *Array<_, T>) Array<mut, *T> {
   MakeArray(source.len(), { source[_] })
 }

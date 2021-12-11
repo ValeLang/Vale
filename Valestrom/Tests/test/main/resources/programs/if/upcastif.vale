@@ -1,15 +1,15 @@
 interface I {
-  fn moo(virtual this &I) int;
+  fn moo(virtual this *I) int;
 }
 struct A {}
 impl I for A;
 struct B {}
 impl I for B;
 
-fn moo(a &A impl I) int { 73 }
-fn moo(b &B impl I) int { 42 }
+fn moo(a *A impl I) int { 73 }
+fn moo(b *B impl I) int { 42 }
 
 fn main() int export {
   myVar I = if (false) { A() } else { B() };
-  = moo(&myVar);
+  = moo(*myVar);
 }

@@ -2,16 +2,16 @@ struct Context {
     code str;
     index int;
 }
-fn advance(c &Context) void {
+fn advance(c *Context) void {
     set c.index = c.index + 1;
 }
-fn advance(c &Context, count int) void {
+fn advance(c *Context, count int) void {
     set c.index = c.index + count;
 }
-fn peek(c &Context) StrSlice {
+fn peek(c *Context) StrSlice {
     = c.code.slice(c.index, c.index + 1);
 }
-fn peekNext(c &Context) StrSlice {
+fn peekNext(c *Context) StrSlice {
     = c.code.slice(c.index + 1, c.index + 2);
 }
 
@@ -38,10 +38,10 @@ fn !=(a StrSlice, b StrSlice) bool {
 
 fn parse(s str) void {
    c = Context(s, 0);
-   parseRoot(&c);
+   parseRoot(*c);
 }
 
-fn readValidChars(c &Context, validChars str) StrSlice {
+fn readValidChars(c *Context, validChars str) StrSlice {
     startIndex = c.index;
     while (not validChars.find(c.peek()).isEmpty()) {
         c.advance();
@@ -49,14 +49,14 @@ fn readValidChars(c &Context, validChars str) StrSlice {
     = c.code.slice(startIndex, c.index);
 }
 
-fn readWord(c &Context) StrSlice {
+fn readWord(c *Context) StrSlice {
     = readValidChars(c, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_");
 }
-fn readWhitespace(c &Context) void {
+fn readWhitespace(c *Context) void {
     readValidChars(c, " \r\n "); // Why do I need a space in the end?
 }
 
-fn parseRoot(c &Context) void {
+fn parseRoot(c *Context) void {
 
     readWhitespace(c);
     while (c.index < c.code.len() - 1) {
@@ -81,7 +81,7 @@ fn parseRoot(c &Context) void {
 
 }
 
-fn parseGenericDefinition(c &Context) {
+fn parseGenericDefinition(c *Context) {
     word = c.readWord();
     if (word.len() == 0) {
         panic("Expected generic type name, but got: " + c.peek().str());
@@ -110,7 +110,7 @@ fn parseGenericDefinition(c &Context) {
     print(">");
 }
 
-fn parseStruct(c &Context) void {
+fn parseStruct(c *Context) void {
     c.readWhitespace();
     structName = c.readWord();
     if (structName.len() == 0) {
@@ -179,19 +179,19 @@ fn parseStruct(c &Context) void {
     println("}");
     c.advance();
 }
-fn parseStructRules(c &Context) {
+fn parseStructRules(c *Context) {
     panic("Struct rules not implemented yet");
 }
 
-fn parseInterface(c &Context) void {
+fn parseInterface(c *Context) void {
     panic("Interface not implemented yet");
 }
 
-fn parseImpl(c &Context) void {
+fn parseImpl(c *Context) void {
     panic("Impl not implemented yet");
 }
 
-fn parseType(c &Context) StrSlice {
+fn parseType(c *Context) StrSlice {
     //TODO: This should support more than just word types (arrays and stuff)
     wordType = c.readWord();
     if (wordType.len() == 0) {
@@ -200,7 +200,7 @@ fn parseType(c &Context) StrSlice {
     = wordType;
 }
 
-fn parseFn(c &Context) void {
+fn parseFn(c *Context) void {
     c.readWhitespace();
     fnName = c.readWord();
     if (fnName.len() == 0) {
@@ -605,7 +605,7 @@ struct PatternPP {
   range Range;
 
   // Whether there's a borrow symbol before the variable name, such
-  // as the `&` in `fn launch(&ship) { ... }`
+  // as the `&` in `fn launch(*ship) { ... }`
   preBorrow Opt<Range>;
 
   // The name of the parameter.
@@ -899,7 +899,7 @@ impl ITemplexPT for ManualSequencePT;
 interface ITemplexPT {}
 
 // A rule specifying the ownership of something.
-// For example, in `a &Spaceship = ...;`, `&Spaceship` is an OwnershippedPT rule saying
+// For example, in `a *Spaceship = ...;`, `*Spaceship` is an OwnershippedPT rule saying
 // that we want a Borrow of the inner templex (which is Spaceship).
 struct OwnershippedPT {
   range Range;
@@ -909,7 +909,7 @@ struct OwnershippedPT {
 impl ITemplexPT for OwnershippedPT;
 
 // A rule that can match anything. For example, in
-//    fn has<E>(arr &Array<_, E>, elem E) bool { .. }
+//    fn has<E>(arr *Array<_, E>, elem E) bool { .. }
 // the _ will accept anything that happens to be there.
 // That means this `has` method can work on both mutable
 // and immutable arrays, because it will accept imm or mut there.
@@ -1024,7 +1024,7 @@ impl ITemplexPT for PermissionedPT;
 // An expression, like you would see inside a function.
 interface IExpressionPE {}
 
-// For example, the `&` in `launch(&ship)`
+// For example, the `&` in `launch(*ship)`
 struct LendPE {
   range Range;
   expr IExpressionPE;

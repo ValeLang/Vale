@@ -146,7 +146,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
   }
 
   test("eachI with borrow") {
-    compile(CombinatorParsers.statement, "eachI &row (cellI, cell){ 0 }") shouldHave {
+    compile(CombinatorParsers.statement, "eachI *row (cellI, cell){ 0 }") shouldHave {
       case FunctionCallPE(_,None,_, false,
       LookupPE(NameP(_, "eachI"), None),
         Vector(

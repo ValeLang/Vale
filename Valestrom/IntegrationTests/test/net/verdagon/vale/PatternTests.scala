@@ -58,7 +58,7 @@ class PatternTests extends FunSuite with Matchers {
         |struct Marine { hp int; }
         |fn main() int export {
         |  m = Marine(8);
-        |  (x, y) = [7, &m];
+        |  (x, y) = [7, *m];
         |  = y.hp;
         |}
       """.stripMargin)
@@ -78,7 +78,7 @@ class PatternTests extends FunSuite with Matchers {
 //        |
 //        |fn main() int export {
 //        |  s ISpaceship = Firefly(42);
-//        |  = if (Firefly(fuel) = &s) {
+//        |  = if (Firefly(fuel) = *s) {
 //        |      fuel
 //        |    } else {
 //        |      73

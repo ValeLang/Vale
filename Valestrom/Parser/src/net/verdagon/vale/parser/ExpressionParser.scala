@@ -81,7 +81,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   private[parser] def lend: Parser[IExpressionPE] = {
     // TODO: split the 'a rule out when we implement regions
     pos ~
-      (("&"| ("'" ~ opt(exprIdentifier <~ optWhite) <~ "&") | ("'" ~ exprIdentifier)) ~> opt("!") ~ (optWhite ~> postfixableExpressions)) ~
+      (("*"| ("'" ~ opt(exprIdentifier <~ optWhite) <~ "*") | ("'" ~ exprIdentifier)) ~> opt("!") ~ (optWhite ~> postfixableExpressions)) ~
       pos ^^ {
       case begin ~ (maybeReadwrite ~ inner) ~ end => {
         LendPE(Range(begin, end), inner, LendConstraintP(Some(if (maybeReadwrite.nonEmpty) ReadwriteP else ReadonlyP)))
@@ -91,7 +91,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
 
   private[parser] def weakLend: Parser[IExpressionPE] = {
     pos ~
-      ("&&" ~> optWhite ~> opt("!") ~ postfixableExpressions) ~
+      ("**" ~> optWhite ~> opt("!") ~ postfixableExpressions) ~
       pos ^^ {
       case begin ~ (maybeReadwrite ~ inner) ~ end => {
         LendPE(Range(begin, end), inner, LendWeakP(if (maybeReadwrite.nonEmpty) ReadwriteP else ReadonlyP))

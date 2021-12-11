@@ -34,7 +34,7 @@ class IfTests extends FunSuite with Matchers with Collector {
   }
 
   test("ifs") {
-    compile(CombinatorParsers.ifLadder, "if (true) { doBlarks(&x) } else { }") shouldHave {
+    compile(CombinatorParsers.ifLadder, "if (true) { doBlarks(*x) } else { }") shouldHave {
       case IfPE(_,
         BlockPE(_, Vector(ConstantBoolPE(_, true))),
         BlockPE(_,

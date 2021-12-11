@@ -19,7 +19,7 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |struct Muta { hp int; }
         |fn main() int export {
-        |  = (&Muta(9)).hp;
+        |  = (*Muta(9)).hp;
         |}
       """.stripMargin)
 
@@ -252,11 +252,11 @@ class OwnershipTests extends FunSuite with Matchers {
 //      """
 //        |struct MutaA { }
 //        |struct MutaB {
-//        |  a &MutaA;
+//        |  a *MutaA;
 //        |}
 //        |fn main() int export {
 //        |  a = MutaA();
-//        |  b = MutaB(&a);
+//        |  b = MutaB(*a);
 //        |  c = a;
 //        |}
 //      """.stripMargin)

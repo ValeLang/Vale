@@ -84,7 +84,7 @@ class TypeTests extends FunSuite with Matchers with Collector {
     }
   }
   test("15") {
-    compile("_ &[3 * MutableStruct]") shouldHave {
+    compile("_ *[3 * MutableStruct]") shouldHave {
       case PatternPP(_,_,
         None,
         Some(
@@ -101,7 +101,7 @@ class TypeTests extends FunSuite with Matchers with Collector {
     }
   }
   test("15m") {
-    compile("_ &&[<_, _> 3 * MutableStruct]") shouldHave {
+    compile("_ **[<_, _> 3 * MutableStruct]") shouldHave {
       case PatternPP(_,_,
         None,
         Some(

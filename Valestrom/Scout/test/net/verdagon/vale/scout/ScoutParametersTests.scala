@@ -41,7 +41,7 @@ class ScoutParametersTests extends FunSuite with Matchers with Collector {
   }
 
   test("Borrowed rune") {
-    val program1 = compile("""fn main<T>(moo &T) infer-ret { }""")
+    val program1 = compile("""fn main<T>(moo *T) infer-ret { }""")
     val main = program1.lookupFunction("main")
     val Vector(param) = main.params
 
@@ -114,7 +114,7 @@ class ScoutParametersTests extends FunSuite with Matchers with Collector {
   }
 
   test("Regioned pure function") {
-    val bork = compile("fn main<'r ro>(ship 'r &Spaceship) pure 't { }")
+    val bork = compile("fn main<'r ro>(ship 'r *Spaceship) pure 't { }")
 
     val main = bork.lookupFunction("main")
     // We dont support regions yet, so scout should filter them out.

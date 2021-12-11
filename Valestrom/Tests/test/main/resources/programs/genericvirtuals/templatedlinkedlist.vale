@@ -16,23 +16,23 @@ impl<T> MyOption<T> for MyNone<T>;
 
 struct MyList<T> rules(T Ref) imm {
   value T;
-  next *MyOption<*MyList<T>>;
+  next @MyOption<@MyList<T>>;
 }
 
-fn printValues(list *MyList<int>) void {
+fn printValues(list @MyList<int>) void {
 	 print(list.value);
 	 printNextValue(list.next);
 }
 
-fn printNextValue(virtual opt *MyOption<*MyList<int>>) void { }
-fn printNextValue(opt *MyNone<*MyList<int>> impl MyOption<*MyList<int>>) void { }
-fn printNextValue(opt *MySome<*MyList<int>> impl MyOption<*MyList<int>>) void {
+fn printNextValue(virtual opt @MyOption<@MyList<int>>) void { }
+fn printNextValue(opt @MyNone<@MyList<int>> impl MyOption<@MyList<int>>) void { }
+fn printNextValue(opt @MySome<@MyList<int>> impl MyOption<@MyList<int>>) void {
 	 printValues(opt.value);
 }
 
 
 fn main() int export {
- 	list = MyList<int>(10, MySome<*MyList<int>>(MyList<int>(20, MySome<*MyList<int>>(MyList<int>(30, MyNone<*MyList<int>>())))));
+ 	list = MyList<int>(10, MySome<@MyList<int>>(MyList<int>(20, MySome<@MyList<int>>(MyList<int>(30, MyNone<@MyList<int>>())))));
  	printValues(list);
  	= 0;
 }

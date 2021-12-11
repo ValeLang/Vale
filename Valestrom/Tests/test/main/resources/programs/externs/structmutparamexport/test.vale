@@ -3,10 +3,10 @@ struct Spaceship export {
   b int;
 }
 
-fn sumSpaceshipFields(s &Spaceship) int extern;
-fn spaceshipGetA(s &Spaceship) int export { s.a }
-fn spaceshipGetB(s &Spaceship) int export { s.b }
+fn sumSpaceshipFields(s *Spaceship) int extern;
+fn spaceshipGetA(s *Spaceship) int export { s.a }
+fn spaceshipGetB(s *Spaceship) int export { s.b }
 
 fn main() int export {
-  ret sumSpaceshipFields(&Spaceship(37, 5));
+  ret sumSpaceshipFields(*Spaceship(37, 5));
 }

@@ -108,7 +108,7 @@ class KindRuleTests extends FunSuite with Matchers with Collector {
     compile(rulePR,"Moo<int>") shouldHave {
       case TemplexPR(CallPT(_,NameOrRunePT(NameP(_, "Moo")),Vector(NameOrRunePT(NameP(_, "int"))))) =>
     }
-    compile(rulePR,"Moo<*int>") shouldHave {
+    compile(rulePR,"Moo<@int>") shouldHave {
       case TemplexPR(CallPT(_,NameOrRunePT(NameP(_, "Moo")),Vector(SharePT(_,NameOrRunePT(NameP(_, "int")))))) =>
     }
   }

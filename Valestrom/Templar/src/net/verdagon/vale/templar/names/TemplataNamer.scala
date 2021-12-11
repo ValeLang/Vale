@@ -14,9 +14,9 @@ object TemplataNamer {
     val CoordT(ownership, permission, kind) = reference;
     val ownershipString =
       ownership match {
-        case ShareT => "" //"*"
-        case ConstraintT => "&"
-        case WeakT => "&&"
+        case ShareT => "@" //"*"
+        case ConstraintT => "*"
+        case WeakT => "**"
         case OwnT => "" //"^"
       }
     val permissionString =

@@ -17,7 +17,7 @@ class TemplarVirtualTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |
         |interface Bork {
-        |  fn bork(virtual self &Bork) int;
+        |  fn bork(virtual self *Bork) int;
         |}
         |
         |fn main() int export {
@@ -120,9 +120,9 @@ class TemplarVirtualTests extends FunSuite with Matchers {
         |struct Bork { }
         |impl IBork for Bork;
         |
-        |fn rebork(virtual result &IBork) bool { true }
+        |fn rebork(virtual result *IBork) bool { true }
         |fn main() export {
-        |  rebork(&Bork());
+        |  rebork(*Bork());
         |}
         |""".stripMargin)
   }

@@ -98,7 +98,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         """
           |fn valeMakeRSA() Array<mut, int> {
           |  ssa = [imm][5, 7, 9, 10, 11];
-          |  ret Array<mut, int>(ssa.len(), &!{ ssa[_] });
+          |  ret Array<mut, int>(ssa.len(), *!{ ssa[_] });
           |}
           |
           |fn main() int export {
@@ -263,7 +263,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |struct MyStruct { a int; }
         |fn main() bool export {
         |  a = MyStruct(7);
-        |  = &a === &a;
+        |  = *a === *a;
         |}
       """.stripMargin)
     compile.evalForKind(Vector()) shouldEqual VonBool(true)
@@ -276,7 +276,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |fn main() bool export {
         |  a = MyStruct(7);
         |  b = MyStruct(7);
-        |  = &a === &b;
+        |  = *a === *b;
         |}
       """.stripMargin)
     compile.evalForKind(Vector()) shouldEqual VonBool(false)
@@ -317,20 +317,20 @@ class IntegrationTestsA extends FunSuite with Matchers {
 //        |  next MyOption;
 //        |}
 //        |
-//        |fn sum(list &MyList) int {
+//        |fn sum(list *MyList) int {
 //        |  list.value + sum(list.next)
 //        |}
 //        |
-//        |fn sum(virtual opt &MyOption) int { panic("called virtual sum!") }
-//        |fn sum(opt &MyNone impl MyOption) int { 0 }
-//        |fn sum(opt &MySome impl MyOption) int {
+//        |fn sum(virtual opt *MyOption) int { panic("called virtual sum!") }
+//        |fn sum(opt *MyNone impl MyOption) int { 0 }
+//        |fn sum(opt *MySome impl MyOption) int {
 //        |   sum(opt.value)
 //        |}
 //        |
 //        |
 //        |fn main() int export {
 //        |  list = MyList(10, MySome(MyList(20, MySome(MyList(30, MyNone())))));
-//        |  = sum(&list);
+//        |  = sum(*list);
 //        |}
 //        |
 //        |""".stripMargin)
@@ -585,13 +585,13 @@ class IntegrationTestsA extends FunSuite with Matchers {
 //        |impl IMoo for Moo;
 //        |
 //        |fn func(virtual moo IMoo) int abstract;
-//        |fn func(virtual moo &IMoo) int abstract;
+//        |fn func(virtual moo *IMoo) int abstract;
 //        |
 //        |fn func(moo Moo impl IMoo) int { 73 }
-//        |fn func(moo &Moo impl IMoo) int { 42 }
+//        |fn func(moo *Moo impl IMoo) int { 42 }
 //        |
 //        |fn main() int export {
-//        |  func(&Moo())
+//        |  func(*Moo())
 //        |}
 //        |""".stripMargin)
 //    val temputs = compile.getTemputs()
@@ -652,8 +652,8 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |fn get<T>(virtual opt XOpt<T>) int abstract;
         |fn get<T>(opt XNone<T> impl XOpt<T>) int { __vbi_panic() }
         |
-        |fn get<T>(virtual opt &XOpt<T>) int abstract;
-        |fn get<T>(opt &XNone<T> impl XOpt<T>) int { 42 }
+        |fn get<T>(virtual opt *XOpt<T>) int abstract;
+        |fn get<T>(opt *XNone<T> impl XOpt<T>) int { 42 }
         |
         |fn main() int export {
         |  opt XOpt<int> = XNone<int>();
@@ -680,8 +680,8 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Moo {}
-        |fn foo(a &Moo) int { 41 }
-        |fn bork(a &Moo) int {
+        |fn foo(a *Moo) int { 41 }
+        |fn bork(a *Moo) int {
         |  if (false) {
         |    ret foo(a);
         |  } else if (false) {
@@ -692,7 +692,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  ret foo(a) + 1;
         |}
         |fn main() int export {
-        |  ret bork(&Moo());
+        |  ret bork(*Moo());
         |}
         |""".stripMargin)
     compile.evalForKind(Vector()) shouldEqual VonInt(42)

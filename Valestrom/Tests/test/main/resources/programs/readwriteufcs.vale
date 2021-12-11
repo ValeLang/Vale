@@ -5,7 +5,7 @@ struct Spaceship {
   fuel! int;
 }
 
-fn getFuel(a &!Spaceship) int {
+fn getFuel(a *!Spaceship) int {
   a.fuel
 }
 

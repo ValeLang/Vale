@@ -75,8 +75,8 @@ object Highlighter {
     s
       .replaceAll("\\{", "&#123;")
       .replaceAll("\\}", "&#125;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
+      .replaceAll("<", "*lt;")
+      .replaceAll(">", "*gt;")
       .replaceAll("\\n", "<br />")
   }
 

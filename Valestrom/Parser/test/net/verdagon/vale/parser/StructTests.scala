@@ -21,7 +21,7 @@ class StructTests extends FunSuite with Matchers with Collector {
   test("17") {
     compile(
       CombinatorParsers.normalStructMember,
-      "a *ListNode<T>;") shouldHave {
+      "a @ListNode<T>;") shouldHave {
       case NormalStructMemberP(_, NameP(_, "a"), FinalP, InterpretedPT(_,ShareP,ReadonlyP,CallPT(_,NameOrRunePT(NameP(_, "ListNode")), Vector(NameOrRunePT(NameP(_, "T")))))) =>
     }
   }
@@ -35,7 +35,7 @@ class StructTests extends FunSuite with Matchers with Collector {
   }
 
   test("Simple struct") {
-    compile(CombinatorParsers.struct, "struct Moo { x &int; }") shouldHave {
+    compile(CombinatorParsers.struct, "struct Moo { x *int; }") shouldHave {
       case StructP(_, NameP(_, "Moo"), Vector(), MutabilityPT(_, MutableP), None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,ConstraintP,ReadonlyP,NameOrRunePT(NameP(_, "int"))))))) =>
     }
   }
@@ -55,7 +55,7 @@ class StructTests extends FunSuite with Matchers with Collector {
   }
 
   test("Struct with weak") {
-    compile(CombinatorParsers.struct, "struct Moo { x &&int; }") shouldHave {
+    compile(CombinatorParsers.struct, "struct Moo { x **int; }") shouldHave {
       case StructP(_, NameP(_, "Moo"), Vector(), MutabilityPT(_, MutableP), None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,WeakP,ReadonlyP,NameOrRunePT(NameP(_, "int"))))))) =>
     }
   }
@@ -67,7 +67,7 @@ class StructTests extends FunSuite with Matchers with Collector {
   }
 
   test("Export struct") {
-    compile(CombinatorParsers.struct, "struct Moo export { x &int; }") shouldHave {
+    compile(CombinatorParsers.struct, "struct Moo export { x *int; }") shouldHave {
       case StructP(_, NameP(_, "Moo"), Vector(ExportP(_)), MutabilityPT(_, MutableP), None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,ConstraintP,ReadonlyP,NameOrRunePT(NameP(_, "int"))))))) =>
     }
   }

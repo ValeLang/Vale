@@ -39,7 +39,7 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
         // Yes capture, no type, no destructure:
         underscoreOr(patternCapture) ^^ { case capture => (None, capture, None, None) } |
         // Hacked in for highlighting, still need to incorporate into the above
-        existsMW("&") ~ existsMW("!") ~ underscoreOr(patternCapture) ^^ { case preBorrow ~ readwrite ~ capture => (preBorrow, capture, None, None) }
+        existsMW("*") ~ existsMW("!") ~ underscoreOr(patternCapture) ^^ { case preBorrow ~ readwrite ~ capture => (preBorrow, capture, None, None) }
     ) ~
     opt(white ~> "impl" ~> white ~> templex) ~
     pos ^^ {
@@ -93,7 +93,7 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
 
   private[parser] def patternOwnership: Parser[OwnershipP] = {
     // See "Capturing Kinds and Ownerships" for why we don't capture a rune here.
-    (("^" ^^^ OwnP) | ("&" ^^^ ConstraintP) | ("&&" ^^^ WeakP) | ("*" ^^^ ShareP))
+    (("^" ^^^ OwnP) | ("*" ^^^ ConstraintP) | ("**" ^^^ WeakP) | ("@" ^^^ ShareP))
   }
 
   // Add any new rules to the "Nothing matches empty string" test!

@@ -120,14 +120,14 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
   }
 
   test("Simple function with apostrophe region-typed identifying rune") {
-    val func = compile(CombinatorParsers.topLevelFunction, "fn sum<'A>(a 'A &Marine){a}")
+    val func = compile(CombinatorParsers.topLevelFunction, "fn sum<'A>(a 'A *Marine){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_, NameP(_, "A"), Vector(TypeRuneAttributeP(_, RegionTypePR))) =>
     }
   }
 
   test("Pool region") {
-    val func = compile(CombinatorParsers.topLevelFunction, "fn sum<'A pool>(a 'A &Marine){a}")
+    val func = compile(CombinatorParsers.topLevelFunction, "fn sum<'A pool>(a 'A *Marine){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_,
       NameP(_, "A"),
@@ -138,7 +138,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
   }
 
   test("Arena region") {
-    val func = compile(CombinatorParsers.topLevelFunction, "fn sum<'A arena>(a 'A &Marine){a}")
+    val func = compile(CombinatorParsers.topLevelFunction, "fn sum<'A arena>(a 'A *Marine){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_,
         NameP(_, "A"),
@@ -150,7 +150,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
 
 
   test("Readonly region") {
-    val func = compile(CombinatorParsers.topLevelFunction, "fn sum<'A ro>(a 'A &Marine){a}")
+    val func = compile(CombinatorParsers.topLevelFunction, "fn sum<'A ro>(a 'A *Marine){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_,
         NameP(_, "A"),

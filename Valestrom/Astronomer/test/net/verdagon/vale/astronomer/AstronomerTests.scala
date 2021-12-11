@@ -100,7 +100,7 @@ class AstronomerTests extends FunSuite with Matchers  {
     val compilation =
       AstronomerTestCompilation.test(
         """interface Moo<T> rules(T Ref) {
-          |  fn bork(virtual self &Moo<T>) int;
+          |  fn bork(virtual self *Moo<T>) int;
           |}
           |""".stripMargin)
     val astrouts = compilation.getAstrouts().getOrDie()

@@ -86,7 +86,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   }
 
   test("Interface") {
-    val program1 = compile("interface IMoo { fn blork(virtual this &IMoo, a bool)void; }")
+    val program1 = compile("interface IMoo { fn blork(virtual this *IMoo, a bool)void; }")
     val imoo = program1.lookupInterface("IMoo")
 
     val blork = imoo.internalMethods.head
@@ -96,7 +96,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   }
 
   test("Generic interface") {
-    val program1 = compile("interface IMoo<T> { fn blork(virtual this &IMoo, a T)void; }")
+    val program1 = compile("interface IMoo<T> { fn blork(virtual this *IMoo, a T)void; }")
     val imoo = program1.lookupInterface("IMoo")
 
     val blork = imoo.internalMethods.head
@@ -313,7 +313,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   test("Test loading from member 2") {
     val program1 = compile(
       """fn MyStruct() {
-        |  &moo.x
+        |  *moo.x
         |}
         |""".stripMargin)
     val main = program1.lookupFunction("MyStruct")
@@ -333,7 +333,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
     val program1 = compile(
       """fn MyStruct() {
         |  this.x = 4;
-        |  this.y = &this.x;
+        |  this.y = *this.x;
         |}
         |""".stripMargin)
     val main = program1.lookupFunction("MyStruct")
@@ -361,7 +361,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
 
   test("this isnt special if was explicit param") {
     val program1 = compile(
-      """fn moo(this &MyStruct) {
+      """fn moo(this *MyStruct) {
         |  println(this.x);
         |}
         |""".stripMargin)
@@ -396,7 +396,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
       """
         |struct Moo {}
         |interface IMoo {}
-        |fn func(moo &Moo impl &IMoo) int { 73 }
+        |fn func(moo *Moo impl *IMoo) int { 73 }
         |""".stripMargin)
     err match {
       case CantOverrideOwnershipped(_) =>
@@ -408,7 +408,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
       """
         |struct Moo {}
         |interface IMoo {}
-        |impl &IMoo for Moo;
+        |impl *IMoo for Moo;
         |""".stripMargin)
     err match {
       case CantOwnershipInterfaceInImpl(_) =>
@@ -432,7 +432,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
       """
         |struct Moo {}
         |interface IMoo {}
-        |impl IMoo for &Moo;
+        |impl IMoo for *Moo;
         |""".stripMargin)
     err match {
       case CantOwnershipStructInImpl(_) =>

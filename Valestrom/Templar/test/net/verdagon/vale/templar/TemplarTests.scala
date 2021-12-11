@@ -137,7 +137,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Moo export { hp int; }
-        |fn main(moo &Moo) int export {
+        |fn main(moo *Moo) int export {
         |  moo.hp
         |}
         |""".stripMargin)
@@ -200,7 +200,7 @@ class TemplarTests extends FunSuite with Matchers {
         |struct Moo {}
         |fn main() void export {
         |  m = Moo();
-        |  b = &m;
+        |  b = *m;
         |}
         |""".stripMargin)
     val temputs = compile.expectTemputs()
@@ -303,7 +303,7 @@ class TemplarTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |struct Engine { fuel int; }
         |struct Spaceship { engine Engine; }
-        |fn getFuel(a &Engine) int { a.fuel }
+        |fn getFuel(a *Engine) int { a.fuel }
         |fn main() int export {
         |  ship = Spaceship(Engine(42));
         |  = getFuel(ship.engine);
@@ -519,7 +519,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |interface IMoo export { fn hi(virtual this &IMoo) void; }
+        |interface IMoo export { fn hi(virtual this *IMoo) void; }
         |""".stripMargin)
     val temputs = compile.expectTemputs()
     val moo = temputs.lookupInterface("IMoo")
@@ -705,7 +705,7 @@ class TemplarTests extends FunSuite with Matchers {
         |
         |fn main() int export {
         |  v = Vec3i(3, 4, 5);
-        |	 (x, y, z) = &v;
+        |	 (x, y, z) = *v;
         |  = y;
         |}
       """.stripMargin)
@@ -760,9 +760,9 @@ class TemplarTests extends FunSuite with Matchers {
           |interface ISpaceship {}
           |struct Firefly {}
           |impl ISpaceship for Firefly;
-          |fn launch(ship &ISpaceship) { }
+          |fn launch(ship *ISpaceship) { }
           |fn main() {
-          |  launch(&Firefly());
+          |  launch(*Firefly());
           |}
           |""".stripMargin)
     val temputs = compile.expectTemputs()
@@ -779,9 +779,9 @@ class TemplarTests extends FunSuite with Matchers {
         |interface ISpaceship<T> rules(T Ref) {}
         |struct Firefly<T> rules(T Ref) {}
         |impl<T> ISpaceship<T> for Firefly<T>;
-        |fn launch<T>(ship &ISpaceship<T>) { }
+        |fn launch<T>(ship *ISpaceship<T>) { }
         |fn main() {
-        |  launch(&Firefly<int>());
+        |  launch(*Firefly<int>());
         |}
         |""".stripMargin)
     val temputs = compile.expectTemputs()
@@ -880,7 +880,7 @@ class TemplarTests extends FunSuite with Matchers {
         |
         |fn main() int export {
         |  a = MakeArray(11, {_});
-        |  = len(&a);
+        |  = len(*a);
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()
@@ -958,7 +958,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |interface AFunction1<P> rules(P Ref) {
-        |  fn __call(virtual this &AFunction1<P>, a P) int;
+        |  fn __call(virtual this *AFunction1<P>, a P) int;
         |}
         |fn main() export {
         |  arr = AFunction1<int>((_){ true });
@@ -987,9 +987,9 @@ class TemplarTests extends FunSuite with Matchers {
         |}
         |struct Spaceship {
         |  name str;
-        |  origin &&Base;
+        |  origin **Base;
         |}
-        |fn printShipBase(ship &Spaceship) {
+        |fn printShipBase(ship *Spaceship) {
         |  maybeOrigin = lock(ship.origin); «14»«15»
         |  if (not maybeOrigin.isEmpty()) { «16»
         |    o = maybeOrigin.get();
@@ -1000,10 +1000,10 @@ class TemplarTests extends FunSuite with Matchers {
         |}
         |fn main() export {
         |  base = Base("Zion");
-        |  ship = Spaceship("Neb", &&base);
-        |  printShipBase(&ship);
+        |  ship = Spaceship("Neb", **base);
+        |  printShipBase(*ship);
         |  (base).drop(); // Destroys base.
-        |  printShipBase(&ship);
+        |  printShipBase(*ship);
         |}
         |""".stripMargin)
 
@@ -1061,7 +1061,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Firefly { }
-        |fn moo(firefly &Firefly) export { }
+        |fn moo(firefly *Firefly) export { }
         |""".stripMargin)
     compile.getTemputs() match {
       case Err(ExportedFunctionDependedOnNonExportedKind(_, _, _, _)) =>
@@ -1075,7 +1075,7 @@ class TemplarTests extends FunSuite with Matchers {
         |import v.builtins.panic.*;
         |import panicutils.*;
         |struct Firefly { }
-        |fn moo() &Firefly export { __pretend<&Firefly>() }
+        |fn moo() *Firefly export { __pretend<*Firefly>() }
         |""".stripMargin)
     compile.getTemputs() match {
       case Err(ExportedFunctionDependedOnNonExportedKind(_, _, _, _)) =>
@@ -1087,7 +1087,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Firefly { }
-        |fn moo(firefly &Firefly) extern;
+        |fn moo(firefly *Firefly) extern;
         |""".stripMargin)
     compile.getTemputs() match {
       case Err(ExternFunctionDependedOnNonExportedKind(_, _, _, _)) =>
@@ -1099,7 +1099,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Firefly imm { }
-        |fn moo() &Firefly extern;
+        |fn moo() *Firefly extern;
         |""".stripMargin)
     compile.getTemputs() match {
       case Err(ExternFunctionDependedOnNonExportedKind(_, _, _, _)) =>
@@ -1139,9 +1139,9 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Muta { }
-        |fn doSomething(m &Muta, i int) {}
+        |fn doSomething(m *Muta, i int) {}
         |fn main() export {
-        |  doSomething(&Muta(), 1)
+        |  doSomething(*Muta(), 1)
         |}
       """.stripMargin)
 
@@ -1182,7 +1182,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Spaceship { }
-        |fn main(ship &!Spaceship) int pure {
+        |fn main(ship *!Spaceship) int pure {
         |  7
         |}
         |""".stripMargin)
@@ -1559,7 +1559,7 @@ class TemplarTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |import v.builtins.panic.*;
         |interface IBlah { }
-        |fn bork(virtual moo &IBlah) abstract;
+        |fn bork(virtual moo *IBlah) abstract;
         |fn main() export {
         |  bork(__vbi_panic());
         |}

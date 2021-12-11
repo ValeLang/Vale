@@ -2,6 +2,6 @@ struct Spaceship { fuel int; }
 fn main() int export {
   a = [][Spaceship(13), Spaceship(14), Spaceship(15)];
   sum = 0;
-  drop_into(a, &!(e){ set sum = sum + e.fuel; });
+  drop_into(a, *!(e){ set sum = sum + e.fuel; });
   = sum;
 }

@@ -171,7 +171,7 @@ case object MoveP extends LoadAsP
 // This means we want to use it, but don't want to own it. This will
 // probably become a BorrowP or ShareP.
 // If permission is None, then we're probably in a dot. For example, x.launch()
-// should be mapped to launch(&!x) if x is mutable, or launch(&x) if it's readonly.
+// should be mapped to launch(*!x) if x is mutable, or launch(*x) if it's readonly.
 case class LendConstraintP(permission: Option[PermissionP]) extends LoadAsP { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 // This means we want to get a weak reference to it. Thisll become a WeakP.
 case class LendWeakP(permission: PermissionP) extends LoadAsP { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }

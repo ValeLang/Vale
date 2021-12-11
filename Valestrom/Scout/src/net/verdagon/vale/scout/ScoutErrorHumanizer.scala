@@ -197,9 +197,9 @@ object ScoutErrorHumanizer {
   def humanizeOwnership(p: OwnershipP) = {
     p match {
       case OwnP => "^"
-      case ShareP => "*"
-      case ConstraintP => "&"
-      case WeakP => "&&"
+      case ShareP => "@"
+      case ConstraintP => "*"
+      case WeakP => "**"
     }
   }
 }

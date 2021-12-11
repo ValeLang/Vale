@@ -65,11 +65,11 @@ trait TemplexParser extends RegexParsers with ParserUtils {
   private[parser] def unariedTemplex: Parser[ITemplexPT] = {
 //    (pos ~ ("?" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => NullablePT(Range(begin, end), inner) }) |
     (pos ~ ("^" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), OwnP, ReadwriteP, inner) }) |
-    (pos ~ ("*" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), ShareP, ReadonlyP, inner) }) |
-    (pos ~ ("&&!" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), WeakP, ReadwriteP, inner) }) |
-    (pos ~ ("&!" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), ConstraintP, ReadwriteP, inner) }) |
-    (pos ~ ("&&" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), WeakP, ReadonlyP, inner) }) |
-    (pos ~ ("&" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), ConstraintP, ReadonlyP, inner) }) |
+    (pos ~ ("@" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), ShareP, ReadonlyP, inner) }) |
+    (pos ~ ("**!" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), WeakP, ReadwriteP, inner) }) |
+    (pos ~ ("*!" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), ConstraintP, ReadwriteP, inner) }) |
+    (pos ~ ("**" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), WeakP, ReadonlyP, inner) }) |
+    (pos ~ ("*" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), ConstraintP, ReadonlyP, inner) }) |
     (pos ~ ("inl" ~> white ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InlinePT(Range(begin, end), inner) }) |
     // A hack to do region highlighting
     ((pos ~ ("'" ~> optWhite ~> exprIdentifier) ~ opt(white ~> templex) ~ pos) ^^ {

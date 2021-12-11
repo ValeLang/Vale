@@ -12,10 +12,10 @@ class InferTemplateTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Muta { hp int; }
-        |fn moo<T>(m &T) int { m.hp }
+        |fn moo<T>(m *T) int { m.hp }
         |fn main() int export {
         |  x = Muta(10);
-        |  = moo(&x);
+        |  = moo(*x);
         |}
       """.stripMargin)
 
@@ -32,10 +32,10 @@ class InferTemplateTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Muta { hp int; }
-        |fn moo<N>(m &[N * Muta]) int { m[0].hp }
+        |fn moo<N>(m *[N * Muta]) int { m[0].hp }
         |fn main() int export {
         |  x = [][Muta(10)];
-        |  = moo(&x);
+        |  = moo(*x);
         |}
       """.stripMargin)
 

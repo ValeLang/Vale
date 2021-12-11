@@ -1,13 +1,13 @@
 interface IShip export imm { }
-fn getFuel(virtual ship &IShip) int abstract;
+fn getFuel(virtual ship *IShip) int abstract;
 
 struct Firefly export imm { fuel int; }
 impl IShip for Firefly;
-fn getFuel(ship &Firefly impl IShip) int { ship.fuel }
+fn getFuel(ship *Firefly impl IShip) int { ship.fuel }
 
 fn cMakeShip() IShip extern;
 
 fn main() int export {
   res = cMakeShip();
-  ret getFuel(&res);
+  ret getFuel(*res);
 }

@@ -8,12 +8,12 @@ struct Vec3i imm {
   z int;
 }
 
-fn bork(thing &!Thing, v Vec3i) void {
+fn bork(thing *!Thing, v Vec3i) void {
   set thing.v = v;
 }
 
 fn main() int export {
   thing = Thing(Vec3i(7, 8, 9));
-  bork(&!thing, Vec3i(4, 5, 6));
+  bork(*!thing, Vec3i(4, 5, 6));
   = thing.v.y;
 }

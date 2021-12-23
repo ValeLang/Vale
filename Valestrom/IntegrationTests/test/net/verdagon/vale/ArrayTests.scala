@@ -100,6 +100,38 @@ class ArrayTests extends FunSuite with Matchers {
     compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
+  test("Migrate RSA") {
+    val compile = RunCompilation.test(
+      """
+        |import array.make.*;
+        |struct Spaceship { fuel int; }
+        |fn main() int export {
+        |  a = Array<mut, Spaceship>(3, &!{Spaceship(41 + _)});
+        |  b = Array<mut, Spaceship>(3);
+        |  migrate(a, &!b);
+        |  = b[1].fuel;
+        |}
+      """.stripMargin)
+
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+  }
+
+  test("Migrate SSA") {
+    val compile = RunCompilation.test(
+      """
+        |import array.make.*;
+        |struct Spaceship { fuel int; }
+        |fn main() int export {
+        |  a = [3](&!{Spaceship(41 + _)});
+        |  b = Array<mut, Spaceship>(3);
+        |  migrate(a, &!b);
+        |  = b[1].fuel;
+        |}
+      """.stripMargin)
+
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+  }
+
   test("Unspecified-mutability static array from lambda defaults to mutable") {
     val compile = RunCompilation.test(
       """

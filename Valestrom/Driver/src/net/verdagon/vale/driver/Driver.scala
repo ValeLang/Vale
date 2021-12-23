@@ -77,6 +77,9 @@ object Driver {
       case ("-v" | "--verbose") :: tail => {
         parseOpts(opts.copy(verboseErrors = true), tail)
       }
+      case ("--debug_output") :: tail => {
+        parseOpts(opts.copy(debugOutput = true), tail)
+      }
       case value :: _ if value.startsWith("-") => throw InputException("Unknown option " + value)
       case value :: tail => {
         if (opts.mode.isEmpty) {

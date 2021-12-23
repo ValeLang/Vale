@@ -194,6 +194,30 @@ public:
 };
 
 
+class BorrowToPointer : public Expression {
+public:
+  Expression* sourceExpr;
+  Reference* resultType;
+
+  BorrowToPointer(
+      Expression* sourceExpr_,
+      Reference* resultType_) :
+      sourceExpr(sourceExpr_),
+      resultType(resultType_) {}
+};
+
+class PointerToBorrow : public Expression {
+public:
+  Expression* sourceExpr;
+  Reference* resultType;
+
+  PointerToBorrow(
+      Expression* sourceExpr_,
+      Reference* resultType_) :
+      sourceExpr(sourceExpr_),
+      resultType(resultType_) {}
+};
+
 class WeakAlias : public Expression {
 public:
   Expression* sourceExpr;

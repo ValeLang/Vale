@@ -214,6 +214,8 @@ Ownership readUnconvertedOwnership(MetalCache* cache, const json& ownership) {
 //  std::cout << ownership.type() << std::endl;
   if (ownership["__type"].get<std::string>() == "Own") {
     return Ownership::OWN;
+  } else if (ownership["__type"].get<std::string>() == "Pointer") {
+    return Ownership::BORROW;
   } else if (ownership["__type"].get<std::string>() == "Borrow") {
     return Ownership::BORROW;
   } else if (ownership["__type"].get<std::string>() == "Weak") {
@@ -335,11 +337,19 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readLocal(cache, expression["local"]),
         readUnconvertedOwnership(cache, expression["targetOwnership"]),
         readName(cache, expression["localName"])->name);
-  } else if (type == "WeakAlias") {
+  } else if (type == "BorrowToWeak" || type == "PointerToWeak") {
     return new WeakAlias(
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceType"]),
         readKind(cache, expression["sourceKind"]),
+        readReference(cache, expression["resultType"]));
+  } else if (type == "BorrowToPointer") {
+    return new BorrowToPointer(
+        readExpression(cache, expression["sourceExpr"]),
+        readReference(cache, expression["resultType"]));
+  } else if (type == "PointerToBorrow") {
+    return new PointerToBorrow(
+        readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["resultType"]));
   } else if (type == "NarrowPermission") {
     return new NarrowPermission(
@@ -491,6 +501,11 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readKind(cache, expression["arrayKind"]));
   } else if (type == "ArrayLength") {
     return new ArrayLength(
+        readExpression(cache, expression["sourceExpr"]),
+        readReference(cache, expression["sourceType"]),
+        expression["sourceKnownLive"]);
+  } else if (type == "ArrayCapacity") {
+    return new ArrayCapacity(
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceType"]),
         expression["sourceKnownLive"]);

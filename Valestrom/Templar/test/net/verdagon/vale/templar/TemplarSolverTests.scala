@@ -4,11 +4,11 @@ import net.verdagon.vale._
 import net.verdagon.vale.scout._
 import net.verdagon.vale.scout.rules.{CoordComponentsSR, KindComponentsSR, RuneUsage}
 import net.verdagon.vale.solver.{FailedSolve, IncompleteSolve, RuleError, SolverConflict, Step}
-import net.verdagon.vale.templar.OverloadTemplar.{FindFunctionFailure, WrongNumberOfArguments}
+import net.verdagon.vale.templar.OverloadTemplar.{FindFunctionFailure, InferFailure, SpecificParamDoesntSend, WrongNumberOfArguments}
 import net.verdagon.vale.templar.ast.{ConstantIntTE, FunctionCallTE, KindExportT, PrototypeT, SignatureT, StructToInterfaceUpcastTE}
 import net.verdagon.vale.templar.env.ReferenceLocalVariableT
 import net.verdagon.vale.templar.expression.CallTemplar
-import net.verdagon.vale.templar.infer.KindIsNotConcrete
+import net.verdagon.vale.templar.infer.{KindIsNotConcrete, SendingNonCitizen}
 import net.verdagon.vale.templar.names.{CitizenNameT, CitizenTemplateNameT, FullNameT, FunctionNameT}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
@@ -483,6 +483,33 @@ class TemplarSolverTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").header.returnType match {
       case CoordT(_,_,StrT()) =>
+    }
+  }
+
+  test("Detects sending non-citizen to citizen") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |import v.builtins.tup.*;
+        |interface MyInterface {}
+        |fn moo<T>(a T)
+        |rules(implements(T, MyInterface))
+        |{ }
+        |fn main() export {
+        |  moo(7);
+        |}
+        |""".stripMargin
+    )
+    compile.getTemputs() match {
+      case Err(CouldntFindFunctionToCallT(range, fff)) => {
+        fff.rejectedCalleeToReason.values.head match {
+          case InferFailure(reason) => {
+            reason match {
+              case FailedSolve(_, _, RuleError(SendingNonCitizen(IntT(32)))) =>
+              case other => vfail(other)
+            }
+          }
+        }
+      }
     }
   }
 }

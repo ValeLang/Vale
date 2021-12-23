@@ -19,22 +19,17 @@ case class KindIsNotConcrete(kind: KindT) extends ITemplarSolverError
 case class KindIsNotInterface(kind: KindT) extends ITemplarSolverError
 case class KindIsNotStruct(kind: KindT) extends ITemplarSolverError
 case class CantShareMutable(kind: KindT) extends ITemplarSolverError
-case class ReceivingDifferentOwnerships(params: Vector[(IRuneS, CoordT)]) extends ITemplarSolverError {
-  vpass()
-}
+case class SendingNonCitizen(kind: KindT) extends ITemplarSolverError
+case class ReceivingDifferentOwnerships(params: Vector[(IRuneS, CoordT)]) extends ITemplarSolverError
 case class ReceivingDifferentPermissions(params: Vector[(IRuneS, CoordT)]) extends ITemplarSolverError
 case class SendingNonIdenticalKinds(sendCoord: CoordT, receiveCoord: CoordT) extends ITemplarSolverError
 case class NoCommonAncestors(params: Vector[(IRuneS, CoordT)]) extends ITemplarSolverError
-case class LookupFailed(name: IImpreciseNameS) extends ITemplarSolverError {
-  vpass()
-}
+case class LookupFailed(name: IImpreciseNameS) extends ITemplarSolverError
 case class NoAncestorsSatisfyCall(params: Vector[(IRuneS, CoordT)]) extends ITemplarSolverError
 case class CantDetermineNarrowestKind(kinds: Set[KindT]) extends ITemplarSolverError
 case class OwnershipDidntMatch(coord: CoordT, expectedOwnership: OwnershipT) extends ITemplarSolverError
 case class PermissionDidntMatch(coord: CoordT, expectedPermission: PermissionT) extends ITemplarSolverError
-case class CallResultWasntExpectedType(expected: ITemplata, actual: ITemplata) extends ITemplarSolverError {
-  vpass()
-}
+case class CallResultWasntExpectedType(expected: ITemplata, actual: ITemplata) extends ITemplarSolverError
 case class OneOfFailed(rule: OneOfSR) extends ITemplarSolverError
 case class KindDoesntImplementInterface(sub: CitizenRefT, suuper: InterfaceTT) extends ITemplarSolverError
 
@@ -290,10 +285,21 @@ class TemplarSolver[Env, State](
         }
       }
       case CoordIsaSR(range, subRune, superRune) => {
-        val CoordTemplata(subCoord @ CoordT(_, _, subCitizen : CitizenRefT)) =
+        val CoordTemplata(subCoord) =
           vassertSome(stepState.getConclusion(subRune.rune))
-        val CoordTemplata(superCoord @ CoordT(_, _, superCitizen : CitizenRefT)) =
+        val subCitizen =
+          subCoord.kind match {
+            case cit : CitizenRefT => cit
+            case other => return Err(RuleError(SendingNonCitizen(other)))
+          }
+
+        val CoordTemplata(superCoord) =
           vassertSome(stepState.getConclusion(superRune.rune))
+        val superCitizen =
+          superCoord.kind match {
+            case cit : CitizenRefT => cit
+            case other => return Err(RuleError(SendingNonCitizen(other)))
+          }
 
         superCitizen match {
           case StructTT(_) => {

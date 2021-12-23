@@ -276,11 +276,11 @@ case class NarrowPermissionH(
 // Turns a borrow ref into a pointer ref.
 case class BorrowToPointerH(
   // Expression containing the pointer reference to turn into a weak ref.
-  innerExpression: ExpressionH[KindH]
+  sourceExpr: ExpressionH[KindH]
 ) extends ExpressionH[KindH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
-  private val ReferenceH(BorrowH, location, permission, kind) = innerExpression.resultType
+  private val ReferenceH(BorrowH, location, permission, kind) = sourceExpr.resultType
   override def resultType: ReferenceH[KindH] = {
     ReferenceH(PointerH, location, permission, kind)
   }
@@ -289,11 +289,11 @@ case class BorrowToPointerH(
 // Turns a pointer ref into a borrow ref.
 case class PointerToBorrowH(
   // Expression containing the pointer reference to turn into a weak ref.
-  innerExpression: ExpressionH[KindH]
+  sourceExpr: ExpressionH[KindH]
 ) extends ExpressionH[KindH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
-  private val ReferenceH(PointerH, location, permission, kind) = innerExpression.resultType
+  private val ReferenceH(PointerH, location, permission, kind) = sourceExpr.resultType
   override def resultType: ReferenceH[KindH] = {
     ReferenceH(BorrowH, location, permission, kind)
   }

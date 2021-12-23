@@ -122,7 +122,7 @@ object ScoutErrorHumanizer {
       case PermissionTemplataType => "perm"
       case LocationTemplataType => "loc"
       case OwnershipTemplataType => "own"
-      case VariabilityTemplataType => "var"
+      case VariabilityTemplataType => "vary"
       case PackTemplataType(elementType) => "pack<" + humanizeTemplataType(elementType) + ">"
       case TemplateTemplataType(params, ret) => humanizeTemplataType(ret) + "<" + params.map(humanizeTemplataType).mkString(",") + ">"
     }

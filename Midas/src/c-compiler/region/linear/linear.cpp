@@ -1301,16 +1301,16 @@ std::pair<Ref, Ref> Linear::receiveUnencryptedAlienReference(
           ->checkValidReference(FL(), functionState, builder, sourceRefMT, sourceRef);
 
   if (dynamic_cast<Int*>(sourceRefMT->kind)) {
-    auto resultRef = wrap(globalState->getRegion(sourceRefMT), targetRefMT, sourceRefLE);
+    auto resultRef = wrap(globalState->getRegion(targetRefMT), targetRefMT, sourceRefLE);
     auto sizeRef = globalState->constI32(LLVMABISizeOfType(globalState->dataLayout, translateType(targetRefMT)));
     return std::make_pair(resultRef, sizeRef);
   } else if (dynamic_cast<Bool*>(sourceRefMT->kind)) {
     auto resultLE = LLVMBuildZExt(builder, sourceRefLE, LLVMInt8TypeInContext(globalState->context), "boolAsI8");
-    auto resultRef = wrap(globalState->getRegion(sourceRefMT), targetRefMT, resultLE);
+    auto resultRef = wrap(globalState->getRegion(targetRefMT), targetRefMT, resultLE);
     auto sizeRef = globalState->constI32(LLVMABISizeOfType(globalState->dataLayout, translateType(targetRefMT)));
     return std::make_pair(resultRef, sizeRef);
   } else if (dynamic_cast<Float*>(sourceRefMT->kind)) {
-    auto resultRef = wrap(globalState->getRegion(sourceRefMT), targetRefMT, sourceRefLE);
+    auto resultRef = wrap(globalState->getRegion(targetRefMT), targetRefMT, sourceRefLE);
     auto sizeRef = globalState->constI32(LLVMABISizeOfType(globalState->dataLayout, translateType(targetRefMT)));
     return std::make_pair(resultRef, sizeRef);
   } else if (dynamic_cast<Str*>(sourceRefMT->kind) ||

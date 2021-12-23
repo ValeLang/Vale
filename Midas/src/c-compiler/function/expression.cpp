@@ -126,6 +126,18 @@ Ref translateExpressionInner(
             functionState, builder, localStore->local->type, refToStore);
     LLVMBuildStore(builder, toStoreLE, localAddr);
     return oldRef;
+  } else if (auto pointerToBorrow = dynamic_cast<PointerToBorrow*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    auto sourceRef =
+        translateExpression(
+            globalState, functionState, blockState, builder, pointerToBorrow->sourceExpr);
+    return sourceRef;
+  } else if (auto borrowToPointer = dynamic_cast<BorrowToPointer*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    auto sourceRef =
+        translateExpression(
+            globalState, functionState, blockState, builder, borrowToPointer->sourceExpr);
+    return sourceRef;
   } else if (auto weakAlias = dynamic_cast<WeakAlias*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
 
@@ -318,8 +330,8 @@ Ref translateExpressionInner(
             ->checkValidReference(FL(),
                 functionState, builder, globalState->metalCache->i32Ref, arrayCapacityRef);
 
-    auto hasSpaceLE = LLVMBuildICmp(builder, LLVMIntULT, arrayLenLE, arrayCapacityLE, "hasSpace");
-    buildIf(globalState, functionState, builder, hasSpaceLE, [globalState](LLVMBuilderRef bodyBuilder) {
+    auto arrayIsFullLE = LLVMBuildICmp(builder, LLVMIntUGE, arrayLenLE, arrayCapacityLE, "hasSpace");
+    buildIf(globalState, functionState, builder, arrayIsFullLE, [globalState](LLVMBuilderRef bodyBuilder) {
       buildPrint(globalState, bodyBuilder, "Error: Runtime-sized array has no room for new element!");
     });
 
@@ -363,8 +375,8 @@ Ref translateExpressionInner(
     auto indexRef =
         wrap(globalState->getRegion(globalState->metalCache->i32Ref), globalState->metalCache->i32Ref, indexLE);
 
-    auto hasElementsLE = LLVMBuildICmp(builder, LLVMIntNE, arrayLenLE, constI32LE(globalState, 0), "hasElements");
-    buildIf(globalState, functionState, builder, hasElementsLE, [globalState](LLVMBuilderRef bodyBuilder) {
+    auto arrayIsEmptyLE = LLVMBuildICmp(builder, LLVMIntEQ, arrayLenLE, constI32LE(globalState, 0), "hasElements");
+    buildIf(globalState, functionState, builder, arrayIsEmptyLE, [globalState](LLVMBuilderRef bodyBuilder) {
       buildPrint(globalState, bodyBuilder, "Error: Cannot pop element from empty runtime-sized array!");
     });
 
@@ -645,6 +657,25 @@ Ref translateExpressionInner(
                 functionState, builder, arrayType, arrayRefLE, arrayKnownLive);
     globalState->getRegion(arrayType)
         ->dealias(AFL("RSALen"), functionState, builder, arrayType, arrayRefLE);
+
+    return sizeLE;
+  } else if (auto arrayCapacity = dynamic_cast<ArrayCapacity*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    auto arrayType = arrayCapacity->sourceType;
+    auto arrayExpr = arrayCapacity->sourceExpr;
+    bool arrayKnownLive = arrayCapacity->sourceKnownLive || globalState->opt->overrideKnownLiveTrue;
+//    auto indexExpr = arrayLength->indexExpr;
+
+    auto arrayRefLE = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
+    globalState->getRegion(arrayType)
+        ->checkValidReference(FL(), functionState, builder, arrayType, arrayRefLE);
+
+    auto sizeLE =
+        globalState->getRegion(arrayType)
+            ->getRuntimeSizedArrayCapacity(
+                functionState, builder, arrayType, arrayRefLE, arrayKnownLive);
+    globalState->getRegion(arrayType)
+        ->dealias(AFL("RSACapacity"), functionState, builder, arrayType, arrayRefLE);
 
     return sizeLE;
   } else if (auto narrowPermission = dynamic_cast<NarrowPermission*>(expr)) {

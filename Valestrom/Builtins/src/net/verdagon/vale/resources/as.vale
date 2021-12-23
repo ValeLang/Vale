@@ -2,7 +2,13 @@ import v.builtins.result.*;
 
 fn as<TargetKind, SourceType>(left SourceType) Result<TargetType, SourceType>
 rules(
-  SourceOwnership Ownership,
+  SourceType Ref(own, rw, _),
+  TargetType Ref(own, rw, TargetKind))
+extern(vale_as_subtype);
+
+fn as<TargetKind, SourceType>(left SourceType) Result<*TargetType, *SourceType>
+rules(
+  SourceOwnership Ownership = borrow | ptr,
   SourcePermission Permission,
   SourceType Ref(SourceOwnership, SourcePermission, _),
   TargetType Ref(SourceOwnership, SourcePermission, TargetKind))

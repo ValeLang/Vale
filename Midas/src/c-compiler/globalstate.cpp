@@ -100,7 +100,10 @@ IRegion* GlobalState::getRegion(Kind* kindM) {
     return getRegion(str->regionId);
   } else {
     auto iter = regionIdByKind.find(kindM);
-    assert(iter != regionIdByKind.end());
+    if (iter == regionIdByKind.end()) {
+      std::cerr << "Couldn't find region for: " << typeid(*kindM).name() << std::endl;
+      exit(1);
+    }
     auto regionId = iter->second;
     return getRegion(regionId);
   }

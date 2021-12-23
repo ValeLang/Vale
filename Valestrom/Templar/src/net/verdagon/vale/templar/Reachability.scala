@@ -96,6 +96,8 @@ object Reachability {
     Collector.all(structDef, {
       case sr @ StructTT(_) => visitStruct(program, emptyTupleStruct, edgeBlueprints, edges, reachables, sr)
       case ir @ InterfaceTT(_) => visitInterface(program, emptyTupleStruct, edgeBlueprints, edges, reachables, ir)
+      case ssa @ StaticSizedArrayTT(_, _, _, _) => visitStaticSizedArray(program, emptyTupleStruct, edgeBlueprints, edges, reachables, ssa)
+      case rsa @ RuntimeSizedArrayTT(_, _) => visitRuntimeSizedArray(program, emptyTupleStruct, edgeBlueprints, edges, reachables, rsa)
     })
     edges.filter(_.struct == structTT).foreach(visitImpl(program, emptyTupleStruct, edgeBlueprints, edges, reachables, _))
 
@@ -130,6 +132,8 @@ object Reachability {
     Collector.all(interfaceDef, {
       case sr @ StructTT(_) => visitStruct(program, emptyTupleStruct, edgeBlueprints, edges, reachables, sr)
       case ir @ InterfaceTT(_) => visitInterface(program, emptyTupleStruct, edgeBlueprints, edges, reachables, ir)
+      case ssa @ StaticSizedArrayTT(_, _, _, _) => visitStaticSizedArray(program, emptyTupleStruct, edgeBlueprints, edges, reachables, ssa)
+      case rsa @ RuntimeSizedArrayTT(_, _) => visitRuntimeSizedArray(program, emptyTupleStruct, edgeBlueprints, edges, reachables, rsa)
     })
     edgeBlueprints.find(_.interface == interfaceTT).get.superFamilyRootBanners.foreach(f => {
       visitFunction(program, emptyTupleStruct, edgeBlueprints, edges, reachables, f.toSignature)

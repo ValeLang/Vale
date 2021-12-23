@@ -528,19 +528,21 @@ object VonHammer {
           Vector(
             VonMember("local", vonifyLocal(local))))
       }
-      case BorrowToPointerH(innerExpression) => {
+      case BorrowToPointerH(sourceExpr) => {
         VonObject(
           "BorrowToPointer",
           None,
           Vector(
-            VonMember("innerExpression", vonifyExpression(innerExpression))))
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
+            VonMember("resultType", vonifyCoord(sourceExpr.resultType))))
       }
-      case PointerToBorrowH(innerExpression) => {
+      case PointerToBorrowH(sourceExpr) => {
         VonObject(
           "PointerToBorrow",
           None,
           Vector(
-            VonMember("innerExpression", vonifyExpression(innerExpression))))
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
+            VonMember("resultType", vonifyCoord(sourceExpr.resultType))))
       }
       case NarrowPermissionH(refExpression, targetPermission) => {
         VonObject(

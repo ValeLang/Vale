@@ -1,13 +1,13 @@
 package net.verdagon.vale.templar.macros
 
-import net.verdagon.vale.{RangeS, vassertSome, vfail}
+import net.verdagon.vale.{RangeS, vassert, vassertSome, vfail}
 import net.verdagon.vale.astronomer.FunctionA
 import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.citizen.AncestorHelper
 import net.verdagon.vale.templar.env.{FunctionEnvironment, FunctionEnvironmentBox}
 import net.verdagon.vale.templar.expression.ExpressionTemplar
 import net.verdagon.vale.templar.templata.KindTemplata
-import net.verdagon.vale.templar.types.{CitizenRefT, CoordT, InterfaceTT, StructTT}
+import net.verdagon.vale.templar.types.{BorrowT, CitizenRefT, CoordT, InterfaceTT, PointerT, StructTT}
 import net.verdagon.vale.templar.{ArrayTemplar, CantDowncastToInterface, CantDowncastUnrelatedTypes, CompileErrorExceptionT, Temputs, ast}
 
 class AsSubtypeMacro(
@@ -55,9 +55,27 @@ class AsSubtypeMacro(
 
     val incomingCoord = paramCoords(0).tyype
     val incomingSubkind = incomingCoord.kind
-    val targetCoord = incomingCoord.copy(kind = targetKind)
+
+    // Because we dont yet put borrows in structs
+    val resultOwnership =
+      incomingCoord.ownership match {
+        case BorrowT => PointerT
+        case other => other
+      }
+    val successCoord =
+      CoordT(
+        resultOwnership,
+        incomingCoord.permission,
+        targetKind)
+    val failCoord =
+      CoordT(
+        resultOwnership,
+        incomingCoord.permission,
+        incomingSubkind)
     val (resultCoord, okConstructor, errConstructor) =
-      expressionTemplar.getResult(temputs, env, callRange, targetCoord, incomingCoord)
+      expressionTemplar.getResult(temputs, env, callRange, successCoord, failCoord)
+    vassert(resultCoord == vassertSome(maybeRetCoord))
+
     val asSubtypeExpr: ReferenceExpressionTE =
       sourceCitizen match {
         case sourceInterface @ InterfaceTT(_) => {

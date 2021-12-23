@@ -94,20 +94,22 @@ class TemplarVirtualTests extends FunSuite with Matchers {
                     CitizenTemplateNameT("Result"),
                     Vector(firstGenericArg, secondGenericArg))))) => (firstGenericArg, secondGenericArg)
           }
+        // They should both be pointers, since we dont really do borrows in structs yet
         firstGenericArg match {
           case CoordTemplata(
             CoordT(
-              BorrowT,ReadonlyT,
+              PointerT,ReadonlyT,
               StructTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("Raza"),Vector()))))) =>
         }
         secondGenericArg match {
           case CoordTemplata(
             CoordT(
-              BorrowT,ReadonlyT,
+              PointerT,ReadonlyT,
               InterfaceTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("IShip"),Vector()))))) =>
         }
         vassert(okConstructor.paramTypes.head.kind == targetSubtype)
-        vassert(errConstructor.paramTypes.head == sourceExpr.result.reference)
+        vassert(errConstructor.paramTypes.head.permission == sourceExpr.result.reference.permission)
+        vassert(errConstructor.paramTypes.head.kind == sourceExpr.result.reference.kind)
         as
       }
     })

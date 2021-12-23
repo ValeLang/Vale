@@ -2,6 +2,15 @@ import stdlib.command.*;
 import stdlib.flagger.*;
 import stdlib.path.*;
 
+//fn removeAllRecursively(path &Path) {
+//  if (path.is_dir()) {
+//    iterdir(path).each((entry){
+//      removeAllRecursively(entry);
+//    });
+//  }
+//  path.remove();
+//}
+
 struct ProjectDirectoryDeclaration {
   project_name str;
   path Path;
@@ -73,6 +82,12 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
           "Whether to benchmark Valestrom."),
         Flag(
           "--verbose",
+          FLAG_BOOL(),
+          "Whether to print out more detailed errors.",
+          "true",
+          "Whether to print out more detailed errors."),
+        Flag(
+          "--debug_output",
           FLAG_BOOL(),
           "Whether to print out more detailed errors.",
           "true",
@@ -167,6 +182,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
 
   benchmark = parsed_flags.get_bool_flag("--benchmark", false);
   verbose = parsed_flags.get_bool_flag("--verbose", false);
+  debug_output = parsed_flags.get_bool_flag("--debug_output", false);
   include_builtins = parsed_flags.get_bool_flag("--include_builtins", true);
   output_vast = parsed_flags.get_bool_flag("--output_vast", true);
   reuse_vast = parsed_flags.get_bool_flag("--reuse_vast", false);
@@ -240,6 +256,10 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
       panic("Error: --reuse_vast specified, but no .vast files found in " + output_dir.str() + ".");
     }
   } else {
+    if (output_dir.exists()) {
+      // TODO: Automatically delete or move this, see https://github.com/ValeLang/Vale/issues/396
+      panic("Error: output directory already exists: {output_dir.str()}");
+    }
     valestrom_process =
         invoke_valestrom(
             &valestrom_path,
@@ -248,6 +268,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
             &project_non_vale_input_declarations,
             benchmark,
             verbose,
+            debug_output,
             include_builtins,
             output_vast,
             output_vpst,

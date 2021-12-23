@@ -485,6 +485,9 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
     std::cerr << "Must specify --output-dir!" << std::endl;
     assert(false);
   }
+  auto outputDir = globalState->opt->outputDir;
+
+
   for (auto& [packageCoord, headerNameToC] : packageCoordToHeaderNameToC) {
     for (auto& [headerName, headerCode] : headerNameToC) {
       std::string moduleIncludeDirectory = makeModuleIncludeDirectory(globalState, packageCoord);

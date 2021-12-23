@@ -250,6 +250,7 @@ fn main() int export {
     suite!.StartTest(42, "rsamutdestroyintocallable", samples_path./("programs/arrays/rsamutdestroyintocallable.vale"), &List<str>(), region);
     suite!.StartTest(42, "ssamutdestroyintocallable", samples_path./("programs/arrays/ssamutdestroyintocallable.vale"), &List<str>(), region);
     suite!.StartTest(5, "rsamutlen", samples_path./("programs/arrays/rsamutlen.vale"), &List<str>(), region);
+    suite!.StartTest(42, "rsamutcapacity", samples_path./("programs/arrays/rsamutcapacity.vale"), &List<str>(), region);
     suite!.StartTest(42, "stradd", samples_path./("programs/strings/stradd.vale"), &List<str>(), region);
     suite!.StartTest(42, "strneq", samples_path./("programs/strings/strneq.vale"), &List<str>(), region);
     suite!.StartTest(42, "lambdamut", samples_path./("programs/lambdas/lambdamut.vale"), &List<str>(), region);
@@ -259,8 +260,8 @@ fn main() int export {
     suite!.StartTest(42, "nestedif", samples_path./("programs/if/nestedif.vale"), &List<str>(), region);
     suite!.StartTest(42, "unstackifyret", samples_path./("programs/unstackifyret.vale"), &List<str>(), region);
     suite!.StartTest(42, "swaprsamutdestroy", samples_path./("programs/arrays/swaprsamutdestroy.vale"), &List<str>(), region);
-    suite!.StartTest(42, "downcastConstraintSuccessful", samples_path./("programs/downcast/downcastConstraintSuccessful.vale"), &List<str>(), region);
-    suite!.StartTest(42, "downcastConstraintFailed", samples_path./("programs/downcast/downcastConstraintFailed.vale"), &List<str>(), region);
+    suite!.StartTest(42, "downcastBorrowSuccessful", samples_path./("programs/downcast/downcastBorrowSuccessful.vale"), &List<str>(), region);
+    suite!.StartTest(42, "downcastBorrowFailed", samples_path./("programs/downcast/downcastBorrowFailed.vale"), &List<str>(), region);
     suite!.StartTest(42, "downcastOwningSuccessful", samples_path./("programs/downcast/downcastOwningSuccessful.vale"), &List<str>(), region);
     suite!.StartTest(42, "downcastOwningFailed", samples_path./("programs/downcast/downcastOwningFailed.vale"), &List<str>(), region);
     suite!.StartTest(42, "unreachablemoot", samples_path./("programs/unreachablemoot.vale"), &List<str>(), region);

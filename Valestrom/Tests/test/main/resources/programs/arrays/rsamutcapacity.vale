@@ -1,0 +1,7 @@
+// immutable runtime-size-array length
+
+fn main() int export {
+  a = Array<mut, int>(42);
+  a!.push(7);
+  = capacity(&a);
+}

@@ -39,7 +39,7 @@ class OptTests extends FunSuite with Matchers {
         """
           |// This is the same as the one in optutils.vale, just named differently,
           |// so its easier to debug.
-          |fn borrowGet<T>(opt *Some<T>) *T { opt.value }
+          |fn borrowGet<T>(opt &Some<T>) *T { *opt.value }
           |
           |struct Spaceship { fuel int; }
           |fn main() int export {

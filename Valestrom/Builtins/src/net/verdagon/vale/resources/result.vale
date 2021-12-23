@@ -6,10 +6,10 @@ impl<OkType, ErrType> Result<OkType, ErrType> for Ok<OkType, ErrType>;
 struct Err<OkType, ErrType> rules(OkType Ref, ErrType Ref) { value ErrType; }
 impl<OkType, ErrType> Result<OkType, ErrType> for Err<OkType, ErrType>;
 
-fn is_ok<OkType, ErrType>(virtual result *Result<OkType, ErrType>) bool abstract;
-fn is_ok<OkType, ErrType>(ok *Ok<OkType, ErrType> impl Result<OkType, ErrType>) bool { true }
-fn is_ok<OkType, ErrType>(err *Err<OkType, ErrType> impl Result<OkType, ErrType>) bool { false }
-fn is_err<OkType, ErrType>(result *Result<OkType, ErrType>) bool { not is_ok(result) }
+fn is_ok<OkType, ErrType>(virtual result &Result<OkType, ErrType>) bool abstract;
+fn is_ok<OkType, ErrType>(ok &Ok<OkType, ErrType> impl Result<OkType, ErrType>) bool { true }
+fn is_ok<OkType, ErrType>(err &Err<OkType, ErrType> impl Result<OkType, ErrType>) bool { false }
+fn is_err<OkType, ErrType>(result &Result<OkType, ErrType>) bool { not is_ok(result) }
 
 fn is_ok<OkType, ErrType>(virtual result *!Result<OkType, ErrType>) bool abstract;
 fn is_ok<OkType, ErrType>(ok *!Ok<OkType, ErrType> impl Result<OkType, ErrType>) bool { true }
@@ -25,13 +25,13 @@ fn expect<OkType, ErrType>(ok Ok<OkType, ErrType> impl Result<OkType, ErrType>) 
   = value;
 }
 
-fn expect<OkType, ErrType>(virtual result *Result<OkType, ErrType>) *OkType abstract;
-fn expect<OkType, ErrType>(err *Err<OkType, ErrType> impl Result<OkType, ErrType>) *OkType { panic("Called expect() on a Err!") }
-fn expect<OkType, ErrType>(ok *Ok<OkType, ErrType> impl Result<OkType, ErrType>) *OkType { ok.value }
+fn expect<OkType, ErrType>(virtual result &Result<OkType, ErrType>) *OkType abstract;
+fn expect<OkType, ErrType>(err &Err<OkType, ErrType> impl Result<OkType, ErrType>) *OkType { panic("Called expect() on a Err!") }
+fn expect<OkType, ErrType>(ok &Ok<OkType, ErrType> impl Result<OkType, ErrType>) *OkType { *ok.value }
 // Itd be nice to abstract over permission
 fn expect<OkType, ErrType>(virtual result *!Result<OkType, ErrType>) *!OkType abstract;
 fn expect<OkType, ErrType>(err *!Err<OkType, ErrType> impl Result<OkType, ErrType>) *!OkType { panic("Called expect() on a Err!") }
-fn expect<OkType, ErrType>(ok *!Ok<OkType, ErrType> impl Result<OkType, ErrType>) infer-ret { ok.value }
+fn expect<OkType, ErrType>(ok *!Ok<OkType, ErrType> impl Result<OkType, ErrType>) *!OkType { *!ok.value }
 
 
 
@@ -42,9 +42,9 @@ fn expect_err<OkType, ErrType>(err Err<OkType, ErrType> impl Result<OkType, ErrT
   = value;
 }
 
-fn expect_err<OkType, ErrType>(virtual result *Result<OkType, ErrType>) *ErrType abstract;
-fn expect_err<OkType, ErrType>(ok *Ok<OkType, ErrType> impl Result<OkType, ErrType>) *ErrType { panic("Called expect_err() on an Ok!") }
-fn expect_err<OkType, ErrType>(err *Err<OkType, ErrType> impl Result<OkType, ErrType>) *ErrType { err.value }
+fn expect_err<OkType, ErrType>(virtual result &Result<OkType, ErrType>) *ErrType abstract;
+fn expect_err<OkType, ErrType>(ok &Ok<OkType, ErrType> impl Result<OkType, ErrType>) *ErrType { panic("Called expect_err() on an Ok!") }
+fn expect_err<OkType, ErrType>(err &Err<OkType, ErrType> impl Result<OkType, ErrType>) *ErrType { err.value }
 // Itd be nice to abstract over permission
 fn expect_err<OkType, ErrType>(virtual result *!Result<OkType, ErrType>) *!ErrType abstract;
 fn expect_err<OkType, ErrType>(ok *!Ok<OkType, ErrType> impl Result<OkType, ErrType>) infer-ret { panic("Called expect_err() on an Ok!") }

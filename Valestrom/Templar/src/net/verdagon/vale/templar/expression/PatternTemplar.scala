@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar.expression
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.parser.{LendConstraintP, UseP}
+import net.verdagon.vale.parser.{LoadAsBorrowP, LoadAsPointerP, UseP}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.{IRulexSR, RuneUsage}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
@@ -173,7 +173,7 @@ class PatternTemplar(
           val localT = localHelper.makeUserLocalVariable(temputs, fate, range, localS, inputExpr.result.reference)
           currentInstructions = currentInstructions :+ LetNormalTE(localT, inputExpr)
           val capturedLocalAliasTE =
-            localHelper.softLoad(fate, range, LocalLookupTE(range, localT, localT.reference, FinalT), LendConstraintP(None))
+            localHelper.softLoad(fate, range, LocalLookupTE(range, localT, localT.reference, FinalT), LoadAsBorrowP(None))
           (Some(localT), capturedLocalAliasTE)
         }
       }
@@ -271,7 +271,7 @@ class PatternTemplar(
     val localT = localHelper.makeTemporaryLocal(fate, life + 0, containerTE.result.reference)
     val letTE = LetNormalTE(localT, containerTE)
     val containerAliasingExprTE =
-      localHelper.softLoad(fate, range, LocalLookupTE(range, localT, localT.reference, FinalT), LendConstraintP(None))
+      localHelper.softLoad(fate, range, LocalLookupTE(range, localT, localT.reference, FinalT), LoadAsPointerP(None))
 
     Templar.consecutive(
       Vector(

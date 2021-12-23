@@ -77,7 +77,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
           FunctionCallPE(_,None,_, false,
             LookupPE(NameP(_, "Wizard"), None),
             Vector(ConstantIntPE(_, 8, _)),
-            LendConstraintP(Some(ReadonlyP))),
+            LoadAsBorrowP(Some(ReadonlyP))),
         _, false,
         NameP(_, "charges")) =>
     }
@@ -127,7 +127,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
   test("eachI") {
     compile(CombinatorParsers.statement, "eachI row (cellI, cell){ 0 }") shouldHave {
       case FunctionCallPE(_,None,_, false,
-      LookupPE(NameP(_, "eachI"), None),
+        LookupPE(NameP(_, "eachI"), None),
         Vector(
           LookupPE(NameP(_, "row"), None),
           LambdaPE(_,
@@ -141,7 +141,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
                       PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "cell")))),None,None,None)))),
                 FunctionReturnP(_, None, None)),
               Some(BlockPE(_,Vector(ConstantIntPE(_, 0, _))))))),
-        LendConstraintP(None)) =>
+        LoadAsBorrowP(None)) =>
     }
   }
 
@@ -150,7 +150,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
       case FunctionCallPE(_,None,_, false,
       LookupPE(NameP(_, "eachI"), None),
         Vector(
-          LendPE(_,LookupPE(NameP(_, "row"), None), LendConstraintP(Some(ReadonlyP))),
+          LoadPE(_,LookupPE(NameP(_, "row"), None), LoadAsPointerP(Some(ReadonlyP))),
           LambdaPE(_,
             FunctionP(_,
               FunctionHeaderP(
@@ -162,17 +162,17 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
                       PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "cell")))),None,None,None)))),
                 FunctionReturnP(_, None, None)),
               Some(BlockPE(_,Vector(ConstantIntPE(_, 0, _))))))),
-      LendConstraintP(None)) =>
+        LoadAsBorrowP(None)) =>
     }
   }
 
   test("Test block's trailing void presence") {
     compile(CombinatorParsers.filledBody, "{ moo() }") shouldHave {
-      case BlockPE(_, Vector(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "moo"), None), Vector(), LendConstraintP(Some(ReadonlyP))))) =>
+      case BlockPE(_, Vector(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "moo"), None), Vector(), LoadAsBorrowP(Some(ReadonlyP))))) =>
     }
 
     compile(CombinatorParsers.filledBody, "{ moo(); }") shouldHave {
-      case BlockPE(_, Vector(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "moo"), None), Vector(), LendConstraintP(Some(ReadonlyP))), VoidPE(_))) =>
+      case BlockPE(_, Vector(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "moo"), None), Vector(), LoadAsBorrowP(Some(ReadonlyP))), VoidPE(_))) =>
     }
   }
 
@@ -181,7 +181,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
     compile(
       CombinatorParsers.blockExprs,
       "= doThings(a);") shouldHave {
-      case Vector(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "doThings"), None), Vector(LookupPE(NameP(_, "a"), None)), LendConstraintP(Some(ReadonlyP)))) =>
+      case Vector(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "doThings"), None), Vector(LookupPE(NameP(_, "a"), None)), LoadAsBorrowP(Some(ReadonlyP)))) =>
     }
   }
 
@@ -215,7 +215,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
       """.stripMargin) shouldHave {
       case Vector(
         LetPE(_,None, PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "a")))), None, None, None), ConstantIntPE(_, 2, _)),
-        FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "doThings"), None), Vector(LookupPE(NameP(_, "a"), None)), LendConstraintP(Some(ReadonlyP)))) =>
+        FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "doThings"), None), Vector(LookupPE(NameP(_, "a"), None)), LoadAsBorrowP(Some(ReadonlyP)))) =>
     }
   }
 

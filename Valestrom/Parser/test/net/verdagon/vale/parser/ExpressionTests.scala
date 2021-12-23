@@ -13,7 +13,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("2") {
-    compile(CombinatorParsers.expression,"4 + 5") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "+"), None), Vector(ConstantIntPE(_, 4, _), ConstantIntPE(_, 5, _)),LendConstraintP(Some(ReadonlyP))) => }
+    compile(CombinatorParsers.expression,"4 + 5") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "+"), None), Vector(ConstantIntPE(_, 4, _), ConstantIntPE(_, 5, _)),LoadAsBorrowP(Some(ReadonlyP))) => }
   }
 
   test("Floats") {
@@ -82,23 +82,27 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("add as call") {
-    compile(CombinatorParsers.expression,"+(4, 5)") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "+"), None), Vector(ConstantIntPE(_, 4, _), ConstantIntPE(_, 5, _)),LendConstraintP(Some(ReadonlyP))) => }
+    compile(CombinatorParsers.expression,"+(4, 5)") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "+"), None), Vector(ConstantIntPE(_, 4, _), ConstantIntPE(_, 5, _)),LoadAsBorrowP(Some(ReadonlyP))) => }
   }
 
   test("regular call") {
-    compile(CombinatorParsers.expression,"x(y)") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "x"), None), Vector(LookupPE(NameP(_, "y"), None)),LendConstraintP(Some(ReadonlyP))) => }
+    compile(CombinatorParsers.expression,"x(y)") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "x"), None), Vector(LookupPE(NameP(_, "y"), None)),LoadAsBorrowP(Some(ReadonlyP))) => }
   }
 
   test("6") {
-    compile(CombinatorParsers.expression,"not y") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "not"), None), Vector(LookupPE(NameP(_, "y"), None)),LendConstraintP(Some(ReadonlyP))) => }
+    compile(CombinatorParsers.expression,"not y") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "not"), None), Vector(LookupPE(NameP(_, "y"), None)),LoadAsBorrowP(Some(ReadonlyP))) => }
   }
 
-  test("Lending result of function call") {
-    compile(CombinatorParsers.expression,"*Muta()") shouldHave { case LendPE(_,FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "Muta"), None), Vector(),LendConstraintP(Some(ReadonlyP))), LendConstraintP(Some(ReadonlyP))) => }
+  test("Pointing result of function call") {
+    compile(CombinatorParsers.expression,"*Muta()") shouldHave { case LoadPE(_,FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "Muta"), None), Vector(),LoadAsBorrowP(Some(ReadonlyP))), LoadAsPointerP(Some(ReadonlyP))) => }
+  }
+
+  test("Borrowing result of function call") {
+    compile(CombinatorParsers.expression,"&Muta()") shouldHave { case LoadPE(_,FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "Muta"), None), Vector(),LoadAsBorrowP(Some(ReadonlyP))), LoadAsBorrowP(Some(ReadonlyP))) => }
   }
 
   test("inline call") {
-    compile(CombinatorParsers.expression,"inl Muta()") shouldHave { case FunctionCallPE(_,Some(UnitP(_)),_,false,LookupPE(NameP(_,"Muta"),None),Vector(),LendConstraintP(Some(ReadonlyP))) => }
+    compile(CombinatorParsers.expression,"inl Muta()") shouldHave { case FunctionCallPE(_,Some(UnitP(_)),_,false,LookupPE(NameP(_,"Muta"),None),Vector(),LoadAsBorrowP(Some(ReadonlyP))) => }
   }
 
   test("Method call") {
@@ -107,7 +111,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
       _,
       _,
       LookupPE(NameP(_,"x"),None),
-      _,LendConstraintP(Some(ReadonlyP)),
+      _,LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadonlyP)),
       false,
       LookupPE(NameP(_,"shout"),None),Vector()) =>
     }
@@ -122,10 +126,10 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
           _,
           false,
           NameP(_,"moo")),
-        _,
-      LendConstraintP(Some(ReadonlyP)),
-        false,
-        LookupPE(NameP(_,"shout"),None), Vector()) =>
+          _,
+          LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadonlyP)),
+          false,
+          LookupPE(NameP(_,"shout"),None), Vector()) =>
     }
   }
 
@@ -145,7 +149,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
       case MethodCallPE(_,
       _,
       LookupPE(NameP(_,"x"),None),
-      _,LendConstraintP(Some(ReadonlyP)),true,
+      _,LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadonlyP)),true,
       LookupPE(NameP(_,"shout"),None),
       Vector()) =>
     }
@@ -155,14 +159,14 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
     compile(CombinatorParsers.expression,"toArray<imm>( *result)") shouldHave {
       case FunctionCallPE(_,None,_,false,
       LookupPE(NameP(_, "toArray"),Some(TemplateArgsP(_, Vector(MutabilityPT(_,ImmutableP))))),
-        Vector(LendPE(_,LookupPE(NameP(_, "result"),None),LendConstraintP(Some(ReadonlyP)))),
-      LendConstraintP(Some(ReadonlyP))) =>
+        Vector(LoadPE(_,LookupPE(NameP(_, "result"),None),LoadAsPointerP(Some(ReadonlyP)))),
+      LoadAsBorrowP(Some(ReadonlyP))) =>
     }
   }
 
   test("Templated method call") {
     compile(CombinatorParsers.expression,"result.toArray <imm> ()") shouldHave {
-      case MethodCallPE(_,_,LookupPE(NameP(_,"result"),None),_,LendConstraintP(Some(ReadonlyP)),false,LookupPE(NameP(_,"toArray"),Some(TemplateArgsP(_, Vector(MutabilityPT(_,ImmutableP))))),Vector()) =>
+      case MethodCallPE(_,_,LookupPE(NameP(_,"result"),None),_,LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadonlyP)),false,LookupPE(NameP(_,"toArray"),Some(TemplateArgsP(_, Vector(MutabilityPT(_,ImmutableP))))),Vector()) =>
     }
   }
 
@@ -174,12 +178,12 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
             FunctionCallPE(_,None,_,false,
             LookupPE(NameP(_, "not"), None),
               Vector(LookupPE(NameP(_, "y"), None)),
-            LendConstraintP(Some(ReadonlyP))),
+            LoadAsBorrowP(Some(ReadonlyP))),
             FunctionCallPE(_,None,_,false,
             LookupPE(NameP(_, "not"), None),
               Vector(LookupPE(NameP(_, "x"), None)),
-            LendConstraintP(Some(ReadonlyP)))),
-      LendConstraintP(Some(ReadonlyP))) =>
+            LoadAsBorrowP(Some(ReadonlyP)))),
+      LoadAsBorrowP(Some(ReadonlyP))) =>
     }
   }
 
@@ -191,21 +195,21 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
             FunctionCallPE(_,None,_,false,
             LookupPE(NameP(_, "+"), None),
               Vector(LookupPE(NameP(_, "a"), None), LookupPE(NameP(_, "b"), None)),
-              LendConstraintP(Some(ReadonlyP))),
+              LoadAsBorrowP(Some(ReadonlyP))),
             FunctionCallPE(_,None,_,false,
             LookupPE(NameP(_, "*"), None),
               Vector(LookupPE(NameP(_, "x"), None), LookupPE(NameP(_, "y"), None)),
-              LendConstraintP(Some(ReadonlyP)))),
-          LendConstraintP(Some(ReadonlyP))) =>
+              LoadAsBorrowP(Some(ReadonlyP)))),
+        LoadAsBorrowP(Some(ReadonlyP))) =>
     }
   }
 
   test("Template calling") {
     compile(CombinatorParsers.expression,"MyNone< int >()") shouldHave {
-      case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "MyNone"), Some(TemplateArgsP(_, Vector(NameOrRunePT(NameP(_, "int")))))),Vector(), LendConstraintP(Some(ReadonlyP))) =>
+      case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "MyNone"), Some(TemplateArgsP(_, Vector(NameOrRunePT(NameP(_, "int")))))),Vector(), LoadAsBorrowP(Some(ReadonlyP))) =>
     }
     compile(CombinatorParsers.expression,"MySome< MyNone <int> >()") shouldHave {
-      case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "MySome"), Some(TemplateArgsP(_, Vector(CallPT(_,NameOrRunePT(NameP(_, "MyNone")),Vector(NameOrRunePT(NameP(_, "int")))))))),Vector(), LendConstraintP(Some(ReadonlyP))) =>
+      case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "MySome"), Some(TemplateArgsP(_, Vector(CallPT(_,NameOrRunePT(NameP(_, "MyNone")),Vector(NameOrRunePT(NameP(_, "int")))))))),Vector(), LoadAsBorrowP(Some(ReadonlyP))) =>
     }
   }
 
@@ -214,7 +218,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
     // for + - * / < >) so it parsed as >(9, =) which was bad. We changed the infix operator parser to expect the
     // whitespace on both sides, so that it was forced to parse the entire thing.
     compile(CombinatorParsers.expression,"9 >= 3") shouldHave {
-      case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, ">="),None),Vector(ConstantIntPE(_, 9, _), ConstantIntPE(_, 3, _)),LendConstraintP(Some(ReadonlyP))) =>
+      case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, ">="),None),Vector(ConstantIntPE(_, 9, _), ConstantIntPE(_, 3, _)),LoadAsBorrowP(Some(ReadonlyP))) =>
     }
   }
 
@@ -239,7 +243,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
       LookupPE(NameP(_,"weapon"),None),
       _, false,
       NameP(_,"owner")),
-      _, LendConstraintP(Some(ReadonlyP)),
+      _, LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadonlyP)),
       false,
       LookupPE(NameP(_,"map"),None),
       Vector()) =>
@@ -248,7 +252,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
 
   test("!=") {
     compile(CombinatorParsers.expression,"3 != 4") shouldHave {
-      case FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "!="), None), Vector(ConstantIntPE(_, 3, _), ConstantIntPE(_, 4, _)), LendConstraintP(Some(ReadonlyP))) =>
+      case FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "!="), None), Vector(ConstantIntPE(_, 3, _), ConstantIntPE(_, 4, _)), LoadAsBorrowP(Some(ReadonlyP))) =>
     }
   }
 
@@ -267,7 +271,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
       case PatternPP(_,_, Some(CaptureP(_,LocalNameP(NameP(_, "a")))),None,None,None) =>
     }
     program shouldHave {
-      case FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "+"), None),Vector(LookupPE(NameP(_, "a"), None), LookupPE(NameP(_, "a"), None)),LendConstraintP(Some(ReadonlyP))) =>
+      case FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "+"), None),Vector(LookupPE(NameP(_, "a"), None), LookupPE(NameP(_, "a"), None)),LoadAsBorrowP(Some(ReadonlyP))) =>
     }
   }
 
@@ -277,7 +281,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
     //    val main = program.lookupFunction("main")
 
     program shouldHave {
-      case FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "call"), None),Vector(LookupPE(NameP(_, "sum"), None)),LendConstraintP(Some(ReadonlyP))) =>
+      case FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "call"), None),Vector(LookupPE(NameP(_, "sum"), None)),LoadAsBorrowP(Some(ReadonlyP))) =>
     }
   }
 
@@ -313,8 +317,8 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
                 FunctionCallPE(_,None,_,false,
                   LookupPE(NameP(_,"-"),None),
                   Vector(ConstantIntPE(_, 5, _), ConstantIntPE(_, 7, _)),
-                  LendConstraintP(Some(ReadonlyP)))))),
-          LendConstraintP(Some(ReadonlyP))) =>
+                  LoadAsBorrowP(Some(ReadonlyP)))))),
+          LoadAsBorrowP(Some(ReadonlyP))) =>
     }
   }
 
@@ -473,9 +477,9 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
             Vector(
               ConstantIntPE(_, 8, _),
               ConstantIntPE(_, 2, _)),
-            LendConstraintP(Some(ReadonlyP))),
+            LoadAsBorrowP(Some(ReadonlyP))),
           ConstantIntPE(_, 0, _)),
-        LendConstraintP(Some(ReadonlyP))) =>
+        LoadAsBorrowP(Some(ReadonlyP))) =>
     }
   }
 
@@ -491,7 +495,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
               Vector(
                 ConstantIntPE(_, 2, _),
                 ConstantIntPE(_, 0, _)),
-              LendConstraintP(Some(ReadonlyP))))),
+              LoadAsBorrowP(Some(ReadonlyP))))),
         BlockPE(_, Vector(ConstantBoolPE(_,false)))) =>
     }
   }

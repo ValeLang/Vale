@@ -87,7 +87,7 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
                 case _ => vwat()
               }, None),
             constructedMembersNames.map(n => DotPE(rangeAtEnd, LookupPE(NameP(rangeAtEnd, "this"), None), Range.zero, false, NameP(rangeAtEnd, n))),
-            LendConstraintP(None))
+            LoadAsBorrowP(None))
 
         val (stackFrameAfterConstructing, NormalResult(_, constructExpression), selfUsesAfterConstructing, childUsesAfterConstructing) =
           scoutExpression(stackFrameBeforeConstructing, lidb.child(), constructorCallP)
@@ -149,13 +149,13 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
               val addCallRange = RangeS(prevExpr.range.end, partSE.range.begin)
               FunctionCallSE(
                 addCallRange,
-                OutsideLoadSE(addCallRange, Array(), CodeNameS("+"), None, LendConstraintP(None)),
+                OutsideLoadSE(addCallRange, Array(), CodeNameS("+"), None, LoadAsBorrowP(None)),
                 Vector(prevExpr, partSE))
             }
           })
         (stackFrame1, NormalResult(rangeS, addedExpr), partsSelfUses, partsChildUses)
       }
-      case LendPE(range, innerPE, targetOwnership) => {
+      case LoadPE(range, innerPE, targetOwnership) => {
         val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
           scoutExpressionAndCoerce(stackFrame0, lidb.child(), innerPE, targetOwnership)
         inner1 match {
@@ -231,7 +231,7 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
       }
       case MethodCallPE(range, inline, subjectExpr, operatorRange, subjectTargetOwnership, isMapCall, memberLookup, methodArgs) => {
         val (stackFrame1, callable1, callableSelfUses, callableChildUses) =
-          scoutExpressionAndCoerce(stackFrame0, lidb.child(), memberLookup, LendConstraintP(None))
+          scoutExpressionAndCoerce(stackFrame0, lidb.child(), memberLookup, LoadAsBorrowP(None))
         val (stackFrame2, subject1, subjectSelfUses, subjectChildUses) =
           scoutExpressionAndCoerce(stackFrame1, lidb.child(), subjectExpr, subjectTargetOwnership)
         val (stackFrame3, tailArgs1, tailArgsSelfUses, tailArgsChildUses) =
@@ -483,14 +483,14 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
           }
           case _ => {
             val (stackFrame1, containerExpr, selfUses, childUses) =
-              scoutExpressionAndCoerce(stackFrame0, lidb.child(), containerExprPE, LendConstraintP(None));
+              scoutExpressionAndCoerce(stackFrame0, lidb.child(), containerExprPE, LoadAsBorrowOrIfContainerIsPointerThenPointerP(None))
             (stackFrame1, NormalResult(evalRange(rangeP), DotSE(evalRange(rangeP), containerExpr, memberName, true)), selfUses, childUses)
           }
         }
       }
       case IndexPE(range, containerExprPE, Vector(indexExprPE)) => {
         val (stackFrame1, containerExpr1, containerSelfUses, containerChildUses) =
-          scoutExpressionAndCoerce(stackFrame0, lidb.child(), containerExprPE, LendConstraintP(None));
+          scoutExpressionAndCoerce(stackFrame0, lidb.child(), containerExprPE, LoadAsBorrowOrIfContainerIsPointerThenPointerP(None))
         val (stackFrame2, indexExpr1, indexSelfUses, indexChildUses) =
           scoutExpressionAndCoerce(stackFrame1, lidb.child(), indexExprPE, UseP);
         val dot1 = IndexSE(evalRange(range), containerExpr1, indexExpr1)
@@ -504,7 +504,7 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
       stackFramePE: StackFrame,
     lidb: LocationInDenizenBuilder,
     exprPE: IExpressionPE,
-    targetOwnershipIfLookupResult: LoadAsP):
+    loadAsP: LoadAsP):
   (StackFrame, IExpressionSE, VariableUses, VariableUses) = {
     val (namesFromInsideFirst, firstResult1, firstInnerSelfUses, firstChildUses) =
       scoutExpression(stackFramePE, lidb.child(), exprPE);
@@ -512,12 +512,14 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
       firstResult1 match {
         case LocalLookupResult(range, name) => {
           val uses =
-            targetOwnershipIfLookupResult match {
-              case LendConstraintP(_) => firstInnerSelfUses.markBorrowed(name)
-              case LendWeakP(_) => firstInnerSelfUses.markBorrowed(name)
-              case _ => firstInnerSelfUses.markMoved(name)
+            loadAsP match {
+              case LoadAsBorrowP(_) => firstInnerSelfUses.markBorrowed(name)
+              case LoadAsPointerP(_) => firstInnerSelfUses.markBorrowed(name)
+              case LoadAsWeakP(_) => firstInnerSelfUses.markBorrowed(name)
+              case LoadAsBorrowOrIfContainerIsPointerThenPointerP(_) => firstInnerSelfUses.markBorrowed(name)
+              case UseP | MoveP => firstInnerSelfUses.markMoved(name)
             }
-          (LocalLoadSE(range, name, targetOwnershipIfLookupResult), uses)
+          (LocalLoadSE(range, name, loadAsP), uses)
         }
         case OutsideLookupResult(range, name, maybeTemplateArgs) => {
           val ruleBuilder = ArrayBuffer[IRulexSR]()
@@ -528,13 +530,13 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
                   stackFramePE.parentEnv, lidb.child(), ruleBuilder, templateArgPT)
               })
             })
-          val load = OutsideLoadSE(range, ruleBuilder.toArray, CodeNameS(name), maybeTemplateArgRunes, targetOwnershipIfLookupResult)
+          val load = OutsideLoadSE(range, ruleBuilder.toArray, CodeNameS(name), maybeTemplateArgRunes, loadAsP)
           (load, firstInnerSelfUses)
         }
         case NormalResult(range, innerExpr1) => {
-          targetOwnershipIfLookupResult match {
+          loadAsP match {
             case UseP => (innerExpr1, firstInnerSelfUses)
-            case _ => (OwnershippedSE(range, innerExpr1, targetOwnershipIfLookupResult), firstInnerSelfUses)
+            case _ => (OwnershippedSE(range, innerExpr1, loadAsP), firstInnerSelfUses)
           }
         }
       }

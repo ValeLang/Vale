@@ -159,6 +159,7 @@ case object VaryingP extends VariabilityP { override def toString: String = "var
 sealed trait OwnershipP
 case object OwnP extends OwnershipP { override def toString: String = "own" }
 case object PointerP extends OwnershipP { override def toString: String = "ptr" }
+case object BorrowP extends OwnershipP { override def toString: String = "borrow" }
 case object WeakP extends OwnershipP { override def toString: String = "weak" }
 case object ShareP extends OwnershipP { override def toString: String = "share" }
 
@@ -172,9 +173,15 @@ case object MoveP extends LoadAsP
 // probably become a BorrowP or ShareP.
 // If permission is None, then we're probably in a dot. For example, x.launch()
 // should be mapped to launch(*!x) if x is mutable, or launch(*x) if it's readonly.
-case class LendConstraintP(permission: Option[PermissionP]) extends LoadAsP { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class LoadAsPointerP(permission: Option[PermissionP]) extends LoadAsP { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+// This means we want to use it, and want to make sure that it doesn't drop.
+// If permission is None, then we're probably in a dot. For example, x.launch()
+// should be mapped to launch(*!x) if x is mutable, or launch(*x) if it's readonly.
+case class LoadAsBorrowP(permission: Option[PermissionP]) extends LoadAsP { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+// This is used for dot.
+case class LoadAsBorrowOrIfContainerIsPointerThenPointerP(permission: Option[PermissionP]) extends LoadAsP { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 // This means we want to get a weak reference to it. Thisll become a WeakP.
-case class LendWeakP(permission: PermissionP) extends LoadAsP { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class LoadAsWeakP(permission: PermissionP) extends LoadAsP { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 // This represents unspecified. It basically means, use whatever ownership already there.
 case object UseP extends LoadAsP
 

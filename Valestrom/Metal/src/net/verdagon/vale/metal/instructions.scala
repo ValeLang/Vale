@@ -228,11 +228,11 @@ case class LocalLoadH(
   local: Local,
   // The ownership of the resulting reference. This doesn't have to
   // match the ownership of the source reference. For example, we might want
-  // to load a constraint reference from an owning local.
+  // to load a borrow reference from an owning local.
   targetOwnership: OwnershipH,
   // The permission of the resulting reference. This doesn't have to
   // match the ownership of the source reference. For example, we might want
-  // to load a constraint reference from an owning local.
+  // to load a borrow reference from an owning local.
   targetPermission: PermissionH,
   // Name of the local variable, for debug purposes.
   localName: FullNameH
@@ -243,6 +243,7 @@ case class LocalLoadH(
   override def resultType: ReferenceH[KindH] = {
     val location =
       (targetOwnership, local.typeH.location) match {
+        case (PointerH, _) => YonderH
         case (BorrowH, _) => YonderH
         case (WeakH, _) => YonderH
         case (OwnH, location) => location
@@ -252,13 +253,13 @@ case class LocalLoadH(
   }
 }
 
-// Turns a constraint ref into a weak ref.
+// Turns a borrow ref into a weak ref.
 case class NarrowPermissionH(
-  // Expression containing the constraint reference to turn into a weak ref.
+  // Expression containing the borrow reference to turn into a weak ref.
   refExpression: ExpressionH[KindH],
   // The permission of the resulting reference. This doesn't have to
   // match the ownership of the source reference. For example, we might want
-  // to load a constraint reference from an owning local.
+  // to load a borrow reference from an owning local.
   targetPermission: PermissionH,
 ) extends ExpressionH[KindH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
@@ -269,6 +270,32 @@ case class NarrowPermissionH(
       case _ => vwat()
     }
     ReferenceH(ownership, location, targetPermission, kind)
+  }
+}
+
+// Turns a borrow ref into a pointer ref.
+case class BorrowToPointerH(
+  // Expression containing the pointer reference to turn into a weak ref.
+  innerExpression: ExpressionH[KindH]
+) extends ExpressionH[KindH] {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+
+  private val ReferenceH(BorrowH, location, permission, kind) = innerExpression.resultType
+  override def resultType: ReferenceH[KindH] = {
+    ReferenceH(PointerH, location, permission, kind)
+  }
+}
+
+// Turns a pointer ref into a borrow ref.
+case class PointerToBorrowH(
+  // Expression containing the pointer reference to turn into a weak ref.
+  innerExpression: ExpressionH[KindH]
+) extends ExpressionH[KindH] {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+
+  private val ReferenceH(PointerH, location, permission, kind) = innerExpression.resultType
+  override def resultType: ReferenceH[KindH] = {
+    ReferenceH(BorrowH, location, permission, kind)
   }
 }
 
@@ -305,7 +332,7 @@ case class MemberLoadH(
 //  vassert(resultType.ownership == targetOwnership)
 //  vassert(resultType.permission == targetPermission)
 
-  if (resultType.ownership == BorrowH) vassert(resultType.location == YonderH)
+  if (resultType.ownership == PointerH) vassert(resultType.location == YonderH)
   if (resultType.ownership == WeakH) vassert(resultType.location == YonderH)
 }
 
@@ -367,12 +394,12 @@ case class RuntimeSizedArrayLoadH(
   arrayExpression: ExpressionH[RuntimeSizedArrayHT],
   // Expression containing the index of the element we'll read.
   indexExpression: ExpressionH[IntH],
-  // The ownership to load as. For example, we might load a constraint reference from a
+  // The ownership to load as. For example, we might load a borrow reference from a
   // owning Car reference element.
   targetOwnership: OwnershipH,
   // The permission of the resulting reference. This doesn't have to
   // match the ownership of the source reference. For example, we might want
-  // to load a constraint reference from an owning local.
+  // to load a borrow reference from an owning local.
   targetPermission: PermissionH,
   expectedElementType: ReferenceH[KindH],
   resultType: ReferenceH[KindH],
@@ -391,12 +418,12 @@ case class StaticSizedArrayLoadH(
   arrayExpression: ExpressionH[StaticSizedArrayHT],
   // Expression containing the index of the element we'll read.
   indexExpression: ExpressionH[IntH],
-  // The ownership to load as. For example, we might load a constraint reference from a
+  // The ownership to load as. For example, we might load a borrow reference from a
   // owning Car reference element.
   targetOwnership: OwnershipH,
   // The permission of the resulting reference. This doesn't have to
   // match the ownership of the source reference. For example, we might want
-  // to load a constraint reference from an owning local.
+  // to load a borrow reference from an owning local.
   targetPermission: PermissionH,
   expectedElementType: ReferenceH[KindH],
   arraySize: Int,
@@ -548,7 +575,7 @@ case class NewImmRuntimeSizedArrayH(
   // call to generate each element of the array.
   // More specifically, we'll call the "__call" function on the interface, which
   // should be the only function on it.
-  // This is a constraint reference.
+  // This is a borrow reference.
   generatorExpression: ExpressionH[KindH],
   // The prototype for the "__call" function to call on the interface for each element.
   generatorMethod: PrototypeH,
@@ -560,9 +587,9 @@ case class NewImmRuntimeSizedArrayH(
   resultType: ReferenceH[RuntimeSizedArrayHT]
 ) extends ExpressionH[RuntimeSizedArrayHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  vassert(
-    generatorExpression.resultType.ownership == BorrowH ||
-      generatorExpression.resultType.ownership == ShareH)
+  generatorExpression.resultType.ownership match {
+    case PointerH | ShareH | BorrowH =>
+  }
   vassert(sizeExpression.resultType.kind == IntH.i32)
 }
 
@@ -613,7 +640,7 @@ case class StaticArrayFromCallableH(
   // call to generate each element of the array.
   // More specifically, we'll call the "__call" function on the interface, which
   // should be the only function on it.
-  // This is a constraint reference.
+  // This is a borrow reference.
   generatorExpression: ExpressionH[KindH],
   // The prototype for the "__call" function to call on the interface for each element.
   generatorMethod: PrototypeH,
@@ -626,7 +653,7 @@ case class StaticArrayFromCallableH(
 ) extends ExpressionH[StaticSizedArrayHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(
-    generatorExpression.resultType.ownership == BorrowH ||
+    generatorExpression.resultType.ownership == PointerH ||
       generatorExpression.resultType.ownership == ShareH)
 }
 
@@ -699,11 +726,22 @@ case class ArrayCapacityH(
   override def resultType: ReferenceH[IntH] = ReferenceH(ShareH, InlineH, ReadonlyH, IntH.i32)
 }
 
-// Turns a constraint ref into a weak ref.
-case class WeakAliasH(
-  // Expression containing the constraint reference to turn into a weak ref.
+// Turns a borrow ref into a weak ref.
+case class BorrowToWeakH(
+  // Expression containing the borrow reference to turn into a weak ref.
   refExpression: ExpressionH[KindH],
 ) extends ExpressionH[KindH] {
+  vassert(refExpression.resultType.ownership == BorrowH)
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  override def resultType: ReferenceH[KindH] = ReferenceH(WeakH, YonderH, refExpression.resultType.permission, refExpression.resultType.kind)
+}
+
+// Turns a pointer ref into a weak ref.
+case class PointerToWeakH(
+  // Expression containing the borrow reference to turn into a weak ref.
+  refExpression: ExpressionH[KindH],
+) extends ExpressionH[KindH] {
+  vassert(refExpression.resultType.ownership == PointerH)
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ReferenceH[KindH] = ReferenceH(WeakH, YonderH, refExpression.resultType.permission, refExpression.resultType.kind)
 }
@@ -750,7 +788,7 @@ case class LockWeakH(
 case class DiscardH(sourceExpression: ExpressionH[KindH]) extends ExpressionH[StructRefH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   sourceExpression.resultType.ownership match {
-    case BorrowH | ShareH | WeakH =>
+    case PointerH | BorrowH | ShareH | WeakH =>
   }
   override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
 }

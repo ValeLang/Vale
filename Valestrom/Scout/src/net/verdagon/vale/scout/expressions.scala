@@ -1,6 +1,6 @@
 package net.verdagon.vale.scout
 
-import net.verdagon.vale.parser.{PointerP, LendConstraintP, LendWeakP, LoadAsP, MoveP, MutabilityP, OwnershipP, PermissionP, VariabilityP, WeakP}
+import net.verdagon.vale.parser.{LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsP, LoadAsPointerP, LoadAsWeakP, MoveP, MutabilityP, OwnershipP, PermissionP, PointerP, VariabilityP, WeakP}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.{ILiteralSL, IRulexSR, RuneUsage}
 import net.verdagon.vale.{RangeS, vassert, vcurious, vimpl, vpass}
@@ -42,8 +42,10 @@ case class OwnershippedSE(range: RangeS, innerExpr1: IExpressionSE, targetOwners
   override def hashCode(): Int = vcurious()
 
   targetOwnership match {
-    case LendWeakP(_) =>
-    case LendConstraintP(_) =>
+    case LoadAsWeakP(_) =>
+    case LoadAsPointerP(_) =>
+    case LoadAsBorrowP(_) =>
+    case LoadAsBorrowOrIfContainerIsPointerThenPointerP(_) =>
     case MoveP =>
   }
 }

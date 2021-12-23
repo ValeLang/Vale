@@ -1,8 +1,8 @@
 import v.builtins.arith.*;
 
-fn drop_into<V, S, E, F>(arr [<imm, V> S * E], consumer *!F) void {}
+fn drop_into<V, S, E, F>(arr [<imm, V> S * E], consumer &!F) void {}
 
-fn drop_into<V, S, E, F>(arr [<mut, V> S * E], consumer *!F) void
+fn drop_into<V, S, E, F>(arr [<mut, V> S * E], consumer &!F) void
 extern(vale_static_sized_array_drop_into);
 
 fn drop<V, S, E>(arr [<mut, V> S * E]) void {
@@ -10,7 +10,7 @@ fn drop<V, S, E>(arr [<mut, V> S * E]) void {
 }
 fn drop<V, S, E>(arr [<imm, V> S * E]) void {}
 
-fn drop_into<E, F>(arr Array<mut, E>, consumer *!F) void {
+fn drop_into<E, F>(arr Array<mut, E>, consumer &!F) void {
   while (arr.len() > 0) {
     consumer!(arr!.pop());
   }
@@ -20,7 +20,7 @@ fn drop<E>(arr Array<mut, E>) void {
   drop_into(arr, {_;});
 }
 
-fn drop_into<E, F>(arr Array<imm, E>, consumer *!F) void {
+fn drop_into<E, F>(arr Array<imm, E>, consumer &!F) void {
   i = arr.len() - 1;
   while (i >= 0) {
     consumer!(arr[i]);
@@ -28,24 +28,23 @@ fn drop_into<E, F>(arr Array<imm, E>, consumer *!F) void {
   }
 }
 fn drop<E>(arr Array<imm, E>) void {
-  drop_into(arr, *!{_;});
+  drop_into(arr, &!{_;});
 }
 
+fn len<M, V, S, E>(arr &[<M, V> S * E]) int extern(vale_static_sized_array_len);
 
-fn len<M, V, S, E>(arr *[<M, V> S * E]) int extern(vale_static_sized_array_len);
-
-fn len<M, E>(arr *Array<M, E>) int extern(vale_runtime_sized_array_len);
+fn len<M, E>(arr &Array<M, E>) int extern(vale_runtime_sized_array_len);
 
 fn __free_replaced<V, S, E>(arr @[<imm, V> S * E]) extern(vale_static_sized_array_free);
 fn __free_replaced<E>(arr @Array<imm, E>) extern(vale_runtime_sized_array_free);
 
-fn capacity<E>(arr *Array<mut, E>) int
+fn capacity<E>(arr &Array<mut, E>) int
 extern(vale_runtime_sized_array_capacity);
 
-fn push<E>(arr *!Array<mut, E>, newElement E) void
+fn push<E>(arr &!Array<mut, E>, newElement E) void
 extern(vale_runtime_sized_array_push);
 
-fn pop<E>(arr *!Array<mut, E>) E
+fn pop<E>(arr &!Array<mut, E>) E
 extern(vale_runtime_sized_array_pop);
 
 fn Array<M, E>(size int) Array<M, E>

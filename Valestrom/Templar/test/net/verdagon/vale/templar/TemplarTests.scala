@@ -8,7 +8,7 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer.{Astronomer, AstronomerCompilation}
 import net.verdagon.vale.solver.{FailedSolve, RuleError, Step}
-import net.verdagon.vale.templar.OverloadTemplar.{FindFunctionFailure, WrongNumberOfArguments}
+import net.verdagon.vale.templar.OverloadTemplar.{FindFunctionFailure, SpecificParamDoesntSend, WrongNumberOfArguments}
 import net.verdagon.vale.templar.ast.{ConstantIntTE, DestroyTE, DiscardTE, FunctionCallTE, FunctionHeaderT, FunctionT, KindExportT, LetAndLendTE, LetNormalTE, LocalLookupTE, ParameterT, PrototypeT, ReferenceExpressionTE, ReferenceMemberLookupTE, ReturnTE, SignatureT, SoftLoadTE, StructToInterfaceUpcastTE, UserFunctionT, referenceExprResultKind, referenceExprResultStructName}
 import net.verdagon.von.{JsonSyntax, VonPrinter}
 import net.verdagon.vale.templar.expression.CallTemplar
@@ -753,6 +753,11 @@ class TemplarTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
   }
 
+  test("Test borrow ref") {
+    val compile = TemplarTestCompilation.test(Tests.loadExpected("programs/borrowRef.vale"))
+    val temputs = compile.expectTemputs()
+  }
+
   test("Tests calling a function with an upcast") {
     val compile = TemplarTestCompilation.test(
         """
@@ -832,6 +837,64 @@ class TemplarTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
   }
 
+  test("Borrow-load member") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |import v.builtins.tup.*;
+        |struct Bork {
+        |  x int;
+        |}
+        |fn getX(bork &Bork) int { bork.x }
+        |struct List {
+        |  array! Bork;
+        |}
+        |fn main() int export {
+        |  l = List(Bork(0));
+        |  = getX(&l.array);
+        |}
+        """.stripMargin)
+
+    val temputs = compile.expectTemputs()
+    vpass()
+  }
+
+  test("Pointer-load member") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |import v.builtins.tup.*;
+        |struct Bork {
+        |  x int;
+        |}
+        |fn getX(bork *Bork) int { bork.x }
+        |struct List {
+        |  array! Bork;
+        |}
+        |fn main() int export {
+        |  l = List(Bork(0));
+        |  = getX(*l.array);
+        |}
+        """.stripMargin)
+
+    val temputs = compile.expectTemputs()
+    vpass()
+  }
+
+  test("fdsfsdf") {
+    // This test is because we had a bug where &! still produced a *!.
+    val compile = TemplarTestCompilation.test(
+      """
+        |import v.builtins.tup.*;
+        |struct Bork { }
+        |fn myFunc<F>(consumer &!F) void { }
+        |fn main() {
+        |  bork = Bork();
+        |  myFunc(&!{ bork; });
+        |}
+        |
+      """.stripMargin)
+    val temputs = compile.expectTemputs()
+  }
+
   test("Test Array of StructTemplata") {
     val compile = TemplarTestCompilation.test(
       """
@@ -880,7 +943,7 @@ class TemplarTests extends FunSuite with Matchers {
         |
         |fn main() int export {
         |  a = MakeArray(11, {_});
-        |  = len(*a);
+        |  = len(&a);
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()
@@ -1146,8 +1209,11 @@ class TemplarTests extends FunSuite with Matchers {
       """.stripMargin)
 
     // Should be a temporary for this object
-    Collector.allOf(compile.expectTemputs().lookupFunction("main"),
-      classOf[LetAndLendTE]).size shouldEqual 1
+    Collector.onlyOf(
+      compile.expectTemputs().lookupFunction("main"),
+      classOf[LetAndLendTE]) match {
+        case LetAndLendTE(_, _, PointerT) =>
+      }
   }
 
   test("Reports when exported SSA depends on non-exported element") {
@@ -1566,6 +1632,30 @@ class TemplarTests extends FunSuite with Matchers {
         |""".stripMargin)
     compile.getTemputs() match {
       case Err(AbstractMethodOutsideOpenInterface(_)) =>
+    }
+  }
+
+  test("Reports when ownership doesnt match") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |import v.builtins.tup.*;
+        |
+        |struct Firefly {}
+        |fn getFuel(self *Firefly) int { 7 }
+        |
+        |fn main() int export {
+        |  f = Firefly();
+        |  ret (&f).getFuel();
+        |}
+        |""".stripMargin
+    )
+    compile.getTemputs() match {
+      case Err(CouldntFindFunctionToCallT(range, fff)) => {
+        fff.name match { case CodeNameS("getFuel") => }
+        fff.rejectedCalleeToReason.size shouldEqual 1
+        val reason = fff.rejectedCalleeToReason.head._2
+        reason match { case SpecificParamDoesntSend(0, _, _) => }
+      }
     }
   }
 }

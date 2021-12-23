@@ -2,7 +2,7 @@ package net.verdagon.vale.hammer
 
 import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vimpl, metal => m}
 import net.verdagon.vale.{metal => m}
-import net.verdagon.vale.metal.{ShareH, BorrowH => _, Immutable => _, Mutable => _, OwnH => _, _}
+import net.verdagon.vale.metal.{ShareH, PointerH => _, Immutable => _, Mutable => _, OwnH => _, _}
 import net.verdagon.vale.templar.{Hinputs, _}
 import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.env.AddressibleLocalVariableT
@@ -45,9 +45,9 @@ object ExpressionHammer {
           LetHammer.translateLet(hinputs, hamuts, currentFunctionHeader, locals, let2)
         (letH, Vector.empty)
       }
-      case let2 @ LetAndLendTE(_, _) => {
+      case let2 @ LetAndLendTE(_, _, _) => {
         val borrowAccess =
-          LetHammer.translateLetAndLend(hinputs, hamuts, currentFunctionHeader, locals, let2)
+          LetHammer.translateLetAndPoint(hinputs, hamuts, currentFunctionHeader, locals, let2)
         (borrowAccess, Vector.empty)
       }
       case des2 @ DestroyTE(_, _, _) => {
@@ -466,16 +466,34 @@ object ExpressionHammer {
         (void, Vector.empty)
       }
 
-      case WeakAliasTE(innerExpr) => {
+      case BorrowToWeakTE(innerExpr) => {
         val (innerExprResultLine, innerDeferreds) =
           translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
-        (WeakAliasH(innerExprResultLine), innerDeferreds)
+        (BorrowToWeakH(innerExprResultLine), innerDeferreds)
+      }
+
+      case PointerToWeakTE(innerExpr) => {
+        val (innerExprResultLine, innerDeferreds) =
+          translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
+        (PointerToWeakH(innerExprResultLine), innerDeferreds)
       }
 
       case NarrowPermissionTE(innerExpr, targetPermission) => {
         val (innerExprResultLine, innerDeferreds) =
           translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
         (NarrowPermissionH(innerExprResultLine, Conversions.evaluatePermission(targetPermission)), innerDeferreds)
+      }
+
+      case BorrowToPointerTE(innerExpr) => {
+        val (innerExprResultLine, innerDeferreds) =
+          translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
+        (BorrowToPointerH(innerExprResultLine), innerDeferreds)
+      }
+
+      case PointerToBorrowTE(innerExpr) => {
+        val (innerExprResultLine, innerDeferreds) =
+          translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
+        (PointerToBorrowH(innerExprResultLine), innerDeferreds)
       }
 
       case IsSameInstanceTE(leftExprT, rightExprT) => {

@@ -42,8 +42,8 @@ class IfTests extends FunSuite with Matchers with Collector {
             FunctionCallPE(_,
               None, _, false, LookupPE(NameP(_, "doBlarks"), None),
               Vector(
-                LendPE(_,LookupPE(NameP(_, "x"), None), LendConstraintP(Some(ReadonlyP)))),
-              LendConstraintP(Some(ReadonlyP))))),
+                LoadPE(_,LookupPE(NameP(_, "x"), None), LoadAsPointerP(Some(ReadonlyP)))),
+              LoadAsBorrowP(Some(ReadonlyP))))),
         BlockPE(_, Vector(VoidPE(_)))) =>
     }
   }
@@ -73,7 +73,7 @@ class IfTests extends FunSuite with Matchers with Collector {
       None,
       PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "newLen")))), None, None, None),
       IfPE(_,
-      BlockPE(_, Vector(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "=="), None), Vector(LookupPE(NameP(_, "num"), None), ConstantIntPE(_, 0, _)), LendConstraintP(Some(ReadonlyP))))),
+      BlockPE(_, Vector(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "=="), None), Vector(LookupPE(NameP(_, "num"), None), ConstantIntPE(_, 0, _)), LoadAsBorrowP(Some(ReadonlyP))))),
       BlockPE(_, Vector(ConstantIntPE(_, 1, _))),
       BlockPE(_, Vector(ConstantIntPE(_, 2, _))))) =>
     }

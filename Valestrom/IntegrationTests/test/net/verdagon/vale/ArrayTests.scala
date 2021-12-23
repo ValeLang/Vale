@@ -47,7 +47,7 @@ class ArrayTests extends FunSuite with Matchers {
         |fn main() int export {
         |  a = [][13, 14, 15];
         |  sum = 0;
-        |  drop_into(a, *!(e){ set sum = sum + e; });
+        |  drop_into(a, &!(e){ set sum = sum + e; });
         |  = sum;
         |}
       """.stripMargin)
@@ -61,7 +61,7 @@ class ArrayTests extends FunSuite with Matchers {
         |fn main() int export {
         |  a = Array<imm>(3, {13 + _});
         |  sum = 0;
-        |  drop_into(a, *!(e){ set sum = sum + e; });
+        |  drop_into(a, &!(e){ set sum = sum + e; });
         |  = sum;
         |}
       """.stripMargin)
@@ -76,7 +76,7 @@ class ArrayTests extends FunSuite with Matchers {
         |fn main() int export {
         |  a = [][Spaceship(13), Spaceship(14), Spaceship(15)];
         |  sum = 0;
-        |  drop_into(a, *!(e){ set sum = sum + e.fuel; });
+        |  drop_into(a, &!(e){ set sum = sum + e.fuel; });
         |  = sum;
         |}
       """.stripMargin)
@@ -90,9 +90,9 @@ class ArrayTests extends FunSuite with Matchers {
         |import array.make.*;
         |struct Spaceship { fuel int; }
         |fn main() int export {
-        |  a = MakeVaryArray(3, *!{Spaceship(13 + _)});
+        |  a = MakeVaryArray(3, &!{Spaceship(13 + _)});
         |  sum = 0;
-        |  drop_into(a, *!(e){ set sum = sum + e.fuel; });
+        |  drop_into(a, &!(e){ set sum = sum + e.fuel; });
         |  = sum;
         |}
       """.stripMargin)
@@ -412,7 +412,7 @@ class ArrayTests extends FunSuite with Matchers {
           |
           |fn main() int export {
           |  box = IntBox(7);
-          |  board = MakeArray(3, *!(col){ box.i });
+          |  board = MakeArray(3, &!(col){ box.i });
           |  = board.1;
           |}
         """.stripMargin)
@@ -436,7 +436,7 @@ class ArrayTests extends FunSuite with Matchers {
         |fn main() int export {
         |  box = IntBox(7);
         |  lam = (col){ box.i };
-        |  board = myFunc(*!lam);
+        |  board = myFunc(&!lam);
         |  = board;
         |}
       """.stripMargin)
@@ -464,10 +464,10 @@ class ArrayTests extends FunSuite with Matchers {
           |import ifunction.ifunction1.*;
           |struct MyIntIdentity {}
           |impl IFunction1<mut, int, int> for MyIntIdentity;
-          |fn __call(this *!MyIntIdentity impl IFunction1<mut, int, int>, i int) int { i }
+          |fn __call(this &!MyIntIdentity impl IFunction1<mut, int, int>, i int) int { i }
           |fn main() export {
           |  m = MyIntIdentity();
-          |  arr = MakeArray(10, *!m);
+          |  arr = MakeArray(10, &!m);
           |  lam = { print(str(arr.6)); };
           |  (lam)();
           |}
@@ -484,10 +484,10 @@ class ArrayTests extends FunSuite with Matchers {
           |
           |struct GoblinMaker {}
           |impl IFunction1<mut, int, Goblin> for GoblinMaker;
-          |fn __call(this *!GoblinMaker impl IFunction1<mut, int, Goblin>, i int) Goblin { Goblin() }
+          |fn __call(this &!GoblinMaker impl IFunction1<mut, int, Goblin>, i int) Goblin { Goblin() }
           |fn main() int export {
           |  m = GoblinMaker();
-          |  arr = MakeVaryArray(1, *!m);
+          |  arr = MakeVaryArray(1, &!m);
           |  set arr.0 = Goblin();
           |  = 4;
           |}
@@ -502,7 +502,7 @@ class ArrayTests extends FunSuite with Matchers {
         """import array.make.*;
           |fn main() int export {
           |  a = MakeArray(11, {_});
-          |  = len(*a);
+          |  = len(&a);
           |}
         """.stripMargin)
     compile.evalForKind(Vector()) shouldEqual VonInt(11)
@@ -515,7 +515,7 @@ class ArrayTests extends FunSuite with Matchers {
           |fn main() int export {
           |  board = MakeArray(5, {_});
           |  result =
-          |      MakeArray(5, *!(i){
+          |      MakeArray(5, &!(i){
           |        board[i] + 2
           |      });
           |  = result.2;
@@ -559,7 +559,7 @@ class ArrayTests extends FunSuite with Matchers {
         |import ifunction.ifunction1.*;
         |fn main() int export {
         |  sum! = 0;
-        |  [][6, 60, 103].each(*!IFunction1<mut, int, void>({ set sum = sum + _; }));
+        |  [][6, 60, 103].each(&!IFunction1<mut, int, void>({ set sum = sum + _; }));
         |  = sum;
         |}
         |""".stripMargin)

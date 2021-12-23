@@ -42,7 +42,7 @@ class AnonymousInterfaceMacro(
   override def getInterfaceSiblingEntries(interfaceName: FullNameT[INameT], interfaceA: InterfaceA): Vector[(FullNameT[INameT], IEnvEntry)] = {
     val memberRunes =
       interfaceA.internalMethods.zipWithIndex.map({ case (method, index) =>
-        RuneUsage(method.range, AnonymousSubstructMemberRuneS(index))
+        RuneUsage(RangeS(method.range.begin, method.range.begin), AnonymousSubstructMemberRuneS(index))
       })
     val members =
       interfaceA.internalMethods.zip(memberRunes).zipWithIndex.map({ case ((method, rune), index) =>

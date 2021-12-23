@@ -57,6 +57,7 @@ case class ClosureParamNameS() extends IVarNameS with IImpreciseNameS { val hash
 case class MagicParamNameS(codeLocation: CodeLocationS) extends IVarNameS { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 case class AnonymousSubstructTemplateNameS(interfaceName: TopLevelCitizenDeclarationNameS) extends ICitizenDeclarationNameS {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  vpass()
   override def packageCoordinate: PackageCoordinate = interfaceName.packageCoordinate
   override def getImpreciseName: IImpreciseNameS = AnonymousSubstructTemplateImpreciseNameS(interfaceName.getImpreciseName)
   override def range: RangeS = interfaceName.range
@@ -108,8 +109,14 @@ case class ArraySizeImplicitRuneS() extends IRuneS { val hash = runtime.ScalaRun
 case class ArrayMutabilityImplicitRuneS() extends IRuneS { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 // Used to type the templex handed to the variability part of the static sized array expressions
 case class ArrayVariabilityImplicitRuneS() extends IRuneS { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
-case class ReturnRuneS() extends IRuneS { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
-case class StructNameRuneS(structName: ICitizenDeclarationNameS) extends IRuneS { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class ReturnRuneS() extends IRuneS {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  vpass()
+}
+case class StructNameRuneS(structName: ICitizenDeclarationNameS) extends IRuneS {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  vpass()
+}
 // Vale has no notion of Self, it's just a convenient name for a first parameter.
 case class SelfRuneS() extends IRuneS { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 case class SelfOwnershipRuneS() extends IRuneS { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }

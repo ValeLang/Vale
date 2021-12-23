@@ -156,7 +156,7 @@ class StructTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |interface XOpt<T> rules(T Ref) {
-        |  fn get(virtual opt *XOpt<T>) *T;
+        |  fn get(virtual opt &XOpt<T>) *T;
         |}
         |struct XSome<T> rules(T Ref) { value T; }
         |impl<T> XOpt<T> for XSome<T>;
@@ -164,8 +164,8 @@ class StructTests extends FunSuite with Matchers {
         |impl<T> XOpt<T> for XNone<T>;
         |
         |
-        |fn get<T>(opt *XNone<T> impl XOpt<T>) *T { __vbi_panic() }
-        |fn get<T>(opt *XSome<T> impl XOpt<T>) *T { opt.value }
+        |fn get<T>(opt &XNone<T> impl XOpt<T>) *T { __vbi_panic() }
+        |fn get<T>(opt &XSome<T> impl XOpt<T>) *T { opt.value }
         |
         |fn main() int export {
         |  m XOpt<int> = XNone<int>();

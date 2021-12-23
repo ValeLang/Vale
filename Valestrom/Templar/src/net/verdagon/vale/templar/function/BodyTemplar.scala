@@ -121,7 +121,10 @@ class BodyTemplar(
     })
   }
 
-  case class ResultTypeMismatchError(expectedType: CoordT, actualType: CoordT) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+  case class ResultTypeMismatchError(expectedType: CoordT, actualType: CoordT) {
+    val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+    vpass()
+  }
 
   private def evaluateFunctionBody(
     funcOuterEnv: FunctionEnvironmentBox,
@@ -149,7 +152,7 @@ class BodyTemplar(
       maybeExpectedResultType match {
         case None => unconvertedBodyWithoutReturn
         case Some(expectedResultType) => {
-          if (templataTemplar.isTypeTriviallyConvertible(temputs, unconvertedBodyWithoutReturn.result.reference, expectedResultType)) {
+          if (templataTemplar.isTypeConvertible(temputs, unconvertedBodyWithoutReturn.result.reference, expectedResultType)) {
             if (unconvertedBodyWithoutReturn.kind == NeverT()) {
               unconvertedBodyWithoutReturn
             } else {

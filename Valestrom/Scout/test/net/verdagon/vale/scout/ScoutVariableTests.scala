@@ -57,7 +57,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     }
   }
 
-  test("Self is lending to function") {
+  test("Self is pointing to function") {
     val program1 = compile("fn main() int export { x = 4; doBlarks(*x); }")
     val main = program1.lookupFunction("main")
     val CodeBodyS(body) = main.body
@@ -68,7 +68,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     }
   }
 
-  test("Self is lending to method") {
+  test("Self is pointing to method") {
     val program1 = compile("fn main() int export { x = 4; x.doBlarks(); }")
     val main = program1.lookupFunction("main")
     val CodeBodyS(body) = main.body
@@ -123,7 +123,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     }
   }
 
-  test("Child is lending") {
+  test("Child is pointing") {
     val program1 = compile(
       """
         |fn main() int export {
@@ -174,7 +174,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     }
   }
 
-  test("Self maybe lending") {
+  test("Self maybe pointing") {
     val program1 = compile(
       """
         |fn main() int export {
@@ -223,7 +223,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     }
   }
 
-  test("Children maybe lending") {
+  test("Children maybe pointing") {
     val program1 = compile(
       """
         |fn main() int export {
@@ -274,7 +274,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     }
   }
 
-  test("Self both lending") {
+  test("Self both pointing") {
     val program1 = compile(
       """
         |fn main() int export {
@@ -291,7 +291,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     }
   }
 
-  test("Children both lending") {
+  test("Children both pointing") {
     val program1 = compile(
       """
         |fn main() int export {
@@ -376,7 +376,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     }
   }
 
-  test("Self lending or moving") {
+  test("Self pointing or moving") {
     val program1 = compile(
       """
         |fn main() int export {
@@ -393,7 +393,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     }
   }
 
-  test("Children lending or moving") {
+  test("Children pointing or moving") {
     val program1 = compile(
       """
         |fn main() int export {

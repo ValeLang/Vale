@@ -6,13 +6,13 @@ impl<T> Opt<T> for Some<T>;
 struct None<T> rules(T Ref) { }
 impl<T> Opt<T> for None<T>;
 
-fn isEmpty<T>(virtual opt *Opt<T>) bool abstract;
-fn isEmpty<T>(opt *None<T> impl Opt<T>) bool { true }
-fn isEmpty<T>(opt *Some<T> impl Opt<T>) bool { false }
+fn isEmpty<T>(virtual opt &Opt<T>) bool abstract;
+fn isEmpty<T>(opt &None<T> impl Opt<T>) bool { true }
+fn isEmpty<T>(opt &Some<T> impl Opt<T>) bool { false }
 
-fn isEmpty<T>(virtual opt *!Opt<T>) bool abstract;
-fn isEmpty<T>(opt *!None<T> impl Opt<T>) bool { true }
-fn isEmpty<T>(opt *!Some<T> impl Opt<T>) bool { false }
+fn isEmpty<T>(virtual opt &!Opt<T>) bool abstract;
+fn isEmpty<T>(opt &!None<T> impl Opt<T>) bool { true }
+fn isEmpty<T>(opt &!Some<T> impl Opt<T>) bool { false }
 
 fn isEmpty<T>(virtual opt Opt<T>) bool abstract;
 fn isEmpty<T>(opt None<T> impl Opt<T>) bool { true }
@@ -25,10 +25,10 @@ fn get<T>(opt Some<T> impl Opt<T>) T {
   = value;
 }
 
-fn get<T>(virtual opt *Opt<T>) *T abstract;
-fn get<T>(opt *None<T> impl Opt<T>) *T { panic("Called get() on a None!") }
-fn get<T>(opt *Some<T> impl Opt<T>) *T { opt.value }
+fn get<T>(virtual opt &Opt<T>) *T abstract;
+fn get<T>(opt &None<T> impl Opt<T>) *T { panic("Called get() on a None!") }
+fn get<T>(opt &Some<T> impl Opt<T>) *T { *opt.value }
 // Itd be nice to abstract over permission
-fn get<T>(virtual opt *!Opt<T>) *!T abstract;
-fn get<T>(opt *!None<T> impl Opt<T>) *!T { panic("Called get() on a None!") }
-fn get<T>(opt *!Some<T> impl Opt<T>) infer-ret { opt.value }
+fn get<T>(virtual opt &!Opt<T>) *!T abstract;
+fn get<T>(opt &!None<T> impl Opt<T>) *!T { panic("Called get() on a None!") }
+fn get<T>(opt &!Some<T> impl Opt<T>) *!T { *!opt.value }

@@ -63,7 +63,7 @@ class TemplarPermissionTests extends FunSuite with Matchers {
         |  engine Engine;
         |}
         |fn main(a *Bork) infer-ret {
-        |  a.engine
+        |  *a.engine
         |}
         |""".stripMargin)
     val temputs = compile.expectTemputs()
@@ -82,7 +82,7 @@ class TemplarPermissionTests extends FunSuite with Matchers {
         |struct Bork {
         |  engine Engine;
         |}
-        |fn getFuel(engine *Engine) int { 42 }
+        |fn getFuel(engine &Engine) int { 42 }
         |fn main() infer-ret {
         |  bork = Bork(Engine());
         |  ret bork.engine.getFuel();

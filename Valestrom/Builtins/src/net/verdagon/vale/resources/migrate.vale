@@ -1,0 +1,6 @@
+
+fn migrate<E>(from Array<mut, E>, to &!Array<mut, E>) {
+  intermediate = Array<mut, E>(from.capacity());
+  drop_into(from, &!{ intermediate!.push(_); });
+  drop_into(intermediate, &!{ to!.push(_); });
+}

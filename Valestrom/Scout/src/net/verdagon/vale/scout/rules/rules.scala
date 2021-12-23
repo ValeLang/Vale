@@ -6,7 +6,9 @@ import net.verdagon.vale.scout._
 
 import scala.collection.immutable.List
 
-case class RuneUsage(range: RangeS, rune: IRuneS)
+case class RuneUsage(range: RangeS, rune: IRuneS) {
+  vpass()
+}
 
 // This isn't generic over e.g.  because we shouldnt reuse
 // this between layers. The generics solver doesn't even know about IRulexSR, doesn't

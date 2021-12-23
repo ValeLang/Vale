@@ -1,0 +1,12 @@
+import v.builtins.tup.*;
+
+struct Carrier {
+  hp int;
+  interceptors int;
+}
+
+fn main() int export {
+  carrier = Carrier(400, 8);
+  ref = &carrier;
+  = ref.interceptors;
+}

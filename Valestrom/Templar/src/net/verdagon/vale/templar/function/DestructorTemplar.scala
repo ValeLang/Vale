@@ -75,6 +75,7 @@ class DestructorTemplar(
           FunctionCallTE(destructorPrototype, Vector(undestructedExpr2))
         }
         case CoordT(PointerT, _, _) => (DiscardTE(undestructedExpr2))
+        case CoordT(BorrowT, _, _) => (DiscardTE(undestructedExpr2))
         case CoordT(WeakT, _, _) => (DiscardTE(undestructedExpr2))
         case CoordT(ShareT, ReadonlyT, _) => {
           val destroySharedCitizen =

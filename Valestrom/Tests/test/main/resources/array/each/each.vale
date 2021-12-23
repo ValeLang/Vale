@@ -2,7 +2,7 @@
 fn each<M, V, N, T, F>(arr A, func F) void
 rules(A Ref(_, _, [<M, V> N * T])) {
   i! = 0;
-  l = len(*arr);
+  l = len(&arr);
   while (i < l) {
     func!(arr[i]);
     set i = i + 1;
@@ -12,7 +12,7 @@ rules(A Ref(_, _, [<M, V> N * T])) {
 fn eachI<M, V, N, T, F>(arr A, func F) void
 rules(A Ref(_, _, [<M, V> N * T])) {
   i! = 0;
-  l = len(*arr);
+  l = len(&arr);
   while (i < l) {
     func!(i, arr[i]);
     set i = i + 1;
@@ -22,7 +22,7 @@ rules(A Ref(_, _, [<M, V> N * T])) {
 fn each<M, T, F>(arr A, func F) void
 rules(A Ref(_, _, Array<M, T>)) {
   i! = 0;
-  l = len(*arr);
+  l = len(&arr);
   while (i < l) {
     func!(arr[i]);
     set i = i + 1;
@@ -32,7 +32,7 @@ rules(A Ref(_, _, Array<M, T>)) {
 fn eachI<F>(arr A, func F) void
 rules(A Ref(_, _, Array<_, _>)) {
   i! = 0;
-  l = len(*arr);
+  l = len(&arr);
   while (i < l) {
     func!(i, arr[i]);
     set i = i + 1;

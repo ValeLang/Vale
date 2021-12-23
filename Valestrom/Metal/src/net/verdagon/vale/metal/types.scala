@@ -34,6 +34,7 @@ case class ReferenceH[+T <: KindH](
   (ownership, location) match {
     case (OwnH, YonderH) =>
     case (ShareH, _) =>
+    case (PointerH, YonderH) =>
     case (BorrowH, YonderH) =>
     case (WeakH, YonderH) =>
     case _ => vfail()
@@ -55,7 +56,7 @@ case class ReferenceH[+T <: KindH](
       val isTup = name.toFullString.startsWith("::C(CT(\"Tup\"")
 
       if (isBox) {
-        vassert(ownership == OwnH || ownership == BorrowH)
+        vassert(ownership == OwnH || ownership == PointerH)
       }
 
       // This will have false positives eventually, take it out then.
@@ -200,6 +201,7 @@ case class CodeLocation(
 // ReferenceH for explanation.
 sealed trait OwnershipH
 case object OwnH extends OwnershipH
+case object PointerH extends OwnershipH
 case object BorrowH extends OwnershipH
 case object WeakH extends OwnershipH
 case object ShareH extends OwnershipH

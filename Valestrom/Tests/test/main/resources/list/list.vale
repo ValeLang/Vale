@@ -1,123 +1,116 @@
-import array.make.*;
-import ifunction.ifunction1.*;
 import panicutils.*;
 
 struct List<E> rules(E Ref) {
-  array! Array<mut, Opt<E>>;
-  size! int;
+  array! Array<mut, E>;
 }
-
-fn List<E>() List<E>
-rules(E Ref) {
-  List<E>(MakeVaryArray<Opt<E>>(0, (index){ __pretend<Opt<E>>() }), 0)
+fn List<E>() List<E> {
+  List<E>(
+    Array<mut, E>(
+      0,
+      &!(i){ __pretend<E>() }))
 }
-fn len<E>(list *List<E>) int { list.size }
-fn add<E>(list *!List<E>, newElement E) {
-  if (list.size == list.len()) {
-    newLen = if (len(*list) == 0) { 1 } else { len(*list) * 2 };
-    newArray =
-        MakeVaryArray(newLen, *!IFunction1<mut, int, Opt<E>>((index){
-          = if (index < len(*list)) {
-              = (set list.array[index] = None<E>());
-            } else {
-              result Opt<E> = None<E>();
-              = result;
-            }
-        }));
-    set list.array = newArray;
+fn void() {}
+fn len<E>(list &List<E>) int { len(&list.array) }
+fn add<E>(list &!List<E>, newElement E) {
+  oldCapacity = list.array.capacity();
+  if (list.len() == oldCapacity) {
+    newCapacity = if (oldCapacity > 0) { oldCapacity * 2 } else { 1 };
+    newArray = Array<mut, E>(newCapacity);
+    oldArray = set list.array = newArray;
+    migrate(oldArray, &!list.array);
   }
-  set list.array[list.size] = Some<E>(newElement);
-  set list.size = list.size + 1;
+  list.array!.push(newElement);
 }
-fn get<E>(list *List<E>, index int) *E {
-  a = list.array;
-  = a[index].get();
-}
-fn set<E>(list *!List<E>, index int, value E) void {
-  set list.array[index] = Some(value);
-}
-fn toArray<E>(list *List<E>) Array<mut, E> {
-  MakeArray(list.len(), *!(i){ list.get(i) })
-}
-fn toVaryArray<E>(list *List<E>) Array<mut, E> {
-  MakeVaryArray(list.len(), *!(i){ list.get(i) })
-}
-fn toImmArray<E>(list *List<E>) Array<imm, E> {
-  MakeImmArray(list.len(), *!(i){ list.get(i) })
-}
-fn toList<E>(arr *Array<_, E>) List<E> {
-  list = List<E>();
-  arr each (elem){
-    list.add(elem);
-  };
-  = list;
+// todo: make that return a &E
+fn get<E>(list &List<E>, index int) &E {
+  a &Array<mut, E> = list.array;
+  = a[index];
 }
 
-fn each<E, F>(list *List<E>, func F) void {
-  i! = 0;
-  l = len(*list);
-  while (i < l) {
-    func(list.get(i));
-    set i = i + 1;
-  }
+fn set<E>(list &!List<E>, index int, value E) E {
+  set list.array[index] = value
 }
 
-fn each<E, F>(list *!List<E>, func F) void {
-  i! = 0;
-  l = len(*list);
-  while (i < l) {
-    func(list.get(i));
-    set i = i + 1;
-  }
+//fn toArray<E>(list &List<E>) Array<mut, E> {
+//  MakeArray(list.len(), *!(i){ list.get(i) })
+//}
+fn toVaryArray<E>(list &List<E>) Array<mut, E> {
+  Array<mut, E>(list.len(), &!(i){ list.get(i) })
 }
-
-fn eachI<E, F>(list *List<E>, func F) void {
-  i! = 0;
-  l = len(*list);
-  while (i < l) {
-    func(i, list.get(i));
-    set i = i + 1;
-  }
+fn toImmArray<E>(list &List<E>) Array<imm, E> {
+  MakeImmArray(list.len(), &!(i){ list.get(i) })
 }
-
-fn eachI<E, F>(list *!List<E>, func F) void {
-  i! = 0;
-  l = len(*list);
-  while (i < l) {
-    func(i, list.get(i));
-    set i = i + 1;
-  }
-}
-
-fn contains<E>(list *List<E>, element E) bool {
-  i! = 0;
-  l = len(*list);
-  while (i < l) {
-    if (list.get(i) == element) {
-      ret true;
-    }
-    set i = i + 1;
-  }
-  ret false;
-}
-
-
-fn remove<E>(list *!List<E>, removeAtIndex int) E {
+//fn toList<E>(arr *Array<_, E>) List<E> {
+//  list = List<E>();
+//  arr each (elem){
+//    list.add(elem);
+//  };
+//  = list;
+//}
+//
+//fn each<E, F>(list &List<E>, func F) void {
+//  i! = 0;
+//  l = len(*list);
+//  while (i < l) {
+//    func(list.get(i));
+//    set i = i + 1;
+//  }
+//}
+//
+//fn each<E, F>(list &!List<E>, func F) void {
+//  i! = 0;
+//  l = len(*list);
+//  while (i < l) {
+//    func(list.get(i));
+//    set i = i + 1;
+//  }
+//}
+//
+//fn eachI<E, F>(list &List<E>, func F) void {
+//  i! = 0;
+//  l = len(*list);
+//  while (i < l) {
+//    func(i, list.get(i));
+//    set i = i + 1;
+//  }
+//}
+//
+//fn eachI<E, F>(list &!List<E>, func F) void {
+//  i! = 0;
+//  l = len(*list);
+//  while (i < l) {
+//    func(i, list.get(i));
+//    set i = i + 1;
+//  }
+//}
+//
+//fn contains<E>(list &List<E>, element E) bool {
+//  i! = 0;
+//  l = len(*list);
+//  while (i < l) {
+//    if (list.get(i) == element) {
+//      ret true;
+//    }
+//    set i = i + 1;
+//  }
+//  ret false;
+//}
+//
+//
+fn remove<E>(list &!List<E>, removeAtIndex int) E {
   if (removeAtIndex < 0) {
     panic("Can't remove at negative index!");
   }
-  if (removeAtIndex >= list.size) {
+  if (removeAtIndex >= list.len()) {
     panic("Can't remove, index out of bounds!");
   }
 
-  temp! = (set list.array[list.size - 1] = None<E>());
-  i! = list.size - 2;
+  temp! Opt<E> = Some<E>(list.array!.pop());
+  i! = list.len() - 1;
   while (i >= removeAtIndex) {
-    set temp = (set list.array[i] = (set temp = None<E>()));
+    set temp = Some(set list.array[i] = (set temp = None<E>()).get());
     set i = i - 1;
   }
-
-  set list.size = list.size - 1;
 
   ret (temp).get();
 }

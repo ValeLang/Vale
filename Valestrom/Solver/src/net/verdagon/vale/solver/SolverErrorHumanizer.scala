@@ -1,6 +1,6 @@
 package net.verdagon.vale.solver
 
-import net.verdagon.vale.SourceCodeUtils.{lineContaining, lineRangeContaining}
+import net.verdagon.vale.SourceCodeUtils.{lineContaining, lineRangeContaining, linesBetween}
 import net.verdagon.vale.{CodeLocationS, FileCoordinateMap, RangeS, repeatStr, vassert}
 
 object SolverErrorHumanizer {
@@ -40,9 +40,9 @@ object SolverErrorHumanizer {
       rulesToSummarize.flatMap(rule => {
         val range = getRuleRange(rule)
         val RangeS(begin, end) = range
-        val ruleBeginLineBegin = lineRangeContaining(codeMap, begin)._1
-        val ruleEndLineBegin = lineRangeContaining(codeMap, end)._1
-        ruleBeginLineBegin.to(ruleEndLineBegin).map(lineBegin => CodeLocationS(getRuleRange(rule).file, lineBegin))
+
+        linesBetween(codeMap, begin, end)
+          .map({ case (begin, _) => CodeLocationS(getRuleRange(rule).file, begin) })
       })
         .distinct
     val allRuneUsages = rulesToSummarize.flatMap(getRuneUsages).distinct
@@ -69,7 +69,7 @@ object SolverErrorHumanizer {
               .sortBy(-_._2.begin.offset)
               .map({ case (rune, range) =>
                 val numSpaces = range.begin.offset - lineBegin
-                val numArrows = range.end.offset - range.begin.offset
+                val numArrows = Math.max(range.end.offset - range.begin.offset, 1)
                 val runeName = humanizeRune(rune)
                   repeatStr(" ", numSpaces) + repeatStr("^", numArrows) + " " +
                     runeName + ": " +

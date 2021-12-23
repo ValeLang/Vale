@@ -68,13 +68,13 @@ class HashMapTest extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """
           |import hashmap.*;
-          |fn add42(map *!HashMap<int, int, IntHasher, IntEquator>) {
+          |fn add42(map &!HashMap<int, int, IntHasher, IntEquator>) {
           |  map!.add(42, 100);
           |}
           |
           |fn main() int export {
           |  m = HashMap<int, int, IntHasher, IntEquator>(IntHasher(), IntEquator());
-          |  add42(*!m);
+          |  add42(&!m);
           |  = m.get(42).get();
           |}
         """.stripMargin)
@@ -94,7 +94,7 @@ class HashMapTest extends FunSuite with Matchers {
           |}
           |
           |struct LocationHasher { }
-          |fn __call(this *LocationHasher, loc Location) int {
+          |fn __call(this &LocationHasher, loc Location) int {
           |  hash! = 0;
           |  set hash = 41 * hash + loc.groupX;
           |  set hash = 41 * hash + loc.groupY;
@@ -103,7 +103,7 @@ class HashMapTest extends FunSuite with Matchers {
           |}
           |
           |struct LocationEquator { }
-          |fn __call(this *LocationEquator, a Location, b Location) bool {
+          |fn __call(this &LocationEquator, a Location, b Location) bool {
           |  (a.groupX == b.groupX) and (a.groupY == b.groupY) and (a.indexInGroup == b.indexInGroup)
           |}
           |

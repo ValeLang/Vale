@@ -293,9 +293,9 @@ class Scout(globalOptions: GlobalOptions) {
   }
 
   private def scoutStruct(file: FileCoordinate, head: StructP): StructS = {
-    val StructP(rangeP, NameP(_, structHumanName), attributesP, mutabilityPT, maybeIdentifyingRunes, maybeTemplateRulesP, StructMembersP(_, members)) = head
+    val StructP(rangeP, NameP(structNameRange, structHumanName), attributesP, mutabilityPT, maybeIdentifyingRunes, maybeTemplateRulesP, StructMembersP(_, members)) = head
     val structRangeS = Scout.evalRange(file, rangeP)
-    val structName = TopLevelCitizenDeclarationNameS(structHumanName, structRangeS)
+    val structName = TopLevelCitizenDeclarationNameS(structHumanName, Scout.evalRange(file, structNameRange))
 
     val lidb = new LocationInDenizenBuilder(Vector())
 
@@ -405,9 +405,9 @@ class Scout(globalOptions: GlobalOptions) {
     file: FileCoordinate,
     containingInterfaceP: InterfaceP):
   InterfaceS = {
-    val InterfaceP(interfaceRange, NameP(_, interfaceHumanName), attributesP, mutabilityPT, maybeIdentifyingRunes, maybeRulesP, internalMethodsP) = containingInterfaceP
+    val InterfaceP(interfaceRange, NameP(interfaceNameRangeS, interfaceHumanName), attributesP, mutabilityPT, maybeIdentifyingRunes, maybeRulesP, internalMethodsP) = containingInterfaceP
     val interfaceRangeS = Scout.evalRange(file, interfaceRange)
-    val interfaceFullName = TopLevelCitizenDeclarationNameS(interfaceHumanName, interfaceRangeS)
+    val interfaceFullName = TopLevelCitizenDeclarationNameS(interfaceHumanName, Scout.evalRange(file, interfaceNameRangeS))
     val rulesP = maybeRulesP.toVector.flatMap(_.rules)
 
     val lidb = new LocationInDenizenBuilder(Vector())

@@ -7,12 +7,11 @@ import net.verdagon.vale.scout.rules.{IRulexSR, RuneUsage}
 import net.verdagon.vale.scout.{ArgumentRuneS, CodeRuneS, CodeVarNameS, FunctionNameS, GlobalFunctionFamilyNameS, INameS, IRuneS, IRuneTypeRuleError, ITemplataType, ImplicitRuneS, LambdaDeclarationNameS, RuneTypeSolveError, ScoutErrorHumanizer, TopLevelCitizenDeclarationNameS}
 import net.verdagon.vale.solver.{FailedSolve, IIncompleteOrFailedSolve, IncompleteSolve, RuleError, SolverConflict, SolverErrorHumanizer}
 import net.verdagon.vale.templar.OverloadTemplar.{FindFunctionFailure, IFindFunctionFailureReason, InferFailure, RuleTypeSolveFailure, SpecificParamDoesntMatchExactly, SpecificParamDoesntSend, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
-import net.verdagon.vale.templar.names.TemplataNamer.getFullNameIdentifierName
 import net.verdagon.vale.templar.ast.{AbstractT, FunctionBannerT, FunctionCalleeCandidate, HeaderCalleeCandidate, ICalleeCandidate, OverrideT, PrototypeT}
-import net.verdagon.vale.templar.infer.{CallResultWasntExpectedType, ITemplarSolverError, KindDoesntImplementInterface, KindIsNotConcrete, KindIsNotInterface, LookupFailed, NoAncestorsSatisfyCall, OwnershipDidntMatch, PermissionDidntMatch, ReceivingDifferentOwnerships}
-import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, CitizenNameT, CitizenTemplateNameT, CodeVarNameT, FullNameT, FunctionNameT, INameT, IVarNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT, TemplataNamer}
+import net.verdagon.vale.templar.infer.{CallResultWasntExpectedType, ITemplarSolverError, KindDoesntImplementInterface, KindIsNotConcrete, KindIsNotInterface, LookupFailed, NoAncestorsSatisfyCall, OneOfFailed, OwnershipDidntMatch, PermissionDidntMatch, ReceivingDifferentOwnerships}
+import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, CitizenNameT, CitizenTemplateNameT, CodeVarNameT, FullNameT, FunctionNameT, INameT, IVarNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT}
 import net.verdagon.vale.templar.templata.{Conversions, CoordListTemplata, CoordTemplata, ITemplata, IntegerTemplata, InterfaceTemplata, KindTemplata, MutabilityTemplata, OwnershipTemplata, PermissionTemplata, PrototypeTemplata, RuntimeSizedArrayTemplateTemplata, StaticSizedArrayTemplateTemplata, StringTemplata, StructTemplata, VariabilityTemplata}
-import net.verdagon.vale.templar.types.{BoolT, PointerT, CoordT, FinalT, FloatT, ImmutableT, IntT, InterfaceTT, KindT, MutableT, OwnT, ParamFilter, ReadonlyT, ReadwriteT, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StrT, StructTT, VaryingT, VoidT, WeakT}
+import net.verdagon.vale.templar.types.{BoolT, BorrowT, CoordT, FinalT, FloatT, ImmutableT, IntT, InterfaceTT, KindT, MutableT, NeverT, OverloadSet, OwnT, ParamFilter, PointerT, ReadonlyT, ReadwriteT, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StrT, StructTT, VaryingT, VoidT, WeakT}
 import net.verdagon.vale.{CodeLocationS, FileCoordinate, FileCoordinateMap, RangeS, repeatStr, vimpl}
 
 object TemplarErrorHumanizer {
@@ -102,7 +101,7 @@ object TemplarErrorHumanizer {
             ": Supplied " + numElementsInitialized + " elements, but expected " + expectedNumElements + "."
         }
         case CouldntFindFunctionToCallT(range, fff) => {
-          humanizeScoutExpectedFunctionFailure(verbose, codeMap, range, fff)
+          humanizeFindFunctionFailure(verbose, codeMap, range, fff)
         }
         case FunctionAlreadyExists(oldFunctionRange, newFunctionRange, signature) => {
             ": Function " + signature.fullName.last + " already exists! Previous declaration at:\n" +
@@ -145,7 +144,7 @@ object TemplarErrorHumanizer {
     f"${posStr} error ${errorId}\n${lineContents}\n${errorStrBody}\n"
   }
 
-  def humanizeScoutExpectedFunctionFailure(
+  def humanizeFindFunctionFailure(
     verbose: Boolean,
     codeMap: FileCoordinateMap[String],
     invocationRange: RangeS,
@@ -301,6 +300,9 @@ object TemplarErrorHumanizer {
       case KindIsNotConcrete(kind) => {
         "Expected kind to be concrete, but was not. Kind: " + kind
       }
+      case OneOfFailed(rule) => {
+        "One-of rule failed."
+      }
       case KindIsNotInterface(kind) => {
         "Expected kind to be interface, but was not. Kind: " + kind
       }
@@ -401,6 +403,7 @@ object TemplarErrorHumanizer {
         ownership match {
           case OwnT => "own"
           case PointerT => "ptr"
+          case BorrowT => "borrow"
           case WeakT => "weak"
           case ShareT => "share"
         }
@@ -418,6 +421,12 @@ object TemplarErrorHumanizer {
               case ReadwriteT => "*!"
             })
           }
+          case BorrowT => {
+            (permission match {
+              case ReadonlyT => "&"
+              case ReadwriteT => "&!"
+            })
+          }
           case WeakT => {
             (permission match {
               case ReadonlyT => "**"
@@ -432,8 +441,10 @@ object TemplarErrorHumanizer {
           case IntT(bits) => "i" + bits
           case BoolT() => "bool"
           case StrT() => "str"
+          case NeverT() => "never"
           case VoidT() => "void"
           case FloatT() => "float"
+          case OverloadSet(_, name, _) => "(overloads: " + ScoutErrorHumanizer.humanizeImpreciseName(name) + ")"
           case InterfaceTT(name) => humanizeName(codeMap, name)
           case StructTT(name) => humanizeName(codeMap, name)
           case RuntimeSizedArrayTT(mutability, elementType) => {

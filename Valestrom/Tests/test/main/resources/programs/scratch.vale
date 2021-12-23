@@ -1025,12 +1025,12 @@ impl ITemplexPT for PermissionedPT;
 interface IExpressionPE {}
 
 // For example, the `&` in `launch(*ship)`
-struct LendPE {
+struct PointPE {
   range Range;
   expr IExpressionPE;
   // targetOwnership OwnershipP;
 }
-impl IExpressionPE for LendPE;
+impl IExpressionPE for PointPE;
 
 // For example, the `and` in `if (readyToLaunch and warmedUp) { ... }`
 struct AndPE {

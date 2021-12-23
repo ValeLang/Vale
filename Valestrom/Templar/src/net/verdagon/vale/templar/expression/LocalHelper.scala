@@ -9,7 +9,7 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{ast, _}
 import net.verdagon.vale.templar.ast.{AddressExpressionTE, AddressMemberLookupTE, DeferTE, ExpressionT, LetAndLendTE, LocalLookupTE, LocationInFunctionEnvironment, ReferenceExpressionTE, ReferenceMemberLookupTE, RuntimeSizedArrayLookupTE, SoftLoadTE, StaticSizedArrayLookupTE, UnletTE}
 import net.verdagon.vale.templar.names.{NameTranslator, TemplarTemporaryVarNameT}
-import net.verdagon.vale.{RangeS, vassert, vfail, vimpl}
+import net.verdagon.vale.{RangeS, vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
@@ -34,10 +34,16 @@ class LocalHelper(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
     life: LocationInFunctionEnvironment,
-    r: ReferenceExpressionTE):
+    r: ReferenceExpressionTE,
+    targetOwnership: OwnershipT):
   (DeferTE) = {
+    targetOwnership match {
+      case BorrowT =>
+      case PointerT =>
+    }
+
     val rlv = makeTemporaryLocal(fate, life, r.result.reference)
-    val letExpr2 = LetAndLendTE(rlv, r)
+    val letExpr2 = LetAndLendTE(rlv, r, targetOwnership)
 
     val unlet = unletLocal(fate, rlv)
     val destructExpr2 =
@@ -131,10 +137,10 @@ class LocalHelper(
                 UnletTE(lv)
               }
               // See CSHROOR for why these aren't just Readwrite.
-              case l @ RuntimeSizedArrayLookupTE(_, _, _, _, _, _) => SoftLoadTE(l, PointerT, a.result.reference.permission)
-              case l @ StaticSizedArrayLookupTE(_, _, _, _, _, _) => SoftLoadTE(l, PointerT, a.result.reference.permission)
-              case l @ ReferenceMemberLookupTE(_,_, _, _, _, _) => SoftLoadTE(l, PointerT, a.result.reference.permission)
-              case l @ AddressMemberLookupTE(_, _, _, _, _) => SoftLoadTE(l, PointerT, a.result.reference.permission)
+              case l @ RuntimeSizedArrayLookupTE(_, _, _, _, _, _) => SoftLoadTE(l, BorrowT, a.result.reference.permission)
+              case l @ StaticSizedArrayLookupTE(_, _, _, _, _, _) => SoftLoadTE(l, BorrowT, a.result.reference.permission)
+              case l @ ReferenceMemberLookupTE(_,_, _, _, _, _) => SoftLoadTE(l, BorrowT, a.result.reference.permission)
+              case l @ AddressMemberLookupTE(_, _, _, _, _) => SoftLoadTE(l, BorrowT, a.result.reference.permission)
             }
           }
           case MoveP => {
@@ -151,27 +157,38 @@ class LocalHelper(
               }
             }
           }
-          case LendConstraintP(None) => SoftLoadTE(a, PointerT, a.result.reference.permission)
-          case LendConstraintP(Some(permission)) => SoftLoadTE(a, PointerT, Conversions.evaluatePermission(permission))
-          case LendWeakP(permission) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
+          case LoadAsPointerP(None) => SoftLoadTE(a, PointerT, a.result.reference.permission)
+          case LoadAsPointerP(Some(permission)) => SoftLoadTE(a, PointerT, Conversions.evaluatePermission(permission))
+          case LoadAsBorrowP(None) => SoftLoadTE(a, BorrowT, a.result.reference.permission)
+          case LoadAsBorrowP(Some(permission)) => SoftLoadTE(a, BorrowT, Conversions.evaluatePermission(permission))
+          case LoadAsBorrowOrIfContainerIsPointerThenPointerP(None) => SoftLoadTE(a, BorrowT, a.result.reference.permission)
+          case LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(permission)) => SoftLoadTE(a, BorrowT, Conversions.evaluatePermission(permission))
+          case LoadAsWeakP(permission) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
         }
       }
-      case PointerT => {
+      case PointerT | BorrowT => {
         loadAsP match {
           case MoveP => vfail()
-          case UseP => SoftLoadTE(a, PointerT, a.result.reference.permission)
-          case LendConstraintP(None) => SoftLoadTE(a, PointerT, a.result.reference.permission)
-          case LendConstraintP(Some(permission)) => SoftLoadTE(a, PointerT, Conversions.evaluatePermission(permission))
-          case LendWeakP(permission) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
+          case UseP => SoftLoadTE(a, a.result.reference.ownership, a.result.reference.permission)
+          case LoadAsPointerP(None) => SoftLoadTE(a, PointerT, a.result.reference.permission)
+          case LoadAsPointerP(Some(permission)) => SoftLoadTE(a, PointerT, Conversions.evaluatePermission(permission))
+          case LoadAsBorrowP(None) => SoftLoadTE(a, BorrowT, a.result.reference.permission)
+          case LoadAsBorrowP(Some(permission)) => SoftLoadTE(a, BorrowT, Conversions.evaluatePermission(permission))
+          case LoadAsBorrowOrIfContainerIsPointerThenPointerP(None) => SoftLoadTE(a, a.result.reference.ownership, a.result.reference.permission)
+          case LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(permission)) => SoftLoadTE(a, a.result.reference.ownership, Conversions.evaluatePermission(permission))
+          case LoadAsWeakP(permission) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
         }
       }
       case WeakT => {
         loadAsP match {
           case UseP => SoftLoadTE(a, WeakT, a.result.reference.permission)
           case MoveP => vfail()
-          case LendConstraintP(None) => SoftLoadTE(a, WeakT, a.result.reference.permission)
-          case LendConstraintP(Some(permission)) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
-          case LendWeakP(permission) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
+          case LoadAsPointerP(None) => SoftLoadTE(a, WeakT, a.result.reference.permission)
+          case LoadAsPointerP(Some(permission)) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
+          case LoadAsBorrowP(None) => SoftLoadTE(a, WeakT, a.result.reference.permission)
+          case LoadAsBorrowP(Some(permission)) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
+          case LoadAsBorrowOrIfContainerIsPointerThenPointerP(_) => vwat()
+          case LoadAsWeakP(permission) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
         }
       }
     }
@@ -192,18 +209,18 @@ class LocalHelper(
       case StrT() => ShareT
       case VoidT() => ShareT
       case StaticSizedArrayTT(_, mutability, _, _) => {
-        if (mutability == MutableT) PointerT else ShareT
+        if (mutability == MutableT) BorrowT else ShareT
       }
       case RuntimeSizedArrayTT(mutability, _) => {
-        if (mutability == MutableT) PointerT else ShareT
+        if (mutability == MutableT) BorrowT else ShareT
       }
       case sr2 @ StructTT(_) => {
         val mutability = Templar.getMutability(temputs, sr2)
-        if (mutability == MutableT) PointerT else ShareT
+        if (mutability == MutableT) BorrowT else ShareT
       }
       case ir2 @ InterfaceTT(_) => {
         val mutability = Templar.getMutability(temputs, ir2)
-        if (mutability == MutableT) PointerT else ShareT
+        if (mutability == MutableT) BorrowT else ShareT
       }
       case OverloadSet(_, _, voidStructRef) => {
         getBorrowOwnership(temputs, voidStructRef)

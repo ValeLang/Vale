@@ -92,29 +92,6 @@ class IntegrationTestsA extends FunSuite with Matchers {
 //    compile.evalForKind(Vector())
 //  }
 
-  test("Scratch scratch") {
-    val compile =
-      RunCompilation.test(
-        """
-          |fn valeMakeRSA() Array<mut, int> {
-          |  ssa = [imm][5, 7, 9, 10, 11];
-          |  ret Array<mut, int>(ssa.len(), *!{ ssa[_] });
-          |}
-          |
-          |fn main() int export {
-          |  arr = valeMakeRSA();
-          |  i = 0;
-          |  total = 0;
-          |  while (i < arr.len()) {
-          |    set total = total + arr[i];
-          |    set i = i + 1;
-          |  }
-          |  ret total;
-          |}
-          |""".stripMargin)
-    compile.evalForKind(Vector())
-  }
-
   test("Simple program returning an int") {
     val compile = RunCompilation.test("fn main() int export {3}")
     compile.evalForKind(Vector()) shouldEqual VonInt(3)
@@ -147,6 +124,11 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("Test constraint ref") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/constraintRef.vale"))
+    compile.evalForKind(Vector()) shouldEqual VonInt(8)
+  }
+
+  test("Test borrow ref") {
+    val compile = RunCompilation.test(Tests.loadExpected("programs/borrowRef.vale"))
     compile.evalForKind(Vector()) shouldEqual VonInt(8)
   }
 
@@ -577,27 +559,27 @@ class IntegrationTestsA extends FunSuite with Matchers {
     vassert(None == hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, FunctionNameT("helperFunc", Vector.empty, Vector(CoordT(ShareT, ReadonlyT, StrT())))))))
   }
 
-//  test("Test overloading between borrow and own") {
-//    val compile = FullCompilation
-//      """
-//        |interface IMoo {}
-//        |struct Moo {}
-//        |impl IMoo for Moo;
-//        |
-//        |fn func(virtual moo IMoo) int abstract;
-//        |fn func(virtual moo *IMoo) int abstract;
-//        |
-//        |fn func(moo Moo impl IMoo) int { 73 }
-//        |fn func(moo *Moo impl IMoo) int { 42 }
-//        |
-//        |fn main() int export {
-//        |  func(*Moo())
-//        |}
-//        |""".stripMargin)
-//    val temputs = compile.getTemputs()
-//
-//    compile.evalForKind(Vector()) shouldEqual VonInt(42)
-//  }
+  test("Test overloading between borrow and pointer") {
+    val compile = RunCompilation.test(
+      """
+        |interface IMoo sealed {}
+        |struct Moo {}
+        |impl IMoo for Moo;
+        |
+        |fn func(virtual moo &IMoo) int abstract;
+        |fn func(virtual moo *IMoo) int abstract;
+        |
+        |fn func(moo &Moo impl IMoo) int { 42 }
+        |fn func(moo *Moo impl IMoo) int { 73 }
+        |
+        |fn main() int export {
+        |  func(&Moo())
+        |}
+        |""".stripMargin)
+    val temputs = compile.getTemputs()
+
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+  }
 
   test("Test returning empty seq") {
     val compile = RunCompilation.test(
@@ -652,8 +634,8 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |fn get<T>(virtual opt XOpt<T>) int abstract;
         |fn get<T>(opt XNone<T> impl XOpt<T>) int { __vbi_panic() }
         |
-        |fn get<T>(virtual opt *XOpt<T>) int abstract;
-        |fn get<T>(opt *XNone<T> impl XOpt<T>) int { 42 }
+        |fn get<T>(virtual opt &XOpt<T>) int abstract;
+        |fn get<T>(opt &XNone<T> impl XOpt<T>) int { 42 }
         |
         |fn main() int export {
         |  opt XOpt<int> = XNone<int>();

@@ -165,10 +165,9 @@ class CallTemplar(
     // Whether we're given a borrow or an own, the call itself will be given a borrow.
     val givenCallableBorrowExpr2 =
       givenCallableUnborrowedExpr2.result.reference match {
-        case CoordT(PointerT, _, _) => (givenCallableUnborrowedExpr2)
-        case CoordT(ShareT, _, _) => (givenCallableUnborrowedExpr2)
+        case CoordT(BorrowT | PointerT | ShareT, _, _) => (givenCallableUnborrowedExpr2)
         case CoordT(OwnT, _, _) => {
-          localHelper.makeTemporaryLocal(temputs, fate, life, givenCallableUnborrowedExpr2)
+          localHelper.makeTemporaryLocal(temputs, fate, life, givenCallableUnborrowedExpr2, BorrowT)
         }
       }
 
@@ -192,7 +191,7 @@ class CallTemplar(
         env, temputs, range, CodeNameS(CallTemplar.CALL_FUNCTION_NAME), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, false)
 
     val mutability = Templar.getMutability(temputs, citizenRef)
-    val ownership = if (mutability == MutableT) PointerT else ShareT
+    val ownership = if (mutability == MutableT) BorrowT else ShareT
     vassert(givenCallableBorrowExpr2.result.reference.ownership == ownership)
     val actualCallableExpr2 = givenCallableBorrowExpr2
 

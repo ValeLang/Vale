@@ -27,7 +27,7 @@ object TypeHammer {
           val (boxStructRefH) =
             StructHammer.makeBox(hinputs, hamuts, member2.variability, coord, referenceH)
           // The stack owns the box, closure structs just borrow it.
-          (ReferenceH(m.BorrowH, YonderH, ReadwriteH, boxStructRefH))
+          (ReferenceH(m.PointerH, YonderH, ReadwriteH, boxStructRefH))
         }
       }
     StructMemberH(
@@ -68,16 +68,13 @@ object TypeHammer {
       (ownership, innerType) match {
         case (OwnT, _) => YonderH
         case (PointerT, _) => YonderH
+        case (BorrowT, _) => YonderH
         case (WeakT, _) => YonderH
         case (ShareT, OverloadSet(_, _, _)) => InlineH
 //        case (ShareT, PackTT(_, _)) => InlineH
 //        case (ShareT, TupleTT(_, _)) => InlineH
         case (ShareT, StructTT(FullNameT(_, Vector(), CitizenNameT(CitizenTemplateNameT("Tup"), _)))) => InlineH
-        case (ShareT, VoidT()) => InlineH
-        case (ShareT, IntT(_)) => InlineH
-        case (ShareT, BoolT()) => InlineH
-        case (ShareT, FloatT()) => InlineH
-        case (ShareT, NeverT()) => InlineH
+        case (ShareT, VoidT() | IntT(_) | BoolT() | FloatT() | NeverT()) => InlineH
         case (ShareT, StrT()) => YonderH
         case (ShareT, _) => YonderH
       }

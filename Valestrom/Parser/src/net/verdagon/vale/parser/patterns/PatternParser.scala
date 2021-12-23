@@ -93,7 +93,7 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
 
   private[parser] def patternOwnership: Parser[OwnershipP] = {
     // See "Capturing Kinds and Ownerships" for why we don't capture a rune here.
-    (("^" ^^^ OwnP) | ("*" ^^^ PointerP) | ("**" ^^^ WeakP) | ("@" ^^^ ShareP))
+    (("^" ^^^ OwnP) | ("*" ^^^ PointerP) | ("&" ^^^ BorrowP) | ("**" ^^^ WeakP) | ("@" ^^^ ShareP))
   }
 
   // Add any new rules to the "Nothing matches empty string" test!

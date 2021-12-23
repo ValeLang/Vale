@@ -12,7 +12,8 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
     pos ~ "true" ~ pos ^^ { case begin ~ _ ~ end => BoolPT(Range(begin, end), true) } |
     pos ~ "false" ~ pos ^^ { case begin ~ _ ~ end => BoolPT(Range(begin, end), false) } |
     pos ~ "own" ~ pos ^^ { case begin ~ _ ~ end => OwnershipPT(Range(begin, end), OwnP) } |
-    pos ~ "borrow" ~ pos ^^ { case begin ~ _ ~ end => OwnershipPT(Range(begin, end), PointerP) } |
+    pos ~ "borrow" ~ pos ^^ { case begin ~ _ ~ end => OwnershipPT(Range(begin, end), BorrowP) } |
+    pos ~ "ptr" ~ pos ^^ { case begin ~ _ ~ end => OwnershipPT(Range(begin, end), PointerP) } |
     pos ~ "weak" ~ pos ^^ { case begin ~ _ ~ end => OwnershipPT(Range(begin, end), WeakP) } |
     pos ~ "share" ~ pos ^^ { case begin ~ _ ~ end => OwnershipPT(Range(begin, end), ShareP) } |
     pos ~ "mut" ~ pos ^^ { case begin ~ _ ~ end => MutabilityPT(Range(begin, end), MutableP) } |
@@ -32,7 +33,8 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
     // The template calls are first because Moo:(Int, Bool) is ambiguous, that (Int, Bool)
     // could be interpreted as a pack.
     (pos ~ string ~ pos ^^ { case begin ~ inner ~ end => StringPT(Range(begin, end), inner.str) }) |
-    (pos ~ ("*" ~> optWhite ~> ruleTemplexPR) ~ pos ^^ { case begin ~ inner ~ end => BorrowPT(Range(begin, end), inner) }) |
+    (pos ~ ("&" ~> optWhite ~> ruleTemplexPR) ~ pos ^^ { case begin ~ inner ~ end => BorrowPT(Range(begin, end), inner) }) |
+    (pos ~ ("*" ~> optWhite ~> ruleTemplexPR) ~ pos ^^ { case begin ~ inner ~ end => PointPT(Range(begin, end), inner) }) |
     (pos ~ ("@" ~> optWhite ~> ruleTemplexPR) ~ pos ^^ { case begin ~ inner ~ end => SharePT(Range(begin, end), inner) }) |
     (pos ~ (keywordOrIdentifierOrRuneRuleTemplexPR <~ optWhite <~ "<" <~ optWhite) ~ (repsep(ruleTemplexPR, optWhite ~> "," <~ optWhite) <~ optWhite <~ ">") ~ pos ^^ {
       case begin ~ template ~ args ~ end => CallPT(Range(begin, end), template, args.toVector)

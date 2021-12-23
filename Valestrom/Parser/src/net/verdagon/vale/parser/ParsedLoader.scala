@@ -332,8 +332,8 @@ object ParsedLoader {
         BadLetPE(
           loadRange(getObjectField(jobj, "range")))
       }
-      case "Lend" => {
-        LendPE(
+      case "Point" => {
+        LoadPE(
           loadRange(getObjectField(jobj, "range")),
           loadExpression(getObjectField(jobj, "inner")),
           loadLoadAs(getObjectField(jobj, "targetOwnership")))
@@ -441,15 +441,23 @@ object ParsedLoader {
     getType(jobj) match {
       case "Move" => MoveP
       case "Use" => UseP
-      case "LendConstraint" => {
-        LendConstraintP(
+      case "LoadAsPointer" => {
+        LoadAsPointerP(
           loadOptionalObject(getObjectField(jobj, "permission"), loadPermission))
       }
-      case "LendWeak" => {
-        LendWeakP(
+      case "LoadAsBorrow" => {
+        LoadAsBorrowP(
+          loadOptionalObject(getObjectField(jobj, "permission"), loadPermission))
+      }
+      case "LoadAsBorrowOrIfContainerIsPointerThenPointer" => {
+        LoadAsBorrowOrIfContainerIsPointerThenPointerP(
+          loadOptionalObject(getObjectField(jobj, "permission"), loadPermission))
+      }
+      case "LoadAsWeak" => {
+        LoadAsWeakP(
           loadPermission(getObjectField(jobj, "permission")))
       }
-      case _ => vwat()
+      case other => vwat(other)
     }
   }
 
@@ -634,6 +642,7 @@ object ParsedLoader {
     getType(jobj) match {
       case "Own" => OwnP
       case "Pointer" => PointerP
+      case "Borrow" => BorrowP
       case "Weak" => WeakP
       case "Share" => ShareP
     }

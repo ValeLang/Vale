@@ -16,6 +16,7 @@ case class AnonymousRunePT(range: Range) extends ITemplexPT {
 }
 case class BoolPT(range: Range, value: Boolean) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 case class BorrowPT(range: Range, inner: ITemplexPT) extends ITemplexPT { override def hashCode(): Int = vcurious() }
+case class PointPT(range: Range, inner: ITemplexPT) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 // This is for example fn(Int)Bool, fn:imm(Int, Int)Str, fn:mut()(Str, Bool)
 // It's shorthand for IFunction:(mut, (Int), Bool), IFunction:(mut, (Int, Int), Str), IFunction:(mut, (), (Str, Bool))
 case class CallPT(range: Range, template: ITemplexPT, args: Vector[ITemplexPT]) extends ITemplexPT { override def hashCode(): Int = vcurious() }

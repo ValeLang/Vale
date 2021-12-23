@@ -2,7 +2,7 @@ package net.verdagon.vale
 
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.ast.{LetNormalTE, SoftLoadTE, WeakAliasTE}
+import net.verdagon.vale.templar.ast.{BorrowToWeakTE, LetNormalTE, SoftLoadTE}
 import net.verdagon.vale.templar.citizen.WeakableImplingMismatch
 import net.verdagon.vale.templar.env.ReferenceLocalVariableT
 import net.verdagon.vale.templar.expression.TookWeakRefOfNonWeakableError
@@ -81,7 +81,7 @@ class WeakTests extends FunSuite with Matchers {
           |""".stripMargin)
 
     val main = compile.expectTemputs().lookupFunction("main")
-    Collector.only(main.body, { case WeakAliasTE(_) => })
+    Collector.only(main.body, { case BorrowToWeakTE(_) => })
     compile.evalForKind(Vector()) shouldEqual VonInt(7)
   }
 

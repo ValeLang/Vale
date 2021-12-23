@@ -3,7 +3,7 @@ package net.verdagon.vale.templar
 import net.verdagon.vale.templar.ast.AsSubtypeTE
 import net.verdagon.vale.templar.names.{CitizenNameT, CitizenTemplateNameT, FullNameT}
 import net.verdagon.vale.templar.templata.CoordTemplata
-import net.verdagon.vale.templar.types.{PointerT, CoordT, InterfaceTT, OwnT, ReadonlyT, ReadwriteT, StructTT}
+import net.verdagon.vale.templar.types.{BorrowT, CoordT, InterfaceTT, OwnT, PointerT, ReadonlyT, ReadwriteT, StructTT}
 import net.verdagon.vale.{Collector, vassert, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -17,7 +17,7 @@ class TemplarVirtualTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |
         |interface Bork {
-        |  fn bork(virtual self *Bork) int;
+        |  fn bork(virtual self &Bork) int;
         |}
         |
         |fn main() int export {
@@ -78,7 +78,7 @@ class TemplarVirtualTests extends FunSuite with Matchers {
     Collector.only(temputs.lookupFunction("as"), {
       case as @ AsSubtypeTE(sourceExpr, targetSubtype, resultOptType, okConstructor, errConstructor) => {
         sourceExpr.result.reference match {
-          case CoordT(PointerT,ReadonlyT,InterfaceTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("IShip"),Vector())))) =>
+          case CoordT(BorrowT,ReadonlyT,InterfaceTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("IShip"),Vector())))) =>
         }
         targetSubtype match {
           case StructTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("Raza"),Vector()))) =>
@@ -97,13 +97,13 @@ class TemplarVirtualTests extends FunSuite with Matchers {
         firstGenericArg match {
           case CoordTemplata(
             CoordT(
-              PointerT,ReadonlyT,
+              BorrowT,ReadonlyT,
               StructTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("Raza"),Vector()))))) =>
         }
         secondGenericArg match {
           case CoordTemplata(
             CoordT(
-              PointerT,ReadonlyT,
+              BorrowT,ReadonlyT,
               InterfaceTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("IShip"),Vector()))))) =>
         }
         vassert(okConstructor.paramTypes.head.kind == targetSubtype)

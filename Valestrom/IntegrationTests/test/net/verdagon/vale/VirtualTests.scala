@@ -150,15 +150,27 @@ class VirtualTests extends FunSuite with Matchers {
     compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
-  test("Successful constraint downcast with as") {
+//  test("Successful borrow downcast with as") {
+//    val compile = RunCompilation.test(
+//      Tests.loadExpected("programs/downcast/downcastBorrowSuccessful.vale"))
+//    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+//  }
+//
+//  test("Failed borrow downcast with as") {
+//    val compile = RunCompilation.test(
+//      Tests.loadExpected("programs/downcast/downcastBorrowFailed.vale"))
+//    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+//  }
+
+  test("Successful pointer downcast with as") {
     val compile = RunCompilation.test(
-      Tests.loadExpected("programs/downcast/downcastConstraintSuccessful.vale"))
+      Tests.loadExpected("programs/downcast/downcastPointerSuccess.vale"))
     compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
-  test("Failed constraint downcast with as") {
+  test("Failed pointer downcast with as") {
     val compile = RunCompilation.test(
-      Tests.loadExpected("programs/downcast/downcastConstraintFailed.vale"))
+      Tests.loadExpected("programs/downcast/downcastPointerFailed.vale"))
     compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
@@ -179,7 +191,7 @@ class VirtualTests extends FunSuite with Matchers {
       """
         |import castutils.*;
         |interface AFunction2<R, P1, P2> rules(R Ref, P1 Ref, P2 Ref) {
-        |  fn __call(virtual this *AFunction2<R, P1, P2>, a P1, b P2) R;
+        |  fn __call(virtual this &AFunction2<R, P1, P2>, a P1, b P2) R;
         |}
         |fn main() str export {
         |  func = AFunction2<str, int, bool>((i, b){ str(i) + str(b) });

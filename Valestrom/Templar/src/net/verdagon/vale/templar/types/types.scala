@@ -23,6 +23,10 @@ case object OwnT extends OwnershipT {
   override def order: Int = 2
   override def toString: String = "own"
 }
+case object BorrowT extends OwnershipT {
+  override def order: Int = 3
+  override def toString: String = "borrow"
+}
 case object PointerT extends OwnershipT {
   override def order: Int = 3
   override def toString: String = "ptr"
@@ -83,6 +87,8 @@ case object YonderT extends LocationT {
 
 case class CoordT(ownership: OwnershipT, permission: PermissionT, kind: KindT)  {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+
+  vpass()
 
   kind match {
     case IntT(_) | BoolT() | StrT() | FloatT() | VoidT() | NeverT() => {

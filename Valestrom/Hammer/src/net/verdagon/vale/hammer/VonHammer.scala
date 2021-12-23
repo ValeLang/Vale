@@ -275,6 +275,7 @@ object VonHammer {
   def vonifyOwnership(ownership: m.OwnershipH): IVonData = {
     ownership match {
       case m.OwnH => VonObject("Own", None, Vector())
+      case m.PointerH => VonObject("Pointer", None, Vector())
       case m.BorrowH => VonObject("Borrow", None, Vector())
       case m.ShareH => VonObject("Share", None, Vector())
       case m.WeakH => VonObject("Weak", None, Vector())
@@ -407,9 +408,20 @@ object VonHammer {
             VonMember("sourceType", vonifyCoord(sourceExpr.resultType)),
             VonMember("sourceKnownLive", VonBool(false))))
       }
-      case wa @ WeakAliasH(sourceExpr) => {
+      case wa @ BorrowToWeakH(sourceExpr) => {
         VonObject(
-          "WeakAlias",
+          "BorrowToWeak",
+          None,
+          Vector(
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
+            VonMember("sourceType", vonifyCoord(sourceExpr.resultType)),
+            VonMember("sourceKind", vonifyKind(sourceExpr.resultType.kind)),
+            VonMember("resultType", vonifyCoord(wa.resultType)),
+            VonMember("resultKind", vonifyKind(wa.resultType.kind))))
+      }
+      case wa @ PointerToWeakH(sourceExpr) => {
+        VonObject(
+          "PointerToWeak",
           None,
           Vector(
             VonMember("sourceExpr", vonifyExpression(sourceExpr)),
@@ -515,6 +527,20 @@ object VonHammer {
           None,
           Vector(
             VonMember("local", vonifyLocal(local))))
+      }
+      case BorrowToPointerH(innerExpression) => {
+        VonObject(
+          "BorrowToPointer",
+          None,
+          Vector(
+            VonMember("innerExpression", vonifyExpression(innerExpression))))
+      }
+      case PointerToBorrowH(innerExpression) => {
+        VonObject(
+          "PointerToBorrow",
+          None,
+          Vector(
+            VonMember("innerExpression", vonifyExpression(innerExpression))))
       }
       case NarrowPermissionH(refExpression, targetPermission) => {
         VonObject(

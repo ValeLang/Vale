@@ -11,5 +11,5 @@ fn getFuel(a *!Spaceship) int {
 
 fn main() int export {
   ship = Spaceship(42);
-  = ship!.getFuel();
+  = (*!ship).getFuel();
 }

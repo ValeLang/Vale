@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar.macros.citizen
 
 import net.verdagon.vale.astronomer.{FunctionA, ImplA}
-import net.verdagon.vale.parser.{LendConstraintP, MoveP, OwnP, ReadonlyP, ReadwriteP, ShareP}
+import net.verdagon.vale.parser.{LoadAsPointerP, MoveP, OwnP, ReadonlyP, ReadwriteP, ShareP}
 import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS, OverrideSP}
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.scout._
@@ -58,7 +58,7 @@ class ImplDropMacro() extends IOnImplDefinedMacro {
                     Array(),
                     CodeNameS(CallTemplar.DROP_FUNCTION_NAME),
                     None,
-                    LendConstraintP(None)),
+                    LoadAsPointerP(None)),
                   Vector(LocalLoadSE(RangeS.internal(-167213), CodeVarNameS("this"), MoveP))))))))
     Vector((
       implName.copy(last = NameTranslator.translateFunctionNameToTemplateName(dropFunctionA.name)),

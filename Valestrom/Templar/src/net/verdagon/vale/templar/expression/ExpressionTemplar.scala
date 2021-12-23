@@ -6,7 +6,7 @@ import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.{RuneTypeSolver, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar.{ast, _}
-import net.verdagon.vale.templar.ast.{AddressExpressionTE, AddressMemberLookupTE, ArgLookupTE, BlockTE, ConstantBoolTE, ConstantFloatTE, ConstantIntTE, ConstantStrTE, ConstructTE, DestroyTE, ExpressionT, IfTE, LetNormalTE, LocalLookupTE, LocationInFunctionEnvironment, MutateTE, NarrowPermissionTE, ProgramT, PrototypeT, ReferenceExpressionTE, ReferenceMemberLookupTE, ReturnTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE, TemplarReinterpretTE, VoidLiteralTE, WeakAliasTE, WhileTE}
+import net.verdagon.vale.templar.ast.{AddressExpressionTE, AddressMemberLookupTE, ArgLookupTE, BlockTE, BorrowToPointerTE, BorrowToWeakTE, ConstantBoolTE, ConstantFloatTE, ConstantIntTE, ConstantStrTE, ConstructTE, DestroyTE, ExpressionT, IfTE, LetNormalTE, LocalLookupTE, LocationInFunctionEnvironment, MutateTE, NarrowPermissionTE, PointerToBorrowTE, PointerToWeakTE, ProgramT, PrototypeT, ReferenceExpressionTE, ReferenceMemberLookupTE, ReturnTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE, TemplarReinterpretTE, VoidLiteralTE, WhileTE}
 import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.DestructorTemplar
@@ -115,7 +115,7 @@ class ExpressionTemplar(
       }
       case Some(AddressibleClosureVariableT(id, closuredVarsStructRef, variability, tyype)) => {
         val mutability = Templar.getMutability(temputs, closuredVarsStructRef)
-        val ownership = if (mutability == MutableT) PointerT else ShareT
+        val ownership = if (mutability == MutableT) BorrowT else ShareT
         val closuredVarsStructRefPermission = if (mutability == MutableT) ReadwriteT else ReadonlyT // See LHRSP
         val closuredVarsStructRefRef = CoordT(ownership, closuredVarsStructRefPermission, closuredVarsStructRef)
         val name2 = fate.fullName.addStep(ClosureParamNameT())
@@ -138,7 +138,7 @@ class ExpressionTemplar(
       }
       case Some(ReferenceClosureVariableT(varName, closuredVarsStructRef, variability, tyype)) => {
         val mutability = Templar.getMutability(temputs, closuredVarsStructRef)
-        val ownership = if (mutability == MutableT) PointerT else ShareT
+        val ownership = if (mutability == MutableT) BorrowT else ShareT
         val closuredVarsStructRefPermission = if (mutability == MutableT) ReadwriteT else ReadonlyT // See LHRSP
         val closuredVarsStructRefCoord = CoordT(ownership, closuredVarsStructRefPermission, closuredVarsStructRef)
 //        val closuredVarsStructDef = temputs.lookupStruct(closuredVarsStructRef)
@@ -180,7 +180,7 @@ class ExpressionTemplar(
       }
       case Some(AddressibleClosureVariableT(id, closuredVarsStructRef, variability, tyype)) => {
         val mutability = Templar.getMutability(temputs, closuredVarsStructRef)
-        val ownership = if (mutability == MutableT) PointerT else ShareT
+        val ownership = if (mutability == MutableT) BorrowT else ShareT
         val closuredVarsStructRefPermission = if (mutability == MutableT) ReadwriteT else ReadonlyT // See LHRSP
         val closuredVarsStructRefRef = CoordT(ownership, closuredVarsStructRefPermission, closuredVarsStructRef)
         val closureParamVarName2 = fate.fullName.addStep(ClosureParamNameT())
@@ -203,7 +203,7 @@ class ExpressionTemplar(
       }
       case Some(ReferenceClosureVariableT(varName, closuredVarsStructRef, variability, tyype)) => {
         val mutability = Templar.getMutability(temputs, closuredVarsStructRef)
-        val ownership = if (mutability == MutableT) PointerT else ShareT
+        val ownership = if (mutability == MutableT) BorrowT else ShareT
         val closuredVarsStructRefPermission = if (mutability == MutableT) ReadwriteT else ReadonlyT // See LHRSP
         val closuredVarsStructRefCoord = CoordT(ownership, closuredVarsStructRefPermission, closuredVarsStructRef)
         val closuredVarsStructDef = temputs.lookupStruct(closuredVarsStructRef)
@@ -339,7 +339,7 @@ class ExpressionTemplar(
           (ArgLookupTE(index, paramCoord), Set())
         }
         case FunctionCallSE(range, OutsideLoadSE(_, rules, name, maybeTemplateArgs, callableTargetOwnership), argsExprs1) => {
-//          vassert(callableTargetOwnership == LendConstraintP(Some(ReadonlyP)))
+//          vassert(callableTargetOwnership == PointConstraintP(Some(ReadonlyP)))
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, life + 0, argsExprs1)
           val callExpr2 =
@@ -355,7 +355,7 @@ class ExpressionTemplar(
           (callExpr2, returnsFromArgs)
         }
         case FunctionCallSE(range, OutsideLoadSE(_, rules, name, templateArgTemplexesS, callableTargetOwnership), argsExprs1) => {
-//          vassert(callableTargetOwnership == LendConstraintP(None))
+//          vassert(callableTargetOwnership == PointConstraintP(None))
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, life + 0, argsExprs1)
           val callExpr2 =
@@ -371,7 +371,7 @@ class ExpressionTemplar(
           (callExpr2, returnsFromArgs)
         }
         case FunctionCallSE(range, OutsideLoadSE(_, rules, name, templateArgs, callableTargetOwnership), argsExprs1) => {
-          vassert(callableTargetOwnership == LendConstraintP(None))
+          vassert(callableTargetOwnership == LoadAsPointerP(None))
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, life, argsExprs1)
           val callExpr2 =
@@ -379,7 +379,7 @@ class ExpressionTemplar(
           (callExpr2, returnsFromArgs)
         }
         case FunctionCallSE(range, OutsideLoadSE(_, rules, name, templateArgs, callableTargetOwnership), argsPackExpr1) => {
-//          vassert(callableTargetOwnership == LendConstraintP(Some(ReadonlyP)))
+//          vassert(callableTargetOwnership == PointConstraintP(Some(ReadonlyP)))
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, life, argsPackExpr1)
           val callExpr2 =
@@ -400,60 +400,101 @@ class ExpressionTemplar(
           (functionPointerCall2, returnsFromCallable ++ returnsFromArgs)
         }
 
-        case OwnershippedSE(range, innerExpr1, loadAsP) => {
-          val (innerExpr2, returnsFromInner) =
-            evaluateAndCoerceToReferenceExpression(temputs, fate, life + 0, innerExpr1);
+        case OwnershippedSE(range, sourceSE, loadAsP) => {
+          val (sourceTE, returnsFromInner) =
+            evaluateAndCoerceToReferenceExpression(temputs, fate, life + 0, sourceSE);
           val resultExpr2 =
-            innerExpr2.result.underlyingReference.ownership match {
+            sourceTE.result.underlyingReference.ownership match {
               case OwnT => {
                 loadAsP match {
                   case MoveP => {
                     // this can happen if we put a ^ on an owning reference. No harm, let it go.
-                    innerExpr2
+                    sourceTE
                   }
-                  case LendConstraintP(None) => {
-                    localHelper.makeTemporaryLocal(temputs, fate, life + 1, innerExpr2)
+                  case LoadAsBorrowP(maybePermission) => {
+                    val expr =
+                      localHelper.makeTemporaryLocal(temputs, fate, life + 1, sourceTE, BorrowT)
+                    maybePermission match {
+                      case None => expr
+                      case Some(permission) => maybeNarrowPermission(range, expr, permission)
+                    }
                   }
-                  case LendConstraintP(Some(permission)) => {
-                    maybeNarrowPermission(range, localHelper.makeTemporaryLocal(temputs, fate, life + 2, innerExpr2), permission)
+                  case LoadAsPointerP(maybePermission) => {
+                    val expr =
+                      localHelper.makeTemporaryLocal(temputs, fate, life + 1, sourceTE, PointerT)
+                    maybePermission match {
+                      case None => expr
+                      case Some(permission) => maybeNarrowPermission(range, expr, permission)
+                    }
                   }
-                  case LendWeakP(permission) => {
-                    weakAlias(temputs, maybeNarrowPermission(range, localHelper.makeTemporaryLocal(temputs, fate, life + 3, innerExpr2), permission))
+                  case LoadAsBorrowOrIfContainerIsPointerThenPointerP(maybePermission) => {
+                    val targetOwnership =
+                      sourceTE.result.reference.ownership match {
+                        case PointerT => PointerT
+                        case ShareT => ShareT
+                        case OwnT | BorrowT => BorrowT
+                        case WeakT => vimpl()
+                      }
+                    val expr =
+                      localHelper.makeTemporaryLocal(temputs, fate, life + 1, sourceTE, targetOwnership)
+                    maybePermission match {
+                      case None => expr
+                      case Some(permission) => maybeNarrowPermission(range, expr, permission)
+                    }
+                  }
+                  case LoadAsWeakP(permission) => {
+                    val expr = localHelper.makeTemporaryLocal(temputs, fate, life + 3, sourceTE, BorrowT)
+                    weakAlias(temputs, maybeNarrowPermission(range, expr, permission))
                   }
                   case UseP => vcurious()
+                }
+              }
+              case BorrowT => {
+                loadAsP match {
+                  case MoveP => vcurious() // Can we even coerce to an owning reference?
+                  case LoadAsPointerP(None) => BorrowToPointerTE(sourceTE)
+                  case LoadAsPointerP(Some(permission)) => BorrowToPointerTE(maybeNarrowPermission(range, sourceTE, permission))
+                  case LoadAsBorrowP(None) | LoadAsBorrowOrIfContainerIsPointerThenPointerP(None) => sourceTE
+                  case LoadAsBorrowP(Some(permission)) => maybeNarrowPermission(range, sourceTE, permission)
+                  case LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(permission)) => maybeNarrowPermission(range, sourceTE, permission)
+                  case LoadAsWeakP(permission) => weakAlias(temputs, maybeNarrowPermission(range, sourceTE, permission))
+                  case UseP => sourceTE
                 }
               }
               case PointerT => {
                 loadAsP match {
                   case MoveP => vcurious() // Can we even coerce to an owning reference?
-                  case LendConstraintP(None) => innerExpr2
-                  case LendConstraintP(Some(permission)) => maybeNarrowPermission(range, innerExpr2, permission)
-                  case LendWeakP(permission) => weakAlias(temputs, maybeNarrowPermission(range, innerExpr2, permission))
-                  case UseP => innerExpr2
+                  case LoadAsBorrowP(None) => PointerToBorrowTE(sourceTE)
+                  case LoadAsBorrowP(Some(permission)) => PointerToBorrowTE(maybeNarrowPermission(range, sourceTE, permission))
+                  case LoadAsPointerP(None) | LoadAsBorrowOrIfContainerIsPointerThenPointerP(None) => sourceTE
+                  case LoadAsPointerP(Some(permission)) => maybeNarrowPermission(range, sourceTE, permission)
+                  case LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(permission)) => maybeNarrowPermission(range, sourceTE, permission)
+                  case LoadAsWeakP(permission) => weakAlias(temputs, maybeNarrowPermission(range, sourceTE, permission))
+                  case UseP => sourceTE
                 }
               }
               case WeakT => {
                 loadAsP match {
                   case MoveP => vcurious() // Can we even coerce to an owning reference?
-                  case LendConstraintP(permission) => vfail() // Need to call lock() to do this
-                  case LendWeakP(permission) => maybeNarrowPermission(range, innerExpr2, permission)
-                  case UseP => innerExpr2
+                  case LoadAsPointerP(permission) => vfail() // Need to call lock() to do this
+                  case LoadAsWeakP(permission) => maybeNarrowPermission(range, sourceTE, permission)
+                  case UseP => sourceTE
                 }
               }
               case ShareT => {
                 loadAsP match {
                   case MoveP => {
                     // Allow this, we can do ^ on a share ref, itll just give us a share ref.
-                    innerExpr2
+                    sourceTE
                   }
-                  case LendConstraintP(permission) => {
+                  case LoadAsPointerP(_) | LoadAsBorrowP(_) | LoadAsBorrowOrIfContainerIsPointerThenPointerP(_) => {
                     // Allow this, we can do & on a share ref, itll just give us a share ref.
-                    innerExpr2
+                    sourceTE
                   }
-                  case LendWeakP(permission) => {
+                  case LoadAsWeakP(permission) => {
                     vfail()
                   }
-                  case UseP => innerExpr2
+                  case UseP => sourceTE
                 }
               }
             }
@@ -616,7 +657,7 @@ class ExpressionTemplar(
         case DotSE(range, containerExpr1, memberNameStr, borrowContainer) => {
           val memberName = CodeVarNameT(memberNameStr)
           val (unborrowedContainerExpr2, returnsFromContainerExpr) =
-            evaluate(temputs, fate, life + 0, containerExpr1);
+            evaluate(temputs, fate, life + 0, containerExpr1)
           val containerExpr2 =
             dotBorrow(temputs, fate, life + 1, unborrowedContainerExpr2)
 
@@ -782,8 +823,8 @@ class ExpressionTemplar(
               case (_, NeverT()) => uncoercedThenBlock2.result.reference
               case (a, b) if a == b => uncoercedThenBlock2.result.reference
               case (a : CitizenRefT, b : CitizenRefT) => {
-                val aAncestors = ancestorHelper.getAncestorInterfacesWithDistance(temputs, a).keys.toSet
-                val bAncestors = ancestorHelper.getAncestorInterfacesWithDistance(temputs, b).keys.toSet
+                val aAncestors = ancestorHelper.getAncestorInterfaces(temputs, a).keys.toSet
+                val bAncestors = ancestorHelper.getAncestorInterfaces(temputs, b).keys.toSet
                 val commonAncestors = aAncestors.intersect(bAncestors)
 
                 if (uncoercedElseBlock2.result.reference.ownership != uncoercedElseBlock2.result.reference.ownership) {
@@ -1090,7 +1131,11 @@ class ExpressionTemplar(
       case _ => vfail()
     }
 
-    WeakAliasTE(expr)
+    expr.result.reference.ownership match {
+      case BorrowT => BorrowToWeakTE(expr)
+      case PointerT => PointerToWeakTE(expr)
+      case other => vwat(other)
+    }
   }
 
   // Borrow like the . does. If it receives an owning reference, itll make a temporary.
@@ -1109,8 +1154,8 @@ class ExpressionTemplar(
       case r: ReferenceExpressionTE => {
         val unborrowedContainerExpr2 = r// decaySoloPack(fate, life + 0, r)
         unborrowedContainerExpr2.result.reference.ownership match {
-          case OwnT => localHelper.makeTemporaryLocal(temputs, fate, life + 1, unborrowedContainerExpr2)
-          case PointerT | ShareT => (unborrowedContainerExpr2)
+          case OwnT => localHelper.makeTemporaryLocal(temputs, fate, life + 1, unborrowedContainerExpr2, BorrowT)
+          case PointerT | BorrowT | ShareT => (unborrowedContainerExpr2)
         }
       }
     }
@@ -1141,11 +1186,11 @@ class ExpressionTemplar(
     vassert(constructExpr2.result.reference == closureCoord)
     // The result of a constructor is always an own or a share.
 
-    // The below code was here, but i see no reason we need to put it in a temporary and lend it out.
+    // The below code was here, but i see no reason we need to put it in a temporary and point it out.
     // shouldnt this be done automatically if we try to call the function which accepts a borrow?
 //    val closureVarId = FullName2(fate.lambdaNumber, "__closure_" + function1.origin.lambdaNumber)
 //    val closureLocalVar = ReferenceLocalVariable2(closureVarId, Final, resultExpr2.resultRegister.reference)
-//    val letExpr2 = LetAndLend2(closureLocalVar, resultExpr2)
+//    val letExpr2 = LetAndPoint2(closureLocalVar, resultExpr2)
 //    val unlet2 = localHelper.unletLocal(fate, closureLocalVar)
 //    val dropExpr =
 //      DestructorTemplar.drop(env, temputs, fate, unlet2)

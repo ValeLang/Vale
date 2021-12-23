@@ -76,7 +76,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
     val program1 = compile("fn main() int export { {_ + _}!(4, 6) }")
 
     val CodeBodyS(BodySE(_, _, BlockSE(_, _, Vector(expr)))) = program1.lookupFunction("main").body
-    val FunctionCallSE(_, OwnershippedSE(_,FunctionSE(lambda@FunctionS(_, _, _, _, _, _, _, _, _)), LendConstraintP(Some(ReadwriteP))), _) = expr
+    val FunctionCallSE(_, OwnershippedSE(_,FunctionSE(lambda@FunctionS(_, _, _, _, _, _, _, _, _)), LoadAsBorrowP(Some(ReadwriteP))), _) = expr
     // See: Lambdas Dont Need Explicit Identifying Runes (LDNEIR)
     lambda.identifyingRunes match {
       case Vector(RuneUsage(_, MagicParamRuneS(mp1)), RuneUsage(_, MagicParamRuneS(mp2))) => {
@@ -127,7 +127,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
     block match {
-      case BlockSE(_, _, Vector(_, FunctionCallSE(_, OutsideLoadSE(_, _, CodeNameS("shout"), _, _), Vector(LocalLoadSE(_, name, LendConstraintP(Some(ReadonlyP))))))) => {
+      case BlockSE(_, _, Vector(_, FunctionCallSE(_, OutsideLoadSE(_, _, CodeNameS("shout"), _, _), Vector(LocalLoadSE(_, name, LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadonlyP))))))) => {
         name match {
           case CodeVarNameS("x") =>
         }
@@ -305,7 +305,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
       case BlockSE(
       _,Vector(),
       Vector(
-      DotSE(_,OutsideLoadSE(_,_,CodeNameS("moo"),None,LendConstraintP(None)),x,true))) =>
+      DotSE(_,OutsideLoadSE(_,_,CodeNameS("moo"),None,LoadAsBorrowOrIfContainerIsPointerThenPointerP(None)),"x",true))) =>
     }
 
   }
@@ -324,7 +324,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
       _,Vector(),
       Vector(
       OwnershippedSE(_,
-      DotSE(_,OutsideLoadSE(_,_,CodeNameS("moo"),None,LendConstraintP(None)),x,true),LendConstraintP(Some(ReadonlyP))))) =>
+      DotSE(_,OutsideLoadSE(_,_,CodeNameS("moo"),None,LoadAsBorrowOrIfContainerIsPointerThenPointerP(None)),x,true),LoadAsPointerP(Some(ReadonlyP))))) =>
     }
 
   }
@@ -350,7 +350,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
       ConstantIntSE(_, 4, _)),
       LetSE(_, _,
       AtomSP(_, Some(CaptureS(ConstructingMemberNameS("y"))), None, _, None),
-      LocalLoadSE(_, ConstructingMemberNameS("x"), LendConstraintP(Some(ReadonlyP)))),
+      LocalLoadSE(_, ConstructingMemberNameS("x"), LoadAsPointerP(Some(ReadonlyP)))),
       FunctionCallSE(_,
       OutsideLoadSE(_, _, CodeNameS("MyStruct"), _, _),
       Vector(
@@ -375,7 +375,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
       Vector(
       FunctionCallSE(_,
       OutsideLoadSE(_, _, CodeNameS("println"), _, _),
-      Vector(DotSE(_, LocalLoadSE(_, CodeVarNameS("this"), LendConstraintP(None)), "x", true))),
+      Vector(DotSE(_, LocalLoadSE(_, CodeVarNameS("this"), LoadAsBorrowOrIfContainerIsPointerThenPointerP(None)), "x", true))),
       VoidSE(_))))) =>
     }
   }

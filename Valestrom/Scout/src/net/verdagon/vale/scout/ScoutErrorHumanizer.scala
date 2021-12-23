@@ -2,7 +2,7 @@ package net.verdagon.vale.scout
 
 import net.verdagon.vale.{FileCoordinateMap, vimpl}
 import net.verdagon.vale.SourceCodeUtils.{humanizePos, lineContaining, nextThingAndRestOfLine}
-import net.verdagon.vale.parser.{PointerP, ExclusiveReadwriteP, FinalP, ImmutableP, MutabilityP, MutableP, OwnP, OwnershipP, PermissionP, ReadonlyP, ReadwriteP, ShareP, VariabilityP, VaryingP, WeakP}
+import net.verdagon.vale.parser.{BorrowP, ExclusiveReadwriteP, FinalP, ImmutableP, MutabilityP, MutableP, OwnP, OwnershipP, PermissionP, PointerP, ReadonlyP, ReadwriteP, ShareP, VariabilityP, VaryingP, WeakP}
 import net.verdagon.vale.scout.rules.{AugmentSR, CallSR, CoerceToCoordSR, CoordComponentsSR, CoordIsaSR, CoordSendSR, EqualsSR, ILiteralSL, IRulexSR, IntLiteralSL, IsInterfaceSR, IsStructSR, KindComponentsSR, LiteralSR, LookupSR, MutabilityLiteralSL, OneOfSR, OwnershipLiteralSL, PackSR, PermissionLiteralSL, PrototypeComponentsSR, RefListCompoundMutabilitySR, RepeaterSequenceSR, RuneParentEnvLookupSR, StringLiteralSL, VariabilityLiteralSL}
 import net.verdagon.vale.solver.SolverErrorHumanizer
 
@@ -98,11 +98,13 @@ object ScoutErrorHumanizer {
       case SelfKindTemplateRuneS() => "(self kind template)"
       case PatternInputRuneS(codeLoc) => "(pattern input " + codeLoc + ")"
       case SelfRuneS() => "(self)"
+      case ReturnRuneS() => "(return)"
       case AnonymousSubstructParentInterfaceTemplateRuneS() => "(anon sub parent interface)"
       case ImplDropVoidRuneS() => "(impl drop void)"
       case ImplDropCoordRuneS() => "(impl drop coord)"
       case FreeOverrideInterfaceRuneS() => "(freeing interface)"
       case FreeOverrideStructRuneS() => "(freeing struct)"
+      case StructNameRuneS(inner) => humanizeName(inner)
       case other => vimpl(other)
     }
   }
@@ -199,6 +201,7 @@ object ScoutErrorHumanizer {
       case OwnP => "^"
       case ShareP => "@"
       case PointerP => "*"
+      case BorrowP => "&"
       case WeakP => "**"
     }
   }

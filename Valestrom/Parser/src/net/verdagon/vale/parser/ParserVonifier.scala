@@ -700,6 +700,7 @@ object ParserVonifier {
       case ShareP => VonObject("Share", None, Vector())
       case OwnP => VonObject("Own", None, Vector())
       case PointerP => VonObject("Pointer", None, Vector())
+      case BorrowP => VonObject("Borrow", None, Vector())
       case WeakP => VonObject("Weak", None, Vector())
     }
   }
@@ -708,15 +709,27 @@ object ParserVonifier {
     thing match {
       case UseP => VonObject("Use", None, Vector())
       case MoveP => VonObject("Move", None, Vector())
-      case LendConstraintP(permission) => {
+      case LoadAsPointerP(permission) => {
         VonObject(
-          "LendConstraint", None,
+          "LoadAsPointer", None,
           Vector(
             VonMember("permission", vonifyOptional(permission, vonifyPermission))))
       }
-      case LendWeakP(permission) => {
+      case LoadAsBorrowOrIfContainerIsPointerThenPointerP(permission) => {
         VonObject(
-          "LendWeak", None,
+          "LoadAsBorrowOrIfContainerIsPointerThenPointer", None,
+          Vector(
+            VonMember("permission", vonifyOptional(permission, vonifyPermission))))
+      }
+      case LoadAsBorrowP(permission) => {
+        VonObject(
+          "LoadAsBorrow", None,
+          Vector(
+            VonMember("permission", vonifyOptional(permission, vonifyPermission))))
+      }
+      case LoadAsWeakP(permission) => {
+        VonObject(
+          "LoadAsWeak", None,
           Vector(
             VonMember("permission", vonifyPermission(permission))))
       }
@@ -833,9 +846,9 @@ object ParserVonifier {
             VonMember("value", VonStr(value.toString)),
             VonMember("bits", VonInt(bits))))
       }
-      case LendPE(range, inner, targetOwnership) => {
+      case LoadPE(range, inner, targetOwnership) => {
         VonObject(
-          "Lend",
+          "Point",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),

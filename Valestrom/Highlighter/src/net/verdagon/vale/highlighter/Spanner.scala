@@ -14,7 +14,7 @@ case object Struct extends IClass
 case object FnName extends IClass
 case object StructName extends IClass
 case object Membs extends IClass
-case object Lend extends IClass
+case object Point extends IClass
 case object Memb extends IClass
 case object Interface extends IClass
 case object MembName extends IClass
@@ -224,9 +224,9 @@ object Spanner {
           range,
           Vector(forExpression(left), makeSpan(MemberAccess, operatorRange)) :+ makeSpan(Lookup, member.range, Vector.empty))
       }
-      case LendPE(range, expr, targetOwnership) => {
+      case LoadPE(range, expr, targetOwnership) => {
         makeSpan(
-          Lend,
+          Point,
           range,
           Vector(forExpression(expr)))
       }
@@ -307,7 +307,7 @@ object Spanner {
     makeSpan(
       Pat,
       range,
-      maybePreBorrow.toVector.map(b => makeSpan(Lend, b.range, Vector.empty)) ++
+      maybePreBorrow.toVector.map(b => makeSpan(Point, b.range, Vector.empty)) ++
       capture.toVector.map(forCapture) ++
       templex.toVector.map(forTemplex) ++
       maybeDestructure.toVector.map(forDestructure))

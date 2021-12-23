@@ -1,7 +1,7 @@
 package net.verdagon.vale.hammer
 
 import net.verdagon.vale.hammer.ExpressionHammer.translate
-import net.verdagon.vale.metal.{BorrowH, ShareH, Variability => _, Varying => _, _}
+import net.verdagon.vale.metal.{PointerH, ShareH, Variability => _, Varying => _, _}
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.templar.{Hinputs, types => t, _}
 import net.verdagon.vale.templar.ast.{AddressMemberLookupTE, ExpressionT, FunctionHeaderT, LocalLookupTE, ReferenceExpressionTE, ReferenceMemberLookupTE, RuntimeSizedArrayLookupTE, SoftLoadTE, StaticSizedArrayLookupTE}
@@ -71,7 +71,10 @@ object LoadHammer {
       translate(hinputs, hamuts, currentFunctionHeader, locals, indexExpr2);
     val indexAccess = indexExprResultLine.expectIntAccess()
 
-    vassert(targetOwnership == BorrowH || targetOwnership == ShareH)
+    vassert(
+      targetOwnership == BorrowH ||
+      targetOwnership == PointerH ||
+        targetOwnership == ShareH)
 
     val rsa = hamuts.getRuntimeSizedArray(arrayAccess.resultType.kind)
     val expectedElementType = rsa.elementType
@@ -79,10 +82,11 @@ object LoadHammer {
       val location =
         (targetOwnership, expectedElementType.location) match {
           case (BorrowH, _) => YonderH
+          case (PointerH, _) => YonderH
           case (OwnH, location) => location
           case (ShareH, location) => location
         }
-      ReferenceH(targetOwnership, location, expectedElementType.permission, expectedElementType.kind)
+      ReferenceH(targetOwnership, location, targetPermission, expectedElementType.kind)
     }
 
     // We're storing into a regular reference element of an array.
@@ -119,7 +123,7 @@ object LoadHammer {
       translate(hinputs, hamuts, currentFunctionHeader, locals, indexExpr2);
     val indexAccess = indexExprResultLine.expectIntAccess()
 
-    vassert(targetOwnership == m.BorrowH || targetOwnership == m.ShareH)
+    vassert(targetOwnership == m.PointerH || targetOwnership == m.BorrowH || targetOwnership == m.ShareH)
 
     val ssa = hamuts.getStaticSizedArray(arrayAccess.resultType.kind)
     val expectedElementType = ssa.elementType
@@ -127,6 +131,7 @@ object LoadHammer {
       val location =
         (targetOwnership, expectedElementType.location) match {
           case (BorrowH, _) => YonderH
+          case (PointerH, _) => YonderH
           case (OwnH, location) => location
           case (ShareH, location) => location
         }
@@ -182,7 +187,7 @@ object LoadHammer {
     val (boxStructRefH) =
       StructHammer.makeBox(hinputs, hamuts, variability, boxedType2, boxedTypeH)
 
-    val boxInStructCoord = ReferenceH(BorrowH, YonderH, ReadwriteH, boxStructRefH)
+    val boxInStructCoord = ReferenceH(PointerH, YonderH, ReadwriteH, boxStructRefH)
 
     // We're storing into a struct's member that is a box. The stack is also
     // pointing at this box. First, get the box, then mutate what's inside.
@@ -284,7 +289,7 @@ object LoadHammer {
     val loadBoxNode =
         LocalLoadH(
           local,
-          m.BorrowH,
+          m.PointerH,
           // The box should be readwrite, but targetPermission is taken into account below.
           ReadwriteH,
           varNameH)
@@ -358,7 +363,7 @@ object LoadHammer {
     val loadBoxNode =
       LocalLoadH(
         local,
-        m.BorrowH,
+        m.PointerH,
         // The box should be readwrite, but we'll load from it in a way that takes into account
         // the user's desired permission.
         ReadwriteH,
@@ -403,14 +408,14 @@ object LoadHammer {
       StructHammer.makeBox(hinputs, hamuts, variability, boxedType2, boxedTypeH)
 
     // We expect a borrow because structs never own boxes, they only borrow them
-    val expectedStructBoxMemberType = ReferenceH(m.BorrowH, YonderH, ReadwriteH, boxStructRefH)
+    val expectedStructBoxMemberType = ReferenceH(m.PointerH, YonderH, ReadwriteH, boxStructRefH)
 
     val loadResultType =
       ReferenceH(
         // Boxes are either owned or borrowed. We only own boxes from locals,
         // and we're loading from a struct here, so we're getting a borrow to the
         // box from the struct.
-        BorrowH,
+        PointerH,
         YonderH,
         // The box should be readwrite, but we'll load from it in a way that takes into account
         // the user's desired permission.
@@ -433,7 +438,7 @@ object LoadHammer {
   def getBorrowedLocation(memberType: ReferenceH[KindH]) = {
     (memberType.ownership, memberType.location) match {
       case (OwnH, _) => YonderH
-      case (BorrowH, _) => YonderH
+      case (PointerH, _) => YonderH
       case (ShareH, location) => location
     }
   }

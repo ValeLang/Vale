@@ -5,11 +5,11 @@ impl<T> XOpt<T> for XSome<T>;
 struct XNone<T> rules(T Ref) { }
 impl<T> XOpt<T> for XNone<T>;
 
-fn getOr<T>(virtual opt *XOpt<T>, default T) T abstract;
-fn getOr<T>(opt *XNone<T> impl XOpt<T>, default T) T {
+fn getOr<T>(virtual opt &XOpt<T>, default T) T abstract;
+fn getOr<T>(opt &XNone<T> impl XOpt<T>, default T) T {
   default
 }
-fn getOr<T>(opt *XSome<T> impl XOpt<T>, default T) T {
+fn getOr<T>(opt &XSome<T> impl XOpt<T>, default T) T {
   opt.value
 }
 

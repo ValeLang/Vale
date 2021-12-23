@@ -78,23 +78,34 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     }
   }
 
-  private[parser] def lend: Parser[IExpressionPE] = {
+  private[parser] def borrow: Parser[IExpressionPE] = {
+    // TODO: split the 'a rule out when we implement regions
+    pos ~
+      (("&"| ("'" ~ opt(exprIdentifier <~ optWhite) <~ "&") | ("'" ~ exprIdentifier)) ~> opt("!") ~ (optWhite ~> postfixableExpressions)) ~
+      pos ^^ {
+      case begin ~ (maybeReadwrite ~ inner) ~ end => {
+        LoadPE(Range(begin, end), inner, LoadAsBorrowP(Some(if (maybeReadwrite.nonEmpty) ReadwriteP else ReadonlyP)))
+      }
+    }
+  }
+
+  private[parser] def point: Parser[IExpressionPE] = {
     // TODO: split the 'a rule out when we implement regions
     pos ~
       (("*"| ("'" ~ opt(exprIdentifier <~ optWhite) <~ "*") | ("'" ~ exprIdentifier)) ~> opt("!") ~ (optWhite ~> postfixableExpressions)) ~
       pos ^^ {
       case begin ~ (maybeReadwrite ~ inner) ~ end => {
-        LendPE(Range(begin, end), inner, LendConstraintP(Some(if (maybeReadwrite.nonEmpty) ReadwriteP else ReadonlyP)))
+        LoadPE(Range(begin, end), inner, LoadAsPointerP(Some(if (maybeReadwrite.nonEmpty) ReadwriteP else ReadonlyP)))
       }
     }
   }
 
-  private[parser] def weakLend: Parser[IExpressionPE] = {
+  private[parser] def weakPoint: Parser[IExpressionPE] = {
     pos ~
       ("**" ~> optWhite ~> opt("!") ~ postfixableExpressions) ~
       pos ^^ {
       case begin ~ (maybeReadwrite ~ inner) ~ end => {
-        LendPE(Range(begin, end), inner, LendWeakP(if (maybeReadwrite.nonEmpty) ReadwriteP else ReadonlyP))
+        LoadPE(Range(begin, end), inner, LoadAsWeakP(if (maybeReadwrite.nonEmpty) ReadwriteP else ReadonlyP))
       }
     }
   }
@@ -102,7 +113,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   private[parser] def not: Parser[IExpressionPE] = {
     pos ~ (pstr("not") <~ white) ~ postfixableExpressions ~ pos ^^ {
       case begin ~ not ~ expr ~ end => {
-        FunctionCallPE(Range(begin, end), None, Range(begin, begin), false, LookupPE(not, None), Vector(expr), LendConstraintP(Some(ReadonlyP)))
+        FunctionCallPE(Range(begin, end), None, Range(begin, begin), false, LookupPE(not, None), Vector(expr), LoadAsBorrowP(Some(ReadonlyP)))
       }
     }
   }
@@ -143,7 +154,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
           false,
           LookupPE(eachI, None),
           Vector(collection, lam),
-          LendConstraintP(None))
+          LoadAsBorrowP(None))
       }
     }
   }
@@ -328,7 +339,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
             false,
             LookupPE(NameP(Range(begin, begin), ""), None),
             Vector.empty,
-            LendConstraintP((None)))
+            LoadAsBorrowP((None)))
         }
       }) |
 //      callNamed |
@@ -420,8 +431,8 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
               val subjectLoadAs =
                 (prev, subjectReadwrite) match {
                   case (PackPE(_, _), _) => UseP // This is like (moo).bork()
-                  case (_, false) => LendConstraintP(Some(ReadonlyP)) // This is like moo.bork()
-                  case (_, true) => LendConstraintP(Some(ReadwriteP)) // This is like moo!.bork()
+                  case (_, false) => LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadonlyP)) // This is like moo.bork()
+                  case (_, true) => LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadwriteP)) // This is like moo!.bork()
                 }
               (None, MethodCallPE(Range(begin, stepRange.end), prevInline, prev, operatorRange, subjectLoadAs, isMapCall, lookup, args))
             }
@@ -430,8 +441,8 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
                 (prev, subjectReadwrite) match {
                   case (PackPE(_, _), false) => UseP // This is like (moo).bork()
                   case (PackPE(_, _), true) => UseP  // This is like (moo)!.bork(), which doesnt make much sense, the owned thing is already readwrite
-                  case (_, false) => LendConstraintP(Some(ReadonlyP)) // This is like moo()
-                  case (_, true) => LendConstraintP(Some(ReadwriteP)) // This is like moo!()
+                  case (_, false) => LoadAsBorrowP(Some(ReadonlyP)) // This is like moo()
+                  case (_, true) => LoadAsBorrowP(Some(ReadwriteP)) // This is like moo!()
                 }
               (None, FunctionCallPE(Range(begin, stepRange.end), prevInline, operatorRange, isMapCall, prev, args, subjectLoadAs))
             }
@@ -448,7 +459,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   }
 
   private[parser] def expressionLevel9: Parser[IExpressionPE] = {
-    weakLend | lend | not | expressionLevel5
+    weakPoint | borrow | point | not | expressionLevel5
   }
 
   // Parses expressions that can contain postfix operators, like function calling
@@ -487,7 +498,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
         white ~> (pstr("*") | pstr("/")) <~ white,
         (range, op: NameP, left, right) => {
           FunctionCallPE(
-            range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), Vector(left, right), LendConstraintP(Some(ReadonlyP)))
+            range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), Vector(left, right), LoadAsBorrowP(Some(ReadonlyP)))
         })
 
     val withAddSubtract =
@@ -496,7 +507,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
         white ~> (pstr("+") | pstr("-")) <~ white,
         (range, op: NameP, left, right) => {
           FunctionCallPE(
-            range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), Vector(left, right), LendConstraintP(Some(ReadonlyP)))
+            range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), Vector(left, right), LoadAsBorrowP(Some(ReadonlyP)))
         })
 
     val withCustomBinaries =
@@ -507,7 +518,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
           not(white ~> conjunctionOperators <~ white) ~>
           (white ~> infixFunctionIdentifier <~ white),
         (range, funcName: NameP, left, right) => {
-          FunctionCallPE(range, None, Range(funcName.range.begin, funcName.range.end), false, LookupPE(funcName, None), Vector(left, right), LendConstraintP(Some(ReadonlyP)))
+          FunctionCallPE(range, None, Range(funcName.range.begin, funcName.range.end), false, LookupPE(funcName, None), Vector(left, right), LoadAsBorrowP(Some(ReadonlyP)))
         })
 
     val withComparisons =
@@ -516,7 +527,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
         not(white ~> conjunctionOperators <~ white) ~>
           white ~> comparisonOperators <~ white,
         (range, op: NameP, left, right) => {
-          FunctionCallPE(range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), Vector(left, right), LendConstraintP(Some(ReadonlyP)))
+          FunctionCallPE(range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), Vector(left, right), LoadAsBorrowP(Some(ReadonlyP)))
         })
 
     val withConjunctions =

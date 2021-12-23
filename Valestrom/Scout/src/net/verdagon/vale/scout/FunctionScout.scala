@@ -270,7 +270,8 @@ class FunctionScout(scout: Scout) {
 
 //    val closurePatternId = fate.nextPatternNumber();
 
-    val closureParamRange = Scout.evalRange(parentStackFrame.file, range)
+    val closureParamPos = Scout.evalPos(parentStackFrame.file, range.begin)
+    val closureParamRange = RangeS(closureParamPos, closureParamPos)
     val closureStructRune = RuneUsage(closureParamRange, ImplicitRuneS(lidb.child().consume()))
     ruleBuilder +=
       LookupSR(
@@ -280,7 +281,7 @@ class FunctionScout(scout: Scout) {
       AugmentSR(
         closureParamRange,
         closureParamTypeRune,
-        Vector(OwnershipLiteralSL(PointerP),PermissionLiteralSL(ReadwriteP)),
+        Vector(OwnershipLiteralSL(BorrowP),PermissionLiteralSL(ReadwriteP)),
         closureStructRune)
 
     val closureParamS =

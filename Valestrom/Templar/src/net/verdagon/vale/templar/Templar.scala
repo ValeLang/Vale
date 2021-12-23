@@ -71,8 +71,8 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
       opts,
       profiler,
       new ITemplataTemplarDelegate {
-        override def getAncestorInterfaceDistance(temputs: Temputs, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT): Option[Int] = {
-          ancestorHelper.getAncestorInterfaceDistance(temputs, descendantCitizenRef, ancestorInterfaceRef).map(_._2)
+        override def isAncestor(temputs: Temputs, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT): Boolean = {
+          ancestorHelper.isAncestor(temputs, descendantCitizenRef, ancestorInterfaceRef).nonEmpty
         }
 
         override def getStructRef(temputs: Temputs, callRange: RangeS,structTemplata: StructTemplata, uncoercedTemplateArgs: Vector[ITemplata]): StructTT = {
@@ -259,7 +259,7 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
       opts,
       new IConvertHelperDelegate {
         override def isAncestor(temputs: Temputs, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT): Boolean = {
-          ancestorHelper.isAncestor(temputs, descendantCitizenRef, ancestorInterfaceRef)
+          ancestorHelper.isAncestor(temputs, descendantCitizenRef, ancestorInterfaceRef).nonEmpty
         }
       })
 

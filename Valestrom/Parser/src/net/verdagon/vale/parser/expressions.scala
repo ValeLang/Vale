@@ -11,20 +11,21 @@ case class VoidPE(range: Range) extends IExpressionPE {
 }
 
 // We have this because it sometimes even a single-member pack can change the semantics.
-// (moo).someMethod() will move moo, and moo.someMethod() will lend moo.
+// (moo).someMethod() will move moo, and moo.someMethod() will point moo.
 // There's probably a better way to distinguish this...
 case class PackPE(range: Range, inners: Vector[IExpressionPE]) extends IExpressionPE {
   override def hashCode(): Int = vcurious();
 }
 
-case class LendPE(
+case class LoadPE(
     range: Range,
     expr: IExpressionPE,
     targetOwnership: LoadAsP) extends IExpressionPE {
   override def hashCode(): Int = vcurious();
   targetOwnership match {
-    case LendWeakP(_) =>
-    case LendConstraintP(_) =>
+    case LoadAsWeakP(_) =>
+    case LoadAsBorrowP(_) =>
+    case LoadAsPointerP(_) =>
   }
 }
 

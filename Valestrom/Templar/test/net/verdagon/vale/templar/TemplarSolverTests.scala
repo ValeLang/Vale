@@ -145,7 +145,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |fn main()
         |rules(
         |  MyStruct = T Ref(O Ownership, P Permission, K Kind),
-        |  X Ref(borrow, ro, K))
+        |  X Ref(ptr, ro, K))
         |X export {
         |  *MyStruct()
         |}
@@ -441,10 +441,10 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |
         |interface IShip {
-        |  fn getFuel(virtual self *IShip) int;
+        |  fn getFuel(virtual self &IShip) int;
         |}
         |struct Firefly {}
-        |fn getFuel(self *Firefly impl IShip) int { 7 }
+        |fn getFuel(self &Firefly impl IShip) int { 7 }
         |impl IShip for Firefly;
         |
         |fn genericGetFuel<T>(x T) int

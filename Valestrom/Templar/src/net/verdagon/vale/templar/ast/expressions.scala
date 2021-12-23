@@ -58,14 +58,20 @@ trait AddressExpressionTE extends ExpressionT {
 
 case class LetAndLendTE(
     variable: ILocalVariableT,
-    expr: ReferenceExpressionTE
+    expr: ReferenceExpressionTE,
+  targetOwnership: OwnershipT
 ) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   vassert(variable.reference == expr.result.reference)
 
+  (expr.result.reference.ownership, targetOwnership) match {
+    case (ShareT, ShareT) =>
+    case (OwnT | BorrowT | PointerT | WeakT, BorrowT | PointerT) =>
+  }
+
   override def result: ReferenceResultT = {
-    val CoordT(ownership, permission, kind) = expr.result.reference
-    ReferenceResultT(CoordT(if (ownership == ShareT) ShareT else PointerT, permission, kind))
+    val CoordT(oldOwnership, permission, kind) = expr.result.reference
+    ReferenceResultT(CoordT(targetOwnership, permission, kind))
   }
 }
 
@@ -77,8 +83,9 @@ case class NarrowPermissionTE(
   expr.result.reference.ownership match {
     case OwnT => vfail() // This only works on non owning references
     case ShareT => vfail() // Share only has readonly
-    case PointerT | WeakT => // fine
+    case PointerT | BorrowT | WeakT => // fine
   }
+  vpass()
   // Only thing we support so far is Readwrite -> Readonly
   vassert(expr.result.reference.permission == ReadwriteT)
   vassert(targetPermission == ReadonlyT)
@@ -86,6 +93,28 @@ case class NarrowPermissionTE(
   override def result: ReferenceResultT = {
     val CoordT(ownership, permission, kind) = expr.result.reference
     ReferenceResultT(CoordT(ownership, targetPermission, kind))
+  }
+}
+
+case class PointerToBorrowTE(
+  expr: ReferenceExpressionTE
+) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
+  vassert(expr.result.reference.ownership == PointerT)
+  override def result: ReferenceResultT = {
+    val CoordT(PointerT, permission, kind) = expr.result.reference
+    ReferenceResultT(CoordT(BorrowT, permission, kind))
+  }
+}
+
+case class BorrowToPointerTE(
+  expr: ReferenceExpressionTE
+) extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
+  vassert(expr.result.reference.ownership == BorrowT)
+  override def result: ReferenceResultT = {
+    val CoordT(BorrowT, permission, kind) = expr.result.reference
+    ReferenceResultT(CoordT(PointerT, permission, kind))
   }
 }
 
@@ -106,14 +135,38 @@ case class LockWeakTE(
   }
 }
 
-// Turns a constraint ref into a weak ref
+// Turns a borrow ref into a weak ref
 // Note that we can also get a weak ref from LocalLoad2'ing a
-// constraint ref local into a weak ref.
-case class WeakAliasTE(
+// borrow ref local into a weak ref.
+case class BorrowToWeakTE(
   innerExpr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
+  vassert(innerExpr.result.reference.ownership == BorrowT)
+
   override def hashCode(): Int = vcurious()
+  innerExpr.result.reference.ownership match {
+    case PointerT =>
+    case BorrowT =>
+  }
+
+  override def result: ReferenceResultT = {
+    ReferenceResultT(CoordT(WeakT, innerExpr.result.reference.permission, innerExpr.kind))
+  }
+}
+
+// Turns a pointer ref into a weak ref
+// Note that we can also get a weak ref from LocalLoad2'ing a
+// pointer ref local into a weak ref.
+case class PointerToWeakTE(
+  innerExpr: ReferenceExpressionTE
+) extends ReferenceExpressionTE {
   vassert(innerExpr.result.reference.ownership == PointerT)
+
+  override def hashCode(): Int = vcurious()
+  innerExpr.result.reference.ownership match {
+    case PointerT =>
+    case BorrowT =>
+  }
 
   override def result: ReferenceResultT = {
     ReferenceResultT(CoordT(WeakT, innerExpr.result.reference.permission, innerExpr.kind))
@@ -157,6 +210,7 @@ case class DiscardTE(
 
   expr.result.reference.ownership match {
     case PointerT =>
+    case BorrowT =>
     case ShareT =>
     case WeakT =>
   }
@@ -428,7 +482,10 @@ case class RuntimeSizedArrayLookupTE(
   override def hashCode(): Int = vcurious()
   vassert(arrayExpr.result.reference.kind == arrayType)
 
-  override def result = AddressResultT(arrayType.elementType)
+  override def result = {
+    val CoordT(ownership, _, kind) = arrayType.elementType
+    AddressResultT(CoordT(ownership, targetPermission, kind))
+  }
 }
 
 case class ArrayLengthTE(arrayExpr: ReferenceExpressionTE) extends ReferenceExpressionTE {
@@ -665,7 +722,7 @@ case class StructToInterfaceUpcastTE(innerExpr: ReferenceExpressionTE, targetInt
 // A soft load is one that turns an int** into an int*. a hard load turns an int* into an int.
 // Turns an Addressible(Pointer) into an OwningPointer. Makes the source owning pointer into null
 
-// If the source was an own and target is borrow, that's a lend
+// If the source was an own and target is borrow, that's a point
 
 case class SoftLoadTE(
     expr: AddressExpressionTE, targetOwnership: OwnershipT, targetPermission: PermissionT) extends ReferenceExpressionTE {

@@ -173,7 +173,7 @@ class Heap(in_vivemDout: PrintStream) {
       vfail("blort")
     }
     checkReference(expectedType, variable.reference)
-    alias(variable.reference, expectedType, targetType)
+    transmute(variable.reference, expectedType, targetType)
   }
 
   private def getLocal(varAddr: VariableAddressV): VariableV = {
@@ -232,7 +232,7 @@ class Heap(in_vivemDout: PrintStream) {
       case StructInstanceV(_, Some(members)) => {
         val actualReference = members(fieldIndex)
         checkReference(expectedType, actualReference)
-        alias(actualReference, expectedType, targetType)
+        transmute(actualReference, expectedType, targetType)
       }
     }
   }
@@ -246,7 +246,7 @@ class Heap(in_vivemDout: PrintStream) {
       case ai @ ArrayInstanceV(_, _, _, _) => {
         val ref = ai.getElement(elementIndex)
         checkReference(expectedType, ref)
-        alias(ref, expectedType, targetType)
+        transmute(ref, expectedType, targetType)
       }
     }
   }
@@ -343,7 +343,7 @@ class Heap(in_vivemDout: PrintStream) {
   def zero(reference: ReferenceV) = {
     val allocation = objectsById.get(reference.allocId)
     vassert(allocation.getTotalRefCount(Some(OwnH)) == 0)
-    vassert(allocation.getTotalRefCount(Some(BorrowH)) == 0)
+    vassert(allocation.getTotalRefCount(Some(PointerH)) == 0)
     allocation.kind match {
       case si @ StructInstanceV(_, _) => si.zero()
       case _ =>
@@ -425,7 +425,7 @@ class Heap(in_vivemDout: PrintStream) {
     objectsById.add(ownership, location, permission, kind)
   }
 
-  def alias(
+  def transmute(
     reference: ReferenceV,
     expectedType: ReferenceH[KindH],
     targetType: ReferenceH[KindH]):
@@ -448,6 +448,43 @@ class Heap(in_vivemDout: PrintStream) {
       case (ReadwriteH, ReadonlyH) =>
       case (ReadwriteH, ReadwriteH) =>
     }
+
+    ReferenceV(
+      actualKind,
+      RRKind(targetType.kind),
+      targetType.ownership,
+      targetType.location,
+      targetType.permission,
+      objectId)
+  }
+
+  def cast(
+    callId: CallId,
+    reference: ReferenceV,
+    expectedType: ReferenceH[KindH],
+    targetType: ReferenceH[KindH]):
+  ReferenceV = {
+    if (expectedType == targetType) {
+      return reference
+    }
+
+    val ReferenceV(actualKind, oldSeenAsType, oldOwnership, oldLocation, oldPermission, objectId) = reference
+    vassert((oldOwnership == ShareH) == (targetType.ownership == ShareH))
+    if (oldSeenAsType.hamut != expectedType.kind) {
+      // not sure if the above .actualType is right
+
+      vfail("wot")
+    }
+
+    (oldPermission, targetType.permission) match {
+      case (ReadonlyH, ReadonlyH) =>
+      case (ReadonlyH, ReadwriteH) => vfail()
+      case (ReadwriteH, ReadonlyH) =>
+      case (ReadwriteH, ReadwriteH) =>
+    }
+
+    incrementReferenceRefCount(RegisterToObjectReferrer(callId, targetType.ownership), reference)
+    decrementReferenceRefCount(RegisterToObjectReferrer(callId, oldOwnership), reference)
 
     ReferenceV(
       actualKind,

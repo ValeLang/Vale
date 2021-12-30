@@ -8,6 +8,7 @@ if [ "$BOOTSTRAPPING_VALEC_DIR" == "" ]; then
   exit
 fi
 
+touch ~/.zshrc
 source ~/.zshrc
 
 cd Valestrom

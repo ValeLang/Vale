@@ -8,9 +8,9 @@ Here's how to build the Vale compiler.
 ```sh
 sudo apt install -y git
 git clone --single-branch --branch master https://github.com/ValeLang/Vale
-Vale/install-compiler-prereqs-linux.sh
+Vale/install-compiler-prereqs-linux.sh ~/LLVMForVale ~/BootstrappingValeCompiler
 cd Vale
-./build-compiler-linux.sh ~/clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10
+./build-compiler-linux.sh ~/LLVMForVale/clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10 ~/BootstrappingValeCompiler
 ```
 
 
@@ -18,10 +18,10 @@ cd Vale
 
 ```sh
 git clone --single-branch --branch master https://github.com/ValeLang/Vale
-Vale/install-compiler-prereqs-mac.sh
+Vale/install-compiler-prereqs-mac.sh ~/BootstrappingValeCompiler
 source ~/.zshrc
 cd Vale
-./build-compiler-mac.sh
+./build-compiler-mac.sh ~/BootstrappingValeCompiler
 ```
 
 

@@ -643,6 +643,15 @@ case class DestroyStaticSizedArrayIntoFunctionTE(
   vassert(consumerMethod.paramTypes(0) == consumer.result.reference)
   vassert(consumerMethod.paramTypes(1) == arrayType.elementType)
 
+  // See https://github.com/ValeLang/Vale/issues/375
+  consumerMethod.returnType.kind match {
+    case StructTT(FullNameT(_, _, CitizenNameT(CitizenTemplateNameT(name), _))) => {
+      vassert(name == ProgramT.tupleHumanName)
+    }
+    case VoidT() =>
+    case _ => vwat()
+  }
+
   override def result: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 }
 
@@ -777,6 +786,14 @@ case class DestroyImmRuntimeSizedArrayTE(
   vassert(consumerMethod.paramTypes(0) == consumer.result.reference)
   //  vassert(consumerMethod.paramTypes(1) == Program2.intType)
   vassert(consumerMethod.paramTypes(1) == arrayType.elementType)
+
+  // See https://github.com/ValeLang/Vale/issues/375
+  consumerMethod.returnType.kind match {
+    case StructTT(FullNameT(_, _, CitizenNameT(CitizenTemplateNameT(name), _))) => {
+      vassert(name == ProgramT.tupleHumanName)
+    }
+    case VoidT() =>
+  }
 
   override def result: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 }

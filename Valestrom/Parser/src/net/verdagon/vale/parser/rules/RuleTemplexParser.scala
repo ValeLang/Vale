@@ -33,6 +33,7 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
     // The template calls are first because Moo:(Int, Bool) is ambiguous, that (Int, Bool)
     // could be interpreted as a pack.
     (pos ~ string ~ pos ^^ { case begin ~ inner ~ end => StringPT(Range(begin, end), inner.str) }) |
+    (pos ~ ("&!" ~> optWhite ~> ruleTemplexPR) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), BorrowP, ReadwriteP, inner) }) |
     (pos ~ ("&" ~> optWhite ~> ruleTemplexPR) ~ pos ^^ { case begin ~ inner ~ end => BorrowPT(Range(begin, end), inner) }) |
     (pos ~ ("*" ~> optWhite ~> ruleTemplexPR) ~ pos ^^ { case begin ~ inner ~ end => PointPT(Range(begin, end), inner) }) |
     (pos ~ ("@" ~> optWhite ~> ruleTemplexPR) ~ pos ^^ { case begin ~ inner ~ end => SharePT(Range(begin, end), inner) }) |

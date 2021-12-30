@@ -1,8 +1,11 @@
 import v.builtins.arith.*;
 
-fn drop_into<V, S, E, F>(arr [<imm, V> S * E], consumer &!F) void {}
+fn drop_into<V, S, E, F>(arr [<imm, V> S * E], consumer &!F) void
+rules(Prot("__call", (&!F, E), void))
+{}
 
 fn drop_into<V, S, E, F>(arr [<mut, V> S * E], consumer &!F) void
+rules(Prot("__call", (&!F, E), void))
 extern(vale_static_sized_array_drop_into);
 
 fn drop<V, S, E>(arr [<mut, V> S * E]) void {
@@ -10,7 +13,9 @@ fn drop<V, S, E>(arr [<mut, V> S * E]) void {
 }
 fn drop<V, S, E>(arr [<imm, V> S * E]) void {}
 
-fn drop_into<E, F>(arr Array<mut, E>, consumer &!F) void {
+fn drop_into<E, F>(arr Array<mut, E>, consumer &!F) void
+rules(Prot("__call", (&!F, E), void))
+{
   while (arr.len() > 0) {
     consumer!(arr!.pop());
   }
@@ -20,7 +25,9 @@ fn drop<E>(arr Array<mut, E>) void {
   drop_into(arr, {_;});
 }
 
-fn drop_into<E, F>(arr Array<imm, E>, consumer &!F) void {
+fn drop_into<E, F>(arr Array<imm, E>, consumer &!F) void
+rules(Prot("__call", (&!F, E), void))
+{
   i = arr.len() - 1;
   while (i >= 0) {
     consumer!(arr[i]);

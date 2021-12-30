@@ -49,6 +49,7 @@ cd ../scripts
 
 cd ../Tester
 
+rm -rf ./BuiltValeCompiler
 unzip ../release-unix/ValeCompiler.zip -d ./BuiltValeCompiler
 
 echo Compiling Tester...

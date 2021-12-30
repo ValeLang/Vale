@@ -1,6 +1,8 @@
 import stdlib.command.*;
 import stdlib.flagger.*;
 import stdlib.path.*;
+import valecutils.pathadditions.*;
+import valecutils.mtpid.*;
 
 
 fn main() export {

@@ -1,0 +1,8 @@
+// MTPID stands for Micro Time Process ID
+// It's basically a u64 with both the process ID and microsecond timestamp in it
+
+fn MtpId() i64 {
+  MtpIdExtern()
+}
+
+fn MtpIdExtern() i64 extern;

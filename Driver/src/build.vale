@@ -257,8 +257,14 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
     }
   } else {
     if (output_dir.exists()) {
-      // TODO: Automatically delete or move this, see https://github.com/ValeLang/Vale/issues/396
-      panic("Error: output directory already exists: {output_dir.str()}");
+      dest_dir = Path("/tmp/old_output_dir_" + str(MtpId()));
+      if (dest_dir.exists()) {
+        println("Deleting existing {dest_dir.str()}.");
+        dest_dir.RemoveDirAll().expect();
+        vassert(not dest_dir.exists(), "Removing old dir {dest_dir.str()} failed!");
+      }
+      println("Moving existing output directory {output_dir.str()} to {dest_dir.str()}.");
+      output_dir.Rename(&dest_dir).expect();
     }
     valestrom_process =
         invoke_valestrom(

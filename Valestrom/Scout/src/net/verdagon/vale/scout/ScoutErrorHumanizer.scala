@@ -31,6 +31,19 @@ object ScoutErrorHumanizer {
             ScoutErrorHumanizer.humanizeRule,
             error.failedSolve)._1
         }
+        case IdentifyingRunesIncompleteS(range, error) => {
+          s": Not enough identifying runes:\n" +
+            SolverErrorHumanizer.humanizeFailedSolve(
+              codeMap,
+              ScoutErrorHumanizer.humanizeRune,
+              (codeMap, identified: Boolean) => identified.toString,
+              (codeMap, u: IIdentifiabilityRuleError) => humanizeIdentifiabilityRuleErrorr(codeMap, u),
+              (rule: IRulexSR) => rule.range,
+              (rule: IRulexSR) => rule.runeUsages.map(u => (u.rune, u.range)),
+              (rule: IRulexSR) => rule.runeUsages.map(_.rune),
+              ScoutErrorHumanizer.humanizeRule,
+              error.failedSolve)._1
+        }
         case VariableNameAlreadyExists(range, name) => s": Local named " + humanizeName(name) + " already exists!\n(If you meant to modify the variable, use the `set` keyword beforehand.)"
         case InterfaceMethodNeedsSelf(range) => s": Interface's method needs a virtual param of interface's type!"
         case LightFunctionMustHaveParamTypes(range, paramIndex) => s": Function parameter must have a type!"
@@ -50,6 +63,12 @@ object ScoutErrorHumanizer {
   }
 
   def humanizeRuneTypeError(codeMap: FileCoordinateMap[String], error: IRuneTypeRuleError): String = {
+    error match {
+      case other => vimpl(other)
+    }
+  }
+
+  def humanizeIdentifiabilityRuleErrorr(codeMap: FileCoordinateMap[String], error: IIdentifiabilityRuleError): String = {
     error match {
       case other => vimpl(other)
     }

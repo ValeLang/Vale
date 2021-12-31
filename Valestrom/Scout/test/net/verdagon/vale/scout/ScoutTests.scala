@@ -4,6 +4,7 @@ import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules._
+import net.verdagon.vale.solver.{IncompleteSolve, Step}
 import net.verdagon.vale.{Collector, Err, FileCoordinate, Ok, vassert, vfail, vimpl, vwat}
 import net.verdagon.von.{JsonSyntax, VonPrinter}
 import org.scalatest.{FunSuite, Matchers}
@@ -43,6 +44,30 @@ class ScoutTests extends FunSuite with Matchers with Collector {
           case Err(e) => e
           case Ok(t) => vfail("Successfully compiled!\n" + t.toString)
         }
+      }
+    }
+  }
+
+  // See: User Must Specify Enough Identifying Runes (UMSEIR)
+  test("Test UMSEIR") {
+    // This should work, its fine that the _ is there because we can always figure out what
+    // that rune is, from the identifying runes.
+    val main =
+    compile(
+      """
+        |fn moo<T>(a T)
+        |rules(K Ref, T = Map<K, _>) { ... }
+        |""".stripMargin).lookupFunction("moo")
+
+    // This should fail, because we can't figure out what it is, given the identifying runes.
+    val error = compileForError(
+      """
+        |fn moo<K, V>(a Map<K, V, _>) { ... }
+        |""".stripMargin)
+    error match {
+      case IdentifyingRunesIncompleteS(_, IdentifiabilitySolveError(_, IncompleteSolve(_, _,runes))) => {
+        // The param rune, and the _ rune are both unknown
+        vassert(runes.size == 2)
       }
     }
   }

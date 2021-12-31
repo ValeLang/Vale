@@ -1034,6 +1034,17 @@ class TemplarTests extends FunSuite with Matchers {
       case Ok(wat) => vwat(wat)
     }
   }
+  test("Zero method anonymous interface") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |import v.builtins.tup.*;
+        |interface MyInterface {}
+        |fn main() export {
+        |  x = MyInterface();
+        |}
+        |""".stripMargin)
+    compile.expectTemputs()
+  }
 
   test("Lock weak member") {
     val compile = TemplarTestCompilation.test(

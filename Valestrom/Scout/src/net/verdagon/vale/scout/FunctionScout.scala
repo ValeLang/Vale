@@ -165,6 +165,11 @@ class FunctionScout(scout: Scout) {
         runeToExplicitType.toMap,
         ruleBuilder.toArray)
 
+    scout.checkIdentifiability(
+      rangeS,
+      userSpecifiedIdentifyingRunes.map(_.rune),
+      ruleBuilder.toArray)
+
     FunctionS(
       Scout.evalRange(file, range),
       name,
@@ -333,6 +338,11 @@ class FunctionScout(scout: Scout) {
       }
     maybeRetCoordRune.foreach(retCoordRune => runeToExplicitType.put(retCoordRune.rune, CoordTemplataType))
 
+    scout.checkIdentifiability(
+      closureParamRange,
+      identifyingRunes.map(_.rune),
+      ruleBuilder.toArray)
+
     val function1 =
       FunctionS(
         Scout.evalRange(parentStackFrame.file, range),
@@ -447,6 +457,7 @@ class FunctionScout(scout: Scout) {
         maybeParamsP,
         FunctionReturnP(retRange, maybeInferRet, maybeRetType)),
       None) = functionP;
+    val rangeS = Scout.evalRange(interfaceEnv.file, range)
     val retRangeS = Scout.evalRange(interfaceEnv.file, retRange)
 
     maybeParamsP match {
@@ -505,7 +516,7 @@ class FunctionScout(scout: Scout) {
           Some(rune)
         }
         case (Some(_), None) => {
-          throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(myStackFrame.file, range), "Can't infer the return type of an interface method!"))
+          throw CompileErrorExceptionS(RangedInternalErrorS(rangeS, "Can't infer the return type of an interface method!"))
         }
         case (None, Some(retTypePT)) => {
           PatternScout.translateMaybeTypeIntoMaybeRune(
@@ -524,6 +535,11 @@ class FunctionScout(scout: Scout) {
     if (attrsP.collect({ case AbstractAttributeP(_) => true  }).nonEmpty) {
       throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(interfaceEnv.file, range), "Dont need abstract here"))
     }
+
+    scout.checkIdentifiability(
+      rangeS,
+      identifyingRunes.map(_.rune),
+      ruleBuilder.toArray)
 
     FunctionS(
       Scout.evalRange(functionEnv.file, range),

@@ -62,6 +62,14 @@ Ref translateExpressionInner(
             Location::INLINE,
             globalState->metalCache->getInt(globalState->metalCache->rcImmRegionId, constantInt->bits));
     return wrap(globalState->getRegion(intRef), intRef, resultLE);
+  } else if (auto constantVoid = dynamic_cast<ConstantVoid*>(expr)) {
+    // See ULTMCIE for why we load and store here.
+    auto resultRef = makeVoidRef(globalState);
+    auto resultLE =
+        globalState->getRegion(globalState->metalCache->voidRef)
+            ->checkValidReference(FL(), functionState, builder, globalState->metalCache->voidRef, resultRef);
+    auto loadedLE = makeConstExpr(functionState, builder, resultLE);
+    return wrap(globalState->getRegion(globalState->metalCache->voidRef), globalState->metalCache->voidRef, loadedLE);
   } else if (auto constantFloat = dynamic_cast<ConstantF64*>(expr)) {
     // See ULTMCIE for why we load and store here.
 
@@ -103,7 +111,7 @@ Ref translateExpressionInner(
         ->checkValidReference(FL(), functionState, builder, stackify->local->type, refToStore);
     makeHammerLocal(
         globalState, functionState, blockState, builder, stackify->local, refToStore, stackify->knownLive);
-    return makeEmptyTupleRef(globalState);
+    return makeVoidRef(globalState);
   } else if (auto localStore = dynamic_cast<LocalStore*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     // The purpose of LocalStore is to put a swap value into a local, and give
@@ -296,7 +304,7 @@ Ref translateExpressionInner(
         ->dealias(
             AFL("DestroySSAIntoF"), functionState, builder, consumerType, consumerRef);
 
-    return makeEmptyTupleRef(globalState);
+    return makeVoidRef(globalState);
   } else if (auto pushRuntimeSizedArray = dynamic_cast<PushRuntimeSizedArray*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto arrayExpr = pushRuntimeSizedArray->arrayExpr;
@@ -346,7 +354,7 @@ Ref translateExpressionInner(
         ->dealias(
             AFL("pushRuntimeSizedArrayNoBoundsCheck"), functionState, builder, arrayType, arrayRef);
 
-    return makeEmptyTupleRef(globalState);
+    return makeVoidRef(globalState);
   } else if (auto popRuntimeSizedArray = dynamic_cast<PopRuntimeSizedArray*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto arrayExpr = popRuntimeSizedArray->arrayExpr;
@@ -427,7 +435,7 @@ Ref translateExpressionInner(
       assert(false);
     }
 
-    return makeEmptyTupleRef(globalState);
+    return makeVoidRef(globalState);
   } else if (auto dirsa = dynamic_cast<DestroyImmRuntimeSizedArray*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto consumerType = dirsa->consumerType;
@@ -497,7 +505,7 @@ Ref translateExpressionInner(
         ->dealias(
             AFL("DestroyRSAIntoF"), functionState, builder, consumerType, consumerRef);
 
-    return makeEmptyTupleRef(globalState);
+    return makeVoidRef(globalState);
   } else if (auto staticSizedArrayLoad = dynamic_cast<StaticSizedArrayLoad*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto arrayType = staticSizedArrayLoad->arrayType;

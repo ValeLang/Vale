@@ -23,6 +23,11 @@ public:
 //    virtual Reference* getResultType() const = 0;
 };
 
+class ConstantVoid : public Expression {
+public:
+  ConstantVoid() {}
+};
+
 class ConstantInt : public Expression {
 public:
   int64_t value;
@@ -44,10 +49,6 @@ public:
       : value(value_) {}
 };
 
-
-class ConstantVoid : public Expression {
-public:
-};
 
 
 class ConstantStr : public Expression {
@@ -486,7 +487,8 @@ public:
     virtualParamIndex(virtualParamIndex_),
     interfaceRef(interfaceRef_),
     indexInEdge(indexInEdge_),
-    functionType(functionType_) {}
+    functionType(functionType_) {
+  }
 };
 
 

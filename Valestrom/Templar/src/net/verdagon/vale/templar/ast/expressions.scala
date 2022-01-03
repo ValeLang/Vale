@@ -318,6 +318,10 @@ case class ConsecutorTE(exprs: Vector[ReferenceExpressionTE]) extends ReferenceE
   // If we want a consecutor that returns nothing, put a VoidLiteralTE in it.
   vassert(exprs.nonEmpty)
 
+  if (exprs.size > 1) {
+    vassert(!exprs.init.contains(VoidLiteralTE()))
+  }
+
   // There shouldn't be a 1-element consecutor.
   // This isn't a hard technical requirement, but it does simplify the resulting AST a bit.
   // Call Templar.consecutive to conform to this.
@@ -789,9 +793,6 @@ case class DestroyImmRuntimeSizedArrayTE(
 
   // See https://github.com/ValeLang/Vale/issues/375
   consumerMethod.returnType.kind match {
-    case StructTT(FullNameT(_, _, CitizenNameT(CitizenTemplateNameT(name), _))) => {
-      vassert(name == ProgramT.tupleHumanName)
-    }
     case VoidT() =>
   }
 

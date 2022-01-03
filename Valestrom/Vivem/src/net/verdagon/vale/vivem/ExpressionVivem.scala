@@ -14,15 +14,8 @@ object ExpressionVivem {
   case class NodeContinue(resultRef: ReferenceV) extends INodeExecuteResult { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
   case class NodeReturn(returnRef: ReferenceV) extends INodeExecuteResult { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
-  def makeVoid(programH: ProgramH, heap: Heap, callId: CallId) = {
-    val emptyPackStructRefH = ProgramH.emptyTupleStructRef
-    val emptyPackStructDefH = programH.lookupStruct(emptyPackStructRefH)
-    val void = heap.newStruct(emptyPackStructDefH, ReferenceH(ShareH, InlineH, ReadonlyH, emptyPackStructRefH), Vector.empty)
-    heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, ShareH), void)
-    void
-  }
-
   def makePrimitive(heap: Heap, callId: CallId, location: LocationH, kind: KindV) = {
+    vassert(kind != VoidV)
     val ref = heap.allocateTransient(ShareH, location, ReadonlyH, kind)
     heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, ShareH), ref)
     ref
@@ -89,7 +82,11 @@ object ExpressionVivem {
           }
         // Lots of instructions do this, not just Discard, see DINSIE.
         discard(programH, heap, stdout, stdin, callId, sourceExpr.resultType, sourceRef)
-        NodeContinue(makeVoid(programH, heap, callId))
+        NodeContinue(heap.void)
+      }
+      case ConstantVoidH() => {
+        val ref = heap.void
+        NodeContinue(ref)
       }
       case ConstantIntH(value, bits) => {
         val ref = makePrimitive(heap, callId, InlineH, IntV(value, bits))
@@ -196,7 +193,7 @@ object ExpressionVivem {
           heap.addLocal(varAddr, memberRef, localType)
           heap.vivemDout.print(" v" + varAddr + "<-o" + memberRef.num)
         })
-        NodeContinue(makeVoid(programH, heap, callId))
+        NodeContinue(heap.void)
       }
       case DestroyStaticSizedArrayIntoLocalsH(arrExpr, localTypes, locals) => {
         val arrReference =
@@ -228,7 +225,7 @@ object ExpressionVivem {
           heap.addLocal(varAddr, memberRef, localType)
           heap.vivemDout.print(" v" + varAddr + "<-o" + memberRef.num)
         })
-        NodeContinue(makeVoid(programH, heap, callId))
+        NodeContinue(heap.void)
       }
       case ArrayLengthH(arrExpr) => {
         val arrayReference =
@@ -387,7 +384,7 @@ object ExpressionVivem {
 
         discard(programH, heap, stdout, stdin, callId, sourceExpr.resultType, reference)
 
-        NodeContinue(makeVoid(programH, heap, callId))
+        NodeContinue(heap.void)
       }
       case LocalStoreH(localIndex, sourceExpr, name) => {
         val reference =
@@ -783,7 +780,7 @@ object ExpressionVivem {
           discard(programH, heap, stdout, stdin, callId, bodyBlock.resultType, conditionReference)
           continue = conditionValue
         }
-        NodeContinue(makeVoid(programH, heap, callId))
+        NodeContinue(heap.void)
       }
       case cac @ NewImmRuntimeSizedArrayH(sizeExpr, generatorExpr, generatorPrototype, _, arrayRefType) => {
         val sizeReference =
@@ -866,7 +863,7 @@ object ExpressionVivem {
 
         heap.vivemDout.print(" o" + arrayReference.num + "+=")
         heap.printKind(newcomerVE)
-        NodeContinue(makeVoid(programH, heap, callId))
+        NodeContinue(heap.void)
       }
 
       case PopRuntimeSizedArrayH(arrayHE, elementType) => {
@@ -950,7 +947,7 @@ object ExpressionVivem {
 
         discard(programH, heap, stdout, stdin, callId, consumerME.resultType, consumerReference)
 
-        NodeContinue(makeVoid(programH, heap, callId))
+        NodeContinue(heap.void)
       }
 
       case cac @ DestroyImmRuntimeSizedArrayH(arrayExpr, consumerInterfaceExpr, consumerMethod, arrayElementType) => {
@@ -987,7 +984,7 @@ object ExpressionVivem {
 
         discard(programH, heap, stdout, stdin, callId, consumerInterfaceExpr.resultType, consumerReference)
 
-        NodeContinue(makeVoid(programH, heap, callId))
+        NodeContinue(heap.void)
       }
 
       case DestroyMutRuntimeSizedArrayH(arrayExpr) => {
@@ -1013,7 +1010,7 @@ object ExpressionVivem {
         heap.zero(arrayReference)
         heap.deallocateIfNoWeakRefs(arrayReference)
 
-        NodeContinue(makeVoid(programH, heap, callId))
+        NodeContinue(heap.void)
       }
     }
   }
@@ -1193,11 +1190,7 @@ object ExpressionVivem {
         case PointerH => // Do nothing.
         case ShareH => {
           expectedReference.kind match {
-            case IntH(_) | BoolH() | StrH() | FloatH() => {
-              heap.zero(actualReference)
-              heap.deallocateIfNoWeakRefs(actualReference)
-            }
-            case x if x == ProgramH.emptyTupleStructRef => {
+            case VoidH() | IntH(_) | BoolH() | StrH() | FloatH() => {
               heap.zero(actualReference)
               heap.deallocateIfNoWeakRefs(actualReference)
             }
@@ -1224,7 +1217,7 @@ object ExpressionVivem {
                   programH, stdin, stdout, heap, Vector(actualReference), functionH)
               heap.vivemDout.print("  " * callId.callDepth + "Getting return reference")
               val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
-              vassert(returnRef.actualKind.hamut == ProgramH.emptyTupleStructRef)
+              vassert(returnRef.actualKind.hamut == VoidH())
               discard(programH, heap, stdout, stdin, callId, prototypeH.returnType, returnRef)
             }
           }

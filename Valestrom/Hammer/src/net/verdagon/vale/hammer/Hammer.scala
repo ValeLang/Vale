@@ -153,7 +153,6 @@ object Hammer {
     val Hinputs(
       interfaces,
       structs,
-      emptyPackStructRef,
       functions,
       kindToDestructor,
       edgeBlueprintsByInterface,
@@ -164,9 +163,9 @@ object Hammer {
       functionExterns) = hinputs
 
 
-    val hamuts = HamutsBox(Hamuts(Map(), Map(), Map(), Vector.empty, Vector.empty, Vector.empty, Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map()))
-    val emptyPackStructRefH = StructHammer.translateStructRef(hinputs, hamuts, emptyPackStructRef)
-    vassert(emptyPackStructRefH == ProgramH.emptyTupleStructRef)
+    val hamuts = HamutsBox(Hamuts(Map(), Map(), Map(), Vector.empty, Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map()))
+//    val emptyPackStructRefH = StructHammer.translateStructRef(hinputs, hamuts, emptyPackStructRef)
+//    vassert(emptyPackStructRefH == ProgramH.emptyTupleStructRef)
 
     kindExports.foreach({ case KindExportT(_, tyype, packageCoordinate, exportName) =>
       val kindH = TypeHammer.translateKind(hinputs, hamuts, tyype)
@@ -229,8 +228,8 @@ object Hammer {
     val packageToInterfaceDefs = hamuts.interfaceDefs.groupBy(_._1.fullName.packageCoord)
     val packageToStructDefs = hamuts.structDefs.groupBy(_.fullName.packageCoordinate)
     val packageToFunctionDefs = hamuts.functionDefs.groupBy(_._1.fullName.packageCoord).mapValues(_.values.toVector)
-    val packageToStaticSizedArrays = hamuts.staticSizedArrays.groupBy(_.name.packageCoordinate)
-    val packageToRuntimeSizedArrays = hamuts.runtimeSizedArrays.groupBy(_.name.packageCoordinate)
+    val packageToStaticSizedArrays = hamuts.staticSizedArrays.values.toVector.groupBy(_.name.packageCoordinate)
+    val packageToRuntimeSizedArrays = hamuts.runtimeSizedArrays.values.toVector.groupBy(_.name.packageCoordinate)
     val packageToImmDestructorPrototypes = immDestructorPrototypesH.groupBy(_._1.packageCoord)
     val packageToExportNameToKind = hamuts.packageCoordToExportNameToKind
     val packageToExportNameToFunction = hamuts.packageCoordToExportNameToFunction

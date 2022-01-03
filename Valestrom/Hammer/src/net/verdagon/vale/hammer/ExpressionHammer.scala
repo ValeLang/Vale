@@ -28,7 +28,7 @@ object ExpressionHammer {
         (ConstantIntH(value, bits), Vector.empty)
       }
       case VoidLiteralTE() => {
-        val constructH = NewStructH(Vector.empty, Vector.empty, ProgramH.emptyTupleStructType)
+        val constructH = ConstantVoidH()
         (constructH, Vector.empty)
       }
       case ConstantStrTE(value) => {
@@ -461,7 +461,7 @@ object ExpressionHammer {
         // theyll never get run anyway.
         // We only translated them above to mark unstackified things unstackified.
 
-        val void = NewStructH(Vector.empty, Vector.empty, ProgramH.emptyTupleStructType)
+        val void = ConstantVoidH()
 
         (void, Vector.empty)
       }
@@ -561,7 +561,7 @@ object ExpressionHammer {
 
     val (deferredExprs, deferredDeferreds) =
       translateExpressions(hinputs, hamuts, currentFunctionHeader, locals, deferreds)
-    if (deferredExprs.map(_.resultType).toSet != Set(ProgramH.emptyTupleStructType)) {
+    if (deferredExprs.map(_.resultType.kind).toSet != Set(VoidH())) {
       // curiosity, why would a deferred ever have a result
       vfail("ehwot?")
     }
@@ -575,8 +575,8 @@ object ExpressionHammer {
     vcurious(deferredExprs.nonEmpty)
 
     val newExprs =
-      if (originalExpr.resultType == ProgramH.emptyTupleStructType) {
-        val void = NewStructH(Vector.empty, Vector.empty, ProgramH.emptyTupleStructType)
+      if (originalExpr.resultType.kind == VoidH()) {
+        val void = ConstantVoidH()
         Vector(originalExpr) ++ (deferredExprs :+ void)
       } else {
         val temporaryResultLocal = locals.addHammerLocal(originalExpr.resultType, m.Final)

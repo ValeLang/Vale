@@ -9,7 +9,7 @@ object MetalPrinter {
         "Str" -> "s",
         "Int" -> "i",
         "Float" -> "f",
-        "Void" -> "v",
+//        "Void" -> "v",
         "Bool" -> "b",
         "Function" -> "F",
         "Ref" -> "R",

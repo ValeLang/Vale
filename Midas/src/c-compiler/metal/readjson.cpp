@@ -39,7 +39,7 @@ std::unordered_map<K, V, H, E> readArrayIntoMap(MetalCache* cache, H h, E e, con
   map.reserve(j.size());
   for (const auto& element : j) {
     std::pair<K, V> p = f(cache, element);
-//    assert(map.find(p.first) == map.end());
+    assert(map.find(p.first) == map.end());
     map.emplace(move(p.first), move(p.second));
   }
   return map;
@@ -150,6 +150,8 @@ Kind* readKind(MetalCache* cache, const json& kind) {
   if (kind["__type"] == "Int") {
     int bits = kind["bits"];
     return cache->getInt(cache->rcImmRegionId, bits);
+  } else if (kind["__type"] == "Void") {
+    return cache->vooid;
   } else if (kind["__type"] == "Bool") {
     return cache->boool;
   } else if (kind["__type"] == "Float") {
@@ -293,6 +295,8 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
     return new ConstantInt(
         readI64(cache, expression["value"]),
         expression["bits"]);
+  } else if (type == "ConstantVoid") {
+    return new ConstantVoid();
   } else if (type == "ConstantBool") {
     return new ConstantBool(
         expression["value"]);
@@ -621,13 +625,6 @@ StructDefinition* readStruct(MetalCache* cache, const json& struuct) {
           readArray(cache, struuct["members"], readStructMember),
           struuct["weakable"] ? Weakability::WEAKABLE : Weakability::NON_WEAKABLE);
 
-  auto structName = result->name;
-  if (structName->name == std::string("Tup_0")) {
-    cache->emptyTupleStruct = cache->getStructKind(structName);
-    cache->emptyTupleStructRef =
-        cache->getReference(Ownership::SHARE, Location::INLINE, cache->emptyTupleStruct);
-  }
-
   return result;
 }
 
@@ -703,7 +700,6 @@ Package* readPackage(MetalCache* cache, const json& program) {
             auto s = readRuntimeSizedArrayDefinition(cache, j);
             return std::make_pair(s->name->name, s);
           }),
-      readStructKind(cache, program["emptyTupleStructKind"]),
 //      readArrayIntoMap<std::string, Prototype*>(
 //          cache,
 //          std::hash<std::string>(),

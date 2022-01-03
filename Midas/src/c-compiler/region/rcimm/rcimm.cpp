@@ -935,7 +935,7 @@ std::pair<Ref, Ref> RCImm::receiveUnencryptedAlienReference(
 
     auto vstrRef =
         mallocStr(
-            makeEmptyTupleRef(globalState), functionState, builder, strLenLE, strLenBytesPtrLE);
+            makeVoidRef(globalState), functionState, builder, strLenLE, strLenBytesPtrLE);
 
     buildFlare(FL(), globalState, functionState, builder, "done storing");
 
@@ -950,8 +950,8 @@ std::pair<Ref, Ref> RCImm::receiveUnencryptedAlienReference(
              dynamic_cast<RuntimeSizedArrayT*>(hostRefMT->kind)) {
     buildFlare(FL(), globalState, functionState, builder);
     if (hostRefMT->location == Location::INLINE) {
-      if (hostRefMT == globalState->metalCache->emptyTupleStructRef) {
-        auto emptyTupleRefMT = globalState->linearRegion->unlinearizeReference(globalState->metalCache->emptyTupleStructRef);
+      if (hostRefMT == globalState->metalCache->voidRef) {
+        auto emptyTupleRefMT = globalState->linearRegion->unlinearizeReference(globalState->metalCache->voidRef);
         auto resultRef = wrap(this, emptyTupleRefMT, LLVMGetUndef(translateType(emptyTupleRefMT)));
         // Vale doesn't care about the size, only extern (linear) does, so just return zero.
         return std::make_pair(resultRef, globalState->constI32(0));
@@ -1211,7 +1211,7 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
                     functionState, builder, hostMemberRefMT, hostMemberRef));
           }
 
-          auto resultRef = allocate(makeEmptyTupleRef(globalState), FL(), functionState, builder, valeObjectRefMT, memberRefs);
+          auto resultRef = allocate(makeVoidRef(globalState), FL(), functionState, builder, valeObjectRefMT, memberRefs);
 
 //          // Remember, we're subtracting each size from a very large number, so its easier to round down
 //          // to the next multiple of 16.
@@ -1224,7 +1224,7 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
           auto lengthLE = globalState->getRegion(hostObjectRefMT)->getStringLen(functionState, builder, hostObjectRef);
           auto sourceBytesPtrLE = globalState->getRegion(hostObjectRefMT)->getStringBytesPtr(functionState, builder, hostObjectRef);
 
-          auto strRef = mallocStr(makeEmptyTupleRef(globalState), functionState, builder, lengthLE, sourceBytesPtrLE);
+          auto strRef = mallocStr(makeVoidRef(globalState), functionState, builder, lengthLE, sourceBytesPtrLE);
 
           buildFlare(FL(), globalState, functionState, builder, "done storing");
 
@@ -1239,7 +1239,7 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
 
           auto valeRsaRef =
               constructRuntimeSizedArray(
-                  makeEmptyTupleRef(globalState),
+                  makeVoidRef(globalState),
                   functionState, builder, valeRsaRefMT, valeRsaMT, lengthRef, "serializedrsa");
           auto valeMemberRefMT = globalState->program->getRuntimeSizedArray(valeRsaMT)->elementType;
           auto hostMemberRefMT = globalState->linearRegion->linearizeReference(valeMemberRefMT);
@@ -1268,7 +1268,7 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
 
           auto valeSsaRef =
               constructStaticSizedArray(
-                  makeEmptyTupleRef(globalState),
+                  makeVoidRef(globalState),
                   functionState, builder, valeSsaRefMT, valeSsaMT);
           auto valeSsaDefM = globalState->program->getStaticSizedArray(valeSsaMT);
           int length = valeSsaDefM->size;

@@ -583,7 +583,8 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("Test returning empty seq") {
     val compile = RunCompilation.test(
-      """fn main() [] export {
+      """export [] as Tup0;
+        |fn main() [] export {
         |  []
         |}
         |""".stripMargin)

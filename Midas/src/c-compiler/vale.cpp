@@ -779,10 +779,6 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
     }
   }
 
-  assert(globalState->metalCache->emptyTupleStruct != nullptr);
-  assert(globalState->metalCache->emptyTupleStructRef != nullptr);
-
-
   LLVMValueRef stringSetupFunctionL = nullptr;
   LLVMBuilderRef stringConstantBuilder = nullptr;
   std::tie(stringSetupFunctionL, stringConstantBuilder) = makeStringSetupFunction(globalState);

@@ -49,7 +49,7 @@ object TemplarErrorHumanizer {
             ": Cannot subscript type: " + tyype + "!"
         }
         case CouldntConvertForReturnT(range, expectedType, actualType) => {
-            ": Couldn't convert " + humanizeTemplata(codeMap, CoordTemplata(actualType)) + " to expected return type " + humanizeTemplata(codeMap, CoordTemplata(actualType))
+            ": Couldn't convert " + humanizeTemplata(codeMap, CoordTemplata(actualType)) + " to expected return type " + humanizeTemplata(codeMap, CoordTemplata(expectedType))
         }
         case CouldntConvertForMutateT(range, expectedType, actualType) => {
             ": Mutate couldn't convert " + actualType + " to expected destination type " + expectedType

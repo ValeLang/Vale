@@ -109,6 +109,10 @@ case class IntH(bits: Int) extends KindH {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
 }
+case class VoidH() extends KindH {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
+}
 case class BoolH() extends KindH {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
@@ -160,7 +164,7 @@ case class StaticSizedArrayHT(
 
 // An array whose size is known at compile time, and therefore doesn't need to
 // carry around its size at runtime.
-case class StaticSizedArrayDefinitionTH(
+case class StaticSizedArrayDefinitionHT(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
   // The size of the array.
@@ -181,7 +185,7 @@ case class RuntimeSizedArrayHT(
   override def packageCoord: PackageCoordinate = name.packageCoordinate
 }
 
-case class RuntimeSizedArrayDefinitionTH(
+case class RuntimeSizedArrayDefinitionHT(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
   mutability: Mutability,

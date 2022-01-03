@@ -57,7 +57,6 @@ object VonHammer {
         VonMember("functions", VonArray(None, functions.map(vonifyFunction).toVector)),
         VonMember("staticSizedArrays", VonArray(None, staticSizedArrays.map(vonifyStaticSizedArrayDefinition).toVector)),
         VonMember("runtimeSizedArrays", VonArray(None, runtimeSizedArrays.map(vonifyRuntimeSizedArrayDefinition).toVector)),
-        VonMember("emptyTupleStructKind", vonifyKind(ProgramH.emptyTupleStructRef)),
         VonMember(
           "immDestructorsByKind",
           VonArray(
@@ -295,8 +294,8 @@ object VonHammer {
         VonMember("type", vonifyCoord(tyype))))
   }
 
-  def vonifyRuntimeSizedArrayDefinition(rsaDef: RuntimeSizedArrayDefinitionTH): IVonData = {
-    val RuntimeSizedArrayDefinitionTH(name, mutability, elementType) = rsaDef
+  def vonifyRuntimeSizedArrayDefinition(rsaDef: RuntimeSizedArrayDefinitionHT): IVonData = {
+    val RuntimeSizedArrayDefinitionHT(name, mutability, elementType) = rsaDef
     VonObject(
       "RuntimeSizedArrayDefinition",
       None,
@@ -307,8 +306,8 @@ object VonHammer {
         VonMember("elementType", vonifyCoord(elementType))))
   }
 
-  def vonifyStaticSizedArrayDefinition(ssaDef: StaticSizedArrayDefinitionTH): IVonData = {
-    val StaticSizedArrayDefinitionTH(name, size, mutability, variability, elementType) = ssaDef
+  def vonifyStaticSizedArrayDefinition(ssaDef: StaticSizedArrayDefinitionHT): IVonData = {
+    val StaticSizedArrayDefinitionHT(name, size, mutability, variability, elementType) = ssaDef
     VonObject(
       "StaticSizedArrayDefinition",
       None,
@@ -327,6 +326,7 @@ object VonHammer {
       case IntH(bits) => VonObject("Int", None, Vector(VonMember("bits", VonInt(bits))))
       case BoolH() => VonObject("Bool", None, Vector())
       case StrH() => VonObject("Str", None, Vector())
+      case VoidH() => VonObject("Void", None, Vector())
       case FloatH() => VonObject("Float", None, Vector())
       case ir @ InterfaceRefH(_) => vonifyInterfaceRef(ir)
       case sr @ StructRefH(_) => vonifyStructRef(sr)
@@ -361,6 +361,9 @@ object VonHammer {
 
   def vonifyExpression(node: ExpressionH[KindH]): IVonData = {
     node match {
+      case ConstantVoidH() => {
+        VonObject("ConstantVoid", None, Vector())
+      }
       case ConstantBoolH(value) => {
         VonObject(
           "ConstantBool",

@@ -90,6 +90,8 @@ IRegion* GlobalState::getRegion(Reference* referenceM) {
 IRegion* GlobalState::getRegion(Kind* kindM) {
   if (auto innt = dynamic_cast<Int*>(kindM)) {
     return getRegion(innt->regionId);
+  } else if (auto vooid = dynamic_cast<Void*>(kindM)) {
+    return getRegion(vooid->regionId);
   } else if (auto boool = dynamic_cast<Bool*>(kindM)) {
     return getRegion(boool->regionId);
   } else if (auto flooat = dynamic_cast<Float*>(kindM)) {

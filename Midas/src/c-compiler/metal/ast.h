@@ -45,9 +45,6 @@ public:
   std::unordered_map<std::string, StructDefinition*> structs;
   std::unordered_map<std::string, StaticSizedArrayDefinitionT*> staticSizedArrays;
   std::unordered_map<std::string, RuntimeSizedArrayDefinitionT*> runtimeSizedArrays;
-  // Get rid of this; since there's no IDs anymore we can have a stable
-  // hardcoded NameH("__Pack", Some(List()), None, None).
-  StructKind* emptyTupleStructRef;
 //  std::unordered_map<std::string, Prototype*> externs;
   std::unordered_map<std::string, Function*> functions;
   std::unordered_map<Kind*, Prototype*, AddressHasher<Kind*>> immDestructorsByKind;
@@ -71,8 +68,6 @@ public:
     std::unordered_map<std::string, StructDefinition*> structs_,
     std::unordered_map<std::string, StaticSizedArrayDefinitionT*> staticSizedArrays_,
     std::unordered_map<std::string, RuntimeSizedArrayDefinitionT*> runtimeSizedArrays_,
-    StructKind* emptyTupleStructRef_,
-//    std::unordered_map<std::string, Prototype*> externs_,
     std::unordered_map<std::string, Function*> functions_,
     std::unordered_map<Kind*, Prototype*, AddressHasher<Kind*>> immDestructorsByKind_,
     std::unordered_map<std::string, Prototype*> exportNameToFunction_,
@@ -84,8 +79,6 @@ public:
       structs(std::move(structs_)),
       staticSizedArrays(std::move(staticSizedArrays_)),
       runtimeSizedArrays(std::move(runtimeSizedArrays_)),
-      emptyTupleStructRef(std::move(emptyTupleStructRef_)),
-//      externs(std::move(externs_)),
       functions(std::move(functions_)),
       immDestructorsByKind(std::move(immDestructorsByKind_)),
       exportNameToFunction(std::move(exportNameToFunction_)),

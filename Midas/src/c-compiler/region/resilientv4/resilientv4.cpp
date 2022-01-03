@@ -51,8 +51,7 @@ ResilientV4::ResilientV4(GlobalState *globalState_, RegionId *regionId_) :
         globalState_,
         &kindStructs,
         globalState->opt->elideChecksForKnownLive,
-        false,
-        anyMT) {
+        false) {
   kindStructs.declareStruct(anyMT, Weakability::NON_WEAKABLE);
   kindStructs.defineStruct(anyMT, {});
 }

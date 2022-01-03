@@ -295,6 +295,7 @@ class Scout(globalOptions: GlobalOptions) {
 
   private def scoutStruct(file: FileCoordinate, head: StructP): StructS = {
     val StructP(rangeP, NameP(structNameRange, structHumanName), attributesP, mutabilityPT, maybeIdentifyingRunes, maybeTemplateRulesP, StructMembersP(_, members)) = head
+
     val structRangeS = Scout.evalRange(file, rangeP)
     val structName = TopLevelCitizenDeclarationNameS(structHumanName, Scout.evalRange(file, structNameRange))
 

@@ -60,6 +60,12 @@ sealed trait ExpressionH[+T <: KindH] {
   }
 }
 
+// Produces a void.
+case class ConstantVoidH() extends ExpressionH[VoidH] {
+  override def hashCode(): Int = 1337
+  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
+}
+
 // Produces an integer.
 case class ConstantIntH(
   // The value of the integer.
@@ -120,7 +126,7 @@ case class StackifyH(
   vassert(sourceExpr.resultType.kind == NeverH() ||
     sourceExpr.resultType == local.typeH)
 
-  override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ReadonlyH, ProgramH.emptyTupleStructRef)
+  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
 }
 
 // Takes a value from a local variable on the stack, and produces it.
@@ -151,12 +157,12 @@ case class DestroyH(
   localTypes: Vector[ReferenceH[KindH]],
   // The locals to put the struct's members into.
   localIndices: Vector[Local],
-) extends ExpressionH[StructRefH] {
+) extends ExpressionH[VoidH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(localTypes.size == localIndices.size)
   vcurious(localTypes == localIndices.map(_.typeH).toVector)
 
-  override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ReadonlyH, ProgramH.emptyTupleStructRef)
+  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
 }
 
 // Takes a struct from the given expressions, and destroys it.
@@ -172,12 +178,12 @@ case class DestroyStaticSizedArrayIntoLocalsH(
   localTypes: Vector[ReferenceH[KindH]],
   // The locals to put the struct's members into.
   localIndices: Vector[Local]
-) extends ExpressionH[StructRefH] {
+) extends ExpressionH[VoidH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(localTypes.size == localIndices.size)
   vcurious(localTypes == localIndices.map(_.typeH).toVector)
 
-  override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
+  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
 }
 
 // Takes a struct reference from the "source" expressions, and makes an interface reference
@@ -507,9 +513,9 @@ case class IfH(
 case class WhileH(
   // The block to run until it returns false.
   bodyBlock: ExpressionH[BoolH]
-) extends ExpressionH[StructRefH] {
+) extends ExpressionH[VoidH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
+  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
 }
 
 // A collection of instructions. The last one will be used as the block's result.
@@ -532,7 +538,7 @@ case class ConsecutorH(
     // The init ones should always return void structs.
     // If there's a never somewhere in there, then there should be nothing afterward.
     // Use Hammer.consecutive to conform to this.
-    vassert(nonLastResultLine.resultType == ProgramH.emptyTupleStructType)
+    vassert(nonLastResultLine.resultType == ReferenceH(ShareH, InlineH, ReadonlyH, VoidH()))
   })
 
   val indexOfFirstNever = exprs.indexWhere(_.resultType.kind == NeverH())
@@ -617,7 +623,7 @@ case class PushRuntimeSizedArrayH(
 ) extends ExpressionH[KindH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
-  override def resultType: ReferenceH[KindH] = ProgramH.emptyTupleStructType
+  override def resultType: ReferenceH[KindH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
 }
 
 // Adds a new element to the end of a mutable unknown-size array.
@@ -668,9 +674,9 @@ case class DestroyStaticSizedArrayIntoFunctionH(
   consumerMethod: PrototypeH,
   arrayElementType: ReferenceH[KindH],
   arraySize: Int
-) extends ExpressionH[StructRefH] {
+) extends ExpressionH[VoidH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
+  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
 }
 
 // Destroys an array previously created with ConstructRuntimeSizedArrayH.
@@ -683,9 +689,9 @@ case class DestroyImmRuntimeSizedArrayH(
   // The prototype for the "__call" function to call on the interface for each element.
   consumerMethod: PrototypeH,
   arrayElementType: ReferenceH[KindH],
-) extends ExpressionH[StructRefH] {
+) extends ExpressionH[VoidH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
+  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
 }
 
 // Destroys an array previously created with ConstructRuntimeSizedArrayH.
@@ -693,9 +699,9 @@ case class DestroyMutRuntimeSizedArrayH(
   // Expression containing the array we'll destroy.
   // This is an owning reference.
   arrayExpression: ExpressionH[RuntimeSizedArrayHT]
-) extends ExpressionH[StructRefH] {
+) extends ExpressionH[VoidH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
+  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
 }
 
 // Creates a new struct instance.
@@ -785,12 +791,12 @@ case class LockWeakH(
 
 // See DINSIE for why this isn't three instructions, and why we don't have the
 // destructor prototype in it.
-case class DiscardH(sourceExpression: ExpressionH[KindH]) extends ExpressionH[StructRefH] {
+case class DiscardH(sourceExpression: ExpressionH[KindH]) extends ExpressionH[VoidH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   sourceExpression.resultType.ownership match {
     case PointerH | BorrowH | ShareH | WeakH =>
   }
-  override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
+  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
 }
 
 trait IExpressionH {

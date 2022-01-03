@@ -41,9 +41,7 @@ ResilientV3::ResilientV3(GlobalState *globalState_, RegionId *regionId_) :
 //        &kindStructs,
         &kindStructs,
         globalState->opt->elideChecksForKnownLive,
-        false,
-        // V3 doesnt use the undead cycle, so any struct will do here
-        globalState->metalCache->emptyTupleStruct) {
+        false) {
 }
 
 void ResilientV3::mainSetup(FunctionState* functionState, LLVMBuilderRef builder) {

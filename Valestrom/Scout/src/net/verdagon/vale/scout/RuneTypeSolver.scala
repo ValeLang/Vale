@@ -31,7 +31,7 @@ object RuneTypeSolver {
         case IsStructSR(range, rune) => Array(rune)
         case CoerceToCoordSR(range, coordRune, kindRune) => Array(coordRune, kindRune)
         case LiteralSR(range, rune, literal) => Array(rune)
-        case AugmentSR(range, resultRune, literal, innerRune) => Array(resultRune, innerRune)
+        case AugmentSR(range, resultRune, ownership, permission, innerRune) => Array(resultRune, innerRune)
         case CallSR(range, resultRune, templateRune, args) => Array(resultRune, templateRune) ++ args
         case PrototypeSR(range, resultRune, name, parameters, returnTypeRune) => Array(resultRune) ++ parameters ++ Array(returnTypeRune)
         case PackSR(range, resultRune, members) => Array(resultRune) ++ members
@@ -88,7 +88,7 @@ object RuneTypeSolver {
       case IsStructSR(_, rune) => Array(Array())
       case CoerceToCoordSR(_, coordRune, kindRune) => Array(Array())
       case LiteralSR(_, rune, literal) => Array(Array())
-      case AugmentSR(_, resultRune, literals, innerRune) => Array(Array())
+      case AugmentSR(_, resultRune, ownership, permission, innerRune) => Array(Array())
       case RepeaterSequenceSR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(Array(resultRune.rune))
 //      case ManualSequenceSR(_, resultRune, elements) => Array(Array(resultRune.rune))
       case RefListCompoundMutabilitySR(range, resultRune, coordListRune) => Array(Array())
@@ -214,7 +214,7 @@ object RuneTypeSolver {
         stepState.concludeRune(rune.rune, KindTemplataType)
         Ok(())
       }
-      case AugmentSR(_, resultRune, literals, innerRune) => {
+      case AugmentSR(_, resultRune, ownership, permission, innerRune) => {
         stepState.concludeRune(resultRune.rune, CoordTemplataType)
         stepState.concludeRune(innerRune.rune, CoordTemplataType)
         Ok(())

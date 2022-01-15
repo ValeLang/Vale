@@ -5,19 +5,19 @@ import org.scalatest.{FunSuite, Matchers}
 
 class ExpressionTests extends FunSuite with Matchers with Collector with TestParseUtils {
   test("PE") {
-    compile(CombinatorParsers.expression, "4") shouldHave { case ConstantIntPE(_, 4, 32) => }
+    compile(CombinatorParsers.expression(true), "4") shouldHave { case ConstantIntPE(_, 4, 32) => }
   }
 
   test("i64") {
-    compile(CombinatorParsers.expression, "4i64") shouldHave { case ConstantIntPE(_, 4, 64) => }
+    compile(CombinatorParsers.expression(true), "4i64") shouldHave { case ConstantIntPE(_, 4, 64) => }
   }
 
   test("2") {
-    compile(CombinatorParsers.expression,"4 + 5") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "+"), None), Vector(ConstantIntPE(_, 4, _), ConstantIntPE(_, 5, _)),LoadAsBorrowP(Some(ReadonlyP))) => }
+    compile(CombinatorParsers.expression(true),"4 + 5") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "+"), None), Vector(ConstantIntPE(_, 4, _), ConstantIntPE(_, 5, _)),LoadAsBorrowP(Some(ReadonlyP))) => }
   }
 
   test("Floats") {
-    compile(CombinatorParsers.expression,"4.2") shouldHave { case ConstantFloatPE(_, 4.2f) => }
+    compile(CombinatorParsers.expression(true),"4.2") shouldHave { case ConstantFloatPE(_, 4.2f) => }
   }
 
   test("Simple string") {
@@ -25,7 +25,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("String with quote inside") {
-    compile(CombinatorParsers.expression, """"m\"oo"""") shouldHave { case ConstantStrPE(_, "m\"oo") => }
+    compile(CombinatorParsers.expression(true), """"m\"oo"""") shouldHave { case ConstantStrPE(_, "m\"oo") => }
   }
 
   test("String with unicode") {
@@ -34,7 +34,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
     compile(CombinatorParsers.shortStringPart, "\\u001b") match { case ConstantStrPE(_, "\u001b") => }
     compile(CombinatorParsers.stringExpr, "\"\\u001b\"") match { case ConstantStrPE(_, "\u001b") => }
     compile(CombinatorParsers.stringExpr, "\"foo\\u001bbar\"") match { case ConstantStrPE(_, "foo\u001bbar") => }
-    compile(CombinatorParsers.expression, "\"foo\\u001bbar\"") match { case ConstantStrPE(_, "foo\u001bbar") => }
+    compile(CombinatorParsers.expression(true), "\"foo\\u001bbar\"") match { case ConstantStrPE(_, "foo\u001bbar") => }
     // FALL NOT TO TEMPTATION
     // Scala has some issues here.
     // The above "\"\\u001b\"" seems like it could be expressed """"\\u001b"""" but it can't.
@@ -49,16 +49,16 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("String with apostrophe inside") {
-    compile(CombinatorParsers.expression, """"m'oo"""") shouldHave { case ConstantStrPE(_, "m'oo") => }
-    compile(CombinatorParsers.expression, "\"\"\"m\'oo\"\"\"") shouldHave { case ConstantStrPE(_, "m'oo") => }
+    compile(CombinatorParsers.expression(true), """"m'oo"""") shouldHave { case ConstantStrPE(_, "m'oo") => }
+    compile(CombinatorParsers.expression(true), "\"\"\"m\'oo\"\"\"") shouldHave { case ConstantStrPE(_, "m'oo") => }
   }
 
   test("Short string interpolating") {
-    compile(CombinatorParsers.expression, """"bl{4}rg"""") shouldHave { case StrInterpolatePE(_, Vector(ConstantStrPE(_, "bl"), ConstantIntPE(_, 4, _), ConstantStrPE(_, "rg"))) => }
+    compile(CombinatorParsers.expression(true), """"bl{4}rg"""") shouldHave { case StrInterpolatePE(_, Vector(ConstantStrPE(_, "bl"), ConstantIntPE(_, 4, _), ConstantStrPE(_, "rg"))) => }
   }
 
   test("Short string interpolating with call") {
-    compile(CombinatorParsers.expression, """"bl{ns(4)}rg"""") shouldHave {
+    compile(CombinatorParsers.expression(true), """"bl{ns(4)}rg"""") shouldHave {
       case StrInterpolatePE(_,
         Vector(
           ConstantStrPE(_, "bl"),
@@ -68,11 +68,11 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("Long string interpolating") {
-    compile(CombinatorParsers.expression, "\"\"\"bl{4}rg\"\"\"") shouldHave { case StrInterpolatePE(_, Vector(ConstantStrPE(_, "bl"), ConstantIntPE(_, 4, _), ConstantStrPE(_, "rg"))) => }
+    compile(CombinatorParsers.expression(true), "\"\"\"bl{4}rg\"\"\"") shouldHave { case StrInterpolatePE(_, Vector(ConstantStrPE(_, "bl"), ConstantIntPE(_, 4, _), ConstantStrPE(_, "rg"))) => }
   }
 
   test("Long string interpolating with call") {
-    compile(CombinatorParsers.expression, "\"\"\"bl\"{ns(4)}rg\"\"\"") shouldHave {
+    compile(CombinatorParsers.expression(true), "\"\"\"bl\"{ns(4)}rg\"\"\"") shouldHave {
       case StrInterpolatePE(_,
       Vector(
         ConstantStrPE(_, "bl\""),
@@ -82,31 +82,37 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("add as call") {
-    compile(CombinatorParsers.expression,"+(4, 5)") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "+"), None), Vector(ConstantIntPE(_, 4, _), ConstantIntPE(_, 5, _)),LoadAsBorrowP(Some(ReadonlyP))) => }
+    compile(CombinatorParsers.expression(true),"+(4, 5)") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "+"), None), Vector(ConstantIntPE(_, 4, _), ConstantIntPE(_, 5, _)),LoadAsBorrowP(Some(ReadonlyP))) => }
+  }
+
+  test("range") {
+    compile(CombinatorParsers.expression(true),"a..b") shouldHave {
+      case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "range"), None), Vector(_, _),LoadAsBorrowP(Some(ReadonlyP))) =>
+    }
   }
 
   test("regular call") {
-    compile(CombinatorParsers.expression,"x(y)") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "x"), None), Vector(LookupPE(NameP(_, "y"), None)),LoadAsBorrowP(Some(ReadonlyP))) => }
+    compile(CombinatorParsers.expression(true),"x(y)") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "x"), None), Vector(LookupPE(NameP(_, "y"), None)),LoadAsBorrowP(Some(ReadonlyP))) => }
   }
 
   test("6") {
-    compile(CombinatorParsers.expression,"not y") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "not"), None), Vector(LookupPE(NameP(_, "y"), None)),LoadAsBorrowP(Some(ReadonlyP))) => }
+    compile(CombinatorParsers.expression(true),"not y") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "not"), None), Vector(LookupPE(NameP(_, "y"), None)),LoadAsBorrowP(Some(ReadonlyP))) => }
   }
 
   test("Pointing result of function call") {
-    compile(CombinatorParsers.expression,"*Muta()") shouldHave { case LoadPE(_,FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "Muta"), None), Vector(),LoadAsBorrowP(Some(ReadonlyP))), LoadAsPointerP(Some(ReadonlyP))) => }
+    compile(CombinatorParsers.expression(true),"*Muta()") shouldHave { case LoadPE(_,FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "Muta"), None), Vector(),LoadAsBorrowP(Some(ReadonlyP))), LoadAsPointerP(Some(ReadonlyP))) => }
   }
 
   test("Borrowing result of function call") {
-    compile(CombinatorParsers.expression,"&Muta()") shouldHave { case LoadPE(_,FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "Muta"), None), Vector(),LoadAsBorrowP(Some(ReadonlyP))), LoadAsBorrowP(Some(ReadonlyP))) => }
+    compile(CombinatorParsers.expression(true),"&Muta()") shouldHave { case LoadPE(_,FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "Muta"), None), Vector(),LoadAsBorrowP(Some(ReadonlyP))), LoadAsBorrowP(Some(ReadonlyP))) => }
   }
 
   test("inline call") {
-    compile(CombinatorParsers.expression,"inl Muta()") shouldHave { case FunctionCallPE(_,Some(UnitP(_)),_,false,LookupPE(NameP(_,"Muta"),None),Vector(),LoadAsBorrowP(Some(ReadonlyP))) => }
+    compile(CombinatorParsers.expression(true),"inl Muta()") shouldHave { case FunctionCallPE(_,Some(UnitP(_)),_,false,LookupPE(NameP(_,"Muta"),None),Vector(),LoadAsBorrowP(Some(ReadonlyP))) => }
   }
 
   test("Method call") {
-    compile(CombinatorParsers.expression,"x . shout ()") shouldHave {
+    compile(CombinatorParsers.expression(true),"x . shout ()") shouldHave {
       case MethodCallPE(
       _,
       _,
@@ -118,7 +124,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("Method on member") {
-    compile(CombinatorParsers.expression,"x.moo.shout()") shouldHave {
+    compile(CombinatorParsers.expression(true),"x.moo.shout()") shouldHave {
       case MethodCallPE(_,
         _,
         DotPE(_,
@@ -134,7 +140,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("Moving method call") {
-    compile(CombinatorParsers.expression,"(x ).shout()") shouldHave {
+    compile(CombinatorParsers.expression(true),"(x ).shout()") shouldHave {
       case MethodCallPE(_,
       _,
         PackPE(_, Vector(LookupPE(NameP(_,"x"),None))),
@@ -145,7 +151,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("Map method call") {
-    compile(CombinatorParsers.expression,"x*. shout()") shouldHave {
+    compile(CombinatorParsers.expression(true),"x*. shout()") shouldHave {
       case MethodCallPE(_,
       _,
       LookupPE(NameP(_,"x"),None),
@@ -156,7 +162,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("Templated function call") {
-    compile(CombinatorParsers.expression,"toArray<imm>( *result)") shouldHave {
+    compile(CombinatorParsers.expression(true),"toArray<imm>( *result)") shouldHave {
       case FunctionCallPE(_,None,_,false,
       LookupPE(NameP(_, "toArray"),Some(TemplateArgsP(_, Vector(MutabilityPT(_,ImmutableP))))),
         Vector(LoadPE(_,LookupPE(NameP(_, "result"),None),LoadAsPointerP(Some(ReadonlyP)))),
@@ -165,13 +171,13 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("Templated method call") {
-    compile(CombinatorParsers.expression,"result.toArray <imm> ()") shouldHave {
+    compile(CombinatorParsers.expression(true),"result.toArray <imm> ()") shouldHave {
       case MethodCallPE(_,_,LookupPE(NameP(_,"result"),None),_,LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadonlyP)),false,LookupPE(NameP(_,"toArray"),Some(TemplateArgsP(_, Vector(MutabilityPT(_,ImmutableP))))),Vector()) =>
     }
   }
 
   test("Custom binaries") {
-    compile(CombinatorParsers.expression,"not y florgle not x") shouldHave {
+    compile(CombinatorParsers.expression(true),"not y florgle not x") shouldHave {
       case FunctionCallPE(_,None,_,false,
       LookupPE(NameP(_, "florgle"), None),
           Vector(
@@ -188,7 +194,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("Custom with noncustom binaries") {
-    compile(CombinatorParsers.expression,"a + b florgle x * y") shouldHave {
+    compile(CombinatorParsers.expression(true),"a + b florgle x * y") shouldHave {
       case FunctionCallPE(_,None,_,false,
         LookupPE(NameP(_, "florgle"), None),
           Vector(
@@ -205,10 +211,10 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("Template calling") {
-    compile(CombinatorParsers.expression,"MyNone< int >()") shouldHave {
+    compile(CombinatorParsers.expression(true),"MyNone< int >()") shouldHave {
       case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "MyNone"), Some(TemplateArgsP(_, Vector(NameOrRunePT(NameP(_, "int")))))),Vector(), LoadAsBorrowP(Some(ReadonlyP))) =>
     }
-    compile(CombinatorParsers.expression,"MySome< MyNone <int> >()") shouldHave {
+    compile(CombinatorParsers.expression(true),"MySome< MyNone <int> >()") shouldHave {
       case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "MySome"), Some(TemplateArgsP(_, Vector(CallPT(_,NameOrRunePT(NameP(_, "MyNone")),Vector(NameOrRunePT(NameP(_, "int")))))))),Vector(), LoadAsBorrowP(Some(ReadonlyP))) =>
     }
   }
@@ -217,25 +223,25 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
     // It turns out, this was only parsing "9 >=" because it was looking for > specifically (in fact, it was looking
     // for + - * / < >) so it parsed as >(9, =) which was bad. We changed the infix operator parser to expect the
     // whitespace on both sides, so that it was forced to parse the entire thing.
-    compile(CombinatorParsers.expression,"9 >= 3") shouldHave {
+    compile(CombinatorParsers.expression(true),"9 >= 3") shouldHave {
       case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, ">="),None),Vector(ConstantIntPE(_, 9, _), ConstantIntPE(_, 3, _)),LoadAsBorrowP(Some(ReadonlyP))) =>
     }
   }
 
   test("Indexing") {
-    compile(CombinatorParsers.expression,"arr [4]") shouldHave {
+    compile(CombinatorParsers.expression(true),"arr [4]") shouldHave {
       case IndexPE(_,LookupPE(NameP(_,arr),None),Vector(ConstantIntPE(_, 4, _))) =>
     }
   }
 
   test("Identity lambda") {
-    compile(CombinatorParsers.expression, "{_}") shouldHave {
+    compile(CombinatorParsers.expression(true), "{_}") shouldHave {
       case LambdaPE(_,FunctionP(_,FunctionHeaderP(_, None,Vector(),None,None,None,FunctionReturnP(_, _, _)),Some(BlockPE(_,Vector(MagicParamLookupPE(_)))))) =>
     }
   }
 
   test("20") {
-    compile(CombinatorParsers.expression,
+    compile(CombinatorParsers.expression(true),
       "weapon.owner.map()") shouldHave {
       case MethodCallPE(_,
       _,
@@ -251,19 +257,19 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("!=") {
-    compile(CombinatorParsers.expression,"3 != 4") shouldHave {
+    compile(CombinatorParsers.expression(true),"3 != 4") shouldHave {
       case FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "!="), None), Vector(ConstantIntPE(_, 3, _), ConstantIntPE(_, 4, _)), LoadAsBorrowP(Some(ReadonlyP))) =>
     }
   }
 
   test("lambda without surrounding parens") {
-    compile(CombinatorParsers.expression, "{ 0 }()") shouldHave {
+    compile(CombinatorParsers.expression(true), "{ 0 }()") shouldHave {
       case FunctionCallPE(_,None,_,false,LambdaPE(None,_),Vector(),_) =>
     }
   }
 
   test("Test templated lambda param") {
-    val program = compile(CombinatorParsers.expression, "((a){a + a})!(3)")
+    val program = compile(CombinatorParsers.expression(true), "((a){a + a})!(3)")
     program shouldHave {
       case FunctionCallPE(_, None, _, false, PackPE(_, Vector(LambdaPE(_, _))), Vector(ConstantIntPE(_, 3, _)),UseP) =>
     }
@@ -277,7 +283,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
 
 
   test("Function call") {
-    val program = compile(CombinatorParsers.expression, "call(sum)")
+    val program = compile(CombinatorParsers.expression(true), "call(sum)")
     //    val main = program.lookupFunction("main")
 
     program shouldHave {
@@ -306,7 +312,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("parens") {
-    compile(CombinatorParsers.expression,
+    compile(CombinatorParsers.expression(true),
       "2 * (5 - 7)") shouldHave {
         case FunctionCallPE(_,None,_,false,
           LookupPE(NameP(_,"*"),None),
@@ -324,7 +330,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
 
   test("static array " +
     "from values") {
-    compile(CombinatorParsers.expression,
+    compile(CombinatorParsers.expression(true),
       "[][3, 5, 6]") shouldHave {
 //      case StaticArrayFromValuesPE(_,Vector(ConstantIntPE(_, 3, _), ConstantIntPE(_, 5, _), ConstantIntPE(_, 6, _))) =>
 //      case null =>
@@ -333,7 +339,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("static array from callable with rune") {
-    compile(CombinatorParsers.expression,
+    compile(CombinatorParsers.expression(true),
       "[N]({_ * 2})") shouldHave {
 //      case StaticArrayFromCallablePE(_,NameOrRunePT(NameP(_, "N")),_,_) =>
 //      case null =>
@@ -347,7 +353,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("static array from callable") {
-    compile(CombinatorParsers.expression,
+    compile(CombinatorParsers.expression(true),
       "[3](triple)") shouldHave {
       case ConstructArrayPE(_,
         None,
@@ -359,7 +365,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("mutable static array from callable") {
-    compile(CombinatorParsers.expression,
+    compile(CombinatorParsers.expression(true),
       "[mut 3](triple)") shouldHave {
       case ConstructArrayPE(_,
         Some(MutabilityPT(_,MutableP)),
@@ -371,7 +377,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("mutable static array from callable, no size") {
-    compile(CombinatorParsers.expression,
+    compile(CombinatorParsers.expression(true),
       "[mut][3, 4, 5]") shouldHave {
       case ConstructArrayPE(_,
         Some(MutabilityPT(_,MutableP)),
@@ -383,7 +389,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("runtime array from callable with rune") {
-    compile(CombinatorParsers.expression,
+    compile(CombinatorParsers.expression(true),
       "[*](6, {_ * 2})") shouldHave {
       //      case StaticArrayFromCallablePE(_,NameOrRunePT(NameP(_, "N")),_,_) =>
       //      case null =>
@@ -397,7 +403,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("runtime array from callable") {
-    compile(CombinatorParsers.expression,
+    compile(CombinatorParsers.expression(true),
       "[*](6, triple)") shouldHave {
       case ConstructArrayPE(_,
         None,
@@ -419,7 +425,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
         Vector(_, _)) =>
     }
 
-    compile(CombinatorParsers.expression,
+    compile(CombinatorParsers.expression(true),
       "[mut *](6, triple)") shouldHave {
       case ConstructArrayPE(_,
         Some(MutabilityPT(_,MutableP)),
@@ -432,7 +438,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
 
 
   test("Call callable expr") {
-    compile(CombinatorParsers.expression,
+    compile(CombinatorParsers.expression(true),
       "(something.callable)(3)") shouldHave {
       case FunctionCallPE(
           _,None,_,false,
@@ -442,7 +448,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("Call callable expr with readwrite") {
-    compile(CombinatorParsers.expression,
+    compile(CombinatorParsers.expression(true),
       "(something.callable)!(3)") shouldHave {
       case FunctionCallPE(
         _,None,_,false,
@@ -454,18 +460,18 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("Array indexing") {
-    compile(CombinatorParsers.expression,
+    compile(CombinatorParsers.expression(true),
       "board[i]") shouldHave {
       case IndexPE(_,LookupPE(NameP(_,"board"),None),Vector(LookupPE(NameP(_,"i"),None))) =>
     }
-    compile(CombinatorParsers.expression,
+    compile(CombinatorParsers.expression(true),
       "this.board[i]") shouldHave {
       case IndexPE(_,DotPE(_,LookupPE(NameP(_,"this"),None),_,false,NameP(_,"board")),Vector(LookupPE(NameP(_,"i"),None))) =>
     }
   }
 
   test("mod and == precedence") {
-    compile(CombinatorParsers.expression,
+    compile(CombinatorParsers.expression(true),
       """8 mod 2 == 0""") shouldHave {
       case FunctionCallPE(_,
         None,_,false,
@@ -484,7 +490,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("or and == precedence") {
-    compile(CombinatorParsers.expression,
+    compile(CombinatorParsers.expression(true),
       """2 == 0 or false""") shouldHave {
       case OrPE(_,
         BlockPE(_,
@@ -503,7 +509,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   test("Parenthesized method syntax will move instead of borrow") {
     val compilation =
       compile(
-        CombinatorParsers.expression,
+        CombinatorParsers.expression(true),
         """(bork).consumeBork()""".stripMargin)
     val (subjectExpr, loadAs) =
       compilation shouldHave {
@@ -523,7 +529,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
 
 //  // See https://github.com/ValeLang/Vale/issues/108
 //  test("Calling with space") {
-//    compile(CombinatorParsers.expression,
+//    compile(CombinatorParsers.expression(true),
 //      """len (cached_dims)""") shouldHave {
 //      case FunctionCallPE(_,_,_,_,LookupPE(StringP(_,"len"),None),Vector(LookupPE(StringP(_,"cached_dims"),None)),_) =>
 //    }

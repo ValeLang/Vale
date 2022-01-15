@@ -82,6 +82,10 @@ class FunctionTemplarMiddleLayer(
             case None => vcurious()
             case Some(KindTemplata(ir @ InterfaceTT(_))) => ir
             case Some(it @ InterfaceTemplata(_, _)) => structTemplar.getInterfaceRef(temputs, range, it, Vector.empty)
+            case Some(KindTemplata(kind)) => {
+              throw CompileErrorExceptionT(CantImplNonInterface(range, kind))
+            }
+            case _ => vwat()
           }
         Some(OverrideT(interface))
       }

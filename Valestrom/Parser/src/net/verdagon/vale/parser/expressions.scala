@@ -46,6 +46,15 @@ case class IfPE(range: Range, condition: BlockPE, thenBody: BlockPE, elseBody: B
 case class WhilePE(range: Range, condition: BlockPE, body: BlockPE) extends IExpressionPE {
   override def hashCode(): Int = vcurious();
 }
+case class ResultPE(range: Range, sourceExpr: IExpressionPE) extends IExpressionPE {
+  override def hashCode(): Int = vcurious();
+}
+case class EachPE(range: Range, entryPattern: PatternPP, iterableExpr: IExpressionPE, body: BlockPE) extends IExpressionPE {
+  override def hashCode(): Int = vcurious();
+}
+case class RangePE(range: Range, fromExpr: BlockPE, toExpr: BlockPE) extends IExpressionPE {
+  override def hashCode(): Int = vcurious();
+}
 case class DestructPE(range: Range, inner: IExpressionPE) extends IExpressionPE {
   override def hashCode(): Int = vcurious();
 }

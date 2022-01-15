@@ -837,6 +837,14 @@ object ParserVonifier {
             VonMember("left", vonifyExpression(left)),
             VonMember("args", VonArray(None, args.map(vonifyExpression).toVector))))
       }
+      case ResultPE(range, source) => {
+        VonObject(
+          "Result",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("source", vonifyExpression(source))))
+      }
       case ConstantIntPE(range, value, bits) => {
         VonObject(
           "ConstantInt",

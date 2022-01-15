@@ -51,7 +51,7 @@ object ParseErrorHumanizer {
         case BadMutDestinationError(pos, cause) => "Parse error somewhere inside this set destination expression. Imprecise inner error: " + humanizeCombinatorParseError(fileMap, fileCoord, cause)
         case BadMutSourceError(pos, cause) => "Parse error somewhere inside this set source expression. Imprecise inner error: " + humanizeCombinatorParseError(fileMap, fileCoord, cause)
         case BadLetDestinationError(pos, cause) => "Parse error somewhere inside this let destination pattern. Imprecise inner error: " + humanizeCombinatorParseError(fileMap, fileCoord, cause)
-        case BadLetSourceError(pos, cause) => "Parse error somewhere inside this let source expression. Imprecise inner error: " + humanizeCombinatorParseError(fileMap, fileCoord, cause)
+        case BadLetSourceError(pos, cause) => "Parse error somewhere inside this let source expression. Imprecise inner error: " + humanize(fileMap, fileCoord, cause)
       }
     val posStr = humanizePos(fileMap, CodeLocationS(fileCoord, err.pos))
     val nextStuff = nextThingAndRestOfLine(fileMap, fileCoord, err.pos)

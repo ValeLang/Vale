@@ -87,6 +87,10 @@ trait TemplexParser extends RegexParsers with ParserUtils {
   }
 
   private[parser] def templex: Parser[ITemplexPT] = {
-    unariedTemplex
+    // This is here so if we say:
+    //   foreach x in myList { ... }
+    // We won't interpret `x in` as a pattern, because
+    // we don't interpret `in` as a valid templex.
+    not("in ") ~> unariedTemplex
   }
 }

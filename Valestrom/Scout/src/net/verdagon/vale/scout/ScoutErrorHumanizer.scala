@@ -14,6 +14,7 @@ object ScoutErrorHumanizer {
     val errorStrBody =
       (err match {
         case RangedInternalErrorS(range, message) => " " + message
+        case UnimplementedExpression(range, expressionName) => s": ${expressionName} not supported yet.\n"
         case CouldntFindVarToMutateS(range, name) => s": No variable named ${name}. Try declaring it above, like `${name} = 42;`\n"
         case CantOwnershipInterfaceInImpl(range) => s": Can only impl a plain interface, remove symbol."
         case CantOwnershipStructInImpl(range) => s": Only a plain struct/interface can be in an impl, remove symbol."
@@ -167,7 +168,7 @@ object ScoutErrorHumanizer {
       case CallSR(range, resultRune, templateRune, argRunes) => humanizeRune(resultRune.rune) + " = " + humanizeRune(templateRune.rune) + "<" + argRunes.map(_.rune).map(humanizeRune).mkString(", ") + ">"
       case LookupSR(range, rune, name) => humanizeRune(rune.rune) + " = " + humanizeImpreciseName(name)
       case LiteralSR(range, rune, literal) => humanizeRune(rune.rune) + " = " + humanizeLiteral(literal)
-      case AugmentSR(range, resultRune, literal, innerRune) => humanizeRune(resultRune.rune) + " = " + literal.map(humanizeLiteral).mkString("") + humanizeRune(innerRune.rune)
+      case AugmentSR(range, resultRune, ownership, permission, innerRune) => humanizeRune(resultRune.rune) + " = " + humanizeOwnership(ownership) + humanizePermission(permission) + humanizeRune(innerRune.rune)
       case EqualsSR(range, left, right) => humanizeRune(left.rune) + " = " + humanizeRune(right.rune)
       case RuneParentEnvLookupSR(range, rune) => "inherit " + humanizeRune(rune.rune)
       case PackSR(range, resultRune, members) => humanizeRune(resultRune.rune) + " = (" + members.map(x => humanizeRune(x.rune)).mkString(", ") + ")"

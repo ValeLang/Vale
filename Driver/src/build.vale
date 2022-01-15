@@ -87,6 +87,18 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
           "true",
           "Whether to print out more detailed errors."),
         Flag(
+          "--census",
+          FLAG_BOOL(),
+          "Whether to add run-time checks to debug the compiler itself.",
+          "true",
+          "Whether to add run-time checks to debug the compiler itself."),
+        Flag(
+          "--asan",
+          FLAG_BOOL(),
+          "Whether to run with ASan.",
+          "true",
+          "Whether to run with ASan."),
+        Flag(
           "--debug_output",
           FLAG_BOOL(),
           "Whether to print out more detailed errors.",
@@ -194,6 +206,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
   flares = parsed_flags.get_bool_flag("--flares", false);
   gen_heap = parsed_flags.get_bool_flag("--gen_heap", false);
   census = parsed_flags.get_bool_flag("--census", false);
+  asan = parsed_flags.get_bool_flag("--asan", false);
   verify = parsed_flags.get_bool_flag("--verify", false);
   debug_symbols = parsed_flags.get_nothing_flag("-g");
   llvm_ir = parsed_flags.get_bool_flag("--llvm_ir", false);
@@ -427,7 +440,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
           windows,
           &clang_inputs,
           &executable_name,
-          census,
+          asan,
           debug_symbols,
           &output_dir);
   println("Running:\n" + clang_process.command);

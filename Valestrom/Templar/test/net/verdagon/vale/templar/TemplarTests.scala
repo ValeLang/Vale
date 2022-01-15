@@ -1501,7 +1501,7 @@ class TemplarTests extends FunSuite with Matchers {
         RangeS.testZero, fireflyCoord))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
-      CantImplStruct(
+      CantImplNonInterface(
         RangeS.testZero, fireflyKind))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,

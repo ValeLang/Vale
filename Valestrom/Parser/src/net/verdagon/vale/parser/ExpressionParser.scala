@@ -49,15 +49,15 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   }
 
   private[parser] def badLetBegin: Parser[BadLetBegin] = {
-    pos ~ expressionLevel5 ~ (pos <~ white <~ "=" <~ white) ^^ {
+    pos ~ expressionLevel5(true) ~ (pos <~ white <~ "=" <~ white) ^^ {
       case begin ~ _ ~ end => BadLetBegin(Range(begin, end))
     }
   }
 
-  private[parser] def let: Parser[LetPE] = {
+  private[parser] def let(allowLambda: Boolean): Parser[LetPE] = {
 //    (opt(templateRulesPR) <~ optWhite) ~
       letBegin ~
-        (expression) ~
+        (expression(allowLambda)) ~
         pos ^^ {
       case LetBegin(begin, pattern) ~ expr ~ end => {
         // We just threw away the topLevelRunes because let statements cant have them.
@@ -66,10 +66,10 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     }
   }
 
-  private[parser] def badLet: Parser[BadLetPE] = {
+  private[parser] def badLet(allowLambda: Boolean): Parser[BadLetPE] = {
     //    (opt(templateRulesPR) <~ optWhite) ~
     badLetBegin ~
-      (expression) ~
+      (expression(allowLambda)) ~
       pos ^^ {
       case BadLetBegin(range) ~ expr ~ end => {
         // We just threw away the topLevelRunes because let statements cant have them.
@@ -81,7 +81,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   private[parser] def borrow: Parser[IExpressionPE] = {
     // TODO: split the 'a rule out when we implement regions
     pos ~
-      (("&"| ("'" ~ opt(exprIdentifier <~ optWhite) <~ "&") | ("'" ~ exprIdentifier)) ~> opt("!") ~ (optWhite ~> postfixableExpressions)) ~
+      (("&"| ("'" ~ opt(exprIdentifier <~ optWhite) <~ "&") | ("'" ~ exprIdentifier)) ~> opt("!") ~ (optWhite ~> postfixableExpressions(true))) ~
       pos ^^ {
       case begin ~ (maybeReadwrite ~ inner) ~ end => {
         LoadPE(Range(begin, end), inner, LoadAsBorrowP(Some(if (maybeReadwrite.nonEmpty) ReadwriteP else ReadonlyP)))
@@ -92,7 +92,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   private[parser] def point: Parser[IExpressionPE] = {
     // TODO: split the 'a rule out when we implement regions
     pos ~
-      (("*"| ("'" ~ opt(exprIdentifier <~ optWhite) <~ "*") | ("'" ~ exprIdentifier)) ~> opt("!") ~ (optWhite ~> postfixableExpressions)) ~
+      (("*"| ("'" ~ opt(exprIdentifier <~ optWhite) <~ "*") | ("'" ~ exprIdentifier)) ~> opt("!") ~ (optWhite ~> postfixableExpressions(true))) ~
       pos ^^ {
       case begin ~ (maybeReadwrite ~ inner) ~ end => {
         LoadPE(Range(begin, end), inner, LoadAsPointerP(Some(if (maybeReadwrite.nonEmpty) ReadwriteP else ReadonlyP)))
@@ -102,7 +102,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
 
   private[parser] def weakPoint: Parser[IExpressionPE] = {
     pos ~
-      ("**" ~> optWhite ~> opt("!") ~ postfixableExpressions) ~
+      ("**" ~> optWhite ~> opt("!") ~ postfixableExpressions(true)) ~
       pos ^^ {
       case begin ~ (maybeReadwrite ~ inner) ~ end => {
         LoadPE(Range(begin, end), inner, LoadAsWeakP(if (maybeReadwrite.nonEmpty) ReadwriteP else ReadonlyP))
@@ -111,7 +111,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   }
 
   private[parser] def not: Parser[IExpressionPE] = {
-    pos ~ (pstr("not") <~ white) ~ postfixableExpressions ~ pos ^^ {
+    pos ~ (pstr("not") <~ white) ~ postfixableExpressions(true) ~ pos ^^ {
       case begin ~ not ~ expr ~ end => {
         FunctionCallPE(Range(begin, end), None, Range(begin, begin), false, LookupPE(not, None), Vector(expr), LoadAsBorrowP(Some(ReadonlyP)))
       }
@@ -119,7 +119,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   }
 
   private[parser] def destruct: Parser[IExpressionPE] = {
-    (pos <~ "destruct" <~ white) ~ expression ~ pos ^^ {
+    (pos <~ "destruct" <~ white) ~ expression(true) ~ pos ^^ {
       case begin ~ inner ~ end => {
         DestructPE(Range(begin, end), inner)
       }
@@ -127,25 +127,29 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   }
 
   private[parser] def ret: Parser[IExpressionPE] = {
-    pos ~ ("ret" ~> white ~> expression) ~ pos ^^ {
+    pos ~ ("ret" ~> white ~> expression(true)) ~ pos ^^ {
       case begin ~ sourceExpr ~ end => ReturnPE(Range(begin, end), sourceExpr)
     }
   }
 
   private[parser] def mutate: Parser[IExpressionPE] = {
-    pos ~ (("set"|"mut") ~> white ~> expression <~ white <~ "=" <~ white) ~ expression ~ pos ^^ {
+    pos ~ (("set"|"mut") ~> white ~> expression(true) <~ white <~ "=" <~ white) ~ expression(true) ~ pos ^^ {
       case begin ~ destinationExpr ~ sourceExpr ~ end => MutatePE(Range(begin, end), destinationExpr, sourceExpr)
     }
   }
 
   private[parser] def bracedBlock: Parser[BlockPE] = {
-    pos ~ ("{" ~> optWhite ~> blockExprs <~ optWhite <~ "}") ~ pos ^^ {
+    pos ~ ("{" ~> optWhite ~> blockExprs(true) <~ optWhite <~ "}") ~ pos ^^ {
       case begin ~ exprs ~ end => BlockPE(Range(begin, end), exprs)
     }
   }
 
   private[parser] def eachOrEachI: Parser[FunctionCallPE] = {
-    pos ~ (pstr("eachI") | pstr("each")) ~! (white ~> expressionLevel9 <~ white) ~ lambda ~ pos ^^ {
+    (pos <~ opt("parallel" <~ white)) ~
+      (pstr("eachI") | pstr("each")) ~!
+      (white ~> expressionLevel9(false) <~ white) ~
+      lambda ~
+      pos ^^ {
       case begin ~ eachI ~ collection ~ lam ~ end => {
         FunctionCallPE(
           Range(begin, end),
@@ -159,8 +163,24 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     }
   }
 
+  private[parser] def foreach: Parser[EachPE] = {
+    (pos <~ opt("parallel" <~ white) <~ pstr("foreach") <~ white) ~!
+      (atomPattern <~ white <~ "in" <~ white) ~
+      (expressionLevel9(false) <~ optWhite) ~
+      bracedBlock ~
+      pos ^^ {
+      case begin ~ pattern ~ iterableExpr ~ block ~ end => {
+        EachPE(
+          Range(begin, end),
+          pattern,
+          iterableExpr,
+          block)
+      }
+    }
+  }
+
   private[parser] def whiile: Parser[WhilePE] = {
-    pos ~ ("while" ~>! optWhite ~> pos) ~ ("(" ~> optWhite ~> blockExprs <~ optWhite <~ ")") ~ (pos <~ optWhite) ~ bracedBlock ~ pos ^^ {
+    pos ~ ("while" ~>! optWhite ~> pos) ~ blockExprs(false) ~ (pos <~ optWhite) ~ bracedBlock ~ pos ^^ {
       case begin ~ condBegin ~ condExprs ~ condEnd ~ thenBlock ~ end => {
         WhilePE(Range(begin, end), BlockPE(Range(condBegin, condEnd), condExprs), thenBlock)
       }
@@ -169,7 +189,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
 
   private[parser] def mat: Parser[MatchPE] = {
     pos ~
-        ("mat" ~> white ~> postfixableExpressions <~ white) ~
+        ("mat" ~> white ~> postfixableExpressions(false) <~ white) ~
         ("{" ~> optWhite ~> repsep(caase, optWhite) <~ optWhite <~ "}") ~
         pos ^^ {
       case begin ~ condExpr ~ lambdas ~ end => {
@@ -179,7 +199,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   }
 
   private[parser] def ifPart: Parser[(BlockPE, BlockPE)] = {
-    ("if" ~> optWhite ~> pos) ~ ("(" ~> optWhite ~> (let | badLet | expression) <~ optWhite <~ ")") ~ (pos <~ optWhite) ~ bracedBlock ^^ {
+    ("if" ~> optWhite ~> pos) ~ (let(false) | badLet(false) | expression(false)) ~ (pos <~ optWhite) ~ bracedBlock ^^ {
       case condBegin ~ condExpr ~ condEnd ~ thenLambda => {
         (BlockPE(Range(condBegin, condEnd), Vector(condExpr)), thenLambda)
       }
@@ -222,14 +242,15 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     // because it mistakenly successfully parses {_ + _} then dies on the next part.
     (pos ~ ("..." ~> pos) ^^ { case begin ~ end => LookupPE(NameP(Range(begin, end), "..."), None) }) |
     (mutate <~ optWhite <~ ";") |
-    (let <~ optWhite <~ ";") |
-    (badLet <~ optWhite <~ ";") |
+    (let(true) <~ optWhite <~ ";") |
+    (badLet(true) <~ optWhite <~ ";") |
     mat |
     (destruct <~ optWhite <~ ";") |
     whiile |
+    foreach |
     eachOrEachI |
     ifLadder |
-    (expression <~ ";") |
+    (expression(true) <~ ";") |
     blockStatement
   }
 
@@ -256,7 +277,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     (pos ~ "\\}" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "}") }) |
     (pos ~ "\n" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\n") }) |
     (pos ~ "\r" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\r") }) |
-    ("{" ~> expression <~ "}") |
+    ("{" ~> expression(true) <~ "}") |
     (pos ~ (not("\\") ~> not("\"") ~> ".".r) ~ pos ^^ { case begin ~ thing ~ end => ConstantStrPE(Range(begin, end), thing) })
   }
 
@@ -280,7 +301,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     (pos ~ "\\}" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "}") }) |
     (pos ~ "\n" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\n") }) |
     (pos ~ "\r" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\r") }) |
-    ("{" ~> expression <~ "}") |
+    ("{" ~> expression(true) <~ "}") |
     (pos ~ (not("\"\"\"") ~> ".".r) ~ pos ^^ { case begin ~ thing ~ end => ConstantStrPE(Range(begin, end), thing) })
   }
 
@@ -324,12 +345,8 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     }
   }
 
-  private[parser] def expressionElementLevel1: Parser[IExpressionPE] = {
-    (pos ~ ("..." ~> pos) ^^ { case begin ~ end => LookupPE(NameP(Range(begin, end), "..."), None) }) |
-    stringExpr |
-      integerExpression |
-      bool |
-      lambda |
+  private[parser] def expressionElementLevel1(allowLambda: Boolean): Parser[IExpressionPE] = {
+    def shortcall: Parser[IExpressionPE] = {
       (pos ~ ("()" ~> pos) ^^ { // hack for shortcalling syntax highlighting
         case begin ~ end => {
           FunctionCallPE(
@@ -342,12 +359,21 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
             LoadAsBorrowP((None)))
         }
       }) |
-//      callNamed |
-//      callCallable |
-      (pos ~ packExpr ~ pos ^^ {
-        case begin ~ (p @ PackPE(_, Vector(inner))) ~ end => p
-        case begin ~ inners ~ end => ShortcallPE(Range(begin, end), inners.inners)
-      }) |
+        (pos ~ packExpr ~ pos ^^ {
+          case begin ~ (p @ PackPE(_, Vector(inner))) ~ end => p
+          case begin ~ inners ~ end => ShortcallPE(Range(begin, end), inners.inners)
+        })
+    }
+    def ellipsis: Parser[IExpressionPE] = {
+      (pos ~ ("..." ~> pos) ^^ { case begin ~ end => LookupPE(NameP(Range(begin, end), "..."), None) })
+    }
+
+    ellipsis |
+    stringExpr |
+      integerExpression |
+      bool |
+      (if (allowLambda) lambda else failure("Lambda not allowed here")) |
+      shortcall |
       arrayOrTuple |
       templateSpecifiedLookup |
       (lookup ^^ {
@@ -356,8 +382,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
       })
   }
 
-  private[parser] def expressionLevel5: Parser[IExpressionPE] = {
-
+  private[parser] def expressionLevel5(allowLambda: Boolean): Parser[IExpressionPE] = {
     sealed trait IStep
     case class MethodCallStep(
       stepRange: Range,
@@ -423,7 +448,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     // We dont have the optWhite here because we dont want to allow spaces before calls.
     // We dont want to allow moo (4) because we want each statements like this:
     //   each moo (x){ println(x); }
-    (pos ~ existsW("inl") ~ expressionElementLevel1 ~ rep(/*SEE ABOVE optWhite ~> */step) ~ pos ^^ {
+    (pos ~ existsW("inl") ~ expressionElementLevel1(allowLambda) ~ rep(/*SEE ABOVE optWhite ~> */step) ~ pos ^^ {
       case begin ~ maybeInline ~ first ~ restWithDots ~ end => {
         val (_, expr) =
           restWithDots.foldLeft((maybeInline, first))({
@@ -458,14 +483,14 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     })
   }
 
-  private[parser] def expressionLevel9: Parser[IExpressionPE] = {
-    weakPoint | borrow | point | not | expressionLevel5
+  private[parser] def expressionLevel9(allowLambda: Boolean): Parser[IExpressionPE] = {
+    weakPoint | borrow | point | not | expressionLevel5(allowLambda)
   }
 
   // Parses expressions that can contain postfix operators, like function calling
   // or dots.
-  private[parser] def postfixableExpressions: Parser[IExpressionPE] = {
-    ret | mutate | ifLadder | expressionLevel9
+  private[parser] def postfixableExpressions(allowLambda: Boolean): Parser[IExpressionPE] = {
+    ret | mutate | ifLadder | foreach | expressionLevel9(allowLambda)
   }
 
   // Binariable = can have binary operators in it
@@ -488,13 +513,22 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     }
   }
 
-  def expression: Parser[IExpressionPE] = {
+  def expression(allowLambda: Boolean): Parser[IExpressionPE] = {
     // These extra white parsers are here otherwise we stop early when we're just looking for "<", in "<=".
     // Expecting the whitespace means we parse the entire operator.
 
+    val withRange =
+      binariableExpression(
+        postfixableExpressions(allowLambda),
+        optWhite ~> pstr("..") <~ optWhite,
+        (range, op: NameP, left, right) => {
+          FunctionCallPE(
+            range, None, Range(op.range.begin, op.range.begin), false, LookupPE(NameP(op.range, "range"), None), Vector(left, right), LoadAsBorrowP(Some(ReadonlyP)))
+        })
+
     val withMultDiv =
       binariableExpression(
-        postfixableExpressions,
+        withRange,
         white ~> (pstr("*") | pstr("/")) <~ white,
         (range, op: NameP, left, right) => {
           FunctionCallPE(
@@ -588,9 +622,9 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     }
   }
 
-  def blockExprs: Parser[Vector[IExpressionPE]] = {
+  def blockExprs(allowLambda: Boolean): Parser[Vector[IExpressionPE]] = {
     multiStatementBlock |
-      ((expression) ^^ { case e => Vector(e) }) |
+      ((expression(allowLambda)) ^^ { case e => Vector(e) }) |
       (pos ^^ { case p => Vector(VoidPE(Range(p, p)))}) |
       (pos ~ ("..." ~> pos) ^^ { case begin ~ end => Vector(VoidPE(Range(begin, end))) })
   }
@@ -628,8 +662,8 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   private[parser] def constructArrayExpr: Parser[IExpressionPE] = {
     pos ~
       (arrayHeader <~ optWhite) ~
-      (("[" ~ (optWhite ~> repsep(expression, optWhite ~> "," <~ optWhite) <~ optWhite <~ "]")) |
-        ("(" ~ (optWhite ~> repsep(expression, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")"))) ~
+      (("[" ~ (optWhite ~> repsep(expression(true), optWhite ~> "," <~ optWhite) <~ optWhite <~ "]")) |
+        ("(" ~ (optWhite ~> repsep(expression(true), optWhite ~> "," <~ optWhite) <~ optWhite <~ ")"))) ~
       pos ^^ {
       case begin ~ ((maybeMutability, maybeVariability, size)) ~ (argsType ~ valueExprs) ~ end => {
         val initializingIndividualElements = argsType match { case "[" => true case "(" => false }
@@ -645,7 +679,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   }
 
   private[parser] def tuupleExpr: Parser[IExpressionPE] = {
-    pos ~ ("[" ~> optWhite ~> repsep(expression, optWhite ~> "," <~ optWhite) <~ optWhite <~ "]") ~ pos ^^ {
+    pos ~ ("[" ~> optWhite ~> repsep(expression(true), optWhite ~> "," <~ optWhite) <~ optWhite <~ "]") ~ pos ^^ {
       case begin ~ a ~ end => {
         TuplePE(Range(begin, end), a.toVector)
       }
@@ -653,13 +687,13 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   }
 
   private[parser] def packExpr: Parser[PackPE] = {
-    pos ~ ("(" ~> optWhite ~> ("..." ^^^ Vector.empty | repsep(expression, optWhite ~> "," <~ optWhite)) <~ optWhite <~ ")") ~ pos ^^ {
+    pos ~ ("(" ~> optWhite ~> ("..." ^^^ Vector.empty | repsep(expression(true), optWhite ~> "," <~ optWhite)) <~ optWhite <~ ")") ~ pos ^^ {
       case begin ~ inners ~ end => PackPE(Range(begin, end), inners.toVector)
     }
   }
 
   private[parser] def indexExpr: Parser[Vector[IExpressionPE]] = {
-    "[" ~> optWhite ~> repsep(expression, optWhite ~> "," <~ optWhite) <~ optWhite <~ "]" ^^ (a => a.toVector)
+    "[" ~> optWhite ~> repsep(expression(true), optWhite ~> "," <~ optWhite) <~ optWhite <~ "]" ^^ (a => a.toVector)
   }
 
   private[parser] def lambda: Parser[LambdaPE] = {

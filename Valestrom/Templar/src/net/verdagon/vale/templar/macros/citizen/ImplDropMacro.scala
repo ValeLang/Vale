@@ -25,12 +25,11 @@ class ImplDropMacro() extends IOnImplDefinedMacro {
         implA.range,
         FunctionNameS(CallTemplar.VIRTUAL_DROP_FUNCTION_NAME, implA.range.begin),
         Vector(),
-        if (implA.isTemplate) {
-          TemplateTemplataType(implA.identifyingRunes.map(_.rune).map(implA.runeToType), FunctionTemplataType)
-        } else {
-          FunctionTemplataType
-        },
-        implA.identifyingRunes,
+        TemplateTemplataType(
+          implA.identifyingRunes.map(_.rune).map(implA.runeToType) :+ KindTemplataType,
+          FunctionTemplataType),
+        // See NIIRII for why we add the interface rune as an identifying rune.
+        implA.identifyingRunes :+ implA.interfaceKindRune,
         implA.runeToType + (ImplDropCoordRuneS() -> CoordTemplataType) + (ImplDropVoidRuneS() -> CoordTemplataType),
         Vector(
           ParameterS(

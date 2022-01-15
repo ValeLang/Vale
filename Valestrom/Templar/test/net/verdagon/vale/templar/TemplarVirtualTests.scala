@@ -11,6 +11,30 @@ import scala.collection.immutable.Set
 
 class TemplarVirtualTests extends FunSuite with Matchers {
 
+  test("Implementing two interfaces causes no vdrop conflict") {
+    // See NIIRII
+    val compile = TemplarTestCompilation.test(
+      """
+        |import v.builtins.tup.*;
+        |
+        |struct MyStruct {}
+        |
+        |interface IA {}
+        |impl IA for MyStruct;
+        |
+        |interface IB {}
+        |impl IB for MyStruct;
+        |
+        |fn bork(a IA) {}
+        |fn zork(b IB) {}
+        |fn main() export {
+        |  bork(MyStruct());
+        |  zork(MyStruct());
+        |}
+      """.stripMargin)
+    val temputs = compile.expectTemputs()
+  }
+
   test("Basic interface anonymous subclass") {
     val compile = TemplarTestCompilation.test(
       """

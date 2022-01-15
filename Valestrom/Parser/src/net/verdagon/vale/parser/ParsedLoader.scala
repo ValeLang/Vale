@@ -392,6 +392,11 @@ object ParsedLoader {
           loadBlock(getObjectField(jobj, "left")),
           loadBlock(getObjectField(jobj, "right")))
       }
+      case "Result" => {
+        ResultPE(
+          loadRange(getObjectField(jobj, "range")),
+          loadExpression(getObjectField(jobj, "source")))
+      }
       case "And" => {
         AndPE(
           loadRange(getObjectField(jobj, "range")),

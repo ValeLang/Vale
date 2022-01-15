@@ -18,6 +18,7 @@ import scala.util.parsing.input.OffsetPosition
 case class CompileErrorExceptionS(err: ICompileErrorS) extends RuntimeException { override def hashCode(): Int = vcurious() }
 
 sealed trait ICompileErrorS { def range: RangeS }
+case class UnimplementedExpression(range: RangeS, expressionName: String) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
 case class CouldntFindVarToMutateS(range: RangeS, name: String) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
 case class ForgotSetKeywordError(range: RangeS) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
 case class CantUseThatLocalName(range: RangeS, name: String) extends ICompileErrorS { override def hashCode(): Int = vcurious() }

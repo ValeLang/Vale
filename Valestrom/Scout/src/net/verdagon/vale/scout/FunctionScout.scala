@@ -286,7 +286,8 @@ class FunctionScout(scout: Scout) {
       AugmentSR(
         closureParamRange,
         closureParamTypeRune,
-        Vector(OwnershipLiteralSL(BorrowP),PermissionLiteralSL(ReadwriteP)),
+        BorrowP,
+        ReadwriteP,
         closureStructRune)
 
     val closureParamS =

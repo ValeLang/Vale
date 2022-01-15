@@ -346,6 +346,8 @@ case class ConsecutorTE(exprs: Vector[ReferenceExpressionTE]) extends ReferenceE
     case ReturnTE(_) =>
   }).size <= 1)
 
+
+
   def lastReferenceExpr = exprs.last
   override def result = lastReferenceExpr.result
 

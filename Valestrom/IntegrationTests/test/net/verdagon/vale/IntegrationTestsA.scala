@@ -593,6 +593,18 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.run(Vector())
   }
 
+  test("Truncate i64 to i32") {
+    val compile = RunCompilation.test(
+      """
+        |fn main() int export {
+        |  TruncateI64ToI32(4300000000i64)
+        |}
+        |""".stripMargin)
+    val temputs = compile.expectTemputs()
+
+    compile.evalForKind(Vector()) shouldEqual VonInt(5032704)
+  }
+
   test("Test export functions") {
     val compile = RunCompilation.test(
       """fn moo() int export {
@@ -715,4 +727,42 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val rsa = vassertSome(builtinPackage.runtimeSizedArrays.find(_.kind == kindH))
     rsa.elementType.kind shouldEqual IntH.i32
   }
+
+  test("Readwrite thing") {
+    val compile = RunCompilation.test(
+      """
+        |fn each<E, F>(func F) void
+        |rules(
+        |  Prot("__call", (&!F, &E), void)) {
+        |}
+        |
+        |struct PageMember { x int; }
+        |struct SomeMutableThing { x int; }
+        |
+        |fn main() {
+        |  someMutableThing = SomeMutableThing(7);
+        |  each<PageMember>((a &PageMember){ someMutableThing.x; a.x; });
+        |}
+        |
+        |""".stripMargin)
+    val temputs = compile.expectTemputs()
+  }
+
+  test("Parallel foreach") {
+    val compile = RunCompilation.test(
+      """
+        |fn main() export {
+        |  exponent = 3;
+        |
+        |  results =
+        |    parallel foreach i in a..b {
+        |      = pow(i, exponent);
+        |    }
+        |
+        |  println(results);
+        |}
+        |""".stripMargin)
+    val temputs = compile.expectTemputs()
+  }
+
 }

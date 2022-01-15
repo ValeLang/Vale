@@ -7,8 +7,8 @@ import net.verdagon.vale.scout.rules.{IRulexSR, RuneUsage}
 import net.verdagon.vale.scout.{ArgumentRuneS, CodeRuneS, CodeVarNameS, FunctionNameS, GlobalFunctionFamilyNameS, INameS, IRuneS, IRuneTypeRuleError, ITemplataType, ImplicitRuneS, LambdaDeclarationNameS, RuneTypeSolveError, ScoutErrorHumanizer, TopLevelCitizenDeclarationNameS}
 import net.verdagon.vale.solver.{FailedSolve, IIncompleteOrFailedSolve, IncompleteSolve, RuleError, SolverConflict, SolverErrorHumanizer}
 import net.verdagon.vale.templar.OverloadTemplar.{FindFunctionFailure, IFindFunctionFailureReason, InferFailure, RuleTypeSolveFailure, SpecificParamDoesntMatchExactly, SpecificParamDoesntSend, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
-import net.verdagon.vale.templar.ast.{AbstractT, FunctionBannerT, FunctionCalleeCandidate, HeaderCalleeCandidate, ICalleeCandidate, OverrideT, PrototypeT}
-import net.verdagon.vale.templar.infer.{CallResultWasntExpectedType, ITemplarSolverError, KindDoesntImplementInterface, KindIsNotConcrete, KindIsNotInterface, LookupFailed, NoAncestorsSatisfyCall, OneOfFailed, OwnershipDidntMatch, PermissionDidntMatch, ReceivingDifferentOwnerships, SendingNonCitizen, WrongNumberOfTemplateArgs}
+import net.verdagon.vale.templar.ast.{AbstractT, FunctionBannerT, FunctionCalleeCandidate, HeaderCalleeCandidate, ICalleeCandidate, OverrideT, PrototypeT, SignatureT}
+import net.verdagon.vale.templar.infer.{CallResultWasntExpectedType, ITemplarSolverError, KindDoesntImplementInterface, KindIsNotConcrete, KindIsNotInterface, LookupFailed, NoAncestorsSatisfyCall, OneOfFailed, OwnershipDidntMatch, PermissionDidntMatch, ReceivingDifferentOwnerships, SendingNonCitizen, SendingNonIdenticalKinds, WrongNumberOfTemplateArgs}
 import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, CitizenNameT, CitizenTemplateNameT, CodeVarNameT, FullNameT, FunctionNameT, INameT, IVarNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT}
 import net.verdagon.vale.templar.templata.{Conversions, CoordListTemplata, CoordTemplata, ITemplata, IntegerTemplata, InterfaceTemplata, KindTemplata, MutabilityTemplata, OwnershipTemplata, PermissionTemplata, PrototypeTemplata, RuntimeSizedArrayTemplateTemplata, StaticSizedArrayTemplateTemplata, StringTemplata, StructTemplata, VariabilityTemplata}
 import net.verdagon.vale.templar.types.{BoolT, BorrowT, CoordT, FinalT, FloatT, ImmutableT, IntT, InterfaceTT, KindT, MutableT, NeverT, OverloadSet, OwnT, ParamFilter, PointerT, ReadonlyT, ReadwriteT, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StrT, StructTT, VaryingT, VoidT, WeakT}
@@ -46,7 +46,7 @@ object TemplarErrorHumanizer {
             ": Can't move a local (" + name + ") from inside a while loop."
         }
         case CannotSubscriptT(range, tyype) => {
-            ": Cannot subscript type: " + tyype + "!"
+            ": Cannot subscript type: " + humanizeTemplata(codeMap, KindTemplata(tyype)) + "!"
         }
         case CouldntConvertForReturnT(range, expectedType, actualType) => {
             ": Couldn't convert " + humanizeTemplata(codeMap, CoordTemplata(actualType)) + " to expected return type " + humanizeTemplata(codeMap, CoordTemplata(expectedType))
@@ -61,7 +61,7 @@ object TemplarErrorHumanizer {
             ": Function " + printableName(codeMap, functionName) + " return type " + humanizeTemplata(codeMap, CoordTemplata(expectedReturnType)) + " doesn't match body's result: " + humanizeTemplata(codeMap, CoordTemplata(resultType))
         }
         case CouldntFindIdentifierToLoadT(range, name) => {
-            ": Couldn't find anything named `" + name + "`!"
+            ": Couldn't find anything named `" + ScoutErrorHumanizer.humanizeImpreciseName(name) + "`!"
         }
         case NonReadonlyReferenceFoundInPureFunctionParameter(range, name) => {
             ": Parameter `" + name + "` should be readonly, because it's in a pure function."
@@ -104,7 +104,7 @@ object TemplarErrorHumanizer {
           humanizeFindFunctionFailure(verbose, codeMap, range, fff)
         }
         case FunctionAlreadyExists(oldFunctionRange, newFunctionRange, signature) => {
-            ": Function " + signature.fullName.last + " already exists! Previous declaration at:\n" +
+            ": Function " + humanizeSignature(codeMap, signature) + " already exists! Previous declaration at:\n" +
             humanizePos(codeMap, oldFunctionRange.begin)
         }
         case AbstractMethodOutsideOpenInterface(range) => {
@@ -116,8 +116,8 @@ object TemplarErrorHumanizer {
         case WhileConditionIsntBoolean(range, actualType) => {
             ": If condition should be a bool, but was: " + actualType
         }
-        case CantImplStruct(range, struct) => {
-            ": Can't extend a struct: (" + struct + ")"
+        case CantImplNonInterface(range, struct) => {
+            ": Can't extend a non-interface: " + struct
         }
         case TemplarSolverError(range, failedSolve) => {
           val (text, lineBegins) =
@@ -295,6 +295,9 @@ object TemplarErrorHumanizer {
     error match {
       case KindDoesntImplementInterface(sub, suuper) => {
         "Kind " + humanizeTemplata(codeMap, KindTemplata(sub)) + " does not implement interface " + humanizeTemplata(codeMap, KindTemplata(suuper))
+      }
+      case SendingNonIdenticalKinds(sendCoord, receiveCoord) => {
+        "Sending non-identical kinds: " + humanizeTemplata(codeMap, CoordTemplata(sendCoord)) + " and " + humanizeTemplata(codeMap, CoordTemplata(receiveCoord))
       }
       case SendingNonCitizen(kind) => {
         "Sending non-struct non-interface Kind: " + humanizeTemplata(codeMap, KindTemplata(kind))
@@ -522,5 +525,9 @@ object TemplarErrorHumanizer {
       }
       case CitizenTemplateNameT(humanName) => humanName
     }
+  }
+
+  def humanizeSignature(codeMap: FileCoordinateMap[String], signature: SignatureT): String = {
+    humanizeName(codeMap, signature.fullName)
   }
 }

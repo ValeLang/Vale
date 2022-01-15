@@ -39,7 +39,10 @@ case class ExportedImmutableKindDependedOnNonExportedKind(range: RangeS, paackag
 case class TypeExportedMultipleTimes(range: RangeS, paackage: PackageCoordinate, exports: Vector[KindExportT]) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class CantUseUnstackifiedLocal(range: RangeS, localId: IVarNameT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class CantUnstackifyOutsideLocalFromInsideWhile(range: RangeS, localId: IVarNameT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
-case class FunctionAlreadyExists(oldFunctionRange: RangeS, newFunctionRange: RangeS, signature: SignatureT) extends ICompileErrorT {override def range: RangeS = newFunctionRange }
+case class FunctionAlreadyExists(oldFunctionRange: RangeS, newFunctionRange: RangeS, signature: SignatureT) extends ICompileErrorT {
+  override def range: RangeS = newFunctionRange
+  vpass()
+}
 case class CantMutateFinalMember(range: RangeS, fullName2: FullNameT[INameT], memberName: FullNameT[IVarNameT]) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class CantMutateFinalElement(range: RangeS, fullName2: FullNameT[INameT]) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class CantUseReadonlyReferenceAsReadwrite(range: RangeS) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
@@ -55,7 +58,7 @@ case class TemplarSolverError(range: RangeS, failedSolve: IIncompleteOrFailedSol
   vpass()
 }
 //case class TemplarSolverConflict(range: RangeS, conclusions: Map[IRuneS, ITemplata], rune: IRuneS, conflictingNewConclusion: ITemplata) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
-case class CantImplStruct(range: RangeS, parent: StructTT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
+case class CantImplNonInterface(range: RangeS, parent: KindT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 // REMEMBER: Add any new errors to the "Humanize errors" test
 
 case class RangedInternalErrorT(range: RangeS, message: String) extends ICompileErrorT { override def hashCode(): Int = vcurious() }

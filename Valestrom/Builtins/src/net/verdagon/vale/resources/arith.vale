@@ -5,6 +5,8 @@ fn castI32Float(x int) float extern;
 fn int(x float) int { castFloatI32(x) }
 fn castFloatI32(x float) int extern;
 
+fn TruncateI64ToI32(x i64) int extern;
+
 fn -(x int) int { __vbi_negateI32(x) }
 fn __vbi_negateI32(x int) int extern;
 

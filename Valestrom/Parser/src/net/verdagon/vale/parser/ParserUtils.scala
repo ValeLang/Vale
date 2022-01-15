@@ -82,7 +82,7 @@ trait ParserUtils extends RegexParsers {
 
 
   private[parser] def float: Parser[IExpressionPE] = {
-    pos ~ raw"^-?\d+\.\d*".r ~ pos ^^ {
+    pos ~ raw"^-?\d+\.\d+".r ~ pos ^^ {
       case begin ~ thingStr ~ end => ConstantFloatPE(Range(begin, end), thingStr.toFloat)
     }
   }

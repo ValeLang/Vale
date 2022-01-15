@@ -20,6 +20,7 @@ class TemplarPermissionTests extends FunSuite with Matchers {
   }
 
 
+
   test("Templex readonly") {
     val compile = TemplarTestCompilation.test(
       """

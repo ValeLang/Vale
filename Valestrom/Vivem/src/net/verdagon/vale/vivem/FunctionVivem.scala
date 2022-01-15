@@ -91,7 +91,7 @@ object FunctionVivem {
       case """::F("__vbi_castFloatI64",[],[R(@,<,#,f)])""" => VivemExterns.castFloatI64
       case """::F("__vbi_lessThanOrEqI64",[],[R(@,<,#,i(64)),R(@,<,#,i(64))])""" => VivemExterns.lessThanOrEqI64
       case """::F("__vbi_modI64",[],[R(@,<,#,i(64)),R(@,<,#,i(64))])""" => VivemExterns.modI64
-
+      case """::F("TruncateI64ToI32",[],[R(@,<,#,i(64))])""" => VivemExterns.truncateI64ToI32
 
       case _ => vimpl(ref.fullName.toFullString())
     }

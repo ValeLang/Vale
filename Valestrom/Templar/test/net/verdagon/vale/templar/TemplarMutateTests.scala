@@ -208,6 +208,21 @@ class TemplarMutateTests extends FunSuite with Matchers {
     }
   }
 
+  test("Reports when we try to override a non-interface") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |import v.builtins.tup.*;
+        |fn bork(a int impl int) {}
+        |fn main() export {
+        |  bork(7);
+        |}
+        |""".stripMargin)
+    compile.getTemputs() match {
+      case Err(CantImplNonInterface(_, IntT(32)) )=>
+      case _ => vfail()
+    }
+  }
+
   test("Humanize errors") {
     val fireflyKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, CitizenNameT(CitizenTemplateNameT("Firefly"), Vector.empty)))
     val fireflyCoord = CoordT(OwnT,ReadwriteT,fireflyKind)
@@ -293,7 +308,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
         RangeS.testZero, fireflyCoord))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
-      CantImplStruct(
+      CantImplNonInterface(
         RangeS.testZero, fireflyKind))
       .nonEmpty)
   }

@@ -114,7 +114,7 @@ class TemplarSolver[Env, State](
         case IsStructSR(range, rune) => Array(rune)
         case CoerceToCoordSR(range, coordRune, kindRune) => Array(coordRune, kindRune)
         case LiteralSR(range, rune, literal) => Array(rune)
-        case AugmentSR(range, resultRune, literal, innerRune) => Array(resultRune, innerRune)
+        case AugmentSR(range, resultRune, ownership, permission, innerRune) => Array(resultRune, innerRune)
         case CallSR(range, resultRune, templateRune, args) => Array(resultRune, templateRune) ++ args
         case PrototypeSR(range, resultRune, name, parameters, returnTypeRune) => Array(resultRune) ++ parameters ++ Array(returnTypeRune)
         case PackSR(range, resultRune, members) => Array(resultRune) ++ members
@@ -152,7 +152,7 @@ class TemplarSolver[Env, State](
       case IsStructSR(_, rune) => Array(Array(rune.rune))
       case CoerceToCoordSR(_, coordRune, kindRune) => Array(Array(coordRune.rune), Array(kindRune.rune))
       case LiteralSR(_, rune, literal) => Array(Array())
-      case AugmentSR(_, resultRune, literals, innerRune) => Array(Array(innerRune.rune), Array(resultRune.rune))
+      case AugmentSR(_, resultRune, ownership, permission, innerRune) => Array(Array(innerRune.rune), Array(resultRune.rune))
       case RepeaterSequenceSR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(Array(resultRune.rune), Array(mutabilityRune.rune, variabilityRune.rune, sizeRune.rune, elementRune.rune))
       // See SAIRFU, this will replace itself with other rules.
       case CoordSendSR(_, senderRune, receiverRune) => Array(Array(senderRune.rune), Array(receiverRune.rune))
@@ -400,64 +400,42 @@ class TemplarSolver[Env, State](
 //        stepState.concludeRune[ITemplarSolverError](rune.rune, result)
         Ok(())
       }
-      case AugmentSR(_, resultRune, literals, innerRune) => {
+      case AugmentSR(_, resultRune, augmentOwnership, augmentPermission, innerRune) => {
         stepState.getConclusion(innerRune.rune) match {
           case Some(CoordTemplata(initialCoord)) => {
             val newCoord =
-              literals.foldLeft(initialCoord)({
-                case (coord, OwnershipLiteralSL(newOwnership)) => {
-                  delegate.getMutability(state, coord.kind) match {
-                    case MutableT => {
-                      if (newOwnership == ShareP) {
-                        return Err(CantShareMutable(coord.kind))
-                      }
-                      coord.copy(ownership = Conversions.evaluateOwnership(newOwnership))
-                    }
-                    case ImmutableT => coord
+              delegate.getMutability(state, initialCoord.kind) match {
+                case MutableT => {
+                  if (augmentOwnership == ShareP) {
+                    return Err(CantShareMutable(initialCoord.kind))
                   }
+                  initialCoord
+                    .copy(ownership = Conversions.evaluateOwnership(augmentOwnership))
+                    .copy(permission = Conversions.evaluatePermission(augmentPermission))
                 }
-                case (coord, PermissionLiteralSL(newPermission)) => {
-                  delegate.getMutability(state, coord.kind) match {
-                    case MutableT => coord.copy(permission = Conversions.evaluatePermission(newPermission))
-                    case ImmutableT => coord
-                  }
-                }
-              })
+                case ImmutableT => initialCoord
+              }
             stepState.concludeRune[ITemplarSolverError](resultRune.rune, CoordTemplata(newCoord))
             Ok(())
           }
           case None => {
             val CoordTemplata(initialCoord) = vassertSome(stepState.getConclusion(resultRune.rune))
             val newCoord =
-              literals.foldLeft(initialCoord)({
-                case (coord, OwnershipLiteralSL(requiredOwnership)) => {
-                  delegate.getMutability(state, coord.kind) match {
-                    case MutableT => {
-                      if (requiredOwnership == ShareP) {
-                        return Err(CantShareMutable(coord.kind))
-                      }
-                      if (coord.ownership == Conversions.evaluateOwnership(requiredOwnership)) {
-                        coord.copy(ownership = OwnT)
-                      } else {
-                        return Err(OwnershipDidntMatch(coord, Conversions.evaluateOwnership(requiredOwnership)))
-                      }
-                    }
-                    case ImmutableT => coord
+              delegate.getMutability(state, initialCoord.kind) match {
+                case MutableT => {
+                  if (augmentOwnership == ShareP) {
+                    return Err(CantShareMutable(initialCoord.kind))
                   }
-                }
-                case (coord, PermissionLiteralSL(requiredPermission)) => {
-                  delegate.getMutability(state, coord.kind) match {
-                    case MutableT => {
-                      if (coord.permission == Conversions.evaluatePermission(requiredPermission)) {
-                        coord.copy(permission = ReadwriteT)
-                      } else {
-                        return Err(PermissionDidntMatch(coord, Conversions.evaluatePermission(requiredPermission)))
-                      }
-                    }
-                    case ImmutableT => coord
+                  if (initialCoord.ownership != Conversions.evaluateOwnership(augmentOwnership)) {
+                    return Err(OwnershipDidntMatch(initialCoord, Conversions.evaluateOwnership(augmentOwnership)))
                   }
+                  if (initialCoord.permission != Conversions.evaluatePermission(augmentPermission)) {
+                    return Err(PermissionDidntMatch(initialCoord, Conversions.evaluatePermission (augmentPermission) ) )
+                  }
+                  initialCoord.copy(ownership = OwnT).copy(permission = ReadwriteT)
                 }
-              })
+                case ImmutableT => initialCoord
+              }
             stepState.concludeRune[ITemplarSolverError](innerRune.rune, CoordTemplata(newCoord))
             Ok(())
           }
@@ -736,10 +714,8 @@ class TemplarSolver[Env, State](
 
                   val possibleCoords =
                     unsolvedRules.collect({
-                      case AugmentSR(range, resultRune, literal, innerRune)
+                      case AugmentSR(range, resultRune, ownership, permission, innerRune)
                         if resultRune.rune == receiver => {
-                        val ownership = vassertOne(literal.collect({ case OwnershipLiteralSL(ownership) => ownership }))
-                        val permission = vassertOne(literal.collect({ case PermissionLiteralSL(permission) => permission }))
                         CoordT(
                           Conversions.evaluateOwnership(ownership),
                           Conversions.evaluatePermission(permission),

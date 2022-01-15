@@ -215,6 +215,9 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
           scoutExpressionAndCoerce(stackFrame0, lidb.child(), innerPE, UseP)
         (stackFrame1, NormalResult(evalRange(range), DestructSE(evalRange(range), inner1)), innerSelfUses, innerChildUses)
       }
+      case ResultPE(range, innerPE) => {
+        scoutExpression(stackFrame0, lidb.child(), innerPE)
+      }
       case PackPE(range, innersPE) => {
         vassert(innersPE.size == 1)
         val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
@@ -495,6 +498,9 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
           scoutExpressionAndCoerce(stackFrame1, lidb.child(), indexExprPE, UseP);
         val dot1 = IndexSE(evalRange(range), containerExpr1, indexExpr1)
         (stackFrame2, NormalResult(evalRange(range), dot1), containerSelfUses.thenMerge(indexSelfUses), containerChildUses.thenMerge(indexChildUses))
+      }
+      case ShortcallPE(range, argExprs) => {
+        throw CompileErrorExceptionS(UnimplementedExpression(evalRange(range), "shortcalling"));
       }
     }
   }

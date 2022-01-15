@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.{Collector, vassert, vimpl}
+import net.verdagon.vale.{Collector, vassert, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
 class StatementTests extends FunSuite with Matchers with Collector with TestParseUtils {
@@ -166,6 +166,31 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
     }
   }
 
+  test("foreach") {
+    compile(CombinatorParsers.atomPattern, "i") shouldHave {
+      case PatternPP(_, _, _, _, _, _) =>
+    }
+    compileForRest(CombinatorParsers.atomPattern, "i in myList { }") shouldEqual
+      " in myList { }"
+    compileForRest(CombinatorParsers.expression(false), "myList { }") shouldEqual
+      " { }"
+    compile(CombinatorParsers.statement, "foreach i in myList { }") shouldHave {
+      case EachPE(_,
+        PatternPP(_,None,Some(CaptureP(_,LocalNameP(NameP(_,"i")))),None,None,None),
+        LookupPE(NameP(_,"myList"),None),
+        BlockPE(_,_)) =>
+    }
+  }
+  test("Multiple statements") {
+    compileProgram(
+      """
+        |fn main() {
+        |  42;
+        |  43;
+        |}
+        |""".stripMargin)
+  }
+
   test("Test block's trailing void presence") {
     compile(CombinatorParsers.filledBody, "{ moo() }") shouldHave {
       case BlockPE(_, Vector(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "moo"), None), Vector(), LoadAsBorrowP(Some(ReadonlyP))))) =>
@@ -179,7 +204,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
 
   test("Block with only a result") {
     compile(
-      CombinatorParsers.blockExprs,
+      CombinatorParsers.blockExprs(true),
       "= doThings(a);") shouldHave {
       case Vector(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "doThings"), None), Vector(LookupPE(NameP(_, "a"), None)), LoadAsBorrowP(Some(ReadonlyP)))) =>
     }
@@ -188,7 +213,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
 
   test("Block with statement and result") {
     compile(
-      CombinatorParsers.blockExprs,
+      CombinatorParsers.blockExprs(true),
       """
         |b;
         |= a;
@@ -199,7 +224,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
 
 
   test("Block with result") {
-    compile(CombinatorParsers.blockExprs,"= 3;") shouldHave {
+    compile(CombinatorParsers.blockExprs(true),"= 3;") shouldHave {
       case Vector(ConstantIntPE(_, 3, _)) =>
     }
   }
@@ -208,7 +233,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
     // = doThings(a); could be misinterpreted as an expression doThings(=, a) if we're
     // not careful.
     compile(
-      CombinatorParsers.blockExprs,
+      CombinatorParsers.blockExprs(true),
       """
         |a = 2;
         |= doThings(a);

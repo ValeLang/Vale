@@ -34,7 +34,7 @@ class IfTests extends FunSuite with Matchers with Collector {
   }
 
   test("ifs") {
-    compile(CombinatorParsers.ifLadder, "if (true) { doBlarks(*x) } else { }") shouldHave {
+    compile(CombinatorParsers.ifLadder, "if true { doBlarks(*x) } else { }") shouldHave {
       case IfPE(_,
         BlockPE(_, Vector(ConstantBoolPE(_, true))),
         BlockPE(_,
@@ -49,7 +49,7 @@ class IfTests extends FunSuite with Matchers with Collector {
   }
 
   test("if let") {
-    compile(CombinatorParsers.ifLadder, "if ((u) = a) {}") shouldHave {
+    compile(CombinatorParsers.ifLadder, "if (u) = a {}") shouldHave {
       case IfPE(_,
         BlockPE(_,
           Vector(
@@ -68,7 +68,7 @@ class IfTests extends FunSuite with Matchers with Collector {
 
   test("19") {
     compile(CombinatorParsers.statement,
-      "newLen = if (num == 0) { 1 } else { 2 };") shouldHave {
+      "newLen = if num == 0 { 1 } else { 2 };") shouldHave {
       case LetPE(_,
       None,
       PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "newLen")))), None, None, None),

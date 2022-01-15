@@ -1,7 +1,7 @@
 package net.verdagon.vale.scout.rules
 
 import net.verdagon.vale.RangeS
-import net.verdagon.vale.parser.{AnonymousRunePT, BoolPT, BorrowP, BorrowPT, CallPT, FunctionPT, ITemplexPT, InlinePT, IntPT, InterpretedPT, LocationPT, ManualSequencePT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnershipPT, PackPT, PermissionPT, PointerP, PrototypePT, Range, RegionRune, RepeaterSequencePT, StringPT, VariabilityPT}
+import net.verdagon.vale.parser.{AnonymousRunePT, BoolPT, BorrowP, BorrowPT, CallPT, FunctionPT, ITemplexPT, InlinePT, IntPT, InterpretedPT, LocationPT, ManualSequencePT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnershipPT, PackPT, PermissionPT, PointerP, PrototypePT, Range, ReadonlyP, RegionRune, RepeaterSequencePT, StringPT, VariabilityPT}
 import net.verdagon.vale.scout.{CodeNameS, CodeRuneS, IEnvironment, IImpreciseNameS, INameS, IRuneS, ImplicitRuneS, LocationInDenizenBuilder, Scout}
 
 import scala.collection.mutable.ArrayBuffer
@@ -94,13 +94,13 @@ object TemplexScout {
           case InterpretedPT(range, ownership, permission, innerP) => {
             val resultRuneS = RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
             val innerRuneS = translateTemplex(env, lidb.child(), ruleBuilder, innerP)
-            ruleBuilder += AugmentSR(evalRange(range), resultRuneS, Vector(OwnershipLiteralSL(ownership), PermissionLiteralSL(permission)), innerRuneS)
+            ruleBuilder += AugmentSR(evalRange(range), resultRuneS, ownership, permission, innerRuneS)
             resultRuneS
           }
           case BorrowPT(range, innerP) => {
             val resultRuneS = RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
             val innerRuneS = translateTemplex(env, lidb.child(), ruleBuilder, innerP)
-            ruleBuilder += AugmentSR(evalRange(range), resultRuneS, Vector(OwnershipLiteralSL(BorrowP)), innerRuneS)
+            ruleBuilder += AugmentSR(evalRange(range), resultRuneS, BorrowP, ReadonlyP, innerRuneS)
             resultRuneS
           }
           case CallPT(range, template, args) => {

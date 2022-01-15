@@ -59,13 +59,13 @@ class AncestorHelper(
           case KindTemplata(interfaceTT @ InterfaceTT(_)) => {
             (Some((interfaceTT, implTemplata)))
           }
-          case KindTemplata(sr @ StructTT(_)) => {
-            throw CompileErrorExceptionT(CantImplStruct(range, sr))
-          }
           case it @ InterfaceTemplata(_, _) => {
             val interfaceTT =
               delegate.getInterfaceRef(temputs, RangeS.internal(-1875), it, Vector.empty)
             (Some((interfaceTT, implTemplata)))
+          }
+          case KindTemplata(other) => {
+            throw CompileErrorExceptionT(CantImplNonInterface(range, other))
           }
         }
       }

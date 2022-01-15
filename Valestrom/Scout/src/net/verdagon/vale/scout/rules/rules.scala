@@ -169,8 +169,8 @@ case class RuneParentEnvLookupSR(
 case class AugmentSR(
   range: RangeS,
   resultRune: RuneUsage,
-  // Lets try and figure out a way to only have one thing here instead of a Vector
-  literal: Vector[ILiteralSL],
+  ownership: OwnershipP,
+  permission: PermissionP,
   innerRune: RuneUsage
 ) extends IRulexSR {
   vpass()

@@ -39,11 +39,25 @@ trait TestParseUtils {
     // The strip is in here because things inside the parser don't expect whitespace before and after
     CombinatorParsers.parse(parser, code.strip().toCharArray()) match {
       case CombinatorParsers.NoSuccess(msg, input) => {
-        vfail("Couldn't parse!\n" + input.pos.longString);
+        vfail("Couldn't parse!\n" + input.pos.longString + "\n" + msg);
       }
       case CombinatorParsers.Success(expr, rest) => {
-        vassert(rest.atEnd)
+        if (!rest.atEnd) {
+          vfail("Couldn't parse all of the input. Remaining:\n" + code.slice(rest.offset, code.length))
+        }
         expr
+      }
+    }
+  }
+
+  def compileForRest[T](parser: CombinatorParsers.Parser[T], code: String): String = {
+    // The strip is in here because things inside the parser don't expect whitespace before and after
+    CombinatorParsers.parse(parser, code.strip().toCharArray()) match {
+      case CombinatorParsers.NoSuccess(msg, input) => {
+        vfail("Couldn't parse!\n" + input.pos.longString + "\n" + msg);
+      }
+      case CombinatorParsers.Success(expr, rest) => {
+        code.slice(rest.offset, code.length)
       }
     }
   }

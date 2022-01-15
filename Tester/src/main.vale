@@ -184,6 +184,8 @@ fn main() int export {
     region = "assist";
     suite!.StartTest(7, "addret", samples_path./("programs/addret.vale"), &List<str>(), region);
     suite!.StartTest(42, "add64ret", samples_path./("programs/add64ret.vale"), &List<str>(), region);
+    suite!.StartTest(42, "comparei64", samples_path./("programs/comparei64.vale"), &List<str>(), region);
+    suite!.StartTest(42, "truncate", samples_path./("programs/truncate.vale"), &List<str>(), region);
     suite!.StartTest(42, "floatarithmetic", samples_path./("programs/floatarithmetic.vale"), &List<str>(), region);
     suite!.StartTest(42, "floateq", samples_path./("programs/floateq.vale"), &List<str>(), region);
     suite!.StartTest(42, "concatstrfloat", samples_path./("programs/concatstrfloat.vale"), &List<str>(), region);
@@ -406,6 +408,8 @@ Subprocess {
   build_args!.add(test_build_dir.str());
   build_args!.add("--region_override");
   build_args!.add(region);
+  build_args!.add("--llvm_ir");
+  build_args!.add("true");
 
   extra_build_flags.each((flag){
     build_args!.add(flag);

@@ -8,5 +8,5 @@ fn Marine() Marine {
   this.cool = true;
 }
 fn main() int export {
-  Marine().hp
+  ret Marine().hp;
 }

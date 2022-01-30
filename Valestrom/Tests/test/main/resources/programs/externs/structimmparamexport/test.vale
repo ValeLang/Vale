@@ -11,5 +11,5 @@ fn expFunc(flam Flamscrankle) int export {
 fn extFunc(flam Flamscrankle) int extern;
 
 fn main() int export {
-  = extFunc(Flamscrankle(7, 35));
+  ret extFunc(Flamscrankle(7, 35));
 }

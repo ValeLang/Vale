@@ -3,5 +3,5 @@ fn main() int export {
   if (false) {
     __vbi_panic();
   }
-  = 42;
+  ret 42;
 }

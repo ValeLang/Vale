@@ -1,5 +1,5 @@
 
 fn main() int export {
   ownMuta = 2;
-  = 42;
+  ret 42;
 }

@@ -1,6 +1,6 @@
 package net.verdagon.vale.astronomer
 
-import net.verdagon.vale.parser.{FileP, ParseFailure, ParseSuccess, Parser}
+import net.verdagon.vale.parser.{ParseFailure, ParseSuccess, Parser}
 import net.verdagon.vale.scout.{CodeRuneS, CoordTemplataType, PackTemplataType, ProgramS, RuneTypeSolveError, Scout}
 import net.verdagon.vale._
 import org.scalatest.{FunSuite, Matchers}

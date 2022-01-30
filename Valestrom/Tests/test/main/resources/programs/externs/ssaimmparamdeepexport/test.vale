@@ -19,5 +19,5 @@ fn cSumFuel(arr [<imm> 3 * Spaceship]) int extern;
 
 fn main() int export {
   a = [imm 3]((i){ Spaceship(13 + i, i * 2) });
-  = cSumFuel(a);
+  ret cSumFuel(a);
 }

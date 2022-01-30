@@ -1,8 +1,10 @@
 package net.verdagon.vale.parser.patterns
 
-import net.verdagon.vale.parser.Patterns._
-import net.verdagon.vale.parser.CombinatorParsers._
+import net.verdagon.vale.parser.ast.Patterns._
+import net.verdagon.vale.parser.old.CombinatorParsers._
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{DestructureP, LocalNameDeclarationP, NameOrRunePT, NameP, PatternPP}
+import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -68,7 +70,7 @@ class DestructureParserTests extends FunSuite with Matchers with Collector {
   test("Capture with destructure") {
     compile("a (x, y)") shouldHave {
       case PatternPP(_,_,
-        Some(CaptureP(_,LocalNameP(NameP(_, "a")))),
+        Some(LocalNameDeclarationP(NameP(_, "a"))),
         None,
         Some(DestructureP(_,Vector(capture("x"), capture("y")))),
         None) =>
@@ -86,7 +88,7 @@ class DestructureParserTests extends FunSuite with Matchers with Collector {
   test("Capture and type with destructure") {
     compile("a A(x, y)") shouldHave {
       case PatternPP(_,_,
-        Some(CaptureP(_,LocalNameP(NameP(_, "a")))),
+        Some(LocalNameDeclarationP(NameP(_, "a"))),
         Some(NameOrRunePT(NameP(_, "A"))),
         Some(DestructureP(_,Vector(capture("x"), capture("y")))),
         None) =>
@@ -95,7 +97,7 @@ class DestructureParserTests extends FunSuite with Matchers with Collector {
   test("Capture with types inside") {
     compile("a (_ int, _ bool)") shouldHave {
       case PatternPP(_,_,
-          Some(CaptureP(_,LocalNameP(NameP(_, "a")))),
+          Some(LocalNameDeclarationP(NameP(_, "a"))),
           None,
           Some(DestructureP(_,Vector(fromEnv("int"), fromEnv("bool")))),
           None) =>

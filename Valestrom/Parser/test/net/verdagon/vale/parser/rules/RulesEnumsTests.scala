@@ -1,8 +1,10 @@
 package net.verdagon.vale.parser.rules
 
 import net.verdagon.vale.{Collector, parser, vfail}
-import net.verdagon.vale.parser.CombinatorParsers._
+import net.verdagon.vale.parser.old.CombinatorParsers._
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{BorrowP, EqualsPR, ExclusiveReadwriteP, ImmutableP, InlineP, LocationPT, LocationTypePR, MutabilityPT, MutabilityTypePR, MutableP, NameOrRunePT, NameP, OrPR, OwnP, OwnershipPT, OwnershipTypePR, PatternPP, PermissionPT, PermissionTypePR, ReadonlyP, ReadwriteP, ShareP, TemplexPR, TypedPR, WeakP, YonderP}
+import net.verdagon.vale.parser.old.CombinatorParsers
 import org.scalatest.{FunSuite, Matchers}
 
 class RulesEnumsTests extends FunSuite with Matchers with Collector {

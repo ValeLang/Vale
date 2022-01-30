@@ -5,7 +5,8 @@ import net.verdagon.vale.astronomer.{Astronomer, ICompileErrorA, ProgramA}
 import net.verdagon.vale.driver.Driver.SourceInput
 import net.verdagon.vale.metal.ProgramH
 import net.verdagon.vale.options.GlobalOptions
-import net.verdagon.vale.parser.{CombinatorParsers, FailedParse, FileP, ImportP, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier, TopLevelImportP}
+import net.verdagon.vale.parser.ast.FileP
+import net.verdagon.vale.parser.{FailedParse, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier}
 import net.verdagon.vale.scout.{ICompileErrorS, ProgramS, Scout}
 import net.verdagon.vale.templar.{Hinputs, ICompileErrorT, Templar, TemplarErrorHumanizer, Temputs}
 import net.verdagon.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, Ok, PackageCoordinate, PackageCoordinateMap, Result, vassert, vassertSome, vfail, vimpl, vwat}

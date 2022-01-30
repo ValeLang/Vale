@@ -1,11 +1,13 @@
 package net.verdagon.vale.parser
 
+import net.verdagon.vale.parser.ast.{BlockPE, ExportAsP, FunctionP, ImportP, NameOrRunePT, NameP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImportP, TopLevelStructP, VoidPE}
+import net.verdagon.vale.parser.old.OldTestParseUtils
 import net.verdagon.vale.{Collector, Tests, vassert}
 import org.scalatest.{FunSuite, Matchers}
 
 
 
-class TopLevelTests extends FunSuite with Matchers with Collector with TestParseUtils {
+class TopLevelTests extends FunSuite with Matchers with Collector with OldTestParseUtils {
   test("Function then struct") {
     val program = compileProgram(
       """
@@ -36,7 +38,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
       case TopLevelFunctionP(
       FunctionP(_,
       _,
-      Some(BlockPE(_,Vector(VoidPE(_)))))) =>
+      Some(BlockPE(_,VoidPE(_))))) =>
     }
   }
 
@@ -83,6 +85,26 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
         |""".stripMargin)
     program.topLevelThings(0) match {
       case TopLevelFunctionP(func) =>
+    }
+  }
+
+
+  test("Bad start of statement") {
+    compileProgramForError(
+      """
+        |fn doCivicDance(virtual this Car) {
+        |  )
+        |}
+        """.stripMargin) match {
+      case BadStartOfStatementError(_) =>
+    }
+    compileProgramForError(
+      """
+        |fn doCivicDance(virtual this Car) {
+        |  ]
+        |}
+        """.stripMargin) match {
+      case BadStartOfStatementError(_) =>
     }
   }
 }

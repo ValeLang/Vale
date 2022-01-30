@@ -7,7 +7,7 @@ import net.verdagon.vale.hammer.{Hammer, Hamuts, VonHammer}
 import net.verdagon.vale.highlighter.{Highlighter, Spanner}
 import net.verdagon.vale.metal.{PackageH, ProgramH}
 import net.verdagon.vale.options.GlobalOptions
-import net.verdagon.vale.parser.{CombinatorParsers, FailedParse, FileP, InputException, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier}
+import net.verdagon.vale.parser.{FailedParse, InputException, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier}
 import net.verdagon.vale.scout.{Scout, ScoutErrorHumanizer}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
 import net.verdagon.vale.vivem.Vivem

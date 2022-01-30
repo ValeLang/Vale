@@ -1,6 +1,6 @@
 package net.verdagon.vale
 
-import net.verdagon.vale.parser.FinalP
+import net.verdagon.vale.parser.ast.FinalP
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env.ReferenceLocalVariableT
 import net.verdagon.vale.templar.types.{CoordT, FinalT, IntT, ReadonlyT, ShareT}
@@ -19,7 +19,7 @@ class PatternTests extends FunSuite with Matchers {
 
   test("Test matching a multiple-member seq of immutables") {
     // Checks that the 5 made it into y, and it was an int
-    val compile = RunCompilation.test( "fn main() int export { (x, y) = [4, 5]; = y; }")
+    val compile = RunCompilation.test( "fn main() int export { (x, y) = [4, 5]; ret y; }")
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     main.header.returnType shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
@@ -31,7 +31,7 @@ class PatternTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Marine { hp int; }
-        |fn main() int export { (x, y) = [Marine(6), Marine(8)]; = y.hp; }
+        |fn main() int export { (x, y) = [Marine(6), Marine(8)]; ret y.hp; }
       """.stripMargin)
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main");
@@ -44,7 +44,7 @@ class PatternTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Marine { hp int; }
-        |fn main() int export { (x, y) = [7, Marine(8)]; = y.hp; }
+        |fn main() int export { (x, y) = [7, Marine(8)]; ret y.hp; }
       """.stripMargin)
     val temputs = compile.expectTemputs()
     temputs.functions.head.header.returnType == CoordT(ShareT, ReadonlyT, IntT.i32)
@@ -59,7 +59,7 @@ class PatternTests extends FunSuite with Matchers {
         |fn main() int export {
         |  m = Marine(8);
         |  (x, y) = [7, *m];
-        |  = y.hp;
+        |  ret y.hp;
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()
@@ -78,7 +78,7 @@ class PatternTests extends FunSuite with Matchers {
 //        |
 //        |fn main() int export {
 //        |  s ISpaceship = Firefly(42);
-//        |  = if (Firefly(fuel) = *s) {
+//        |  ret if (Firefly(fuel) = *s) {
 //        |      fuel
 //        |    } else {
 //        |      73

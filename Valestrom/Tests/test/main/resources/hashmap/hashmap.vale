@@ -5,10 +5,10 @@ import ifunction.ifunction1.*;
 
 
 struct IntHasher { }
-fn __call(this &IntHasher, x int) int { x }
+fn __call(this &IntHasher, x int) int { ret x; }
 
 struct IntEquator { }
-fn __call(this &IntEquator, a int, b int) bool { a == b }
+fn __call(this &IntEquator, a int, b int) bool { ret a == b; }
 
 struct HashMapNode<K, V> {
   key K;
@@ -23,11 +23,11 @@ struct HashMap<K, V, H, E> {
 }
 
 fn HashMap<K, V, H, E>(hasher H, equator E) HashMap<K, V, H, E> {
-  HashMap<K, V, H, E>(hasher, equator, 0)
+  ret HashMap<K, V, H, E>(hasher, equator, 0);
 }
 
 fn HashMap<K, V, H, E>(hasher H, equator E, capacity int) HashMap<K, V, H, E> {
-  HashMap<K, V>(
+  ret HashMap<K, V>(
       hasher,
       equator,
       MakeVaryArray(
@@ -36,10 +36,10 @@ fn HashMap<K, V, H, E>(hasher H, equator E, capacity int) HashMap<K, V, H, E> {
           opt Opt<HashMapNode<K, V>> = None<HashMapNode<K, V>>();
           = opt;
         })),
-      0)
+      0);
 }
 
-fn len<K, V, H, E>(self &HashMap<K, V, H, E>) int { self.size }
+fn len<K, V, H, E>(self &HashMap<K, V, H, E>) int { ret self.size; }
 
 fn update<K, V, H, E>(self &!HashMap<K, V, H, E>, key K, value V) void {
   hash int = (&self.hasher)(key);
@@ -60,7 +60,7 @@ fn add<K, V, H, E>(map &!HashMap<K, V, H, E>, key K, value V) void {
   if ((map.size + 1) * 2 >= map.table.len()) {
     newSize =
         if (map.table.len() == 0) { 2 }
-        else { map.table.len() * 2 };
+        else { map.table.len() * 2 }
     newTable =
         MakeVaryArray(
             newSize,
@@ -106,7 +106,7 @@ fn findEmptyIndexForKey<K, V>(table &Array<mut, Opt<HashMapNode<K, V>>>, startIn
     // continue to next node
     set i = i + 1;
   }
-  = panic("findEmptyIndexForKey went past end of table!");
+  ret panic("findEmptyIndexForKey went past end of table!");
 }
 
 fn findIndexOfKey<K, V, E>(table &Array<mut, Opt<HashMapNode<K, V>>>, equator E, startIndex int, key K) Opt<int> {
@@ -124,7 +124,7 @@ fn findIndexOfKey<K, V, E>(table &Array<mut, Opt<HashMapNode<K, V>>>, equator E,
     // continue to next node
     set i = i + 1;
   }
-  = panic("findIndexOfKey went past end of table! len " + str(table.len()) + " and i " + str(i));
+  ret panic("findIndexOfKey went past end of table! len " + str(table.len()) + " and i " + str(i));
 }
 
 fn get<K, V, H, E>(self &HashMap<K, V, H, E>, key K) Opt<*V> {
@@ -144,7 +144,7 @@ fn get<K, V, H, E>(self &HashMap<K, V, H, E>, key K) Opt<*V> {
 }
 
 fn has<K, V, H, E>(self &HashMap<K, V, H, E>, key K) bool {
-  not(self.get(key).isEmpty())
+  ret not(self.get(key).isEmpty());
 }
 
 fn keys<K, V, H, E>(self &HashMap<K, V, H, E>) Array<imm, K> {
@@ -157,7 +157,7 @@ fn keys<K, V, H, E>(self &HashMap<K, V, H, E>) Array<imm, K> {
     }
     set index = index + 1;
   }
-  = list.toImmArray();
+  ret list.toImmArray();
 }
 
 fn values<K, V, H, E>(self &HashMap<K, V, H, E>) Array<mut, V> {
@@ -170,7 +170,7 @@ fn values<K, V, H, E>(self &HashMap<K, V, H, E>) Array<mut, V> {
     }
     set index = index + 1;
   }
-  = list.toVaryArray();
+  ret list.toVaryArray();
 }
 
 fn innerRemove<K, V, H, E>(

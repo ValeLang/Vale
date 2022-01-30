@@ -8,5 +8,5 @@ fn main() int export {
   m = GoblinMaker();
   arr = Array<mut, Goblin>(1, &!m);
   set arr.0 = Goblin();
-  = 42;
+  ret 42;
 }

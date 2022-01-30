@@ -1,7 +1,8 @@
 package net.verdagon.vale.scout.rules
 
 import net.verdagon.vale.RangeS
-import net.verdagon.vale.parser.{AnonymousRunePT, BoolPT, BorrowP, BorrowPT, CallPT, FunctionPT, ITemplexPT, InlinePT, IntPT, InterpretedPT, LocationPT, ManualSequencePT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnershipPT, PackPT, PermissionPT, PointerP, PrototypePT, Range, ReadonlyP, RegionRune, RepeaterSequencePT, StringPT, VariabilityPT}
+import net.verdagon.vale.parser.VariabilityPT
+import net.verdagon.vale.parser.ast.{AnonymousRunePT, BoolPT, BorrowP, BorrowPT, CallPT, FunctionPT, ITemplexPT, IntPT, InterpretedPT, LocationPT, ManualSequencePT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnershipPT, PackPT, PermissionPT, PrototypePT, RangeP, ReadonlyP, RegionRune, RepeaterSequencePT, StringPT, VariabilityPT}
 import net.verdagon.vale.scout.{CodeNameS, CodeRuneS, IEnvironment, IImpreciseNameS, INameS, IRuneS, ImplicitRuneS, LocationInDenizenBuilder, Scout}
 
 import scala.collection.mutable.ArrayBuffer
@@ -60,7 +61,7 @@ object TemplexScout {
     ruleBuilder: ArrayBuffer[IRulexSR],
     templex: ITemplexPT):
   RuneUsage = {
-    val evalRange = (range: Range) => Scout.evalRange(env.file, range)
+    val evalRange = (range: RangeP) => Scout.evalRange(env.file, range)
 
     translateValueTemplex(templex) match {
       case Some(x) => addLiteralRule(lidb.child(), ruleBuilder, evalRange(templex.range), x)

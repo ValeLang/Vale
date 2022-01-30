@@ -12,7 +12,7 @@ import org.scalatest.{FunSuite, Matchers}
 
 class ArithmeticTestsA extends FunSuite with Matchers {
   test("Dividing") {
-    val compile = RunCompilation.test("fn main() int export {5 / 2}")
+    val compile = RunCompilation.test("fn main() int export { ret 5 / 2; }")
     compile.evalForKind(Vector()) shouldEqual VonInt(2)
   }
 }

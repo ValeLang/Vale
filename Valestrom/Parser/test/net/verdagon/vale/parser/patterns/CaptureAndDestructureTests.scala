@@ -1,8 +1,10 @@
 package net.verdagon.vale.parser.patterns
 
-import net.verdagon.vale.parser.Patterns._
-import net.verdagon.vale.parser.CombinatorParsers._
+import net.verdagon.vale.parser.ast.Patterns._
+import net.verdagon.vale.parser.old.CombinatorParsers._
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{DestructureP, LocalNameDeclarationP, ManualSequencePT, NameOrRunePT, NameP, PatternPP}
+import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -41,7 +43,7 @@ class CaptureAndDestructureTests extends FunSuite with Matchers with Collector {
   test("Capture with destructure with type inside") {
     compile("a (a int, b bool)") shouldHave {
       case PatternPP(_,_,
-          Some(CaptureP(_,LocalNameP(NameP(_, "a")))),
+          Some(LocalNameDeclarationP(NameP(_, "a"))),
           None,
           Some(
           DestructureP(_,
@@ -62,13 +64,13 @@ class CaptureAndDestructureTests extends FunSuite with Matchers with Collector {
   }
   test("capture with empty destructure") {
     compile("a ()") shouldHave {
-      case PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "a")))),None,Some(DestructureP(_,Vector())),None) =>
+      case PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, "a"))),None,Some(DestructureP(_,Vector())),None) =>
     }
   }
   test("Destructure with nested atom") {
     compile("a (b int)") shouldHave {
       case PatternPP(_,_,
-          Some(CaptureP(_,LocalNameP(NameP(_, "a")))),
+          Some(LocalNameDeclarationP(NameP(_, "a"))),
           None,
           Some(
           DestructureP(_,

@@ -182,5 +182,5 @@ fn main() int export {
       set running = false;
     }
   }
-  = 0;
+  ret 0;
 }

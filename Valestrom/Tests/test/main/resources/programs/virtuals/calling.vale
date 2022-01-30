@@ -8,16 +8,16 @@ interface Car {
 struct Civic {}
 impl Car for Civic;
 fn doCivicDance(civic Civic impl Car) int {
-  = 4;
+  ret 4;
 }
 
 struct Toyota {}
 impl Car for Toyota;
 fn doCivicDance(toyota Toyota impl Car) int {
-  = 7;
+  ret 7;
 }
 
 fn main() int export {
   x Car = Toyota();
-  = doCivicDance(x);
+  ret doCivicDance(x);
 }

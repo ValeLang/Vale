@@ -76,8 +76,8 @@ class WeakTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """
           |struct Muta weakable { hp int; }
-          |fn getHp(weakMuta **Muta) int { (lock(weakMuta)).get().hp }
-          |fn main() int export { getHp(**Muta(7)) }
+          |fn getHp(weakMuta **Muta) int { ret (lock(weakMuta)).get().hp; }
+          |fn main() int export { ret getHp(**Muta(7)); }
           |""".stripMargin)
 
     val main = compile.expectTemputs().lookupFunction("main")
@@ -109,7 +109,7 @@ class WeakTests extends FunSuite with Matchers {
           |interface IUnit {}
           |struct Muta weakable { hp int; }
           |impl IUnit for Muta;
-          |fn main(muta Muta) int  { 7 }
+          |fn main(muta Muta) int  { ret 7; }
           |""".stripMargin)
 
     try {
@@ -127,7 +127,7 @@ class WeakTests extends FunSuite with Matchers {
           |interface IUnit weakable {}
           |struct Muta { hp int; }
           |impl IUnit for Muta;
-          |fn main(muta Muta) int  { 7 }
+          |fn main(muta Muta) int  { ret 7; }
           |""".stripMargin)
 
     try {

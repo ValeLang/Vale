@@ -1,7 +1,7 @@
 package net.verdagon.vale.scout
 
 import net.verdagon.vale.options.GlobalOptions
-import net.verdagon.vale.parser.{CombinatorParsers, ParseFailure, ParseSuccess, Parser, VaryingP}
+import net.verdagon.vale.parser.{ParseFailure, ParseSuccess, Parser}
 import net.verdagon.vale.{Collector, Err, FileCoordinate, Ok, vassert, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -577,11 +577,11 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """.stripMargin)
     val scoutput = program1
     val main = scoutput.lookupFunction("main")
-    val CodeBodyS(BodySE(_, _, mainBlock)) = main.body
+    val CodeBodyS(BodySE(_, _, BlockSE(_, _, ConsecutorSE(exprs)))) = main.body
     // __Closure is shown as not used... we could change scout to automatically
     // borrow it whenever we try to access a closure variable?
     val lamBlock =
-      mainBlock.exprs.collect({
+      exprs.collect({
         case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, CodeBodyS(innerBody))), _), _) => innerBody.block
       }).head
     lamBlock.locals.head match {
@@ -602,13 +602,13 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """.stripMargin)
     val scoutput = program1
     val main = scoutput.lookupFunction("main")
-    val CodeBodyS(BodySE(_, _, mainBlock)) = main.body
+    val CodeBodyS(BodySE(_, _, BlockSE(_, _, ConsecutorSE(exprs)))) = main.body
     // __Closure is shown as not used... we could change scout to automatically
     // borrow it whenever we try to access a closure variable?
     val lamBlock =
-    mainBlock.exprs.collect({
-      case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, CodeBodyS(innerBody))), _), _) => innerBody.block
-    }).head
+      exprs.collect({
+        case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, CodeBodyS(innerBody))), _), _) => innerBody.block
+      }).head
     val locals = lamBlock.locals
     locals.find(_.varName == ClosureParamNameS()).get match {
       case LocalS(ClosureParamNameS(),

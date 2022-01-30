@@ -1,17 +1,17 @@
 
-fn +(a str, b str) str { addStr(a, 0, len(a), b, 0, len(b)) }
+fn +(a str, b str) str { ret addStr(a, 0, len(a), b, 0, len(b)); }
 fn addStr(a str, aBegin int, aEnd int, b str, bBegin int, bEnd int) str extern;
 
-fn str(x int) str { castI32Str(x) }
+fn str(x int) str { ret castI32Str(x); }
 fn castI32Str(x int) str extern;
 
-fn str(x i64) str { castI64Str(x) }
+fn str(x i64) str { ret castI64Str(x); }
 fn castI64Str(x i64) str extern;
 
-fn str(x float) str { castFloatStr(x) }
+fn str(x float) str { ret castFloatStr(x); }
 fn castFloatStr(x float) str extern;
 
-fn len(s str) int { __vbi_strLength(s) }
+fn len(s str) int { ret __vbi_strLength(s); }
 fn __vbi_strLength(s str) int extern;
 
 fn strtoascii(s str, begin int, end int) int extern;

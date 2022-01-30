@@ -19,5 +19,5 @@ struct Spigglewigget export imm {
 fn extFunc_vasp(flam Flamscrankle) int extern;
 
 fn main() int export {
-  = extFunc_vasp(Flamscrankle(7, Bogglewoggle(Spigglewigget(5, 7, 4), 5), 14));
+  ret extFunc_vasp(Flamscrankle(7, Bogglewoggle(Spigglewigget(5, 7, 4), 5), 14));
 }

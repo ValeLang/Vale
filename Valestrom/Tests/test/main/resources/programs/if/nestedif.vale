@@ -3,7 +3,7 @@
 // incorrectly say it was from the then's starting block (same with else).
 
 fn main() int export {
-  = if (false) { 73 }
+  ret if (false) { 73 }
     else if (true) { 42 }
     else { 62 }
 }

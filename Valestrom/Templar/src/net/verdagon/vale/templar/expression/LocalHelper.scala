@@ -1,6 +1,7 @@
 package net.verdagon.vale.templar.expression
 
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsP, LoadAsPointerP, LoadAsWeakP, MoveP, UseP}
 import net.verdagon.vale.scout.{LocalS, NotUsed}
 import net.verdagon.vale.templar.env.{AddressibleLocalVariableT, FunctionEnvironmentBox, ILocalVariableT, ReferenceLocalVariableT}
 import net.verdagon.vale.templar.function.DestructorTemplar

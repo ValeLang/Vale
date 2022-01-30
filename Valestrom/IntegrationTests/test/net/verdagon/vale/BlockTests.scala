@@ -1,6 +1,6 @@
 package net.verdagon.vale
 
-import net.verdagon.vale.parser.{FinalP, VariabilityP}
+import net.verdagon.vale.parser.FinalP
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.types.{BoolT, CoordT, IntT, ShareT}
@@ -14,12 +14,12 @@ class BlockTests extends FunSuite with Matchers {
         |fn main() int export {
         |  block {
         |  }
-        |  = 3;
+        |  ret 3;
         |}
       """.stripMargin)
     val scoutput = compile.getScoutput().getOrDie().moduleToPackagesToFilenameToContents("test")(Vector.empty)("0.vale")
     val main = scoutput.lookupFunction("main")
-    main.body match { case CodeBodyS(BodySE(_, _,BlockSE(_, _,Vector(BlockSE(_, _,_), _)))) => }
+    main.body match { case CodeBodyS(BodySE(_, _,BlockSE(_, _,ConsecutorSE(Vector(BlockSE(_, _,_), _))))) => }
 
     compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
@@ -30,12 +30,12 @@ class BlockTests extends FunSuite with Matchers {
         |  block {
         |    y = 6;
         |  }
-        |  = 3;
+        |  ret 3;
         |}
       """.stripMargin)
     val scoutput = compile.getScoutput().getOrDie().moduleToPackagesToFilenameToContents("test")(Vector.empty)("0.vale")
     val main = scoutput.lookupFunction("main")
-    val block = main.body match { case CodeBodyS(BodySE(_, _,BlockSE(_, _,Vector(b @ BlockSE(_, _,_), _)))) => b }
+    val block = main.body match { case CodeBodyS(BodySE(_, _,BlockSE(_, _, ConsecutorSE(Vector(b @ BlockSE(_, _,_), _))))) => b }
     vassert(block.locals.size == 1)
     block.locals.head match {
       case LocalS(CodeVarNameS("y"), NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
@@ -51,7 +51,7 @@ class BlockTests extends FunSuite with Matchers {
         |    y = 6;
         |  }
         |  y = 3;
-        |  = y;
+        |  ret y;
         |}
       """.stripMargin)
     val scoutput = compile.getScoutput().getOrDie()

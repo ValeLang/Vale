@@ -1,6 +1,8 @@
 package net.verdagon.vale.parser.patterns
 
-import net.verdagon.vale.parser.{ITemplexPT, _}
+import net.verdagon.vale.parser.ast.{AbstractP, BorrowP, ConstructingMemberNameDeclarationP, DestructureP, INameDeclarationP, ITemplexPT, LocalNameDeclarationP, NameP, OverrideP, OwnP, OwnershipP, PatternPP, PointerP, ShareP, WeakP}
+import net.verdagon.vale.parser.old.{ParserUtils, TemplexParser}
+import net.verdagon.vale.parser.{ast, _}
 import net.verdagon.vale.{vcurious, vfail, vimpl}
 
 import scala.util.parsing.combinator.RegexParsers
@@ -49,10 +51,10 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
           (maybeVirtual, maybeInterface) match {
             case (None, None) => None
             case (Some(range), None) => Some(AbstractP(range.range))
-            case (None, Some(interface)) => Some(OverrideP(Range(begin, end), interface))
+            case (None, Some(interface)) => Some(OverrideP(ast.RangeP(begin, end), interface))
             case (Some(_), Some(_)) => vfail()
           }
-        PatternPP(Range(begin, end), maybePreBorrow, maybeCapture, maybeType, maybeDestructure, maybeVirtuality)
+        ast.PatternPP(ast.RangeP(begin, end), maybePreBorrow, maybeCapture, maybeType, maybeDestructure, maybeVirtuality)
       }
     }
   }
@@ -61,10 +63,10 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
 
   // Remember, for pattern parsers, something *must* be present, don't match empty.
   // Luckily, for this rule, we always have the expr identifier.
-  private[parser] def patternCapture: Parser[CaptureP] = {
+  private[parser] def patternCapture: Parser[INameDeclarationP] = {
     pos ~ existsMW("this.") ~ (exprIdentifier <~ opt("!")) ~ pos ^^ {
-      case begin ~ None ~ name ~ end => CaptureP(Range(begin, end), LocalNameP(name))
-      case begin ~ Some(thisdot) ~ name ~ end => CaptureP(Range(begin, end), ConstructingMemberNameP(NameP(Range(begin, name.range.end), name.str)))
+      case begin ~ None ~ name ~ end => LocalNameDeclarationP(name)
+      case begin ~ Some(thisdot) ~ name ~ end => ConstructingMemberNameDeclarationP(NameP(ast.RangeP(begin, name.range.end), name.str))
     }
   }
 
@@ -85,7 +87,7 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
 
   private[parser] def destructure: Parser[DestructureP] = {
     pos ~ ("(" ~> optWhite ~> repsep(atomPattern, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")") ~ pos ^^ {
-      case begin ~ inners ~ end => DestructureP(Range(begin, end), inners.toVector)
+      case begin ~ inners ~ end => DestructureP(ast.RangeP(begin, end), inners.toVector)
     }
   }
 

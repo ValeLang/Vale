@@ -4,5 +4,5 @@ fn runExtCommand() str extern;
 
 fn main() int export {
   result = runExtCommand();
-  = result.len();
+  ret result.len();
 }

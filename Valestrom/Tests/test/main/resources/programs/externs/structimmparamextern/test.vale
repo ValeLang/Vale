@@ -7,5 +7,5 @@ struct Flamscrankle export imm {
 fn extFunc(flam Flamscrankle) int extern;
 
 fn main() int export {
-  = extFunc(Flamscrankle(7, 35));
+  ret extFunc(Flamscrankle(7, 35));
 }

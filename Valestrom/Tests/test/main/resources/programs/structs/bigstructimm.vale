@@ -8,5 +8,5 @@ struct UnitSnapshot imm {
 }
 
 fn main() int export {
-  = UnitSnapshot(4, 5, 6, 7, 42, 9).agility;
+  ret UnitSnapshot(4, 5, 6, 7, 42, 9).agility;
 }

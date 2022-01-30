@@ -272,6 +272,7 @@ case class IfTE(
 case class WhileTE(block: BlockTE) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
+  vpass()
 }
 
 case class MutateTE(

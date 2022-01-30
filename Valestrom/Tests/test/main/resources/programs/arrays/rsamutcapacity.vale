@@ -3,5 +3,5 @@
 fn main() int export {
   a = Array<mut, int>(42);
   a!.push(7);
-  = capacity(&a);
+  ret capacity(&a);
 }

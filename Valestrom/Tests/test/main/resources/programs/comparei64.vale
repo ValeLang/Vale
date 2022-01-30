@@ -1,4 +1,4 @@
 
 fn main() int export {
-  = if (1i64 >= 4294967296i64) { 73 } else { 42 }
+  ret if (1i64 >= 4294967296i64) { 73 } else { 42 }
 }

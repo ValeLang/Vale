@@ -1,7 +1,9 @@
 package net.verdagon.vale.parser.rules
 
-import net.verdagon.vale.parser.CombinatorParsers._
+import net.verdagon.vale.parser.old.CombinatorParsers._
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{AnonymousRunePT, CallPT, ComponentsPR, EqualsPR, FinalP, ImmutableP, IntPT, IntTypePR, KindTypePR, ManualSequencePT, MutabilityPT, MutableP, NameOrRunePT, NameP, PatternPP, PrototypePT, RepeaterSequencePT, SharePT, TemplexPR, TypedPR, VariabilityPT}
+import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, vfail}
 import org.scalatest.{FunSuite, Matchers}
 

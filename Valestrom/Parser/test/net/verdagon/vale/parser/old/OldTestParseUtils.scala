@@ -1,41 +1,44 @@
-package net.verdagon.vale.parser
+package net.verdagon.vale.parser.old
 
-import net.verdagon.vale.{FileCoordinate, FileCoordinateMap, vassert, vfail}
+import net.verdagon.vale.parser.ast.FileP
+import net.verdagon.vale.parser._
+import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, Ok, vfail}
 
-trait TestParseUtils {
+trait OldTestParseUtils {
   def compileProgramWithComments(code: String): FileP = {
     Parser.runParserForProgramAndCommentRanges(code) match {
-      case ParseFailure(err) => {
+      case Err(err) => {
         vfail(
           ParseErrorHumanizer.humanize(
             FileCoordinateMap(Map()).add("my", Vector.empty, "0", code),
             FileCoordinate("my", Vector.empty, "0"),
             err))
       }
-      case ParseSuccess(result) => result._1
+      case Ok(result) => result._1
     }
   }
+
   def compileProgram(code: String): FileP = {
     Parser.runParser(code) match {
-      case ParseFailure(err) => {
+      case Err(err) => {
         vfail(
           ParseErrorHumanizer.humanize(
             FileCoordinateMap(Map()).add("my", Vector.empty, "0", code),
             FileCoordinate("my", Vector.empty, "0"),
             err))
       }
-      case ParseSuccess(result) => result
+      case Ok(result) => result
     }
   }
 
   def compileProgramForError(code: String): IParseError = {
     Parser.runParser(code) match {
-      case ParseFailure(err) => err
-      case ParseSuccess(result) => vfail("Expected error, but actually parsed invalid program:\n" + result)
+      case Err(err) => err
+      case Ok(result) => vfail("Expected error, but actually parsed invalid program:\n" + result)
     }
   }
 
-  def compile[T](parser: CombinatorParsers.Parser[T], code: String): T = {
+  def oldCompile[T](parser: CombinatorParsers.Parser[T], code: String): T = {
     // The strip is in here because things inside the parser don't expect whitespace before and after
     CombinatorParsers.parse(parser, code.strip().toCharArray()) match {
       case CombinatorParsers.NoSuccess(msg, input) => {
@@ -50,7 +53,7 @@ trait TestParseUtils {
     }
   }
 
-  def compileForRest[T](parser: CombinatorParsers.Parser[T], code: String): String = {
+  def oldCompileForRest[T](parser: CombinatorParsers.Parser[T], code: String): String = {
     // The strip is in here because things inside the parser don't expect whitespace before and after
     CombinatorParsers.parse(parser, code.strip().toCharArray()) match {
       case CombinatorParsers.NoSuccess(msg, input) => {

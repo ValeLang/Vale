@@ -1,6 +1,7 @@
 package net.verdagon.vale.highlighter
 
-import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{AbstractAttributeP, BlockPE, CallPT, ConstantBoolPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, DestructPE, DestructureP, DotPE, ExportAttributeP, ExternAttributeP, FileP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IExpressionPE, IFunctionAttributeP, INameDeclarationP, IRulexPR, IStructContent, ITemplexPT, IdentifyingRunesP, IfPE, ImplP, IndexPE, InlinePT, IntPT, InterfaceP, InterpretedPT, LambdaPE, LetPE, LoadPE, LookupPE, MagicParamLookupPE, MethodCallPE, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, PackPE, ParamsP, PatternPP, PureAttributeP, RepeaterSequencePT, ReturnPE, RuntimeSizedP, ShortcallPE, StaticSizedP, StrInterpolatePE, StructMembersP, StructMethodP, StructP, TemplateArgsP, TemplateRulesP, TopLevelFunctionP, TopLevelImplP, TopLevelInterfaceP, TopLevelStructP, TuplePE, UnitP, VoidPE, WhilePE}
+import net.verdagon.vale.parser.{ast, _}
 import net.verdagon.vale.{vcurious, vimpl}
 
 sealed trait IClass
@@ -54,13 +55,13 @@ case object Ownership extends IClass
 case object Permission extends IClass
 case object Match extends IClass
 
-case class Span(classs: IClass, range: Range, children: Vector[Span]) { override def hashCode(): Int = vcurious() }
+case class Span(classs: IClass, range: ast.RangeP, children: Vector[Span]) { override def hashCode(): Int = vcurious() }
 
 object Spanner {
   def forProgram(program: FileP): Span = {
     makeSpan(
       Prog,
-      Range(0, Int.MaxValue),
+      ast.RangeP(0, Int.MaxValue),
       program.topLevelThings.map({
         case TopLevelFunctionP(f) => forFunction(f)
         case TopLevelInterfaceP(i) => forInterface(i)
@@ -155,8 +156,8 @@ object Spanner {
   }
 
   def forBlock(b: BlockPE): Span = {
-    val BlockPE(range, elements) = b
-    makeSpan(Block, range, elements.map(forExpression))
+    val BlockPE(range, inner) = b
+    makeSpan(Block, range, Vector(forExpression(inner)))
   }
 
   def forExpression(e: IExpressionPE): Span = {
@@ -183,8 +184,10 @@ object Spanner {
           range,
           Vector(forPattern(pattern), forExpression(expr)))
       }
-      case LookupPE(NameP(range, _), templateArgs) => {
-        makeSpan(Lookup, range, Vector.empty)
+      case LookupPE(lookupName, templateArgs) => {
+        vimpl()
+//        val NameP(range, _) = vimpl(lookupName)
+//        makeSpan(Lookup, range, Vector.empty)
       }
       case TuplePE(range, elements) => {
         makeSpan(Seq, range, elements.map(forExpression))
@@ -218,7 +221,7 @@ object Spanner {
           range,
           parts.map(forExpression))
       }
-      case DotPE(range, left, operatorRange, _, member) => {
+      case DotPE(range, left, operatorRange, member) => {
         makeSpan(
           MemberAccess,
           range,
@@ -236,26 +239,30 @@ object Spanner {
         val allSpans = (Vector(callableSpan) ++ argSpans)
         makeSpan(Call, range, allSpans)
       }
-      case MethodCallPE(range, inline, callableExpr, operatorRange, _, _, LookupPE(NameP(methodNameRange, _), maybeTemplateArgs), argExprs) => {
-        val callableSpan = forExpression(callableExpr)
-        val methodSpan = makeSpan(CallLookup, methodNameRange, Vector.empty)
-        val maybeTemplateArgsSpan = maybeTemplateArgs.toVector.map(forTemplateArgs)
-        val argSpans = argExprs.map(forExpression)
-        val allSpans = (Vector(callableSpan, makeSpan(MemberAccess, operatorRange), methodSpan) ++ maybeTemplateArgsSpan ++ argSpans)
-        makeSpan(Call, range, allSpans)
+      case MethodCallPE(range, callableExpr, operatorRange, subjectReadwrite, LookupPE(lookup, maybeTemplateArgs), argExprs) => {
+        vimpl()
+//        NameP(methodNameRange, _)
+//        val callableSpan = forExpression(callableExpr)
+//        val methodSpan = makeSpan(CallLookup, methodNameRange, Vector.empty)
+//        val maybeTemplateArgsSpan = maybeTemplateArgs.toVector.map(forTemplateArgs)
+//        val argSpans = argExprs.map(forExpression)
+//        val allSpans = (Vector(callableSpan, makeSpan(MemberAccess, operatorRange), methodSpan) ++ maybeTemplateArgsSpan ++ argSpans)
+//        makeSpan(Call, range, allSpans)
       }
-      case FunctionCallPE(range, inlRange, operatorRange, _, LookupPE(NameP(nameRange, _), maybeTemplateArgs), argExprs, _) => {
-        val inlSpan = inlRange.toVector.map(x => makeSpan(Inl, x.range, Vector.empty))
-        val opSpan = makeSpan(MemberAccess, operatorRange)
-        val callableSpan = makeSpan(CallLookup, nameRange, Vector.empty)
-        val maybeTemplateArgsSpan = maybeTemplateArgs.toVector.map(forTemplateArgs)
-        val argSpans = argExprs.map(forExpression)
-        val allSpans =
-          (inlSpan ++ Vector(opSpan, callableSpan) ++ maybeTemplateArgsSpan ++ argSpans)
-            .sortWith(_.range.begin < _.range.begin)
-        makeSpan(Call, range, allSpans)
+      case FunctionCallPE(range, operatorRange, LookupPE(lookup, maybeTemplateArgs), argExprs, callableReadwrite) => {
+        vimpl()
+//        NameP(nameRange, _)
+//        val inlSpan = inlRange.toVector.map(x => makeSpan(Inl, x.range, Vector.empty))
+//        val opSpan = makeSpan(MemberAccess, operatorRange)
+//        val callableSpan = makeSpan(CallLookup, nameRange, Vector.empty)
+//        val maybeTemplateArgsSpan = maybeTemplateArgs.toVector.map(forTemplateArgs)
+//        val argSpans = argExprs.map(forExpression)
+//        val allSpans =
+//          (inlSpan ++ Vector(opSpan, callableSpan) ++ maybeTemplateArgsSpan ++ argSpans)
+//            .sortWith(_.range.begin < _.range.begin)
+//        makeSpan(Call, range, allSpans)
       }
-      case FunctionCallPE(range, None, operatorRange, _, callableExpr, argExprs, _) => {
+      case FunctionCallPE(range, operatorRange, callableExpr, argExprs, _) => {
         val callableSpan = forExpression(callableExpr)
         val argSpans = argExprs.map(forExpression)
         val allSpans = (Vector(callableSpan) ++ argSpans).sortWith(_.range.begin < _.range.begin)
@@ -269,18 +276,18 @@ object Spanner {
       case ReturnPE(range, expr) => {
         makeSpan(Ret, range, Vector(forExpression(expr)))
       }
-      case BlockPE(range, exprs) => {
+      case BlockPE(range, inner) => {
         makeSpan(
           Block,
           range,
-          exprs.map(forExpression))
+          Vector(forExpression(inner)))
       }
-      case MatchPE(range, condExpr, lambdas) => {
-        makeSpan(
-          Match,
-          range,
-          Vector(forExpression(condExpr)) ++ lambdas.map(l => forFunction(l.function)))
-      }
+//      case MatchPE(range, condExpr, lambdas) => {
+//        makeSpan(
+//          Match,
+//          range,
+//          Vector(forExpression(condExpr)) ++ lambdas.map(l => forFunction(l.function)))
+//      }
       case IfPE(range, condition, thenBody, elseBody) => {
         makeSpan(
           If,
@@ -321,21 +328,22 @@ object Spanner {
       patterns.map(forPattern))
   }
 
-  def forCapture(c: CaptureP): Span = {
-    val CaptureP(range, name) = c
-    val nameSpan =
-      name match {
-        case LocalNameP(NameP(nameRange, _)) => {
-          makeSpan(CaptureName, nameRange, Vector.empty)
-        }
-        case ConstructingMemberNameP(NameP(nameRange, _)) => {
-          makeSpan(CaptureName, nameRange, Vector.empty)
-        }
-      }
-    makeSpan(
-      Capture,
-      range,
-      Vector(nameSpan))
+  def forCapture(c: INameDeclarationP): Span = {
+    vimpl()
+//    val INameDeclarationP(range, name) = c
+//    val nameSpan =
+//      name match {
+//        case LocalNameDeclarationP(NameP(nameRange, _)) => {
+//          makeSpan(CaptureName, nameRange, Vector.empty)
+//        }
+//        case ConstructingMemberNameDeclarationP(NameP(nameRange, _)) => {
+//          makeSpan(CaptureName, nameRange, Vector.empty)
+//        }
+//      }
+//    makeSpan(
+//      Capture,
+//      range,
+//      Vector(nameSpan))
   }
 
   def forTemplex(t: ITemplexPT): Span = {
@@ -403,7 +411,7 @@ object Spanner {
       runes.map(rune => makeSpan(IdentRune, rune.range)))
   }
 
-  def makeSpan(classs: IClass, range: Range, children: Vector[Span] = Vector.empty) = {
+  def makeSpan(classs: IClass, range: ast.RangeP, children: Vector[Span] = Vector.empty) = {
     val filteredAndSortedChildren =
       children
         .filter(s => s.range.begin != s.range.end)

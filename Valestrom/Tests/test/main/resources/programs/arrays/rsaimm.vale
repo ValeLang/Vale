@@ -1,6 +1,6 @@
 // immutable runtime-size-array
 
 fn main() int export {
-  a = [imm *](5, {_});
-  = a[3];
+  a = #[](5, {_});
+  ret a[3];
 }

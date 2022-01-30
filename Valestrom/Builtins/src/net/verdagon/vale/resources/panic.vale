@@ -3,7 +3,7 @@ import v.builtins.print.*;
 fn panic(msg str) infer-ret {
   print(msg);
   print("\n");
-  = __vbi_panic();
+  ret __vbi_panic();
 }
 
 fn __vbi_panic() __Never extern;

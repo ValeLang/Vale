@@ -2,6 +2,7 @@ package net.verdagon.vale.scout
 
 import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{PointerP, ReadonlyP}
 import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.{Collector, Err, FileCoordinate, FileCoordinateMap, Ok, vassert, vfail, vimpl}
@@ -124,7 +125,7 @@ class ScoutParametersTests extends FunSuite with Matchers with Collector {
   test("Test param-less lambda identifying runes") {
     val bork = compile(
       """
-        |fn main() int export {do({ 3 })}
+        |fn main() int export {do({ ret 3; })}
         |""".stripMargin)
 
     val main = bork.lookupFunction("main")

@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar.expression
 
 //import net.verdagon.vale.astronomer.{BlockSE, IExpressionSE}
-import net.verdagon.vale.scout.{BlockSE, IExpressionSE}
+import net.verdagon.vale.scout.{BlockSE, ExpressionScout, IExpressionSE}
 import net.verdagon.vale.templar.{ast, _}
 import net.verdagon.vale.templar.ast.{BlockTE, LetNormalTE, LocationInFunctionEnvironment, ReferenceExpressionTE, UnreachableMootTE}
 import net.verdagon.vale.templar.env._
@@ -27,6 +27,7 @@ class BlockTemplar(
     destructorTemplar: DestructorTemplar,
     localHelper: LocalHelper,
     delegate: IBlockTemplarDelegate) {
+
   // This is NOT USED FOR EVERY BLOCK!
   // This is just for the simplest kind of block.
   // This can serve as an example for how we can use together all the tools provided by BlockTemplar.
@@ -45,7 +46,8 @@ class BlockTemplar(
     val startingFate = fate.snapshot
 
     val (expressionsWithResult, returnsFromExprs) =
-      evaluateBlockStatements(temputs, startingFate, fate, life, block1.exprs)
+      evaluateBlockStatements(
+        temputs, startingFate, fate, life, block1)
 
     val block2 = BlockTE(expressionsWithResult)
 
@@ -58,10 +60,10 @@ class BlockTemplar(
     startingFate: FunctionEnvironment,
     fate: FunctionEnvironmentBox,
     life: LocationInFunctionEnvironment,
-    exprs: Vector[IExpressionSE]):
+    blockSE: BlockSE):
   (ReferenceExpressionTE, Set[CoordT]) = {
     val (unneveredUnresultifiedUndestructedExpressions, returnsFromExprs) =
-      evaluateBlockStatementsInner(temputs, fate, life + 0, exprs.toList);
+      evaluateBlockStatementsInner(temputs, fate, life + 0, ExpressionScout.flattenExpressions(blockSE.expr).toList);
 
     val unreversedVariablesToDestruct = getUnmovedVariablesIntroducedSince(startingFate, fate)
 

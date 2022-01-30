@@ -1,6 +1,6 @@
 package net.verdagon.vale
 
-import net.verdagon.vale.parser.{CaptureP, FinalP, VaryingP}
+import net.verdagon.vale.parser.INameDeclarationP
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.templar._
@@ -19,7 +19,7 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |struct Muta { hp int; }
         |fn main() int export {
-        |  = (*Muta(9)).hp;
+        |  ret (*Muta(9)).hp;
         |}
       """.stripMargin)
 
@@ -46,7 +46,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |}
         |fn main() int export {
         |  m = Muta(9);
-        |  = (m).hp;
+        |  ret (m).hp;
         |}
       """.stripMargin)
 
@@ -110,7 +110,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |}
         |
         |fn main() int export {
-        |  = (Muta(10)).hp;
+        |  ret (Muta(10)).hp;
         |}
       """.stripMargin)
 
@@ -201,7 +201,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |
         |fn main() int export {
         |  a = Muta(10);
-        |  = a.hp;
+        |  ret a.hp;
         |}
       """.stripMargin)
 
@@ -222,7 +222,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |  wand ^Wand;
         |}
         |fn main() int export {
-        |  = Wizard(Wand(10)).wand.charges;
+        |  ret Wizard(Wand(10)).wand.charges;
         |}
       """.stripMargin)
 
@@ -239,7 +239,7 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  i! = 0;
-        |  = i;
+        |  ret i;
         |}
       """.stripMargin)
 

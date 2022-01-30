@@ -13,12 +13,16 @@ class IfTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |fn main() int export {
-        |  = if (true) { 3 } else { 5 }
+        |  ret if (true) { 3 } else { 5 }
         |}
       """.stripMargin)
     val programS = compile.getScoutput().getOrDie().moduleToPackagesToFilenameToContents("test")(Vector.empty)("0.vale")
     val main = programS.lookupFunction("main")
-    val CodeBodyS(BodySE(_, _, BlockSE(_, _, Vector(IfSE(_, _, _, _))))) = main.body
+    val ret = Collector.only(main.body, { case r @ ReturnSE(_, _) => r })
+    val iff = Collector.only(ret, { case i @ IfSE(_, _, _, _) => i })
+    Collector.only(iff.condition, { case ConstantBoolSE(_, true) => })
+    Collector.only(iff.thenBody, { case ConstantIntSE(_, 3, _) => })
+    Collector.only(iff.elseBody, { case ConstantIntSE(_, 5, _) => })
 
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), { case IfTE(_, _, _) => })
@@ -30,7 +34,7 @@ class IfTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |fn main() int export {
-        |  = if (false) { 3 } else { 5 }
+        |  ret if (false) { 3 } else { 5 }
         |}
       """.stripMargin)
 
@@ -41,7 +45,7 @@ class IfTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |fn main() int export {
-        |  = if (false) { 3 } else if (true) { 5 } else { 7 }
+        |  ret if (false) { 3 } else if (true) { 5 } else { 7 }
         |}
       """.stripMargin)
 
@@ -66,7 +70,7 @@ class IfTests extends FunSuite with Matchers {
         |struct Marine { x int; }
         |fn main() int export {
         |  m = Marine(5);
-        |  = if (false) {
+        |  ret if (false) {
         |      (x) = m;
         |      = x;
         |    } else {
@@ -96,7 +100,7 @@ class IfTests extends FunSuite with Matchers {
         |struct Marine { x int; }
         |fn main() str export {
         |  m = Marine(5);
-        |  = if (m.x == 5) { "#" }
+        |  ret if (m.x == 5) { "#" }
         |  else if (0 == 0) { "?" }
         |  else { "." }
         |}
@@ -107,6 +111,18 @@ class IfTests extends FunSuite with Matchers {
     ifs.foreach(iff => iff.result.reference shouldEqual CoordT(ShareT, ReadonlyT, StrT()))
 
     compile.evalForKind(Vector()) shouldEqual VonStr("#")
+  }
+
+  test("If with condition declaration") {
+    val compile = RunCompilation.test(
+      """
+        |fn main() int export {
+        |  ret if x = 42; x < 50; { x }
+        |    else { 73 }
+        |}
+      """.stripMargin)
+
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Ret from inside if will destroy locals") {
@@ -128,7 +144,7 @@ class IfTests extends FunSuite with Matchers {
         |      = m.hp;
         |    };
         |  println("In rest!");
-        |  = x;
+        |  ret x;
         |}
         |""".stripMargin)
 
@@ -156,7 +172,7 @@ class IfTests extends FunSuite with Matchers {
         |      = m.hp;
         |    };
         |  println("In rest!");
-        |  = x;
+        |  ret x;
         |}
         |""".stripMargin)
 

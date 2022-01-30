@@ -1,6 +1,7 @@
 package net.verdagon.vale.scout
 
-import net.verdagon.vale.parser.{LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsP, LoadAsPointerP, LoadAsWeakP, MoveP, MutabilityP, OwnershipP, PermissionP, PointerP, VariabilityP, WeakP}
+import net.verdagon.vale.parser.PermissionP
+import net.verdagon.vale.parser.ast.{LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsP, LoadAsPointerP, LoadAsWeakP, MoveP, PermissionP}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.{ILiteralSL, IRulexSR, RuneUsage}
 import net.verdagon.vale.{RangeS, vassert, vcurious, vimpl, vpass}
@@ -17,21 +18,24 @@ case class LetSE(
 
 case class IfSE(
   range: RangeS,
-  condition: BlockSE,
+  condition: IExpressionSE,
   thenBody: BlockSE,
   elseBody: BlockSE
 ) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
+
+  vcurious(!condition.isInstanceOf[BlockSE])
 }
 
-case class WhileSE(range: RangeS, condition: BlockSE, body: BlockSE) extends IExpressionSE {
+case class WhileSE(range: RangeS, body: BlockSE) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
+  vpass()
 }
 
 case class ExprMutateSE(range: RangeS, mutatee: IExpressionSE, expr: IExpressionSE) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
 }
-case class GlobalMutateSE(range: RangeS, name: ImpreciseCodeVarNameS, expr: IExpressionSE) extends IExpressionSE {
+case class GlobalMutateSE(range: RangeS, name: CodeNameS, expr: IExpressionSE) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
 }
 case class LocalMutateSE(range: RangeS, name: IVarNameS, expr: IExpressionSE) extends IExpressionSE {
@@ -86,21 +90,34 @@ case class BodySE(
     block: BlockSE
 ) {
   override def hashCode(): Int = vcurious()
+  vpass()
 }
 
 case class BlockSE(
   range: RangeS,
   locals: Vector[LocalS],
+  expr: IExpressionSE,
+) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
 
+  vassert(locals.map(_.varName) == locals.map(_.varName).distinct)
+//  expr match {
+//    case BlockSE(range, locals, expr) => vcurious()
+//    case _ =>
+//  }
+}
+
+case class ConsecutorSE(
   exprs: Vector[IExpressionSE],
 ) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
-  // Every element should have at least one expression, because a block will
-  // return the last expression's result as its result.
-  // Even empty blocks aren't empty, they have a void() at the end.
-  vassert(exprs.size >= 1)
 
-  vassert(locals.map(_.varName) == locals.map(_.varName).distinct)
+  override def range: RangeS = RangeS(exprs.head.range.begin, exprs.last.range.end)
+
+  // Should have at least one expression, because we'll
+  // return the last expression's result as its result.
+  vassert(exprs.size > 1)
+  vassert(exprs.collect({ case ConsecutorSE(_) => }).isEmpty)
 }
 
 case class ArgLookupSE(range: RangeS, index: Int) extends IExpressionSE {

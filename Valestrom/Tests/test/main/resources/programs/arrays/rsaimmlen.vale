@@ -2,5 +2,5 @@
 
 fn main() int export {
   a = MakeImmArray(5, {_});
-  = len(a);
+  ret len(a);
 }

@@ -13,7 +13,7 @@ class ResultTests extends FunSuite with Matchers {
           |
           |fn main() int export {
           |  result Result<int, str> = Ok<int, str>(42);
-          |  = if (result.is_ok()) { result.expect() }
+          |  ret if (result.is_ok()) { result.expect() }
           |    else { panic("wat") }
           |}
         """.stripMargin)
@@ -29,7 +29,7 @@ class ResultTests extends FunSuite with Matchers {
           |
           |fn main() str export {
           |  result Result<int, str> = Err<int, str>("file not found!");
-          |  = if (result.is_err()) { result.expect_err() }
+          |  ret if (result.is_err()) { result.expect_err() }
           |    else { panic("fail!") }
           |}
         """.stripMargin)

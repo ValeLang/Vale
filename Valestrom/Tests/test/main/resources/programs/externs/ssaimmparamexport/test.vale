@@ -14,5 +14,5 @@ fn cSumFuel(arr [<imm> 3 * int]) int extern;
 
 fn main() int export {
   a = [imm 3]((i){ 13 + i });
-  = cSumFuel(a);
+  ret cSumFuel(a);
 }

@@ -20,7 +20,7 @@ fn sum(list *MyList) int {
 }
 
 fn sum(virtual opt *MyOption) int abstract;
-fn sum(opt *MyNone impl MyOption) int { 0 }
+fn sum(opt *MyNone impl MyOption) int { ret 0; }
 fn sum(opt *MySome impl MyOption) int {
    sum(*opt.value)
 }
@@ -28,5 +28,5 @@ fn sum(opt *MySome impl MyOption) int {
 
 fn main() int export {
   list = MyList(7, MySome(MyList(17, MySome(MyList(18, MyNone())))));
-  = sum(*list);
+  ret sum(*list);
 }

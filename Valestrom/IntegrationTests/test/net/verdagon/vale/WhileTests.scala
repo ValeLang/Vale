@@ -9,7 +9,7 @@ class WhileTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  while (false) {}
-        |  = 5;
+        |  ret 5;
         |}
       """.stripMargin)
 
@@ -24,7 +24,7 @@ class WhileTests extends FunSuite with Matchers {
         |  while (i < 4) {
         |    set i = i + 1;
         |  }
-        |  = i;
+        |  ret i;
         |}
       """.stripMargin)
 
@@ -37,10 +37,10 @@ class WhileTests extends FunSuite with Matchers {
         |import printutils.*;
         |fn main() int export {
         |  key! = 0;
-        |  while (set key = __getch(); = key < 96;) {
+        |  while set key = __getch(); = key < 96; {
         |    print(key);
         |  }
-        |  = key;
+        |  ret key;
         |}
       """.stripMargin)
 
@@ -56,10 +56,10 @@ class WhileTests extends FunSuite with Matchers {
         |
         |fn main() int export {
         |  key! = 0;
-        |  while (set key = __getch(); = key != 99;) {
+        |  while set key = __getch(); = key != 99; {
         |    print(key);
         |  }
-        |  = key;
+        |  ret key;
         |}
       """.stripMargin)
 
@@ -73,13 +73,27 @@ class WhileTests extends FunSuite with Matchers {
         |  while (true) {
         |    ret 9;
         |  }
-        |  = __vbi_panic();
+        |  ret __vbi_panic();
         |}
       """.stripMargin)
 
     compile.evalForKind(Vector()) shouldEqual VonInt(9)
   }
-//
+
+  test("While with condition declaration") {
+    val compile = RunCompilation.test(
+      """
+        |fn main() int export {
+        |  while x = 42; x < 50; { ret x; }
+        |  ret 73;
+        |}
+      """.stripMargin)
+
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+  }
+
+
+  //
 //  test("Tests a while loop with a move in it") {
 //    val compile = RunCompilation.test(
 //      """
@@ -90,7 +104,7 @@ class WhileTests extends FunSuite with Matchers {
 //        |  while (true) {
 //        |    doThings(m);
 //        |  }
-//        |  = 4;
+//        |  ret 4;
 //        |}
 //      """.stripMargin)
 //

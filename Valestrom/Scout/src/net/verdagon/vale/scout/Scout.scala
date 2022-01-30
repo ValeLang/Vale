@@ -4,6 +4,7 @@ package net.verdagon.vale.scout
 import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.{CodeLocationS, RangeS, vpass}
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{AnonymousRunePT, BoolPT, CallPT, ExportAsP, ExportP, FileP, ICitizenAttributeP, IImpreciseNameP, ITemplexPT, ImplP, ImportP, InlinePT, IntPT, InterfaceP, InterpretedPT, IterableNameP, IterationOptionNameP, IteratorNameP, LocationPT, LookupNameP, MacroCallP, ManualSequencePT, MutabilityP, MutabilityPT, NameOrRunePT, NameP, NormalStructMemberP, OwnershipPT, PermissionPT, RangeP, RepeaterSequencePT, RulePUtils, SealedP, StructMembersP, StructMethodP, StructP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, VariadicStructMemberP, WeakableP}
 import net.verdagon.vale.scout.Scout.determineDenizenType
 import net.verdagon.vale.scout.patterns.PatternScout
 //import net.verdagon.vale.scout.predictor.RuneTypeSolveError
@@ -104,7 +105,7 @@ case class StackFrame(
   def allDeclarations: VariableDeclarations = {
     locals ++ maybeParent.map(_.allDeclarations).getOrElse(Scout.noDeclarations)
   }
-  def findVariable(name: String): Option[IVarNameS] = {
+  def findVariable(name: IImpreciseNameS): Option[IVarNameS] = {
     locals.find(name) match {
       case Some(fullNameS) => Some(fullNameS)
       case None => {
@@ -121,12 +122,21 @@ object Scout {
   def noVariableUses = VariableUses(Vector.empty)
   def noDeclarations = VariableDeclarations(Vector.empty)
 
-  def evalRange(file: FileCoordinate, range: Range): RangeS = {
+  def evalRange(file: FileCoordinate, range: RangeP): RangeS = {
     RangeS(evalPos(file, range.begin), evalPos(file, range.end))
   }
 
   def evalPos(file: FileCoordinate, pos: Int): CodeLocationS = {
     CodeLocationS(file, pos)
+  }
+
+  def translateImpreciseName(file: FileCoordinate, name: IImpreciseNameP): IImpreciseNameS = {
+    name match {
+      case LookupNameP(name) => CodeNameS(name.str)
+      case IterableNameP(range) => IterableNameS(Scout.evalRange(file,  range))
+      case IteratorNameP(range) => IteratorNameS(Scout.evalRange(file,  range))
+      case IterationOptionNameP(range) => IterationOptionNameS(Scout.evalRange(file,  range))
+    }
   }
 
   // Err is the missing rune
@@ -170,6 +180,20 @@ object Scout {
       case MutabilityPT(_, mutability) => vwat()
       case LocationPT(_, location) => vwat()
       case PermissionPT(_, permission) => vwat()
+    }
+  }
+
+  def consecutive(exprs: Vector[IExpressionSE]): IExpressionSE = {
+    if (exprs.isEmpty) {
+      vcurious()
+    } else if (exprs.size == 1) {
+      exprs.head
+    } else {
+      ConsecutorSE(
+        exprs.flatMap({
+          case ConsecutorSE(exprs) => exprs
+          case other => List(other)
+        }))
     }
   }
 }

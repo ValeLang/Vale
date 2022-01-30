@@ -9,5 +9,5 @@ struct Inner {
 fn main() int export {
   o = Outer(Inner(73));
   set o.inner.x = 42;
-  = o.inner.x;
+  ret o.inner.x;
 }

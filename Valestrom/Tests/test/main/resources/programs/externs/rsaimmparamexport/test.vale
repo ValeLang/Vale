@@ -20,5 +20,5 @@ fn extSumBytes(arr Array<imm, int>) int extern;
 
 fn main() int export {
   a = [imm *](5, {_});
-  = extSumBytes(a);
+  ret extSumBytes(a);
 }

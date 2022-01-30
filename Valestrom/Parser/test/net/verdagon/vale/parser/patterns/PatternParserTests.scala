@@ -1,8 +1,10 @@
 package net.verdagon.vale.parser.patterns
 
-import net.verdagon.vale.parser.Patterns._
-import net.verdagon.vale.parser.CombinatorParsers._
+import net.verdagon.vale.parser.ast.Patterns._
+import net.verdagon.vale.parser.old.CombinatorParsers._
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{AbstractP, DestructureP, LocalNameDeclarationP, ManualSequencePT, NameOrRunePT, NameP, PatternPP, Patterns, ShareP}
+import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -50,7 +52,7 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
   }
   test("Name-only Capture") {
     compile(atomPattern,"a") match {
-      case PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "a")))), None, None, None) =>
+      case PatternPP(_, _,Some(LocalNameDeclarationP(NameP(_, "a"))), None, None, None) =>
     }
   }
   test("Empty pattern list") {
@@ -77,7 +79,7 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
     compile("a Moo(a, b)") shouldHave {
       case PatternPP(
           _,_,
-          Some(CaptureP(_,LocalNameP(NameP(_, "a")))),
+          Some(LocalNameDeclarationP(NameP(_, "a"))),
           Some(NameOrRunePT(NameP(_, "Moo"))),
           Some(DestructureP(_,Vector(capture("a"),capture("b")))),
           None) =>
@@ -90,9 +92,9 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
     compile("moo T(a int)") shouldHave {
       case PatternPP(
           _,_,
-          Some(CaptureP(_,LocalNameP(NameP(_, "moo")))),
+          Some(LocalNameDeclarationP(NameP(_, "moo"))),
           Some(NameOrRunePT(NameP(_, "T"))),
-          Some(DestructureP(_,Vector(PatternPP(_,_, Some(CaptureP(_,LocalNameP(NameP(_, "a")))),Some(NameOrRunePT(NameP(_, "int"))),None,None)))),
+          Some(DestructureP(_,Vector(PatternPP(_,_, Some(LocalNameDeclarationP(NameP(_, "a"))),Some(NameOrRunePT(NameP(_, "int"))),None,None)))),
           None) =>
     }
   }
@@ -101,7 +103,7 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
     compile("a [int, bool](a, b)") shouldHave {
       case PatternPP(
           _,_,
-          Some(CaptureP(_,LocalNameP(NameP(_, "a")))),
+          Some(LocalNameDeclarationP(NameP(_, "a"))),
           Some(
             ManualSequencePT(_,
                   Vector(
@@ -114,7 +116,7 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
 
   test("Virtual function") {
     compile(CombinatorParsers.atomPattern, "virtual this Car") shouldHave {
-      case PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "this")))),Some(NameOrRunePT(NameP(_, "Car"))),None,Some(AbstractP(_))) =>
+      case PatternPP(_, _,Some(LocalNameDeclarationP(NameP(_, "this"))),Some(NameOrRunePT(NameP(_, "Car"))),None,Some(AbstractP(_))) =>
     }
   }
 }

@@ -1,8 +1,10 @@
 package net.verdagon.vale.parser.patterns
 
-import net.verdagon.vale.parser.Patterns.{capturedWithType, capturedWithTypeRune}
-import net.verdagon.vale.parser.CombinatorParsers._
+import net.verdagon.vale.parser.ast.Patterns.{capturedWithType, capturedWithTypeRune}
+import net.verdagon.vale.parser.old.CombinatorParsers._
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{ConstructingMemberNameDeclarationP, InterpretedPT, LocalNameDeclarationP, NameOrRunePT, NameP, PatternPP, PointerP, ReadonlyP, WeakP}
+import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -55,7 +57,7 @@ class CaptureAndTypeTests extends FunSuite with Matchers with Collector {
   test("Capture with borrow tame") {
     compile("arr *R") shouldHave {
       case PatternPP(_,_,
-      Some(CaptureP(_,LocalNameP(NameP(_, "arr")))),
+      Some(LocalNameDeclarationP(NameP(_, "arr"))),
       Some(InterpretedPT(_,PointerP,ReadonlyP, NameOrRunePT(NameP(_, "R")))),
       None,
       None) =>
@@ -64,7 +66,7 @@ class CaptureAndTypeTests extends FunSuite with Matchers with Collector {
   test("Capture with this. in front") {
     compile("this.arr **R") shouldHave {
       case PatternPP(_,_,
-      Some(CaptureP(_, ConstructingMemberNameP(NameP(_, "arr")))),
+      Some(ConstructingMemberNameDeclarationP(NameP(_, "arr"))),
       Some(InterpretedPT(_,WeakP,ReadonlyP, NameOrRunePT(NameP(_, "R")))),
       None,
       None) =>

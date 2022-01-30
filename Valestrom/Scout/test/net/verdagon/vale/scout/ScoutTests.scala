@@ -2,6 +2,7 @@ package net.verdagon.vale.scout
 
 import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{FinalP, LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsPointerP, MutableP, ReadonlyP, ReadwriteP, UseP}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.solver.{IncompleteSolve, Step}
@@ -73,13 +74,13 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   }
 
   test("Lookup +") {
-    val program1 = compile("fn main() int export { +(3, 4) }")
+    val program1 = compile("fn main() int export { ret +(3, 4); }")
     val main = program1.lookupFunction("main")
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
-    block match {
-      case BlockSE(_, _, Vector(FunctionCallSE(_, OutsideLoadSE(_, _, CodeNameS("+"), _, _), _))) =>
-    }
+    val ret = Collector.only(block.expr, { case x @ ReturnSE(_, _) => x })
+    val call = Collector.only(ret.inner, { case x @ FunctionCallSE(_, _, _) => x })
+    Collector.only(call.callableExpr, { case x @ OutsideLoadSE(_, _, CodeNameS("+"), _, _) => x })
   }
 
   test("Struct") {
@@ -98,10 +99,10 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   }
 
   test("Lambda") {
-    val program1 = compile("fn main() int export { {_ + _}!(4, 6) }")
+    val program1 = compile("fn main() int export { ret {_ + _}!(4, 6); }")
 
-    val CodeBodyS(BodySE(_, _, BlockSE(_, _, Vector(expr)))) = program1.lookupFunction("main").body
-    val FunctionCallSE(_, OwnershippedSE(_,FunctionSE(lambda@FunctionS(_, _, _, _, _, _, _, _, _)), LoadAsBorrowP(Some(ReadwriteP))), _) = expr
+    val CodeBodyS(BodySE(_, _, BlockSE(_, _, expr))) = program1.lookupFunction("main").body
+    val ReturnSE(_, FunctionCallSE(_, OwnershippedSE(_,FunctionSE(lambda@FunctionS(_, _, _, _, _, _, _, _, _)), LoadAsBorrowP(Some(ReadwriteP))), _)) = expr
     // See: Lambdas Dont Need Explicit Identifying Runes (LDNEIR)
     lambda.identifyingRunes match {
       case Vector(RuneUsage(_, MagicParamRuneS(mp1)), RuneUsage(_, MagicParamRuneS(mp2))) => {
@@ -147,12 +148,12 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   }
 
   test("Method call") {
-    val program1 = compile("fn main() int export { x = 4; = x.shout(); }")
+    val program1 = compile("fn main() int export { x = 4; ret x.shout(); }")
     val main = program1.lookupFunction("main")
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
     block match {
-      case BlockSE(_, _, Vector(_, FunctionCallSE(_, OutsideLoadSE(_, _, CodeNameS("shout"), _, _), Vector(LocalLoadSE(_, name, LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadonlyP))))))) => {
+      case BlockSE(_, _, ReturnSE(_, FunctionCallSE(_, OutsideLoadSE(_, _, CodeNameS("shout"), _, _), Vector(LocalLoadSE(_, name, LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadonlyP))))))) => {
         name match {
           case CodeVarNameS("x") =>
         }
@@ -161,12 +162,12 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   }
 
   test("Moving method call") {
-    val program1 = compile("fn main() int export { x = 4; = (x).shout(); }")
+    val program1 = compile("fn main() int export { x = 4; ret (x).shout(); }")
     val main = program1.lookupFunction("main")
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
     block match {
-      case BlockSE(_, _, Vector(_, FunctionCallSE(_, OutsideLoadSE(_, _, CodeNameS("shout"), _, _),Vector(LocalLoadSE(_,CodeVarNameS("x"), UseP))))) =>
+      case BlockSE(_, _, ReturnSE(_, FunctionCallSE(_, OutsideLoadSE(_, _, CodeNameS("shout"), _, _),Vector(LocalLoadSE(_,CodeVarNameS("x"), UseP))))) =>
     }
   }
 
@@ -183,7 +184,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
     val main = program1.lookupFunction("main")
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
-    val BlockSE(_, _, things) = block
+    val BlockSE(_, _, ConsecutorSE(things)) = block
     val lambda1 = things(0).asInstanceOf[FunctionSE].function
     val lambda2 = things(1).asInstanceOf[FunctionSE].function
     lambda1.params match {
@@ -211,6 +212,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
       Vector(
       LocalS(ConstructingMemberNameS("x"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),
       LocalS(ConstructingMemberNameS("y"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
+      ConsecutorSE(
       Vector(
       LetSE(_,
       _,
@@ -224,7 +226,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
       OutsideLoadSE(_, _, CodeNameS("MyStruct"), _, _),
       Vector(
       LocalLoadSE(_, ConstructingMemberNameS("x"), UseP),
-      LocalLoadSE(_, ConstructingMemberNameS("y"), UseP))))) =>
+      LocalLoadSE(_, ConstructingMemberNameS("y"), UseP)))))) =>
     }
   }
 
@@ -320,7 +322,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   test("Test loading from member") {
     val program1 = compile(
       """fn MyStruct() {
-        |  moo.x
+        |  ret moo.x;
         |}
         |""".stripMargin)
     val main = program1.lookupFunction("MyStruct")
@@ -329,8 +331,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
     block match {
       case BlockSE(
       _,Vector(),
-      Vector(
-      DotSE(_,OutsideLoadSE(_,_,CodeNameS("moo"),None,LoadAsBorrowOrIfContainerIsPointerThenPointerP(None)),"x",true))) =>
+      ReturnSE(_, DotSE(_,OutsideLoadSE(_,_,CodeNameS("moo"),None,LoadAsBorrowOrIfContainerIsPointerThenPointerP(None)),"x",true))) =>
     }
 
   }
@@ -338,7 +339,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   test("Test loading from member 2") {
     val program1 = compile(
       """fn MyStruct() {
-        |  *moo.x
+        |  ret *moo.x;
         |}
         |""".stripMargin)
     val main = program1.lookupFunction("MyStruct")
@@ -347,8 +348,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
     block match {
       case BlockSE(
       _,Vector(),
-      Vector(
-      OwnershippedSE(_,
+      ReturnSE(_, OwnershippedSE(_,
       DotSE(_,OutsideLoadSE(_,_,CodeNameS("moo"),None,LoadAsBorrowOrIfContainerIsPointerThenPointerP(None)),x,true),LoadAsPointerP(Some(ReadonlyP))))) =>
     }
 
@@ -369,6 +369,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
       Vector(
       LocalS(ConstructingMemberNameS("x"), Used, Used, NotUsed, NotUsed, NotUsed, NotUsed),
       LocalS(ConstructingMemberNameS("y"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
+      ConsecutorSE(
       Vector(
       LetSE(_, _,
       AtomSP(_, Some(CaptureS(ConstructingMemberNameS("x"))), None, _, None),
@@ -380,7 +381,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
       OutsideLoadSE(_, _, CodeNameS("MyStruct"), _, _),
       Vector(
       LocalLoadSE(_, ConstructingMemberNameS("x"), UseP),
-      LocalLoadSE(_, ConstructingMemberNameS("y"), UseP))))) =>
+      LocalLoadSE(_, ConstructingMemberNameS("y"), UseP)))))) =>
     }
   }
 
@@ -397,11 +398,12 @@ class ScoutTests extends FunSuite with Matchers with Collector {
       Vector(),
       BlockSE(_,
       Vector(LocalS(CodeVarNameS("this"), Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed)),
+      ConsecutorSE(
       Vector(
       FunctionCallSE(_,
       OutsideLoadSE(_, _, CodeNameS("println"), _, _),
       Vector(DotSE(_, LocalLoadSE(_, CodeVarNameS("this"), LoadAsBorrowOrIfContainerIsPointerThenPointerP(None)), "x", true))),
-      VoidSE(_))))) =>
+      VoidSE(_)))))) =>
     }
   }
 
@@ -421,7 +423,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
       """
         |struct Moo {}
         |interface IMoo {}
-        |fn func(moo *Moo impl *IMoo) int { 73 }
+        |fn func(moo *Moo impl *IMoo) int { ret 73; }
         |""".stripMargin)
     err match {
       case CantOverrideOwnershipped(_) =>
@@ -484,5 +486,49 @@ class ScoutTests extends FunSuite with Matchers with Collector {
       case InterfaceMethodNeedsSelf(_) =>
       case _ => vfail()
     }
+  }
+
+  test("Parenthesized method syntax will move instead of borrow") {
+    vimpl()
+//    val compilation =
+//      compile(
+//        ExpressionParser.parseExpression(_, StopBeforeCloseBrace),
+//        """(bork).consumeBork()""".stripMargin)
+//    val (subjectExpr, loadAs) =
+//      compilation shouldHave
+//        {
+//          case MethodCallPE(_,
+//          subjectExpr,
+//          _,
+//          loadAs,
+//          LookupPE(LookupNameP(NameP(_, "consumeBork")), _),
+//          _) => (subjectExpr, loadAs)
+//        }
+//    loadAs shouldEqual false
+//    subjectExpr match {
+//      case PackPE(_, Vector(LookupPE(LookupNameP(NameP(_, "bork")), None))) =>
+//    }
+  }
+
+  test("Statement after result or return") {
+    vimpl()
+    //    compileProgramForError(
+    //      """
+    //        |fn doCivicDance(virtual this Car) {
+    //        |  ret 4;
+    //        |  7
+    //        |}
+    //        """.stripMargin) match {
+    //      case StatementAfterResult(_) =>
+    //    }
+    //    compileProgramForError(
+    //      """
+    //        |fn doCivicDance(virtual this Car) {
+    //        |  ret 4;
+    //        |  7
+    //        |}
+    //        """.stripMargin) match {
+    //      case StatementAfterReturn(_) =>
+    //    }
   }
 }

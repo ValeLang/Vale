@@ -16,13 +16,13 @@ class ImportTests extends FunSuite with Matchers {
         |
         |fn main() int export {
         |  a = moo();
-        |  = a;
+        |  ret a;
         |}
       """.stripMargin
 
     val moduleBCode =
       """
-        |fn moo() int { 42 }
+        |fn moo() int { ret 42; }
       """.stripMargin
 
     val compile =
@@ -44,13 +44,13 @@ class ImportTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  a = 42;
-        |  = a;
+        |  ret a;
         |}
       """.stripMargin
 
     val moduleBCode =
       """
-        |fn moo() int { 73 }
+        |fn moo() int { ret 73; }
       """.stripMargin
 
     val compile =
@@ -76,13 +76,13 @@ class ImportTests extends FunSuite with Matchers {
         |
         |fn main() int export {
         |  a = moo();
-        |  = a;
+        |  ret a;
         |}
       """.stripMargin
 
     val moduleBCode =
       """
-        |fn moo() int { 42 }
+        |fn moo() int { ret 42; }
       """.stripMargin
 
     val compile =
@@ -106,7 +106,7 @@ class ImportTests extends FunSuite with Matchers {
         |
         |fn main() int export {
         |  a = 42;
-        |  = a;
+        |  ret a;
         |}
       """.stripMargin
 

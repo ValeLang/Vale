@@ -10,9 +10,9 @@ class TupleTests extends FunSuite with Matchers {
   test("Returning tuple from function and dotting it") {
     val compile = RunCompilation.test(
       """
-        |fn makeArray() infer-ret { [2, 3, 4, 5, 6] }
+        |fn makeArray() infer-ret { ret [2, 3, 4, 5, 6]; }
         |fn main() int export {
-        |  makeArray().3
+        |  ret makeArray().3;
         |}
       """.stripMargin)
 
@@ -20,7 +20,7 @@ class TupleTests extends FunSuite with Matchers {
   }
 
   test("Simple tuple with one int") {
-    val compile = RunCompilation.test( "fn main() int export { [9].0 }")
+    val compile = RunCompilation.test( "fn main() int export { ret [9].0; }")
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").header.returnType.kind shouldEqual IntT.i32
@@ -31,7 +31,7 @@ class TupleTests extends FunSuite with Matchers {
   }
 
   test("Tuple with two things") {
-    val compile = RunCompilation.test( "fn main() bool export { [9, true].1 }")
+    val compile = RunCompilation.test( "fn main() bool export { ret [9, true].1; }")
     compile.evalForKind(Vector()) shouldEqual VonBool(true)
   }
 
@@ -39,10 +39,10 @@ class TupleTests extends FunSuite with Matchers {
   test("Tuple type") {
     val compile = RunCompilation.test(
       """
-        |fn moo(a [int, int]) int { a.1 }
+        |fn moo(a [int, int]) int { ret a.1; }
         |
         |fn main() int export {
-        |  moo([3, 4])
+        |  ret moo([3, 4]);
         |}
         |""".stripMargin)
     compile.evalForKind(Vector()) shouldEqual VonInt(4)

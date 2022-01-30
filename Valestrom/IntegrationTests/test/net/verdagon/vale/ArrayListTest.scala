@@ -14,7 +14,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |struct List<E> rules(E Ref) {
           |  array! Array<mut, E>;
           |}
-          |fn len<E>(list &List<E>) int { len(&list.array) }
+          |fn len<E>(list &List<E>) int { ret len(&list.array); }
           |fn add<E>(list &!List<E>, newElement E) {
           |  newArray = Array<mut, E>(len(&list) + 1);
           |  while (newArray.len() < newArray.capacity()) {
@@ -31,7 +31,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |// todo: make that return a &E
           |fn get<E>(list &List<E>, index int) E {
           |  a = list.array;
-          |  = a[index];
+          |  ret a[index];
           |}
           |
           |fn main() int export {
@@ -39,7 +39,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |  add(&!l, 5);
           |  add(&!l, 9);
           |  add(&!l, 7);
-          |  = l.get(1);
+          |  ret l.get(1);
           |}
         """.stripMargin)
 
@@ -56,7 +56,7 @@ class ArrayListTest extends FunSuite with Matchers {
         |  add(&!l, 5);
         |  add(&!l, 9);
         |  add(&!l, 7);
-        |  = l.get(1);
+        |  ret l.get(1);
         |}
         """.stripMargin)
 
@@ -79,7 +79,7 @@ class ArrayListTest extends FunSuite with Matchers {
         |  add(&!l, 5);
         |  add(&!l, 9);
         |  add(&!l, 7);
-        |  = l.get(1);
+        |  ret l.get(1);
         |}
       """.stripMargin)
 
@@ -95,7 +95,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |  add(&!l, 5);
           |  add(&!l, 9);
           |  add(&!l, 7);
-          |  = l.get(1);
+          |  ret l.get(1);
           |}
         """.stripMargin)
 
@@ -111,7 +111,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |  add(&!l, 5);
           |  add(&!l, 9);
           |  add(&!l, 7);
-          |  = l.len();
+          |  ret l.len();
           |}
         """.stripMargin)
 
@@ -128,7 +128,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |  add(&!l, 9);
           |  add(&!l, 7);
           |  set(&!l, 1, 11);
-          |  = l.get(1);
+          |  ret l.get(1);
           |}
         """.stripMargin)
 
@@ -149,7 +149,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |  add(&!l, Marine(5));
           |  add(&!l, Marine(9));
           |  add(&!l, Marine(7));
-          |  = l.get(1).hp;
+          |  ret l.get(1).hp;
           |}
         """.stripMargin)
 
@@ -168,7 +168,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |  };
           |  lam!();
           |  lam!();
-          |  = m.hp;
+          |  ret m.hp;
           |}
         """.stripMargin)
 
@@ -194,7 +194,7 @@ class ArrayListTest extends FunSuite with Matchers {
         |    m2 = (set m = None<Marine>()).get();
         |    = m2.hp;
         |  };
-        |  = lam!();
+        |  ret lam!();
         |}
       """.stripMargin)
 

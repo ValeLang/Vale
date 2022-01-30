@@ -2,5 +2,5 @@
 import math.*;
 
 fn main() int export {
-  int(sqrt(float(16)))
+  ret int(sqrt(float(16)));
 }

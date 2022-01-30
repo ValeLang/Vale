@@ -86,6 +86,7 @@ object NameTranslator {
       case SelfNameS() => SelfNameT()
       case MagicParamNameS(codeLocation) => MagicParamNameT(translateCodeLocation(codeLocation))
       case ConstructingMemberNameS(n) => ConstructingMemberNameT(n)
+      case WhileCondResultNameS(range) => WhileCondResultNameT(range)
       case CodeVarNameS(name) => CodeVarNameT(name)
       case AnonymousSubstructMemberNameS(index) => AnonymousSubstructMemberNameT(index)
     }

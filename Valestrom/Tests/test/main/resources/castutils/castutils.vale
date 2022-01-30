@@ -1,28 +1,28 @@
 
 fn str(b bool) str {
-  = if (b) { "true" } else { "false" }
+  ret if (b) { "true" } else { "false" }
 }
 
 fn +(i int, s str) str {
-  str(i) + s
+  ret str(i) + s;
 }
 
 fn +(s str, i int) str {
-  s + str(i)
+  ret s + str(i);
 }
 
 fn +(s str, b bool) str {
-  s + str(b)
+  ret s + str(b);
 }
 
 fn +(b bool, s str) str {
-  str(b) + s
+  ret str(b) + s;
 }
 
 fn +(f float, s str) str {
-  str(f) + s
+  ret str(f) + s;
 }
 
 fn +(s str, f float) str {
-  s + str(f)
+  ret s + str(f);
 }

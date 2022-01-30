@@ -1,6 +1,6 @@
 
 fn factorial(x int) int {
-  = if (x == 0) {
+  ret if (x == 0) {
       1
     } else {
       x * factorial(x - 1)
@@ -8,5 +8,5 @@ fn factorial(x int) int {
 }
 
 fn main() int export {
-  = factorial(5);
+  ret factorial(5);
 }

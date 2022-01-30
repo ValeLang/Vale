@@ -9,5 +9,5 @@ fn doIt() XOpt {
 
 fn main() int export {
   a = doIt();
-  = 3;
+  ret 3;
 }

@@ -3,10 +3,11 @@ package net.verdagon.vale.templar.expression
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsP, LoadAsPointerP, LoadAsWeakP, MoveP, PermissionP, ReadonlyP, ReadwriteP, UseP}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.{RuneTypeSolver, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar.{ast, _}
-import net.verdagon.vale.templar.ast.{AddressExpressionTE, AddressMemberLookupTE, ArgLookupTE, BlockTE, BorrowToPointerTE, BorrowToWeakTE, ConstantBoolTE, ConstantFloatTE, ConstantIntTE, ConstantStrTE, ConstructTE, DestroyTE, ExpressionT, IfTE, LetNormalTE, LocalLookupTE, LocationInFunctionEnvironment, MutateTE, NarrowPermissionTE, PointerToBorrowTE, PointerToWeakTE, ProgramT, PrototypeT, ReferenceExpressionTE, ReferenceMemberLookupTE, ReturnTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE, TemplarReinterpretTE, VoidLiteralTE, WhileTE}
+import net.verdagon.vale.templar.ast.{AddressExpressionTE, AddressMemberLookupTE, ArgLookupTE, BlockTE, BorrowToPointerTE, BorrowToWeakTE, ConsecutorTE, ConstantBoolTE, ConstantFloatTE, ConstantIntTE, ConstantStrTE, ConstructTE, DestroyTE, ExpressionT, IfTE, LetNormalTE, LocalLookupTE, LocationInFunctionEnvironment, MutateTE, NarrowPermissionTE, PointerToBorrowTE, PointerToWeakTE, ProgramT, PrototypeT, ReferenceExpressionTE, ReferenceMemberLookupTE, ReturnTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE, TemplarReinterpretTE, VoidLiteralTE, WhileTE}
 import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.DestructorTemplar
@@ -783,37 +784,35 @@ class ExpressionTemplar(
             }
           }
         }
-        case IfSE(range, conditionSE, thenBody1, elseBody1) => {
+        case IfSE(range, conditionSE, thenBodySE, elseBodySE) => {
           // We make a block for the if-statement which contains its condition (the "if block"),
           // and then two child blocks under that for the then and else blocks.
           // The then and else blocks are children of the block which contains the condition
           // so they can access any locals declared by the condition.
 
-          val ifBlockFate = fate.makeChildBlockEnvironment(None)
-
           val (conditionExpr, returnsFromCondition) =
-            evaluateAndCoerceToReferenceExpression(temputs, ifBlockFate, life + 1, conditionSE)
+            evaluateAndCoerceToReferenceExpression(temputs, fate, life + 1, conditionSE)
           if (conditionExpr.result.reference != CoordT(ShareT, ReadonlyT, BoolT())) {
             throw CompileErrorExceptionT(IfConditionIsntBoolean(conditionSE.range, conditionExpr.result.reference))
           }
 
 
-          val thenFate = ifBlockFate.makeChildBlockEnvironment(Some(thenBody1))
+          val thenFate = fate.makeChildBlockEnvironment(Some(thenBodySE))
 
           val (thenExpressionsWithResult, thenReturnsFromExprs) =
-            evaluateBlockStatements(temputs, thenFate.snapshot, thenFate, life + 2, thenBody1.exprs)
+            evaluateBlockStatements(temputs, thenFate.snapshot, thenFate, life + 2, thenBodySE)
           val uncoercedThenBlock2 = BlockTE(thenExpressionsWithResult)
 
-          val thenUnstackifiedAncestorLocals = thenFate.getEffectsSince(ifBlockFate.snapshot)
+          val thenUnstackifiedAncestorLocals = thenFate.getEffectsSince(fate.snapshot)
           val thenContinues = uncoercedThenBlock2.result.reference.kind != NeverT()
 
-          val elseFate = ifBlockFate.makeChildBlockEnvironment(Some(elseBody1))
+          val elseFate = fate.makeChildBlockEnvironment(Some(elseBodySE))
 
           val (elseExpressionsWithResult, elseReturnsFromExprs) =
-            evaluateBlockStatements(temputs, elseFate.snapshot, elseFate, life + 3, elseBody1.exprs)
+            evaluateBlockStatements(temputs, elseFate.snapshot, elseFate, life + 3, elseBodySE)
           val uncoercedElseBlock2 = BlockTE(elseExpressionsWithResult)
 
-          val elseUnstackifiedAncestorLocals = elseFate.getEffectsSince(ifBlockFate.snapshot)
+          val elseUnstackifiedAncestorLocals = elseFate.getEffectsSince(fate.snapshot)
           val elseContinues = uncoercedElseBlock2.result.reference.kind != NeverT()
 
           val commonType =
@@ -842,7 +841,7 @@ class ExpressionTemplar(
                 }
               }
               case (a, b) => {
-                vimpl(s"Couldnt reconcile branches of if:\n${a}\n${b}")
+                throw CompileErrorExceptionT(CantReconcileBranchesResults(range, uncoercedThenBlock2.result.reference, uncoercedElseBlock2.result.reference))
               }
             }
           val thenExpr2 = convertHelper.convert(thenFate.snapshot, temputs, range, uncoercedThenBlock2, commonType)
@@ -856,38 +855,38 @@ class ExpressionTemplar(
             if (thenUnstackifiedAncestorLocals != elseUnstackifiedAncestorLocals) {
               throw CompileErrorExceptionT(RangedInternalErrorT(range, "Must move same variables from inside branches!\nFrom then branch: " + thenUnstackifiedAncestorLocals + "\nFrom else branch: " + elseUnstackifiedAncestorLocals))
             }
-            thenUnstackifiedAncestorLocals.foreach(ifBlockFate.markLocalUnstackified)
+            thenUnstackifiedAncestorLocals.foreach(fate.markLocalUnstackified)
           } else {
             // One of them continues and the other does not.
             if (thenContinues) {
-              thenUnstackifiedAncestorLocals.foreach(ifBlockFate.markLocalUnstackified)
+              thenUnstackifiedAncestorLocals.foreach(fate.markLocalUnstackified)
             } else if (elseContinues) {
-              elseUnstackifiedAncestorLocals.foreach(ifBlockFate.markLocalUnstackified)
+              elseUnstackifiedAncestorLocals.foreach(fate.markLocalUnstackified)
             } else vfail()
           }
 
 
-          val ifBlockUnstackifiedAncestorLocals = ifBlockFate.getEffectsSince(fate.snapshot)
+          val ifBlockUnstackifiedAncestorLocals = fate.getEffectsSince(fate.snapshot)
           ifBlockUnstackifiedAncestorLocals.foreach(fate.markLocalUnstackified)
 
 
           (ifExpr2, returnsFromCondition ++ thenReturnsFromExprs ++ elseReturnsFromExprs)
         }
-        case WhileSE(range, conditionSE, body1) => {
+        case WhileSE(range, bodySE) => {
           // We make a block for the while-statement which contains its condition (the "if block"),
           // and the body block, so they can access any locals declared by the condition.
 
-          val whileBlockFate = fate.makeChildBlockEnvironment(None)
+//
+//          val (conditionExpr, returnsFromCondition) =
+//            evaluateAndCoerceToReferenceExpression(temputs, whileBlockFate, life + 0, conditionSE)
+//          if (conditionExpr.result.reference != CoordT(ShareT, ReadonlyT, BoolT())) {
+//            throw CompileErrorExceptionT(WhileConditionIsntBoolean(conditionSE.range, conditionExpr.result.reference))
+//          }
 
-          val (conditionExpr, returnsFromCondition) =
-            evaluateAndCoerceToReferenceExpression(temputs, whileBlockFate, life + 0, conditionSE)
-          if (conditionExpr.result.reference != CoordT(ShareT, ReadonlyT, BoolT())) {
-            throw CompileErrorExceptionT(WhileConditionIsntBoolean(conditionSE.range, conditionExpr.result.reference))
-          }
 
-
+          val whileBlockFate = fate.makeChildBlockEnvironment(Some(bodySE))
           val (bodyExpressionsWithResult, bodyReturnsFromExprs) =
-            evaluateBlockStatements(temputs, whileBlockFate.snapshot, whileBlockFate, life + 1, Vector(body1))
+            evaluateBlockStatements(temputs, whileBlockFate.snapshot, whileBlockFate, life + 1, bodySE)
           val uncoercedBodyBlock2 = BlockTE(bodyExpressionsWithResult)
 
           val bodyContinues = uncoercedBodyBlock2.result.reference.kind != NeverT()
@@ -899,26 +898,31 @@ class ExpressionTemplar(
           }
 
 
-          val thenBody =
-            if (uncoercedBodyBlock2.kind == NeverT()) {
-              uncoercedBodyBlock2
-            } else {
-              BlockTE(Templar.consecutive(Vector(uncoercedBodyBlock2, ConstantBoolTE(true))))
-            }
+//          val thenBody =
+//            if (uncoercedBodyBlock2.kind == NeverT()) {
+//              uncoercedBodyBlock2
+//            } else {
+//              BlockTE(Templar.consecutive(Vector(uncoercedBodyBlock2, ConstantBoolTE(true))))
+//            }
 
-          val ifExpr2 =
-            ast.IfTE(
-              conditionExpr,
-              thenBody,
-              BlockTE(ConstantBoolTE(false)))
-          val whileExpr2 = WhileTE(BlockTE(ifExpr2))
-          (whileExpr2, returnsFromCondition ++ bodyReturnsFromExprs)
+//          val ifExpr2 =
+//            ast.IfTE(
+//              conditionExpr,
+//              thenBody,
+//              BlockTE(ConstantBoolTE(false)))
+          val whileExpr2 = WhileTE(uncoercedBodyBlock2)
+          (whileExpr2, /*returnsFromCondition ++*/ bodyReturnsFromExprs)
         }
-        case b @ BlockSE(range, locals, blockExprs) => {
+        case ConsecutorSE(exprs) => {
+          val (resultTE, returns) =
+            evaluateAndCoerceToReferenceExpressions(temputs, fate, life + 0, exprs)
+          (Templar.consecutive(resultTE), returns)
+        }
+        case b @ BlockSE(range, locals, _) => {
           val childEnvironment = fate.makeChildBlockEnvironment(Some(b))
 
           val (expressionsWithResult, returnsFromExprs) =
-            evaluateBlockStatements(temputs, childEnvironment.functionEnvironment, childEnvironment, life, blockExprs)
+            evaluateBlockStatements(temputs, childEnvironment.functionEnvironment, childEnvironment, life, b)
           val block2 = BlockTE(expressionsWithResult)
 
           val unstackifiedAncestorLocals = childEnvironment.getEffectsSince(fate.snapshot)
@@ -1217,9 +1221,9 @@ class ExpressionTemplar(
     startingFate: FunctionEnvironment,
     fate: FunctionEnvironmentBox,
     life: LocationInFunctionEnvironment,
-    exprs: Vector[IExpressionSE]):
+    block: BlockSE):
   (ReferenceExpressionTE, Set[CoordT]) = {
-    blockTemplar.evaluateBlockStatements(temputs, startingFate, fate, life, exprs)
+    blockTemplar.evaluateBlockStatements(temputs, startingFate, fate, life, block)
   }
 
   def translatePatternList(

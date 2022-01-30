@@ -2,7 +2,7 @@ package net.verdagon.vale.hammer
 
 import net.verdagon.vale.astronomer.{ICompileErrorA, ProgramA}
 import net.verdagon.vale.metal._
-import net.verdagon.vale.parser.{FileP, VariabilityP}
+import net.verdagon.vale.parser.VariabilityP
 import net.verdagon.vale.scout.{ICompileErrorS, ProgramS}
 import net.verdagon.vale.templar.ast.{FunctionExportT, FunctionExternT, KindExportT, KindExternT}
 import net.verdagon.vale.templar.names.{FullNameT, IVarNameT}

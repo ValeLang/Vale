@@ -1,7 +1,8 @@
 package net.verdagon.vale.scout.rules
 
 import net.verdagon.vale.{RangeS, vassert, vcurious, vimpl, vpass, vwat}
-import net.verdagon.vale.parser.{LocationP, MutabilityP, OwnershipP, PermissionP, VariabilityP}
+import net.verdagon.vale.parser.LocationP
+import net.verdagon.vale.parser.ast.{LocationP, MutabilityP, OwnershipP, PermissionP, VariabilityP}
 import net.verdagon.vale.scout._
 
 import scala.collection.immutable.List

@@ -1,6 +1,6 @@
 package net.verdagon.vale.scout
 
-import net.verdagon.vale.parser.VariabilityP
+import net.verdagon.vale.parser.IterationOptionNameDeclarationP
 import net.verdagon.vale.{vassert, vcurious, vfail, vimpl}
 
 
@@ -25,14 +25,21 @@ case class VariableDeclarations(vars: Vector[VariableDeclaration]) {
   def ++(that: VariableDeclarations): VariableDeclarations = {
     VariableDeclarations(vars ++ that.vars)
   }
-  def find(needle: String): Option[IVarNameS] = {
-    vars.map(_.name).find({
-      case CodeVarNameS(humanName) => humanName == needle
-      case ConstructingMemberNameS(_) => false
-      case ClosureParamNameS() => false
-//      case UnnamedLocalNameS(_) => false
-      case MagicParamNameS(_) => false
-    })
+  def find(needle: IImpreciseNameS): Option[IVarNameS] = {
+    (needle match {
+      case CodeNameS(needle) => {
+        vars.map(_.name).collect({ case v @ CodeVarNameS(hay) if hay == needle => v })
+      }
+      case IterableNameS(needle) => {
+        vars.map(_.name).collect({ case v @ IterableNameS(hay) if hay == needle => v })
+      }
+      case IteratorNameS(needle) => {
+        vars.map(_.name).collect({ case v @ IteratorNameS(hay) if hay == needle => v })
+      }
+      case IterationOptionNameS(needle) => {
+        vars.map(_.name).collect({ case v @ IterationOptionNameS(hay) if hay == needle => v })
+      }
+    }).headOption
   }
 }
 

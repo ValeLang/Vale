@@ -9,5 +9,5 @@ fn cSumFuel_vasp(arr Array<imm, Spaceship>) int extern;
 
 fn main() int export {
   a = [imm *](5, (i){ Spaceship(i * 2, 7) });
-  = cSumFuel_vasp(a);
+  ret cSumFuel_vasp(a);
 }

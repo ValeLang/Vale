@@ -103,7 +103,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |fn main() rules(N int = 3) int export {
-        |  N
+        |  ret N;
         |}
         |""".stripMargin
     )
@@ -116,7 +116,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |fn main() rules(N int = 3, M int = N) int export {
-        |  M
+        |  ret M;
         |}
         |""".stripMargin
     )
@@ -129,7 +129,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |fn main() rules(N int = 2 | 3 | 4, N = 3) int export {
-        |  N
+        |  ret N;
         |}
         |""".stripMargin
     )
@@ -147,7 +147,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |  MyStruct = T Ref(O Ownership, P Permission, K Kind),
         |  X Ref(ptr, ro, K))
         |X export {
-        |  *MyStruct()
+        |  ret *MyStruct();
         |}
         |""".stripMargin
     )
@@ -161,12 +161,12 @@ class TemplarSolverTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn moo(i int, b bool) str { "hello" }
+        |fn moo(i int, b bool) str { ret "hello"; }
         |fn main()
         |rules(
         |  mooFunc Prot("moo", (int, bool), _))
         |str export {
-        |  (mooFunc)(5, true)
+        |  ret (mooFunc)(5, true);
         |}
         |""".stripMargin
     )
@@ -301,7 +301,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |impl<X> MyInterface<X> for SomeStruct<X>;
         |
         |fn doAThing<T>(t T) SomeStruct<T> {
-        |  SomeStruct<T>(t)
+        |  ret SomeStruct<T>(t);
         |}
         |
         |fn main() export {
@@ -320,11 +320,11 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |struct SomeStruct imm { i int; }
         |
         |fn bork(x *SomeStruct) int {
-        |  x.i
+        |  ret x.i;
         |}
         |
         |fn main() int export {
-        |  bork(SomeStruct(7))
+        |  ret bork(SomeStruct(7));
         |}
         |""".stripMargin
     )
@@ -358,11 +358,11 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |
         |fn bork<X, Z>() Z
         |rules(X Kind = SomeStruct<int>, X = SomeStruct<Z>) {
-        |  9
+        |  ret 9;
         |}
         |
         |fn main() int export {
-        |  bork()
+        |  ret bork();
         |}
         |""".stripMargin
     )
@@ -378,7 +378,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |struct SomeStruct { }
         |
         |fn bork<T>(x T) ^T {
-        |  SomeStruct()
+        |  ret SomeStruct();
         |}
         |
         |fn main() export {
@@ -403,7 +403,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |}
         |
         |fn main() bool export {
-        |  swap([5, true]).0
+        |  ret swap([5, true]).0;
         |}
         |""".stripMargin
     )
@@ -425,7 +425,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |}
         |
         |fn main() int export {
-        |  swap([][5, 7]).0
+        |  ret swap([][5, 7]).0;
         |}
         |""".stripMargin
     )
@@ -444,16 +444,16 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |  fn getFuel(virtual self &IShip) int;
         |}
         |struct Firefly {}
-        |fn getFuel(self &Firefly impl IShip) int { 7 }
+        |fn getFuel(self &Firefly impl IShip) int { ret 7; }
         |impl IShip for Firefly;
         |
         |fn genericGetFuel<T>(x T) int
         |rules(implements(T, IShip)) {
-        |  x.getFuel()
+        |  ret x.getFuel();
         |}
         |
         |fn main() int export {
-        |  genericGetFuel(Firefly())
+        |  ret genericGetFuel(Firefly());
         |}
         |""".stripMargin
     )
@@ -469,13 +469,13 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |import v.builtins.panic.*;
         |
-        |fn moo(i int, b bool) str { "hello" }
+        |fn moo(i int, b bool) str { ret "hello"; }
         |
         |fn main()
         |rules(
         |  mooFunc Prot("moo", (int, bool), R Ref))
         |R export {
-        |  __vbi_panic()
+        |  __vbi_panic();
         |}
         |
         |""".stripMargin

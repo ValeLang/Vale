@@ -6,7 +6,7 @@ import net.verdagon.vale.{FileCoordinateMap, PackageCoordinate, PackageCoordinat
 import net.verdagon.vale.templar.{Hinputs, _}
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.metal.{FunctionH, ProgramH, StackifyH, VariableIdH}
-import net.verdagon.vale.parser.FileP
+import net.verdagon.vale.parser.ast.FileP
 import net.verdagon.vale.scout.{ICompileErrorS, ProgramS}
 
 import scala.collection.immutable.List

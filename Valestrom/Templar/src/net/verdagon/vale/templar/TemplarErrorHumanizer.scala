@@ -27,6 +27,9 @@ object TemplarErrorHumanizer {
         case CantUseReadonlyReferenceAsReadwrite(range) => {
             ": Can't make readonly reference into a readwrite one!"
         }
+        case CantReconcileBranchesResults(range, thenResult, elseResult) => {
+          ": If branches return different types: " + humanizeTemplata(codeMap, CoordTemplata(thenResult)) + " and " + humanizeTemplata(codeMap, CoordTemplata(elseResult))
+        }
         case CantMoveOutOfMemberT(range, name) => {
             ": Cannot move out of member (" + name + ")"
         }

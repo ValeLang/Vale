@@ -13,9 +13,9 @@ class VirtualTests extends FunSuite with Matchers {
       val compile = RunCompilation.test(
         """
           |interface I sealed {}
-          |fn doThing(virtual i I) int {4}
+          |fn doThing(virtual i I) int { ret 4; }
           |fn main(i I) int {
-          |  doThing(i)
+          |  ret doThing(i);
           |}
         """.stripMargin)
       val temputs = compile.expectTemputs()
@@ -46,9 +46,9 @@ class VirtualTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |interface I sealed {}
-        |fn doThing(virtual i I) int {4}
+        |fn doThing(virtual i I) int { ret 4; }
         |fn main(i I) int {
-        |  doThing(i)
+        |  ret doThing(i);
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()
@@ -89,7 +89,7 @@ class VirtualTests extends FunSuite with Matchers {
         |  fn doThing(virtual i I) int;
         |}
         |fn main(i I) int {
-        |  doThing(i)
+        |  ret doThing(i);
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()
@@ -129,21 +129,21 @@ class VirtualTests extends FunSuite with Matchers {
           |}
           |
           |struct Human {  }
-          |fn hop(s *Human impl Bipedal) int { 7 }
-          |fn skip(s *Human impl Bipedal) int { 9 }
+          |fn hop(s *Human impl Bipedal) int { ret 7; }
+          |fn skip(s *Human impl Bipedal) int { ret 9; }
           |impl Bipedal for Human;
           |
           |fn hopscotch(s *Bipedal) int {
           |  s.hop();
           |  s.skip();
-          |  = s.hop();
+          |  ret s.hop();
           |}
           |
           |fn main() export int {
           |   x = Bipedal({ 3 }, { 5 });
           |  // x is an unnamed substruct which implements Bipedal.
           |
-          |  = hopscotch(*x);
+          |  ret hopscotch(*x);
           |}
         """.stripMargin)
     val temputs = compile.getHamuts()

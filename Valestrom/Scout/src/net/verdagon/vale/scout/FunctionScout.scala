@@ -1,6 +1,7 @@
 package net.verdagon.vale.scout
 
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{AbstractAttributeP, AbstractP, BlockPE, BorrowP, BuiltinAttributeP, ExportAttributeP, ExternAttributeP, FunctionHeaderP, FunctionP, FunctionReturnP, IFunctionAttributeP, IdentifyingRuneP, NameP, PureAttributeP, ReadwriteP, RegionTypePR, ReturnPE, RulePUtils, TypeRuneAttributeP, UseP}
 import net.verdagon.vale.scout.Scout.noDeclarations
 import net.verdagon.vale.scout.patterns._
 //import net.verdagon.vale.scout.predictor.{Conclusions, PredictorEvaluator}
@@ -151,7 +152,8 @@ class FunctionScout(scout: Scout) {
             // We hand these into scoutBody instead of assembling a StackFrame on our own because we want
             // StackFrame's to be made in one place, where we can centralize the logic for tracking variable
             // uses and so on.
-            captureDeclarations)
+            captureDeclarations,
+            false)
         vassert(body1.closuredNames.isEmpty)
         CodeBodyS(body1)
       }
@@ -266,8 +268,9 @@ class FunctionScout(scout: Scout) {
         functionEnv,
         Some(parentStackFrame),
         lidb.child(),
-        body0,
-        paramDeclarations)
+        BlockPE(range, ReturnPE(range, body0)),
+        paramDeclarations,
+        true)
 
     if (lambdaMagicParamNames.nonEmpty && (explicitParams.nonEmpty)) {
       throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(parentStackFrame.file, range), "Cant have a lambda with _ and params"))
@@ -368,7 +371,8 @@ class FunctionScout(scout: Scout) {
     parentStackFrame: Option[StackFrame],
     lidb: LocationInDenizenBuilder,
     body0: BlockPE,
-    initialDeclarations: VariableDeclarations):
+    initialDeclarations: VariableDeclarations,
+    resultRequested: Boolean):
   (BodySE, VariableUses, Vector[MagicParamNameS]) = {
     val functionBodyEnv = functionEnv.child()
 
@@ -376,13 +380,18 @@ class FunctionScout(scout: Scout) {
     // If we have a lone lookup node, like "m = Marine(); m;" then that
     // 'm' will be turned into an expression, which means that's how it's
     // destroyed. So, thats how we destroy things before their time.
-    val (NormalResult(_, block1), selfUses, childUses) =
-      expressionScout.scoutBlock(
+    val (block1, selfUses, childUses) =
+      expressionScout.newBlock(
         functionBodyEnv,
         parentStackFrame,
         lidb.child(),
-        body0,
-        initialDeclarations)
+        Scout.evalRange(functionBodyEnv.file, body0.range),
+        initialDeclarations,
+        resultRequested,
+        (stackFrame1, lidb, resultRequested) => {
+          expressionScout.scoutExpressionAndCoerce(
+            stackFrame1, lidb, body0, UseP, resultRequested)
+        })
 
     vcurious(
       childUses.uses.map(_.name).collect({ case mpn @ MagicParamNameS(_) => mpn }).isEmpty)
@@ -401,7 +410,9 @@ class FunctionScout(scout: Scout) {
           childUses.isMoved(declared.name),
           childUses.isMutated(declared.name))
       })
-    val block1WithParamLocals = BlockSE(Scout.evalRange(functionBodyEnv.file, body0.range), block1.locals ++ magicParamLocals, block1.exprs)
+    val bodyRangeS = Scout.evalRange(functionBodyEnv.file, body0.range)
+    val block1WithParamLocals =
+      BlockSE(bodyRangeS, block1.locals ++ magicParamLocals, block1)
 
     val allUses =
       selfUses.combine(childUses, {

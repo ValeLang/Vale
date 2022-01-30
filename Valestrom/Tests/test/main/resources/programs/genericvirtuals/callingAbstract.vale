@@ -7,11 +7,11 @@ interface MyInterface<T> rules(T Ref) {
 
 struct MyStruct<T> rules(T Ref) { }
 impl<T> MyInterface<T> for MyStruct<T>;
-fn doThing<T>(x MyStruct<T> impl MyInterface<T>) int {4}
+fn doThing<T>(x MyStruct<T> impl MyInterface<T>) int { ret 4; }
 
 fn main() int export {
   x = MyStruct<int>();
   y = MyStruct<str>();
   doThing(x);
-  = doThing(y);
+  ret doThing(y);
 }

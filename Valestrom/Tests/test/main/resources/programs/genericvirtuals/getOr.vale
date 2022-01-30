@@ -7,13 +7,13 @@ impl<T> XOpt<T> for XNone<T>;
 
 fn getOr<T>(virtual opt &XOpt<T>, default T) T abstract;
 fn getOr<T>(opt &XNone<T> impl XOpt<T>, default T) T {
-  default
+  ret default;
 }
 fn getOr<T>(opt &XSome<T> impl XOpt<T>, default T) T {
-  opt.value
+  ret opt.value;
 }
 
 fn main() int export {
   a XOpt<int> = XSome(9);
-  = a.getOr<int>(12);
+  ret a.getOr<int>(12);
 }

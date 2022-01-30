@@ -1,6 +1,7 @@
 package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.MutabilityP
 import net.verdagon.vale.scout.rules.{IRulexSR, RuneUsage}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.{PackageCoordinate, RangeS, vassert, vcurious, vimpl, vpass, vwat}

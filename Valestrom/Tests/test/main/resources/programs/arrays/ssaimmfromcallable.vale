@@ -2,5 +2,5 @@
 fn main() int export {
   i = 3;
   a = [imm 5](*!{_ * 42});
-  = a[1];
+  ret a[1];
 }

@@ -35,25 +35,25 @@ rules(
   G Ref(share | borrow, _, _),
   F Prot = Prot("__call", (G, int), T))
 {
-  Array<imm, T>(n, generator)
+  ret Array<imm, T>(n, generator);
 }
 
 fn toImmArray<N, E>(seq &[<_, _> N * E]) Array<imm, E> {
-  MakeImmArray(N, { seq[_] })
+  ret MakeImmArray(N, { seq[_] });
 }
 
 fn toImmArray<T>(source &Array<_, T>) Array<imm, *T> {
-  MakeImmArray(source.len(), &!{ source[_] })
+  ret MakeImmArray(source.len(), &!{ source[_] });
 }
 
 fn toVaryArray<N, E, SM>(seq &[<SM> N * E]) Array<mut, E> {
-  MakeVaryArray(N, { seq[_] })
+  ret MakeVaryArray(N, { seq[_] });
 }
 
 fn toVaryArray<T>(source &Array<_, T>) Array<mut, *T> {
-  MakeVaryArray(source.len(), &!{ source[_] })
+  ret MakeVaryArray(source.len(), &!{ source[_] });
 }
 
 fn toArray<T>(source &Array<_, T>) Array<mut, *T> {
-  MakeArray(source.len(), { source[_] })
+  ret MakeArray(source.len(), { source[_] });
 }

@@ -7,7 +7,7 @@ fn has<E, F>(arr &Array<_, E>, elem E, equator F) bool {
     }
     set i = i + 1;
   }
-  = false;
+  ret false;
 }
 
 fn has<E>(arr &Array<_, E>, elem E) bool {
@@ -22,9 +22,9 @@ fn has<E, F>(seq &[<_> _ * E], elem E, equator F) bool {
     }
     set i = i + 1;
   }
-  = false;
+  ret false;
 }
 
 fn has<E>(seq &[<_> _ * E], elem E) bool {
-  has(seq, elem, ==)
+  ret has(seq, elem, ==);
 }

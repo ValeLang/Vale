@@ -1,7 +1,8 @@
 package net.verdagon.vale.templar.expression
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.parser.{LoadAsBorrowP, LoadAsPointerP, UseP}
+import net.verdagon.vale.parser.UseP
+import net.verdagon.vale.parser.ast.{LoadAsBorrowP, LoadAsPointerP}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.{IRulexSR, RuneUsage}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}

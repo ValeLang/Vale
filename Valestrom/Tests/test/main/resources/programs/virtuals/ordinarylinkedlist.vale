@@ -19,19 +19,19 @@ struct MyList imm {
 }
 
 fn printValues(list @MyList) void {
-	 print(list.value);
-	 printNextValue(list.next);
+  print(list.value);
+  printNextValue(list.next);
 }
 
 fn printNextValue(virtual opt @MyOption) void { }
 fn printNextValue(opt @MyNone impl MyOption) void { }
 fn printNextValue(opt @MySome impl MyOption) void {
-	 printValues(opt.value);
+  printValues(opt.value);
 }
 
 
 fn main() int export {
- 	list = MyList(10, MySome(MyList(20, MySome(MyList(30, MyNone())))));
- 	printValues(list);
- 	= 0;
+  list = MyList(10, MySome(MyList(20, MySome(MyList(30, MyNone())))));
+  printValues(list);
+  ret 0;
 }

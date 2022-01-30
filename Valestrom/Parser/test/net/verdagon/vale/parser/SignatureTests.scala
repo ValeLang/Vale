@@ -1,15 +1,18 @@
 package net.verdagon.vale.parser
 
+import net.verdagon.vale.parser.ExpressionParser.StopBeforeCloseBrace
+import net.verdagon.vale.parser.ast.{BlockPE, ConstantIntPE, FunctionHeaderP, FunctionP, FunctionReturnP, IdentifyingRuneP, IdentifyingRunesP, LocalNameDeclarationP, NameOrRunePT, NameP, OverrideP, ParamsP, PatternPP, Patterns, VoidPE}
+import net.verdagon.vale.parser.old.{CombinatorParsers, OldTestParseUtils}
 import net.verdagon.vale.{Collector, vassert, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
-class SignatureTests extends FunSuite with Matchers with Collector with TestParseUtils {
+class SignatureTests extends FunSuite with Collector with TestParseUtils {
   // fn maxHp(this: virtual IUnit): Int;
 
   test("Impl function") {
     compile(
-      CombinatorParsers.topLevelFunction,
-      "fn maxHp(this Marine impl IUnit) { 5 }") shouldHave {
+      Parser.parseFunction(_, StopBeforeCloseBrace),
+      "fn maxHp(this Marine impl IUnit) { ret 5; }") shouldHave {
       case FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "maxHp")),Vector(), None, None,
@@ -18,35 +21,40 @@ class SignatureTests extends FunSuite with Matchers with Collector with TestPars
               _,
               Vector(
                 PatternPP(_,_,
-                  Some(CaptureP(_,LocalNameP(NameP(_, "this")))),
+                  Some(LocalNameDeclarationP(NameP(_, "this"))),
                   Some(NameOrRunePT(NameP(_, "Marine"))),
                   None,
                   Some(OverrideP(_,NameOrRunePT(NameP(_, "IUnit")))))))),
           FunctionReturnP(_, None,None)),
-        Some(BlockPE(_, Vector(ConstantIntPE(_, 5, _))))) =>
+        Some(BlockPE(_, _))) =>
     }
   }
 
   test("Param") {
-    val program = compileProgram("fn call(f F){f()}")
+    val program =
+      compile(
+        Parser.parseFunction(_, StopBeforeCloseBrace),
+        "fn call(f F){f()}")
     program shouldHave {
-      case PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "f")))),Some(NameOrRunePT(NameP(_, "F"))),None,None) =>
+      case PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, "f"))),Some(NameOrRunePT(NameP(_, "F"))),None,None) =>
     }
   }
 
   test("Templated function") {
-    compile(CombinatorParsers.topLevelFunction, "fn sum () rules() {3}") shouldHave {
+    compile(
+      Parser.parseFunction(_, StopBeforeCloseBrace),
+      "fn sum () rules() {3}") shouldHave {
       case FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "sum")), Vector(), None, Some(_), Some(_), FunctionReturnP(_, None, None)),
-        Some(BlockPE(_, Vector(ConstantIntPE(_, 3, _))))) =>
+        Some(BlockPE(_, ConstantIntPE(_, 3, _)))) =>
     }
   }
 
 
   test("Identifying runes") {
     compile(
-      CombinatorParsers.topLevelFunction,
+      Parser.parseFunction(_, StopBeforeCloseBrace),
       "fn wrap<A, F>(a A) { }") shouldHave {
       case FunctionP(_,
         FunctionHeaderP(_,
@@ -59,7 +67,7 @@ class SignatureTests extends FunSuite with Matchers with Collector with TestPars
           None,
           Some(ParamsP(_, Vector(Patterns.capturedWithTypeRune("a", "A")))),
           FunctionReturnP(_, None, None)),
-        Some(BlockPE(_, Vector(VoidPE(_))))) =>
+        Some(BlockPE(_, VoidPE(_)))) =>
     }
   }
 
@@ -67,7 +75,7 @@ class SignatureTests extends FunSuite with Matchers with Collector with TestPars
     // This test is here because we were parsing the first _ of __Never as an anonymous
     // rune then stopping.
     compile(
-      CombinatorParsers.topLevelFunction,
+      Parser.parseFunction(_, StopBeforeCloseBrace),
       "fn __vbi_panic() __Never {}") shouldHave {
       case NameOrRunePT(NameP(_,"__Never")) =>
     }

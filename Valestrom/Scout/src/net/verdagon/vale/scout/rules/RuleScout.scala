@@ -1,6 +1,7 @@
 package net.verdagon.vale.scout.rules
 
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{BoolTypePR, BuiltinCallPR, ComponentsPR, CoordListTypePR, CoordTypePR, EqualsPR, IRulexPR, ITypePR, IntTypePR, KindTypePR, LocationTypePR, MutabilityTypePR, NameP, OrPR, OwnershipTypePR, PermissionTypePR, PrototypeTypePR, RangeP, TemplexPR, TypedPR, VariabilityTypePR}
 import net.verdagon.vale.scout.{IEnvironment, Environment => _, FunctionEnvironment => _, _}
 import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vimpl}
 
@@ -28,7 +29,7 @@ object RuleScout {
     runeToExplicitType: mutable.HashMap[IRuneS, ITemplataType],
     rulex: IRulexPR):
   RuneUsage = {
-    val evalRange = (range: Range) => Scout.evalRange(env.file, range)
+    val evalRange = (range: RangeP) => Scout.evalRange(env.file, range)
 
     rulex match {
       case EqualsPR(range, leftP, rightP) => {

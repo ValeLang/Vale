@@ -15,7 +15,7 @@ import scala.collection.immutable.List
 sealed trait OwnershipT  {
   def order: Int;
 }
-case object ShareT   extends OwnershipT {
+case object ShareT extends OwnershipT {
   override def order: Int = 1
   override def toString: String = "share"
 }

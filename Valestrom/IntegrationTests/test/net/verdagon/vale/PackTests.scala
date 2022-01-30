@@ -11,7 +11,7 @@ class PackTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  (x, y, z) = [5, 6, 7];
-        |  = x;
+        |  ret x;
         |}
       """.stripMargin)
 
@@ -27,7 +27,7 @@ class PackTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  (x, (y, z)) = [[4, 5], [6, 7]];
-        |  = y;
+        |  ret y;
         |}
       """.stripMargin)
 
@@ -49,7 +49,7 @@ class PackTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  (x, (y, z)) = [5, [6, false]];
-        |  = x;
+        |  ret x;
         |}
       """.stripMargin)
 

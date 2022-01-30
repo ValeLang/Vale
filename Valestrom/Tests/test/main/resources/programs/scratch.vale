@@ -621,7 +621,7 @@ struct PatternPP {
   // `fn launch(Spaceship(fuel, wings)) { println(fuel + wings); }`
   destructure Opt<DestructureP>;
 
-  // The `abstract` or `impl` in the parameter, like `fn wings(self Serenity impl ISpaceship) int  { 2 }`
+  // The `abstract` or `impl` in the parameter, like `fn wings(self Serenity impl ISpaceship) int  { ret 2; }`
   virtuality Opt<IVirtualityP>;
 }
 

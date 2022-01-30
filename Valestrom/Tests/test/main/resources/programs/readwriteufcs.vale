@@ -6,10 +6,10 @@ struct Spaceship {
 }
 
 fn getFuel(a *!Spaceship) int {
-  a.fuel
+  ret a.fuel;
 }
 
 fn main() int export {
   ship = Spaceship(42);
-  = (*!ship).getFuel();
+  ret (*!ship).getFuel();
 }

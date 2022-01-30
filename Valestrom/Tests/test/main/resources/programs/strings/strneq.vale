@@ -1,6 +1,6 @@
 
 fn main() int export {
-  = if (streq("abc", 0, 3, "def", 0, 3)) {
+  ret if (streq("abc", 0, 3, "def", 0, 3)) {
       73
     } else {
       42

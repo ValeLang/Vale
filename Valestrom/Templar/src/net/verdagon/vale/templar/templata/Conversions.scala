@@ -2,6 +2,7 @@ package net.verdagon.vale.templar.templata
 
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{BorrowP, FinalP, ImmutableP, InlineP, LocationP, MutabilityP, MutableP, OwnP, OwnershipP, PermissionP, PointerP, ReadonlyP, ReadwriteP, ShareP, VariabilityP, VaryingP, WeakP, YonderP}
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.{scout => s}
 import net.verdagon.vale.templar.{types => t}

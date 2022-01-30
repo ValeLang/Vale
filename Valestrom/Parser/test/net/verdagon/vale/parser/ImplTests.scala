@@ -1,12 +1,14 @@
 package net.verdagon.vale.parser
 
+import net.verdagon.vale.parser.ast.{CallPT, IdentifyingRuneP, IdentifyingRunesP, ImplP, MutabilityPT, MutableP, NameOrRunePT, NameP}
+import net.verdagon.vale.parser.old.{CombinatorParsers, OldTestParseUtils}
 import net.verdagon.vale.{Collector, Tests, vassert}
 import org.scalatest.{FunSuite, Matchers}
 
 
-class ImplTests extends FunSuite with Matchers with Collector with TestParseUtils {
+class ImplTests extends FunSuite with Matchers with Collector with OldTestParseUtils {
   test("Templated impl") {
-    compile(
+    oldCompile(
       CombinatorParsers.impl,
       """
         |impl<T> MyInterface<T> for SomeStruct<T>;
@@ -20,7 +22,7 @@ class ImplTests extends FunSuite with Matchers with Collector with TestParseUtil
   }
 
   test("Impling a template call") {
-    compile(
+    oldCompile(
       CombinatorParsers.impl,
       """
         |impl IFunction1<mut, int, int> for MyIntIdentity;

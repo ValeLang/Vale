@@ -18,7 +18,7 @@ class HashMapTest extends FunSuite with Matchers {
           |  m!.add(8, 102);
           |  m!.add(12, 103);
           |  m!.update(8, 108);
-          |  = m.get(8).get();
+          |  ret m.get(8).get();
           |}
           |""".stripMargin)
 
@@ -57,7 +57,7 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassertEq(m.get(40).get(), 110, "val at 10 not 110!");
           |  vassertEq(m.get(44).get(), 111, "val at 11 not 111!");
           |  vassert(m.get(1337).isEmpty(), "expected nothing at 1337!");
-          |  = m.get(44).get();
+          |  ret m.get(44).get();
           |}
         """.stripMargin)
 
@@ -75,7 +75,7 @@ class HashMapTest extends FunSuite with Matchers {
           |fn main() int export {
           |  m = HashMap<int, int, IntHasher, IntEquator>(IntHasher(), IntEquator());
           |  add42(&!m);
-          |  = m.get(42).get();
+          |  ret m.get(42).get();
           |}
         """.stripMargin)
 
@@ -99,18 +99,18 @@ class HashMapTest extends FunSuite with Matchers {
           |  set hash = 41 * hash + loc.groupX;
           |  set hash = 41 * hash + loc.groupY;
           |  set hash = 41 * hash + loc.indexInGroup;
-          |  = hash;
+          |  ret hash;
           |}
           |
           |struct LocationEquator { }
           |fn __call(this &LocationEquator, a Location, b Location) bool {
-          |  (a.groupX == b.groupX) and (a.groupY == b.groupY) and (a.indexInGroup == b.indexInGroup)
+          |  ret (a.groupX == b.groupX) and (a.groupY == b.groupY) and (a.indexInGroup == b.indexInGroup);
           |}
           |
           |fn main() int export {
           |  m = HashMap<Location, int>(LocationHasher(), LocationEquator());
           |  m!.add(Location(4, 5, 6), 100);
-          |  = m.get(Location(4, 5, 6)).get();
+          |  ret m.get(Location(4, 5, 6)).get();
           |}
         """.stripMargin)
 
@@ -135,7 +135,7 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassert(m.has(4));
           |  vassert(m.has(8));
           |  vassert(m.has(12));
-          |  = 111;
+          |  ret 111;
           |}
         """.stripMargin)
 
@@ -159,7 +159,7 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassertEq(k[1], 4);
           |  vassertEq(k[2], 8);
           |  vassertEq(k[3], 12);
-          |  = 1337;
+          |  ret 1337;
           |}
         """.stripMargin)
 
@@ -183,7 +183,7 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassertEq(k[1], 101);
           |  vassertEq(k[2], 102);
           |  vassertEq(k[3], 103);
-          |  = 1337;
+          |  ret 1337;
           |}
         """.stripMargin)
 
@@ -209,7 +209,7 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassert(m.has(12));
           |  m!.remove(12);
           |  vassert(not m.has(12));
-          |  = 1337;
+          |  ret 1337;
           |}
         """.stripMargin)
 
@@ -235,7 +235,7 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassert(m.has(4));
           |  m!.remove(4);
           |  vassert(not m.has(4));
-          |  = 1337;
+          |  ret 1337;
           |}
         """.stripMargin)
 
@@ -263,7 +263,7 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassertEq(values[0], 0, "wat");
           |  vassertEq(values[1], 3, "wat");
           |  vassertEq(values[2], 4, "wat");
-          |  = 1337;
+          |  ret 1337;
           |}
         """.stripMargin)
 

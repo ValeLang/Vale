@@ -46,7 +46,7 @@ class TemplarVirtualTests extends FunSuite with Matchers {
         |
         |fn main() int export {
         |  f = Bork({ 7 });
-        |  = f.bork();
+        |  ret f.bork();
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()
@@ -60,7 +60,7 @@ class TemplarVirtualTests extends FunSuite with Matchers {
         |
         |fn main() int export {
         |  f = IFunction1<mut, int, int>({_});
-        |  = (f)!(7);
+        |  ret (f)!(7);
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()

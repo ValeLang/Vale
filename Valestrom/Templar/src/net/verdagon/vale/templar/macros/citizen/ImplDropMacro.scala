@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar.macros.citizen
 
 import net.verdagon.vale.astronomer.{FunctionA, ImplA}
-import net.verdagon.vale.parser.{LoadAsPointerP, MoveP, OwnP, ReadonlyP, ReadwriteP, ShareP}
+import net.verdagon.vale.parser.ReadwriteP
 import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS, OverrideSP}
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.scout._
@@ -9,12 +9,13 @@ import net.verdagon.vale.templar.ast.{FunctionHeaderT, LocationInFunctionEnviron
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env.{FunctionEnvEntry, FunctionEnvironment}
 import net.verdagon.vale.templar.function.{DestructorTemplar, FunctionTemplarCore}
-import net.verdagon.vale.templar.macros.{IOnImplDefinedMacro}
+import net.verdagon.vale.templar.macros.IOnImplDefinedMacro
 import net.verdagon.vale.templar.names.{FullNameT, FunctionTemplateNameT, INameT, NameTranslator}
 import net.verdagon.vale.templar.templata.{CoordTemplata, KindTemplata}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{ArrayTemplar, IFunctionGenerator, Temputs}
 import net.verdagon.vale._
+import net.verdagon.vale.parser.ast.{LoadAsPointerP, MoveP}
 import net.verdagon.vale.templar.expression.CallTemplar
 
 class ImplDropMacro() extends IOnImplDefinedMacro {
@@ -51,14 +52,13 @@ class ImplDropMacro() extends IOnImplDefinedMacro {
             Vector(),
             BlockSE(RangeS.internal(-167213),
               Vector(LocalS(CodeVarNameS("this"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
-              Vector(
-                FunctionCallSE(RangeS.internal(-167213),
-                  OutsideLoadSE(RangeS.internal(-167213),
-                    Array(),
-                    CodeNameS(CallTemplar.DROP_FUNCTION_NAME),
-                    None,
-                    LoadAsPointerP(None)),
-                  Vector(LocalLoadSE(RangeS.internal(-167213), CodeVarNameS("this"), MoveP))))))))
+              FunctionCallSE(RangeS.internal(-167213),
+                OutsideLoadSE(RangeS.internal(-167213),
+                  Array(),
+                  CodeNameS(CallTemplar.DROP_FUNCTION_NAME),
+                  None,
+                  LoadAsPointerP(None)),
+                Vector(LocalLoadSE(RangeS.internal(-167213), CodeVarNameS("this"), MoveP)))))))
     Vector((
       implName.copy(last = NameTranslator.translateFunctionNameToTemplateName(dropFunctionA.name)),
       FunctionEnvEntry(dropFunctionA)))

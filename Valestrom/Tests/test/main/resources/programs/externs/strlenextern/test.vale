@@ -3,5 +3,5 @@ fn extStrLen(haystackStr str) int extern;
 
 fn main() int export {
   len = extStrLen("sprogwoggle");
-  = len;
+  ret len;
 }

@@ -4,7 +4,7 @@ interface IUnit weakable { fn getHp(virtual self **IUnit) int; }
 impl IUnit for Muta;
 fn getHp(self **Muta impl IUnit) int {
   maybeBorrowSelf = lock(self);
-  = if (maybeBorrowSelf.isEmpty()) {
+  ret if (maybeBorrowSelf.isEmpty()) {
       drop(maybeBorrowSelf);
       = 0;
     } else {
@@ -16,5 +16,5 @@ fn getHp(self **Muta impl IUnit) int {
 fn main() int export {
   ownMuta = Muta(73);
   weakUnit **IUnit = **ownMuta;
-  = getHp(weakUnit);
+  ret getHp(weakUnit);
 }

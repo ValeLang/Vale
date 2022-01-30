@@ -1,10 +1,13 @@
 package net.verdagon.vale.parser
 
+import net.verdagon.vale.parser.ExpressionParser.StopBeforeCloseBrace
+import net.verdagon.vale.parser.ast.{CallPT, ExportP, FinalP, IdentifyingRuneP, IdentifyingRunesP, ImmutableP, InlinePT, IntTypePR, InterpretedPT, MutabilityPT, MutableP, NameOrRunePT, NameP, NormalStructMemberP, PointerP, ReadonlyP, RepeaterSequencePT, ShareP, StructMembersP, StructP, TemplateRulesP, TypedPR, VariabilityPT, VariadicStructMemberP, VaryingP, WeakP}
+import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, vassert}
 import org.scalatest.{FunSuite, Matchers}
 
 
-class StructTests extends FunSuite with Matchers with Collector {
+class StructTests extends FunSuite with Collector with TestParseUtils {
   private def compile[T](parser: CombinatorParsers.Parser[T], code: String): T = {
     // The strip is in here because things inside the parser don't expect whitespace before and after
     CombinatorParsers.parse(parser, code.strip().toCharArray()) match {
@@ -35,45 +38,58 @@ class StructTests extends FunSuite with Matchers with Collector {
   }
 
   test("Simple struct") {
-    compile(CombinatorParsers.struct, "struct Moo { x *int; }") shouldHave {
+    compileMaybe(
+      Parser.parseStruct(_),
+      "struct Moo { x *int; }") shouldHave {
       case StructP(_, NameP(_, "Moo"), Vector(), MutabilityPT(_, MutableP), None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,PointerP,ReadonlyP,NameOrRunePT(NameP(_, "int"))))))) =>
     }
   }
 
   test("Variadic struct") {
-    val thing = compile(CombinatorParsers.struct, "struct Moo<T> { _ ...T; }")
+    val thing = compileMaybe(
+      Parser.parseStruct(_),
+      "struct Moo<T> { _ ...T; }")
     Collector.only(thing, {
       case StructMembersP(_, Vector(VariadicStructMemberP(_, FinalP, NameOrRunePT(NameP(_, "T"))))) =>
     })
   }
 
   test("Variadic struct with varying") {
-    val thing = compile(CombinatorParsers.struct, "struct Moo<T> { _! ...T; }")
+    val thing = compileMaybe(
+      Parser.parseStruct(_),
+      "struct Moo<T> { _! ...T; }")
     Collector.only(thing, {
       case StructMembersP(_, Vector(VariadicStructMemberP(_, VaryingP, NameOrRunePT(NameP(_, "T"))))) =>
     })
   }
 
   test("Struct with weak") {
-    compile(CombinatorParsers.struct, "struct Moo { x **int; }") shouldHave {
+    compileMaybe(
+      Parser.parseStruct(_),
+      "struct Moo { x **int; }") shouldHave {
       case StructP(_, NameP(_, "Moo"), Vector(), MutabilityPT(_, MutableP), None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,WeakP,ReadonlyP,NameOrRunePT(NameP(_, "int"))))))) =>
     }
   }
 
   test("Struct with inl") {
-    compile(CombinatorParsers.struct, "struct Moo { x inl Marine; }") shouldHave {
+    compileMaybe(
+      Parser.parseStruct(_),
+      "struct Moo { x inl Marine; }") shouldHave {
       case StructP(_,NameP(_,"Moo"),Vector(), MutabilityPT(_, MutableP),None,None,StructMembersP(_,Vector(NormalStructMemberP(_,NameP(_,"x"),FinalP,InlinePT(_,NameOrRunePT(NameP(_,"Marine"))))))) =>
     }
   }
 
   test("Export struct") {
-    compile(CombinatorParsers.struct, "struct Moo export { x *int; }") shouldHave {
+    compileMaybe(
+      Parser.parseStruct(_),
+      "struct Moo export { x *int; }") shouldHave {
       case StructP(_, NameP(_, "Moo"), Vector(ExportP(_)), MutabilityPT(_, MutableP), None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,PointerP,ReadonlyP,NameOrRunePT(NameP(_, "int"))))))) =>
     }
   }
 
   test("Struct with rune") {
-    compile(CombinatorParsers.struct,
+    compileMaybe(
+      Parser.parseStruct(_),
       """
         |struct ListNode<E> {
         |  value E;
@@ -95,7 +111,8 @@ class StructTests extends FunSuite with Matchers with Collector {
   }
 
   test("Struct with int rune") {
-    compile(CombinatorParsers.struct,
+    compileMaybe(
+      Parser.parseStruct(_),
       """
         |struct Vecf<N>
         |rules(N int)
@@ -116,7 +133,8 @@ class StructTests extends FunSuite with Matchers with Collector {
   }
 
   test("Struct with int rune, array sequence specifies mutability") {
-    compile(CombinatorParsers.struct,
+    compileMaybe(
+      Parser.parseStruct(_),
       """
         |struct Vecf<N>
         |rules(N int)

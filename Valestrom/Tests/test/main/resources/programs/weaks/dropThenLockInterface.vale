@@ -2,15 +2,15 @@
 struct Muta weakable { hp int; }
 interface IUnit weakable { fn getHp(virtual self *IUnit) int; }
 impl IUnit for Muta;
-fn getHp(self *Muta impl IUnit) int { self.hp }
+fn getHp(self *Muta impl IUnit) int { ret self.hp; }
 
 fn main() int export {
   ownMuta = Muta(73);
   weakUnit **IUnit = **ownMuta;
   drop(ownMuta);
   maybeBorrowUnit = lock(weakUnit);
-  = if (maybeBorrowUnit.isEmpty()) {
-      = 42;
+  ret if (maybeBorrowUnit.isEmpty()) {
+      42;
     } else {
       maybeBorrowUnit.get().getHp()
     }

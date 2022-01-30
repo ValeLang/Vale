@@ -13,5 +13,5 @@ fn main() int export {
     }
   }
 
-  = 42;
+  ret 42;
 }

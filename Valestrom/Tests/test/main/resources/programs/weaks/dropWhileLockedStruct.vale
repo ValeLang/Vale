@@ -5,5 +5,5 @@ fn main() int export {
   weakMuta = **ownMuta;
   maybeBorrowMuta = lock(weakMuta);
   drop(ownMuta);
-  = maybeBorrowMuta.get().hp;
+  ret maybeBorrowMuta.get().hp;
 }

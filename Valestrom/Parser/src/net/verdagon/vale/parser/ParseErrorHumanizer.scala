@@ -12,6 +12,14 @@ object ParseErrorHumanizer {
   String = {
     val errorStrBody =
       err match {
+        case CombinatorParseError(pos, msg) => msg
+        case BadStartOfBlock(pos) => "Bad start of block."
+        case BadDot(pos) => "Bad dot."
+        case BadExpressionBegin(pos) => "Bad start of expression."
+        case UnknownTupleOrSubExpression(pos) => "Saw ( but expression is neither tuple nor sub-expression."
+        case NeedSemicolon(pos) => "Need semicolon."
+        case BadStructMember(pos) => "Bad struct member."
+        case BadBinaryFunctionName(pos) => "Bad binary function name."
 //        case CombinatorParseError(pos, msg) => "Internal parser error: " + msg + ":\n"
         case UnrecognizedTopLevelThingError(pos) => "expected fn, struct, interface, impl, import, or export, but found:\n"
         case BadFunctionBodyError(pos) => "expected a function body, or `;` to note there is none. Found:\n"

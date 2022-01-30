@@ -1,8 +1,10 @@
 package net.verdagon.vale.parser.patterns
 
-import net.verdagon.vale.parser.Patterns._
-import net.verdagon.vale.parser.CombinatorParsers._
+import net.verdagon.vale.parser.ast.Patterns._
+import net.verdagon.vale.parser.old.CombinatorParsers._
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{CallPT, DestructureP, LocalNameDeclarationP, ManualSequencePT, NameOrRunePT, NameP, PatternPP}
+import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -92,7 +94,7 @@ class TypeAndDestructureTests extends FunSuite with Matchers with Collector {
       case PatternPP(_,_,
           None,
           Some(NameOrRunePT(NameP(_, "Muta"))),
-          Some(DestructureP(_,Vector(PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "b")))),None,None,None)))),
+          Some(DestructureP(_,Vector(PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, "b"))),None,None,None)))),
           None) =>
     }
   }
@@ -101,7 +103,7 @@ class TypeAndDestructureTests extends FunSuite with Matchers with Collector {
       case PatternPP(_,_,
           None,
           Some(NameOrRunePT(NameP(_, "Muta"))),
-          Some(DestructureP(_,Vector(PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "b")))),Some(NameOrRunePT(NameP(_, "Marine"))),None,None)))),
+          Some(DestructureP(_,Vector(PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, "b"))),Some(NameOrRunePT(NameP(_, "Marine"))),None,None)))),
           None) =>
     }
   }

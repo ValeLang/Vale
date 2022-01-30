@@ -279,6 +279,12 @@ class TemplarMutateTests extends FunSuite with Matchers {
         CodeVarNameT("hp")))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      CantReconcileBranchesResults(
+        RangeS.testZero,
+        fireflyCoord,
+        serenityCoord))
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantUseUnstackifiedLocal(
         RangeS.testZero,
         CodeVarNameT("firefly")))

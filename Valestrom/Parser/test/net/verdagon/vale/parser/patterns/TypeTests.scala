@@ -1,9 +1,11 @@
 package net.verdagon.vale.parser.patterns
 
 import net.verdagon.vale.{Collector, parser, vfail, vimpl}
-import net.verdagon.vale.parser.Patterns.{fromEnv, withType}
-import net.verdagon.vale.parser.CombinatorParsers._
+import net.verdagon.vale.parser.ast.Patterns.{fromEnv, withType}
+import net.verdagon.vale.parser.old.CombinatorParsers._
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{AnonymousRunePT, CallPT, FinalP, ImmutableP, IntPT, InterpretedPT, ManualSequencePT, MutabilityPT, MutableP, NameOrRunePT, NameP, PatternPP, PointerP, ReadonlyP, RepeaterSequencePT, VariabilityPT, VaryingP, WeakP}
+import net.verdagon.vale.parser.old.CombinatorParsers
 import org.scalatest.{FunSuite, Matchers}
 
 class TypeTests extends FunSuite with Matchers with Collector {

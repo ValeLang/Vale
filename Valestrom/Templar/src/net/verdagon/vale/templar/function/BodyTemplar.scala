@@ -4,9 +4,9 @@ package net.verdagon.vale.templar.function
 //import net.verdagon.vale.astronomer.{AtomSP, FunctionA, BodySE, ExportA, IExpressionSE, IFunctionAttributeA, LocalA, ParameterS, PureA, UserFunctionA}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
-import net.verdagon.vale.parser.CaptureP
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer.FunctionA
+import net.verdagon.vale.parser.ast.INameDeclarationP
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS}
 import net.verdagon.vale.templar._
@@ -22,7 +22,7 @@ trait IBodyTemplarDelegate {
     startingFate: FunctionEnvironment,
     fate: FunctionEnvironmentBox,
     life: LocationInFunctionEnvironment,
-    exprs: Vector[IExpressionSE]):
+    exprs: BlockSE):
   (ReferenceExpressionTE, Set[CoordT])
 
   def translatePatternList(
@@ -143,7 +143,7 @@ class BodyTemplar(
       evaluateLets(env, temputs, life + 0, body1.range, params1, params2);
 
     val (statementsFromBlock, returnsFromInsideMaybeWithNever) =
-      delegate.evaluateBlockStatements(temputs, startingEnv, env, life + 1, body1.block.exprs);
+      delegate.evaluateBlockStatements(temputs, startingEnv, env, life + 1, body1.block);
 
     val unconvertedBodyWithoutReturn = Templar.consecutive(Vector(patternsTE, statementsFromBlock))
 

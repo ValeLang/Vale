@@ -1,5 +1,5 @@
 
 fn main() int export {
   __vbi_panic();
-  = 73;
+  ret 73;
 }

@@ -26,7 +26,7 @@ trait IFunctionTemplarDelegate {
     startingFate: FunctionEnvironment,
     fate: FunctionEnvironmentBox,
     life: LocationInFunctionEnvironment,
-    exprs: Vector[IExpressionSE]):
+    exprs: BlockSE):
   (ReferenceExpressionTE, Set[CoordT])
 
   def translatePatternList(

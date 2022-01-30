@@ -10,7 +10,7 @@ class StringTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |fn main() str export {
-        |  "sprogwoggle"
+        |  ret "sprogwoggle";
         |}
       """.stripMargin)
 
@@ -24,7 +24,7 @@ class StringTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |fn main() str export {
-        |  "sprog\nwoggle"
+        |  ret "sprog\nwoggle";
         |}
         |""".stripMargin)
 
@@ -35,7 +35,7 @@ class StringTests extends FunSuite with Matchers {
   }
 
   test("String with hex escape") {
-    val code = "fn main() str export { \"sprog\\u001bwoggle\" }"
+    val code = "fn main() str export { ret \"sprog\\u001bwoggle\"; }"
     // This assert makes sure the above is making the input we actually intend.
     // Real source files from disk are going to have a backslash character and then a u,
     // they won't have the 0x1b byte.
@@ -73,9 +73,9 @@ class StringTests extends FunSuite with Matchers {
 
   test("String interpolate") {
     val compile = RunCompilation.test(
-      "fn +(s str, i int) str { s + str(i) }\n" +
-      "fn ns(i int) int { i }\n" +
-      "fn main() str export { \"\"\"bl\"{ns(4)}rg\"\"\" }")
+      "fn +(s str, i int) str { ret s + str(i); }\n" +
+      "fn ns(i int) int { ret i; }\n" +
+      "fn main() str export { ret \"\"\"bl\"{ns(4)}rg\"\"\"; }")
 
     compile.evalForKind(Vector()) shouldEqual VonStr("bl\"4rg")
   }
@@ -101,14 +101,14 @@ class StringTests extends FunSuite with Matchers {
           |}
           |
           |fn slice(s str) StrSlice {
-          |  newStrSlice(s, 0, s.len())
+          |  ret newStrSlice(s, 0, s.len());
           |}
           |
-          |fn slice(s str, begin int) StrSlice { s.slice().slice(begin) }
+          |fn slice(s str, begin int) StrSlice { ret s.slice().slice(begin); }
           |fn slice(s StrSlice, begin int) StrSlice {
           |  newBegin = s.begin + begin;
           |  vassert(newBegin <= s.string.len(), "slice begin is more than string length!");
-          |  = newStrSlice(s.string, newBegin, s.end);
+          |  ret newStrSlice(s.string, newBegin, s.end);
           |}
           |
           |fn len(s StrSlice) int {
@@ -116,17 +116,17 @@ class StringTests extends FunSuite with Matchers {
           |}
           |
           |fn slice(s str, begin int, end int) StrSlice {
-          |  = newStrSlice(s, begin, end);
+          |  ret newStrSlice(s, begin, end);
           |}
           |
           |fn slice(s StrSlice, begin int, end int) StrSlice {
           |  newGlyphBeginOffset = s.begin + begin;
           |  newGlyphEndOffset = s.begin + end;
-          |  = newStrSlice(s.string, newGlyphBeginOffset, newGlyphEndOffset);
+          |  ret newStrSlice(s.string, newGlyphBeginOffset, newGlyphEndOffset);
           |}
           |
           |fn main() int export {
-          |  "hello".slice().slice(1, 4).len()
+          |  ret "hello".slice().slice(1, 4).len();
           |}
           |""".stripMargin)
 

@@ -1,18 +1,18 @@
 
 fn min(a int, b int) int {
-  = if (a <= b) { a } else { b }
+  ret if (a <= b) { a } else { b }
 }
 
 fn max(a int, b int) int {
-  = if (a >= b) { a } else { b }
+  ret if (a >= b) { a } else { b }
 }
 
 fn abs(a int) int {
-  = if (a < 0) { a * -1 } else { a }
+  ret if (a < 0) { a * -1 } else { a }
 }
 
 fn signum(a int) int {
-  = if (a < 0) { -1 }
+  ret if (a < 0) { -1 }
     else if (a > 0) { 1 }
     else { 0 }
 }

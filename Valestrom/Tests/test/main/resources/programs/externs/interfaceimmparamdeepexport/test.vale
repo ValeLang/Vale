@@ -10,7 +10,7 @@ impl IShip for Seaship;
 
 fn getFuel(virtual this IShip) int abstract;
 fn getFuel(this Spaceship impl IShip) int { this.engine.fuel }
-fn getFuel(this Seaship impl IShip) int { 0 }
+fn getFuel(this Seaship impl IShip) int { ret 0; }
 
 fn valeGetShipFuel(s IShip) int export {
   ret s.getFuel();

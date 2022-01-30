@@ -12,5 +12,5 @@ impl<T> K<T> for L<T>;
 
 fn main() int export {
   x = L<int>();
-  = 4;
+  ret 4;
 }

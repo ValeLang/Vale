@@ -5,20 +5,20 @@ import org.scalatest.{FunSuite, Matchers}
 
 class ConjunctionTests extends FunSuite with Matchers {
   test("And") {
-    val compile = RunCompilation.test("fn main() bool export {true and true}")
+    val compile = RunCompilation.test("fn main() bool export { ret true and true; }")
     compile.evalForKind(Vector()) shouldEqual VonBool(true)
   }
 
   test("Or") {
-    val compile = RunCompilation.test("fn main() bool export {true or false}")
+    val compile = RunCompilation.test("fn main() bool export { ret true or false; }")
     compile.evalForKind(Vector()) shouldEqual VonBool(true)
   }
 
   test("And short-circuiting") {
     val compile = RunCompilation.test(
       """
-        |fn printAndFalse() bool { print("bork!"); = false; }
-        |fn main() bool export {printAndFalse() and printAndFalse()}
+        |fn printAndFalse() bool { print("bork!"); ret false; }
+        |fn main() bool export { ret printAndFalse() and printAndFalse(); }
         |""".stripMargin)
 
     compile.evalForStdout(Vector()) shouldEqual "bork!"
@@ -27,8 +27,8 @@ class ConjunctionTests extends FunSuite with Matchers {
   test("Or short-circuiting") {
     val compile = RunCompilation.test(
       """
-        |fn printAndTrue() bool { print("bork!"); = true; }
-        |fn main() bool export {printAndTrue() or printAndTrue()}
+        |fn printAndTrue() bool { print("bork!"); ret true; }
+        |fn main() bool export { ret printAndTrue() or printAndTrue(); }
         |""".stripMargin)
 
     compile.evalForStdout(Vector()) shouldEqual "bork!"

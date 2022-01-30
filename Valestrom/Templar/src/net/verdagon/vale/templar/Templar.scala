@@ -3,10 +3,10 @@ package net.verdagon.vale.templar;
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.options.GlobalOptions
-import net.verdagon.vale.parser.UseP
+import net.verdagon.vale.parser.ast.UseP
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.IRulexSR
-import net.verdagon.vale.scout.{CodeNameS, ExportS, ExternS, FunctionNameS, GeneratedBodyS, GlobalFunctionFamilyNameS, ICompileErrorS, IExpressionSE, IFunctionDeclarationNameS, IImpreciseNameS, INameS, IRuneS, ITemplataType, ProgramS, SealedS, TopLevelCitizenDeclarationNameS}
+import net.verdagon.vale.scout.{BlockSE, CodeNameS, ExportS, ExternS, FunctionNameS, GeneratedBodyS, GlobalFunctionFamilyNameS, ICompileErrorS, IExpressionSE, IFunctionDeclarationNameS, IImpreciseNameS, INameS, IRuneS, ITemplataType, ProgramS, SealedS, TopLevelCitizenDeclarationNameS}
 import net.verdagon.vale.templar.EdgeTemplar.{FoundFunction, NeededOverride, PartialEdgeT}
 import net.verdagon.vale.templar.OverloadTemplar.FindFunctionFailure
 import net.verdagon.vale.templar.ast.{ArgLookupTE, ArrayLengthTE, AsSubtypeTE, BlockTE, ConsecutorTE, EdgeT, FunctionCallTE, FunctionHeaderT, FunctionT, IsSameInstanceTE, LocationInFunctionEnvironment, LockWeakTE, ParameterT, ProgramT, PrototypeT, ReferenceExpressionTE, ReturnTE, VoidLiteralTE}
@@ -305,7 +305,7 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
         startingFate: FunctionEnvironment,
         fate: FunctionEnvironmentBox,
         life: LocationInFunctionEnvironment,
-        exprs: Vector[IExpressionSE]
+        exprs: BlockSE
     ): (ReferenceExpressionTE, Set[CoordT]) = {
       expressionTemplar.evaluateBlockStatements(temputs, startingFate, fate, life, exprs)
     }

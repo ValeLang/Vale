@@ -11,7 +11,7 @@ struct MyFunc { }
 impl MyIFunction1<int, int> for MyFunc;
 
 fn go(this *MyFunc impl MyIFunction1<int, int>, param int) int {
-  param * 2
+  ret param * 2;
 }
 
 fn main() export {

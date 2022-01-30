@@ -5,5 +5,5 @@ fn __call(this &!MyIntIdentity, i int) int { i }
 
 fn main() int export {
   a = Array<mut, int>(5, &!MyIntIdentity());
-  = a[3];
+  ret a[3];
 }

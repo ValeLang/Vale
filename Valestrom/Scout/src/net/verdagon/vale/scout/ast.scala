@@ -1,6 +1,7 @@
 package net.verdagon.vale.scout
 
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{IMacroInclusion, MutabilityP, VariabilityP}
 import net.verdagon.vale.scout.patterns.{AtomSP, VirtualitySP}
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.{FileCoordinate, PackageCoordinate, RangeS, vassert, vcurious, vimpl, vpass, vwat}

@@ -1,7 +1,6 @@
 package net.verdagon.vale.scout.rules
 
 import net.verdagon.vale.RangeS
-import net.verdagon.vale.parser.VariabilityPT
 import net.verdagon.vale.parser.ast.{AnonymousRunePT, BoolPT, BorrowP, BorrowPT, CallPT, FunctionPT, ITemplexPT, IntPT, InterpretedPT, LocationPT, ManualSequencePT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnershipPT, PackPT, PermissionPT, PrototypePT, RangeP, ReadonlyP, RegionRune, RepeaterSequencePT, StringPT, VariabilityPT}
 import net.verdagon.vale.scout.{CodeNameS, CodeRuneS, IEnvironment, IImpreciseNameS, INameS, IRuneS, ImplicitRuneS, LocationInDenizenBuilder, Scout}
 

@@ -1,6 +1,6 @@
 
 fn main() int export {
   i = 3;
-  a = [mut 5](*!{_ * 42});
+  a = [#5](*!{_ * 42});
   ret a[1];
 }

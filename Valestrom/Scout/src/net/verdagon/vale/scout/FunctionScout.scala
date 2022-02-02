@@ -228,7 +228,7 @@ class FunctionScout(scout: Scout) {
     val ruleBuilder = ArrayBuffer[IRulexSR]()
     val runeToExplicitType = mutable.HashMap[IRuneS, ITemplataType]()
 
-    // We say PerhapsTypeless because they might be anonymous params like in `(_){ true }`
+    // We say PerhapsTypeless because they might be anonymous params like in `(_) => { true }`
     // Later on, we'll make identifying runes for these.
     val explicitParamPatternsPerhapsTypeless =
       PatternScout.scoutPatterns(
@@ -268,7 +268,11 @@ class FunctionScout(scout: Scout) {
         functionEnv,
         Some(parentStackFrame),
         lidb.child(),
-        BlockPE(range, ReturnPE(range, body0)),
+        body0,
+//        body0 match {
+//          case BlockPE(_, ReturnPE(_, _)) => body0
+//          case BlockPE(range, inner) => BlockPE(range, ReturnPE(range, inner))
+//        },
         paramDeclarations,
         true)
 
@@ -390,7 +394,7 @@ class FunctionScout(scout: Scout) {
         resultRequested,
         (stackFrame1, lidb, resultRequested) => {
           expressionScout.scoutExpressionAndCoerce(
-            stackFrame1, lidb, body0, UseP, resultRequested)
+            stackFrame1, lidb, body0.inner, UseP, resultRequested)
         })
 
     vcurious(
@@ -412,7 +416,7 @@ class FunctionScout(scout: Scout) {
       })
     val bodyRangeS = Scout.evalRange(functionBodyEnv.file, body0.range)
     val block1WithParamLocals =
-      BlockSE(bodyRangeS, block1.locals ++ magicParamLocals, block1)
+      BlockSE(bodyRangeS, block1.locals ++ magicParamLocals, block1.expr)
 
     val allUses =
       selfUses.combine(childUses, {

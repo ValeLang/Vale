@@ -521,6 +521,7 @@ case class ReferenceMemberLookupTE(
     // See RMLRMO why we just return the member type.
     AddressResultT(memberReference.copy(permission = targetPermission))
   }
+  vpass()
 }
 case class AddressMemberLookupTE(
     range: RangeS,

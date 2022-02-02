@@ -34,7 +34,7 @@ class InferTemplateTests extends FunSuite with Matchers {
         |struct Muta { hp int; }
         |fn moo<N>(m *[N * Muta]) int { ret m[0].hp; }
         |fn main() int export {
-        |  x = [][Muta(10)];
+        |  x = [#][Muta(10)];
         |  ret moo(*x);
         |}
       """.stripMargin)
@@ -47,7 +47,7 @@ class InferTemplateTests extends FunSuite with Matchers {
         |struct Muta { hp int; }
         |fn moo<N>(m [N * Muta]) int { ret m[0].hp; }
         |fn main() int export {
-        |  x = [][Muta(10)];
+        |  x = [#][Muta(10)];
         |  ret moo(x);
         |}
       """.stripMargin)

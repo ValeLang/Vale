@@ -72,10 +72,10 @@ class IfTests extends FunSuite with Matchers {
         |  m = Marine(5);
         |  ret if (false) {
         |      (x) = m;
-        |      = x;
+        |      x
         |    } else {
         |      (y) = m;
-        |      = y;
+        |      y
         |    }
         |}
       """.stripMargin)
@@ -117,7 +117,7 @@ class IfTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |fn main() int export {
-        |  ret if x = 42; x < 50; { x }
+        |  ret if x = 42; x < 50 { x }
         |    else { 73 }
         |}
       """.stripMargin)
@@ -141,7 +141,7 @@ class IfTests extends FunSuite with Matchers {
         |      ret 7;
         |    } else {
         |      println("In else!");
-        |      = m.hp;
+        |      m.hp
         |    };
         |  println("In rest!");
         |  ret x;
@@ -169,7 +169,7 @@ class IfTests extends FunSuite with Matchers {
         |      ret 7;
         |    } else {
         |      println("In else!");
-        |      = m.hp;
+        |      m.hp
         |    };
         |  println("In rest!");
         |  ret x;

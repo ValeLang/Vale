@@ -2,7 +2,6 @@ package net.verdagon.vale.templar.infer
 
 import net.verdagon.vale._
 import net.verdagon.vale.options.GlobalOptions
-import net.verdagon.vale.parser.ShareP
 import net.verdagon.vale.parser.ast.ShareP
 import net.verdagon.vale.scout.{ArgumentRuneS, CodeNameS, CoordTemplataType, IImpreciseNameS, INameS, IRuneS, ITemplataType, KindTemplataType, RuneNameS}
 import net.verdagon.vale.scout.rules._

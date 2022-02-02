@@ -10,7 +10,7 @@ class PackTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |fn main() int export {
-        |  (x, y, z) = [5, 6, 7];
+        |  (x, y, z) = (5, 6, 7);
         |  ret x;
         |}
       """.stripMargin)
@@ -26,7 +26,7 @@ class PackTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |fn main() int export {
-        |  (x, (y, z)) = [[4, 5], [6, 7]];
+        |  (x, (y, z)) = ((4, 5), (6, 7));
         |  ret y;
         |}
       """.stripMargin)
@@ -48,7 +48,7 @@ class PackTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |fn main() int export {
-        |  (x, (y, z)) = [5, [6, false]];
+        |  (x, (y, z)) = (5, (6, false));
         |  ret x;
         |}
       """.stripMargin)

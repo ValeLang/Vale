@@ -15,14 +15,14 @@ class ScoutRuleTests extends FunSuite with Matchers {
 
   private def compile(code: String): ProgramS = {
     Parser.runParser(code) match {
-      case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(firstProgram0) => {
+      case Err(err) => fail(err.toString)
+      case Ok(firstProgram0) => {
         val von = ParserVonifier.vonifyFile(firstProgram0)
         val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
         val program0 =
           ParsedLoader.load(vpstJson) match {
-            case ParseFailure(error) => vwat(error.toString)
-            case ParseSuccess(program0) => program0
+            case Err(error) => vwat(error.toString)
+            case Ok(program0) => program0
           }
         new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => vfail(e.toString)
@@ -34,14 +34,14 @@ class ScoutRuleTests extends FunSuite with Matchers {
 
   private def compileForError(code: String): ICompileErrorS = {
     Parser.runParser(code) match {
-      case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(firstProgram0) => {
+      case Err(err) => fail(err.toString)
+      case Ok(firstProgram0) => {
         val von = ParserVonifier.vonifyFile(firstProgram0)
         val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
         val program0 =
           ParsedLoader.load(vpstJson) match {
-            case ParseFailure(error) => vwat(error.toString)
-            case ParseSuccess(program0) => program0
+            case Err(error) => vwat(error.toString)
+            case Ok(program0) => program0
           }
         new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => e

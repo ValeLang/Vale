@@ -3,7 +3,7 @@ package net.verdagon.vale.templar.expression
 //import net.verdagon.vale.astronomer.{BlockSE, IExpressionSE}
 import net.verdagon.vale.scout.{BlockSE, ExpressionScout, IExpressionSE}
 import net.verdagon.vale.templar.{ast, _}
-import net.verdagon.vale.templar.ast.{BlockTE, LetNormalTE, LocationInFunctionEnvironment, ReferenceExpressionTE, UnreachableMootTE}
+import net.verdagon.vale.templar.ast.{BlockTE, ConsecutorTE, LetNormalTE, LocationInFunctionEnvironment, ReferenceExpressionTE, UnreachableMootTE}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.DestructorTemplar
 import net.verdagon.vale.templar.names.{FullNameT, IVarNameT, TemplarBlockResultVarNameT}
@@ -62,8 +62,14 @@ class BlockTemplar(
     life: LocationInFunctionEnvironment,
     blockSE: BlockSE):
   (ReferenceExpressionTE, Set[CoordT]) = {
-    val (unneveredUnresultifiedUndestructedExpressions, returnsFromExprs) =
-      evaluateBlockStatementsInner(temputs, fate, life + 0, ExpressionScout.flattenExpressions(blockSE.expr).toList);
+    val (unneveredUnresultifiedUndestructedRootExpression, returnsFromExprs) =
+      delegate.evaluateAndCoerceToReferenceExpression(temputs, fate, life + 0, blockSE.expr);
+
+    val unneveredUnresultifiedUndestructedExpressions =
+      unneveredUnresultifiedUndestructedRootExpression match {
+        case ConsecutorTE(exprs) => exprs
+        case other => Vector(other)
+      }
 
     val unreversedVariablesToDestruct = getUnmovedVariablesIntroducedSince(startingFate, fate)
 
@@ -144,39 +150,39 @@ class BlockTemplar(
     (exprs.init :+ resultLet, resultVariable)
   }
 
-  private def evaluateBlockStatementsInner(
-    temputs: Temputs,
-    fate: FunctionEnvironmentBox,
-    life: LocationInFunctionEnvironment,
-    expr1: List[IExpressionSE]):
-  (List[ReferenceExpressionTE], Set[CoordT]) = {
-    expr1 match {
-      case Nil => (Nil, Set())
-      case first1 :: rest1 => {
-        val (perhapsUndestructedFirstExpr2, returnsFromFirst) =
-          delegate.evaluateAndCoerceToReferenceExpression(
-            temputs, fate, life + 0, first1);
-
-        val destructedFirstExpr2 =
-          if (rest1.isEmpty) {
-            // This is the last expression, which means it's getting returned,
-            // so don't destruct it.
-            (perhapsUndestructedFirstExpr2) // Do nothing
-          } else {
-            // This isn't the last expression
-            perhapsUndestructedFirstExpr2.result.kind match {
-              case VoidT() => perhapsUndestructedFirstExpr2
-              case _ => destructorTemplar.drop(fate, temputs, perhapsUndestructedFirstExpr2)
-            }
-          }
-
-        val (restExprs2, returnsFromRest) =
-          evaluateBlockStatementsInner(temputs, fate, life + 1, rest1)
-
-        (destructedFirstExpr2 +: restExprs2, returnsFromFirst ++ returnsFromRest)
-      }
-    }
-  }
+//  private def evaluateBlockStatementsInner(
+//    temputs: Temputs,
+//    fate: FunctionEnvironmentBox,
+//    life: LocationInFunctionEnvironment,
+//    expr1: List[IExpressionSE]):
+//  (List[ReferenceExpressionTE], Set[CoordT]) = {
+//    expr1 match {
+//      case Nil => (Nil, Set())
+//      case first1 :: rest1 => {
+//        val (perhapsUndestructedFirstExpr2, returnsFromFirst) =
+//          delegate.evaluateAndCoerceToReferenceExpression(
+//            temputs, fate, life + 0, first1);
+//
+//        val destructedFirstExpr2 =
+//          if (rest1.isEmpty) {
+//            // This is the last expression, which means it's getting returned,
+//            // so don't destruct it.
+//            (perhapsUndestructedFirstExpr2) // Do nothing
+//          } else {
+//            // This isn't the last expression
+//            perhapsUndestructedFirstExpr2.result.kind match {
+//              case VoidT() => perhapsUndestructedFirstExpr2
+//              case _ => destructorTemplar.drop(fate, temputs, perhapsUndestructedFirstExpr2)
+//            }
+//          }
+//
+//        val (restExprs2, returnsFromRest) =
+//          evaluateBlockStatementsInner(temputs, fate, life + 1, rest1)
+//
+//        (destructedFirstExpr2 +: restExprs2, returnsFromFirst ++ returnsFromRest)
+//      }
+//    }
+//  }
 
   def mootAll(
     temputs: Temputs,

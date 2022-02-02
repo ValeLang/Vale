@@ -1,7 +1,7 @@
 package net.verdagon.vale.parser
 
 import net.liftweb.json._
-import net.verdagon.vale.parser.ast.{AbstractAttributeP, AbstractP, AndPE, AnonymousRunePT, ArenaRuneAttributeP, BlockPE, BoolTypePR, BorrowP, BorrowPT, BuiltinAttributeP, BuiltinCallPR, BumpRuneAttributeP, CallMacro, CallPT, CitizenTemplateTypePR, ComponentsPR, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, ConstructingMemberNameDeclarationP, CoordListTypePR, CoordTypePR, DestructPE, DestructureP, DontCallMacro, DotPE, EachPE, EqualsPR, ExportAsP, ExportAttributeP, ExportP, ExternAttributeP, FileP, FinalP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IArraySizeP, ICitizenAttributeP, IExpressionPE, IFunctionAttributeP, IImpreciseNameP, INameDeclarationP, IRulexPR, IRuneAttributeP, IStructContent, ITemplexPT, ITypePR, IVirtualityP, IdentifyingRuneP, IdentifyingRunesP, IfPE, ImmutableP, ImplP, ImportP, IndexPE, InlinePT, IntPT, IntTypePR, InterfaceP, InterpretedPT, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, KindTypePR, LambdaPE, LetPE, LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsP, LoadAsPointerP, LoadAsWeakP, LoadPE, LocalNameDeclarationP, LocationTypePR, LookupNameP, LookupPE, MacroCallP, MagicParamLookupPE, ManualSequencePT, MethodCallPE, MoveP, MutabilityP, MutabilityPT, MutabilityTypePR, MutableP, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, OrPE, OrPR, OverrideP, OwnP, OwnershipP, OwnershipPT, OwnershipTypePR, PackPE, PackPT, ParamsP, PatternPP, PermissionP, PermissionPT, PermissionTypePR, PointerP, PoolRuneAttributeP, PrototypeTypePR, PureAttributeP, ReadOnlyRuneAttributeP, ReadonlyP, ReadwriteP, RegionTypePR, RepeaterSequencePT, ReturnPE, RuntimeSizedP, SealedP, ShareP, ShortcallPE, StaticSizedP, StrInterpolatePE, StringPT, StructMembersP, StructMethodP, StructP, TemplateArgsP, TemplateRulesP, TemplexPR, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, TypeRuneAttributeP, TypedPR, UnitP, UseP, VariabilityP, VariabilityPT, VariabilityTypePR, VariadicStructMemberP, VaryingP, VoidPE, WeakP, WeakableP, WhilePE}
+import net.verdagon.vale.parser.ast.{AbstractAttributeP, AbstractP, AndPE, AnonymousRunePT, ArenaRuneAttributeP, AugmentPE, BinaryCallPE, BlockPE, BoolTypePR, BorrowP, BorrowPT, BraceCallPE, BuiltinAttributeP, BuiltinCallPR, BumpRuneAttributeP, CallMacro, CallPT, CitizenTemplateTypePR, ComponentsPR, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, ConstructingMemberNameDeclarationP, CoordListTypePR, CoordTypePR, DestructPE, DestructureP, DontCallMacro, DotPE, EachPE, EqualsPR, ExportAsP, ExportAttributeP, ExportP, ExternAttributeP, FileP, FinalP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IArraySizeP, ICitizenAttributeP, IExpressionPE, IFunctionAttributeP, IImpreciseNameP, INameDeclarationP, IRulexPR, IRuneAttributeP, IStructContent, ITemplexPT, ITypePR, IVirtualityP, IdentifyingRuneP, IdentifyingRunesP, IfPE, ImmutableP, ImplP, ImportP, IndexPE, InlinePT, IntPT, IntTypePR, InterfaceP, InterpretedPT, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, KindTypePR, LambdaPE, LetPE, LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsP, LoadAsPointerP, LoadAsWeakP, LocalNameDeclarationP, LocationTypePR, LookupNameP, LookupPE, MacroCallP, MagicParamLookupPE, ManualSequencePT, MethodCallPE, MoveP, MutabilityP, MutabilityPT, MutabilityTypePR, MutableP, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, NotPE, OrPE, OrPR, OverrideP, OwnP, OwnershipP, OwnershipPT, OwnershipTypePR, PackPE, PackPT, ParamsP, PatternPP, PermissionP, PermissionPT, PermissionTypePR, PointerP, PoolRuneAttributeP, PrototypeTypePR, PureAttributeP, ReadOnlyRuneAttributeP, ReadonlyP, ReadwriteP, RegionTypePR, RepeaterSequencePT, ReturnPE, RuntimeSizedP, SealedP, ShareP, ShortcallPE, StaticSizedP, StrInterpolatePE, StringPT, StructMembersP, StructMethodP, StructP, SubExpressionPE, TemplateArgsP, TemplateRulesP, TemplexPR, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, TypeRuneAttributeP, TypedPR, UnitP, UseP, VariabilityP, VariabilityPT, VariabilityTypePR, VariadicStructMemberP, VaryingP, VoidPE, WeakP, WeakableP, WhilePE}
 import net.verdagon.vale.{Err, Ok, Result, vimpl, vwat}
 
 object ParsedLoader {
@@ -272,12 +272,25 @@ object ParsedLoader {
       case "FunctionCall" => {
         FunctionCallPE(
           loadRange(getObjectField(jobj, "range")),
-//          loadOptionalObject(getObjectField(jobj, "inline"), loadUnit),
           loadRange(getObjectField(jobj, "operatorRange")),
-//          getBooleanField(jobj, "isMapCall"),
           loadExpression(getObjectField(jobj, "callableExpr")),
           getArrayField(jobj, "argExprs").map(expectObject).map(loadExpression),
           getBooleanField(jobj, "callableReadwrite"))
+      }
+      case "BraceCall" => {
+        BraceCallPE(
+          loadRange(getObjectField(jobj, "range")),
+          loadRange(getObjectField(jobj, "operatorRange")),
+          loadExpression(getObjectField(jobj, "callableExpr")),
+          getArrayField(jobj, "argExprs").map(expectObject).map(loadExpression),
+          getBooleanField(jobj, "callableReadwrite"))
+      }
+      case "BinaryCall" => {
+        BinaryCallPE(
+          loadRange(getObjectField(jobj, "range")),
+          loadName(getObjectField(jobj, "functionName")),
+          loadExpression(getObjectField(jobj, "leftExpr")),
+          loadExpression(getObjectField(jobj, "rightExpr")))
       }
       case "MethodCall" => {
         MethodCallPE(
@@ -344,11 +357,12 @@ object ParsedLoader {
           loadPattern(getObjectField(jobj, "pattern")),
           loadExpression(getObjectField(jobj, "source")))
       }
-      case "Point" => {
-        LoadPE(
+      case "Augment" => {
+        AugmentPE(
           loadRange(getObjectField(jobj, "range")),
-          loadExpression(getObjectField(jobj, "inner")),
-          loadLoadAs(getObjectField(jobj, "targetOwnership")))
+          loadOwnership(getObjectField(jobj, "targetOwnership")),
+          loadPermission(getObjectField(jobj, "targetPermission")),
+          loadExpression(getObjectField(jobj, "inner")))
       }
       case "Mutate" => {
         MutatePE(
@@ -426,6 +440,16 @@ object ParsedLoader {
           loadRange(getObjectField(jobj, "range")),
           loadExpression(getObjectField(jobj, "left")),
           loadBlock(getObjectField(jobj, "right")))
+      }
+      case "SubExpression" => {
+        SubExpressionPE(
+          loadRange(getObjectField(jobj, "range")),
+          loadExpression(getObjectField(jobj, "innerExpr")))
+      }
+      case "Not" => {
+        NotPE(
+          loadRange(getObjectField(jobj, "range")),
+          loadExpression(getObjectField(jobj, "innerExpr")))
       }
       case "StrInterpolate" => {
         StrInterpolatePE(

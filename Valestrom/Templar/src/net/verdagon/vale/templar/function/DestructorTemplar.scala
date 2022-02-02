@@ -2,7 +2,6 @@ package net.verdagon.vale.templar.function
 
 //import net.verdagon.vale.astronomer.{AbstractAP, CallAR, CodeRuneS, CodeTypeNameS, CodeVarNameS, ComponentsAR, EqualsAR, FunctionA, FunctionNameS, GeneratedBodyS, ImmConcreteDestructorImpreciseNameS, ImmConcreteDestructorNameS, ImmDropImpreciseNameS, ImmDropNameS, ImmInterfaceDestructorImpreciseNameS, ImmInterfaceDestructorNameS, LocalS, MutabilityAR, NameSR, OrAR, OverrideAP, OwnershipAR, ParameterS, PermissionAR, RuneSR, TemplexAR, UserFunctionA}
 import net.verdagon.vale.astronomer.{FunctionA, ImmConcreteDestructorNameS, ImmInterfaceDestructorNameS}
-import net.verdagon.vale.parser.ReadwriteP
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS, OverrideSP}
 import net.verdagon.vale.scout.rules.{CallSR, CoordComponentsSR, EqualsSR, IsConcreteSR, IsInterfaceSR, IsStructSR, KindComponentsSR, LiteralSR, LookupSR, MutabilityLiteralSL, OneOfSR, OwnershipLiteralSL, PermissionLiteralSL, RuneUsage}
 import net.verdagon.vale.scout.{CodeNameS, CodeRuneS, CodeVarNameS, FreeImpreciseNameS, FunctionNameS, GeneratedBodyS, GlobalFunctionFamilyNameS, LocalS, NotUsed, ParameterS, Used, UserFunctionS}
@@ -120,8 +119,8 @@ class DestructorTemplar(
                     as)
                 destroySharedArray(temputs, underarrayReference2)
               }
-              case OverloadSet(overloadSetEnv, name, voidStructRef) => {
-                val understructReference2 = undestructedExpr2.result.reference.copy(kind = voidStructRef)
+              case OverloadSet(overloadSetEnv, name) => {
+                val understructReference2 = undestructedExpr2.result.reference.copy(kind = VoidT())
                 destroySharedCitizen(temputs, understructReference2)
               }
               case StructTT(_) | InterfaceTT(_) => {

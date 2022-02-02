@@ -1,6 +1,6 @@
 package net.verdagon.vale.highlighter
 
-import net.verdagon.vale.parser.ast.{AbstractAttributeP, BlockPE, CallPT, ConstantBoolPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, DestructPE, DestructureP, DotPE, ExportAttributeP, ExternAttributeP, FileP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IExpressionPE, IFunctionAttributeP, INameDeclarationP, IRulexPR, IStructContent, ITemplexPT, IdentifyingRunesP, IfPE, ImplP, IndexPE, InlinePT, IntPT, InterfaceP, InterpretedPT, LambdaPE, LetPE, LoadPE, LookupPE, MagicParamLookupPE, MethodCallPE, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, PackPE, ParamsP, PatternPP, PureAttributeP, RepeaterSequencePT, ReturnPE, RuntimeSizedP, ShortcallPE, StaticSizedP, StrInterpolatePE, StructMembersP, StructMethodP, StructP, TemplateArgsP, TemplateRulesP, TopLevelFunctionP, TopLevelImplP, TopLevelInterfaceP, TopLevelStructP, TuplePE, UnitP, VoidPE, WhilePE}
+import net.verdagon.vale.parser.ast.{AbstractAttributeP, AugmentPE, BlockPE, CallPT, ConsecutorPE, ConstantBoolPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, DestructPE, DestructureP, DotPE, ExportAttributeP, ExternAttributeP, FileP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IExpressionPE, IFunctionAttributeP, INameDeclarationP, IRulexPR, IStructContent, ITemplexPT, IdentifyingRunesP, IfPE, ImplP, IndexPE, InlinePT, IntPT, InterfaceP, InterpretedPT, LambdaPE, LetPE, LookupNameP, LookupPE, MagicParamLookupPE, MethodCallPE, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, PackPE, ParamsP, PatternPP, PureAttributeP, RepeaterSequencePT, ReturnPE, RuntimeSizedP, ShortcallPE, StaticSizedP, StrInterpolatePE, StructMembersP, StructMethodP, StructP, TemplateArgsP, TemplateRulesP, TopLevelFunctionP, TopLevelImplP, TopLevelInterfaceP, TopLevelStructP, TuplePE, UnitP, VoidPE, WhilePE}
 import net.verdagon.vale.parser.{ast, _}
 import net.verdagon.vale.{vcurious, vimpl}
 
@@ -36,6 +36,7 @@ case object Bool extends IClass
 case object Typ extends IClass
 case object Destruct extends IClass
 case object Call extends IClass
+case object Consecutor extends IClass
 case object Ret extends IClass
 case object If extends IClass
 case object While extends IClass
@@ -185,9 +186,10 @@ object Spanner {
           Vector(forPattern(pattern), forExpression(expr)))
       }
       case LookupPE(lookupName, templateArgs) => {
-        vimpl()
-//        val NameP(range, _) = vimpl(lookupName)
-//        makeSpan(Lookup, range, Vector.empty)
+        lookupName match {
+          case LookupNameP(NameP(range, _)) => makeSpan(Lookup, range, Vector.empty)
+          case other => vimpl(other)
+        }
       }
       case TuplePE(range, elements) => {
         makeSpan(Seq, range, elements.map(forExpression))
@@ -195,10 +197,11 @@ object Spanner {
       case PackPE(range, elements) => {
         makeSpan(Seq, range, elements.map(forExpression))
       }
-      case ConstructArrayPE(range, mutability, variability, size, initializingIndividualElements, args) => {
+      case ConstructArrayPE(range, tyype, mutability, variability, size, initializingIndividualElements, args) => {
         makeSpan(
           ConstructArray,
           range,
+          tyype.map(forTemplex).toVector ++
           mutability.map(forTemplex).toVector ++
           variability.map(forTemplex).toVector ++
           (size match {
@@ -227,7 +230,7 @@ object Spanner {
           range,
           Vector(forExpression(left), makeSpan(MemberAccess, operatorRange)) :+ makeSpan(Lookup, member.range, Vector.empty))
       }
-      case LoadPE(range, expr, targetOwnership) => {
+      case AugmentPE(range, targetOwnership, targetPermission, expr) => {
         makeSpan(
           Point,
           range,
@@ -240,14 +243,12 @@ object Spanner {
         makeSpan(Call, range, allSpans)
       }
       case MethodCallPE(range, callableExpr, operatorRange, subjectReadwrite, LookupPE(lookup, maybeTemplateArgs), argExprs) => {
-        vimpl()
-//        NameP(methodNameRange, _)
-//        val callableSpan = forExpression(callableExpr)
-//        val methodSpan = makeSpan(CallLookup, methodNameRange, Vector.empty)
-//        val maybeTemplateArgsSpan = maybeTemplateArgs.toVector.map(forTemplateArgs)
-//        val argSpans = argExprs.map(forExpression)
-//        val allSpans = (Vector(callableSpan, makeSpan(MemberAccess, operatorRange), methodSpan) ++ maybeTemplateArgsSpan ++ argSpans)
-//        makeSpan(Call, range, allSpans)
+        val callableSpan = forExpression(callableExpr)
+        val methodSpan = makeSpan(CallLookup, lookup.range, Vector.empty)
+        val maybeTemplateArgsSpan = maybeTemplateArgs.toVector.map(forTemplateArgs)
+        val argSpans = argExprs.map(forExpression)
+        val allSpans = (Vector(callableSpan, makeSpan(MemberAccess, operatorRange), methodSpan) ++ maybeTemplateArgsSpan ++ argSpans)
+        makeSpan(Call, range, allSpans)
       }
       case FunctionCallPE(range, operatorRange, LookupPE(lookup, maybeTemplateArgs), argExprs, callableReadwrite) => {
         vimpl()
@@ -267,6 +268,10 @@ object Spanner {
         val argSpans = argExprs.map(forExpression)
         val allSpans = (Vector(callableSpan) ++ argSpans).sortWith(_.range.begin < _.range.begin)
         makeSpan(Call, range, allSpans)
+      }
+      case c @ ConsecutorPE(inners) => {
+        val innersSpans = inners.map(forExpression)
+        makeSpan(Consecutor, c.range, innersSpans)
       }
       case ShortcallPE(range, argExprs) => {
         val argSpans = argExprs.map(forExpression)

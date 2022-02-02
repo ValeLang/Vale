@@ -139,19 +139,19 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Simple lambda") {
-    val compile = RunCompilation.test("fn main() int export { ret {7;}(); }")
+    val compile = RunCompilation.test("fn main() int export { ret {7}(); }")
     compile.evalForKind(Vector()) shouldEqual VonInt(7)
   }
 
   test("Lambda with one magic arg") {
-    val compile = RunCompilation.test("fn main() int export { ret {_;}(3); }")
+    val compile = RunCompilation.test("fn main() int export { ret {_}(3); }")
     compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
 
   // Test that the lambda's arg is the right type, and the name is right
   test("Lambda with a type specified param") {
-    val compile = RunCompilation.test("fn main() int export { ret (a int){ ret +(a,a); }(3); }");
+    val compile = RunCompilation.test("fn main() int export { ret (a int) => { ret +(a,a); }(3); }");
     compile.evalForKind(Vector()) shouldEqual VonInt(6)
   }
 
@@ -374,7 +374,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |}
         |
         |fn main() int export {
-        |  v = Vec<3, int>([imm][3, 4, 5]);
+        |  v = Vec<3, int>(#[#][3, 4, 5]);
         |  ret v.values.2;
         |}
       """.stripMargin)
@@ -586,7 +586,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """export [] as Tup0;
         |fn main() [] export {
-        |  ret [];
+        |  ret ();
         |}
         |""".stripMargin)
     val temputs = compile.expectTemputs()
@@ -742,7 +742,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |
         |fn main() {
         |  someMutableThing = SomeMutableThing(7);
-        |  each<PageMember>((a &PageMember){ someMutableThing.x; a.x; });
+        |  each<PageMember>((a &PageMember) => { someMutableThing.x; a.x });
         |}
         |
         |""".stripMargin)
@@ -757,7 +757,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |
         |  results =
         |    parallel foreach i in a..b {
-        |      pow(i, exponent);
+        |      pow(i, exponent)
         |    }
         |
         |  println(results);

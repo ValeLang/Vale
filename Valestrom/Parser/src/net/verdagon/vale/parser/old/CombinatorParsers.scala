@@ -19,30 +19,6 @@ object CombinatorParsers
   override def skipWhitespace = false
   //override val whiteSpace = "[ \t\r\f]+".r
 
-//  def filledBody: Parser[BlockPE] = {
-//    // A hack to do region highlighting
-//    opt("'" ~> optWhite ~> exprIdentifier <~ optWhite) ~>
-//      bracedBlock
-//  }
-//
-//  def emptyBody: Parser[BlockPE] = {
-//    // A hack to do region highlighting
-//    pos ~ opt("'" ~> optWhite ~> exprIdentifier <~ optWhite) ~
-//      ("{" ~> optWhite ~> pos <~ optWhite <~ "}") ~ pos ^^ {
-//      case begin ~ maybeRegion ~ middle ~ end => BlockPE(ast.RangeP(begin, end), VoidPE(ast.RangeP(middle, middle)))
-//    }
-//  }
-//
-//  def noBody: Parser[Unit] = {
-//    ";" ^^^ ()
-//  }
-//
-//  def maybeBody: Parser[Option[BlockPE]] = {
-//    (filledBody ^^ (x => Some(x))) |
-//      (emptyBody ^^^ None) |
-//      (noBody ^^^ None)
-//  }
-
   def functionAttribute: Parser[IFunctionAttributeP] = {
     pos ~ "abstract" ~ pos ^^ { case begin ~ _ ~ end => AbstractAttributeP(ast.RangeP(begin, end)) } |
       pos ~ ("extern(" ~> exprIdentifier <~ ")") ~ pos ^^ { case begin ~ generatorName ~ end => BuiltinAttributeP(ast.RangeP(begin, end), generatorName) } |

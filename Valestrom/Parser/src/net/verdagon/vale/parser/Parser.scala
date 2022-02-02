@@ -170,7 +170,8 @@ object Parser {
 
   def parseFunctionOrLocalOrMemberName(iter: ParsingIterator): Option[NameP] = {
     val begin = iter.getPos()
-    iter.tryy("^(<=>|<=|<|>=|>|===|==|!=|\\+|-|/|\\*|[A-Za-z_][A-Za-z0-9_]*)".r) match {
+    // TODO: might be better to make this a blacklist instead
+    iter.tryy("^(<=>|<=|<|>=|>|===|==|!=|~|\\+|-|/|\\*|[A-Za-z_][A-Za-z0-9_]*)".r) match {
       case Some(str) => Some(NameP(RangeP(begin, iter.getPos()), str))
       case None => None
     }
@@ -390,6 +391,7 @@ object Parser {
     val methods = ArrayBuffer[FunctionP]()
 
     while (!atEnd(iter, StopBeforeCloseBrace)) {
+      iter.consumeWhitespace()
       parseFunction(iter, StopBeforeCloseBrace) match {
         case Err(e) => return Err(e)
         case Ok(Some(f)) => methods += f

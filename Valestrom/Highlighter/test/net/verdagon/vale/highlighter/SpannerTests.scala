@@ -14,14 +14,14 @@ class SpannerTests extends FunSuite with Matchers {
   }
 
   test("Spanner simple function") {
-    val program1 = compile("fn main() infer-ret { 3; }")
+    val program1 = compile("fn main() infer-ret { 3 }")
     val main = program1.lookupFunction("main")
     Spanner.forFunction(main) shouldEqual
-      Span(Fn,ast.RangeP(0,26),Vector(
+      Span(Fn,ast.RangeP(0,25),Vector(
         Span(FnName,ast.RangeP(3,7),Vector.empty),
         Span(Params,ast.RangeP(7,9),Vector.empty),
         Span(Ret,ast.RangeP(10,20),Vector(Span(Ret,ast.RangeP(10,19),Vector.empty))),
-        Span(Block,ast.RangeP(20,26),Vector(
+        Span(Block,ast.RangeP(20,25),Vector(
           Span(Num,ast.RangeP(22,23),Vector.empty)))))
   }
 
@@ -29,7 +29,7 @@ class SpannerTests extends FunSuite with Matchers {
   test("Spanner map call") {
     val program1 = compile(
       """fn main() infer-ret {
-        |  this.abilities*.getImpulse();
+        |  this.abilities!.getImpulse();
         |}
         |""".stripMargin)
     val main = program1.lookupFunction("main")
@@ -42,15 +42,17 @@ class SpannerTests extends FunSuite with Matchers {
           Span(Ret,_,Vector(Span(Ret,_,Vector()))),
           Span(Block,_,
             Vector(
-              Span(Call,_,
+              Span(Consecutor,_,
                 Vector(
-                  Span(MemberAccess,_,
+                  Span(Call,_,
                     Vector(
-                      Span(Lookup,_,Vector()),
+                      Span(MemberAccess,_,
+                        Vector(
+                          Span(Lookup,_,Vector()),
+                          Span(MemberAccess,_,Vector()),
+                          Span(Lookup,_,Vector()))),
                       Span(MemberAccess,_,Vector()),
-                      Span(Lookup,_,Vector()))),
-                  Span(MemberAccess,_,Vector()),
-                  Span(CallLookup,_,Vector()))))))) =>
+                      Span(CallLookup,_,Vector()))))))))) =>
     }
   }
 }

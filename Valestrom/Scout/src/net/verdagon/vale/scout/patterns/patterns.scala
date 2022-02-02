@@ -1,6 +1,5 @@
 package net.verdagon.vale.scout.patterns
 
-import net.verdagon.vale.parser.INameDeclarationP
 import net.verdagon.vale.scout._
 import net.verdagon.vale.scout.rules.RuneUsage
 import net.verdagon.vale.{RangeS, vcurious, vimpl, vpass}

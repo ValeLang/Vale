@@ -1,6 +1,5 @@
 package net.verdagon.vale.astronomer
 
-import net.verdagon.vale.parser.INameDeclarationP
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, OverrideSP}
 import net.verdagon.vale.scout._
 import net.verdagon.vale.{vcurious, vimpl}

@@ -36,8 +36,8 @@ object TemplarErrorHumanizer {
         case CantMutateFinalMember(range, fullName, memberName) => {
             ": Cannot mutate final member '" + printableVarName(memberName.last) + "' of container " + printableFullName(fullName)
         }
-        case CantMutateFinalElement(range, fullName) => {
-            ": Cannot change a slot in array " + printableFullName(fullName) + " to point to a different element; it's an array of final references."
+        case CantMutateFinalElement(range, coord) => {
+            ": Cannot change a slot in array " + humanizeTemplata(codeMap, CoordTemplata(coord)) + " to point to a different element; it's an array of final references."
         }
         case LambdaReturnDoesntMatchInterfaceConstructor(range) => {
             ": Argument function return type doesn't match interface method param"

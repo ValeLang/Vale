@@ -73,8 +73,8 @@ class ArrayListTest extends FunSuite with Matchers {
         |      List<int>(
         |          Array<mut, int>(
         |              0,
-        |              &!(index){
-        |                = 0;
+        |              &!(index) => {
+        |                0
         |              }));
         |  add(&!l, 5);
         |  add(&!l, 9);
@@ -145,7 +145,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |      List<Marine>(
           |          Array<mut, Marine>(
           |              0,
-          |              (index){ Marine(index) }));
+          |              (index) => { Marine(index) }));
           |  add(&!l, Marine(5));
           |  add(&!l, Marine(9));
           |  add(&!l, Marine(7));
@@ -192,7 +192,7 @@ class ArrayListTest extends FunSuite with Matchers {
         |  m! Opt<Marine> = Some(Marine(6));
         |  lam = {
         |    m2 = (set m = None<Marine>()).get();
-        |    = m2.hp;
+        |    m2.hp
         |  };
         |  ret lam!();
         |}

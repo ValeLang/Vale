@@ -9,10 +9,10 @@ fn advance(c *Context, count int) void {
     set c.index = c.index + count;
 }
 fn peek(c *Context) StrSlice {
-    = c.code.slice(c.index, c.index + 1);
+  c.code.slice(c.index, c.index + 1)
 }
 fn peekNext(c *Context) StrSlice {
-    = c.code.slice(c.index + 1, c.index + 2);
+  c.code.slice(c.index + 1, c.index + 2)
 }
 
 
@@ -42,15 +42,15 @@ fn parse(s str) void {
 }
 
 fn readValidChars(c *Context, validChars str) StrSlice {
-    startIndex = c.index;
-    while (not validChars.find(c.peek()).isEmpty()) {
-        c.advance();
-    }
-    = c.code.slice(startIndex, c.index);
+  startIndex = c.index;
+  while (not validChars.find(c.peek()).isEmpty()) {
+    c.advance();
+  }
+  c.code.slice(startIndex, c.index)
 }
 
 fn readWord(c *Context) StrSlice {
-    = readValidChars(c, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_");
+  readValidChars(c, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_")
 }
 fn readWhitespace(c *Context) void {
     readValidChars(c, " \r\n "); // Why do I need a space in the end?
@@ -192,12 +192,12 @@ fn parseImpl(c *Context) void {
 }
 
 fn parseType(c *Context) StrSlice {
-    //TODO: This should support more than just word types (arrays and stuff)
-    wordType = c.readWord();
-    if (wordType.len() == 0) {
-        panic("Expected type, but got: " + c.peek().str());
-    }
-    = wordType;
+  //TODO: This should support more than just word types (arrays and stuff)
+  wordType = c.readWord();
+  if (wordType.len() == 0) {
+      panic("Expected type, but got: " + c.peek().str());
+  }
+  wordType
 }
 
 fn parseFn(c *Context) void {
@@ -1219,13 +1219,13 @@ impl IExpressionPE for LookupPE;
 // A `_`, like in:
 //   mySpaceships.map({ _.launch(); })
 // It represents a parameter. The above is equivalent to:
-//   mySpaceships.map((s){ s.launch(); })
+//   mySpaceships.map((s) => { s.launch(); })
 struct MagicParamLookupPE {
   range Range;
 }
 impl IExpressionPE for MagicParamLookupPE;
 
-// A lambda, like `(s){ s.launch(); }`
+// A lambda, like `(s) => { s.launch(); }`
 struct LambdaPE {
   // Just here for syntax highlighting so far.
   // Will eventually contain captures for unattached lambdas.

@@ -1,4 +1,5 @@
 import v.builtins.print.*;
+import v.builtins.str.*;
 
 fn panic(msg str) infer-ret {
   print(msg);

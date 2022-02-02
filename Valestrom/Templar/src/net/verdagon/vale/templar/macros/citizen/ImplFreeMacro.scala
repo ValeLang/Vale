@@ -2,7 +2,6 @@ package net.verdagon.vale.templar.macros.citizen
 
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer.{FunctionA, ImplA, StructA, VirtualFreeDeclarationNameS}
-import net.verdagon.vale.parser.LoadAsPointerP
 import net.verdagon.vale.scout._
 import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS, OverrideSP}
 import net.verdagon.vale.scout.rules._

@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar
 
-import net.verdagon.vale.parser.{ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier}
+import net.verdagon.vale.parser.{ParseErrorHumanizer, ParsedLoader, Parser, ParserVonifier}
 import net.verdagon.vale.scout.{CodeNameS, CodeRuneS, CodeVarNameS, FunctionNameS, GlobalFunctionFamilyNameS, ICompileErrorS, ProgramS, Scout, TopLevelCitizenDeclarationNameS, VariableNameAlreadyExists}
 import net.verdagon.vale.templar.env.ReferenceLocalVariableT
 import net.verdagon.vale.templar.templata._
@@ -32,6 +32,7 @@ class TemplarTests extends FunSuite with Matchers {
   test("do not submit") {
     vfail()
     // 1. add an assert that all function bodies end in ret
+    // 2. might be better to make parseFunctionOrLocalOrMemberName a blacklist instead
   }
 
   test("Simple program returning an int, inferred") {
@@ -232,7 +233,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn main() int export { ret { 7; }(); }
+        |fn main() int export { ret { 7 }(); }
         |""".stripMargin)
     val temputs = compile.expectTemputs()
 
@@ -246,7 +247,7 @@ class TemplarTests extends FunSuite with Matchers {
       TemplarTestCompilation.test(
         """
           |import v.builtins.tup.*;
-          |fn main() int export { ret {_;}(3); }
+          |fn main() int export { ret {_}(3); }
           |""".stripMargin)
     val temputs = compile.expectTemputs()
 
@@ -266,7 +267,7 @@ class TemplarTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |import v.builtins.arith.*;
         |fn main() int export {
-        |  ret (a int){+(a,a);}(3);
+        |  ret (a int) => {+(a,a)}(3);
         |}
         |""".stripMargin);
     val temputs = compile.expectTemputs()
@@ -492,6 +493,56 @@ class TemplarTests extends FunSuite with Matchers {
         CoordT(OwnT,ReadwriteT,InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("MyOption"), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))))
 
     // Can't run it because there's nothing implementing that interface >_>
+  }
+
+  test("each on int range") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |import v.builtins.opt.*;
+        |import v.builtins.logic.*;
+        |import v.builtins.arith.*;
+        |
+        |struct Range { begin int; end int; }
+        |fn begin(self &Range) RangeIter { ret RangeIter(self, self.begin); }
+        |struct RangeIter { range &Range; i! int; }
+        |fn next(self &!RangeIter) Opt<int> {
+        |  if self.i < self.range.end {
+        |    Some(set self.i = self.i + 1)
+        |  } else {
+        |    None<int>()
+        |  }
+        |}
+        |fn main() int export {
+        |  sum = 0;
+        |  foreach i in Range(0, 10) {
+        |    set sum = sum + i;
+        |  }
+        |  sum
+        |}
+        |""".stripMargin)
+    val temputs = compile.expectTemputs()
+    val main = temputs.lookupFunction("main")
+    vimpl()
+  }
+
+  test("Return without ret") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |fn main() int export { 73 }
+        |""".stripMargin)
+    compile.getTemputs().expectErr() match {
+      case null =>
+    }
+  }
+
+  test("Reports mismatched return type when expecting void") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |fn main() export { 73 }
+        |""".stripMargin)
+    compile.getTemputs().expectErr() match {
+      case null =>
+    }
   }
 
   test("Tests exporting function") {
@@ -891,7 +942,7 @@ class TemplarTests extends FunSuite with Matchers {
         |fn myFunc<F>(consumer &!F) void { }
         |fn main() {
         |  bork = Bork();
-        |  myFunc(&!{ bork; });
+        |  myFunc(&!{ bork });
         |}
         |
       """.stripMargin)
@@ -997,7 +1048,7 @@ class TemplarTests extends FunSuite with Matchers {
         |    if (true) {
         |      ret 7;
         |    } else {
-        |      = m.hp;
+        |      m.hp
         |    };
         |  ret x;
         |}
@@ -1027,7 +1078,7 @@ class TemplarTests extends FunSuite with Matchers {
         |  fn __call(virtual this *AFunction1<P>, a P) int;
         |}
         |fn main() export {
-        |  arr = AFunction1<int>((_){ true });
+        |  arr = AFunction1<int>((_) => { true });
         |}
         |""".stripMargin)
 
@@ -1152,7 +1203,7 @@ class TemplarTests extends FunSuite with Matchers {
         |import v.builtins.panic.*;
         |import panicutils.*;
         |struct Firefly { }
-        |fn moo() *Firefly export { __pretend<*Firefly>(); }
+        |fn moo() *Firefly export { __pretend<*Firefly>() }
         |""".stripMargin)
     compile.getTemputs() match {
       case Err(ExportedFunctionDependedOnNonExportedKind(_, _, _, _)) =>

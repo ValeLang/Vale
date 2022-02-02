@@ -1,0 +1,59 @@
+
+struct SSAIter<M, N, E> {
+  arr &[<M> N * E];
+  i! int;
+
+fn begin<M, N, E>(seq &![<M> N * E]) SSAIter<M, N, E> {
+  ret SSAIter(&seq, 0);
+}}
+fn begin<M, N, E>(seq &[<M> N * E]) SSAIter<M, N, E> {
+  ret SSAIter(seq, 0);
+}
+fn next<M, N, E>(iter &!SSAIter<M, N, E>) Opt<E> {
+  if iter.i < iter.arr.len() {
+    Some<E>(iter.arr[set iter.i = iter.i + 1])
+  } else {
+    None<E>()
+  }
+}
+
+// fn each<M, V, N, T, F>(arr A, func F) void
+// rules(A Ref(_, _, [<M, V> N * T])) {
+//   i! = 0;
+//   l = len(&arr);
+//   while (i < l) {
+//     func!(arr[i]);
+//     set i = i + 1;
+//   }
+// }
+//
+// fn eachI<M, V, N, T, F>(arr A, func F) void
+// rules(A Ref(_, _, [<M, V> N * T])) {
+//   i! = 0;
+//   l = len(&arr);
+//   while (i < l) {
+//     func!(i, arr[i]);
+//     set i = i + 1;
+//   }
+// }
+//
+// fn each<M, T, F>(arr A, func F) void
+// rules(A Ref(_, _, Array<M, T>)) {
+//   i! = 0;
+//   l = len(&arr);
+//   while (i < l) {
+//     func!(arr[i]);
+//     set i = i + 1;
+//   }
+// }
+//
+// fn eachI<F>(arr A, func F) void
+// rules(A Ref(_, _, Array<_, _>)) {
+//   i! = 0;
+//   l = len(&arr);
+//   while (i < l) {
+//     func!(i, arr[i]);
+//     set i = i + 1;
+//   }
+// }
+//

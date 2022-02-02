@@ -6,10 +6,10 @@ fn getHp(self **Muta impl IUnit) int {
   maybeBorrowSelf = lock(self);
   ret if (maybeBorrowSelf.isEmpty()) {
       drop(maybeBorrowSelf);
-      = 0;
+      0
     } else {
       drop(maybeBorrowSelf);
-      = 42;
+      42
     }
 }
 

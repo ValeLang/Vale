@@ -1,6 +1,5 @@
 package net.verdagon.vale
 
-import net.verdagon.vale.parser.INameDeclarationP
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.templar._

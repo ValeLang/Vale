@@ -6,21 +6,21 @@ import net.verdagon.vale.parser.ast.{FinalP, LoadAsBorrowOrIfContainerIsPointerT
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.solver.{IncompleteSolve, Step}
-import net.verdagon.vale.{Collector, Err, FileCoordinate, Ok, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{Collector, Err, FileCoordinate, FileCoordinateMap, Ok, vassert, vfail, vimpl, vwat}
 import net.verdagon.von.{JsonSyntax, VonPrinter}
 import org.scalatest.{FunSuite, Matchers}
 
 class ScoutTests extends FunSuite with Matchers with Collector {
   private def compile(code: String): ProgramS = {
     Parser.runParser(code) match {
-      case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(firstProgram0) => {
+      case Err(err) => fail(ParseErrorHumanizer.humanize(FileCoordinateMap.test(code), FileCoordinate.test, err))
+      case Ok(firstProgram0) => {
         val von = ParserVonifier.vonifyFile(firstProgram0)
         val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
         val program0 =
           ParsedLoader.load(vpstJson) match {
-            case ParseFailure(error) => vwat(error.toString)
-            case ParseSuccess(program0) => program0
+            case Err(error) => vwat(error.toString)
+            case Ok(program0) => program0
           }
         new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => vfail(e.toString)
@@ -32,14 +32,14 @@ class ScoutTests extends FunSuite with Matchers with Collector {
 
   private def compileForError(code: String): ICompileErrorS = {
     Parser.runParser(code) match {
-      case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(firstProgram0) => {
+      case Err(err) => fail(err.toString)
+      case Ok(firstProgram0) => {
         val von = ParserVonifier.vonifyFile(firstProgram0)
         val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
         val program0 =
           ParsedLoader.load(vpstJson) match {
-            case ParseFailure(error) => vwat(error.toString)
-            case ParseSuccess(program0) => program0
+            case Err(error) => vwat(error.toString)
+            case Ok(program0) => program0
           }
         new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => e
@@ -102,7 +102,10 @@ class ScoutTests extends FunSuite with Matchers with Collector {
     val program1 = compile("fn main() int export { ret {_ + _}!(4, 6); }")
 
     val CodeBodyS(BodySE(_, _, BlockSE(_, _, expr))) = program1.lookupFunction("main").body
-    val ReturnSE(_, FunctionCallSE(_, OwnershippedSE(_,FunctionSE(lambda@FunctionS(_, _, _, _, _, _, _, _, _)), LoadAsBorrowP(Some(ReadwriteP))), _)) = expr
+    val lambda =
+      Collector.only(expr, {
+        case ReturnSE(_, FunctionCallSE(_, OwnershippedSE(_, FunctionSE(lambda@FunctionS(_, _, _, _, _, _, _, _, _)), LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadwriteP))), _)) => lambda
+      })
     // See: Lambdas Dont Need Explicit Identifying Runes (LDNEIR)
     lambda.identifyingRunes match {
       case Vector(RuneUsage(_, MagicParamRuneS(mp1)), RuneUsage(_, MagicParamRuneS(mp2))) => {
@@ -148,17 +151,13 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   }
 
   test("Method call") {
-    val program1 = compile("fn main() int export { x = 4; ret x.shout(); }")
+    val program1 = compile("fn main() int export { ret true.shout(); }")
     val main = program1.lookupFunction("main")
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
-    block match {
-      case BlockSE(_, _, ReturnSE(_, FunctionCallSE(_, OutsideLoadSE(_, _, CodeNameS("shout"), _, _), Vector(LocalLoadSE(_, name, LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadonlyP))))))) => {
-        name match {
-          case CodeVarNameS("x") =>
-        }
-      }
-    }
+    val ret = Collector.only(block, { case r @ ReturnSE(_, _) => r })
+    Collector.only(ret, { case FunctionCallSE(_, OutsideLoadSE(_, _, CodeNameS("shout"), _, _), Vector(OwnershippedSE(_,ConstantBoolSE(_,true),LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadonlyP))))) => })
+//    { case ReturnSE(_,FunctionCallSE(_,_,Vector()) => }
   }
 
   test("Moving method call") {
@@ -166,9 +165,8 @@ class ScoutTests extends FunSuite with Matchers with Collector {
     val main = program1.lookupFunction("main")
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
-    block match {
-      case BlockSE(_, _, ReturnSE(_, FunctionCallSE(_, OutsideLoadSE(_, _, CodeNameS("shout"), _, _),Vector(LocalLoadSE(_,CodeVarNameS("x"), UseP))))) =>
-    }
+    val ret = Collector.only(block, { case r @ ReturnSE(_, _) => r })
+    Collector.only(ret, { case FunctionCallSE(_, OutsideLoadSE(_, _, CodeNameS("shout"), _, _), Vector(LocalLoadSE(_,CodeVarNameS("x"), UseP))) => })
   }
 
   test("Function with magic lambda and regular lambda") {
@@ -178,21 +176,19 @@ class ScoutTests extends FunSuite with Matchers with Collector {
       compile(
         """fn main() int export {
           |  {_};
-          |  (a){a};
+          |  (a) => {a};
           |}
         """.stripMargin)
     val main = program1.lookupFunction("main")
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
     val BlockSE(_, _, ConsecutorSE(things)) = block
-    val lambda1 = things(0).asInstanceOf[FunctionSE].function
-    val lambda2 = things(1).asInstanceOf[FunctionSE].function
-    lambda1.params match {
+    val lambdas = Collector.all(things, { case f @ FunctionSE(_) => f }).toList
+    lambdas.head.function.params match {
       case Vector(_, ParameterS(AtomSP(_, Some(CaptureS(MagicParamNameS(_))), None, Some(RuneUsage(_, MagicParamRuneS(_))), None))) =>
     }
-    lambda2.params match {
+    lambdas.last.function.params match {
       case Vector(_, ParameterS(AtomSP(_, Some(CaptureS(CodeVarNameS("a"))), None, Some(RuneUsage(_, ImplicitRuneS(_))), None))) =>
-//      case Vector(_, ParameterS(AtomSP(_, Some(CaptureS(CodeVarNameS(a))), None, None, None))) =>
     }
   }
 
@@ -207,27 +203,31 @@ class ScoutTests extends FunSuite with Matchers with Collector {
     val main = program1.lookupFunction("MyStruct")
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
-    block match {
-      case BlockSE(_,
-      Vector(
-      LocalS(ConstructingMemberNameS("x"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),
-      LocalS(ConstructingMemberNameS("y"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
-      ConsecutorSE(
-      Vector(
-      LetSE(_,
+    block.locals match {
+      case Vector(
+        LocalS(ConstructingMemberNameS("x"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),
+        LocalS(ConstructingMemberNameS("y"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)) =>
+    }
+    val exprs = block.expr match { case ConsecutorSE(exprs) => exprs }
+    Collector.only(exprs, {
+      case LetSE(_,
       _,
       AtomSP(_, Some(CaptureS(ConstructingMemberNameS("x"))), None, _, None),
-      ConstantIntSE(_, 4, _)),
-      LetSE(_,
-      _,
-      AtomSP(_, Some(CaptureS(ConstructingMemberNameS("y"))), None, _, None),
-      ConstantBoolSE(_, true)),
-      FunctionCallSE(_,
-      OutsideLoadSE(_, _, CodeNameS("MyStruct"), _, _),
-      Vector(
-      LocalLoadSE(_, ConstructingMemberNameS("x"), UseP),
-      LocalLoadSE(_, ConstructingMemberNameS("y"), UseP)))))) =>
-    }
+      ConstantIntSE(_, 4, _)) =>
+    })
+    Collector.only(exprs, {
+      case LetSE(_,
+        _,
+        AtomSP(_, Some(CaptureS(ConstructingMemberNameS("y"))), None, _, None),
+        ConstantBoolSE(_, true)) =>
+    })
+    Collector.only(exprs, {
+      case FunctionCallSE(_,
+        OutsideLoadSE(_, _, CodeNameS("MyStruct"), _, _),
+        Vector(
+          LocalLoadSE(_, ConstructingMemberNameS("x"), UseP),
+          LocalLoadSE(_, ConstructingMemberNameS("y"), UseP))) =>
+    })
   }
 
   test("Forgetting set when changing") {
@@ -245,7 +245,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   test("Cant use set as a local name") {
     val error = compileForError(
       """fn moo() {
-        |  (set) = [6];
+        |  (set) = (6,);
         |}
         |""".stripMargin)
     error match {
@@ -256,7 +256,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   test("CantInitializeIndividualElementsOfRuntimeSizedArray") {
     val error = compileForError(
       """fn MyStruct() {
-        |  ship = [*][4, 5, 6];
+        |  ship = [][4, 5, 6];
         |}
         |""".stripMargin)
     error match {
@@ -267,7 +267,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   test("InitializingRuntimeSizedArrayRequiresSizeAndCallable too few") {
     val error = compileForError(
       """fn MyStruct() {
-        |  ship = [*](4);
+        |  ship = [](4);
         |}
         |""".stripMargin)
     error match {
@@ -278,7 +278,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   test("InitializingRuntimeSizedArrayRequiresSizeAndCallable too many") {
     val error = compileForError(
       """fn MyStruct() {
-        |  ship = [*](4, {_}, 10);
+        |  ship = [](4, {_}, 10);
         |}
         |""".stripMargin)
     error match {
@@ -289,7 +289,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   test("InitializingStaticSizedArrayRequiresSizeAndCallable too few") {
     val error = compileForError(
       """fn MyStruct() {
-        |  ship = [5]();
+        |  ship = [#5]();
         |}
         |""".stripMargin)
     error match {
@@ -300,7 +300,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   test("InitializingStaticSizedArrayRequiresSizeAndCallable too many") {
     val error = compileForError(
       """fn MyStruct() {
-        |  ship = [5](4, {_});
+        |  ship = [#5](4, {_});
         |}
         |""".stripMargin)
     error match {
@@ -311,7 +311,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   test("InitializingStaticSizedArrayFromCallableNeedsSizeTemplex") {
     val error = compileForError(
       """fn MyStruct() {
-        |  ship = []({_});
+        |  ship = [#]({_});
         |}
         |""".stripMargin)
     error match {
@@ -328,11 +328,8 @@ class ScoutTests extends FunSuite with Matchers with Collector {
     val main = program1.lookupFunction("MyStruct")
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
-    block match {
-      case BlockSE(
-      _,Vector(),
-      ReturnSE(_, DotSE(_,OutsideLoadSE(_,_,CodeNameS("moo"),None,LoadAsBorrowOrIfContainerIsPointerThenPointerP(None)),"x",true))) =>
-    }
+    Collector.only(block,
+      { case ReturnSE(_, DotSE(_,OutsideLoadSE(_,_,CodeNameS("moo"),None,LoadAsBorrowOrIfContainerIsPointerThenPointerP(None)),"x",true)) => })
 
   }
 
@@ -345,13 +342,9 @@ class ScoutTests extends FunSuite with Matchers with Collector {
     val main = program1.lookupFunction("MyStruct")
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
-    block match {
-      case BlockSE(
-      _,Vector(),
-      ReturnSE(_, OwnershippedSE(_,
-      DotSE(_,OutsideLoadSE(_,_,CodeNameS("moo"),None,LoadAsBorrowOrIfContainerIsPointerThenPointerP(None)),x,true),LoadAsPointerP(Some(ReadonlyP))))) =>
-    }
-
+    Collector.only(block, {
+      case ReturnSE(_, OwnershippedSE(_, DotSE(_,OutsideLoadSE(_,_,CodeNameS("moo"),None,LoadAsBorrowOrIfContainerIsPointerThenPointerP(None)),x,true),LoadAsPointerP(Some(ReadonlyP)))) =>
+    })
   }
 
   test("Constructing members, borrowing another member") {
@@ -364,25 +357,28 @@ class ScoutTests extends FunSuite with Matchers with Collector {
     val main = program1.lookupFunction("MyStruct")
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
-    block match {
-      case BlockSE(_,
-      Vector(
-      LocalS(ConstructingMemberNameS("x"), Used, Used, NotUsed, NotUsed, NotUsed, NotUsed),
-      LocalS(ConstructingMemberNameS("y"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
-      ConsecutorSE(
-      Vector(
-      LetSE(_, _,
-      AtomSP(_, Some(CaptureS(ConstructingMemberNameS("x"))), None, _, None),
-      ConstantIntSE(_, 4, _)),
-      LetSE(_, _,
-      AtomSP(_, Some(CaptureS(ConstructingMemberNameS("y"))), None, _, None),
-      LocalLoadSE(_, ConstructingMemberNameS("x"), LoadAsPointerP(Some(ReadonlyP)))),
-      FunctionCallSE(_,
+    block.locals match {
+      case Vector(
+        LocalS(ConstructingMemberNameS("x"), Used, Used, NotUsed, NotUsed, NotUsed, NotUsed),
+        LocalS(ConstructingMemberNameS("y"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)) =>
+    }
+    Collector.only(block, {
+      case LetSE(_, _,
+        AtomSP(_, Some(CaptureS(ConstructingMemberNameS("x"))), None, _, None),
+        ConstantIntSE(_, 4, _)) =>
+    })
+    Collector.only(block, {
+      case LetSE(_, _,
+        AtomSP(_, Some(CaptureS(ConstructingMemberNameS("y"))), None, _, None),
+        LocalLoadSE(_, ConstructingMemberNameS("x"), LoadAsPointerP(Some(ReadonlyP)))) =>
+    })
+    Collector.only(block, {
+      case FunctionCallSE(_,
       OutsideLoadSE(_, _, CodeNameS("MyStruct"), _, _),
       Vector(
       LocalLoadSE(_, ConstructingMemberNameS("x"), UseP),
-      LocalLoadSE(_, ConstructingMemberNameS("y"), UseP)))))) =>
-    }
+      LocalLoadSE(_, ConstructingMemberNameS("y"), UseP))) =>
+    })
   }
 
   test("this isnt special if was explicit param") {
@@ -392,19 +388,12 @@ class ScoutTests extends FunSuite with Matchers with Collector {
         |}
         |""".stripMargin)
     val main = program1.lookupFunction("moo")
-    main.body match {
-      case CodeBodyS(
-      BodySE(_,
-      Vector(),
-      BlockSE(_,
-      Vector(LocalS(CodeVarNameS("this"), Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed)),
-      ConsecutorSE(
-      Vector(
-      FunctionCallSE(_,
-      OutsideLoadSE(_, _, CodeNameS("println"), _, _),
-      Vector(DotSE(_, LocalLoadSE(_, CodeVarNameS("this"), LoadAsBorrowOrIfContainerIsPointerThenPointerP(None)), "x", true))),
-      VoidSE(_)))))) =>
-    }
+    Collector.only(main.body, {
+      case FunctionCallSE(_,
+        OutsideLoadSE(_, _, CodeNameS("println"), _, _),
+        Vector(DotSE(_, LocalLoadSE(_, CodeVarNameS("this"), LoadAsBorrowOrIfContainerIsPointerThenPointerP(None)), "x", true))) =>
+    })
+    Collector.all(main.body, { case FunctionCallSE(_, _, _) => }).size shouldEqual 1
   }
 
   test("Reports when mutating nonexistant local") {
@@ -488,47 +477,15 @@ class ScoutTests extends FunSuite with Matchers with Collector {
     }
   }
 
-  test("Parenthesized method syntax will move instead of borrow") {
-    vimpl()
-//    val compilation =
-//      compile(
-//        ExpressionParser.parseExpression(_, StopBeforeCloseBrace),
-//        """(bork).consumeBork()""".stripMargin)
-//    val (subjectExpr, loadAs) =
-//      compilation shouldHave
-//        {
-//          case MethodCallPE(_,
-//          subjectExpr,
-//          _,
-//          loadAs,
-//          LookupPE(LookupNameP(NameP(_, "consumeBork")), _),
-//          _) => (subjectExpr, loadAs)
-//        }
-//    loadAs shouldEqual false
-//    subjectExpr match {
-//      case PackPE(_, Vector(LookupPE(LookupNameP(NameP(_, "bork")), None))) =>
-//    }
-  }
-
   test("Statement after result or return") {
-    vimpl()
-    //    compileProgramForError(
-    //      """
-    //        |fn doCivicDance(virtual this Car) {
-    //        |  ret 4;
-    //        |  7
-    //        |}
-    //        """.stripMargin) match {
-    //      case StatementAfterResult(_) =>
-    //    }
-    //    compileProgramForError(
-    //      """
-    //        |fn doCivicDance(virtual this Car) {
-    //        |  ret 4;
-    //        |  7
-    //        |}
-    //        """.stripMargin) match {
-    //      case StatementAfterReturn(_) =>
-    //    }
+    compileForError(
+      """
+        |fn doCivicDance(virtual this Car) {
+        |  ret 4;
+        |  7
+        |}
+        """.stripMargin) match {
+      case StatementAfterReturnS(_) =>
+    }
   }
 }

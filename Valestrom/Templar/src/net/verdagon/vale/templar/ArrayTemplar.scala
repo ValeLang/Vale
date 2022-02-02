@@ -31,6 +31,7 @@ class ArrayTemplar(
     fate: FunctionEnvironmentBox,
     range: RangeS,
     rulesA: Vector[IRulexSR],
+    maybeElementTypeRuneA: Option[IRuneS],
     sizeRuneA: IRuneS,
     mutabilityRune: IRuneS,
     variabilityRune: IRuneS,
@@ -66,6 +67,7 @@ class ArrayTemplar(
     fate: FunctionEnvironmentBox,
     range: RangeS,
     rulesA: Vector[IRulexSR],
+    maybeElementTypeRune: Option[IRuneS],
     mutabilityRune: IRuneS,
     sizeTE: ReferenceExpressionTE,
     callableTE: ReferenceExpressionTE):
@@ -98,6 +100,14 @@ class ArrayTemplar(
 //    val variability = getArrayVariability(templatas, variabilityRune)
     val prototype = overloadTemplar.getArrayGeneratorPrototype(temputs, fate, range, callableTE)
     val rsaMT = getRuntimeSizedArrayKind(fate.snapshot.globalEnv, temputs, prototype.returnType, mutability)
+
+    maybeElementTypeRune.foreach(elementTypeRuneA => {
+      val expectedElementType = getArrayElementType(templatas, elementTypeRuneA)
+      if (prototype.returnType != expectedElementType) {
+        throw CompileErrorExceptionT(UnexpectedArrayElementType(range, expectedElementType, prototype.returnType))
+      }
+    })
+
     val expr2 = NewImmRuntimeSizedArrayTE(rsaMT, sizeTE, callableTE, prototype)
     expr2
   }
@@ -107,6 +117,7 @@ class ArrayTemplar(
       fate: FunctionEnvironmentBox,
       range: RangeS,
       rulesA: Vector[IRulexSR],
+    maybeElementTypeRuneA: Option[IRuneS],
     sizeRuneA: IRuneS,
     mutabilityRuneA: IRuneS,
     variabilityRuneA: IRuneS,
@@ -135,6 +146,13 @@ class ArrayTemplar(
     val templatas =
       inferTemplar.solveExpectComplete(
         fate.snapshot, temputs, rulesA, runeToType, range, Vector(), Vector())
+    maybeElementTypeRuneA.foreach(elementTypeRuneA => {
+      val expectedElementType = getArrayElementType(templatas, elementTypeRuneA)
+      if (memberType != expectedElementType) {
+        throw CompileErrorExceptionT(UnexpectedArrayElementType(range, expectedElementType, memberType))
+      }
+    })
+
     val size = getArraySize(templatas, sizeRuneA)
     val mutability = getArrayMutability(templatas, mutabilityRuneA)
     val variability = getArrayVariability(templatas, variabilityRuneA)
@@ -300,6 +318,10 @@ class ArrayTemplar(
   private def getArraySize(templatas: Map[IRuneS, ITemplata], sizeRuneA: IRuneS): Int = {
     val IntegerTemplata(m) = vassertSome(templatas.get(sizeRuneA))
     m.toInt
+  }
+  private def getArrayElementType(templatas: Map[IRuneS, ITemplata], typeRuneA: IRuneS): CoordT = {
+    val CoordTemplata(m) = vassertSome(templatas.get(typeRuneA))
+    m
   }
 
   def lookupInStaticSizedArray(

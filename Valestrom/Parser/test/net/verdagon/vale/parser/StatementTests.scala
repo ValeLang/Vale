@@ -1,7 +1,7 @@
 package net.verdagon.vale.parser
 
 import net.verdagon.vale.parser.ExpressionParser.StopBeforeCloseBrace
-import net.verdagon.vale.parser.ast.{AugmentPE, BlockPE, BorrowP, ConsecutorPE, ConstantIntPE, ConstantStrPE, DestructPE, DestructureP, DotPE, EachPE, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, LambdaPE, LetPE, LoadAsBorrowP, LoadAsPointerP, LoadPE, LocalNameDeclarationP, LookupNameP, LookupPE, MutatePE, NameOrRunePT, NameP, ParamsP, PatternPP, Patterns, ReadonlyP, ReturnPE, TuplePE, VoidPE}
+import net.verdagon.vale.parser.ast._
 import net.verdagon.vale.parser.old.{CombinatorParsers, OldTestParseUtils}
 import net.verdagon.vale.{Collector, vassert, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
@@ -91,6 +91,34 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
     // was whitespace after a "ret".
     compile(ExpressionParser.parseStatement(_, StopBeforeCloseBrace, false), "retcode()") shouldHave {
       case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, "retcode")),None),Vector(),_) =>
+    }
+  }
+
+  test("Test inner set") {
+    // This test is here because we had a bug where we didn't check that there
+    // was whitespace after a "ret".
+    compile(
+      ExpressionParser.parseStatement(_, StopBeforeCloseBrace, false),
+      "oldArray = set list.array = newArray") shouldHave {
+      case LetPE(_,
+        None,
+        PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"oldArray"))),None,None,None),
+        MutatePE(_,
+          DotPE(_,LookupPE(LookupNameP(NameP(_,"list")),None),_,NameP(_,"array")),
+          LookupPE(LookupNameP(NameP(_,"newArray")),None))) =>
+    }
+  }
+
+  test("Test if-statement producing") {
+    // This test is here because we had a bug where we didn't check that there
+    // was whitespace after a "ret".
+    compile(
+      ExpressionParser.parseStatement(_, StopBeforeCloseBrace, false),
+      "if true { 3 } else { 4 }") shouldHave {
+      case IfPE(_,
+        ConstantBoolPE(_,true),
+        BlockPE(_,ConstantIntPE(_,3,_)),
+        BlockPE(_,ConstantIntPE(_,4,_))) =>
     }
   }
 
@@ -284,4 +312,19 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
       case VoidPE(_) =>
     }
   }
+
+  test("foreach 2") {
+    val programS =
+      compile(
+        ExpressionParser.parseBlockContents(_, StopBeforeCloseBrace, false),
+        """
+          |fn main() int export {
+          |  foreach i in Range(0, 10) {
+          |    i
+          |  }
+          |}
+          |""".stripMargin)
+    vimpl()
+  }
+
 }

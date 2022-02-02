@@ -19,6 +19,19 @@ class TopLevelTests extends FunSuite with Matchers with Collector with OldTestPa
     program.topLevelThings(1) match { case TopLevelStructP(_) => }
   }
 
+//  test("Function containing if") {
+//    val program = compileProgram(
+//      """
+//        |fn main() int {
+//        |  if true { 3 } else { 4 }
+//        |}
+//        |""".stripMargin)
+//    val main = program.lookupFunction("main")
+//    main.body.get
+//  }
+
+
+
 
   test("Reports unrecognized at top level") {
     val code =

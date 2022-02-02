@@ -34,13 +34,13 @@ struct Goblin {
 
 fn makeBoard() Array<mut, Array<mut, str>> {
   ret
-    MakeArray(10, (row){
-      MakeArray(10, (col){
-        = if (row == 0) { "#" }
-          else if (col == 0) { "#" }
-          else if (row == 9) { "#" }
-          else if (col == 9) { "#" }
-          else { "." }
+    MakeArray(10, (row) => {
+      MakeArray(10, (col) => {
+        if (row == 0) { "#" }
+        else if (col == 0) { "#" }
+        else if (row == 9) { "#" }
+        else if (col == 9) { "#" }
+        else { "." }
       })
     });
 }
@@ -59,7 +59,7 @@ fn display(
       if (rowI == playerRow and cellI == playerCol) {
         set charToPrint = "@";
       } else {
-        goblins.keys().each((key){
+        goblins.keys().each((key) => {
           goblin? = goblins.get(key);
           goblin = (goblin?).get(); // TODO try getting rid of this ^, doesnt wanna find the get function
 
@@ -164,7 +164,7 @@ fn main() int export {
     }
 
     killedGoblin! = false;
-    goblins.keys().each((key){
+    goblins.keys().each((key) => {
       if (goblinAt?(*goblins, key, newPlayerRow, newPlayerCol)) {
         goblins!.remove(key);
         set killedGoblin = true;

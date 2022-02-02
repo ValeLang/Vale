@@ -14,8 +14,6 @@ sealed trait IParseError {
 }
 case class UnrecognizedTopLevelThingError(pos: Int) extends IParseError { override def errorId: String = "P1001"; override def hashCode(): Int = vcurious() }
 case class BadStartOfStatementError(pos: Int) extends IParseError { override def errorId: String = "P1002"; override def hashCode(): Int = vcurious() }
-case class StatementAfterResult(pos: Int) extends IParseError { override def errorId: String = "P1003"; override def hashCode(): Int = vcurious() }
-case class StatementAfterReturn(pos: Int) extends IParseError { override def errorId: String = "P1004"; override def hashCode(): Int = vcurious() }
 case class BadExpressionEnd(pos: Int) extends IParseError { override def errorId: String = "P1005"; override def hashCode(): Int = vcurious() }
 case class BadExpressionBegin(pos: Int) extends IParseError {
   override def errorId: String = "P1005"; override def hashCode(): Int = vcurious()

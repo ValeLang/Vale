@@ -32,9 +32,9 @@ fn HashMap<K, V, H, E>(hasher H, equator E, capacity int) HashMap<K, V, H, E> {
       equator,
       MakeVaryArray(
         capacity,
-        &!IFunction1<mut, int, Opt<HashMapNode<K, V>>>((index){
+        &!IFunction1<mut, int, Opt<HashMapNode<K, V>>>((index) => {
           opt Opt<HashMapNode<K, V>> = None<HashMapNode<K, V>>();
-          = opt;
+          opt
         })),
       0);
 }
@@ -44,11 +44,11 @@ fn len<K, V, H, E>(self &HashMap<K, V, H, E>) int { ret self.size; }
 fn update<K, V, H, E>(self &!HashMap<K, V, H, E>, key K, value V) void {
   hash int = (&self.hasher)(key);
   startIndex = abs(hash mod self.table.len());
-  index? = findIndexOfKey(&self.table, self.equator, startIndex, key);
-  if (index?.isEmpty()) {
+  maybeIndex = findIndexOfKey(&self.table, self.equator, startIndex, key);
+  if (maybeIndex.isEmpty()) {
     panic("Map doesnt have given key!");
   }
-  optNode &!Opt<HashMapNode<K, V>> = self.table[index?.get()];
+  optNode &!Opt<HashMapNode<K, V>> = self.table[maybeIndex.get()];
   node *!HashMapNode<K, V> = get(&!optNode);
   set node.value = value;
 }
@@ -60,21 +60,21 @@ fn add<K, V, H, E>(map &!HashMap<K, V, H, E>, key K, value V) void {
   if ((map.size + 1) * 2 >= map.table.len()) {
     newSize =
         if (map.table.len() == 0) { 2 }
-        else { map.table.len() * 2 }
+        else { map.table.len() * 2 };
     newTable =
         MakeVaryArray(
             newSize,
-            &!IFunction1<mut, int, Opt<HashMapNode<K, V>>>((index){
+            &!IFunction1<mut, int, Opt<HashMapNode<K, V>>>((index) => {
               opt Opt<HashMapNode<K, V>> = None<HashMapNode<K, V>>();
-              = opt;
+              opt
             }));
     i! = 0;
     while (i < map.table.len()) {
       if (map.table[i].isEmpty()) {
         // do nothing
       } else {
-        node? = (set map.table[i] = None<HashMapNode<K, V>>());
-        node = get(node?);
+        maybeNode = (set map.table[i] = None<HashMapNode<K, V>>());
+        node = get(maybeNode);
         addNodeToTable(&!newTable, map.hasher, node);
       }
       set i = i + 1;
@@ -133,12 +133,12 @@ fn get<K, V, H, E>(self &HashMap<K, V, H, E>, key K) Opt<*V> {
   }
   hash int = (&self.hasher)(key);
   startIndex = abs(hash mod self.table.len());
-  index? = findIndexOfKey(self.table, self.equator, startIndex, key);
-  if (index?.isEmpty()) {
+  maybeIndex = findIndexOfKey(self.table, self.equator, startIndex, key);
+  if (maybeIndex.isEmpty()) {
     opt Opt<*V> = None<*V>();
     ret opt;
   }
-  node = self.table[index?.get()].get();
+  node = self.table[maybeIndex.get()].get();
   opt Opt<*V> = Some<*V>(*node.value);
   ret opt;
 }
@@ -151,9 +151,9 @@ fn keys<K, V, H, E>(self &HashMap<K, V, H, E>) Array<imm, K> {
   list = List<K>();
   index! = 0;
   while (index < self.table.len()) {
-    node? = self.table[index];
-    if (not(node?.isEmpty())) {
-      list!.add(node?.get().key);
+    maybeNode = self.table[index];
+    if (not(maybeNode.isEmpty())) {
+      list!.add(maybeNode.get().key);
     }
     set index = index + 1;
   }
@@ -164,9 +164,9 @@ fn values<K, V, H, E>(self &HashMap<K, V, H, E>) Array<mut, V> {
   list = List<V>();
   index! = 0;
   while (index < self.table.len()) {
-    node? = self.table[index];
-    if (not(node?.isEmpty())) {
-      list!.add(node?.get().value);
+    maybeNode = self.table[index];
+    if (not(maybeNode.isEmpty())) {
+      list!.add(maybeNode.get().value);
     }
     set index = index + 1;
   }
@@ -181,8 +181,8 @@ fn innerRemove<K, V, H, E>(
 int {
   hash int = (&hasher)(key);
   startIndex = abs(hash mod table.len());
-  index? = findIndexOfKey(&table, equator, startIndex, key);
-  index = index?.get();
+  maybeIndex = findIndexOfKey(&table, equator, startIndex, key);
+  index = maybeIndex.get();
   set table[index] = None<HashMapNode<K, V>>();
   ret index;
 }
@@ -197,12 +197,12 @@ void {
   i! = 1;
   while (i < map.table.len()) {
     neighborIndex = (originalIndex + i) mod len(&map.table);
-    neighbor? = (set map.table[neighborIndex] = None<HashMapNode<K, V>>());
-    if (not neighbor?.isEmpty()) {
-      (neighborKey, neighborValue) = (neighbor?).get();
+    maybeNeighbor = (set map.table[neighborIndex] = None<HashMapNode<K, V>>());
+    if (not maybeNeighbor.isEmpty()) {
+      (neighborKey, neighborValue) = (maybeNeighbor).get();
       addNodeToTable(map.table, map.hasher, HashMapNode<K, V>(neighborKey, neighborValue));
     } else {
-      drop(neighbor?);
+      drop(maybeNeighbor);
       set i = map.table.len(); // break
     }
     set i = i + 1;

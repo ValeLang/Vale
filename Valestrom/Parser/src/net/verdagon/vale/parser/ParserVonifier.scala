@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.parser.ast.{AbstractAttributeP, AbstractP, AndPE, AnonymousRunePT, ArenaRuneAttributeP, BlockPE, BoolPT, BoolTypePR, BorrowP, BorrowPT, BuiltinAttributeP, BuiltinCallPR, BumpRuneAttributeP, CallPT, CitizenTemplateTypePR, ComponentsPR, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, ConstructingMemberNameDeclarationP, CoordListTypePR, CoordTypePR, DestructPE, DestructureP, DontCallMacro, DotPE, DotPR, EachPE, EqualsPR, ExclusiveReadwriteP, ExportAsP, ExportAttributeP, ExportP, ExternAttributeP, FileP, FinalP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionPT, FunctionReturnP, IArraySizeP, ICitizenAttributeP, IExpressionPE, IFunctionAttributeP, IImpreciseNameP, INameDeclarationP, IRulexPR, IRuneAttributeP, IStructContent, ITemplexPT, ITopLevelThingP, ITypePR, IVirtualityP, IdentifyingRuneP, IdentifyingRunesP, IfPE, ImmutableP, ImplP, ImportP, IndexPE, InlineP, InlinePT, IntPT, IntTypePR, InterfaceP, InterpretedPT, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, KindTypePR, LambdaPE, LetPE, LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsP, LoadAsPointerP, LoadAsWeakP, LoadPE, LocalNameDeclarationP, LocationP, LocationPT, LocationTypePR, LookupNameP, LookupPE, MacroCallP, MagicParamLookupPE, ManualSequencePT, MethodCallPE, MoveP, MutabilityP, MutabilityPT, MutabilityTypePR, MutableP, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, OrPE, OrPR, OverrideP, OwnP, OwnershipP, OwnershipPT, OwnershipTypePR, PackPE, PackPR, PackPT, ParamsP, PatternPP, PermissionP, PermissionPT, PermissionTypePR, PointerP, PoolRuneAttributeP, PrototypePT, PrototypeTypePR, PureAttributeP, RangeP, ReadOnlyRuneAttributeP, ReadonlyP, ReadwriteP, RegionTypePR, RepeaterSequencePT, ResolveSignaturePR, ReturnPE, RuntimeSizedP, SealedP, ShareP, SharePT, ShortcallPE, StaticSizedP, StrInterpolatePE, StringPT, StructMembersP, StructMethodP, StructP, TemplateArgsP, TemplateRulesP, TemplexPR, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, TypeRuneAttributeP, TypedPR, TypedRunePT, UnitP, UseP, VariabilityP, VariabilityPT, VariabilityTypePR, VariadicStructMemberP, VaryingP, VoidPE, WeakP, WeakableP, WhilePE, YonderP}
+import net.verdagon.vale.parser.ast.{AbstractAttributeP, AbstractP, AndPE, AnonymousRunePT, ArenaRuneAttributeP, AugmentPE, BinaryCallPE, BlockPE, BoolPT, BoolTypePR, BorrowP, BorrowPT, BraceCallPE, BuiltinAttributeP, BuiltinCallPR, BumpRuneAttributeP, CallPT, CitizenTemplateTypePR, ComponentsPR, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, ConstructingMemberNameDeclarationP, CoordListTypePR, CoordTypePR, DestructPE, DestructureP, DontCallMacro, DotPE, DotPR, EachPE, EqualsPR, ExclusiveReadwriteP, ExportAsP, ExportAttributeP, ExportP, ExternAttributeP, FileP, FinalP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionPT, FunctionReturnP, IArraySizeP, ICitizenAttributeP, IExpressionPE, IFunctionAttributeP, IImpreciseNameP, INameDeclarationP, IRulexPR, IRuneAttributeP, IStructContent, ITemplexPT, ITopLevelThingP, ITypePR, IVirtualityP, IdentifyingRuneP, IdentifyingRunesP, IfPE, ImmutableP, ImplP, ImportP, IndexPE, InlineP, InlinePT, IntPT, IntTypePR, InterfaceP, InterpretedPT, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, KindTypePR, LambdaPE, LetPE, LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsP, LoadAsPointerP, LoadAsWeakP, LocalNameDeclarationP, LocationP, LocationPT, LocationTypePR, LookupNameP, LookupPE, MacroCallP, MagicParamLookupPE, ManualSequencePT, MethodCallPE, MoveP, MutabilityP, MutabilityPT, MutabilityTypePR, MutableP, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, NotPE, OrPE, OrPR, OverrideP, OwnP, OwnershipP, OwnershipPT, OwnershipTypePR, PackPE, PackPR, PackPT, ParamsP, PatternPP, PermissionP, PermissionPT, PermissionTypePR, PointerP, PoolRuneAttributeP, PrototypePT, PrototypeTypePR, PureAttributeP, RangeP, ReadOnlyRuneAttributeP, ReadonlyP, ReadwriteP, RegionTypePR, RepeaterSequencePT, ResolveSignaturePR, ReturnPE, RuntimeSizedP, SealedP, ShareP, SharePT, ShortcallPE, StaticSizedP, StrInterpolatePE, StringPT, StructMembersP, StructMethodP, StructP, SubExpressionPE, TemplateArgsP, TemplateRulesP, TemplexPR, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, TypeRuneAttributeP, TypedPR, TypedRunePT, UnitP, UseP, VariabilityP, VariabilityPT, VariabilityTypePR, VariadicStructMemberP, VaryingP, VoidPE, WeakP, WeakableP, WhilePE, YonderP}
 import net.verdagon.vale.vimpl
 import net.verdagon.von.{IVonData, VonArray, VonBool, VonFloat, VonInt, VonMember, VonObject, VonStr}
 
@@ -796,6 +796,14 @@ object ParserVonifier {
             VonMember("range", vonifyRange(range)),
             VonMember("value", VonFloat(value))))
       }
+      case NotPE(range, inner) => {
+        VonObject(
+          "Not",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("innerExpr", vonifyExpression(inner))))
+      }
       case FunctionCallPE(range, operatorRange, callableExpr, argExprs, callableReadwrite) => {
         VonObject(
           "FunctionCall",
@@ -806,6 +814,35 @@ object ParserVonifier {
             VonMember("callableExpr", vonifyExpression(callableExpr)),
             VonMember("argExprs", VonArray(None, argExprs.map(vonifyExpression).toVector)),
             VonMember("callableReadwrite", VonBool(callableReadwrite))))
+      }
+      case BraceCallPE(range, operatorRange, callableExpr, argExprs, callableReadwrite) => {
+        VonObject(
+          "BraceCall",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("operatorRange", vonifyRange(operatorRange)),
+            VonMember("callableExpr", vonifyExpression(callableExpr)),
+            VonMember("argExprs", VonArray(None, argExprs.map(vonifyExpression).toVector)),
+            VonMember("callableReadwrite", VonBool(callableReadwrite))))
+      }
+      case BinaryCallPE(range, name, leftExpr, rightExpr) => {
+        VonObject(
+          "BinaryCall",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("functionName", vonifyName(name)),
+            VonMember("leftExpr", vonifyExpression(leftExpr)),
+            VonMember("rightExpr", vonifyExpression(rightExpr))))
+      }
+      case SubExpressionPE(range, inner) => {
+        VonObject(
+          "SubExpression",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("innerExpr", vonifyExpression(inner))))
       }
       case EachPE(range, entryPattern, inRange, iterableExpr, body) => {
         VonObject(
@@ -882,14 +919,15 @@ object ParserVonifier {
             VonMember("value", VonStr(value.toString)),
             VonMember("bits", VonInt(bits))))
       }
-      case LoadPE(range, inner, targetOwnership) => {
+      case AugmentPE(range, targetOwnership, targetPermission, inner) => {
         VonObject(
-          "Point",
+          "Augment",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
-            VonMember("inner", vonifyExpression(inner)),
-            VonMember("targetOwnership", vonifyLoadAs(targetOwnership))))
+            VonMember("targetOwnership", vonifyOwnership(targetOwnership)),
+            VonMember("targetPermission", vonifyPermission(targetPermission)),
+            VonMember("inner", vonifyExpression(inner))))
       }
       case LetPE(range, templateRules, pattern, source) => {
         VonObject(
@@ -1013,7 +1051,7 @@ object ParserVonifier {
             VonMember("range", vonifyRange(range)),
             VonMember("elements", VonArray(None, elements.map(vonifyExpression).toVector))))
       }
-      case ca @ ConstructArrayPE(range, mutability, variability, size, initializingIndividualElements, args) => {
+      case ca @ ConstructArrayPE(range, tyype, mutability, variability, size, initializingIndividualElements, args) => {
         vonifyConstructArray(ca)
       }
       case VoidPE(range) => {
@@ -1050,13 +1088,14 @@ object ParserVonifier {
   }
 
   private def vonifyConstructArray(ca: ConstructArrayPE): VonObject = {
-    val ConstructArrayPE(range, mutability, variability, size, initializingIndividualElements, args) = ca
+    val ConstructArrayPE(range, tyype, mutability, variability, size, initializingIndividualElements, args) = ca
 
     VonObject(
       "ConstructArray",
       None,
       Vector(
         VonMember("range", vonifyRange(range)),
+        VonMember("type", vonifyOptional(tyype, vonifyTemplex)),
         VonMember("mutability", vonifyOptional(mutability, vonifyTemplex)),
         VonMember("variability", vonifyOptional(variability, vonifyTemplex)),
         VonMember("size", vonifyArraySize(size)),

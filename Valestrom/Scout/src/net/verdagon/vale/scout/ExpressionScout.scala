@@ -1,6 +1,6 @@
 package net.verdagon.vale.scout
 
-import net.verdagon.vale.parser.ast.{AndPE, BlockPE, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, DestructPE, DotPE, EachPE, FinalP, FunctionCallPE, FunctionP, IExpressionPE, ITemplexPT, IfPE, IndexPE, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, LambdaPE, LetPE, LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsP, LoadAsPointerP, LoadAsWeakP, LoadPE, LookupNameP, LookupPE, MagicParamLookupPE, MethodCallPE, MoveP, MutableP, MutatePE, NameP, OrPE, PackPE, PatternPP, ReturnPE, RuntimeSizedP, ShortcallPE, StaticSizedP, StrInterpolatePE, TemplateArgsP, TuplePE, UseP, VoidPE, WhilePE}
+import net.verdagon.vale.parser.ast.{AndPE, AugmentPE, BinaryCallPE, BlockPE, BorrowP, BraceCallPE, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, DestructPE, DotPE, EachPE, FinalP, FunctionCallPE, FunctionP, IExpressionPE, ITemplexPT, IfPE, IndexPE, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, LambdaPE, LetPE, LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsP, LoadAsPointerP, LoadAsWeakP, LookupNameP, LookupPE, MagicParamLookupPE, MethodCallPE, MoveP, MutableP, MutatePE, NameP, NotPE, OrPE, PackPE, PatternPP, PointerP, RangeP, ReadonlyP, ReadwriteP, ReturnPE, RuntimeSizedP, ShortcallPE, StaticSizedP, StrInterpolatePE, SubExpressionPE, TemplateArgsP, TuplePE, UseP, VoidPE, WeakP, WhilePE}
 import net.verdagon.vale.parser.{ast, _}
 import net.verdagon.vale.{RangeS, scout, vassert, vcurious, vfail, vimpl, vwat}
 import net.verdagon.vale.scout.Scout.{evalRange, noDeclarations, noVariableUses}
@@ -128,19 +128,7 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
         // - we're constructing
         // - we end with a return
         // - a result was requested.
-        val exprsS =
-            (if (endsWithReturn(exprWithoutConstructingWithoutVoidS)) {
-              exprWithoutConstructingWithoutVoidS
-            } else {
-              if (resultRequested) {
-                exprWithoutConstructingWithoutVoidS
-              } else {
-                Scout.consecutive(
-                  Vector(
-                    exprWithoutConstructingWithoutVoidS,
-                    VoidSE(RangeS(rangeS.end, rangeS.end))))
-              }
-            })
+        val exprsS = exprWithoutConstructingWithoutVoidS
         (stackFrameBeforeConstructing, exprsS, selfUsesBeforeConstructing, childUsesBeforeConstructing)
       } else {
         val rangeAtEnd = ast.RangeP(rangeS.end.offset, rangeS.end.offset)
@@ -229,13 +217,22 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
           })
         (stackFrame1, NormalResult(addedExpr), partsSelfUses, partsChildUses)
       }
-      case LoadPE(range, innerPE, targetOwnership) => {
+      case AugmentPE(range, targetOwnership, targetPermission, innerPE) => {
+        val loadAs =
+          (targetOwnership, targetPermission) match {
+            case (PointerP, ReadwriteP) => LoadAsPointerP(Some(ReadwriteP))
+            case (PointerP, ReadonlyP) => LoadAsPointerP(Some(ReadonlyP))
+            case (BorrowP, ReadwriteP) => LoadAsBorrowP(Some(ReadwriteP))
+            case (BorrowP, ReadonlyP) => LoadAsBorrowP(Some(ReadonlyP))
+            case (WeakP, ReadwriteP) => LoadAsWeakP(ReadwriteP)
+            case (WeakP, ReadonlyP) => LoadAsWeakP(ReadonlyP)
+          }
         val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
-          scoutExpressionAndCoerce(stackFrame0, lidb.child(), innerPE, targetOwnership, true)
+          scoutExpressionAndCoerce(stackFrame0, lidb.child(), innerPE, loadAs, true)
         inner1 match {
-          case OwnershippedSE(_, _, loadAs) => vassert(loadAs == targetOwnership)
-          case LocalLoadSE(_, _, loadAs) => vassert(loadAs == targetOwnership)
-          case OutsideLoadSE(_, _, _, _, loadAs) => vassert(loadAs == targetOwnership)
+          case OwnershippedSE(_, _, innerLoadAs) => vassert(loadAs == innerLoadAs)
+          case LocalLoadSE(_, _, innerLoadAs) => vassert(loadAs == innerLoadAs)
+          case OutsideLoadSE(_, _, _, _, innerLoadAs) => vassert(loadAs == innerLoadAs)
           case _ => vwat()
         }
         (stackFrame1, NormalResult(inner1), innerSelfUses, innerChildUses)
@@ -244,6 +241,23 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
         val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
           scoutExpressionAndCoerce(stackFrame0, lidb.child(), innerPE, UseP, true)
         (stackFrame1, NormalResult(ReturnSE(evalRange(range), inner1)), innerSelfUses, innerChildUses)
+      }
+      case NotPE(range, innerPE) => {
+        val callableSE = OutsideLoadSE(evalRange(range), Array(), CodeNameS("not"), None, LoadAsBorrowOrIfContainerIsPointerThenPointerP(None))
+
+        val (stackFrame1, innerSE, innerSelfUses, innerChildUses) =
+          scoutExpressionAndCoerce(stackFrame0, lidb.child(), innerPE, UseP, true)
+
+        val result =
+          NormalResult(
+            FunctionCallSE(evalRange(range), callableSE, Vector(innerSE)))
+
+        (stackFrame1, result, innerSelfUses, innerChildUses)
+      }
+      case SubExpressionPE(range, innerPE) => {
+        val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
+          scoutExpressionAndCoerce(stackFrame0, lidb.child(), innerPE, UseP, true)
+        (stackFrame1, NormalResult(inner1), innerSelfUses, innerChildUses)
       }
       case ConstantIntPE(range, value, bits) => (stackFrame0, NormalResult(ConstantIntSE(evalRange(range), value, bits)), noVariableUses, noVariableUses)
       case ConstantBoolPE(range,value) => (stackFrame0, NormalResult(ConstantBoolSE(evalRange(range), value)), noVariableUses, noVariableUses)
@@ -309,19 +323,73 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
           scoutExpressionAndCoerce(stackFrame0, lidb.child(), innersPE.head, UseP, true)
         (stackFrame1, NormalResult(inner1), innerSelfUses, innerChildUses)
       }
-      case FunctionCallPE(range, _, callablePE, args, borrowCallable) => {
+      case FunctionCallPE(range, _, callablePE, args, callableReadwrite) => {
+        val loadCallableAs =
+          if (callableReadwrite) {
+            LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadwriteP))
+          } else {
+            LoadAsBorrowOrIfContainerIsPointerThenPointerP(None)
+          }
         val (stackFrame1, callable1, callableSelfUses, callableChildUses) =
-          scoutExpressionAndCoerce(stackFrame0, lidb.child(), callablePE, borrowCallable, true)
+          scoutExpressionAndCoerce(stackFrame0, lidb.child(), callablePE, loadCallableAs, true)
         val (stackFrame2, args1, argsSelfUses, argsChildUses) =
           scoutElementsAsExpressions(stackFrame1, lidb.child(), args, true)
         val result = NormalResult(FunctionCallSE(evalRange(range), callable1, args1.toVector))
         (stackFrame2, result, callableSelfUses.thenMerge(argsSelfUses), callableChildUses.thenMerge(argsChildUses))
       }
-      case MethodCallPE(range, subjectExpr, operatorRange, subjectTargetOwnership, memberLookup, methodArgs) => {
+      case BinaryCallPE(range, namePE, leftPE, rightPE) => {
+        val callableSE = OutsideLoadSE(evalRange(range), Array(), CodeNameS(namePE.str), None, LoadAsBorrowOrIfContainerIsPointerThenPointerP(None))
+
+        val (stackFrame1, leftSE, leftSelfUses, leftChildUses) =
+          scoutExpressionAndCoerce(stackFrame0, lidb.child(), leftPE, LoadAsBorrowOrIfContainerIsPointerThenPointerP(None), true)
+        val (stackFrame2, rightSE, rightSelfUses, rightChildUses) =
+          scoutExpressionAndCoerce(stackFrame1, lidb.child(), rightPE, LoadAsBorrowOrIfContainerIsPointerThenPointerP(None), true)
+
+        val result =
+          NormalResult(
+            FunctionCallSE(evalRange(range), callableSE, Vector(leftSE, rightSE)))
+        (stackFrame2, result, leftSelfUses.thenMerge(rightSelfUses), leftChildUses.thenMerge(rightChildUses))
+      }
+      case BraceCallPE(range, operatorRange, subjectPE, args, callableReadwrite) => {
+        val loadSubjectAs =
+          subjectPE match {
+            // For subexpressions, just use what they give.
+            case SubExpressionPE(_, _) => UseP
+            // For anything else, default to borrowing.
+            case _ => {
+              LoadAsBorrowOrIfContainerIsPointerThenPointerP(None)
+            }
+          }
+
+        vassert(args.size == 1)
+        val argPE = args.head
+
+        val (stackFrame1, callableSE, callableSelfUses, callableChildUses) =
+          scoutExpressionAndCoerce(stackFrame0, lidb.child(), subjectPE, loadSubjectAs, true)
+        val (stackFrame2, argSE, argSelfUses, argChildUses) =
+          scoutExpressionAndCoerce(stackFrame1, lidb.child(), argPE, UseP, true)
+
+        val resultSE = IndexSE(evalRange(range), callableSE, argSE)
+        (stackFrame2, NormalResult(resultSE), callableSelfUses.thenMerge(argSelfUses), callableChildUses.thenMerge(argChildUses))
+      }
+      case MethodCallPE(range, subjectExpr, operatorRange, callableReadwrite, memberLookup, methodArgs) => {
+        val loadSubjectAs =
+          subjectExpr match {
+            // For subexpressions, just use what they give.
+            case SubExpressionPE(_, _) => UseP
+            // For anything else, default to borrowing.
+            case _ => {
+              if (callableReadwrite) {
+                LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadwriteP))
+              } else {
+                LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadonlyP))
+              }
+            }
+          }
         val (stackFrame1, callable1, callableSelfUses, callableChildUses) =
           scoutExpressionAndCoerce(stackFrame0, lidb.child(), memberLookup, LoadAsBorrowP(None), true)
         val (stackFrame2, subject1, subjectSelfUses, subjectChildUses) =
-          scoutExpressionAndCoerce(stackFrame1, lidb.child(), subjectExpr, subjectTargetOwnership, true)
+          scoutExpressionAndCoerce(stackFrame1, lidb.child(), subjectExpr, loadSubjectAs, true)
         val (stackFrame3, tailArgs1, tailArgsSelfUses, tailArgsChildUses) =
           scoutElementsAsExpressions(stackFrame2, lidb.child(), methodArgs, true)
 
@@ -337,9 +405,14 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
           scoutElementsAsExpressions(stackFrame0, lidb.child(), elementsPE, true)
         (stackFrame1, NormalResult(TupleSE(evalRange(range), elements1.toVector)), selfUses, childUses)
       }
-      case ConstructArrayPE(rangeP, maybeMutabilityPT, maybeVariabilityPT, size, initializingIndividualElements, argsPE) => {
+      case ConstructArrayPE(rangeP, maybeTypePT, maybeMutabilityPT, maybeVariabilityPT, size, initializingIndividualElements, argsPE) => {
         val rangeS = evalRange(rangeP)
         val ruleBuilder = mutable.ArrayBuffer[IRulexSR]()
+        val maybeTypeRuneS =
+          maybeTypePT.map(typePT => {
+            TemplexScout.translateTemplex(
+              stackFrame0.parentEnv, lidb.child(), ruleBuilder, typePT)
+          })
         val mutabilityRuneS =
           maybeMutabilityPT match {
             case None => {
@@ -379,7 +452,7 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
               }
               val Vector(sizeSE, callableSE) = argsSE
 
-              RuntimeArrayFromCallableSE(rangeS, ruleBuilder.toArray, mutabilityRuneS, sizeSE, callableSE)
+              RuntimeArrayFromCallableSE(rangeS, ruleBuilder.toArray, maybeTypeRuneS, mutabilityRuneS, sizeSE, callableSE)
             }
             case StaticSizedP(maybeSizePT) => {
               val maybeSizeRuneS =
@@ -407,7 +480,7 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
                   }
 
                 StaticArrayFromValuesSE(
-                  rangeS, ruleBuilder.toArray, mutabilityRuneS, variabilityRuneS, sizeRuneS, argsSE.toVector)
+                  rangeS, ruleBuilder.toArray, maybeTypeRuneS, mutabilityRuneS, variabilityRuneS, sizeRuneS, argsSE.toVector)
               } else {
                 if (argsSE.size != 1) {
                   throw CompileErrorExceptionS(InitializingStaticSizedArrayRequiresSizeAndCallable(rangeS))
@@ -418,7 +491,8 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
                     case None => throw CompileErrorExceptionS(InitializingStaticSizedArrayFromCallableNeedsSizeTemplex(rangeS))
                   }
                 val Vector(callableSE) = argsSE
-                StaticArrayFromCallableSE(rangeS, ruleBuilder.toArray, mutabilityRuneS, variabilityRuneS, sizeRuneS, callableSE)
+                StaticArrayFromCallableSE(
+                  rangeS, ruleBuilder.toArray, maybeTypeRuneS, mutabilityRuneS, variabilityRuneS, sizeRuneS, callableSE)
               }
             }
           }
@@ -431,49 +505,68 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
         (stackFrame0, NormalResult(resultSE), selfUses, childUses)
       }
       case ConsecutorPE(inners) => {
-        val (stackFrame1, resultsSE, selfUses, childUses) =
+        val (stackFrame1, unfilteredResultsSE, selfUses, childUses) =
           scoutElementsAsExpressions(stackFrame0, lidb.child(), inners, resultRequested)
-        (stackFrame1, NormalResult(Scout.consecutive(resultsSE)), selfUses, childUses)
+
+        // Strip trailing voids after return
+        // The boolean is whether we've seen a return yet
+        val (_, filteredResultsSE) =
+          unfilteredResultsSE.foldLeft((false, Vector[IExpressionSE]()))({
+            case ((false, previous), r @ ReturnSE(_, _)) => (true, previous :+ r)
+            case ((false, previous), next) => (false, previous :+ next)
+            case ((true, previous), VoidSE(_)) => (true, previous)
+            case ((true, previous), next) => {
+              throw CompileErrorExceptionS(StatementAfterReturnS(next.range))
+            }
+          })
+
+        (stackFrame1, NormalResult(Scout.consecutive(filteredResultsSE)), selfUses, childUses)
       }
       case AndPE(range, leftPE, rightPE) => {
         val rightRange = evalRange(rightPE.range)
         val endRange = RangeS(rightRange.end, rightRange.end)
 
-        val (stackFrame1, condSE, condUses, condChildUses) =
-          scoutExpressionAndCoerce(stackFrame0, lidb.child(), leftPE, UseP, true)
-        val (thenSE, thenUses, thenChildUses) =
-          scoutBlock(stackFrame1, lidb.child(), noDeclarations, resultRequested, rightPE)
-        val elseUses = VariableUses(Vector.empty)
-        val elseChildUses = VariableUses(Vector.empty)
-        val elseSE = BlockSE(endRange, Vector.empty, ConstantBoolSE(endRange, false))
+        val (stackFrameZ, ifSE, selfUses, childUses) =
+          newIf(
+            stackFrame0, lidb, resultRequested, range,
+            (stackFrame1, lidb, _) => {
+              scoutExpressionAndCoerce(stackFrame1, lidb, leftPE, UseP, true)
+            },
+            (stackFrame2, lidb, _) => {
+              val (thenSE, thenUses, thenChildUses) =
+                scoutBlock(stackFrame2, lidb.child(), noDeclarations, true, rightPE)
+              (stackFrame2, thenSE, thenUses, thenChildUses)
+            },
+            (stackFrame3, lidb, _) => {
+              val elseSE =
+                BlockSE(endRange, Vector.empty, ConstantBoolSE(endRange, false))
+              (stackFrame3, elseSE, noVariableUses, noVariableUses)
+            })
 
-        val selfCaseUses = thenUses.branchMerge(elseUses)
-        val selfUses = condUses.thenMerge(selfCaseUses);
-        val childCaseUses = thenChildUses.branchMerge(elseChildUses)
-        val childUses = condChildUses.thenMerge(childCaseUses);
-
-        val ifSE = IfSE(evalRange(range), condSE, thenSE, elseSE)
-        (stackFrame1, NormalResult(ifSE), selfUses, childUses)
+        (stackFrameZ, NormalResult(ifSE), selfUses, childUses)
       }
       case OrPE(range, leftPE, rightPE) => {
         val rightRange = evalRange(rightPE.range)
         val endRange = RangeS(rightRange.end, rightRange.end)
 
-        val (stackFrame1, condSE, condUses, condChildUses) =
-          scoutExpressionAndCoerce(stackFrame0, lidb.child(), leftPE, UseP, true)
-        val thenUses = VariableUses(Vector.empty)
-        val thenChildUses = VariableUses(Vector.empty)
-        val thenSE = BlockSE(endRange, Vector.empty, ConstantBoolSE(endRange, true))
-        val (elseSE, elseUses, elseChildUses) =
-          scoutBlock(stackFrame1, lidb.child(), noDeclarations, true, rightPE)
+        val (stackFrameZ, ifSE, selfUses, childUses) =
+          newIf(
+            stackFrame0, lidb, resultRequested, range,
+            (stackFrame1, lidb, _) => {
+              scoutExpressionAndCoerce(stackFrame1, lidb, leftPE, UseP, true)
+            },
+            (stackFrame2, lidb, _) => {
+              val elseSE =
+                BlockSE(endRange, Vector.empty, ConstantBoolSE(endRange, true))
+              (stackFrame2, elseSE, noVariableUses, noVariableUses)
+            },
+            (stackFrame3, lidb, _) => {
+              val (thenSE, thenUses, thenChildUses) =
+                scoutBlock(stackFrame3, lidb.child(), noDeclarations, true, rightPE)
+              (stackFrame3, thenSE, thenUses, thenChildUses)
+            })
 
-        val selfCaseUses = thenUses.branchMerge(elseUses)
-        val selfUses = condUses.thenMerge(selfCaseUses);
-        val childCaseUses = thenChildUses.branchMerge(elseChildUses)
-        val childUses = condChildUses.thenMerge(childCaseUses);
-
-        val ifSE = IfSE(evalRange(range), condSE, thenSE, elseSE)
-        (stackFrame1, NormalResult(ifSE), selfUses, childUses)
+        (stackFrameZ, NormalResult(ifSE), selfUses, childUses)
       }
       case IfPE(range, condition, thenBody, elseBody) => {
         val (resultSE, selfUses, childUses) =
@@ -503,47 +596,90 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
         (stackFrame0, NormalResult(resultSE), selfUses, childUses)
       }
       case WhilePE(range, conditionPE, uncombinedBodyPE) => {
-        val (combinedBodySE, selfUses, childUses) =
-          newBlock(
-            stackFrame0.parentEnv,
-            Some(stackFrame0),
-            lidb.child(),
-            evalRange(range),
-            noDeclarations,
-            true,
-            (stackFrame1, lidb, resultRequested) => {
-              vassert(resultRequested)
-              val (stackFrame2, condSE, condSelfUses, condChildUses) =
-                scoutExpressionAndCoerce(stackFrame1, lidb.child(), conditionPE, UseP, true)
-
-              val (thenSE, thenSelfUses, thenChildUses) =
-                scoutBlock(
-                  stackFrame2, lidb.child(), noDeclarations, true,
-                  BlockPE(range, ConsecutorPE(Vector(uncombinedBodyPE, ConstantBoolPE(range, true)))))
-
-              val elseSE = BlockSE(evalRange(range), Vector(), ConstantBoolSE(evalRange(range), false))
-
-              // Condition's uses isn't sent through a branch merge because the condition
-              // is *always* evaluated (at least once).
-              val selfCaseUses = thenSelfUses.branchMerge(noVariableUses)
-              val selfUses = condSelfUses.thenMerge(selfCaseUses);
-              val childCaseUses = thenChildUses.branchMerge(noVariableUses)
-              val childUses = condChildUses.thenMerge(childCaseUses);
-
-              val ifSE = IfSE(evalRange(range), condSE, thenSE, elseSE)
-              (stackFrame2, ifSE, selfUses, childUses)
+        val (loopSE, loopSelfUses, loopChildUses) =
+          LoopScout.scoutLoop(
+            this, stackFrame0, lidb, range,
+            (stackFrame1, lidb, _) => {
+              val (loopBodySE, loopBodySelfUses, loopBodyChildUses) =
+                newBlock(
+                  stackFrame1.parentEnv, Some(stackFrame1), lidb, Scout.evalRange(stackFrame0.file, range), noDeclarations, true,
+                  (stackFrame2, lidb, _) => {
+                    newIf(
+                      stackFrame2, lidb, true, range,
+                      (stackFrame3, lidb, _) => {
+                        scoutExpressionAndCoerce(
+                          stackFrame3, lidb.child(), conditionPE, UseP, true)
+                      },
+                      (stackFrame3, lidb, _) => {
+                        val (blockSE, thenBlockSelfUses, thenBlockChildUses) =
+                          newBlock(
+                            stackFrame3.parentEnv, Some(stackFrame3), lidb, Scout.evalRange(stackFrame0.file, range), noDeclarations, true,
+                            (stackFrame4, lidb, _) => {
+                              val (stackFrameF, thenSE, thenSelfUses, thenChildUses) =
+                                scoutExpressionAndCoerce(
+                                  stackFrame4, lidb.child(), uncombinedBodyPE, UseP, true)
+                              val trueSE = ConstantBoolSE(Scout.evalRange(stackFrame0.file, range), true)
+                              val combinedSE = Scout.consecutive(Vector(thenSE, trueSE))
+                              (stackFrameF, combinedSE, thenSelfUses, thenChildUses)
+                            })
+                        (stackFrame3, blockSE, thenBlockSelfUses, thenBlockChildUses)
+                      },
+                      (stackFrame3, lidb, _) => {
+                        val (blockSE, thenBlockSelfUses, thenBlockChildUses) =
+                          newBlock(
+                            stackFrame3.parentEnv, Some(stackFrame3), lidb, Scout.evalRange(stackFrame0.file, range), noDeclarations, true,
+                            (stackFrameF, _, _) => {
+                              val falseSE = ConstantBoolSE(Scout.evalRange(stackFrame0.file, range), false)
+                              (stackFrameF, falseSE, noVariableUses, noVariableUses)
+                            })
+                        (stackFrame3, blockSE, thenBlockSelfUses, thenBlockChildUses)
+                      })
+                  })
+              (stackFrame1, loopBodySE, loopBodySelfUses, loopBodyChildUses)
             })
 
-        (stackFrame0, NormalResult(WhileSE(evalRange(range), combinedBodySE)), selfUses, childUses)
+        (stackFrame0, NormalResult(loopSE), loopSelfUses, loopChildUses)
+//
+//        val (combinedBodySE, selfUses, childUses) =
+//          newBlock(
+//            stackFrame0.parentEnv,
+//            Some(stackFrame0),
+//            lidb.child(),
+//            evalRange(range),
+//            noDeclarations,
+//            true,
+//            (stackFrame1, lidb, resultRequested) => {
+//              vassert(resultRequested)
+//              val (stackFrame2, condSE, condSelfUses, condChildUses) =
+//                scoutExpressionAndCoerce(stackFrame1, lidb.child(), conditionPE, UseP, true)
+//
+//              val (thenSE, thenSelfUses, thenChildUses) =
+//                scoutBlock(
+//                  stackFrame2, lidb.child(), noDeclarations, true,
+//                  BlockPE(range, ConsecutorPE(Vector(uncombinedBodyPE, ConstantBoolPE(range, true)))))
+//
+//              val elseSE = BlockSE(evalRange(range), Vector(), ConstantBoolSE(evalRange(range), false))
+//
+//              // Condition's uses isn't sent through a branch merge because the condition
+//              // is *always* evaluated (at least once).
+//              val selfCaseUses = thenSelfUses.branchMerge(noVariableUses)
+//              val selfUses = condSelfUses.thenMerge(selfCaseUses);
+//              val childCaseUses = thenChildUses.branchMerge(noVariableUses)
+//              val childUses = condChildUses.thenMerge(childCaseUses);
+//
+//              val ifSE = IfSE(evalRange(range), condSE, thenSE, elseSE)
+//              (stackFrame2, ifSE, selfUses, childUses)
+//            })
+//        (stackFrame0, NormalResult(WhileSE(evalRange(range), combinedBodySE)), selfUses, childUses)
       }
       case EachPE(range, entryPatternPP, inKeywordRange, iterableExpr, body) => {
-        val transformedPE =
-          transformEach(range, entryPatternPP, inKeywordRange, iterableExpr, body)
-        scoutExpression(stackFrame0, lidb.child(), transformedPE, resultRequested)
+        val (loopSE, selfUses, childUses) =
+          LoopScout.scoutEach(this, stackFrame0, lidb, range, entryPatternPP, inKeywordRange, iterableExpr, body)
+        (stackFrame0, NormalResult(loopSE), selfUses, childUses)
       }
-      case BadLetPE(range) => {
-        throw CompileErrorExceptionS(ForgotSetKeywordError(evalRange(range)))
-      }
+//      case BadLetPE(range) => {
+//        throw CompileErrorExceptionS(ForgotSetKeywordError(evalRange(range)))
+//      }
       case LetPE(range, rulesP, patternP, exprPE) => {
         val codeLocation = Scout.evalPos(stackFrame0.file, range.begin)
         val (stackFrame1, expr1, selfUses, childUses) =
@@ -592,7 +728,7 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
           }
         (stackFrame2, NormalResult(mutateExpr1), sourceSelfUses.thenMerge(destinationSelfUses), sourceChildUses.thenMerge(destinationChildUses))
       }
-      case DotPE(rangeP, containerExprPE, _, isMapCall, NameP(_, memberName)) => {
+      case DotPE(rangeP, containerExprPE, _, NameP(_, memberName)) => {
         containerExprPE match {
           // Here, we're special casing lookups of this.x when we're in a constructor.
           // We know we're in a constructor if there's no `this` variable yet. After all,
@@ -623,90 +759,31 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
     }
   }
 
-  private def transformEach(range: ast.RangeP, entryPatternPP: PatternPP, inKeywordRange: ast.RangeP, iterableExpr: IExpressionPE, body: BlockPE) = {
-    BlockPE(
-      range,
-      ConsecutorPE(
-        Vector(
-          LetPE(
-            inKeywordRange,
-            None,
-            PatternPP(inKeywordRange, None, Some(IterableNameDeclarationP(inKeywordRange)), None, None, None),
-            iterableExpr),
-          LetPE(
-            inKeywordRange,
-            None,
-            PatternPP(inKeywordRange, None, Some(IteratorNameDeclarationP(inKeywordRange)), None, None, None),
-            FunctionCallPE(
-              inKeywordRange,
-              None,
-              inKeywordRange,
-              false,
-              LookupPE(LookupNameP(NameP(inKeywordRange, "begin")), None),
-              Vector(
-                LoadPE(
-                  inKeywordRange,
-                  LookupPE(IterableNameP(inKeywordRange), None),
-                  LoadAsBorrowP(None))),
-              LoadAsBorrowP(None))),
-          WhilePE(
-            range,
-            ConsecutorPE(
-              Vector(
-                LetPE(
-                  entryPatternPP.range,
-                  None,
-                  PatternPP(inKeywordRange, None, Some(IterationOptionNameDeclarationP(inKeywordRange)), None, None, None),
-                  FunctionCallPE(
-                    inKeywordRange,
-                    None,
-                    inKeywordRange,
-                    false,
-                    LookupPE(LookupNameP(NameP(inKeywordRange, "next")), None),
-                    Vector(
-                      LoadPE(
-                        inKeywordRange,
-                        LookupPE(IteratorNameP(inKeywordRange), None),
-                        LoadAsBorrowP(None))),
-                    LoadAsBorrowP(None))),
-                FunctionCallPE(
-                  inKeywordRange,
-                  None,
-                  inKeywordRange,
-                  false,
-                  LookupPE(LookupNameP(NameP(inKeywordRange, "not")), None),
-                  Vector(
-                    FunctionCallPE(
-                      inKeywordRange,
-                      None,
-                      inKeywordRange,
-                      false,
-                      LookupPE(LookupNameP(NameP(inKeywordRange, "isEmpty")), None),
-                      Vector(
-                        LoadPE(
-                          inKeywordRange,
-                          LookupPE(IterationOptionNameP(inKeywordRange), None),
-                          LoadAsBorrowP(None))),
-                      LoadAsBorrowP(None))),
-                  LoadAsBorrowP(None)))),
-              BlockPE(
-                body.range,
-                ConsecutorPE(
-                  Vector(
-                    LetPE(
-                      inKeywordRange,
-                      None,
-                      entryPatternPP,
-                      FunctionCallPE(
-                        inKeywordRange,
-                        None,
-                        inKeywordRange,
-                        false,
-                        LookupPE(LookupNameP(NameP(inKeywordRange, "get")), None),
-                        Vector(
-                          LookupPE(IterationOptionNameP(inKeywordRange), None)),
-                        LoadAsBorrowP(None))),
-                    body)))))))
+  def newIf(
+    stackFrame0: StackFrame,
+    lidb: LocationInDenizenBuilder,
+    resultRequested: Boolean,
+    range: RangeP,
+    makeCondition: (StackFrame, LocationInDenizenBuilder, Boolean) => (StackFrame, IExpressionSE, VariableUses, VariableUses),
+    makeThen: (StackFrame, LocationInDenizenBuilder, Boolean) => (StackFrame, BlockSE, VariableUses, VariableUses),
+    makeElse: (StackFrame, LocationInDenizenBuilder, Boolean) => (StackFrame, BlockSE, VariableUses, VariableUses)):
+  (StackFrame, IfSE, VariableUses, VariableUses) = {
+    val (stackFrame1, condSE, condUses, condChildUses) =
+      makeCondition(stackFrame0, lidb.child(), resultRequested)
+
+    val (stackFrame2, thenSE, thenUses, thenChildUses) =
+      makeThen(stackFrame1, lidb.child(), resultRequested)
+    val (stackFrame3, elseSE, elseUses, elseChildUses) =
+      makeElse(stackFrame2, lidb.child(), resultRequested)
+
+    val selfCaseUses = thenUses.branchMerge(elseUses)
+    val selfUses = condUses.thenMerge(selfCaseUses);
+    val childCaseUses = thenChildUses.branchMerge(elseChildUses)
+    val childUses = condChildUses.thenMerge(childCaseUses);
+
+    val ifSE =
+      IfSE(Scout.evalRange(stackFrame0.file, range), condSE, thenSE, elseSE)
+    (stackFrame3, ifSE, selfUses, childUses)
   }
 
   // If we load an immutable with targetOwnershipIfLookupResult = Own or Borrow, it will just be Share.

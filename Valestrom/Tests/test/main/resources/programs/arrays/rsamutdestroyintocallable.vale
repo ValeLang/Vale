@@ -2,6 +2,6 @@ struct Spaceship { fuel int; }
 fn main() int export {
   a = Array<mut, Spaceship>(3, &!{Spaceship(13 + _)});
   sum = 0;
-  drop_into(a, &!(e){ set sum = sum + e.fuel; });
+  drop_into(a, &!(e) => { set sum = sum + e.fuel; });
   ret sum;
 }

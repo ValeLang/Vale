@@ -13,7 +13,7 @@ class ArrayTests extends FunSuite with Matchers {
   test("Returning static array from function and dotting it") {
     val compile = RunCompilation.test(
       """
-        |fn makeArray() infer-ret { ret [][2, 3, 4, 5, 6]; }
+        |fn makeArray() infer-ret { ret [#][2, 3, 4, 5, 6]; }
         |fn main() int export {
         |  ret makeArray().3;
         |}
@@ -27,7 +27,7 @@ class ArrayTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  i = 2;
-        |  a = [][2, 3, 4, 5, 6];
+        |  a = [#][2, 3, 4, 5, 6];
         |  ret a[i];
         |}
       """.stripMargin)
@@ -45,9 +45,9 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |fn main() int export {
-        |  a = [][13, 14, 15];
+        |  a = [#][13, 14, 15];
         |  sum = 0;
-        |  drop_into(a, &!(e){ set sum = sum + e; });
+        |  drop_into(a, &!(e) => { set sum = sum + e; });
         |  ret sum;
         |}
       """.stripMargin)
@@ -61,7 +61,7 @@ class ArrayTests extends FunSuite with Matchers {
         |fn main() int export {
         |  a = Array<imm>(3, {13 + _});
         |  sum = 0;
-        |  drop_into(a, &!(e){ set sum = sum + e; });
+        |  drop_into(a, &!(e) => { set sum = sum + e; });
         |  ret sum;
         |}
       """.stripMargin)
@@ -74,9 +74,9 @@ class ArrayTests extends FunSuite with Matchers {
       """
         |struct Spaceship { fuel int; }
         |fn main() int export {
-        |  a = [][Spaceship(13), Spaceship(14), Spaceship(15)];
+        |  a = [#][Spaceship(13), Spaceship(14), Spaceship(15)];
         |  sum = 0;
-        |  drop_into(a, &!(e){ set sum = sum + e.fuel; });
+        |  drop_into(a, &!(e) => { set sum = sum + e.fuel; });
         |  ret sum;
         |}
       """.stripMargin)
@@ -92,7 +92,7 @@ class ArrayTests extends FunSuite with Matchers {
         |fn main() int export {
         |  a = MakeVaryArray(3, &!{Spaceship(13 + _)});
         |  sum = 0;
-        |  drop_into(a, &!(e){ set sum = sum + e.fuel; });
+        |  drop_into(a, &!(e) => { set sum = sum + e.fuel; });
         |  ret sum;
         |}
       """.stripMargin)
@@ -122,7 +122,7 @@ class ArrayTests extends FunSuite with Matchers {
         |import array.make.*;
         |struct Spaceship { fuel int; }
         |fn main() int export {
-        |  a = [3](&!{Spaceship(41 + _)});
+        |  a = [#3](&!{Spaceship(41 + _)});
         |  b = Array<mut, Spaceship>(3);
         |  migrate(a, &!b);
         |  ret b[1].fuel;
@@ -137,7 +137,7 @@ class ArrayTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  i = 3;
-        |  a = [5](*!{_ * 42});
+        |  a = [#5](*!{_ * 42});
         |  ret a[1];
         |}
         |""".stripMargin)
@@ -261,7 +261,7 @@ class ArrayTests extends FunSuite with Matchers {
         |  ret arr.3;
         |}
         |fn main() int export {
-        |  a = [imm][2, 3, 4, 5, 6];
+        |  a = #[#][2, 3, 4, 5, 6];
         |  ret doThings(a);
         |}
       """.stripMargin)
@@ -280,7 +280,7 @@ class ArrayTests extends FunSuite with Matchers {
         |  ret arr.2.x;
         |}
         |fn main() int export {
-        |  a = [][MutableStruct(2), MutableStruct(3), MutableStruct(4)];
+        |  a = [#][MutableStruct(2), MutableStruct(3), MutableStruct(4)];
         |  ret doThings(*a);
         |}
       """.stripMargin)
@@ -296,7 +296,7 @@ class ArrayTests extends FunSuite with Matchers {
         |fn __call(lol int, i int) int { ret i; }
         |
         |fn main() int export {
-        |  a = [imm *](10, 1337);
+        |  a = #[](10, 1337);
         |  ret a.3;
         |}
       """.stripMargin)
@@ -319,7 +319,7 @@ class ArrayTests extends FunSuite with Matchers {
         |fn main() int
         |rules(F Prot = Prot("__call", (Lam, int), int))
         |export {
-        |  a = [imm, final, *](10, Lam());
+        |  a = #[](10, Lam());
         |  ret a.3;
         |}
       """.stripMargin)
@@ -412,7 +412,7 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |fn main() int export {
-        |  ret [[2]].0.0;
+        |  ret [#][[#][2]].0.0;
         |}
       """.stripMargin)
 
@@ -427,7 +427,7 @@ class ArrayTests extends FunSuite with Matchers {
           |  board =
           |      MakeArray(
           |          3,
-          |          (row){ MakeArray(3, { row + _ }) });
+          |          (row) => { MakeArray(3, { row + _ }) });
           |  ret board.1.2;
           |}
         """.stripMargin)
@@ -444,7 +444,7 @@ class ArrayTests extends FunSuite with Matchers {
           |
           |fn main() int export {
           |  box = IntBox(7);
-          |  board = MakeArray(3, &!(col){ box.i });
+          |  board = MakeArray(3, &!(col) => { box.i });
           |  ret board.1;
           |}
         """.stripMargin)
@@ -467,7 +467,7 @@ class ArrayTests extends FunSuite with Matchers {
         |
         |fn main() int export {
         |  box = IntBox(7);
-        |  lam = (col){ box.i };
+        |  lam = (col) => { box.i };
         |  board = myFunc(&!lam);
         |  ret board;
         |}
@@ -547,7 +547,7 @@ class ArrayTests extends FunSuite with Matchers {
           |fn main() int export {
           |  board = MakeArray(5, {_});
           |  result =
-          |      MakeArray(5, &!(i){
+          |      MakeArray(5, &!(i) => {
           |        board[i] + 2
           |      });
           |  ret result.2;
@@ -566,7 +566,7 @@ class ArrayTests extends FunSuite with Matchers {
           |  ret MakeArray(N, { seq[_] });
           |}
           |fn main() int export {
-          |  ret [imm][6, 4, 3, 5, 2, 8].toArray<mut>()[3];
+          |  ret #[#][6, 4, 3, 5, 2, 8].toArray<mut>()[3];
           |}
           |""".stripMargin)
     compile.evalForKind(Vector()) shouldEqual VonInt(5)
@@ -577,7 +577,7 @@ class ArrayTests extends FunSuite with Matchers {
       """
         |import array.make.*;
         |fn main() int export {
-        |  ret [imm][[imm][6, 60].toImmArray(), [imm][4, 40].toImmArray(), [imm][3, 30].toImmArray()].toImmArray()[2][1];
+        |  ret #[#][#[#][6, 60].toImmArray(), #[#][4, 40].toImmArray(), #[#][3, 30].toImmArray()].toImmArray()[2][1];
         |}
         |""".stripMargin)
     compile.evalForKind(Vector()) shouldEqual VonInt(30)
@@ -587,11 +587,11 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |import array.make.*;
-        |import array.each.*;
+        |import array.iter.*;
         |import ifunction.ifunction1.*;
         |fn main() int export {
         |  sum! = 0;
-        |  [][6, 60, 103].each(&!IFunction1<mut, int, void>({ set sum = sum + _; }));
+        |  [#][6, 60, 103].each(&!IFunction1<mut, int, void>({ set sum = sum + _; }));
         |  ret sum;
         |}
         |""".stripMargin)
@@ -603,7 +603,7 @@ class ArrayTests extends FunSuite with Matchers {
         """
           |import array.has.*;
           |fn main() bool export {
-          |  ret [][6, 60, 103].has(103);
+          |  ret [#][6, 60, 103].has(103);
           |}
           |""".stripMargin)
     compile.evalForKind(Vector()) shouldEqual VonBool(true)
@@ -614,9 +614,9 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """
           |import array.make.*;
-          |import array.each.*;
+          |import array.iter.*;
           |fn main() export {
-          |  planets = []["Venus", "Earth", "Mars"];
+          |  planets = [#]["Venus", "Earth", "Mars"];
           |  foreach planet in planets {
           |    print(planet);
           |  }
@@ -640,13 +640,13 @@ class ArrayTests extends FunSuite with Matchers {
 
 //  test("Destroy lambda with mutable captures") {
 //    val compile = RunCompilation.test(
-//      Samples.get("generics/each.vale") +
+//      Samples.get("generics/iter.vale") +
 //        """
 //          |fn main() int export {
 //          |  list = Array<mut, int>(3, *!IFunction1<mut, int, int>({_}));
 //          |  n = 7;
 //          |  newArray =
-//          |      Array<mut, int>(3, *!IFunction1<mut, int, int>((index){
+//          |      Array<mut, int>(3, *!IFunction1<mut, int, int>((index) => {
 //          |        = if (index == 1) {
 //          |            = n;
 //          |          } else {
@@ -668,10 +668,10 @@ class ArrayTests extends FunSuite with Matchers {
 //        |fn map
 //        |:(n: Int, T: reference, F: kind)
 //        |(arr: *[n T], generator: *F) {
-//        |  Array<mut>(n, (i){ generator(arr.(i))})
+//        |  Array<mut>(n, (i) => { generator(arr.(i))})
 //        |}
 //        |fn main() int export {
-//        |  board = Array<mut>(5, (x){ x});
+//        |  board = Array<mut>(5, (x) => { x});
 //        |  result = map(board, {_});
 //        |  ret result.3;
 //        |}

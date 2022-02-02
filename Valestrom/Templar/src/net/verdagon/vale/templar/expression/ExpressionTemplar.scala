@@ -584,11 +584,11 @@ class ExpressionTemplar(
                   case _ => vimpl(structExpr.kind.toString)
                 }
               }
-              case RuntimeSizedArrayLookupTE(range, _, arrayType, _, _, _) => {
-                throw CompileErrorExceptionT(CantMutateFinalElement(range, arrayType.name))
+              case RuntimeSizedArrayLookupTE(range, arrayExpr, arrayType, _, _, _) => {
+                throw CompileErrorExceptionT(CantMutateFinalElement(range, arrayExpr.result.reference))
               }
-              case StaticSizedArrayLookupTE(range, _, arrayType, _, _, _) => {
-                throw CompileErrorExceptionT(CantMutateFinalElement(range, arrayType.name))
+              case StaticSizedArrayLookupTE(range, arrayExpr, arrayType, _, _, _) => {
+                throw CompileErrorExceptionT(CantMutateFinalElement(range, arrayExpr.result.reference))
               }
               case x => vimpl(x.toString)
             }
@@ -717,24 +717,24 @@ class ExpressionTemplar(
           val expr2 = sequenceTemplar.evaluate(fate.snapshot, temputs, exprs2)
           (expr2, returnsFromElements)
         }
-        case StaticArrayFromValuesSE(range, rules, mutabilityRune, variabilityRune, sizeRuneA, elements1) => {
+        case StaticArrayFromValuesSE(range, rules, maybeElementTypeRuneA, mutabilityRune, variabilityRune, sizeRuneA, elements1) => {
           val (exprs2, returnsFromElements) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, life, elements1);
           // would we need a sequence templata? probably right?
           val expr2 =
             arrayTemplar.evaluateStaticSizedArrayFromValues(
-              temputs, fate, range, rules.toVector, sizeRuneA.rune, mutabilityRune.rune, variabilityRune.rune, exprs2)
+              temputs, fate, range, rules.toVector, maybeElementTypeRuneA.map(_.rune), sizeRuneA.rune, mutabilityRune.rune, variabilityRune.rune, exprs2)
           (expr2, returnsFromElements)
         }
-        case StaticArrayFromCallableSE(range, rules, maybeMutabilityRune, maybeVariabilityRune, sizeRuneA, callableAE) => {
+        case StaticArrayFromCallableSE(range, rules, maybeElementTypeRune, maybeMutabilityRune, maybeVariabilityRune, sizeRuneA, callableAE) => {
           val (callableTE, returnsFromCallable) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, life, callableAE);
           val expr2 =
             arrayTemplar.evaluateStaticSizedArrayFromCallable(
-              temputs, fate, range, rules.toVector, sizeRuneA.rune, maybeMutabilityRune.rune, maybeVariabilityRune.rune, callableTE)
+              temputs, fate, range, rules.toVector, maybeElementTypeRune.map(_.rune), sizeRuneA.rune, maybeMutabilityRune.rune, maybeVariabilityRune.rune, callableTE)
           (expr2, returnsFromCallable)
         }
-        case RuntimeArrayFromCallableSE(range, rulesA, mutabilityRune, sizeAE, callableAE) => {
+        case RuntimeArrayFromCallableSE(range, rulesA, maybeElementTypeRune, mutabilityRune, sizeAE, callableAE) => {
           val (sizeTE, returnsFromSize) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, life + 0, sizeAE);
           val (callableTE, returnsFromCallable) =
@@ -742,7 +742,7 @@ class ExpressionTemplar(
 
           val expr2 =
             arrayTemplar.evaluateRuntimeSizedArrayFromCallable(
-              temputs, fate, range, rulesA.toVector, mutabilityRune.rune, sizeTE, callableTE)
+              temputs, fate, range, rulesA.toVector, maybeElementTypeRune.map(_.rune), mutabilityRune.rune, sizeTE, callableTE)
           (expr2, returnsFromSize ++ returnsFromCallable)
         }
         case LetSE(range, rulesA, pattern, sourceExpr1) => {
@@ -913,10 +913,24 @@ class ExpressionTemplar(
           val whileExpr2 = WhileTE(uncoercedBodyBlock2)
           (whileExpr2, /*returnsFromCondition ++*/ bodyReturnsFromExprs)
         }
-        case ConsecutorSE(exprs) => {
-          val (resultTE, returns) =
-            evaluateAndCoerceToReferenceExpressions(temputs, fate, life + 0, exprs)
-          (Templar.consecutive(resultTE), returns)
+        case ConsecutorSE(exprsSE) => {
+
+          val (initExprsTE, initReturnsUnflattened) =
+            exprsSE.init.zipWithIndex.map({ case (exprSE, index) =>
+              val (undroppedExprTE, returns) =
+                evaluateAndCoerceToReferenceExpression(temputs, fate, life + index, exprSE)
+              val exprTE =
+                undroppedExprTE.result.kind match {
+                  case VoidT() => undroppedExprTE
+                  case _ => destructorTemplar.drop(fate, temputs, undroppedExprTE)
+                }
+              (exprTE, returns)
+            }).unzip
+
+          val (lastExprTE, lastReturns) =
+            evaluateAndCoerceToReferenceExpression(temputs, fate, life + (exprsSE.size - 1), exprsSE.last)
+
+          (Templar.consecutive(initExprsTE :+ lastExprTE), (initReturnsUnflattened.flatten ++ lastReturns).toSet)
         }
         case b @ BlockSE(range, locals, _) => {
           val childEnvironment = fate.makeChildBlockEnvironment(Some(b))
@@ -1206,14 +1220,11 @@ class ExpressionTemplar(
 
   private def newGlobalFunctionGroupExpression(env: IEnvironment, temputs: Temputs, name: IImpreciseNameS): ReferenceExpressionTE = {
     TemplarReinterpretTE(
-      sequenceTemplar.makeEmptyTuple(env, temputs),
+      VoidLiteralTE(),
       CoordT(
         ShareT,
         ReadonlyT,
-        OverloadSet(
-          env,
-          name,
-          sequenceTemplar.makeTupleKind(env, temputs, Vector()))))
+        OverloadSet(env, name)))
   }
 
   def evaluateBlockStatements(

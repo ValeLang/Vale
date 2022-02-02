@@ -15,7 +15,9 @@ object ParseErrorHumanizer {
         case CombinatorParseError(pos, msg) => msg
         case BadStartOfBlock(pos) => "Bad start of block."
         case BadDot(pos) => "Bad dot."
+        case BadInterfaceMember(pos) => "Bad interface member."
         case BadExpressionBegin(pos) => "Bad start of expression."
+        case NeedWhitespaceAroundBinaryOperator(pos) => "Need whitespace around binary operator."
         case UnknownTupleOrSubExpression(pos) => "Saw ( but expression is neither tuple nor sub-expression."
         case NeedSemicolon(pos) => "Need semicolon."
         case BadStructMember(pos) => "Bad struct member."
@@ -24,8 +26,6 @@ object ParseErrorHumanizer {
         case UnrecognizedTopLevelThingError(pos) => "expected fn, struct, interface, impl, import, or export, but found:\n"
         case BadFunctionBodyError(pos) => "expected a function body, or `;` to note there is none. Found:\n"
         case BadStartOfStatementError(pos) => "expected `}` to end the block, but found:\n"
-        case StatementAfterResult(pos) => "result statement must be last in the block, but instead found:\n"
-        case StatementAfterReturn(pos) => "return statement must be last in the block, but instead found:\n"
         case BadExpressionEnd(pos) => "expected `;` or `}` after expression, but found:\n"
         case BadImport(pos, cause) => "bad import:\n" + cause.toString + "\n"
         case BadStartOfWhileCondition(pos) => "Bad start of while condition, expected ("

@@ -10,8 +10,8 @@ import org.scalatest.{FunSuite, Matchers}
 class ScoutErrorHumanizerTests extends FunSuite with Matchers {
   private def compile(code: String): ProgramS = {
     Parser.runParser(code) match {
-      case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(program0) => {
+      case Err(err) => fail(err.toString)
+      case Ok(program0) => {
         new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => vfail(e.toString)
           case Ok(t) => t
@@ -22,8 +22,8 @@ class ScoutErrorHumanizerTests extends FunSuite with Matchers {
 
   private def compileForError(code: String): ICompileErrorS = {
     Parser.runParser(code) match {
-      case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(program0) => {
+      case Err(err) => fail(err.toString)
+      case Ok(program0) => {
         new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => e
           case Ok(t) => vfail("Successfully compiled!\n" + t.toString)

@@ -1,10 +1,9 @@
 package net.verdagon.vale.scout
 
-import net.verdagon.vale.parser.PermissionP
 import net.verdagon.vale.parser.ast.{LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsP, LoadAsPointerP, LoadAsWeakP, MoveP, PermissionP}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.{ILiteralSL, IRulexSR, RuneUsage}
-import net.verdagon.vale.{RangeS, vassert, vcurious, vimpl, vpass}
+import net.verdagon.vale.{RangeS, vassert, vcurious, vimpl, vpass, vwat}
 
 // patternId is a unique number, can be used to make temporary variables that wont
 // collide with other things
@@ -25,6 +24,11 @@ case class IfSE(
   override def hashCode(): Int = vcurious()
 
   vcurious(!condition.isInstanceOf[BlockSE])
+}
+
+case class LoopSE(range: RangeS, body: BlockSE) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+  vpass()
 }
 
 case class WhileSE(range: RangeS, body: BlockSE) extends IExpressionSE {
@@ -118,6 +122,20 @@ case class ConsecutorSE(
   // return the last expression's result as its result.
   vassert(exprs.size > 1)
   vassert(exprs.collect({ case ConsecutorSE(_) => }).isEmpty)
+
+
+//  if (exprs.size >= 2) {
+//    exprs.last match {
+//      case VoidSE(_) => {
+//        exprs.init.last match {
+//          case ReturnSE(_, _) => vcurious()
+//          case VoidSE(_) => vcurious()
+//          case _ =>
+//        }
+//      }
+//      case _ =>
+//    }
+//  }
 }
 
 case class ArgLookupSE(range: RangeS, index: Int) extends IExpressionSE {
@@ -136,6 +154,10 @@ case class RepeaterBlockIteratorSE(range: RangeS, expression: IExpressionSE) ext
 
 case class ReturnSE(range: RangeS, inner: IExpressionSE) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
+  inner match {
+    case ReturnSE(_, _) => vwat()
+    case _ =>
+  }
 }
 case class VoidSE(range: RangeS) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
@@ -147,6 +169,7 @@ case class TupleSE(range: RangeS, elements: Vector[IExpressionSE]) extends IExpr
 case class StaticArrayFromValuesSE(
   range: RangeS,
   rules: Array[IRulexSR],
+  maybeElementTypeST: Option[RuneUsage],
   mutabilityST: RuneUsage,
   variabilityST: RuneUsage,
   sizeST: RuneUsage,
@@ -157,6 +180,7 @@ case class StaticArrayFromValuesSE(
 case class StaticArrayFromCallableSE(
   range: RangeS,
   rules: Array[IRulexSR],
+  maybeElementTypeST: Option[RuneUsage],
   mutabilityST: RuneUsage,
   variabilityST: RuneUsage,
   sizeST: RuneUsage,
@@ -167,6 +191,7 @@ case class StaticArrayFromCallableSE(
 case class RuntimeArrayFromCallableSE(
   range: RangeS,
   rules: Array[IRulexSR],
+  maybeElementTypeST: Option[RuneUsage],
   mutabilityST: RuneUsage,
   sizeSE: IExpressionSE,
   callable: IExpressionSE

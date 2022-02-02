@@ -274,8 +274,7 @@ case class StructTT(fullName: FullNameT[ICitizenNameT]) extends CitizenRefT {
 case class OverloadSet(
   env: IEnvironment,
   // The name to look for in the environment.
-  name: IImpreciseNameS,
-  voidStructRef: StructTT
+  name: IImpreciseNameS
 ) extends KindT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 

@@ -18,6 +18,6 @@ fn valeSumFuel(arr Array<imm, Spaceship>) int export {
 fn cSumFuel(arr Array<imm, Spaceship>) int extern;
 
 fn main() int export {
-  a = [imm *](3, (i){ Spaceship(13 + i, i * 2) });
+  a = [imm *](3, (i) => { Spaceship(13 + i, i * 2) });
   ret cSumFuel(a);
 }

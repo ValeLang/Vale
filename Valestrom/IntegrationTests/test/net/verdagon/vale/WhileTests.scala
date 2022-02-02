@@ -37,7 +37,7 @@ class WhileTests extends FunSuite with Matchers {
         |import printutils.*;
         |fn main() int export {
         |  key! = 0;
-        |  while set key = __getch(); = key < 96; {
+        |  while set key = __getch(); key < 96 {
         |    print(key);
         |  }
         |  ret key;
@@ -47,7 +47,7 @@ class WhileTests extends FunSuite with Matchers {
     compile.evalForKind(Vector(), Vector("A", "B", "c")) shouldEqual VonInt(99)
   }
 
-  test("Tests a while loop with a != in it") {
+  test("Tests a while loop with a set in it") {
     val compile = RunCompilation.test(
       """
         |import printutils.*;
@@ -55,8 +55,8 @@ class WhileTests extends FunSuite with Matchers {
         |import logic.*;
         |
         |fn main() int export {
-        |  key! = 0;
-        |  while set key = __getch(); = key != 99; {
+        |  key = 0;
+        |  while set key = __getch(); key != 99 {
         |    print(key);
         |  }
         |  ret key;
@@ -64,6 +64,23 @@ class WhileTests extends FunSuite with Matchers {
       """.stripMargin)
 
     compile.evalForKind(Vector(), Vector("A", "B", "c")) shouldEqual VonInt(99)
+  }
+
+  test("Tests a while loop with a declaration in it") {
+    val compile = RunCompilation.test(
+      """
+        |import printutils.*;
+        |import ioutils.*;
+        |import logic.*;
+        |
+        |fn main() export {
+        |  while key = __getch(); key != 99 {
+        |    print(key);
+        |  }
+        |}
+      """.stripMargin)
+
+    compile.evalForKind(Vector(), Vector("A", "B", "c"))
   }
 
   test("Return from infinite while loop") {
@@ -84,7 +101,7 @@ class WhileTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |fn main() int export {
-        |  while x = 42; x < 50; { ret x; }
+        |  while x = 42; x < 50 { ret x; }
         |  ret 73;
         |}
       """.stripMargin)

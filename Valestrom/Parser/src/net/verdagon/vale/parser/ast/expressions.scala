@@ -31,20 +31,6 @@ case class SubExpressionPE(range: RangeP, inner: IExpressionPE) extends IExpress
   override def producesResult(): Boolean = true
 }
 
-case class LoadPE(
-    range: RangeP,
-    expr: IExpressionPE,
-    targetOwnership: LoadAsP) extends IExpressionPE {
-  targetOwnership match {
-    case LoadAsWeakP(_) =>
-    case LoadAsBorrowP(_) =>
-    case LoadAsPointerP(_) =>
-  }
-  override def hashCode(): Int = vcurious();
-  override def needsSemicolonBeforeNextStatement: Boolean = true
-  override def producesResult(): Boolean = true
-}
-
 case class AndPE(range: RangeP, left: IExpressionPE, right: BlockPE) extends IExpressionPE {
   override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
@@ -200,12 +186,9 @@ case class FunctionCallPE(
 case class BraceCallPE(
   range: RangeP,
   operatorRange: RangeP,
-  callableExpr: IExpressionPE,
+  subjectExpr: IExpressionPE,
   argExprs: Vector[IExpressionPE],
-  // If we're calling a lambda or some other callable struct,
-  // the 'this' ptr parameter might want a certain ownership,
-  // so the user might specify that.
-  targetOwnershipForCallable: LoadAsP
+  callableReadwrite: Boolean
 ) extends IExpressionPE {
   override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
@@ -225,6 +208,7 @@ case class AugmentPE(
   targetPermission: PermissionP,
   inner: IExpressionPE
 ) extends IExpressionPE {
+
   override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true

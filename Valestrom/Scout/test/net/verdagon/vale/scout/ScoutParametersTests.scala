@@ -12,8 +12,8 @@ class ScoutParametersTests extends FunSuite with Matchers with Collector {
 
   private def compile(code: String): ProgramS = {
     Parser.runParser(code) match {
-      case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(program0) => {
+      case Err(err) => fail(err.toString)
+      case Ok(program0) => {
         new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => vfail(ScoutErrorHumanizer.humanize(FileCoordinateMap.test(code), e))
           case Ok(t) => t
@@ -151,7 +151,7 @@ class ScoutParametersTests extends FunSuite with Matchers with Collector {
   test("Test one-anonymous-param lambda identifying runes") {
     val bork = compile(
       """
-        |fn main() int export {do((_){ true })}
+        |fn main() int export {do((_) => { true })}
         |""".stripMargin)
 
     val main = bork.lookupFunction("main")

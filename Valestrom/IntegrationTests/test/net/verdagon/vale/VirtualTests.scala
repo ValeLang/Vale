@@ -194,7 +194,7 @@ class VirtualTests extends FunSuite with Matchers {
         |  fn __call(virtual this &AFunction2<R, P1, P2>, a P1, b P2) R;
         |}
         |fn main() str export {
-        |  func = AFunction2<str, int, bool>((i, b){ str(i) + str(b) });
+        |  func = AFunction2<str, int, bool>((i, b) => { str(i) + str(b) });
         |  ret func(42, true);
         |}
         |""".stripMargin)

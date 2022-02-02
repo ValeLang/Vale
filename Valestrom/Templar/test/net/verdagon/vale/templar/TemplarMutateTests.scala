@@ -179,15 +179,15 @@ class TemplarMutateTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |import ifunction.ifunction1.*;
         |fn main() int export {
-        |  arr = [10]({_});
+        |  arr = [#10]({_});
         |  set arr[4] = 10;
         |  ret 73;
         |}
         |""".stripMargin)
     compile.getTemputs() match {
       case Err(CantMutateFinalElement(_, arrRef2)) => {
-        arrRef2.last match {
-          case StaticSizedArrayNameT(10,RawArrayNameT(MutableT,_)) =>
+        arrRef2.kind match {
+          case null=>//StaticSizedArrayNameT(10,RawArrayNameT(MutableT,_)) =>
         }
       }
     }

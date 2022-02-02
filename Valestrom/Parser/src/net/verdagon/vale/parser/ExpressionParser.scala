@@ -1,7 +1,7 @@
 package net.verdagon.vale.parser
 
 import net.verdagon.vale.parser.Parser.{parseFunctionOrLocalOrMemberName, parseLocalOrMemberName}
-import net.verdagon.vale.parser.ast.{AndPE, AugmentPE, BinaryCallPE, BlockPE, BorrowP, BraceCallPE, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstructArrayPE, DestructPE, DotPE, EachPE, ExportAsP, FileP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IExpressionPE, ITemplexPT, ITopLevelThingP, IfPE, ImmutableP, ImplP, ImportP, InterfaceP, LambdaPE, LetPE, LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LocalNameDeclarationP, LookupNameP, LookupPE, MethodCallPE, MutabilityPT, MutableP, MutatePE, NameP, NotPE, OrPE, OwnP, PackPE, ParamsP, PatternPP, PointerP, RangeP, RangePE, ReadonlyP, ReadwriteP, ReturnPE, RuntimeSizedP, StaticSizedP, StructP, SubExpressionPE, TemplateArgsP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, UseP, VoidPE, WeakP, WhilePE}
+import net.verdagon.vale.parser.ast.{AndPE, AugmentPE, BinaryCallPE, BlockPE, BorrowP, BraceCallPE, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstructArrayPE, DestructPE, DotPE, EachPE, ExportAsP, FileP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IExpressionPE, ITemplexPT, ITopLevelThingP, IfPE, ImmutableP, ImplP, ImportP, InterfaceP, LambdaPE, LetPE, LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LocalNameDeclarationP, LookupNameP, LookupPE, MagicParamLookupPE, MethodCallPE, MutabilityPT, MutableP, MutatePE, NameP, NotPE, OrPE, OwnP, PackPE, ParamsP, PatternPP, PointerP, RangeP, RangePE, ReadonlyP, ReadwriteP, ReturnPE, RuntimeSizedP, StaticSizedP, StructP, SubExpressionPE, TemplateArgsP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, UseP, VoidPE, WeakP, WhilePE}
 import net.verdagon.vale.parser.expressions.ParseString
 import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, Ok, PackageCoordinate, Result, repeatStr, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
@@ -191,7 +191,7 @@ object ExpressionParser {
     expectResult: Boolean):
   Result[Option[MutatePE], IParseError] = {
     val mutateBegin = iter.getPos()
-    if (!iter.trySkip("^(set|mut)\\b".r)) {
+    if (!iter.trySkip("^(set|mut)\\s".r)) {
       return Ok(None)
     }
     iter.consumeWhitespace()
@@ -231,7 +231,9 @@ object ExpressionParser {
       }
 
     tentativeIter.consumeWhitespace()
-    if (!tentativeIter.trySkip("^=[^=]".r)) {
+    // Because == would be a binary == operator
+    // and => would be a lambda
+    if (!tentativeIter.trySkip("^=[^=>]".r)) {
       return Ok(None)
     }
     tentativeIter.consumeWhitespace()
@@ -366,7 +368,11 @@ object ExpressionParser {
             }
           } else {
             if (newStatement.producesResult()) {
-              vimpl()
+              // Example, the if in:
+              //   fn main() export {
+              //     if true { 3 } else { 4 }
+              //   }
+              // Let's end with this statement, don't add a void afterward.
             } else {
               // Example:
               //   while true { }
@@ -600,6 +606,10 @@ object ExpressionParser {
   }
 
   def parseAtom(iter: ParsingIterator, stopBefore: IStopBefore): Result[Option[IExpressionPE], IParseError] = {
+    val begin = iter.getPos()
+    if (iter.trySkip("^_\\b".r)) {
+      return Ok(Some(MagicParamLookupPE(RangeP(begin, iter.getPos()))))
+    }
     parseBoolean(iter) match {
       case Some(e) => return Ok(Some(e))
       case None =>
@@ -620,6 +630,11 @@ object ExpressionParser {
       case Ok(None) =>
     }
     parseLambda(iter, stopBefore) match {
+      case Err(err) => return Err(err)
+      case Ok(Some(e)) => return Ok(Some(e))
+      case Ok(None) =>
+    }
+    parseMut(iter, stopBefore, true) match {
       case Err(err) => return Err(err)
       case Ok(Some(e)) => return Ok(Some(e))
       case Ok(None) =>
@@ -664,7 +679,7 @@ object ExpressionParser {
               RangeP(operatorBegin, iter.getPos()),
               exprSoFar,
               args,
-              UseP)))
+              false)))
       }
       case Ok(None) =>
     }
@@ -680,57 +695,62 @@ object ExpressionParser {
       }
     }
 
-    if (iter.trySkip("^\\s*\\.".r)) {
-      val operatorEnd = iter.getPos()
-      iter.consumeWhitespace()
-      val nameBegin = iter.getPos()
-      val name =
-        iter.tryy("^\\d+".r) match {
-          case Some(x) => {
-            NameP(RangeP(nameBegin, iter.getPos()), x)
-          }
-          case None => {
-            parseFunctionOrLocalOrMemberName(iter) match {
-              case Some(n) => n
-              case None => return Err(BadDot(iter.getPos()))
+    iter.tryy("^\\s*!?\\s*\\.".r) match {
+      case None =>
+      case Some(op) => {
+        val subjectReadwrite = op.contains('!')
+
+        val operatorEnd = iter.getPos()
+        iter.consumeWhitespace()
+        val nameBegin = iter.getPos()
+        val name =
+          iter.tryy("^\\d+".r) match {
+            case Some(x) => {
+              NameP(RangeP(nameBegin, iter.getPos()), x)
+            }
+            case None => {
+              parseFunctionOrLocalOrMemberName(iter) match {
+                case Some(n) => n
+                case None => return Err(BadDot(iter.getPos()))
+              }
             }
           }
-        }
 
-      val maybeTemplateArgs =
-        parseChevronPack(iter) match {
+        val maybeTemplateArgs =
+          parseChevronPack(iter) match {
+            case Err(e) => return Err(e)
+            case Ok(None) => None
+            case Ok(Some(templateArgs)) => {
+              Some(TemplateArgsP(RangeP(operatorBegin, iter.getPos()), templateArgs))
+            }
+          }
+
+        parsePack(iter) match {
           case Err(e) => return Err(e)
-          case Ok(None) => None
-          case Ok(Some(templateArgs)) => {
-            Some(TemplateArgsP(RangeP(operatorBegin, iter.getPos()), templateArgs))
+          case Ok(Some(x)) => {
+            return Ok(
+              Some(
+                MethodCallPE(
+                  RangeP(spreeBegin, iter.getPos()),
+                  exprSoFar,
+                  RangeP(operatorBegin, operatorEnd),
+                  subjectReadwrite,
+                  LookupPE(LookupNameP(name), maybeTemplateArgs),
+                  x)))
           }
-        }
+          case Ok(None) => {
+            if (maybeTemplateArgs.nonEmpty) {
+              return Err(CantTemplateCallMember(iter.getPos()))
+            }
 
-      parsePack(iter) match {
-        case Err(e) => return Err(e)
-        case Ok(Some(x)) => {
-          return Ok(
-            Some(
-              MethodCallPE(
-                RangeP(spreeBegin, iter.getPos()),
-                exprSoFar,
-                RangeP(operatorBegin, operatorEnd),
-                false,
-                LookupPE(LookupNameP(name), maybeTemplateArgs),
-                x)))
-        }
-        case Ok(None) => {
-          if (maybeTemplateArgs.nonEmpty) {
-            return Err(CantTemplateCallMember(iter.getPos()))
+            return Ok(
+              Some(
+                DotPE(
+                  RangeP(spreeBegin, iter.getPos()),
+                  exprSoFar,
+                  RangeP(operatorBegin, operatorEnd),
+                  name)))
           }
-
-          return Ok(
-            Some(
-              DotPE(
-                RangeP(spreeBegin, iter.getPos()),
-                exprSoFar,
-                RangeP(operatorBegin, operatorEnd),
-                name)))
         }
       }
     }
@@ -795,7 +815,14 @@ object ExpressionParser {
     if (iter.peek("^\\s+<\\s+".r)) {
       // This is a binary < operator, because there's space on both sides.
       return Ok(None)
-    } else if (iter.trySkip("^\\s+<".r)) {
+    } else if (iter.peek("^\\s*<=".r)) {
+      // This is a binary <= operator, bail.
+      return Ok(None)
+    } else if (iter.peek("^\\s+<[\\S]".r)) {
+      // This is a template call like:
+      //   x = myFunc <int> ();
+      val y = iter.trySkip("^\\s+<".r)
+      vassert(y)
       // continue
     } else if (iter.trySkip("^<\\s*".r)) {
       // continue
@@ -907,6 +934,11 @@ object ExpressionParser {
       return Ok(None)
     }
     iter.consumeWhitespace()
+
+    if (iter.trySkip("^\\)".r)) {
+      return Ok(Some(TuplePE(RangeP(begin, iter.getPos()), Vector())))
+    }
+
     val elements = new mutable.ArrayBuffer[IExpressionPE]()
 
     val expr =
@@ -1285,9 +1317,14 @@ object ExpressionParser {
     vassert(digitsConsumed > 0)
 
     if (iter.trySkip("^\\.".r)) {
-      var mantissa: Double = 0.0
+      var mantissa = 0.0
+      var digitMultiplier = 1.0
       while (iter.tryy("^\\d".r) match {
-        case Some(d) => mantissa = mantissa * 0.1 + d.toInt * 0.1; true
+        case Some(d) => {
+          digitMultiplier = digitMultiplier * 0.1
+          mantissa = mantissa + d.toInt * digitMultiplier
+          true
+        }
         case None => false
       }) {}
 

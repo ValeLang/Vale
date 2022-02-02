@@ -1,7 +1,7 @@
 package net.verdagon.vale.parser
 
 import net.verdagon.vale.parser.ExpressionParser.StopBeforeCloseBrace
-import net.verdagon.vale.parser.ast.{AugmentPE, BinaryCallPE, BlockPE, ConsecutorPE, ConstantBoolPE, ConstantIntPE, DestructureP, FileP, FunctionCallPE, IfPE, LetPE, LoadAsBorrowP, LoadAsPointerP, LoadPE, LocalNameDeclarationP, LookupNameP, LookupPE, MethodCallPE, NameP, NotPE, PatternPP, PointerP, ReadonlyP, VoidPE}
+import net.verdagon.vale.parser.ast._
 import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, Tests, vassert}
 import org.scalatest.{FunSuite, Matchers}

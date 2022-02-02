@@ -1,4 +1,4 @@
 fn main() int export {
-  t = [true, 42];
+  t = (true, 42);
   ret t.1;
 }

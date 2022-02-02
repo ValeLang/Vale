@@ -9,7 +9,7 @@ import net.verdagon.vale.scout.rules.IRulexSR
 import net.verdagon.vale.scout.{BlockSE, CodeNameS, ExportS, ExternS, FunctionNameS, GeneratedBodyS, GlobalFunctionFamilyNameS, ICompileErrorS, IExpressionSE, IFunctionDeclarationNameS, IImpreciseNameS, INameS, IRuneS, ITemplataType, ProgramS, SealedS, TopLevelCitizenDeclarationNameS}
 import net.verdagon.vale.templar.EdgeTemplar.{FoundFunction, NeededOverride, PartialEdgeT}
 import net.verdagon.vale.templar.OverloadTemplar.FindFunctionFailure
-import net.verdagon.vale.templar.ast.{ArgLookupTE, ArrayLengthTE, AsSubtypeTE, BlockTE, ConsecutorTE, EdgeT, FunctionCallTE, FunctionHeaderT, FunctionT, IsSameInstanceTE, LocationInFunctionEnvironment, LockWeakTE, ParameterT, ProgramT, PrototypeT, ReferenceExpressionTE, ReturnTE, VoidLiteralTE}
+import net.verdagon.vale.templar.ast.{ArgLookupTE, ArrayLengthTE, AsSubtypeTE, BlockTE, ConsecutorTE, EdgeT, FunctionCallTE, FunctionHeaderT, FunctionT, IsSameInstanceTE, LocationInFunctionEnvironment, LockWeakTE, ParameterT, ProgramT, PrototypeT, ReferenceExpressionTE, ReturnTE, UnreachableMootTE, VoidLiteralTE}
 import net.verdagon.vale.templar.citizen.{AncestorHelper, IAncestorHelperDelegate, IStructTemplarDelegate, StructTemplar}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.expression.{ExpressionTemplar, IExpressionTemplarDelegate, LocalHelper}
@@ -119,7 +119,7 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
         Boolean = {
           kind match {
             case RuntimeSizedArrayTT(_, _) => false
-            case OverloadSet(_, _, _) => false
+            case OverloadSet(_, _) => false
             case StaticSizedArrayTT(_, _, _, _) => false
             case s @ StructTT(_) => ancestorHelper.getAncestorInterfaces(temputs, s).nonEmpty
             case i @ InterfaceTT(_) => ancestorHelper.getAncestorInterfaces(temputs, i).nonEmpty
@@ -888,12 +888,27 @@ object Templar {
             case ConsecutorTE(exprs) => exprs
             case other => Vector(other)
           })
+
         val withoutInitVoids =
-          flattened.init.filter(_ != VoidLiteralTE()) :+ flattened.last
-        withoutInitVoids match {
+          flattened.init.filter(_ != VoidLiteralTE()) :+
+            flattened.last
+
+        val (_, withMoots) =
+          // the boolean means "reachable"
+          withoutInitVoids.foldLeft((true, Vector[ReferenceExpressionTE]()))({
+            case ((false, previous), expr) => {
+              (false, previous :+ UnreachableMootTE(expr))
+            }
+            case ((true, previous), expr) => {
+              val reachableAfterThis = expr.kind != NeverT()
+              (reachableAfterThis, previous :+ expr)
+            }
+          })
+
+        withMoots match {
           case Vector() => vwat("Shouldn't have zero-element consecutors!")
           case Vector(only) => only
-          case _ => ConsecutorTE(withoutInitVoids)
+          case _ => ConsecutorTE(withMoots)
         }
       }
     }
@@ -930,7 +945,7 @@ object Templar {
       case ir @ InterfaceTT(_) => temputs.lookupMutability(ir)
 //      case PackTT(_, sr) => temputs.lookupMutability(sr)
 //      case TupleTT(_, sr) => temputs.lookupMutability(sr)
-      case OverloadSet(_, _, _) => {
+      case OverloadSet(_, _) => {
         // Just like FunctionT2
         ImmutableT
       }

@@ -79,6 +79,11 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
       { case MethodCallPE(_,LookupPE(LookupNameP(NameP(_,"x")),None),_,false,LookupPE(LookupNameP(NameP(_,"shout")),None),Vector()) => }
   }
 
+  test("Method call readwrite") {
+    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace),"x !. shout ()") shouldHave
+      { case MethodCallPE(_,LookupPE(LookupNameP(NameP(_,"x")),None),_,true,LookupPE(LookupNameP(NameP(_,"shout")),None),Vector()) => }
+  }
+
   test("Method on member") {
     compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace),"x.moo.shout()") shouldHave
       {
@@ -222,7 +227,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
           FunctionP(_,
             FunctionHeaderP(_,
               None,Vector(),None,None,None,FunctionReturnP(_,None,None)),
-              Some(BlockPE(_,LookupPE(LookupNameP(NameP(_,"_")),None))))) =>
+              Some(BlockPE(_,MagicParamLookupPE(_))))) =>
       }
   }
 
@@ -329,6 +334,14 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
     }
   }
 
+  test("Less than or equal") {
+    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace),
+      "a <= b") shouldHave
+      {
+        case BinaryCallPE(_,NameP(_,"<="),LookupPE(LookupNameP(NameP(_,"a")),None),LookupPE(LookupNameP(NameP(_,"b")),None)) =>
+      }
+  }
+
   test("static array from callable") {
     compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace),
       "[#3](triple)") shouldHave
@@ -422,6 +435,12 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
       { case TuplePE(_,Vector(ConstantIntPE(_,3,_))) => }
   }
 
+  test("Zero element tuple") {
+    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace),
+      "()") shouldHave
+      { case TuplePE(_,Vector()) => }
+  }
+
   test("Two element tuple") {
     compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace),
       "(3,4)") shouldHave
@@ -468,12 +487,12 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
     compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace),
       "board[i]") shouldHave
       {
-      case BraceCallPE(_,_,LookupPE(LookupNameP(NameP(_,"board")),None),Vector(LookupPE(LookupNameP(NameP(_,"i")),None)),UseP) =>
+      case BraceCallPE(_,_,LookupPE(LookupNameP(NameP(_,"board")),None),Vector(LookupPE(LookupNameP(NameP(_,"i")),None)),false) =>
       }
     compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace),
       "this.board[i]") shouldHave
       {
-      case BraceCallPE(_,_,DotPE(_,LookupPE(LookupNameP(NameP(_, "this")),None),_,NameP(_,"board")),Vector(LookupPE(LookupNameP(NameP(_,"i")),None)),UseP) =>
+      case BraceCallPE(_,_,DotPE(_,LookupPE(LookupNameP(NameP(_, "this")),None),_,NameP(_,"board")),Vector(LookupPE(LookupNameP(NameP(_,"i")),None)),false) =>
       }
   }
 

@@ -1,6 +1,5 @@
 package net.verdagon.vale
 
-import net.verdagon.vale.parser.FinalP
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.types.{BoolT, CoordT, IntT, ShareT}

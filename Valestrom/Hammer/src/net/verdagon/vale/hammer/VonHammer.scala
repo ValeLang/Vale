@@ -1,8 +1,8 @@
 package net.verdagon.vale.hammer
 
-import net.verdagon.vale.hammer.NameHammer.{translateFileCoordinate, translateFullName}
+import net.verdagon.vale.hammer.NameHammer.{translateCodeLocation, translateFileCoordinate, translateFullName}
 import net.verdagon.vale.metal._
-import net.verdagon.vale.{CodeLocationS, PackageCoordinate, vassert, vfail, vimpl, metal => m}
+import net.verdagon.vale.{CodeLocationS, PackageCoordinate, RangeS, vassert, vfail, vimpl, metal => m}
 import net.verdagon.vale.scout._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.{Hinputs, _}
@@ -1044,6 +1044,16 @@ object VonHammer {
         VonMember("offset", VonInt(offset))))
   }
 
+  def vonifyRange(range: RangeS): IVonData = {
+    val RangeS(begin, end) = range
+    VonObject(
+      "Range",
+      None,
+      Vector(
+        VonMember("begin", translateCodeLocation(begin)),
+        VonMember("end", translateCodeLocation(end))))
+  }
+
   def translateName(
     hinputs: Hinputs,
     hamuts: HamutsBox,
@@ -1076,6 +1086,27 @@ object VonHammer {
           None,
           Vector(
             VonMember("codeLocation", vonifyCodeLocation2(codeLocation))))
+      }
+      case IterableNameT(range) => {
+        VonObject(
+          "IterableName",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range))))
+      }
+      case IteratorNameT(range) => {
+        VonObject(
+          "IteratorName",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range))))
+      }
+      case IterationOptionNameT(range) => {
+        VonObject(
+          "IterationOptionName",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range))))
       }
       case StaticSizedArrayNameT(size, arr) => {
         VonObject(

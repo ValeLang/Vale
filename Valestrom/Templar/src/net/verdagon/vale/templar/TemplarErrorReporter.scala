@@ -27,6 +27,7 @@ case class CantDowncastUnrelatedTypes(range: RangeS, sourceKind: KindT, targetKi
 case class CantDowncastToInterface(range: RangeS, targetKind: InterfaceTT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class CouldntFindTypeT(range: RangeS, name: String) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class ArrayElementsHaveDifferentTypes(range: RangeS, types: Set[CoordT]) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
+case class UnexpectedArrayElementType(range: RangeS, expectedType: CoordT, actualType: CoordT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class InitializedWrongNumberOfElements(range: RangeS, expectedNumElements: Int, numElementsInitialized: Int) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class CannotSubscriptT(range: RangeS, tyype: KindT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class NonReadonlyReferenceFoundInPureFunctionParameter(range: RangeS, paramName: IVarNameT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
@@ -57,7 +58,7 @@ case class FunctionAlreadyExists(oldFunctionRange: RangeS, newFunctionRange: Ran
   vpass()
 }
 case class CantMutateFinalMember(range: RangeS, fullName2: FullNameT[INameT], memberName: FullNameT[IVarNameT]) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
-case class CantMutateFinalElement(range: RangeS, fullName2: FullNameT[INameT]) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
+case class CantMutateFinalElement(range: RangeS, coord: CoordT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class CantUseReadonlyReferenceAsReadwrite(range: RangeS) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class LambdaReturnDoesntMatchInterfaceConstructor(range: RangeS) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class IfConditionIsntBoolean(range: RangeS, actualType: CoordT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }

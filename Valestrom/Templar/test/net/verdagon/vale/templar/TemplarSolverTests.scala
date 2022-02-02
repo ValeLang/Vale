@@ -399,11 +399,11 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |
         |fn swap<T, Y>(x [T, Y]) [Y, T] {
         |  (a, b) = x;
-        |  ret [b, a];
+        |  ret (b, a);
         |}
         |
         |fn main() bool export {
-        |  ret swap([5, true]).0;
+        |  ret swap((5, true)).0;
         |}
         |""".stripMargin
     )
@@ -421,11 +421,11 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |
         |fn swap<N, T>(x [N * T]) [N * T] {
         |  (a, b) = x;
-        |  ret [][b, a];
+        |  ret [#][b, a];
         |}
         |
         |fn main() int export {
-        |  ret swap([][5, 7]).0;
+        |  ret swap([#][5, 7]).0;
         |}
         |""".stripMargin
     )

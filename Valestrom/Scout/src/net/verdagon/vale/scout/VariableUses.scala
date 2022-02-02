@@ -1,6 +1,5 @@
 package net.verdagon.vale.scout
 
-import net.verdagon.vale.parser.IterationOptionNameDeclarationP
 import net.verdagon.vale.{vassert, vcurious, vfail, vimpl}
 
 

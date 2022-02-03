@@ -34,6 +34,11 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
       { case ConstantFloatPE(_, 4.2) => }
   }
 
+  test("Number range") {
+    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace),"0..5") shouldHave
+      { case RangePE(_,ConstantIntPE(_,0,_),ConstantIntPE(_,5,_)) => }
+  }
+
   test("add as call") {
     compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace),"+(4, 5)") shouldHave
       { case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, "+")), None), Vector(ConstantIntPE(_, 4, _), ConstantIntPE(_, 5, _)),false) => }

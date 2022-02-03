@@ -20,6 +20,7 @@ case class BadExpressionBegin(pos: Int) extends IParseError {
   vpass()
 }
 case class BadParamEnd(pos: Int) extends IParseError { override def errorId: String = "P1005"; override def hashCode(): Int = vcurious() }
+case class ForgotSetKeyword(pos: Int) extends IParseError { override def errorId: String = "P1005"; override def hashCode(): Int = vcurious() }
 case class BadBinaryFunctionName(pos: Int) extends IParseError {
   override def errorId: String = "P1005"; override def hashCode(): Int = vcurious()
   vpass()

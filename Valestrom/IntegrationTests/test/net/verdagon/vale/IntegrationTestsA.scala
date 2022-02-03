@@ -606,6 +606,14 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForKind(Vector()) shouldEqual VonInt(5032704)
   }
 
+  test("Return without ret") {
+    val compile = RunCompilation.test(
+      """
+        |fn main() int export { 73 }
+        |""".stripMargin)
+    compile.evalForKind(Vector()) shouldEqual VonInt(73)
+  }
+
   test("Test export functions") {
     val compile = RunCompilation.test(
       """fn moo() int export {
@@ -740,25 +748,42 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |struct PageMember { x int; }
         |struct SomeMutableThing { x int; }
         |
-        |fn main() {
+        |fn main() export {
         |  someMutableThing = SomeMutableThing(7);
-        |  each<PageMember>((a &PageMember) => { someMutableThing.x; a.x });
+        |  each<PageMember>((a &PageMember) => { someMutableThing.x; a.x; });
         |}
         |
         |""".stripMargin)
-    val temputs = compile.expectTemputs()
+    compile.evalForKind(Vector())
+  }
+
+  test("each on int range") {
+    val compile = RunCompilation.test(
+      """
+        |import intrange.*;
+        |
+        |fn main() int export {
+        |  sum = 0;
+        |  foreach i in 0..10 {
+        |    set sum = sum + i;
+        |  }
+        |  ret sum;
+        |}
+        |""".stripMargin)
+    compile.evalForKind(Vector()) shouldEqual VonInt(45)
   }
 
   test("Parallel foreach") {
     val compile = RunCompilation.test(
       """
+        |import intrange.*;
         |fn main() export {
         |  exponent = 3;
         |
         |  results =
-        |    parallel foreach i in a..b {
-        |      pow(i, exponent)
-        |    }
+        |    parallel foreach i in 0..5 {
+        |      i + 1
+        |    };
         |
         |  println(results);
         |}

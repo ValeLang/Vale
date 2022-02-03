@@ -897,19 +897,6 @@ class ExpressionTemplar(
             throw CompileErrorExceptionT(CantUnstackifyOutsideLocalFromInsideWhile(range, bodyUnstackifiedAncestorLocals.head.last))
           }
 
-
-//          val thenBody =
-//            if (uncoercedBodyBlock2.kind == NeverT()) {
-//              uncoercedBodyBlock2
-//            } else {
-//              BlockTE(Templar.consecutive(Vector(uncoercedBodyBlock2, ConstantBoolTE(true))))
-//            }
-
-//          val ifExpr2 =
-//            ast.IfTE(
-//              conditionExpr,
-//              thenBody,
-//              BlockTE(ConstantBoolTE(false)))
           val whileExpr2 = WhileTE(uncoercedBodyBlock2)
           (whileExpr2, /*returnsFromCondition ++*/ bodyReturnsFromExprs)
         }

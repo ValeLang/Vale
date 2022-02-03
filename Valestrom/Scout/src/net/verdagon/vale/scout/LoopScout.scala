@@ -34,29 +34,6 @@ object LoopScout {
     iterableExpr: IExpressionPE,
     body: BlockPE):
   (BlockSE, VariableUses, VariableUses) = {
-    // This just scopes the iterable's expression so its things dont outlive the foreach block.
-    val (loopSE, selfUses, childUses) =
-      expressionScout.newBlock(
-        stackFrame0.parentEnv, Some(stackFrame0), lidb.child(), Scout.evalRange(stackFrame0.file, range), noDeclarations, false,
-        (stackFrame1, lidb, _) => {
-          val (bodySE, bodySelfUses, bodyChildUses) =
-            scoutOuterBodyContents(
-              expressionScout, stackFrame1, lidb, range, entryPatternPP, inKeywordRange, iterableExpr, body)
-          (stackFrame1, bodySE, bodySelfUses, bodyChildUses)
-        })
-    (loopSE, selfUses, childUses)
-  }
-
-  def scoutOuterBodyContents(
-    expressionScout: ExpressionScout,
-    stackFrame0: StackFrame,
-    lidb: LocationInDenizenBuilder,
-    range: RangeP,
-    entryPatternPP: PatternPP,
-    inKeywordRange: RangeP,
-    iterableExpr: IExpressionPE,
-    body: BlockPE):
-  (BlockSE, VariableUses, VariableUses) = {
     expressionScout.newBlock(
       stackFrame0.parentEnv, Some(stackFrame0), lidb.child(), Scout.evalRange(stackFrame0.file, range),
       noDeclarations, true,

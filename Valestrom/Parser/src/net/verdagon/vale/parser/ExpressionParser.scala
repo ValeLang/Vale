@@ -56,14 +56,17 @@ object ExpressionParser {
   }
 
   private def parseForeach(
-    iter: ParsingIterator,
+    originalIter: ParsingIterator,
     expectResult: Boolean):
   Result[Option[EachPE], IParseError] = {
-    val eachBegin = iter.getPos()
-    iter.trySkip("^parallel\\s+".r)
-    if (!iter.trySkip("^foreach".r)) {
+    val eachBegin = originalIter.getPos()
+    val tentativeIter = originalIter.clone()
+    tentativeIter.trySkip("^parallel\\s+".r)
+    if (!tentativeIter.trySkip("^foreach".r)) {
       return Ok(None)
     }
+    originalIter.skipTo(tentativeIter.position)
+    val iter = originalIter
     iter.consumeWhitespace()
     val pattern =
       iter.consumeWithCombinator(CombinatorParsers.atomPattern) match {
@@ -613,6 +616,11 @@ object ExpressionParser {
     parseBoolean(iter) match {
       case Some(e) => return Ok(Some(e))
       case None =>
+    }
+    parseForeach(iter, true) match {
+      case Err(err) => return Err(err)
+      case Ok(Some(e)) => return Ok(Some(e))
+      case Ok(None) =>
     }
     ParseString.parseString(iter) match {
       case Err(err) => return Err(err)
@@ -1296,14 +1304,20 @@ object ExpressionParser {
     Ok(Some(arrayPE))
   }
 
-  def parseNumber(iter: ParsingIterator): Result[Option[IExpressionPE], IParseError] = {
-    val begin = iter.getPos()
+  def parseNumber(originalIter: ParsingIterator): Result[Option[IExpressionPE], IParseError] = {
+    val defaultBits = 32
+    val begin = originalIter.getPos()
 
-    val negative = iter.trySkip("^-".r)
+    val tentativeIter = originalIter.clone()
 
-    if (!iter.peek("^\\d".r)) {
+    val negative = tentativeIter.trySkip("^-".r)
+
+    if (!tentativeIter.peek("^\\d".r)) {
       return Ok(None)
     }
+
+    originalIter.skipTo(tentativeIter.position)
+    val iter = originalIter
 
     var digitsConsumed = 0
     var integer = 0L
@@ -1316,7 +1330,10 @@ object ExpressionParser {
     }) {}
     vassert(digitsConsumed > 0)
 
-    if (iter.trySkip("^\\.".r)) {
+    if (iter.peek("^\\.\\.".r)) {
+      // This is followed by the range operator, so just stop here.
+      Ok(Some(ConstantIntPE(RangeP(begin, iter.getPos()), integer, defaultBits)))
+    } else if (iter.trySkip("^\\.".r)) {
       var mantissa = 0.0
       var digitMultiplier = 1.0
       while (iter.tryy("^\\d".r) match {
@@ -1345,7 +1362,7 @@ object ExpressionParser {
           vassert(bits > 0)
           bits
         } else {
-          32
+          defaultBits
         }
 
       val result = integer * (if (negative) -1 else 1)
@@ -1433,6 +1450,9 @@ object ExpressionParser {
         return Ok(Some(x))
       }
       case None =>
+    }
+    if (iter.peek("^=".r)) {
+      return Err(ForgotSetKeyword(iter.getPos()))
     }
     Err(BadBinaryFunctionName(iter.getPos()))
   }

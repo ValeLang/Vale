@@ -230,18 +230,6 @@ class ScoutTests extends FunSuite with Matchers with Collector {
     })
   }
 
-  test("Forgetting set when changing") {
-    val error = compileForError(
-      """fn MyStruct() {
-        |  ship = Spaceship(10);
-        |  ship.x = 4;
-        |}
-        |""".stripMargin)
-    error match {
-      case ForgotSetKeywordError(_) =>
-    }
-  }
-
   test("Cant use set as a local name") {
     val error = compileForError(
       """fn moo() {
@@ -379,6 +367,73 @@ class ScoutTests extends FunSuite with Matchers with Collector {
       LocalLoadSE(_, ConstructingMemberNameS("x"), UseP),
       LocalLoadSE(_, ConstructingMemberNameS("y"), UseP))) =>
     })
+  }
+
+  test("foreach") {
+    val program1 = compile(
+      """fn main() {
+        |  foreach i in myList { }
+        |}
+        |""".stripMargin)
+
+    val function = program1.lookupFunction("main")
+    val CodeBodyS(body) = function.body
+    body.block shouldHave {
+      case LocalS(IterableNameS(_),Used,NotUsed,NotUsed,NotUsed,NotUsed,NotUsed) =>
+    }
+    body.block shouldHave {
+      case LocalS(IteratorNameS(_),Used,NotUsed,NotUsed,NotUsed,NotUsed,NotUsed) =>
+    }
+    body.block shouldHave {
+      case LocalS(IterationOptionNameS(_),Used,Used,NotUsed,NotUsed,NotUsed,NotUsed) =>
+    }
+    body.block shouldHave {
+      case LocalS(CodeVarNameS("i"),NotUsed,NotUsed,NotUsed,NotUsed,NotUsed,NotUsed) =>
+    }
+    body.block shouldHave {
+      case LetSE(_,_,
+        AtomSP(_,Some(CaptureS(IterableNameS(_))),None,None,None),
+        OutsideLoadSE(_,_,CodeNameS("myList"),None,UseP)) =>
+    }
+    body.block shouldHave {
+      case LetSE(_,_,
+        AtomSP(_,Some(CaptureS(IteratorNameS(_))),None,None,None),
+        FunctionCallSE(_,
+          OutsideLoadSE(_,_,CodeNameS("begin"),None,LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadonlyP))),
+          Vector(LocalLoadSE(_,IterableNameS(_),LoadAsBorrowP(Some(ReadonlyP)))))) =>
+    }
+    body.block shouldHave {
+      case WhileSE(_, _) =>
+    }
+    body.block shouldHave {
+      case LetSE(_,_,
+        AtomSP(_,Some(CaptureS(IterationOptionNameS(_))),None,None,None),
+        FunctionCallSE(_,
+          OutsideLoadSE(_,_,CodeNameS("next"),None,LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadonlyP))),
+          Vector(
+            LocalLoadSE(_,IteratorNameS(_),LoadAsBorrowP(Some(ReadwriteP)))))) =>
+    }
+    body.block shouldHave {
+      case FunctionCallSE(_,
+        OutsideLoadSE(_,_,CodeNameS("not"),_,_),
+        Vector(
+          FunctionCallSE(_,
+            OutsideLoadSE(_,_,CodeNameS("isEmpty"),_,_),
+            Vector(
+              LocalLoadSE(_,IterationOptionNameS(_),LoadAsBorrowP(Some(ReadonlyP))))))) =>
+    }
+    body.block shouldHave {
+      case LetSE(_,_,
+        AtomSP(_,Some(CaptureS(CodeVarNameS("i"))),None,None,None),
+        FunctionCallSE(_,
+          OutsideLoadSE(_,_,CodeNameS("get"),None,LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadonlyP))),
+          Vector(LocalLoadSE(_,IterationOptionNameS(_),UseP)))) =>
+    }
+    body.block shouldHave {
+      case ConsecutorSE(Vector(
+        LocalLoadSE(_,IterationOptionNameS(_),UseP),
+        ConstantBoolSE(_,false))) =>
+    }
   }
 
   test("this isnt special if was explicit param") {

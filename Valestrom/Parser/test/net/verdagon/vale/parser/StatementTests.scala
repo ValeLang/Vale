@@ -313,16 +313,36 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
     }
   }
 
+  test("Forgetting set when changing") {
+    val error =
+      compileForError(
+        ExpressionParser.parseBlockContents(_, StopBeforeCloseBrace, false),
+        """
+          |ship.x = 4;
+          |""".stripMargin)
+    error match {
+      case ForgotSetKeyword(_) =>
+    }
+  }
+
   test("foreach 2") {
     val programS =
       compile(
         ExpressionParser.parseBlockContents(_, StopBeforeCloseBrace, false),
         """
-          |fn main() int export {
-          |  foreach i in Range(0, 10) {
-          |    i
-          |  }
+          |foreach i in Range(0, 10) {
+          |  i
           |}
+          |""".stripMargin)
+    vimpl()
+  }
+
+  test("foreach expr") {
+    val programS =
+      compile(
+        ExpressionParser.parseBlockContents(_, StopBeforeCloseBrace, false),
+        """
+          |a = foreach i in c { i };
           |""".stripMargin)
     vimpl()
   }

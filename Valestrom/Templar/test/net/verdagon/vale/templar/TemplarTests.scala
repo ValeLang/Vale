@@ -29,12 +29,6 @@ class TemplarTests extends FunSuite with Matchers {
     is.mkString("")
   }
 
-  test("do not submit") {
-    vfail()
-    // 1. add an assert that all function bodies end in ret
-    // 2. might be better to make parseFunctionOrLocalOrMemberName a blacklist instead
-  }
-
   test("Simple program returning an int, inferred") {
     val compile =
       TemplarTestCompilation.test(
@@ -495,53 +489,16 @@ class TemplarTests extends FunSuite with Matchers {
     // Can't run it because there's nothing implementing that interface >_>
   }
 
-  test("each on int range") {
-    val compile = TemplarTestCompilation.test(
-      """
-        |import v.builtins.opt.*;
-        |import v.builtins.logic.*;
-        |import v.builtins.arith.*;
-        |
-        |struct Range { begin int; end int; }
-        |fn begin(self &Range) RangeIter { ret RangeIter(self, self.begin); }
-        |struct RangeIter { range &Range; i! int; }
-        |fn next(self &!RangeIter) Opt<int> {
-        |  if self.i < self.range.end {
-        |    Some(set self.i = self.i + 1)
-        |  } else {
-        |    None<int>()
-        |  }
-        |}
-        |fn main() int export {
-        |  sum = 0;
-        |  foreach i in Range(0, 10) {
-        |    set sum = sum + i;
-        |  }
-        |  sum
-        |}
-        |""".stripMargin)
-    val temputs = compile.expectTemputs()
-    val main = temputs.lookupFunction("main")
-    vimpl()
-  }
-
-  test("Return without ret") {
-    val compile = TemplarTestCompilation.test(
-      """
-        |fn main() int export { 73 }
-        |""".stripMargin)
-    compile.getTemputs().expectErr() match {
-      case null =>
-    }
-  }
-
   test("Reports mismatched return type when expecting void") {
     val compile = TemplarTestCompilation.test(
       """
         |fn main() export { 73 }
         |""".stripMargin)
     compile.getTemputs().expectErr() match {
-      case null =>
+      case BodyResultDoesntMatch(_,
+        FunctionNameS("main",_),
+        CoordT(ShareT,ReadonlyT,VoidT()),
+        CoordT(ShareT,ReadonlyT,IntT(_))) =>
     }
   }
 
@@ -1655,7 +1612,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |fn main() int export {
-        |  arr = [][true, 42];
+        |  arr = [#][true, 42];
         |  ret arr.1;
         |}
         |""".stripMargin)
@@ -1675,7 +1632,7 @@ class TemplarTests extends FunSuite with Matchers {
         |  numWings int;
         |}
         |fn main() bool export {
-        |  arr = [4][true, false, false];
+        |  arr = [#4][true, false, false];
         |  ret arr.0;
         |}
         |""".stripMargin)

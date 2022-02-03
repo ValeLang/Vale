@@ -30,7 +30,7 @@ case class CodeLocationS(
   // Just for debug purposes
   override def toString: String = {
     if (file == FileCoordinate.test) {
-      "tv" + ":" + offset
+      "tvl" + ":" + offset
     } else {
       file.toString + ":" + offset
     }
@@ -46,9 +46,9 @@ case class RangeS(begin: CodeLocationS, end: CodeLocationS) {
   // Just for debug purposes
   override def toString: String = {
     if (file == FileCoordinate.test) {
-      "tv" + ":" + begin.offset + "-" + end.offset
+      "tvr" + ":" + begin.offset + "-" + end.offset
     } else {
-      begin.toString + "-" + end.toString
+      "RangeS(" + begin.toString + ", " + end.toString + ")"
     }
   }
 }

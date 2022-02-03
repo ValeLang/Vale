@@ -170,8 +170,7 @@ object Parser {
 
   def parseFunctionOrLocalOrMemberName(iter: ParsingIterator): Option[NameP] = {
     val begin = iter.getPos()
-    // TODO: might be better to make this a blacklist instead
-    iter.tryy("^(<=>|<=|<|>=|>|===|==|!=|~|\\+|-|/|\\*|[A-Za-z_][A-Za-z0-9_]*)".r) match {
+    iter.tryy("""^^(<=>|<=|<|>=|>|===|==|!=|[^\s\.\!\$\&\,\:\(\)\;\[\]\{\}\'\@\^\"\<\>\=\`]+)""".r) match {
       case Some(str) => Some(NameP(RangeP(begin, iter.getPos()), str))
       case None => None
     }

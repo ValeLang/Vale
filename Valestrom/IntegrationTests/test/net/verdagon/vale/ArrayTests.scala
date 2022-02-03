@@ -501,7 +501,7 @@ class ArrayTests extends FunSuite with Matchers {
           |  m = MyIntIdentity();
           |  arr = MakeArray(10, &!m);
           |  lam = { print(str(arr.6)); };
-          |  (lam)();
+          |  lam!();
           |}
         """.stripMargin)
 
@@ -587,7 +587,7 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |import array.make.*;
-        |import array.iter.*;
+        |import array.each.*;
         |import ifunction.ifunction1.*;
         |fn main() int export {
         |  sum! = 0;

@@ -103,6 +103,9 @@ class DestructorTemplar(
               case IntT(_) | StrT() | BoolT() | FloatT() | VoidT() => {
                 DiscardTE(undestructedExpr2)
               }
+              case OverloadSet(overloadSetEnv, name) => {
+                DiscardTE(undestructedExpr2)
+              }
               case as@StaticSizedArrayTT(_, _, _, _) => {
                 val underarrayReference2 =
                   CoordT(
@@ -118,10 +121,6 @@ class DestructorTemplar(
                     undestructedExpr2.result.reference.permission,
                     as)
                 destroySharedArray(temputs, underarrayReference2)
-              }
-              case OverloadSet(overloadSetEnv, name) => {
-                val understructReference2 = undestructedExpr2.result.reference.copy(kind = VoidT())
-                destroySharedCitizen(temputs, understructReference2)
               }
               case StructTT(_) | InterfaceTT(_) => {
                 destroySharedCitizen(temputs, undestructedExpr2.result.reference)

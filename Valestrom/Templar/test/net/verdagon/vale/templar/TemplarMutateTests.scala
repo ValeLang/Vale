@@ -173,13 +173,13 @@ class TemplarMutateTests extends FunSuite with Matchers {
     compile.expectTemputs()
   }
 
-  test("Reports when we try to mutate an element in a static-sized array of finals") {
+  test("Reports when we try to mutate an element in an imm static-sized array") {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
         |import ifunction.ifunction1.*;
         |fn main() int export {
-        |  arr = [#10]({_});
+        |  arr = #[#10]({_});
         |  set arr[4] = 10;
         |  ret 73;
         |}
@@ -187,7 +187,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     compile.getTemputs() match {
       case Err(CantMutateFinalElement(_, arrRef2)) => {
         arrRef2.kind match {
-          case null=>//StaticSizedArrayNameT(10,RawArrayNameT(MutableT,_)) =>
+          case StaticSizedArrayTT(10,ImmutableT,FinalT,CoordT(ShareT,ReadonlyT,IntT(_))) =>
         }
       }
     }

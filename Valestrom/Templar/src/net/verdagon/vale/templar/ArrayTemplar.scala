@@ -28,7 +28,7 @@ class ArrayTemplar(
 
   def evaluateStaticSizedArrayFromCallable(
     temputs: Temputs,
-    fate: FunctionEnvironmentBox,
+    fate: IEnvironment,
     range: RangeS,
     rulesA: Vector[IRulexSR],
     maybeElementTypeRuneA: Option[IRuneS],
@@ -52,19 +52,27 @@ class ArrayTemplar(
         case Err(e) => throw CompileErrorExceptionT(InferAstronomerError(range, e))
       }
     val templatas =
-      inferTemplar.solveExpectComplete(fate.snapshot, temputs, rulesA, runeToType, range, Vector(), Vector())
+      inferTemplar.solveExpectComplete(fate, temputs, rulesA, runeToType, range, Vector(), Vector())
     val IntegerTemplata(size) = vassertSome(templatas.get(sizeRuneA))
     val mutability = getArrayMutability(templatas, mutabilityRune)
     val variability = getArrayVariability(templatas, variabilityRune)
     val prototype = overloadTemplar.getArrayGeneratorPrototype(temputs, fate, range, callableTE)
-    val ssaMT = getStaticSizedArrayKind(fate.snapshot.globalEnv, temputs, mutability, variability, size.toInt, prototype.returnType)
+    val ssaMT = getStaticSizedArrayKind(fate.globalEnv, temputs, mutability, variability, size.toInt, prototype.returnType)
+
+    maybeElementTypeRuneA.foreach(elementTypeRuneA => {
+      val expectedElementType = getArrayElementType(templatas, elementTypeRuneA)
+      if (prototype.returnType != expectedElementType) {
+        throw CompileErrorExceptionT(UnexpectedArrayElementType(range, expectedElementType, prototype.returnType))
+      }
+    })
+
     val expr2 = StaticArrayFromCallableTE(ssaMT, callableTE, prototype)
     expr2
   }
 
   def evaluateRuntimeSizedArrayFromCallable(
     temputs: Temputs,
-    fate: FunctionEnvironmentBox,
+    fate: IEnvironment,
     range: RangeS,
     rulesA: Vector[IRulexSR],
     maybeElementTypeRune: Option[IRuneS],
@@ -87,7 +95,7 @@ class ArrayTemplar(
         case Err(e) => throw CompileErrorExceptionT(InferAstronomerError(range, e))
       }
     val templatas =
-      inferTemplar.solveExpectComplete(fate.snapshot, temputs, rulesA, runeToType, range, Vector(), Vector())
+      inferTemplar.solveExpectComplete(fate, temputs, rulesA, runeToType, range, Vector(), Vector())
     val mutability = getArrayMutability(templatas, mutabilityRune)
 
     mutability match {
@@ -99,7 +107,7 @@ class ArrayTemplar(
 
 //    val variability = getArrayVariability(templatas, variabilityRune)
     val prototype = overloadTemplar.getArrayGeneratorPrototype(temputs, fate, range, callableTE)
-    val rsaMT = getRuntimeSizedArrayKind(fate.snapshot.globalEnv, temputs, prototype.returnType, mutability)
+    val rsaMT = getRuntimeSizedArrayKind(fate.globalEnv, temputs, prototype.returnType, mutability)
 
     maybeElementTypeRune.foreach(elementTypeRuneA => {
       val expectedElementType = getArrayElementType(templatas, elementTypeRuneA)
@@ -114,7 +122,7 @@ class ArrayTemplar(
 
   def evaluateStaticSizedArrayFromValues(
       temputs: Temputs,
-      fate: FunctionEnvironmentBox,
+      fate: IEnvironment,
       range: RangeS,
       rulesA: Vector[IRulexSR],
     maybeElementTypeRuneA: Option[IRuneS],
@@ -145,7 +153,7 @@ class ArrayTemplar(
 
     val templatas =
       inferTemplar.solveExpectComplete(
-        fate.snapshot, temputs, rulesA, runeToType, range, Vector(), Vector())
+        fate, temputs, rulesA, runeToType, range, Vector(), Vector())
     maybeElementTypeRuneA.foreach(elementTypeRuneA => {
       val expectedElementType = getArrayElementType(templatas, elementTypeRuneA)
       if (memberType != expectedElementType) {
@@ -161,7 +169,7 @@ class ArrayTemplar(
           throw CompileErrorExceptionT(InitializedWrongNumberOfElements(range, size, exprs2.size))
         }
 
-    val staticSizedArrayType = getStaticSizedArrayKind(fate.snapshot.globalEnv, temputs, mutability, variability, exprs2.size, memberType)
+    val staticSizedArrayType = getStaticSizedArrayKind(fate.globalEnv, temputs, mutability, variability, exprs2.size, memberType)
     val ownership = if (staticSizedArrayType.mutability == MutableT) OwnT else ShareT
     val permission = if (staticSizedArrayType.mutability == MutableT) ReadwriteT else ReadonlyT
     val finalExpr = StaticArrayFromValuesTE(exprs2, CoordT(ownership, permission, staticSizedArrayType), staticSizedArrayType)

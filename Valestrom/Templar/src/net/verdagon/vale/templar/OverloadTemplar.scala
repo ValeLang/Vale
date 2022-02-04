@@ -140,7 +140,7 @@ class OverloadTemplar(
     val candidates =
       findHayTemplatas(env, temputs, functionName, paramFilters, extraEnvsToLookIn)
     candidates.flatMap({
-      case KindTemplata(OverloadSet(overloadsEnv, nameInOverloadsEnv, _)) => {
+      case KindTemplata(OverloadSet(overloadsEnv, nameInOverloadsEnv)) => {
         getCandidateBanners(
           overloadsEnv, temputs, callRange, nameInOverloadsEnv,
           explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, exact)
@@ -561,7 +561,7 @@ class OverloadTemplar(
 
   def getArrayGeneratorPrototype(
     temputs: Temputs,
-    fate: FunctionEnvironmentBox,
+    fate: IEnvironment,
     range: RangeS,
     callableTE: ReferenceExpressionTE):
   PrototypeT = {
@@ -571,7 +571,7 @@ class OverloadTemplar(
         ParamFilter(callableTE.result.underlyingReference, None),
         ParamFilter(CoordT(ShareT, ReadonlyT, IntT.i32), None))
       findFunction(
-        fate.snapshot, temputs, range, funcName, Vector.empty, Array.empty,
+        fate, temputs, range, funcName, Vector.empty, Array.empty,
         paramFilters, Vector.empty, false)
   }
 

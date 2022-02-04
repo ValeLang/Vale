@@ -55,7 +55,7 @@ class DestructorTemplar(
   }
 
   def drop(
-    fate: FunctionEnvironmentBox,
+    env: IEnvironment,
     temputs: Temputs,
     undestructedExpr2: ReferenceExpressionTE):
   (ReferenceExpressionTE) = {
@@ -65,10 +65,10 @@ class DestructorTemplar(
           val destructorPrototype =
             kind match {
               case StructTT(_) | InterfaceTT(_) => {
-                getDropFunction(fate.globalEnv, temputs, r)
+                getDropFunction(env.globalEnv, temputs, r)
               }
               case StaticSizedArrayTT(_, _, _, _) | RuntimeSizedArrayTT(_, _) => {
-                getDropFunction(fate.globalEnv, temputs, r)
+                getDropFunction(env.globalEnv, temputs, r)
               }
             }
           FunctionCallTE(destructorPrototype, Vector(undestructedExpr2))
@@ -79,7 +79,7 @@ class DestructorTemplar(
         case CoordT(ShareT, ReadonlyT, _) => {
           val destroySharedCitizen =
             (temputs: Temputs, Coord: CoordT) => {
-              val destructorHeader = getDropFunction(fate.globalEnv, temputs, Coord)
+              val destructorHeader = getDropFunction(env.globalEnv, temputs, Coord)
               // We just needed to ensure it's in the temputs, so that the backend can use it
               // for when reference counts drop to zero.
               // If/when we have a GC backend, we can skip generating share destructors.
@@ -88,7 +88,7 @@ class DestructorTemplar(
             };
           val destroySharedArray =
             (temputs: Temputs, coord: CoordT) => {
-              val destructorHeader = getDropFunction(fate.globalEnv, temputs, coord)
+              val destructorHeader = getDropFunction(env.globalEnv, temputs, coord)
               // We just needed to ensure it's in the temputs, so that the backend can use it
               // for when reference counts drop to zero.
               // If/when we have a GC backend, we can skip generating share destructors.
@@ -136,16 +136,15 @@ class DestructorTemplar(
   }
 
   def generateDropFunction(
-    initialBodyEnv: FunctionEnvironment,
+    fenv: FunctionEnvironment,
     temputs: Temputs,
     originFunction1: FunctionA,
     type2: CoordT):
   (FunctionHeaderT) = {
-    val bodyEnv = FunctionEnvironmentBox(initialBodyEnv)
-    val dropExpr2 = drop(bodyEnv, temputs, ArgLookupTE(0, type2))
+    val dropExpr2 = drop(fenv, temputs, ArgLookupTE(0, type2))
     val header =
       ast.FunctionHeaderT(
-        bodyEnv.fullName,
+        fenv.fullName,
         Vector.empty,
         Vector(ParameterT(CodeVarNameT("x"), None, type2)),
         CoordT(ShareT, ReadonlyT, VoidT()),
@@ -154,7 +153,7 @@ class DestructorTemplar(
     val function2 = FunctionT(header, BlockTE(Templar.consecutive(Vector(dropExpr2, ReturnTE(VoidLiteralTE())))))
     temputs.declareFunctionReturnType(header.toSignature, CoordT(ShareT, ReadonlyT, VoidT()))
     temputs.addFunction(function2)
-    vassert(temputs.getDeclaredSignatureOrigin(bodyEnv.fullName) == Some(originFunction1.range))
+    vassert(temputs.getDeclaredSignatureOrigin(fenv.fullName) == Some(originFunction1.range))
     header
   }
 }

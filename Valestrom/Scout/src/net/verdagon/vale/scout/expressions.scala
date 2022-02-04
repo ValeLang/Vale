@@ -31,6 +31,10 @@ case class LoopSE(range: RangeS, body: BlockSE) extends IExpressionSE {
   vpass()
 }
 
+case class BreakSE(range: RangeS) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
+
 case class WhileSE(range: RangeS, body: BlockSE) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
   vpass()

@@ -3,7 +3,7 @@ package net.verdagon.vale.templar.expression
 import net.verdagon.vale.parser._
 import net.verdagon.vale.parser.ast.{LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsP, LoadAsPointerP, LoadAsWeakP, MoveP, UseP}
 import net.verdagon.vale.scout.{LocalS, NotUsed}
-import net.verdagon.vale.templar.env.{AddressibleLocalVariableT, FunctionEnvironmentBox, ILocalVariableT, ReferenceLocalVariableT}
+import net.verdagon.vale.templar.env.{AddressibleLocalVariableT, NodeEnvironmentBox, FunctionEnvironmentBox, ILocalVariableT, ReferenceLocalVariableT}
 import net.verdagon.vale.templar.function.DestructorTemplar
 import net.verdagon.vale.templar.templata.Conversions
 import net.verdagon.vale.templar.types._
@@ -19,13 +19,13 @@ class LocalHelper(
   destructorTemplar: DestructorTemplar) {
 
   def makeTemporaryLocal(
-    fate: FunctionEnvironmentBox,
+    nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironment,
     coord: CoordT):
   ReferenceLocalVariableT = {
-    val varId = fate.functionEnvironment.fullName.addStep(TemplarTemporaryVarNameT(life))
+    val varId = nenv.functionEnvironment.fullName.addStep(TemplarTemporaryVarNameT(life))
     val rlv = ReferenceLocalVariableT(varId, FinalT, coord)
-    fate.addVariable(rlv)
+    nenv.addVariable(rlv)
     rlv
   }
 
@@ -33,7 +33,7 @@ class LocalHelper(
   // separately.
   def makeTemporaryLocal(
     temputs: Temputs,
-    fate: FunctionEnvironmentBox,
+    nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironment,
     r: ReferenceExpressionTE,
     targetOwnership: OwnershipT):
@@ -43,12 +43,12 @@ class LocalHelper(
       case PointerT =>
     }
 
-    val rlv = makeTemporaryLocal(fate, life, r.result.reference)
+    val rlv = makeTemporaryLocal(nenv, life, r.result.reference)
     val letExpr2 = LetAndLendTE(rlv, r, targetOwnership)
 
-    val unlet = unletLocal(fate, rlv)
+    val unlet = unletLocal(nenv, rlv)
     val destructExpr2 =
-      destructorTemplar.drop(fate, temputs, unlet)
+      destructorTemplar.drop(nenv.snapshot, temputs, unlet)
     vassert(destructExpr2.kind == VoidT())
 
     // No Discard here because the destructor already returns void.
@@ -56,21 +56,21 @@ class LocalHelper(
     (ast.DeferTE(letExpr2, destructExpr2))
   }
 
-  def unletLocal(fate: FunctionEnvironmentBox, localVar: ILocalVariableT):
+  def unletLocal(nenv: NodeEnvironmentBox, localVar: ILocalVariableT):
   (UnletTE) = {
-    fate.markLocalUnstackified(localVar.id)
+    nenv.markLocalUnstackified(localVar.id)
     UnletTE(localVar)
   }
 
   def unletAll(
     temputs: Temputs,
-    fate: FunctionEnvironmentBox,
+    nenv: NodeEnvironmentBox,
     variables: Vector[ILocalVariableT]):
   (Vector[ReferenceExpressionTE]) = {
     variables.map({ case variable =>
-      val unlet = unletLocal(fate, variable)
+      val unlet = unletLocal(nenv, variable)
       val maybeHeadExpr2 =
-        destructorTemplar.drop(fate, temputs, unlet)
+        destructorTemplar.drop(nenv.snapshot, temputs, unlet)
       maybeHeadExpr2
     })
   }
@@ -82,14 +82,14 @@ class LocalHelper(
   // mutated from inside closures.
   def makeUserLocalVariable(
     temputs: Temputs,
-    fate: FunctionEnvironmentBox,
+    nenv: NodeEnvironmentBox,
     range: RangeS,
     localVariableA: LocalS,
     referenceType2: CoordT):
   ILocalVariableT = {
     val varId = NameTranslator.translateVarNameStep(localVariableA.varName)
 
-    if (fate.getVariable(varId).nonEmpty) {
+    if (nenv.getVariable(varId).nonEmpty) {
       throw CompileErrorExceptionT(RangedInternalErrorT(range, "There's already a variable named " + varId))
     }
 
@@ -98,14 +98,14 @@ class LocalHelper(
     val mutable = Templar.getMutability(temputs, referenceType2.kind)
     val addressible = LocalHelper.determineIfLocalIsAddressible(mutable, localVariableA)
 
-    val fullVarName = fate.fullName.addStep(varId)
+    val fullVarName = nenv.fullName.addStep(varId)
     val localVar =
       if (addressible) {
         AddressibleLocalVariableT(fullVarName, variability, referenceType2)
       } else {
         ReferenceLocalVariableT(fullVarName, variability, referenceType2)
       }
-    fate.addVariable(localVar)
+    nenv.addVariable(localVar)
     localVar
   }
 
@@ -120,7 +120,7 @@ class LocalHelper(
   }
 
   def softLoad(
-      fate: FunctionEnvironmentBox,
+      nenv: NodeEnvironmentBox,
       loadRange: RangeS,
       a: AddressExpressionTE,
       loadAsP: LoadAsP):
@@ -134,7 +134,7 @@ class LocalHelper(
           case UseP => {
             a match {
               case LocalLookupTE(_, lv, _, _) => {
-                fate.markLocalUnstackified(lv.id)
+                nenv.markLocalUnstackified(lv.id)
                 UnletTE(lv)
               }
               // See CSHROOR for why these aren't just Readwrite.
@@ -147,7 +147,7 @@ class LocalHelper(
           case MoveP => {
             a match {
               case LocalLookupTE(_, lv, _, _) => {
-                fate.markLocalUnstackified(lv.id)
+                nenv.markLocalUnstackified(lv.id)
                 UnletTE(lv)
               }
               case ReferenceMemberLookupTE(_,_, name, _, _, _) => {

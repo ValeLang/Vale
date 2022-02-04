@@ -7,7 +7,7 @@ import net.verdagon.vale.templar.env.TemplatasStore.{entryMatchesFilter, entryTo
 import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.macros.citizen._
 import net.verdagon.vale.templar.macros.{AnonymousInterfaceMacro, FunctorHelper, IFunctionBodyMacro, IOnImplDefinedMacro, IOnInterfaceDefinedMacro, IOnStructDefinedMacro, StructConstructorMacro}
-import net.verdagon.vale.templar.names.{AnonymousSubstructConstructorTemplateNameT, AnonymousSubstructImplNameT, AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, ArbitraryNameT, CitizenNameT, CitizenTemplateNameT, ClosureParamNameT, FreeTemplateNameT, FullNameT, FunctionNameT, FunctionTemplateNameT, INameT, ImplDeclareNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT, LambdaTemplateNameT, NameTranslator, PackageTopLevelNameT, PrimitiveNameT, RuneNameT, SelfNameT, VirtualFreeTemplateNameT}
+import net.verdagon.vale.templar.names.{AnonymousSubstructConstructorTemplateNameT, AnonymousSubstructImplNameT, AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, ArbitraryNameT, CitizenNameT, CitizenTemplateNameT, ClosureParamNameT, FreeTemplateNameT, FullNameT, FunctionNameT, FunctionTemplateNameT, INameT, IVarNameT, ImplDeclareNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT, LambdaTemplateNameT, NameTranslator, PackageTopLevelNameT, PrimitiveNameT, RuneNameT, SelfNameT, VirtualFreeTemplateNameT}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.{CodeLocationS, Err, IProfiler, Ok, PackageCoordinate, Result, vassert, vcurious, vfail, vimpl, vwat}
 
@@ -320,9 +320,7 @@ case class PackageEnvironment[+T <: INameT](
   // These are ones that the user imports (or the ancestors that we implicitly import)
   globalNamespaces: Vector[TemplatasStore]
 ) extends IEnvironment {
-    val hash = runtime.ScalaRunTime._hashCode(fullName); override def hashCode(): Int = hash;
-
-
+  val hash = runtime.ScalaRunTime._hashCode(fullName); override def hashCode(): Int = hash;
 
   override def equals(obj: Any): Boolean = {
     if (!obj.isInstanceOf[IEnvironment]) {

@@ -23,15 +23,15 @@ import scala.collection.immutable.{List, Set}
 trait IFunctionTemplarDelegate {
   def evaluateBlockStatements(
     temputs: Temputs,
-    startingFate: FunctionEnvironment,
-    fate: FunctionEnvironmentBox,
+    startingNenv: NodeEnvironment,
+    nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironment,
     exprs: BlockSE):
   (ReferenceExpressionTE, Set[CoordT])
 
   def translatePatternList(
     temputs: Temputs,
-    fate: FunctionEnvironmentBox,
+    nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironment,
     patterns1: Vector[AtomSP],
     patternInputExprs2: Vector[ReferenceExpressionTE]):
@@ -80,7 +80,7 @@ class FunctionTemplar(
       opts, profiler, templataTemplar, inferTemplar, convertHelper, structTemplar, delegate)
 
   private def determineClosureVariableMember(
-      env: FunctionEnvironment,
+      env: NodeEnvironment,
       temputs: Temputs,
       name: IVarNameS) = {
     val (variability2, memberType) =
@@ -115,7 +115,7 @@ class FunctionTemplar(
 
   def evaluateClosureStruct(
       temputs: Temputs,
-      containingFunctionEnv: FunctionEnvironment,
+      containingNodeEnv: NodeEnvironment,
     callRange: RangeS,
     name: IFunctionDeclarationNameS,
       functionA: FunctionA):
@@ -126,12 +126,12 @@ class FunctionTemplar(
     // Note, this is where the unordered closuredNames set becomes ordered.
     val closuredVarNamesAndTypes =
       closuredNames
-        .map(name => determineClosureVariableMember(containingFunctionEnv, temputs, name))
+        .map(name => determineClosureVariableMember(containingNodeEnv, temputs, name))
         .toVector;
 
     val (structTT, _, functionTemplata) =
       structTemplar.makeClosureUnderstruct(
-        containingFunctionEnv, temputs, name, functionA, closuredVarNamesAndTypes)
+        containingNodeEnv, temputs, name, functionA, closuredVarNamesAndTypes)
 
     // Eagerly evaluate the function if it's not a template.
     if (functionA.isTemplate) {
@@ -333,9 +333,9 @@ class FunctionTemplar(
   }
 
   private def evaluateOrdinaryClosureFunctionFromNonCallForHeader(
-      env: IEnvironment,
-      temputs: Temputs,
-      closureStructRef: StructTT,
+    env: IEnvironment,
+    temputs: Temputs,
+    closureStructRef: StructTT,
     function: FunctionA):
   (FunctionHeaderT) = {
     closureOrLightLayer.evaluateOrdinaryClosureFunctionFromNonCallForHeader(

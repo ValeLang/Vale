@@ -293,7 +293,7 @@ class FunctionTemplarMiddleLayer(
     // We fill out the params here to get the function's full name.
     val newName = assembleName(oldName, paramTypes)
 
-    FunctionEnvironment(globalEnv, parentEnv, newName, templatas, function, maybeReturnType, None, variables, Set())
+    FunctionEnvironment(globalEnv, parentEnv, newName, templatas, function, maybeReturnType, variables)
   }
 
   private def assembleName(

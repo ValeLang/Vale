@@ -302,22 +302,22 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
       new IFunctionTemplarDelegate {
     override def evaluateBlockStatements(
         temputs: Temputs,
-        startingFate: FunctionEnvironment,
-        fate: FunctionEnvironmentBox,
+        startingNenv: NodeEnvironment,
+        nenv: NodeEnvironmentBox,
         life: LocationInFunctionEnvironment,
         exprs: BlockSE
     ): (ReferenceExpressionTE, Set[CoordT]) = {
-      expressionTemplar.evaluateBlockStatements(temputs, startingFate, fate, life, exprs)
+      expressionTemplar.evaluateBlockStatements(temputs, startingNenv, nenv, life, exprs)
     }
 
     override def translatePatternList(
       temputs: Temputs,
-      fate: FunctionEnvironmentBox,
+      nenv: NodeEnvironmentBox,
       life: LocationInFunctionEnvironment,
       patterns1: Vector[AtomSP],
       patternInputExprs2: Vector[ReferenceExpressionTE]
     ): ReferenceExpressionTE = {
-      expressionTemplar.translatePatternList(temputs, fate, life, patterns1, patternInputExprs2)
+      expressionTemplar.translatePatternList(temputs, nenv, life, patterns1, patternInputExprs2)
     }
 
     override def evaluateParent(env: IEnvironment, temputs: Temputs, sparkHeader: FunctionHeaderT): Unit = {
@@ -372,8 +372,8 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
           functionTemplar.evaluateTemplatedFunctionFromCallForPrototype(temputs, callRange, functionTemplata, explicitTemplateArgs, args)
         }
 
-        override def evaluateClosureStruct(temputs: Temputs, containingFunctionEnv: FunctionEnvironment, callRange: RangeS, name: IFunctionDeclarationNameS, function1: FunctionA): StructTT = {
-          functionTemplar.evaluateClosureStruct(temputs, containingFunctionEnv, callRange, name, function1)
+        override def evaluateClosureStruct(temputs: Temputs, containingNodeEnv: NodeEnvironment, callRange: RangeS, name: IFunctionDeclarationNameS, function1: FunctionA): StructTT = {
+          functionTemplar.evaluateClosureStruct(temputs, containingNodeEnv, callRange, name, function1)
         }
       })
 

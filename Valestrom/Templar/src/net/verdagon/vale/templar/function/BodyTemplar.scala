@@ -19,15 +19,15 @@ import scala.collection.immutable.{List, Set}
 trait IBodyTemplarDelegate {
   def evaluateBlockStatements(
     temputs: Temputs,
-    startingFate: FunctionEnvironment,
-    fate: FunctionEnvironmentBox,
+    startingNenv: NodeEnvironment,
+    nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironment,
     exprs: BlockSE):
   (ReferenceExpressionTE, Set[CoordT])
 
   def translatePatternList(
     temputs: Temputs,
-    fate: FunctionEnvironmentBox,
+    nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironment,
     patterns1: Vector[AtomSP],
     patternInputExprs2: Vector[ReferenceExpressionTE]):
@@ -46,13 +46,13 @@ class BodyTemplar(
   // - IF we had to infer it, the return type.
   // - The body.
   def declareAndEvaluateFunctionBody(
-      funcOuterEnv: FunctionEnvironmentBox,
-      temputs: Temputs,
-      life: LocationInFunctionEnvironment,
-      function1: FunctionA,
-      maybeExplicitReturnCoord: Option[CoordT],
-      params2: Vector[ParameterT],
-      isDestructor: Boolean):
+    funcOuterEnv: FunctionEnvironmentBox,
+    temputs: Temputs,
+    life: LocationInFunctionEnvironment,
+    function1: FunctionA,
+    maybeExplicitReturnCoord: Option[CoordT],
+    params2: Vector[ParameterT],
+    isDestructor: Boolean):
   (Option[CoordT], BlockTE) = {
     val bodyS =
       function1.body match {
@@ -136,8 +136,8 @@ class BodyTemplar(
     isDestructor: Boolean,
     maybeExpectedResultType: Option[CoordT]):
   Result[(BlockTE, Set[CoordT]), ResultTypeMismatchError] = {
-    val env = funcOuterEnv.makeChildBlockEnvironment(Some(body1.block))
-    val startingEnv = env.functionEnvironment
+    val env = NodeEnvironmentBox(funcOuterEnv.makeChildNodeEnvironment(body1.block, life))
+    val startingEnv = env.snapshot
 
     val patternsTE =
       evaluateLets(env, temputs, life + 0, body1.range, params1, params2);
@@ -199,7 +199,7 @@ class BodyTemplar(
 
   // Produce the lets at the start of a function.
   private def evaluateLets(
-      fate: FunctionEnvironmentBox,
+    nenv: NodeEnvironmentBox,
       temputs: Temputs,
     life: LocationInFunctionEnvironment,
     range: RangeS,
@@ -210,14 +210,14 @@ class BodyTemplar(
       params2.zipWithIndex.map({ case (p, index) => ArgLookupTE(index, p.tyype) })
     val letExprs2 =
       delegate.translatePatternList(
-        temputs, fate, life, params1.map(_.pattern), paramLookups2);
+        temputs, nenv, life, params1.map(_.pattern), paramLookups2);
 
     // todo: at this point, to allow for recursive calls, add a callable type to the environment
     // for everything inside the body to use
 
     params1.foreach({
       case ParameterS(AtomSP(_, Some(CaptureS(name)), _, _, _)) => {
-        if (!fate.declaredLocals.exists(_.id.last == NameTranslator.translateVarNameStep(name))) {
+        if (!nenv.declaredLocals.exists(_.id.last == NameTranslator.translateVarNameStep(name))) {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot couldnt find " + name))
         }
       }

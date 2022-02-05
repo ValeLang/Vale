@@ -13,6 +13,6 @@ fn valeSumFuel(arr [<imm> 3 * int]) int export {
 fn cSumFuel(arr [<imm> 3 * int]) int extern;
 
 fn main() int export {
-  a = [imm 3]((i) => { 13 + i });
+  a = #[#3]((i) => { 13 + i });
   ret cSumFuel(a);
 }

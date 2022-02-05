@@ -32,9 +32,9 @@ class TemplarMutateTests extends FunSuite with Matchers {
         |""".stripMargin)
     val temputs = compile.expectTemputs();
     val main = temputs.lookupFunction("main")
-    Collector.only(main, { case MutateTE(LocalLookupTE(_,ReferenceLocalVariableT(FullNameT(_,_, CodeVarNameT("a")), VaryingT, _), _, VaryingT), ConstantIntTE(4, _)) => })
+    Collector.only(main, { case MutateTE(LocalLookupTE(_,ReferenceLocalVariableT(FullNameT(_,_, CodeVarNameT("a")), VaryingT, _)), ConstantIntTE(4, _)) => })
 
-    val lookup = Collector.only(main, { case l @ LocalLookupTE(range, localVariable, reference, variability) => l })
+    val lookup = Collector.only(main, { case l @ LocalLookupTE(range, localVariable) => l })
     val resultCoord = lookup.result.reference
     resultCoord shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
   }

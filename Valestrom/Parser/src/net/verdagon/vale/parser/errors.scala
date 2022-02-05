@@ -87,6 +87,7 @@ case class CombinatorParseError(pos: Int, msg: String) extends IParseError {
   override def errorId: String = "P1021"; override def hashCode(): Int = vcurious()
   vpass()
 }
+case class BadArraySizerEnd(pos: Int) extends IParseError { override def errorId: String = "P1022"; override def hashCode(): Int = vcurious() }
 case class BadWhileCondition(pos: Int, cause: CombinatorParseError) extends IParseError { override def errorId: String = "P1022"; override def hashCode(): Int = vcurious() }
 case class BadWhileBody(pos: Int, cause: CombinatorParseError) extends IParseError { override def errorId: String = "P1023"; override def hashCode(): Int = vcurious() }
 case class BadIfCondition(pos: Int, cause: CombinatorParseError) extends IParseError { override def errorId: String = "P1024"; override def hashCode(): Int = vcurious() }

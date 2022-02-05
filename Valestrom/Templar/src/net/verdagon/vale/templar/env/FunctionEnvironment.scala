@@ -6,7 +6,7 @@ import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.ast.LocationInFunctionEnvironment
 import net.verdagon.vale.templar.names.{BuildingFunctionNameWithClosuredsAndTemplateArgsT, BuildingFunctionNameWithClosuredsT, FullNameT, IFunctionNameT, INameT, IVarNameT}
 import net.verdagon.vale.templar.templata.ITemplata
-import net.verdagon.vale.templar.types.{CoordT, StructTT, VariabilityT}
+import net.verdagon.vale.templar.types.{CoordT, NeverT, StructTT, VariabilityT}
 import net.verdagon.vale.{IProfiler, vassert, vcurious, vfail, vimpl, vpass, vwat}
 
 import scala.collection.immutable.{List, Map, Set}
@@ -546,6 +546,10 @@ case class ReferenceLocalVariableT(
   reference: CoordT
 ) extends ILocalVariableT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  reference.kind match {
+    case NeverT() => vwat()
+    case _ =>
+  }
   vpass()
 }
 case class AddressibleClosureVariableT(

@@ -27,14 +27,12 @@ case class AddressResultT(reference: CoordT) extends IExpressionResultT {
 
   override def underlyingReference: CoordT = reference
   override def kind = reference.kind
-
 }
 case class ReferenceResultT(reference: CoordT) extends IExpressionResultT {
   override def hashCode(): Int = vcurious()
 
   override def underlyingReference: CoordT = reference
   override def kind = reference.kind
-
 }
 trait ExpressionT  {
   def result: IExpressionResultT
@@ -67,6 +65,11 @@ case class LetAndLendTE(
   (expr.result.reference.ownership, targetOwnership) match {
     case (ShareT, ShareT) =>
     case (OwnT | BorrowT | PointerT | WeakT, BorrowT | PointerT) =>
+  }
+
+  expr match {
+    case BreakTE() | ReturnTE(_) => vwat() // See BRCOBS
+    case _ =>
   }
 
   override def result: ReferenceResultT = {
@@ -180,8 +183,9 @@ case class LetNormalTE(
   override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
+
   expr match {
-    case ReturnTE(_) => vwat()
+    case BreakTE() | ReturnTE(_) => vwat() // See BRCOBS
     case _ =>
   }
 }
@@ -319,8 +323,6 @@ case class BlockTE(
   override def hashCode(): Int = vcurious()
 
   override def result = inner.result
-
-
 }
 
 case class ConsecutorTE(exprs: Vector[ReferenceExpressionTE]) extends ReferenceExpressionTE {
@@ -361,8 +363,6 @@ case class ConsecutorTE(exprs: Vector[ReferenceExpressionTE]) extends ReferenceE
 
   def lastReferenceExpr = exprs.last
   override def result = lastReferenceExpr.result
-
-
 }
 
 case class TupleTE(
@@ -370,7 +370,6 @@ case class TupleTE(
     resultReference: CoordT) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(resultReference)
-
 }
 
 // Discards a reference, whether it be owned or borrow or whatever.
@@ -384,7 +383,6 @@ case class TupleTE(
 case class UnreachableMootTE(innerExpr: ReferenceExpressionTE) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, NeverT()))
-
 }
 
 case class StaticArrayFromValuesTE(
@@ -393,13 +391,11 @@ case class StaticArrayFromValuesTE(
     arrayType: StaticSizedArrayTT) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(resultReference)
-
 }
 
 case class ArraySizeTE(array: ReferenceExpressionTE) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, IntT.i32))
-
 }
 
 case class IsSameInstanceTE(left: ReferenceExpressionTE, right: ReferenceExpressionTE) extends ReferenceExpressionTE {
@@ -407,7 +403,6 @@ case class IsSameInstanceTE(left: ReferenceExpressionTE, right: ReferenceExpress
   vassert(left.result.reference == right.result.reference)
 
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, BoolT()))
-
 }
 
 case class AsSubtypeTE(
@@ -424,7 +419,6 @@ case class AsSubtypeTE(
 ) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(resultResultType)
-
 }
 
 case class VoidLiteralTE() extends ReferenceExpressionTE {
@@ -509,7 +503,6 @@ case class RuntimeSizedArrayLookupTE(
 case class ArrayLengthTE(arrayExpr: ReferenceExpressionTE) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, IntT.i32))
-
 }
 
 case class ReferenceMemberLookupTE(

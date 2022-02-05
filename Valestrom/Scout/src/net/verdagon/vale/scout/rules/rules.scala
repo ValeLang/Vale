@@ -105,7 +105,7 @@ case class IsStructSR(
 ) extends IRulexSR {
   override def hashCode(): Int = vcurious()
   override def runeUsages: Array[RuneUsage] = Array(rune)
-4}
+}
 
 case class CoerceToCoordSR(
   range: RangeS,

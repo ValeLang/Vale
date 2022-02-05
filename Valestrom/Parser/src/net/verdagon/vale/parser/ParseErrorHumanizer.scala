@@ -42,6 +42,7 @@ object ParseErrorHumanizer {
         case BadMutateEqualsError(pos) => "Expected = after set destination"
         case BadLetEndError(pos) => "Expected ; after declarations source"
         case BadWhileCondition(pos, cause) => "Parse error somewhere inside this while condition. Imprecise inner error: " + humanizeCombinatorParseError(fileMap, fileCoord, cause)
+        case BadArraySizerEnd(pos) => "Bad array sizer; expected ]"
         case BadWhileBody(pos, cause) => "Parse error somewhere inside this while body. Imprecise inner error: " + humanizeCombinatorParseError(fileMap, fileCoord, cause)
         case BadIfCondition(pos, cause) => "Parse error somewhere inside this if condition. Imprecise inner error: " + humanizeCombinatorParseError(fileMap, fileCoord, cause)
         case BadIfBody(pos, cause) => "Parse error somewhere inside this if body. Imprecise inner error: " + humanizeCombinatorParseError(fileMap, fileCoord, cause)

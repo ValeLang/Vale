@@ -8,6 +8,6 @@ export [<imm> 3 * Spaceship] as ImmSpaceshipArray;
 fn cSumFuel(arr [<imm> 3 * Spaceship]) int extern;
 
 fn main() int export {
-  a = [imm][Spaceship(13, 100), Spaceship(14, 100), Spaceship(15, 100)];
+  a = #[#][Spaceship(13, 100), Spaceship(14, 100), Spaceship(15, 100)];
   ret cSumFuel(a);
 }

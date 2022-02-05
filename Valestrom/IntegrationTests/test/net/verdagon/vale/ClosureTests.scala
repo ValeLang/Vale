@@ -155,7 +155,7 @@ class ClosureTests extends FunSuite with Matchers {
     Collector.onlyOf(main, classOf[FunctionCallTE])
 
     Collector.only(lambda, {
-      case LocalLookupTE(_,ReferenceLocalVariableT(FullNameT(_, _,ClosureParamNameT()),FinalT,_),_, _) =>
+      case LocalLookupTE(_,ReferenceLocalVariableT(FullNameT(_, _,ClosureParamNameT()),FinalT,_)) =>
     })
 
     compile.evalForKind(Vector()) shouldEqual VonInt(4)

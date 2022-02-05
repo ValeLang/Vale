@@ -3,6 +3,6 @@ export Array<imm, int> as ImmIntArray;
 fn sumBytes(arr Array<imm, int>) int extern;
 
 fn main() int export {
-  a = [imm *](5, {_});
+  a = #[](5, {_});
   ret sumBytes(a);
 }

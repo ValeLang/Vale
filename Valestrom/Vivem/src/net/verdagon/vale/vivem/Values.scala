@@ -258,7 +258,6 @@ case class VariableV(
     id: VariableAddressV,
     var reference: ReferenceV,
     expectedType: ReferenceH[KindH]) {
-  vassert(reference != None)
 }
 
 case class ExpressionId(

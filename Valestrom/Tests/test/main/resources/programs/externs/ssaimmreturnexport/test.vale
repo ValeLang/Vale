@@ -2,7 +2,7 @@
 export [<imm> 3 * int] as ImmIntArray;
 
 fn valeMakeSSA() [<imm> 3 * int] export {
-  ret [imm][13, 14, 15];
+  ret #[#][13, 14, 15];
 }
 
 fn cMakeSSA() [<imm> 3 * int] extern;

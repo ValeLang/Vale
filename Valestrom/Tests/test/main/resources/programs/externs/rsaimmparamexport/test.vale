@@ -12,13 +12,13 @@ rules(A Ref(_, _, Array<_, _>)) {
 
 fn expSumBytes(arr Array<imm, int>) int export {
   sum! = 0;
-  each arr (i) => { set sum = sum + i; }
+  foreach i in arr { set sum = sum + i; }
   ret sum;
 }
 
 fn extSumBytes(arr Array<imm, int>) int extern;
 
 fn main() int export {
-  a = [imm *](5, {_});
+  a = #[](5, {_});
   ret extSumBytes(a);
 }

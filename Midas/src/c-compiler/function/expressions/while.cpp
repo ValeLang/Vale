@@ -9,15 +9,21 @@
 Ref translateWhile(
     GlobalState* globalState,
     FunctionState* functionState,
-    BlockState* blockState,
+    BlockState* parentBlockState,
     LLVMBuilderRef builder,
     While* whiile) {
-  buildWhile(
+  buildBreakyWhile(
       globalState,
       functionState, builder,
-      [globalState, functionState, blockState, whiile](LLVMBuilderRef bodyBuilder) {
-        return translateExpression(
-            globalState, functionState, blockState, bodyBuilder, whiile->bodyExpr);
+      [globalState, functionState, parentBlockState, whiile](
+          LLVMBuilderRef bodyBuilder, LLVMBasicBlockRef loopEnd) {
+        BlockState childBlockState(
+            parentBlockState->addressNumberer, parentBlockState, std::optional(loopEnd));
+        auto resultRef =
+            translateExpression(
+                globalState, functionState, &childBlockState, bodyBuilder, whiile->bodyExpr);
+        globalState->getRegion(globalState->metalCache->voidRef)
+            ->checkValidReference(FL(), functionState, bodyBuilder, globalState->metalCache->voidRef, resultRef);
       });
   // Nobody should use a result of a while, so we'll just return a Never.
   return makeVoidRef(globalState);

@@ -2,7 +2,7 @@
 export Array<mut, int> as MutIntArray;
 
 fn valeMakeRSA() Array<mut, int> export {
-  ssa = [imm][5, 7, 9, 10, 11];
+  ssa = #[#][5, 7, 9, 10, 11];
   ret Array<mut, int>(ssa.len(), { ssa[_] });
 }
 

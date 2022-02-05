@@ -8,7 +8,7 @@ import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.{EqualsSR, RuneParentEnvLookupSR, RuneUsage}
 import net.verdagon.vale.scout.{RuneTypeSolver, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar.{ast, _}
-import net.verdagon.vale.templar.ast.{AddressExpressionTE, AddressMemberLookupTE, ArgLookupTE, BlockTE, BorrowToPointerTE, BorrowToWeakTE, BreakTE, ConsecutorTE, ConstantBoolTE, ConstantFloatTE, ConstantIntTE, ConstantStrTE, ConstructTE, DestroyTE, ExpressionT, FunctionCallTE, IfTE, LetNormalTE, LocalLookupTE, LocationInFunctionEnvironment, MutateTE, NarrowPermissionTE, PointerToBorrowTE, PointerToWeakTE, ProgramT, PrototypeT, ReferenceExpressionTE, ReferenceMemberLookupTE, ReturnTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE, TemplarReinterpretTE, VoidLiteralTE, WhileTE}
+import net.verdagon.vale.templar.ast.{AddressExpressionTE, AddressMemberLookupTE, ArgLookupTE, BlockTE, BorrowToPointerTE, BorrowToWeakTE, BreakTE, ConsecutorTE, ConstantBoolTE, ConstantFloatTE, ConstantIntTE, ConstantStrTE, ConstructTE, DestroyTE, ExpressionT, FunctionCallTE, IfTE, LetNormalTE, LocalLookupTE, LocationInFunctionEnvironment, MutateTE, NarrowPermissionTE, PointerToBorrowTE, PointerToWeakTE, ProgramT, PrototypeT, ReferenceExpressionTE, ReferenceMemberLookupTE, ReturnTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE, TemplarReinterpretTE, UnreachableMootTE, VoidLiteralTE, WhileTE}
 import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.DestructorTemplar
@@ -1068,22 +1068,42 @@ class ExpressionTemplar(
           val variablesToDestruct = allLocals.filter(x => !unstackifiedLocals.contains(x.id))
           val reversedVariablesToDestruct = variablesToDestruct.reverse
 
-          val resultVarId = nenv.fullName.addStep(TemplarFunctionResultVarNameT())
-          val resultVariable = ReferenceLocalVariableT(resultVarId, FinalT, innerExpr2.result.reference)
-          val resultLet = LetNormalTE(resultVariable, innerExpr2)
-          nenv.addVariable(resultVariable)
-
-          val destructExprs =
-            localHelper.unletAll(temputs, nenv, reversedVariablesToDestruct)
-
-          val getResultExpr =
-            localHelper.unletLocal(nenv, resultVariable)
-
-          val consecutor = Templar.consecutive(Vector(resultLet) ++ destructExprs ++ Vector(getResultExpr))
-
           val returns = returnsFromInnerExpr + innerExpr2.result.reference
 
-          (ReturnTE(consecutor), returns)
+          innerExpr2.result.reference.kind match {
+            case NeverT() | VoidT() => {
+              val destructExprs =
+                localHelper.unletAll(temputs, nenv, reversedVariablesToDestruct)
+
+              val resultExpr =
+                innerExpr2.result.reference.kind match {
+                  case NeverT() => UnreachableMootTE(VoidLiteralTE())
+                  case VoidT() => VoidLiteralTE()
+                }
+
+              val consecutor =
+                Templar.consecutive(
+                  Vector(innerExpr2) ++ destructExprs ++ Vector(resultExpr))
+
+              (ReturnTE(consecutor), returns)
+            }
+            case _ => {
+              val resultVarId = nenv.fullName.addStep(TemplarFunctionResultVarNameT())
+              val resultVariable = ReferenceLocalVariableT(resultVarId, FinalT, innerExpr2.result.reference)
+              val resultLet = LetNormalTE(resultVariable, innerExpr2)
+              nenv.addVariable(resultVariable)
+
+              val destructExprs =
+                localHelper.unletAll(temputs, nenv, reversedVariablesToDestruct)
+
+              val getResultExpr =
+                localHelper.unletLocal(nenv, resultVariable)
+
+              val consecutor = Templar.consecutive(Vector(resultLet) ++ destructExprs ++ Vector(getResultExpr))
+
+              (ReturnTE(consecutor), returns)
+            }
+          }
         }
         case BreakSE(range) => {
           // See BEAFB, we need to find the nearest while to see local since then.

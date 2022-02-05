@@ -2,8 +2,8 @@
 export Array<imm, int> as ImmIntArray;
 
 fn valeMakeRSA() Array<imm, int> export {
-  ssa = [imm][5, 7, 9, 10, 11];
-  ret [imm *](ssa.len(), { ssa[_] });
+  ssa = #[#][5, 7, 9, 10, 11];
+  ret [#](ssa.len(), { ssa[_] });
 }
 
 fn cMakeRSA() Array<imm, int> extern;

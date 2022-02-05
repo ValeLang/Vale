@@ -1268,7 +1268,7 @@ object ExpressionParser {
         RuntimeSizedP
       }
     if (!iter.trySkip("^\\]".r)) {
-      vwat()
+      return Err(BadArraySizerEnd(iter.getPos()))
     }
 
     val tyype =

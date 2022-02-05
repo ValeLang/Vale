@@ -542,6 +542,10 @@ public:
   innerType(innerType_) {}
 };
 
+class Break : public Expression {
+public:
+};
+
 class Return : public Expression {
 public:
   Expression *sourceExpr;

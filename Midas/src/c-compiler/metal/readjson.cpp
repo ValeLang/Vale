@@ -304,6 +304,8 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
     return new Return(
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceType"]));
+  } else if (type == "Break") {
+    return new Break();
   } else if (type == "Stackify") {
     return new Stackify(
         readExpression(cache, expression["sourceExpr"]),

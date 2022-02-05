@@ -133,7 +133,7 @@ class LocalHelper(
         loadAsP match {
           case UseP => {
             a match {
-              case LocalLookupTE(_, lv, _, _) => {
+              case LocalLookupTE(_, lv) => {
                 nenv.markLocalUnstackified(lv.id)
                 UnletTE(lv)
               }
@@ -146,7 +146,7 @@ class LocalHelper(
           }
           case MoveP => {
             a match {
-              case LocalLookupTE(_, lv, _, _) => {
+              case LocalLookupTE(_, lv) => {
                 nenv.markLocalUnstackified(lv.id)
                 UnletTE(lv)
               }

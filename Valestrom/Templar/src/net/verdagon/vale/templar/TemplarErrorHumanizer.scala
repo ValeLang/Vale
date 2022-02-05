@@ -456,7 +456,7 @@ object TemplarErrorHumanizer {
           case NeverT() => "never"
           case VoidT() => "void"
           case FloatT() => "float"
-          case OverloadSet(_, name, _) => "(overloads: " + ScoutErrorHumanizer.humanizeImpreciseName(name) + ")"
+          case OverloadSet(_, name) => "(overloads: " + ScoutErrorHumanizer.humanizeImpreciseName(name) + ")"
           case InterfaceTT(name) => humanizeName(codeMap, name)
           case StructTT(name) => humanizeName(codeMap, name)
           case RuntimeSizedArrayTT(mutability, elementType) => {

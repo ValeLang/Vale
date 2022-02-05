@@ -102,6 +102,33 @@ Ref translateExpressionInner(
       LLVMBuildRet(builder, toReturnLE);
       return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtr);
     }
+  } else if (auto breeak = dynamic_cast<Break*>(expr)) {
+    if (auto nearestLoopBlockStateAndEnd = blockState->getNearestLoopEnd()) {
+      auto [nearestLoopBlockState, nearestLoopEnd] = *nearestLoopBlockStateAndEnd;
+
+      LLVMBuildBr(builder, nearestLoopEnd);
+
+      return wrap(
+        globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef,
+        globalState->neverPtr);
+
+//      buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+//      auto sourceRef = translateExpression(globalState, functionState, blockState, builder, ret->sourceExpr);
+//      if (ret->sourceType->kind == globalState->metalCache->never) {
+//        return sourceRef;
+//      } else {
+//        auto toReturnLE =
+//            globalState->getRegion(ret->sourceType)
+//                ->checkValidReference(FL(), functionState, builder, ret->sourceType, sourceRef);
+//        LLVMBuildRet(builder, toReturnLE);
+//        return wrap(
+//            globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef,
+//            globalState->neverPtr);
+//      }
+    } else {
+      std::cerr << "Error: found a break not inside a loop!" << std::endl;
+      exit(1);
+    }
   } else if (auto stackify = dynamic_cast<Stackify*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto refToStore =

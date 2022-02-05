@@ -109,7 +109,7 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
   LLVMBuilderRef localsBuilder = builder;
 
   FunctionState functionState(exportName, exportFunctionL, exportReturnLT, localsBuilder);
-  BlockState initialBlockState(globalState->addressNumberer, nullptr);
+  BlockState initialBlockState(globalState->addressNumberer, nullptr, std::nullopt);
   buildFlare(FL(), globalState, &functionState, builder, "Calling export function ", functionState.containingFuncName, " from native");
 
   std::vector<Ref> argsToActualFunction;
@@ -264,7 +264,7 @@ void translateFunction(
   //
   // All builders work like this, at whatever level theyre on.
 
-  BlockState initialBlockState(globalState->addressNumberer, nullptr);
+  BlockState initialBlockState(globalState->addressNumberer, nullptr, std::nullopt);
 
   buildFlare(FL(), globalState, &functionState, bodyTopLevelBuilder, "Inside function ", functionM->prototype->name->name);
 

@@ -6,7 +6,7 @@ import java.io.FileNotFoundException
 import net.verdagon.vale.templar.{Hinputs, ast, _}
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.vivem.{ConstraintViolatedException, Heap, IntV, PrimitiveKindV, ReferenceV, StructInstanceV, Vivem}
-import net.verdagon.von.{IVonData, VonBool, VonFloat, VonInt, VonObject}
+import net.verdagon.von.{IVonData, VonBool, VonFloat, VonInt, VonObject, VonStr}
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.{FullCompilation, FullCompilationOptions}
 import net.verdagon.vale.hammer.VonHammer
@@ -777,6 +777,9 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |import intrange.*;
+        |import list.*;
+        |import listprintutils.*;
+        |
         |fn main() export {
         |  exponent = 3;
         |
@@ -785,10 +788,9 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |      i + 1
         |    };
         |
-        |  println(results);
+        |  println(&results);
         |}
         |""".stripMargin)
-    val temputs = compile.expectTemputs()
+    compile.evalForStdout(Vector()).trim shouldEqual "[1, 2, 3, 4, 5]"
   }
-
 }

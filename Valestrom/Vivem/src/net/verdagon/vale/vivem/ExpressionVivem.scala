@@ -13,6 +13,7 @@ object ExpressionVivem {
   sealed trait INodeExecuteResult
   case class NodeContinue(resultRef: ReferenceV) extends INodeExecuteResult { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
   case class NodeReturn(returnRef: ReferenceV) extends INodeExecuteResult { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+  case class NodeBreak() extends INodeExecuteResult { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
   def makePrimitive(heap: Heap, callId: CallId, location: LocationH, kind: KindV) = {
     vassert(kind != VoidV)
@@ -77,7 +78,7 @@ object ExpressionVivem {
         }
         val sourceRef =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
         // Lots of instructions do this, not just Discard, see DINSIE.
@@ -107,6 +108,9 @@ object ExpressionVivem {
       case ArgumentH(resultType, argumentIndex) => {
         val ref = takeArgument(heap, callId, argumentIndex, resultType)
         NodeContinue(ref)
+      }
+      case BreakH() => {
+        return NodeBreak()
       }
       case ReturnH(sourceExpr) => {
         val sourceRef =
@@ -158,7 +162,7 @@ object ExpressionVivem {
           val innerExpr = innerExprs(i)
 
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(i), innerExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(innerExprResultRef) => {
               if (i == innerExprs.size - 1) {
                 lastInnerExprResultRef = Some(innerExprResultRef)
@@ -174,7 +178,7 @@ object ExpressionVivem {
       case DestroyH(structExpr, localTypes, locals) => {
         val structReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), structExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
 
@@ -198,7 +202,7 @@ object ExpressionVivem {
       case DestroyStaticSizedArrayIntoLocalsH(arrExpr, localTypes, locals) => {
         val arrReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
 
@@ -230,7 +234,7 @@ object ExpressionVivem {
       case ArrayLengthH(arrExpr) => {
         val arrayReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
 
@@ -244,7 +248,7 @@ object ExpressionVivem {
       case ArrayCapacityH(arrExpr) => {
         val arrayReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
 
@@ -258,7 +262,7 @@ object ExpressionVivem {
       case waH @ BorrowToWeakH(sourceExpr) => {
         val constraintRef =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
         vassert(constraintRef.ownership == BorrowH)
@@ -272,7 +276,7 @@ object ExpressionVivem {
       case waH @ PointerToWeakH(sourceExpr) => {
         val constraintRef =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
         vassert(constraintRef.ownership == PointerH)
@@ -286,7 +290,7 @@ object ExpressionVivem {
       case AsSubtypeH(sourceExpr, targetKind, resultType, okConstructor, errConstructor) => {
         val sourceRef =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
 
@@ -330,7 +334,7 @@ object ExpressionVivem {
       case LockWeakH(sourceExpr, resultType, someConstructor, noneConstructor) => {
         val weakRef =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
         vassert(weakRef.ownership == WeakH)
@@ -374,7 +378,7 @@ object ExpressionVivem {
       case StackifyH(sourceExpr, localIndex, name) => {
         val reference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
 
@@ -389,7 +393,7 @@ object ExpressionVivem {
       case LocalStoreH(localIndex, sourceExpr, name) => {
         val reference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
 
@@ -407,12 +411,12 @@ object ExpressionVivem {
       case MemberStoreH(resultType, structExpr, memberIndex, sourceExpr, memberName) => {
         val structReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), structExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
         val sourceReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(1), sourceExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
 
@@ -431,17 +435,17 @@ object ExpressionVivem {
       case RuntimeSizedArrayStoreH(arrayExpr, indexExpr, sourceExpr, resultType) => {
         val arrayReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrayExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
         val indexReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(1), indexExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
         val sourceReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(2), sourceExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
         val IntV(elementIndex, 32) = heap.dereference(indexReference)
@@ -485,7 +489,7 @@ object ExpressionVivem {
       case ll @ NarrowPermissionH(sourceExpr, targetOwnership) => {
         val sourceReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
 
@@ -497,7 +501,7 @@ object ExpressionVivem {
       case btp @ BorrowToPointerH(sourceExpr) => {
         val sourceReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
 
@@ -509,7 +513,7 @@ object ExpressionVivem {
       case ptb @ PointerToBorrowH(sourceExpr) => {
         val sourceReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
 
@@ -530,10 +534,10 @@ object ExpressionVivem {
         val argRefs =
           argsExprs.zipWithIndex.map({ case (argExpr, i) =>
             executeNode(programH, stdin, stdout, heap, expressionId.addStep(i), argExpr) match {
-              case r @ NodeReturn(_) => {
-                vimpl() // do we have to, like, discard the previously made arguments?
-                // what happens with those?
-                return r
+              case NodeBreak() | NodeReturn(_) => {
+                // This shouldnt be possible because break and return can only
+                // be statements, not expressions, see BRCOBS.
+                vwat()
               }
               case NodeContinue(r) => r
             }
@@ -655,7 +659,7 @@ object ExpressionVivem {
       case ml @ MemberLoadH(structExpr, memberIndex, expectedMemberType, resultType, memberName) => {
         val structReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), structExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
 
@@ -673,12 +677,12 @@ object ExpressionVivem {
       case rsal @ RuntimeSizedArrayLoadH(arrayExpr, indexExpr, targetOwnership, targetPermission, expectedElementType, resultType) => {
         val arrayReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrayExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
         val indexIntReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(1), indexExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
 
@@ -705,12 +709,12 @@ object ExpressionVivem {
       case StaticSizedArrayLoadH(arrayExpr, indexExpr, targetOwnership, targetPermission, expectedElementType, arraySize, resultType) => {
         val arrayReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrayExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
         val indexReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(1), indexExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
         val index =
@@ -735,7 +739,7 @@ object ExpressionVivem {
       case siu @ StructToInterfaceUpcastH(sourceExpr, targetInterfaceRef) => {
         val sourceReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
 
@@ -745,7 +749,7 @@ object ExpressionVivem {
       case IfH(conditionBlock, thenBlock, elseBlock, commonSupertype) => {
         val conditionReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), conditionBlock) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
         val conditionKind = heap.dereference(conditionReference)
@@ -756,12 +760,12 @@ object ExpressionVivem {
         val blockResult =
           if (conditionValue == true) {
             executeNode(programH, stdin, stdout, heap, expressionId.addStep(1), thenBlock) match {
-              case r @ NodeReturn(_) => return r
+              case r @ (NodeReturn(_) | NodeBreak()) => return r
               case NodeContinue(r) => r
             }
           } else {
             executeNode(programH, stdin, stdout, heap, expressionId.addStep(2), elseBlock) match {
-              case r @ NodeReturn(_) => return r
+              case r @ (NodeReturn(_) | NodeBreak()) => return r
               case NodeContinue(r) => r
             }
           }
@@ -770,22 +774,20 @@ object ExpressionVivem {
       case WhileH(bodyBlock) => {
         var continue = true
         while (continue) {
-          val conditionReference =
-            executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), bodyBlock) match {
-              case r @ NodeReturn(_) => return r
-              case NodeContinue(r) => r
+          executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), bodyBlock) match {
+            case r @ NodeReturn(_) => return r
+            case NodeBreak() => continue = false
+            case NodeContinue(r) => {
+              discard(programH, heap, stdout, stdin, callId, bodyBlock.resultType, r)
             }
-          val conditionKind = heap.dereference(conditionReference)
-          val BoolV(conditionValue) = conditionKind;
-          discard(programH, heap, stdout, stdin, callId, bodyBlock.resultType, conditionReference)
-          continue = conditionValue
+          }
         }
         NodeContinue(heap.void)
       }
       case cac @ NewImmRuntimeSizedArrayH(sizeExpr, generatorExpr, generatorPrototype, _, arrayRefType) => {
         val sizeReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sizeExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
         val sizeKind = heap.dereference(sizeReference)
@@ -821,7 +823,7 @@ object ExpressionVivem {
       case NewMutRuntimeSizedArrayH(capacityHE, elementHT, arrayRefType) => {
         val capacityReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), capacityHE) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
         val capacityValue = heap.dereference(capacityReference)
@@ -842,7 +844,7 @@ object ExpressionVivem {
       case PushRuntimeSizedArrayH(arrayHE, newcomerHE) => {
         val arrayReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrayHE) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
         val rsaDef = programH.lookupRuntimeSizedArray(arrayHE.resultType.kind)
@@ -851,7 +853,7 @@ object ExpressionVivem {
 
         val newcomerReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), newcomerHE) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
         val newcomerVE = heap.dereference(newcomerReference)
@@ -869,7 +871,7 @@ object ExpressionVivem {
       case PopRuntimeSizedArrayH(arrayHE, elementType) => {
         val arrayReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrayHE) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
 //        val rsaDef = programH.lookupRuntimeSizedArray(arrayHE.resultType.kind)
@@ -919,13 +921,13 @@ object ExpressionVivem {
       case DestroyStaticSizedArrayIntoFunctionH(arrayExpr, consumerME, consumerMethod, arrayElementType, arraySize) => {
         val arrayReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrayExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
 
         val consumerReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(1), consumerME) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
         heap.checkReference(consumerME.resultType, consumerReference)
@@ -953,13 +955,13 @@ object ExpressionVivem {
       case cac @ DestroyImmRuntimeSizedArrayH(arrayExpr, consumerInterfaceExpr, consumerMethod, arrayElementType) => {
         val arrayReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrayExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
 
         val consumerReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(1), consumerInterfaceExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
         heap.checkReference(consumerInterfaceExpr.resultType, consumerReference)
@@ -990,7 +992,7 @@ object ExpressionVivem {
       case DestroyMutRuntimeSizedArrayH(arrayExpr) => {
         val arrayReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrayExpr) match {
-            case r @ NodeReturn(_) => return r
+            case r @ (NodeReturn(_) | NodeBreak()) => return r
             case NodeContinue(r) => r
           }
 

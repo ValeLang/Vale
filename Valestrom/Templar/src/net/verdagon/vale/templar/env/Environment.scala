@@ -79,7 +79,7 @@ trait IEnvironment {
       lookupWithImpreciseNameInner(profiler, nameS, lookupFilter, true).toList match {
         case List() => None
         case List(only) => Some(only)
-        case _ => vfail("Too many with name: " + nameS)
+        case many => vfail("Too many with name: " + nameS + ":\n" + many.mkString("\n"))
       }
     })
   }

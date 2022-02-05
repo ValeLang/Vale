@@ -1,7 +1,7 @@
 package net.verdagon.vale.vivem
 
 import net.verdagon.vale.metal._
-import net.verdagon.vale.vivem.ExpressionVivem.{NodeContinue, NodeReturn}
+import net.verdagon.vale.vivem.ExpressionVivem.{NodeBreak, NodeContinue, NodeReturn}
 import net.verdagon.vale.{vimpl, vwat, metal => m}
 
 object FunctionVivem {
@@ -31,6 +31,7 @@ object FunctionVivem {
     val returnRef =
       ExpressionVivem.executeNode(programH, stdin, stdout, heap, rootExpressionId, functionH.body) match {
         case NodeReturn(r) => NodeReturn(r)
+        case NodeBreak() => vwat()
         case NodeContinue(r) => NodeReturn(r)
       }
 

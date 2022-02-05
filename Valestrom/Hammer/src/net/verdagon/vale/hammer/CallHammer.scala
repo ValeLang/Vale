@@ -341,9 +341,7 @@ object CallHammer {
     val expr =
       translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, exprWithoutDeferreds, deferreds)
 
-    val boolExpr = expr.expectBoolAccess()
-
-    val whileCallNode = WhileH(boolExpr)
+    val whileCallNode = WhileH(expr)
     whileCallNode
   }
 

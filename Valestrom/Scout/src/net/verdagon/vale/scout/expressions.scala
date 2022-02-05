@@ -40,6 +40,11 @@ case class WhileSE(range: RangeS, body: BlockSE) extends IExpressionSE {
   vpass()
 }
 
+case class MapSE(range: RangeS, body: BlockSE) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+  vpass()
+}
+
 case class ExprMutateSE(range: RangeS, mutatee: IExpressionSE, expr: IExpressionSE) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
 }
@@ -163,6 +168,7 @@ case class ReturnSE(range: RangeS, inner: IExpressionSE) extends IExpressionSE {
     case _ =>
   }
 }
+
 case class VoidSE(range: RangeS) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
 }

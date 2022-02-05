@@ -512,7 +512,7 @@ case class IfH(
 // A while loop. Continuously runs bodyBlock until it returns false.
 case class WhileH(
   // The block to run until it returns false.
-  bodyBlock: ExpressionH[BoolH]
+  bodyBlock: ExpressionH[KindH]
 ) extends ExpressionH[VoidH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
@@ -702,6 +702,12 @@ case class DestroyMutRuntimeSizedArrayH(
 ) extends ExpressionH[VoidH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
+}
+
+// Jumps to after the closest containing loop.
+case class BreakH() extends ExpressionH[NeverH] {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  override def resultType: ReferenceH[NeverH] = ReferenceH(ShareH, InlineH, ReadonlyH, NeverH())
 }
 
 // Creates a new struct instance.

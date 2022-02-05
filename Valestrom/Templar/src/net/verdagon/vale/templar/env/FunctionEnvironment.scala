@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar.env
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.scout.{BlockSE, IExpressionSE, IImpreciseNameS, INameS, LocalS, WhileSE}
+import net.verdagon.vale.scout.{BlockSE, IExpressionSE, IImpreciseNameS, INameS, LocalS, MapSE, WhileSE}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.ast.LocationInFunctionEnvironment
 import net.verdagon.vale.templar.names.{BuildingFunctionNameWithClosuredsAndTemplateArgsT, BuildingFunctionNameWithClosuredsT, FullNameT, IFunctionNameT, INameT, IVarNameT}
@@ -178,7 +178,7 @@ case class NodeEnvironment(
   }
 
   // Gets the effects that this environment had on the outside world (on its parent
-  // environments).
+  // environments). In other words, parent locals that were unstackified.
   def getEffectsSince(earlierNodeEnv: NodeEnvironment): Set[FullNameT[IVarNameT]] = {
     vassert(parentFunctionEnv == earlierNodeEnv.parentFunctionEnv)
 
@@ -194,6 +194,30 @@ case class NodeEnvironment(
 
     val unstackifiedAncestorLocals = unstackifiedLocals -- liveLocalsIntroducedSinceEarlier
     unstackifiedAncestorLocals
+  }
+
+  def getLiveVariablesIntroducedSince(
+    sinceNenv: NodeEnvironment):
+  Vector[ILocalVariableT] = {
+    val localsAsOfThen =
+      sinceNenv.declaredLocals.collect({
+        case x @ ReferenceLocalVariableT(_, _, _) => x
+        case x @ AddressibleLocalVariableT(_, _, _) => x
+      })
+    val localsAsOfNow =
+      declaredLocals.collect({
+        case x @ ReferenceLocalVariableT(_, _, _) => x
+        case x @ AddressibleLocalVariableT(_, _, _) => x
+      })
+
+    vassert(localsAsOfNow.startsWith(localsAsOfThen))
+    val localsDeclaredSinceThen = localsAsOfNow.slice(localsAsOfThen.size, localsAsOfNow.size)
+    vassert(localsDeclaredSinceThen.size == localsAsOfNow.size - localsAsOfThen.size)
+
+    val unmovedLocalsDeclaredSinceThen =
+      localsDeclaredSinceThen.filter(x => !unstackifiedLocals.contains(x.id))
+
+    unmovedLocalsDeclaredSinceThen
   }
 
   def makeChild(node: IExpressionSE): NodeEnvironment = {
@@ -234,10 +258,11 @@ case class NodeEnvironment(
       case _ => parentNodeEnv.flatMap(_.nearestBlockEnv())
     }
   }
-  def nearestWhileEnv(): Option[(NodeEnvironment, WhileSE)] = {
+  def nearestLoopEnv(): Option[(NodeEnvironment, IExpressionSE)] = {
     node match {
       case w @ WhileSE(_, _) => Some((this, w))
-      case _ => parentNodeEnv.flatMap(_.nearestWhileEnv())
+      case w @ MapSE(_, _) => Some((this, w))
+      case _ => parentNodeEnv.flatMap(_.nearestLoopEnv())
     }
   }
 }
@@ -320,8 +345,8 @@ case class NodeEnvironmentBox(var nodeEnvironment: NodeEnvironment) {
   def nearestBlockEnv(): Option[(NodeEnvironment, BlockSE)] = {
     nodeEnvironment.nearestBlockEnv()
   }
-  def nearestWhileEnv(): Option[(NodeEnvironment, WhileSE)] = {
-    nodeEnvironment.nearestWhileEnv()
+  def nearestLoopEnv(): Option[(NodeEnvironment, IExpressionSE)] = {
+    nodeEnvironment.nearestLoopEnv()
   }
 }
 

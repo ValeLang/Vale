@@ -610,6 +610,15 @@ object ExpressionParser {
 
   def parseAtom(iter: ParsingIterator, stopBefore: IStopBefore): Result[Option[IExpressionPE], IParseError] = {
     val begin = iter.getPos()
+
+    // See BRCOBS
+    if (iter.trySkip("^break\\b".r)) {
+      return Err(CantUseBreakInExpression(iter.getPos()))
+    }
+    // See BRCOBS
+    if (iter.trySkip("^ret\\b".r)) {
+      return Err(CantUseReturnInExpression(iter.getPos()))
+    }
     if (iter.trySkip("^_\\b".r)) {
       return Ok(Some(MagicParamLookupPE(RangeP(begin, iter.getPos()))))
     }

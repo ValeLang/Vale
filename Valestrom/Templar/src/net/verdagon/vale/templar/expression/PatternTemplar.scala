@@ -173,7 +173,7 @@ class PatternTemplar(
           val localT = localHelper.makeUserLocalVariable(temputs, nenv, range, localS, inputExpr.result.reference)
           currentInstructions = currentInstructions :+ LetNormalTE(localT, inputExpr)
           val capturedLocalAliasTE =
-            localHelper.softLoad(nenv, range, LocalLookupTE(range, localT, localT.reference, FinalT), LoadAsBorrowP(None))
+            localHelper.softLoad(nenv, range, LocalLookupTE(range, localT), LoadAsBorrowP(None))
           (Some(localT), capturedLocalAliasTE)
         }
       }
@@ -271,7 +271,7 @@ class PatternTemplar(
     val localT = localHelper.makeTemporaryLocal(nenv, life + 0, containerTE.result.reference)
     val letTE = LetNormalTE(localT, containerTE)
     val containerAliasingExprTE =
-      localHelper.softLoad(nenv, range, LocalLookupTE(range, localT, localT.reference, FinalT), LoadAsPointerP(None))
+      localHelper.softLoad(nenv, range, LocalLookupTE(range, localT), LoadAsPointerP(None))
 
     Templar.consecutive(
       Vector(

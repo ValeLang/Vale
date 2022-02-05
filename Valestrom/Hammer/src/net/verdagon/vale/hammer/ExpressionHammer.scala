@@ -541,6 +541,10 @@ object ExpressionHammer {
         (expr, Vector.empty)
       }
 
+      case BreakTE() => {
+        (BreakH(), Vector.empty)
+      }
+
       case _ => {
         vfail("wat " + expr2)
       }

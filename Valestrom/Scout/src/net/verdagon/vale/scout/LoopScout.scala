@@ -64,8 +64,9 @@ object LoopScout {
             true)
 
         val (loopSE, loopBodySelfUses, loopBodyChildUses) =
-          scoutLoop(
-            expressionScout, stackFrame3, lidb.child(), range,
+          expressionScout.newBlock(
+            stackFrame3.parentEnv, Some(stackFrame3), lidb.child(), Scout.evalRange(stackFrame0.file, range),
+            noDeclarations, true,
             (stackFrame4, lidb, _) => {
               val (loopBodySE, loopBodySelfUses, lookBodyChildUses) =
                 expressionScout.newBlock(
@@ -74,7 +75,13 @@ object LoopScout {
                   (stackFrame5, lidb, _) => {
                     scoutEachBody(expressionScout, stackFrame5, lidb, range, inKeywordRange, entryPatternPP, body)
                   })
-              (stackFrame4, loopBodySE, loopBodySelfUses, lookBodyChildUses)
+              val loopSE =
+                if (body.producesResult()) {
+                  MapSE(Scout.evalRange(stackFrame0.file, range), loopBodySE)
+                } else {
+                  WhileSE(Scout.evalRange(stackFrame0.file, range), loopBodySE)
+                }
+              (stackFrame4, loopSE, loopBodySelfUses, lookBodyChildUses)
             })
 
         val contentsSE = Scout.consecutive(Vector(letIterableSE, letIteratorSE, loopSE))
@@ -98,10 +105,10 @@ object LoopScout {
     val (stackFrame4, ifSE, ifSelfUses, ifChildUses) =
       expressionScout.newIf(
         stackFrame0, lidb, true, range,
-        (stackFrame2, lidb, _) => {
+        (stackFrame1, lidb, _) => {
           val (stackFrame3, condSE, condSelfUses, condChildUses) =
             expressionScout.scoutExpressionAndCoerce(
-              stackFrame2,
+              stackFrame1,
               lidb,
               ConsecutorPE(
                 Vector(
@@ -135,32 +142,32 @@ object LoopScout {
               true)
           (stackFrame3, condSE, condSelfUses, condChildUses)
         },
-        (stackFrame3, lidb, _) => {
+        (stackFrame1, lidb, _) => {
           val (thenSE, thenUses, thenChildUses) =
             expressionScout.newBlock(
-              stackFrame3.parentEnv, Some(stackFrame3), lidb.child(), Scout.evalRange(stackFrame0.file, range), noDeclarations, true,
-              (stackFrame4, lidb, _) => {
-                val (stackFrame5, lookupSE, lookupSelfUses, lookupChildUses) =
+              stackFrame1.parentEnv, Some(stackFrame1), lidb.child(), Scout.evalRange(stackFrame0.file, range), noDeclarations, true,
+              (stackFrame2, lidb, _) => {
+                val (stackFrame3, lookupSE, lookupSelfUses, lookupChildUses) =
                   expressionScout.scoutExpressionAndCoerce(
-                    stackFrame4,
+                    stackFrame2,
                     lidb,
                     LookupPE(IterationOptionNameP(inKeywordRange), None),
                     UseP, false)
-                val breakSE = BreakSE(Scout.evalRange(stackFrame4.file, range))
+                val breakSE = BreakSE(Scout.evalRange(stackFrame3.file, range))
                 val lookupAndBreakSE =
                   Scout.consecutive(Vector(lookupSE, breakSE))
-                (stackFrame5, lookupAndBreakSE, lookupSelfUses, lookupChildUses)
+                (stackFrame3, lookupAndBreakSE, lookupSelfUses, lookupChildUses)
               })
-          (stackFrame3, thenSE, thenUses, thenChildUses)
+          (stackFrame1, thenSE, thenUses, thenChildUses)
         },
-        (stackFrame2, _, _) => {
+        (stackFrame1, _, _) => {
           // Else does nothing
           val voidSE =
             BlockSE(
-              Scout.evalRange(stackFrame2.file, range),
+              Scout.evalRange(stackFrame1.file, range),
               Vector(),
-              VoidSE(Scout.evalRange(stackFrame2.file, range)))
-          (stackFrame2, voidSE, noVariableUses, noVariableUses)
+              VoidSE(Scout.evalRange(stackFrame1.file, range)))
+          (stackFrame1, voidSE, noVariableUses, noVariableUses)
         })
 
     val (stackFrame5, consumeSomeSE, consumeSomeSelfUses, consumeSomeChildUses) =
@@ -207,8 +214,9 @@ object LoopScout {
       noDeclarations, true,
       (stackFrame1, lidb, _) => {
         val (loopSE, loopBodySelfUses, loopBodyChildUses) =
-          scoutLoop(
-            expressionScout, stackFrame1, lidb.child(), range,
+          expressionScout.newBlock(
+            stackFrame1.parentEnv, Some(stackFrame1), lidb.child(), Scout.evalRange(stackFrame0.file, range),
+            noDeclarations, true,
             (stackFrame4, lidb, _) => {
               val (loopBodySE, loopBodySelfUses, lookBodyChildUses) =
                 expressionScout.newBlock(
@@ -217,7 +225,8 @@ object LoopScout {
                   (stackFrame5, lidb, _) => {
                     scoutWhileBody(expressionScout, stackFrame5, lidb, range, conditionPE, body)
                   })
-              (stackFrame4, loopBodySE, loopBodySelfUses, lookBodyChildUses)
+              val whileSE = WhileSE(Scout.evalRange(stackFrame0.file, range), loopBodySE)
+              (stackFrame4, whileSE, loopBodySelfUses, lookBodyChildUses)
             })
         (stackFrame1, loopSE, loopBodySelfUses, loopBodyChildUses)
       })
@@ -240,7 +249,16 @@ object LoopScout {
               stackFrame2, lidb, conditionPE, UseP, true)
           (stackFrame3, condSE, condSelfUses, condChildUses)
         },
-        (stackFrame3, lidb, _) => {
+        (stackFrame2, lidb, _) => {
+          // Then does nothing, just continue on
+          val voidSE =
+            BlockSE(
+              Scout.evalRange(stackFrame2.file, range),
+              Vector(),
+              VoidSE(Scout.evalRange(stackFrame2.file, range)))
+          (stackFrame2, voidSE, noVariableUses, noVariableUses)
+        },
+        (stackFrame3, _, _) => {
           val (thenSE, thenUses, thenChildUses) =
             expressionScout.newBlock(
               stackFrame3.parentEnv, Some(stackFrame3), lidb.child(), Scout.evalRange(stackFrame0.file, range), noDeclarations, true,
@@ -249,15 +267,6 @@ object LoopScout {
                 (stackFrame4, breakSE, noVariableUses, noVariableUses)
               })
           (stackFrame3, thenSE, thenUses, thenChildUses)
-        },
-        (stackFrame2, _, _) => {
-          // Else does nothing
-          val voidSE =
-            BlockSE(
-              Scout.evalRange(stackFrame2.file, range),
-              Vector(),
-              VoidSE(Scout.evalRange(stackFrame2.file, range)))
-          (stackFrame2, voidSE, noVariableUses, noVariableUses)
         })
 
     val (userBodySE, userBodySelfUses, userBodyChildUses) =

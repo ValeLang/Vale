@@ -5,14 +5,15 @@ import net.verdagon.vale.astronomer._
 import net.verdagon.vale.parser._
 import net.verdagon.vale.parser.ast.{LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsP, LoadAsPointerP, LoadAsWeakP, MoveP, PermissionP, ReadonlyP, ReadwriteP, UseP}
 import net.verdagon.vale.scout.patterns.AtomSP
+import net.verdagon.vale.scout.rules.{EqualsSR, RuneParentEnvLookupSR, RuneUsage}
 import net.verdagon.vale.scout.{RuneTypeSolver, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar.{ast, _}
-import net.verdagon.vale.templar.ast.{AddressExpressionTE, AddressMemberLookupTE, ArgLookupTE, BlockTE, BorrowToPointerTE, BorrowToWeakTE, ConsecutorTE, ConstantBoolTE, ConstantFloatTE, ConstantIntTE, ConstantStrTE, ConstructTE, DestroyTE, ExpressionT, IfTE, LetNormalTE, LocalLookupTE, LocationInFunctionEnvironment, MutateTE, NarrowPermissionTE, PointerToBorrowTE, PointerToWeakTE, ProgramT, PrototypeT, ReferenceExpressionTE, ReferenceMemberLookupTE, ReturnTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE, TemplarReinterpretTE, VoidLiteralTE, WhileTE}
+import net.verdagon.vale.templar.ast.{AddressExpressionTE, AddressMemberLookupTE, ArgLookupTE, BlockTE, BorrowToPointerTE, BorrowToWeakTE, BreakTE, ConsecutorTE, ConstantBoolTE, ConstantFloatTE, ConstantIntTE, ConstantStrTE, ConstructTE, DestroyTE, ExpressionT, FunctionCallTE, IfTE, LetNormalTE, LocalLookupTE, LocationInFunctionEnvironment, MutateTE, NarrowPermissionTE, PointerToBorrowTE, PointerToWeakTE, ProgramT, PrototypeT, ReferenceExpressionTE, ReferenceMemberLookupTE, ReturnTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE, TemplarReinterpretTE, VoidLiteralTE, WhileTE}
 import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.DestructorTemplar
 import net.verdagon.vale.templar.function.FunctionTemplar.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
-import net.verdagon.vale.templar.names.{ArbitraryNameT, CitizenNameT, CitizenTemplateNameT, ClosureParamNameT, CodeVarNameT, FullNameT, IVarNameT, NameTranslator, TemplarFunctionResultVarNameT, TemplarTemporaryVarNameT}
+import net.verdagon.vale.templar.names.{ArbitraryNameT, CitizenNameT, CitizenTemplateNameT, ClosureParamNameT, CodeVarNameT, FullNameT, IVarNameT, NameTranslator, RuneNameT, SelfNameT, TemplarBlockResultVarNameT, TemplarFunctionResultVarNameT, TemplarTemporaryVarNameT}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 
@@ -62,7 +63,13 @@ class ExpressionTemplar(
       life: LocationInFunctionEnvironment,
       expr1: IExpressionSE):
     (ReferenceExpressionTE, Set[CoordT]) = {
-      ExpressionTemplar.this.evaluateAndCoerceToReferenceExpression(temputs, nenv, life, expr1)
+      ExpressionTemplar.this.evaluateAndCoerceToReferenceExpression(
+        temputs, nenv, life, expr1)
+    }
+
+    override def dropSince(temputs: Temputs, startingNenv: NodeEnvironment, nenv: NodeEnvironmentBox, life: LocationInFunctionEnvironment, unresultifiedUndestructedExpressions: ReferenceExpressionTE): ReferenceExpressionTE = {
+      ExpressionTemplar.this.dropSince(
+        temputs, startingNenv, nenv, life, unresultifiedUndestructedExpressions)
     }
   })
 
@@ -109,10 +116,10 @@ class ExpressionTemplar(
   Option[AddressExpressionTE] = {
     nenv.getVariable(NameTranslator.translateVarNameStep(nameA)) match {
       case Some(alv @ AddressibleLocalVariableT(_, _, reference)) => {
-        Some(LocalLookupTE(range, alv, reference, alv.variability))
+        Some(LocalLookupTE(range, alv))
       }
       case Some(rlv @ ReferenceLocalVariableT(id, _, reference)) => {
-        Some(LocalLookupTE(range, rlv, reference, rlv.variability))
+        Some(LocalLookupTE(range, rlv))
       }
       case Some(AddressibleClosureVariableT(id, closuredVarsStructRef, variability, tyype)) => {
         val mutability = Templar.getMutability(temputs, closuredVarsStructRef)
@@ -125,9 +132,7 @@ class ExpressionTemplar(
             temputs,
             LocalLookupTE(
               range,
-              ReferenceLocalVariableT(name2, FinalT, closuredVarsStructRefRef),
-              closuredVarsStructRefRef,
-              FinalT))
+              ReferenceLocalVariableT(name2, FinalT, closuredVarsStructRefRef)))
 
         val closuredVarsStructDef = temputs.lookupStruct(closuredVarsStructRef)
         vassert(closuredVarsStructDef.members.exists(member => closuredVarsStructRef.fullName.addStep(member.name) == id))
@@ -148,9 +153,7 @@ class ExpressionTemplar(
             temputs,
             LocalLookupTE(
               range,
-              ReferenceLocalVariableT(nenv.fullName.addStep(ClosureParamNameT()), FinalT, closuredVarsStructRefCoord),
-              closuredVarsStructRefCoord,
-              FinalT))
+              ReferenceLocalVariableT(nenv.fullName.addStep(ClosureParamNameT()), FinalT, closuredVarsStructRefCoord)))
 //        val index = closuredVarsStructDef.members.indexWhere(_.name == varName)
 
         val lookup =
@@ -171,13 +174,13 @@ class ExpressionTemplar(
     nenv.getVariable(name2) match {
       case Some(alv @ AddressibleLocalVariableT(varId, variability, reference)) => {
         vassert(!nenv.unstackifieds.contains(varId))
-        Some(LocalLookupTE(range, alv, reference, variability))
+        Some(LocalLookupTE(range, alv))
       }
       case Some(rlv @ ReferenceLocalVariableT(varId, variability, reference)) => {
         if (nenv.unstackifieds.contains(varId)) {
           throw CompileErrorExceptionT(CantUseUnstackifiedLocal(range, varId.last))
         }
-        Some(LocalLookupTE(range, rlv, reference, variability))
+        Some(LocalLookupTE(range, rlv))
       }
       case Some(AddressibleClosureVariableT(id, closuredVarsStructRef, variability, tyype)) => {
         val mutability = Templar.getMutability(temputs, closuredVarsStructRef)
@@ -191,9 +194,7 @@ class ExpressionTemplar(
             temputs,
             LocalLookupTE(
               range,
-              ReferenceLocalVariableT(closureParamVarName2, FinalT, closuredVarsStructRefRef),
-              closuredVarsStructRefRef,
-              variability))
+              ReferenceLocalVariableT(closureParamVarName2, FinalT, closuredVarsStructRefRef)))
         val closuredVarsStructDef = temputs.lookupStruct(closuredVarsStructRef)
         vassert(closuredVarsStructDef.members.exists(member => closuredVarsStructRef.fullName.addStep(member.name) == id))
 
@@ -216,9 +217,7 @@ class ExpressionTemplar(
             temputs,
             LocalLookupTE(
               range,
-              ReferenceLocalVariableT(nenv.fullName.addStep(ClosureParamNameT()), FinalT, closuredVarsStructRefCoord),
-              closuredVarsStructRefCoord,
-              FinalT))
+              ReferenceLocalVariableT(nenv.fullName.addStep(ClosureParamNameT()), FinalT, closuredVarsStructRefCoord)))
 
 //        val ownershipInClosureStruct = closuredVarsStructDef.members(index).tyype.reference.ownership
 
@@ -872,33 +871,116 @@ class ExpressionTemplar(
 
           (ifExpr2, returnsFromCondition ++ thenReturnsFromExprs ++ elseReturnsFromExprs)
         }
-        case WhileSE(range, bodySE) => {
+        case w @ WhileSE(range, bodySE) => {
           // We make a block for the while-statement which contains its condition (the "if block"),
           // and the body block, so they can access any locals declared by the condition.
 
-//
-//          val (conditionExpr, returnsFromCondition) =
-//            evaluateAndCoerceToReferenceExpression(temputs, whileBlockFate, life + 0, conditionSE)
-//          if (conditionExpr.result.reference != CoordT(ShareT, ReadonlyT, BoolT())) {
-//            throw CompileErrorExceptionT(WhileConditionIsntBoolean(conditionSE.range, conditionExpr.result.reference))
-//          }
+          // See BEAFB for why we make a new environment for the While
+          val loopNenv = nenv.makeChild(w)
 
-
-          val whileBlockFate = NodeEnvironmentBox(nenv.makeChild(bodySE))
+          val loopBlockFate = NodeEnvironmentBox(loopNenv.makeChild(bodySE))
           val (bodyExpressionsWithResult, bodyReturnsFromExprs) =
-            evaluateBlockStatements(temputs, whileBlockFate.snapshot, whileBlockFate, life + 1, bodySE)
+            evaluateBlockStatements(temputs, loopBlockFate.snapshot, loopBlockFate, life + 1, bodySE)
           val uncoercedBodyBlock2 = BlockTE(bodyExpressionsWithResult)
 
-          val bodyContinues = uncoercedBodyBlock2.result.reference.kind != NeverT()
-
-
-          val bodyUnstackifiedAncestorLocals = whileBlockFate.snapshot.getEffectsSince(nenv.snapshot)
+          val bodyUnstackifiedAncestorLocals = loopBlockFate.snapshot.getEffectsSince(nenv.snapshot)
           if (bodyUnstackifiedAncestorLocals.nonEmpty) {
             throw CompileErrorExceptionT(CantUnstackifyOutsideLocalFromInsideWhile(range, bodyUnstackifiedAncestorLocals.head.last))
           }
 
-          val whileExpr2 = WhileTE(uncoercedBodyBlock2)
-          (whileExpr2, /*returnsFromCondition ++*/ bodyReturnsFromExprs)
+          val loopExpr2 = WhileTE(uncoercedBodyBlock2)
+          (loopExpr2, /*returnsFromCondition ++*/ bodyReturnsFromExprs)
+        }
+        case m @ MapSE(range, bodySE) => {
+          // Preprocess the entire loop once, to predict what its result type
+          // will be.
+          // We can't just use this, because any returns inside won't drop
+          // the temporary list.
+          val elementRefT =
+            {
+              // See BEAFB for why we make a new environment for the While
+              val loopNenv = nenv.makeChild(m)
+              val loopBlockFate = NodeEnvironmentBox(loopNenv.makeChild(bodySE))
+              val (bodyExpressionsWithResult, _) =
+                evaluateBlockStatements(temputs, loopBlockFate.snapshot, loopBlockFate, life + 1, bodySE)
+              bodyExpressionsWithResult.result.reference
+            }
+
+          // Now that we know the result type, let's make a temporary list.
+
+          val callEnv =
+            nenv.snapshot
+              .copy(templatas =
+                nenv.snapshot.templatas
+                  .addEntry(RuneNameT(SelfRuneS()), TemplataEnvEntry(CoordTemplata(elementRefT))))
+          val makeListTE =
+            callTemplar.evaluatePrefixCall(
+              temputs,
+              nenv,
+              life + 1,
+              range,
+              newGlobalFunctionGroupExpression(callEnv, temputs, CodeNameS("List")),
+              Vector(RuneParentEnvLookupSR(range, RuneUsage(range, SelfRuneS()))),
+              Array(SelfRuneS()),
+              Vector())
+
+          val listLocal =
+            localHelper.makeTemporaryLocal(
+              nenv, life + 2, makeListTE.result.reference)
+          val letListTE =
+            LetNormalTE(listLocal, makeListTE)
+
+          val (loopTE, returnsFromLoop) =
+            {
+              // See BEAFB for why we make a new environment for the While
+              val loopNenv = nenv.makeChild(m)
+
+              val loopBlockFate = NodeEnvironmentBox(loopNenv.makeChild(bodySE))
+              val (userBodyTE, bodyReturnsFromExprs) =
+                evaluateBlockStatements(temputs, loopBlockFate.snapshot, loopBlockFate, life + 1, bodySE)
+
+              // We store the iteration result in a local because the loop body will have
+              // breaks, and we can't have a BreakTE inside a FunctionCallTE, see BRCOBS.
+              val iterationResultLocal =
+                localHelper.makeTemporaryLocal(
+                  nenv, life + 3, userBodyTE.result.reference)
+              val letIterationResultTE =
+                LetNormalTE(iterationResultLocal, userBodyTE)
+
+              val addCall =
+                callTemplar.evaluatePrefixCall(
+                  temputs,
+                  nenv,
+                  life + 4,
+                  range,
+                  newGlobalFunctionGroupExpression(callEnv, temputs, CodeNameS("add")),
+                  Vector(),
+                  Array(),
+                  Vector(
+                    localHelper.borrowSoftLoad(
+                      temputs,
+                      LocalLookupTE(
+                        range,
+                        listLocal)),
+                    localHelper.unletLocal(nenv, iterationResultLocal)))
+              val bodyTE = BlockTE(Templar.consecutive(Vector(letIterationResultTE, addCall)))
+
+              val bodyUnstackifiedAncestorLocals = loopBlockFate.snapshot.getEffectsSince(nenv.snapshot)
+              if (bodyUnstackifiedAncestorLocals.nonEmpty) {
+                throw CompileErrorExceptionT(CantUnstackifyOutsideLocalFromInsideWhile(range, bodyUnstackifiedAncestorLocals.head.last))
+              }
+
+              val whileTE = WhileTE(bodyTE)
+              (whileTE, bodyReturnsFromExprs)
+            }
+
+          val unletListTE =
+            localHelper.unletLocal(nenv, listLocal)
+
+          val combinedTE =
+            Templar.consecutive(Vector(letListTE, loopTE, unletListTE))
+
+          (combinedTE, returnsFromLoop)
         }
         case ConsecutorSE(exprsSE) => {
 
@@ -1002,6 +1084,18 @@ class ExpressionTemplar(
           val returns = returnsFromInnerExpr + innerExpr2.result.reference
 
           (ReturnTE(consecutor), returns)
+        }
+        case BreakSE(range) => {
+          // See BEAFB, we need to find the nearest while to see local since then.
+          nenv.nearestLoopEnv() match {
+            case None => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Using break while not inside loop!"))
+            case Some((whileNenv, _)) => {
+              val dropsTE =
+                dropSince(temputs, whileNenv, nenv, life, VoidLiteralTE())
+              val dropsAndBreakTE = Templar.consecutive(Vector(dropsTE, BreakTE()))
+              (dropsAndBreakTE, Set())
+            }
+          }
         }
         case _ => {
           println(expr1)
@@ -1282,5 +1376,70 @@ class ExpressionTemplar(
       maybeRetCoordRune,
       rulesS.toVector,
       bodyS)
+  }
+
+
+  def dropSince(
+    temputs: Temputs,
+    startingNenv: NodeEnvironment,
+    nenv: NodeEnvironmentBox,
+    life: LocationInFunctionEnvironment,
+    exprTE: ReferenceExpressionTE):
+  ReferenceExpressionTE = {
+    val unreversedVariablesToDestruct = nenv.snapshot.getLiveVariablesIntroducedSince(startingNenv)
+
+    val newExpr =
+      if (unreversedVariablesToDestruct.isEmpty) {
+        exprTE
+      } else if (exprTE.kind == NeverT()) {
+        val moots = mootAll(temputs, nenv, unreversedVariablesToDestruct)
+        Templar.consecutive(Vector(exprTE) ++ moots)
+      } else if (exprTE.kind == VoidT()) {
+        val reversedVariablesToDestruct = unreversedVariablesToDestruct.reverse
+        // Dealiasing should be done by hammer. But destructors are done here
+        val destroyExpressions = localHelper.unletAll(temputs, nenv, reversedVariablesToDestruct)
+
+        Templar.consecutive(
+          (Vector(exprTE) ++ destroyExpressions) :+
+            VoidLiteralTE())
+      } else {
+        val (resultifiedExpr, resultLocalVariable) =
+          resultifyExpressions(nenv, life + 1, exprTE)
+
+        val reversedVariablesToDestruct = unreversedVariablesToDestruct.reverse
+        // Dealiasing should be done by hammer. But destructors are done here
+        val destroyExpressions = localHelper.unletAll(temputs, nenv, reversedVariablesToDestruct)
+
+        Templar.consecutive(
+          (Vector(resultifiedExpr) ++ destroyExpressions) :+
+            localHelper.unletLocal(nenv, resultLocalVariable))
+      }
+    newExpr
+  }
+
+  // Makes the last expression stored in a variable.
+  // Dont call this for void or never or no expressions.
+  // Maybe someday we can do this even for Never and Void, for consistency and so
+  // we dont have any special casing.
+  def resultifyExpressions(
+    nenv: NodeEnvironmentBox,
+    life: LocationInFunctionEnvironment,
+    expr: ReferenceExpressionTE):
+  (ReferenceExpressionTE, ReferenceLocalVariableT) = {
+    val resultVarId = nenv.fullName.addStep(TemplarBlockResultVarNameT(life))
+    val resultVariable = ReferenceLocalVariableT(resultVarId, FinalT, expr.result.reference)
+    val resultLet = LetNormalTE(resultVariable, expr)
+    nenv.addVariable(resultVariable)
+    (resultLet, resultVariable)
+  }
+
+  def mootAll(
+    temputs: Temputs,
+    nenv: NodeEnvironmentBox,
+    variables: Vector[ILocalVariableT]):
+  (Vector[ReferenceExpressionTE]) = {
+    variables.map({ case head =>
+      ast.UnreachableMootTE(localHelper.unletLocal(nenv, head))
+    })
   }
 }

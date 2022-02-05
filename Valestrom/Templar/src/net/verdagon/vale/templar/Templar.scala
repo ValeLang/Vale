@@ -897,7 +897,11 @@ object Templar {
           // the boolean means "reachable"
           withoutInitVoids.foldLeft((true, Vector[ReferenceExpressionTE]()))({
             case ((false, previous), expr) => {
-              (false, previous :+ UnreachableMootTE(expr))
+              if (expr.kind == NeverT()) {
+                (false, previous :+ expr)
+              } else {
+                (false, previous :+ UnreachableMootTE(expr))
+              }
             }
             case ((true, previous), expr) => {
               val reachableAfterThis = expr.kind != NeverT()

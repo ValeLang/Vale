@@ -29,6 +29,8 @@ case class BadTemplateCallee(pos: Int) extends IParseError { override def errorI
 case class UnknownTupleOrSubExpression(pos: Int) extends IParseError { override def errorId: String = "P1005"; override def hashCode(): Int = vcurious() }
 
 case class BadRangeOperand(pos: Int) extends IParseError { override def errorId: String = "P1005"; override def hashCode(): Int = vcurious() }
+case class CantUseBreakInExpression(pos: Int) extends IParseError { override def errorId: String = "P1005"; override def hashCode(): Int = vcurious() }
+case class CantUseReturnInExpression(pos: Int) extends IParseError { override def errorId: String = "P1005"; override def hashCode(): Int = vcurious() }
 case class NeedSemicolon(pos: Int) extends IParseError {
   override def errorId: String = "P1005"; override def hashCode(): Int = vcurious()
   vpass()

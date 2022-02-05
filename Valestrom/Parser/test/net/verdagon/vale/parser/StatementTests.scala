@@ -330,11 +330,18 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
       compile(
         ExpressionParser.parseBlockContents(_, StopBeforeCloseBrace, false),
         """
-          |foreach i in Range(0, 10) {
+          |foreach i in a {
           |  i
           |}
           |""".stripMargin)
-    vimpl()
+    programS shouldHave {
+      case EachPE(_,
+        PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"i"))),None,None,None),
+        _,
+        LookupPE(LookupNameP(NameP(_,"a")),None),
+        BlockPE(_,
+          LookupPE(LookupNameP(NameP(_,"i")),None))) =>
+    }
   }
 
   test("foreach expr") {
@@ -344,7 +351,13 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
         """
           |a = foreach i in c { i };
           |""".stripMargin)
-    vimpl()
+    programS shouldHave {
+      case ConsecutorPE(Vector(
+        LetPE(_,None,
+          PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,a))),None,None,None),
+          EachPE(_,_,_,_,_)),
+        VoidPE(_))) =>
+    }
   }
 
 }

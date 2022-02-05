@@ -476,6 +476,12 @@ object VonHammer {
             VonMember("sourceExpr", vonifyExpression(sourceExpr)),
             VonMember("sourceType", vonifyCoord(sourceExpr.resultType))))
       }
+      case BreakH() => {
+        VonObject(
+          "Break",
+          None,
+          Vector())
+      }
       case DiscardH(sourceExpr) => {
         VonObject(
           "Discard",

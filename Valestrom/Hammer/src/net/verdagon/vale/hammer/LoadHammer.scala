@@ -23,12 +23,10 @@ object LoadHammer {
 
     val (loadedAccessH, sourceDeferreds) =
       sourceExpr2 match {
-        case LocalLookupTE(_,ReferenceLocalVariableT(varId, variability, reference), varType2, _) => {
-          vassert(reference == varType2)
+        case LocalLookupTE(_,ReferenceLocalVariableT(varId, variability, reference)) => {
           translateMundaneLocalLoad(hinputs, hamuts, currentFunctionHeader, locals, varId, reference, targetOwnership, targetPermission)
         }
-        case LocalLookupTE(_,AddressibleLocalVariableT(varId, variability, localReference2), varType2, _) => {
-          vassert(localReference2 == varType2)
+        case LocalLookupTE(_,AddressibleLocalVariableT(varId, variability, localReference2)) => {
           translateAddressibleLocalLoad(hinputs, hamuts, currentFunctionHeader, locals, varId, variability, localReference2, targetOwnership, targetPermission)
         }
         case ReferenceMemberLookupTE(_,structExpr2, memberName, memberType2, _, _) => {
@@ -350,8 +348,7 @@ object LoadHammer {
       locals: LocalsBox,
       lookup2: LocalLookupTE):
   (ExpressionH[KindH]) = {
-    val LocalLookupTE(_,localVar, type2, _) = lookup2;
-    vassert(type2 == localVar.reference)
+    val LocalLookupTE(_,localVar) = lookup2;
 
     val local = locals.get(localVar.id).get
     vassert(!locals.unstackifiedVars.contains(local.id))

@@ -415,12 +415,12 @@ class ScoutTests extends FunSuite with Matchers with Collector {
     }
     body.block shouldHave {
       case FunctionCallSE(_,
-        OutsideLoadSE(_,_,CodeNameS("not"),_,_),
+        OutsideLoadSE(_,_,CodeNameS("isEmpty"),_,_),
         Vector(
-          FunctionCallSE(_,
-            OutsideLoadSE(_,_,CodeNameS("isEmpty"),_,_),
-            Vector(
-              LocalLoadSE(_,IterationOptionNameS(_),LoadAsBorrowP(Some(ReadonlyP))))))) =>
+          LocalLoadSE(_,IterationOptionNameS(_),LoadAsBorrowP(Some(ReadonlyP))))) =>
+    }
+    body.block shouldHave {
+      case BreakSE(_) =>
     }
     body.block shouldHave {
       case LetSE(_,_,
@@ -430,9 +430,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
           Vector(LocalLoadSE(_,IterationOptionNameS(_),UseP)))) =>
     }
     body.block shouldHave {
-      case ConsecutorSE(Vector(
-        LocalLoadSE(_,IterationOptionNameS(_),UseP),
-        ConstantBoolSE(_,false))) =>
+      case LocalLoadSE(_,IterationOptionNameS(_),UseP) =>
     }
   }
 

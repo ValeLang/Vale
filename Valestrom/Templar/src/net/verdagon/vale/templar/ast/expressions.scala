@@ -270,6 +270,11 @@ case class IfTE(
 // The block is expected to return a boolean (false = stop, true = keep going).
 // The block will probably contain an If2(the condition, the body, false)
 case class WhileTE(block: BlockTE) extends ReferenceExpressionTE {
+  // While loops must always produce void.
+  // If we want a foreach/map/whatever construct, the loop should instead
+  // add things to a list inside; WhileTE shouldnt do it for it.
+  vassert(block.kind == VoidT() || block.kind == NeverT())
+
   override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
   vpass()
@@ -295,6 +300,11 @@ case class ReturnTE(
       case BlockTE(expr) => getFinalExpr(expr)
     }
   }
+}
+
+case class BreakTE() extends ReferenceExpressionTE {
+  override def hashCode(): Int = vcurious()
+  override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, NeverT()))
 }
 
 // when we make a closure, we make a struct full of pointers to all our variables
@@ -445,11 +455,12 @@ case class ConstantFloatTE(value: Double) extends ReferenceExpressionTE {
 case class LocalLookupTE(
   range: RangeS,
   localVariable: ILocalVariableT,
-  reference: CoordT,
-  variability: VariabilityT
+//  reference: CoordT,
+//  variability: VariabilityT
 ) extends AddressExpressionTE {
   override def hashCode(): Int = vcurious()
-  override def result = AddressResultT(reference)
+  override def result = AddressResultT(localVariable.reference)
+  override def variability: VariabilityT = localVariable.variability
 }
 
 case class ArgLookupTE(

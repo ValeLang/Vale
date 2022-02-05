@@ -106,7 +106,7 @@ class TemplarTests extends FunSuite with Matchers {
     Collector.onlyOf(temputs.lookupFunction("main"), classOf[ParameterT]).tyype == CoordT(ShareT, ReadonlyT, IntT.i32)
     val lookup = Collector.onlyOf(temputs.lookupFunction("main"), classOf[LocalLookupTE]);
     lookup.localVariable.id.last shouldEqual CodeVarNameT("a")
-    lookup.reference shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
+    lookup.localVariable.reference shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
   }
 
   test("Tests adding two numbers") {
@@ -730,7 +730,7 @@ class TemplarTests extends FunSuite with Matchers {
 
     Collector.only(main, {
       case ReferenceMemberLookupTE(_,
-        SoftLoadTE(LocalLookupTE(_, _, CoordT(_,_,StructTT(_)), FinalT), PointerT, ReadonlyT),
+        SoftLoadTE(LocalLookupTE(_, ReferenceLocalVariableT(_, FinalT, CoordT(_,_,StructTT(_)))), PointerT, ReadonlyT),
         FullNameT(_, Vector(CitizenNameT(CitizenTemplateNameT("Vec3i"),Vector())),CodeVarNameT("x")),CoordT(ShareT,ReadonlyT,IntT.i32),ReadonlyT,FinalT) =>
     })
   }

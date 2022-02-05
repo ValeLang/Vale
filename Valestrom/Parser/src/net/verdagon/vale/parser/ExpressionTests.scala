@@ -296,6 +296,28 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
     }
   }
 
+  test("Detect break in expr") {
+    // See BRCOBS
+    compileForError(
+      ExpressionParser.parseExpression(_, StopBeforeCloseBrace),
+      """
+        |a(b, break)
+        |""".stripMargin) match {
+      case CantUseBreakInExpression(_) =>
+    }
+  }
+
+  test("Detect return in expr") {
+    // See BRCOBS
+    compileForError(
+      ExpressionParser.parseExpression(_, StopBeforeCloseBrace),
+      """
+        |a(b, ret)
+        |""".stripMargin) match {
+      case CantUseReturnInExpression(_) =>
+    }
+  }
+
   test("parens") {
     compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace),
       "2 * (5 - 7)") shouldHave

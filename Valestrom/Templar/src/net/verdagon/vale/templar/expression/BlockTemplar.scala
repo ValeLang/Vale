@@ -19,6 +19,14 @@ trait IBlockTemplarDelegate {
     life: LocationInFunctionEnvironment,
     expr1: IExpressionSE):
   (ReferenceExpressionTE, Set[CoordT])
+
+  def dropSince(
+    temputs: Temputs,
+    startingNenv: NodeEnvironment,
+    nenv: NodeEnvironmentBox,
+    life: LocationInFunctionEnvironment,
+    unresultifiedUndestructedExpressions: ReferenceExpressionTE):
+  ReferenceExpressionTE
 }
 
 class BlockTemplar(
@@ -55,6 +63,7 @@ class BlockTemplar(
     (block2, unstackifiedAncestorLocals, returnsFromExprs)
   }
 
+
   def evaluateBlockStatements(
     temputs: Temputs,
     startingNenv: NodeEnvironment,
@@ -66,88 +75,35 @@ class BlockTemplar(
       delegate.evaluateAndCoerceToReferenceExpression(temputs, nenv, life + 0, blockSE.expr);
 
     val unneveredUnresultifiedUndestructedExpressions =
-      unneveredUnresultifiedUndestructedRootExpression match {
-        case ConsecutorTE(exprs) => exprs
-        case other => Vector(other)
-      }
+      unneveredUnresultifiedUndestructedRootExpression
 
-    val unreversedVariablesToDestruct = getUnmovedVariablesIntroducedSince(startingNenv, nenv)
+//    val unneveredUnresultifiedUndestructedExpressions =
+//      unneveredUnresultifiedUndestructedRootExpression match {
+//        case ConsecutorTE(exprs) => exprs
+//        case other => Vector(other)
+//      }
 
     val unresultifiedUndestructedExpressions =
-      unneveredUnresultifiedUndestructedExpressions.indexWhere(_.kind == NeverT()) match {
-        case -1 => unneveredUnresultifiedUndestructedExpressions
-        case indexOfFirstNever => {
-          unneveredUnresultifiedUndestructedExpressions.zipWithIndex.map({ case (e, i) =>
-            if (i <= indexOfFirstNever) {
-              e
-            } else {
-              UnreachableMootTE(e)
-            }
-          })
-        }
-      }
+      unneveredUnresultifiedUndestructedExpressions
+//    val unresultifiedUndestructedExpressions =
+//      unneveredUnresultifiedUndestructedExpressions.indexWhere(_.kind == NeverT()) match {
+//        case -1 => unneveredUnresultifiedUndestructedExpressions
+//        case indexOfFirstNever => {
+//          unneveredUnresultifiedUndestructedExpressions.zipWithIndex.map({ case (e, i) =>
+//            if (i <= indexOfFirstNever) {
+//              e
+//            } else {
+//              UnreachableMootTE(e)
+//            }
+//          })
+//        }
+//      }
 
-    val newExpressionsList =
-      if (unreversedVariablesToDestruct.isEmpty) {
-        unresultifiedUndestructedExpressions
-      } else if (unresultifiedUndestructedExpressions.last.kind == NeverT()) {
-        val moots = mootAll(temputs, nenv, unreversedVariablesToDestruct)
-        unresultifiedUndestructedExpressions ++ moots
-      } else {
-        val (resultifiedExpressions, resultLocalVariable) =
-          resultifyExpressions(nenv, life + 1, unresultifiedUndestructedExpressions.toVector)
+    val newExpr =
+      delegate.dropSince(
+        temputs, startingNenv, nenv, life, unresultifiedUndestructedExpressions)
 
-        val reversedVariablesToDestruct = unreversedVariablesToDestruct.reverse
-        // Dealiasing should be done by hammer. But destructors are done here
-        val destroyExpressions = localHelper.unletAll(temputs, nenv, reversedVariablesToDestruct)
-
-        (resultifiedExpressions ++ destroyExpressions) :+ localHelper.unletLocal(nenv, resultLocalVariable)
-      }
-
-    (Templar.consecutive(newExpressionsList.toVector), returnsFromExprs)
-  }
-
-  def getUnmovedVariablesIntroducedSince(
-    sinceNenv: NodeEnvironment,
-    currentNenv: NodeEnvironmentBox):
-  Vector[ILocalVariableT] = {
-    val localsAsOfThen =
-      sinceNenv.declaredLocals.collect({
-        case x @ ReferenceLocalVariableT(_, _, _) => x
-        case x @ AddressibleLocalVariableT(_, _, _) => x
-      })
-    val localsAsOfNow =
-      currentNenv.declaredLocals.collect({
-        case x @ ReferenceLocalVariableT(_, _, _) => x
-        case x @ AddressibleLocalVariableT(_, _, _) => x
-      })
-
-    vassert(localsAsOfNow.startsWith(localsAsOfThen))
-    val localsDeclaredSinceThen = localsAsOfNow.slice(localsAsOfThen.size, localsAsOfNow.size)
-    vassert(localsDeclaredSinceThen.size == localsAsOfNow.size - localsAsOfThen.size)
-
-    val unmovedLocalsDeclaredSinceThen =
-      localsDeclaredSinceThen.filter(x => !currentNenv.unstackifieds.contains(x.id))
-
-    unmovedLocalsDeclaredSinceThen
-  }
-
-  // Makes the last expression stored in a variable.
-  // Dont call this for void or never or no expressions.
-  // Maybe someday we can do this even for Never and Void, for consistency and so
-  // we dont have any special casing.
-  def resultifyExpressions(
-    nenv: NodeEnvironmentBox,
-    life: LocationInFunctionEnvironment,
-    exprs: Vector[ReferenceExpressionTE]):
-  (Vector[ReferenceExpressionTE], ReferenceLocalVariableT) = {
-    vassert(exprs.nonEmpty)
-    val lastExpr = exprs.last
-    val resultVarId = nenv.fullName.addStep(TemplarBlockResultVarNameT(life))
-    val resultVariable = ReferenceLocalVariableT(resultVarId, FinalT, lastExpr.result.reference)
-    val resultLet = LetNormalTE(resultVariable, lastExpr)
-    nenv.addVariable(resultVariable)
-    (exprs.init :+ resultLet, resultVariable)
+    (newExpr, returnsFromExprs)
   }
 
 //  private def evaluateBlockStatementsInner(
@@ -184,13 +140,4 @@ class BlockTemplar(
 //    }
 //  }
 
-  def mootAll(
-    temputs: Temputs,
-    nenv: NodeEnvironmentBox,
-    variables: Vector[ILocalVariableT]):
-  (Vector[ReferenceExpressionTE]) = {
-    variables.map({ case head =>
-      ast.UnreachableMootTE(localHelper.unletLocal(nenv, head))
-    })
-  }
 }

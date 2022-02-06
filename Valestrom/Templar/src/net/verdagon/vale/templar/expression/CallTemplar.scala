@@ -234,10 +234,15 @@ class CallTemplar(
             }
           }
         } else {
-          // do stuff here.
-          // also there is one special case here, which is when we try to hand in
-          // an owning when they just want a borrow, gotta account for that here
-          vfail("do stuff " + argsHead + " and " + paramsHead)
+          if (argsHead.kind == NeverT()) {
+            // This is fine, no conversion will ever actually happen.
+            // This can be seen in this call: +(5, panic())
+          } else {
+            // do stuff here.
+            // also there is one special case here, which is when we try to hand in
+            // an owning when they just want a borrow, gotta account for that here
+            vfail("do stuff " + argsHead + " and " + paramsHead)
+          }
         }
       }
     })

@@ -5,7 +5,7 @@ import net.verdagon.vale.astronomer.{ICompileErrorA, ProgramA}
 import java.io.FileNotFoundException
 import net.verdagon.vale.templar.{Hinputs, ast, _}
 import net.verdagon.vale.{metal => m}
-import net.verdagon.vale.vivem.{ConstraintViolatedException, Heap, IntV, PrimitiveKindV, ReferenceV, StructInstanceV, Vivem}
+import net.verdagon.vale.vivem.{ConstraintViolatedException, Heap, IntV, PanicException, PrimitiveKindV, ReferenceV, StructInstanceV, Vivem}
 import net.verdagon.von.{IVonData, VonBool, VonFloat, VonInt, VonObject, VonStr}
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.{FullCompilation, FullCompilationOptions}

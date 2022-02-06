@@ -546,10 +546,6 @@ case class ReferenceLocalVariableT(
   reference: CoordT
 ) extends ILocalVariableT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  reference.kind match {
-    case NeverT() => vwat()
-    case _ =>
-  }
   vpass()
 }
 case class AddressibleClosureVariableT(

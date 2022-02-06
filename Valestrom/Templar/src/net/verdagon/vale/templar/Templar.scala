@@ -9,7 +9,7 @@ import net.verdagon.vale.scout.rules.IRulexSR
 import net.verdagon.vale.scout.{BlockSE, CodeNameS, ExportS, ExternS, FunctionNameS, GeneratedBodyS, GlobalFunctionFamilyNameS, ICompileErrorS, IExpressionSE, IFunctionDeclarationNameS, IImpreciseNameS, INameS, IRuneS, ITemplataType, ProgramS, SealedS, TopLevelCitizenDeclarationNameS}
 import net.verdagon.vale.templar.EdgeTemplar.{FoundFunction, NeededOverride, PartialEdgeT}
 import net.verdagon.vale.templar.OverloadTemplar.FindFunctionFailure
-import net.verdagon.vale.templar.ast.{ArgLookupTE, ArrayLengthTE, AsSubtypeTE, BlockTE, ConsecutorTE, EdgeT, FunctionCallTE, FunctionHeaderT, FunctionT, IsSameInstanceTE, LocationInFunctionEnvironment, LockWeakTE, ParameterT, ProgramT, PrototypeT, ReferenceExpressionTE, ReturnTE, UnreachableMootTE, VoidLiteralTE}
+import net.verdagon.vale.templar.ast.{ArgLookupTE, ArrayLengthTE, AsSubtypeTE, BlockTE, ConsecutorTE, EdgeT, FunctionCallTE, FunctionHeaderT, FunctionT, IsSameInstanceTE, LocationInFunctionEnvironment, LockWeakTE, ParameterT, ProgramT, PrototypeT, ReferenceExpressionTE, ReturnTE, VoidLiteralTE}
 import net.verdagon.vale.templar.citizen.{AncestorHelper, IAncestorHelperDelegate, IStructTemplarDelegate, StructTemplar}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.expression.{ExpressionTemplar, IExpressionTemplarDelegate, LocalHelper}
@@ -890,29 +890,12 @@ object Templar {
           })
 
         val withoutInitVoids =
-          flattened.init.filter(_ != VoidLiteralTE()) :+
-            flattened.last
+          flattened.init.filter(_ != VoidLiteralTE()) :+ flattened.last
 
-        val (_, withMoots) =
-          // the boolean means "reachable"
-          withoutInitVoids.foldLeft((true, Vector[ReferenceExpressionTE]()))({
-            case ((false, previous), expr) => {
-              if (expr.kind == NeverT()) {
-                (false, previous :+ expr)
-              } else {
-                (false, previous :+ UnreachableMootTE(expr))
-              }
-            }
-            case ((true, previous), expr) => {
-              val reachableAfterThis = expr.kind != NeverT()
-              (reachableAfterThis, previous :+ expr)
-            }
-          })
-
-        withMoots match {
+        withoutInitVoids match {
           case Vector() => vwat("Shouldn't have zero-element consecutors!")
           case Vector(only) => only
-          case _ => ConsecutorTE(withMoots)
+          case _ => ConsecutorTE(withoutInitVoids)
         }
       }
     }

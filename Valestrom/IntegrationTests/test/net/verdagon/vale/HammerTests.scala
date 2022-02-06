@@ -2,9 +2,10 @@ package net.verdagon.vale
 
 import net.verdagon.vale.driver.FullCompilationOptions
 import net.verdagon.vale.hammer._
-import net.verdagon.vale.metal.{BlockH, CallH, InlineH, IntH, NeverH, PrototypeH, ReadonlyH, ReferenceH}
+import net.verdagon.vale.metal.{BlockH, CallH, ConsecutorH, ConstantIntH, Final, FullNameH, InlineH, IntH, Local, NeverH, PrototypeH, ReadonlyH, ReferenceH, ShareH, StackifyH, VariableIdH, VoidH}
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.templar.types.ShareT
+import net.verdagon.vale.vivem.PanicException
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.von.VonInt
 
@@ -97,6 +98,33 @@ class HammerTests extends FunSuite with Matchers {
         vassert(fullNameH.toFullString().contains("__vbi_panic"))
       }
     }
+  }
+
+  test("panic in expr") {
+    val compile = RunCompilation.test(
+      """
+        |import intrange.*;
+        |
+        |fn main() int export {
+        |  ret 3 + __vbi_panic();
+        |}
+        |""".stripMargin)
+    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
+    val main = packageH.lookupFunction("main")
+    val intExpr =
+      main.body match {
+        case BlockH(
+          ConsecutorH(Vector(
+            intExpr,
+            CallH(
+              PrototypeH(_,Vector(),ReferenceH(_,_,ReadonlyH,NeverH())),
+              Vector())))) => {
+          intExpr
+        }
+      }
+    Collector.only(intExpr, {
+      case ConstantIntH(3, 32) =>
+    })
   }
 
   test("Tests export function") {

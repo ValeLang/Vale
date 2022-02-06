@@ -270,30 +270,68 @@ object Hammer {
     ProgramH(PackageCoordinateMap(packages))
   }
 
-  def consecutive(unfilteredExprsH: Vector[ExpressionH[KindH]]): ExpressionH[KindH] = {
-    val indexOfFirstNever = unfilteredExprsH.indexWhere(_.resultType.kind == NeverH())
-    // If there's an expression returning a Never, then remove all the expressions after that.
-    val exprsH =
-      unfilteredExprsH.zipWithIndex
-        // It comes after a Never statement, take it out.
-        .filter({ case (expr, index) => indexOfFirstNever < 0 || index <= indexOfFirstNever })
-        // If this isnt the last expr, and its just making a void, take it out.
-        .filter({ case (expr, index) =>
-          if (index < unfilteredExprsH.size - 1) {
-            expr match {
-              case NewStructH(Vector(), Vector(), ReferenceH(_, InlineH, _, _)) => false
-              case _ => true
-            }
-          } else {
-            true
-          }
-        }).map(_._1)
+  private def flattenAndFilterVoids(unfilteredExprsHE: Vector[ExpressionH[KindH]]): Vector[ExpressionH[KindH]] = {
+    val flattenedExprsHE =
+      unfilteredExprsHE.flatMap({
+        case ConsecutorH(innersHE) => innersHE
+        case other => Vector(other)
+      })
+    flattenedExprsHE.init.foreach(exprHE => {
+      vassert(exprHE.resultType.kind != NeverH())
+    })
 
-    vassert(exprsH.nonEmpty)
+    // Filter out any Void that arent the last.
+    val filteredFlattenedExprsHE =
+      if (flattenedExprsHE.size <= 1) {
+        flattenedExprsHE
+      } else {
+        flattenedExprsHE.init.filter(_ != ConstantVoidH()) :+ flattenedExprsHE.last
+      }
+    vassert(filteredFlattenedExprsHE.nonEmpty)
+    filteredFlattenedExprsHE
+  }
 
-    exprsH match {
+  def consecutive(unfilteredExprsHE: Vector[ExpressionH[KindH]]): ExpressionH[KindH] = {
+    val filteredFlattenedExprsHE = flattenAndFilterVoids(unfilteredExprsHE)
+
+    filteredFlattenedExprsHE match {
       case Vector() => vwat("Cant have empty consecutive")
       case Vector(only) => only
+      case multiple => ConsecutorH(multiple)
+    }
+  }
+
+  // Like consecutive() but for expressions that were meant to go somewhere
+  // but then the last one crashes.
+  // We store them into locals really just so ConsecutorH doesn't complain
+  // about some pre-last statements not producing voids.
+  // See BRCOBS.
+  def consecrash(
+    locals: LocalsBox,
+    unfilteredExprsHE: Vector[ExpressionH[KindH]]):
+  ExpressionH[KindH] = {
+    vassert(unfilteredExprsHE.last.resultType.kind == NeverH())
+
+    val exprsHE = flattenAndFilterVoids(unfilteredExprsHE)
+
+    // Make temporaries for all the previous things if we end in a never
+    val exprsWithStackifiedInitHE =
+      exprsHE.init
+        .map(expr => {
+          if (expr.resultType.kind == VoidH()) {
+            // Dont need a temporary if it's void, we can just drop it.
+            expr
+          } else {
+            val local = locals.addHammerLocal(expr.resultType, Final)
+            StackifyH(expr, local, None)
+          }
+        }) :+
+        exprsHE.last
+    // We'll never need to unstackify them because we're about to crash.
+
+    exprsWithStackifiedInitHE match {
+      case Vector() => vwat("Cant have empty consecutive")
+      case Vector(only) => return only
       case multiple => ConsecutorH(multiple)
     }
   }

@@ -349,20 +349,26 @@ case class ConsecutorTE(exprs: Vector[ReferenceExpressionTE]) extends ReferenceE
   // The last can be anything, even a Void or a Never.
   exprs.init.foreach(expr => vassert(expr.kind == VoidT() || expr.kind == NeverT()))
 
-  // If there's a Never2() anywhere, then the entire block should end in an unreachable
-  // or panic or something.
-  if (exprs.exists(_.kind == NeverT())) {
-    vassert(exprs.last.kind == NeverT())
-  }
+  // Nevermind, we made it so the consecutor's result is Never if there's
+  // a Never *anywhere* inside it.
+  //  // If there's a Never2() anywhere, then the entire block should end in an unreachable
+  //  // or panic or something.
+  //  if (exprs.exists(_.kind == NeverT())) {
+  //    vassert(exprs.last.kind == NeverT())
+  //  }
 
   vassert(exprs.collect({
     case ReturnTE(_) =>
   }).size <= 1)
 
-
+  override val result: ReferenceResultT =
+    if (exprs.exists(_.kind == NeverT())) {
+      ReferenceResultT(CoordT(ShareT, ReadonlyT, NeverT()))
+    } else {
+      exprs.last.result
+    }
 
   def lastReferenceExpr = exprs.last
-  override def result = lastReferenceExpr.result
 }
 
 case class TupleTE(
@@ -372,18 +378,18 @@ case class TupleTE(
   override def result = ReferenceResultT(resultReference)
 }
 
-// Discards a reference, whether it be owned or borrow or whatever.
-// This is used after panics or other never-returning things, to signal that a certain
-// variable should be considered gone. See AUMAP.
-// This can also be used if theres anything after a panic in a block, like
-//   fn main() int export {
-//     __panic();
-//     println("hi");
-//   }
-case class UnreachableMootTE(innerExpr: ReferenceExpressionTE) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
-  override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, NeverT()))
-}
+//// Discards a reference, whether it be owned or borrow or whatever.
+//// This is used after panics or other never-returning things, to signal that a certain
+//// variable should be considered gone. See AUMAP.
+//// This can also be used if theres anything after a panic in a block, like
+////   fn main() int export {
+////     __panic();
+////     println("hi");
+////   }
+//case class UnreachableMootTE(innerExpr: ReferenceExpressionTE) extends ReferenceExpressionTE {
+//  override def hashCode(): Int = vcurious()
+//  override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, NeverT()))
+//}
 
 case class StaticArrayFromValuesTE(
     elements: Vector[ReferenceExpressionTE],
@@ -571,7 +577,10 @@ case class FunctionCallTE(
   override def hashCode(): Int = vcurious()
 
   vassert(callable.paramTypes.size == args.size)
-  vassert(callable.paramTypes == args.map(_.result.reference))
+  args.map(_.result.reference).zip(callable.paramTypes).foreach({
+    case (CoordT(_, _, NeverT()), _) =>
+    case (a, b) => vassert(a == b)
+  })
 
   override def result: ReferenceResultT = {
     ReferenceResultT(callable.returnType)

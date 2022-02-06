@@ -17,19 +17,23 @@ object CallHammer {
     prototype2: PrototypeT,
     argsExprs2: Vector[ReferenceExpressionTE]):
   (ExpressionH[KindH]) = {
-    val (argsResultLines, argsDeferreds) =
-      ExpressionHammer.translateExpressions(
+    val (argsHE, argsDeferreds) =
+      ExpressionHammer.translateExpressionsUntilNever(
         hinputs, hamuts, currentFunctionHeader, locals, argsExprs2);
+    // Don't evaluate anything that can't ever be run, see BRCOBS
+    if (argsHE.nonEmpty && argsHE.last.resultType.kind == NeverH()) {
+      return Hammer.consecrash(locals, argsHE)
+    }
 
     // Doublecheck the types
     val (paramTypes) =
       TypeHammer.translateReferences(hinputs, hamuts, prototype2.paramTypes);
-    vassert(argsResultLines.map(_.resultType) == paramTypes)
+    vassert(argsHE.map(_.resultType) == paramTypes)
 
     val (functionRefH) =
       FunctionHammer.translateFunctionRef(hinputs, hamuts, currentFunctionHeader, prototype2);
 
-    val callResultNode = ExternCallH(functionRefH.prototype, argsResultLines)
+    val callResultNode = ExternCallH(functionRefH.prototype, argsHE)
 
       ExpressionHammer.translateDeferreds(
         hinputs, hamuts, currentFunctionHeader, locals, callResultNode, argsDeferreds)
@@ -46,9 +50,13 @@ object CallHammer {
   ExpressionH[KindH] = {
     val returnType2 = function.returnType
     val paramTypes = function.paramTypes
-    val (argLines, argsDeferreds) =
-      ExpressionHammer.translateExpressions(
+    val (argsHE, argsDeferreds) =
+      ExpressionHammer.translateExpressionsUntilNever(
         hinputs, hamuts, currentFunctionHeader, locals, args);
+    // Don't evaluate anything that can't ever be run, see BRCOBS
+    if (argsHE.nonEmpty && argsHE.last.resultType.kind == NeverH()) {
+      return Hammer.consecrash(locals, argsHE)
+    }
 
     val prototypeH =
       FunctionHammer.translatePrototype(hinputs, hamuts, function)
@@ -56,14 +64,14 @@ object CallHammer {
     // Doublecheck the types
     val (paramTypesH) =
       TypeHammer.translateReferences(hinputs, hamuts, paramTypes)
-    vassert(argLines.map(_.resultType) == paramTypesH)
+    vassert(argsHE.map(_.resultType) == paramTypesH)
 
     // Doublecheck return
     val (returnTypeH) = TypeHammer.translateReference(hinputs, hamuts, returnType2)
     val (resultTypeH) = TypeHammer.translateReference(hinputs, hamuts, resultType2);
     vassert(returnTypeH == resultTypeH)
 
-    val callResultNode = CallH(prototypeH, argLines)
+    val callResultNode = CallH(prototypeH, argsHE)
 
     ExpressionHammer.translateDeferreds(
       hinputs, hamuts, currentFunctionHeader, locals, callResultNode, argsDeferreds)
@@ -194,11 +202,11 @@ object CallHammer {
       TypeHammer.translateReference(hinputs, hamuts, arrayExpr2.result.reference)
     vassert(arrayRefTypeH.expectStaticSizedArrayReference().kind == arrayTypeH)
 
-    val (arrayExprResultLine, arrayExprDeferreds) =
+    val (arrayExprResultHE, arrayExprDeferreds) =
       ExpressionHammer.translate(
         hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
 
-    val (consumerCallableResultLine, consumerCallableDeferreds) =
+    val (consumerCallableResultHE, consumerCallableDeferreds) =
       ExpressionHammer.translate(
         hinputs, hamuts, currentFunctionHeader, locals, consumerExpr2);
 
@@ -209,8 +217,8 @@ object CallHammer {
 
     val destroyStaticSizedArrayCallNode =
         DestroyStaticSizedArrayIntoFunctionH(
-          arrayExprResultLine.expectStaticSizedArrayAccess(),
-          consumerCallableResultLine,
+          arrayExprResultHE.expectStaticSizedArrayAccess(),
+          consumerCallableResultHE,
           consumerMethod,
           staticSizedArrayDef.elementType,
           staticSizedArrayDef.size)
@@ -236,11 +244,11 @@ object CallHammer {
       TypeHammer.translateReference(hinputs, hamuts, arrayExpr2.result.reference)
     vassert(arrayRefTypeH.expectRuntimeSizedArrayReference().kind == arrayTypeH)
 
-    val (arrayExprResultLine, arrayExprDeferreds) =
+    val (arrayExprResultHE, arrayExprDeferreds) =
       ExpressionHammer.translate(
         hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
 
-    val (consumerCallableResultLine, consumerCallableDeferreds) =
+    val (consumerCallableResultHE, consumerCallableDeferreds) =
       ExpressionHammer.translate(
         hinputs, hamuts, currentFunctionHeader, locals, consumerExpr2);
 
@@ -249,13 +257,13 @@ object CallHammer {
 
     val elementType =
       hamuts.getRuntimeSizedArray(
-          arrayExprResultLine.expectRuntimeSizedArrayAccess().resultType.kind)
+          arrayExprResultHE.expectRuntimeSizedArrayAccess().resultType.kind)
         .elementType
 
     val destroyStaticSizedArrayCallNode =
         DestroyImmRuntimeSizedArrayH(
-          arrayExprResultLine.expectRuntimeSizedArrayAccess(),
-          consumerCallableResultLine,
+          arrayExprResultHE.expectRuntimeSizedArrayAccess(),
+          consumerCallableResultHE,
           consumerMethod,
           elementType)
 
@@ -354,9 +362,13 @@ object CallHammer {
       resultType2: CoordT,
       argsExprs2: Vector[ExpressionT]):
   ExpressionH[KindH] = {
-    val (argLines, argsDeferreds) =
-      ExpressionHammer.translateExpressions(
+    val (argsHE, argsDeferreds) =
+      ExpressionHammer.translateExpressionsUntilNever(
         hinputs, hamuts, currentFunctionHeader, locals, argsExprs2);
+    // Don't evaluate anything that can't ever be run, see BRCOBS
+    if (argsHE.nonEmpty && argsHE.last.resultType.kind == NeverH()) {
+      return Hammer.consecrash(locals, argsHE)
+    }
 
     val virtualParamIndex = superFunctionHeader.getVirtualIndex.get
     val CoordT(_, _, interfaceTT @ InterfaceTT(_)) =
@@ -372,7 +384,7 @@ object CallHammer {
 
     val callNode =
         InterfaceCallH(
-          argLines,
+          argsHE,
           virtualParamIndex,
           interfaceRefH,
           indexInEdge,

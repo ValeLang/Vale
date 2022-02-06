@@ -3,7 +3,7 @@ package net.verdagon.vale.templar.expression
 //import net.verdagon.vale.astronomer.{BlockSE, IExpressionSE}
 import net.verdagon.vale.scout.{BlockSE, ExpressionScout, IExpressionSE}
 import net.verdagon.vale.templar.{ast, _}
-import net.verdagon.vale.templar.ast.{BlockTE, ConsecutorTE, LetNormalTE, LocationInFunctionEnvironment, ReferenceExpressionTE, UnreachableMootTE}
+import net.verdagon.vale.templar.ast.{BlockTE, ConsecutorTE, LetNormalTE, LocationInFunctionEnvironment, ReferenceExpressionTE}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.DestructorTemplar
 import net.verdagon.vale.templar.names.{FullNameT, IVarNameT, TemplarBlockResultVarNameT}

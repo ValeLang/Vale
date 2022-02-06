@@ -16,6 +16,7 @@ object ParseErrorHumanizer {
         case BadStartOfBlock(pos) => "Bad start of block."
         case BadDot(pos) => "Bad dot."
         case BadInterfaceMember(pos) => "Bad interface member."
+        case BadStringChar(stringBeginPos, pos) => "Bad string character, " + humanizePos(fileMap, CodeLocationS(fileCoord, stringBeginPos)) + "-" + humanizePos(fileMap, CodeLocationS(fileCoord, pos))
         case BadExpressionBegin(pos) => "Bad start of expression."
         case NeedWhitespaceAroundBinaryOperator(pos) => "Need whitespace around binary operator."
         case UnknownTupleOrSubExpression(pos) => "Saw ( but expression is neither tuple nor sub-expression."
@@ -27,6 +28,8 @@ object ParseErrorHumanizer {
         case BadFunctionBodyError(pos) => "expected a function body, or `;` to note there is none. Found:\n"
         case BadStartOfStatementError(pos) => "expected `}` to end the block, but found:\n"
         case BadExpressionEnd(pos) => "expected `;` or `}` after expression, but found:\n"
+        case IfBlocksMustBothOrNeitherReturn(pos) => "If blocks should either both return, or neither return."
+        case ForgotSetKeyword(pos) => "Need `set` keyword to mutate a variable that already exists."
         case BadImport(pos, cause) => "bad import:\n" + cause.toString + "\n"
         case BadStartOfWhileCondition(pos) => "Bad start of while condition, expected ("
         case BadEndOfWhileCondition(pos) => "Bad end of while condition, expected )"

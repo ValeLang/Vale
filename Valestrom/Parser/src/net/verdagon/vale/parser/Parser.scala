@@ -95,6 +95,22 @@ case class ParsingIterator(code: String, var position: Int = 0) {
       }
     }
   }
+
+  def trySkipIfPeekNext(
+    toConsume: Regex,
+    ifNextPeek: Regex):
+  Boolean = {
+    val tentativeIter = this.clone()
+    if (!tentativeIter.trySkip(toConsume)) {
+      return false
+    }
+    val pos = tentativeIter.getPos()
+    if (!tentativeIter.peek(ifNextPeek)) {
+      return false
+    }
+    this.skipTo(pos)
+    return true
+  }
 }
 
 object Parser {

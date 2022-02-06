@@ -793,4 +793,39 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |""".stripMargin)
     compile.evalForStdout(Vector()).trim shouldEqual "[1, 2, 3, 4, 5]"
   }
+
+  test("Mutable foreach") {
+    val compile = RunCompilation.test(
+      """
+        |// A fake 1-element list
+        |struct Ship {
+        |  fuel! int;
+        |}
+        |struct List {
+        |  ship Ship;
+        |}
+        |
+        |struct ListIter {
+        |  ship &!Ship;
+        |  pos! int;
+        |}
+        |fn begin(self &!List) ListIter { ListIter(&!self.ship, 0) }
+        |fn next(iter &!ListIter) Opt<&!Ship> {
+        |  if pos = set iter.pos = iter.pos + 1; pos < 1 {
+        |    Some<&!Ship>(iter.ship)
+        |  } else {
+        |    None<&!Ship>()
+        |  }
+        |}
+        |
+        |fn main() int export {
+        |  list = List(Ship(73));
+        |  foreach i in &!list {
+        |    set i.fuel = 42;
+        |  }
+        |  ret list.ship.fuel;
+        |}
+        |""".stripMargin)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+  }
 }

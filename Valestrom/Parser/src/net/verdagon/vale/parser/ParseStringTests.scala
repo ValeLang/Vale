@@ -14,6 +14,11 @@ class ParseStringTests extends FunSuite with Collector with TestParseUtils {
       { case ConstantStrPE(_, "moo") => }
   }
 
+  test("String with newline") {
+    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), "\"\"\"m\noo\"\"\"") shouldHave
+      { case ConstantStrPE(_, "m\noo") => }
+  }
+
   test("String with quote inside") {
     compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), """"m\"oo"""") shouldHave
       { case ConstantStrPE(_, "m\"oo") => }
@@ -21,8 +26,8 @@ class ParseStringTests extends FunSuite with Collector with TestParseUtils {
 
   test("String with unicode") {
     ParseString.parseFourDigitHexNum(ParsingIterator("000a")) shouldEqual Some(10)
-    compile(ParseString.parseStringPart, "\\u000a") shouldEqual StringPartChar('\n')
-    compile(ParseString.parseStringPart, "\\u001b") shouldEqual StringPartChar('\u001b')
+    compile(ParseString.parseStringPart(_, 0), "\\u000a") shouldEqual StringPartChar('\n')
+    compile(ParseString.parseStringPart(_, 0), "\\u001b") shouldEqual StringPartChar('\u001b')
     compileMaybe(ParseString.parseString, "\"\\u001b\"") match { case ConstantStrPE(_, "\u001b") => }
     compileMaybe(ParseString.parseString, "\"foo\\u001bbar\"") match { case ConstantStrPE(_, "foo\u001bbar") => }
 
@@ -65,6 +70,20 @@ class ParseStringTests extends FunSuite with Collector with TestParseUtils {
 
   test("Long string interpolating") {
     compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), "\"\"\"bl{4}rg\"\"\"") shouldHave
+      { case StrInterpolatePE(_, Vector(ConstantStrPE(_, "bl"), ConstantIntPE(_, 4, _), ConstantStrPE(_, "rg"))) => }
+  }
+
+  test("Long string doesnt interpolate with brace then newline") {
+    compile(
+      ExpressionParser.parseExpression(_, StopBeforeCloseBrace),
+      "\"\"\"bl{\n4}rg\"\"\"") shouldHave
+      { case ConstantStrPE(_, "bl{\n4}rg") => }
+  }
+
+  test("Long string interpolates with brace then backslash") {
+    compile(
+      ExpressionParser.parseExpression(_, StopBeforeCloseBrace),
+      "\"\"\"bl{\\\n4}rg\"\"\"") shouldHave
       { case StrInterpolatePE(_, Vector(ConstantStrPE(_, "bl"), ConstantIntPE(_, 4, _), ConstantStrPE(_, "rg"))) => }
   }
 

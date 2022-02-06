@@ -47,10 +47,17 @@ case class IfPE(range: RangeP, condition: IExpressionPE, thenBody: BlockPE, else
   override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = false
   vcurious(!condition.isInstanceOf[BlockPE])
+
+  // assert(thenBody.producesResult() == elseBody.producesResult())
+  // We dont do the above assert because we might have cases like this:
+  //   if blah {
+  //     ret 3;
+  //   } else {
+  //     6
+  //   }
+
   override def producesResult(): Boolean = {
-    val x = thenBody.producesResult()
-    assert(x == elseBody.producesResult())
-    x
+    thenBody.producesResult()
   }
 }
 // condition and body are both blocks because otherwise, if we declare a variable inside them, then
@@ -205,7 +212,7 @@ case class NotPE(range: RangeP, inner: IExpressionPE) extends IExpressionPE {
 case class AugmentPE(
   range: RangeP,
   targetOwnership: OwnershipP,
-  targetPermission: PermissionP,
+  targetPermission: Option[PermissionP],
   inner: IExpressionPE
 ) extends IExpressionPE {
 

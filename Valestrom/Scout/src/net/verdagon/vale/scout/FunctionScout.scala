@@ -143,7 +143,7 @@ class FunctionScout(scout: Scout) {
         GeneratedBodyS(attributes.collectFirst({ case BuiltinAttributeP(_, generatorId) => generatorId}).head.str)
       } else {
         vassert(maybeBody0.nonEmpty)
-        val (body1, _, Vector()) =
+        val (body1, _, magicParams) =
           scoutBody(
             functionEnv,
             None,
@@ -154,6 +154,9 @@ class FunctionScout(scout: Scout) {
             // uses and so on.
             captureDeclarations,
             false)
+        if (magicParams.nonEmpty) {
+          throw CompileErrorExceptionS(RangedInternalErrorS(rangeS, "Magic param (underscore) in a normal block!"))
+        }
         vassert(body1.closuredNames.isEmpty)
         CodeBodyS(body1)
       }

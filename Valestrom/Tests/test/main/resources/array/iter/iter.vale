@@ -2,12 +2,15 @@
 struct SSAIter<M, N, E> {
   arr &[<M> N * E];
   i! int;
-
+}
 fn begin<M, N, E>(seq &![<M> N * E]) SSAIter<M, N, E> {
   ret SSAIter(&seq, 0);
-}}
+}
 fn begin<M, N, E>(seq &[<M> N * E]) SSAIter<M, N, E> {
   ret SSAIter(seq, 0);
+}
+fn begin<M, N, E>(seq &![<M> N * E]) SSAIter<M, N, E> {
+  ret SSAIter(&seq, 0);
 }
 fn next<M, N, E>(iter &!SSAIter<M, N, E>) Opt<E> {
   if iter.i < iter.arr.len() {

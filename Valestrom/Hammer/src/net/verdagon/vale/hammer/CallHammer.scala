@@ -305,22 +305,27 @@ object CallHammer {
     val thenContinues = thenResultCoord.kind != NeverH()
     val elseContinues = elseResultCoord.kind != NeverH()
 
-    val localsFromBranchToUseForUnstackifyingParentLocals =
-      if (thenContinues == elseContinues) { // Both continue, or both don't
+    val unstackifiesOfParentLocals =
+      if (thenContinues && elseContinues) { // Both continue
         val parentLocalsAfterThen = thenLocals.locals.keySet -- thenLocals.unstackifiedVars
         val parentLocalsAfterElse = elseLocals.locals.keySet -- elseLocals.unstackifiedVars
         // The same outside-if variables should still exist no matter which branch we went down.
-        vassert(parentLocalsAfterThen == parentLocalsAfterElse)
+        if (parentLocalsAfterThen != parentLocalsAfterElse) {
+          vfail("Internal error:\nIn function " + currentFunctionHeader + "\nMismatch in if branches' parent-unstackifies:\nThen branch: " + parentLocalsAfterThen + "\nElse branch: " + parentLocalsAfterElse)
+        }
         // Since theyre the same, just arbitrarily use the then.
-        thenLocals
+        thenLocals.unstackifiedVars
+      } else if (thenContinues) {
+        // Then continues, else does not
+        // Throw away any information from the else. But do consider those from the then.
+        thenLocals.unstackifiedVars
+      } else if (elseContinues) {
+        // Else continues, then does not
+        elseLocals.unstackifiedVars
       } else {
-        // One of them continues and the other does not.
-        if (thenContinues) {
-          // Throw away any information from the else. But do consider those from the then.
-          thenLocals
-        } else if (elseContinues) {
-          elseLocals
-        } else vfail()
+        // Neither continues, so neither unstackifies things.
+        // It also kind of doesnt matter, no code after this will run.
+        Set[VariableIdH]()
       }
 
     val parentLocalsToUnstackify =
@@ -329,7 +334,7 @@ object CallHammer {
         // ...minus the ones that were unstackified before...
         .diff(parentLocals.unstackifiedVars)
         // ...which were unstackified by the branch.
-        .intersect(localsFromBranchToUseForUnstackifyingParentLocals.unstackifiedVars)
+        .intersect(unstackifiesOfParentLocals)
     parentLocalsToUnstackify.foreach(parentLocals.markUnstackified)
 
     ifCallNode

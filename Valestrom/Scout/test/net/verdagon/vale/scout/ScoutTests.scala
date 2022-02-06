@@ -400,7 +400,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
         AtomSP(_,Some(CaptureS(IteratorNameS(_))),None,None,None),
         FunctionCallSE(_,
           OutsideLoadSE(_,_,CodeNameS("begin"),None,LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(ReadonlyP))),
-          Vector(LocalLoadSE(_,IterableNameS(_),LoadAsBorrowP(Some(ReadonlyP)))))) =>
+          Vector(LocalLoadSE(_,IterableNameS(_),LoadAsBorrowP(None))))) =>
     }
     body.block shouldHave {
       case WhileSE(_, _) =>

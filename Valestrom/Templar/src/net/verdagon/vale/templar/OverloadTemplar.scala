@@ -203,7 +203,12 @@ class OverloadTemplar(
               RuneTypeSolver.solve(
                 opts.globalOptions.sanityCheck,
                 opts.globalOptions.useOptimizedSolver,
-                (nameS: IImpreciseNameS) => vassertOne(env.lookupNearestWithImpreciseName(profiler, nameS, Set(TemplataLookupContext))).tyype,
+                (nameS: IImpreciseNameS) => {
+                  env.lookupNearestWithImpreciseName(profiler, nameS, Set(TemplataLookupContext)) match {
+                    case Some(x) => x.tyype
+                    case None => vfail("Couldn't find a: " + nameS)
+                  }
+                },
                 callRange,
                 false,
                 explicitTemplateArgRulesS,

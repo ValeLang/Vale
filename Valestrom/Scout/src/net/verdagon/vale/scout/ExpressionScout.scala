@@ -220,12 +220,9 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
       case AugmentPE(range, targetOwnership, targetPermission, innerPE) => {
         val loadAs =
           (targetOwnership, targetPermission) match {
-            case (PointerP, ReadwriteP) => LoadAsPointerP(Some(ReadwriteP))
-            case (PointerP, ReadonlyP) => LoadAsPointerP(Some(ReadonlyP))
-            case (BorrowP, ReadwriteP) => LoadAsBorrowP(Some(ReadwriteP))
-            case (BorrowP, ReadonlyP) => LoadAsBorrowP(Some(ReadonlyP))
-            case (WeakP, ReadwriteP) => LoadAsWeakP(ReadwriteP)
-            case (WeakP, ReadonlyP) => LoadAsWeakP(ReadonlyP)
+            case (PointerP, maybePermission) => LoadAsPointerP(maybePermission)
+            case (BorrowP, maybePermission) => LoadAsBorrowP(maybePermission)
+            case (WeakP, maybePermission) => LoadAsWeakP(maybePermission)
           }
         val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
           scoutExpressionAndCoerce(stackFrame0, lidb.child(), innerPE, loadAs, true)

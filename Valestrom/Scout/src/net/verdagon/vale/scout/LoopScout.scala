@@ -57,7 +57,7 @@ object LoopScout {
                 LookupPE(LookupNameP(NameP(inKeywordRange, "begin")), None),
                 Vector(
                   AugmentPE(
-                    inKeywordRange, BorrowP, ReadonlyP,
+                    inKeywordRange, BorrowP, None,
                     LookupPE(IterableNameP(inKeywordRange), None))),
                 false)),
             UseP,
@@ -124,7 +124,7 @@ object LoopScout {
                         AugmentPE(
                           inKeywordRange,
                           BorrowP,
-                          ReadwriteP,
+                          Some(ReadwriteP),
                           LookupPE(IteratorNameP(inKeywordRange), None))),
                       false)),
                   FunctionCallPE(
@@ -135,7 +135,7 @@ object LoopScout {
                       AugmentPE(
                         inKeywordRange,
                         BorrowP,
-                        ReadonlyP,
+                        Some(ReadonlyP),
                         LookupPE(IterationOptionNameP(inKeywordRange), None))),
                     false))),
               UseP,

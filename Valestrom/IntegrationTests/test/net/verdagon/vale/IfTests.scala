@@ -214,6 +214,25 @@ class IfTests extends FunSuite with Matchers {
     compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
+  test("If with panics and rets") {
+    val compile =
+      RunCompilation.test(
+        """
+          |fn main() int export {
+          |  a = 7;
+          |  if false {
+          |    panic("lol");
+          |    ret 73;
+          |  } else {
+          |    ret 42;
+          |  }
+          |  ret 73;
+          |}
+          |
+          |""".stripMargin)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+  }
+
   test("Toast") {
     val compile = RunCompilation.test(
       """

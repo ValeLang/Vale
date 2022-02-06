@@ -442,9 +442,14 @@ class ExpressionTemplar(
                       case Some(permission) => maybeNarrowPermission(range, expr, permission)
                     }
                   }
-                  case LoadAsWeakP(permission) => {
+                  case LoadAsWeakP(maybePermission) => {
                     val expr = localHelper.makeTemporaryLocal(temputs, nenv, life + 3, sourceTE, BorrowT)
-                    weakAlias(temputs, maybeNarrowPermission(range, expr, permission))
+                    val x =
+                      maybePermission match {
+                        case None => expr
+                        case Some(permission) => maybeNarrowPermission(range, expr, permission)
+                      }
+                    weakAlias(temputs, x)
                   }
                   case UseP => vcurious()
                 }
@@ -457,7 +462,8 @@ class ExpressionTemplar(
                   case LoadAsBorrowP(None) | LoadAsBorrowOrIfContainerIsPointerThenPointerP(None) => sourceTE
                   case LoadAsBorrowP(Some(permission)) => maybeNarrowPermission(range, sourceTE, permission)
                   case LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(permission)) => maybeNarrowPermission(range, sourceTE, permission)
-                  case LoadAsWeakP(permission) => weakAlias(temputs, maybeNarrowPermission(range, sourceTE, permission))
+                  case LoadAsWeakP(Some(permission)) => weakAlias(temputs, maybeNarrowPermission(range, sourceTE, permission))
+                  case LoadAsWeakP(None) => weakAlias(temputs, sourceTE)
                   case UseP => sourceTE
                 }
               }
@@ -469,7 +475,8 @@ class ExpressionTemplar(
                   case LoadAsPointerP(None) | LoadAsBorrowOrIfContainerIsPointerThenPointerP(None) => sourceTE
                   case LoadAsPointerP(Some(permission)) => maybeNarrowPermission(range, sourceTE, permission)
                   case LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(permission)) => maybeNarrowPermission(range, sourceTE, permission)
-                  case LoadAsWeakP(permission) => weakAlias(temputs, maybeNarrowPermission(range, sourceTE, permission))
+                  case LoadAsWeakP(Some(permission)) => weakAlias(temputs, maybeNarrowPermission(range, sourceTE, permission))
+                  case LoadAsWeakP(None) => weakAlias(temputs, sourceTE)
                   case UseP => sourceTE
                 }
               }
@@ -477,7 +484,8 @@ class ExpressionTemplar(
                 loadAsP match {
                   case MoveP => vcurious() // Can we even coerce to an owning reference?
                   case LoadAsPointerP(permission) => vfail() // Need to call lock() to do this
-                  case LoadAsWeakP(permission) => maybeNarrowPermission(range, sourceTE, permission)
+                  case LoadAsWeakP(None) => sourceTE
+                  case LoadAsWeakP(Some(permission)) => maybeNarrowPermission(range, sourceTE, permission)
                   case UseP => sourceTE
                 }
               }
@@ -832,9 +840,9 @@ class ExpressionTemplar(
                 val permission = uncoercedElseBlock2.result.reference.permission
 
                 if (commonAncestors.isEmpty) {
-                  vimpl(s"No common ancestors of two branches of if:\n${a}\n${b}")
+                  throw CompileErrorExceptionT(RangedInternalErrorT(range, s"No common ancestors of two branches of if:\n${a}\n${b}"))
                 } else if (commonAncestors.size > 1) {
-                  vimpl(s"More than one common ancestor of two branches of if:\n${a}\n${b}")
+                  throw CompileErrorExceptionT(RangedInternalErrorT(range, s"More than one common ancestor of two branches of if:\n${a}\n${b}"))
                 } else {
                   CoordT(ownership, permission, commonAncestors.head)
                 }

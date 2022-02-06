@@ -181,7 +181,7 @@ case class LoadAsBorrowP(permission: Option[PermissionP]) extends LoadAsP { val 
 // This is used for dot.
 case class LoadAsBorrowOrIfContainerIsPointerThenPointerP(permission: Option[PermissionP]) extends LoadAsP { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 // This means we want to get a weak reference to it. Thisll become a WeakP.
-case class LoadAsWeakP(permission: PermissionP) extends LoadAsP { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class LoadAsWeakP(permission: Option[PermissionP]) extends LoadAsP { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 // This represents unspecified. It basically means, use whatever ownership already there.
 case object UseP extends LoadAsP
 

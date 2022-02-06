@@ -61,17 +61,17 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
 
   test("Pointing result of function call") {
     compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace),"*Muta()") shouldHave
-    { case AugmentPE(_,PointerP,ReadonlyP,FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_,"Muta")),None),Vector(),false)) => }
+    { case AugmentPE(_,PointerP,Some(ReadonlyP),FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_,"Muta")),None),Vector(),false)) => }
   }
 
   test("Borrowing result of function call") {
     compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace),"&Muta()") shouldHave
-      { case AugmentPE(_,BorrowP,ReadonlyP,FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_,"Muta")),None),Vector(),false)) => }
+      { case AugmentPE(_,BorrowP,Some(ReadonlyP),FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_,"Muta")),None),Vector(),false)) => }
   }
 
   test("Specifying heap") {
     compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace),"^Muta()") shouldHave
-      { case AugmentPE(_,OwnP,ReadwriteP,FunctionCallPE(_,_,_,_,_)) => }
+      { case AugmentPE(_,OwnP,Some(ReadwriteP),FunctionCallPE(_,_,_,_,_)) => }
   }
 
   test("inline call ignored") {
@@ -127,7 +127,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
       {
         case FunctionCallPE(_,_,
         LookupPE(LookupNameP(NameP(_,"toArray")),Some(TemplateArgsP(_,Vector(MutabilityPT(_,ImmutableP))))),
-        Vector(AugmentPE(_,PointerP,ReadonlyP,LookupPE(LookupNameP(NameP(_,"result")),None))),
+        Vector(AugmentPE(_,PointerP,Some(ReadonlyP),LookupPE(LookupNameP(NameP(_,"result")),None))),
         false) =>    }
   }
 
@@ -345,6 +345,16 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
     }
   }
 
+  test("static array from values with newlines") {
+    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace),
+      "[#][\n3\n]") shouldHave
+      {
+        //      case StaticArrayFromValuesPE(_,Vector(ConstantIntPE(_, 3, _), ConstantIntPE(_, 5, _), ConstantIntPE(_, 6, _))) =>
+        //      case null =>
+        case ConstructArrayPE(_,_,_,_,_,_,_) =>
+      }
+  }
+
   test("static array from callable with rune") {
     compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace),
       "[#N]({_ * 2})") shouldHave
@@ -528,12 +538,12 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
       """8 mod 2 == 0""") shouldHave
       {
       case BinaryCallPE(_,
-        NameP(_, "mod"),
-        ConstantIntPE(_, 8, _),
+      NameP(_, "=="),
         BinaryCallPE(_,
-          NameP(_, "=="),
-          ConstantIntPE(_, 2, _),
-          ConstantIntPE(_, 0, _))) =>
+          NameP(_, "mod"),
+          ConstantIntPE(_, 8, _),
+          ConstantIntPE(_, 2, _)),
+        ConstantIntPE(_, 0, _)) =>
     }
   }
 

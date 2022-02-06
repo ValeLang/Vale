@@ -195,7 +195,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
       case EachPE(_,
       PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"i"))),None,None,None),
       _,
-      AugmentPE(_, BorrowP, ReadonlyP, LookupPE(LookupNameP(NameP(_, "myList")),None)),
+      AugmentPE(_, BorrowP, Some(ReadonlyP), LookupPE(LookupNameP(NameP(_, "myList")),None)),
       BlockPE(_,_)) =>
     }
   }

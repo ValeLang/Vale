@@ -240,6 +240,7 @@ fn main() int export {
     suite!.StartTest(42, "ifnevers", samples_path./("programs/if/ifnevers.vale"), &List<str>(), region);
     suite!.StartTest(42, "mutlocal", samples_path./("programs/mutlocal.vale"), &List<str>(), region);
     suite!.StartTest(42, "while", samples_path./("programs/while/while.vale"), &List<str>(), region);
+    suite!.StartTest(45, "foreach", samples_path./("programs/while/foreach.vale"), &List<str>(), region);
     suite!.StartTest(8, "constraintRef", samples_path./("programs/constraintRef.vale"), &List<str>(), region);
     suite!.StartTest(42, "ssamutfromcallable", samples_path./("programs/arrays/ssamutfromcallable.vale"), &List<str>(), region);
     suite!.StartTest(42, "ssamutfromvalues", samples_path./("programs/arrays/ssamutfromvalues.vale"), &List<str>(), region);

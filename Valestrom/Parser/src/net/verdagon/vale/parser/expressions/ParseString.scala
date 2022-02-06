@@ -1,11 +1,12 @@
 package net.verdagon.vale.parser.expressions
 
 import net.verdagon.vale.parser.ExpressionParser.StopBeforeCloseBrace
-import net.verdagon.vale.{Err, Ok, Result, vimpl}
-import net.verdagon.vale.parser.{BadStringInterpolationEnd, BadUnicodeChar, ExpressionParser, IParseError, Parser, ParsingIterator, ast}
+import net.verdagon.vale.{Err, Ok, Result, vassert, vassertSome, vimpl}
+import net.verdagon.vale.parser.{BadStringChar, BadStringInterpolationEnd, BadUnicodeChar, ExpressionParser, IParseError, Parser, ParsingIterator, ast}
 import net.verdagon.vale.parser.ast.{ConstantStrPE, IExpressionPE, RangeP, StrInterpolatePE}
 
 import scala.collection.mutable
+import scala.util.matching.Regex
 
 object ParseString {
   def parseStringEnd(iter: ParsingIterator, isLongString: Boolean): Boolean = {
@@ -28,7 +29,7 @@ object ParseString {
     var stringSoFar = new StringBuilder()
 
     while (!parseStringEnd(iter, isLongString)) {
-      parseStringPart(iter) match {
+      parseStringPart(iter, begin) match {
         case Err(e) => return Err(e)
         case Ok(StringPartChar(c)) => {
           stringSoFar += c
@@ -66,8 +67,12 @@ object ParseString {
   sealed trait StringPart
   case class StringPartChar(c: Char) extends StringPart
   case class StringPartExpr(expr: IExpressionPE) extends StringPart
-  def parseStringPart(iter: ParsingIterator): Result[StringPart, IParseError] = {
-    if (iter.trySkip("^\\{".r)) {
+  def parseStringPart(iter: ParsingIterator, stringBeginPos: Int): Result[StringPart, IParseError] = {
+    // The newline is because we dont want to interpolate when its a { then a newline.
+    // If they want that, then they should do {\
+    if (iter.trySkip("^\\{\\\\".r) ||
+        iter.trySkipIfPeekNext("^\\{".r, "^[^\\n]".r)) {
+      iter.consumeWhitespace()
       (ExpressionParser.parseExpression(iter, StopBeforeCloseBrace) match {
         case Err(e) => return Err(e)
         case Ok(e) => Ok(StringPartExpr(e))
@@ -102,7 +107,14 @@ object ParseString {
         Ok(StringPartChar(iter.tryy("^.".r).get.charAt(0)))
       }
     } else {
-      Ok(StringPartChar(iter.tryy("^.".r).get.charAt(0)))
+      val c =
+        iter.tryy("^(.|\\n)".r) match {
+          case None => {
+            return Err(BadStringChar(stringBeginPos, iter.getPos()))
+          }
+          case Some(x) => x
+        }
+      Ok(StringPartChar(c.charAt(0)))
     }
   }
 

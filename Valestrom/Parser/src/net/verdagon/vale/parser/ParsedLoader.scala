@@ -361,7 +361,7 @@ object ParsedLoader {
         AugmentPE(
           loadRange(getObjectField(jobj, "range")),
           loadOwnership(getObjectField(jobj, "targetOwnership")),
-          loadPermission(getObjectField(jobj, "targetPermission")),
+          loadOptionalObject(getObjectField(jobj, "targetPermission"), loadPermission),
           loadExpression(getObjectField(jobj, "inner")))
       }
       case "Mutate" => {
@@ -515,7 +515,7 @@ object ParsedLoader {
       }
       case "LoadAsWeak" => {
         LoadAsWeakP(
-          loadPermission(getObjectField(jobj, "permission")))
+          loadOptionalObject(getObjectField(jobj, "permission"), loadPermission))
       }
       case other => vwat(other)
     }

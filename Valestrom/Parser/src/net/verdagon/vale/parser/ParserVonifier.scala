@@ -744,7 +744,7 @@ object ParserVonifier {
         VonObject(
           "LoadAsWeak", None,
           Vector(
-            VonMember("permission", vonifyPermission(permission))))
+            VonMember("permission", vonifyOptional(permission, vonifyPermission))))
       }
     }
   }
@@ -935,7 +935,7 @@ object ParserVonifier {
           Vector(
             VonMember("range", vonifyRange(range)),
             VonMember("targetOwnership", vonifyOwnership(targetOwnership)),
-            VonMember("targetPermission", vonifyPermission(targetPermission)),
+            VonMember("targetPermission", vonifyOptional(targetPermission, vonifyPermission)),
             VonMember("inner", vonifyExpression(inner))))
       }
       case LetPE(range, templateRules, pattern, source) => {

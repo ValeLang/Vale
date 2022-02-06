@@ -16,7 +16,7 @@ class IfTests extends FunSuite with Matchers with Collector with TestParseUtils 
         BlockPE(_,
           FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_,"doBlarks")),None),
             Vector(
-              AugmentPE(_,PointerP,ReadonlyP,LookupPE(LookupNameP(NameP(_,"x")),None))),false)),
+              AugmentPE(_,PointerP,Some(ReadonlyP),LookupPE(LookupNameP(NameP(_,"x")),None))),false)),
         BlockPE(_,VoidPE(_))) =>
     }
   }

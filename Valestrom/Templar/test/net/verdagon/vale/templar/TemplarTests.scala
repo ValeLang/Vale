@@ -211,6 +211,8 @@ class TemplarTests extends FunSuite with Matchers {
     tyype.permission shouldEqual ReadonlyT
   }
 
+
+
   test("Recursion") {
     val compile = TemplarTestCompilation.test(
       """

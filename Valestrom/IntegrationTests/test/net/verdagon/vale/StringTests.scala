@@ -20,6 +20,20 @@ class StringTests extends FunSuite with Matchers {
     compile.evalForKind(Vector()) shouldEqual VonStr("sprogwoggle")
   }
 
+  test("Empty string") {
+    val compile = RunCompilation.test(
+      """
+        |fn main() str export {
+        |  ret "";
+        |}
+      """.stripMargin)
+
+    val temputs = compile.expectTemputs()
+    Collector.only(temputs.lookupFunction("main"), { case ConstantStrTE("") => })
+
+    compile.evalForKind(Vector()) shouldEqual VonStr("")
+  }
+
   test("String with escapes") {
     val compile = RunCompilation.test(
       """

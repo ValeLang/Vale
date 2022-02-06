@@ -171,6 +171,12 @@ object ExpressionParser {
     val rootElseBlock =
       ifElses.foldRight(finalElse)({
         case ((condBlock, thenBlock), elseBlock) => {
+          // We don't check that both branches produce because of cases like:
+          //   if blah {
+          //     ret 3;
+          //   } else {
+          //     6
+          //   }
           BlockPE(
             RangeP(condBlock.range.begin, thenBlock.range.end),
             ast.IfPE(
@@ -179,6 +185,12 @@ object ExpressionParser {
         }
       })
     val (rootConditionLambda, rootThenLambda) = rootIf
+    // We don't check that both branches produce because of cases like:
+    //   if blah {
+    //     ret 3;
+    //   } else {
+    //     6
+    //   }
     Ok(
       Some(
         ast.IfPE(
@@ -545,9 +557,10 @@ object ExpressionParser {
         case ".." => 6
         case "*" | "/" => 5
         case "+" | "-" => 4
-        case "<=>" | "<=" | "<" | ">=" | ">" | "===" | "==" | "!=" => 3
-        case "and" | "or" => 2
-        case _ => 1
+        // case _ => 3 Everything else is 3, see end case
+        case "<=>" | "<=" | "<" | ">=" | ">" | "===" | "==" | "!=" => 2
+        case "and" | "or" => 1
+        case _ => 3 // This is so we can have 3 mod 2 == 1
       }
   }
 
@@ -913,7 +926,7 @@ object ExpressionParser {
     val elements = new mutable.ArrayBuffer[IExpressionPE]()
     while (!iter.trySkip("^\\]".r)) {
       val expr =
-        parseExpression(iter, StopBeforeCloseParen) match {
+        parseExpression(iter, StopBeforeCloseSquare) match {
           case Err(e) => return Err(e)
           case Ok(expr) => expr
         }
@@ -1073,7 +1086,7 @@ object ExpressionParser {
             case "**!" => (WeakP, ReadwriteP)
             case "**" => (WeakP, ReadonlyP)
           }
-        val augmentPE = AugmentPE(RangeP(begin, iter.getPos()), targetOwnership, targetPermission, innerPE)
+        val augmentPE = AugmentPE(RangeP(begin, iter.getPos()), targetOwnership, Some(targetPermission), innerPE)
         return Ok(Some(augmentPE))
       }
     }

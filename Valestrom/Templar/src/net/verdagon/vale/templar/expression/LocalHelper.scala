@@ -164,7 +164,8 @@ class LocalHelper(
           case LoadAsBorrowP(Some(permission)) => SoftLoadTE(a, BorrowT, Conversions.evaluatePermission(permission))
           case LoadAsBorrowOrIfContainerIsPointerThenPointerP(None) => SoftLoadTE(a, BorrowT, a.result.reference.permission)
           case LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(permission)) => SoftLoadTE(a, BorrowT, Conversions.evaluatePermission(permission))
-          case LoadAsWeakP(permission) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
+          case LoadAsWeakP(None) => SoftLoadTE(a, WeakT, a.result.reference.permission)
+          case LoadAsWeakP(Some(permission)) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
         }
       }
       case PointerT | BorrowT => {
@@ -177,7 +178,8 @@ class LocalHelper(
           case LoadAsBorrowP(Some(permission)) => SoftLoadTE(a, BorrowT, Conversions.evaluatePermission(permission))
           case LoadAsBorrowOrIfContainerIsPointerThenPointerP(None) => SoftLoadTE(a, a.result.reference.ownership, a.result.reference.permission)
           case LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(permission)) => SoftLoadTE(a, a.result.reference.ownership, Conversions.evaluatePermission(permission))
-          case LoadAsWeakP(permission) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
+          case LoadAsWeakP(None) => SoftLoadTE(a, WeakT, a.result.reference.permission)
+          case LoadAsWeakP(Some(permission)) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
         }
       }
       case WeakT => {
@@ -189,7 +191,8 @@ class LocalHelper(
           case LoadAsBorrowP(None) => SoftLoadTE(a, WeakT, a.result.reference.permission)
           case LoadAsBorrowP(Some(permission)) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
           case LoadAsBorrowOrIfContainerIsPointerThenPointerP(_) => vwat()
-          case LoadAsWeakP(permission) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
+          case LoadAsWeakP(None) => SoftLoadTE(a, WeakT, a.result.reference.permission)
+          case LoadAsWeakP(Some(permission)) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
         }
       }
     }

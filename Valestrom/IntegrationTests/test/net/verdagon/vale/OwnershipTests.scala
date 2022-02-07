@@ -81,7 +81,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |
         |fn drop(m ^Muta) void {
         |  println("Destroying!");
-        |  Muta() = m;
+        |  Muta[] = m;
         |}
         |
         |fn main() export {
@@ -105,7 +105,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |
         |fn drop(m ^Muta) {
         |  println("Destroying!");
-        |  Muta(hp) = m;
+        |  Muta[hp] = m;
         |}
         |
         |fn main() int export {
@@ -128,7 +128,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |
         |fn drop(m ^Muta) {
         |  println("Destroying!");
-        |  Muta() = m;
+        |  Muta[] = m;
         |}
         |
         |fn main() export {
@@ -153,7 +153,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |
         |fn drop(m ^Muta) {
         |  println("Destroying!");
-        |  Muta() = m;
+        |  Muta[] = m;
         |}
         |
         |fn moo(m ^Muta) {
@@ -195,7 +195,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |
         |fn drop(m ^Muta) {
         |  println("Destroying!");
-        |  Muta(hp) = m;
+        |  Muta[hp] = m;
         |}
         |
         |fn main() int export {

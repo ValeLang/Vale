@@ -3,7 +3,7 @@ package net.verdagon.vale.parser.patterns
 import net.verdagon.vale.parser.ast.Patterns._
 import net.verdagon.vale.parser.old.CombinatorParsers._
 import net.verdagon.vale.parser._
-import net.verdagon.vale.parser.ast.{AbstractP, DestructureP, LocalNameDeclarationP, ManualSequencePT, NameOrRunePT, NameP, PatternPP, Patterns, ShareP}
+import net.verdagon.vale.parser.ast.{AbstractP, DestructureP, LocalNameDeclarationP, TuplePT, NameOrRunePT, NameP, PatternPP, Patterns, ShareP}
 import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
@@ -76,7 +76,7 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
   }
 
   test("Capture with type with destructure") {
-    compile("a Moo(a, b)") shouldHave {
+    compile("a Moo[a, b]") shouldHave {
       case PatternPP(
           _,_,
           Some(LocalNameDeclarationP(NameP(_, "a"))),
@@ -89,7 +89,7 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
 
   test("CSTODTS") {
     // This tests us handling an ambiguity properly, see CSTODTS in docs.
-    compile("moo T(a int)") shouldHave {
+    compile("moo T[a int]") shouldHave {
       case PatternPP(
           _,_,
           Some(LocalNameDeclarationP(NameP(_, "moo"))),
@@ -100,12 +100,12 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
   }
 
   test("Capture with destructure with type outside") {
-    compile("a [int, bool](a, b)") shouldHave {
+    compile("a (int, bool)[a, b]") shouldHave {
       case PatternPP(
           _,_,
           Some(LocalNameDeclarationP(NameP(_, "a"))),
           Some(
-            ManualSequencePT(_,
+            TuplePT(_,
                   Vector(
                     NameOrRunePT(NameP(_, "int")),
                     NameOrRunePT(NameP(_, "bool"))))),

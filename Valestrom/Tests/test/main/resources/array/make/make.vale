@@ -1,9 +1,9 @@
 
-fn MakeArray<T, G>(n int, generator G) Array<mut, T>
+fn MakeArray<T, G>(n int, generator G) []<mut>T
 rules(
   T Ref,
   G Ref(share | borrow, _, _),
-  F Prot = Prot("__call", (G, int), T))
+  F Prot = Prot("__call", Refs(G, int), T))
 {
   arr = Array<mut, T>(n);
   i! = 0;
@@ -14,11 +14,11 @@ rules(
   ret arr;
 }
 
-fn MakeVaryArray<T, G>(n int, generator G) Array<mut, T>
+fn MakeVaryArray<T, G>(n int, generator G) []<mut>T
 rules(
   T Ref,
   G Ref(share | borrow, _, _),
-  F Prot = Prot("__call", (G, int), T))
+  F Prot = Prot("__call", Refs(G, int), T))
 {
   arr = Array<mut, T>(n);
   i! = 0;
@@ -29,31 +29,31 @@ rules(
   ret arr;
 }
 
-fn MakeImmArray<G>(n int, generator G) Array<imm, T>
+fn MakeImmArray<G>(n int, generator G) []<imm>T
 rules(
   T Ref,
   G Ref(share | borrow, _, _),
-  F Prot = Prot("__call", (G, int), T))
+  F Prot = Prot("__call", Refs(G, int), T))
 {
   ret Array<imm, T>(n, generator);
 }
 
-fn toImmArray<N, E>(seq &[<_, _> N * E]) Array<imm, E> {
+fn toImmArray<N, E>(seq &[#N]<_, _>E) []<imm>E {
   ret MakeImmArray(N, { seq[_] });
 }
 
-fn toImmArray<T>(source &Array<_, T>) Array<imm, *T> {
+fn toImmArray<T>(source &[]<_>T) Array<imm, *T> {
   ret MakeImmArray(source.len(), &!{ source[_] });
 }
 
-fn toVaryArray<N, E, SM>(seq &[<SM> N * E]) Array<mut, E> {
+fn toVaryArray<N, E, SM>(seq &[#N]<SM>E) []<mut>E {
   ret MakeVaryArray(N, { seq[_] });
 }
 
-fn toVaryArray<T>(source &Array<_, T>) Array<mut, *T> {
+fn toVaryArray<T>(source &[]<_>T) Array<mut, *T> {
   ret MakeVaryArray(source.len(), &!{ source[_] });
 }
 
-fn toArray<T>(source &Array<_, T>) Array<mut, *T> {
+fn toArray<T>(source &[]<_>T) Array<mut, *T> {
   ret MakeArray(source.len(), { source[_] });
 }

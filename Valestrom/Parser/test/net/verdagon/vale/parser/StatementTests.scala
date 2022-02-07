@@ -40,7 +40,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("8") {
-    compile(ExpressionParser.parseStatement(_, StopBeforeCloseBrace, false), "(x, y) = (4, 5)") shouldHave {
+    compile(ExpressionParser.parseStatement(_, StopBeforeCloseBrace, false), "[x, y] = (4, 5)") shouldHave {
       case LetPE(_,
       None,
           PatternPP(_,_,
@@ -156,7 +156,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Let with simple pattern in seq") {
-    compile(ExpressionParser.parseStatement(_, StopBeforeCloseBrace, false), "(a Moo) = m") shouldHave {
+    compile(ExpressionParser.parseStatement(_, StopBeforeCloseBrace, false), "[a Moo] = m") shouldHave {
       case LetPE(_,
       None,
           PatternPP(_,_,
@@ -169,7 +169,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Let with destructuring pattern") {
-    compile(ExpressionParser.parseStatement(_, StopBeforeCloseBrace, false), "Muta() = m") shouldHave {
+    compile(ExpressionParser.parseStatement(_, StopBeforeCloseBrace, false), "Muta[] = m") shouldHave {
       case LetPE(_,None,PatternPP(_,_,None,Some(NameOrRunePT(NameP(_, "Muta"))),Some(DestructureP(_,Vector())),None),LookupPE(LookupNameP(NameP(_, "m")), None)) =>
     }
   }
@@ -201,7 +201,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("foreach with two receivers") {
-    compile(ExpressionParser.parseStatement(_, StopBeforeCloseBrace, false), "foreach (a, b) in myList { }") shouldHave {
+    compile(ExpressionParser.parseStatement(_, StopBeforeCloseBrace, false), "foreach [a, b] in myList { }") shouldHave {
       case EachPE(_,
         PatternPP(_,
           None,None,None,

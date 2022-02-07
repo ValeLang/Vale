@@ -4,7 +4,7 @@ package net.verdagon.vale.scout
 import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.{CodeLocationS, RangeS, vpass}
 import net.verdagon.vale.parser._
-import net.verdagon.vale.parser.ast.{AnonymousRunePT, BoolPT, CallPT, ExportAsP, ExportP, FileP, ICitizenAttributeP, IImpreciseNameP, ITemplexPT, ImplP, ImportP, InlinePT, IntPT, InterfaceP, InterpretedPT, IterableNameP, IterationOptionNameP, IteratorNameP, LocationPT, LookupNameP, MacroCallP, ManualSequencePT, MutabilityP, MutabilityPT, NameOrRunePT, NameP, NormalStructMemberP, OwnershipPT, PermissionPT, RangeP, RepeaterSequencePT, RulePUtils, SealedP, StructMembersP, StructMethodP, StructP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, VariadicStructMemberP, WeakableP}
+import net.verdagon.vale.parser.ast.{AnonymousRunePT, BoolPT, CallPT, ExportAsP, ExportP, FileP, ICitizenAttributeP, IImpreciseNameP, ITemplexPT, ImplP, ImportP, InlinePT, IntPT, InterfaceP, InterpretedPT, IterableNameP, IterationOptionNameP, IteratorNameP, LocationPT, LookupNameP, MacroCallP, TuplePT, MutabilityP, MutabilityPT, NameOrRunePT, NameP, NormalStructMemberP, OwnershipPT, PermissionPT, RangeP, StaticSizedArrayPT, RulePUtils, SealedP, StructMembersP, StructMethodP, StructP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, VariadicStructMemberP, WeakableP}
 import net.verdagon.vale.scout.Scout.determineDenizenType
 import net.verdagon.vale.scout.patterns.PatternScout
 //import net.verdagon.vale.scout.predictor.RuneTypeSolveError
@@ -173,8 +173,8 @@ object Scout {
       case AnonymousRunePT(_) => vwat()
       case NameOrRunePT(NameP(_, name)) => CodeNameS(name)
       case CallPT(_, template, args) => getHumanName(template)
-      case RepeaterSequencePT(_, mutability, variability, size, element) => vwat()
-      case ManualSequencePT(_, members) => vwat()
+      case StaticSizedArrayPT(_, mutability, variability, size, element) => vwat()
+      case TuplePT(_, members) => vwat()
       case IntPT(_, value) => vwat()
       case BoolPT(_, value) => vwat()
       case OwnershipPT(_, ownership) => vwat()

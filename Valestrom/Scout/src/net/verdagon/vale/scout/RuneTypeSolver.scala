@@ -35,7 +35,8 @@ object RuneTypeSolver {
         case CallSR(range, resultRune, templateRune, args) => Array(resultRune, templateRune) ++ args
         case PrototypeSR(range, resultRune, name, parameters, returnTypeRune) => Array(resultRune) ++ parameters ++ Array(returnTypeRune)
         case PackSR(range, resultRune, members) => Array(resultRune) ++ members
-        case RepeaterSequenceSR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune)
+        case StaticSizedArraySR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune)
+        case RuntimeSizedArraySR(range, resultRune, mutabilityRune, elementRune) => Array(resultRune, mutabilityRune, elementRune)
 //        case ManualSequenceSR(range, resultRune, elements) => Array(resultRune) ++ elements
         case RefListCompoundMutabilitySR(range, resultRune, coordListRune) => Array(resultRune, coordListRune)
 //        case CoordListSR(range, resultRune, elements) => Array(resultRune) ++ elements
@@ -89,7 +90,8 @@ object RuneTypeSolver {
       case CoerceToCoordSR(_, coordRune, kindRune) => Array(Array())
       case LiteralSR(_, rune, literal) => Array(Array())
       case AugmentSR(_, resultRune, ownership, permission, innerRune) => Array(Array())
-      case RepeaterSequenceSR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(Array(resultRune.rune))
+      case StaticSizedArraySR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(Array(resultRune.rune))
+      case RuntimeSizedArraySR(_, resultRune, mutabilityRune, elementRune) => Array(Array(resultRune.rune))
 //      case ManualSequenceSR(_, resultRune, elements) => Array(Array(resultRune.rune))
       case RefListCompoundMutabilitySR(range, resultRune, coordListRune) => Array(Array())
         // solverState.addPuzzle(ruleIndex, Array(senderRune, receiverRune))
@@ -224,10 +226,15 @@ object RuneTypeSolver {
         stepState.concludeRune(resultRune.rune, PackTemplataType(CoordTemplataType))
         Ok(())
       }
-      case RepeaterSequenceSR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => {
+      case StaticSizedArraySR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => {
         stepState.concludeRune(mutabilityRune.rune, MutabilityTemplataType)
         stepState.concludeRune(variabilityRune.rune, VariabilityTemplataType)
         stepState.concludeRune(sizeRune.rune, IntegerTemplataType)
+        stepState.concludeRune(elementRune.rune, CoordTemplataType)
+        Ok(())
+      }
+      case RuntimeSizedArraySR(_, resultRune, mutabilityRune, elementRune) => {
+        stepState.concludeRune(mutabilityRune.rune, MutabilityTemplataType)
         stepState.concludeRune(elementRune.rune, CoordTemplataType)
         Ok(())
       }

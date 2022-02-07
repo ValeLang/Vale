@@ -1,6 +1,6 @@
 
 fn each<M, V, N, T, F>(arr A, func F) void
-rules(A Ref(_, _, [<M, V> N * T])) {
+rules(A Ref(_, _, [#N]<M, V>T)) {
   i! = 0;
   l = len(&arr);
   while (i < l) {
@@ -10,7 +10,7 @@ rules(A Ref(_, _, [<M, V> N * T])) {
 }
 
 fn eachI<M, V, N, T, F>(arr A, func F) void
-rules(A Ref(_, _, [<M, V> N * T])) {
+rules(A Ref(_, _, [#N]<M, V>T)) {
   i! = 0;
   l = len(&arr);
   while (i < l) {

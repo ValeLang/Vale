@@ -21,7 +21,7 @@ fn is_err<OkType, ErrType>(result *!Result<OkType, ErrType>) bool { ret not is_o
 fn expect<OkType, ErrType>(virtual result Result<OkType, ErrType>) OkType abstract;
 fn expect<OkType, ErrType>(err Err<OkType, ErrType> impl Result<OkType, ErrType>) OkType { panic("Called expect() on a Err!"); }
 fn expect<OkType, ErrType>(ok Ok<OkType, ErrType> impl Result<OkType, ErrType>) OkType {
-  Ok<OkType, ErrType>(value) = ok;
+  Ok<OkType, ErrType>[value] = ok;
   ret value;
 }
 
@@ -38,7 +38,7 @@ fn expect<OkType, ErrType>(ok *!Ok<OkType, ErrType> impl Result<OkType, ErrType>
 fn expect_err<OkType, ErrType>(virtual result Result<OkType, ErrType>) ErrType abstract;
 fn expect_err<OkType, ErrType>(ok Ok<OkType, ErrType> impl Result<OkType, ErrType>) ErrType { panic("Called expect_err() on an Ok!"); }
 fn expect_err<OkType, ErrType>(err Err<OkType, ErrType> impl Result<OkType, ErrType>) ErrType {
-  Err<OkType, ErrType>(value) = err;
+  Err<OkType, ErrType>[value] = err;
   ret value;
 }
 

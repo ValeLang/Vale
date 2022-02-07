@@ -909,7 +909,7 @@ struct OwnershippedPT {
 impl ITemplexPT for OwnershippedPT;
 
 // A rule that can match anything. For example, in
-//    fn has<E>(arr *Array<_, E>, elem E) bool { .. }
+//    fn has<E>(arr *[]<_>E, elem E) bool { .. }
 // the _ will accept anything that happens to be there.
 // That means this `has` method can work on both mutable
 // and immutable arrays, because it will accept imm or mut there.
@@ -934,7 +934,7 @@ struct CallPT {
 }
 impl ITemplexPT for CallPT;
 
-// For example `[4 * int]`, a 4-element array.
+// For example `[#4]int`, a 4-element array.
 struct RepeaterSequencePT {
   range Range;
   mutability ITemplexPT;
@@ -964,7 +964,7 @@ struct BoolPT {
 }
 impl ITemplexPT for BoolPT;
 
-// For example, the `imm` in `a Array<imm, int> = ...;`
+// For example, the `imm` in `a []<imm>int = ...;`
 struct MutabilityPT {
   range Range;
   mutability MutabilityP;

@@ -39,7 +39,7 @@ class TupleTests extends FunSuite with Matchers {
   test("Tuple type") {
     val compile = RunCompilation.test(
       """
-        |fn moo(a [int, int]) int { ret a.1; }
+        |fn moo(a (int, int)) int { ret a.1; }
         |
         |fn main() int export {
         |  ret moo((3, 4));

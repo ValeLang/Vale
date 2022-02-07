@@ -208,7 +208,7 @@ case class PackSR(
   override def runeUsages: Array[RuneUsage] = Array(resultRune) ++ members
 }
 
-case class RepeaterSequenceSR(
+case class StaticSizedArraySR(
   range: RangeS,
   resultRune: RuneUsage,
   mutabilityRune: RuneUsage,
@@ -218,6 +218,16 @@ case class RepeaterSequenceSR(
 ) extends IRulexSR {
   override def hashCode(): Int = vcurious()
   override def runeUsages: Array[RuneUsage] = Array(resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune)
+}
+
+case class RuntimeSizedArraySR(
+  range: RangeS,
+  resultRune: RuneUsage,
+  mutabilityRune: RuneUsage,
+  elementRune: RuneUsage
+) extends IRulexSR {
+  override def hashCode(): Int = vcurious()
+  override def runeUsages: Array[RuneUsage] = Array(resultRune, mutabilityRune, elementRune)
 }
 
 sealed trait ILiteralSL {

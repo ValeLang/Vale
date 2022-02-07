@@ -1,7 +1,7 @@
 package net.verdagon.vale.parser
 
 import net.verdagon.vale.parser.ExpressionParser.StopBeforeCloseBrace
-import net.verdagon.vale.parser.ast.{CallPT, ExportP, FinalP, IdentifyingRuneP, IdentifyingRunesP, ImmutableP, InlinePT, IntTypePR, InterpretedPT, MutabilityPT, MutableP, NameOrRunePT, NameP, NormalStructMemberP, PointerP, ReadonlyP, RepeaterSequencePT, ShareP, StructMembersP, StructP, TemplateRulesP, TypedPR, VariabilityPT, VariadicStructMemberP, VaryingP, WeakP}
+import net.verdagon.vale.parser.ast.{CallPT, ExportP, FinalP, IdentifyingRuneP, IdentifyingRunesP, ImmutableP, InlinePT, IntTypePR, InterpretedPT, MutabilityPT, MutableP, NameOrRunePT, NameP, NormalStructMemberP, PointerP, ReadonlyP, RuntimeSizedArrayPT, ShareP, StaticSizedArrayPT, StructMembersP, StructP, TemplateRulesP, TypedPR, VariabilityPT, VariadicStructMemberP, VaryingP, WeakP}
 import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, vassert}
 import org.scalatest.{FunSuite, Matchers}
@@ -32,8 +32,8 @@ class StructTests extends FunSuite with Collector with TestParseUtils {
   test("18") {
     compile(
       CombinatorParsers.normalStructMember,
-      "a Array<imm, T>;") shouldHave {
-      case NormalStructMemberP(_, NameP(_, "a"), FinalP, CallPT(_,NameOrRunePT(NameP(_, "Array")), Vector(MutabilityPT(_,ImmutableP), NameOrRunePT(NameP(_, "T"))))) =>
+      "a []<imm>T;") shouldHave {
+      case NormalStructMemberP(_,NameP(_,"a"),FinalP,RuntimeSizedArrayPT(_,MutabilityPT(_,ImmutableP),NameOrRunePT(NameP(_,"T")))) =>
     }
   }
 
@@ -117,7 +117,7 @@ class StructTests extends FunSuite with Collector with TestParseUtils {
         |struct Vecf<N>
         |rules(N int)
         |{
-        |  values [N * float];
+        |  values [#N]float;
         |}
         |
       """.stripMargin.strip()) shouldHave {
@@ -128,7 +128,7 @@ class StructTests extends FunSuite with Collector with TestParseUtils {
         MutabilityPT(_, MutableP),
         Some(IdentifyingRunesP(_, Vector(IdentifyingRuneP(_, NameP(_, "N"), Vector())))),
         Some(TemplateRulesP(_, Vector(TypedPR(_,Some(NameP(_, "N")), IntTypePR)))),
-        StructMembersP(_, Vector(NormalStructMemberP(_,NameP(_, "values"), FinalP, RepeaterSequencePT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, "N")), NameOrRunePT(NameP(_, "float"))))))) =>
+        StructMembersP(_, Vector(NormalStructMemberP(_,NameP(_, "values"), FinalP, StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, "N")), NameOrRunePT(NameP(_, "float"))))))) =>
     }
   }
 
@@ -139,7 +139,7 @@ class StructTests extends FunSuite with Collector with TestParseUtils {
         |struct Vecf<N>
         |rules(N int)
         |{
-        |  values [<imm> N * float];
+        |  values [#N]<imm>float;
         |}
         |
       """.stripMargin.strip()) shouldHave {
@@ -150,7 +150,7 @@ class StructTests extends FunSuite with Collector with TestParseUtils {
           MutabilityPT(_, MutableP),
           Some(IdentifyingRunesP(_, Vector(IdentifyingRuneP(_, NameP(_, "N"), Vector())))),
           Some(TemplateRulesP(_, Vector(TypedPR(_,Some(NameP(_, "N")),IntTypePR)))),
-          StructMembersP(_, Vector(NormalStructMemberP(_,NameP(_, "values"),FinalP,RepeaterSequencePT(_,MutabilityPT(_,ImmutableP), VariabilityPT(_, FinalP), NameOrRunePT(NameP(_, "N")), NameOrRunePT(NameP(_, "float"))))))) =>
+          StructMembersP(_, Vector(NormalStructMemberP(_,NameP(_, "values"),FinalP,StaticSizedArrayPT(_,MutabilityPT(_,ImmutableP), VariabilityPT(_, FinalP), NameOrRunePT(NameP(_, "N")), NameOrRunePT(NameP(_, "float"))))))) =>
     }
   }
 }

@@ -24,7 +24,7 @@ case class InlinePT(range: RangeP, inner: ITemplexPT) extends ITemplexPT { overr
 case class IntPT(range: RangeP, value: Long) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 case class RegionRune(range: RangeP, name: NameP) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 case class LocationPT(range: RangeP, location: LocationP) extends ITemplexPT { override def hashCode(): Int = vcurious() }
-case class ManualSequencePT(range: RangeP, elements: Vector[ITemplexPT]) extends ITemplexPT { override def hashCode(): Int = vcurious() }
+case class TuplePT(range: RangeP, elements: Vector[ITemplexPT]) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 case class MutabilityPT(range: RangeP, mutability: MutabilityP) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 case class NameOrRunePT(name: NameP) extends ITemplexPT {
   override def hashCode(): Int = vcurious()
@@ -38,11 +38,16 @@ case class PackPT(range: RangeP, members: Vector[ITemplexPT]) extends ITemplexPT
 //case class PermissionedPT(range: Range, permission: PermissionP, inner: ITemplexPT) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 case class PermissionPT(range: RangeP, permission: PermissionP) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 case class PrototypePT(range: RangeP, name: NameP, parameters: Vector[ITemplexPT], returnType: ITemplexPT) extends ITemplexPT { override def hashCode(): Int = vcurious() }
-case class RepeaterSequencePT(
+case class StaticSizedArrayPT(
   range: RangeP,
   mutability: ITemplexPT,
   variability: ITemplexPT,
   size: ITemplexPT,
+  element: ITemplexPT
+) extends ITemplexPT { override def hashCode(): Int = vcurious() }
+case class RuntimeSizedArrayPT(
+  range: RangeP,
+  mutability: ITemplexPT,
   element: ITemplexPT
 ) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 case class SharePT(range: RangeP, inner: ITemplexPT) extends ITemplexPT { override def hashCode(): Int = vcurious() }

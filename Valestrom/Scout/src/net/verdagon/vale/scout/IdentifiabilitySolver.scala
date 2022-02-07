@@ -34,7 +34,8 @@ object IdentifiabilitySolver {
         case CallSR(range, resultRune, templateRune, args) => Array(resultRune, templateRune) ++ args
         case PrototypeSR(range, resultRune, name, parameters, returnTypeRune) => Array(resultRune) ++ parameters ++ Array(returnTypeRune)
         case PackSR(range, resultRune, members) => Array(resultRune) ++ members
-        case RepeaterSequenceSR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune)
+        case StaticSizedArraySR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune)
+        case RuntimeSizedArraySR(range, resultRune, mutabilityRune, elementRune) => Array(resultRune, mutabilityRune, elementRune)
 //        case ManualSequenceSR(range, resultRune, elements) => Array(resultRune) ++ elements
         case RefListCompoundMutabilitySR(range, resultRune, coordListRune) => Array(resultRune, coordListRune)
 //        case CoordListSR(range, resultRune, elements) => Array(resultRune) ++ elements
@@ -74,7 +75,8 @@ object IdentifiabilitySolver {
       case CoerceToCoordSR(_, coordRune, kindRune) => Array(Array())
       case LiteralSR(_, rune, literal) => Array(Array())
       case AugmentSR(_, resultRune, ownership, permission, innerRune) => Array(Array())
-      case RepeaterSequenceSR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(Array(resultRune.rune), Array(mutabilityRune.rune, variabilityRune.rune, sizeRune.rune, elementRune.rune))
+      case StaticSizedArraySR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(Array(resultRune.rune), Array(mutabilityRune.rune, variabilityRune.rune, sizeRune.rune, elementRune.rune))
+      case RuntimeSizedArraySR(_, resultRune, mutabilityRune, elementRune) => Array(Array(resultRune.rune), Array(mutabilityRune.rune, elementRune.rune))
 //      case ManualSequenceSR(_, resultRune, elements) => Array(Array(resultRune.rune))
       case RefListCompoundMutabilitySR(range, resultRune, coordListRune) => Array(Array())
         // solverState.addPuzzle(ruleIndex, Array(senderRune, receiverRune))
@@ -188,11 +190,17 @@ object IdentifiabilitySolver {
         stepState.concludeRune(resultRune.rune, true)
         Ok(())
       }
-      case RepeaterSequenceSR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => {
+      case StaticSizedArraySR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => {
         stepState.concludeRune(resultRune.rune, true)
         stepState.concludeRune(mutabilityRune.rune, true)
         stepState.concludeRune(variabilityRune.rune, true)
         stepState.concludeRune(sizeRune.rune, true)
+        stepState.concludeRune(elementRune.rune, true)
+        Ok(())
+      }
+      case RuntimeSizedArraySR(_, resultRune, mutabilityRune, elementRune) => {
+        stepState.concludeRune(resultRune.rune, true)
+        stepState.concludeRune(mutabilityRune.rune, true)
         stepState.concludeRune(elementRune.rune, true)
         Ok(())
       }

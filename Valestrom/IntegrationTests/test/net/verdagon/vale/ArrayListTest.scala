@@ -12,7 +12,7 @@ class ArrayListTest extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """
           |struct List<E> rules(E Ref) {
-          |  array! Array<mut, E>;
+          |  array! []<mut>E;
           |}
           |fn len<E>(list &List<E>) int { ret len(&list.array); }
           |fn add<E>(list &!List<E>, newElement E) {

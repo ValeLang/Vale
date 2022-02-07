@@ -233,7 +233,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   test("Cant use set as a local name") {
     val error = compileForError(
       """fn moo() {
-        |  (set) = (6,);
+        |  [set] = (6,);
         |}
         |""".stripMargin)
     error match {

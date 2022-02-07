@@ -54,7 +54,7 @@ class StructTests extends FunSuite with Matchers {
         |}
         |fn main() int export {
         |  m = Marine(4, 7);
-        |  Marine(hp, ammo) = m;
+        |  Marine[hp, ammo] = m;
         |  ret ammo;
         |}
       """.stripMargin)
@@ -87,14 +87,14 @@ class StructTests extends FunSuite with Matchers {
         |struct Weapon #!DeriveStructDrop { }
         |fn drop(weapon Weapon) {
         |  println("Destroying weapon!");
-        |  Weapon() = weapon;
+        |  Weapon[] = weapon;
         |}
         |struct Marine #!DeriveStructDrop {
         |  weapon Weapon;
         |}
         |fn drop(marine Marine) {
         |  println("Destroying marine!");
-        |  Marine(weapon) = marine;
+        |  Marine[weapon] = marine;
         |}
         |fn main() export {
         |  Marine(Weapon());

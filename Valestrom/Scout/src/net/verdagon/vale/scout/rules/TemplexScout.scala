@@ -1,7 +1,7 @@
 package net.verdagon.vale.scout.rules
 
 import net.verdagon.vale.RangeS
-import net.verdagon.vale.parser.ast.{AnonymousRunePT, BoolPT, BorrowP, BorrowPT, CallPT, FunctionPT, ITemplexPT, IntPT, InterpretedPT, LocationPT, ManualSequencePT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnershipPT, PackPT, PermissionPT, PrototypePT, RangeP, ReadonlyP, RegionRune, RepeaterSequencePT, StringPT, VariabilityPT}
+import net.verdagon.vale.parser.ast.{AnonymousRunePT, BoolPT, BorrowP, BorrowPT, CallPT, FunctionPT, ITemplexPT, IntPT, InterpretedPT, LocationPT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnershipPT, PackPT, PermissionPT, PrototypePT, RangeP, ReadonlyP, RegionRune, RuntimeSizedArrayPT, StaticSizedArrayPT, StringPT, TuplePT, VariabilityPT}
 import net.verdagon.vale.scout.{CodeNameS, CodeRuneS, IEnvironment, IImpreciseNameS, INameS, IRuneS, ImplicitRuneS, LocationInDenizenBuilder, Scout}
 
 import scala.collection.mutable.ArrayBuffer
@@ -152,10 +152,10 @@ object TemplexScout {
                 members.map(translateTemplex(env, lidb.child(), ruleBuilder, _)).toArray)
             resultRuneS
           }
-          case RepeaterSequencePT(range, mutability, variability, size, element) => {
+          case StaticSizedArrayPT(range, mutability, variability, size, element) => {
             val resultRuneS = RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
             ruleBuilder +=
-              RepeaterSequenceSR(
+              StaticSizedArraySR(
                 evalRange(range),
                 resultRuneS,
                 translateTemplex(env, lidb.child(), ruleBuilder, mutability),
@@ -164,7 +164,17 @@ object TemplexScout {
                 translateTemplex(env, lidb.child(), ruleBuilder, element))
             resultRuneS
           }
-          case ManualSequencePT(range, elements) => {
+          case RuntimeSizedArrayPT(range, mutability, element) => {
+            val resultRuneS = RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
+            ruleBuilder +=
+              RuntimeSizedArraySR(
+                evalRange(range),
+                resultRuneS,
+                translateTemplex(env, lidb.child(), ruleBuilder, mutability),
+                translateTemplex(env, lidb.child(), ruleBuilder, element))
+            resultRuneS
+          }
+          case TuplePT(range, elements) => {
             val resultRuneS = RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
             val templateRuneS = RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
             val packRuneS = RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))

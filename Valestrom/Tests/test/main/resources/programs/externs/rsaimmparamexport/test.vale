@@ -1,4 +1,4 @@
-export Array<imm, int> as ImmIntArray;
+export []<imm>int as ImmIntArray;
 
 fn range(begin int, end int) IntRange { ret IntRange(begin, end); }
 struct IntRange { begin int; end int; }
@@ -12,14 +12,14 @@ fn next(self &!IntRangeIter) Opt<int> {
   }
 }
 
-fn expSumBytes(arr Array<imm, int>) int export {
+fn expSumBytes(arr []<imm>int) int export {
   sum! = 0;
   l = len(arr);
   foreach i in 0..l { set sum = sum + arr[i]; }
   ret sum;
 }
 
-fn extSumBytes(arr Array<imm, int>) int extern;
+fn extSumBytes(arr []<imm>int) int extern;
 
 fn main() int export {
   a = #[](5, {_});

@@ -4,8 +4,8 @@ fn main() int export {
   a! = Ship();
   b! = Ship();
 
-  Ship() = (set b = (set a = (set b = Ship())));
-  Ship() = a;
-  Ship() = b;
+  Ship[] = (set b = (set a = (set b = Ship())));
+  Ship[] = a;
+  Ship[] = b;
   ret 42;
 }

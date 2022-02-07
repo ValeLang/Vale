@@ -52,7 +52,7 @@ class RuleTests extends FunSuite with Matchers with Collector {
     checkFail(level5PR, "")
     checkFail(manualSeqRulePR, "")
     checkFail(packRulePR, "")
-    checkFail(repeaterSeqRulePR, "")
+    checkFail(staticSizedArrayPR, "")
     checkFail(rulePR, "")
     checkFail(ruleTemplexPR, "")
     checkFail(ruleTemplexPR, "")
@@ -78,7 +78,7 @@ class RuleTests extends FunSuite with Matchers with Collector {
   }
 
   test("Super complicated") {
-    compile(rulePR, "C = [I * X] | [N * T]") // succeeds
+    compile(rulePR, "C = [#I]X | [#N]T") // succeeds
   }
 
   test("destructure prototype") {
@@ -92,7 +92,7 @@ class RuleTests extends FunSuite with Matchers with Collector {
   }
 
   test("prototype with coords") {
-    compile(rulePR, "Prot(_, (int, bool), _)") shouldHave {
+    compile(rulePR, "Prot(_, Refs(int, bool), _)") shouldHave {
       case ComponentsPR(_,
         TypedPR(_,None,PrototypeTypePR),
         Vector(

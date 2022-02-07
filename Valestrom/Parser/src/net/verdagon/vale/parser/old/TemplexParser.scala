@@ -1,40 +1,93 @@
 package net.verdagon.vale.parser.old
 
-import net.verdagon.vale.parser.ast.{AnonymousRunePT, BoolPT, BorrowP, CallPT, ExclusiveReadwriteP, FinalP, ITemplexPT, ImmutableP, InlineP, InlinePT, IntPT, InterpretedPT, LocationPT, ManualSequencePT, MutabilityPT, MutableP, NameOrRunePT, OwnP, OwnershipPT, PermissionPT, PointerP, ReadonlyP, ReadwriteP, RegionRune, RepeaterSequencePT, ShareP, VariabilityPT, VaryingP, WeakP, YonderP}
+import net.verdagon.vale.parser.ast.{AnonymousRunePT, BoolPT, BorrowP, CallPT, ExclusiveReadwriteP, FinalP, ITemplexPT, ImmutableP, InlineP, InlinePT, IntPT, InterpretedPT, LocationPT, TuplePT, MutabilityPT, MutableP, NameOrRunePT, OwnP, OwnershipPT, PermissionPT, PointerP, ReadonlyP, ReadwriteP, RegionRune, RuntimeSizedArrayPT, ShareP, StaticSizedArrayPT, VariabilityPT, VaryingP, WeakP, YonderP}
 import net.verdagon.vale.parser.{ast, _}
 
 import scala.util.parsing.combinator.RegexParsers
 
 trait TemplexParser extends RegexParsers with ParserUtils {
 
-  def repeaterSeqTemplex: Parser[ITemplexPT] = {
-    (pos ~ ("[" ~> optWhite ~> templex) ~ (white ~> "*" ~> white ~> templex <~ optWhite <~ "]") ~ pos ^^ {
-      case begin ~ numElements ~ elementType ~ end => {
-        RepeaterSequencePT(ast.RangeP(begin, end), MutabilityPT(ast.RangeP(begin, end), MutableP), VariabilityPT(ast.RangeP(begin, end), FinalP), numElements, elementType)
+  def staticSizedArrayTemplex: Parser[ITemplexPT] = {
+    pos ~
+      ("[" ~> optWhite ~> "#" ~> optWhite ~> templex <~ optWhite <~ "]") ~
+      opt("<" ~> optWhite ~> repsep(templex, optWhite ~> "," <~ optWhite) <~ optWhite <~ ">") ~
+      templex ~
+      pos ^^ {
+      case begin ~ numElements ~ maybeTemplateArgs ~ elementType ~ end => {
+        val mutability =
+          maybeTemplateArgs.toList.flatten.lift(0)
+            .getOrElse(MutabilityPT(ast.RangeP(begin, end), MutableP))
+        val variability =
+          maybeTemplateArgs.toList.flatten.lift(1)
+            .getOrElse(VariabilityPT(ast.RangeP(begin, end), FinalP))
+        StaticSizedArrayPT(
+          ast.RangeP(begin, end),
+          mutability,
+          variability,
+          numElements,
+          elementType)
       }
-    }) |
-      (pos ~ ("[<" ~> optWhite ~> atomTemplex <~ optWhite <~ ">") ~ (optWhite ~> templex) ~ (optWhite ~> "*" ~> optWhite ~> templex <~ optWhite <~ "]") ~ pos ^^ {
-        case begin ~ mutability ~ numElements ~ elementType ~ end => {
-          RepeaterSequencePT(ast.RangeP(begin, end), mutability, VariabilityPT(ast.RangeP(begin, end), FinalP), numElements, elementType)
-        }
-      }) |
-      (pos ~ ("[<" ~> optWhite ~> atomTemplex <~ optWhite <~ ",") ~ (optWhite ~> atomTemplex <~ optWhite <~ ">") ~ (optWhite ~> templex) ~ (optWhite ~> "*" ~> optWhite ~> templex <~ optWhite <~ "]") ~ pos ^^ {
-        case begin ~ mutability ~ variability ~ numElements ~ elementType ~ end => {
-          RepeaterSequencePT(ast.RangeP(begin, end), mutability, variability, numElements, elementType)
-        }
-      })
+    }
   }
 
-  private[parser] def manualSeqTemplex: Parser[ITemplexPT] = {
-    pos ~ ("[" ~> optWhite ~> repsep(templex, optWhite ~> "," <~ optWhite) <~ optWhite <~ "]") ~ pos ^^ {
-      case begin ~ members ~ end => ManualSequencePT(ast.RangeP(begin, end), members.toVector)
+
+  def runtimeSizedArrayTemplex: Parser[ITemplexPT] = {
+    (pos <~ "[" <~ optWhite <~ "]") ~
+      opt("<" ~> optWhite ~> repsep(templex, optWhite ~> "," <~ optWhite) <~ optWhite <~ ">") ~
+      templex ~
+      pos ^^ {
+      case begin ~ maybeTemplateArgs ~ elementType ~ end => {
+        val mutability =
+          maybeTemplateArgs.toList.flatten.lift(0)
+            .getOrElse(MutabilityPT(ast.RangeP(begin, end),MutableP))
+        RuntimeSizedArrayPT(
+          ast.RangeP(begin, end),
+          mutability,
+          elementType)
+      }
     }
+//
+//    (pos ~ ("[" ~> optWhite ~> templex) ~ (white ~> "*" ~> white ~> templex <~ optWhite <~ "]") ~ pos ^^ {
+//      case begin ~ numElements ~ elementType ~ end => {
+//        StaticSizedArrayPT(ast.RangeP(begin, end), MutabilityPT(ast.RangeP(begin, end), MutableP), VariabilityPT(ast.RangeP(begin, end), FinalP), numElements, elementType)
+//      }
+//    }) |
+//      (pos ~ ("[<" ~> optWhite ~> atomTemplex <~ optWhite <~ ">") ~ (optWhite ~> templex) ~ (optWhite ~> "*" ~> optWhite ~> templex <~ optWhite <~ "]") ~ pos ^^ {
+//        case begin ~ mutability ~ numElements ~ elementType ~ end => {
+//          StaticSizedArrayPT(ast.RangeP(begin, end), mutability, VariabilityPT(ast.RangeP(begin, end), FinalP), numElements, elementType)
+//        }
+//      }) |
+//      (pos ~ ("[<" ~> optWhite ~> atomTemplex <~ optWhite <~ ",") ~ (optWhite ~> atomTemplex <~ optWhite <~ ">") ~ (optWhite ~> templex) ~ (optWhite ~> "*" ~> optWhite ~> templex <~ optWhite <~ "]") ~ pos ^^ {
+//        case begin ~ mutability ~ variability ~ numElements ~ elementType ~ end => {
+//          StaticSizedArrayPT(ast.RangeP(begin, end), mutability, variability, numElements, elementType)
+//        }
+//      })
+  }
+
+  private[parser] def tupleTemplex: Parser[ITemplexPT] = {
+    (pos <~ "(" <~ optWhite <~ ")") ~ pos ^^ {
+      case begin ~ end => TuplePT(ast.RangeP(begin, end), Vector.empty)
+    } |
+    pos ~ ("(" ~> optWhite ~> repsep(templex, optWhite ~> "," <~ optWhite) <~ optWhite <~ "," <~ optWhite <~ ")") ~ pos ^^ {
+      case begin ~ members ~ end => TuplePT(ast.RangeP(begin, end), members.toVector)
+    } |
+    pos ~
+      ("(" ~> optWhite ~> templex <~ optWhite <~ "," <~ optWhite) ~
+      (repsep(templex, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")") ~
+      pos ^^ {
+      case begin ~ first ~ rest ~ end => TuplePT(ast.RangeP(begin, end), (first :: rest).toVector)
+    }
+    // Old:
+    //  pos ~ ("[" ~> optWhite ~> repsep(templex, optWhite ~> "," <~ optWhite) <~ optWhite <~ "]") ~ pos ^^ {
+    //    case begin ~ members ~ end => ManualSequencePT(ast.RangeP(begin, end), members.toVector)
+    //  }
   }
 
   private[parser] def atomTemplex: Parser[ITemplexPT] = {
     ("(" ~> optWhite ~> templex <~ optWhite <~ ")") |
-      repeaterSeqTemplex |
-      manualSeqTemplex |
+      staticSizedArrayTemplex |
+      runtimeSizedArrayTemplex |
+      tupleTemplex |
       (pos ~ long ~ pos ^^ { case begin ~ value ~ end => IntPT(ast.RangeP(begin, end), value) }) |
       pos ~ "true" ~ pos ^^ { case begin ~ _ ~ end => BoolPT(ast.RangeP(begin, end), true) } |
       pos ~ "false" ~ pos ^^ { case begin ~ _ ~ end => BoolPT(ast.RangeP(begin, end), false) } |

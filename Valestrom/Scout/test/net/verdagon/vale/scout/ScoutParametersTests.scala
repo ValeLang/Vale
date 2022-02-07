@@ -85,7 +85,7 @@ class ScoutParametersTests extends FunSuite with Matchers with Collector {
 
   test("Rune destructure") {
     // This is an ambiguous case but we decided it should destructure a struct or sequence, see CSTODTS in docs.
-    val program1 = compile("""fn main<T>(moo T(a int)) infer-ret { }""")
+    val program1 = compile("""fn main<T>(moo T[a int]) infer-ret { }""")
     val main = program1.lookupFunction("main")
 
     val Vector(param) = main.params

@@ -1,6 +1,6 @@
-export [<imm> 3 * int] as ImmIntArray;
+export [#3]<imm>int as ImmIntArray;
 
-fn cSumBytes(arr [<imm> 3 * int]) int extern;
+fn cSumBytes(arr [#3]<imm>int) int extern;
 
 fn main() int export {
   a = #[#][13, 14, 15];

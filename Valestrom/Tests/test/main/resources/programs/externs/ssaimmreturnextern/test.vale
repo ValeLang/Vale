@@ -1,7 +1,7 @@
 
-export [<imm> 3 * int] as ImmIntArray;
+export [#3]<imm>int as ImmIntArray;
 
-fn cMakeRSA() [<imm> 3 * int] extern;
+fn cMakeRSA() [#3]<imm>int extern;
 
 fn main() int export {
   arr = cMakeRSA();

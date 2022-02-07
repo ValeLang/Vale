@@ -2,7 +2,7 @@ package net.verdagon.vale.parser.rules
 
 import net.verdagon.vale.parser.old.CombinatorParsers._
 import net.verdagon.vale.parser._
-import net.verdagon.vale.parser.ast.{AnonymousRunePT, ComponentsPR, CoordTypePR, EqualsPR, KindTypePR, ManualSequencePT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnP, OwnershipPT, PatternPP, TemplexPR, TypedPR}
+import net.verdagon.vale.parser.ast.{AnonymousRunePT, ComponentsPR, CoordTypePR, EqualsPR, KindTypePR, TuplePT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnP, OwnershipPT, PatternPP, TemplexPR, TypedPR}
 import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, vfail}
 import org.scalatest.{FunSuite, Matchers}
@@ -122,19 +122,19 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
   }
 
   test("Coord with sequence in value spot") {
-    compile(rulePR, "T Ref = [int, bool]") shouldHave {
+    compile(rulePR, "T Ref = (int, bool)") shouldHave {
       case EqualsPR(_,
           TypedPR(_,Some(NameP(_, "T")),CoordTypePR),
           TemplexPR(
-            ManualSequencePT(_,
+            TuplePT(_,
               Vector(NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "bool")))))) =>
     }
   }
 
-  test("Braces without Ref is sequence") {
-    compile(rulePR, "[int, bool]") shouldHave {
+  test("Lone tuple is sequence") {
+    compile(rulePR, "(int, bool)") shouldHave {
       case TemplexPR(
-          ManualSequencePT(_,
+          TuplePT(_,
             Vector(NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "bool"))))) =>
         }
   }

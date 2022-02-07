@@ -253,11 +253,11 @@ class ArrayTests extends FunSuite with Matchers {
     compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
-  //m [<mut> 3 * [<mut> 3 * int]] = [mut][ [mut][1, 2, 3], [mut][4, 5, 6], [mut][7, 8, 9] ];
+  //m [<mut> 3 * [#3]<mut>int] = [mut][ [mut][1, 2, 3], [mut][4, 5, 6], [mut][7, 8, 9] ];
   test("Take arraysequence as a parameter") {
     val compile = RunCompilation.test(
       """
-        |fn doThings(arr [<imm> 5 * int]) int {
+        |fn doThings(arr [#5]<imm>int) int {
         |  ret arr.3;
         |}
         |fn main() int export {
@@ -276,7 +276,7 @@ class ArrayTests extends FunSuite with Matchers {
         |  x int;
         |}
         |
-        |fn doThings(arr *[3 * ^MutableStruct]) int {
+        |fn doThings(arr *[#3]^MutableStruct) int {
         |  ret arr.2.x;
         |}
         |fn main() int export {
@@ -317,7 +317,7 @@ class ArrayTests extends FunSuite with Matchers {
         |fn __call(lam Lam, i int) int { ret i; }
         |
         |fn main() int
-        |rules(F Prot = Prot("__call", (Lam, int), int))
+        |rules(F Prot = Prot("__call", Refs(Lam, int), int))
         |export {
         |  a = #[](10, Lam());
         |  ret a.3;
@@ -456,7 +456,7 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |fn myFunc<F>(generator F) T
-        |rules(T Ref, Prot("__call", (F, int), T))
+        |rules(T Ref, Prot("__call", Refs(F, int), T))
         |{
         |  ret generator!(9);
         |}
@@ -561,7 +561,7 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """
           |import array.make.*;
-          |fn toArray<M, N, E>(seq *[<_> N * E]) Array<M, E>
+          |fn toArray<M, N, E>(seq *[#N]<_>E) []<M>E
           |rules(M Mutability) {
           |  ret MakeArray(N, { seq[_] });
           |}
@@ -584,6 +584,10 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Array foreach") {
+
+    start with thing
+    // make an runtime array parsing thing, see each.vale
+
     val compile = RunCompilation.test(
       """
         |import array.make.*;

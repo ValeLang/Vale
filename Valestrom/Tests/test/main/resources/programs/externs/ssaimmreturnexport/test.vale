@@ -1,11 +1,11 @@
 
-export [<imm> 3 * int] as ImmIntArray;
+export [#3]<imm>int as ImmIntArray;
 
-fn valeMakeSSA() [<imm> 3 * int] export {
+fn valeMakeSSA() [#3]<imm>int export {
   ret #[#][13, 14, 15];
 }
 
-fn cMakeSSA() [<imm> 3 * int] extern;
+fn cMakeSSA() [#3]<imm>int extern;
 
 fn main() int export {
   arr = cMakeSSA();

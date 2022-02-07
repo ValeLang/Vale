@@ -370,7 +370,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |
         |struct Vec<N, T> rules(N int)
         |{
-        |  values [<imm> N * T];
+        |  values [#N]<imm>T;
         |}
         |
         |fn main() int export {
@@ -584,8 +584,8 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("Test returning empty seq") {
     val compile = RunCompilation.test(
-      """export [] as Tup0;
-        |fn main() [] export {
+      """export () as Tup0;
+        |fn main() () export {
         |  ret ();
         |}
         |""".stripMargin)
@@ -727,7 +727,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("exporting array") {
-    val compilation = RunCompilation.test("export Array<mut, int> as IntArray;")
+    val compilation = RunCompilation.test("export []<mut>int as IntArray;")
     val hamuts = compilation.getHamuts()
     val testPackage = hamuts.lookupPackage(PackageCoordinate.TEST_TLD)
     val kindH = vassertSome(testPackage.exportNameToKind.get("IntArray"))
@@ -742,7 +742,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
       """
         |fn each<E, F>(func F) void
         |rules(
-        |  Prot("__call", (&!F, &E), void)) {
+        |  Prot("__call", Refs(&!F, &E), void)) {
         |}
         |
         |struct PageMember { x int; }

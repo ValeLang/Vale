@@ -178,7 +178,7 @@ class TemplarTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |struct Moo #!DeriveStructDrop export { hp int; }
         |fn drop(self ^Moo) {
-        |  (_) = self;
+        |  [_] = self;
         |}
         |fn main() int export {
         |  ret Moo(42).hp;
@@ -365,7 +365,7 @@ class TemplarTests extends FunSuite with Matchers {
         |struct Muta { }
         |
         |fn destructor(m ^Muta) {
-        |  Muta() = m;
+        |  Muta[] = m;
         |}
         |
         |fn main() export {
@@ -683,7 +683,7 @@ class TemplarTests extends FunSuite with Matchers {
         |}
         |
         |fn main() int export {
-        |	 Vec3i(x, y, z) = Vec3i(3, 4, 5);
+        |	 Vec3i[x, y, z] = Vec3i(3, 4, 5);
         |  ret y;
         |}
       """.stripMargin)
@@ -718,7 +718,7 @@ class TemplarTests extends FunSuite with Matchers {
         |
         |fn main() int export {
         |  v = Vec3i(3, 4, 5);
-        |	 (x, y, z) = *v;
+        |	 [x, y, z] = *v;
         |  ret y;
         |}
       """.stripMargin)
@@ -917,7 +917,7 @@ class TemplarTests extends FunSuite with Matchers {
         |  y float;
         |}
         |struct Pattern imm {
-        |  patternTiles Array<imm, Vec2>;
+        |  patternTiles []<imm>Vec2;
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()
@@ -1213,7 +1213,7 @@ class TemplarTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |import v.builtins.arrays.*;
         |import v.builtins.functor1.*;
-        |export Array<imm, Raza> as RazaArray;
+        |export []<imm>Raza as RazaArray;
         |struct Raza imm { }
         |""".stripMargin)
     compile.getTemputs() match {
@@ -1246,7 +1246,7 @@ class TemplarTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |import v.builtins.arrays.*;
         |import v.builtins.functor1.*;
-        |export [<imm> 5 * Raza] as RazaArray;
+        |export [#5]<imm>Raza as RazaArray;
         |struct Raza imm { }
         |""".stripMargin)
     compile.getTemputs() match {

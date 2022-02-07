@@ -125,7 +125,7 @@ class AstronomerTests extends FunSuite with Matchers  {
     val compilation =
       AstronomerTestCompilation.test(
         """fn moo<T>()
-          |rules(T = (int, bool))
+          |rules(T = Refs(int, bool))
           |{
           |}
           |""".stripMargin)
@@ -139,7 +139,7 @@ class AstronomerTests extends FunSuite with Matchers  {
     val compilation =
       AstronomerTestCompilation.test(
         """fn moo<T>()
-          |rules(Prot("moo", (T, bool), str))
+          |rules(Prot("moo", Refs(T, bool), str))
           |{
           |}
           |""".stripMargin)
@@ -153,7 +153,7 @@ class AstronomerTests extends FunSuite with Matchers  {
     val compilation =
       AstronomerTestCompilation.test(
         """fn moo<P>()
-          |rules(P = (), Prot("moo", P, str))
+          |rules(P = Refs(), Prot("moo", P, str))
           |{
           |}
           |""".stripMargin)

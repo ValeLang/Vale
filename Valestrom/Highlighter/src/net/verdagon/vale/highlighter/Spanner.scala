@@ -1,6 +1,6 @@
 package net.verdagon.vale.highlighter
 
-import net.verdagon.vale.parser.ast.{AbstractAttributeP, AugmentPE, BlockPE, CallPT, ConsecutorPE, ConstantBoolPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, DestructPE, DestructureP, DotPE, ExportAttributeP, ExternAttributeP, FileP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IExpressionPE, IFunctionAttributeP, INameDeclarationP, IRulexPR, IStructContent, ITemplexPT, IdentifyingRunesP, IfPE, ImplP, IndexPE, InlinePT, IntPT, InterfaceP, InterpretedPT, LambdaPE, LetPE, LookupNameP, LookupPE, MagicParamLookupPE, MethodCallPE, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, PackPE, ParamsP, PatternPP, PureAttributeP, RepeaterSequencePT, ReturnPE, RuntimeSizedP, ShortcallPE, StaticSizedP, StrInterpolatePE, StructMembersP, StructMethodP, StructP, TemplateArgsP, TemplateRulesP, TopLevelFunctionP, TopLevelImplP, TopLevelInterfaceP, TopLevelStructP, TuplePE, UnitP, VoidPE, WhilePE}
+import net.verdagon.vale.parser.ast.{AbstractAttributeP, AugmentPE, BlockPE, CallPT, ConsecutorPE, ConstantBoolPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, DestructPE, DestructureP, DotPE, ExportAttributeP, ExternAttributeP, FileP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IExpressionPE, IFunctionAttributeP, INameDeclarationP, IRulexPR, IStructContent, ITemplexPT, IdentifyingRunesP, IfPE, ImplP, IndexPE, InlinePT, IntPT, InterfaceP, InterpretedPT, LambdaPE, LetPE, LookupNameP, LookupPE, MagicParamLookupPE, MethodCallPE, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, PackPE, ParamsP, PatternPP, PureAttributeP, StaticSizedArrayPT, ReturnPE, RuntimeSizedP, ShortcallPE, StaticSizedP, StrInterpolatePE, StructMembersP, StructMethodP, StructP, TemplateArgsP, TemplateRulesP, TopLevelFunctionP, TopLevelImplP, TopLevelInterfaceP, TopLevelStructP, TuplePE, UnitP, VoidPE, WhilePE}
 import net.verdagon.vale.parser.{ast, _}
 import net.verdagon.vale.{vcurious, vimpl}
 
@@ -362,7 +362,7 @@ object Spanner {
       case InterpretedPT(range, ownership, permission, inner) => {
         makeSpan(Ownership, range, Vector(forTemplex(inner)))
       }
-      case RepeaterSequencePT(range, mutability, variability, size, element) => {
+      case StaticSizedArrayPT(range, mutability, variability, size, element) => {
         makeSpan(
           Typ,
           range,

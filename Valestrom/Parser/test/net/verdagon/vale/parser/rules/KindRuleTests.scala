@@ -2,7 +2,7 @@ package net.verdagon.vale.parser.rules
 
 import net.verdagon.vale.parser.old.CombinatorParsers._
 import net.verdagon.vale.parser._
-import net.verdagon.vale.parser.ast.{AnonymousRunePT, CallPT, ComponentsPR, EqualsPR, FinalP, ImmutableP, IntPT, IntTypePR, KindTypePR, ManualSequencePT, MutabilityPT, MutableP, NameOrRunePT, NameP, PatternPP, PrototypePT, RepeaterSequencePT, SharePT, TemplexPR, TypedPR, VariabilityPT}
+import net.verdagon.vale.parser.ast.{AnonymousRunePT, CallPT, ComponentsPR, EqualsPR, FinalP, ImmutableP, IntPT, IntTypePR, KindTypePR, TuplePT, MutabilityPT, MutableP, NameOrRunePT, NameP, PatternPP, PrototypePT, StaticSizedArrayPT, SharePT, TemplexPR, TypedPR, VariabilityPT}
 import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, vfail}
 import org.scalatest.{FunSuite, Matchers}
@@ -89,19 +89,19 @@ class KindRuleTests extends FunSuite with Matchers with Collector {
   }
 
   test("Kind with sequence in value spot") {
-    compile(rulePR, "T Kind = [int, bool]") shouldHave {
+    compile(rulePR, "T Kind = (int, bool)") shouldHave {
       case EqualsPR(_,
           TypedPR(_,Some(NameP(_, "T")),KindTypePR),
           TemplexPR(
-            ManualSequencePT(_,
+            TuplePT(_,
               Vector(NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "bool")))))) =>
     }
   }
 
-  test("Braces without Kind is sequence") {
-    compile(rulePR, "[int, bool]") shouldHave {
+  test("Lone sequence") {
+    compile(rulePR, "(int, bool)") shouldHave {
       case TemplexPR(
-          ManualSequencePT(_,
+          TuplePT(_,
             Vector(NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "bool"))))) =>
     }
   }
@@ -165,41 +165,41 @@ class KindRuleTests extends FunSuite with Matchers with Collector {
   }
 
   test("Repeater sequence") {
-    compile(repeaterSeqRulePR, "[_ * _]") shouldHave {
-      case RepeaterSequencePT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), AnonymousRunePT(_),AnonymousRunePT(_)) =>
+    compile(staticSizedArrayPR, "[#_]_") shouldHave {
+      case StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), AnonymousRunePT(_),AnonymousRunePT(_)) =>
     }
-    compile(repeaterSeqRulePR, "[<imm> _ * _]") shouldHave {
-      case RepeaterSequencePT(_,MutabilityPT(_,ImmutableP), VariabilityPT(_,FinalP), AnonymousRunePT(_),AnonymousRunePT(_)) =>
+    compile(staticSizedArrayPR, "[#_]<imm>_") shouldHave {
+      case StaticSizedArrayPT(_,MutabilityPT(_,ImmutableP), VariabilityPT(_,FinalP), AnonymousRunePT(_),AnonymousRunePT(_)) =>
     }
-    compile(repeaterSeqRulePR, "[3 * int]") shouldHave {
-      case RepeaterSequencePT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), IntPT(_,3),NameOrRunePT(NameP(_, "int"))) =>
+    compile(staticSizedArrayPR, "[#3]int") shouldHave {
+      case StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), IntPT(_,3),NameOrRunePT(NameP(_, "int"))) =>
     }
-    compile(repeaterSeqRulePR, "[N * int]") shouldHave {
-        case RepeaterSequencePT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, "N")),NameOrRunePT(NameP(_, "int"))) =>
+    compile(staticSizedArrayPR, "[#N]int") shouldHave {
+        case StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, "N")),NameOrRunePT(NameP(_, "int"))) =>
     }
-    compile(repeaterSeqRulePR, "[_ * int]") shouldHave {
-        case RepeaterSequencePT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), AnonymousRunePT(_),NameOrRunePT(NameP(_, "int"))) =>
+    compile(staticSizedArrayPR, "[#_]int") shouldHave {
+        case StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), AnonymousRunePT(_),NameOrRunePT(NameP(_, "int"))) =>
     }
-    compile(repeaterSeqRulePR, "[N * T]") shouldHave {
-        case RepeaterSequencePT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, "N")),NameOrRunePT(NameP(_, "T"))) =>
+    compile(staticSizedArrayPR, "[#N]T") shouldHave {
+        case StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, "N")),NameOrRunePT(NameP(_, "T"))) =>
     }
   }
 
   test("Regular sequence") {
-    compile(manualSeqRulePR, "[]") shouldHave {
-        case ManualSequencePT(_,Vector()) =>
+    compile(manualSeqRulePR, "()") shouldHave {
+        case TuplePT(_,Vector()) =>
     }
-    compile(manualSeqRulePR, "[int]") shouldHave {
-        case ManualSequencePT(_,Vector(NameOrRunePT(NameP(_, "int")))) =>
+    compile(manualSeqRulePR, "(int)") shouldHave {
+        case TuplePT(_,Vector(NameOrRunePT(NameP(_, "int")))) =>
     }
-    compile(manualSeqRulePR, "[int, bool]") shouldHave {
-        case ManualSequencePT(_,Vector(NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "bool")))) =>
+    compile(manualSeqRulePR, "(int, bool)") shouldHave {
+        case TuplePT(_,Vector(NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "bool")))) =>
     }
-    compile(manualSeqRulePR, "[_, bool]") shouldHave {
-        case ManualSequencePT(_,Vector(AnonymousRunePT(_), NameOrRunePT(NameP(_, "bool")))) =>
+    compile(manualSeqRulePR, "(_, bool)") shouldHave {
+        case TuplePT(_,Vector(AnonymousRunePT(_), NameOrRunePT(NameP(_, "bool")))) =>
     }
-    compile(manualSeqRulePR, "[_, _]") shouldHave {
-        case ManualSequencePT(_,Vector(AnonymousRunePT(_), AnonymousRunePT(_))) =>
+    compile(manualSeqRulePR, "(_, _)") shouldHave {
+        case TuplePT(_,Vector(AnonymousRunePT(_), AnonymousRunePT(_))) =>
     }
   }
 

@@ -1,8 +1,8 @@
-export [<mut> 5 * int] as MutIntArray;
+export [#5]<mut>int as MutIntArray;
 
-fn sumBytes(arr *[<mut> 5 * int]) int extern;
-fn getMutIntArrayLen(arr *[<mut> 5 * int]) int export { len(&arr) }
-fn getMutIntArrayElem(arr *[<mut> 5 * int], i int) int export { arr[i] }
+fn sumBytes(arr *[#5]<mut>int) int extern;
+fn getMutIntArrayLen(arr *[#5]<mut>int) int export { len(&arr) }
+fn getMutIntArrayElem(arr *[#5]<mut>int, i int) int export { arr[i] }
 
 fn main() int export {
   a = [#5]({_});

@@ -22,21 +22,23 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
     pos ~
     opt(pstr("virtual") <~ white) ~
     (
-      // The order here matters, we don't want the "a" rule to match "a A(_, _)" just because one starts with the other.
+      // The order here matters.
+      // We dont want to mix up the type []Ship with the destructure [], so types need to come first.
+      // We don't want the "a" rule to match "a A[_, _]" just because one starts with the other.
 
-        // First, the ones with destructuring:
+      // First, the ones with types:
         // Yes capture, yes type, yes destructure:
         underscoreOr(patternCapture) ~ (white ~> templex) ~ destructure ^^ { case capture ~ tyype ~ destructure => (None, capture, Some(tyype), Some(destructure)) } |
-        // Yes capture, no type, yes destructure:
-        underscoreOr(patternCapture) ~ (white ~> destructure) ^^ { case capture ~ destructure => (None, capture, None, Some(destructure)) } |
-        // No capture, yes type, yes destructure:
-        templex ~ destructure ^^ { case tyype ~ destructure => (None, None, Some(tyype), Some(destructure)) } |
-        // No capture, no type, yes destructure:
-        destructure ^^ { case destructure => (None, None, None, Some(destructure)) } |
-      // Now, the ones with types:
-        // No capture, yes type, no destructure: impossible.
         // Yes capture, yes type, no destructure:
         underscoreOr(patternCapture) ~ (white ~> templex) ^^ { case capture ~ tyype => (None, capture, Some(tyype), None) } |
+        // No capture, yes type, yes destructure:
+        templex ~ destructure ^^ { case tyype ~ destructure => (None, None, Some(tyype), Some(destructure)) } |
+        // No capture, yes type, no destructure: impossible.
+      // Now, the ones with destructuring:
+        // Yes capture, no type, yes destructure:
+        underscoreOr(patternCapture) ~ (white ~> destructure) ^^ { case capture ~ destructure => (None, capture, None, Some(destructure)) } |
+        // No capture, no type, yes destructure:
+        destructure ^^ { case destructure => (None, None, None, Some(destructure)) } |
       // Now, a simple capture:
         // Yes capture, no type, no destructure:
         underscoreOr(patternCapture) ^^ { case capture => (None, capture, None, None) } |
@@ -86,7 +88,7 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
   // Add any new rules to the "Nothing matches empty string" test!
 
   private[parser] def destructure: Parser[DestructureP] = {
-    pos ~ ("(" ~> optWhite ~> repsep(atomPattern, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")") ~ pos ^^ {
+    pos ~ ("[" ~> optWhite ~> repsep(atomPattern, optWhite ~> "," <~ optWhite) <~ optWhite <~ "]") ~ pos ^^ {
       case begin ~ inners ~ end => DestructureP(ast.RangeP(begin, end), inners.toVector)
     }
   }

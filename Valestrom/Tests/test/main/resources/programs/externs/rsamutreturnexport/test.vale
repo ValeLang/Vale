@@ -1,12 +1,12 @@
 
-export Array<mut, int> as MutIntArray;
+export []<mut>int as MutIntArray;
 
-fn valeMakeRSA() Array<mut, int> export {
+fn valeMakeRSA() []<mut>int export {
   ssa = #[#][5, 7, 9, 10, 11];
   ret Array<mut, int>(ssa.len(), { ssa[_] });
 }
 
-fn cMakeRSA() Array<mut, int> extern;
+fn cMakeRSA() []<mut>int extern;
 
 fn main() int export {
   arr = cMakeRSA();

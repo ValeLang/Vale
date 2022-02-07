@@ -22,7 +22,7 @@ class IfTests extends FunSuite with Matchers with Collector with TestParseUtils 
   }
 
   test("if let") {
-    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), "if (u) = a {}") shouldHave {
+    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), "if [u] = a {}") shouldHave {
       case IfPE(_,
         LetPE(_,None,
           PatternPP(_,None,None,None,

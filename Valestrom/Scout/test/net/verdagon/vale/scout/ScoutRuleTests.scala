@@ -126,7 +126,7 @@ class ScoutRuleTests extends FunSuite with Matchers {
       compile(
         """
           |fn main<M, V, N, E>(t T)
-          |rules(T Ref = [<M, V> N * E]) {}
+          |rules(T Ref = [#N]<M, V>E) {}
           |""".stripMargin)
     val main = program.lookupFunction("main")
 

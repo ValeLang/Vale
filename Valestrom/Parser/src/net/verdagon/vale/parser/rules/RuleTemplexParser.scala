@@ -1,7 +1,7 @@
 package net.verdagon.vale.parser.rules
 
 import net.verdagon.vale.parser
-import net.verdagon.vale.parser.ast.{AnonymousRunePT, BoolPT, BorrowP, BorrowPT, CallPT, ExclusiveReadwriteP, FinalP, FunctionPT, ITemplexPT, ImmutableP, InlineP, IntPT, InterpretedPT, LocationPT, ManualSequencePT, MutabilityPT, MutableP, NameOrRunePT, OwnP, OwnershipPT, PackPT, PermissionPT, PointPT, PointerP, PrototypePT, ReadonlyP, ReadwriteP, RepeaterSequencePT, ShareP, SharePT, StringPT, VariabilityPT, WeakP, YonderP}
+import net.verdagon.vale.parser.ast.{AnonymousRunePT, BoolPT, BorrowP, BorrowPT, CallPT, ExclusiveReadwriteP, FinalP, FunctionPT, ITemplexPT, ImmutableP, InlineP, IntPT, InterpretedPT, LocationPT, TuplePT, MutabilityPT, MutableP, NameOrRunePT, OwnP, OwnershipPT, PackPT, PermissionPT, PointPT, PointerP, PrototypePT, ReadonlyP, ReadwriteP, StaticSizedArrayPT, ShareP, SharePT, StringPT, VariabilityPT, WeakP, YonderP}
 import net.verdagon.vale.parser.{ast, _}
 import net.verdagon.vale.parser.old.ParserUtils
 
@@ -46,7 +46,7 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
     callableRulePR |
     packRulePR |
     manualSeqRulePR |
-    repeaterSeqRulePR |
+    staticSizedArrayPR |
     (pos ~ long ~ pos ^^ { case begin ~ inner ~ end => IntPT(ast.RangeP(begin, end), inner) }) |
     keywordOrIdentifierOrRuneRuleTemplexPR |
     // This is at the end because we dont want to preclude identifiers like __Never
@@ -60,29 +60,44 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
   // Add any new rules to the "Nothing matches empty string" test!
 
   private[parser] def manualSeqRulePR: Parser[ITemplexPT] = {
-    pos ~ ("[" ~> optWhite ~> repsep(ruleTemplexPR, optWhite ~> "," <~ optWhite) <~ optWhite <~ "]") ~ pos ^^ {
-      case begin ~ members ~ end => ManualSequencePT(ast.RangeP(begin, end), members.toVector)
+    pos ~ ("(" ~> optWhite ~> repsep(ruleTemplexPR, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")") ~ pos ^^ {
+      case begin ~ members ~ end => TuplePT(ast.RangeP(begin, end), members.toVector)
     }
   }
 
   // Add any new rules to the "Nothing matches empty string" test!
 
-  private[parser] def repeaterSeqRulePR: Parser[ITemplexPT] = {
-    (pos ~ ("[" ~> optWhite ~> ruleTemplexPR <~ optWhite <~ "*" <~ optWhite) ~ (ruleTemplexPR <~ optWhite <~ "]") ~ pos ^^ {
-      case begin ~ size ~ element ~ end => {
-        RepeaterSequencePT(ast.RangeP(begin, end), MutabilityPT(ast.RangeP(begin, begin), MutableP), VariabilityPT(ast.RangeP(begin, begin), FinalP), size, element)
-      }
-    }) |
-    (pos ~ ("[<" ~> optWhite ~> ruleTemplexPR <~ optWhite <~ ">") ~ ((optWhite ~> ruleTemplexPR) <~ optWhite <~ "*" <~ optWhite) ~ (ruleTemplexPR <~ optWhite <~ "]") ~ pos ^^ {
-      case begin ~ mutability ~ size ~ element ~ end => {
-        RepeaterSequencePT(ast.RangeP(begin, end), mutability, VariabilityPT(ast.RangeP(begin, begin), FinalP), size, element)
-      }
-    }) |
-    (pos ~ ("[<" ~> optWhite ~> ruleTemplexPR <~ optWhite <~ ",") ~ (optWhite ~> ruleTemplexPR <~ optWhite <~ ">") ~ ((optWhite ~> ruleTemplexPR) <~ optWhite <~ "*" <~ optWhite) ~ (ruleTemplexPR <~ optWhite <~ "]") ~ pos ^^ {
-      case begin ~ mutability ~ variability ~ size ~ element ~ end => {
-        RepeaterSequencePT(ast.RangeP(begin, end), mutability, variability, size, element)
-      }
-    })
+  private[parser] def staticSizedArrayPR: Parser[ITemplexPT] = {
+    pos ~
+      ("[" ~> optWhite ~> "#" ~> optWhite ~> ruleTemplexPR <~ optWhite <~ "]") ~
+      opt("<" ~> optWhite ~> repsep(ruleTemplexPR, optWhite ~> "," <~ optWhite) <~ optWhite <~ ">") ~
+      ruleTemplexPR ~
+      pos ^^ {
+        case begin ~ size ~ maybeTemplateArgs ~ element ~ end => {
+          val mutability =
+            maybeTemplateArgs.toList.flatten.lift(0)
+              .getOrElse(MutabilityPT(ast.RangeP(begin, end), MutableP))
+          val variability =
+            maybeTemplateArgs.toList.flatten.lift(1)
+              .getOrElse(VariabilityPT(ast.RangeP(begin, end), FinalP))
+          StaticSizedArrayPT(ast.RangeP(begin, end), mutability, variability, size, element)
+        }
+    }
+//    (pos ~ ("[" ~> optWhite ~> ruleTemplexPR <~ optWhite <~ "*" <~ optWhite) ~ (ruleTemplexPR <~ optWhite <~ "]") ~ pos ^^ {
+//      case begin ~ size ~ element ~ end => {
+//        StaticSizedArrayPT(ast.RangeP(begin, end), MutabilityPT(ast.RangeP(begin, begin), MutableP), VariabilityPT(ast.RangeP(begin, begin), FinalP), size, element)
+//      }
+//    }) |
+//    (pos ~ ("[<" ~> optWhite ~> ruleTemplexPR <~ optWhite <~ ">") ~ ((optWhite ~> ruleTemplexPR) <~ optWhite <~ "*" <~ optWhite) ~ (ruleTemplexPR <~ optWhite <~ "]") ~ pos ^^ {
+//      case begin ~ mutability ~ size ~ element ~ end => {
+//        StaticSizedArrayPT(ast.RangeP(begin, end), mutability, VariabilityPT(ast.RangeP(begin, begin), FinalP), size, element)
+//      }
+//    }) |
+//    (pos ~ ("[<" ~> optWhite ~> ruleTemplexPR <~ optWhite <~ ",") ~ (optWhite ~> ruleTemplexPR <~ optWhite <~ ">") ~ ((optWhite ~> ruleTemplexPR) <~ optWhite <~ "*" <~ optWhite) ~ (ruleTemplexPR <~ optWhite <~ "]") ~ pos ^^ {
+//      case begin ~ mutability ~ variability ~ size ~ element ~ end => {
+//        StaticSizedArrayPT(ast.RangeP(begin, end), mutability, variability, size, element)
+//      }
+//    })
   }
 
   // Add any new rules to the "Nothing matches empty string" test!
@@ -108,7 +123,7 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
   // Add any new rules to the "Nothing matches empty string" test!
 
   private[parser] def packRulePR: Parser[ITemplexPT] = {
-    pos ~ ("(" ~> optWhite ~> repsep(ruleTemplexPR, optWhite ~ "," ~ optWhite) <~ optWhite <~ ")") ~ pos ^^ {
+    pos ~ ("Refs" ~> optWhite ~> "(" ~> optWhite ~> repsep(ruleTemplexPR, optWhite ~ "," ~ optWhite) <~ optWhite <~ ")") ~ pos ^^ {
       case begin ~ members ~ end => PackPT(ast.RangeP(begin, end), members.toVector)
     }
   }

@@ -1,11 +1,11 @@
 
-fn migrate<E>(from Array<mut, E>, to &!Array<mut, E>) {
+fn migrate<E>(from []<mut>E, to &![]<mut>E) {
   intermediate = Array<mut, E>(from.capacity());
   drop_into(from, &!{ intermediate!.push(_); });
   drop_into(intermediate, &!{ to!.push(_); });
 }
 
-fn migrate<E, N, V>(from [<mut, V> N * E], to &!Array<mut, E>) {
+fn migrate<E, N, V>(from [#N]<mut, V>E, to &![]<mut>E) {
   intermediate = Array<mut, E>(N);
   drop_into(from, &!{ intermediate!.push(_); });
   drop_into(intermediate, &!{ to!.push(_); });

@@ -118,7 +118,8 @@ class TemplarSolver[Env, State](
         case CallSR(range, resultRune, templateRune, args) => Array(resultRune, templateRune) ++ args
         case PrototypeSR(range, resultRune, name, parameters, returnTypeRune) => Array(resultRune) ++ parameters ++ Array(returnTypeRune)
         case PackSR(range, resultRune, members) => Array(resultRune) ++ members
-        case RepeaterSequenceSR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune)
+        case StaticSizedArraySR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune)
+        case RuntimeSizedArraySR(range, resultRune, mutabilityRune, elementRune) => Array(resultRune, mutabilityRune, elementRune)
 //        case ManualSequenceSR(range, resultRune, elements) => Array(resultRune) ++ elements
 //        case CoordListSR(range, resultRune, elements) => Array(resultRune) ++ elements
         case CoordSendSR(range, senderRune, receiverRune) => Array(senderRune, receiverRune)
@@ -153,7 +154,8 @@ class TemplarSolver[Env, State](
       case CoerceToCoordSR(_, coordRune, kindRune) => Array(Array(coordRune.rune), Array(kindRune.rune))
       case LiteralSR(_, rune, literal) => Array(Array())
       case AugmentSR(_, resultRune, ownership, permission, innerRune) => Array(Array(innerRune.rune), Array(resultRune.rune))
-      case RepeaterSequenceSR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(Array(resultRune.rune), Array(mutabilityRune.rune, variabilityRune.rune, sizeRune.rune, elementRune.rune))
+      case StaticSizedArraySR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(Array(resultRune.rune), Array(mutabilityRune.rune, variabilityRune.rune, sizeRune.rune, elementRune.rune))
+      case RuntimeSizedArraySR(_, resultRune, mutabilityRune, elementRune) => Array(Array(resultRune.rune), Array(mutabilityRune.rune, elementRune.rune))
       // See SAIRFU, this will replace itself with other rules.
       case CoordSendSR(_, senderRune, receiverRune) => Array(Array(senderRune.rune), Array(receiverRune.rune))
       case CoordIsaSR(range, senderRune, receiverRune) => Array(Array(senderRune.rune, receiverRune.rune))
@@ -462,7 +464,7 @@ class TemplarSolver[Env, State](
           }
         }
       }
-      case RepeaterSequenceSR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => {
+      case StaticSizedArraySR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => {
         stepState.getConclusion(resultRune.rune) match {
           case None => {
             val MutabilityTemplata(mutability) = vassertSome(stepState.getConclusion(mutabilityRune.rune))
@@ -491,6 +493,33 @@ class TemplarSolver[Env, State](
                 Ok(())
               }
               case _ => return Err(CallResultWasntExpectedType(StaticSizedArrayTemplateTemplata(), result))
+            }
+          }
+        }
+      }
+      case RuntimeSizedArraySR(_, resultRune, mutabilityRune, elementRune) => {
+        stepState.getConclusion(resultRune.rune) match {
+          case None => {
+            val MutabilityTemplata(mutability) = vassertSome(stepState.getConclusion(mutabilityRune.rune))
+            val CoordTemplata(element) = vassertSome(stepState.getConclusion(elementRune.rune))
+            val arrKind =
+              delegate.getRuntimeSizedArrayKind(env, state, element, mutability)
+            stepState.concludeRune[ITemplarSolverError](resultRune.rune, KindTemplata(arrKind))
+            Ok(())
+          }
+          case Some(result) => {
+            result match {
+              case KindTemplata(RuntimeSizedArrayTT(mutability, elementType)) => {
+                stepState.concludeRune[ITemplarSolverError](elementRune.rune, CoordTemplata(elementType))
+                stepState.concludeRune[ITemplarSolverError](mutabilityRune.rune, MutabilityTemplata(mutability))
+                Ok(())
+              }
+              case CoordTemplata(CoordT(OwnT | ShareT, _, RuntimeSizedArrayTT(mutability, elementType))) => {
+                stepState.concludeRune[ITemplarSolverError](elementRune.rune, CoordTemplata(elementType))
+                stepState.concludeRune[ITemplarSolverError](mutabilityRune.rune, MutabilityTemplata(mutability))
+                Ok(())
+              }
+              case _ => return Err(CallResultWasntExpectedType(RuntimeSizedArrayTemplateTemplata(), result))
             }
           }
         }

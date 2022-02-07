@@ -164,7 +164,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |fn moo(i int, b bool) str { ret "hello"; }
         |fn main()
         |rules(
-        |  mooFunc Prot("moo", (int, bool), _))
+        |  mooFunc Prot("moo", Refs(int, bool), _))
         |str export {
         |  ret (mooFunc)(5, true);
         |}
@@ -397,8 +397,8 @@ class TemplarSolverTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |
-        |fn swap<T, Y>(x [T, Y]) [Y, T] {
-        |  (a, b) = x;
+        |fn swap<T, Y>(x (T, Y)) (Y, T) {
+        |  [a, b] = x;
         |  ret (b, a);
         |}
         |
@@ -419,8 +419,8 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |import v.builtins.arrays.*;
         |
-        |fn swap<N, T>(x [N * T]) [N * T] {
-        |  (a, b) = x;
+        |fn swap<N, T>(x [#N]T) [#N]T {
+        |  [a, b] = x;
         |  ret [#][b, a];
         |}
         |
@@ -473,7 +473,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |
         |fn main()
         |rules(
-        |  mooFunc Prot("moo", (int, bool), R Ref))
+        |  mooFunc Prot("moo", Refs(int, bool), R Ref))
         |R export {
         |  __vbi_panic();
         |}

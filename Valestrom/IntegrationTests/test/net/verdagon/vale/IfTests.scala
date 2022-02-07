@@ -71,10 +71,10 @@ class IfTests extends FunSuite with Matchers {
         |fn main() int export {
         |  m = Marine(5);
         |  ret if (false) {
-        |      (x) = m;
+        |      [x] = m;
         |      x
         |    } else {
-        |      (y) = m;
+        |      [y] = m;
         |      y
         |    }
         |}
@@ -131,7 +131,7 @@ class IfTests extends FunSuite with Matchers {
         |struct Marine #!DeriveStructDrop { hp int; }
         |fn drop(marine Marine) void {
         |  println("Destroying marine!");
-        |  Marine(weapon) = marine;
+        |  Marine[weapon] = marine;
         |}
         |fn main() int export {
         |  m = Marine(5);
@@ -159,7 +159,7 @@ class IfTests extends FunSuite with Matchers {
         |struct Marine #!DeriveStructDrop { hp int; }
         |fn drop(marine Marine) void {
         |  println("Destroying marine!");
-        |  Marine(weapon) = marine;
+        |  Marine[weapon] = marine;
         |}
         |fn main() int export {
         |  m = Marine(5);
@@ -195,7 +195,7 @@ class IfTests extends FunSuite with Matchers {
         |  while (zork < 4) {
         |    moo = Moo(Bork(5));
         |    if (true) {
-        |      (bork) = moo;
+        |      [bork] = moo;
         |      println(bork.num);
         |    } else {
         |      drop(moo);

@@ -1,11 +1,11 @@
 
-export [3 * int] as MutIntArray;
+export [#3]int as MutIntArray;
 
-fn valeMakeSSA() [3 * int] export {
+fn valeMakeSSA() [#3]int export {
   ret [#][13, 14, 15];
 }
 
-fn cMakeSSA() [3 * int] extern;
+fn cMakeSSA() [#3]int extern;
 
 fn main() int export {
   arr = cMakeSSA();

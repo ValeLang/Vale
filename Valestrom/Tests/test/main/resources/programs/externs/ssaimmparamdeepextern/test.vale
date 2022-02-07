@@ -3,9 +3,9 @@ struct Spaceship export imm {
   wings int;
 }
 
-export [<imm> 3 * Spaceship] as ImmSpaceshipArray;
+export [#3]<imm>Spaceship as ImmSpaceshipArray;
 
-fn cSumFuel(arr [<imm> 3 * Spaceship]) int extern;
+fn cSumFuel(arr [#3]<imm>Spaceship) int extern;
 
 fn main() int export {
   a = #[#][Spaceship(13, 100), Spaceship(14, 100), Spaceship(15, 100)];

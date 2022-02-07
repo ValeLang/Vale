@@ -1,7 +1,7 @@
 package net.verdagon.vale.parser.rules
 
 import net.verdagon.vale.parser
-import net.verdagon.vale.parser.ast.{AnonymousRunePT, BoolPT, BorrowP, BorrowPT, CallPT, ExclusiveReadwriteP, FinalP, FunctionPT, ITemplexPT, ImmutableP, InlineP, IntPT, InterpretedPT, LocationPT, TuplePT, MutabilityPT, MutableP, NameOrRunePT, OwnP, OwnershipPT, PackPT, PermissionPT, PointPT, PointerP, PrototypePT, ReadonlyP, ReadwriteP, StaticSizedArrayPT, ShareP, SharePT, StringPT, VariabilityPT, WeakP, YonderP}
+import net.verdagon.vale.parser.ast.{AnonymousRunePT, BoolPT, BorrowP, BorrowPT, CallPT, ExclusiveReadwriteP, FinalP, FunctionPT, ITemplexPT, ImmutableP, InlineP, IntPT, InterpretedPT, LocationPT, MutabilityPT, MutableP, NameOrRunePT, OwnP, OwnershipPT, PackPT, PermissionPT, PointPT, PointerP, PrototypePT, ReadonlyP, ReadwriteP, RuntimeSizedArrayPT, ShareP, SharePT, StaticSizedArrayPT, StringPT, TuplePT, VariabilityPT, WeakP, YonderP}
 import net.verdagon.vale.parser.{ast, _}
 import net.verdagon.vale.parser.old.ParserUtils
 
@@ -47,6 +47,7 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
     packRulePR |
     manualSeqRulePR |
     staticSizedArrayPR |
+    runtimeSizedArrayPR |
     (pos ~ long ~ pos ^^ { case begin ~ inner ~ end => IntPT(ast.RangeP(begin, end), inner) }) |
     keywordOrIdentifierOrRuneRuleTemplexPR |
     // This is at the end because we dont want to preclude identifiers like __Never
@@ -83,7 +84,9 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
           StaticSizedArrayPT(ast.RangeP(begin, end), mutability, variability, size, element)
         }
     }
-//    (pos ~ ("[" ~> optWhite ~> ruleTemplexPR <~ optWhite <~ "*" <~ optWhite) ~ (ruleTemplexPR <~ optWhite <~ "]") ~ pos ^^ {
+
+
+      //    (pos ~ ("[" ~> optWhite ~> ruleTemplexPR <~ optWhite <~ "*" <~ optWhite) ~ (ruleTemplexPR <~ optWhite <~ "]") ~ pos ^^ {
 //      case begin ~ size ~ element ~ end => {
 //        StaticSizedArrayPT(ast.RangeP(begin, end), MutabilityPT(ast.RangeP(begin, begin), MutableP), VariabilityPT(ast.RangeP(begin, begin), FinalP), size, element)
 //      }
@@ -98,6 +101,22 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
 //        StaticSizedArrayPT(ast.RangeP(begin, end), mutability, variability, size, element)
 //      }
 //    })
+  }
+
+  // Add any new rules to the "Nothing matches empty string" test!
+
+  private[parser] def runtimeSizedArrayPR: Parser[ITemplexPT] = {
+    (pos <~ "[" <~ optWhite <~ "]") ~
+      opt("<" ~> optWhite ~> repsep(ruleTemplexPR, optWhite ~> "," <~ optWhite) <~ optWhite <~ ">") ~
+      ruleTemplexPR ~
+      pos ^^ {
+      case begin ~ maybeTemplateArgs ~ element ~ end => {
+        val mutability =
+          maybeTemplateArgs.toList.flatten.lift(0)
+            .getOrElse(MutabilityPT(ast.RangeP(begin, end), MutableP))
+        RuntimeSizedArrayPT(ast.RangeP(begin, end), mutability, element)
+      }
+    }
   }
 
   // Add any new rules to the "Nothing matches empty string" test!

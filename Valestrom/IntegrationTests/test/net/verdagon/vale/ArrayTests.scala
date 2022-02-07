@@ -584,10 +584,6 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Array foreach") {
-
-    start with thing
-    // make an runtime array parsing thing, see each.vale
-
     val compile = RunCompilation.test(
       """
         |import array.make.*;

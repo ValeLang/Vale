@@ -53,6 +53,7 @@ class RuleTests extends FunSuite with Matchers with Collector {
     checkFail(manualSeqRulePR, "")
     checkFail(packRulePR, "")
     checkFail(staticSizedArrayPR, "")
+    checkFail(runtimeSizedArrayPR, "")
     checkFail(rulePR, "")
     checkFail(ruleTemplexPR, "")
     checkFail(ruleTemplexPR, "")

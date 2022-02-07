@@ -164,7 +164,7 @@ class KindRuleTests extends FunSuite with Matchers with Collector {
     }
   }
 
-  test("Repeater sequence") {
+  test("Static sized array") {
     compile(staticSizedArrayPR, "[#_]_") shouldHave {
       case StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), AnonymousRunePT(_),AnonymousRunePT(_)) =>
     }

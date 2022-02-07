@@ -37,10 +37,10 @@ trait TestParseUtils {
 //    }
 //  }
 
-  def compileMaybe[T](parser: (ParsingIterator) => Result[Option[T], IParseError], unstrippedCode: String): T = {
-    val code = unstrippedCode.strip()
-    // The strip is in here because things inside the parser don't expect whitespace before and after
-    val iter = ParsingIterator(code.strip(), 0)
+  def compileMaybe[T](parser: (ParsingIterator) => Result[Option[T], IParseError], untrimpedCode: String): T = {
+    val code = untrimpedCode.trim()
+    // The trim is in here because things inside the parser don't expect whitespace before and after
+    val iter = ParsingIterator(code.trim(), 0)
     parser(iter) match {
       case Ok(None) => {
         vfail("Couldn't parse, not applicable!");
@@ -57,10 +57,10 @@ trait TestParseUtils {
     }
   }
 
-  def compile[T](parser: (ParsingIterator) => Result[T, IParseError], unstrippedCode: String): T = {
-    val code = unstrippedCode.strip()
-    // The strip is in here because things inside the parser don't expect whitespace before and after
-    val iter = ParsingIterator(code.strip(), 0)
+  def compile[T](parser: (ParsingIterator) => Result[T, IParseError], untrimpedCode: String): T = {
+    val code = untrimpedCode.trim()
+    // The trim is in here because things inside the parser don't expect whitespace before and after
+    val iter = ParsingIterator(code.trim(), 0)
     parser(iter) match {
       case Err(err) => {
         vfail("Couldn't parse!\n" + ParseErrorHumanizer.humanize(FileCoordinateMap.test(code), FileCoordinate.test, err))
@@ -74,10 +74,10 @@ trait TestParseUtils {
     }
   }
 
-  def compileForError[T](parser: (ParsingIterator) => Result[T, IParseError], unstrippedCode: String): IParseError = {
-    val code = unstrippedCode.strip()
-    // The strip is in here because things inside the parser don't expect whitespace before and after
-    val iter = ParsingIterator(code.strip(), 0)
+  def compileForError[T](parser: (ParsingIterator) => Result[T, IParseError], untrimpedCode: String): IParseError = {
+    val code = untrimpedCode.trim()
+    // The trim is in here because things inside the parser don't expect whitespace before and after
+    val iter = ParsingIterator(code.trim(), 0)
     parser(iter) match {
       case Err(err) => {
         err

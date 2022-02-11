@@ -19,7 +19,7 @@ fi
 STDLIB_DIR="$3"
 if [ "$STDLIB_DIR" == "" ]; then
   echo "Third arg must be path to download the current stdlib to."
-  echo "Example: ~/stdlig"
+  echo "Example: ~/stdlib"
   exit
 fi
 

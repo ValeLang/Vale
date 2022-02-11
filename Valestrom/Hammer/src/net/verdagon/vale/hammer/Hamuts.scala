@@ -2,7 +2,7 @@ package net.verdagon.vale.hammer
 
 import net.verdagon.vale.metal._
 import net.verdagon.vale.templar.ast.PrototypeT
-import net.verdagon.vale.templar.types.{InterfaceTT, StructTT}
+import net.verdagon.vale.templar.types.{InterfaceTT, RuntimeSizedArrayTT, StaticSizedArrayTT, StructTT}
 import net.verdagon.vale.{PackageCoordinate, vassert, vfail, vimpl}
 import net.verdagon.von.IVonData
 
@@ -21,8 +21,8 @@ case class HamutsBox(var inner: Hamuts) {
   def interfaceDefs: Map[InterfaceTT, InterfaceDefinitionH] = inner.interfaceDefs
   def functionRefs: Map[PrototypeT, FunctionRefH] = inner.functionRefs
   def functionDefs: Map[PrototypeT, FunctionH] = inner.functionDefs
-  def staticSizedArrays: Vector[StaticSizedArrayDefinitionTH] = inner.staticSizedArrays
-  def runtimeSizedArrays: Vector[RuntimeSizedArrayDefinitionTH] = inner.runtimeSizedArrays
+  def staticSizedArrays: Map[StaticSizedArrayTT, StaticSizedArrayDefinitionHT] = inner.staticSizedArrays
+  def runtimeSizedArrays: Map[RuntimeSizedArrayTT, RuntimeSizedArrayDefinitionHT] = inner.runtimeSizedArrays
 
   def forwardDeclareStruct(structTT: StructTT, structRefH: StructRefH): Unit = {
     inner = inner.forwardDeclareStruct(structTT, structRefH)
@@ -44,12 +44,12 @@ case class HamutsBox(var inner: Hamuts) {
     inner = inner.addInterface(interfaceTT, interfaceDefH)
   }
 
-  def addStaticSizedArray(staticSizedArrayDefinitionTH: StaticSizedArrayDefinitionTH): Unit = {
-    inner = inner.addStaticSizedArray(staticSizedArrayDefinitionTH)
+  def addStaticSizedArray(ssaTT: StaticSizedArrayTT, staticSizedArrayDefinitionTH: StaticSizedArrayDefinitionHT): Unit = {
+    inner = inner.addStaticSizedArray(ssaTT, staticSizedArrayDefinitionTH)
   }
 
-  def addRuntimeSizedArray(runtimeSizedArrayDefinitionTH: RuntimeSizedArrayDefinitionTH): Unit = {
-    inner = inner.addRuntimeSizedArray(runtimeSizedArrayDefinitionTH)
+  def addRuntimeSizedArray(rsaTT: RuntimeSizedArrayTT, runtimeSizedArrayDefinitionTH: RuntimeSizedArrayDefinitionHT): Unit = {
+    inner = inner.addRuntimeSizedArray(rsaTT, runtimeSizedArrayDefinitionTH)
   }
 
   def forwardDeclareFunction(functionRef2: PrototypeT, functionRefH: FunctionRefH): Unit = {
@@ -82,10 +82,10 @@ case class HamutsBox(var inner: Hamuts) {
     id
   }
 
-  def getStaticSizedArray(staticSizedArrayTH: StaticSizedArrayHT): StaticSizedArrayDefinitionTH = {
+  def getStaticSizedArray(staticSizedArrayTH: StaticSizedArrayHT): StaticSizedArrayDefinitionHT = {
     inner.getStaticSizedArray(staticSizedArrayTH)
   }
-  def getRuntimeSizedArray(runtimeSizedArrayTH: RuntimeSizedArrayHT): RuntimeSizedArrayDefinitionTH = {
+  def getRuntimeSizedArray(runtimeSizedArrayTH: RuntimeSizedArrayHT): RuntimeSizedArrayDefinitionHT = {
     inner.getRuntimeSizedArray(runtimeSizedArrayTH)
   }
 }
@@ -95,8 +95,8 @@ case class Hamuts(
     structRefsByRef2: Map[StructTT, StructRefH],
     structDefsByRef2: Map[StructTT, StructDefinitionH],
     structDefs: Vector[StructDefinitionH],
-    staticSizedArrays: Vector[StaticSizedArrayDefinitionTH],
-    runtimeSizedArrays: Vector[RuntimeSizedArrayDefinitionTH],
+    staticSizedArrays: Map[StaticSizedArrayTT, StaticSizedArrayDefinitionHT],
+    runtimeSizedArrays: Map[RuntimeSizedArrayTT, RuntimeSizedArrayDefinitionHT],
     interfaceRefs: Map[InterfaceTT, InterfaceRefH],
     interfaceDefs: Map[InterfaceTT, InterfaceDefinitionH],
     functionRefs: Map[PrototypeT, FunctionRefH],
@@ -106,6 +106,10 @@ case class Hamuts(
     packageCoordToExternNameToFunction: Map[PackageCoordinate, Map[String, PrototypeH]],
     packageCoordToExternNameToKind: Map[PackageCoordinate, Map[String, KindH]]) {
   override def hashCode(): Int = vfail() // Would need a really good reason to hash something this big
+
+  vassert(functionDefs.values.map(_.fullName).toVector.distinct.size == functionDefs.values.size)
+  vassert(structDefs.map(_.fullName).distinct.size == structDefs.size)
+  vassert(runtimeSizedArrays.values.map(_.name).toVector.distinct.size == runtimeSizedArrays.size)
 
   def forwardDeclareStruct(structTT: StructTT, structRefH: StructRefH): Hamuts = {
     Hamuts(
@@ -127,6 +131,7 @@ case class Hamuts(
 
   def addStructOriginatingFromTemplar(structTT: StructTT, structDefH: StructDefinitionH): Hamuts = {
     vassert(structRefsByRef2.contains(structTT))
+    vassert(!structDefsByRef2.contains(structTT))
     Hamuts(
       idByFullNameByHumanName,
       structRefsByRef2,
@@ -145,6 +150,8 @@ case class Hamuts(
   }
 
   def addStructOriginatingFromHammer(structDefH: StructDefinitionH): Hamuts = {
+    vassert(!structDefs.exists(_.fullName == structDefH.fullName))
+
     Hamuts(
       idByFullNameByHumanName,
       structRefsByRef2,
@@ -200,6 +207,8 @@ case class Hamuts(
   }
 
   def forwardDeclareFunction(functionRef2: PrototypeT, functionRefH: FunctionRefH): Hamuts = {
+    vassert(!functionRefs.contains(functionRef2))
+
     Hamuts(
       idByFullNameByHumanName,
       structRefsByRef2,
@@ -219,6 +228,12 @@ case class Hamuts(
 
   def addFunction(functionRef2: PrototypeT, functionDefH: FunctionH): Hamuts = {
     vassert(functionRefs.contains(functionRef2))
+    functionDefs.find(_._2.fullName == functionDefH.fullName) match {
+      case None =>
+      case Some(existing) => {
+        vfail("Internal error: Can't add function:\n" + functionRef2 + "\nbecause there's already a function with same hammer name:\b" + existing._1 + "\nHammer name:\n" + functionDefH.fullName)
+      }
+    }
 
     Hamuts(
       idByFullNameByHumanName,
@@ -377,13 +392,16 @@ case class Hamuts(
       packageCoordToExternNameToKind)
   }
 
-  def addStaticSizedArray(staticSizedArrayDefinitionTH: StaticSizedArrayDefinitionTH): Hamuts = {
+  def addStaticSizedArray(
+    ssaTT: StaticSizedArrayTT,
+    staticSizedArrayDefinitionHT: StaticSizedArrayDefinitionHT
+  ): Hamuts = {
     Hamuts(
       idByFullNameByHumanName,
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
-      staticSizedArrays :+ staticSizedArrayDefinitionTH,
+      staticSizedArrays + (ssaTT -> staticSizedArrayDefinitionHT),
       runtimeSizedArrays,
       interfaceRefs,
       interfaceDefs,
@@ -395,14 +413,17 @@ case class Hamuts(
       packageCoordToExternNameToKind)
   }
 
-  def addRuntimeSizedArray(runtimeSizedArrayDefinitionTH: RuntimeSizedArrayDefinitionTH): Hamuts = {
+  def addRuntimeSizedArray(
+    rsaTT: RuntimeSizedArrayTT,
+    runtimeSizedArrayDefinitionHT: RuntimeSizedArrayDefinitionHT
+  ): Hamuts = {
     Hamuts(
       idByFullNameByHumanName,
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
       staticSizedArrays,
-      runtimeSizedArrays :+ runtimeSizedArrayDefinitionTH,
+      runtimeSizedArrays + (rsaTT -> runtimeSizedArrayDefinitionHT),
       interfaceRefs,
       interfaceDefs,
       functionRefs,
@@ -449,11 +470,10 @@ case class Hamuts(
     (newHamuts, id)
   }
 
-  def getStaticSizedArray(staticSizedArrayTH: StaticSizedArrayHT): StaticSizedArrayDefinitionTH = {
-    staticSizedArrays.find(_.name == staticSizedArrayTH.name).get
+  def getStaticSizedArray(staticSizedArrayHT: StaticSizedArrayHT): StaticSizedArrayDefinitionHT = {
+    staticSizedArrays.values.find(_.kind == staticSizedArrayHT).get
   }
-  def getRuntimeSizedArray(runtimeSizedArrayTH: RuntimeSizedArrayHT): RuntimeSizedArrayDefinitionTH = {
-    runtimeSizedArrays.find(_.name == runtimeSizedArrayTH.name).get
+  def getRuntimeSizedArray(runtimeSizedArrayTH: RuntimeSizedArrayHT): RuntimeSizedArrayDefinitionHT = {
+    runtimeSizedArrays.values.find(_.kind == runtimeSizedArrayTH).get
   }
-
 }

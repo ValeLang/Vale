@@ -28,8 +28,12 @@ object BlockHammer {
     val unstackifiedLocalIdsInThisBlock = blockLocals.unstackifiedVars.intersect(localIdsInThisBlock)
 
     if (localIdsInThisBlock != unstackifiedLocalIdsInThisBlock) {
-      // This probably means that there was no UnletH or DestructureH for that variable.
-      vfail("Ununstackified local: " + (localIdsInThisBlock -- unstackifiedLocalIdsInThisBlock))
+      if (exprH.resultType.kind == NeverH()) {
+        // Then it's forgivable, because the block never reaches its end.
+      } else {
+        // This probably means that there was no UnletH or DestructureH for that variable.
+        vfail("Ununstackified local: " + (localIdsInThisBlock -- unstackifiedLocalIdsInThisBlock))
+      }
     }
 
     // All the parent locals...
@@ -42,7 +46,6 @@ object BlockHammer {
     unstackifiedLocalsFromParent.foreach(parentLocals.markUnstackified)
     parentLocals.setNextLocalIdNumber(blockLocals.nextLocalIdNumber)
 
-    val resultType = exprH.resultType
 //    start here, we're returning locals and thats not optimal
     BlockH(exprH)
   }

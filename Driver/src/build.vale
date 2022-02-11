@@ -2,6 +2,15 @@ import stdlib.command.*;
 import stdlib.flagger.*;
 import stdlib.path.*;
 
+//fn removeAllRecursively(path &Path) {
+//  if (path.is_dir()) {
+//    iterdir(path).each((entry){
+//      removeAllRecursively(entry);
+//    });
+//  }
+//  path.remove();
+//}
+
 struct ProjectDirectoryDeclaration {
   project_name str;
   path Path;
@@ -73,6 +82,24 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
           "Whether to benchmark Valestrom."),
         Flag(
           "--verbose",
+          FLAG_BOOL(),
+          "Whether to print out more detailed errors.",
+          "true",
+          "Whether to print out more detailed errors."),
+        Flag(
+          "--census",
+          FLAG_BOOL(),
+          "Whether to add run-time checks to debug the compiler itself.",
+          "true",
+          "Whether to add run-time checks to debug the compiler itself."),
+        Flag(
+          "--asan",
+          FLAG_BOOL(),
+          "Whether to run with ASan.",
+          "true",
+          "Whether to run with ASan."),
+        Flag(
+          "--debug_output",
           FLAG_BOOL(),
           "Whether to print out more detailed errors.",
           "true",
@@ -167,6 +194,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
 
   benchmark = parsed_flags.get_bool_flag("--benchmark", false);
   verbose = parsed_flags.get_bool_flag("--verbose", false);
+  debug_output = parsed_flags.get_bool_flag("--debug_output", false);
   include_builtins = parsed_flags.get_bool_flag("--include_builtins", true);
   output_vast = parsed_flags.get_bool_flag("--output_vast", true);
   reuse_vast = parsed_flags.get_bool_flag("--reuse_vast", false);
@@ -178,6 +206,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
   flares = parsed_flags.get_bool_flag("--flares", false);
   gen_heap = parsed_flags.get_bool_flag("--gen_heap", false);
   census = parsed_flags.get_bool_flag("--census", false);
+  asan = parsed_flags.get_bool_flag("--asan", false);
   verify = parsed_flags.get_bool_flag("--verify", false);
   debug_symbols = parsed_flags.get_nothing_flag("-g");
   llvm_ir = parsed_flags.get_bool_flag("--llvm_ir", false);
@@ -240,6 +269,16 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
       panic("Error: --reuse_vast specified, but no .vast files found in " + output_dir.str() + ".");
     }
   } else {
+    if (output_dir.exists()) {
+      dest_dir = GetTempDir()./("old_output_dir_" + str(MtpId()));
+      if (dest_dir.exists()) {
+        println("Deleting existing {dest_dir.str()}.");
+        dest_dir.RemoveDirAll().expect();
+        vassert(not dest_dir.exists(), "Removing old dir {dest_dir.str()} failed!");
+      }
+      println("Moving existing output directory {output_dir.str()} to {dest_dir.str()}.");
+      output_dir.Rename(&dest_dir).expect();
+    }
     valestrom_process =
         invoke_valestrom(
             &valestrom_path,
@@ -248,6 +287,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
             &project_non_vale_input_declarations,
             benchmark,
             verbose,
+            debug_output,
             include_builtins,
             output_vast,
             output_vpst,
@@ -400,7 +440,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
           windows,
           &clang_inputs,
           &executable_name,
-          census,
+          asan,
           debug_symbols,
           &output_dir);
   println("Running:\n" + clang_process.command);

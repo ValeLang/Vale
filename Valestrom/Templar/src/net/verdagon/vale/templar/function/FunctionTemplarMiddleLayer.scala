@@ -82,6 +82,10 @@ class FunctionTemplarMiddleLayer(
             case None => vcurious()
             case Some(KindTemplata(ir @ InterfaceTT(_))) => ir
             case Some(it @ InterfaceTemplata(_, _)) => structTemplar.getInterfaceRef(temputs, range, it, Vector.empty)
+            case Some(KindTemplata(kind)) => {
+              throw CompileErrorExceptionT(CantImplNonInterface(range, kind))
+            }
+            case _ => vwat()
           }
         Some(OverrideT(interface))
       }
@@ -185,7 +189,7 @@ class FunctionTemplarMiddleLayer(
 
   // We would want only the prototype instead of the entire header if, for example,
   // we were calling the function. This is necessary for a recursive function like
-  // fn main():Int{main()}
+  // func main():Int{main()}
   // Preconditions:
   // - already spawned local env
   // - either no template args, or they were already added to the env.
@@ -289,7 +293,7 @@ class FunctionTemplarMiddleLayer(
     // We fill out the params here to get the function's full name.
     val newName = assembleName(oldName, paramTypes)
 
-    FunctionEnvironment(globalEnv, parentEnv, newName, templatas, function, maybeReturnType, None, variables, Set())
+    FunctionEnvironment(globalEnv, parentEnv, newName, templatas, function, maybeReturnType, variables)
   }
 
   private def assembleName(

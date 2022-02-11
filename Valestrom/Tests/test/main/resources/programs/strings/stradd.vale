@@ -1,11 +1,11 @@
 
-fn main() int export {
+exported func main() int {
   a = "Glory to the ";
   b = "Lizard People";
   combined = a + b;
 
   other = "Glory to the Lizard People";
-  = if (streq(combined, 0, len(combined), other, 0, len(other))) {
+  ret if (streq(combined, 0, len(combined), other, 0, len(other))) {
       42
     } else {
       1

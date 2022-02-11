@@ -36,7 +36,7 @@ Ref translateNewImmRuntimeSizedArray(
   // If we get here, arrayLT is a pointer to our counted struct.
   auto rsaRef =
       globalState->getRegion(arrayRefType)->constructRuntimeSizedArray(
-          makeEmptyTupleRef(globalState),
+          makeVoidRef(globalState),
           functionState,
           builder,
           arrayRefType,

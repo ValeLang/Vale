@@ -1,63 +1,73 @@
 import v.builtins.arith.*;
 
-fn drop_into<V, S, E, F>(arr [<imm, V> S * E], consumer &!F) void {}
+func drop_into<V, S, E, F>(arr [#S]<imm, V>E, consumer &!F) void
+where Prot("__call", Refs(&!F, E), void)
+{}
 
-fn drop_into<V, S, E, F>(arr [<mut, V> S * E], consumer &!F) void
-extern(vale_static_sized_array_drop_into);
+extern("vale_static_sized_array_drop_into")
+func drop_into<V, S, E, F>(arr [#S]<mut, V>E, consumer &!F) void
+where Prot("__call", Refs(&!F, E), void);
 
-fn drop<V, S, E>(arr [<mut, V> S * E]) void {
+func drop<V, S, E>(arr [#S]<mut, V>E) void {
   drop_into(arr, {_;});
 }
-fn drop<V, S, E>(arr [<imm, V> S * E]) void {}
+func drop<V, S, E>(arr [#S]<imm, V>E) void {}
 
-fn drop_into<E, F>(arr Array<mut, E>, consumer &!F) void {
+func drop_into<E, F>(arr []<mut>E, consumer &!F) void
+where Prot("__call", Refs(&!F, E), void)
+{
   while (arr.len() > 0) {
     consumer!(arr!.pop());
   }
-  () = arr;
+  [] = arr;
 }
-fn drop<E>(arr Array<mut, E>) void {
+func drop<E>(arr []<mut>E) void {
   drop_into(arr, {_;});
 }
 
-fn drop_into<E, F>(arr Array<imm, E>, consumer &!F) void {
+func drop_into<E, F>(arr []<imm>E, consumer &!F) void
+where Prot("__call", Refs(&!F, E), void)
+{
   i = arr.len() - 1;
   while (i >= 0) {
     consumer!(arr[i]);
     set i = i - 1;
   }
 }
-fn drop<E>(arr Array<imm, E>) void {
+func drop<E>(arr []<imm>E) void {
   drop_into(arr, &!{_;});
 }
 
+extern("vale_static_sized_array_len")
+func len<M, V, S, E>(arr &[#S]<M, V>E) int;
 
-fn len<M, V, S, E>(arr &[<M, V> S * E]) int extern(vale_static_sized_array_len);
+extern("vale_runtime_sized_array_len")
+func len<M, E>(arr &[]<M>E) int;
 
-fn len<M, E>(arr &Array<M, E>) int extern(vale_runtime_sized_array_len);
+extern("vale_static_sized_array_free")
+func __free_replaced<V, S, E>(arr @[#S]<imm, V>E);
 
-fn __free_replaced<V, S, E>(arr *[<imm, V> S * E]) extern(vale_static_sized_array_free);
-fn __free_replaced<E>(arr *Array<imm, E>) extern(vale_runtime_sized_array_free);
+extern("vale_runtime_sized_array_free")
+func __free_replaced<E>(arr @[]<imm>E);
 
-fn capacity<E>(arr &Array<mut, E>) int
-extern(vale_runtime_sized_array_capacity);
+extern("vale_runtime_sized_array_capacity")
+func capacity<E>(arr &[]<mut>E) int;
 
-fn push<E>(arr &!Array<mut, E>, newElement E) void
-extern(vale_runtime_sized_array_push);
+extern("vale_runtime_sized_array_push")
+func push<E>(arr &![]<mut>E, newElement E) void;
 
-fn pop<E>(arr &!Array<mut, E>) E
-extern(vale_runtime_sized_array_pop);
+extern("vale_runtime_sized_array_pop")
+func pop<E>(arr &![]<mut>E) E;
 
-fn Array<M, E>(size int) Array<M, E>
-rules(M Mutability = mut, E Ref)
-extern(vale_runtime_sized_array_mut_new);
+extern("vale_runtime_sized_array_mut_new")
+func Array<M, E>(size int) []<M>E
+where M Mutability = mut, E Ref;
 
-fn Array<M, E, G>(n int, generator G) Array<M, E>
-rules(
+func Array<M, E, G>(n int, generator G) []<M>E
+where
   M Mutability = mut,
-  T Ref,
   G Ref(share | borrow, _, _),
-  F Prot = Prot("__call", (G, int), T))
+  F Prot = Prot("__call", Refs(G, int), E)
 {
   arr = Array<mut, E>(n);
   i! = 0;
@@ -68,10 +78,10 @@ rules(
   ret arr;
 }
 
-fn Array<M, E, G>(n int, generator G) Array<M, E>
-rules(
+extern("vale_runtime_sized_array_imm_new")
+func Array<M, E, G>(n int, generator G) []<M>E
+where
   M Mutability = imm,
   E Ref,
   G Ref(share | borrow, _, _),
-  F Prot = Prot("__call", (G, int), E))
-extern(vale_runtime_sized_array_imm_new);
+  F Prot = Prot("__call", Refs(G, int), E);

@@ -34,6 +34,7 @@ case class ReferenceH[+T <: KindH](
   (ownership, location) match {
     case (OwnH, YonderH) =>
     case (ShareH, _) =>
+    case (PointerH, YonderH) =>
     case (BorrowH, YonderH) =>
     case (WeakH, YonderH) =>
     case _ => vfail()
@@ -55,7 +56,7 @@ case class ReferenceH[+T <: KindH](
       val isTup = name.toFullString.startsWith("::C(CT(\"Tup\"")
 
       if (isBox) {
-        vassert(ownership == OwnH || ownership == BorrowH)
+        vassert(ownership == OwnH || ownership == PointerH)
       }
 
       // This will have false positives eventually, take it out then.
@@ -105,6 +106,10 @@ object IntH {
   val i32 = IntH(32)
 }
 case class IntH(bits: Int) extends KindH {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
+}
+case class VoidH() extends KindH {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
 }
@@ -159,7 +164,7 @@ case class StaticSizedArrayHT(
 
 // An array whose size is known at compile time, and therefore doesn't need to
 // carry around its size at runtime.
-case class StaticSizedArrayDefinitionTH(
+case class StaticSizedArrayDefinitionHT(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
   // The size of the array.
@@ -180,7 +185,7 @@ case class RuntimeSizedArrayHT(
   override def packageCoord: PackageCoordinate = name.packageCoordinate
 }
 
-case class RuntimeSizedArrayDefinitionTH(
+case class RuntimeSizedArrayDefinitionHT(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
   mutability: Mutability,
@@ -200,6 +205,7 @@ case class CodeLocation(
 // ReferenceH for explanation.
 sealed trait OwnershipH
 case object OwnH extends OwnershipH
+case object PointerH extends OwnershipH
 case object BorrowH extends OwnershipH
 case object WeakH extends OwnershipH
 case object ShareH extends OwnershipH

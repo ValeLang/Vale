@@ -1,18 +1,17 @@
-package net.verdagon.vale.parser
+package net.verdagon.vale.parser.ast
 
-import net.verdagon.vale.{vassert, vcheck, vcurious, vimpl}
+import net.verdagon.vale.vcurious
 
-import scala.collection.immutable.List
 import scala.util.parsing.input.Positional
 
 sealed trait IVirtualityP
-case class AbstractP(range: Range) extends IVirtualityP
-case class OverrideP(range: Range, tyype: ITemplexPT) extends IVirtualityP { override def hashCode(): Int = vcurious() }
+case class AbstractP(range: RangeP) extends IVirtualityP
+case class OverrideP(range: RangeP, tyype: ITemplexPT) extends IVirtualityP { override def hashCode(): Int = vcurious() }
 
 case class PatternPP(
-    range: Range,
+    range: RangeP,
     preBorrow: Option[UnitP],
-    capture: Option[CaptureP],
+    capture: Option[INameDeclarationP],
 
     // If they just have a destructure, this will probably be a ManualSequence(None).
     // If they have just parens, this will probably be a Pack(None).
@@ -28,22 +27,23 @@ case class PatternPP(
     virtuality: Option[IVirtualityP]) extends Positional
 
 case class DestructureP(
-  range: Range,
+  range: RangeP,
   patterns: Vector[PatternPP]) { override def hashCode(): Int = vcurious() }
 
-sealed trait ICaptureNameP
-case class LocalNameP(name: NameP) extends ICaptureNameP { override def hashCode(): Int = vcurious() }
-case class ConstructingMemberNameP(name: NameP) extends ICaptureNameP { override def hashCode(): Int = vcurious() }
-
-case class CaptureP(
-    range: Range,
-    name: ICaptureNameP) { override def hashCode(): Int = vcurious() }
+sealed trait INameDeclarationP {
+  def range: RangeP
+}
+case class LocalNameDeclarationP(name: NameP) extends INameDeclarationP { override def hashCode(): Int = vcurious(); override def range: RangeP = name.range }
+case class IterableNameDeclarationP(range: RangeP) extends INameDeclarationP { override def hashCode(): Int = vcurious() }
+case class IteratorNameDeclarationP(range: RangeP) extends INameDeclarationP { override def hashCode(): Int = vcurious() }
+case class IterationOptionNameDeclarationP(range: RangeP) extends INameDeclarationP { override def hashCode(): Int = vcurious() }
+case class ConstructingMemberNameDeclarationP(name: NameP) extends INameDeclarationP { override def hashCode(): Int = vcurious(); override def range: RangeP = name.range }
 
 object Patterns {
   object capturedWithTypeRune {
     def unapply(arg: PatternPP): Option[(String, String)] = {
       arg match {
-        case PatternPP(_, _, Some(CaptureP(_, LocalNameP(NameP(_, name)))), Some(NameOrRunePT(NameP(_, kindRune))), None, None) => Some((name, kindRune))
+        case PatternPP(_, _, Some(LocalNameDeclarationP(NameP(_, name))), Some(NameOrRunePT(NameP(_, kindRune))), None, None) => Some((name, kindRune))
         case _ => None
       }
     }
@@ -56,7 +56,7 @@ object Patterns {
   object capture {
     def unapply(arg: PatternPP): Option[String] = {
       arg match {
-        case PatternPP(_, _, Some(CaptureP(_, LocalNameP(NameP(_, name)))), None, None, None) => Some(name)
+        case PatternPP(_, _, Some(LocalNameDeclarationP(NameP(_, name))), None, None, None) => Some(name)
         case _ => None
       }
     }
@@ -80,7 +80,7 @@ object Patterns {
   object capturedWithType {
     def unapply(arg: PatternPP): Option[(String, ITemplexPT)] = {
       arg match {
-        case PatternPP(_, _, Some(CaptureP(_, LocalNameP(NameP(_, name)))), Some(templex), None, None) => Some((name, templex))
+        case PatternPP(_, _, Some(LocalNameDeclarationP(NameP(_, name))), Some(templex), None, None) => Some((name, templex))
         case _ => None
       }
     }

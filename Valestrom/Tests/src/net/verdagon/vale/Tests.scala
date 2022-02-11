@@ -28,5 +28,5 @@ object Tests {
   }
 
   def getPackageToResourceResolver: IPackageResolver[Map[String, String]]
-  = resolvePackageToResource
+    = resolvePackageToResource
 }

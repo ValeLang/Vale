@@ -27,22 +27,22 @@ class FunctionTemplarCore(
   val bodyTemplar = new BodyTemplar(opts, profiler, templataTemplar, convertHelper, new IBodyTemplarDelegate {
     override def evaluateBlockStatements(
       temputs: Temputs,
-      startingFate: FunctionEnvironment,
-      fate: FunctionEnvironmentBox,
+      startingNenv: NodeEnvironment,
+      nenv: NodeEnvironmentBox,
       life: LocationInFunctionEnvironment,
-      exprs: Vector[IExpressionSE]
+      exprs: BlockSE
     ): (ReferenceExpressionTE, Set[CoordT]) = {
-      delegate.evaluateBlockStatements(temputs, startingFate, fate, life, exprs)
+      delegate.evaluateBlockStatements(temputs, startingNenv, nenv, life, exprs)
     }
 
     override def translatePatternList(
         temputs: Temputs,
-        fate: FunctionEnvironmentBox,
+      nenv: NodeEnvironmentBox,
       life: LocationInFunctionEnvironment,
         patterns1: Vector[AtomSP],
         patternInputExprs2: Vector[ReferenceExpressionTE]
     ): ReferenceExpressionTE = {
-      delegate.translatePatternList(temputs, fate, life, patterns1, patternInputExprs2)
+      delegate.translatePatternList(temputs, nenv, life, patterns1, patternInputExprs2)
     }
   })
 
@@ -221,7 +221,6 @@ class FunctionTemplarCore(
             finishFunctionMaybeDeferred(
               temputs,
               fullEnv.snapshot,
-              startingFullEnv,
               life,
               attributesT,
               paramsT,
@@ -242,7 +241,6 @@ class FunctionTemplarCore(
                 finishFunctionMaybeDeferred(
                   temputs,
                   fullEnv.snapshot,
-                  startingFullEnv,
                   life,
                   attributesT,
                   paramsT,
@@ -271,7 +269,6 @@ class FunctionTemplarCore(
   private def finishFunctionMaybeDeferred(
       temputs: Temputs,
       fullEnvSnapshot: FunctionEnvironment,
-      startingFullEnvSnapshot: FunctionEnvironment,
       life: LocationInFunctionEnvironment,
       attributesT: Vector[IFunctionAttributeT],
       paramsT: Vector[ParameterT],
@@ -302,12 +299,6 @@ class FunctionTemplarCore(
     // That's what we were originally here for, and evaluating the body above
     // just did it for us O_o
     // So, here we check to see if we accidentally already did it.
-
-    // Get the variables by diffing the function environment.
-    // Remember, the near env contains closure variables, which we
-    // don't care about here. So find the difference between the near
-    // env and our latest env.
-    vassert(fullEnv.declaredLocals.startsWith(startingFullEnvSnapshot.declaredLocals))
 
     temputs.lookupFunction(header.toSignature) match {
       case None => {

@@ -1,23 +1,23 @@
 
-struct Flamscrankle export imm {
+exported struct Flamscrankle imm {
   x int;
   b Bogglewoggle;
   y int;
 }
 
-struct Bogglewoggle export imm {
+exported struct Bogglewoggle imm {
   s Spigglewigget;
   x int;
 }
 
-struct Spigglewigget export imm {
+exported struct Spigglewigget imm {
   x int;
   y int;
   z int;
 }
 
-fn extFunc_vasp(flam Flamscrankle) int extern;
+extern func extFunc_vasp(flam Flamscrankle) int;
 
-fn main() int export {
-  = extFunc_vasp(Flamscrankle(7, Bogglewoggle(Spigglewigget(5, 7, 4), 5), 14));
+exported func main() int {
+  ret extFunc_vasp(Flamscrankle(7, Bogglewoggle(Spigglewigget(5, 7, 4), 5), 14));
 }

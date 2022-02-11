@@ -1,12 +1,14 @@
 package net.verdagon.vale.scout.rules
 
 import net.verdagon.vale.{RangeS, vassert, vcurious, vimpl, vpass, vwat}
-import net.verdagon.vale.parser.{LocationP, MutabilityP, OwnershipP, PermissionP, VariabilityP}
+import net.verdagon.vale.parser.ast.{LocationP, MutabilityP, OwnershipP, PermissionP, VariabilityP}
 import net.verdagon.vale.scout._
 
 import scala.collection.immutable.List
 
-case class RuneUsage(range: RangeS, rune: IRuneS)
+case class RuneUsage(range: RangeS, rune: IRuneS) {
+  vpass()
+}
 
 // This isn't generic over e.g.  because we shouldnt reuse
 // this between layers. The generics solver doesn't even know about IRulexSR, doesn't
@@ -103,7 +105,7 @@ case class IsStructSR(
 ) extends IRulexSR {
   override def hashCode(): Int = vcurious()
   override def runeUsages: Array[RuneUsage] = Array(rune)
-4}
+}
 
 case class CoerceToCoordSR(
   range: RangeS,
@@ -167,8 +169,8 @@ case class RuneParentEnvLookupSR(
 case class AugmentSR(
   range: RangeS,
   resultRune: RuneUsage,
-  // Lets try and figure out a way to only have one thing here instead of a Vector
-  literal: Vector[ILiteralSL],
+  ownership: OwnershipP,
+  permission: PermissionP,
   innerRune: RuneUsage
 ) extends IRulexSR {
   vpass()
@@ -206,7 +208,7 @@ case class PackSR(
   override def runeUsages: Array[RuneUsage] = Array(resultRune) ++ members
 }
 
-case class RepeaterSequenceSR(
+case class StaticSizedArraySR(
   range: RangeS,
   resultRune: RuneUsage,
   mutabilityRune: RuneUsage,
@@ -216,6 +218,16 @@ case class RepeaterSequenceSR(
 ) extends IRulexSR {
   override def hashCode(): Int = vcurious()
   override def runeUsages: Array[RuneUsage] = Array(resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune)
+}
+
+case class RuntimeSizedArraySR(
+  range: RangeS,
+  resultRune: RuneUsage,
+  mutabilityRune: RuneUsage,
+  elementRune: RuneUsage
+) extends IRulexSR {
+  override def hashCode(): Int = vcurious()
+  override def runeUsages: Array[RuneUsage] = Array(resultRune, mutabilityRune, elementRune)
 }
 
 sealed trait ILiteralSL {

@@ -9,7 +9,7 @@ import net.verdagon.vale.{vassertSome, vfail}
 case class Hinputs(
   interfaces: Vector[InterfaceDefinitionT],
   structs: Vector[StructDefinitionT],
-  emptyPackStructRef: StructTT,
+//  emptyPackStructRef: StructTT,
   functions: Vector[FunctionT],
   immKindToDestructor: Map[KindT, PrototypeT],
   edgeBlueprintsByInterface: Map[InterfaceTT, InterfaceEdgeBlueprint],

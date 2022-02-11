@@ -7,7 +7,7 @@ class PrintTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |import printutils.*;
-        |fn main() export {
+        |exported func main() {
         |  println(6);
         |}
       """.stripMargin)
@@ -19,7 +19,7 @@ class PrintTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |import printutils.*;
-        |fn main() export {
+        |exported func main() {
         |  println(true);
         |}
       """.stripMargin)

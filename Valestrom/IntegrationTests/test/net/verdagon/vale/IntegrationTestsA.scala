@@ -5,13 +5,14 @@ import net.verdagon.vale.astronomer.{ICompileErrorA, ProgramA}
 import java.io.FileNotFoundException
 import net.verdagon.vale.templar.{Hinputs, ast, _}
 import net.verdagon.vale.{metal => m}
-import net.verdagon.vale.vivem.{ConstraintViolatedException, Heap, IntV, PrimitiveKindV, ReferenceV, StructInstanceV, Vivem}
-import net.verdagon.von.{IVonData, VonBool, VonFloat, VonInt, VonObject}
+import net.verdagon.vale.vivem.{ConstraintViolatedException, Heap, IntV, PanicException, PrimitiveKindV, ReferenceV, StructInstanceV, Vivem}
+import net.verdagon.von.{IVonData, VonBool, VonFloat, VonInt, VonObject, VonStr}
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.{FullCompilation, FullCompilationOptions}
 import net.verdagon.vale.hammer.VonHammer
 import net.verdagon.vale.metal.{FullNameH, IntH, ProgramH, PrototypeH, ReadonlyH, ReadwriteH, YonderH}
-import net.verdagon.vale.parser.{FailedParse, FileP}
+import net.verdagon.vale.parser.FailedParse
+import net.verdagon.vale.parser.ast.FileP
 import net.verdagon.vale.scout.{ICompileErrorS, ProgramS}
 import net.verdagon.vale.templar.ast.{SignatureT, StructToInterfaceUpcastTE}
 import net.verdagon.vale.templar.names.{FullNameT, FunctionNameT}
@@ -92,56 +93,33 @@ class IntegrationTestsA extends FunSuite with Matchers {
 //    compile.evalForKind(Vector())
 //  }
 
-  test("Scratch scratch") {
-    val compile =
-      RunCompilation.test(
-        """
-          |fn valeMakeRSA() Array<mut, int> {
-          |  ssa = [imm][5, 7, 9, 10, 11];
-          |  ret Array<mut, int>(ssa.len(), &!{ ssa[_] });
-          |}
-          |
-          |fn main() int export {
-          |  arr = valeMakeRSA();
-          |  i = 0;
-          |  total = 0;
-          |  while (i < arr.len()) {
-          |    set total = total + arr[i];
-          |    set i = i + 1;
-          |  }
-          |  ret total;
-          |}
-          |""".stripMargin)
-    compile.evalForKind(Vector())
-  }
-
   test("Simple program returning an int") {
-    val compile = RunCompilation.test("fn main() int export {3}")
+    val compile = RunCompilation.test("exported func main() int { ret 3; }")
     compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
   test("Hardcoding negative numbers") {
-    val compile = RunCompilation.test("fn main() int export {-3}")
+    val compile = RunCompilation.test("exported func main() int { ret -3; }")
     compile.evalForKind(Vector()) shouldEqual VonInt(-3)
   }
 
   test("Taking an argument and returning it") {
-    val compile = RunCompilation.test("fn main(a int) export int {a}")
+    val compile = RunCompilation.test("exported func main(a int) int { ret a; }")
     compile.evalForKind(Vector(IntV(5, 32))) shouldEqual VonInt(5)
   }
 
   test("Tests adding two numbers") {
-    val compile = RunCompilation.test("fn main() int export { +(2, 3) }")
+    val compile = RunCompilation.test("exported func main() int { ret +(2, 3); }")
     compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
   test("Tests adding two floats") {
-    val compile = RunCompilation.test("fn main() float export { +(2.5, 3.5) }")
+    val compile = RunCompilation.test("exported func main() float { ret +(2.5, 3.5); }")
     compile.evalForKind(Vector()) shouldEqual VonFloat(6.0f)
   }
 
   test("Tests inline adding") {
-    val compile = RunCompilation.test("fn main() int export { 2 + 3 }")
+    val compile = RunCompilation.test("exported func main() int { ret 2 + 3; }")
     compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
@@ -150,25 +128,30 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForKind(Vector()) shouldEqual VonInt(8)
   }
 
+  test("Test borrow ref") {
+    val compile = RunCompilation.test(Tests.loadExpected("programs/borrowRef.vale"))
+    compile.evalForKind(Vector()) shouldEqual VonInt(8)
+  }
+
   test("Tests inline adding more") {
-    val compile = RunCompilation.test("fn main() int export { 2 + 3 + 4 + 5 + 6 }")
+    val compile = RunCompilation.test("exported func main() int { ret 2 + 3 + 4 + 5 + 6; }")
     compile.evalForKind(Vector()) shouldEqual VonInt(20)
   }
 
   test("Simple lambda") {
-    val compile = RunCompilation.test("fn main() int export {{7}()}")
+    val compile = RunCompilation.test("exported func main() int { ret {7}(); }")
     compile.evalForKind(Vector()) shouldEqual VonInt(7)
   }
 
   test("Lambda with one magic arg") {
-    val compile = RunCompilation.test("fn main() int export {{_}(3)}")
+    val compile = RunCompilation.test("exported func main() int { ret {_}(3); }")
     compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
 
   // Test that the lambda's arg is the right type, and the name is right
   test("Lambda with a type specified param") {
-    val compile = RunCompilation.test("fn main() int export {(a int){ +(a,a)}(3)}");
+    val compile = RunCompilation.test("exported func main() int { ret (a int) => { ret +(a,a); }(3); }");
     compile.evalForKind(Vector()) shouldEqual VonInt(6)
   }
 
@@ -178,34 +161,34 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Test block") {
-    val compile = RunCompilation.test("fn main() int export {true; 200; = 300;}")
+    val compile = RunCompilation.test("exported func main() int {true; 200; ret 300;}")
     compile.evalForKind(Vector()) shouldEqual VonInt(300)
   }
 
   test("Test templates") {
     val compile = RunCompilation.test(
       """
-        |fn ~<T>(a T, b T) T { a }
-        |fn main() int export {true ~ false; 2 ~ 2; = 3 ~ 3;}
+        |func ~<T>(a T, b T) T { ret a; }
+        |exported func main() int {true ~ false; 2 ~ 2; ret 3 ~ 3;}
       """.stripMargin)
     compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
   test("Test mutating a local var") {
-    val compile = RunCompilation.test("fn main() export {a! = 3; set a = 4; }")
+    val compile = RunCompilation.test("exported func main() {a! = 3; set a = 4; }")
     compile.run(Vector())
   }
 
   test("Test returning a local mutable var") {
-    val compile = RunCompilation.test("fn main() int export {a! = 3; set a = 4; = a;}")
+    val compile = RunCompilation.test("exported func main() int {a! = 3; set a = 4; ret a;}")
     compile.evalForKind(Vector()) shouldEqual VonInt(4)
   }
 
   test("Test taking a callable param") {
     val compile = RunCompilation.test(
       """
-        |fn do<T>(callable T) infer-ret {callable()}
-        |fn main() int export {do({ 3 })}
+        |func do<T>(callable T) infer-ret { ret callable(); }
+        |exported func main() int { ret do({ 3 }); }
       """.stripMargin)
     compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
@@ -213,17 +196,17 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Stamps an interface template via a function parameter") {
     val compile = RunCompilation.test(
       """
-        |interface MyInterface<T> rules(T Ref) { }
-        |fn doAThing<T>(i MyInterface<T>) { }
+        |interface MyInterface<T> where T Ref { }
+        |func doAThing<T>(i MyInterface<T>) { }
         |
-        |struct SomeStruct<T> rules(T Ref) { }
-        |fn doAThing<T>(s SomeStruct<T>) { }
+        |struct SomeStruct<T> where T Ref { }
+        |func doAThing<T>(s SomeStruct<T>) { }
         |impl<T> MyInterface<T> for SomeStruct<T>;
         |
         |export MyInterface<int> as SomeIntInterface;
         |export SomeStruct<int> as SomeIntStruct;
         |
-        |fn main(a SomeStruct<int>) export {
+        |exported func main(a SomeStruct<int>) {
         |  doAThing<int>(a);
         |}
       """.stripMargin)
@@ -245,7 +228,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct MyStruct { a int; }
-        |fn main() int export { ms = MyStruct(7); = ms.a; }
+        |exported func main() int { ms = MyStruct(7); ret ms.a; }
       """.stripMargin)
     compile.evalForKind(Vector()) shouldEqual VonInt(7)
   }
@@ -261,9 +244,9 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct MyStruct { a int; }
-        |fn main() bool export {
+        |exported func main() bool {
         |  a = MyStruct(7);
-        |  = &a === &a;
+        |  ret *a === *a;
         |}
       """.stripMargin)
     compile.evalForKind(Vector()) shouldEqual VonBool(true)
@@ -273,10 +256,10 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct MyStruct { a int; }
-        |fn main() bool export {
+        |exported func main() bool {
         |  a = MyStruct(7);
         |  b = MyStruct(7);
-        |  = &a === &b;
+        |  ret *a === *b;
         |}
       """.stripMargin)
     compile.evalForKind(Vector()) shouldEqual VonBool(false)
@@ -317,20 +300,20 @@ class IntegrationTestsA extends FunSuite with Matchers {
 //        |  next MyOption;
 //        |}
 //        |
-//        |fn sum(list &MyList) int {
+//        |func sum(list *MyList) int {
 //        |  list.value + sum(list.next)
 //        |}
 //        |
-//        |fn sum(virtual opt &MyOption) int { panic("called virtual sum!") }
-//        |fn sum(opt &MyNone impl MyOption) int { 0 }
-//        |fn sum(opt &MySome impl MyOption) int {
+//        |func sum(virtual opt *MyOption) int { panic("called virtual sum!") }
+//        |func sum(opt *MyNone impl MyOption) int { ret 0; }
+//        |func sum(opt *MySome impl MyOption) int {
 //        |   sum(opt.value)
 //        |}
 //        |
 //        |
-//        |fn main() int export {
+//        |exported func main() int {
 //        |  list = MyList(10, MySome(MyList(20, MySome(MyList(30, MyNone())))));
-//        |  = sum(&list);
+//        |  ret sum(*list);
 //        |}
 //        |
 //        |""".stripMargin)
@@ -342,8 +325,8 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct MyThing { value int; }
-        |fn moo() MyThing { MyThing(4) }
-        |fn main() export { moo(); }
+        |func moo() MyThing { ret MyThing(4); }
+        |exported func main() { moo(); }
       """.stripMargin)
     compile.run(Vector())
   }
@@ -351,9 +334,9 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Tests calling a templated struct's constructor") {
     val compile = RunCompilation.test(
       """
-        |struct MySome<T> rules(T Ref) { value T; }
-        |fn main() int export {
-        |  MySome<int>(4).value
+        |struct MySome<T> where T Ref { value T; }
+        |exported func main() int {
+        |  ret MySome<int>(4).value;
         |}
       """.stripMargin)
     compile.evalForKind(Vector())
@@ -367,7 +350,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |import array.make.*;
         |import ifunction.ifunction1.*;
         |
-        |fn main() int export {
+        |exported func main() int {
         |  arr = Array<mut, int>(9);
         |  arr!.push(420);
         |  arr!.push(421);
@@ -385,14 +368,14 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |
-        |struct Vec<N, T> rules(N int)
+        |struct Vec<N, T> where N int
         |{
-        |  values [<imm> N * T];
+        |  values [#N]<imm>T;
         |}
         |
-        |fn main() int export {
-        |  v = Vec<3, int>([imm][3, 4, 5]);
-        |  = v.values.2;
+        |exported func main() int {
+        |  v = Vec<3, int>(#[#][3, 4, 5]);
+        |  ret v.values.2;
         |}
       """.stripMargin)
     compile.evalForKind(Vector()) shouldEqual VonInt(5)
@@ -427,18 +410,18 @@ class IntegrationTestsA extends FunSuite with Matchers {
     // Tests putting MyOption<int> as the type of x.
     val compile = RunCompilation.test(
       """
-        |interface MyOption<T> rules(T Ref) { }
+        |interface MyOption<T> where T Ref { }
         |
-        |struct MySome<T> rules(T Ref) {}
+        |struct MySome<T> where T Ref {}
         |impl<T> MyOption<T> for MySome<T>;
         |
-        |fn doSomething(opt MyOption<int>) int {
-        |  = 9;
+        |func doSomething(opt MyOption<int>) int {
+        |  ret 9;
         |}
         |
-        |fn main() int export {
-        |	x MyOption<int> = MySome<int>();
-        |	= doSomething(x);
+        |exported func main() int {
+        |	 x MyOption<int> = MySome<int>();
+        |	 ret doSomething(x);
         |}
       """.stripMargin)
     compile.evalForKind(Vector()) shouldEqual VonInt(9)
@@ -497,8 +480,8 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |struct Moo imm {
         |  x float;
         |}
-        |fn main() int export {
-        |  7
+        |exported func main() int {
+        |  ret 7;
         |}
       """.stripMargin)
     compile.evalForKind(Vector()) shouldEqual VonInt(7)
@@ -517,13 +500,13 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |struct XSome { value int; }
         |impl XOpt for XSome;
         |
-        |fn doIt() XOpt {
-        |  XSome(9)
+        |func doIt() XOpt {
+        |  ret XSome(9);
         |}
         |
-        |fn main() int export {
+        |exported func main() int {
         |  a = doIt();
-        |  = 3;
+        |  ret 3;
         |}
         |""".stripMargin)
 
@@ -561,10 +544,10 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
     val compile = RunCompilation.test(
       """import printutils.*;
-        |fn bork(x str) { print(x); }
-        |fn helperFunc(x int) { print(x); }
-        |fn helperFunc(x str) { print(x); }
-        |fn main() export {
+        |func bork(x str) { print(x); }
+        |func helperFunc(x int) { print(x); }
+        |func helperFunc(x str) { print(x); }
+        |exported func main() {
         |  helperFunc(4);
         |}
         |""".stripMargin)
@@ -577,32 +560,33 @@ class IntegrationTestsA extends FunSuite with Matchers {
     vassert(None == hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, FunctionNameT("helperFunc", Vector.empty, Vector(CoordT(ShareT, ReadonlyT, StrT())))))))
   }
 
-//  test("Test overloading between borrow and own") {
-//    val compile = FullCompilation
-//      """
-//        |interface IMoo {}
-//        |struct Moo {}
-//        |impl IMoo for Moo;
-//        |
-//        |fn func(virtual moo IMoo) int abstract;
-//        |fn func(virtual moo &IMoo) int abstract;
-//        |
-//        |fn func(moo Moo impl IMoo) int { 73 }
-//        |fn func(moo &Moo impl IMoo) int { 42 }
-//        |
-//        |fn main() int export {
-//        |  func(&Moo())
-//        |}
-//        |""".stripMargin)
-//    val temputs = compile.getTemputs()
-//
-//    compile.evalForKind(Vector()) shouldEqual VonInt(42)
-//  }
+  test("Test overloading between borrow and pointer") {
+    val compile = RunCompilation.test(
+      """
+        |sealed interface IMoo  {}
+        |struct Moo {}
+        |impl IMoo for Moo;
+        |
+        |abstract func func(virtual moo &IMoo) int;
+        |abstract func func(virtual moo *IMoo) int;
+        |
+        |func func(moo &Moo impl IMoo) int { ret 42; }
+        |func func(moo *Moo impl IMoo) int { ret 73; }
+        |
+        |exported func main() int {
+        |  ret func(&Moo());
+        |}
+        |""".stripMargin)
+    val temputs = compile.getTemputs()
+
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+  }
 
   test("Test returning empty seq") {
     val compile = RunCompilation.test(
-      """fn main() [] export {
-        |  []
+      """export () as Tup0;
+        |exported func main() () {
+        |  ret ();
         |}
         |""".stripMargin)
     val temputs = compile.expectTemputs()
@@ -610,10 +594,30 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.run(Vector())
   }
 
+  test("Truncate i64 to i32") {
+    val compile = RunCompilation.test(
+      """
+        |exported func main() int {
+        |  ret TruncateI64ToI32(4300000000i64);
+        |}
+        |""".stripMargin)
+    val temputs = compile.expectTemputs()
+
+    compile.evalForKind(Vector()) shouldEqual VonInt(5032704)
+  }
+
+  test("Return without ret") {
+    val compile = RunCompilation.test(
+      """
+        |exported func main() int { 73 }
+        |""".stripMargin)
+    compile.evalForKind(Vector()) shouldEqual VonInt(73)
+  }
+
   test("Test export functions") {
     val compile = RunCompilation.test(
-      """fn moo() int export {
-        |  42
+      """exported func moo() int {
+        |  ret 42;
         |}
         |""".stripMargin)
     val hamuts = compile.getHamuts()
@@ -645,19 +649,19 @@ class IntegrationTestsA extends FunSuite with Matchers {
       """
         |import panicutils.*;
         |
-        |interface XOpt<T> sealed rules(T Ref) { }
-        |struct XNone<T> rules(T Ref) { }
+        |sealed interface XOpt<T> where T Ref { }
+        |struct XNone<T> where T Ref { }
         |impl<T> XOpt<T> for XNone<T>;
         |
-        |fn get<T>(virtual opt XOpt<T>) int abstract;
-        |fn get<T>(opt XNone<T> impl XOpt<T>) int { __vbi_panic() }
+        |abstract func get<T>(virtual opt XOpt<T>) int;
+        |func get<T>(opt XNone<T> impl XOpt<T>) int { __vbi_panic() }
         |
-        |fn get<T>(virtual opt &XOpt<T>) int abstract;
-        |fn get<T>(opt &XNone<T> impl XOpt<T>) int { 42 }
+        |abstract func get<T>(virtual opt &XOpt<T>) int;
+        |func get<T>(opt &XNone<T> impl XOpt<T>) int { ret 42; }
         |
-        |fn main() int export {
+        |exported func main() int {
         |  opt XOpt<int> = XNone<int>();
-        |  = opt.get();
+        |  ret opt.get();
         |}
         """.stripMargin)
 
@@ -680,8 +684,8 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Moo {}
-        |fn foo(a &Moo) int { 41 }
-        |fn bork(a &Moo) int {
+        |func foo(a *Moo) int { ret 41; }
+        |func bork(a *Moo) int {
         |  if (false) {
         |    ret foo(a);
         |  } else if (false) {
@@ -691,8 +695,8 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  }
         |  ret foo(a) + 1;
         |}
-        |fn main() int export {
-        |  ret bork(&Moo());
+        |exported func main() int {
+        |  ret bork(*Moo());
         |}
         |""".stripMargin)
     compile.evalForKind(Vector()) shouldEqual VonInt(42)
@@ -704,8 +708,8 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Moo {}
-        |fn foo(a Moo) int { 41 }
-        |fn bork(a Moo) int {
+        |func foo(a Moo) int { ret 41; }
+        |func bork(a Moo) int {
         |  if (false) {
         |    ret foo(a);
         |  } else if (false) {
@@ -715,7 +719,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  }
         |  ret 42;
         |}
-        |fn main() int export {
+        |exported func main() int {
         |  ret bork(Moo());
         |}
         |""".stripMargin)
@@ -723,7 +727,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("exporting array") {
-    val compilation = RunCompilation.test("export Array<mut, int> as IntArray;")
+    val compilation = RunCompilation.test("export []<mut>int as IntArray;")
     val hamuts = compilation.getHamuts()
     val testPackage = hamuts.lookupPackage(PackageCoordinate.TEST_TLD)
     val kindH = vassertSome(testPackage.exportNameToKind.get("IntArray"))
@@ -731,5 +735,96 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val builtinPackage = hamuts.lookupPackage(PackageCoordinate.BUILTIN)
     val rsa = vassertSome(builtinPackage.runtimeSizedArrays.find(_.kind == kindH))
     rsa.elementType.kind shouldEqual IntH.i32
+  }
+
+  test("Readwrite thing") {
+    val compile = RunCompilation.test(
+      """
+        |func each<E, F>(func F) void
+        |where Prot("__call", Refs(&!F, &E), void) {
+        |}
+        |
+        |struct PageMember { x int; }
+        |struct SomeMutableThing { x int; }
+        |
+        |exported func main() {
+        |  someMutableThing = SomeMutableThing(7);
+        |  each<PageMember>((a &PageMember) => { someMutableThing.x; a.x; });
+        |}
+        |
+        |""".stripMargin)
+    compile.evalForKind(Vector())
+  }
+
+  test("each on int range") {
+    val compile = RunCompilation.test(
+      """
+        |import intrange.*;
+        |
+        |exported func main() int {
+        |  sum = 0;
+        |  foreach i in 0..10 {
+        |    set sum = sum + i;
+        |  }
+        |  ret sum;
+        |}
+        |""".stripMargin)
+    compile.evalForKind(Vector()) shouldEqual VonInt(45)
+  }
+
+  test("Parallel foreach") {
+    val compile = RunCompilation.test(
+      """
+        |import intrange.*;
+        |import list.*;
+        |import listprintutils.*;
+        |
+        |exported func main() {
+        |  exponent = 3;
+        |
+        |  results =
+        |    parallel foreach i in 0..5 {
+        |      i + 1
+        |    };
+        |
+        |  println(&results);
+        |}
+        |""".stripMargin)
+    compile.evalForStdout(Vector()).trim shouldEqual "[1, 2, 3, 4, 5]"
+  }
+
+  test("Mutable foreach") {
+    val compile = RunCompilation.test(
+      """
+        |// A fake 1-element list
+        |struct Ship {
+        |  fuel! int;
+        |}
+        |struct List {
+        |  ship Ship;
+        |}
+        |
+        |struct ListIter {
+        |  ship &!Ship;
+        |  pos! int;
+        |}
+        |func begin(self &!List) ListIter { ListIter(&!self.ship, 0) }
+        |func next(iter &!ListIter) Opt<&!Ship> {
+        |  if pos = set iter.pos = iter.pos + 1; pos < 1 {
+        |    Some<&!Ship>(iter.ship)
+        |  } else {
+        |    None<&!Ship>()
+        |  }
+        |}
+        |
+        |exported func main() int {
+        |  list = List(Ship(73));
+        |  foreach i in &!list {
+        |    set i.fuel = 42;
+        |  }
+        |  ret list.ship.fuel;
+        |}
+        |""".stripMargin)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 }

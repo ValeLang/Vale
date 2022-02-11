@@ -1,11 +1,9 @@
 package net.verdagon.vale.vivem
 
 import java.io.PrintStream
-
 import net.verdagon.vale.metal._
 import net.verdagon.vale.vassertSome
 import net.verdagon.vale.vivem.ExpressionVivem
-
 import net.verdagon.vale.{vassert, vcurious, vfail, vimpl}
 import net.verdagon.von._
 
@@ -30,17 +28,16 @@ class AdapterForExterns(
   }
 
   def makeVoid(): ReferenceV = {
-    val emptyPackStructRefH = ProgramH.emptyTupleStructRef
-    val emptyPackStructDefH = programH.lookupStruct(emptyPackStructRefH)
-    heap.newStruct(emptyPackStructDefH, ReferenceH(ShareH, InlineH, ReadonlyH, emptyPackStructRefH), Vector.empty)
+    heap.void
   }
 }
 
 class AllocationMap(vivemDout: PrintStream) {
   private val objectsById = mutable.HashMap[AllocationId, Allocation]()
-  private val voidishIds = mutable.HashMap[KindH, AllocationId]()
+  private val STARTING_ID = 501
+  private var nextId = STARTING_ID;
+  val void: ReferenceV = add(ShareH, InlineH, ReadonlyH, VoidV)
 
-  private var nextId = 501;
   private def newId() = {
     val id = nextId;
     nextId = nextId + 1
@@ -62,10 +59,8 @@ class AllocationMap(vivemDout: PrintStream) {
   }
 
   def remove(allocId: AllocationId): Unit = {
-    if (voidishIds.contains(allocId.tyype.hamut)) {
-      return;
-    }
     vassert(contains(allocId))
+    vassert(objectsById(allocId).kind != VoidV)
     objectsById.remove(allocId)
   }
 
@@ -80,18 +75,11 @@ class AllocationMap(vivemDout: PrintStream) {
   }
 
   def add(ownership: OwnershipH, location: LocationH, permission: PermissionH, kind: KindV) = {
-    val shouldIntern =
-      kind match {
-        case StructInstanceV(structH, members) if structH.mutability == Immutable && members.get.isEmpty => true
-        case _ => false
-      }
-    if (shouldIntern) {
-      voidishIds.get(kind.tyype.hamut) match {
-        case Some(allocId) => get(allocId)
-        case None => // continue
-      }
+    val id = newId()
+    if (kind == VoidV) {
+      // Make sure it only happens once
+      vassert(id == STARTING_ID)
     }
-
     val reference =
       ReferenceV(
         // These two are the same because when we allocate something,
@@ -102,12 +90,9 @@ class AllocationMap(vivemDout: PrintStream) {
         ownership,
         location,
         permission,
-        newId())
+        id)
     val allocation = new Allocation(reference, kind)
     objectsById.put(reference.allocId, allocation)
-    if (shouldIntern) {
-      voidishIds.put(kind.tyype.hamut, reference.allocId)
-    }
     reference
   }
 
@@ -118,10 +103,7 @@ class AllocationMap(vivemDout: PrintStream) {
   }
 
   def checkForLeaks(): Unit = {
-    val nonInternedObjects =
-      objectsById
-        .values
-        .filter(value => !voidishIds.contains(value.kind.tyype.hamut))
+    val nonInternedObjects = objectsById.values.filter(_.kind != VoidV)
     if (nonInternedObjects.nonEmpty) {
       nonInternedObjects
         .map(_.reference.allocId.num)
@@ -140,9 +122,11 @@ class Heap(in_vivemDout: PrintStream) {
   val vivemDout = in_vivemDout
 
   /*private*/ val objectsById = new AllocationMap(vivemDout)
-  
+
   private val callIdStack = mutable.Stack[CallId]();
   private val callsById = mutable.HashMap[CallId, Call]()
+
+  val void = objectsById.void
 
   def addLocal(varAddr: VariableAddressV, reference: ReferenceV, expectedType: ReferenceH[KindH]) = {
     val call = getCurrentCall(varAddr.callId)
@@ -173,7 +157,7 @@ class Heap(in_vivemDout: PrintStream) {
       vfail("blort")
     }
     checkReference(expectedType, variable.reference)
-    alias(variable.reference, expectedType, targetType)
+    transmute(variable.reference, expectedType, targetType)
   }
 
   private def getLocal(varAddr: VariableAddressV): VariableV = {
@@ -232,7 +216,7 @@ class Heap(in_vivemDout: PrintStream) {
       case StructInstanceV(_, Some(members)) => {
         val actualReference = members(fieldIndex)
         checkReference(expectedType, actualReference)
-        alias(actualReference, expectedType, targetType)
+        transmute(actualReference, expectedType, targetType)
       }
     }
   }
@@ -246,7 +230,7 @@ class Heap(in_vivemDout: PrintStream) {
       case ai @ ArrayInstanceV(_, _, _, _) => {
         val ref = ai.getElement(elementIndex)
         checkReference(expectedType, ref)
-        alias(ref, expectedType, targetType)
+        transmute(ref, expectedType, targetType)
       }
     }
   }
@@ -343,7 +327,7 @@ class Heap(in_vivemDout: PrintStream) {
   def zero(reference: ReferenceV) = {
     val allocation = objectsById.get(reference.allocId)
     vassert(allocation.getTotalRefCount(Some(OwnH)) == 0)
-    vassert(allocation.getTotalRefCount(Some(BorrowH)) == 0)
+    vassert(allocation.getTotalRefCount(Some(PointerH)) == 0)
     allocation.kind match {
       case si @ StructInstanceV(_, _) => si.zero()
       case _ =>
@@ -363,7 +347,7 @@ class Heap(in_vivemDout: PrintStream) {
   private def incrementObjectRefCount(
       pointingFrom: IObjectReferrer,
       allocId: AllocationId,
-      allowUndead: Boolean = false) = {
+      allowUndead: Boolean = false): Unit = {
     if (!allowUndead) {
       if (!containsLiveObject(allocId)) {
         vfail("Trying to increment dead object: " + allocId)
@@ -396,6 +380,10 @@ class Heap(in_vivemDout: PrintStream) {
   }
 
   def getRefCount(reference: ReferenceV): Int = {
+    if (reference.actualKind.hamut == VoidH()) {
+      // Let's pretend Void permanently has 1 RC, so nobody tries to free it
+      return 1
+    }
     if (reference.ownership == WeakH) {
       vassert(containsLiveOrUndeadObject(reference.allocId))
     } else {
@@ -425,7 +413,7 @@ class Heap(in_vivemDout: PrintStream) {
     objectsById.add(ownership, location, permission, kind)
   }
 
-  def alias(
+  def transmute(
     reference: ReferenceV,
     expectedType: ReferenceH[KindH],
     targetType: ReferenceH[KindH]):
@@ -458,6 +446,43 @@ class Heap(in_vivemDout: PrintStream) {
       objectId)
   }
 
+  def cast(
+    callId: CallId,
+    reference: ReferenceV,
+    expectedType: ReferenceH[KindH],
+    targetType: ReferenceH[KindH]):
+  ReferenceV = {
+    if (expectedType == targetType) {
+      return reference
+    }
+
+    val ReferenceV(actualKind, oldSeenAsType, oldOwnership, oldLocation, oldPermission, objectId) = reference
+    vassert((oldOwnership == ShareH) == (targetType.ownership == ShareH))
+    if (oldSeenAsType.hamut != expectedType.kind) {
+      // not sure if the above .actualType is right
+
+      vfail("wot")
+    }
+
+    (oldPermission, targetType.permission) match {
+      case (ReadonlyH, ReadonlyH) =>
+      case (ReadonlyH, ReadwriteH) => vfail()
+      case (ReadwriteH, ReadonlyH) =>
+      case (ReadwriteH, ReadwriteH) =>
+    }
+
+    incrementReferenceRefCount(RegisterToObjectReferrer(callId, targetType.ownership), reference)
+    decrementReferenceRefCount(RegisterToObjectReferrer(callId, oldOwnership), reference)
+
+    ReferenceV(
+      actualKind,
+      RRKind(targetType.kind),
+      targetType.ownership,
+      targetType.location,
+      targetType.permission,
+      objectId)
+  }
+
   def isEmpty: Boolean = {
     objectsById.isEmpty
   }
@@ -478,6 +503,7 @@ class Heap(in_vivemDout: PrintStream) {
     inputReachables.foreach(inputReachable => {
       innerFindReachableAllocations(destinationMap, inputReachable)
     })
+    innerFindReachableAllocations(destinationMap, void)
     destinationMap.toMap
   }
 
@@ -496,6 +522,7 @@ class Heap(in_vivemDout: PrintStream) {
     destinationMap.put(inputReachable, allocation)
     allocation.kind match {
       case IntV(_, _) =>
+      case VoidV =>
       case BoolV(_) =>
       case FloatV(_) =>
       case StructInstanceV(structDefH, Some(members)) => {
@@ -537,6 +564,7 @@ class Heap(in_vivemDout: PrintStream) {
 
   def printKind(kind: KindV) = {
     kind match {
+      case VoidV => vivemDout.print("void")
       case IntV(value, _) => vivemDout.print(value)
       case BoolV(value) => vivemDout.print(value)
       case StrV(value) => vivemDout.print(value)
@@ -602,7 +630,7 @@ class Heap(in_vivemDout: PrintStream) {
 //  }
 
   def addUninitializedArray(
-      arrayDefinitionTH: RuntimeSizedArrayDefinitionTH,
+      arrayDefinitionTH: RuntimeSizedArrayDefinitionHT,
       arrayRefType: ReferenceH[RuntimeSizedArrayHT],
       capacity: Int):
   (ReferenceV, ArrayInstanceV) = {
@@ -612,7 +640,7 @@ class Heap(in_vivemDout: PrintStream) {
   }
 
   def addArray(
-    arrayDefinitionTH: StaticSizedArrayDefinitionTH,
+    arrayDefinitionTH: StaticSizedArrayDefinitionHT,
     arrayRefType: ReferenceH[StaticSizedArrayHT],
     memberRefs: Vector[ReferenceV]):
   (ReferenceV, ArrayInstanceV) = {
@@ -654,6 +682,7 @@ class Heap(in_vivemDout: PrintStream) {
           vfail("Expected " + expectedType + " but was " + actualKind)
         }
       }
+      case (VoidV, VoidH()) =>
       case (BoolV(_), BoolH()) =>
       case (StrV(_), StrH()) =>
       case (FloatV(_), FloatH()) =>
@@ -742,6 +771,7 @@ class Heap(in_vivemDout: PrintStream) {
 
   def toVon(ref: ReferenceV): IVonData = {
     dereference(ref) match {
+      case VoidV => VonObject("void", None, Vector())
       case IntV(value, bits) => VonInt(value)
       case FloatV(value) => VonFloat(value)
       case BoolV(value) => VonBool(value)

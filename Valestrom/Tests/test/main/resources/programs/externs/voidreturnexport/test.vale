@@ -1,8 +1,8 @@
-fn donothing() export { }
+exported func donothing() { }
 
-fn runExtCommand() extern;
+extern func runExtCommand();
 
-fn main() int export {
+exported func main() int {
   runExtCommand();
-  = 42;
+  ret 42;
 }

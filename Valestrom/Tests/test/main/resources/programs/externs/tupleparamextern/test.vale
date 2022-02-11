@@ -1,5 +1,5 @@
-fn extGetFromTuple(i [int, int]) int extern;
+extern func extGetFromTuple(i [int, int]) int;
 
-fn main() int export {
+exported func main() int {
   extGetFromTuple([73, 42])
 }

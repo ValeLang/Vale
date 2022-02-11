@@ -1,6 +1,7 @@
 package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.MutabilityP
 import net.verdagon.vale.scout.rules.{IRulexSR, RuneUsage}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.{PackageCoordinate, RangeS, vassert, vcurious, vimpl, vpass, vwat}
@@ -69,7 +70,7 @@ case class StructA(
     mutabilityRune: RuneUsage,
 
     // This is needed for recursive structures like
-    //   struct ListNode<T> imm rules(T Ref) {
+    //   struct ListNode<T> imm where T Ref {
     //     tail ListNode<T>;
     //   }
     maybePredictedMutability: Option[MutabilityP],
@@ -143,7 +144,7 @@ case class InterfaceA(
     weakable: Boolean,
     mutabilityRune: RuneUsage,
     // This is needed for recursive structures like
-    //   struct ListNode<T> imm rules(T Ref) {
+    //   struct ListNode<T> imm where T Ref {
     //     tail ListNode<T>;
     //   }
     maybePredictedMutability: Option[MutabilityP],

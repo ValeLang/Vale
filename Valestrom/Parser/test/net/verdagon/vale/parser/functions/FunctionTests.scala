@@ -1,15 +1,20 @@
 package net.verdagon.vale.parser.functions
 
+import net.verdagon.vale.parser.ExpressionParser.StopBeforeCloseBrace
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{AbstractAttributeP, AbstractP, ArenaRuneAttributeP, BlockPE, ConstantIntPE, CoordTypePR, ExternAttributeP, FunctionHeaderP, FunctionP, FunctionReturnP, IdentifyingRuneP, LocalNameDeclarationP, NameOrRunePT, NameP, ParamsP, PatternPP, PoolRuneAttributeP, PureAttributeP, ReadOnlyRuneAttributeP, RegionTypePR, TopLevelFunctionP, TopLevelStructP, TypeRuneAttributeP, VoidPE}
+import net.verdagon.vale.parser.old.{CombinatorParsers, OldTestParseUtils}
 import net.verdagon.vale.{Collector, Tests, vassert}
 import org.scalatest.{FunSuite, Matchers}
 
 
-class BiggerTests extends FunSuite with Matchers with Collector with TestParseUtils {
+class BiggerTests extends FunSuite with Collector with TestParseUtils {
   test("Function then struct") {
-    val program = compileProgram(
+    val program =
+      compile(
+        Parser.runParserInner(_),
       """
-        |fn main() int export {}
+        |exported func main() int {}
         |
         |struct mork { }
         |""".stripMargin)
@@ -18,116 +23,124 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
   }
 
   test("Simple function") {
-    compile(CombinatorParsers.topLevelFunction, "fn sum() int {3}") match {
-      case FunctionP(_,
+    compileMaybe(
+      Parser.parseTopLevelThing(_), "func sum() int {3}") match {
+      case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "sum")), Vector(), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, Some(_))),
-        Some(BlockPE(_, Vector(ConstantIntPE(_, 3, _))))) =>
+        Some(BlockPE(_, ConstantIntPE(_, 3, _))))) =>
     }
   }
 
   test("Pure function") {
-    compile(CombinatorParsers.topLevelFunction, "fn sum() pure {3}") match {
-      case FunctionP(_,
+    compileMaybe(
+      Parser.parseTopLevelThing(_), "pure func sum() {3}") match {
+      case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "sum")), Vector(PureAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
-        Some(BlockPE(_, Vector(ConstantIntPE(_, 3, _))))) =>
+        Some(BlockPE(_, ConstantIntPE(_, 3, _))))) =>
     }
   }
 
   test("Extern function") {
-    compile(CombinatorParsers.topLevelFunction, "fn sum() extern;") match {
-      case FunctionP(_,
+    compileMaybe(
+      Parser.parseTopLevelThing(_), "extern func sum();") match {
+      case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "sum")), Vector(ExternAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
-        None) =>
+        None)) =>
     }
   }
 
   test("Abstract function") {
-    compile(CombinatorParsers.topLevelFunction, "fn sum() abstract;") match {
-      case FunctionP(_,
+    compileMaybe(
+      Parser.parseTopLevelThing(_), "abstract func sum();") match {
+      case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "sum")), Vector(AbstractAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
-        None) =>
+        None)) =>
     }
   }
 
   test("Pure and default region") {
-    compile(
-      CombinatorParsers.topLevelFunction,
-      """fn findNearbyUnits() 'i int pure 'i { }
+    compileMaybe(
+      Parser.parseTopLevelThing(_),
+      """pure func findNearbyUnits() 'i int 'i { }
         |""".stripMargin) match {
-      case FunctionP(_,
+      case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_,"findNearbyUnits")),
           Vector(PureAttributeP(_)),
           None,
-          None,
-          Some(ParamsP(_,Vector())),
+          None, Some(ParamsP(_,Vector())),
           FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_,"int"))))),
-        Some(BlockPE(_,Vector(VoidPE(_))))) =>
+        Some(BlockPE(_,VoidPE(_))))) =>
     }
   }
 
   test("Attribute after return") {
-    compile(CombinatorParsers.topLevelFunction, "fn sum() Int abstract;") match {
-      case FunctionP(_,
+    compileMaybe(
+      Parser.parseTopLevelThing(_), "abstract func sum() Int;") match {
+      case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "sum")),
           Vector(AbstractAttributeP(_)),
           None,
-          None,
-          Some(ParamsP(_,Vector())),
+          None, Some(ParamsP(_,Vector())),
           FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_,"Int"))))),
-        None) =>
+        None)) =>
     }
   }
 
   test("Attribute before return") {
-    compile(CombinatorParsers.topLevelFunction, "fn sum() abstract Int;") match {
-      case FunctionP(_,
+    compileMaybe(
+      Parser.parseTopLevelThing(_), "abstract func sum() Int;") match {
+      case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "sum")),
           Vector(AbstractAttributeP(_)),
           None,
-          None,
-          Some(ParamsP(_,Vector())),
+          None, Some(ParamsP(_,Vector())),
           FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_,"Int"))))),
-        None) =>
+        None)) =>
     }
   }
 
   test("Simple function with identifying rune") {
-    val func = compile(CombinatorParsers.topLevelFunction, "fn sum<A>(a A){a}")
+    val TopLevelFunctionP(func) = compileMaybe(
+      Parser.parseTopLevelThing(_), "func sum<A>(a A){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_, NameP(_, "A"), Vector()) =>
     }
   }
 
   test("Simple function with coord-typed identifying rune") {
-    val func = compile(CombinatorParsers.topLevelFunction, "fn sum<A coord>(a A){a}")
+    val TopLevelFunctionP(func) = compileMaybe(
+      Parser.parseTopLevelThing(_), "func sum<A coord>(a A){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_, NameP(_, "A"), Vector(TypeRuneAttributeP(_, CoordTypePR))) =>
     }
   }
 
   test("Simple function with region-typed identifying rune") {
-    val func = compile(CombinatorParsers.topLevelFunction, "fn sum<A reg>(a A){a}")
+    val TopLevelFunctionP(func) = compileMaybe(
+      Parser.parseTopLevelThing(_), "func sum<A reg>(a A){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_, NameP(_, "A"), Vector(TypeRuneAttributeP(_, RegionTypePR))) =>
     }
   }
 
   test("Simple function with apostrophe region-typed identifying rune") {
-    val func = compile(CombinatorParsers.topLevelFunction, "fn sum<'A>(a 'A &Marine){a}")
+    val TopLevelFunctionP(func) = compileMaybe(
+      Parser.parseTopLevelThing(_), "func sum<'A>(a 'A *Marine){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_, NameP(_, "A"), Vector(TypeRuneAttributeP(_, RegionTypePR))) =>
     }
   }
 
   test("Pool region") {
-    val func = compile(CombinatorParsers.topLevelFunction, "fn sum<'A pool>(a 'A &Marine){a}")
+    val TopLevelFunctionP(func) = compileMaybe(
+      Parser.parseTopLevelThing(_), "func sum<'A pool>(a 'A *Marine){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_,
       NameP(_, "A"),
@@ -138,7 +151,8 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
   }
 
   test("Arena region") {
-    val func = compile(CombinatorParsers.topLevelFunction, "fn sum<'A arena>(a 'A &Marine){a}")
+    val TopLevelFunctionP(func) = compileMaybe(
+      Parser.parseTopLevelThing(_), "func sum<'A arena>(a 'A *Marine){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_,
         NameP(_, "A"),
@@ -150,7 +164,8 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
 
 
   test("Readonly region") {
-    val func = compile(CombinatorParsers.topLevelFunction, "fn sum<'A ro>(a 'A &Marine){a}")
+    val TopLevelFunctionP(func) = compileMaybe(
+      Parser.parseTopLevelThing(_), "func sum<'A ro>(a 'A *Marine){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_,
         NameP(_, "A"),
@@ -161,24 +176,25 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
   }
 
   test("Virtual function") {
-    compile(
-      CombinatorParsers.topLevelFunction,
+    compileMaybe(
+      Parser.parseTopLevelThing(_),
       """
-        |fn doCivicDance(virtual this Car) int;
+        |func doCivicDance(virtual this Car) int;
       """.stripMargin) shouldHave {
-      case FunctionP(_,
+      case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "doCivicDance")), Vector(), None, None,
-          Some(ParamsP(_, Vector(PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "this")))), Some(NameOrRunePT(NameP(_, "Car"))), None, Some(AbstractP(_)))))),
+          Some(NameP(_, "doCivicDance")), Vector(), None,
+          None, Some(ParamsP(_, Vector(PatternPP(_, _,Some(LocalNameDeclarationP(NameP(_, "this"))), Some(NameOrRunePT(NameP(_, "Car"))), None, Some(AbstractP(_)))))),
           FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_, "int"))))),
-        None) =>
+        None)) =>
     }
   }
 
   test("Bad thing for body") {
-    compileProgramForError(
+    compileForError(
+      Parser.runParserInner(_),
         """
-          |fn doCivicDance(virtual this Car) moo blork
+          |func doCivicDance(virtual this Car) moo blork
         """.stripMargin) match {
       case BadFunctionBodyError(_) =>
     }

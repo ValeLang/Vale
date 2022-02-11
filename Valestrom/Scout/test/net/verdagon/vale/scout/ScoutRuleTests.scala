@@ -15,14 +15,14 @@ class ScoutRuleTests extends FunSuite with Matchers {
 
   private def compile(code: String): ProgramS = {
     Parser.runParser(code) match {
-      case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(firstProgram0) => {
+      case Err(err) => fail(err.toString)
+      case Ok(firstProgram0) => {
         val von = ParserVonifier.vonifyFile(firstProgram0)
         val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
         val program0 =
           ParsedLoader.load(vpstJson) match {
-            case ParseFailure(error) => vwat(error.toString)
-            case ParseSuccess(program0) => program0
+            case Err(error) => vwat(error.toString)
+            case Ok(program0) => program0
           }
         new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => vfail(e.toString)
@@ -34,14 +34,14 @@ class ScoutRuleTests extends FunSuite with Matchers {
 
   private def compileForError(code: String): ICompileErrorS = {
     Parser.runParser(code) match {
-      case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(firstProgram0) => {
+      case Err(err) => fail(err.toString)
+      case Ok(firstProgram0) => {
         val von = ParserVonifier.vonifyFile(firstProgram0)
         val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
         val program0 =
           ParsedLoader.load(vpstJson) match {
-            case ParseFailure(error) => vwat(error.toString)
-            case ParseSuccess(program0) => program0
+            case Err(error) => vwat(error.toString)
+            case Ok(program0) => program0
           }
         new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => e
@@ -55,7 +55,7 @@ class ScoutRuleTests extends FunSuite with Matchers {
     val program =
       compile(
         """
-          |fn main(a int) {}
+          |func main(a int) {}
           |""".stripMargin)
     val main = program.lookupFunction("main")
 
@@ -67,8 +67,8 @@ class ScoutRuleTests extends FunSuite with Matchers {
     val program =
       compile(
         """
-          |fn main<T, Y>(a T)
-          |rules(Y = T) {}
+          |func main<T, Y>(a T)
+          |where Y = T {}
           |""".stripMargin)
     val main = program.lookupFunction("main")
 
@@ -82,8 +82,8 @@ class ScoutRuleTests extends FunSuite with Matchers {
     val program =
       compile(
         """
-          |fn main<M>(a int)
-          |rules(M = own | borrow) {}
+          |func main<M>(a int)
+          |where M = own | borrow {}
           |""".stripMargin)
     val main = program.lookupFunction("main")
 
@@ -95,8 +95,8 @@ class ScoutRuleTests extends FunSuite with Matchers {
     val program =
       compile(
         """
-          |fn main<T>(a T)
-          |rules(T Ref(O, P, K), O Ownership, P Permission, K Kind) {}
+          |func main<T>(a T)
+          |where T Ref(O, P, K), O Ownership, P Permission, K Kind {}
           |""".stripMargin)
     val main = program.lookupFunction("main")
 
@@ -110,8 +110,8 @@ class ScoutRuleTests extends FunSuite with Matchers {
     val program =
       compile(
         """
-          |fn main<A, B, T>(p1 A, p2 B)
-          |rules(A = T<B>, T = Option, A = int) {}
+          |func main<A, B, T>(p1 A, p2 B)
+          |where A = T<B>, T = Option, A = int {}
           |""".stripMargin)
     val main = program.lookupFunction("main")
 
@@ -125,8 +125,8 @@ class ScoutRuleTests extends FunSuite with Matchers {
     val program =
       compile(
         """
-          |fn main<M, V, N, E>(t T)
-          |rules(T Ref = [<M, V> N * E]) {}
+          |func main<M, V, N, E>(t T)
+          |where T Ref = [#N]<M, V>E {}
           |""".stripMargin)
     val main = program.lookupFunction("main")
 
@@ -141,8 +141,8 @@ class ScoutRuleTests extends FunSuite with Matchers {
     val program =
       compile(
         """
-          |fn main<A, B>()
-          |rules(A = isInterface(B)) {}
+          |func main<A, B>()
+          |where A = isInterface(B) {}
           |""".stripMargin)
     val main = program.lookupFunction("main")
 

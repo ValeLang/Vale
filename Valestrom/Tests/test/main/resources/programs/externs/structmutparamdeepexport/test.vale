@@ -1,14 +1,14 @@
 
-struct Spaceship export {
+exported struct Spaceship {
   engine Engine;
 }
 // Not exported
 struct Engine { fuel int; }
 
-fn valeGetFuel(s &Spaceship) int export { s.engine.fuel }
+exported func valeGetFuel(s *Spaceship) int { s.engine.fuel }
 
-fn cGetFuel(s &Spaceship) int extern;
+extern func cGetFuel(s *Spaceship) int;
 
-fn main() int export {
-  ret cGetFuel(&Spaceship(Engine(42)));
+exported func main() int {
+  ret cGetFuel(*Spaceship(Engine(42)));
 }

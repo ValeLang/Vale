@@ -1,4 +1,4 @@
-fn main() int export {
+exported func main() int {
    x = 32.0 == 16.0 + 16.0;
    ret if (x) { 42 } else { 73 }
 }

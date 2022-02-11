@@ -13,8 +13,11 @@
 #include "globalstate.h"
 
 class BlockState {
+public:
+  AddressNumberer* const addressNumberer;
 private:
-  const BlockState* maybeParentBlockState;
+  BlockState* maybeParentBlockState;
+  std::optional<LLVMBasicBlockRef> maybeAfterLoop;
   std::unordered_map<VariableId*, LLVMValueRef, AddressHasher<VariableId*>> localAddrByLocalId;
   std::unordered_set<VariableId*, AddressHasher<VariableId*>> unstackifiedLocalIds;
 
@@ -23,10 +26,12 @@ public:
 
   BlockState(const BlockState&) = delete;
 
-  BlockState(AddressNumberer* addressNumberer, BlockState* maybeParentBlockState_) :
-      localAddrByLocalId(0, addressNumberer->makeHasher<VariableId*>()),
-      unstackifiedLocalIds(0, addressNumberer->makeHasher<VariableId*>()),
-      maybeParentBlockState(maybeParentBlockState_) {
+  BlockState(AddressNumberer* addressNumberer_, BlockState* maybeParentBlockState_, std::optional<LLVMBasicBlockRef> maybeAfterLoop_) :
+      addressNumberer(addressNumberer_),
+      maybeParentBlockState(maybeParentBlockState_),
+      maybeAfterLoop(maybeAfterLoop_),
+      localAddrByLocalId(0, addressNumberer_->makeHasher<VariableId*>()),
+      unstackifiedLocalIds(0, addressNumberer_->makeHasher<VariableId*>()) {
   }
 
   LLVMValueRef getLocalAddr(VariableId* varId) const {
@@ -114,6 +119,18 @@ public:
       childUnstackifiedParentLocalIds.insert(unstackifiedLocalId);
     }
     return childUnstackifiedParentLocalIds;
+  }
+
+  std::optional<std::tuple<BlockState*, LLVMBasicBlockRef>> getNearestLoopEnd() {
+    if (maybeAfterLoop) {
+      return std::optional(std::make_tuple(this, *maybeAfterLoop));
+    } else {
+      if (maybeParentBlockState) {
+        return maybeParentBlockState->getNearestLoopEnd();
+      } else {
+        return std::nullopt;
+      }
+    }
   }
 };
 

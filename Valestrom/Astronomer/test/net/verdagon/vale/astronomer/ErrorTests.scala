@@ -1,6 +1,6 @@
 package net.verdagon.vale.astronomer
 
-import net.verdagon.vale.parser.{FileP, ParseFailure, ParseSuccess, Parser, Range}
+import net.verdagon.vale.parser.{Parser}
 import net.verdagon.vale.scout.{CodeNameS, ProgramS, Scout}
 import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, Ok, PackageCoordinateMap, vassert, vfail}
 import org.scalatest.{FunSuite, Matchers}
@@ -16,7 +16,7 @@ class ErrorTests extends FunSuite with Matchers  {
   test("Report type not found") {
     val compilation =
       AstronomerTestCompilation.test(
-        """fn main(a Bork) export {
+        """exported func main(a Bork) {
           |}
           |""".stripMargin)
 
@@ -33,10 +33,10 @@ class ErrorTests extends FunSuite with Matchers  {
     val compilation =
       AstronomerTestCompilation.test(
         """
-          |fn moo<A>(x int) {
+          |func moo<A>(x int) {
           |  42
           |}
-          |fn main() export {
+          |exported func main() {
           |  moo();
           |}
           |""".stripMargin)

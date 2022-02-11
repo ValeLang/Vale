@@ -1,8 +1,8 @@
 package net.verdagon.vale.hammer
 
-import net.verdagon.vale.hammer.NameHammer.{translateFileCoordinate, translateFullName}
+import net.verdagon.vale.hammer.NameHammer.{translateCodeLocation, translateFileCoordinate, translateFullName}
 import net.verdagon.vale.metal._
-import net.verdagon.vale.{CodeLocationS, PackageCoordinate, vassert, vfail, vimpl, metal => m}
+import net.verdagon.vale.{CodeLocationS, PackageCoordinate, RangeS, vassert, vfail, vimpl, metal => m}
 import net.verdagon.vale.scout._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.{Hinputs, _}
@@ -57,7 +57,6 @@ object VonHammer {
         VonMember("functions", VonArray(None, functions.map(vonifyFunction).toVector)),
         VonMember("staticSizedArrays", VonArray(None, staticSizedArrays.map(vonifyStaticSizedArrayDefinition).toVector)),
         VonMember("runtimeSizedArrays", VonArray(None, runtimeSizedArrays.map(vonifyRuntimeSizedArrayDefinition).toVector)),
-        VonMember("emptyTupleStructKind", vonifyKind(ProgramH.emptyTupleStructRef)),
         VonMember(
           "immDestructorsByKind",
           VonArray(
@@ -275,6 +274,7 @@ object VonHammer {
   def vonifyOwnership(ownership: m.OwnershipH): IVonData = {
     ownership match {
       case m.OwnH => VonObject("Own", None, Vector())
+      case m.PointerH => VonObject("Pointer", None, Vector())
       case m.BorrowH => VonObject("Borrow", None, Vector())
       case m.ShareH => VonObject("Share", None, Vector())
       case m.WeakH => VonObject("Weak", None, Vector())
@@ -294,8 +294,8 @@ object VonHammer {
         VonMember("type", vonifyCoord(tyype))))
   }
 
-  def vonifyRuntimeSizedArrayDefinition(rsaDef: RuntimeSizedArrayDefinitionTH): IVonData = {
-    val RuntimeSizedArrayDefinitionTH(name, mutability, elementType) = rsaDef
+  def vonifyRuntimeSizedArrayDefinition(rsaDef: RuntimeSizedArrayDefinitionHT): IVonData = {
+    val RuntimeSizedArrayDefinitionHT(name, mutability, elementType) = rsaDef
     VonObject(
       "RuntimeSizedArrayDefinition",
       None,
@@ -306,8 +306,8 @@ object VonHammer {
         VonMember("elementType", vonifyCoord(elementType))))
   }
 
-  def vonifyStaticSizedArrayDefinition(ssaDef: StaticSizedArrayDefinitionTH): IVonData = {
-    val StaticSizedArrayDefinitionTH(name, size, mutability, variability, elementType) = ssaDef
+  def vonifyStaticSizedArrayDefinition(ssaDef: StaticSizedArrayDefinitionHT): IVonData = {
+    val StaticSizedArrayDefinitionHT(name, size, mutability, variability, elementType) = ssaDef
     VonObject(
       "StaticSizedArrayDefinition",
       None,
@@ -326,6 +326,7 @@ object VonHammer {
       case IntH(bits) => VonObject("Int", None, Vector(VonMember("bits", VonInt(bits))))
       case BoolH() => VonObject("Bool", None, Vector())
       case StrH() => VonObject("Str", None, Vector())
+      case VoidH() => VonObject("Void", None, Vector())
       case FloatH() => VonObject("Float", None, Vector())
       case ir @ InterfaceRefH(_) => vonifyInterfaceRef(ir)
       case sr @ StructRefH(_) => vonifyStructRef(sr)
@@ -360,6 +361,9 @@ object VonHammer {
 
   def vonifyExpression(node: ExpressionH[KindH]): IVonData = {
     node match {
+      case ConstantVoidH() => {
+        VonObject("ConstantVoid", None, Vector())
+      }
       case ConstantBoolH(value) => {
         VonObject(
           "ConstantBool",
@@ -407,9 +411,20 @@ object VonHammer {
             VonMember("sourceType", vonifyCoord(sourceExpr.resultType)),
             VonMember("sourceKnownLive", VonBool(false))))
       }
-      case wa @ WeakAliasH(sourceExpr) => {
+      case wa @ BorrowToWeakH(sourceExpr) => {
         VonObject(
-          "WeakAlias",
+          "BorrowToWeak",
+          None,
+          Vector(
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
+            VonMember("sourceType", vonifyCoord(sourceExpr.resultType)),
+            VonMember("sourceKind", vonifyKind(sourceExpr.resultType.kind)),
+            VonMember("resultType", vonifyCoord(wa.resultType)),
+            VonMember("resultKind", vonifyKind(wa.resultType.kind))))
+      }
+      case wa @ PointerToWeakH(sourceExpr) => {
+        VonObject(
+          "PointerToWeak",
           None,
           Vector(
             VonMember("sourceExpr", vonifyExpression(sourceExpr)),
@@ -460,6 +475,12 @@ object VonHammer {
           Vector(
             VonMember("sourceExpr", vonifyExpression(sourceExpr)),
             VonMember("sourceType", vonifyCoord(sourceExpr.resultType))))
+      }
+      case BreakH() => {
+        VonObject(
+          "Break",
+          None,
+          Vector())
       }
       case DiscardH(sourceExpr) => {
         VonObject(
@@ -515,6 +536,22 @@ object VonHammer {
           None,
           Vector(
             VonMember("local", vonifyLocal(local))))
+      }
+      case BorrowToPointerH(sourceExpr) => {
+        VonObject(
+          "BorrowToPointer",
+          None,
+          Vector(
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
+            VonMember("resultType", vonifyCoord(sourceExpr.resultType))))
+      }
+      case PointerToBorrowH(sourceExpr) => {
+        VonObject(
+          "PointerToBorrow",
+          None,
+          Vector(
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
+            VonMember("resultType", vonifyCoord(sourceExpr.resultType))))
       }
       case NarrowPermissionH(refExpression, targetPermission) => {
         VonObject(
@@ -1013,6 +1050,16 @@ object VonHammer {
         VonMember("offset", VonInt(offset))))
   }
 
+  def vonifyRange(range: RangeS): IVonData = {
+    val RangeS(begin, end) = range
+    VonObject(
+      "Range",
+      None,
+      Vector(
+        VonMember("begin", translateCodeLocation(begin)),
+        VonMember("end", translateCodeLocation(end))))
+  }
+
   def translateName(
     hinputs: Hinputs,
     hamuts: HamutsBox,
@@ -1045,6 +1092,27 @@ object VonHammer {
           None,
           Vector(
             VonMember("codeLocation", vonifyCodeLocation2(codeLocation))))
+      }
+      case IterableNameT(range) => {
+        VonObject(
+          "IterableName",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range))))
+      }
+      case IteratorNameT(range) => {
+        VonObject(
+          "IteratorName",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range))))
+      }
+      case IterationOptionNameT(range) => {
+        VonObject(
+          "IterationOptionName",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range))))
       }
       case StaticSizedArrayNameT(size, arr) => {
         VonObject(

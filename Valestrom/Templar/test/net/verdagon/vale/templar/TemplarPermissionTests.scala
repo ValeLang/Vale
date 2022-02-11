@@ -20,20 +20,21 @@ class TemplarPermissionTests extends FunSuite with Matchers {
   }
 
 
+
   test("Templex readonly") {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
         |struct Bork {}
-        |fn main(a &Bork) int {
-        |  = 7;
+        |func main(a *Bork) int {
+        |  ret 7;
         |}
         |""".stripMargin)
     val temputs = compile.expectTemputs()
 
     val main = temputs.lookupFunction("main")
     Collector.only(main, {
-      case FunctionHeaderT(simpleName("main"),Vector(UserFunctionT),Vector(ParameterT(_, _, CoordT(ConstraintT, ReadonlyT, StructTT(_)))), _, _) => true
+      case FunctionHeaderT(simpleName("main"),Vector(UserFunctionT),Vector(ParameterT(_, _, CoordT(PointerT, ReadonlyT, StructTT(_)))), _, _) => true
     })
   }
 
@@ -42,15 +43,15 @@ class TemplarPermissionTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Bork {}
-        |fn main(a &!Bork) int {
-        |  = 7;
+        |func main(a *!Bork) int {
+        |  ret 7;
         |}
         |""".stripMargin)
     val temputs = compile.expectTemputs()
 
     val main = temputs.lookupFunction("main")
     Collector.only(main, {
-      case FunctionHeaderT(simpleName("main"),Vector(UserFunctionT),Vector(ParameterT(_, _, CoordT(ConstraintT, ReadwriteT, StructTT(_)))), _, _) => true
+      case FunctionHeaderT(simpleName("main"),Vector(UserFunctionT),Vector(ParameterT(_, _, CoordT(PointerT, ReadwriteT, StructTT(_)))), _, _) => true
     })
   }
 
@@ -62,15 +63,15 @@ class TemplarPermissionTests extends FunSuite with Matchers {
         |struct Bork {
         |  engine Engine;
         |}
-        |fn main(a &Bork) infer-ret {
-        |  a.engine
+        |func main(a *Bork) infer-ret {
+        |  ret *a.engine;
         |}
         |""".stripMargin)
     val temputs = compile.expectTemputs()
 
     val main = temputs.lookupFunction("main")
     main.header.returnType match {
-      case CoordT(ConstraintT, ReadonlyT, _) =>
+      case CoordT(PointerT, ReadonlyT, _) =>
     }
   }
 
@@ -82,8 +83,8 @@ class TemplarPermissionTests extends FunSuite with Matchers {
         |struct Bork {
         |  engine Engine;
         |}
-        |fn getFuel(engine &Engine) int { 42 }
-        |fn main() infer-ret {
+        |func getFuel(engine &Engine) int { ret 42; }
+        |func main() infer-ret {
         |  bork = Bork(Engine());
         |  ret bork.engine.getFuel();
         |}

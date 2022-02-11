@@ -40,6 +40,9 @@ object NameHammer {
       case LambdaCitizenNameT(codeLoc) => "lam"
       case LambdaTemplateNameT(codeLoc) => "lamTemplate"
       case LetNameT(codeLoc) => "let"
+      case IterableNameT(range) => "iterable"
+      case IteratorNameT(range) => "iterator"
+      case IterationOptionNameT(range) => "iterationOption"
       case MagicParamNameT(codeLoc) => "magicParam"
       case PrimitiveNameT(humanName) => humanName
       case RawArrayNameT(mutability, elementType) => "rawArr"

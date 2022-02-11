@@ -157,7 +157,10 @@ void KindStructs::declareStruct(StructKind* structM, Weakability weakable) {
   auto innerStructL =
       LLVMStructCreateNamed(
           globalState->context, structM->fullName->name.c_str());
-  assert(structInnerStructs.count(structM->fullName->name) == 0);
+  if (structInnerStructs.count(structM->fullName->name) != 0) {
+    std::cerr << "Can't declare " << structM->fullName->name << ", already declared!" << std::endl;
+    exit(1);
+  }
   structInnerStructs.emplace(structM->fullName->name, innerStructL);
 
   auto wrapperStructL =

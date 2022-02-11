@@ -20,14 +20,14 @@ LLVMTypeRef makeNeverType(GlobalState* globalState) {
   return LLVMArrayType(LLVMIntTypeInContext(globalState->context, NEVER_INT_BITS), 0);
 }
 
-LLVMValueRef makeEmptyTuple(GlobalState* globalState) {
-  return LLVMGetUndef(globalState->rcImm->translateType(globalState->metalCache->emptyTupleStructRef));
+LLVMValueRef makeVoid(GlobalState* globalState) {
+  return LLVMGetUndef(globalState->rcImm->translateType(globalState->metalCache->voidRef));
 }
 
-Ref makeEmptyTupleRef(GlobalState* globalState) {
-  auto emptyTupleLE = makeEmptyTuple(globalState);
-  auto refMT = globalState->metalCache->emptyTupleStructRef;
-  return wrap(globalState->rcImm, refMT, emptyTupleLE);
+Ref makeVoidRef(GlobalState* globalState) {
+  auto voidLE = makeVoid(globalState);
+  auto refMT = globalState->metalCache->voidRef;
+  return wrap(globalState->rcImm, refMT, voidLE);
 }
 
 LLVMValueRef makeMidasLocal(
@@ -266,7 +266,7 @@ LLVMValueRef makeConstExpr(FunctionState* functionState, LLVMBuilderRef builder,
   return LLVMBuildLoad(builder, localAddr, "");
 }
 
-LLVMValueRef makeConstIntExpr(FunctionState* functionState, LLVMBuilderRef builder, LLVMTypeRef type, int value) {
+LLVMValueRef makeConstIntExpr(FunctionState* functionState, LLVMBuilderRef builder, LLVMTypeRef type, int64_t value) {
   return makeConstExpr(functionState, builder, LLVMConstInt(type, value, false));
 }
 

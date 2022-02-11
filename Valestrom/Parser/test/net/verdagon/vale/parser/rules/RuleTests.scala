@@ -1,7 +1,9 @@
 package net.verdagon.vale.parser.rules
 
-import net.verdagon.vale.parser.CombinatorParsers._
+import net.verdagon.vale.parser.old.CombinatorParsers._
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{AnonymousRunePT, BuiltinCallPR, ComponentsPR, EqualsPR, NameOrRunePT, NameP, PackPT, PatternPP, PrototypePT, PrototypeTypePR, TemplexPR, TypedPR}
+import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -50,12 +52,13 @@ class RuleTests extends FunSuite with Matchers with Collector {
     checkFail(level5PR, "")
     checkFail(manualSeqRulePR, "")
     checkFail(packRulePR, "")
-    checkFail(repeaterSeqRulePR, "")
+    checkFail(staticSizedArrayPR, "")
+    checkFail(runtimeSizedArrayPR, "")
     checkFail(rulePR, "")
     checkFail(ruleTemplexPR, "")
     checkFail(ruleTemplexPR, "")
     checkFail(ruleTemplexSetPR, "")
-    checkFail(templateRulesPR, "")
+//    checkFail(templateRulesPR, "")
     checkFail(refListCompoundMutabilityPR, "")
     checkFail(packPR, "")
   }
@@ -70,13 +73,13 @@ class RuleTests extends FunSuite with Matchers with Collector {
     compile(rulePR, "implements(MyObject, T)") shouldHave {
         case BuiltinCallPR(_, NameP(_, "implements"),Vector(TemplexPR(NameOrRunePT(NameP(_, "MyObject"))), TemplexPR(NameOrRunePT(NameP(_, "T"))))) =>
     }
-    compile(rulePR, "exists(fn +(T)int)") shouldHave {
+    compile(rulePR, "exists(func +(T)int)") shouldHave {
         case BuiltinCallPR(_, NameP(_, "exists"), Vector(TemplexPR(PrototypePT(_,NameP(_, "+"), Vector(NameOrRunePT(NameP(_, "T"))), NameOrRunePT(NameP(_, "int")))))) =>
     }
   }
 
   test("Super complicated") {
-    compile(rulePR, "C = [I * X] | [N * T]") // succeeds
+    compile(rulePR, "C = [#I]X | [#N]T") // succeeds
   }
 
   test("destructure prototype") {
@@ -90,7 +93,7 @@ class RuleTests extends FunSuite with Matchers with Collector {
   }
 
   test("prototype with coords") {
-    compile(rulePR, "Prot(_, (int, bool), _)") shouldHave {
+    compile(rulePR, "Prot(_, Refs(int, bool), _)") shouldHave {
       case ComponentsPR(_,
         TypedPR(_,None,PrototypeTypePR),
         Vector(

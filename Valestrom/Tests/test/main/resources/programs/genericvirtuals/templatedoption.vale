@@ -1,19 +1,19 @@
 
-interface MyOption<T> sealed rules(T Ref) { }
+sealed interface MyOption<T> where T Ref { }
 
-struct MySome<T> rules(T Ref) {
+struct MySome<T> where T Ref {
   value T;
 }
 impl<T> MyOption<T> for MySome<T>;
 
-struct MyNone<T> rules(T Ref) { }
+struct MyNone<T> where T Ref { }
 impl<T> MyOption<T> for MyNone<T>;
 
-fn len<T>(virtual opt &MyOption<T>) int abstract;
-fn len<T>(opt &MyNone<T> impl MyOption<T>) int { 0 }
-fn len<T>(opt &MySome<T> impl MyOption<T>) int { 1 }
+abstract func len<T>(virtual opt *MyOption<T>) int;
+func len<T>(opt *MyNone<T> impl MyOption<T>) int { ret 0; }
+func len<T>(opt *MySome<T> impl MyOption<T>) int { ret 1; }
 
-fn main() int export {
+exported func main() int {
   myOpt MyOption<int> = MySome<int>(4);
-  = len(&myOpt);
+  ret len(*myOpt);
 }

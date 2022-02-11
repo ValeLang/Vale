@@ -16,8 +16,8 @@
 
 LLVMTypeRef makeNeverType(GlobalState* globalState);
 
-LLVMValueRef makeEmptyTuple(GlobalState* globalState);
-Ref makeEmptyTupleRef(GlobalState* globalState);
+LLVMValueRef makeVoid(GlobalState* globalState);
+Ref makeVoidRef(GlobalState* globalState);
 
 LLVMValueRef makeMidasLocal(
     FunctionState* functionState,
@@ -155,7 +155,7 @@ Ref buildInterfaceCall(
     int virtualParamIndex);
 
 
-LLVMValueRef makeConstIntExpr(FunctionState* functionState, LLVMBuilderRef builder, LLVMTypeRef type, int value);
+LLVMValueRef makeConstIntExpr(FunctionState* functionState, LLVMBuilderRef builder, LLVMTypeRef type, int64_t value);
 
 LLVMValueRef makeConstExpr(
     FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef constExpr);

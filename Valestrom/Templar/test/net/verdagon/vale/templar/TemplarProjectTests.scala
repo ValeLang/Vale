@@ -16,7 +16,7 @@ class TemplarProjectTests extends FunSuite with Matchers {
       TemplarTestCompilation.test(
         """
           |import v.builtins.tup.*;
-          |fn main() export { }
+          |exported func main() { }
           """.stripMargin)
     val temputs = compile.expectTemputs()
 
@@ -29,7 +29,7 @@ class TemplarProjectTests extends FunSuite with Matchers {
       TemplarTestCompilation.test(
         """
           |import v.builtins.tup.*;
-          |fn main() export { {}!() }
+          |exported func main() { {}!() }
           """.stripMargin)
     val temputs = compile.expectTemputs()
 
@@ -49,7 +49,7 @@ class TemplarProjectTests extends FunSuite with Matchers {
       TemplarTestCompilation.test(
         """
           |import v.builtins.tup.*;
-          |struct MyStruct export { a int; }
+          |exported struct MyStruct { a int; }
           |""".stripMargin)
     val temputs = compile.expectTemputs()
 

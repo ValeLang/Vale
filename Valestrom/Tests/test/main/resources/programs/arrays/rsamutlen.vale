@@ -1,6 +1,6 @@
 // immutable runtime-size-array length
 
-fn main() int export {
+exported func main() int {
   a = Array<mut, int>(5, {_});
-  = len(&a);
+  ret len(&a);
 }

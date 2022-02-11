@@ -1,7 +1,7 @@
 package net.verdagon.vale.scout
 
 import net.verdagon.vale.options.GlobalOptions
-import net.verdagon.vale.parser.{CombinatorParsers, ParseFailure, ParseSuccess, Parser, VaryingP}
+import net.verdagon.vale.parser.{Parser}
 import net.verdagon.vale.{Collector, Err, FileCoordinate, Ok, vassert, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -10,8 +10,8 @@ import scala.runtime.Nothing$
 class ScoutVariableTests extends FunSuite with Matchers {
   private def compileProgramForError(code: String): ICompileErrorS = {
     Parser.runParser(code) match {
-      case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(program0) => {
+      case Err(err) => fail(err.toString)
+      case Ok(program0) => {
         new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
           case Ok(_) => vfail("Expected an error")
           case Err(e) => e
@@ -22,8 +22,8 @@ class ScoutVariableTests extends FunSuite with Matchers {
 
   private def compile(code: String): ProgramS = {
     Parser.runParser(code) match {
-      case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(program0) => {
+      case Err(err) => fail(err.toString)
+      case Ok(program0) => {
         new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => vfail(e.toString)
           case Ok(t) => t
@@ -33,7 +33,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Regular variable") {
-    val program1 = compile("fn main() int export { x = 4; }")
+    val program1 = compile("exported func main() int { x = 4; }")
     val main = program1.lookupFunction("main")
     val CodeBodyS(body) = main.body
     vassert(body.block.locals.size == 1)
@@ -45,20 +45,20 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Type-less local has no coord rune") {
-    val program1 = compile("fn main() int export { x = 4; }")
+    val program1 = compile("exported func main() int { x = 4; }")
     val main = program1.lookupFunction("main")
     val local = Collector.only(main, { case let @ LetSE(_, rules, pattern, _) => let })
     local.pattern.coordRune shouldEqual None
   }
 
   test("Reports defining same-name variable") {
-    compileProgramForError("fn main() export { x = 4; x = 5; }") match {
+    compileProgramForError("exported func main() { x = 4; x = 5; }") match {
       case VariableNameAlreadyExists(_, CodeVarNameS("x")) =>
     }
   }
 
-  test("Self is lending to function") {
-    val program1 = compile("fn main() int export { x = 4; doBlarks(&x); }")
+  test("Self is pointing to function") {
+    val program1 = compile("exported func main() int { x = 4; doBlarks(*x); }")
     val main = program1.lookupFunction("main")
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
@@ -68,8 +68,8 @@ class ScoutVariableTests extends FunSuite with Matchers {
     }
   }
 
-  test("Self is lending to method") {
-    val program1 = compile("fn main() int export { x = 4; x.doBlarks(); }")
+  test("Self is pointing to method") {
+    val program1 = compile("exported func main() int { x = 4; x.doBlarks(); }")
     val main = program1.lookupFunction("main")
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
@@ -80,7 +80,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Self is moving to function") {
-    val program1 = compile("fn main() int export { x = 4; doBlarks(x); }")
+    val program1 = compile("exported func main() int { x = 4; doBlarks(x); }")
     val main = program1.lookupFunction("main")
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
@@ -91,7 +91,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Self is moving to method") {
-    val program1 = compile("fn main() int export { x = 4; (x).doBlarks(); }")
+    val program1 = compile("exported func main() int { x = 4; (x).doBlarks(); }")
     val main = program1.lookupFunction("main")
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
@@ -102,7 +102,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Self is mutating mutable") {
-    val program1 = compile("fn main() int export { x! = 4; set x = 6; }")
+    val program1 = compile("exported func main() int { x! = 4; set x = 6; }")
     val main = program1.lookupFunction("main")
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
@@ -113,7 +113,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Self is moving and mutating same variable") {
-    val program1 = compile("fn main() int export { x! = 4; set x = x + 1; }")
+    val program1 = compile("exported func main() int { x! = 4; set x = +(x, 1); }")
     val main = program1.lookupFunction("main")
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
@@ -123,12 +123,12 @@ class ScoutVariableTests extends FunSuite with Matchers {
     }
   }
 
-  test("Child is lending") {
+  test("Child is pointing") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
-        |  ({ doBlarks(&x); })();
+        |  ({ doBlarks(*x); })();
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -143,7 +143,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Child is moving") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
         |  ({ doBlarks(x); })();
         |}
@@ -160,7 +160,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Child is mutating") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
         |  ({ set x = 9; })();
         |}
@@ -174,12 +174,12 @@ class ScoutVariableTests extends FunSuite with Matchers {
     }
   }
 
-  test("Self maybe lending") {
+  test("Self maybe pointing") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
-        |  if (true) { doBlarks(&x); } else { }
+        |  if (true) { doBlarks(*x); } else { }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -192,7 +192,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Self maybe moving") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
         |  if (true) { doBlarks(x); } else { }
         |}
@@ -209,7 +209,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Self maybe mutating") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
         |  if (true) { set x = 9; } else { }
         |}
@@ -223,12 +223,12 @@ class ScoutVariableTests extends FunSuite with Matchers {
     }
   }
 
-  test("Children maybe lending") {
+  test("Children maybe pointing") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
-        |  if (true) { { doBlarks(&x); }(); } else { }
+        |  if (true) { { doBlarks(*x); }(); } else { }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -243,7 +243,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Children maybe moving") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
         |  if (true) { { doBlarks(x); }(); } else { }
         |}
@@ -260,7 +260,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Children maybe mutating") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
         |  if (true) { { set x = 9; }(); } else { }
         |}
@@ -274,12 +274,12 @@ class ScoutVariableTests extends FunSuite with Matchers {
     }
   }
 
-  test("Self both lending") {
+  test("Self both pointing") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
-        |  if (true) { doBoinks(&x); } else { doBloops(&x); }
+        |  if (true) { doBoinks(*x); } else { doBloops(*x); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -291,12 +291,12 @@ class ScoutVariableTests extends FunSuite with Matchers {
     }
   }
 
-  test("Children both lending") {
+  test("Children both pointing") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
-        |  if (true) { { doBoinks(&x); }(); } else { { doBloops(&x); }(); }
+        |  if (true) { { doBoinks(*x); }(); } else { { doBloops(*x); }(); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -311,7 +311,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Self both moving") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
         |  if (true) { doBoinks(x); } else { doBloops(x); }
         |}
@@ -328,7 +328,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Children both moving") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
         |  if (true) { { doBoinks(x); }(); } else { { doBloops(x); }(); }
         |}
@@ -345,7 +345,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Self both mutating") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
         |  if (true) { set x = 9; } else { set x = 8; }
         |}
@@ -362,7 +362,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Children both mutating") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
         |  if (true) { { set x = 9; }(); } else { { set x = 8; }(); }
         |}
@@ -376,12 +376,12 @@ class ScoutVariableTests extends FunSuite with Matchers {
     }
   }
 
-  test("Self lending or moving") {
+  test("Self pointing or moving") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
-        |  if (true) { doThings(&x); } else { moveThis(x); }
+        |  if (true) { doThings(*x); } else { moveThis(x); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -393,12 +393,12 @@ class ScoutVariableTests extends FunSuite with Matchers {
     }
   }
 
-  test("Children lending or moving") {
+  test("Children pointing or moving") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
-        |  if (true) { { doThings(&x); }(); } else { { moveThis(x); }(); }
+        |  if (true) { { doThings(*x); }(); } else { { moveThis(x); }(); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -413,7 +413,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Self mutating or moving") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
         |  if (true) { set x = 9; } else { moveThis(x); }
         |}
@@ -430,7 +430,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Children mutating or moving") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
         |  if (true) { { set x = 9; }(); } else { { moveThis(x); }(); }
         |}
@@ -445,7 +445,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Self moving and mutating same variable") {
-    val program1 = compile("fn main() int export { x! = 4; set x = x + 1; }")
+    val program1 = compile("exported func main() int { x! = 4; set x = +(x, 1); }")
     val main = program1.lookupFunction("main")
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
@@ -456,7 +456,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Children moving and mutating same variable") {
-    val program1 = compile("fn main() int export { x! = 4; { set x = x + 1; }(); }")
+    val program1 = compile("exported func main() int { x! = 4; { set x = +(x, 1); }(); }")
     val main = program1.lookupFunction("main")
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
@@ -469,8 +469,8 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Self borrowing param") {
     val program1 = compile(
       """
-        |fn main(x int) {
-        |  print(&x);
+        |func main(x int) {
+        |  print(*x);
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -485,8 +485,8 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Children borrowing param") {
     val program1 = compile(
       """
-        |fn main(x int) {
-        |  { print(&x); }();
+        |func main(x int) {
+        |  { print(*x); }();
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -501,9 +501,9 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Self loading or mutating or moving") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
-        |  if (true) { set x = 9; } else if (true) { moveThis(x); } else { blark(&x); }
+        |  if (true) { set x = 9; } else if (true) { moveThis(x); } else { blark(*x); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -518,9 +518,9 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Children loading or mutating or moving") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 4;
-        |  if (true) { { set x = 9; }(); } else if (true) { { moveThis(x); }(); } else { { blark(&x); }(); }
+        |  if (true) { { set x = 9; }(); } else if (true) { { moveThis(x); }(); } else { { blark(*x); }(); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -535,9 +535,9 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("While condition borrowing") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = Marine();
-        |  while (&x) { }
+        |  while (*x) { }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -553,9 +553,9 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("While body maybe loading") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = Marine();
-        |  while (true) { doThing(&x); }
+        |  while (true) { doThing(*x); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -570,18 +570,18 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Include closure var in locals") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  m = Marine();
         |  { m.shout() }!();
         |}
       """.stripMargin)
     val scoutput = program1
     val main = scoutput.lookupFunction("main")
-    val CodeBodyS(BodySE(_, _, mainBlock)) = main.body
+    val CodeBodyS(BodySE(_, _, BlockSE(_, _, ConsecutorSE(exprs)))) = main.body
     // __Closure is shown as not used... we could change scout to automatically
     // borrow it whenever we try to access a closure variable?
     val lamBlock =
-      mainBlock.exprs.collect({
+      exprs.collect({
         case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, CodeBodyS(innerBody))), _), _) => innerBody.block
       }).head
     lamBlock.locals.head match {
@@ -596,19 +596,19 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Include _ in locals") {
     val program1 = compile(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  { print(_) }!(3);
         |}
       """.stripMargin)
     val scoutput = program1
     val main = scoutput.lookupFunction("main")
-    val CodeBodyS(BodySE(_, _, mainBlock)) = main.body
+    val CodeBodyS(BodySE(_, _, BlockSE(_, _, ConsecutorSE(exprs)))) = main.body
     // __Closure is shown as not used... we could change scout to automatically
     // borrow it whenever we try to access a closure variable?
     val lamBlock =
-    mainBlock.exprs.collect({
-      case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, CodeBodyS(innerBody))), _), _) => innerBody.block
-    }).head
+      exprs.collect({
+        case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, CodeBodyS(innerBody))), _), _) => innerBody.block
+      }).head
     val locals = lamBlock.locals
     locals.find(_.varName == ClosureParamNameS()).get match {
       case LocalS(ClosureParamNameS(),

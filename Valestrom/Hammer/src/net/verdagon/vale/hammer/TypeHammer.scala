@@ -27,7 +27,7 @@ object TypeHammer {
           val (boxStructRefH) =
             StructHammer.makeBox(hinputs, hamuts, member2.variability, coord, referenceH)
           // The stack owns the box, closure structs just borrow it.
-          (ReferenceH(m.BorrowH, YonderH, ReadwriteH, boxStructRefH))
+          (ReferenceH(m.PointerH, YonderH, ReadwriteH, boxStructRefH))
         }
       }
     StructMemberH(
@@ -44,14 +44,12 @@ object TypeHammer {
       case BoolT() => BoolH()
       case FloatT() => FloatH()
       case StrT() => StrH()
-      case VoidT() => ProgramH.emptyTupleStructRef
+      case VoidT() => VoidH()
       case s @ StructTT(_) => StructHammer.translateStructRef(hinputs, hamuts, s)
 
       case i @ InterfaceTT(_) => StructHammer.translateInterfaceRef(hinputs, hamuts, i)
 
-      case OverloadSet(_, _, understructTT) => {
-        StructHammer.translateStructRef(hinputs, hamuts, understructTT)
-      }
+      case OverloadSet(_, _) => VoidH()
 
       case a @ StaticSizedArrayTT(_, _, _, _) => translateStaticSizedArray(hinputs, hamuts, a)
       case a @ RuntimeSizedArrayTT(_, _) => translateRuntimeSizedArray(hinputs, hamuts, a)
@@ -67,17 +65,14 @@ object TypeHammer {
     val location = {
       (ownership, innerType) match {
         case (OwnT, _) => YonderH
-        case (ConstraintT, _) => YonderH
+        case (PointerT, _) => YonderH
+        case (BorrowT, _) => YonderH
         case (WeakT, _) => YonderH
-        case (ShareT, OverloadSet(_, _, _)) => InlineH
+        case (ShareT, OverloadSet(_, _)) => InlineH
 //        case (ShareT, PackTT(_, _)) => InlineH
 //        case (ShareT, TupleTT(_, _)) => InlineH
         case (ShareT, StructTT(FullNameT(_, Vector(), CitizenNameT(CitizenTemplateNameT("Tup"), _)))) => InlineH
-        case (ShareT, VoidT()) => InlineH
-        case (ShareT, IntT(_)) => InlineH
-        case (ShareT, BoolT()) => InlineH
-        case (ShareT, FloatT()) => InlineH
-        case (ShareT, NeverT()) => InlineH
+        case (ShareT, VoidT() | IntT(_) | BoolT() | FloatT() | NeverT()) => InlineH
         case (ShareT, StrT()) => YonderH
         case (ShareT, _) => YonderH
       }
@@ -107,26 +102,36 @@ object TypeHammer {
   def translateStaticSizedArray(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-      type2: StaticSizedArrayTT):
+      ssaTT: StaticSizedArrayTT):
   StaticSizedArrayHT = {
-    val name = NameHammer.translateFullName(hinputs, hamuts, type2.name)
-    val StaticSizedArrayTT(_, mutabilityT, variabilityT, memberType) = type2
-    val memberReferenceH = TypeHammer.translateReference(hinputs, hamuts, memberType)
-    val mutability = Conversions.evaluateMutability(mutabilityT)
-    val variability = Conversions.evaluateVariability(variabilityT)
-    val definition = StaticSizedArrayDefinitionTH(name, type2.size, mutability, variability, memberReferenceH)
-    hamuts.addStaticSizedArray(definition)
-    StaticSizedArrayHT(name)
+    hamuts.staticSizedArrays.get(ssaTT) match {
+      case Some(x) => x.kind
+      case None => {
+        val name = NameHammer.translateFullName(hinputs, hamuts, ssaTT.name)
+        val StaticSizedArrayTT(_, mutabilityT, variabilityT, memberType) = ssaTT
+        val memberReferenceH = TypeHammer.translateReference(hinputs, hamuts, memberType)
+        val mutability = Conversions.evaluateMutability(mutabilityT)
+        val variability = Conversions.evaluateVariability(variabilityT)
+        val definition = StaticSizedArrayDefinitionHT(name, ssaTT.size, mutability, variability, memberReferenceH)
+        hamuts.addStaticSizedArray(ssaTT, definition)
+        StaticSizedArrayHT(name)
+      }
+    }
   }
 
-  def translateRuntimeSizedArray(hinputs: Hinputs, hamuts: HamutsBox, type2: RuntimeSizedArrayTT): RuntimeSizedArrayHT = {
-    val nameH = NameHammer.translateFullName(hinputs, hamuts, type2.name)
-    val RuntimeSizedArrayTT(mutabilityT, memberType) = type2
-    val memberReferenceH = TypeHammer.translateReference(hinputs, hamuts, memberType)
-    val mutability = Conversions.evaluateMutability(mutabilityT)
-//    val variability = Conversions.evaluateVariability(variabilityT)
-    val definition = RuntimeSizedArrayDefinitionTH(nameH, mutability, memberReferenceH)
-    hamuts.addRuntimeSizedArray(definition)
-    RuntimeSizedArrayHT(nameH)
+  def translateRuntimeSizedArray(hinputs: Hinputs, hamuts: HamutsBox, rsaTT: RuntimeSizedArrayTT): RuntimeSizedArrayHT = {
+    hamuts.runtimeSizedArrays.get(rsaTT) match {
+      case Some(x) => x.kind
+      case None => {
+        val nameH = NameHammer.translateFullName(hinputs, hamuts, rsaTT.name)
+        val RuntimeSizedArrayTT(mutabilityT, memberType) = rsaTT
+        val memberReferenceH = TypeHammer.translateReference(hinputs, hamuts, memberType)
+        val mutability = Conversions.evaluateMutability(mutabilityT)
+        //    val variability = Conversions.evaluateVariability(variabilityT)
+        val definition = RuntimeSizedArrayDefinitionHT(nameH, mutability, memberReferenceH)
+        hamuts.addRuntimeSizedArray(rsaTT, definition)
+        RuntimeSizedArrayHT(nameH)
+      }
+    }
   }
 }

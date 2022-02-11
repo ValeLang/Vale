@@ -1,5 +1,5 @@
 
-fn getch() int { __getch() }
-fn __getch() int extern;
+func getch() int { __getch() }
+extern func __getch() int;
 
-fn stdinReadInt() int extern;
+extern func stdinReadInt() int;

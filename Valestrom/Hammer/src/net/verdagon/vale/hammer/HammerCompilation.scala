@@ -4,7 +4,8 @@ import net.verdagon.vale.{FileCoordinateMap, IPackageResolver, IProfiler, NullPr
 import net.verdagon.vale.astronomer.{ICompileErrorA, ProgramA}
 import net.verdagon.vale.metal.ProgramH
 import net.verdagon.vale.options.GlobalOptions
-import net.verdagon.vale.parser.{FailedParse, FileP}
+import net.verdagon.vale.parser.FailedParse
+import net.verdagon.vale.parser.ast.FileP
 import net.verdagon.vale.scout.{ICompileErrorS, ProgramS}
 import net.verdagon.vale.templar.{Hinputs, ICompileErrorT, TemplarCompilation, TemplarCompilationOptions}
 

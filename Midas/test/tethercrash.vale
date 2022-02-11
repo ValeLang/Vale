@@ -12,5 +12,5 @@ fn main() int export {
   print("Getting tether...\n");
   s__tether = b;
   print("Should have failed before here!\n");
-  = s__tether.fuel;
+  s__tether.fuel
 }

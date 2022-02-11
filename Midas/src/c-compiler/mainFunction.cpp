@@ -117,7 +117,7 @@ Prototype* makeValeMainFunction(
         }
         buildFlare(FL(), globalState, functionState, entryBuilder);
 
-        if (userMainFunctionPrototype->returnType->kind == globalState->metalCache->emptyTupleStruct) {
+        if (userMainFunctionPrototype->returnType->kind == globalState->metalCache->vooid) {
           buildFlare(FL(), globalState, functionState, entryBuilder);
           LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, true));
         } else if (userMainFunctionPrototype->returnType->kind == globalState->metalCache->i64) {

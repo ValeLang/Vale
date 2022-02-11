@@ -11,14 +11,14 @@ class HashMapTest extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """
           |import hashmap.*;
-          |fn main() int export {
+          |exported func main() int {
           |  m = HashMap<int, int>(IntHasher(), IntEquator());
           |  m!.add(0, 100);
           |  m!.add(4, 101);
           |  m!.add(8, 102);
           |  m!.add(12, 103);
           |  m!.update(8, 108);
-          |  = m.get(8).get();
+          |  ret m.get(8).get();
           |}
           |""".stripMargin)
 
@@ -30,7 +30,7 @@ class HashMapTest extends FunSuite with Matchers {
         """
           |import hashmap.*;
           |import panicutils.*;
-          |fn main() int export {
+          |exported func main() int {
           |  m = HashMap<int, int>(IntHasher(), IntEquator());
           |  m!.add(0, 100);
           |  m!.add(4, 101);
@@ -57,7 +57,7 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassertEq(m.get(40).get(), 110, "val at 10 not 110!");
           |  vassertEq(m.get(44).get(), 111, "val at 11 not 111!");
           |  vassert(m.get(1337).isEmpty(), "expected nothing at 1337!");
-          |  = m.get(44).get();
+          |  ret m.get(44).get();
           |}
         """.stripMargin)
 
@@ -68,14 +68,14 @@ class HashMapTest extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """
           |import hashmap.*;
-          |fn add42(map &!HashMap<int, int, IntHasher, IntEquator>) {
+          |func add42(map &!HashMap<int, int, IntHasher, IntEquator>) {
           |  map!.add(42, 100);
           |}
           |
-          |fn main() int export {
+          |exported func main() int {
           |  m = HashMap<int, int, IntHasher, IntEquator>(IntHasher(), IntEquator());
           |  add42(&!m);
-          |  = m.get(42).get();
+          |  ret m.get(42).get();
           |}
         """.stripMargin)
 
@@ -94,23 +94,23 @@ class HashMapTest extends FunSuite with Matchers {
           |}
           |
           |struct LocationHasher { }
-          |fn __call(this &LocationHasher, loc Location) int {
+          |func __call(this &LocationHasher, loc Location) int {
           |  hash! = 0;
           |  set hash = 41 * hash + loc.groupX;
           |  set hash = 41 * hash + loc.groupY;
           |  set hash = 41 * hash + loc.indexInGroup;
-          |  = hash;
+          |  ret hash;
           |}
           |
           |struct LocationEquator { }
-          |fn __call(this &LocationEquator, a Location, b Location) bool {
-          |  (a.groupX == b.groupX) and (a.groupY == b.groupY) and (a.indexInGroup == b.indexInGroup)
+          |func __call(this &LocationEquator, a Location, b Location) bool {
+          |  ret (a.groupX == b.groupX) and (a.groupY == b.groupY) and (a.indexInGroup == b.indexInGroup);
           |}
           |
-          |fn main() int export {
+          |exported func main() int {
           |  m = HashMap<Location, int>(LocationHasher(), LocationEquator());
           |  m!.add(Location(4, 5, 6), 100);
-          |  = m.get(Location(4, 5, 6)).get();
+          |  ret m.get(Location(4, 5, 6)).get();
           |}
         """.stripMargin)
 
@@ -122,7 +122,7 @@ class HashMapTest extends FunSuite with Matchers {
         """
           |import hashmap.*;
           |import panicutils.*;
-          |fn main() int export {
+          |exported func main() int {
           |  m = HashMap<int, int>(IntHasher(), IntEquator());
           |  m!.add(0, 100);
           |  m!.add(4, 101);
@@ -135,7 +135,7 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassert(m.has(4));
           |  vassert(m.has(8));
           |  vassert(m.has(12));
-          |  = 111;
+          |  ret 111;
           |}
         """.stripMargin)
 
@@ -147,7 +147,7 @@ class HashMapTest extends FunSuite with Matchers {
         """
           |import hashmap.*;
           |import panicutils.*;
-          |fn main() int export {
+          |exported func main() int {
           |  m = HashMap<int, int>(IntHasher(), IntEquator());
           |  m!.add(0, 100);
           |  m!.add(4, 101);
@@ -159,7 +159,7 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassertEq(k[1], 4);
           |  vassertEq(k[2], 8);
           |  vassertEq(k[3], 12);
-          |  = 1337;
+          |  ret 1337;
           |}
         """.stripMargin)
 
@@ -171,7 +171,7 @@ class HashMapTest extends FunSuite with Matchers {
         """
           |import hashmap.*;
           |import panicutils.*;
-          |fn main() int export {
+          |exported func main() int {
           |  m = HashMap<int, int>(IntHasher(), IntEquator());
           |  m!.add(0, 100);
           |  m!.add(4, 101);
@@ -183,7 +183,7 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassertEq(k[1], 101);
           |  vassertEq(k[2], 102);
           |  vassertEq(k[3], 103);
-          |  = 1337;
+          |  ret 1337;
           |}
         """.stripMargin)
 
@@ -197,7 +197,7 @@ class HashMapTest extends FunSuite with Matchers {
           |import panicutils.*;
           |struct Plane {}
           |
-          |fn main() int export {
+          |exported func main() int {
           |  m = HashMap<int, Plane>(IntHasher(), IntEquator());
           |  m!.add(0, Plane());
           |  m!.add(4, Plane());
@@ -209,7 +209,7 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassert(m.has(12));
           |  m!.remove(12);
           |  vassert(not m.has(12));
-          |  = 1337;
+          |  ret 1337;
           |}
         """.stripMargin)
 
@@ -221,7 +221,7 @@ class HashMapTest extends FunSuite with Matchers {
         """
           |import hashmap.*;
           |import panicutils.*;
-          |fn main() int export {
+          |exported func main() int {
           |  m = HashMap<int, int>(IntHasher(), IntEquator());
           |  m!.add(0, 100);
           |  m!.add(4, 101);
@@ -235,7 +235,7 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassert(m.has(4));
           |  m!.remove(4);
           |  vassert(not m.has(4));
-          |  = 1337;
+          |  ret 1337;
           |}
         """.stripMargin)
 
@@ -248,7 +248,7 @@ class HashMapTest extends FunSuite with Matchers {
           |import hashmap.*;
           |import panicutils.*;
           |
-          |fn main() int export {
+          |exported func main() int {
           |  m = HashMap<int, int>(IntHasher(), IntEquator());
           |  m!.add(0, 0);
           |  m!.add(1, 1);
@@ -263,7 +263,7 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassertEq(values[0], 0, "wat");
           |  vassertEq(values[1], 3, "wat");
           |  vassertEq(values[2], 4, "wat");
-          |  = 1337;
+          |  ret 1337;
           |}
         """.stripMargin)
 

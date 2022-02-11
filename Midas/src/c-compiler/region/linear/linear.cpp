@@ -121,6 +121,7 @@ Linear::Linear(GlobalState* globalState_)
       globalState->metalCache->getReference(
           Ownership::SHARE, Location::YONDER, linearStr);
 
+  addMappedKind(globalState->metalCache->vooid, globalState->metalCache->getVoid(getRegionId()));
   addMappedKind(globalState->metalCache->i32, globalState->metalCache->getInt(getRegionId(), 32));
   addMappedKind(globalState->metalCache->i64, globalState->metalCache->getInt(getRegionId(), 64));
   addMappedKind(globalState->metalCache->boool, globalState->metalCache->getBool(getRegionId()));
@@ -1035,6 +1036,8 @@ std::string Linear::getExportName(Package* currentPackage, Reference* hostRefMT,
     return std::string() + "int" + std::to_string(innt->bits) + "_t";
   } else if (dynamic_cast<Never *>(hostMT)) {
     return "void";
+  } else if (dynamic_cast<Void *>(hostMT)) {
+    return "void";
   } else if (dynamic_cast<Bool *>(hostMT)) {
     return "int8_t";
   } else if (dynamic_cast<Float *>(hostMT)) {
@@ -1056,9 +1059,6 @@ std::string Linear::getExportName(Package* currentPackage, Reference* hostRefMT,
     auto valeMT = valeKindByHostKind.find(hostMT)->second;
     auto valeStructMT = dynamic_cast<StructKind*>(valeMT);
     assert(valeStructMT);
-    if (valeStructMT == globalState->metalCache->emptyTupleStruct) {
-      return "void";
-    }
     auto baseName = currentPackage->getKindExportName(valeStructMT, includeProjectName);
     assert(hostRefMT->ownership == Ownership::SHARE);
     if (hostRefMT->location == Location::INLINE) {
@@ -1301,16 +1301,16 @@ std::pair<Ref, Ref> Linear::receiveUnencryptedAlienReference(
           ->checkValidReference(FL(), functionState, builder, sourceRefMT, sourceRef);
 
   if (dynamic_cast<Int*>(sourceRefMT->kind)) {
-    auto resultRef = wrap(globalState->getRegion(sourceRefMT), targetRefMT, sourceRefLE);
+    auto resultRef = wrap(globalState->getRegion(targetRefMT), targetRefMT, sourceRefLE);
     auto sizeRef = globalState->constI32(LLVMABISizeOfType(globalState->dataLayout, translateType(targetRefMT)));
     return std::make_pair(resultRef, sizeRef);
   } else if (dynamic_cast<Bool*>(sourceRefMT->kind)) {
     auto resultLE = LLVMBuildZExt(builder, sourceRefLE, LLVMInt8TypeInContext(globalState->context), "boolAsI8");
-    auto resultRef = wrap(globalState->getRegion(sourceRefMT), targetRefMT, resultLE);
+    auto resultRef = wrap(globalState->getRegion(targetRefMT), targetRefMT, resultLE);
     auto sizeRef = globalState->constI32(LLVMABISizeOfType(globalState->dataLayout, translateType(targetRefMT)));
     return std::make_pair(resultRef, sizeRef);
   } else if (dynamic_cast<Float*>(sourceRefMT->kind)) {
-    auto resultRef = wrap(globalState->getRegion(sourceRefMT), targetRefMT, sourceRefLE);
+    auto resultRef = wrap(globalState->getRegion(targetRefMT), targetRefMT, sourceRefLE);
     auto sizeRef = globalState->constI32(LLVMABISizeOfType(globalState->dataLayout, translateType(targetRefMT)));
     return std::make_pair(resultRef, sizeRef);
   } else if (dynamic_cast<Str*>(sourceRefMT->kind) ||
@@ -1319,8 +1319,8 @@ std::pair<Ref, Ref> Linear::receiveUnencryptedAlienReference(
       dynamic_cast<StaticSizedArrayT*>(sourceRefMT->kind) ||
       dynamic_cast<RuntimeSizedArrayT*>(sourceRefMT->kind)) {
     if (sourceRefMT->location == Location::INLINE) {
-      if (sourceRefMT == globalState->metalCache->emptyTupleStructRef) {
-        auto emptyTupleRefMT = linearizeReference(globalState->metalCache->emptyTupleStructRef);
+      if (sourceRefMT == globalState->metalCache->voidRef) {
+        auto emptyTupleRefMT = linearizeReference(globalState->metalCache->voidRef);
         auto resultRef = wrap(this, emptyTupleRefMT, LLVMGetUndef(translateType(emptyTupleRefMT)));
         auto sizeRef = globalState->constI32(LLVMABISizeOfType(globalState->dataLayout, translateType(targetRefMT)));
         return std::make_pair(resultRef, sizeRef);

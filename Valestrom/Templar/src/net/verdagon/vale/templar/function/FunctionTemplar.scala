@@ -23,15 +23,15 @@ import scala.collection.immutable.{List, Set}
 trait IFunctionTemplarDelegate {
   def evaluateBlockStatements(
     temputs: Temputs,
-    startingFate: FunctionEnvironment,
-    fate: FunctionEnvironmentBox,
+    startingNenv: NodeEnvironment,
+    nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironment,
-    exprs: Vector[IExpressionSE]):
+    exprs: BlockSE):
   (ReferenceExpressionTE, Set[CoordT])
 
   def translatePatternList(
     temputs: Temputs,
-    fate: FunctionEnvironmentBox,
+    nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironment,
     patterns1: Vector[AtomSP],
     patternInputExprs2: Vector[ReferenceExpressionTE]):
@@ -80,7 +80,7 @@ class FunctionTemplar(
       opts, profiler, templataTemplar, inferTemplar, convertHelper, structTemplar, delegate)
 
   private def determineClosureVariableMember(
-      env: FunctionEnvironment,
+      env: NodeEnvironment,
       temputs: Temputs,
       name: IVarNameS) = {
     val (variability2, memberType) =
@@ -89,8 +89,8 @@ class FunctionTemplar(
           // See "Captured own is borrow" test for why we do this
           val tyype =
             reference.ownership match {
-              case OwnT => ReferenceMemberTypeT(CoordT(ConstraintT, reference.permission, reference.kind))
-              case ConstraintT | ShareT => ReferenceMemberTypeT(reference)
+              case OwnT => ReferenceMemberTypeT(CoordT(BorrowT, reference.permission, reference.kind))
+              case PointerT | BorrowT | ShareT => ReferenceMemberTypeT(reference)
             }
           (variability, tyype)
         }
@@ -101,8 +101,8 @@ class FunctionTemplar(
           // See "Captured own is borrow" test for why we do this
           val tyype =
             reference.ownership match {
-              case OwnT => ReferenceMemberTypeT(CoordT(ConstraintT, reference.permission, reference.kind))
-              case ConstraintT | ShareT => ReferenceMemberTypeT(reference)
+              case OwnT => ReferenceMemberTypeT(CoordT(BorrowT, reference.permission, reference.kind))
+              case PointerT | BorrowT | ShareT => ReferenceMemberTypeT(reference)
             }
           (variability, tyype)
         }
@@ -115,7 +115,7 @@ class FunctionTemplar(
 
   def evaluateClosureStruct(
       temputs: Temputs,
-      containingFunctionEnv: FunctionEnvironment,
+      containingNodeEnv: NodeEnvironment,
     callRange: RangeS,
     name: IFunctionDeclarationNameS,
       functionA: FunctionA):
@@ -126,12 +126,12 @@ class FunctionTemplar(
     // Note, this is where the unordered closuredNames set becomes ordered.
     val closuredVarNamesAndTypes =
       closuredNames
-        .map(name => determineClosureVariableMember(containingFunctionEnv, temputs, name))
+        .map(name => determineClosureVariableMember(containingNodeEnv, temputs, name))
         .toVector;
 
     val (structTT, _, functionTemplata) =
       structTemplar.makeClosureUnderstruct(
-        containingFunctionEnv, temputs, name, functionA, closuredVarNamesAndTypes)
+        containingNodeEnv, temputs, name, functionA, closuredVarNamesAndTypes)
 
     // Eagerly evaluate the function if it's not a template.
     if (functionA.isTemplate) {
@@ -196,7 +196,7 @@ class FunctionTemplar(
 
   // We would want only the prototype instead of the entire header if, for example,
   // we were calling the function. This is necessary for a recursive function like
-  // fn main():Int{main()}
+  // func main():Int{main()}
   def evaluateOrdinaryFunctionFromNonCallForPrototype(
     temputs: Temputs,
     callRange: RangeS,
@@ -333,9 +333,9 @@ class FunctionTemplar(
   }
 
   private def evaluateOrdinaryClosureFunctionFromNonCallForHeader(
-      env: IEnvironment,
-      temputs: Temputs,
-      closureStructRef: StructTT,
+    env: IEnvironment,
+    temputs: Temputs,
+    closureStructRef: StructTT,
     function: FunctionA):
   (FunctionHeaderT) = {
     closureOrLightLayer.evaluateOrdinaryClosureFunctionFromNonCallForHeader(
@@ -365,7 +365,7 @@ class FunctionTemplar(
 
   // We would want only the prototype instead of the entire header if, for example,
   // we were calling the function. This is necessary for a recursive function like
-  // fn main():Int{main()}
+  // func main():Int{main()}
   private def evaluateOrdinaryLightFunctionFromNonCallForPrototype(
       env: IEnvironment,
       temputs: Temputs,

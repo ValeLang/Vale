@@ -60,6 +60,12 @@ sealed trait ExpressionH[+T <: KindH] {
   }
 }
 
+// Produces a void.
+case class ConstantVoidH() extends ExpressionH[VoidH] {
+  override def hashCode(): Int = 1337
+  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
+}
+
 // Produces an integer.
 case class ConstantIntH(
   // The value of the integer.
@@ -117,10 +123,12 @@ case class StackifyH(
   name: Option[FullNameH]
 ) extends ExpressionH[KindH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  vassert(sourceExpr.resultType.kind == NeverH() ||
-    sourceExpr.resultType == local.typeH)
 
-  override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ReadonlyH, ProgramH.emptyTupleStructRef)
+  // See BRCOBS, source shouldn't be Never.
+  vassert(sourceExpr.resultType.kind != NeverH())
+  vassert(sourceExpr.resultType == local.typeH)
+
+  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
 }
 
 // Takes a value from a local variable on the stack, and produces it.
@@ -151,12 +159,15 @@ case class DestroyH(
   localTypes: Vector[ReferenceH[KindH]],
   // The locals to put the struct's members into.
   localIndices: Vector[Local],
-) extends ExpressionH[StructRefH] {
+) extends ExpressionH[VoidH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(localTypes.size == localIndices.size)
   vcurious(localTypes == localIndices.map(_.typeH).toVector)
 
-  override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ReadonlyH, ProgramH.emptyTupleStructRef)
+  // See BRCOBS, source shouldn't be Never.
+  vassert(structExpression.resultType.kind != NeverH())
+
+  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
 }
 
 // Takes a struct from the given expressions, and destroys it.
@@ -172,12 +183,15 @@ case class DestroyStaticSizedArrayIntoLocalsH(
   localTypes: Vector[ReferenceH[KindH]],
   // The locals to put the struct's members into.
   localIndices: Vector[Local]
-) extends ExpressionH[StructRefH] {
+) extends ExpressionH[VoidH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(localTypes.size == localIndices.size)
   vcurious(localTypes == localIndices.map(_.typeH).toVector)
 
-  override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
+  // See BRCOBS, source shouldn't be Never.
+  vassert(structExpression.resultType.kind != NeverH())
+
+  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
 }
 
 // Takes a struct reference from the "source" expressions, and makes an interface reference
@@ -188,6 +202,10 @@ case class StructToInterfaceUpcastH(
   // The type of interface to cast to.
   targetInterfaceRef: InterfaceRefH
 ) extends ExpressionH[InterfaceRefH] {
+
+  // See BRCOBS, source shouldn't be Never.
+  vassert(sourceExpression.resultType.kind != NeverH())
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   // The resulting type will have the same ownership as the source expressions had.
   def resultType = ReferenceH(sourceExpression.resultType.ownership, sourceExpression.resultType.location, sourceExpression.resultType.permission, targetInterfaceRef)
@@ -201,6 +219,10 @@ case class InterfaceToInterfaceUpcastH(
   // The type of interface to cast to.
   targetInterfaceRef: InterfaceRefH
 ) extends ExpressionH[InterfaceRefH] {
+
+  // See BRCOBS, source shouldn't be Never.
+  vassert(sourceExpression.resultType.kind != NeverH())
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   // The resulting type will have the same ownership as the source expressions had.
   def resultType = ReferenceH(sourceExpression.resultType.ownership, sourceExpression.resultType.location, sourceExpression.resultType.permission, targetInterfaceRef)
@@ -216,6 +238,10 @@ case class LocalStoreH(
   // Name of the local variable, for debug purposes.
   localName: FullNameH
 ) extends ExpressionH[KindH] {
+
+  // See BRCOBS, source shouldn't be Never.
+  vassert(sourceExpression.resultType.kind != NeverH())
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ReferenceH[KindH] = local.typeH
 }
@@ -228,11 +254,11 @@ case class LocalLoadH(
   local: Local,
   // The ownership of the resulting reference. This doesn't have to
   // match the ownership of the source reference. For example, we might want
-  // to load a constraint reference from an owning local.
+  // to load a borrow reference from an owning local.
   targetOwnership: OwnershipH,
   // The permission of the resulting reference. This doesn't have to
   // match the ownership of the source reference. For example, we might want
-  // to load a constraint reference from an owning local.
+  // to load a borrow reference from an owning local.
   targetPermission: PermissionH,
   // Name of the local variable, for debug purposes.
   localName: FullNameH
@@ -243,6 +269,7 @@ case class LocalLoadH(
   override def resultType: ReferenceH[KindH] = {
     val location =
       (targetOwnership, local.typeH.location) match {
+        case (PointerH, _) => YonderH
         case (BorrowH, _) => YonderH
         case (WeakH, _) => YonderH
         case (OwnH, location) => location
@@ -252,15 +279,19 @@ case class LocalLoadH(
   }
 }
 
-// Turns a constraint ref into a weak ref.
+// Turns a borrow ref into a weak ref.
 case class NarrowPermissionH(
-  // Expression containing the constraint reference to turn into a weak ref.
+  // Expression containing the borrow reference to turn into a weak ref.
   refExpression: ExpressionH[KindH],
   // The permission of the resulting reference. This doesn't have to
   // match the ownership of the source reference. For example, we might want
-  // to load a constraint reference from an owning local.
+  // to load a borrow reference from an owning local.
   targetPermission: PermissionH,
 ) extends ExpressionH[KindH] {
+
+  // See BRCOBS, source shouldn't be Never.
+  vassert(refExpression.resultType.kind != NeverH())
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ReferenceH[KindH] = {
     val ReferenceH(ownership, location, permission, kind) = refExpression.resultType
@@ -269,6 +300,35 @@ case class NarrowPermissionH(
       case _ => vwat()
     }
     ReferenceH(ownership, location, targetPermission, kind)
+  }
+}
+
+// Turns a borrow ref into a pointer ref.
+case class BorrowToPointerH(
+  // Expression containing the pointer reference to turn into a weak ref.
+  sourceExpr: ExpressionH[KindH]
+) extends ExpressionH[KindH] {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+
+  // See BRCOBS, source shouldn't be Never.
+  vassert(sourceExpr.resultType.kind != NeverH())
+
+  private val ReferenceH(BorrowH, location, permission, kind) = sourceExpr.resultType
+  override def resultType: ReferenceH[KindH] = {
+    ReferenceH(PointerH, location, permission, kind)
+  }
+}
+
+// Turns a pointer ref into a borrow ref.
+case class PointerToBorrowH(
+  // Expression containing the pointer reference to turn into a weak ref.
+  sourceExpr: ExpressionH[KindH]
+) extends ExpressionH[KindH] {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+
+  private val ReferenceH(PointerH, location, permission, kind) = sourceExpr.resultType
+  override def resultType: ReferenceH[KindH] = {
+    ReferenceH(BorrowH, location, permission, kind)
   }
 }
 
@@ -284,7 +344,14 @@ case class MemberStoreH(
   sourceExpression: ExpressionH[KindH],
   // Name of the member, for debug purposes.
   memberName: FullNameH
-) extends ExpressionH[KindH]
+) extends ExpressionH[KindH] {
+
+  // See BRCOBS, struct shouldn't be Never.
+  vassert(structExpression.resultType.kind != NeverH())
+  // See BRCOBS, source shouldn't be Never.
+  vassert(sourceExpression.resultType.kind != NeverH())
+
+}
 
 // Takes a reference from the given "struct" expressions, and copies it into a new
 // expressions. This can never move a reference, only alias it.
@@ -301,11 +368,15 @@ case class MemberLoadH(
   // Member's name, for debug purposes.
   memberName: FullNameH
 ) extends ExpressionH[KindH] {
+
+  // See BRCOBS, source shouldn't be Never.
+  vassert(structExpression.resultType.kind != NeverH())
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 //  vassert(resultType.ownership == targetOwnership)
 //  vassert(resultType.permission == targetPermission)
 
-  if (resultType.ownership == BorrowH) vassert(resultType.location == YonderH)
+  if (resultType.ownership == PointerH) vassert(resultType.location == YonderH)
   if (resultType.ownership == WeakH) vassert(resultType.location == YonderH)
 }
 
@@ -317,7 +388,13 @@ case class NewArrayFromValuesH(
   resultType: ReferenceH[StaticSizedArrayHT],
   // The expressions from which we'll get the values to put into the array.
   sourceExpressions: Vector[ExpressionH[KindH]]
-) extends ExpressionH[StaticSizedArrayHT]
+) extends ExpressionH[StaticSizedArrayHT] {
+
+  // See BRCOBS, source shouldn't be Never.
+  sourceExpressions.foreach(expr => {
+    vassert(expr.resultType.kind != NeverH())
+  })
+}
 
 // Loads from the "source" expressions and swaps it into the array from arrayExpression at
 // the position specified by the integer in indexExpression. The old value from the
@@ -336,6 +413,11 @@ case class StaticSizedArrayStoreH(
 ) extends ExpressionH[KindH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(indexExpression.resultType.kind == IntH.i32)
+
+  // See BRCOBS, source shouldn't be Never.
+  vassert(arrayExpression.resultType.kind != NeverH())
+  vassert(indexExpression.resultType.kind != NeverH())
+  vassert(sourceExpression.resultType.kind != NeverH())
 }
 
 // Loads from the "source" expressions and swaps it into the array from arrayExpression at
@@ -355,6 +437,11 @@ case class RuntimeSizedArrayStoreH(
 ) extends ExpressionH[KindH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(indexExpression.resultType.kind == IntH.i32)
+
+  // See BRCOBS, source shouldn't be Never.
+  vassert(arrayExpression.resultType.kind != NeverH())
+  vassert(indexExpression.resultType.kind != NeverH())
+  vassert(sourceExpression.resultType.kind != NeverH())
 }
 
 // Loads from the array in arrayExpression at the index in indexExpression, and stores
@@ -367,18 +454,22 @@ case class RuntimeSizedArrayLoadH(
   arrayExpression: ExpressionH[RuntimeSizedArrayHT],
   // Expression containing the index of the element we'll read.
   indexExpression: ExpressionH[IntH],
-  // The ownership to load as. For example, we might load a constraint reference from a
+  // The ownership to load as. For example, we might load a borrow reference from a
   // owning Car reference element.
   targetOwnership: OwnershipH,
   // The permission of the resulting reference. This doesn't have to
   // match the ownership of the source reference. For example, we might want
-  // to load a constraint reference from an owning local.
+  // to load a borrow reference from an owning local.
   targetPermission: PermissionH,
   expectedElementType: ReferenceH[KindH],
   resultType: ReferenceH[KindH],
 ) extends ExpressionH[KindH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(indexExpression.resultType.kind == IntH.i32)
+
+  // See BRCOBS, source shouldn't be Never.
+  vassert(arrayExpression.resultType.kind != NeverH())
+  vassert(indexExpression.resultType.kind != NeverH())
 }
 
 // Loads from the array in arrayExpression at the index in indexExpression, and stores
@@ -391,12 +482,12 @@ case class StaticSizedArrayLoadH(
   arrayExpression: ExpressionH[StaticSizedArrayHT],
   // Expression containing the index of the element we'll read.
   indexExpression: ExpressionH[IntH],
-  // The ownership to load as. For example, we might load a constraint reference from a
+  // The ownership to load as. For example, we might load a borrow reference from a
   // owning Car reference element.
   targetOwnership: OwnershipH,
   // The permission of the resulting reference. This doesn't have to
   // match the ownership of the source reference. For example, we might want
-  // to load a constraint reference from an owning local.
+  // to load a borrow reference from an owning local.
   targetPermission: PermissionH,
   expectedElementType: ReferenceH[KindH],
   arraySize: Int,
@@ -404,6 +495,10 @@ case class StaticSizedArrayLoadH(
 ) extends ExpressionH[KindH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(indexExpression.resultType.kind == IntH.i32)
+
+  // See BRCOBS, source shouldn't be Never.
+  vassert(arrayExpression.resultType.kind != NeverH())
+  vassert(indexExpression.resultType.kind != NeverH())
 }
 
 // Calls a function.
@@ -413,6 +508,11 @@ case class CallH(
   // Expressions containing the arguments to pass to the function.
   argsExpressions: Vector[ExpressionH[KindH]]
 ) extends ExpressionH[KindH] {
+  // See BRCOBS, no arguments should be Never.
+  argsExpressions.foreach(expr => {
+    vassert(expr.resultType.kind != NeverH())
+  })
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ReferenceH[KindH] = function.returnType
 }
@@ -424,6 +524,11 @@ case class ExternCallH(
   // Expressions containing the arguments to pass to the function.
   argsExpressions: Vector[ExpressionH[KindH]]
 ) extends ExpressionH[KindH] {
+  // See BRCOBS, no arguments should be Never.
+  argsExpressions.foreach(expr => {
+    vassert(expr.resultType.kind != NeverH())
+  })
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ReferenceH[KindH] = function.returnType
 }
@@ -445,6 +550,11 @@ case class InterfaceCallH(
   // parameter, and the function that is eventually called will have a struct there.
   functionType: PrototypeH
 ) extends ExpressionH[KindH] {
+  // See BRCOBS, no arguments should be Never.
+  argsExpressions.foreach(expr => {
+    vassert(expr.resultType.kind != NeverH())
+  })
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ReferenceH[KindH] = functionType.returnType
   vassert(indexInEdge >= 0)
@@ -479,10 +589,13 @@ case class IfH(
 // A while loop. Continuously runs bodyBlock until it returns false.
 case class WhileH(
   // The block to run until it returns false.
-  bodyBlock: ExpressionH[BoolH]
-) extends ExpressionH[StructRefH] {
+  bodyBlock: ExpressionH[KindH]
+) extends ExpressionH[KindH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
+
+  vassert(bodyBlock.resultType.kind == VoidH() || bodyBlock.resultType.kind == NeverH())
+
+  override def resultType: ReferenceH[KindH] = bodyBlock.resultType // either void or never
 }
 
 // A collection of instructions. The last one will be used as the block's result.
@@ -505,7 +618,7 @@ case class ConsecutorH(
     // The init ones should always return void structs.
     // If there's a never somewhere in there, then there should be nothing afterward.
     // Use Hammer.consecutive to conform to this.
-    vassert(nonLastResultLine.resultType == ProgramH.emptyTupleStructType)
+    vassert(nonLastResultLine.resultType == ReferenceH(ShareH, InlineH, ReadonlyH, VoidH()))
   })
 
   val indexOfFirstNever = exprs.indexWhere(_.resultType.kind == NeverH())
@@ -518,6 +631,48 @@ case class ConsecutorH(
 
   override def resultType: ReferenceH[KindH] = exprs.last.resultType
 }
+
+//// A collection of instructions to evaluate, knowing that we'll never
+//// finish evaluating, we'll panic before then.
+//// This is used when we have a source expression that's a never, such as:
+////   someFunc(Ship(), panic())
+//// We'll turn it into:
+////   __consecrash(Ship(), panic())
+//// This is different from consecutor in that:
+//// 1. We'll make sure we crash at the end.
+//// 2. We're allowed to leak all of these inner exprs, such as that Ship()
+//case class ConsecutorH(
+//  // The instructions to run.
+//  exprs: Vector[ExpressionH[KindH]],
+//) extends ExpressionH[KindH] {
+//  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+//  // We should simplify these away
+//  vassert(exprs.nonEmpty)
+//
+//  exprs.init.foreach(nonLastResultLine => {
+//    // The init ones should never just be VoidLiteralHs, those should be stripped out.
+//    // Use Hammer.consecutive to conform to this.
+//    nonLastResultLine match {
+//      case NewStructH(Vector(), Vector(), ReferenceH(_, InlineH, _, _)) => vfail("Should be no creating voids in the middle of a consecutor!")
+//      case _ =>
+//    }
+//
+//    // The init ones should always return void structs.
+//    // If there's a never somewhere in there, then there should be nothing afterward.
+//    // Use Hammer.consecutive to conform to this.
+//    vassert(nonLastResultLine.resultType == ReferenceH(ShareH, InlineH, ReadonlyH, VoidH()))
+//  })
+//
+//  val indexOfFirstNever = exprs.indexWhere(_.resultType.kind == NeverH())
+//  if (indexOfFirstNever >= 0) {
+//    // The first never should be the last line. There shouldn't be anything after never.
+//    if (indexOfFirstNever != exprs.size - 1) {
+//      vfail()
+//    }
+//  }
+//
+//  override def resultType: ReferenceH[KindH] = exprs.last.resultType
+//}
 
 // An expression where all locals declared inside will be destroyed by the time we exit.
 case class BlockH(
@@ -534,6 +689,9 @@ case class ReturnH(
   // The expressions to read from, whose value we'll return from the function.
   sourceExpression: ExpressionH[KindH]
 ) extends ExpressionH[NeverH] {
+  // See BRCOBS, no arguments should be Never.
+  vassert(sourceExpression.resultType.kind != NeverH())
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ReferenceH[NeverH] = ReferenceH(ShareH, InlineH, ReadonlyH, NeverH())
 }
@@ -548,7 +706,7 @@ case class NewImmRuntimeSizedArrayH(
   // call to generate each element of the array.
   // More specifically, we'll call the "__call" function on the interface, which
   // should be the only function on it.
-  // This is a constraint reference.
+  // This is a borrow reference.
   generatorExpression: ExpressionH[KindH],
   // The prototype for the "__call" function to call on the interface for each element.
   generatorMethod: PrototypeH,
@@ -559,10 +717,14 @@ case class NewImmRuntimeSizedArrayH(
   // only method's return type.
   resultType: ReferenceH[RuntimeSizedArrayHT]
 ) extends ExpressionH[RuntimeSizedArrayHT] {
+  // See BRCOBS, no arguments should be Never.
+  vassert(sizeExpression.resultType.kind != NeverH())
+  vassert(generatorExpression.resultType.kind != NeverH())
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  vassert(
-    generatorExpression.resultType.ownership == BorrowH ||
-      generatorExpression.resultType.ownership == ShareH)
+  generatorExpression.resultType.ownership match {
+    case PointerH | ShareH | BorrowH =>
+  }
   vassert(sizeExpression.resultType.kind == IntH.i32)
 }
 
@@ -578,6 +740,9 @@ case class NewMutRuntimeSizedArrayH(
   // The resulting type of the array.
   resultType: ReferenceH[RuntimeSizedArrayHT]
 ) extends ExpressionH[RuntimeSizedArrayHT] {
+  // See BRCOBS, no arguments should be Never.
+  vassert(capacityExpression.resultType.kind != NeverH())
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 }
 
@@ -588,9 +753,13 @@ case class PushRuntimeSizedArrayH(
   // Expression for the new element.
   newcomerExpression: ExpressionH[KindH],
 ) extends ExpressionH[KindH] {
+  // See BRCOBS, no arguments should be Never.
+  vassert(arrayExpression.resultType.kind != NeverH())
+  vassert(newcomerExpression.resultType.kind != NeverH())
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
-  override def resultType: ReferenceH[KindH] = ProgramH.emptyTupleStructType
+  override def resultType: ReferenceH[KindH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
 }
 
 // Adds a new element to the end of a mutable unknown-size array.
@@ -600,6 +769,9 @@ case class PopRuntimeSizedArrayH(
   // The element type for the array.
   elementType: ReferenceH[KindH]
 ) extends ExpressionH[KindH] {
+  // See BRCOBS, no arguments should be Never.
+  vassert(arrayExpression.resultType.kind != NeverH())
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
   override def resultType: ReferenceH[KindH] = elementType
@@ -613,7 +785,7 @@ case class StaticArrayFromCallableH(
   // call to generate each element of the array.
   // More specifically, we'll call the "__call" function on the interface, which
   // should be the only function on it.
-  // This is a constraint reference.
+  // This is a borrow reference.
   generatorExpression: ExpressionH[KindH],
   // The prototype for the "__call" function to call on the interface for each element.
   generatorMethod: PrototypeH,
@@ -624,9 +796,12 @@ case class StaticArrayFromCallableH(
   // only method's return type.
   resultType: ReferenceH[StaticSizedArrayHT]
 ) extends ExpressionH[StaticSizedArrayHT] {
+  // See BRCOBS, no arguments should be Never.
+  vassert(generatorExpression.resultType.kind != NeverH())
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   vassert(
-    generatorExpression.resultType.ownership == BorrowH ||
+    generatorExpression.resultType.ownership == PointerH ||
       generatorExpression.resultType.ownership == ShareH)
 }
 
@@ -641,9 +816,13 @@ case class DestroyStaticSizedArrayIntoFunctionH(
   consumerMethod: PrototypeH,
   arrayElementType: ReferenceH[KindH],
   arraySize: Int
-) extends ExpressionH[StructRefH] {
+) extends ExpressionH[VoidH] {
+  // See BRCOBS, no arguments should be Never.
+  vassert(arrayExpression.resultType.kind != NeverH())
+  vassert(consumerExpression.resultType.kind != NeverH())
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
+  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
 }
 
 // Destroys an array previously created with ConstructRuntimeSizedArrayH.
@@ -656,9 +835,13 @@ case class DestroyImmRuntimeSizedArrayH(
   // The prototype for the "__call" function to call on the interface for each element.
   consumerMethod: PrototypeH,
   arrayElementType: ReferenceH[KindH],
-) extends ExpressionH[StructRefH] {
+) extends ExpressionH[VoidH] {
+  // See BRCOBS, no arguments should be Never.
+  vassert(arrayExpression.resultType.kind != NeverH())
+  vassert(consumerExpression.resultType.kind != NeverH())
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
+  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
 }
 
 // Destroys an array previously created with ConstructRuntimeSizedArrayH.
@@ -666,9 +849,18 @@ case class DestroyMutRuntimeSizedArrayH(
   // Expression containing the array we'll destroy.
   // This is an owning reference.
   arrayExpression: ExpressionH[RuntimeSizedArrayHT]
-) extends ExpressionH[StructRefH] {
+) extends ExpressionH[VoidH] {
+  // See BRCOBS, no arguments should be Never.
+  vassert(arrayExpression.resultType.kind != NeverH())
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
+  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
+}
+
+// Jumps to after the closest containing loop.
+case class BreakH() extends ExpressionH[NeverH] {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  override def resultType: ReferenceH[NeverH] = ReferenceH(ShareH, InlineH, ReadonlyH, NeverH())
 }
 
 // Creates a new struct instance.
@@ -679,13 +871,21 @@ case class NewStructH(
   targetMemberNames: Vector[FullNameH],
   // The type of struct we'll create.
   resultType: ReferenceH[StructRefH]
-) extends ExpressionH[StructRefH]
+) extends ExpressionH[StructRefH] {
+  // See BRCOBS, no arguments should be Never.
+  sourceExpressions.foreach(expr => {
+    vassert(expr.resultType.kind != NeverH())
+  })
+}
 
 // Gets the length of an unknown-sized array.
 case class ArrayLengthH(
   // Expression containing the array whose length we'll get.
   sourceExpression: ExpressionH[KindH],
 ) extends ExpressionH[IntH] {
+  // See BRCOBS, no arguments should be Never.
+  vassert(sourceExpression.resultType.kind != NeverH())
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ReferenceH[IntH] = ReferenceH(ShareH, InlineH, ReadonlyH, IntH.i32)
 }
@@ -695,15 +895,36 @@ case class ArrayCapacityH(
   // Expression containing the array whose length we'll get.
   sourceExpression: ExpressionH[KindH],
 ) extends ExpressionH[IntH] {
+  // See BRCOBS, no arguments should be Never.
+  vassert(sourceExpression.resultType.kind != NeverH())
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ReferenceH[IntH] = ReferenceH(ShareH, InlineH, ReadonlyH, IntH.i32)
 }
 
-// Turns a constraint ref into a weak ref.
-case class WeakAliasH(
-  // Expression containing the constraint reference to turn into a weak ref.
+// Turns a borrow ref into a weak ref.
+case class BorrowToWeakH(
+  // Expression containing the borrow reference to turn into a weak ref.
   refExpression: ExpressionH[KindH],
 ) extends ExpressionH[KindH] {
+  // See BRCOBS, no arguments should be Never.
+  vassert(refExpression.resultType.kind != NeverH())
+
+  vassert(refExpression.resultType.ownership == BorrowH)
+
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  override def resultType: ReferenceH[KindH] = ReferenceH(WeakH, YonderH, refExpression.resultType.permission, refExpression.resultType.kind)
+}
+
+// Turns a pointer ref into a weak ref.
+case class PointerToWeakH(
+  // Expression containing the borrow reference to turn into a weak ref.
+  refExpression: ExpressionH[KindH],
+) extends ExpressionH[KindH] {
+  // See BRCOBS, no arguments should be Never.
+  vassert(refExpression.resultType.kind != NeverH())
+
+  vassert(refExpression.resultType.ownership == PointerH)
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ReferenceH[KindH] = ReferenceH(WeakH, YonderH, refExpression.resultType.permission, refExpression.resultType.kind)
 }
@@ -713,6 +934,10 @@ case class IsSameInstanceH(
   leftExpression: ExpressionH[KindH],
   rightExpression: ExpressionH[KindH],
 ) extends ExpressionH[KindH] {
+  // See BRCOBS, no arguments should be Never.
+  vassert(leftExpression.resultType.kind != NeverH())
+  vassert(rightExpression.resultType.kind != NeverH())
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def resultType: ReferenceH[KindH] = ReferenceH(ShareH, InlineH, ReadonlyH, BoolH())
 }
@@ -731,7 +956,10 @@ case class AsSubtypeH(
   someConstructor: PrototypeH,
   // Function to make a None of the right type
   noneConstructor: PrototypeH,
-) extends ExpressionH[KindH]
+) extends ExpressionH[KindH] {
+  // See BRCOBS, no arguments should be Never.
+  vassert(sourceExpression.resultType.kind != NeverH())
+}
 
 // Locks a weak ref to turn it into an optional of borrow ref.
 case class LockWeakH(
@@ -743,16 +971,22 @@ case class LockWeakH(
   someConstructor: PrototypeH,
   // Function to make a None of the right type
   noneConstructor: PrototypeH,
-) extends ExpressionH[KindH]
+) extends ExpressionH[KindH] {
+  // See BRCOBS, no arguments should be Never.
+  vassert(sourceExpression.resultType.kind != NeverH())
+}
 
 // See DINSIE for why this isn't three instructions, and why we don't have the
 // destructor prototype in it.
-case class DiscardH(sourceExpression: ExpressionH[KindH]) extends ExpressionH[StructRefH] {
+case class DiscardH(sourceExpression: ExpressionH[KindH]) extends ExpressionH[VoidH] {
+  // See BRCOBS, no arguments should be Never.
+  vassert(sourceExpression.resultType.kind != NeverH())
+
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   sourceExpression.resultType.ownership match {
-    case BorrowH | ShareH | WeakH =>
+    case PointerH | BorrowH | ShareH | WeakH =>
   }
-  override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
+  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
 }
 
 trait IExpressionH {

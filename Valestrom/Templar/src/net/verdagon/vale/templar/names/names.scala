@@ -111,6 +111,10 @@ case class TemplarPatternDestructureeNameT(life: LocationInFunctionEnvironment) 
 case class UnnamedLocalNameT(codeLocation: CodeLocationS) extends IVarNameT { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;   }
 case class ClosureParamNameT() extends IVarNameT { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;   }
 case class ConstructingMemberNameT(name: String) extends IVarNameT { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;   }
+case class WhileCondResultNameT(range: RangeS) extends IVarNameT { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;   }
+case class IterableNameT(range: RangeS) extends IVarNameT { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class IteratorNameT(range: RangeS) extends IVarNameT { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class IterationOptionNameT(range: RangeS) extends IVarNameT { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 case class MagicParamNameT(codeLocation2: CodeLocationS) extends IVarNameT { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;   }
 case class CodeVarNameT(name: String) extends IVarNameT { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;   }
 // We dont use CodeVarName2(0), CodeVarName2(1) etc because we dont want the user to address these members directly.

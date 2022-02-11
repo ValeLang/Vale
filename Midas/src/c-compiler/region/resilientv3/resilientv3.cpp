@@ -41,9 +41,7 @@ ResilientV3::ResilientV3(GlobalState *globalState_, RegionId *regionId_) :
 //        &kindStructs,
         &kindStructs,
         globalState->opt->elideChecksForKnownLive,
-        false,
-        // V3 doesnt use the undead cycle, so any struct will do here
-        globalState->metalCache->emptyTupleStruct) {
+        false) {
 }
 
 void ResilientV3::mainSetup(FunctionState* functionState, LLVMBuilderRef builder) {
@@ -124,7 +122,8 @@ void ResilientV3::alias(
 
   if (dynamic_cast<Int *>(sourceRnd) ||
       dynamic_cast<Bool *>(sourceRnd) ||
-      dynamic_cast<Float *>(sourceRnd)) {
+      dynamic_cast<Float *>(sourceRnd) ||
+      dynamic_cast<Void *>(sourceRnd)) {
     // Do nothing for these, they're always inlined and copied.
   } else if (dynamic_cast<InterfaceKind *>(sourceRnd) ||
              dynamic_cast<StructKind *>(sourceRnd) ||

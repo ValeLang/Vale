@@ -1,16 +1,16 @@
 
-interface I<T> rules(T Ref) imm { }
+interface I<T> imm where T Ref { }
 
-interface J<T> rules(T Ref) imm { }
+interface J<T> imm where T Ref { }
 impl<T> I<T> for J<T>;
 
-interface K<T> rules(T Ref) imm { }
+interface K<T> imm where T Ref { }
 impl<T> J<T> for K<T>;
 
-struct L<T> rules(T Ref) imm { }
+struct L<T> imm where T Ref { }
 impl<T> K<T> for L<T>;
 
-fn main() int export {
+exported func main() int {
   x = L<int>();
-  = 4;
+  ret 4;
 }

@@ -13,8 +13,7 @@ public:
       GlobalState* globalState_,
       KindStructs* kindStructs_,
       bool elideChecksForKnownLive_,
-      bool limitMode_,
-      StructKind* anyMT);
+      bool limitMode_);
 
   Ref assembleWeakRef(
       FunctionState* functionState,
@@ -190,8 +189,6 @@ private:
 //  KindStructs* weakRefStructsSource;
 
   bool elideChecksForKnownLive = false;
-
-  StructKind* anyMT = nullptr;
 
   std::unordered_map<Kind*, LLVMValueRef, AddressHasher<Kind*>> globalNullPtrPtrByKind;
 };

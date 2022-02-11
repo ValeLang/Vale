@@ -16,7 +16,11 @@ class Allocation(
 
   def id = reference.allocId
 
-  def incrementRefCount(referrer: IObjectReferrer) = {
+  def incrementRefCount(referrer: IObjectReferrer): Unit = {
+    if (kind == VoidV) {
+      // Void has no RC
+      return
+    }
     referrer match {
       case RegisterToObjectReferrer(_, _) => {
         // We can have multiple of these, thats fine
@@ -30,7 +34,11 @@ class Allocation(
     referrers = referrers + (referrer -> (referrers.getOrElse(referrer, 0) + 1))
   }
 
-  def decrementRefCount(referrer: IObjectReferrer) = {
+  def decrementRefCount(referrer: IObjectReferrer): Unit = {
+    if (kind == VoidV) {
+      // Void has no RC
+      return
+    }
     if (!referrers.contains(referrer)) {
       vfail("nooooo\n" + referrer + "\nnot in:\n" + referrers)
     }
@@ -41,14 +49,22 @@ class Allocation(
     }
   }
 
-  def getRefCount() = {
+  def getRefCount(): Int = {
+    if (kind == VoidV) {
+      // Pretend void has 1 RC so nobody ever deallocates it
+      return 1
+    }
     referrers
       .toVector
       .map(_._2)
       .sum
   }
 
-  def ensureRefCount(maybeOwnershipFilter: Option[Set[OwnershipH]], expectedNum: Int) = {
+  def ensureRefCount(maybeOwnershipFilter: Option[Set[OwnershipH]], expectedNum: Int): Unit = {
+    if (kind == VoidV) {
+      // Void has no RC
+      return
+    }
     var referrers = this.referrers
     referrers =
       maybeOwnershipFilter match {
@@ -72,7 +88,11 @@ class Allocation(
     }
   }
 
-  def getTotalRefCount(maybeOwnershipFilter: Option[OwnershipH]) = {
+  def getTotalRefCount(maybeOwnershipFilter: Option[OwnershipH]): Int = {
+    if (kind == VoidV) {
+      // Pretend void has 1 RC so nobody ever deallocates it
+      return 1
+    }
     maybeOwnershipFilter match {
       case None => referrers.size
       case Some(ownershipFilter) => referrers.keys.filter(_.ownership == ownershipFilter).size
@@ -97,6 +117,9 @@ sealed trait KindV {
   def tyype: RRKind
 }
 sealed trait PrimitiveKindV extends KindV
+case object VoidV extends PrimitiveKindV {
+  override def tyype = RRKind(VoidH())
+}
 case class IntV(value: Long, bits: Int) extends PrimitiveKindV {
   override def tyype = RRKind(IntH(bits))
 }
@@ -215,13 +238,13 @@ case class RegisterHoldToObjectReferrer(expressionId: ExpressionId, ownership: O
 case class ArgumentToObjectReferrer(argumentId: ArgumentId, ownership: OwnershipH) extends IObjectReferrer { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 case class VariableAddressV(callId: CallId, local: Local) {
-  override def toString: String = "&v:" + callId + "#v" + local.id.number
+  override def toString: String = "*v:" + callId + "#v" + local.id.number
 }
 case class MemberAddressV(structId: AllocationId, fieldIndex: Int) {
-  override def toString: String = "&o:" + structId.num + "." + fieldIndex
+  override def toString: String = "*o:" + structId.num + "." + fieldIndex
 }
 case class ElementAddressV(arrayId: AllocationId, elementIndex: Int) {
-  override def toString: String = "&o:" + arrayId.num + "." + elementIndex
+  override def toString: String = "*o:" + arrayId.num + "." + elementIndex
 }
 
 // Used in tracking reference counts/maps.
@@ -235,7 +258,6 @@ case class VariableV(
     id: VariableAddressV,
     var reference: ReferenceV,
     expectedType: ReferenceH[KindH]) {
-  vassert(reference != None)
 }
 
 case class ExpressionId(

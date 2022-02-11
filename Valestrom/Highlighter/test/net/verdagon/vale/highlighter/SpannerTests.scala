@@ -1,34 +1,35 @@
 package net.verdagon.vale.highlighter
 
-import net.verdagon.vale.parser._
-import net.verdagon.vale.vfail
+import net.verdagon.vale.parser.ast.FileP
+import net.verdagon.vale.parser.{ast, _}
+import net.verdagon.vale.{Err, Ok, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
 class SpannerTests extends FunSuite with Matchers {
   private def compile(code: String): FileP = {
     Parser.runParser(code) match {
-      case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(program0) => program0
+      case Err(err) => fail(err.toString)
+      case Ok(program0) => program0
     }
   }
 
   test("Spanner simple function") {
-    val program1 = compile("fn main() infer-ret { 3 }")
+    val program1 = compile("func main() infer-ret { 3 }")
     val main = program1.lookupFunction("main")
     Spanner.forFunction(main) shouldEqual
-      Span(Fn,Range(0,25),Vector(
-        Span(FnName,Range(3,7),Vector.empty),
-        Span(Params,Range(7,9),Vector.empty),
-        Span(Ret,Range(10,20),Vector(Span(Ret,Range(10,19),Vector.empty))),
-        Span(Block,Range(20,25),Vector(
-          Span(Num,Range(22,23),Vector.empty)))))
+      Span(Fn,ast.RangeP(0,27),Vector(
+        Span(FnName,ast.RangeP(5,9),Vector.empty),
+        Span(Params,ast.RangeP(9,11),Vector.empty),
+        Span(Ret,ast.RangeP(12,22),Vector(Span(Ret,ast.RangeP(12,21),Vector.empty))),
+        Span(Block,ast.RangeP(22,27),Vector(
+          Span(Num,ast.RangeP(24,25),Vector.empty)))))
   }
 
 
   test("Spanner map call") {
     val program1 = compile(
-      """fn main() infer-ret {
-        |  this.abilities*.getImpulse();
+      """func main() infer-ret {
+        |  this.abilities!.getImpulse();
         |}
         |""".stripMargin)
     val main = program1.lookupFunction("main")
@@ -41,15 +42,17 @@ class SpannerTests extends FunSuite with Matchers {
           Span(Ret,_,Vector(Span(Ret,_,Vector()))),
           Span(Block,_,
             Vector(
-              Span(Call,_,
+              Span(Consecutor,_,
                 Vector(
-                  Span(MemberAccess,_,
+                  Span(Call,_,
                     Vector(
-                      Span(Lookup,_,Vector()),
+                      Span(MemberAccess,_,
+                        Vector(
+                          Span(Lookup,_,Vector()),
+                          Span(MemberAccess,_,Vector()),
+                          Span(Lookup,_,Vector()))),
                       Span(MemberAccess,_,Vector()),
-                      Span(Lookup,_,Vector()))),
-                  Span(MemberAccess,_,Vector()),
-                  Span(CallLookup,_,Vector()))))))) =>
+                      Span(CallLookup,_,Vector()))))))))) =>
     }
   }
 }

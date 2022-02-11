@@ -1,7 +1,7 @@
 
-fn main() int export {
+exported func main() int {
   if (false) {
     __vbi_panic();
   }
-  = 42;
+  ret 42;
 }

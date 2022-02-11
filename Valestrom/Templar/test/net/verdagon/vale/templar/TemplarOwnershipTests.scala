@@ -25,10 +25,10 @@ class TemplarOwnershipTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Bork { a int; }
-        |fn consumeBork(bork Bork) int {
+        |func consumeBork(bork Bork) int {
         |  ret bork.a;
         |}
-        |fn main() int {
+        |func main() int {
         |  bork = Bork(42);
         |  ret (bork).consumeBork();
         |}
@@ -41,9 +41,10 @@ class TemplarOwnershipTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |
-        |struct Muta #!DeriveStructDrop { }
+        |#!DeriveStructDrop
+        |struct Muta { }
         |
-        |fn main() export {
+        |exported func main() {
         |  Muta();
         |}
       """.stripMargin)

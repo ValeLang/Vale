@@ -1,13 +1,13 @@
 
-export [3 * int] as MutIntArray;
+export [#3]int as MutIntArray;
 
-fn valeMakeSSA() [3 * int] export {
-  ret [][13, 14, 15];
+exported func valeMakeSSA() [#3]int {
+  ret [#][13, 14, 15];
 }
 
-fn cMakeSSA() [3 * int] extern;
+extern func cMakeSSA() [#3]int;
 
-fn main() int export {
+exported func main() int {
   arr = cMakeSSA();
   i = 0;
   total = 0;

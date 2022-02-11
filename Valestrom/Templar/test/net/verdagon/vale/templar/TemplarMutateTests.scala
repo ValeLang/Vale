@@ -28,13 +28,13 @@ class TemplarMutateTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn main() export {a! = 3; set a = 4; }
+        |exported func main() {a! = 3; set a = 4; }
         |""".stripMargin)
     val temputs = compile.expectTemputs();
     val main = temputs.lookupFunction("main")
-    Collector.only(main, { case MutateTE(LocalLookupTE(_,ReferenceLocalVariableT(FullNameT(_,_, CodeVarNameT("a")), VaryingT, _), _, VaryingT), ConstantIntTE(4, _)) => })
+    Collector.only(main, { case MutateTE(LocalLookupTE(_,ReferenceLocalVariableT(FullNameT(_,_, CodeVarNameT("a")), VaryingT, _)), ConstantIntTE(4, _)) => })
 
-    val lookup = Collector.only(main, { case l @ LocalLookupTE(range, localVariable, reference, variability) => l })
+    val lookup = Collector.only(main, { case l @ LocalLookupTE(range, localVariable) => l })
     val resultCoord = lookup.result.reference
     resultCoord shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
   }
@@ -46,7 +46,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
           |import v.builtins.tup.*;
           |struct Engine { fuel int; }
           |struct Spaceship { engine! Engine; }
-          |fn main() export {
+          |exported func main() {
           |  ship = Spaceship(Engine(10));
           |  set ship.engine = Engine(15);
           |}
@@ -67,13 +67,13 @@ class TemplarMutateTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |interface IXOption<T> rules(T Ref) { }
-        |struct XSome<T> rules(T Ref) { value T; }
+        |interface IXOption<T> where T Ref { }
+        |struct XSome<T> where T Ref { value T; }
         |impl<T> IXOption<T> for XSome<T>;
-        |struct XNone<T> rules(T Ref) { }
+        |struct XNone<T> where T Ref { }
         |impl<T> IXOption<T> for XNone<T>;
         |
-        |fn main() export {
+        |exported func main() {
         |  m! IXOption<int> = XNone<int>();
         |  set m = XSome(6);
         |}
@@ -90,16 +90,16 @@ class TemplarMutateTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |interface IXOption<T> rules(T Ref) { }
-        |struct XSome<T> rules(T Ref) { value T; }
+        |interface IXOption<T> where T Ref { }
+        |struct XSome<T> where T Ref { value T; }
         |impl<T> IXOption<T> for XSome<T>;
-        |struct XNone<T> rules(T Ref) { }
+        |struct XNone<T> where T Ref { }
         |impl<T> IXOption<T> for XNone<T>;
         |
         |struct Marine {
         |  weapon! IXOption<int>;
         |}
-        |fn main() export {
+        |exported func main() {
         |  m = Marine(XNone<int>());
         |  set m.weapon = XSome(6);
         |}
@@ -117,7 +117,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Vec3 imm { x float; y float; z float; }
-        |fn main() int export {
+        |exported func main() int {
         |  v = Vec3(3.0, 4.0, 5.0);
         |  set v.x = 10.0;
         |}
@@ -139,7 +139,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Vec3 { x float; y float; z float; }
-        |fn main() int export {
+        |exported func main() int {
         |  v = Vec3(3.0, 4.0, 5.0);
         |  set v.x = 10.0;
         |}
@@ -161,7 +161,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |import v.builtins.arrays.*;
-        |fn main() int export {
+        |exported func main() int {
         |  arr = Array<mut, int>(3);
         |  arr!.push(0);
         |  arr!.push(1);
@@ -173,21 +173,21 @@ class TemplarMutateTests extends FunSuite with Matchers {
     compile.expectTemputs()
   }
 
-  test("Reports when we try to mutate an element in a static-sized array of finals") {
+  test("Reports when we try to mutate an element in an imm static-sized array") {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
         |import ifunction.ifunction1.*;
-        |fn main() int export {
-        |  arr = [10]({_});
+        |exported func main() int {
+        |  arr = #[#10]({_});
         |  set arr[4] = 10;
         |  ret 73;
         |}
         |""".stripMargin)
     compile.getTemputs() match {
       case Err(CantMutateFinalElement(_, arrRef2)) => {
-        arrRef2.last match {
-          case StaticSizedArrayNameT(10,RawArrayNameT(MutableT,_)) =>
+        arrRef2.kind match {
+          case StaticSizedArrayTT(10,ImmutableT,FinalT,CoordT(ShareT,ReadonlyT,IntT(_))) =>
         }
       }
     }
@@ -197,13 +197,28 @@ class TemplarMutateTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn main() export {
+        |exported func main() {
         |  a! = 5;
         |  set a = "blah";
         |}
         |""".stripMargin)
     compile.getTemputs() match {
       case Err(CouldntConvertForMutateT(_, CoordT(ShareT, ReadonlyT, IntT.i32), CoordT(ShareT, ReadonlyT, StrT()))) =>
+      case _ => vfail()
+    }
+  }
+
+  test("Reports when we try to override a non-interface") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |import v.builtins.tup.*;
+        |func bork(a int impl int) {}
+        |exported func main() {
+        |  bork(7);
+        |}
+        |""".stripMargin)
+    compile.getTemputs() match {
+      case Err(CantImplNonInterface(_, IntT(32)) )=>
       case _ => vfail()
     }
   }
@@ -264,6 +279,12 @@ class TemplarMutateTests extends FunSuite with Matchers {
         CodeVarNameT("hp")))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      CantReconcileBranchesResults(
+        RangeS.testZero,
+        fireflyCoord,
+        serenityCoord))
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantUseUnstackifiedLocal(
         RangeS.testZero,
         CodeVarNameT("firefly")))
@@ -293,7 +314,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
         RangeS.testZero, fireflyCoord))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
-      CantImplStruct(
+      CantImplNonInterface(
         RangeS.testZero, fireflyKind))
       .nonEmpty)
   }

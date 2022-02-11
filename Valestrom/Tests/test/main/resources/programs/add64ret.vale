@@ -1,4 +1,4 @@
-fn main() i64 export {
+exported func main() i64 {
   // Tests that i32 overflows as expected
   if ((2000000042 * 7) / 7 - 2000000000 == 42) {
     ret 73i64;

@@ -1,6 +1,8 @@
 package net.verdagon.vale.parser.rules
 
-import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast._
+import net.verdagon.vale.parser.{ast, _}
+import net.verdagon.vale.parser.old.ParserUtils
 
 import scala.util.parsing.combinator.RegexParsers
 
@@ -16,7 +18,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
 
   private[parser] def typedPR: Parser[TypedPR] = {
     pos ~ underscoreOr(typeIdentifier) ~ (white ~> typePR) ~ pos ^^ {
-      case begin ~ maybeRune ~ tyype ~ end => TypedPR(Range(begin, end), maybeRune, tyype)
+      case begin ~ maybeRune ~ tyype ~ end => ast.TypedPR(ast.RangeP(begin, end), maybeRune, tyype)
     }
   }
 
@@ -41,25 +43,25 @@ trait RuleParser extends RegexParsers with ParserUtils {
       (typePR <~ "(" <~ optWhite) ~
       repsep(rulePR, optWhite ~> "," <~ optWhite) ~
       pos <~ optWhite <~ ")" ^^ {
-      case begin ~ tyype ~ components ~ end => ComponentsPR(Range(begin, end), TypedPR(Range(begin, end), None, tyype), components.toVector)
+      case begin ~ tyype ~ components ~ end => ComponentsPR(ast.RangeP(begin, end), ast.TypedPR(ast.RangeP(begin, end), None, tyype), components.toVector)
     }) |
     (pos ~
       (typedPR <~ "(" <~ optWhite) ~
       repsep(rulePR, optWhite ~> "," <~ optWhite) ~
       pos <~ optWhite <~ ")" ^^ {
-      case begin ~ container ~ components ~ end => ComponentsPR(Range(begin, end), container, components.toVector)
+      case begin ~ container ~ components ~ end => ast.ComponentsPR(ast.RangeP(begin, end), container, components.toVector)
     })
   }
 
   private[parser] def dotPR(innerRule: Parser[IRulexPR]): Parser[IRulexPR] = {
     pos ~ (innerRule <~ optWhite <~ "." <~ optWhite) ~ typeIdentifier ~ pos ^^ {
-      case begin ~ inner ~ name ~ end => DotPR(Range(begin, end), inner, name)
+      case begin ~ inner ~ name ~ end => DotPR(ast.RangeP(begin, end), inner, name)
     }
   }
 
   private[parser] def orPR(inner: Parser[IRulexPR]): Parser[IRulexPR] = {
     pos ~ (inner <~ optWhite <~ "|" <~ optWhite) ~ rep1sep(inner, optWhite ~> "|" <~ optWhite) ~ pos ^^ {
-      case begin ~ firstPossibility ~ restPossibilities ~ end => OrPR(Range(begin, end), Vector(firstPossibility) ++ restPossibilities)
+      case begin ~ firstPossibility ~ restPossibilities ~ end => OrPR(ast.RangeP(begin, end), Vector(firstPossibility) ++ restPossibilities)
     }
   }
 
@@ -96,11 +98,11 @@ trait RuleParser extends RegexParsers with ParserUtils {
   // Add any new rules to the "Nothing matches empty string" test!
 
   private[parser] def identifyingRegionRuneAttribute: Parser[IRuneAttributeP] = {
-    pos ~ "ro" ~ pos ^^ { case begin ~ _ ~ end => ReadOnlyRuneAttributeP(Range(begin, end)) } |
-    pos ~ "bump" ~ pos ^^ { case begin ~ _ ~ end => BumpRuneAttributeP(Range(begin, end)) } |
-    pos ~ "pool" ~ pos ^^ { case begin ~ _ ~ end => PoolRuneAttributeP(Range(begin, end)) } |
-    pos ~ "arena" ~ pos ^^ { case begin ~ _ ~ end => ArenaRuneAttributeP(Range(begin, end)) } |
-    pos ~ ("coord" ^^^ CoordTypePR | "kind" ^^^ KindTypePR | "reg" ^^^ RegionTypePR) ~ pos ^^ { case begin ~ tyype ~ end => TypeRuneAttributeP(Range(begin, end), tyype) }
+    pos ~ "ro" ~ pos ^^ { case begin ~ _ ~ end => ReadOnlyRuneAttributeP(ast.RangeP(begin, end)) } |
+    pos ~ "bump" ~ pos ^^ { case begin ~ _ ~ end => BumpRuneAttributeP(ast.RangeP(begin, end)) } |
+    pos ~ "pool" ~ pos ^^ { case begin ~ _ ~ end => PoolRuneAttributeP(ast.RangeP(begin, end)) } |
+    pos ~ "arena" ~ pos ^^ { case begin ~ _ ~ end => ArenaRuneAttributeP(ast.RangeP(begin, end)) } |
+    pos ~ ("coord" ^^^ CoordTypePR | "kind" ^^^ KindTypePR | "reg" ^^^ RegionTypePR) ~ pos ^^ { case begin ~ tyype ~ end => TypeRuneAttributeP(ast.RangeP(begin, end), tyype) }
   }
 
   private[parser] def identifyingRune: Parser[IdentifyingRuneP] = {
@@ -111,7 +113,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
             case None => Vector.empty
             case Some(NameP(range, _)) => Vector(TypeRuneAttributeP(range, RegionTypePR))
           }
-        IdentifyingRuneP(Range(begin, end), name, isRegionAttrInList ++ regionAttributes)
+        IdentifyingRuneP(ast.RangeP(begin, end), name, isRegionAttrInList ++ regionAttributes)
       }
     }
   }
@@ -120,17 +122,17 @@ trait RuleParser extends RegexParsers with ParserUtils {
 
   private[parser] def identifyingRunesPR: Parser[IdentifyingRunesP] = {
     pos ~ ("<" ~> optWhite ~> repsep(identifyingRune, optWhite ~> "," <~ optWhite) <~ optWhite <~ ">") ~ pos ^^ {
-      case begin ~ runes ~ end => IdentifyingRunesP(Range(begin, end), runes.toVector)
+      case begin ~ runes ~ end => IdentifyingRunesP(ast.RangeP(begin, end), runes.toVector)
     }
   }
 
   // Add any new rules to the "Nothing matches empty string" test!
 
-  def templateRulesPR: Parser[TemplateRulesP] = {
-    pos ~ ("rules" ~> optWhite ~> "(" ~> optWhite ~> repsep(rulePR, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")") ~ pos ^^ {
-      case begin ~ rules ~ end => TemplateRulesP(Range(begin, end), rules.toVector)
-    }
-  }
+//  def templateRulesPR: Parser[TemplateRulesP] = {
+//    pos ~ ("rules" ~> optWhite ~> "(" ~> optWhite ~> repsep(rulePR, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")") ~ pos ^^ {
+//      case begin ~ rules ~ end => ast.TemplateRulesP(ast.RangeP(begin, end), rules.toVector)
+//    }
+//  }
 
   // Add any new rules to the "Nothing matches empty string" test!
 
@@ -138,7 +140,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
   private[parser] def implementsPR: Parser[IRulexPR] = {
     pos ~ pstr("implements") ~ (optWhite ~> "(" ~> optWhite ~> rulePR <~ optWhite <~ "," <~ optWhite) ~
         (rulePR <~ optWhite <~ ")") ~ pos ^^ {
-      case begin ~ impl ~ struct ~ interface ~ end => BuiltinCallPR(Range(begin, end), impl, Vector(struct, interface))
+      case begin ~ impl ~ struct ~ interface ~ end => BuiltinCallPR(ast.RangeP(begin, end), impl, Vector(struct, interface))
     }
   }
 
@@ -147,7 +149,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
   // Atomic means no neighboring, see parser doc.
   private[parser] def refListCompoundMutabilityPR: Parser[IRulexPR] = {
     pos ~ pstr("refListCompoundMutability") ~ (optWhite ~> "(" ~> optWhite ~> (rulePR <~ optWhite <~ ")")) ~ pos ^^ {
-      case begin ~ name ~ arg ~ end => BuiltinCallPR(Range(begin, end), name, Vector(arg))
+      case begin ~ name ~ arg ~ end => BuiltinCallPR(ast.RangeP(begin, end), name, Vector(arg))
     }
   }
 
@@ -156,7 +158,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
   // Atomic means no neighboring, see parser doc.
   private[parser] def isInterfacePR: Parser[IRulexPR] = {
     pos ~ pstr("isInterface") ~ (optWhite ~> "(" ~> optWhite ~> rulePR <~ optWhite <~ ")") ~ pos ^^ {
-      case begin ~ name ~ arg ~ end => BuiltinCallPR(Range(begin, end), name, Vector(arg))
+      case begin ~ name ~ arg ~ end => BuiltinCallPR(ast.RangeP(begin, end), name, Vector(arg))
     }
   }
 
@@ -165,7 +167,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
   // Atomic means no neighboring, see parser doc.
   private[parser] def existsPR: Parser[IRulexPR] = {
     pos ~ pstr("exists") ~ (optWhite ~> "(" ~> optWhite ~> rulePR <~ optWhite <~ ")") ~ pos ^^ {
-      case begin ~ exists ~ thing ~ end => BuiltinCallPR(Range(begin, end), exists, Vector(thing))
+      case begin ~ exists ~ thing ~ end => BuiltinCallPR(ast.RangeP(begin, end), exists, Vector(thing))
     }
   }
 
@@ -173,7 +175,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
 
   private[parser] def packPR: Parser[PackPR] = {
     pos ~ ("(" ~> optWhite ~> repsep(rulePR, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")") ~ pos ^^ {
-      case begin ~ thing ~ end => PackPR(Range(begin, end), thing.toVector)
+      case begin ~ thing ~ end => PackPR(ast.RangeP(begin, end), thing.toVector)
     }
   }
 
@@ -181,7 +183,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
 
   private[parser] def equalsPR(inner: Parser[IRulexPR]): Parser[EqualsPR] = {
     pos ~ (inner <~ optWhite <~ "=" <~ optWhite) ~ inner ~ pos ^^ {
-      case begin ~ left ~ right ~ end => EqualsPR(Range(begin, end), left, right)
+      case begin ~ left ~ right ~ end => EqualsPR(ast.RangeP(begin, end), left, right)
     }
   }
 

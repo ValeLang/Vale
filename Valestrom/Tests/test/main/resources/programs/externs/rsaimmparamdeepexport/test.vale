@@ -1,11 +1,11 @@
-struct Spaceship export imm {
+exported struct Spaceship imm {
   fuel int;
   wings int;
 }
 
-export Array<imm, Spaceship> as ImmSpaceshipArray;
+export []<imm>Spaceship as ImmSpaceshipArray;
 
-fn valeSumFuel(arr Array<imm, Spaceship>) int export {
+exported func valeSumFuel(arr []<imm>Spaceship) int {
   total = 0;
   i = 0;
   while (i < arr.len()) {
@@ -15,9 +15,9 @@ fn valeSumFuel(arr Array<imm, Spaceship>) int export {
   ret total;
 }
 
-fn cSumFuel(arr Array<imm, Spaceship>) int extern;
+extern func cSumFuel(arr []<imm>Spaceship) int;
 
-fn main() int export {
-  a = [imm *](3, (i){ Spaceship(13 + i, i * 2) });
-  = cSumFuel(a);
+exported func main() int {
+  a = #[](3, (i) => { Spaceship(13 + i, i * 2) });
+  ret cSumFuel(a);
 }

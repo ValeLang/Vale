@@ -161,6 +161,16 @@ public:
   PackageCoordinate* getPackageCoordinate() const override { return regionId->packageCoord; }
 };
 
+class Void : public Kind {
+public:
+  RegionId* regionId;
+
+  Void(RegionId* regionId_) :
+      regionId(regionId_) {}
+
+  PackageCoordinate* getPackageCoordinate() const override { return regionId->packageCoord; }
+};
+
 class InterfaceKind : public Kind {
 public:
     Name* fullName;

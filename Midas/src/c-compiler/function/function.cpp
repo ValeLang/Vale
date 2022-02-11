@@ -32,7 +32,7 @@ LLVMValueRef declareFunction(
 bool translatesToCVoid(GlobalState* globalState, Reference* returnMT) {
   if (returnMT == globalState->metalCache->neverRef) {
     return true;
-  } else if (returnMT == globalState->metalCache->emptyTupleStructRef) {
+  } else if (returnMT == globalState->metalCache->voidRef) {
     return true;
   } else {
     return false;
@@ -53,7 +53,7 @@ bool typeNeedsPointerParameter(GlobalState* globalState, Reference* returnMT) {
 LLVMTypeRef translateReturnType(GlobalState* globalState, Reference* returnMT) {
   if (returnMT == globalState->metalCache->neverRef) {
     return LLVMVoidTypeInContext(globalState->context);
-  } else if (returnMT == globalState->metalCache->emptyTupleStructRef) {
+  } else if (returnMT == globalState->metalCache->voidRef) {
     return LLVMVoidTypeInContext(globalState->context);
   } else {
     auto logicalReturnTypeL = globalState->getRegion(returnMT)->getExternalType(returnMT);
@@ -109,7 +109,7 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
   LLVMBuilderRef localsBuilder = builder;
 
   FunctionState functionState(exportName, exportFunctionL, exportReturnLT, localsBuilder);
-  BlockState initialBlockState(globalState->addressNumberer, nullptr);
+  BlockState initialBlockState(globalState->addressNumberer, nullptr, std::nullopt);
   buildFlare(FL(), globalState, &functionState, builder, "Calling export function ", functionState.containingFuncName, " from native");
 
   std::vector<Ref> argsToActualFunction;
@@ -143,7 +143,7 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
   buildFlare(FL(), globalState, &functionState, builder, "Done calling vale function ", functionM->prototype->name->name);
   buildFlare(FL(), globalState, &functionState, builder, "Resuming export function ", functionState.containingFuncName);
 
-  if (functionM->prototype->returnType == globalState->metalCache->emptyTupleStructRef) {
+  if (functionM->prototype->returnType == globalState->metalCache->voidRef) {
     LLVMBuildRetVoid(builder);
   } else {
     auto valeReturnRef = valeReturnRefOrVoid;
@@ -264,7 +264,7 @@ void translateFunction(
   //
   // All builders work like this, at whatever level theyre on.
 
-  BlockState initialBlockState(globalState->addressNumberer, nullptr);
+  BlockState initialBlockState(globalState->addressNumberer, nullptr, std::nullopt);
 
   buildFlare(FL(), globalState, &functionState, bodyTopLevelBuilder, "Inside function ", functionM->prototype->name->name);
 

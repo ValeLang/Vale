@@ -14,7 +14,7 @@ Ref translateBlock(
     LLVMBuilderRef builder,
     Block* block) {
 
-  BlockState childBlockState(globalState->addressNumberer, parentBlockState);
+  BlockState childBlockState(globalState->addressNumberer, parentBlockState, std::nullopt);
 
   auto resultLE =
       translateExpression(globalState, functionState, &childBlockState, builder, block->inner);

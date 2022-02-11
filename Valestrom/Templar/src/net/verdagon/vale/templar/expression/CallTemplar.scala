@@ -3,7 +3,7 @@ package net.verdagon.vale.templar.expression
 import net.verdagon.vale.scout.{CodeNameS, GlobalFunctionFamilyNameS, IImpreciseNameS, IRuneS}
 import net.verdagon.vale.scout.rules.IRulexSR
 import net.verdagon.vale.templar.OverloadTemplar.FindFunctionFailure
-import net.verdagon.vale.templar.env.{FunctionEnvironment, FunctionEnvironmentBox}
+import net.verdagon.vale.templar.env.{NodeEnvironment, NodeEnvironmentBox, FunctionEnvironment, FunctionEnvironmentBox}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{ast, _}
@@ -33,7 +33,7 @@ class CallTemplar(
 
   private def evaluateCall(
       temputs: Temputs,
-      fate: FunctionEnvironmentBox,
+    nenv: NodeEnvironmentBox,
       life: LocationInFunctionEnvironment,
       range: RangeS,
       callableExpr: ReferenceExpressionTE,
@@ -47,19 +47,19 @@ class CallTemplar(
       }
       case structTT @ StructTT(_) => {
         evaluateClosureCall(
-          fate, temputs, life, range, structTT, explicitTemplateArgRulesS, explicitTemplateArgRunesS, callableExpr, givenArgsExprs2)
+          nenv, temputs, life, range, structTT, explicitTemplateArgRulesS, explicitTemplateArgRunesS, callableExpr, givenArgsExprs2)
       }
       case interfaceTT @ InterfaceTT(_) => {
         evaluateClosureCall(
-          fate, temputs, life, range, interfaceTT, explicitTemplateArgRulesS, explicitTemplateArgRunesS, callableExpr, givenArgsExprs2)
+          nenv, temputs, life, range, interfaceTT, explicitTemplateArgRulesS, explicitTemplateArgRunesS, callableExpr, givenArgsExprs2)
       }
-      case OverloadSet(overloadSetEnv, functionName, _) => {
+      case OverloadSet(overloadSetEnv, functionName) => {
         val unconvertedArgsPointerTypes2 =
           givenArgsExprs2.map(_.result.expectReference().reference)
 
         // We want to get the prototype here, not the entire header, because
         // we might be in the middle of a recursive call like:
-        // fn main():Int(main())
+        // func main():Int(main())
 
         val argsParamFilters =
           unconvertedArgsPointerTypes2.map(unconvertedArgsPointerType2 => {
@@ -79,7 +79,7 @@ class CallTemplar(
               false)
         val argsExprs2 =
           convertHelper.convertExprs(
-            fate.snapshot, temputs, range, givenArgsExprs2, prototype.paramTypes)
+            nenv.snapshot, temputs, range, givenArgsExprs2, prototype.paramTypes)
 
         checkTypes(
           temputs,
@@ -94,7 +94,7 @@ class CallTemplar(
 
   private def evaluateNamedCall(
     temputs: Temputs,
-    fate: FunctionEnvironment,
+    nenv: NodeEnvironment,
     range: RangeS,
     functionName: IImpreciseNameS,
     explicitTemplateArgRulesS: Vector[IRulexSR],
@@ -106,7 +106,7 @@ class CallTemplar(
 
     // We want to get the prototype here, not the entire header, because
     // we might be in the middle of a recursive call like:
-    // fn main():Int(main())
+    // func main():Int(main())
 
     val argsParamFilters =
       unconvertedArgsPointerTypes2.map(unconvertedArgsPointerType2 => {
@@ -115,7 +115,7 @@ class CallTemplar(
 
     val prototype =
       overloadTemplar.findFunction(
-        fate,
+        nenv,
         temputs,
         range,
         functionName,
@@ -126,7 +126,7 @@ class CallTemplar(
         false)
     val argsExprs2 =
       convertHelper.convertExprs(
-        fate, temputs, range, givenArgsExprs2, prototype.paramTypes)
+        nenv, temputs, range, givenArgsExprs2, prototype.paramTypes)
 
     checkTypes(
       temputs,
@@ -152,7 +152,7 @@ class CallTemplar(
   // also, the given callable is f, but the actual callable is f.__function.
 
   private def evaluateClosureCall(
-      fate: FunctionEnvironmentBox,
+      nenv: NodeEnvironmentBox,
       temputs: Temputs,
       life: LocationInFunctionEnvironment,
       range: RangeS,
@@ -165,10 +165,9 @@ class CallTemplar(
     // Whether we're given a borrow or an own, the call itself will be given a borrow.
     val givenCallableBorrowExpr2 =
       givenCallableUnborrowedExpr2.result.reference match {
-        case CoordT(ConstraintT, _, _) => (givenCallableUnborrowedExpr2)
-        case CoordT(ShareT, _, _) => (givenCallableUnborrowedExpr2)
+        case CoordT(BorrowT | PointerT | ShareT, _, _) => (givenCallableUnborrowedExpr2)
         case CoordT(OwnT, _, _) => {
-          localHelper.makeTemporaryLocal(temputs, fate, life, givenCallableUnborrowedExpr2)
+          localHelper.makeTemporaryLocal(temputs, nenv, life, givenCallableUnborrowedExpr2, BorrowT)
         }
       }
 
@@ -192,7 +191,7 @@ class CallTemplar(
         env, temputs, range, CodeNameS(CallTemplar.CALL_FUNCTION_NAME), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, false)
 
     val mutability = Templar.getMutability(temputs, citizenRef)
-    val ownership = if (mutability == MutableT) ConstraintT else ShareT
+    val ownership = if (mutability == MutableT) BorrowT else ShareT
     vassert(givenCallableBorrowExpr2.result.reference.ownership == ownership)
     val actualCallableExpr2 = givenCallableBorrowExpr2
 
@@ -235,10 +234,15 @@ class CallTemplar(
             }
           }
         } else {
-          // do stuff here.
-          // also there is one special case here, which is when we try to hand in
-          // an owning when they just want a borrow, gotta account for that here
-          vfail("do stuff " + argsHead + " and " + paramsHead)
+          if (argsHead.kind == NeverT()) {
+            // This is fine, no conversion will ever actually happen.
+            // This can be seen in this call: +(5, panic())
+          } else {
+            // do stuff here.
+            // also there is one special case here, which is when we try to hand in
+            // an owning when they just want a borrow, gotta account for that here
+            vfail("do stuff " + argsHead + " and " + paramsHead)
+          }
         }
       }
     })
@@ -248,7 +252,7 @@ class CallTemplar(
 
   def evaluatePrefixCall(
       temputs: Temputs,
-      fate: FunctionEnvironmentBox,
+    nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironment,
     range: RangeS,
       callableReferenceExpr2: ReferenceExpressionTE,
@@ -258,19 +262,19 @@ class CallTemplar(
   (FunctionCallTE) = {
     val callExpr =
       evaluateCall(
-        temputs, fate, life, range, callableReferenceExpr2, explicitTemplateArgRulesS, explicitTemplateArgRunesS, argsExprs2)
+        temputs, nenv, life, range, callableReferenceExpr2, explicitTemplateArgRulesS, explicitTemplateArgRunesS, argsExprs2)
     (callExpr)
   }
 
   def evaluateNamedPrefixCall(
     temputs: Temputs,
-    fate: FunctionEnvironmentBox,
+    nenv: NodeEnvironmentBox,
     rangeS: RangeS,
     functionName: IImpreciseNameS,
     rules: Vector[IRulexSR],
     templateArgs: Vector[IRuneS],
     argsExprs2: Vector[ReferenceExpressionTE]):
   (FunctionCallTE) = {
-    evaluateNamedCall(temputs, fate.snapshot, rangeS, functionName, rules, templateArgs.toArray, argsExprs2)
+    evaluateNamedCall(temputs, nenv.snapshot, rangeS, functionName, rules, templateArgs.toArray, argsExprs2)
   }
 }

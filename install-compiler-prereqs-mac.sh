@@ -5,7 +5,14 @@
 BOOTSTRAPPING_VALEC_DIR="$1"
 if [ "$BOOTSTRAPPING_VALEC_DIR" == "" ]; then
   echo "First arg must be path to unzip a bootstrapping stable Vale compiler to."
-  echo "Example: ~/ValeCompiler-0.1.3.3-Ubuntu"
+  echo "Example: ~/ValeCompiler-0.1.3.3-Ubuntu ~/stdlib"
+  exit
+fi
+
+STDLIB_DIR="$2"
+if [ "$STDLIB_DIR" == "" ]; then
+  echo "Second arg must be path to download the current stdlib to."
+  echo "Example: ~/stdlib"
   exit
 fi
 
@@ -23,7 +30,7 @@ echo 'export PATH=~/jdk-11.0.10+9-jre/Contents/Home/bin:$PATH' >> ~/.zshrc
 
 # Installs brew, like said on https://brew.sh/
 echo Installing brew...
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" </dev/null
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 # See https://stackoverflow.com/questions/25535407/bypassing-prompt-to-press-return-in-homebrew-install-script
 # for why we do </dev/null
 
@@ -37,3 +44,6 @@ echo 'export PATH=$PATH:~/ValeCompiler-0.1.3.3-Mac' >> ~/.zshrc
 echo "Downloading and unzipping depdendencies and LLVM..."
 brew install llvm@11 sbt cmake
 echo 'export PATH=$PATH:/usr/local/Cellar/llvm@11/11.1.0_2/bin' >> ~/.zshrc
+
+echo "Downloading stdlib..."
+git clone https://github.com/ValeLang/stdlib $STDLIB_DIR

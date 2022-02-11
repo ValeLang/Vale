@@ -11,15 +11,15 @@ class ArrayListTest extends FunSuite with Matchers {
   test("Simple ArrayList, no optionals") {
     val compile = RunCompilation.test(
         """
-          |struct List<E> rules(E Ref) {
-          |  array! Array<mut, E>;
+          |struct List<E> where E Ref {
+          |  array! []<mut>E;
           |}
-          |fn listLen<E>(list &List<E>) int { len(&list.array) }
-          |fn add<E>(list &!List<E>, newElement E) {
-          |  newArray = Array<mut, E>(listLen(&list) + 1);
+          |func len<E>(list &List<E>) int { ret len(&list.array); }
+          |func add<E>(list &!List<E>, newElement E) {
+          |  newArray = Array<mut, E>(len(&list) + 1);
           |  while (newArray.len() < newArray.capacity()) {
           |    index = newArray.len();
-          |    if (index == listLen(&list)) {
+          |    if (index == len(&list)) {
           |      newArray!.push(newElement);
           |    } else {
           |      a = list.array;
@@ -29,58 +29,34 @@ class ArrayListTest extends FunSuite with Matchers {
           |  set list.array = newArray;
           |}
           |// todo: make that return a &E
-          |fn get<E>(list &List<E>, index int) E {
+          |func get<E>(list &List<E>, index int) E {
           |  a = list.array;
-          |  = a[index];
+          |  ret a[index];
           |}
           |
-          |fn main() int export {
+          |exported func main() int {
           |  l = List<int>(Array<mut, int>(0));
           |  add(&!l, 5);
           |  add(&!l, 9);
           |  add(&!l, 7);
-          |  = l.get(1);
+          |  ret l.get(1);
           |}
         """.stripMargin)
 
     compile.evalForKind(Vector()) shouldEqual VonInt(9)
   }
 
-  test("Doubling ArrayList, no optionals") {
+  test("Doubling ArrayList") {
     val compile = RunCompilation.test(
       """
-        |struct List<E> rules(E Ref) {
-        |  array! Array<mut, E>;
-        |}
-        |fn void() {}
-        |fn listLen<E>(list &List<E>) int { len(&list.array) }
-        |fn migrate<E>(from Array<mut, E>, to &!Array<mut, E>) {
-        |  intermediate = Array<mut, E>(from.capacity());
-        |  drop_into(from, &!{ intermediate!.push(_); });
-        |  drop_into(intermediate, &!{ to!.push(_); });
-        |}
-        |fn add<E>(list &!List<E>, newElement E) {
-        |  oldCapacity = list.array.capacity();
-        |  if (list.listLen() == oldCapacity) {
-        |    newCapacity = if (oldCapacity > 0) { oldCapacity * 2 } else { 1 };
-        |    newArray = Array<mut, E>(newCapacity);
-        |    oldArray = set list.array = newArray;
-        |    migrate(oldArray, &!list.array);
-        |  }
-        |  list.array!.push(newElement);
-        |}
-        |// todo: make that return a &E
-        |fn get<E>(list &List<E>, index int) E {
-        |  a = list.array;
-        |  = a[index];
-        |}
+        |import list.*;
         |
-        |fn main() int export {
+        |exported func main() int {
         |  l = List<int>(Array<mut, int>(0));
         |  add(&!l, 5);
         |  add(&!l, 9);
         |  add(&!l, 7);
-        |  = l.get(1);
+        |  ret l.get(1);
         |}
         """.stripMargin)
 
@@ -92,20 +68,18 @@ class ArrayListTest extends FunSuite with Matchers {
       """import list.*;
         |import ifunction.ifunction1.*;
         |
-        |fn main() int export {
+        |exported func main() int {
         |  l =
         |      List<int>(
-        |          MakeVaryArray(
+        |          Array<mut, int>(
         |              0,
-        |              &!(index){
-        |                result Opt<int> = Some(index);
-        |                = result;
-        |              }),
-        |          0);
+        |              &!(index) => {
+        |                0
+        |              }));
         |  add(&!l, 5);
         |  add(&!l, 9);
         |  add(&!l, 7);
-        |  = l.get(1);
+        |  ret l.get(1);
         |}
       """.stripMargin)
 
@@ -116,12 +90,12 @@ class ArrayListTest extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """import list.*;
           |
-          |fn main() int export {
+          |exported func main() int {
           |  l = List<int>();
           |  add(&!l, 5);
           |  add(&!l, 9);
           |  add(&!l, 7);
-          |  = l.get(1);
+          |  ret l.get(1);
           |}
         """.stripMargin)
 
@@ -132,12 +106,12 @@ class ArrayListTest extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """import list.*;
           |
-          |fn main() int export {
+          |exported func main() int {
           |  l = List<int>();
           |  add(&!l, 5);
           |  add(&!l, 9);
           |  add(&!l, 7);
-          |  = l.len();
+          |  ret l.len();
           |}
         """.stripMargin)
 
@@ -148,13 +122,13 @@ class ArrayListTest extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """import list.*;
           |
-          |fn main() int export {
+          |exported func main() int {
           |  l = List<int>();
           |  add(&!l, 5);
           |  add(&!l, 9);
           |  add(&!l, 7);
           |  set(&!l, 1, 11);
-          |  = l.get(1);
+          |  ret l.get(1);
           |}
         """.stripMargin)
 
@@ -166,20 +140,16 @@ class ArrayListTest extends FunSuite with Matchers {
         """import list.*;
           |struct Marine { hp int; }
           |
-          |fn main() int export {
+          |exported func main() int {
           |  l =
           |      List<Marine>(
-          |          MakeVaryArray<Opt<Marine>>(
+          |          Array<mut, Marine>(
           |              0,
-          |              (index){
-          |                result Opt<Marine> = Some(Marine(index));
-          |                = result;
-          |              }),
-          |          0);
+          |              (index) => { Marine(index) }));
           |  add(&!l, Marine(5));
           |  add(&!l, Marine(9));
           |  add(&!l, Marine(7));
-          |  = l.get(1).hp;
+          |  ret l.get(1).hp;
           |}
         """.stripMargin)
 
@@ -191,14 +161,14 @@ class ArrayListTest extends FunSuite with Matchers {
         """import list.*;
           |struct Marine { hp int; }
           |
-          |fn main() int export {
+          |exported func main() int {
           |  m! = Marine(6);
           |  lam = {
           |    set m = Marine(9);
           |  };
           |  lam!();
           |  lam!();
-          |  = m.hp;
+          |  ret m.hp;
           |}
         """.stripMargin)
 
@@ -218,13 +188,13 @@ class ArrayListTest extends FunSuite with Matchers {
       """import list.*;
         |struct Marine { hp int; }
         |
-        |fn main() int export {
+        |exported func main() int {
         |  m! Opt<Marine> = Some(Marine(6));
         |  lam = {
         |    m2 = (set m = None<Marine>()).get();
-        |    = m2.hp;
+        |    m2.hp
         |  };
-        |  = lam!();
+        |  ret lam!();
         |}
       """.stripMargin)
 
@@ -242,7 +212,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |import panicutils.*;
           |struct Marine { hp int; }
           |
-          |fn main() export {
+          |exported func main() {
           |  l = List<Marine>();
           |  add(&!l, Marine(5));
           |  add(&!l, Marine(7));
@@ -269,7 +239,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |import panicutils.*;
           |struct Marine { hp int; }
           |
-          |fn main() export {
+          |exported func main() {
           |  l = List<Marine>();
           |  add(&!l, Marine(5));
           |  add(&!l, Marine(7));

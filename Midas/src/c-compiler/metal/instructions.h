@@ -23,6 +23,11 @@ public:
 //    virtual Reference* getResultType() const = 0;
 };
 
+class ConstantVoid : public Expression {
+public:
+  ConstantVoid() {}
+};
+
 class ConstantInt : public Expression {
 public:
   int64_t value;
@@ -44,10 +49,6 @@ public:
       : value(value_) {}
 };
 
-
-class ConstantVoid : public Expression {
-public:
-};
 
 
 class ConstantStr : public Expression {
@@ -193,6 +194,30 @@ public:
         localName(localName) {}
 };
 
+
+class BorrowToPointer : public Expression {
+public:
+  Expression* sourceExpr;
+  Reference* resultType;
+
+  BorrowToPointer(
+      Expression* sourceExpr_,
+      Reference* resultType_) :
+      sourceExpr(sourceExpr_),
+      resultType(resultType_) {}
+};
+
+class PointerToBorrow : public Expression {
+public:
+  Expression* sourceExpr;
+  Reference* resultType;
+
+  PointerToBorrow(
+      Expression* sourceExpr_,
+      Reference* resultType_) :
+      sourceExpr(sourceExpr_),
+      resultType(resultType_) {}
+};
 
 class WeakAlias : public Expression {
 public:
@@ -462,7 +487,8 @@ public:
     virtualParamIndex(virtualParamIndex_),
     interfaceRef(interfaceRef_),
     indexInEdge(indexInEdge_),
-    functionType(functionType_) {}
+    functionType(functionType_) {
+  }
 };
 
 
@@ -514,6 +540,10 @@ public:
   Block(Expression * inner_, Reference* innerType_) :
   inner(inner_),
   innerType(innerType_) {}
+};
+
+class Break : public Expression {
+public:
 };
 
 class Return : public Expression {

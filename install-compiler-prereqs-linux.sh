@@ -16,6 +16,13 @@ if [ "$BOOTSTRAPPING_VALEC_DIR" == "" ]; then
   exit
 fi
 
+STDLIB_DIR="$3"
+if [ "$STDLIB_DIR" == "" ]; then
+  echo "Third arg must be path to download the current stdlib to."
+  echo "Example: ~/stdlib"
+  exit
+fi
+
 
 # Install misc dependencies
 echo "Installing dependencies..."
@@ -51,3 +58,6 @@ curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-11.1.0/cl
 mkdir -p $LLVM_DIR
 tar xf /tmp/clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10.tar.xz -C $LLVM_DIR
 # Later, we'll need to feed this to a cmake command so it knows where the LLVM libraries are.
+
+echo "Downloading stdlib..."
+git clone https://github.com/ValeLang/stdlib $STDLIB_DIR

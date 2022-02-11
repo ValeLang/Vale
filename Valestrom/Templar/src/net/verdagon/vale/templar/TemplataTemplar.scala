@@ -15,11 +15,11 @@ import scala.collection.immutable.{List, Map, Set}
 
 trait ITemplataTemplarDelegate {
 
-  def getAncestorInterfaceDistance(
+  def isAncestor(
     temputs: Temputs,
     descendantCitizenRef: CitizenRefT,
     ancestorInterfaceRef: InterfaceTT):
-  Option[Int]
+  Boolean
 
   def getStructRef(
     temputs: Temputs,
@@ -54,158 +54,134 @@ class TemplataTemplar(
     profiler: IProfiler,
     delegate: ITemplataTemplarDelegate) {
 
-  def getTypeDistance(
-    temputs: Temputs,
-    sourcePointerType: CoordT,
-    targetPointerType: CoordT):
-  (Option[TypeDistance]) = {
-
-    val CoordT(targetOwnership, targetPermission, targetType) = targetPointerType;
-    val CoordT(sourceOwnership, sourcePermission, sourceType) = sourcePointerType;
-
-    if (sourceType == NeverT()) {
-      return (Some(TypeDistance(0, 0, 0)))
-    }
-
-    val upcastDistance =
-      if (sourceType == targetType) {
-        (0)
-      } else {
-        (sourceType, targetType) match {
-          case (VoidT(), _) => return (None)
-          case (IntT(_), _) => return (None)
-          case (BoolT(), _) => return (None)
-          case (StrT(), _) => return (None)
-          case (_, VoidT()) => return (None)
-          case (_, IntT(_)) => return (None)
-          case (_, BoolT()) => return (None)
-          case (_, StrT()) => return (None)
-          case (_, StructTT(_)) => return (None)
-          case (a @ StructTT(_), b @ InterfaceTT(_)) => {
-            delegate.getAncestorInterfaceDistance(temputs, a, b) match {
-              case (None) => return (None)
-              case (Some(distance)) => (distance)
-            }
-          }
-          case (a @ InterfaceTT(_), b @ InterfaceTT(_)) => {
-            delegate.getAncestorInterfaceDistance(temputs, a, b) match {
-              case (None) => return (None)
-              case (Some(distance)) => (distance)
-            }
-          }
-          case (_ : CitizenRefT, IntT(_) | BoolT() | StrT() | FloatT()) => return (None)
-          case (IntT(_) | BoolT() | StrT() | FloatT(), _ : CitizenRefT) => return (None)
-          case (_, RuntimeSizedArrayTT(_, _)) => return None
-          case (RuntimeSizedArrayTT(_, _), _) => return None
-          case (_, StaticSizedArrayTT(_, _, _, _)) => return None
-          case (StaticSizedArrayTT(_, _, _, _), _) => return None
-          case _ => {
-            vfail("Can't convert from " + sourceType + " to " + targetType)
-          }
-        }
-      }
-
-    val ownershipDistance =
-      (sourceOwnership, targetOwnership) match {
-        case (OwnT, OwnT) => 0
-        case (OwnT, ConstraintT) => 1
-        case (OwnT, WeakT) => 1
-        case (OwnT, ShareT) => return None
-        case (ConstraintT, OwnT) => return (None)
-        case (ConstraintT, ConstraintT) => 0
-        case (ConstraintT, WeakT) => 1
-        case (ConstraintT, ShareT) => return None
-        case (WeakT, OwnT) => return None
-        case (WeakT, ConstraintT) => return None
-        case (WeakT, WeakT) => 0
-        case (WeakT, ShareT) => return None
-        case (ShareT, ShareT) => 0
-        case (ShareT, ConstraintT) => return None
-        case (ShareT, WeakT) => return None
-        case (ShareT, OwnT) => return None
-      }
-
-    val permissionDistance =
-      (sourcePermission, targetPermission) match {
-        case (ReadonlyT, ReadonlyT) => 0
-        case (ReadonlyT, ReadwriteT) => return None
-        // Could eventually make this 1 instead of None, if we want to implicitly
-        // go from readwrite to readonly, that would be nice.
-        case (ReadwriteT, ReadonlyT) => return None
-        case (ReadwriteT, ReadwriteT) => 0
-      }
-
-    (Some(TypeDistance(upcastDistance, ownershipDistance, permissionDistance)))
-  }
-
   def isTypeConvertible(
     temputs: Temputs,
     sourcePointerType: CoordT,
     targetPointerType: CoordT):
-  (Boolean) = {
-    val maybeDistance =
-      getTypeDistance(temputs, sourcePointerType, targetPointerType)
-    (maybeDistance.nonEmpty)
-  }
+  Boolean = {
 
-  def isTypeTriviallyConvertible(
-    temputs: Temputs,
-    sourcePointerType: CoordT,
-    targetPointerType: CoordT):
-  (Boolean) = {
     val CoordT(targetOwnership, targetPermission, targetType) = targetPointerType;
     val CoordT(sourceOwnership, sourcePermission, sourceType) = sourcePointerType;
 
-    if (sourceType == NeverT()) {
-      return (true)
-    }
+    // Note the Never case will short-circuit a true, regardless of the other checks (permission, ownership)
 
-    if (sourceType == targetType) {
-
-    } else {
-      (sourceType, targetType) match {
-        case (VoidT(), _) => return (false)
-        case (IntT(_), _) => return (false)
-        case (BoolT(), _) => return (false)
-        case (StrT(), _) => return (false)
-        case (RuntimeSizedArrayTT(_, _), _) => return (false)
-        case (StaticSizedArrayTT(_, _, _, _), _) => return (false)
-        case (_, VoidT()) => return (false)
-        case (_, IntT(_)) => return (false)
-        case (_, BoolT()) => return (false)
-        case (_, StrT()) => return (false)
-        case (_, StaticSizedArrayTT(_, _, _, _)) => return (false)
-        case (_, StructTT(_)) => return (false)
-        case (a @ StructTT(_), b @ InterfaceTT(_)) => {
-          delegate.getAncestorInterfaceDistance(temputs, a, b) match {
-            case (None) => return (false)
-            case (Some(_)) =>
-          }
+    (sourceType, targetType) match {
+      case (NeverT(), _) => return true
+      case (a, b) if a == b =>
+      case (VoidT() | IntT(_) | BoolT() | StrT() | FloatT() | RuntimeSizedArrayTT(_, _) | StaticSizedArrayTT(_, _, _, _), _) => return false
+      case (_, VoidT() | IntT(_) | BoolT() | StrT() | FloatT() | RuntimeSizedArrayTT(_, _) | StaticSizedArrayTT(_, _, _, _)) => return false
+      case (_, StructTT(_)) => return false
+      case (a @ StructTT(_), b @ InterfaceTT(_)) => {
+        if (!delegate.isAncestor(temputs, a, b)) {
+          return false
         }
-        case (a @ InterfaceTT(_), b @ InterfaceTT(_)) => {
-          delegate.getAncestorInterfaceDistance(temputs, a, b) match {
-            case (None) => return (false)
-            case (Some(_)) =>
-          }
+      }
+      case (a @ InterfaceTT(_), b @ InterfaceTT(_)) => {
+        if (!delegate.isAncestor(temputs, a, b)) {
+          return false
         }
-        case (_ : CitizenRefT, IntT(_) | BoolT() | StrT() | FloatT()) => return (false)
-        case (IntT(_) | BoolT() | StrT() | FloatT(), _ : CitizenRefT) => return (false)
-        case _ => {
-          vfail("Can't convert from " + sourceType + " to " + targetType)
-        }
+      }
+      case _ => {
+        vfail("Dont know if we can convert from " + sourceType + " to " + targetType)
       }
     }
 
-    if (sourceOwnership != targetOwnership) {
-      return false
+    (sourceOwnership, targetOwnership) match {
+      case (a, b) if a == b =>
+      // At some point maybe we should automatically convert borrow to pointer and vice versa
+      // and perhaps automatically promote borrow or pointer to weak?
+      case (OwnT, BorrowT) => return false
+      case (OwnT, PointerT) => return false
+      case (OwnT, WeakT) => return false
+      case (OwnT, ShareT) => return false
+      case (PointerT, OwnT) => return false
+      case (PointerT, BorrowT) => return false
+      case (PointerT, WeakT) => return false
+      case (PointerT, ShareT) => return false
+      case (BorrowT, OwnT) => return false
+      case (BorrowT, PointerT) => return false
+      case (BorrowT, WeakT) => return false
+      case (BorrowT, ShareT) => return false
+      case (WeakT, OwnT) => return false
+      case (WeakT, PointerT) => return false
+      case (WeakT, BorrowT) => return false
+      case (WeakT, ShareT) => return false
+      case (ShareT, PointerT) => return false
+      case (ShareT, BorrowT) => return false
+      case (ShareT, WeakT) => return false
+      case (ShareT, OwnT) => return false
     }
 
-    if (sourcePermission != targetPermission) {
-      return false
+    (sourcePermission, targetPermission) match {
+      case (ReadonlyT, ReadonlyT) =>
+      case (ReadonlyT, ReadwriteT) => return false
+      // Could eventually make this true instead of false, if we want to implicitly
+      // go from readwrite to readonly, that would be nice.
+      case (ReadwriteT, ReadonlyT) => return false
+      case (ReadwriteT, ReadwriteT) =>
     }
 
     true
   }
+//
+//  def isTypeTriviallyConvertible(
+//    temputs: Temputs,
+//    sourcePointerType: CoordT,
+//    targetPointerType: CoordT):
+//  (Boolean) = {
+//    val CoordT(targetOwnership, targetPermission, targetType) = targetPointerType;
+//    val CoordT(sourceOwnership, sourcePermission, sourceType) = sourcePointerType;
+//
+//    if (sourceType == NeverT()) {
+//      return (true)
+//    }
+//
+//    if (sourceType == targetType) {
+//
+//    } else {
+//      (sourceType, targetType) match {
+//        case (VoidT(), _) => return (false)
+//        case (IntT(_), _) => return (false)
+//        case (BoolT(), _) => return (false)
+//        case (StrT(), _) => return (false)
+//        case (RuntimeSizedArrayTT(_, _), _) => return (false)
+//        case (StaticSizedArrayTT(_, _, _, _), _) => return (false)
+//        case (_, VoidT()) => return (false)
+//        case (_, IntT(_)) => return (false)
+//        case (_, BoolT()) => return (false)
+//        case (_, StrT()) => return (false)
+//        case (_, StaticSizedArrayTT(_, _, _, _)) => return (false)
+//        case (_, StructTT(_)) => return (false)
+//        case (a @ StructTT(_), b @ InterfaceTT(_)) => {
+//          delegate.isAncestor(temputs, a, b) match {
+//            case (None) => return (false)
+//            case (Some(_)) =>
+//          }
+//        }
+//        case (a @ InterfaceTT(_), b @ InterfaceTT(_)) => {
+//          delegate.isAncestor(temputs, a, b) match {
+//            case (None) => return (false)
+//            case (Some(_)) =>
+//          }
+//        }
+//        case (_ : CitizenRefT, IntT(_) | BoolT() | StrT() | FloatT()) => return (false)
+//        case (IntT(_) | BoolT() | StrT() | FloatT(), _ : CitizenRefT) => return (false)
+//        case _ => {
+//          vfail("Can't convert from " + sourceType + " to " + targetType)
+//        }
+//      }
+//    }
+//
+//    if (sourceOwnership != targetOwnership) {
+//      return false
+//    }
+//
+//    if (sourcePermission != targetPermission) {
+//      return false
+//    }
+//
+//    true
+//  }
 
   def pointifyKind(temputs: Temputs, kind: KindT, ownershipIfMutable: OwnershipT): CoordT = {
     val mutability = Templar.getMutability(temputs, kind)
@@ -423,18 +399,5 @@ class TemplataTemplar(
       return false
     }
     citizenTemplateFullName.last == actualCitizenRef.fullName.last.template
-  }
-}
-
-case class TypeDistance(upcastDistance: Int, ownershipDistance: Int, permissionDistance: Int) {
-  override def hashCode(): Int = vcurious()
-  def lessThanOrEqualTo(that: TypeDistance): Boolean = {
-    if (this.upcastDistance < that.upcastDistance) return true;
-    if (this.upcastDistance > that.upcastDistance) return false;
-    if (this.ownershipDistance < that.ownershipDistance) return true;
-    if (this.ownershipDistance > that.ownershipDistance) return false;
-    if (this.permissionDistance < that.permissionDistance) return true;
-    if (this.permissionDistance > that.permissionDistance) return false;
-    true
   }
 }

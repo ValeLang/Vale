@@ -76,7 +76,7 @@ public:
       strs(0, addressNumberer->makeHasher<RegionId*>()),
       floats(0, addressNumberer->makeHasher<RegionId*>()),
       nevers(0, addressNumberer->makeHasher<RegionId*>()),
-      rawArrays(0, addressNumberer->makeHasher<Reference*>()),
+      voids(0, addressNumberer->makeHasher<RegionId*>()),
       runtimeSizedArrays(0, addressNumberer->makeHasher<Name*>()),
       staticSizedArrays(0, addressNumberer->makeHasher<Name*>()),
       unconvertedReferences(0, addressNumberer->makeHasher<Kind*>()),
@@ -105,6 +105,8 @@ public:
     strRef = getReference(Ownership::SHARE, Location::YONDER, str);
     never = getNever(rcImmRegionId);
     neverRef = getReference(Ownership::SHARE, Location::INLINE, never);
+    vooid = getVoid(rcImmRegionId);
+    voidRef = getReference(Ownership::SHARE, Location::INLINE, vooid);
 //    regionKind = getStructKind(getName("__Region"));
   }
 
@@ -143,6 +145,13 @@ public:
         &floats,
         regionId,
         [&](){ return new Float(regionId); });
+  }
+
+  Void* getVoid(RegionId* regionId) {
+    return makeIfNotPresent(
+        &voids,
+        regionId,
+        [&](){ return new Void(regionId); });
   }
 
   Never* getNever(RegionId* regionId) {
@@ -233,18 +242,9 @@ public:
   std::unordered_map<RegionId*, Bool*, AddressHasher<RegionId*>> bools;
   std::unordered_map<RegionId*, Str*, AddressHasher<RegionId*>> strs;
   std::unordered_map<RegionId*, Float*, AddressHasher<RegionId*>> floats;
+  std::unordered_map<RegionId*, Void*, AddressHasher<RegionId*>> voids;
   std::unordered_map<RegionId*, Never*, AddressHasher<RegionId*>> nevers;
 
-  // This is conceptually a map<[Reference*, Mutability], RawArrayT*>.
-  std::unordered_map<
-      Reference*,
-      std::unordered_map<
-          RegionId*,
-          std::unordered_map<
-              Mutability,
-              RawArrayT*>,
-          AddressHasher<RegionId*>>,
-      AddressHasher<Reference*>> rawArrays;
   std::unordered_map<Name*, RuntimeSizedArrayT*, AddressHasher<Name*>> runtimeSizedArrays;
   std::unordered_map<Name*, StaticSizedArrayT*, AddressHasher<Name*>> staticSizedArrays;
   std::unordered_map<
@@ -298,8 +298,8 @@ public:
   Reference* strRef = nullptr;
   Never* never = nullptr;
   Reference* neverRef = nullptr;
-  StructKind* emptyTupleStruct = nullptr;
-  Reference* emptyTupleStructRef = nullptr;
+  Void* vooid = nullptr;
+  Reference* voidRef = nullptr;
   // This is a central kind that holds a region's data.
   // These will hold for example the bump pointer for an arena region,
   // or a free list pointer for HGM.

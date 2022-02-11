@@ -3,18 +3,18 @@ package net.verdagon.vale.templar.citizen
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
-import net.verdagon.vale.parser.{CallMacro, DontCallMacro, FinalP, ImmutableP, MutabilityP, MutableP}
 import net.verdagon.vale.scout.{SealedS, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar.OverloadTemplar.FindFunctionFailure
 import net.verdagon.vale.templar.{ast, _}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.{DestructorTemplar, FunctionTemplar, FunctionTemplarCore, FunctionTemplarMiddleLayer, FunctionTemplarOrdinaryOrTemplatedLayer}
 import net.verdagon.vale._
+import net.verdagon.vale.parser.ast.{CallMacro, DontCallMacro}
 import net.verdagon.vale.scout.rules.RuneUsage
 import net.verdagon.vale.templar.ast.ProgramT.tupleHumanName
 import net.verdagon.vale.templar.ast.{AbstractT, ArgLookupTE, BlockTE, DiscardTE, FunctionCallTE, FunctionHeaderT, FunctionT, ICitizenAttributeT, LocationInFunctionEnvironment, OverrideT, ParameterT, ProgramT, PrototypeT, ReferenceMemberLookupTE, ReturnTE, SealedT, SoftLoadTE}
 import net.verdagon.vale.templar.expression.CallTemplar
-import net.verdagon.vale.templar.names.{AnonymousSubstructImplNameT, AnonymousSubstructMemberNameT, AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, CitizenNameT, CitizenTemplateNameT, ClosureParamNameT, CodeVarNameT, FullNameT, FunctionNameT, FunctionTemplateNameT, ICitizenNameT, INameT, ImplDeclareNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT, NameTranslator, RuneNameT, SelfNameT, FreeTemplateNameT, TemplarTemporaryVarNameT}
+import net.verdagon.vale.templar.names.{AnonymousSubstructImplNameT, AnonymousSubstructMemberNameT, AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, CitizenNameT, CitizenTemplateNameT, ClosureParamNameT, CodeVarNameT, FreeTemplateNameT, FullNameT, FunctionNameT, FunctionTemplateNameT, ICitizenNameT, INameT, ImplDeclareNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT, NameTranslator, RuneNameT, SelfNameT, TemplarTemporaryVarNameT}
 
 import scala.collection.immutable.List
 
@@ -346,7 +346,7 @@ class StructTemplarCore(
             case AddressMemberTypeT(reference) => true
             case ReferenceMemberTypeT(reference) => {
               reference.ownership match {
-                case OwnT | ConstraintT | WeakT => true
+                case OwnT | PointerT | BorrowT | WeakT => true
                 case ShareT => false
               }
             }

@@ -3,6 +3,6 @@ struct Carrier {
   interceptors int;
 }
 
-fn main() int export {
-  = Carrier(400, 8).interceptors;
+exported func main() int {
+  ret Carrier(400, 8).interceptors;
 }

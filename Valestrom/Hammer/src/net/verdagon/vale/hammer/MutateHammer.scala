@@ -1,7 +1,7 @@
 package net.verdagon.vale.hammer
 
 import net.verdagon.vale.hammer.ExpressionHammer.{translate, translateDeferreds}
-import net.verdagon.vale.metal.{BorrowH => _, Variability => _, _}
+import net.verdagon.vale.metal.{PointerH => _, Variability => _, _}
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.templar.{Hinputs, _}
 import net.verdagon.vale.templar.ast.{AddressMemberLookupTE, ExpressionT, FunctionHeaderT, LocalLookupTE, MutateTE, ReferenceExpressionTE, ReferenceMemberLookupTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE}
@@ -28,10 +28,10 @@ object MutateHammer {
 
     val (oldValueAccess, destinationDeferreds) =
       destinationExpr2 match {
-        case LocalLookupTE(_,ReferenceLocalVariableT(varId, variability, reference), varType2, _) => {
+        case LocalLookupTE(_,ReferenceLocalVariableT(varId, variability, reference)) => {
           translateMundaneLocalMutate(hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, varId)
         }
-        case LocalLookupTE(_,AddressibleLocalVariableT(varId, variability, reference), varType2, _) => {
+        case LocalLookupTE(_,AddressibleLocalVariableT(varId, variability, reference)) => {
           translateAddressibleLocalMutate(hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, sourceResultPointerTypeH, varId, variability, reference)
         }
         case ReferenceMemberLookupTE(_,structExpr2, memberName, _, _, _) => {
@@ -141,14 +141,14 @@ object MutateHammer {
       StructHammer.makeBox(hinputs, hamuts, variability, boxedType2, boxedTypeH)
 
     // Remember, structs can never own boxes, they only borrow them
-    val expectedStructBoxMemberType = ReferenceH(m.BorrowH, YonderH, ReadwriteH, boxStructRefH)
+    val expectedStructBoxMemberType = ReferenceH(m.PointerH, YonderH, ReadwriteH, boxStructRefH)
 
     // We're storing into a struct's member that is a box. The stack is also
     // pointing at this box. First, get the box, then mutate what's inside.
     val nameH = NameHammer.translateFullName(hinputs, hamuts, memberName)
     val loadResultType =
       ReferenceH(
-        m.BorrowH,
+        m.PointerH,
         YonderH,
         // The box should be readwrite, but targetPermission is taken into account when we load/mutate from the
         // box's member.
@@ -229,7 +229,7 @@ object MutateHammer {
     val loadBoxNode =
       LocalLoadH(
         local,
-        m.BorrowH,
+        m.PointerH,
         // The box should be readwrite, but targetPermission is taken into account when we load from its member.
         ReadwriteH,
         nameH)

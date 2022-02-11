@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar
 
-import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier}
+import net.verdagon.vale.parser.{ParseErrorHumanizer, ParsedLoader, Parser, ParserVonifier}
 import net.verdagon.vale.scout.{CodeNameS, CodeRuneS, CodeVarNameS, FunctionNameS, GlobalFunctionFamilyNameS, ICompileErrorS, ProgramS, Scout, TopLevelCitizenDeclarationNameS, VariableNameAlreadyExists}
 import net.verdagon.vale.templar.env.ReferenceLocalVariableT
 import net.verdagon.vale.templar.templata._
@@ -8,7 +8,7 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer.{Astronomer, AstronomerCompilation}
 import net.verdagon.vale.solver.{FailedSolve, RuleError, Step}
-import net.verdagon.vale.templar.OverloadTemplar.{FindFunctionFailure, WrongNumberOfArguments}
+import net.verdagon.vale.templar.OverloadTemplar.{FindFunctionFailure, SpecificParamDoesntSend, WrongNumberOfArguments}
 import net.verdagon.vale.templar.ast.{ConstantIntTE, DestroyTE, DiscardTE, FunctionCallTE, FunctionHeaderT, FunctionT, KindExportT, LetAndLendTE, LetNormalTE, LocalLookupTE, ParameterT, PrototypeT, ReferenceExpressionTE, ReferenceMemberLookupTE, ReturnTE, SignatureT, SoftLoadTE, StructToInterfaceUpcastTE, UserFunctionT, referenceExprResultKind, referenceExprResultStructName}
 import net.verdagon.von.{JsonSyntax, VonPrinter}
 import net.verdagon.vale.templar.expression.CallTemplar
@@ -29,13 +29,12 @@ class TemplarTests extends FunSuite with Matchers {
     is.mkString("")
   }
 
-
   test("Simple program returning an int, inferred") {
     val compile =
       TemplarTestCompilation.test(
         """
           |import v.builtins.tup.*;
-          |fn main() infer-ret {3}
+          |func main() infer-ret { ret 3; }
           |""".stripMargin)
     val temputs = compile.expectTemputs()
 
@@ -52,7 +51,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn main() int {3}
+        |func main() int { ret 3; }
         |""".stripMargin)
     val temputs = compile.expectTemputs()
 
@@ -64,7 +63,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn main() int export {-3}
+        |exported func main() int { ret -3; }
         |""".stripMargin)
     val main = compile.expectTemputs().lookupFunction("main")
     Collector.only(main, { case ConstantIntTE(-3, _) => true })
@@ -74,9 +73,9 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn main() infer-ret export {
+        |exported func main() infer-ret {
         |  a = 42;
-        |  = a;
+        |  ret a;
         |}
     """.stripMargin)
     val main = compile.expectTemputs().lookupFunction("main")
@@ -88,10 +87,9 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |import v.builtins.panic.*;
-        |fn main() infer-ret export {
+        |exported func main() infer-ret {
         |  __vbi_panic();
         |  a = 42;
-        |  = a;
         |}
     """.stripMargin)
     val main = compile.expectTemputs().lookupFunction("main")
@@ -102,13 +100,13 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn main(a int) int {a}
+        |func main(a int) int { ret a; }
         |""".stripMargin)
     val temputs = compile.expectTemputs()
     Collector.onlyOf(temputs.lookupFunction("main"), classOf[ParameterT]).tyype == CoordT(ShareT, ReadonlyT, IntT.i32)
     val lookup = Collector.onlyOf(temputs.lookupFunction("main"), classOf[LocalLookupTE]);
     lookup.localVariable.id.last shouldEqual CodeVarNameT("a")
-    lookup.reference shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
+    lookup.localVariable.reference shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
   }
 
   test("Tests adding two numbers") {
@@ -117,7 +115,7 @@ class TemplarTests extends FunSuite with Matchers {
         """
           |import v.builtins.tup.*;
           |import v.builtins.arith.*;
-          |fn main() int export { +(2, 3) }
+          |exported func main() int { ret +(2, 3); }
           |""".stripMargin)
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
@@ -136,9 +134,9 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |struct Moo export { hp int; }
-        |fn main(moo &Moo) int export {
-        |  moo.hp
+        |exported struct Moo { hp int; }
+        |exported func main(moo *Moo) int {
+        |  ret moo.hp;
         |}
         |""".stripMargin)
     val temputs = compile.expectTemputs()
@@ -149,9 +147,9 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |struct Moo export { hp int; }
-        |fn main() Moo export {
-        |  Moo(42)
+        |exported struct Moo { hp int; }
+        |exported func main() Moo {
+        |  ret Moo(42);
         |}
         |""".stripMargin)
     val temputs = compile.expectTemputs()
@@ -162,9 +160,9 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |struct Moo export { hp int; }
-        |fn main() int export {
-        |  Moo(42).hp
+        |exported struct Moo { hp int; }
+        |exported func main() int {
+        |  ret Moo(42).hp;
         |}
         |""".stripMargin)
     val temputs = compile.expectTemputs()
@@ -178,12 +176,13 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |struct Moo #!DeriveStructDrop export { hp int; }
-        |fn drop(self ^Moo) {
-        |  (_) = self;
+        |#!DeriveStructDrop
+        |exported struct Moo { hp int; }
+        |func drop(self ^Moo) {
+        |  [_] = self;
         |}
-        |fn main() int export {
-        |  Moo(42).hp
+        |exported func main() int {
+        |  ret Moo(42).hp;
         |}
         |""".stripMargin)
     val temputs = compile.expectTemputs()
@@ -198,9 +197,9 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Moo {}
-        |fn main() void export {
+        |exported func main() void {
         |  m = Moo();
-        |  b = &m;
+        |  b = *m;
         |}
         |""".stripMargin)
     val temputs = compile.expectTemputs()
@@ -209,15 +208,17 @@ class TemplarTests extends FunSuite with Matchers {
       Collector.only(main.body, {
         case LetNormalTE(ReferenceLocalVariableT(FullNameT(_, _, CodeVarNameT("b")), _, tyype), _) => tyype
       })
-    tyype.ownership shouldEqual ConstraintT
+    tyype.ownership shouldEqual PointerT
     tyype.permission shouldEqual ReadonlyT
   }
+
+
 
   test("Recursion") {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn main() int export{main()}
+        |exported func main() int { ret main(); }
         |""".stripMargin)
     val temputs = compile.expectTemputs()
 
@@ -229,7 +230,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn main() int export {{7}()}
+        |exported func main() int { ret { 7 }(); }
         |""".stripMargin)
     val temputs = compile.expectTemputs()
 
@@ -243,7 +244,7 @@ class TemplarTests extends FunSuite with Matchers {
       TemplarTestCompilation.test(
         """
           |import v.builtins.tup.*;
-          |fn main() int export {{_}(3)}
+          |exported func main() int { ret {_}(3); }
           |""".stripMargin)
     val temputs = compile.expectTemputs()
 
@@ -262,8 +263,8 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |import v.builtins.arith.*;
-        |fn main() int export {
-        |  (a int){+(a,a)}(3)
+        |exported func main() int {
+        |  ret (a int) => {+(a,a)}(3);
         |}
         |""".stripMargin);
     val temputs = compile.expectTemputs()
@@ -303,10 +304,10 @@ class TemplarTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |struct Engine { fuel int; }
         |struct Spaceship { engine Engine; }
-        |fn getFuel(a &Engine) int { a.fuel }
-        |fn main() int export {
+        |func getFuel(a *Engine) int { a.fuel }
+        |exported func main() int {
         |  ship = Spaceship(Engine(42));
-        |  = getFuel(ship.engine);
+        |  ret getFuel(ship.engine);
         |}
         |""".stripMargin)
     compile.getTemputs() match {
@@ -323,7 +324,7 @@ class TemplarTests extends FunSuite with Matchers {
         |  name! str;
         |  numWings int;
         |}
-        |fn main() export {
+        |exported func main() {
         |  ship = Spaceship("Serenity", 2);
         |  println(ship.name);
         |}
@@ -337,8 +338,8 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn ~<T>(a T, b T)T{a}
-        |fn main() int export {true ~ false; 2 ~ 2; = 3 ~ 3;}
+        |func ~<T>(a T, b T)T{ ret a; }
+        |exported func main() int {true ~ false; 2 ~ 2; ret 3 ~ 3;}
       """.stripMargin)
     val temputs = compile.expectTemputs()
 
@@ -350,8 +351,8 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn do<F>(callable F) infer-ret {callable()}
-        |fn main() int export {do({ 3 })}
+        |func do<F>(callable F) infer-ret { ret callable(); }
+        |exported func main() int { ret do({ ret 3; }); }
       """.stripMargin)
     val temputs = compile.expectTemputs()
 
@@ -364,11 +365,11 @@ class TemplarTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |struct Muta { }
         |
-        |fn destructor(m ^Muta) {
-        |  Muta() = m;
+        |func destructor(m ^Muta) {
+        |  Muta[] = m;
         |}
         |
-        |fn main() export {
+        |exported func main() {
         |  a = Muta();
         |}
       """.stripMargin)
@@ -382,16 +383,16 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |interface MyInterface<X> rules(X Ref) { }
+        |interface MyInterface<X> where X Ref { }
         |
-        |struct SomeStruct<X> rules(X Ref) { x X; }
+        |struct SomeStruct<X> where X Ref { x X; }
         |impl<X> MyInterface<X> for SomeStruct<X>;
         |
-        |fn doAThing<T>(t T) SomeStruct<T> {
-        |  SomeStruct<T>(t)
+        |func doAThing<T>(t T) SomeStruct<T> {
+        |  ret SomeStruct<T>(t);
         |}
         |
-        |fn main() export {
+        |exported func main() {
         |  doAThing(4);
         |}
         |""".stripMargin
@@ -403,7 +404,7 @@ class TemplarTests extends FunSuite with Matchers {
 //    val compile = RunCompilation.test(
 //      """
 //        |struct MyStruct imm {}
-//        |fn wot(b: *MyStruct) int { 9 }
+//        |func wot(b: *MyStruct) int { ret 9; }
 //      """.stripMargin)
 //    val temputs = compile.expectTemputs()
 //
@@ -415,7 +416,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct MyStruct { a int; }
-        |fn main() int export { ms = MyStruct(7); = ms.a; }
+        |exported func main() int { ms = MyStruct(7); ret ms.a; }
       """.stripMargin)
     val temputs = compile.expectTemputs()
 
@@ -454,7 +455,7 @@ class TemplarTests extends FunSuite with Matchers {
         |interface MyInterface { }
         |struct MyStruct { }
         |impl MyInterface for MyStruct;
-        |fn main(a MyStruct) {}
+        |func main(a MyStruct) {}
       """.stripMargin)
     val temputs = compile.expectTemputs()
 
@@ -477,8 +478,8 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |interface MyOption<T> rules(T Ref) { }
-        |fn main(a MyOption<int>) { }
+        |interface MyOption<T> where T Ref { }
+        |func main(a MyOption<int>) { }
       """.stripMargin)
     val temputs = compile.expectTemputs()
 
@@ -491,11 +492,24 @@ class TemplarTests extends FunSuite with Matchers {
     // Can't run it because there's nothing implementing that interface >_>
   }
 
+  test("Reports mismatched return type when expecting void") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |exported func main() { 73 }
+        |""".stripMargin)
+    compile.getTemputs().expectErr() match {
+      case BodyResultDoesntMatch(_,
+        FunctionNameS("main",_),
+        CoordT(ShareT,ReadonlyT,VoidT()),
+        CoordT(ShareT,ReadonlyT,IntT(_))) =>
+    }
+  }
+
   test("Tests exporting function") {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn moo() export { }
+        |exported func moo() { }
         |""".stripMargin)
     val temputs = compile.expectTemputs()
     val moo = temputs.lookupFunction("moo")
@@ -507,7 +521,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |struct Moo export { a int; }
+        |exported struct Moo { a int; }
         |""".stripMargin)
     val temputs = compile.expectTemputs()
     val moo = temputs.lookupStruct("Moo")
@@ -519,7 +533,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |interface IMoo export { fn hi(virtual this &IMoo) void; }
+        |exported interface IMoo { func hi(virtual this *IMoo) void; }
         |""".stripMargin)
     val temputs = compile.expectTemputs()
     val moo = temputs.lookupInterface("IMoo")
@@ -533,11 +547,11 @@ class TemplarTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |import v.builtins.panic.*;
         |import panicutils.*;
-        |interface MyOption<T> rules(T Ref) imm { }
-        |struct MySome<T> rules(T Ref) imm { value T; }
+        |interface MyOption<T> imm where T Ref { }
+        |struct MySome<T> imm where T Ref { value T; }
         |impl<T> MyOption<T> for MySome<T>;
-        |fn moo(a MySome<int>) { }
-        |fn main() export { moo(__pretend<MySome<int>>()); }
+        |func moo(a MySome<int>) { }
+        |exported func main() { moo(__pretend<MySome<int>>()); }
         |""".stripMargin)
     val temputs = compile.expectTemputs()
 
@@ -556,8 +570,8 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct MyThing { value int; }
-        |fn moo() MyThing { MyThing(4) }
-        |fn main() export { moo(); }
+        |func moo() MyThing { ret MyThing(4) }
+        |exported func main() { moo(); }
       """.stripMargin)
 
     val temputs = compile.expectTemputs()
@@ -575,9 +589,9 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |struct MySome<T> rules(T Ref) { value T; }
-        |fn main() int export {
-        |  MySome<int>(4).value
+        |struct MySome<T> where T Ref { value T; }
+        |exported func main() int {
+        |  ret MySome<int>(4).value;
         |}
         |""".stripMargin
     )
@@ -648,9 +662,9 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |
-        |fn moo<T> () rules(T Ref) { }
+        |func moo<T> () where T Ref { }
         |
-        |fn main() export {
+        |exported func main() {
         |	moo<int>();
         |}
       """.stripMargin)
@@ -669,9 +683,9 @@ class TemplarTests extends FunSuite with Matchers {
         |  z int;
         |}
         |
-        |fn main() int export {
-        |	 Vec3i(x, y, z) = Vec3i(3, 4, 5);
-        |  = y;
+        |exported func main() int {
+        |	 Vec3i[x, y, z] = Vec3i(3, 4, 5);
+        |  ret y;
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()
@@ -703,10 +717,10 @@ class TemplarTests extends FunSuite with Matchers {
         |  z int;
         |}
         |
-        |fn main() int export {
+        |exported func main() int {
         |  v = Vec3i(3, 4, 5);
-        |	 (x, y, z) = &v;
-        |  = y;
+        |	 [x, y, z] = *v;
+        |  ret y;
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()
@@ -719,7 +733,7 @@ class TemplarTests extends FunSuite with Matchers {
 
     Collector.only(main, {
       case ReferenceMemberLookupTE(_,
-        SoftLoadTE(LocalLookupTE(_, _, CoordT(_,_,StructTT(_)), FinalT), ConstraintT, ReadonlyT),
+        SoftLoadTE(LocalLookupTE(_, ReferenceLocalVariableT(_, FinalT, CoordT(_,_,StructTT(_)))), PointerT, ReadonlyT),
         FullNameT(_, Vector(CitizenNameT(CitizenTemplateNameT("Vec3i"),Vector())),CodeVarNameT("x")),CoordT(ShareT,ReadonlyT,IntT.i32),ReadonlyT,FinalT) =>
     })
   }
@@ -730,18 +744,18 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |
-        |interface MyOption<T> rules(T Ref) { }
+        |interface MyOption<T> where T Ref { }
         |
-        |struct MySome<T> rules(T Ref) {}
+        |struct MySome<T> where T Ref {}
         |impl<T> MyOption<T> for MySome<T>;
         |
-        |fn doSomething(opt MyOption<int>) int {
-        |  = 9;
+        |func doSomething(opt MyOption<int>) int {
+        |  ret 9;
         |}
         |
-        |fn main() int export {
+        |exported func main() int {
         |	x MyOption<int> = MySome<int>();
-        |	= doSomething(x);
+        |	ret doSomething(x);
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()
@@ -753,6 +767,11 @@ class TemplarTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
   }
 
+  test("Test borrow ref") {
+    val compile = TemplarTestCompilation.test(Tests.loadExpected("programs/borrowRef.vale"))
+    val temputs = compile.expectTemputs()
+  }
+
   test("Tests calling a function with an upcast") {
     val compile = TemplarTestCompilation.test(
         """
@@ -760,9 +779,9 @@ class TemplarTests extends FunSuite with Matchers {
           |interface ISpaceship {}
           |struct Firefly {}
           |impl ISpaceship for Firefly;
-          |fn launch(ship &ISpaceship) { }
-          |fn main() {
-          |  launch(&Firefly());
+          |func launch(ship *ISpaceship) { }
+          |func main() {
+          |  launch(*Firefly());
           |}
           |""".stripMargin)
     val temputs = compile.expectTemputs()
@@ -776,12 +795,12 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |interface ISpaceship<T> rules(T Ref) {}
-        |struct Firefly<T> rules(T Ref) {}
+        |interface ISpaceship<T> where T Ref {}
+        |struct Firefly<T> where T Ref {}
         |impl<T> ISpaceship<T> for Firefly<T>;
-        |fn launch<T>(ship &ISpaceship<T>) { }
-        |fn main() {
-        |  launch(&Firefly<int>());
+        |func launch<T>(ship *ISpaceship<T>) { }
+        |func main() {
+        |  launch(*Firefly<int>());
         |}
         |""".stripMargin)
     val temputs = compile.expectTemputs()
@@ -824,10 +843,68 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |struct ListNode<T> rules(T Ref) imm {
+        |struct ListNode<T> imm where T Ref {
         |  tail ListNode<T>;
         |}
-        |fn main(a ListNode<int>) {}
+        |func main(a ListNode<int>) {}
+      """.stripMargin)
+    val temputs = compile.expectTemputs()
+  }
+
+  test("Borrow-load member") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |import v.builtins.tup.*;
+        |struct Bork {
+        |  x int;
+        |}
+        |func getX(bork &Bork) int { ret bork.x; }
+        |struct List {
+        |  array! Bork;
+        |}
+        |exported func main() int {
+        |  l = List(Bork(0));
+        |  ret getX(&l.array);
+        |}
+        """.stripMargin)
+
+    val temputs = compile.expectTemputs()
+    vpass()
+  }
+
+  test("Pointer-load member") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |import v.builtins.tup.*;
+        |struct Bork {
+        |  x int;
+        |}
+        |func getX(bork *Bork) int { ret bork.x; }
+        |struct List {
+        |  array! Bork;
+        |}
+        |exported func main() int {
+        |  l = List(Bork(0));
+        |  ret getX(*l.array);
+        |}
+        """.stripMargin)
+
+    val temputs = compile.expectTemputs()
+    vpass()
+  }
+
+  test("fdsfsdf") {
+    // This test is because we had a bug where &! still produced a *!.
+    val compile = TemplarTestCompilation.test(
+      """
+        |import v.builtins.tup.*;
+        |struct Bork { }
+        |func myFunc<F>(consumer &!F) void { }
+        |func main() {
+        |  bork = Bork();
+        |  myFunc(&!{ bork });
+        |}
+        |
       """.stripMargin)
     val temputs = compile.expectTemputs()
   }
@@ -841,7 +918,7 @@ class TemplarTests extends FunSuite with Matchers {
         |  y float;
         |}
         |struct Pattern imm {
-        |  patternTiles Array<imm, Vec2>;
+        |  patternTiles []<imm>Vec2;
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()
@@ -856,7 +933,7 @@ class TemplarTests extends FunSuite with Matchers {
         |import v.builtins.arrays.*;
         |import ifunction.ifunction1.*;
         |
-        |fn main() void export {
+        |exported func main() void {
         |  arr = Array<mut, int>(9);
         |  arr!.push(420);
         |  arr!.push(421);
@@ -878,9 +955,9 @@ class TemplarTests extends FunSuite with Matchers {
         |import v.builtins.arrays.*;
         |import ifunction.ifunction1.*;
         |
-        |fn main() int export {
+        |exported func main() int {
         |  a = MakeArray(11, {_});
-        |  = len(&a);
+        |  ret len(&a);
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()
@@ -890,7 +967,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn main() int export {
+        |exported func main() int {
         |  ret 7;
         |}
       """.stripMargin)
@@ -904,13 +981,13 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |import v.builtins.panic.*;
-        |fn main() int export {
+        |exported func main() int {
         |  if (true) {
         |    ret 7;
         |  } else {
         |    ret 9;
         |  }
-        |  = __vbi_panic();
+        |  __vbi_panic();
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()
@@ -925,15 +1002,15 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Marine { hp int; }
-        |fn main() int export {
+        |exported func main() int {
         |  m = Marine(5);
         |  x =
         |    if (true) {
         |      ret 7;
         |    } else {
-        |      = m.hp;
+        |      m.hp
         |    };
-        |  = x;
+        |  ret x;
         |}
         |""".stripMargin)// +
 //        Tests.loadExpected("castutils/castutils.vale") +
@@ -957,11 +1034,11 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |interface AFunction1<P> rules(P Ref) {
-        |  fn __call(virtual this &AFunction1<P>, a P) int;
+        |interface AFunction1<P> where P Ref {
+        |  func __call(virtual this *AFunction1<P>, a P) int;
         |}
-        |fn main() export {
-        |  arr = AFunction1<int>((_){ true });
+        |exported func main() {
+        |  arr = AFunction1<int>((_) => { true });
         |}
         |""".stripMargin)
 
@@ -970,6 +1047,17 @@ class TemplarTests extends FunSuite with Matchers {
       case Err(other) => vwat(TemplarErrorHumanizer.humanize(true, compile.getCodeMap().getOrDie(), other))
       case Ok(wat) => vwat(wat)
     }
+  }
+  test("Zero method anonymous interface") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |import v.builtins.tup.*;
+        |interface MyInterface {}
+        |exported func main() {
+        |  x = MyInterface();
+        |}
+        |""".stripMargin)
+    compile.expectTemputs()
   }
 
   test("Lock weak member") {
@@ -987,9 +1075,9 @@ class TemplarTests extends FunSuite with Matchers {
         |}
         |struct Spaceship {
         |  name str;
-        |  origin &&Base;
+        |  origin **Base;
         |}
-        |fn printShipBase(ship &Spaceship) {
+        |func printShipBase(ship *Spaceship) {
         |  maybeOrigin = lock(ship.origin); «14»«15»
         |  if (not maybeOrigin.isEmpty()) { «16»
         |    o = maybeOrigin.get();
@@ -998,12 +1086,12 @@ class TemplarTests extends FunSuite with Matchers {
         |    println("Ship base unknown!");
         |  }
         |}
-        |fn main() export {
+        |exported func main() {
         |  base = Base("Zion");
-        |  ship = Spaceship("Neb", &&base);
-        |  printShipBase(&ship);
+        |  ship = Spaceship("Neb", **base);
+        |  printShipBase(*ship);
         |  (base).drop(); // Destroys base.
-        |  printShipBase(&ship);
+        |  printShipBase(*ship);
         |}
         |""".stripMargin)
 
@@ -1020,10 +1108,10 @@ class TemplarTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |import printutils.*;
         |
-        |fn helperFunc<T>(x T) {
+        |func helperFunc<T>(x T) {
         |  { print(x); }();
         |}
-        |fn main() export {
+        |exported func main() {
         |  helperFunc(4);
         |  helperFunc("bork");
         |}
@@ -1042,13 +1130,13 @@ class TemplarTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |import printutils.*;
         |
-        |fn helperFunc(x int) {
+        |func helperFunc(x int) {
         |  { print(x); }();
         |}
-        |fn helperFunc(x str) {
+        |func helperFunc(x str) {
         |  { print(x); }();
         |}
-        |fn main() export {
+        |exported func main() {
         |  helperFunc(4);
         |  helperFunc("bork");
         |}
@@ -1061,7 +1149,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Firefly { }
-        |fn moo(firefly &Firefly) export { }
+        |exported func moo(firefly *Firefly) { }
         |""".stripMargin)
     compile.getTemputs() match {
       case Err(ExportedFunctionDependedOnNonExportedKind(_, _, _, _)) =>
@@ -1075,7 +1163,7 @@ class TemplarTests extends FunSuite with Matchers {
         |import v.builtins.panic.*;
         |import panicutils.*;
         |struct Firefly { }
-        |fn moo() &Firefly export { __pretend<&Firefly>() }
+        |exported func moo() *Firefly { __pretend<*Firefly>() }
         |""".stripMargin)
     compile.getTemputs() match {
       case Err(ExportedFunctionDependedOnNonExportedKind(_, _, _, _)) =>
@@ -1087,7 +1175,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Firefly { }
-        |fn moo(firefly &Firefly) extern;
+        |extern func moo(firefly *Firefly);
         |""".stripMargin)
     compile.getTemputs() match {
       case Err(ExternFunctionDependedOnNonExportedKind(_, _, _, _)) =>
@@ -1099,7 +1187,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Firefly imm { }
-        |fn moo() &Firefly extern;
+        |extern func moo() *Firefly;
         |""".stripMargin)
     compile.getTemputs() match {
       case Err(ExternFunctionDependedOnNonExportedKind(_, _, _, _)) =>
@@ -1110,7 +1198,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |struct Firefly export imm {
+        |exported struct Firefly imm {
         |  raza Raza;
         |}
         |struct Raza imm { }
@@ -1126,7 +1214,7 @@ class TemplarTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |import v.builtins.arrays.*;
         |import v.builtins.functor1.*;
-        |export Array<imm, Raza> as RazaArray;
+        |export []<imm>Raza as RazaArray;
         |struct Raza imm { }
         |""".stripMargin)
     compile.getTemputs() match {
@@ -1139,15 +1227,18 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Muta { }
-        |fn doSomething(m &Muta, i int) {}
-        |fn main() export {
-        |  doSomething(&Muta(), 1)
+        |func doSomething(m *Muta, i int) {}
+        |exported func main() {
+        |  doSomething(*Muta(), 1)
         |}
       """.stripMargin)
 
     // Should be a temporary for this object
-    Collector.allOf(compile.expectTemputs().lookupFunction("main"),
-      classOf[LetAndLendTE]).size shouldEqual 1
+    Collector.onlyOf(
+      compile.expectTemputs().lookupFunction("main"),
+      classOf[LetAndLendTE]) match {
+        case LetAndLendTE(_, _, PointerT) =>
+      }
   }
 
   test("Reports when exported SSA depends on non-exported element") {
@@ -1156,7 +1247,7 @@ class TemplarTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |import v.builtins.arrays.*;
         |import v.builtins.functor1.*;
-        |export [<imm> 5 * Raza] as RazaArray;
+        |export [#5]<imm>Raza as RazaArray;
         |struct Raza imm { }
         |""".stripMargin)
     compile.getTemputs() match {
@@ -1168,7 +1259,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn main() int export {
+        |exported func main() int {
         |  moo
         |}
         |""".stripMargin)
@@ -1182,7 +1273,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Spaceship { }
-        |fn main(ship &!Spaceship) int pure {
+        |pure func main(ship *!Spaceship) int {
         |  7
         |}
         |""".stripMargin)
@@ -1202,12 +1293,12 @@ class TemplarTests extends FunSuite with Matchers {
         |  weapon! Weapon;
         |}
         |
-        |fn main() int export {
+        |exported func main() int {
         |  m = Marine(Weapon(7));
         |  newWeapon = Weapon(10);
         |  set m.weapon = newWeapon;
         |  set newWeapon.ammo = 11;
-        |  = 42;
+        |  ret 42;
         |}
         |""".stripMargin)
     compile.getTemputs() match {
@@ -1220,7 +1311,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |struct Moo export { }
+        |exported struct Moo { }
         |export Moo as Bork;
         |""".stripMargin)
     compile.getTemputs() match {
@@ -1239,12 +1330,12 @@ class TemplarTests extends FunSuite with Matchers {
         |  weapon! Weapon;
         |}
         |
-        |fn main() int export {
+        |exported func main() int {
         |  m = Marine(Weapon(7));
         |  newWeapon = Weapon(10);
         |  set m.weapon = newWeapon;
         |  println(newWeapon.ammo);
-        |  = 42;
+        |  ret 42;
         |}
         |""".stripMargin)
     compile.getTemputs() match {
@@ -1260,12 +1351,12 @@ class TemplarTests extends FunSuite with Matchers {
         |  ammo int;
         |}
         |
-        |fn main() int export {
+        |exported func main() int {
         |  m = Marine(7);
         |  while (false) {
         |    drop(m);
         |  }
-        |  = 42;
+        |  ret 42;
         |}
         |""".stripMargin)
     compile.getTemputs() match {
@@ -1281,9 +1372,9 @@ class TemplarTests extends FunSuite with Matchers {
         |  ammo! int;
         |}
         |
-        |fn main() int export {
+        |exported func main() int {
         |  weapon = Weapon(10);
-        |  = weapon[42];
+        |  ret weapon[42];
         |}
         |""".stripMargin)
     compile.getTemputs() match {
@@ -1295,8 +1386,8 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn moo() int export { 1337 }
-        |fn moo() int export { 1448 }
+        |exported func moo() int { ret 1337; }
+        |exported func moo() int { ret 1448; }
         |""".stripMargin)
     compile.getTemputs() match {
       case Err(FunctionAlreadyExists(_, _, SignatureT(FullNameT(_, Vector(), FunctionNameT("moo", Vector(), Vector()))))) =>
@@ -1307,8 +1398,8 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn moo(a int, b bool, s str) int { a }
-        |fn main() int export {
+        |func moo(a int, b bool, s str) int { a }
+        |exported func main() int {
         |  moo(42, true, "hello", false)
         |}
         |""".stripMargin)
@@ -1424,7 +1515,7 @@ class TemplarTests extends FunSuite with Matchers {
         RangeS.testZero, fireflyCoord))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
-      CantImplStruct(
+      CantImplNonInterface(
         RangeS.testZero, fireflyKind))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
@@ -1488,7 +1579,7 @@ class TemplarTests extends FunSuite with Matchers {
         |interface ISpaceship { }
         |struct Spoon { }
         |
-        |fn main() export {
+        |exported func main() {
         |  ship = __pretend<ISpaceship>();
         |  ship.as<Spoon>();
         |}
@@ -1509,7 +1600,7 @@ class TemplarTests extends FunSuite with Matchers {
         |interface ISub { }
         |impl ISuper for ISub;
         |
-        |fn main() export {
+        |exported func main() {
         |  ship = __pretend<ISuper>();
         |  ship.as<ISub>();
         |}
@@ -1523,9 +1614,9 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn main() int export {
-        |  arr = [][true, 42];
-        |  = arr.1;
+        |exported func main() int {
+        |  arr = [#][true, 42];
+        |  ret arr.1;
         |}
         |""".stripMargin)
     compile.getTemputs() match {
@@ -1543,9 +1634,9 @@ class TemplarTests extends FunSuite with Matchers {
         |  name! str;
         |  numWings int;
         |}
-        |fn main() bool export {
-        |  arr = [4][true, false, false];
-        |  = arr.0;
+        |exported func main() bool {
+        |  arr = [#4][true, false, false];
+        |  ret arr.0;
         |}
         |""".stripMargin)
     compile.getTemputs() match {
@@ -1559,13 +1650,37 @@ class TemplarTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |import v.builtins.panic.*;
         |interface IBlah { }
-        |fn bork(virtual moo &IBlah) abstract;
-        |fn main() export {
+        |abstract func bork(virtual moo *IBlah);
+        |exported func main() {
         |  bork(__vbi_panic());
         |}
         |""".stripMargin)
     compile.getTemputs() match {
       case Err(AbstractMethodOutsideOpenInterface(_)) =>
+    }
+  }
+
+  test("Reports when ownership doesnt match") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |import v.builtins.tup.*;
+        |
+        |struct Firefly {}
+        |func getFuel(self *Firefly) int { ret 7; }
+        |
+        |exported func main() int {
+        |  f = Firefly();
+        |  ret (&f).getFuel();
+        |}
+        |""".stripMargin
+    )
+    compile.getTemputs() match {
+      case Err(CouldntFindFunctionToCallT(range, fff)) => {
+        fff.name match { case CodeNameS("getFuel") => }
+        fff.rejectedCalleeToReason.size shouldEqual 1
+        val reason = fff.rejectedCalleeToReason.head._2
+        reason match { case SpecificParamDoesntSend(0, _, _) => }
+      }
     }
   }
 }

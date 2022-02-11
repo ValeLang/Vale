@@ -10,6 +10,7 @@ object Builtins {
       "arith" -> "arith.vale",
       "functor1" -> "functor1.vale",
       "logic" -> "logic.vale",
+      "migrate" -> "migrate.vale",
       "str" -> "str.vale",
       "drop" -> "drop.vale",
       "arrays" -> "arrays.vale",
@@ -34,8 +35,8 @@ object Builtins {
   // Modulized is a made up word, it means we're pretending the builtins are in different modules.
   // This lets tests import only certain kinds of builtins.
   // The more basic foundational tests will choose not to import any builtins, so they can test the
-  // bare minimum. For example, the most basic test is `fn main() int { 42 }`, and we don't want it
-  // to fail just because the builtin-yet-unused `fn as<T, X>(x X) Opt<T> { ... }` doesn't want to
+  // bare minimum. For example, the most basic test is `func main() int { ret 42; }`, and we don't want it
+  // to fail just because the builtin-yet-unused `func as<T, X>(x X) Opt<T> { ... }` doesn't want to
   // work right now.
   def getModulizedCodeMap(): FileCoordinateMap[String] = {
     moduleToFilename.foldLeft(FileCoordinateMap[String](Map()))({

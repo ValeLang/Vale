@@ -49,15 +49,16 @@ class StructConstructorMacro(
       val rules = mutable.ArrayBuffer[IRulexSR]()
       rules ++= structA.rules
 
-      val retRune = RuneUsage(structA.range, ReturnRuneS())
+      val retRune = RuneUsage(structA.name.range, ReturnRuneS())
       runeToType += (retRune.rune -> CoordTemplataType)
+      val structNameRange = structA.name.range
       if (structA.isTemplate) {
         val structNameRune = StructNameRuneS(structA.name)
         runeToType += (structNameRune -> structA.tyype)
-        rules += LookupSR(structA.range, RuneUsage(structA.range, structNameRune), structA.name.getImpreciseName)
-        rules += CallSR(structA.range, retRune, RuneUsage(structA.range, structNameRune), structA.identifyingRunes.toArray)
+        rules += LookupSR(structNameRange, RuneUsage(structNameRange, structNameRune), structA.name.getImpreciseName)
+        rules += CallSR(structNameRange, retRune, RuneUsage(structNameRange, structNameRune), structA.identifyingRunes.toArray)
       } else {
-        rules += LookupSR(structA.range, retRune, structA.name.getImpreciseName)
+        rules += LookupSR(structNameRange, retRune, structA.name.getImpreciseName)
       }
 
       val params =

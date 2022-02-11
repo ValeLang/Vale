@@ -15,32 +15,24 @@ import scala.collection.immutable.List
 sealed trait OwnershipT  {
   def order: Int;
 }
-case object ShareT   extends OwnershipT {
-  override def order: Int = 1;
-
-
-
+case object ShareT extends OwnershipT {
+  override def order: Int = 1
   override def toString: String = "share"
 }
 case object OwnT extends OwnershipT {
-  override def order: Int = 2;
-
-
-
+  override def order: Int = 2
   override def toString: String = "own"
 }
-case object ConstraintT extends OwnershipT {
-  override def order: Int = 3;
-
-
-
-  override def toString: String = "constraint"
+case object BorrowT extends OwnershipT {
+  override def order: Int = 3
+  override def toString: String = "borrow"
+}
+case object PointerT extends OwnershipT {
+  override def order: Int = 3
+  override def toString: String = "ptr"
 }
 case object WeakT extends OwnershipT {
-  override def order: Int = 4;
-
-
-
+  override def order: Int = 4
   override def toString: String = "weak"
 }
 
@@ -48,17 +40,11 @@ sealed trait MutabilityT  {
   def order: Int;
 }
 case object MutableT extends MutabilityT {
-  override def order: Int = 1;
-
-
-
+  override def order: Int = 1
   override def toString: String = "mut"
 }
 case object ImmutableT extends MutabilityT {
-  override def order: Int = 2;
-
-
-
+  override def order: Int = 2
   override def toString: String = "imm"
 }
 
@@ -66,17 +52,11 @@ sealed trait VariabilityT  {
   def order: Int;
 }
 case object FinalT extends VariabilityT {
-  override def order: Int = 1;
-
-
-
+  override def order: Int = 1
   override def toString: String = "final"
 }
 case object VaryingT extends VariabilityT {
-  override def order: Int = 2;
-
-
-
+  override def order: Int = 2
   override def toString: String = "vary"
 }
 
@@ -84,17 +64,11 @@ sealed trait PermissionT  {
   def order: Int;
 }
 case object ReadonlyT extends PermissionT {
-  override def order: Int = 1;
-
-
-
+  override def order: Int = 1
   override def toString: String = "ro"
 }
 case object ReadwriteT extends PermissionT {
-  override def order: Int = 2;
-
-
-
+  override def order: Int = 2
   override def toString: String = "rw"
 }
 
@@ -102,23 +76,19 @@ sealed trait LocationT  {
   def order: Int;
 }
 case object InlineT extends LocationT {
-  override def order: Int = 1;
-
-
-
+  override def order: Int = 1
   override def toString: String = "inl"
 }
 case object YonderT extends LocationT {
-  override def order: Int = 1;
-
-
-
+  override def order: Int = 1
   override def toString: String = "heap"
 }
 
 
 case class CoordT(ownership: OwnershipT, permission: PermissionT, kind: KindT)  {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+
+  vpass()
 
   kind match {
     case IntT(_) | BoolT() | StrT() | FloatT() | VoidT() | NeverT() => {
@@ -304,8 +274,7 @@ case class StructTT(fullName: FullNameT[ICitizenNameT]) extends CitizenRefT {
 case class OverloadSet(
   env: IEnvironment,
   // The name to look for in the environment.
-  name: IImpreciseNameS,
-  voidStructRef: StructTT
+  name: IImpreciseNameS
 ) extends KindT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 

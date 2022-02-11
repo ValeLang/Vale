@@ -18,5 +18,5 @@ Ref translateConstruct(
     const std::vector<Ref>& memberRefs) {
   return globalState->getRegion(desiredReference)
       ->allocate(
-          makeEmptyTupleRef(globalState), from, functionState, builder, desiredReference, memberRefs);
+          makeVoidRef(globalState), from, functionState, builder, desiredReference, memberRefs);
 }

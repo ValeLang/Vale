@@ -1,6 +1,8 @@
 package net.verdagon.vale.parser
 
 import net.liftweb.json._
+import net.verdagon.vale.parser.ast.{ConstantStrPE, FileP}
+import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, vassert}
 import net.verdagon.von.{JsonSyntax, VonPrinter}
 import org.scalatest.{FunSuite, Matchers}
@@ -9,43 +11,43 @@ import java.nio.charset.Charset
 
 
 class LoadTests extends FunSuite with Matchers with Collector {
-  private def compileProgramWithComments(code: String): FileP = {
-    Parser.runParserForProgramAndCommentRanges(code) match {
-      case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(result) => result._1
-    }
-  }
-  private def compileProgram(code: String): FileP = {
-    // The strip is in here because things inside the parser don't expect whitespace before and after
-    Parser.runParser(code) match {
-      case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(result) => result
-    }
-  }
-
-  private def compile[T](parser: CombinatorParsers.Parser[T], code: String): T = {
-    // The strip is in here because things inside the parser don't expect whitespace before and after
-    CombinatorParsers.parse(parser, code.strip().toCharArray()) match {
-      case CombinatorParsers.NoSuccess(msg, input) => {
-        fail("Couldn't parse!\n" + input.pos.longString);
-      }
-      case CombinatorParsers.Success(expr, rest) => {
-        vassert(rest.atEnd)
-        expr
-      }
-    }
-  }
+//  private def compileProgramWithComments(code: String): FileP = {
+//    Parser.runParserForProgramAndCommentRanges(code) match {
+//      case ParseFailure(err) => fail(err.toString)
+//      case ParseSuccess(result) => result._1
+//    }
+//  }
+//  private def compileProgram(code: String): FileP = {
+//    // The strip is in here because things inside the parser don't expect whitespace before and after
+//    Parser.runParser(code) match {
+//      case ParseFailure(err) => fail(err.toString)
+//      case ParseSuccess(result) => result
+//    }
+//  }
+//
+//  private def compile[T](parser: CombinatorParsers.Parser[T], code: String): T = {
+//    // The strip is in here because things inside the parser don't expect whitespace before and after
+//    CombinatorParsers.parse(parser, code.strip().toCharArray()) match {
+//      case CombinatorParsers.NoSuccess(msg, input) => {
+//        fail("Couldn't parse!\n" + input.pos.longString);
+//      }
+//      case CombinatorParsers.Success(expr, rest) => {
+//        vassert(rest.atEnd)
+//        expr
+//      }
+//    }
+//  }
 
   test("Simple program") {
-    val originalFile = Parser.runParser("""fn main() int export { 42 }""").get()
+    val originalFile = Parser.runParser("""exported func main() int { ret 42; }""").getOrDie()
     val von = ParserVonifier.vonifyFile(originalFile)
     val json = new VonPrinter(JsonSyntax, 120).print(von)
-    val loadedFile = ParsedLoader.load(json).get()
+    val loadedFile = ParsedLoader.load(json).getOrDie()
     originalFile shouldEqual loadedFile
   }
 
   test("Strings with special characters") {
-    val code = "fn main() str export { \"hello\\u001bworld\" }"
+    val code = "exported func main() str { \"hello\\u001bworld\" }"
     // FALL NOT TO TEMPTATION
     // Scala has some issues here.
     // The above "\"\\u001b\"" seems like it could be expressed """"\\u001b"""" but it can't.
@@ -62,7 +64,7 @@ class LoadTests extends FunSuite with Matchers with Collector {
     // Real source files from disk are going to have a backslash character and then a u,
     // they won't have the 0x1b byte.
     vassert(code.contains("\\u001b"))
-    val originalFile = Parser.runParser(code).get()
+    val originalFile = Parser.runParser(code).getOrDie()
     originalFile shouldHave { case ConstantStrPE(_, "hello\u001bworld" ) => }
 
     val von = ParserVonifier.vonifyFile(originalFile)
@@ -72,7 +74,7 @@ class LoadTests extends FunSuite with Matchers with Collector {
     val generatedBytes = generatedJsonStr.getBytes(Charset.forName("UTF-8"))
 
     val loadedJsonStr = new String(generatedBytes, "UTF-8");
-    val loadedFile = ParsedLoader.load(loadedJsonStr).get()
+    val loadedFile = ParsedLoader.load(loadedJsonStr).getOrDie()
     originalFile shouldEqual loadedFile
   }
 }

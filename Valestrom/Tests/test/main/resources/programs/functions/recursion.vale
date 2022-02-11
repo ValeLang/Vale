@@ -1,12 +1,12 @@
 
-fn factorial(x int) int {
-  = if (x == 0) {
+func factorial(x int) int {
+  ret if (x == 0) {
       1
     } else {
       x * factorial(x - 1)
     }
 }
 
-fn main() int export {
-  = factorial(5);
+exported func main() int {
+  ret factorial(5);
 }

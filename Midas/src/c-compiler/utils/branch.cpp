@@ -308,7 +308,7 @@ Ref buildIfElse(
   }
 }
 
-void buildWhile(
+void buildBoolyWhile(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -352,13 +352,60 @@ void buildWhile(
   LLVMPositionBuilderAtEnd(builder, afterwardBlockL);
 }
 
+void buildBreakyWhile(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    std::function<void(LLVMBuilderRef, LLVMBasicBlockRef)> buildBody) {
+
+  // While only has a body expr, no separate condition.
+  // If the body itself returns true, then we'll run the body again.
+
+  // We already are in the "current" block (which is what `builder` is
+  // pointing at currently), but we're about to make two more: "body" and
+  // "afterward".
+  //              .-----> body -----.
+  //  current ---'         ↑         :---> afterward
+  //                       `--------'
+  // Right now, the `builder` is pointed at the "current" block.
+  // After we're done, we'll change it to point at the "afterward" block, so
+  // that subsequent instructions (after the While) can keep using the same
+  // builder, but they'll be adding to the "afterward" block we're making
+  // here.
+
+  LLVMBasicBlockRef bodyStartBlockL =
+      LLVMAppendBasicBlockInContext(globalState->context,
+          functionState->containingFuncL,
+          functionState->nextBlockName().c_str());
+  LLVMBuilderRef bodyBlockBuilder = LLVMCreateBuilderInContext(globalState->context);
+  LLVMPositionBuilderAtEnd(bodyBlockBuilder, bodyStartBlockL);
+
+  // Jump from our previous block into the body for the first time.
+  LLVMBuildBr(builder, bodyStartBlockL);
+
+  //buildBody(bodyBlockBuilder);
+//  auto continueLE = globalState->getRegion(globalState->metalCache->boolRef)->checkValidReference(FL(), functionState, builder, globalState->metalCache->boolRef, continueRef);
+
+  LLVMBasicBlockRef afterwardBlockL =
+      LLVMAppendBasicBlockInContext(globalState->context,
+          functionState->containingFuncL,
+          functionState->nextBlockName().c_str());
+
+  buildBody(bodyBlockBuilder, afterwardBlockL);
+
+  LLVMBuildBr(bodyBlockBuilder, bodyStartBlockL);
+  //LLVMBuildCondBr(bodyBlockBuilder, continueLE, bodyStartBlockL, afterwardBlockL);
+
+  LLVMPositionBuilderAtEnd(builder, afterwardBlockL);
+}
+
 void buildWhile(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     std::function<Ref(LLVMBuilderRef)> buildCondition,
     std::function<void(LLVMBuilderRef)> buildBody) {
-  buildWhile(
+  buildBoolyWhile(
       globalState,
       functionState,
       builder,

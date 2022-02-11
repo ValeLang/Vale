@@ -1,6 +1,6 @@
 
-fn extMakeTuple(i int) [int, int] extern;
+extern func extMakeTuple(i int) [int, int];
 
-fn main() int export {
+exported func main() int {
   extMakeTuple(14).1
 }

@@ -2,30 +2,30 @@ import v.builtins.print.*;
 import v.builtins.str.*;
 import castutils.*;
 
-fn println(s str) void {
+func println(s str) void {
   print(s + "\n");
 }
 
-fn println(i int) void {
+func println(i int) void {
   print(str(i) + "\n");
 }
 
-fn println(b bool) void {
+func println(b bool) void {
   print(str(b) + "\n");
 }
 
-fn println(f float) void {
+func println(f float) void {
   print(str(f) + "\n");
 }
 
-fn print(i int) void {
+func print(i int) void {
   print(str(i));
 }
 
-fn print(b bool) void {
+func print(b bool) void {
   print(str(b));
 }
 
-fn print(f float) void {
+func print(f float) void {
   print(str(f));
 }

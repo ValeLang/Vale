@@ -1,6 +1,7 @@
 package net.verdagon.vale.scout.patterns
 
-import net.verdagon.vale.parser.{AbstractP, _}
+import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{AbstractP, ConstructingMemberNameDeclarationP, DestructureP, ITemplexPT, InterpretedPT, IterableNameDeclarationP, IterationOptionNameDeclarationP, IteratorNameDeclarationP, LocalNameDeclarationP, NameOrRunePT, NameP, OverrideP, PatternPP}
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, _}
 import net.verdagon.vale.{RangeS, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
@@ -103,14 +104,23 @@ object PatternScout {
 //          val codeLocation = Scout.evalPos(stackFrame.file, patternPP.range.begin)
           None
         }
-        case Some(CaptureP(_,LocalNameP(NameP(_, name)))) => {
+        case Some(LocalNameDeclarationP(NameP(_, name))) => {
           if (name == "set" || name == "mut") {
             throw CompileErrorExceptionS(CantUseThatLocalName(Scout.evalRange(stackFrame.file, range), name))
           }
           Some(CaptureS(CodeVarNameS(name)))
         }
-        case Some(CaptureP(_,ConstructingMemberNameP(NameP(_, name)))) => {
+        case Some(ConstructingMemberNameDeclarationP(NameP(_, name))) => {
           Some(CaptureS(ConstructingMemberNameS(name)))
+        }
+        case Some(IterableNameDeclarationP(range)) => {
+          Some(CaptureS(IterableNameS(Scout.evalRange(stackFrame.file, range))))
+        }
+        case Some(IteratorNameDeclarationP(range)) => {
+          Some(CaptureS(IteratorNameS(Scout.evalRange(stackFrame.file, range))))
+        }
+        case Some(IterationOptionNameDeclarationP(range)) => {
+          Some(CaptureS(IterationOptionNameS(Scout.evalRange(stackFrame.file, range))))
         }
       }
 

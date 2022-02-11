@@ -20,8 +20,8 @@ Ref translateIf(
       translateExpression(
           globalState, functionState, parentBlockState, builder, iff->conditionExpr);
 
-  BlockState thenBlockState(globalState->addressNumberer, parentBlockState);
-  BlockState elseBlockState(globalState->addressNumberer, parentBlockState);
+  BlockState thenBlockState(globalState->addressNumberer, parentBlockState, std::nullopt);
+  BlockState elseBlockState(globalState->addressNumberer, parentBlockState, std::nullopt);
 
   auto resultLE =
       buildIfElse(

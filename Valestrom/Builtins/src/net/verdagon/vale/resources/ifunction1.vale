@@ -1,14 +1,14 @@
 
-interface IFunction1<M, P1, R>
-rules(M Mutability, P1 Ref, R Ref) M {
-  fn __call(virtual self &!IFunction1<M, P1, R>, p1 P1) R;
+interface IFunction1<M, P1, R> M
+where M Mutability, P1 Ref, R Ref {
+  func __call(virtual self &!IFunction1<M, P1, R>, p1 P1) R;
 }
 
 
-struct Functor1<M, F>
-rules(M Mutability, F Prot) M {
+struct Functor1<M, F> M
+where M Mutability, F Prot {
 }
-fn __call<M, F>(self &Functor1<M, F>, param1 Param1Type) RetType
-rules(F Prot(_, (Param1Type), RetType), Param1Type Ref, RetType Ref) {
+func __call<M, F>(self &Functor1<M, F>, param1 Param1Type) RetType
+where F Prot(_, Refs(Param1Type), RetType), Param1Type Ref, RetType Ref {
   F(param1)
 }

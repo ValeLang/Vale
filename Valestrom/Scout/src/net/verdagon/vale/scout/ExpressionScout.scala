@@ -112,7 +112,7 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
       scoutContents(initialStackFrame, lidb.child(), resultRequested)
 
     // If we had for example:
-    //   fn MyStruct() {
+    //   func MyStruct() {
     //     this.a = 5;
     //     println("flamscrankle");
     //     this.b = true;
@@ -671,7 +671,7 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
 //      case BadLetPE(range) => {
 //        throw CompileErrorExceptionS(ForgotSetKeywordError(evalRange(range)))
 //      }
-      case LetPE(range, rulesP, patternP, exprPE) => {
+      case LetPE(range, patternP, exprPE) => {
         val codeLocation = Scout.evalPos(stackFrame0.file, range.begin)
         val (stackFrame1, expr1, selfUses, childUses) =
           scoutExpressionAndCoerce(stackFrame0, lidb.child(), exprPE, UseP, true);
@@ -680,7 +680,7 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
         val runeToExplicitType = mutable.HashMap[IRuneS, ITemplataType]()
 
         RuleScout.translateRulexes(
-          stackFrame0.parentEnv, lidb.child(), ruleBuilder, runeToExplicitType, rulesP.toVector.flatMap(_.rules))
+          stackFrame0.parentEnv, lidb.child(), ruleBuilder, runeToExplicitType, Vector())
 
         val patternS =
           PatternScout.translatePattern(

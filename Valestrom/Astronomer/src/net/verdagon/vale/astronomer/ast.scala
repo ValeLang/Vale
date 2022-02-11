@@ -70,7 +70,7 @@ case class StructA(
     mutabilityRune: RuneUsage,
 
     // This is needed for recursive structures like
-    //   struct ListNode<T> imm rules(T Ref) {
+    //   struct ListNode<T> imm where T Ref {
     //     tail ListNode<T>;
     //   }
     maybePredictedMutability: Option[MutabilityP],
@@ -144,7 +144,7 @@ case class InterfaceA(
     weakable: Boolean,
     mutabilityRune: RuneUsage,
     // This is needed for recursive structures like
-    //   struct ListNode<T> imm rules(T Ref) {
+    //   struct ListNode<T> imm where T Ref {
     //     tail ListNode<T>;
     //   }
     maybePredictedMutability: Option[MutabilityP],

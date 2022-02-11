@@ -39,9 +39,12 @@ case class TopLevelImportP(imporrt: ImportP) extends ITopLevelThingP { override 
 case class ImplP(
   range: RangeP,
   identifyingRunes: Option[IdentifyingRunesP],
-  rules: Option[TemplateRulesP],
-  struct: ITemplexPT,
-  interface: ITemplexPT) { override def hashCode(): Int = vcurious() }
+  templateRules: Option[TemplateRulesP],
+  // Option because we can say `impl MyInterface;` inside a struct.
+  struct: Option[ITemplexPT],
+  interface: ITemplexPT,
+  attributes: Vector[IAttributeP]
+) { override def hashCode(): Int = vcurious() }
 
 case class ExportAsP(
   range: RangeP,
@@ -54,20 +57,20 @@ case class ImportP(
   packageSteps: Vector[NameP],
   importeeName: NameP) { override def hashCode(): Int = vcurious() }
 
-sealed trait ICitizenAttributeP
-case class ExportP(range: RangeP) extends ICitizenAttributeP { override def hashCode(): Int = vcurious() }
-case class WeakableP(range: RangeP) extends ICitizenAttributeP { override def hashCode(): Int = vcurious() }
-case class SealedP(range: RangeP) extends ICitizenAttributeP { override def hashCode(): Int = vcurious() }
+//sealed trait IAttributeP
+//case class ExportP(range: RangeP) extends IAttributeP { override def hashCode(): Int = vcurious() }
+case class WeakableAttributeP(range: RangeP) extends IAttributeP { override def hashCode(): Int = vcurious() }
+case class SealedAttributeP(range: RangeP) extends IAttributeP { override def hashCode(): Int = vcurious() }
 
 sealed trait IMacroInclusion
 case object CallMacro extends IMacroInclusion
 case object DontCallMacro extends IMacroInclusion
-case class MacroCallP(range: RangeP, inclusion: IMacroInclusion, name: NameP) extends ICitizenAttributeP { override def hashCode(): Int = vcurious() }
+case class MacroCallP(range: RangeP, inclusion: IMacroInclusion, name: NameP) extends IAttributeP { override def hashCode(): Int = vcurious() }
 
 case class StructP(
   range: RangeP,
   name: NameP,
-  attributes: Vector[ICitizenAttributeP],
+  attributes: Vector[IAttributeP],
   mutability: ITemplexPT,
   identifyingRunes: Option[IdentifyingRunesP],
   templateRules: Option[TemplateRulesP],
@@ -93,18 +96,19 @@ case class VariadicStructMemberP(
 case class InterfaceP(
   range: RangeP,
   name: NameP,
-  attributes: Vector[ICitizenAttributeP],
+  attributes: Vector[IAttributeP],
   mutability: ITemplexPT,
   maybeIdentifyingRunes: Option[IdentifyingRunesP],
   templateRules: Option[TemplateRulesP],
   members: Vector[FunctionP]) { override def hashCode(): Int = vcurious() }
 
-sealed trait IFunctionAttributeP
-case class AbstractAttributeP(range: RangeP) extends IFunctionAttributeP { override def hashCode(): Int = vcurious() }
-case class ExternAttributeP(range: RangeP) extends IFunctionAttributeP { override def hashCode(): Int = vcurious() }
-case class BuiltinAttributeP(range: RangeP, generatorName: NameP) extends IFunctionAttributeP { override def hashCode(): Int = vcurious() }
-case class ExportAttributeP(range: RangeP) extends IFunctionAttributeP { override def hashCode(): Int = vcurious() }
-case class PureAttributeP(range: RangeP) extends IFunctionAttributeP { override def hashCode(): Int = vcurious() }
+sealed trait IAttributeP
+case class AbstractAttributeP(range: RangeP) extends IAttributeP { override def hashCode(): Int = vcurious() }
+case class ExternAttributeP(range: RangeP) extends IAttributeP { override def hashCode(): Int = vcurious() }
+case class BuiltinAttributeP(range: RangeP, generatorName: NameP) extends IAttributeP { override def hashCode(): Int = vcurious() }
+case class ExportAttributeP(range: RangeP) extends IAttributeP { override def hashCode(): Int = vcurious() }
+case class PureAttributeP(range: RangeP) extends IAttributeP { override def hashCode(): Int = vcurious() }
+//case class RuleAttributeP(rule: IRulexPR) extends IAttributeP { override def hashCode(): Int = vcurious() }
 
 sealed trait IRuneAttributeP
 case class TypeRuneAttributeP(range: RangeP, tyype: ITypePR) extends IRuneAttributeP { override def hashCode(): Int = vcurious() }
@@ -135,9 +139,9 @@ case class FunctionReturnP(
 case class FunctionHeaderP(
   range: RangeP,
   name: Option[NameP],
-  attributes: Vector[IFunctionAttributeP],
+  attributes: Vector[IAttributeP],
 
-  // If Some(Vector.empty), should show up like the <> in fn moo<>(a int, b bool)
+  // If Some(Vector.empty), should show up like the <> in func moo<>(a int, b bool)
   maybeUserSpecifiedIdentifyingRunes: Option[IdentifyingRunesP],
   templateRules: Option[TemplateRulesP],
 

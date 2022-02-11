@@ -13,8 +13,14 @@ object ParseErrorHumanizer {
     val errorStrBody =
       err match {
         case CombinatorParseError(pos, msg) => msg
+        case BadInterfaceHeader(pos) => "Bad interface header."
         case BadStartOfBlock(pos) => "Bad start of block."
+        case DontNeedSemicolon(pos) => "Dont need semicolon."
         case BadDot(pos) => "Bad dot."
+        case BadImplFor(pos) => "Bad impl, expected `for`"
+        case BadForeachInError(pos) => "Bad foreach, expected `in`."
+        case BadAttributeError(pos) => "Bad attribute."
+        case BadStructContentsBegin(pos) => "Bad start of struct contents."
         case BadInterfaceMember(pos) => "Bad interface member."
         case BadStringChar(stringBeginPos, pos) => "Bad string character, " + humanizePos(fileMap, CodeLocationS(fileCoord, stringBeginPos)) + "-" + humanizePos(fileMap, CodeLocationS(fileCoord, pos))
         case BadExpressionBegin(pos) => "Bad start of expression."
@@ -24,7 +30,7 @@ object ParseErrorHumanizer {
         case BadStructMember(pos) => "Bad struct member."
         case BadBinaryFunctionName(pos) => "Bad binary function name."
 //        case CombinatorParseError(pos, msg) => "Internal parser error: " + msg + ":\n"
-        case UnrecognizedTopLevelThingError(pos) => "expected fn, struct, interface, impl, import, or export, but found:\n"
+        case UnrecognizedTopLevelThingError(pos) => "expected func, struct, interface, impl, import, or export, but found:\n"
         case BadFunctionBodyError(pos) => "expected a function body, or `;` to note there is none. Found:\n"
         case BadStartOfStatementError(pos) => "expected `}` to end the block, but found:\n"
         case BadExpressionEnd(pos) => "expected `;` or `}` after expression, but found:\n"

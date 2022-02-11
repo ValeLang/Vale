@@ -7,7 +7,7 @@ class WhileTests extends FunSuite with Matchers {
   test("Simple while loop that doesnt execute") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  while (false) {}
         |  ret 5;
         |}
@@ -19,7 +19,7 @@ class WhileTests extends FunSuite with Matchers {
   test("Test a for-ish while loop") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  i! = 0;
         |  while (i < 4) {
         |    set i = i + 1;
@@ -35,7 +35,7 @@ class WhileTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """import ioutils.*;
         |import printutils.*;
-        |fn main() int export {
+        |exported func main() int {
         |  key! = 0;
         |  while set key = __getch(); key < 96 {
         |    print(key);
@@ -54,7 +54,7 @@ class WhileTests extends FunSuite with Matchers {
         |import ioutils.*;
         |import logic.*;
         |
-        |fn main() int export {
+        |exported func main() int {
         |  key = 0;
         |  while set key = __getch(); key != 99 {
         |    print(key);
@@ -73,7 +73,7 @@ class WhileTests extends FunSuite with Matchers {
         |import ioutils.*;
         |import logic.*;
         |
-        |fn main() export {
+        |exported func main() {
         |  while key = __getch(); key != 99 {
         |    print(key);
         |  }
@@ -86,7 +86,7 @@ class WhileTests extends FunSuite with Matchers {
   test("Return from infinite while loop") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  while (true) {
         |    ret 9;
         |  }
@@ -100,7 +100,7 @@ class WhileTests extends FunSuite with Matchers {
   test("While with condition declaration") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  while x = 42; x < 50 { ret x; }
         |  ret 73;
         |}
@@ -114,9 +114,9 @@ class WhileTests extends FunSuite with Matchers {
 //  test("Tests a while loop with a move in it") {
 //    val compile = RunCompilation.test(
 //      """
-//        |fn doThings(m: Marine) { }
+//        |func doThings(m: Marine) { }
 //        |struct Marine { hp: int; }
-//        |fn main() int export {
+//        |exported func main() int {
 //        |  m = Marine(7);
 //        |  while (true) {
 //        |    doThings(m);

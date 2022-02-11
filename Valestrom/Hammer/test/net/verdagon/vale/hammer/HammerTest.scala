@@ -17,7 +17,7 @@ class HammerTest extends FunSuite with Matchers with Collector {
   test("Local IDs unique") {
     val compile = HammerTestCompilation.test(
         """
-          |fn main() export {
+          |exported func main() {
           |  a = 6;
           |  if (true) {
           |    b = 7;

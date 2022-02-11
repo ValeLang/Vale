@@ -3,15 +3,15 @@ package net.verdagon.vale.templar
 import net.verdagon.vale.parser.ast.MutableP
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
-import net.verdagon.vale.scout.rules.IRulexSR
-import net.verdagon.vale.scout.{IImpreciseNameS, IRuneS, RuneTypeSolver, SelfNameS}
+import net.verdagon.vale.scout.rules.{IRulexSR, RuneParentEnvLookupSR, RuneUsage}
+import net.verdagon.vale.scout.{CodeNameS, CodeRuneS, IImpreciseNameS, IRuneS, RuneTypeSolver, SelfNameS}
 import net.verdagon.vale.templar.OverloadTemplar.FindFunctionFailure
-import net.verdagon.vale.templar.ast.{DestroyImmRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoFunctionTE, NewImmRuntimeSizedArrayTE, ProgramT, PrototypeT, ReferenceExpressionTE, RuntimeSizedArrayLookupTE, StaticArrayFromCallableTE, StaticArrayFromValuesTE, StaticSizedArrayLookupTE}
+import net.verdagon.vale.templar.ast.{DestroyImmRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoFunctionTE, FunctionCallTE, NewImmRuntimeSizedArrayTE, ProgramT, PrototypeT, ReferenceExpressionTE, RuntimeSizedArrayLookupTE, StaticArrayFromCallableTE, StaticArrayFromValuesTE, StaticSizedArrayLookupTE}
 import net.verdagon.vale.templar.citizen.{StructTemplar, StructTemplarCore}
-import net.verdagon.vale.templar.env.{CitizenEnvironment, FunctionEnvEntry, FunctionEnvironmentBox, GlobalEnvironment, IEnvironment, IEnvironmentBox, PackageEnvironment, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
+import net.verdagon.vale.templar.env.{CitizenEnvironment, FunctionEnvEntry, FunctionEnvironmentBox, GlobalEnvironment, IEnvironment, IEnvironmentBox, NodeEnvironmentBox, PackageEnvironment, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
 import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.function.DestructorTemplar
-import net.verdagon.vale.templar.names.{FullNameT, FunctionNameT, FunctionTemplateNameT, PackageTopLevelNameT, SelfNameT}
+import net.verdagon.vale.templar.names.{FullNameT, FunctionNameT, FunctionTemplateNameT, PackageTopLevelNameT, RuneNameT, SelfNameT}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.{CodeLocationS, Err, IProfiler, Ok, RangeS, vassert, vassertOne, vassertSome, vimpl}
@@ -72,19 +72,19 @@ class ArrayTemplar(
 
   def evaluateRuntimeSizedArrayFromCallable(
     temputs: Temputs,
-    fate: IEnvironment,
+    nenv: NodeEnvironmentBox,
     range: RangeS,
     rulesA: Vector[IRulexSR],
     maybeElementTypeRune: Option[IRuneS],
     mutabilityRune: IRuneS,
     sizeTE: ReferenceExpressionTE,
     callableTE: ReferenceExpressionTE):
-  NewImmRuntimeSizedArrayTE = {
+  ReferenceExpressionTE = {
     val runeToType =
       RuneTypeSolver.solve(
         opts.globalOptions.sanityCheck,
         opts.globalOptions.useOptimizedSolver,
-        nameS => vassertOne(fate.lookupNearestWithImpreciseName(profiler, nameS, Set(TemplataLookupContext))).tyype,
+        nameS => vassertOne(nenv.functionEnvironment.lookupNearestWithImpreciseName(profiler, nameS, Set(TemplataLookupContext))).tyype,
         range,
         false,
         rulesA,
@@ -95,29 +95,70 @@ class ArrayTemplar(
         case Err(e) => throw CompileErrorExceptionT(InferAstronomerError(range, e))
       }
     val templatas =
-      inferTemplar.solveExpectComplete(fate, temputs, rulesA, runeToType, range, Vector(), Vector())
+      inferTemplar.solveExpectComplete(nenv.functionEnvironment, temputs, rulesA, runeToType, range, Vector(), Vector())
     val mutability = getArrayMutability(templatas, mutabilityRune)
 
+//    val variability = getArrayVariability(templatas, variabilityRune)
+
     mutability match {
-      case ImmutableT =>
+      case ImmutableT => {
+        val prototype =
+          overloadTemplar.getArrayGeneratorPrototype(
+            temputs, nenv.functionEnvironment, range, callableTE)
+        val rsaMT =
+          getRuntimeSizedArrayKind(
+            nenv.functionEnvironment.globalEnv, temputs, prototype.returnType, mutability)
+
+        maybeElementTypeRune.foreach(elementTypeRuneA => {
+          val expectedElementType = getArrayElementType(templatas, elementTypeRuneA)
+          if (prototype.returnType != expectedElementType) {
+            throw CompileErrorExceptionT(UnexpectedArrayElementType(range, expectedElementType, prototype.returnType))
+          }
+        })
+
+        NewImmRuntimeSizedArrayTE(rsaMT, sizeTE, callableTE, prototype)
+      }
       case MutableT => {
-        throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't construct a mutable runtime array from a callable!"))
+        val prototype =
+          overloadTemplar.findFunction(
+            nenv.functionEnvironment
+              .addEntry(RuneNameT(CodeRuneS("M")), TemplataEnvEntry(MutabilityTemplata(MutableT))),
+            temputs,
+            range,
+            CodeNameS("Array"),
+            Vector(
+              RuneParentEnvLookupSR(range, RuneUsage(range, CodeRuneS("M")))),
+            Array(CodeRuneS("M")),
+            Vector(
+              ParamFilter(sizeTE.result.reference, None),
+              ParamFilter(callableTE.result.reference, None)),
+            Vector(),
+            true)
+
+        val elementType =
+          prototype.returnType.kind match {
+            case RuntimeSizedArrayTT(mutability, elementType) => {
+              if (mutability != MutableT) {
+                throw CompileErrorExceptionT(RangedInternalErrorT(range, "Array function returned wrong mutability!"))
+              }
+              elementType
+            }
+            case _ => {
+              throw CompileErrorExceptionT(RangedInternalErrorT(range, "Array function returned wrong type!"))
+            }
+          }
+        maybeElementTypeRune.foreach(elementTypeRuneA => {
+          val expectedElementType = getArrayElementType(templatas, elementTypeRuneA)
+          if (elementType != expectedElementType) {
+            throw CompileErrorExceptionT(UnexpectedArrayElementType(range, expectedElementType, prototype.returnType))
+          }
+        })
+        val callTE =
+          FunctionCallTE(prototype, Vector(sizeTE, callableTE))
+        callTE
+        //        throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't construct a mutable runtime array from a callable!"))
       }
     }
-
-//    val variability = getArrayVariability(templatas, variabilityRune)
-    val prototype = overloadTemplar.getArrayGeneratorPrototype(temputs, fate, range, callableTE)
-    val rsaMT = getRuntimeSizedArrayKind(fate.globalEnv, temputs, prototype.returnType, mutability)
-
-    maybeElementTypeRune.foreach(elementTypeRuneA => {
-      val expectedElementType = getArrayElementType(templatas, elementTypeRuneA)
-      if (prototype.returnType != expectedElementType) {
-        throw CompileErrorExceptionT(UnexpectedArrayElementType(range, expectedElementType, prototype.returnType))
-      }
-    })
-
-    val expr2 = NewImmRuntimeSizedArrayTE(rsaMT, sizeTE, callableTE, prototype)
-    expr2
   }
 
   def evaluateStaticSizedArrayFromValues(

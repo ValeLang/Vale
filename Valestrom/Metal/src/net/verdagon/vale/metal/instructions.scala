@@ -590,9 +590,12 @@ case class IfH(
 case class WhileH(
   // The block to run until it returns false.
   bodyBlock: ExpressionH[KindH]
-) extends ExpressionH[VoidH] {
+) extends ExpressionH[KindH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, ReadonlyH, VoidH())
+
+  vassert(bodyBlock.resultType.kind == VoidH() || bodyBlock.resultType.kind == NeverH())
+
+  override def resultType: ReferenceH[KindH] = bodyBlock.resultType // either void or never
 }
 
 // A collection of instructions. The last one will be used as the block's result.

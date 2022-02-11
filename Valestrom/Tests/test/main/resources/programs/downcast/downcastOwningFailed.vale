@@ -1,5 +1,5 @@
 
-interface IShip sealed {}
+sealed interface IShip  {}
 
 struct Serenity {}
 impl IShip for Serenity;
@@ -7,7 +7,7 @@ impl IShip for Serenity;
 struct Raza { fuel int; }
 impl IShip for Raza;
 
-fn moo(ship IShip) int {
+func moo(ship IShip) int {
   maybeRaza Result<Raza, IShip> = (ship).as<Raza>();
   ret if (maybeRaza.is_ok()) {
       maybeRaza.expect().fuel
@@ -15,6 +15,6 @@ fn moo(ship IShip) int {
       42
     }
 }
-fn main() int export {
+exported func main() int {
   ret moo(Serenity());
 }

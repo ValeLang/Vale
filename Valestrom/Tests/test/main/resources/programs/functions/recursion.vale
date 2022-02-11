@@ -1,5 +1,5 @@
 
-fn factorial(x int) int {
+func factorial(x int) int {
   ret if (x == 0) {
       1
     } else {
@@ -7,6 +7,6 @@ fn factorial(x int) int {
     }
 }
 
-fn main() int export {
+exported func main() int {
   ret factorial(5);
 }

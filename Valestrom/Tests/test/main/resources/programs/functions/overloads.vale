@@ -3,6 +3,6 @@ import v.builtins.tup.*;
 import v.builtins.arith.*;
 import v.builtins.str.*;
 
-fn ~(a int, b int) infer-ret { ret +(a, b); }
-fn ~(a str, b str) infer-ret { ret +(a, b); }
-fn main() infer-ret export { ret 3 ~ 3; }
+func ~(a int, b int) infer-ret { ret +(a, b); }
+func ~(a str, b str) infer-ret { ret +(a, b); }
+exported func main() infer-ret { ret 3 ~ 3; }

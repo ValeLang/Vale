@@ -2,46 +2,46 @@ struct Context {
     code str;
     index int;
 }
-fn advance(c *Context) void {
+func advance(c *Context) void {
     set c.index = c.index + 1;
 }
-fn advance(c *Context, count int) void {
+func advance(c *Context, count int) void {
     set c.index = c.index + count;
 }
-fn peek(c *Context) StrSlice {
+func peek(c *Context) StrSlice {
   c.code.slice(c.index, c.index + 1)
 }
-fn peekNext(c *Context) StrSlice {
+func peekNext(c *Context) StrSlice {
   c.code.slice(c.index + 1, c.index + 2)
 }
 
 
-fn main() void {
-    code = "\nstruct Hello<A, B> {\n   horse int;\n   pferd str; another str; \n}\nfn main() int export {\n   println(123); \n}";
+func main() void {
+    code = "\nstruct Hello<A, B> {\n   horse int;\n   pferd str; another str; \n}\nexported func main() int {\n   println(123); \n}";
     println(code);
     println("----------- Parsing -----------");
     parse(code);
 }
 
 // Extra string stuff
-fn println(s StrSlice) void {
+func println(s StrSlice) void {
     println(s.str());
 }
-fn !=(a str, b StrSlice) bool { a.slice() != b }
-fn !=(a StrSlice, b str) bool { a != b.slice() }
-fn !=(a StrSlice, b StrSlice) bool {
+func !=(a str, b StrSlice) bool { a.slice() != b }
+func !=(a StrSlice, b str) bool { a != b.slice() }
+func !=(a StrSlice, b StrSlice) bool {
   streq(a.string, a.begin, a.end, b.string, b.begin, b.end) == false
 }
 //
 
 
 
-fn parse(s str) void {
+func parse(s str) void {
    c = Context(s, 0);
    parseRoot(*c);
 }
 
-fn readValidChars(c *Context, validChars str) StrSlice {
+func readValidChars(c *Context, validChars str) StrSlice {
   startIndex = c.index;
   while (not validChars.find(c.peek()).isEmpty()) {
     c.advance();
@@ -49,19 +49,19 @@ fn readValidChars(c *Context, validChars str) StrSlice {
   c.code.slice(startIndex, c.index)
 }
 
-fn readWord(c *Context) StrSlice {
+func readWord(c *Context) StrSlice {
   readValidChars(c, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_")
 }
-fn readWhitespace(c *Context) void {
+func readWhitespace(c *Context) void {
     readValidChars(c, " \r\n "); // Why do I need a space in the end?
 }
 
-fn parseRoot(c *Context) void {
+func parseRoot(c *Context) void {
 
     readWhitespace(c);
     while (c.index < c.code.len() - 1) {
         word = readWord(c);
-        if (word == "fn") {
+        if (word == "func") {
             c.parseFn();
             c.readWhitespace();
         } else if (word == "struct") {
@@ -81,7 +81,7 @@ fn parseRoot(c *Context) void {
 
 }
 
-fn parseGenericDefinition(c *Context) {
+func parseGenericDefinition(c *Context) {
     word = c.readWord();
     if (word.len() == 0) {
         panic("Expected generic type name, but got: " + c.peek().str());
@@ -110,7 +110,7 @@ fn parseGenericDefinition(c *Context) {
     print(">");
 }
 
-fn parseStruct(c *Context) void {
+func parseStruct(c *Context) void {
     c.readWhitespace();
     structName = c.readWord();
     if (structName.len() == 0) {
@@ -179,19 +179,19 @@ fn parseStruct(c *Context) void {
     println("}");
     c.advance();
 }
-fn parseStructRules(c *Context) {
+func parseStructwhere c *Context {
     panic("Struct rules not implemented yet");
 }
 
-fn parseInterface(c *Context) void {
+func parseInterface(c *Context) void {
     panic("Interface not implemented yet");
 }
 
-fn parseImpl(c *Context) void {
+func parseImpl(c *Context) void {
     panic("Impl not implemented yet");
 }
 
-fn parseType(c *Context) StrSlice {
+func parseType(c *Context) StrSlice {
   //TODO: This should support more than just word types (arrays and stuff)
   wordType = c.readWord();
   if (wordType.len() == 0) {
@@ -200,13 +200,13 @@ fn parseType(c *Context) StrSlice {
   wordType
 }
 
-fn parseFn(c *Context) void {
+func parseFn(c *Context) void {
     c.readWhitespace();
     fnName = c.readWord();
     if (fnName.len() == 0) {
         panic("Expected function name, but got: " + c.peek().str());
     }
-    print("fn " + fnName.str());
+    print("func " + fnName.str());
 
     c.readWhitespace();
     if (c.peek() != "(") {
@@ -219,14 +219,14 @@ fn parseFn(c *Context) void {
 
     c.readWhitespace();
     if (c.peek() != ")") {
-        panic("Expected end of fn parameter list ), but got: " + c.peek().str());
+        panic("Expected end of func parameter list ), but got: " + c.peek().str());
     }
     c.advance();
     print(")");
 
     c.readWhitespace();
     if (c.peek() != "{") {
-        panic("Expected start of fn scope {, but got: " + c.peek().str());
+        panic("Expected start of func scope {, but got: " + c.peek().str());
     }
     c.advance();
     print("{");
@@ -376,7 +376,7 @@ struct PureAttributeP { range Range; }
 impl IFunctionAttributeP for PureAttributeP;
 
 // Attributes on a rune.
-// A rune is a template param, like the T in `fn sum<T>(a T, b T) { a + b }`
+// A rune is a template param, like the T in `func sum<T>(a T, b T) { a + b }`
 interface IRuneSttributeP {}
 
 // What kind of rune this is. Most runes are Coord runes (coord means reference), but
@@ -404,7 +404,7 @@ struct BumpRuneAttributeP { range Range; }
 impl IRuneSttributeP for BumpRuneAttributeP;
 
 // An identifying rune
-// A rune is a template param, like the T in `fn sum<T>(a T, b T) { a + b }`
+// A rune is a template param, like the T in `func sum<T>(a T, b T) { a + b }`
 // It's an identifying rune if it appears between the < and >.
 // They're called identifying because sum<int> and sum<bool> are different functions,
 // so the T helps identify the function.
@@ -446,8 +446,8 @@ struct FunctionHeaderP {
   // attributes List<IFunctionAttributeP>;
 
   // If this is None, then the function had no identifying runes.
-  // If it's Some(Vector.empty) it might represent the <> in `fn moo<>(a int, b bool) { ... }`
-  // If it's Some(Vector(...)) then it's the <T, Y> in `fn moo<T, Y>(a T, b Y) { ... }`
+  // If it's Some(Vector.empty) it might represent the <> in `func moo<>(a int, b bool) { ... }`
+  // If it's Some(Vector(...)) then it's the <T, Y> in `func moo<T, Y>(a T, b Y) { ... }`
   maybeUserSpecifiedIdentifyingRunes Opt<IdentifyingRunesP>;
 
   // Any template rules for the function.
@@ -600,35 +600,35 @@ impl VariabilityP for VaryingP;
 // A pattern, used for parameter declarations or local declarations.
 // For example:
 // - The `a Spaceship` in `a Spaceship = makeSpaceship();`
-// - The `a Spaceship` in `fn launch(a Spaceship) { ... }`
+// - The `a Spaceship` in `func launch(a Spaceship) { ... }`
 struct PatternPP {
   range Range;
 
   // Whether there's a borrow symbol before the variable name, such
-  // as the `&` in `fn launch(*ship) { ... }`
+  // as the `&` in `func launch(*ship) { ... }`
   preBorrow Opt<Range>;
 
   // The name of the parameter.
   // This can be absent, such as in
-  // `fn launch(Spaceship(fuel, wings)) { println(fuel + wings); }`
+  // `func launch(Spaceship(fuel, wings)) { println(fuel + wings); }`
   // which destructures the incoming spaceship immediately and needs no name.
   capture Opt<CaptureP>;
 
-  // The type of the parameter, like the `Spaceship` in `fn launch(a Spaceship) { ... }`
+  // The type of the parameter, like the `Spaceship` in `func launch(a Spaceship) { ... }`
   templex Opt<ITemplexPT>;
 
   // The destructure part of the pattern, like the `(fuel, wings)` in
-  // `fn launch(Spaceship(fuel, wings)) { println(fuel + wings); }`
+  // `func launch(Spaceship(fuel, wings)) { println(fuel + wings); }`
   destructure Opt<DestructureP>;
 
-  // The `abstract` or `impl` in the parameter, like `fn wings(self Serenity impl ISpaceship) int  { ret 2; }`
+  // The `abstract` or `impl` in the parameter, like `func wings(self Serenity impl ISpaceship) int  { ret 2; }`
   virtuality Opt<IVirtualityP>;
 }
 
 // The destructure part of the pattern, like the `(fuel, wings)` in
 // `Spaceship(fuel, wings) = makeSpaceship(...)`
 // or in
-// `fn launch(Spaceship(fuel, wings)) { println(fuel + wings); }`
+// `func launch(Spaceship(fuel, wings)) { println(fuel + wings); }`
 struct DestructureP {
   range Range;
   // The inner patterns, such as the `resonance` and `WarpCoil(factor, _)` in
@@ -851,7 +851,7 @@ struct CallPT {
   args List<ITemplexPT>;
 }
 impl ITemplexPT for CallPT;
-// This is for example fn(Int)Bool; fn<imm>(Int, Int)Str; fn:mut()(Str; Bool)
+// This is for example func(Int)Bool; func<imm>(Int, Int)Str; func:mut()(Str; Bool)
 // It's shorthand for IFunction:(mut; (Int); Bool); IFunction:(mut; (Int; Int); Str); IFunction:(mut; (); (Str; Bool))
 struct FunctionPT {
   range Range;
@@ -909,7 +909,7 @@ struct OwnershippedPT {
 impl ITemplexPT for OwnershippedPT;
 
 // A rule that can match anything. For example, in
-//    fn has<E>(arr *[]<_>E, elem E) bool { .. }
+//    func has<E>(arr *[]<_>E, elem E) bool { .. }
 // the _ will accept anything that happens to be there.
 // That means this `has` method can work on both mutable
 // and immutable arrays, because it will accept imm or mut there.

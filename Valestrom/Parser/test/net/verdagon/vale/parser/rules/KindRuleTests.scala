@@ -204,15 +204,15 @@ class KindRuleTests extends FunSuite with Matchers with Collector {
   }
 
 //  test("Callable kind rule") {
-//    compile(callableRulePR, "fn(Int)Void") shouldHave {//        case FunctionPT(None,PackPT(Vector(NameOrRunePT(StringP(_, "int")))),NameOrRunePT(StringP(_, "void")))
-//    compile(callableRulePR, "fn(T)R") shouldHave {//        case FunctionPT(None,PackPT(Vector(NameOrRunePT(StringP(_, "T")))),NameOrRunePT(StringP(_, "R")))
+//    compile(callableRulePR, "func(Int)Void") shouldHave {//        case FunctionPT(None,PackPT(Vector(NameOrRunePT(StringP(_, "int")))),NameOrRunePT(StringP(_, "void")))
+//    compile(callableRulePR, "func(T)R") shouldHave {//        case FunctionPT(None,PackPT(Vector(NameOrRunePT(StringP(_, "T")))),NameOrRunePT(StringP(_, "R")))
 //  }
 
   test("Prototype kind rule") {
-    compile(prototypeRulePR, "fn moo(int)void") shouldHave {
+    compile(prototypeRulePR, "func moo(int)void") shouldHave {
         case PrototypePT(_,NameP(_, "moo"), Vector(NameOrRunePT(NameP(_, "int"))),NameOrRunePT(NameP(_, "void"))) =>
     }
-    compile(prototypeRulePR, "fn moo(T)R") shouldHave {
+    compile(prototypeRulePR, "func moo(T)R") shouldHave {
         case PrototypePT(_,NameP(_, "moo"), Vector(NameOrRunePT(NameP(_, "T"))),NameOrRunePT(NameP(_, "R"))) =>
     }
   }

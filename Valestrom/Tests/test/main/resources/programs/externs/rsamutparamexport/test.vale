@@ -1,10 +1,10 @@
 export []<mut>int as MutIntArray;
 
-fn sumBytes(arr *[]<mut>int) int extern;
-fn getMutIntArrayLen(arr *[]<mut>int) int export { len(&arr) }
-fn getMutIntArrayElem(arr *[]<mut>int, i int) int export { arr[i] }
+extern func sumBytes(arr *[]<mut>int) int;
+exported func getMutIntArrayLen(arr *[]<mut>int) int { len(&arr) }
+exported func getMutIntArrayElem(arr *[]<mut>int, i int) int { arr[i] }
 
-fn main() int export {
+exported func main() int {
   a = Array<mut, int>(5, {_});
   ret sumBytes(*a);
 }

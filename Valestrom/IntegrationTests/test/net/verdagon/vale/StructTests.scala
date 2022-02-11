@@ -9,7 +9,7 @@ class StructTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Marine {}
-        |fn main() export {
+        |exported func main() {
         |  Marine();
         |}
       """.stripMargin)
@@ -27,7 +27,7 @@ class StructTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Marine { hp int; }
-        |fn main() export {
+        |exported func main() {
         |  Marine(9);
         |}
       """.stripMargin)
@@ -52,7 +52,7 @@ class StructTests extends FunSuite with Matchers {
         |  hp int;
         |  ammo int;
         |}
-        |fn main() int export {
+        |exported func main() int {
         |  m = Marine(4, 7);
         |  Marine[hp, ammo] = m;
         |  ret ammo;
@@ -69,7 +69,7 @@ class StructTests extends FunSuite with Matchers {
         |  hp int;
         |  ammo int;
         |}
-        |fn main() int export {
+        |exported func main() int {
         |  m = Marine(4, 7);
         |  destruct m;
         |  ret 9;
@@ -84,19 +84,21 @@ class StructTests extends FunSuite with Matchers {
       """
         |import printutils.*;
         |
-        |struct Weapon #!DeriveStructDrop { }
-        |fn drop(weapon Weapon) {
+        |#!DeriveStructDrop
+        |struct Weapon { }
+        |func drop(weapon Weapon) {
         |  println("Destroying weapon!");
         |  Weapon[] = weapon;
         |}
-        |struct Marine #!DeriveStructDrop {
+        |#!DeriveStructDrop
+        |struct Marine {
         |  weapon Weapon;
         |}
-        |fn drop(marine Marine) {
+        |func drop(marine Marine) {
         |  println("Destroying marine!");
         |  Marine[weapon] = marine;
         |}
-        |fn main() export {
+        |exported func main() {
         |  Marine(Weapon());
         |}
       """.stripMargin)
@@ -112,7 +114,7 @@ class StructTests extends FunSuite with Matchers {
 //        |
 //        |struct GetMarineWeaponNameFunc { }
 //        |impl IFunction1<mut, *Marine, str> for GetMarineWeaponNameFunc;
-//        |fn __call(this *!GetMarineWeaponNameFunc impl IFunction1<mut, *Marine, str>, m *Marine) str {
+//        |func __call(this *!GetMarineWeaponNameFunc impl IFunction1<mut, *Marine, str>, m *Marine) str {
 //        |  m.weapon.name
 //        |}
 //        |
@@ -120,19 +122,19 @@ class StructTests extends FunSuite with Matchers {
 //        |  name str;
 //        |  owner! Opt<*Marine>;
 //        |}
-//        |fn destructor(weapon Weapon) void {
+//        |func destructor(weapon Weapon) void {
 //        |  println("Destroying weapon, owner's weapon is: " + weapon.owner.map(*!GetMarineWeaponNameFunc()).getOr("none"));
 //        |  Weapon(name, owner) = weapon;
 //        |}
 //        |struct Marine {
 //        |  weapon! Weapon;
 //        |}
-//        |fn destructor(marine Marine) void {
+//        |func destructor(marine Marine) void {
 //        |  println("Destroying marine!");
 //        |  set marine.weapon.owner = None<*Marine>();
 //        |  Marine(weapon) = marine;
 //        |}
-//        |fn main() export {
+//        |exported func main() {
 //        |  m = Marine(Weapon("Sword", None<*Marine>()));
 //        |  set m.weapon.owner = Some(*m);
 //        |  set m.weapon = Weapon("Spear", Some(*m));
@@ -155,19 +157,19 @@ class StructTests extends FunSuite with Matchers {
   test("Panic function") {
     val compile = RunCompilation.test(
       """
-        |interface XOpt<T> rules(T Ref) {
-        |  fn get(virtual opt &XOpt<T>) *T;
+        |interface XOpt<T> where T Ref {
+        |  func get(virtual opt &XOpt<T>) *T;
         |}
-        |struct XSome<T> rules(T Ref) { value T; }
+        |struct XSome<T> where T Ref { value T; }
         |impl<T> XOpt<T> for XSome<T>;
-        |struct XNone<T> rules(T Ref) { }
+        |struct XNone<T> where T Ref { }
         |impl<T> XOpt<T> for XNone<T>;
         |
         |
-        |fn get<T>(opt &XNone<T> impl XOpt<T>) *T { __vbi_panic(); }
-        |fn get<T>(opt &XSome<T> impl XOpt<T>) *T { ret opt.value; }
+        |func get<T>(opt &XNone<T> impl XOpt<T>) *T { __vbi_panic(); }
+        |func get<T>(opt &XSome<T> impl XOpt<T>) *T { ret opt.value; }
         |
-        |fn main() int export {
+        |exported func main() int {
         |  m XOpt<int> = XNone<int>();
         |  ret m.get();
         |}
@@ -184,9 +186,9 @@ class StructTests extends FunSuite with Matchers {
 
   test("Call borrow parameter with shared reference") {
     val compile = RunCompilation.test(
-      """fn get<T>(a *T) *T { ret a; }
+      """func get<T>(a *T) *T { ret a; }
         |
-        |fn main() int export {
+        |exported func main() int {
         |  ret get(6);
         |}
       """.stripMargin)

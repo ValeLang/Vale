@@ -29,7 +29,7 @@ class WhileTests extends FunSuite with Collector with TestParseUtils {
           WhilePE(_,
             ConsecutorPE(
               Vector(
-                LetPE(_,None,PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"x"))),None,None,None),ConstantIntPE(_,4,32)),
+                LetPE(_,PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"x"))),None,None,None),ConstantIntPE(_,4,32)),
               BinaryCallPE(_,NameP(_,">"),LookupPE(LookupNameP(NameP(_,"x")),None),ConstantIntPE(_,6,32)),
               VoidPE(_))),
             BlockPE(_,VoidPE(_))),

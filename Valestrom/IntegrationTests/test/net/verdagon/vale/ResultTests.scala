@@ -11,7 +11,7 @@ class ResultTests extends FunSuite with Matchers {
           |import v.builtins.panic.*;
           |import v.builtins.result.*;
           |
-          |fn main() int export {
+          |exported func main() int {
           |  result Result<int, str> = Ok<int, str>(42);
           |  ret if (result.is_ok()) { result.expect() }
           |    else { panic("wat") }
@@ -27,7 +27,7 @@ class ResultTests extends FunSuite with Matchers {
           |import v.builtins.panic.*;
           |import v.builtins.result.*;
           |
-          |fn main() str export {
+          |exported func main() str {
           |  result Result<int, str> = Err<int, str>("file not found!");
           |  ret if (result.is_err()) { result.expect_err() }
           |    else { panic("fail!") }
@@ -43,7 +43,7 @@ class ResultTests extends FunSuite with Matchers {
         |import v.builtins.panic.*;
         |import v.builtins.result.*;
         |
-        |fn main() int export {
+        |exported func main() int {
         |  result Result<int, str> = Ok<int, str>(42);
         |  ret (result).expect();
         |}
@@ -58,7 +58,7 @@ class ResultTests extends FunSuite with Matchers {
         |import v.builtins.panic.*;
         |import v.builtins.result.*;
         |
-        |fn main() str export {
+        |exported func main() str {
         |  result Result<int, str> = Err<int, str>("file not found!");
         |  ret (result).expect_err();
         |}
@@ -73,7 +73,7 @@ class ResultTests extends FunSuite with Matchers {
           |import v.builtins.panic.*;
           |import v.builtins.result.*;
           |
-          |fn main() int export {
+          |exported func main() int {
           |  result Result<int, str> = Err<int, str>("file not found!");
           |  ret result.expect();
           |}
@@ -93,7 +93,7 @@ class ResultTests extends FunSuite with Matchers {
         |import v.builtins.panic.*;
         |import v.builtins.result.*;
         |
-        |fn main() str export {
+        |exported func main() str {
         |  result Result<int, str> = Ok<int, str>(73);
         |  ret result.expect_err();
         |}

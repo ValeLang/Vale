@@ -199,7 +199,7 @@ class PatternTemplar(
               destructureOwning(
                 temputs, nenv, life + 1, range, liveCaptureLocals, exprToDestructureOrDropOrPassTE, listOfMaybeDestructureMemberPatterns, afterSubPatternSuccessContinuation)
             }
-            case PointerT | ShareT => {
+            case PointerT | BorrowT | ShareT => {
               destructureNonOwningAndMaybeContinue(
                 temputs, nenv, life + 2, range, liveCaptureLocals, exprToDestructureOrDropOrPassTE, listOfMaybeDestructureMemberPatterns, afterSubPatternSuccessContinuation)
             }
@@ -315,12 +315,24 @@ class PatternTemplar(
             case staticSizedArrayT@StaticSizedArrayTT(size, _, _, elementType) => {
               loadFromStaticSizedArray(range, staticSizedArrayT, expectedContainerCoord, expectedContainerOwnership, expectedContainerPermission, containerAliasingExprTE, memberIndex)
             }
-            case _ => vfail("impl!")
+            case other => {
+              throw CompileErrorExceptionT(RangedInternalErrorT(range, "Unknown type to destructure: " + other))
+            }
           }
 
         val memberOwnershipInStruct = memberAddrExprTE.result.reference.ownership
         val coerceToOwnership = loadResultOwnership(memberOwnershipInStruct)
-        val loadExpr = SoftLoadTE(memberAddrExprTE, coerceToOwnership, expectedContainerPermission)
+        val memberPermissionInStruct = memberAddrExprTE.result.reference.permission
+        val corceToPermission = Templar.intersectPermission(memberPermissionInStruct, expectedContainerPermission)
+
+        if (coerceToOwnership == ShareT) {
+          if (corceToPermission != ReadonlyT) {
+            throw CompileErrorExceptionT(RangedInternalErrorT(range, "Share ref doesnt have readonly permission!"))
+          }
+        }
+
+        val loadExpr =
+          SoftLoadTE(memberAddrExprTE, coerceToOwnership, corceToPermission)
         innerTranslateSubPatternAndMaybeContinue(
           temputs, nenv, life + 1, headMaybeDestructureMemberPattern, liveCaptureLocals, loadExpr,
           (temputs, nenv, life, liveCaptureLocals) => {
@@ -414,7 +426,8 @@ class PatternTemplar(
 
   private def loadResultOwnership(memberOwnershipInStruct: OwnershipT): OwnershipT = {
     memberOwnershipInStruct match {
-      case OwnT => PointerT
+      case OwnT => BorrowT
+      case BorrowT => BorrowT
       case PointerT => PointerT
       case WeakT => WeakT
       case ShareT => ShareT

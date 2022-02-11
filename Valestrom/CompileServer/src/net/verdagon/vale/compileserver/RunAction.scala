@@ -12,7 +12,7 @@ class RunAction extends HttpFunction {
     val code = scala.io.Source.fromInputStream(request.getInputStream).mkString
     if (code.isEmpty) {
       response.setStatusCode(400)
-      response.getWriter.write("To compile a Vale program, specify the Vale code in the request body.\nExample: fn main() int export { ret 42; }\n")
+      response.getWriter.write("To compile a Vale program, specify the Vale code in the request body.\nExample: exported func main() int { ret 42; }\n")
       return
     }
 

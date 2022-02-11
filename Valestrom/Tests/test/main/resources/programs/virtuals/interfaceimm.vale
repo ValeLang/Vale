@@ -1,5 +1,5 @@
 
-interface MyOption sealed imm { }
+sealed interface MyOption imm { }
 
 struct MySome imm {
   value @MyList;
@@ -15,18 +15,18 @@ struct MyList imm {
   next @MyOption;
 }
 
-fn sum(list @MyList) int {
+func sum(list @MyList) int {
   ret list.value + sum(list.next);
 }
 
-fn sum(virtual opt @MyOption) int abstract;
-fn sum(opt @MyNone impl MyOption) int { ret 0; }
-fn sum(opt @MySome impl MyOption) int {
+abstract func sum(virtual opt @MyOption) int;
+func sum(opt @MyNone impl MyOption) int { ret 0; }
+func sum(opt @MySome impl MyOption) int {
    ret sum(opt.value);
 }
 
 
-fn main() int export {
+exported func main() int {
   list = MyList(7, MySome(MyList(17, MySome(MyList(18, MyNone())))));
   ret sum(list);
 }

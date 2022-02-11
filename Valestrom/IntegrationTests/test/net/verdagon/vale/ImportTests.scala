@@ -14,7 +14,7 @@ class ImportTests extends FunSuite with Matchers {
       """
         |import moduleB.moo;
         |
-        |fn main() int export {
+        |exported func main() int {
         |  a = moo();
         |  ret a;
         |}
@@ -22,7 +22,7 @@ class ImportTests extends FunSuite with Matchers {
 
     val moduleBCode =
       """
-        |fn moo() int { ret 42; }
+        |func moo() int { ret 42; }
       """.stripMargin
 
     val compile =
@@ -42,7 +42,7 @@ class ImportTests extends FunSuite with Matchers {
   test("Tests non-imported module isn't brought in") {
     val moduleACode =
       """
-        |fn main() int export {
+        |exported func main() int {
         |  a = 42;
         |  ret a;
         |}
@@ -50,7 +50,7 @@ class ImportTests extends FunSuite with Matchers {
 
     val moduleBCode =
       """
-        |fn moo() int { ret 73; }
+        |func moo() int { ret 73; }
       """.stripMargin
 
     val compile =
@@ -74,7 +74,7 @@ class ImportTests extends FunSuite with Matchers {
       """
         |import moduleB.bork.*;
         |
-        |fn main() int export {
+        |exported func main() int {
         |  a = moo();
         |  ret a;
         |}
@@ -82,7 +82,7 @@ class ImportTests extends FunSuite with Matchers {
 
     val moduleBCode =
       """
-        |fn moo() int { ret 42; }
+        |func moo() int { ret 42; }
       """.stripMargin
 
     val compile =
@@ -104,7 +104,7 @@ class ImportTests extends FunSuite with Matchers {
       """
         |import moduleB.bork.*;
         |
-        |fn main() int export {
+        |exported func main() int {
         |  a = 42;
         |  ret a;
         |}

@@ -1,7 +1,7 @@
 package net.verdagon.vale.scout
 
 import net.verdagon.vale.parser._
-import net.verdagon.vale.parser.ast.{AbstractAttributeP, AbstractP, BlockPE, BorrowP, BuiltinAttributeP, ExportAttributeP, ExternAttributeP, FunctionHeaderP, FunctionP, FunctionReturnP, IFunctionAttributeP, IdentifyingRuneP, NameP, PureAttributeP, ReadwriteP, RegionTypePR, ReturnPE, RulePUtils, TypeRuneAttributeP, UseP}
+import net.verdagon.vale.parser.ast.{AbstractAttributeP, AbstractP, BlockPE, BorrowP, BuiltinAttributeP, ExportAttributeP, ExternAttributeP, FunctionHeaderP, FunctionP, FunctionReturnP, IAttributeP, IdentifyingRuneP, NameP, PureAttributeP, ReadwriteP, RegionTypePR, ReturnPE, RulePUtils, TypeRuneAttributeP, UseP}
 import net.verdagon.vale.scout.Scout.noDeclarations
 import net.verdagon.vale.scout.patterns._
 //import net.verdagon.vale.scout.predictor.{Conclusions, PredictorEvaluator}
@@ -142,13 +142,17 @@ class FunctionScout(scout: Scout) {
       } else if (attributes.collectFirst({ case BuiltinAttributeP(_, _) => }).nonEmpty) {
         GeneratedBodyS(attributes.collectFirst({ case BuiltinAttributeP(_, generatorId) => generatorId}).head.str)
       } else {
-        vassert(maybeBody0.nonEmpty)
+        val body =
+          maybeBody0 match {
+            case None => throw CompileErrorExceptionS(RangedInternalErrorS(rangeS, "Error: function has no body."))
+            case Some(x) => x
+          }
         val (body1, _, magicParams) =
           scoutBody(
             functionEnv,
             None,
             lidb.child(),
-            maybeBody0.get,
+            body,
             // We hand these into scoutBody instead of assembling a StackFrame on our own because we want
             // StackFrame's to be made in one place, where we can centralize the logic for tracking variable
             // uses and so on.
@@ -187,7 +191,7 @@ class FunctionScout(scout: Scout) {
       body1)
   }
 
-  def translateFunctionAttributes(file: FileCoordinate, attrsP: Vector[IFunctionAttributeP]): Vector[IFunctionAttributeS] = {
+  def translateFunctionAttributes(file: FileCoordinate, attrsP: Vector[IAttributeP]): Vector[IFunctionAttributeS] = {
     attrsP.map({
       case AbstractAttributeP(_) => vwat() // Should have been filtered out, templar cares about abstract directly
       case ExportAttributeP(_) => ExportS(file.packageCoordinate)

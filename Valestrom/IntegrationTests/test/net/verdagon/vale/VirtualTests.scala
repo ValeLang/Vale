@@ -12,9 +12,9 @@ class VirtualTests extends FunSuite with Matchers {
     test("Simple program containing a virtual function") {
       val compile = RunCompilation.test(
         """
-          |interface I sealed {}
-          |fn doThing(virtual i I) int { ret 4; }
-          |fn main(i I) int {
+          |sealed interface I  {}
+          |func doThing(virtual i I) int { ret 4; }
+          |func main(i I) int {
           |  ret doThing(i);
           |}
         """.stripMargin)
@@ -45,9 +45,9 @@ class VirtualTests extends FunSuite with Matchers {
   test("Can call virtual function") {
     val compile = RunCompilation.test(
       """
-        |interface I sealed {}
-        |fn doThing(virtual i I) int { ret 4; }
-        |fn main(i I) int {
+        |sealed interface I  {}
+        |func doThing(virtual i I) int { ret 4; }
+        |func main(i I) int {
         |  ret doThing(i);
         |}
       """.stripMargin)
@@ -86,9 +86,9 @@ class VirtualTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |interface I {
-        |  fn doThing(virtual i I) int;
+        |  func doThing(virtual i I) int;
         |}
-        |fn main(i I) int {
+        |func main(i I) int {
         |  ret doThing(i);
         |}
       """.stripMargin)
@@ -114,8 +114,8 @@ class VirtualTests extends FunSuite with Matchers {
           |interface SectionMember {}
           |struct Header {}
           |impl SectionMember for Header;
-          |fn collectHeaders2(header *List<*Header>, virtual this *SectionMember) abstract;
-          |fn collectHeaders2(header *List<*Header>, this *Header impl SectionMember) { }
+          |abstract func collectHeaders2(header *List<*Header>, virtual this *SectionMember);
+          |func collectHeaders2(header *List<*Header>, this *Header impl SectionMember) { }
         """.stripMargin)
     val temputs = compile.getHamuts()
   }
@@ -124,22 +124,22 @@ class VirtualTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """
           |interface Bipedal {
-          |  fn hop(virtual s *Bipedal) int;
-          |  fn skip(virtual s *Bipedal) int;
+          |  func hop(virtual s *Bipedal) int;
+          |  func skip(virtual s *Bipedal) int;
           |}
           |
           |struct Human {  }
-          |fn hop(s *Human impl Bipedal) int { ret 7; }
-          |fn skip(s *Human impl Bipedal) int { ret 9; }
+          |func hop(s *Human impl Bipedal) int { ret 7; }
+          |func skip(s *Human impl Bipedal) int { ret 9; }
           |impl Bipedal for Human;
           |
-          |fn hopscotch(s *Bipedal) int {
+          |func hopscotch(s *Bipedal) int {
           |  s.hop();
           |  s.skip();
           |  ret s.hop();
           |}
           |
-          |fn main() export int {
+          |exported func main() int {
           |   x = Bipedal({ 3 }, { 5 });
           |  // x is an unnamed substruct which implements Bipedal.
           |
@@ -190,10 +190,10 @@ class VirtualTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |import castutils.*;
-        |interface AFunction2<R, P1, P2> rules(R Ref, P1 Ref, P2 Ref) {
-        |  fn __call(virtual this &AFunction2<R, P1, P2>, a P1, b P2) R;
+        |interface AFunction2<R, P1, P2> where R Ref, P1 Ref, P2 Ref {
+        |  func __call(virtual this &AFunction2<R, P1, P2>, a P1, b P2) R;
         |}
-        |fn main() str export {
+        |exported func main() str {
         |  func = AFunction2<str, int, bool>((i, b) => { str(i) + str(b) });
         |  ret func(42, true);
         |}

@@ -17,24 +17,24 @@ class HighlighterTests extends FunSuite with Matchers {
   test("Highlighter simple function") {
     val code =
       """
-        |fn main() {
+        |func main() {
         |  3
         |}
         |""".stripMargin
     highlight(code) shouldEqual
-      """<span class="Prog"><br /><span class="Fn">fn <span class="FnName">main</span><span class="Params">()</span> <span class="Block">&#123;<br />  <span class="Num">3</span><br />&#125;</span></span><br /></span>"""
+      """<span class="Prog"><br /><span class="Fn">func <span class="FnName">main</span><span class="Params">()</span> <span class="Block">&#123;<br />  <span class="Num">3</span><br />&#125;</span></span><br /></span>"""
   }
 
   test("Highlighter with comments") {
     val code =
       """
-        |fn main(
+        |func main(
         | // hello
         |) {
         |  3//bork
         |}
         |""".stripMargin
     highlight(code) shouldEqual
-      """<span class="Prog"><br /><span class="Fn">fn <span class="FnName">main</span><span class="Params">(<br /> <span class="Comment">// hello</span><br />)</span> <span class="Block">&#123;<br />  <span class="Num">3<span class="Comment">//bork</span></span><br />&#125;</span></span><br /></span>"""
+      """<span class="Prog"><br /><span class="Fn">func <span class="FnName">main</span><span class="Params">(<br /> <span class="Comment">// hello</span><br />)</span> <span class="Block">&#123;<br />  <span class="Num">3<span class="Comment">//bork</span></span><br />&#125;</span></span><br /></span>"""
   }
 }

@@ -41,7 +41,7 @@ object LoopScout {
           expressionScout.scoutExpressionAndCoerce(
             stackFrame1, lidb.child(),
             LetPE(
-              inKeywordRange, None,
+              inKeywordRange,
               PatternPP(inKeywordRange, None, Some(IterableNameDeclarationP(inKeywordRange)), None, None, None),
               iterableExpr),
             UseP,
@@ -50,7 +50,7 @@ object LoopScout {
           expressionScout.scoutExpressionAndCoerce(
             stackFrame2, lidb.child(),
             LetPE(
-              inKeywordRange, None,
+              inKeywordRange,
               PatternPP(inKeywordRange, None, Some(IteratorNameDeclarationP(inKeywordRange)), None, None, None),
               FunctionCallPE(
                 inKeywordRange, inKeywordRange,
@@ -114,7 +114,6 @@ object LoopScout {
                 Vector(
                   LetPE(
                     entryPatternPP.range,
-                    None,
                     PatternPP(inKeywordRange, None, Some(IterationOptionNameDeclarationP(inKeywordRange)), None, None, None),
                     FunctionCallPE(
                       inKeywordRange,
@@ -175,7 +174,6 @@ object LoopScout {
         stackFrame4, lidb.child(),
         LetPE(
           inKeywordRange,
-          None,
           entryPatternPP,
           FunctionCallPE(
             inKeywordRange,

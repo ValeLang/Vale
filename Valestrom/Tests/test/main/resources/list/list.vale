@@ -1,17 +1,17 @@
 import panicutils.*;
 
-struct List<E> rules(E Ref) {
+struct List<E> where E Ref {
   array! []<mut>E;
 }
-fn List<E>() List<E> {
+func List<E>() List<E> {
   ret List<E>(
     Array<mut, E>(
       0,
       &!(i) => { __pretend<E>() }));
 }
-fn void() {}
-fn len<E>(list &List<E>) int { ret len(&list.array); }
-fn add<E>(list &!List<E>, newElement E) {
+func void() {}
+func len<E>(list &List<E>) int { ret len(&list.array); }
+func add<E>(list &!List<E>, newElement E) {
   oldCapacity = list.array.capacity();
   if (list.len() == oldCapacity) {
     newCapacity = if (oldCapacity > 0) { oldCapacity * 2 } else { 1 };
@@ -22,25 +22,25 @@ fn add<E>(list &!List<E>, newElement E) {
   list.array!.push(newElement);
 }
 // todo: make that return a &E
-fn get<E>(list &List<E>, index int) &E {
+func get<E>(list &List<E>, index int) &E {
   a &[]<mut>E = list.array;
   ret a[index];
 }
 
-fn set<E>(list &!List<E>, index int, value E) E {
+func set<E>(list &!List<E>, index int, value E) E {
   ret set list.array[index] = value;
 }
 
-//fn toArray<E>(list &List<E>) []<mut>E {
+//func toArray<E>(list &List<E>) []<mut>E {
 //  MakeArray(list.len(), *!(i) => { list.get(i) })
 //}
-fn toVaryArray<E>(list &List<E>) []<mut>E {
+func toVaryArray<E>(list &List<E>) []<mut>E {
   ret Array<mut, E>(list.len(), &!(i) => { list.get(i) });
 }
-fn toImmArray<E>(list &List<E>) []<imm>E {
+func toImmArray<E>(list &List<E>) []<imm>E {
   ret MakeImmArray(list.len(), &!(i) => { list.get(i) });
 }
-//fn toList<E>(arr *[]<_>E) List<E> {
+//func toList<E>(arr *[]<_>E) List<E> {
 //  list = List<E>();
 //  arr each (elem) => {
 //    list.add(elem);
@@ -48,7 +48,7 @@ fn toImmArray<E>(list &List<E>) []<imm>E {
 //  = list;
 //}
 //
-//fn each<E, F>(list &List<E>, func F) void {
+//func each<E, F>(list &List<E>, func F) void {
 //  i! = 0;
 //  l = len(*list);
 //  while (i < l) {
@@ -57,7 +57,7 @@ fn toImmArray<E>(list &List<E>) []<imm>E {
 //  }
 //}
 //
-//fn each<E, F>(list &!List<E>, func F) void {
+//func each<E, F>(list &!List<E>, func F) void {
 //  i! = 0;
 //  l = len(*list);
 //  while (i < l) {
@@ -66,7 +66,7 @@ fn toImmArray<E>(list &List<E>) []<imm>E {
 //  }
 //}
 //
-//fn eachI<E, F>(list &List<E>, func F) void {
+//func eachI<E, F>(list &List<E>, func F) void {
 //  i! = 0;
 //  l = len(*list);
 //  while (i < l) {
@@ -75,7 +75,7 @@ fn toImmArray<E>(list &List<E>) []<imm>E {
 //  }
 //}
 //
-//fn eachI<E, F>(list &!List<E>, func F) void {
+//func eachI<E, F>(list &!List<E>, func F) void {
 //  i! = 0;
 //  l = len(*list);
 //  while (i < l) {
@@ -84,7 +84,7 @@ fn toImmArray<E>(list &List<E>) []<imm>E {
 //  }
 //}
 //
-//fn contains<E>(list &List<E>, element E) bool {
+//func contains<E>(list &List<E>, element E) bool {
 //  i! = 0;
 //  l = len(*list);
 //  while (i < l) {
@@ -97,7 +97,7 @@ fn toImmArray<E>(list &List<E>) []<imm>E {
 //}
 //
 //
-fn remove<E>(list &!List<E>, removeAtIndex int) E {
+func remove<E>(list &!List<E>, removeAtIndex int) E {
   if (removeAtIndex < 0) {
     panic("Can't remove at negative index!");
   }

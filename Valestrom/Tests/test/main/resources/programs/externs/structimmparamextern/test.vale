@@ -1,11 +1,11 @@
 
-struct Flamscrankle export imm {
+exported struct Flamscrankle imm {
   a int;
   c int;
 }
 
-fn extFunc(flam Flamscrankle) int extern;
+extern func extFunc(flam Flamscrankle) int;
 
-fn main() int export {
+exported func main() int {
   ret extFunc(Flamscrankle(7, 35));
 }

@@ -3,11 +3,11 @@ interface XOpt { }
 struct XSome { value int; }
 impl XOpt for XSome;
 
-fn doIt() XOpt {
+func doIt() XOpt {
   ret XSome(9);
 }
 
-fn main() int export {
+exported func main() int {
   a = doIt();
   ret 3;
 }

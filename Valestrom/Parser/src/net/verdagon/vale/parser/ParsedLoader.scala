@@ -1,7 +1,7 @@
 package net.verdagon.vale.parser
 
 import net.liftweb.json._
-import net.verdagon.vale.parser.ast.{AbstractAttributeP, AbstractP, AndPE, AnonymousRunePT, ArenaRuneAttributeP, AugmentPE, BinaryCallPE, BlockPE, BoolTypePR, BorrowP, BorrowPT, BraceCallPE, BuiltinAttributeP, BuiltinCallPR, BumpRuneAttributeP, CallMacro, CallPT, CitizenTemplateTypePR, ComponentsPR, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, ConstructingMemberNameDeclarationP, CoordListTypePR, CoordTypePR, DestructPE, DestructureP, DontCallMacro, DotPE, EachPE, EqualsPR, ExportAsP, ExportAttributeP, ExportP, ExternAttributeP, FileP, FinalP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IArraySizeP, ICitizenAttributeP, IExpressionPE, IFunctionAttributeP, IImpreciseNameP, INameDeclarationP, IRulexPR, IRuneAttributeP, IStructContent, ITemplexPT, ITypePR, IVirtualityP, IdentifyingRuneP, IdentifyingRunesP, IfPE, ImmutableP, ImplP, ImportP, IndexPE, InlinePT, IntPT, IntTypePR, InterfaceP, InterpretedPT, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, KindTypePR, LambdaPE, LetPE, LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsP, LoadAsPointerP, LoadAsWeakP, LocalNameDeclarationP, LocationTypePR, LookupNameP, LookupPE, MacroCallP, MagicParamLookupPE, TuplePT, MethodCallPE, MoveP, MutabilityP, MutabilityPT, MutabilityTypePR, MutableP, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, NotPE, OrPE, OrPR, OverrideP, OwnP, OwnershipP, OwnershipPT, OwnershipTypePR, PackPE, PackPT, ParamsP, PatternPP, PermissionP, PermissionPT, PermissionTypePR, PointerP, PoolRuneAttributeP, PrototypeTypePR, PureAttributeP, RangePE, ReadOnlyRuneAttributeP, ReadonlyP, ReadwriteP, RegionTypePR, ReturnPE, RuntimeSizedArrayPT, RuntimeSizedP, SealedP, ShareP, ShortcallPE, StaticSizedArrayPT, StaticSizedP, StrInterpolatePE, StringPT, StructMembersP, StructMethodP, StructP, SubExpressionPE, TemplateArgsP, TemplateRulesP, TemplexPR, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, TypeRuneAttributeP, TypedPR, UnitP, UseP, VariabilityP, VariabilityPT, VariabilityTypePR, VariadicStructMemberP, VaryingP, VoidPE, WeakP, WeakableP, WhilePE}
+import net.verdagon.vale.parser.ast._
 import net.verdagon.vale.{Err, Ok, Result, vimpl, vwat}
 
 object ParsedLoader {
@@ -126,9 +126,10 @@ object ParsedLoader {
     ImplP(
       loadRange(getObjectField(jobj, "range")),
       loadOptionalObject(getObjectField(jobj, "identifyingRunes"), loadIdentifyingRunes),
-      loadOptionalObject(getObjectField(jobj, "rules"), loadTemplateRules),
-      loadTemplex(getObjectField(jobj, "struct")),
-      loadTemplex(getObjectField(jobj, "interface")))
+      loadOptionalObject(getObjectField(jobj, "templateRules"), loadTemplateRules),
+      loadOptionalObject(getObjectField(jobj, "struct"), loadTemplex),
+      loadTemplex(getObjectField(jobj, "interface")),
+      getArrayField(jobj, "attributes").map(expectObject).map(loadAttribute))
   }
 
   private def loadExportAs(jobj: JObject) = {
@@ -150,7 +151,7 @@ object ParsedLoader {
     StructP(
       loadRange(getObjectField(jobj, "range")),
       loadName(getObjectField(jobj, "name")),
-      getArrayField(jobj, "attributes").map(expectObject).map(loadCitizenAttribute),
+      getArrayField(jobj, "attributes").map(expectObject).map(loadAttribute),
       loadTemplex(getObjectField(jobj, "mutability")),
       loadOptionalObject(getObjectField(jobj, "identifyingRunes"), loadIdentifyingRunes),
       loadOptionalObject(getObjectField(jobj, "templateRules"), loadTemplateRules),
@@ -161,7 +162,8 @@ object ParsedLoader {
     InterfaceP(
       loadRange(getObjectField(topLevelThing, "range")),
       loadName(getObjectField(topLevelThing, "name")),
-      getArrayField(topLevelThing, "attributes").map(expectObject).map(loadCitizenAttribute),
+      getArrayField(topLevelThing, "attributes").map(expectObject).map(loadAttribute),
+//      getArrayField(topLevelThing, "attributes").map(expectObject).map(loadCitizenAttribute),
       loadTemplex(getObjectField(topLevelThing, "mutability")),
       loadOptionalObject(getObjectField(topLevelThing, "maybeIdentifyingRunes"), loadIdentifyingRunes),
       loadOptionalObject(getObjectField(topLevelThing, "templateRules"), loadTemplateRules),
@@ -172,7 +174,7 @@ object ParsedLoader {
     FunctionHeaderP(
       loadRange(getObjectField(jobj, "range")),
       loadOptionalObject(getObjectField(jobj, "name"), loadName),
-      getArrayField(jobj, "attributes").map(expectObject).map(loadFunctionAttribute),
+      getArrayField(jobj, "attributes").map(expectObject).map(loadAttribute),
       loadOptionalObject(getObjectField(jobj, "maybeUserSpecifiedIdentifyingRunes"), loadIdentifyingRunes),
       loadOptionalObject(getObjectField(jobj, "templateRules"), loadTemplateRules),
       loadOptionalObject(getObjectField(jobj, "params"), loadParams),
@@ -353,7 +355,8 @@ object ParsedLoader {
       case "Let" => {
         LetPE(
           loadRange(getObjectField(jobj, "range")),
-          loadOptionalObject(getObjectField(jobj, "templateRules"), loadTemplateRules),
+//          getArrayField(jobj, "attributes").map(expectObject).map(loadAttribute),
+//          loadOptionalObject(getObjectField(jobj, "templateRules"), loadTemplateRules),
           loadPattern(getObjectField(jobj, "pattern")),
           loadExpression(getObjectField(jobj, "source")))
       }
@@ -632,20 +635,6 @@ object ParsedLoader {
     }
   }
 
-  def loadCitizenAttribute(jobj: JObject): ICitizenAttributeP = {
-    getType(jobj) match {
-      case "ExportAttribute" => ExportP(loadRange(getObjectField(jobj, "range")))
-      case "SealedAttribute" => SealedP(loadRange(getObjectField(jobj, "range")))
-      case "WeakableAttribute" => WeakableP(loadRange(getObjectField(jobj, "range")))
-      case "MacroCall" => {
-        MacroCallP(
-          loadRange(getObjectField(jobj, "range")),
-          if (getBooleanField(jobj, "dontCall")) DontCallMacro else CallMacro,
-          loadName(getObjectField(jobj, "name")))
-      }
-      case x => vimpl(x.toString)
-    }
-  }
 
   def loadRuneAttribute(jobj: JObject): IRuneAttributeP = {
     getType(jobj) match {
@@ -662,7 +651,7 @@ object ParsedLoader {
     }
   }
 
-  def loadFunctionAttribute(jobj: JObject): IFunctionAttributeP = {
+  def loadAttribute(jobj: JObject): IAttributeP = {
     getType(jobj) match {
       case "AbstractAttribute" => AbstractAttributeP(loadRange(getObjectField(jobj, "range")))
       case "PureAttribute" => PureAttributeP(loadRange(getObjectField(jobj, "range")))
@@ -672,6 +661,15 @@ object ParsedLoader {
         BuiltinAttributeP(
           loadRange(getObjectField(jobj, "range")),
           loadName(getObjectField(jobj, "generatorName")))
+      }
+      case "ExportAttribute" => ExportAttributeP(loadRange(getObjectField(jobj, "range")))
+      case "SealedAttribute" => SealedAttributeP(loadRange(getObjectField(jobj, "range")))
+      case "WeakableAttribute" => WeakableAttributeP(loadRange(getObjectField(jobj, "range")))
+      case "MacroCall" => {
+        MacroCallP(
+          loadRange(getObjectField(jobj, "range")),
+          if (getBooleanField(jobj, "dontCall")) DontCallMacro else CallMacro,
+          loadName(getObjectField(jobj, "name")))
       }
       case x => vimpl(x.toString)
     }
@@ -737,6 +735,11 @@ object ParsedLoader {
       case "AnonymousRuneT" => {
         AnonymousRunePT(
           loadRange(getObjectField(jobj, "range")))
+      }
+      case "RegionRuneT" => {
+        RegionRunePT(
+          loadRange(getObjectField(jobj, "range")),
+          loadName(getObjectField(jobj, "name")))
       }
       case "OwnershipT" => {
         OwnershipPT(

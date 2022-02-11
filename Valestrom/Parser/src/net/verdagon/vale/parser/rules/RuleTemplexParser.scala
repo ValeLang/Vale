@@ -123,7 +123,7 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
 
   private[parser] def prototypeRulePR: Parser[ITemplexPT] = {
     pos ~
-      ("fn" ~> optWhite ~> exprIdentifier <~ optWhite <~ "(" <~ optWhite) ~
+      ("func" ~> optWhite ~> exprIdentifier <~ optWhite <~ "(" <~ optWhite) ~
       (repsep(ruleTemplexPR, optWhite ~ "," ~ optWhite) <~ optWhite <~ ")" <~ optWhite) ~
         ruleTemplexPR ~
       pos ^^ {
@@ -134,7 +134,7 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
   // Add any new rules to the "Nothing matches empty string" test!
 
   private[parser] def callableRulePR: Parser[ITemplexPT] = {
-    pos ~ ("fn" ~> optWhite ~> opt(":" ~> optWhite ~> ruleTemplexPR) ~ ("(" ~> optWhite ~> repsep(ruleTemplexPR, optWhite ~ "," ~ optWhite) <~ optWhite <~ ")") ~ (optWhite ~> ruleTemplexPR)) ~ pos ^^ {
+    pos ~ ("func" ~> optWhite ~> opt(":" ~> optWhite ~> ruleTemplexPR) ~ ("(" ~> optWhite ~> repsep(ruleTemplexPR, optWhite ~ "," ~ optWhite) <~ optWhite <~ ")") ~ (optWhite ~> ruleTemplexPR)) ~ pos ^^ {
       case begin ~ (mutability ~ params ~ ret) ~ end => FunctionPT(ast.RangeP(begin, end), mutability, PackPT(ast.RangeP(begin, end), params.toVector), ret)
     }
   }

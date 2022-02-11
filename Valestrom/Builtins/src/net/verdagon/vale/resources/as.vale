@@ -1,15 +1,15 @@
 import v.builtins.result.*;
 
-fn as<TargetKind, SourceType>(left SourceType) Result<TargetType, SourceType>
-rules(
+extern("vale_as_subtype")
+func as<TargetKind, SourceType>(left SourceType) Result<TargetType, SourceType>
+where
   SourceType Ref(own, rw, _),
-  TargetType Ref(own, rw, TargetKind))
-extern(vale_as_subtype);
+  TargetType Ref(own, rw, TargetKind);
 
-fn as<TargetKind, SourceType>(left SourceType) Result<*TargetType, *SourceType>
-rules(
+extern("vale_as_subtype")
+func as<TargetKind, SourceType>(left SourceType) Result<*TargetType, *SourceType>
+where
   SourceOwnership Ownership = borrow | ptr,
   SourcePermission Permission,
   SourceType Ref(SourceOwnership, SourcePermission, _),
-  TargetType Ref(SourceOwnership, SourcePermission, TargetKind))
-extern(vale_as_subtype);
+  TargetType Ref(SourceOwnership, SourcePermission, TargetKind);

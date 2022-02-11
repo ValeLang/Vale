@@ -14,7 +14,7 @@ class BiggerTests extends FunSuite with Collector with TestParseUtils {
       compile(
         Parser.runParserInner(_),
       """
-        |fn main() int export {}
+        |exported func main() int {}
         |
         |struct mork { }
         |""".stripMargin)
@@ -24,126 +24,123 @@ class BiggerTests extends FunSuite with Collector with TestParseUtils {
 
   test("Simple function") {
     compileMaybe(
-      Parser.parseFunction(_, StopBeforeCloseBrace), "fn sum() int {3}") match {
-      case FunctionP(_,
+      Parser.parseTopLevelThing(_), "func sum() int {3}") match {
+      case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "sum")), Vector(), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, Some(_))),
-        Some(BlockPE(_, ConstantIntPE(_, 3, _)))) =>
+        Some(BlockPE(_, ConstantIntPE(_, 3, _))))) =>
     }
   }
 
   test("Pure function") {
     compileMaybe(
-      Parser.parseFunction(_, StopBeforeCloseBrace), "fn sum() pure {3}") match {
-      case FunctionP(_,
+      Parser.parseTopLevelThing(_), "pure func sum() {3}") match {
+      case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "sum")), Vector(PureAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
-        Some(BlockPE(_, ConstantIntPE(_, 3, _)))) =>
+        Some(BlockPE(_, ConstantIntPE(_, 3, _))))) =>
     }
   }
 
   test("Extern function") {
     compileMaybe(
-      Parser.parseFunction(_, StopBeforeCloseBrace), "fn sum() extern;") match {
-      case FunctionP(_,
+      Parser.parseTopLevelThing(_), "extern func sum();") match {
+      case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "sum")), Vector(ExternAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
-        None) =>
+        None)) =>
     }
   }
 
   test("Abstract function") {
     compileMaybe(
-      Parser.parseFunction(_, StopBeforeCloseBrace), "fn sum() abstract;") match {
-      case FunctionP(_,
+      Parser.parseTopLevelThing(_), "abstract func sum();") match {
+      case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "sum")), Vector(AbstractAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
-        None) =>
+        None)) =>
     }
   }
 
   test("Pure and default region") {
     compileMaybe(
-      Parser.parseFunction(_, StopBeforeCloseBrace),
-      """fn findNearbyUnits() 'i int pure 'i { }
+      Parser.parseTopLevelThing(_),
+      """pure func findNearbyUnits() 'i int 'i { }
         |""".stripMargin) match {
-      case FunctionP(_,
+      case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_,"findNearbyUnits")),
           Vector(PureAttributeP(_)),
           None,
-          None,
-          Some(ParamsP(_,Vector())),
+          None, Some(ParamsP(_,Vector())),
           FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_,"int"))))),
-        Some(BlockPE(_,VoidPE(_)))) =>
+        Some(BlockPE(_,VoidPE(_))))) =>
     }
   }
 
   test("Attribute after return") {
     compileMaybe(
-      Parser.parseFunction(_, StopBeforeCloseBrace), "fn sum() Int abstract;") match {
-      case FunctionP(_,
+      Parser.parseTopLevelThing(_), "abstract func sum() Int;") match {
+      case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "sum")),
           Vector(AbstractAttributeP(_)),
           None,
-          None,
-          Some(ParamsP(_,Vector())),
+          None, Some(ParamsP(_,Vector())),
           FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_,"Int"))))),
-        None) =>
+        None)) =>
     }
   }
 
   test("Attribute before return") {
     compileMaybe(
-      Parser.parseFunction(_, StopBeforeCloseBrace), "fn sum() abstract Int;") match {
-      case FunctionP(_,
+      Parser.parseTopLevelThing(_), "abstract func sum() Int;") match {
+      case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "sum")),
           Vector(AbstractAttributeP(_)),
           None,
-          None,
-          Some(ParamsP(_,Vector())),
+          None, Some(ParamsP(_,Vector())),
           FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_,"Int"))))),
-        None) =>
+        None)) =>
     }
   }
 
   test("Simple function with identifying rune") {
-    val func = compileMaybe(
-      Parser.parseFunction(_, StopBeforeCloseBrace), "fn sum<A>(a A){a}")
+    val TopLevelFunctionP(func) = compileMaybe(
+      Parser.parseTopLevelThing(_), "func sum<A>(a A){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_, NameP(_, "A"), Vector()) =>
     }
   }
 
   test("Simple function with coord-typed identifying rune") {
-    val func = compileMaybe(
-      Parser.parseFunction(_, StopBeforeCloseBrace), "fn sum<A coord>(a A){a}")
+    val TopLevelFunctionP(func) = compileMaybe(
+      Parser.parseTopLevelThing(_), "func sum<A coord>(a A){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_, NameP(_, "A"), Vector(TypeRuneAttributeP(_, CoordTypePR))) =>
     }
   }
 
   test("Simple function with region-typed identifying rune") {
-    val func = compileMaybe(
-      Parser.parseFunction(_, StopBeforeCloseBrace), "fn sum<A reg>(a A){a}")
+    val TopLevelFunctionP(func) = compileMaybe(
+      Parser.parseTopLevelThing(_), "func sum<A reg>(a A){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_, NameP(_, "A"), Vector(TypeRuneAttributeP(_, RegionTypePR))) =>
     }
   }
 
   test("Simple function with apostrophe region-typed identifying rune") {
-    val func = compileMaybe(
-      Parser.parseFunction(_, StopBeforeCloseBrace), "fn sum<'A>(a 'A *Marine){a}")
+    val TopLevelFunctionP(func) = compileMaybe(
+      Parser.parseTopLevelThing(_), "func sum<'A>(a 'A *Marine){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_, NameP(_, "A"), Vector(TypeRuneAttributeP(_, RegionTypePR))) =>
     }
   }
 
   test("Pool region") {
-    val func = compileMaybe(
-      Parser.parseFunction(_, StopBeforeCloseBrace), "fn sum<'A pool>(a 'A *Marine){a}")
+    val TopLevelFunctionP(func) = compileMaybe(
+      Parser.parseTopLevelThing(_), "func sum<'A pool>(a 'A *Marine){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_,
       NameP(_, "A"),
@@ -154,8 +151,8 @@ class BiggerTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Arena region") {
-    val func = compileMaybe(
-      Parser.parseFunction(_, StopBeforeCloseBrace), "fn sum<'A arena>(a 'A *Marine){a}")
+    val TopLevelFunctionP(func) = compileMaybe(
+      Parser.parseTopLevelThing(_), "func sum<'A arena>(a 'A *Marine){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_,
         NameP(_, "A"),
@@ -167,8 +164,8 @@ class BiggerTests extends FunSuite with Collector with TestParseUtils {
 
 
   test("Readonly region") {
-    val func = compileMaybe(
-      Parser.parseFunction(_, StopBeforeCloseBrace), "fn sum<'A ro>(a 'A *Marine){a}")
+    val TopLevelFunctionP(func) = compileMaybe(
+      Parser.parseTopLevelThing(_), "func sum<'A ro>(a 'A *Marine){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_,
         NameP(_, "A"),
@@ -180,16 +177,16 @@ class BiggerTests extends FunSuite with Collector with TestParseUtils {
 
   test("Virtual function") {
     compileMaybe(
-      Parser.parseFunction(_, StopBeforeCloseBrace),
+      Parser.parseTopLevelThing(_),
       """
-        |fn doCivicDance(virtual this Car) int;
+        |func doCivicDance(virtual this Car) int;
       """.stripMargin) shouldHave {
-      case FunctionP(_,
+      case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "doCivicDance")), Vector(), None, None,
-          Some(ParamsP(_, Vector(PatternPP(_, _,Some(LocalNameDeclarationP(NameP(_, "this"))), Some(NameOrRunePT(NameP(_, "Car"))), None, Some(AbstractP(_)))))),
+          Some(NameP(_, "doCivicDance")), Vector(), None,
+          None, Some(ParamsP(_, Vector(PatternPP(_, _,Some(LocalNameDeclarationP(NameP(_, "this"))), Some(NameOrRunePT(NameP(_, "Car"))), None, Some(AbstractP(_)))))),
           FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_, "int"))))),
-        None) =>
+        None)) =>
     }
   }
 
@@ -197,7 +194,7 @@ class BiggerTests extends FunSuite with Collector with TestParseUtils {
     compileForError(
       Parser.runParserInner(_),
         """
-          |fn doCivicDance(virtual this Car) moo blork
+          |func doCivicDance(virtual this Car) moo blork
         """.stripMargin) match {
       case BadFunctionBodyError(_) =>
     }

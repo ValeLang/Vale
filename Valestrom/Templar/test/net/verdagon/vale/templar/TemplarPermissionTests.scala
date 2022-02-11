@@ -26,7 +26,7 @@ class TemplarPermissionTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Bork {}
-        |fn main(a *Bork) int {
+        |func main(a *Bork) int {
         |  ret 7;
         |}
         |""".stripMargin)
@@ -43,7 +43,7 @@ class TemplarPermissionTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Bork {}
-        |fn main(a *!Bork) int {
+        |func main(a *!Bork) int {
         |  ret 7;
         |}
         |""".stripMargin)
@@ -63,7 +63,7 @@ class TemplarPermissionTests extends FunSuite with Matchers {
         |struct Bork {
         |  engine Engine;
         |}
-        |fn main(a *Bork) infer-ret {
+        |func main(a *Bork) infer-ret {
         |  ret *a.engine;
         |}
         |""".stripMargin)
@@ -83,8 +83,8 @@ class TemplarPermissionTests extends FunSuite with Matchers {
         |struct Bork {
         |  engine Engine;
         |}
-        |fn getFuel(engine &Engine) int { ret 42; }
-        |fn main() infer-ret {
+        |func getFuel(engine &Engine) int { ret 42; }
+        |func main() infer-ret {
         |  bork = Bork(Engine());
         |  ret bork.engine.getFuel();
         |}

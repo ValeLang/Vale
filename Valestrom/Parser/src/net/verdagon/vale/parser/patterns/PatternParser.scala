@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser.patterns
 
-import net.verdagon.vale.parser.ast.{AbstractP, BorrowP, ConstructingMemberNameDeclarationP, DestructureP, INameDeclarationP, ITemplexPT, LocalNameDeclarationP, NameP, OverrideP, OwnP, OwnershipP, PatternPP, PointerP, ShareP, WeakP}
+import net.verdagon.vale.parser.ast.{AbstractP, BorrowP, ConstructingMemberNameDeclarationP, DestructureP, INameDeclarationP, ITemplexPT, LocalNameDeclarationP, NameP, OverrideP, OwnP, OwnershipP, PatternPP, PointerP, RangeP, ShareP, WeakP}
 import net.verdagon.vale.parser.old.{ParserUtils, TemplexParser}
 import net.verdagon.vale.parser.{ast, _}
 import net.verdagon.vale.{vcurious, vfail, vimpl}
@@ -66,6 +66,9 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
   // Remember, for pattern parsers, something *must* be present, don't match empty.
   // Luckily, for this rule, we always have the expr identifier.
   private[parser] def patternCapture: Parser[INameDeclarationP] = {
+    (pos <~ "&") ~ ("this"|"self") ~ pos ^^ {
+      case begin ~ name ~ end => LocalNameDeclarationP(NameP(RangeP(begin, end), name))
+    } |
     pos ~ existsMW("this.") ~ (exprIdentifier <~ opt("!")) ~ pos ^^ {
       case begin ~ None ~ name ~ end => LocalNameDeclarationP(name)
       case begin ~ Some(thisdot) ~ name ~ end => ConstructingMemberNameDeclarationP(NameP(ast.RangeP(begin, name.range.end), name.str))

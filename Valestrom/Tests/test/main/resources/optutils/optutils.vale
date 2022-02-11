@@ -1,20 +1,20 @@
 
-fn getOr<T>(virtual opt &Opt<T>, default T) T abstract;
-fn getOr<T>(opt &None<T> impl Opt<T>, default T) T {
+abstract func getOr<T>(virtual opt &Opt<T>, default T) T;
+func getOr<T>(opt &None<T> impl Opt<T>, default T) T {
   ret default;
 }
-fn getOr<T>(opt &Some<T> impl Opt<T>, default T) T {
+func getOr<T>(opt &Some<T> impl Opt<T>, default T) T {
   ret opt.value;
 }
 
-fn map<T, R>(virtual opt &Opt<T>, func &!IFunction1<mut, *T, R>) Opt<R> abstract;
-fn map<T, R>(opt &None<T> impl Opt<T>, func &!IFunction1<mut, *T, R>) Opt<R> {
+abstract func map<T, R>(virtual opt &Opt<T>, func &!IFunction1<mut, *T, R>) Opt<R>;
+func map<T, R>(opt &None<T> impl Opt<T>, func &!IFunction1<mut, *T, R>) Opt<R> {
   ret None<R>();
 }
-fn map<T, R>(opt &Some<T> impl Opt<T>, func &!IFunction1<mut, *T, R>) Opt<R> {
+func map<T, R>(opt &Some<T> impl Opt<T>, func &!IFunction1<mut, *T, R>) Opt<R> {
   ret Some<R>(func!(opt.value));
 }
 
-fn len<T>(virtual opt &Opt<T>) int abstract;
-fn len<T>(opt &None<T> impl Opt<T>) int { ret 0; }
-fn len<T>(opt &Some<T> impl Opt<T>) int { ret 1; }
+abstract func len<T>(virtual opt &Opt<T>) int;
+func len<T>(opt &None<T> impl Opt<T>) int { ret 0; }
+func len<T>(opt &Some<T> impl Opt<T>) int { ret 1; }

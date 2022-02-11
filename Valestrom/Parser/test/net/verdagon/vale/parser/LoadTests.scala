@@ -39,7 +39,7 @@ class LoadTests extends FunSuite with Matchers with Collector {
 //  }
 
   test("Simple program") {
-    val originalFile = Parser.runParser("""fn main() int export { ret 42; }""").getOrDie()
+    val originalFile = Parser.runParser("""exported func main() int { ret 42; }""").getOrDie()
     val von = ParserVonifier.vonifyFile(originalFile)
     val json = new VonPrinter(JsonSyntax, 120).print(von)
     val loadedFile = ParsedLoader.load(json).getOrDie()
@@ -47,7 +47,7 @@ class LoadTests extends FunSuite with Matchers with Collector {
   }
 
   test("Strings with special characters") {
-    val code = "fn main() str export { \"hello\\u001bworld\" }"
+    val code = "exported func main() str { \"hello\\u001bworld\" }"
     // FALL NOT TO TEMPTATION
     // Scala has some issues here.
     // The above "\"\\u001b\"" seems like it could be expressed """"\\u001b"""" but it can't.

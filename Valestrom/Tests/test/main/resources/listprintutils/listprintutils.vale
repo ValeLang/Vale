@@ -1,5 +1,5 @@
 
-fn println<E>(list &List<E>) {
+func println<E>(list &List<E>) {
     print("[");
   l = len(list);
   foreach i in 0..l {

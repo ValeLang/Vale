@@ -6,7 +6,7 @@ struct Inner {
   x! int;
 }
 
-fn main() int export {
+exported func main() int {
   o = Outer(Inner(73));
   set o.inner.x = 42;
   ret o.inner.x;

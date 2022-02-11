@@ -1,5 +1,5 @@
 
-fn main() int export {
+exported func main() int {
   if (false) {
     __vbi_panic();
   }

@@ -1,7 +1,7 @@
 
-fn extStrLen(haystackStr str) int extern;
+extern func extStrLen(haystackStr str) int;
 
-fn main() int export {
+exported func main() int {
   len = extStrLen("sprogwoggle");
   ret len;
 }

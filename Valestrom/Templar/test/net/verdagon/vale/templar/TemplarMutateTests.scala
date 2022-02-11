@@ -28,7 +28,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn main() export {a! = 3; set a = 4; }
+        |exported func main() {a! = 3; set a = 4; }
         |""".stripMargin)
     val temputs = compile.expectTemputs();
     val main = temputs.lookupFunction("main")
@@ -46,7 +46,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
           |import v.builtins.tup.*;
           |struct Engine { fuel int; }
           |struct Spaceship { engine! Engine; }
-          |fn main() export {
+          |exported func main() {
           |  ship = Spaceship(Engine(10));
           |  set ship.engine = Engine(15);
           |}
@@ -67,13 +67,13 @@ class TemplarMutateTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |interface IXOption<T> rules(T Ref) { }
-        |struct XSome<T> rules(T Ref) { value T; }
+        |interface IXOption<T> where T Ref { }
+        |struct XSome<T> where T Ref { value T; }
         |impl<T> IXOption<T> for XSome<T>;
-        |struct XNone<T> rules(T Ref) { }
+        |struct XNone<T> where T Ref { }
         |impl<T> IXOption<T> for XNone<T>;
         |
-        |fn main() export {
+        |exported func main() {
         |  m! IXOption<int> = XNone<int>();
         |  set m = XSome(6);
         |}
@@ -90,16 +90,16 @@ class TemplarMutateTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |interface IXOption<T> rules(T Ref) { }
-        |struct XSome<T> rules(T Ref) { value T; }
+        |interface IXOption<T> where T Ref { }
+        |struct XSome<T> where T Ref { value T; }
         |impl<T> IXOption<T> for XSome<T>;
-        |struct XNone<T> rules(T Ref) { }
+        |struct XNone<T> where T Ref { }
         |impl<T> IXOption<T> for XNone<T>;
         |
         |struct Marine {
         |  weapon! IXOption<int>;
         |}
-        |fn main() export {
+        |exported func main() {
         |  m = Marine(XNone<int>());
         |  set m.weapon = XSome(6);
         |}
@@ -117,7 +117,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Vec3 imm { x float; y float; z float; }
-        |fn main() int export {
+        |exported func main() int {
         |  v = Vec3(3.0, 4.0, 5.0);
         |  set v.x = 10.0;
         |}
@@ -139,7 +139,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct Vec3 { x float; y float; z float; }
-        |fn main() int export {
+        |exported func main() int {
         |  v = Vec3(3.0, 4.0, 5.0);
         |  set v.x = 10.0;
         |}
@@ -161,7 +161,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |import v.builtins.arrays.*;
-        |fn main() int export {
+        |exported func main() int {
         |  arr = Array<mut, int>(3);
         |  arr!.push(0);
         |  arr!.push(1);
@@ -178,7 +178,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |import ifunction.ifunction1.*;
-        |fn main() int export {
+        |exported func main() int {
         |  arr = #[#10]({_});
         |  set arr[4] = 10;
         |  ret 73;
@@ -197,7 +197,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn main() export {
+        |exported func main() {
         |  a! = 5;
         |  set a = "blah";
         |}
@@ -212,8 +212,8 @@ class TemplarMutateTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |fn bork(a int impl int) {}
-        |fn main() export {
+        |func bork(a int impl int) {}
+        |exported func main() {
         |  bork(7);
         |}
         |""".stripMargin)

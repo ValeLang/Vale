@@ -196,7 +196,7 @@ class FunctionTemplar(
 
   // We would want only the prototype instead of the entire header if, for example,
   // we were calling the function. This is necessary for a recursive function like
-  // fn main():Int{main()}
+  // func main():Int{main()}
   def evaluateOrdinaryFunctionFromNonCallForPrototype(
     temputs: Temputs,
     callRange: RangeS,
@@ -365,7 +365,7 @@ class FunctionTemplar(
 
   // We would want only the prototype instead of the entire header if, for example,
   // we were calling the function. This is necessary for a recursive function like
-  // fn main():Int{main()}
+  // func main():Int{main()}
   private def evaluateOrdinaryLightFunctionFromNonCallForPrototype(
       env: IEnvironment,
       temputs: Temputs,

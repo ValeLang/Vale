@@ -20,10 +20,10 @@ class PureFunctionTests extends FunSuite with Matchers {
           |struct Spaceship {
           |  engine Engine;
           |}
-          |fn pfunc(s *Spaceship) pure int {
+          |pure func pfunc(s *Spaceship) int {
           |  ret s.engine.fuel;
           |}
-          |fn main() int export {
+          |exported func main() int {
           |  s = Spaceship(Engine(10));
           |  ret pfunc(*s);
           |}

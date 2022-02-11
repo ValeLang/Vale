@@ -68,11 +68,11 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
 
   test("Coord matches plain Int") {
     // Coord can do this because I want to be able to say:
-    //   fn moo
-    //   rules(#T = (Int):Void)
+    //   func moo
+    //   where #T = (Int):Void
     //   (a: #T)
     // instead of:
-    //   fn moo
+    //   func moo
     //   rules(
     //     Ref#T[_, _, Ref[_, _, Int]]:Ref[_, _, Void]))
     //   (a: #T)

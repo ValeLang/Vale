@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser.old
 
-import net.verdagon.vale.parser.ast.{AbstractAttributeP, BlockPE, BuiltinAttributeP, CallMacro, DontCallMacro, ExportAsP, ExportAttributeP, ExportP, ExternAttributeP, FinalP, FunctionHeaderP, FunctionP, FunctionReturnP, ICitizenAttributeP, IFunctionAttributeP, IStructContent, ImplP, ImportP, InterfaceP, MacroCallP, MutabilityPT, MutableP, NormalStructMemberP, PureAttributeP, SealedP, StructMembersP, StructMethodP, StructP, VariadicStructMemberP, VaryingP, VoidPE, WeakableP}
+import net.verdagon.vale.parser.ast._
 import net.verdagon.vale.parser.patterns.PatternParser
 import net.verdagon.vale.parser.rules.{RuleParser, RuleTemplexParser}
 import net.verdagon.vale.parser.{ast, _}
@@ -18,45 +18,45 @@ object CombinatorParsers
     with ExpressionParser {
   override def skipWhitespace = false
   //override val whiteSpace = "[ \t\r\f]+".r
-
-  def functionAttribute: Parser[IFunctionAttributeP] = {
-    pos ~ "abstract" ~ pos ^^ { case begin ~ _ ~ end => AbstractAttributeP(ast.RangeP(begin, end)) } |
-      pos ~ ("extern(" ~> exprIdentifier <~ ")") ~ pos ^^ { case begin ~ generatorName ~ end => BuiltinAttributeP(ast.RangeP(begin, end), generatorName) } |
-      pos ~ "extern" ~ pos ^^ { case begin ~ _ ~ end => ExternAttributeP(ast.RangeP(begin, end)) } |
-      pos ~ "export" ~ pos ^^ { case begin ~ _ ~ end => ExportAttributeP(ast.RangeP(begin, end)) } |
-      pos ~ "pure" ~ pos ^^ { case begin ~ _ ~ end => PureAttributeP(ast.RangeP(begin, end)) }
-  }
-
-  def topLevelFunctionBegin = {
-    pos ~
-      ("fn" ~> optWhite ~> (comparisonOperators | functionIdentifier) <~ optWhite) ~
-      opt(identifyingRunesPR <~ optWhite) ~
-      (patternPrototypeParams <~ optWhite) ~
-      pos ~
-      existsMW("infer-ret") ~
-      // We have template rules before and after the return type because the return type likes
-      // to parse the `rules` in `rules(stuff here)` as a type and then fail when it hits the
-      // parentheses.
-      opt(templateRulesPR <~ optWhite) ~
-      (repsep(functionAttribute, white) <~ optWhite) ~
-      opt(templex <~ optWhite) ~
-      pos ~
-      opt(templateRulesPR <~ optWhite) ~
-      (repsep(functionAttribute, white) <~ optWhite) ~
-      pos ^^ {
-      case begin ~ name ~ identifyingRunes ~ patternParams ~ retBegin ~ maybeInferRet ~ maybeTemplateRulesBeforeReturn ~ attributesBeforeReturn ~ maybeRetType ~ retEnd ~ maybeTemplateRulesAfterReturn ~ attributesBeforeBody ~ end => {
-        vassert(!(maybeTemplateRulesBeforeReturn.nonEmpty && maybeTemplateRulesAfterReturn.nonEmpty))
-        FunctionHeaderP(
-          ast.RangeP(begin, end),
-          Some(name),
-          (attributesBeforeReturn ++ attributesBeforeBody).toVector,
-          identifyingRunes,
-          (maybeTemplateRulesBeforeReturn.toVector ++ maybeTemplateRulesAfterReturn.toVector).headOption,
-          Some(patternParams),
-          FunctionReturnP(ast.RangeP(retBegin, retEnd), maybeInferRet, maybeRetType))
-      }
-    }
-  }
+//
+//  def functionAttribute: Parser[IFunctionAttributeP] = {
+//    pos ~ "abstract" ~ pos ^^ { case begin ~ _ ~ end => AbstractAttributeP(ast.RangeP(begin, end)) } |
+//      pos ~ ("extern(" ~> exprIdentifier <~ ")") ~ pos ^^ { case begin ~ generatorName ~ end => BuiltinAttributeP(ast.RangeP(begin, end), generatorName) } |
+//      pos ~ "extern" ~ pos ^^ { case begin ~ _ ~ end => ExternAttributeP(ast.RangeP(begin, end)) } |
+//      pos ~ "export" ~ pos ^^ { case begin ~ _ ~ end => ExportAttributeP(ast.RangeP(begin, end)) } |
+//      pos ~ "pure" ~ pos ^^ { case begin ~ _ ~ end => PureAttributeP(ast.RangeP(begin, end)) }
+//  }
+//
+//  def topLevelFunctionBegin = {
+//    pos ~
+//      ("func" ~> optWhite ~> (comparisonOperators | functionIdentifier) <~ optWhite) ~
+//      opt(identifyingRunesPR <~ optWhite) ~
+//      (patternPrototypeParams <~ optWhite) ~
+//      pos ~
+//      existsMW("infer-ret") ~
+//      // We have template rules before and after the return type because the return type likes
+//      // to parse the `rules` in `rules(stuff here)` as a type and then fail when it hits the
+//      // parentheses.
+//      opt(templateRulesPR <~ optWhite) ~
+//      (repsep(functionAttribute, white) <~ optWhite) ~
+//      opt(templex <~ optWhite) ~
+//      pos ~
+//      opt(templateRulesPR <~ optWhite) ~
+//      (repsep(functionAttribute, white) <~ optWhite) ~
+//      pos ^^ {
+//      case begin ~ name ~ identifyingRunes ~ patternParams ~ retBegin ~ maybeInferRet ~ maybeTemplateRulesBeforeReturn ~ attributesBeforeReturn ~ maybeRetType ~ retEnd ~ maybeTemplateRulesAfterReturn ~ attributesBeforeBody ~ end => {
+//        vassert(!(maybeTemplateRulesBeforeReturn.nonEmpty && maybeTemplateRulesAfterReturn.nonEmpty))
+//        FunctionHeaderP(
+//          ast.RangeP(begin, end),
+//          Some(name),
+//          (attributesBeforeReturn ++ attributesBeforeBody).toVector,
+//          identifyingRunes,
+//          (maybeTemplateRulesBeforeReturn.toVector ++ maybeTemplateRulesAfterReturn.toVector).headOption,
+//          Some(patternParams),
+//          FunctionReturnP(ast.RangeP(retBegin, retEnd), maybeInferRet, maybeRetType))
+//      }
+//    }
+//  }
 
 //  def topLevelFunction: Parser[FunctionP] = {
 //    pos ~
@@ -77,7 +77,7 @@ object CombinatorParsers
   }
 
   def variadicStructMember: Parser[VariadicStructMemberP] = {
-    pos ~ ("_" ~> opt("!") <~ white) ~ ("..." ~> optWhite ~> templex <~ optWhite <~ ";") ~ pos ^^ {
+    pos ~ ("_" ~> opt("!") <~ white) ~ (".." ~> optWhite ~> templex <~ optWhite <~ ";") ~ pos ^^ {
       case begin ~ (None) ~ tyype ~ end => ast.VariadicStructMemberP(ast.RangeP(begin, end), FinalP, tyype)
       case begin ~ (Some(_)) ~ tyype ~ end => ast.VariadicStructMemberP(ast.RangeP(begin, end), VaryingP, tyype)
     }
@@ -87,16 +87,16 @@ object CombinatorParsers
 //    variadicStructMember | normalStructMember | (topLevelFunction ^^ StructMethodP)
 //  }
 
-  def citizenAttribute: Parser[ICitizenAttributeP] = {
-    pos ~ "export" ~ pos ^^ { case begin ~ _ ~ end => ExportP(ast.RangeP(begin, end)) } |
-      pos ~ "weakable" ~ pos ^^ { case begin ~ _ ~ end => WeakableP(ast.RangeP(begin, end)) } |
-      pos ~ "sealed" ~ pos ^^ { case begin ~ _ ~ end => SealedP(ast.RangeP(begin, end)) } |
-      pos ~ ("#" ~> opt("!")) ~ typeIdentifier ~ pos ^^ {
-        case begin ~ dontCall ~ name ~ end => {
-          MacroCallP(ast.RangeP(begin, end), if (dontCall.isEmpty) CallMacro else DontCallMacro, name)
-        }
-      }
-  }
+//  def citizenAttribute: Parser[ICitizenAttributeP] = {
+//    pos ~ "export" ~ pos ^^ { case begin ~ _ ~ end => ExportP(ast.RangeP(begin, end)) } |
+//      pos ~ "weakable" ~ pos ^^ { case begin ~ _ ~ end => WeakableP(ast.RangeP(begin, end)) } |
+//      pos ~ "sealed" ~ pos ^^ { case begin ~ _ ~ end => SealedP(ast.RangeP(begin, end)) } |
+//      pos ~ ("#" ~> opt("!")) ~ typeIdentifier ~ pos ^^ {
+//        case begin ~ dontCall ~ name ~ end => {
+//          MacroCallP(ast.RangeP(begin, end), if (dontCall.isEmpty) CallMacro else DontCallMacro, name)
+//        }
+//      }
+//  }
 
 //  private[parser] def interface: Parser[InterfaceP] = {
 //
@@ -104,18 +104,18 @@ object CombinatorParsers
 
 //  def struct: Parser[StructP] = {
 //  }
-
-  private[parser] def impl: Parser[ImplP] = {
-    pos ~ (("impl" ~> optWhite ~>
-      opt(identifyingRunesPR <~ optWhite) ~
-      opt(templateRulesPR) <~ optWhite) ~
-      (templex <~ optWhite <~ "for" <~ optWhite) ~
-      (templex <~ optWhite <~ ";")) ~ pos ^^ {
-      case begin ~ (maybeIdentifyingRunes ~ maybeTemplateRules ~ interfaceType ~ structType) ~ end => {
-        ast.ImplP(ast.RangeP(begin, end), maybeIdentifyingRunes, maybeTemplateRules, structType, interfaceType)
-      }
-    }
-  }
+//
+//  private[parser] def impl: Parser[ImplP] = {
+//    pos ~ (("impl" ~> optWhite ~>
+//      opt(identifyingRunesPR <~ optWhite) ~
+//      opt(templateRulesPR) <~ optWhite) ~
+//      (templex <~ optWhite <~ "for" <~ optWhite) ~
+//      (templex <~ optWhite <~ ";")) ~ pos ^^ {
+//      case begin ~ (maybeIdentifyingRunes ~ maybeTemplateRules ~ interfaceType ~ structType) ~ end => {
+//        ast.ImplP(ast.RangeP(begin, end), maybeIdentifyingRunes, maybeTemplateRules, structType, interfaceType)
+//      }
+//    }
+//  }
 
   private[parser] def export: Parser[ExportAsP] = {
     pos ~ ("export" ~> white ~>

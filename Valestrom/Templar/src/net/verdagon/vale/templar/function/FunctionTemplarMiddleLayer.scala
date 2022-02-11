@@ -189,7 +189,7 @@ class FunctionTemplarMiddleLayer(
 
   // We would want only the prototype instead of the entire header if, for example,
   // we were calling the function. This is necessary for a recursive function like
-  // fn main():Int{main()}
+  // func main():Int{main()}
   // Preconditions:
   // - already spawned local env
   // - either no template args, or they were already added to the env.

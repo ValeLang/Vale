@@ -1,4 +1,4 @@
 
-fn main() int export {
+exported func main() int {
   ret len(str(1337i64));
 }

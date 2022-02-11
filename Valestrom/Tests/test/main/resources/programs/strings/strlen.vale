@@ -1,5 +1,5 @@
 
-fn main() int export {
+exported func main() int {
   // This tests string length, but also tests that special characters
   // made it all the way through all the stages of the compiler
   ret len("sprog\u001bwoggle");

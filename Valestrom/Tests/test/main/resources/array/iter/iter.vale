@@ -1,59 +1,20 @@
 
-struct SSAIter<M, N, E> {
-  arr &[#N]<M>E;
-  i! int;
+struct StaticSizedArrayReadonlyIter<N, M, V, E> where E Ref {
+  arr &[#N]<M, V>E;
+  pos! int;
 }
-fn begin<M, N, E>(seq &![#N]<M>E) SSAIter<M, N, E> {
-  ret SSAIter(&seq, 0);
+func begin<N, M, V, E>(arr &[#N]<M, V>E)
+StaticSizedArrayReadonlyIter<N, M, V, E> {
+  StaticSizedArrayReadonlyIter<N, M, V, E>(arr, 0)
 }
-fn begin<M, N, E>(seq &[#N]<M>E) SSAIter<M, N, E> {
-  ret SSAIter(seq, 0);
+func begin<N, M, V, E>(arr &![#N]<M, V>E)
+StaticSizedArrayReadonlyIter<N, M, V, E> {
+  StaticSizedArrayReadonlyIter<N, M, V, E>(&arr, 0)
 }
-fn next<M, N, E>(iter &!SSAIter<M, N, E>) Opt<E> {
-  if iter.i < iter.arr.len() {
-    Some<E>(iter.arr[set iter.i = iter.i + 1])
+func next<N, M, V, E>(iter &!StaticSizedArrayReadonlyIter<N, M, V, E>) Opt<&E> {
+  if iter.pos < iter.arr.len() {
+    Some<&E>(&iter.arr[set iter.pos = iter.pos + 1])
   } else {
-    None<E>()
+    None<&E>()
   }
 }
-
-// fn each<M, V, N, T, F>(arr A, func F) void
-// rules(A Ref(_, _, [#N]<M, V>T)) {
-//   i! = 0;
-//   l = len(&arr);
-//   while (i < l) {
-//     func!(arr[i]);
-//     set i = i + 1;
-//   }
-// }
-//
-// fn eachI<M, V, N, T, F>(arr A, func F) void
-// rules(A Ref(_, _, [#N]<M, V>T)) {
-//   i! = 0;
-//   l = len(&arr);
-//   while (i < l) {
-//     func!(i, arr[i]);
-//     set i = i + 1;
-//   }
-// }
-//
-// fn each<M, T, F>(arr A, func F) void
-// rules(A Ref(_, _, []<M>T)) {
-//   i! = 0;
-//   l = len(&arr);
-//   while (i < l) {
-//     func!(arr[i]);
-//     set i = i + 1;
-//   }
-// }
-//
-// fn eachI<F>(arr A, func F) void
-// rules(A Ref(_, _, []<_>_)) {
-//   i! = 0;
-//   l = len(&arr);
-//   while (i < l) {
-//     func!(i, arr[i]);
-//     set i = i + 1;
-//   }
-// }
-//

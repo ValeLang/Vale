@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser.old
 
-import net.verdagon.vale.parser.ast.{AnonymousRunePT, BoolPT, BorrowP, CallPT, ExclusiveReadwriteP, FinalP, ITemplexPT, ImmutableP, InlineP, InlinePT, IntPT, InterpretedPT, LocationPT, TuplePT, MutabilityPT, MutableP, NameOrRunePT, OwnP, OwnershipPT, PermissionPT, PointerP, ReadonlyP, ReadwriteP, RegionRune, RuntimeSizedArrayPT, ShareP, StaticSizedArrayPT, VariabilityPT, VaryingP, WeakP, YonderP}
+import net.verdagon.vale.parser.ast.{AnonymousRunePT, BoolPT, BorrowP, CallPT, ExclusiveReadwriteP, FinalP, ITemplexPT, ImmutableP, InlineP, InlinePT, IntPT, InterpretedPT, LocationPT, TuplePT, MutabilityPT, MutableP, NameOrRunePT, OwnP, OwnershipPT, PermissionPT, PointerP, ReadonlyP, ReadwriteP, RegionRunePT, RuntimeSizedArrayPT, ShareP, StaticSizedArrayPT, VariabilityPT, VaryingP, WeakP, YonderP}
 import net.verdagon.vale.parser.{ast, _}
 
 import scala.util.parsing.combinator.RegexParsers
@@ -131,7 +131,7 @@ trait TemplexParser extends RegexParsers with ParserUtils {
       (pos ~ ("inl" ~> white ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InlinePT(ast.RangeP(begin, end), inner) }) |
       // A hack to do region highlighting
       ((pos ~ ("'" ~> optWhite ~> exprIdentifier) ~ opt(white ~> templex) ~ pos) ^^ {
-        case begin ~ regionName ~ None ~ end => RegionRune(ast.RangeP(begin, end), regionName)
+        case begin ~ regionName ~ None ~ end => RegionRunePT(ast.RangeP(begin, end), regionName)
         case begin ~ regionName ~ Some(inner) ~ end => inner
       }) |
       (pos ~ ((atomTemplex <~ optWhite) ~ ("<" ~> optWhite ~> repsep(templex, optWhite ~ "," ~ optWhite) <~ optWhite <~ ">")) ~ pos ^^ {
@@ -145,6 +145,6 @@ trait TemplexParser extends RegexParsers with ParserUtils {
     //   foreach x in myList { ... }
     // We won't interpret `x in` as a pattern, because
     // we don't interpret `in` as a valid templex.
-    not("in ") ~> unariedTemplex
+    not("in ") ~> not("impl ") ~> unariedTemplex
   }
 }

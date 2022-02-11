@@ -1,9 +1,9 @@
 
-fn range(begin int, end int) IntRange { ret IntRange(begin, end); }
+func range(begin int, end int) IntRange { ret IntRange(begin, end); }
 struct IntRange { begin int; end int; }
-fn begin(self &!IntRange) IntRangeIter { ret IntRangeIter(&self, self.begin); }
+func begin(self &!IntRange) IntRangeIter { ret IntRangeIter(&self, self.begin); }
 struct IntRangeIter { range &IntRange; i! int; }
-fn next(self &!IntRangeIter) Opt<int> {
+func next(self &!IntRangeIter) Opt<int> {
   if self.i < self.range.end {
     Some(set self.i = self.i + 1)
   } else {
@@ -15,10 +15,10 @@ fn next(self &!IntRangeIter) Opt<int> {
 struct List {
   sum! int;
 }
-fn List() List { List(0) }
-fn add(self &!List, x int) { set self.sum = self.sum + x; }
+func List() List { List(0) }
+func add(self &!List, x int) { set self.sum = self.sum + x; }
 
-fn main() int export {
+exported func main() int {
   results =
     foreach i in range(0, 10) {
       i

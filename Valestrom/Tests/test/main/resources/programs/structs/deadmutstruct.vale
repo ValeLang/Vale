@@ -3,7 +3,7 @@ struct Carrier {
   interceptors int;
 }
 
-fn main() int export {
+exported func main() int {
   c = Carrier(73, 73);
   b = *c;
   drop(c);

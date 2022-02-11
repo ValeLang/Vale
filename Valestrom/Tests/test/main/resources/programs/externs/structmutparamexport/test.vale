@@ -1,12 +1,12 @@
-struct Spaceship export {
+exported struct Spaceship {
   a int;
   b int;
 }
 
-fn sumSpaceshipFields(s *Spaceship) int extern;
-fn spaceshipGetA(s *Spaceship) int export { s.a }
-fn spaceshipGetB(s *Spaceship) int export { s.b }
+extern func sumSpaceshipFields(s *Spaceship) int;
+exported func spaceshipGetA(s *Spaceship) int { s.a }
+exported func spaceshipGetB(s *Spaceship) int { s.b }
 
-fn main() int export {
+exported func main() int {
   ret sumSpaceshipFields(*Spaceship(37, 5));
 }

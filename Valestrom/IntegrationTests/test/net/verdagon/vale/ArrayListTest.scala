@@ -11,11 +11,11 @@ class ArrayListTest extends FunSuite with Matchers {
   test("Simple ArrayList, no optionals") {
     val compile = RunCompilation.test(
         """
-          |struct List<E> rules(E Ref) {
+          |struct List<E> where E Ref {
           |  array! []<mut>E;
           |}
-          |fn len<E>(list &List<E>) int { ret len(&list.array); }
-          |fn add<E>(list &!List<E>, newElement E) {
+          |func len<E>(list &List<E>) int { ret len(&list.array); }
+          |func add<E>(list &!List<E>, newElement E) {
           |  newArray = Array<mut, E>(len(&list) + 1);
           |  while (newArray.len() < newArray.capacity()) {
           |    index = newArray.len();
@@ -29,12 +29,12 @@ class ArrayListTest extends FunSuite with Matchers {
           |  set list.array = newArray;
           |}
           |// todo: make that return a &E
-          |fn get<E>(list &List<E>, index int) E {
+          |func get<E>(list &List<E>, index int) E {
           |  a = list.array;
           |  ret a[index];
           |}
           |
-          |fn main() int export {
+          |exported func main() int {
           |  l = List<int>(Array<mut, int>(0));
           |  add(&!l, 5);
           |  add(&!l, 9);
@@ -51,7 +51,7 @@ class ArrayListTest extends FunSuite with Matchers {
       """
         |import list.*;
         |
-        |fn main() int export {
+        |exported func main() int {
         |  l = List<int>(Array<mut, int>(0));
         |  add(&!l, 5);
         |  add(&!l, 9);
@@ -68,7 +68,7 @@ class ArrayListTest extends FunSuite with Matchers {
       """import list.*;
         |import ifunction.ifunction1.*;
         |
-        |fn main() int export {
+        |exported func main() int {
         |  l =
         |      List<int>(
         |          Array<mut, int>(
@@ -90,7 +90,7 @@ class ArrayListTest extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """import list.*;
           |
-          |fn main() int export {
+          |exported func main() int {
           |  l = List<int>();
           |  add(&!l, 5);
           |  add(&!l, 9);
@@ -106,7 +106,7 @@ class ArrayListTest extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """import list.*;
           |
-          |fn main() int export {
+          |exported func main() int {
           |  l = List<int>();
           |  add(&!l, 5);
           |  add(&!l, 9);
@@ -122,7 +122,7 @@ class ArrayListTest extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """import list.*;
           |
-          |fn main() int export {
+          |exported func main() int {
           |  l = List<int>();
           |  add(&!l, 5);
           |  add(&!l, 9);
@@ -140,7 +140,7 @@ class ArrayListTest extends FunSuite with Matchers {
         """import list.*;
           |struct Marine { hp int; }
           |
-          |fn main() int export {
+          |exported func main() int {
           |  l =
           |      List<Marine>(
           |          Array<mut, Marine>(
@@ -161,7 +161,7 @@ class ArrayListTest extends FunSuite with Matchers {
         """import list.*;
           |struct Marine { hp int; }
           |
-          |fn main() int export {
+          |exported func main() int {
           |  m! = Marine(6);
           |  lam = {
           |    set m = Marine(9);
@@ -188,7 +188,7 @@ class ArrayListTest extends FunSuite with Matchers {
       """import list.*;
         |struct Marine { hp int; }
         |
-        |fn main() int export {
+        |exported func main() int {
         |  m! Opt<Marine> = Some(Marine(6));
         |  lam = {
         |    m2 = (set m = None<Marine>()).get();
@@ -212,7 +212,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |import panicutils.*;
           |struct Marine { hp int; }
           |
-          |fn main() export {
+          |exported func main() {
           |  l = List<Marine>();
           |  add(&!l, Marine(5));
           |  add(&!l, Marine(7));
@@ -239,7 +239,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |import panicutils.*;
           |struct Marine { hp int; }
           |
-          |fn main() export {
+          |exported func main() {
           |  l = List<Marine>();
           |  add(&!l, Marine(5));
           |  add(&!l, Marine(7));

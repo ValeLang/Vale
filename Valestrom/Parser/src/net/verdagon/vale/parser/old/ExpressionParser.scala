@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser.old
 
-import net.verdagon.vale.parser.ast.{AndPE, BlockPE, ConsecutorPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, DestructPE, DotPE, EachPE, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IArraySizeP, IExpressionPE, ITemplexPT, IfPE, IndexPE, LambdaPE, LetPE, LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsPointerP, LoadAsWeakP, AugmentPE, LookupNameP, LookupPE, MagicParamLookupPE, MethodCallPE, MutatePE, NameP, OrPE, PackPE, ParamsP, PatternPP, RangeP, ReadonlyP, ReadwriteP, ReturnPE, RuntimeSizedP, ShortcallPE, StaticSizedP, StrInterpolatePE, TemplateArgsP, TemplateRulesP, TuplePE, UseP, VoidPE, WhilePE}
+import net.verdagon.vale.parser.ast._
 import net.verdagon.vale.parser.ast
 import net.verdagon.vale.vcurious
 

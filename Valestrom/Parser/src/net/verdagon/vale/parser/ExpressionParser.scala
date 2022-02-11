@@ -220,10 +220,21 @@ object ExpressionParser {
       return Err(BadMutateEqualsError(iter.position))
     }
     iter.consumeWhitespace()
+
     val source =
-      parseExpression(iter, stopBefore) match {
-        case Err(err) => return Err(err)
-        case Ok(expression) => expression
+      // This is for when the articles do:
+      //   set x = ...;
+      // and we strip out the ... to get
+      //   set x =    ;
+      // so let's just interpret it as a void
+      if (iter.peek("^\\s*;".r)) {
+        iter.consumeWhitespace()
+        VoidPE(RangeP(iter.getPos(), iter.getPos()))
+      } else {
+        parseExpression(iter, stopBefore) match {
+          case Err(err) => return Err(err)
+          case Ok(expression) => expression
+        }
       }
     val mutateEnd = iter.getPos()
 
@@ -262,17 +273,28 @@ object ExpressionParser {
       case _ =>
     }
 
+
     val source =
-      parseExpression(iter, stopBefore) match {
-        case Err(cpe) => return Err(BadLetSourceError(iter.getPos(), cpe))
-        case Ok(result) => result
+      // This is for when the articles do:
+      //   x = ...;
+      // and we strip out the ... to get
+      //   x =    ;
+      // so let's just interpret it as a void
+      if (iter.peek("^\\s*;".r)) {
+        iter.consumeWhitespace()
+        VoidPE(RangeP(iter.getPos(), iter.getPos()))
+      } else {
+        parseExpression(iter, stopBefore) match {
+          case Err(err) => return Err(err)
+          case Ok(expression) => expression
+        }
       }
     val letEnd = iter.getPos()
 
     iter.consumeWhitespace()
     //    if (!iter.tryConsume("^;".r)) { return Err(BadLetEndError(iter.getPos())) }
 
-    Ok(Some(LetPE(RangeP(letBegin, letEnd), None, pattern, source)))
+    Ok(Some(LetPE(RangeP(letBegin, letEnd), pattern, source)))
   }
 
   private def parseIfPart(
@@ -312,6 +334,7 @@ object ExpressionParser {
   }
 
   sealed trait IStopBefore
+  case object StopBeforeFileEnd extends IStopBefore
   case object StopBeforeCloseBrace extends IStopBefore
   case object StopBeforeCloseParen extends IStopBefore
   case object StopBeforeEquals extends IStopBefore
@@ -324,7 +347,7 @@ object ExpressionParser {
     val statements = new mutable.MutableList[IExpressionPE]
 
     // Just ignore this if we see it (as a hack for the syntax highlighter).
-    iter.trySkip("^\\s*\\.\\.\\.".r)
+//    iter.trySkip("^\\s*\\.\\.\\.".r)
     iter.trySkip("^\\s*;".r)
 
 
@@ -384,7 +407,7 @@ object ExpressionParser {
           } else {
             if (newStatement.producesResult()) {
               // Example, the if in:
-              //   fn main() export {
+              //   exported func main() {
               //     if true { 3 } else { 4 }
               //   }
               // Let's end with this statement, don't add a void afterward.
@@ -1018,10 +1041,10 @@ object ExpressionParser {
 
   def parseExpressionDataElement(iter: ParsingIterator, stopBefore: IStopBefore): Result[Option[IExpressionPE], IParseError] = {
     val begin = iter.getPos()
-    iter.tryy("^\\.\\.\\.".r) match {
-      case Some(n) => return Ok(Some(VoidPE(RangeP(begin, iter.getPos()))))
-      case None =>
-    }
+//    iter.tryy("^\\.\\.\\.".r) match {
+//      case Some(n) => return Ok(Some(VoidPE(RangeP(begin, iter.getPos()))))
+//      case None =>
+//    }
 
     // We'll ignore these prefixes, they're for documentation and blogs:
     if (iter.trySkip("^inl\\b".r)) {

@@ -1,51 +1,51 @@
 
-fn +(a str, b str) str { ret addStr(a, 0, len(a), b, 0, len(b)); }
-fn addStr(a str, aBegin int, aEnd int, b str, bBegin int, bEnd int) str extern;
+func +(a str, b str) str { ret addStr(a, 0, len(a), b, 0, len(b)); }
+extern func addStr(a str, aBegin int, aEnd int, b str, bBegin int, bEnd int) str;
 
-fn str(x int) str { ret castI32Str(x); }
-fn castI32Str(x int) str extern;
+func str(x int) str { ret castI32Str(x); }
+extern func castI32Str(x int) str;
 
-fn str(x i64) str { ret castI64Str(x); }
-fn castI64Str(x i64) str extern;
+func str(x i64) str { ret castI64Str(x); }
+extern func castI64Str(x i64) str;
 
-fn str(x float) str { ret castFloatStr(x); }
-fn castFloatStr(x float) str extern;
+func str(x float) str { ret castFloatStr(x); }
+extern func castFloatStr(x float) str;
 
-fn len(s str) int { ret __vbi_strLength(s); }
-fn __vbi_strLength(s str) int extern;
+func len(s str) int { ret __vbi_strLength(s); }
+extern func __vbi_strLength(s str) int;
 
-fn strtoascii(s str, begin int, end int) int extern;
-fn strfromascii(code int) str extern;
+extern func strtoascii(s str, begin int, end int) int;
+extern func strfromascii(code int) str;
 
-fn strindexof(
+extern func strindexof(
   haystackContainer str,
   haystackBegin int,
   haystackEnd int,
   needleContainer str,
   needleBegin int,
   needleEnd int)
-int extern;
+int;
 
-fn substring(
+extern func substring(
   haystackContainer str,
   begin int,
   end int)
-str extern;
+str;
 
-fn streq(
+extern func streq(
   aContainerStr str,
   aBegin int,
   aEnd int,
   bContainerStr str,
   bBegin int,
   bEnd int)
-bool extern;
+bool;
 
-fn strcmp(
+extern func strcmp(
   aContainerStr str,
   aBegin int,
   aEnd int,
   bContainerStr str,
   bBegin int,
   bEnd int)
-int extern;
+int;

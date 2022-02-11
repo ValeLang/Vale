@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.parser.ast.{AbstractAttributeP, AbstractP, AndPE, AnonymousRunePT, ArenaRuneAttributeP, AugmentPE, BinaryCallPE, BlockPE, BoolPT, BoolTypePR, BorrowP, BorrowPT, BraceCallPE, BuiltinAttributeP, BuiltinCallPR, BumpRuneAttributeP, CallPT, CitizenTemplateTypePR, ComponentsPR, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, ConstructingMemberNameDeclarationP, CoordListTypePR, CoordTypePR, DestructPE, DestructureP, DontCallMacro, DotPE, DotPR, EachPE, EqualsPR, ExclusiveReadwriteP, ExportAsP, ExportAttributeP, ExportP, ExternAttributeP, FileP, FinalP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionPT, FunctionReturnP, IArraySizeP, ICitizenAttributeP, IExpressionPE, IFunctionAttributeP, IImpreciseNameP, INameDeclarationP, IRulexPR, IRuneAttributeP, IStructContent, ITemplexPT, ITopLevelThingP, ITypePR, IVirtualityP, IdentifyingRuneP, IdentifyingRunesP, IfPE, ImmutableP, ImplP, ImportP, IndexPE, InlineP, InlinePT, IntPT, IntTypePR, InterfaceP, InterpretedPT, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, KindTypePR, LambdaPE, LetPE, LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsP, LoadAsPointerP, LoadAsWeakP, LocalNameDeclarationP, LocationP, LocationPT, LocationTypePR, LookupNameP, LookupPE, MacroCallP, MagicParamLookupPE, TuplePT, MethodCallPE, MoveP, MutabilityP, MutabilityPT, MutabilityTypePR, MutableP, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, NotPE, OrPE, OrPR, OverrideP, OwnP, OwnershipP, OwnershipPT, OwnershipTypePR, PackPE, PackPR, PackPT, ParamsP, PatternPP, PermissionP, PermissionPT, PermissionTypePR, PointerP, PoolRuneAttributeP, PrototypePT, PrototypeTypePR, PureAttributeP, RangeP, RangePE, ReadOnlyRuneAttributeP, ReadonlyP, ReadwriteP, RegionTypePR, ResolveSignaturePR, ReturnPE, RuntimeSizedArrayPT, RuntimeSizedP, SealedP, ShareP, SharePT, ShortcallPE, StaticSizedArrayPT, StaticSizedP, StrInterpolatePE, StringPT, StructMembersP, StructMethodP, StructP, SubExpressionPE, TemplateArgsP, TemplateRulesP, TemplexPR, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, TypeRuneAttributeP, TypedPR, TypedRunePT, UnitP, UseP, VariabilityP, VariabilityPT, VariabilityTypePR, VariadicStructMemberP, VaryingP, VoidPE, WeakP, WeakableP, WhilePE, YonderP}
+import net.verdagon.vale.parser.ast._
 import net.verdagon.vale.vimpl
 import net.verdagon.von.{IVonData, VonArray, VonBool, VonFloat, VonInt, VonMember, VonObject, VonStr}
 
@@ -34,23 +34,6 @@ object ParserVonifier {
     }
   }
 
-  def vonifyCitizenAttribute(thing: ICitizenAttributeP): VonObject = {
-    thing match {
-      case WeakableP(range) => VonObject("WeakableAttribute", None, Vector(VonMember("range", vonifyRange(range))))
-      case SealedP(range) => VonObject("SealedAttribute", None, Vector(VonMember("range", vonifyRange(range))))
-      case ExportP(range) => VonObject("ExportAttribute", None, Vector(VonMember("range", vonifyRange(range))))
-      case MacroCallP(range, dontCall, name) => {
-        VonObject(
-          "MacroCall",
-          None,
-          Vector(
-            VonMember("range", vonifyRange(range)),
-            VonMember("dontCall", VonBool(dontCall == DontCallMacro)),
-            VonMember("name", vonifyName(name))))
-      }
-    }
-  }
-
   def vonifyRuneAttribute(thing: IRuneAttributeP): VonObject = {
     thing match {
       case TypeRuneAttributeP(range, tyype) => {
@@ -77,7 +60,7 @@ object ParserVonifier {
       Vector(
         VonMember("range", vonifyRange(range)),
         VonMember("name", vonifyName(name)),
-        VonMember("attributes", VonArray(None, attributes.map(vonifyCitizenAttribute).toVector)),
+        VonMember("attributes", VonArray(None, attributes.map(vonifyAttribute).toVector)),
         VonMember("mutability", vonifyTemplex(mutability)),
         VonMember("identifyingRunes", vonifyOptional(identifyingRunes, vonifyIdentifyingRunes)),
         VonMember("templateRules", vonifyOptional(templateRules, vonifyTemplateRules)),
@@ -142,7 +125,7 @@ object ParserVonifier {
       Vector(
         VonMember("range", vonifyRange(range)),
         VonMember("name", vonifyName(name)),
-        VonMember("attributes", VonArray(None, attributes.map(vonifyCitizenAttribute).toVector)),
+        VonMember("attributes", VonArray(None, attributes.map(vonifyAttribute).toVector)),
         VonMember("mutability", vonifyTemplex(mutability)),
         VonMember("maybeIdentifyingRunes", vonifyOptional(maybeIdentifyingRunes, vonifyIdentifyingRunes)),
         VonMember("templateRules", vonifyOptional(templateRules, vonifyTemplateRules)),
@@ -150,7 +133,7 @@ object ParserVonifier {
   }
 
   def vonifyImpl(impl: ImplP): VonObject = {
-    val ImplP(range, identifyingRunes, rules, struct, interface) = impl
+    val ImplP(range, identifyingRunes, templateRules, struct, interface, attributes) = impl
 
     VonObject(
       "Impl",
@@ -158,8 +141,9 @@ object ParserVonifier {
       Vector(
         VonMember("range", vonifyRange(range)),
         VonMember("identifyingRunes", vonifyOptional(identifyingRunes, vonifyIdentifyingRunes)),
-        VonMember("rules", vonifyOptional(rules, vonifyTemplateRules)),
-        VonMember("struct", vonifyTemplex(struct)),
+        VonMember("attributes", VonArray(None, attributes.map(vonifyAttribute).toVector)),
+        VonMember("templateRules", vonifyOptional(templateRules, vonifyTemplateRules)),
+        VonMember("struct", vonifyOptional(struct, vonifyTemplex)),
         VonMember("interface", vonifyTemplex(interface))))
   }
 
@@ -217,7 +201,7 @@ object ParserVonifier {
       Vector(
         VonMember("range", vonifyRange(range)),
         VonMember("name", vonifyOptional(name, vonifyName)),
-        VonMember("attributes", VonArray(None, attributes.map(vonifyFunctionAttribute).toVector)),
+        VonMember("attributes", VonArray(None, attributes.map(vonifyAttribute).toVector)),
         VonMember("maybeUserSpecifiedIdentifyingRunes", vonifyOptional(maybeUserSpecifiedIdentifyingRunes, vonifyIdentifyingRunes)),
         VonMember("templateRules", vonifyOptional(templateRules, vonifyTemplateRules)),
         VonMember("params", vonifyOptional(params, vonifyParams)),
@@ -334,11 +318,22 @@ object ParserVonifier {
         VonMember("range", vonifyRange(range))))
   }
 
-  def vonifyFunctionAttribute(thing: IFunctionAttributeP): VonObject = {
+  def vonifyAttribute(thing: IAttributeP): VonObject = {
     thing match {
+      case WeakableAttributeP(range) => VonObject("WeakableAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+      case SealedAttributeP(range) => VonObject("SealedAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+      case ExportAttributeP(range) => VonObject("ExportAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+      case MacroCallP(range, dontCall, name) => {
+        VonObject(
+          "MacroCall",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("dontCall", VonBool(dontCall == DontCallMacro)),
+            VonMember("name", vonifyName(name))))
+      }
       case AbstractAttributeP(range) => VonObject("AbstractAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case ExternAttributeP(range) => VonObject("ExternAttribute", None, Vector(VonMember("range", vonifyRange(range))))
-      case ExportAttributeP(range) => VonObject("ExportAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case PureAttributeP(range) => VonObject("PureAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case BuiltinAttributeP(range, generatorName) => {
         VonObject(
@@ -506,6 +501,14 @@ object ParserVonifier {
 
   def vonifyTemplex(thing: ITemplexPT): VonObject = {
     thing match {
+      case RegionRunePT(range, name) => {
+        VonObject(
+          "RegionRuneT",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("name", vonifyName(name))))
+      }
       case AnonymousRunePT(range) => {
         VonObject(
           "AnonymousRuneT",
@@ -947,13 +950,13 @@ object ParserVonifier {
             VonMember("targetPermission", vonifyOptional(targetPermission, vonifyPermission)),
             VonMember("inner", vonifyExpression(inner))))
       }
-      case LetPE(range, templateRules, pattern, source) => {
+      case LetPE(range, pattern, source) => {
         VonObject(
           "Let",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
-            VonMember("templateRules", vonifyOptional(templateRules, vonifyTemplateRules)),
+//            VonMember("templateRules", vonifyOptional(templateRules, vonifyTemplateRules)),
             VonMember("pattern", vonifyPattern(pattern)),
             VonMember("source", vonifyExpression(source))))
       }

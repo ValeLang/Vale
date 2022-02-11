@@ -89,18 +89,18 @@ case class DestructPE(range: RangeP, inner: IExpressionPE) extends IExpressionPE
 //}
 case class MutatePE(range: RangeP, mutatee: IExpressionPE, source: IExpressionPE) extends IExpressionPE {
   override def hashCode(): Int = vcurious();
-  override def needsSemicolonBeforeNextStatement: Boolean = source.needsSemicolonBeforeNextStatement
+  override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true
 }
 case class ReturnPE(range: RangeP, expr: IExpressionPE) extends IExpressionPE {
   override def hashCode(): Int = vcurious();
-  override def needsSemicolonBeforeNextStatement: Boolean = expr.needsSemicolonBeforeNextStatement
+  override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = false
 }
 
 case class LetPE(
   range: RangeP,
-  templateRules: Option[TemplateRulesP],
+//  templateRules: Option[TemplateRulesP],
   pattern: PatternPP,
   source: IExpressionPE
 ) extends IExpressionPE {

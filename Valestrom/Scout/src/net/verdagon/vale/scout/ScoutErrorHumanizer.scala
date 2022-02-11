@@ -3,7 +3,7 @@ package net.verdagon.vale.scout
 import net.verdagon.vale.{FileCoordinateMap, vimpl}
 import net.verdagon.vale.SourceCodeUtils.{humanizePos, lineContaining, nextThingAndRestOfLine}
 import net.verdagon.vale.parser.ast.{BorrowP, ExclusiveReadwriteP, FinalP, ImmutableP, MutabilityP, MutableP, OwnP, OwnershipP, PermissionP, PointerP, ReadonlyP, ReadwriteP, ShareP, VariabilityP, VaryingP, WeakP}
-import net.verdagon.vale.scout.rules.{AugmentSR, CallSR, CoerceToCoordSR, CoordComponentsSR, CoordIsaSR, CoordSendSR, EqualsSR, ILiteralSL, IRulexSR, IntLiteralSL, IsInterfaceSR, IsStructSR, KindComponentsSR, LiteralSR, LookupSR, MutabilityLiteralSL, OneOfSR, OwnershipLiteralSL, PackSR, PermissionLiteralSL, PrototypeComponentsSR, RefListCompoundMutabilitySR, StaticSizedArraySR, RuneParentEnvLookupSR, StringLiteralSL, VariabilityLiteralSL}
+import net.verdagon.vale.scout.rules.{AugmentSR, CallSR, CoerceToCoordSR, CoordComponentsSR, CoordIsaSR, CoordSendSR, EqualsSR, ILiteralSL, IRulexSR, IntLiteralSL, IsInterfaceSR, IsStructSR, KindComponentsSR, LiteralSR, LookupSR, MutabilityLiteralSL, OneOfSR, OwnershipLiteralSL, PackSR, PermissionLiteralSL, PrototypeComponentsSR, RefListCompoundMutabilitySR, RuneParentEnvLookupSR, RuntimeSizedArraySR, StaticSizedArraySR, StringLiteralSL, VariabilityLiteralSL}
 import net.verdagon.vale.solver.SolverErrorHumanizer
 
 object ScoutErrorHumanizer {
@@ -176,7 +176,10 @@ object ScoutErrorHumanizer {
         humanizeRune(resultRune.rune) + " = Prot(" + humanizeRune(nameRune.rune) + ", " + humanizeRune(paramsListRune.rune) + ", " + humanizeRune(returnRune.rune) + ")"
       }
       case StaticSizedArraySR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => {
-        "[<" + humanizeRune(mutabilityRune.rune) + ", " + humanizeRune(variabilityRune.rune) + "> " + humanizeRune(sizeRune.rune) + " * " + humanizeRune(elementRune.rune) + "]"
+        humanizeRune(resultRune.rune) + " = " + "[#" + humanizeRune(sizeRune.rune) + "]<" + humanizeRune(mutabilityRune.rune) + ", " + humanizeRune(variabilityRune.rune) + ">" + humanizeRune(elementRune.rune)
+      }
+      case RuntimeSizedArraySR(range, resultRune, mutabilityRune, elementRune) => {
+        humanizeRune(resultRune.rune) + " = " + "[]<" + humanizeRune(mutabilityRune.rune) + ">" + humanizeRune(elementRune.rune)
       }
       case other => vimpl(other)
     }

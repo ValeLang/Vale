@@ -749,7 +749,7 @@ class ExpressionTemplar(
 
           val expr2 =
             arrayTemplar.evaluateRuntimeSizedArrayFromCallable(
-              temputs, nenv.snapshot, range, rulesA.toVector, maybeElementTypeRune.map(_.rune), mutabilityRune.rune, sizeTE, callableTE)
+              temputs, nenv, range, rulesA.toVector, maybeElementTypeRune.map(_.rune), mutabilityRune.rune, sizeTE, callableTE)
           (expr2, returnsFromSize ++ returnsFromCallable)
         }
         case LetSE(range, rulesA, pattern, sourceExpr1) => {
@@ -891,9 +891,11 @@ class ExpressionTemplar(
             evaluateBlockStatements(temputs, loopBlockFate.snapshot, loopBlockFate, life + 1, bodySE)
           val uncoercedBodyBlock2 = BlockTE(bodyExpressionsWithResult)
 
-          val bodyUnstackifiedAncestorLocals = loopBlockFate.snapshot.getEffectsSince(nenv.snapshot)
-          if (bodyUnstackifiedAncestorLocals.nonEmpty) {
-            throw CompileErrorExceptionT(CantUnstackifyOutsideLocalFromInsideWhile(range, bodyUnstackifiedAncestorLocals.head.last))
+          if (uncoercedBodyBlock2.kind != NeverT()) {
+            val bodyUnstackifiedAncestorLocals = loopBlockFate.snapshot.getEffectsSince(nenv.snapshot)
+            if (bodyUnstackifiedAncestorLocals.nonEmpty) {
+              throw CompileErrorExceptionT(CantUnstackifyOutsideLocalFromInsideWhile(range, bodyUnstackifiedAncestorLocals.head.last))
+            }
           }
 
           val loopExpr2 = WhileTE(uncoercedBodyBlock2)

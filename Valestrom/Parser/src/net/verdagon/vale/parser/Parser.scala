@@ -1,7 +1,7 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.parser.ExpressionParser.{IStopBefore, StopBeforeCloseBrace, StopBeforeCloseChevron, StopBeforeCloseParen, StopBeforeCloseSquare, StopBeforeEquals, StopBeforeOpenBrace}
-import net.verdagon.vale.parser.ast.{AugmentPE, BinaryCallPE, BlockPE, BorrowP, ConsecutorPE, ConstantFloatPE, ConstantIntPE, DestructPE, DotPE, EachPE, ExportAsP, FileP, FunctionCallPE, FunctionP, IExpressionPE, IStructContent, ITopLevelThingP, IfPE, ImplP, ImportP, InterfaceP, LetPE, LoadAsBorrowP, LocalNameDeclarationP, LookupNameP, LookupPE, MethodCallPE, MutabilityPT, MutableP, MutatePE, NameP, NotPE, OwnP, PackPE, PointerP, RangeP, RangePE, ReadonlyP, ReadwriteP, ReturnPE, StructMembersP, StructMethodP, StructP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, VoidPE, WeakP, WhilePE}
+import net.verdagon.vale.parser.ExpressionParser.{IStopBefore, StopBeforeCloseBrace, StopBeforeCloseChevron, StopBeforeCloseParen, StopBeforeCloseSquare, StopBeforeEquals, StopBeforeFileEnd, StopBeforeOpenBrace}
+import net.verdagon.vale.parser.ast._
 import net.verdagon.vale.parser.expressions.ParseString
 import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, Ok, PackageCoordinate, Result, repeatStr, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
@@ -115,7 +115,7 @@ case class ParsingIterator(code: String, var position: Int = 0) {
 
 object Parser {
   def runParserForProgramAndCommentRanges(codeWithComments: String): Result[(FileP, Vector[(Int, Int)]), IParseError] = {
-    val regex = "(//[^\\r\\n]*|«\\w+»)".r
+    val regex = "(\\.\\.\\.|//[^\\r\\n]*|«\\w+»)".r
     val commentRanges = regex.findAllMatchIn(codeWithComments).map(mat => (mat.start, mat.end)).toVector
     var code = codeWithComments
     commentRanges.foreach({ case (begin, end) =>
@@ -135,49 +135,74 @@ object Parser {
     runParserInner(iter)
   }
 
+  def parseExpectTopLevelThing(iter: ParsingIterator): Result[ITopLevelThingP, IParseError] = {
+    parseTopLevelThing(iter) match {
+      case Err(e) => Err(e)
+      case Ok(None) => Err(UnrecognizedTopLevelThingError(iter.getPos()))
+      case Ok(Some(x)) => Ok(x)
+    }
+  }
+
+  def parseTopLevelThing(iter: ParsingIterator): Result[Option[ITopLevelThingP], IParseError] = {
+    val attributes = ArrayBuffer[IAttributeP]()
+    while ({
+      parseAttribute(iter) match {
+        case Err(e) => return Err(e)
+        case Ok(Some(x)) => {
+          attributes += x
+          iter.consumeWhitespace()
+          true
+        }
+        case Ok(None) => false
+      }
+    }) {}
+
+    parseImpl(iter, attributes.toVector) match {
+      case Err(err) => return Err(err)
+      case Ok(Some(result)) => return Ok(Some(TopLevelImplP(result)))
+      case Ok(None) =>
+    }
+    parseStruct(iter, attributes.toVector) match {
+      case Err(err) => return Err(err)
+      case Ok(Some(result)) => return Ok(Some(TopLevelStructP(result)))
+      case Ok(None) =>
+    }
+    parseInterface(iter, attributes.toVector) match {
+      case Err(err) => return Err(err)
+      case Ok(Some(result)) => return Ok(Some(TopLevelInterfaceP(result)))
+      case Ok(None) =>
+    }
+    parseExportAs(iter, attributes.toVector) match {
+      case Err(err) => return Err(err)
+      case Ok(Some(result)) => return Ok(Some(TopLevelExportAsP(result)))
+      case Ok(None) =>
+    }
+    parseImport(iter, attributes.toVector) match {
+      case Err(err) => return Err(err)
+      case Ok(Some(result)) => return Ok(Some(TopLevelImportP(result)))
+      case Ok(None) =>
+    }
+    parseFunction(iter, attributes.toVector, StopBeforeCloseBrace) match {
+      case Err(err) => return Err(err)
+      case Ok(Some(result)) => return Ok(Some(TopLevelFunctionP(result)))
+      case Ok(None) =>
+    }
+    return Ok(None)
+  }
+
   private[parser] def runParserInner(iter: ParsingIterator): Result[FileP, IParseError] = {
     val topLevelThings = new mutable.MutableList[ITopLevelThingP]()
 
     iter.consumeWhitespace()
 
-    while (!iter.atEnd()) {
-      if (iter.peek("^struct\\b".r)) {
-        parseStruct(iter) match {
-          case Err(err) => return Err(err)
-          case Ok(None) => vimpl() // restructure this function
-          case Ok(Some(result)) => topLevelThings += TopLevelStructP(result)
+    while (!atEnd(iter, StopBeforeFileEnd)) {
+      parseExpectTopLevelThing(iter) match {
+        case Err(e) => return Err(e)
+        case Ok(x) => {
+          topLevelThings += x
+          iter.consumeWhitespace()
         }
-      } else if (iter.peek("^interface\\b".r)) {
-        parseInterface(iter) match {
-          case Err(err) => return Err(err)
-          case Ok(None) => vimpl() // restructure this function
-          case Ok(Some(result)) => topLevelThings += TopLevelInterfaceP(result)
-        }
-      } else if (iter.peek("^impl\\b".r)) {
-        parseImpl(iter) match {
-          case Err(err) => return Err(err)
-          case Ok(result) => topLevelThings += TopLevelImplP(result)
-        }
-      } else if (iter.peek("^export\\b".r)) {
-        parseExportAs(iter) match {
-          case Err(err) => return Err(err)
-          case Ok(result) => topLevelThings += TopLevelExportAsP(result)
-        }
-      } else if (iter.peek("^import\\b".r)) {
-        parseImport(iter) match {
-          case Err(err) => return Err(err)
-          case Ok(result) => topLevelThings += TopLevelImportP(result)
-        }
-      } else if (iter.peek("^fn\\b".r)) {
-        parseFunction(iter, StopBeforeCloseBrace) match {
-          case Err(err) => return Err(err)
-          case Ok(None) => vimpl() // restructure this function
-          case Ok(Some(result)) => topLevelThings += TopLevelFunctionP(result)
-        }
-      } else {
-        return Err(UnrecognizedTopLevelThingError(iter.position))
       }
-      iter.consumeWhitespace()
     }
 
     val program0 = ast.FileP(topLevelThings.toVector)
@@ -208,7 +233,65 @@ object Parser {
     }
   }
 
-  private[parser] def parseStruct(iter: ParsingIterator): Result[Option[StructP], IParseError] = {
+  def parseTemplateRules(iter: ParsingIterator):
+  Result[Option[TemplateRulesP], IParseError] = {
+    val begin = iter.getPos()
+
+    if (!iter.trySkip("^where\\b".r)) {
+      return Ok(None)
+    }
+    val rules = ArrayBuffer[IRulexPR]()
+
+    iter.consumeWhitespace()
+
+    rules +=
+      (parseRule(iter) match {
+        case Err(e) => return Err(e)
+        case Ok(Some(x)) => x
+        case Ok(None) => return Err(BadRule(iter.getPos()))
+      })
+
+    while (iter.trySkip("^\\s*,".r)) {
+      iter.consumeWhitespace()
+      rules +=
+        (parseRule(iter) match {
+          case Err(e) => return Err(e)
+          case Ok(Some(x)) => x
+          case Ok(None) => return Err(BadRule(iter.getPos()))
+        })
+    }
+
+    val end = iter.getPos()
+
+    Ok(Some(TemplateRulesP(RangeP(begin, end), rules.toVector)))
+  }
+
+  private def parseCitizenSuffix(iter: ParsingIterator):
+  Result[(RangeP, Option[ITemplexPT], Option[TemplateRulesP]), IParseError] = {
+    parseTemplateRules(iter) match {
+      case Err(e) => return Err(e)
+      case Ok(Some(r)) => Ok(RangeP(iter.getPos(), iter.getPos()), None, Some(r))
+      case Ok(None) => {
+        val mutabilityBegin = iter.getPos()
+        iter.consumeWithCombinator(CombinatorParsers.opt(CombinatorParsers.templex)) match {
+          case Err(e) => vwat()
+          case Ok(maybeMutability) => {
+            val mutabilityRange = RangeP(mutabilityBegin, iter.getPos())
+            iter.consumeWhitespace()
+            parseTemplateRules(iter) match {
+              case Err(e) => return Err(e)
+              case Ok(maybeTemplateRules) => Ok(mutabilityRange, maybeMutability, maybeTemplateRules)
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private[parser] def parseStruct(
+    iter: ParsingIterator,
+    attributes: Vector[IAttributeP]):
+  Result[Option[StructP], IParseError] = {
     val begin = iter.getPos()
 
     if (!iter.trySkip("^struct\\b".r)) {
@@ -233,29 +316,11 @@ object Parser {
 
     iter.consumeWhitespace()
 
-    val attributes =
-      iter.consumeWithCombinator(CombinatorParsers.repsep(CombinatorParsers.citizenAttribute, CombinatorParsers.white)) match {
-        case Err(e) => vwat()
-        case Ok(x) => x.toVector
+    val (mutabilityRange, maybeMutability, maybeTemplateRules) =
+      parseCitizenSuffix(iter) match {
+        case Err(e) => return Err(e)
+        case Ok((a, b, c)) => (a, b, c)
       }
-
-    iter.consumeWhitespace()
-
-    val maybeTemplateRules =
-      iter.consumeWithCombinator(CombinatorParsers.opt(CombinatorParsers.templateRulesPR)) match {
-        case Err(e) => vwat()
-        case Ok(e) => e
-      }
-
-    iter.consumeWhitespace()
-
-    val mutabilityBegin = iter.getPos()
-    val maybeMutability =
-      iter.consumeWithCombinator(CombinatorParsers.opt(CombinatorParsers.templex)) match {
-        case Err(e) => vwat()
-        case Ok(e) => e
-      }
-    val mutabilityEnd = iter.getPos()
 
     iter.consumeWhitespace()
 
@@ -270,9 +335,12 @@ object Parser {
     iter.consumeWhitespace()
     while (!atEnd(iter, StopBeforeCloseBrace)) {
       iter.consumeWhitespace()
-      parseFunction(iter, StopBeforeCloseBrace) match {
+      parseTopLevelThing(iter) match {
         case Err(e) => return Err(e)
-        case Ok(Some(f)) => contents += StructMethodP(f)
+        case Ok(Some(TopLevelFunctionP(func))) => contents += StructMethodP(func)
+        case Ok(Some(_)) => {
+          // Ignore these, we have `impl MyInterface;` inside structs in articles
+        }
         case Ok(None) => {
           iter.consumeWithCombinator(CombinatorParsers.variadicStructMember) match {
             case Ok(m) => contents += m
@@ -300,8 +368,8 @@ object Parser {
       ast.StructP(
         ast.RangeP(begin, iter.getPos()),
         name,
-        attributes,
-        maybeMutability.getOrElse(MutabilityPT(ast.RangeP(mutabilityBegin, mutabilityEnd), MutableP)),
+        attributes.toVector,
+        maybeMutability.getOrElse(MutabilityPT(mutabilityRange, MutableP)),
         maybeIdentifyingRunes,
         maybeTemplateRules,
         StructMembersP(ast.RangeP(contentsBegin, contentsEnd),
@@ -326,27 +394,10 @@ object Parser {
 //    }
   }
 
-  private def parseInterface(iter: ParsingIterator): Result[Option[InterfaceP], IParseError] = {
-//    pos ~
-//      ("interface " ~> optWhite ~> exprIdentifier <~ optWhite) ~
-//      opt(identifyingRunesPR <~ optWhite) ~
-//      (repsep(citizenAttribute, white) <~ optWhite) ~
-//      (opt(templateRulesPR) <~ optWhite) ~
-//      // A hack to do region highlighting
-//      opt("'" ~> optWhite ~> exprIdentifier <~ optWhite) ~
-//      pos ~
-//      (opt(templex) <~ optWhite) ~
-//      (pos <~ "{" <~ optWhite) ~
-//      repsep(topLevelFunction, optWhite) ~
-//      (optWhite ~> "}" ~> pos) ^^ {
-//      case begin ~ name ~ maybeIdentifyingRunes ~ seealed ~ maybeTemplateRules ~ defaultRegion ~ mutabilityBegin ~ maybeMutability ~ mutabilityEnd ~ members ~ end => {
-//        ast.InterfaceP(ast.RangeP(begin, end), name, seealed.toVector, maybeMutability.getOrElse(MutabilityPT(ast.RangeP(mutabilityBegin, mutabilityEnd), MutableP)), maybeIdentifyingRunes, maybeTemplateRules, members.toVector)
-//      }
-//    }
-//    iter.consumeWithCombinator(CombinatorParsers.interface) match {
-//      case Err(e) => Err(BadInterface(iter.getPos(), e))
-//      case Ok(s) => Ok(s)
-//    }
+  private def parseInterface(
+    iter: ParsingIterator,
+    attributes: Vector[IAttributeP]):
+  Result[Option[InterfaceP], IParseError] = {
     val begin = iter.getPos()
 
     if (!iter.trySkip("^interface\\b".r)) {
@@ -371,29 +422,11 @@ object Parser {
 
     iter.consumeWhitespace()
 
-    val attributes =
-      iter.consumeWithCombinator(CombinatorParsers.repsep(CombinatorParsers.citizenAttribute, CombinatorParsers.white)) match {
-        case Err(e) => vwat()
-        case Ok(x) => x.toVector
+    val (mutabilityRange, maybeMutability, maybeTemplateRules) =
+      parseCitizenSuffix(iter) match {
+        case Err(e) => return Err(e)
+        case Ok((a, b, c)) => (a, b, c)
       }
-
-    iter.consumeWhitespace()
-
-    val maybeTemplateRules =
-      iter.consumeWithCombinator(CombinatorParsers.opt(CombinatorParsers.templateRulesPR)) match {
-        case Err(e) => vwat()
-        case Ok(e) => e
-      }
-
-    iter.consumeWhitespace()
-
-    val mutabilityBegin = iter.getPos()
-    val maybeMutability =
-      iter.consumeWithCombinator(CombinatorParsers.opt(CombinatorParsers.templex)) match {
-        case Err(e) => vwat()
-        case Ok(e) => e
-      }
-    val mutabilityEnd = iter.getPos()
 
     iter.consumeWhitespace()
 
@@ -407,9 +440,12 @@ object Parser {
 
     while (!atEnd(iter, StopBeforeCloseBrace)) {
       iter.consumeWhitespace()
-      parseFunction(iter, StopBeforeCloseBrace) match {
+      parseTopLevelThing(iter) match {
         case Err(e) => return Err(e)
-        case Ok(Some(f)) => methods += f
+        case Ok(Some(TopLevelFunctionP(f))) => methods += f
+        case Ok(Some(other)) => {
+          return Err(UnexpectedTopLevelThing(iter.getPos(), other))
+        }
         case Ok(None) => return Err(BadInterfaceMember(iter.getPos()))
       }
     }
@@ -426,32 +462,119 @@ object Parser {
       ast.InterfaceP(
         ast.RangeP(begin, iter.getPos()),
         name,
-        attributes,
-        maybeMutability.getOrElse(MutabilityPT(ast.RangeP(mutabilityBegin, mutabilityEnd), MutableP)),
+        attributes.toVector,
+        maybeMutability.getOrElse(MutabilityPT(mutabilityRange, MutableP)),
         maybeIdentifyingRunes,
         maybeTemplateRules,
         methods.toVector)
     Ok(Some(interface))
   }
 
-  private def parseImpl(iter: ParsingIterator): Result[ImplP, IParseError] = {
-    iter.consumeWithCombinator(CombinatorParsers.impl) match {
-      case Err(e) => Err(BadImpl(iter.getPos(), e))
-      case Ok(s) => Ok(s)
+  private def parseImpl(
+    iter: ParsingIterator,
+    attributes: Vector[IAttributeP]
+  ): Result[Option[ImplP], IParseError] = {
+    val begin = iter.getPos()
+
+    if (!iter.trySkip("^impl\\b".r)) {
+      return Ok(None)
     }
+
+    iter.consumeWhitespace()
+
+    val maybeIdentifyingRunes =
+      iter.consumeWithCombinator(CombinatorParsers.opt(CombinatorParsers.identifyingRunesPR)) match {
+        case Err(e) => vwat()
+        case Ok(x) => x
+      }
+
+    //
+    //    iter.consumeWhitespace()
+    //
+    //    val maybeTemplateRules =
+    //      iter.consumeWithCombinator(CombinatorParsers.opt(CombinatorParsers.templateRulesPR)) match {
+    //        case Err(e) => vwat()
+    //        case Ok(e) => e
+    //      }
+
+    iter.consumeWhitespace()
+
+    val interface =
+      iter.consumeWithCombinator(CombinatorParsers.templex) match {
+        case Err(e) => vwat()
+        case Ok(e) => e
+      }
+
+    iter.consumeWhitespace()
+
+    val struct =
+      if (iter.trySkip("^for\\b".r)) {
+        iter.consumeWhitespace()
+
+        iter.consumeWithCombinator(CombinatorParsers.templex) match {
+          case Err(e) => vwat()
+          case Ok(e) => Some(e)
+        }
+      } else {
+        None
+      }
+
+    val maybeTemplateRules =
+      parseTemplateRules(iter) match {
+        case Err(e) => return Err(e)
+        case Ok(r) => r
+      }
+
+    iter.consumeWhitespace()
+
+    if (!iter.trySkip("^;".r)) {
+      return Err(NeedSemicolon(iter.getPos()))
+    }
+
+    val impl =
+      ast.ImplP(
+        ast.RangeP(begin, iter.getPos()),
+        maybeIdentifyingRunes,
+        maybeTemplateRules,
+        struct,
+        interface,
+        attributes)
+    Ok(Some(impl))
   }
 
-  private def parseExportAs(iter: ParsingIterator): Result[ExportAsP, IParseError] = {
+  private def parseExportAs(
+    iter: ParsingIterator,
+    attributes: Vector[IAttributeP]):
+  Result[Option[ExportAsP], IParseError] = {
+    if (!iter.peek("^export\\b".r)) {
+      return Ok(None)
+    }
+
+    if (attributes.nonEmpty) {
+      return Err(UnexpectedAttributes(iter.getPos()))
+    }
+
     iter.consumeWithCombinator(CombinatorParsers.`export`) match {
       case Err(e) => Err(BadExport(iter.getPos(), e))
-      case Ok(s) => Ok(s)
+      case Ok(s) => Ok(Some(s))
     }
   }
 
-  private def parseImport(iter: ParsingIterator): Result[ImportP, IParseError] = {
+  private def parseImport(
+    iter: ParsingIterator,
+    attributes: Vector[IAttributeP]):
+  Result[Option[ImportP], IParseError] = {
+    if (!iter.peek("^import\\b".r)) {
+      return Ok(None)
+    }
+
+    if (attributes.nonEmpty) {
+      return Err(UnexpectedAttributes(iter.getPos()))
+    }
+
     iter.consumeWithCombinator(CombinatorParsers.`import`) match {
       case Err(e) => Err(BadImport(iter.getPos(), e))
-      case Ok(s) => Ok(s)
+      case Ok(s) => Ok(Some(s))
     }
   }
 
@@ -466,19 +589,150 @@ object Parser {
       case StopBeforeCloseSquare => iter.peek("^\\s*\\]".r)
       case StopBeforeCloseChevron => iter.peek("^(\\s+>|>\\s+)".r)
       case StopBeforeOpenBrace => iter.peek("^\\s*\\{".r)
+      case StopBeforeFileEnd => false
     }
   }
 
-  private[parser] def parseFunction(iter: ParsingIterator, stopBefore: IStopBefore): Result[Option[FunctionP], IParseError] = {
-    if (!iter.peek("^fn\\b".r)) {
+  // Returns:
+  // - The infer-ret range, if any
+  def parseAttribute(iter: ParsingIterator):
+  Result[Option[IAttributeP], IParseError] = {
+    val begin = iter.getPos()
+    if (iter.trySkip("^exported\\b".r)) {
+      Ok(Some(ExportAttributeP(RangeP(begin, iter.getPos()))))
+    } else if (iter.trySkip("^extern\\b".r)) {
+      if (iter.trySkip("^\\s*\\(".r)) {
+        val nameBegin = iter.getPos()
+        if (!iter.trySkip("^\\s*\"".r)) {
+          return Err(BadAttributeError(iter.getPos()))
+        }
+        val name =
+          iter.tryy("^[^\"]+".r) match {
+            case None => return Err(BadAttributeError(iter.getPos()))
+            case Some(s) => s
+          }
+        if (!iter.trySkip("^\\s*\"".r)) {
+          return Err(BadAttributeError(iter.getPos()))
+        }
+        val nameEnd = iter.getPos()
+        if (!iter.trySkip("^\\s*\\)".r)) {
+          return Err(BadAttributeError(iter.getPos()))
+        }
+        Ok(Some(BuiltinAttributeP(RangeP(begin, iter.getPos()), NameP(RangeP(nameBegin, nameEnd), name))))
+      } else {
+        Ok(Some(ExternAttributeP(RangeP(begin, iter.getPos()))))
+      }
+    } else if (iter.trySkip("^abstract\\b".r)) {
+      Ok(Some(AbstractAttributeP(RangeP(begin, iter.getPos()))))
+    } else if (iter.trySkip("^pure\\b".r)) {
+      Ok(Some(PureAttributeP(RangeP(begin, iter.getPos()))))
+    } else if (iter.trySkip("^sealed\\b".r)) {
+      Ok(Some(SealedAttributeP(RangeP(begin, iter.getPos()))))
+    } else if (iter.trySkip("^weakable\\b".r)) {
+      Ok(Some(WeakableAttributeP(RangeP(begin, iter.getPos()))))
+    } else if (iter.trySkip("^#".r)) {
+      val dont = iter.trySkip("^\\!".r)
+      val name =
+        parseTypeName(iter) match {
+          case None => return Err(BadAttributeError(iter.getPos()))
+          case Some(x) => x
+        }
+      val call =
+        MacroCallP(ast.RangeP(begin, iter.getPos()), if (dont) DontCallMacro else CallMacro, name)
+      Ok(Some(call))
+    } else {
+      Ok(None)
+    }
+  }
+
+  private def parseRule(iter: ParsingIterator):
+  Result[Option[IRulexPR], IParseError] = {
+    iter.consumeWithCombinator(CombinatorParsers.rulePR) match {
+      case Err(e) => Err(BadFunctionHeaderError(iter.getPos(), e))
+      case Ok(x) => Ok(Some(x))
+    }
+  }
+
+  private[parser] def parseFunction(
+    iter: ParsingIterator,
+    attributes: Vector[IAttributeP],
+    stopBefore: IStopBefore):
+  Result[Option[FunctionP], IParseError] = {
+    val funcBegin = iter.getPos()
+    if (!iter.trySkip("^(func|funky)\\b".r)) {
       return Ok(None)
     }
-    val funcBegin = iter.getPos()
-    val header =
-      iter.consumeWithCombinator(CombinatorParsers.topLevelFunctionBegin) match {
-        case Err(err) => return Err(BadFunctionHeaderError(iter.getPos(), err))
-        case Ok(result) => result
+    iter.consumeWhitespace()
+
+    val name =
+      parseFunctionOrLocalOrMemberName(iter) match {
+        case None => return Err(BadFunctionName(iter.getPos()))
+        case Some(n) => n
       }
+
+    iter.consumeWhitespace()
+
+    val maybeIdentifyingRunes =
+      if (iter.peek("^<".r)) {
+        iter.consumeWithCombinator(CombinatorParsers.identifyingRunesPR) match {
+          case Err(cpe) => return Err(BadFunctionHeaderError(iter.getPos(), cpe))
+          case Ok(x) => Some(x)
+        }
+      } else {
+        None
+      }
+
+    iter.consumeWhitespace()
+
+    val params =
+      iter.consumeWithCombinator(CombinatorParsers.patternPrototypeParams) match {
+        case Err(cpe) => return Err(BadFunctionHeaderError(iter.getPos(), cpe))
+        case Ok(x) => Some(x)
+      }
+
+    iter.consumeWhitespace()
+
+    val retBegin = iter.getPos()
+    val (maybeTemplateRules, maybeInferRet, maybeReturnType) =
+      parseTemplateRules(iter) match {
+        case Err(e) => return Err(e)
+        case Ok(Some(templateRules)) => (Some(templateRules), None, None)
+        case Ok(None) => {
+          val (maybeInferRet: Option[UnitP], maybeReturnType: Option[ITemplexPT]) =
+            if (iter.trySkip("^\\s*infer-ret".r)) {
+              (Some(UnitP(RangeP(retBegin, iter.getPos()))), None)
+            } else {
+              iter.consumeWithCombinator(CombinatorParsers.opt(CombinatorParsers.templex)) match {
+                case Err(cpe) => return Err(BadFunctionHeaderError(iter.getPos(), cpe))
+                case Ok(x) => (None, x)
+              }
+            }
+
+          iter.consumeWhitespace()
+
+          parseTemplateRules(iter) match {
+            case Err(e) => return Err(e)
+            case Ok(maybeTemplateRules) => {
+              (maybeTemplateRules, maybeInferRet, maybeReturnType)
+            }
+          }
+        }
+      }
+    val retEnd = iter.getPos()
+
+    iter.consumeWhitespace()
+
+    val header =
+      FunctionHeaderP(
+        ast.RangeP(funcBegin, iter.getPos()),
+        Some(name),
+        attributes,
+        maybeIdentifyingRunes,
+        maybeTemplateRules,
+        params,
+        FunctionReturnP(
+          ast.RangeP(retBegin, retEnd), maybeInferRet, maybeReturnType))
+
     iter.consumeWhitespace()
     if (iter.trySkip("^;".r)) {
       return Ok(Some(ast.FunctionP(RangeP(funcBegin, iter.getPos()), header, None)))

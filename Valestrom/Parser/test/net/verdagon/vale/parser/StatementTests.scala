@@ -9,7 +9,7 @@ import org.scalatest.{FunSuite, Matchers}
 class StatementTests extends FunSuite with Collector with TestParseUtils {
   test("Simple let") {
     compile(ExpressionParser.parseBlockContents(_, StopBeforeCloseBrace, false), "x = 4;") shouldHave {
-      case LetPE(_,None, PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, "x"))), None, None, None), ConstantIntPE(_, 4, _)) =>
+      case LetPE(_, PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, "x"))), None, None, None), ConstantIntPE(_, 4, _)) =>
     }
   }
 
@@ -42,7 +42,6 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   test("8") {
     compile(ExpressionParser.parseStatement(_, StopBeforeCloseBrace, false), "[x, y] = (4, 5)") shouldHave {
       case LetPE(_,
-      None,
           PatternPP(_,_,
             None,
             None,
@@ -70,13 +69,13 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
 
   test("Test simple let") {
     compile(ExpressionParser.parseStatement(_, StopBeforeCloseBrace, false), "x = 3") shouldHave {
-      case LetPE(_,None,PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, "x"))),None,None,None),ConstantIntPE(_, 3, _)) =>
+      case LetPE(_,PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, "x"))),None,None,None),ConstantIntPE(_, 3, _)) =>
     }
   }
 
   test("Test varying let") {
     compile(ExpressionParser.parseStatement(_, StopBeforeCloseBrace, false), "x! = 3") shouldHave {
-      case LetPE(_,None,PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, "x"))),None,None,None),ConstantIntPE(_, 3, _)) =>
+      case LetPE(_,PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, "x"))),None,None,None),ConstantIntPE(_, 3, _)) =>
     }
   }
 
@@ -101,7 +100,6 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
       ExpressionParser.parseStatement(_, StopBeforeCloseBrace, false),
       "oldArray = set list.array = newArray") shouldHave {
       case LetPE(_,
-        None,
         PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"oldArray"))),None,None,None),
         MutatePE(_,
           DotPE(_,LookupPE(LookupNameP(NameP(_,"list")),None),_,NameP(_,"array")),
@@ -142,14 +140,13 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
 
   test("Let with pattern with only a capture") {
     compile(ExpressionParser.parseStatement(_, StopBeforeCloseBrace, false), "a = m") shouldHave {
-      case LetPE(_,None,Patterns.capture("a"),LookupPE(LookupNameP(NameP(_, "m")), None)) =>
+      case LetPE(_,Patterns.capture("a"),LookupPE(LookupNameP(NameP(_, "m")), None)) =>
     }
   }
 
   test("Let with simple pattern") {
     compile(ExpressionParser.parseStatement(_, StopBeforeCloseBrace, false), "a Moo = m") shouldHave {
       case LetPE(_,
-        None,
         PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, "a"))),Some(NameOrRunePT(NameP(_, "Moo"))),None,None),
         LookupPE(LookupNameP(NameP(_, "m")), None)) =>
     }
@@ -158,7 +155,6 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   test("Let with simple pattern in seq") {
     compile(ExpressionParser.parseStatement(_, StopBeforeCloseBrace, false), "[a Moo] = m") shouldHave {
       case LetPE(_,
-      None,
           PatternPP(_,_,
             None,
             None,
@@ -170,7 +166,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
 
   test("Let with destructuring pattern") {
     compile(ExpressionParser.parseStatement(_, StopBeforeCloseBrace, false), "Muta[] = m") shouldHave {
-      case LetPE(_,None,PatternPP(_,_,None,Some(NameOrRunePT(NameP(_, "Muta"))),Some(DestructureP(_,Vector())),None),LookupPE(LookupNameP(NameP(_, "m")), None)) =>
+      case LetPE(_,PatternPP(_,_,None,Some(NameOrRunePT(NameP(_, "Muta"))),Some(DestructureP(_,Vector())),None),LookupPE(LookupNameP(NameP(_, "m")), None)) =>
     }
   }
 
@@ -224,7 +220,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
         _,
         ConsecutorPE(
           Vector(
-            LetPE(_,None,PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"myList"))),None,None,None),ConstantIntPE(_,3,_)),
+            LetPE(_,PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"myList"))),None,None,None),ConstantIntPE(_,3,_)),
             LookupPE(LookupNameP(NameP(_,"myList")),None))),
         BlockPE(_,VoidPE(_))) =>
     }
@@ -291,7 +287,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
         |doThings(a)
       """.stripMargin) shouldHave {
       case Vector(
-        LetPE(_,None, PatternPP(_, _,Some(LocalNameDeclarationP(NameP(_, "a"))), None, None, None), ConstantIntPE(_, 2, _)),
+        LetPE(_, PatternPP(_, _,Some(LocalNameDeclarationP(NameP(_, "a"))), None, None, None), ConstantIntPE(_, 2, _)),
         FunctionCallPE(_, _, LookupPE(LookupNameP(NameP(_, "doThings")), None), Vector(LookupPE(LookupNameP(NameP(_, "a")), None)), false)) =>
     }
   }
@@ -303,13 +299,6 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
         "set x = 6;")
     program shouldHave {
       case MutatePE(_,LookupPE(LookupNameP(NameP(_, "x")), None),ConstantIntPE(_, 6, _)) =>
-    }
-  }
-
-  // To support the examples on the site for the syntax highlighter
-  test("empty") {
-    compile(ExpressionParser.parseBlockContents(_, StopBeforeCloseBrace, false),"...") shouldHave {
-      case VoidPE(_) =>
     }
   }
 
@@ -353,7 +342,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
           |""".stripMargin)
     programS shouldHave {
       case ConsecutorPE(Vector(
-        LetPE(_,None,
+        LetPE(_,
           PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,a))),None,None,None),
           EachPE(_,_,_,_,_)),
         VoidPE(_))) =>

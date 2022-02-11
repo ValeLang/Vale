@@ -1,8 +1,8 @@
-fn getAStr() str export { "hello!" }
+exported func getAStr() str { "hello!" }
 
-fn runExtCommand() str extern;
+extern func runExtCommand() str;
 
-fn main() int export {
+exported func main() int {
   result = runExtCommand();
   ret result.len();
 }

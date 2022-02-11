@@ -12,9 +12,9 @@ import org.scalatest.{FunSuite, Matchers}
 
 class ScoutTests extends FunSuite with Matchers with Collector {
   private def compile(code: String): ProgramS = {
-    Parser.runParser(code) match {
+    Parser.runParserForProgramAndCommentRanges(code) match {
       case Err(err) => fail(ParseErrorHumanizer.humanize(FileCoordinateMap.test(code), FileCoordinate.test, err))
-      case Ok(firstProgram0) => {
+      case Ok((firstProgram0, _)) => {
         val von = ParserVonifier.vonifyFile(firstProgram0)
         val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
         val program0 =
@@ -31,9 +31,9 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   }
 
   private def compileForError(code: String): ICompileErrorS = {
-    Parser.runParser(code) match {
+    Parser.runParserForProgramAndCommentRanges(code) match {
       case Err(err) => fail(err.toString)
-      case Ok(firstProgram0) => {
+      case Ok((firstProgram0, _)) => {
         val von = ParserVonifier.vonifyFile(firstProgram0)
         val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
         val program0 =
@@ -56,14 +56,14 @@ class ScoutTests extends FunSuite with Matchers with Collector {
     val main =
     compile(
       """
-        |fn moo<T>(a T)
-        |rules(K Ref, T = Map<K, _>) { ... }
+        |func moo<T>(a T)
+        |where K Ref, T = Map<K, _> { ... }
         |""".stripMargin).lookupFunction("moo")
 
     // This should fail, because we can't figure out what it is, given the identifying runes.
     val error = compileForError(
       """
-        |fn moo<K, V>(a Map<K, V, _>) { ... }
+        |func moo<K, V>(a Map<K, V, _>) { ... }
         |""".stripMargin)
     error match {
       case IdentifyingRunesIncompleteS(_, IdentifiabilitySolveError(_, IncompleteSolve(_, _,runes))) => {
@@ -74,7 +74,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   }
 
   test("Lookup +") {
-    val program1 = compile("fn main() int export { ret +(3, 4); }")
+    val program1 = compile("exported func main() int { ret +(3, 4); }")
     val main = program1.lookupFunction("main")
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
@@ -99,7 +99,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   }
 
   test("Lambda") {
-    val program1 = compile("fn main() int export { ret {_ + _}!(4, 6); }")
+    val program1 = compile("exported func main() int { ret {_ + _}!(4, 6); }")
 
     val CodeBodyS(BodySE(_, _, BlockSE(_, _, expr))) = program1.lookupFunction("main").body
     val lambda =
@@ -115,7 +115,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   }
 
   test("Interface") {
-    val program1 = compile("interface IMoo { fn blork(virtual this *IMoo, a bool)void; }")
+    val program1 = compile("interface IMoo { func blork(virtual this *IMoo, a bool)void; }")
     val imoo = program1.lookupInterface("IMoo")
 
     val blork = imoo.internalMethods.head
@@ -125,7 +125,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   }
 
   test("Generic interface") {
-    val program1 = compile("interface IMoo<T> { fn blork(virtual this *IMoo, a T)void; }")
+    val program1 = compile("interface IMoo<T> { func blork(virtual this *IMoo, a T)void; }")
     val imoo = program1.lookupInterface("IMoo")
 
     val blork = imoo.internalMethods.head
@@ -151,7 +151,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   }
 
   test("Method call") {
-    val program1 = compile("fn main() int export { ret true.shout(); }")
+    val program1 = compile("exported func main() int { ret true.shout(); }")
     val main = program1.lookupFunction("main")
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
@@ -161,7 +161,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   }
 
   test("Moving method call") {
-    val program1 = compile("fn main() int export { x = 4; ret (x).shout(); }")
+    val program1 = compile("exported func main() int { x = 4; ret (x).shout(); }")
     val main = program1.lookupFunction("main")
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
@@ -174,7 +174,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
 
     val program1 =
       compile(
-        """fn main() int export {
+        """exported func main() int {
           |  {_};
           |  (a) => {a};
           |}
@@ -195,7 +195,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
 
   test("Constructing members") {
     val program1 = compile(
-      """fn MyStruct() {
+      """func MyStruct() {
         |  this.x = 4;
         |  this.y = true;
         |}
@@ -232,7 +232,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
 
   test("Cant use set as a local name") {
     val error = compileForError(
-      """fn moo() {
+      """func moo() {
         |  [set] = (6,);
         |}
         |""".stripMargin)
@@ -243,7 +243,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
 
   test("CantInitializeIndividualElementsOfRuntimeSizedArray") {
     val error = compileForError(
-      """fn MyStruct() {
+      """func MyStruct() {
         |  ship = [][4, 5, 6];
         |}
         |""".stripMargin)
@@ -254,7 +254,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
 
   test("InitializingRuntimeSizedArrayRequiresSizeAndCallable too few") {
     val error = compileForError(
-      """fn MyStruct() {
+      """func MyStruct() {
         |  ship = [](4);
         |}
         |""".stripMargin)
@@ -265,7 +265,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
 
   test("InitializingRuntimeSizedArrayRequiresSizeAndCallable too many") {
     val error = compileForError(
-      """fn MyStruct() {
+      """func MyStruct() {
         |  ship = [](4, {_}, 10);
         |}
         |""".stripMargin)
@@ -276,7 +276,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
 
   test("InitializingStaticSizedArrayRequiresSizeAndCallable too few") {
     val error = compileForError(
-      """fn MyStruct() {
+      """func MyStruct() {
         |  ship = [#5]();
         |}
         |""".stripMargin)
@@ -287,7 +287,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
 
   test("InitializingStaticSizedArrayRequiresSizeAndCallable too many") {
     val error = compileForError(
-      """fn MyStruct() {
+      """func MyStruct() {
         |  ship = [#5](4, {_});
         |}
         |""".stripMargin)
@@ -298,7 +298,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
 
   test("InitializingStaticSizedArrayFromCallableNeedsSizeTemplex") {
     val error = compileForError(
-      """fn MyStruct() {
+      """func MyStruct() {
         |  ship = [#]({_});
         |}
         |""".stripMargin)
@@ -309,7 +309,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
 
   test("Test loading from member") {
     val program1 = compile(
-      """fn MyStruct() {
+      """func MyStruct() {
         |  ret moo.x;
         |}
         |""".stripMargin)
@@ -323,7 +323,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
 
   test("Test loading from member 2") {
     val program1 = compile(
-      """fn MyStruct() {
+      """func MyStruct() {
         |  ret *moo.x;
         |}
         |""".stripMargin)
@@ -337,7 +337,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
 
   test("Constructing members, borrowing another member") {
     val program1 = compile(
-      """fn MyStruct() {
+      """func MyStruct() {
         |  this.x = 4;
         |  this.y = *this.x;
         |}
@@ -371,7 +371,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
 
   test("foreach") {
     val program1 = compile(
-      """fn main() {
+      """func main() {
         |  foreach i in myList { }
         |}
         |""".stripMargin)
@@ -436,7 +436,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
 
   test("this isnt special if was explicit param") {
     val program1 = compile(
-      """fn moo(this *MyStruct) {
+      """func moo(this *MyStruct) {
         |  println(this.x);
         |}
         |""".stripMargin)
@@ -451,7 +451,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
 
   test("Reports when mutating nonexistant local") {
     val err = compileForError(
-      """fn main() int export {
+      """exported func main() int {
         |  set a = a + 1;
         |}
         |""".stripMargin)
@@ -465,7 +465,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
       """
         |struct Moo {}
         |interface IMoo {}
-        |fn func(moo *Moo impl *IMoo) int { ret 73; }
+        |func func(moo *Moo impl *IMoo) int { ret 73; }
         |""".stripMargin)
     err match {
       case CantOverrideOwnershipped(_) =>
@@ -487,7 +487,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   test("Reports when extern function has body") {
     val err = compileForError(
       """
-        |fn bork() int extern {
+        |extern func bork() int {
         |  3
         |}
         |""".stripMargin)
@@ -511,7 +511,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   test("Reports when we forget set") {
     val err = compileForError(
       """
-        |fn main() export {
+        |exported func main() {
         |  x = "world!";
         |  x = "changed";
         |}
@@ -523,7 +523,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   }
 
   test("Reports when interface method doesnt have self") {
-    val err = compileForError("interface IMoo { fn blork(a bool)void; }")
+    val err = compileForError("interface IMoo { func blork(a bool)void; }")
     err match {
       case InterfaceMethodNeedsSelf(_) =>
       case _ => vfail()
@@ -533,7 +533,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   test("Statement after result or return") {
     compileForError(
       """
-        |fn doCivicDance(virtual this Car) {
+        |func doCivicDance(virtual this Car) {
         |  ret 4;
         |  7
         |}

@@ -1,7 +1,7 @@
 package net.verdagon.vale.scout.rules
 
 import net.verdagon.vale.RangeS
-import net.verdagon.vale.parser.ast.{AnonymousRunePT, BoolPT, BorrowP, BorrowPT, CallPT, FunctionPT, ITemplexPT, IntPT, InterpretedPT, LocationPT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnershipPT, PackPT, PermissionPT, PrototypePT, RangeP, ReadonlyP, RegionRune, RuntimeSizedArrayPT, StaticSizedArrayPT, StringPT, TuplePT, VariabilityPT}
+import net.verdagon.vale.parser.ast.{AnonymousRunePT, BoolPT, BorrowP, BorrowPT, CallPT, FunctionPT, ITemplexPT, InlinePT, IntPT, InterpretedPT, LocationPT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnershipPT, PackPT, PermissionPT, PrototypePT, RangeP, ReadonlyP, RegionRunePT, RuntimeSizedArrayPT, StaticSizedArrayPT, StringPT, TuplePT, VariabilityPT}
 import net.verdagon.vale.scout.{CodeNameS, CodeRuneS, IEnvironment, IImpreciseNameS, INameS, IRuneS, ImplicitRuneS, LocationInDenizenBuilder, Scout}
 
 import scala.collection.mutable.ArrayBuffer
@@ -66,8 +66,9 @@ object TemplexScout {
       case Some(x) => addLiteralRule(lidb.child(), ruleBuilder, evalRange(templex.range), x)
       case None => {
         templex match {
+          case InlinePT(range, inner) => translateTemplex(env, lidb, ruleBuilder, inner)
           case AnonymousRunePT(range) => RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
-          case RegionRune(range, NameP(_, name)) => {
+          case RegionRunePT(range, NameP(_, name)) => {
             val isRuneFromLocalEnv = env.localDeclaredRunes().contains(CodeRuneS(name))
             if (isRuneFromLocalEnv) {
               RuneUsage(evalRange(range), CodeRuneS(name))

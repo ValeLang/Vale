@@ -1,5 +1,6 @@
 package net.verdagon.vale.parser
 
+import net.verdagon.vale.parser.ast.ITopLevelThingP
 import net.verdagon.vale.{FileCoordinate, FileCoordinateMap, vcurious, vimpl, vpass}
 
 case class FailedParse(
@@ -15,12 +16,16 @@ sealed trait IParseError {
 case class UnrecognizedTopLevelThingError(pos: Int) extends IParseError { override def errorId: String = "P1001"; override def hashCode(): Int = vcurious() }
 case class BadStartOfStatementError(pos: Int) extends IParseError { override def errorId: String = "P1002"; override def hashCode(): Int = vcurious() }
 case class BadExpressionEnd(pos: Int) extends IParseError { override def errorId: String = "P1005"; override def hashCode(): Int = vcurious() }
+case class BadRule(pos: Int) extends IParseError { override def errorId: String = "P1005"; override def hashCode(): Int = vcurious() }
+case class UnexpectedAttributes(pos: Int) extends IParseError { override def errorId: String = "P1005"; override def hashCode(): Int = vcurious() }
+case class UnexpectedTopLevelThing(pos: Int, topLevelThing: ITopLevelThingP) extends IParseError { override def errorId: String = "P1005"; override def hashCode(): Int = vcurious() }
 case class IfBlocksMustBothOrNeitherReturn(pos: Int) extends IParseError { override def errorId: String = "P1005"; override def hashCode(): Int = vcurious() }
 case class BadExpressionBegin(pos: Int) extends IParseError {
   override def errorId: String = "P1005"; override def hashCode(): Int = vcurious()
   vpass()
 }
 case class BadStringChar(stringBeginPos: Int, pos: Int) extends IParseError { override def errorId: String = "P1005"; override def hashCode(): Int = vcurious() }
+case class BadFunctionName(pos: Int) extends IParseError { override def errorId: String = "P1005"; override def hashCode(): Int = vcurious() }
 case class BadParamEnd(pos: Int) extends IParseError { override def errorId: String = "P1005"; override def hashCode(): Int = vcurious() }
 case class ForgotSetKeyword(pos: Int) extends IParseError { override def errorId: String = "P1005"; override def hashCode(): Int = vcurious() }
 case class BadBinaryFunctionName(pos: Int) extends IParseError {
@@ -102,10 +107,13 @@ case class BadStructContentsEnd(pos: Int) extends IParseError { override def err
 case class BadStructMember(pos: Int) extends IParseError { override def errorId: String = "P1027"; override def hashCode(): Int = vcurious() }
 case class BadInterfaceMember(pos: Int) extends IParseError { override def errorId: String = "P1027"; override def hashCode(): Int = vcurious() }
 case class BadInterface(pos: Int, cause: CombinatorParseError) extends IParseError { override def errorId: String = "P1028"; override def hashCode(): Int = vcurious() }
+case class BadInterfaceHeader(pos: Int) extends IParseError { override def errorId: String = "P1028"; override def hashCode(): Int = vcurious() }
 case class BadImpl(pos: Int, cause: CombinatorParseError) extends IParseError { override def errorId: String = "P1029"; override def hashCode(): Int = vcurious() }
+case class BadImplFor(pos: Int) extends IParseError { override def errorId: String = "P1029"; override def hashCode(): Int = vcurious() }
 case class BadExport(pos: Int, cause: CombinatorParseError) extends IParseError { override def errorId: String = "P1030"; override def hashCode(): Int = vcurious() }
 case class BadImport(pos: Int, cause: CombinatorParseError) extends IParseError { override def errorId: String = "P1031"; override def hashCode(): Int = vcurious() }
 case class BadFunctionHeaderError(pos: Int, cause: CombinatorParseError) extends IParseError { override def errorId: String = "P1032"; override def hashCode(): Int = vcurious() }
+case class BadAttributeError(pos: Int) extends IParseError { override def errorId: String = "P1032"; override def hashCode(): Int = vcurious() }
 case class BadEachError(pos: Int, cause: CombinatorParseError) extends IParseError { override def errorId: String = "P1033"; override def hashCode(): Int = vcurious() }
 case class BadBlockError(pos: Int, cause: CombinatorParseError) extends IParseError { override def errorId: String = "P1034"; override def hashCode(): Int = vcurious() }
 case class BadResultError(pos: Int, cause: CombinatorParseError) extends IParseError { override def errorId: String = "P1035"; override def hashCode(): Int = vcurious() }
@@ -128,4 +136,3 @@ case class BadForeachInError(pos: Int) extends IParseError {
   override def errorId: String = "P1041"; override def hashCode(): Int = vcurious()
   vpass()
 }
-case class BadForeachIterableError(pos: Int, cause: CombinatorParseError) extends IParseError { override def errorId: String = "P1041"; override def hashCode(): Int = vcurious() }

@@ -12,7 +12,7 @@ class IfTests extends FunSuite with Matchers {
   test("Simple true branch returning an int") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  ret if (true) { 3 } else { 5 }
         |}
       """.stripMargin)
@@ -33,7 +33,7 @@ class IfTests extends FunSuite with Matchers {
   test("Simple false branch returning an int") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  ret if (false) { 3 } else { 5 }
         |}
       """.stripMargin)
@@ -44,7 +44,7 @@ class IfTests extends FunSuite with Matchers {
   test("Ladder") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  ret if (false) { 3 } else if (true) { 5 } else { 7 }
         |}
       """.stripMargin)
@@ -68,7 +68,7 @@ class IfTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Marine { x int; }
-        |fn main() int export {
+        |exported func main() int {
         |  m = Marine(5);
         |  ret if (false) {
         |      [x] = m;
@@ -98,7 +98,7 @@ class IfTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Marine { x int; }
-        |fn main() str export {
+        |exported func main() str {
         |  m = Marine(5);
         |  ret if (m.x == 5) { "#" }
         |  else if (0 == 0) { "?" }
@@ -116,7 +116,7 @@ class IfTests extends FunSuite with Matchers {
   test("If with condition declaration") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  ret if x = 42; x < 50 { x }
         |    else { 73 }
         |}
@@ -128,12 +128,13 @@ class IfTests extends FunSuite with Matchers {
   test("Ret from inside if will destroy locals") {
     val compile = RunCompilation.test(
       """import printutils.*;
-        |struct Marine #!DeriveStructDrop { hp int; }
-        |fn drop(marine Marine) void {
+        |#!DeriveStructDrop
+        |struct Marine { hp int; }
+        |func drop(marine Marine) void {
         |  println("Destroying marine!");
         |  Marine[weapon] = marine;
         |}
-        |fn main() int export {
+        |exported func main() int {
         |  m = Marine(5);
         |  x =
         |    if (true) {
@@ -156,12 +157,13 @@ class IfTests extends FunSuite with Matchers {
       """
         |import printutils.*;
         |
-        |struct Marine #!DeriveStructDrop { hp int; }
-        |fn drop(marine Marine) void {
+        |#!DeriveStructDrop
+        |struct Marine { hp int; }
+        |func drop(marine Marine) void {
         |  println("Destroying marine!");
         |  Marine[weapon] = marine;
         |}
-        |fn main() int export {
+        |exported func main() int {
         |  m = Marine(5);
         |  x =
         |    if (false) {
@@ -190,7 +192,7 @@ class IfTests extends FunSuite with Matchers {
         |  bork Bork;
         |}
         |
-        |fn main() export {
+        |exported func main() {
         |  zork! = 0;
         |  while (zork < 4) {
         |    moo = Moo(Bork(5));
@@ -218,7 +220,7 @@ class IfTests extends FunSuite with Matchers {
     val compile =
       RunCompilation.test(
         """
-          |fn main() int export {
+          |exported func main() int {
           |  a = 7;
           |  if false {
           |    panic("lol");
@@ -236,7 +238,7 @@ class IfTests extends FunSuite with Matchers {
   test("Toast") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  a = 0;
         |  if (a == 2) {
         |    ret 71;

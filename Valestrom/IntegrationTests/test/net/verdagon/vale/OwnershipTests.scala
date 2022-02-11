@@ -17,7 +17,7 @@ class OwnershipTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Muta { hp int; }
-        |fn main() int export {
+        |exported func main() int {
         |  ret (*Muta(9)).hp;
         |}
       """.stripMargin)
@@ -40,10 +40,10 @@ class OwnershipTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Muta { hp int; }
-        |fn take(m Muta) {
+        |func take(m Muta) {
         |  ret m.hp;
         |}
-        |fn main() int export {
+        |exported func main() int {
         |  m = Muta(9);
         |  ret (m).hp;
         |}
@@ -60,7 +60,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |
         |struct Muta { }
         |
-        |fn main() export {
+        |exported func main() {
         |  Muta();
         |}
       """.stripMargin)
@@ -77,14 +77,15 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |import printutils.*;
         |
-        |struct Muta #!DeriveStructDrop { }
+        |#!DeriveStructDrop
+        |struct Muta { }
         |
-        |fn drop(m ^Muta) void {
+        |func drop(m ^Muta) void {
         |  println("Destroying!");
         |  Muta[] = m;
         |}
         |
-        |fn main() export {
+        |exported func main() {
         |  Muta();
         |}
       """.stripMargin)
@@ -101,14 +102,15 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |import printutils.*;
         |
-        |struct Muta #!DeriveStructDrop { hp int; }
+        |#!DeriveStructDrop
+        |struct Muta { hp int; }
         |
-        |fn drop(m ^Muta) {
+        |func drop(m ^Muta) {
         |  println("Destroying!");
         |  Muta[hp] = m;
         |}
         |
-        |fn main() int export {
+        |exported func main() int {
         |  ret (Muta(10)).hp;
         |}
       """.stripMargin)
@@ -124,14 +126,15 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |import printutils.*;
         |
-        |struct Muta #!DeriveStructDrop { }
+        |#!DeriveStructDrop
+        |struct Muta { }
         |
-        |fn drop(m ^Muta) {
+        |func drop(m ^Muta) {
         |  println("Destroying!");
         |  Muta[] = m;
         |}
         |
-        |fn main() export {
+        |exported func main() {
         |  a = Muta();
         |}
       """.stripMargin)
@@ -149,17 +152,18 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |import printutils.*;
         |
-        |struct Muta #!DeriveStructDrop { }
+        |#!DeriveStructDrop
+        |struct Muta { }
         |
-        |fn drop(m ^Muta) {
+        |func drop(m ^Muta) {
         |  println("Destroying!");
         |  Muta[] = m;
         |}
         |
-        |fn moo(m ^Muta) {
+        |func moo(m ^Muta) {
         |}
         |
-        |fn main() export {
+        |exported func main() {
         |  a = Muta();
         |  moo(a);
         |}
@@ -191,14 +195,15 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |import printutils.*;
         |
-        |struct Muta #!DeriveStructDrop { hp int; }
+        |#!DeriveStructDrop
+        |struct Muta { hp int; }
         |
-        |fn drop(m ^Muta) {
+        |func drop(m ^Muta) {
         |  println("Destroying!");
         |  Muta[hp] = m;
         |}
         |
-        |fn main() int export {
+        |exported func main() int {
         |  a = Muta(10);
         |  ret a.hp;
         |}
@@ -220,7 +225,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |struct Wizard {
         |  wand ^Wand;
         |}
-        |fn main() int export {
+        |exported func main() int {
         |  ret Wizard(Wand(10)).wand.charges;
         |}
       """.stripMargin)
@@ -236,7 +241,7 @@ class OwnershipTests extends FunSuite with Matchers {
   test("Unstackifies local vars") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  i! = 0;
         |  ret i;
         |}
@@ -259,7 +264,7 @@ class OwnershipTests extends FunSuite with Matchers {
 //        |struct MutaB {
 //        |  a *MutaA;
 //        |}
-//        |fn main() int export {
+//        |exported func main() int {
 //        |  a = MutaA();
 //        |  b = MutaB(*a);
 //        |  c = a;

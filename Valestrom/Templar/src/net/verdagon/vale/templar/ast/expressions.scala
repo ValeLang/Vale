@@ -183,6 +183,15 @@ case class LetNormalTE(
   override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
+  if (expr.kind == NeverT()) {
+    // then we can put it into whatever type we want
+  } else {
+    if (variable.reference.kind == NeverT()) {
+      vfail() // can't receive into a never
+    } else {
+      vassert(variable.reference == expr.result.reference)
+    }
+  }
 
   expr match {
     case BreakTE() | ReturnTE(_) => vwat() // See BRCOBS
@@ -280,7 +289,7 @@ case class WhileTE(block: BlockTE) extends ReferenceExpressionTE {
   vassert(block.kind == VoidT() || block.kind == NeverT())
 
   override def hashCode(): Int = vcurious()
-  override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
+  override def result = block.result // either void or never
   vpass()
 }
 
@@ -382,7 +391,7 @@ case class TupleTE(
 //// This is used after panics or other never-returning things, to signal that a certain
 //// variable should be considered gone. See AUMAP.
 //// This can also be used if theres anything after a panic in a block, like
-////   fn main() int export {
+////   exported func main() int {
 ////     __panic();
 ////     println("hi");
 ////   }

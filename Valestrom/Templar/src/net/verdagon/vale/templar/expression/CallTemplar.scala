@@ -59,7 +59,7 @@ class CallTemplar(
 
         // We want to get the prototype here, not the entire header, because
         // we might be in the middle of a recursive call like:
-        // fn main():Int(main())
+        // func main():Int(main())
 
         val argsParamFilters =
           unconvertedArgsPointerTypes2.map(unconvertedArgsPointerType2 => {
@@ -106,7 +106,7 @@ class CallTemplar(
 
     // We want to get the prototype here, not the entire header, because
     // we might be in the middle of a recursive call like:
-    // fn main():Int(main())
+    // func main():Int(main())
 
     val argsParamFilters =
       unconvertedArgsPointerTypes2.map(unconvertedArgsPointerType2 => {

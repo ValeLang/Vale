@@ -1,20 +1,20 @@
 
-fn min(a int, b int) int {
+func min(a int, b int) int {
   ret if (a <= b) { a } else { b }
 }
 
-fn max(a int, b int) int {
+func max(a int, b int) int {
   ret if (a >= b) { a } else { b }
 }
 
-fn abs(a int) int {
+func abs(a int) int {
   ret if (a < 0) { a * -1 } else { a }
 }
 
-fn signum(a int) int {
+func signum(a int) int {
   ret if (a < 0) { -1 }
     else if (a > 0) { 1 }
     else { 0 }
 }
 
-fn sqrt(x float) float extern;
+extern func sqrt(x float) float;

@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser.rules
 
-import net.verdagon.vale.parser.ast.{ArenaRuneAttributeP, BuiltinCallPR, BumpRuneAttributeP, ComponentsPR, CoordListTypePR, CoordTypePR, DotPR, EqualsPR, IRulexPR, IRuneAttributeP, ITemplexPT, ITypePR, IdentifyingRuneP, IdentifyingRunesP, IntTypePR, KindTypePR, LocationTypePR, MutabilityTypePR, NameP, OrPR, OwnershipTypePR, PackPR, PermissionTypePR, PoolRuneAttributeP, PrototypeTypePR, ReadOnlyRuneAttributeP, RegionTypePR, TemplateRulesP, TemplexPR, TypeRuneAttributeP, TypedPR, VariabilityTypePR}
+import net.verdagon.vale.parser.ast._
 import net.verdagon.vale.parser.{ast, _}
 import net.verdagon.vale.parser.old.ParserUtils
 
@@ -128,11 +128,11 @@ trait RuleParser extends RegexParsers with ParserUtils {
 
   // Add any new rules to the "Nothing matches empty string" test!
 
-  def templateRulesPR: Parser[TemplateRulesP] = {
-    pos ~ ("rules" ~> optWhite ~> "(" ~> optWhite ~> repsep(rulePR, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")") ~ pos ^^ {
-      case begin ~ rules ~ end => ast.TemplateRulesP(ast.RangeP(begin, end), rules.toVector)
-    }
-  }
+//  def templateRulesPR: Parser[TemplateRulesP] = {
+//    pos ~ ("rules" ~> optWhite ~> "(" ~> optWhite ~> repsep(rulePR, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")") ~ pos ^^ {
+//      case begin ~ rules ~ end => ast.TemplateRulesP(ast.RangeP(begin, end), rules.toVector)
+//    }
+//  }
 
   // Add any new rules to the "Nothing matches empty string" test!
 

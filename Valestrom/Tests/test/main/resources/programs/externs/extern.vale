@@ -1,6 +1,6 @@
 
 import math.*;
 
-fn main() int export {
+exported func main() int {
   ret int(sqrt(float(16)));
 }

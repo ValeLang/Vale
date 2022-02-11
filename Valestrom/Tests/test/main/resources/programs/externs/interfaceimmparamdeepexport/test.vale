@@ -1,23 +1,23 @@
-struct Engine export imm { fuel int; }
+exported struct Engine imm { fuel int; }
 
-interface IShip sealed export imm { }
+sealed exported interface IShip imm { }
 
-struct Spaceship export imm { engine Engine; }
+exported struct Spaceship imm { engine Engine; }
 impl IShip for Spaceship;
 
-struct Seaship export imm { unused int; }
+exported struct Seaship imm { unused int; }
 impl IShip for Seaship;
 
-fn getFuel(virtual this IShip) int abstract;
-fn getFuel(this Spaceship impl IShip) int { this.engine.fuel }
-fn getFuel(this Seaship impl IShip) int { ret 0; }
+abstract func getFuel(virtual this IShip) int;
+func getFuel(this Spaceship impl IShip) int { this.engine.fuel }
+func getFuel(this Seaship impl IShip) int { ret 0; }
 
-fn valeGetShipFuel(s IShip) int export {
+exported func valeGetShipFuel(s IShip) int {
   ret s.getFuel();
 }
 
-fn cGetShipFuel(s IShip) int extern;
+extern func cGetShipFuel(s IShip) int;
 
-fn main() int export {
+exported func main() int {
    cGetShipFuel(Spaceship(Engine(42)))
 }

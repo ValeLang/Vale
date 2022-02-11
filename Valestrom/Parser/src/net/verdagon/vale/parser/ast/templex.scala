@@ -15,14 +15,14 @@ case class AnonymousRunePT(range: RangeP) extends ITemplexPT {
 case class BoolPT(range: RangeP, value: Boolean) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 case class BorrowPT(range: RangeP, inner: ITemplexPT) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 case class PointPT(range: RangeP, inner: ITemplexPT) extends ITemplexPT { override def hashCode(): Int = vcurious() }
-// This is for example fn(Int)Bool, fn:imm(Int, Int)Str, fn:mut()(Str, Bool)
+// This is for example func(Int)Bool, func:imm(Int, Int)Str, func:mut()(Str, Bool)
 // It's shorthand for IFunction:(mut, (Int), Bool), IFunction:(mut, (Int, Int), Str), IFunction:(mut, (), (Str, Bool))
 case class CallPT(range: RangeP, template: ITemplexPT, args: Vector[ITemplexPT]) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 // Mutability is Optional because they can leave it out, and mut will be assumed.
 case class FunctionPT(range: RangeP, mutability: Option[ITemplexPT], parameters: PackPT, returnType: ITemplexPT) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 case class InlinePT(range: RangeP, inner: ITemplexPT) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 case class IntPT(range: RangeP, value: Long) extends ITemplexPT { override def hashCode(): Int = vcurious() }
-case class RegionRune(range: RangeP, name: NameP) extends ITemplexPT { override def hashCode(): Int = vcurious() }
+case class RegionRunePT(range: RangeP, name: NameP) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 case class LocationPT(range: RangeP, location: LocationP) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 case class TuplePT(range: RangeP, elements: Vector[ITemplexPT]) extends ITemplexPT { override def hashCode(): Int = vcurious() }
 case class MutabilityPT(range: RangeP, mutability: MutabilityP) extends ITemplexPT { override def hashCode(): Int = vcurious() }

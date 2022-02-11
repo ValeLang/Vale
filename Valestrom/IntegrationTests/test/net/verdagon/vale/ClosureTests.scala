@@ -45,7 +45,7 @@ class ClosureTests extends FunSuite with Matchers {
 
     // Even if we're certain it's moved, it must be addressible.
     // Imagine:
-    // fn main() int export {
+    // exported func main() int {
     //   m = Marine();
     //   if (something) {
     //     something.consume(m);
@@ -78,7 +78,7 @@ class ClosureTests extends FunSuite with Matchers {
         |struct Marine {
         |  hp int;
         |}
-        |fn main() int export {
+        |exported func main() int {
         |  m = Marine(9);
         |  ret { m.hp }!();
         |}
@@ -88,7 +88,7 @@ class ClosureTests extends FunSuite with Matchers {
   }
 
   test("Test closure's local variables") {
-    val compile = RunCompilation.test("fn main() int export { x = 4; ret {x}(); }")
+    val compile = RunCompilation.test("exported func main() int { x = 4; ret {x}(); }")
     val temputs = compile.expectTemputs()
 
     val main = temputs.lookupLambdaIn("main")
@@ -111,7 +111,7 @@ class ClosureTests extends FunSuite with Matchers {
   }
 
   test("Test returning a nonmutable closured variable from the closure") {
-    val compile = RunCompilation.test("fn main() int export { x = 4; ret {x}(); }")
+    val compile = RunCompilation.test("exported func main() int { x = 4; ret {x}(); }")
     val temputs = compile.expectTemputs()
 
     // The struct should have an int x in it which is a reference type.
@@ -164,7 +164,7 @@ class ClosureTests extends FunSuite with Matchers {
   test("Mutates from inside a closure") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x! = 4;
         |  { set x = x + 1; }!();
         |  ret x;
@@ -193,7 +193,7 @@ class ClosureTests extends FunSuite with Matchers {
   }
 
   test("Mutates from inside a closure inside a closure") {
-    val compile = RunCompilation.test("fn main() int export { x! = 4; { { set x = x + 1; }!(); }!(); ret x; }")
+    val compile = RunCompilation.test("exported func main() int { x! = 4; { { set x = x + 1; }!(); }!(); ret x; }")
 
     compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
@@ -201,7 +201,7 @@ class ClosureTests extends FunSuite with Matchers {
   test("Read from inside a closure inside a closure") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 42;
         |  ret { { x }() }();
         |}

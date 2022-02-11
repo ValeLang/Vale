@@ -36,7 +36,7 @@ class ScoutErrorHumanizerTests extends FunSuite with Matchers {
     val error =
       compileForError(
         """
-          |fn do(callable) infer-ret {callable()}
+          |func do(callable) infer-ret {callable()}
           |""".stripMargin)
     error match {
       case LightFunctionMustHaveParamTypes(_, 0) =>

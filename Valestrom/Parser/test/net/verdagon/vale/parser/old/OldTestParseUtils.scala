@@ -19,7 +19,7 @@ trait OldTestParseUtils {
   }
 
   def compileProgram(code: String): FileP = {
-    Parser.runParser(code) match {
+    Parser.runParserForProgramAndCommentRanges(code) match {
       case Err(err) => {
         vfail(
           ParseErrorHumanizer.humanize(
@@ -27,7 +27,7 @@ trait OldTestParseUtils {
             FileCoordinate("my", Vector.empty, "0"),
             err))
       }
-      case Ok(result) => result
+      case Ok((result, _)) => result
     }
   }
 

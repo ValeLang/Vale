@@ -1,9 +1,9 @@
 
 export []<imm>int as ImmIntArray;
 
-fn cMakeRSA() []<imm>int extern;
+extern func cMakeRSA() []<imm>int;
 
-fn main() int export {
+exported func main() int {
   arr = cMakeRSA();
   i = 0;
   total = 0;

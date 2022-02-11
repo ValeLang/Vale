@@ -25,9 +25,9 @@ class TemplarVirtualTests extends FunSuite with Matchers {
         |interface IB {}
         |impl IB for MyStruct;
         |
-        |fn bork(a IA) {}
-        |fn zork(b IB) {}
-        |fn main() export {
+        |func bork(a IA) {}
+        |func zork(b IB) {}
+        |exported func main() {
         |  bork(MyStruct());
         |  zork(MyStruct());
         |}
@@ -41,10 +41,10 @@ class TemplarVirtualTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |
         |interface Bork {
-        |  fn bork(virtual self &Bork) int;
+        |  func bork(virtual self &Bork) int;
         |}
         |
-        |fn main() int export {
+        |exported func main() int {
         |  f = Bork({ 7 });
         |  ret f.bork();
         |}
@@ -58,7 +58,7 @@ class TemplarVirtualTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |import ifunction.ifunction1.*;
         |
-        |fn main() int export {
+        |exported func main() int {
         |  f = IFunction1<mut, int, int>({_});
         |  ret (f)!(7);
         |}
@@ -74,7 +74,7 @@ class TemplarVirtualTests extends FunSuite with Matchers {
         |struct Raza { fuel int; }
         |impl IShip for Raza;
         |
-        |fn main() export {
+        |exported func main() {
         |  ship IShip = Raza(42);
         |}
         |""".stripMargin)
@@ -92,7 +92,7 @@ class TemplarVirtualTests extends FunSuite with Matchers {
         |struct Raza { fuel int; }
         |impl IShip for Raza;
         |
-        |fn main() export {
+        |exported func main() {
         |  ship IShip = Raza(42);
         |  ship.as<Raza>();
         |}
@@ -146,8 +146,8 @@ class TemplarVirtualTests extends FunSuite with Matchers {
         |struct Bork { }
         |impl IBork for Bork;
         |
-        |fn rebork(virtual result *IBork) bool { true }
-        |fn main() export {
+        |func rebork(virtual result *IBork) bool { true }
+        |exported func main() {
         |  rebork(*Bork());
         |}
         |""".stripMargin)

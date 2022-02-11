@@ -1,28 +1,28 @@
 
-fn str(b bool) str {
+func str(b bool) str {
   ret if (b) { "true" } else { "false" }
 }
 
-fn +(i int, s str) str {
+func +(i int, s str) str {
   ret str(i) + s;
 }
 
-fn +(s str, i int) str {
+func +(s str, i int) str {
   ret s + str(i);
 }
 
-fn +(s str, b bool) str {
+func +(s str, b bool) str {
   ret s + str(b);
 }
 
-fn +(b bool, s str) str {
+func +(b bool, s str) str {
   ret str(b) + s;
 }
 
-fn +(f float, s str) str {
+func +(f float, s str) str {
   ret str(f) + s;
 }
 
-fn +(s str, f float) str {
+func +(s str, f float) str {
   ret s + str(f);
 }

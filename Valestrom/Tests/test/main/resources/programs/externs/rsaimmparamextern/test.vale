@@ -1,8 +1,8 @@
 export []<imm>int as ImmIntArray;
 
-fn sumBytes(arr []<imm>int) int extern;
+extern func sumBytes(arr []<imm>int) int;
 
-fn main() int export {
+exported func main() int {
   a = #[](5, {_});
   ret sumBytes(a);
 }

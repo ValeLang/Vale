@@ -1,8 +1,8 @@
 
-struct Functor1<M, F>
-rules(M Mutability, F Prot) M {
+struct Functor1<M, F> M
+where M Mutability, F Prot {
 }
-fn __call<M, F>(self &Functor1<M, F>, param1 Param1Type) RetType
-rules(F Prot(_, Refs(Param1Type), RetType), Param1Type Ref, RetType Ref) {
+func __call<M, F>(self &Functor1<M, F>, param1 Param1Type) RetType
+where F Prot(_, Refs(Param1Type), RetType), Param1Type Ref, RetType Ref {
   F(param1)
 }

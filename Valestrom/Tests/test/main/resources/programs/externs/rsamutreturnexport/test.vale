@@ -1,14 +1,14 @@
 
 export []<mut>int as MutIntArray;
 
-fn valeMakeRSA() []<mut>int export {
+exported func valeMakeRSA() []<mut>int {
   ssa = #[#][5, 7, 9, 10, 11];
   ret Array<mut, int>(ssa.len(), { ssa[_] });
 }
 
-fn cMakeRSA() []<mut>int extern;
+extern func cMakeRSA() []<mut>int;
 
-fn main() int export {
+exported func main() int {
   arr = cMakeRSA();
   i = 0;
   total = 0;

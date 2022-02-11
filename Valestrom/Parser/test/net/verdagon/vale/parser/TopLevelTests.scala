@@ -11,7 +11,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with OldTestPa
   test("Function then struct") {
     val program = compileProgram(
       """
-        |fn main() int export {}
+        |exported func main() int {}
         |
         |struct mork { }
         |""".stripMargin)
@@ -19,10 +19,22 @@ class TopLevelTests extends FunSuite with Matchers with Collector with OldTestPa
     program.topLevelThings(1) match { case TopLevelStructP(_) => }
   }
 
+  test("Ellipses ignored") {
+    compileProgram("""exported func main(...) int {}""".stripMargin)
+    compileProgram("""exported func main() ... {}""".stripMargin)
+    compileProgram("""exported func main() int {} ... """.stripMargin)
+    compileProgram("""exported func main() int {...}""".stripMargin)
+    compileProgram("""exported func main() int {moo(...)}""".stripMargin)
+    compileProgram("""exported func main() int {x = ...;}""".stripMargin)
+    compileProgram("""exported func main() int {set x = ...;}""".stripMargin)
+    compileProgram("""struct Moo {} ... """.stripMargin)
+    compileProgram("""struct Moo {...}""".stripMargin)
+  }
+
 //  test("Function containing if") {
 //    val program = compileProgram(
 //      """
-//        |fn main() int {
+//        |func main() int {
 //        |  if true { 3 } else { 4 }
 //        |}
 //        |""".stripMargin)
@@ -35,18 +47,23 @@ class TopLevelTests extends FunSuite with Matchers with Collector with OldTestPa
 
   test("Reports unrecognized at top level") {
     val code =
-      """fn main(){}
+      """func main(){}
         |blort
         |""".stripMargin
     val err = compileProgramForError(code)
     err match {
-      case UnrecognizedTopLevelThingError(12) =>
+      case UnrecognizedTopLevelThingError(_) =>
     }
+  }
+
+  // lol
+  test("Funky function") {
+    compileProgram("funky main() { }")
   }
 
   // To support the examples on the site for the syntax highlighter
   test("empty") {
-    val program = compileProgram("fn foo() { ... }")
+    val program = compileProgram("func foo() { ... }")
     program.topLevelThings(0) match {
       case TopLevelFunctionP(
       FunctionP(_,
@@ -94,7 +111,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with OldTestPa
   test("Return with region generics") {
     val program = compileProgram(
       """
-        |fn strongestDesire() IDesire<'r, 'i> { }
+        |func strongestDesire() IDesire<'r, 'i> { }
         |""".stripMargin)
     program.topLevelThings(0) match {
       case TopLevelFunctionP(func) =>
@@ -105,7 +122,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with OldTestPa
   test("Bad start of statement") {
     compileProgramForError(
       """
-        |fn doCivicDance(virtual this Car) {
+        |func doCivicDance(virtual this Car) {
         |  )
         |}
         """.stripMargin) match {
@@ -113,7 +130,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with OldTestPa
     }
     compileProgramForError(
       """
-        |fn doCivicDance(virtual this Car) {
+        |func doCivicDance(virtual this Car) {
         |  ]
         |}
         """.stripMargin) match {

@@ -11,7 +11,7 @@ class HashMapTest extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """
           |import hashmap.*;
-          |fn main() int export {
+          |exported func main() int {
           |  m = HashMap<int, int>(IntHasher(), IntEquator());
           |  m!.add(0, 100);
           |  m!.add(4, 101);
@@ -30,7 +30,7 @@ class HashMapTest extends FunSuite with Matchers {
         """
           |import hashmap.*;
           |import panicutils.*;
-          |fn main() int export {
+          |exported func main() int {
           |  m = HashMap<int, int>(IntHasher(), IntEquator());
           |  m!.add(0, 100);
           |  m!.add(4, 101);
@@ -68,11 +68,11 @@ class HashMapTest extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """
           |import hashmap.*;
-          |fn add42(map &!HashMap<int, int, IntHasher, IntEquator>) {
+          |func add42(map &!HashMap<int, int, IntHasher, IntEquator>) {
           |  map!.add(42, 100);
           |}
           |
-          |fn main() int export {
+          |exported func main() int {
           |  m = HashMap<int, int, IntHasher, IntEquator>(IntHasher(), IntEquator());
           |  add42(&!m);
           |  ret m.get(42).get();
@@ -94,7 +94,7 @@ class HashMapTest extends FunSuite with Matchers {
           |}
           |
           |struct LocationHasher { }
-          |fn __call(this &LocationHasher, loc Location) int {
+          |func __call(this &LocationHasher, loc Location) int {
           |  hash! = 0;
           |  set hash = 41 * hash + loc.groupX;
           |  set hash = 41 * hash + loc.groupY;
@@ -103,11 +103,11 @@ class HashMapTest extends FunSuite with Matchers {
           |}
           |
           |struct LocationEquator { }
-          |fn __call(this &LocationEquator, a Location, b Location) bool {
+          |func __call(this &LocationEquator, a Location, b Location) bool {
           |  ret (a.groupX == b.groupX) and (a.groupY == b.groupY) and (a.indexInGroup == b.indexInGroup);
           |}
           |
-          |fn main() int export {
+          |exported func main() int {
           |  m = HashMap<Location, int>(LocationHasher(), LocationEquator());
           |  m!.add(Location(4, 5, 6), 100);
           |  ret m.get(Location(4, 5, 6)).get();
@@ -122,7 +122,7 @@ class HashMapTest extends FunSuite with Matchers {
         """
           |import hashmap.*;
           |import panicutils.*;
-          |fn main() int export {
+          |exported func main() int {
           |  m = HashMap<int, int>(IntHasher(), IntEquator());
           |  m!.add(0, 100);
           |  m!.add(4, 101);
@@ -147,7 +147,7 @@ class HashMapTest extends FunSuite with Matchers {
         """
           |import hashmap.*;
           |import panicutils.*;
-          |fn main() int export {
+          |exported func main() int {
           |  m = HashMap<int, int>(IntHasher(), IntEquator());
           |  m!.add(0, 100);
           |  m!.add(4, 101);
@@ -171,7 +171,7 @@ class HashMapTest extends FunSuite with Matchers {
         """
           |import hashmap.*;
           |import panicutils.*;
-          |fn main() int export {
+          |exported func main() int {
           |  m = HashMap<int, int>(IntHasher(), IntEquator());
           |  m!.add(0, 100);
           |  m!.add(4, 101);
@@ -197,7 +197,7 @@ class HashMapTest extends FunSuite with Matchers {
           |import panicutils.*;
           |struct Plane {}
           |
-          |fn main() int export {
+          |exported func main() int {
           |  m = HashMap<int, Plane>(IntHasher(), IntEquator());
           |  m!.add(0, Plane());
           |  m!.add(4, Plane());
@@ -221,7 +221,7 @@ class HashMapTest extends FunSuite with Matchers {
         """
           |import hashmap.*;
           |import panicutils.*;
-          |fn main() int export {
+          |exported func main() int {
           |  m = HashMap<int, int>(IntHasher(), IntEquator());
           |  m!.add(0, 100);
           |  m!.add(4, 101);
@@ -248,7 +248,7 @@ class HashMapTest extends FunSuite with Matchers {
           |import hashmap.*;
           |import panicutils.*;
           |
-          |fn main() int export {
+          |exported func main() int {
           |  m = HashMap<int, int>(IntHasher(), IntEquator());
           |  m!.add(0, 0);
           |  m!.add(1, 1);

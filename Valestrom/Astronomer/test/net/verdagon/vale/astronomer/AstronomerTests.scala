@@ -16,7 +16,7 @@ class AstronomerTests extends FunSuite with Matchers  {
   test("Type simple main function") {
     val compilation =
       AstronomerTestCompilation.test(
-      """fn main() export {
+      """exported func main() {
         |}
         |""".stripMargin)
     val astrouts = compilation.getAstrouts().getOrDie()
@@ -25,7 +25,7 @@ class AstronomerTests extends FunSuite with Matchers  {
   test("Type simple generic function") {
     val compilation =
       AstronomerTestCompilation.test(
-        """fn moo<T>() rules(T Ref) export {
+        """exported func moo<T>() where T Ref {
           |}
           |""".stripMargin)
     val astrouts = compilation.getAstrouts().getOrDie()
@@ -34,7 +34,7 @@ class AstronomerTests extends FunSuite with Matchers  {
   test("Infer coord type from parameters") {
     val compilation =
       AstronomerTestCompilation.test(
-        """fn moo<T>(x T) export {
+        """exported func moo<T>(x T) {
           |}
           |""".stripMargin)
     val astrouts = compilation.getAstrouts().getOrDie()
@@ -90,7 +90,7 @@ class AstronomerTests extends FunSuite with Matchers  {
   test("Type simple generic interface") {
     val compilation =
       AstronomerTestCompilation.test(
-        """interface Moo<T> rules(T Ref) {
+        """interface Moo<T> where T Ref {
           |}
           |""".stripMargin)
     val astrouts = compilation.getAstrouts().getOrDie()
@@ -99,8 +99,8 @@ class AstronomerTests extends FunSuite with Matchers  {
   test("Type simple generic interface method") {
     val compilation =
       AstronomerTestCompilation.test(
-        """interface Moo<T> rules(T Ref) {
-          |  fn bork(virtual self *Moo<T>) int;
+        """interface Moo<T> where T Ref {
+          |  func bork(virtual self *Moo<T>) int;
           |}
           |""".stripMargin)
     val astrouts = compilation.getAstrouts().getOrDie()
@@ -112,7 +112,7 @@ class AstronomerTests extends FunSuite with Matchers  {
         """struct List<T> {
           |  moo T;
           |}
-          |fn moo<T>(x List<T>) export {
+          |exported func moo<T>(x List<T>) {
           |}
           |""".stripMargin)
     val astrouts = compilation.getAstrouts().getOrDie()
@@ -124,8 +124,8 @@ class AstronomerTests extends FunSuite with Matchers  {
   test("Test evaluate Pack") {
     val compilation =
       AstronomerTestCompilation.test(
-        """fn moo<T>()
-          |rules(T = Refs(int, bool))
+        """func moo<T>()
+          |where T = Refs(int, bool)
           |{
           |}
           |""".stripMargin)
@@ -138,8 +138,8 @@ class AstronomerTests extends FunSuite with Matchers  {
   test("Test infer Pack from result") {
     val compilation =
       AstronomerTestCompilation.test(
-        """fn moo<T>()
-          |rules(Prot("moo", Refs(T, bool), str))
+        """func moo<T>()
+          |where Prot("moo", Refs(T, bool), str)
           |{
           |}
           |""".stripMargin)
@@ -152,8 +152,8 @@ class AstronomerTests extends FunSuite with Matchers  {
   test("Test infer Pack from empty result") {
     val compilation =
       AstronomerTestCompilation.test(
-        """fn moo<P>()
-          |rules(P = Refs(), Prot("moo", P, str))
+        """func moo<P>()
+          |where P = Refs(), Prot("moo", P, str)
           |{
           |}
           |""".stripMargin)
@@ -166,8 +166,8 @@ class AstronomerTests extends FunSuite with Matchers  {
 //  test("Test cant solve empty Pack") {
 //    val compilation =
 //      AstronomerTestCompilation.test(
-//        """fn moo<P>()
-//          |rules(P = ())
+//        """func moo<P>()
+//          |where P = ()
 //          |{
 //          |}
 //          |""".stripMargin)

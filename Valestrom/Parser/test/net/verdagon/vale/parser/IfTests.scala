@@ -24,7 +24,7 @@ class IfTests extends FunSuite with Matchers with Collector with TestParseUtils 
   test("if let") {
     compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), "if [u] = a {}") shouldHave {
       case IfPE(_,
-        LetPE(_,None,
+        LetPE(_,
           PatternPP(_,None,None,None,
             Some(
               DestructureP(_,
@@ -42,7 +42,7 @@ class IfTests extends FunSuite with Matchers with Collector with TestParseUtils 
       case IfPE(_,
         ConsecutorPE(
           Vector(
-            LetPE(_,None,PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"x"))),None,None,None),ConstantIntPE(_,4,32)),
+            LetPE(_,PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"x"))),None,None,None),ConstantIntPE(_,4,32)),
             NotPE(_,MethodCallPE(_,LookupPE(LookupNameP(NameP(_,"x")),None),_,false,LookupPE(LookupNameP(NameP(_,"isEmpty")),None),Vector())))),
         BlockPE(_,VoidPE(_)),
         BlockPE(_,VoidPE(_))) =>
@@ -55,7 +55,6 @@ class IfTests extends FunSuite with Matchers with Collector with TestParseUtils 
       case ConsecutorPE(
         Vector(
           LetPE(_,
-            None,
             PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_,"newLen"))),None,None,None),
             IfPE(_,
               BinaryCallPE(_,NameP(_,"=="),LookupPE(LookupNameP(NameP(_,"num")),None),ConstantIntPE(_,0,_)),

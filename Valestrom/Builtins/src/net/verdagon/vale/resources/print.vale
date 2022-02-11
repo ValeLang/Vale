@@ -1,3 +1,3 @@
 
-fn print(s str) { printstr(s, 0, len(s)) }
-fn printstr(s str, start int, length int) extern;
+func print(s str) { printstr(s, 0, len(s)) }
+extern func printstr(s str, start int, length int);

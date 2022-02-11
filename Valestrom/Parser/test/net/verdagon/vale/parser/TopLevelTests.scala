@@ -1,15 +1,17 @@
 package net.verdagon.vale.parser
 
+import net.verdagon.vale.parser.ast.{BlockPE, ExportAsP, FunctionP, ImportP, NameOrRunePT, NameP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImportP, TopLevelStructP, VoidPE}
+import net.verdagon.vale.parser.old.OldTestParseUtils
 import net.verdagon.vale.{Collector, Tests, vassert}
 import org.scalatest.{FunSuite, Matchers}
 
 
 
-class TopLevelTests extends FunSuite with Matchers with Collector with TestParseUtils {
+class TopLevelTests extends FunSuite with Matchers with Collector with OldTestParseUtils {
   test("Function then struct") {
     val program = compileProgram(
       """
-        |fn main() int export {}
+        |exported func main() int {}
         |
         |struct mork { }
         |""".stripMargin)
@@ -17,26 +19,56 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
     program.topLevelThings(1) match { case TopLevelStructP(_) => }
   }
 
+  test("Ellipses ignored") {
+    compileProgram("""exported func main(...) int {}""".stripMargin)
+    compileProgram("""exported func main() ... {}""".stripMargin)
+    compileProgram("""exported func main() int {} ... """.stripMargin)
+    compileProgram("""exported func main() int {...}""".stripMargin)
+    compileProgram("""exported func main() int {moo(...)}""".stripMargin)
+    compileProgram("""exported func main() int {x = ...;}""".stripMargin)
+    compileProgram("""exported func main() int {set x = ...;}""".stripMargin)
+    compileProgram("""struct Moo {} ... """.stripMargin)
+    compileProgram("""struct Moo {...}""".stripMargin)
+  }
+
+//  test("Function containing if") {
+//    val program = compileProgram(
+//      """
+//        |func main() int {
+//        |  if true { 3 } else { 4 }
+//        |}
+//        |""".stripMargin)
+//    val main = program.lookupFunction("main")
+//    main.body.get
+//  }
+
+
+
 
   test("Reports unrecognized at top level") {
     val code =
-      """fn main(){}
+      """func main(){}
         |blort
         |""".stripMargin
     val err = compileProgramForError(code)
     err match {
-      case UnrecognizedTopLevelThingError(12) =>
+      case UnrecognizedTopLevelThingError(_) =>
     }
+  }
+
+  // lol
+  test("Funky function") {
+    compileProgram("funky main() { }")
   }
 
   // To support the examples on the site for the syntax highlighter
   test("empty") {
-    val program = compileProgram("fn foo() { ... }")
+    val program = compileProgram("func foo() { ... }")
     program.topLevelThings(0) match {
       case TopLevelFunctionP(
       FunctionP(_,
       _,
-      Some(BlockPE(_,Vector(VoidPE(_)))))) =>
+      Some(BlockPE(_,VoidPE(_))))) =>
     }
   }
 
@@ -49,7 +81,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
   }
 
   test("exporting array") {
-    val program = compileProgram("export Array<mut, int> as IntArray;")
+    val program = compileProgram("export []<mut>int as IntArray;")
     program.topLevelThings(0) match {
       case TopLevelExportAsP(ExportAsP(_,_,NameP(_,"IntArray"))) =>
     }
@@ -79,10 +111,30 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
   test("Return with region generics") {
     val program = compileProgram(
       """
-        |fn strongestDesire() IDesire<'r, 'i> { }
+        |func strongestDesire() IDesire<'r, 'i> { }
         |""".stripMargin)
     program.topLevelThings(0) match {
       case TopLevelFunctionP(func) =>
+    }
+  }
+
+
+  test("Bad start of statement") {
+    compileProgramForError(
+      """
+        |func doCivicDance(virtual this Car) {
+        |  )
+        |}
+        """.stripMargin) match {
+      case BadStartOfStatementError(_) =>
+    }
+    compileProgramForError(
+      """
+        |func doCivicDance(virtual this Car) {
+        |  ]
+        |}
+        """.stripMargin) match {
+      case BadStartOfStatementError(_) =>
     }
   }
 }

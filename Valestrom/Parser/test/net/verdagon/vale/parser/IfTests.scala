@@ -1,81 +1,66 @@
 package net.verdagon.vale.parser
 
+import net.verdagon.vale.parser.ExpressionParser.StopBeforeCloseBrace
+import net.verdagon.vale.parser.ast._
+import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, Tests, vassert}
 import org.scalatest.{FunSuite, Matchers}
 
 
-
-class IfTests extends FunSuite with Matchers with Collector {
-  private def compileProgramWithComments(code: String): FileP = {
-    Parser.runParserForProgramAndCommentRanges(code) match {
-      case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(result) => result._1
-    }
-  }
-  private def compileProgram(code: String): FileP = {
-    // The strip is in here because things inside the parser don't expect whitespace before and after
-    Parser.runParser(code) match {
-      case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(result) => result
-    }
-  }
-
-  private def compile[T](parser: CombinatorParsers.Parser[T], code: String): T = {
-    // The strip is in here because things inside the parser don't expect whitespace before and after
-    CombinatorParsers.parse(parser, code.strip().toCharArray()) match {
-      case CombinatorParsers.NoSuccess(msg, input) => {
-        fail("Couldn't parse!\n" + input.pos.longString);
-      }
-      case CombinatorParsers.Success(expr, rest) => {
-        vassert(rest.atEnd)
-        expr
-      }
-    }
-  }
-
+class IfTests extends FunSuite with Matchers with Collector with TestParseUtils {
   test("ifs") {
-    compile(CombinatorParsers.ifLadder, "if (true) { doBlarks(&x) } else { }") shouldHave {
+    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), "if true { doBlarks(*x) } else { }") shouldHave {
+
       case IfPE(_,
-        BlockPE(_, Vector(ConstantBoolPE(_, true))),
+        ConstantBoolPE(_, true),
         BlockPE(_,
-          Vector(
-            FunctionCallPE(_,
-              None, _, false, LookupPE(NameP(_, "doBlarks"), None),
-              Vector(
-                LendPE(_,LookupPE(NameP(_, "x"), None), LendConstraintP(Some(ReadonlyP)))),
-              LendConstraintP(Some(ReadonlyP))))),
-        BlockPE(_, Vector(VoidPE(_)))) =>
+          FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_,"doBlarks")),None),
+            Vector(
+              AugmentPE(_,PointerP,Some(ReadonlyP),LookupPE(LookupNameP(NameP(_,"x")),None))),false)),
+        BlockPE(_,VoidPE(_))) =>
     }
   }
 
   test("if let") {
-    compile(CombinatorParsers.ifLadder, "if ((u) = a) {}") shouldHave {
+    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), "if [u] = a {}") shouldHave {
       case IfPE(_,
-        BlockPE(_,
+        LetPE(_,
+          PatternPP(_,None,None,None,
+            Some(
+              DestructureP(_,
+                Vector(
+                  PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"u"))),None,None,None)))),
+            None),
+          LookupPE(LookupNameP(NameP(_, "a")),None)),
+        BlockPE(_,VoidPE(_)),
+        BlockPE(_,VoidPE(_))) =>
+    }
+  }
+
+  test("If with condition declarations") {
+    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace),"if x = 4; not x.isEmpty() { }") shouldHave {
+      case IfPE(_,
+        ConsecutorPE(
           Vector(
-            LetPE(_,None,
-              PatternPP(_,None,None,None,
-                Some(
-                  DestructureP(_,
-                    Vector(
-                      PatternPP(_,None,Some(CaptureP(_,LocalNameP(NameP(_,"u")))),None,None,None)))),
-                None),
-              LookupPE(NameP(_,"a"),None)))),
-        BlockPE(_,Vector(VoidPE(_))),
-        BlockPE(_,Vector(VoidPE(_)))) =>
+            LetPE(_,PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"x"))),None,None,None),ConstantIntPE(_,4,32)),
+            NotPE(_,MethodCallPE(_,LookupPE(LookupNameP(NameP(_,"x")),None),_,false,LookupPE(LookupNameP(NameP(_,"isEmpty")),None),Vector())))),
+        BlockPE(_,VoidPE(_)),
+        BlockPE(_,VoidPE(_))) =>
     }
   }
 
   test("19") {
-    compile(CombinatorParsers.statement,
-      "newLen = if (num == 0) { 1 } else { 2 };") shouldHave {
-      case LetPE(_,
-      None,
-      PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "newLen")))), None, None, None),
-      IfPE(_,
-      BlockPE(_, Vector(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "=="), None), Vector(LookupPE(NameP(_, "num"), None), ConstantIntPE(_, 0, _)), LendConstraintP(Some(ReadonlyP))))),
-      BlockPE(_, Vector(ConstantIntPE(_, 1, _))),
-      BlockPE(_, Vector(ConstantIntPE(_, 2, _))))) =>
+    compile(ExpressionParser.parseBlockContents(_, StopBeforeCloseBrace, false),
+      "newLen = if num == 0 { 1 } else { 2 };") shouldHave {
+      case ConsecutorPE(
+        Vector(
+          LetPE(_,
+            PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_,"newLen"))),None,None,None),
+            IfPE(_,
+              BinaryCallPE(_,NameP(_,"=="),LookupPE(LookupNameP(NameP(_,"num")),None),ConstantIntPE(_,0,_)),
+              BlockPE(_,ConstantIntPE(_,1,_)),
+              BlockPE(_,ConstantIntPE(_,2,32)))),
+          VoidPE(_))) =>
     }
   }
 }

@@ -1,0 +1,12 @@
+
+func migrate<E>(from []<mut>E, to &![]<mut>E) {
+  intermediate = Array<mut, E>(from.capacity());
+  drop_into(from, &!{ intermediate!.push(_); });
+  drop_into(intermediate, &!{ to!.push(_); });
+}
+
+func migrate<E, N, V>(from [#N]<mut, V>E, to &![]<mut>E) {
+  intermediate = Array<mut, E>(N);
+  drop_into(from, &!{ intermediate!.push(_); });
+  drop_into(intermediate, &!{ to!.push(_); });
+}

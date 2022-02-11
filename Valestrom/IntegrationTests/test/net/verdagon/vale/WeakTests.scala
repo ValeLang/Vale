@@ -2,7 +2,7 @@ package net.verdagon.vale
 
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.ast.{LetNormalTE, SoftLoadTE, WeakAliasTE}
+import net.verdagon.vale.templar.ast.{BorrowToWeakTE, LetNormalTE, SoftLoadTE}
 import net.verdagon.vale.templar.citizen.WeakableImplingMismatch
 import net.verdagon.vale.templar.env.ReferenceLocalVariableT
 import net.verdagon.vale.templar.expression.TookWeakRefOfNonWeakableError
@@ -75,13 +75,13 @@ class WeakTests extends FunSuite with Matchers {
   test("Make weak ref from temporary") {
     val compile = RunCompilation.test(
         """
-          |struct Muta weakable { hp int; }
-          |fn getHp(weakMuta &&Muta) int { (lock(weakMuta)).get().hp }
-          |fn main() int export { getHp(&&Muta(7)) }
+          |weakable struct Muta { hp int; }
+          |func getHp(weakMuta **Muta) int { ret (lock(weakMuta)).get().hp; }
+          |exported func main() int { ret getHp(**Muta(7)); }
           |""".stripMargin)
 
     val main = compile.expectTemputs().lookupFunction("main")
-    Collector.only(main.body, { case WeakAliasTE(_) => })
+    Collector.only(main.body, { case BorrowToWeakTE(_) => })
     compile.evalForKind(Vector()) shouldEqual VonInt(7)
   }
 
@@ -89,8 +89,8 @@ class WeakTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """
           |struct Muta { hp int; }
-          |fn getHp(weakMuta &&Muta) { (lock(weakMuta)).get().hp }
-          |fn main() int export { getHp(&&Muta(7)) }
+          |func getHp(weakMuta **Muta) { (lock(weakMuta)).get().hp }
+          |exported func main() int { getHp(**Muta(7)) }
           |""".stripMargin)
 
     try {
@@ -107,9 +107,9 @@ class WeakTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """
           |interface IUnit {}
-          |struct Muta weakable { hp int; }
+          |weakable struct Muta { hp int; }
           |impl IUnit for Muta;
-          |fn main(muta Muta) int  { 7 }
+          |func main(muta Muta) int  { ret 7; }
           |""".stripMargin)
 
     try {
@@ -124,10 +124,10 @@ class WeakTests extends FunSuite with Matchers {
   test("Cant make non-weakable extend a weakable") {
     val compile = RunCompilation.test(
         """
-          |interface IUnit weakable {}
+          |weakable interface IUnit {}
           |struct Muta { hp int; }
           |impl IUnit for Muta;
-          |fn main(muta Muta) int  { 7 }
+          |func main(muta Muta) int  { ret 7; }
           |""".stripMargin)
 
     try {
@@ -234,11 +234,11 @@ class WeakTests extends FunSuite with Matchers {
           |  hp int;
           |}
           |struct Spaceship {
-          |  origin &&Base;
+          |  origin **Base;
           |}
-          |fn main() int export {
+          |exported func main() int {
           |  base = Base(73);
-          |  ship = Spaceship(&&base);
+          |  ship = Spaceship(**base);
           |
           |  (base).drop(); // Destroys base.
           |

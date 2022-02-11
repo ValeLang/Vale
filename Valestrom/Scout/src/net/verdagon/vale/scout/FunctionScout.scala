@@ -1,6 +1,7 @@
 package net.verdagon.vale.scout
 
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{AbstractAttributeP, AbstractP, BlockPE, BorrowP, BuiltinAttributeP, ExportAttributeP, ExternAttributeP, FunctionHeaderP, FunctionP, FunctionReturnP, IAttributeP, IdentifyingRuneP, NameP, PureAttributeP, ReadwriteP, RegionTypePR, ReturnPE, RulePUtils, TypeRuneAttributeP, UseP}
 import net.verdagon.vale.scout.Scout.noDeclarations
 import net.verdagon.vale.scout.patterns._
 //import net.verdagon.vale.scout.predictor.{Conclusions, PredictorEvaluator}
@@ -141,17 +142,25 @@ class FunctionScout(scout: Scout) {
       } else if (attributes.collectFirst({ case BuiltinAttributeP(_, _) => }).nonEmpty) {
         GeneratedBodyS(attributes.collectFirst({ case BuiltinAttributeP(_, generatorId) => generatorId}).head.str)
       } else {
-        vassert(maybeBody0.nonEmpty)
-        val (body1, _, Vector()) =
+        val body =
+          maybeBody0 match {
+            case None => throw CompileErrorExceptionS(RangedInternalErrorS(rangeS, "Error: function has no body."))
+            case Some(x) => x
+          }
+        val (body1, _, magicParams) =
           scoutBody(
             functionEnv,
             None,
             lidb.child(),
-            maybeBody0.get,
+            body,
             // We hand these into scoutBody instead of assembling a StackFrame on our own because we want
             // StackFrame's to be made in one place, where we can centralize the logic for tracking variable
             // uses and so on.
-            captureDeclarations)
+            captureDeclarations,
+            false)
+        if (magicParams.nonEmpty) {
+          throw CompileErrorExceptionS(RangedInternalErrorS(rangeS, "Magic param (underscore) in a normal block!"))
+        }
         vassert(body1.closuredNames.isEmpty)
         CodeBodyS(body1)
       }
@@ -165,6 +174,11 @@ class FunctionScout(scout: Scout) {
         runeToExplicitType.toMap,
         ruleBuilder.toArray)
 
+    scout.checkIdentifiability(
+      rangeS,
+      userSpecifiedIdentifyingRunes.map(_.rune),
+      ruleBuilder.toArray)
+
     FunctionS(
       Scout.evalRange(file, range),
       name,
@@ -177,7 +191,7 @@ class FunctionScout(scout: Scout) {
       body1)
   }
 
-  def translateFunctionAttributes(file: FileCoordinate, attrsP: Vector[IFunctionAttributeP]): Vector[IFunctionAttributeS] = {
+  def translateFunctionAttributes(file: FileCoordinate, attrsP: Vector[IAttributeP]): Vector[IFunctionAttributeS] = {
     attrsP.map({
       case AbstractAttributeP(_) => vwat() // Should have been filtered out, templar cares about abstract directly
       case ExportAttributeP(_) => ExportS(file.packageCoordinate)
@@ -221,7 +235,7 @@ class FunctionScout(scout: Scout) {
     val ruleBuilder = ArrayBuffer[IRulexSR]()
     val runeToExplicitType = mutable.HashMap[IRuneS, ITemplataType]()
 
-    // We say PerhapsTypeless because they might be anonymous params like in `(_){ true }`
+    // We say PerhapsTypeless because they might be anonymous params like in `(_) => { true }`
     // Later on, we'll make identifying runes for these.
     val explicitParamPatternsPerhapsTypeless =
       PatternScout.scoutPatterns(
@@ -262,7 +276,12 @@ class FunctionScout(scout: Scout) {
         Some(parentStackFrame),
         lidb.child(),
         body0,
-        paramDeclarations)
+//        body0 match {
+//          case BlockPE(_, ReturnPE(_, _)) => body0
+//          case BlockPE(range, inner) => BlockPE(range, ReturnPE(range, inner))
+//        },
+        paramDeclarations,
+        true)
 
     if (lambdaMagicParamNames.nonEmpty && (explicitParams.nonEmpty)) {
       throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(parentStackFrame.file, range), "Cant have a lambda with _ and params"))
@@ -270,7 +289,8 @@ class FunctionScout(scout: Scout) {
 
 //    val closurePatternId = fate.nextPatternNumber();
 
-    val closureParamRange = Scout.evalRange(parentStackFrame.file, range)
+    val closureParamPos = Scout.evalPos(parentStackFrame.file, range.begin)
+    val closureParamRange = RangeS(closureParamPos, closureParamPos)
     val closureStructRune = RuneUsage(closureParamRange, ImplicitRuneS(lidb.child().consume()))
     ruleBuilder +=
       LookupSR(
@@ -280,7 +300,8 @@ class FunctionScout(scout: Scout) {
       AugmentSR(
         closureParamRange,
         closureParamTypeRune,
-        Vector(OwnershipLiteralSL(ConstraintP),PermissionLiteralSL(ReadwriteP)),
+        BorrowP,
+        ReadwriteP,
         closureStructRune)
 
     val closureParamS =
@@ -332,6 +353,11 @@ class FunctionScout(scout: Scout) {
       }
     maybeRetCoordRune.foreach(retCoordRune => runeToExplicitType.put(retCoordRune.rune, CoordTemplataType))
 
+    scout.checkIdentifiability(
+      closureParamRange,
+      identifyingRunes.map(_.rune),
+      ruleBuilder.toArray)
+
     val function1 =
       FunctionS(
         Scout.evalRange(parentStackFrame.file, range),
@@ -356,7 +382,8 @@ class FunctionScout(scout: Scout) {
     parentStackFrame: Option[StackFrame],
     lidb: LocationInDenizenBuilder,
     body0: BlockPE,
-    initialDeclarations: VariableDeclarations):
+    initialDeclarations: VariableDeclarations,
+    resultRequested: Boolean):
   (BodySE, VariableUses, Vector[MagicParamNameS]) = {
     val functionBodyEnv = functionEnv.child()
 
@@ -364,13 +391,18 @@ class FunctionScout(scout: Scout) {
     // If we have a lone lookup node, like "m = Marine(); m;" then that
     // 'm' will be turned into an expression, which means that's how it's
     // destroyed. So, thats how we destroy things before their time.
-    val (NormalResult(_, block1), selfUses, childUses) =
-      expressionScout.scoutBlock(
+    val (block1, selfUses, childUses) =
+      expressionScout.newBlock(
         functionBodyEnv,
         parentStackFrame,
         lidb.child(),
-        body0,
-        initialDeclarations)
+        Scout.evalRange(functionBodyEnv.file, body0.range),
+        initialDeclarations,
+        resultRequested,
+        (stackFrame1, lidb, resultRequested) => {
+          expressionScout.scoutExpressionAndCoerce(
+            stackFrame1, lidb, body0.inner, UseP, resultRequested)
+        })
 
     vcurious(
       childUses.uses.map(_.name).collect({ case mpn @ MagicParamNameS(_) => mpn }).isEmpty)
@@ -389,7 +421,9 @@ class FunctionScout(scout: Scout) {
           childUses.isMoved(declared.name),
           childUses.isMutated(declared.name))
       })
-    val block1WithParamLocals = BlockSE(Scout.evalRange(functionBodyEnv.file, body0.range), block1.locals ++ magicParamLocals, block1.exprs)
+    val bodyRangeS = Scout.evalRange(functionBodyEnv.file, body0.range)
+    val block1WithParamLocals =
+      BlockSE(bodyRangeS, block1.locals ++ magicParamLocals, block1.expr)
 
     val allUses =
       selfUses.combine(childUses, {
@@ -446,6 +480,7 @@ class FunctionScout(scout: Scout) {
         maybeParamsP,
         FunctionReturnP(retRange, maybeInferRet, maybeRetType)),
       None) = functionP;
+    val rangeS = Scout.evalRange(interfaceEnv.file, range)
     val retRangeS = Scout.evalRange(interfaceEnv.file, retRange)
 
     maybeParamsP match {
@@ -504,7 +539,7 @@ class FunctionScout(scout: Scout) {
           Some(rune)
         }
         case (Some(_), None) => {
-          throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(myStackFrame.file, range), "Can't infer the return type of an interface method!"))
+          throw CompileErrorExceptionS(RangedInternalErrorS(rangeS, "Can't infer the return type of an interface method!"))
         }
         case (None, Some(retTypePT)) => {
           PatternScout.translateMaybeTypeIntoMaybeRune(
@@ -523,6 +558,11 @@ class FunctionScout(scout: Scout) {
     if (attrsP.collect({ case AbstractAttributeP(_) => true  }).nonEmpty) {
       throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(interfaceEnv.file, range), "Dont need abstract here"))
     }
+
+    scout.checkIdentifiability(
+      rangeS,
+      identifyingRunes.map(_.rune),
+      ruleBuilder.toArray)
 
     FunctionS(
       Scout.evalRange(functionEnv.file, range),

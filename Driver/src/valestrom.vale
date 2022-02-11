@@ -6,6 +6,7 @@ fn invoke_valestrom(
   project_non_vale_inputs &List<ProjectNonValeInputDeclaration>,
   benchmark bool,
   verbose bool,
+  debug_output bool,
   include_builtins bool,
   output_vast bool,
   output_vpst bool,
@@ -31,6 +32,9 @@ Subprocess {
   }
   if (verbose) {
     command_line_args!.add("--verbose");
+  }
+  if (debug_output) {
+    command_line_args!.add("--debug_output");
   }
   if (not include_builtins) {
     command_line_args!.add("--include-builtins false");

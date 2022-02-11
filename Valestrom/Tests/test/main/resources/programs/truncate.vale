@@ -1,0 +1,5 @@
+
+exported func main() int {
+  x = TruncateI64ToI32(4300000000i64);
+  ret if (x == 5032704) { 42 } else { 73 }
+}

@@ -2,9 +2,10 @@ package net.verdagon.vale
 
 import net.verdagon.vale.driver.FullCompilationOptions
 import net.verdagon.vale.hammer._
-import net.verdagon.vale.metal.{BlockH, CallH, InlineH, IntH, NeverH, PrototypeH, ReadonlyH, ReferenceH}
+import net.verdagon.vale.metal.{BlockH, CallH, ConsecutorH, ConstantIntH, Final, FullNameH, InlineH, IntH, Local, NeverH, PrototypeH, ReadonlyH, ReferenceH, ShareH, StackifyH, VariableIdH, VoidH}
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.templar.types.ShareT
+import net.verdagon.vale.vivem.PanicException
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.von.VonInt
 
@@ -16,7 +17,7 @@ class HammerTests extends FunSuite with Matchers {
 
   test("Simple main") {
     val compile = RunCompilation.test(
-      "fn main() int export {3}")
+      "exported func main() int { ret 3; }")
     val hamuts = compile.getHamuts()
 
     val testPackage = hamuts.lookupPackage(PackageCoordinate.TEST_TLD)
@@ -28,10 +29,10 @@ class HammerTests extends FunSuite with Matchers {
 //  test("Templated struct makes it into hamuts") {
 //    val compile = RunCompilation.test(
 //      """
-//        |struct ListNode<T> imm rules(T: Ref) {
+//        |struct ListNode<T> imm where T: Ref {
 //        |  tail: *ListNode<T>;
 //        |}
-//        |fn main(a: *ListNode:int) {}
+//        |func main(a: *ListNode:int) {}
 //      """.stripMargin)
 //    val hamuts = compile.getHamuts()
 //    hamuts.structs.find(_.fullName.parts.last.humanName == "ListNode").get;
@@ -40,24 +41,24 @@ class HammerTests extends FunSuite with Matchers {
   test("Two templated structs make it into hamuts") {
     val compile = RunCompilation.test(
       """
-        |interface MyOption<T> rules(T Ref) imm { }
-        |struct MyNone<T> rules(T Ref) imm { }
+        |interface MyOption<T> imm where T Ref { }
+        |struct MyNone<T> imm where T Ref { }
         |impl<T> MyOption<T> for MyNone<T>;
-        |struct MySome<T> rules(T Ref) imm { value T; }
+        |struct MySome<T> imm where T Ref { value T; }
         |impl<T> MyOption<T> for MySome<T>;
         |
-        |fn main(a *MySome<int>, b *MyNone<int>) {}
+        |func main(a @MySome<int>, b @MyNone<int>) {}
       """.stripMargin)
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
     packageH.interfaces.find(interface => {
-      interface.fullName.toFullString() == """test::C(CT("MyOption"),[TR(R(*,<,#,i(32)))])"""
+      interface.fullName.toFullString() == """test::C(CT("MyOption"),[TR(R(@,<,#,i(32)))])"""
     }).get;
 
-    val mySome = packageH.structs.find(_.fullName.toFullString() == """test::C(CT("MySome"),[TR(R(*,<,#,i(32)))])""").get;
+    val mySome = packageH.structs.find(_.fullName.toFullString() == """test::C(CT("MySome"),[TR(R(@,<,#,i(32)))])""").get;
     vassert(mySome.members.size == 1);
     vassert(mySome.members.head.tyype == ReferenceH[IntH](m.ShareH, InlineH, ReadonlyH, IntH.i32))
 
-    val myNone = packageH.structs.find(_.fullName.toFullString() == """test::C(CT("MyNone"),[TR(R(*,<,#,i(32)))])""").get;
+    val myNone = packageH.structs.find(_.fullName.toFullString() == """test::C(CT("MyNone"),[TR(R(@,<,#,i(32)))])""").get;
     vassert(myNone.members.isEmpty);
   }
 
@@ -68,10 +69,10 @@ class HammerTests extends FunSuite with Matchers {
 //    val compile = RunCompilation.test(
 //      """
 //        |interface Blark imm { }
-//        |fn wot(virtual b *Blark) int abstract;
+//        |func wot(virtual b *Blark) int abstract;
 //        |struct MyStruct export imm {}
 //        |impl Blark for MyStruct;
-//        |fn wot(b *MyStruct impl Blark) int { 9 }
+//        |func wot(b *MyStruct impl Blark) int { ret 9; }
 //      """.stripMargin)
 //    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
 //    packageH.nonExternFunctions.find(f => f.prototype.fullName.toFullString().startsWith("""F("wot"""")).get;
@@ -84,10 +85,10 @@ class HammerTests extends FunSuite with Matchers {
   test("Tests stripping things after panic") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  __vbi_panic();
         |  a = 42;
-        |  = a;
+        |  ret a;
         |}
       """.stripMargin)
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
@@ -99,10 +100,37 @@ class HammerTests extends FunSuite with Matchers {
     }
   }
 
+  test("panic in expr") {
+    val compile = RunCompilation.test(
+      """
+        |import intrange.*;
+        |
+        |exported func main() int {
+        |  ret 3 + __vbi_panic();
+        |}
+        |""".stripMargin)
+    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
+    val main = packageH.lookupFunction("main")
+    val intExpr =
+      main.body match {
+        case BlockH(
+          ConsecutorH(Vector(
+            intExpr,
+            CallH(
+              PrototypeH(_,Vector(),ReferenceH(_,_,ReadonlyH,NeverH())),
+              Vector())))) => {
+          intExpr
+        }
+      }
+    Collector.only(intExpr, {
+      case ConstantIntH(3, 32) =>
+    })
+  }
+
   test("Tests export function") {
     val compile = RunCompilation.test(
       """
-        |fn moo() int export { 42 }
+        |exported func moo() int { ret 42; }
         |""".stripMargin)
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
     val moo = packageH.lookupFunction("moo")
@@ -112,7 +140,7 @@ class HammerTests extends FunSuite with Matchers {
   test("Tests export struct") {
     val compile = RunCompilation.test(
       """
-        |struct Moo export { }
+        |exported struct Moo { }
         |""".stripMargin)
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
     val moo = packageH.lookupStruct("Moo")
@@ -122,7 +150,7 @@ class HammerTests extends FunSuite with Matchers {
   test("Tests export interface") {
     val compile = RunCompilation.test(
       """
-        |interface Moo export { }
+        |exported interface Moo { }
         |""".stripMargin)
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
     val moo = packageH.lookupInterface("Moo")
@@ -136,8 +164,8 @@ class HammerTests extends FunSuite with Matchers {
         Builtins.getCodeMap()
           .or(
             FileCoordinateMap(Map())
-              .add("moduleA", Vector.empty, "StructA.vale", "struct StructA export { a int; }")
-              .add("moduleB", Vector.empty, "StructB.vale", "struct StructB export { a int; }"))
+              .add("moduleA", Vector.empty, "StructA.vale", "exported struct StructA { a int; }")
+              .add("moduleB", Vector.empty, "StructB.vale", "exported struct StructB { a int; }"))
           .or(Tests.getPackageToResourceResolver),
         FullCompilationOptions())
     val hamuts = compile.getHamuts()

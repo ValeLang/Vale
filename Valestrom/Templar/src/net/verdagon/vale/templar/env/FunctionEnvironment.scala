@@ -1,12 +1,13 @@
 package net.verdagon.vale.templar.env
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.scout.{BlockSE, IImpreciseNameS, INameS, LocalS}
+import net.verdagon.vale.scout.{BlockSE, IExpressionSE, IImpreciseNameS, INameS, LocalS, MapSE, WhileSE}
 import net.verdagon.vale.templar._
+import net.verdagon.vale.templar.ast.LocationInFunctionEnvironment
 import net.verdagon.vale.templar.names.{BuildingFunctionNameWithClosuredsAndTemplateArgsT, BuildingFunctionNameWithClosuredsT, FullNameT, IFunctionNameT, INameT, IVarNameT}
 import net.verdagon.vale.templar.templata.ITemplata
-import net.verdagon.vale.templar.types.{CoordT, StructTT, VariabilityT}
-import net.verdagon.vale.{IProfiler, vassert, vcurious, vfail, vimpl, vwat}
+import net.verdagon.vale.templar.types.{CoordT, NeverT, StructTT, VariabilityT}
+import net.verdagon.vale.{IProfiler, vassert, vcurious, vfail, vimpl, vpass, vwat}
 
 import scala.collection.immutable.{List, Map, Set}
 
@@ -89,6 +90,266 @@ case class BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs(
 
 }
 
+case class NodeEnvironment(
+  parentFunctionEnv: FunctionEnvironment,
+  parentNodeEnv: Option[NodeEnvironment],
+  node: IExpressionSE,
+  life: LocationInFunctionEnvironment,
+
+  // The things below are the "state"; they can be different for any given line in a function.
+  templatas: TemplatasStore,
+  // This contains locals from parent blocks, see WTHPFE.
+  declaredLocals: Vector[IVariableT],
+  // This can refer to vars in parent blocks, see UCRTVPE.
+  unstackifiedLocals: Set[FullNameT[IVarNameT]]
+) extends IEnvironment {
+  vassert(declaredLocals == declaredLocals.distinct)
+
+  val hash = fullName.hashCode() ^ life.hashCode();
+  override def hashCode(): Int = hash;
+  override def equals(obj: Any): Boolean = vcurious()
+
+  override def fullName: FullNameT[INameT] = parentFunctionEnv.fullName
+  def function = parentFunctionEnv.function
+
+  private[env] override def lookupWithNameInner(
+    profiler: IProfiler,
+    name: INameT,
+    lookupFilter: Set[ILookupContext],
+    getOnlyNearest: Boolean):
+  Iterable[ITemplata] = {
+    EnvironmentHelper.lookupWithNameInner(
+      this, templatas, parentNodeEnv.getOrElse(parentFunctionEnv), profiler, name, lookupFilter, getOnlyNearest)
+  }
+
+  private[env] override def lookupWithImpreciseNameInner(
+    profiler: IProfiler,
+    name: IImpreciseNameS,
+    lookupFilter: Set[ILookupContext],
+    getOnlyNearest: Boolean):
+  Iterable[ITemplata] = {
+    EnvironmentHelper.lookupWithImpreciseNameInner(
+      this, templatas, parentNodeEnv.getOrElse(parentFunctionEnv), profiler, name, lookupFilter, getOnlyNearest)
+  }
+
+  def globalEnv: GlobalEnvironment = parentFunctionEnv.globalEnv
+
+  def parentEnv: IEnvironment = {
+    parentNodeEnv.getOrElse(parentFunctionEnv)
+  }
+
+  def getVariable(name: IVarNameT): Option[IVariableT] = {
+    declaredLocals.find(_.id.last == name) match {
+      case Some(v) => Some(v)
+      case None => {
+        parentNodeEnv match {
+          case Some(p) => p.getVariable(name)
+          case None => {
+            parentFunctionEnv.closuredLocals.find(_.id.last == name)
+          }
+        }
+      }
+    }
+  }
+
+  // Dont have a getAllUnstackifiedLocals or getAllLiveLocals here. We learned that the hard way.
+  // See UCRTVPE, child environments would be the ones that know about their unstackifying of locals
+  // from parent envs.
+
+  def getAllLocals(): Vector[ILocalVariableT] = {
+    declaredLocals.collect({ case i : ILocalVariableT => i })
+  }
+
+  def getAllUnstackifiedLocals(): Vector[FullNameT[IVarNameT]] = {
+    unstackifiedLocals.toVector
+  }
+
+  def addVariables(newVars: Vector[IVariableT]): NodeEnvironment = {
+    NodeEnvironment(parentFunctionEnv, parentNodeEnv, node, life, templatas, declaredLocals ++ newVars, unstackifiedLocals)
+  }
+  def addVariable(newVar: IVariableT): NodeEnvironment = {
+    NodeEnvironment(parentFunctionEnv, parentNodeEnv, node, life, templatas, declaredLocals :+ newVar, unstackifiedLocals)
+  }
+  def markLocalUnstackified(newUnstackified: FullNameT[IVarNameT]): NodeEnvironment = {
+    vassert(!getAllUnstackifiedLocals().contains(newUnstackified))
+    vassert(getAllLocals().exists(_.id == newUnstackified))
+    // Even if the local belongs to a parent env, we still mark it unstackified here, see UCRTVPE.
+    NodeEnvironment(parentFunctionEnv, parentNodeEnv, node, life, templatas, declaredLocals, unstackifiedLocals + newUnstackified)
+  }
+
+  // Gets the effects that this environment had on the outside world (on its parent
+  // environments). In other words, parent locals that were unstackified.
+  def getEffectsSince(earlierNodeEnv: NodeEnvironment): Set[FullNameT[IVarNameT]] = {
+    vassert(parentFunctionEnv == earlierNodeEnv.parentFunctionEnv)
+
+    // We may have unstackified outside locals from inside the block, make sure
+    // the parent environment knows about that.
+
+    // declaredLocals contains things from parent environment, which is why we need to receive
+    // an earlier environment to compare to, see WTHPFE.
+    val earlierNodeEnvDeclaredLocals = earlierNodeEnv.declaredLocals.map(_.id).toSet
+    val earlierNodeEnvLiveLocals = earlierNodeEnvDeclaredLocals -- earlierNodeEnv.unstackifiedLocals
+    val liveLocalsIntroducedSinceEarlier =
+      declaredLocals.map(_.id).filter(x => !earlierNodeEnvLiveLocals.contains(x))
+
+    val unstackifiedAncestorLocals = unstackifiedLocals -- liveLocalsIntroducedSinceEarlier
+    unstackifiedAncestorLocals
+  }
+
+  def getLiveVariablesIntroducedSince(
+    sinceNenv: NodeEnvironment):
+  Vector[ILocalVariableT] = {
+    val localsAsOfThen =
+      sinceNenv.declaredLocals.collect({
+        case x @ ReferenceLocalVariableT(_, _, _) => x
+        case x @ AddressibleLocalVariableT(_, _, _) => x
+      })
+    val localsAsOfNow =
+      declaredLocals.collect({
+        case x @ ReferenceLocalVariableT(_, _, _) => x
+        case x @ AddressibleLocalVariableT(_, _, _) => x
+      })
+
+    vassert(localsAsOfNow.startsWith(localsAsOfThen))
+    val localsDeclaredSinceThen = localsAsOfNow.slice(localsAsOfThen.size, localsAsOfNow.size)
+    vassert(localsDeclaredSinceThen.size == localsAsOfNow.size - localsAsOfThen.size)
+
+    val unmovedLocalsDeclaredSinceThen =
+      localsDeclaredSinceThen.filter(x => !unstackifiedLocals.contains(x.id))
+
+    unmovedLocalsDeclaredSinceThen
+  }
+
+  def makeChild(node: IExpressionSE): NodeEnvironment = {
+    NodeEnvironment(
+      parentFunctionEnv,
+      Some(this),
+      node,
+      life,
+      TemplatasStore(fullName, Map(), Map()),
+      declaredLocals, // See WTHPFE.
+      unstackifiedLocals) // See WTHPFE.
+  }
+
+  def addEntry(name: INameT, entry: IEnvEntry): NodeEnvironment = {
+    NodeEnvironment(
+      parentFunctionEnv,
+      parentNodeEnv,
+      node,
+      life,
+      templatas.addEntry(name, entry),
+      declaredLocals,
+      unstackifiedLocals)
+  }
+  def addEntries(newEntries: Vector[(INameT, IEnvEntry)]): NodeEnvironment = {
+    NodeEnvironment(
+      parentFunctionEnv,
+      parentNodeEnv,
+      node,
+      life,
+      templatas.addEntries(newEntries),
+      declaredLocals,
+      unstackifiedLocals)
+  }
+
+  def nearestBlockEnv(): Option[(NodeEnvironment, BlockSE)] = {
+    node match {
+      case b @ BlockSE(_, _, _) => Some((this, b))
+      case _ => parentNodeEnv.flatMap(_.nearestBlockEnv())
+    }
+  }
+  def nearestLoopEnv(): Option[(NodeEnvironment, IExpressionSE)] = {
+    node match {
+      case w @ WhileSE(_, _) => Some((this, w))
+      case w @ MapSE(_, _) => Some((this, w))
+      case _ => parentNodeEnv.flatMap(_.nearestLoopEnv())
+    }
+  }
+}
+
+case class NodeEnvironmentBox(var nodeEnvironment: NodeEnvironment) {
+  override def hashCode(): Int = vfail() // Shouldnt hash, is mutable
+
+  def snapshot: NodeEnvironment = nodeEnvironment
+  def fullName: FullNameT[IFunctionNameT] = nodeEnvironment.parentFunctionEnv.fullName
+  def node: IExpressionSE = nodeEnvironment.node
+  def maybeReturnType: Option[CoordT] = nodeEnvironment.parentFunctionEnv.maybeReturnType
+  def globalEnv: GlobalEnvironment = nodeEnvironment.globalEnv
+  def declaredLocals: Vector[IVariableT] = nodeEnvironment.declaredLocals
+  def unstackifieds: Set[FullNameT[IVarNameT]] = nodeEnvironment.unstackifiedLocals
+  def function = nodeEnvironment.function
+  def functionEnvironment = nodeEnvironment.parentFunctionEnv
+
+  def addVariable(newVar: IVariableT): Unit= {
+    nodeEnvironment = nodeEnvironment.addVariable(newVar)
+  }
+  def markLocalUnstackified(newMoved: FullNameT[IVarNameT]): Unit= {
+    nodeEnvironment = nodeEnvironment.markLocalUnstackified(newMoved)
+  }
+
+  def getVariable(name: IVarNameT): Option[IVariableT] = {
+    nodeEnvironment.getVariable(name)
+  }
+
+  def getAllLocals(): Vector[ILocalVariableT] = {
+    nodeEnvironment.getAllLocals()
+  }
+
+  def getAllUnstackifiedLocals(): Vector[FullNameT[IVarNameT]] = {
+    nodeEnvironment.getAllUnstackifiedLocals()
+  }
+
+  def lookupNearestWithImpreciseName(
+    profiler: IProfiler,
+    nameS: IImpreciseNameS,
+    lookupFilter: Set[ILookupContext]):
+  Option[ITemplata] = {
+    nodeEnvironment.lookupNearestWithImpreciseName(profiler, nameS, lookupFilter)
+  }
+
+  def lookupNearestWithName(
+    profiler: IProfiler,
+    nameS: INameT,
+    lookupFilter: Set[ILookupContext]):
+  Option[ITemplata] = {
+    nodeEnvironment.lookupNearestWithName(profiler, nameS, lookupFilter)
+  }
+
+  def lookupAllWithImpreciseName(profiler: IProfiler, nameS: IImpreciseNameS, lookupFilter: Set[ILookupContext]): Iterable[ITemplata] = {
+    nodeEnvironment.lookupAllWithImpreciseName(profiler, nameS, lookupFilter)
+  }
+
+  def lookupAllWithName(profiler: IProfiler, nameS: INameT, lookupFilter: Set[ILookupContext]): Iterable[ITemplata] = {
+    nodeEnvironment.lookupAllWithName(profiler, nameS, lookupFilter)
+  }
+
+  private[env] def lookupWithImpreciseNameInner(profiler: IProfiler, nameS: IImpreciseNameS, lookupFilter: Set[ILookupContext], getOnlyNearest: Boolean) = {
+    nodeEnvironment.lookupWithImpreciseNameInner(profiler, nameS, lookupFilter, getOnlyNearest)
+  }
+
+  private[env] def lookupWithNameInner(profiler: IProfiler, nameS: INameT, lookupFilter: Set[ILookupContext], getOnlyNearest: Boolean) = {
+    nodeEnvironment.lookupWithNameInner(profiler, nameS, lookupFilter, getOnlyNearest)
+  }
+
+  def makeChild(node: IExpressionSE): NodeEnvironment = {
+    nodeEnvironment.makeChild(node)
+  }
+
+  def addEntry(name: INameT, entry: IEnvEntry): Unit = {
+    nodeEnvironment = nodeEnvironment.addEntry(name, entry)
+  }
+  def addEntries(newEntries: Vector[(INameT, IEnvEntry)]): Unit= {
+    nodeEnvironment = nodeEnvironment.addEntries(newEntries)
+  }
+
+  def nearestBlockEnv(): Option[(NodeEnvironment, BlockSE)] = {
+    nodeEnvironment.nearestBlockEnv()
+  }
+  def nearestLoopEnv(): Option[(NodeEnvironment, IExpressionSE)] = {
+    nodeEnvironment.nearestLoopEnv()
+  }
+}
+
 case class FunctionEnvironment(
   // These things are the "environment"; they are the same for every line in a function.
   globalEnv: GlobalEnvironment,
@@ -101,22 +362,12 @@ case class FunctionEnvironment(
   function: FunctionA,
   maybeReturnType: Option[CoordT],
 
+  closuredLocals: Vector[IVariableT],
+
   // Eventually we might have a list of imported environments here, pointing at the
   // environments in the global environment.
-
-  // This is stuff that's not state, but could be different line-to-line.
-  // The containing Block, useful for looking up LocalS for any locals we're making.
-  containingBlockS: Option[BlockSE],
-
-  // The things below are the "state"; they can be different for any given line in a function.
-  // This contains locals from parent blocks, see WTHPFE.
-  declaredLocals: Vector[IVariableT],
-  // This can refer to vars in parent environments, see UCRTVPE.
-  unstackifiedLocals: Set[FullNameT[IVarNameT]]
 ) extends IEnvironment {
   val hash = runtime.ScalaRunTime._hashCode(fullName); override def hashCode(): Int = hash;
-
-  vassert(declaredLocals == declaredLocals.distinct)
 
   override def equals(obj: Any): Boolean = {
     if (!obj.isInstanceOf[IEnvironment]) {
@@ -125,18 +376,6 @@ case class FunctionEnvironment(
     return fullName.equals(obj.asInstanceOf[IEnvironment].fullName)
   }
 
-  def addVariables(newVars: Vector[IVariableT]): FunctionEnvironment = {
-    FunctionEnvironment(globalEnv, parentEnv, fullName, templatas, function, maybeReturnType, containingBlockS, declaredLocals ++ newVars, unstackifiedLocals)
-  }
-  def addVariable(newVar: IVariableT): FunctionEnvironment = {
-    FunctionEnvironment(globalEnv, parentEnv, fullName, templatas, function, maybeReturnType, containingBlockS, declaredLocals :+ newVar, unstackifiedLocals)
-  }
-  def markLocalUnstackified(newUnstackified: FullNameT[IVarNameT]): FunctionEnvironment = {
-    vassert(!getAllUnstackifiedLocals().contains(newUnstackified))
-    vassert(getAllLocals().exists(_.id == newUnstackified))
-    // Even if the local belongs to a parent env, we still mark it unstackified here, see UCRTVPE.
-    FunctionEnvironment(globalEnv, parentEnv, fullName, templatas, function, maybeReturnType, containingBlockS, declaredLocals, unstackifiedLocals + newUnstackified)
-  }
 
   def addEntry(name: INameT, entry: IEnvEntry): FunctionEnvironment = {
     FunctionEnvironment(
@@ -146,9 +385,7 @@ case class FunctionEnvironment(
       templatas.addEntry(name, entry),
       function,
       maybeReturnType,
-      containingBlockS,
-      declaredLocals,
-      unstackifiedLocals)
+      closuredLocals)
   }
   def addEntries(newEntries: Vector[(INameT, IEnvEntry)]): FunctionEnvironment = {
     FunctionEnvironment(
@@ -158,9 +395,7 @@ case class FunctionEnvironment(
       templatas.addEntries(newEntries),
       function,
       maybeReturnType,
-      containingBlockS,
-      declaredLocals,
-      unstackifiedLocals)
+      closuredLocals)
   }
 
   private[env] override def lookupWithNameInner(
@@ -183,34 +418,42 @@ case class FunctionEnvironment(
       this, templatas, parentEnv, profiler, name, lookupFilter, getOnlyNearest)
   }
 
-  def getVariable(name: IVarNameT): Option[IVariableT] = {
-    declaredLocals.find(_.id.last == name)
-  }
+  def makeChildNodeEnvironment(node: IExpressionSE, life: LocationInFunctionEnvironment): NodeEnvironment = {
+    // See WTHPFE, if this is a lambda, we let our blocks start with
+    // locals from the parent function.
+    val (declaredLocals, unstackifiedLocals) =
+      parentEnv match {
+        case NodeEnvironment(_, _, _, _, _, declaredLocals, unstackifiedLocals) => {
+          (declaredLocals, unstackifiedLocals)
+        }
+        case _ => (Vector(), Set[FullNameT[IVarNameT]]())
+      }
 
-  // Dont have a getAllUnstackifiedLocals or getAllLiveLocals here. We learned that the hard way.
-  // See UCRTVPE, child environments would be the ones that know about their unstackifying of locals
-  // from parent envs.
-
-  def getAllLocals(): Vector[ILocalVariableT] = {
-    declaredLocals.collect({ case i : ILocalVariableT => i })
-  }
-
-  def getAllUnstackifiedLocals(): Vector[FullNameT[IVarNameT]] = {
-    unstackifiedLocals.toVector
-  }
-
-  def makeChildBlockEnvironment( newContainingBlockS: Option[BlockSE]) = {
-    FunctionEnvironment(
-      globalEnv,
+    NodeEnvironment(
       this,
-      fullName,
+      None,
+      node,
+      life,
       TemplatasStore(fullName, Map(), Map()),
-      function,
-      maybeReturnType,
-      newContainingBlockS,
       declaredLocals, // See WTHPFE.
       unstackifiedLocals) // See WTHPFE.
   }
+
+  def getClosuredDeclaredLocals(): Vector[IVariableT] = {
+    parentEnv match {
+      case n @ NodeEnvironment(_, _, _, _, _, _, _) => n.declaredLocals
+      case f @ FunctionEnvironment(_, _, _, _, _, _, _) => f.getClosuredDeclaredLocals()
+      case _ => Vector()
+    }
+  }
+
+//  def getClosuredUnstackifiedLocals(): Vector[IVariableT] = {
+//    parentEnv match {
+//      case n @ NodeEnvironment(_, _, _, _, _, _, _) => n.unstackifiedLocals
+//      case f @ FunctionEnvironment(_, _, _, _, _, _) => f.getClosuredDeclaredLocals()
+//      case _ => Vector()
+//    }
+//  }
 
   // No particular reason we don't have an addFunction like PackageEnvironment does
 }
@@ -222,20 +465,10 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
   def fullName: FullNameT[IFunctionNameT] = functionEnvironment.fullName
   def function: FunctionA = functionEnvironment.function
   def maybeReturnType: Option[CoordT] = functionEnvironment.maybeReturnType
-  def containingBlockS: Option[BlockSE] = functionEnvironment.containingBlockS
-  def declaredLocals: Vector[IVariableT] = functionEnvironment.declaredLocals
-  def unstackifieds: Set[FullNameT[IVarNameT]] = functionEnvironment.unstackifiedLocals
   override def globalEnv: GlobalEnvironment = functionEnvironment.globalEnv
 
   def setReturnType(returnType: Option[CoordT]): Unit = {
     functionEnvironment = functionEnvironment.copy(maybeReturnType = returnType)
-  }
-
-  def addVariable(newVar: IVariableT): Unit= {
-    functionEnvironment = functionEnvironment.addVariable(newVar)
-  }
-  def markLocalUnstackified(newMoved: FullNameT[IVarNameT]): Unit= {
-    functionEnvironment = functionEnvironment.markLocalUnstackified(newMoved)
   }
 
   def addEntry(name: INameT, entry: IEnvEntry): Unit = {
@@ -277,40 +510,8 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
     functionEnvironment.lookupWithNameInner(profiler, nameS, lookupFilter, getOnlyNearest)
   }
 
-  def getVariable(name: IVarNameT): Option[IVariableT] = {
-    functionEnvironment.getVariable(name)
-  }
-
-  def getAllLocals(): Vector[ILocalVariableT] = {
-    functionEnvironment.getAllLocals()
-  }
-
-  def getAllUnstackifiedLocals(): Vector[FullNameT[IVarNameT]] = {
-    functionEnvironment.getAllUnstackifiedLocals()
-  }
-
-  // Gets the effects that this environment had on the outside world (on its parent
-  // environments).
-  def getEffectsSince(earlierFate: FunctionEnvironment): Set[FullNameT[IVarNameT]] = {
-    // We may have unstackified outside locals from inside the block, make sure
-    // the parent environment knows about that.
-
-    // declaredLocals contains things from parent environment, which is why we need to receive
-    // an earlier environment to compare to, see WTHPFE.
-    val earlierFateDeclaredLocals = earlierFate.declaredLocals.map(_.id).toSet
-    val earlierFateLiveLocals = earlierFateDeclaredLocals -- earlierFate.unstackifiedLocals
-    val liveLocalsIntroducedSinceEarlier =
-      declaredLocals.map(_.id).filter(x => !earlierFateLiveLocals.contains(x))
-
-    val unstackifiedAncestorLocals = unstackifieds -- liveLocalsIntroducedSinceEarlier
-    unstackifiedAncestorLocals
-  }
-
-  def makeChildBlockEnvironment( containingBlockS: Option[BlockSE]):
-  FunctionEnvironmentBox = {
-    FunctionEnvironmentBox(
-      functionEnvironment
-        .makeChildBlockEnvironment(containingBlockS))
+  def makeChildNodeEnvironment(node: IExpressionSE, life: LocationInFunctionEnvironment): NodeEnvironment = {
+    functionEnvironment.makeChildNodeEnvironment(node, life)
   }
 
   // No particular reason we don't have an addFunction like PackageEnvironment does
@@ -345,7 +546,7 @@ case class ReferenceLocalVariableT(
   reference: CoordT
 ) extends ILocalVariableT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-
+  vpass()
 }
 case class AddressibleClosureVariableT(
   id: FullNameT[IVarNameT],

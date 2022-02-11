@@ -7,8 +7,7 @@ import net.verdagon.vale.solver.{CompleteSolve, FailedSolve, IIncompleteOrFailed
 import net.verdagon.vale.templar.OverloadTemplar.{Outscored, RuleTypeSolveFailure, SpecificParamDoesntMatchExactly, SpecificParamDoesntSend}
 import net.verdagon.vale.templar.ast.{AbstractT, FunctionBannerT, FunctionCalleeCandidate, HeaderCalleeCandidate, ICalleeCandidate, IValidCalleeCandidate, OverrideT, ParameterT, PrototypeT, ReferenceExpressionTE, ValidCalleeCandidate, ValidHeaderCalleeCandidate}
 import net.verdagon.vale.templar.infer.ITemplarSolverError
-import net.verdagon.vale.templar.names.TemplataNamer
-import net.verdagon.vale.{Err, Ok, RangeS, Result, vassertOne, vassertSome, vpass}
+import net.verdagon.vale.{Err, Ok, RangeS, Result, vassertOne, vassertSome, vpass, vwat}
 //import net.verdagon.vale.astronomer.ruletyper.{IRuleTyperEvaluatorDelegate, RuleTyperEvaluator, RuleTyperSolveFailure, RuleTyperSolveSuccess}
 //import net.verdagon.vale.scout.rules.{EqualsSR, TemplexSR, TypedSR}
 import net.verdagon.vale.templar.types._
@@ -141,7 +140,7 @@ class OverloadTemplar(
     val candidates =
       findHayTemplatas(env, temputs, functionName, paramFilters, extraEnvsToLookIn)
     candidates.flatMap({
-      case KindTemplata(OverloadSet(overloadsEnv, nameInOverloadsEnv, _)) => {
+      case KindTemplata(OverloadSet(overloadsEnv, nameInOverloadsEnv)) => {
         getCandidateBanners(
           overloadsEnv, temputs, callRange, nameInOverloadsEnv,
           explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, exact)
@@ -204,7 +203,12 @@ class OverloadTemplar(
               RuneTypeSolver.solve(
                 opts.globalOptions.sanityCheck,
                 opts.globalOptions.useOptimizedSolver,
-                (nameS: IImpreciseNameS) => vassertOne(env.lookupNearestWithImpreciseName(profiler, nameS, Set(TemplataLookupContext))).tyype,
+                (nameS: IImpreciseNameS) => {
+                  env.lookupNearestWithImpreciseName(profiler, nameS, Set(TemplataLookupContext)) match {
+                    case Some(x) => x.tyype
+                    case None => vfail("Couldn't find a: " + nameS)
+                  }
+                },
                 callRange,
                 false,
                 explicitTemplateArgRulesS,
@@ -256,7 +260,9 @@ class OverloadTemplar(
                           case (EvaluateFunctionSuccess(banner)) => {
                             paramsMatch(temputs, paramFilters, banner.params, exact) match {
                               case Err(rejectionReason) => Err(rejectionReason)
-                              case Ok(()) => Ok(ValidCalleeCandidate(banner, ft))
+                              case Ok(()) => {
+                                Ok(ValidCalleeCandidate(banner, ft))
+                              }
                             }
                           }
                         }
@@ -277,7 +283,9 @@ class OverloadTemplar(
                 case (EvaluateFunctionSuccess(banner)) => {
                   paramsMatch(temputs, paramFilters, banner.params, exact) match {
                     case Err(reason) => Err(reason)
-                    case Ok(_) => Ok(ast.ValidCalleeCandidate(banner, ft))
+                    case Ok(_) => {
+                      Ok(ast.ValidCalleeCandidate(banner, ft))
+                    }
                   }
                 }
               }
@@ -286,14 +294,18 @@ class OverloadTemplar(
         } else {
           val banner = functionTemplar.evaluateOrdinaryFunctionFromNonCallForBanner(temputs, callRange, ft)
           paramsMatch(temputs, paramFilters, banner.params, exact) match {
-            case Ok(_) => Ok(ast.ValidCalleeCandidate(banner, ft))
+            case Ok(_) => {
+              Ok(ast.ValidCalleeCandidate(banner, ft))
+            }
             case Err(reason) => Err(reason)
           }
         }
       }
       case HeaderCalleeCandidate(header) => {
         paramsMatch(temputs, paramFilters, header.params, exact) match {
-          case Ok(_) => Ok(ValidHeaderCalleeCandidate(header))
+          case Ok(_) => {
+            Ok(ValidHeaderCalleeCandidate(header))
+          }
           case Err(fff) => Err(fff)
         }
       }
@@ -374,17 +386,27 @@ class OverloadTemplar(
     }
   }
 
+  // Returns either:
+  // - None if banners incompatible
+  // - Some(param to needs-conversion)
   private def getBannerParamScores(
     temputs: Temputs,
     banner: IValidCalleeCandidate,
     argTypes: Vector[CoordT]):
-  (Vector[TypeDistance]) = {
+  (Option[Vector[Boolean]]) = {
+    val initial: Option[Vector[Boolean]] = Some(Vector())
     banner.banner.paramTypes.zip(argTypes)
-      .foldLeft((Vector[TypeDistance]()))({
-        case ((previousParamsScores), (paramType, argType)) => {
-          templataTemplar.getTypeDistance(temputs, argType, paramType) match {
-            case (None) => vfail("wat")
-            case (Some(distance)) => (previousParamsScores :+ distance)
+      .foldLeft(initial)({
+        case (None, _) => None
+        case (Some(previous), (paramType, argType)) => {
+          if (argType == paramType) {
+            Some(previous :+ false)
+          } else {
+            if (templataTemplar.isTypeConvertible(temputs, argType, paramType)) {
+              Some(previous :+ true)
+            } else {
+              None
+            }
           }
         }
       })
@@ -432,48 +454,61 @@ class OverloadTemplar(
         }
       }).toVector
 
-    val bannersAndScores =
-      banners.foldLeft((Vector[(IValidCalleeCandidate, Vector[TypeDistance])]()))({
-        case ((previousBannersAndScores), banner) => {
-          val scores =
-            getBannerParamScores(temputs, banner, argTypes)
-          (previousBannersAndScores :+ (banner, scores))
-        }
+    val bannerIndexToScore =
+      banners.map(banner => {
+        vassertSome(getBannerParamScores(temputs, banner, argTypes))
       })
 
-    val bestScore =
-      bannersAndScores.map(_._2).reduce((aScore, bScore) => {
-        if (aScore == bScore) {
-          // Doesn't matter, just return one
-          aScore
+    // For any given parameter:
+    // - If all candidates require a conversion, keep going
+    //   (This might be a mistake, should we throw an error instead?)
+    // - If no candidates require a conversion, keep going
+    // - If some candidates require a conversion, disqualify those candidates
+
+    val paramIndexToSurvivingBannerIndices =
+      argTypes.indices.map(paramIndex => {
+        val bannerIndexToRequiresConversion =
+          bannerIndexToScore.zipWithIndex.map({
+            case (paramIndexToScore, bannerIndex) => paramIndexToScore(paramIndex)
+          })
+        if (bannerIndexToRequiresConversion.forall(_ == true)) {
+          // vfail("All candidates require conversion for param " + paramIndex)
+          bannerIndexToScore.indices
+        } else if (bannerIndexToRequiresConversion.forall(_ == false)) {
+          bannerIndexToScore.indices
         } else {
-          val aIsBetter =
-            aScore.zip(bScore).forall({
-              case (aScorePart, bScorePart) => aScorePart.lessThanOrEqualTo(bScorePart)
-            })
-          if (aIsBetter) aScore else bScore
+          val survivingBannerIndices =
+            bannerIndexToRequiresConversion.zipWithIndex.filter(_._1).map(_._2)
+          survivingBannerIndices
         }
       })
-
-    val bannerByIsBestScore =
-      bannersAndScores.groupBy[Boolean]({ case (_, score) => score == bestScore })
-
-
-    val bannerWithBestScore =
-      if (bannerByIsBestScore.getOrElse(true, Vector.empty).isEmpty) {
-        vfail("wat")
-      } else if (bannerByIsBestScore.getOrElse(true, Vector.empty).size > 1) {
-        throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Can't resolve between:\n" + bannerByIsBestScore.mapValues(_.mkString("\n")).mkString("\n")))
+    // Now, each parameter knows what candidates it disqualifies.
+    // See if there's exactly one candidate that all parameters agree on.
+    val survivingBannerIndices =
+      paramIndexToSurvivingBannerIndices.foldLeft(bannerIndexToScore.indices.toVector)({
+        case (a, b) => a.intersect(b)
+      })
+    val survivingBannerIndex =
+      if (survivingBannerIndices.size == 0) {
+        // This can happen if the parameters don't agree who the best
+        // candidates are.
+        vfail("No candidate is a clear winner!")
+      } else if (survivingBannerIndices.size == 1) {
+        survivingBannerIndices.head
       } else {
-        bannerByIsBestScore(true).head._1
-      };
+        throw CompileErrorExceptionT(
+          RangedInternalErrorT(
+            callRange,
+            "Can't resolve between:\n" +
+              survivingBannerIndices.map(banners).mkString("\n")))
+      }
 
     val rejectedBanners =
-      bannerByIsBestScore.getOrElse(false, Vector.empty).map(_._1)
+      banners.zipWithIndex.filter(_._2 != survivingBannerIndex).map(_._1)
     val rejectionReasonByBanner =
       rejectedBanners.map((_, Outscored())).toMap
 
-    (bannerWithBestScore, rejectionReasonByBanner)
+    (banners(survivingBannerIndex), rejectionReasonByBanner)
   }
 
   def stampPotentialFunctionForBanner(
@@ -531,7 +566,7 @@ class OverloadTemplar(
 
   def getArrayGeneratorPrototype(
     temputs: Temputs,
-    fate: FunctionEnvironmentBox,
+    fate: IEnvironment,
     range: RangeS,
     callableTE: ReferenceExpressionTE):
   PrototypeT = {
@@ -541,7 +576,7 @@ class OverloadTemplar(
         ParamFilter(callableTE.result.underlyingReference, None),
         ParamFilter(CoordT(ShareT, ReadonlyT, IntT.i32), None))
       findFunction(
-        fate.snapshot, temputs, range, funcName, Vector.empty, Array.empty,
+        fate, temputs, range, funcName, Vector.empty, Array.empty,
         paramFilters, Vector.empty, false)
   }
 

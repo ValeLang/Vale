@@ -1,7 +1,7 @@
 
 struct Bork {}
 
-fn main() int export {
+exported func main() int {
   originalIndex = 9;
 
   i! = 1;
@@ -13,5 +13,5 @@ fn main() int export {
     }
   }
 
-  = 42;
+  ret 42;
 }

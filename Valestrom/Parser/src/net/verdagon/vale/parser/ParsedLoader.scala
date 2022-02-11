@@ -1,7 +1,8 @@
 package net.verdagon.vale.parser
 
 import net.liftweb.json._
-import net.verdagon.vale.{vimpl, vwat}
+import net.verdagon.vale.parser.ast._
+import net.verdagon.vale.{Err, Ok, Result, vimpl, vwat}
 
 object ParsedLoader {
   def expectObject(obj: Object): JObject = {
@@ -80,9 +81,9 @@ object ParsedLoader {
   def getType(jobj: JObject): String = {
     getStringField(jobj, "__type")
   }
-  def loadRange(jobj: JObject): Range = {
+  def loadRange(jobj: JObject): ast.RangeP = {
     expectType(jobj, "Range")
-    Range(
+    ast.RangeP(
       getIntField(jobj, "begin"),
       getIntField(jobj, "end"))
   }
@@ -93,11 +94,11 @@ object ParsedLoader {
       getStringField(jobj, "name"))
   }
 
-  def load(source: String): IParseResult[FileP] = {
+  def load(source: String): Result[FileP, IParseError] = {
     try {
       val jfile = expectObjectTyped(parse(source), "File")
-      ParseSuccess(
-        FileP(
+      Ok(
+        ast.FileP(
           getArrayField(jfile, "topLevelThings").map(expectObject).map(topLevelThing => {
             getType(topLevelThing) match {
               case "Struct" => TopLevelStructP(loadStruct(topLevelThing))
@@ -110,7 +111,7 @@ object ParsedLoader {
             }
           })))
     } catch {
-      case BadVPSTException(err) => ParseFailure(err)
+      case BadVPSTException(err) => Err(err)
     }
   }
 
@@ -125,9 +126,10 @@ object ParsedLoader {
     ImplP(
       loadRange(getObjectField(jobj, "range")),
       loadOptionalObject(getObjectField(jobj, "identifyingRunes"), loadIdentifyingRunes),
-      loadOptionalObject(getObjectField(jobj, "rules"), loadTemplateRules),
-      loadTemplex(getObjectField(jobj, "struct")),
-      loadTemplex(getObjectField(jobj, "interface")))
+      loadOptionalObject(getObjectField(jobj, "templateRules"), loadTemplateRules),
+      loadOptionalObject(getObjectField(jobj, "struct"), loadTemplex),
+      loadTemplex(getObjectField(jobj, "interface")),
+      getArrayField(jobj, "attributes").map(expectObject).map(loadAttribute))
   }
 
   private def loadExportAs(jobj: JObject) = {
@@ -149,7 +151,7 @@ object ParsedLoader {
     StructP(
       loadRange(getObjectField(jobj, "range")),
       loadName(getObjectField(jobj, "name")),
-      getArrayField(jobj, "attributes").map(expectObject).map(loadCitizenAttribute),
+      getArrayField(jobj, "attributes").map(expectObject).map(loadAttribute),
       loadTemplex(getObjectField(jobj, "mutability")),
       loadOptionalObject(getObjectField(jobj, "identifyingRunes"), loadIdentifyingRunes),
       loadOptionalObject(getObjectField(jobj, "templateRules"), loadTemplateRules),
@@ -160,7 +162,8 @@ object ParsedLoader {
     InterfaceP(
       loadRange(getObjectField(topLevelThing, "range")),
       loadName(getObjectField(topLevelThing, "name")),
-      getArrayField(topLevelThing, "attributes").map(expectObject).map(loadCitizenAttribute),
+      getArrayField(topLevelThing, "attributes").map(expectObject).map(loadAttribute),
+//      getArrayField(topLevelThing, "attributes").map(expectObject).map(loadCitizenAttribute),
       loadTemplex(getObjectField(topLevelThing, "mutability")),
       loadOptionalObject(getObjectField(topLevelThing, "maybeIdentifyingRunes"), loadIdentifyingRunes),
       loadOptionalObject(getObjectField(topLevelThing, "templateRules"), loadTemplateRules),
@@ -171,7 +174,7 @@ object ParsedLoader {
     FunctionHeaderP(
       loadRange(getObjectField(jobj, "range")),
       loadOptionalObject(getObjectField(jobj, "name"), loadName),
-      getArrayField(jobj, "attributes").map(expectObject).map(loadFunctionAttribute),
+      getArrayField(jobj, "attributes").map(expectObject).map(loadAttribute),
       loadOptionalObject(getObjectField(jobj, "maybeUserSpecifiedIdentifyingRunes"), loadIdentifyingRunes),
       loadOptionalObject(getObjectField(jobj, "templateRules"), loadTemplateRules),
       loadOptionalObject(getObjectField(jobj, "params"), loadParams),
@@ -179,16 +182,16 @@ object ParsedLoader {
   }
 
   def loadParams(jobj: JObject): ParamsP = {
-    ParamsP(
+    ast.ParamsP(
       loadRange(getObjectField(jobj, "range")),
       getArrayField(jobj, "patterns").map(expectObject).map(loadPattern))
   }
 
   def loadPattern(jobj: JObject): PatternPP = {
-    PatternPP(
+    ast.PatternPP(
       loadRange(getObjectField(jobj, "range")),
       loadOptionalObject(getObjectField(jobj, "preBorrow"), loadUnit),
-      loadOptionalObject(getObjectField(jobj, "capture"), loadCapture),
+      loadOptionalObject(getObjectField(jobj, "capture"), loadNameDeclaration),
       loadOptionalObject(getObjectField(jobj, "templex"), loadTemplex),
       loadOptionalObject(getObjectField(jobj, "destructure"), loadDestructure),
       loadOptionalObject(getObjectField(jobj, "virtuality"), loadVirtuality))
@@ -200,20 +203,33 @@ object ParsedLoader {
       getArrayField(jobj, "patterns").map(expectObject).map(loadPattern))
   }
 
-  def loadCapture(jobj: JObject): CaptureP = {
-    CaptureP(
-      loadRange(getObjectField(jobj, "range")),
-      loadCaptureName(getObjectField(jobj, "captureName")))
+  def loadNameDeclaration(jobj: JObject): INameDeclarationP = {
+    getType(jobj) match {
+      case "LocalNameDeclaration" => LocalNameDeclarationP(loadName(getObjectField(jobj, "name")))
+      case "IterableNameDeclaration" => IterableNameDeclarationP(loadRange(getObjectField(jobj, "range")))
+      case "IteratorNameDeclaration" => IteratorNameDeclarationP(loadRange(getObjectField(jobj, "range")))
+      case "IterationOptionNameDeclaration" => IterationOptionNameDeclarationP(loadRange(getObjectField(jobj, "range")))
+      case "ConstructingMemberNameDeclaration" => ConstructingMemberNameDeclarationP(loadName(getObjectField(jobj, "name")))
+    }
   }
 
-  def loadCaptureName(jobj: JObject): ICaptureNameP = {
+  def loadImpreciseName(jobj: JObject): IImpreciseNameP = {
+    getType(jobj) match {
+      case "LookupName" => LookupNameP(loadName(getObjectField(jobj, "name")))
+      case "IterableName" => IterableNameP(loadRange(getObjectField(jobj, "range")))
+      case "IteratorName" => IteratorNameP(loadRange(getObjectField(jobj, "range")))
+      case "IterationOptionName" => IterationOptionNameP(loadRange(getObjectField(jobj, "range")))
+    }
+  }
+
+  def loadCaptureName(jobj: JObject): INameDeclarationP = {
     getType(jobj) match {
       case "LocalName" => {
-        LocalNameP(
+        LocalNameDeclarationP(
           loadName(getObjectField(jobj, "name")))
       }
       case "ConstructingMemberName" => {
-        ConstructingMemberNameP(
+        ConstructingMemberNameDeclarationP(
           loadName(getObjectField(jobj, "name")))
       }
     }
@@ -222,11 +238,16 @@ object ParsedLoader {
   def loadBlock(jobj: JObject): BlockPE = {
     BlockPE(
       loadRange(getObjectField(jobj, "range")),
-      getArrayField(jobj, "elements").map(expectObject).map(loadExpression))
+      loadExpression(getObjectField(jobj, "inner")))
+  }
+
+  def loadConsecutor(jobj: JObject): ConsecutorPE = {
+    ConsecutorPE(
+      getArrayField(jobj, "inners").map(expectObject).map(loadExpression))
   }
 
   def loadFunctionReturn(jobj: JObject): FunctionReturnP = {
-    FunctionReturnP(
+    ast.FunctionReturnP(
       loadRange(getObjectField(jobj, "range")),
       loadOptionalObject(getObjectField(jobj, "inferRet"), loadUnit),
       loadOptionalObject(getObjectField(jobj, "retType"), loadTemplex))
@@ -238,7 +259,7 @@ object ParsedLoader {
   }
 
   def loadStructMembers(jobj: JObject): StructMembersP = {
-    StructMembersP(
+    ast.StructMembersP(
       loadRange(getObjectField(jobj, "range")),
       getArrayField(jobj, "members").map(expectObject).map(loadStructContent))
   }
@@ -253,21 +274,32 @@ object ParsedLoader {
       case "FunctionCall" => {
         FunctionCallPE(
           loadRange(getObjectField(jobj, "range")),
-          loadOptionalObject(getObjectField(jobj, "inline"), loadUnit),
           loadRange(getObjectField(jobj, "operatorRange")),
-          getBooleanField(jobj, "isMapCall"),
           loadExpression(getObjectField(jobj, "callableExpr")),
           getArrayField(jobj, "argExprs").map(expectObject).map(loadExpression),
-          loadLoadAs(getObjectField(jobj, "callableTargetOwnership")))
+          getBooleanField(jobj, "callableReadwrite"))
+      }
+      case "BraceCall" => {
+        BraceCallPE(
+          loadRange(getObjectField(jobj, "range")),
+          loadRange(getObjectField(jobj, "operatorRange")),
+          loadExpression(getObjectField(jobj, "callableExpr")),
+          getArrayField(jobj, "argExprs").map(expectObject).map(loadExpression),
+          getBooleanField(jobj, "callableReadwrite"))
+      }
+      case "BinaryCall" => {
+        BinaryCallPE(
+          loadRange(getObjectField(jobj, "range")),
+          loadName(getObjectField(jobj, "functionName")),
+          loadExpression(getObjectField(jobj, "leftExpr")),
+          loadExpression(getObjectField(jobj, "rightExpr")))
       }
       case "MethodCall" => {
         MethodCallPE(
           loadRange(getObjectField(jobj, "range")),
-          loadOptionalObject(getObjectField(jobj, "inline"), loadUnit),
           loadExpression(getObjectField(jobj, "subjectExpr")),
           loadRange(getObjectField(jobj, "operatorRange")),
-          loadLoadAs(getObjectField(jobj, "subjectTargetOwnership")),
-          getBooleanField(jobj, "isMapCall"),
+          getBooleanField(jobj, "subjectReadwrite"),
           loadLookup(getObjectField(jobj, "method")),
           getArrayField(jobj, "argExprs").map(expectObject).map(loadExpression))
       }
@@ -313,7 +345,6 @@ object ParsedLoader {
           loadRange(getObjectField(jobj, "range")),
           loadExpression(getObjectField(jobj, "left")),
           loadRange(getObjectField(jobj, "operatorRange")),
-          getBooleanField(jobj, "isMapAccess"),
           loadName(getObjectField(jobj, "member")))
       }
       case "Lambda" => {
@@ -324,19 +355,17 @@ object ParsedLoader {
       case "Let" => {
         LetPE(
           loadRange(getObjectField(jobj, "range")),
-          loadOptionalObject(getObjectField(jobj, "templateRules"), loadTemplateRules),
+//          getArrayField(jobj, "attributes").map(expectObject).map(loadAttribute),
+//          loadOptionalObject(getObjectField(jobj, "templateRules"), loadTemplateRules),
           loadPattern(getObjectField(jobj, "pattern")),
           loadExpression(getObjectField(jobj, "source")))
       }
-      case "BadLet" => {
-        BadLetPE(
-          loadRange(getObjectField(jobj, "range")))
-      }
-      case "Lend" => {
-        LendPE(
+      case "Augment" => {
+        AugmentPE(
           loadRange(getObjectField(jobj, "range")),
-          loadExpression(getObjectField(jobj, "inner")),
-          loadLoadAs(getObjectField(jobj, "targetOwnership")))
+          loadOwnership(getObjectField(jobj, "targetOwnership")),
+          loadOptionalObject(getObjectField(jobj, "targetPermission"), loadPermission),
+          loadExpression(getObjectField(jobj, "inner")))
       }
       case "Mutate" => {
         MutatePE(
@@ -349,22 +378,26 @@ object ParsedLoader {
           loadRange(getObjectField(jobj, "range")),
           loadExpression(getObjectField(jobj, "expr")))
       }
+      case "Consecutor" => {
+        loadConsecutor(jobj)
+      }
       case "Block" => {
-        BlockPE(
-          loadRange(getObjectField(jobj, "range")),
-          getArrayField(jobj, "elements").map(expectObject).map(loadExpression))
+        loadBlock(jobj)
+//        BlockPE(
+//          loadRange(getObjectField(jobj, "range")),
+//          getArrayField(jobj, "elements").map(expectObject).map(loadExpression))
       }
       case "If" => {
         IfPE(
           loadRange(getObjectField(jobj, "range")),
-          loadBlock(getObjectField(jobj, "condition")),
+          loadExpression(getObjectField(jobj, "condition")),
           loadBlock(getObjectField(jobj, "thenBody")),
           loadBlock(getObjectField(jobj, "elseBody")))
       }
       case "While" => {
         WhilePE(
           loadRange(getObjectField(jobj, "range")),
-          loadBlock(getObjectField(jobj, "condition")),
+          loadExpression(getObjectField(jobj, "condition")),
           loadBlock(getObjectField(jobj, "body")))
       }
       case "Index" => {
@@ -386,17 +419,46 @@ object ParsedLoader {
           loadRange(getObjectField(jobj, "range")),
           loadExpression(getObjectField(jobj, "inner")))
       }
+      case "Each" => {
+        EachPE(
+          loadRange(getObjectField(jobj, "range")),
+          loadPattern(getObjectField(jobj, "entryPattern")),
+          loadRange(getObjectField(jobj, "inRange")),
+          loadExpression(getObjectField(jobj, "iterableExpr")),
+          loadBlock(getObjectField(jobj, "body")))
+      }
       case "Or" => {
         OrPE(
           loadRange(getObjectField(jobj, "range")),
-          loadBlock(getObjectField(jobj, "left")),
+          loadExpression(getObjectField(jobj, "left")),
           loadBlock(getObjectField(jobj, "right")))
       }
+//      case "Result" => {
+//        ResultPE(
+//          loadRange(getObjectField(jobj, "range")),
+//          loadExpression(getObjectField(jobj, "source")))
+//      }
       case "And" => {
         AndPE(
           loadRange(getObjectField(jobj, "range")),
-          loadBlock(getObjectField(jobj, "left")),
+          loadExpression(getObjectField(jobj, "left")),
           loadBlock(getObjectField(jobj, "right")))
+      }
+      case "SubExpression" => {
+        SubExpressionPE(
+          loadRange(getObjectField(jobj, "range")),
+          loadExpression(getObjectField(jobj, "innerExpr")))
+      }
+      case "Not" => {
+        NotPE(
+          loadRange(getObjectField(jobj, "range")),
+          loadExpression(getObjectField(jobj, "innerExpr")))
+      }
+      case "Range" => {
+        RangePE(
+          loadRange(getObjectField(jobj, "range")),
+          loadExpression(getObjectField(jobj, "begin")),
+          loadExpression(getObjectField(jobj, "end")))
       }
       case "StrInterpolate" => {
         StrInterpolatePE(
@@ -418,6 +480,7 @@ object ParsedLoader {
   private def loadConstructArray(jobj: JObject) = {
     ConstructArrayPE(
       loadRange(getObjectField(jobj, "range")),
+      loadOptionalObject(getObjectField(jobj, "type"), loadTemplex),
       loadOptionalObject(getObjectField(jobj, "mutability"), loadTemplex),
       loadOptionalObject(getObjectField(jobj, "variability"), loadTemplex),
       loadArraySize(getObjectField(jobj, "size")),
@@ -427,12 +490,12 @@ object ParsedLoader {
 
   private def loadLookup(jobj: JObject) = {
     LookupPE(
-      loadName(getObjectField(jobj, "name")),
+      loadImpreciseName(getObjectField(jobj, "name")),
       loadOptionalObject(getObjectField(jobj, "templateArgs"), loadTemplateArgs))
   }
 
   def loadTemplateArgs(jobj: JObject): TemplateArgsP = {
-    TemplateArgsP(
+    ast.TemplateArgsP(
       loadRange(getObjectField(jobj, "range")),
       getArrayField(jobj, "args").map(expectObject).map(loadTemplex))
   }
@@ -441,15 +504,23 @@ object ParsedLoader {
     getType(jobj) match {
       case "Move" => MoveP
       case "Use" => UseP
-      case "LendConstraint" => {
-        LendConstraintP(
+      case "LoadAsPointer" => {
+        LoadAsPointerP(
           loadOptionalObject(getObjectField(jobj, "permission"), loadPermission))
       }
-      case "LendWeak" => {
-        LendWeakP(
-          loadPermission(getObjectField(jobj, "permission")))
+      case "LoadAsBorrow" => {
+        LoadAsBorrowP(
+          loadOptionalObject(getObjectField(jobj, "permission"), loadPermission))
       }
-      case _ => vwat()
+      case "LoadAsBorrowOrIfContainerIsPointerThenPointer" => {
+        LoadAsBorrowOrIfContainerIsPointerThenPointerP(
+          loadOptionalObject(getObjectField(jobj, "permission"), loadPermission))
+      }
+      case "LoadAsWeak" => {
+        LoadAsWeakP(
+          loadOptionalObject(getObjectField(jobj, "permission"), loadPermission))
+      }
+      case other => vwat(other)
     }
   }
 
@@ -497,7 +568,7 @@ object ParsedLoader {
   }
 
   def loadTemplateRules(jobj: JObject): TemplateRulesP = {
-    TemplateRulesP(
+    ast.TemplateRulesP(
       loadRange(getObjectField(jobj, "range")),
       getArrayField(jobj, "rules").map(expectObject).map(loadRulex))
   }
@@ -564,20 +635,6 @@ object ParsedLoader {
     }
   }
 
-  def loadCitizenAttribute(jobj: JObject): ICitizenAttributeP = {
-    getType(jobj) match {
-      case "ExportAttribute" => ExportP(loadRange(getObjectField(jobj, "range")))
-      case "SealedAttribute" => SealedP(loadRange(getObjectField(jobj, "range")))
-      case "WeakableAttribute" => WeakableP(loadRange(getObjectField(jobj, "range")))
-      case "MacroCall" => {
-        MacroCallP(
-          loadRange(getObjectField(jobj, "range")),
-          if (getBooleanField(jobj, "dontCall")) DontCallMacro else CallMacro,
-          loadName(getObjectField(jobj, "name")))
-      }
-      case x => vimpl(x.toString)
-    }
-  }
 
   def loadRuneAttribute(jobj: JObject): IRuneAttributeP = {
     getType(jobj) match {
@@ -594,7 +651,7 @@ object ParsedLoader {
     }
   }
 
-  def loadFunctionAttribute(jobj: JObject): IFunctionAttributeP = {
+  def loadAttribute(jobj: JObject): IAttributeP = {
     getType(jobj) match {
       case "AbstractAttribute" => AbstractAttributeP(loadRange(getObjectField(jobj, "range")))
       case "PureAttribute" => PureAttributeP(loadRange(getObjectField(jobj, "range")))
@@ -604,6 +661,15 @@ object ParsedLoader {
         BuiltinAttributeP(
           loadRange(getObjectField(jobj, "range")),
           loadName(getObjectField(jobj, "generatorName")))
+      }
+      case "ExportAttribute" => ExportAttributeP(loadRange(getObjectField(jobj, "range")))
+      case "SealedAttribute" => SealedAttributeP(loadRange(getObjectField(jobj, "range")))
+      case "WeakableAttribute" => WeakableAttributeP(loadRange(getObjectField(jobj, "range")))
+      case "MacroCall" => {
+        MacroCallP(
+          loadRange(getObjectField(jobj, "range")),
+          if (getBooleanField(jobj, "dontCall")) DontCallMacro else CallMacro,
+          loadName(getObjectField(jobj, "name")))
       }
       case x => vimpl(x.toString)
     }
@@ -633,7 +699,8 @@ object ParsedLoader {
   def loadOwnership(jobj: JObject): OwnershipP = {
     getType(jobj) match {
       case "Own" => OwnP
-      case "Constraint" => ConstraintP
+      case "Pointer" => PointerP
+      case "Borrow" => BorrowP
       case "Weak" => WeakP
       case "Share" => ShareP
     }
@@ -669,6 +736,11 @@ object ParsedLoader {
         AnonymousRunePT(
           loadRange(getObjectField(jobj, "range")))
       }
+      case "RegionRuneT" => {
+        RegionRunePT(
+          loadRange(getObjectField(jobj, "range")),
+          loadName(getObjectField(jobj, "name")))
+      }
       case "OwnershipT" => {
         OwnershipPT(
           loadRange(getObjectField(jobj, "range")),
@@ -693,16 +765,22 @@ object ParsedLoader {
           getArrayField(jobj, "members").map(expectObject).map(loadTemplex))
       }
       case "ManualSequenceT" => {
-        ManualSequencePT(
+        TuplePT(
           loadRange(getObjectField(jobj, "range")),
           getArrayField(jobj, "members").map(expectObject).map(loadTemplex))
       }
-      case "RepeaterSequenceT" => {
-        RepeaterSequencePT(
+      case "StaticSizedArrayT" => {
+        StaticSizedArrayPT(
           loadRange(getObjectField(jobj, "range")),
           loadTemplex(getObjectField(jobj, "mutability")),
           loadTemplex(getObjectField(jobj, "variability")),
           loadTemplex(getObjectField(jobj, "size")),
+          loadTemplex(getObjectField(jobj, "element")))
+      }
+      case "RuntimeSizedArrayT" => {
+        RuntimeSizedArrayPT(
+          loadRange(getObjectField(jobj, "range")),
+          loadTemplex(getObjectField(jobj, "mutability")),
           loadTemplex(getObjectField(jobj, "element")))
       }
       case "BorrowT" => {

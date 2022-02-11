@@ -278,8 +278,8 @@ Ref buildExternCall(
       LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
       return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtr);
     } else {
-      if (prototype->returnType == globalState->metalCache->emptyTupleStructRef) {
-        return makeEmptyTupleRef(globalState);
+      if (prototype->returnType == globalState->metalCache->voidRef) {
+        return makeVoidRef(globalState);
       } else {
         buildFlare(FL(), globalState, functionState, builder);
 

@@ -23,31 +23,31 @@ import ioutils.*;
 // already occupied by a goblin ("g"), it will destroy the goblin.
 
 
-struct Vec<N, T> rules(N int)
+struct Vec<N, T> where N int
 {
-  values [<imm> N * T];
+  values [#N]<imm>T;
 }
 
 struct Goblin {
   location Vec<2, int>;
 }
 
-fn makeBoard() Array<mut, Array<mut, str>> {
+func makeBoard() Array<mut, []<mut>str> {
   ret
-    MakeArray(10, (row){
-      MakeArray(10, (col){
-        = if (row == 0) { "#" }
-          else if (col == 0) { "#" }
-          else if (row == 9) { "#" }
-          else if (col == 9) { "#" }
-          else { "." }
+    MakeArray(10, (row) => {
+      MakeArray(10, (col) => {
+        if (row == 0) { "#" }
+        else if (col == 0) { "#" }
+        else if (row == 9) { "#" }
+        else if (col == 9) { "#" }
+        else { "." }
       })
     });
 }
 
-fn display(
-    board &Array<mut, Array<mut, str>>,
-    goblins &HashMap<int, Goblin, IntHasher, IntEquator>,
+func display(
+    board *Array<mut, []<mut>str>,
+    goblins *HashMap<int, Goblin, IntHasher, IntEquator>,
     playerRow int,
     playerCol int)
 {
@@ -59,7 +59,7 @@ fn display(
       if (rowI == playerRow and cellI == playerCol) {
         set charToPrint = "@";
       } else {
-        goblins.keys().each((key){
+        goblins.keys().each((key) => {
           goblin? = goblins.get(key);
           goblin = (goblin?).get(); // TODO try getting rid of this ^, doesnt wanna find the get function
 
@@ -76,7 +76,7 @@ fn display(
   print(toPrint);
 }
 
-fn inputKey() int {
+func inputKey() int {
   key! = 0;
   while (true) {
     set key = __getch();
@@ -99,8 +99,8 @@ fn inputKey() int {
 }
 
 
-fn goblinAt?(
-  goblins &HashMap<int, Goblin, IntHasher, IntEquator>,
+func goblinAt?(
+  goblins *HashMap<int, Goblin, IntHasher, IntEquator>,
   goblinKey int,
   row int,
   col int)
@@ -112,7 +112,7 @@ bool {
 }
 
 
-fn main() int export {
+exported func main() int {
   println("Welcome to the ridiculously simplistic roguelike game!");
   println("Controls:");
   println("  w+enter: move up");
@@ -143,8 +143,8 @@ fn main() int export {
   running! = true;
   while (running) {
     display(
-        &board,
-        &goblins,
+        *board,
+        *goblins,
         playerRow,
         playerCol);
 
@@ -164,8 +164,8 @@ fn main() int export {
     }
 
     killedGoblin! = false;
-    goblins.keys().each((key){
-      if (goblinAt?(&goblins, key, newPlayerRow, newPlayerCol)) {
+    goblins.keys().each((key) => {
+      if (goblinAt?(*goblins, key, newPlayerRow, newPlayerCol)) {
         goblins!.remove(key);
         set killedGoblin = true;
       }
@@ -182,5 +182,5 @@ fn main() int export {
       set running = false;
     }
   }
-  = 0;
+  ret 0;
 }

@@ -62,6 +62,14 @@ Ref translateExpressionInner(
             Location::INLINE,
             globalState->metalCache->getInt(globalState->metalCache->rcImmRegionId, constantInt->bits));
     return wrap(globalState->getRegion(intRef), intRef, resultLE);
+  } else if (auto constantVoid = dynamic_cast<ConstantVoid*>(expr)) {
+    // See ULTMCIE for why we load and store here.
+    auto resultRef = makeVoidRef(globalState);
+    auto resultLE =
+        globalState->getRegion(globalState->metalCache->voidRef)
+            ->checkValidReference(FL(), functionState, builder, globalState->metalCache->voidRef, resultRef);
+    auto loadedLE = makeConstExpr(functionState, builder, resultLE);
+    return wrap(globalState->getRegion(globalState->metalCache->voidRef), globalState->metalCache->voidRef, loadedLE);
   } else if (auto constantFloat = dynamic_cast<ConstantF64*>(expr)) {
     // See ULTMCIE for why we load and store here.
 
@@ -94,6 +102,33 @@ Ref translateExpressionInner(
       LLVMBuildRet(builder, toReturnLE);
       return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtr);
     }
+  } else if (auto breeak = dynamic_cast<Break*>(expr)) {
+    if (auto nearestLoopBlockStateAndEnd = blockState->getNearestLoopEnd()) {
+      auto [nearestLoopBlockState, nearestLoopEnd] = *nearestLoopBlockStateAndEnd;
+
+      LLVMBuildBr(builder, nearestLoopEnd);
+
+      return wrap(
+        globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef,
+        globalState->neverPtr);
+
+//      buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+//      auto sourceRef = translateExpression(globalState, functionState, blockState, builder, ret->sourceExpr);
+//      if (ret->sourceType->kind == globalState->metalCache->never) {
+//        return sourceRef;
+//      } else {
+//        auto toReturnLE =
+//            globalState->getRegion(ret->sourceType)
+//                ->checkValidReference(FL(), functionState, builder, ret->sourceType, sourceRef);
+//        LLVMBuildRet(builder, toReturnLE);
+//        return wrap(
+//            globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef,
+//            globalState->neverPtr);
+//      }
+    } else {
+      std::cerr << "Error: found a break not inside a loop!" << std::endl;
+      exit(1);
+    }
   } else if (auto stackify = dynamic_cast<Stackify*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto refToStore =
@@ -103,7 +138,7 @@ Ref translateExpressionInner(
         ->checkValidReference(FL(), functionState, builder, stackify->local->type, refToStore);
     makeHammerLocal(
         globalState, functionState, blockState, builder, stackify->local, refToStore, stackify->knownLive);
-    return makeEmptyTupleRef(globalState);
+    return makeVoidRef(globalState);
   } else if (auto localStore = dynamic_cast<LocalStore*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     // The purpose of LocalStore is to put a swap value into a local, and give
@@ -126,6 +161,18 @@ Ref translateExpressionInner(
             functionState, builder, localStore->local->type, refToStore);
     LLVMBuildStore(builder, toStoreLE, localAddr);
     return oldRef;
+  } else if (auto pointerToBorrow = dynamic_cast<PointerToBorrow*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    auto sourceRef =
+        translateExpression(
+            globalState, functionState, blockState, builder, pointerToBorrow->sourceExpr);
+    return sourceRef;
+  } else if (auto borrowToPointer = dynamic_cast<BorrowToPointer*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    auto sourceRef =
+        translateExpression(
+            globalState, functionState, blockState, builder, borrowToPointer->sourceExpr);
+    return sourceRef;
   } else if (auto weakAlias = dynamic_cast<WeakAlias*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
 
@@ -284,7 +331,7 @@ Ref translateExpressionInner(
         ->dealias(
             AFL("DestroySSAIntoF"), functionState, builder, consumerType, consumerRef);
 
-    return makeEmptyTupleRef(globalState);
+    return makeVoidRef(globalState);
   } else if (auto pushRuntimeSizedArray = dynamic_cast<PushRuntimeSizedArray*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto arrayExpr = pushRuntimeSizedArray->arrayExpr;
@@ -318,8 +365,8 @@ Ref translateExpressionInner(
             ->checkValidReference(FL(),
                 functionState, builder, globalState->metalCache->i32Ref, arrayCapacityRef);
 
-    auto hasSpaceLE = LLVMBuildICmp(builder, LLVMIntULT, arrayLenLE, arrayCapacityLE, "hasSpace");
-    buildIf(globalState, functionState, builder, hasSpaceLE, [globalState](LLVMBuilderRef bodyBuilder) {
+    auto arrayIsFullLE = LLVMBuildICmp(builder, LLVMIntUGE, arrayLenLE, arrayCapacityLE, "hasSpace");
+    buildIf(globalState, functionState, builder, arrayIsFullLE, [globalState](LLVMBuilderRef bodyBuilder) {
       buildPrint(globalState, bodyBuilder, "Error: Runtime-sized array has no room for new element!");
     });
 
@@ -334,7 +381,7 @@ Ref translateExpressionInner(
         ->dealias(
             AFL("pushRuntimeSizedArrayNoBoundsCheck"), functionState, builder, arrayType, arrayRef);
 
-    return makeEmptyTupleRef(globalState);
+    return makeVoidRef(globalState);
   } else if (auto popRuntimeSizedArray = dynamic_cast<PopRuntimeSizedArray*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto arrayExpr = popRuntimeSizedArray->arrayExpr;
@@ -363,8 +410,8 @@ Ref translateExpressionInner(
     auto indexRef =
         wrap(globalState->getRegion(globalState->metalCache->i32Ref), globalState->metalCache->i32Ref, indexLE);
 
-    auto hasElementsLE = LLVMBuildICmp(builder, LLVMIntNE, arrayLenLE, constI32LE(globalState, 0), "hasElements");
-    buildIf(globalState, functionState, builder, hasElementsLE, [globalState](LLVMBuilderRef bodyBuilder) {
+    auto arrayIsEmptyLE = LLVMBuildICmp(builder, LLVMIntEQ, arrayLenLE, constI32LE(globalState, 0), "hasElements");
+    buildIf(globalState, functionState, builder, arrayIsEmptyLE, [globalState](LLVMBuilderRef bodyBuilder) {
       buildPrint(globalState, bodyBuilder, "Error: Cannot pop element from empty runtime-sized array!");
     });
 
@@ -415,7 +462,7 @@ Ref translateExpressionInner(
       assert(false);
     }
 
-    return makeEmptyTupleRef(globalState);
+    return makeVoidRef(globalState);
   } else if (auto dirsa = dynamic_cast<DestroyImmRuntimeSizedArray*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto consumerType = dirsa->consumerType;
@@ -485,7 +532,7 @@ Ref translateExpressionInner(
         ->dealias(
             AFL("DestroyRSAIntoF"), functionState, builder, consumerType, consumerRef);
 
-    return makeEmptyTupleRef(globalState);
+    return makeVoidRef(globalState);
   } else if (auto staticSizedArrayLoad = dynamic_cast<StaticSizedArrayLoad*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto arrayType = staticSizedArrayLoad->arrayType;
@@ -645,6 +692,25 @@ Ref translateExpressionInner(
                 functionState, builder, arrayType, arrayRefLE, arrayKnownLive);
     globalState->getRegion(arrayType)
         ->dealias(AFL("RSALen"), functionState, builder, arrayType, arrayRefLE);
+
+    return sizeLE;
+  } else if (auto arrayCapacity = dynamic_cast<ArrayCapacity*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    auto arrayType = arrayCapacity->sourceType;
+    auto arrayExpr = arrayCapacity->sourceExpr;
+    bool arrayKnownLive = arrayCapacity->sourceKnownLive || globalState->opt->overrideKnownLiveTrue;
+//    auto indexExpr = arrayLength->indexExpr;
+
+    auto arrayRefLE = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
+    globalState->getRegion(arrayType)
+        ->checkValidReference(FL(), functionState, builder, arrayType, arrayRefLE);
+
+    auto sizeLE =
+        globalState->getRegion(arrayType)
+            ->getRuntimeSizedArrayCapacity(
+                functionState, builder, arrayType, arrayRefLE, arrayKnownLive);
+    globalState->getRegion(arrayType)
+        ->dealias(AFL("RSACapacity"), functionState, builder, arrayType, arrayRefLE);
 
     return sizeLE;
   } else if (auto narrowPermission = dynamic_cast<NarrowPermission*>(expr)) {

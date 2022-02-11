@@ -1,6 +1,6 @@
-export [<imm> 3 * int] as ImmIntArray;
+export [#3]<imm>int as ImmIntArray;
 
-fn valeSumFuel(arr [<imm> 3 * int]) int export {
+exported func valeSumFuel(arr [#3]<imm>int) int {
   total = 0;
   i = 0;
   while (i < arr.len()) {
@@ -10,9 +10,9 @@ fn valeSumFuel(arr [<imm> 3 * int]) int export {
   ret total;
 }
 
-fn cSumFuel(arr [<imm> 3 * int]) int extern;
+extern func cSumFuel(arr [#3]<imm>int) int;
 
-fn main() int export {
-  a = [imm 3]((i){ 13 + i });
-  = cSumFuel(a);
+exported func main() int {
+  a = #[#3]((i) => { 13 + i });
+  ret cSumFuel(a);
 }

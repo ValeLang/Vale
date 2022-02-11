@@ -1,17 +1,17 @@
 package net.verdagon.vale.templar
 
+import net.verdagon.vale.parser.ast.MutableP
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
-import net.verdagon.vale.parser.MutableP
-import net.verdagon.vale.scout.rules.IRulexSR
-import net.verdagon.vale.scout.{IImpreciseNameS, IRuneS, RuneTypeSolver, SelfNameS}
+import net.verdagon.vale.scout.rules.{IRulexSR, RuneParentEnvLookupSR, RuneUsage}
+import net.verdagon.vale.scout.{CodeNameS, CodeRuneS, IImpreciseNameS, IRuneS, RuneTypeSolver, SelfNameS}
 import net.verdagon.vale.templar.OverloadTemplar.FindFunctionFailure
-import net.verdagon.vale.templar.ast.{DestroyImmRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoFunctionTE, NewImmRuntimeSizedArrayTE, ProgramT, PrototypeT, ReferenceExpressionTE, RuntimeSizedArrayLookupTE, StaticArrayFromCallableTE, StaticArrayFromValuesTE, StaticSizedArrayLookupTE}
+import net.verdagon.vale.templar.ast.{DestroyImmRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoFunctionTE, FunctionCallTE, NewImmRuntimeSizedArrayTE, ProgramT, PrototypeT, ReferenceExpressionTE, RuntimeSizedArrayLookupTE, StaticArrayFromCallableTE, StaticArrayFromValuesTE, StaticSizedArrayLookupTE}
 import net.verdagon.vale.templar.citizen.{StructTemplar, StructTemplarCore}
-import net.verdagon.vale.templar.env.{CitizenEnvironment, FunctionEnvEntry, FunctionEnvironmentBox, GlobalEnvironment, IEnvironment, IEnvironmentBox, PackageEnvironment, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
+import net.verdagon.vale.templar.env.{CitizenEnvironment, FunctionEnvEntry, FunctionEnvironmentBox, GlobalEnvironment, IEnvironment, IEnvironmentBox, NodeEnvironmentBox, PackageEnvironment, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
 import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.function.DestructorTemplar
-import net.verdagon.vale.templar.names.{FullNameT, FunctionNameT, FunctionTemplateNameT, PackageTopLevelNameT, SelfNameT}
+import net.verdagon.vale.templar.names.{FullNameT, FunctionNameT, FunctionTemplateNameT, PackageTopLevelNameT, RuneNameT, SelfNameT}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.{CodeLocationS, Err, IProfiler, Ok, RangeS, vassert, vassertOne, vassertSome, vimpl}
@@ -28,9 +28,10 @@ class ArrayTemplar(
 
   def evaluateStaticSizedArrayFromCallable(
     temputs: Temputs,
-    fate: FunctionEnvironmentBox,
+    fate: IEnvironment,
     range: RangeS,
     rulesA: Vector[IRulexSR],
+    maybeElementTypeRuneA: Option[IRuneS],
     sizeRuneA: IRuneS,
     mutabilityRune: IRuneS,
     variabilityRune: IRuneS,
@@ -51,30 +52,39 @@ class ArrayTemplar(
         case Err(e) => throw CompileErrorExceptionT(InferAstronomerError(range, e))
       }
     val templatas =
-      inferTemplar.solveExpectComplete(fate.snapshot, temputs, rulesA, runeToType, range, Vector(), Vector())
+      inferTemplar.solveExpectComplete(fate, temputs, rulesA, runeToType, range, Vector(), Vector())
     val IntegerTemplata(size) = vassertSome(templatas.get(sizeRuneA))
     val mutability = getArrayMutability(templatas, mutabilityRune)
     val variability = getArrayVariability(templatas, variabilityRune)
     val prototype = overloadTemplar.getArrayGeneratorPrototype(temputs, fate, range, callableTE)
-    val ssaMT = getStaticSizedArrayKind(fate.snapshot.globalEnv, temputs, mutability, variability, size.toInt, prototype.returnType)
+    val ssaMT = getStaticSizedArrayKind(fate.globalEnv, temputs, mutability, variability, size.toInt, prototype.returnType)
+
+    maybeElementTypeRuneA.foreach(elementTypeRuneA => {
+      val expectedElementType = getArrayElementType(templatas, elementTypeRuneA)
+      if (prototype.returnType != expectedElementType) {
+        throw CompileErrorExceptionT(UnexpectedArrayElementType(range, expectedElementType, prototype.returnType))
+      }
+    })
+
     val expr2 = StaticArrayFromCallableTE(ssaMT, callableTE, prototype)
     expr2
   }
 
   def evaluateRuntimeSizedArrayFromCallable(
     temputs: Temputs,
-    fate: FunctionEnvironmentBox,
+    nenv: NodeEnvironmentBox,
     range: RangeS,
     rulesA: Vector[IRulexSR],
+    maybeElementTypeRune: Option[IRuneS],
     mutabilityRune: IRuneS,
     sizeTE: ReferenceExpressionTE,
     callableTE: ReferenceExpressionTE):
-  NewImmRuntimeSizedArrayTE = {
+  ReferenceExpressionTE = {
     val runeToType =
       RuneTypeSolver.solve(
         opts.globalOptions.sanityCheck,
         opts.globalOptions.useOptimizedSolver,
-        nameS => vassertOne(fate.lookupNearestWithImpreciseName(profiler, nameS, Set(TemplataLookupContext))).tyype,
+        nameS => vassertOne(nenv.functionEnvironment.lookupNearestWithImpreciseName(profiler, nameS, Set(TemplataLookupContext))).tyype,
         range,
         false,
         rulesA,
@@ -85,28 +95,78 @@ class ArrayTemplar(
         case Err(e) => throw CompileErrorExceptionT(InferAstronomerError(range, e))
       }
     val templatas =
-      inferTemplar.solveExpectComplete(fate.snapshot, temputs, rulesA, runeToType, range, Vector(), Vector())
+      inferTemplar.solveExpectComplete(nenv.functionEnvironment, temputs, rulesA, runeToType, range, Vector(), Vector())
     val mutability = getArrayMutability(templatas, mutabilityRune)
 
+//    val variability = getArrayVariability(templatas, variabilityRune)
+
     mutability match {
-      case ImmutableT =>
+      case ImmutableT => {
+        val prototype =
+          overloadTemplar.getArrayGeneratorPrototype(
+            temputs, nenv.functionEnvironment, range, callableTE)
+        val rsaMT =
+          getRuntimeSizedArrayKind(
+            nenv.functionEnvironment.globalEnv, temputs, prototype.returnType, mutability)
+
+        maybeElementTypeRune.foreach(elementTypeRuneA => {
+          val expectedElementType = getArrayElementType(templatas, elementTypeRuneA)
+          if (prototype.returnType != expectedElementType) {
+            throw CompileErrorExceptionT(UnexpectedArrayElementType(range, expectedElementType, prototype.returnType))
+          }
+        })
+
+        NewImmRuntimeSizedArrayTE(rsaMT, sizeTE, callableTE, prototype)
+      }
       case MutableT => {
-        throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't construct a mutable runtime array from a callable!"))
+        val prototype =
+          overloadTemplar.findFunction(
+            nenv.functionEnvironment
+              .addEntry(RuneNameT(CodeRuneS("M")), TemplataEnvEntry(MutabilityTemplata(MutableT))),
+            temputs,
+            range,
+            CodeNameS("Array"),
+            Vector(
+              RuneParentEnvLookupSR(range, RuneUsage(range, CodeRuneS("M")))),
+            Array(CodeRuneS("M")),
+            Vector(
+              ParamFilter(sizeTE.result.reference, None),
+              ParamFilter(callableTE.result.reference, None)),
+            Vector(),
+            true)
+
+        val elementType =
+          prototype.returnType.kind match {
+            case RuntimeSizedArrayTT(mutability, elementType) => {
+              if (mutability != MutableT) {
+                throw CompileErrorExceptionT(RangedInternalErrorT(range, "Array function returned wrong mutability!"))
+              }
+              elementType
+            }
+            case _ => {
+              throw CompileErrorExceptionT(RangedInternalErrorT(range, "Array function returned wrong type!"))
+            }
+          }
+        maybeElementTypeRune.foreach(elementTypeRuneA => {
+          val expectedElementType = getArrayElementType(templatas, elementTypeRuneA)
+          if (elementType != expectedElementType) {
+            throw CompileErrorExceptionT(UnexpectedArrayElementType(range, expectedElementType, prototype.returnType))
+          }
+        })
+        val callTE =
+          FunctionCallTE(prototype, Vector(sizeTE, callableTE))
+        callTE
+        //        throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't construct a mutable runtime array from a callable!"))
       }
     }
-
-//    val variability = getArrayVariability(templatas, variabilityRune)
-    val prototype = overloadTemplar.getArrayGeneratorPrototype(temputs, fate, range, callableTE)
-    val rsaMT = getRuntimeSizedArrayKind(fate.snapshot.globalEnv, temputs, prototype.returnType, mutability)
-    val expr2 = NewImmRuntimeSizedArrayTE(rsaMT, sizeTE, callableTE, prototype)
-    expr2
   }
 
   def evaluateStaticSizedArrayFromValues(
       temputs: Temputs,
-      fate: FunctionEnvironmentBox,
+      fate: IEnvironment,
       range: RangeS,
       rulesA: Vector[IRulexSR],
+    maybeElementTypeRuneA: Option[IRuneS],
     sizeRuneA: IRuneS,
     mutabilityRuneA: IRuneS,
     variabilityRuneA: IRuneS,
@@ -134,7 +194,14 @@ class ArrayTemplar(
 
     val templatas =
       inferTemplar.solveExpectComplete(
-        fate.snapshot, temputs, rulesA, runeToType, range, Vector(), Vector())
+        fate, temputs, rulesA, runeToType, range, Vector(), Vector())
+    maybeElementTypeRuneA.foreach(elementTypeRuneA => {
+      val expectedElementType = getArrayElementType(templatas, elementTypeRuneA)
+      if (memberType != expectedElementType) {
+        throw CompileErrorExceptionT(UnexpectedArrayElementType(range, expectedElementType, memberType))
+      }
+    })
+
     val size = getArraySize(templatas, sizeRuneA)
     val mutability = getArrayMutability(templatas, mutabilityRuneA)
     val variability = getArrayVariability(templatas, variabilityRuneA)
@@ -143,7 +210,7 @@ class ArrayTemplar(
           throw CompileErrorExceptionT(InitializedWrongNumberOfElements(range, size, exprs2.size))
         }
 
-    val staticSizedArrayType = getStaticSizedArrayKind(fate.snapshot.globalEnv, temputs, mutability, variability, exprs2.size, memberType)
+    val staticSizedArrayType = getStaticSizedArrayKind(fate.globalEnv, temputs, mutability, variability, exprs2.size, memberType)
     val ownership = if (staticSizedArrayType.mutability == MutableT) OwnT else ShareT
     val permission = if (staticSizedArrayType.mutability == MutableT) ReadwriteT else ReadonlyT
     val finalExpr = StaticArrayFromValuesTE(exprs2, CoordT(ownership, permission, staticSizedArrayType), staticSizedArrayType)
@@ -300,6 +367,10 @@ class ArrayTemplar(
   private def getArraySize(templatas: Map[IRuneS, ITemplata], sizeRuneA: IRuneS): Int = {
     val IntegerTemplata(m) = vassertSome(templatas.get(sizeRuneA))
     m.toInt
+  }
+  private def getArrayElementType(templatas: Map[IRuneS, ITemplata], typeRuneA: IRuneS): CoordT = {
+    val CoordTemplata(m) = vassertSome(templatas.get(typeRuneA))
+    m
   }
 
   def lookupInStaticSizedArray(

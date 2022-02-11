@@ -2,7 +2,6 @@ package net.verdagon.vale.templar.macros.drop
 
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer.{FunctionA, ImplA, StructA, VirtualFreeDeclarationNameS}
-import net.verdagon.vale.parser.{LendConstraintP, MoveP}
 import net.verdagon.vale.scout._
 import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS, OverrideSP}
 import net.verdagon.vale.scout.rules._
@@ -78,9 +77,8 @@ class ImplFreeMacro(overloadTemplar: OverloadTemplar) extends IOnStructDefinedMa
             Vector(),
             BlockSE(RangeS.internal(-167213),
               Vector(LocalS(CodeVarNameS("this"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
-              Vector(
-                ReturnSE(RangeS.internal(-167213), VoidSE(RangeS.internal(-167214)))
-              )))))
+              ReturnSE(RangeS.internal(-167213), VoidSE(RangeS.internal(-167214)))
+              ))))
     Vector((
       structName.addStep(NameTranslator.translateFunctionNameToTemplateName(virtualFreeFunctionA.name)),
       FunctionEnvEntry(virtualFreeFunctionA)))

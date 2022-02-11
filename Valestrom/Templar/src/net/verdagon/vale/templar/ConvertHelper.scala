@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale._
-import net.verdagon.vale.templar.ast.{ReferenceExpressionTE, StructToInterfaceUpcastTE}
+import net.verdagon.vale.templar.ast.{ReferenceExpressionTE, SoftLoadTE, StructToInterfaceUpcastTE}
 //import net.verdagon.vale.astronomer.IRulexSR
 import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env.{IEnvironment, IEnvironmentBox}
@@ -71,17 +71,17 @@ class ConvertHelper(
 
     (sourceOwnership, targetOwnership) match {
       case (OwnT, OwnT) =>
-      case (ConstraintT, OwnT) => {
+      case (PointerT, OwnT) => {
         throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied a borrow but target wants to own the argument"))
       }
-      case (OwnT, ConstraintT) => {
+      case (OwnT, PointerT) => {
         throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied an owning but target wants to only borrow"))
       }
-      case (ConstraintT, ConstraintT) =>
+      case (PointerT, PointerT) =>
+      case (BorrowT, BorrowT) =>
       case (ShareT, ShareT) =>
-      case (OwnT, ShareT) => vwat();
-      case (ConstraintT, ShareT) => vwat();
       case (WeakT, WeakT) =>
+      case other => vwat(other)
     }
 
     (sourcePermission, targetPermission) match {

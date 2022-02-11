@@ -270,7 +270,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
     }
   } else {
     if (output_dir.exists()) {
-      dest_dir = Path("/tmp/old_output_dir_" + str(MtpId()));
+      dest_dir = GetTempDir()./("old_output_dir_" + str(MtpId()));
       if (dest_dir.exists()) {
         println("Deleting existing {dest_dir.str()}.");
         dest_dir.RemoveDirAll().expect();

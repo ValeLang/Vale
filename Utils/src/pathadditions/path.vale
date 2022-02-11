@@ -111,6 +111,10 @@ fn CreateDir(path &Path, allow_already_existing bool) Result<void, FileError> {
     }
 }
 
+fn GetTempDir() Path {
+  Path(GetTempDirExtern())
+}
+
 // change to bool in next version, has fix
 fn CreateDirExtern(path str, allow_already_existing int) bool extern;
 
@@ -145,3 +149,5 @@ fn Rename(path &Path, destination &Path) Result<void, FileError> {
 }
 
 fn RenameExtern(path str, destination str) int extern;
+
+fn GetTempDirExtern() str extern;

@@ -161,3 +161,19 @@ extern ValeInt valecutils_RenameExtern(ValeStr* path, ValeStr* destination) {
   free(destination);
   return result;
 }
+
+extern ValeStr* valecutils_GetTempDirExtern() {
+#ifdef _WIN32
+  char path[MAX_PATH];
+  int length = GetTempPathA(MAX_PATH, path);
+  if (length == 0) {
+    fprintf(stderr, "stdlib.GetTempDir: GetTempPathA failed: error %ld\n", GetLastError());
+    exit(1);
+  }
+  ValeStr* result = ValeStrFrom(path);
+  return result;
+#else
+  ValeStr* result = ValeStrFrom("/tmp");
+  return result;
+#endif
+}

@@ -51,7 +51,7 @@ static ValeInt RemoveDir(const char* path) {
 
 static int8_t IsSymLink(const char* path) {
 #ifdef _WIN32
-  return false;
+  return 0;
 #else
   struct stat path_stat;
   if (stat(path, &path_stat) != 0) {

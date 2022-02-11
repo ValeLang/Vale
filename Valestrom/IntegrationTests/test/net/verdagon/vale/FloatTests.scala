@@ -14,7 +14,7 @@ class FloatTests extends FunSuite with Matchers {
       """
         |import printutils.*;
         |
-        |fn main() export {
+        |exported func main() {
         |  a = 42.125;
         |  print(a);
         |}

@@ -74,7 +74,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
 
   // We would want only the prototype instead of the entire header if, for example,
   // we were calling the function. This is necessary for a recursive function like
-  // fn main():Int{main()}
+  // func main():Int{main()}
   // Preconditions:
   // - either no closured vars, or they were already added to the env.
   // - env is the environment the templated function was made in
@@ -223,7 +223,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
 
   // We would want only the prototype instead of the entire header if, for example,
   // we were calling the function. This is necessary for a recursive function like
-  // fn main():Int{main()}
+  // func main():Int{main()}
   def evaluateOrdinaryFunctionFromNonCallForPrototype(
     // The environment the function was defined in.
     nearEnv: BuildingFunctionEnvironmentWithClosureds,

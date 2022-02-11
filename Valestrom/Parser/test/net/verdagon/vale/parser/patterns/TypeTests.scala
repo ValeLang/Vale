@@ -1,9 +1,11 @@
 package net.verdagon.vale.parser.patterns
 
 import net.verdagon.vale.{Collector, parser, vfail, vimpl}
-import net.verdagon.vale.parser.Patterns.{fromEnv, withType}
-import net.verdagon.vale.parser.CombinatorParsers._
+import net.verdagon.vale.parser.ast.Patterns.{fromEnv, withType}
+import net.verdagon.vale.parser.old.CombinatorParsers._
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{AnonymousRunePT, CallPT, FinalP, ImmutableP, IntPT, InterpretedPT, TuplePT, MutabilityPT, MutableP, NameOrRunePT, NameP, PatternPP, PointerP, ReadonlyP, StaticSizedArrayPT, VariabilityPT, VaryingP, WeakP}
+import net.verdagon.vale.parser.old.CombinatorParsers
 import org.scalatest.{FunSuite, Matchers}
 
 class TypeTests extends FunSuite with Matchers with Collector {
@@ -42,9 +44,9 @@ class TypeTests extends FunSuite with Matchers with Collector {
   }
 
   test("15a") {
-    compile("_ [3 * MutableStruct]") shouldHave {
+    compile("_ [#3]MutableStruct") shouldHave {
       case withType(
-          RepeaterSequencePT(_,
+          StaticSizedArrayPT(_,
               MutabilityPT(_,MutableP),
               VariabilityPT(_,FinalP),
               IntPT(_,3),
@@ -53,9 +55,9 @@ class TypeTests extends FunSuite with Matchers with Collector {
   }
 
   test("15b") {
-    compile("_ [<imm> 3 * MutableStruct]") shouldHave {
+    compile("_ [#3]<imm>MutableStruct") shouldHave {
       case withType(
-        RepeaterSequencePT(_,
+        StaticSizedArrayPT(_,
           MutabilityPT(_,ImmutableP),
           VariabilityPT(_,FinalP),
           IntPT(_,3),
@@ -64,9 +66,9 @@ class TypeTests extends FunSuite with Matchers with Collector {
   }
 
   test("15c") {
-    compile("_ [<imm, vary> 3 * MutableStruct]") shouldHave {
+    compile("_ [#3]<imm, vary>MutableStruct") shouldHave {
       case withType(
-      RepeaterSequencePT(_,
+      StaticSizedArrayPT(_,
       MutabilityPT(_,ImmutableP),
       VariabilityPT(_,VaryingP),
       IntPT(_,3),
@@ -75,23 +77,23 @@ class TypeTests extends FunSuite with Matchers with Collector {
   }
 
   test("Sequence type") {
-    compile("_ [int, bool]") shouldHave {
+    compile("_ (int, bool)") shouldHave {
       case withType(
-          ManualSequencePT(_,
+          TuplePT(_,
             Vector(
               NameOrRunePT(NameP(_, "int")),
               NameOrRunePT(NameP(_, "bool"))))) =>
     }
   }
   test("15") {
-    compile("_ &[3 * MutableStruct]") shouldHave {
+    compile("_ *[#3]MutableStruct") shouldHave {
       case PatternPP(_,_,
         None,
         Some(
           InterpretedPT(_,
-            ConstraintP,
+            PointerP,
             ReadonlyP,
-            RepeaterSequencePT(_,
+            StaticSizedArrayPT(_,
               MutabilityPT(_,MutableP),
               VariabilityPT(_,FinalP),
               IntPT(_,3),
@@ -101,14 +103,14 @@ class TypeTests extends FunSuite with Matchers with Collector {
     }
   }
   test("15m") {
-    compile("_ &&[<_, _> 3 * MutableStruct]") shouldHave {
+    compile("_ **[#3]<_, _>MutableStruct") shouldHave {
       case PatternPP(_,_,
         None,
         Some(
           InterpretedPT(_,
             WeakP,
             ReadonlyP,
-            RepeaterSequencePT(_,
+            StaticSizedArrayPT(_,
               AnonymousRunePT(_),
               AnonymousRunePT(_),
               IntPT(_,3),

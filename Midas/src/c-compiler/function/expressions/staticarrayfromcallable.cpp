@@ -41,7 +41,7 @@ Ref translateStaticArrayFromCallable(
     // If we get here, arrayLT is a pointer to our counted struct.
     auto ssaRef =
         globalState->getRegion(staticArrayFromCallable->arrayRefType)->constructStaticSizedArray(
-            makeEmptyTupleRef(globalState),
+            makeVoidRef(globalState),
             functionState,
             builder,
             staticArrayFromCallable->arrayRefType,

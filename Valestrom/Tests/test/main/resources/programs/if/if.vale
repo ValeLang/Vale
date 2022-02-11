@@ -1,5 +1,5 @@
-fn main() int export {
-  = if (true) {
+exported func main() int {
+  ret if (true) {
       42
     } else {
       73

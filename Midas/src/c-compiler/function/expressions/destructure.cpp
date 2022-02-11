@@ -60,5 +60,5 @@ Ref translateDestructure(
 
   buildFlare(FL(), globalState, functionState, builder);
 
-  return makeEmptyTupleRef(globalState);
+  return makeVoidRef(globalState);
 }

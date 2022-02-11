@@ -7,9 +7,9 @@ class WhileTests extends FunSuite with Matchers {
   test("Simple while loop that doesnt execute") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  while (false) {}
-        |  = 5;
+        |  ret 5;
         |}
       """.stripMargin)
 
@@ -19,12 +19,12 @@ class WhileTests extends FunSuite with Matchers {
   test("Test a for-ish while loop") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  i! = 0;
         |  while (i < 4) {
         |    set i = i + 1;
         |  }
-        |  = i;
+        |  ret i;
         |}
       """.stripMargin)
 
@@ -35,62 +35,93 @@ class WhileTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """import ioutils.*;
         |import printutils.*;
-        |fn main() int export {
+        |exported func main() int {
         |  key! = 0;
-        |  while (set key = __getch(); = key < 96;) {
+        |  while set key = __getch(); key < 96 {
         |    print(key);
         |  }
-        |  = key;
+        |  ret key;
         |}
       """.stripMargin)
 
     compile.evalForKind(Vector(), Vector("A", "B", "c")) shouldEqual VonInt(99)
   }
 
-  test("Tests a while loop with a != in it") {
+  test("Tests a while loop with a set in it") {
     val compile = RunCompilation.test(
       """
         |import printutils.*;
         |import ioutils.*;
         |import logic.*;
         |
-        |fn main() int export {
-        |  key! = 0;
-        |  while (set key = __getch(); = key != 99;) {
+        |exported func main() int {
+        |  key = 0;
+        |  while set key = __getch(); key != 99 {
         |    print(key);
         |  }
-        |  = key;
+        |  ret key;
         |}
       """.stripMargin)
 
     compile.evalForKind(Vector(), Vector("A", "B", "c")) shouldEqual VonInt(99)
   }
 
+  test("Tests a while loop with a declaration in it") {
+    val compile = RunCompilation.test(
+      """
+        |import printutils.*;
+        |import ioutils.*;
+        |import logic.*;
+        |
+        |exported func main() {
+        |  while key = __getch(); key != 99 {
+        |    print(key);
+        |  }
+        |}
+      """.stripMargin)
+
+    compile.evalForKind(Vector(), Vector("A", "B", "c"))
+  }
+
   test("Return from infinite while loop") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  while (true) {
         |    ret 9;
         |  }
-        |  = __vbi_panic();
+        |  ret __vbi_panic();
         |}
       """.stripMargin)
 
     compile.evalForKind(Vector()) shouldEqual VonInt(9)
   }
-//
+
+  test("While with condition declaration") {
+    val compile = RunCompilation.test(
+      """
+        |exported func main() int {
+        |  while x = 42; x < 50 { ret x; }
+        |  ret 73;
+        |}
+      """.stripMargin)
+
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+  }
+
+
+  //
 //  test("Tests a while loop with a move in it") {
 //    val compile = RunCompilation.test(
 //      """
-//        |fn doThings(m: Marine) { }
+//        |func doThings(m: Marine) { }
 //        |struct Marine { hp: int; }
-//        |fn main() int export {
+//        |exported func main() int {
 //        |  m = Marine(7);
 //        |  while (true) {
 //        |    doThings(m);
 //        |  }
-//        |  = 4;
+//        |  ret 4;
 //        |}
 //      """.stripMargin)
 //

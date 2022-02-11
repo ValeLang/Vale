@@ -39,7 +39,7 @@ Ref translateNewArrayFromValues(
     // If we get here, arrayLT is a pointer to our counted struct.
     auto resultLE =
         globalState->getRegion(newArrayFromValues->arrayRefType)->constructStaticSizedArray(
-            makeEmptyTupleRef(globalState),
+            makeVoidRef(globalState),
             functionState,
             builder,
             newArrayFromValues->arrayRefType,

@@ -1,8 +1,10 @@
 package net.verdagon.vale.parser.patterns
 
-import net.verdagon.vale.parser.Patterns._
-import net.verdagon.vale.parser.CombinatorParsers._
+import net.verdagon.vale.parser.ast.Patterns._
+import net.verdagon.vale.parser.old.CombinatorParsers._
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{DestructureP, LocalNameDeclarationP, NameOrRunePT, NameP, PatternPP}
+import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -38,27 +40,27 @@ class DestructureParserTests extends FunSuite with Matchers with Collector {
   }
 
   test("Only empty destructure") {
-    compile("()") shouldHave {
+    compile("[]") shouldHave {
       case withDestructure(Vector()) =>
     }
   }
   test("One element destructure") {
-    compile("(a)") shouldHave {
+    compile("[a]") shouldHave {
       case withDestructure(Vector(capture("a"))) =>
     }
   }
   test("One typed element destructure") {
-    compile("( _ A )") shouldHave {
+    compile("[ _ A ]") shouldHave {
       case withDestructure(Vector(withType(NameOrRunePT(NameP(_, "A"))))) =>
     }
   }
   test("Only two-element destructure") {
-    compile("(a, b)") shouldHave {
+    compile("[a, b]") shouldHave {
       case withDestructure(Vector(capture("a"), capture("b"))) =>
     }
   }
   test("Two-element destructure with ignore") {
-    compile("(_, b)") shouldHave {
+    compile("[_, b]") shouldHave {
       case PatternPP(_,_,
           None,None,
           Some(DestructureP(_,Vector(PatternPP(_,_,None, None, None, None), capture("b")))),
@@ -66,16 +68,16 @@ class DestructureParserTests extends FunSuite with Matchers with Collector {
     }
   }
   test("Capture with destructure") {
-    compile("a (x, y)") shouldHave {
+    compile("a [x, y]") shouldHave {
       case PatternPP(_,_,
-        Some(CaptureP(_,LocalNameP(NameP(_, "a")))),
+        Some(LocalNameDeclarationP(NameP(_, "a"))),
         None,
         Some(DestructureP(_,Vector(capture("x"), capture("y")))),
         None) =>
     }
   }
   test("Type with destructure") {
-    compile("A(a, b)") shouldHave {
+    compile("A[a, b]") shouldHave {
       case PatternPP(_,_,
         None,
         Some(NameOrRunePT(NameP(_, "A"))),
@@ -84,25 +86,25 @@ class DestructureParserTests extends FunSuite with Matchers with Collector {
     }
   }
   test("Capture and type with destructure") {
-    compile("a A(x, y)") shouldHave {
+    compile("a A[x, y]") shouldHave {
       case PatternPP(_,_,
-        Some(CaptureP(_,LocalNameP(NameP(_, "a")))),
+        Some(LocalNameDeclarationP(NameP(_, "a"))),
         Some(NameOrRunePT(NameP(_, "A"))),
         Some(DestructureP(_,Vector(capture("x"), capture("y")))),
         None) =>
     }
   }
   test("Capture with types inside") {
-    compile("a (_ int, _ bool)") shouldHave {
+    compile("a [_ int, _ bool]") shouldHave {
       case PatternPP(_,_,
-          Some(CaptureP(_,LocalNameP(NameP(_, "a")))),
+          Some(LocalNameDeclarationP(NameP(_, "a"))),
           None,
           Some(DestructureP(_,Vector(fromEnv("int"), fromEnv("bool")))),
           None) =>
     }
   }
   test("Destructure with type inside") {
-    compile("(a int, b bool)") shouldHave {
+    compile("[a int, b bool]") shouldHave {
       case withDestructure(
       Vector(
           capturedWithType("a", NameOrRunePT(NameP(_, "int"))),
@@ -110,7 +112,7 @@ class DestructureParserTests extends FunSuite with Matchers with Collector {
     }
   }
   test("Nested destructures A") {
-    compile("(a, (b, c))") shouldHave {
+    compile("[a, [b, c]]") shouldHave {
       case withDestructure(
         Vector(
           capture("a"),
@@ -121,7 +123,7 @@ class DestructureParserTests extends FunSuite with Matchers with Collector {
     }
   }
   test("Nested destructures B") {
-    compile("((a), b)") shouldHave {
+    compile("[[a], b]") shouldHave {
       case withDestructure(
       Vector(
           withDestructure(
@@ -131,7 +133,7 @@ class DestructureParserTests extends FunSuite with Matchers with Collector {
     }
   }
   test("Nested destructures C") {
-    compile("(((a)))") shouldHave {
+    compile("[[[a]]]") shouldHave {
       case withDestructure(
       Vector(
           withDestructure(

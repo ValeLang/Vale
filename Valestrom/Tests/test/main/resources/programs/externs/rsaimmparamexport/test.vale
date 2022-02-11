@@ -1,24 +1,27 @@
-export Array<imm, int> as ImmIntArray;
+export []<imm>int as ImmIntArray;
 
-fn each<F>(arr A, func F) void
-rules(A Ref(_, _, Array<_, _>)) {
-  i! = 0;
-  l = len(&arr);
-  while (i < l) {
-    func!(arr[i]);
-    set i = i + 1;
+func range(begin int, end int) IntRange { ret IntRange(begin, end); }
+struct IntRange { begin int; end int; }
+func begin(self &!IntRange) IntRangeIter { ret IntRangeIter(&self, self.begin); }
+struct IntRangeIter { range &IntRange; i! int; }
+func next(self &!IntRangeIter) Opt<int> {
+  if self.i < self.range.end {
+    Some(set self.i = self.i + 1)
+  } else {
+    None<int>()
   }
 }
 
-fn expSumBytes(arr Array<imm, int>) int export {
+exported func expSumBytes(arr []<imm>int) int {
   sum! = 0;
-  each arr (i){ set sum = sum + i; }
+  l = len(arr);
+  foreach i in 0..l { set sum = sum + arr[i]; }
   ret sum;
 }
 
-fn extSumBytes(arr Array<imm, int>) int extern;
+extern func extSumBytes(arr []<imm>int) int;
 
-fn main() int export {
-  a = [imm *](5, {_});
-  = extSumBytes(a);
+exported func main() int {
+  a = #[](5, {_});
+  ret extSumBytes(a);
 }

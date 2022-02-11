@@ -252,7 +252,7 @@ case class CoordListTemplata(coords: Vector[CoordT]) extends ITemplata {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 18;
   override def tyype: ITemplataType = PackTemplataType(CoordTemplataType)
-
+  vpass()
 
 }
 

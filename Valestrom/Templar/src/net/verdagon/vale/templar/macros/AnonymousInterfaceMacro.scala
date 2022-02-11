@@ -2,7 +2,7 @@ package net.verdagon.vale.templar.macros
 
 import net.verdagon.vale.{CodeLocationS, IProfiler, PackageCoordinate, RangeS, vassert, vassertOne, vassertSome, vfail, vimpl, vwat}
 import net.verdagon.vale.astronomer.{ConstructorNameS, FunctionA, ImplA, ImplImpreciseNameS, InterfaceA, StructA}
-import net.verdagon.vale.parser.{FinalP, MutableP, UseP}
+import net.verdagon.vale.parser.ast.{FinalP, UseP}
 import net.verdagon.vale.scout.{AnonymousSubstructMemberNameS, AnonymousSubstructMemberRuneS, AnonymousSubstructParentInterfaceRuneS, AnonymousSubstructParentInterfaceTemplateRuneS, AnonymousSubstructRuneS, AnonymousSubstructTemplateImpreciseNameS, AnonymousSubstructTemplateNameS, AnonymousSubstructTemplateRuneS, BlockSE, BodySE, CodeBodyS, CodeNameS, CodeRuneS, CoordTemplataType, DotSE, FunctionCallSE, FunctionNameS, FunctionTemplataType, GeneratedBodyS, GlobalFunctionFamilyNameS, IRuneS, ITemplataType, ImplDeclarationNameS, KindTemplataType, LocalLoadSE, LocalS, NormalStructMemberS, NotUsed, OwnershipTemplataType, ParameterS, PermissionTemplataType, RuneNameS, SelfKindRuneS, SelfKindTemplateRuneS, SelfNameS, SelfOwnershipRuneS, SelfPermissionRuneS, SelfRuneS, StructNameRuneS, TemplateTemplataType, TopLevelCitizenDeclarationNameS, Used, UserFunctionS}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS, OverrideSP}
 import net.verdagon.vale.scout.rules.{AugmentSR, CallSR, CoerceToCoordSR, CoordComponentsSR, EqualsSR, Equivalencies, IRulexSR, LookupSR, OwnershipLiteralSL, RuleScout, RuneUsage}
@@ -15,7 +15,7 @@ import net.verdagon.vale.templar.macros.citizen.{ImplDropMacro, InterfaceFreeMac
 import net.verdagon.vale.templar.names.{AnonymousSubstructImplNameT, AnonymousSubstructLambdaNameT, AnonymousSubstructMemberNameT, AnonymousSubstructNameT, ConstructorNameT, FullNameT, FunctionNameT, ICitizenNameT, INameT, ImplDeclareNameT, NameTranslator, RuneNameT, TemplarTemporaryVarNameT}
 import net.verdagon.vale.templar.templata.{CoordTemplata, ExternFunctionTemplata, InterfaceTemplata, KindTemplata, MutabilityTemplata}
 import net.verdagon.vale.templar.{ArrayTemplar, CompileErrorExceptionT, IFunctionGenerator, LambdaReturnDoesntMatchInterfaceConstructor, OverloadTemplar, RangedInternalErrorT, Templar, TemplarOptions, Temputs, ast}
-import net.verdagon.vale.templar.types.{ConstraintT, CoordT, FinalT, ImmutableT, InterfaceTT, MutabilityT, MutableT, NeverT, ParamFilter, ReadonlyT, ReadwriteT, ReferenceMemberTypeT, ShareT, StructDefinitionT, StructMemberT, StructTT}
+import net.verdagon.vale.templar.types.{CoordT, FinalT, ImmutableT, InterfaceTT, MutabilityT, MutableT, NeverT, ParamFilter, PointerT, ReadonlyT, ReadwriteT, ReferenceMemberTypeT, ShareT, StructDefinitionT, StructMemberT, StructTT}
 
 import scala.collection.immutable.List
 import scala.collection.mutable
@@ -42,7 +42,7 @@ class AnonymousInterfaceMacro(
   override def getInterfaceSiblingEntries(interfaceName: FullNameT[INameT], interfaceA: InterfaceA): Vector[(FullNameT[INameT], IEnvEntry)] = {
     val memberRunes =
       interfaceA.internalMethods.zipWithIndex.map({ case (method, index) =>
-        RuneUsage(method.range, AnonymousSubstructMemberRuneS(index))
+        RuneUsage(RangeS(method.range.begin, method.range.begin), AnonymousSubstructMemberRuneS(index))
       })
     val members =
       interfaceA.internalMethods.zip(memberRunes).zipWithIndex.map({ case ((method, rune), index) =>
@@ -243,6 +243,6 @@ class AnonymousInterfaceMacro(
           BlockSE(
             methodRange,
             newParams.map(param => vassertSome(param.pattern.name).name).map(LocalS(_, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
-            Vector(newBody)))))
+            newBody))))
   }
 }

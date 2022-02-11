@@ -1,6 +1,5 @@
 package net.verdagon.vale
 
-import net.verdagon.vale.parser.{FinalP, ImmutableP, MutableP, VaryingP}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.ast.{AddressMemberLookupTE, ConstructTE, FunctionCallTE, LetNormalTE, LocalLookupTE, MutateTE, ReferenceMemberLookupTE}
@@ -46,7 +45,7 @@ class ClosureTests extends FunSuite with Matchers {
 
     // Even if we're certain it's moved, it must be addressible.
     // Imagine:
-    // fn main() int export {
+    // exported func main() int {
     //   m = Marine();
     //   if (something) {
     //     something.consume(m);
@@ -79,9 +78,9 @@ class ClosureTests extends FunSuite with Matchers {
         |struct Marine {
         |  hp int;
         |}
-        |fn main() int export {
+        |exported func main() int {
         |  m = Marine(9);
-        |  = { m.hp }!();
+        |  ret { m.hp }!();
         |}
       """.stripMargin)
 
@@ -89,7 +88,7 @@ class ClosureTests extends FunSuite with Matchers {
   }
 
   test("Test closure's local variables") {
-    val compile = RunCompilation.test("fn main() int export { x = 4; = {x}(); }")
+    val compile = RunCompilation.test("exported func main() int { x = 4; ret {x}(); }")
     val temputs = compile.expectTemputs()
 
     val main = temputs.lookupLambdaIn("main")
@@ -112,7 +111,7 @@ class ClosureTests extends FunSuite with Matchers {
   }
 
   test("Test returning a nonmutable closured variable from the closure") {
-    val compile = RunCompilation.test("fn main() int export { x = 4; = {x}(); }")
+    val compile = RunCompilation.test("exported func main() int { x = 4; ret {x}(); }")
     val temputs = compile.expectTemputs()
 
     // The struct should have an int x in it which is a reference type.
@@ -156,7 +155,7 @@ class ClosureTests extends FunSuite with Matchers {
     Collector.onlyOf(main, classOf[FunctionCallTE])
 
     Collector.only(lambda, {
-      case LocalLookupTE(_,ReferenceLocalVariableT(FullNameT(_, _,ClosureParamNameT()),FinalT,_),_, _) =>
+      case LocalLookupTE(_,ReferenceLocalVariableT(FullNameT(_, _,ClosureParamNameT()),FinalT,_)) =>
     })
 
     compile.evalForKind(Vector()) shouldEqual VonInt(4)
@@ -165,10 +164,10 @@ class ClosureTests extends FunSuite with Matchers {
   test("Mutates from inside a closure") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x! = 4;
         |  { set x = x + 1; }!();
-        |  = x;
+        |  ret x;
         |}
       """.stripMargin)
     val scoutput = compile.getScoutput().getOrDie()
@@ -194,7 +193,7 @@ class ClosureTests extends FunSuite with Matchers {
   }
 
   test("Mutates from inside a closure inside a closure") {
-    val compile = RunCompilation.test("fn main() int export { x! = 4; { { set x = x + 1; }!(); }!(); = x; }")
+    val compile = RunCompilation.test("exported func main() int { x! = 4; { { set x = x + 1; }!(); }!(); ret x; }")
 
     compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
@@ -202,9 +201,9 @@ class ClosureTests extends FunSuite with Matchers {
   test("Read from inside a closure inside a closure") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  x = 42;
-        |  = { { x }() }();
+        |  ret { { x }() }();
         |}
         |""".stripMargin)
 

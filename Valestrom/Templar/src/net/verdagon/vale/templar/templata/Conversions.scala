@@ -2,6 +2,7 @@ package net.verdagon.vale.templar.templata
 
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{BorrowP, FinalP, ImmutableP, InlineP, LocationP, MutabilityP, MutableP, OwnP, OwnershipP, PermissionP, PointerP, ReadonlyP, ReadwriteP, ShareP, VariabilityP, VaryingP, WeakP, YonderP}
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.{scout => s}
 import net.verdagon.vale.templar.{types => t}
@@ -42,7 +43,8 @@ object Conversions {
   def evaluateOwnership(ownership: OwnershipP): OwnershipT = {
     ownership match {
       case OwnP => OwnT
-      case ConstraintP => ConstraintT
+      case PointerP => PointerT
+      case BorrowP => BorrowT
       case WeakP => WeakT
       case ShareP => ShareT
     }
@@ -51,7 +53,7 @@ object Conversions {
   def evaluateMaybeOwnership(maybeOwnership: Option[OwnershipP]): Option[OwnershipT] = {
     maybeOwnership.map({
       case OwnP => OwnT
-      case ConstraintP => ConstraintT
+      case PointerP => PointerT
       case WeakP => WeakT
       case ShareP => ShareT
     })
@@ -60,7 +62,8 @@ object Conversions {
   def unevaluateOwnership(ownership: OwnershipT): OwnershipP = {
     ownership match {
       case OwnT => OwnP
-      case ConstraintT => ConstraintP
+      case PointerT => PointerP
+      case BorrowT => BorrowP
       case WeakT => WeakP
       case ShareT => ShareP
     }

@@ -16,3 +16,7 @@ double __vale_castI64Float(int64_t i) {
 int64_t __vale_castFloatI64(double i) {
   return (int64_t)i;
 }
+
+int32_t __vale_TruncateI64ToI32(int64_t i) {
+  return (int32_t)i;
+}

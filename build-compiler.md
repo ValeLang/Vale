@@ -8,9 +8,9 @@ Here's how to build the Vale compiler.
 ```sh
 sudo apt install -y git
 git clone --single-branch --branch master https://github.com/ValeLang/Vale
-Vale/install-compiler-prereqs-linux.sh
+Vale/install-compiler-prereqs-linux.sh ~/LLVMForVale ~/BootstrappingValeCompiler ~/stdlib
 cd Vale
-./build-compiler-linux.sh ~/clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10
+./build-compiler-linux.sh ~/LLVMForVale/clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10 ~/BootstrappingValeCompiler ~/stdlib
 ```
 
 
@@ -18,10 +18,10 @@ cd Vale
 
 ```sh
 git clone --single-branch --branch master https://github.com/ValeLang/Vale
-Vale/install-compiler-prereqs-mac.sh
+Vale/install-compiler-prereqs-mac.sh ~/BootstrappingValeCompiler ~/stdlib
 source ~/.zshrc
 cd Vale
-./build-compiler-mac.sh
+./build-compiler-mac.sh ~/BootstrappingValeCompiler ~/stdlib
 ```
 
 
@@ -40,6 +40,7 @@ If you still want to compile the compiler on Windows, keep reading.
  1. Install sbt: https://github.com/sbt/sbt/releases (look for the .msi on that page)
  1. Install java: https://adoptopenjdk.net/
  1. Install 7-zip: https://www.7-zip.org/download.html
+ 1. Install the previous version of the vale compiler: https://vale.dev/download
  1. Build LLVM, see next section.
  1. Build the compiler, which is the section after next.
 
@@ -76,6 +77,7 @@ Once youve done the above steps and installed LLVM, run the below commands:
 
 ```sh
 git clone https://github.com/ValeLang/Vale --single-branch --branch master
+git clone https://github.com/ValeLang/stdlib --single-branch --branch master
 cd Vale
-build-windows.bat
+.\\build-compiler-windows.bat C:\\llvm C:\\OldValeCompiler C:\\stdlib
 ```

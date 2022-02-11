@@ -1,6 +1,6 @@
 
-fn not(b bool) bool { __vbi_not(b) }
-fn __vbi_not(b bool) bool extern;
+func not(b bool) bool { ret __vbi_not(b); }
+extern func __vbi_not(b bool) bool;
 
-fn ==(left bool, right bool) bool { __vbi_eqBoolBool(left, right) }
-fn __vbi_eqBoolBool(left bool, right bool) bool extern;
+func ==(left bool, right bool) bool { ret __vbi_eqBoolBool(left, right); }
+extern func __vbi_eqBoolBool(left bool, right bool) bool;

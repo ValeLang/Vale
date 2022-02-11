@@ -5,11 +5,11 @@ struct Spaceship {
   fuel! int;
 }
 
-fn getFuel(a &Spaceship) int {
-  a.fuel
+func getFuel(a *Spaceship) int {
+  ret a.fuel;
 }
 
-fn main() int export {
+exported func main() int {
   ship = Spaceship(42);
-  = ship.getFuel();
+  ret (*ship).getFuel();
 }

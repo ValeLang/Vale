@@ -51,8 +51,7 @@ ResilientV4::ResilientV4(GlobalState *globalState_, RegionId *regionId_) :
         globalState_,
         &kindStructs,
         globalState->opt->elideChecksForKnownLive,
-        false,
-        anyMT) {
+        false) {
   kindStructs.declareStruct(anyMT, Weakability::NON_WEAKABLE);
   kindStructs.defineStruct(anyMT, {});
 }
@@ -135,7 +134,8 @@ void ResilientV4::alias(
 
   if (dynamic_cast<Int *>(sourceRnd) ||
       dynamic_cast<Bool *>(sourceRnd) ||
-      dynamic_cast<Float *>(sourceRnd)) {
+      dynamic_cast<Float *>(sourceRnd) ||
+      dynamic_cast<Void *>(sourceRnd)) {
     // Do nothing for these, they're always inlined and copied.
   } else if (dynamic_cast<InterfaceKind *>(sourceRnd) ||
              dynamic_cast<StructKind *>(sourceRnd) ||

@@ -12,13 +12,17 @@ class IfTests extends FunSuite with Matchers {
   test("Simple true branch returning an int") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
-        |  = if (true) { 3 } else { 5 }
+        |exported func main() int {
+        |  ret if (true) { 3 } else { 5 }
         |}
       """.stripMargin)
     val programS = compile.getScoutput().getOrDie().moduleToPackagesToFilenameToContents("test")(Vector.empty)("0.vale")
     val main = programS.lookupFunction("main")
-    val CodeBodyS(BodySE(_, _, BlockSE(_, _, Vector(IfSE(_, _, _, _))))) = main.body
+    val ret = Collector.only(main.body, { case r @ ReturnSE(_, _) => r })
+    val iff = Collector.only(ret, { case i @ IfSE(_, _, _, _) => i })
+    Collector.only(iff.condition, { case ConstantBoolSE(_, true) => })
+    Collector.only(iff.thenBody, { case ConstantIntSE(_, 3, _) => })
+    Collector.only(iff.elseBody, { case ConstantIntSE(_, 5, _) => })
 
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), { case IfTE(_, _, _) => })
@@ -29,8 +33,8 @@ class IfTests extends FunSuite with Matchers {
   test("Simple false branch returning an int") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
-        |  = if (false) { 3 } else { 5 }
+        |exported func main() int {
+        |  ret if (false) { 3 } else { 5 }
         |}
       """.stripMargin)
 
@@ -40,8 +44,8 @@ class IfTests extends FunSuite with Matchers {
   test("Ladder") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
-        |  = if (false) { 3 } else if (true) { 5 } else { 7 }
+        |exported func main() int {
+        |  ret if (false) { 3 } else if (true) { 5 } else { 7 }
         |}
       """.stripMargin)
 
@@ -64,14 +68,14 @@ class IfTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Marine { x int; }
-        |fn main() int export {
+        |exported func main() int {
         |  m = Marine(5);
-        |  = if (false) {
-        |      (x) = m;
-        |      = x;
+        |  ret if (false) {
+        |      [x] = m;
+        |      x
         |    } else {
-        |      (y) = m;
-        |      = y;
+        |      [y] = m;
+        |      y
         |    }
         |}
       """.stripMargin)
@@ -94,9 +98,9 @@ class IfTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Marine { x int; }
-        |fn main() str export {
+        |exported func main() str {
         |  m = Marine(5);
-        |  = if (m.x == 5) { "#" }
+        |  ret if (m.x == 5) { "#" }
         |  else if (0 == 0) { "?" }
         |  else { "." }
         |}
@@ -109,15 +113,28 @@ class IfTests extends FunSuite with Matchers {
     compile.evalForKind(Vector()) shouldEqual VonStr("#")
   }
 
+  test("If with condition declaration") {
+    val compile = RunCompilation.test(
+      """
+        |exported func main() int {
+        |  ret if x = 42; x < 50 { x }
+        |    else { 73 }
+        |}
+      """.stripMargin)
+
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+  }
+
   test("Ret from inside if will destroy locals") {
     val compile = RunCompilation.test(
       """import printutils.*;
-        |struct Marine #!DeriveStructDrop { hp int; }
-        |fn drop(marine Marine) void {
+        |#!DeriveStructDrop
+        |struct Marine { hp int; }
+        |func drop(marine Marine) void {
         |  println("Destroying marine!");
-        |  Marine(weapon) = marine;
+        |  Marine[weapon] = marine;
         |}
-        |fn main() int export {
+        |exported func main() int {
         |  m = Marine(5);
         |  x =
         |    if (true) {
@@ -125,10 +142,10 @@ class IfTests extends FunSuite with Matchers {
         |      ret 7;
         |    } else {
         |      println("In else!");
-        |      = m.hp;
+        |      m.hp
         |    };
         |  println("In rest!");
-        |  = x;
+        |  ret x;
         |}
         |""".stripMargin)
 
@@ -140,12 +157,13 @@ class IfTests extends FunSuite with Matchers {
       """
         |import printutils.*;
         |
-        |struct Marine #!DeriveStructDrop { hp int; }
-        |fn drop(marine Marine) void {
+        |#!DeriveStructDrop
+        |struct Marine { hp int; }
+        |func drop(marine Marine) void {
         |  println("Destroying marine!");
-        |  Marine(weapon) = marine;
+        |  Marine[weapon] = marine;
         |}
-        |fn main() int export {
+        |exported func main() int {
         |  m = Marine(5);
         |  x =
         |    if (false) {
@@ -153,10 +171,10 @@ class IfTests extends FunSuite with Matchers {
         |      ret 7;
         |    } else {
         |      println("In else!");
-        |      = m.hp;
+        |      m.hp
         |    };
         |  println("In rest!");
-        |  = x;
+        |  ret x;
         |}
         |""".stripMargin)
 
@@ -174,12 +192,12 @@ class IfTests extends FunSuite with Matchers {
         |  bork Bork;
         |}
         |
-        |fn main() export {
+        |exported func main() {
         |  zork! = 0;
         |  while (zork < 4) {
         |    moo = Moo(Bork(5));
         |    if (true) {
-        |      (bork) = moo;
+        |      [bork] = moo;
         |      println(bork.num);
         |    } else {
         |      drop(moo);
@@ -198,10 +216,29 @@ class IfTests extends FunSuite with Matchers {
     compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
+  test("If with panics and rets") {
+    val compile =
+      RunCompilation.test(
+        """
+          |exported func main() int {
+          |  a = 7;
+          |  if false {
+          |    panic("lol");
+          |    ret 73;
+          |  } else {
+          |    ret 42;
+          |  }
+          |  ret 73;
+          |}
+          |
+          |""".stripMargin)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+  }
+
   test("Toast") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  a = 0;
         |  if (a == 2) {
         |    ret 71;

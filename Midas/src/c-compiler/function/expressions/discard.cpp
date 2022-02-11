@@ -19,7 +19,7 @@ Ref translateDiscard(
       translateExpression(
           globalState, functionState, blockState, builder, sourceExpr);
 
-  if (sourceResultType == globalState->metalCache->emptyTupleStructRef) {
+  if (sourceResultType == globalState->metalCache->voidRef) {
     return sourceRef;
   }
 
@@ -34,5 +34,5 @@ Ref translateDiscard(
           sourceResultType,
           sourceRef);
   buildFlare(FL(), globalState, functionState, builder, "discarded!");
-  return makeEmptyTupleRef(globalState);
+  return makeVoidRef(globalState);
 }

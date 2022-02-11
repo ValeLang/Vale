@@ -1,6 +1,6 @@
 
-fn main() int export {
+exported func main() int {
   x! = 10;
-  ({ set x = 42; })();
-  = x;
+  ({ set x = 42; })!();
+  ret x;
 }

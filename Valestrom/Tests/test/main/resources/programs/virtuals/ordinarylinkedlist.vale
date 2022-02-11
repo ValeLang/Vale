@@ -2,10 +2,10 @@
 import v.builtins.tup.*;
 import printutils.*;
 
-interface MyOption sealed imm { }
+sealed interface MyOption imm { }
 
 struct MySome imm {
-  value *MyList;
+  value @MyList;
 }
 impl MyOption for MySome;
 
@@ -15,23 +15,23 @@ impl MyOption for MyNone;
 
 struct MyList imm {
   value int;
-  next *MyOption;
+  next @MyOption;
 }
 
-fn printValues(list *MyList) void {
-	 print(list.value);
-	 printNextValue(list.next);
+func printValues(list @MyList) void {
+  print(list.value);
+  printNextValue(list.next);
 }
 
-fn printNextValue(virtual opt *MyOption) void { }
-fn printNextValue(opt *MyNone impl MyOption) void { }
-fn printNextValue(opt *MySome impl MyOption) void {
-	 printValues(opt.value);
+func printNextValue(virtual opt @MyOption) void { }
+func printNextValue(opt @MyNone impl MyOption) void { }
+func printNextValue(opt @MySome impl MyOption) void {
+  printValues(opt.value);
 }
 
 
-fn main() int export {
- 	list = MyList(10, MySome(MyList(20, MySome(MyList(30, MyNone())))));
- 	printValues(list);
- 	= 0;
+exported func main() int {
+  list = MyList(10, MySome(MyList(20, MySome(MyList(30, MyNone())))));
+  printValues(list);
+  ret 0;
 }

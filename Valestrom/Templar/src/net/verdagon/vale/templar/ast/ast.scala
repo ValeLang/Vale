@@ -3,7 +3,7 @@ package net.verdagon.vale.templar.ast
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer.FunctionA
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.names.{CitizenNameT, FullNameT, IFunctionNameT, IVarNameT, PackageTopLevelNameT}
+import net.verdagon.vale.templar.names.{CitizenNameT, CitizenTemplateNameT, FullNameT, IFunctionNameT, IVarNameT, PackageTopLevelNameT}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 
@@ -78,6 +78,8 @@ case class EdgeT(
 object ProgramT {
   val topLevelName = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, PackageTopLevelNameT())
   val tupleHumanName = "Tup"
+//  val emptyTupleTT =
+//    StructTT(FullNameT(PackageCoordinate.BUILTIN, Vector(), CitizenNameT(CitizenTemplateNameT(tupleHumanName), Vector(CoordListTemplata(Vector())))))
 
   val intType = CoordT(ShareT, ReadonlyT, IntT.i32)
   val boolType = CoordT(ShareT, ReadonlyT, BoolT())

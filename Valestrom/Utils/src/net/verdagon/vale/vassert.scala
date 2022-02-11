@@ -7,7 +7,7 @@ package net.verdagon.vale
 // when debugging test failures.
 class VAssertionFailException(message: String) extends RuntimeException {
   override def getMessage: String = message
-  override def toString: String = "Assertion failed!"
+  override def toString: String = "Assertion failed! " + message
 }
 
 // A condition that reflects a user error.

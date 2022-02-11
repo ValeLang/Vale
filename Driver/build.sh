@@ -5,5 +5,6 @@ if [ "$BOOTSTRAPPING_VALEC_DIR" == "" ]; then
   echo "Example: ~/TheValeCompiler"
   exit
 fi
+shift;
 
-$BOOTSTRAPPING_VALEC_DIR/valec build driver=src stdlib=$BOOTSTRAPPING_VALEC_DIR/stdlib/src --output_dir build -o valec
+$BOOTSTRAPPING_VALEC_DIR/valec build driver=src stdlib=$BOOTSTRAPPING_VALEC_DIR/stdlib/src valecutils=../Utils/src --output_dir build -o valec $@

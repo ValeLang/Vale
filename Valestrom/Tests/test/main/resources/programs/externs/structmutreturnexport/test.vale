@@ -1,14 +1,14 @@
-struct Thing export {
+exported struct Thing {
   a str;
   b int;
 }
-fn makeThing(a str, b int) Thing export {
+exported func makeThing(a str, b int) Thing {
   Thing(a, b)
 }
 
-fn runExtCommand() Thing extern;
+extern func runExtCommand() Thing;
 
-fn main() int export {
+exported func main() int {
   res = runExtCommand();
   ret len(res.a) + res.b;
 }

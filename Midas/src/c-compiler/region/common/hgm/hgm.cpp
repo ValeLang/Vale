@@ -14,14 +14,12 @@ HybridGenerationalMemory::HybridGenerationalMemory(
     GlobalState* globalState_,
     KindStructs* kindStructs_,
     bool elideChecksForKnownLive_,
-    bool false_,
-    StructKind* anyMT_)
+    bool false_)
   : globalState(globalState_),
     fatWeaks(globalState_, kindStructs_),
     kindStructs(kindStructs_),
     elideChecksForKnownLive(elideChecksForKnownLive_),
 //    false(false_),
-    anyMT(anyMT_),
     globalNullPtrPtrByKind(0, globalState->makeAddressHasher<Kind*>()) {
 }
 

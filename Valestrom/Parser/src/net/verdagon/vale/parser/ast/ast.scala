@@ -1,20 +1,20 @@
 // good
 
-package net.verdagon.vale.parser
+package net.verdagon.vale.parser.ast
 
-import net.verdagon.vale.{vassert, vcurious, vimpl, vpass}
+import net.verdagon.vale.{vassert, vcurious, vpass}
 
-case class Range(begin: Int, end: Int) {
+case class RangeP(begin: Int, end: Int) {
   override def hashCode(): Int = vcurious()
   vassert(begin == end || begin <= end)
 }
-object Range {
-  val zero = Range(0, 0)
+object RangeP {
+  val zero = RangeP(0, 0)
 }
 // Something that exists in the source code. An Option[UnitP] is better than a boolean
 // because it also contains the range it was found.
-case class UnitP(range: Range) { override def hashCode(): Int = vcurious() }
-case class NameP(range: Range, str: String) { override def hashCode(): Int = vcurious() }
+case class UnitP(range: RangeP) { override def hashCode(): Int = vcurious() }
+case class NameP(range: RangeP, str: String) { override def hashCode(): Int = vcurious() }
 
 case class FileP(topLevelThings: Vector[ITopLevelThingP]) {
   override def hashCode(): Int = vcurious()
@@ -37,107 +37,111 @@ case class TopLevelExportAsP(export: ExportAsP) extends ITopLevelThingP { overri
 case class TopLevelImportP(imporrt: ImportP) extends ITopLevelThingP { override def hashCode(): Int = vcurious() }
 
 case class ImplP(
-  range: Range,
+  range: RangeP,
   identifyingRunes: Option[IdentifyingRunesP],
-  rules: Option[TemplateRulesP],
-  struct: ITemplexPT,
-  interface: ITemplexPT) { override def hashCode(): Int = vcurious() }
+  templateRules: Option[TemplateRulesP],
+  // Option because we can say `impl MyInterface;` inside a struct.
+  struct: Option[ITemplexPT],
+  interface: ITemplexPT,
+  attributes: Vector[IAttributeP]
+) { override def hashCode(): Int = vcurious() }
 
 case class ExportAsP(
-  range: Range,
+  range: RangeP,
   struct: ITemplexPT,
   exportedName: NameP) { override def hashCode(): Int = vcurious() }
 
 case class ImportP(
-  range: Range,
+  range: RangeP,
   moduleName: NameP,
   packageSteps: Vector[NameP],
   importeeName: NameP) { override def hashCode(): Int = vcurious() }
 
-sealed trait ICitizenAttributeP
-case class ExportP(range: Range) extends ICitizenAttributeP { override def hashCode(): Int = vcurious() }
-case class WeakableP(range: Range) extends ICitizenAttributeP { override def hashCode(): Int = vcurious() }
-case class SealedP(range: Range) extends ICitizenAttributeP { override def hashCode(): Int = vcurious() }
+//sealed trait IAttributeP
+//case class ExportP(range: RangeP) extends IAttributeP { override def hashCode(): Int = vcurious() }
+case class WeakableAttributeP(range: RangeP) extends IAttributeP { override def hashCode(): Int = vcurious() }
+case class SealedAttributeP(range: RangeP) extends IAttributeP { override def hashCode(): Int = vcurious() }
 
 sealed trait IMacroInclusion
 case object CallMacro extends IMacroInclusion
 case object DontCallMacro extends IMacroInclusion
-case class MacroCallP(range: Range, inclusion: IMacroInclusion, name: NameP) extends ICitizenAttributeP { override def hashCode(): Int = vcurious() }
+case class MacroCallP(range: RangeP, inclusion: IMacroInclusion, name: NameP) extends IAttributeP { override def hashCode(): Int = vcurious() }
 
 case class StructP(
-  range: Range,
+  range: RangeP,
   name: NameP,
-  attributes: Vector[ICitizenAttributeP],
+  attributes: Vector[IAttributeP],
   mutability: ITemplexPT,
   identifyingRunes: Option[IdentifyingRunesP],
   templateRules: Option[TemplateRulesP],
   members: StructMembersP) { override def hashCode(): Int = vcurious() }
 
 case class StructMembersP(
-  range: Range,
+  range: RangeP,
   contents: Vector[IStructContent]) { override def hashCode(): Int = vcurious() }
 sealed trait IStructContent
 case class StructMethodP(func: FunctionP) extends IStructContent { override def hashCode(): Int = vcurious() }
 case class NormalStructMemberP(
-  range: Range,
+  range: RangeP,
   name: NameP,
   variability: VariabilityP,
   tyype: ITemplexPT
 ) extends IStructContent { override def hashCode(): Int = vcurious() }
 case class VariadicStructMemberP(
-  range: Range,
+  range: RangeP,
   variability: VariabilityP,
   tyype: ITemplexPT
 ) extends IStructContent { override def hashCode(): Int = vcurious() }
 
 case class InterfaceP(
-  range: Range,
+  range: RangeP,
   name: NameP,
-  attributes: Vector[ICitizenAttributeP],
+  attributes: Vector[IAttributeP],
   mutability: ITemplexPT,
   maybeIdentifyingRunes: Option[IdentifyingRunesP],
   templateRules: Option[TemplateRulesP],
   members: Vector[FunctionP]) { override def hashCode(): Int = vcurious() }
 
-sealed trait IFunctionAttributeP
-case class AbstractAttributeP(range: Range) extends IFunctionAttributeP { override def hashCode(): Int = vcurious() }
-case class ExternAttributeP(range: Range) extends IFunctionAttributeP { override def hashCode(): Int = vcurious() }
-case class BuiltinAttributeP(range: Range, generatorName: NameP) extends IFunctionAttributeP { override def hashCode(): Int = vcurious() }
-case class ExportAttributeP(range: Range) extends IFunctionAttributeP { override def hashCode(): Int = vcurious() }
-case class PureAttributeP(range: Range) extends IFunctionAttributeP { override def hashCode(): Int = vcurious() }
+sealed trait IAttributeP
+case class AbstractAttributeP(range: RangeP) extends IAttributeP { override def hashCode(): Int = vcurious() }
+case class ExternAttributeP(range: RangeP) extends IAttributeP { override def hashCode(): Int = vcurious() }
+case class BuiltinAttributeP(range: RangeP, generatorName: NameP) extends IAttributeP { override def hashCode(): Int = vcurious() }
+case class ExportAttributeP(range: RangeP) extends IAttributeP { override def hashCode(): Int = vcurious() }
+case class PureAttributeP(range: RangeP) extends IAttributeP { override def hashCode(): Int = vcurious() }
+//case class RuleAttributeP(rule: IRulexPR) extends IAttributeP { override def hashCode(): Int = vcurious() }
 
 sealed trait IRuneAttributeP
-case class TypeRuneAttributeP(range: Range, tyype: ITypePR) extends IRuneAttributeP { override def hashCode(): Int = vcurious() }
-case class ReadOnlyRuneAttributeP(range: Range) extends IRuneAttributeP {
+case class TypeRuneAttributeP(range: RangeP, tyype: ITypePR) extends IRuneAttributeP { override def hashCode(): Int = vcurious() }
+case class ReadOnlyRuneAttributeP(range: RangeP) extends IRuneAttributeP {
   vpass()
 }
-case class PoolRuneAttributeP(range: Range) extends IRuneAttributeP { override def hashCode(): Int = vcurious() }
-case class ArenaRuneAttributeP(range: Range) extends IRuneAttributeP { override def hashCode(): Int = vcurious() }
-case class BumpRuneAttributeP(range: Range) extends IRuneAttributeP { override def hashCode(): Int = vcurious() }
+case class PoolRuneAttributeP(range: RangeP) extends IRuneAttributeP { override def hashCode(): Int = vcurious() }
+case class ArenaRuneAttributeP(range: RangeP) extends IRuneAttributeP { override def hashCode(): Int = vcurious() }
+case class BumpRuneAttributeP(range: RangeP) extends IRuneAttributeP { override def hashCode(): Int = vcurious() }
 
-case class IdentifyingRuneP(range: Range, name: NameP, attributes: Vector[IRuneAttributeP]) { override def hashCode(): Int = vcurious() }
+case class IdentifyingRuneP(range: RangeP, name: NameP, attributes: Vector[IRuneAttributeP]) { override def hashCode(): Int = vcurious() }
 
-case class IdentifyingRunesP(range: Range, runes: Vector[IdentifyingRuneP]) { override def hashCode(): Int = vcurious() }
-case class TemplateRulesP(range: Range, rules: Vector[IRulexPR]) { override def hashCode(): Int = vcurious() }
-case class ParamsP(range: Range, patterns: Vector[PatternPP]) { override def hashCode(): Int = vcurious() }
+case class IdentifyingRunesP(range: RangeP, runes: Vector[IdentifyingRuneP]) { override def hashCode(): Int = vcurious() }
+case class TemplateRulesP(range: RangeP, rules: Vector[IRulexPR]) { override def hashCode(): Int = vcurious() }
+case class ParamsP(range: RangeP, patterns: Vector[PatternPP]) { override def hashCode(): Int = vcurious() }
 
 case class FunctionP(
-  range: Range,
+  range: RangeP,
   header: FunctionHeaderP,
   body: Option[BlockPE]) { override def hashCode(): Int = vcurious() }
 
 case class FunctionReturnP(
-  range: Range,
+  range: RangeP,
   inferRet: Option[UnitP],
   retType: Option[ITemplexPT]
 ) { override def hashCode(): Int = vcurious() }
 
 case class FunctionHeaderP(
-  range: Range,
+  range: RangeP,
   name: Option[NameP],
-  attributes: Vector[IFunctionAttributeP],
+  attributes: Vector[IAttributeP],
 
-  // If Some(Vector.empty), should show up like the <> in fn moo<>(a int, b bool)
+  // If Some(Vector.empty), should show up like the <> in func moo<>(a int, b bool)
   maybeUserSpecifiedIdentifyingRunes: Option[IdentifyingRunesP],
   templateRules: Option[TemplateRulesP],
 
@@ -158,7 +162,8 @@ case object VaryingP extends VariabilityP { override def toString: String = "var
 
 sealed trait OwnershipP
 case object OwnP extends OwnershipP { override def toString: String = "own" }
-case object ConstraintP extends OwnershipP { override def toString: String = "constraint" }
+case object PointerP extends OwnershipP { override def toString: String = "ptr" }
+case object BorrowP extends OwnershipP { override def toString: String = "borrow" }
 case object WeakP extends OwnershipP { override def toString: String = "weak" }
 case object ShareP extends OwnershipP { override def toString: String = "share" }
 
@@ -171,10 +176,16 @@ case object MoveP extends LoadAsP
 // This means we want to use it, but don't want to own it. This will
 // probably become a BorrowP or ShareP.
 // If permission is None, then we're probably in a dot. For example, x.launch()
-// should be mapped to launch(&!x) if x is mutable, or launch(&x) if it's readonly.
-case class LendConstraintP(permission: Option[PermissionP]) extends LoadAsP { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+// should be mapped to launch(*!x) if x is mutable, or launch(*x) if it's readonly.
+case class LoadAsPointerP(permission: Option[PermissionP]) extends LoadAsP { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+// This means we want to use it, and want to make sure that it doesn't drop.
+// If permission is None, then we're probably in a dot. For example, x.launch()
+// should be mapped to launch(*!x) if x is mutable, or launch(*x) if it's readonly.
+case class LoadAsBorrowP(permission: Option[PermissionP]) extends LoadAsP { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+// This is used for dot.
+case class LoadAsBorrowOrIfContainerIsPointerThenPointerP(permission: Option[PermissionP]) extends LoadAsP { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 // This means we want to get a weak reference to it. Thisll become a WeakP.
-case class LendWeakP(permission: PermissionP) extends LoadAsP { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class LoadAsWeakP(permission: Option[PermissionP]) extends LoadAsP { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 // This represents unspecified. It basically means, use whatever ownership already there.
 case object UseP extends LoadAsP
 

@@ -1,15 +1,15 @@
-struct Engine export imm { leftFuel int; rightFuel int; }
+exported struct Engine imm { leftFuel int; rightFuel int; }
 
-interface IShip sealed export imm { }
+sealed exported interface IShip imm { }
 
-struct Spaceship export imm { fuel int; }
+exported struct Spaceship imm { fuel int; }
 impl IShip for Spaceship;
 
-struct Seaship export imm { engine Engine; }
+exported struct Seaship imm { engine Engine; }
 impl IShip for Seaship;
 
-fn cGetShipFuel(s IShip) int extern;
+extern func cGetShipFuel(s IShip) int;
 
-fn main() int export {
+exported func main() int {
   cGetShipFuel(Seaship(Engine(37, 5)))
 }

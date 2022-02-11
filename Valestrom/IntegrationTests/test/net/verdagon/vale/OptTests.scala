@@ -10,9 +10,9 @@ class OptTests extends FunSuite with Matchers {
   test("Test empty and get for Some") {
     val compile = RunCompilation.test(
         """
-          |fn main() int export {
+          |exported func main() int {
           |  opt Opt<int> = Some(9);
-          |  = if (opt.isEmpty()) { 0 }
+          |  ret if (opt.isEmpty()) { 0 }
           |    else { opt.get() }
           |}
         """.stripMargin)
@@ -23,9 +23,9 @@ class OptTests extends FunSuite with Matchers {
   test("Test empty and get for None") {
     val compile = RunCompilation.test(
         """
-          |fn main() int export {
+          |exported func main() int {
           |  opt Opt<int> = None<int>();
-          |  = if (opt.isEmpty()) { 0 }
+          |  ret if (opt.isEmpty()) { 0 }
           |    else { opt.get() }
           |}
         """.stripMargin)
@@ -39,12 +39,12 @@ class OptTests extends FunSuite with Matchers {
         """
           |// This is the same as the one in optutils.vale, just named differently,
           |// so its easier to debug.
-          |fn borrowGet<T>(opt &Some<T>) &T { opt.value }
+          |func borrowGet<T>(opt &Some<T>) *T { *opt.value }
           |
           |struct Spaceship { fuel int; }
-          |fn main() int export {
+          |exported func main() int {
           |  s = Spaceship(42);
-          |  ret Some<&Spaceship>(&s).borrowGet().fuel;
+          |  ret Some<*Spaceship>(*s).borrowGet().fuel;
           |}
         """.stripMargin)
 

@@ -1,6 +1,5 @@
 package net.verdagon.vale
 
-import net.verdagon.vale.parser.{CaptureP, FinalP, VaryingP}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.templar._
@@ -18,17 +17,19 @@ class OwnershipTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Muta { hp int; }
-        |fn main() int export {
-        |  = (&Muta(9)).hp;
+        |exported func main() int {
+        |  ret (*Muta(9)).hp;
         |}
       """.stripMargin)
 
     val main = compile.expectTemputs().lookupFunction("main")
     Collector.only(main, {
-      case LetAndLendTE(ReferenceLocalVariableT(FullNameT(_, Vector(FunctionNameT("main",Vector(),Vector())),TemplarTemporaryVarNameT(_)),FinalT,_),refExpr) => {
+      case letTE @ LetAndLendTE(ReferenceLocalVariableT(FullNameT(_, Vector(FunctionNameT("main",Vector(),Vector())),TemplarTemporaryVarNameT(_)),FinalT,_),refExpr,targetOwnership) => {
         refExpr.result.reference match {
           case CoordT(OwnT, ReadwriteT, StructTT(simpleName("Muta"))) =>
         }
+        targetOwnership shouldEqual PointerT
+        letTE.result.reference.ownership shouldEqual PointerT
       }
     })
 
@@ -39,12 +40,12 @@ class OwnershipTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Muta { hp int; }
-        |fn take(m Muta) {
+        |func take(m Muta) {
         |  ret m.hp;
         |}
-        |fn main() int export {
+        |exported func main() int {
         |  m = Muta(9);
-        |  = (m).hp;
+        |  ret (m).hp;
         |}
       """.stripMargin)
 
@@ -59,7 +60,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |
         |struct Muta { }
         |
-        |fn main() export {
+        |exported func main() {
         |  Muta();
         |}
       """.stripMargin)
@@ -76,14 +77,15 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |import printutils.*;
         |
-        |struct Muta #!DeriveStructDrop { }
+        |#!DeriveStructDrop
+        |struct Muta { }
         |
-        |fn drop(m ^Muta) void {
+        |func drop(m ^Muta) void {
         |  println("Destroying!");
-        |  Muta() = m;
+        |  Muta[] = m;
         |}
         |
-        |fn main() export {
+        |exported func main() {
         |  Muta();
         |}
       """.stripMargin)
@@ -100,15 +102,16 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |import printutils.*;
         |
-        |struct Muta #!DeriveStructDrop { hp int; }
+        |#!DeriveStructDrop
+        |struct Muta { hp int; }
         |
-        |fn drop(m ^Muta) {
+        |func drop(m ^Muta) {
         |  println("Destroying!");
-        |  Muta(hp) = m;
+        |  Muta[hp] = m;
         |}
         |
-        |fn main() int export {
-        |  = (Muta(10)).hp;
+        |exported func main() int {
+        |  ret (Muta(10)).hp;
         |}
       """.stripMargin)
 
@@ -123,14 +126,15 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |import printutils.*;
         |
-        |struct Muta #!DeriveStructDrop { }
+        |#!DeriveStructDrop
+        |struct Muta { }
         |
-        |fn drop(m ^Muta) {
+        |func drop(m ^Muta) {
         |  println("Destroying!");
-        |  Muta() = m;
+        |  Muta[] = m;
         |}
         |
-        |fn main() export {
+        |exported func main() {
         |  a = Muta();
         |}
       """.stripMargin)
@@ -148,17 +152,18 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |import printutils.*;
         |
-        |struct Muta #!DeriveStructDrop { }
+        |#!DeriveStructDrop
+        |struct Muta { }
         |
-        |fn drop(m ^Muta) {
+        |func drop(m ^Muta) {
         |  println("Destroying!");
-        |  Muta() = m;
+        |  Muta[] = m;
         |}
         |
-        |fn moo(m ^Muta) {
+        |func moo(m ^Muta) {
         |}
         |
-        |fn main() export {
+        |exported func main() {
         |  a = Muta();
         |  moo(a);
         |}
@@ -190,16 +195,17 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |import printutils.*;
         |
-        |struct Muta #!DeriveStructDrop { hp int; }
+        |#!DeriveStructDrop
+        |struct Muta { hp int; }
         |
-        |fn drop(m ^Muta) {
+        |func drop(m ^Muta) {
         |  println("Destroying!");
-        |  Muta(hp) = m;
+        |  Muta[hp] = m;
         |}
         |
-        |fn main() int export {
+        |exported func main() int {
         |  a = Muta(10);
-        |  = a.hp;
+        |  ret a.hp;
         |}
       """.stripMargin)
 
@@ -219,8 +225,8 @@ class OwnershipTests extends FunSuite with Matchers {
         |struct Wizard {
         |  wand ^Wand;
         |}
-        |fn main() int export {
-        |  = Wizard(Wand(10)).wand.charges;
+        |exported func main() int {
+        |  ret Wizard(Wand(10)).wand.charges;
         |}
       """.stripMargin)
 
@@ -235,15 +241,19 @@ class OwnershipTests extends FunSuite with Matchers {
   test("Unstackifies local vars") {
     val compile = RunCompilation.test(
       """
-        |fn main() int export {
+        |exported func main() int {
         |  i! = 0;
-        |  = i;
+        |  ret i;
         |}
       """.stripMargin)
 
     val main = compile.expectTemputs().lookupFunction("main")
 
-    val numVariables = Collector.all(main, { case LetAndLendTE(_, _) => case LetNormalTE(_, _) => }).size
+    val numVariables =
+      Collector.all(main, {
+        case LetAndLendTE(_, _, _) =>
+        case LetNormalTE(_, _) =>
+      }).size
     Collector.all(main, { case UnletTE(_) => }).size shouldEqual numVariables
   }
 
@@ -252,11 +262,11 @@ class OwnershipTests extends FunSuite with Matchers {
 //      """
 //        |struct MutaA { }
 //        |struct MutaB {
-//        |  a &MutaA;
+//        |  a *MutaA;
 //        |}
-//        |fn main() int export {
+//        |exported func main() int {
 //        |  a = MutaA();
-//        |  b = MutaB(&a);
+//        |  b = MutaB(*a);
 //        |  c = a;
 //        |}
 //      """.stripMargin)

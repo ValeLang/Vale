@@ -3,6 +3,6 @@ import v.builtins.tup.*;
 interface MyInterface { }
 struct MyStruct { value int; }
 impl MyInterface for MyStruct;
-fn main() export {
+exported func main() {
   x MyInterface = MyStruct(9);
 }

@@ -354,6 +354,13 @@ object VivemExterns {
     }
   }
 
+  def truncateI64ToI32(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
+    vassert(args.size == 1)
+    val IntV(value, 64) = memory.dereference(args(0))
+    val result = value & 0xFFFFFFFFL
+    memory.addAllocationForReturn(ShareH, InlineH, ReadonlyH, IntV(result, 32))
+  }
+
   def modI64(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
     vassert(args.size == 2)
     val aKind = memory.dereference(args(0))

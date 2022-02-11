@@ -4,6 +4,7 @@ package net.verdagon.vale.scout
 import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.{CodeLocationS, RangeS, vpass}
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast._
 import net.verdagon.vale.scout.Scout.determineDenizenType
 import net.verdagon.vale.scout.patterns.PatternScout
 //import net.verdagon.vale.scout.predictor.RuneTypeSolveError
@@ -18,7 +19,9 @@ import scala.util.parsing.input.OffsetPosition
 case class CompileErrorExceptionS(err: ICompileErrorS) extends RuntimeException { override def hashCode(): Int = vcurious() }
 
 sealed trait ICompileErrorS { def range: RangeS }
+case class UnimplementedExpression(range: RangeS, expressionName: String) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
 case class CouldntFindVarToMutateS(range: RangeS, name: String) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
+case class StatementAfterReturnS(range: RangeS) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
 case class ForgotSetKeywordError(range: RangeS) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
 case class CantUseThatLocalName(range: RangeS, name: String) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
 case class ExternHasBody(range: RangeS) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
@@ -36,6 +39,7 @@ case class InterfaceMethodNeedsSelf(range: RangeS) extends ICompileErrorS {
 }
 case class VirtualAndAbstractGoTogether(range: RangeS) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
 case class CouldntSolveRulesS(range: RangeS, error: RuneTypeSolveError) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
+case class IdentifyingRunesIncompleteS(range: RangeS, error: IdentifiabilitySolveError) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
 case class RangedInternalErrorS(range: RangeS, message: String) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
 case class LightFunctionMustHaveParamTypes(range: RangeS, paramIndex: Int) extends ICompileErrorS { override def hashCode(): Int = vcurious() }
 
@@ -102,7 +106,7 @@ case class StackFrame(
   def allDeclarations: VariableDeclarations = {
     locals ++ maybeParent.map(_.allDeclarations).getOrElse(Scout.noDeclarations)
   }
-  def findVariable(name: String): Option[IVarNameS] = {
+  def findVariable(name: IImpreciseNameS): Option[IVarNameS] = {
     locals.find(name) match {
       case Some(fullNameS) => Some(fullNameS)
       case None => {
@@ -119,12 +123,21 @@ object Scout {
   def noVariableUses = VariableUses(Vector.empty)
   def noDeclarations = VariableDeclarations(Vector.empty)
 
-  def evalRange(file: FileCoordinate, range: Range): RangeS = {
+  def evalRange(file: FileCoordinate, range: RangeP): RangeS = {
     RangeS(evalPos(file, range.begin), evalPos(file, range.end))
   }
 
   def evalPos(file: FileCoordinate, pos: Int): CodeLocationS = {
     CodeLocationS(file, pos)
+  }
+
+  def translateImpreciseName(file: FileCoordinate, name: IImpreciseNameP): IImpreciseNameS = {
+    name match {
+      case LookupNameP(name) => CodeNameS(name.str)
+      case IterableNameP(range) => IterableNameS(Scout.evalRange(file,  range))
+      case IteratorNameP(range) => IteratorNameS(Scout.evalRange(file,  range))
+      case IterationOptionNameP(range) => IterationOptionNameS(Scout.evalRange(file,  range))
+    }
   }
 
   // Err is the missing rune
@@ -160,14 +173,53 @@ object Scout {
       case AnonymousRunePT(_) => vwat()
       case NameOrRunePT(NameP(_, name)) => CodeNameS(name)
       case CallPT(_, template, args) => getHumanName(template)
-      case RepeaterSequencePT(_, mutability, variability, size, element) => vwat()
-      case ManualSequencePT(_, members) => vwat()
+      case StaticSizedArrayPT(_, mutability, variability, size, element) => vwat()
+      case TuplePT(_, members) => vwat()
       case IntPT(_, value) => vwat()
       case BoolPT(_, value) => vwat()
       case OwnershipPT(_, ownership) => vwat()
       case MutabilityPT(_, mutability) => vwat()
       case LocationPT(_, location) => vwat()
       case PermissionPT(_, permission) => vwat()
+    }
+  }
+
+//  def knownEndsInVoid(expr: IExpressionSE): Boolean = {
+//    expr match {
+//      case VoidSE(_) => true
+//      case ReturnSE(_, _) => true
+//      case DestructSE(_, _) => true
+//      case IfSE(_, _, thenBody, elseBody) => knownEndsInVoid(thenBody) && knownEndsInVoid(elseBody)
+//      case WhileSE(_, _) => true
+//    }
+//  }
+
+//  def pruneTrailingVoids(exprs: Vector[IExpressionSE]): Vector[IExpressionSE] = {
+//    if (exprs.size >= 2) {
+//      exprs.last match {
+//        case VoidSE(_) => {
+//          exprs.init.last match {
+//            case ReturnSE(_, _) => return exprs.init
+//            case VoidSE(_) => return pruneTrailingVoids(exprs.init)
+//            case
+//          }
+//        }
+//        case _ =>
+//      }
+//    }
+//  }
+
+  def consecutive(exprs: Vector[IExpressionSE]): IExpressionSE = {
+    if (exprs.isEmpty) {
+      vcurious()
+    } else if (exprs.size == 1) {
+      exprs.head
+    } else {
+      ConsecutorSE(
+        exprs.flatMap({
+          case ConsecutorSE(exprs) => exprs
+          case other => List(other)
+        }))
     }
   }
 }
@@ -189,7 +241,7 @@ class Scout(globalOptions: GlobalOptions) {
   }
 
   private def scoutImpl(file: FileCoordinate, impl0: ImplP): ImplS = {
-    val ImplP(range, identifyingRuneNames, maybeTemplateRulesP, struct, interface) = impl0
+    val ImplP(range, identifyingRuneNames, maybeTemplateRulesP, maybeStruct, interface, attributes) = impl0
 
     interface match {
       case InterpretedPT(range, _, _, _) => {
@@ -198,8 +250,8 @@ class Scout(globalOptions: GlobalOptions) {
       case _ =>
     }
 
-    struct match {
-      case InterpretedPT(range, _, _, _) => {
+    maybeStruct match {
+      case Some(InterpretedPT(range, _, _, _)) => {
         throw CompileErrorExceptionS(CantOwnershipStructInImpl(Scout.evalRange(file, range)))
       }
       case _ =>
@@ -228,6 +280,12 @@ class Scout(globalOptions: GlobalOptions) {
     val runeToExplicitType = mutable.HashMap[IRuneS, ITemplataType]()
 
     RuleScout.translateRulexes(implEnv, lidb.child(), ruleBuilder, runeToExplicitType, templateRulesP)
+
+    val struct =
+      maybeStruct match {
+        case None => throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(file, range), "Impl needs struct!"))
+        case Some(x) => x
+      }
 
     val structRune =
       PatternScout.translateMaybeTypeIntoRune(
@@ -293,9 +351,10 @@ class Scout(globalOptions: GlobalOptions) {
   }
 
   private def scoutStruct(file: FileCoordinate, head: StructP): StructS = {
-    val StructP(rangeP, NameP(_, structHumanName), attributesP, mutabilityPT, maybeIdentifyingRunes, maybeTemplateRulesP, StructMembersP(_, members)) = head
+    val StructP(rangeP, NameP(structNameRange, structHumanName), attributesP, mutabilityPT, maybeIdentifyingRunes, maybeTemplateRulesP, StructMembersP(_, members)) = head
+
     val structRangeS = Scout.evalRange(file, rangeP)
-    val structName = TopLevelCitizenDeclarationNameS(structHumanName, structRangeS)
+    val structName = TopLevelCitizenDeclarationNameS(structHumanName, Scout.evalRange(file, structNameRange))
 
     val lidb = new LocationInDenizenBuilder(Vector())
 
@@ -352,8 +411,8 @@ class Scout(globalOptions: GlobalOptions) {
         }
       }
 
-    val weakable = attributesP.exists({ case w @ WeakableP(_) => true case _ => false })
-    val attrsS = translateCitizenAttributes(file, attributesP.filter({ case WeakableP(_) => false case _ => true}))
+    val weakable = attributesP.exists({ case w @ WeakableAttributeP(_) => true case _ => false })
+    val attrsS = translateCitizenAttributes(file, attributesP.filter({ case WeakableAttributeP(_) => false case _ => true}))
 
 //    val runeSToCanonicalRune = ruleBuilder.runeSToTentativeRune.mapValues(tentativeRune => tentativeRuneToCanonicalRune(tentativeRune))
 
@@ -372,10 +431,10 @@ class Scout(globalOptions: GlobalOptions) {
       membersS)
   }
 
-  def translateCitizenAttributes(file: FileCoordinate, attrsP: Vector[ICitizenAttributeP]): Vector[ICitizenAttributeS] = {
+  def translateCitizenAttributes(file: FileCoordinate, attrsP: Vector[IAttributeP]): Vector[ICitizenAttributeS] = {
     attrsP.map({
-      case ExportP(_) => ExportS(file.packageCoordinate)
-      case SealedP(_) => SealedS
+      case ExportAttributeP(_) => ExportS(file.packageCoordinate)
+      case SealedAttributeP(_) => SealedS
       case MacroCallP(range, dontCall, NameP(_, str)) => MacroCallS(Scout.evalRange(file, range), dontCall, str)
       case x => vimpl(x.toString)
     })
@@ -401,13 +460,27 @@ class Scout(globalOptions: GlobalOptions) {
   }
 
 
+  def checkIdentifiability(
+    rangeS: RangeS,
+    identifyingRunesS: Vector[IRuneS],
+    rulesS: Array[IRulexSR]):
+  Unit = {
+    IdentifiabilitySolver.solve(
+      globalOptions.sanityCheck,
+      globalOptions.useOptimizedSolver,
+      rangeS, rulesS, identifyingRunesS) match {
+      case Ok(_) =>
+      case Err(e) => throw CompileErrorExceptionS(IdentifyingRunesIncompleteS(rangeS, e))
+    }
+  }
+
   private def scoutInterface(
     file: FileCoordinate,
     containingInterfaceP: InterfaceP):
   InterfaceS = {
-    val InterfaceP(interfaceRange, NameP(_, interfaceHumanName), attributesP, mutabilityPT, maybeIdentifyingRunes, maybeRulesP, internalMethodsP) = containingInterfaceP
+    val InterfaceP(interfaceRange, NameP(interfaceNameRangeS, interfaceHumanName), attributesP, mutabilityPT, maybeIdentifyingRunes, maybeRulesP, internalMethodsP) = containingInterfaceP
     val interfaceRangeS = Scout.evalRange(file, interfaceRange)
-    val interfaceFullName = TopLevelCitizenDeclarationNameS(interfaceHumanName, interfaceRangeS)
+    val interfaceFullName = TopLevelCitizenDeclarationNameS(interfaceHumanName, Scout.evalRange(file, interfaceNameRangeS))
     val rulesP = maybeRulesP.toVector.flatMap(_.rules)
 
     val lidb = new LocationInDenizenBuilder(Vector())
@@ -446,8 +519,8 @@ class Scout(globalOptions: GlobalOptions) {
         new FunctionScout(this).scoutInterfaceMember(
           interfaceEnv, explicitIdentifyingRunes.toArray, rulesS, runeToExplicitType.toMap, _))
 
-    val weakable = attributesP.exists({ case w @ WeakableP(_) => true case _ => false })
-    val attrsS = translateCitizenAttributes(file, attributesP.filter({ case WeakableP(_) => false case _ => true}))
+    val weakable = attributesP.exists({ case w @ WeakableAttributeP(_) => true case _ => false })
+    val attrsS = translateCitizenAttributes(file, attributesP.filter({ case WeakableAttributeP(_) => false case _ => true}))
 
     val interfaceS =
       InterfaceS(

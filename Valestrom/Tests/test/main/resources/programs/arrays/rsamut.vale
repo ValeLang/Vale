@@ -1,9 +1,9 @@
 // mutable runtime-size-array
 
 struct MyIntIdentity {}
-fn __call(this &!MyIntIdentity, i int) int { i }
+func __call(this &!MyIntIdentity, i int) int { i }
 
-fn main() int export {
+exported func main() int {
   a = Array<mut, int>(5, &!MyIntIdentity());
-  = a[3];
+  ret a[3];
 }

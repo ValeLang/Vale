@@ -48,11 +48,17 @@ void buildIf(
     std::function<void(LLVMBuilderRef)> buildThen);
 
 
-void buildWhile(
+void buildBoolyWhile(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    std::function<Ref(LLVMBuilderRef)> buildBody);
+    std::function<Ref(LLVMBuilderRef, LLVMBasicBlockRef)> buildBody);
+
+void buildBreakyWhile(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    std::function<void(LLVMBuilderRef, LLVMBasicBlockRef)> buildBody);
 
 void buildWhile(
     GlobalState* globalState,

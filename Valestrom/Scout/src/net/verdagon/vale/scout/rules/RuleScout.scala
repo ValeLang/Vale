@@ -1,6 +1,7 @@
 package net.verdagon.vale.scout.rules
 
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{BoolTypePR, BuiltinCallPR, ComponentsPR, CoordListTypePR, CoordTypePR, EqualsPR, IRulexPR, ITypePR, IntTypePR, KindTypePR, LocationTypePR, MutabilityTypePR, NameP, OrPR, OwnershipTypePR, PermissionTypePR, PrototypeTypePR, RangeP, TemplexPR, TypedPR, VariabilityTypePR}
 import net.verdagon.vale.scout.{IEnvironment, Environment => _, FunctionEnvironment => _, _}
 import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vimpl}
 
@@ -28,7 +29,7 @@ object RuleScout {
     runeToExplicitType: mutable.HashMap[IRuneS, ITemplataType],
     rulex: IRulexPR):
   RuneUsage = {
-    val evalRange = (range: Range) => Scout.evalRange(env.file, range)
+    val evalRange = (range: RangeP) => Scout.evalRange(env.file, range)
 
     rulex match {
       case EqualsPR(range, leftP, rightP) => {
@@ -241,11 +242,12 @@ class Equivalencies(rules: IndexedSeq[IRulexSR]) {
     case CallSR(range, resultRune, templateRune, args) =>
     case CoordIsaSR(range, subRune, superRune) =>
     case CoordSendSR(range, senderRune, receiverRune) =>
-    case AugmentSR(range, resultRune, literal, innerRune) => markKindEquivalent(resultRune.rune, innerRune.rune)
+    case AugmentSR(range, resultRune, ownership, permission, innerRune) => markKindEquivalent(resultRune.rune, innerRune.rune)
     case LiteralSR(range, rune, literal) =>
     case LookupSR(range, rune, name) =>
     case CoerceToCoordSR(range, coordRune, kindRune) => markKindEquivalent(coordRune.rune, kindRune.rune)
-    case RepeaterSequenceSR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) =>
+    case StaticSizedArraySR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) =>
+    case RuntimeSizedArraySR(range, resultRune, mutabilityRune, elementRune) =>
     case OneOfSR(range, rune, literals) =>
     case PrototypeComponentsSR(range, resultRune, nameRune, paramsListRune, returnRune) =>
     case PackSR(range, resultRune, members) =>

@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar.macros.drop
 
 import net.verdagon.vale.astronomer.{FunctionA, InterfaceA}
-import net.verdagon.vale.parser.{LendConstraintP, MoveP, ReadonlyP}
+import net.verdagon.vale.parser.ast.{LoadAsPointerP, MoveP}
 import net.verdagon.vale.scout._
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules.{LookupSR, RuneUsage}
@@ -47,14 +47,13 @@ class InterfaceDropMacro(overloadTemplar: OverloadTemplar) extends IOnInterfaceD
             Vector(),
             BlockSE(RangeS.internal(-167213),
               Vector(LocalS(CodeVarNameS("this"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
-              Vector(
-                FunctionCallSE(RangeS.internal(-167213),
-                  OutsideLoadSE(RangeS.internal(-167213),
-                    Array(),
-                    CodeNameS(CallTemplar.VIRTUAL_DROP_FUNCTION_NAME),
-                    None,
-                    LendConstraintP(None)),
-                  Vector(LocalLoadSE(RangeS.internal(-167213), CodeVarNameS("this"), MoveP))))))))
+              FunctionCallSE(RangeS.internal(-167213),
+                OutsideLoadSE(RangeS.internal(-167213),
+                  Array(),
+                  CodeNameS(CallTemplar.VIRTUAL_DROP_FUNCTION_NAME),
+                  None,
+                  LoadAsPointerP(None)),
+                Vector(LocalLoadSE(RangeS.internal(-167213), CodeVarNameS("this"), MoveP)))))))
 
     val virtualDropFunctionA =
       FunctionA(

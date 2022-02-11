@@ -61,7 +61,7 @@ object Collector extends Collector {
   }
   def only[T, R](a: Any, partialFunction: PartialFunction[Any, R]): R = {
     all(a, partialFunction).toList match {
-      case List() => vfail("No results!")
+      case List() => vfail("No results, in: " + a)
       case List(only) => only
       case results => vfail(results)
     }

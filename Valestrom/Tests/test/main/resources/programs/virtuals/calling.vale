@@ -2,22 +2,22 @@
 import v.builtins.tup.*;
 
 interface Car {
-  fn doCivicDance(virtual this Car) int;
+  func doCivicDance(virtual this Car) int;
 }
 
 struct Civic {}
 impl Car for Civic;
-fn doCivicDance(civic Civic impl Car) int {
-  = 4;
+func doCivicDance(civic Civic impl Car) int {
+  ret 4;
 }
 
 struct Toyota {}
 impl Car for Toyota;
-fn doCivicDance(toyota Toyota impl Car) int {
-  = 7;
+func doCivicDance(toyota Toyota impl Car) int {
+  ret 7;
 }
 
-fn main() int export {
+exported func main() int {
   x Car = Toyota();
-  = doCivicDance(x);
+  ret doCivicDance(x);
 }

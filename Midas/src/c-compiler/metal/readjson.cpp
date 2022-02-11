@@ -39,7 +39,7 @@ std::unordered_map<K, V, H, E> readArrayIntoMap(MetalCache* cache, H h, E e, con
   map.reserve(j.size());
   for (const auto& element : j) {
     std::pair<K, V> p = f(cache, element);
-//    assert(map.find(p.first) == map.end());
+    assert(map.find(p.first) == map.end());
     map.emplace(move(p.first), move(p.second));
   }
   return map;
@@ -150,6 +150,8 @@ Kind* readKind(MetalCache* cache, const json& kind) {
   if (kind["__type"] == "Int") {
     int bits = kind["bits"];
     return cache->getInt(cache->rcImmRegionId, bits);
+  } else if (kind["__type"] == "Void") {
+    return cache->vooid;
   } else if (kind["__type"] == "Bool") {
     return cache->boool;
   } else if (kind["__type"] == "Float") {
@@ -214,6 +216,8 @@ Ownership readUnconvertedOwnership(MetalCache* cache, const json& ownership) {
 //  std::cout << ownership.type() << std::endl;
   if (ownership["__type"].get<std::string>() == "Own") {
     return Ownership::OWN;
+  } else if (ownership["__type"].get<std::string>() == "Pointer") {
+    return Ownership::BORROW;
   } else if (ownership["__type"].get<std::string>() == "Borrow") {
     return Ownership::BORROW;
   } else if (ownership["__type"].get<std::string>() == "Weak") {
@@ -291,6 +295,8 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
     return new ConstantInt(
         readI64(cache, expression["value"]),
         expression["bits"]);
+  } else if (type == "ConstantVoid") {
+    return new ConstantVoid();
   } else if (type == "ConstantBool") {
     return new ConstantBool(
         expression["value"]);
@@ -298,6 +304,8 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
     return new Return(
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceType"]));
+  } else if (type == "Break") {
+    return new Break();
   } else if (type == "Stackify") {
     return new Stackify(
         readExpression(cache, expression["sourceExpr"]),
@@ -335,11 +343,19 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readLocal(cache, expression["local"]),
         readUnconvertedOwnership(cache, expression["targetOwnership"]),
         readName(cache, expression["localName"])->name);
-  } else if (type == "WeakAlias") {
+  } else if (type == "BorrowToWeak" || type == "PointerToWeak") {
     return new WeakAlias(
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceType"]),
         readKind(cache, expression["sourceKind"]),
+        readReference(cache, expression["resultType"]));
+  } else if (type == "BorrowToPointer") {
+    return new BorrowToPointer(
+        readExpression(cache, expression["sourceExpr"]),
+        readReference(cache, expression["resultType"]));
+  } else if (type == "PointerToBorrow") {
+    return new PointerToBorrow(
+        readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["resultType"]));
   } else if (type == "NarrowPermission") {
     return new NarrowPermission(
@@ -494,6 +510,11 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceType"]),
         expression["sourceKnownLive"]);
+  } else if (type == "ArrayCapacity") {
+    return new ArrayCapacity(
+        readExpression(cache, expression["sourceExpr"]),
+        readReference(cache, expression["sourceType"]),
+        expression["sourceKnownLive"]);
   } else if (type == "StructToInterfaceUpcast") {
     return new StructToInterfaceUpcast(
         readExpression(cache, expression["sourceExpr"]),
@@ -606,13 +627,6 @@ StructDefinition* readStruct(MetalCache* cache, const json& struuct) {
           readArray(cache, struuct["members"], readStructMember),
           struuct["weakable"] ? Weakability::WEAKABLE : Weakability::NON_WEAKABLE);
 
-  auto structName = result->name;
-  if (structName->name == std::string("Tup_0")) {
-    cache->emptyTupleStruct = cache->getStructKind(structName);
-    cache->emptyTupleStructRef =
-        cache->getReference(Ownership::SHARE, Location::INLINE, cache->emptyTupleStruct);
-  }
-
   return result;
 }
 
@@ -688,7 +702,6 @@ Package* readPackage(MetalCache* cache, const json& program) {
             auto s = readRuntimeSizedArrayDefinition(cache, j);
             return std::make_pair(s->name->name, s);
           }),
-      readStructKind(cache, program["emptyTupleStructKind"]),
 //      readArrayIntoMap<std::string, Prototype*>(
 //          cache,
 //          std::hash<std::string>(),

@@ -1,7 +1,7 @@
 
-fn drop(x int) {}
-fn drop(x bool) {}
-fn drop(x float) {}
-fn drop(x void) {}
-fn drop(x i64) {}
-fn drop(x str) {}
+func drop(x int) {}
+func drop(x bool) {}
+func drop(x float) {}
+func drop(x void) {}
+func drop(x i64) {}
+func drop(x str) {}

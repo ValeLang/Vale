@@ -2,11 +2,11 @@
 struct Goblin { }
 
 struct GoblinMaker {}
-fn __call(this &!GoblinMaker, i int) Goblin { Goblin() }
+func __call(this &!GoblinMaker, i int) Goblin { Goblin() }
 
-fn main() int export {
+exported func main() int {
   m = GoblinMaker();
   arr = Array<mut, Goblin>(1, &!m);
   set arr.0 = Goblin();
-  = 42;
+  ret 42;
 }

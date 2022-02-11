@@ -1,9 +1,9 @@
 package net.verdagon.vale.scout
 
-import net.verdagon.vale.parser.{ConstraintP, LendConstraintP, LendWeakP, LoadAsP, MoveP, MutabilityP, OwnershipP, PermissionP, VariabilityP, WeakP}
+import net.verdagon.vale.parser.ast.{LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsP, LoadAsPointerP, LoadAsWeakP, MoveP, PermissionP}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.{ILiteralSL, IRulexSR, RuneUsage}
-import net.verdagon.vale.{RangeS, vassert, vcurious, vimpl, vpass}
+import net.verdagon.vale.{RangeS, vassert, vcurious, vimpl, vpass, vwat}
 
 // patternId is a unique number, can be used to make temporary variables that wont
 // collide with other things
@@ -17,21 +17,38 @@ case class LetSE(
 
 case class IfSE(
   range: RangeS,
-  condition: BlockSE,
+  condition: IExpressionSE,
   thenBody: BlockSE,
   elseBody: BlockSE
 ) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
+
+  vcurious(!condition.isInstanceOf[BlockSE])
 }
 
-case class WhileSE(range: RangeS, condition: BlockSE, body: BlockSE) extends IExpressionSE {
+case class LoopSE(range: RangeS, body: BlockSE) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
+  vpass()
+}
+
+case class BreakSE(range: RangeS) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+}
+
+case class WhileSE(range: RangeS, body: BlockSE) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+  vpass()
+}
+
+case class MapSE(range: RangeS, body: BlockSE) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
+  vpass()
 }
 
 case class ExprMutateSE(range: RangeS, mutatee: IExpressionSE, expr: IExpressionSE) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
 }
-case class GlobalMutateSE(range: RangeS, name: ImpreciseCodeVarNameS, expr: IExpressionSE) extends IExpressionSE {
+case class GlobalMutateSE(range: RangeS, name: CodeNameS, expr: IExpressionSE) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
 }
 case class LocalMutateSE(range: RangeS, name: IVarNameS, expr: IExpressionSE) extends IExpressionSE {
@@ -42,8 +59,10 @@ case class OwnershippedSE(range: RangeS, innerExpr1: IExpressionSE, targetOwners
   override def hashCode(): Int = vcurious()
 
   targetOwnership match {
-    case LendWeakP(_) =>
-    case LendConstraintP(_) =>
+    case LoadAsWeakP(_) =>
+    case LoadAsPointerP(_) =>
+    case LoadAsBorrowP(_) =>
+    case LoadAsBorrowOrIfContainerIsPointerThenPointerP(_) =>
     case MoveP =>
   }
 }
@@ -84,21 +103,48 @@ case class BodySE(
     block: BlockSE
 ) {
   override def hashCode(): Int = vcurious()
+  vpass()
 }
 
 case class BlockSE(
   range: RangeS,
   locals: Vector[LocalS],
+  expr: IExpressionSE,
+) extends IExpressionSE {
+  override def hashCode(): Int = vcurious()
 
+  vassert(locals.map(_.varName) == locals.map(_.varName).distinct)
+//  expr match {
+//    case BlockSE(range, locals, expr) => vcurious()
+//    case _ =>
+//  }
+}
+
+case class ConsecutorSE(
   exprs: Vector[IExpressionSE],
 ) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
-  // Every element should have at least one expression, because a block will
-  // return the last expression's result as its result.
-  // Even empty blocks aren't empty, they have a void() at the end.
-  vassert(exprs.size >= 1)
 
-  vassert(locals.map(_.varName) == locals.map(_.varName).distinct)
+  override def range: RangeS = RangeS(exprs.head.range.begin, exprs.last.range.end)
+
+  // Should have at least one expression, because we'll
+  // return the last expression's result as its result.
+  vassert(exprs.size > 1)
+  vassert(exprs.collect({ case ConsecutorSE(_) => }).isEmpty)
+
+
+//  if (exprs.size >= 2) {
+//    exprs.last match {
+//      case VoidSE(_) => {
+//        exprs.init.last match {
+//          case ReturnSE(_, _) => vcurious()
+//          case VoidSE(_) => vcurious()
+//          case _ =>
+//        }
+//      }
+//      case _ =>
+//    }
+//  }
 }
 
 case class ArgLookupSE(range: RangeS, index: Int) extends IExpressionSE {
@@ -117,7 +163,12 @@ case class RepeaterBlockIteratorSE(range: RangeS, expression: IExpressionSE) ext
 
 case class ReturnSE(range: RangeS, inner: IExpressionSE) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
+  inner match {
+    case ReturnSE(_, _) => vwat()
+    case _ =>
+  }
 }
+
 case class VoidSE(range: RangeS) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
 }
@@ -128,6 +179,7 @@ case class TupleSE(range: RangeS, elements: Vector[IExpressionSE]) extends IExpr
 case class StaticArrayFromValuesSE(
   range: RangeS,
   rules: Array[IRulexSR],
+  maybeElementTypeST: Option[RuneUsage],
   mutabilityST: RuneUsage,
   variabilityST: RuneUsage,
   sizeST: RuneUsage,
@@ -138,6 +190,7 @@ case class StaticArrayFromValuesSE(
 case class StaticArrayFromCallableSE(
   range: RangeS,
   rules: Array[IRulexSR],
+  maybeElementTypeST: Option[RuneUsage],
   mutabilityST: RuneUsage,
   variabilityST: RuneUsage,
   sizeST: RuneUsage,
@@ -148,6 +201,7 @@ case class StaticArrayFromCallableSE(
 case class RuntimeArrayFromCallableSE(
   range: RangeS,
   rules: Array[IRulexSR],
+  maybeElementTypeST: Option[RuneUsage],
   mutabilityST: RuneUsage,
   sizeSE: IExpressionSE,
   callable: IExpressionSE

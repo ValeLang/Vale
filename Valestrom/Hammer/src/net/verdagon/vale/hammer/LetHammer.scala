@@ -21,20 +21,25 @@ object LetHammer {
   ExpressionH[KindH] = {
     val LetNormalTE(localVariable, sourceExpr2) = let2
 
-    val (sourceExprResultLine, deferreds) =
+    val (sourceExprHE, deferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2);
     val (sourceResultPointerTypeH) =
       TypeHammer.translateReference(hinputs, hamuts, sourceExpr2.result.reference)
+
+    if (sourceExprHE.resultType.kind == NeverH()) {
+      // We'll never get to this let, so strip it out. See BRCOBS.
+      return sourceExprHE
+    }
 
     val stackifyNode =
       localVariable match {
         case ReferenceLocalVariableT(varId, variability, type2) => {
           translateMundaneLet(
-            hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, sourceResultPointerTypeH, varId, variability)
+            hinputs, hamuts, currentFunctionHeader, locals, sourceExprHE, sourceResultPointerTypeH, varId, variability)
         }
         case AddressibleLocalVariableT(varId, variability, reference) => {
           translateAddressibleLet(
-            hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, sourceResultPointerTypeH, varId, variability, reference)
+            hinputs, hamuts, currentFunctionHeader, locals, sourceExprHE, sourceResultPointerTypeH, varId, variability, reference)
         }
       }
 
@@ -42,16 +47,16 @@ object LetHammer {
       hinputs, hamuts, currentFunctionHeader, locals, stackifyNode, deferreds)
   }
 
-  def translateLetAndLend(
+  def translateLetAndPoint(
     hinputs: Hinputs,
     hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeaderT,
     locals: LocalsBox,
-    let2: LetAndLendTE):
+    letTE: LetAndLendTE):
   (ExpressionH[KindH]) = {
-    val LetAndLendTE(localVariable, sourceExpr2) = let2
+    val LetAndLendTE(localVariable, sourceExpr2, targetOwnership) = letTE
 
-    val (sourceExprResultLine, deferreds) =
+    val (sourceExprHE, deferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2);
     val (sourceResultPointerTypeH) =
       TypeHammer.translateReference(hinputs, hamuts, sourceExpr2.result.reference)
@@ -59,12 +64,12 @@ object LetHammer {
     val borrowAccess =
       localVariable match {
         case ReferenceLocalVariableT(varId, variability, type2) => {
-          translateMundaneLetAndLend(
-            hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2, sourceExprResultLine, sourceResultPointerTypeH, let2, varId, variability)
+          translateMundaneLetAndPoint(
+            hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2, sourceExprHE, sourceResultPointerTypeH, letTE, varId, variability)
         }
         case AddressibleLocalVariableT(varId, variability, reference) => {
-          translateAddressibleLetAndLend(
-            hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2, sourceExprResultLine, sourceResultPointerTypeH, let2, varId, variability, reference)
+          translateAddressibleLetAndPoint(
+            hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2, sourceExprHE, sourceResultPointerTypeH, letTE, varId, variability, reference)
         }
       }
 
@@ -77,7 +82,7 @@ object LetHammer {
     hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeaderT,
     locals: LocalsBox,
-    sourceExprResultLine: ExpressionH[KindH],
+    sourceExprHE: ExpressionH[KindH],
     sourceResultPointerTypeH: ReferenceH[KindH],
     varId: FullNameT[IVarNameT],
     variability: VariabilityT,
@@ -92,29 +97,29 @@ object LetHammer {
 
     StackifyH(
       NewStructH(
-        Vector(sourceExprResultLine),
+        Vector(sourceExprHE),
         hamuts.structDefs.find(_.getRef == boxStructRefH).get.members.map(_.name),
         expectedLocalBoxType),
       local,
       Some(NameHammer.translateFullName(hinputs, hamuts, varId)))
   }
 
-  private def translateAddressibleLetAndLend(
+  private def translateAddressibleLetAndPoint(
     hinputs: Hinputs,
     hamuts: HamutsBox,
       currentFunctionHeader: FunctionHeaderT,
     locals: LocalsBox,
     sourceExpr2: ReferenceExpressionTE,
-    sourceExprResultLine: ExpressionH[KindH],
+    sourceExprHE: ExpressionH[KindH],
     sourceResultPointerTypeH: ReferenceH[KindH],
-    let2: LetAndLendTE,
+    letTE: LetAndLendTE,
     varId: FullNameT[IVarNameT],
     variability: VariabilityT,
     reference: CoordT):
   (ExpressionH[KindH]) = {
     val stackifyH =
       translateAddressibleLet(
-        hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, sourceResultPointerTypeH, varId, variability, reference)
+        hinputs, hamuts, currentFunctionHeader, locals, sourceExprHE, sourceResultPointerTypeH, varId, variability, reference)
     val (borrowAccess, Vector()) =
       LoadHammer.translateAddressibleLocalLoad(
         hinputs,
@@ -124,8 +129,8 @@ object LetHammer {
         varId,
         variability,
         sourceExpr2.result.reference,
-        let2.result.reference.ownership,
-        let2.result.reference.permission)
+        letTE.result.reference.ownership,
+        letTE.result.reference.permission)
     ConsecutorH(Vector(stackifyH, borrowAccess))
   }
 
@@ -134,44 +139,44 @@ object LetHammer {
     hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeaderT,
     locals: LocalsBox,
-    sourceExprResultLine: ExpressionH[KindH],
+    sourceExprHE: ExpressionH[KindH],
     sourceResultPointerTypeH: ReferenceH[KindH],
     varId: FullNameT[IVarNameT],
     variability: VariabilityT):
   StackifyH = {
+    vassert(sourceExprHE.resultType.kind != NeverH())
     val localIndex =
       locals.addTemplarLocal(hinputs, hamuts, varId, Conversions.evaluateVariability(variability), sourceResultPointerTypeH)
     val stackNode =
       StackifyH(
-        sourceExprResultLine,
+        sourceExprHE,
         localIndex,
         Some(NameHammer.translateFullName(hinputs, hamuts, varId)))
     stackNode
   }
 
-    private def translateMundaneLetAndLend(
+    private def translateMundaneLetAndPoint(
       hinputs: Hinputs,
       hamuts: HamutsBox,
       currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
       sourceExpr2: ReferenceExpressionTE,
-      sourceExprResultLine: ExpressionH[KindH],
+      sourceExprHE: ExpressionH[KindH],
       sourceResultPointerTypeH: ReferenceH[KindH],
-      let2: LetAndLendTE,
+      letTE: LetAndLendTE,
       varId: FullNameT[IVarNameT],
       variability: VariabilityT):
     ExpressionH[KindH] = {
-
-      val stackifyH =
-        translateMundaneLet(
-          hinputs,
-          hamuts,
-          currentFunctionHeader,
-          locals,
-          sourceExprResultLine,
-          sourceResultPointerTypeH,
-          varId,
-          variability)
+    val stackifyH =
+      translateMundaneLet(
+        hinputs,
+        hamuts,
+        currentFunctionHeader,
+        locals,
+        sourceExprHE,
+        sourceResultPointerTypeH,
+        varId,
+        variability)
 
     val (borrowAccess, Vector()) =
       LoadHammer.translateMundaneLocalLoad(
@@ -181,8 +186,8 @@ object LetHammer {
         locals,
         varId,
         sourceExpr2.result.reference,
-        let2.result.reference.ownership,
-        let2.result.reference.permission)
+        letTE.result.reference.ownership,
+        letTE.result.reference.permission)
 
       ConsecutorH(Vector(stackifyH, borrowAccess))
   }
@@ -242,7 +247,7 @@ object LetHammer {
   ): ExpressionH[KindH] = {
     val DestroyStaticSizedArrayIntoLocalsTE(sourceExpr2, arrSeqT, destinationReferenceLocalVariables) = des2
 
-    val (sourceExprResultLine, sourceExprDeferreds) =
+    val (sourceExprHE, sourceExprDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2);
 
     vassert(destinationReferenceLocalVariables.size == arrSeqT.size)
@@ -270,7 +275,7 @@ object LetHammer {
 
     val stackNode =
         DestroyStaticSizedArrayIntoLocalsH(
-          sourceExprResultLine.expectStaticSizedArrayAccess(),
+          sourceExprHE.expectStaticSizedArrayAccess(),
           localTypes,
           localIndices.toVector)
 
@@ -287,7 +292,7 @@ object LetHammer {
   ExpressionH[KindH] = {
     val DestroyTE(sourceExpr2, structTT, destinationReferenceLocalVariables) = des2
 
-    val (sourceExprResultLine, sourceExprDeferreds) =
+    val (sourceExprHE, sourceExprDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2);
 
     val structDefT = hinputs.lookupStruct(structTT)
@@ -329,7 +334,7 @@ object LetHammer {
               val (boxStructRefH) =
                 StructHammer.makeBox(hinputs, hamuts, member2.variability, memberRefType2, memberRefTypeH)
               // Structs only ever borrow boxes, boxes are only ever owned by the stack.
-              val localBoxType = ReferenceH(m.BorrowH, YonderH, ReadwriteH, boxStructRefH)
+              val localBoxType = ReferenceH(m.PointerH, YonderH, ReadwriteH, boxStructRefH)
               val localIndex = locals.addHammerLocal(localBoxType, m.Final)
 
               (remainingDestinationReferenceLocalVariables, previousLocalTypes :+ localBoxType, previousLocalIndices :+ localIndex)
@@ -340,7 +345,7 @@ object LetHammer {
 
     val destructureH =
         DestroyH(
-          sourceExprResultLine.expectStructAccess(),
+          sourceExprHE.expectStructAccess(),
           localTypes,
           localIndices.toVector)
 

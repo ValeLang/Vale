@@ -1,8 +1,8 @@
 
-fn do<F>(callable F) int {
+func do<F>(callable F) int {
   callable()
 }
 
-fn main() int export {
+exported func main() int {
   do({ 42 })
 }

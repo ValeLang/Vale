@@ -11,9 +11,13 @@ public:
   // See usages of this int to see where we make those zero-len arrays of these.
   static constexpr int NEVER_INT_BITS = 57;
 
+  // Similar to Never, we pick an arbitrary integer to be our void.
+  static constexpr int VOID_INT_BITS = 37;
+
 
   bool isPrimitive(Reference* referenceM) {
-    return dynamic_cast<Int *>(referenceM->kind) != nullptr ||
+    return dynamic_cast<Void *>(referenceM->kind) != nullptr ||
+        dynamic_cast<Int *>(referenceM->kind) != nullptr ||
         dynamic_cast<Bool *>(referenceM->kind) != nullptr ||
         dynamic_cast<Float *>(referenceM->kind) != nullptr;
   }
@@ -22,6 +26,9 @@ public:
     if (auto innt = dynamic_cast<Int*>(referenceM->kind)) {
       assert(referenceM->ownership == Ownership::SHARE);
       return LLVMIntTypeInContext(globalState->context, innt->bits);
+    } else if (auto vooid = dynamic_cast<Void*>(referenceM->kind)) {
+      assert(referenceM->ownership == Ownership::SHARE);
+      return LLVMIntTypeInContext(globalState->context, VOID_INT_BITS);
     } else if (dynamic_cast<Bool*>(referenceM->kind) != nullptr) {
       assert(referenceM->ownership == Ownership::SHARE);
       return LLVMInt1TypeInContext(globalState->context);

@@ -9,8 +9,8 @@ class StringTests extends FunSuite with Matchers {
   test("Simple string") {
     val compile = RunCompilation.test(
       """
-        |fn main() str export {
-        |  "sprogwoggle"
+        |exported func main() str {
+        |  ret "sprogwoggle";
         |}
       """.stripMargin)
 
@@ -20,11 +20,25 @@ class StringTests extends FunSuite with Matchers {
     compile.evalForKind(Vector()) shouldEqual VonStr("sprogwoggle")
   }
 
+  test("Empty string") {
+    val compile = RunCompilation.test(
+      """
+        |exported func main() str {
+        |  ret "";
+        |}
+      """.stripMargin)
+
+    val temputs = compile.expectTemputs()
+    Collector.only(temputs.lookupFunction("main"), { case ConstantStrTE("") => })
+
+    compile.evalForKind(Vector()) shouldEqual VonStr("")
+  }
+
   test("String with escapes") {
     val compile = RunCompilation.test(
       """
-        |fn main() str export {
-        |  "sprog\nwoggle"
+        |exported func main() str {
+        |  ret "sprog\nwoggle";
         |}
         |""".stripMargin)
 
@@ -35,7 +49,7 @@ class StringTests extends FunSuite with Matchers {
   }
 
   test("String with hex escape") {
-    val code = "fn main() str export { \"sprog\\u001bwoggle\" }"
+    val code = "exported func main() str { ret \"sprog\\u001bwoggle\"; }"
     // This assert makes sure the above is making the input we actually intend.
     // Real source files from disk are going to have a backslash character and then a u,
     // they won't have the 0x1b byte.
@@ -73,9 +87,9 @@ class StringTests extends FunSuite with Matchers {
 
   test("String interpolate") {
     val compile = RunCompilation.test(
-      "fn +(s str, i int) str { s + str(i) }\n" +
-      "fn ns(i int) int { i }\n" +
-      "fn main() str export { \"\"\"bl\"{ns(4)}rg\"\"\" }")
+      "func +(s str, i int) str { ret s + str(i); }\n" +
+      "func ns(i int) int { ret i; }\n" +
+      "exported func main() str { ret \"\"\"bl\"{ns(4)}rg\"\"\"; }")
 
     compile.evalForKind(Vector()) shouldEqual VonStr("bl\"4rg")
   }
@@ -91,7 +105,7 @@ class StringTests extends FunSuite with Matchers {
           |  begin int;
           |  end int;
           |}
-          |fn newStrSlice(string str, begin int, end int) StrSlice {
+          |func newStrSlice(string str, begin int, end int) StrSlice {
           |  vassert(begin >= 0, "slice begin was negative!");
           |  vassert(end >= 0, "slice end was negative!");
           |  vassert(begin <= string.len(), "slice begin was more than length!");
@@ -100,33 +114,33 @@ class StringTests extends FunSuite with Matchers {
           |  ret StrSlice(string, begin, end);
           |}
           |
-          |fn slice(s str) StrSlice {
-          |  newStrSlice(s, 0, s.len())
+          |func slice(s str) StrSlice {
+          |  ret newStrSlice(s, 0, s.len());
           |}
           |
-          |fn slice(s str, begin int) StrSlice { s.slice().slice(begin) }
-          |fn slice(s StrSlice, begin int) StrSlice {
+          |func slice(s str, begin int) StrSlice { ret s.slice().slice(begin); }
+          |func slice(s StrSlice, begin int) StrSlice {
           |  newBegin = s.begin + begin;
           |  vassert(newBegin <= s.string.len(), "slice begin is more than string length!");
-          |  = newStrSlice(s.string, newBegin, s.end);
+          |  ret newStrSlice(s.string, newBegin, s.end);
           |}
           |
-          |fn len(s StrSlice) int {
+          |func len(s StrSlice) int {
           |  ret s.end - s.begin;
           |}
           |
-          |fn slice(s str, begin int, end int) StrSlice {
-          |  = newStrSlice(s, begin, end);
+          |func slice(s str, begin int, end int) StrSlice {
+          |  ret newStrSlice(s, begin, end);
           |}
           |
-          |fn slice(s StrSlice, begin int, end int) StrSlice {
+          |func slice(s StrSlice, begin int, end int) StrSlice {
           |  newGlyphBeginOffset = s.begin + begin;
           |  newGlyphEndOffset = s.begin + end;
-          |  = newStrSlice(s.string, newGlyphBeginOffset, newGlyphEndOffset);
+          |  ret newStrSlice(s.string, newGlyphBeginOffset, newGlyphEndOffset);
           |}
           |
-          |fn main() int export {
-          |  "hello".slice().slice(1, 4).len()
+          |exported func main() int {
+          |  ret "hello".slice().slice(1, 4).len();
           |}
           |""".stripMargin)
 

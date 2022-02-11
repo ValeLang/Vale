@@ -2,6 +2,7 @@ package net.verdagon.vale.scout
 
 import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{PointerP, ReadonlyP}
 import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.{Collector, Err, FileCoordinate, FileCoordinateMap, Ok, vassert, vfail, vimpl}
@@ -11,8 +12,8 @@ class ScoutParametersTests extends FunSuite with Matchers with Collector {
 
   private def compile(code: String): ProgramS = {
     Parser.runParser(code) match {
-      case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(program0) => {
+      case Err(err) => fail(err.toString)
+      case Ok(program0) => {
         new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => vfail(ScoutErrorHumanizer.humanize(FileCoordinateMap.test(code), e))
           case Ok(t) => t
@@ -22,7 +23,7 @@ class ScoutParametersTests extends FunSuite with Matchers with Collector {
   }
 
   test("Simple rune rule") {
-    val program1 = compile("""fn main<T>(moo T) infer-ret { }""")
+    val program1 = compile("""func main<T>(moo T) infer-ret { }""")
     val main = program1.lookupFunction("main")
 
     vassert(main.runeToPredictedType.size == 1)
@@ -33,7 +34,7 @@ class ScoutParametersTests extends FunSuite with Matchers with Collector {
   }
 
   test("Returned rune") {
-    val program1 = compile("""fn main<T>(moo T) T { moo }""")
+    val program1 = compile("""func main<T>(moo T) T { moo }""")
     val main = program1.lookupFunction("main")
 
     vassert(main.identifyingRunes.map(_.rune).contains(CodeRuneS("T")))
@@ -41,7 +42,7 @@ class ScoutParametersTests extends FunSuite with Matchers with Collector {
   }
 
   test("Borrowed rune") {
-    val program1 = compile("""fn main<T>(moo &T) infer-ret { }""")
+    val program1 = compile("""func main<T>(moo *T) infer-ret { }""")
     val main = program1.lookupFunction("main")
     val Vector(param) = main.params
 
@@ -57,14 +58,14 @@ class ScoutParametersTests extends FunSuite with Matchers with Collector {
 
     val tCoordRuneFromRules =
       main.rules shouldHave {
-        case AugmentSR(_, tcr, Vector(OwnershipLiteralSL(ConstraintP),PermissionLiteralSL(ReadonlyP)), RuneUsage(_, CodeRuneS("T"))) => tcr
+        case AugmentSR(_, tcr, PointerP,ReadonlyP, RuneUsage(_, CodeRuneS("T"))) => tcr
       }
 
     tCoordRuneFromParams shouldEqual tCoordRuneFromRules.rune
   }
 
   test("Anonymous, typed param") {
-    val program1 = compile("""fn main(_ int) infer-ret { }""")
+    val program1 = compile("""func main(_ int) infer-ret { }""")
     val main = program1.lookupFunction("main")
     val Vector(param) = main.params
     val paramRune =
@@ -84,7 +85,7 @@ class ScoutParametersTests extends FunSuite with Matchers with Collector {
 
   test("Rune destructure") {
     // This is an ambiguous case but we decided it should destructure a struct or sequence, see CSTODTS in docs.
-    val program1 = compile("""fn main<T>(moo T(a int)) infer-ret { }""")
+    val program1 = compile("""func main<T>(moo T[a int]) infer-ret { }""")
     val main = program1.lookupFunction("main")
 
     val Vector(param) = main.params
@@ -114,7 +115,7 @@ class ScoutParametersTests extends FunSuite with Matchers with Collector {
   }
 
   test("Regioned pure function") {
-    val bork = compile("fn main<'r ro>(ship 'r &Spaceship) pure 't { }")
+    val bork = compile("func main<'r ro>(ship 'r *Spaceship) pure 't { }")
 
     val main = bork.lookupFunction("main")
     // We dont support regions yet, so scout should filter them out.
@@ -124,7 +125,7 @@ class ScoutParametersTests extends FunSuite with Matchers with Collector {
   test("Test param-less lambda identifying runes") {
     val bork = compile(
       """
-        |fn main() int export {do({ 3 })}
+        |exported func main() int {do({ ret 3; })}
         |""".stripMargin)
 
     val main = bork.lookupFunction("main")
@@ -137,7 +138,7 @@ class ScoutParametersTests extends FunSuite with Matchers with Collector {
   test("Test one-param lambda identifying runes") {
     val bork = compile(
       """
-        |fn main() int export {do({ _ })}
+        |exported func main() int {do({ _ })}
         |""".stripMargin)
 
     val main = bork.lookupFunction("main")
@@ -150,7 +151,7 @@ class ScoutParametersTests extends FunSuite with Matchers with Collector {
   test("Test one-anonymous-param lambda identifying runes") {
     val bork = compile(
       """
-        |fn main() int export {do((_){ true })}
+        |exported func main() int {do((_) => { true })}
         |""".stripMargin)
 
     val main = bork.lookupFunction("main")

@@ -1,6 +1,7 @@
 package net.verdagon.vale.scout
 
 import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.ast.{IMacroInclusion, MutabilityP, VariabilityP}
 import net.verdagon.vale.scout.patterns.{AtomSP, VirtualitySP}
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.{FileCoordinate, PackageCoordinate, RangeS, vassert, vcurious, vimpl, vpass, vwat}
@@ -71,7 +72,7 @@ case class StructS(
     mutabilityRune: RuneUsage,
 
     // This is needed for recursive structures like
-    //   struct ListNode<T> imm rules(T Ref) {
+    //   struct ListNode<T> imm where T Ref {
     //     tail ListNode<T>;
     //   }
     maybePredictedMutability: Option[MutabilityP],
@@ -114,7 +115,7 @@ case class InterfaceS(
   mutabilityRune: RuneUsage,
 
   // This is needed for recursive structures like
-  //   struct ListNode<T> imm rules(T Ref) {
+  //   struct ListNode<T> imm where T Ref {
   //     tail ListNode<T>;
   //   }
   maybePredictedMutability: Option[MutabilityP],

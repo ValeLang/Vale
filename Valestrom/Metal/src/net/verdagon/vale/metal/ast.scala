@@ -6,12 +6,11 @@ import net.verdagon.von.{IVonData, JsonSyntax, VonArray, VonMember, VonObject, V
 import scala.collection.immutable.ListMap
 
 object ProgramH {
-  val emptyTupleStructRef =
-    // If the templar ever decides to change this things name, update this to match templar's.
-//    StructRefH(FullNameH("Tup0", 0, PackageCoordinate.BUILTIN, Vector(VonObject("Tup",None,Vector(VonMember("members",VonArray(None,Vector())))))))
-    StructRefH(FullNameH("Tup",0, PackageCoordinate.BUILTIN, Vector(VonObject("CitizenName",None,Vector(VonMember("humanName",VonObject("CitizenTemplateName",None,Vector(VonMember("Tup",VonStr("Tup"))))), VonMember("templateArgs",VonArray(None,Vector(VonObject("CoordListTemplata",None,Vector(VonMember("coords",VonArray(None,Vector()))))))))))))
-
-  def emptyTupleStructType = ReferenceH(ShareH, InlineH, ReadonlyH, emptyTupleStructRef)
+//  val emptyTupleStructRef =
+//    // If the templar ever decides to change this things name, update this to match templar's.
+////    StructRefH(FullNameH("Tup0", 0, PackageCoordinate.BUILTIN, Vector(VonObject("Tup",None,Vector(VonMember("members",VonArray(None,Vector())))))))
+//    StructRefH(FullNameH("Tup",0, PackageCoordinate.BUILTIN, Vector(VonObject("CitizenName",None,Vector(VonMember("humanName",VonObject("CitizenTemplateName",None,Vector(VonMember("Tup",VonStr("Tup"))))), VonMember("templateArgs",VonArray(None,Vector(VonObject("CoordListTemplata",None,Vector(VonMember("coords",VonArray(None,Vector()))))))))))))
+//  def emptyTupleStructType = ReferenceH(ShareH, InlineH, ReadonlyH, emptyTupleStructRef)
 
   val mainRegionName = "main"
   val externRegionName = "host"
@@ -33,8 +32,8 @@ case class PackageH(
     structs: Vector[StructDefinitionH],
     // All of the user defined functions (and some from the compiler itself).
     functions: Vector[FunctionH],
-    staticSizedArrays: Vector[StaticSizedArrayDefinitionTH],
-    runtimeSizedArrays: Vector[RuntimeSizedArrayDefinitionTH],
+    staticSizedArrays: Vector[StaticSizedArrayDefinitionHT],
+    runtimeSizedArrays: Vector[RuntimeSizedArrayDefinitionHT],
     // Used for native compilation only, not JVM/CLR/JS/iOS.
     // These are pointing into the specific functions (in the `functions` field)
     // which should be called when we drop a reference to an immutable object.
@@ -109,11 +108,11 @@ case class ProgramH(
     val paackage = lookupPackage(interfaceRefH.fullName.packageCoordinate)
     vassertSome(paackage.interfaces.find(_.getRef == interfaceRefH))
   }
-  def lookupStaticSizedArray(ssaTH: StaticSizedArrayHT): StaticSizedArrayDefinitionTH = {
+  def lookupStaticSizedArray(ssaTH: StaticSizedArrayHT): StaticSizedArrayDefinitionHT = {
     val paackage = lookupPackage(ssaTH.name.packageCoordinate)
     vassertSome(paackage.staticSizedArrays.find(_.name == ssaTH.name))
   }
-  def lookupRuntimeSizedArray(rsaTH: RuntimeSizedArrayHT): RuntimeSizedArrayDefinitionTH = {
+  def lookupRuntimeSizedArray(rsaTH: RuntimeSizedArrayHT): RuntimeSizedArrayDefinitionHT = {
     val paackage = lookupPackage(rsaTH.name.packageCoordinate)
     vassertSome(paackage.runtimeSizedArrays.find(_.name == rsaTH.name))
   }

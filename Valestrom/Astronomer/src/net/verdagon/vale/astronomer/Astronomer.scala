@@ -1,7 +1,8 @@
 package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.options.GlobalOptions
-import net.verdagon.vale.parser.{CaptureP, FailedParse, FileP, ImmutableP, MutabilityP, MutableP}
+import net.verdagon.vale.parser.FailedParse
+import net.verdagon.vale.parser.ast.FileP
 import net.verdagon.vale.scout.{ExportS, ExternS, RuneTypeSolver, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS, OverrideSP}
 import net.verdagon.vale.scout.rules._

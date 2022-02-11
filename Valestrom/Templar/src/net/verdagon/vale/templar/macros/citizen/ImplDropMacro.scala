@@ -1,7 +1,6 @@
 package net.verdagon.vale.templar.macros.citizen
 
 import net.verdagon.vale.astronomer.{FunctionA, ImplA}
-import net.verdagon.vale.parser.{LendConstraintP, MoveP, OwnP, ReadonlyP, ReadwriteP, ShareP}
 import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS, OverrideSP}
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.scout._
@@ -9,12 +8,13 @@ import net.verdagon.vale.templar.ast.{FunctionHeaderT, LocationInFunctionEnviron
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env.{FunctionEnvEntry, FunctionEnvironment}
 import net.verdagon.vale.templar.function.{DestructorTemplar, FunctionTemplarCore}
-import net.verdagon.vale.templar.macros.{IOnImplDefinedMacro}
+import net.verdagon.vale.templar.macros.IOnImplDefinedMacro
 import net.verdagon.vale.templar.names.{FullNameT, FunctionTemplateNameT, INameT, NameTranslator}
 import net.verdagon.vale.templar.templata.{CoordTemplata, KindTemplata}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{ArrayTemplar, IFunctionGenerator, Temputs}
 import net.verdagon.vale._
+import net.verdagon.vale.parser.ast.{LoadAsPointerP, MoveP}
 import net.verdagon.vale.templar.expression.CallTemplar
 
 class ImplDropMacro() extends IOnImplDefinedMacro {
@@ -25,12 +25,11 @@ class ImplDropMacro() extends IOnImplDefinedMacro {
         implA.range,
         FunctionNameS(CallTemplar.VIRTUAL_DROP_FUNCTION_NAME, implA.range.begin),
         Vector(),
-        if (implA.isTemplate) {
-          TemplateTemplataType(implA.identifyingRunes.map(_.rune).map(implA.runeToType), FunctionTemplataType)
-        } else {
-          FunctionTemplataType
-        },
-        implA.identifyingRunes,
+        TemplateTemplataType(
+          implA.identifyingRunes.map(_.rune).map(implA.runeToType) :+ KindTemplataType,
+          FunctionTemplataType),
+        // See NIIRII for why we add the interface rune as an identifying rune.
+        implA.identifyingRunes :+ implA.interfaceKindRune,
         implA.runeToType + (ImplDropCoordRuneS() -> CoordTemplataType) + (ImplDropVoidRuneS() -> CoordTemplataType),
         Vector(
           ParameterS(
@@ -52,14 +51,13 @@ class ImplDropMacro() extends IOnImplDefinedMacro {
             Vector(),
             BlockSE(RangeS.internal(-167213),
               Vector(LocalS(CodeVarNameS("this"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
-              Vector(
-                FunctionCallSE(RangeS.internal(-167213),
-                  OutsideLoadSE(RangeS.internal(-167213),
-                    Array(),
-                    CodeNameS(CallTemplar.DROP_FUNCTION_NAME),
-                    None,
-                    LendConstraintP(None)),
-                  Vector(LocalLoadSE(RangeS.internal(-167213), CodeVarNameS("this"), MoveP))))))))
+              FunctionCallSE(RangeS.internal(-167213),
+                OutsideLoadSE(RangeS.internal(-167213),
+                  Array(),
+                  CodeNameS(CallTemplar.DROP_FUNCTION_NAME),
+                  None,
+                  LoadAsPointerP(None)),
+                Vector(LocalLoadSE(RangeS.internal(-167213), CodeVarNameS("this"), MoveP)))))))
     Vector((
       implName.copy(last = NameTranslator.translateFunctionNameToTemplateName(dropFunctionA.name)),
       FunctionEnvEntry(dropFunctionA)))

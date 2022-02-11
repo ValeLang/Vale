@@ -2,7 +2,7 @@ package net.verdagon.vale.templar.infer
 
 import net.verdagon.vale._
 import net.verdagon.vale.options.GlobalOptions
-import net.verdagon.vale.parser.{ConstraintP, ShareP}
+import net.verdagon.vale.parser.ast.ShareP
 import net.verdagon.vale.scout.{ArgumentRuneS, CodeNameS, CoordTemplataType, IImpreciseNameS, INameS, IRuneS, ITemplataType, KindTemplataType, RuneNameS}
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.solver.{CompleteSolve, FailedSolve, ISolveRule, ISolverError, ISolverOutcome, IStepState, IncompleteSolve, RuleError, Solver, SolverConflict}
@@ -19,24 +19,20 @@ case class KindIsNotConcrete(kind: KindT) extends ITemplarSolverError
 case class KindIsNotInterface(kind: KindT) extends ITemplarSolverError
 case class KindIsNotStruct(kind: KindT) extends ITemplarSolverError
 case class CantShareMutable(kind: KindT) extends ITemplarSolverError
-case class ReceivingDifferentOwnerships(params: Vector[(IRuneS, CoordT)]) extends ITemplarSolverError {
-  vpass()
-}
+case class SendingNonCitizen(kind: KindT) extends ITemplarSolverError
+case class ReceivingDifferentOwnerships(params: Vector[(IRuneS, CoordT)]) extends ITemplarSolverError
 case class ReceivingDifferentPermissions(params: Vector[(IRuneS, CoordT)]) extends ITemplarSolverError
 case class SendingNonIdenticalKinds(sendCoord: CoordT, receiveCoord: CoordT) extends ITemplarSolverError
 case class NoCommonAncestors(params: Vector[(IRuneS, CoordT)]) extends ITemplarSolverError
-case class LookupFailed(name: IImpreciseNameS) extends ITemplarSolverError {
-  vpass()
-}
+case class LookupFailed(name: IImpreciseNameS) extends ITemplarSolverError
 case class NoAncestorsSatisfyCall(params: Vector[(IRuneS, CoordT)]) extends ITemplarSolverError
 case class CantDetermineNarrowestKind(kinds: Set[KindT]) extends ITemplarSolverError
 case class OwnershipDidntMatch(coord: CoordT, expectedOwnership: OwnershipT) extends ITemplarSolverError
 case class PermissionDidntMatch(coord: CoordT, expectedPermission: PermissionT) extends ITemplarSolverError
-case class CallResultWasntExpectedType(expected: ITemplata, actual: ITemplata) extends ITemplarSolverError {
-  vpass()
-}
+case class CallResultWasntExpectedType(expected: ITemplata, actual: ITemplata) extends ITemplarSolverError
 case class OneOfFailed(rule: OneOfSR) extends ITemplarSolverError
 case class KindDoesntImplementInterface(sub: CitizenRefT, suuper: InterfaceTT) extends ITemplarSolverError
+case class WrongNumberOfTemplateArgs(expectedNumArgs: Int) extends ITemplarSolverError
 
 trait IInfererDelegate[Env, State] {
   def lookupMemberTypes(
@@ -118,11 +114,12 @@ class TemplarSolver[Env, State](
         case IsStructSR(range, rune) => Array(rune)
         case CoerceToCoordSR(range, coordRune, kindRune) => Array(coordRune, kindRune)
         case LiteralSR(range, rune, literal) => Array(rune)
-        case AugmentSR(range, resultRune, literal, innerRune) => Array(resultRune, innerRune)
+        case AugmentSR(range, resultRune, ownership, permission, innerRune) => Array(resultRune, innerRune)
         case CallSR(range, resultRune, templateRune, args) => Array(resultRune, templateRune) ++ args
         case PrototypeSR(range, resultRune, name, parameters, returnTypeRune) => Array(resultRune) ++ parameters ++ Array(returnTypeRune)
         case PackSR(range, resultRune, members) => Array(resultRune) ++ members
-        case RepeaterSequenceSR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune)
+        case StaticSizedArraySR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune)
+        case RuntimeSizedArraySR(range, resultRune, mutabilityRune, elementRune) => Array(resultRune, mutabilityRune, elementRune)
 //        case ManualSequenceSR(range, resultRune, elements) => Array(resultRune) ++ elements
 //        case CoordListSR(range, resultRune, elements) => Array(resultRune) ++ elements
         case CoordSendSR(range, senderRune, receiverRune) => Array(senderRune, receiverRune)
@@ -156,8 +153,9 @@ class TemplarSolver[Env, State](
       case IsStructSR(_, rune) => Array(Array(rune.rune))
       case CoerceToCoordSR(_, coordRune, kindRune) => Array(Array(coordRune.rune), Array(kindRune.rune))
       case LiteralSR(_, rune, literal) => Array(Array())
-      case AugmentSR(_, resultRune, literals, innerRune) => Array(Array(innerRune.rune), Array(resultRune.rune))
-      case RepeaterSequenceSR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(Array(resultRune.rune), Array(mutabilityRune.rune, variabilityRune.rune, sizeRune.rune, elementRune.rune))
+      case AugmentSR(_, resultRune, ownership, permission, innerRune) => Array(Array(innerRune.rune), Array(resultRune.rune))
+      case StaticSizedArraySR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(Array(resultRune.rune), Array(mutabilityRune.rune, variabilityRune.rune, sizeRune.rune, elementRune.rune))
+      case RuntimeSizedArraySR(_, resultRune, mutabilityRune, elementRune) => Array(Array(resultRune.rune), Array(mutabilityRune.rune, elementRune.rune))
       // See SAIRFU, this will replace itself with other rules.
       case CoordSendSR(_, senderRune, receiverRune) => Array(Array(senderRune.rune), Array(receiverRune.rune))
       case CoordIsaSR(range, senderRune, receiverRune) => Array(Array(senderRune.rune, receiverRune.rune))
@@ -173,7 +171,7 @@ class TemplarSolver[Env, State](
     stepState: IStepState[IRulexSR, IRuneS, ITemplata]):
   // One might expect us to return the conclusions in this Result. Instead we take in a
   // lambda to avoid intermediate allocations, for speed.
-  Result[Unit, ISolverError[IRuneS, ITemplata, ITemplarSolverError]] = {
+  Result[Unit, ITemplarSolverError] = {
     rule match {
       case KindComponentsSR(range, kindRune, mutabilityRune) => {
         val KindTemplata(kind) = vassertSome(stepState.getConclusion(kindRune.rune))
@@ -286,28 +284,39 @@ class TemplarSolver[Env, State](
         if (delegate.getAncestors(state, sub, true).contains(suuper)) {
           Ok(())
         } else {
-          Err(RuleError(KindDoesntImplementInterface(sub, suuper)))
+          Err(KindDoesntImplementInterface(sub, suuper))
         }
       }
       case CoordIsaSR(range, subRune, superRune) => {
-        val CoordTemplata(subCoord @ CoordT(_, _, subCitizen : CitizenRefT)) =
+        val CoordTemplata(subCoord) =
           vassertSome(stepState.getConclusion(subRune.rune))
-        val CoordTemplata(superCoord @ CoordT(_, _, superCitizen : CitizenRefT)) =
+        val subCitizen =
+          subCoord.kind match {
+            case cit : CitizenRefT => cit
+            case other => return Err(SendingNonCitizen(other))
+          }
+
+        val CoordTemplata(superCoord) =
           vassertSome(stepState.getConclusion(superRune.rune))
+        val superCitizen =
+          superCoord.kind match {
+            case cit : CitizenRefT => cit
+            case other => return Err(SendingNonCitizen(other))
+          }
 
         superCitizen match {
           case StructTT(_) => {
             if (subCoord == superCoord) {
               Ok(())
             } else {
-              Err(RuleError(SendingNonIdenticalKinds(subCoord, superCoord)))
+              Err(SendingNonIdenticalKinds(subCoord, superCoord))
             }
           }
           case superInterface @ InterfaceTT(_) => {
             if (delegate.getAncestors(state, subCitizen, true).contains(superCitizen)) {
               Ok(())
             } else {
-              Err(RuleError(KindDoesntImplementInterface(subCitizen, superInterface)))
+              Err(KindDoesntImplementInterface(subCitizen, superInterface))
             }
           }
         }
@@ -318,7 +327,7 @@ class TemplarSolver[Env, State](
         if (templatas.contains(result)) {
           Ok(())
         } else {
-          Err(RuleError(OneOfFailed(rule)))
+          Err(OneOfFailed(rule))
         }
       }
       case rule @ IsConcreteSR(_, rune) => {
@@ -327,7 +336,7 @@ class TemplarSolver[Env, State](
           case KindTemplata(kind) => {
             kind match {
               case InterfaceTT(_) => {
-                Err(RuleError(KindIsNotConcrete(kind)))
+                Err(KindIsNotConcrete(kind))
               }
               case _ => Ok(())
             }
@@ -341,7 +350,7 @@ class TemplarSolver[Env, State](
           case KindTemplata(kind) => {
             kind match {
               case InterfaceTT(_) => Ok(())
-              case _ => Err(RuleError(KindIsNotInterface(kind)))
+              case _ => Err(KindIsNotInterface(kind))
             }
           }
           case _ => vwat() // Should be impossible, all template rules are type checked
@@ -353,7 +362,7 @@ class TemplarSolver[Env, State](
           case KindTemplata(kind) => {
             kind match {
               case StructTT(_) => Ok(())
-              case _ => Err(RuleError(KindIsNotStruct(kind)))
+              case _ => Err(KindIsNotStruct(kind))
             }
           }
           case _ => vwat() // Should be impossible, all template rules are type checked
@@ -381,7 +390,7 @@ class TemplarSolver[Env, State](
       case LookupSR(range, rune, name) => {
         val result =
           delegate.lookupTemplataImprecise(env, state, range, name) match {
-            case None => return Err(RuleError(LookupFailed(name)))
+            case None => return Err(LookupFailed(name))
             case Some(x) => x
           }
         stepState.concludeRune[ITemplarSolverError](rune.rune, result)
@@ -393,64 +402,42 @@ class TemplarSolver[Env, State](
 //        stepState.concludeRune[ITemplarSolverError](rune.rune, result)
         Ok(())
       }
-      case AugmentSR(_, resultRune, literals, innerRune) => {
+      case AugmentSR(_, resultRune, augmentOwnership, augmentPermission, innerRune) => {
         stepState.getConclusion(innerRune.rune) match {
           case Some(CoordTemplata(initialCoord)) => {
             val newCoord =
-              literals.foldLeft(initialCoord)({
-                case (coord, OwnershipLiteralSL(newOwnership)) => {
-                  delegate.getMutability(state, coord.kind) match {
-                    case MutableT => {
-                      if (newOwnership == ShareP) {
-                        return Err(RuleError(CantShareMutable(coord.kind)))
-                      }
-                      coord.copy(ownership = Conversions.evaluateOwnership(newOwnership))
-                    }
-                    case ImmutableT => coord
+              delegate.getMutability(state, initialCoord.kind) match {
+                case MutableT => {
+                  if (augmentOwnership == ShareP) {
+                    return Err(CantShareMutable(initialCoord.kind))
                   }
+                  initialCoord
+                    .copy(ownership = Conversions.evaluateOwnership(augmentOwnership))
+                    .copy(permission = Conversions.evaluatePermission(augmentPermission))
                 }
-                case (coord, PermissionLiteralSL(newPermission)) => {
-                  delegate.getMutability(state, coord.kind) match {
-                    case MutableT => coord.copy(permission = Conversions.evaluatePermission(newPermission))
-                    case ImmutableT => coord
-                  }
-                }
-              })
+                case ImmutableT => initialCoord
+              }
             stepState.concludeRune[ITemplarSolverError](resultRune.rune, CoordTemplata(newCoord))
             Ok(())
           }
           case None => {
             val CoordTemplata(initialCoord) = vassertSome(stepState.getConclusion(resultRune.rune))
             val newCoord =
-              literals.foldLeft(initialCoord)({
-                case (coord, OwnershipLiteralSL(requiredOwnership)) => {
-                  delegate.getMutability(state, coord.kind) match {
-                    case MutableT => {
-                      if (requiredOwnership == ShareP) {
-                        return Err(RuleError(CantShareMutable(coord.kind)))
-                      }
-                      if (coord.ownership == Conversions.evaluateOwnership(requiredOwnership)) {
-                        coord.copy(ownership = OwnT)
-                      } else {
-                        return Err(RuleError(OwnershipDidntMatch(coord, Conversions.evaluateOwnership(requiredOwnership))))
-                      }
-                    }
-                    case ImmutableT => coord
+              delegate.getMutability(state, initialCoord.kind) match {
+                case MutableT => {
+                  if (augmentOwnership == ShareP) {
+                    return Err(CantShareMutable(initialCoord.kind))
                   }
-                }
-                case (coord, PermissionLiteralSL(requiredPermission)) => {
-                  delegate.getMutability(state, coord.kind) match {
-                    case MutableT => {
-                      if (coord.permission == Conversions.evaluatePermission(requiredPermission)) {
-                        coord.copy(permission = ReadwriteT)
-                      } else {
-                        return Err(RuleError(PermissionDidntMatch(coord, Conversions.evaluatePermission(requiredPermission))))
-                      }
-                    }
-                    case ImmutableT => coord
+                  if (initialCoord.ownership != Conversions.evaluateOwnership(augmentOwnership)) {
+                    return Err(OwnershipDidntMatch(initialCoord, Conversions.evaluateOwnership(augmentOwnership)))
                   }
+                  if (initialCoord.permission != Conversions.evaluatePermission(augmentPermission)) {
+                    return Err(PermissionDidntMatch(initialCoord, Conversions.evaluatePermission (augmentPermission) ) )
+                  }
+                  initialCoord.copy(ownership = OwnT).copy(permission = ReadwriteT)
                 }
-              })
+                case ImmutableT => initialCoord
+              }
             stepState.concludeRune[ITemplarSolverError](innerRune.rune, CoordTemplata(newCoord))
             Ok(())
           }
@@ -477,7 +464,7 @@ class TemplarSolver[Env, State](
           }
         }
       }
-      case RepeaterSequenceSR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => {
+      case StaticSizedArraySR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => {
         stepState.getConclusion(resultRune.rune) match {
           case None => {
             val MutabilityTemplata(mutability) = vassertSome(stepState.getConclusion(mutabilityRune.rune))
@@ -505,7 +492,34 @@ class TemplarSolver[Env, State](
                 stepState.concludeRune[ITemplarSolverError](variabilityRune.rune, VariabilityTemplata(variability))
                 Ok(())
               }
-              case _ => return Err(RuleError(CallResultWasntExpectedType(StaticSizedArrayTemplateTemplata(), result)))
+              case _ => return Err(CallResultWasntExpectedType(StaticSizedArrayTemplateTemplata(), result))
+            }
+          }
+        }
+      }
+      case RuntimeSizedArraySR(_, resultRune, mutabilityRune, elementRune) => {
+        stepState.getConclusion(resultRune.rune) match {
+          case None => {
+            val MutabilityTemplata(mutability) = vassertSome(stepState.getConclusion(mutabilityRune.rune))
+            val CoordTemplata(element) = vassertSome(stepState.getConclusion(elementRune.rune))
+            val arrKind =
+              delegate.getRuntimeSizedArrayKind(env, state, element, mutability)
+            stepState.concludeRune[ITemplarSolverError](resultRune.rune, KindTemplata(arrKind))
+            Ok(())
+          }
+          case Some(result) => {
+            result match {
+              case KindTemplata(RuntimeSizedArrayTT(mutability, elementType)) => {
+                stepState.concludeRune[ITemplarSolverError](elementRune.rune, CoordTemplata(elementType))
+                stepState.concludeRune[ITemplarSolverError](mutabilityRune.rune, MutabilityTemplata(mutability))
+                Ok(())
+              }
+              case CoordTemplata(CoordT(OwnT | ShareT, _, RuntimeSizedArrayTT(mutability, elementType))) => {
+                stepState.concludeRune[ITemplarSolverError](elementRune.rune, CoordTemplata(elementType))
+                stepState.concludeRune[ITemplarSolverError](mutabilityRune.rune, MutabilityTemplata(mutability))
+                Ok(())
+              }
+              case _ => return Err(CallResultWasntExpectedType(RuntimeSizedArrayTemplateTemplata(), result))
             }
           }
         }
@@ -527,6 +541,9 @@ class TemplarSolver[Env, State](
               case RuntimeSizedArrayTemplateTemplata() => {
                 result match {
                   case CoordTemplata(CoordT(ShareT | OwnT, _, RuntimeSizedArrayTT(mutability, memberType))) => {
+                    if (argRunes.size != 2) {
+                      return Err(WrongNumberOfTemplateArgs(2))
+                    }
                     val Array(mutabilityRune, elementRune) = argRunes
                     stepState.concludeRune[ITemplarSolverError](mutabilityRune.rune, MutabilityTemplata(mutability))
                     stepState.concludeRune[ITemplarSolverError](elementRune.rune, CoordTemplata(memberType))
@@ -538,14 +555,14 @@ class TemplarSolver[Env, State](
                     stepState.concludeRune[ITemplarSolverError](elementRune.rune, CoordTemplata(memberType))
                     Ok(())
                   }
-                  case _ => return Err(RuleError(CallResultWasntExpectedType(template, result)))
+                  case _ => return Err(CallResultWasntExpectedType(template, result))
                 }
               }
               case it @ InterfaceTemplata(_, _) => {
                 result match {
                   case KindTemplata(interface @ InterfaceTT(_)) => {
                     if (!delegate.kindIsFromTemplate(state,interface, it)) {
-                      return Err(RuleError(CallResultWasntExpectedType(it, result)))
+                      return Err(CallResultWasntExpectedType(it, result))
                     }
                     vassert(argRunes.size == interface.fullName.last.templateArgs.size)
                     argRunes.zip(interface.fullName.last.templateArgs).foreach({ case (rune, templateArg) =>
@@ -555,7 +572,7 @@ class TemplarSolver[Env, State](
                   }
                   case CoordTemplata(CoordT(OwnT | ShareT, _, interface @ InterfaceTT(_))) => {
                     if (!delegate.kindIsFromTemplate(state,interface, it)) {
-                      return Err(RuleError(CallResultWasntExpectedType(it, result)))
+                      return Err(CallResultWasntExpectedType(it, result))
                     }
                     vassert(argRunes.size == interface.fullName.last.templateArgs.size)
                     argRunes.zip(interface.fullName.last.templateArgs).foreach({ case (rune, templateArg) =>
@@ -563,28 +580,28 @@ class TemplarSolver[Env, State](
                     })
                     Ok(())
                   }
-                  case _ => return Err(RuleError(CallResultWasntExpectedType(template, result)))
+                  case _ => return Err(CallResultWasntExpectedType(template, result))
                 }
               }
               case it @ KindTemplata(templateInterface @ InterfaceTT(_)) => {
                 result match {
                   case KindTemplata(instantiationInterface @ InterfaceTT(_)) => {
                     if (templateInterface != instantiationInterface) {
-                      return Err(RuleError(CallResultWasntExpectedType(it, result)))
+                      return Err(CallResultWasntExpectedType(it, result))
                     }
                     argRunes.zip(instantiationInterface.fullName.last.templateArgs).foreach({ case (rune, templateArg) =>
                       stepState.concludeRune[ITemplarSolverError](rune.rune, templateArg)
                     })
                     Ok(())
                   }
-                  case _ => return Err(RuleError(CallResultWasntExpectedType(template, result)))
+                  case _ => return Err(CallResultWasntExpectedType(template, result))
                 }
               }
               case st @ StructTemplata(_, _) => {
                 result match {
                   case KindTemplata(struct @ StructTT(_)) => {
                     if (!delegate.kindIsFromTemplate(state,struct, st)) {
-                      return Err(RuleError(CallResultWasntExpectedType(st, result)))
+                      return Err(CallResultWasntExpectedType(st, result))
                     }
                     vassert(argRunes.size == struct.fullName.last.templateArgs.size)
                     argRunes.zip(struct.fullName.last.templateArgs).foreach({ case (rune, templateArg) =>
@@ -594,7 +611,7 @@ class TemplarSolver[Env, State](
                   }
                   case CoordTemplata(CoordT(OwnT | ShareT, _, struct @ StructTT(_))) => {
                     if (!delegate.kindIsFromTemplate(state,struct, st)) {
-                      return Err(RuleError(CallResultWasntExpectedType(st, result)))
+                      return Err(CallResultWasntExpectedType(st, result))
                     }
                     vassert(argRunes.size == struct.fullName.last.templateArgs.size)
                     argRunes.zip(struct.fullName.last.templateArgs).foreach({ case (rune, templateArg) =>
@@ -602,7 +619,7 @@ class TemplarSolver[Env, State](
                     })
                     Ok(())
                   }
-                  case _ => return Err(RuleError(CallResultWasntExpectedType(template, result)))
+                  case _ => return Err(CallResultWasntExpectedType(template, result))
                 }
               }
             }
@@ -726,10 +743,8 @@ class TemplarSolver[Env, State](
 
                   val possibleCoords =
                     unsolvedRules.collect({
-                      case AugmentSR(range, resultRune, literal, innerRune)
+                      case AugmentSR(range, resultRune, ownership, permission, innerRune)
                         if resultRune.rune == receiver => {
-                        val ownership = vassertOne(literal.collect({ case OwnershipLiteralSL(ownership) => ownership }))
-                        val permission = vassertOne(literal.collect({ case PermissionLiteralSL(permission) => permission }))
                         CoordT(
                           Conversions.evaluateOwnership(ownership),
                           Conversions.evaluatePermission(permission),
@@ -857,7 +872,10 @@ class TemplarSolver[Env, State](
               vassert(coerced.tyype == vassertSome(runeToType.get(rune)))
               stepState.concludeRune[ErrType](rune, coerced)
             }
-          })
+          }) match {
+            case Ok(x) => Ok(x)
+            case Err(e) => Err(RuleError(e))
+          }
         }
       }
     Solver.solve[IRulexSR, IRuneS, Env, State, ITemplata, ITemplarSolverError](

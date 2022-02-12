@@ -70,3 +70,5 @@ call build.bat %2 || echo "Tester build failed, aborting." && exit /b 1
 
 echo Running Tester...
 build\testvalec --valestrom_path .\BuiltValeCompiler\Valestrom.jar --midas_path .\BuiltValeCompiler\midas.exe --builtins_dir .\BuiltValeCompiler\builtins --valec_path .\BuiltValeCompiler\valec.exe --midas_tests_dir ..\Midas\test --valestrom_tests_dir ..\Valestrom --concurrent 6 @assist || echo "Tests failed, aborting." && exit /b 1
+
+cd ..

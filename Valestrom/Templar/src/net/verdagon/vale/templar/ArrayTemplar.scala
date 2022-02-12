@@ -4,7 +4,7 @@ import net.verdagon.vale.parser.ast.MutableP
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.scout.rules.{IRulexSR, RuneParentEnvLookupSR, RuneUsage}
-import net.verdagon.vale.scout.{CodeNameS, CodeRuneS, IImpreciseNameS, IRuneS, RuneTypeSolver, SelfNameS}
+import net.verdagon.vale.scout.{CodeNameS, CodeRuneS, CoordTemplataType, IImpreciseNameS, IRuneS, MutabilityTemplataType, RuneTypeSolver, SelfNameS}
 import net.verdagon.vale.templar.OverloadTemplar.FindFunctionFailure
 import net.verdagon.vale.templar.ast.{DestroyImmRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoFunctionTE, FunctionCallTE, NewImmRuntimeSizedArrayTE, ProgramT, PrototypeT, ReferenceExpressionTE, RuntimeSizedArrayLookupTE, StaticArrayFromCallableTE, StaticArrayFromValuesTE, StaticSizedArrayLookupTE}
 import net.verdagon.vale.templar.citizen.{StructTemplar, StructTemplarCore}
@@ -78,7 +78,7 @@ class ArrayTemplar(
     maybeElementTypeRune: Option[IRuneS],
     mutabilityRune: IRuneS,
     sizeTE: ReferenceExpressionTE,
-    callableTE: ReferenceExpressionTE):
+    maybeCallableTE: Option[ReferenceExpressionTE]):
   ReferenceExpressionTE = {
     val runeToType =
       RuneTypeSolver.solve(
@@ -90,7 +90,8 @@ class ArrayTemplar(
         rulesA,
         List(),
         true,
-        Map()) match {
+        Map(mutabilityRune -> MutabilityTemplataType) ++
+          maybeElementTypeRune.map(_ -> CoordTemplataType)) match {
         case Ok(r) => r
         case Err(e) => throw CompileErrorExceptionT(InferAstronomerError(range, e))
       }
@@ -102,6 +103,14 @@ class ArrayTemplar(
 
     mutability match {
       case ImmutableT => {
+        val callableTE =
+          maybeCallableTE match {
+            case None => {
+              throw CompileErrorExceptionT(NewImmRSANeedsCallable(range))
+            }
+            case Some(c) => c
+          }
+
         val prototype =
           overloadTemplar.getArrayGeneratorPrototype(
             temputs, nenv.functionEnvironment, range, callableTE)
@@ -122,16 +131,23 @@ class ArrayTemplar(
         val prototype =
           overloadTemplar.findFunction(
             nenv.functionEnvironment
-              .addEntry(RuneNameT(CodeRuneS("M")), TemplataEnvEntry(MutabilityTemplata(MutableT))),
+              .addEntries(
+                Vector(
+                  (RuneNameT(CodeRuneS("M")), TemplataEnvEntry(MutabilityTemplata(MutableT)))) ++
+              maybeElementTypeRune.map(e => {
+                (RuneNameT(e), TemplataEnvEntry(CoordTemplata(getArrayElementType(templatas, e))))
+              })),
             temputs,
             range,
             CodeNameS("Array"),
             Vector(
-              RuneParentEnvLookupSR(range, RuneUsage(range, CodeRuneS("M")))),
-            Array(CodeRuneS("M")),
-            Vector(
-              ParamFilter(sizeTE.result.reference, None),
-              ParamFilter(callableTE.result.reference, None)),
+              RuneParentEnvLookupSR(range, RuneUsage(range, CodeRuneS("M")))) ++
+            maybeElementTypeRune.map(e => {
+              RuneParentEnvLookupSR(range, RuneUsage(range, e))
+            }),
+            Array(CodeRuneS("M")) ++ maybeElementTypeRune,
+            Vector(ParamFilter(sizeTE.result.reference, None)) ++
+              maybeCallableTE.map(c => ParamFilter(c.result.reference, None)),
             Vector(),
             true)
 
@@ -154,7 +170,7 @@ class ArrayTemplar(
           }
         })
         val callTE =
-          FunctionCallTE(prototype, Vector(sizeTE, callableTE))
+          FunctionCallTE(prototype, Vector(sizeTE) ++ maybeCallableTE)
         callTE
         //        throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't construct a mutable runtime array from a callable!"))
       }

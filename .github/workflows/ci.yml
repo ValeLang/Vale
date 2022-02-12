@@ -34,7 +34,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: ValeCompiler-0-Ubuntu.zip
-          path: .\release-windows\ValeCompiler.zip
+          path: .\release-unix\ValeCompiler.zip
 
   build_and_test_mac:
     runs-on: macos-latest
@@ -47,5 +47,5 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: ValeCompiler-0-Mac.zip
-          path: .\release-windows\ValeCompiler.zip
+          path: .\release-unix\ValeCompiler.zip
 

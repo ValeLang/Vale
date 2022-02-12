@@ -52,7 +52,7 @@ object ScoutErrorHumanizer {
         case CantUseThatLocalName(range, name) => s": Can't use the name ${name} for a local."
         case ExternHasBody(range) => s": Extern function can't have a body too."
         case CantInitializeIndividualElementsOfRuntimeSizedArray(range) => s": Can't initialize individual elements of a runtime-sized array."
-        case InitializingRuntimeSizedArrayRequiresSizeAndCallable(range) => s": Initializing a runtime-sized array requires two arguments: a size, and a function that will populate the elements."
+        case InitializingRuntimeSizedArrayRequiresSizeAndCallable(range) => s": Initializing a runtime-sized array requires 1-2 arguments: a capacity, and optionally a function that will populate that many elements."
         case InitializingStaticSizedArrayRequiresSizeAndCallable(range) => s": Initializing a statically-sized array requires one argument: a function that will populate the elements."
         case InitializingStaticSizedArrayFromCallableNeedsSizeTemplex(range) => s": Initializing a statically-sized array requires a size in-between the square brackets."
       })

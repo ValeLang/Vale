@@ -3,8 +3,9 @@ package net.verdagon.vale
 import com.sun.tools.javac.util.ArrayUtils
 import net.verdagon.vale.parser.ast.ImmutableP
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.ast.{NewImmRuntimeSizedArrayTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE}
+import net.verdagon.vale.templar.ast.{LetNormalTE, NewImmRuntimeSizedArrayTE, NewMutRuntimeSizedArrayTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE}
 import net.verdagon.vale.templar.env.ReferenceLocalVariableT
+import net.verdagon.vale.templar.names.{CodeVarNameT, FullNameT}
 import net.verdagon.vale.templar.types._
 import net.verdagon.von.{VonBool, VonInt, VonStr}
 import org.scalatest.{FunSuite, Matchers}
@@ -310,6 +311,27 @@ class ArrayTests extends FunSuite with Matchers {
     compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
+  test("new rsa") {
+    val compile = RunCompilation.test(
+      """
+        |exported func main() int {
+        |  a = []int(3);
+        |  a!.push(73);
+        |  a!.push(42);
+        |  a!.push(73);
+        |  ret a.1;
+        |}
+      """.stripMargin)
+
+    val temputs = compile.expectTemputs()
+    val main = temputs.lookupFunction("main")
+    Collector.only(main, {
+      case LetNormalTE(ReferenceLocalVariableT(FullNameT(_,Vector(_),CodeVarNameT("a")),_,CoordT(OwnT,ReadwriteT,RuntimeSizedArrayTT(MutableT,CoordT(ShareT,ReadonlyT,IntT(_))))), _) =>
+    })
+
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+  }
+
   test("array map with lambda") {
     val compile = RunCompilation.test(
       """
@@ -609,7 +631,7 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
 
-  test("each on KSA") {
+  test("each on SSA") {
     val compile = RunCompilation.test(
         """
           |import array.make.*;
@@ -635,6 +657,21 @@ class ArrayTests extends FunSuite with Matchers {
       """.stripMargin)
 
     compile.evalForKind(Vector()) shouldEqual VonStr("3")
+  }
+
+  test("Reports when making new imm rsa without lambda") {
+    val compile = RunCompilation.test(
+      """
+        |exported func main() int {
+        |  a = #[](3);
+        |  a!.push(73);
+        |  ret a.0;
+        |}
+      """.stripMargin)
+
+    compile.getTemputs().expectErr() match {
+      case NewImmRSANeedsCallable(_) =>
+    }
   }
 
 //  test("Destroy lambda with mutable captures") {

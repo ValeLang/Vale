@@ -279,6 +279,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
       println("Moving existing output directory {output_dir.str()} to {dest_dir.str()}.");
       output_dir.Rename(&dest_dir).expect();
     }
+    output_dir.CreateDirAll(true);
     valestrom_process =
         invoke_valestrom(
             &valestrom_path,

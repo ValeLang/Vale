@@ -11,14 +11,14 @@ import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.{DestructorTemplar, FunctionTemplar, FunctionTemplarCore, FunctionTemplarMiddleLayer}
 import net.verdagon.vale._
-import net.verdagon.vale.templar.ast.{FunctionHeaderT, PrototypeT}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.citizen.StructTemplarTemplateArgsLayer
-import net.verdagon.vale.templar.names.{ICitizenNameT, INameT}
+import net.verdagon.vale.templar.names.{ICitizenNameT, INameT, NameTranslator}
 
 import scala.collection.immutable.List
 import scala.collection.mutable
 
-case class WeakableImplingMismatch(structWeakable: Boolean, interfaceWeakable: Boolean) extends Throwable { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class WeakableImplingMismatch(structWeakable: Boolean, interfaceWeakable: Boolean) extends Throwable { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
 trait IStructTemplarDelegate {
   def evaluateOrdinaryFunctionFromNonCallForHeader(
@@ -46,13 +46,14 @@ trait IStructTemplarDelegate {
 
 class StructTemplar(
     opts: TemplarOptions,
-    profiler: IProfiler,
+    interner: Interner,
+    nameTranslator: NameTranslator,
     inferTemplar: InferTemplar,
     ancestorHelper: AncestorHelper,
     delegate: IStructTemplarDelegate) {
   val templateArgsLayer =
     new StructTemplarTemplateArgsLayer(
-      opts, profiler, inferTemplar, ancestorHelper, delegate)
+      opts, interner, nameTranslator, inferTemplar, ancestorHelper, delegate)
 
   def getStructRef(
     temputs: Temputs,
@@ -60,7 +61,7 @@ class StructTemplar(
     structTemplata: StructTemplata,
     uncoercedTemplateArgs: Vector[ITemplata]):
   (StructTT) = {
-    profiler.newProfile("StructTemplarGetStructRef", structTemplata.debugString + "<" + uncoercedTemplateArgs.mkString(", ") + ">", () => {
+    Profiler.frame(() => {
       templateArgsLayer.getStructRef(
         temputs, callRange, structTemplata, uncoercedTemplateArgs)
     })
@@ -74,7 +75,7 @@ class StructTemplar(
     interfaceTemplata: InterfaceTemplata,
     uncoercedTemplateArgs: Vector[ITemplata]):
   (InterfaceTT) = {
-//    profiler.newProfile("StructTemplar-getInterfaceRef", interfaceTemplata.debugString + "<" + uncoercedTemplateArgs.mkString(", ") + ">", () => {
+//    Profiler.reentrant("StructTemplar-getInterfaceRef", interfaceTemplata.debugString + "<" + uncoercedTemplateArgs.mkString(", ") + ">", () => {
       templateArgsLayer.getInterfaceRef(
         temputs, callRange, interfaceTemplata, uncoercedTemplateArgs)
 //    })
@@ -88,7 +89,7 @@ class StructTemplar(
     functionS: FunctionA,
     members: Vector[StructMemberT]):
   (StructTT, MutabilityT, FunctionTemplata) = {
-//    profiler.newProfile("StructTemplar-makeClosureUnderstruct", name.codeLocation.toString, () => {
+//    Profiler.reentrant("StructTemplar-makeClosureUnderstruct", name.codeLocation.toString, () => {
       templateArgsLayer.makeClosureUnderstruct(containingFunctionEnv, temputs, name, functionS, members)
 //    })
   }

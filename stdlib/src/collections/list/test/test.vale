@@ -1,0 +1,68 @@
+import stdlib.collections.list.*;
+import stdlib.testsuite.*;
+
+struct Ship {
+  fuel int;
+}
+
+exported func main() {
+  suite = TestSuite();
+
+  suite.test("List from SSA of primitives", {
+    list =
+      List([#][
+        13,
+        14,
+        15
+      ]);
+    sum = 0;
+    list.each({ set sum = sum + _; });
+    sum should_equal 42;
+  });
+
+  suite.test("List from SSA of instances", {
+    list =
+      List([#][
+        Ship(13),
+        Ship(14),
+        Ship(15)
+      ]);
+    sum = 0;
+    list.each({ set sum = sum + _.fuel; });
+    sum should_equal 42;
+  });
+
+  suite.test("ListBuilder 1", {
+    list =
+      ((((ListBuilder<int>())
+        .add(13))
+        .add(14))
+        .add(15)).build();
+    sum = 0;
+    list.each({ set sum = sum + _; });
+    sum should_equal 42;
+  });
+
+  suite.test("List from SSA", {
+    list = List([#][13, 14, 15]);
+    list.get(0) should_equal 13;
+    list.get(1) should_equal 14;
+    list.get(2) should_equal 15;
+  });
+
+  //suite.test("insert", {
+  //  list = List<int>();
+  //  list.add(0);
+  //  list.add(1);
+  //  list.add(2);
+  //  list.add(3);
+  //  list.insert(42, 2);
+  //  list.get(0) should_equal 0;
+  //  list.get(1) should_equal 1;
+  //  list.get(2) should_equal 42;
+  //  list.get(3) should_equal 2;
+  //  list.get(4) should_equal 3;
+  //});
+
+  (suite).finish();
+}

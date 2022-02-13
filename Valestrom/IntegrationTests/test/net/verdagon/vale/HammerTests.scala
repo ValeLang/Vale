@@ -2,7 +2,7 @@ package net.verdagon.vale
 
 import net.verdagon.vale.driver.FullCompilationOptions
 import net.verdagon.vale.hammer._
-import net.verdagon.vale.metal.{BlockH, CallH, ConsecutorH, ConstantIntH, Final, FullNameH, InlineH, IntH, Local, NeverH, PrototypeH, ReadonlyH, ReferenceH, ShareH, StackifyH, VariableIdH, VoidH}
+import net.verdagon.vale.metal.{BlockH, CallH, ConsecutorH, ConstantIntH, Final, FullNameH, InlineH, IntH, Local, NeverH, PrototypeH, ReferenceH, ShareH, StackifyH, VariableIdH, VoidH}
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.templar.types.ShareT
 import net.verdagon.vale.vivem.PanicException
@@ -51,14 +51,14 @@ class HammerTests extends FunSuite with Matchers {
       """.stripMargin)
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
     packageH.interfaces.find(interface => {
-      interface.fullName.toFullString() == """test::C(CT("MyOption"),[TR(R(@,<,#,i(32)))])"""
+      interface.fullName.toFullString() == """test::C(CT("MyOption"),[TR(R(@,<,i(32)))])"""
     }).get;
 
-    val mySome = packageH.structs.find(_.fullName.toFullString() == """test::C(CT("MySome"),[TR(R(@,<,#,i(32)))])""").get;
+    val mySome = packageH.structs.find(_.fullName.toFullString() == """test::C(CT("MySome"),[TR(R(@,<,i(32)))])""").get;
     vassert(mySome.members.size == 1);
-    vassert(mySome.members.head.tyype == ReferenceH[IntH](m.ShareH, InlineH, ReadonlyH, IntH.i32))
+    vassert(mySome.members.head.tyype == ReferenceH[IntH](m.ShareH, InlineH, IntH.i32))
 
-    val myNone = packageH.structs.find(_.fullName.toFullString() == """test::C(CT("MyNone"),[TR(R(@,<,#,i(32)))])""").get;
+    val myNone = packageH.structs.find(_.fullName.toFullString() == """test::C(CT("MyNone"),[TR(R(@,<,i(32)))])""").get;
     vassert(myNone.members.isEmpty);
   }
 
@@ -94,7 +94,7 @@ class HammerTests extends FunSuite with Matchers {
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
     val main = packageH.lookupFunction("main")
     main.body match {
-      case BlockH(CallH(PrototypeH(fullNameH, Vector(), ReferenceH(_, _, ReadonlyH, NeverH())), Vector())) => {
+      case BlockH(CallH(PrototypeH(fullNameH, Vector(), ReferenceH(_, _, NeverH(_))), Vector())) => {
         vassert(fullNameH.toFullString().contains("__vbi_panic"))
       }
     }
@@ -117,7 +117,7 @@ class HammerTests extends FunSuite with Matchers {
           ConsecutorH(Vector(
             intExpr,
             CallH(
-              PrototypeH(_,Vector(),ReferenceH(_,_,ReadonlyH,NeverH())),
+              PrototypeH(_,Vector(),ReferenceH(_,_,NeverH(_))),
               Vector())))) => {
           intExpr
         }

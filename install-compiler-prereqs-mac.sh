@@ -9,13 +9,6 @@ if [ "$BOOTSTRAPPING_VALEC_DIR" == "" ]; then
   exit
 fi
 
-STDLIB_DIR="$2"
-if [ "$STDLIB_DIR" == "" ]; then
-  echo "Second arg must be path to download the current stdlib to."
-  echo "Example: ~/stdlib"
-  exit
-fi
-
 # Installs Xcode if you haven't already.
 echo Installing Xcode...
 xcode-select --install
@@ -42,8 +35,5 @@ echo 'export PATH=$PATH:~/ValeCompiler-0.1.3.3-Mac' >> ~/.zshrc
 
 # Install misc dependencies
 echo "Downloading and unzipping depdendencies and LLVM..."
-brew install llvm@11 sbt cmake
-echo 'export PATH=$PATH:/usr/local/Cellar/llvm@11/11.1.0_2/bin' >> ~/.zshrc
-
-echo "Downloading stdlib..."
-git clone https://github.com/ValeLang/stdlib $STDLIB_DIR
+brew install llvm@13 sbt cmake
+echo 'export PATH=$PATH:/usr/local/Cellar/llvm@13/13.0.0/bin' >> ~/.zshrc

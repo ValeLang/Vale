@@ -10,7 +10,7 @@ import net.verdagon.vale.parser.ast.INameDeclarationP
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.ast.{ArgLookupTE, BlockTE, LocationInFunctionEnvironment, ParameterT, ReferenceExpressionTE, ReturnTE}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.names.NameTranslator
 
@@ -36,7 +36,8 @@ trait IBodyTemplarDelegate {
 
 class BodyTemplar(
   opts: TemplarOptions,
-  profiler: IProfiler,
+
+  nameTranslator: NameTranslator,
 
     templataTemplar: TemplataTemplar,
     convertHelper: ConvertHelper,
@@ -60,7 +61,6 @@ class BodyTemplar(
         case _ => vwat()
       }
 
-    profiler.childFrame("evaluate body", () => {
       maybeExplicitReturnCoord match {
         case None => {
           val (body2, returns) =
@@ -73,8 +73,9 @@ class BodyTemplar(
               case Ok((body, returns)) => (body, returns)
             }
 
+          vassert(body2.result.kind != NeverT(true))
           val returnType2 =
-            if (returns.isEmpty && body2.result.kind == NeverT()) {
+            if (returns.isEmpty && body2.result.kind == NeverT(false)) {
               // No returns yet the body results in a Never. This can happen if we call panic from inside.
               body2.result.reference
             } else {
@@ -106,9 +107,9 @@ class BodyTemplar(
 
           if (returns == Set(explicitRetCoord)) {
             // Let it through, it returns the expected type.
-          } else if (returns == Set(CoordT(ShareT, ReadonlyT, NeverT()))) {
+          } else if (returns == Set(CoordT(ShareT, NeverT(false)))) {
             // Let it through, it returns a never but we expect something else, that's fine
-          } else if (returns == Set() && body2.result.kind == NeverT()) {
+          } else if (returns == Set() && body2.result.kind == NeverT(false)) {
             // Let it through, it doesn't return anything yet it results in a never, which means
             // we called panic or something from inside.
           } else {
@@ -118,11 +119,10 @@ class BodyTemplar(
           (None, body2)
         }
       }
-    })
   }
 
   case class ResultTypeMismatchError(expectedType: CoordT, actualType: CoordT) {
-    val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+    val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
     vpass()
   }
 
@@ -153,7 +153,7 @@ class BodyTemplar(
         case None => unconvertedBodyWithoutReturn
         case Some(expectedResultType) => {
           if (templataTemplar.isTypeConvertible(temputs, unconvertedBodyWithoutReturn.result.reference, expectedResultType)) {
-            if (unconvertedBodyWithoutReturn.kind == NeverT()) {
+            if (unconvertedBodyWithoutReturn.kind == NeverT(false)) {
               unconvertedBodyWithoutReturn
             } else {
               convertHelper.convert(funcOuterEnv.snapshot, temputs, body1.range, unconvertedBodyWithoutReturn, expectedResultType);
@@ -167,7 +167,7 @@ class BodyTemplar(
 
     // If the function doesn't end in a ret, then add one for it.
     val (convertedBodyWithReturn, returnsMaybeWithNever) =
-      if (convertedBodyWithoutReturn.kind == NeverT()) {
+      if (convertedBodyWithoutReturn.kind == NeverT(false)) {
         (convertedBodyWithoutReturn, returnsFromInsideMaybeWithNever)
       } else {
         (ReturnTE(convertedBodyWithoutReturn), returnsFromInsideMaybeWithNever + convertedBodyWithoutReturn.result.reference)
@@ -176,8 +176,8 @@ class BodyTemplar(
     // out below.
 
     val returns =
-      if (returnsMaybeWithNever.size > 1 && returnsMaybeWithNever.contains(CoordT(ShareT, ReadonlyT, NeverT()))) {
-        returnsMaybeWithNever - CoordT(ShareT, ReadonlyT, NeverT())
+      if (returnsMaybeWithNever.size > 1 && returnsMaybeWithNever.contains(CoordT(ShareT, NeverT(false)))) {
+        returnsMaybeWithNever - CoordT(ShareT, NeverT(false))
       } else {
         returnsMaybeWithNever
       }
@@ -217,7 +217,7 @@ class BodyTemplar(
 
     params1.foreach({
       case ParameterS(AtomSP(_, Some(CaptureS(name)), _, _, _)) => {
-        if (!nenv.declaredLocals.exists(_.id.last == NameTranslator.translateVarNameStep(name))) {
+        if (!nenv.declaredLocals.exists(_.id.last == nameTranslator.translateVarNameStep(name))) {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot couldnt find " + name))
         }
       }

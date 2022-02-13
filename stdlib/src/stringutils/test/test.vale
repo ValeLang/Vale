@@ -1,0 +1,139 @@
+import stdlib.stringutils.*;
+import stdlib.testsuite.*;
+
+exported func main() {
+  suite = TestSuite();
+  suite.test("splice", {
+    splice("moo", 1, 1, "lol") should_equal "mlolo";
+  });
+
+  suite.test("splitOnce 1", {
+    maybeFirstAndRest = "".splitOnce(" ");
+    maybeFirstAndRest.isEmpty() should_equal true;
+  });
+  suite.test("splitOnce 2", {
+    maybeFirstAndRest = "bork".splitOnce(" ");
+    maybeFirstAndRest.isEmpty() should_equal true;
+  });
+  suite.test("splitOnce 3", {
+    maybeFirstAndRest = " bork".splitOnce(" ");
+    maybeFirstAndRest.isEmpty() should_equal false;
+    [first, rest] = maybeFirstAndRest.get();
+    first should_equal "".slice();
+    rest should_equal "bork".slice();
+  });
+  suite.test("splitOnce 4", {
+    maybeFirstAndRest = "bork ".splitOnce(" ");
+    maybeFirstAndRest.isEmpty() should_equal false;
+    [first, rest] = maybeFirstAndRest.get();
+    first should_equal "bork".slice();
+    rest should_equal "".slice();
+  });
+  suite.test("split empty 1", {
+    splat = "".split("");
+    splat.len() should_equal 0;
+  });
+  suite.test("split empty 2", {
+    splat = "a".split("");
+    splat.len() should_equal 1;
+    splat.get(0) should_equal "a".slice();
+  });
+  suite.test("split empty 3", {
+    splat = "ab".split("");
+    splat.len() should_equal 2;
+    splat.get(0) should_equal "a".slice();
+    splat.get(1) should_equal "b".slice();
+  });
+  suite.test("split 1", {
+    splat = "".split(" ");
+    splat.len() should_equal 1;
+    splat.get(0) should_equal "".slice();
+  });
+  suite.test("split 2", {
+    splat = "bork".split(" ");
+    splat.len() should_equal 1;
+    splat.get(0) should_equal "bork".slice();
+  });
+  suite.test("split 3", {
+    splat = " bork".split(" ");
+    splat.len() should_equal 2;
+    splat.get(0) should_equal "".slice();
+    splat.get(1) should_equal "bork".slice();
+  });
+  suite.test("split 4", {
+    splat = "bork ".split(" ");
+    splat.len() should_equal 2;
+    splat.get(0) should_equal "bork".slice();
+    splat.get(1) should_equal "".slice();
+  });
+  suite.test("split 5", {
+    splat = "hello my name is evan".split(" ");
+    splat.len() should_equal 5;
+    splat.get(0) should_equal "hello".slice();
+    splat.get(1) should_equal "my".slice();
+    splat.get(2) should_equal "name".slice();
+    splat.get(3) should_equal "is".slice();
+    splat.get(4) should_equal "evan".slice();
+  });
+  suite.test("split 6", {
+    splat = "    ".split(" ");
+    splat.len() should_equal 5;
+    splat.get(0) should_equal "".slice();
+    splat.get(1) should_equal "".slice();
+    splat.get(2) should_equal "".slice();
+    splat.get(3) should_equal "".slice();
+    splat.get(4) should_equal "".slice();
+  });
+  suite.test("parse int None 0", {
+    int("").isEmpty() should_equal true
+  });
+  suite.test("parse int None 1", {
+    int("abc").isEmpty() should_equal true
+  });
+  suite.test("parse int None 2", {
+    int("-").isEmpty() should_equal true
+  });
+  suite.test("parse int None 3", {
+    int(".").isEmpty() should_equal true
+  });
+  suite.test("parse int None 4", {
+    int("\n").isEmpty() should_equal true
+  });
+  suite.test("parse int None 5", {
+    int(" ").isEmpty() should_equal true
+  });
+  suite.test("parse int None 6", {
+    int("0123a").isEmpty() should_equal true
+  });
+  suite.test("parse int Some 0", {
+    result = int("123");
+    result.isEmpty() should_equal false;
+    result.get() should_equal 123;
+  });
+  suite.test("parse int Some 1", {
+    result = int("-123");
+    result.isEmpty() should_equal false;
+    result.get() should_equal -123;
+  });
+  suite.test("parse int Some 2", {
+    result = int("-0");
+    result.isEmpty() should_equal false;
+    result.get() should_equal 0;
+  });
+  suite.test("parse int Some 3", {
+    result = int("0");
+    result.isEmpty() should_equal false;
+    result.get() should_equal 0;
+  });
+
+  suite.sub("replaceAll", (sts) => {
+    sts.test("nothing", { "hello".replaceAll("bork", "arr") should_equal "hello" });
+    sts.test("basic 1", { "hello".replaceAll("ell", "arr") should_equal "harro" });
+    sts.test("basic 2", { "hellello".replaceAll("ell", "arr") should_equal "harrarro" });
+    sts.test("overlapping", { "helllo".replaceAll("ll", "rr") should_equal "herrlo" });
+    sts.test("begin", { "abc".replaceAll("ab", "xy") should_equal "xyc" });
+    sts.test("end", { "abc".replaceAll("bc", "xy") should_equal "axy" });
+  });
+
+  (suite).finish();
+}

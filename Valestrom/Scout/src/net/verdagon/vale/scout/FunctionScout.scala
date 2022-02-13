@@ -1,7 +1,7 @@
 package net.verdagon.vale.scout
 
 import net.verdagon.vale.parser._
-import net.verdagon.vale.parser.ast.{AbstractAttributeP, AbstractP, BlockPE, BorrowP, BuiltinAttributeP, ExportAttributeP, ExternAttributeP, FunctionHeaderP, FunctionP, FunctionReturnP, IAttributeP, IdentifyingRuneP, NameP, PureAttributeP, ReadwriteP, RegionTypePR, ReturnPE, RulePUtils, TypeRuneAttributeP, UseP}
+import net.verdagon.vale.parser.ast._
 import net.verdagon.vale.scout.Scout.noDeclarations
 import net.verdagon.vale.scout.patterns._
 //import net.verdagon.vale.scout.predictor.{Conclusions, PredictorEvaluator}
@@ -15,14 +15,23 @@ import net.verdagon.vale._
 
 import scala.collection.immutable.{List, Range}
 
-class FunctionScout(scout: Scout) {
+class FunctionScout(
+    scout: Scout,
+    interner: Interner,
+    templexScout: TemplexScout,
+    ruleScout: RuleScout) {
+  val patternScout = new PatternScout(interner, templexScout)
   val expressionScout =
     new ExpressionScout(
       new IExpressionScoutDelegate {
         override def scoutLambda(parentStackFrame: StackFrame, lambdaFunction0: FunctionP): (FunctionS, VariableUses) = {
           FunctionScout.this.scoutLambda(parentStackFrame, lambdaFunction0)
         }
-      }
+      },
+      templexScout,
+      ruleScout,
+      patternScout,
+      interner
     )
 
   def scoutTopLevelFunction(file: FileCoordinate, functionP: FunctionP): FunctionS = {
@@ -43,12 +52,12 @@ class FunctionScout(scout: Scout) {
     val name =
       (file, originalCodeName) match {
         case (FileCoordinate("v", Vector("builtins", "arrays"), "arrays.vale"), "__free_replaced") => {
-          FreeDeclarationNameS(Scout.evalPos(file, originalNameRange.begin))
+          interner.intern(FreeDeclarationNameS(Scout.evalPos(file, originalNameRange.begin)))
         }
         case (FileCoordinate("", Vector(), "arrays.vale"), "__free_replaced") => {
-          FreeDeclarationNameS(Scout.evalPos(file, originalNameRange.begin))
+          interner.intern(FreeDeclarationNameS(Scout.evalPos(file, originalNameRange.begin)))
         }
-        case (_, n) => FunctionNameS(n, codeLocation)
+        case (_, n) => interner.intern(FunctionNameS(n, codeLocation))
       }
 
 
@@ -76,7 +85,7 @@ class FunctionScout(scout: Scout) {
 
     val ruleBuilder = ArrayBuffer[IRulexSR]()
     val runeToExplicitType = mutable.HashMap[IRuneS, ITemplataType]()
-    RuleScout.translateRulexes(
+    ruleScout.translateRulexes(
       functionEnv,
       lidb.child(),
       ruleBuilder,
@@ -95,13 +104,13 @@ class FunctionScout(scout: Scout) {
         }
       })
     val explicitParamsPatterns1 =
-      PatternScout.scoutPatterns(
+      patternScout.scoutPatterns(
         myStackFrameWithoutParams, lidb.child(), ruleBuilder, runeToExplicitType, patternsP)
 
     val explicitParams1 = explicitParamsPatterns1.map(ParameterS)
     val captureDeclarations =
       explicitParams1
-        .map(explicitParam1 => VariableDeclarations(PatternScout.getParameterCaptures(explicitParam1.pattern)))
+        .map(explicitParam1 => VariableDeclarations(patternScout.getParameterCaptures(explicitParam1.pattern)))
         .foldLeft(noDeclarations)(_ ++ _)
 
     val maybeRetCoordRune =
@@ -110,21 +119,19 @@ class FunctionScout(scout: Scout) {
           // If nothing's present, assume void
           val rangeS = Scout.evalRange(file, retRange)
           val rune = RuneUsage(rangeS, ImplicitRuneS(lidb.child().consume()))
-          ruleBuilder += LookupSR(rangeS, rune, CodeNameS("void"))
+          ruleBuilder += LookupSR(rangeS, rune, interner.intern(CodeNameS("void")))
           Some(rune)
         }
         case (Some(_), None) => None // Infer the return
         case (None, Some(retTypePT)) => {
           val rune =
-            PatternScout.translateMaybeTypeIntoMaybeRune(
+            templexScout.translateMaybeTypeIntoMaybeRune(
               functionEnv,
               lidb,
               Scout.evalRange(file, retRange),
               ruleBuilder,
               runeToExplicitType,
-              Some(retTypePT),
-              // The rune should be on the right, see DCRC option A.
-              false)
+              Some(retTypePT))
           rune
         }
         case (Some(_), Some(_)) => throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(file, range), "Can't have return type and infer-ret at the same time"))
@@ -161,7 +168,9 @@ class FunctionScout(scout: Scout) {
         if (magicParams.nonEmpty) {
           throw CompileErrorExceptionS(RangedInternalErrorS(rangeS, "Magic param (underscore) in a normal block!"))
         }
-        vassert(body1.closuredNames.isEmpty)
+        if (body1.closuredNames.nonEmpty) {
+          throw CompileErrorExceptionS(RangedInternalErrorS(rangeS, "Internal error: Body closured names not empty?:\n" + body1.closuredNames))
+        }
         CodeBodyS(body1)
       }
 
@@ -214,9 +223,9 @@ class FunctionScout(scout: Scout) {
 
     vcurious(userSpecifiedIdentifyingRuneNames.isEmpty)
 
-    val lambdaName = LambdaDeclarationNameS(/*parentStackFrame.name,*/ codeLocation)
+    val lambdaName = interner.intern(LambdaDeclarationNameS(/*parentStackFrame.name,*/ codeLocation))
     // Every lambda has a closure as its first arg, even if its empty
-    val closureStructName = LambdaStructDeclarationNameS(lambdaName)
+    val closureStructName = interner.intern(LambdaStructDeclarationNameS(lambdaName))
 
     val functionEnv =
       FunctionEnvironment(
@@ -238,7 +247,7 @@ class FunctionScout(scout: Scout) {
     // We say PerhapsTypeless because they might be anonymous params like in `(_) => { true }`
     // Later on, we'll make identifying runes for these.
     val explicitParamPatternsPerhapsTypeless =
-      PatternScout.scoutPatterns(
+      patternScout.scoutPatterns(
         myStackFrameWithoutParams,
         lidb.child(),
         ruleBuilder,
@@ -260,14 +269,14 @@ class FunctionScout(scout: Scout) {
 
 //    vassert(exportedTemplateParamNames.size == exportedTemplateParamNames.toSet.size)
 
-    val closureParamName = ClosureParamNameS()
+    val closureParamName = interner.intern(ClosureParamNameS())
 
     val closureDeclaration =
       VariableDeclarations(Vector(VariableDeclaration(closureParamName)))
 
     val paramDeclarations =
       explicitParams.map(_.pattern)
-        .map(pattern1 => VariableDeclarations(PatternScout.getParameterCaptures(pattern1)))
+        .map(pattern1 => VariableDeclarations(patternScout.getParameterCaptures(pattern1)))
         .foldLeft(closureDeclaration)(_ ++ _)
 
     val (body1, variableUses, lambdaMagicParamNames) =
@@ -294,14 +303,13 @@ class FunctionScout(scout: Scout) {
     val closureStructRune = RuneUsage(closureParamRange, ImplicitRuneS(lidb.child().consume()))
     ruleBuilder +=
       LookupSR(
-        closureParamRange, closureStructRune, closureStructName.getImpreciseName)
+        closureParamRange, closureStructRune, closureStructName.getImpreciseName(interner))
     val closureParamTypeRune = RuneUsage(closureParamRange, ImplicitRuneS(lidb.child().consume()))
     ruleBuilder +=
       AugmentSR(
         closureParamRange,
         closureParamTypeRune,
         BorrowP,
-        ReadwriteP,
         closureStructRune)
 
     val closureParamS =
@@ -340,14 +348,13 @@ class FunctionScout(scout: Scout) {
       (maybeInferRet, maybeRetType) match {
         case (_, None) => None // Infer the return
         case (None, Some(retTypePT)) => {
-          PatternScout.translateMaybeTypeIntoMaybeRune(
+          templexScout.translateMaybeTypeIntoMaybeRune(
             functionEnv,
             lidb.child(),
             Scout.evalRange(myStackFrameWithoutParams.file, retRange),
             ruleBuilder,
             runeToExplicitType,
-            Some(retTypePT),
-            false)
+            Some(retTypePT))
         }
         case (Some(_), Some(_)) => throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(parentStackFrame.file, range), "Can't have return type and infer-ret at the same time"))
       }
@@ -493,7 +500,7 @@ class FunctionScout(scout: Scout) {
     }
 
     val codeLocation = Scout.evalPos(interfaceEnv.file, range.begin)
-    val funcName = FunctionNameS(codeName, codeLocation)
+    val funcName = interner.intern(FunctionNameS(codeName, codeLocation))
     val explicitIdentifyingRunes: Vector[RuneUsage] =
       userSpecifiedIdentifyingRuneNames
           .toVector
@@ -519,14 +526,14 @@ class FunctionScout(scout: Scout) {
     val runeToExplicitType = mutable.HashMap[IRuneS, ITemplataType]()
     runeToExplicitType ++= interfaceRuneToExplicitType
 
-    RuleScout.translateRulexes(interfaceEnv, lidb.child(), ruleBuilder, runeToExplicitType, templateRulesP.toVector.flatMap(_.rules))
+    ruleScout.translateRulexes(interfaceEnv, lidb.child(), ruleBuilder, runeToExplicitType, templateRulesP.toVector.flatMap(_.rules))
 
     val functionEnv =
       FunctionEnvironment(
         interfaceEnv.file, funcName, Some(interfaceEnv), userDeclaredRunes.map(_.rune).toSet, maybeParamsP.size, true)
     val myStackFrame = StackFrame(interfaceEnv.file, funcName, functionEnv, None, noDeclarations)
     val patternsS =
-      PatternScout.scoutPatterns(myStackFrame, lidb.child(), ruleBuilder, runeToExplicitType, maybeParamsP.toVector.flatMap(_.patterns))
+      patternScout.scoutPatterns(myStackFrame, lidb.child(), ruleBuilder, runeToExplicitType, maybeParamsP.toVector.flatMap(_.patterns))
 
     val paramsS = patternsS.map(ParameterS)
 
@@ -535,21 +542,20 @@ class FunctionScout(scout: Scout) {
         case (None, None) => {
           // If nothing's present, assume void
           val rune = RuneUsage(retRangeS, ImplicitRuneS(lidb.child().consume()))
-          ruleBuilder += LookupSR(retRangeS, rune, CodeNameS("void"))
+          ruleBuilder += LookupSR(retRangeS, rune, interner.intern(CodeNameS("void")))
           Some(rune)
         }
         case (Some(_), None) => {
           throw CompileErrorExceptionS(RangedInternalErrorS(rangeS, "Can't infer the return type of an interface method!"))
         }
         case (None, Some(retTypePT)) => {
-          PatternScout.translateMaybeTypeIntoMaybeRune(
+          templexScout.translateMaybeTypeIntoMaybeRune(
             interfaceEnv,
             lidb.child(),
             Scout.evalRange(myStackFrame.file, retRange),
             ruleBuilder,
             runeToExplicitType,
-            Some(retTypePT),
-            false)
+            Some(retTypePT))
         }
         case (Some(_), Some(_)) => throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(myStackFrame.file, range), "Can't have return type and infer-ret at the same time"))
       }

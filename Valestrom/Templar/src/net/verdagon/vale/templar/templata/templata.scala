@@ -1,12 +1,12 @@
 package net.verdagon.vale.templar.templata
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.scout.{BooleanTemplataType, CoordTemplataType, FunctionNameS, ITemplataType, IntegerTemplataType, KindTemplataType, LocationTemplataType, MutabilityTemplataType, OwnershipTemplataType, PackTemplataType, PermissionTemplataType, PrototypeTemplataType, StringTemplataType, TemplateTemplataType, TopLevelCitizenDeclarationNameS, VariabilityTemplataType}
-import net.verdagon.vale.templar.ast.{FunctionHeaderT, PrototypeT}
+import net.verdagon.vale.scout.{BooleanTemplataType, CoordTemplataType, FunctionNameS, ITemplataType, IntegerTemplataType, KindTemplataType, LocationTemplataType, MutabilityTemplataType, OwnershipTemplataType, PackTemplataType, PrototypeTemplataType, StringTemplataType, TemplateTemplataType, TopLevelCitizenDeclarationNameS, VariabilityTemplataType, IEnvironment => _}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.names.{CitizenNameT, CitizenTemplateNameT, FullNameT, FunctionNameT, INameT, NameTranslator, PackageTopLevelNameT}
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{PackageCoordinate, vassert, vfail, vimpl, vpass}
+import net.verdagon.vale.{PackageCoordinate, vassert, vcurious, vfail, vimpl, vpass}
 
 import scala.collection.immutable.List
 
@@ -21,14 +21,12 @@ case class CoordTemplata(reference: CoordT) extends ITemplata {
   override def order: Int = 1;
   override def tyype: ITemplataType = CoordTemplataType
 
-
+  vpass()
 }
 case class KindTemplata(kind: KindT) extends ITemplata {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 2;
   override def tyype: ITemplataType = KindTemplataType
-
-
 }
 case class RuntimeSizedArrayTemplateTemplata() extends ITemplata {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
@@ -59,6 +57,16 @@ case class FunctionTemplata(
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case FunctionTemplata(thatEnv, thatFunction) => {
+        function.range == thatFunction.range &&
+          function.name == thatFunction.name
+      }
+      case _ => false
+    }
+  }
+
   override def order: Int = 6
   override def tyype: ITemplataType = vfail()
 
@@ -77,7 +85,8 @@ case class FunctionTemplata(
 
 
   def getTemplateName(): FullNameT[INameT] = {
-    outerEnv.fullName.addStep(NameTranslator.translateFunctionNameToTemplateName(function.name))
+    vimpl()
+//    outerEnv.fullName.addStep(nameTranslator.translateFunctionNameToTemplateName(function.name))
   }
 
   def debugString: String = outerEnv.fullName + ":" + function.name
@@ -156,7 +165,7 @@ case class InterfaceTemplata(
 
 
   def getTemplateName(): INameT = {
-    CitizenTemplateNameT(originInterface.name.name)//, NameTranslator.translateCodeLocation(originInterface.name.range.begin))
+    CitizenTemplateNameT(originInterface.name.name)//, nameTranslator.translateCodeLocation(originInterface.name.range.begin))
   }
 
   def debugString: String = env.fullName + ":" + originInterface.name
@@ -180,73 +189,48 @@ case class ImplTemplata(
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 9
   override def tyype: ITemplataType = vfail()
-
-
 }
 
 case class OwnershipTemplata(ownership: OwnershipT) extends ITemplata {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 10;
   override def tyype: ITemplataType = OwnershipTemplataType
-
-
 }
 case class VariabilityTemplata(variability: VariabilityT) extends ITemplata {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 11;
   override def tyype: ITemplataType = VariabilityTemplataType
-
-
 }
 case class MutabilityTemplata(mutability: MutabilityT) extends ITemplata {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 12;
   override def tyype: ITemplataType = MutabilityTemplataType
-
-
-}
-case class PermissionTemplata(permission: PermissionT) extends ITemplata {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def order: Int = 13;
-  override def tyype: ITemplataType = PermissionTemplataType
-
-
 }
 case class LocationTemplata(location: LocationT) extends ITemplata {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 14;
   override def tyype: ITemplataType = LocationTemplataType
-
-
 }
 
 case class BooleanTemplata(value: Boolean) extends ITemplata {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 15;
   override def tyype: ITemplataType = BooleanTemplataType
-
-
 }
 case class IntegerTemplata(value: Long) extends ITemplata {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 16;
   override def tyype: ITemplataType = IntegerTemplataType
-
-
 }
 case class StringTemplata(value: String) extends ITemplata {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 17;
   override def tyype: ITemplataType = StringTemplataType
-
-
 }
 case class PrototypeTemplata(value: PrototypeT) extends ITemplata {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 18;
   override def tyype: ITemplataType = PrototypeTemplataType
-
-
 }
 case class CoordListTemplata(coords: Vector[CoordT]) extends ITemplata {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
@@ -267,6 +251,4 @@ case class ExternFunctionTemplata(header: FunctionHeaderT) extends ITemplata {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 1337
   override def tyype: ITemplataType = vfail()
-
-
 }

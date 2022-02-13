@@ -1,0 +1,54 @@
+import stdlib.collections.list.*;
+import stdlib.math.*;
+
+struct HashSetDiffIterator<K, H, E> {
+  table &[]Opt<K>;
+  otherTable &HashSet<K, H, E>;
+  pos! int;
+}
+
+func diff_iter<K, H, E>(
+  a &HashSet<K, H, E>,
+  b &HashSet<K, H, E>)
+HashSetDiffIterator<K, H, E> {
+  HashSetDiffIterator(a.table, b, 0)
+}
+
+func begin<K, H, E>(iter &HashSetDiffIterator<K, H, E>) HashSetDiffIterator<K, H, E> {
+  HashSetDiffIterator<K, H, E>(iter.table, iter.otherTable, iter.pos)
+}
+
+func next<K, H, E>(iter &HashSetDiffIterator<K, H, E>) Opt<K> {
+  while iter.pos < iter.table.len() {
+    if entry = iter.table[set iter.pos = iter.pos + 1];
+        not entry.isEmpty() {
+      x = (entry).get();
+      if not iter.otherTable.contains(x) {
+        ret Some<K>(x);
+      }
+    }
+  }
+  ret None<K>();
+}
+
+func List<K, H, E>(
+  iter &HashSetDiffIterator<K, H, E>)
+List<K> {
+  list = List<K>();
+  foreach x in iter {
+    list.add(x);
+  }
+  ret list;
+}
+
+func HashSet<K, H, E>(
+  iter &HashSetDiffIterator<K, H, E>,
+  hasher H,
+  equator E)
+HashSet<K, H, E> {
+  list = HashSet<K, H, E>(hasher, equator);
+  foreach x in iter {
+    list.add(x);
+  }
+  ret list;
+}

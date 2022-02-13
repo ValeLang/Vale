@@ -3,7 +3,7 @@ package net.verdagon.vale
 import com.sun.tools.javac.util.ArrayUtils
 import net.verdagon.vale.parser.ast.ImmutableP
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.ast.{LetNormalTE, NewImmRuntimeSizedArrayTE, NewMutRuntimeSizedArrayTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.env.ReferenceLocalVariableT
 import net.verdagon.vale.templar.names.{CodeVarNameT, FullNameT}
 import net.verdagon.vale.templar.types._
@@ -20,7 +20,7 @@ class ArrayTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) match { case VonInt(5) => }
   }
 
   test("Simple static array and runtime index lookup") {
@@ -35,11 +35,11 @@ class ArrayTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), {
-      case StaticSizedArrayLookupTE(_,_,_,_, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,_,_, _) => {
       }
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) match { case VonInt(4) => }
   }
 
   test("Destroy SSA of imms into function") {
@@ -48,12 +48,12 @@ class ArrayTests extends FunSuite with Matchers {
         |exported func main() int {
         |  a = [#][13, 14, 15];
         |  sum = 0;
-        |  drop_into(a, &!(e) => { set sum = sum + e; });
+        |  drop_into(a, &(e) => { set sum = sum + e; });
         |  ret sum;
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Destroy RSA of imms into function") {
@@ -62,12 +62,12 @@ class ArrayTests extends FunSuite with Matchers {
         |exported func main() int {
         |  a = Array<imm>(3, {13 + _});
         |  sum = 0;
-        |  drop_into(a, &!(e) => { set sum = sum + e; });
+        |  drop_into(a, &(e) => { set sum = sum + e; });
         |  ret sum;
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Destroy SSA of muts into function") {
@@ -77,12 +77,12 @@ class ArrayTests extends FunSuite with Matchers {
         |exported func main() int {
         |  a = [#][Spaceship(13), Spaceship(14), Spaceship(15)];
         |  sum = 0;
-        |  drop_into(a, &!(e) => { set sum = sum + e.fuel; });
+        |  drop_into(a, &(e) => { set sum = sum + e.fuel; });
         |  ret sum;
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Destroy RSA of muts into function") {
@@ -91,14 +91,14 @@ class ArrayTests extends FunSuite with Matchers {
         |import array.make.*;
         |struct Spaceship { fuel int; }
         |exported func main() int {
-        |  a = MakeVaryArray(3, &!{Spaceship(13 + _)});
+        |  a = MakeVaryArray(3, &{Spaceship(13 + _)});
         |  sum = 0;
-        |  drop_into(a, &!(e) => { set sum = sum + e.fuel; });
+        |  drop_into(a, &(e) => { set sum = sum + e.fuel; });
         |  ret sum;
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Migrate RSA") {
@@ -107,14 +107,14 @@ class ArrayTests extends FunSuite with Matchers {
         |import array.make.*;
         |struct Spaceship { fuel int; }
         |exported func main() int {
-        |  a = Array<mut, Spaceship>(3, &!{Spaceship(41 + _)});
+        |  a = Array<mut, Spaceship>(3, &{Spaceship(41 + _)});
         |  b = Array<mut, Spaceship>(3);
-        |  migrate(a, &!b);
+        |  migrate(a, &b);
         |  ret b[1].fuel;
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Migrate SSA") {
@@ -123,14 +123,14 @@ class ArrayTests extends FunSuite with Matchers {
         |import array.make.*;
         |struct Spaceship { fuel int; }
         |exported func main() int {
-        |  a = [#3](&!{Spaceship(41 + _)});
+        |  a = [#3](&{Spaceship(41 + _)});
         |  b = Array<mut, Spaceship>(3);
-        |  migrate(a, &!b);
+        |  migrate(a, &b);
         |  ret b[1].fuel;
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Unspecified-mutability static array from lambda defaults to mutable") {
@@ -138,19 +138,19 @@ class ArrayTests extends FunSuite with Matchers {
       """
         |exported func main() int {
         |  i = 3;
-        |  a = [#5](*!{_ * 42});
+        |  a = [#5](&{_ * 42});
         |  ret a[1];
         |}
         |""".stripMargin)
 
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), {
-      case StaticSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,arrayType, _, _) => {
         arrayType.mutability shouldEqual MutableT
       }
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Immutable static array from lambda") {
@@ -158,12 +158,12 @@ class ArrayTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), {
-      case StaticSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,arrayType, _, _) => {
         arrayType.mutability shouldEqual ImmutableT
       }
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Mutable static array from lambda") {
@@ -171,12 +171,12 @@ class ArrayTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), {
-      case StaticSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,arrayType, _, _) => {
         arrayType.mutability shouldEqual MutableT
       }
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Immutable static array from values") {
@@ -184,12 +184,12 @@ class ArrayTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), {
-      case StaticSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,arrayType, _, _) => {
         arrayType.mutability shouldEqual ImmutableT
       }
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Mutable static array from values") {
@@ -197,12 +197,12 @@ class ArrayTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), {
-      case StaticSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
+      case StaticSizedArrayLookupTE(_,_,arrayType, _, _) => {
         arrayType.mutability shouldEqual MutableT
       }
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Unspecified-mutability runtime array from lambda defaults to mutable") {
@@ -211,19 +211,19 @@ class ArrayTests extends FunSuite with Matchers {
         |import array.make.*;
         |exported func main() int {
         |  i = 3;
-        |  a = MakeVaryArray(5, *!{_ * 42});
+        |  a = MakeVaryArray(5, &{_ * 42});
         |  ret a[1];
         |}
         |""".stripMargin)
 
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), {
-      case RuntimeSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
+      case RuntimeSizedArrayLookupTE(_,_,arrayType, _, _) => {
         arrayType.mutability shouldEqual MutableT
       }
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Immutable runtime array from lambda") {
@@ -231,12 +231,12 @@ class ArrayTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), {
-      case RuntimeSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
+      case RuntimeSizedArrayLookupTE(_,_,arrayType, _, _) => {
         arrayType.mutability shouldEqual ImmutableT
       }
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Mutable runtime array from lambda") {
@@ -246,12 +246,12 @@ class ArrayTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), {
-      case RuntimeSizedArrayLookupTE(_,_,arrayType, _, _, _) => {
+      case RuntimeSizedArrayLookupTE(_,_,arrayType, _, _) => {
         arrayType.mutability shouldEqual MutableT
       }
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   //m [<mut> 3 * [#3]<mut>int] = [mut][ [mut][1, 2, 3], [mut][4, 5, 6], [mut][7, 8, 9] ];
@@ -267,7 +267,7 @@ class ArrayTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) match { case VonInt(5) => }
   }
 
   test("Borrow arraysequence as a parameter") {
@@ -277,16 +277,16 @@ class ArrayTests extends FunSuite with Matchers {
         |  x int;
         |}
         |
-        |func doThings(arr *[#3]^MutableStruct) int {
+        |func doThings(arr &[#3]^MutableStruct) int {
         |  ret arr.2.x;
         |}
         |exported func main() int {
         |  a = [#][MutableStruct(2), MutableStruct(3), MutableStruct(4)];
-        |  ret doThings(*a);
+        |  ret doThings(&a);
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) match { case VonInt(4) => }
   }
 
   // the argument to __Array doesnt even have to be a struct or a lambda or an
@@ -305,10 +305,10 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     Collector.only(main, {
-      case NewImmRuntimeSizedArrayTE(RuntimeSizedArrayTT(ImmutableT, CoordT(ShareT, ReadonlyT, IntT(_))), _, _, _) =>
+      case NewImmRuntimeSizedArrayTE(RuntimeSizedArrayTT(ImmutableT, CoordT(ShareT, IntT(_))), _, _, _) =>
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
 
   test("new rsa") {
@@ -316,9 +316,9 @@ class ArrayTests extends FunSuite with Matchers {
       """
         |exported func main() int {
         |  a = []int(3);
-        |  a!.push(73);
-        |  a!.push(42);
-        |  a!.push(73);
+        |  a.push(73);
+        |  a.push(42);
+        |  a.push(73);
         |  ret a.1;
         |}
       """.stripMargin)
@@ -326,10 +326,10 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     Collector.only(main, {
-      case LetNormalTE(ReferenceLocalVariableT(FullNameT(_,Vector(_),CodeVarNameT("a")),_,CoordT(OwnT,ReadwriteT,RuntimeSizedArrayTT(MutableT,CoordT(ShareT,ReadonlyT,IntT(_))))), _) =>
+      case LetNormalTE(ReferenceLocalVariableT(FullNameT(_,Vector(_),CodeVarNameT("a")),_,CoordT(OwnT,RuntimeSizedArrayTT(MutableT,CoordT(ShareT,IntT(_))))), _) =>
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("array map with lambda") {
@@ -339,7 +339,7 @@ class ArrayTests extends FunSuite with Matchers {
         |func __call(lam Lam, i int) int { ret i; }
         |
         |exported func main() int
-        |where F Prot = Prot("__call", Refs(Lam, int), int) {
+        |where F Prot = Prot["__call", Refs(Lam, int), int] {
         |  a = #[](10, Lam());
         |  ret a.3;
         |}
@@ -348,10 +348,10 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     Collector.only(main, {
-      case NewImmRuntimeSizedArrayTE(RuntimeSizedArrayTT(ImmutableT, CoordT(ShareT, ReadonlyT, IntT(_))), _, _, _) =>
+      case NewImmRuntimeSizedArrayTE(RuntimeSizedArrayTT(ImmutableT, CoordT(ShareT, IntT(_))), _, _, _) =>
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
 
   test("MakeArray map with struct") {
@@ -368,7 +368,7 @@ class ArrayTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
 
   test("MakeArray map with lambda") {
@@ -381,7 +381,7 @@ class ArrayTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
 
   test("array map with interface") {
@@ -390,7 +390,7 @@ class ArrayTests extends FunSuite with Matchers {
           |import array.make.*;
           |import ifunction.ifunction1.*;
           |exported func main() int {
-          |  a = Array<imm, int>(10, *!IFunction1<imm, int, int>({_}));
+          |  a = Array<imm, int>(10, &IFunction1<imm, int, int>({_}));
           |  ret a.3;
           |}
           |""".stripMargin)
@@ -398,10 +398,10 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("Array")
     Collector.only(main, {
-      case NewImmRuntimeSizedArrayTE(RuntimeSizedArrayTT(ImmutableT, CoordT(ShareT, ReadonlyT, IntT(_))), _, _, _) =>
+      case NewImmRuntimeSizedArrayTE(RuntimeSizedArrayTT(ImmutableT, CoordT(ShareT, IntT(_))), _, _, _) =>
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
 
   test("Array map taking a closure which captures something") {
@@ -413,7 +413,7 @@ class ArrayTests extends FunSuite with Matchers {
           |  ret a.3;
           |}
         """.stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(10)
+    compile.evalForKind(Vector()) match { case VonInt(10) => }
   }
 
   test("Simple array map with runtime index lookup") {
@@ -426,7 +426,7 @@ class ArrayTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) match { case VonInt(5) => }
   }
 
   test("Nested array") {
@@ -437,7 +437,7 @@ class ArrayTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(2)
+    compile.evalForKind(Vector()) match { case VonInt(2) => }
   }
 
 
@@ -453,7 +453,7 @@ class ArrayTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
 
   test("Array with capture") {
@@ -465,21 +465,21 @@ class ArrayTests extends FunSuite with Matchers {
           |
           |exported func main() int {
           |  box = IntBox(7);
-          |  board = MakeArray(3, &!(col) => { box.i });
+          |  board = MakeArray(3, &(col) => { box.i });
           |  ret board.1;
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(7)
+    compile.evalForKind(Vector()) match { case VonInt(7) => }
   }
 
   test("Capture") {
     val compile = RunCompilation.test(
       """
         |func myFunc<F>(generator F) T
-        |where T Ref, Prot("__call", Refs(F, int), T)
+        |where T Ref, Prot["__call", Refs(F, int), T]
         |{
-        |  ret generator!(9);
+        |  ret generator(9);
         |}
         |
         |struct IntBox {
@@ -489,12 +489,12 @@ class ArrayTests extends FunSuite with Matchers {
         |exported func main() int {
         |  box = IntBox(7);
         |  lam = (col) => { box.i };
-        |  board = myFunc(&!lam);
+        |  board = myFunc(&lam);
         |  ret board;
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(7)
+    compile.evalForKind(Vector()) match { case VonInt(7) => }
   }
 
 
@@ -508,7 +508,7 @@ class ArrayTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(1337)
+    compile.evalForKind(Vector()) match { case VonInt(1337) => }
   }
 
   test("Capture mutable array") {
@@ -517,12 +517,12 @@ class ArrayTests extends FunSuite with Matchers {
           |import ifunction.ifunction1.*;
           |struct MyIntIdentity {}
           |impl IFunction1<mut, int, int> for MyIntIdentity;
-          |func __call(this &!MyIntIdentity impl IFunction1<mut, int, int>, i int) int { ret i; }
+          |func __call(this &MyIntIdentity, i int) int { ret i; }
           |exported func main() {
           |  m = MyIntIdentity();
-          |  arr = MakeArray(10, &!m);
+          |  arr = MakeArray(10, &m);
           |  lam = { print(str(arr.6)); };
-          |  lam!();
+          |  lam();
           |}
         """.stripMargin)
 
@@ -537,16 +537,16 @@ class ArrayTests extends FunSuite with Matchers {
           |
           |struct GoblinMaker {}
           |impl IFunction1<mut, int, Goblin> for GoblinMaker;
-          |func __call(this &!GoblinMaker impl IFunction1<mut, int, Goblin>, i int) Goblin { ret Goblin(); }
+          |func __call(this &GoblinMaker, i int) Goblin { ret Goblin(); }
           |exported func main() int {
           |  m = GoblinMaker();
-          |  arr = MakeVaryArray(1, &!m);
+          |  arr = MakeVaryArray(1, &m);
           |  set arr.0 = Goblin();
           |  ret 4;
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) match { case VonInt(4) => }
   }
 
 
@@ -558,7 +558,7 @@ class ArrayTests extends FunSuite with Matchers {
           |  ret len(&a);
           |}
         """.stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(11)
+    compile.evalForKind(Vector()) match { case VonInt(11) => }
   }
 
   test("Map using array construct") {
@@ -568,21 +568,21 @@ class ArrayTests extends FunSuite with Matchers {
           |exported func main() int {
           |  board = MakeArray(5, {_});
           |  result =
-          |      MakeArray(5, &!(i) => {
+          |      MakeArray(5, &(i) => {
           |        board[i] + 2
           |      });
           |  ret result.2;
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) match { case VonInt(4) => }
   }
 
   test("Map from hardcoded values") {
     val compile = RunCompilation.test(
         """
           |import array.make.*;
-          |func toArray<M, N, E>(seq *[#N]<_>E) []<M>E
+          |func toArray<M, N, E>(seq &[#N]<_>E) []<M>E
           |where M Mutability {
           |  ret MakeArray(N, { seq[_] });
           |}
@@ -590,7 +590,7 @@ class ArrayTests extends FunSuite with Matchers {
           |  ret #[#][6, 4, 3, 5, 2, 8].toArray<mut>()[3];
           |}
           |""".stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) match { case VonInt(5) => }
   }
 
   test("Nested imm arrays") {
@@ -601,7 +601,7 @@ class ArrayTests extends FunSuite with Matchers {
         |  ret #[#][#[#][6, 60].toImmArray(), #[#][4, 40].toImmArray(), #[#][3, 30].toImmArray()].toImmArray()[2][1];
         |}
         |""".stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(30)
+    compile.evalForKind(Vector()) match { case VonInt(30) => }
   }
 
   test("Array foreach") {
@@ -611,12 +611,12 @@ class ArrayTests extends FunSuite with Matchers {
         |import array.each.*;
         |import ifunction.ifunction1.*;
         |exported func main() int {
-        |  sum! = 0;
-        |  [#][6, 60, 103].each(&!IFunction1<mut, int, void>({ set sum = sum + _; }));
+        |  sum = 0;
+        |  [#][6, 60, 103].each(&IFunction1<mut, int, void>({ set sum = sum + _; }));
         |  ret sum;
         |}
         |""".stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(169)
+    compile.evalForKind(Vector()) match { case VonInt(169) => }
   }
 
   test("Array has") {
@@ -624,10 +624,10 @@ class ArrayTests extends FunSuite with Matchers {
         """
           |import array.has.*;
           |exported func main() bool {
-          |  ret [#][6, 60, 103].has(103);
+          |  ret (&[#][6, 60, 103]).has(103);
           |}
           |""".stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonBool(true)
+    compile.evalForKind(Vector()) match { case VonBool(true) => }
   }
 
 
@@ -656,7 +656,7 @@ class ArrayTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonStr("3")
+    compile.evalForKind(Vector()) match { case VonStr("3") => }
   }
 
   test("Reports when making new imm rsa without lambda") {
@@ -664,7 +664,7 @@ class ArrayTests extends FunSuite with Matchers {
       """
         |exported func main() int {
         |  a = #[](3);
-        |  a!.push(73);
+        |  a.push(73);
         |  ret a.0;
         |}
       """.stripMargin)
@@ -693,7 +693,7 @@ class ArrayTests extends FunSuite with Matchers {
 //          |  ret newArray.0;
 //          |}
 //          |""".stripMargin)
-//    compile.evalForKind(Vector()) shouldEqual VonInt(0)
+//    compile.evalForKind(Vector()) match { case VonInt(0) => }
 //  }
 
 
@@ -713,7 +713,7 @@ class ArrayTests extends FunSuite with Matchers {
 //        |}
 //      """.stripMargin)
 //
-//    compile.evalForKind(Vector()) shouldEqual VonInt(3)
+//    compile.evalForKind(Vector()) match { case VonInt(3) => }
 //  }
 
 

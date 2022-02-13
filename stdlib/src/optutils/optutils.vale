@@ -1,0 +1,63 @@
+
+func nonEmpty<T>(self &Opt<T>) bool { not self.isEmpty() }
+
+
+abstract func get<T>(virtual opt Opt<T>, msg str) T;
+func get<T>(opt None<T>, msg str) T { panic(msg); }
+func get<T>(opt Some<T>, msg str) T {
+  [value] = opt;
+  ret value;
+}
+
+abstract func get<T>(virtual opt &Opt<T>, msg str) &T;
+func get<T>(opt &None<T>, msg str) &T { panic(msg); }
+func get<T>(opt &Some<T>, msg str) &T { ret &opt.value; }
+
+func ==<T>(a &Opt<T>, b &Opt<T>) bool
+where Prot["==", Refs(&T, &T), bool] {
+  if a.isEmpty() and b.isEmpty() {
+    ret true;
+  }
+  if a.isEmpty() != b.isEmpty() {
+    ret false;
+  }
+  ret a.get() == b.get();
+}
+
+func clone<T>(self &Opt<T>) Opt<T>
+where Prot["clone", Refs(&T), T] {
+  if self.isEmpty() {
+    ret None<T>();
+  }
+  ret Some(self.get().clone());
+}
+
+
+func map<F, T>(self &Opt<T>, func &F) Opt<R>
+where Prot["__call", Refs(&F, &T), R Ref] {
+  if self.isEmpty() {
+    None<R>()
+  } else {
+    Some<R>(func(&self.get()))
+  }
+}
+
+func or<F, T>(self Opt<T>, func F) T
+where Prot["__call", Refs(&F), _] {
+  if self.isEmpty() {
+    [ ] = self.as<None<T>>().expect("zork f");
+    ret func();
+  } else {
+    ret (self).get();
+  }
+}
+
+func or<F, T>(self &Opt<T>, func F) &T
+where Prot["__call", Refs(&F), _] {
+  if self.isEmpty() {
+    [ ] = self.as<None<T>>().expect("zork g");
+    ret func();
+  } else {
+    ret self.get();
+  }
+}

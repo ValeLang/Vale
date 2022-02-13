@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar.names
 
-import net.verdagon.vale.templar.ast.{AbstractT, OverrideT, PrototypeT}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.{CodeLocationS, vimpl}
@@ -107,7 +107,7 @@ import net.verdagon.vale.{CodeLocationS, vimpl}
 //    getReferenceIdentifierName(tyype) +
 //      (virtuality match {
 //        case None => ""
-//        case Some(AbstractT) => " abstract"
+//        case Some(AbstractT()) => " abstract"
 //        case Some(OverrideT(kind)) => " impl " + getKindIdentifierName(kind)
 //      })
 //  }

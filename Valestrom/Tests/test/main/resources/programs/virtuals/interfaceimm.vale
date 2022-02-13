@@ -20,8 +20,8 @@ func sum(list @MyList) int {
 }
 
 abstract func sum(virtual opt @MyOption) int;
-func sum(opt @MyNone impl MyOption) int { ret 0; }
-func sum(opt @MySome impl MyOption) int {
+func sum(opt @MyNone) int { ret 0; }
+func sum(opt @MySome) int {
    ret sum(opt.value);
 }
 

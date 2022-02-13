@@ -3,7 +3,7 @@ import stdlib.*;
 struct Spaceship {
   fuel int;
 }
-fn main() int export {
+func main() int export {
   print("Starting...\n");
   s = Spaceship(73);
   b = &s;

@@ -100,7 +100,7 @@ class AstronomerTests extends FunSuite with Matchers  {
     val compilation =
       AstronomerTestCompilation.test(
         """interface Moo<T> where T Ref {
-          |  func bork(virtual self *Moo<T>) int;
+          |  func bork(virtual self &Moo<T>) int;
           |}
           |""".stripMargin)
     val astrouts = compilation.getAstrouts().getOrDie()
@@ -139,7 +139,7 @@ class AstronomerTests extends FunSuite with Matchers  {
     val compilation =
       AstronomerTestCompilation.test(
         """func moo<T>()
-          |where Prot("moo", Refs(T, bool), str)
+          |where Prot["moo", Refs(T, bool), str]
           |{
           |}
           |""".stripMargin)
@@ -153,7 +153,7 @@ class AstronomerTests extends FunSuite with Matchers  {
     val compilation =
       AstronomerTestCompilation.test(
         """func moo<P>()
-          |where P = Refs(), Prot("moo", P, str)
+          |where P RefList = Refs(), Prot["moo", P, str]
           |{
           |}
           |""".stripMargin)

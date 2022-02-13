@@ -18,12 +18,12 @@ object ProgramH {
 
 case class RegionH(
   name: String,
-  kinds: Vector[KindH]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+  kinds: Vector[KindH]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
 case class Export(
   nameH: FullNameH,
   exportedName: String
-) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
 case class PackageH(
     // All the interfaces in the program.
@@ -47,7 +47,7 @@ case class PackageH(
     // Translations for backends to use if they need to export a name.
     externNameToKind: Map[String, KindH]
 ) {
-  override def hashCode(): Int = vfail() // Would need a really good reason to hash something this big
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vfail() // Would need a really good reason to hash something this big
 
   // These are convenience functions for the tests to look up various functions.
   def externFunctions = functions.filter(_.isExtern)
@@ -90,7 +90,7 @@ case class PackageH(
 
 case class ProgramH(
   packages: PackageCoordinateMap[PackageH]) {
-  override def hashCode(): Int = vfail() // Would need a really good reason to hash something this big
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vfail() // Would need a really good reason to hash something this big
 
 
   def lookupPackage(packageCoordinate: PackageCoordinate): PackageH = {
@@ -140,7 +140,7 @@ case class StructDefinitionH(
     edges: Vector[EdgeH],
     // The members of the struct, in order.
     members: Vector[StructMemberH]) {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
   def getRef: StructRefH = StructRefH(fullName)
 }
 
@@ -153,7 +153,7 @@ case class StructMemberH(
   // This isn't wired up to anything, feel free to ignore it.
   variability: Variability,
   // The type of the member.
-  tyype: ReferenceH[KindH]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+  tyype: ReferenceH[KindH]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
 // An interface definition containing name, methods, etc.
 case class InterfaceDefinitionH(
@@ -174,7 +174,7 @@ case class InterfaceDefinitionH(
   superInterfaces: Vector[InterfaceRefH],
   // All the methods that we can call on this interface.
   methods: Vector[InterfaceMethodH]) {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
   def getRef = InterfaceRefH(fullName)
 }
 
@@ -198,7 +198,7 @@ case class EdgeH(
   interface: InterfaceRefH,
   // Map whose key is an interface method, and whose value is the method of the struct
   // that it's overriding.
-  structPrototypesByInterfaceMethod: ListMap[InterfaceMethodH, PrototypeH]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+  structPrototypesByInterfaceMethod: ListMap[InterfaceMethodH, PrototypeH]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
 sealed trait IFunctionAttributeH
 case object UserFunctionH extends IFunctionAttributeH // Whether it was written by a human. Mostly for tests right now.
@@ -219,7 +219,7 @@ case class FunctionH(
 
   // The body of the function that contains the actual instructions.
   body: ExpressionH[KindH]) {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
   def fullName = prototype.fullName
   def isUserFunction = attributes.contains(UserFunctionH)
 }
@@ -239,6 +239,15 @@ case class FullNameH(
     packageCoordinate: PackageCoordinate,
     parts: Vector[IVonData]) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case FullNameH(thatReadableName, thatId, _, _) => {
+        readableName == thatReadableName && id == thatId
+      }
+      case _ => false
+    }
+  }
   def toFullString(): String = { FullNameH.namePartsToString(packageCoordinate, parts) }
 }
 

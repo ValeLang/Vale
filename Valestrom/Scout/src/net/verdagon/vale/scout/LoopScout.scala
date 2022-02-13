@@ -1,6 +1,6 @@
 package net.verdagon.vale.scout
 
-import net.verdagon.vale.parser.ast.{AugmentPE, BlockPE, BorrowP, ConsecutorPE, ConstantBoolPE, FunctionCallPE, IExpressionPE, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, LetPE, LookupNameP, LookupPE, NameP, NotPE, PatternPP, RangeP, ReadonlyP, ReadwriteP, UseP, WhilePE}
+import net.verdagon.vale.parser.ast._
 import net.verdagon.vale.scout.Scout.{noDeclarations, noVariableUses}
 
 object LoopScout {
@@ -57,9 +57,8 @@ object LoopScout {
                 LookupPE(LookupNameP(NameP(inKeywordRange, "begin")), None),
                 Vector(
                   AugmentPE(
-                    inKeywordRange, BorrowP, None,
-                    LookupPE(IterableNameP(inKeywordRange), None))),
-                false)),
+                    inKeywordRange, BorrowP,
+                    LookupPE(IterableNameP(inKeywordRange), None))))),
             UseP,
             true)
 
@@ -123,9 +122,7 @@ object LoopScout {
                         AugmentPE(
                           inKeywordRange,
                           BorrowP,
-                          Some(ReadwriteP),
-                          LookupPE(IteratorNameP(inKeywordRange), None))),
-                      false)),
+                          LookupPE(IteratorNameP(inKeywordRange), None))))),
                   FunctionCallPE(
                     inKeywordRange,
                     inKeywordRange,
@@ -134,9 +131,7 @@ object LoopScout {
                       AugmentPE(
                         inKeywordRange,
                         BorrowP,
-                        Some(ReadonlyP),
-                        LookupPE(IterationOptionNameP(inKeywordRange), None))),
-                    false))),
+                        LookupPE(IterationOptionNameP(inKeywordRange), None)))))),
               UseP,
               true)
           (stackFrame3, condSE, condSelfUses, condChildUses)
@@ -180,8 +175,7 @@ object LoopScout {
             inKeywordRange,
             LookupPE(LookupNameP(NameP(inKeywordRange, "get")), None),
             Vector(
-              LookupPE(IterationOptionNameP(inKeywordRange), None)),
-            false)),
+              LookupPE(IterationOptionNameP(inKeywordRange), None)))),
         UseP,
         false)
 

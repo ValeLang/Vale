@@ -15,15 +15,15 @@ class ArrayListTest extends FunSuite with Matchers {
           |  array! []<mut>E;
           |}
           |func len<E>(list &List<E>) int { ret len(&list.array); }
-          |func add<E>(list &!List<E>, newElement E) {
+          |func add<E>(list &List<E>, newElement E) {
           |  newArray = Array<mut, E>(len(&list) + 1);
           |  while (newArray.len() < newArray.capacity()) {
           |    index = newArray.len();
           |    if (index == len(&list)) {
-          |      newArray!.push(newElement);
+          |      newArray.push(newElement);
           |    } else {
           |      a = list.array;
-          |      newArray!.push(a[index]);
+          |      newArray.push(a[index]);
           |    }
           |  }
           |  set list.array = newArray;
@@ -36,14 +36,14 @@ class ArrayListTest extends FunSuite with Matchers {
           |
           |exported func main() int {
           |  l = List<int>(Array<mut, int>(0));
-          |  add(&!l, 5);
-          |  add(&!l, 9);
-          |  add(&!l, 7);
+          |  add(&l, 5);
+          |  add(&l, 9);
+          |  add(&l, 7);
           |  ret l.get(1);
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) match { case VonInt(9) => }
   }
 
   test("Doubling ArrayList") {
@@ -53,14 +53,14 @@ class ArrayListTest extends FunSuite with Matchers {
         |
         |exported func main() int {
         |  l = List<int>(Array<mut, int>(0));
-        |  add(&!l, 5);
-        |  add(&!l, 9);
-        |  add(&!l, 7);
+        |  add(&l, 5);
+        |  add(&l, 9);
+        |  add(&l, 7);
         |  ret l.get(1);
         |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) match { case VonInt(9) => }
   }
 
   test("Array list with optionals") {
@@ -73,17 +73,17 @@ class ArrayListTest extends FunSuite with Matchers {
         |      List<int>(
         |          Array<mut, int>(
         |              0,
-        |              &!(index) => {
+        |              &(index) => {
         |                0
         |              }));
-        |  add(&!l, 5);
-        |  add(&!l, 9);
-        |  add(&!l, 7);
+        |  add(&l, 5);
+        |  add(&l, 9);
+        |  add(&l, 7);
         |  ret l.get(1);
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) match { case VonInt(9) => }
   }
 
   test("Array list zero-constructor") {
@@ -92,14 +92,14 @@ class ArrayListTest extends FunSuite with Matchers {
           |
           |exported func main() int {
           |  l = List<int>();
-          |  add(&!l, 5);
-          |  add(&!l, 9);
-          |  add(&!l, 7);
+          |  add(&l, 5);
+          |  add(&l, 9);
+          |  add(&l, 7);
           |  ret l.get(1);
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) match { case VonInt(9) => }
   }
 
   test("Array list len") {
@@ -108,14 +108,14 @@ class ArrayListTest extends FunSuite with Matchers {
           |
           |exported func main() int {
           |  l = List<int>();
-          |  add(&!l, 5);
-          |  add(&!l, 9);
-          |  add(&!l, 7);
+          |  add(&l, 5);
+          |  add(&l, 9);
+          |  add(&l, 7);
           |  ret l.len();
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
 
   test("Array list set") {
@@ -124,15 +124,15 @@ class ArrayListTest extends FunSuite with Matchers {
           |
           |exported func main() int {
           |  l = List<int>();
-          |  add(&!l, 5);
-          |  add(&!l, 9);
-          |  add(&!l, 7);
-          |  set(&!l, 1, 11);
+          |  add(&l, 5);
+          |  add(&l, 9);
+          |  add(&l, 7);
+          |  set(&l, 1, 11);
           |  ret l.get(1);
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(11)
+    compile.evalForKind(Vector()) match { case VonInt(11) => }
   }
 
   test("Array list with optionals with mutable element") {
@@ -146,14 +146,14 @@ class ArrayListTest extends FunSuite with Matchers {
           |          Array<mut, Marine>(
           |              0,
           |              (index) => { Marine(index) }));
-          |  add(&!l, Marine(5));
-          |  add(&!l, Marine(9));
-          |  add(&!l, Marine(7));
+          |  add(&l, Marine(5));
+          |  add(&l, Marine(9));
+          |  add(&l, Marine(7));
           |  ret l.get(1).hp;
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) match { case VonInt(9) => }
   }
 
   test("Mutate mutable from in lambda") {
@@ -162,12 +162,12 @@ class ArrayListTest extends FunSuite with Matchers {
           |struct Marine { hp int; }
           |
           |exported func main() int {
-          |  m! = Marine(6);
+          |  m = Marine(6);
           |  lam = {
           |    set m = Marine(9);
           |  };
-          |  lam!();
-          |  lam!();
+          |  lam();
+          |  lam();
           |  ret m.hp;
           |}
         """.stripMargin)
@@ -180,7 +180,7 @@ class ArrayListTest extends FunSuite with Matchers {
       }
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) match { case VonInt(9) => }
   }
 
   test("Move mutable from in lambda") {
@@ -189,12 +189,12 @@ class ArrayListTest extends FunSuite with Matchers {
         |struct Marine { hp int; }
         |
         |exported func main() int {
-        |  m! Opt<Marine> = Some(Marine(6));
+        |  m Opt<Marine> = Some(Marine(6));
         |  lam = {
         |    m2 = (set m = None<Marine>()).get();
         |    m2.hp
         |  };
-        |  ret lam!();
+        |  ret lam();
         |}
       """.stripMargin)
 
@@ -202,7 +202,7 @@ class ArrayListTest extends FunSuite with Matchers {
     val main = temputs.lookupFunction("main");
     Collector.only(main, { case LetNormalTE(AddressibleLocalVariableT(FullNameT(_, _, CodeVarNameT("m")), VaryingT, _), _) => })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(6)
+    compile.evalForKind(Vector()) match { case VonInt(6) => }
   }
 
 
@@ -214,12 +214,12 @@ class ArrayListTest extends FunSuite with Matchers {
           |
           |exported func main() {
           |  l = List<Marine>();
-          |  add(&!l, Marine(5));
-          |  add(&!l, Marine(7));
-          |  add(&!l, Marine(9));
-          |  add(&!l, Marine(11));
-          |  add(&!l, Marine(13));
-          |  l!.remove(2);
+          |  add(&l, Marine(5));
+          |  add(&l, Marine(7));
+          |  add(&l, Marine(9));
+          |  add(&l, Marine(11));
+          |  add(&l, Marine(13));
+          |  l.remove(2);
           |  vassert(l.get(0).hp == 5);
           |  vassert(l.get(1).hp == 7);
           |  vassert(l.get(2).hp == 11);
@@ -241,10 +241,10 @@ class ArrayListTest extends FunSuite with Matchers {
           |
           |exported func main() {
           |  l = List<Marine>();
-          |  add(&!l, Marine(5));
-          |  add(&!l, Marine(7));
-          |  l!.remove(0);
-          |  l!.remove(0);
+          |  add(&l, Marine(5));
+          |  add(&l, Marine(7));
+          |  l.remove(0);
+          |  l.remove(0);
           |  vassert(l.len() == 0);
           |}
         """.stripMargin)

@@ -1,0 +1,7 @@
+
+func !=<T>(a &T, b &T) bool {
+  not (a == b)
+}
+
+func and(a bool, b bool) bool { a and b }
+func or(a bool, b bool) bool { a or b }

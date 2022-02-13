@@ -6,22 +6,24 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.ast.{LocationInFunctionEnvironment, PrototypeT}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.citizen.{AncestorHelper, IStructTemplarDelegate, StructTemplarMiddle}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.FunctionTemplar
 import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, FullNameT, ICitizenNameT, INameT, NameTranslator}
-import net.verdagon.vale.{IProfiler, RangeS, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{Profiler, Interner, RangeS, vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
 class StructTemplarTemplateArgsLayer(
     opts: TemplarOptions,
-    profiler: IProfiler,
+
+    interner: Interner,
+    nameTranslator: NameTranslator,
     inferTemplar: InferTemplar,
     ancestorHelper: AncestorHelper,
     delegate: IStructTemplarDelegate) {
-  val middle = new StructTemplarMiddle(opts, profiler, ancestorHelper, delegate)
+  val middle = new StructTemplarMiddle(opts, interner, nameTranslator, ancestorHelper, delegate)
 
   def getStructRef(
     temputs: Temputs,
@@ -29,14 +31,14 @@ class StructTemplarTemplateArgsLayer(
     structTemplata: StructTemplata,
     templateArgs: Vector[ITemplata]):
   (StructTT) = {
-    profiler.newProfile("getStructRef", structTemplata.debugString + "<" + templateArgs.map(_.toString).mkString(", ") + ">", () => {
+    Profiler.frame(() => {
       val StructTemplata(env, structA) = structTemplata
-      val structTemplateName = NameTranslator.translateCitizenName(structA.name)
-      val structName = structTemplateName.makeCitizenName(templateArgs)
+      val structTemplateName = nameTranslator.translateCitizenName(structA.name)
+      val structName = structTemplateName.makeCitizenName(interner, templateArgs)
       val fullName = env.fullName.addStep(structName)
 //      val fullName = env.fullName.addStep(structLastName)
 
-      temputs.structDeclared(fullName) match {
+      temputs.structDeclared(interner.intern(StructTT(fullName))) match {
         case Some(structTT) => {
           (structTT)
         }
@@ -45,7 +47,7 @@ class StructTemplarTemplateArgsLayer(
           if (templateArgs.size != structA.identifyingRunes.size) {
             vfail("wat?")
           }
-          val temporaryStructRef = StructTT(fullName)
+          val temporaryStructRef = interner.intern(StructTT(fullName))
           temputs.declareKind(temporaryStructRef)
 
           structA.maybePredictedMutability match {
@@ -84,14 +86,14 @@ class StructTemplarTemplateArgsLayer(
     interfaceTemplata: InterfaceTemplata,
     templateArgs: Vector[ITemplata]):
   (InterfaceTT) = {
-    profiler.newProfile("getInterfaceRef", interfaceTemplata.debugString + "<" + templateArgs.map(_.toString).mkString(", ") + ">", () => {
+    Profiler.frame(() => {
       val InterfaceTemplata(env, interfaceA) = interfaceTemplata
-      val interfaceTemplateName = NameTranslator.translateCitizenName(interfaceA.name)
-      val interfaceName = interfaceTemplateName.makeCitizenName(templateArgs)
+      val interfaceTemplateName = nameTranslator.translateCitizenName(interfaceA.name)
+      val interfaceName = interfaceTemplateName.makeCitizenName(interner, templateArgs)
       val fullName = env.fullName.addStep(interfaceName)
 //      val fullName = env.fullName.addStep(interfaceLastName)
 
-      temputs.interfaceDeclared(fullName) match {
+      temputs.interfaceDeclared(interner.intern(InterfaceTT(fullName))) match {
         case Some(interfaceTT) => {
           (interfaceTT)
         }
@@ -100,7 +102,7 @@ class StructTemplarTemplateArgsLayer(
           if (templateArgs.size != interfaceA.identifyingRunes.size) {
             vfail("wat?")
           }
-          val temporaryInterfaceRef = InterfaceTT(fullName)
+          val temporaryInterfaceRef = interner.intern(InterfaceTT(fullName))
           temputs.declareKind(temporaryInterfaceRef)
 
 

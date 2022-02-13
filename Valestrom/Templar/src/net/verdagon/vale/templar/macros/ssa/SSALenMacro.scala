@@ -27,7 +27,7 @@ class SSALenMacro() extends IFunctionBodyMacro {
     temputs.declareFunctionReturnType(header.toSignature, header.returnType)
     val len =
       header.paramTypes match {
-        case Vector(CoordT(_, _, StaticSizedArrayTT(size, _, _, _))) => size
+        case Vector(CoordT(_, StaticSizedArrayTT(size, _, _, _))) => size
         case _ => throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "SSALenMacro received non-SSA param: " + header.paramTypes))
       }
     temputs.addFunction(

@@ -6,16 +6,16 @@ impl IShip for Spaceship;
 exported struct Seaship { leftFuel int; rightFuel int; }
 impl IShip for Seaship;
 
-abstract func getShipFuelInner(virtual s *IShip) int;
-func getShipFuelInner(s *Spaceship impl IShip) int { s.fuel }
-func getShipFuelInner(s *Seaship impl IShip) int { s.leftFuel + s.rightFuel }
+abstract func getShipFuelInner(virtual s &IShip) int;
+func getShipFuelInner(s &Spaceship) int { s.fuel }
+func getShipFuelInner(s &Seaship) int { s.leftFuel + s.rightFuel }
 
-exported func valeGetShipFuel(s *IShip) int {
+exported func valeGetShipFuel(s &IShip) int {
   getShipFuelInner(s)
 }
 
-extern func cGetTripleShipFuel(s *IShip) int;
+extern func cGetTripleShipFuel(s &IShip) int;
 
 exported func main() int {
-  cGetTripleShipFuel(*Seaship(9, 5))
+  cGetTripleShipFuel(&Seaship(9, 5))
 }

@@ -5,12 +5,12 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.scout.{AbstractBodyS, CodeBodyS, ExternBodyS, GeneratedBodyS, IFunctionDeclarationNameS}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.ast.{FunctionBannerT, FunctionHeaderT, PrototypeT}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.FunctionTemplar.IEvaluateFunctionResult
 import net.verdagon.vale.templar.names.{BuildingFunctionNameWithClosuredsT, FullNameT, INameT, NameTranslator}
-import net.verdagon.vale.{IProfiler, RangeS, vassert, vfail, vimpl}
+import net.verdagon.vale.{Profiler, Interner, RangeS, vassert, vfail, vimpl}
 
 import scala.collection.immutable.{List, Map}
 
@@ -22,15 +22,17 @@ import scala.collection.immutable.{List, Map}
 // This file is the outer layer, which spawns a local environment for the function.
 class FunctionTemplarClosureOrLightLayer(
     opts: TemplarOptions,
-  profiler: IProfiler,
-  templataTemplar: TemplataTemplar,
+
+    interner: Interner,
+    nameTranslator: NameTranslator,
+    templataTemplar: TemplataTemplar,
     inferTemplar: InferTemplar,
-  convertHelper: ConvertHelper,
+    convertHelper: ConvertHelper,
     structTemplar: StructTemplar,
     delegate: IFunctionTemplarDelegate) {
   val ordinaryOrTemplatedLayer =
     new FunctionTemplarOrdinaryOrTemplatedLayer(
-      opts, profiler, templataTemplar, inferTemplar, convertHelper, structTemplar, delegate)
+      opts, interner, nameTranslator, templataTemplar, inferTemplar, convertHelper, structTemplar, delegate)
 
   // This is for the early stages of Templar when it's scanning banners to put in
   // its env. We just want its banner, we don't want to evaluate it.
@@ -80,7 +82,7 @@ class FunctionTemplarClosureOrLightLayer(
         outerEnv.globalEnv,
         outerEnv,
         name,
-        TemplatasStore(name, Map(), Map()).addEntries(entries),
+        TemplatasStore(name, Map(), Map()).addEntries(interner, entries),
         function,
         variables)
 
@@ -106,7 +108,7 @@ class FunctionTemplarClosureOrLightLayer(
         outerEnv.globalEnv,
         outerEnv,
         name,
-        TemplatasStore(name, Map(), Map()).addEntries(entries),
+        TemplatasStore(name, Map(), Map()).addEntries(interner, entries),
         function,
         variables)
     ordinaryOrTemplatedLayer.evaluateTemplatedFunctionFromCallForPrototype(
@@ -194,7 +196,7 @@ class FunctionTemplarClosureOrLightLayer(
         outerEnv.globalEnv,
         outerEnv,
         name,
-        TemplatasStore(name, Map(), Map()).addEntries(entries),
+        TemplatasStore(name, Map(), Map()).addEntries(interner, entries),
         function,
         variables)
     ordinaryOrTemplatedLayer.evaluateOrdinaryFunctionFromNonCallForBanner(
@@ -219,7 +221,7 @@ class FunctionTemplarClosureOrLightLayer(
         outerEnv.globalEnv,
         outerEnv,
         name,
-        TemplatasStore(name, Map(), Map()).addEntries(entries),
+        TemplatasStore(name, Map(), Map()).addEntries(interner, entries),
         function,
         variables)
     ordinaryOrTemplatedLayer.evaluateOrdinaryFunctionFromNonCallForHeader(
@@ -244,7 +246,7 @@ class FunctionTemplarClosureOrLightLayer(
         outerEnv.globalEnv,
         outerEnv,
         name,
-        TemplatasStore(name, Map(), Map()).addEntries(entries),
+        TemplatasStore(name, Map(), Map()).addEntries(interner, entries),
         function,
         variables)
     ordinaryOrTemplatedLayer.evaluateTemplatedFunctionFromNonCallForHeader(
@@ -303,7 +305,7 @@ class FunctionTemplarClosureOrLightLayer(
     outerEnv: IEnvironment,
     functionName: IFunctionDeclarationNameS
   ): FullNameT[BuildingFunctionNameWithClosuredsT] = {
-    val templateName = NameTranslator.translateFunctionNameToTemplateName(functionName)
+    val templateName = nameTranslator.translateFunctionNameToTemplateName(functionName)
     outerEnv.fullName.addStep(BuildingFunctionNameWithClosuredsT(templateName))
   }
 

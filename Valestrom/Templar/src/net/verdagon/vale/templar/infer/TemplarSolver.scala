@@ -6,9 +6,10 @@ import net.verdagon.vale.parser.ast.ShareP
 import net.verdagon.vale.scout.{ArgumentRuneS, CodeNameS, CoordTemplataType, IImpreciseNameS, INameS, IRuneS, ITemplataType, KindTemplataType, RuneNameS}
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.solver.{CompleteSolve, FailedSolve, ISolveRule, ISolverError, ISolverOutcome, IStepState, IncompleteSolve, RuleError, Solver, SolverConflict}
+import net.verdagon.vale.templar.OverloadTemplar.FindFunctionFailure
 import net.verdagon.vale.templar.ast.PrototypeT
 import net.verdagon.vale.templar.names.{CitizenNameT, FullNameT, FunctionNameT, INameT}
-import net.verdagon.vale.templar.templata.{Conversions, CoordListTemplata, CoordTemplata, ITemplata, IntegerTemplata, InterfaceTemplata, KindTemplata, MutabilityTemplata, OwnershipTemplata, PermissionTemplata, PrototypeTemplata, RuntimeSizedArrayTemplateTemplata, StaticSizedArrayTemplateTemplata, StringTemplata, StructTemplata, VariabilityTemplata}
+import net.verdagon.vale.templar.templata.{Conversions, CoordListTemplata, CoordTemplata, ITemplata, IntegerTemplata, InterfaceTemplata, KindTemplata, MutabilityTemplata, OwnershipTemplata, PrototypeTemplata, RuntimeSizedArrayTemplateTemplata, StaticSizedArrayTemplateTemplata, StringTemplata, StructTemplata, VariabilityTemplata}
 import net.verdagon.vale.templar.types._
 
 import scala.collection.immutable.HashSet
@@ -18,17 +19,16 @@ sealed trait ITemplarSolverError
 case class KindIsNotConcrete(kind: KindT) extends ITemplarSolverError
 case class KindIsNotInterface(kind: KindT) extends ITemplarSolverError
 case class KindIsNotStruct(kind: KindT) extends ITemplarSolverError
+case class CouldntFindFunction(range: RangeS, fff: FindFunctionFailure) extends ITemplarSolverError
 case class CantShareMutable(kind: KindT) extends ITemplarSolverError
 case class SendingNonCitizen(kind: KindT) extends ITemplarSolverError
 case class ReceivingDifferentOwnerships(params: Vector[(IRuneS, CoordT)]) extends ITemplarSolverError
-case class ReceivingDifferentPermissions(params: Vector[(IRuneS, CoordT)]) extends ITemplarSolverError
 case class SendingNonIdenticalKinds(sendCoord: CoordT, receiveCoord: CoordT) extends ITemplarSolverError
 case class NoCommonAncestors(params: Vector[(IRuneS, CoordT)]) extends ITemplarSolverError
 case class LookupFailed(name: IImpreciseNameS) extends ITemplarSolverError
 case class NoAncestorsSatisfyCall(params: Vector[(IRuneS, CoordT)]) extends ITemplarSolverError
 case class CantDetermineNarrowestKind(kinds: Set[KindT]) extends ITemplarSolverError
 case class OwnershipDidntMatch(coord: CoordT, expectedOwnership: OwnershipT) extends ITemplarSolverError
-case class PermissionDidntMatch(coord: CoordT, expectedPermission: PermissionT) extends ITemplarSolverError
 case class CallResultWasntExpectedType(expected: ITemplata, actual: ITemplata) extends ITemplarSolverError
 case class OneOfFailed(rule: OneOfSR) extends ITemplarSolverError
 case class KindDoesntImplementInterface(sub: CitizenRefT, suuper: InterfaceTT) extends ITemplarSolverError
@@ -82,7 +82,7 @@ trait IInfererDelegate[Env, State] {
 
   def structIsClosure(state: State, structTT: StructTT): Boolean
 
-  def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: Vector[CoordT]): PrototypeT
+  def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: Vector[CoordT]): Result[PrototypeT, FindFunctionFailure]
 
 
   def kindIsFromTemplate(
@@ -98,36 +98,39 @@ class TemplarSolver[Env, State](
 ) {
 
   def getRunes(rule: IRulexSR): Array[IRuneS] = {
-    val sanityCheck =
-      rule match {
-        case LookupSR(range, rune, literal) => Array(rune)
-        case LookupSR(range, rune, literal) => Array(rune)
-        case RuneParentEnvLookupSR(range, rune) => Array(rune)
-        case EqualsSR(range, left, right) => Array(left, right)
-        case CoordIsaSR(range, sub, suuper) => Array(sub, suuper)
-        case KindComponentsSR(range, resultRune, mutabilityRune) => Array(resultRune, mutabilityRune)
-        case CoordComponentsSR(range, resultRune, ownershipRune, permissionRune, kindRune) => Array(resultRune, ownershipRune, permissionRune, kindRune)
-        case PrototypeComponentsSR(range, resultRune, nameRune, paramsListRune, returnRune) => Array(resultRune, nameRune, paramsListRune, returnRune)
-        case OneOfSR(range, rune, literals) => Array(rune)
-        case IsConcreteSR(range, rune) => Array(rune)
-        case IsInterfaceSR(range, rune) => Array(rune)
-        case IsStructSR(range, rune) => Array(rune)
-        case CoerceToCoordSR(range, coordRune, kindRune) => Array(coordRune, kindRune)
-        case LiteralSR(range, rune, literal) => Array(rune)
-        case AugmentSR(range, resultRune, ownership, permission, innerRune) => Array(resultRune, innerRune)
-        case CallSR(range, resultRune, templateRune, args) => Array(resultRune, templateRune) ++ args
-        case PrototypeSR(range, resultRune, name, parameters, returnTypeRune) => Array(resultRune) ++ parameters ++ Array(returnTypeRune)
-        case PackSR(range, resultRune, members) => Array(resultRune) ++ members
-        case StaticSizedArraySR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune)
-        case RuntimeSizedArraySR(range, resultRune, mutabilityRune, elementRune) => Array(resultRune, mutabilityRune, elementRune)
-//        case ManualSequenceSR(range, resultRune, elements) => Array(resultRune) ++ elements
-//        case CoordListSR(range, resultRune, elements) => Array(resultRune) ++ elements
-        case CoordSendSR(range, senderRune, receiverRune) => Array(senderRune, receiverRune)
-        case RefListCompoundMutabilitySR(range, resultRune, coordListRune) => Array(resultRune, coordListRune)
-      }
-    val result = rule.runeUsages
-    vassert(result.map(_.rune) sameElements sanityCheck.map(_.rune))
-    result.map(_.rune)
+    val result = rule.runeUsages.map(_.rune)
+
+    if (globalOptions.sanityCheck) {
+      val sanityChecked =
+        rule match {
+          case LookupSR(range, rune, literal) => Array(rune)
+          case LookupSR(range, rune, literal) => Array(rune)
+          case RuneParentEnvLookupSR(range, rune) => Array(rune)
+          case EqualsSR(range, left, right) => Array(left, right)
+          case CoordIsaSR(range, sub, suuper) => Array(sub, suuper)
+          case KindComponentsSR(range, resultRune, mutabilityRune) => Array(resultRune, mutabilityRune)
+          case CoordComponentsSR(range, resultRune, ownershipRune, kindRune) => Array(resultRune, ownershipRune, kindRune)
+          case PrototypeComponentsSR(range, resultRune, nameRune, paramsListRune, returnRune) => Array(resultRune, nameRune, paramsListRune, returnRune)
+          case OneOfSR(range, rune, literals) => Array(rune)
+          case IsConcreteSR(range, rune) => Array(rune)
+          case IsInterfaceSR(range, rune) => Array(rune)
+          case IsStructSR(range, rune) => Array(rune)
+          case CoerceToCoordSR(range, coordRune, kindRune) => Array(coordRune, kindRune)
+          case LiteralSR(range, rune, literal) => Array(rune)
+          case AugmentSR(range, resultRune, ownership, innerRune) => Array(resultRune, innerRune)
+          case CallSR(range, resultRune, templateRune, args) => Array(resultRune, templateRune) ++ args
+          case PrototypeSR(range, resultRune, name, parameters, returnTypeRune) => Array(resultRune) ++ parameters ++ Array(returnTypeRune)
+          case PackSR(range, resultRune, members) => Array(resultRune) ++ members
+          case StaticSizedArraySR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune)
+          case RuntimeSizedArraySR(range, resultRune, mutabilityRune, elementRune) => Array(resultRune, mutabilityRune, elementRune)
+          //        case ManualSequenceSR(range, resultRune, elements) => Array(resultRune) ++ elements
+          //        case CoordListSR(range, resultRune, elements) => Array(resultRune) ++ elements
+          case CoordSendSR(range, senderRune, receiverRune) => Array(senderRune, receiverRune)
+          case RefListCompoundMutabilitySR(range, resultRune, coordListRune) => Array(resultRune, coordListRune)
+        }
+      vassert(result sameElements sanityChecked.map(_.rune))
+    }
+    result
   }
 
   def getPuzzles(rule: IRulexSR): Array[Array[IRuneS]] = {
@@ -143,7 +146,7 @@ class TemplarSolver[Env, State](
       }
       case PackSR(_, resultRune, members) => Array(Array(resultRune.rune), members.map(_.rune))
       case KindComponentsSR(_, kindRune, mutabilityRune) => Array(Array(kindRune.rune))
-      case CoordComponentsSR(_, resultRune, ownershipRune, permissionRune, kindRune) => Array(Array(resultRune.rune), Array(ownershipRune.rune, permissionRune.rune, kindRune.rune))
+      case CoordComponentsSR(_, resultRune, ownershipRune, kindRune) => Array(Array(resultRune.rune), Array(ownershipRune.rune, kindRune.rune))
       // Notice how there is no return rune in here; we can solve the entire rule with just the name and the parameter list.
       case PrototypeComponentsSR(range, resultRune, nameRune, paramListRune, returnRune) => Array(Array(resultRune.rune), Array(nameRune.rune, paramListRune.rune))
       case OneOfSR(_, rune, literals) => Array(Array(rune.rune))
@@ -153,7 +156,7 @@ class TemplarSolver[Env, State](
       case IsStructSR(_, rune) => Array(Array(rune.rune))
       case CoerceToCoordSR(_, coordRune, kindRune) => Array(Array(coordRune.rune), Array(kindRune.rune))
       case LiteralSR(_, rune, literal) => Array(Array())
-      case AugmentSR(_, resultRune, ownership, permission, innerRune) => Array(Array(innerRune.rune), Array(resultRune.rune))
+      case AugmentSR(_, resultRune, ownership, innerRune) => Array(Array(innerRune.rune), Array(resultRune.rune))
       case StaticSizedArraySR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(Array(resultRune.rune), Array(mutabilityRune.rune, variabilityRune.rune, sizeRune.rune, elementRune.rune))
       case RuntimeSizedArraySR(_, resultRune, mutabilityRune, elementRune) => Array(Array(resultRune.rune), Array(mutabilityRune.rune, elementRune.rune))
       // See SAIRFU, this will replace itself with other rules.
@@ -179,31 +182,33 @@ class TemplarSolver[Env, State](
         stepState.concludeRune[ITemplarSolverError](mutabilityRune.rune, MutabilityTemplata(mutability))
         Ok(())
       }
-      case CoordComponentsSR(_, resultRune, ownershipRune, permissionRune, kindRune) => {
+      case CoordComponentsSR(_, resultRune, ownershipRune, kindRune) => {
         stepState.getConclusion(resultRune.rune) match {
           case None => {
             val OwnershipTemplata(ownership) = vassertSome(stepState.getConclusion(ownershipRune.rune))
-            val PermissionTemplata(permission) = vassertSome(stepState.getConclusion(permissionRune.rune))
             val KindTemplata(kind) = vassertSome(stepState.getConclusion(kindRune.rune))
-            val newCoord = CoordT(ownership, permission, kind)
+            val newCoord = CoordT(ownership, kind)
             stepState.concludeRune[ITemplarSolverError](resultRune.rune, CoordTemplata(newCoord))
             Ok(())
           }
           case Some(coord) => {
-            val CoordTemplata(CoordT(ownership, permission, kind)) = coord
+            val CoordTemplata(CoordT(ownership, kind)) = coord
             stepState.concludeRune[ITemplarSolverError](ownershipRune.rune, OwnershipTemplata(ownership))
-            stepState.concludeRune[ITemplarSolverError](permissionRune.rune, PermissionTemplata(permission))
             stepState.concludeRune[ITemplarSolverError](kindRune.rune, KindTemplata(kind))
             Ok(())
           }
         }
       }
-      case PrototypeComponentsSR(_, resultRune, nameRune, paramListRune, returnRune) => {
+      case PrototypeComponentsSR(range, resultRune, nameRune, paramListRune, returnRune) => {
         stepState.getConclusion(resultRune.rune) match {
           case None => {
             val StringTemplata(name) = vassertSome(stepState.getConclusion(nameRune.rune))
             val CoordListTemplata(coords) = vassertSome(stepState.getConclusion(paramListRune.rune))
-            val prototype = delegate.resolveExactSignature(env, state, rule.range, name, coords)
+            val prototype =
+              delegate.resolveExactSignature(env, state, rule.range, name, coords) match {
+                case Err(e) => return Err(CouldntFindFunction(range, e))
+                case Ok(x) => x
+              }
             stepState.concludeRune[ITemplarSolverError](resultRune.rune, PrototypeTemplata(prototype))
             stepState.concludeRune[ITemplarSolverError](returnRune.rune, CoordTemplata(prototype.returnType))
             Ok(())
@@ -402,7 +407,7 @@ class TemplarSolver[Env, State](
 //        stepState.concludeRune[ITemplarSolverError](rune.rune, result)
         Ok(())
       }
-      case AugmentSR(_, resultRune, augmentOwnership, augmentPermission, innerRune) => {
+      case AugmentSR(_, resultRune, augmentOwnership, innerRune) => {
         stepState.getConclusion(innerRune.rune) match {
           case Some(CoordTemplata(initialCoord)) => {
             val newCoord =
@@ -413,7 +418,6 @@ class TemplarSolver[Env, State](
                   }
                   initialCoord
                     .copy(ownership = Conversions.evaluateOwnership(augmentOwnership))
-                    .copy(permission = Conversions.evaluatePermission(augmentPermission))
                 }
                 case ImmutableT => initialCoord
               }
@@ -431,10 +435,7 @@ class TemplarSolver[Env, State](
                   if (initialCoord.ownership != Conversions.evaluateOwnership(augmentOwnership)) {
                     return Err(OwnershipDidntMatch(initialCoord, Conversions.evaluateOwnership(augmentOwnership)))
                   }
-                  if (initialCoord.permission != Conversions.evaluatePermission(augmentPermission)) {
-                    return Err(PermissionDidntMatch(initialCoord, Conversions.evaluatePermission (augmentPermission) ) )
-                  }
-                  initialCoord.copy(ownership = OwnT).copy(permission = ReadwriteT)
+                  initialCoord.copy(ownership = OwnT)
                 }
                 case ImmutableT => initialCoord
               }
@@ -485,7 +486,7 @@ class TemplarSolver[Env, State](
                 stepState.concludeRune[ITemplarSolverError](variabilityRune.rune, VariabilityTemplata(variability))
                 Ok(())
               }
-              case CoordTemplata(CoordT(OwnT | ShareT, _, StaticSizedArrayTT(size, mutability, variability, elementType))) => {
+              case CoordTemplata(CoordT(OwnT | ShareT, StaticSizedArrayTT(size, mutability, variability, elementType))) => {
                 stepState.concludeRune[ITemplarSolverError](elementRune.rune, CoordTemplata(elementType))
                 stepState.concludeRune[ITemplarSolverError](sizeRune.rune, IntegerTemplata(size))
                 stepState.concludeRune[ITemplarSolverError](mutabilityRune.rune, MutabilityTemplata(mutability))
@@ -514,7 +515,7 @@ class TemplarSolver[Env, State](
                 stepState.concludeRune[ITemplarSolverError](mutabilityRune.rune, MutabilityTemplata(mutability))
                 Ok(())
               }
-              case CoordTemplata(CoordT(OwnT | ShareT, _, RuntimeSizedArrayTT(mutability, elementType))) => {
+              case CoordTemplata(CoordT(OwnT | ShareT, RuntimeSizedArrayTT(mutability, elementType))) => {
                 stepState.concludeRune[ITemplarSolverError](elementRune.rune, CoordTemplata(elementType))
                 stepState.concludeRune[ITemplarSolverError](mutabilityRune.rune, MutabilityTemplata(mutability))
                 Ok(())
@@ -540,7 +541,7 @@ class TemplarSolver[Env, State](
             template match {
               case RuntimeSizedArrayTemplateTemplata() => {
                 result match {
-                  case CoordTemplata(CoordT(ShareT | OwnT, _, RuntimeSizedArrayTT(mutability, memberType))) => {
+                  case CoordTemplata(CoordT(ShareT | OwnT, RuntimeSizedArrayTT(mutability, memberType))) => {
                     if (argRunes.size != 2) {
                       return Err(WrongNumberOfTemplateArgs(2))
                     }
@@ -570,7 +571,7 @@ class TemplarSolver[Env, State](
                     })
                     Ok(())
                   }
-                  case CoordTemplata(CoordT(OwnT | ShareT, _, interface @ InterfaceTT(_))) => {
+                  case CoordTemplata(CoordT(OwnT | ShareT, interface @ InterfaceTT(_))) => {
                     if (!delegate.kindIsFromTemplate(state,interface, it)) {
                       return Err(CallResultWasntExpectedType(it, result))
                     }
@@ -609,7 +610,7 @@ class TemplarSolver[Env, State](
                     })
                     Ok(())
                   }
-                  case CoordTemplata(CoordT(OwnT | ShareT, _, struct @ StructTT(_))) => {
+                  case CoordTemplata(CoordT(OwnT | ShareT, struct @ StructTT(_))) => {
                     if (!delegate.kindIsFromTemplate(state,struct, st)) {
                       return Err(CallResultWasntExpectedType(st, result))
                     }
@@ -659,7 +660,6 @@ class TemplarSolver[Env, State](
 
   private def literalToTemplata(literal: ILiteralSL) = {
     literal match {
-      case PermissionLiteralSL(permission) => PermissionTemplata(Conversions.evaluatePermission(permission))
       case MutabilityLiteralSL(mutability) => MutabilityTemplata(Conversions.evaluateMutability(mutability))
       case OwnershipLiteralSL(ownership) => OwnershipTemplata(Conversions.evaluateOwnership(ownership))
       case VariabilityLiteralSL(variability) => VariabilityTemplata(Conversions.evaluateVariability(variability))
@@ -683,10 +683,11 @@ class TemplarSolver[Env, State](
       vassert(templata.tyype == vassertSome(runeToType.get(rune)))
     })
 
+    val solver =
+      new Solver[IRulexSR, IRuneS, Env, State, ITemplata, ITemplarSolverError](
+        globalOptions.sanityCheck, globalOptions.useOptimizedSolver)
     val solverState =
-      Solver.makeInitialSolverState(
-        globalOptions.sanityCheck,
-        globalOptions.useOptimizedSolver,
+      solver.makeInitialSolverState(
         rules,
         getRunes,
         (rule: IRulexSR) => getPuzzles(rule),
@@ -743,16 +744,15 @@ class TemplarSolver[Env, State](
 
                   val possibleCoords =
                     unsolvedRules.collect({
-                      case AugmentSR(range, resultRune, ownership, permission, innerRune)
+                      case AugmentSR(range, resultRune, ownership, innerRune)
                         if resultRune.rune == receiver => {
                         CoordT(
                           Conversions.evaluateOwnership(ownership),
-                          Conversions.evaluatePermission(permission),
                           receiverInstantiationKind)
                       }
                     }) ++
-                      senderConclusions.map(_._2).map({ case CoordT(ownership, permission, _) =>
-                        CoordT(ownership, permission, receiverInstantiationKind)
+                      senderConclusions.map(_._2).map({ case CoordT(ownership, _) =>
+                        CoordT(ownership, receiverInstantiationKind)
                       })
                   if (possibleCoords.nonEmpty) {
                     val ownership =
@@ -761,13 +761,7 @@ class TemplarSolver[Env, State](
                         case Vector(ownership) => ownership
                         case _ => return Err(RuleError(ReceivingDifferentOwnerships(senderConclusions)))
                       }
-                    val permission =
-                      possibleCoords.map(_.permission).distinct match {
-                        case Vector() => vwat()
-                        case Vector(permission) => permission
-                        case _ => return Err(RuleError(ReceivingDifferentPermissions(senderConclusions)))
-                      }
-                    Some(receiver -> CoordTemplata(CoordT(ownership, permission, receiverInstantiationKind)))
+                    Some(receiver -> CoordTemplata(CoordT(ownership, receiverInstantiationKind)))
                   } else {
                     // Just conclude a kind, which will coerce to an owning coord, and hope it's right.
                     Some(receiver -> KindTemplata(receiverInstantiationKind))
@@ -878,7 +872,7 @@ class TemplarSolver[Env, State](
           }
         }
       }
-    Solver.solve[IRulexSR, IRuneS, Env, State, ITemplata, ITemplarSolverError](
+    solver.solve(
       (rule: IRulexSR) => getPuzzles(rule),
       state,
       env,

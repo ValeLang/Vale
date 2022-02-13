@@ -198,13 +198,13 @@ case class StaticArrayFromCallableSE(
 ) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
 }
-case class RuntimeArrayFromCallableSE(
+case class NewRuntimeSizedArraySE(
   range: RangeS,
   rules: Array[IRulexSR],
   maybeElementTypeST: Option[RuneUsage],
   mutabilityST: RuneUsage,
-  sizeSE: IExpressionSE,
-  callable: IExpressionSE
+  size: IExpressionSE,
+  callable: Option[IExpressionSE]
 ) extends IExpressionSE {
   override def hashCode(): Int = vcurious()
 }

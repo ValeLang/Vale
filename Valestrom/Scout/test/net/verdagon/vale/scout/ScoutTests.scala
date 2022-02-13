@@ -255,7 +255,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
   test("InitializingRuntimeSizedArrayRequiresSizeAndCallable too few") {
     val error = compileForError(
       """func MyStruct() {
-        |  ship = [](4);
+        |  ship = []();
         |}
         |""".stripMargin)
     error match {

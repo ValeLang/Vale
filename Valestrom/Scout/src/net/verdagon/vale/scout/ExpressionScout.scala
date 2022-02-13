@@ -476,12 +476,13 @@ class ExpressionScout(delegate: IExpressionScoutDelegate) {
               if (initializingIndividualElements) {
                 throw CompileErrorExceptionS(CantInitializeIndividualElementsOfRuntimeSizedArray(rangeS))
               }
-              if (argsSE.size != 2) {
+              if (argsSE.isEmpty || argsSE.size > 2) {
                 throw CompileErrorExceptionS(InitializingRuntimeSizedArrayRequiresSizeAndCallable(rangeS))
               }
-              val Vector(sizeSE, callableSE) = argsSE
+              val sizeSE = argsSE.head
+              val callableSE = argsSE.lift(1)
 
-              RuntimeArrayFromCallableSE(rangeS, ruleBuilder.toArray, maybeTypeRuneS, mutabilityRuneS, sizeSE, callableSE)
+              NewRuntimeSizedArraySE(rangeS, ruleBuilder.toArray, maybeTypeRuneS, mutabilityRuneS, sizeSE, callableSE)
             }
             case StaticSizedP(maybeSizePT) => {
               val maybeSizeRuneS =

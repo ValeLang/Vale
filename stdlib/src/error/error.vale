@@ -1,0 +1,8 @@
+struct Call {
+    name str; 
+}
+
+interface Error {
+    func description(virtual self &Error) str;
+    func trace(virtual self &Error) List<Call>;    
+}

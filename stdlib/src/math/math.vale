@@ -1,0 +1,32 @@
+
+func min(a int, b int) int {
+  if (a <= b) { a } else { b }
+}
+
+func max(a int, b int) int {
+  if (a >= b) { a } else { b }
+}
+
+func abs(a int) int {
+  if (a < 0) { a * -1 } else { a }
+}
+
+func signum(a int) int {
+  if (a < 0) { -1 }
+  else if (a > 0) { 1 }
+  else { 0 }
+}
+
+
+func range(begin int, end int) IntRange { ret IntRange(begin, end); }
+struct IntRange { begin int; end int; }
+func begin(self &IntRange) IntRangeIter { ret IntRangeIter(self, self.begin); }
+func begin(self &!IntRange) IntRangeIter { ret IntRangeIter(&self, self.begin); }
+struct IntRangeIter { range &IntRange; i! int; }
+func next(self &!IntRangeIter) Opt<int> {
+  if self.i < self.range.end {
+    Some(set self.i = self.i + 1)
+  } else {
+    None<int>()
+  }
+}

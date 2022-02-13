@@ -13,4 +13,3 @@ Catalyst/.*
 Catalyst/catalyst/target/
 Catalyst/testing/test*/out/
 removeextra.sh
-stdlib

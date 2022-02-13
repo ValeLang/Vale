@@ -1,0 +1,74 @@
+import stdlib.collections.*;
+import stdlib.testsuite.*;
+
+struct Ship {
+  fuel int;
+}
+
+exported func main() {
+  suite = TestSuite();
+
+  suite!.test("List from SSA of primitives", {
+    list =
+      List([#][
+        13,
+        14,
+        15
+      ]);
+    sum = 0;
+    list.each({ set sum = sum + _; });
+    sum should_equal 42;
+  });
+
+  suite!.test("List from SSA of instances", {
+    list =
+      List([#][
+        Ship(13),
+        Ship(14),
+        Ship(15)
+      ]);
+    sum = 0;
+    list.each({ set sum = sum + _.fuel; });
+    sum should_equal 42;
+  });
+
+  suite!.test("ListBuilder 1", {
+    list =
+      ((((ListBuilder<int>())
+        .add(13))
+        .add(14))
+        .add(15)).build();
+    sum = 0;
+    list.each({ set sum = sum + _; });
+    sum should_equal 42;
+  });
+
+  suite!.test("List from SSA", {
+    list = List([#][13, 14, 15]);
+    list.get(0) should_equal 13;
+    list.get(1) should_equal 14;
+    list.get(2) should_equal 15;
+  });
+
+  suite!.test("Basic hash map", {
+    map = HashMap<int, int, IntHasher, IntEquator>(IntHasher(), IntEquator());
+    map!.add(3, 39);
+    map!.add(7, 42);
+    map!.add(11, 51);
+    map.get(3).get() should_equal 39;
+    map.get(7).get() should_equal 42;
+    map.get(11).get() should_equal 51;
+  });
+
+  suite!.test("Basic hash set", {
+    sett = HashSet<int, IntHasher, IntEquator>(IntHasher(), IntEquator());
+    sett!.add(39);
+    sett!.add(42);
+    sett!.add(51);
+    sett.has(42) should_equal true;
+    sett.has(43) should_equal false;
+    sett.len() should_equal 3;
+  });
+
+  (suite).finish();
+}

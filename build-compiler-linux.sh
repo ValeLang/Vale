@@ -22,13 +22,6 @@ if [ "$BOOTSTRAPPING_VALEC_DIR" == "" ]; then
   exit
 fi
 
-STDLIB_SOURCE="$3"
-if [ "$STDLIB_SOURCE" == "" ]; then
-  echo "Please supply the stdlib to use."
-  echo "Example: ~/stdlib"
-  exit
-fi
-
 
 cd Valestrom
 
@@ -62,7 +55,7 @@ cp -r ../Midas/src/builtins ../release-unix/builtins || { echo 'Error copying in
 cp releaseREADME.txt ../release-unix/README.txt || { echo 'Error copying into release-unix.' ; exit 1; }
 cp valec-* ../release-unix || { echo 'Error copying into release-unix.' ; exit 1; }
 cp ../Midas/build/midas ../release-unix/midas || { echo 'Error copying into release-unix.' ; exit 1; }
-cp -r $STDLIB_SOURCE ../release-unix/stdlib || { echo 'Error copying into release-unix.' ; exit 1; }
+cp -r ../stdlib ../release-unix/stdlib || { echo 'Error copying into release-unix.' ; exit 1; }
 cp -r helloworld ../release-unix/samples/helloworld || { echo 'Error copying into release-unix.' ; exit 1; }
 cp ../Driver/build/valec ../release-unix/valec || { echo 'Error copying into release-unix.' ; exit 1; }
 cd ../release-unix || { echo 'Error copying into release-unix.' ; exit 1; }

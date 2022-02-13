@@ -10,7 +10,3 @@ echo Downloading bootstrapping Vale compiler...
 powershell -c "$ProgressPreference = 'SilentlyContinue' ; Invoke-WebRequest -Uri 'https://vale.dev/releases/ValeCompiler-0.1.3.4-Win.zip' -OutFile '%temp%\ValeCompiler-0.1.3.4-Win.zip'"
 mkdir %2
 tar xf "%temp%\ValeCompiler-0.1.3.4-Win.zip" -C %2
-
-echo Downloading stdlib...
-
-git clone https://github.com/ValeLang/stdlib %3

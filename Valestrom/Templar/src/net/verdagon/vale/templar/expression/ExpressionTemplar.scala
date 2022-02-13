@@ -741,15 +741,23 @@ class ExpressionTemplar(
               temputs, nenv.snapshot, range, rules.toVector, maybeElementTypeRune.map(_.rune), sizeRuneA.rune, maybeMutabilityRune.rune, maybeVariabilityRune.rune, callableTE)
           (expr2, returnsFromCallable)
         }
-        case RuntimeArrayFromCallableSE(range, rulesA, maybeElementTypeRune, mutabilityRune, sizeAE, callableAE) => {
+        case NewRuntimeSizedArraySE(range, rulesA, maybeElementTypeRune, mutabilityRune, sizeAE, maybeCallableAE) => {
           val (sizeTE, returnsFromSize) =
             evaluateAndCoerceToReferenceExpression(temputs, nenv, life + 0, sizeAE);
-          val (callableTE, returnsFromCallable) =
-            evaluateAndCoerceToReferenceExpression(temputs, nenv, life + 1, callableAE);
+          val (maybeCallableTE, returnsFromCallable) =
+            maybeCallableAE match {
+              case None => (None, Vector())
+              case Some(callableAE) => {
+                val (callableTE, rets) =
+                  evaluateAndCoerceToReferenceExpression(temputs, nenv, life + 1, callableAE);
+                (Some(callableTE), rets)
+              }
+            }
+
 
           val expr2 =
             arrayTemplar.evaluateRuntimeSizedArrayFromCallable(
-              temputs, nenv, range, rulesA.toVector, maybeElementTypeRune.map(_.rune), mutabilityRune.rune, sizeTE, callableTE)
+              temputs, nenv, range, rulesA.toVector, maybeElementTypeRune.map(_.rune), mutabilityRune.rune, sizeTE, maybeCallableTE)
           (expr2, returnsFromSize ++ returnsFromCallable)
         }
         case LetSE(range, rulesA, pattern, sourceExpr1) => {

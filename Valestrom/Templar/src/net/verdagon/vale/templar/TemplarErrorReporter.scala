@@ -29,6 +29,7 @@ case class CouldntFindTypeT(range: RangeS, name: String) extends ICompileErrorT 
 case class ArrayElementsHaveDifferentTypes(range: RangeS, types: Set[CoordT]) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class UnexpectedArrayElementType(range: RangeS, expectedType: CoordT, actualType: CoordT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class InitializedWrongNumberOfElements(range: RangeS, expectedNumElements: Int, numElementsInitialized: Int) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
+case class NewImmRSANeedsCallable(range: RangeS) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class CannotSubscriptT(range: RangeS, tyype: KindT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class NonReadonlyReferenceFoundInPureFunctionParameter(range: RangeS, paramName: IVarNameT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class CouldntFindIdentifierToLoadT(range: RangeS, name: IImpreciseNameS) extends ICompileErrorT {

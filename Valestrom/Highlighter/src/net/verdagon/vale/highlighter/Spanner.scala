@@ -399,11 +399,17 @@ object Spanner {
       case InterpretedPT(range, ownership, permission, inner) => {
         makeSpan(Ownership, range, Vector(forTemplex(inner)))
       }
+      case RuntimeSizedArrayPT(range, mutability, element) => {
+        makeSpan(
+          Typ,
+          range,
+          Vector(forTemplex(mutability), forTemplex(element)))
+      }
       case StaticSizedArrayPT(range, mutability, variability, size, element) => {
         makeSpan(
           Typ,
           range,
-          Vector(forTemplex(size), forTemplex(element)))
+          Vector(forTemplex(size), forTemplex(mutability), forTemplex(variability), forTemplex(element)))
       }
       case IntPT(range, value) => {
         makeSpan(

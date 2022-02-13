@@ -1,38 +1,33 @@
 
 USAGE:
-  python3 valec.py build [options] [root modules] [module directory mappings]
+  valec.exe build [options] [module directory mappings]
 
 Compiles a .vale program into an executable.
 
 Source files can be either .vale, .vast, or .c files.
 
 EXAMPLE:
-  python3 valec.py build hello hello:./samples/helloworld stdlib:./stdlib/src
+  valec.exe build hello=./samples/helloworld stdlib=./stdlib/src
 
   In this example, we're:
-  - Telling it to build the `hello` module and all its dependencies.
   - Setting up module directory mappings:
     - The "hello" module's source is in ./samples/helloworld
     - The "stdlib" module's source is in ./stdlib/src
 
 ARGUMENTS:
-  [root module]:
-    A "root module" is one we want to build, and whose dependencies we also
-    want to build. You will likely only specify one: your program's module.
-
   [module directory mapping]:
     Informs the compiler of a new module, and tells it where its source can
     be found.
-    Follows the format [name]:[directory]
+    Follows the format [name]=[directory]
 
 OPTIONS:
---output-dir
+--output_dir
     Specifies an output directory to write AST, LLVM, and executable to.
 -o
     Specifies executable name.
---llvmir
+--llvm_ir
     Outputs LLVM IR to build.ll
---region-override [region spec]
+--region_override [region spec]
     Makes all code in the program use the given region spec.
     Possible region specs:
       assist: Detect when constraint references become dangling.
@@ -44,5 +39,3 @@ OPTIONS:
     compiler itself.
 --verbose
     Prints additional details for compile errors.
---add-exports-include-path
-    When compiling C files, adds the exports dir to their include path.

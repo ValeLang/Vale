@@ -8,13 +8,6 @@ if [ "$BOOTSTRAPPING_VALEC_DIR" == "" ]; then
   exit
 fi
 
-STDLIB_SOURCE="$2"
-if [ "$STDLIB_SOURCE" == "" ]; then
-  echo "Please supply the stdlib to use."
-  echo "Example: ~/stdlib"
-  exit
-fi
-
 touch ~/.zshrc
 source ~/.zshrc
 
@@ -26,7 +19,7 @@ sbt assembly || { echo 'Valestrom build failed, aborting.' ; exit 1; }
 cd ../Midas
 
 echo Generating Midas...
-LLVM_CMAKE_DIR="/usr/local/Cellar/llvm@11/`ls /usr/local/Cellar/llvm@11`/lib/cmake/llvm"
+LLVM_CMAKE_DIR="/usr/local/Cellar/llvm/`ls /usr/local/Cellar/llvm`/lib/cmake/llvm"
 cmake -B build -D LLVM_DIR="$LLVM_CMAKE_DIR" || { echo 'Midas generate failed, aborting.' ; exit 1; }
 
 cd build
@@ -47,11 +40,11 @@ mkdir -p ../release-unix || { echo 'Error making new release-unix dir.' ; exit 1
 mkdir -p ../release-unix/samples || { echo 'Error making new samples dir.' ; exit 1; }
 cp ../Valestrom/Valestrom.jar ../release-unix || { echo 'Error copying into release-unix.' ; exit 1; }
 cp -r ../Valestrom/Tests/test/main/resources/programs ../release-unix/samples || { echo 'Error copying into release-unix.' ; exit 1; }
-cp -r ../Midas/src/builtins ../release-unix/builtins || { echo 'Error copying into release-unix.' ; exit 1; }
+cp -r ../Midas/builtins ../release-unix/builtins || { echo 'Error copying into release-unix.' ; exit 1; }
 cp releaseREADME.txt ../release-unix/README.txt || { echo 'Error copying into release-unix.' ; exit 1; }
 cp valec-* ../release-unix || { echo 'Error copying into release-unix.' ; exit 1; }
 cp ../Midas/build/midas ../release-unix/midas || { echo 'Error copying into release-unix.' ; exit 1; }
-cp -r $STDLIB_SOURCE ../release-unix/stdlib || { echo 'Error copying into release-unix.' ; exit 1; }
+cp -r ../stdlib ../release-unix/stdlib || { echo 'Error copying into release-unix.' ; exit 1; }
 cp -r helloworld ../release-unix/samples/helloworld || { echo 'Error copying into release-unix.' ; exit 1; }
 cp ../Driver/build/valec ../release-unix/valec || { echo 'Error copying into release-unix.' ; exit 1; }
 cd ../release-unix || { echo 'Error copying into release-unix.' ; exit 1; }

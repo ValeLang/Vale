@@ -1,6 +1,5 @@
 package net.verdagon.vale.hammer
 
-import net.verdagon.vale.hammer.NameHammer.{translateCodeLocation, translateFileCoordinate, translateFullName}
 import net.verdagon.vale.metal._
 import net.verdagon.vale.{CodeLocationS, PackageCoordinate, RangeS, vassert, vfail, vimpl, metal => m}
 import net.verdagon.vale.scout._
@@ -10,7 +9,7 @@ import net.verdagon.vale.templar.names._
 import net.verdagon.vale.templar.types._
 import net.verdagon.von._
 
-object VonHammer {
+class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
   def vonifyProgram(program: ProgramH): IVonData = {
     val ProgramH(packages) = program
 
@@ -201,14 +200,6 @@ object VonHammer {
     }
   }
 
-  def vonifyPermission(permission: m.PermissionH): IVonData = {
-    permission match {
-      case m.ReadonlyH => VonObject("Readonly", None, Vector())
-      case m.ReadwriteH => VonObject("Readwrite", None, Vector())
-//      case m.ExclusiveReadwriteH => VonObject("ExclusiveReadwrite", None, Vector())
-    }
-  }
-
   def vonifyLocation(location: m.LocationH): IVonData = {
     location match {
       case m.InlineH => VonObject("Inline", None, Vector())
@@ -236,7 +227,7 @@ object VonHammer {
   }
 
   def vonifyCoord(coord: ReferenceH[KindH]): IVonData = {
-    val ReferenceH(ownership, location, permission, kind) = coord
+    val ReferenceH(ownership, location, kind) = coord
 
     VonObject(
       "Ref",
@@ -244,7 +235,6 @@ object VonHammer {
       Vector(
         VonMember("ownership", vonifyOwnership(ownership)),
         VonMember("location", vonifyLocation(location)),
-        VonMember("permission", vonifyPermission(permission)),
         VonMember("kind", vonifyKind(kind))))
   }
 
@@ -274,7 +264,6 @@ object VonHammer {
   def vonifyOwnership(ownership: m.OwnershipH): IVonData = {
     ownership match {
       case m.OwnH => VonObject("Own", None, Vector())
-      case m.PointerH => VonObject("Pointer", None, Vector())
       case m.BorrowH => VonObject("Borrow", None, Vector())
       case m.ShareH => VonObject("Share", None, Vector())
       case m.WeakH => VonObject("Weak", None, Vector())
@@ -322,7 +311,7 @@ object VonHammer {
 
   def vonifyKind(kind: KindH): IVonData = {
     kind match {
-      case NeverH() => VonObject("Never", None, Vector())
+      case NeverH(_) => VonObject("Never", None, Vector())
       case IntH(bits) => VonObject("Int", None, Vector(VonMember("bits", VonInt(bits))))
       case BoolH() => VonObject("Bool", None, Vector())
       case StrH() => VonObject("Str", None, Vector())
@@ -414,17 +403,6 @@ object VonHammer {
       case wa @ BorrowToWeakH(sourceExpr) => {
         VonObject(
           "BorrowToWeak",
-          None,
-          Vector(
-            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
-            VonMember("sourceType", vonifyCoord(sourceExpr.resultType)),
-            VonMember("sourceKind", vonifyKind(sourceExpr.resultType.kind)),
-            VonMember("resultType", vonifyCoord(wa.resultType)),
-            VonMember("resultKind", vonifyKind(wa.resultType.kind))))
-      }
-      case wa @ PointerToWeakH(sourceExpr) => {
-        VonObject(
-          "PointerToWeak",
           None,
           Vector(
             VonMember("sourceExpr", vonifyExpression(sourceExpr)),
@@ -536,30 +514,6 @@ object VonHammer {
           None,
           Vector(
             VonMember("local", vonifyLocal(local))))
-      }
-      case BorrowToPointerH(sourceExpr) => {
-        VonObject(
-          "BorrowToPointer",
-          None,
-          Vector(
-            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
-            VonMember("resultType", vonifyCoord(sourceExpr.resultType))))
-      }
-      case PointerToBorrowH(sourceExpr) => {
-        VonObject(
-          "PointerToBorrow",
-          None,
-          Vector(
-            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
-            VonMember("resultType", vonifyCoord(sourceExpr.resultType))))
-      }
-      case NarrowPermissionH(refExpression, targetPermission) => {
-        VonObject(
-          "NarrowPermission",
-          None,
-          Vector(
-            VonMember("sourceExpr", vonifyExpression(refExpression)),
-            VonMember("targetPermission", vonifyPermission(targetPermission))))
       }
       case DestroyStaticSizedArrayIntoFunctionH(arrayExpr, consumerExpr, consumerMethod, arrayElementType, arraySize) => {
         VonObject(
@@ -678,14 +632,13 @@ object VonHammer {
             VonMember("localName", vonifyName(localName)),
             VonMember("knownLive", VonBool(false))))
       }
-      case LocalLoadH(local, targetOwnership, targetPermission, localName) => {
+      case LocalLoadH(local, targetOwnership, localName) => {
         VonObject(
           "LocalLoad",
           None,
           Vector(
             VonMember("local", vonifyLocal(local)),
             VonMember("targetOwnership", vonifyOwnership(targetOwnership)),
-            VonMember("targetPermission", vonifyPermission(targetPermission)),
             VonMember("localName", vonifyName(localName))))
       }
       case MemberStoreH(resultType, structExpr, memberIndex, sourceExpr, memberName) => {
@@ -712,7 +665,6 @@ object VonHammer {
             VonMember("structKnownLive", VonBool(false)),
             VonMember("memberIndex", VonInt(memberIndex)),
             VonMember("targetOwnership", vonifyOwnership(resultType.ownership)),
-            VonMember("targetPermission", vonifyPermission(resultType.permission)),
             VonMember("expectedMemberType", vonifyCoord(expectedMemberType)),
             VonMember("expectedResultType", vonifyCoord(resultType)),
             VonMember("memberName", vonifyName(memberName))))
@@ -747,7 +699,7 @@ object VonHammer {
             VonMember("sourceKnownLive", VonBool(false)),
             VonMember("resultType", vonifyCoord(resultType))))
       }
-      case rsal @ RuntimeSizedArrayLoadH(arrayExpr, indexExpr, targetOwnership, targetPermission, expectedElementType, resultType) => {
+      case rsal @ RuntimeSizedArrayLoadH(arrayExpr, indexExpr, targetOwnership, expectedElementType, resultType) => {
         VonObject(
           "RuntimeSizedArrayLoad",
           None,
@@ -761,7 +713,6 @@ object VonHammer {
             VonMember("indexKind", vonifyKind(indexExpr.resultType.kind)),
             VonMember("resultType", vonifyCoord(rsal.resultType)),
             VonMember("targetOwnership", vonifyOwnership(targetOwnership)),
-            VonMember("targetPermission", vonifyPermission(targetPermission)),
             VonMember("expectedElementType", vonifyCoord(expectedElementType)),
             VonMember("resultType", vonifyCoord(resultType))))
       }
@@ -805,7 +756,7 @@ object VonHammer {
             VonMember("resultType", vonifyCoord(resultType)),
             VonMember("elementType", vonifyCoord(resultType))))
       }
-      case ssal @ StaticSizedArrayLoadH(arrayExpr, indexExpr, targetOwnership, targetPermission, expectedElementType, arraySize, resultType) => {
+      case ssal @ StaticSizedArrayLoadH(arrayExpr, indexExpr, targetOwnership, expectedElementType, arraySize, resultType) => {
         VonObject(
           "StaticSizedArrayLoad",
           None,
@@ -817,7 +768,6 @@ object VonHammer {
             VonMember("indexExpr", vonifyExpression(indexExpr)),
             VonMember("resultType", vonifyCoord(ssal.resultType)),
             VonMember("targetOwnership", vonifyOwnership(targetOwnership)),
-            VonMember("targetPermission", vonifyPermission(targetPermission)),
             VonMember("expectedElementType", vonifyCoord(expectedElementType)),
             VonMember("arraySize", VonInt(arraySize)),
             VonMember("resultType", vonifyCoord(resultType))))
@@ -957,7 +907,7 @@ object VonHammer {
           "CoordTemplata",
           None,
           Vector(
-            VonMember("coord", vonifyCoord(TypeHammer.translateReference(hinputs, hamuts, coord)))))
+            VonMember("coord", vonifyCoord(typeHammer.translateReference(hinputs, hamuts, coord)))))
       }
       case CoordListTemplata(coords) => {
         VonObject(
@@ -967,21 +917,21 @@ object VonHammer {
             VonMember("coords",
               VonArray(
                 None,
-                coords.map(coord => vonifyCoord(TypeHammer.translateReference(hinputs, hamuts, coord)))))))
+                coords.map(coord => vonifyCoord(typeHammer.translateReference(hinputs, hamuts, coord)))))))
       }
       case KindTemplata(kind) => {
         VonObject(
           "KindTemplata",
           None,
           Vector(
-            VonMember("kind", vonifyKind(TypeHammer.translateKind(hinputs, hamuts, kind)))))
+            VonMember("kind", vonifyKind(typeHammer.translateKind(hinputs, hamuts, kind)))))
       }
       case PrototypeTemplata(prototype) => {
         VonObject(
           "PrototypeTemplata",
           None,
           Vector(
-            VonMember("prototype", vonifyPrototype(FunctionHammer.translatePrototype(hinputs, hamuts, prototype)))))
+            VonMember("prototype", vonifyPrototype(typeHammer.translatePrototype(hinputs, hamuts, prototype)))))
       }
       case RuntimeSizedArrayTemplateTemplata() => VonObject("ArrayTemplateTemplata", None, Vector())
       case ft @ FunctionTemplata(env, functionA) => {
@@ -992,7 +942,7 @@ object VonHammer {
             VonMember("envName", vonifyTemplarName(hinputs, hamuts, env.fullName)),
             VonMember(
               "function",
-              vonifyName(translateFullName(hinputs, hamuts, ft.getTemplateName())))))
+              vonifyName(nameHammer.translateFullName(hinputs, hamuts, ft.getTemplateName())))))
       }
       case st @ StructTemplata(env, struct) => {
         VonObject(
@@ -1000,7 +950,8 @@ object VonHammer {
           None,
           Vector(
             VonMember("envName", vonifyTemplarName(hinputs, hamuts, env.fullName)),
-            VonMember("structName", translateName(hinputs, hamuts, NameTranslator.translateCitizenName(st.originStruct.name)))))
+            vimpl()))
+//            VonMember("structName", translateName(hinputs, hamuts, nameTranslator.translateCitizenName(st.originStruct.name)))))
       }
       case it @ InterfaceTemplata(env, interface) => {
         VonObject(
@@ -1016,14 +967,15 @@ object VonHammer {
           None,
           Vector(
             VonMember("envName", vonifyTemplarName(hinputs, hamuts, env.fullName)),
-            VonMember("subCitizenHumanName", translateName(hinputs, hamuts, NameTranslator.translateNameStep(impl.name))),
-            VonMember("location", vonifyCodeLocation2(NameTranslator.translateCodeLocation(impl.name.codeLocation)))))
+            vimpl(),
+            vimpl()))
+//            VonMember("subCitizenHumanName", translateName(hinputs, hamuts, nameTranslator.translateNameStep(impl.name))),
+//            VonMember("location", vonifyCodeLocation2(nameTranslator.translateCodeLocation(impl.name.codeLocation)))))
       }
       case ExternFunctionTemplata(header) => VonObject("ExternFunctionTemplata", None, Vector(VonMember("name", vonifyTemplarName(hinputs, hamuts, header.fullName))))
       case OwnershipTemplata(ownership) => VonObject("OwnershipTemplata", None, Vector(VonMember("ownership", vonifyOwnership(Conversions.evaluateOwnership(ownership)))))
       case VariabilityTemplata(variability) => VonObject("VariabilityTemplata", None, Vector(VonMember("variability", vonifyVariability(Conversions.evaluateVariability(variability)))))
       case MutabilityTemplata(mutability) => VonObject("MutabilityTemplata", None, Vector(VonMember("mutability", vonifyMutability(Conversions.evaluateMutability(mutability)))))
-      case PermissionTemplata(permission) => VonObject("PermissionTemplata", None, Vector(VonMember("permission", vonifyPermission(Conversions.evaluatePermission(permission)))))
       case LocationTemplata(location) => VonObject("LocationTemplata", None, Vector(VonMember("location", vonifyLocation(Conversions.evaluateLocation(location)))))
       case BooleanTemplata(value) => VonObject("BooleanTemplata", None, Vector(VonMember("value", VonBool(value))))
       case IntegerTemplata(value) => VonObject("IntegerTemplata", None, Vector(VonMember("value", VonInt(value))))
@@ -1036,7 +988,7 @@ object VonHammer {
       "CodeLocation",
       None,
       Vector(
-        VonMember("file", translateFileCoordinate(file)),
+        VonMember("file", NameHammer.translateFileCoordinate(file)),
         VonMember("offset", VonInt(offset))))
   }
 
@@ -1046,7 +998,7 @@ object VonHammer {
       "CodeLocation",
       None,
       Vector(
-        VonMember("file", translateFileCoordinate(file)),
+        VonMember("file", NameHammer.translateFileCoordinate(file)),
         VonMember("offset", VonInt(offset))))
   }
 
@@ -1056,8 +1008,8 @@ object VonHammer {
       "Range",
       None,
       Vector(
-        VonMember("begin", translateCodeLocation(begin)),
-        VonMember("end", translateCodeLocation(end))))
+        VonMember("begin", NameHammer.translateCodeLocation(begin)),
+        VonMember("end", NameHammer.translateCodeLocation(end))))
   }
 
   def translateName(
@@ -1135,7 +1087,7 @@ object VonHammer {
           None,
           Vector(
             VonMember("mutability", vonifyMutability(Conversions.evaluateMutability(mutability))),
-            VonMember("elementType", vonifyCoord(TypeHammer.translateReference(hinputs, hamuts, elementType)))))
+            VonMember("elementType", vonifyCoord(typeHammer.translateReference(hinputs, hamuts, elementType)))))
       }
       case TemplarBlockResultVarNameT(life) => {
         VonObject(
@@ -1224,6 +1176,13 @@ object VonHammer {
           Vector(
             VonMember("interface", VonInt(index))))
       }
+      case AnonymousSubstructImplTemplateNameT(interface) => {
+        VonObject(
+          "AnonymousSubstructImplTemplateName",
+          None,
+          Vector(
+            VonMember("interface", translateName(hinputs, hamuts, interface))))
+      }
       case PrimitiveNameT(humanName) => {
         VonObject(
           "PrimitiveName",
@@ -1249,7 +1208,7 @@ object VonHammer {
           "StructFreeName",
           None,
           Vector(
-//            VonMember("codeLoc", vonifyCodeLocation2(NameTranslator.translateCodeLocation(codeLoc))),
+//            VonMember("codeLoc", vonifyCodeLocation2(nameTranslator.translateCodeLocation(codeLoc))),
             VonMember(
               "templateArgs",
               VonArray(
@@ -1259,24 +1218,40 @@ object VonHammer {
                   .toVector)),
             VonMember(
               "kind",
-              vonifyKind(TypeHammer.translateKind(hinputs, hamuts, kind)))))
+              vonifyKind(typeHammer.translateKind(hinputs, hamuts, kind)))))
       }
-      case VirtualFreeNameT(templateArgs, param) => {
-        VonObject(
-          "F",
-          None,
-          Vector(
-            VonMember(
-              "templateArgs",
-              VonArray(
-                None,
-                templateArgs
-                  .map(templateArg => vonifyTemplata(hinputs, hamuts, templateArg))
-                  .toVector)),
-            VonMember(
-              "param",
-              vonifyKind(TypeHammer.translateKind(hinputs, hamuts, param)))))
-      }
+//      case AbstractVirtualFreeNameT(templateArgs, param) => {
+//        VonObject(
+//          "AbstractVirtualFreeF",
+//          None,
+//          Vector(
+//            VonMember(
+//              "templateArgs",
+//              VonArray(
+//                None,
+//                templateArgs
+//                  .map(templateArg => vonifyTemplata(hinputs, hamuts, templateArg))
+//                  .toVector)),
+//            VonMember(
+//              "param",
+//              vonifyKind(typeHammer.translateKind(hinputs, hamuts, param)))))
+//      }
+//      case OverrideVirtualFreeNameT(templateArgs, param) => {
+//        VonObject(
+//          "OverrideVirtualFreeF",
+//          None,
+//          Vector(
+//            VonMember(
+//              "templateArgs",
+//              VonArray(
+//                None,
+//                templateArgs
+//                  .map(templateArg => vonifyTemplata(hinputs, hamuts, templateArg))
+//                  .toVector)),
+//            VonMember(
+//              "param",
+//              vonifyKind(typeHammer.translateKind(hinputs, hamuts, param)))))
+//      }
       case FunctionNameT(humanName, templateArgs, parameters) => {
         VonObject(
           "F",
@@ -1295,9 +1270,69 @@ object VonHammer {
               VonArray(
                 None,
                 parameters
-                  .map(templateArg => TypeHammer.translateReference(hinputs, hamuts, templateArg))
+                  .map(templateArg => typeHammer.translateReference(hinputs, hamuts, templateArg))
                   .map(vonifyCoord)
                   .toVector))))
+      }
+//      case AbstractVirtualDropFunctionNameT(implName, templateArgs, parameters) => {
+//        VonObject(
+//          "AbstractVirtualDropFunctionNameF",
+//          None,
+//          Vector(
+//            VonMember("implName", translateName(hinputs, hamuts, implName)),
+//            VonMember(
+//              "templateArgs",
+//              VonArray(
+//                None,
+//                templateArgs
+//                  .map(templateArg => vonifyTemplata(hinputs, hamuts, templateArg))
+//                  .toVector)),
+//            VonMember(
+//              "parameters",
+//              VonArray(
+//                None,
+//                parameters
+//                  .map(templateArg => typeHammer.translateReference(hinputs, hamuts, templateArg))
+//                  .map(vonifyCoord)
+//                  .toVector))))
+//      }
+//      case OverrideVirtualDropFunctionNameT(implName, templateArgs, parameters) => {
+//        VonObject(
+//          "OverrideVirtualDropFunctionNameF",
+//          None,
+//          Vector(
+//            VonMember("implName", translateName(hinputs, hamuts, implName)),
+//            VonMember(
+//              "templateArgs",
+//              VonArray(
+//                None,
+//                templateArgs
+//                  .map(templateArg => vonifyTemplata(hinputs, hamuts, templateArg))
+//                  .toVector)),
+//            VonMember(
+//              "parameters",
+//              VonArray(
+//                None,
+//                parameters
+//                  .map(templateArg => typeHammer.translateReference(hinputs, hamuts, templateArg))
+//                  .map(vonifyCoord)
+//                  .toVector))))
+//      }
+      case ForwarderFunctionNameT(inner, index) => {
+        VonObject(
+          "ForwarderF",
+          None,
+          Vector(
+            VonMember("inner", translateName(hinputs, hamuts, inner)),
+            VonMember("index", VonInt(index))))
+      }
+      case ForwarderFunctionTemplateNameT(inner, index) => {
+        VonObject(
+          "ForwarderFT",
+          None,
+          Vector(
+            VonMember("inner", translateName(hinputs, hamuts, inner)),
+            VonMember("index", VonInt(index))))
       }
       case FunctionTemplateNameT(humanName, codeLocation) => {
         VonObject(

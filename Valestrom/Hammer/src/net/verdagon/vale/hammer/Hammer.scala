@@ -3,21 +3,21 @@ package net.verdagon.vale.hammer
 import net.verdagon.vale.astronomer.{ICompileErrorA, ProgramA}
 import net.verdagon.vale.metal._
 import net.verdagon.vale.scout.{ICompileErrorS, ProgramS}
-import net.verdagon.vale.templar.ast.{FunctionExportT, FunctionExternT, KindExportT, KindExternT}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.names.{FullNameT, IVarNameT}
 import net.verdagon.vale.templar.{Hinputs, ICompileErrorT, TemplarCompilation, TemplarCompilationOptions, types => t}
-import net.verdagon.vale.{Builtins, FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, PackageCoordinate, PackageCoordinateMap, Result, vassert, vcurious, vfail, vwat}
+import net.verdagon.vale.{Builtins, FileCoordinateMap, IPackageResolver, Profiler, Interner, PackageCoordinate, PackageCoordinateMap, Result, vassert, vcurious, vfail, vwat}
 
 import scala.collection.immutable.List
 
 case class FunctionRefH(prototype: PrototypeH) {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
   //  def functionType = prototype.functionType
   def fullName = prototype.fullName
 }
 
 case class LocalsBox(var inner: Locals) {
-  override def hashCode(): Int = vfail() // Shouldnt hash, is mutable
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vfail() // Shouldnt hash, is mutable
 
   def snapshot = inner
 
@@ -50,13 +50,12 @@ case class LocalsBox(var inner: Locals) {
   }
 
   def addTemplarLocal(
-    hinputs: Hinputs,
-    hamuts: HamutsBox,
     varId2: FullNameT[IVarNameT],
+    varIdNameH: FullNameH,
     variability: Variability,
     tyype: ReferenceH[KindH]):
   Local = {
-    val (newInner, local) = inner.addTemplarLocal(hinputs, hamuts, varId2, variability, tyype)
+    val (newInner, local) = inner.addTemplarLocal(varId2, varIdNameH, variability, tyype)
     inner = newInner
     local
   }
@@ -77,12 +76,11 @@ case class Locals(
      locals: Map[VariableIdH, Local],
 
      nextLocalIdNumber: Int) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   def addTemplarLocal(
-    hinputs: Hinputs,
-    hamuts: HamutsBox,
     varId2: FullNameT[IVarNameT],
+    varIdNameH: FullNameH,
     variability: Variability,
     tyype: ReferenceH[KindH]):
   (Locals, Local) = {
@@ -91,7 +89,6 @@ case class Locals(
     }
     val newLocalHeight = locals.size
     val newLocalIdNumber = nextLocalIdNumber
-    val varIdNameH = NameHammer.translateFullName(hinputs, hamuts, varId2)
     val newLocalId = VariableIdH(newLocalIdNumber, newLocalHeight, Some(varIdNameH))
     // Temporary until catalyst fills in stuff here
     val keepAlive = newLocalId.name.map(_.readableName).getOrElse("").endsWith("__tether");
@@ -147,82 +144,97 @@ case class Locals(
   }
 }
 
-object Hammer {
+class Hammer(interner: Interner) {
+  val nameHammer: NameHammer =
+    new NameHammer((hinputs, hamuts, step) => {
+      vonHammer.translateName(hinputs, hamuts, step)
+    })
+  val structHammer: StructHammer =
+    new StructHammer(
+      interner,
+      nameHammer,
+      (hinputs, hamuts, prototypeT) => typeHammer.translatePrototype(hinputs, hamuts, prototypeT),
+      (hinputs, hamuts, referenceT) => typeHammer.translateReference(hinputs, hamuts, referenceT))
+  val typeHammer: TypeHammer = new TypeHammer(interner, nameHammer, structHammer)
+  val functionHammer = new FunctionHammer(typeHammer, nameHammer, structHammer)
+  val vonHammer = new VonHammer(nameHammer, typeHammer)
+
   def translate(hinputs: Hinputs): ProgramH = {
     val Hinputs(
-      interfaces,
-      structs,
-      functions,
-      kindToDestructor,
-      edgeBlueprintsByInterface,
-      edges,
-      kindExports,
-      functionExports,
-      kindExterns,
-      functionExterns) = hinputs
+    interfaces,
+    structs,
+    functions,
+    kindToDestructor,
+    edgeBlueprintsByInterface,
+    edges,
+    kindExports,
+    functionExports,
+    kindExterns,
+    functionExterns) = hinputs
 
 
     val hamuts = HamutsBox(Hamuts(Map(), Map(), Map(), Vector.empty, Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map()))
-//    val emptyPackStructRefH = StructHammer.translateStructRef(hinputs, hamuts, emptyPackStructRef)
-//    vassert(emptyPackStructRefH == ProgramH.emptyTupleStructRef)
+    //    val emptyPackStructRefH = structHammer.translateStructRef(hinputs, hamuts, emptyPackStructRef)
+    //    vassert(emptyPackStructRefH == ProgramH.emptyTupleStructRef)
 
     kindExports.foreach({ case KindExportT(_, tyype, packageCoordinate, exportName) =>
-      val kindH = TypeHammer.translateKind(hinputs, hamuts, tyype)
+      val kindH = typeHammer.translateKind(hinputs, hamuts, tyype)
       hamuts.addKindExport(kindH, packageCoordinate, exportName)
     })
 
     functionExports.foreach({ case FunctionExportT(_, prototype, packageCoordinate, exportName) =>
-      val prototypeH = FunctionHammer.translatePrototype(hinputs, hamuts, prototype)
+      val prototypeH = typeHammer.translatePrototype(hinputs, hamuts, prototype)
       hamuts.addFunctionExport(prototypeH, packageCoordinate, exportName)
     })
 
     kindExterns.foreach({ case KindExternT(tyype, packageCoordinate, exportName) =>
-      val kindH = TypeHammer.translateKind(hinputs, hamuts, tyype)
+      val kindH = typeHammer.translateKind(hinputs, hamuts, tyype)
       hamuts.addKindExtern(kindH, packageCoordinate, exportName)
     })
 
     functionExterns.foreach({ case FunctionExternT(_, prototype, packageCoordinate, exportName) =>
-      val prototypeH = FunctionHammer.translatePrototype(hinputs, hamuts, prototype)
+      val prototypeH = typeHammer.translatePrototype(hinputs, hamuts, prototype)
       hamuts.addFunctionExtern(prototypeH, packageCoordinate, exportName)
     })
 
     // We generate the names here first, so that externs get the first chance at having
     // ID 0 for each name, which means we dont need to add _1 _2 etc to the end of them,
     // and they'll match up with the actual outside names.
-//          externNameToExtern.map({ case (externName, prototype2) =>
-//            val fullNameH = NameHammer.translateFullName(hinputs, hamuts, prototype2.fullName)
-//            val humanName =
-//              prototype2.fullName.last match {
-//                case ExternFunctionName2(humanName, _) => humanName
-//                case _ => vfail("Only human-named functions can be extern")
-//              }
-//            if (fullNameH.readableName != humanName) {
-//              vfail("Name conflict, two externs with the same name!")
-//            }
-//            val prototypeH = FunctionHammer.translatePrototype(hinputs, hamuts, prototype2)
-//            (packageCoordinate -> (externName, prototypeH))
-//          })
-//      })
-//    val externPrototypesH =
-//      packageToExternNameToPrototypeH.values.flatMap(_.values.toVector)
+    //          externNameToExtern.map({ case (externName, prototype2) =>
+    //            val fullNameH = NameHammer.translateFullName(hinputs, hamuts, prototype2.fullName)
+    //            val humanName =
+    //              prototype2.fullName.last match {
+    //                case ExternFunctionName2(humanName, _) => humanName
+    //                case _ => vfail("Only human-named functions can be extern")
+    //              }
+    //            if (fullNameH.readableName != humanName) {
+    //              vfail("Name conflict, two externs with the same name!")
+    //            }
+    //            val prototypeH = typeHammer.translatePrototype(hinputs, hamuts, prototype2)
+    //            (packageCoordinate -> (externName, prototypeH))
+    //          })
+    //      })
+    //    val externPrototypesH =
+    //      packageToExternNameToPrototypeH.values.flatMap(_.values.toVector)
 
-    StructHammer.translateInterfaces(hinputs, hamuts);
-    StructHammer.translateStructs(hinputs, hamuts)
+    structHammer.translateInterfaces(hinputs, hamuts);
+    structHammer.translateStructs(hinputs, hamuts)
     val userFunctions = functions.filter(f => f.header.isUserFunction).toVector
     val nonUserFunctions = functions.filter(f => !f.header.isUserFunction).toVector
-    FunctionHammer.translateFunctions(hinputs, hamuts, userFunctions)
-    FunctionHammer.translateFunctions(hinputs, hamuts, nonUserFunctions)
+    functionHammer.translateFunctions(hinputs, hamuts, userFunctions)
+    functionHammer.translateFunctions(hinputs, hamuts, nonUserFunctions)
 
     val immDestructorPrototypesH =
       kindToDestructor.map({ case (kind, destructor) =>
-        val kindH = TypeHammer.translateKind(hinputs, hamuts, kind)
-        val immDestructorPrototypeH = FunctionHammer.translatePrototype(hinputs, hamuts, destructor)
+        val kindH = typeHammer.translateKind(hinputs, hamuts, kind)
+        val immDestructorPrototypeH = typeHammer.translatePrototype(hinputs, hamuts, destructor)
         (kindH -> immDestructorPrototypeH)
       }).toMap
 
     immDestructorPrototypesH.foreach({ case (kindH, immDestructorPrototypeH) => {
       vassert(immDestructorPrototypeH.params.head.kind == kindH)
-    }})
+    }
+    })
 
     val packageToInterfaceDefs = hamuts.interfaceDefs.groupBy(_._1.fullName.packageCoord)
     val packageToStructDefs = hamuts.structDefs.groupBy(_.fullName.packageCoordinate)
@@ -237,15 +249,15 @@ object Hammer {
 
     val allPackageCoords =
       packageToInterfaceDefs.keySet ++
-      packageToStructDefs.keySet ++
-      packageToFunctionDefs.keySet ++
-      packageToStaticSizedArrays.keySet ++
-      packageToRuntimeSizedArrays.keySet ++
-      packageToImmDestructorPrototypes.keySet ++
-      packageToExportNameToFunction.keySet ++
-      packageToExportNameToKind.keySet ++
-      packageToExternNameToFunction.keySet ++
-      packageToExternNameToKind.keySet
+        packageToStructDefs.keySet ++
+        packageToFunctionDefs.keySet ++
+        packageToStaticSizedArrays.keySet ++
+        packageToRuntimeSizedArrays.keySet ++
+        packageToImmDestructorPrototypes.keySet ++
+        packageToExportNameToFunction.keySet ++
+        packageToExportNameToKind.keySet ++
+        packageToExternNameToFunction.keySet ++
+        packageToExternNameToKind.keySet
 
     val packages =
       allPackageCoords.toVector.map(packageCoord => {
@@ -269,6 +281,9 @@ object Hammer {
 
     ProgramH(PackageCoordinateMap(packages))
   }
+}
+
+object Hammer {
 
   private def flattenAndFilterVoids(unfilteredExprsHE: Vector[ExpressionH[KindH]]): Vector[ExpressionH[KindH]] = {
     val flattenedExprsHE =
@@ -277,7 +292,10 @@ object Hammer {
         case other => Vector(other)
       })
     flattenedExprsHE.init.foreach(exprHE => {
-      vassert(exprHE.resultType.kind != NeverH())
+      exprHE.resultType.kind match {
+        case NeverH(_) => vwat()
+        case _ =>
+      }
     })
 
     // Filter out any Void that arent the last.
@@ -285,7 +303,9 @@ object Hammer {
       if (flattenedExprsHE.size <= 1) {
         flattenedExprsHE
       } else {
-        flattenedExprsHE.init.filter(_ != ConstantVoidH()) :+ flattenedExprsHE.last
+        flattenedExprsHE.init
+          .filter({ case ConstantVoidH() => false case _ => true }) :+
+          flattenedExprsHE.last
       }
     vassert(filteredFlattenedExprsHE.nonEmpty)
     filteredFlattenedExprsHE
@@ -310,7 +330,10 @@ object Hammer {
     locals: LocalsBox,
     unfilteredExprsHE: Vector[ExpressionH[KindH]]):
   ExpressionH[KindH] = {
-    vassert(unfilteredExprsHE.last.resultType.kind == NeverH())
+    unfilteredExprsHE.last.resultType.kind match {
+      case NeverH(_) =>
+      case _ => vwat()
+    }
 
     val exprsHE = flattenAndFilterVoids(unfilteredExprsHE)
 

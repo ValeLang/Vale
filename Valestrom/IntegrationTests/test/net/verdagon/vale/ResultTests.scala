@@ -18,7 +18,7 @@ class ResultTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Test is_err and borrow expect_err for Err") {
@@ -34,7 +34,7 @@ class ResultTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonStr("file not found!")
+    compile.evalForKind(Vector()) match { case VonStr("file not found!") => }
   }
 
   test("Test owning expect") {
@@ -49,7 +49,7 @@ class ResultTests extends FunSuite with Matchers {
         |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Test owning expect_err") {
@@ -64,7 +64,7 @@ class ResultTests extends FunSuite with Matchers {
         |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonStr("file not found!")
+    compile.evalForKind(Vector()) match { case VonStr("file not found!") => }
   }
 
   test("Test expect() panics for Err") {

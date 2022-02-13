@@ -1,15 +1,28 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.parser.ast.{BlockPE, ExportAsP, FunctionP, ImportP, NameOrRunePT, NameP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImportP, TopLevelStructP, VoidPE}
-import net.verdagon.vale.parser.old.OldTestParseUtils
-import net.verdagon.vale.{Collector, Tests, vassert}
+import net.verdagon.vale.options.GlobalOptions
+import net.verdagon.vale.parser.ast.{BlockPE, ExportAsP, FileP, FunctionP, ITopLevelThingP, ImportP, NameOrRunePT, NameP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImportP, TopLevelStructP, VoidPE}
+import net.verdagon.vale.{Collector, Tests, vassert, vassertSome}
 import org.scalatest.{FunSuite, Matchers}
 
 
 
-class TopLevelTests extends FunSuite with Matchers with Collector with OldTestParseUtils {
+class TopLevelTests extends FunSuite with Matchers with Collector with TestParseUtils {
+  def compile(code: String): FileP = {
+    new Parser(GlobalOptions(true, true, true, true))
+      .runParserForProgramAndCommentRanges(code)
+      .getOrDie()
+      ._1
+  }
+
+  def compileForError(code: String): IParseError = {
+    new Parser(GlobalOptions(true, true, true, true))
+      .runParserForProgramAndCommentRanges(code)
+      .expectErr()
+  }
+
   test("Function then struct") {
-    val program = compileProgram(
+    val program = compile(
       """
         |exported func main() int {}
         |
@@ -20,19 +33,19 @@ class TopLevelTests extends FunSuite with Matchers with Collector with OldTestPa
   }
 
   test("Ellipses ignored") {
-    compileProgram("""exported func main(...) int {}""".stripMargin)
-    compileProgram("""exported func main() ... {}""".stripMargin)
-    compileProgram("""exported func main() int {} ... """.stripMargin)
-    compileProgram("""exported func main() int {...}""".stripMargin)
-    compileProgram("""exported func main() int {moo(...)}""".stripMargin)
-    compileProgram("""exported func main() int {x = ...;}""".stripMargin)
-    compileProgram("""exported func main() int {set x = ...;}""".stripMargin)
-    compileProgram("""struct Moo {} ... """.stripMargin)
-    compileProgram("""struct Moo {...}""".stripMargin)
+    compile("""exported func main(...) int {}""".stripMargin)
+    compile("""exported func main() ... {}""".stripMargin)
+    compile("""exported func main() int {} ... """.stripMargin)
+    compile("""exported func main() int {...}""".stripMargin)
+    compile("""exported func main() int {moo(...)}""".stripMargin)
+    compile("""exported func main() int {x = ...;}""".stripMargin)
+    compile("""exported func main() int {set x = ...;}""".stripMargin)
+    compile("""struct Moo {} ... """.stripMargin)
+    compile("""struct Moo {...}""".stripMargin)
   }
 
 //  test("Function containing if") {
-//    val program = compileProgram(
+//    val program = compile(
 //      """
 //        |func main() int {
 //        |  if true { 3 } else { 4 }
@@ -50,7 +63,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with OldTestPa
       """func main(){}
         |blort
         |""".stripMargin
-    val err = compileProgramForError(code)
+    val err = compileForError(code)
     err match {
       case UnrecognizedTopLevelThingError(_) =>
     }
@@ -58,12 +71,12 @@ class TopLevelTests extends FunSuite with Matchers with Collector with OldTestPa
 
   // lol
   test("Funky function") {
-    compileProgram("funky main() { }")
+    compile("funky main() { }")
   }
 
   // To support the examples on the site for the syntax highlighter
   test("empty") {
-    val program = compileProgram("func foo() { ... }")
+    val program = compile("func foo() { ... }")
     program.topLevelThings(0) match {
       case TopLevelFunctionP(
       FunctionP(_,
@@ -73,7 +86,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with OldTestPa
   }
 
   test("exporting int") {
-    val program = compileProgram("export int as NumberThing;")
+    val program = compile("export int as NumberThing;")
     program.topLevelThings(0) match {
       case TopLevelExportAsP(ExportAsP(_,NameOrRunePT(NameP(_,"int")),NameP(_,"NumberThing"))) =>
 
@@ -81,35 +94,35 @@ class TopLevelTests extends FunSuite with Matchers with Collector with OldTestPa
   }
 
   test("exporting array") {
-    val program = compileProgram("export []<mut>int as IntArray;")
+    val program = compile("export []<mut>int as IntArray;")
     program.topLevelThings(0) match {
       case TopLevelExportAsP(ExportAsP(_,_,NameP(_,"IntArray"))) =>
     }
   }
 
   test("import wildcard") {
-    val program = compileProgram("import somemodule.*;")
+    val program = compile("import somemodule.*;")
     program.topLevelThings(0) match {
       case TopLevelImportP(ImportP(_, NameP(_, "somemodule"), Vector(), NameP(_, "*"))) =>
     }
   }
 
   test("import just module and thing") {
-    val program = compileProgram("import somemodule.List;")
+    val program = compile("import somemodule.List;")
     program.topLevelThings(0) match {
       case TopLevelImportP(ImportP(_, NameP(_, "somemodule"), Vector(), NameP(_, "List"))) =>
     }
   }
 
   test("full import") {
-    val program = compileProgram("import somemodule.subpackage.List;")
+    val program = compile("import somemodule.subpackage.List;")
     program.topLevelThings(0) match {
       case TopLevelImportP(ImportP(_, NameP(_, "somemodule"), Vector(NameP(_, "subpackage")), NameP(_, "List"))) =>
     }
   }
 
   test("Return with region generics") {
-    val program = compileProgram(
+    val program = compile(
       """
         |func strongestDesire() IDesire<'r, 'i> { }
         |""".stripMargin)
@@ -120,7 +133,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with OldTestPa
 
 
   test("Bad start of statement") {
-    compileProgramForError(
+    compileForError(
       """
         |func doCivicDance(virtual this Car) {
         |  )
@@ -128,7 +141,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with OldTestPa
         """.stripMargin) match {
       case BadStartOfStatementError(_) =>
     }
-    compileProgramForError(
+    compileForError(
       """
         |func doCivicDance(virtual this Car) {
         |  ]

@@ -5,7 +5,7 @@
 LLVM_DIR="$1"
 if [ "$LLVM_DIR" == "" ]; then
   echo "First arg must be path to unzip LLVM to."
-  echo "Example: ~/clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10"
+  echo "Example: ~/clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.10"
   exit
 fi
 
@@ -13,13 +13,6 @@ BOOTSTRAPPING_VALEC_DIR="$2"
 if [ "$BOOTSTRAPPING_VALEC_DIR" == "" ]; then
   echo "Second arg must be path to unzip a bootstrapping stable Vale compiler to."
   echo "Example: ~/ValeCompiler-0.1.3.3-Ubuntu"
-  exit
-fi
-
-STDLIB_DIR="$3"
-if [ "$STDLIB_DIR" == "" ]; then
-  echo "Third arg must be path to download the current stdlib to."
-  echo "Example: ~/stdlib"
   exit
 fi
 
@@ -53,11 +46,8 @@ unzip ValeCompiler-0.1.3.3-Ubuntu.zip -d $BOOTSTRAPPING_VALEC_DIR
 # echo 'export PATH=$PATH:~/ValeCompiler-0.1.3.3-Ubuntu' >> ~/.bashrc
 
 echo "Downloading and unzipping LLVM to $LLVM_DIR..."
-# Install LLVM 11.1.0 (from https://github.com/llvm/llvm-project/releases/tag/llvmorg-11.1.0)
-curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-11.1.0/clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10.tar.xz --output /tmp/clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10.tar.xz
+# Install LLVM 13.0.0 (from https://github.com/llvm/llvm-project/releases/tag/llvmorg-13.0.0)
+curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz --output /tmp/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz
 mkdir -p $LLVM_DIR
-tar xf /tmp/clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10.tar.xz -C $LLVM_DIR
+tar xf /tmp/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz -C $LLVM_DIR
 # Later, we'll need to feed this to a cmake command so it knows where the LLVM libraries are.
-
-echo "Downloading stdlib..."
-git clone https://github.com/ValeLang/stdlib $STDLIB_DIR

@@ -15,18 +15,18 @@ struct MyList {
   next MyOption;
 }
 
-func sum(list *MyList) int {
-  list.value + sum(*list.next)
+func sum(list &MyList) int {
+  list.value + sum(&list.next)
 }
 
-abstract func sum(virtual opt *MyOption) int;
-func sum(opt *MyNone impl MyOption) int { ret 0; }
-func sum(opt *MySome impl MyOption) int {
-   sum(*opt.value)
+abstract func sum(virtual opt &MyOption) int;
+func sum(opt &MyNone) int { ret 0; }
+func sum(opt &MySome) int {
+   sum(&opt.value)
 }
 
 
 exported func main() int {
   list = MyList(7, MySome(MyList(17, MySome(MyList(18, MyNone())))));
-  ret sum(*list);
+  ret sum(&list);
 }

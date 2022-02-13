@@ -2,8 +2,8 @@ package net.verdagon.vale.scout
 
 import net.verdagon.vale.{FileCoordinateMap, vimpl}
 import net.verdagon.vale.SourceCodeUtils.{humanizePos, lineContaining, nextThingAndRestOfLine}
-import net.verdagon.vale.parser.ast.{BorrowP, ExclusiveReadwriteP, FinalP, ImmutableP, MutabilityP, MutableP, OwnP, OwnershipP, PermissionP, PointerP, ReadonlyP, ReadwriteP, ShareP, VariabilityP, VaryingP, WeakP}
-import net.verdagon.vale.scout.rules.{AugmentSR, CallSR, CoerceToCoordSR, CoordComponentsSR, CoordIsaSR, CoordSendSR, EqualsSR, ILiteralSL, IRulexSR, IntLiteralSL, IsInterfaceSR, IsStructSR, KindComponentsSR, LiteralSR, LookupSR, MutabilityLiteralSL, OneOfSR, OwnershipLiteralSL, PackSR, PermissionLiteralSL, PrototypeComponentsSR, RefListCompoundMutabilitySR, RuneParentEnvLookupSR, RuntimeSizedArraySR, StaticSizedArraySR, StringLiteralSL, VariabilityLiteralSL}
+import net.verdagon.vale.parser.ast._
+import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.solver.SolverErrorHumanizer
 
 object ScoutErrorHumanizer {
@@ -14,6 +14,7 @@ object ScoutErrorHumanizer {
     val errorStrBody =
       (err match {
         case RangedInternalErrorS(range, message) => " " + message
+        case UnknownRuleFunctionS(range, name) => ": Unknown rule function name: "+ name
         case UnimplementedExpression(range, expressionName) => s": ${expressionName} not supported yet.\n"
         case CouldntFindVarToMutateS(range, name) => s": No variable named ${name}. Try declaring it above, like `${name} = 42;`\n"
         case CantOwnershipInterfaceInImpl(range) => s": Can only impl a plain interface, remove symbol."
@@ -96,12 +97,15 @@ object ScoutErrorHumanizer {
 
   def humanizeImpreciseName(name: IImpreciseNameS): String = {
     name match {
+      case SelfNameS() => "(self)"
       case CodeNameS(n) => n
       case FreeImpreciseNameS() => "(free)"
       case RuneNameS(rune) => humanizeRune(rune)
       case AnonymousSubstructTemplateImpreciseNameS(interfaceHumanName) => "(anon substruct template of " + humanizeImpreciseName(interfaceHumanName) + ")"
       case LambdaStructImpreciseNameS(lambdaName) => humanizeImpreciseName(lambdaName) + ".struct"
       case LambdaImpreciseNameS() => "(lambda)"
+//      case VirtualFreeImpreciseNameS() => "(abstract virtual free)"
+//      case VirtualFreeImpreciseNameS() => "(override virtual free)"
     }
   }
 
@@ -114,7 +118,6 @@ object ScoutErrorHumanizer {
       case AnonymousSubstructMemberRuneS(index) => "(anon member " + index + ")"
       case SelfKindRuneS() => "(self kind)"
       case SelfOwnershipRuneS() => "(self ownership)"
-      case SelfPermissionRuneS() => "(self permission)"
       case SelfKindTemplateRuneS() => "(self kind template)"
       case PatternInputRuneS(codeLoc) => "(pattern input " + codeLoc + ")"
       case SelfRuneS() => "(self)"
@@ -124,7 +127,12 @@ object ScoutErrorHumanizer {
       case ImplDropCoordRuneS() => "(impl drop coord)"
       case FreeOverrideInterfaceRuneS() => "(freeing interface)"
       case FreeOverrideStructRuneS() => "(freeing struct)"
+      case AnonymousSubstructRuneS() => "(anon substruct)"
+      case AnonymousSubstructTemplateRuneS() => "(anon substruct template)"
+      case AnonymousSubstructParentInterfaceTemplateRuneS() => "(anon sub parent template)"
+      case AnonymousSubstructParentInterfaceRuneS() => "(anon sub parent)"
       case StructNameRuneS(inner) => humanizeName(inner)
+      case FreeOverrideStructTemplateRuneS() => "(free override template)"
       case other => vimpl(other)
     }
   }
@@ -139,7 +147,6 @@ object ScoutErrorHumanizer {
       case MutabilityTemplataType => "mut"
       case PrototypeTemplataType => "prot"
       case StringTemplataType => "str"
-      case PermissionTemplataType => "perm"
       case LocationTemplataType => "loc"
       case OwnershipTemplataType => "own"
       case VariabilityTemplataType => "vary"
@@ -153,8 +160,8 @@ object ScoutErrorHumanizer {
       case KindComponentsSR(range, kindRune, mutabilityRune) => {
         humanizeRune(kindRune.rune) + " = Kind(" + humanizeRune(mutabilityRune.rune) + ")"
       }
-      case CoordComponentsSR(range, resultRune, ownershipRune, permissionRune, kindRune) => {
-        humanizeRune(resultRune.rune) + " = Ref(" + humanizeRune(ownershipRune.rune) + ", " + humanizeRune(permissionRune.rune) + ", " + humanizeRune(kindRune.rune) + ")"
+      case CoordComponentsSR(range, resultRune, ownershipRune, kindRune) => {
+        humanizeRune(resultRune.rune) + " = Ref(" + humanizeRune(ownershipRune.rune) + ", " + humanizeRune(kindRune.rune) + ")"
       }
       case OneOfSR(range, resultRune, literals) => {
         humanizeRune(resultRune.rune) + " = " + literals.map(_.toString).mkString(" | ")
@@ -168,12 +175,12 @@ object ScoutErrorHumanizer {
       case CallSR(range, resultRune, templateRune, argRunes) => humanizeRune(resultRune.rune) + " = " + humanizeRune(templateRune.rune) + "<" + argRunes.map(_.rune).map(humanizeRune).mkString(", ") + ">"
       case LookupSR(range, rune, name) => humanizeRune(rune.rune) + " = " + humanizeImpreciseName(name)
       case LiteralSR(range, rune, literal) => humanizeRune(rune.rune) + " = " + humanizeLiteral(literal)
-      case AugmentSR(range, resultRune, ownership, permission, innerRune) => humanizeRune(resultRune.rune) + " = " + humanizeOwnership(ownership) + humanizePermission(permission) + humanizeRune(innerRune.rune)
+      case AugmentSR(range, resultRune, ownership, innerRune) => humanizeRune(resultRune.rune) + " = " + humanizeOwnership(ownership) + humanizeRune(innerRune.rune)
       case EqualsSR(range, left, right) => humanizeRune(left.rune) + " = " + humanizeRune(right.rune)
       case RuneParentEnvLookupSR(range, rune) => "inherit " + humanizeRune(rune.rune)
       case PackSR(range, resultRune, members) => humanizeRune(resultRune.rune) + " = (" + members.map(x => humanizeRune(x.rune)).mkString(", ") + ")"
       case PrototypeComponentsSR(range, resultRune, nameRune, paramsListRune, returnRune) => {
-        humanizeRune(resultRune.rune) + " = Prot(" + humanizeRune(nameRune.rune) + ", " + humanizeRune(paramsListRune.rune) + ", " + humanizeRune(returnRune.rune) + ")"
+        humanizeRune(resultRune.rune) + " = Prot[" + humanizeRune(nameRune.rune) + ", " + humanizeRune(paramsListRune.rune) + ", " + humanizeRune(returnRune.rune) + "]"
       }
       case StaticSizedArraySR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => {
         humanizeRune(resultRune.rune) + " = " + "[#" + humanizeRune(sizeRune.rune) + "]<" + humanizeRune(mutabilityRune.rune) + ", " + humanizeRune(variabilityRune.rune) + ">" + humanizeRune(elementRune.rune)
@@ -188,20 +195,11 @@ object ScoutErrorHumanizer {
   def humanizeLiteral(literal: ILiteralSL): String = {
     literal match {
       case OwnershipLiteralSL(ownership) => humanizeOwnership(ownership)
-      case PermissionLiteralSL(permission) => humanizePermission(permission)
       case MutabilityLiteralSL(mutability) => humanizeMutability(mutability)
       case VariabilityLiteralSL(variability) => humanizeVariability(variability)
       case IntLiteralSL(value) => value.toString
       case StringLiteralSL(value) => "\"" + value + "\""
       case other => vimpl(other)
-    }
-  }
-
-  def humanizePermission(p: PermissionP) = {
-    p match {
-      case ReadwriteP => "!"
-      case ReadonlyP => "#"
-      case ExclusiveReadwriteP => "!!"
     }
   }
 
@@ -223,7 +221,6 @@ object ScoutErrorHumanizer {
     p match {
       case OwnP => "^"
       case ShareP => "@"
-      case PointerP => "*"
       case BorrowP => "&"
       case WeakP => "**"
     }

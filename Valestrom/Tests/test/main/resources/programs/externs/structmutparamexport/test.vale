@@ -3,10 +3,10 @@ exported struct Spaceship {
   b int;
 }
 
-extern func sumSpaceshipFields(s *Spaceship) int;
-exported func spaceshipGetA(s *Spaceship) int { s.a }
-exported func spaceshipGetB(s *Spaceship) int { s.b }
+extern func sumSpaceshipFields(s &Spaceship) int;
+exported func spaceshipGetA(s &Spaceship) int { s.a }
+exported func spaceshipGetB(s &Spaceship) int { s.b }
 
 exported func main() int {
-  ret sumSpaceshipFields(*Spaceship(37, 5));
+  ret sumSpaceshipFields(&Spaceship(37, 5));
 }

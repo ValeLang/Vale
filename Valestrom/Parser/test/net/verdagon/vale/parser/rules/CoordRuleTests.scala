@@ -1,67 +1,43 @@
 package net.verdagon.vale.parser.rules
 
-import net.verdagon.vale.parser.old.CombinatorParsers._
+
 import net.verdagon.vale.parser._
-import net.verdagon.vale.parser.ast.{AnonymousRunePT, ComponentsPR, CoordTypePR, EqualsPR, KindTypePR, TuplePT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnP, OwnershipPT, PatternPP, TemplexPR, TypedPR}
-import net.verdagon.vale.parser.old.CombinatorParsers
+import net.verdagon.vale.parser.ast.{AnonymousRunePT, ComponentsPR, CoordTypePR, EqualsPR, IRulexPR, KindTypePR, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnP, OwnershipPT, PatternPP, TemplexPR, TuplePT, TypedPR}
+
+import net.verdagon.vale.parser.templex.TemplexParser
 import net.verdagon.vale.{Collector, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
-class CoordRuleTests extends FunSuite with Matchers with Collector {
-  private def compile[T](parser: CombinatorParsers.Parser[T], code: String): T = {
-    CombinatorParsers.parse(parser, code.toCharArray()) match {
-      case CombinatorParsers.NoSuccess(msg, input) => {
-        fail();
-      }
-      case CombinatorParsers.Success(expr, rest) => {
-        if (!rest.atEnd) {
-          vfail(rest.pos.longString)
-        }
-        expr
-      }
-    }
-  }
-  private def compile[T](code: String): PatternPP = {
-    compile(atomPattern, code)
-  }
-
-  private def checkFail[T](parser: CombinatorParsers.Parser[T], code: String) = {
-    CombinatorParsers.parse(parser, "") match {
-      case CombinatorParsers.NoSuccess(_, _) =>
-      case CombinatorParsers.Success(_, rest) => {
-        if (!rest.atEnd) {
-          fail(rest.pos.longString)
-        }
-        fail()
-      }
-    }
+class CoordRuleTests extends FunSuite with Matchers with Collector with TestParseUtils {
+  private def compile[T](code: String): IRulexPR = {
+    compile(new TemplexParser().parseRule(_), code)
   }
 
   test("Empty Coord rule") {
-    compile(rulePR, "_ Ref") shouldHave {
+    compile("_ Ref") shouldHave {
       case TypedPR(_,None,CoordTypePR) =>
     }
   }
 
   test("Coord with rune") {
-    compile(rulePR, "T Ref") shouldHave {
+    compile("T Ref") shouldHave {
       case TypedPR(_,Some(NameP(_, "T")),CoordTypePR) =>
     }
   }
 
   test("Coord with destructure only") {
-    compile(rulePR, "Ref(_, _)") shouldHave {
-      case ComponentsPR(_,TypedPR(_,None,CoordTypePR),Vector(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))) =>
+    compile("Ref[_, _]") shouldHave {
+      case ComponentsPR(_,CoordTypePR,Vector(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))) =>
     }
   }
 
   test("Coord with rune and destructure") {
-    compile(rulePR, "T Ref(_, _)") shouldHave {
-      case ComponentsPR(_,TypedPR(_,Some(NameP(_, "T")),CoordTypePR),Vector(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))) =>
+    compile("T = Ref[_, _]") shouldHave {
+      case ComponentsPR(_,CoordTypePR,Vector(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))) =>
     }
-    compile(rulePR, "T Ref(own, _)") shouldHave {
+    compile("T = Ref[own, _]") shouldHave {
         case ComponentsPR(_,
-          TypedPR(_,Some(NameP(_, "T")),CoordTypePR),
+          CoordTypePR,
           Vector(TemplexPR(OwnershipPT(_,OwnP)), TemplexPR(AnonymousRunePT(_)))) =>
     }
   }
@@ -74,9 +50,9 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
     // instead of:
     //   func moo
     //   rules(
-    //     Ref#T[_, _, Ref[_, _, Int]]:Ref[_, _, Void]))
+    //     Ref#T[_, Ref[_, Int]]:Ref[_, Void]))
     //   (a: #T)
-    compile(rulePR, "int") shouldHave {
+    compile("int") shouldHave {
       case TemplexPR(NameOrRunePT(NameP(_, "int"))) =>
     }
 //        CoordPR(None,None,None,None,None,Some(Vector(NameTemplexPR("int"))))
@@ -84,9 +60,9 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
   }
 
   test("Coord with Int in kind rule") {
-    compile(rulePR, "T Ref(_, int)") shouldHave {
+    compile("Ref[_, int]") shouldHave {
       case ComponentsPR(_,
-          TypedPR(_,Some(NameP(_, "T")),CoordTypePR),
+          CoordTypePR,
           Vector(TemplexPR(AnonymousRunePT(_)), TemplexPR(NameOrRunePT(NameP(_, "int"))))) =>
     }
 //      runedTCoordWithEnvKind("T", "int")
@@ -94,18 +70,18 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
   }
 
   test("Coord with specific Kind rule") {
-    compile(rulePR, "T Ref(_, Kind(mut))") shouldHave {
+    compile("Ref[_, Kind[mut]]") shouldHave {
       case ComponentsPR(_,
-          TypedPR(_,Some(NameP(_, "T")),CoordTypePR),
+          CoordTypePR,
           Vector(
             TemplexPR(AnonymousRunePT(_)),
             ComponentsPR(_,
-              TypedPR(_,None,KindTypePR),Vector(TemplexPR(MutabilityPT(_,MutableP)))))) =>
+              KindTypePR,Vector(TemplexPR(MutabilityPT(_,MutableP)))))) =>
     }
   }
 
   test("Coord with value") {
-    compile(rulePR, "T Ref = int") shouldHave {
+    compile("T Ref = int") shouldHave {
       case EqualsPR(_,
           TypedPR(_,Some(NameP(_, "T")),CoordTypePR),
           TemplexPR(NameOrRunePT(NameP(_, "int")))) =>
@@ -113,16 +89,16 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
   }
 
   test("Coord with destructure and value") {
-    compile(rulePR, "T Ref(_, _) = int") shouldHave {
+    compile("T = Ref[_, _] = int") shouldHave {
       case EqualsPR(_,
-          ComponentsPR(_,TypedPR(_,Some(NameP(_, "T")),CoordTypePR),Vector(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))),
+          ComponentsPR(_,CoordTypePR,Vector(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))),
           TemplexPR(NameOrRunePT(NameP(_, "int")))) =>
     }
 //        runedTCoordWithValue("T", NameTemplexPR("int"))
   }
 
   test("Coord with sequence in value spot") {
-    compile(rulePR, "T Ref = (int, bool)") shouldHave {
+    compile("T Ref = (int, bool)") shouldHave {
       case EqualsPR(_,
           TypedPR(_,Some(NameP(_, "T")),CoordTypePR),
           TemplexPR(
@@ -132,7 +108,7 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
   }
 
   test("Lone tuple is sequence") {
-    compile(rulePR, "(int, bool)") shouldHave {
+    compile("(int, bool)") shouldHave {
       case TemplexPR(
           TuplePT(_,
             Vector(NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "bool"))))) =>

@@ -1,6 +1,6 @@
 
 exported func main() int {
-  playerRow! = 137;
+  playerRow = 137;
 
   if (false) {
     ret 50;

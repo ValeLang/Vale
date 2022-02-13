@@ -1,15 +1,15 @@
 package net.verdagon.vale.templar.macros
 
-import net.verdagon.vale.{IProfiler, RangeS}
+import net.verdagon.vale.{Profiler, RangeS}
 import net.verdagon.vale.astronomer.FunctionA
 import net.verdagon.vale.templar.{ArrayTemplar, IFunctionGenerator, Temputs, ast}
-import net.verdagon.vale.templar.ast.{ArgLookupTE, BlockTE, FunctionHeaderT, FunctionT, IsSameInstanceTE, LocationInFunctionEnvironment, ParameterT, ReturnTE}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env.FunctionEnvironment
 import net.verdagon.vale.templar.function.{DestructorTemplar, FunctionTemplarCore}
 import net.verdagon.vale.templar.types.CoordT
 
-class SameInstanceMacro(profiler: IProfiler) extends IFunctionBodyMacro {
+class SameInstanceMacro() extends IFunctionBodyMacro {
   val generatorId: String = "vale_same_instance"
 
   def generateFunctionBody(

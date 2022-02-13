@@ -1,0 +1,217 @@
+import stdlib.stringutils.*;
+import stdlib.path.*;
+import stdlib.os.*;
+
+export Array<imm, str> as StrArray;
+export Array<mut, str> as MutStrArray;
+
+struct Subprocess {
+  command str;
+  handle i64;
+}
+
+func Subprocess(command str) Result<Subprocess, str> {
+  list = command.split(" ");
+  cmd = str(list.get(0));
+  newlist = List<StrSlice>();
+  foreach [index, element] in list.entries() {
+    if index != 0 { newlist.add(list.get(index)); }
+  }
+  ret Subprocess(cmd, &newlist);
+}
+
+func Subprocess(command str, args &List<str>) Result<Subprocess, str> {
+  newlist = List<StrSlice>();
+  foreach element in args {
+    newlist.add(slice(element));
+  }
+  ret Subprocess(command, &newlist);
+}
+
+func FindProgramInPath(relative_program str) Opt<Path> {
+  path_env_var = get_env_var("PATH");
+  path_strs = path_env_var.split(GetEnvPathSeparator());
+
+  maybe_found_program_path Opt<Path> = None<Path>();
+  if Path(relative_program).exists() {
+    set maybe_found_program_path = Some(Path(relative_program));
+  } else {
+    i = 0;
+    while i < path_strs.len() and maybe_found_program_path.isEmpty() {
+      path_str = path_strs.get(i);
+      if path_str.len() > 0 {
+        possible_program_path = Path(path_str.str())./(relative_program);
+        if possible_program_path.exists() {
+          set maybe_found_program_path = Some(possible_program_path.clone());
+        }
+      }
+      set i = i + 1;
+    }
+  }
+
+  ret maybe_found_program_path;
+}
+
+func PrintCommandLinePart(builder &StringBuilder, part StrSlice) {
+  if part.contains(" ") {
+    builder.print("\"");
+    builder.print(part.replaceAll("\"", "\\\""));
+    builder.print("\"");
+  } else {
+    builder.print(part);
+  }
+}
+
+func Subprocess(relative_program str, args &List<StrSlice>) Result<Subprocess, str> {
+
+  paths = get_env_var("PATH").split(":");
+
+
+  maybe_program_path = FindProgramInPath(relative_program);
+
+
+  if maybe_program_path.isEmpty() {
+    panic("Unable to find program {relative_program}.");
+  }
+  program_path = (maybe_program_path).get();
+  if program_path.is_dir() {
+    panic("Unable to execute {relative_program}, is a directory.");
+  }
+
+
+  command_str_builder = StringBuilder();
+  command_str_builder.PrintCommandLinePart(program_path.str().slice());
+
+
+  cmdlist = List<str>();
+  cmdlist.add(program_path.str());
+  foreach arg in args {
+    command_str_builder.print(" ");
+    command_str_builder.PrintCommandLinePart(arg);
+    cmdlist.add(arg.str());
+  }
+
+  command_str = command_str_builder.str();
+
+  cmd_array = cmdlist.toImmArray();
+
+  handle = launch_command(cmd_array);
+  if handle == 0i64 {
+    ret Err<Subprocess, str>("Failed to create command!");
+  }
+
+  retval = Subprocess(command_str, handle);
+  ret Ok<Subprocess, str>(retval);
+}
+
+func consume_and_join<StdoutConsumer, StderrConsumer>(
+  self Subprocess,
+  stdout_consumer StdoutConsumer,
+  stderr_consumer StderrConsumer)
+int {
+  close_stdin(self.handle);
+
+  running = true;
+  while running {
+    stdout_consumed_anything = false;
+    stdout_consuming = true;
+    while stdout_consuming {
+      s = self.read_stdout(1000);
+      if s.len() > 0 {
+        (&stdout_consumer)(s);
+        set stdout_consumed_anything = true;
+      } else {
+        set stdout_consuming = false;
+      }
+    }
+
+    stderr_consumed_anything = false;
+    stderr_consuming = true;
+    while stderr_consuming {
+      s = self.read_stderr(1000);
+      if s.len() > 0 {
+        (&stderr_consumer)(s);
+        set stderr_consumed_anything = true;
+      } else {
+        set stderr_consuming = false;
+      }
+    }
+
+    if not stdout_consumed_anything and not stderr_consumed_anything and not self.alive() {
+      set running = false;
+    }
+  }
+
+  ret join(self);
+}
+
+func print_and_join(self Subprocess) int {
+  x = consume_and_join(
+    self,
+    &(stdout_chunk) => {
+      print(stdout_chunk);
+    },
+    &(stderr_chunk) => {
+      print(stderr_chunk);
+    });
+  ret x;
+}
+
+struct ExecResult {
+  return_code int;
+  stdout str;
+  stderr str;
+}
+
+func capture_and_join(self Subprocess) ExecResult {
+  stdout_builder = StringBuilder();
+  stderr_builder = StringBuilder();
+  return_code =
+      consume_and_join(
+          self,
+          &(stdout_chunk) => { stdout_builder.print(stdout_chunk); },
+          &(stderr_chunk) => { stderr_builder.print(stderr_chunk); });
+  ret ExecResult(return_code, stdout_builder.str(), stderr_builder.str());
+}
+
+func join(self Subprocess) int {
+  status = join(self.handle);
+  destroy(self.handle);
+  ret status;
+}
+
+func alive(self &Subprocess) bool {
+  ret alive(self.handle);
+}
+
+func read_all_stdout(self &Subprocess) str {
+  builder = StringBuilder();
+
+  running = true;
+  while running {
+    s = self.read_stdout(1000);
+    builder.print(s);
+    if s.len() == 0 and not self.alive() {
+      set running = false;
+    }
+  }
+
+  ret builder.str();
+}
+
+func read_stdout(self &Subprocess, len int) str {
+  ret read_stdout(self.handle, len);
+}
+func read_stderr(self &Subprocess, len int) str {
+  ret read_stderr(self.handle, len);
+}
+
+extern func get_env_var(name str) str;
+extern func launch_command(args Array<imm, str>) i64;
+extern func write_stdin(cmd i64, s str);
+extern func close_stdin(cmd i64);
+extern func read_stdout(cmd i64, len int) str;
+extern func read_stderr(cmd i64, len int) str;
+extern func join(cmd i64) int;
+extern func alive(cmd i64) bool;
+extern func destroy(cmd i64);

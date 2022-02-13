@@ -1,0 +1,37 @@
+
+
+struct HashMapIter<K, V> {
+  table &Array<mut, Opt<HashMapNode<K, V>>>;
+  pos! int;
+}
+
+func begin<K, V, H, E>(map &HashMap<K, V, H, E>) HashMapIter<K, V> {
+  HashMapIter<K, V>(map.table, 0)
+}
+
+func next<K, V>(iter &HashMapIter<K, V>) Opt<(K, &V)> {
+  while iter.pos < iter.table.len() {
+    this_pos = set iter.pos = iter.pos + 1;
+    if not iter.table[this_pos].isEmpty() {
+      node = &iter.table[this_pos].get();
+      ret Some<(K, &V)>((node.key, &node.value));
+    }
+  }
+  ret None<(K, &V)>();
+}
+
+
+
+func each<F, K, V, H, E>(self &HashMap<K, V, H, E>, func &F)
+where Prot["__call", Refs(&F, &K, &V), _] {
+  list = List<K>();
+  index = 0;
+  while index < self.table.len() {
+    maybeNode = self.table[index];
+    if not(maybeNode.isEmpty()) {
+      n = maybeNode.get();
+      (func)(n.key, n.value);
+    }
+    set index = index + 1;
+  }
+}

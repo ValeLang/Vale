@@ -4,19 +4,19 @@ import v.builtins.arith.*;
 import printutils.*;
 
 interface MyIFunction1<P1, R> where P1 Ref, R Ref {
-  func go(virtual this *MyIFunction1<P1, R>, param P1) R;
+  func go(virtual this &MyIFunction1<P1, R>, param P1) R;
 }
 
 struct MyFunc { }
 impl MyIFunction1<int, int> for MyFunc;
 
-func go(this *MyFunc impl MyIFunction1<int, int>, param int) int {
+func go(this &MyFunc, param int) int {
   ret param * 2;
 }
 
 exported func main() {
   m = MyFunc();
-  i *MyIFunction1<int, int> = *m;
+  i &MyIFunction1<int, int> = &m;
   println(i.go(4));
   println(i.go(6));
 }

@@ -1,0 +1,52 @@
+
+struct TestSuite {
+  filter str;
+  num_tests_ran! int;
+  num_tests_skipped! int;
+}
+
+func TestSuite() TestSuite {
+  TestSuite("", 0, 0)
+}
+
+func finish(suite TestSuite) {
+  println("Passed all " + suite.num_tests_ran + " tests!");
+  if suite.num_tests_skipped > 0 {
+    println("Skipped " + suite.num_tests_skipped + " tests.");
+  }
+}
+
+func test<F>(suite &TestSuite, name str, lambda F) {
+  if name.contains(suite.filter) {
+    set suite.num_tests_ran = suite.num_tests_ran + 1;
+    println("Test: " + name);
+    lambda();
+  } else {
+    set suite.num_tests_skipped = suite.num_tests_skipped + 1;
+  }
+}
+
+func should_equal<T>(a T, b T) {
+  if not (a == b) {
+    panic("Check failed! Expected:\n{a}\nto equal:\n{b}");
+  }
+}
+
+func should_not_equal<T>(a T, b T) {
+  if a == b {
+    panic("Check failed! Expected a difference, but both were: {a}");
+  }
+}
+
+struct SubTestSuite {
+  suite &TestSuite;
+  prefix str;
+}
+func test<F>(subSuite &SubTestSuite, name str, func F) {
+  (subSuite.suite).test(subSuite.prefix + " / " + name, func);
+}
+
+func sub<F>(suite &TestSuite, prefix str, body F) {
+  subSuite = SubTestSuite(&suite, prefix);
+  body(subSuite);
+}

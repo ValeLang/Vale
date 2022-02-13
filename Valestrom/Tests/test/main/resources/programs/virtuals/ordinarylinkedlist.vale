@@ -24,8 +24,8 @@ func printValues(list @MyList) void {
 }
 
 func printNextValue(virtual opt @MyOption) void { }
-func printNextValue(opt @MyNone impl MyOption) void { }
-func printNextValue(opt @MySome impl MyOption) void {
+func printNextValue(opt @MyNone) void { }
+func printNextValue(opt @MySome) void {
   printValues(opt.value);
 }
 

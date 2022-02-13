@@ -1,0 +1,116 @@
+
+import stdlib.math.*; // for clamp
+
+struct StrSlice imm {
+  string str;
+  begin int;
+  end int;
+  // Will soon have a private bytesBegin and bytesEnd
+}
+
+func newStrSlice(string str, begin int, end int) StrSlice {
+  vassert(begin >= 0, "slice begin was negative!");
+  vassert(end >= 0, "slice end was negative!");
+  vassert(begin <= string.len(), "slice begin was more than length!");
+  vassert(end <= string.len(), "slice end was more than length!");
+  vassert(end >= begin, "slice end was before begin!");
+
+  ret StrSlice(string, begin, end);
+  // this.string = string;
+  // this.begin = begin;
+  // this.end = end;
+}
+
+func len(s StrSlice) int {
+  ret s.end - s.begin;
+}
+
+func contains(haystack str, needle str) bool { contains(haystack.slice(), needle.slice()) }
+func contains(haystack StrSlice, needle str) bool { contains(haystack, needle.slice()) }
+func contains(haystack str, needle StrSlice) bool { contains(haystack.slice(), needle) }
+func contains(haystack StrSlice, needle StrSlice) bool { not find(haystack, needle).isEmpty() }
+
+func find(haystack str, needle str) Opt<int> { find(haystack.slice(), needle.slice()) }
+func find(haystack str, needle StrSlice) Opt<int> { find(haystack.slice(), needle) }
+func find(haystack StrSlice, needle str) Opt<int> { find(haystack, needle.slice()) }
+func find(haystack StrSlice, needle StrSlice) Opt<int> {
+  offsetAfterBegin =
+      strindexof(
+          haystack.string, haystack.begin, haystack.end,
+          needle.string, needle.begin, needle.end);
+  if offsetAfterBegin < 0 {
+    ret None<int>();
+  } else {
+    ret Some(offsetAfterBegin);
+  }
+}
+
+func slice(s str) StrSlice {
+  newStrSlice(s, 0, s.len())
+}
+
+func slice(s str, begin int) StrSlice { s.slice().slice(begin) }
+func slice(s str, begin int, end int) StrSlice { s.slice().slice(begin, end) }
+func slice(s StrSlice, begin int) StrSlice { s.slice(begin, s.len()) }
+// Makes a new slice inside a given existing slice.
+// s The given slice.
+// uncheckedRelativeBegin: the index, relative to the slice begin, for the new slice to begin at. Could be out of bounds.
+// uncheckedRelativeEnd: the index, relative to the slice begin, for the new slice to end at. Could be out of bounds.
+func slice(s StrSlice, uncheckedRelativeBegin int, uncheckedRelativeEnd int) StrSlice {
+  // Make sure the begin and end are within the bounds of the existing slice
+  relativeBegin = uncheckedRelativeBegin.clamp(0, s.len());
+  relativeEnd = uncheckedRelativeEnd.clamp(relativeBegin, s.len());
+  // Figure out the absolute position of the new slice inside the string
+  absoluteBegin = s.begin + relativeBegin;
+  absoluteEnd = s.begin + relativeEnd;
+  // Make the new slice
+  newStrSlice(s.string, absoluteBegin, absoluteEnd)
+}
+
+func charAt(s str, at int) str { s.slice().charAt(at) }
+func charAt(s StrSlice, at int) str { s.slice(at, at + 1).str() }
+
+
+func str(s StrSlice) str {
+  ret substring(s.string, s.begin, s.len());
+}
+
+
+func !=(a str, b StrSlice) bool { a.slice() != b }
+func !=(a StrSlice, b str) bool { a != b.slice() }
+
+func ==(a str, b str) bool { a.slice() == b.slice() }
+func ==(a str, b StrSlice) bool { a.slice() == b }
+func ==(a StrSlice, b str) bool { a == b.slice() }
+func ==(a StrSlice, b StrSlice) bool {
+  streq(a.string, a.begin, a.end, b.string, b.begin, b.end)
+}
+
+func <=>(a str, b str) int { a.slice() <=> b.slice() }
+func <=>(a str, b StrSlice) int { a.slice() <=> b }
+func <=>(a StrSlice, b str) int { a <=> b.slice() }
+func <=>(a StrSlice, b StrSlice) int {
+  strcmp(a.string, a.begin, a.end, b.string, b.begin, b.end)
+}
+
+func +(a str, b StrSlice) str { a.slice() + b }
+func +(a StrSlice, b str) str { a + b.slice() }
+func +(a StrSlice, b StrSlice) str {
+  addStr(a.string, a.begin, a.end - a.begin, b.string, b.begin, b.end - b.begin)
+}
+
+func print(s StrSlice) { printstr(s.string, s.begin, s.end - s.begin) }
+
+func println(s StrSlice) void {
+  print(s + "\n");
+}
+
+func toAscii(s str) int { s.slice().toAscii() }
+func toAscii(s StrSlice) int {
+  vassert(s.begin + 1 <= s.end);
+  strtoascii(s.string, s.begin, s.end)
+}
+
+func fromAscii(code int) str {
+  ret strfromascii(code);
+}

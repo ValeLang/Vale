@@ -1,6 +1,6 @@
 package net.verdagon.vale.solver
 
-import net.verdagon.vale.{Collector, Err, Ok, Result, vassert, vassertOne, vassertSome, vfail, vimpl, vwat}
+import net.verdagon.vale.{Collector, Err, Ok, Profiler, Result, vassert, vassertOne, vassertSome, vfail, vimpl, vwat}
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.collection.immutable.Map
@@ -42,9 +42,9 @@ object TestRuleSolver extends ISolveRule[IRule, Long, Unit, Unit, String, String
   override def complexSolve(state: Unit, env: Unit, stepState: IStepState[IRule, Long, String]):
   Result[Unit, ISolverError[Long, String, String]] = {
     val unsolvedRules = stepState.getUnsolvedRules()
-    val receiverRunes = unsolvedRules.collect({ case Receive(receiverRune, _) => receiverRune })
+    val receiverRunes = unsolvedRules.collect({ case Send(_, receiverRune) => receiverRune })
     receiverRunes.foreach(receiver => {
-      val receiveRules = unsolvedRules.collect({ case z @ Receive(r, _) if r == receiver => z })
+      val receiveRules = unsolvedRules.collect({ case z @ Send(_, r) if r == receiver => z })
       val callRules = unsolvedRules.collect({ case z @ Call(r, _, _) if r == receiver => z })
       val senderConclusions = receiveRules.map(_.senderRune).flatMap(stepState.getConclusion)
       val callTemplates = callRules.map(_.nameRune).flatMap(stepState.getConclusion)
@@ -140,7 +140,7 @@ object TestRuleSolver extends ISolveRule[IRule, Long, Unit, Unit, String, String
           case other => vwat(other)
         }
       }
-      case Receive(receiverRune, senderRune) => {
+      case Send(senderRune, receiverRune) => {
         val receiver = vassertSome(stepState.getConclusion(receiverRune))
         if (receiver == "ISpaceship" || receiver == "IWeapon:int") {
           stepState.addRule(Implements(senderRune, receiverRune))

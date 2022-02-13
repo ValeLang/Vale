@@ -55,4 +55,7 @@ trait ISolverState[Rule, Rune, Conclusion] {
     ruleToPuzzles: Rule => Array[Array[Rune]],
     step: IStepState[Rule, Rune, Conclusion] => Result[Unit, ISolverError[Rune, Conclusion, ErrType]]):
   Result[Step[Rule, Rune, Conclusion], ISolverError[Rune, Conclusion, ErrType]]
+
+  def concludeRune[ErrType](newlySolvedRune: Int, conclusion: Conclusion):
+  Result[Boolean, ISolverError[Rune, Conclusion, ErrType]]
 }

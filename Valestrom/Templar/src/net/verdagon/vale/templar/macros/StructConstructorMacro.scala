@@ -1,23 +1,25 @@
 package net.verdagon.vale.templar.macros
 
-import net.verdagon.vale.{IProfiler, PackageCoordinate, RangeS, vassert}
-import net.verdagon.vale.astronomer.{ConstructorNameS, FunctionA, StructA}
-import net.verdagon.vale.scout.{CodeNameS, CodeVarNameS, CoordTemplataType, FunctionTemplataType, GeneratedBodyS, IRuneS, ITemplataType, KindTemplataType, NormalStructMemberS, ParameterS, ReturnRuneS, RuneNameS, StructNameRuneS, TemplateTemplataType, UserFunctionS, VariadicStructMemberS}
+import net.verdagon.vale.{Profiler, Interner, PackageCoordinate, RangeS, vassert}
+import net.verdagon.vale.astronomer.{FunctionA, StructA}
+import net.verdagon.vale.scout.{CodeNameS, CodeVarNameS, ConstructorNameS, CoordTemplataType, FunctionTemplataType, GeneratedBodyS, IRuneS, ITemplataType, KindTemplataType, NormalStructMemberS, ParameterS, ReturnRuneS, RuneNameS, StructNameRuneS, TemplateTemplataType, UserFunctionS, VariadicStructMemberS}
 import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules.{CallSR, IRulexSR, IndexListSR, LookupSR, RuneUsage}
-import net.verdagon.vale.templar.ast.{ArgLookupTE, BlockTE, ConstructTE, FunctionHeaderT, FunctionT, LocationInFunctionEnvironment, ParameterT, ReturnTE}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env.{FunctionEnvEntry, FunctionEnvironment, PackageEnvironment}
 import net.verdagon.vale.templar.function.{DestructorTemplar, FunctionTemplarCore}
 import net.verdagon.vale.templar.names.{CitizenTemplateNameT, FullNameT, IFunctionNameT, INameT, NameTranslator, PackageTopLevelNameT}
 import net.verdagon.vale.templar.{ArrayTemplar, IFunctionGenerator, TemplarOptions, Temputs}
-import net.verdagon.vale.templar.types.{CoordT, InterfaceTT, MutabilityT, MutableT, OwnT, ReadonlyT, ReadwriteT, ReferenceMemberTypeT, ShareT, StructDefinitionT, StructMemberT, StructTT}
+import net.verdagon.vale.templar.types.{CoordT, InterfaceTT, MutabilityT, MutableT, OwnT, ReferenceMemberTypeT, ShareT, StructDefinitionT, StructMemberT, StructTT}
 
 import scala.collection.mutable
 
 class StructConstructorMacro(
   opts: TemplarOptions,
-  profiler: IProfiler
+
+  interner: Interner,
+  nameTranslator: NameTranslator
 ) extends IOnStructDefinedMacro with IFunctionBodyMacro {
 
   val macroName: String = "DeriveStructConstructor"
@@ -36,13 +38,13 @@ class StructConstructorMacro(
     }
     val functionA = defineConstructorFunction(structA)
     Vector(
-      structName.copy(last = NameTranslator.translateNameStep(functionA.name)) ->
+      structName.copy(last = nameTranslator.translateNameStep(functionA.name)) ->
         FunctionEnvEntry(functionA))
   }
 
   private def defineConstructorFunction(structA: StructA):
   FunctionA = {
-    profiler.newProfile("StructTemplarGetConstructor", structA.name.toString, () => {
+    Profiler.frame(() => {
       val runeToType = mutable.HashMap[IRuneS, ITemplataType]()
       runeToType ++= structA.runeToType
 
@@ -55,16 +57,16 @@ class StructConstructorMacro(
       if (structA.isTemplate) {
         val structNameRune = StructNameRuneS(structA.name)
         runeToType += (structNameRune -> structA.tyype)
-        rules += LookupSR(structNameRange, RuneUsage(structNameRange, structNameRune), structA.name.getImpreciseName)
+        rules += LookupSR(structNameRange, RuneUsage(structNameRange, structNameRune), structA.name.getImpreciseName(interner))
         rules += CallSR(structNameRange, retRune, RuneUsage(structNameRange, structNameRune), structA.identifyingRunes.toArray)
       } else {
-        rules += LookupSR(structNameRange, retRune, structA.name.getImpreciseName)
+        rules += LookupSR(structNameRange, retRune, structA.name.getImpreciseName(interner))
       }
 
       val params =
         structA.members.zipWithIndex.flatMap({
           case (NormalStructMemberS(range, name, variability, typeRune), index) => {
-            val capture = CaptureS(CodeVarNameS(name))
+            val capture = CaptureS(interner.intern(CodeVarNameS(name)))
             Vector(ParameterS(AtomSP(range, Some(capture), None, Some(typeRune), None)))
           }
           case (VariadicStructMemberS(range, variability, typeRune), index) => {
@@ -75,7 +77,7 @@ class StructConstructorMacro(
       val functionA =
         FunctionA(
           structA.range,
-          ConstructorNameS(structA.name),
+          interner.intern(ConstructorNameS(structA.name)),
           Vector(),
           structA.tyype match {
             case KindTemplataType => FunctionTemplataType
@@ -103,7 +105,7 @@ class StructConstructorMacro(
     paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
   FunctionHeaderT = {
-    val Some(CoordT(_, _, structTT @ StructTT(_))) = maybeRetCoord
+    val Some(CoordT(_, structTT @ StructTT(_))) = maybeRetCoord
     val structDef = temputs.lookupStruct(structTT)
 
     val constructorFullName = env.fullName
@@ -115,8 +117,7 @@ class StructConstructorMacro(
         }
       })
     val constructorReturnOwnership = if (structDef.mutability == MutableT) OwnT else ShareT
-    val constructorReturnPermission = if (structDef.mutability == MutableT) ReadwriteT else ReadonlyT
-    val constructorReturnType = CoordT(constructorReturnOwnership, constructorReturnPermission, structDef.getRef)
+    val constructorReturnType = CoordT(constructorReturnOwnership, structDef.getRef)
     // not virtual because how could a constructor be virtual
     val constructor2 =
       FunctionT(

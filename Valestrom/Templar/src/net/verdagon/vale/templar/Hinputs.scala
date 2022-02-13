@@ -4,7 +4,7 @@ import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.names._
 import net.verdagon.vale.templar.templata.simpleName
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{vassertSome, vfail}
+import net.verdagon.vale.{vassertSome, vcurious, vfail}
 
 case class Hinputs(
   interfaces: Vector[InterfaceDefinitionT],
@@ -18,7 +18,7 @@ case class Hinputs(
   functionExports: Vector[FunctionExportT],
   kindExterns: Vector[KindExternT],
   functionExterns: Vector[FunctionExternT]) {
-  override def hashCode(): Int = vfail() // Would need a really good reason to hash something this big
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vfail() // Would need a really good reason to hash something this big
 
   def lookupStruct(structTT: StructTT): StructDefinitionT = {
     structs.find(_.getRef == structTT) match {

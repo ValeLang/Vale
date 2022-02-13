@@ -1,6 +1,6 @@
 package net.verdagon.vale.hammer
 
-import net.verdagon.vale.{FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, PackageCoordinate, PackageCoordinateMap, Result, vimpl}
+import net.verdagon.vale.{FileCoordinateMap, IPackageResolver, Profiler, PackageCoordinate, PackageCoordinateMap, Result, vassertSome, vcurious, vimpl}
 import net.verdagon.vale.astronomer.{ICompileErrorA, ProgramA}
 import net.verdagon.vale.metal.ProgramH
 import net.verdagon.vale.options.GlobalOptions
@@ -15,9 +15,8 @@ case class HammerCompilationOptions(
   debugOut: (=> String) => Unit = (x => {
     println("##: " + x)
   }),
-  profiler: IProfiler = new NullProfiler(),
   globalOptions: GlobalOptions = GlobalOptions()
-) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
 class HammerCompilation(
   packagesToBuild: Vector[PackageCoordinate],
@@ -29,9 +28,13 @@ class HammerCompilation(
       packageToContentsResolver,
       TemplarCompilationOptions(
         options.globalOptions,
-        options.debugOut,
-        options.profiler))
+        options.debugOut))
   var hamutsCache: Option[ProgramH] = None
+  var vonHammerCache: Option[VonHammer] = None
+
+  def getVonHammer() = vassertSome(vonHammerCache)
+
+  def interner = templarCompilation.interner
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = templarCompilation.getCodeMap()
   def getParseds(): Result[FileCoordinateMap[(FileP, Vector[(Int, Int)])], FailedParse] = templarCompilation.getParseds()
@@ -45,8 +48,10 @@ class HammerCompilation(
     hamutsCache match {
       case Some(hamuts) => hamuts
       case None => {
-        val hamuts = Hammer.translate(templarCompilation.expectTemputs())
+        val hammer = new Hammer(interner)
+        val hamuts = hammer.translate(templarCompilation.expectTemputs())
         hamutsCache = Some(hamuts)
+        vonHammerCache = Some(hammer.vonHammer)
         hamuts
       }
     }

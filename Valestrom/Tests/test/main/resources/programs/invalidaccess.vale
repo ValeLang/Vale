@@ -3,7 +3,7 @@ struct Marine { hp int; }
 
 exported func main() int {
   m = Marine(7);
-  b = *m;
+  b = &m;
   drop(m);
   ret b.hp;
 }

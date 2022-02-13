@@ -3,12 +3,12 @@ package net.verdagon.vale.templar.expression
 import net.verdagon.vale.scout.{CodeNameS, GlobalFunctionFamilyNameS, IImpreciseNameS, IRuneS}
 import net.verdagon.vale.scout.rules.IRulexSR
 import net.verdagon.vale.templar.OverloadTemplar.FindFunctionFailure
-import net.verdagon.vale.templar.env.{NodeEnvironment, NodeEnvironmentBox, FunctionEnvironment, FunctionEnvironmentBox}
+import net.verdagon.vale.templar.env.{FunctionEnvironment, FunctionEnvironmentBox, NodeEnvironment, NodeEnvironmentBox}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{ast, _}
-import net.verdagon.vale.templar.ast.{FunctionCallTE, LocationInFunctionEnvironment, ReferenceExpressionTE}
-import net.verdagon.vale.{RangeS, vassert, vfail}
+import net.verdagon.vale.templar.ast._
+import net.verdagon.vale.{Err, Interner, Ok, RangeS, vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
@@ -19,13 +19,14 @@ object CallTemplar {
   // Every type, including interfaces, has a function of this name. These won't be virtual.
   val DROP_FUNCTION_NAME = "drop"
   // Every interface *also* has a function of this name. It's abstract, and an override is defined for each impl.
-  val VIRTUAL_DROP_FUNCTION_NAME = "vdrop"
-  // Interface's drop function simply calls vdrop.
-  // A struct's vdrop function calls the struct's drop function.
+//  val VIRTUAL_DROP_FUNCTION_NAME = "vdrop"
+//  // Interface's drop function simply calls vdrop.
+//  // A struct's vdrop function calls the struct's drop function.
 }
 
 class CallTemplar(
     opts: TemplarOptions,
+    interner: Interner,
     templataTemplar: TemplataTemplar,
     convertHelper: ConvertHelper,
     localHelper: LocalHelper,
@@ -42,7 +43,8 @@ class CallTemplar(
       givenArgsExprs2: Vector[ReferenceExpressionTE]):
   (FunctionCallTE) = {
     callableExpr.result.reference.kind match {
-      case NeverT() | BoolT() => {
+      case NeverT(true) => vwat()
+      case NeverT(false) | BoolT() => {
         throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot " + callableExpr.result.reference.kind))
       }
       case structTT @ StructTT(_) => {
@@ -53,7 +55,7 @@ class CallTemplar(
         evaluateClosureCall(
           nenv, temputs, life, range, interfaceTT, explicitTemplateArgRulesS, explicitTemplateArgRunesS, callableExpr, givenArgsExprs2)
       }
-      case OverloadSet(overloadSetEnv, functionName) => {
+      case OverloadSetT(overloadSetEnv, functionName) => {
         val unconvertedArgsPointerTypes2 =
           givenArgsExprs2.map(_.result.expectReference().reference)
 
@@ -76,7 +78,10 @@ class CallTemplar(
               explicitTemplateArgRunesS,
               argsParamFilters,
               Vector.empty,
-              false)
+              false) match {
+            case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, e))
+            case Ok(x) => x
+          }
         val argsExprs2 =
           convertHelper.convertExprs(
             nenv.snapshot, temputs, range, givenArgsExprs2, prototype.paramTypes)
@@ -123,7 +128,10 @@ class CallTemplar(
         explicitTemplateArgRunesS,
         argsParamFilters,
         Vector.empty,
-        false)
+        false) match {
+        case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, e))
+        case Ok(x) => x
+      }
     val argsExprs2 =
       convertHelper.convertExprs(
         nenv, temputs, range, givenArgsExprs2, prototype.paramTypes)
@@ -165,9 +173,9 @@ class CallTemplar(
     // Whether we're given a borrow or an own, the call itself will be given a borrow.
     val givenCallableBorrowExpr2 =
       givenCallableUnborrowedExpr2.result.reference match {
-        case CoordT(BorrowT | PointerT | ShareT, _, _) => (givenCallableUnborrowedExpr2)
-        case CoordT(OwnT, _, _) => {
-          localHelper.makeTemporaryLocal(temputs, nenv, life, givenCallableUnborrowedExpr2, BorrowT)
+        case CoordT(BorrowT | ShareT, _) => (givenCallableUnborrowedExpr2)
+        case CoordT(OwnT, _) => {
+          localHelper.makeTemporaryLocal(temputs, nenv, range, life, givenCallableUnborrowedExpr2, BorrowT)
         }
       }
 
@@ -181,14 +189,16 @@ class CallTemplar(
     val closureParamType =
       CoordT(
         givenCallableBorrowExpr2.result.reference.ownership,
-        givenCallableUnborrowedExpr2.result.reference.permission,
         citizenRef)
     val paramFilters =
       Vector(ParamFilter(closureParamType, None)) ++
         argsTypes2.map(argType => ParamFilter(argType, None))
     val prototype2 =
       overloadTemplar.findFunction(
-        env, temputs, range, CodeNameS(CallTemplar.CALL_FUNCTION_NAME), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, false)
+        env, temputs, range, interner.intern(CodeNameS(CallTemplar.CALL_FUNCTION_NAME)), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, false) match {
+        case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, e))
+        case Ok(x) => x
+      }
 
     val mutability = Templar.getMutability(temputs, citizenRef)
     val ownership = if (mutability == MutableT) BorrowT else ShareT
@@ -234,14 +244,17 @@ class CallTemplar(
             }
           }
         } else {
-          if (argsHead.kind == NeverT()) {
-            // This is fine, no conversion will ever actually happen.
-            // This can be seen in this call: +(5, panic())
-          } else {
-            // do stuff here.
-            // also there is one special case here, which is when we try to hand in
-            // an owning when they just want a borrow, gotta account for that here
-            vfail("do stuff " + argsHead + " and " + paramsHead)
+          argsHead.kind match {
+            case NeverT(_) => {
+              // This is fine, no conversion will ever actually happen.
+              // This can be seen in this call: +(5, panic())
+            }
+            case _ => {
+              // do stuff here.
+              // also there is one special case here, which is when we try to hand in
+              // an owning when they just want a borrow, gotta account for that here
+              vfail("do stuff " + argsHead + " and " + paramsHead)
+            }
           }
         }
       }

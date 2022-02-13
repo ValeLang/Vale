@@ -1,14 +1,14 @@
 package net.verdagon.vale.scout.rules
 
 import net.verdagon.vale.parser._
-import net.verdagon.vale.parser.ast.{BoolTypePR, BuiltinCallPR, ComponentsPR, CoordListTypePR, CoordTypePR, EqualsPR, IRulexPR, ITypePR, IntTypePR, KindTypePR, LocationTypePR, MutabilityTypePR, NameP, OrPR, OwnershipTypePR, PermissionTypePR, PrototypeTypePR, RangeP, TemplexPR, TypedPR, VariabilityTypePR}
+import net.verdagon.vale.parser.ast._
 import net.verdagon.vale.scout.{IEnvironment, Environment => _, FunctionEnvironment => _, _}
-import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vimpl}
+import net.verdagon.vale.{vassert, vassertOne, vassertSome, vcurious, vfail, vimpl}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-object RuleScout {
+class RuleScout(templexScout: TemplexScout) {
   // Returns:
   // - new rules produced on the side while translating the given rules
   // - the translated versions of the given rules
@@ -48,7 +48,7 @@ object RuleScout {
           possibilitiesP
             .map({
               case TemplexPR(templex) => {
-                TemplexScout.translateValueTemplex(templex) match {
+                templexScout.translateValueTemplex(templex) match {
                   case None => vfail("Or rules can only contain values for their possibilities.")
                   case Some(x) => x
                 }
@@ -59,30 +59,25 @@ object RuleScout {
         builder += OneOfSR(evalRange(range), rune, values.toArray)
         rune
       }
-      case ComponentsPR(range, TypedPR(typeRange, maybeRune, tyype), componentsP) => {
-        val rune =
-          maybeRune match {
-            case None => RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
-            case Some(r) => RuneUsage(evalRange(r.range), CodeRuneS(r.str))
-          }
+      case ComponentsPR(range, tyype, componentsP) => {
+        val rune = RuneUsage(Scout.evalRange(env.file, range), ImplicitRuneS(lidb.child().consume()))
         runeToExplicitType.put(rune.rune, translateType(tyype))
         tyype match {
           case CoordTypePR => {
-            if (componentsP.size != 3) {
-              vfail("Ref rule should have three components! Found: " + componentsP.size)
+            if (componentsP.size != 2) {
+              vfail("Ref rule should have two components! Found: " + componentsP.size)
             }
-            val Vector(ownershipRuneS, permissionRuneS, kindRuneS) =
+            val Vector(ownershipRuneS, kindRuneS) =
               translateRulexes(env, lidb.child(), builder, runeToExplicitType, componentsP)
             builder +=
               CoordComponentsSR(
                 Scout.evalRange(env.file, range),
                 rune,
                 ownershipRuneS,
-                permissionRuneS,
                 kindRuneS)
           }
           case KindTypePR => {
-            if (componentsP.size != 3) {
+            if (componentsP.size != 1) {
               vfail("Kind rule should have one component! Found: " + componentsP.size)
             }
             val Vector(mutabilityRuneS) =
@@ -123,40 +118,73 @@ object RuleScout {
         runeToExplicitType.put(rune, translateType(tyype))
         RuneUsage(evalRange(range), rune)
       }
-      case TemplexPR(templex) => TemplexScout.translateTemplex(env, lidb.child(), builder, templex)
-      case BuiltinCallPR(range, NameP(_, "isInterface"), args) => {
-        vassert(args.length == 1)
-        val argRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, args.head)
+      case TemplexPR(templex) => templexScout.translateTemplex(env, lidb.child(), builder, templex)
+      case BuiltinCallPR(range, name, args) => {
+        name.str match {
+          case "isInterface" => {
+            vassert(args.length == 1)
+            val argRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, args.head)
 
-//        val resultRune = ImplicitRuneS(lidb.child().consume())
-        builder += IsInterfaceSR(evalRange(range), argRune)
-//        runeToExplicitType.put(resultRune, KindTemplataType)
-        runeToExplicitType.put(argRune.rune, KindTemplataType)
+    //        val resultRune = ImplicitRuneS(lidb.child().consume())
+            builder += IsInterfaceSR(evalRange(range), argRune)
+    //        runeToExplicitType.put(resultRune, KindTemplataType)
+            runeToExplicitType.put(argRune.rune, KindTemplataType)
 
-        RuneUsage(evalRange(range), argRune.rune)
-      }
-      case BuiltinCallPR(range, NameP(_, "implements"), args) => {
-        vassert(args.length == 2)
-        val Vector(structRule, interfaceRule) = args
-        val structRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, structRule)
-        runeToExplicitType.put(structRune.rune, CoordTemplataType)
-        val interfaceRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, interfaceRule)
-        runeToExplicitType.put(interfaceRune.rune, CoordTemplataType)
+            RuneUsage(evalRange(range), argRune.rune)
+          }
+          case "implements" => {
+            vassert(args.length == 2)
+            val Vector(structRule, interfaceRule) = args
+            val structRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, structRule)
+            runeToExplicitType.put(structRune.rune, CoordTemplataType)
+            val interfaceRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, interfaceRule)
+            runeToExplicitType.put(interfaceRune.rune, CoordTemplataType)
 
-        builder += CoordIsaSR(evalRange(range), structRune, interfaceRune)
+            builder += CoordIsaSR(evalRange(range), structRune, interfaceRune)
 
-        RuneUsage(evalRange(range), structRune.rune)
-      }
-      case BuiltinCallPR(range, NameP(_, "refListCompoundMutability"), args) => {
-        vassert(args.length == 1)
-        val argRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, args.head)
+            RuneUsage(evalRange(range), structRune.rune)
+          }
+          case "refListCompoundMutability" => {
+            vassert(args.length == 1)
+            val argRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, args.head)
 
-        val resultRune = RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
-        builder += RefListCompoundMutabilitySR(evalRange(range), resultRune, argRune)
-        runeToExplicitType.put(resultRune.rune, MutabilityTemplataType)
-        runeToExplicitType.put(argRune.rune, PackTemplataType(CoordTemplataType))
+            val resultRune = RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
+            builder += RefListCompoundMutabilitySR(evalRange(range), resultRune, argRune)
+            runeToExplicitType.put(resultRune.rune, MutabilityTemplataType)
+            runeToExplicitType.put(argRune.rune, PackTemplataType(CoordTemplataType))
 
-        RuneUsage(evalRange(range), resultRune.rune)
+            RuneUsage(evalRange(range), resultRune.rune)
+          }
+          case "Refs" => {
+            val argRunes =
+              args.map(arg => {
+                translateRulex(env, lidb.child(), builder, runeToExplicitType, arg)
+              })
+
+            val resultRune = RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
+            builder += PackSR(evalRange(range), resultRune, argRunes.toArray)
+            runeToExplicitType.put(resultRune.rune, PackTemplataType(CoordTemplataType))
+
+            RuneUsage(evalRange(range), resultRune.rune)
+          }
+          case "any" => {
+            val literals: Array[ILiteralSL] =
+              args.map({
+                case TemplexPR(IntPT(_, i)) => IntLiteralSL(i)
+                case TemplexPR(OwnershipPT(_, i)) => OwnershipLiteralSL(i)
+                case other => vimpl(other)
+              }).toArray
+
+            val resultRune = RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
+            builder += OneOfSR(evalRange(range), resultRune, literals)
+            runeToExplicitType.put(resultRune.rune, vassertOne(literals.map(_.getType()).distinct))
+
+            RuneUsage(evalRange(range), resultRune.rune)
+          }
+          case other => {
+            throw new CompileErrorExceptionS(UnknownRuleFunctionS(evalRange(range), other))
+          }
+        }
       }
     }
   }
@@ -169,7 +197,6 @@ object RuleScout {
       case OwnershipTypePR => OwnershipTemplataType
       case MutabilityTypePR => MutabilityTemplataType
       case VariabilityTypePR => VariabilityTemplataType
-      case PermissionTypePR => PermissionTemplataType
       case LocationTypePR => LocationTemplataType
       case CoordTypePR => CoordTemplataType
       case CoordListTypePR => PackTemplataType(CoordTemplataType)
@@ -188,17 +215,7 @@ object RuleScout {
         collectAllRunesNonDistinct(destination, runeToExplicitType, rightP)
       }
       case OrPR(_, possibilitiesP) =>
-      case ComponentsPR(_, TypedPR(typeRange, maybeRune, tyype), componentsP) => {
-          maybeRune match {
-            case None =>
-            case Some(NameP(_, runeName)) => {
-              val rune = CodeRuneS(runeName)
-              destination += rune
-              runeToExplicitType.put(rune, translateType(tyype))
-              componentsP.foreach(collectAllRunesNonDistinct(destination, runeToExplicitType, _))
-            }
-          }
-      }
+      case ComponentsPR(_, tyype, componentsP) =>
       case TypedPR(_, None, tyype) =>
       case TypedPR(_, Some(NameP(_, runeName)), tyype) => {
         val rune = CodeRuneS(runeName)
@@ -208,7 +225,9 @@ object RuleScout {
       case TemplexPR(innerPR) => // Do nothing, we can't declare runes inside templexes
     }
   }
+}
 
+object RuleScout {
   // Gets the template name (or the kind name if not template)
   def getRuneKindTemplate(rulesS: IndexedSeq[IRulexSR], rune: IRuneS) = {
     val equivalencies = new Equivalencies(rulesS)
@@ -237,12 +256,13 @@ class Equivalencies(rules: IndexedSeq[IRulexSR]) {
     runeToKindEquivalentRunes.getOrElseUpdate(runeB, mutable.HashSet()) += runeA
   }
   rules.foreach({
-    case CoordComponentsSR(_, resultRune, _, _, kindRune) => markKindEquivalent(resultRune.rune, kindRune.rune)
+    case CoordComponentsSR(_, resultRune, _, kindRune) => markKindEquivalent(resultRune.rune, kindRune.rune)
+    case KindComponentsSR(_, resultRune, _) =>
     case EqualsSR(_, left, right) => markKindEquivalent(left.rune, right.rune)
     case CallSR(range, resultRune, templateRune, args) =>
     case CoordIsaSR(range, subRune, superRune) =>
     case CoordSendSR(range, senderRune, receiverRune) =>
-    case AugmentSR(range, resultRune, ownership, permission, innerRune) => markKindEquivalent(resultRune.rune, innerRune.rune)
+    case AugmentSR(range, resultRune, ownership, innerRune) => markKindEquivalent(resultRune.rune, innerRune.rune)
     case LiteralSR(range, rune, literal) =>
     case LookupSR(range, rune, name) =>
     case CoerceToCoordSR(range, coordRune, kindRune) => markKindEquivalent(coordRune.rune, kindRune.rune)

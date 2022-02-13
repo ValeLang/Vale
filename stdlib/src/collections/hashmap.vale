@@ -1,0 +1,295 @@
+import stdlib.math.*;
+
+struct HashMapNode<K, V> {
+  key K;
+  value! V;
+}
+
+struct HashMap<K, V, H, E> {
+  hasher H;
+  equator E;
+  table! Array<mut, Opt<HashMapNode<K, V>>>;
+  size! int;
+}
+
+func HashMap<K, V, H, E>(hasher H, equator E) HashMap<K, V, H, E> {
+  HashMap<K, V, H, E>(hasher, equator, 0)
+}
+
+func HashMap<K, V, H, E>(hasher H, equator E, capacity int) HashMap<K, V, H, E> {
+  HashMap<K, V>(
+      hasher,
+      equator,
+      Array<mut, Opt<HashMapNode<K, V>>>(
+        capacity,
+        &!IFunction1<mut, int, Opt<HashMapNode<K, V>>>((index) => {
+          opt Opt<HashMapNode<K, V>> = None<HashMapNode<K, V>>();
+          opt
+        })),
+      0)
+}
+
+func len<K, V, H, E>(self &HashMap<K, V, H, E>) int { self.size }
+
+func update<K, V, H, E>(self &!HashMap<K, V, H, E>, key K, value V) void {
+  hash int = (&self.hasher)(key);
+  startIndex = abs(hash mod self.table.len());
+  index? = findIndexOfKey(&self.table, self.equator, startIndex, key);
+  if index?.isEmpty() {
+    panic("Map doesnt have given key!");
+  }
+  optNode &!Opt<HashMapNode<K, V>> = self.table[index?.get()];
+  node &!HashMapNode<K, V> = &!get(&!optNode);
+  set node.value = value;
+}
+
+func add<K, V, H, E>(map &!HashMap<K, V, H, E>, key K, value V) void {
+  if map.has(key) {
+    panic("Map already has given key!");
+  }
+  if (map.size + 1) * 2 >= map.table.len() {
+    newSize =
+        if map.table.len() == 0 { 2 }
+        else { map.table.len() * 2 };
+    newTable =
+        Array<mut, Opt<HashMapNode<K, V>>>(
+            newSize,
+            &!IFunction1<mut, int, Opt<HashMapNode<K, V>>>((index) => {
+              opt Opt<HashMapNode<K, V>> = None<HashMapNode<K, V>>();
+              opt
+            }));
+    i! = 0;
+    while i < map.table.len() {
+      if map.table[i].isEmpty() {
+        // do nothing
+      } else {
+        node? = (mut map.table[i] = None<HashMapNode<K, V>>());
+        node = get(node?);
+        addNodeToTable(&!newTable, &map.hasher, node);
+      }
+      set i = i + 1;
+    }
+    set map.table = newTable;
+  }
+
+  addNodeToTable(map.table, &map.hasher, HashMapNode<K, V>(key, value));
+  set map.size = map.size + 1;
+}
+
+func addNodeToTable<K, V, H>(table &!Array<mut, Opt<HashMapNode<K, V>>>, hasher H, node HashMapNode<K, V>) {
+  hash int = (&hasher)(node.key);
+  startIndex = abs(hash mod table.len());
+  index = findEmptyIndexForKey(&table, startIndex, node.key);
+
+  opt Opt<HashMapNode<K, V>> = Some(node);
+  set table[index] = opt;
+}
+
+func findEmptyIndexForKey<K, V>(table &Array<mut, Opt<HashMapNode<K, V>>>, startIndex int, key K) int {
+  i! = 0;
+  while i < table.len() {
+    index = (startIndex + i) mod table.len();
+    something = table[index];
+    if something.isEmpty() {
+      ret index;
+    }
+    // continue to next node
+    set i = i + 1;
+  }
+  panic("findEmptyIndexForKey went past end of table!");
+}
+
+func findIndexOfKey<K, V, E>(table &Array<mut, Opt<HashMapNode<K, V>>>, equator E, startIndex int, key K) Opt<int> {
+  i! = 0;
+  while i < table.len() {
+    index = (startIndex + i) mod table.len();
+    something = table[index];
+    if something.isEmpty() {
+      ret None<int>();
+    }
+    node = something.get();
+    if (&equator)(node.key, key) {
+      ret Some<int>(index);
+    }
+    // continue to next node
+    set i = i + 1;
+  }
+  panic("findIndexOfKey went past end of table! len " + str(table.len()) + " and i " + str(i));
+}
+
+func get<K, V, H, E>(self &HashMap<K, V, H, E>, key K) Opt<&V> {
+  if self.table.len() == 0 {
+    ret None<&V>();
+  }
+  hash int = (&self.hasher)(key);
+  startIndex = abs(hash mod self.table.len());
+  index? = findIndexOfKey(self.table, self.equator, startIndex, key);
+  if index?.isEmpty() {
+    opt Opt<&V> = None<&V>();
+    ret opt;
+  }
+  node = self.table[index?.get()].get();
+  opt Opt<&V> = Some<&V>(node.value);
+  ret opt;
+}
+
+// Perhaps we can find a way to make a function generic over permission?
+func get<K, V, H, E>(self &!HashMap<K, V, H, E>, key K) Opt<&!V> {
+  if self.table.len() == 0 {
+    ret None<&!V>();
+  }
+  hash int = (&self.hasher)(key);
+  startIndex = abs(hash mod self.table.len());
+  index? = findIndexOfKey(&self.table, self.equator, startIndex, key);
+  if index?.isEmpty() {
+    opt Opt<&!V> = None<&!V>();
+    ret opt;
+  }
+  node = self.table[index?.get()]!.get();
+  opt Opt<&!V> = Some<&!V>(node.value);
+  ret opt;
+}
+
+func has<K, V, H, E>(self &HashMap<K, V, H, E>, key K) bool {
+  not(self.get(key).isEmpty())
+}
+
+func keys<K, V, H, E>(self &HashMap<K, V, H, E>) Array<imm, K> {
+  list = List<K>();
+  index! = 0;
+  while index < self.table.len() {
+    node? = self.table[index];
+    if not(node?.isEmpty()) {
+      list!.add(node?.get().key);
+    }
+    set index = index + 1;
+  }
+  list.toImmArray()
+}
+
+func values<K, V, H, E>(self &HashMap<K, V, H, E>) Array<mut, V> {
+  list = List<V>();
+  index! = 0;
+  while index < self.table.len() {
+    node? = self.table[index];
+    if not(node?.isEmpty()) {
+      list!.add(node?.get().value);
+    }
+    set index = index + 1;
+  }
+  (list).toVaryArray()
+}
+
+func innerRemove<K, V, H, E>(
+  table &!Array<mut, Opt<HashMapNode<K, V>>>,
+  hasher H,
+  equator E,
+  key K)
+int {
+  hash int = (&hasher)(key);
+  startIndex = abs(hash mod table.len());
+  index? = findIndexOfKey(&table, equator, startIndex, key);
+  index = index?.get();
+  set table[index] = None<HashMapNode<K, V>>();
+  ret index;
+}
+
+func remove<K, V, H, E>(
+  map &!HashMap<K, V, H, E>,
+  key K)
+void {
+  originalIndex = innerRemove(map.table, map.hasher, map.equator, key);
+  set map.size = map.size - 1;
+
+  i! = 1;
+  while i < map.table.len() {
+    neighborIndex = (originalIndex + i) mod len(&map.table);
+    neighbor? = (mut map.table[neighborIndex] = None<HashMapNode<K, V>>());
+    if not neighbor?.isEmpty() {
+      [neighborKey, neighborValue] = (neighbor?).get();
+      addNodeToTable(map.table, map.hasher, HashMapNode<K, V>(neighborKey, neighborValue));
+    } else {
+      drop(neighbor?);
+      set i = map.table.len(); // break
+    }
+    set i = i + 1;
+  }
+}
+
+struct IntHasher { }
+func __call(this &IntHasher, x int) int { x }
+
+struct IntEquator { }
+func __call(this &IntEquator, a int, b int) bool { a == b }
+
+
+func each<F, K, V, H, E>(self &HashMap<K, V, H, E>, func &!F)
+where Prot("__call", (&!F, &K, &V), _) {
+  list = List<K>();
+  index! = 0;
+  while index < self.table.len() {
+    node? = self.table[index];
+    if not(node?.isEmpty()) {
+      n = node?.get();
+      (func)!(n.key, n.value);
+    }
+    set index = index + 1;
+  }
+}
+
+func each<F, K, V, H, E>(self &!HashMap<K, V, H, E>, func &!F)
+where Prot("__call", (&!F, &K, &!V), _) {
+  list = List<K>();
+  index! = 0;
+  while index < self.table.len() {
+    maybe_node = &!self.table[index];
+    if not(maybe_node.isEmpty()) {
+      n = (maybe_node).get();
+      (func)!(n.key, &!n.value);
+    }
+    set index = index + 1;
+  }
+}
+
+
+
+struct HashMapReadonlyIter<K, V> {
+  table &Array<mut, Opt<HashMapNode<K, V>>>;
+  pos! int;
+}
+
+func begin<K, V, H, E>(map &HashMap<K, V, H, E>) HashMapReadonlyIter<K, V> {
+  HashMapReadonlyIter<K, V>(map.table, 0)
+}
+
+func next<K, V>(iter &!HashMapReadonlyIter<K, V>) Opt<(K, &V)> {
+  while iter.pos < iter.table.len() {
+    this_pos = set iter.pos = iter.pos + 1;
+    if not iter.table[this_pos].isEmpty() {
+      node = &iter.table[this_pos].get();
+      ret Some<(K, &V)>((node.key, &node.value));
+    }
+  }
+  ret None<(K, &V)>();
+}
+
+
+struct HashMapReadwriteIter<K, V> {
+  table &!Array<mut, Opt<HashMapNode<K, V>>>;
+  pos! int;
+}
+
+func begin<K, V, H, E>(map &!HashMap<K, V, H, E>) HashMapReadwriteIter<K, V> {
+  HashMapReadwriteIter<K, V>(&!map.table, 0)
+}
+
+func next<K, V>(iter &!HashMapReadwriteIter<K, V>) Opt<(K, &!V)> {
+  while iter.pos < iter.table.len() {
+    this_pos = set iter.pos = iter.pos + 1;
+    if not iter.table[this_pos].isEmpty() {
+      node = &!iter.table[this_pos]!.get();
+      ret Some<(K, &!V)>((node.key, &!node.value));
+    }
+  }
+  ret None<(K, &!V)>();
+}

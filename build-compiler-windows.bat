@@ -43,7 +43,7 @@ echo d | xcopy /s /e /y ..\Midas\src\builtins ..\release-windows\builtins
 copy releaseREADME.txt ..\release-windows\README.txt
 copy valec* ..\release-windows
 copy ..\Midas\build\Debug\midas.exe ..\release-windows\midas.exe
-echo d | xcopy /s /e /y %3 ..\release-windows\stdlib
+echo d | xcopy /s /e /y ..\stdlib ..\release-windows\stdlib
 echo d | xcopy /s /e /y helloworld ..\release-windows\samples\helloworld
 copy ..\Driver\build\valec.exe ..\release-windows\valec.exe
 

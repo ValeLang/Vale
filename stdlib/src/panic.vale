@@ -1,0 +1,21 @@
+
+func __pretend<T>() T { __vbi_panic() }
+
+func vassert(cond bool) {
+  vassert(cond, "Assertion failed!");
+}
+
+func vassert(cond bool, msg str) {
+  if (cond == false) {
+    println(msg);
+    __vbi_panic();
+  }
+}
+
+func vassertEq<T>(a T, b T) void {
+  vassert(a == b, "Assertion failed, not equal!");
+}
+
+func vassertEq<T>(a T, b T, msg str) void {
+  vassert(a == b, msg);
+}

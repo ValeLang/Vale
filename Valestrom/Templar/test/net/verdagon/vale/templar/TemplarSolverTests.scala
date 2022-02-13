@@ -5,7 +5,7 @@ import net.verdagon.vale.scout._
 import net.verdagon.vale.scout.rules.{CoordComponentsSR, KindComponentsSR, RuneUsage}
 import net.verdagon.vale.solver.{FailedSolve, IncompleteSolve, RuleError, SolverConflict, Step}
 import net.verdagon.vale.templar.OverloadTemplar.{FindFunctionFailure, InferFailure, SpecificParamDoesntSend, WrongNumberOfArguments}
-import net.verdagon.vale.templar.ast.{ConstantIntTE, FunctionCallTE, KindExportT, PrototypeT, SignatureT, StructToInterfaceUpcastTE}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.env.ReferenceLocalVariableT
 import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.infer.{KindIsNotConcrete, SendingNonCitizen}
@@ -29,13 +29,13 @@ class TemplarSolverTests extends FunSuite with Matchers {
 
   test("Humanize errors") {
     val fireflyKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("Firefly"), Vector())))
-    val fireflyCoord = CoordT(OwnT,ReadwriteT,fireflyKind)
+    val fireflyCoord = CoordT(OwnT,fireflyKind)
     val serenityKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("Serenity"), Vector())))
-    val serenityCoord = CoordT(OwnT,ReadwriteT,serenityKind)
+    val serenityCoord = CoordT(OwnT,serenityKind)
     val ispaceshipKind = InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("ISpaceship"), Vector())))
-    val ispaceshipCoord = CoordT(OwnT,ReadwriteT,ispaceshipKind)
+    val ispaceshipCoord = CoordT(OwnT,ispaceshipKind)
     val unrelatedKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("Spoon"), Vector())))
-    val unrelatedCoord = CoordT(OwnT,ReadwriteT,unrelatedKind)
+    val unrelatedCoord = CoordT(OwnT,unrelatedKind)
     val fireflySignature = SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), FunctionNameT("myFunc", Vector(), Vector(fireflyCoord))))
     val fireflyExport = KindExportT(RangeS.testZero, fireflyKind, PackageCoordinate.TEST_TLD, "Firefly");
     val serenityExport = KindExportT(RangeS.testZero, fireflyKind, PackageCoordinate.TEST_TLD, "Serenity");
@@ -51,7 +51,6 @@ class TemplarSolverTests extends FunSuite with Matchers {
           makeRange(0, codeStr.length),
           RuneUsage(makeRange(6, 7), CodeRuneS("I")),
           RuneUsage(makeRange(11, 12), CodeRuneS("A")),
-          RuneUsage(makeRange(25, 27), CodeRuneS("Of")),
           RuneUsage(makeRange(33, 52), ImplicitRuneS(LocationInDenizen(Vector(7))))),
         KindComponentsSR(
           makeRange(33, 52),
@@ -128,7 +127,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |exported func main() int where N int = 2 | 3 | 4, N = 3 {
+        |exported func main() int where N int = any(2, 3, 4), N = 3 {
         |  ret N;
         |}
         |""".stripMargin
@@ -144,16 +143,16 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |exported struct MyStruct { }
         |exported func main() X
         |where
-        |  MyStruct = T Ref(O Ownership, P Permission, K Kind),
-        |  X Ref(ptr, ro, K)
+        |  MyStruct = Ref[O Ownership, K Kind],
+        |  X Ref = Ref[borrow, K]
         |{
-        |  ret *MyStruct();
+        |  ret &MyStruct();
         |}
         |""".stripMargin
     )
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").header.returnType match {
-      case CoordT(PointerT, ReadonlyT, StructTT(_)) =>
+      case CoordT(BorrowT, StructTT(_)) =>
     }
   }
 
@@ -163,7 +162,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |func moo(i int, b bool) str { ret "hello"; }
         |exported func main() str
-        |where mooFunc Prot("moo", Refs(int, bool), _)
+        |where mooFunc Prot = Prot["moo", Refs(int, bool), _]
         |{
         |  ret (mooFunc)(5, true);
         |}
@@ -221,7 +220,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("moo").header.params.head.tyype match {
-      case CoordT(_, _, StructTT(_)) =>
+      case CoordT(_, StructTT(_)) =>
     }
   }
 
@@ -244,7 +243,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val moo = temputs.lookupFunction("moo")
     moo.header.params.head.tyype match {
-      case CoordT(_, _, InterfaceTT(_)) =>
+      case CoordT(_, InterfaceTT(_)) =>
     }
     val main = temputs.lookupFunction("main")
     Collector.all(main, {
@@ -269,7 +268,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val moo = temputs.lookupFunction("moo")
     moo.header.params.head.tyype match {
-      case CoordT(_, _, InterfaceTT(FullNameT(_, _, CitizenNameT(_, Vector(CoordTemplata(CoordT(_, _, IntT(_)))))))) =>
+      case CoordT(_, InterfaceTT(FullNameT(_, _, CitizenNameT(_, Vector(CoordTemplata(CoordT(_, IntT(_)))))))) =>
     }
   }
 
@@ -318,7 +317,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |
         |struct SomeStruct imm { i int; }
         |
-        |func bork(x *SomeStruct) int {
+        |func bork(x &SomeStruct) int {
         |  ret x.i;
         |}
         |
@@ -366,7 +365,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |""".stripMargin
     )
     val temputs = compile.expectTemputs()
-    temputs.lookupFunction("bork").header.fullName.last.templateArgs.last shouldEqual CoordTemplata(CoordT(ShareT, ReadonlyT, IntT(32)))
+    temputs.lookupFunction("bork").header.fullName.last.templateArgs.last shouldEqual CoordTemplata(CoordT(ShareT, IntT(32)))
   }
 
   test("Can turn a borrow coord into an owning coord") {
@@ -387,7 +386,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
     )
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("bork").header.fullName.last.templateArgs.last match {
-      case CoordTemplata(CoordT(OwnT, _, _)) =>
+      case CoordTemplata(CoordT(OwnT, _)) =>
     }
   }
 
@@ -408,7 +407,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
     )
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("swap").header.fullName.last.templateArgs.last match {
-      case CoordTemplata(CoordT(ShareT, ReadonlyT, BoolT())) =>
+      case CoordTemplata(CoordT(ShareT, BoolT())) =>
     }
   }
 
@@ -430,7 +429,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
     )
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("swap").header.fullName.last.templateArgs.last match {
-      case CoordTemplata(CoordT(ShareT, ReadonlyT, IntT(32))) =>
+      case CoordTemplata(CoordT(ShareT, IntT(32))) =>
     }
   }
 
@@ -443,7 +442,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |  func getFuel(virtual self &IShip) int;
         |}
         |struct Firefly {}
-        |func getFuel(self &Firefly impl IShip) int { ret 7; }
+        |func getFuel(self &Firefly) int { ret 7; }
         |impl IShip for Firefly;
         |
         |func genericGetFuel<T>(x T) int
@@ -458,7 +457,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
     )
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("genericGetFuel").header.fullName.last.templateArgs.last match {
-      case CoordTemplata(CoordT(_,_,StructTT(FullNameT(_,_,CitizenNameT(CitizenTemplateNameT("Firefly"),_))))) =>
+      case CoordTemplata(CoordT(_,StructTT(FullNameT(_,_,CitizenNameT(CitizenTemplateNameT("Firefly"),_))))) =>
     }
   }
 
@@ -471,7 +470,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |func moo(i int, b bool) str { ret "hello"; }
         |
         |exported func main() R
-        |where mooFunc Prot("moo", Refs(int, bool), R Ref) {
+        |where mooFunc Prot = Prot["moo", Refs(int, bool), R Ref] {
         |  __vbi_panic();
         |}
         |
@@ -479,7 +478,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
     )
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").header.returnType match {
-      case CoordT(_,_,StrT()) =>
+      case CoordT(_,StrT()) =>
     }
   }
 
@@ -498,7 +497,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
     )
     compile.getTemputs() match {
       case Err(CouldntFindFunctionToCallT(range, fff)) => {
-        fff.rejectedCalleeToReason.values.head match {
+        fff.rejectedCalleeToReason.map(_._2).head match {
           case InferFailure(reason) => {
             reason match {
               case FailedSolve(_, _, RuleError(SendingNonCitizen(IntT(32)))) =>

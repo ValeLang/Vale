@@ -3,12 +3,12 @@ package net.verdagon.vale.templar.expression
 //import net.verdagon.vale.astronomer.{BlockSE, IExpressionSE}
 import net.verdagon.vale.scout.{BlockSE, ExpressionScout, IExpressionSE}
 import net.verdagon.vale.templar.{ast, _}
-import net.verdagon.vale.templar.ast.{BlockTE, ConsecutorTE, LetNormalTE, LocationInFunctionEnvironment, ReferenceExpressionTE}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.DestructorTemplar
 import net.verdagon.vale.templar.names.{FullNameT, IVarNameT, TemplarBlockResultVarNameT}
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.vassert
+import net.verdagon.vale.{RangeS, vassert}
 
 import scala.collection.immutable.{List, Set}
 
@@ -24,6 +24,7 @@ trait IBlockTemplarDelegate {
     temputs: Temputs,
     startingNenv: NodeEnvironment,
     nenv: NodeEnvironmentBox,
+    range: RangeS,
     life: LocationInFunctionEnvironment,
     unresultifiedUndestructedExpressions: ReferenceExpressionTE):
   ReferenceExpressionTE
@@ -100,8 +101,8 @@ class BlockTemplar(
 //      }
 
     val newExpr =
-      delegate.dropSince(
-        temputs, startingNenv, nenv, life, unresultifiedUndestructedExpressions)
+          delegate.dropSince(
+            temputs, startingNenv, nenv, RangeS(blockSE.range.end, blockSE.range.end), life, unresultifiedUndestructedExpressions)
 
     (newExpr, returnsFromExprs)
   }

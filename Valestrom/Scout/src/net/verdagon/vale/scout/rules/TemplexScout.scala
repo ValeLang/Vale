@@ -1,12 +1,14 @@
 package net.verdagon.vale.scout.rules
 
-import net.verdagon.vale.RangeS
-import net.verdagon.vale.parser.ast.{AnonymousRunePT, BoolPT, BorrowP, BorrowPT, CallPT, FunctionPT, ITemplexPT, InlinePT, IntPT, InterpretedPT, LocationPT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnershipPT, PackPT, PermissionPT, PrototypePT, RangeP, ReadonlyP, RegionRunePT, RuntimeSizedArrayPT, StaticSizedArrayPT, StringPT, TuplePT, VariabilityPT}
-import net.verdagon.vale.scout.{CodeNameS, CodeRuneS, IEnvironment, IImpreciseNameS, INameS, IRuneS, ImplicitRuneS, LocationInDenizenBuilder, Scout}
+import net.verdagon.vale.{Interner, RangeS}
+import net.verdagon.vale.parser.ast._
+import net.verdagon.vale.scout._
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-object TemplexScout {
+class TemplexScout(
+    interner: Interner) {
   def addLiteralRule(
     lidb: LocationInDenizenBuilder,
     ruleBuilder: ArrayBuffer[IRulexSR],
@@ -46,7 +48,6 @@ object TemplexScout {
       case BoolPT(_, value) => Some(BoolLiteralSL(value))
       case MutabilityPT(_, mutability) => Some(MutabilityLiteralSL(mutability))
       case VariabilityPT(_, variability) => Some(VariabilityLiteralSL(variability))
-      case PermissionPT(_, permission) => Some(PermissionLiteralSL(permission))
       case StringPT(_, value) => Some(StringLiteralSL(value))
       case LocationPT(_, location) => Some(LocationLiteralSL(location))
       case OwnershipPT(_, ownership) => Some(OwnershipLiteralSL(ownership))
@@ -88,20 +89,20 @@ object TemplexScout {
                 addRuneParentEnvLookupRule(lidb.child(), ruleBuilder, evalRange(range), CodeRuneS(nameOrRune))
               }
             } else {
-              val valueSR = CodeNameS(nameOrRune)
+              val valueSR = interner.intern(CodeNameS(nameOrRune))
               addLookupRule(lidb.child(), ruleBuilder, evalRange(range), valueSR)
             }
           }
-          case InterpretedPT(range, ownership, permission, innerP) => {
+          case InterpretedPT(range, ownership, innerP) => {
             val resultRuneS = RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
             val innerRuneS = translateTemplex(env, lidb.child(), ruleBuilder, innerP)
-            ruleBuilder += AugmentSR(evalRange(range), resultRuneS, ownership, permission, innerRuneS)
+            ruleBuilder += AugmentSR(evalRange(range), resultRuneS, ownership, innerRuneS)
             resultRuneS
           }
           case BorrowPT(range, innerP) => {
             val resultRuneS = RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
             val innerRuneS = translateTemplex(env, lidb.child(), ruleBuilder, innerP)
-            ruleBuilder += AugmentSR(evalRange(range), resultRuneS, BorrowP, ReadonlyP, innerRuneS)
+            ruleBuilder += AugmentSR(evalRange(range), resultRuneS, BorrowP, innerRuneS)
             resultRuneS
           }
           case CallPT(range, template, args) => {
@@ -116,7 +117,7 @@ object TemplexScout {
           }
           case FunctionPT(range, mutability, paramsPack, returnType) => {
             val resultRuneS = RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
-            val templateNameRuneS = addLookupRule(lidb.child(), ruleBuilder, evalRange(range), CodeNameS("IFunction"))
+            val templateNameRuneS = addLookupRule(lidb.child(), ruleBuilder, evalRange(range), interner.intern(CodeNameS("IFunction")))
             val mutabilityRuneS =
               mutability match {
                 case None => addLiteralRule(lidb.child(), ruleBuilder, evalRange(range), MutabilityLiteralSL(MutableP))
@@ -183,7 +184,7 @@ object TemplexScout {
               LookupSR(
                 evalRange(range),
                 templateRuneS,
-                CodeNameS("Tup"))
+                interner.intern(CodeNameS("Tup")))
             ruleBuilder +=
               CallSR(
                 evalRange(range),
@@ -199,6 +200,58 @@ object TemplexScout {
           }
         }
       }
+    }
+  }
+
+  def translateTypeIntoRune(
+    env: IEnvironment,
+    lidb: LocationInDenizenBuilder,
+    ruleBuilder: ArrayBuffer[IRulexSR],
+    typeP: ITemplexPT):
+  RuneUsage = {
+    typeP match {
+      case NameOrRunePT(NameP(range, nameOrRune)) if env.allDeclaredRunes().contains(CodeRuneS(nameOrRune)) => {
+        val resultRuneS = RuneUsage(Scout.evalRange(env.file, range), CodeRuneS(nameOrRune))
+        //        ruleBuilder += ValueLeafSR(range, resultRuneS, EnvRuneLookupSR(CodeRuneS(nameOrRune)))
+        //        resultRuneS
+        resultRuneS
+      }
+      case nonRuneTemplexP => {
+        translateTemplex(env, lidb.child(), ruleBuilder, nonRuneTemplexP)
+      }
+    }
+  }
+  def translateMaybeTypeIntoRune(
+    env: IEnvironment,
+    lidb: LocationInDenizenBuilder,
+    range: RangeS,
+    ruleBuilder: ArrayBuffer[IRulexSR],
+    maybeTypeP: Option[ITemplexPT]):
+  RuneUsage = {
+    maybeTypeP match {
+      case None => {
+        val resultRuneS = RuneUsage(range, ImplicitRuneS(lidb.child().consume()))
+        resultRuneS
+      }
+      case Some(typeP) => {
+        translateTypeIntoRune(env, lidb, ruleBuilder, typeP)
+      }
+    }
+  }
+  def translateMaybeTypeIntoMaybeRune(
+    env: IEnvironment,
+    lidb: LocationInDenizenBuilder,
+    range: RangeS,
+    ruleBuilder: ArrayBuffer[IRulexSR],
+    runeToExplicitType: mutable.HashMap[IRuneS, ITemplataType],
+    maybeTypeP: Option[ITemplexPT]):
+  Option[RuneUsage] = {
+    if (maybeTypeP.isEmpty) {
+      None
+    } else {
+      Some(
+        translateMaybeTypeIntoRune(
+          env, lidb.child(), range, ruleBuilder, maybeTypeP))
     }
   }
 }

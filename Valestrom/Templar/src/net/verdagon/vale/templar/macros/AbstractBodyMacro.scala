@@ -2,7 +2,7 @@ package net.verdagon.vale.templar.macros
 
 import net.verdagon.vale.astronomer.FunctionA
 import net.verdagon.vale.templar.{Temputs, ast}
-import net.verdagon.vale.templar.ast.{AbstractT, ArgLookupTE, BlockTE, FunctionHeaderT, InterfaceFunctionCallTE, LocationInFunctionEnvironment, ParameterT, ReturnTE}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.env.FunctionEnvironment
 import net.verdagon.vale.templar.types.CoordT
 import net.verdagon.vale.{RangeS, vassert, vassertSome}
@@ -23,7 +23,7 @@ class AbstractBodyMacro() extends IFunctionBodyMacro {
 
     val returnReferenceType2 = vassertSome(maybeRetCoord)
 
-    vassert(params2.exists(_.virtuality == Some(AbstractT)))
+    vassert(params2.exists(_.virtuality == Some(AbstractT())))
     val header =
       ast.FunctionHeaderT(
         env.fullName,

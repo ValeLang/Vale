@@ -1,46 +1,42 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.parser.ExpressionParser.StopBeforeCloseBrace
+import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser.ast._
-import net.verdagon.vale.parser.old.CombinatorParsers
+
 import net.verdagon.vale.{Collector, vassert}
 import org.scalatest.{FunSuite, Matchers}
 
 
 class StructTests extends FunSuite with Collector with TestParseUtils {
-  private def compile[T](parser: CombinatorParsers.Parser[T], code: String): T = {
-    // The strip is in here because things inside the parser don't expect whitespace before and after
-    CombinatorParsers.parse(parser, code.strip().toCharArray()) match {
-      case CombinatorParsers.NoSuccess(msg, input) => {
-        fail("Couldn't parse!\n" + input.pos.longString);
-      }
-      case CombinatorParsers.Success(expr, rest) => {
-        vassert(rest.atEnd)
-        expr
-      }
-    }
-  }
+//  private def compile[T](parser: CombinatorParsers.Parser[T], code: String): T = {
+//    // The strip is in here because things inside the parser don't expect whitespace before and after
+//    CombinatorParsers.parse(parser, code.strip().toCharArray()) match {
+//      case CombinatorParsers.NoSuccess(msg, input) => {
+//        fail("Couldn't parse!\n" + input.pos.longString);
+//      }
+//      case CombinatorParsers.Success(expr, rest) => {
+//        vassert(rest.atEnd)
+//        expr
+//      }
+//    }
+//  }
 
   test("17") {
-    compile(
-      CombinatorParsers.normalStructMember,
-      "a @ListNode<T>;") shouldHave {
-      case NormalStructMemberP(_, NameP(_, "a"), FinalP, InterpretedPT(_,ShareP,ReadonlyP,CallPT(_,NameOrRunePT(NameP(_, "ListNode")), Vector(NameOrRunePT(NameP(_, "T")))))) =>
+    compile(makeParser().parseStructMember(_), "a @ListNode<T>;") shouldHave {
+      case NormalStructMemberP(_, NameP(_, "a"), FinalP, InterpretedPT(_,ShareP,CallPT(_,NameOrRunePT(NameP(_, "ListNode")), Vector(NameOrRunePT(NameP(_, "T")))))) =>
     }
   }
 
   test("18") {
-    compile(
-      CombinatorParsers.normalStructMember,
-      "a []<imm>T;") shouldHave {
+    compile(makeParser().parseStructMember(_), "a []<imm>T;") shouldHave {
       case NormalStructMemberP(_,NameP(_,"a"),FinalP,RuntimeSizedArrayPT(_,MutabilityPT(_,ImmutableP),NameOrRunePT(NameP(_,"T")))) =>
     }
   }
 
   test("Simple struct") {
     compileMaybe(
-      Parser.parseTopLevelThing(_),
-      "struct Moo { x *int; }") shouldHave {
+      makeParser().parseTopLevelThing(_),
+      "struct Moo { x &int; }") shouldHave {
       case TopLevelStructP(StructP(_,
         NameP(_, "Moo"),
         Vector(),
@@ -49,13 +45,13 @@ class StructTests extends FunSuite with Collector with TestParseUtils {
         None,
         StructMembersP(_,
           Vector(
-            NormalStructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,PointerP,ReadonlyP,NameOrRunePT(NameP(_, "int")))))))) =>
+            NormalStructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,BorrowP,NameOrRunePT(NameP(_, "int")))))))) =>
     }
   }
 
   test("Variadic struct") {
     val thing = compileMaybe(
-      Parser.parseTopLevelThing(_),
+      makeParser().parseTopLevelThing(_),
       "struct Moo<T> { _ ..T; }")
     Collector.only(thing, {
       case StructMembersP(_, Vector(VariadicStructMemberP(_, FinalP, NameOrRunePT(NameP(_, "T"))))) =>
@@ -64,7 +60,7 @@ class StructTests extends FunSuite with Collector with TestParseUtils {
 
   test("Variadic struct with varying") {
     val thing = compileMaybe(
-      Parser.parseTopLevelThing(_),
+      makeParser().parseTopLevelThing(_),
       "struct Moo<T> { _! ..T; }")
     Collector.only(thing, {
       case StructMembersP(_, Vector(VariadicStructMemberP(_, VaryingP, NameOrRunePT(NameP(_, "T"))))) =>
@@ -73,31 +69,31 @@ class StructTests extends FunSuite with Collector with TestParseUtils {
 
   test("Struct with weak") {
     compileMaybe(
-      Parser.parseTopLevelThing(_),
+      makeParser().parseTopLevelThing(_),
       "struct Moo { x **int; }") shouldHave {
-      case TopLevelStructP(StructP(_, NameP(_, "Moo"), Vector(), MutabilityPT(_, MutableP), None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,WeakP,ReadonlyP,NameOrRunePT(NameP(_, "int")))))))) =>
+      case TopLevelStructP(StructP(_, NameP(_, "Moo"), Vector(), MutabilityPT(_, MutableP), None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,WeakP,NameOrRunePT(NameP(_, "int")))))))) =>
     }
   }
 
-  test("Struct with inl") {
+  test("Struct with heap") {
     compileMaybe(
-      Parser.parseTopLevelThing(_),
-      "struct Moo { x inl Marine; }") shouldHave {
-      case TopLevelStructP(StructP(_,NameP(_,"Moo"),Vector(), MutabilityPT(_, MutableP),None,None,StructMembersP(_,Vector(NormalStructMemberP(_,NameP(_,"x"),FinalP,InlinePT(_,NameOrRunePT(NameP(_,"Marine")))))))) =>
+      makeParser().parseTopLevelThing(_),
+      "struct Moo { x ^Marine; }") shouldHave {
+      case TopLevelStructP(StructP(_,NameP(_,"Moo"),Vector(), MutabilityPT(_, MutableP),None,None,StructMembersP(_,Vector(NormalStructMemberP(_,NameP(_,"x"),FinalP,InterpretedPT(_,OwnP,NameOrRunePT(NameP(_,"Marine")))))))) =>
     }
   }
 
   test("Export struct") {
     compileMaybe(
-      Parser.parseTopLevelThing(_),
-      "exported struct Moo { x *int; }") shouldHave {
-      case TopLevelStructP(StructP(_, NameP(_, "Moo"), Vector(ExportAttributeP(_)), MutabilityPT(_, MutableP), None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,PointerP,ReadonlyP,NameOrRunePT(NameP(_, "int")))))))) =>
+      makeParser().parseTopLevelThing(_),
+      "exported struct Moo { x &int; }") shouldHave {
+      case TopLevelStructP(StructP(_, NameP(_, "Moo"), Vector(ExportAttributeP(_)), MutabilityPT(_, MutableP), None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,BorrowP,NameOrRunePT(NameP(_, "int")))))))) =>
     }
   }
 
   test("Struct with rune") {
     compileMaybe(
-      Parser.parseTopLevelThing(_),
+      makeParser().parseTopLevelThing(_),
       """
         |struct ListNode<E> {
         |  value E;
@@ -120,7 +116,7 @@ class StructTests extends FunSuite with Collector with TestParseUtils {
 
   test("Struct with int rune") {
     compileMaybe(
-      Parser.parseTopLevelThing(_),
+      makeParser().parseTopLevelThing(_),
       """
         |struct Vecf<N> where N int
         |{
@@ -141,7 +137,7 @@ class StructTests extends FunSuite with Collector with TestParseUtils {
 
   test("Struct with int rune, array sequence specifies mutability") {
     compileMaybe(
-      Parser.parseTopLevelThing(_),
+      makeParser().parseTopLevelThing(_),
       """
         |struct Vecf<N> where N int
         |{

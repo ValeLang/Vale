@@ -17,7 +17,7 @@ case class VariableDeclaration(
 }
 
 case class VariableDeclarations(vars: Vector[VariableDeclaration]) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   vassert(vars.distinct == vars)
 
@@ -43,9 +43,9 @@ case class VariableDeclarations(vars: Vector[VariableDeclaration]) {
 }
 
 case class VariableUses(uses: Vector[VariableUse]) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
-  vassert(uses.distinct == uses)
+  vassert(uses.map(_.name).distinct == uses.map(_.name))
 
   def allUsedNames: Vector[IVarNameS] = uses.map(_.name)
   def markBorrowed(name: IVarNameS): VariableUses = {
@@ -103,7 +103,7 @@ case class VariableUses(uses: Vector[VariableUse]) {
     uses.find(_.name == newUse.name) match {
       case None => VariableUses((uses :+ newUse).distinct)
       case Some(existingUse) => {
-        VariableUses(uses.filter(_ != existingUse) :+ merge(existingUse, newUse, certaintyMerger))
+        VariableUses(uses.filter(_.name != existingUse.name) :+ merge(existingUse, newUse, certaintyMerger))
       }
     }
   }

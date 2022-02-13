@@ -7,7 +7,7 @@ import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env.{IEnvironment, IEnvironmentBox, TemplataLookupContext}
 import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, CitizenNameT, INameT, NameTranslator}
-import net.verdagon.vale.{IProfiler, RangeS, vassert, vassertOne, vassertSome, vcurious, vfail, vimpl, vwat}
+import net.verdagon.vale.{Profiler, RangeS, vassert, vassertOne, vassertSome, vcurious, vfail, vimpl, vwat}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 
@@ -50,9 +50,10 @@ trait ITemplataTemplarDelegate {
 }
 
 class TemplataTemplar(
-    opts: TemplarOptions,
-    profiler: IProfiler,
-    delegate: ITemplataTemplarDelegate) {
+  opts: TemplarOptions,
+
+  nameTranslator: NameTranslator,
+  delegate: ITemplataTemplarDelegate) {
 
   def isTypeConvertible(
     temputs: Temputs,
@@ -60,13 +61,13 @@ class TemplataTemplar(
     targetPointerType: CoordT):
   Boolean = {
 
-    val CoordT(targetOwnership, targetPermission, targetType) = targetPointerType;
-    val CoordT(sourceOwnership, sourcePermission, sourceType) = sourcePointerType;
+    val CoordT(targetOwnership, targetType) = targetPointerType;
+    val CoordT(sourceOwnership, sourceType) = sourcePointerType;
 
-    // Note the Never case will short-circuit a true, regardless of the other checks (permission, ownership)
+    // Note the Never case will short-circuit a true, regardless of the other checks (ownership)
 
     (sourceType, targetType) match {
-      case (NeverT(), _) => return true
+      case (NeverT(_), _) => return true
       case (a, b) if a == b =>
       case (VoidT() | IntT(_) | BoolT() | StrT() | FloatT() | RuntimeSizedArrayTT(_, _) | StaticSizedArrayTT(_, _, _, _), _) => return false
       case (_, VoidT() | IntT(_) | BoolT() | StrT() | FloatT() | RuntimeSizedArrayTT(_, _) | StaticSizedArrayTT(_, _, _, _)) => return false
@@ -91,34 +92,17 @@ class TemplataTemplar(
       // At some point maybe we should automatically convert borrow to pointer and vice versa
       // and perhaps automatically promote borrow or pointer to weak?
       case (OwnT, BorrowT) => return false
-      case (OwnT, PointerT) => return false
       case (OwnT, WeakT) => return false
       case (OwnT, ShareT) => return false
-      case (PointerT, OwnT) => return false
-      case (PointerT, BorrowT) => return false
-      case (PointerT, WeakT) => return false
-      case (PointerT, ShareT) => return false
       case (BorrowT, OwnT) => return false
-      case (BorrowT, PointerT) => return false
       case (BorrowT, WeakT) => return false
       case (BorrowT, ShareT) => return false
       case (WeakT, OwnT) => return false
-      case (WeakT, PointerT) => return false
       case (WeakT, BorrowT) => return false
       case (WeakT, ShareT) => return false
-      case (ShareT, PointerT) => return false
       case (ShareT, BorrowT) => return false
       case (ShareT, WeakT) => return false
       case (ShareT, OwnT) => return false
-    }
-
-    (sourcePermission, targetPermission) match {
-      case (ReadonlyT, ReadonlyT) =>
-      case (ReadonlyT, ReadwriteT) => return false
-      // Could eventually make this true instead of false, if we want to implicitly
-      // go from readwrite to readonly, that would be nice.
-      case (ReadwriteT, ReadonlyT) => return false
-      case (ReadwriteT, ReadwriteT) =>
     }
 
     true
@@ -186,34 +170,33 @@ class TemplataTemplar(
   def pointifyKind(temputs: Temputs, kind: KindT, ownershipIfMutable: OwnershipT): CoordT = {
     val mutability = Templar.getMutability(temputs, kind)
     val ownership = if (mutability == MutableT) ownershipIfMutable else ShareT
-    val permission = if (mutability == MutableT) ReadwriteT else ReadonlyT
     kind match {
       case a @ RuntimeSizedArrayTT(_, _) => {
-        CoordT(ownership, permission, a)
+        CoordT(ownership, a)
       }
       case a @ StaticSizedArrayTT(_, _, _, _) => {
-        CoordT(ownership, permission, a)
+        CoordT(ownership, a)
       }
       case s @ StructTT(_) => {
-        CoordT(ownership, permission, s)
+        CoordT(ownership, s)
       }
       case i @ InterfaceTT(_) => {
-        CoordT(ownership, permission, i)
+        CoordT(ownership, i)
       }
       case VoidT() => {
-        CoordT(ShareT, ReadonlyT, VoidT())
+        CoordT(ShareT, VoidT())
       }
       case i @ IntT(_) => {
-        CoordT(ShareT, ReadonlyT, i)
+        CoordT(ShareT, i)
       }
       case FloatT() => {
-        CoordT(ShareT, ReadonlyT, FloatT())
+        CoordT(ShareT, FloatT())
       }
       case BoolT() => {
-        CoordT(ShareT, ReadonlyT, BoolT())
+        CoordT(ShareT, BoolT())
       }
       case StrT() => {
-        CoordT(ShareT, ReadonlyT, StrT())
+        CoordT(ShareT, StrT())
       }
     }
   }
@@ -287,7 +270,7 @@ class TemplataTemplar(
     // Changed this from AnythingLookupContext to TemplataLookupContext
     // because this is called from StructTemplar to figure out its members.
     // We could instead pipe a lookup context through, if this proves problematic.
-    vassertOne(env.lookupNearestWithName(profiler, name, Set(TemplataLookupContext)))
+    vassertOne(env.lookupNearestWithName(name, Set(TemplataLookupContext)))
   }
 
   def lookupTemplata(
@@ -299,7 +282,7 @@ class TemplataTemplar(
     // Changed this from AnythingLookupContext to TemplataLookupContext
     // because this is called from StructTemplar to figure out its members.
     // We could instead pipe a lookup context through, if this proves problematic.
-    val results = env.lookupNearestWithImpreciseName(profiler, name, Set(TemplataLookupContext))
+    val results = env.lookupNearestWithImpreciseName(name, Set(TemplataLookupContext))
     if (results.size > 1) {
       vfail()
     }
@@ -311,7 +294,6 @@ class TemplataTemplar(
     val mutability = Templar.getMutability(temputs, kind)
     CoordT(
       if (mutability == MutableT) OwnT else ShareT,
-      if (mutability == MutableT) ReadwriteT else ReadonlyT,
       kind)
   }
 
@@ -354,9 +336,7 @@ class TemplataTemplar(
 
           // Default ownership is own for mutables, share for imms
           val ownership = if (mutability == MutableT) OwnT else ShareT
-          // Default permission is readwrite for mutables, readonly for imms
-          val permission = if (mutability == MutableT) ReadwriteT else ReadonlyT
-          val coerced = CoordTemplata(CoordT(ownership, permission, kind))
+          val coerced = CoordTemplata(CoordT(ownership, kind))
           (coerced)
         }
         case (it@InterfaceTemplata(_, interfaceA), CoordTemplataType) => {
@@ -370,7 +350,6 @@ class TemplataTemplar(
             CoordTemplata(
               CoordT(
                 if (mutability == MutableT) OwnT else ShareT,
-                if (mutability == MutableT) ReadwriteT else ReadonlyT,
                 kind))
           (coerced)
         }
@@ -385,13 +364,13 @@ class TemplataTemplar(
     val citizenTemplateFullName =
       expectedCitizenTemplata match {
         case StructTemplata(env, originStruct) => {
-          env.fullName.addStep(NameTranslator.translateCitizenName(originStruct.name))
+          env.fullName.addStep(nameTranslator.translateCitizenName(originStruct.name))
         }
         case InterfaceTemplata(env, originInterface) => {
-          env.fullName.addStep(NameTranslator.translateCitizenName(originInterface.name))
+          env.fullName.addStep(nameTranslator.translateCitizenName(originInterface.name))
         }
         case KindTemplata(expectedKind) => return actualCitizenRef == expectedKind
-        case CoordTemplata(CoordT(OwnT | ShareT, ReadonlyT, actualKind)) => return actualCitizenRef == actualKind
+        case CoordTemplata(CoordT(OwnT | ShareT, actualKind)) => return actualCitizenRef == actualKind
         case _ => return false
       }
     if (actualCitizenRef.fullName.initSteps != citizenTemplateFullName.initSteps) {

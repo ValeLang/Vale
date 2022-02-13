@@ -3,7 +3,7 @@ package net.verdagon.vale.templar.macros
 import net.verdagon.vale.{PackageCoordinate, RangeS}
 import net.verdagon.vale.astronomer.{FunctionA, ImplA, InterfaceA, StructA}
 import net.verdagon.vale.templar.Temputs
-import net.verdagon.vale.templar.ast.{FunctionHeaderT, LocationInFunctionEnvironment, ParameterT}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.env.{FunctionEnvironment, IEnvEntry}
 import net.verdagon.vale.templar.names.{CitizenTemplateNameT, FullNameT, INameT}
 import net.verdagon.vale.templar.types.{CoordT, InterfaceTT, MutabilityT, RuntimeSizedArrayTT, StructTT}

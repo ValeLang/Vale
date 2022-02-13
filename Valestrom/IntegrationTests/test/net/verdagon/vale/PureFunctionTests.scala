@@ -20,14 +20,14 @@ class PureFunctionTests extends FunSuite with Matchers {
           |struct Spaceship {
           |  engine Engine;
           |}
-          |pure func pfunc(s *Spaceship) int {
+          |pure func pfunc(s &Spaceship) int {
           |  ret s.engine.fuel;
           |}
           |exported func main() int {
           |  s = Spaceship(Engine(10));
-          |  ret pfunc(*s);
+          |  ret pfunc(&s);
           |}
           |""".stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(10)
+    compile.evalForKind(Vector()) match { case VonInt(10) => }
   }
 }

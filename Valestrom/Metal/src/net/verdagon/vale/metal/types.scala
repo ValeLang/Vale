@@ -1,6 +1,6 @@
 package net.verdagon.vale.metal
 
-import net.verdagon.vale.{FileCoordinate, PackageCoordinate, vassert, vfail, vimpl}
+import net.verdagon.vale.{FileCoordinate, PackageCoordinate, vassert, vcurious, vfail, vimpl}
 
 // Represents a reference type.
 // A reference contains these things:
@@ -28,20 +28,19 @@ import net.verdagon.vale.{FileCoordinate, PackageCoordinate, vassert, vfail, vim
 // In previous stages, this is referred to as a "coord", because these four things can be
 // thought of as dimensions of a coordinate.
 case class ReferenceH[+T <: KindH](
-    ownership: OwnershipH, location: LocationH, permission: PermissionH, kind: T) {
+    ownership: OwnershipH, location: LocationH, kind: T) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
   (ownership, location) match {
     case (OwnH, YonderH) =>
     case (ShareH, _) =>
-    case (PointerH, YonderH) =>
     case (BorrowH, YonderH) =>
     case (WeakH, YonderH) =>
     case _ => vfail()
   }
 
   kind match {
-    case IntH(_) | BoolH() | FloatH() | NeverH() => {
+    case IntH(_) | BoolH() | FloatH() | NeverH(_) => {
       // Make sure that if we're pointing at a primitives, it's via a Share reference.
       vassert(ownership == ShareH)
       vassert(location == InlineH)
@@ -53,17 +52,10 @@ case class ReferenceH[+T <: KindH](
     }
     case StructRefH(name) => {
       val isBox = name.toFullString.startsWith("::C(\"__Box\"")
-      val isTup = name.toFullString.startsWith("::C(CT(\"Tup\"")
 
       if (isBox) {
-        vassert(ownership == OwnH || ownership == PointerH)
+        vassert(ownership == OwnH || ownership == BorrowH)
       }
-
-      // This will have false positives eventually, take it out then.
-      val shouldBeInlined =
-        (ownership == ShareH && isTup)// ||
-        //(ownership == OwnH && isBox)
-      vassert(shouldBeInlined == (location == InlineH));
     }
     case _ =>
   }
@@ -72,28 +64,28 @@ case class ReferenceH[+T <: KindH](
   // points at a static sized array.
   def expectStaticSizedArrayReference() = {
     kind match {
-      case atH @ StaticSizedArrayHT(_) => ReferenceH[StaticSizedArrayHT](ownership, location, permission, atH)
+      case atH @ StaticSizedArrayHT(_) => ReferenceH[StaticSizedArrayHT](ownership, location, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
   // points at an unstatic sized array.
   def expectRuntimeSizedArrayReference() = {
     kind match {
-      case atH @ RuntimeSizedArrayHT(_) => ReferenceH[RuntimeSizedArrayHT](ownership, location, permission, atH)
+      case atH @ RuntimeSizedArrayHT(_) => ReferenceH[RuntimeSizedArrayHT](ownership, location, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
   // points at struct.
   def expectStructReference() = {
     kind match {
-      case atH @ StructRefH(_) => ReferenceH[StructRefH](ownership, location, permission, atH)
+      case atH @ StructRefH(_) => ReferenceH[StructRefH](ownership, location, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
   // points at interface.
   def expectInterfaceReference() = {
     kind match {
-      case atH @ InterfaceRefH(_) => ReferenceH[InterfaceRefH](ownership, location, permission, atH)
+      case atH @ InterfaceRefH(_) => ReferenceH[InterfaceRefH](ownership, location, atH)
     }
   }
 }
@@ -131,7 +123,7 @@ case class FloatH() extends KindH {
 // TODO: This feels weird being a kind in metal. Figure out a way to not
 // have this? Perhaps replace all kinds with Optional[Optional[KindH]],
 // where None is never, Some(None) is Void, and Some(Some(_)) is a normal thing.
-case class NeverH() extends KindH {
+case class NeverH(fromBreak: Boolean) extends KindH {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
 }
@@ -205,16 +197,9 @@ case class CodeLocation(
 // ReferenceH for explanation.
 sealed trait OwnershipH
 case object OwnH extends OwnershipH
-case object PointerH extends OwnershipH
 case object BorrowH extends OwnershipH
 case object WeakH extends OwnershipH
 case object ShareH extends OwnershipH
-
-// Permission is restrictions on how we can modify an object through a certain
-// reference, see ReferenceH for explanation.
-sealed trait PermissionH
-case object ReadonlyH extends PermissionH
-case object ReadwriteH extends PermissionH
 
 // Location says whether a reference contains the kind's location (yonder) or
 // contains the kind itself (inline).
@@ -260,7 +245,7 @@ case object Mutable extends Mutability
 // Examples (with C++ translations):
 //   This will create a varying local, which can be changed to point elsewhere:
 //     Vale:
-//       x! = Car(4, "Honda Civic");
+//       x = Car(4, "Honda Civic");
 //       set x = someOtherCar;
 //       set x = Car(4, "Toyota Camry");
 //     C++:

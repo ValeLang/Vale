@@ -1,0 +1,199 @@
+import stdlib.collections.list.*;
+import stdlib.resultutils.*;
+
+export Array<imm, str> as StrArray;
+export Array<mut, str> as MutStrArray;
+export List<Path> as PathList;
+
+
+interface FileError { }
+struct FileNotFoundError {
+  path Path;
+}
+impl FileError for FileNotFoundError;
+
+
+exported func AddToPathChildList(parent &Path, list &List<Path>, child_name str) {
+  list.add(parent./(child_name));
+}
+
+exported struct Path {
+  segments List<str>;
+  //drive Opt<str>;
+}
+func resolve(self &Path) Path {
+  Path(resolve(self.str()))
+}
+
+func is_dir(path &Path) bool {
+  is_dir(path.str())
+}
+
+func is_file(path &Path) bool {
+  is_file(path.str())
+}
+
+func parent(path &Path) Path {
+  result = path.clone();
+  if (result.segments.len() == 0) {
+    panic("Can't get parent directory, is already root.");
+  }
+  result.segments.remove(result.segments.len() - 1);
+  ret result;
+}
+
+func directory(path &Path) Path {
+  result = path.clone();
+  if (path.is_dir()) {
+    ret result;
+  }
+  result.segments.remove(result.segments.len() - 1);
+  ret result;
+}
+
+func Path(s str) Path {
+  segments = List<str>();
+  foreach a in s.split("/") {
+    foreach b in a.split("\\") {
+      segments.add(b.str());
+    }
+  }
+  // If it ends in a / there will be an empty string at the end, remove it.
+  if (segments.get(segments.len() - 1) == "") {
+    segments.remove(segments.len() - 1);
+  }
+  vassert(segments.len() > 0, "Path is empty!");
+  ret Path(segments);
+}
+
+func name(path &Path) str {
+  path.segments.get(path.segments.len() - 1)
+}
+
+func str(path Path) str { path.str() }
+func str(path &Path) str {
+  sep = GetPathSeparator();
+
+  builder = StringBuilder();
+  first = true;
+  //if (not path.drive.isEmpty()) {
+  //  builder.print(path.drive.get());
+  //  set first = false;
+  //}
+  foreach segment in path.segments {
+    if (not first) {
+      builder.print(sep);
+    }
+    builder.print(segment);
+    set first = false;
+  }
+  ret builder.str();
+}
+
+func exists(path &Path) bool {
+  ret path.str().exists();
+}
+func exists(path Path) bool { path.exists() }
+
+func ==(a &Path, b &Path) bool {
+  if (a.segments.len() != b.segments.len()) {
+    ret false;
+  }
+  i = 0;
+  while (i < a.segments.len()) {
+    if (a.segments.get(i) != b.segments.get(i)) {
+      ret false;
+    }
+    set i = i + 1;
+  }
+
+  //if (a.drive.isEmpty() != b.drive.isEmpty()) {
+  //  ret false;
+  //}
+  //if (not a.drive.isEmpty()) {
+  //  if (a.drive.get() != b.drive.get()) {
+  //    ret false;
+  //  }
+  //}
+  ret true;
+}
+func !=(a &Path, b &Path) bool { not (a == b) }
+
+func clone(self &Path) Path {
+  segments = List<str>();
+  foreach segment in self.segments {
+    segments.add(segment);
+  }
+  ret Path(segments); //, self.drive);
+}
+
+func /(path Path, segment str) Path { path / segment }
+func /(path &Path, segment str) Path {
+  new_path = path.clone();
+
+  new_segments = segment.split(GetPathSeparator());
+  foreach new_segment in new_segments {
+    if (new_segment.len() > 0) {
+      new_path.segments.add(new_segment.str());
+    }
+  }
+
+  ret new_path;
+}
+
+func iterdir(path &Path) List<Path> {
+  destination_list = List<Path>();
+  success = iterdir(path, path.str(), &destination_list);
+  if (not success) {
+    panic("iterdir failed!");
+  }
+  ret destination_list;
+}
+
+func readAsString(path &Path) str {
+  readFileAsString(path.str())
+}
+func writeString(path &Path, contentsVStr str) {
+  writeStringToFile(path.str(), contentsVStr)
+}
+
+func CreateDir(path &Path, allow_already_existing bool) Result<void, FileError> {
+  if (CreateDirExtern(path.str(), allow_already_existing)) {
+    Ok<void, FileError>(void())
+  } else {
+    panic("Error in CreateDir");
+  }
+}
+
+func CreateDirAll(path &Path, allow_already_existing bool) Result<void, FileError> {
+  if (path.segments.len() == 0) {
+    ret Err<void, FileError>(FileNotFoundError(path.clone()));
+  }
+  if (not path.exists()) {
+    // Recurse
+    recurse_result = CreateDirAll(&path.parent(), allow_already_existing);
+    if (recurse_result.is_err()) {
+      ret recurse_result;
+    }
+    recurse_result.expect("zork h");
+
+    create_dir_result = path.CreateDir(allow_already_existing);
+    if (create_dir_result.is_err()) {
+      ret create_dir_result;
+    }
+    create_dir_result.expect("zork i");
+  }
+  ret Ok<void, FileError>(void());
+}
+
+extern func readFileAsString(filenameVStr str) str;
+extern func writeStringToFile(filenameVStr str, contentsVStr str) void;
+extern func GetEnvPathSeparator() str;
+extern func GetPathSeparator() str;
+extern func is_dir(value str) bool;
+extern func is_file(value str) bool;
+extern func exists(path str) bool;
+extern func iterdir(path &Path, path_str str, destination_list &List<Path>) bool;
+extern func makeDirectory(path str, allow_already_existing bool) bool;
+extern func resolve(path str) str;
+extern func CreateDirExtern(path str, allow_already_existing bool) bool;

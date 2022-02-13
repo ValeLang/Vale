@@ -12,10 +12,11 @@ import net.verdagon.vale.templar.macros.{IFunctionBodyMacro, IOnStructDefinedMac
 import net.verdagon.vale.templar.names.{FullNameT, INameT, NameTranslator}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{OverloadTemplar, Templar, Temputs}
-import net.verdagon.vale.{CodeLocationS, PackageCoordinate, RangeS, vwat}
+import net.verdagon.vale.{CodeLocationS, Interner, PackageCoordinate, RangeS, vwat}
 
 class StructDropMacro(
-  overloadTemplar: OverloadTemplar,
+  interner: Interner,
+  nameTranslator: NameTranslator,
   destructorTemplar: DestructorTemplar
 ) extends IOnStructDefinedMacro with IFunctionBodyMacro {
 
@@ -46,7 +47,7 @@ class StructDropMacro(
         structType,
         structIdentifyingRunes.map(_.rune),
         structIdentifyingRuneToType)
-    val dropNameT = structName.addStep(NameTranslator.translateFunctionNameToTemplateName(dropFunctionA.name))
+    val dropNameT = structName.addStep(nameTranslator.translateFunctionNameToTemplateName(dropFunctionA.name))
     Vector((dropNameT, FunctionEnvEntry(dropFunctionA)))
   }
 
@@ -60,9 +61,9 @@ class StructDropMacro(
   FunctionA = {
     val nameS =
       if (isDrop) {
-        FunctionNameS(CallTemplar.DROP_FUNCTION_NAME, structRange.begin)
+        interner.intern(FunctionNameS(CallTemplar.DROP_FUNCTION_NAME, structRange.begin))
       } else {
-        FreeDeclarationNameS(structRange.begin)
+        interner.intern(FreeDeclarationNameS(structRange.begin))
       }
     FunctionA(
       structRange,
@@ -81,7 +82,7 @@ class StructDropMacro(
           CodeRuneS("DropP1") -> CoordTemplataType,
           CodeRuneS("DropV") -> CoordTemplataType),
       Vector(
-        ParameterS(AtomSP(RangeS.internal(-1342), Some(CaptureS(CodeVarNameS("x"))), None, Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("DropP1"))), None))),
+        ParameterS(AtomSP(RangeS.internal(-1342), Some(CaptureS(interner.intern(CodeVarNameS("x")))), None, Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("DropP1"))), None))),
       Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("DropV"))),
       Vector(
         structType match {
@@ -99,8 +100,8 @@ class StructDropMacro(
               structIdentifyingRunes.map(r => RuneUsage(RangeS.internal(-64002), r)).toArray)
           }
         },
-        LookupSR(RangeS.internal(-167213), RuneUsage(RangeS.internal(-64002), CodeRuneS("DropStruct")), structNameS.getImpreciseName),
-        LookupSR(RangeS.internal(-167213), RuneUsage(RangeS.internal(-64002), CodeRuneS("DropV")), CodeNameS("void"))),
+        LookupSR(RangeS.internal(-1672159), RuneUsage(RangeS.internal(-64002), CodeRuneS("DropStruct")), structNameS.getImpreciseName(interner)),
+        LookupSR(RangeS.internal(-1672160), RuneUsage(RangeS.internal(-64002), CodeRuneS("DropV")), interner.intern(CodeNameS("void")))),
       GeneratedBodyS(dropGeneratorId))
   }
 
@@ -120,14 +121,14 @@ class StructDropMacro(
         CodeRuneS("DropP1") -> CoordTemplataType,
         CodeRuneS("DropV") -> CoordTemplataType),
       Vector(
-        ParameterS(AtomSP(RangeS.internal(-1342), Some(CaptureS(CodeVarNameS("x"))), None, Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("DropP1"))), None))),
+        ParameterS(AtomSP(RangeS.internal(-1342), Some(CaptureS(interner.intern(CodeVarNameS("x")))), None, Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("DropP1"))), None))),
       Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("DropV"))),
       Vector(
         LookupSR(
-          RangeS.internal(-167213),
+          RangeS.internal(-1672161),
           RuneUsage(RangeS.internal(-64002), CodeRuneS("DropP1")),
-          SelfNameS()),
-        LookupSR(RangeS.internal(-167213), RuneUsage(RangeS.internal(-64002), CodeRuneS("DropV")), CodeNameS("void"))),
+          interner.intern(SelfNameS())),
+        LookupSR(RangeS.internal(-1672162), RuneUsage(RangeS.internal(-64002), CodeRuneS("DropV")), interner.intern(CodeNameS("void")))),
       GeneratedBodyS(dropGeneratorId))
   }
 
@@ -150,10 +151,9 @@ class StructDropMacro(
       }
     val structDef = temputs.lookupStruct(structTT)
     val structOwnership = if (structDef.mutability == MutableT) OwnT else ShareT
-    val structPermission = if (structDef.mutability == MutableT) ReadwriteT else ReadonlyT
-    val structType = CoordT(structOwnership, structPermission, structDef.getRef)
+    val structType = CoordT(structOwnership, structDef.getRef)
 
-    val ret = CoordT(ShareT, ReadonlyT, VoidT())
+    val ret = CoordT(ShareT, VoidT())
     val header = FunctionHeaderT(env.fullName, Vector.empty, params2, ret, originFunction1)
 
     temputs.declareFunctionReturnType(header.toSignature, header.returnType)
@@ -175,7 +175,13 @@ class StructDropMacro(
         case MutableT => {
           Templar.consecutive(
             Vector(DestroyTE(ArgLookupTE(0, structType), structTT, memberLocalVariables)) ++
-              memberLocalVariables.map(v => destructorTemplar.drop(bodyEnv, temputs, UnletTE(v))))
+              memberLocalVariables.map(v => {
+                destructorTemplar.drop(
+                  bodyEnv,
+                  temputs,
+                  originFunction1.map(_.range).getOrElse(callRange),
+                  UnletTE(v))
+              }))
         }
       }
 

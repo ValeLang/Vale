@@ -8,10 +8,10 @@ import net.verdagon.vale.templar.macros.IFunctionBodyMacro
 import net.verdagon.vale.templar.templata.CoordTemplata
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{Temputs, ast}
-import net.verdagon.vale.{IProfiler, RangeS, vassertSome}
+import net.verdagon.vale.{Profiler, Interner, RangeS, vassertSome}
 
 
-class RSAMutablePopMacro(profiler: IProfiler) extends IFunctionBodyMacro {
+class RSAMutablePopMacro( interner: Interner) extends IFunctionBodyMacro {
   val generatorId: String = "vale_runtime_sized_array_pop"
 
   def generateFunctionBody(
@@ -32,9 +32,9 @@ class RSAMutablePopMacro(profiler: IProfiler) extends IFunctionBodyMacro {
     val CoordTemplata(elementType) =
       vassertSome(
         env.lookupNearestWithImpreciseName(
-          profiler, RuneNameS(CodeRuneS("E")), Set(TemplataLookupContext)))
+          interner.intern(RuneNameS(CodeRuneS("E"))), Set(TemplataLookupContext)))
 
-    val arrayTT = RuntimeSizedArrayTT(MutableT, elementType)
+    val arrayTT = interner.intern(RuntimeSizedArrayTT(MutableT, elementType))
 
     temputs.addFunction(
       ast.FunctionT(

@@ -4,10 +4,10 @@
 // to LLVMValueRef map.
 
 exported func main() int {
-  playerRow! = 4;
+  playerRow = 4;
 
   if (false) {
-    newPlayerRow! = 0;
+    newPlayerRow = 0;
   }
   ret 42;
 }

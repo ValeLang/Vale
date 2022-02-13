@@ -1,0 +1,383 @@
+import stdlib.collections.list.*;
+
+func startsWith(a str, b str) bool { startsWith(a.slice(), b.slice()) }
+func startsWith(a str, b StrSlice) bool { startsWith(a.slice(), b) }
+func startsWith(a StrSlice, b str) bool { startsWith(a, b.slice()) }
+func startsWith(a StrSlice, b StrSlice) bool {
+  if b.len() > a.len() {
+    ret false;
+  }
+  ret a.slice(0, b.len()) == b;
+}
+
+
+func endsWith(a str, b str) bool { endsWith(a.slice(), b.slice()) }
+func endsWith(a str, b StrSlice) bool { endsWith(a.slice(), b) }
+func endsWith(a StrSlice, b str) bool { endsWith(a, b.slice()) }
+func endsWith(a StrSlice, b StrSlice) bool {
+  if b.len() > a.len() {
+    ret false;
+  }
+  a.slice(a.len() - b.len(), a.len()) == b
+}
+
+
+func splice(original str, at int, removeNumChars int, insert str) str {
+  before = original.slice(0, at).str();
+  after = original.slice(at + removeNumChars, original.len()).str();
+  ret before + insert + after;
+}
+
+
+func ltrim(s str) StrSlice { ltrim(s.slice()) }
+func ltrim(s StrSlice) StrSlice {
+  whitespace = " \r\n\t";
+  while true {
+    if s == "" {
+      ret s;
+    }
+    if whitespace.find(s.slice(0, 1)).isEmpty() {
+      ret s;
+    }
+    set s = s.slice(1, s.len());
+  }
+  panic("unreachable");
+}
+func rtrim(s str) StrSlice { rtrim(s.slice()) }
+func rtrim(s StrSlice) StrSlice {
+  whitespace = " \r\n\t";
+  while true {
+    if s == "" {
+      ret s;
+    }
+    if whitespace.find(s.slice(s.len() - 1, s.len())).isEmpty() {
+      ret s;
+    }
+    set s = s.slice(0, s.len() - 1);
+  }
+  panic("unreachable");
+}
+
+func trim(s str) StrSlice { trim(s.slice()) }
+func trim(s StrSlice) StrSlice { ltrim(rtrim(s)) }
+
+func isWhitespace(s str) bool { isWhitespace(s.slice()) }
+func isWhitespace(s StrSlice) bool {
+  while len(s) > 0 {
+    if " \r\n\t".find(s).isEmpty() {
+      // then its not whitespace
+      ret false;
+    }
+    set s = s.slice(1);
+  }
+  ret true;
+}
+
+
+func ltrimnl(s str) StrSlice { ltrimnl(s.slice()) }
+func ltrimnl(s StrSlice) StrSlice {
+  while true {
+    if s == "" {
+      ret s;
+    }
+    if s.slice(0, 1) != "\n" {
+      ret s;
+    }
+    set s = s.slice(1, s.len());
+  }
+  panic("unreachable");
+}
+func rtrimnl(s str) StrSlice { rtrimnl(s.slice()) }
+func rtrimnl(s StrSlice) StrSlice {
+  whitespace = " \r\n\t";
+  while true {
+    if s == "" {
+      ret s;
+    }
+    if s.slice(s.len() - 1, s.len()) != "\n" {
+      ret s;
+    }
+    set s = s.slice(0, s.len() - 1);
+  }
+  panic("unreachable");
+}
+
+func trimnl(s str) StrSlice { trimnl(s.slice()) }
+func trimnl(s StrSlice) StrSlice { ltrimnl(rtrimnl(s)) }
+
+func int(s str) Opt<int> { int(s.slice()) }
+func int(s StrSlice) Opt<int> {
+  if s == "" {
+    ret None<int>();
+  }
+
+  hasNegative =
+    if s.startsWith("-") {
+      set s = s.slice(1);
+      true
+    } else {
+      false
+    };
+
+  totalSoFar = 0;
+  digitsConsumed = 0;
+
+  while s != "" {
+    digitStr = s.slice(0, 1);
+
+    ascii = toAscii(digitStr);
+    if ascii < 48 or ascii >= 58 {
+      ret None<int>();
+    }
+    digit = ascii - 48;
+
+    set totalSoFar = totalSoFar * 10 + digit;
+    set digitsConsumed = digitsConsumed + 1;
+    set s = s.slice(1);
+  }
+
+  if hasNegative {
+    if digitsConsumed == 0 {
+      ret None<int>();
+    }
+    set totalSoFar = totalSoFar * -1;
+  }
+
+  ret Some(totalSoFar);
+}
+
+struct SplitResult {
+  beforeSplit StrSlice;
+  afterSplit StrSlice;
+}
+func splitOnce(haystack str, needle str) Opt<SplitResult> {
+  splitOnce(haystack.slice(), needle.slice())
+}
+func splitOnce(haystack StrSlice, needle str) Opt<SplitResult> {
+  splitOnce(haystack, needle.slice())
+}
+func splitOnce(haystack str, needle StrSlice) Opt<SplitResult> {
+  splitOnce(haystack.slice(), needle)
+}
+func splitOnce(haystack StrSlice, needle StrSlice) Opt<SplitResult> {
+  maybeOffsetAfterBegin = find(haystack, needle);
+  if maybeOffsetAfterBegin.isEmpty() {
+    r Opt<SplitResult> = None<SplitResult>();
+    r
+  } else {
+    offsetAfterBegin = maybeOffsetAfterBegin.get();
+    r Opt<SplitResult> =
+        Some<SplitResult>(
+            SplitResult(
+                haystack.slice(0, offsetAfterBegin),
+                haystack.slice(offsetAfterBegin + needle.len(), haystack.len())));
+    r
+  }
+}
+
+
+func split(haystack str, needle str) List<StrSlice> {
+  split(haystack.slice(), needle.slice())
+}
+func split(haystack str, needle StrSlice) List<StrSlice> {
+  split(haystack.slice(), needle)
+}
+func split(haystack StrSlice, needle str) List<StrSlice> {
+  split(haystack, needle.slice())
+}
+func split(haystack StrSlice, needle StrSlice) List<StrSlice> {
+  // Special case first: this means they want to explode a string into
+  // chars, like "abc" into "a", "b", "c"  
+  if needle == "" {
+    result_parts = List<StrSlice>();
+    while haystack != "" {
+      result_parts.add(haystack.slice(0, 1));
+      set haystack = haystack.slice(1, haystack.len());
+    }
+    ret result_parts;
+  }
+
+  // We want to maintain the invariant that
+  //   something.split(needle).len() == something.count(needle).len() + 1
+  // (Arbitrary decision, but seems to make sense)
+  // This also means that result_parts will always have at least one entry in it.
+
+  result_parts = List<StrSlice>();
+
+  if needle == "" {
+    result_parts.add("".slice());
+    ret result_parts;
+  }
+
+  // For example, if we do "aabbb".split("a"), we want to take the two "a"s off
+  // the start, and add two ""s to the result_parts.
+  while haystack.startsWith(needle) {
+    set haystack = haystack.slice(needle.len(), haystack.len());
+    result_parts.add("".slice());
+  }
+
+  // Similarly, if we do "bbbaa".split("a"), we want to take the "a"s off
+  // the end.
+  // But, we don't want to add them to the result_parts yet, we'll do that after
+  // we get the stuff before it.
+  // We'll just remember for now how many of them are at the end, and
+  // shorten them off haystack.
+  num_at_end = 0;
+  while haystack.endsWith(needle) {
+    set haystack = haystack.slice(0, haystack.len() - needle.len());
+    set num_at_end = num_at_end + 1;
+  }
+
+  // For example, if we do "aaa".split("a"), the above start slicing put
+  // 3 ""s into result_parts, and left us with a "". We still want another ""
+  // to maintain the invariant, so we just add another one here.
+  if haystack == "" {
+    result_parts.add("".slice());
+  } else {
+    // If we get here, no needles are at the beginning or end, and we still
+    // have a haystack.
+    // For example, needle "a" and haystack "babab".
+    while haystack != "" {
+      before_and_after_next_needle = haystack.splitOnce(needle);
+      if not before_and_after_next_needle.isEmpty() {
+        // There's a needle somewhere in the haystack!
+        [before_next_needle, after_next_needle] = before_and_after_next_needle.get();
+        // If haystack was "bacad" and needle was "a",
+        // before_next_needle will contain "b" and
+        // after_next_needle will contain "cad"
+        result_parts.add(before_next_needle);
+        set haystack = after_next_needle; // Now haystack is "cad"
+      } else {
+        // If we get here, there's no more needles to be found in the haystack.
+        // However, we know that there's still some hay left, for example "b".
+        vassert(haystack.len() > 0);
+        result_parts.add(haystack);
+        set haystack = "".slice(); // This will just end the loop
+      }
+    }
+  }
+
+  // Add the ""s we found at the end of the haystack when we began.
+  i = 0;
+  while i < num_at_end {
+    result_parts.add("".slice());
+    set i = i + 1;
+  }
+
+  ret result_parts;
+}
+
+
+struct StrSliceHasher { }
+func __call(self &StrSliceHasher, s StrSlice) int {
+  sum = 0;
+  while s != "" {
+    set sum = sum * 1337 + toAscii(s.slice(0, 1));
+    set s = s.slice(1);
+  }
+  ret sum;
+}
+
+struct StrSliceEquator { }
+func __call(self &StrSliceEquator, a StrSlice, b StrSlice) bool {
+  a == b
+}
+
+struct StrHasher { }
+func __call(self &StrHasher, original_str str) int {
+  s = original_str.slice();
+  sum = 0;
+  while s != "" {
+    set sum = sum * 1337 + toAscii(s.slice(0, 1));
+    set s = s.slice(1);
+  }
+  ret sum;
+}
+
+struct StrEquator { }
+func __call(self &StrEquator, a str, b str) bool {
+  a == b
+}
+
+
+struct StringBuilder {
+  parts List<StrSlice>;
+}
+func StringBuilder() StringBuilder {
+  StringBuilder(List<StrSlice>())
+}
+func assembleStr(self &StringBuilder) str {
+  result = "";
+  foreach s in self.parts {
+    set result = result + s;
+  }
+  ret result;
+}
+func str(self &StringBuilder) str { self.assembleStr() }
+func print(self &StringBuilder, b bool) {
+  self.print(str(b));
+}
+func print(self &StringBuilder, s str) {
+  self.print(s.slice());
+}
+func print(self &StringBuilder, s StrSlice) {
+  self.parts.add(s);
+}
+func print(self &StringBuilder, i int) {
+  self.print(str(i).slice());
+}
+func println(self &StringBuilder, s str) {
+  self.print(s);
+  self.print("\n");
+}
+func println(self &StringBuilder, s StrSlice) {
+  self.print(s);
+  self.print("\n");
+}
+func println(self &StringBuilder, i int) {
+  self.print(i);
+  self.print("\n");
+}
+
+
+func replaceAll(source str, needle str, replacement str) str {
+  replaceAll(source.slice(), needle.slice(), replacement.slice())
+}
+func replaceAll(source str, needle str, replacement StrSlice) str {
+  replaceAll(source.slice(), needle.slice(), replacement)
+}
+func replaceAll(source str, needle StrSlice, replacement str) str {
+  replaceAll(source.slice(), needle, replacement.slice())
+}
+func replaceAll(source str, needle StrSlice, replacement StrSlice) str {
+  replaceAll(source.slice(), needle, replacement)
+}
+func replaceAll(source StrSlice, needle str, replacement str) str {
+  replaceAll(source, needle.slice(), replacement.slice())
+}
+func replaceAll(source StrSlice, needle str, replacement StrSlice) str {
+  replaceAll(source, needle.slice(), replacement)
+}
+func replaceAll(source StrSlice, needle StrSlice, replacement str) str {
+  replaceAll(source, needle, replacement.slice())
+}
+func replaceAll(remaining_source StrSlice, needle StrSlice, replacement StrSlice) str {
+  builder = StringBuilder();
+
+  running = true;
+  while running {
+    maybe_next_and_new_remaining_source = remaining_source.splitOnce(needle);
+    if maybe_next_and_new_remaining_source.isEmpty() {
+      set running = false;
+    } else {
+      [next, new_remaining_source] = maybe_next_and_new_remaining_source.get();
+      builder.print(next);
+      builder.print(replacement);
+      set remaining_source = new_remaining_source;
+    }
+  }
+
+  builder.print(remaining_source);
+
+  ret builder.str();
+}

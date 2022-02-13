@@ -9,8 +9,8 @@ exported struct Seaship imm { unused int; }
 impl IShip for Seaship;
 
 abstract func getFuel(virtual this IShip) int;
-func getFuel(this Spaceship impl IShip) int { this.engine.fuel }
-func getFuel(this Seaship impl IShip) int { ret 0; }
+func getFuel(this Spaceship) int { this.engine.fuel }
+func getFuel(this Seaship) int { ret 0; }
 
 exported func valeGetShipFuel(s IShip) int {
   ret s.getFuel();

@@ -1,0 +1,553 @@
+// NOTE(Alec):
+//   THIS IS BORKED!
+// 
+//   When building, you will get a big, scary error!
+//   Let's just wait for Verdagon to fix that...
+// NOTE(Evan):
+//   LO, THIS IS NO LONGER BORKED
+///   BEHOLD THE UNBORKENING
+
+
+/// A full representation of a possible flag.
+/// 
+/// # fields:
+///   * name The name of the flag (e.g. --foo, --bar, etc.)
+///   * type
+///     The type of the flag. I would say this is an enum, but those aren't in Vale yet... so
+///     here is the documentation for the different types:
+///    * FLAG_NOTHING = 0 -> This means the flag is standalone and takes no value.
+///    * FLAG_INT = 1 -> This means the flag takes an @int value.
+///    * FLAG_STR = 2 -> This means the flag takes a @str value (parsed by the command line).
+///    * FLAG_TOKN = 3 ->
+///      This means the flag takes a `token` value (@str). This is essentially the same as
+///      the `FLAG_STR` value, but is different in semantics alone.
+///    * FLAG_BOOL = 4 -> This means the flag takes a @bool value (true/false).
+///    * FLAG_LIST_INT = 4 ->
+///      This means the flag takes a @List<int>. The values are delineated individually
+///      through whitespace (parsed by the command line).
+///    * FLAG_LIST_STR ->
+///      This means the flag takes a @List<str>. Same structure as `FLAG_LIST_INT`.
+///    * FLAG_LIST_TOKN ->
+///      This means the flag takes a @List<str>. Same structure as `FLAG_LIST_INT`.
+///    * FLAG_LIST_BOOL ->
+///      This means the flag takes a @List<bool>. Same structure as `FLAG_LIST_INT`.
+///    * FLAG_LIST_ANY ->
+///      This means the flag takes a @List<FlagType>. Same structure as `FLAG_LIST_INT`.
+///   * short_desc
+///     The short description of the flag. This will eventually be used in `[command] --help`.
+///   * example
+///     An example of how to use the flag. This will eventually be used in
+///     `[command] --help [flag]`.
+///   * desc
+///     The long description of the flag. This will eventually be used in
+///     `[command] --help [flag]`.
+struct Flag {
+  name str;
+  type int; // FLAG_INT, FLAG_STR, FLAG_TOKN, FLAG_BOOL, or the FLAG_LIST values.
+
+  short_desc str;
+  example str;
+  desc str;
+}
+
+func FLAG_NOTHING() int { 0 }
+
+func FLAG_INT () int { 1 }
+func FLAG_STR () int { 2 }
+func FLAG_TOKN() int { 3 }
+func FLAG_BOOL() int { 4 }
+
+func FLAG_LIST_INT () int { 5 }
+func FLAG_LIST_STR () int { 6 }
+func FLAG_LIST_TOKN() int { 7 }
+func FLAG_LIST_BOOL() int { 8 }
+func FLAG_LIST_ANY () int { 9 }
+
+/// The result of a flag that has been parsed.
+/// 
+/// # fields:
+///   * name The name of the flag (should be identical to @Flag::name).
+///   * val The value of the flag. Can be any variation of @FlagType.
+struct ParsedFlag {
+  name str;
+  val  FlagType;
+}
+
+/// A list of @ParsedFlag and invalid flags, which are stored as a @List<str>
+/// 
+/// # fields:
+///   * parsed_flags The successfully parsed flags.
+///   * unrecognized_inputs
+///    Unsuccessfully parsed flags. Flagger stores these so that the user can later go in and
+///    either validate the flags through some other means or give more descriptive error
+///    messages for the flags.
+struct ParsedFlagList {
+  parsed_flags  List<ParsedFlag>;
+  unrecognized_inputs List<str>;
+}
+
+/// A statically-sized list of @Command. Commands are different from
+/// flags in that they take no values. An example of a command vs a
+/// flag would be `vale build` vs `--verbose`.
+/// 
+/// ... Maybe one day we can get a self-hosted CLI like that... A Valer can but dream.
+struct CommandList<N> { commands [#N]Command; }
+
+/// As described in @CommandList, a `Command` takes no arguments. It is simply
+/// a subcommand within the main command, such as `vale build`, where `build` is
+/// the command.
+/// 
+/// # fields:
+///   * name The name of the command (e.g. build, run, etc.).
+///   * desc The long description of the command. This will eventually be used in `[command] --help [subcommand]`.
+///   * short_desc The short description of the command. This will eventually be used in `[command] --help`.
+///   * example An example of the command. This will eventually be used in `[command] --help [subcommand]`.
+struct Command {
+  name str;
+  desc str;
+
+  short_desc str;
+
+  example str;
+}
+
+/// A wack union of flag types. The valid flag value types are:
+///  1. @FlagInt
+///  2. @FlagString
+///  3. @FlagToken
+///  4. @FlagBool
+///  5. @FlagAnyList
+/// 
+/// This will later have other `FLAG_LIST` types.
+/// 
+/// All flag value types have only one field, `value`.
+interface FlagType { }
+
+/// An @int variant of @FlagType.
+struct FlagInt { value int; }
+impl FlagType for FlagInt;
+
+/// A @str variant of @FlagType.
+struct FlagString { value str; }
+impl FlagType for FlagString;
+
+/// A `token` (@str) variant of @FlagType.
+struct FlagToken { value str; }
+impl FlagType for FlagToken;
+
+/// A @bool variant of @FlagType.
+struct FlagBool { value bool; }
+impl FlagType for FlagBool;
+
+/// A @List<FlagType> variant of @FlagType.
+struct FlagAnyList { value List<FlagType>; }
+impl FlagType for FlagAnyList;
+
+/// Verifies a @Command matches one of the commands in the @CommandList.
+/// 
+/// # generics:
+///   * N The size of the @CommandList passed implicitly through parametric polymorphism.
+/// 
+/// # params:
+///   * command_list The command list created by the user.
+///   * command_str The possible command to be verified.
+///
+/// # returns:
+///   1. Whether the string is a valid @Command
+func verify<N>(command_list &CommandList<N>, command_str str) bool {
+  valid = false;
+
+  command_list.flags.each((cmd) => {
+    if valid {
+      ret void();
+    }
+
+    set valid = cmd.name == command_str;
+  });
+
+  valid
+}
+
+/// Parses all flags within the arguments.
+/// Any invalid flags can be handled however the user wishes.
+/// 
+/// # generics:
+///   * N The size of the @[Command].
+/// 
+/// # params:
+///   * flag_list An array created by the user.
+///   * args The command line arguments (skips the `[command]`).
+/// 
+/// # returns:
+///   1. A list of parsed and invalid flags.
+func parse_all_flags<N>(flag_list &[#N]<_, _>Flag, args []<imm>str) ParsedFlagList {
+  parsed_flag_list = ParsedFlagList(List<ParsedFlag>(), List<str>());
+
+  i = 1;
+
+  while i < len(args) {
+    arg = args[i];
+
+    valid = false;
+    flag_type = FLAG_NOTHING();
+
+    foreach flag in flag_list {
+      if not valid {
+        set valid = flag.name == arg;
+        set flag_type = flag.type;
+      }
+    }
+
+    if valid and flag_type != FLAG_NOTHING() {
+      [new_parsed_flag, new_i] = parse_flag(args, flag_type, &i);
+      set i = new_i;
+      parsed_flag_list.parsed_flags.add(new_parsed_flag);
+    }
+
+    else if (valid and flag_type == FLAG_NOTHING()) {
+      parsed_flag_list.parsed_flags.add(ParsedFlag(args[i], FlagString("")));
+    }
+
+    else {
+      parsed_flag_list.unrecognized_inputs.add(arg);
+    }
+
+    set i = i + 1;
+  }
+
+  parsed_flag_list
+}
+
+/// Parses a single flag and its value given its information.
+/// Any invalid flags can be handled however the user wishes.
+/// 
+/// # params:
+///   * args The command line arguments (skips the `[command]`).
+///   * flag_type The type of the flag (see @Flag for more).
+///   * i The iteration count for the arguments. Will mutate.
+/// 
+/// # returns:
+///   1. A list of parsed and invalid flags.
+func parse_flag(args []<imm>str, flag_type int, i int) (ParsedFlag, int) {
+  name = args[i];
+
+  // Curse Verdagon and his lack of matches! lol
+
+  if flag_type == FLAG_NOTHING() {
+    vassert(false, "Invalid flag type was passed");
+
+    ret (ParsedFlag(name, FlagString("")), i);
+  }
+
+  else if (flag_type == FLAG_INT()) {
+    set i = i + 1;
+    
+    val = int(args[i].slice());
+
+    vassert(not val.isEmpty(), "Argument " + str(i) + " \"" + args[i] + "\" is not an int.");
+
+    ret (ParsedFlag(name, FlagInt(val.get())), i);
+  }
+
+  else if (flag_type == FLAG_STR()) {
+    set i = i + 1;
+    ret (ParsedFlag(name, FlagString(args[i])), i);
+  }
+
+  else if (flag_type == FLAG_TOKN()) {
+    set i = i + 1;
+    ret (ParsedFlag(name, FlagToken(args[i])), i);
+  }
+
+  else if (flag_type == FLAG_BOOL()) {
+    set i = i + 1;
+
+    val = args[i] == "true";
+
+    vassert((not val and args[i] == "false") or val, "Invalid bool value \"" + args[i] + "\" for flag \"" + args[i - 1] + "\".");
+
+    ret (ParsedFlag(name, FlagBool(val)), i);
+  }
+
+  else {
+    vassert(false, "Invalid flag type was passed");
+
+    ret (ParsedFlag(name, FlagString("")), i);
+  }
+
+  panic("Invalid or unimplemented type has been passed.");
+
+  // TODO: List types
+}
+
+/// Prints out an explanation of the flag and shows an example of its usage.
+///
+/// # params:
+///   * flag_list The set of possible flags, given to @parse_all_flags.
+///   * flag_name The name of the flag that we're looking for.
+func explain_flag<N>(
+    flag_list &[#N]Flag,
+    flag_name str) {
+  needle_flag_name = flag_name;
+
+  i = 0;
+  while i < flag_list.len() {
+    hay_flag = flag_list[i];
+    if hay_flag.name == needle_flag_name {
+      println("{hay_flag.name}: {hay_flag.short_desc}");
+      println("");
+      println("Example: {hay_flag.name}={hay_flag.example}");
+      println("");
+      println(hay_flag.desc);
+      ret void();
+    }
+    set i = i + 1;
+  }
+  panic("Couldn't find flag: " + flag_name);
+}
+
+/// Returns whether the user supplied the specified nothing-typed flag.
+///
+/// # params:
+///   * parsed_flag_list User-supplied flag values, from @parse_all_flags.
+///   * flag_name The name of the flag that we're looking for.
+///
+/// # returns:
+///   1. Whether the flag with the given name was specified by the user.
+func get_nothing_flag(parsed_flag_list &ParsedFlagList, flag_name str) bool {
+  i = 0;
+  while i < parsed_flag_list.parsed_flags.len() {
+    if parsed_flag_list.parsed_flags.get(i).name == flag_name {
+      ret true;
+    }
+    set i = i + 1;
+  }
+  ret false;
+}
+
+/// Returns the string the user supplied for the flag with the given name.
+///
+/// # params:
+///   * parsed_flag_list User-supplied flag values, from @parse_all_flags.
+///   * flag_name The name of the flag that we're looking for.
+///
+/// # returns:
+///   1. The value given by the user for the flag with the given name.
+func get_string_flag(parsed_flag_list &ParsedFlagList, flag_name str) Opt<str> {
+  needle_flag_name = flag_name;
+
+  i = 0;
+  while i < parsed_flag_list.parsed_flags.len() {
+    hay_flag = parsed_flag_list.parsed_flags.get(i);
+    if hay_flag.name == needle_flag_name {
+      maybe_str_flag = hay_flag.val.as<FlagString>();
+      if maybe_str_flag.is_ok() {
+        strFlag = maybe_str_flag.expect("zork b");
+        ret Some<str>(strFlag.value);
+      }
+    }
+    set i = i + 1;
+  }
+  ret None<str>();
+}
+
+
+/// Returns the string the user supplied for the flag with the given name.
+/// If it was not present, returns the default value specified by @default.
+///
+/// # params:
+///   * parsed_flag_list User-supplied flag values, from @parse_all_flags.
+///   * flag_name The name of the flag that we're looking for.
+///   * default Default value to return if the specified flag wasn't present.
+///
+/// # returns:
+///   1. The value given by the user for the flag with the given name.
+func get_string_flag(parsed_flag_list &ParsedFlagList, flag_name str, default str) str {
+  result = get_string_flag(parsed_flag_list, flag_name);
+  if not result.isEmpty() {
+    ret (result).get();
+  } else {
+    ret default;
+  }
+}
+
+
+
+/// Returns the string the user supplied for the flag with the given name.
+///
+/// If the flag is not present, then Flagger will explain the flag to the user, show an example of
+/// its usage, and halt the program.
+///
+/// # params:
+///   * parsed_flag_list User-supplied flag values, from @parse_all_flags.
+///   * flag_name The name of the flag that we're looking for.
+///
+/// # returns:
+///   1. The value given by the user for the flag with the given name.
+func expect_string_flag<N>(
+  parsed_flag_list &ParsedFlagList,
+  flag_list &[#N]Flag,
+  flag_name str)
+str {
+  maybe_found_flag = get_string_flag(parsed_flag_list, flag_name);
+  if not maybe_found_flag.isEmpty() {
+    ret maybe_found_flag.get();
+  }
+  println("Must specify the " + flag_name + " flag, explained below.");
+  println("");
+  explain_flag(flag_list, flag_name);
+  println("");
+  panic("Must specify the " + flag_name + " flag (see above for explanation). Aborting!");
+}
+
+
+/// Returns the bool the user supplied for the flag with the given name.
+///
+/// # params:
+///   * parsed_flag_list User-supplied flag values, from @parse_all_flags.
+///   * flag_name The name of the flag that we're looking for.
+///
+/// # returns:
+///   1. The value given by the user for the flag with the given name.
+func get_bool_flag(parsed_flag_list &ParsedFlagList, flag_name str) Opt<bool> {
+  needle_flag_name = flag_name;
+
+  i = 0;
+  while i < parsed_flag_list.parsed_flags.len() {
+    hay_flag = parsed_flag_list.parsed_flags.get(i);
+    if hay_flag.name == needle_flag_name {
+      maybe_str_flag = hay_flag.val.as<FlagBool>();
+      if maybe_str_flag.is_ok() {
+        strFlag = maybe_str_flag.expect("zork c");
+        ret Some<bool>(strFlag.value);
+      }
+    }
+    set i = i + 1;
+  }
+  ret None<bool>();
+}
+
+
+/// Returns the bool the user supplied for the flag with the given name.
+/// If it was not present, returns the default value specified by @default.
+///
+/// # params:
+///   * parsed_flag_list User-supplied flag values, from @parse_all_flags.
+///   * flag_name The name of the flag that we're looking for.
+///   * default Default value to return if the specified flag wasn't present.
+///
+/// # returns:
+///   1. The value given by the user for the flag with the given name.
+func get_bool_flag(parsed_flag_list &ParsedFlagList, flag_name str, default bool) bool {
+  result = get_bool_flag(parsed_flag_list, flag_name);
+  if not result.isEmpty() {
+    ret (result).get();
+  } else {
+    ret default;
+  }
+}
+
+
+
+/// Returns the bool the user supplied for the flag with the given name.
+///
+/// If the flag is not present, then Flagger will explain the flag to the user, show an example of
+/// its usage, and halt the program.
+///
+/// # params:
+///   * parsed_flag_list User-supplied flag values, from @parse_all_flags.
+///   * flag_name The name of the flag that we're looking for.
+///
+/// # returns:
+///   1. The value given by the user for the flag with the given name.
+func expect_bool_flag<N>(
+  parsed_flag_list &ParsedFlagList,
+  flag_list &[#N]Flag,
+  flag_name str)
+bool {
+  maybe_found_flag = get_bool_flag(parsed_flag_list, flag_name);
+  if not maybe_found_flag.isEmpty() {
+    ret maybe_found_flag.get();
+  }
+  println("Must specify the " + flag_name + " flag, explained below.");
+  println("");
+  explain_flag(flag_list, flag_name);
+  println("");
+  panic("Must specify the " + flag_name + " flag (see above for explanation). Aborting!");
+}
+
+
+/// Returns the bool the user supplied for the flag with the given name.
+///
+/// # params:
+///   * parsed_flag_list User-supplied flag values, from @parse_all_flags.
+///   * flag_name The name of the flag that we're looking for.
+///
+/// # returns:
+///   1. The value given by the user for the flag with the given name.
+func get_int_flag(parsed_flag_list &ParsedFlagList, flag_name str) Opt<int> {
+  needle_flag_name = flag_name;
+
+  i = 0;
+  while i < parsed_flag_list.parsed_flags.len() {
+    hay_flag = parsed_flag_list.parsed_flags.get(i);
+    if hay_flag.name == needle_flag_name {
+      maybe_str_flag = hay_flag.val.as<FlagInt>();
+      if maybe_str_flag.is_ok() {
+        strFlag = maybe_str_flag.expect("zork d");
+        ret Some<int>(strFlag.value);
+      }
+    }
+    set i = i + 1;
+  }
+  ret None<int>();
+}
+
+
+/// Returns the int the user supplied for the flag with the given name.
+/// If it was not present, returns the default value specified by @default.
+///
+/// # params:
+///   * parsed_flag_list User-supplied flag values, from @parse_all_flags.
+///   * flag_name The name of the flag that we're looking for.
+///   * default Default value to return if the specified flag wasn't present.
+///
+/// # returns:
+///   1. The value given by the user for the flag with the given name.
+func get_int_flag(parsed_flag_list &ParsedFlagList, flag_name str, default int) int {
+  result = get_int_flag(parsed_flag_list, flag_name);
+  if not result.isEmpty() {
+    ret (result).get();
+  } else {
+    ret default;
+  }
+}
+
+
+
+/// Returns the int the user supplied for the flag with the given name.
+///
+/// If the flag is not present, then Flagger will explain the flag to the user, show an example of
+/// its usage, and halt the program.
+///
+/// # params:
+///   * parsed_flag_list User-supplied flag values, from @parse_all_flags.
+///   * flag_name The name of the flag that we're looking for.
+///
+/// # returns:
+///   1. The value given by the user for the flag with the given name.
+func expect_int_flag<N>(
+  parsed_flag_list &ParsedFlagList,
+  flag_list &[#N]Flag,
+  flag_name str)
+int {
+  maybe_found_flag = get_int_flag(parsed_flag_list, flag_name);
+  if not maybe_found_flag.isEmpty() {
+    ret maybe_found_flag.get();
+  }
+  println("Must specify the " + flag_name + " flag, explained below.");
+  println("");
+  explain_flag(flag_list, flag_name);
+  println("");
+  panic("Must specify the " + flag_name + " flag (see above for explanation). Aborting!");
+}

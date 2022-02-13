@@ -7,13 +7,13 @@ interface Car {
 
 struct Civic {}
 impl Car for Civic;
-func doCivicDance(civic Civic impl Car) int {
+func doCivicDance(civic Civic) int {
   ret 4;
 }
 
 struct Toyota {}
 impl Car for Toyota;
-func doCivicDance(toyota Toyota impl Car) int {
+func doCivicDance(toyota Toyota) int {
   ret 7;
 }
 

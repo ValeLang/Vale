@@ -1,0 +1,19 @@
+import stdlib.stringutils.*;
+import stdlib.*;
+import stdlib.testsuite.*;
+
+exported func main() {
+  suite = TestSuite();
+  suite.test("Concat float and string", {
+    vassert(len("moo" + 16.5) >= len("moo16"));
+  });
+  suite.test("Array iter entries", {
+    arr = [](5, {_ * 2});
+    sum = 0;
+    foreach [i, x] in arr.entries() {
+      set sum = sum + i + x;
+    }
+    vassert(sum == 30);
+  });
+  (suite).finish();
+}

@@ -1,0 +1,52 @@
+
+func min(a int, b int) int {
+  if a <= b { a } else { b }
+}
+
+func max(a int, b int) int {
+  if a >= b { a } else { b }
+}
+
+func clamp(x int, minimum int, maximum int) int {
+  vassert(minimum <= maximum, "clamp minimum must be <= maximum!");
+  min(max(x, minimum), maximum)
+}
+
+func abs(a int) int {
+  if a < 0 { a * -1 } else { a }
+}
+
+func signum(a int) int {
+  if a < 0 { -1 }
+  else if a > 0 { 1 }
+  else { 0 }
+}
+
+
+func range(begin int, end int) IntRange { ret IntRange(begin, end); }
+struct IntRange { begin int; end int; }
+func begin(self &IntRange) IntRangeIter { ret IntRangeIter(self, self.begin); }
+struct IntRangeIter { range &IntRange; i! int; }
+func next(self &IntRangeIter) Opt<int> {
+  if self.i < self.range.end {
+    Some(set self.i = self.i + 1)
+  } else {
+    None<int>()
+  }
+}
+
+struct IntHasher { }
+func __call(this &IntHasher, x int) int { x }
+
+struct IntEquator { }
+func __call(this &IntEquator, a int, b int) bool { a == b }
+
+extern func fsqrt(x float) float;
+
+extern func lshift(x i64, by int) i64;
+extern func rshift(x i64, by int) i64;
+extern func xor(a i64, b i64) i64;
+
+extern func i64(x int) i64;
+
+//extern func mod(a i64, b i64) i64;

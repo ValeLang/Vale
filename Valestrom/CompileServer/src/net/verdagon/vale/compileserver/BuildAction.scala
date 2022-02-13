@@ -1,7 +1,7 @@
 package net.verdagon.vale.compileserver
 
 import com.google.cloud.functions.{HttpFunction, HttpRequest, HttpResponse}
-import net.verdagon.vale.{Err, Ok}
+import net.verdagon.vale.{Err, Ok, vimpl}
 import net.verdagon.vale.driver.Driver
 import net.verdagon.vale.driver.Driver.{Options, SourceInput, build, jsonifyProgram}
 
@@ -21,7 +21,7 @@ class BuildAction extends HttpFunction {
         false, false, true, false, true, None, false, true, true, true)
     val json =
       Driver.build(options) match {
-        case Ok(Some(programH)) => jsonifyProgram(programH)
+        case Ok(Some(programH)) => jsonifyProgram(vimpl(), programH)
         case Err(error) => {
           response.setStatusCode(400)
           response.getWriter.write(error)

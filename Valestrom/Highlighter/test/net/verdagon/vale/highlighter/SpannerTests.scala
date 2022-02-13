@@ -1,15 +1,21 @@
 package net.verdagon.vale.highlighter
 
+import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser.ast.FileP
 import net.verdagon.vale.parser.{ast, _}
-import net.verdagon.vale.{Err, Ok, vfail}
+import net.verdagon.vale.{Err, FileCoordinateMap, Ok, PackageCoordinate, PackageCoordinateMap, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
 class SpannerTests extends FunSuite with Matchers {
   private def compile(code: String): FileP = {
-    Parser.runParser(code) match {
+    val compilation =
+      new ParserCompilation(
+        GlobalOptions(true, true, true, true),
+        Vector(PackageCoordinate.TEST_TLD),
+        FileCoordinateMap.test(code))
+    compilation.getParseds() match {
       case Err(err) => fail(err.toString)
-      case Ok(program0) => program0
+      case Ok(program0) => program0.expectOne()._1
     }
   }
 
@@ -29,7 +35,7 @@ class SpannerTests extends FunSuite with Matchers {
   test("Spanner map call") {
     val program1 = compile(
       """func main() infer-ret {
-        |  this.abilities!.getImpulse();
+        |  this.abilities.getImpulse();
         |}
         |""".stripMargin)
     val main = program1.lookupFunction("main")

@@ -183,13 +183,13 @@ case class LetNormalTE(
   override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
-  if (expr.kind == NeverT()) {
-    // then we can put it into whatever type we want
-  } else {
-    if (variable.reference.kind == NeverT()) {
-      vfail() // can't receive into a never
-    } else {
-      vassert(variable.reference == expr.result.reference)
+  expr.kind match {
+    case NeverT(_) => // then we can put it into whatever type we want
+    case _ => {
+      variable.reference.kind match {
+        case NeverT(_) => vfail() // can't receive into a never
+        case _ => vassert(variable.reference == expr.result.reference)
+      }
     }
   }
 
@@ -265,16 +265,18 @@ case class IfTE(
   private val elseResultCoord = elseCall.result.reference
 
   vassert(conditionResultCoord == CoordT(ShareT, ReadonlyT, BoolT()))
-  vassert(
-    thenResultCoord.kind == NeverT() ||
-      elseResultCoord.kind == NeverT() ||
-      thenResultCoord == elseResultCoord)
+
+  (thenResultCoord.kind, thenResultCoord.kind) match {
+    case (NeverT(_), _) =>
+    case (_, NeverT(_)) =>
+    case (a, b) if a == b =>
+    case _ => vwat()
+  }
 
   private val commonSupertype =
-    if (thenResultCoord.kind == NeverT()) {
-      elseResultCoord
-    } else {
-      thenResultCoord
+    thenResultCoord.kind match {
+      case NeverT(_) => elseResultCoord
+      case _ => thenResultCoord
     }
 
   override def result = ReferenceResultT(commonSupertype)
@@ -286,10 +288,16 @@ case class WhileTE(block: BlockTE) extends ReferenceExpressionTE {
   // While loops must always produce void.
   // If we want a foreach/map/whatever construct, the loop should instead
   // add things to a list inside; WhileTE shouldnt do it for it.
-  vassert(block.kind == VoidT() || block.kind == NeverT())
+  val resultCoord =
+    block.kind match {
+      case VoidT() => CoordT(ShareT, ReadonlyT, VoidT())
+      case NeverT(true) => CoordT(ShareT, ReadonlyT, VoidT())
+      case NeverT(false) => CoordT(ShareT, ReadonlyT, NeverT(false))
+      case _ => vwat()
+    }
 
   override def hashCode(): Int = vcurious()
-  override def result = block.result // either void or never
+  override def result = ReferenceResultT(resultCoord)
   vpass()
 }
 
@@ -306,7 +314,7 @@ case class ReturnTE(
   sourceExpr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
-  override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, NeverT()))
+  override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, NeverT(false)))
 
   def getFinalExpr(expression2: ExpressionT): Unit = {
     expression2 match {
@@ -317,7 +325,7 @@ case class ReturnTE(
 
 case class BreakTE() extends ReferenceExpressionTE {
   override def hashCode(): Int = vcurious()
-  override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, NeverT()))
+  override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, NeverT(true)))
 }
 
 // when we make a closure, we make a struct full of pointers to all our variables
@@ -356,25 +364,30 @@ case class ConsecutorTE(exprs: Vector[ReferenceExpressionTE]) extends ReferenceE
 
   // Everything but the last should result in a Void or a Never.
   // The last can be anything, even a Void or a Never.
-  exprs.init.foreach(expr => vassert(expr.kind == VoidT() || expr.kind == NeverT()))
+  exprs.init.foreach(expr => {
+    expr.kind match {
+      case VoidT() | NeverT(_) =>
+      case _ => vwat()
+    }
+  })
 
-  // Nevermind, we made it so the consecutor's result is Never if there's
-  // a Never *anywhere* inside it.
   //  // If there's a Never2() anywhere, then the entire block should end in an unreachable
   //  // or panic or something.
   //  if (exprs.exists(_.kind == NeverT())) {
   //    vassert(exprs.last.kind == NeverT())
   //  }
+  // Nevermind, we made it so the consecutor's result is Never if there's
+  // a Never *anywhere* inside it.
 
   vassert(exprs.collect({
     case ReturnTE(_) =>
   }).size <= 1)
 
   override val result: ReferenceResultT =
-    if (exprs.exists(_.kind == NeverT())) {
-      ReferenceResultT(CoordT(ShareT, ReadonlyT, NeverT()))
-    } else {
-      exprs.last.result
+    exprs.map(_.result.reference)
+        .collectFirst({ case n @ CoordT(ShareT, ReadonlyT, NeverT(_)) => n }) match {
+      case Some(n) => ReferenceResultT(n)
+      case None => exprs.last.result
     }
 
   def lastReferenceExpr = exprs.last
@@ -587,7 +600,7 @@ case class FunctionCallTE(
 
   vassert(callable.paramTypes.size == args.size)
   args.map(_.result.reference).zip(callable.paramTypes).foreach({
-    case (CoordT(_, _, NeverT()), _) =>
+    case (CoordT(_, _, NeverT(_)), _) =>
     case (a, b) => vassert(a == b)
   })
 
@@ -609,11 +622,14 @@ case class TemplarReinterpretTE(
 
   override def result = ReferenceResultT(resultReference)
 
-  // Unless it's a Never...
-  if (expr.result.reference.kind != NeverT()) {
-    if (resultReference.ownership != expr.result.reference.ownership) {
-      // Cant reinterpret to a different ownership!
-      vfail("wat");
+  expr.result.reference.kind match {
+    // Unless it's a Never...
+    case NeverT(_) =>
+    case _ => {
+      if (resultReference.ownership != expr.result.reference.ownership) {
+        // Cant reinterpret to a different ownership!
+        vfail("wat");
+      }
     }
   }
 }

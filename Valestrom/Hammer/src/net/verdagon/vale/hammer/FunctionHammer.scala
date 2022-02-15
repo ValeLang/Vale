@@ -49,11 +49,16 @@ object FunctionHammer {
           ExpressionHammer.translate(hinputs, hamuts, header, locals, body)
         vassert(locals.unstackifiedVars.size == locals.locals.size)
         val resultCoord = bodyH.resultType
-        if (resultCoord.kind != NeverH() && resultCoord != prototypeH.returnType) {
-          vfail(
-            "Result of body's instructions didnt match return type!\n" +
-            "Return type:   " + prototypeH.returnType + "\n" +
-            "Body's result: " + resultCoord)
+        if (resultCoord != prototypeH.returnType) {
+          resultCoord.kind match {
+            case NeverH(_) => // meh its fine
+            case _ => {
+              vfail(
+                "Result of body's instructions didnt match return type!\n" +
+                  "Return type:   " + prototypeH.returnType + "\n" +
+                  "Body's result: " + resultCoord)
+            }
+          }
         }
 
         val isAbstract = header.getAbstractInterface.nonEmpty

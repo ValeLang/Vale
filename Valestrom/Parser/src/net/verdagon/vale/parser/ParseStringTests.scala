@@ -19,6 +19,11 @@ class ParseStringTests extends FunSuite with Collector with TestParseUtils {
       { case ConstantStrPE(_, "m\noo") => }
   }
 
+  test("String with escaped braces") {
+    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), "\"\\{\\}\"") shouldHave
+      { case ConstantStrPE(_, "{}") => }
+  }
+
   test("String with quote inside") {
     compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), """"m\"oo"""") shouldHave
       { case ConstantStrPE(_, "m\"oo") => }

@@ -14,7 +14,7 @@ import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.names.{CodeVarNameT, FullNameT, PackageTopLevelNameT}
-import net.verdagon.vale.{CodeLocationS, IProfiler, PackageCoordinate, RangeS, vassert, vfail, vimpl}
+import net.verdagon.vale.{CodeLocationS, IProfiler, PackageCoordinate, RangeS, vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
@@ -99,7 +99,7 @@ class DestructorTemplar(
 
           val unshareExpr2 =
             undestructedExpr2.result.reference.kind match {
-              case NeverT() => undestructedExpr2
+              case NeverT(_) => undestructedExpr2
               case IntT(_) | StrT() | BoolT() | FloatT() | VoidT() => {
                 DiscardTE(undestructedExpr2)
               }
@@ -129,9 +129,10 @@ class DestructorTemplar(
           unshareExpr2
         }
       }
-    vassert(
-      resultExpr2.result.reference == CoordT(ShareT, ReadonlyT, VoidT()) ||
-        resultExpr2.result.reference == CoordT(ShareT, ReadonlyT, NeverT()))
+    resultExpr2.result.reference.kind match {
+      case VoidT() | NeverT(_) =>
+      case _ => vwat()
+    }
     resultExpr2
   }
 

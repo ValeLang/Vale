@@ -39,7 +39,7 @@ object TypeHammer {
   def translateKind(hinputs: Hinputs, hamuts: HamutsBox, tyype: KindT):
   (KindH) = {
     tyype match {
-      case NeverT() => NeverH()
+      case NeverT(fromBreak) => NeverH(fromBreak)
       case IntT(bits) => IntH(bits)
       case BoolT() => BoolH()
       case FloatT() => FloatH()
@@ -72,7 +72,7 @@ object TypeHammer {
 //        case (ShareT, PackTT(_, _)) => InlineH
 //        case (ShareT, TupleTT(_, _)) => InlineH
         case (ShareT, StructTT(FullNameT(_, Vector(), CitizenNameT(CitizenTemplateNameT("Tup"), _)))) => InlineH
-        case (ShareT, VoidT() | IntT(_) | BoolT() | FloatT() | NeverT()) => InlineH
+        case (ShareT, VoidT() | IntT(_) | BoolT() | FloatT() | NeverT(_)) => InlineH
         case (ShareT, StrT()) => YonderH
         case (ShareT, _) => YonderH
       }

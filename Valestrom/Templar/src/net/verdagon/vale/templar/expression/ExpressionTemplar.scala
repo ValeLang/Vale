@@ -819,7 +819,11 @@ class ExpressionTemplar(
           val uncoercedThenBlock2 = BlockTE(thenExpressionsWithResult)
 
           val thenUnstackifiedAncestorLocals = thenFate.snapshot.getEffectsSince(nenv.snapshot)
-          val thenContinues = uncoercedThenBlock2.result.reference.kind != NeverT()
+          val thenContinues =
+            uncoercedThenBlock2.result.reference.kind match {
+              case NeverT(_) => false
+              case _ => true
+            }
 
           val elseFate = NodeEnvironmentBox(nenv.makeChild(elseBodySE))
 
@@ -828,13 +832,21 @@ class ExpressionTemplar(
           val uncoercedElseBlock2 = BlockTE(elseExpressionsWithResult)
 
           val elseUnstackifiedAncestorLocals = elseFate.snapshot.getEffectsSince(nenv.snapshot)
-          val elseContinues = uncoercedElseBlock2.result.reference.kind != NeverT()
+          val elseContinues =
+            uncoercedElseBlock2.result.reference.kind match {
+              case NeverT(_) => false
+              case _ => true
+            }
 
           val commonType =
             (uncoercedThenBlock2.kind, uncoercedElseBlock2.kind) match {
-              case (NeverT(), NeverT()) => uncoercedThenBlock2.result.reference
-              case (NeverT(), _) => uncoercedElseBlock2.result.reference
-              case (_, NeverT()) => uncoercedThenBlock2.result.reference
+              // If one side has a return-never, use the other side.
+              case (NeverT(false), _) => uncoercedElseBlock2.result.reference
+              case (_, NeverT(false)) => uncoercedThenBlock2.result.reference
+              // If we get here, theres no return-nevers in play.
+              // If one side has a break-never, use the other side.
+              case (NeverT(true), _) => uncoercedElseBlock2.result.reference
+              case (_, NeverT(true)) => uncoercedThenBlock2.result.reference
               case (a, b) if a == b => uncoercedThenBlock2.result.reference
               case (a : CitizenRefT, b : CitizenRefT) => {
                 val aAncestors = ancestorHelper.getAncestorInterfaces(temputs, a).keys.toSet
@@ -899,10 +911,13 @@ class ExpressionTemplar(
             evaluateBlockStatements(temputs, loopBlockFate.snapshot, loopBlockFate, life + 1, bodySE)
           val uncoercedBodyBlock2 = BlockTE(bodyExpressionsWithResult)
 
-          if (uncoercedBodyBlock2.kind != NeverT()) {
-            val bodyUnstackifiedAncestorLocals = loopBlockFate.snapshot.getEffectsSince(nenv.snapshot)
-            if (bodyUnstackifiedAncestorLocals.nonEmpty) {
-              throw CompileErrorExceptionT(CantUnstackifyOutsideLocalFromInsideWhile(range, bodyUnstackifiedAncestorLocals.head.last))
+          uncoercedBodyBlock2.kind match {
+            case NeverT(_) =>
+            case _ => {
+              val bodyUnstackifiedAncestorLocals = loopBlockFate.snapshot.getEffectsSince(nenv.snapshot)
+              if (bodyUnstackifiedAncestorLocals.nonEmpty) {
+                throw CompileErrorExceptionT(CantUnstackifyOutsideLocalFromInsideWhile(range, bodyUnstackifiedAncestorLocals.head.last))
+              }
             }
           }
 

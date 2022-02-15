@@ -13,6 +13,9 @@ object ParseErrorHumanizer {
     val errorStrBody =
       err match {
         case CombinatorParseError(pos, msg) => msg
+        case BadStringInterpolationEnd(pos) => "Bad string interpolation end."
+        case CantUseBreakInExpression(pos) => "Can't use break inside an expression."
+        case CantUseReturnInExpression(pos) => "Can't use return inside an expression."
         case BadInterfaceHeader(pos) => "Bad interface header."
         case BadStartOfBlock(pos) => "Bad start of block."
         case DontNeedSemicolon(pos) => "Dont need semicolon."

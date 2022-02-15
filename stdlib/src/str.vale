@@ -19,6 +19,10 @@ func newStrSlice(string str, begin int, end int) StrSlice {
   // this.end = end;
 }
 
+func len(s StrSlice) int {
+  ret s.end - s.begin;
+}
+
 func has(haystack str, needle str) bool { has(haystack.slice(), needle.slice()) }
 func has(haystack StrSlice, needle str) bool { has(haystack, needle.slice()) }
 func has(haystack str, needle StrSlice) bool { has(haystack.slice(), needle) }
@@ -52,26 +56,22 @@ func slice(s str) StrSlice {
 }
 
 func slice(s str, begin int) StrSlice { s.slice().slice(begin) }
-func slice(s StrSlice, begin int) StrSlice {
-  newBegin = s.begin + begin;
-  vassert(newBegin <= s.string.len(), "slice begin is more than string length!");
-  newStrSlice(s.string, newBegin, s.end)
+func slice(s str, begin int, end int) StrSlice { s.slice().slice(begin, end) }
+func slice(s StrSlice, begin int) StrSlice { s.slice(begin, s.len()) }
+// Makes a new slice inside a given existing slice.
+// s The given slice.
+// uncheckedRelativeBegin: the index, relative to the slice begin, for the new slice to begin at. Could be out of bounds.
+// uncheckedRelativeEnd: the index, relative to the slice begin, for the new slice to end at. Could be out of bounds.
+func slice(s StrSlice, uncheckedRelativeBegin int, uncheckedRelativeEnd int) StrSlice {
+  // Make sure the begin and end are within the bounds of the existing slice
+  relativeBegin = uncheckedRelativeBegin.clamp(0, s.len());
+  relativeEnd = uncheckedRelativeEnd.clamp(relativeBegin, s.len());
+  // Figure out the absolute position of the new slice inside the string
+  absoluteBegin = s.begin + relativeBegin;
+  absoluteEnd = s.begin + relativeEnd;
+  // Make the new slice
+  newStrSlice(s.string, absoluteBegin, absoluteEnd)
 }
-
-func len(s StrSlice) int {
-  ret s.end - s.begin;
-}
-
-func slice(s str, begin int, end int) StrSlice {
-  newStrSlice(s, begin, end)
-}
-
-func slice(s StrSlice, begin int, end int) StrSlice {
-  newGlyphBeginOffset = s.begin + begin;
-  newGlyphEndOffset = s.begin + end;
-  newStrSlice(s.string, newGlyphBeginOffset, newGlyphEndOffset)
-}
-
 
 func str(s StrSlice) str {
   ret substring(s.string, s.begin, s.len());

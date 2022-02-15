@@ -73,8 +73,9 @@ class BodyTemplar(
               case Ok((body, returns)) => (body, returns)
             }
 
+          vassert(body2.result.kind != NeverT(true))
           val returnType2 =
-            if (returns.isEmpty && body2.result.kind == NeverT()) {
+            if (returns.isEmpty && body2.result.kind == NeverT(false)) {
               // No returns yet the body results in a Never. This can happen if we call panic from inside.
               body2.result.reference
             } else {
@@ -106,9 +107,9 @@ class BodyTemplar(
 
           if (returns == Set(explicitRetCoord)) {
             // Let it through, it returns the expected type.
-          } else if (returns == Set(CoordT(ShareT, ReadonlyT, NeverT()))) {
+          } else if (returns == Set(CoordT(ShareT, ReadonlyT, NeverT(false)))) {
             // Let it through, it returns a never but we expect something else, that's fine
-          } else if (returns == Set() && body2.result.kind == NeverT()) {
+          } else if (returns == Set() && body2.result.kind == NeverT(false)) {
             // Let it through, it doesn't return anything yet it results in a never, which means
             // we called panic or something from inside.
           } else {
@@ -153,7 +154,7 @@ class BodyTemplar(
         case None => unconvertedBodyWithoutReturn
         case Some(expectedResultType) => {
           if (templataTemplar.isTypeConvertible(temputs, unconvertedBodyWithoutReturn.result.reference, expectedResultType)) {
-            if (unconvertedBodyWithoutReturn.kind == NeverT()) {
+            if (unconvertedBodyWithoutReturn.kind == NeverT(false)) {
               unconvertedBodyWithoutReturn
             } else {
               convertHelper.convert(funcOuterEnv.snapshot, temputs, body1.range, unconvertedBodyWithoutReturn, expectedResultType);
@@ -167,7 +168,7 @@ class BodyTemplar(
 
     // If the function doesn't end in a ret, then add one for it.
     val (convertedBodyWithReturn, returnsMaybeWithNever) =
-      if (convertedBodyWithoutReturn.kind == NeverT()) {
+      if (convertedBodyWithoutReturn.kind == NeverT(false)) {
         (convertedBodyWithoutReturn, returnsFromInsideMaybeWithNever)
       } else {
         (ReturnTE(convertedBodyWithoutReturn), returnsFromInsideMaybeWithNever + convertedBodyWithoutReturn.result.reference)
@@ -176,8 +177,8 @@ class BodyTemplar(
     // out below.
 
     val returns =
-      if (returnsMaybeWithNever.size > 1 && returnsMaybeWithNever.contains(CoordT(ShareT, ReadonlyT, NeverT()))) {
-        returnsMaybeWithNever - CoordT(ShareT, ReadonlyT, NeverT())
+      if (returnsMaybeWithNever.size > 1 && returnsMaybeWithNever.contains(CoordT(ShareT, ReadonlyT, NeverT(false)))) {
+        returnsMaybeWithNever - CoordT(ShareT, ReadonlyT, NeverT(false))
       } else {
         returnsMaybeWithNever
       }

@@ -97,6 +97,11 @@ case class ReturnPE(range: RangeP, expr: IExpressionPE) extends IExpressionPE {
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = false
 }
+case class BreakPE(range: RangeP) extends IExpressionPE {
+  override def hashCode(): Int = vcurious();
+  override def needsSemicolonBeforeNextStatement: Boolean = true
+  override def producesResult(): Boolean = false
+}
 
 case class LetPE(
   range: RangeP,

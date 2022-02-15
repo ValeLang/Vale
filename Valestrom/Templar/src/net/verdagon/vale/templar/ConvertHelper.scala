@@ -55,14 +55,18 @@ class ConvertHelper(
       return sourceExpr
     }
 
-    if (sourceExpr.result.reference.kind == NeverT()) {
-      return sourceExpr
+    sourceExpr.result.reference.kind match {
+      case NeverT(_) => return sourceExpr
+      case _ =>
     }
 
     val CoordT(targetOwnership, targetPermission, targetType) = targetPointerType;
     val CoordT(sourceOwnership, sourcePermission, sourceType) = sourcePointerType;
 
-    vcurious(targetPointerType.kind != NeverT())
+    targetPointerType.kind match {
+      case NeverT(_) => vcurious()
+      case _ =>
+    }
 
     // We make the hammer aware of nevers.
 //    if (sourceType == Never2()) {

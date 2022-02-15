@@ -111,12 +111,12 @@ case class Temputs() {
   def addFunction(function: FunctionT): Unit = {
     vassert(declaredSignatures.contains(function.header.toSignature))
     vassert(
-      function.body.result.reference.kind == NeverT() ||
+      function.body.result.reference.kind == NeverT(false) ||
       function.body.result.reference == function.header.returnType)
     Collector.all(function, {
       case ReturnTE(innerExpr) => {
         vassert(
-          innerExpr.result.reference.kind == NeverT() ||
+          innerExpr.result.reference.kind == NeverT(false) ||
           innerExpr.result.reference == function.header.returnType)
       }
     })

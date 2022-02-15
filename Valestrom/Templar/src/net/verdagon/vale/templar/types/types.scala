@@ -91,7 +91,7 @@ case class CoordT(ownership: OwnershipT, permission: PermissionT, kind: KindT)  
   vpass()
 
   kind match {
-    case IntT(_) | BoolT() | StrT() | FloatT() | VoidT() | NeverT() => {
+    case IntT(_) | BoolT() | StrT() | FloatT() | VoidT() | NeverT(_) => {
       vassert(ownership == ShareT)
     }
     case _ =>
@@ -114,7 +114,13 @@ sealed trait KindT  {
 }
 
 // like Scala's Nothing. No instance of this can ever happen.
-case class NeverT() extends KindT {
+case class NeverT(
+  // True if this Never came from a break.
+  // While will have to know about this; if it's a Never from a return, it should
+  // propagate it, but if its body is a break never, the while produces a void.
+  // See BRCOBS.
+  fromBreak: Boolean
+) extends KindT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 6;
 }

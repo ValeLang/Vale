@@ -41,7 +41,7 @@ case class ReferenceH[+T <: KindH](
   }
 
   kind match {
-    case IntH(_) | BoolH() | FloatH() | NeverH() => {
+    case IntH(_) | BoolH() | FloatH() | NeverH(_) => {
       // Make sure that if we're pointing at a primitives, it's via a Share reference.
       vassert(ownership == ShareH)
       vassert(location == InlineH)
@@ -131,7 +131,7 @@ case class FloatH() extends KindH {
 // TODO: This feels weird being a kind in metal. Figure out a way to not
 // have this? Perhaps replace all kinds with Optional[Optional[KindH]],
 // where None is never, Some(None) is Void, and Some(Some(_)) is a normal thing.
-case class NeverH() extends KindH {
+case class NeverH(fromBreak: Boolean) extends KindH {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
 }

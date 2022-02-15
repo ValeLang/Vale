@@ -3,12 +3,12 @@ package net.verdagon.vale.templar.expression
 import net.verdagon.vale.scout.{CodeNameS, GlobalFunctionFamilyNameS, IImpreciseNameS, IRuneS}
 import net.verdagon.vale.scout.rules.IRulexSR
 import net.verdagon.vale.templar.OverloadTemplar.FindFunctionFailure
-import net.verdagon.vale.templar.env.{NodeEnvironment, NodeEnvironmentBox, FunctionEnvironment, FunctionEnvironmentBox}
+import net.verdagon.vale.templar.env.{FunctionEnvironment, FunctionEnvironmentBox, NodeEnvironment, NodeEnvironmentBox}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{ast, _}
 import net.verdagon.vale.templar.ast.{FunctionCallTE, LocationInFunctionEnvironment, ReferenceExpressionTE}
-import net.verdagon.vale.{RangeS, vassert, vfail}
+import net.verdagon.vale.{RangeS, vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
@@ -42,7 +42,8 @@ class CallTemplar(
       givenArgsExprs2: Vector[ReferenceExpressionTE]):
   (FunctionCallTE) = {
     callableExpr.result.reference.kind match {
-      case NeverT() | BoolT() => {
+      case NeverT(true) => vwat()
+      case NeverT(false) | BoolT() => {
         throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot " + callableExpr.result.reference.kind))
       }
       case structTT @ StructTT(_) => {
@@ -234,14 +235,17 @@ class CallTemplar(
             }
           }
         } else {
-          if (argsHead.kind == NeverT()) {
-            // This is fine, no conversion will ever actually happen.
-            // This can be seen in this call: +(5, panic())
-          } else {
-            // do stuff here.
-            // also there is one special case here, which is when we try to hand in
-            // an owning when they just want a borrow, gotta account for that here
-            vfail("do stuff " + argsHead + " and " + paramsHead)
+          argsHead.kind match {
+            case NeverT(_) => {
+              // This is fine, no conversion will ever actually happen.
+              // This can be seen in this call: +(5, panic())
+            }
+            case _ => {
+              // do stuff here.
+              // also there is one special case here, which is when we try to hand in
+              // an owning when they just want a borrow, gotta account for that here
+              vfail("do stuff " + argsHead + " and " + paramsHead)
+            }
           }
         }
       }

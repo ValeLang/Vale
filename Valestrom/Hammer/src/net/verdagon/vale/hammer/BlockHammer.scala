@@ -28,11 +28,14 @@ object BlockHammer {
     val unstackifiedLocalIdsInThisBlock = blockLocals.unstackifiedVars.intersect(localIdsInThisBlock)
 
     if (localIdsInThisBlock != unstackifiedLocalIdsInThisBlock) {
-      if (exprH.resultType.kind == NeverH()) {
-        // Then it's forgivable, because the block never reaches its end.
-      } else {
-        // This probably means that there was no UnletH or DestructureH for that variable.
-        vfail("Ununstackified local: " + (localIdsInThisBlock -- unstackifiedLocalIdsInThisBlock))
+      exprH.resultType.kind match {
+        case NeverH(_) => {
+          // Then it's forgivable, because the block never reaches its end.
+        }
+        case _ => {
+          // This probably means that there was no UnletH or DestructureH for that variable.
+          vfail("Ununstackified local: " + (localIdsInThisBlock -- unstackifiedLocalIdsInThisBlock))
+        }
       }
     }
 

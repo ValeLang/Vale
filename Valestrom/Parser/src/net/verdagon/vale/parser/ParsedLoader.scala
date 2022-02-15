@@ -378,6 +378,10 @@ object ParsedLoader {
           loadRange(getObjectField(jobj, "range")),
           loadExpression(getObjectField(jobj, "expr")))
       }
+      case "Break" => {
+        BreakPE(
+          loadRange(getObjectField(jobj, "range")))
+      }
       case "Consecutor" => {
         loadConsecutor(jobj)
       }

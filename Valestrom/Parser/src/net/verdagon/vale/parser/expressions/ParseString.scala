@@ -93,7 +93,7 @@ object ParseString {
       } else if (iter.trySkip("^\\{".r)) {
         Ok(StringPartChar('{'))
       } else if (iter.trySkip("^\\}".r)) {
-        Ok(StringPartChar('{'))
+        Ok(StringPartChar('}'))
       } else if (iter.trySkip("^u".r)) {
         val num =
           parseFourDigitHexNum(iter) match {

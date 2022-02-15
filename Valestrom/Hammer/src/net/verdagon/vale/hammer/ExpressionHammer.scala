@@ -104,20 +104,24 @@ object ExpressionHammer {
         val exprsHE =
           exprsTE.foldLeft(Vector[ExpressionH[KindH]]())({
             case (previousHE, nextTE) => {
-              if (previousHE.nonEmpty && previousHE.last.resultType.kind == NeverH()) {
-                previousHE
-              } else {
-                val (nextHE, nextDeferreds) =
-                  translate(hinputs, hamuts, currentFunctionHeader, locals, nextTE);
-                val nextExprWithDeferredsHE =
-                  translateDeferreds(
-                    hinputs, hamuts, currentFunctionHeader, locals, nextHE, nextDeferreds)
-                previousHE :+ nextExprWithDeferredsHE
+              previousHE.lastOption.map(_.resultType.kind) match {
+                case Some(NeverH(_)) => previousHE
+                case _ => {
+                  val (nextHE, nextDeferreds) =
+                    translate(hinputs, hamuts, currentFunctionHeader, locals, nextTE);
+                  val nextExprWithDeferredsHE =
+                    translateDeferreds(
+                      hinputs, hamuts, currentFunctionHeader, locals, nextHE, nextDeferreds)
+                  previousHE :+ nextExprWithDeferredsHE
+                }
               }
             }
           })
-        if (exprsHE.nonEmpty && exprsHE.last.resultType.kind == NeverH()) {
-          return (Hammer.consecrash(locals, exprsHE), Vector.empty)
+        exprsHE.lastOption.map(_.resultType.kind) match {
+          case Some(NeverH(_)) => {
+            return (Hammer.consecrash(locals, exprsHE), Vector.empty)
+          }
+          case _ =>
         }
 
         (Hammer.consecutive(exprsHE), Vector.empty)
@@ -172,8 +176,11 @@ object ExpressionHammer {
           translateExpressionsUntilNever(
             hinputs, hamuts, currentFunctionHeader, locals, exprs);
         // Don't evaluate anything that can't ever be run, see BRCOBS
-        if (resultsHE.nonEmpty && resultsHE.last.resultType.kind == NeverH()) {
-          return (Hammer.consecrash(locals, resultsHE), Vector())
+        resultsHE.lastOption.map(_.resultType.kind) match {
+          case Some(NeverH(_)) => {
+            return (Hammer.consecrash(locals, resultsHE), Vector())
+          }
+          case _ =>
         }
 
         val resultStructT = resultType.kind match { case s @ StructTT(_) => s }
@@ -202,8 +209,11 @@ object ExpressionHammer {
         val (resultsHE, deferreds) =
           translateExpressionsUntilNever(hinputs, hamuts, currentFunctionHeader, locals, exprs);
         // Don't evaluate anything that can't ever be run, see BRCOBS
-        if (resultsHE.nonEmpty && resultsHE.last.resultType.kind == NeverH()) {
-          return (Hammer.consecrash(locals, resultsHE), Vector())
+        resultsHE.lastOption.map(_.resultType.kind) match {
+          case Some(NeverH(_)) => {
+            return (Hammer.consecrash(locals, resultsHE), Vector())
+          }
+          case _ =>
         }
         val (underlyingArrayH) =
           TypeHammer.translateStaticSizedArray(hinputs, hamuts, arrayType2);
@@ -227,8 +237,11 @@ object ExpressionHammer {
         val (membersHE, deferreds) =
           translateExpressionsUntilNever(hinputs, hamuts, currentFunctionHeader, locals, memberExprs);
         // Don't evaluate anything that can't ever be run, see BRCOBS
-        if (membersHE.nonEmpty && membersHE.last.resultType.kind == NeverH()) {
-          return (Hammer.consecrash(locals, membersHE), Vector())
+        membersHE.lastOption.map(_.resultType.kind) match {
+          case Some(NeverH(_)) => {
+            return (Hammer.consecrash(locals, membersHE), Vector())
+          }
+          case _ =>
         }
 
         val (resultTypeH) =
@@ -345,9 +358,12 @@ object ExpressionHammer {
         val innerExprResultType2 = innerExpr.result.reference
         val (innerExprResultTypeH) = TypeHammer.translateReference(hinputs, hamuts, innerExprResultType2);
         val (resultTypeH) = TypeHammer.translateReference(hinputs, hamuts, resultType2);
-        if (innerExprResultTypeH.kind != NeverH()) {
-          if (innerExprResultTypeH != resultTypeH) {
-            vfail(innerExprResultTypeH  + " doesnt match " + resultTypeH);
+        innerExprResultTypeH.kind match {
+          case NeverH(_) =>
+          case _ => {
+            if (innerExprResultTypeH != resultTypeH) {
+              vfail(innerExprResultTypeH + " doesnt match " + resultTypeH);
+            }
           }
         }
 
@@ -366,12 +382,15 @@ object ExpressionHammer {
         // its understruct, and sometimes theyre different, when we're making a Never into
         // an Int for example when one branch of an If panics or returns.
 
-        if (innerExprResultTypeH.kind == NeverH() || resultTypeH.kind == NeverH()) {
-          vfail()
-//          (ReinterpretH(innerExprHE, resultTypeH), deferreds)
-        } else {
-          (innerExprHE, deferreds)
+        innerExprResultTypeH.kind match {
+          case NeverH(_) => vfail()
+          case _ =>
         }
+        resultTypeH.kind match {
+          case NeverH(_) => vfail()
+          case _ =>
+        }
+        (innerExprHE, deferreds)
       }
 
       case up @ InterfaceToInterfaceUpcastTE(innerExpr, targetInterfaceRef2) => {
@@ -459,8 +478,11 @@ object ExpressionHammer {
 
         // If we're returning a never, just strip this Return, because we'll
         // never get here.
-        if (innerWithDeferreds.resultType.kind == NeverH()) {
-          return (innerWithDeferreds, Vector.empty)
+        innerWithDeferreds.resultType.kind match {
+          case NeverH(_) => {
+            return (innerWithDeferreds, Vector.empty)
+          }
+          case _ =>
         }
 
         vassert(innerExpr.result.reference == currentFunctionHeader.returnType)
@@ -604,8 +626,11 @@ object ExpressionHammer {
       translateExpressionsUntilNever(
         hinputs, hamuts, currentFunctionHeader, locals, deferreds)
     // Don't evaluate anything that can't ever be run, see BRCOBS
-    if (deferredExprs.nonEmpty && deferredExprs.last.resultType.kind == NeverH()) {
-      return Hammer.consecrash(locals, deferredExprs)
+    deferredExprs.lastOption.map(_.resultType.kind) match {
+      case Some(NeverH(_)) => {
+        return Hammer.consecrash(locals, deferredExprs)
+      }
+      case _ =>
     }
     if (deferredExprs.map(_.resultType.kind).toSet != Set(VoidH())) {
       // curiosity, why would a deferred ever have a result
@@ -648,8 +673,9 @@ object ExpressionHammer {
         // If we previously saw a Never, stop there, don't proceed, don't even waste
         // time compiling the rest.
         case ((prevExprsHE, _), _)
-            if prevExprsHE.nonEmpty &&
-              prevExprsHE.last.resultType.kind == NeverH() => {
+            if (prevExprsHE.lastOption.map(_.resultType.kind) match {
+              case Some(NeverH(_)) => true case _ => false
+            }) => {
           (prevExprsHE, Vector())
         }
         case ((prevExprsHE, prevDeferreds), nextTE) => {
@@ -660,10 +686,9 @@ object ExpressionHammer {
       })
 
     // We'll never get to the deferreds, so forget them.
-    if (exprsHE.nonEmpty && exprsHE.last.resultType.kind == NeverH()) {
-      (exprsHE, Vector())
-    } else {
-      (exprsHE, deferreds)
+    exprsHE.lastOption.map(_.resultType.kind) match {
+      case Some(NeverH(_)) => (exprsHE, Vector())
+      case _ => (exprsHE, deferreds)
     }
   }
 

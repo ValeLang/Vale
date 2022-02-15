@@ -277,7 +277,10 @@ object Hammer {
         case other => Vector(other)
       })
     flattenedExprsHE.init.foreach(exprHE => {
-      vassert(exprHE.resultType.kind != NeverH())
+      exprHE.resultType.kind match {
+        case NeverH(_) => vwat()
+        case _ =>
+      }
     })
 
     // Filter out any Void that arent the last.
@@ -310,7 +313,10 @@ object Hammer {
     locals: LocalsBox,
     unfilteredExprsHE: Vector[ExpressionH[KindH]]):
   ExpressionH[KindH] = {
-    vassert(unfilteredExprsHE.last.resultType.kind == NeverH())
+    unfilteredExprsHE.last.resultType.kind match {
+      case NeverH(_) =>
+      case _ => vwat()
+    }
 
     val exprsHE = flattenAndFilterVoids(unfilteredExprsHE)
 

@@ -93,7 +93,7 @@ class TemplarTests extends FunSuite with Matchers {
         |}
     """.stripMargin)
     val main = compile.expectTemputs().lookupFunction("main")
-    vassert(main.header.returnType.kind == NeverT())
+    vassert(main.header.returnType.kind == NeverT(false))
   }
 
   test("Taking an argument and returning it") {

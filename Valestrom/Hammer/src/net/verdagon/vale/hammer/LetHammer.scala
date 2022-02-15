@@ -1,8 +1,7 @@
 package net.verdagon.vale.hammer
 
 import net.verdagon.vale.hammer.ExpressionHammer.translate
-import net.verdagon.vale.{metal => m}
-import net.verdagon.vale.{vassert, vassertSome, vfail, vimpl, metal => m}
+import net.verdagon.vale.{vassert, vassertSome, vfail, vimpl, vwat, metal => m}
 import net.verdagon.vale.metal.{Variability => _, _}
 import net.verdagon.vale.templar.{Hinputs, _}
 import net.verdagon.vale.templar.ast.{DestroyStaticSizedArrayIntoLocalsTE, DestroyTE, FunctionHeaderT, LetAndLendTE, LetNormalTE, ReferenceExpressionTE, UnletTE}
@@ -26,9 +25,10 @@ object LetHammer {
     val (sourceResultPointerTypeH) =
       TypeHammer.translateReference(hinputs, hamuts, sourceExpr2.result.reference)
 
-    if (sourceExprHE.resultType.kind == NeverH()) {
+    sourceExprHE.resultType.kind match {
       // We'll never get to this let, so strip it out. See BRCOBS.
-      return sourceExprHE
+      case NeverH(_) => return sourceExprHE
+      case _ =>
     }
 
     val stackifyNode =
@@ -144,7 +144,10 @@ object LetHammer {
     varId: FullNameT[IVarNameT],
     variability: VariabilityT):
   StackifyH = {
-    vassert(sourceExprHE.resultType.kind != NeverH())
+    sourceExprHE.resultType.kind match {
+      case NeverH(_) => vwat()
+      case _ =>
+    }
     val localIndex =
       locals.addTemplarLocal(hinputs, hamuts, varId, Conversions.evaluateVariability(variability), sourceResultPointerTypeH)
     val stackNode =

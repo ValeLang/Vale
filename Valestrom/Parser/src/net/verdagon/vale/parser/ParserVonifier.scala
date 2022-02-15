@@ -992,6 +992,13 @@ object ParserVonifier {
             VonMember("range", vonifyRange(range)),
             VonMember("expr", vonifyExpression(expr))))
       }
+      case BreakPE(range) => {
+        VonObject(
+          "Break",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range))))
+      }
       case ConstantStrPE(range, value) => {
         VonObject(
           "ConstantStr",

@@ -497,7 +497,7 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
                 PrimitiveNameT("Array") -> TemplataEnvEntry(RuntimeSizedArrayTemplateTemplata()),
                 PrimitiveNameT("bool") -> TemplataEnvEntry(KindTemplata(BoolT())),
                 PrimitiveNameT("float") -> TemplataEnvEntry(KindTemplata(FloatT())),
-                PrimitiveNameT("__Never") -> TemplataEnvEntry(KindTemplata(NeverT())),
+                PrimitiveNameT("__Never") -> TemplataEnvEntry(KindTemplata(NeverT(false))),
                 PrimitiveNameT("str") -> TemplataEnvEntry(KindTemplata(StrT())),
                 PrimitiveNameT("void") -> TemplataEnvEntry(KindTemplata(VoidT())))))
 
@@ -903,7 +903,7 @@ object Templar {
 
   def isPrimitive(kind: KindT): Boolean = {
     kind match {
-      case VoidT() | IntT(_) | BoolT() | StrT() | NeverT() | FloatT() => true
+      case VoidT() | IntT(_) | BoolT() | StrT() | NeverT(_) | FloatT() => true
 //      case TupleTT(_, understruct) => isPrimitive(understruct)
       case StructTT(_) => false
       case InterfaceTT(_) => false
@@ -920,7 +920,7 @@ object Templar {
   def getMutability(temputs: Temputs, concreteValue2: KindT):
   MutabilityT = {
     concreteValue2 match {
-      case NeverT() => ImmutableT
+      case NeverT(_) => ImmutableT
       case IntT(_) => ImmutableT
       case FloatT() => ImmutableT
       case BoolT() => ImmutableT

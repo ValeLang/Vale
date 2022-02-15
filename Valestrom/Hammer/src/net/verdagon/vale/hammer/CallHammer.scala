@@ -21,7 +21,7 @@ object CallHammer {
       ExpressionHammer.translateExpressionsUntilNever(
         hinputs, hamuts, currentFunctionHeader, locals, argsExprs2);
     // Don't evaluate anything that can't ever be run, see BRCOBS
-    if (argsHE.nonEmpty && argsHE.last.resultType.kind == NeverH()) {
+    if (argsHE.nonEmpty && argsHE.last.resultType.kind == NeverH(true)) {
       return Hammer.consecrash(locals, argsHE)
     }
 
@@ -54,8 +54,11 @@ object CallHammer {
       ExpressionHammer.translateExpressionsUntilNever(
         hinputs, hamuts, currentFunctionHeader, locals, args);
     // Don't evaluate anything that can't ever be run, see BRCOBS
-    if (argsHE.nonEmpty && argsHE.last.resultType.kind == NeverH()) {
-      return Hammer.consecrash(locals, argsHE)
+    argsHE.lastOption.map(_.resultType.kind) match {
+      case Some(NeverH(_)) => {
+        return Hammer.consecrash(locals, argsHE)
+      }
+      case _ =>
     }
 
     val prototypeH =
@@ -302,8 +305,8 @@ object CallHammer {
     val ifCallNode = IfH(conditionBlockH.expectBoolAccess(), thenBlockH, elseBlockH, commonSupertypeH)
 
 
-    val thenContinues = thenResultCoord.kind != NeverH()
-    val elseContinues = elseResultCoord.kind != NeverH()
+    val thenContinues = thenResultCoord.kind match { case NeverH(_) => false case _ => true }
+    val elseContinues = elseResultCoord.kind match { case NeverH(_) => false case _ => true }
 
     val unstackifiesOfParentLocals =
       if (thenContinues && elseContinues) { // Both continue
@@ -371,7 +374,7 @@ object CallHammer {
       ExpressionHammer.translateExpressionsUntilNever(
         hinputs, hamuts, currentFunctionHeader, locals, argsExprs2);
     // Don't evaluate anything that can't ever be run, see BRCOBS
-    if (argsHE.nonEmpty && argsHE.last.resultType.kind == NeverH()) {
+    if (argsHE.nonEmpty && argsHE.last.resultType.kind == NeverH(false)) {
       return Hammer.consecrash(locals, argsHE)
     }
 

@@ -322,7 +322,7 @@ object VonHammer {
 
   def vonifyKind(kind: KindH): IVonData = {
     kind match {
-      case NeverH() => VonObject("Never", None, Vector())
+      case NeverH(_) => VonObject("Never", None, Vector())
       case IntH(bits) => VonObject("Int", None, Vector(VonMember("bits", VonInt(bits))))
       case BoolH() => VonObject("Bool", None, Vector())
       case StrH() => VonObject("Str", None, Vector())

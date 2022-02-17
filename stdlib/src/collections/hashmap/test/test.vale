@@ -1,0 +1,12 @@
+import stdlib.collections.*;
+import stdlib.testsuite.*;
+
+struct Ship {
+  fuel int;
+}
+
+exported func main() {
+  suite = TestSuite();
+
+  (suite).finish();
+}

@@ -1,0 +1,74 @@
+
+
+struct HashSetReadonlyIter<K> {
+  table &Array<mut, Opt<K>>;
+  pos! int;
+}
+
+func begin<K, H, E>(map &HashSet<K, H, E>) HashSetReadonlyIter<K> {
+  HashSetReadonlyIter<K>(&map.table, 0)
+}
+
+func next<K>(iter &!HashSetReadonlyIter<K>) Opt<&K> {
+  while iter.pos < iter.table.len() {
+    this_pos = set iter.pos = iter.pos + 1;
+    if not iter.table[this_pos].isEmpty() {
+      node = &iter.table[this_pos].get();
+      ret Some<&K>(node);
+    }
+  }
+  ret None<&K>();
+}
+
+
+struct HashSetReadwriteIter<K> {
+  table &![]<mut>Opt<K>;
+  pos! int;
+}
+
+func begin<K, H, E>(map &!HashSet<K, H, E>) HashSetReadwriteIter<K> {
+  HashSetReadwriteIter<K>(&!map.table, 0)
+}
+
+func next<K>(iter &!HashSetReadwriteIter<K>) Opt<&!K> {
+  while iter.pos < iter.table.len() {
+    this_pos = set iter.pos = iter.pos + 1;
+    if not iter.table[this_pos].isEmpty() {
+      node = &!iter.table[this_pos]!.get();
+      ret Some<&!K>(node);
+    }
+  }
+  ret None<&!K>();
+}
+
+
+
+
+func each<K, H, E, F>(
+  self &HashSet<K, H, E>,
+  func F)
+void {
+  index! = 0;
+  while (index < self.table.len()) {
+    node? = self.table[index];
+    if not(node?.isEmpty()) {
+      func!(node?.get());
+    }
+    set index = index + 1;
+  }
+}
+
+func each<K, H, E, F>(
+  self &!HashSet<K, H, E>,
+  func F)
+void {
+  index! = 0;
+  while (index < self.table.len()) {
+    node? = self.table[index];
+    if not(node?.isEmpty()) {
+      func!(node?.get());
+    }
+    set index = index + 1;
+  }
+}
+

@@ -11,13 +11,13 @@ func TestSuite() TestSuite {
 
 func finish(suite TestSuite) {
   println("Passed all " + suite.num_tests_ran + " tests!");
-  if (suite.num_tests_skipped > 0) {
+  if suite.num_tests_skipped > 0 {
     println("Skipped " + suite.num_tests_skipped + " tests.");
   }
 }
 
 func test<F>(suite &!TestSuite, name str, lambda F) {
-  if (name.has(suite.filter)) {
+  if name.has(suite.filter) {
     set suite.num_tests_ran = suite.num_tests_ran + 1;
     println("Test: " + name);
     lambda!();
@@ -27,13 +27,13 @@ func test<F>(suite &!TestSuite, name str, lambda F) {
 }
 
 func should_equal<T>(a T, b T) {
-  if (not (a == b)) {
+  if not (a == b) {
     panic("Check failed! Expected:\n{a}\nto equal:\n{b}");
   }
 }
 
 func should_not_equal<T>(a T, b T) {
-  if (a == b) {
+  if a == b {
     panic("Check failed! Expected a difference, but both were: {a}");
   }
 }

@@ -1,0 +1,74 @@
+
+
+struct HashMapReadonlyIter<K, V> {
+  table &Array<mut, Opt<HashMapNode<K, V>>>;
+  pos! int;
+}
+
+func begin<K, V, H, E>(map &HashMap<K, V, H, E>) HashMapReadonlyIter<K, V> {
+  HashMapReadonlyIter<K, V>(map.table, 0)
+}
+
+func next<K, V>(iter &!HashMapReadonlyIter<K, V>) Opt<(K, &V)> {
+  while iter.pos < iter.table.len() {
+    this_pos = set iter.pos = iter.pos + 1;
+    if not iter.table[this_pos].isEmpty() {
+      node = &iter.table[this_pos].get();
+      ret Some<(K, &V)>((node.key, &node.value));
+    }
+  }
+  ret None<(K, &V)>();
+}
+
+
+struct HashMapReadwriteIter<K, V> {
+  table &!Array<mut, Opt<HashMapNode<K, V>>>;
+  pos! int;
+}
+
+func begin<K, V, H, E>(map &!HashMap<K, V, H, E>) HashMapReadwriteIter<K, V> {
+  HashMapReadwriteIter<K, V>(&!map.table, 0)
+}
+
+func next<K, V>(iter &!HashMapReadwriteIter<K, V>) Opt<(K, &!V)> {
+  while iter.pos < iter.table.len() {
+    this_pos = set iter.pos = iter.pos + 1;
+    if not iter.table[this_pos].isEmpty() {
+      node = &!iter.table[this_pos]!.get();
+      ret Some<(K, &!V)>((node.key, &!node.value));
+    }
+  }
+  ret None<(K, &!V)>();
+}
+
+
+
+
+func each<F, K, V, H, E>(self &HashMap<K, V, H, E>, func &!F)
+where Prot("__call", (&!F, &K, &V), _) {
+  list = List<K>();
+  index! = 0;
+  while index < self.table.len() {
+    node? = self.table[index];
+    if not(node?.isEmpty()) {
+      n = node?.get();
+      (func)!(n.key, n.value);
+    }
+    set index = index + 1;
+  }
+}
+
+func each<F, K, V, H, E>(self &!HashMap<K, V, H, E>, func &!F)
+where Prot("__call", (&!F, &K, &!V), _) {
+  list = List<K>();
+  index! = 0;
+  while index < self.table.len() {
+    maybe_node = &!self.table[index];
+    if not(maybe_node.isEmpty()) {
+      n = (maybe_node).get();
+      (func)!(n.key, &!n.value);
+    }
+    set index = index + 1;
+  }
+}
+

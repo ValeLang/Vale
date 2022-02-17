@@ -66,7 +66,7 @@ class TemplataTemplar(
     // Note the Never case will short-circuit a true, regardless of the other checks (permission, ownership)
 
     (sourceType, targetType) match {
-      case (NeverT(), _) => return true
+      case (NeverT(_), _) => return true
       case (a, b) if a == b =>
       case (VoidT() | IntT(_) | BoolT() | StrT() | FloatT() | RuntimeSizedArrayTT(_, _) | StaticSizedArrayTT(_, _, _, _), _) => return false
       case (_, VoidT() | IntT(_) | BoolT() | StrT() | FloatT() | RuntimeSizedArrayTT(_, _) | StaticSizedArrayTT(_, _, _, _)) => return false

@@ -1,0 +1,80 @@
+
+
+
+struct ListReadonlyIter<E> where E Ref {
+  list_array &Array<mut, E>;
+  pos! int;
+}
+
+func begin<E>(list &List<E>) ListReadonlyIter<E> {
+  ListReadonlyIter<E>(list.array, 0)
+}
+
+func next<E>(iter &!ListReadonlyIter<E>) Opt<&E> {
+  if iter.pos < iter.list_array.len() {
+    Some<&E>(iter.list_array[set iter.pos = iter.pos + 1])
+  } else {
+    None<&E>()
+  }
+}
+
+
+
+struct ListReadwriteIter<E> where E Ref {
+  list_array &!Array<mut, E>;
+  pos! int;
+}
+
+func begin<E>(list &!List<E>) ListReadwriteIter<E> {
+  ListReadwriteIter<E>(&!list.array, 0)
+}
+
+func next<E>(iter &!ListReadwriteIter<E>) Opt<&!E> {
+  if iter.pos < iter.list_array.len() {
+    Some<&!E>(iter.list_array[set iter.pos = iter.pos + 1])
+  } else {
+    None<&!E>()
+  }
+}
+
+
+
+struct ListReadonlyEntriesIter<E> where E Ref {
+  list_array &Array<mut, E>;
+  pos! int;
+}
+func entries<E>(list &List<E>) ListReadonlyEntriesIter<E> {
+  ListReadonlyEntriesIter<E>(&list.array, 0)
+}
+func begin<E>(iter &!ListReadonlyEntriesIter<E>) ListReadonlyEntriesIter<E> {
+  ListReadonlyEntriesIter<E>(iter.list_array, iter.pos)
+}
+func next<E>(iter &!ListReadonlyEntriesIter<E>) Opt<(int, &E)> {
+  if iter.pos < iter.list_array.len() {
+    Some<(int, &E)>((iter.pos, iter.list_array[set iter.pos = iter.pos + 1]))
+  } else {
+    None<(int, &E)>()
+  }
+}
+
+
+
+
+struct ListReadwriteEntriesIter<E> where E Ref {
+  list_array &!Array<mut, E>;
+  pos! int;
+}
+func entries<E>(list &!List<E>) ListReadwriteEntriesIter<E> {
+  ListReadwriteEntriesIter<E>(&!list.array, 0)
+}
+func begin<E>(iter &!ListReadwriteEntriesIter<E>) ListReadwriteEntriesIter<E> {
+  ListReadwriteEntriesIter<E>(iter.list_array, iter.pos)
+}
+func next<E>(iter &!ListReadwriteEntriesIter<E>) Opt<(int, &!E)> {
+  if iter.pos < iter.list_array.len() {
+    Some<(int, &!E)>((iter.pos, &!iter.list_array[set iter.pos = iter.pos + 1]))
+  } else {
+    None<(int, &!E)>()
+  }
+}
+

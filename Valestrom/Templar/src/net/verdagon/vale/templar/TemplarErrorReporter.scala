@@ -58,7 +58,7 @@ case class FunctionAlreadyExists(oldFunctionRange: RangeS, newFunctionRange: Ran
   override def range: RangeS = newFunctionRange
   vpass()
 }
-case class CantMutateFinalMember(range: RangeS, fullName2: FullNameT[INameT], memberName: FullNameT[IVarNameT]) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
+case class CantMutateFinalMember(range: RangeS, struct: StructTT, memberName: FullNameT[IVarNameT]) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class CantMutateFinalElement(range: RangeS, coord: CoordT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class CantUseReadonlyReferenceAsReadwrite(range: RangeS) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class LambdaReturnDoesntMatchInterfaceConstructor(range: RangeS) extends ICompileErrorT { override def hashCode(): Int = vcurious() }

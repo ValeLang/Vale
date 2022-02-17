@@ -1,4 +1,6 @@
 
+import stdlib.math.*; // for clamp
+
 struct StrSlice imm {
   string str;
   begin int;

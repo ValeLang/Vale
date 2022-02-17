@@ -36,8 +36,8 @@ object TemplarErrorHumanizer {
         case CantMoveOutOfMemberT(range, name) => {
             "Cannot move out of member (" + name + ")"
         }
-        case CantMutateFinalMember(range, fullName, memberName) => {
-            "Cannot mutate final member '" + printableVarName(memberName.last) + "' of container " + printableFullName(fullName)
+        case CantMutateFinalMember(range, struct, memberName) => {
+            "Cannot mutate final member '" + printableVarName(memberName.last) + "' of container " + humanizeTemplata(codeMap, CoordTemplata(struct))
         }
         case CantMutateFinalElement(range, coord) => {
             "Cannot change a slot in array " + humanizeTemplata(codeMap, CoordTemplata(coord)) + " to point to a different element; it's an array of final references."
@@ -456,7 +456,7 @@ object TemplarErrorHumanizer {
           case IntT(bits) => "i" + bits
           case BoolT() => "bool"
           case StrT() => "str"
-          case NeverT() => "never"
+          case NeverT(_) => "never"
           case VoidT() => "void"
           case FloatT() => "float"
           case OverloadSet(_, name) => "(overloads: " + ScoutErrorHumanizer.humanizeImpreciseName(name) + ")"

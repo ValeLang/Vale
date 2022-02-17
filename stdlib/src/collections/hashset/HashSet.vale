@@ -9,6 +9,14 @@ func HashSet<K, H, E>(hasher H, equator E) HashSet<K, H, E> {
   HashSet<K, H, E>(hasher, equator, 0)
 }
 
+func HashSet<K, H, E>(hasher H, equator E, source &HashSet<K, H, E>) HashSet<K, H, E> {
+  self = HashSet<K, H, E>(hasher, equator);
+  foreach x in source {
+    self!.add(x);
+  }
+  ret self;
+}
+
 func HashSet<K, H, E>(hasher H, equator E, capacity int) HashSet<K, H, E> {
   HashSet<K>(
       hasher,
@@ -29,7 +37,7 @@ func HashSet<K, H, E, M, N>(
 HashSet<K, H, E> {
   this = HashSet<K, H, E>(hasher, equator, 0);
   foreach v in valuesKSA {
-    if (not this.has(v)) {
+    if not this.contains(v) {
       this!.add(v);
     }
   }
@@ -43,7 +51,7 @@ func HashSet<K, H, E>(
 HashSet<K, H, E> {
   this = HashSet<K, H, E>(hasher, equator, 0);
   foreach v in valuesArray {
-    if (not this.has(v)) {
+    if not this.contains(v) {
       this!.add(v);
     }
   }
@@ -55,12 +63,12 @@ func len<K, H, E>(self &HashSet<K, H, E>) int { self.size }
 func isEmpty<K, H, E>(self &HashSet<K, H, E>) bool { self.size == 0 }
 
 func add<K, H, E>(self &!HashSet<K, H, E>, key K) void {
-  if (self.has(key)) {
+  if self.contains(key) {
     panic("HashSet already has given key!");
   }
-  if ((self.size + 1) * 2 >= self.table.len()) {
+  if (self.size + 1) * 2 >= self.table.len() {
     newSize =
-        if (self.table.len() == 0) { 2 }
+        if self.table.len() == 0 { 1 }
         else { self.table.len() * 2 };
     newTable =
         Array<mut, Opt<K>>(
@@ -71,7 +79,7 @@ func add<K, H, E>(self &!HashSet<K, H, E>, key K) void {
             }));
     i! = 0;
     while (i < self.table.len()) {
-      if (self.table[i].isEmpty()) {
+      if self.table[i].isEmpty() {
         // do nothing
       } else {
         node? = (mut self.table[i] = None<K>());
@@ -101,7 +109,7 @@ func findEmptyIndexInHashSetForKey<K>(table &Array<mut, Opt<K>>, startIndex int,
   while (i < table.len()) {
     index = (startIndex + i) mod table.len();
     something = table[index];
-    if (something.isEmpty()) {
+    if something.isEmpty() {
       ret index;
     }
     // continue to next node
@@ -115,27 +123,27 @@ func findIndexOfKey<K, E>(table &Array<mut, Opt<K>>, equator E, startIndex int, 
   while (i < table.len()) {
     index = (startIndex + i) mod table.len();
     something = table[index];
-    if (something.isEmpty()) {
+    if something.isEmpty() {
       ret None<int>();
     }
     node = something.get();
-    if ((equator)(node, key)) {
+    if (equator)(node, key) {
       ret Some<int>(index);
     }
     // continue to next node
     set i = i + 1;
   }
-  panic("findIndexOfKey went past end of table! len " + str(table.len()) + " and i " + str(i));
+  ret None<int>();
 }
 
 func get<K, H, E>(self &HashSet<K, H, E>, key K) Opt<K> {
-  if (self.table.len() == 0) {
+  if self.table.len() == 0 {
     ret None<K>();
   }
   hash int = (self.hasher)(key);
   startIndex = abs(hash mod self.table.len());
   index? = findIndexOfKey(&self.table, self.equator, startIndex, key);
-  if (index?.isEmpty()) {
+  if index?.isEmpty() {
     opt Opt<K> = None<K>();
     ret opt;
   }
@@ -144,7 +152,7 @@ func get<K, H, E>(self &HashSet<K, H, E>, key K) Opt<K> {
   ret opt;
 }
 
-func has<K, H, E>(self &HashSet<K, H, E>, key K) bool {
+func contains<K, H, E>(self &HashSet<K, H, E>, key K) bool {
   not(self.get(key).isEmpty())
 }
 
@@ -153,7 +161,7 @@ func toArray<K, H, E>(self &HashSet<K, H, E>) Array<imm, K> {
   index! = 0;
   while (index < self.table.len()) {
     node? = self.table[index];
-    if (not(node?.isEmpty())) {
+    if not(node?.isEmpty()) {
       list!.add(node?.get());
     }
     set index = index + 1;
@@ -186,7 +194,7 @@ void {
   while (i < self.table.len()) {
     neighborIndex = (originalIndex + i) mod len(&self.table);
     neighbor? = (mut self.table[neighborIndex] = None<K>());
-    if (not neighbor?.isEmpty()) {
+    if not neighbor?.isEmpty() {
       neighborKey = (neighbor?).get();
       addNodeToHashSetTable(&!self.table, self.hasher, neighborKey);
     } else {
@@ -195,75 +203,4 @@ void {
     }
     set i = i + 1;
   }
-}
-
-func each<K, H, E, F>(
-  self &HashSet<K, H, E>,
-  func F)
-void {
-  index! = 0;
-  while (index < self.table.len()) {
-    node? = self.table[index];
-    if (not(node?.isEmpty())) {
-      func!(node?.get());
-    }
-    set index = index + 1;
-  }
-}
-
-func each<K, H, E, F>(
-  self &!HashSet<K, H, E>,
-  func F)
-void {
-  index! = 0;
-  while (index < self.table.len()) {
-    node? = self.table[index];
-    if (not(node?.isEmpty())) {
-      func!(node?.get());
-    }
-    set index = index + 1;
-  }
-}
-
-
-
-struct HashSetReadonlyIter<K> {
-  table &Array<mut, Opt<K>>;
-  pos! int;
-}
-
-func begin<K, H, E>(map &HashSet<K, H, E>) HashSetReadonlyIter<K> {
-  HashSetReadonlyIter<K>(&map.table, 0)
-}
-
-func next<K>(iter &!HashSetReadonlyIter<K>) Opt<&K> {
-  while iter.pos < iter.table.len() {
-    this_pos = set iter.pos = iter.pos + 1;
-    if not iter.table[this_pos].isEmpty() {
-      node = &iter.table[this_pos].get();
-      ret Some<&K>(node);
-    }
-  }
-  ret None<&K>();
-}
-
-
-struct HashSetReadwriteIter<K> {
-  table &![]<mut>Opt<K>;
-  pos! int;
-}
-
-func begin<K, H, E>(map &!HashSet<K, H, E>) HashSetReadwriteIter<K> {
-  HashSetReadwriteIter<K>(&!map.table, 0)
-}
-
-func next<K>(iter &!HashSetReadwriteIter<K>) Opt<&!K> {
-  while iter.pos < iter.table.len() {
-    this_pos = set iter.pos = iter.pos + 1;
-    if not iter.table[this_pos].isEmpty() {
-      node = &!iter.table[this_pos]!.get();
-      ret Some<&!K>(node);
-    }
-  }
-  ret None<&!K>();
 }

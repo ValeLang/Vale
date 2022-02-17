@@ -1,4 +1,4 @@
-import stdlib.collections.*;
+import stdlib.collections.list.*;
 
 export Array<imm, str> as StrArray;
 export Array<mut, str> as MutStrArray;

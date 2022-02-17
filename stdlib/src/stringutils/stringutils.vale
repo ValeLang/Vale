@@ -1,4 +1,4 @@
-import stdlib.collections.*;
+import stdlib.collections.list.*;
 
 func startsWith(a str, b str) bool { startsWith(a.slice(), b.slice()) }
 func startsWith(a str, b StrSlice) bool { startsWith(a.slice(), b) }

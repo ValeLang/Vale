@@ -1,0 +1,40 @@
+import stdlib.collections.hashset.*;
+import stdlib.testsuite.*;
+import stdlib.math.*;
+
+struct Ship {
+  fuel int;
+}
+
+exported func main() {
+  suite = TestSuite();
+
+  suite!.test("Basic hash set", {
+    sett = HashSet<int, IntHasher, IntEquator>(IntHasher(), IntEquator());
+    sett!.add(39);
+    sett!.add(42);
+    sett!.add(51);
+    sett.contains(42) should_equal true;
+    sett.contains(43) should_equal false;
+    sett.len() should_equal 3;
+  });
+
+  suite!.test("hash set diff", {
+    a = HashSet<int, IntHasher, IntEquator>(IntHasher(), IntEquator());
+    a!.add(39);
+    a!.add(42);
+    a!.add(51);
+    a!.add(72);
+    b = HashSet<int, IntHasher, IntEquator>(IntHasher(), IntEquator());
+    b!.add(39);
+    b!.add(47);
+    b!.add(51);
+    diff = diff_iter(&a, &b).List();
+
+    diff.contains(42) should_equal true;
+    diff.contains(72) should_equal true;
+    diff.len() should_equal 2;
+  });
+
+  (suite).finish();
+}

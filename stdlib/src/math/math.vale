@@ -34,3 +34,9 @@ func next(self &!IntRangeIter) Opt<int> {
     None<int>()
   }
 }
+
+struct IntHasher { }
+func __call(this &IntHasher, x int) int { x }
+
+struct IntEquator { }
+func __call(this &IntEquator, a int, b int) bool { a == b }

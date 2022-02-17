@@ -94,7 +94,7 @@ class HammerTests extends FunSuite with Matchers {
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
     val main = packageH.lookupFunction("main")
     main.body match {
-      case BlockH(CallH(PrototypeH(fullNameH, Vector(), ReferenceH(_, _, ReadonlyH, NeverH())), Vector())) => {
+      case BlockH(CallH(PrototypeH(fullNameH, Vector(), ReferenceH(_, _, ReadonlyH, NeverH(_))), Vector())) => {
         vassert(fullNameH.toFullString().contains("__vbi_panic"))
       }
     }
@@ -117,7 +117,7 @@ class HammerTests extends FunSuite with Matchers {
           ConsecutorH(Vector(
             intExpr,
             CallH(
-              PrototypeH(_,Vector(),ReferenceH(_,_,ReadonlyH,NeverH())),
+              PrototypeH(_,Vector(),ReferenceH(_,_,ReadonlyH,NeverH(_))),
               Vector())))) => {
           intExpr
         }

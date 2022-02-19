@@ -23,6 +23,7 @@ case class CantReconcileBranchesResults(range: RangeS, thenResult: CoordT, elseR
   override def hashCode(): Int = vcurious()
   vpass()
 }
+case class WrongNumberOfDestructuresError(range: RangeS, actualNum: Int, expectedNum: Int) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class CantDowncastUnrelatedTypes(range: RangeS, sourceKind: KindT, targetKind: KindT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class CantDowncastToInterface(range: RangeS, targetKind: InterfaceTT) extends ICompileErrorT { override def hashCode(): Int = vcurious() }
 case class CouldntFindTypeT(range: RangeS, name: String) extends ICompileErrorT { override def hashCode(): Int = vcurious() }

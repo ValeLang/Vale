@@ -184,7 +184,7 @@ case class StructMemberT(
   tyype: IMemberTypeT
 )  {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-
+  vpass()
 }
 
 sealed trait IMemberTypeT  {

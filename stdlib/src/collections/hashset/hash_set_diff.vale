@@ -40,3 +40,15 @@ List<K> {
   }
   ret list;
 }
+
+func HashSet<K, H, E>(
+  iter &HashSetDiffIterator<K, H, E>,
+  hasher H,
+  equator E)
+HashSet<K, H, E> {
+  list = HashSet<K, H, E>(hasher, equator);
+  foreach x in iter {
+    list!.add(x);
+  }
+  ret list;
+}

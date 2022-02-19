@@ -501,7 +501,7 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
                 PrimitiveNameT("str") -> TemplataEnvEntry(KindTemplata(StrT())),
                 PrimitiveNameT("void") -> TemplataEnvEntry(KindTemplata(VoidT())))))
 
-        val temputs = Temputs()
+        val temputs = Temputs(opts.globalOptions.useOptimizedSolver)
 
 //        val emptyTupleStruct =
 //          sequenceTemplar.makeTupleKind(

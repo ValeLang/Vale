@@ -113,13 +113,15 @@ case class Temputs() {
     vassert(
       function.body.result.reference.kind == NeverT(false) ||
       function.body.result.reference == function.header.returnType)
-    Collector.all(function, {
-      case ReturnTE(innerExpr) => {
-        vassert(
-          innerExpr.result.reference.kind == NeverT(false) ||
-          innerExpr.result.reference == function.header.returnType)
-      }
-    })
+//    if (!useOptimization) {
+//      Collector.all(function, {
+//        case ReturnTE(innerExpr) => {
+//          vassert(
+//            innerExpr.result.reference.kind == NeverT(false) ||
+//              innerExpr.result.reference == function.header.returnType)
+//        }
+//      })
+//    }
 
     if (functions.exists(_.header == function.header)) {
       vfail("wot")

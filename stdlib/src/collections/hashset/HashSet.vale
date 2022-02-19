@@ -9,7 +9,7 @@ func HashSet<K, H, E>(hasher H, equator E) HashSet<K, H, E> {
   HashSet<K, H, E>(hasher, equator, 0)
 }
 
-func HashSet<K, H, E>(hasher H, equator E, source &HashSet<K, H, E>) HashSet<K, H, E> {
+func HashSet<K, H, E>(source &HashSet<K, H, E>, hasher H, equator E) HashSet<K, H, E> {
   self = HashSet<K, H, E>(hasher, equator);
   foreach x in source {
     self!.add(x);
@@ -203,4 +203,27 @@ void {
     }
     set i = i + 1;
   }
+}
+
+func ==<K, H, E>(
+  a &HashSet<K, H, E>,
+  b &HashSet<K, H, E>
+) bool {
+  if a.len() != b.len() {
+    ret false;
+  }
+  foreach x in a {
+    if not b.contains(x) {
+      ret false;
+    }
+  }
+  ret true;
+}
+
+func List<K, H, E>(sett &HashSet<K, H, E>) List<K> {
+  list = List<K>(sett.len());
+  foreach x in sett {
+    list!.add(x);
+  }
+  ret list;
 }

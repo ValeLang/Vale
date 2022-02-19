@@ -75,6 +75,29 @@ class TemplarPermissionTests extends FunSuite with Matchers {
     }
   }
 
+  test("Shared ref from readwrite struct") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |import v.builtins.tup.*;
+        |struct Pattern imm {}
+        |struct Terrain {
+        |  pattern Pattern;
+        |}
+        |struct TerrainController {
+        |  terrain Terrain;
+        |}
+        |func main(a &!TerrainController) infer-ret {
+        |  ret a.terrain.pattern;
+        |}
+        |""".stripMargin)
+    val temputs = compile.expectTemputs()
+
+    val main = temputs.lookupFunction("main")
+    main.header.returnType match {
+      case CoordT(ShareT, ReadonlyT, _) =>
+    }
+  }
+
   test("Borrow-method-call on readwrite member") {
     val compile = TemplarTestCompilation.test(
       """

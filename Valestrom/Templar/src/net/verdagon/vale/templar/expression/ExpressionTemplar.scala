@@ -586,7 +586,7 @@ class ExpressionTemplar(
               case ReferenceMemberLookupTE(range, structExpr, memberName, _, _, _) => {
                 structExpr.kind match {
                   case s @ StructTT(_) => {
-                    throw CompileErrorExceptionT(CantMutateFinalMember(range, s.fullName, memberName))
+                    throw CompileErrorExceptionT(CantMutateFinalMember(range, s, memberName))
                   }
                   case _ => vimpl(structExpr.kind.toString)
                 }

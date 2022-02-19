@@ -243,7 +243,12 @@ class PatternTemplar(
         val liveCaptureLocals = initialLiveCaptureLocals ++ elementLocals
         vassert(liveCaptureLocals == liveCaptureLocals.distinct)
 
-        val lets = makeLetsForOwnAndMaybeContinue(temputs, nenv, life + 4, liveCaptureLocals, elementLocals.toList, listOfMaybeDestructureMemberPatterns.toList, afterDestructureSuccessContinuation)
+        if (elementLocals.size != listOfMaybeDestructureMemberPatterns.size) {
+          throw CompileErrorExceptionT(WrongNumberOfDestructuresError(range, listOfMaybeDestructureMemberPatterns.size, elementLocals.size))
+        }
+        val lets =
+          makeLetsForOwnAndMaybeContinue(
+            temputs, nenv, life + 4, liveCaptureLocals, elementLocals.toList, listOfMaybeDestructureMemberPatterns.toList, afterDestructureSuccessContinuation)
         Templar.consecutive(Vector(destroyTE, lets))
       }
       case rsa @ RuntimeSizedArrayTT(_, _) => {
@@ -380,6 +385,9 @@ class PatternTemplar(
     val liveCaptureLocals = initialLiveCaptureLocals ++ memberLocals
     vassert(liveCaptureLocals == liveCaptureLocals.distinct)
 
+    if (memberLocals.size != innerPatternMaybes.size) {
+      throw CompileErrorExceptionT(WrongNumberOfDestructuresError(range, innerPatternMaybes.size, memberLocals.size))
+    }
     val restTE =
       makeLetsForOwnAndMaybeContinue(
         temputs,
@@ -402,6 +410,8 @@ class PatternTemplar(
     afterLetsSuccessContinuation: (Temputs, NodeEnvironmentBox, LocationInFunctionEnvironment, Vector[ILocalVariableT]) => ReferenceExpressionTE
   ): ReferenceExpressionTE = {
     vassert(initialLiveCaptureLocals == initialLiveCaptureLocals.distinct)
+
+    vassert(memberLocalVariables.size == innerPatternMaybes.size)
 
     (memberLocalVariables, innerPatternMaybes) match {
       case (Nil, Nil) => {

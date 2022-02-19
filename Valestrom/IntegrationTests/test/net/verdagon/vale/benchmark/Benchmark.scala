@@ -34,7 +34,7 @@ object Benchmark {
   }
 
   def main(args: Array[String]): Unit = {
-    val compareOptimization = false
+    val compareOptimization = true
 
     println("Starting benchmarking...")
     if (compareOptimization) {

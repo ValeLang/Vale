@@ -44,7 +44,7 @@ func update<K, V, H, E>(self &!HashMap<K, V, H, E>, key K, value V) void {
 }
 
 func add<K, V, H, E>(map &!HashMap<K, V, H, E>, key K, value V) void {
-  if map.has(key) {
+  if map.ContainsKey(key) {
     panic("Map already has given key!");
   }
   if (map.size + 1) * 2 >= map.table.len() {
@@ -150,7 +150,7 @@ func get<K, V, H, E>(self &!HashMap<K, V, H, E>, key K) Opt<&!V> {
   ret opt;
 }
 
-func has<K, V, H, E>(self &HashMap<K, V, H, E>, key K) bool {
+func ContainsKey<K, V, H, E>(self &HashMap<K, V, H, E>, key K) bool {
   not(self.get(key).isEmpty())
 }
 
@@ -185,20 +185,22 @@ func innerRemove<K, V, H, E>(
   hasher H,
   equator E,
   key K)
-int {
+(int, HashMapNode<K, V>) {
   hash int = (&hasher)(key);
   startIndex = abs(hash mod table.len());
   index? = findIndexOfKey(&table, equator, startIndex, key);
   index = index?.get();
-  set table[index] = None<HashMapNode<K, V>>();
-  ret index;
+  oldNodeOpt = set table[index] = None<HashMapNode<K, V>>();
+  vassert(not oldNodeOpt.isEmpty());
+  oldNode = (oldNodeOpt).get();
+  ret (index, oldNode);
 }
 
 func remove<K, V, H, E>(
   map &!HashMap<K, V, H, E>,
   key K)
-void {
-  originalIndex = innerRemove(map.table, map.hasher, map.equator, key);
+V {
+  [originalIndex, oldNode] = innerRemove(map.table, map.hasher, map.equator, key);
   set map.size = map.size - 1;
 
   i! = 1;
@@ -214,4 +216,19 @@ void {
     }
     set i = i + 1;
   }
+
+  [_, value] = oldNode;
+  ret value;
+}
+
+func KeySet<K, V, H, E>(
+  map &HashMap<K, V, H, E>,
+  hasher H,
+  equator E)
+HashSet<K, H, E> {
+  sett = HashSet<K, H, E>(hasher, equator);
+  foreach [key, value] in map {
+    sett!.add(key);
+  }
+  ret sett;
 }

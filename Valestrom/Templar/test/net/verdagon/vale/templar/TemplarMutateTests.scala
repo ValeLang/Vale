@@ -124,8 +124,8 @@ class TemplarMutateTests extends FunSuite with Matchers {
         |""".stripMargin)
     compile.getTemputs() match {
       case Err(CantMutateFinalMember(_, structTT, memberName)) => {
-        structTT.last match {
-          case CitizenNameT(CitizenTemplateNameT("Vec3"), Vector()) =>
+        structTT match {
+          case StructTT(FullNameT(_, _, CitizenNameT(CitizenTemplateNameT("Vec3"), Vector()))) =>
         }
         memberName.last match {
           case CodeVarNameT("x") =>
@@ -146,8 +146,8 @@ class TemplarMutateTests extends FunSuite with Matchers {
         |""".stripMargin)
     compile.getTemputs() match {
       case Err(CantMutateFinalMember(_, structTT, memberName)) => {
-        structTT.last match {
-          case CitizenNameT(CitizenTemplateNameT("Vec3"), Vector()) =>
+        structTT match {
+          case StructTT(FullNameT(_, _, CitizenNameT(CitizenTemplateNameT("Vec3"), Vector()))) =>
         }
         memberName.last match {
           case CodeVarNameT("x") =>
@@ -298,7 +298,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantMutateFinalMember(
         RangeS.testZero,
-        serenityKind.fullName,
+        serenityKind,
         FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, CodeVarNameT("bork"))))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,

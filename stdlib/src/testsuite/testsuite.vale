@@ -17,7 +17,7 @@ func finish(suite TestSuite) {
 }
 
 func test<F>(suite &!TestSuite, name str, lambda F) {
-  if name.has(suite.filter) {
+  if name.contains(suite.filter) {
     set suite.num_tests_ran = suite.num_tests_ran + 1;
     println("Test: " + name);
     lambda!();

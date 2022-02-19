@@ -28,64 +28,67 @@ object TemplarErrorHumanizer {
           "To make an immutable runtime-sized array, need two params: capacity int, plus lambda to populate that many elements."
         }
         case CantUseReadonlyReferenceAsReadwrite(range) => {
-            "Can't make readonly reference into a readwrite one!"
+          "Can't make readonly reference into a readwrite one!"
         }
         case CantReconcileBranchesResults(range, thenResult, elseResult) => {
           "If branches return different types: " + humanizeTemplata(codeMap, CoordTemplata(thenResult)) + " and " + humanizeTemplata(codeMap, CoordTemplata(elseResult))
         }
         case CantMoveOutOfMemberT(range, name) => {
-            "Cannot move out of member (" + name + ")"
+          "Cannot move out of member (" + name + ")"
         }
         case CantMutateFinalMember(range, struct, memberName) => {
-            "Cannot mutate final member '" + printableVarName(memberName.last) + "' of container " + humanizeTemplata(codeMap, CoordTemplata(struct))
+          "Cannot mutate final member '" + printableVarName(memberName.last) + "' of container " + humanizeTemplata(codeMap, KindTemplata(struct))
         }
         case CantMutateFinalElement(range, coord) => {
-            "Cannot change a slot in array " + humanizeTemplata(codeMap, CoordTemplata(coord)) + " to point to a different element; it's an array of final references."
+          "Cannot change a slot in array " + humanizeTemplata(codeMap, CoordTemplata(coord)) + " to point to a different element; it's an array of final references."
         }
         case LambdaReturnDoesntMatchInterfaceConstructor(range) => {
-            "Argument function return type doesn't match interface method param"
+          "Argument function return type doesn't match interface method param"
         }
         case CantUseUnstackifiedLocal(range, name) => {
-            "Can't use local that was already moved (" + name + ")"
+          "Can't use local that was already moved (" + name + ")"
         }
         case CantUnstackifyOutsideLocalFromInsideWhile(range, name) => {
-            "Can't move a local (" + name + ") from inside a while loop."
+          "Can't move a local (" + name + ") from inside a while loop."
         }
         case CannotSubscriptT(range, tyype) => {
-            "Cannot subscript type: " + humanizeTemplata(codeMap, KindTemplata(tyype)) + "!"
+          "Cannot subscript type: " + humanizeTemplata(codeMap, KindTemplata(tyype)) + "!"
         }
         case CouldntConvertForReturnT(range, expectedType, actualType) => {
-            "Couldn't convert " + humanizeTemplata(codeMap, CoordTemplata(actualType)) + " to expected return type " + humanizeTemplata(codeMap, CoordTemplata(expectedType))
+          "Couldn't convert " + humanizeTemplata(codeMap, CoordTemplata(actualType)) + " to expected return type " + humanizeTemplata(codeMap, CoordTemplata(expectedType))
         }
         case CouldntConvertForMutateT(range, expectedType, actualType) => {
-            "Mutate couldn't convert " + actualType + " to expected destination type " + expectedType
+          "Mutate couldn't convert " + actualType + " to expected destination type " + expectedType
         }
         case CouldntFindMemberT(range, memberName) => {
-            "Couldn't find member " + memberName + "!"
+          "Couldn't find member " + memberName + "!"
         }
         case BodyResultDoesntMatch(range, functionName, expectedReturnType, resultType) => {
-            "Function " + printableName(codeMap, functionName) + " return type " + humanizeTemplata(codeMap, CoordTemplata(expectedReturnType)) + " doesn't match body's result: " + humanizeTemplata(codeMap, CoordTemplata(resultType))
+          "Function " + printableName(codeMap, functionName) + " return type " + humanizeTemplata(codeMap, CoordTemplata(expectedReturnType)) + " doesn't match body's result: " + humanizeTemplata(codeMap, CoordTemplata(resultType))
         }
         case CouldntFindIdentifierToLoadT(range, name) => {
-            "Couldn't find anything named `" + ScoutErrorHumanizer.humanizeImpreciseName(name) + "`!"
+          "Couldn't find anything named `" + ScoutErrorHumanizer.humanizeImpreciseName(name) + "`!"
         }
         case NonReadonlyReferenceFoundInPureFunctionParameter(range, name) => {
-            "Parameter `" + name + "` should be readonly, because it's in a pure function."
+          "Parameter `" + name + "` should be readonly, because it's in a pure function."
         }
         case CouldntFindTypeT(range, name) => {
-            "Couldn't find any type named `" + name + "`!"
+          "Couldn't find any type named `" + name + "`!"
         }
         case ImmStructCantHaveVaryingMember(range, structName, memberName) => {
-            "Immutable struct (\"" + printableName(codeMap, structName) + "\") cannot have varying member (\"" + memberName + "\")."
+          "Immutable struct (\"" + printableName(codeMap, structName) + "\") cannot have varying member (\"" + memberName + "\")."
+        }
+        case WrongNumberOfDestructuresError(range, actualNum, expectedNum) => {
+          "Wrong number of receivers; receiving " + actualNum + " but should be " + expectedNum + "."
         }
         case CantDowncastUnrelatedTypes(range, sourceKind, targetKind) => {
-            "Can't downcast `" + sourceKind + "` to unrelated `" + targetKind + "`"
+          "Can't downcast `" + sourceKind + "` to unrelated `" + targetKind + "`"
         }
         case CantDowncastToInterface(range, targetKind) => {
-            "Can't downcast to an interface (" + targetKind + ") yet."
+          "Can't downcast to an interface (" + targetKind + ") yet."
         }
         case ArrayElementsHaveDifferentTypes(range, types) => {
-            "Array's elements have different types: " + types.mkString(", ")
+          "Array's elements have different types: " + types.mkString(", ")
         }
         case ExportedFunctionDependedOnNonExportedKind(range, paackage, signature, nonExportedKind) => {
           "Exported function " + signature + " depends on kind " + nonExportedKind + " that wasn't exported from package " + paackage
@@ -104,26 +107,26 @@ object TemplarErrorHumanizer {
           "Exported kind " + signature + " depends on kind " + nonExportedKind + " that wasn't exported from package " + paackage
         }
         case InitializedWrongNumberOfElements(range, expectedNumElements, numElementsInitialized) => {
-            "Supplied " + numElementsInitialized + " elements, but expected " + expectedNumElements + "."
+          "Supplied " + numElementsInitialized + " elements, but expected " + expectedNumElements + "."
         }
         case CouldntFindFunctionToCallT(range, fff) => {
           humanizeFindFunctionFailure(verbose, codeMap, range, fff)
         }
         case FunctionAlreadyExists(oldFunctionRange, newFunctionRange, signature) => {
-            "Function " + humanizeSignature(codeMap, signature) + " already exists! Previous declaration at:\n" +
+          "Function " + humanizeSignature(codeMap, signature) + " already exists! Previous declaration at:\n" +
             humanizePos(codeMap, oldFunctionRange.begin)
         }
         case AbstractMethodOutsideOpenInterface(range) => {
           "Open (non-sealed) interfaces can't have abstract methods defined outside the interface."
         }
         case IfConditionIsntBoolean(range, actualType) => {
-            "If condition should be a bool, but was: " + actualType
+          "If condition should be a bool, but was: " + actualType
         }
         case WhileConditionIsntBoolean(range, actualType) => {
-            "If condition should be a bool, but was: " + actualType
+          "If condition should be a bool, but was: " + actualType
         }
         case CantImplNonInterface(range, struct) => {
-            "Can't extend a non-interface: " + struct
+          "Can't extend a non-interface: " + struct
         }
         case TemplarSolverError(range, failedSolve) => {
           val (text, lineBegins) =

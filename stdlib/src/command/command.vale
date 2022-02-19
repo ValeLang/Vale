@@ -53,7 +53,7 @@ func FindProgramInPath(relative_program str) Opt<Path> {
 }
 
 func PrintCommandLinePart(builder &!StringBuilder, part StrSlice) {
-  if part.has(" ") {
+  if part.contains(" ") {
     builder!.print("\"");
     builder!.print(part.replaceAll("\"", "\\\""));
     builder!.print("\"");

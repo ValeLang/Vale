@@ -25,10 +25,10 @@ func len(s StrSlice) int {
   ret s.end - s.begin;
 }
 
-func has(haystack str, needle str) bool { has(haystack.slice(), needle.slice()) }
-func has(haystack StrSlice, needle str) bool { has(haystack, needle.slice()) }
-func has(haystack str, needle StrSlice) bool { has(haystack.slice(), needle) }
-func has(haystack StrSlice, needle StrSlice) bool { not find(haystack, needle).isEmpty() }
+func contains(haystack str, needle str) bool { contains(haystack.slice(), needle.slice()) }
+func contains(haystack StrSlice, needle str) bool { contains(haystack, needle.slice()) }
+func contains(haystack str, needle StrSlice) bool { contains(haystack.slice(), needle) }
+func contains(haystack StrSlice, needle StrSlice) bool { not find(haystack, needle).isEmpty() }
 
 func find(haystack str, needle str) Opt<StrSlice> { find(haystack.slice(), needle.slice()) }
 func find(haystack str, needle StrSlice) Opt<StrSlice> { find(haystack.slice(), needle) }

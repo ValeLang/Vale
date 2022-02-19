@@ -468,6 +468,10 @@ object ExpressionHammer {
         (innerWithDeferredsExprH, Vector.empty)
       }
       case ReturnTE(innerExpr) => {
+        vassert(
+          innerExpr.result.reference.kind == NeverT(false) ||
+          innerExpr.result.reference == currentFunctionHeader.returnType)
+
         val (innerExprHE, innerDeferreds) =
           translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
 

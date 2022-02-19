@@ -1,12 +1,85 @@
-import stdlib.collections.*;
+import stdlib.collections.hashmap.*;
+import stdlib.collections.hashset.*;
+import stdlib.stringutils.*;
 import stdlib.testsuite.*;
 
 struct Ship {
   fuel int;
 }
 
+func +(s str, sett &HashMap<int, int, IntHasher, IntEquator>) str {
+  combined = StringBuilder();
+  combined!.print(s);
+  combined!.print("[");
+
+  first = true;
+  foreach [k, v] in sett {
+    if not first {
+      combined!.print(", ");
+    }
+    combined!.print(k);
+    combined!.print("=");
+    combined!.print(v);
+    set first = false;
+  }
+
+  combined!.print("]");
+
+  ret combined.str();
+}
+func +(s str, sett &HashSet<int, IntHasher, IntEquator>) str {
+  combined = StringBuilder();
+  combined!.print(s);
+  combined!.print("[");
+
+  first = true;
+  foreach x in sett {
+    if not first {
+      combined!.print(", ");
+    }
+    combined!.print(x);
+    set first = false;
+  }
+
+  combined!.print("]");
+
+  ret combined.str();
+}
+
 exported func main() {
   suite = TestSuite();
+
+  suite!.test("Basic hash map", {
+    map = HashMap<int, int, IntHasher, IntEquator>(IntHasher(), IntEquator());
+    map!.add(39, 1);
+    map!.add(42, 2);
+    map!.add(51, 3);
+    map!.add(72, 4);
+    map!.add(89, 5);
+
+    sett = HashSet<int, IntHasher, IntEquator>(IntHasher(), IntEquator());
+    sett!.add(39);
+    sett!.add(42);
+    sett!.add(51);
+    sett!.add(72);
+    sett!.add(89);
+
+    &map.KeysIter().HashSet(IntHasher(), IntEquator()) should_equal &sett;
+  });
+
+  suite!.test("Remove", {
+    map = HashMap<int, int, IntHasher, IntEquator>(IntHasher(), IntEquator());
+    map!.add(39, 1);
+    map!.add(42, 2);
+    map!.add(51, 3);
+    map!.remove(51) should_equal 3;
+
+    sett = HashSet<int, IntHasher, IntEquator>(IntHasher(), IntEquator());
+    sett!.add(39);
+    sett!.add(42);
+
+    &map.KeysIter().HashSet(IntHasher(), IntEquator()) should_equal &sett;
+  });
 
   (suite).finish();
 }

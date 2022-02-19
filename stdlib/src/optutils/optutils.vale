@@ -1,0 +1,2 @@
+
+func nonEmpty<T>(self &Opt<T>) bool { not self.isEmpty() }

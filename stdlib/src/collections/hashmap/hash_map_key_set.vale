@@ -1,0 +1,49 @@
+import stdlib.collections.list.*;
+import stdlib.math.*;
+
+struct HashMapKeySetIterator<K, V> {
+  table &[]Opt<HashMapNode<K, V>>;
+  pos! int;
+}
+
+func KeysIter<K, V, H, E>(map &HashMap<K, V, H, E>)
+HashMapKeySetIterator<K, V> {
+  HashMapKeySetIterator(map.table, 0)
+}
+
+func begin<K, V>(iter &HashMapKeySetIterator<K, V>)
+HashMapKeySetIterator<K, V> {
+  HashMapKeySetIterator<K, V>(iter.table, iter.pos)
+}
+
+func next<K, V>(iter &!HashMapKeySetIterator<K, V>) Opt<K> {
+  while iter.pos < iter.table.len() {
+    if entry = iter.table[set iter.pos = iter.pos + 1];
+        not entry.isEmpty() {
+      ret Some<K>((entry).get().key);
+    }
+  }
+  ret None<K>();
+}
+
+func HashSet<K, V, H, E>(
+  iter &HashMapKeySetIterator<K, V>,
+  hasher H,
+  equator E)
+HashSet<K, H, E> {
+  sett = HashSet<K, H, E>(hasher, equator);
+  foreach x in iter {
+    sett!.add(x);
+  }
+  ret sett;
+}
+
+func List<K, V>(
+  iter &HashMapKeySetIterator<K, V>)
+List<K> {
+  list = List<K>();
+  foreach x in iter {
+    list!.add(x);
+  }
+  ret list;
+}

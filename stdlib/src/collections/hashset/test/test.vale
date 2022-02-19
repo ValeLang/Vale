@@ -1,9 +1,29 @@
 import stdlib.collections.hashset.*;
 import stdlib.testsuite.*;
+import stdlib.stringutils.*;
 import stdlib.math.*;
 
 struct Ship {
   fuel int;
+}
+
+func +(s str, sett &HashSet<int, IntHasher, IntEquator>) str {
+  combined = StringBuilder();
+  combined!.print(s);
+  combined!.print("[");
+
+  first = true;
+  foreach x in sett {
+    if not first {
+      combined!.print(", ");
+    }
+    combined!.print(x);
+    set first = false;
+  }
+
+  combined!.print("]");
+
+  ret combined.str();
 }
 
 exported func main() {
@@ -17,6 +37,24 @@ exported func main() {
     sett.contains(42) should_equal true;
     sett.contains(43) should_equal false;
     sett.len() should_equal 3;
+  });
+
+  suite!.test("hash set equal", {
+    a = HashSet<int, IntHasher, IntEquator>(IntHasher(), IntEquator());
+    a!.add(39);
+    a!.add(42);
+    a!.add(51);
+    a!.add(72);
+    b = HashSet<int, IntHasher, IntEquator>(IntHasher(), IntEquator());
+    b!.add(39);
+    b!.add(42);
+    b!.add(51);
+
+    &a should_not_equal &b;
+
+    b!.add(72);
+
+    &a should_equal &b;
   });
 
   suite!.test("hash set diff", {

@@ -59,8 +59,12 @@ case class MemberWiseEqualsWrapper(x: IInterning) {
   }
 }
 
+class BigHashMap[A, B](initSize : Int) extends mutable.HashMap[A, B] {
+  override def initialSize: Int = initSize // 16 - by default
+}
+
 class Interner {
-  val map = mutable.HashMap[MemberWiseEqualsWrapper, Any]()
+  val map = new BigHashMap[MemberWiseEqualsWrapper, Any](100000)
   def intern[X <: IInterning](x: X): X = {
     map.get(MemberWiseEqualsWrapper(x)) match {
       case Some(original) => return original.asInstanceOf[X]

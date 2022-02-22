@@ -309,7 +309,7 @@ class ArrayTemplar(
     temputs.getStaticSizedArrayType(size, mutability, variability, type2) match {
       case Some(staticSizedArrayT2) => (staticSizedArrayT2)
       case None => {
-        val staticSizedArrayType = StaticSizedArrayTT(size, mutability, variability, type2)
+        val staticSizedArrayType = interner.intern(StaticSizedArrayTT(size, mutability, variability, type2))
         temputs.addStaticSizedArray(staticSizedArrayType)
         val staticSizedArrayOwnership = if (mutability == MutableT) OwnT else ShareT
         val staticSizedArrayPermission = if (mutability == MutableT) ReadwriteT else ReadonlyT
@@ -348,7 +348,7 @@ class ArrayTemplar(
     temputs.getRuntimeSizedArray(arrayMutability, type2) match {
       case Some(staticSizedArrayT2) => (staticSizedArrayT2)
       case None => {
-        val runtimeSizedArrayType = RuntimeSizedArrayTT(arrayMutability, type2)
+        val runtimeSizedArrayType = interner.intern(RuntimeSizedArrayTT(arrayMutability, type2))
         temputs.addRuntimeSizedArray(runtimeSizedArrayType)
         val runtimeSizedArrayRefType2 =
           CoordT(

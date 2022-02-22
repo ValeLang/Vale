@@ -17,7 +17,8 @@ class NameHammer(translateName: (Hinputs, HamutsBox, INameT) => IVonData) {
     namePart match {
       case SelfNameT() => "self"
       case AnonymousSubstructImplNameT() => "AnonSubstructImpl"
-      case VirtualFreeNameT(_, _) => "VirtualFree"
+      case AbstractVirtualFreeNameT(_, _) => "(abstract vfree)"
+      case OverrideVirtualFreeNameT(_, _) => "(override vfree)"
       case AbstractVirtualDropFunctionNameT(_, _, _) => "vdrop"
       case OverrideVirtualDropFunctionNameT(_, _, _) => "vdrop"
       case FreeNameT(templateArgs, parameters) => "Free"

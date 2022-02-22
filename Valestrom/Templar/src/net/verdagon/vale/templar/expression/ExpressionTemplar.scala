@@ -1340,7 +1340,7 @@ class ExpressionTemplar(
       CoordT(
         ShareT,
         ReadonlyT,
-        OverloadSet(env, name)))
+        interner.intern(OverloadSetT(env, name))))
   }
 
   def evaluateBlockStatements(

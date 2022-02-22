@@ -1,8 +1,8 @@
 package net.verdagon.vale.templar.macros
 
 import net.verdagon.vale.{IProfiler, Interner, PackageCoordinate, RangeS, vassert}
-import net.verdagon.vale.astronomer.{ConstructorNameS, FunctionA, StructA}
-import net.verdagon.vale.scout.{CodeNameS, CodeVarNameS, CoordTemplataType, FunctionTemplataType, GeneratedBodyS, IRuneS, ITemplataType, KindTemplataType, NormalStructMemberS, ParameterS, ReturnRuneS, RuneNameS, StructNameRuneS, TemplateTemplataType, UserFunctionS, VariadicStructMemberS}
+import net.verdagon.vale.astronomer.{FunctionA, StructA}
+import net.verdagon.vale.scout.{CodeNameS, CodeVarNameS, ConstructorNameS, CoordTemplataType, FunctionTemplataType, GeneratedBodyS, IRuneS, ITemplataType, KindTemplataType, NormalStructMemberS, ParameterS, ReturnRuneS, RuneNameS, StructNameRuneS, TemplateTemplataType, UserFunctionS, VariadicStructMemberS}
 import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules.{CallSR, IRulexSR, IndexListSR, LookupSR, RuneUsage}
 import net.verdagon.vale.templar.ast.{ArgLookupTE, BlockTE, ConstructTE, FunctionHeaderT, FunctionT, LocationInFunctionEnvironment, ParameterT, ReturnTE}

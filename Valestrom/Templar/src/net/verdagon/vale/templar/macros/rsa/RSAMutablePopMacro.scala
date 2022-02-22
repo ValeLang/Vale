@@ -34,7 +34,7 @@ class RSAMutablePopMacro(profiler: IProfiler, interner: Interner) extends IFunct
         env.lookupNearestWithImpreciseName(
           profiler, interner.intern(RuneNameS(CodeRuneS("E"))), Set(TemplataLookupContext)))
 
-    val arrayTT = RuntimeSizedArrayTT(MutableT, elementType)
+    val arrayTT = interner.intern(RuntimeSizedArrayTT(MutableT, elementType))
 
     temputs.addFunction(
       ast.FunctionT(

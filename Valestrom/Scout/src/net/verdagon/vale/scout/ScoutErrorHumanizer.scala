@@ -102,6 +102,8 @@ object ScoutErrorHumanizer {
       case AnonymousSubstructTemplateImpreciseNameS(interfaceHumanName) => "(anon substruct template of " + humanizeImpreciseName(interfaceHumanName) + ")"
       case LambdaStructImpreciseNameS(lambdaName) => humanizeImpreciseName(lambdaName) + ".struct"
       case LambdaImpreciseNameS() => "(lambda)"
+      case VirtualFreeImpreciseNameS() => "(abstract virtual free)"
+      case VirtualFreeImpreciseNameS() => "(override virtual free)"
     }
   }
 
@@ -129,6 +131,7 @@ object ScoutErrorHumanizer {
       case AnonymousSubstructParentInterfaceTemplateRuneS() => "(anon sub parent template)"
       case AnonymousSubstructParentInterfaceRuneS() => "(anon sub parent)"
       case StructNameRuneS(inner) => humanizeName(inner)
+      case FreeOverrideStructTemplateRuneS() => "(free override template)"
       case other => vimpl(other)
     }
   }

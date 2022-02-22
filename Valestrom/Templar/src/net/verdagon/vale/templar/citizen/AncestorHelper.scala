@@ -1,6 +1,7 @@
 package net.verdagon.vale.templar.citizen
 
-import net.verdagon.vale.astronomer.{ImplA, ImplImpreciseNameS}
+import net.verdagon.vale.astronomer.ImplA
+import net.verdagon.vale.scout.ImplImpreciseNameS
 import net.verdagon.vale.scout.rules.Equivalencies
 import net.verdagon.vale.solver.SolverErrorHumanizer
 import net.verdagon.vale.templar.types._

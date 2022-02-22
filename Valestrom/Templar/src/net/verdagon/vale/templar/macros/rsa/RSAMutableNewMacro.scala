@@ -39,7 +39,7 @@ class RSAMutableNewMacro(profiler: IProfiler, interner: Interner) extends IFunct
         env.lookupNearestWithImpreciseName(
           profiler, interner.intern(RuneNameS(CodeRuneS("M"))), Set(TemplataLookupContext)))
 
-    val arrayTT = RuntimeSizedArrayTT(mutability, elementType)
+    val arrayTT = interner.intern(RuntimeSizedArrayTT(mutability, elementType))
 
     temputs.addFunction(
       ast.FunctionT(

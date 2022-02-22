@@ -1270,9 +1270,25 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
               "kind",
               vonifyKind(typeHammer.translateKind(hinputs, hamuts, kind)))))
       }
-      case VirtualFreeNameT(templateArgs, param) => {
+      case AbstractVirtualFreeNameT(templateArgs, param) => {
         VonObject(
-          "F",
+          "AbstractVirtualFreeF",
+          None,
+          Vector(
+            VonMember(
+              "templateArgs",
+              VonArray(
+                None,
+                templateArgs
+                  .map(templateArg => vonifyTemplata(hinputs, hamuts, templateArg))
+                  .toVector)),
+            VonMember(
+              "param",
+              vonifyKind(typeHammer.translateKind(hinputs, hamuts, param)))))
+      }
+      case OverrideVirtualFreeNameT(templateArgs, param) => {
+        VonObject(
+          "OverrideVirtualFreeF",
           None,
           Vector(
             VonMember(

@@ -107,7 +107,13 @@ case class NodeEnvironment(
 
   val hash = fullName.hashCode() ^ life.hashCode();
   override def hashCode(): Int = hash;
-  override def equals(obj: Any): Boolean = vcurious()
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case that @ NodeEnvironment(_, _, _, _, _, _, _) => {
+        fullName == that.fullName && life == that.life
+      }
+    }
+  }
 
   override def fullName: FullNameT[INameT] = parentFunctionEnv.fullName
   def function = parentFunctionEnv.function

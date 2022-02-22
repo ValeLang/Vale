@@ -125,7 +125,7 @@ class Templar(
         Boolean = {
           kind match {
             case RuntimeSizedArrayTT(_, _) => false
-            case OverloadSet(_, _) => false
+            case OverloadSetT(_, _) => false
             case StaticSizedArrayTT(_, _, _, _) => false
             case s @ StructTT(_) => ancestorHelper.getAncestorInterfaces(temputs, s).nonEmpty
             case i @ InterfaceTT(_) => ancestorHelper.getAncestorInterfaces(temputs, i).nonEmpty
@@ -948,7 +948,7 @@ object Templar {
       case ir @ InterfaceTT(_) => temputs.lookupMutability(ir)
 //      case PackTT(_, sr) => temputs.lookupMutability(sr)
 //      case TupleTT(_, sr) => temputs.lookupMutability(sr)
-      case OverloadSet(_, _) => {
+      case OverloadSetT(_, _) => {
         // Just like FunctionT2
         ImmutableT
       }

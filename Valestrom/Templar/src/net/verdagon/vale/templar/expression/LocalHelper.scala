@@ -228,7 +228,7 @@ class LocalHelper(
         val mutability = Templar.getMutability(temputs, ir2)
         if (mutability == MutableT) BorrowT else ShareT
       }
-      case OverloadSet(_, _) => {
+      case OverloadSetT(_, _) => {
         ShareT
       }
     }

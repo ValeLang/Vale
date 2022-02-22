@@ -36,7 +36,7 @@ class StructTemplarCore(
     val templateNameT = nameTranslator.translateCitizenName(structA.name)
     val structNameT = templateNameT.makeCitizenName(interner, coercedFinalTemplateArgs)
     val fullNameT = structRunesEnv.fullName.addStep(structNameT)
-    val temporaryStructRef = StructTT(fullNameT)
+    val temporaryStructRef = interner.intern(StructTT(fullNameT))
 
     val attributesWithoutExportOrMacros =
       structA.attributes.filter({
@@ -119,6 +119,7 @@ class StructTemplarCore(
     val structDefT =
       StructDefinitionT(
         fullNameT,
+        interner.intern(StructTT(fullNameT)),
         translateCitizenAttributes(attributesWithoutExportOrMacros),
         structA.weakable,
         mutability,
@@ -182,7 +183,7 @@ class StructTemplarCore(
   (InterfaceDefinitionT) = {
     val TopLevelCitizenDeclarationNameS(humanName, codeLocation) = interfaceA.name
     val fullNameT = interfaceRunesEnv.fullName.addStep(interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT(humanName)), coercedFinalTemplateArgs2)))
-    val temporaryInferfaceRef = InterfaceTT(fullNameT)
+    val temporaryInferfaceRef = interner.intern(InterfaceTT(fullNameT))
 
     val attributesWithoutExport =
       interfaceA.attributes.filter({
@@ -278,6 +279,7 @@ class StructTemplarCore(
     val interfaceDef2 =
       InterfaceDefinitionT(
         fullNameT,
+        interner.intern(InterfaceTT(fullNameT)),
         translateCitizenAttributes(attributesWithoutExport),
         interfaceA.weakable,
         mutability,
@@ -365,7 +367,7 @@ class StructTemplarCore(
     val nearName = nearTemplateName.makeCitizenName(interner, Vector())
     val fullName = containingFunctionEnv.fullName.addStep(nearName)
 
-    val structTT = StructTT(fullName)
+    val structTT = interner.intern(StructTT(fullName))
 
     // We declare the function into the environment that we use to compile the
     // struct, so that those who use the struct can reach into its environment
@@ -409,7 +411,11 @@ class StructTemplarCore(
     temputs.declareKindEnv(structTT, structEnv);
 
 
-    val closureStructDefinition = StructDefinitionT(fullName, Vector.empty, false, mutability, members, true);
+    val closureStructDefinition =
+      StructDefinitionT(
+        fullName,
+        interner.intern(StructTT(fullName)),
+        Vector.empty, false, mutability, members, true);
     temputs.add(closureStructDefinition)
 
     val closuredVarsStructRef = closureStructDefinition.getRef;

@@ -143,7 +143,7 @@ class OverloadTemplar(
     val candidates =
       findHayTemplatas(env, temputs, functionName, paramFilters, extraEnvsToLookIn)
     candidates.flatMap({
-      case KindTemplata(OverloadSet(overloadsEnv, nameInOverloadsEnv)) => {
+      case KindTemplata(OverloadSetT(overloadsEnv, nameInOverloadsEnv)) => {
         getCandidateBanners(
           overloadsEnv, temputs, callRange, nameInOverloadsEnv,
           explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, exact)

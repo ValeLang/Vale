@@ -38,7 +38,7 @@ class StructTemplarTemplateArgsLayer(
       val fullName = env.fullName.addStep(structName)
 //      val fullName = env.fullName.addStep(structLastName)
 
-      temputs.structDeclared(fullName) match {
+      temputs.structDeclared(interner.intern(StructTT(fullName))) match {
         case Some(structTT) => {
           (structTT)
         }
@@ -47,7 +47,7 @@ class StructTemplarTemplateArgsLayer(
           if (templateArgs.size != structA.identifyingRunes.size) {
             vfail("wat?")
           }
-          val temporaryStructRef = StructTT(fullName)
+          val temporaryStructRef = interner.intern(StructTT(fullName))
           temputs.declareKind(temporaryStructRef)
 
           structA.maybePredictedMutability match {
@@ -93,7 +93,7 @@ class StructTemplarTemplateArgsLayer(
       val fullName = env.fullName.addStep(interfaceName)
 //      val fullName = env.fullName.addStep(interfaceLastName)
 
-      temputs.interfaceDeclared(fullName) match {
+      temputs.interfaceDeclared(interner.intern(InterfaceTT(fullName))) match {
         case Some(interfaceTT) => {
           (interfaceTT)
         }
@@ -102,7 +102,7 @@ class StructTemplarTemplateArgsLayer(
           if (templateArgs.size != interfaceA.identifyingRunes.size) {
             vfail("wat?")
           }
-          val temporaryInterfaceRef = InterfaceTT(fullName)
+          val temporaryInterfaceRef = interner.intern(InterfaceTT(fullName))
           temputs.declareKind(temporaryInterfaceRef)
 
 

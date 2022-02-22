@@ -17,8 +17,11 @@ class NameTranslator(interner: Interner) {
       case FreeDeclarationNameS(codeLocationS) => {
         interner.intern(FreeTemplateNameT(translateCodeLocation(codeLocationS)))
       }
-      case VirtualFreeDeclarationNameS(codeLoc) => {
-        interner.intern(VirtualFreeTemplateNameT(codeLoc))
+      case AbstractVirtualFreeDeclarationNameS(codeLoc) => {
+        interner.intern(AbstractVirtualFreeTemplateNameT(codeLoc))
+      }
+      case OverrideVirtualFreeDeclarationNameS(codeLoc) => {
+        interner.intern(OverrideVirtualFreeTemplateNameT(codeLoc))
       }
       case FunctionNameS(name, codeLocation) => {
         interner.intern(FunctionTemplateNameT(name, translateCodeLocation(codeLocation)))

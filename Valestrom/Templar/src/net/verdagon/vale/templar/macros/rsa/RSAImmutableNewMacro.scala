@@ -50,7 +50,7 @@ class RSAImmutableNewMacro(profiler: IProfiler, interner: Interner) extends IFun
         case MutableT => VaryingT
       }
 
-    val arrayTT = RuntimeSizedArrayTT(mutability, elementType)
+    val arrayTT = interner.intern(RuntimeSizedArrayTT(mutability, elementType))
 
     temputs.addFunction(
       ast.FunctionT(

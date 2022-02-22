@@ -258,14 +258,26 @@ case class FreeNameT(templateArgs: Vector[ITemplata], kind: KindT) extends IFunc
 }
 
 // See NSIDN for why we have these virtual names
-case class VirtualFreeTemplateNameT(codeLoc: CodeLocationS) extends INameT with IFunctionTemplateNameT {
+case class AbstractVirtualFreeTemplateNameT(codeLoc: CodeLocationS) extends INameT with IFunctionTemplateNameT {
   override def makeFunctionName(interner: Interner, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
     val Vector(CoordT(ShareT, ReadonlyT, kind)) = params
-    interner.intern(VirtualFreeNameT(templateArgs, kind))
+    interner.intern(AbstractVirtualFreeNameT(templateArgs, kind))
   }
 }
 // See NSIDN for why we have these virtual names
-case class VirtualFreeNameT(templateArgs: Vector[ITemplata], param: KindT) extends IFunctionNameT {
+case class AbstractVirtualFreeNameT(templateArgs: Vector[ITemplata], param: KindT) extends IFunctionNameT {
+  override def parameters: Vector[CoordT] = Vector(CoordT(ShareT, ReadonlyT, param))
+}
+
+// See NSIDN for why we have these virtual names
+case class OverrideVirtualFreeTemplateNameT(codeLoc: CodeLocationS) extends INameT with IFunctionTemplateNameT {
+  override def makeFunctionName(interner: Interner, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
+    val Vector(CoordT(ShareT, ReadonlyT, kind)) = params
+    interner.intern(OverrideVirtualFreeNameT(templateArgs, kind))
+  }
+}
+// See NSIDN for why we have these virtual names
+case class OverrideVirtualFreeNameT(templateArgs: Vector[ITemplata], param: KindT) extends IFunctionNameT {
   override def parameters: Vector[CoordT] = Vector(CoordT(ShareT, ReadonlyT, param))
 }
 

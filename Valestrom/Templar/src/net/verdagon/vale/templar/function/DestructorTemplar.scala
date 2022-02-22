@@ -104,7 +104,7 @@ class DestructorTemplar(
               case IntT(_) | StrT() | BoolT() | FloatT() | VoidT() => {
                 DiscardTE(undestructedExpr2)
               }
-              case OverloadSet(overloadSetEnv, name) => {
+              case OverloadSetT(overloadSetEnv, name) => {
                 DiscardTE(undestructedExpr2)
               }
               case as@StaticSizedArrayTT(_, _, _, _) => {

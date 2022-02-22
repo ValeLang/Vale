@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar.macros.citizen
 
 import net.verdagon.vale._
-import net.verdagon.vale.astronomer.{FunctionA, ImplA, StructA, VirtualFreeDeclarationNameS}
+import net.verdagon.vale.astronomer.{FunctionA, ImplA, StructA}
 import net.verdagon.vale.scout._
 import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS, OverrideSP}
 import net.verdagon.vale.scout.rules._
@@ -10,7 +10,7 @@ import net.verdagon.vale.templar.ast.{ArgLookupTE, BlockTE, FunctionCallTE, Func
 import net.verdagon.vale.templar.env.{FunctionEnvEntry, IEnvEntry}
 import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.macros.{IFunctionBodyMacro, IOnImplDefinedMacro, IOnStructDefinedMacro}
-import net.verdagon.vale.templar.names.{FullNameT, INameT, NameTranslator, VirtualFreeNameT}
+import net.verdagon.vale.templar.names._
 import net.verdagon.vale.templar.types.{CoordT, ImmutableT, InterfaceTT, MutabilityT, ParamFilter, ReadonlyT, ShareT, StructTT, VoidT}
 
 class ImplFreeMacro(
@@ -31,7 +31,7 @@ class ImplFreeMacro(
     val virtualFreeFunctionA =
       FunctionA(
         structA.range,
-        interner.intern(VirtualFreeDeclarationNameS(structA.range.begin)),
+        interner.intern(OverrideVirtualFreeDeclarationNameS(structA.range.begin)),
         Vector(),
         TemplateTemplataType(
           structA.identifyingRunes.map(_.rune).map(structA.runeToType) :+ KindTemplataType,

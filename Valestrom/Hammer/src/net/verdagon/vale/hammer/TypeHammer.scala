@@ -26,7 +26,7 @@ class TypeHammer(
 
       case i @ InterfaceTT(_) => structHammer.translateInterfaceRef(hinputs, hamuts, i)
 
-      case OverloadSet(_, _) => VoidH()
+      case OverloadSetT(_, _) => VoidH()
 
       case a @ StaticSizedArrayTT(_, _, _, _) => translateStaticSizedArray(hinputs, hamuts, a)
       case a @ RuntimeSizedArrayTT(_, _) => translateRuntimeSizedArray(hinputs, hamuts, a)
@@ -45,7 +45,7 @@ class TypeHammer(
         case (PointerT, _) => YonderH
         case (BorrowT, _) => YonderH
         case (WeakT, _) => YonderH
-        case (ShareT, OverloadSet(_, _)) => InlineH
+        case (ShareT, OverloadSetT(_, _)) => InlineH
 //        case (ShareT, PackTT(_, _)) => InlineH
 //        case (ShareT, TupleTT(_, _)) => InlineH
         case (ShareT, StructTT(FullNameT(_, Vector(), CitizenNameT(CitizenTemplateNameT("Tup"), _)))) => InlineH

@@ -425,6 +425,7 @@ class TemplarTests extends FunSuite with Matchers {
       case StructDefinitionT(
       simpleName("MyStruct"),
       _,
+      _,
       false,
       MutableT,
       Vector(StructMemberT(CodeVarNameT("a"), FinalT, ReferenceMemberTypeT(CoordT(ShareT, ReadonlyT, IntT.i32)))),
@@ -461,12 +462,12 @@ class TemplarTests extends FunSuite with Matchers {
 
     val interfaceDef =
       temputs.interfaces.collectFirst({
-        case id @ InterfaceDefinitionT(simpleName("MyInterface"), _, false, MutableT, Vector()) => id
+        case id @ InterfaceDefinitionT(simpleName("MyInterface"), _, _, false, MutableT, Vector()) => id
       }).get
 
     val structDef =
       temputs.structs.collectFirst({
-        case sd @ StructDefinitionT(simpleName("MyStruct"), _, false, MutableT, _, false) => sd
+        case sd @ StructDefinitionT(simpleName("MyStruct"), _, _, false, MutableT, _, false) => sd
       }).get
 
     vassert(temputs.edges.exists(impl => {
@@ -485,10 +486,13 @@ class TemplarTests extends FunSuite with Matchers {
     val interner = compile.interner
 
     temputs.lookupInterface(
-      InterfaceTT(
-        FullNameT(PackageCoordinate.TEST_TLD, Vector(), interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("MyOption")), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))))
+      interner.intern(
+        InterfaceTT(
+          FullNameT(PackageCoordinate.TEST_TLD, Vector(), interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("MyOption")), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))))))
     vassert(temputs.lookupFunction("main").header.params.head.tyype ==
-        CoordT(OwnT,ReadwriteT,InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("MyOption")), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))))))
+        CoordT(OwnT,ReadwriteT,
+          interner.intern(
+            InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("MyOption")), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))))))
 
     // Can't run it because there's nothing implementing that interface >_>
   }
@@ -559,10 +563,14 @@ class TemplarTests extends FunSuite with Matchers {
 
     val interface =
       temputs.lookupInterface(
-        InterfaceTT(
-          FullNameT(PackageCoordinate.TEST_TLD, Vector(), interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("MyOption")), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))))
+        interner.intern(
+          InterfaceTT(
+            FullNameT(PackageCoordinate.TEST_TLD, Vector(), interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("MyOption")), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))))))
 
-    val struct = temputs.lookupStruct(StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("MySome")), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))));
+    val struct =
+      temputs.lookupStruct(
+        interner.intern(
+          StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("MySome")), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))))))
 
     temputs.lookupImpl(struct.getRef, interface.getRef)
   }
@@ -601,7 +609,9 @@ class TemplarTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val interner = compile.interner
 
-    temputs.lookupStruct(StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("MySome")), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))));
+    temputs.lookupStruct(
+      interner.intern(
+        StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("MySome")), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))))))
 
     val constructor = temputs.lookupFunction("MySome")
     constructor.header match {

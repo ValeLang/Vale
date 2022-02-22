@@ -2,7 +2,7 @@ package net.verdagon.vale.templar
 
 import net.verdagon.vale.templar.ast.{AsSubtypeTE, DestroyImmRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoFunctionTE, EdgeT, FunctionCallTE, FunctionT, InterfaceEdgeBlueprint, LockWeakTE, NewImmRuntimeSizedArrayTE, ProgramT, SignatureT, StaticArrayFromCallableTE, getFunctionLastName}
 import net.verdagon.vale.templar.expression.CallTemplar
-import net.verdagon.vale.templar.names.{FreeNameT, FullNameT, FunctionNameT, IFunctionNameT, VirtualFreeNameT}
+import net.verdagon.vale.templar.names._
 import net.verdagon.vale.templar.templata.CoordTemplata
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.{Collector, PackageCoordinate, vassertOne, vassertSome, vcurious, vimpl, vpass}
@@ -106,7 +106,8 @@ object Reachability {
           program.getAllFunctions().find(func => {
             func.header.toSignature match {
               case SignatureT(FullNameT(_, _, FreeNameT(_, kind))) if kind == structTT => true
-              case SignatureT(FullNameT(_, _, VirtualFreeNameT(_, kind))) if kind == structTT => true
+              case SignatureT(FullNameT(_, _, AbstractVirtualFreeNameT(_, kind))) if kind == structTT => true
+              case SignatureT(FullNameT(_, _, OverrideVirtualFreeNameT(_, kind))) if kind == structTT => true
               case _ => false
             }
           })).header.toSignature
@@ -143,7 +144,8 @@ object Reachability {
           program.getAllFunctions().find(func => {
             func.header.toSignature match {
               case SignatureT(FullNameT(_, _, FreeNameT(_, kind))) if kind == interfaceTT => true
-              case SignatureT(FullNameT(_, _, VirtualFreeNameT(_, kind))) if kind == interfaceTT => true
+              case SignatureT(FullNameT(_, _, AbstractVirtualFreeNameT(_, kind))) if kind == interfaceTT => true
+              case SignatureT(FullNameT(_, _, OverrideVirtualFreeNameT(_, kind))) if kind == interfaceTT => true
               case _ => false
             }
           })).header.toSignature
@@ -183,7 +185,8 @@ object Reachability {
           program.getAllFunctions().find(func => {
             func.header.toSignature match {
               case SignatureT(FullNameT(_, _, FreeNameT(_, kind))) if kind == ssa => true
-              case SignatureT(FullNameT(_, _, VirtualFreeNameT(_, kind))) if kind == ssa => true
+              case SignatureT(FullNameT(_, _, AbstractVirtualFreeNameT(_, kind))) if kind == ssa => true
+              case SignatureT(FullNameT(_, _, OverrideVirtualFreeNameT(_, kind))) if kind == ssa => true
               case _ => false
             }
           })).header.toSignature
@@ -211,7 +214,8 @@ object Reachability {
           program.getAllFunctions().find(func => {
             func.header.toSignature match {
               case SignatureT(FullNameT(_, _, FreeNameT(_, kind))) if kind == rsa => true
-              case SignatureT(FullNameT(_, _, VirtualFreeNameT(_, kind))) if kind == rsa => true
+              case SignatureT(FullNameT(_, _, AbstractVirtualFreeNameT(_, kind))) if kind == rsa => true
+              case SignatureT(FullNameT(_, _, OverrideVirtualFreeNameT(_, kind))) if kind == rsa => true
               case _ => false
             }
           })).header.toSignature

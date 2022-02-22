@@ -220,7 +220,7 @@ class PatternTemplar(
       listOfMaybeDestructureMemberPatterns: Vector[AtomSP],
       afterDestructureSuccessContinuation: (Temputs, NodeEnvironmentBox, LocationInFunctionEnvironment, Vector[ILocalVariableT]) => ReferenceExpressionTE
   ): ReferenceExpressionTE = {
-    vassert(initialLiveCaptureLocals == initialLiveCaptureLocals.distinct)
+    vassert(initialLiveCaptureLocals.map(_.id) == initialLiveCaptureLocals.map(_.id).distinct)
 
     val CoordT(OwnT, expectedContainerPermission, expectedContainerKind) = inputExpr.result.reference
     expectedContainerKind match {
@@ -243,7 +243,7 @@ class PatternTemplar(
         val elementLocals = (0 until size).map(i => localHelper.makeTemporaryLocal(nenv, life + 3 + i, elementType)).toVector
         val destroyTE = DestroyStaticSizedArrayIntoLocalsTE(inputExpr, staticSizedArrayT, elementLocals)
         val liveCaptureLocals = initialLiveCaptureLocals ++ elementLocals
-        vassert(liveCaptureLocals == liveCaptureLocals.distinct)
+        vassert(liveCaptureLocals.map(_.id) == liveCaptureLocals.map(_.id).distinct)
 
         if (elementLocals.size != listOfMaybeDestructureMemberPatterns.size) {
           throw CompileErrorExceptionT(WrongNumberOfDestructuresError(range, listOfMaybeDestructureMemberPatterns.size, elementLocals.size))
@@ -273,7 +273,7 @@ class PatternTemplar(
       listOfMaybeDestructureMemberPatterns: Vector[AtomSP],
       afterDestructureSuccessContinuation: (Temputs, NodeEnvironmentBox, LocationInFunctionEnvironment, Vector[ILocalVariableT]) => ReferenceExpressionTE
   ): ReferenceExpressionTE = {
-    vassert(liveCaptureLocals == liveCaptureLocals.distinct)
+    vassert(liveCaptureLocals.map(_.id) == liveCaptureLocals.map(_.id).distinct)
 
     val localT = localHelper.makeTemporaryLocal(nenv, life + 0, containerTE.result.reference)
     val letTE = LetNormalTE(localT, containerTE)
@@ -299,7 +299,7 @@ class PatternTemplar(
     listOfMaybeDestructureMemberPatterns: List[AtomSP],
     afterDestructureSuccessContinuation: (Temputs, NodeEnvironmentBox, LocationInFunctionEnvironment, Vector[ILocalVariableT]) => ReferenceExpressionTE
   ): ReferenceExpressionTE = {
-    vassert(liveCaptureLocals == liveCaptureLocals.distinct)
+    vassert(liveCaptureLocals.map(_.id) == liveCaptureLocals.map(_.id).distinct)
 
     val CoordT(expectedContainerOwnership, expectedContainerPermission, expectedContainerKind) = expectedContainerCoord
 
@@ -343,7 +343,7 @@ class PatternTemplar(
         innerTranslateSubPatternAndMaybeContinue(
           temputs, nenv, life + 1, headMaybeDestructureMemberPattern, liveCaptureLocals, loadExpr,
           (temputs, nenv, life, liveCaptureLocals) => {
-            vassert(liveCaptureLocals == liveCaptureLocals.distinct)
+            vassert(liveCaptureLocals.map(_.id) == liveCaptureLocals.map(_.id).distinct)
 
             val nextMemberIndex = memberIndex + 1
             iterateDestructureNonOwningAndMaybeContinue(
@@ -372,7 +372,7 @@ class PatternTemplar(
     inputStructExpr: ReferenceExpressionTE,
     afterDestroySuccessContinuation: (Temputs, NodeEnvironmentBox, LocationInFunctionEnvironment, Vector[ILocalVariableT]) => ReferenceExpressionTE
   ): ReferenceExpressionTE = {
-    vassert(initialLiveCaptureLocals == initialLiveCaptureLocals.distinct)
+    vassert(initialLiveCaptureLocals.map(_.id) == initialLiveCaptureLocals.map(_.id).distinct)
 
     val CoordT(_, _, structTT @ StructTT(_)) = inputStructExpr.result.reference
     val structDefT = temputs.getStructDefForRef(structTT)
@@ -385,7 +385,7 @@ class PatternTemplar(
         .map({ case (memberType, i) => localHelper.makeTemporaryLocal(nenv, life + 1 + i, memberType) }).toVector
     val destroyTE = DestroyTE(inputStructExpr, structTT, memberLocals)
     val liveCaptureLocals = initialLiveCaptureLocals ++ memberLocals
-    vassert(liveCaptureLocals == liveCaptureLocals.distinct)
+    vassert(liveCaptureLocals.map(_.id) == liveCaptureLocals.map(_.id).distinct)
 
     if (memberLocals.size != innerPatternMaybes.size) {
       throw CompileErrorExceptionT(WrongNumberOfDestructuresError(range, innerPatternMaybes.size, memberLocals.size))
@@ -411,7 +411,7 @@ class PatternTemplar(
     innerPatternMaybes: List[AtomSP],
     afterLetsSuccessContinuation: (Temputs, NodeEnvironmentBox, LocationInFunctionEnvironment, Vector[ILocalVariableT]) => ReferenceExpressionTE
   ): ReferenceExpressionTE = {
-    vassert(initialLiveCaptureLocals == initialLiveCaptureLocals.distinct)
+    vassert(initialLiveCaptureLocals.map(_.id) == initialLiveCaptureLocals.map(_.id).distinct)
 
     vassert(memberLocalVariables.size == innerPatternMaybes.size)
 
@@ -427,7 +427,7 @@ class PatternTemplar(
         innerTranslateSubPatternAndMaybeContinue(
           temputs, nenv, life + 1, headMaybeInnerPattern, liveCaptureLocals, unletExpr,
           (temputs, nenv, life, liveCaptureLocals) => {
-            vassert(initialLiveCaptureLocals == initialLiveCaptureLocals.distinct)
+            vassert(initialLiveCaptureLocals.map(_.id) == initialLiveCaptureLocals.map(_.id).distinct)
 
             makeLetsForOwnAndMaybeContinue(
               temputs, nenv, life, liveCaptureLocals, tailMemberLocalVariables, tailInnerPatternMaybes, afterLetsSuccessContinuation)

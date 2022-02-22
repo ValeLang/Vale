@@ -39,8 +39,9 @@ class VirtualTests extends FunSuite with Matchers {
                       CoordT(
                         OwnT,
                         ReadwriteT,
-                        InterfaceTT(
-                          FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("I")), Vector.empty))))))))))))
+                        interner.intern(
+                          InterfaceTT(
+                            FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("I")), Vector.empty)))))))))))))
       vassert(doThing.header.params(0).virtuality.get == AbstractT)
     }
 
@@ -75,8 +76,9 @@ class VirtualTests extends FunSuite with Matchers {
                     CoordT(
                       OwnT,
                       ReadwriteT,
-                      InterfaceTT(
-                        FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("I")), Vector.empty))))))))))))
+                      interner.intern(
+                        InterfaceTT(
+                          FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("I")), Vector.empty)))))))))))))
     vassert(doThing.header.params(0).virtuality.get == AbstractT)
   }
 

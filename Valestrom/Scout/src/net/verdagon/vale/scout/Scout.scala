@@ -122,6 +122,8 @@ case class StackFrame(
 
 object Scout {
   val VIRTUAL_DROP_FUNCTION_NAME = "vdrop"
+  // Interface's drop function simply calls vdrop.
+  // A struct's vdrop function calls the struct's drop function.
 
   def noVariableUses = VariableUses(Vector.empty)
   def noDeclarations = VariableDeclarations(Vector.empty)

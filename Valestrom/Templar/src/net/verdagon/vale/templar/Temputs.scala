@@ -218,9 +218,9 @@ case class Temputs() {
     deferredEvaluatingFunctions.put(devf.prototypeT, devf)
   }
 
-  def structDeclared(fullName: FullNameT[ICitizenNameT]): Option[StructTT] = {
+  def structDeclared(structTT: StructTT): Option[StructTT] = {
     // This is the only place besides StructDefinition2 and declareStruct thats allowed to make one of these
-    val structTT = StructTT(fullName)
+//    val structTT = StructTT(fullName)
     if (declaredKinds.contains(structTT)) {
       Some(structTT)
     } else {
@@ -262,9 +262,9 @@ case class Temputs() {
     }
   }
 
-  def interfaceDeclared(fullName: FullNameT[ICitizenNameT]): Option[InterfaceTT] = {
+  def interfaceDeclared(interfaceTT: InterfaceTT): Option[InterfaceTT] = {
     // This is the only place besides InterfaceDefinition2 and declareInterface thats allowed to make one of these
-    val interfaceTT = InterfaceTT(fullName)
+//    val interfaceTT = InterfaceTT(fullName)
     if (declaredKinds.contains(interfaceTT)) {
       Some(interfaceTT)
     } else {

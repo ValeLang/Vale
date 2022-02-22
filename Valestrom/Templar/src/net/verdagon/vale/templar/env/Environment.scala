@@ -7,7 +7,7 @@ import net.verdagon.vale.templar.env.TemplatasStore.{entryMatchesFilter, entryTo
 import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.macros.citizen._
 import net.verdagon.vale.templar.macros.{AnonymousInterfaceMacro, FunctorHelper, IFunctionBodyMacro, IOnImplDefinedMacro, IOnInterfaceDefinedMacro, IOnStructDefinedMacro, StructConstructorMacro}
-import net.verdagon.vale.templar.names.{AbstractVirtualDropFunctionNameT, AbstractVirtualDropFunctionTemplateNameT, AnonymousSubstructConstructorTemplateNameT, AnonymousSubstructImplNameT, AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, ArbitraryNameT, CitizenNameT, CitizenTemplateNameT, ClosureParamNameT, ForwarderFunctionNameT, ForwarderFunctionTemplateNameT, FreeTemplateNameT, FullNameT, FunctionNameT, FunctionTemplateNameT, INameT, IVarNameT, ImplDeclareNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT, LambdaTemplateNameT, NameTranslator, OverrideVirtualDropFunctionNameT, OverrideVirtualDropFunctionTemplateNameT, PackageTopLevelNameT, PrimitiveNameT, RuneNameT, SelfNameT, VirtualFreeNameT, VirtualFreeTemplateNameT}
+import net.verdagon.vale.templar.names._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.{CodeLocationS, Err, IProfiler, Interner, Ok, PackageCoordinate, Result, vassert, vcurious, vfail, vimpl, vwat}
 
@@ -200,11 +200,12 @@ object TemplatasStore {
       case FreeTemplateNameT(codeLocation) => Some(interner.intern(FreeImpreciseNameS()))
       case LambdaTemplateNameT(codeLocation) => Some(interner.intern(LambdaImpreciseNameS()))
       case FreeTemplateNameT(codeLoc) => Some(interner.intern(FreeImpreciseNameS()))
-      case VirtualFreeTemplateNameT(codeLoc) => Some(interner.intern(VirtualFreeImpreciseNameS()))
+      case AbstractVirtualFreeTemplateNameT(codeLoc) => Some(interner.intern(VirtualFreeImpreciseNameS()))
       case ForwarderFunctionTemplateNameT(inner, index) => getImpreciseName(interner, inner)
       case ForwarderFunctionNameT(inner, index) => getImpreciseName(interner, inner)
-      case VirtualFreeTemplateNameT(codeLoc) => Some(interner.intern(VirtualFreeImpreciseNameS()))
-      case VirtualFreeNameT(_, _) => Some(interner.intern(VirtualFreeImpreciseNameS()))
+      case OverrideVirtualFreeTemplateNameT(codeLoc) => Some(interner.intern(VirtualFreeImpreciseNameS()))
+      case AbstractVirtualFreeNameT(_, _) => Some(interner.intern(VirtualFreeImpreciseNameS()))
+      case OverrideVirtualFreeNameT(_, _) => Some(interner.intern(VirtualFreeImpreciseNameS()))
       case OverrideVirtualDropFunctionTemplateNameT(_) => Some(interner.intern(CodeNameS(Scout.VIRTUAL_DROP_FUNCTION_NAME)))
       case AbstractVirtualDropFunctionTemplateNameT(_) => Some(interner.intern(CodeNameS(Scout.VIRTUAL_DROP_FUNCTION_NAME)))
       case OverrideVirtualDropFunctionNameT(_, _, _) => Some(interner.intern(CodeNameS(Scout.VIRTUAL_DROP_FUNCTION_NAME)))

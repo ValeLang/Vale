@@ -53,7 +53,7 @@ class InterfaceDropMacro(
               FunctionCallSE(RangeS.internal(-167213),
                 OutsideLoadSE(RangeS.internal(-167213),
                   Array(),
-                  interner.intern(CodeNameS(CallTemplar.VIRTUAL_DROP_FUNCTION_NAME)),
+                  interner.intern(CodeNameS(Scout.VIRTUAL_DROP_FUNCTION_NAME)),
                   None,
                   LoadAsPointerP(None)),
                 Vector(LocalLoadSE(RangeS.internal(-167213), interner.intern(CodeVarNameS("this")), MoveP)))))))

@@ -19,9 +19,9 @@ object CallTemplar {
   // Every type, including interfaces, has a function of this name. These won't be virtual.
   val DROP_FUNCTION_NAME = "drop"
   // Every interface *also* has a function of this name. It's abstract, and an override is defined for each impl.
-  val VIRTUAL_DROP_FUNCTION_NAME = "vdrop"
-  // Interface's drop function simply calls vdrop.
-  // A struct's vdrop function calls the struct's drop function.
+//  val VIRTUAL_DROP_FUNCTION_NAME = "vdrop"
+//  // Interface's drop function simply calls vdrop.
+//  // A struct's vdrop function calls the struct's drop function.
 }
 
 class CallTemplar(
@@ -55,7 +55,7 @@ class CallTemplar(
         evaluateClosureCall(
           nenv, temputs, life, range, interfaceTT, explicitTemplateArgRulesS, explicitTemplateArgRunesS, callableExpr, givenArgsExprs2)
       }
-      case OverloadSet(overloadSetEnv, functionName) => {
+      case OverloadSetT(overloadSetEnv, functionName) => {
         val unconvertedArgsPointerTypes2 =
           givenArgsExprs2.map(_.result.expectReference().reference)
 

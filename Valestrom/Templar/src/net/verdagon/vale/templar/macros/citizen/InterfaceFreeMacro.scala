@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar.macros.citizen
 
-import net.verdagon.vale.astronomer.{FunctionA, InterfaceA, VirtualFreeDeclarationNameS, VirtualFreeImpreciseNameS}
+import net.verdagon.vale.astronomer.{FunctionA, InterfaceA}
 import net.verdagon.vale.scout._
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules.{LookupSR, RuneUsage}
@@ -8,7 +8,7 @@ import net.verdagon.vale.templar.ast.{ArgLookupTE, BlockTE, FunctionCallTE, Func
 import net.verdagon.vale.templar.env.{FunctionEnvEntry, FunctionEnvironment, FunctionEnvironmentBox, IEnvironment}
 import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.macros.{IFunctionBodyMacro, IOnInterfaceDefinedMacro}
-import net.verdagon.vale.templar.names.{FreeTemplateNameT, FullNameT, FunctionTemplateNameT, INameT, VirtualFreeTemplateNameT}
+import net.verdagon.vale.templar.names._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{OverloadTemplar, Templar, Temputs, env}
 import net.verdagon.vale.{CodeLocationS, Interner, RangeS, vassert}
@@ -51,7 +51,7 @@ class InterfaceFreeMacro(interner: Interner, overloadTemplar: OverloadTemplar) e
             LookupSR(RangeS.internal(-167213), RuneUsage(RangeS.internal(-64002), CodeRuneS("V")), interner.intern(CodeNameS("void")))),
           GeneratedBodyS(generatorId))
 
-      val virtualFreeFunctionNameS = interner.intern(VirtualFreeDeclarationNameS(interfaceA.range.begin))
+      val virtualFreeFunctionNameS = interner.intern(AbstractVirtualFreeDeclarationNameS(interfaceA.range.begin))
       val virtualFreeFunctionA =
         FunctionA(
           interfaceA.range,
@@ -76,7 +76,7 @@ class InterfaceFreeMacro(interner: Interner, overloadTemplar: OverloadTemplar) e
       Vector(
         interfaceName.addStep(interner.intern(FreeTemplateNameT(freeFunctionNameS.codeLocationS))) ->
           FunctionEnvEntry(freeFunctionA),
-        interfaceName.addStep(interner.intern(VirtualFreeTemplateNameT(virtualFreeFunctionNameS.codeLoc))) ->
+        interfaceName.addStep(interner.intern(AbstractVirtualFreeTemplateNameT(virtualFreeFunctionNameS.codeLoc))) ->
           FunctionEnvEntry(virtualFreeFunctionA))
     } else {
       Vector()

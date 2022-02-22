@@ -57,7 +57,10 @@ object Benchmark {
       // Eventually, we'll want a benchmarking program that does take these things into account, such as by invoking the
       // driver over and over, because class loading, icache, etc are all totally valid things that we care about.
       // For now though, this will do.
-      go(true)
+      println("Warming up...")
+      val warmupTime = (0 until 10).map(_ => go(true)).map(_.totalNanoseconds).sum
+      println("Warmed up (" + warmupTime + "ns), running...")
+
       val profiles = (0 until 10).map(_ => go(true))
       val times = profiles.map(_.totalNanoseconds)
       val averageTime = times.sum / times.size

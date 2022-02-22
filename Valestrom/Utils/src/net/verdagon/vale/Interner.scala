@@ -76,3 +76,8 @@ class Interner {
     x
   }
 }
+
+//trait IInterning
+//class Interner {
+//  def intern[X <: IInterning](x: X): X = x
+//}

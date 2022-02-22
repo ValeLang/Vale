@@ -1,6 +1,5 @@
 package net.verdagon.vale.templar.function
 
-import net.verdagon.vale.astronomer.VirtualFreeImpreciseNameS
 import net.verdagon.vale.scout.{CodeNameS, GlobalFunctionFamilyNameS}
 import net.verdagon.vale.templar.OverloadTemplar.FindFunctionFailure
 import net.verdagon.vale.templar.types._
@@ -9,7 +8,6 @@ import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.ast.{AbstractT, FunctionHeaderT, OverrideT, ParameterT}
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env.{IEnvironment, TemplatasStore}
-import net.verdagon.vale.templar.names.{FunctionNameT, VirtualFreeNameT}
 import net.verdagon.vale.{Interner, RangeS, vassert, vassertSome, vcurious, vfail, vimpl}
 
 import scala.collection.immutable.List

@@ -1,12 +1,10 @@
 package net.verdagon.vale.templar
 
 //import net.verdagon.vale.astronomer.{GlobalFunctionFamilyNameS, INameS, INameA, ImmConcreteDestructorImpreciseNameA, ImmConcreteDestructorNameA, ImmInterfaceDestructorImpreciseNameS}
-import net.verdagon.vale.astronomer.VirtualFreeImpreciseNameS
+//import net.verdagon.vale.astronomer.VirtualFreeImpreciseNameS
 import net.verdagon.vale.scout.{CodeNameS, CodeVarNameS, GlobalFunctionFamilyNameS, IImpreciseNameS, INameS}
 import net.verdagon.vale.templar.ast.{FunctionT, ImplT, InterfaceEdgeBlueprint, OverrideT, PrototypeT}
 import net.verdagon.vale.templar.env.TemplatasStore
-import net.verdagon.vale.templar.expression.CallTemplar
-import net.verdagon.vale.templar.names.{AbstractVirtualDropFunctionNameT, ForwarderFunctionNameT, ForwarderFunctionTemplateNameT, FreeNameT, FunctionNameT, VirtualFreeNameT}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.{Interner, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 

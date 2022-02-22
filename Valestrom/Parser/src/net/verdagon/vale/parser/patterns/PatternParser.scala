@@ -78,7 +78,7 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
   // Add any new rules to the "Nothing matches empty string" test!
 
   // Remember, for pattern parsers, something *must* be present, don't match empty.
-  case class PatternTypePPI(ownership: Option[OwnershipP], runeOrKind: ITemplexPT) {   override def hashCode(): Int = vcurious()
+  case class PatternTypePPI(ownership: Option[OwnershipP], runeOrKind: ITemplexPT) {   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   }
   private[parser] def patternType: Parser[PatternTypePPI] = {
     opt(patternOwnership <~ optWhite) ~ runeOrKindPattern ^^ {

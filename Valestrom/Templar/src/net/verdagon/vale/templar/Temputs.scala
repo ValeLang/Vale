@@ -27,7 +27,8 @@ case class Temputs() {
 
   // Not all signatures/banners or even return types will have a function here, it might not have
   // been processed yet.
-  private val functions: mutable.ArrayBuffer[FunctionT] = mutable.ArrayBuffer()
+  private val functionsBySignature: mutable.HashMap[SignatureT, FunctionT] = mutable.HashMap()
+  private val functionsByPrototype: mutable.HashMap[PrototypeT, FunctionT] = mutable.HashMap()
   private val envByFunctionSignature: mutable.HashMap[SignatureT, FunctionEnvironment] = mutable.HashMap()
 
   // One must fill this in when putting things into declaredKinds.
@@ -68,12 +69,12 @@ case class Temputs() {
   }
 
   def lookupFunction(signature2: SignatureT): Option[FunctionT] = {
-    functions.find(_.header.toSignature == signature2)
+    functionsBySignature.get(signature2)
   }
 
   def findImmDestructor(kind: KindT): PrototypeT = {
     vassertOne(
-      functions
+      functionsBySignature.values
         .filter({
 //          case getFunctionLastName(DropNameT(_, CoordT(_, _, k))) if k == kind => true
           case getFunctionLastName(FreeNameT(_, k)) if k == kind => true
@@ -123,11 +124,15 @@ case class Temputs() {
 //      })
 //    }
 
-    if (functions.exists(_.header == function.header)) {
+    if (functionsByPrototype.contains(function.header.toPrototype)) {
+      vfail("wot")
+    }
+    if (functionsBySignature.contains(function.header.toSignature)) {
       vfail("wot")
     }
 
-    functions += function
+    functionsBySignature.put(function.header.toSignature, function)
+    functionsByPrototype.put(function.header.toPrototype, function)
   }
 
   // We can't declare the struct at the same time as we declare its mutability or environment,
@@ -276,7 +281,7 @@ case class Temputs() {
 
   def getAllStructs(): Iterable[StructDefinitionT] = structDefsByRef.values
   def getAllInterfaces(): Iterable[InterfaceDefinitionT] = interfaceDefsByRef.values
-  def getAllFunctions(): Iterable[FunctionT] = functions
+  def getAllFunctions(): Iterable[FunctionT] = functionsBySignature.values
   def getAllImpls(): Iterable[ImplT] = impls
   def getAllStaticSizedArrays(): Iterable[StaticSizedArrayTT] = staticSizedArrayTypes.values
   def getAllRuntimeSizedArrays(): Iterable[RuntimeSizedArrayTT] = runtimeSizedArrayTypes.values

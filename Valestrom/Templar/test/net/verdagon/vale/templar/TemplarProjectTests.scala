@@ -19,8 +19,9 @@ class TemplarProjectTests extends FunSuite with Matchers {
           |exported func main() { }
           """.stripMargin)
     val temputs = compile.expectTemputs()
+    val interner = compile.interner
 
-    val fullName = FullNameT(PackageCoordinate.TEST_TLD, Vector(), FunctionNameT("main", Vector(), Vector()))
+    val fullName = FullNameT(PackageCoordinate.TEST_TLD, Vector(), interner.intern(FunctionNameT("main", Vector(), Vector())))
     vassertSome(temputs.lookupFunction(SignatureT(fullName)))
   }
 

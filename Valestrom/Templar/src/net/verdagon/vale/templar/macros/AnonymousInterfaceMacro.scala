@@ -1,9 +1,9 @@
 package net.verdagon.vale.templar.macros
 
-import net.verdagon.vale.{CodeLocationS, IProfiler, PackageCoordinate, RangeS, vassert, vassertOne, vassertSome, vfail, vimpl, vwat}
+import net.verdagon.vale.{CodeLocationS, IProfiler, Interner, PackageCoordinate, RangeS, vassert, vassertOne, vassertSome, vfail, vimpl, vwat}
 import net.verdagon.vale.astronomer.{ConstructorNameS, FunctionA, ImplA, ImplImpreciseNameS, InterfaceA, StructA}
 import net.verdagon.vale.parser.ast.{FinalP, UseP}
-import net.verdagon.vale.scout.{AnonymousSubstructMemberNameS, AnonymousSubstructMemberRuneS, AnonymousSubstructParentInterfaceRuneS, AnonymousSubstructParentInterfaceTemplateRuneS, AnonymousSubstructRuneS, AnonymousSubstructTemplateImpreciseNameS, AnonymousSubstructTemplateNameS, AnonymousSubstructTemplateRuneS, BlockSE, BodySE, CodeBodyS, CodeNameS, CodeRuneS, CoordTemplataType, DotSE, FunctionCallSE, FunctionNameS, FunctionTemplataType, GeneratedBodyS, GlobalFunctionFamilyNameS, IRuneS, ITemplataType, ImplDeclarationNameS, KindTemplataType, LocalLoadSE, LocalS, NormalStructMemberS, NotUsed, OwnershipTemplataType, ParameterS, PermissionTemplataType, RuneNameS, SelfKindRuneS, SelfKindTemplateRuneS, SelfNameS, SelfOwnershipRuneS, SelfPermissionRuneS, SelfRuneS, StructNameRuneS, TemplateTemplataType, TopLevelCitizenDeclarationNameS, Used, UserFunctionS}
+import net.verdagon.vale.scout.{AnonymousSubstructImplDeclarationNameS, AnonymousSubstructMemberNameS, AnonymousSubstructMemberRuneS, AnonymousSubstructParentInterfaceRuneS, AnonymousSubstructParentInterfaceTemplateRuneS, AnonymousSubstructRuneS, AnonymousSubstructTemplateImpreciseNameS, AnonymousSubstructTemplateNameS, AnonymousSubstructTemplateRuneS, BlockSE, BodySE, CodeBodyS, CodeNameS, CodeRuneS, CoordTemplataType, DotSE, FunctionCallSE, FunctionNameS, FunctionTemplataType, GeneratedBodyS, ForwarderFunctionDeclarationNameS, GlobalFunctionFamilyNameS, IRuneS, ITemplataType, ImplDeclarationNameS, KindTemplataType, LocalLoadSE, LocalS, NormalStructMemberS, NotUsed, OwnershipTemplataType, ParameterS, PermissionTemplataType, RuneNameS, SelfKindRuneS, SelfKindTemplateRuneS, SelfNameS, SelfOwnershipRuneS, SelfPermissionRuneS, SelfRuneS, StructNameRuneS, TemplateTemplataType, TopLevelCitizenDeclarationNameS, Used, UserFunctionS}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS, OverrideSP}
 import net.verdagon.vale.scout.rules.{AugmentSR, CallSR, CoerceToCoordSR, CoordComponentsSR, EqualsSR, Equivalencies, IRulexSR, LookupSR, OwnershipLiteralSL, RuleScout, RuneUsage}
 import net.verdagon.vale.templar.ast.{AbstractT, ArgLookupTE, BlockTE, ConstructTE, DiscardTE, FunctionCallTE, FunctionHeaderT, FunctionT, LocationInFunctionEnvironment, OverrideT, ParameterT, PrototypeT, ReferenceMemberLookupTE, ReturnTE, SoftLoadTE}
@@ -21,15 +21,18 @@ import scala.collection.immutable.List
 import scala.collection.mutable
 
 class AnonymousInterfaceMacro(
-  opts: TemplarOptions,
-  profiler: IProfiler,
-  overloadTemplar: OverloadTemplar,
-  structTemplar: StructTemplar,
-  structConstructorMacro: StructConstructorMacro,
-  structDropMacro: StructDropMacro,
-  structFreeMacro: StructFreeMacro,
-  interfaceFreeMacro: InterfaceFreeMacro,
-  implDropMacro: ImplDropMacro) extends IOnInterfaceDefinedMacro {
+    opts: TemplarOptions,
+    profiler: IProfiler,
+    interner: Interner,
+    nameTranslator: NameTranslator,
+    overloadTemplar: OverloadTemplar,
+    structTemplar: StructTemplar,
+    structConstructorMacro: StructConstructorMacro,
+    structDropMacro: StructDropMacro,
+    structFreeMacro: StructFreeMacro,
+    interfaceFreeMacro: InterfaceFreeMacro,
+    implDropMacro: ImplDropMacro
+) extends IOnInterfaceDefinedMacro {
 
   val macroName: String = "DeriveAnonymousSubstruct"
 
@@ -49,8 +52,8 @@ class AnonymousInterfaceMacro(
         NormalStructMemberS(method.range, index.toString, FinalP, rune)
       })
 
-    val structNameS = AnonymousSubstructTemplateNameS(interfaceA.name)
-    val structNameT = interfaceName.copy(last = NameTranslator.translateNameStep(structNameS))
+    val structNameS = interner.intern(AnonymousSubstructTemplateNameS(interfaceA.name))
+    val structNameT = interfaceName.copy(last = nameTranslator.translateNameStep(structNameS))
     val structA = makeStruct(interfaceA, memberRunes, members, structNameS)
 
     val moreEntries =
@@ -61,7 +64,7 @@ class AnonymousInterfaceMacro(
 
     val forwarderMethods =
       interfaceA.internalMethods.zip(memberRunes).zipWithIndex.map({ case ((method, rune), methodIndex) =>
-        val name = structNameT.copy(last = NameTranslator.translateFunctionNameToTemplateName(method.name))
+        val name = structNameT.copy(last = nameTranslator.translateFunctionNameToTemplateName(method.name))
         (name, FunctionEnvEntry(makeForwarderFunction(structNameS, structA.tyype, structA, method, methodIndex)))
       })
 
@@ -70,7 +73,7 @@ class AnonymousInterfaceMacro(
         LookupSR(
           interfaceA.range,
           RuneUsage(interfaceA.range, AnonymousSubstructTemplateRuneS()),
-          structA.name.getImpreciseName) :+
+          structA.name.getImpreciseName(interner)) :+
         CallSR(
           structA.range,
           RuneUsage(structA.range, AnonymousSubstructRuneS()),
@@ -79,7 +82,7 @@ class AnonymousInterfaceMacro(
         LookupSR(
           interfaceA.range,
           RuneUsage(interfaceA.range, AnonymousSubstructParentInterfaceTemplateRuneS()),
-          interfaceA.name.getImpreciseName) :+
+          interfaceA.name.getImpreciseName(interner)) :+
         CallSR(
           interfaceA.range,
           RuneUsage(interfaceA.range, AnonymousSubstructParentInterfaceRuneS()),
@@ -94,18 +97,21 @@ class AnonymousInterfaceMacro(
     val structKindRuneS = RuneUsage(interfaceA.range, AnonymousSubstructRuneS())
     val interfaceKindRuneS = RuneUsage(interfaceA.range, AnonymousSubstructParentInterfaceRuneS())
 
+    val implNameS = interner.intern(AnonymousSubstructImplDeclarationNameS(interfaceA.name))
+    val implImpreciseNameS = interner.intern(ImplImpreciseNameS(RuleScout.getRuneKindTemplate(rules, structKindRuneS.rune)))
+
     val implA =
       ImplA(
         interfaceA.range,
-        ImplDeclarationNameS(interfaceA.range.begin),
+        implNameS,
         // Just getting the template name (or the kind name if not template), see INSHN.
-        ImplImpreciseNameS(RuleScout.getRuneKindTemplate(rules, structKindRuneS.rune)),
+        implImpreciseNameS,
         structA.identifyingRunes,
         rules,
         runeToType,
         structKindRuneS,
         interfaceKindRuneS)
-    val implNameT = structNameT.copy(last = NameTranslator.translateNameStep(implA.name))
+    val implNameT = structNameT.copy(last = nameTranslator.translateNameStep(implA.name))
     val implSiblingEntries =
       implDropMacro.getImplSiblingEntries(implNameT, implA)
 
@@ -174,7 +180,7 @@ class AnonymousInterfaceMacro(
       LookupSR(
         abstractParamRange,
         RuneUsage(abstractParamRange, SelfKindTemplateRuneS()),
-        AnonymousSubstructTemplateImpreciseNameS(structNameS.interfaceName.getImpreciseName))
+        interner.intern(AnonymousSubstructTemplateImpreciseNameS(structNameS.interfaceName.getImpreciseName(interner))))
     val lookupStructRule =
       CallSR(
         abstractParamRange,
@@ -194,7 +200,7 @@ class AnonymousInterfaceMacro(
       ParameterS(
         AtomSP(
           abstractParamRange,
-          Some(CaptureS(SelfNameS())),
+          Some(CaptureS(interner.intern(SelfNameS()))),
           Some(OverrideSP(abstractParamRange, RuneUsage(abstractParamCoordRune.range, AnonymousSubstructParentInterfaceTemplateRuneS()))),
           Some(RuneUsage(abstractParamCoordRune.range, SelfRuneS())),
           None))
@@ -206,7 +212,7 @@ class AnonymousInterfaceMacro(
         methodRange,
         DotSE(
           methodRange,
-          LocalLoadSE(methodRange, SelfNameS(), UseP),
+          LocalLoadSE(methodRange, interner.intern(SelfNameS()), UseP),
           methodIndex.toString,
           false),
         // Params minus the abstract param
@@ -216,7 +222,7 @@ class AnonymousInterfaceMacro(
 
     FunctionA(
       methodRange,
-      name,
+      interner.intern(ForwarderFunctionDeclarationNameS(name, methodIndex)),
       attributes,
       TemplateTemplataType(
         (methodOriginalType match {

@@ -124,6 +124,10 @@ object ScoutErrorHumanizer {
       case ImplDropCoordRuneS() => "(impl drop coord)"
       case FreeOverrideInterfaceRuneS() => "(freeing interface)"
       case FreeOverrideStructRuneS() => "(freeing struct)"
+      case AnonymousSubstructRuneS() => "(anon substruct)"
+      case AnonymousSubstructTemplateRuneS() => "(anon substruct template)"
+      case AnonymousSubstructParentInterfaceTemplateRuneS() => "(anon sub parent template)"
+      case AnonymousSubstructParentInterfaceRuneS() => "(anon sub parent)"
       case StructNameRuneS(inner) => humanizeName(inner)
       case other => vimpl(other)
     }

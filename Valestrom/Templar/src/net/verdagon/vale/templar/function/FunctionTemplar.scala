@@ -4,7 +4,7 @@ import net.verdagon.vale.astronomer.{CompileErrorExceptionA, CouldntSolveRulesA,
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.parser._
-import net.verdagon.vale.{Err, IProfiler, Ok, Profiler, RangeS, scout, vassert, vassertOne, vassertSome, vimpl, vwat}
+import net.verdagon.vale.{Err, IProfiler, Interner, Ok, Profiler, RangeS, scout, vassert, vassertOne, vassertSome, vimpl, vwat}
 import net.verdagon.vale.scout.{RuneTypeSolver, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, OverrideSP}
 import net.verdagon.vale.scout.rules._
@@ -70,6 +70,8 @@ object FunctionTemplar {
 class FunctionTemplar(
     opts: TemplarOptions,
     profiler: IProfiler,
+    interner: Interner,
+    nameTranslator: NameTranslator,
     templataTemplar: TemplataTemplar,
     inferTemplar: InferTemplar,
     convertHelper: ConvertHelper,
@@ -77,14 +79,14 @@ class FunctionTemplar(
     delegate: IFunctionTemplarDelegate) {
   val closureOrLightLayer =
     new FunctionTemplarClosureOrLightLayer(
-      opts, profiler, templataTemplar, inferTemplar, convertHelper, structTemplar, delegate)
+      opts, profiler, interner, nameTranslator, templataTemplar, inferTemplar, convertHelper, structTemplar, delegate)
 
   private def determineClosureVariableMember(
       env: NodeEnvironment,
       temputs: Temputs,
       name: IVarNameS) = {
     val (variability2, memberType) =
-      env.getVariable(NameTranslator.translateVarNameStep(name)).get match {
+      env.getVariable(nameTranslator.translateVarNameStep(name)).get match {
         case ReferenceLocalVariableT(_, variability, reference) => {
           // See "Captured own is borrow" test for why we do this
           val tyype =
@@ -110,7 +112,7 @@ class FunctionTemplar(
           (variability, AddressMemberTypeT(reference))
         }
       }
-    StructMemberT(NameTranslator.translateVarNameStep(name), variability2, memberType)
+    StructMemberT(nameTranslator.translateVarNameStep(name), variability2, memberType)
   }
 
   def evaluateClosureStruct(
@@ -210,7 +212,7 @@ class FunctionTemplar(
         } else {
           val lambdaCitizenName2 =
             functionTemplata.function.name match {
-              case LambdaDeclarationNameS(codeLocation) => LambdaCitizenNameT(LambdaCitizenTemplateNameT(NameTranslator.translateCodeLocation(codeLocation)))
+              case LambdaDeclarationNameS(codeLocation) => interner.intern(LambdaCitizenNameT(interner.intern(LambdaCitizenTemplateNameT(nameTranslator.translateCodeLocation(codeLocation)))))
               case _ => vwat()
             }
 
@@ -242,7 +244,7 @@ class FunctionTemplar(
         } else {
           val lambdaCitizenName2 =
             functionTemplata.function.name match {
-              case LambdaDeclarationNameS(codeLocation) => LambdaCitizenNameT(LambdaCitizenTemplateNameT(NameTranslator.translateCodeLocation(codeLocation)))
+              case LambdaDeclarationNameS(codeLocation) => interner.intern(LambdaCitizenNameT(interner.intern(LambdaCitizenTemplateNameT(nameTranslator.translateCodeLocation(codeLocation)))))
               case _ => vwat()
             }
 
@@ -284,7 +286,7 @@ class FunctionTemplar(
         } else {
           val lambdaCitizenName2 =
             functionTemplata.function.name match {
-              case LambdaDeclarationNameS(codeLocation) => LambdaCitizenNameT(LambdaCitizenTemplateNameT(NameTranslator.translateCodeLocation(codeLocation)))
+              case LambdaDeclarationNameS(codeLocation) => interner.intern(LambdaCitizenNameT(interner.intern(LambdaCitizenTemplateNameT(nameTranslator.translateCodeLocation(codeLocation)))))
               case _ => vwat()
             }
 
@@ -449,7 +451,7 @@ class FunctionTemplar(
   IEvaluateFunctionResult[PrototypeT] = {
     val lambdaCitizenName2 =
       function.name match {
-        case LambdaDeclarationNameS(codeLocation) => LambdaCitizenNameT(LambdaCitizenTemplateNameT(NameTranslator.translateCodeLocation(codeLocation)))
+        case LambdaDeclarationNameS(codeLocation) => interner.intern(LambdaCitizenNameT(interner.intern(LambdaCitizenTemplateNameT(nameTranslator.translateCodeLocation(codeLocation)))))
         case _ => vwat()
       }
     val KindTemplata(closureStructRef @ StructTT(_)) =

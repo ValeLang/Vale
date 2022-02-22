@@ -15,7 +15,7 @@ import scala.util.parsing.input.{CharSequenceReader, Position}
 
 
 case class ParsingIterator(code: String, var position: Int = 0) {
-  override def hashCode(): Int = vcurious();
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
 
   def currentChar(): Char = code.charAt(position)
   def advance() { position = position + 1 }
@@ -907,6 +907,6 @@ class ParserCompilation(
 }
 
 case class InputException(message: String) extends Throwable {
-  override def hashCode(): Int = vcurious();
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def toString: String = message
 }

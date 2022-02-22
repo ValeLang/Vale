@@ -11,17 +11,19 @@ import net.verdagon.vale.templar.citizen.{AncestorHelper, IStructTemplarDelegate
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.FunctionTemplar
 import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, FullNameT, ICitizenNameT, INameT, NameTranslator}
-import net.verdagon.vale.{IProfiler, RangeS, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{IProfiler, Interner, RangeS, vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
 class StructTemplarTemplateArgsLayer(
     opts: TemplarOptions,
     profiler: IProfiler,
+    interner: Interner,
+    nameTranslator: NameTranslator,
     inferTemplar: InferTemplar,
     ancestorHelper: AncestorHelper,
     delegate: IStructTemplarDelegate) {
-  val middle = new StructTemplarMiddle(opts, profiler, ancestorHelper, delegate)
+  val middle = new StructTemplarMiddle(opts, profiler, interner, nameTranslator, ancestorHelper, delegate)
 
   def getStructRef(
     temputs: Temputs,
@@ -31,8 +33,8 @@ class StructTemplarTemplateArgsLayer(
   (StructTT) = {
     profiler.newProfile("getStructRef", structTemplata.debugString + "<" + templateArgs.map(_.toString).mkString(", ") + ">", () => {
       val StructTemplata(env, structA) = structTemplata
-      val structTemplateName = NameTranslator.translateCitizenName(structA.name)
-      val structName = structTemplateName.makeCitizenName(templateArgs)
+      val structTemplateName = nameTranslator.translateCitizenName(structA.name)
+      val structName = structTemplateName.makeCitizenName(interner, templateArgs)
       val fullName = env.fullName.addStep(structName)
 //      val fullName = env.fullName.addStep(structLastName)
 
@@ -86,8 +88,8 @@ class StructTemplarTemplateArgsLayer(
   (InterfaceTT) = {
     profiler.newProfile("getInterfaceRef", interfaceTemplata.debugString + "<" + templateArgs.map(_.toString).mkString(", ") + ">", () => {
       val InterfaceTemplata(env, interfaceA) = interfaceTemplata
-      val interfaceTemplateName = NameTranslator.translateCitizenName(interfaceA.name)
-      val interfaceName = interfaceTemplateName.makeCitizenName(templateArgs)
+      val interfaceTemplateName = nameTranslator.translateCitizenName(interfaceA.name)
+      val interfaceName = interfaceTemplateName.makeCitizenName(interner, templateArgs)
       val fullName = env.fullName.addStep(interfaceName)
 //      val fullName = env.fullName.addStep(interfaceLastName)
 

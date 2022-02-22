@@ -8,7 +8,7 @@ import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vimpl}
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-object RuleScout {
+class RuleScout(templexScout: TemplexScout) {
   // Returns:
   // - new rules produced on the side while translating the given rules
   // - the translated versions of the given rules
@@ -48,7 +48,7 @@ object RuleScout {
           possibilitiesP
             .map({
               case TemplexPR(templex) => {
-                TemplexScout.translateValueTemplex(templex) match {
+                templexScout.translateValueTemplex(templex) match {
                   case None => vfail("Or rules can only contain values for their possibilities.")
                   case Some(x) => x
                 }
@@ -123,7 +123,7 @@ object RuleScout {
         runeToExplicitType.put(rune, translateType(tyype))
         RuneUsage(evalRange(range), rune)
       }
-      case TemplexPR(templex) => TemplexScout.translateTemplex(env, lidb.child(), builder, templex)
+      case TemplexPR(templex) => templexScout.translateTemplex(env, lidb.child(), builder, templex)
       case BuiltinCallPR(range, NameP(_, "isInterface"), args) => {
         vassert(args.length == 1)
         val argRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, args.head)
@@ -208,7 +208,9 @@ object RuleScout {
       case TemplexPR(innerPR) => // Do nothing, we can't declare runes inside templexes
     }
   }
+}
 
+object RuleScout {
   // Gets the template name (or the kind name if not template)
   def getRuneKindTemplate(rulesS: IndexedSeq[IRulexSR], rune: IRuneS) = {
     val equivalencies = new Equivalencies(rulesS)

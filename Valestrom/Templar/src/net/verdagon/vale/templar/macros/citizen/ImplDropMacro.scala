@@ -17,13 +17,18 @@ import net.verdagon.vale._
 import net.verdagon.vale.parser.ast.{LoadAsPointerP, MoveP}
 import net.verdagon.vale.templar.expression.CallTemplar
 
-class ImplDropMacro() extends IOnImplDefinedMacro {
+class ImplDropMacro(
+  interner: Interner,
+  nameTranslator: NameTranslator,
+) extends IOnImplDefinedMacro {
   override def getImplSiblingEntries(implName: FullNameT[INameT], implA: ImplA):
   Vector[(FullNameT[INameT], FunctionEnvEntry)] = {
+    val funcNameA =
+      interner.intern(OverrideVirtualDropFunctionDeclarationNameS(implA.name))
     val dropFunctionA =
       FunctionA(
         implA.range,
-        FunctionNameS(CallTemplar.VIRTUAL_DROP_FUNCTION_NAME, implA.range.begin),
+        funcNameA,
         Vector(),
         TemplateTemplataType(
           implA.identifyingRunes.map(_.rune).map(implA.runeToType) :+ KindTemplataType,
@@ -35,7 +40,7 @@ class ImplDropMacro() extends IOnImplDefinedMacro {
           ParameterS(
             AtomSP(
               RangeS.internal(-1340),
-              Some(CaptureS(CodeVarNameS("this"))),
+              Some(CaptureS(interner.intern(CodeVarNameS("this")))),
               Some(OverrideSP(RangeS.internal(-64002), RuneUsage(RangeS.internal(-64002), implA.interfaceKindRune.rune))),
               Some(RuneUsage(RangeS.internal(-64002), ImplDropCoordRuneS())), None))),
         Some(RuneUsage(RangeS.internal(-64002), ImplDropVoidRuneS())),
@@ -45,21 +50,21 @@ class ImplDropMacro() extends IOnImplDefinedMacro {
             RangeS.internal(-167213),
             RuneUsage(RangeS.internal(-167214), ImplDropCoordRuneS()),
             RuneUsage(RangeS.internal(-167215), implA.structKindRune.rune)),
-          LookupSR(RangeS.internal(-167213),RuneUsage(RangeS.internal(-64002), ImplDropVoidRuneS()),CodeNameS("void"))),
+          LookupSR(RangeS.internal(-167213),RuneUsage(RangeS.internal(-64002), ImplDropVoidRuneS()),interner.intern(CodeNameS("void")))),
         CodeBodyS(
           BodySE(RangeS.internal(-167213),
             Vector(),
             BlockSE(RangeS.internal(-167213),
-              Vector(LocalS(CodeVarNameS("this"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
+              Vector(LocalS(interner.intern(CodeVarNameS("this")), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
               FunctionCallSE(RangeS.internal(-167213),
                 OutsideLoadSE(RangeS.internal(-167213),
                   Array(),
-                  CodeNameS(CallTemplar.DROP_FUNCTION_NAME),
+                  interner.intern(CodeNameS(CallTemplar.DROP_FUNCTION_NAME)),
                   None,
                   LoadAsPointerP(None)),
-                Vector(LocalLoadSE(RangeS.internal(-167213), CodeVarNameS("this"), MoveP)))))))
+                Vector(LocalLoadSE(RangeS.internal(-167213), interner.intern(CodeVarNameS("this")), MoveP)))))))
     Vector((
-      implName.copy(last = NameTranslator.translateFunctionNameToTemplateName(dropFunctionA.name)),
+      implName.copy(last = nameTranslator.translateFunctionNameToTemplateName(funcNameA)),
       FunctionEnvEntry(dropFunctionA)))
   }
 }

@@ -4,24 +4,25 @@ package net.verdagon.vale.templar
 import net.verdagon.vale.astronomer.VirtualFreeImpreciseNameS
 import net.verdagon.vale.scout.{CodeNameS, CodeVarNameS, GlobalFunctionFamilyNameS, IImpreciseNameS, INameS}
 import net.verdagon.vale.templar.ast.{FunctionT, ImplT, InterfaceEdgeBlueprint, OverrideT, PrototypeT}
+import net.verdagon.vale.templar.env.TemplatasStore
 import net.verdagon.vale.templar.expression.CallTemplar
-import net.verdagon.vale.templar.names.{FreeNameT, FunctionNameT, VirtualFreeNameT}
+import net.verdagon.vale.templar.names.{AbstractVirtualDropFunctionNameT, ForwarderFunctionNameT, ForwarderFunctionTemplateNameT, FreeNameT, FunctionNameT, VirtualFreeNameT}
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{Interner, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 
-object EdgeTemplar {
-  sealed trait IMethod
-  case class NeededOverride(
-    name: IImpreciseNameS,
-    paramFilters: Vector[ParamFilter]
-  ) extends IMethod { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
-  case class FoundFunction(prototype: PrototypeT) extends IMethod { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+sealed trait IMethod
+case class NeededOverride(
+  name: IImpreciseNameS,
+  paramFilters: Vector[ParamFilter]
+) extends IMethod { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
+case class FoundFunction(prototype: PrototypeT) extends IMethod { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
-  case class PartialEdgeT(
-    struct: StructTT,
-    interface: InterfaceTT,
-    methods: Vector[IMethod]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class PartialEdgeT(
+  struct: StructTT,
+  interface: InterfaceTT,
+  methods: Vector[IMethod]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
+class EdgeTemplar(interner: Interner) {
   def assemblePartialEdges(temputs: Temputs): Vector[PartialEdgeT] = {
     val interfaceEdgeBlueprints = makeInterfaceEdgeBlueprints(temputs)
 
@@ -45,12 +46,16 @@ object EdgeTemplar {
                       }
                       case (tyype, _) => ParamFilter(tyype, None)
                     })
-                  superFunction.fullName.last match {
-                    case FunctionNameT(humanName, _, _) => NeededOverride(CodeNameS(humanName), overrideParamFilters)
-                    case VirtualFreeNameT(_, _) => NeededOverride(VirtualFreeImpreciseNameS(), overrideParamFilters)
-//                    case DropNameT(_, _) => NeededOverride(CodeVarNameS(CallTemplar.VIRTUAL_DROP_FUNCTION_NAME), overrideParamFilters)
-                    case other => vwat(other)
-                  }
+                  val impreciseName =
+                    vassertSome(TemplatasStore.getImpreciseName(interner, superFunction.fullName.last))
+                  NeededOverride(impreciseName, overrideParamFilters)
+//                  superFunction.fullName.last match {
+//                    case FunctionNameT(humanName, _, _) => NeededOverride(interner.intern(CodeNameS(humanName)), overrideParamFilters)
+//                    case VirtualFreeNameT(_, _) => NeededOverride(interner.intern(VirtualFreeImpreciseNameS()), overrideParamFilters)
+//                    case AbstractVirtualDropFunctionNameT(_, _, _) => NeededOverride(interner.intern(VirtualFreeImpreciseNameS()), overrideParamFilters)
+////                    case DropNameT(_, _) => NeededOverride(CodeVarNameS(CallTemplar.VIRTUAL_DROP_FUNCTION_NAME), overrideParamFilters)
+//                    case other => vwat(other)
+//                  }
                 }
                 case Some(Vector()) => vfail("wot")
                 case Some(Vector(onlyOverride)) => FoundFunction(onlyOverride.header.toPrototype)
@@ -74,7 +79,8 @@ object EdgeTemplar {
     // Without this, if an impl had no functions in it, it wouldn't be included in the result.
     temputs.getAllImpls().map({ case ImplT(struct, interface) => (struct, interface) -> Vector() }).toMap ++
     (temputs.getAllFunctions().toVector.flatMap({ case overrideFunction =>
-      overrideFunction.header.getOverride match {
+      val x = overrideFunction
+      x.header.getOverride match {
         case None => Vector.empty
         case Some((struct, superInterface)) => {
           // Make sure that the struct actually overrides that function
@@ -108,18 +114,27 @@ object EdgeTemplar {
           val matchesAndIndices =
             edgeBlueprint.superFamilyRootBanners.zipWithIndex
               .filter({ case (possibleSuperFunction, index) =>
-                val namesMatch =
-                  (possibleSuperFunction.fullName.last, overrideFunction.header.fullName.last) match {
-                    case (FunctionNameT(possibleSuperFunctionHumanName, _, _), FunctionNameT(overrideFunctionHumanName, _, _)) => {
-                      possibleSuperFunctionHumanName == overrideFunctionHumanName
-                    }
-                    case (FunctionNameT(_, _, _), _) => false
-                    case (_, FunctionNameT(_, _, _)) => false
-                    case (VirtualFreeNameT(_, _), VirtualFreeNameT(_, _)) => true
-                    case (VirtualFreeNameT(_, _), _) => false
-                    case (_, VirtualFreeNameT(_, _)) => false
-                    case other => vimpl(other)
-                  }
+                val possibleSuperFunctionImpreciseName =
+                  TemplatasStore.getImpreciseName(interner, possibleSuperFunction.fullName.last)
+                val overrideFunctionImpreciseName =
+                  TemplatasStore.getImpreciseName(interner, overrideFunction.header.fullName.last)
+                val namesMatch = possibleSuperFunctionImpreciseName == overrideFunctionImpreciseName
+
+//                  (possibleSuperFunction.fullName.last, overrideFunction.header.fullName.last) match {
+
+//                    case (FunctionNameT(possibleSuperFunctionHumanName, _, _), FunctionNameT(overrideFunctionHumanName, _, _)) => {
+//                      possibleSuperFunctionHumanName == overrideFunctionHumanName
+//                    }
+//                    case (FunctionNameT(possibleSuperFunctionHumanName, _, _), ForwarderFunctionNameT(FunctionNameT(overrideFunctionHumanName, _, _), _)) => {
+//                      possibleSuperFunctionHumanName == overrideFunctionHumanName
+//                    }
+//                    case (FunctionNameT(_, _, _), _) => false
+//                    case (_, FunctionNameT(_, _, _)) => false
+//                    case (VirtualFreeNameT(_, _), VirtualFreeNameT(_, _)) => true
+//                    case (VirtualFreeNameT(_, _), _) => false
+//                    case (_, VirtualFreeNameT(_, _)) => false
+//                    case other => vimpl(other)
+//                  }
                 namesMatch && possibleSuperFunction.paramTypes == needleSuperFunctionParamTypes
               })
           matchesAndIndices match {
@@ -156,11 +171,13 @@ object EdgeTemplar {
           // when it calls array generators/consumers' first method.
           val interfaceDef = temputs.getAllInterfaces().find(_.getRef == interfaceTT).get
           // Make sure `functions` has everything that the interface def wanted.
-          vassert((interfaceDef.internalMethods.toSet -- functions.map(_.header).toSet).isEmpty)
+          vassert((interfaceDef.internalMethods.map(_.toSignature).toSet -- functions.map(_.header.toSignature).toSet).isEmpty)
           // Move all the internal methods to the front.
           val orderedMethods =
             interfaceDef.internalMethods ++
-              functions.map(_.header).filter(!interfaceDef.internalMethods.contains(_))
+              functions.map(_.header).filter(x => {
+                !interfaceDef.internalMethods.exists(y => y.toSignature == x.toSignature)
+              })
           (interfaceTT -> orderedMethods)
         })
     // Some interfaces would be empty and they wouldn't be in

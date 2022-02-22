@@ -4,6 +4,14 @@ import scala.collection.immutable.List
 
 case class FileCoordinate(module: String, packages: Vector[String], filepath: String) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case FileCoordinate(thatModule, thatPackages, thatFilepath) => {
+        module == thatModule && packages == thatPackages && filepath == thatFilepath
+      }
+      case _ => false
+    }
+  }
 
   def isInternal = module == ""
 
@@ -29,6 +37,14 @@ object FileCoordinate extends Ordering[FileCoordinate] {
 
 case class PackageCoordinate(module: String, packages: Vector[String]) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case PackageCoordinate(thatModule, thatPackages) => {
+        module == thatModule && packages == thatPackages
+      }
+      case _ => false
+    }
+  }
 
   def isInternal = module == ""
 
@@ -85,7 +101,7 @@ object FileCoordinateMap {
 case class FileCoordinateMap[Contents](
     moduleToPackagesToFilenameToContents: Map[String, Map[Vector[String], Map[String, Contents]]])
 extends IPackageResolver[Map[String, Contents]] {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   def apply(coord: FileCoordinate): Contents = {
     vassertSome(
@@ -211,7 +227,7 @@ trait IPackageResolver[T] {
 
 case class PackageCoordinateMap[Contents](
   moduleToPackagesToContents: Map[String, Map[Vector[String], Contents]]) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
 
   def add(module: String, packages: Vector[String], contents: Contents):

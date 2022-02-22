@@ -39,6 +39,7 @@ class RunCompilation(
   packageToContentsResolver: IPackageResolver[Map[String, String]],
   options: FullCompilationOptions = FullCompilationOptions()) {
   var fullCompilation = new FullCompilation(packagesToBuild, packageToContentsResolver, options)
+  def interner = fullCompilation.interner
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = fullCompilation.getCodeMap()
   def getParseds(): Result[FileCoordinateMap[(FileP, Vector[(Int, Int)])], FailedParse] = fullCompilation.getParseds()
@@ -49,7 +50,7 @@ class RunCompilation(
   def expectTemputs(): Hinputs = fullCompilation.expectTemputs()
   def getHamuts(): ProgramH = {
     val hamuts = fullCompilation.getHamuts()
-    VonHammer.vonifyProgram(hamuts)
+    fullCompilation.getVonHammer().vonifyProgram(hamuts)
     hamuts
   }
 
@@ -95,74 +96,74 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("Simple program returning an int") {
     val compile = RunCompilation.test("exported func main() int { ret 3; }")
-    compile.evalForKind(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
 
   test("Hardcoding negative numbers") {
     val compile = RunCompilation.test("exported func main() int { ret -3; }")
-    compile.evalForKind(Vector()) shouldEqual VonInt(-3)
+    compile.evalForKind(Vector()) match { case VonInt(-3) => }
   }
 
   test("Taking an argument and returning it") {
     val compile = RunCompilation.test("exported func main(a int) int { ret a; }")
-    compile.evalForKind(Vector(IntV(5, 32))) shouldEqual VonInt(5)
+    compile.evalForKind(Vector(IntV(5, 32))) match { case VonInt(5) => }
   }
 
   test("Tests adding two numbers") {
     val compile = RunCompilation.test("exported func main() int { ret +(2, 3); }")
-    compile.evalForKind(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) match { case VonInt(5) => }
   }
 
   test("Tests adding two floats") {
     val compile = RunCompilation.test("exported func main() float { ret +(2.5, 3.5); }")
-    compile.evalForKind(Vector()) shouldEqual VonFloat(6.0f)
+    compile.evalForKind(Vector()) match { case VonFloat(6.0f) => }
   }
 
   test("Tests inline adding") {
     val compile = RunCompilation.test("exported func main() int { ret 2 + 3; }")
-    compile.evalForKind(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) match { case VonInt(5) => }
   }
 
   test("Test constraint ref") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/constraintRef.vale"))
-    compile.evalForKind(Vector()) shouldEqual VonInt(8)
+    compile.evalForKind(Vector()) match { case VonInt(8) => }
   }
 
   test("Test borrow ref") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/borrowRef.vale"))
-    compile.evalForKind(Vector()) shouldEqual VonInt(8)
+    compile.evalForKind(Vector()) match { case VonInt(8) => }
   }
 
   test("Tests inline adding more") {
     val compile = RunCompilation.test("exported func main() int { ret 2 + 3 + 4 + 5 + 6; }")
-    compile.evalForKind(Vector()) shouldEqual VonInt(20)
+    compile.evalForKind(Vector()) match { case VonInt(20) => }
   }
 
   test("Simple lambda") {
     val compile = RunCompilation.test("exported func main() int { ret {7}(); }")
-    compile.evalForKind(Vector()) shouldEqual VonInt(7)
+    compile.evalForKind(Vector()) match { case VonInt(7) => }
   }
 
   test("Lambda with one magic arg") {
     val compile = RunCompilation.test("exported func main() int { ret {_}(3); }")
-    compile.evalForKind(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
 
 
   // Test that the lambda's arg is the right type, and the name is right
   test("Lambda with a type specified param") {
     val compile = RunCompilation.test("exported func main() int { ret (a int) => { ret +(a,a); }(3); }");
-    compile.evalForKind(Vector()) shouldEqual VonInt(6)
+    compile.evalForKind(Vector()) match { case VonInt(6) => }
   }
 
   test("Test overloads") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/functions/overloads.vale"))
-    compile.evalForKind(Vector()) shouldEqual VonInt(6)
+    compile.evalForKind(Vector()) match { case VonInt(6) => }
   }
 
   test("Test block") {
     val compile = RunCompilation.test("exported func main() int {true; 200; ret 300;}")
-    compile.evalForKind(Vector()) shouldEqual VonInt(300)
+    compile.evalForKind(Vector()) match { case VonInt(300) => }
   }
 
   test("Test templates") {
@@ -171,7 +172,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |func ~<T>(a T, b T) T { ret a; }
         |exported func main() int {true ~ false; 2 ~ 2; ret 3 ~ 3;}
       """.stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
 
   test("Test mutating a local var") {
@@ -181,7 +182,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("Test returning a local mutable var") {
     val compile = RunCompilation.test("exported func main() int {a! = 3; set a = 4; ret a;}")
-    compile.evalForKind(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) match { case VonInt(4) => }
   }
 
   test("Test taking a callable param") {
@@ -190,7 +191,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |func do<T>(callable T) infer-ret { ret callable(); }
         |exported func main() int { ret do({ 3 }); }
       """.stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
 
   test("Stamps an interface template via a function parameter") {
@@ -221,7 +222,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("Tests unstackifying a variable multiple times in a function") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/multiUnstackify.vale"))
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Reads a struct member") {
@@ -230,14 +231,14 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |struct MyStruct { a int; }
         |exported func main() int { ms = MyStruct(7); ret ms.a; }
       """.stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(7)
+    compile.evalForKind(Vector()) match { case VonInt(7) => }
   }
 
   test("Add two i64") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/add64ret.vale"))
     val temputs = compile.getTemputs()
     val hamuts = compile.getHamuts()
-    compile.evalForKind(Vector()) shouldEqual VonInt(42L)
+    compile.evalForKind(Vector()) match { case VonInt(42L) => }
   }
 
   test("=== true") {
@@ -249,7 +250,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  ret *a === *a;
         |}
       """.stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonBool(true)
+    compile.evalForKind(Vector()) match { case VonBool(true) => }
   }
 
   test("=== false") {
@@ -262,17 +263,17 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  ret *a === *b;
         |}
       """.stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonBool(false)
+    compile.evalForKind(Vector()) match { case VonBool(false) => }
   }
 
   test("set swapping locals") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/mutswaplocals.vale"))
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("imm tuple access") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/tuples/immtupleaccess.vale"))
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   // Known failure 2020-08-20
@@ -318,7 +319,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 //        |
 //        |""".stripMargin)
 //    val hamuts = compile.getHamuts();
-//    compile.evalForKind(Vector()) shouldEqual VonInt(60)
+//    compile.evalForKind(Vector()) match { case VonInt(60) => }
 //  }
 
   test("Tests single expression and single statement functions' returns") {
@@ -361,7 +362,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()
-    compile.evalForKind(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) match { case VonInt(9) => }
   }
 
   test("Test int generic") {
@@ -378,7 +379,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  ret v.values.2;
         |}
       """.stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) match { case VonInt(5) => }
   }
 
   test("Tests upcasting from a struct to an interface") {
@@ -388,7 +389,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("Tests upcasting from if") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/if/upcastif.vale"))
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Tests from file") {
@@ -398,12 +399,12 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("Tests from subdir file") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/virtuals/round.vale"))
-    compile.evalForKind(Vector()) shouldEqual VonInt(8)
+    compile.evalForKind(Vector()) match { case VonInt(8) => }
   }
 
   test("Tests calling a virtual function") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/virtuals/calling.vale"))
-    compile.evalForKind(Vector()) shouldEqual VonInt(7)
+    compile.evalForKind(Vector()) match { case VonInt(7) => }
   }
 
   test("Tests making a variable with a pattern") {
@@ -424,7 +425,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |	 ret doSomething(x);
         |}
       """.stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) match { case VonInt(9) => }
   }
 
 
@@ -442,13 +443,13 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("Tests calling an abstract function") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/genericvirtuals/callingAbstract.vale"))
-    compile.evalForKind(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) match { case VonInt(4) => }
   }
 
   test("Template overrides are stamped") {
     val compile = RunCompilation.test(
         Tests.loadExpected("programs/genericvirtuals/templatedoption.vale"))
-    compile.evalForKind(Vector()) shouldEqual VonInt(1)
+    compile.evalForKind(Vector()) match { case VonInt(1) => }
   }
 
   test("Tests a foreach for a linked list") {
@@ -471,7 +472,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("Tests recursion") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/functions/recursion.vale"))
-    compile.evalForKind(Vector()) shouldEqual VonInt(120)
+    compile.evalForKind(Vector()) match { case VonInt(120) => }
   }
 
   test("Tests floats") {
@@ -484,13 +485,13 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  ret 7;
         |}
       """.stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(7)
+    compile.evalForKind(Vector()) match { case VonInt(7) => }
   }
 
   test("getOr function") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/genericvirtuals/getOr.vale"))
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) match { case VonInt(9) => }
   }
 
   test("Function return without ret upcasts") {
@@ -516,7 +517,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
       case StructToInterfaceUpcastTE(_, _) =>
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
 
   test("Function return with ret upcasts") {
@@ -528,7 +529,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
       case StructToInterfaceUpcastTE(_, _) =>
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
 
   test("Map function") {
@@ -536,7 +537,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         Tests.loadExpected("programs/genericvirtuals/mapFunc.vale"))
     compile.expectTemputs()
 
-    compile.evalForKind(Vector()) shouldEqual VonBool(true)
+    compile.evalForKind(Vector()) match { case VonBool(true) => }
   }
 
   test("Test shaking") {
@@ -552,12 +553,13 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     val hinputs = compile.expectTemputs()
+    val interner = compile.interner
 
-    vassertSome(hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, FunctionNameT("helperFunc", Vector.empty, Vector(CoordT(ShareT, ReadonlyT, IntT.i32)))))))
+    vassertSome(hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(FunctionNameT("helperFunc", Vector.empty, Vector(CoordT(ShareT, ReadonlyT, IntT.i32))))))))
 
-    vassert(None == hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, FunctionNameT("bork", Vector.empty, Vector(CoordT(ShareT, ReadonlyT, StrT())))))))
+    vassert(None == hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(FunctionNameT("bork", Vector.empty, Vector(CoordT(ShareT, ReadonlyT, StrT()))))))))
 
-    vassert(None == hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, FunctionNameT("helperFunc", Vector.empty, Vector(CoordT(ShareT, ReadonlyT, StrT())))))))
+    vassert(None == hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(FunctionNameT("helperFunc", Vector.empty, Vector(CoordT(ShareT, ReadonlyT, StrT()))))))))
   }
 
   test("Test overloading between borrow and pointer") {
@@ -579,7 +581,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |""".stripMargin)
     val temputs = compile.getTemputs()
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Test returning empty seq") {
@@ -603,7 +605,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |""".stripMargin)
     val temputs = compile.expectTemputs()
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(5032704)
+    compile.evalForKind(Vector()) match { case VonInt(5032704) => }
   }
 
   test("Return without ret") {
@@ -611,7 +613,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
       """
         |exported func main() int { 73 }
         |""".stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(73)
+    compile.evalForKind(Vector()) match { case VonInt(73) => }
   }
 
   test("Test export functions") {
@@ -637,7 +639,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val externSqrt = packageH.lookupFunction("sqrt")
     vassert(externSqrt.isExtern)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) match { case VonInt(4) => }
   }
 
   test("Test narrowing between borrow and owning overloads") {
@@ -665,13 +667,13 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Test catch deref after drop") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/invalidaccess.vale"))
     try {
-      compile.evalForKind(Vector()) shouldEqual VonInt(42)
+      compile.evalForKind(Vector()) match { case VonInt(42) => }
       vfail()
     } catch {
       case ConstraintViolatedException(_) => // good!
@@ -699,7 +701,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  ret bork(*Moo());
         |}
         |""".stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
 
@@ -723,7 +725,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  ret bork(Moo());
         |}
         |""".stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("exporting array") {

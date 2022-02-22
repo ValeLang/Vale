@@ -2,14 +2,14 @@ package net.verdagon.vale.vivem
 
 import java.io.PrintStream
 import net.verdagon.vale.metal.{InlineH, ProgramH, ReadonlyH, ShareH}
-import net.verdagon.vale.{FileCoordinateMap, IPackageResolver, PackageCoordinateMap, Result, vassert, vfail, vimpl, vpass}
+import net.verdagon.vale.{FileCoordinateMap, IPackageResolver, PackageCoordinateMap, Result, vassert, vcurious, vfail, vimpl, vpass}
 import net.verdagon.von.IVonData
 
 import scala.collection.immutable.List
 
-case class PanicException() extends Throwable { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class PanicException() extends Throwable { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 case class ConstraintViolatedException(msg: String) extends Throwable {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
   vpass()
 }
 

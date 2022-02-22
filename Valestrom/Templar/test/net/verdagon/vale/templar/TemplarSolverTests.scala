@@ -498,7 +498,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
     )
     compile.getTemputs() match {
       case Err(CouldntFindFunctionToCallT(range, fff)) => {
-        fff.rejectedCalleeToReason.values.head match {
+        fff.rejectedCalleeToReason.map(_._2).head match {
           case InferFailure(reason) => {
             reason match {
               case FailedSolve(_, _, RuleError(SendingNonCitizen(IntT(32)))) =>

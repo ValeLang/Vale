@@ -13,7 +13,7 @@ class WhileTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) match { case VonInt(5) => }
   }
 
   test("Test a for-ish while loop") {
@@ -28,7 +28,7 @@ class WhileTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) match { case VonInt(4) => }
   }
 
   test("Tests a while loop with a complex condition") {
@@ -44,7 +44,7 @@ class WhileTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector(), Vector("A", "B", "c")) shouldEqual VonInt(99)
+    compile.evalForKind(Vector(), Vector("A", "B", "c")) match { case VonInt(99) => }
   }
 
   test("Tests a while loop with a set in it") {
@@ -63,7 +63,7 @@ class WhileTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector(), Vector("A", "B", "c")) shouldEqual VonInt(99)
+    compile.evalForKind(Vector(), Vector("A", "B", "c")) match { case VonInt(99) => }
   }
 
   test("Tests a while loop with a declaration in it") {
@@ -94,7 +94,7 @@ class WhileTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) match { case VonInt(9) => }
   }
 
   test("Infinite while loop conditional break") {
@@ -111,7 +111,7 @@ class WhileTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Infinite while loop unconditional break") {
@@ -125,7 +125,7 @@ class WhileTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Infinite while loop conditional break from both sides") {
@@ -143,7 +143,7 @@ class WhileTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Infinite while loop conditional return") {
@@ -160,7 +160,7 @@ class WhileTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Infinite while loop unconditional return") {
@@ -174,7 +174,7 @@ class WhileTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Infinite while loop conditional return from both sides") {
@@ -192,7 +192,7 @@ class WhileTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("While with condition declaration") {
@@ -204,7 +204,7 @@ class WhileTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("each on int range") {
@@ -220,7 +220,7 @@ class WhileTests extends FunSuite with Matchers {
         |  ret sum;
         |}
         |""".stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(45)
+    compile.evalForKind(Vector()) match { case VonInt(45) => }
   }
 
   test("Parallel foreach") {
@@ -276,7 +276,7 @@ class WhileTests extends FunSuite with Matchers {
         |  ret list.ship.fuel;
         |}
         |""".stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("each on int range with conditional break") {
@@ -297,7 +297,7 @@ class WhileTests extends FunSuite with Matchers {
         |  ret 0;
         |}
         |""".stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(0)
+    compile.evalForKind(Vector()) match { case VonInt(0) => }
   }
 
   test("each on int range with unconditional break") {
@@ -313,7 +313,7 @@ class WhileTests extends FunSuite with Matchers {
         |  ret sum;
         |}
         |""".stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(0)
+    compile.evalForKind(Vector()) match { case VonInt(0) => }
   }
 
   test("each on int range with conditional break from both branches") {
@@ -333,7 +333,7 @@ class WhileTests extends FunSuite with Matchers {
         |  ret sum;
         |}
         |""".stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(0)
+    compile.evalForKind(Vector()) match { case VonInt(0) => }
   }
 
   //
@@ -353,6 +353,6 @@ class WhileTests extends FunSuite with Matchers {
 //
 //    // should fail
 //
-//    compile.evalForKind(Vector()) shouldEqual VonInt(4)
+//    compile.evalForKind(Vector()) match { case VonInt(4) => }
 //  }
 }

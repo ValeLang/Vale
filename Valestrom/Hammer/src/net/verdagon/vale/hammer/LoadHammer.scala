@@ -1,6 +1,5 @@
 package net.verdagon.vale.hammer
 
-import net.verdagon.vale.hammer.ExpressionHammer.translate
 import net.verdagon.vale.metal.{PointerH, ShareH, Variability => _, Varying => _, _}
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.templar.{Hinputs, types => t, _}
@@ -10,7 +9,11 @@ import net.verdagon.vale.templar.names.{FullNameT, IVarNameT}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.{vassert, vfail}
 
-object LoadHammer {
+class LoadHammer(
+    typeHammer: TypeHammer,
+    nameHammer: NameHammer,
+    structHammer: StructHammer,
+    expressionHammer: ExpressionHammer) {
 
   def translateLoad(
       hinputs: Hinputs,
@@ -62,11 +65,11 @@ object LoadHammer {
     val targetPermission = Conversions.evaluatePermission(targetPermissionT)
 
     val (arrayResultLine, arrayDeferreds) =
-      translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
+      expressionHammer.translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
     val arrayAccess = arrayResultLine.expectRuntimeSizedArrayAccess()
 
     val (indexExprResultLine, indexDeferreds) =
-      translate(hinputs, hamuts, currentFunctionHeader, locals, indexExpr2);
+      expressionHammer.translate(hinputs, hamuts, currentFunctionHeader, locals, indexExpr2);
     val indexAccess = indexExprResultLine.expectIntAccess()
 
     vassert(
@@ -114,11 +117,11 @@ object LoadHammer {
     val targetPermission = Conversions.evaluatePermission(targetPermissionT)
 
     val (arrayResultLine, arrayDeferreds) =
-      translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
+      expressionHammer.translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
     val arrayAccess = arrayResultLine.expectStaticSizedArrayAccess()
 
     val (indexExprResultLine, indexDeferreds) =
-      translate(hinputs, hamuts, currentFunctionHeader, locals, indexExpr2);
+      expressionHammer.translate(hinputs, hamuts, currentFunctionHeader, locals, indexExpr2);
     val indexAccess = indexExprResultLine.expectIntAccess()
 
     vassert(targetOwnership == m.PointerH || targetOwnership == m.BorrowH || targetOwnership == m.ShareH)
@@ -162,7 +165,7 @@ object LoadHammer {
       targetPermissionT: t.PermissionT,
   ): (ExpressionH[KindH], Vector[ExpressionT]) = {
     val (structResultLine, structDeferreds) =
-      translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
+      expressionHammer.translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val structTT =
       structExpr2.result.reference.kind match {
@@ -180,16 +183,16 @@ object LoadHammer {
     val boxedType2 = member2.tyype.expectAddressMember().reference
 
     val (boxedTypeH) =
-      TypeHammer.translateReference(hinputs, hamuts, boxedType2);
+      typeHammer.translateReference(hinputs, hamuts, boxedType2);
 
     val (boxStructRefH) =
-      StructHammer.makeBox(hinputs, hamuts, variability, boxedType2, boxedTypeH)
+      structHammer.makeBox(hinputs, hamuts, variability, boxedType2, boxedTypeH)
 
     val boxInStructCoord = ReferenceH(PointerH, YonderH, ReadwriteH, boxStructRefH)
 
     // We're storing into a struct's member that is a box. The stack is also
     // pointing at this box. First, get the box, then mutate what's inside.
-    var varFullNameH = NameHammer.translateFullName(hinputs, hamuts, memberName)
+    var varFullNameH = nameHammer.translateFullName(hinputs, hamuts, memberName)
     val loadBoxNode =
         MemberLoadH(
           structResultLine.expectStructAccess(),
@@ -212,7 +215,7 @@ object LoadHammer {
           StructHammer.BOX_MEMBER_INDEX,
           boxedTypeH,
           loadResultType,
-          NameHammer.addStep(hamuts, boxStructRefH.fullName, StructHammer.BOX_MEMBER_NAME))
+          nameHammer.addStep(hamuts, boxStructRefH.fullName, StructHammer.BOX_MEMBER_NAME))
     (loadedNodeH, structDeferreds)
   }
 
@@ -229,12 +232,12 @@ object LoadHammer {
       targetPermissionT: t.PermissionT,
   ): (ExpressionH[KindH], Vector[ExpressionT]) = {
     val (structResultLine, structDeferreds) =
-      translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
+      expressionHammer.translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val (expectedMemberTypeH) =
-      TypeHammer.translateReference(hinputs, hamuts, expectedMemberCoord);
+      typeHammer.translateReference(hinputs, hamuts, expectedMemberCoord);
 //    val (resultTypeH) =
-//      TypeHammer.translateReference(hinputs, hamuts, resultCoord);
+//      typeHammer.translateReference(hinputs, hamuts, resultCoord);
 
     val structTT =
       structExpr2.result.reference.kind match {
@@ -257,7 +260,7 @@ object LoadHammer {
           memberIndex,
           expectedMemberTypeH,
           loadResultType,
-          NameHammer.translateFullName(hinputs, hamuts, memberName))
+          nameHammer.translateFullName(hinputs, hamuts, memberName))
     (loadedNode, structDeferreds)
   }
 
@@ -276,14 +279,14 @@ object LoadHammer {
     vassert(!locals.unstackifiedVars.contains(local.id))
 
     val (localTypeH) =
-      TypeHammer.translateReference(hinputs, hamuts, localReference2);
+      typeHammer.translateReference(hinputs, hamuts, localReference2);
     val (boxStructRefH) =
-      StructHammer.makeBox(hinputs, hamuts, variability, localReference2, localTypeH)
+      structHammer.makeBox(hinputs, hamuts, variability, localReference2, localTypeH)
     vassert(local.typeH.kind == boxStructRefH)
 
     // This means we're trying to load from a local variable that holds a box.
     // We need to load the box, then mutate its contents.
-    val varNameH = NameHammer.translateFullName(hinputs, hamuts, varId)
+    val varNameH = nameHammer.translateFullName(hinputs, hamuts, varId)
     val loadBoxNode =
         LocalLoadH(
           local,
@@ -302,7 +305,7 @@ object LoadHammer {
           StructHammer.BOX_MEMBER_INDEX,
           localTypeH,
           loadResultType,
-          NameHammer.addStep(hamuts, boxStructRefH.fullName, StructHammer.BOX_MEMBER_NAME))
+          nameHammer.addStep(hamuts, boxStructRefH.fullName, StructHammer.BOX_MEMBER_NAME))
     (loadedNode, Vector.empty)
   }
 
@@ -329,7 +332,7 @@ object LoadHammer {
     vassert(!locals.unstackifiedVars.contains(local.id))
 
     val (expectedTypeH) =
-      TypeHammer.translateReference(hinputs, hamuts, expectedType2);
+      typeHammer.translateReference(hinputs, hamuts, expectedType2);
     vassert(expectedTypeH == local.typeH)
 
     val loadedNode =
@@ -337,7 +340,7 @@ object LoadHammer {
           local,
           targetOwnership,
           targetPermission,
-          NameHammer.translateFullName(hinputs, hamuts, varId))
+          nameHammer.translateFullName(hinputs, hamuts, varId))
     (loadedNode, Vector.empty)
   }
 
@@ -353,7 +356,7 @@ object LoadHammer {
     val local = locals.get(localVar.id).get
     vassert(!locals.unstackifiedVars.contains(local.id))
     val (boxStructRefH) =
-      StructHammer.makeBox(hinputs, hamuts, localVar.variability, localVar.reference, local.typeH)
+      structHammer.makeBox(hinputs, hamuts, localVar.variability, localVar.reference, local.typeH)
 
     // This means we're trying to load from a local variable that holds a box.
     // We need to load the box, then mutate its contents.
@@ -364,7 +367,7 @@ object LoadHammer {
         // The box should be readwrite, but we'll load from it in a way that takes into account
         // the user's desired permission.
         ReadwriteH,
-        NameHammer.translateFullName(hinputs, hamuts, localVar.id))
+        nameHammer.translateFullName(hinputs, hamuts, localVar.id))
     loadBoxNode
   }
 
@@ -380,7 +383,7 @@ object LoadHammer {
     val AddressMemberLookupTE(_,structExpr2, memberName, resultType2, _) = lookup2;
 
     val (structResultLine, structDeferreds) =
-      translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
+      expressionHammer.translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val structTT =
       structExpr2.result.reference.kind match {
@@ -399,10 +402,10 @@ object LoadHammer {
     val boxedType2 = member2.tyype.expectAddressMember().reference
 
     val (boxedTypeH) =
-      TypeHammer.translateReference(hinputs, hamuts, boxedType2);
+      typeHammer.translateReference(hinputs, hamuts, boxedType2);
 
     val (boxStructRefH) =
-      StructHammer.makeBox(hinputs, hamuts, variability, boxedType2, boxedTypeH)
+      structHammer.makeBox(hinputs, hamuts, variability, boxedType2, boxedTypeH)
 
     // We expect a borrow because structs never own boxes, they only borrow them
     val expectedStructBoxMemberType = ReferenceH(m.PointerH, YonderH, ReadwriteH, boxStructRefH)
@@ -427,7 +430,7 @@ object LoadHammer {
         memberIndex,
         expectedStructBoxMemberType,
         loadResultType,
-        NameHammer.translateFullName(hinputs, hamuts, memberName))
+        nameHammer.translateFullName(hinputs, hamuts, memberName))
 
     (loadBoxNode, structDeferreds)
   }

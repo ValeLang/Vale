@@ -6,7 +6,7 @@ import scala.util.parsing.input.Positional
 
 sealed trait IVirtualityP
 case class AbstractP(range: RangeP) extends IVirtualityP
-case class OverrideP(range: RangeP, tyype: ITemplexPT) extends IVirtualityP { override def hashCode(): Int = vcurious() }
+case class OverrideP(range: RangeP, tyype: ITemplexPT) extends IVirtualityP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class PatternPP(
     range: RangeP,
@@ -28,16 +28,19 @@ case class PatternPP(
 
 case class DestructureP(
   range: RangeP,
-  patterns: Vector[PatternPP]) { override def hashCode(): Int = vcurious() }
+  patterns: Vector[PatternPP]) {
+
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
+}
 
 sealed trait INameDeclarationP {
   def range: RangeP
 }
-case class LocalNameDeclarationP(name: NameP) extends INameDeclarationP { override def hashCode(): Int = vcurious(); override def range: RangeP = name.range }
-case class IterableNameDeclarationP(range: RangeP) extends INameDeclarationP { override def hashCode(): Int = vcurious() }
-case class IteratorNameDeclarationP(range: RangeP) extends INameDeclarationP { override def hashCode(): Int = vcurious() }
-case class IterationOptionNameDeclarationP(range: RangeP) extends INameDeclarationP { override def hashCode(): Int = vcurious() }
-case class ConstructingMemberNameDeclarationP(name: NameP) extends INameDeclarationP { override def hashCode(): Int = vcurious(); override def range: RangeP = name.range }
+case class LocalNameDeclarationP(name: NameP) extends INameDeclarationP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious(); override def range: RangeP = name.range }
+case class IterableNameDeclarationP(range: RangeP) extends INameDeclarationP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class IteratorNameDeclarationP(range: RangeP) extends INameDeclarationP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class IterationOptionNameDeclarationP(range: RangeP) extends INameDeclarationP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class ConstructingMemberNameDeclarationP(name: NameP) extends INameDeclarationP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious(); override def range: RangeP = name.range }
 
 object Patterns {
   object capturedWithTypeRune {

@@ -17,7 +17,7 @@ class OptTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) match { case VonInt(9) => }
   }
 
   test("Test empty and get for None") {
@@ -30,7 +30,7 @@ class OptTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(0)
+    compile.evalForKind(Vector()) match { case VonInt(0) => }
   }
 
   test("Test empty and get for borrow") {
@@ -48,6 +48,6 @@ class OptTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 }

@@ -169,14 +169,8 @@ func splitOnce(haystack StrSlice, needle StrSlice) Opt<SplitResult> {
     r Opt<SplitResult> =
         Some<SplitResult>(
             SplitResult(
-                newStrSlice(
-                    haystack.string,
-                    haystack.begin,
-                    offsetAfterBegin.begin),
-                newStrSlice(
-                    haystack.string,
-                    offsetAfterBegin.begin + needle.len(),
-                    haystack.end)));
+                haystack.slice(0, offsetAfterBegin),
+                haystack.slice(offsetAfterBegin + needle.len(), haystack.len())));
     r
   }
 }

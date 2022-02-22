@@ -224,9 +224,10 @@ class TemplarMutateTests extends FunSuite with Matchers {
   }
 
   test("Humanize errors") {
-    val fireflyKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, CitizenNameT(CitizenTemplateNameT("Firefly"), Vector.empty)))
+    val interner = new Interner()
+    val fireflyKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(CitizenNameT(CitizenTemplateNameT("Firefly"), Vector.empty))))
     val fireflyCoord = CoordT(OwnT,ReadwriteT,fireflyKind)
-    val serenityKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, CitizenNameT(CitizenTemplateNameT("Serenity"), Vector.empty)))
+    val serenityKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(CitizenNameT(CitizenTemplateNameT("Serenity"), Vector.empty))))
     val serenityCoord = CoordT(OwnT,ReadwriteT,serenityKind)
 
     val filenamesAndSources = FileCoordinateMap.test("blah blah blah\nblah blah blah")
@@ -236,7 +237,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindFunctionToCallT(
         RangeS.testZero,
-        FindFunctionFailure(CodeNameS(""), Vector.empty, Map())))
+        FindFunctionFailure(interner.intern(CodeNameS("")), Vector.empty, Map())))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CannotSubscriptT(
@@ -246,7 +247,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindIdentifierToLoadT(
         RangeS.testZero,
-        CodeNameS("spaceship")))
+        interner.intern(CodeNameS("spaceship"))))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindMemberT(
@@ -276,7 +277,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantMoveOutOfMemberT(
         RangeS.testZero,
-        CodeVarNameT("hp")))
+        interner.intern(CodeVarNameT("hp"))))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantReconcileBranchesResults(
@@ -287,19 +288,19 @@ class TemplarMutateTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantUseUnstackifiedLocal(
         RangeS.testZero,
-        CodeVarNameT("firefly")))
+        interner.intern(CodeVarNameT("firefly"))))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       FunctionAlreadyExists(
         RangeS.testZero,
         RangeS.testZero,
-        SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, FunctionNameT("myFunc", Vector.empty, Vector.empty)))))
+        SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(FunctionNameT("myFunc", Vector.empty, Vector.empty))))))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantMutateFinalMember(
         RangeS.testZero,
         serenityKind,
-        FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, CodeVarNameT("bork"))))
+        FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(CodeVarNameT("bork")))))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       LambdaReturnDoesntMatchInterfaceConstructor(

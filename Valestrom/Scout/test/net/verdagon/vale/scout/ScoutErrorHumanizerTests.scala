@@ -4,7 +4,7 @@ import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.{Collector, Err, FileCoordinate, FileCoordinateMap, Ok, RangeS, vassert, vfail}
+import net.verdagon.vale.{Collector, Err, FileCoordinate, FileCoordinateMap, Interner, Ok, RangeS, vassert, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
 class ScoutErrorHumanizerTests extends FunSuite with Matchers {
@@ -12,7 +12,8 @@ class ScoutErrorHumanizerTests extends FunSuite with Matchers {
     Parser.runParser(code) match {
       case Err(err) => fail(err.toString)
       case Ok(program0) => {
-        new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
+        new Scout(GlobalOptions.test(), new Interner())
+            .scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => vfail(e.toString)
           case Ok(t) => t
         }
@@ -24,7 +25,8 @@ class ScoutErrorHumanizerTests extends FunSuite with Matchers {
     Parser.runParser(code) match {
       case Err(err) => fail(err.toString)
       case Ok(program0) => {
-        new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
+        new Scout(GlobalOptions.test(), new Interner())
+            .scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => e
           case Ok(t) => vfail("Successfully compiled!\n" + t.toString)
         }

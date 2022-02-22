@@ -1,6 +1,5 @@
 package net.verdagon.vale.hammer
 
-import net.verdagon.vale.hammer.NameHammer.{translateCodeLocation, translateFileCoordinate, translateFullName}
 import net.verdagon.vale.metal._
 import net.verdagon.vale.{CodeLocationS, PackageCoordinate, RangeS, vassert, vfail, vimpl, metal => m}
 import net.verdagon.vale.scout._
@@ -10,7 +9,7 @@ import net.verdagon.vale.templar.names._
 import net.verdagon.vale.templar.types._
 import net.verdagon.von._
 
-object VonHammer {
+class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
   def vonifyProgram(program: ProgramH): IVonData = {
     val ProgramH(packages) = program
 
@@ -957,7 +956,7 @@ object VonHammer {
           "CoordTemplata",
           None,
           Vector(
-            VonMember("coord", vonifyCoord(TypeHammer.translateReference(hinputs, hamuts, coord)))))
+            VonMember("coord", vonifyCoord(typeHammer.translateReference(hinputs, hamuts, coord)))))
       }
       case CoordListTemplata(coords) => {
         VonObject(
@@ -967,21 +966,21 @@ object VonHammer {
             VonMember("coords",
               VonArray(
                 None,
-                coords.map(coord => vonifyCoord(TypeHammer.translateReference(hinputs, hamuts, coord)))))))
+                coords.map(coord => vonifyCoord(typeHammer.translateReference(hinputs, hamuts, coord)))))))
       }
       case KindTemplata(kind) => {
         VonObject(
           "KindTemplata",
           None,
           Vector(
-            VonMember("kind", vonifyKind(TypeHammer.translateKind(hinputs, hamuts, kind)))))
+            VonMember("kind", vonifyKind(typeHammer.translateKind(hinputs, hamuts, kind)))))
       }
       case PrototypeTemplata(prototype) => {
         VonObject(
           "PrototypeTemplata",
           None,
           Vector(
-            VonMember("prototype", vonifyPrototype(FunctionHammer.translatePrototype(hinputs, hamuts, prototype)))))
+            VonMember("prototype", vonifyPrototype(typeHammer.translatePrototype(hinputs, hamuts, prototype)))))
       }
       case RuntimeSizedArrayTemplateTemplata() => VonObject("ArrayTemplateTemplata", None, Vector())
       case ft @ FunctionTemplata(env, functionA) => {
@@ -992,7 +991,7 @@ object VonHammer {
             VonMember("envName", vonifyTemplarName(hinputs, hamuts, env.fullName)),
             VonMember(
               "function",
-              vonifyName(translateFullName(hinputs, hamuts, ft.getTemplateName())))))
+              vonifyName(nameHammer.translateFullName(hinputs, hamuts, ft.getTemplateName())))))
       }
       case st @ StructTemplata(env, struct) => {
         VonObject(
@@ -1000,7 +999,8 @@ object VonHammer {
           None,
           Vector(
             VonMember("envName", vonifyTemplarName(hinputs, hamuts, env.fullName)),
-            VonMember("structName", translateName(hinputs, hamuts, NameTranslator.translateCitizenName(st.originStruct.name)))))
+            vimpl()))
+//            VonMember("structName", translateName(hinputs, hamuts, nameTranslator.translateCitizenName(st.originStruct.name)))))
       }
       case it @ InterfaceTemplata(env, interface) => {
         VonObject(
@@ -1016,8 +1016,10 @@ object VonHammer {
           None,
           Vector(
             VonMember("envName", vonifyTemplarName(hinputs, hamuts, env.fullName)),
-            VonMember("subCitizenHumanName", translateName(hinputs, hamuts, NameTranslator.translateNameStep(impl.name))),
-            VonMember("location", vonifyCodeLocation2(NameTranslator.translateCodeLocation(impl.name.codeLocation)))))
+            vimpl(),
+            vimpl()))
+//            VonMember("subCitizenHumanName", translateName(hinputs, hamuts, nameTranslator.translateNameStep(impl.name))),
+//            VonMember("location", vonifyCodeLocation2(nameTranslator.translateCodeLocation(impl.name.codeLocation)))))
       }
       case ExternFunctionTemplata(header) => VonObject("ExternFunctionTemplata", None, Vector(VonMember("name", vonifyTemplarName(hinputs, hamuts, header.fullName))))
       case OwnershipTemplata(ownership) => VonObject("OwnershipTemplata", None, Vector(VonMember("ownership", vonifyOwnership(Conversions.evaluateOwnership(ownership)))))
@@ -1036,7 +1038,7 @@ object VonHammer {
       "CodeLocation",
       None,
       Vector(
-        VonMember("file", translateFileCoordinate(file)),
+        VonMember("file", NameHammer.translateFileCoordinate(file)),
         VonMember("offset", VonInt(offset))))
   }
 
@@ -1046,7 +1048,7 @@ object VonHammer {
       "CodeLocation",
       None,
       Vector(
-        VonMember("file", translateFileCoordinate(file)),
+        VonMember("file", NameHammer.translateFileCoordinate(file)),
         VonMember("offset", VonInt(offset))))
   }
 
@@ -1056,8 +1058,8 @@ object VonHammer {
       "Range",
       None,
       Vector(
-        VonMember("begin", translateCodeLocation(begin)),
-        VonMember("end", translateCodeLocation(end))))
+        VonMember("begin", NameHammer.translateCodeLocation(begin)),
+        VonMember("end", NameHammer.translateCodeLocation(end))))
   }
 
   def translateName(
@@ -1135,7 +1137,7 @@ object VonHammer {
           None,
           Vector(
             VonMember("mutability", vonifyMutability(Conversions.evaluateMutability(mutability))),
-            VonMember("elementType", vonifyCoord(TypeHammer.translateReference(hinputs, hamuts, elementType)))))
+            VonMember("elementType", vonifyCoord(typeHammer.translateReference(hinputs, hamuts, elementType)))))
       }
       case TemplarBlockResultVarNameT(life) => {
         VonObject(
@@ -1224,6 +1226,13 @@ object VonHammer {
           Vector(
             VonMember("interface", VonInt(index))))
       }
+      case AnonymousSubstructImplTemplateNameT(interface) => {
+        VonObject(
+          "AnonymousSubstructImplTemplateName",
+          None,
+          Vector(
+            VonMember("interface", translateName(hinputs, hamuts, interface))))
+      }
       case PrimitiveNameT(humanName) => {
         VonObject(
           "PrimitiveName",
@@ -1249,7 +1258,7 @@ object VonHammer {
           "StructFreeName",
           None,
           Vector(
-//            VonMember("codeLoc", vonifyCodeLocation2(NameTranslator.translateCodeLocation(codeLoc))),
+//            VonMember("codeLoc", vonifyCodeLocation2(nameTranslator.translateCodeLocation(codeLoc))),
             VonMember(
               "templateArgs",
               VonArray(
@@ -1259,7 +1268,7 @@ object VonHammer {
                   .toVector)),
             VonMember(
               "kind",
-              vonifyKind(TypeHammer.translateKind(hinputs, hamuts, kind)))))
+              vonifyKind(typeHammer.translateKind(hinputs, hamuts, kind)))))
       }
       case VirtualFreeNameT(templateArgs, param) => {
         VonObject(
@@ -1275,7 +1284,7 @@ object VonHammer {
                   .toVector)),
             VonMember(
               "param",
-              vonifyKind(TypeHammer.translateKind(hinputs, hamuts, param)))))
+              vonifyKind(typeHammer.translateKind(hinputs, hamuts, param)))))
       }
       case FunctionNameT(humanName, templateArgs, parameters) => {
         VonObject(
@@ -1295,9 +1304,69 @@ object VonHammer {
               VonArray(
                 None,
                 parameters
-                  .map(templateArg => TypeHammer.translateReference(hinputs, hamuts, templateArg))
+                  .map(templateArg => typeHammer.translateReference(hinputs, hamuts, templateArg))
                   .map(vonifyCoord)
                   .toVector))))
+      }
+      case AbstractVirtualDropFunctionNameT(implName, templateArgs, parameters) => {
+        VonObject(
+          "AbstractVirtualDropFunctionNameF",
+          None,
+          Vector(
+            VonMember("implName", translateName(hinputs, hamuts, implName)),
+            VonMember(
+              "templateArgs",
+              VonArray(
+                None,
+                templateArgs
+                  .map(templateArg => vonifyTemplata(hinputs, hamuts, templateArg))
+                  .toVector)),
+            VonMember(
+              "parameters",
+              VonArray(
+                None,
+                parameters
+                  .map(templateArg => typeHammer.translateReference(hinputs, hamuts, templateArg))
+                  .map(vonifyCoord)
+                  .toVector))))
+      }
+      case OverrideVirtualDropFunctionNameT(implName, templateArgs, parameters) => {
+        VonObject(
+          "OverrideVirtualDropFunctionNameF",
+          None,
+          Vector(
+            VonMember("implName", translateName(hinputs, hamuts, implName)),
+            VonMember(
+              "templateArgs",
+              VonArray(
+                None,
+                templateArgs
+                  .map(templateArg => vonifyTemplata(hinputs, hamuts, templateArg))
+                  .toVector)),
+            VonMember(
+              "parameters",
+              VonArray(
+                None,
+                parameters
+                  .map(templateArg => typeHammer.translateReference(hinputs, hamuts, templateArg))
+                  .map(vonifyCoord)
+                  .toVector))))
+      }
+      case ForwarderFunctionNameT(inner, index) => {
+        VonObject(
+          "ForwarderF",
+          None,
+          Vector(
+            VonMember("inner", translateName(hinputs, hamuts, inner)),
+            VonMember("index", VonInt(index))))
+      }
+      case ForwarderFunctionTemplateNameT(inner, index) => {
+        VonObject(
+          "ForwarderFT",
+          None,
+          Vector(
+            VonMember("inner", translateName(hinputs, hamuts, inner)),
+            VonMember("index", VonInt(index))))
       }
       case FunctionTemplateNameT(humanName, codeLocation) => {
         VonObject(

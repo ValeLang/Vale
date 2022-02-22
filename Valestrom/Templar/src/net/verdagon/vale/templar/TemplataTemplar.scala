@@ -50,9 +50,10 @@ trait ITemplataTemplarDelegate {
 }
 
 class TemplataTemplar(
-    opts: TemplarOptions,
-    profiler: IProfiler,
-    delegate: ITemplataTemplarDelegate) {
+  opts: TemplarOptions,
+  profiler: IProfiler,
+  nameTranslator: NameTranslator,
+  delegate: ITemplataTemplarDelegate) {
 
   def isTypeConvertible(
     temputs: Temputs,
@@ -385,10 +386,10 @@ class TemplataTemplar(
     val citizenTemplateFullName =
       expectedCitizenTemplata match {
         case StructTemplata(env, originStruct) => {
-          env.fullName.addStep(NameTranslator.translateCitizenName(originStruct.name))
+          env.fullName.addStep(nameTranslator.translateCitizenName(originStruct.name))
         }
         case InterfaceTemplata(env, originInterface) => {
-          env.fullName.addStep(NameTranslator.translateCitizenName(originInterface.name))
+          env.fullName.addStep(nameTranslator.translateCitizenName(originInterface.name))
         }
         case KindTemplata(expectedKind) => return actualCitizenRef == expectedKind
         case CoordTemplata(CoordT(OwnT | ShareT, ReadonlyT, actualKind)) => return actualCitizenRef == actualKind

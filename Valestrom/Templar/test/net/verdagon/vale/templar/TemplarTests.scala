@@ -105,8 +105,8 @@ class TemplarTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     Collector.onlyOf(temputs.lookupFunction("main"), classOf[ParameterT]).tyype == CoordT(ShareT, ReadonlyT, IntT.i32)
     val lookup = Collector.onlyOf(temputs.lookupFunction("main"), classOf[LocalLookupTE]);
-    lookup.localVariable.id.last shouldEqual CodeVarNameT("a")
-    lookup.localVariable.reference shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
+    lookup.localVariable.id.last match { case CodeVarNameT("a") => }
+    lookup.localVariable.reference match { case CoordT(ShareT, ReadonlyT, IntT.i32) => }
   }
 
   test("Tests adding two numbers") {
@@ -482,12 +482,13 @@ class TemplarTests extends FunSuite with Matchers {
         |func main(a MyOption<int>) { }
       """.stripMargin)
     val temputs = compile.expectTemputs()
+    val interner = compile.interner
 
     temputs.lookupInterface(
       InterfaceTT(
-        FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("MyOption"), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))))
+        FullNameT(PackageCoordinate.TEST_TLD, Vector(), interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("MyOption")), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))))
     vassert(temputs.lookupFunction("main").header.params.head.tyype ==
-        CoordT(OwnT,ReadwriteT,InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("MyOption"), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))))
+        CoordT(OwnT,ReadwriteT,InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("MyOption")), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))))))
 
     // Can't run it because there's nothing implementing that interface >_>
   }
@@ -554,13 +555,14 @@ class TemplarTests extends FunSuite with Matchers {
         |exported func main() { moo(__pretend<MySome<int>>()); }
         |""".stripMargin)
     val temputs = compile.expectTemputs()
+    val interner = compile.interner
 
     val interface =
       temputs.lookupInterface(
         InterfaceTT(
-          FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("MyOption"), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))))
+          FullNameT(PackageCoordinate.TEST_TLD, Vector(), interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("MyOption")), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))))
 
-    val struct = temputs.lookupStruct(StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("MySome"), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))));
+    val struct = temputs.lookupStruct(StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("MySome")), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))));
 
     temputs.lookupImpl(struct.getRef, interface.getRef)
   }
@@ -597,8 +599,9 @@ class TemplarTests extends FunSuite with Matchers {
     )
 
     val temputs = compile.expectTemputs()
+    val interner = compile.interner
 
-    temputs.lookupStruct(StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("MySome"), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32)))))));
+    temputs.lookupStruct(StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("MySome")), Vector(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))));
 
     val constructor = temputs.lookupFunction("MySome")
     constructor.header match {
@@ -625,8 +628,8 @@ class TemplarTests extends FunSuite with Matchers {
     Collector.only(main, { case LetNormalTE(ReferenceLocalVariableT(FullNameT(_,_,CodeVarNameT("x")),FinalT,CoordT(OwnT,ReadwriteT,InterfaceTT(simpleName("MyInterface")))), _) => })
 
     val upcast = Collector.onlyOf(main, classOf[StructToInterfaceUpcastTE])
-    vassert(upcast.result.reference == CoordT(OwnT,ReadwriteT,InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("MyInterface"), Vector())))))
-    vassert(upcast.innerExpr.result.reference == CoordT(OwnT,ReadwriteT,StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("MyStruct"), Vector())))))
+    upcast.result.reference match { case CoordT(OwnT,ReadwriteT,InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("MyInterface"), Vector())))) => }
+    upcast.innerExpr.result.reference match { case CoordT(OwnT,ReadwriteT,StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("MyStruct"), Vector())))) => }
   }
 
   test("Tests calling a virtual function") {
@@ -639,7 +642,7 @@ class TemplarTests extends FunSuite with Matchers {
         Collector.only(innerExpr.result, {
           case StructTT(simpleName("Toyota")) =>
         })
-        vassert(up.result.reference.kind == InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("Car"), Vector()))))
+        up.result.reference.kind match { case InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("Car"), Vector()))) => }
       }
     })
   }

@@ -229,16 +229,15 @@ class SolverTests extends FunSuite with Matchers with Collector {
         Call(-3, -1, -2)) // We dont know the template, -1, yet
 
 
+    val solver = new Solver[IRule, Long, Unit, Unit, String, String](true, true)
     val solverState =
-      Solver.makeInitialSolverState[IRule, Long, String](
-        true,
-        true,
+      solver.makeInitialSolverState(
         rules,
         (rule: IRule) => rule.allRunes.toVector,
         (rule: IRule) => rule.allPuzzles,
         Map())
     val firstConclusions =
-      Solver.solve((r: IRule) => r.allPuzzles, (), (), solverState, TestRuleSolver) match {
+      solver.solve((r: IRule) => r.allPuzzles, (), (), solverState, TestRuleSolver) match {
         case Ok(c) => c._2
         case Err(e) => vfail(e)
       }
@@ -246,7 +245,7 @@ class SolverTests extends FunSuite with Matchers with Collector {
     solverState.markRulesSolved(Array(), Map(solverState.getCanonicalRune(-1) -> "Firefly"))
 
     val secondConclusions =
-      Solver.solve((r: IRule) => r.allPuzzles, (), (), solverState, TestRuleSolver) match {
+      solver.solve((r: IRule) => r.allPuzzles, (), (), solverState, TestRuleSolver) match {
         case Ok(c) => c._2
         case Err(e) => vfail(e)
       }
@@ -273,16 +272,15 @@ class SolverTests extends FunSuite with Matchers with Collector {
           Literal(-2, "1337"),
           Call(-3, -1, -2)) // X = Firefly<A>
 
+      val solver = new Solver[IRule, Long, Unit, Unit, String, String](true, true)
       val solverState =
-        Solver.makeInitialSolverState[IRule, Long, String](
-          true,
-          true,
+        solver.makeInitialSolverState(
           rules,
           (rule: IRule) => rule.allRunes.toVector,
           puzzler,
           Map())
       val conclusions: Map[Long, String] =
-        Solver.solve((r: IRule) => r.allPuzzles, (), (), solverState, TestRuleSolver) match {
+        solver.solve((r: IRule) => r.allPuzzles, (), (), solverState, TestRuleSolver) match {
           case Ok(c) => c._2.toMap
           case Err(e) => vfail(e)
         }
@@ -319,15 +317,14 @@ class SolverTests extends FunSuite with Matchers with Collector {
 
   private def expectSolveFailure(rules: IndexedSeq[IRule]):
   FailedSolve[IRule, Long, String, String] = {
+    val solver = new Solver[IRule, Long, Unit, Unit, String, String](true, true)
     val solverState =
-      Solver.makeInitialSolverState[IRule, Long, String](
-        true,
-        true,
+      solver.makeInitialSolverState(
         rules,
         (rule: IRule) => rule.allRunes.toVector,
         (rule: IRule) => rule.allPuzzles,
         Map())
-    Solver.solve((r: IRule) => r.allPuzzles, (), (), solverState, TestRuleSolver) match {
+    solver.solve((r: IRule) => r.allPuzzles, (), (), solverState, TestRuleSolver) match {
       case Ok(c) => vfail(c)
       case Err(e) => e
     }
@@ -338,16 +335,15 @@ class SolverTests extends FunSuite with Matchers with Collector {
     expectCompleteSolve: Boolean,
     initiallyKnownRunes: Map[Long, String] = Map()):
   Map[Long, String] = {
+    val solver = new Solver[IRule, Long, Unit, Unit, String, String](true, true)
     val solverState =
-      Solver.makeInitialSolverState[IRule, Long, String](
-        true,
-        true,
+      solver.makeInitialSolverState(
         rules,
         (rule: IRule) => rule.allRunes.toVector,
         (rule: IRule) => rule.allPuzzles,
         initiallyKnownRunes)
     val conclusions =
-      Solver.solve((r: IRule) => r.allPuzzles, (), (), solverState, TestRuleSolver) match {
+      solver.solve((r: IRule) => r.allPuzzles, (), (), solverState, TestRuleSolver) match {
           case Ok(c) => c._2
           case Err(e) => vfail(e)
         }

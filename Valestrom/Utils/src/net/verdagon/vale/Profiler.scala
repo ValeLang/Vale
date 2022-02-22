@@ -4,10 +4,10 @@ import scala.collection.immutable.HashMap
 import scala.collection.mutable
 
 case class FinishedProfile(args: String, profileTotalNanoseconds: Long, rootFrame: FinishedFrame) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 case class FinishedFrame(nanoseconds: Long, children: Map[String, Vector[FinishedFrame]]) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   def totalTime: Long = nanoseconds + children.map(_._2.map(_.totalTime).sum).sum
 }

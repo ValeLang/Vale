@@ -11,7 +11,7 @@ import net.verdagon.vale.parser.{FailedParse, InputException, ParseErrorHumanize
 import net.verdagon.vale.scout.{Scout, ScoutErrorHumanizer}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
 import net.verdagon.vale.vivem.Vivem
-import net.verdagon.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, NullProfiler, Ok, PackageCoordinate, Result, vassert, vassertSome, vcheck, vfail, vimpl, vwat}
+import net.verdagon.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, NullProfiler, Ok, PackageCoordinate, Result, vassert, vassertSome, vcheck, vcurious, vfail, vimpl, vwat}
 import net.verdagon.von.{IVonData, JsonSyntax, VonInt, VonPrinter}
 
 import java.nio.charset.Charset
@@ -25,15 +25,15 @@ object Driver {
     def packageCoord: PackageCoordinate
   }
   case class ModulePathInput(moduleName: String, path: String) extends IValestromInput {
-    val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+    val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
     override def packageCoord: PackageCoordinate = PackageCoordinate(moduleName, Vector.empty)
   }
-  case class DirectFilePathInput(packageCoord: PackageCoordinate, path: String) extends IValestromInput { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+  case class DirectFilePathInput(packageCoord: PackageCoordinate, path: String) extends IValestromInput { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
   case class SourceInput(
       packageCoord: PackageCoordinate,
       // Name isnt guaranteed to be unique, we sometimes hand in strings like "builtins.vale"
       name: String,
-      code: String) extends IValestromInput { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+      code: String) extends IValestromInput { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
   case class Options(
     inputs: Vector[IValestromInput],
@@ -50,7 +50,7 @@ object Driver {
     useOptimizedSolver: Boolean,
     verboseErrors: Boolean,
     debugOutput: Boolean
-  ) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+  ) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
   def parseOpts(opts: Options, list: List[String]) : Options = {
     list match {
@@ -266,7 +266,7 @@ object Driver {
             packageCoord.module + packageCoord.packages.map("." + _).mkString("")
           }) +
           ".vast"
-        val json = jsonifyPackage(packageCoord, paackage)
+        val json = jsonifyPackage(compilation.getVonHammer(), packageCoord, paackage)
         writeFile(outputVastFilepath, json)
 //        println("Wrote VAST to file " + outputVastFilepath)
       })
@@ -277,14 +277,14 @@ object Driver {
     }
   }
 
-  def jsonifyPackage(packageCoord: PackageCoordinate, packageH: PackageH): String = {
-    val programV = VonHammer.vonifyPackage(packageCoord, packageH)
+  def jsonifyPackage(vonHammer: VonHammer, packageCoord: PackageCoordinate, packageH: PackageH): String = {
+    val programV = vonHammer.vonifyPackage(packageCoord, packageH)
     val json = new VonPrinter(JsonSyntax, 120).print(programV)
     json
   }
 
-  def jsonifyProgram(programH: ProgramH): String = {
-    val programV = VonHammer.vonifyProgram(programH)
+  def jsonifyProgram(vonHammer: VonHammer, programH: ProgramH): String = {
+    val programV = vonHammer.vonifyProgram(programH)
     val json = new VonPrinter(JsonSyntax, 120).print(programV)
     json
   }

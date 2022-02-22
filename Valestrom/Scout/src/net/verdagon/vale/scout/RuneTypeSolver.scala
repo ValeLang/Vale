@@ -13,7 +13,7 @@ case class RuneTypeSolveError(range: RangeS, failedSolve: IIncompleteOrFailedSol
 sealed trait IRuneTypeRuleError
 case class LookupDidntMatchExpectedType(range: RangeS, expectedType: ITemplataType, actualType: ITemplataType) extends IRuneTypeRuleError
 
-object RuneTypeSolver {
+class RuneTypeSolver(interner: Interner) {
   def getRunes(rule: IRulexSR): Array[IRuneS] = {
     val sanityCheck =
       rule match {
@@ -201,7 +201,7 @@ object RuneTypeSolver {
         Ok(())
       }
       case RuneParentEnvLookupSR(range, rune) => {
-        (env(RuneNameS(rune.rune)), vassertSome(stepState.getConclusion(rune.rune))) match {
+        (env(interner.intern(RuneNameS(rune.rune))), vassertSome(stepState.getConclusion(rune.rune))) match {
           case (KindTemplataType, CoordTemplataType) =>
           case (TemplateTemplataType(Vector(), KindTemplataType), CoordTemplataType) =>
           case (TemplateTemplataType(Vector(), result), expected) if result == expected =>
@@ -273,11 +273,14 @@ object RuneTypeSolver {
             case _ => List()
           }).toMap
         })
+    val solver =
+      new Solver[IRulexSR, IRuneS, IImpreciseNameS => ITemplataType, Unit, ITemplataType, IRuneTypeRuleError](
+        sanityCheck, useOptimizedSolver)
     val solverState =
-      Solver.makeInitialSolverState(
-        sanityCheck, useOptimizedSolver, rules, getRunes, (rule: IRulexSR) => getPuzzles(predicting, rule), initiallyKnownRunes)
+      solver.makeInitialSolverState(
+        rules, getRunes, (rule: IRulexSR) => getPuzzles(predicting, rule), initiallyKnownRunes)
     val (steps, conclusions) =
-      Solver.solve[IRulexSR, IRuneS, IImpreciseNameS => ITemplataType, Unit, ITemplataType, IRuneTypeRuleError](
+      solver.solve(
         (rule: IRulexSR) => getPuzzles(predicting, rule),
         Unit,
         env,

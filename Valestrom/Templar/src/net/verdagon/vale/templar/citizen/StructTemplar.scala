@@ -13,12 +13,12 @@ import net.verdagon.vale.templar.function.{DestructorTemplar, FunctionTemplar, F
 import net.verdagon.vale._
 import net.verdagon.vale.templar.ast.{FunctionHeaderT, PrototypeT}
 import net.verdagon.vale.templar.citizen.StructTemplarTemplateArgsLayer
-import net.verdagon.vale.templar.names.{ICitizenNameT, INameT}
+import net.verdagon.vale.templar.names.{ICitizenNameT, INameT, NameTranslator}
 
 import scala.collection.immutable.List
 import scala.collection.mutable
 
-case class WeakableImplingMismatch(structWeakable: Boolean, interfaceWeakable: Boolean) extends Throwable { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class WeakableImplingMismatch(structWeakable: Boolean, interfaceWeakable: Boolean) extends Throwable { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
 trait IStructTemplarDelegate {
   def evaluateOrdinaryFunctionFromNonCallForHeader(
@@ -47,12 +47,14 @@ trait IStructTemplarDelegate {
 class StructTemplar(
     opts: TemplarOptions,
     profiler: IProfiler,
+    interner: Interner,
+    nameTranslator: NameTranslator,
     inferTemplar: InferTemplar,
     ancestorHelper: AncestorHelper,
     delegate: IStructTemplarDelegate) {
   val templateArgsLayer =
     new StructTemplarTemplateArgsLayer(
-      opts, profiler, inferTemplar, ancestorHelper, delegate)
+      opts, profiler, interner, nameTranslator, inferTemplar, ancestorHelper, delegate)
 
   def getStructRef(
     temputs: Temputs,

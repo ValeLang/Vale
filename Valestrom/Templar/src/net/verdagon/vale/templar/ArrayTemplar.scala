@@ -4,7 +4,7 @@ import net.verdagon.vale.parser.ast.MutableP
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.scout.rules.{IRulexSR, RuneParentEnvLookupSR, RuneUsage}
-import net.verdagon.vale.scout.{CodeNameS, CodeRuneS, CoordTemplataType, IImpreciseNameS, IRuneS, MutabilityTemplataType, RuneTypeSolver, SelfNameS}
+import net.verdagon.vale.scout.{CodeNameS, CodeRuneS, CoordTemplataType, IImpreciseNameS, INameS, IRuneS, MutabilityTemplataType, RuneTypeSolver, SelfNameS}
 import net.verdagon.vale.templar.OverloadTemplar.FindFunctionFailure
 import net.verdagon.vale.templar.ast.{DestroyImmRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoFunctionTE, FunctionCallTE, NewImmRuntimeSizedArrayTE, ProgramT, PrototypeT, ReferenceExpressionTE, RuntimeSizedArrayLookupTE, StaticArrayFromCallableTE, StaticArrayFromValuesTE, StaticSizedArrayLookupTE}
 import net.verdagon.vale.templar.citizen.{StructTemplar, StructTemplarCore}
@@ -14,15 +14,18 @@ import net.verdagon.vale.templar.function.DestructorTemplar
 import net.verdagon.vale.templar.names.{FullNameT, FunctionNameT, FunctionTemplateNameT, PackageTopLevelNameT, RuneNameT, SelfNameT}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
-import net.verdagon.vale.{CodeLocationS, Err, IProfiler, Ok, RangeS, vassert, vassertOne, vassertSome, vimpl}
+import net.verdagon.vale.{CodeLocationS, Err, IProfiler, Interner, Ok, RangeS, vassert, vassertOne, vassertSome, vimpl}
 
 import scala.collection.immutable.{List, Set}
 
 class ArrayTemplar(
     opts: TemplarOptions,
     profiler: IProfiler,
+    interner: Interner,
     inferTemplar: InferTemplar,
     overloadTemplar: OverloadTemplar) {
+
+  val runeTypeSolver = new RuneTypeSolver(interner)
 
   vassert(overloadTemplar != null)
 
@@ -38,7 +41,7 @@ class ArrayTemplar(
     callableTE: ReferenceExpressionTE):
   StaticArrayFromCallableTE = {
     val runeToType =
-      RuneTypeSolver.solve(
+      runeTypeSolver.solve(
         opts.globalOptions.sanityCheck,
         opts.globalOptions.useOptimizedSolver,
         (nameS: IImpreciseNameS) => vassertOne(fate.lookupNearestWithImpreciseName(profiler, nameS, Set(TemplataLookupContext))).tyype,
@@ -81,7 +84,7 @@ class ArrayTemplar(
     maybeCallableTE: Option[ReferenceExpressionTE]):
   ReferenceExpressionTE = {
     val runeToType =
-      RuneTypeSolver.solve(
+      runeTypeSolver.solve(
         opts.globalOptions.sanityCheck,
         opts.globalOptions.useOptimizedSolver,
         nameS => vassertOne(nenv.functionEnvironment.lookupNearestWithImpreciseName(profiler, nameS, Set(TemplataLookupContext))).tyype,
@@ -132,14 +135,15 @@ class ArrayTemplar(
           overloadTemplar.findFunction(
             nenv.functionEnvironment
               .addEntries(
+                interner,
                 Vector(
-                  (RuneNameT(CodeRuneS("M")), TemplataEnvEntry(MutabilityTemplata(MutableT)))) ++
+                  (interner.intern(RuneNameT(CodeRuneS("M"))), TemplataEnvEntry(MutabilityTemplata(MutableT)))) ++
               maybeElementTypeRune.map(e => {
-                (RuneNameT(e), TemplataEnvEntry(CoordTemplata(getArrayElementType(templatas, e))))
+                (interner.intern(RuneNameT(e)), TemplataEnvEntry(CoordTemplata(getArrayElementType(templatas, e))))
               })),
             temputs,
             range,
-            CodeNameS("Array"),
+            interner.intern(CodeNameS("Array")),
             Vector(
               RuneParentEnvLookupSR(range, RuneUsage(range, CodeRuneS("M")))) ++
             maybeElementTypeRune.map(e => {
@@ -189,7 +193,7 @@ class ArrayTemplar(
       exprs2: Vector[ReferenceExpressionTE]):
    StaticArrayFromValuesTE = {
     val runeToType =
-      RuneTypeSolver.solve(
+      runeTypeSolver.solve(
         opts.globalOptions.sanityCheck,
         opts.globalOptions.useOptimizedSolver,
         nameS => vassertOne(fate.lookupNearestWithImpreciseName(profiler, nameS, Set(TemplataLookupContext))).tyype,
@@ -318,10 +322,11 @@ class ArrayTemplar(
         val arrayEnv =
           CitizenEnvironment(
             globalEnv,
-            PackageEnvironment(globalEnv, staticSizedArrayType.name, globalEnv.nameToTopLevelEnvironment.values.toVector),
-            staticSizedArrayType.name,
-            TemplatasStore(staticSizedArrayType.name, Map(), Map())
+            PackageEnvironment(globalEnv, staticSizedArrayType.getName(interner), globalEnv.nameToTopLevelEnvironment.values.toVector),
+            staticSizedArrayType.getName(interner),
+            TemplatasStore(staticSizedArrayType.getName(interner), Map(), Map())
               .addEntries(
+                interner,
                 Vector()))
         temputs.declareKind(staticSizedArrayType)
         temputs.declareKindEnv(staticSizedArrayType, arrayEnv)
@@ -358,10 +363,11 @@ class ArrayTemplar(
         val arrayEnv =
           CitizenEnvironment(
             globalEnv,
-            PackageEnvironment(globalEnv, runtimeSizedArrayType.name, globalEnv.nameToTopLevelEnvironment.values.toVector),
-            runtimeSizedArrayType.name,
-            TemplatasStore(runtimeSizedArrayType.name, Map(), Map())
+            PackageEnvironment(globalEnv, runtimeSizedArrayType.getName(interner), globalEnv.nameToTopLevelEnvironment.values.toVector),
+            runtimeSizedArrayType.getName(interner),
+            TemplatasStore(runtimeSizedArrayType.getName(interner), Map(), Map())
               .addEntries(
+                interner,
                 Vector()))
         temputs.declareKind(runtimeSizedArrayType)
         temputs.declareKindEnv(runtimeSizedArrayType, arrayEnv)

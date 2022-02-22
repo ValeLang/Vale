@@ -33,7 +33,7 @@ class OwnershipTests extends FunSuite with Matchers {
       }
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) match { case VonInt(9) => }
   }
 
   test("Owning ref method call") {
@@ -50,7 +50,7 @@ class OwnershipTests extends FunSuite with Matchers {
       """.stripMargin)
 
     val main = compile.expectTemputs().lookupFunction("main")
-    compile.evalForKind(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) match { case VonInt(9) => }
   }
 
   test("Derive drop") {
@@ -118,7 +118,7 @@ class OwnershipTests extends FunSuite with Matchers {
     val main = compile.expectTemputs().lookupFunction("main")
     Collector.only(main, { case FunctionCallTE(functionName("drop"), _) => })
 
-    compile.evalForKindAndStdout(Vector()) shouldEqual (VonInt(10), "Destroying!\n")
+    compile.evalForKindAndStdout(Vector()) match { case (VonInt(10), "Destroying!\n") => }
   }
 
   test("Calls destructor on local var") {
@@ -213,7 +213,7 @@ class OwnershipTests extends FunSuite with Matchers {
     Collector.only(main, { case FunctionCallTE(functionName("drop"), _) => })
     Collector.all(main, { case FunctionCallTE(_, _) => }).size shouldEqual 2
 
-    compile.evalForKindAndStdout(Vector()) shouldEqual (VonInt(10), "Destroying!\n")
+    compile.evalForKindAndStdout(Vector()) match { case (VonInt(10), "Destroying!\n") => }
   }
 
   test("Gets from temporary struct a member's member") {
@@ -230,7 +230,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(10)
+    compile.evalForKind(Vector()) match { case VonInt(10) => }
   }
 
   // test that when we create a block closure, we hoist to the beginning its constructor,

@@ -5,7 +5,7 @@ import net.verdagon.vale.parser._
 import net.verdagon.vale.parser.ast.{PointerP, ReadonlyP}
 import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.{Collector, Err, FileCoordinate, FileCoordinateMap, Ok, vassert, vfail, vimpl}
+import net.verdagon.vale.{Collector, Err, FileCoordinate, FileCoordinateMap, Interner, Ok, vassert, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
 class ScoutParametersTests extends FunSuite with Matchers with Collector {
@@ -14,7 +14,8 @@ class ScoutParametersTests extends FunSuite with Matchers with Collector {
     Parser.runParser(code) match {
       case Err(err) => fail(err.toString)
       case Ok(program0) => {
-        new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
+        new Scout(GlobalOptions.test(), new Interner())
+            .scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => vfail(ScoutErrorHumanizer.humanize(FileCoordinateMap.test(code), e))
           case Ok(t) => t
         }

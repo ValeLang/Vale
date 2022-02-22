@@ -3,27 +3,29 @@ package net.verdagon.vale.templar.expression
 import net.verdagon.vale.parser._
 import net.verdagon.vale.parser.ast.{LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsP, LoadAsPointerP, LoadAsWeakP, MoveP, UseP}
 import net.verdagon.vale.scout.{LocalS, NotUsed}
-import net.verdagon.vale.templar.env.{AddressibleLocalVariableT, NodeEnvironmentBox, FunctionEnvironmentBox, ILocalVariableT, ReferenceLocalVariableT}
+import net.verdagon.vale.templar.env.{AddressibleLocalVariableT, FunctionEnvironmentBox, ILocalVariableT, NodeEnvironmentBox, ReferenceLocalVariableT}
 import net.verdagon.vale.templar.function.DestructorTemplar
 import net.verdagon.vale.templar.templata.Conversions
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{ast, _}
 import net.verdagon.vale.templar.ast.{AddressExpressionTE, AddressMemberLookupTE, DeferTE, ExpressionT, LetAndLendTE, LocalLookupTE, LocationInFunctionEnvironment, ReferenceExpressionTE, ReferenceMemberLookupTE, RuntimeSizedArrayLookupTE, SoftLoadTE, StaticSizedArrayLookupTE, UnletTE}
 import net.verdagon.vale.templar.names.{NameTranslator, TemplarTemporaryVarNameT}
-import net.verdagon.vale.{RangeS, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{Interner, RangeS, vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
 class LocalHelper(
     opts: TemplarOptions,
-  destructorTemplar: DestructorTemplar) {
+    interner: Interner,
+    nameTranslator: NameTranslator,
+    destructorTemplar: DestructorTemplar) {
 
   def makeTemporaryLocal(
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironment,
     coord: CoordT):
   ReferenceLocalVariableT = {
-    val varId = nenv.functionEnvironment.fullName.addStep(TemplarTemporaryVarNameT(life))
+    val varId = nenv.functionEnvironment.fullName.addStep(interner.intern(TemplarTemporaryVarNameT(life)))
     val rlv = ReferenceLocalVariableT(varId, FinalT, coord)
     nenv.addVariable(rlv)
     rlv
@@ -87,7 +89,7 @@ class LocalHelper(
     localVariableA: LocalS,
     referenceType2: CoordT):
   ILocalVariableT = {
-    val varId = NameTranslator.translateVarNameStep(localVariableA.varName)
+    val varId = nameTranslator.translateVarNameStep(localVariableA.varName)
 
     if (nenv.getVariable(varId).nonEmpty) {
       throw CompileErrorExceptionT(RangedInternalErrorT(range, "There's already a variable named " + varId))

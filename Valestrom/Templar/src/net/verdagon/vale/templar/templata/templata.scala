@@ -6,7 +6,7 @@ import net.verdagon.vale.templar.ast.{FunctionHeaderT, PrototypeT}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.names.{CitizenNameT, CitizenTemplateNameT, FullNameT, FunctionNameT, INameT, NameTranslator, PackageTopLevelNameT}
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{PackageCoordinate, vassert, vfail, vimpl, vpass}
+import net.verdagon.vale.{PackageCoordinate, vassert, vcurious, vfail, vimpl, vpass}
 
 import scala.collection.immutable.List
 
@@ -59,6 +59,16 @@ case class FunctionTemplata(
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case FunctionTemplata(thatEnv, thatFunction) => {
+        function.range == thatFunction.range &&
+          function.name == thatFunction.name
+      }
+      case _ => false
+    }
+  }
+
   override def order: Int = 6
   override def tyype: ITemplataType = vfail()
 
@@ -77,7 +87,8 @@ case class FunctionTemplata(
 
 
   def getTemplateName(): FullNameT[INameT] = {
-    outerEnv.fullName.addStep(NameTranslator.translateFunctionNameToTemplateName(function.name))
+    vimpl()
+//    outerEnv.fullName.addStep(nameTranslator.translateFunctionNameToTemplateName(function.name))
   }
 
   def debugString: String = outerEnv.fullName + ":" + function.name
@@ -156,7 +167,7 @@ case class InterfaceTemplata(
 
 
   def getTemplateName(): INameT = {
-    CitizenTemplateNameT(originInterface.name.name)//, NameTranslator.translateCodeLocation(originInterface.name.range.begin))
+    CitizenTemplateNameT(originInterface.name.name)//, nameTranslator.translateCodeLocation(originInterface.name.range.begin))
   }
 
   def debugString: String = env.fullName + ":" + originInterface.name

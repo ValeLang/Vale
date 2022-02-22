@@ -7,7 +7,6 @@ import net.verdagon.vale.parser.ast.UseP
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.IRulexSR
 import net.verdagon.vale.scout.{BlockSE, CodeNameS, ExportS, ExternS, FunctionNameS, GeneratedBodyS, GlobalFunctionFamilyNameS, ICompileErrorS, IExpressionSE, IFunctionDeclarationNameS, IImpreciseNameS, INameS, IRuneS, ITemplataType, ProgramS, SealedS, TopLevelCitizenDeclarationNameS}
-import net.verdagon.vale.templar.EdgeTemplar.{FoundFunction, NeededOverride, PartialEdgeT}
 import net.verdagon.vale.templar.OverloadTemplar.FindFunctionFailure
 import net.verdagon.vale.templar.ast.{ArgLookupTE, ArrayLengthTE, AsSubtypeTE, BlockTE, ConsecutorTE, EdgeT, FunctionCallTE, FunctionHeaderT, FunctionT, IsSameInstanceTE, LocationInFunctionEnvironment, LockWeakTE, ParameterT, ProgramT, PrototypeT, ReferenceExpressionTE, ReturnTE, VoidLiteralTE}
 import net.verdagon.vale.templar.citizen.{AncestorHelper, IAncestorHelperDelegate, IStructTemplarDelegate, StructTemplar}
@@ -58,18 +57,25 @@ case class TemplarOptions(
   debugOut: (=> String) => Unit = DefaultPrintyThing.print,
   globalOptions: GlobalOptions
 ) {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
 }
 
 
 
-class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions: GlobalOptions) {
+class Templar(
+    debugOut: (=> String) => Unit,
+    profiler: IProfiler,
+    interner: Interner,
+    globalOptions: GlobalOptions) {
   val opts = TemplarOptions(debugOut, globalOptions)
+
+  val nameTranslator = new NameTranslator(interner)
 
   val templataTemplar =
     new TemplataTemplar(
       opts,
       profiler,
+      nameTranslator,
       new ITemplataTemplarDelegate {
         override def isAncestor(temputs: Temputs, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT): Boolean = {
           ancestorHelper.isAncestor(temputs, descendantCitizenRef, ancestorInterfaceRef).nonEmpty
@@ -250,7 +256,7 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
 
         override def resolveExactSignature(env: IEnvironment, state: Temputs, range: RangeS, name: String, coords: Vector[CoordT]): PrototypeT = {
           profiler.childFrame("InferTemplarDelegate.resolveExactSignature", () => {
-            overloadTemplar.findFunction(env, state, range, CodeNameS(name), Vector.empty, Array.empty, coords.map(ParamFilter(_, None)), Vector.empty, true)
+            overloadTemplar.findFunction(env, state, range, interner.intern(CodeNameS(name)), Vector.empty, Array.empty, coords.map(ParamFilter(_, None)), Vector.empty, true)
           })
         }
       })
@@ -264,7 +270,7 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
       })
 
   val ancestorHelper: AncestorHelper =
-    new AncestorHelper(opts, profiler, inferTemplar, new IAncestorHelperDelegate {
+    new AncestorHelper(opts, profiler, interner, inferTemplar, new IAncestorHelperDelegate {
       override def getInterfaceRef(temputs: Temputs, callRange: RangeS, interfaceTemplata: InterfaceTemplata, uncoercedTemplateArgs: Vector[ITemplata]): InterfaceTT = {
         structTemplar.getInterfaceRef(temputs, callRange, interfaceTemplata, uncoercedTemplateArgs)
       }
@@ -274,6 +280,8 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
     new StructTemplar(
       opts,
       profiler,
+      interner,
+      nameTranslator,
       inferTemplar,
       ancestorHelper,
       new IStructTemplarDelegate {
@@ -298,7 +306,7 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
       })
 
   val functionTemplar: FunctionTemplar =
-    new FunctionTemplar(opts, profiler, templataTemplar, inferTemplar, convertHelper, structTemplar,
+    new FunctionTemplar(opts, profiler, interner, nameTranslator, templataTemplar, inferTemplar, convertHelper, structTemplar,
       new IFunctionTemplarDelegate {
     override def evaluateBlockStatements(
         temputs: Temputs,
@@ -340,17 +348,18 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
         functionTemplarCore, structTemplar, destructorTemplar, arrayTemplar, fullEnv, temputs, life, callRange, originFunction, paramCoords, maybeRetCoord)
     }
   })
-  val overloadTemplar: OverloadTemplar = new OverloadTemplar(opts, profiler, templataTemplar, inferTemplar, functionTemplar)
-  val destructorTemplar: DestructorTemplar = new DestructorTemplar(opts, structTemplar, overloadTemplar)
+  val overloadTemplar: OverloadTemplar = new OverloadTemplar(opts, profiler, interner, templataTemplar, inferTemplar, functionTemplar)
+  val destructorTemplar: DestructorTemplar = new DestructorTemplar(opts, interner, structTemplar, overloadTemplar)
 
-  val virtualTemplar = new VirtualTemplar(opts, overloadTemplar)
+  val virtualTemplar = new VirtualTemplar(opts, interner, overloadTemplar)
 
-  val sequenceTemplar = new SequenceTemplar(opts, profiler, structTemplar, templataTemplar)
+  val sequenceTemplar = new SequenceTemplar(opts, profiler, interner, structTemplar, templataTemplar)
 
   val arrayTemplar =
     new ArrayTemplar(
       opts,
       profiler,
+      interner,
       inferTemplar,
       overloadTemplar)
 
@@ -358,6 +367,8 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
     new ExpressionTemplar(
       opts,
       profiler,
+      interner,
+      nameTranslator,
       templataTemplar,
       inferTemplar,
       arrayTemplar,
@@ -377,33 +388,35 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
         }
       })
 
-  val functorHelper = new FunctorHelper(profiler, structTemplar)
-  val structConstructorMacro = new StructConstructorMacro(opts, profiler)
-  val structDropMacro = new StructDropMacro(overloadTemplar, destructorTemplar)
-  val structFreeMacro = new StructFreeMacro(overloadTemplar, destructorTemplar)
-  val interfaceFreeMacro = new InterfaceFreeMacro(overloadTemplar)
+  val edgeTemplar = new EdgeTemplar(interner)
+
+  val functorHelper = new FunctorHelper(profiler, interner, structTemplar)
+  val structConstructorMacro = new StructConstructorMacro(opts, profiler, interner, nameTranslator)
+  val structDropMacro = new StructDropMacro(interner, nameTranslator, destructorTemplar)
+  val structFreeMacro = new StructFreeMacro(interner, nameTranslator, destructorTemplar)
+  val interfaceFreeMacro = new InterfaceFreeMacro(interner, overloadTemplar)
   val asSubtypeMacro = new AsSubtypeMacro(ancestorHelper, expressionTemplar)
   val rsaLenMacro = new RSALenMacro()
-  val rsaMutNewMacro = new RSAMutableNewMacro(profiler)
-  val rsaImmNewMacro = new RSAImmutableNewMacro(profiler)
-  val rsaPushMacro = new RSAMutablePushMacro(profiler)
-  val rsaPopMacro = new RSAMutablePopMacro(profiler)
-  val rsaCapacityMacro = new RSAMutableCapacityMacro(profiler)
+  val rsaMutNewMacro = new RSAMutableNewMacro(profiler, interner)
+  val rsaImmNewMacro = new RSAImmutableNewMacro(profiler, interner)
+  val rsaPushMacro = new RSAMutablePushMacro(profiler, interner)
+  val rsaPopMacro = new RSAMutablePopMacro(profiler, interner)
+  val rsaCapacityMacro = new RSAMutableCapacityMacro(profiler, interner)
   val ssaLenMacro = new SSALenMacro()
   val rsaDropMacro = new RSADropIntoMacro(arrayTemplar)
   val ssaDropMacro = new SSADropIntoMacro(arrayTemplar)
   val rsaFreeMacro = new RSAFreeMacro(arrayTemplar, destructorTemplar)
   val ssaFreeMacro = new SSAFreeMacro(arrayTemplar, destructorTemplar)
 //  val ssaLenMacro = new SSALenMacro()
-  val implDropMacro = new ImplDropMacro()
-  val implFreeMacro = new ImplFreeMacro(overloadTemplar)
-  val interfaceDropMacro = new InterfaceDropMacro(overloadTemplar)
+  val implDropMacro = new ImplDropMacro(interner, nameTranslator)
+  val implFreeMacro = new ImplFreeMacro(interner, nameTranslator)
+  val interfaceDropMacro = new InterfaceDropMacro(interner, nameTranslator)
   val abstractBodyMacro = new AbstractBodyMacro()
   val lockWeakMacro = new LockWeakMacro(expressionTemplar)
   val sameInstanceMacro = new SameInstanceMacro(profiler)
   val anonymousInterfaceMacro =
     new AnonymousInterfaceMacro(
-      opts, profiler, overloadTemplar, structTemplar, structConstructorMacro, structDropMacro, structFreeMacro, interfaceFreeMacro, implDropMacro)
+      opts, profiler, interner, nameTranslator, overloadTemplar, structTemplar, structConstructorMacro, structDropMacro, structFreeMacro, interfaceFreeMacro, implDropMacro)
 
 
   def evaluate(packageToProgramA: PackageCoordinateMap[ProgramA]): Result[Hinputs, ICompileErrorT] = {
@@ -411,14 +424,14 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
       profiler.newProfile("Templar.evaluate", "", () => {
         val fullNameAndEnvEntry: Vector[(FullNameT[INameT], IEnvEntry)] =
           packageToProgramA.flatMap({ case (coord, programA) =>
-            val packageName = FullNameT(coord, Vector(), PackageTopLevelNameT())
+            val packageName = FullNameT(coord, Vector(), interner.intern(PackageTopLevelNameT()))
             programA.structs.map(structA => {
-              val structNameT = packageName.addStep(NameTranslator.translateNameStep(structA.name))
+              val structNameT = packageName.addStep(nameTranslator.translateNameStep(structA.name))
               Vector((structNameT, StructEnvEntry(structA))) ++
               structConstructorMacro.getStructSiblingEntries(structConstructorMacro.macroName, structNameT, structA)
             }) ++
             programA.interfaces.map(interfaceA => {
-              val interfaceNameT = packageName.addStep(NameTranslator.translateNameStep(interfaceA.name))
+              val interfaceNameT = packageName.addStep(nameTranslator.translateNameStep(interfaceA.name))
               Vector((interfaceNameT, InterfaceEnvEntry(interfaceA))) ++
                 (if (interfaceA.attributes.contains(SealedS)) {
                   Vector()
@@ -427,12 +440,12 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
                 })
             }) ++
             programA.impls.map(implA => {
-              val implNameT = packageName.addStep(NameTranslator.translateImplName(implA.name))
+              val implNameT = packageName.addStep(nameTranslator.translateImplName(implA.name))
               Vector((implNameT, ImplEnvEntry(implA))) ++
               implDropMacro.getImplSiblingEntries(implNameT, implA)
             }) ++
             programA.functions.map(functionA => {
-              val functionNameT = packageName.addStep(NameTranslator.translateFunctionNameToTemplateName(functionA.name))
+              val functionNameT = packageName.addStep(nameTranslator.translateFunctionNameToTemplateName(functionA.name))
               Vector((functionNameT, FunctionEnvEntry(functionA)))
             })
           }).flatten.flatten.toVector
@@ -441,14 +454,14 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
           fullNameAndEnvEntry
             .map({
               case (name, envEntry) => {
-                (name.copy(last = PackageTopLevelNameT()), name.last, envEntry)
+                (name.copy(last = interner.intern(PackageTopLevelNameT())), name.last, envEntry)
               }
             })
             .groupBy(_._1)
             .map({ case (namespaceFullName, envEntries) =>
               namespaceFullName ->
               TemplatasStore(namespaceFullName, Map(), Map())
-                .addEntries(envEntries.map({ case (_, b, c) => (b, c) }))
+                .addEntries(interner, envEntries.map({ case (_, b, c) => (b, c) }))
              }).toMap
 
         val globalEnv =
@@ -490,18 +503,19 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
               asSubtypeMacro.generatorId -> asSubtypeMacro),
             namespaceNameToTemplatas,
             // Bulitins
-            TemplatasStore(FullNameT(PackageCoordinate.BUILTIN, Vector(), PackageTopLevelNameT()), Map(), Map()).addEntries(
+            TemplatasStore(FullNameT(PackageCoordinate.BUILTIN, Vector(), interner.intern(PackageTopLevelNameT())), Map(), Map()).addEntries(
+              interner,
               Vector[(INameT, IEnvEntry)](
-                PrimitiveNameT("int") -> TemplataEnvEntry(KindTemplata(IntT.i32)),
-                PrimitiveNameT("i64") -> TemplataEnvEntry(KindTemplata(IntT.i64)),
-                PrimitiveNameT("Array") -> TemplataEnvEntry(RuntimeSizedArrayTemplateTemplata()),
-                PrimitiveNameT("bool") -> TemplataEnvEntry(KindTemplata(BoolT())),
-                PrimitiveNameT("float") -> TemplataEnvEntry(KindTemplata(FloatT())),
-                PrimitiveNameT("__Never") -> TemplataEnvEntry(KindTemplata(NeverT(false))),
-                PrimitiveNameT("str") -> TemplataEnvEntry(KindTemplata(StrT())),
-                PrimitiveNameT("void") -> TemplataEnvEntry(KindTemplata(VoidT())))))
+                interner.intern(PrimitiveNameT("int")) -> TemplataEnvEntry(KindTemplata(IntT.i32)),
+                interner.intern(PrimitiveNameT("i64")) -> TemplataEnvEntry(KindTemplata(IntT.i64)),
+                interner.intern(PrimitiveNameT("Array")) -> TemplataEnvEntry(RuntimeSizedArrayTemplateTemplata()),
+                interner.intern(PrimitiveNameT("bool")) -> TemplataEnvEntry(KindTemplata(BoolT())),
+                interner.intern(PrimitiveNameT("float")) -> TemplataEnvEntry(KindTemplata(FloatT())),
+                interner.intern(PrimitiveNameT("__Never")) -> TemplataEnvEntry(KindTemplata(NeverT(false))),
+                interner.intern(PrimitiveNameT("str")) -> TemplataEnvEntry(KindTemplata(StrT())),
+                interner.intern(PrimitiveNameT("void")) -> TemplataEnvEntry(KindTemplata(VoidT())))))
 
-        val temputs = Temputs(opts.globalOptions.useOptimizedSolver)
+        val temputs = Temputs()
 
 //        val emptyTupleStruct =
 //          sequenceTemplar.makeTupleKind(
@@ -569,7 +583,7 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
         packageToProgramA.flatMap({ case (packageCoord, programA) =>
           val env =
             PackageEnvironment.makeTopLevelEnvironment(
-              globalEnv, FullNameT(packageCoord, Vector(), PackageTopLevelNameT()))
+              globalEnv, FullNameT(packageCoord, Vector(), interner.intern(PackageTopLevelNameT())))
 
           programA.exports.foreach({ case ExportAsA(range, exportedName, rules, runeToType, typeRuneA) =>
             val typeRuneT = typeRuneA
@@ -624,7 +638,7 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
                 opts.debugOut("which envs do we look in?")
                 val env =
                   PackageEnvironment.makeTopLevelEnvironment(
-                    globalEnv, FullNameT(PackageCoordinate.BUILTIN, Vector(), PackageTopLevelNameT()))
+                    globalEnv, FullNameT(PackageCoordinate.BUILTIN, Vector(), interner.intern(PackageTopLevelNameT())))
                 stampKnownNeededOverrides(env, temputs)
               })
 
@@ -642,8 +656,8 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
           }
         }
 
-        val edgeBlueprints = EdgeTemplar.makeInterfaceEdgeBlueprints(temputs)
-        val partialEdges = EdgeTemplar.assemblePartialEdges(temputs)
+        val edgeBlueprints = edgeTemplar.makeInterfaceEdgeBlueprints(temputs)
+        val partialEdges = edgeTemplar.assemblePartialEdges(temputs)
         val edges =
           partialEdges.map({ case PartialEdgeT(struct, interface, methods) =>
             EdgeT(
@@ -849,7 +863,7 @@ class Templar(debugOut: (=> String) => Unit, profiler: IProfiler, globalOptions:
   def stampKnownNeededOverrides(env: PackageEnvironment[INameT], temputs: Temputs): Int = {
     val neededOverrides =
       profiler.childFrame("assemble partial edges", () => {
-        val partialEdges = EdgeTemplar.assemblePartialEdges(temputs)
+        val partialEdges = edgeTemplar.assemblePartialEdges(temputs)
         partialEdges.flatMap(e => e.methods.flatMap({
           case n @ NeededOverride(_, _) => Vector(n)
           case FoundFunction(_) => Vector.empty
@@ -890,7 +904,9 @@ object Templar {
           })
 
         val withoutInitVoids =
-          flattened.init.filter(_ != VoidLiteralTE()) :+ flattened.last
+          flattened.init
+            .filter({ case VoidLiteralTE() => false case _ => true }) :+
+            flattened.last
 
         withoutInitVoids match {
           case Vector() => vwat("Shouldn't have zero-element consecutors!")

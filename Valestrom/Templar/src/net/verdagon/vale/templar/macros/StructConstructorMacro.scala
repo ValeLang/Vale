@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar.macros
 
-import net.verdagon.vale.{IProfiler, PackageCoordinate, RangeS, vassert}
+import net.verdagon.vale.{IProfiler, Interner, PackageCoordinate, RangeS, vassert}
 import net.verdagon.vale.astronomer.{ConstructorNameS, FunctionA, StructA}
 import net.verdagon.vale.scout.{CodeNameS, CodeVarNameS, CoordTemplataType, FunctionTemplataType, GeneratedBodyS, IRuneS, ITemplataType, KindTemplataType, NormalStructMemberS, ParameterS, ReturnRuneS, RuneNameS, StructNameRuneS, TemplateTemplataType, UserFunctionS, VariadicStructMemberS}
 import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS}
@@ -17,7 +17,9 @@ import scala.collection.mutable
 
 class StructConstructorMacro(
   opts: TemplarOptions,
-  profiler: IProfiler
+  profiler: IProfiler,
+  interner: Interner,
+  nameTranslator: NameTranslator
 ) extends IOnStructDefinedMacro with IFunctionBodyMacro {
 
   val macroName: String = "DeriveStructConstructor"
@@ -36,7 +38,7 @@ class StructConstructorMacro(
     }
     val functionA = defineConstructorFunction(structA)
     Vector(
-      structName.copy(last = NameTranslator.translateNameStep(functionA.name)) ->
+      structName.copy(last = nameTranslator.translateNameStep(functionA.name)) ->
         FunctionEnvEntry(functionA))
   }
 
@@ -55,16 +57,16 @@ class StructConstructorMacro(
       if (structA.isTemplate) {
         val structNameRune = StructNameRuneS(structA.name)
         runeToType += (structNameRune -> structA.tyype)
-        rules += LookupSR(structNameRange, RuneUsage(structNameRange, structNameRune), structA.name.getImpreciseName)
+        rules += LookupSR(structNameRange, RuneUsage(structNameRange, structNameRune), structA.name.getImpreciseName(interner))
         rules += CallSR(structNameRange, retRune, RuneUsage(structNameRange, structNameRune), structA.identifyingRunes.toArray)
       } else {
-        rules += LookupSR(structNameRange, retRune, structA.name.getImpreciseName)
+        rules += LookupSR(structNameRange, retRune, structA.name.getImpreciseName(interner))
       }
 
       val params =
         structA.members.zipWithIndex.flatMap({
           case (NormalStructMemberS(range, name, variability, typeRune), index) => {
-            val capture = CaptureS(CodeVarNameS(name))
+            val capture = CaptureS(interner.intern(CodeVarNameS(name)))
             Vector(ParameterS(AtomSP(range, Some(capture), None, Some(typeRune), None)))
           }
           case (VariadicStructMemberS(range, variability, typeRune), index) => {
@@ -75,7 +77,7 @@ class StructConstructorMacro(
       val functionA =
         FunctionA(
           structA.range,
-          ConstructorNameS(structA.name),
+          interner.intern(ConstructorNameS(structA.name)),
           Vector(),
           structA.tyype match {
             case KindTemplataType => FunctionTemplataType

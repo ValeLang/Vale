@@ -78,8 +78,8 @@ trait ISolveRule[Rule, Rune, Env, State, Conclusion, ErrType] {
   ): Result[Unit, ISolverError[Rune, Conclusion, ErrType]]
 }
 
-object Solver {
-  def solve[Rule, Rune, Env, State, Conclusion, ErrType](
+class Solver[Rule, Rune, Env, State, Conclusion, ErrType](sanityCheck: Boolean, useOptimizedSolver: Boolean) {
+  def solve(
     ruleToPuzzles: Rule => Array[Array[Rune]],
     state: State,
     env: Env,
@@ -106,7 +106,9 @@ object Solver {
               case Err(e) => return Err(FailedSolve(solverState.getSteps(), solverState.getUnsolvedRules(), e))
             }
 
-            solverState.sanityCheck()
+            if (sanityCheck) {
+              solverState.sanityCheck()
+            }
             true
           }
         }
@@ -137,9 +139,7 @@ object Solver {
     Ok((solverState.getSteps().toStream, solverState.userifyConclusions()))
   }
 
-  def makeInitialSolverState[Rule, Rune, Conclusion](
-    sanityCheck: Boolean,
-    useOptimizedSolver: Boolean,
+  def makeInitialSolverState(
     initialRules: IndexedSeq[Rule],
     ruleToRunes: Rule => Iterable[Rune],
     ruleToPuzzles: Rule => Array[Array[Rune]],
@@ -173,7 +173,9 @@ object Solver {
       })
     })
 
-    solverState.sanityCheck()
+    if (sanityCheck) {
+      solverState.sanityCheck()
+    }
     solverState
   }
 }

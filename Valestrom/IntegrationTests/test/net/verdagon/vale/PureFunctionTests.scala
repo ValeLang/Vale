@@ -28,6 +28,6 @@ class PureFunctionTests extends FunSuite with Matchers {
           |  ret pfunc(*s);
           |}
           |""".stripMargin)
-    compile.evalForKind(Vector()) shouldEqual VonInt(10)
+    compile.evalForKind(Vector()) match { case VonInt(10) => }
   }
 }

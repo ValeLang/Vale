@@ -37,6 +37,7 @@ trait IBodyTemplarDelegate {
 class BodyTemplar(
   opts: TemplarOptions,
   profiler: IProfiler,
+  nameTranslator: NameTranslator,
 
     templataTemplar: TemplataTemplar,
     convertHelper: ConvertHelper,
@@ -123,7 +124,7 @@ class BodyTemplar(
   }
 
   case class ResultTypeMismatchError(expectedType: CoordT, actualType: CoordT) {
-    val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+    val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
     vpass()
   }
 
@@ -218,7 +219,7 @@ class BodyTemplar(
 
     params1.foreach({
       case ParameterS(AtomSP(_, Some(CaptureS(name)), _, _, _)) => {
-        if (!nenv.declaredLocals.exists(_.id.last == NameTranslator.translateVarNameStep(name))) {
+        if (!nenv.declaredLocals.exists(_.id.last == nameTranslator.translateVarNameStep(name))) {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot couldnt find " + name))
         }
       }

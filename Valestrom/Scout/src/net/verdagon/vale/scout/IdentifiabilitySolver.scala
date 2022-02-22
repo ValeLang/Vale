@@ -215,11 +215,15 @@ object IdentifiabilitySolver {
     identifyingRunes: Iterable[IRuneS]):
   Result[Map[IRuneS, Boolean], IdentifiabilitySolveError] = {
     val initiallyKnownRunes = identifyingRunes.map(r => (r, true)).toMap
+    val solver =
+      new Solver[IRulexSR, IRuneS, Unit, Unit, Boolean, IIdentifiabilityRuleError](
+        sanityCheck, useOptimizedSolver)
     val solverState =
-      Solver.makeInitialSolverState[IRulexSR, IRuneS, Boolean](
-        sanityCheck, useOptimizedSolver, rules, getRunes, (rule: IRulexSR) => getPuzzles(rule), initiallyKnownRunes)
+      solver
+        .makeInitialSolverState(
+          rules, getRunes, (rule: IRulexSR) => getPuzzles(rule), initiallyKnownRunes)
     val (steps, conclusions) =
-      Solver.solve[IRulexSR, IRuneS, Unit, Unit, Boolean, IIdentifiabilityRuleError](
+      solver.solve(
         (rule: IRulexSR) => getPuzzles(rule),
         Unit,
         Unit,

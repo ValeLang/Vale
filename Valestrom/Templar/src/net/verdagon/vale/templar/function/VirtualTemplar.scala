@@ -8,13 +8,13 @@ import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.ast.{AbstractT, FunctionHeaderT, OverrideT, ParameterT}
 import net.verdagon.vale.templar.citizen.StructTemplar
-import net.verdagon.vale.templar.env.IEnvironment
+import net.verdagon.vale.templar.env.{IEnvironment, TemplatasStore}
 import net.verdagon.vale.templar.names.{FunctionNameT, VirtualFreeNameT}
-import net.verdagon.vale.{RangeS, vassert, vcurious, vfail, vimpl}
+import net.verdagon.vale.{Interner, RangeS, vassert, vassertSome, vcurious, vfail, vimpl}
 
 import scala.collection.immutable.List
 
-class VirtualTemplar(opts: TemplarOptions, overloadTemplar: OverloadTemplar) {
+class VirtualTemplar(opts: TemplarOptions, interner: Interner, overloadTemplar: OverloadTemplar) {
   // See Virtuals doc for this function's purpose.
   // For the "Templated parent case"
   def evaluateParent(
@@ -50,12 +50,7 @@ class VirtualTemplar(opts: TemplarOptions, overloadTemplar: OverloadTemplar) {
           })
 
         val nameToScoutFor =
-          sparkHeader.fullName.last match {
-            case FunctionNameT(humanName, _, _) => CodeNameS(humanName)
-            case VirtualFreeNameT(_, _) => VirtualFreeImpreciseNameS()
-//            case ImmInterfaceDestructorNameT(_, _) => ImmInterfaceDestructorImpreciseNameS()
-            case other => vimpl(other)
-          }
+          vassertSome(TemplatasStore.getImpreciseName(interner, sparkHeader.fullName.last))
 
         // See MLIOET
         val superInterfaceEnv = temputs.getEnvForKind(superInterfaceRef2)

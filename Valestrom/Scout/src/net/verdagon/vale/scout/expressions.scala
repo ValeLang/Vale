@@ -12,7 +12,7 @@ case class LetSE(
     rules: Array[IRulexSR],
     pattern: AtomSP,
     expr: IExpressionSE) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class IfSE(
@@ -21,42 +21,42 @@ case class IfSE(
   thenBody: BlockSE,
   elseBody: BlockSE
 ) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   vcurious(!condition.isInstanceOf[BlockSE])
 }
 
 case class LoopSE(range: RangeS, body: BlockSE) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()
 }
 
 case class BreakSE(range: RangeS) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class WhileSE(range: RangeS, body: BlockSE) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()
 }
 
 case class MapSE(range: RangeS, body: BlockSE) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()
 }
 
 case class ExprMutateSE(range: RangeS, mutatee: IExpressionSE, expr: IExpressionSE) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 case class GlobalMutateSE(range: RangeS, name: CodeNameS, expr: IExpressionSE) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 case class LocalMutateSE(range: RangeS, name: IVarNameS, expr: IExpressionSE) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class OwnershippedSE(range: RangeS, innerExpr1: IExpressionSE, targetOwnership: LoadAsP) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   targetOwnership match {
     case LoadAsWeakP(_) =>
@@ -68,7 +68,7 @@ case class OwnershippedSE(range: RangeS, innerExpr1: IExpressionSE, targetOwners
 }
 
 case class PermissionedSE(range: RangeS, innerExpr1: IExpressionSE, targetPermission: PermissionP) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 
@@ -90,7 +90,7 @@ case class LocalS(
     childBorrowed: IVariableUseCertainty,
     childMoved: IVariableUseCertainty,
     childMutated: IVariableUseCertainty) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class BodySE(
@@ -102,7 +102,7 @@ case class BodySE(
 
     block: BlockSE
 ) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()
 }
 
@@ -111,7 +111,7 @@ case class BlockSE(
   locals: Vector[LocalS],
   expr: IExpressionSE,
 ) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   vassert(locals.map(_.varName) == locals.map(_.varName).distinct)
 //  expr match {
@@ -123,7 +123,7 @@ case class BlockSE(
 case class ConsecutorSE(
   exprs: Vector[IExpressionSE],
 ) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   override def range: RangeS = RangeS(exprs.head.range.begin, exprs.last.range.end)
 
@@ -148,21 +148,21 @@ case class ConsecutorSE(
 }
 
 case class ArgLookupSE(range: RangeS, index: Int) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
  // These things will be separated by semicolons, and all be joined in a block
 case class RepeaterBlockSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
  }
 
 // Results in a pack, represents the differences between the expressions
 case class RepeaterBlockIteratorSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class ReturnSE(range: RangeS, inner: IExpressionSE) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   inner match {
     case ReturnSE(_, _) => vwat()
     case _ =>
@@ -170,11 +170,11 @@ case class ReturnSE(range: RangeS, inner: IExpressionSE) extends IExpressionSE {
 }
 
 case class VoidSE(range: RangeS) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class TupleSE(range: RangeS, elements: Vector[IExpressionSE]) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 case class StaticArrayFromValuesSE(
   range: RangeS,
@@ -185,7 +185,7 @@ case class StaticArrayFromValuesSE(
   sizeST: RuneUsage,
   elements: Vector[IExpressionSE]
 ) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 case class StaticArrayFromCallableSE(
   range: RangeS,
@@ -196,7 +196,7 @@ case class StaticArrayFromCallableSE(
   sizeST: RuneUsage,
   callable: IExpressionSE
 ) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 case class NewRuntimeSizedArraySE(
   range: RangeS,
@@ -206,37 +206,37 @@ case class NewRuntimeSizedArraySE(
   size: IExpressionSE,
   callable: Option[IExpressionSE]
 ) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 // This thing will be repeated, separated by commas, and all be joined in a pack
 case class RepeaterPackSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 // Results in a pack, represents the differences between the elements
 case class RepeaterPackIteratorSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class ConstantIntSE(range: RangeS, value: Long, bits: Int) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class ConstantBoolSE(range: RangeS, value: Boolean) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class ConstantStrSE(range: RangeS, value: String) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class ConstantFloatSE(range: RangeS, value: Double) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class DestructSE(range: RangeS, inner: IExpressionSE) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class FunctionSE(function: FunctionS) extends IExpressionSE {
@@ -244,15 +244,15 @@ case class FunctionSE(function: FunctionS) extends IExpressionSE {
 }
 
 case class DotSE(range: RangeS, left: IExpressionSE, member: String, borrowContainer: Boolean) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class IndexSE(range: RangeS, left: IExpressionSE, indexExpr: IExpressionSE) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class FunctionCallSE(range: RangeS, callableExpr: IExpressionSE, argsExprs1: Vector[IExpressionSE]) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 
@@ -268,9 +268,9 @@ case class OutsideLoadSE(
   maybeTemplateArgs: Option[Array[RuneUsage]],
   targetOwnership: LoadAsP
 ) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()
 }
 case class RuneLookupSE(range: RangeS, rune: IRuneS) extends IExpressionSE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }

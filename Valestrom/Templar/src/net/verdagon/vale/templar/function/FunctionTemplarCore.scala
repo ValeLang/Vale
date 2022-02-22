@@ -6,25 +6,27 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.scout.{AbstractBodyS, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar.{ast, _}
-import net.verdagon.vale.templar.ast.{AbstractT, ArgLookupTE, BlockTE, ExternT, ExternFunctionCallTE, FunctionCallTE, FunctionHeaderT, FunctionT, IFunctionAttributeT, InterfaceFunctionCallTE, LocationInFunctionEnvironment, OverrideT, ParameterT, PrototypeT, PureT, ReferenceExpressionTE, ReturnTE, SignatureT, UserFunctionT}
+import net.verdagon.vale.templar.ast.{AbstractT, ArgLookupTE, BlockTE, ExternFunctionCallTE, ExternT, FunctionCallTE, FunctionHeaderT, FunctionT, IFunctionAttributeT, InterfaceFunctionCallTE, LocationInFunctionEnvironment, OverrideT, ParameterT, PrototypeT, PureT, ReferenceExpressionTE, ReturnTE, SignatureT, UserFunctionT}
 import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.expression.CallTemplar
-import net.verdagon.vale.templar.names.{CodeVarNameT, ExternFunctionNameT, FullNameT, FunctionNameT, IFunctionNameT}
-import net.verdagon.vale.{Err, IProfiler, Ok, RangeS, vassert, vassertOne, vassertSome, vcheck, vcurious, vfail, vimpl, vwat}
+import net.verdagon.vale.templar.names.{CodeVarNameT, ExternFunctionNameT, FullNameT, FunctionNameT, IFunctionNameT, NameTranslator}
+import net.verdagon.vale.{Err, IProfiler, Interner, Ok, RangeS, vassert, vassertOne, vassertSome, vcheck, vcurious, vfail, vimpl, vwat}
 
 import scala.collection.immutable.{List, Set}
 
-case class ResultTypeMismatchError(expectedType: CoordT, actualType: CoordT) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class ResultTypeMismatchError(expectedType: CoordT, actualType: CoordT) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
 class FunctionTemplarCore(
     opts: TemplarOptions,
-  profiler: IProfiler,
+    profiler: IProfiler,
+    interner: Interner,
+    nameTranslator: NameTranslator,
 
-  templataTemplar: TemplataTemplar,
+    templataTemplar: TemplataTemplar,
     convertHelper: ConvertHelper,
     delegate: IFunctionTemplarDelegate) {
-  val bodyTemplar = new BodyTemplar(opts, profiler, templataTemplar, convertHelper, new IBodyTemplarDelegate {
+  val bodyTemplar = new BodyTemplar(opts, profiler, nameTranslator, templataTemplar, convertHelper, new IBodyTemplarDelegate {
     override def evaluateBlockStatements(
       temputs: Temputs,
       startingNenv: NodeEnvironment,
@@ -82,7 +84,7 @@ class FunctionTemplarCore(
         }
         case ExternBodyS => {
           val maybeRetCoord =
-            fullEnv.lookupNearestWithImpreciseName(profiler, RuneNameS(startingFullEnv.function.maybeRetCoordRune.get.rune), Set(TemplataLookupContext)).headOption
+            fullEnv.lookupNearestWithImpreciseName(profiler, interner.intern(RuneNameS(startingFullEnv.function.maybeRetCoordRune.get.rune)), Set(TemplataLookupContext)).headOption
           val retCoord =
             maybeRetCoord match {
               case None => vfail("wat")
@@ -110,7 +112,7 @@ class FunctionTemplarCore(
             startingFullEnv.function.maybeRetCoordRune match {
               case None => (None)
               case Some(retCoordRune) => {
-                fullEnv.lookupNearestWithImpreciseName(profiler, RuneNameS(retCoordRune.rune), Set(TemplataLookupContext)).headOption
+                fullEnv.lookupNearestWithImpreciseName(profiler, interner.intern(RuneNameS(retCoordRune.rune)), Set(TemplataLookupContext)).headOption
               }
             }
           val maybeRetCoord =
@@ -205,7 +207,7 @@ class FunctionTemplarCore(
           case Some(retCoordRune) => {
             startingFullEnv.lookupNearestWithImpreciseName(
                 profiler,
-                RuneNameS(retCoordRune.rune),
+                interner.intern(RuneNameS(retCoordRune.rune)),
                 Set(TemplataLookupContext))  match {
               case Some(CoordTemplata(retCoord)) => Some(retCoord)
               case other => vwat(other)
@@ -339,7 +341,7 @@ class FunctionTemplarCore(
             returnType2,
             maybeOrigin)
 
-        val externFullName = FullNameT(fullName.packageCoord, Vector.empty, ExternFunctionNameT(humanName, params))
+        val externFullName = FullNameT(fullName.packageCoord, Vector.empty, interner.intern(ExternFunctionNameT(humanName, params)))
         val externPrototype = PrototypeT(externFullName, header.returnType)
         temputs.addFunctionExtern(range, externPrototype, fullName.packageCoord, humanName)
 
@@ -386,7 +388,7 @@ class FunctionTemplarCore(
         ast.FunctionHeaderT(
           env.fullName,
           Vector.empty,
-          Vector(ast.ParameterT(CodeVarNameT("this"), Some(OverrideT(interfaceTT)), structType2)),
+          Vector(ast.ParameterT(interner.intern(CodeVarNameT("this")), Some(OverrideT(interfaceTT)), structType2)),
           CoordT(ShareT, ReadonlyT, VoidT()),
           maybeOriginFunction1),
         BlockTE(

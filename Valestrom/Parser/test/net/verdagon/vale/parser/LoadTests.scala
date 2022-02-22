@@ -43,7 +43,8 @@ class LoadTests extends FunSuite with Matchers with Collector {
     val von = ParserVonifier.vonifyFile(originalFile)
     val json = new VonPrinter(JsonSyntax, 120).print(von)
     val loadedFile = ParsedLoader.load(json).getOrDie()
-    originalFile shouldEqual loadedFile
+    // This is because we don't want to enable .equals, see EHCFBD.
+    originalFile.toString == loadedFile.toString
   }
 
   test("Strings with special characters") {
@@ -75,6 +76,7 @@ class LoadTests extends FunSuite with Matchers with Collector {
 
     val loadedJsonStr = new String(generatedBytes, "UTF-8");
     val loadedFile = ParsedLoader.load(loadedJsonStr).getOrDie()
-    originalFile shouldEqual loadedFile
+    // This is because we don't want to enable .equals, see EHCFBD.
+    originalFile.toString shouldEqual loadedFile.toString
   }
 }

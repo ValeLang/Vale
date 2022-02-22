@@ -8,7 +8,7 @@ import net.verdagon.vale.templar.env.IEnvironment
 import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, CitizenNameT, CitizenTemplateNameT, ClosureParamNameT, CodeVarNameT, FullNameT, FunctionNameT, ICitizenNameT, INameT, IVarNameT, ImplDeclareNameT, LambdaCitizenNameT, LetNameT, MagicParamNameT, RawArrayNameT, RuntimeSizedArrayNameT, StaticSizedArrayNameT, UnnamedLocalNameT}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{CodeLocationS, PackageCoordinate, vassert, vcurious, vfail, vimpl, vpass}
+import net.verdagon.vale.{CodeLocationS, Interner, PackageCoordinate, vassert, vcurious, vfail, vimpl, vpass}
 
 import scala.collection.immutable.List
 
@@ -105,7 +105,7 @@ case class CoordT(ownership: OwnershipT, permission: PermissionT, kind: KindT)  
   }
 }
 
-sealed trait KindT  {
+sealed trait KindT {
   def order: Int;
 
   // Note, we don't have a mutability: Mutability in here because this Kind
@@ -164,7 +164,7 @@ case class StaticSizedArrayTT(
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 12;
 
-  def name: FullNameT[StaticSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, StaticSizedArrayNameT(size, RawArrayNameT(mutability, elementType)))
+  def getName(interner: Interner): FullNameT[StaticSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, interner.intern(StaticSizedArrayNameT(size, interner.intern(RawArrayNameT(mutability, elementType)))))
 }
 
 case class RuntimeSizedArrayTT(
@@ -174,7 +174,7 @@ case class RuntimeSizedArrayTT(
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def order: Int = 19;
 
-  def name: FullNameT[RuntimeSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, RuntimeSizedArrayNameT(RawArrayNameT(mutability, elementType)))
+  def getName(interner: Interner): FullNameT[RuntimeSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, interner.intern(RuntimeSizedArrayNameT(interner.intern(RawArrayNameT(mutability, elementType)))))
 }
 
 case class StructMemberT(
@@ -226,7 +226,7 @@ case class StructDefinitionT(
   members: Vector[StructMemberT],
   isClosure: Boolean
 ) extends CitizenDefinitionT {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   override def getRef: StructTT = StructTT(fullName)
 
@@ -260,7 +260,7 @@ case class InterfaceDefinitionT(
     // See IMRFDI for why we need to remember only the internal methods here.
     internalMethods: Vector[FunctionHeaderT]
 ) extends CitizenDefinitionT  {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def getRef = InterfaceTT(fullName)
 }
 
@@ -299,7 +299,7 @@ case class InterfaceTT(
 case class ParamFilter(
     tyype: CoordT,
     virtuality: Option[VirtualityT]) {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
 
   def debugString: String = {
     tyype.toString + virtuality.map(" impl " + _.toString).getOrElse("")

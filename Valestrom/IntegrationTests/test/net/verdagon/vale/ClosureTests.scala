@@ -84,7 +84,7 @@ class ClosureTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) match { case VonInt(9) => }
   }
 
   test("Test closure's local variables") {
@@ -113,6 +113,7 @@ class ClosureTests extends FunSuite with Matchers {
   test("Test returning a nonmutable closured variable from the closure") {
     val compile = RunCompilation.test("exported func main() int { x = 4; ret {x}(); }")
     val temputs = compile.expectTemputs()
+    val interner = compile.interner
 
     // The struct should have an int x in it which is a reference type.
     // It's a reference because we know for sure that it's moved from our child,
@@ -121,7 +122,7 @@ class ClosureTests extends FunSuite with Matchers {
     val closuredVarsStruct =
       vassertSome(
         temputs.structs.find(struct => struct.fullName.last match { case l @ LambdaCitizenNameT(_) => true case _ => false }));
-    val expectedMembers = Vector(StructMemberT(CodeVarNameT("x"), FinalT, ReferenceMemberTypeT(CoordT(ShareT, ReadonlyT, IntT.i32))));
+    val expectedMembers = Vector(StructMemberT(interner.intern(CodeVarNameT("x")), FinalT, ReferenceMemberTypeT(CoordT(ShareT, ReadonlyT, IntT.i32))));
     vassert(closuredVarsStruct.members == expectedMembers)
 
     val lambda = temputs.lookupLambdaIn("main")
@@ -158,7 +159,7 @@ class ClosureTests extends FunSuite with Matchers {
       case LocalLookupTE(_,ReferenceLocalVariableT(FullNameT(_, _,ClosureParamNameT()),FinalT,_)) =>
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) match { case VonInt(4) => }
   }
 
   test("Mutates from inside a closure") {
@@ -170,11 +171,12 @@ class ClosureTests extends FunSuite with Matchers {
         |  ret x;
         |}
       """.stripMargin)
-    val scoutput = compile.getScoutput().getOrDie()
     val temputs = compile.expectTemputs()
+    val interner = compile.interner
+
     // The struct should have an int x in it.
     val closuredVarsStruct = vassertSome(temputs.structs.find(struct => struct.fullName.last match { case l @ LambdaCitizenNameT(_) => true case _ => false }));
-    val expectedMembers = Vector(StructMemberT(CodeVarNameT("x"), VaryingT, AddressMemberTypeT(CoordT(ShareT, ReadonlyT, IntT.i32))));
+    val expectedMembers = Vector(StructMemberT(interner.intern(CodeVarNameT("x")), VaryingT, AddressMemberTypeT(CoordT(ShareT, ReadonlyT, IntT.i32))));
     vassert(closuredVarsStruct.members == expectedMembers)
 
     val lambda = temputs.lookupLambdaIn("main")
@@ -189,13 +191,13 @@ class ClosureTests extends FunSuite with Matchers {
       case LetNormalTE(AddressibleLocalVariableT(_, VaryingT, _), _) =>
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) match { case VonInt(5) => }
   }
 
   test("Mutates from inside a closure inside a closure") {
     val compile = RunCompilation.test("exported func main() int { x! = 4; { { set x = x + 1; }!(); }!(); ret x; }")
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) match { case VonInt(5) => }
   }
 
   test("Read from inside a closure inside a closure") {
@@ -207,7 +209,7 @@ class ClosureTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Mutable lambda") {
@@ -224,6 +226,6 @@ class ClosureTests extends FunSuite with Matchers {
         }
       }).get
     vassert(closureStruct.mutability == MutableT)
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 }

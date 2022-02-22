@@ -8,7 +8,7 @@ import scala.collection.immutable.List
 
 case class CaptureS(
   name: IVarNameS) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class AtomSP(
@@ -23,7 +23,7 @@ case class AtomSP(
   virtuality: Option[VirtualitySP],
   coordRune: Option[RuneUsage],
   destructure: Option[Vector[AtomSP]]) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()
 }
 
@@ -37,5 +37,5 @@ case class AbstractSP(
 ) extends VirtualitySP
 
 case class OverrideSP(range: RangeS, kindRune: RuneUsage) extends VirtualitySP {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }

@@ -12,13 +12,14 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.ast.{ConstantIntTE, DestroyMutRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoLocalsTE, DestroyTE, LetNormalTE, LocalLookupTE, LocationInFunctionEnvironment, ReferenceExpressionTE, ReferenceMemberLookupTE, SoftLoadTE, TemplarReinterpretTE}
 import net.verdagon.vale.templar.names.RuneNameT
-import net.verdagon.vale.{IProfiler, RangeS, vassert, vassertSome, vfail}
+import net.verdagon.vale.{IProfiler, Interner, RangeS, vassert, vassertSome, vfail}
 
 import scala.collection.immutable.List
 
 class PatternTemplar(
     opts: TemplarOptions,
     profiler: IProfiler,
+    interner: Interner,
     inferTemplar: InferTemplar,
     arrayTemplar: ArrayTemplar,
     convertHelper: ConvertHelper,
@@ -64,7 +65,7 @@ class PatternTemplar(
     // But if we're doing a regular let statement, then it doesn't need to contain everything past it.
     afterPatternsSuccessContinuation: (Temputs, NodeEnvironmentBox, Vector[ILocalVariableT]) => ReferenceExpressionTE):
   ReferenceExpressionTE = {
-    vassert(liveCaptureLocals == liveCaptureLocals.distinct)
+    vassert(liveCaptureLocals.map(_.id) == liveCaptureLocals.map(_.id).distinct)
 
     (patternsA, patternInputsTE) match {
       case (Nil, Nil) => afterPatternsSuccessContinuation(temputs, nenv, liveCaptureLocals)
@@ -72,7 +73,7 @@ class PatternTemplar(
         innerTranslateSubPatternAndMaybeContinue(
           temputs, nenv, life + 0, headPatternA, liveCaptureLocals, headPatternInputTE,
           (temputs, nenv, life, liveCaptureLocals) => {
-            vassert(liveCaptureLocals == liveCaptureLocals.distinct)
+            vassert(liveCaptureLocals.map(_.id) == liveCaptureLocals.map(_.id).distinct)
 
             iterateTranslateListAndMaybeContinue(
               temputs, nenv, life + 1, liveCaptureLocals, tailPatternsA, tailPatternInputsTE, afterPatternsSuccessContinuation)
@@ -122,8 +123,9 @@ class PatternTemplar(
                     receiverRune,
                     CoordTemplata(unconvertedInputExpr.result.reference))))
             nenv.addEntries(
+              interner,
               templatasByRune.toVector
-                .map({ case (key, value) => (RuneNameT(key), TemplataEnvEntry(value)) }))
+                .map({ case (key, value) => (interner.intern(RuneNameT(key)), TemplataEnvEntry(value)) }))
             val CoordTemplata(expectedCoord) = vassertSome(templatasByRune.get(receiverRune.rune))
 
             // Now we convert m to a Marine. This also checks that it *can* be
@@ -150,7 +152,7 @@ class PatternTemplar(
       // But if we're doing a regular let statement, then it doesn't need to contain everything past it.
       afterSubPatternSuccessContinuation: (Temputs, NodeEnvironmentBox, LocationInFunctionEnvironment, Vector[ILocalVariableT]) => ReferenceExpressionTE):
   ReferenceExpressionTE = {
-    vassert(previousLiveCaptureLocals == previousLiveCaptureLocals.distinct)
+    vassert(previousLiveCaptureLocals.map(_.id) == previousLiveCaptureLocals.map(_.id).distinct)
 
     val AtomSP(range, maybeCaptureLocalVarA, maybeVirtuality, coordRuneA, maybeDestructure) = pattern
 
@@ -183,7 +185,7 @@ class PatternTemplar(
     }
 
     val liveCaptureLocals = previousLiveCaptureLocals ++ maybeCaptureLocalVarT.toVector
-    vassert(liveCaptureLocals == liveCaptureLocals.distinct)
+    vassert(liveCaptureLocals.map(_.id) == liveCaptureLocals.map(_.id).distinct)
 
     Templar.consecutive(
       currentInstructions :+
@@ -419,7 +421,7 @@ class PatternTemplar(
       }
       case (headMemberLocalVariable :: tailMemberLocalVariables, headMaybeInnerPattern :: tailInnerPatternMaybes) => {
         val unletExpr = localHelper.unletLocal(nenv, headMemberLocalVariable)
-        val liveCaptureLocals = initialLiveCaptureLocals.filter(_ != headMemberLocalVariable)
+        val liveCaptureLocals = initialLiveCaptureLocals.filter(_.id != headMemberLocalVariable.id)
         vassert(liveCaptureLocals.size == initialLiveCaptureLocals.size - 1)
 
         innerTranslateSubPatternAndMaybeContinue(

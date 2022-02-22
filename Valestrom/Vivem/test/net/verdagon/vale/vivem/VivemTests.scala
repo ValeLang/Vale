@@ -25,7 +25,7 @@ class VivemTests extends FunSuite with Matchers {
           .add(PackageCoordinate.TEST_TLD, PackageH(Vector.empty, Vector.empty, Vector(main), Vector.empty, Vector.empty, Map(), Map("main" -> main.prototype), Map(), Map(), Map())))
     val result =
       Vivem.executeWithPrimitiveArgs(programH, Vector(), System.out, Vivem.emptyStdin, Vivem.nullStdout)
-    result shouldEqual VonInt(7)
+    result match { case VonInt(7) => }
   }
 
   test("Adding") {
@@ -76,6 +76,6 @@ class VivemTests extends FunSuite with Matchers {
           .add(PackageCoordinate.TEST_TLD, PackageH(Vector.empty, Vector.empty, Vector(main), Vector.empty, Vector.empty, Map(), Map("main" -> main.prototype), Map(), Map(), Map())))
     val result =
       Vivem.executeWithPrimitiveArgs(programH, Vector(), System.out, Vivem.emptyStdin, Vivem.nullStdout)
-    result shouldEqual VonInt(159)
+    result match { case VonInt(159) => }
   }
 }

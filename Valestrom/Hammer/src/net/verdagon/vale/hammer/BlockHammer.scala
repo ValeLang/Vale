@@ -1,13 +1,12 @@
 package net.verdagon.vale.hammer
 
-import net.verdagon.vale.hammer.ExpressionHammer.translateDeferreds
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.metal._
 import net.verdagon.vale.templar.Hinputs
 import net.verdagon.vale.templar.ast.{BlockTE, FunctionHeaderT}
 import net.verdagon.vale.{vassert, vfail}
 
-object BlockHammer {
+class BlockHammer(expressionHammer: ExpressionHammer) {
   def translateBlock(
     hinputs: Hinputs,
     hamuts: HamutsBox,
@@ -18,13 +17,13 @@ object BlockHammer {
     val blockLocals = LocalsBox(parentLocals.snapshot)
 
     val exprH =
-      ExpressionHammer.translateExpressionsAndDeferreds(
+      expressionHammer.translateExpressionsAndDeferreds(
         hinputs, hamuts, currentFunctionHeader, blockLocals, Vector(block2.inner));
 
     // We dont vassert(deferreds.isEmpty) here, see BMHD for why.
 
     val localIdsInThisBlock = blockLocals.locals.keys.toSet.diff(parentLocals.locals.keys.toSet)
-    val localsInThisBlock = localIdsInThisBlock.map(blockLocals.locals)
+//    val localsInThisBlock = localIdsInThisBlock.map(blockLocals.locals)
     val unstackifiedLocalIdsInThisBlock = blockLocals.unstackifiedVars.intersect(localIdsInThisBlock)
 
     if (localIdsInThisBlock != unstackifiedLocalIdsInThisBlock) {

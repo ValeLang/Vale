@@ -3,7 +3,7 @@ package net.verdagon.vale.templar.env
 import net.verdagon.vale.astronomer.{FunctionA, ImplA, InterfaceA, StructA}
 import net.verdagon.vale.templar.templata.{IContainer, ITemplata}
 import net.verdagon.vale.templar.types.{InterfaceTT, StructTT}
-import net.verdagon.vale.{vimpl, vpass}
+import net.verdagon.vale.{vcurious, vimpl, vpass}
 
 sealed trait IEnvEntry
 // We dont have the unevaluatedContainers in here because see TMRE

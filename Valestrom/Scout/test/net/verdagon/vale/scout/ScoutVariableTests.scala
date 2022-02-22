@@ -1,8 +1,8 @@
 package net.verdagon.vale.scout
 
 import net.verdagon.vale.options.GlobalOptions
-import net.verdagon.vale.parser.{Parser}
-import net.verdagon.vale.{Collector, Err, FileCoordinate, Ok, vassert, vfail, vimpl}
+import net.verdagon.vale.parser.Parser
+import net.verdagon.vale.{Collector, Err, FileCoordinate, Interner, Ok, vassert, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.runtime.Nothing$
@@ -12,7 +12,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     Parser.runParser(code) match {
       case Err(err) => fail(err.toString)
       case Ok(program0) => {
-        new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
+        new Scout(GlobalOptions.test(), new Interner()).scoutProgram(FileCoordinate.test, program0) match {
           case Ok(_) => vfail("Expected an error")
           case Err(e) => e
         }
@@ -24,7 +24,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     Parser.runParser(code) match {
       case Err(err) => fail(err.toString)
       case Ok(program0) => {
-        new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
+        new Scout(GlobalOptions.test(), new Interner()).scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => vfail(e.toString)
           case Ok(t) => t
         }
@@ -610,7 +610,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
         case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, CodeBodyS(innerBody))), _), _) => innerBody.block
       }).head
     val locals = lamBlock.locals
-    locals.find(_.varName == ClosureParamNameS()).get match {
+    locals.find(_.varName match { case ClosureParamNameS() => true case _ => false }).get match {
       case LocalS(ClosureParamNameS(),
         NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }

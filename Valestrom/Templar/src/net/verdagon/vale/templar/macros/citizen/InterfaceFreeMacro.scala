@@ -11,9 +11,9 @@ import net.verdagon.vale.templar.macros.{IFunctionBodyMacro, IOnInterfaceDefined
 import net.verdagon.vale.templar.names.{FreeTemplateNameT, FullNameT, FunctionTemplateNameT, INameT, VirtualFreeTemplateNameT}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{OverloadTemplar, Templar, Temputs, env}
-import net.verdagon.vale.{CodeLocationS, RangeS, vassert}
+import net.verdagon.vale.{CodeLocationS, Interner, RangeS, vassert}
 
-class InterfaceFreeMacro(overloadTemplar: OverloadTemplar) extends IOnInterfaceDefinedMacro with IFunctionBodyMacro {
+class InterfaceFreeMacro(interner: Interner, overloadTemplar: OverloadTemplar) extends IOnInterfaceDefinedMacro with IFunctionBodyMacro {
 
   val generatorId = "interfaceFreeGenerator"
 
@@ -29,7 +29,7 @@ class InterfaceFreeMacro(overloadTemplar: OverloadTemplar) extends IOnInterfaceD
     mutability: MutabilityT):
   Vector[(FullNameT[INameT], FunctionEnvEntry)] = {
     if (mutability == ImmutableT) {
-      val freeFunctionNameS = FreeDeclarationNameS(interfaceA.range.begin)
+      val freeFunctionNameS = interner.intern(FreeDeclarationNameS(interfaceA.range.begin))
       val freeFunctionA =
         FunctionA(
           interfaceA.name.range,
@@ -42,16 +42,16 @@ class InterfaceFreeMacro(overloadTemplar: OverloadTemplar) extends IOnInterfaceD
             ParameterS(
               AtomSP(
                 RangeS.internal(-1340),
-                Some(CaptureS(CodeVarNameS("this"))),
+                Some(CaptureS(interner.intern(CodeVarNameS("this")))),
                 None,
                 Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("T"))), None))),
           Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("V"))),
           Vector(
-            LookupSR(RangeS.internal(-167213), RuneUsage(RangeS.internal(-64002), CodeRuneS("T")), SelfNameS()),
-            LookupSR(RangeS.internal(-167213), RuneUsage(RangeS.internal(-64002), CodeRuneS("V")), CodeNameS("void"))),
+            LookupSR(RangeS.internal(-167213), RuneUsage(RangeS.internal(-64002), CodeRuneS("T")), interner.intern(SelfNameS())),
+            LookupSR(RangeS.internal(-167213), RuneUsage(RangeS.internal(-64002), CodeRuneS("V")), interner.intern(CodeNameS("void")))),
           GeneratedBodyS(generatorId))
 
-      val virtualFreeFunctionNameS = VirtualFreeDeclarationNameS(interfaceA.range.begin)
+      val virtualFreeFunctionNameS = interner.intern(VirtualFreeDeclarationNameS(interfaceA.range.begin))
       val virtualFreeFunctionA =
         FunctionA(
           interfaceA.range,
@@ -64,19 +64,19 @@ class InterfaceFreeMacro(overloadTemplar: OverloadTemplar) extends IOnInterfaceD
             ParameterS(
               AtomSP(
                 RangeS.internal(-1340),
-                Some(CaptureS(CodeVarNameS("this"))),
+                Some(CaptureS(interner.intern(CodeVarNameS("this")))),
                 Some(AbstractSP(RangeS.internal(-1340), true)),
                 Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("T"))), None))),
           Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("V"))),
           Vector(
-            LookupSR(RangeS.internal(-167213), RuneUsage(RangeS.internal(-64002), CodeRuneS("T")), SelfNameS()),
-            LookupSR(RangeS.internal(-167213), RuneUsage(RangeS.internal(-64002), CodeRuneS("V")), CodeNameS("void"))),
+            LookupSR(RangeS.internal(-167213), RuneUsage(RangeS.internal(-64002), CodeRuneS("T")), interner.intern(SelfNameS())),
+            LookupSR(RangeS.internal(-167213), RuneUsage(RangeS.internal(-64002), CodeRuneS("V")), interner.intern(CodeNameS("void")))),
           GeneratedBodyS("abstractBody"))
 
       Vector(
-        interfaceName.addStep(FreeTemplateNameT(freeFunctionNameS.codeLocationS)) ->
+        interfaceName.addStep(interner.intern(FreeTemplateNameT(freeFunctionNameS.codeLocationS))) ->
           FunctionEnvEntry(freeFunctionA),
-        interfaceName.addStep(VirtualFreeTemplateNameT(virtualFreeFunctionNameS.codeLoc)) ->
+        interfaceName.addStep(interner.intern(VirtualFreeTemplateNameT(virtualFreeFunctionNameS.codeLoc))) ->
           FunctionEnvEntry(virtualFreeFunctionA))
     } else {
       Vector()
@@ -102,7 +102,7 @@ class InterfaceFreeMacro(overloadTemplar: OverloadTemplar) extends IOnInterfaceD
 
     val virtualFreePrototype =
       overloadTemplar.findFunction(
-        env, temputs, callRange, VirtualFreeImpreciseNameS(), Vector(), Array(),
+        env, temputs, callRange, interner.intern(VirtualFreeImpreciseNameS()), Vector(), Array(),
         Vector(ParamFilter(paramCoord, None)), Vector(), true)
 
     val expr = FunctionCallTE(virtualFreePrototype, Vector(ArgLookupTE(0, paramCoord)))

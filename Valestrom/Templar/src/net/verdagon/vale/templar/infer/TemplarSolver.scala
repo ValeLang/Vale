@@ -683,10 +683,11 @@ class TemplarSolver[Env, State](
       vassert(templata.tyype == vassertSome(runeToType.get(rune)))
     })
 
+    val solver =
+      new Solver[IRulexSR, IRuneS, Env, State, ITemplata, ITemplarSolverError](
+        globalOptions.sanityCheck, globalOptions.useOptimizedSolver)
     val solverState =
-      Solver.makeInitialSolverState(
-        globalOptions.sanityCheck,
-        globalOptions.useOptimizedSolver,
+      solver.makeInitialSolverState(
         rules,
         getRunes,
         (rule: IRulexSR) => getPuzzles(rule),
@@ -878,7 +879,7 @@ class TemplarSolver[Env, State](
           }
         }
       }
-    Solver.solve[IRulexSR, IRuneS, Env, State, ITemplata, ITemplarSolverError](
+    solver.solve(
       (rule: IRulexSR) => getPuzzles(rule),
       state,
       env,

@@ -14,12 +14,13 @@ import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.names.{CodeVarNameT, FullNameT, PackageTopLevelNameT}
-import net.verdagon.vale.{CodeLocationS, IProfiler, PackageCoordinate, RangeS, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{CodeLocationS, IProfiler, Interner, PackageCoordinate, RangeS, vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
 class DestructorTemplar(
     opts: TemplarOptions,
+    interner: Interner,
     structTemplar: StructTemplar,
     overloadTemplar: OverloadTemplar) {
   def getDropFunction(
@@ -30,9 +31,9 @@ class DestructorTemplar(
     val env =
       PackageEnvironment(
         globalEnv,
-        FullNameT(PackageCoordinate.BUILTIN, Vector(), PackageTopLevelNameT()),
+        FullNameT(PackageCoordinate.BUILTIN, Vector(), interner.intern(PackageTopLevelNameT())),
         globalEnv.nameToTopLevelEnvironment.values.toVector)
-    val name = CodeNameS(CallTemplar.DROP_FUNCTION_NAME)
+    val name = interner.intern(CodeNameS(CallTemplar.DROP_FUNCTION_NAME))
     val range = RangeS.internal(-1663)
     val args = Vector(ParamFilter(type2, None))
     overloadTemplar.findFunction(env, temputs, range, name, Vector.empty, Array.empty, args, Vector(), true)
@@ -46,9 +47,9 @@ class DestructorTemplar(
     val env =
       PackageEnvironment(
         globalEnv,
-        FullNameT(PackageCoordinate.BUILTIN, Vector(), PackageTopLevelNameT()),
+        FullNameT(PackageCoordinate.BUILTIN, Vector(), interner.intern(PackageTopLevelNameT())),
         globalEnv.nameToTopLevelEnvironment.values.toVector)
-    val name = FreeImpreciseNameS()
+    val name = interner.intern(FreeImpreciseNameS())
     val range = RangeS.internal(-1663)
     val args = Vector(ParamFilter(type2, None))
     overloadTemplar.findFunction(env, temputs, range, name, Vector.empty, Array.empty, args, Vector(), true)
@@ -147,7 +148,7 @@ class DestructorTemplar(
       ast.FunctionHeaderT(
         fenv.fullName,
         Vector.empty,
-        Vector(ParameterT(CodeVarNameT("x"), None, type2)),
+        Vector(ParameterT(interner.intern(CodeVarNameT("x")), None, type2)),
         CoordT(ShareT, ReadonlyT, VoidT()),
         Some(originFunction1))
 

@@ -23,13 +23,13 @@ trait IExpressionResultT  {
   def kind: KindT
 }
 case class AddressResultT(reference: CoordT) extends IExpressionResultT {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   override def underlyingReference: CoordT = reference
   override def kind = reference.kind
 }
 case class ReferenceResultT(reference: CoordT) extends IExpressionResultT {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   override def underlyingReference: CoordT = reference
   override def kind = reference.kind
@@ -59,7 +59,7 @@ case class LetAndLendTE(
     expr: ReferenceExpressionTE,
   targetOwnership: OwnershipT
 ) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vassert(variable.reference == expr.result.reference)
 
   (expr.result.reference.ownership, targetOwnership) match {
@@ -82,7 +82,7 @@ case class NarrowPermissionTE(
     expr: ReferenceExpressionTE,
     targetPermission: PermissionT
 ) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   expr.result.reference.ownership match {
     case OwnT => vfail() // This only works on non owning references
     case ShareT => vfail() // Share only has readonly
@@ -102,7 +102,7 @@ case class NarrowPermissionTE(
 case class PointerToBorrowTE(
   expr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vassert(expr.result.reference.ownership == PointerT)
   override def result: ReferenceResultT = {
     val CoordT(PointerT, permission, kind) = expr.result.reference
@@ -113,7 +113,7 @@ case class PointerToBorrowTE(
 case class BorrowToPointerTE(
   expr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vassert(expr.result.reference.ownership == BorrowT)
   override def result: ReferenceResultT = {
     val CoordT(BorrowT, permission, kind) = expr.result.reference
@@ -132,7 +132,7 @@ case class LockWeakTE(
   // Function to make a None of the right type
   noneConstructor: PrototypeT,
 ) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result: ReferenceResultT = {
     ReferenceResultT(resultOptBorrowType)
   }
@@ -146,7 +146,7 @@ case class BorrowToWeakTE(
 ) extends ReferenceExpressionTE {
   vassert(innerExpr.result.reference.ownership == BorrowT)
 
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   innerExpr.result.reference.ownership match {
     case PointerT =>
     case BorrowT =>
@@ -165,7 +165,7 @@ case class PointerToWeakTE(
 ) extends ReferenceExpressionTE {
   vassert(innerExpr.result.reference.ownership == PointerT)
 
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   innerExpr.result.reference.ownership match {
     case PointerT =>
     case BorrowT =>
@@ -180,7 +180,7 @@ case class LetNormalTE(
     variable: ILocalVariableT,
     expr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
   expr.kind match {
@@ -201,7 +201,7 @@ case class LetNormalTE(
 
 // Only ExpressionTemplar.unletLocal should make these
 case class UnletTE(variable: ILocalVariableT) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(variable.reference)
 
   vpass()
@@ -218,7 +218,7 @@ case class UnletTE(variable: ILocalVariableT) extends ReferenceExpressionTE {
 case class DiscardTE(
   expr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
   expr.result.reference.ownership match {
@@ -244,7 +244,7 @@ case class DeferTE(
   // Every deferred expression should discard its result, IOW, return Void.
   deferredExpr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   override def result = ReferenceResultT(innerExpr.result.reference)
 
@@ -259,7 +259,7 @@ case class IfTE(
     condition: ReferenceExpressionTE,
     thenCall: ReferenceExpressionTE,
     elseCall: ReferenceExpressionTE) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   private val conditionResultCoord = condition.result.reference
   private val thenResultCoord = thenCall.result.reference
   private val elseResultCoord = elseCall.result.reference
@@ -296,7 +296,7 @@ case class WhileTE(block: BlockTE) extends ReferenceExpressionTE {
       case _ => vwat()
     }
 
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(resultCoord)
   vpass()
 }
@@ -305,7 +305,7 @@ case class MutateTE(
   destinationExpr: AddressExpressionTE,
   sourceExpr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(destinationExpr.result.reference)
 }
 
@@ -313,7 +313,7 @@ case class MutateTE(
 case class ReturnTE(
   sourceExpr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, NeverT(false)))
 
   def getFinalExpr(expression2: ExpressionT): Unit = {
@@ -324,7 +324,7 @@ case class ReturnTE(
 }
 
 case class BreakTE() extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, NeverT(true)))
 }
 
@@ -337,19 +337,19 @@ case class BreakTE() extends ReferenceExpressionTE {
 case class BlockTE(
     inner: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   override def result = inner.result
 }
 
 case class ConsecutorTE(exprs: Vector[ReferenceExpressionTE]) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   // There shouldn't be a 0-element consecutor.
   // If we want a consecutor that returns nothing, put a VoidLiteralTE in it.
   vassert(exprs.nonEmpty)
 
   if (exprs.size > 1) {
-    vassert(!exprs.init.contains(VoidLiteralTE()))
+    vassert(exprs.init.collect({ case VoidLiteralTE() => }).isEmpty)
   }
 
   // There shouldn't be a 1-element consecutor.
@@ -396,7 +396,7 @@ case class ConsecutorTE(exprs: Vector[ReferenceExpressionTE]) extends ReferenceE
 case class TupleTE(
     elements: Vector[ReferenceExpressionTE],
     resultReference: CoordT) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(resultReference)
 }
 
@@ -409,7 +409,7 @@ case class TupleTE(
 ////     println("hi");
 ////   }
 //case class UnreachableMootTE(innerExpr: ReferenceExpressionTE) extends ReferenceExpressionTE {
-//  override def hashCode(): Int = vcurious()
+//  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 //  override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, NeverT()))
 //}
 
@@ -417,17 +417,17 @@ case class StaticArrayFromValuesTE(
     elements: Vector[ReferenceExpressionTE],
     resultReference: CoordT,
     arrayType: StaticSizedArrayTT) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(resultReference)
 }
 
 case class ArraySizeTE(array: ReferenceExpressionTE) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, IntT.i32))
 }
 
 case class IsSameInstanceTE(left: ReferenceExpressionTE, right: ReferenceExpressionTE) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vassert(left.result.reference == right.result.reference)
 
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, BoolT()))
@@ -445,32 +445,32 @@ case class AsSubtypeTE(
     // Function to make a None of the right type
     errConstructor: PrototypeT,
 ) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(resultResultType)
 }
 
 case class VoidLiteralTE() extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 }
 
 case class ConstantIntTE(value: Long, bits: Int) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, IntT(bits)))
 }
 
 case class ConstantBoolTE(value: Boolean) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, BoolT()))
 }
 
 case class ConstantStrTE(value: String) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, StrT()))
 }
 
 case class ConstantFloatTE(value: Double) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, FloatT()))
 }
 
@@ -480,7 +480,7 @@ case class LocalLookupTE(
 //  reference: CoordT,
 //  variability: VariabilityT
 ) extends AddressExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = AddressResultT(localVariable.reference)
   override def variability: VariabilityT = localVariable.variability
 }
@@ -489,7 +489,7 @@ case class ArgLookupTE(
     paramIndex: Int,
     reference: CoordT
 ) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(reference)
 }
 
@@ -503,7 +503,7 @@ case class StaticSizedArrayLookupTE(
     targetPermission: PermissionT,
     variability: VariabilityT
 ) extends AddressExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vassert(arrayExpr.result.reference.kind == arrayType)
 
   override def result = AddressResultT(arrayType.elementType)
@@ -519,7 +519,7 @@ case class RuntimeSizedArrayLookupTE(
   targetPermission: PermissionT,
   variability: VariabilityT
 ) extends AddressExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vassert(arrayExpr.result.reference.kind == arrayType)
 
   override def result = {
@@ -529,7 +529,7 @@ case class RuntimeSizedArrayLookupTE(
 }
 
 case class ArrayLengthTE(arrayExpr: ReferenceExpressionTE) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, ReadonlyT, IntT.i32))
 }
 
@@ -542,7 +542,7 @@ case class ReferenceMemberLookupTE(
     // See RMLHTP why we can have this here.
     targetPermission: PermissionT,
     variability: VariabilityT) extends AddressExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = {
     if (structExpr.result.reference.permission == ReadonlyT) {
       vassert(targetPermission == ReadonlyT)
@@ -561,7 +561,7 @@ case class AddressMemberLookupTE(
     memberName: FullNameT[IVarNameT],
     resultType2: CoordT,
     variability: VariabilityT) extends AddressExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = AddressResultT(resultType2)
 }
 
@@ -569,14 +569,14 @@ case class InterfaceFunctionCallTE(
     superFunctionHeader: FunctionHeaderT,
     resultReference: CoordT,
     args: Vector[ReferenceExpressionTE]) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result: ReferenceResultT = ReferenceResultT(resultReference)
 }
 
 case class ExternFunctionCallTE(
     prototype2: PrototypeT,
     args: Vector[ReferenceExpressionTE]) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   // We dont:
   //   vassert(prototype2.fullName.last.templateArgs.isEmpty)
   // because we totally can have extern templates.
@@ -596,7 +596,7 @@ case class ExternFunctionCallTE(
 case class FunctionCallTE(
     callable: PrototypeT,
     args: Vector[ReferenceExpressionTE]) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   vassert(callable.paramTypes.size == args.size)
   args.map(_.result.reference).zip(callable.paramTypes).foreach({
@@ -617,7 +617,7 @@ case class FunctionCallTE(
 case class TemplarReinterpretTE(
     expr: ReferenceExpressionTE,
     resultReference: CoordT) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vassert(expr.result.reference != resultReference)
 
   override def result = ReferenceResultT(resultReference)
@@ -638,7 +638,7 @@ case class ConstructTE(
     structTT: StructTT,
     resultReference: CoordT,
     args: Vector[ExpressionT]) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()
 
   override def result = ReferenceResultT(resultReference)
@@ -650,7 +650,7 @@ case class NewMutRuntimeSizedArrayTE(
   arrayType: RuntimeSizedArrayTT,
   capacityExpr: ReferenceExpressionTE
 ) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result: ReferenceResultT = {
     ReferenceResultT(
       CoordT(
@@ -665,7 +665,7 @@ case class StaticArrayFromCallableTE(
   generator: ReferenceExpressionTE,
   generatorMethod: PrototypeT
 ) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result: ReferenceResultT = {
     ReferenceResultT(
       CoordT(
@@ -684,7 +684,7 @@ case class DestroyStaticSizedArrayIntoFunctionTE(
     arrayType: StaticSizedArrayTT,
     consumer: ReferenceExpressionTE,
     consumerMethod: PrototypeT) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vassert(consumerMethod.paramTypes.size == 2)
   vassert(consumerMethod.paramTypes(0) == consumer.result.reference)
   vassert(consumerMethod.paramTypes(1) == arrayType.elementType)
@@ -709,7 +709,7 @@ case class DestroyStaticSizedArrayIntoLocalsTE(
   staticSizedArray: StaticSizedArrayTT,
   destinationReferenceVariables: Vector[ReferenceLocalVariableT]
 ) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
   vassert(expr.kind == staticSizedArray)
@@ -753,7 +753,7 @@ case class PopRuntimeSizedArrayTE(
 case class InterfaceToInterfaceUpcastTE(
     innerExpr: ReferenceExpressionTE,
     targetInterfaceRef: InterfaceTT) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   def result: ReferenceResultT = {
     ReferenceResultT(
       CoordT(
@@ -764,7 +764,7 @@ case class InterfaceToInterfaceUpcastTE(
 }
 
 case class StructToInterfaceUpcastTE(innerExpr: ReferenceExpressionTE, targetInterfaceRef: InterfaceTT) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   def result: ReferenceResultT = {
     ReferenceResultT(
       CoordT(
@@ -781,7 +781,7 @@ case class StructToInterfaceUpcastTE(innerExpr: ReferenceExpressionTE, targetInt
 
 case class SoftLoadTE(
     expr: AddressExpressionTE, targetOwnership: OwnershipT, targetPermission: PermissionT) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   vassert((targetOwnership == ShareT) == (expr.result.reference.ownership == ShareT))
   vassert(targetOwnership != OwnT) // need to unstackify or destroy to get an owning reference
@@ -811,7 +811,7 @@ case class DestroyTE(
     structTT: StructTT,
     destinationReferenceVariables: Vector[ReferenceLocalVariableT]
 ) extends ReferenceExpressionTE {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result: ReferenceResultT = ReferenceResultT(CoordT(ShareT, ReadonlyT, VoidT()))
 
   if (expr.result.reference.ownership == PointerT) {
@@ -827,7 +827,7 @@ case class DestroyImmRuntimeSizedArrayTE(
 ) extends ReferenceExpressionTE {
   vassert(arrayType.mutability == ImmutableT)
 
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vassert(consumerMethod.paramTypes.size == 2)
   vassert(consumerMethod.paramTypes(0) == consumer.result.reference)
   //  vassert(consumerMethod.paramTypes(1) == Program2.intType)
@@ -851,7 +851,7 @@ case class NewImmRuntimeSizedArrayTE(
 ) extends ReferenceExpressionTE {
   vassert(arrayType.mutability == ImmutableT)
 
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result: ReferenceResultT = {
     ReferenceResultT(
       CoordT(

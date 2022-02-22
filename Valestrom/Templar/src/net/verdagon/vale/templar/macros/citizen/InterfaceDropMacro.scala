@@ -9,12 +9,15 @@ import net.verdagon.vale.templar.ast.PrototypeT
 import net.verdagon.vale.templar.env.{FunctionEnvEntry, IEnvEntry, IEnvironment}
 import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.macros.IOnInterfaceDefinedMacro
-import net.verdagon.vale.templar.names.{FullNameT, FunctionTemplateNameT, INameT}
+import net.verdagon.vale.templar.names.{FullNameT, FunctionTemplateNameT, INameT, NameTranslator}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{OverloadTemplar, Templar, Temputs}
-import net.verdagon.vale.{CodeLocationS, RangeS, vassert}
+import net.verdagon.vale.{CodeLocationS, Interner, RangeS, vassert}
 
-class InterfaceDropMacro(overloadTemplar: OverloadTemplar) extends IOnInterfaceDefinedMacro {
+class InterfaceDropMacro(
+  interner: Interner,
+  nameTranslator: NameTranslator
+) extends IOnInterfaceDefinedMacro {
 
   val macroName: String = "DeriveInterfaceDrop"
 
@@ -26,7 +29,7 @@ class InterfaceDropMacro(overloadTemplar: OverloadTemplar) extends IOnInterfaceD
     val dropFunctionA =
       FunctionA(
         interfaceA.name.range,
-        FunctionNameS(CallTemplar.DROP_FUNCTION_NAME, interfaceA.name.range.begin),
+        interner.intern(FunctionNameS(CallTemplar.DROP_FUNCTION_NAME, interfaceA.name.range.begin)),
         Vector(),
         TemplateTemplataType(Vector(CoordTemplataType), FunctionTemplataType),
         Vector(RuneUsage(RangeS.internal(-64002), CodeRuneS("T"))),
@@ -35,30 +38,32 @@ class InterfaceDropMacro(overloadTemplar: OverloadTemplar) extends IOnInterfaceD
           ParameterS(
             AtomSP(
               RangeS.internal(-1340),
-              Some(CaptureS(CodeVarNameS("this"))),
+              Some(CaptureS(interner.intern(CodeVarNameS("this")))),
               None,
               Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("T"))), None))),
         Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("V"))),
         Vector(
-          LookupSR(RangeS.internal(-167213),RuneUsage(RangeS.internal(-64002), CodeRuneS("T")),SelfNameS()),
-          LookupSR(RangeS.internal(-167213),RuneUsage(RangeS.internal(-64002), CodeRuneS("V")),CodeNameS("void"))),
+          LookupSR(RangeS.internal(-167213),RuneUsage(RangeS.internal(-64002), CodeRuneS("T")),interner.intern(SelfNameS())),
+          LookupSR(RangeS.internal(-167213),RuneUsage(RangeS.internal(-64002), CodeRuneS("V")),interner.intern(CodeNameS("void")))),
         CodeBodyS(
           BodySE(RangeS.internal(-167213),
             Vector(),
             BlockSE(RangeS.internal(-167213),
-              Vector(LocalS(CodeVarNameS("this"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
+              Vector(LocalS(interner.intern(CodeVarNameS("this")), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
               FunctionCallSE(RangeS.internal(-167213),
                 OutsideLoadSE(RangeS.internal(-167213),
                   Array(),
-                  CodeNameS(CallTemplar.VIRTUAL_DROP_FUNCTION_NAME),
+                  interner.intern(CodeNameS(CallTemplar.VIRTUAL_DROP_FUNCTION_NAME)),
                   None,
                   LoadAsPointerP(None)),
-                Vector(LocalLoadSE(RangeS.internal(-167213), CodeVarNameS("this"), MoveP)))))))
+                Vector(LocalLoadSE(RangeS.internal(-167213), interner.intern(CodeVarNameS("this")), MoveP)))))))
 
+    val virtualDropFunctionNameA =
+      interner.intern(AbstractVirtualDropFunctionDeclarationNameS(interfaceA.name))
     val virtualDropFunctionA =
       FunctionA(
         interfaceA.range,
-        FunctionNameS(CallTemplar.VIRTUAL_DROP_FUNCTION_NAME, interfaceA.range.begin),
+        virtualDropFunctionNameA,
         Vector(),
         TemplateTemplataType(Vector(CoordTemplataType), FunctionTemplataType),
         Vector(RuneUsage(RangeS.internal(-64002), CodeRuneS("T"))),
@@ -67,19 +72,19 @@ class InterfaceDropMacro(overloadTemplar: OverloadTemplar) extends IOnInterfaceD
           ParameterS(
             AtomSP(
               RangeS.internal(-1340),
-              Some(CaptureS(CodeVarNameS("this"))),
+              Some(CaptureS(interner.intern(CodeVarNameS("this")))),
               Some(AbstractSP(RangeS.internal(-1340), true)),
               Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("T"))), None))),
         Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("V"))),
         Vector(
-          LookupSR(RangeS.internal(-167213),RuneUsage(RangeS.internal(-64002), CodeRuneS("T")),SelfNameS()),
-          LookupSR(RangeS.internal(-167213),RuneUsage(RangeS.internal(-64002), CodeRuneS("V")),CodeNameS("void"))),
+          LookupSR(RangeS.internal(-167213),RuneUsage(RangeS.internal(-64002), CodeRuneS("T")),interner.intern(SelfNameS())),
+          LookupSR(RangeS.internal(-167213),RuneUsage(RangeS.internal(-64002), CodeRuneS("V")),interner.intern(CodeNameS("void")))),
         GeneratedBodyS("abstractBody"))
 
     Vector(
-      interfaceName.addStep(FunctionTemplateNameT(CallTemplar.DROP_FUNCTION_NAME, CodeLocationS.internal(-76))) ->
+      interfaceName.addStep(nameTranslator.translateFunctionNameToTemplateName(dropFunctionA.name)) ->
         FunctionEnvEntry(dropFunctionA),
-      interfaceName.addStep(FunctionTemplateNameT(CallTemplar.VIRTUAL_DROP_FUNCTION_NAME, CodeLocationS.internal(-77))) ->
+      interfaceName.addStep(nameTranslator.translateFunctionNameToTemplateName(virtualDropFunctionA.name)) ->
         FunctionEnvEntry(virtualDropFunctionA))
   }
 }

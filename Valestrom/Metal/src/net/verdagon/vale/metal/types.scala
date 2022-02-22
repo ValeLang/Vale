@@ -1,6 +1,6 @@
 package net.verdagon.vale.metal
 
-import net.verdagon.vale.{FileCoordinate, PackageCoordinate, vassert, vfail, vimpl}
+import net.verdagon.vale.{FileCoordinate, PackageCoordinate, vassert, vcurious, vfail, vimpl}
 
 // Represents a reference type.
 // A reference contains these things:

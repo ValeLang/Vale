@@ -14,7 +14,7 @@ case class ProgramA(
     impls: Vector[ImplA],
     functions: Vector[FunctionA],
     exports: Vector[ExportAsA]) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   def lookupFunction(name: INameS) = {
     val matches = functions.filter(_.name == name)
@@ -103,7 +103,7 @@ case class StructA(
 
 case class ImplA(
   range: RangeS,
-  name: ImplDeclarationNameS,
+  name: IImplDeclarationNameS,
   impreciseName: ImplImpreciseNameS, // The name of an impl is the human name of the subcitizen, see INSHN.
   identifyingRunes: Vector[RuneUsage],
   rules: Vector[IRulexSR],

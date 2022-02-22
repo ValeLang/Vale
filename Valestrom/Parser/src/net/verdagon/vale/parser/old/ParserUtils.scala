@@ -11,7 +11,7 @@ import scala.util.parsing.input.{OffsetPosition, Positional}
 trait ParserUtils extends RegexParsers {
 
   case class PosWrapper(u: Unit) extends Positional {
-    override def hashCode(): Int = vcurious()
+    override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   }
 
   private[parser] def pos: Parser[Int] = {

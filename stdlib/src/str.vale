@@ -30,26 +30,18 @@ func contains(haystack StrSlice, needle str) bool { contains(haystack, needle.sl
 func contains(haystack str, needle StrSlice) bool { contains(haystack.slice(), needle) }
 func contains(haystack StrSlice, needle StrSlice) bool { not find(haystack, needle).isEmpty() }
 
-func find(haystack str, needle str) Opt<StrSlice> { find(haystack.slice(), needle.slice()) }
-func find(haystack str, needle StrSlice) Opt<StrSlice> { find(haystack.slice(), needle) }
-func find(haystack StrSlice, needle str) Opt<StrSlice> { find(haystack, needle.slice()) }
-func find(haystack StrSlice, needle StrSlice) Opt<StrSlice> {
+func find(haystack str, needle str) Opt<int> { find(haystack.slice(), needle.slice()) }
+func find(haystack str, needle StrSlice) Opt<int> { find(haystack.slice(), needle) }
+func find(haystack StrSlice, needle str) Opt<int> { find(haystack, needle.slice()) }
+func find(haystack StrSlice, needle StrSlice) Opt<int> {
   offsetAfterBegin =
       strindexof(
           haystack.string, haystack.begin, haystack.end,
           needle.string, needle.begin, needle.end);
-
   if offsetAfterBegin < 0 {
-    r Opt<StrSlice> = None<StrSlice>();
-    r
+    ret None<int>();
   } else {
-    r Opt<StrSlice> =
-        Some<StrSlice>(
-            newStrSlice(
-                haystack.string,
-                haystack.begin + offsetAfterBegin,
-                haystack.begin + offsetAfterBegin + needle.len()));
-    r
+    ret Some(offsetAfterBegin);
   }
 }
 

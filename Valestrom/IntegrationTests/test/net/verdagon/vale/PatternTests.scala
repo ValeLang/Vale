@@ -14,7 +14,7 @@ class PatternTests extends FunSuite with Matchers {
   //  compile.getTemputs()
   //  val main = temputs.lookupFunction("main")
   //  main.header.returnType shouldEqual Coord(Share, Readonly, Int2())
-  //  compile.evalForKind(Vector()) shouldEqual VonInt(4)
+  //  compile.evalForKind(Vector()) match { case VonInt(4) => }
   //}
 
   test("Test matching a multiple-member seq of immutables") {
@@ -23,7 +23,7 @@ class PatternTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     main.header.returnType shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
-    compile.evalForKind(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) match { case VonInt(5) => }
   }
 
   test("Test matching a multiple-member seq of mutables") {
@@ -36,7 +36,7 @@ class PatternTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main");
     main.header.returnType shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
-    compile.evalForKind(Vector()) shouldEqual VonInt(8)
+    compile.evalForKind(Vector()) match { case VonInt(8) => }
   }
 
   test("Test matching a multiple-member pack of immutable and own") {
@@ -48,7 +48,7 @@ class PatternTests extends FunSuite with Matchers {
       """.stripMargin)
     val temputs = compile.expectTemputs()
     temputs.functions.head.header.returnType == CoordT(ShareT, ReadonlyT, IntT.i32)
-    compile.evalForKind(Vector()) shouldEqual VonInt(8)
+    compile.evalForKind(Vector()) match { case VonInt(8) => }
   }
 
   test("Test matching a multiple-member pack of immutable and borrow") {
@@ -64,7 +64,7 @@ class PatternTests extends FunSuite with Matchers {
       """.stripMargin)
     val temputs = compile.expectTemputs()
     temputs.functions.head.header.returnType == CoordT(ShareT, ReadonlyT, IntT.i32)
-    compile.evalForKind(Vector()) shouldEqual VonInt(8)
+    compile.evalForKind(Vector()) match { case VonInt(8) => }
   }
 
 
@@ -82,7 +82,7 @@ class PatternTests extends FunSuite with Matchers {
       """.stripMargin)
     val temputs = compile.expectTemputs()
     temputs.functions.head.header.returnType == CoordT(ShareT, ReadonlyT, IntT.i32)
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
 
@@ -109,7 +109,7 @@ class PatternTests extends FunSuite with Matchers {
 //      """.stripMargin)
 //    val temputs = compile.expectTemputs()
 //    temputs.functions.head.header.returnType == CoordT(ShareT, ReadonlyT, IntT.i32)
-//    compile.evalForKind(Vector()) shouldEqual VonInt(8)
+//    compile.evalForKind(Vector()) match { case VonInt(8) => }
 //  }
 
   // Intentional known failure 2021.02.28, we never implemented pattern destructuring
@@ -140,6 +140,6 @@ class PatternTests extends FunSuite with Matchers {
 //        |""".stripMargin)
 //    val temputs = compile.expectTemputs()
 //    temputs.functions.head.header.returnType == CoordT(ShareT, ReadonlyT, IntT.i32)
-//    compile.evalForKind(Vector()) shouldEqual VonInt(8)
+//    compile.evalForKind(Vector()) match { case VonInt(8) => }
 //  }
 }

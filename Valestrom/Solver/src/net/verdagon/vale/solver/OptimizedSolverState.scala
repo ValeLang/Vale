@@ -1,6 +1,6 @@
 package net.verdagon.vale.solver
 
-import net.verdagon.vale.{Err, Ok, Result, vassert, vfail, vimpl}
+import net.verdagon.vale.{Err, Ok, Result, vassert, vcurious, vfail, vimpl}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -83,7 +83,7 @@ case class OptimizedSolverState[Rule, RuneID, Conclusion](
   private val runeToConclusion: mutable.ArrayBuffer[Option[Conclusion]]
 ) extends ISolverState[Rule, RuneID, Conclusion] {
 
-  override def hashCode(): Int = vfail() // is mutable, should never be hashed
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vfail() // is mutable, should never be hashed
 
   override def deepClone(): OptimizedSolverState[Rule, RuneID, Conclusion] = {
     OptimizedSolverState[Rule, RuneID, Conclusion](

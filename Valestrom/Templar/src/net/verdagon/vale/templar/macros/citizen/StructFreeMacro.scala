@@ -12,10 +12,11 @@ import net.verdagon.vale.templar.macros.{IFunctionBodyMacro, IOnStructDefinedMac
 import net.verdagon.vale.templar.names.{FullNameT, INameT, NameTranslator}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{OverloadTemplar, Templar, Temputs}
-import net.verdagon.vale.{RangeS, vwat}
+import net.verdagon.vale.{Interner, RangeS, vwat}
 
 class StructFreeMacro(
-  overloadTemplar: OverloadTemplar,
+  interner: Interner,
+  nameTranslator: NameTranslator,
   destructorTemplar: DestructorTemplar
 ) extends IOnStructDefinedMacro with IFunctionBodyMacro {
 
@@ -46,7 +47,7 @@ class StructFreeMacro(
           structType,
           structIdentifyingRunes.map(_.rune),
           structIdentifyingRuneToType)
-      val freeNameT = structName.addStep(NameTranslator.translateFunctionNameToTemplateName(freeFunctionA.name))
+      val freeNameT = structName.addStep(nameTranslator.translateFunctionNameToTemplateName(freeFunctionA.name))
       Vector((freeNameT, FunctionEnvEntry(freeFunctionA)))
     } else {
       Vector()
@@ -60,7 +61,7 @@ class StructFreeMacro(
     structIdentifyingRunes: Vector[IRuneS],
     structIdentifyingRuneToType: Map[IRuneS, ITemplataType]):
   FunctionA = {
-    val nameS = FreeDeclarationNameS(structRange.begin)
+    val nameS = interner.intern(FreeDeclarationNameS(structRange.begin))
     FunctionA(
       structRange,
       nameS,
@@ -78,7 +79,7 @@ class StructFreeMacro(
           CodeRuneS("DropP1") -> CoordTemplataType,
           CodeRuneS("DropV") -> CoordTemplataType),
       Vector(
-        ParameterS(AtomSP(RangeS.internal(-1342), Some(CaptureS(CodeVarNameS("x"))), None, Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("DropP1"))), None))),
+        ParameterS(AtomSP(RangeS.internal(-1342), Some(CaptureS(interner.intern(CodeVarNameS("x")))), None, Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("DropP1"))), None))),
       Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("DropV"))),
       Vector(
         structType match {
@@ -96,8 +97,8 @@ class StructFreeMacro(
               structIdentifyingRunes.map(r => RuneUsage(RangeS.internal(-64002), r)).toArray)
           }
         },
-        LookupSR(RangeS.internal(-167213), RuneUsage(RangeS.internal(-64002), CodeRuneS("DropStruct")), structNameS.getImpreciseName),
-        LookupSR(RangeS.internal(-167213), RuneUsage(RangeS.internal(-64002), CodeRuneS("DropV")), CodeNameS("void"))),
+        LookupSR(RangeS.internal(-167213), RuneUsage(RangeS.internal(-64002), CodeRuneS("DropStruct")), structNameS.getImpreciseName(interner)),
+        LookupSR(RangeS.internal(-167213), RuneUsage(RangeS.internal(-64002), CodeRuneS("DropV")), interner.intern(CodeNameS("void")))),
       GeneratedBodyS(freeGeneratorId))
   }
 
@@ -117,14 +118,14 @@ class StructFreeMacro(
         CodeRuneS("DropP1") -> CoordTemplataType,
         CodeRuneS("DropV") -> CoordTemplataType),
       Vector(
-        ParameterS(AtomSP(RangeS.internal(-1342), Some(CaptureS(CodeVarNameS("x"))), None, Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("DropP1"))), None))),
+        ParameterS(AtomSP(RangeS.internal(-1342), Some(CaptureS(interner.intern(CodeVarNameS("x")))), None, Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("DropP1"))), None))),
       Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("DropV"))),
       Vector(
         LookupSR(
           RangeS.internal(-167213),
           RuneUsage(RangeS.internal(-64002), CodeRuneS("DropP1")),
-          SelfNameS()),
-        LookupSR(RangeS.internal(-167213), RuneUsage(RangeS.internal(-64002), CodeRuneS("DropV")), CodeNameS("void"))),
+          interner.intern(SelfNameS())),
+        LookupSR(RangeS.internal(-167213), RuneUsage(RangeS.internal(-64002), CodeRuneS("DropV")), interner.intern(CodeNameS("void")))),
       GeneratedBodyS(freeGeneratorId))
   }
 

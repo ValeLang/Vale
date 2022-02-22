@@ -4,7 +4,7 @@ import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP}
-import net.verdagon.vale.{Err, FileCoordinate, Ok, RangeS, vassert, vassertSome, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, FileCoordinate, Interner, Ok, RangeS, vassert, vassertSome, vfail, vimpl, vwat}
 import net.verdagon.von.{JsonSyntax, VonPrinter}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -24,7 +24,7 @@ class ScoutRuleTests extends FunSuite with Matchers {
             case Err(error) => vwat(error.toString)
             case Ok(program0) => program0
           }
-        new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
+        new Scout(GlobalOptions.test(), new Interner()).scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => vfail(e.toString)
           case Ok(t) => t
         }
@@ -43,7 +43,7 @@ class ScoutRuleTests extends FunSuite with Matchers {
             case Err(error) => vwat(error.toString)
             case Ok(program0) => program0
           }
-        new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
+        new Scout(GlobalOptions.test(), new Interner()).scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => e
           case Ok(t) => vfail("Successfully compiled!\n" + t.toString)
         }

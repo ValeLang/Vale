@@ -8,7 +8,7 @@ import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{ast, _}
 import net.verdagon.vale.templar.ast.{FunctionCallTE, LocationInFunctionEnvironment, ReferenceExpressionTE}
-import net.verdagon.vale.{RangeS, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{Interner, RangeS, vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
@@ -26,6 +26,7 @@ object CallTemplar {
 
 class CallTemplar(
     opts: TemplarOptions,
+    interner: Interner,
     templataTemplar: TemplataTemplar,
     convertHelper: ConvertHelper,
     localHelper: LocalHelper,
@@ -189,7 +190,7 @@ class CallTemplar(
         argsTypes2.map(argType => ParamFilter(argType, None))
     val prototype2 =
       overloadTemplar.findFunction(
-        env, temputs, range, CodeNameS(CallTemplar.CALL_FUNCTION_NAME), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, false)
+        env, temputs, range, interner.intern(CodeNameS(CallTemplar.CALL_FUNCTION_NAME)), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, false)
 
     val mutability = Templar.getMutability(temputs, citizenRef)
     val ownership = if (mutability == MutableT) BorrowT else ShareT

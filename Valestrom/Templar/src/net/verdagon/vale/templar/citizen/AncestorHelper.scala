@@ -8,7 +8,7 @@ import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.names.NameTranslator
-import net.verdagon.vale.{Err, IProfiler, Ok, RangeS, vassertSome, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, IProfiler, Interner, Ok, RangeS, vassertSome, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
@@ -26,6 +26,7 @@ trait IAncestorHelperDelegate {
 class AncestorHelper(
     opts: TemplarOptions,
     profiler: IProfiler,
+    interner: Interner,
     inferTemplar: InferTemplar,
     delegate: IAncestorHelperDelegate) {
 
@@ -79,9 +80,9 @@ class AncestorHelper(
 
     // See INSHN, the imprecise name for an impl is the wrapped imprecise name of its struct template.
     val needleImplName =
-      TemplatasStore.getImpreciseName(childCitizenRef.fullName.last) match {
+      TemplatasStore.getImpreciseName(interner, childCitizenRef.fullName.last) match {
         case None => return Vector.empty
-        case Some(x) => ImplImpreciseNameS(x)
+        case Some(x) => interner.intern(ImplImpreciseNameS(x))
       }
     val citizenEnv =
       childCitizenRef match {

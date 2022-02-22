@@ -6,7 +6,7 @@ import net.verdagon.vale.parser.ast.FileP
 import net.verdagon.vale.scout.{ExportS, ExternS, RuneTypeSolver, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS, OverrideSP}
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.{CodeLocationS, Err, FileCoordinateMap, IPackageResolver, Ok, PackageCoordinate, PackageCoordinateMap, RangeS, Result, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
+import net.verdagon.vale.{CodeLocationS, Err, FileCoordinateMap, IPackageResolver, Interner, Ok, PackageCoordinate, PackageCoordinateMap, RangeS, Result, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 import scala.collection.mutable
@@ -23,7 +23,7 @@ case class Environment(
     maybeParentEnv: Option[Environment],
     codeMap: PackageCoordinateMap[ProgramS],
     runeToType: Map[IRuneS, ITemplataType]) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   val structsS: Vector[StructS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.structs)).toVector
   val interfacesS: Vector[InterfaceS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.interfaces)).toVector
@@ -37,7 +37,7 @@ case class Environment(
   }
 }
 
-class Astronomer(globalOptions: GlobalOptions) {
+class Astronomer(globalOptions: GlobalOptions, interner: Interner) {
   val primitives =
     Map(
       "int" -> KindTemplataType,
@@ -285,7 +285,7 @@ class Astronomer(globalOptions: GlobalOptions) {
       rangeS,
       nameS,
       // Just getting the template name (or the kind name if not template), see INSHN.
-      ImplImpreciseNameS(RuleScout.getRuneKindTemplate(rulesS, structKindRuneS.rune)),
+      interner.intern(ImplImpreciseNameS(RuleScout.getRuneKindTemplate(rulesS, structKindRuneS.rune))),
       identifyingRunesS,
       rulesS.toVector,
       runeSToType,
@@ -344,7 +344,7 @@ class Astronomer(globalOptions: GlobalOptions) {
       runeToExplicitType ++
         paramsS.flatMap(_.pattern.coordRune.map(_.rune -> CoordTemplataType)).toMap
     val runeSToType =
-      RuneTypeSolver.solve(
+      new RuneTypeSolver(interner).solve(
         globalOptions.sanityCheck,
         globalOptions.useOptimizedSolver,
         (n) => lookupType(astrouts, env, rangeS, n),
@@ -416,7 +416,7 @@ class Astronomer(globalOptions: GlobalOptions) {
       val packageToStructsA = structsA.groupBy(_.range.begin.file.packageCoordinate)
       val packageToInterfacesA = interfacesA.groupBy(_.name.range.begin.file.packageCoordinate)
       val packageToFunctionsA = functionsA.groupBy(_.name.packageCoordinate)
-      val packageToImplsA = implsA.groupBy(_.name.codeLocation.file.packageCoordinate)
+      val packageToImplsA = implsA.groupBy(_.name.packageCoordinate)
       val packageToExportsA = exportsA.groupBy(_.range.file.packageCoordinate)
 
       val allPackages =
@@ -458,6 +458,8 @@ class AstronomerCompilation(
   var scoutCompilation = new ScoutCompilation(globalOptions, packagesToBuild, packageToContentsResolver)
   var astroutsCache: Option[PackageCoordinateMap[ProgramA]] = None
 
+  def interner = scoutCompilation.interner
+
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = scoutCompilation.getCodeMap()
   def getParseds(): Result[FileCoordinateMap[(FileP, Vector[(Int, Int)])], FailedParse] = scoutCompilation.getParseds()
   def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = scoutCompilation.getVpstMap()
@@ -467,7 +469,7 @@ class AstronomerCompilation(
     astroutsCache match {
       case Some(astrouts) => Ok(astrouts)
       case None => {
-        new Astronomer(globalOptions).runAstronomer(scoutCompilation.expectScoutput()) match {
+        new Astronomer(globalOptions, scoutCompilation.interner).runAstronomer(scoutCompilation.expectScoutput()) match {
           case Right(err) => Err(err)
           case Left(astrouts) => {
             astroutsCache = Some(astrouts)

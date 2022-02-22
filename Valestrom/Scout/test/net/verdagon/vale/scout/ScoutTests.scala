@@ -6,7 +6,7 @@ import net.verdagon.vale.parser.ast.{FinalP, LoadAsBorrowOrIfContainerIsPointerT
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.solver.{IncompleteSolve, Step}
-import net.verdagon.vale.{Collector, Err, FileCoordinate, FileCoordinateMap, Ok, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{Collector, Err, FileCoordinate, FileCoordinateMap, Interner, Ok, vassert, vfail, vimpl, vwat}
 import net.verdagon.von.{JsonSyntax, VonPrinter}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -22,7 +22,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
             case Err(error) => vwat(error.toString)
             case Ok(program0) => program0
           }
-        new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
+        new Scout(GlobalOptions.test(), new Interner()).scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => vfail(e.toString)
           case Ok(t) => t
         }
@@ -41,7 +41,7 @@ class ScoutTests extends FunSuite with Matchers with Collector {
             case Err(error) => vwat(error.toString)
             case Ok(program0) => program0
           }
-        new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
+        new Scout(GlobalOptions.test(), new Interner()).scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => e
           case Ok(t) => vfail("Successfully compiled!\n" + t.toString)
         }

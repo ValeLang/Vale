@@ -14,13 +14,14 @@ case class TemplarCompilationOptions(
   globalOptions: GlobalOptions = GlobalOptions(),
   debugOut: (=> String) => Unit = DefaultPrintyThing.print,
   profiler: IProfiler = new NullProfiler(),
-) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
 class TemplarCompilation(
   packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]],
   options: TemplarCompilationOptions = TemplarCompilationOptions()) {
   var astronomerCompilation = new AstronomerCompilation(options.globalOptions, packagesToBuild, packageToContentsResolver)
+  def interner = astronomerCompilation.interner
   var hinputsCache: Option[Hinputs] = None
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = astronomerCompilation.getCodeMap()
@@ -34,7 +35,12 @@ class TemplarCompilation(
     hinputsCache match {
       case Some(temputs) => Ok(temputs)
       case None => {
-        val templar = new Templar(options.debugOut, options.profiler, options.globalOptions)
+        val templar =
+          new Templar(
+            options.debugOut,
+            options.profiler,
+            astronomerCompilation.scoutCompilation.interner,
+            options.globalOptions)
         templar.evaluate(astronomerCompilation.expectAstrouts()) match {
           case Err(e) => Err(e)
           case Ok(hinputs) => {

@@ -61,7 +61,7 @@ case class IsStructAR[RuneID, RuleID, Literal, Lookup](
   override def allRunes: Vector[RuneID] = Vector(rune)
 }
 
-case class CoerceToCoord[RuneID, RuleID, Literal, Lookup](
+case class CoerceToCoordAR[RuneID, RuleID, Literal, Lookup](
   range: RuleID,
   coordRune: RuneID,
   kindRune: RuneID

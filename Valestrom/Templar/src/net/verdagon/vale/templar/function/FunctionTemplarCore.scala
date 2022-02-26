@@ -11,7 +11,7 @@ import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.names.{CodeVarNameT, ExternFunctionNameT, FullNameT, FunctionNameT, IFunctionNameT, NameTranslator}
-import net.verdagon.vale.{Err, IProfiler, Interner, Ok, RangeS, vassert, vassertOne, vassertSome, vcheck, vcurious, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, Profiler, Interner, Ok, RangeS, vassert, vassertOne, vassertSome, vcheck, vcurious, vfail, vimpl, vwat}
 
 import scala.collection.immutable.{List, Set}
 
@@ -19,14 +19,14 @@ case class ResultTypeMismatchError(expectedType: CoordT, actualType: CoordT) { v
 
 class FunctionTemplarCore(
     opts: TemplarOptions,
-    profiler: IProfiler,
+
     interner: Interner,
     nameTranslator: NameTranslator,
 
     templataTemplar: TemplataTemplar,
     convertHelper: ConvertHelper,
     delegate: IFunctionTemplarDelegate) {
-  val bodyTemplar = new BodyTemplar(opts, profiler, nameTranslator, templataTemplar, convertHelper, new IBodyTemplarDelegate {
+  val bodyTemplar = new BodyTemplar(opts, nameTranslator, templataTemplar, convertHelper, new IBodyTemplarDelegate {
     override def evaluateBlockStatements(
       temputs: Temputs,
       startingNenv: NodeEnvironment,
@@ -84,7 +84,7 @@ class FunctionTemplarCore(
         }
         case ExternBodyS => {
           val maybeRetCoord =
-            fullEnv.lookupNearestWithImpreciseName(profiler, interner.intern(RuneNameS(startingFullEnv.function.maybeRetCoordRune.get.rune)), Set(TemplataLookupContext)).headOption
+            fullEnv.lookupNearestWithImpreciseName(interner.intern(RuneNameS(startingFullEnv.function.maybeRetCoordRune.get.rune)), Set(TemplataLookupContext)).headOption
           val retCoord =
             maybeRetCoord match {
               case None => vfail("wat")
@@ -112,7 +112,7 @@ class FunctionTemplarCore(
             startingFullEnv.function.maybeRetCoordRune match {
               case None => (None)
               case Some(retCoordRune) => {
-                fullEnv.lookupNearestWithImpreciseName(profiler, interner.intern(RuneNameS(retCoordRune.rune)), Set(TemplataLookupContext)).headOption
+                fullEnv.lookupNearestWithImpreciseName(interner.intern(RuneNameS(retCoordRune.rune)), Set(TemplataLookupContext)).headOption
               }
             }
           val maybeRetCoord =
@@ -199,61 +199,59 @@ class FunctionTemplarCore(
         case _ => true
       })
 
-    profiler.childFrame("evaluate body", () => {
-      val attributesT = translateAttributes(attributesWithoutExport)
+    val attributesT = translateAttributes(attributesWithoutExport)
 
-      val maybeExplicitReturnCoord =
-        startingFullEnv.function.maybeRetCoordRune match {
-          case Some(retCoordRune) => {
-            startingFullEnv.lookupNearestWithImpreciseName(
-                profiler,
-                interner.intern(RuneNameS(retCoordRune.rune)),
-                Set(TemplataLookupContext))  match {
-              case Some(CoordTemplata(retCoord)) => Some(retCoord)
-              case other => vwat(other)
-            }
+    val maybeExplicitReturnCoord =
+      startingFullEnv.function.maybeRetCoordRune match {
+        case Some(retCoordRune) => {
+          startingFullEnv.lookupNearestWithImpreciseName(
+
+              interner.intern(RuneNameS(retCoordRune.rune)),
+              Set(TemplataLookupContext))  match {
+            case Some(CoordTemplata(retCoord)) => Some(retCoord)
+            case other => vwat(other)
           }
-          case None => None
         }
-
-      maybeExplicitReturnCoord match {
-        case None => {
-          opts.debugOut("Eagerly evaluating function: " + functionFullName)
-          val header =
-            finishFunctionMaybeDeferred(
-              temputs,
-              fullEnv.snapshot,
-              life,
-              attributesT,
-              paramsT,
-              isDestructor,
-              maybeExplicitReturnCoord,
-              None)
-          header
-        }
-        case Some(explicitReturnCoord) => {
-          fullEnv.setReturnType(Some(explicitReturnCoord))
-          val header = finalizeHeader(fullEnv, temputs, attributesT, paramsT, explicitReturnCoord)
-          opts.debugOut("Deferring function: " + header.fullName)
-          temputs.deferEvaluatingFunction(
-            DeferredEvaluatingFunction(
-              header.toPrototype,
-              (temputs) => {
-                opts.debugOut("Finishing function: " + header.fullName)
-                finishFunctionMaybeDeferred(
-                  temputs,
-                  fullEnv.snapshot,
-                  life,
-                  attributesT,
-                  paramsT,
-                  isDestructor,
-                  maybeExplicitReturnCoord,
-                  Some(header))
-              }))
-          header
-        }
+        case None => None
       }
-    })
+
+    maybeExplicitReturnCoord match {
+      case None => {
+        opts.debugOut("Eagerly evaluating function: " + functionFullName)
+        val header =
+          finishFunctionMaybeDeferred(
+            temputs,
+            fullEnv.snapshot,
+            life,
+            attributesT,
+            paramsT,
+            isDestructor,
+            maybeExplicitReturnCoord,
+            None)
+        header
+      }
+      case Some(explicitReturnCoord) => {
+        fullEnv.setReturnType(Some(explicitReturnCoord))
+        val header = finalizeHeader(fullEnv, temputs, attributesT, paramsT, explicitReturnCoord)
+        opts.debugOut("Deferring function: " + header.fullName)
+        temputs.deferEvaluatingFunction(
+          DeferredEvaluatingFunction(
+            header.toPrototype,
+            (temputs) => {
+              opts.debugOut("Finishing function: " + header.fullName)
+              finishFunctionMaybeDeferred(
+                temputs,
+                fullEnv.snapshot,
+                life,
+                attributesT,
+                paramsT,
+                isDestructor,
+                maybeExplicitReturnCoord,
+                Some(header))
+            }))
+        header
+      }
+    }
   }
 
   def finalizeHeader(

@@ -9,7 +9,7 @@ import net.verdagon.vale.templar.{ast, names, _}
 import net.verdagon.vale.templar.ast.{AbstractT, FunctionBannerT, FunctionHeaderT, FunctionT, OverrideT, ParameterT, PrototypeT, SealedT, SignatureT, VirtualityT}
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
-import net.verdagon.vale.{IProfiler, Interner, RangeS, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
+import net.verdagon.vale.{Profiler, Interner, RangeS, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.names.{AnonymousSubstructConstructorNameT, AnonymousSubstructConstructorTemplateNameT, BuildingFunctionNameWithClosuredsAndTemplateArgsT, ConstructorTemplateNameT, FreeTemplateNameT, FullNameT, FunctionNameT, FunctionTemplateNameT, ICitizenNameT, ICitizenTemplateNameT, IFunctionNameT, LambdaTemplateNameT, NameTranslator, TemplarIgnoredParamNameT}
 
@@ -17,14 +17,14 @@ import scala.collection.immutable.{List, Set}
 
 class FunctionTemplarMiddleLayer(
     opts: TemplarOptions,
-    profiler: IProfiler,
+
     interner: Interner,
     nameTranslator: NameTranslator,
     templataTemplar: TemplataTemplar,
     convertHelper: ConvertHelper,
     structTemplar: StructTemplar,
     delegate: IFunctionTemplarDelegate) {
-  val core = new FunctionTemplarCore(opts, profiler, interner, nameTranslator, templataTemplar, convertHelper, delegate)
+  val core = new FunctionTemplarCore(opts, interner, nameTranslator, templataTemplar, convertHelper, delegate)
 
   // This is for the early stages of Templar when it's scanning banners to put in
   // its env. We just want its banner, we don't want to evaluate it.
@@ -40,7 +40,7 @@ class FunctionTemplarMiddleLayer(
 
     // Check preconditions
     function1.runeToType.keySet.foreach(templateParam => {
-      vassert(runedEnv.lookupNearestWithImpreciseName(profiler, vimpl(templateParam.toString), Set(TemplataLookupContext, ExpressionLookupContext)).nonEmpty)
+      vassert(runedEnv.lookupNearestWithImpreciseName(vimpl(templateParam.toString), Set(TemplataLookupContext, ExpressionLookupContext)).nonEmpty)
     })
     function1.body match {
       case CodeBodyS(body1) => vassert(body1.closuredNames.isEmpty)
@@ -80,7 +80,7 @@ class FunctionTemplarMiddleLayer(
       }
       case Some(OverrideSP(range, interfaceRuneA)) => {
         val interface =
-          env.lookupNearestWithImpreciseName(profiler, interner.intern(RuneNameS(interfaceRuneA.rune)), Set(TemplataLookupContext)) match {
+          env.lookupNearestWithImpreciseName(interner.intern(RuneNameS(interfaceRuneA.rune)), Set(TemplataLookupContext)) match {
             case None => vcurious()
             case Some(KindTemplata(ir @ InterfaceTT(_))) => ir
             case Some(it @ InterfaceTemplata(_, _)) => structTemplar.getInterfaceRef(temputs, range, it, Vector.empty)
@@ -107,7 +107,7 @@ class FunctionTemplarMiddleLayer(
 
     // Check preconditions
     function1.runeToType.keySet.foreach(templateParam => {
-      vassert(runedEnv.lookupNearestWithImpreciseName(profiler, interner.intern(RuneNameS(templateParam)), Set(TemplataLookupContext, ExpressionLookupContext)).nonEmpty);
+      vassert(runedEnv.lookupNearestWithImpreciseName(interner.intern(RuneNameS(templateParam)), Set(TemplataLookupContext, ExpressionLookupContext)).nonEmpty);
     })
 
     val params2 = assembleFunctionParams(runedEnv, temputs, function1.params)
@@ -159,7 +159,7 @@ class FunctionTemplarMiddleLayer(
     function1.runeToType.keySet.foreach(templateParam => {
       vassert(
         runedEnv
-          .lookupNearestWithImpreciseName(profiler,
+          .lookupNearestWithImpreciseName(
             interner.intern(RuneNameS(templateParam)),
             Set(TemplataLookupContext, ExpressionLookupContext))
           .nonEmpty);
@@ -206,7 +206,7 @@ class FunctionTemplarMiddleLayer(
     // Check preconditions
     function1.runeToType.keySet.foreach(templateParam => {
       vassert(
-        runedEnv.lookupNearestWithImpreciseName(profiler,
+        runedEnv.lookupNearestWithImpreciseName(
           interner.intern(RuneNameS(templateParam)),
           Set(TemplataLookupContext, ExpressionLookupContext)).nonEmpty);
     })
@@ -254,7 +254,7 @@ class FunctionTemplarMiddleLayer(
     params1.map(param1 => {
       val CoordTemplata(coord) =
         env
-          .lookupNearestWithImpreciseName(profiler,
+          .lookupNearestWithImpreciseName(
             interner.intern(RuneNameS(param1.pattern.coordRune.get.rune)),
             Set(TemplataLookupContext))
           .get
@@ -272,7 +272,7 @@ class FunctionTemplarMiddleLayer(
           vassertSome(
             env
               .lookupNearestWithImpreciseName(
-                profiler,
+
                 interner.intern(RuneNameS(param1.pattern.coordRune.get.rune)),
                 Set(TemplataLookupContext)))
         val maybeVirtuality = evaluateMaybeVirtuality(env, temputs, coord.kind, param1.pattern.virtuality)
@@ -313,7 +313,7 @@ class FunctionTemplarMiddleLayer(
   ): Option[CoordT] = {
     maybeRetCoordRune.map(retCoordRuneA => {
       val retCoordRune = (retCoordRuneA)
-      nearEnv.lookupNearestWithImpreciseName(profiler, interner.intern(RuneNameS(retCoordRune)), Set(TemplataLookupContext)) match {
+      nearEnv.lookupNearestWithImpreciseName(interner.intern(RuneNameS(retCoordRune)), Set(TemplataLookupContext)) match {
         case Some(CoordTemplata(coord)) => coord
         case _ => vwat(retCoordRune.toString)
       }

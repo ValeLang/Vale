@@ -137,7 +137,7 @@ class SolverTests extends FunSuite with Matchers with Collector {
     val rules =
       Array(
         Literal(-1L, "Firefly"),
-        Receive(-1L, -2L))
+        Send(-2L, -1L))
     getConclusions(rules, true) shouldEqual
       Map(-1L -> "Firefly", -2L -> "Firefly")
   }
@@ -148,11 +148,12 @@ class SolverTests extends FunSuite with Matchers with Collector {
       Array(
         Literal(-1L, "Firefly"),
         Literal(-2L, "ISpaceship"),
-        Receive(-1L, -2L))
+        Send(-2L, -1L))
     expectSolveFailure(rules) match {
       case FailedSolve(steps, unsolvedRules, err) => {
-        steps.flatMap(_.conclusions) shouldEqual Vector((-1,"Firefly"), (-2,"ISpaceship"), (-2,"Firefly"))
-        unsolvedRules shouldEqual Vector(Receive(-1,-2))
+        steps.flatMap(_.conclusions).toSet shouldEqual
+          Set((-1,"Firefly"), (-2,"ISpaceship"), (-2,"Firefly"))
+        unsolvedRules.toSet shouldEqual Set(Send(-2, -1))
         err match {
           case SolverConflict(
             -2,
@@ -171,7 +172,7 @@ class SolverTests extends FunSuite with Matchers with Collector {
       Array(
         Literal(-1L, "ISpaceship"),
         Literal(-2L, "Firefly"),
-        Receive(-1L, -2L))
+        Send(-2L, -1L))
     // Should be a successful solve
     getConclusions(rules, true) shouldEqual
       Map(-1L -> "ISpaceship", -2L -> "Firefly")
@@ -182,7 +183,7 @@ class SolverTests extends FunSuite with Matchers with Collector {
     val rules =
       Array(
         Literal(-2L, "Firefly"),
-        Receive(-1L, -2L))
+        Send(-2L, -1L))
     // Should be a successful solve
     getConclusions(rules, true) shouldEqual
       Map(-1L -> "Firefly", -2L -> "Firefly")
@@ -194,8 +195,8 @@ class SolverTests extends FunSuite with Matchers with Collector {
       Array(
         Literal(-2L, "Firefly"),
         Literal(-3L, "Serenity"),
-        Receive(-1L, -2L),
-        Receive(-1L, -3L))
+        Send(-2L, -1L),
+        Send(-3L, -1L))
     // Should be a successful solve
     getConclusions(rules, true) shouldEqual
       Map(-1L -> "ISpaceship", -2L -> "Firefly", -3L -> "Serenity")
@@ -206,7 +207,7 @@ class SolverTests extends FunSuite with Matchers with Collector {
     val rules =
       Array(
         Literal(-2L, "Flamethrower:int"),
-        Receive(-1L, -2L),
+        Send(-2L, -1L),
         Call(-1L, -3L, -4L),
         Literal(-3L, "IWeapon"))
     // Should be a successful solve
@@ -252,7 +253,19 @@ class SolverTests extends FunSuite with Matchers with Collector {
     secondConclusions.toMap shouldEqual
       Map(-1 -> "Firefly", -2 -> "A", -3 -> "Firefly:A")
   }
-
+//
+//  test("bork") {
+//    // It'll be nice to partially solve some rules, for example before we put them in the overload index.
+//
+//    // Note how these two rules aren't connected to each other at all
+//    val rules =
+//      Vector(
+//        Lookup(-5, "Firefly"),
+//        Equals(-2, -5),
+//        Send(-1,-5)) // We dont know the template, -1, yet
+//    getConclusions(rules, true, Map(-5L -> "Firefly")) shouldEqual
+//      Map(-1L -> "ISpaceship", -2L -> "Firefly")
+//  }
 
   test("Predicting") {
     // "Predicting" is when the rules arent completely solvable, but we can still run some of them

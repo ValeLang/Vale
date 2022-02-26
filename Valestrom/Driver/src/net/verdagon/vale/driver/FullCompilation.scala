@@ -9,7 +9,7 @@ import net.verdagon.vale.parser.ast.FileP
 import net.verdagon.vale.parser.{FailedParse, ParseErrorHumanizer, ParsedLoader, Parser, ParserVonifier}
 import net.verdagon.vale.scout.{ICompileErrorS, ProgramS, Scout}
 import net.verdagon.vale.templar.{Hinputs, ICompileErrorT, Templar, TemplarErrorHumanizer, Temputs}
-import net.verdagon.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, Ok, PackageCoordinate, PackageCoordinateMap, Result, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
+import net.verdagon.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Profiler, Ok, PackageCoordinate, PackageCoordinateMap, Result, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 import net.verdagon.vale.vivem.{Heap, PrimitiveKindV, ReferenceV, Vivem}
 import net.verdagon.von.{IVonData, JsonSyntax, VonPrinter}
 
@@ -20,7 +20,6 @@ case class FullCompilationOptions(
   debugOut: (=> String) => Unit = (x => {
     println("##: " + x)
   }),
-  profiler: IProfiler = new NullProfiler(),
 ) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
 class FullCompilation(
@@ -33,7 +32,6 @@ class FullCompilation(
       packageToContentsResolver,
       HammerCompilationOptions(
         options.debugOut,
-        options.profiler,
         options.globalOptions))
 
   def interner = hammerCompilation.interner

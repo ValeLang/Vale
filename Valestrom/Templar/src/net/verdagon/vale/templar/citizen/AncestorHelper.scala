@@ -9,7 +9,7 @@ import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.names.NameTranslator
-import net.verdagon.vale.{Err, IProfiler, Interner, Ok, RangeS, vassertSome, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, Profiler, Interner, Ok, RangeS, vassertSome, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
@@ -26,7 +26,7 @@ trait IAncestorHelperDelegate {
 
 class AncestorHelper(
     opts: TemplarOptions,
-    profiler: IProfiler,
+
     interner: Interner,
     inferTemplar: InferTemplar,
     delegate: IAncestorHelperDelegate) {
@@ -40,16 +40,14 @@ class AncestorHelper(
     val ImplA(range, name, impreciseName, identifyingRunes, rules, runeToType, structKindRune, interfaceKindRune) = impl
 
     val result =
-      profiler.childFrame("getMaybeImplementedInterface", () => {
-        inferTemplar.solveComplete(
-          env,
-          temputs,
-          rules,
-          runeToType,
-          RangeS.internal(-1875),
-          Vector(InitialKnown(structKindRune, KindTemplata(childCitizenRef))),
-          Vector())
-      })
+      inferTemplar.solveComplete(
+        env,
+        temputs,
+        rules,
+        runeToType,
+        RangeS.internal(-1875),
+        Vector(InitialKnown(structKindRune, KindTemplata(childCitizenRef))),
+        Vector())
 
     result match {
       case Err(e) => {
@@ -90,7 +88,7 @@ class AncestorHelper(
         case sr @ StructTT(_) => temputs.getEnvForKind(sr)
         case ir @ InterfaceTT(_) => temputs.getEnvForKind(ir)
       }
-    citizenEnv.lookupAllWithImpreciseName(profiler, needleImplName, Set(TemplataLookupContext, ExpressionLookupContext))
+    citizenEnv.lookupAllWithImpreciseName(needleImplName, Set(TemplataLookupContext, ExpressionLookupContext))
       .map({
         case it @ ImplTemplata(_, _) => it
         //        case ExternImplTemplata(structTT, interfaceTT) => if (structTT == childCitizenRef) Vector(interfaceTT) else Vector.empty
@@ -103,7 +101,7 @@ class AncestorHelper(
     temputs: Temputs,
     childCitizenRef: CitizenRefT):
   (Vector[(InterfaceTT, ImplTemplata)]) = {
-    profiler.newProfile("getParentInterfaces", "", () => {
+    Profiler.frame(() => {
       getMatchingImpls(temputs, childCitizenRef).flatMap({
         case it@ImplTemplata(_, _) => getMaybeImplementedInterface(temputs, childCitizenRef, it)
         case other => vwat(other.toString)
@@ -126,7 +124,7 @@ class AncestorHelper(
     temputs: Temputs,
     descendantCitizenRef: CitizenRefT):
   (Map[InterfaceTT, ImplTemplata]) = {
-    profiler.newProfile("getAncestorInterfacesWithDistance", "", () => {
+    Profiler.frame(() => {
       val parentInterfacesAndImpls =
         getParentInterfaces(temputs, descendantCitizenRef)
 

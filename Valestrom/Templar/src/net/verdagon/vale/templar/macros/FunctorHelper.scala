@@ -7,15 +7,15 @@ import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env.{FunctionEnvironment, TemplataLookupContext}
 import net.verdagon.vale.templar.templata.{MutabilityTemplata, PrototypeTemplata, StructTemplata}
 import net.verdagon.vale.templar.types.{CoordT, ImmutableT, ReadonlyT, ShareT}
-import net.verdagon.vale.{IProfiler, Interner, Profiler, RangeS, vwat}
+import net.verdagon.vale.{Profiler, Interner, RangeS, vwat}
 
-class FunctorHelper(profiler: IProfiler, interner: Interner, structTemplar: StructTemplar) {
+class FunctorHelper( interner: Interner, structTemplar: StructTemplar) {
   def getFunctorForPrototype(
     env: FunctionEnvironment, temputs: Temputs, callRange: RangeS, dropFunction: PrototypeT):
   ConstructTE = {
     val functorTemplate =
       env.lookupNearestWithImpreciseName(
-        profiler, interner.intern(CodeNameS("Functor1")), Set(TemplataLookupContext)) match {
+        interner.intern(CodeNameS("Functor1")), Set(TemplataLookupContext)) match {
         case Some(st@StructTemplata(_, _)) => st
         case other => vwat(other)
       }

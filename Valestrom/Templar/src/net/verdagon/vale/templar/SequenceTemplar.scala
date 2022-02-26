@@ -7,11 +7,11 @@ import net.verdagon.vale.templar.citizen.{StructTemplar, StructTemplarCore}
 import net.verdagon.vale.templar.env.{FunctionEnvironment, FunctionEnvironmentBox, IEnvironment, PackageEnvironment, TemplataLookupContext}
 import net.verdagon.vale.templar.function.{DestructorTemplar, FunctionTemplar}
 import net.verdagon.vale.templar.names.CitizenTemplateNameT
-import net.verdagon.vale.{IProfiler, Interner, RangeS, vassert, vassertSome, vimpl}
+import net.verdagon.vale.{Profiler, Interner, RangeS, vassert, vassertSome, vimpl}
 
 class SequenceTemplar(
   opts: TemplarOptions,
-  profiler: IProfiler,
+
   interner: Interner,
     structTemplar: StructTemplar,
     templataTemplar: TemplataTemplar) {
@@ -40,7 +40,7 @@ class SequenceTemplar(
     val tupleTemplate @ StructTemplata(_, _) =
       vassertSome(
         env.lookupNearestWithName(
-          profiler, interner.intern(CitizenTemplateNameT(ProgramT.tupleHumanName)), Set(TemplataLookupContext)))
+          interner.intern(CitizenTemplateNameT(ProgramT.tupleHumanName)), Set(TemplataLookupContext)))
     structTemplar.getStructRef(
       temputs,
       RangeS.internal(-17653),

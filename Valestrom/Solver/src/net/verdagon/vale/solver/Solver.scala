@@ -87,6 +87,10 @@ class Solver[Rule, Rune, Env, State, Conclusion, ErrType](sanityCheck: Boolean, 
     solveRule: ISolveRule[Rule, Rune, Env, State, Conclusion, ErrType]
   ): Result[(Stream[Step[Rule, Rune, Conclusion]], Stream[(Rune, Conclusion)]), FailedSolve[Rule, Rune, Conclusion, ErrType]] = {
 
+    if (sanityCheck) {
+      solverState.sanityCheck()
+    }
+
     while ({
       while ({
         solverState.getNextSolvable() match {
@@ -101,12 +105,14 @@ class Solver[Rule, Rune, Env, State, Conclusion, ErrType](sanityCheck: Boolean, 
 
             val canonicalConclusions =
               step.conclusions.map({ case (userRune, conclusion) => solverState.getCanonicalRune(userRune) -> conclusion }).toMap
+//            println(s"Got conclusions for ${solvingRuleIndex}: " + canonicalConclusions.keySet)
             solverState.markRulesSolved[ErrType](Array(solvingRuleIndex), canonicalConclusions) match {
               case Ok(_) =>
               case Err(e) => return Err(FailedSolve(solverState.getSteps(), solverState.getUnsolvedRules(), e))
             }
 
             if (sanityCheck) {
+//              println("Sanity checking")
               solverState.sanityCheck()
             }
             true
@@ -129,7 +135,9 @@ class Solver[Rule, Rune, Env, State, Conclusion, ErrType](sanityCheck: Boolean, 
             case Err(e) => return Err(FailedSolve(solverState.getSteps(), solverState.getUnsolvedRules(), e))
           }
 
-        solverState.sanityCheck()
+        if (sanityCheck) {
+          solverState.sanityCheck()
+        }
         continue
       } else {
         false // no more rules to solve, halt
@@ -145,14 +153,18 @@ class Solver[Rule, Rune, Env, State, Conclusion, ErrType](sanityCheck: Boolean, 
     ruleToPuzzles: Rule => Array[Array[Rune]],
     initiallyKnownRunes: Map[Rune, Conclusion]):
   ISolverState[Rule, Rune, Conclusion] = {
-    val solverState =
-//      if (useOptimizedSolver) {
-//        OptimizedSolverState[Rule, Rune, Conclusion]()
-//      } else {
+    val solverState: ISolverState[Rule, Rune, Conclusion] =
+      if (useOptimizedSolver) {
+        OptimizedSolverState[Rule, Rune, Conclusion]()
+      } else {
         SimpleSolverState[Rule, Rune, Conclusion]()
-//      }
+      }
 
     (initialRules.flatMap(ruleToRunes) ++ initiallyKnownRunes.keys).distinct.foreach(solverState.addRune)
+
+    if (sanityCheck) {
+      solverState.sanityCheck()
+    }
 
     val step =
       solverState.initialStep(ruleToPuzzles, (stepState: IStepState[Rule, Rune, Conclusion]) => {
@@ -165,12 +177,21 @@ class Solver[Rule, Rune, Env, State, Conclusion, ErrType](sanityCheck: Boolean, 
       solverState.concludeRune(solverState.getCanonicalRune(rune), conclusion)
     })
 
+    if (sanityCheck) {
+      solverState.sanityCheck()
+    }
 
     initialRules.foreach(rule => {
       val ruleIndex = solverState.addRule(rule)
+      if (sanityCheck) {
+        solverState.sanityCheck()
+      }
       ruleToPuzzles(rule).foreach(puzzleRunes => {
         solverState.addPuzzle(ruleIndex, puzzleRunes.map(solverState.getCanonicalRune).distinct)
       })
+      if (sanityCheck) {
+        solverState.sanityCheck()
+      }
     })
 
     if (sanityCheck) {

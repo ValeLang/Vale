@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar.macros
 
-import net.verdagon.vale.{IProfiler, Interner, PackageCoordinate, RangeS, vassert}
+import net.verdagon.vale.{Profiler, Interner, PackageCoordinate, RangeS, vassert}
 import net.verdagon.vale.astronomer.{FunctionA, StructA}
 import net.verdagon.vale.scout.{CodeNameS, CodeVarNameS, ConstructorNameS, CoordTemplataType, FunctionTemplataType, GeneratedBodyS, IRuneS, ITemplataType, KindTemplataType, NormalStructMemberS, ParameterS, ReturnRuneS, RuneNameS, StructNameRuneS, TemplateTemplataType, UserFunctionS, VariadicStructMemberS}
 import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS}
@@ -17,7 +17,7 @@ import scala.collection.mutable
 
 class StructConstructorMacro(
   opts: TemplarOptions,
-  profiler: IProfiler,
+
   interner: Interner,
   nameTranslator: NameTranslator
 ) extends IOnStructDefinedMacro with IFunctionBodyMacro {
@@ -44,7 +44,7 @@ class StructConstructorMacro(
 
   private def defineConstructorFunction(structA: StructA):
   FunctionA = {
-    profiler.newProfile("StructTemplarGetConstructor", structA.name.toString, () => {
+    Profiler.frame(() => {
       val runeToType = mutable.HashMap[IRuneS, ITemplataType]()
       runeToType ++= structA.runeToType
 

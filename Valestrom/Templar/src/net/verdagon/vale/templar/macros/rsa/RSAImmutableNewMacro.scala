@@ -8,10 +8,10 @@ import net.verdagon.vale.templar.macros.IFunctionBodyMacro
 import net.verdagon.vale.templar.templata.{CoordTemplata, MutabilityTemplata, PrototypeTemplata}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{Temputs, ast}
-import net.verdagon.vale.{IProfiler, Interner, RangeS, vassertSome}
+import net.verdagon.vale.{Profiler, Interner, RangeS, vassertSome}
 
 
-class RSAImmutableNewMacro(profiler: IProfiler, interner: Interner) extends IFunctionBodyMacro {
+class RSAImmutableNewMacro( interner: Interner) extends IFunctionBodyMacro {
   val generatorId: String = "vale_runtime_sized_array_imm_new"
 
   def generateFunctionBody(
@@ -32,17 +32,17 @@ class RSAImmutableNewMacro(profiler: IProfiler, interner: Interner) extends IFun
     val CoordTemplata(elementType) =
       vassertSome(
         env.lookupNearestWithImpreciseName(
-          profiler, interner.intern(RuneNameS(CodeRuneS("E"))), Set(TemplataLookupContext)))
+          interner.intern(RuneNameS(CodeRuneS("E"))), Set(TemplataLookupContext)))
 
     val MutabilityTemplata(mutability) =
       vassertSome(
         env.lookupNearestWithImpreciseName(
-          profiler, interner.intern(RuneNameS(CodeRuneS("M"))), Set(TemplataLookupContext)))
+          interner.intern(RuneNameS(CodeRuneS("M"))), Set(TemplataLookupContext)))
 
     val PrototypeTemplata(generatorPrototype) =
       vassertSome(
         env.lookupNearestWithImpreciseName(
-          profiler, interner.intern(RuneNameS(CodeRuneS("F"))), Set(TemplataLookupContext)))
+          interner.intern(RuneNameS(CodeRuneS("F"))), Set(TemplataLookupContext)))
 
     val variability =
       mutability match {

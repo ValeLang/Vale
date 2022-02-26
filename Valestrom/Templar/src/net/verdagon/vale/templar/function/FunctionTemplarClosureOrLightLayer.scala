@@ -10,7 +10,7 @@ import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.FunctionTemplar.IEvaluateFunctionResult
 import net.verdagon.vale.templar.names.{BuildingFunctionNameWithClosuredsT, FullNameT, INameT, NameTranslator}
-import net.verdagon.vale.{IProfiler, Interner, RangeS, vassert, vfail, vimpl}
+import net.verdagon.vale.{Profiler, Interner, RangeS, vassert, vfail, vimpl}
 
 import scala.collection.immutable.{List, Map}
 
@@ -22,7 +22,7 @@ import scala.collection.immutable.{List, Map}
 // This file is the outer layer, which spawns a local environment for the function.
 class FunctionTemplarClosureOrLightLayer(
     opts: TemplarOptions,
-    profiler: IProfiler,
+
     interner: Interner,
     nameTranslator: NameTranslator,
     templataTemplar: TemplataTemplar,
@@ -32,7 +32,7 @@ class FunctionTemplarClosureOrLightLayer(
     delegate: IFunctionTemplarDelegate) {
   val ordinaryOrTemplatedLayer =
     new FunctionTemplarOrdinaryOrTemplatedLayer(
-      opts, profiler, interner, nameTranslator, templataTemplar, inferTemplar, convertHelper, structTemplar, delegate)
+      opts, interner, nameTranslator, templataTemplar, inferTemplar, convertHelper, structTemplar, delegate)
 
   // This is for the early stages of Templar when it's scanning banners to put in
   // its env. We just want its banner, we don't want to evaluate it.

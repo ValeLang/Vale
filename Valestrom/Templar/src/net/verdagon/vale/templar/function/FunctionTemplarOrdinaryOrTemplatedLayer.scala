@@ -13,7 +13,7 @@ import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.FunctionTemplar.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
 import net.verdagon.vale.templar.names.{BuildingFunctionNameWithClosuredsAndTemplateArgsT, FullNameT, INameT, NameTranslator, RuneNameT}
-import net.verdagon.vale.{Err, IProfiler, Interner, Ok, RangeS, vcurious, vimpl}
+import net.verdagon.vale.{Err, Profiler, Interner, Ok, RangeS, vcurious, vimpl}
 //import net.verdagon.vale.templar.infer.{InferSolveFailure, InferSolveSuccess}
 import net.verdagon.vale.{vassert, vfail, vwat}
 
@@ -27,7 +27,7 @@ import scala.collection.immutable.{List, Set}
 // This file is the outer layer, which spawns a local environment for the function.
 class FunctionTemplarOrdinaryOrTemplatedLayer(
     opts: TemplarOptions,
-    profiler: IProfiler,
+
     interner: Interner,
     nameTranslator: NameTranslator,
     templataTemplar: TemplataTemplar,
@@ -35,7 +35,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     convertHelper: ConvertHelper,
     structTemplar: StructTemplar,
     delegate: IFunctionTemplarDelegate) {
-  val middleLayer = new FunctionTemplarMiddleLayer(opts, profiler, interner, nameTranslator, templataTemplar, convertHelper, structTemplar, delegate)
+  val middleLayer = new FunctionTemplarMiddleLayer(opts, interner, nameTranslator, templataTemplar, convertHelper, structTemplar, delegate)
 
   // This is for the early stages of Templar when it's scanning banners to put in
   // its env. We just want its banner, we don't want to evaluate it.
@@ -209,7 +209,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     val initialKnowns =
       function.identifyingRunes.flatMap(identifyingRune => {
         nearEnv.lookupNearestWithName(
-          profiler, interner.intern(RuneNameT(identifyingRune.rune)), Set(TemplataLookupContext))
+          interner.intern(RuneNameT(identifyingRune.rune)), Set(TemplataLookupContext))
           .map(InitialKnown(identifyingRune, _))
       })
     val inferences =

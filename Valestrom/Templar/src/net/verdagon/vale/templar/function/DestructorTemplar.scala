@@ -14,7 +14,7 @@ import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.names.{CodeVarNameT, FullNameT, PackageTopLevelNameT}
-import net.verdagon.vale.{CodeLocationS, IProfiler, Interner, PackageCoordinate, RangeS, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{CodeLocationS, Profiler, Interner, PackageCoordinate, RangeS, vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 

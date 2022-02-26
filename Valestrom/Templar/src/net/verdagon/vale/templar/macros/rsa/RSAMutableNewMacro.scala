@@ -8,10 +8,10 @@ import net.verdagon.vale.templar.macros.IFunctionBodyMacro
 import net.verdagon.vale.templar.templata.{CoordTemplata, MutabilityTemplata}
 import net.verdagon.vale.templar.types.{CoordT, RuntimeSizedArrayTT}
 import net.verdagon.vale.templar.{Temputs, ast}
-import net.verdagon.vale.{IProfiler, Interner, RangeS, vassertSome}
+import net.verdagon.vale.{Profiler, Interner, RangeS, vassertSome}
 
 
-class RSAMutableNewMacro(profiler: IProfiler, interner: Interner) extends IFunctionBodyMacro {
+class RSAMutableNewMacro( interner: Interner) extends IFunctionBodyMacro {
   val generatorId: String = "vale_runtime_sized_array_mut_new"
 
   def generateFunctionBody(
@@ -32,12 +32,12 @@ class RSAMutableNewMacro(profiler: IProfiler, interner: Interner) extends IFunct
     val CoordTemplata(elementType) =
       vassertSome(
         env.lookupNearestWithImpreciseName(
-          profiler, interner.intern(RuneNameS(CodeRuneS("E"))), Set(TemplataLookupContext)))
+          interner.intern(RuneNameS(CodeRuneS("E"))), Set(TemplataLookupContext)))
 
     val MutabilityTemplata(mutability) =
       vassertSome(
         env.lookupNearestWithImpreciseName(
-          profiler, interner.intern(RuneNameS(CodeRuneS("M"))), Set(TemplataLookupContext)))
+          interner.intern(RuneNameS(CodeRuneS("M"))), Set(TemplataLookupContext)))
 
     val arrayTT = interner.intern(RuntimeSizedArrayTT(mutability, elementType))
 

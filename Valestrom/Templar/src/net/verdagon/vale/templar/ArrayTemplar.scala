@@ -14,13 +14,13 @@ import net.verdagon.vale.templar.function.DestructorTemplar
 import net.verdagon.vale.templar.names.{FullNameT, FunctionNameT, FunctionTemplateNameT, PackageTopLevelNameT, RuneNameT, SelfNameT}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
-import net.verdagon.vale.{CodeLocationS, Err, IProfiler, Interner, Ok, RangeS, vassert, vassertOne, vassertSome, vimpl}
+import net.verdagon.vale.{CodeLocationS, Err, Profiler, Interner, Ok, RangeS, vassert, vassertOne, vassertSome, vimpl}
 
 import scala.collection.immutable.{List, Set}
 
 class ArrayTemplar(
     opts: TemplarOptions,
-    profiler: IProfiler,
+
     interner: Interner,
     inferTemplar: InferTemplar,
     overloadTemplar: OverloadTemplar) {
@@ -44,7 +44,7 @@ class ArrayTemplar(
       runeTypeSolver.solve(
         opts.globalOptions.sanityCheck,
         opts.globalOptions.useOptimizedSolver,
-        (nameS: IImpreciseNameS) => vassertOne(fate.lookupNearestWithImpreciseName(profiler, nameS, Set(TemplataLookupContext))).tyype,
+        (nameS: IImpreciseNameS) => vassertOne(fate.lookupNearestWithImpreciseName(nameS, Set(TemplataLookupContext))).tyype,
         range,
         false,
         rulesA,
@@ -87,7 +87,7 @@ class ArrayTemplar(
       runeTypeSolver.solve(
         opts.globalOptions.sanityCheck,
         opts.globalOptions.useOptimizedSolver,
-        nameS => vassertOne(nenv.functionEnvironment.lookupNearestWithImpreciseName(profiler, nameS, Set(TemplataLookupContext))).tyype,
+        nameS => vassertOne(nenv.functionEnvironment.lookupNearestWithImpreciseName(nameS, Set(TemplataLookupContext))).tyype,
         range,
         false,
         rulesA,
@@ -196,7 +196,7 @@ class ArrayTemplar(
       runeTypeSolver.solve(
         opts.globalOptions.sanityCheck,
         opts.globalOptions.useOptimizedSolver,
-        nameS => vassertOne(fate.lookupNearestWithImpreciseName(profiler, nameS, Set(TemplataLookupContext))).tyype,
+        nameS => vassertOne(fate.lookupNearestWithImpreciseName(nameS, Set(TemplataLookupContext))).tyype,
         range,
         false,
         rulesA,

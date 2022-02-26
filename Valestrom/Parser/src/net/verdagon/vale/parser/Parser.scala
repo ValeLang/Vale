@@ -4,7 +4,7 @@ import net.verdagon.vale.parser.ExpressionParser.{IStopBefore, StopBeforeCloseBr
 import net.verdagon.vale.parser.ast._
 import net.verdagon.vale.parser.expressions.ParseString
 import net.verdagon.vale.parser.old.CombinatorParsers
-import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, Ok, PackageCoordinate, Result, repeatStr, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, Profiler, Ok, PackageCoordinate, Result, repeatStr, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 import net.verdagon.von.{JsonSyntax, VonPrinter}
 
 import scala.collection.immutable.{List, Map}

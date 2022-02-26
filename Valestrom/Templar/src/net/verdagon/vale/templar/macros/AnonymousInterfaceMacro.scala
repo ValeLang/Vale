@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar.macros
 
-import net.verdagon.vale.{CodeLocationS, IProfiler, Interner, PackageCoordinate, RangeS, vassert, vassertOne, vassertSome, vfail, vimpl, vwat}
+import net.verdagon.vale.{CodeLocationS, Profiler, Interner, PackageCoordinate, RangeS, vassert, vassertOne, vassertSome, vfail, vimpl, vwat}
 import net.verdagon.vale.astronomer.{FunctionA, ImplA, InterfaceA, StructA}
 import net.verdagon.vale.parser.ast.{FinalP, UseP}
 import net.verdagon.vale.scout.{AnonymousSubstructImplDeclarationNameS, AnonymousSubstructMemberNameS, AnonymousSubstructMemberRuneS, AnonymousSubstructParentInterfaceRuneS, AnonymousSubstructParentInterfaceTemplateRuneS, AnonymousSubstructRuneS, AnonymousSubstructTemplateImpreciseNameS, AnonymousSubstructTemplateNameS, AnonymousSubstructTemplateRuneS, BlockSE, BodySE, CodeBodyS, CodeNameS, CodeRuneS, CoordTemplataType, DotSE, ForwarderFunctionDeclarationNameS, FunctionCallSE, FunctionNameS, FunctionTemplataType, GeneratedBodyS, GlobalFunctionFamilyNameS, IRuneS, ITemplataType, ImplDeclarationNameS, ImplImpreciseNameS, KindTemplataType, LocalLoadSE, LocalS, NormalStructMemberS, NotUsed, OwnershipTemplataType, ParameterS, PermissionTemplataType, RuneNameS, SelfKindRuneS, SelfKindTemplateRuneS, SelfNameS, SelfOwnershipRuneS, SelfPermissionRuneS, SelfRuneS, StructNameRuneS, TemplateTemplataType, TopLevelCitizenDeclarationNameS, Used, UserFunctionS}
@@ -22,7 +22,7 @@ import scala.collection.mutable
 
 class AnonymousInterfaceMacro(
     opts: TemplarOptions,
-    profiler: IProfiler,
+
     interner: Interner,
     nameTranslator: NameTranslator,
     overloadTemplar: OverloadTemplar,

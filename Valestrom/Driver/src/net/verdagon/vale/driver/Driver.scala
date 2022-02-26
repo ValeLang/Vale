@@ -11,7 +11,7 @@ import net.verdagon.vale.parser.{FailedParse, InputException, ParseErrorHumanize
 import net.verdagon.vale.scout.{Scout, ScoutErrorHumanizer}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
 import net.verdagon.vale.vivem.Vivem
-import net.verdagon.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, NullProfiler, Ok, PackageCoordinate, Result, vassert, vassertSome, vcheck, vcurious, vfail, vimpl, vwat}
+import net.verdagon.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, Ok, PackageCoordinate, Profiler, Result, vassert, vassertSome, vcheck, vcurious, vfail, vimpl, vwat}
 import net.verdagon.von.{IVonData, JsonSyntax, VonInt, VonPrinter}
 
 import java.nio.charset.Charset
@@ -190,8 +190,7 @@ object Driver {
             })
           } else {
             x => Unit // do nothing with it
-          },
-          new NullProfiler()
+          }
         )
       )
 
@@ -346,8 +345,7 @@ object Driver {
                   })
                 } else {
                   x => Unit // do nothing with it
-                },
-                new NullProfiler()))
+                }))
 
           val parseds =
             compilation.getParseds() match {

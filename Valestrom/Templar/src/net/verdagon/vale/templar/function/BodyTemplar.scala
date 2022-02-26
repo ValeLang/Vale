@@ -36,7 +36,7 @@ trait IBodyTemplarDelegate {
 
 class BodyTemplar(
   opts: TemplarOptions,
-  profiler: IProfiler,
+
   nameTranslator: NameTranslator,
 
     templataTemplar: TemplataTemplar,
@@ -61,7 +61,6 @@ class BodyTemplar(
         case _ => vwat()
       }
 
-    profiler.childFrame("evaluate body", () => {
       maybeExplicitReturnCoord match {
         case None => {
           val (body2, returns) =
@@ -120,7 +119,6 @@ class BodyTemplar(
           (None, body2)
         }
       }
-    })
   }
 
   case class ResultTypeMismatchError(expectedType: CoordT, actualType: CoordT) {

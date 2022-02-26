@@ -11,19 +11,19 @@ import net.verdagon.vale.templar.citizen.{AncestorHelper, IStructTemplarDelegate
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.FunctionTemplar
 import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, FullNameT, ICitizenNameT, INameT, NameTranslator}
-import net.verdagon.vale.{IProfiler, Interner, RangeS, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{Profiler, Interner, RangeS, vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
 class StructTemplarTemplateArgsLayer(
     opts: TemplarOptions,
-    profiler: IProfiler,
+
     interner: Interner,
     nameTranslator: NameTranslator,
     inferTemplar: InferTemplar,
     ancestorHelper: AncestorHelper,
     delegate: IStructTemplarDelegate) {
-  val middle = new StructTemplarMiddle(opts, profiler, interner, nameTranslator, ancestorHelper, delegate)
+  val middle = new StructTemplarMiddle(opts, interner, nameTranslator, ancestorHelper, delegate)
 
   def getStructRef(
     temputs: Temputs,
@@ -31,7 +31,7 @@ class StructTemplarTemplateArgsLayer(
     structTemplata: StructTemplata,
     templateArgs: Vector[ITemplata]):
   (StructTT) = {
-    profiler.newProfile("getStructRef", structTemplata.debugString + "<" + templateArgs.map(_.toString).mkString(", ") + ">", () => {
+    Profiler.frame(() => {
       val StructTemplata(env, structA) = structTemplata
       val structTemplateName = nameTranslator.translateCitizenName(structA.name)
       val structName = structTemplateName.makeCitizenName(interner, templateArgs)
@@ -86,7 +86,7 @@ class StructTemplarTemplateArgsLayer(
     interfaceTemplata: InterfaceTemplata,
     templateArgs: Vector[ITemplata]):
   (InterfaceTT) = {
-    profiler.newProfile("getInterfaceRef", interfaceTemplata.debugString + "<" + templateArgs.map(_.toString).mkString(", ") + ">", () => {
+    Profiler.frame(() => {
       val InterfaceTemplata(env, interfaceA) = interfaceTemplata
       val interfaceTemplateName = nameTranslator.translateCitizenName(interfaceA.name)
       val interfaceName = interfaceTemplateName.makeCitizenName(interner, templateArgs)

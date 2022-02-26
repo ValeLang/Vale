@@ -1,6 +1,6 @@
 package net.verdagon.vale.hammer
 
-import net.verdagon.vale.{FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, PackageCoordinate, PackageCoordinateMap, Result, vassertSome, vcurious, vimpl}
+import net.verdagon.vale.{FileCoordinateMap, IPackageResolver, Profiler, PackageCoordinate, PackageCoordinateMap, Result, vassertSome, vcurious, vimpl}
 import net.verdagon.vale.astronomer.{ICompileErrorA, ProgramA}
 import net.verdagon.vale.metal.ProgramH
 import net.verdagon.vale.options.GlobalOptions
@@ -15,7 +15,6 @@ case class HammerCompilationOptions(
   debugOut: (=> String) => Unit = (x => {
     println("##: " + x)
   }),
-  profiler: IProfiler = new NullProfiler(),
   globalOptions: GlobalOptions = GlobalOptions()
 ) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
@@ -29,8 +28,7 @@ class HammerCompilation(
       packageToContentsResolver,
       TemplarCompilationOptions(
         options.globalOptions,
-        options.debugOut,
-        options.profiler))
+        options.debugOut))
   var hamutsCache: Option[ProgramH] = None
   var vonHammerCache: Option[VonHammer] = None
 

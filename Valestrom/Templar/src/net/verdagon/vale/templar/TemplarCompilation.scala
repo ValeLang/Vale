@@ -13,7 +13,6 @@ import scala.collection.mutable
 case class TemplarCompilationOptions(
   globalOptions: GlobalOptions = GlobalOptions(),
   debugOut: (=> String) => Unit = DefaultPrintyThing.print,
-  profiler: IProfiler = new NullProfiler(),
 ) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
 class TemplarCompilation(
@@ -38,7 +37,6 @@ class TemplarCompilation(
         val templar =
           new Templar(
             options.debugOut,
-            options.profiler,
             astronomerCompilation.scoutCompilation.interner,
             options.globalOptions)
         templar.evaluate(astronomerCompilation.expectAstrouts()) match {

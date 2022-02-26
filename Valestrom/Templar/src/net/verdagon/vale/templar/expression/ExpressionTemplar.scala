@@ -41,7 +41,7 @@ trait IExpressionTemplarDelegate {
 
 class ExpressionTemplar(
     opts: TemplarOptions,
-    profiler: IProfiler,
+
     interner: Interner,
     nameTranslator: NameTranslator,
 
@@ -57,7 +57,7 @@ class ExpressionTemplar(
     delegate: IExpressionTemplarDelegate) {
   val localHelper = new LocalHelper(opts, interner, nameTranslator, destructorTemplar)
   val callTemplar = new CallTemplar(opts, interner, templataTemplar, convertHelper, localHelper, overloadTemplar)
-  val patternTemplar = new PatternTemplar(opts, profiler, interner, inferTemplar, arrayTemplar, convertHelper, destructorTemplar, localHelper)
+  val patternTemplar = new PatternTemplar(opts, interner, inferTemplar, arrayTemplar, convertHelper, destructorTemplar, localHelper)
   val blockTemplar = new BlockTemplar(opts, destructorTemplar, localHelper, new IBlockTemplarDelegate {
     override def evaluateAndCoerceToReferenceExpression(
       temputs: Temputs,
@@ -101,7 +101,7 @@ class ExpressionTemplar(
         (Some(thing))
       }
       case None => {
-        nenv.lookupNearestWithName(profiler, name, Set(TemplataLookupContext)) match {
+        nenv.lookupNearestWithName(name, Set(TemplataLookupContext)) match {
           case Some(IntegerTemplata(num)) => (Some(ConstantIntTE(num, 32)))
           case Some(BooleanTemplata(bool)) => (Some(ConstantBoolTE(bool)))
           case None => (None)
@@ -326,7 +326,7 @@ class ExpressionTemplar(
       life: LocationInFunctionEnvironment,
       expr1: IExpressionSE):
   (ExpressionT, Set[CoordT]) = {
-    profiler.newProfile(expr1.getClass.getSimpleName, nenv.fullName.toString, () => {
+    Profiler.frame(() => {
       expr1 match {
         case VoidSE(range) => (VoidLiteralTE(), Set())
         case ConstantIntSE(range, i, bits) => (ConstantIntTE(i, bits), Set())
@@ -335,7 +335,7 @@ class ExpressionTemplar(
         case ConstantFloatSE(range, f) => (ConstantFloatTE(f), Set())
         case ArgLookupSE(range, index) => {
           val paramCoordRune = nenv.function.params(index).pattern.coordRune.get
-          val paramCoordTemplata = vassertOne(nenv.lookupNearestWithImpreciseName(profiler, interner.intern(RuneNameS(paramCoordRune.rune)), Set(TemplataLookupContext)))
+          val paramCoordTemplata = vassertOne(nenv.lookupNearestWithImpreciseName(interner.intern(RuneNameS(paramCoordRune.rune)), Set(TemplataLookupContext)))
           val CoordTemplata(paramCoord) = paramCoordTemplata
           vassert(nenv.functionEnvironment.fullName.last.parameters(index) == paramCoord)
           (ArgLookupTE(index, paramCoord), Set())
@@ -529,7 +529,7 @@ class ExpressionTemplar(
           // not in templata context.
 
           val templataFromEnv =
-            nenv.lookupAllWithImpreciseName(profiler, name, Set(ExpressionLookupContext)) match {
+            nenv.lookupAllWithImpreciseName(name, Set(ExpressionLookupContext)) match {
               case Vector(BooleanTemplata(value)) => ConstantBoolTE(value)
               case Vector(IntegerTemplata(value)) => ConstantIntTE(value, 32)
               case templatas if templatas.nonEmpty && templatas.collect({ case FunctionTemplata(_, _) => case ExternFunctionTemplata(_) => }).size == templatas.size => {
@@ -771,7 +771,7 @@ class ExpressionTemplar(
             new RuneTypeSolver(interner).solve(
                 opts.globalOptions.sanityCheck,
                 opts.globalOptions.useOptimizedSolver,
-                nameS => vassertOne(nenv.lookupNearestWithImpreciseName(profiler, nameS, Set(TemplataLookupContext))).tyype,
+                nameS => vassertOne(nenv.lookupNearestWithImpreciseName(nameS, Set(TemplataLookupContext))).tyype,
                 range,
                 false,
                 rulesA,
@@ -789,7 +789,7 @@ class ExpressionTemplar(
           (resultTE, returnsFromSource)
         }
         case r @ RuneLookupSE(range, runeA) => {
-          val templata = vassertOne(nenv.lookupNearestWithImpreciseName(profiler, interner.intern(RuneNameS(runeA)), Set(TemplataLookupContext)))
+          val templata = vassertOne(nenv.lookupNearestWithImpreciseName(interner.intern(RuneNameS(runeA)), Set(TemplataLookupContext)))
           templata match {
             case IntegerTemplata(value) => (ConstantIntTE(value, 32), Set())
             case PrototypeTemplata(value) => {
@@ -1169,7 +1169,7 @@ class ExpressionTemplar(
   def getOption(temputs: Temputs, nenv: FunctionEnvironment, range: RangeS, containedCoord: CoordT):
   (CoordT, PrototypeT, PrototypeT) = {
     val interfaceTemplata =
-      nenv.lookupNearestWithImpreciseName(profiler, interner.intern(CodeNameS("Opt")), Set(TemplataLookupContext)).toList match {
+      nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS("Opt")), Set(TemplataLookupContext)).toList match {
         case List(it@InterfaceTemplata(_, _)) => it
         case _ => vfail()
       }
@@ -1178,7 +1178,7 @@ class ExpressionTemplar(
     val ownOptCoord = CoordT(OwnT, ReadwriteT, optInterfaceRef)
 
     val someConstructorTemplata =
-      nenv.lookupNearestWithImpreciseName(profiler, interner.intern(CodeNameS("Some")), Set(ExpressionLookupContext)).toList match {
+      nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS("Some")), Set(ExpressionLookupContext)).toList match {
         case List(ft@FunctionTemplata(_, _)) => ft
         case _ => vwat();
       }
@@ -1190,7 +1190,7 @@ class ExpressionTemplar(
       }
 
     val noneConstructorTemplata =
-      nenv.lookupNearestWithImpreciseName(profiler, interner.intern(CodeNameS("None")), Set(ExpressionLookupContext)).toList match {
+      nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS("None")), Set(ExpressionLookupContext)).toList match {
         case List(ft@FunctionTemplata(_, _)) => ft
         case _ => vwat();
       }
@@ -1206,7 +1206,7 @@ class ExpressionTemplar(
   def getResult(temputs: Temputs, nenv: FunctionEnvironment, range: RangeS, containedSuccessCoord: CoordT, containedFailCoord: CoordT):
   (CoordT, PrototypeT, PrototypeT) = {
     val interfaceTemplata =
-      nenv.lookupNearestWithImpreciseName(profiler, interner.intern(CodeNameS("Result")), Set(TemplataLookupContext)).toList match {
+      nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS("Result")), Set(TemplataLookupContext)).toList match {
         case List(it@InterfaceTemplata(_, _)) => it
         case _ => vfail()
       }
@@ -1215,7 +1215,7 @@ class ExpressionTemplar(
     val ownResultCoord = CoordT(OwnT, ReadwriteT, resultInterfaceRef)
 
     val okConstructorTemplata =
-      nenv.lookupNearestWithImpreciseName(profiler, interner.intern(CodeNameS("Ok")), Set(ExpressionLookupContext)).toList match {
+      nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS("Ok")), Set(ExpressionLookupContext)).toList match {
         case List(ft@FunctionTemplata(_, _)) => ft
         case _ => vwat();
       }
@@ -1227,7 +1227,7 @@ class ExpressionTemplar(
       }
 
     val errConstructorTemplata =
-      nenv.lookupNearestWithImpreciseName(profiler, interner.intern(CodeNameS("Err")), Set(ExpressionLookupContext)).toList match {
+      nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS("Err")), Set(ExpressionLookupContext)).toList match {
         case List(ft@FunctionTemplata(_, _)) => ft
         case _ => vwat();
       }
@@ -1388,7 +1388,7 @@ class ExpressionTemplar(
           // evaluating lambdas.
           case LambdaStructImpreciseNameS(_) => CoordTemplataType
           case n => {
-            vassertSome(nenv.lookupNearestWithImpreciseName(profiler, n, Set(TemplataLookupContext))).tyype
+            vassertSome(nenv.lookupNearestWithImpreciseName(n, Set(TemplataLookupContext))).tyype
           }
         },
         rangeS,

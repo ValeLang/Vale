@@ -19,7 +19,7 @@ import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.function.FunctionTemplar
 import net.verdagon.vale.templar.function.FunctionTemplar.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
 //import net.verdagon.vale.templar.infer.infer.{InferSolveFailure, InferSolveSuccess}
-import net.verdagon.vale.{IProfiler, vassert, vcurious, vfail, vimpl}
+import net.verdagon.vale.{Profiler, vassert, vcurious, vfail, vimpl}
 
 import scala.collection.immutable.List
 
@@ -55,7 +55,7 @@ object OverloadTemplar {
 
 class OverloadTemplar(
     opts: TemplarOptions,
-    profiler: IProfiler,
+
     interner: Interner,
     templataTemplar: TemplataTemplar,
     inferTemplar: InferTemplar,
@@ -73,7 +73,7 @@ class OverloadTemplar(
     extraEnvsToLookIn: Vector[IEnvironment],
     exact: Boolean):
   PrototypeT = {
-    profiler.newProfile("findFunctionForPrototype", "", () => {
+    Profiler.frame(() => {
       findPotentialFunction(
         env,
         temputs,
@@ -207,7 +207,7 @@ class OverloadTemplar(
                 opts.globalOptions.sanityCheck,
                 opts.globalOptions.useOptimizedSolver,
                 (nameS: IImpreciseNameS) => {
-                  env.lookupNearestWithImpreciseName(profiler, nameS, Set(TemplataLookupContext)) match {
+                  env.lookupNearestWithImpreciseName(nameS, Set(TemplataLookupContext)) match {
                     case Some(x) => x.tyype
                     case None => vfail("Couldn't find a: " + nameS)
                   }
@@ -232,7 +232,7 @@ class OverloadTemplar(
                         val templata =
                           vassertSome(
                             env.lookupNearestWithImpreciseName(
-                              profiler, interner.intern(RuneNameS(rune.rune)), Set(TemplataLookupContext)))
+                              interner.intern(RuneNameS(rune.rune)), Set(TemplataLookupContext)))
                         val newConclusions = previousConclusions :+ InitialKnown(rune, templata)
                         (newConclusions, remainingRules)
                       }
@@ -242,36 +242,34 @@ class OverloadTemplar(
                     })
 
                   // We only want to solve the template arg runes
-                  profiler.childFrame("solve template args", () => {
-                    inferTemplar.solveComplete(
-                      env,
-                      temputs,
-                      rulesWithoutRuneParentEnvLookups,
-                      explicitTemplateArgRuneToType ++ runeTypeConclusions,
-                      callRange,
-                      initialKnowns,
-                      Vector()) match {
-                      case (Err(e)) => {
-                        Err(InferFailure(e))
-                      }
-                      case (Ok(explicitRuneSToTemplata)) => {
-                        val explicitlySpecifiedTemplateArgTemplatas = explicitTemplateArgRunesS.map(explicitRuneSToTemplata)
+                  inferTemplar.solveComplete(
+                    env,
+                    temputs,
+                    rulesWithoutRuneParentEnvLookups,
+                    explicitTemplateArgRuneToType ++ runeTypeConclusions,
+                    callRange,
+                    initialKnowns,
+                    Vector()) match {
+                    case (Err(e)) => {
+                      Err(InferFailure(e))
+                    }
+                    case (Ok(explicitRuneSToTemplata)) => {
+                      val explicitlySpecifiedTemplateArgTemplatas = explicitTemplateArgRunesS.map(explicitRuneSToTemplata)
 
-                        functionTemplar.evaluateTemplatedFunctionFromCallForBanner(
-                          temputs, callRange, ft, explicitlySpecifiedTemplateArgTemplatas.toVector, paramFilters) match {
-                          case (EvaluateFunctionFailure(reason)) => Err(reason)
-                          case (EvaluateFunctionSuccess(banner)) => {
-                            paramsMatch(temputs, paramFilters, banner.params, exact) match {
-                              case Err(rejectionReason) => Err(rejectionReason)
-                              case Ok(()) => {
-                                Ok(ValidCalleeCandidate(banner, ft))
-                              }
+                      functionTemplar.evaluateTemplatedFunctionFromCallForBanner(
+                        temputs, callRange, ft, explicitlySpecifiedTemplateArgTemplatas.toVector, paramFilters) match {
+                        case (EvaluateFunctionFailure(reason)) => Err(reason)
+                        case (EvaluateFunctionSuccess(banner)) => {
+                          paramsMatch(temputs, paramFilters, banner.params, exact) match {
+                            case Err(rejectionReason) => Err(rejectionReason)
+                            case Ok(()) => {
+                              Ok(ValidCalleeCandidate(banner, ft))
                             }
                           }
                         }
                       }
                     }
-                  })
+                  }
                 }
               }
             }
@@ -342,7 +340,7 @@ class OverloadTemplar(
   Vector[ITemplata] = {
     val environments = Vector(env) ++ getParamEnvironments(temputs, paramFilters) ++ extraEnvsToLookIn
     val undeduped =
-      environments.flatMap(_.lookupAllWithImpreciseName(profiler, impreciseName, Set(ExpressionLookupContext)))
+      environments.flatMap(_.lookupAllWithImpreciseName(impreciseName, Set(ExpressionLookupContext)))
     undeduped.distinct
   }
 

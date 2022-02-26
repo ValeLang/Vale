@@ -6,7 +6,7 @@ import net.verdagon.vale.scout.{ICompileErrorS, ProgramS}
 import net.verdagon.vale.templar.ast.{FunctionExportT, FunctionExternT, KindExportT, KindExternT}
 import net.verdagon.vale.templar.names.{FullNameT, IVarNameT}
 import net.verdagon.vale.templar.{Hinputs, ICompileErrorT, TemplarCompilation, TemplarCompilationOptions, types => t}
-import net.verdagon.vale.{Builtins, FileCoordinateMap, IPackageResolver, IProfiler, Interner, NullProfiler, PackageCoordinate, PackageCoordinateMap, Result, vassert, vcurious, vfail, vwat}
+import net.verdagon.vale.{Builtins, FileCoordinateMap, IPackageResolver, Profiler, Interner, PackageCoordinate, PackageCoordinateMap, Result, vassert, vcurious, vfail, vwat}
 
 import scala.collection.immutable.List
 

@@ -8,10 +8,10 @@ import net.verdagon.vale.templar.macros.IFunctionBodyMacro
 import net.verdagon.vale.templar.templata.CoordTemplata
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{Temputs, ast}
-import net.verdagon.vale.{IProfiler, Interner, RangeS, vassertSome}
+import net.verdagon.vale.{Profiler, Interner, RangeS, vassertSome}
 
 
-class RSAMutablePushMacro(profiler: IProfiler, interner: Interner) extends IFunctionBodyMacro {
+class RSAMutablePushMacro( interner: Interner) extends IFunctionBodyMacro {
   val generatorId: String = "vale_runtime_sized_array_push"
 
   def generateFunctionBody(
@@ -32,7 +32,7 @@ class RSAMutablePushMacro(profiler: IProfiler, interner: Interner) extends IFunc
     val CoordTemplata(elementType) =
       vassertSome(
         env.lookupNearestWithImpreciseName(
-          profiler, interner.intern(RuneNameS(CodeRuneS("E"))), Set(TemplataLookupContext)))
+          interner.intern(RuneNameS(CodeRuneS("E"))), Set(TemplataLookupContext)))
 
     val arrayTT = interner.intern(RuntimeSizedArrayTT(MutableT, elementType))
 

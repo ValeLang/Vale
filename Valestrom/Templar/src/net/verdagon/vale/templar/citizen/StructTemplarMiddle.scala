@@ -9,19 +9,19 @@ import net.verdagon.vale.templar.ast.{LocationInFunctionEnvironment, PrototypeT}
 import net.verdagon.vale.templar.env.{CitizenEnvironment, FunctionEnvironment, IEnvironment, InterfaceEnvEntry, PackageEnvironment, TemplataEnvEntry, TemplatasStore}
 import net.verdagon.vale.templar.function.{FunctionTemplar, FunctionTemplarCore, VirtualTemplar}
 import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, FullNameT, ICitizenNameT, INameT, NameTranslator, RuneNameT}
-import net.verdagon.vale.{IProfiler, Interner, RangeS, vfail, vimpl}
+import net.verdagon.vale.{Profiler, Interner, RangeS, vfail, vimpl}
 
 import scala.collection.immutable.List
 
 class StructTemplarMiddle(
     opts: TemplarOptions,
-    profiler: IProfiler,
+
     interner: Interner,
     nameTranslator: NameTranslator,
 
     ancestorHelper: AncestorHelper,
     delegate: IStructTemplarDelegate) {
-  val core = new StructTemplarCore(opts, profiler, interner, nameTranslator, ancestorHelper, delegate)
+  val core = new StructTemplarCore(opts, interner, nameTranslator, ancestorHelper, delegate)
 
   def getStructRef(
     structOuterEnv: IEnvironment,

@@ -20,7 +20,7 @@ import scala.collection.immutable.List
 
 class StructTemplarCore(
   opts: TemplarOptions,
-  profiler: IProfiler,
+
   interner: Interner,
   nameTranslator: NameTranslator,
   ancestorHelper: AncestorHelper,
@@ -50,7 +50,7 @@ class StructTemplarCore(
 
     val mutability =
       structRunesEnv.lookupNearestWithImpreciseName(
-        profiler,
+
         interner.intern(RuneNameS(structA.mutabilityRune.rune)),
         Set(TemplataLookupContext)).toList match {
         case List(MutabilityTemplata(m)) => m
@@ -144,19 +144,17 @@ class StructTemplarCore(
       }
     }
 
-    profiler.childFrame("struct ancestor interfaces", () => {
-      val ancestorImplsAndInterfaces =
-        ancestorHelper.getAncestorInterfaces(temputs, temporaryStructRef)
+    val ancestorImplsAndInterfaces =
+      ancestorHelper.getAncestorInterfaces(temputs, temporaryStructRef)
 
-      ancestorImplsAndInterfaces.foreach({
-        case (ancestorInterface, implTemplata) => {
-          val interfaceDefinition2 = temputs.lookupInterface(ancestorInterface)
-          if (structDefT.weakable != interfaceDefinition2.weakable) {
-            throw WeakableImplingMismatch(structDefT.weakable, interfaceDefinition2.weakable)
-          }
-          temputs.addImpl(temporaryStructRef, ancestorInterface)
+    ancestorImplsAndInterfaces.foreach({
+      case (ancestorInterface, implTemplata) => {
+        val interfaceDefinition2 = temputs.lookupInterface(ancestorInterface)
+        if (structDefT.weakable != interfaceDefinition2.weakable) {
+          throw WeakableImplingMismatch(structDefT.weakable, interfaceDefinition2.weakable)
         }
-      })
+        temputs.addImpl(temporaryStructRef, ancestorInterface)
+      }
     })
 
     structDefT
@@ -196,7 +194,7 @@ class StructTemplarCore(
 
     val mutability =
       interfaceRunesEnv.lookupNearestWithImpreciseName(
-        profiler,
+
         interner.intern(RuneNameS(interfaceA.mutabilityRune.rune)),
         Set(TemplataLookupContext)).toList match {
         case List(MutabilityTemplata(m)) => m
@@ -302,9 +300,7 @@ class StructTemplarCore(
       }
     }
 
-    profiler.childFrame("interface ancestor interfaces", () => {
-      val _ = ancestorHelper.getParentInterfaces(temputs, temporaryInferfaceRef)
-    })
+    val _ = ancestorHelper.getParentInterfaces(temputs, temporaryInferfaceRef)
 
     (interfaceDef2)
   }
@@ -321,7 +317,7 @@ class StructTemplarCore(
     val typeTemplata =
       vassertOne(
         env.lookupNearestWithImpreciseName(
-          profiler, interner.intern(RuneNameS(member.typeRune.rune)), Set(TemplataLookupContext)))
+          interner.intern(RuneNameS(member.typeRune.rune)), Set(TemplataLookupContext)))
     val variabilityT = Conversions.evaluateVariability(member.variability)
     member match {
       case NormalStructMemberS(_, name, _, _) => {

@@ -34,7 +34,6 @@ class OptTests extends FunSuite with Matchers {
   }
 
   test("Test empty and get for borrow") {
-    val profiler = new Profiler()
     val compile = RunCompilation.test(
         """
           |// This is the same as the one in optutils.vale, just named differently,

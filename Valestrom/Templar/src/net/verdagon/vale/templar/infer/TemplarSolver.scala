@@ -98,36 +98,39 @@ class TemplarSolver[Env, State](
 ) {
 
   def getRunes(rule: IRulexSR): Array[IRuneS] = {
-    val sanityCheck =
-      rule match {
-        case LookupSR(range, rune, literal) => Array(rune)
-        case LookupSR(range, rune, literal) => Array(rune)
-        case RuneParentEnvLookupSR(range, rune) => Array(rune)
-        case EqualsSR(range, left, right) => Array(left, right)
-        case CoordIsaSR(range, sub, suuper) => Array(sub, suuper)
-        case KindComponentsSR(range, resultRune, mutabilityRune) => Array(resultRune, mutabilityRune)
-        case CoordComponentsSR(range, resultRune, ownershipRune, permissionRune, kindRune) => Array(resultRune, ownershipRune, permissionRune, kindRune)
-        case PrototypeComponentsSR(range, resultRune, nameRune, paramsListRune, returnRune) => Array(resultRune, nameRune, paramsListRune, returnRune)
-        case OneOfSR(range, rune, literals) => Array(rune)
-        case IsConcreteSR(range, rune) => Array(rune)
-        case IsInterfaceSR(range, rune) => Array(rune)
-        case IsStructSR(range, rune) => Array(rune)
-        case CoerceToCoordSR(range, coordRune, kindRune) => Array(coordRune, kindRune)
-        case LiteralSR(range, rune, literal) => Array(rune)
-        case AugmentSR(range, resultRune, ownership, permission, innerRune) => Array(resultRune, innerRune)
-        case CallSR(range, resultRune, templateRune, args) => Array(resultRune, templateRune) ++ args
-        case PrototypeSR(range, resultRune, name, parameters, returnTypeRune) => Array(resultRune) ++ parameters ++ Array(returnTypeRune)
-        case PackSR(range, resultRune, members) => Array(resultRune) ++ members
-        case StaticSizedArraySR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune)
-        case RuntimeSizedArraySR(range, resultRune, mutabilityRune, elementRune) => Array(resultRune, mutabilityRune, elementRune)
-//        case ManualSequenceSR(range, resultRune, elements) => Array(resultRune) ++ elements
-//        case CoordListSR(range, resultRune, elements) => Array(resultRune) ++ elements
-        case CoordSendSR(range, senderRune, receiverRune) => Array(senderRune, receiverRune)
-        case RefListCompoundMutabilitySR(range, resultRune, coordListRune) => Array(resultRune, coordListRune)
-      }
-    val result = rule.runeUsages
-    vassert(result.map(_.rune) sameElements sanityCheck.map(_.rune))
-    result.map(_.rune)
+    val result = rule.runeUsages.map(_.rune)
+
+    if (globalOptions.sanityCheck) {
+      val sanityChecked =
+        rule match {
+          case LookupSR(range, rune, literal) => Array(rune)
+          case LookupSR(range, rune, literal) => Array(rune)
+          case RuneParentEnvLookupSR(range, rune) => Array(rune)
+          case EqualsSR(range, left, right) => Array(left, right)
+          case CoordIsaSR(range, sub, suuper) => Array(sub, suuper)
+          case KindComponentsSR(range, resultRune, mutabilityRune) => Array(resultRune, mutabilityRune)
+          case CoordComponentsSR(range, resultRune, ownershipRune, permissionRune, kindRune) => Array(resultRune, ownershipRune, permissionRune, kindRune)
+          case PrototypeComponentsSR(range, resultRune, nameRune, paramsListRune, returnRune) => Array(resultRune, nameRune, paramsListRune, returnRune)
+          case OneOfSR(range, rune, literals) => Array(rune)
+          case IsConcreteSR(range, rune) => Array(rune)
+          case IsInterfaceSR(range, rune) => Array(rune)
+          case IsStructSR(range, rune) => Array(rune)
+          case CoerceToCoordSR(range, coordRune, kindRune) => Array(coordRune, kindRune)
+          case LiteralSR(range, rune, literal) => Array(rune)
+          case AugmentSR(range, resultRune, ownership, permission, innerRune) => Array(resultRune, innerRune)
+          case CallSR(range, resultRune, templateRune, args) => Array(resultRune, templateRune) ++ args
+          case PrototypeSR(range, resultRune, name, parameters, returnTypeRune) => Array(resultRune) ++ parameters ++ Array(returnTypeRune)
+          case PackSR(range, resultRune, members) => Array(resultRune) ++ members
+          case StaticSizedArraySR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune)
+          case RuntimeSizedArraySR(range, resultRune, mutabilityRune, elementRune) => Array(resultRune, mutabilityRune, elementRune)
+          //        case ManualSequenceSR(range, resultRune, elements) => Array(resultRune) ++ elements
+          //        case CoordListSR(range, resultRune, elements) => Array(resultRune) ++ elements
+          case CoordSendSR(range, senderRune, receiverRune) => Array(senderRune, receiverRune)
+          case RefListCompoundMutabilitySR(range, resultRune, coordListRune) => Array(resultRune, coordListRune)
+        }
+      vassert(result sameElements sanityChecked.map(_.rune))
+    }
+    result
   }
 
   def getPuzzles(rule: IRulexSR): Array[Array[IRuneS]] = {

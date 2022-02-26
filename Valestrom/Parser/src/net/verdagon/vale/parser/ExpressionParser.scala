@@ -4,7 +4,7 @@ import net.verdagon.vale.parser.Parser.{parseFunctionOrLocalOrMemberName, parseL
 import net.verdagon.vale.parser.ast.{AndPE, AugmentPE, BinaryCallPE, BlockPE, BorrowP, BraceCallPE, BreakPE, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstructArrayPE, DestructPE, DotPE, EachPE, ExportAsP, FileP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IExpressionPE, ITemplexPT, ITopLevelThingP, IfPE, ImmutableP, ImplP, ImportP, InterfaceP, LambdaPE, LetPE, LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LocalNameDeclarationP, LookupNameP, LookupPE, MagicParamLookupPE, MethodCallPE, MutabilityPT, MutableP, MutatePE, NameP, NotPE, OrPE, OwnP, PackPE, ParamsP, PatternPP, PointerP, RangeP, RangePE, ReadonlyP, ReadwriteP, ReturnPE, RuntimeSizedP, StaticSizedP, StructP, SubExpressionPE, TemplateArgsP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, UseP, VoidPE, WeakP, WhilePE}
 import net.verdagon.vale.parser.expressions.ParseString
 import net.verdagon.vale.parser.old.CombinatorParsers
-import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, Ok, PackageCoordinate, Result, repeatStr, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, Profiler, Ok, PackageCoordinate, Result, repeatStr, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 import net.verdagon.von.{JsonSyntax, VonPrinter}
 
 import scala.collection.immutable.{List, Map}
@@ -604,42 +604,44 @@ object ExpressionParser {
   }
 
   def parseExpression(iter: ParsingIterator, stopBefore: IStopBefore): Result[IExpressionPE, IParseError] = {
-    //    if (iter.peek("^if\\s".r)) {
-    //      parseIfLadder(iter)
-    //    } else if (iter.peek("^foreach\\s".r) || iter.peek("^parallel\\s+foreach\\s".r)) {
-    //      parseForeach(iter)
-    //    } else if (iter.peek("^(set|mut)\\s".r)) {
-    //      parseMut(iter)
-    //    } else {
-    //      parseExpression(allowLambda)(iter)
-    //    }
+    Profiler.frame(() => {
+      //    if (iter.peek("^if\\s".r)) {
+      //      parseIfLadder(iter)
+      //    } else if (iter.peek("^foreach\\s".r) || iter.peek("^parallel\\s+foreach\\s".r)) {
+      //      parseForeach(iter)
+      //    } else if (iter.peek("^(set|mut)\\s".r)) {
+      //      parseMut(iter)
+      //    } else {
+      //      parseExpression(allowLambda)(iter)
+      //    }
 
-    val elements = mutable.ArrayBuffer[IExpressionElement]()
+      val elements = mutable.ArrayBuffer[IExpressionElement]()
 
-    var continue = true
-    while (continue) {
-      val subExpr =
-        parseExpressionDataElement(iter, stopBefore) match {
-          case Err(error) => return Err(error)
-          case Ok(Some(x)) => x
-          case Ok(None) => return Err(BadExpressionBegin(iter.getPos()))
-        }
-      elements += DataElement(subExpr)
+      var continue = true
+      while (continue) {
+        val subExpr =
+          parseExpressionDataElement(iter, stopBefore) match {
+            case Err(error) => return Err(error)
+            case Ok(Some(x)) => x
+            case Ok(None) => return Err(BadExpressionBegin(iter.getPos()))
+          }
+        elements += DataElement(subExpr)
 
-      if (atExpressionEnd(iter, stopBefore)) {
-        continue = false
-      } else {
-        parseBinaryCall(iter) match {
-          case Err(error) => return Err(error)
-          case Ok(None) => continue = false
-          case Ok(Some(symbol)) => elements += BinaryCallElement(symbol)
+        if (atExpressionEnd(iter, stopBefore)) {
+          continue = false
+        } else {
+          parseBinaryCall(iter) match {
+            case Err(error) => return Err(error)
+            case Ok(None) => continue = false
+            case Ok(Some(symbol)) => elements += BinaryCallElement(symbol)
+          }
         }
       }
-    }
 
-    val (exprPE, _) =
-      descramble(elements.toArray, 0, elements.size - 1, MIN_PRECEDENCE)
-    Ok(exprPE)
+      val (exprPE, _) =
+        descramble(elements.toArray, 0, elements.size - 1, MIN_PRECEDENCE)
+      Ok(exprPE)
+    })
   }
 
   def parseLookup(iter: ParsingIterator): Option[IExpressionPE] = {

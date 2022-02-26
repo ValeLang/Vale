@@ -5,7 +5,7 @@ import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.env.{FunctionEnvironment, FunctionEnvironmentBox}
 import net.verdagon.vale.templar.types.CoordT
 import net.verdagon.vale.templar.{ArrayTemplar, Temputs, ast}
-import net.verdagon.vale.{IProfiler, RangeS}
+import net.verdagon.vale.{Profiler, RangeS}
 
 
 class RSALenMacro() extends IFunctionBodyMacro {

@@ -12,13 +12,13 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.ast.{ConstantIntTE, DestroyMutRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoLocalsTE, DestroyTE, LetNormalTE, LocalLookupTE, LocationInFunctionEnvironment, ReferenceExpressionTE, ReferenceMemberLookupTE, SoftLoadTE, TemplarReinterpretTE}
 import net.verdagon.vale.templar.names.RuneNameT
-import net.verdagon.vale.{IProfiler, Interner, RangeS, vassert, vassertSome, vfail}
+import net.verdagon.vale.{Profiler, Interner, RangeS, vassert, vassertSome, vfail}
 
 import scala.collection.immutable.List
 
 class PatternTemplar(
     opts: TemplarOptions,
-    profiler: IProfiler,
+
     interner: Interner,
     inferTemplar: InferTemplar,
     arrayTemplar: ArrayTemplar,
@@ -45,7 +45,7 @@ class PatternTemplar(
     // But if we're doing a regular let statement, then it doesn't need to contain everything past it.
     afterPatternsSuccessContinuation: (Temputs, NodeEnvironmentBox, Vector[ILocalVariableT]) => ReferenceExpressionTE):
   ReferenceExpressionTE = {
-    profiler.newProfile("translatePatternList", nenv.fullName.toString, () => {
+    Profiler.frame(() => {
       iterateTranslateListAndMaybeContinue(
         temputs, nenv, life, Vector(), patternsA.toList, patternInputsTE.toList, afterPatternsSuccessContinuation)
     })
@@ -99,7 +99,7 @@ class PatternTemplar(
       // But if we're doing a regular let statement, then it doesn't need to contain everything past it.
       afterPatternsSuccessContinuation: (Temputs, NodeEnvironmentBox, LocationInFunctionEnvironment, Vector[ILocalVariableT]) => ReferenceExpressionTE):
   ReferenceExpressionTE = {
-    profiler.newProfile("inferAndTranslatePattern", nenv.fullName.toString, () => {
+    Profiler.frame(() => {
 
       // The rules are different depending on the incoming type.
       // See Impl Rule For Upcasts (IRFU).

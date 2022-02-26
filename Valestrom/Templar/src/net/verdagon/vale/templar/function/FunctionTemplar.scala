@@ -4,7 +4,7 @@ import net.verdagon.vale.astronomer.{CompileErrorExceptionA, CouldntSolveRulesA,
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.parser._
-import net.verdagon.vale.{Err, IProfiler, Interner, Ok, Profiler, RangeS, scout, vassert, vassertOne, vassertSome, vimpl, vwat}
+import net.verdagon.vale.{Err, Interner, Ok, Profiler, RangeS, scout, vassert, vassertOne, vassertSome, vimpl, vwat}
 import net.verdagon.vale.scout.{RuneTypeSolver, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, OverrideSP}
 import net.verdagon.vale.scout.rules._
@@ -69,7 +69,7 @@ object FunctionTemplar {
 // This file is the outer layer, which spawns a local environment for the function.
 class FunctionTemplar(
     opts: TemplarOptions,
-    profiler: IProfiler,
+
     interner: Interner,
     nameTranslator: NameTranslator,
     templataTemplar: TemplataTemplar,
@@ -79,7 +79,7 @@ class FunctionTemplar(
     delegate: IFunctionTemplarDelegate) {
   val closureOrLightLayer =
     new FunctionTemplarClosureOrLightLayer(
-      opts, profiler, interner, nameTranslator, templataTemplar, inferTemplar, convertHelper, structTemplar, delegate)
+      opts, interner, nameTranslator, templataTemplar, inferTemplar, convertHelper, structTemplar, delegate)
 
   private def determineClosureVariableMember(
       env: NodeEnvironment,
@@ -152,7 +152,7 @@ class FunctionTemplar(
     temputs: Temputs,
     functionTemplata: FunctionTemplata):
   FunctionHeaderT = {
-    profiler.newProfile("FunctionTemplarEvaluateOrdinaryFunctionFromNonCallForHeader", functionTemplata.debugString, () => {
+    Profiler.frame(() => {
         val FunctionTemplata(env, function) = functionTemplata
         if (function.isLight) {
           evaluateOrdinaryLightFunctionFromNonCallForHeader(
@@ -160,7 +160,7 @@ class FunctionTemplar(
         } else {
           val List(KindTemplata(closureStructRef@StructTT(_))) =
             env.lookupNearestWithImpreciseName(
-              profiler,
+
               vimpl(), //FunctionScout.CLOSURE_STRUCT_ENV_ENTRY_NAME,
               Set(TemplataLookupContext)).toList
           val header =
@@ -176,7 +176,7 @@ class FunctionTemplar(
     temputs: Temputs,
     functionTemplata: FunctionTemplata):
   FunctionHeaderT = {
-    profiler.newProfile("FunctionTemplarEvaluateOrdinaryFunctionFromNonCallForHeader", functionTemplata.debugString, () => {
+    Profiler.frame(() => {
       val FunctionTemplata(env, function) = functionTemplata
       if (function.isLight) {
         evaluateTemplatedLightFunctionFromNonCallForHeader(
@@ -184,7 +184,7 @@ class FunctionTemplar(
       } else {
         val List(KindTemplata(closureStructRef@StructTT(_))) =
           env.lookupNearestWithImpreciseName(
-            profiler,
+
             vimpl(), //FunctionScout.CLOSURE_STRUCT_ENV_ENTRY_NAME,
             Set(TemplataLookupContext)).toList
         val header =
@@ -204,7 +204,7 @@ class FunctionTemplar(
     callRange: RangeS,
     functionTemplata: FunctionTemplata):
   (PrototypeT) = {
-    profiler.newProfile("FunctionTemplarEvaluateOrdinaryFunctionFromNonCallForPrototype", functionTemplata.debugString, () => {
+    Profiler.frame(() => {
         val FunctionTemplata(env, function) = functionTemplata
         if (function.isLight) {
           evaluateOrdinaryLightFunctionFromNonCallForPrototype(
@@ -219,7 +219,7 @@ class FunctionTemplar(
           val KindTemplata(closureStructRef@StructTT(_)) =
             vassertOne(
               env.lookupNearestWithName(
-                profiler,
+
                 lambdaCitizenName2,
                 Set(TemplataLookupContext)))
           val header =
@@ -236,7 +236,7 @@ class FunctionTemplar(
     callRange: RangeS,
     functionTemplata: FunctionTemplata):
   (FunctionBannerT) = {
-    profiler.newProfile("FunctionTemplarEvaluateOrdinaryFunctionFromNonCallForBanner", functionTemplata.debugString, () => {
+    Profiler.frame(() => {
         val FunctionTemplata(env, function) = functionTemplata
         if (function.isLight()) {
           evaluateOrdinaryLightFunctionFromNonCallForBanner(
@@ -251,7 +251,7 @@ class FunctionTemplar(
           val KindTemplata(closureStructRef@StructTT(_)) =
             vassertOne(
               env.lookupNearestWithName(
-                profiler,
+
                 lambdaCitizenName2,
                 Set(TemplataLookupContext)))
           evaluateOrdinaryClosureFunctionFromNonCallForBanner(
@@ -278,7 +278,7 @@ class FunctionTemplar(
     alreadySpecifiedTemplateArgs: Vector[ITemplata],
     paramFilters: Vector[ParamFilter]):
   (IEvaluateFunctionResult[FunctionBannerT]) = {
-    profiler.newProfile("EvaluateTemplatedFunctionFromCallForBannerProbe", functionTemplata.debugString + "<" + alreadySpecifiedTemplateArgs.mkString(", ") + ">(" + paramFilters.map(_.debugString).mkString(", ") + ")", () => {
+    Profiler.frame(() => {
         val FunctionTemplata(env, function) = functionTemplata
         if (function.isLight()) {
           evaluateTemplatedLightFunctionFromCallForBanner(
@@ -293,7 +293,7 @@ class FunctionTemplar(
           val KindTemplata(closureStructRef@StructTT(_)) =
             vassertOne(
               env.lookupNearestWithName(
-                profiler,
+
                 lambdaCitizenName2,
                 Set(TemplataLookupContext)))
           val banner =
@@ -326,7 +326,7 @@ class FunctionTemplar(
     alreadySpecifiedTemplateArgs: Vector[ITemplata],
     paramFilters: Vector[ParamFilter]):
   (IEvaluateFunctionResult[FunctionBannerT]) = {
-    profiler.newProfile("FunctionTemplarEvaluateTemplatedLightFunctionFromCallForBanner", functionTemplata.debugString + "<" + alreadySpecifiedTemplateArgs.mkString(", ") + ">(" + paramFilters.map(_.debugString).mkString(", ") + ")", () => {
+    Profiler.frame(() => {
         val FunctionTemplata(env, function) = functionTemplata
         closureOrLightLayer.evaluateTemplatedLightBannerFromCall(
           env, temputs, callRange, function, alreadySpecifiedTemplateArgs, paramFilters)
@@ -400,7 +400,7 @@ class FunctionTemplar(
       temputs: Temputs,
       functionTemplata: FunctionTemplata):
   Unit = {
-    profiler.newProfile("FunctionTemplarEvaluateOrdinaryLightFunctionFromNonCallForTemputs", functionTemplata.debugString, () => {
+    Profiler.frame(() => {
         val FunctionTemplata(env, function) = functionTemplata
         val _ =
           evaluateOrdinaryLightFunctionFromNonCallForHeader(
@@ -416,7 +416,7 @@ class FunctionTemplar(
     explicitTemplateArgs: Vector[ITemplata],
     args: Vector[ParamFilter]):
   IEvaluateFunctionResult[PrototypeT] = {
-    profiler.newProfile("FunctionTemplarEvaluateTemplatedFunctionFromCallForPrototype", functionTemplata.debugString + "<" + explicitTemplateArgs.mkString(", ") + ">(" + args.mkString(", ") + ")", () => {
+    Profiler.frame(() => {
         val FunctionTemplata(env, function) = functionTemplata
         if (function.isLight()) {
           evaluateTemplatedLightFunctionFromCallForPrototype(
@@ -457,7 +457,7 @@ class FunctionTemplar(
     val KindTemplata(closureStructRef @ StructTT(_)) =
       vassertOne(
         env.lookupNearestWithName(
-          profiler,
+
           lambdaCitizenName2,
           Set(TemplataLookupContext)))
     closureOrLightLayer.evaluateTemplatedClosureFunctionFromCallForPrototype(

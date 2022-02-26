@@ -7,7 +7,7 @@ import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env.{IEnvironment, IEnvironmentBox, TemplataLookupContext}
 import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, CitizenNameT, INameT, NameTranslator}
-import net.verdagon.vale.{IProfiler, RangeS, vassert, vassertOne, vassertSome, vcurious, vfail, vimpl, vwat}
+import net.verdagon.vale.{Profiler, RangeS, vassert, vassertOne, vassertSome, vcurious, vfail, vimpl, vwat}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 
@@ -51,7 +51,7 @@ trait ITemplataTemplarDelegate {
 
 class TemplataTemplar(
   opts: TemplarOptions,
-  profiler: IProfiler,
+
   nameTranslator: NameTranslator,
   delegate: ITemplataTemplarDelegate) {
 
@@ -288,7 +288,7 @@ class TemplataTemplar(
     // Changed this from AnythingLookupContext to TemplataLookupContext
     // because this is called from StructTemplar to figure out its members.
     // We could instead pipe a lookup context through, if this proves problematic.
-    vassertOne(env.lookupNearestWithName(profiler, name, Set(TemplataLookupContext)))
+    vassertOne(env.lookupNearestWithName(name, Set(TemplataLookupContext)))
   }
 
   def lookupTemplata(
@@ -300,7 +300,7 @@ class TemplataTemplar(
     // Changed this from AnythingLookupContext to TemplataLookupContext
     // because this is called from StructTemplar to figure out its members.
     // We could instead pipe a lookup context through, if this proves problematic.
-    val results = env.lookupNearestWithImpreciseName(profiler, name, Set(TemplataLookupContext))
+    val results = env.lookupNearestWithImpreciseName(name, Set(TemplataLookupContext))
     if (results.size > 1) {
       vfail()
     }

@@ -77,13 +77,13 @@ func add<K, H, E>(self &!HashSet<K, H, E>, key K) void {
               opt Opt<K> = None<K>();
               opt
             }));
-    i! = 0;
+    i = 0;
     while (i < self.table.len()) {
       if self.table[i].isEmpty() {
         // do nothing
       } else {
-        node? = (mut self.table[i] = None<K>());
-        node = get(node?);
+        maybeNode = (mut self.table[i] = None<K>());
+        node = get(maybeNode);
         addNodeToHashSetTable(&!newTable, self.hasher, node);
       }
       set i = i + 1;
@@ -105,7 +105,7 @@ func addNodeToHashSetTable<K, H>(table &!Array<mut, Opt<K>>, hasher H, key K) {
 }
 
 func findEmptyIndexInHashSetForKey<K>(table &Array<mut, Opt<K>>, startIndex int, key K) int {
-  i! = 0;
+  i = 0;
   while (i < table.len()) {
     index = (startIndex + i) mod table.len();
     something = table[index];
@@ -119,7 +119,7 @@ func findEmptyIndexInHashSetForKey<K>(table &Array<mut, Opt<K>>, startIndex int,
 }
 
 func findIndexOfKey<K, E>(table &Array<mut, Opt<K>>, equator E, startIndex int, key K) Opt<int> {
-  i! = 0;
+  i = 0;
   while (i < table.len()) {
     index = (startIndex + i) mod table.len();
     something = table[index];
@@ -142,12 +142,12 @@ func get<K, H, E>(self &HashSet<K, H, E>, key K) Opt<K> {
   }
   hash int = (self.hasher)(key);
   startIndex = abs(hash mod self.table.len());
-  index? = findIndexOfKey(&self.table, self.equator, startIndex, key);
-  if index?.isEmpty() {
+  maybeIndex = findIndexOfKey(&self.table, self.equator, startIndex, key);
+  if maybeIndex.isEmpty() {
     opt Opt<K> = None<K>();
     ret opt;
   }
-  node = self.table[index?.get()].get();
+  node = self.table[maybeIndex.get()].get();
   opt Opt<K> = Some<K>(node);
   ret opt;
 }
@@ -158,11 +158,11 @@ func contains<K, H, E>(self &HashSet<K, H, E>, key K) bool {
 
 func toArray<K, H, E>(self &HashSet<K, H, E>) Array<imm, K> {
   list = List<K>();
-  index! = 0;
+  index = 0;
   while (index < self.table.len()) {
-    node? = self.table[index];
-    if not(node?.isEmpty()) {
-      list!.add(node?.get());
+    maybeNode = self.table[index];
+    if not(maybeNode.isEmpty()) {
+      list!.add(maybeNode.get());
     }
     set index = index + 1;
   }
@@ -177,8 +177,8 @@ func innerRemove<K, H, E>(
 int {
   hash int = (&hasher)(key);
   startIndex = abs(hash mod table.len());
-  index? = findIndexOfKey(&table, &equator, startIndex, key);
-  index = index?.get();
+  maybeIndex = findIndexOfKey(&table, &equator, startIndex, key);
+  index = maybeIndex.get();
   set table[index] = None<K>();
   ret index;
 }
@@ -190,15 +190,15 @@ void {
   originalIndex = innerRemove(&!self.table, self.hasher, self.equator, key);
   set self.size = self.size - 1;
 
-  i! = 1;
+  i = 1;
   while (i < self.table.len()) {
     neighborIndex = (originalIndex + i) mod len(&self.table);
-    neighbor? = (mut self.table[neighborIndex] = None<K>());
-    if not neighbor?.isEmpty() {
-      neighborKey = (neighbor?).get();
+    maybeNeighbor = (mut self.table[neighborIndex] = None<K>());
+    if not maybeNeighbor.isEmpty() {
+      neighborKey = (maybeNeighbor).get();
       addNodeToHashSetTable(&!self.table, self.hasher, neighborKey);
     } else {
-      drop(neighbor?);
+      drop(maybeNeighbor);
       set i = self.table.len(); // break
     }
     set i = i + 1;

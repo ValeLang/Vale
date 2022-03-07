@@ -125,7 +125,7 @@ func remove<E>(list &!List<E>, removeAtIndex int) E {
     panic("Can't remove, index out of bounds!");
   }
 
-  temp! Opt<E> = Some<E>(list.array!.pop());
+  temp Opt<E> = Some<E>(list.array!.pop());
   i = list.len() - 1;
   while i >= removeAtIndex {
     set temp = Some(set list.array[i] = (set temp = None<E>()).get());
@@ -191,8 +191,8 @@ func toVaryArray<E>(list List<E>) []<mut>E {
 
 func each<E, F>(list &List<E>, func F) void
 where
-    F Ref(_, rw, _),
-    Prot("__call", Refs(&!F, &E), void) {
+    F = Ref[_, rw, _],
+    Prot["__call", Refs(&!F, &E), void] {
   i = 0;
   l = len(&list);
   while i < l {
@@ -203,8 +203,8 @@ where
 
 func each<E, F>(list &List<E>, func F) void
 where
-    F Ref(_, ro, _),
-    Prot("__call", Refs(&F, &E), void) {
+    F = Ref[_, ro, _],
+    Prot["__call", Refs(&F, &E), void] {
   i = 0;
   l = len(&list);
   while i < l {
@@ -215,8 +215,8 @@ where
 
 func each<E, F>(list &!List<E>, func F) void
 where
-    F Ref(_, rw, _),
-    Prot("__call", Refs(&!F, &!E), void) {
+    F = Ref[_, rw, _],
+    Prot["__call", Refs(&!F, &!E), void] {
   i = 0;
   l = len(&list);
   while i < l {
@@ -227,8 +227,8 @@ where
 
 func each<E, F>(list &!List<E>, func F) void
 where
-    F Ref(_, ro, _),
-    Prot("__call", Refs(&F, &!E), void) {
+    F = Ref[_, ro, _],
+    Prot["__call", Refs(&F, &!E), void] {
   i = 0;
   l = len(&list);
   while i < l {
@@ -310,7 +310,7 @@ func join(list &List<StrSlice>, joiner str) str {
 }
 
 func map<E, F>(list &List<E>, func &!F) List<T>
-where T Ref, Prot("__call", Refs(&!F, E), T) {
+where T Ref, Prot["__call", Refs(&!F, E), T] {
   result = List<T>();
   list.each({ result!.add((func)!(_)); });
   ret result;

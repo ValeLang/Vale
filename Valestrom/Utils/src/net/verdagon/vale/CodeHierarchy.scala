@@ -124,13 +124,23 @@ extends IPackageResolver[Map[String, Contents]] {
   }
 
   def map[T](func: (FileCoordinate, Contents) => T): FileCoordinateMap[T] = {
+    val coords =
+      moduleToPackagesToFilenameToContents.flatMap({
+        case (module, packagesToFilenameToContents) =>
+          packagesToFilenameToContents.flatMap({ case (packages, filenameToContents) =>
+            filenameToContents.map({ case (filename, contents) =>
+              FileCoordinate(module, packages, filename) -> contents
+            })
+          })
+      })
+    val results = coords.map({ case (coord, contents) => coord -> func(coord, contents) })
     FileCoordinateMap(
       moduleToPackagesToFilenameToContents.map({ case (module, packagesToFilenameToContents) =>
         module ->
           packagesToFilenameToContents.map({ case (packages, filenameToContents) =>
             packages ->
-              filenameToContents.map({ case (filename, contents) =>
-                filename -> func(FileCoordinate(module, packages, filename), contents)
+              filenameToContents.map({ case (filename, _) =>
+                filename -> results(FileCoordinate(module, packages, filename))
               })
           })
       }))

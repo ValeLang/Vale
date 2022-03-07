@@ -7,18 +7,6 @@ if [ "$VALEC_DIR" == "" ]; then
 fi
 shift;
 
-echo "Building hashset test..."
-$VALEC_DIR/valec build stdlib=src vtest=src/collections/hashset/test || exit 1
-echo "Running hashset test..."
-build/main || exit 1
-echo "Done testing!"
-
-echo "Building hashmap test..."
-$VALEC_DIR/valec build stdlib=src vtest=src/collections/hashmap/test || exit 1
-echo "Running hashmap test..."
-build/main || exit 1
-echo "Done testing!"
-
 echo "Building list test..."
 $VALEC_DIR/valec build stdlib=src vtest=src/collections/list/test || exit 1
 echo "Running list test..."
@@ -46,5 +34,17 @@ echo "Done testing!"
 echo "Building stringutils test..."
 $VALEC_DIR/valec build stdlib=src vtest=src/stringutils/test || exit 1
 echo "Running stringutils test..."
+build/main || exit 1
+echo "Done testing!"
+
+echo "Building hashset test..."
+$VALEC_DIR/valec build stdlib=src vtest=src/collections/hashset/test || exit 1
+echo "Running hashset test..."
+build/main || exit 1
+echo "Done testing!"
+
+echo "Building hashmap test..."
+$VALEC_DIR/valec build stdlib=src vtest=src/collections/hashmap/test || exit 1
+echo "Running hashmap test..."
 build/main || exit 1
 echo "Done testing!"

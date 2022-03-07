@@ -1073,6 +1073,26 @@ class TemplarTests extends FunSuite with Matchers {
     compile.expectTemputs()
   }
 
+  test("Failure to resolve a Prot rule's function doesnt halt") {
+    // In the below example, it should disqualify the first foo() because T = bool
+    // and there exists no moo(bool). Instead, we saw the Prot rule throw and halt
+    // compilation.
+
+    // Instead, we need to bubble up that failure to find the right function, so
+    // it disqualifies the candidate and goes with the other one.
+
+    TemplarTestCompilation.test(
+      """
+        |func moo(a str) { }
+        |func foo<T>(f T) void where Prot["moo", Refs(str), void] { }
+        |func foo<T>(f T) void where Prot["moo", Refs(bool), void] { }
+        |func main() { foo("hello"); }
+        |""".stripMargin).expectTemputs()
+  }
+
+
+
+
   test("Lock weak member") {
     val compile = TemplarTestCompilation.test(
       """

@@ -48,11 +48,11 @@ func each<K, H, E, F>(
   self &HashSet<K, H, E>,
   func F)
 void {
-  index! = 0;
+  index = 0;
   while (index < self.table.len()) {
-    node? = self.table[index];
-    if not(node?.isEmpty()) {
-      func!(node?.get());
+    maybeNode = self.table[index];
+    if not(maybeNode.isEmpty()) {
+      func!(maybeNode.get());
     }
     set index = index + 1;
   }
@@ -62,11 +62,11 @@ func each<K, H, E, F>(
   self &!HashSet<K, H, E>,
   func F)
 void {
-  index! = 0;
+  index = 0;
   while (index < self.table.len()) {
-    node? = self.table[index];
-    if not(node?.isEmpty()) {
-      func!(node?.get());
+    maybeNode = self.table[index];
+    if not(maybeNode.isEmpty()) {
+      func!(maybeNode.get());
     }
     set index = index + 1;
   }

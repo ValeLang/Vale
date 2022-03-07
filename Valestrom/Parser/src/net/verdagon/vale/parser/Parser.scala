@@ -4,7 +4,6 @@ import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser.Parser.{ParsedDouble, ParsedInteger, atEnd, parseFunctionOrLocalOrMemberName, parseLocalOrMemberName}
 import net.verdagon.vale.parser.ast._
 import net.verdagon.vale.parser.expressions.StringParser
-import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.parser.templex.TemplexParser
 import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, Ok, PackageCoordinate, Profiler, Result, repeatStr, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 import net.verdagon.von.{JsonSyntax, VonPrinter}
@@ -32,10 +31,7 @@ case class ParsingIterator(code: String, var position: Int = 0) {
   }
 
   def getPos(): Int = {
-    CombinatorParsers.parse(CombinatorParsers.pos, toReader()) match {
-      case CombinatorParsers.NoSuccess(_, _) => vwat()
-      case CombinatorParsers.Success(result, _) => result
-    }
+    position
   }
 
   def toReader() = new CharSequenceReader(code, position)
@@ -80,23 +76,6 @@ case class ParsingIterator(code: String, var position: Int = 0) {
   }
 
   def peek(regex: Regex): Boolean = at(regex)
-
-  def peek[T](parser: CombinatorParsers.Parser[T]): Boolean = {
-    CombinatorParsers.parse(parser, toReader()) match {
-      case CombinatorParsers.NoSuccess(msg, next) => false
-      case CombinatorParsers.Success(result, rest) => true
-    }
-  }
-
-  def consumeWithCombinator[T](parser: CombinatorParsers.Parser[T]): Result[T, CombinatorParseError] = {
-    CombinatorParsers.parse(parser, toReader()) match {
-      case CombinatorParsers.NoSuccess(msg, next) => return Err(CombinatorParseError(position, msg))
-      case CombinatorParsers.Success(result, rest) => {
-        skipTo(rest.offset)
-        Ok(result)
-      }
-    }
-  }
 
   def trySkipIfPeekNext(
     toConsume: Regex,
@@ -950,64 +929,66 @@ class ParserCompilation(
     alreadyParsedProgramPMap: FileCoordinateMap[(FileP, Vector[(Int, Int)])],
     resolver: IPackageResolver[Map[String, String]]):
   Result[(FileCoordinateMap[String], FileCoordinateMap[(FileP, Vector[(Int, Int)])]), FailedParse] = {
-    val neededPackageCoords =
-      neededPackages ++
-        alreadyParsedProgramPMap.flatMap({ case (fileCoord, file) =>
-          file._1.topLevelThings.collect({
-            case TopLevelImportP(ImportP(_, moduleName, packageSteps, importeeName)) => {
-              PackageCoordinate(moduleName.str, packageSteps.map(_.str))
-            }
+    Profiler.frame(() => {
+      val neededPackageCoords =
+        neededPackages ++
+          alreadyParsedProgramPMap.flatMap({ case (fileCoord, file) =>
+            file._1.topLevelThings.collect({
+              case TopLevelImportP(ImportP(_, moduleName, packageSteps, importeeName)) => {
+                PackageCoordinate(moduleName.str, packageSteps.map(_.str))
+              }
+            })
+          }).toVector.flatten.filter(packageCoord => {
+            !alreadyParsedProgramPMap.moduleToPackagesToFilenameToContents
+              .getOrElse(packageCoord.module, Map())
+              .contains(packageCoord.packages)
           })
-        }).toVector.flatten.filter(packageCoord => {
-          !alreadyParsedProgramPMap.moduleToPackagesToFilenameToContents
-            .getOrElse(packageCoord.module, Map())
-            .contains(packageCoord.packages)
+
+      if (neededPackageCoords.isEmpty) {
+        return Ok((alreadyFoundCodeMap, alreadyParsedProgramPMap))
+      }
+      //    println("Need packages: " + neededPackageCoords.mkString(", "))
+
+      val neededCodeMapFlat =
+        neededPackageCoords.flatMap(neededPackageCoord => {
+          val filepathsAndContents =
+            resolver.resolve(neededPackageCoord) match {
+              case None => {
+                throw InputException("Couldn't find: " + neededPackageCoord)
+              }
+              case Some(fac) => fac
+            }
+
+          // Note that filepathsAndContents *can* be empty, see ImportTests.
+          Vector((neededPackageCoord.module, neededPackageCoord.packages, filepathsAndContents))
+        })
+      val grouped =
+        neededCodeMapFlat.groupBy(_._1).mapValues(_.groupBy(_._2).mapValues(_.map(_._3).head))
+      val neededCodeMap = FileCoordinateMap(grouped)
+
+      val combinedCodeMap = alreadyFoundCodeMap.mergeNonOverlapping(neededCodeMap)
+
+      val newProgramPMap =
+        neededCodeMap.map({ case (fileCoord, code) =>
+          new Parser(opts).runParserForProgramAndCommentRanges(code) match {
+            case Err(err) => {
+              return Err(FailedParse(combinedCodeMap, fileCoord, err))
+            }
+            case Ok((program0, commentsRanges)) => {
+              val von = ParserVonifier.vonifyFile(program0)
+              val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
+              ParsedLoader.load(vpstJson) match {
+                case Err(error) => vwat(ParseErrorHumanizer.humanize(neededCodeMap, fileCoord, error))
+                case Ok(program0) => (program0, commentsRanges)
+              }
+            }
+          }
         })
 
-    if (neededPackageCoords.isEmpty) {
-      return Ok((alreadyFoundCodeMap, alreadyParsedProgramPMap))
-    }
-//    println("Need packages: " + neededPackageCoords.mkString(", "))
+      val combinedProgramPMap = alreadyParsedProgramPMap.mergeNonOverlapping(newProgramPMap)
 
-    val neededCodeMapFlat =
-      neededPackageCoords.flatMap(neededPackageCoord => {
-        val filepathsAndContents =
-          resolver.resolve(neededPackageCoord) match {
-            case None => {
-              throw InputException("Couldn't find: " + neededPackageCoord)
-            }
-            case Some(fac) => fac
-          }
-
-        // Note that filepathsAndContents *can* be empty, see ImportTests.
-        Vector((neededPackageCoord.module, neededPackageCoord.packages, filepathsAndContents))
-      })
-    val grouped =
-      neededCodeMapFlat.groupBy(_._1).mapValues(_.groupBy(_._2).mapValues(_.map(_._3).head))
-    val neededCodeMap = FileCoordinateMap(grouped)
-
-    val combinedCodeMap = alreadyFoundCodeMap.mergeNonOverlapping(neededCodeMap)
-
-    val newProgramPMap =
-      neededCodeMap.map({ case (fileCoord, code) =>
-        new Parser(opts).runParserForProgramAndCommentRanges(code) match {
-          case Err(err) => {
-            return Err(FailedParse(combinedCodeMap, fileCoord, err))
-          }
-          case Ok((program0, commentsRanges)) => {
-            val von = ParserVonifier.vonifyFile(program0)
-            val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
-            ParsedLoader.load(vpstJson) match {
-              case Err(error) => vwat(ParseErrorHumanizer.humanize(neededCodeMap, fileCoord, error))
-              case Ok(program0) => (program0, commentsRanges)
-            }
-          }
-        }
-      })
-
-    val combinedProgramPMap = alreadyParsedProgramPMap.mergeNonOverlapping(newProgramPMap)
-
-    loadAndParseIteration(Vector(), combinedCodeMap, combinedProgramPMap, resolver)
+      loadAndParseIteration(Vector(), combinedCodeMap, combinedProgramPMap, resolver)
+    })
   }
 
   var codeMapCache: Option[FileCoordinateMap[String]] = None

@@ -14,6 +14,7 @@ object ScoutErrorHumanizer {
     val errorStrBody =
       (err match {
         case RangedInternalErrorS(range, message) => " " + message
+        case UnknownRuleFunctionS(range, name) => ": Unknown rule function name: "+ name
         case UnimplementedExpression(range, expressionName) => s": ${expressionName} not supported yet.\n"
         case CouldntFindVarToMutateS(range, name) => s": No variable named ${name}. Try declaring it above, like `${name} = 42;`\n"
         case CantOwnershipInterfaceInImpl(range) => s": Can only impl a plain interface, remove symbol."

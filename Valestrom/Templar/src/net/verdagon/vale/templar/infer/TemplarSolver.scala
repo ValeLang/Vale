@@ -6,6 +6,7 @@ import net.verdagon.vale.parser.ast.ShareP
 import net.verdagon.vale.scout.{ArgumentRuneS, CodeNameS, CoordTemplataType, IImpreciseNameS, INameS, IRuneS, ITemplataType, KindTemplataType, RuneNameS}
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.solver.{CompleteSolve, FailedSolve, ISolveRule, ISolverError, ISolverOutcome, IStepState, IncompleteSolve, RuleError, Solver, SolverConflict}
+import net.verdagon.vale.templar.OverloadTemplar.FindFunctionFailure
 import net.verdagon.vale.templar.ast.PrototypeT
 import net.verdagon.vale.templar.names.{CitizenNameT, FullNameT, FunctionNameT, INameT}
 import net.verdagon.vale.templar.templata.{Conversions, CoordListTemplata, CoordTemplata, ITemplata, IntegerTemplata, InterfaceTemplata, KindTemplata, MutabilityTemplata, OwnershipTemplata, PermissionTemplata, PrototypeTemplata, RuntimeSizedArrayTemplateTemplata, StaticSizedArrayTemplateTemplata, StringTemplata, StructTemplata, VariabilityTemplata}
@@ -18,6 +19,7 @@ sealed trait ITemplarSolverError
 case class KindIsNotConcrete(kind: KindT) extends ITemplarSolverError
 case class KindIsNotInterface(kind: KindT) extends ITemplarSolverError
 case class KindIsNotStruct(kind: KindT) extends ITemplarSolverError
+case class CouldntFindFunction(range: RangeS, fff: FindFunctionFailure) extends ITemplarSolverError
 case class CantShareMutable(kind: KindT) extends ITemplarSolverError
 case class SendingNonCitizen(kind: KindT) extends ITemplarSolverError
 case class ReceivingDifferentOwnerships(params: Vector[(IRuneS, CoordT)]) extends ITemplarSolverError
@@ -82,7 +84,7 @@ trait IInfererDelegate[Env, State] {
 
   def structIsClosure(state: State, structTT: StructTT): Boolean
 
-  def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: Vector[CoordT]): PrototypeT
+  def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: Vector[CoordT]): Result[PrototypeT, FindFunctionFailure]
 
 
   def kindIsFromTemplate(
@@ -201,12 +203,16 @@ class TemplarSolver[Env, State](
           }
         }
       }
-      case PrototypeComponentsSR(_, resultRune, nameRune, paramListRune, returnRune) => {
+      case PrototypeComponentsSR(range, resultRune, nameRune, paramListRune, returnRune) => {
         stepState.getConclusion(resultRune.rune) match {
           case None => {
             val StringTemplata(name) = vassertSome(stepState.getConclusion(nameRune.rune))
             val CoordListTemplata(coords) = vassertSome(stepState.getConclusion(paramListRune.rune))
-            val prototype = delegate.resolveExactSignature(env, state, rule.range, name, coords)
+            val prototype =
+              delegate.resolveExactSignature(env, state, rule.range, name, coords) match {
+                case Err(e) => return Err(CouldntFindFunction(range, e))
+                case Ok(x) => x
+              }
             stepState.concludeRune[ITemplarSolverError](resultRune.rune, PrototypeTemplata(prototype))
             stepState.concludeRune[ITemplarSolverError](returnRune.rune, CoordTemplata(prototype.returnType))
             Ok(())

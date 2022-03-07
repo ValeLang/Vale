@@ -1,9 +1,9 @@
 package net.verdagon.vale.parser.rules
 
-import net.verdagon.vale.parser.old.CombinatorParsers._
+
 import net.verdagon.vale.parser._
 import net.verdagon.vale.parser.ast.{AnonymousRunePT, BuiltinCallPR, ComponentsPR, EqualsPR, IRulexPR, NameOrRunePT, NameP, PackPT, PatternPP, PrototypePT, PrototypeTypePR, TemplexPR, TypedPR}
-import net.verdagon.vale.parser.old.CombinatorParsers
+
 import net.verdagon.vale.parser.templex.TemplexParser
 import net.verdagon.vale.{Collector, vfail}
 import org.scalatest.{FunSuite, Matchers}
@@ -11,44 +11,6 @@ import org.scalatest.{FunSuite, Matchers}
 class RuleTests extends FunSuite with Matchers with Collector with TestParseUtils {
   private def compile[T](code: String): IRulexPR = {
     compile(new TemplexParser().parseRule(_), code)
-  }
-
-  private def checkFail[T](parser: CombinatorParsers.Parser[T], code: String) = {
-    CombinatorParsers.parse(parser, "") match {
-      case CombinatorParsers.NoSuccess(_, _) =>
-      case CombinatorParsers.Success(_, rest) => {
-        if (!rest.atEnd) {
-          fail(rest.pos.longString)
-        }
-        fail()
-      }
-    }
-  }
-
-  test("Nothing matches empty string") {
-    checkFail(prototypeRulePR, "")
-    checkFail(callableRulePR, "")
-    checkFail(existsPR, "")
-    checkFail(implementsPR, "")
-    checkFail(keywordOrIdentifierOrRuneRuleTemplexPR, "")
-    checkFail(level0PR, "")
-    checkFail(level1PR, "")
-    checkFail(level2PR, "")
-    checkFail(isInterfacePR, "")
-    checkFail(level3PR, "")
-    checkFail(level4PR, "")
-    checkFail(level5PR, "")
-    checkFail(manualSeqRulePR, "")
-    checkFail(packRulePR, "")
-    checkFail(staticSizedArrayPR, "")
-    checkFail(runtimeSizedArrayPR, "")
-    checkFail(rulePR, "")
-    checkFail(ruleTemplexPR, "")
-    checkFail(ruleTemplexPR, "")
-    checkFail(ruleTemplexSetPR, "")
-//    checkFail(templateRulesPR, "")
-    checkFail(refListCompoundMutabilityPR, "")
-    checkFail(packPR, "")
   }
 
   test("Relations") {

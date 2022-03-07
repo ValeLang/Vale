@@ -1,28 +1,16 @@
 package net.verdagon.vale.parser.rules
 
 import net.verdagon.vale.{Collector, parser, vfail}
-import net.verdagon.vale.parser.old.CombinatorParsers._
+
 import net.verdagon.vale.parser._
 import net.verdagon.vale.parser.ast.{BorrowP, BuiltinCallPR, EqualsPR, ExclusiveReadwriteP, IRulexPR, ImmutableP, InlineP, LocationPT, LocationTypePR, MutabilityPT, MutabilityTypePR, MutableP, NameOrRunePT, NameP, OrPR, OwnP, OwnershipPT, OwnershipTypePR, PatternPP, PermissionPT, PermissionTypePR, ReadonlyP, ReadwriteP, ShareP, TemplexPR, TypedPR, WeakP, YonderP}
-import net.verdagon.vale.parser.old.CombinatorParsers
+
 import net.verdagon.vale.parser.templex.TemplexParser
 import org.scalatest.{FunSuite, Matchers}
 
 class RulesEnumsTests extends FunSuite with Matchers with Collector with TestParseUtils {
   private def compile[T](code: String): IRulexPR = {
     compile(new TemplexParser().parseRule(_), code)
-  }
-
-  private def checkFail[T](parser: CombinatorParsers.Parser[T], code: String) = {
-    CombinatorParsers.parse(parser, "") match {
-      case CombinatorParsers.NoSuccess(_, _) =>
-      case CombinatorParsers.Success(_, rest) => {
-        if (!rest.atEnd) {
-          fail(rest.pos.longString)
-        }
-        fail()
-      }
-    }
   }
 
   test("Ownership") {

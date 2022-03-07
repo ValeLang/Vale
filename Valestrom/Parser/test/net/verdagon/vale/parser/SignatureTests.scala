@@ -1,7 +1,6 @@
 package net.verdagon.vale.parser
 
 import net.verdagon.vale.parser.ast.{BlockPE, ConstantIntPE, FunctionHeaderP, FunctionP, FunctionReturnP, IdentifyingRuneP, IdentifyingRunesP, LocalNameDeclarationP, NameOrRunePT, NameP, OverrideP, ParamsP, PatternPP, Patterns, TopLevelFunctionP, VoidPE}
-import net.verdagon.vale.parser.old.{CombinatorParsers, OldTestParseUtils}
 import net.verdagon.vale.{Collector, vassert, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 

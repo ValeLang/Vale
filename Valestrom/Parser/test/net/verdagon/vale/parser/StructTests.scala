@@ -2,7 +2,7 @@ package net.verdagon.vale.parser
 
 import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser.ast._
-import net.verdagon.vale.parser.old.CombinatorParsers
+
 import net.verdagon.vale.{Collector, vassert}
 import org.scalatest.{FunSuite, Matchers}
 

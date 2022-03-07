@@ -1,9 +1,9 @@
 package net.verdagon.vale.parser.rules
 
-import net.verdagon.vale.parser.old.CombinatorParsers._
+
 import net.verdagon.vale.parser._
 import net.verdagon.vale.parser.ast.{AnonymousRunePT, CallPT, ComponentsPR, EqualsPR, FinalP, IRulexPR, ImmutableP, IntPT, IntTypePR, InterpretedPT, KindTypePR, MutabilityPT, MutableP, NameOrRunePT, NameP, PatternPP, PrototypePT, ReadonlyP, ShareP, SharePT, StaticSizedArrayPT, TemplexPR, TuplePT, TypedPR, VariabilityPT}
-import net.verdagon.vale.parser.old.CombinatorParsers
+
 import net.verdagon.vale.parser.templex.TemplexParser
 import net.verdagon.vale.{Collector, vfail}
 import org.scalatest.{FunSuite, Matchers}
@@ -11,18 +11,6 @@ import org.scalatest.{FunSuite, Matchers}
 class KindRuleTests extends FunSuite with Matchers with Collector with TestParseUtils {
   private def compile[T](code: String): IRulexPR = {
     compile(new TemplexParser().parseRule(_), code)
-  }
-
-  private def checkFail[T](parser: CombinatorParsers.Parser[T], code: String) = {
-    CombinatorParsers.parse(parser, "") match {
-      case CombinatorParsers.NoSuccess(_, _) =>
-      case CombinatorParsers.Success(_, rest) => {
-        if (!rest.atEnd) {
-          fail(rest.pos.longString)
-        }
-        fail()
-      }
-    }
   }
 
   test("Empty Kind rule") {

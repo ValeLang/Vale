@@ -1,7 +1,7 @@
 package net.verdagon.vale.parser
 
 import net.verdagon.vale.parser.ast.{BinaryCallPE, BlockPE, ConsecutorPE, ConstantBoolPE, ConstantIntPE, LetPE, LocalNameDeclarationP, LookupNameP, LookupPE, NameP, PatternPP, VoidPE, WhilePE}
-import net.verdagon.vale.parser.old.CombinatorParsers
+
 import net.verdagon.vale.{Collector, Tests, vassert}
 import org.scalatest.{FunSuite, Matchers}
 

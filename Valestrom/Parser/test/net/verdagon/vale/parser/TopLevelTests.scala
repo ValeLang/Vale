@@ -2,7 +2,6 @@ package net.verdagon.vale.parser
 
 import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser.ast.{BlockPE, ExportAsP, FileP, FunctionP, ITopLevelThingP, ImportP, NameOrRunePT, NameP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImportP, TopLevelStructP, VoidPE}
-import net.verdagon.vale.parser.old.OldTestParseUtils
 import net.verdagon.vale.{Collector, Tests, vassert, vassertSome}
 import org.scalatest.{FunSuite, Matchers}
 

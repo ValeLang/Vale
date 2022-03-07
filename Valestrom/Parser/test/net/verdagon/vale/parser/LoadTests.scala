@@ -3,7 +3,6 @@ package net.verdagon.vale.parser
 import net.liftweb.json._
 import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser.ast.{ConstantStrPE, FileP}
-import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, vassert}
 import net.verdagon.von.{JsonSyntax, VonPrinter}
 import org.scalatest.{FunSuite, Matchers}

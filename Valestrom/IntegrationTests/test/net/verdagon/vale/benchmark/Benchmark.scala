@@ -3,8 +3,10 @@ package net.verdagon.vale.benchmark
 import net.verdagon.vale.astronomer.AstronomerErrorHumanizer
 import net.verdagon.vale.driver.FullCompilationOptions
 import net.verdagon.vale.options.GlobalOptions
+import net.verdagon.vale.parser.ParseErrorHumanizer
+import net.verdagon.vale.scout.ScoutErrorHumanizer
 import net.verdagon.vale.templar.TemplarErrorHumanizer
-import net.verdagon.vale.{Builtins, Err, FileCoordinateMap, Ok, PackageCoordinate, Profiler, RunCompilation, Tests, Timer}
+import net.verdagon.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, Ok, PackageCoordinate, Profiler, RunCompilation, Tests, Timer}
 
 import scala.collection.immutable.List
 
@@ -22,15 +24,23 @@ object Benchmark {
         FullCompilationOptions(
           GlobalOptions(false, useOptimization, false, false),
           debugOut = (_) => {}))
-    compile.getAstrouts() match {
-      case Err(e) => println(AstronomerErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), e))
+    compile.getParseds() match {
+      case Err(e) => println(ParseErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), FileCoordinate.test, e.error))
       case Ok(t) =>
     }
-    compile.getTemputs() match {
-      case Err(e) => println(TemplarErrorHumanizer.humanize(true, compile.getCodeMap().getOrDie(), e))
-      case Ok(t) =>
-    }
-    compile.getHamuts()
+//    compile.getScoutput() match {
+//      case Err(e) => println(ScoutErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), e))
+//      case Ok(t) =>
+//    }
+//    compile.getAstrouts() match {
+//      case Err(e) => println(AstronomerErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), e))
+//      case Ok(t) =>
+//    }
+//    compile.getTemputs() match {
+//      case Err(e) => println(TemplarErrorHumanizer.humanize(true, compile.getCodeMap().getOrDie(), e))
+//      case Ok(t) =>
+//    }
+//    compile.getHamuts()
     timer.stop()
     timer.getNanosecondsSoFar()
   }

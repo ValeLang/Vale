@@ -8,7 +8,7 @@ import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.ast.{AbstractT, FunctionHeaderT, OverrideT, ParameterT}
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env.{IEnvironment, TemplatasStore}
-import net.verdagon.vale.{Interner, RangeS, vassert, vassertSome, vcurious, vfail, vimpl}
+import net.verdagon.vale.{Err, Interner, Ok, RangeS, vassert, vassertSome, vcurious, vfail, vimpl}
 
 import scala.collection.immutable.List
 
@@ -57,7 +57,10 @@ class VirtualTemplar(opts: TemplarOptions, interner: Interner, overloadTemplar: 
         // Throw away the result prototype, we just want it to be in the temputs.
         overloadTemplar.findFunction(
           env, temputs, RangeS.internal(-1388), nameToScoutFor, Vector.empty,
-          Array.empty, needleSuperFunctionParamFilters, extraEnvsToLookIn, true)
+          Array.empty, needleSuperFunctionParamFilters, extraEnvsToLookIn, true) match {
+          case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(RangeS.internal(-1388), e))
+          case Ok(x) => x
+        }
       }
     }
   }

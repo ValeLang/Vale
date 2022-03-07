@@ -153,7 +153,10 @@ class ArrayTemplar(
             Vector(ParamFilter(sizeTE.result.reference, None)) ++
               maybeCallableTE.map(c => ParamFilter(c.result.reference, None)),
             Vector(),
-            true)
+            true) match {
+            case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, e))
+            case Ok(x) => x
+          }
 
         val elementType =
           prototype.returnType.kind match {

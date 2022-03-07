@@ -10,8 +10,8 @@ import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.macros.{IFunctionBodyMacro, IOnInterfaceDefinedMacro}
 import net.verdagon.vale.templar.names._
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.templar.{OverloadTemplar, Templar, Temputs, env}
-import net.verdagon.vale.{CodeLocationS, Interner, RangeS, vassert}
+import net.verdagon.vale.templar.{CompileErrorExceptionT, CouldntFindFunctionToCallT, OverloadTemplar, Templar, Temputs, env}
+import net.verdagon.vale.{CodeLocationS, Err, Interner, Ok, RangeS, vassert}
 
 class InterfaceFreeMacro(interner: Interner, overloadTemplar: OverloadTemplar) extends IOnInterfaceDefinedMacro with IFunctionBodyMacro {
 
@@ -103,7 +103,10 @@ class InterfaceFreeMacro(interner: Interner, overloadTemplar: OverloadTemplar) e
     val virtualFreePrototype =
       overloadTemplar.findFunction(
         env, temputs, callRange, interner.intern(VirtualFreeImpreciseNameS()), Vector(), Array(),
-        Vector(ParamFilter(paramCoord, None)), Vector(), true)
+        Vector(ParamFilter(paramCoord, None)), Vector(), true) match {
+        case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(callRange, e))
+        case Ok(x) => x
+      }
 
     val expr = FunctionCallTE(virtualFreePrototype, Vector(ArgLookupTE(0, paramCoord)))
 

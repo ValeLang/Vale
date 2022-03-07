@@ -11,9 +11,9 @@ struct Subprocess {
 }
 
 func Subprocess(command str) Result<Subprocess, str> {
-  list! = command.split(" ");
+  list = command.split(" ");
   cmd = str(list.get(0));
-  newlist! = List<StrSlice>();
+  newlist = List<StrSlice>();
   foreach [index, element] in list.entries() {
     if index != 0 { newlist!.add(list.get(index)); }
   }
@@ -21,7 +21,7 @@ func Subprocess(command str) Result<Subprocess, str> {
 }
 
 func Subprocess(command str, args &List<str>) Result<Subprocess, str> {
-  newlist! = List<StrSlice>();
+  newlist = List<StrSlice>();
   foreach element in args {
     newlist!.add(slice(element));
   }
@@ -83,7 +83,7 @@ func Subprocess(relative_program str, args &List<StrSlice>) Result<Subprocess, s
   command_str_builder!.PrintCommandLinePart(program_path.str().slice());
 
 
-  cmdlist! = List<str>();
+  cmdlist = List<str>();
   cmdlist!.add(program_path.str());
   foreach arg in args {
     command_str_builder!.print(" ");

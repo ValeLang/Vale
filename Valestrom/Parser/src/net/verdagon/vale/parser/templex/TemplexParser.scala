@@ -1,7 +1,7 @@
 package net.verdagon.vale.parser.templex
 
 import net.verdagon.vale.parser.Parser.{ParsedDouble, ParsedInteger, parseRuneType, parseTypeName}
-import net.verdagon.vale.{Err, Ok, Result, vimpl, vwat}
+import net.verdagon.vale.{Err, Ok, Profiler, Result, vimpl, vwat}
 import net.verdagon.vale.parser._
 import net.verdagon.vale.parser.ast._
 import net.verdagon.vale.parser.expressions.StringParser
@@ -505,7 +505,9 @@ class TemplexParser {
   }
 
   def parseTemplex(iter: ParsingIterator): Result[ITemplexPT, IParseError] = {
-    parseTemplexAtomAndCallAndPrefixesAndSuffixes(iter)
+    Profiler.frame(() => {
+      parseTemplexAtomAndCallAndPrefixesAndSuffixes(iter)
+    })
   }
 
   def parseTypedRune(originalIter: ParsingIterator): Result[Option[TypedPR], IParseError] = {
@@ -643,17 +645,25 @@ class TemplexParser {
   }
 
   def parseRuleUpToEqualsPrecedence(iter: ParsingIterator): Result[IRulexPR, IParseError] = {
-    val begin = iter.getPos()
-    val inner =
-      parseRuleAtom(iter) match { case Err(e) => return Err(e) case Ok(t) => t }
+    Profiler.frame(() => {
+      val begin = iter.getPos()
+      val inner =
+        parseRuleAtom(iter) match {
+          case Err(e) => return Err(e)
+          case Ok(t) => t
+        }
 
-    if (iter.trySkip("^\\s*=\\s*".r)) {
-      val right =
-        parseRuleUpToEqualsPrecedence(iter) match { case Err(e) => return Err(e) case Ok(t) => t }
-      return Ok(EqualsPR(RangeP(begin, iter.getPos()), inner, right))
-    }
+      if (iter.trySkip("^\\s*=\\s*".r)) {
+        val right =
+          parseRuleUpToEqualsPrecedence(iter) match {
+            case Err(e) => return Err(e)
+            case Ok(t) => t
+          }
+        return Ok(EqualsPR(RangeP(begin, iter.getPos()), inner, right))
+      }
 
-    return Ok(inner)
+      return Ok(inner)
+    })
   }
 
   def parseRule(iter: ParsingIterator): Result[IRulexPR, IParseError] = {

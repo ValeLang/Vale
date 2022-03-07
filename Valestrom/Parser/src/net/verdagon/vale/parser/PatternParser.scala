@@ -52,7 +52,7 @@ class PatternParser {
     val begin = iter.getPos()
 
     if (!iter.trySkip("^\\[".r)) {
-      vwat()
+      return Err(RangedInternalErrorP(iter.getPos(), "No [ ?"))
     }
     iter.consumeWhitespace()
 
@@ -154,8 +154,8 @@ class PatternParser {
 
         val tyype = new TemplexParser().parseTemplex(iter) match { case Err(e) => return Err(e) case Ok(p) => p }
 
-        // We should be at the same place.
-        vassert(iter.getPos() == tentativeIter.getPos())
+//        // We should be at the same place.
+//        vassert(iter.getPos() == tentativeIter.getPos())
 
         val destructure = parseDestructure(iter) match { case Err(e) => return Err(e) case Ok(p) => p }
 

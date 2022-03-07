@@ -14,7 +14,7 @@ import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.names.{CodeVarNameT, FullNameT, PackageTopLevelNameT}
-import net.verdagon.vale.{CodeLocationS, Profiler, Interner, PackageCoordinate, RangeS, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{CodeLocationS, Err, Interner, Ok, PackageCoordinate, Profiler, RangeS, vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
@@ -36,7 +36,10 @@ class DestructorTemplar(
     val name = interner.intern(CodeNameS(CallTemplar.DROP_FUNCTION_NAME))
     val range = RangeS.internal(-1663)
     val args = Vector(ParamFilter(type2, None))
-    overloadTemplar.findFunction(env, temputs, range, name, Vector.empty, Array.empty, args, Vector(), true)
+    overloadTemplar.findFunction(env, temputs, range, name, Vector.empty, Array.empty, args, Vector(), true) match {
+      case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, e))
+      case Ok(x) => x
+    }
   }
 
   def getFreeFunction(
@@ -52,7 +55,10 @@ class DestructorTemplar(
     val name = interner.intern(FreeImpreciseNameS())
     val range = RangeS.internal(-1663)
     val args = Vector(ParamFilter(type2, None))
-    overloadTemplar.findFunction(env, temputs, range, name, Vector.empty, Array.empty, args, Vector(), true)
+    overloadTemplar.findFunction(env, temputs, range, name, Vector.empty, Array.empty, args, Vector(), true) match {
+      case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, e))
+      case Ok(x) => x
+    }
   }
 
   def drop(

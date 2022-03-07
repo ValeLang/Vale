@@ -8,7 +8,7 @@ import net.verdagon.vale.scout.{ArgumentRuneS, CodeRuneS, CodeVarNameS, Construc
 import net.verdagon.vale.solver.{FailedSolve, IIncompleteOrFailedSolve, IncompleteSolve, RuleError, SolverConflict, SolverErrorHumanizer}
 import net.verdagon.vale.templar.OverloadTemplar.{FindFunctionFailure, IFindFunctionFailureReason, InferFailure, RuleTypeSolveFailure, SpecificParamDoesntMatchExactly, SpecificParamDoesntSend, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
 import net.verdagon.vale.templar.ast.{AbstractT, FunctionBannerT, FunctionCalleeCandidate, HeaderCalleeCandidate, ICalleeCandidate, OverrideT, PrototypeT, SignatureT}
-import net.verdagon.vale.templar.infer.{CallResultWasntExpectedType, ITemplarSolverError, KindDoesntImplementInterface, KindIsNotConcrete, KindIsNotInterface, LookupFailed, NoAncestorsSatisfyCall, OneOfFailed, OwnershipDidntMatch, PermissionDidntMatch, ReceivingDifferentOwnerships, SendingNonCitizen, SendingNonIdenticalKinds, WrongNumberOfTemplateArgs}
+import net.verdagon.vale.templar.infer.{CallResultWasntExpectedType, CouldntFindFunction, ITemplarSolverError, KindDoesntImplementInterface, KindIsNotConcrete, KindIsNotInterface, LookupFailed, NoAncestorsSatisfyCall, OneOfFailed, OwnershipDidntMatch, PermissionDidntMatch, ReceivingDifferentOwnerships, SendingNonCitizen, SendingNonIdenticalKinds, WrongNumberOfTemplateArgs}
 import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, CitizenNameT, CitizenTemplateNameT, CodeVarNameT, FullNameT, FunctionNameT, INameT, IVarNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT}
 import net.verdagon.vale.templar.templata.{Conversions, CoordListTemplata, CoordTemplata, ITemplata, IntegerTemplata, InterfaceTemplata, KindTemplata, MutabilityTemplata, OwnershipTemplata, PermissionTemplata, PrototypeTemplata, RuntimeSizedArrayTemplateTemplata, StaticSizedArrayTemplateTemplata, StringTemplata, StructTemplata, VariabilityTemplata}
 import net.verdagon.vale.templar.types.{BoolT, BorrowT, CoordT, FinalT, FloatT, ImmutableT, IntT, InterfaceTT, KindT, MutableT, NeverT, OverloadSetT, OwnT, ParamFilter, PointerT, ReadonlyT, ReadwriteT, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StrT, StructTT, VaryingT, VoidT, WeakT}
@@ -310,6 +310,9 @@ object TemplarErrorHumanizer {
       }
       case SendingNonCitizen(kind) => {
         "Sending non-struct non-interface Kind: " + humanizeTemplata(codeMap, KindTemplata(kind))
+      }
+      case CouldntFindFunction(range, fff) => {
+        "Couldn't find function to call: " + humanizeFindFunctionFailure(false, codeMap, range, fff)
       }
       case WrongNumberOfTemplateArgs(expectedNumArgs) => {
         "Wrong number of template args, expected " + expectedNumArgs + "."

@@ -2,7 +2,6 @@ package net.verdagon.vale.parser.functions
 
 import net.verdagon.vale.parser._
 import net.verdagon.vale.parser.ast.{AbstractAttributeP, AbstractP, ArenaRuneAttributeP, BlockPE, ConstantIntPE, CoordTypePR, ExternAttributeP, FunctionHeaderP, FunctionP, FunctionReturnP, IdentifyingRuneP, LocalNameDeclarationP, NameOrRunePT, NameP, ParamsP, PatternPP, PoolRuneAttributeP, PureAttributeP, ReadOnlyRuneAttributeP, RegionTypePR, TopLevelFunctionP, TopLevelStructP, TypeRuneAttributeP, VoidPE}
-import net.verdagon.vale.parser.old.{CombinatorParsers, OldTestParseUtils}
 import net.verdagon.vale.{Collector, Tests, vassert}
 import org.scalatest.{FunSuite, Matchers}
 

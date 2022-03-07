@@ -234,7 +234,7 @@ class Templar(
             structDef.isClosure
         }
 
-        override def resolveExactSignature(env: IEnvironment, state: Temputs, range: RangeS, name: String, coords: Vector[CoordT]): PrototypeT = {
+        override def resolveExactSignature(env: IEnvironment, state: Temputs, range: RangeS, name: String, coords: Vector[CoordT]): Result[PrototypeT, FindFunctionFailure] = {
             overloadTemplar.findFunction(env, state, range, interner.intern(CodeNameS(name)), Vector.empty, Array.empty, coords.map(ParamFilter(_, None)), Vector.empty, true)
         }
       })
@@ -279,7 +279,10 @@ class Templar(
         PrototypeT = {
           overloadTemplar.findFunction(env, temputs, callRange, functionName,
             explicitTemplateArgRulesS,
-            explicitTemplateArgRunesS, args, extraEnvsToLookIn, exact)
+            explicitTemplateArgRunesS, args, extraEnvsToLookIn, exact) match {
+            case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(callRange, e))
+            case Ok(x) => x
+          }
         }
       })
 
@@ -857,7 +860,10 @@ class Templar(
           Array.empty,
           neededOverride.paramFilters,
           Vector.empty,
-          true)
+          true) match {
+          case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(RangeS.internal(-1900), e))
+          case Ok(x) => x
+        }
       }
     })
 

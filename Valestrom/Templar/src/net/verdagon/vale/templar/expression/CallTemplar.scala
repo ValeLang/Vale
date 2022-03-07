@@ -8,7 +8,7 @@ import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{ast, _}
 import net.verdagon.vale.templar.ast.{FunctionCallTE, LocationInFunctionEnvironment, ReferenceExpressionTE}
-import net.verdagon.vale.{Interner, RangeS, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, Interner, Ok, RangeS, vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
@@ -78,7 +78,10 @@ class CallTemplar(
               explicitTemplateArgRunesS,
               argsParamFilters,
               Vector.empty,
-              false)
+              false) match {
+            case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, e))
+            case Ok(x) => x
+          }
         val argsExprs2 =
           convertHelper.convertExprs(
             nenv.snapshot, temputs, range, givenArgsExprs2, prototype.paramTypes)
@@ -125,7 +128,10 @@ class CallTemplar(
         explicitTemplateArgRunesS,
         argsParamFilters,
         Vector.empty,
-        false)
+        false) match {
+        case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, e))
+        case Ok(x) => x
+      }
     val argsExprs2 =
       convertHelper.convertExprs(
         nenv, temputs, range, givenArgsExprs2, prototype.paramTypes)
@@ -190,7 +196,10 @@ class CallTemplar(
         argsTypes2.map(argType => ParamFilter(argType, None))
     val prototype2 =
       overloadTemplar.findFunction(
-        env, temputs, range, interner.intern(CodeNameS(CallTemplar.CALL_FUNCTION_NAME)), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, false)
+        env, temputs, range, interner.intern(CodeNameS(CallTemplar.CALL_FUNCTION_NAME)), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, false) match {
+        case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, e))
+        case Ok(x) => x
+      }
 
     val mutability = Templar.getMutability(temputs, citizenRef)
     val ownership = if (mutability == MutableT) BorrowT else ShareT

@@ -2,28 +2,15 @@ package net.verdagon.vale.parser.patterns
 
 import net.verdagon.vale.{Collector, parser, vfail, vimpl}
 import net.verdagon.vale.parser.ast.Patterns.{fromEnv, withType}
-import net.verdagon.vale.parser.old.CombinatorParsers._
+
 import net.verdagon.vale.parser._
 import net.verdagon.vale.parser.ast.{AnonymousRunePT, CallPT, FinalP, IgnoredLocalNameDeclarationP, ImmutableP, IntPT, InterpretedPT, MutabilityPT, MutableP, NameOrRunePT, NameP, PatternPP, PointerP, ReadonlyP, StaticSizedArrayPT, TuplePT, VariabilityPT, VaryingP, WeakP}
-import net.verdagon.vale.parser.old.CombinatorParsers
+
 import org.scalatest.{FunSuite, Matchers}
 
 class TypeTests extends FunSuite with Matchers with Collector with TestParseUtils {
   private def compile[T](code: String): PatternPP = {
     compile(new PatternParser().parsePattern(_), code)
-  }
-
-  private def checkFail[T](parser: CombinatorParsers.Parser[T], code: String) = {
-    CombinatorParsers.parse(parser, code) match {
-      case CombinatorParsers.NoSuccess(_, _) =>
-      case CombinatorParsers.Success(_, rest) => {
-        if (!rest.atEnd) {
-          // That's good, it didn't parse all of it
-        } else {
-          fail()
-        }
-      }
-    }
   }
 
   test("Ignoring name") {

@@ -5,7 +5,6 @@ import net.verdagon.vale.parser.ExpressionParser.{MAX_PRECEDENCE, MIN_PRECEDENCE
 import net.verdagon.vale.parser.Parser.{ParsedDouble, ParsedInteger}
 import net.verdagon.vale.parser.ast.{AndPE, AugmentPE, BinaryCallPE, BlockPE, BorrowP, BraceCallPE, BreakPE, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstructArrayPE, DestructPE, DotPE, EachPE, ExportAsP, FileP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IExpressionPE, ITemplexPT, ITopLevelThingP, IfPE, ImmutableP, ImplP, ImportP, InterfaceP, LambdaPE, LetPE, LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LocalNameDeclarationP, LookupNameP, LookupPE, MagicParamLookupPE, MethodCallPE, MutabilityPT, MutableP, MutatePE, NameP, NotPE, OrPE, OwnP, PackPE, ParamsP, PatternPP, PointerP, RangeP, RangePE, ReadonlyP, ReadwriteP, ReturnPE, RuntimeSizedP, StaticSizedP, StructP, SubExpressionPE, TemplateArgsP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, UseP, VoidPE, WeakP, WhilePE}
 import net.verdagon.vale.parser.expressions.StringParser
-import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.parser.templex.TemplexParser
 import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, Ok, PackageCoordinate, Profiler, Result, repeatStr, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 import net.verdagon.von.{JsonSyntax, VonPrinter}

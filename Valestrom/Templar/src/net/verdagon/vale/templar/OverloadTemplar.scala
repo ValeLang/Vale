@@ -72,7 +72,7 @@ class OverloadTemplar(
     args: Vector[ParamFilter],
     extraEnvsToLookIn: Vector[IEnvironment],
     exact: Boolean):
-  PrototypeT = {
+  Result[PrototypeT, FindFunctionFailure] = {
     Profiler.frame(() => {
       findPotentialFunction(
         env,
@@ -84,9 +84,9 @@ class OverloadTemplar(
         args,
         extraEnvsToLookIn,
         exact) match {
-        case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(callRange, e))
+        case Err(e) => return Err(e)
         case Ok(potentialBanner) => {
-          stampPotentialFunctionForPrototype(temputs, callRange, potentialBanner, args)
+          Ok(stampPotentialFunctionForPrototype(temputs, callRange, potentialBanner, args))
         }
       }
     })
@@ -578,7 +578,10 @@ class OverloadTemplar(
         ParamFilter(CoordT(ShareT, ReadonlyT, IntT.i32), None))
       findFunction(
         fate, temputs, range, funcName, Vector.empty, Array.empty,
-        paramFilters, Vector.empty, false)
+        paramFilters, Vector.empty, false) match {
+        case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, e))
+        case Ok(x) => x
+      }
   }
 
   def getArrayConsumerPrototype(
@@ -594,6 +597,9 @@ class OverloadTemplar(
         ParamFilter(callableTE.result.underlyingReference, None),
         ParamFilter(elementType, None))
     findFunction(
-      fate.snapshot, temputs, range, funcName, Vector.empty, Array.empty, paramFilters, Vector.empty, false)
+      fate.snapshot, temputs, range, funcName, Vector.empty, Array.empty, paramFilters, Vector.empty, false) match {
+      case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, e))
+      case Ok(x) => x
+    }
   }
 }

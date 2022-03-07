@@ -30,7 +30,7 @@ func splice(original str, at int, removeNumChars int, insert str) str {
 
 
 func ltrim(s str) StrSlice { ltrim(s.slice()) }
-func ltrim(s! StrSlice) StrSlice {
+func ltrim(s StrSlice) StrSlice {
   whitespace = " \r\n\t";
   while true {
     if s == "" {
@@ -44,7 +44,7 @@ func ltrim(s! StrSlice) StrSlice {
   panic("unreachable");
 }
 func rtrim(s str) StrSlice { rtrim(s.slice()) }
-func rtrim(s! StrSlice) StrSlice {
+func rtrim(s StrSlice) StrSlice {
   whitespace = " \r\n\t";
   while true {
     if s == "" {
@@ -59,10 +59,10 @@ func rtrim(s! StrSlice) StrSlice {
 }
 
 func trim(s str) StrSlice { trim(s.slice()) }
-func trim(s! StrSlice) StrSlice { ltrim(rtrim(s)) }
+func trim(s StrSlice) StrSlice { ltrim(rtrim(s)) }
 
 func isWhitespace(s str) bool { isWhitespace(s.slice()) }
-func isWhitespace(s! StrSlice) bool {
+func isWhitespace(s StrSlice) bool {
   while len(s) > 0 {
     if " \r\n\t".find(s).isEmpty() {
       // then its not whitespace
@@ -75,7 +75,7 @@ func isWhitespace(s! StrSlice) bool {
 
 
 func ltrimnl(s str) StrSlice { ltrimnl(s.slice()) }
-func ltrimnl(s! StrSlice) StrSlice {
+func ltrimnl(s StrSlice) StrSlice {
   while true {
     if s == "" {
       ret s;
@@ -88,7 +88,7 @@ func ltrimnl(s! StrSlice) StrSlice {
   panic("unreachable");
 }
 func rtrimnl(s str) StrSlice { rtrimnl(s.slice()) }
-func rtrimnl(s! StrSlice) StrSlice {
+func rtrimnl(s StrSlice) StrSlice {
   whitespace = " \r\n\t";
   while true {
     if s == "" {
@@ -103,10 +103,10 @@ func rtrimnl(s! StrSlice) StrSlice {
 }
 
 func trimnl(s str) StrSlice { trimnl(s.slice()) }
-func trimnl(s! StrSlice) StrSlice { ltrimnl(rtrimnl(s)) }
+func trimnl(s StrSlice) StrSlice { ltrimnl(rtrimnl(s)) }
 
-func int(s! str) Opt<int> { int(s.slice()) }
-func int(s! StrSlice) Opt<int> {
+func int(s str) Opt<int> { int(s.slice()) }
+func int(s StrSlice) Opt<int> {
   if s == "" {
     ret None<int>();
   }
@@ -185,7 +185,7 @@ func split(haystack str, needle StrSlice) List<StrSlice> {
 func split(haystack StrSlice, needle str) List<StrSlice> {
   split(haystack, needle.slice())
 }
-func split(haystack! StrSlice, needle StrSlice) List<StrSlice> {
+func split(haystack StrSlice, needle StrSlice) List<StrSlice> {
   // Special case first: this means they want to explode a string into
   // chars, like "abc" into "a", "b", "c"  
   if needle == "" {
@@ -269,8 +269,8 @@ func split(haystack! StrSlice, needle StrSlice) List<StrSlice> {
 
 
 struct StrSliceHasher { }
-func __call(self &StrSliceHasher, s! StrSlice) int {
-  sum! = 0;
+func __call(self &StrSliceHasher, s StrSlice) int {
+  sum = 0;
   while s != "" {
     set sum = sum * 1337 + toAscii(s.slice(0, 1));
     set s = s.slice(1);
@@ -284,9 +284,9 @@ func __call(self &StrSliceEquator, a StrSlice, b StrSlice) bool {
 }
 
 struct StrHasher { }
-func __call(self &StrHasher, original_str! str) int {
+func __call(self &StrHasher, original_str str) int {
   s = original_str.slice();
-  sum! = 0;
+  sum = 0;
   while s != "" {
     set sum = sum * 1337 + toAscii(s.slice(0, 1));
     set s = s.slice(1);
@@ -307,7 +307,7 @@ func StringBuilder() StringBuilder {
   StringBuilder(List<StrSlice>())
 }
 func assembleStr(self &StringBuilder) str {
-  result! = "";
+  result = "";
   foreach s in self.parts {
     set result = result + s;
   }

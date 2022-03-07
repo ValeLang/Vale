@@ -1,10 +1,10 @@
 package net.verdagon.vale.parser.patterns
 
 import net.verdagon.vale.parser.ast.Patterns._
-import net.verdagon.vale.parser.old.CombinatorParsers._
+
 import net.verdagon.vale.parser._
 import net.verdagon.vale.parser.ast.{CallPT, DestructureP, IgnoredLocalNameDeclarationP, LocalNameDeclarationP, NameOrRunePT, NameP, PatternPP, TuplePT}
-import net.verdagon.vale.parser.old.CombinatorParsers
+
 import net.verdagon.vale.{Collector, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -12,22 +12,6 @@ class TypeAndDestructureTests extends FunSuite with Matchers with Collector with
   private def compile[T](code: String): PatternPP = {
     compile(new PatternParser().parsePattern(_), code)
   }
-
-  private def checkFail[T](parser: CombinatorParsers.Parser[T], code: String) = {
-    CombinatorParsers.parse(parser, code) match {
-      case CombinatorParsers.NoSuccess(_, _) =>
-      case CombinatorParsers.Success(_, rest) => {
-        if (!rest.atEnd) {
-          // That's good, it didn't parse all of it
-        } else {
-          fail()
-        }
-      }
-    }
-  }
-
-
-
 
   test("Empty destructure") {
     compile("_ Muta[]") shouldHave {

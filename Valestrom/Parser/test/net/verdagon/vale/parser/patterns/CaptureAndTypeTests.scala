@@ -1,10 +1,8 @@
 package net.verdagon.vale.parser.patterns
 
 import net.verdagon.vale.parser.ast.Patterns.{capturedWithType, capturedWithTypeRune}
-import net.verdagon.vale.parser.old.CombinatorParsers._
 import net.verdagon.vale.parser._
 import net.verdagon.vale.parser.ast.{ConstructingMemberNameDeclarationP, InterpretedPT, LocalNameDeclarationP, NameOrRunePT, NameP, PatternPP, PointerP, ReadonlyP, WeakP}
-import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -24,19 +22,6 @@ class CaptureAndTypeTests extends FunSuite with Matchers with Collector with Tes
 //  }
   private def compile[T](code: String): PatternPP = {
     compile(new PatternParser().parsePattern(_), code)
-  }
-
-  private def checkFail[T](parser: CombinatorParsers.Parser[T], code: String) = {
-    CombinatorParsers.parse(parser, code) match {
-      case CombinatorParsers.NoSuccess(_, _) =>
-      case CombinatorParsers.Success(_, rest) => {
-        if (!rest.atEnd) {
-          // That's good, it didn't parse all of it
-        } else {
-          fail()
-        }
-      }
-    }
   }
 
   test("No capture, with type") {

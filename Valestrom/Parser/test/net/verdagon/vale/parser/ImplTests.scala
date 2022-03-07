@@ -2,7 +2,6 @@ package net.verdagon.vale.parser
 
 import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser.ast.{CallPT, IdentifyingRuneP, IdentifyingRunesP, ImplP, MutabilityPT, MutableP, NameOrRunePT, NameP, TopLevelImplP}
-import net.verdagon.vale.parser.old.{CombinatorParsers, OldTestParseUtils}
 import net.verdagon.vale.{Collector, Tests, vassert}
 import org.scalatest.{FunSuite, Matchers}
 

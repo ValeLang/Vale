@@ -12,6 +12,13 @@ object ParseErrorHumanizer {
   String = {
     val errorStrBody =
       err match {
+        case BadRuleCallParam(pos) => "Bad rule call param."
+        case BadFunctionAfterParam(pos) => "Bad end of param."
+        case BadRuneTypeError(pos) => "Bad rune type."
+        case BadTemplateCallParam(pos) => "Bad template call param."
+        case BadDestructureError(pos) => "Bad destructure."
+        case BadTypeExpression(pos) => "Bad type expression."
+        case BadLocalName(pos) => "Bad local name."
         case CombinatorParseError(pos, msg) => msg
         case BadStringInterpolationEnd(pos) => "Bad string interpolation end."
         case CantUseBreakInExpression(pos) => "Can't use break inside an expression."
@@ -39,7 +46,7 @@ object ParseErrorHumanizer {
         case BadExpressionEnd(pos) => "expected `;` or `}` after expression, but found:\n"
         case IfBlocksMustBothOrNeitherReturn(pos) => "If blocks should either both return, or neither return."
         case ForgotSetKeyword(pos) => "Need `set` keyword to mutate a variable that already exists."
-        case BadImport(pos, cause) => "bad import:\n" + cause.toString + "\n"
+//        case BadImport(pos, cause) => "bad import:\n" + cause.toString + "\n"
         case BadStartOfWhileCondition(pos) => "Bad start of while condition, expected ("
         case BadEndOfWhileCondition(pos) => "Bad end of while condition, expected )"
         case BadStartOfWhileBody(pos) => "Bad start of while body, expected {"
@@ -61,7 +68,7 @@ object ParseErrorHumanizer {
         case BadElseBody(pos, cause) => "Parse error somewhere inside this else body. Imprecise inner error: " + humanizeCombinatorParseError(fileMap, fileCoord, cause)
         case BadStruct(pos, cause) => "Parse error somewhere inside this struct. Imprecise inner error: " + humanizeCombinatorParseError(fileMap, fileCoord, cause)
         case BadInterface(pos, cause) => "Parse error somewhere inside this interface. Imprecise inner error: " + humanizeCombinatorParseError(fileMap, fileCoord, cause)
-        case BadImpl(pos, cause) => "Parse error somewhere inside this impl. Imprecise inner error: " + humanizeCombinatorParseError(fileMap, fileCoord, cause)
+//        case BadImpl(pos, cause) => "Parse error somewhere inside this impl. Imprecise inner error: " + humanizeCombinatorParseError(fileMap, fileCoord, cause)
         case BadFunctionHeaderError(pos, cause) => "Parse error somewhere inside this function header. Imprecise inner error: " + humanizeCombinatorParseError(fileMap, fileCoord, cause)
         case BadEachError(pos, cause) => "Parse error somewhere inside this each/eachI. Imprecise inner error: " + humanizeCombinatorParseError(fileMap, fileCoord, cause)
         case BadBlockError(pos, cause) => "Parse error somewhere inside this block. Imprecise inner error: " + humanizeCombinatorParseError(fileMap, fileCoord, cause)

@@ -8,22 +8,22 @@ import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
-class CaptureAndTypeTests extends FunSuite with Matchers with Collector {
-  private def compile[T](parser: CombinatorParsers.Parser[T], code: String): T = {
-    CombinatorParsers.parse(parser, code.toCharArray()) match {
-      case CombinatorParsers.NoSuccess(msg, input) => {
-        fail();
-      }
-      case CombinatorParsers.Success(expr, rest) => {
-        if (!rest.atEnd) {
-          vfail(rest.pos.longString)
-        }
-        expr
-      }
-    }
-  }
+class CaptureAndTypeTests extends FunSuite with Matchers with Collector with TestParseUtils {
+//  private def compile[T](parser: CombinatorParsers.Parser[T], code: String): T = {
+//    CombinatorParsers.parse(parser, code.toCharArray()) match {
+//      case CombinatorParsers.NoSuccess(msg, input) => {
+//        fail();
+//      }
+//      case CombinatorParsers.Success(expr, rest) => {
+//        if (!rest.atEnd) {
+//          vfail(rest.pos.longString)
+//        }
+//        expr
+//      }
+//    }
+//  }
   private def compile[T](code: String): PatternPP = {
-    compile(atomPattern, code)
+    compile(new PatternParser().parsePattern(_), code)
   }
 
   private def checkFail[T](parser: CombinatorParsers.Parser[T], code: String) = {
@@ -63,8 +63,8 @@ class CaptureAndTypeTests extends FunSuite with Matchers with Collector {
       None) =>
     }
   }
-  test("Capture with this. in front") {
-    compile("this.arr **R") shouldHave {
+  test("Capture with self. in front") {
+    compile("self.arr **R") shouldHave {
       case PatternPP(_,_,
       Some(ConstructingMemberNameDeclarationP(NameP(_, "arr"))),
       Some(InterpretedPT(_,WeakP,ReadonlyP, NameOrRunePT(NameP(_, "R")))),

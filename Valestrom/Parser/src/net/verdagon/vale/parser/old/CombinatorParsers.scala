@@ -1,8 +1,9 @@
 package net.verdagon.vale.parser.old
 
 import net.verdagon.vale.parser.ast._
-import net.verdagon.vale.parser.patterns.PatternParser
-import net.verdagon.vale.parser.rules.{RuleParser, RuleTemplexParser}
+import net.verdagon.vale.parser.old.patterns.PatternParser
+import net.verdagon.vale.parser.old.rules.RuleParser
+import net.verdagon.vale.parser.rules.RuleTemplexParser
 import net.verdagon.vale.parser.{ast, _}
 import net.verdagon.vale.vassert
 
@@ -68,20 +69,20 @@ object CombinatorParsers
 //      }
 //    }
 //  }
-
-  def normalStructMember: Parser[NormalStructMemberP] = {
-    pos ~ (exprIdentifier ~ opt("!") <~ optWhite) ~ (templex <~ optWhite <~ ";") ~ pos ^^ {
-      case begin ~ (name ~ None) ~ tyype ~ end => ast.NormalStructMemberP(ast.RangeP(begin, end), name, FinalP, tyype)
-      case begin ~ (name ~ Some(_)) ~ tyype ~ end => ast.NormalStructMemberP(ast.RangeP(begin, end), name, VaryingP, tyype)
-    }
-  }
-
-  def variadicStructMember: Parser[VariadicStructMemberP] = {
-    pos ~ ("_" ~> opt("!") <~ white) ~ (".." ~> optWhite ~> templex <~ optWhite <~ ";") ~ pos ^^ {
-      case begin ~ (None) ~ tyype ~ end => ast.VariadicStructMemberP(ast.RangeP(begin, end), FinalP, tyype)
-      case begin ~ (Some(_)) ~ tyype ~ end => ast.VariadicStructMemberP(ast.RangeP(begin, end), VaryingP, tyype)
-    }
-  }
+//
+//  def normalStructMember: Parser[NormalStructMemberP] = {
+//    pos ~ (exprIdentifier ~ opt("!") <~ optWhite) ~ (templex <~ optWhite <~ ";") ~ pos ^^ {
+//      case begin ~ (name ~ None) ~ tyype ~ end => ast.NormalStructMemberP(ast.RangeP(begin, end), name, FinalP, tyype)
+//      case begin ~ (name ~ Some(_)) ~ tyype ~ end => ast.NormalStructMemberP(ast.RangeP(begin, end), name, VaryingP, tyype)
+//    }
+//  }
+//
+//  def variadicStructMember: Parser[VariadicStructMemberP] = {
+//    pos ~ ("_" ~> opt("!") <~ white) ~ (".." ~> optWhite ~> templex <~ optWhite <~ ";") ~ pos ^^ {
+//      case begin ~ (None) ~ tyype ~ end => ast.VariadicStructMemberP(ast.RangeP(begin, end), FinalP, tyype)
+//      case begin ~ (Some(_)) ~ tyype ~ end => ast.VariadicStructMemberP(ast.RangeP(begin, end), VaryingP, tyype)
+//    }
+//  }
 
 //  def structContent: Parser[IStructContent] = {
 //    variadicStructMember | normalStructMember | (topLevelFunction ^^ StructMethodP)
@@ -117,26 +118,26 @@ object CombinatorParsers
 //    }
 //  }
 
-  private[parser] def export: Parser[ExportAsP] = {
-    pos ~ ("export" ~> white ~>
-      (templex <~ white <~ "as" <~ white) ~
-      (exprIdentifier <~ optWhite <~ ";")) ~ pos ^^ {
-      case begin ~ (tyype ~ name) ~ end => {
-        ast.ExportAsP(ast.RangeP(begin, end), tyype, name)
-      }
-    }
-  }
-
-  private[parser] def `import`: Parser[ImportP] = {
-    (pos <~ "import" <~ white) ~
-      rep(exprIdentifier <~ optWhite <~ "." <~ optWhite) ~
-      (exprIdentifier | pstr("*")) ~
-      (optWhite ~> ";" ~> pos) ^^ {
-      case begin ~ steps ~ importee ~ end => {
-        val moduleName = steps.head
-        val packageSteps = steps.tail
-        ast.ImportP(ast.RangeP(begin, end), moduleName, packageSteps.toVector, importee)
-      }
-    }
-  }
+//  private[parser] def export: Parser[ExportAsP] = {
+//    pos ~ ("export" ~> white ~>
+//      (templex <~ white <~ "as" <~ white) ~
+//      (exprIdentifier <~ optWhite <~ ";")) ~ pos ^^ {
+//      case begin ~ (tyype ~ name) ~ end => {
+//        ast.ExportAsP(ast.RangeP(begin, end), tyype, name)
+//      }
+//    }
+//  }
+//
+//  private[parser] def `import`: Parser[ImportP] = {
+//    (pos <~ "import" <~ white) ~
+//      rep(exprIdentifier <~ optWhite <~ "." <~ optWhite) ~
+//      (exprIdentifier | pstr("*")) ~
+//      (optWhite ~> ";" ~> pos) ^^ {
+//      case begin ~ steps ~ importee ~ end => {
+//        val moduleName = steps.head
+//        val packageSteps = steps.tail
+//        ast.ImportP(ast.RangeP(begin, end), moduleName, packageSteps.toVector, importee)
+//      }
+//    }
+//  }
 }

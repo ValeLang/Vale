@@ -17,7 +17,7 @@ class StructTests extends FunSuite with Matchers {
     compile.run(Vector())
   }
 
-  test("Constructor with this") {
+  test("Constructor with self") {
     val compile = RunCompilation.test( Tests.loadExpected("programs/structs/constructor.vale"))
 
     compile.evalForKind(Vector()) match { case VonInt(10) => }
@@ -88,7 +88,7 @@ class StructTests extends FunSuite with Matchers {
         |struct Weapon { }
         |func drop(weapon Weapon) {
         |  println("Destroying weapon!");
-        |  Weapon[] = weapon;
+        |  Weapon[ ] = weapon;
         |}
         |#!DeriveStructDrop
         |struct Marine {

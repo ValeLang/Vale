@@ -11,15 +11,9 @@ import org.scalatest.{FunSuite, Matchers}
 class ScoutParametersTests extends FunSuite with Matchers with Collector {
 
   private def compile(code: String): ProgramS = {
-    Parser.runParser(code) match {
-      case Err(err) => fail(err.toString)
-      case Ok(program0) => {
-        new Scout(GlobalOptions.test(), new Interner())
-            .scoutProgram(FileCoordinate.test, program0) match {
-          case Err(e) => vfail(ScoutErrorHumanizer.humanize(FileCoordinateMap.test(code), e))
-          case Ok(t) => t
-        }
-      }
+    ScoutTestCompilation.test(code).getScoutput() match {
+      case Err(e) => vfail(ScoutErrorHumanizer.humanize(FileCoordinateMap.test(code), e))
+      case Ok(t) => t.expectOne()
     }
   }
 
@@ -116,7 +110,7 @@ class ScoutParametersTests extends FunSuite with Matchers with Collector {
   }
 
   test("Regioned pure function") {
-    val bork = compile("func main<'r ro>(ship 'r *Spaceship) pure 't { }")
+    val bork = compile("pure func main<'r>(ship *Spaceship 'r) 't { }")
 
     val main = bork.lookupFunction("main")
     // We dont support regions yet, so scout should filter them out.

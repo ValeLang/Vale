@@ -2,11 +2,11 @@
 func MakeArray<T, G>(n int, generator G) []<mut>T
 where
   T Ref,
-  G Ref(share | borrow, _, _),
-  F Prot = Prot("__call", Refs(G, int), T)
+  G Ref = Ref[any(share, borrow), _, _],
+  F Prot = Prot["__call", Refs(G, int), T]
 {
   arr = Array<mut, T>(n);
-  i! = 0;
+  i = 0;
   while (i < n) {
     arr!.push(generator!(i));
     set i = i + 1;
@@ -17,11 +17,11 @@ where
 func MakeVaryArray<T, G>(n int, generator G) []<mut>T
 where
   T Ref,
-  G Ref(share | borrow, _, _),
-  F Prot = Prot("__call", Refs(G, int), T)
+  G Ref = Ref[any(share, borrow), _, _],
+  F Prot = Prot["__call", Refs(G, int), T]
 {
   arr = Array<mut, T>(n);
-  i! = 0;
+  i = 0;
   while (i < n) {
     arr!.push(generator!(i));
     set i = i + 1;
@@ -32,8 +32,8 @@ where
 func MakeImmArray<G>(n int, generator G) []<imm>T
 where
   T Ref,
-  G Ref(share | borrow, _, _),
-  F Prot = Prot("__call", Refs(G, int), T)
+  G Ref = Ref[any(share, borrow), _, _],
+  F Prot = Prot["__call", Refs(G, int), T]
 {
   ret Array<imm, T>(n, generator);
 }

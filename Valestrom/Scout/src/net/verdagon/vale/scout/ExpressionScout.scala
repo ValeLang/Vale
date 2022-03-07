@@ -146,7 +146,7 @@ class ExpressionScout(
                 case FunctionNameS(n, _) => LookupNameP(NameP(rangeAtEnd, n))
                 case _ => vwat()
               }, None),
-            constructedMembersNames.map(n => DotPE(rangeAtEnd, LookupPE(LookupNameP(NameP(rangeAtEnd, "this")), None), ast.RangeP.zero, NameP(rangeAtEnd, n))),
+            constructedMembersNames.map(n => DotPE(rangeAtEnd, LookupPE(LookupNameP(NameP(rangeAtEnd, "self")), None), ast.RangeP.zero, NameP(rangeAtEnd, n))),
             false)
 
         val (stackFrameAfterConstructing, NormalResult(constructExpression), selfUsesAfterConstructing, childUsesAfterConstructing) =
@@ -734,7 +734,7 @@ class ExpressionScout(
           // We know we're in a constructor if there's no `this` variable yet. After all,
           // in a constructor, `this` is just an imaginary concept until we actually
           // fill all the variables.
-          case LookupPE(LookupNameP(NameP(range, "this")), _) if (stackFrame0.findVariable(interner.intern(CodeNameS("this"))).isEmpty) => {
+          case LookupPE(LookupNameP(NameP(range, "self")), _) if (stackFrame0.findVariable(interner.intern(CodeNameS("self"))).isEmpty) => {
             val result = LocalLookupResult(evalRange(range), interner.intern(ConstructingMemberNameS(memberName)))
             (stackFrame0, result, noVariableUses, noVariableUses)
           }

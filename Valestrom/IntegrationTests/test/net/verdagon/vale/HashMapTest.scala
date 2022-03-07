@@ -95,7 +95,7 @@ class HashMapTest extends FunSuite with Matchers {
           |
           |struct LocationHasher { }
           |func __call(this &LocationHasher, loc Location) int {
-          |  hash! = 0;
+          |  hash = 0;
           |  set hash = 41 * hash + loc.groupX;
           |  set hash = 41 * hash + loc.groupY;
           |  set hash = 41 * hash + loc.indexInGroup;

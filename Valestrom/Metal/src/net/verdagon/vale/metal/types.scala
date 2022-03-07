@@ -260,7 +260,7 @@ case object Mutable extends Mutability
 // Examples (with C++ translations):
 //   This will create a varying local, which can be changed to point elsewhere:
 //     Vale:
-//       x! = Car(4, "Honda Civic");
+//       x = Car(4, "Honda Civic");
 //       set x = someOtherCar;
 //       set x = Car(4, "Toyota Camry");
 //     C++:

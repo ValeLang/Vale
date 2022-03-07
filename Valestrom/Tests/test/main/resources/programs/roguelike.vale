@@ -51,10 +51,10 @@ func display(
     playerRow int,
     playerCol int)
 {
-  toPrint! = "";
+  toPrint = "";
   board.eachI((rowI, row) => {
     row.eachI((cellI, cell) => {
-      charToPrint! = cell;
+      charToPrint = cell;
 
       if (rowI == playerRow and cellI == playerCol) {
         set charToPrint = "@";
@@ -77,7 +77,7 @@ func display(
 }
 
 func inputKey() int {
-  key! = 0;
+  key = 0;
   while (true) {
     set key = __getch();
     if (key == 81) {
@@ -125,8 +125,8 @@ exported func main() int {
 
   board = makeBoard();
 
-  playerRow! = 4;
-  playerCol! = 3;
+  playerRow = 4;
+  playerCol = 3;
 
   goblins = HashMap<int, Goblin, IntHasher, IntEquator>(IntHasher(), IntEquator());
   goblins!.add(13, Goblin(Vec(#[#][6, 3])));
@@ -140,7 +140,7 @@ exported func main() int {
   goblins!.add(27, Goblin(Vec(#[#][4, 6])));
   goblins!.add(29, Goblin(Vec(#[#][7, 4])));
 
-  running! = true;
+  running = true;
   while (running) {
     display(
         &board,
@@ -149,8 +149,8 @@ exported func main() int {
         playerCol);
 
     key = inputKey();
-    newPlayerRow! = playerRow;
-    newPlayerCol! = playerCol;
+    newPlayerRow = playerRow;
+    newPlayerCol = playerCol;
     if (key == 81) {
       set running = false;
     } else if (key == 119) {
@@ -163,7 +163,7 @@ exported func main() int {
       set newPlayerCol = newPlayerCol + 1;
     }
 
-    killedGoblin! = false;
+    killedGoblin = false;
     goblins.keys().each((key) => {
       if (goblinAt?(&goblins, key, newPlayerRow, newPlayerCol)) {
         goblins!.remove(key);

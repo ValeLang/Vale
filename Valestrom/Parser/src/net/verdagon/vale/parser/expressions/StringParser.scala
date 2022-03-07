@@ -1,14 +1,14 @@
 package net.verdagon.vale.parser.expressions
 
-import net.verdagon.vale.parser.ExpressionParser.StopBeforeCloseBrace
 import net.verdagon.vale.{Err, Ok, Result, vassert, vassertSome, vimpl}
-import net.verdagon.vale.parser.{BadStringChar, BadStringInterpolationEnd, BadUnicodeChar, ExpressionParser, IParseError, Parser, ParsingIterator, ast}
+import net.verdagon.vale.parser.{BadStringChar, BadStringInterpolationEnd, BadUnicodeChar, ExpressionParser, IParseError, Parser, ParsingIterator, StopBeforeCloseBrace, ast}
 import net.verdagon.vale.parser.ast.{ConstantStrPE, IExpressionPE, RangeP, StrInterpolatePE}
+import net.verdagon.vale.parser.expressions.StringParser.{StringPart, StringPartChar, StringPartExpr, parseFourDigitHexNum}
 
 import scala.collection.mutable
 import scala.util.matching.Regex
 
-object ParseString {
+class StringParser(expressionParser: ExpressionParser) {
   def parseStringEnd(iter: ParsingIterator, isLongString: Boolean): Boolean = {
     iter.atEnd() || iter.trySkip(if (isLongString) "^\"\"\"".r else "^\"".r)
   }
@@ -60,20 +60,13 @@ object ParseString {
     }
   }
 
-  def parseFourDigitHexNum(iter: ParsingIterator): Option[Int] = {
-    iter.tryy("^([0-9a-fA-F]{4})".r).map(Integer.parseInt(_, 16))
-  }
-
-  sealed trait StringPart
-  case class StringPartChar(c: Char) extends StringPart
-  case class StringPartExpr(expr: IExpressionPE) extends StringPart
   def parseStringPart(iter: ParsingIterator, stringBeginPos: Int): Result[StringPart, IParseError] = {
     // The newline is because we dont want to interpolate when its a { then a newline.
     // If they want that, then they should do {\
     if (iter.trySkip("^\\{\\\\".r) ||
-        iter.trySkipIfPeekNext("^\\{".r, "^[^\\n]".r)) {
+      iter.trySkipIfPeekNext("^\\{".r, "^[^\\n]".r)) {
       iter.consumeWhitespace()
-      (ExpressionParser.parseExpression(iter, StopBeforeCloseBrace) match {
+      (expressionParser.parseExpression(iter, StopBeforeCloseBrace) match {
         case Err(e) => return Err(e)
         case Ok(e) => Ok(StringPartExpr(e))
       })
@@ -117,5 +110,15 @@ object ParseString {
       Ok(StringPartChar(c.charAt(0)))
     }
   }
+}
 
+object StringParser {
+
+  sealed trait StringPart
+  case class StringPartChar(c: Char) extends StringPart
+  case class StringPartExpr(expr: IExpressionPE) extends StringPart
+
+  def parseFourDigitHexNum(iter: ParsingIterator): Option[Int] = {
+    iter.tryy("^([0-9a-fA-F]{4})".r).map(Integer.parseInt(_, 16))
+  }
 }

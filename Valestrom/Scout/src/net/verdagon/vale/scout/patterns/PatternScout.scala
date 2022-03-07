@@ -1,7 +1,7 @@
 package net.verdagon.vale.scout.patterns
 
 import net.verdagon.vale.parser._
-import net.verdagon.vale.parser.ast.{AbstractP, ConstructingMemberNameDeclarationP, DestructureP, ITemplexPT, InterpretedPT, IterableNameDeclarationP, IterationOptionNameDeclarationP, IteratorNameDeclarationP, LocalNameDeclarationP, NameOrRunePT, NameP, OverrideP, PatternPP}
+import net.verdagon.vale.parser.ast.{AbstractP, ConstructingMemberNameDeclarationP, DestructureP, ITemplexPT, IgnoredLocalNameDeclarationP, InterpretedPT, IterableNameDeclarationP, IterationOptionNameDeclarationP, IteratorNameDeclarationP, LocalNameDeclarationP, NameOrRunePT, NameP, OverrideP, PatternPP}
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, _}
 import net.verdagon.vale.{Interner, RangeS, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
@@ -104,6 +104,9 @@ class PatternScout(
       maybeCaptureP match {
         case None => {
 //          val codeLocation = Scout.evalPos(stackFrame.file, patternPP.range.begin)
+          None
+        }
+        case Some(IgnoredLocalNameDeclarationP(_)) => {
           None
         }
         case Some(LocalNameDeclarationP(NameP(_, name))) => {

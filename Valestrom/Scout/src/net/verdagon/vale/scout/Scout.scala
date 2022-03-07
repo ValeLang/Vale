@@ -564,7 +564,7 @@ class ScoutCompilation(
   globalOptions: GlobalOptions,
   packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]]) {
-  var parserCompilation = new ParserCompilation(packagesToBuild, packageToContentsResolver)
+  var parserCompilation = new ParserCompilation(globalOptions, packagesToBuild, packageToContentsResolver)
   val interner = new Interner()
   var scoutputCache: Option[FileCoordinateMap[ProgramS]] = None
 

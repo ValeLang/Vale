@@ -8,29 +8,18 @@ import net.verdagon.vale.{Collector, Err, FileCoordinate, FileCoordinateMap, Int
 import org.scalatest.{FunSuite, Matchers}
 
 class ScoutErrorHumanizerTests extends FunSuite with Matchers {
+
   private def compile(code: String): ProgramS = {
-    Parser.runParser(code) match {
-      case Err(err) => fail(err.toString)
-      case Ok(program0) => {
-        new Scout(GlobalOptions.test(), new Interner())
-            .scoutProgram(FileCoordinate.test, program0) match {
-          case Err(e) => vfail(e.toString)
-          case Ok(t) => t
-        }
-      }
+    ScoutTestCompilation.test(code).getScoutput() match {
+      case Err(e) => vfail(ScoutErrorHumanizer.humanize(FileCoordinateMap.test(code), e))
+      case Ok(t) => t.expectOne()
     }
   }
 
   private def compileForError(code: String): ICompileErrorS = {
-    Parser.runParser(code) match {
-      case Err(err) => fail(err.toString)
-      case Ok(program0) => {
-        new Scout(GlobalOptions.test(), new Interner())
-            .scoutProgram(FileCoordinate.test, program0) match {
-          case Err(e) => e
-          case Ok(t) => vfail("Successfully compiled!\n" + t.toString)
-        }
-      }
+    ScoutTestCompilation.test(code).getScoutput() match {
+      case Err(e) => e
+      case Ok(t) => vfail("Successfully compiled!\n" + t.toString)
     }
   }
 

@@ -147,7 +147,7 @@ extends IPackageResolver[Map[String, Contents]] {
   }
 
   def expectOne(): Contents = {
-    val Vector(only) = moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.values))
+    val Vector(only) = moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toVector
     only
   }
 

@@ -1,4 +1,4 @@
-package net.verdagon.vale.parser.rules
+package net.verdagon.vale.parser.old.rules
 
 import net.verdagon.vale.parser.ast._
 import net.verdagon.vale.parser.{ast, _}
@@ -32,7 +32,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
     "Ref" ^^^ CoordTypePR |
     "Prot" ^^^ PrototypeTypePR |
     // Int must be after Interface, otherwise we'll have a hanging "erface"
-    // Same with Kint and KindTemplate
+    // Same with Kind and KindTemplate
     "int" ^^^ IntTypePR |
     "i64" ^^^ IntTypePR |
     "Kind" ^^^ KindTypePR
@@ -43,13 +43,13 @@ trait RuleParser extends RegexParsers with ParserUtils {
       (typePR <~ "(" <~ optWhite) ~
       repsep(rulePR, optWhite ~> "," <~ optWhite) ~
       pos <~ optWhite <~ ")" ^^ {
-      case begin ~ tyype ~ components ~ end => ComponentsPR(ast.RangeP(begin, end), ast.TypedPR(ast.RangeP(begin, end), None, tyype), components.toVector)
+      case begin ~ tyype ~ components ~ end => ComponentsPR(ast.RangeP(begin, end), tyype, components.toVector)
     }) |
     (pos ~
       (typedPR <~ "(" <~ optWhite) ~
       repsep(rulePR, optWhite ~> "," <~ optWhite) ~
       pos <~ optWhite <~ ")" ^^ {
-      case begin ~ container ~ components ~ end => ast.ComponentsPR(ast.RangeP(begin, end), container, components.toVector)
+      case begin ~ container ~ components ~ end => ast.ComponentsPR(ast.RangeP(begin, end), container.tyype, components.toVector)
     })
   }
 
@@ -105,26 +105,26 @@ trait RuleParser extends RegexParsers with ParserUtils {
     pos ~ ("coord" ^^^ CoordTypePR | "kind" ^^^ KindTypePR | "reg" ^^^ RegionTypePR) ~ pos ^^ { case begin ~ tyype ~ end => TypeRuneAttributeP(ast.RangeP(begin, end), tyype) }
   }
 
-  private[parser] def identifyingRune: Parser[IdentifyingRuneP] = {
-    pos ~ opt(pstr("'")) ~ exprIdentifier ~ rep(white ~> identifyingRegionRuneAttribute) ~ pos ^^ {
-      case begin ~ maybeIsRegion ~ name ~ regionAttributes ~ end => {
-        val isRegionAttrInList =
-          maybeIsRegion match {
-            case None => Vector.empty
-            case Some(NameP(range, _)) => Vector(TypeRuneAttributeP(range, RegionTypePR))
-          }
-        IdentifyingRuneP(ast.RangeP(begin, end), name, isRegionAttrInList ++ regionAttributes)
-      }
-    }
-  }
+//  private[parser] def identifyingRune: Parser[IdentifyingRuneP] = {
+//    pos ~ opt(pstr("'")) ~ exprIdentifier ~ rep(white ~> identifyingRegionRuneAttribute) ~ pos ^^ {
+//      case begin ~ maybeIsRegion ~ name ~ regionAttributes ~ end => {
+//        val isRegionAttrInList =
+//          maybeIsRegion match {
+//            case None => Vector.empty
+//            case Some(NameP(range, _)) => Vector(TypeRuneAttributeP(range, RegionTypePR))
+//          }
+//        IdentifyingRuneP(ast.RangeP(begin, end), name, isRegionAttrInList ++ regionAttributes)
+//      }
+//    }
+//  }
 
   // Add any new rules to the "Nothing matches empty string" test!
 
-  private[parser] def identifyingRunesPR: Parser[IdentifyingRunesP] = {
-    pos ~ ("<" ~> optWhite ~> repsep(identifyingRune, optWhite ~> "," <~ optWhite) <~ optWhite <~ ">") ~ pos ^^ {
-      case begin ~ runes ~ end => IdentifyingRunesP(ast.RangeP(begin, end), runes.toVector)
-    }
-  }
+//  private[parser] def identifyingRunesPR: Parser[IdentifyingRunesP] = {
+//    pos ~ ("<" ~> optWhite ~> repsep(identifyingRune, optWhite ~> "," <~ optWhite) <~ optWhite <~ ">") ~ pos ^^ {
+//      case begin ~ runes ~ end => IdentifyingRunesP(ast.RangeP(begin, end), runes.toVector)
+//    }
+//  }
 
   // Add any new rules to the "Nothing matches empty string" test!
 

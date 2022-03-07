@@ -162,7 +162,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |struct Marine { hp int; }
           |
           |exported func main() int {
-          |  m! = Marine(6);
+          |  m = Marine(6);
           |  lam = {
           |    set m = Marine(9);
           |  };
@@ -189,7 +189,7 @@ class ArrayListTest extends FunSuite with Matchers {
         |struct Marine { hp int; }
         |
         |exported func main() int {
-        |  m! Opt<Marine> = Some(Marine(6));
+        |  m Opt<Marine> = Some(Marine(6));
         |  lam = {
         |    m2 = (set m = None<Marine>()).get();
         |    m2.hp

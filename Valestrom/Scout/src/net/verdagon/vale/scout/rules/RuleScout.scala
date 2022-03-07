@@ -1,9 +1,9 @@
 package net.verdagon.vale.scout.rules
 
 import net.verdagon.vale.parser._
-import net.verdagon.vale.parser.ast.{BoolTypePR, BuiltinCallPR, ComponentsPR, CoordListTypePR, CoordTypePR, EqualsPR, IRulexPR, ITypePR, IntTypePR, KindTypePR, LocationTypePR, MutabilityTypePR, NameP, OrPR, OwnershipTypePR, PermissionTypePR, PrototypeTypePR, RangeP, TemplexPR, TypedPR, VariabilityTypePR}
+import net.verdagon.vale.parser.ast.{BoolTypePR, BuiltinCallPR, ComponentsPR, CoordListTypePR, CoordTypePR, EqualsPR, IRulexPR, ITypePR, IntPT, IntTypePR, KindTypePR, LocationTypePR, MutabilityTypePR, NameP, OrPR, OwnershipPT, OwnershipTypePR, PermissionTypePR, PrototypeTypePR, RangeP, TemplexPR, TypedPR, VariabilityTypePR}
 import net.verdagon.vale.scout.{IEnvironment, Environment => _, FunctionEnvironment => _, _}
-import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vimpl}
+import net.verdagon.vale.{vassert, vassertOne, vassertSome, vcurious, vfail, vimpl}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -59,12 +59,8 @@ class RuleScout(templexScout: TemplexScout) {
         builder += OneOfSR(evalRange(range), rune, values.toArray)
         rune
       }
-      case ComponentsPR(range, TypedPR(typeRange, maybeRune, tyype), componentsP) => {
-        val rune =
-          maybeRune match {
-            case None => RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
-            case Some(r) => RuneUsage(evalRange(r.range), CodeRuneS(r.str))
-          }
+      case ComponentsPR(range, tyype, componentsP) => {
+        val rune = RuneUsage(Scout.evalRange(env.file, range), ImplicitRuneS(lidb.child().consume()))
         runeToExplicitType.put(rune.rune, translateType(tyype))
         tyype match {
           case CoordTypePR => {
@@ -158,6 +154,32 @@ class RuleScout(templexScout: TemplexScout) {
 
         RuneUsage(evalRange(range), resultRune.rune)
       }
+      case BuiltinCallPR(range, NameP(_, "Refs"), args) => {
+        val argRunes =
+          args.map(arg => {
+            translateRulex(env, lidb.child(), builder, runeToExplicitType, arg)
+          })
+
+        val resultRune = RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
+        builder += PackSR(evalRange(range), resultRune, argRunes.toArray)
+        runeToExplicitType.put(resultRune.rune, PackTemplataType(CoordTemplataType))
+
+        RuneUsage(evalRange(range), resultRune.rune)
+      }
+      case BuiltinCallPR(range, NameP(_, "any"), args) => {
+        val literals: Array[ILiteralSL] =
+          args.map({
+            case TemplexPR(IntPT(_, i)) => IntLiteralSL(i)
+            case TemplexPR(OwnershipPT(_, i)) => OwnershipLiteralSL(i)
+            case other => vimpl(other)
+          }).toArray
+
+        val resultRune = RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
+        builder += OneOfSR(evalRange(range), resultRune, literals)
+        runeToExplicitType.put(resultRune.rune, vassertOne(literals.map(_.getType()).distinct))
+
+        RuneUsage(evalRange(range), resultRune.rune)
+      }
     }
   }
 
@@ -188,17 +210,7 @@ class RuleScout(templexScout: TemplexScout) {
         collectAllRunesNonDistinct(destination, runeToExplicitType, rightP)
       }
       case OrPR(_, possibilitiesP) =>
-      case ComponentsPR(_, TypedPR(typeRange, maybeRune, tyype), componentsP) => {
-          maybeRune match {
-            case None =>
-            case Some(NameP(_, runeName)) => {
-              val rune = CodeRuneS(runeName)
-              destination += rune
-              runeToExplicitType.put(rune, translateType(tyype))
-              componentsP.foreach(collectAllRunesNonDistinct(destination, runeToExplicitType, _))
-            }
-          }
-      }
+      case ComponentsPR(_, tyype, componentsP) =>
       case TypedPR(_, None, tyype) =>
       case TypedPR(_, Some(NameP(_, runeName)), tyype) => {
         val rune = CodeRuneS(runeName)

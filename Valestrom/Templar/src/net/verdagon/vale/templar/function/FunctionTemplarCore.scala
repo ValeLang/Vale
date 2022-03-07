@@ -386,7 +386,7 @@ class FunctionTemplarCore(
         ast.FunctionHeaderT(
           env.fullName,
           Vector.empty,
-          Vector(ast.ParameterT(interner.intern(CodeVarNameT("this")), Some(OverrideT(interfaceTT)), structType2)),
+          Vector(ast.ParameterT(interner.intern(CodeVarNameT("self")), Some(OverrideT(interfaceTT)), structType2)),
           CoordT(ShareT, ReadonlyT, VoidT()),
           maybeOriginFunction1),
         BlockTE(

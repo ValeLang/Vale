@@ -2,40 +2,43 @@ package net.verdagon.vale.parser.old
 
 import net.verdagon.vale.parser.ast.FileP
 import net.verdagon.vale.parser._
-import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, Ok, vfail}
+import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, Ok, vfail, vimpl}
 
 trait OldTestParseUtils {
   def compileProgramWithComments(code: String): FileP = {
-    Parser.runParserForProgramAndCommentRanges(code) match {
-      case Err(err) => {
-        vfail(
-          ParseErrorHumanizer.humanize(
-            FileCoordinateMap(Map()).add("my", Vector.empty, "0", code),
-            FileCoordinate("my", Vector.empty, "0"),
-            err))
-      }
-      case Ok(result) => result._1
-    }
+    vimpl()
+//    Parser.runParserForProgramAndCommentRanges(code) match {
+//      case Err(err) => {
+//        vfail(
+//          ParseErrorHumanizer.humanize(
+//            FileCoordinateMap(Map()).add("my", Vector.empty, "0", code),
+//            FileCoordinate("my", Vector.empty, "0"),
+//            err))
+//      }
+//      case Ok(result) => result._1
+//    }
   }
 
   def compileProgram(code: String): FileP = {
-    Parser.runParserForProgramAndCommentRanges(code) match {
-      case Err(err) => {
-        vfail(
-          ParseErrorHumanizer.humanize(
-            FileCoordinateMap(Map()).add("my", Vector.empty, "0", code),
-            FileCoordinate("my", Vector.empty, "0"),
-            err))
-      }
-      case Ok((result, _)) => result
-    }
+    vimpl()
+//    Parser.runParserForProgramAndCommentRanges(code) match {
+//      case Err(err) => {
+//        vfail(
+//          ParseErrorHumanizer.humanize(
+//            FileCoordinateMap(Map()).add("my", Vector.empty, "0", code),
+//            FileCoordinate("my", Vector.empty, "0"),
+//            err))
+//      }
+//      case Ok((result, _)) => result
+//    }
   }
 
   def compileProgramForError(code: String): IParseError = {
-    Parser.runParser(code) match {
-      case Err(err) => err
-      case Ok(result) => vfail("Expected error, but actually parsed invalid program:\n" + result)
-    }
+    vimpl()
+//    Parser.runParser(code) match {
+//      case Err(err) => err
+//      case Ok(result) => vfail("Expected error, but actually parsed invalid program:\n" + result)
+//    }
   }
 
   def oldCompile[T](parser: CombinatorParsers.Parser[T], code: String): T = {

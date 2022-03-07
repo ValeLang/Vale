@@ -21,7 +21,7 @@ func is_err<OkType, ErrType>(result *!Result<OkType, ErrType>) bool { ret not is
 abstract func expect<OkType, ErrType>(virtual result Result<OkType, ErrType>) OkType;
 func expect<OkType, ErrType>(err Err<OkType, ErrType> impl Result<OkType, ErrType>) OkType { panic("Called expect() on a Err!"); }
 func expect<OkType, ErrType>(ok Ok<OkType, ErrType> impl Result<OkType, ErrType>) OkType {
-  Ok<OkType, ErrType>[value] = ok;
+  [value] = ok;
   ret value;
 }
 
@@ -38,7 +38,7 @@ func expect<OkType, ErrType>(ok *!Ok<OkType, ErrType> impl Result<OkType, ErrTyp
 abstract func expect_err<OkType, ErrType>(virtual result Result<OkType, ErrType>) ErrType;
 func expect_err<OkType, ErrType>(ok Ok<OkType, ErrType> impl Result<OkType, ErrType>) ErrType { panic("Called expect_err() on an Ok!"); }
 func expect_err<OkType, ErrType>(err Err<OkType, ErrType> impl Result<OkType, ErrType>) ErrType {
-  Err<OkType, ErrType>[value] = err;
+  [value] = err;
   ret value;
 }
 

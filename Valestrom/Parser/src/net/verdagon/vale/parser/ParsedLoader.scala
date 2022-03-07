@@ -205,6 +205,7 @@ object ParsedLoader {
 
   def loadNameDeclaration(jobj: JObject): INameDeclarationP = {
     getType(jobj) match {
+      case "IgnoredLocalNameDeclaration" => IgnoredLocalNameDeclarationP(loadRange(getObjectField(jobj, "range")))
       case "LocalNameDeclaration" => LocalNameDeclarationP(loadName(getObjectField(jobj, "name")))
       case "IterableNameDeclaration" => IterableNameDeclarationP(loadRange(getObjectField(jobj, "range")))
       case "IteratorNameDeclaration" => IteratorNameDeclarationP(loadRange(getObjectField(jobj, "range")))
@@ -585,7 +586,7 @@ object ParsedLoader {
       case "ComponentsPR" => {
         ComponentsPR(
           loadRange(getObjectField(jobj, "range")),
-          loadTypedPR(getObjectField(jobj, "container")),
+          loadRulexType(getObjectField(jobj, "container")),
           getArrayField(jobj, "components").map(expectObject).map(loadRulex))
       }
       case "OrPR" => {

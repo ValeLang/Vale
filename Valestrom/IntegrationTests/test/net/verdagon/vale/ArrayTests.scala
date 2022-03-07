@@ -339,7 +339,7 @@ class ArrayTests extends FunSuite with Matchers {
         |func __call(lam Lam, i int) int { ret i; }
         |
         |exported func main() int
-        |where F Prot = Prot("__call", Refs(Lam, int), int) {
+        |where F Prot = Prot["__call", Refs(Lam, int), int] {
         |  a = #[](10, Lam());
         |  ret a.3;
         |}
@@ -477,7 +477,7 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |func myFunc<F>(generator F) T
-        |where T Ref, Prot("__call", Refs(F, int), T)
+        |where T Ref, Prot["__call", Refs(F, int), T]
         |{
         |  ret generator!(9);
         |}
@@ -611,7 +611,7 @@ class ArrayTests extends FunSuite with Matchers {
         |import array.each.*;
         |import ifunction.ifunction1.*;
         |exported func main() int {
-        |  sum! = 0;
+        |  sum = 0;
         |  [#][6, 60, 103].each(&!IFunction1<mut, int, void>({ set sum = sum + _; }));
         |  ret sum;
         |}

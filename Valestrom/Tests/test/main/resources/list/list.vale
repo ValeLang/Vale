@@ -49,7 +49,7 @@ func toImmArray<E>(list &List<E>) []<imm>E {
 //}
 //
 //func each<E, F>(list &List<E>, func F) void {
-//  i! = 0;
+//  i = 0;
 //  l = len(*list);
 //  while (i < l) {
 //    func(list.get(i));
@@ -58,7 +58,7 @@ func toImmArray<E>(list &List<E>) []<imm>E {
 //}
 //
 //func each<E, F>(list &!List<E>, func F) void {
-//  i! = 0;
+//  i = 0;
 //  l = len(*list);
 //  while (i < l) {
 //    func(list.get(i));
@@ -67,7 +67,7 @@ func toImmArray<E>(list &List<E>) []<imm>E {
 //}
 //
 //func eachI<E, F>(list &List<E>, func F) void {
-//  i! = 0;
+//  i = 0;
 //  l = len(*list);
 //  while (i < l) {
 //    func(i, list.get(i));
@@ -76,7 +76,7 @@ func toImmArray<E>(list &List<E>) []<imm>E {
 //}
 //
 //func eachI<E, F>(list &!List<E>, func F) void {
-//  i! = 0;
+//  i = 0;
 //  l = len(*list);
 //  while (i < l) {
 //    func(i, list.get(i));
@@ -85,7 +85,7 @@ func toImmArray<E>(list &List<E>) []<imm>E {
 //}
 //
 //func contains<E>(list &List<E>, element E) bool {
-//  i! = 0;
+//  i = 0;
 //  l = len(*list);
 //  while (i < l) {
 //    if (list.get(i) == element) {
@@ -105,8 +105,8 @@ func remove<E>(list &!List<E>, removeAtIndex int) E {
     panic("Can't remove, index out of bounds!");
   }
 
-  temp! Opt<E> = Some<E>(list.array!.pop());
-  i! = list.len() - 1;
+  temp Opt<E> = Some<E>(list.array!.pop());
+  i = list.len() - 1;
   while (i >= removeAtIndex) {
     set temp = Some(set list.array[i] = (set temp = None<E>()).get());
     set i = i - 1;

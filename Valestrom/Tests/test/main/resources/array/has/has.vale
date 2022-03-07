@@ -1,6 +1,6 @@
 
 func has<E, F>(arr &[]<_>E, elem E, equator F) bool {
-  i! = 0;
+  i = 0;
   while (i < arr.len()) {
     if (equator!(arr[i], elem)) {
       ret true;
@@ -15,7 +15,7 @@ func has<E>(arr &[]<_>E, elem E) bool {
 }
 
 func has<E, F>(seq &[#_]<_>E, elem E, equator F) bool {
-  i! = 0;
+  i = 0;
   while (i < seq.len()) {
     if (equator!(seq[i], elem)) {
       ret true;

@@ -1,12 +1,12 @@
 import v.builtins.arith.*;
 
 func drop_into<V, S, E, F>(arr [#S]<imm, V>E, consumer &!F) void
-where Prot("__call", Refs(&!F, E), void)
+where Prot["__call", Refs(&!F, E), void]
 {}
 
 extern("vale_static_sized_array_drop_into")
 func drop_into<V, S, E, F>(arr [#S]<mut, V>E, consumer &!F) void
-where Prot("__call", Refs(&!F, E), void);
+where Prot["__call", Refs(&!F, E), void];
 
 func drop<V, S, E>(arr [#S]<mut, V>E) void {
   drop_into(arr, {_;});
@@ -14,7 +14,7 @@ func drop<V, S, E>(arr [#S]<mut, V>E) void {
 func drop<V, S, E>(arr [#S]<imm, V>E) void {}
 
 func drop_into<E, F>(arr []<mut>E, consumer &!F) void
-where Prot("__call", Refs(&!F, E), void)
+where Prot["__call", Refs(&!F, E), void]
 {
   while (arr.len() > 0) {
     consumer!(arr!.pop());
@@ -26,7 +26,7 @@ func drop<E>(arr []<mut>E) void {
 }
 
 func drop_into<E, F>(arr []<imm>E, consumer &!F) void
-where Prot("__call", Refs(&!F, E), void)
+where Prot["__call", Refs(&!F, E), void]
 {
   i = arr.len() - 1;
   while (i >= 0) {
@@ -66,11 +66,11 @@ where M Mutability = mut, E Ref;
 func Array<M, E, G>(n int, generator G) []<M>E
 where
   M Mutability = mut,
-  G Ref(share | borrow, _, _),
-  F Prot = Prot("__call", Refs(G, int), E)
+  G Ref = Ref[any(share, borrow), _, _],
+  F Prot = Prot["__call", Refs(G, int), E]
 {
   arr = Array<mut, E>(n);
-  i! = 0;
+  i = 0;
   while (i < n) {
     arr!.push(generator!(i));
     set i = i + 1;
@@ -83,5 +83,5 @@ func Array<M, E, G>(n int, generator G) []<M>E
 where
   M Mutability = imm,
   E Ref,
-  G Ref(share | borrow, _, _),
-  F Prot = Prot("__call", Refs(G, int), E);
+  G Ref = Ref[any(share, borrow), _, _],
+  F Prot = Prot["__call", Refs(G, int), E];

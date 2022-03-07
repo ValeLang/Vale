@@ -37,6 +37,7 @@ sealed trait INameDeclarationP {
   def range: RangeP
 }
 case class LocalNameDeclarationP(name: NameP) extends INameDeclarationP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious(); override def range: RangeP = name.range }
+case class IgnoredLocalNameDeclarationP(range: RangeP) extends INameDeclarationP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious(); }
 case class IterableNameDeclarationP(range: RangeP) extends INameDeclarationP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class IteratorNameDeclarationP(range: RangeP) extends INameDeclarationP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class IterationOptionNameDeclarationP(range: RangeP) extends INameDeclarationP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
@@ -67,7 +68,7 @@ object Patterns {
   object fromEnv {
     def unapply(arg: PatternPP): Option[String] = {
       arg match {
-        case PatternPP(_, _, None, Some(NameOrRunePT(NameP(_, kindName))), None, None) => Some(kindName)
+        case PatternPP(_, _, None | Some(IgnoredLocalNameDeclarationP(_)), Some(NameOrRunePT(NameP(_, kindName))), None, None) => Some(kindName)
         case _ => None
       }
     }

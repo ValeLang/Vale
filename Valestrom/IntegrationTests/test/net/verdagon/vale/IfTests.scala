@@ -193,7 +193,7 @@ class IfTests extends FunSuite with Matchers {
         |}
         |
         |exported func main() {
-        |  zork! = 0;
+        |  zork = 0;
         |  while (zork < 4) {
         |    moo = Moo(Bork(5));
         |    if (true) {

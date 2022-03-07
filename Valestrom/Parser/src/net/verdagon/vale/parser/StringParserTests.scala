@@ -1,42 +1,43 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.parser.ExpressionParser.StopBeforeCloseBrace
+import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser.ast._
-import net.verdagon.vale.parser.expressions.ParseString
-import net.verdagon.vale.parser.expressions.ParseString.StringPartChar
-import net.verdagon.vale.{Collector, vimpl}
+import net.verdagon.vale.parser.expressions.StringParser
+import net.verdagon.vale.parser.expressions.StringParser.StringPartChar
+import net.verdagon.vale.{Collector, vassertSome, vimpl}
 import org.scalatest.FunSuite
 import org.scalatest.Matchers.convertToAnyShouldWrapper
 
-class ParseStringTests extends FunSuite with Collector with TestParseUtils {
+class StringParserTests extends FunSuite with Collector with TestParseUtils {
   test("Simple string") {
-    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), """"moo"""") shouldHave
+    compileExpression(""""moo"""") shouldHave
       { case ConstantStrPE(_, "moo") => }
   }
 
   test("String with newline") {
-    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), "\"\"\"m\noo\"\"\"") shouldHave
+    compileExpression("\"\"\"m\noo\"\"\"") shouldHave
       { case ConstantStrPE(_, "m\noo") => }
   }
 
   test("String with escaped braces") {
-    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), "\"\\{\\}\"") shouldHave
+    compileExpression("\"\\{\\}\"") shouldHave
       { case ConstantStrPE(_, "{}") => }
   }
 
   test("String with quote inside") {
-    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), """"m\"oo"""") shouldHave
+    compileExpression(""""m\"oo"""") shouldHave
       { case ConstantStrPE(_, "m\"oo") => }
   }
 
   test("String with unicode") {
-    ParseString.parseFourDigitHexNum(ParsingIterator("000a")) shouldEqual Some(10)
-    compile(ParseString.parseStringPart(_, 0), "\\u000a") shouldEqual StringPartChar('\n')
-    compile(ParseString.parseStringPart(_, 0), "\\u001b") shouldEqual StringPartChar('\u001b')
-    compileMaybe(ParseString.parseString, "\"\\u001b\"") match { case ConstantStrPE(_, "\u001b") => }
-    compileMaybe(ParseString.parseString, "\"foo\\u001bbar\"") match { case ConstantStrPE(_, "foo\u001bbar") => }
+    val e = new ExpressionParser(GlobalOptions(true, true, true, true))
+    StringParser.parseFourDigitHexNum(ParsingIterator("000a")) shouldEqual Some(10)
+    compile(e.stringParser.parseStringPart(_, 0), "\\u000a") shouldEqual StringPartChar('\n')
+    compile(e.stringParser.parseStringPart(_, 0), "\\u001b") shouldEqual StringPartChar('\u001b')
+    compileMaybe(e.stringParser.parseString, "\"\\u001b\"") match { case ConstantStrPE(_, "\u001b") => }
+    compileMaybe(e.stringParser.parseString, "\"foo\\u001bbar\"") match { case ConstantStrPE(_, "foo\u001bbar") => }
 
-    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), "\"foo\\u001bbar\"") match { case ConstantStrPE(_, "foo\u001bbar") => }
+    compileExpression("\"foo\\u001bbar\"") match { case ConstantStrPE(_, "foo\u001bbar") => }
     // FALL NOT TO TEMPTATION
     // Scala has some issues here.
     // The above "\"\\u001b\"" seems like it could be expressed """"\\u001b"""" but it can't.
@@ -51,19 +52,19 @@ class ParseStringTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("String with apostrophe inside") {
-    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), """"m'oo"""") shouldHave
+    compileExpression(""""m'oo"""") shouldHave
       { case ConstantStrPE(_, "m'oo") => }
-    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), "\"\"\"m\'oo\"\"\"") shouldHave
+    compileExpression("\"\"\"m\'oo\"\"\"") shouldHave
       { case ConstantStrPE(_, "m'oo") => }
   }
 
   test("Short string interpolating") {
-    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), """"bl{4}rg"""") shouldHave
+    compileExpression(""""bl{4}rg"""") shouldHave
       { case StrInterpolatePE(_, Vector(ConstantStrPE(_, "bl"), ConstantIntPE(_, 4, _), ConstantStrPE(_, "rg"))) => }
   }
 
   test("Short string interpolating with call") {
-    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), """"bl{ns(4)}rg"""") shouldHave
+    compileExpression(""""bl{ns(4)}rg"""") shouldHave
       {
       case StrInterpolatePE(_,
         Vector(
@@ -74,26 +75,24 @@ class ParseStringTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Long string interpolating") {
-    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), "\"\"\"bl{4}rg\"\"\"") shouldHave
+    compileExpression("\"\"\"bl{4}rg\"\"\"") shouldHave
       { case StrInterpolatePE(_, Vector(ConstantStrPE(_, "bl"), ConstantIntPE(_, 4, _), ConstantStrPE(_, "rg"))) => }
   }
 
   test("Long string doesnt interpolate with brace then newline") {
-    compile(
-      ExpressionParser.parseExpression(_, StopBeforeCloseBrace),
+    compileExpression(
       "\"\"\"bl{\n4}rg\"\"\"") shouldHave
       { case ConstantStrPE(_, "bl{\n4}rg") => }
   }
 
   test("Long string interpolates with brace then backslash") {
-    compile(
-      ExpressionParser.parseExpression(_, StopBeforeCloseBrace),
+    compileExpression(
       "\"\"\"bl{\\\n4}rg\"\"\"") shouldHave
       { case StrInterpolatePE(_, Vector(ConstantStrPE(_, "bl"), ConstantIntPE(_, 4, _), ConstantStrPE(_, "rg"))) => }
   }
 
   test("Long string interpolating with call") {
-    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), "\"\"\"bl\"{ns(4)}rg\"\"\"") shouldHave
+    compileExpression("\"\"\"bl\"{ns(4)}rg\"\"\"") shouldHave
       {
       case StrInterpolatePE(_,
       Vector(

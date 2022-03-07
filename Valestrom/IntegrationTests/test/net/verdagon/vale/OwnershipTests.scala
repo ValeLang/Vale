@@ -82,7 +82,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |
         |func drop(m ^Muta) void {
         |  println("Destroying!");
-        |  Muta[] = m;
+        |  Muta[ ] = m;
         |}
         |
         |exported func main() {
@@ -131,7 +131,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |
         |func drop(m ^Muta) {
         |  println("Destroying!");
-        |  Muta[] = m;
+        |  Muta[ ] = m;
         |}
         |
         |exported func main() {
@@ -157,7 +157,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |
         |func drop(m ^Muta) {
         |  println("Destroying!");
-        |  Muta[] = m;
+        |  Muta[ ] = m;
         |}
         |
         |func moo(m ^Muta) {
@@ -242,7 +242,7 @@ class OwnershipTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() int {
-        |  i! = 0;
+        |  i = 0;
         |  ret i;
         |}
       """.stripMargin)

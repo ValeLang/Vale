@@ -4,26 +4,13 @@ import net.verdagon.vale.{Collector, parser, vfail, vimpl}
 import net.verdagon.vale.parser.ast.Patterns.{fromEnv, withType}
 import net.verdagon.vale.parser.old.CombinatorParsers._
 import net.verdagon.vale.parser._
-import net.verdagon.vale.parser.ast.{AnonymousRunePT, CallPT, FinalP, ImmutableP, IntPT, InterpretedPT, TuplePT, MutabilityPT, MutableP, NameOrRunePT, NameP, PatternPP, PointerP, ReadonlyP, StaticSizedArrayPT, VariabilityPT, VaryingP, WeakP}
+import net.verdagon.vale.parser.ast.{AnonymousRunePT, CallPT, FinalP, IgnoredLocalNameDeclarationP, ImmutableP, IntPT, InterpretedPT, MutabilityPT, MutableP, NameOrRunePT, NameP, PatternPP, PointerP, ReadonlyP, StaticSizedArrayPT, TuplePT, VariabilityPT, VaryingP, WeakP}
 import net.verdagon.vale.parser.old.CombinatorParsers
 import org.scalatest.{FunSuite, Matchers}
 
-class TypeTests extends FunSuite with Matchers with Collector {
-  private def compile[T](parser: CombinatorParsers.Parser[T], code: String): T = {
-    CombinatorParsers.parse(parser, code.toCharArray()) match {
-      case CombinatorParsers.NoSuccess(msg, input) => {
-        fail(msg + "\n" + input);
-      }
-      case CombinatorParsers.Success(expr, rest) => {
-        if (!rest.atEnd) {
-          vfail(rest.pos.longString)
-        }
-        expr
-      }
-    }
-  }
+class TypeTests extends FunSuite with Matchers with Collector with TestParseUtils {
   private def compile[T](code: String): PatternPP = {
-    compile(atomPattern, code)
+    compile(new PatternParser().parsePattern(_), code)
   }
 
   private def checkFail[T](parser: CombinatorParsers.Parser[T], code: String) = {
@@ -88,7 +75,7 @@ class TypeTests extends FunSuite with Matchers with Collector {
   test("15") {
     compile("_ *[#3]MutableStruct") shouldHave {
       case PatternPP(_,_,
-        None,
+        Some(IgnoredLocalNameDeclarationP(_)),
         Some(
           InterpretedPT(_,
             PointerP,
@@ -105,7 +92,7 @@ class TypeTests extends FunSuite with Matchers with Collector {
   test("15m") {
     compile("_ **[#3]<_, _>MutableStruct") shouldHave {
       case PatternPP(_,_,
-        None,
+        Some(IgnoredLocalNameDeclarationP(_)),
         Some(
           InterpretedPT(_,
             WeakP,
@@ -122,7 +109,7 @@ class TypeTests extends FunSuite with Matchers with Collector {
   test("15z") {
     compile("_ MyOption<MyList<int>>") shouldHave {
       case PatternPP(_,_,
-        None,
+        Some(IgnoredLocalNameDeclarationP(_)),
         Some(
           CallPT(
             _,

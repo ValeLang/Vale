@@ -2,33 +2,24 @@ package net.verdagon.vale.scout
 
 import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser.Parser
-import net.verdagon.vale.{Collector, Err, FileCoordinate, Interner, Ok, vassert, vfail, vimpl}
+import net.verdagon.vale.{Collector, Err, FileCoordinate, FileCoordinateMap, Interner, Ok, vassert, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.runtime.Nothing$
 
 class ScoutVariableTests extends FunSuite with Matchers {
-  private def compileProgramForError(code: String): ICompileErrorS = {
-    Parser.runParser(code) match {
-      case Err(err) => fail(err.toString)
-      case Ok(program0) => {
-        new Scout(GlobalOptions.test(), new Interner()).scoutProgram(FileCoordinate.test, program0) match {
-          case Ok(_) => vfail("Expected an error")
-          case Err(e) => e
-        }
-      }
+
+  private def compileForError(code: String): ICompileErrorS = {
+    ScoutTestCompilation.test(code).getScoutput() match {
+      case Err(e) => e
+      case Ok(t) => vfail("Successfully compiled!\n" + t.toString)
     }
   }
 
   private def compile(code: String): ProgramS = {
-    Parser.runParser(code) match {
-      case Err(err) => fail(err.toString)
-      case Ok(program0) => {
-        new Scout(GlobalOptions.test(), new Interner()).scoutProgram(FileCoordinate.test, program0) match {
-          case Err(e) => vfail(e.toString)
-          case Ok(t) => t
-        }
-      }
+    ScoutTestCompilation.test(code).getScoutput() match {
+      case Err(e) => vfail(ScoutErrorHumanizer.humanize(FileCoordinateMap.test(code), e))
+      case Ok(t) => t.expectOne()
     }
   }
 
@@ -52,7 +43,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Reports defining same-name variable") {
-    compileProgramForError("exported func main() { x = 4; x = 5; }") match {
+    compileForError("exported func main() { x = 4; x = 5; }") match {
       case VariableNameAlreadyExists(_, CodeVarNameS("x")) =>
     }
   }
@@ -102,7 +93,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Self is mutating mutable") {
-    val program1 = compile("exported func main() int { x! = 4; set x = 6; }")
+    val program1 = compile("exported func main() int { x = 4; set x = 6; }")
     val main = program1.lookupFunction("main")
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
@@ -113,7 +104,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Self is moving and mutating same variable") {
-    val program1 = compile("exported func main() int { x! = 4; set x = +(x, 1); }")
+    val program1 = compile("exported func main() int { x = 4; set x = +(x, 1); }")
     val main = program1.lookupFunction("main")
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
@@ -445,7 +436,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Self moving and mutating same variable") {
-    val program1 = compile("exported func main() int { x! = 4; set x = +(x, 1); }")
+    val program1 = compile("exported func main() int { x = 4; set x = +(x, 1); }")
     val main = program1.lookupFunction("main")
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
@@ -456,7 +447,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Children moving and mutating same variable") {
-    val program1 = compile("exported func main() int { x! = 4; { set x = +(x, 1); }(); }")
+    val program1 = compile("exported func main() int { x = 4; { set x = +(x, 1); }(); }")
     val main = program1.lookupFunction("main")
     val CodeBodyS(body) = main.body
     body.block.locals.head match {

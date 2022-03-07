@@ -8,22 +8,9 @@ import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
-class CaptureAndDestructureTests extends FunSuite with Matchers with Collector {
-  private def compile[T](parser: CombinatorParsers.Parser[T], code: String): T = {
-    CombinatorParsers.parse(parser, code.toCharArray()) match {
-      case CombinatorParsers.NoSuccess(msg, input) => {
-        fail();
-      }
-      case CombinatorParsers.Success(expr, rest) => {
-        if (!rest.atEnd) {
-          vfail(rest.pos.longString)
-        }
-        expr
-      }
-    }
-  }
+class CaptureAndDestructureTests extends FunSuite with Matchers with Collector with TestParseUtils {
   private def compile[T](code: String): PatternPP = {
-    compile(atomPattern, code)
+    compile(x => new PatternParser().parsePattern(x), code)
   }
 
   private def checkFail[T](parser: CombinatorParsers.Parser[T], code: String) = {
@@ -59,11 +46,11 @@ class CaptureAndDestructureTests extends FunSuite with Matchers with Collector {
     }
   }
   test("empty destructure") {
-    compile(destructure,"[]") shouldHave { case Nil =>
-    }
+    compile(new PatternParser().parseDestructure(_),"[]") shouldHave { case Nil => }
   }
   test("capture with empty destructure") {
-    compile("a []") shouldHave {
+    // Needs the space between the braces, see https://github.com/ValeLang/Vale/issues/434
+    compile("a [ ]") shouldHave {
       case PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, "a"))),None,Some(DestructureP(_,Vector())),None) =>
     }
   }

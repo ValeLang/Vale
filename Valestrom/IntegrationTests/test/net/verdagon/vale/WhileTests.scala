@@ -20,7 +20,7 @@ class WhileTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() int {
-        |  i! = 0;
+        |  i = 0;
         |  while (i < 4) {
         |    set i = i + 1;
         |  }
@@ -36,7 +36,7 @@ class WhileTests extends FunSuite with Matchers {
       """import ioutils.*;
         |import printutils.*;
         |exported func main() int {
-        |  key! = 0;
+        |  key = 0;
         |  while set key = __getch(); key < 96 {
         |    print(key);
         |  }

@@ -128,7 +128,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |exported func main() int where N int = 2 | 3 | 4, N = 3 {
+        |exported func main() int where N int = any(2, 3, 4), N = 3 {
         |  ret N;
         |}
         |""".stripMargin
@@ -144,8 +144,8 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |exported struct MyStruct { }
         |exported func main() X
         |where
-        |  MyStruct = T Ref(O Ownership, P Permission, K Kind),
-        |  X Ref(ptr, ro, K)
+        |  MyStruct = Ref[O Ownership, P Permission, K Kind],
+        |  X Ref = Ref[ptr, ro, K]
         |{
         |  ret *MyStruct();
         |}
@@ -163,7 +163,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |func moo(i int, b bool) str { ret "hello"; }
         |exported func main() str
-        |where mooFunc Prot("moo", Refs(int, bool), _)
+        |where mooFunc Prot = Prot["moo", Refs(int, bool), _]
         |{
         |  ret (mooFunc)(5, true);
         |}
@@ -471,7 +471,7 @@ class TemplarSolverTests extends FunSuite with Matchers {
         |func moo(i int, b bool) str { ret "hello"; }
         |
         |exported func main() R
-        |where mooFunc Prot("moo", Refs(int, bool), R Ref) {
+        |where mooFunc Prot = Prot["moo", Refs(int, bool), R Ref] {
         |  __vbi_panic();
         |}
         |

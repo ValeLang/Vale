@@ -1,5 +1,6 @@
 package net.verdagon.vale.parser
 
+import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser.ast.{CallPT, IdentifyingRuneP, IdentifyingRunesP, ImplP, MutabilityPT, MutableP, NameOrRunePT, NameP, TopLevelImplP}
 import net.verdagon.vale.parser.old.{CombinatorParsers, OldTestParseUtils}
 import net.verdagon.vale.{Collector, Tests, vassert}
@@ -8,8 +9,9 @@ import org.scalatest.{FunSuite, Matchers}
 
 class ImplTests extends FunSuite with Matchers with Collector with TestParseUtils {
   test("Templated impl") {
+    val p = new Parser(GlobalOptions(true, true, true, true))
     compile(
-      Parser.parseTopLevelThing(_),
+      p.parseTopLevelThing(_),
       """
         |impl<T> MyInterface<T> for SomeStruct<T>;
       """.stripMargin) shouldHave {
@@ -23,8 +25,9 @@ class ImplTests extends FunSuite with Matchers with Collector with TestParseUtil
   }
 
   test("Impling a template call") {
+    val p = new Parser(GlobalOptions(true, true, true, true))
     compile(
-      Parser.parseTopLevelThing(_),
+      p.parseTopLevelThing(_),
       """
         |impl IFunction1<mut, int, int> for MyIntIdentity;
         |""".stripMargin) shouldHave {

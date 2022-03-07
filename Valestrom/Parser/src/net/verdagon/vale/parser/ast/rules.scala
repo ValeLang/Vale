@@ -10,9 +10,7 @@ case class OrPR(range: RangeP, possibilities: Vector[IRulexPR]) extends IRulexPR
 case class DotPR(range: RangeP, container: IRulexPR, memberName: NameP) extends IRulexPR { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class ComponentsPR(
   range: RangeP,
-  // This is a TypedPR so that we can know the type, so we can know whether this is
-  // a kind components rule or a coord components rule.
-  container: TypedPR,
+  container: ITypePR,
   components: Vector[IRulexPR]
 ) extends IRulexPR { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class TypedPR(range: RangeP, rune: Option[NameP], tyype: ITypePR) extends IRulexPR { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
@@ -53,7 +51,7 @@ object RulePUtils {
       case EqualsPR(range, left, right) => getOrderedRuneDeclarationsFromRulexWithDuplicates(left) ++ getOrderedRuneDeclarationsFromRulexWithDuplicates(right)
       case OrPR(range, possibilities) => getOrderedRuneDeclarationsFromRulexesWithDuplicates(possibilities)
       case DotPR(range, container, memberName) => getOrderedRuneDeclarationsFromRulexWithDuplicates(container)
-      case ComponentsPR(_, container, components) => getOrderedRuneDeclarationsFromRulexesWithDuplicates(Vector(container) ++ components)
+      case ComponentsPR(_, container, components) => getOrderedRuneDeclarationsFromRulexesWithDuplicates(components)
       case TypedPR(range, maybeRune, tyype) => maybeRune.toVector
       case TemplexPR(templex) => getOrderedRuneDeclarationsFromTemplexWithDuplicates(templex)
       case BuiltinCallPR(range, name, args) => getOrderedRuneDeclarationsFromRulexesWithDuplicates(args)

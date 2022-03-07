@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser.ast
 
-import net.verdagon.vale.{vassert, vcurious, vpass}
+import net.verdagon.vale.{vassert, vcurious, vpass, vwat}
 
 // See PVSBUFI
 
@@ -32,7 +32,13 @@ case class NameOrRunePT(name: NameP) extends ITemplexPT {
   vassert(name.str != "_")
 }
 //case class NullablePT(range: Range, inner: ITemplexPT) extends ITemplexPT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class InterpretedPT(range: RangeP, ownership: OwnershipP, permission: PermissionP, inner: ITemplexPT) extends ITemplexPT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class InterpretedPT(range: RangeP, ownership: OwnershipP, permission: PermissionP, inner: ITemplexPT) extends ITemplexPT {
+  override def equals(obj: Any): Boolean = vcurious();
+  override def hashCode(): Int = vcurious()
+  if (ownership == OwnP && permission == ReadonlyP) {
+    vwat()
+  }
+}
 case class OwnershipPT(range: RangeP, ownership: OwnershipP) extends ITemplexPT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class PackPT(range: RangeP, members: Vector[ITemplexPT]) extends ITemplexPT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 //case class PermissionedPT(range: Range, permission: PermissionP, inner: ITemplexPT) extends ITemplexPT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }

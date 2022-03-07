@@ -366,7 +366,7 @@ class TemplarTests extends FunSuite with Matchers {
         |struct Muta { }
         |
         |func destructor(m ^Muta) {
-        |  Muta[] = m;
+        |  Muta[ ] = m;
         |}
         |
         |exported func main() {

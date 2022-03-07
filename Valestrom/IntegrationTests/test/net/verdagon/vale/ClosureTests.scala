@@ -166,7 +166,7 @@ class ClosureTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() int {
-        |  x! = 4;
+        |  x = 4;
         |  { set x = x + 1; }!();
         |  ret x;
         |}
@@ -195,7 +195,7 @@ class ClosureTests extends FunSuite with Matchers {
   }
 
   test("Mutates from inside a closure inside a closure") {
-    val compile = RunCompilation.test("exported func main() int { x! = 4; { { set x = x + 1; }!(); }!(); ret x; }")
+    val compile = RunCompilation.test("exported func main() int { x = 4; { { set x = x + 1; }!(); }!(); ret x; }")
 
     compile.evalForKind(Vector()) match { case VonInt(5) => }
   }

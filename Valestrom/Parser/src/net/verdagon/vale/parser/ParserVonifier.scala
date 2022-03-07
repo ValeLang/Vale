@@ -252,6 +252,7 @@ object ParserVonifier {
 
   def vonifyNameDeclaration(thing: INameDeclarationP): VonObject = {
     thing match {
+      case IgnoredLocalNameDeclarationP(range) => VonObject("IgnoredLocalNameDeclaration", None, Vector(VonMember("range", vonifyRange(range))))
       case LocalNameDeclarationP(name) => VonObject("LocalNameDeclaration", None, Vector(VonMember("name", vonifyName(name))))
       case ConstructingMemberNameDeclarationP(name) => VonObject("ConstructingMemberNameDeclaration", None, Vector(VonMember("name", vonifyName(name))))
       case IterableNameDeclarationP(range) => VonObject("IterableNameDeclaration", None, Vector(VonMember("range", vonifyRange(range))))
@@ -394,7 +395,7 @@ object ParserVonifier {
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
-            VonMember("container", vonifyRule(container)),
+            VonMember("container", vonifyRuneType(container)),
             VonMember("components", VonArray(None, components.map(vonifyRule).toVector))
           )
         )

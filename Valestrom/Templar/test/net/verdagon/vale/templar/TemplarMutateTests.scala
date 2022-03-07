@@ -28,7 +28,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |exported func main() {a! = 3; set a = 4; }
+        |exported func main() {a = 3; set a = 4; }
         |""".stripMargin)
     val temputs = compile.expectTemputs();
     val main = temputs.lookupFunction("main")
@@ -74,7 +74,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
         |impl<T> IXOption<T> for XNone<T>;
         |
         |exported func main() {
-        |  m! IXOption<int> = XNone<int>();
+        |  m IXOption<int> = XNone<int>();
         |  set m = XSome(6);
         |}
       """.stripMargin)
@@ -198,7 +198,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |exported func main() {
-        |  a! = 5;
+        |  a = 5;
         |  set a = "blah";
         |}
         |""".stripMargin)

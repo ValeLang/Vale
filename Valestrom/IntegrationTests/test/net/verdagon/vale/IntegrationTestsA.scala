@@ -176,12 +176,12 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Test mutating a local var") {
-    val compile = RunCompilation.test("exported func main() {a! = 3; set a = 4; }")
+    val compile = RunCompilation.test("exported func main() {a = 3; set a = 4; }")
     compile.run(Vector())
   }
 
   test("Test returning a local mutable var") {
-    val compile = RunCompilation.test("exported func main() int {a! = 3; set a = 4; ret a;}")
+    val compile = RunCompilation.test("exported func main() int {a = 3; set a = 4; ret a;}")
     compile.evalForKind(Vector()) match { case VonInt(4) => }
   }
 
@@ -743,7 +743,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |func each<E, F>(func F) void
-        |where Prot("__call", Refs(&!F, &E), void) {
+        |where Prot["__call", Refs(&!F, &E), void] {
         |}
         |
         |struct PageMember { x int; }

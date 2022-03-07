@@ -13,7 +13,7 @@ func next(self &!IntRangeIter) Opt<int> {
 }
 
 exported func expSumBytes(arr []<imm>int) int {
-  sum! = 0;
+  sum = 0;
   l = len(arr);
   foreach i in 0..l { set sum = sum + arr[i]; }
   ret sum;

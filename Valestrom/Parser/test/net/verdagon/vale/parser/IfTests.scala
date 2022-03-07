@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.parser.ExpressionParser.StopBeforeCloseBrace
+import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser.ast._
 import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, Tests, vassert}
@@ -9,7 +9,7 @@ import org.scalatest.{FunSuite, Matchers}
 
 class IfTests extends FunSuite with Matchers with Collector with TestParseUtils {
   test("ifs") {
-    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), "if true { doBlarks(*x) } else { }") shouldHave {
+    compileExpression("if true { doBlarks(*x) } else { }") shouldHave {
 
       case IfPE(_,
         ConstantBoolPE(_, true),
@@ -22,7 +22,7 @@ class IfTests extends FunSuite with Matchers with Collector with TestParseUtils 
   }
 
   test("if let") {
-    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), "if [u] = a {}") shouldHave {
+    compileExpression("if [u] = a {}") shouldHave {
       case IfPE(_,
         LetPE(_,
           PatternPP(_,None,None,None,
@@ -38,7 +38,7 @@ class IfTests extends FunSuite with Matchers with Collector with TestParseUtils 
   }
 
   test("If with condition declarations") {
-    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace),"if x = 4; not x.isEmpty() { }") shouldHave {
+    compileExpression("if x = 4; not x.isEmpty() { }") shouldHave {
       case IfPE(_,
         ConsecutorPE(
           Vector(
@@ -50,7 +50,8 @@ class IfTests extends FunSuite with Matchers with Collector with TestParseUtils 
   }
 
   test("19") {
-    compile(ExpressionParser.parseBlockContents(_, StopBeforeCloseBrace, false),
+    val e = new ExpressionParser(GlobalOptions(true, true, true, true))
+    compile(e.parseBlockContents(_, StopBeforeCloseBrace),
       "newLen = if num == 0 { 1 } else { 2 };") shouldHave {
       case ConsecutorPE(
         Vector(

@@ -1,6 +1,7 @@
 package net.verdagon.vale.parser
 
 import net.liftweb.json._
+import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser.ast.{ConstantStrPE, FileP}
 import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, vassert}
@@ -39,7 +40,8 @@ class LoadTests extends FunSuite with Matchers with Collector {
 //  }
 
   test("Simple program") {
-    val originalFile = Parser.runParser("""exported func main() int { ret 42; }""").getOrDie()
+    val p = new Parser(GlobalOptions(true, true, true, true))
+    val originalFile = p.runParser("""exported func main() int { ret 42; }""").getOrDie()
     val von = ParserVonifier.vonifyFile(originalFile)
     val json = new VonPrinter(JsonSyntax, 120).print(von)
     val loadedFile = ParsedLoader.load(json).getOrDie()
@@ -48,6 +50,8 @@ class LoadTests extends FunSuite with Matchers with Collector {
   }
 
   test("Strings with special characters") {
+    val p = new Parser(GlobalOptions(true, true, true, true))
+
     val code = "exported func main() str { \"hello\\u001bworld\" }"
     // FALL NOT TO TEMPTATION
     // Scala has some issues here.
@@ -65,7 +69,7 @@ class LoadTests extends FunSuite with Matchers with Collector {
     // Real source files from disk are going to have a backslash character and then a u,
     // they won't have the 0x1b byte.
     vassert(code.contains("\\u001b"))
-    val originalFile = Parser.runParser(code).getOrDie()
+    val originalFile = p.runParser(code).getOrDie()
     originalFile shouldHave { case ConstantStrPE(_, "hello\u001bworld" ) => }
 
     val von = ParserVonifier.vonifyFile(originalFile)

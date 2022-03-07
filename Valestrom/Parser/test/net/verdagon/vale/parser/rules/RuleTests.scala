@@ -2,27 +2,15 @@ package net.verdagon.vale.parser.rules
 
 import net.verdagon.vale.parser.old.CombinatorParsers._
 import net.verdagon.vale.parser._
-import net.verdagon.vale.parser.ast.{AnonymousRunePT, BuiltinCallPR, ComponentsPR, EqualsPR, NameOrRunePT, NameP, PackPT, PatternPP, PrototypePT, PrototypeTypePR, TemplexPR, TypedPR}
+import net.verdagon.vale.parser.ast.{AnonymousRunePT, BuiltinCallPR, ComponentsPR, EqualsPR, IRulexPR, NameOrRunePT, NameP, PackPT, PatternPP, PrototypePT, PrototypeTypePR, TemplexPR, TypedPR}
 import net.verdagon.vale.parser.old.CombinatorParsers
+import net.verdagon.vale.parser.templex.TemplexParser
 import net.verdagon.vale.{Collector, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
-class RuleTests extends FunSuite with Matchers with Collector {
-  private def compile[T](parser: CombinatorParsers.Parser[T], code: String): T = {
-    CombinatorParsers.parse(parser, code.toCharArray()) match {
-      case CombinatorParsers.NoSuccess(msg, input) => {
-        fail();
-      }
-      case CombinatorParsers.Success(expr, rest) => {
-        if (!rest.atEnd) {
-          vfail(rest.pos.longString)
-        }
-        expr
-      }
-    }
-  }
-  private def compile[T](code: String): PatternPP = {
-    compile(atomPattern, code)
+class RuleTests extends FunSuite with Matchers with Collector with TestParseUtils {
+  private def compile[T](code: String): IRulexPR = {
+    compile(new TemplexParser().parseRule(_), code)
   }
 
   private def checkFail[T](parser: CombinatorParsers.Parser[T], code: String) = {
@@ -64,41 +52,41 @@ class RuleTests extends FunSuite with Matchers with Collector {
   }
 
   test("Relations") {
-    compile(rulePR, "implements(MyObject, IObject)") shouldHave {
+    compile("implements(MyObject, IObject)") shouldHave {
       case BuiltinCallPR(_, NameP(_, "implements"),Vector(TemplexPR(NameOrRunePT(NameP(_, "MyObject"))), TemplexPR(NameOrRunePT(NameP(_, "IObject"))))) =>
     }
-    compile(rulePR, "implements(R, IObject)") shouldHave {
+    compile("implements(R, IObject)") shouldHave {
         case BuiltinCallPR(_, NameP(_, "implements"),Vector(TemplexPR(NameOrRunePT(NameP(_, "R"))), TemplexPR(NameOrRunePT(NameP(_, "IObject"))))) =>
     }
-    compile(rulePR, "implements(MyObject, T)") shouldHave {
+    compile("implements(MyObject, T)") shouldHave {
         case BuiltinCallPR(_, NameP(_, "implements"),Vector(TemplexPR(NameOrRunePT(NameP(_, "MyObject"))), TemplexPR(NameOrRunePT(NameP(_, "T"))))) =>
     }
-    compile(rulePR, "exists(func +(T)int)") shouldHave {
+    compile("exists(func +(T)int)") shouldHave {
         case BuiltinCallPR(_, NameP(_, "exists"), Vector(TemplexPR(PrototypePT(_,NameP(_, "+"), Vector(NameOrRunePT(NameP(_, "T"))), NameOrRunePT(NameP(_, "int")))))) =>
     }
   }
 
   test("Super complicated") {
-    compile(rulePR, "C = [#I]X | [#N]T") // succeeds
+    compile("C = any([#I]X, [#N]T)") // succeeds
   }
 
   test("destructure prototype") {
-    compile(rulePR, "Prot(_, _, T) = moo") shouldHave {
+    compile("Prot[_, _, T] = moo") shouldHave {
       case EqualsPR(_,
         ComponentsPR(_,
-          TypedPR(_,None,PrototypeTypePR),
+          PrototypeTypePR,
           Vector(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)), TemplexPR(NameOrRunePT(NameP(_, "T"))))),
         TemplexPR(NameOrRunePT(NameP(_, "moo")))) =>
     }
   }
 
   test("prototype with coords") {
-    compile(rulePR, "Prot(_, Refs(int, bool), _)") shouldHave {
+    compile("Prot[_, pack(int, bool), _]") shouldHave {
       case ComponentsPR(_,
-        TypedPR(_,None,PrototypeTypePR),
+        PrototypeTypePR,
         Vector(
           TemplexPR(AnonymousRunePT(_)),
-          TemplexPR(PackPT(_,Vector(NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "bool"))))),
+          BuiltinCallPR(_,NameP(_,"pack"),Vector(TemplexPR(NameOrRunePT(NameP(_, "int"))), TemplexPR(NameOrRunePT(NameP(_, "bool"))))),
           TemplexPR(AnonymousRunePT(_)))) =>
     }
   }

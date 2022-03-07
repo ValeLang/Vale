@@ -60,8 +60,8 @@ func display(
         set charToPrint = "@";
       } else {
         goblins.keys().each((key) => {
-          goblin? = goblins.get(key);
-          goblin = (goblin?).get(); // TODO try getting rid of this ^, doesnt wanna find the get function
+          maybeGoblin = goblins.get(key);
+          goblin = (maybeGoblin).get(); // TODO try getting rid of this ^, doesnt wanna find the get function
 
           if (rowI == goblin.location.values.1 and cellI == goblin.location.values.0) {
             set charToPrint = "g";
@@ -99,7 +99,7 @@ func inputKey() int {
 }
 
 
-func goblinAt?(
+func goblinAt(
   goblins &HashMap<int, Goblin, IntHasher, IntEquator>,
   goblinKey int,
   row int,
@@ -165,7 +165,7 @@ exported func main() int {
 
     killedGoblin = false;
     goblins.keys().each((key) => {
-      if (goblinAt?(&goblins, key, newPlayerRow, newPlayerCol)) {
+      if (goblinAt(&goblins, key, newPlayerRow, newPlayerCol)) {
         goblins!.remove(key);
         set killedGoblin = true;
       }

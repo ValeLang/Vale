@@ -1,2 +1,39 @@
 
 func nonEmpty<T>(self &Opt<T>) bool { not self.isEmpty() }
+
+
+abstract func get<T>(virtual opt Opt<T>, msg str) T;
+func get<T>(opt None<T> impl Opt<T>, msg str) T { panic(msg); }
+func get<T>(opt Some<T> impl Opt<T>, msg str) T {
+  [value] = opt;
+  ret value;
+}
+
+abstract func get<T>(virtual opt &Opt<T>, msg str) *T;
+func get<T>(opt &None<T> impl Opt<T>, msg str) *T { panic(msg); }
+func get<T>(opt &Some<T> impl Opt<T>, msg str) *T { ret *opt.value; }
+// Itd be nice to abstract over permission
+abstract func get<T>(virtual opt &!Opt<T>, msg str) *!T;
+func get<T>(opt &!None<T> impl Opt<T>, msg str) *!T { ret panic(msg); }
+func get<T>(opt &!Some<T> impl Opt<T>, msg str) *!T { ret *!opt.value; }
+
+
+
+func map<F, T>(self &Opt<T>, func &!F) Opt<R>
+where Prot["__call", Refs(&!F, &T), R Ref] {
+  if self.isEmpty() {
+    None<R>()
+  } else {
+    Some<R>(func!(&self.get()))
+  }
+}
+
+func or<F, T>(self Opt<T>, func F) T
+where Prot["__call", Refs(&!F), _] {
+  if self.isEmpty() {
+    [ ] = self.as<None<T>>().expect();
+    ret func!();
+  } else {
+    ret (self).get();
+  }
+}

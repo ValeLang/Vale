@@ -656,10 +656,7 @@ class ExpressionTemplar(
 //                  case _ => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Struct random access not implemented yet!"))
 //                }
 //              }
-              case sr@StructTT(_) => {
-                throw CompileErrorExceptionT(CannotSubscriptT(range, containerExpr2.result.reference.kind))
-              }
-              case _ => vwat()
+              case _ => throw CompileErrorExceptionT(CannotSubscriptT(range, containerExpr2.result.reference.kind))
               // later on, a map type could go here
             }
           (exprTemplata, returnsFromContainerExpr ++ returnsFromIndexExpr)
@@ -839,6 +836,10 @@ class ExpressionTemplar(
               case NeverT(_) => false
               case _ => true
             }
+
+          if (uncoercedThenBlock2.result.reference.ownership != uncoercedElseBlock2.result.reference.ownership) {
+            throw CompileErrorExceptionT(CantReconcileBranchesResults(range, uncoercedThenBlock2.result.reference, uncoercedElseBlock2.result.reference))
+          }
 
           val commonType =
             (uncoercedThenBlock2.kind, uncoercedElseBlock2.kind) match {

@@ -85,7 +85,7 @@ class ConvertHelper(
       case (BorrowT, BorrowT) =>
       case (ShareT, ShareT) =>
       case (WeakT, WeakT) =>
-      case other => vwat(other)
+      case _ => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied a " + sourceOwnership + " but target wants " + targetOwnership))
     }
 
     (sourcePermission, targetPermission) match {

@@ -20,6 +20,7 @@ func List<E, M>(arr &Array<M, E>) List<E> {
   list
 }
 
+
 func List<E, M, V, N>(arr [#N]<M, V>E) List<E> {
   list = List<E>(arr.len());
   migrate(arr, &!list.array);
@@ -247,6 +248,31 @@ where
 //}
 //
 
+func indexOf<E>(list &List<E>, element E) Opt<int> {
+  i = 0;
+  l = len(&list);
+  while i < l {
+    if list.get(i) == element {
+      ret Some(i);
+    }
+    set i = i + 1;
+  }
+  ret None<int>();
+}
+
+func indexWhere<E, F>(list &List<E>, func F) Opt<int>
+where Prot["__call", Refs(&!F, &E), _] {
+  i = 0;
+  l = len(&list);
+  while i < l {
+    if func!(list.get(i)) {
+      ret Some(i);
+    }
+    set i = i + 1;
+  }
+  ret None<int>();
+}
+
 func contains<E>(list &List<E>, element E) bool {
   i = 0;
   l = len(&list);
@@ -317,7 +343,7 @@ where T Ref, Prot["__call", Refs(&!F, E), T] {
 }
 
 //func exists<E, F>(list &List<E>, func F) bool
-//rules(T Ref, Prot("__call", (&F, E), T)) {
+//rules(T Ref, Prot("__call", Refs(&F, E), T)) {
 //  i = 0;
 //  while i < list.len() {
 //    if (&!func)(list.get(i)) {

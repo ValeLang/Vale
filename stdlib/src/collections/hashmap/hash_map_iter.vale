@@ -45,7 +45,7 @@ func next<K, V>(iter &!HashMapReadwriteIter<K, V>) Opt<(K, &!V)> {
 
 
 func each<F, K, V, H, E>(self &HashMap<K, V, H, E>, func &!F)
-where Prot["__call", (&!F, &K, &V), _] {
+where Prot["__call", Refs(&!F, &K, &V), _] {
   list = List<K>();
   index = 0;
   while index < self.table.len() {
@@ -59,7 +59,7 @@ where Prot["__call", (&!F, &K, &V), _] {
 }
 
 func each<F, K, V, H, E>(self &!HashMap<K, V, H, E>, func &!F)
-where Prot["__call", (&!F, &K, &!V), _] {
+where Prot["__call", Refs(&!F, &K, &!V), _] {
   list = List<K>();
   index = 0;
   while index < self.table.len() {

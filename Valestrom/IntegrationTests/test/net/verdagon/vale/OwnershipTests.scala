@@ -3,7 +3,7 @@ package net.verdagon.vale
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.ast.{FunctionCallTE, LetAndLendTE, LetNormalTE, UnletTE}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.env.ReferenceLocalVariableT
 import net.verdagon.vale.templar.templata.{functionName, simpleName}
 import net.verdagon.vale.templar.types._
@@ -18,7 +18,7 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |struct Muta { hp int; }
         |exported func main() int {
-        |  ret (*Muta(9)).hp;
+        |  ret (&Muta(9)).hp;
         |}
       """.stripMargin)
 
@@ -26,14 +26,14 @@ class OwnershipTests extends FunSuite with Matchers {
     Collector.only(main, {
       case letTE @ LetAndLendTE(ReferenceLocalVariableT(FullNameT(_, Vector(FunctionNameT("main",Vector(),Vector())),TemplarTemporaryVarNameT(_)),FinalT,_),refExpr,targetOwnership) => {
         refExpr.result.reference match {
-          case CoordT(OwnT, ReadwriteT, StructTT(simpleName("Muta"))) =>
+          case CoordT(OwnT, StructTT(simpleName("Muta"))) =>
         }
-        targetOwnership shouldEqual PointerT
-        letTE.result.reference.ownership shouldEqual PointerT
+        targetOwnership shouldEqual BorrowT
+        letTE.result.reference.ownership shouldEqual BorrowT
       }
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) match { case VonInt(9) => }
   }
 
   test("Owning ref method call") {
@@ -50,7 +50,7 @@ class OwnershipTests extends FunSuite with Matchers {
       """.stripMargin)
 
     val main = compile.expectTemputs().lookupFunction("main")
-    compile.evalForKind(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) match { case VonInt(9) => }
   }
 
   test("Derive drop") {
@@ -82,7 +82,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |
         |func drop(m ^Muta) void {
         |  println("Destroying!");
-        |  Muta[] = m;
+        |  Muta[ ] = m;
         |}
         |
         |exported func main() {
@@ -118,7 +118,7 @@ class OwnershipTests extends FunSuite with Matchers {
     val main = compile.expectTemputs().lookupFunction("main")
     Collector.only(main, { case FunctionCallTE(functionName("drop"), _) => })
 
-    compile.evalForKindAndStdout(Vector()) shouldEqual (VonInt(10), "Destroying!\n")
+    compile.evalForKindAndStdout(Vector()) match { case (VonInt(10), "Destroying!\n") => }
   }
 
   test("Calls destructor on local var") {
@@ -131,7 +131,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |
         |func drop(m ^Muta) {
         |  println("Destroying!");
-        |  Muta[] = m;
+        |  Muta[ ] = m;
         |}
         |
         |exported func main() {
@@ -157,7 +157,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |
         |func drop(m ^Muta) {
         |  println("Destroying!");
-        |  Muta[] = m;
+        |  Muta[ ] = m;
         |}
         |
         |func moo(m ^Muta) {
@@ -213,7 +213,7 @@ class OwnershipTests extends FunSuite with Matchers {
     Collector.only(main, { case FunctionCallTE(functionName("drop"), _) => })
     Collector.all(main, { case FunctionCallTE(_, _) => }).size shouldEqual 2
 
-    compile.evalForKindAndStdout(Vector()) shouldEqual (VonInt(10), "Destroying!\n")
+    compile.evalForKindAndStdout(Vector()) match { case (VonInt(10), "Destroying!\n") => }
   }
 
   test("Gets from temporary struct a member's member") {
@@ -230,7 +230,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(10)
+    compile.evalForKind(Vector()) match { case VonInt(10) => }
   }
 
   // test that when we create a block closure, we hoist to the beginning its constructor,
@@ -242,7 +242,7 @@ class OwnershipTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() int {
-        |  i! = 0;
+        |  i = 0;
         |  ret i;
         |}
       """.stripMargin)
@@ -257,25 +257,37 @@ class OwnershipTests extends FunSuite with Matchers {
     Collector.all(main, { case UnletTE(_) => }).size shouldEqual numVariables
   }
 
-//  test("Wingman catches hanging borrow") {
-//    val compile = RunCompilation.test(
-//      """
-//        |struct MutaA { }
-//        |struct MutaB {
-//        |  a *MutaA;
-//        |}
-//        |exported func main() int {
-//        |  a = MutaA();
-//        |  b = MutaB(*a);
-//        |  c = a;
-//        |}
-//      """.stripMargin)
-//
-//    try {
-//      compile.evalForKind(Vector())
-//      fail();
-//    } catch {
-//      case VivemPanic("Dangling borrow") =>
-//    }
-//  }
+  test("Basic builder pattern") {
+    val compile = RunCompilation.test(
+      """
+        |struct Ship { hp! int; fuel! int; }
+        |func setHp(ship Ship, hp int) Ship {
+        |  set ship.hp = hp;
+        |  ret ship;
+        |}
+        |func setFuel(ship Ship, fuel int) Ship {
+        |  set ship.fuel = fuel;
+        |  ret ship;
+        |}
+        |exported func main() int {
+        |  ship = Ship(0, 0).setHp(42).setFuel(43);
+        |  ret ship.hp;
+        |}
+        |""".stripMargin)
+
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
+  }
+
+  test("Member access on returned owning ref") {
+    val compile = RunCompilation.test(
+      """
+        |struct Ship { hp int; }
+        |exported func main() int {
+        |  ret Ship(42).hp;
+        |}
+        |""".stripMargin)
+
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
+  }
+
 }

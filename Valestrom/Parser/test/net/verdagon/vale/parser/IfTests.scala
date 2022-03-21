@@ -1,28 +1,27 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.parser.ExpressionParser.StopBeforeCloseBrace
+import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser.ast._
-import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, Tests, vassert}
 import org.scalatest.{FunSuite, Matchers}
 
 
 class IfTests extends FunSuite with Matchers with Collector with TestParseUtils {
   test("ifs") {
-    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), "if true { doBlarks(*x) } else { }") shouldHave {
+    compileExpression("if true { doBlarks(&x) } else { }") shouldHave {
 
       case IfPE(_,
         ConstantBoolPE(_, true),
         BlockPE(_,
           FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_,"doBlarks")),None),
             Vector(
-              AugmentPE(_,PointerP,Some(ReadonlyP),LookupPE(LookupNameP(NameP(_,"x")),None))),false)),
+              AugmentPE(_,BorrowP,LookupPE(LookupNameP(NameP(_,"x")),None))))),
         BlockPE(_,VoidPE(_))) =>
     }
   }
 
   test("if let") {
-    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace), "if [u] = a {}") shouldHave {
+    compileExpression("if [u] = a {}") shouldHave {
       case IfPE(_,
         LetPE(_,
           PatternPP(_,None,None,None,
@@ -38,19 +37,20 @@ class IfTests extends FunSuite with Matchers with Collector with TestParseUtils 
   }
 
   test("If with condition declarations") {
-    compile(ExpressionParser.parseExpression(_, StopBeforeCloseBrace),"if x = 4; not x.isEmpty() { }") shouldHave {
+    compileExpression("if x = 4; not x.isEmpty() { }") shouldHave {
       case IfPE(_,
         ConsecutorPE(
           Vector(
             LetPE(_,PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"x"))),None,None,None),ConstantIntPE(_,4,32)),
-            NotPE(_,MethodCallPE(_,LookupPE(LookupNameP(NameP(_,"x")),None),_,false,LookupPE(LookupNameP(NameP(_,"isEmpty")),None),Vector())))),
+            NotPE(_,MethodCallPE(_,LookupPE(LookupNameP(NameP(_,"x")),None),_,LookupPE(LookupNameP(NameP(_,"isEmpty")),None),Vector())))),
         BlockPE(_,VoidPE(_)),
         BlockPE(_,VoidPE(_))) =>
     }
   }
 
   test("19") {
-    compile(ExpressionParser.parseBlockContents(_, StopBeforeCloseBrace, false),
+    val e = new ExpressionParser(GlobalOptions(true, true, true, true))
+    compile(e.parseBlockContents(_, StopBeforeCloseBrace),
       "newLen = if num == 0 { 1 } else { 2 };") shouldHave {
       case ConsecutorPE(
         Vector(

@@ -1,16 +1,17 @@
 import stdlib.testsuite.*;
 import stdlib.command.*;
+import stdlib.resultutils.*;
 
 exported func main() {
   suite = TestSuite();
 
-  suite!.sub("subprocess", (sts) => {
-    sts!.test("basic", {
+  suite.sub("subprocess", (sts) => {
+    sts.test("basic", {
       if (IsWindows()) {
         panic("Implement for windows");
       }
 
-      cat_process = (Subprocess("/bin/cat")).expect();
+      cat_process = (Subprocess("/bin/cat")).expect("zork a");
       cat_process.handle.write_stdin("hello\n");
       run_result = (cat_process).capture_and_join();
       run_result.stdout.trim() should_equal "hello".slice();

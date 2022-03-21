@@ -13,7 +13,7 @@ sealed trait Result[+T, +E] {
   def mapError[Y](func: (E) => Y): Result[T, Y]
 }
 case class Ok[T, E](t: T) extends Result[T, E] {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   override def getOrDie(): T = t
   override def expectErr(): E = vfail("Called expectErr on an Ok")
@@ -22,7 +22,7 @@ case class Ok[T, E](t: T) extends Result[T, E] {
   override def map[Y](func: T => Y): Result[Y, E] = Ok(func(t))
 }
 case class Err[T, E](e: E) extends Result[T, E] {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   override def getOrDie(): T = vfail("Called getOrDie on an Err:\n" + e)
   override def expectErr(): E = e

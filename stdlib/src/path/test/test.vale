@@ -14,54 +14,54 @@ exported func main() {
   println("zork 3");
   test_file.writeString("hello");
   println("zork 4");
-  test_directory./("a.txt").writeString("a");
-  test_directory./("b.txt").writeString("b");
+  (&test_directory./("a.txt")).writeString("a");
+  (&test_directory./("b.txt")).writeString("b");
   println("zork 5");
 
-  suite!.sub("CreateDirAll", (sts) => {
-    sts!.test("basic", {
+  suite.sub("CreateDirAll", (sts) => {
+    sts.test("basic", {
       test_directory.exists() should_equal true;
     });
   });
 
-  suite!.sub("resolve", (sts) => {
-    sts!.test("basic", {
+  suite.sub("resolve", (sts) => {
+    sts.test("basic", {
       println("in resolve test");
       test_directory.resolve().str() should_not_equal test_directory.str();
     });
   });
 
-  suite!.sub("exists", (sts) => {
-    sts!.test("0", { test_directory.exists() should_equal true });
-    sts!.test("1", { test_file.exists() should_equal true });
-    sts!.test("nonexistant", { test_directory./("idontexist").exists() should_equal false });
+  suite.sub("exists", (sts) => {
+    sts.test("0", { test_directory.exists() should_equal true });
+    sts.test("1", { test_file.exists() should_equal true });
+    sts.test("nonexistant", { test_directory./("idontexist").exists() should_equal false });
   });
 
-  suite!.sub("is_dir", (sts) => {
-    sts!.test("0", { test_directory.is_dir() should_equal true });
-    sts!.test("1", { test_file.is_dir() should_equal false });
+  suite.sub("is_dir", (sts) => {
+    sts.test("0", { test_directory.is_dir() should_equal true });
+    sts.test("1", { test_file.is_dir() should_equal false });
   });
-  suite!.sub("is_file", (sts) => {
-    sts!.test("0", { test_directory.is_file() should_equal false });
-    sts!.test("1", { test_file.is_file() should_equal true });
+  suite.sub("is_file", (sts) => {
+    sts.test("0", { test_directory.is_file() should_equal false });
+    sts.test("1", { test_file.is_file() should_equal true });
   });
 
-  suite!.sub("directory", (sts) => {
-    sts!.test("0", { test_directory.directory().str() should_equal test_directory.str() });
-    sts!.test("1", { test_file.directory().str() should_equal test_directory.str() });
+  suite.sub("directory", (sts) => {
+    sts.test("0", { test_directory.directory().str() should_equal test_directory.str() });
+    sts.test("1", { test_file.directory().str() should_equal test_directory.str() });
   });
   
-  suite!.sub("Read as string", (sts) => {
-    sts!.test("0", { test_file.readAsString() should_equal "hello" });
+  suite.sub("Read as string", (sts) => {
+    sts.test("0", { test_file.readAsString() should_equal "hello" });
   });
   
-  suite!.sub("name", (sts) => {
-    sts!.test("0", { test_directory.name() should_equal "bork" });
-    sts!.test("1", { test_file.name() should_equal "myfile.txt" });
+  suite.sub("name", (sts) => {
+    sts.test("0", { test_directory.name() should_equal "bork" });
+    sts.test("1", { test_file.name() should_equal "myfile.txt" });
   });
   
-  suite!.sub("iterdir 1", (sts) => {
-    sts!.test("A", {
+  suite.sub("iterdir 1", (sts) => {
+    sts.test("A", {
       files = test_directory.iterdir();
       files.len() should_equal 3;
     });

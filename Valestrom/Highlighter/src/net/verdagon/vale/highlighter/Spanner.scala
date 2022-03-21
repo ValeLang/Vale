@@ -55,7 +55,6 @@ case object TplArgs extends IClass
 case object Comment extends IClass
 case object Mutability extends IClass
 case object Ownership extends IClass
-case object Permission extends IClass
 case object Match extends IClass
 
 case class Span(classs: IClass, range: ast.RangeP, children: Vector[Span]) { override def hashCode(): Int = vcurious() }
@@ -233,7 +232,7 @@ object Spanner {
           range,
           Vector(forExpression(left), makeSpan(MemberAccess, operatorRange)) :+ makeSpan(Lookup, member.range, Vector.empty))
       }
-      case AugmentPE(range, targetOwnership, targetPermission, expr) => {
+      case AugmentPE(range, targetOwnership, expr) => {
         makeSpan(
           Point,
           range,
@@ -245,7 +244,7 @@ object Spanner {
         val allSpans = (Vector(callableSpan) ++ argSpans)
         makeSpan(Call, range, allSpans)
       }
-      case MethodCallPE(range, callableExpr, operatorRange, subjectReadwrite, LookupPE(lookup, maybeTemplateArgs), argExprs) => {
+      case MethodCallPE(range, callableExpr, operatorRange, LookupPE(lookup, maybeTemplateArgs), argExprs) => {
         val callableSpan = forExpression(callableExpr)
         val methodSpan = makeSpan(CallLookup, lookup.range, Vector.empty)
         val maybeTemplateArgsSpan = maybeTemplateArgs.toVector.map(forTemplateArgs)
@@ -260,7 +259,7 @@ object Spanner {
             .sortWith(_.range.begin < _.range.begin)
         makeSpan(Call, range, allSpans)
       }
-      case FunctionCallPE(range, operatorRange, LookupPE(LookupNameP(NameP(nameRange, _)), maybeTemplateArgs), argExprs, _) => {
+      case FunctionCallPE(range, operatorRange, LookupPE(LookupNameP(NameP(nameRange, _)), maybeTemplateArgs), argExprs) => {
         val opSpan = makeSpan(MemberAccess, operatorRange)
         val callableSpan = makeSpan(CallLookup, nameRange, Vector.empty)
         val maybeTemplateArgsSpan = maybeTemplateArgs.toVector.map(forTemplateArgs)
@@ -282,7 +281,7 @@ object Spanner {
             .sortWith(_.range.begin < _.range.begin)
         makeSpan(Call, range, allSpans)
       }
-      case FunctionCallPE(range, operatorRange, callableExpr, argExprs, _) => {
+      case FunctionCallPE(range, operatorRange, callableExpr, argExprs) => {
         val callableSpan = forExpression(callableExpr)
         val argSpans = argExprs.map(forExpression)
         val allSpans = (Vector(callableSpan) ++ argSpans).sortWith(_.range.begin < _.range.begin)
@@ -396,7 +395,7 @@ object Spanner {
       case InlinePT(range, inner) => {
         makeSpan(Inl, range, Vector(forTemplex(inner)))
       }
-      case InterpretedPT(range, ownership, permission, inner) => {
+      case InterpretedPT(range, ownership, inner) => {
         makeSpan(Ownership, range, Vector(forTemplex(inner)))
       }
       case RuntimeSizedArrayPT(range, mutability, element) => {

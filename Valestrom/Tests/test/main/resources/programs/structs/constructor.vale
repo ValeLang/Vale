@@ -4,8 +4,8 @@ struct Marine {
   cool bool;
 }
 func Marine() Marine {
-  this.hp = 10;
-  this.cool = true;
+  self.hp = 10;
+  self.cool = true;
 }
 exported func main() int {
   ret Marine().hp;

@@ -1,34 +1,44 @@
 import v.builtins.panic.*;
 
+#!DeriveInterfaceDrop
 sealed interface Opt<T> where T Ref { }
+#!DeriveStructDrop
 struct Some<T> where T Ref { value T; }
+#!DeriveImplDrop
 impl<T> Opt<T> for Some<T>;
+#!DeriveStructDrop
 struct None<T> where T Ref { }
+#!DeriveImplDrop
 impl<T> Opt<T> for None<T>;
 
-abstract func isEmpty<T>(virtual opt &Opt<T>) bool;
-func isEmpty<T>(opt &None<T> impl Opt<T>) bool { ret true; }
-func isEmpty<T>(opt &Some<T> impl Opt<T>) bool { ret false; }
+abstract func drop<T>(virtual opt Opt<T>)
+where Prot["drop", Refs(T), void];
 
-abstract func isEmpty<T>(virtual opt &!Opt<T>) bool;
-func isEmpty<T>(opt &!None<T> impl Opt<T>) bool { ret true; }
-func isEmpty<T>(opt &!Some<T> impl Opt<T>) bool { ret false; }
+func drop<T>(opt Some<T>)
+where Prot["drop", Refs(T), void]
+{
+  [x] = opt;
+}
+
+func drop<T>(opt None<T>) {
+  [ ] = opt;
+}
+
+abstract func isEmpty<T>(virtual opt &Opt<T>) bool;
+func isEmpty<T>(opt &None<T>) bool { ret true; }
+func isEmpty<T>(opt &Some<T>) bool { ret false; }
 
 abstract func isEmpty<T>(virtual opt Opt<T>) bool;
-func isEmpty<T>(opt None<T> impl Opt<T>) bool { ret true; }
-func isEmpty<T>(opt Some<T> impl Opt<T>) bool { ret false; }
+func isEmpty<T>(opt None<T>) bool { ret true; }
+func isEmpty<T>(opt Some<T>) bool { ret false; }
 
 abstract func get<T>(virtual opt Opt<T>) T;
-func get<T>(opt None<T> impl Opt<T>) T { panic("Called get() on a None!"); }
-func get<T>(opt Some<T> impl Opt<T>) T {
-  Some<T>[value] = opt;
+func get<T>(opt None<T>) T { panic("Called get() on a None!"); }
+func get<T>(opt Some<T>) T {
+  [value] = opt;
   ret value;
 }
 
-abstract func get<T>(virtual opt &Opt<T>) *T;
-func get<T>(opt &None<T> impl Opt<T>) *T { panic("Called get() on a None!"); }
-func get<T>(opt &Some<T> impl Opt<T>) *T { ret *opt.value; }
-// Itd be nice to abstract over permission
-abstract func get<T>(virtual opt &!Opt<T>) *!T;
-func get<T>(opt &!None<T> impl Opt<T>) *!T { ret panic("Called get() on a None!"); }
-func get<T>(opt &!Some<T> impl Opt<T>) *!T { ret *!opt.value; }
+abstract func get<T>(virtual opt &Opt<T>) &T;
+func get<T>(opt &None<T>) &T { panic("Called get() on a None!"); }
+func get<T>(opt &Some<T>) &T { ret &opt.value; }

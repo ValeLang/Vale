@@ -23,7 +23,7 @@ case class ImplT(
   struct: StructTT,
   interface: InterfaceTT
 )  {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
 }
 
@@ -33,7 +33,7 @@ case class KindExportT(
   packageCoordinate: PackageCoordinate,
   exportedName: String
 )  {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
 }
 
@@ -43,7 +43,7 @@ case class FunctionExportT(
   packageCoordinate: PackageCoordinate,
   exportedName: String
 )  {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
 }
 
@@ -52,7 +52,7 @@ case class KindExternT(
   packageCoordinate: PackageCoordinate,
   externName: String
 )  {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
 }
 
@@ -62,36 +62,45 @@ case class FunctionExternT(
   packageCoordinate: PackageCoordinate,
   externName: String
 )  {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
 }
 
 case class InterfaceEdgeBlueprint(
   interface: InterfaceTT,
-  superFamilyRootBanners: Vector[FunctionBannerT]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+  superFamilyRootBanners: Vector[FunctionBannerT]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
 case class EdgeT(
   struct: StructTT,
   interface: InterfaceTT,
-  methods: Vector[PrototypeT]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+  methods: Vector[PrototypeT]) {
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case EdgeT(thatStruct, thatInterface, _) => {
+        struct == thatStruct && interface == thatInterface
+      }
+    }
+  }
+}
 
 object ProgramT {
-  val topLevelName = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, PackageTopLevelNameT())
   val tupleHumanName = "Tup"
 //  val emptyTupleTT =
 //    StructTT(FullNameT(PackageCoordinate.BUILTIN, Vector(), CitizenNameT(CitizenTemplateNameT(tupleHumanName), Vector(CoordListTemplata(Vector())))))
 
-  val intType = CoordT(ShareT, ReadonlyT, IntT.i32)
-  val boolType = CoordT(ShareT, ReadonlyT, BoolT())
+  val intType = CoordT(ShareT, IntT.i32)
+  val boolType = CoordT(ShareT, BoolT())
 }
 
 case class FunctionT(
   header: FunctionHeaderT,
   body: ReferenceExpressionTE)  {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   // We always end a function with a return, whose result is a Never.
-  vassert(body.result.kind == NeverT())
+  vassert(body.result.kind == NeverT(false))
 }
 
 object getFunctionLastName {
@@ -109,21 +118,22 @@ case class LocationInFunctionEnvironment(path: Vector[Int]) {
   override def toString: String = path.mkString(".")
 }
 
-trait VirtualityT
-case object AbstractT extends VirtualityT {
-
-}
-case class OverrideT(interface: InterfaceTT) extends VirtualityT {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-
-}
+case class AbstractT()
 
 case class ParameterT(
   name: IVarNameT,
-  virtuality: Option[VirtualityT],
+  virtuality: Option[AbstractT],
   tyype: CoordT)  {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
+  // Use same instead, see EHCFBD for why we dont like equals.
+  override def equals(obj: Any): Boolean = vcurious();
+
+  def same(that: ParameterT): Boolean = {
+    name == that.name &&
+      virtuality == that.virtuality &&
+      tyype == that.tyype
+  }
 }
 
 sealed trait ICalleeCandidate
@@ -141,14 +151,14 @@ sealed trait IValidCalleeCandidate {
 case class ValidHeaderCalleeCandidate(
   header: FunctionHeaderT
 ) extends IValidCalleeCandidate {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
   override def banner: FunctionBannerT = header.toBanner
 }
 case class ValidCalleeCandidate(
   banner: FunctionBannerT,
   function: FunctionTemplata
 ) extends IValidCalleeCandidate {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
 }
 
 // A "signature" is just the things required for overload resolution, IOW function name and arg types.
@@ -174,6 +184,16 @@ case class FunctionBannerT(
   params: Vector[ParameterT])   {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
+  // Use same instead, see EHCFBD for why we dont like equals.
+  override def equals(obj: Any): Boolean = vcurious();
+
+  def same(that: FunctionBannerT): Boolean = {
+    originFunction == that.originFunction &&
+      fullName == that.fullName &&
+      params.size == that.params.size &&
+      params.zip(that.params).forall({ case (a, b) => a.same(b) })
+  }
+
   vassert(fullName.last.parameters == params.map(_.tyype))
 
   def toSignature: SignatureT = SignatureT(fullName)
@@ -182,26 +202,16 @@ case class FunctionBannerT(
   def getAbstractInterface: Option[InterfaceTT] = {
     val abstractInterfaces =
       params.collect({
-        case ParameterT(_, Some(AbstractT), CoordT(_, _, ir @ InterfaceTT(_))) => ir
+        case ParameterT(_, Some(AbstractT()), CoordT(_, ir @ InterfaceTT(_))) => ir
       })
     vassert(abstractInterfaces.size <= 1)
     abstractInterfaces.headOption
   }
 
-  def getOverride: Option[(StructTT, InterfaceTT)] = {
-    val overrides =
-      params.collect({
-        case ParameterT(_, Some(OverrideT(ir)), CoordT(_, _, sr @ StructTT(_))) => (sr, ir)
-      })
-    vassert(overrides.size <= 1)
-    overrides.headOption
-  }
-
   def getVirtualIndex: Option[Int] = {
     val indices =
       params.zipWithIndex.collect({
-        case (ParameterT(_, Some(OverrideT(_)), _), index) => index
-        case (ParameterT(_, Some(AbstractT), _), index) => index
+        case (ParameterT(_, Some(AbstractT()), _), index) => index
       })
     vassert(indices.size <= 1)
     indices.headOption
@@ -238,6 +248,15 @@ case class FunctionHeaderT(
   maybeOriginFunction: Option[FunctionA])  {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case FunctionHeaderT(thatName, _, _, _, _) => {
+        fullName == thatName
+      }
+      case _ => false
+    }
+  }
+
   // Make sure there's no duplicate names
   vassert(params.map(_.name).toSet.size == params.size);
 
@@ -247,7 +266,7 @@ case class FunctionHeaderT(
   //  def isExport = attributes.exists({ case Export2(_) => true case _ => false })
   def isUserFunction = attributes.contains(UserFunctionT)
   def getAbstractInterface: Option[InterfaceTT] = toBanner.getAbstractInterface
-  def getOverride: Option[(StructTT, InterfaceTT)] = toBanner.getOverride
+//  def getOverride: Option[(StructTT, InterfaceTT)] = toBanner.getOverride
   def getVirtualIndex: Option[Int] = toBanner.getVirtualIndex
 
   maybeOriginFunction.foreach(originFunction => {

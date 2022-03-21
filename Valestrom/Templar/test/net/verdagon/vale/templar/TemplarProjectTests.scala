@@ -19,8 +19,9 @@ class TemplarProjectTests extends FunSuite with Matchers {
           |exported func main() { }
           """.stripMargin)
     val temputs = compile.expectTemputs()
+    val interner = compile.interner
 
-    val fullName = FullNameT(PackageCoordinate.TEST_TLD, Vector(), FunctionNameT("main", Vector(), Vector()))
+    val fullName = FullNameT(PackageCoordinate.TEST_TLD, Vector(), interner.intern(FunctionNameT("main", Vector(), Vector())))
     vassertSome(temputs.lookupFunction(SignatureT(fullName)))
   }
 
@@ -29,7 +30,7 @@ class TemplarProjectTests extends FunSuite with Matchers {
       TemplarTestCompilation.test(
         """
           |import v.builtins.tup.*;
-          |exported func main() { {}!() }
+          |exported func main() { {}() }
           """.stripMargin)
     val temputs = compile.expectTemputs()
 
@@ -40,7 +41,7 @@ class TemplarProjectTests extends FunSuite with Matchers {
       case FullNameT(
         PackageCoordinate.TEST_TLD,
         Vector(FunctionNameT("main",Vector(),Vector()), LambdaCitizenNameT(_)),
-        FunctionNameT("__call",Vector(),Vector(CoordT(ShareT,ReadonlyT,_)))) =>
+        FunctionNameT("__call",Vector(),Vector(CoordT(ShareT,_)))) =>
     }
   }
 

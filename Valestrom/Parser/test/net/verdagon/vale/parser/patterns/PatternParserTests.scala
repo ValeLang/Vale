@@ -1,78 +1,45 @@
 package net.verdagon.vale.parser.patterns
 
 import net.verdagon.vale.parser.ast.Patterns._
-import net.verdagon.vale.parser.old.CombinatorParsers._
 import net.verdagon.vale.parser._
-import net.verdagon.vale.parser.ast.{AbstractP, DestructureP, LocalNameDeclarationP, TuplePT, NameOrRunePT, NameP, PatternPP, Patterns, ShareP}
-import net.verdagon.vale.parser.old.CombinatorParsers
-import net.verdagon.vale.{Collector, vfail, vimpl}
+import net.verdagon.vale.parser.ast._
+import net.verdagon.vale.{Collector, Err, Ok, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
-class PatternParserTests extends FunSuite with Matchers with Collector {
-  private def compile[T](parser: CombinatorParsers.Parser[T], code: String): T = {
-    CombinatorParsers.parse(parser, code.toCharArray()) match {
-      case CombinatorParsers.NoSuccess(msg, input) => {
-        fail(msg);
-      }
-      case CombinatorParsers.Success(expr, rest) => {
-        if (!rest.atEnd) {
-          vfail(rest.pos.longString)
-        }
-        expr
-      }
-    }
-  }
+class PatternParserTests extends FunSuite with Matchers with Collector with TestParseUtils {
   private def compile[T](code: String): PatternPP = {
-    compile(atomPattern, code)
+    compile(new PatternParser().parsePattern(_), code)
   }
 
-  private def checkFail[T](parser: CombinatorParsers.Parser[T], code: String) = {
-    CombinatorParsers.parse(parser, code) match {
-      case CombinatorParsers.NoSuccess(_, _) =>
-      case CombinatorParsers.Success(_, rest) => {
-        if (!rest.atEnd) {
-          // That's good, it didn't parse all of it
-        } else {
-          fail()
-        }
-      }
-    }
+  private def checkFail[T](code: String) = {
+    compileForError(new PatternParser().parsePattern(_), code)
+  }
+
+  private def checkRest[T](code: String, expectedRest: String) = {
+    compileForRest(new PatternParser().parsePattern(_), code, expectedRest)
   }
 
   test("Simple Int") {
     // Make sure every pattern on the way down to kind can match Int
-    compile(typeIdentifier,"int") shouldHave { case "int" => }
-    compile(runeOrKindPattern,"int") shouldHave { case NameOrRunePT(NameP(_, "int")) => }
-    compile(patternType,"int") shouldHave { case PatternTypePPI(None, NameOrRunePT(NameP(_, "int"))) => }
-    compile(atomPattern,"_ int") shouldHave { case Patterns.fromEnv("int") => }
-  }
-  test("Pattern Templexes") {
-    compile(patternType,"int") shouldHave { case PatternTypePPI(None, NameOrRunePT(NameP(_, "int"))) => }
-    compile(patternType,"@int") shouldHave { case PatternTypePPI(Some(ShareP), NameOrRunePT(NameP(_, "int"))) => }
+//    compile(Parser.parseTypeName(_),"int") shouldHave { case "int" => }
+//    compile(runeOrKindPattern,"int") shouldHave { case NameOrRunePT(NameP(_, "int")) => }
+//    compile(patternType,"int") shouldHave { case PatternTypePPI(None, NameOrRunePT(NameP(_, "int"))) => }
+    compile("_ int") shouldHave { case Patterns.fromEnv("int") => }
   }
   test("Name-only Capture") {
-    compile(atomPattern,"a") match {
+    compile("a") match {
       case PatternPP(_, _,Some(LocalNameDeclarationP(NameP(_, "a"))), None, None, None) =>
     }
   }
-  test("Empty pattern list") {
-    compile(patternPrototypeParams,"()").patterns shouldEqual Vector.empty
-  }
-  test("Pattern list with only two captures") {
-    val list = compile(patternPrototypeParams, "(a, b)")
-    list.patterns shouldHave {
-      case Vector(capture("a"), capture("b")) =>
-    }
-  }
   test("Simple pattern doesn't eat = after it") {
-    compile(atomPattern, "a Int")
-    checkFail(atomPattern, "a Int=")
-    checkFail(atomPattern, "a Int =")
-    checkFail(atomPattern, "a Int = m")
-    checkFail(atomPattern, "a Int = m;")
+    compile( "a Int")
+    checkRest("a Int=", "=")
+    checkRest("a Int =", " =")
+    checkRest("a Int = m", " = m")
+    checkRest("a Int = m;", " = m;")
   }
   test("Empty pattern") {
-    compile("_") match { case PatternPP(_,_, None,None,None,None) => }
+    compile("_") match { case PatternPP(_,_, Some(IgnoredLocalNameDeclarationP(_)),None,None,None) => }
   }
 
   test("Capture with type with destructure") {
@@ -115,7 +82,7 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
   }
 
   test("Virtual function") {
-    compile(CombinatorParsers.atomPattern, "virtual this Car") shouldHave {
+    compile("virtual this Car") shouldHave {
       case PatternPP(_, _,Some(LocalNameDeclarationP(NameP(_, "this"))),Some(NameOrRunePT(NameP(_, "Car"))),None,Some(AbstractP(_))) =>
     }
   }

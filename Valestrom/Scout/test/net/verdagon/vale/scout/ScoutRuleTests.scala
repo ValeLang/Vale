@@ -4,7 +4,7 @@ import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP}
-import net.verdagon.vale.{Err, FileCoordinate, Ok, RangeS, vassert, vassertSome, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, Interner, Ok, RangeS, vassert, vassertSome, vfail, vimpl, vwat}
 import net.verdagon.von.{JsonSyntax, VonPrinter}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -14,40 +14,16 @@ class ScoutRuleTests extends FunSuite with Matchers {
   val tz = RangeS.testZero
 
   private def compile(code: String): ProgramS = {
-    Parser.runParser(code) match {
-      case Err(err) => fail(err.toString)
-      case Ok(firstProgram0) => {
-        val von = ParserVonifier.vonifyFile(firstProgram0)
-        val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
-        val program0 =
-          ParsedLoader.load(vpstJson) match {
-            case Err(error) => vwat(error.toString)
-            case Ok(program0) => program0
-          }
-        new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
-          case Err(e) => vfail(e.toString)
-          case Ok(t) => t
-        }
-      }
+    ScoutTestCompilation.test(code).getScoutput() match {
+      case Err(e) => vfail(ScoutErrorHumanizer.humanize(FileCoordinateMap.test(code), e))
+      case Ok(t) => t.expectOne()
     }
   }
 
   private def compileForError(code: String): ICompileErrorS = {
-    Parser.runParser(code) match {
-      case Err(err) => fail(err.toString)
-      case Ok(firstProgram0) => {
-        val von = ParserVonifier.vonifyFile(firstProgram0)
-        val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
-        val program0 =
-          ParsedLoader.load(vpstJson) match {
-            case Err(error) => vwat(error.toString)
-            case Ok(program0) => program0
-          }
-        new Scout(GlobalOptions.test()).scoutProgram(FileCoordinate.test, program0) match {
-          case Err(e) => e
-          case Ok(t) => vfail("Successfully compiled!\n" + t.toString)
-        }
-      }
+    ScoutTestCompilation.test(code).getScoutput() match {
+      case Err(e) => e
+      case Ok(t) => vfail("Successfully compiled!\n" + t.toString)
     }
   }
 
@@ -83,7 +59,7 @@ class ScoutRuleTests extends FunSuite with Matchers {
       compile(
         """
           |func main<M>(a int)
-          |where M = own | borrow {}
+          |where M = any(own, borrow) {}
           |""".stripMargin)
     val main = program.lookupFunction("main")
 
@@ -96,13 +72,12 @@ class ScoutRuleTests extends FunSuite with Matchers {
       compile(
         """
           |func main<T>(a T)
-          |where T Ref(O, P, K), O Ownership, P Permission, K Kind {}
+          |where T = Ref[O, K], O Ownership, K Kind {}
           |""".stripMargin)
     val main = program.lookupFunction("main")
 
     vassertSome(main.runeToPredictedType.get(CodeRuneS("T"))) shouldEqual CoordTemplataType
     vassertSome(main.runeToPredictedType.get(CodeRuneS("O"))) shouldEqual OwnershipTemplataType
-    vassertSome(main.runeToPredictedType.get(CodeRuneS("P"))) shouldEqual PermissionTemplataType
     vassertSome(main.runeToPredictedType.get(CodeRuneS("K"))) shouldEqual KindTemplataType
   }
 

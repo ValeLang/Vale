@@ -155,7 +155,7 @@ impl FlagType for FlagAnyList;
 /// # returns:
 ///   1. Whether the string is a valid @Command
 func verify<N>(command_list &CommandList<N>, command_str str) bool {
-  valid! = false;
+  valid = false;
 
   command_list.flags.each((cmd) => {
     if valid {
@@ -183,13 +183,13 @@ func verify<N>(command_list &CommandList<N>, command_str str) bool {
 func parse_all_flags<N>(flag_list &[#N]<_, _>Flag, args []<imm>str) ParsedFlagList {
   parsed_flag_list = ParsedFlagList(List<ParsedFlag>(), List<str>());
 
-  i! = 1;
+  i = 1;
 
   while i < len(args) {
     arg = args[i];
 
-    valid!   = false;
-    flag_type! = FLAG_NOTHING();
+    valid = false;
+    flag_type = FLAG_NOTHING();
 
     foreach flag in flag_list {
       if not valid {
@@ -201,15 +201,15 @@ func parse_all_flags<N>(flag_list &[#N]<_, _>Flag, args []<imm>str) ParsedFlagLi
     if valid and flag_type != FLAG_NOTHING() {
       [new_parsed_flag, new_i] = parse_flag(args, flag_type, &i);
       set i = new_i;
-      parsed_flag_list.parsed_flags!.add(new_parsed_flag);
+      parsed_flag_list.parsed_flags.add(new_parsed_flag);
     }
 
     else if (valid and flag_type == FLAG_NOTHING()) {
-      parsed_flag_list.parsed_flags!.add(ParsedFlag(args[i], FlagString("")));
+      parsed_flag_list.parsed_flags.add(ParsedFlag(args[i], FlagString("")));
     }
 
     else {
-      parsed_flag_list.unrecognized_inputs!.add(arg);
+      parsed_flag_list.unrecognized_inputs.add(arg);
     }
 
     set i = i + 1;
@@ -228,7 +228,7 @@ func parse_all_flags<N>(flag_list &[#N]<_, _>Flag, args []<imm>str) ParsedFlagLi
 /// 
 /// # returns:
 ///   1. A list of parsed and invalid flags.
-func parse_flag(args []<imm>str, flag_type int, i! int) (ParsedFlag, int) {
+func parse_flag(args []<imm>str, flag_type int, i int) (ParsedFlag, int) {
   name = args[i];
 
   // Curse Verdagon and his lack of matches! lol
@@ -290,7 +290,7 @@ func explain_flag<N>(
     flag_name str) {
   needle_flag_name = flag_name;
 
-  i! = 0;
+  i = 0;
   while i < flag_list.len() {
     hay_flag = flag_list[i];
     if hay_flag.name == needle_flag_name {
@@ -315,7 +315,7 @@ func explain_flag<N>(
 /// # returns:
 ///   1. Whether the flag with the given name was specified by the user.
 func get_nothing_flag(parsed_flag_list &ParsedFlagList, flag_name str) bool {
-  i! = 0;
+  i = 0;
   while i < parsed_flag_list.parsed_flags.len() {
     if parsed_flag_list.parsed_flags.get(i).name == flag_name {
       ret true;
@@ -336,13 +336,13 @@ func get_nothing_flag(parsed_flag_list &ParsedFlagList, flag_name str) bool {
 func get_string_flag(parsed_flag_list &ParsedFlagList, flag_name str) Opt<str> {
   needle_flag_name = flag_name;
 
-  i! = 0;
+  i = 0;
   while i < parsed_flag_list.parsed_flags.len() {
     hay_flag = parsed_flag_list.parsed_flags.get(i);
     if hay_flag.name == needle_flag_name {
       maybe_str_flag = hay_flag.val.as<FlagString>();
       if maybe_str_flag.is_ok() {
-        strFlag = maybe_str_flag.expect();
+        strFlag = maybe_str_flag.expect("zork b");
         ret Some<str>(strFlag.value);
       }
     }
@@ -412,13 +412,13 @@ str {
 func get_bool_flag(parsed_flag_list &ParsedFlagList, flag_name str) Opt<bool> {
   needle_flag_name = flag_name;
 
-  i! = 0;
+  i = 0;
   while i < parsed_flag_list.parsed_flags.len() {
     hay_flag = parsed_flag_list.parsed_flags.get(i);
     if hay_flag.name == needle_flag_name {
       maybe_str_flag = hay_flag.val.as<FlagBool>();
       if maybe_str_flag.is_ok() {
-        strFlag = maybe_str_flag.expect();
+        strFlag = maybe_str_flag.expect("zork c");
         ret Some<bool>(strFlag.value);
       }
     }
@@ -488,13 +488,13 @@ bool {
 func get_int_flag(parsed_flag_list &ParsedFlagList, flag_name str) Opt<int> {
   needle_flag_name = flag_name;
 
-  i! = 0;
+  i = 0;
   while i < parsed_flag_list.parsed_flags.len() {
     hay_flag = parsed_flag_list.parsed_flags.get(i);
     if hay_flag.name == needle_flag_name {
       maybe_str_flag = hay_flag.val.as<FlagInt>();
       if maybe_str_flag.is_ok() {
-        strFlag = maybe_str_flag.expect();
+        strFlag = maybe_str_flag.expect("zork d");
         ret Some<int>(strFlag.value);
       }
     }

@@ -19,6 +19,6 @@ object Formatter {
       Span(classs, elements.toVector)
     }
   }
-  case class Span(classs: IClass, elements: Vector[IElement]) extends IElement { override def hashCode(): Int = vcurious(); }
-  case class Text(string: String) extends IElement { override def hashCode(): Int = vcurious(); }
+  case class Span(classs: IClass, elements: Vector[IElement]) extends IElement { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious(); }
+  case class Text(string: String) extends IElement { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious(); }
 }

@@ -17,7 +17,7 @@ class StringTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), { case ConstantStrTE("sprogwoggle") => })
 
-    compile.evalForKind(Vector()) shouldEqual VonStr("sprogwoggle")
+    compile.evalForKind(Vector()) match { case VonStr("sprogwoggle") => }
   }
 
   test("Empty string") {
@@ -31,7 +31,7 @@ class StringTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), { case ConstantStrTE("") => })
 
-    compile.evalForKind(Vector()) shouldEqual VonStr("")
+    compile.evalForKind(Vector()) match { case VonStr("") => }
   }
 
   test("String with escapes") {
@@ -45,7 +45,7 @@ class StringTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     Collector.only(temputs.lookupFunction("main"), { case ConstantStrTE("sprog\nwoggle") => })
 
-    compile.evalForKind(Vector()) shouldEqual VonStr("sprog\nwoggle")
+    compile.evalForKind(Vector()) match { case VonStr("sprog\nwoggle") => }
   }
 
   test("String with hex escape") {
@@ -71,18 +71,18 @@ class StringTests extends FunSuite with Matchers {
 
   test("int to string") {
     val compile = RunCompilation.test( Tests.loadExpected("programs/strings/inttostr.vale"))
-    compile.evalForKind(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) match { case VonInt(4) => }
   }
 
   test("i64 to string") {
     val compile = RunCompilation.test( Tests.loadExpected("programs/strings/i64tostr.vale"))
-    compile.evalForKind(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) match { case VonInt(4) => }
   }
 
   test("String length") {
     val compile = RunCompilation.test( Tests.loadExpected("programs/strings/strlen.vale"))
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(12)
+    compile.evalForKind(Vector()) match { case VonInt(12) => }
   }
 
   test("String interpolate") {
@@ -91,7 +91,7 @@ class StringTests extends FunSuite with Matchers {
       "func ns(i int) int { ret i; }\n" +
       "exported func main() str { ret \"\"\"bl\"{ns(4)}rg\"\"\"; }")
 
-    compile.evalForKind(Vector()) shouldEqual VonStr("bl\"4rg")
+    compile.evalForKind(Vector()) match { case VonStr("bl\"4rg") => }
   }
 
   test("Slice a slice") {
@@ -144,6 +144,6 @@ class StringTests extends FunSuite with Matchers {
           |}
           |""".stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
 }

@@ -15,6 +15,6 @@ object TemplarTestCompilation {
       Builtins.getModulizedCodeMap()
         .or(FileCoordinateMap.test(code.toVector))
         .or(Tests.getPackageToResourceResolver),
-      TemplarCompilationOptions())
+      TemplarCompilationOptions(GlobalOptions(true, true, true, true)))
   }
 }

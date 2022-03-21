@@ -205,6 +205,7 @@ object ParsedLoader {
 
   def loadNameDeclaration(jobj: JObject): INameDeclarationP = {
     getType(jobj) match {
+      case "IgnoredLocalNameDeclaration" => IgnoredLocalNameDeclarationP(loadRange(getObjectField(jobj, "range")))
       case "LocalNameDeclaration" => LocalNameDeclarationP(loadName(getObjectField(jobj, "name")))
       case "IterableNameDeclaration" => IterableNameDeclarationP(loadRange(getObjectField(jobj, "range")))
       case "IteratorNameDeclaration" => IteratorNameDeclarationP(loadRange(getObjectField(jobj, "range")))
@@ -276,8 +277,7 @@ object ParsedLoader {
           loadRange(getObjectField(jobj, "range")),
           loadRange(getObjectField(jobj, "operatorRange")),
           loadExpression(getObjectField(jobj, "callableExpr")),
-          getArrayField(jobj, "argExprs").map(expectObject).map(loadExpression),
-          getBooleanField(jobj, "callableReadwrite"))
+          getArrayField(jobj, "argExprs").map(expectObject).map(loadExpression))
       }
       case "BraceCall" => {
         BraceCallPE(
@@ -299,7 +299,6 @@ object ParsedLoader {
           loadRange(getObjectField(jobj, "range")),
           loadExpression(getObjectField(jobj, "subjectExpr")),
           loadRange(getObjectField(jobj, "operatorRange")),
-          getBooleanField(jobj, "subjectReadwrite"),
           loadLookup(getObjectField(jobj, "method")),
           getArrayField(jobj, "argExprs").map(expectObject).map(loadExpression))
       }
@@ -364,7 +363,6 @@ object ParsedLoader {
         AugmentPE(
           loadRange(getObjectField(jobj, "range")),
           loadOwnership(getObjectField(jobj, "targetOwnership")),
-          loadOptionalObject(getObjectField(jobj, "targetPermission"), loadPermission),
           loadExpression(getObjectField(jobj, "inner")))
       }
       case "Mutate" => {
@@ -377,6 +375,10 @@ object ParsedLoader {
         ReturnPE(
           loadRange(getObjectField(jobj, "range")),
           loadExpression(getObjectField(jobj, "expr")))
+      }
+      case "Break" => {
+        BreakPE(
+          loadRange(getObjectField(jobj, "range")))
       }
       case "Consecutor" => {
         loadConsecutor(jobj)
@@ -418,6 +420,11 @@ object ParsedLoader {
         DestructPE(
           loadRange(getObjectField(jobj, "range")),
           loadExpression(getObjectField(jobj, "inner")))
+      }
+      case "Unlet" => {
+        UnletPE(
+          loadRange(getObjectField(jobj, "range")),
+          loadImpreciseName(getObjectField(jobj, "localName")))
       }
       case "Each" => {
         EachPE(
@@ -504,38 +511,24 @@ object ParsedLoader {
     getType(jobj) match {
       case "Move" => MoveP
       case "Use" => UseP
-      case "LoadAsPointer" => {
-        LoadAsPointerP(
-          loadOptionalObject(getObjectField(jobj, "permission"), loadPermission))
-      }
-      case "LoadAsBorrow" => {
-        LoadAsBorrowP(
-          loadOptionalObject(getObjectField(jobj, "permission"), loadPermission))
-      }
-      case "LoadAsBorrowOrIfContainerIsPointerThenPointer" => {
-        LoadAsBorrowOrIfContainerIsPointerThenPointerP(
-          loadOptionalObject(getObjectField(jobj, "permission"), loadPermission))
-      }
-      case "LoadAsWeak" => {
-        LoadAsWeakP(
-          loadOptionalObject(getObjectField(jobj, "permission"), loadPermission))
-      }
+      case "LoadAsBorrow" => LoadAsBorrowP
+      case "LoadAsWeak" => LoadAsWeakP
       case other => vwat(other)
     }
   }
 
-  def loadVirtuality(jobj: JObject): IVirtualityP = {
-    getType(jobj) match {
-      case "Override" => {
-        OverrideP(
-          loadRange(getObjectField(jobj, "range")),
-          loadTemplex(getObjectField(jobj, "type")))
-      }
-      case "Abstract" => {
+  def loadVirtuality(jobj: JObject): AbstractP = {
+//    getType(jobj) match {
+//      case "Override" => {
+//        OverrideP(
+//          loadRange(getObjectField(jobj, "range")),
+//          loadTemplex(getObjectField(jobj, "type")))
+//      }
+//      case "Abstract" => {
         AbstractP(
           loadRange(getObjectField(jobj, "range")))
-      }
-    }
+//      }
+//    }
   }
 
   def loadStructContent(jobj: JObject): IStructContent = {
@@ -581,7 +574,7 @@ object ParsedLoader {
       case "ComponentsPR" => {
         ComponentsPR(
           loadRange(getObjectField(jobj, "range")),
-          loadTypedPR(getObjectField(jobj, "container")),
+          loadRulexType(getObjectField(jobj, "container")),
           getArrayField(jobj, "components").map(expectObject).map(loadRulex))
       }
       case "OrPR" => {
@@ -623,7 +616,6 @@ object ParsedLoader {
       case "OwnershipTypePR" => OwnershipTypePR
       case "MutabilityTypePR" => MutabilityTypePR
       case "VariabilityTypePR" => VariabilityTypePR
-      case "PermissionTypePR" => PermissionTypePR
       case "LocationTypePR" => LocationTypePR
       case "CoordTypePR" => CoordTypePR
       case "CoordListTypePR" => CoordListTypePR
@@ -689,17 +681,9 @@ object ParsedLoader {
     }
   }
 
-  def loadPermission(jobj: JObject): PermissionP = {
-    getType(jobj) match {
-      case "Readonly" => ReadonlyP
-      case "Readwrite" => ReadwriteP
-    }
-  }
-
   def loadOwnership(jobj: JObject): OwnershipP = {
     getType(jobj) match {
       case "Own" => OwnP
-      case "Pointer" => PointerP
       case "Borrow" => BorrowP
       case "Weak" => WeakP
       case "Share" => ShareP
@@ -750,7 +734,6 @@ object ParsedLoader {
         InterpretedPT(
           loadRange(getObjectField(jobj, "range")),
           loadOwnership(getObjectField(jobj, "ownership")),
-          loadPermission(getObjectField(jobj, "permission")),
           loadTemplex(getObjectField(jobj, "inner")))
       }
       case "CallT" => {
@@ -787,11 +770,6 @@ object ParsedLoader {
         BorrowPT(
           loadRange(getObjectField(jobj, "range")),
           loadTemplex(getObjectField(jobj, "inner")))
-      }
-      case "PermissionT" => {
-        PermissionPT(
-          loadRange(getObjectField(jobj, "range")),
-          loadPermission(getObjectField(jobj, "permission")))
       }
       case "InlineT" => {
         InlinePT(

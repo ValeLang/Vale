@@ -38,7 +38,7 @@ func !=(a StrSlice, b StrSlice) bool {
 
 func parse(s str) void {
    c = Context(s, 0);
-   parseRoot(*c);
+   parseRoot(&c);
 }
 
 func readValidChars(c *Context, validChars str) StrSlice {
@@ -563,7 +563,7 @@ impl MutabilityP for ImmutableP;
 // Examples (with C++ translations):
 //   This will create a varying local, which can be changed to point elsewhere:
 //     Vale:
-//       x! = Car(4, "Honda Civic");
+//       x = Car(4, "Honda Civic");
 //       set x = someOtherCar;
 //       set x = Car(4, "Toyota Camry");
 //     C++:
@@ -605,7 +605,7 @@ struct PatternPP {
   range Range;
 
   // Whether there's a borrow symbol before the variable name, such
-  // as the `&` in `func launch(*ship) { ... }`
+  // as the `&` in `func launch(&ship) { ... }`
   preBorrow Opt<Range>;
 
   // The name of the parameter.
@@ -638,7 +638,7 @@ struct DestructureP {
 
 
 // The name and variability of a local, like the `a` in `a = 5` or the
-// `a!` in `a! = 5;`.
+// `a!` in `a = 5;`.
 struct CaptureP {
   range Range;
   name ICaptureNameP;
@@ -899,7 +899,7 @@ impl ITemplexPT for ManualSequencePT;
 interface ITemplexPT {}
 
 // A rule specifying the ownership of something.
-// For example, in `a *Spaceship = ...;`, `*Spaceship` is an OwnershippedPT rule saying
+// For example, in `a &Spaceship = ...;`, `&Spaceship` is an OwnershippedPT rule saying
 // that we want a Borrow of the inner templex (which is Spaceship).
 struct OwnershippedPT {
   range Range;
@@ -1024,7 +1024,7 @@ impl ITemplexPT for PermissionedPT;
 // An expression, like you would see inside a function.
 interface IExpressionPE {}
 
-// For example, the `&` in `launch(*ship)`
+// For example, the `&` in `launch(&ship)`
 struct PointPE {
   range Range;
   expr IExpressionPE;

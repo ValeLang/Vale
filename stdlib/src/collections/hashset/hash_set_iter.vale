@@ -1,0 +1,37 @@
+
+
+struct HashSetIter<K> {
+  table &Array<mut, Opt<K>>;
+  pos! int;
+}
+
+func begin<K, H, E>(map &HashSet<K, H, E>) HashSetIter<K> {
+  HashSetIter<K>(&map.table, 0)
+}
+
+func next<K>(iter &HashSetIter<K>) Opt<&K> {
+  while iter.pos < iter.table.len() {
+    this_pos = set iter.pos = iter.pos + 1;
+    if not iter.table[this_pos].isEmpty() {
+      node = &iter.table[this_pos].get();
+      ret Some<&K>(node);
+    }
+  }
+  ret None<&K>();
+}
+
+
+
+func each<K, H, E, F>(
+  self &HashSet<K, H, E>,
+  func F)
+void {
+  index = 0;
+  while (index < self.table.len()) {
+    maybeNode = self.table[index];
+    if not(maybeNode.isEmpty()) {
+      func(maybeNode.get());
+    }
+    set index = index + 1;
+  }
+}

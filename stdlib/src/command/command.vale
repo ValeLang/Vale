@@ -11,19 +11,19 @@ struct Subprocess {
 }
 
 func Subprocess(command str) Result<Subprocess, str> {
-  list! = command.split(" ");
+  list = command.split(" ");
   cmd = str(list.get(0));
-  newlist! = List<StrSlice>();
+  newlist = List<StrSlice>();
   foreach [index, element] in list.entries() {
-    if index != 0 { newlist!.add(list.get(index)); }
+    if index != 0 { newlist.add(list.get(index)); }
   }
   ret Subprocess(cmd, &newlist);
 }
 
 func Subprocess(command str, args &List<str>) Result<Subprocess, str> {
-  newlist! = List<StrSlice>();
+  newlist = List<StrSlice>();
   foreach element in args {
-    newlist!.add(slice(element));
+    newlist.add(slice(element));
   }
   ret Subprocess(command, &newlist);
 }
@@ -52,13 +52,13 @@ func FindProgramInPath(relative_program str) Opt<Path> {
   ret maybe_found_program_path;
 }
 
-func PrintCommandLinePart(builder &!StringBuilder, part StrSlice) {
-  if part.has(" ") {
-    builder!.print("\"");
-    builder!.print(part.replaceAll("\"", "\\\""));
-    builder!.print("\"");
+func PrintCommandLinePart(builder &StringBuilder, part StrSlice) {
+  if part.contains(" ") {
+    builder.print("\"");
+    builder.print(part.replaceAll("\"", "\\\""));
+    builder.print("\"");
   } else {
-    builder!.print(part);
+    builder.print(part);
   }
 }
 
@@ -80,15 +80,15 @@ func Subprocess(relative_program str, args &List<StrSlice>) Result<Subprocess, s
 
 
   command_str_builder = StringBuilder();
-  command_str_builder!.PrintCommandLinePart(program_path.str().slice());
+  command_str_builder.PrintCommandLinePart(program_path.str().slice());
 
 
-  cmdlist! = List<str>();
-  cmdlist!.add(program_path.str());
+  cmdlist = List<str>();
+  cmdlist.add(program_path.str());
   foreach arg in args {
-    command_str_builder!.print(" ");
-    command_str_builder!.PrintCommandLinePart(arg);
-    cmdlist!.add(arg.str());
+    command_str_builder.print(" ");
+    command_str_builder.PrintCommandLinePart(arg);
+    cmdlist.add(arg.str());
   }
 
   command_str = command_str_builder.str();
@@ -118,7 +118,7 @@ int {
     while stdout_consuming {
       s = self.read_stdout(1000);
       if s.len() > 0 {
-        (&!stdout_consumer)!(s);
+        (&stdout_consumer)(s);
         set stdout_consumed_anything = true;
       } else {
         set stdout_consuming = false;
@@ -130,7 +130,7 @@ int {
     while stderr_consuming {
       s = self.read_stderr(1000);
       if s.len() > 0 {
-        (&!stderr_consumer)!(s);
+        (&stderr_consumer)(s);
         set stderr_consumed_anything = true;
       } else {
         set stderr_consuming = false;
@@ -148,10 +148,10 @@ int {
 func print_and_join(self Subprocess) int {
   x = consume_and_join(
     self,
-    &!(stdout_chunk) => {
+    &(stdout_chunk) => {
       print(stdout_chunk);
     },
-    &!(stderr_chunk) => {
+    &(stderr_chunk) => {
       print(stderr_chunk);
     });
   ret x;
@@ -169,8 +169,8 @@ func capture_and_join(self Subprocess) ExecResult {
   return_code =
       consume_and_join(
           self,
-          &!(stdout_chunk) => { stdout_builder!.print(stdout_chunk); },
-          &!(stderr_chunk) => { stderr_builder!.print(stderr_chunk); });
+          &(stdout_chunk) => { stdout_builder.print(stdout_chunk); },
+          &(stderr_chunk) => { stderr_builder.print(stderr_chunk); });
   ret ExecResult(return_code, stdout_builder.str(), stderr_builder.str());
 }
 
@@ -190,7 +190,7 @@ func read_all_stdout(self &Subprocess) str {
   running = true;
   while running {
     s = self.read_stdout(1000);
-    builder!.print(s);
+    builder.print(s);
     if s.len() == 0 and not self.alive() {
       set running = false;
     }

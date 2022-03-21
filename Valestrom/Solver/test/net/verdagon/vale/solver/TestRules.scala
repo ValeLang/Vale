@@ -34,7 +34,7 @@ case class Call(resultRune: Long, nameRune: Long, argRune: Long) extends IRule {
   override def allPuzzles: Array[Array[Long]] = Array(Array(resultRune, nameRune), Array(nameRune, argRune))
 }
 // See IRFU and SRCAMP for what this rule is doing
-case class Receive(receiverRune: Long, senderRune: Long) extends IRule {
+case class Send(senderRune: Long, receiverRune: Long) extends IRule {
   override def allRunes: Array[Long] = Array(receiverRune, senderRune)
   override def allPuzzles: Array[Array[Long]] = Array(Array(receiverRune))
 }

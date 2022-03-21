@@ -8,9 +8,10 @@ Here's how to build the Vale compiler.
 ```sh
 sudo apt install -y git
 git clone --single-branch --branch master https://github.com/ValeLang/Vale
-Vale/install-compiler-prereqs-linux.sh ~/LLVMForVale ~/BootstrappingValeCompiler ~/stdlib
+Vale/install-compiler-prereqs-linux.sh ~/LLVMForVale ~/BootstrappingValeCompiler
 cd Vale
-./build-compiler-linux.sh ~/LLVMForVale/clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10 ~/BootstrappingValeCompiler ~/stdlib
+./build-compiler-linux.sh ~/LLVMForVale/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz ~/BootstrappingValeCompiler
+
 ```
 
 
@@ -18,10 +19,10 @@ cd Vale
 
 ```sh
 git clone --single-branch --branch master https://github.com/ValeLang/Vale
-Vale/install-compiler-prereqs-mac.sh ~/BootstrappingValeCompiler ~/stdlib
+Vale/install-compiler-prereqs-mac.sh ~/BootstrappingValeCompiler
 source ~/.zshrc
 cd Vale
-./build-compiler-mac.sh ~/BootstrappingValeCompiler ~/stdlib
+./build-compiler-mac.sh ~/BootstrappingValeCompiler
 ```
 
 
@@ -77,7 +78,6 @@ Once youve done the above steps and installed LLVM, run the below commands:
 
 ```sh
 git clone https://github.com/ValeLang/Vale --single-branch --branch master
-git clone https://github.com/ValeLang/stdlib --single-branch --branch master
 cd Vale
-.\\build-compiler-windows.bat C:\\llvm C:\\OldValeCompiler C:\\stdlib
+.\\build-compiler-windows.bat C:\\llvm C:\\OldValeCompiler
 ```

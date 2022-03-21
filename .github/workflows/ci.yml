@@ -15,9 +15,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: install prereqs
-        run: cmd /c '.\install-compiler-prereqs-windows.bat C:\llvm-install-minimum C:\ValeCompiler-0.1.3.4-Win C:\stdlib'
+        run: cmd /c '.\install-compiler-prereqs-windows.bat C:\LLVM13 C:\BootstrappingValeCompiler'
       - name: run vcvars and build-compiler-windows.bat
-        run: cmd /c '"C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && .\build-compiler-windows.bat C:\llvm-install-minimum C:\ValeCompiler-0.1.3.4-Win C:\stdlib'
+        run: cmd /c '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && .\build-compiler-windows.bat C:\LLVM13\llvm-project-llvmorg-13.0.1 C:\BootstrappingValeCompiler'
       - uses: actions/upload-artifact@v2
         with:
           name: ValeCompiler-0-Win.zip
@@ -28,9 +28,9 @@ jobs:
     steps: 
       - uses: actions/checkout@v2
       - name: install prereqs
-        run: ./install-compiler-prereqs-linux.sh ~/ValeLLVM ~/ValeCompiler-0.1.3.3-Ubuntu ~/stdlib
+        run: ./install-compiler-prereqs-linux.sh ~/LLVMForVale ~/BootstrappingValeCompiler
       - name: build compiler 
-        run: ./build-compiler-linux.sh ~/ValeLLVM/clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10 ~/ValeCompiler-0.1.3.3-Ubuntu ~/stdlib
+        run: ./build-compiler-linux.sh ~/LLVMForVale/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04 ~/BootstrappingValeCompiler
       - uses: actions/upload-artifact@v2
         with:
           name: ValeCompiler-0-Ubuntu.zip
@@ -41,7 +41,7 @@ jobs:
     steps: 
       - uses: actions/checkout@v2
       - name: install prereqs
-        run: ./install-compiler-prereqs-mac.sh ~/ValeCompiler-0.1.3.3-Mac ~/stdlib
+        run: ./install-compiler-prereqs-mac.sh ~/ValeCompiler-0.1.3.3-Mac
       - name: build compiler
         run: source ~/.zshrc && ./build-compiler-mac.sh ~/ValeCompiler-0.1.3.3-Mac ~/stdlib
       - uses: actions/upload-artifact@v2

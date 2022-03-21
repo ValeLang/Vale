@@ -636,6 +636,8 @@ object ParsedLoader {
           loadRulexType(getObjectField(jobj, "type")))
       }
       case "ReadOnlyRuneAttribute" => ReadOnlyRuneAttributeP(loadRange(getObjectField(jobj, "range")))
+      case "ReadWriteRuneAttribute" => ReadWriteRuneAttributeP(loadRange(getObjectField(jobj, "range")))
+      case "ImmutableRuneAttribute" => ImmutableRuneAttributeP(loadRange(getObjectField(jobj, "range")))
       case "PoolRuneAttribute" => PoolRuneAttributeP(loadRange(getObjectField(jobj, "range")))
       case "ArenaRuneAttribute" => ArenaRuneAttributeP(loadRange(getObjectField(jobj, "range")))
       case "BumpRuneAttribute" => BumpRuneAttributeP(loadRange(getObjectField(jobj, "range")))

@@ -15,6 +15,7 @@ object ParseErrorHumanizer {
         case RangedInternalErrorP(pos, msg) => "Internal error: " + msg
         case UnrecognizableExpressionAfterAugment(pos) => "Unrecognizable expression: "
         case BadMemberEnd(pos) => "Bad member end."
+        case OnlyRegionRunesCanHaveMutability(pos) => "Only region runes, such as 'x, can have ro or rw or mut."
         case BadRuleCallParam(pos) => "Bad rule call param."
         case BadFunctionAfterParam(pos) => "Bad end of param."
         case BadRuneTypeError(pos) => "Bad rune type."

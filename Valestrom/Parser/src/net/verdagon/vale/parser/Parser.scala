@@ -251,59 +251,56 @@ class Parser(opts: GlobalOptions) {
 
     val begin = iter.getPos()
 
-    val maybeRegionAttribute =
-      if (iter.trySkip("^'".r)) {
-        iter.consumeWhitespace()
-        Some(TypeRuneAttributeP(RangeP(begin, iter.getPos()), RegionTypePR))
-      } else {
-        None
-      }
+    if (iter.trySkip("^'".r)) {
+      iter.consumeWhitespace()
 
-    val name =
-      parseFunctionOrLocalOrMemberName(iter) match {
-        case Some(n) => n
-        case None => return Err(BadRuneNameError(iter.getPos()))
-      }
+      val name =
+        parseFunctionOrLocalOrMemberName(iter) match {
+          case Some(n) => n
+          case None => return Err(BadRuneNameError(iter.getPos()))
+        }
 
-    iter.consumeWhitespace()
+      iter.consumeWhitespace()
 
-    val typeBegin = iter.getPos()
-    val maybeRuneType =
-      Parser.parseRuneType(iter, Vector(StopBeforeCloseChevron, StopBeforeComma, StopBeforeEquals)) match {
-        case Err(e) => return Err(e)
-        case Ok(x) => x.map(TypeRuneAttributeP(RangeP(typeBegin, iter.getPos()), _))
-      }
+      val regionTypeBegin = iter.getPos()
+      val attributes =
+        Vector(TypeRuneAttributeP(RangeP(regionTypeBegin, iter.getPos()), RegionTypePR)) ++
+        (if (iter.trySkip("^ro\\b".r)) {
+          Vector(ReadOnlyRuneAttributeP(RangeP(regionTypeBegin, iter.getPos())))
+        } else if (iter.trySkip("^rw\\b".r)) {
+          Vector(ReadWriteRuneAttributeP(RangeP(regionTypeBegin, iter.getPos())))
+        } else if (iter.trySkip("^imm\\b".r)) {
+          Vector(ImmutableRuneAttributeP(RangeP(regionTypeBegin, iter.getPos())))
+        } else {
+          Vector()
+        })
 
-    val attributes =
-      (maybeRegionAttribute, maybeRuneType) match {
-        case (None, Some(x)) => Vector(x)
-        case (Some(x), None) => Vector(x)
-        case (None, None) => Vector()
-        case (Some(_), Some(_)) => {
-          return Err(RegionRuneHasType(typeBegin))
+      if (iter.trySkip("^\\s*=\\s*".r)) {
+        new TemplexParser().parseTemplex(iter) match {
+          case Err(e) => return Err(e)
+          case Ok(x) => // ignore it
         }
       }
 
-    if (iter.trySkip("^\\s*=\\s*".r)) {
-      new TemplexParser().parseTemplex(iter) match {
-        case Err(e) => return Err(e)
-        case Ok(x) => // ignore it
-      }
+      Ok(IdentifyingRuneP(RangeP(begin, iter.getPos()), name, attributes))
+    } else {
+      val name =
+        parseFunctionOrLocalOrMemberName(iter) match {
+          case Some(n) => n
+          case None => return Err(BadRuneNameError(iter.getPos()))
+        }
+
+      iter.consumeWhitespace()
+
+      val typeBegin = iter.getPos()
+      val maybeRuneType =
+        Parser.parseRuneType(iter, Vector(StopBeforeCloseChevron, StopBeforeComma, StopBeforeEquals)) match {
+          case Err(e) => return Err(e)
+          case Ok(Some(x)) => Some(TypeRuneAttributeP(RangeP(typeBegin, iter.getPos()), x))
+          case Ok(None) => None
+        }
+      Ok(IdentifyingRuneP(RangeP(begin, iter.getPos()), name, maybeRuneType.toVector))
     }
-
-    Ok(IdentifyingRuneP(RangeP(begin, iter.getPos()), name, attributes))
-
-//    pos ~ opt(pstr("'")) ~ exprIdentifier ~ rep(white ~> identifyingRegionRuneAttribute) ~ pos ^^ {
-//      case begin ~ maybeIsRegion ~ name ~ regionAttributes ~ end => {
-//        val isRegionAttrInList =
-//          maybeIsRegion match {
-//            case None => Vector.empty
-//            case Some(NameP(range, _)) => Vector(TypeRuneAttributeP(range, RegionTypePR))
-//          }
-//        IdentifyingRuneP(ast.RangeP(begin, end), name, isRegionAttrInList ++ regionAttributes)
-//      }
-//    }
-
   }
 
   private[parser] def parseIdentifyingRunes(

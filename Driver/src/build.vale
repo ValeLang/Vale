@@ -123,6 +123,12 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
           "false",
           "Whether to output VPST, the code's parsed representation"),
         Flag(
+          "--no_std",
+          FLAG_BOOL(),
+          "Whether to include the stdlib.",
+          "false",
+          "Whether to include the stdlib."),
+        Flag(
           "--llvm_ir",
           FLAG_BOOL(),
           "Whether to output LLVM IR.",
@@ -199,6 +205,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
   output_vast = parsed_flags.get_bool_flag("--output_vast", true);
   reuse_vast = parsed_flags.get_bool_flag("--reuse_vast", false);
   output_vpst = parsed_flags.get_bool_flag("--output_vpst", true);
+  no_std = parsed_flags.get_bool_flag("--no_std", true);
 
   maybe_region_override = parsed_flags.get_string_flag("--region_override");
   maybe_cpu = parsed_flags.get_string_flag("--cpu");
@@ -223,6 +230,11 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
   project_directory_declarations = List<ProjectDirectoryDeclaration>();
   project_vale_input_declarations = List<ProjectValeInputDeclaration>();
   project_non_vale_input_declarations = List<ProjectNonValeInputDeclaration>();
+
+  if (not no_std) {
+    project_directory_declarations!.add(ProjectDirectoryDeclaration("stdlib", compiler_dir./("stdlib")./("src")));
+  }
+
 
   while (parsed_flags.unrecognized_inputs.len() > 0) {
     flag = parsed_flags.unrecognized_inputs.get(0);

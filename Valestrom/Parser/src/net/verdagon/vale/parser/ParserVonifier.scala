@@ -45,6 +45,8 @@ object ParserVonifier {
             VonMember("type", vonifyRuneType(tyype))))
       }
       case ReadOnlyRuneAttributeP(range) => VonObject("ReadOnlyRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+      case ReadWriteRuneAttributeP(range) => VonObject("ReadWriteRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+      case ImmutableRuneAttributeP(range) => VonObject("ImmutableRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case PoolRuneAttributeP(range) => VonObject("PoolRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case ArenaRuneAttributeP(range) => VonObject("ArenaRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case BumpRuneAttributeP(range) => VonObject("BumpRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))

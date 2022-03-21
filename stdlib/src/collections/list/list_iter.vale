@@ -1,0 +1,40 @@
+
+
+
+struct ListIter<E> where E Ref {
+  list_array &Array<mut, E>;
+  pos! int;
+}
+
+func begin<E>(list &List<E>) ListIter<E> {
+  ListIter<E>(list.array, 0)
+}
+
+func next<E>(iter &ListIter<E>) Opt<&E> {
+  if iter.pos < iter.list_array.len() {
+    Some<&E>(iter.list_array[set iter.pos = iter.pos + 1])
+  } else {
+    None<&E>()
+  }
+}
+
+
+
+struct ListEntriesIter<E> where E Ref {
+  list_array &Array<mut, E>;
+  pos! int;
+}
+func entries<E>(list &List<E>) ListEntriesIter<E> {
+  ListEntriesIter<E>(&list.array, 0)
+}
+func begin<E>(iter &ListEntriesIter<E>) ListEntriesIter<E> {
+  ListEntriesIter<E>(iter.list_array, iter.pos)
+}
+func next<E>(iter &ListEntriesIter<E>) Opt<(int, &E)> {
+  if iter.pos < iter.list_array.len() {
+    Some<(int, &E)>((iter.pos, iter.list_array[set iter.pos = iter.pos + 1]))
+  } else {
+    None<(int, &E)>()
+  }
+}
+

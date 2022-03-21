@@ -3,7 +3,7 @@ weakable struct Muta { hp int; }
 exported func main() int {
   ownMuta = Muta(7);
   print(str(ownMuta.hp));
-  weakMuta = **(*ownMuta);
+  weakMuta = **(&ownMuta);
   maybeBorrowMuta = lock(weakMuta);
   ret maybeBorrowMuta.get().hp;
 }

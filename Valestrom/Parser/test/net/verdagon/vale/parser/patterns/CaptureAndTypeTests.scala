@@ -1,42 +1,27 @@
 package net.verdagon.vale.parser.patterns
 
 import net.verdagon.vale.parser.ast.Patterns.{capturedWithType, capturedWithTypeRune}
-import net.verdagon.vale.parser.old.CombinatorParsers._
 import net.verdagon.vale.parser._
-import net.verdagon.vale.parser.ast.{ConstructingMemberNameDeclarationP, InterpretedPT, LocalNameDeclarationP, NameOrRunePT, NameP, PatternPP, PointerP, ReadonlyP, WeakP}
-import net.verdagon.vale.parser.old.CombinatorParsers
+import net.verdagon.vale.parser.ast._
 import net.verdagon.vale.{Collector, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
-class CaptureAndTypeTests extends FunSuite with Matchers with Collector {
-  private def compile[T](parser: CombinatorParsers.Parser[T], code: String): T = {
-    CombinatorParsers.parse(parser, code.toCharArray()) match {
-      case CombinatorParsers.NoSuccess(msg, input) => {
-        fail();
-      }
-      case CombinatorParsers.Success(expr, rest) => {
-        if (!rest.atEnd) {
-          vfail(rest.pos.longString)
-        }
-        expr
-      }
-    }
-  }
+class CaptureAndTypeTests extends FunSuite with Matchers with Collector with TestParseUtils {
+//  private def compile[T](parser: CombinatorParsers.Parser[T], code: String): T = {
+//    CombinatorParsers.parse(parser, code.toCharArray()) match {
+//      case CombinatorParsers.NoSuccess(msg, input) => {
+//        fail();
+//      }
+//      case CombinatorParsers.Success(expr, rest) => {
+//        if (!rest.atEnd) {
+//          vfail(rest.pos.longString)
+//        }
+//        expr
+//      }
+//    }
+//  }
   private def compile[T](code: String): PatternPP = {
-    compile(atomPattern, code)
-  }
-
-  private def checkFail[T](parser: CombinatorParsers.Parser[T], code: String) = {
-    CombinatorParsers.parse(parser, code) match {
-      case CombinatorParsers.NoSuccess(_, _) =>
-      case CombinatorParsers.Success(_, rest) => {
-        if (!rest.atEnd) {
-          // That's good, it didn't parse all of it
-        } else {
-          fail()
-        }
-      }
-    }
+    compile(new PatternParser().parsePattern(_), code)
   }
 
   test("No capture, with type") {
@@ -55,19 +40,19 @@ class CaptureAndTypeTests extends FunSuite with Matchers with Collector {
     }
   }
   test("Capture with borrow tame") {
-    compile("arr *R") shouldHave {
+    compile("arr &R") shouldHave {
       case PatternPP(_,_,
       Some(LocalNameDeclarationP(NameP(_, "arr"))),
-      Some(InterpretedPT(_,PointerP,ReadonlyP, NameOrRunePT(NameP(_, "R")))),
+      Some(InterpretedPT(_,BorrowP, NameOrRunePT(NameP(_, "R")))),
       None,
       None) =>
     }
   }
-  test("Capture with this. in front") {
-    compile("this.arr **R") shouldHave {
+  test("Capture with self. in front") {
+    compile("self.arr **R") shouldHave {
       case PatternPP(_,_,
       Some(ConstructingMemberNameDeclarationP(NameP(_, "arr"))),
-      Some(InterpretedPT(_,WeakP,ReadonlyP, NameOrRunePT(NameP(_, "R")))),
+      Some(InterpretedPT(_,WeakP, NameOrRunePT(NameP(_, "R")))),
       None,
       None) =>
     }

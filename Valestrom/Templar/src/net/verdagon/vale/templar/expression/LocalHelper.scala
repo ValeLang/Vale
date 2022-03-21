@@ -1,29 +1,31 @@
 package net.verdagon.vale.templar.expression
 
 import net.verdagon.vale.parser._
-import net.verdagon.vale.parser.ast.{LoadAsBorrowOrIfContainerIsPointerThenPointerP, LoadAsBorrowP, LoadAsP, LoadAsPointerP, LoadAsWeakP, MoveP, UseP}
+import net.verdagon.vale.parser.ast._
 import net.verdagon.vale.scout.{LocalS, NotUsed}
-import net.verdagon.vale.templar.env.{AddressibleLocalVariableT, NodeEnvironmentBox, FunctionEnvironmentBox, ILocalVariableT, ReferenceLocalVariableT}
+import net.verdagon.vale.templar.env.{AddressibleLocalVariableT, FunctionEnvironmentBox, ILocalVariableT, NodeEnvironmentBox, ReferenceLocalVariableT}
 import net.verdagon.vale.templar.function.DestructorTemplar
 import net.verdagon.vale.templar.templata.Conversions
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{ast, _}
-import net.verdagon.vale.templar.ast.{AddressExpressionTE, AddressMemberLookupTE, DeferTE, ExpressionT, LetAndLendTE, LocalLookupTE, LocationInFunctionEnvironment, ReferenceExpressionTE, ReferenceMemberLookupTE, RuntimeSizedArrayLookupTE, SoftLoadTE, StaticSizedArrayLookupTE, UnletTE}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.names.{NameTranslator, TemplarTemporaryVarNameT}
-import net.verdagon.vale.{RangeS, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{Interner, RangeS, vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
 class LocalHelper(
     opts: TemplarOptions,
-  destructorTemplar: DestructorTemplar) {
+    interner: Interner,
+    nameTranslator: NameTranslator,
+    destructorTemplar: DestructorTemplar) {
 
   def makeTemporaryLocal(
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironment,
     coord: CoordT):
   ReferenceLocalVariableT = {
-    val varId = nenv.functionEnvironment.fullName.addStep(TemplarTemporaryVarNameT(life))
+    val varId = nenv.functionEnvironment.fullName.addStep(interner.intern(TemplarTemporaryVarNameT(life)))
     val rlv = ReferenceLocalVariableT(varId, FinalT, coord)
     nenv.addVariable(rlv)
     rlv
@@ -34,21 +36,21 @@ class LocalHelper(
   def makeTemporaryLocal(
     temputs: Temputs,
     nenv: NodeEnvironmentBox,
+    range: RangeS,
     life: LocationInFunctionEnvironment,
     r: ReferenceExpressionTE,
     targetOwnership: OwnershipT):
   (DeferTE) = {
     targetOwnership match {
       case BorrowT =>
-      case PointerT =>
     }
 
     val rlv = makeTemporaryLocal(nenv, life, r.result.reference)
     val letExpr2 = LetAndLendTE(rlv, r, targetOwnership)
 
-    val unlet = unletLocal(nenv, rlv)
+    val unlet = unletLocalWithoutDropping(nenv, rlv)
     val destructExpr2 =
-      destructorTemplar.drop(nenv.snapshot, temputs, unlet)
+      destructorTemplar.drop(nenv.snapshot, temputs, range, unlet)
     vassert(destructExpr2.kind == VoidT())
 
     // No Discard here because the destructor already returns void.
@@ -56,23 +58,33 @@ class LocalHelper(
     (ast.DeferTE(letExpr2, destructExpr2))
   }
 
-  def unletLocal(nenv: NodeEnvironmentBox, localVar: ILocalVariableT):
+  def unletLocalWithoutDropping(nenv: NodeEnvironmentBox, localVar: ILocalVariableT):
   (UnletTE) = {
     nenv.markLocalUnstackified(localVar.id)
     UnletTE(localVar)
   }
 
-  def unletAll(
+  def unletAndDropAll(
     temputs: Temputs,
     nenv: NodeEnvironmentBox,
+    range: RangeS,
     variables: Vector[ILocalVariableT]):
   (Vector[ReferenceExpressionTE]) = {
     variables.map({ case variable =>
-      val unlet = unletLocal(nenv, variable)
+      val unlet = unletLocalWithoutDropping(nenv, variable)
       val maybeHeadExpr2 =
-        destructorTemplar.drop(nenv.snapshot, temputs, unlet)
+        destructorTemplar.drop(nenv.snapshot, temputs, range, unlet)
       maybeHeadExpr2
     })
+  }
+
+  def unletAllWithoutDropping(
+    temputs: Temputs,
+    nenv: NodeEnvironmentBox,
+    range: RangeS,
+    variables: Vector[ILocalVariableT]):
+  (Vector[ReferenceExpressionTE]) = {
+    variables.map(variable => unletLocalWithoutDropping(nenv, variable))
   }
 
   // A user local variable is one that the user can address inside their code.
@@ -87,7 +99,7 @@ class LocalHelper(
     localVariableA: LocalS,
     referenceType2: CoordT):
   ILocalVariableT = {
-    val varId = NameTranslator.translateVarNameStep(localVariableA.varName)
+    val varId = nameTranslator.translateVarNameStep(localVariableA.varName)
 
     if (nenv.getVariable(varId).nonEmpty) {
       throw CompileErrorExceptionT(RangedInternalErrorT(range, "There's already a variable named " + varId))
@@ -127,7 +139,7 @@ class LocalHelper(
   ReferenceExpressionTE = {
     a.result.reference.ownership match {
       case ShareT => {
-        SoftLoadTE(a, ShareT, ReadonlyT)
+        SoftLoadTE(a, ShareT)
       }
       case OwnT => {
         loadAsP match {
@@ -138,10 +150,10 @@ class LocalHelper(
                 UnletTE(lv)
               }
               // See CSHROOR for why these aren't just Readwrite.
-              case l @ RuntimeSizedArrayLookupTE(_, _, _, _, _, _) => SoftLoadTE(l, BorrowT, a.result.reference.permission)
-              case l @ StaticSizedArrayLookupTE(_, _, _, _, _, _) => SoftLoadTE(l, BorrowT, a.result.reference.permission)
-              case l @ ReferenceMemberLookupTE(_,_, _, _, _, _) => SoftLoadTE(l, BorrowT, a.result.reference.permission)
-              case l @ AddressMemberLookupTE(_, _, _, _, _) => SoftLoadTE(l, BorrowT, a.result.reference.permission)
+              case l @ RuntimeSizedArrayLookupTE(_, _, _, _, _) => SoftLoadTE(l, BorrowT)
+              case l @ StaticSizedArrayLookupTE(_, _, _, _, _) => SoftLoadTE(l, BorrowT)
+              case l @ ReferenceMemberLookupTE(_,_, _, _, _) => SoftLoadTE(l, BorrowT)
+              case l @ AddressMemberLookupTE(_, _, _, _, _) => SoftLoadTE(l, BorrowT)
             }
           }
           case MoveP => {
@@ -150,7 +162,7 @@ class LocalHelper(
                 nenv.markLocalUnstackified(lv.id)
                 UnletTE(lv)
               }
-              case ReferenceMemberLookupTE(_,_, name, _, _, _) => {
+              case ReferenceMemberLookupTE(_,_, name, _, _) => {
                 throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name.last))
               }
               case AddressMemberLookupTE(_, _, name, _, _) => {
@@ -158,41 +170,24 @@ class LocalHelper(
               }
             }
           }
-          case LoadAsPointerP(None) => SoftLoadTE(a, PointerT, a.result.reference.permission)
-          case LoadAsPointerP(Some(permission)) => SoftLoadTE(a, PointerT, Conversions.evaluatePermission(permission))
-          case LoadAsBorrowP(None) => SoftLoadTE(a, BorrowT, a.result.reference.permission)
-          case LoadAsBorrowP(Some(permission)) => SoftLoadTE(a, BorrowT, Conversions.evaluatePermission(permission))
-          case LoadAsBorrowOrIfContainerIsPointerThenPointerP(None) => SoftLoadTE(a, BorrowT, a.result.reference.permission)
-          case LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(permission)) => SoftLoadTE(a, BorrowT, Conversions.evaluatePermission(permission))
-          case LoadAsWeakP(None) => SoftLoadTE(a, WeakT, a.result.reference.permission)
-          case LoadAsWeakP(Some(permission)) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
+          case LoadAsBorrowP => SoftLoadTE(a, BorrowT)
+          case LoadAsWeakP => SoftLoadTE(a, WeakT)
         }
       }
-      case PointerT | BorrowT => {
+      case BorrowT => {
         loadAsP match {
           case MoveP => vfail()
-          case UseP => SoftLoadTE(a, a.result.reference.ownership, a.result.reference.permission)
-          case LoadAsPointerP(None) => SoftLoadTE(a, PointerT, a.result.reference.permission)
-          case LoadAsPointerP(Some(permission)) => SoftLoadTE(a, PointerT, Conversions.evaluatePermission(permission))
-          case LoadAsBorrowP(None) => SoftLoadTE(a, BorrowT, a.result.reference.permission)
-          case LoadAsBorrowP(Some(permission)) => SoftLoadTE(a, BorrowT, Conversions.evaluatePermission(permission))
-          case LoadAsBorrowOrIfContainerIsPointerThenPointerP(None) => SoftLoadTE(a, a.result.reference.ownership, a.result.reference.permission)
-          case LoadAsBorrowOrIfContainerIsPointerThenPointerP(Some(permission)) => SoftLoadTE(a, a.result.reference.ownership, Conversions.evaluatePermission(permission))
-          case LoadAsWeakP(None) => SoftLoadTE(a, WeakT, a.result.reference.permission)
-          case LoadAsWeakP(Some(permission)) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
+          case UseP => SoftLoadTE(a, a.result.reference.ownership)
+          case LoadAsBorrowP => SoftLoadTE(a, BorrowT)
+          case LoadAsWeakP => SoftLoadTE(a, WeakT)
         }
       }
       case WeakT => {
         loadAsP match {
-          case UseP => SoftLoadTE(a, WeakT, a.result.reference.permission)
+          case UseP => SoftLoadTE(a, WeakT)
           case MoveP => vfail()
-          case LoadAsPointerP(None) => SoftLoadTE(a, WeakT, a.result.reference.permission)
-          case LoadAsPointerP(Some(permission)) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
-          case LoadAsBorrowP(None) => SoftLoadTE(a, WeakT, a.result.reference.permission)
-          case LoadAsBorrowP(Some(permission)) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
-          case LoadAsBorrowOrIfContainerIsPointerThenPointerP(_) => vwat()
-          case LoadAsWeakP(None) => SoftLoadTE(a, WeakT, a.result.reference.permission)
-          case LoadAsWeakP(Some(permission)) => SoftLoadTE(a, WeakT, Conversions.evaluatePermission(permission))
+          case LoadAsBorrowP => SoftLoadTE(a, WeakT)
+          case LoadAsWeakP => SoftLoadTE(a, WeakT)
         }
       }
     }
@@ -201,7 +196,7 @@ class LocalHelper(
   def borrowSoftLoad(temputs: Temputs, expr2: AddressExpressionTE):
   ReferenceExpressionTE = {
     val ownership = getBorrowOwnership(temputs, expr2.result.reference.kind)
-    SoftLoadTE(expr2, ownership, expr2.result.reference.permission)
+    SoftLoadTE(expr2, ownership)
   }
 
   def getBorrowOwnership(temputs: Temputs, kind: KindT):
@@ -226,7 +221,7 @@ class LocalHelper(
         val mutability = Templar.getMutability(temputs, ir2)
         if (mutability == MutableT) BorrowT else ShareT
       }
-      case OverloadSet(_, _) => {
+      case OverloadSetT(_, _) => {
         ShareT
       }
     }

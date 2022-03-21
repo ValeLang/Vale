@@ -11,7 +11,7 @@ import net.verdagon.vale.templar.env.{IEnvironment, ILookupContext, TemplataLook
 import net.verdagon.vale.templar.infer.{IInfererDelegate, _}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{Err, IProfiler, Ok, RangeS, Result, vassert, vassertSome, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, Profiler, Ok, RangeS, Result, vassert, vassertSome, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 import scala.collection.mutable
@@ -28,7 +28,7 @@ case class InitialKnown(
 
 class InferTemplar(
     opts: TemplarOptions,
-    profiler: IProfiler,
+
     delegate: IInfererDelegate[IEnvironment, Temputs]) {
   def solveComplete(
     env: IEnvironment,
@@ -75,7 +75,7 @@ class InferTemplar(
     initialKnowns: Vector[InitialKnown],
     initialSends: Vector[InitialSend]
   ): ISolverOutcome[IRulexSR, IRuneS, ITemplata, ITemplarSolverError] = {
-    profiler.newProfile("infer", "", () => {
+    Profiler.frame(() => {
 
       val runeToType =
         initialRuneToType ++

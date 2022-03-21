@@ -17,7 +17,7 @@ class OptTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) match { case VonInt(9) => }
   }
 
   test("Test empty and get for None") {
@@ -30,24 +30,24 @@ class OptTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(0)
+    compile.evalForKind(Vector()) match { case VonInt(0) => }
   }
 
   test("Test empty and get for borrow") {
-    val profiler = new Profiler()
     val compile = RunCompilation.test(
         """
           |// This is the same as the one in optutils.vale, just named differently,
           |// so its easier to debug.
-          |func borrowGet<T>(opt &Some<T>) *T { *opt.value }
+          |func borrowGet<T>(opt &Some<T>) &T { &opt.value }
           |
           |struct Spaceship { fuel int; }
           |exported func main() int {
           |  s = Spaceship(42);
-          |  ret Some<*Spaceship>(*s).borrowGet().fuel;
+          |  bork = Some<&Spaceship>(&s);
+          |  ret bork.borrowGet().fuel;
           |}
         """.stripMargin)
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 }

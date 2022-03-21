@@ -5,7 +5,7 @@ import net.verdagon.vale.astronomer.FunctionA
 import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.env.FunctionEnvironment
 import net.verdagon.vale.templar.expression.ExpressionTemplar
-import net.verdagon.vale.templar.types.{PointerT, CoordT}
+import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.{Temputs, ast}
 
 
@@ -28,7 +28,7 @@ class LockWeakMacro(
       ast.FunctionHeaderT(env.fullName, Vector.empty, paramCoords, maybeRetCoord.get, originFunction)
     temputs.declareFunctionReturnType(header.toSignature, header.returnType)
 
-    val borrowCoord = paramCoords.head.tyype.copy(ownership = PointerT)
+    val borrowCoord = paramCoords.head.tyype.copy(ownership = BorrowT)
     val (optCoord, someConstructor, noneConstructor) =
       expressionTemplar.getOption(temputs, env, callRange, borrowCoord)
     val lockExpr =

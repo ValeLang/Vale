@@ -1,0 +1,14 @@
+
+abstract func expect<OkType, ErrType>(virtual result Result<OkType, ErrType>, msg str) OkType;
+func expect<OkType, ErrType>(err Err<OkType, ErrType>, msg str) OkType {
+  panic(msg);
+}
+func expect<OkType, ErrType>(ok Ok<OkType, ErrType>, msg str) OkType {
+  [value] = ok;
+  ret value;
+}
+
+abstract func expect<OkType, ErrType>(virtual result &Result<OkType, ErrType>, msg str) &OkType;
+func expect<OkType, ErrType>(err &Err<OkType, ErrType>, msg str) &OkType { panic(msg); }
+func expect<OkType, ErrType>(ok &Ok<OkType, ErrType>, msg str) &OkType { ret &ok.value; }
+

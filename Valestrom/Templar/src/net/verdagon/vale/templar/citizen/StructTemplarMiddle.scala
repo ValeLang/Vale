@@ -5,21 +5,23 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.ast.{LocationInFunctionEnvironment, PrototypeT}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.env.{CitizenEnvironment, FunctionEnvironment, IEnvironment, InterfaceEnvEntry, PackageEnvironment, TemplataEnvEntry, TemplatasStore}
 import net.verdagon.vale.templar.function.{FunctionTemplar, FunctionTemplarCore, VirtualTemplar}
-import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, FullNameT, ICitizenNameT, INameT, RuneNameT}
-import net.verdagon.vale.{IProfiler, RangeS, vfail, vimpl}
+import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, FullNameT, ICitizenNameT, INameT, NameTranslator, RuneNameT}
+import net.verdagon.vale.{Profiler, Interner, RangeS, vfail, vimpl}
 
 import scala.collection.immutable.List
 
 class StructTemplarMiddle(
     opts: TemplarOptions,
-    profiler: IProfiler,
+
+    interner: Interner,
+    nameTranslator: NameTranslator,
 
     ancestorHelper: AncestorHelper,
     delegate: IStructTemplarDelegate) {
-  val core = new StructTemplarCore(opts, profiler, ancestorHelper, delegate)
+  val core = new StructTemplarCore(opts, interner, nameTranslator, ancestorHelper, delegate)
 
   def getStructRef(
     structOuterEnv: IEnvironment,
@@ -37,8 +39,9 @@ class StructTemplarMiddle(
         structOuterEnv.fullName,
         TemplatasStore(structOuterEnv.fullName, Map(), Map())
           .addEntries(
+            interner,
             templatasByRune.toVector
-              .map({ case (rune, templata) => (RuneNameT(rune), TemplataEnvEntry(templata)) })))
+              .map({ case (rune, templata) => (interner.intern(RuneNameT(rune)), TemplataEnvEntry(templata)) })))
     val structDefinition2 =
       core.makeStruct(
         localEnv, temputs, structS, coercedFinalTemplateArgs2);
@@ -62,8 +65,9 @@ class StructTemplarMiddle(
         interfaceOuterEnv.fullName,
         TemplatasStore(interfaceOuterEnv.fullName, Map(), Map())
           .addEntries(
+            interner,
             templatasByRune.toVector
-              .map({ case (rune, templata) => (RuneNameT(rune), TemplataEnvEntry(templata)) })))
+              .map({ case (rune, templata) => (interner.intern(RuneNameT(rune)), TemplataEnvEntry(templata)) })))
     val interfaceDefinition2 =
       core.makeInterface(
         localEnv, temputs, interfaceA, coercedFinalTemplateArgs2);

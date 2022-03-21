@@ -6,18 +6,22 @@ func str(b bool) str {
 }
 
 func +(i int, s str) str {
-  str(i) + s
+  i.str() + s
+}
+
+func +(i int, s StrSlice) str {
+  i.str() + s.str()
 }
 
 func +(s str, i int) str {
-  s + str(i)
+  s + i.str()
 }
 
 func +(s str, i i64) str {
-  s + str(i)
+  s + i.str()
 }
 func +(i i64, s str) str {
-  str(i) + s
+  i.str() + s
 }
 
 func +(s str, b bool) str {

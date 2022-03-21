@@ -3,7 +3,7 @@ package net.verdagon.vale.templar
 import net.verdagon.vale.templar.ast.AsSubtypeTE
 import net.verdagon.vale.templar.names.{CitizenNameT, CitizenTemplateNameT, FullNameT}
 import net.verdagon.vale.templar.templata.CoordTemplata
-import net.verdagon.vale.templar.types.{BorrowT, CoordT, InterfaceTT, OwnT, PointerT, ReadonlyT, ReadwriteT, StructTT}
+import net.verdagon.vale.templar.types.{BorrowT, CoordT, InterfaceTT, OwnT, StructTT}
 import net.verdagon.vale.{Collector, vassert, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -60,7 +60,7 @@ class TemplarVirtualTests extends FunSuite with Matchers {
         |
         |exported func main() int {
         |  f = IFunction1<mut, int, int>({_});
-        |  ret (f)!(7);
+        |  ret (f)(7);
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()
@@ -86,6 +86,7 @@ class TemplarVirtualTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |import v.builtins.as.*;
+        |import v.builtins.drop.*;
         |
         |interface IShip {}
         |
@@ -102,7 +103,7 @@ class TemplarVirtualTests extends FunSuite with Matchers {
     Collector.only(temputs.lookupFunction("as"), {
       case as @ AsSubtypeTE(sourceExpr, targetSubtype, resultOptType, okConstructor, errConstructor) => {
         sourceExpr.result.reference match {
-          case CoordT(BorrowT,ReadonlyT,InterfaceTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("IShip"),Vector())))) =>
+          case CoordT(BorrowT,InterfaceTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("IShip"),Vector())))) =>
         }
         targetSubtype match {
           case StructTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("Raza"),Vector()))) =>
@@ -110,7 +111,7 @@ class TemplarVirtualTests extends FunSuite with Matchers {
         val (firstGenericArg, secondGenericArg) =
           resultOptType match {
             case CoordT(
-              OwnT,ReadwriteT,
+              OwnT,
               InterfaceTT(
                 FullNameT(
                   _, Vector(),
@@ -122,17 +123,16 @@ class TemplarVirtualTests extends FunSuite with Matchers {
         firstGenericArg match {
           case CoordTemplata(
             CoordT(
-              PointerT,ReadonlyT,
+              BorrowT,
               StructTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("Raza"),Vector()))))) =>
         }
         secondGenericArg match {
           case CoordTemplata(
             CoordT(
-              PointerT,ReadonlyT,
+              BorrowT,
               InterfaceTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("IShip"),Vector()))))) =>
         }
         vassert(okConstructor.paramTypes.head.kind == targetSubtype)
-        vassert(errConstructor.paramTypes.head.permission == sourceExpr.result.reference.permission)
         vassert(errConstructor.paramTypes.head.kind == sourceExpr.result.reference.kind)
         as
       }
@@ -148,7 +148,7 @@ class TemplarVirtualTests extends FunSuite with Matchers {
         |
         |func rebork(virtual result *IBork) bool { true }
         |exported func main() {
-        |  rebork(*Bork());
+        |  rebork(&Bork());
         |}
         |""".stripMargin)
   }

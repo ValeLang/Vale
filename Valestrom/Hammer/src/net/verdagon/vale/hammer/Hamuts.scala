@@ -3,12 +3,12 @@ package net.verdagon.vale.hammer
 import net.verdagon.vale.metal._
 import net.verdagon.vale.templar.ast.PrototypeT
 import net.verdagon.vale.templar.types.{InterfaceTT, RuntimeSizedArrayTT, StaticSizedArrayTT, StructTT}
-import net.verdagon.vale.{PackageCoordinate, vassert, vfail, vimpl}
+import net.verdagon.vale.{PackageCoordinate, vassert, vcurious, vfail, vimpl}
 import net.verdagon.von.IVonData
 
 
 case class HamutsBox(var inner: Hamuts) {
-  override def hashCode(): Int = vfail() // Shouldnt hash, is mutable
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vfail() // Shouldnt hash, is mutable
 
   def packageCoordToExportNameToFunction: Map[PackageCoordinate, Map[String, PrototypeH]] = inner.packageCoordToExportNameToFunction
   def packageCoordToExportNameToKind: Map[PackageCoordinate, Map[String, KindH]] = inner.packageCoordToExportNameToKind
@@ -105,7 +105,7 @@ case class Hamuts(
     packageCoordToExportNameToKind: Map[PackageCoordinate, Map[String, KindH]],
     packageCoordToExternNameToFunction: Map[PackageCoordinate, Map[String, PrototypeH]],
     packageCoordToExternNameToKind: Map[PackageCoordinate, Map[String, KindH]]) {
-  override def hashCode(): Int = vfail() // Would need a really good reason to hash something this big
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vfail() // Would need a really good reason to hash something this big
 
   vassert(functionDefs.values.map(_.fullName).toVector.distinct.size == functionDefs.values.size)
   vassert(structDefs.map(_.fullName).distinct.size == structDefs.size)

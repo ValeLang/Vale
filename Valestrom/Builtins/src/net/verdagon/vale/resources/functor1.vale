@@ -3,6 +3,6 @@ struct Functor1<M, F> M
 where M Mutability, F Prot {
 }
 func __call<M, F>(self &Functor1<M, F>, param1 Param1Type) RetType
-where F Prot(_, Refs(Param1Type), RetType), Param1Type Ref, RetType Ref {
+where F Prot = Prot[_, Refs(Param1Type), RetType], Param1Type Ref, RetType Ref {
   F(param1)
 }

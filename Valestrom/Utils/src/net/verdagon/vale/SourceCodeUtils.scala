@@ -75,6 +75,9 @@ object SourceCodeUtils {
       }
       lineBegin = lineEnd + 1
     }
+    if (offset == text.length) {
+      return (lineBegin, lineBegin)
+    }
     vfail()
   }
 

@@ -7,8 +7,8 @@ exported struct Seaship imm { leftFuel int; rightFuel int; }
 impl IShip for Seaship;
 
 abstract func getFuel(virtual this IShip) int;
-func getFuel(this Spaceship impl IShip) int { this.fuel }
-func getFuel(this Seaship impl IShip) int { this.leftFuel + this.rightFuel }
+func getFuel(this Spaceship) int { this.fuel }
+func getFuel(this Seaship) int { this.leftFuel + this.rightFuel }
 
 exported func valeGetShipFuel(s IShip) int {
   ret s.getFuel();

@@ -7,11 +7,7 @@ func begin<N, M, V, E>(arr &[#N]<M, V>E)
 StaticSizedArrayReadonlyIter<N, M, V, E> {
   StaticSizedArrayReadonlyIter<N, M, V, E>(arr, 0)
 }
-func begin<N, M, V, E>(arr &![#N]<M, V>E)
-StaticSizedArrayReadonlyIter<N, M, V, E> {
-  StaticSizedArrayReadonlyIter<N, M, V, E>(&arr, 0)
-}
-func next<N, M, V, E>(iter &!StaticSizedArrayReadonlyIter<N, M, V, E>) Opt<&E> {
+func next<N, M, V, E>(iter &StaticSizedArrayReadonlyIter<N, M, V, E>) Opt<&E> {
   if iter.pos < iter.arr.len() {
     Some<&E>(&iter.arr[set iter.pos = iter.pos + 1])
   } else {

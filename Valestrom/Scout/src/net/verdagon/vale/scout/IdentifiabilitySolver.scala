@@ -22,7 +22,7 @@ object IdentifiabilitySolver {
         case CoordIsaSR(range, sub, suuper) => Array(sub, suuper)
         case KindIsaSR(range, sub, suuper) => Array(sub, suuper)
         case KindComponentsSR(range, resultRune, mutabilityRune) => Array(resultRune, mutabilityRune)
-        case CoordComponentsSR(range, resultRune, ownershipRune, permissionRune, kindRune) => Array(resultRune, ownershipRune, permissionRune, kindRune)
+        case CoordComponentsSR(range, resultRune, ownershipRune, kindRune) => Array(resultRune, ownershipRune, kindRune)
         case PrototypeComponentsSR(range, resultRune, nameRune, paramsListRune, returnRune) => Array(resultRune, nameRune, paramsListRune, returnRune)
         case OneOfSR(range, rune, literals) => Array(rune)
         case IsConcreteSR(range, rune) => Array(rune)
@@ -30,7 +30,7 @@ object IdentifiabilitySolver {
         case IsStructSR(range, rune) => Array(rune)
         case CoerceToCoordSR(range, coordRune, kindRune) => Array(coordRune, kindRune)
         case LiteralSR(range, rune, literal) => Array(rune)
-        case AugmentSR(range, resultRune, ownership, permission, innerRune) => Array(resultRune, innerRune)
+        case AugmentSR(range, resultRune, ownership, innerRune) => Array(resultRune, innerRune)
         case CallSR(range, resultRune, templateRune, args) => Array(resultRune, templateRune) ++ args
         case PrototypeSR(range, resultRune, name, parameters, returnTypeRune) => Array(resultRune) ++ parameters ++ Array(returnTypeRune)
         case PackSR(range, resultRune, members) => Array(resultRune) ++ members
@@ -66,7 +66,7 @@ object IdentifiabilitySolver {
       }
       case CoordIsaSR(_, subRune, superRune) => Array(Array())
       case KindComponentsSR(_, resultRune, mutabilityRune) => Array(Array())
-      case CoordComponentsSR(_, resultRune, ownershipRune, permissionRune, kindRune) => Array(Array())
+      case CoordComponentsSR(_, resultRune, ownershipRune, kindRune) => Array(Array())
       case PrototypeComponentsSR(_, resultRune, nameRune, paramsListRune, returnRune) => Array(Array())
       case OneOfSR(_, rune, literals) => Array(Array())
       case IsConcreteSR(_, rune) => Array(Array(rune.rune))
@@ -74,7 +74,7 @@ object IdentifiabilitySolver {
       case IsStructSR(_, rune) => Array(Array())
       case CoerceToCoordSR(_, coordRune, kindRune) => Array(Array())
       case LiteralSR(_, rune, literal) => Array(Array())
-      case AugmentSR(_, resultRune, ownership, permission, innerRune) => Array(Array())
+      case AugmentSR(_, resultRune, ownership, innerRune) => Array(Array())
       case StaticSizedArraySR(_, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Array(Array(resultRune.rune), Array(mutabilityRune.rune, variabilityRune.rune, sizeRune.rune, elementRune.rune))
       case RuntimeSizedArraySR(_, resultRune, mutabilityRune, elementRune) => Array(Array(resultRune.rune), Array(mutabilityRune.rune, elementRune.rune))
 //      case ManualSequenceSR(_, resultRune, elements) => Array(Array(resultRune.rune))
@@ -105,10 +105,9 @@ object IdentifiabilitySolver {
         })
         Ok(())
       }
-      case CoordComponentsSR(_, resultRune, ownershipRune, permissionRune, kindRune) => {
+      case CoordComponentsSR(_, resultRune, ownershipRune, kindRune) => {
         stepState.concludeRune(resultRune.rune, true)
         stepState.concludeRune(ownershipRune.rune, true)
-        stepState.concludeRune(permissionRune.rune, true)
         stepState.concludeRune(kindRune.rune, true)
         Ok(())
       }
@@ -180,7 +179,7 @@ object IdentifiabilitySolver {
         stepState.concludeRune(rune.rune, true)
         Ok(())
       }
-      case AugmentSR(_, resultRune, ownership, permission, innerRune) => {
+      case AugmentSR(_, resultRune, ownership, innerRune) => {
         stepState.concludeRune(resultRune.rune, true)
         stepState.concludeRune(innerRune.rune, true)
         Ok(())
@@ -215,11 +214,15 @@ object IdentifiabilitySolver {
     identifyingRunes: Iterable[IRuneS]):
   Result[Map[IRuneS, Boolean], IdentifiabilitySolveError] = {
     val initiallyKnownRunes = identifyingRunes.map(r => (r, true)).toMap
+    val solver =
+      new Solver[IRulexSR, IRuneS, Unit, Unit, Boolean, IIdentifiabilityRuleError](
+        sanityCheck, useOptimizedSolver)
     val solverState =
-      Solver.makeInitialSolverState[IRulexSR, IRuneS, Boolean](
-        sanityCheck, useOptimizedSolver, rules, getRunes, (rule: IRulexSR) => getPuzzles(rule), initiallyKnownRunes)
+      solver
+        .makeInitialSolverState(
+          rules, getRunes, (rule: IRulexSR) => getPuzzles(rule), initiallyKnownRunes)
     val (steps, conclusions) =
-      Solver.solve[IRulexSR, IRuneS, Unit, Unit, Boolean, IIdentifiabilityRuleError](
+      solver.solve(
         (rule: IRulexSR) => getPuzzles(rule),
         Unit,
         Unit,

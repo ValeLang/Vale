@@ -1,12 +1,17 @@
 package net.verdagon.vale.hammer
 
 import net.verdagon.vale.metal._
-import net.verdagon.vale.{vassert, vassertSome, vfail, vimpl, vwat, metal => m}
+import net.verdagon.vale.{Interner, vassert, vassertSome, vfail, vimpl, vwat, metal => m}
 import net.verdagon.vale.templar.{Hinputs, _}
-import net.verdagon.vale.templar.ast.{ExternT, FunctionHeaderT, FunctionT, IFunctionAttributeT, PrototypeT, PureT, UserFunctionT}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.names.{FullNameT, IVarNameT}
 
-object FunctionHammer {
+class FunctionHammer(
+    typeHammer: TypeHammer,
+    nameHammer: NameHammer,
+    structHammer: StructHammer) {
+  val expressionHammer =
+    new ExpressionHammer(typeHammer, nameHammer, structHammer, this)
 
   def translateFunctions(
     hinputs: Hinputs,
@@ -34,7 +39,7 @@ object FunctionHammer {
             header @ FunctionHeaderT(humanName, attrs2, params2, returnType2, _),
             body) = function2;
 
-        val (prototypeH) = translatePrototype(hinputs, hamuts, header.toPrototype);
+        val (prototypeH) = typeHammer.translatePrototype(hinputs, hamuts, header.toPrototype);
         val temporaryFunctionRefH = FunctionRefH(prototypeH);
         hamuts.forwardDeclareFunction(header.toPrototype, temporaryFunctionRefH)
 
@@ -46,14 +51,19 @@ object FunctionHammer {
               Map[VariableIdH,Local](),
               1));
         val (bodyH, Vector()) =
-          ExpressionHammer.translate(hinputs, hamuts, header, locals, body)
+          expressionHammer.translate(hinputs, hamuts, header, locals, body)
         vassert(locals.unstackifiedVars.size == locals.locals.size)
         val resultCoord = bodyH.resultType
-        if (resultCoord.kind != NeverH() && resultCoord != prototypeH.returnType) {
-          vfail(
-            "Result of body's instructions didnt match return type!\n" +
-            "Return type:   " + prototypeH.returnType + "\n" +
-            "Body's result: " + resultCoord)
+        if (resultCoord != prototypeH.returnType) {
+          resultCoord.kind match {
+            case NeverH(_) => // meh its fine
+            case _ => {
+              vfail(
+                "Result of body's instructions didnt match return type!\n" +
+                  "Return type:   " + prototypeH.returnType + "\n" +
+                  "Body's result: " + resultCoord)
+            }
+          }
         }
 
         val isAbstract = header.getAbstractInterface.nonEmpty
@@ -76,32 +86,13 @@ object FunctionHammer {
     })
   }
 
-  def translatePrototypes(
-      hinputs: Hinputs, hamuts: HamutsBox,
-      prototypes2: Vector[PrototypeT]):
-  (Vector[PrototypeH]) = {
-    prototypes2.map(translatePrototype(hinputs, hamuts, _))
-  }
-
-  def translatePrototype(
-      hinputs: Hinputs, hamuts: HamutsBox,
-      prototype2: PrototypeT):
-  (PrototypeH) = {
-    val PrototypeT(fullName2, returnType2) = prototype2;
-    val (paramsTypesH) = TypeHammer.translateReferences(hinputs, hamuts, prototype2.paramTypes)
-    val (returnTypeH) = TypeHammer.translateReference(hinputs, hamuts, returnType2)
-    val (fullNameH) = NameHammer.translateFullName(hinputs, hamuts, fullName2)
-    val prototypeH = PrototypeH(fullNameH, paramsTypesH, returnTypeH)
-    (prototypeH)
-  }
-
   def translateFunctionRef(
       hinputs: Hinputs,
       hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeaderT,
       prototype2: PrototypeT):
   (FunctionRefH) = {
-    val (prototypeH) = translatePrototype(hinputs, hamuts, prototype2);
+    val (prototypeH) = typeHammer.translatePrototype(hinputs, hamuts, prototype2);
     val functionRefH = FunctionRefH(prototypeH);
     (functionRefH)
   }

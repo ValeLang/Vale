@@ -1,4 +1,4 @@
 
-func !=<T>(a *T, b *T) bool {
+func !=<T>(a &T, b &T) bool {
   ret not (a == b);
 }

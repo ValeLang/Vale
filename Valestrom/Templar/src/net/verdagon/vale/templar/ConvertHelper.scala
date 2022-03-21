@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale._
-import net.verdagon.vale.templar.ast.{ReferenceExpressionTE, SoftLoadTE, StructToInterfaceUpcastTE}
+import net.verdagon.vale.templar.ast._
 //import net.verdagon.vale.astronomer.IRulexSR
 import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env.{IEnvironment, IEnvironmentBox}
@@ -55,14 +55,18 @@ class ConvertHelper(
       return sourceExpr
     }
 
-    if (sourceExpr.result.reference.kind == NeverT()) {
-      return sourceExpr
+    sourceExpr.result.reference.kind match {
+      case NeverT(_) => return sourceExpr
+      case _ =>
     }
 
-    val CoordT(targetOwnership, targetPermission, targetType) = targetPointerType;
-    val CoordT(sourceOwnership, sourcePermission, sourceType) = sourcePointerType;
+    val CoordT(targetOwnership, targetType) = targetPointerType;
+    val CoordT(sourceOwnership, sourceType) = sourcePointerType;
 
-    vcurious(targetPointerType.kind != NeverT())
+    targetPointerType.kind match {
+      case NeverT(_) => vcurious()
+      case _ =>
+    }
 
     // We make the hammer aware of nevers.
 //    if (sourceType == Never2()) {
@@ -71,26 +75,16 @@ class ConvertHelper(
 
     (sourceOwnership, targetOwnership) match {
       case (OwnT, OwnT) =>
-      case (PointerT, OwnT) => {
+      case (BorrowT, OwnT) => {
         throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied a borrow but target wants to own the argument"))
       }
-      case (OwnT, PointerT) => {
+      case (OwnT, BorrowT) => {
         throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied an owning but target wants to only borrow"))
       }
-      case (PointerT, PointerT) =>
       case (BorrowT, BorrowT) =>
       case (ShareT, ShareT) =>
       case (WeakT, WeakT) =>
-      case other => vwat(other)
-    }
-
-    (sourcePermission, targetPermission) match {
-      case (ReadwriteT, ReadwriteT) =>
-      case (ReadonlyT, ReadwriteT) => {
-        throw CompileErrorExceptionT(CantUseReadonlyReferenceAsReadwrite(range))
-      }
-      case (ReadwriteT, ReadonlyT) =>
-      case (ReadonlyT, ReadonlyT) =>
+      case _ => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied a " + sourceOwnership + " but target wants " + targetOwnership))
     }
 
     val sourceExprConverted =

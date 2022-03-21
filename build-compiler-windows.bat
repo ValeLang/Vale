@@ -1,16 +1,9 @@
 
 
-cd Valestrom
-
-echo Compiling Valestrom...
-call sbt assembly || echo "Valestrom build failed, aborting." && exit /b 1
-
-cd ..
-
 cd Midas
 
 echo Generating Midas...
-cmake -B build -D LLVM_DIR="%1\lib\cmake\llvm" || echo "Midas generate failed, aborting." && exit /b 1
+cmake -B build -D LLVM_DIR="%1\build\lib\cmake\llvm" || echo "Midas generate failed, aborting." && exit /b 1
 
 cd build
 
@@ -18,9 +11,13 @@ echo Compiling Midas...
 cmake --build . || echo "Midas build failed, aborting." && exit /b 1
 
 
+cd ..\..\Valestrom
+
+echo Compiling Valestrom...
+call sbt assembly || echo "Valestrom build failed, aborting." && exit /b 1
 
 
-cd ..\..\Driver
+cd ..\Driver
 
 echo Compiling Driver...
 call build.bat %2 || echo "Driver build failed, aborting." && exit /b 1
@@ -39,7 +36,7 @@ mkdir "..\release-windows\samples"
 copy ..\Valestrom\Valestrom.jar ..\release-windows\Valestrom.jar
 
 echo d | xcopy /s /e /y ..\Valestrom\Tests\test\main\resources\programs ..\release-windows\samples
-echo d | xcopy /s /e /y ..\Midas\src\builtins ..\release-windows\builtins
+echo d | xcopy /s /e /y ..\Midas\builtins ..\release-windows\builtins
 copy releaseREADME.txt ..\release-windows\README.txt
 copy valec* ..\release-windows
 copy ..\Midas\build\Debug\midas.exe ..\release-windows\midas.exe

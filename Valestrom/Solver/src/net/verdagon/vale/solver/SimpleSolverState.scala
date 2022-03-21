@@ -31,7 +31,7 @@ case class SimpleSolverState[Rule, Rune, Conclusion](
   private var canonicalRuneToConclusion: Map[Int, Conclusion]
 ) extends ISolverState[Rule, Rune, Conclusion] {
 
-  override def hashCode(): Int = vfail() // is mutable, should never be hashed
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vfail() // is mutable, should never be hashed
 
   def deepClone(): SimpleSolverState[Rule, Rune, Conclusion] = {
     vcurious()
@@ -45,6 +45,7 @@ case class SimpleSolverState[Rule, Rune, Conclusion](
   }
 
   override def sanityCheck(): Unit = {
+//    vassert(rules == rules.distinct)
   }
 
   override def getRule(ruleIndex: Int): Rule = rules(ruleIndex)
@@ -80,7 +81,6 @@ case class SimpleSolverState[Rule, Rune, Conclusion](
   }
 
   override def addRule(rule: Rule): Int = {
-    vassert(!rules.contains(rule))
     val newCanonicalRule = rules.size
     rules = rules :+ rule
 //    canonicalRuleToUserRule = canonicalRuleToUserRule + (newCanonicalRule -> rule)

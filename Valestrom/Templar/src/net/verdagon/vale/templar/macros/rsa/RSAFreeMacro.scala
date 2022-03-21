@@ -28,14 +28,14 @@ class RSAFreeMacro(
   FunctionHeaderT = {
     val bodyEnv = FunctionEnvironmentBox(env)
 
-    val Vector(rsaCoord @ CoordT(ShareT, ReadonlyT, RuntimeSizedArrayTT(_, elementCoord))) = params2.map(_.tyype)
+    val Vector(rsaCoord @ CoordT(ShareT, RuntimeSizedArrayTT(_, elementCoord))) = params2.map(_.tyype)
 
-    val ret = CoordT(ShareT, ReadonlyT, VoidT())
+    val ret = CoordT(ShareT, VoidT())
     val header = FunctionHeaderT(env.fullName, Vector.empty, params2, ret, originFunction1)
 
     temputs.declareFunctionReturnType(header.toSignature, header.returnType)
 
-    val elementDropFunction = destructorTemplar.getDropFunction(env.globalEnv, temputs, elementCoord)
+    val elementDropFunction = destructorTemplar.getDropFunction(env.globalEnv, temputs, callRange, elementCoord)
     val elementDropFunctorTE =
       env.globalEnv.functorHelper.getFunctorForPrototype(env, temputs, callRange, elementDropFunction)
 

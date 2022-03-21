@@ -1,6 +1,6 @@
 package net.verdagon.vale.solver
 
-import net.verdagon.vale.{vassert, vfail}
+import net.verdagon.vale.{vassert, vcurious, vfail}
 
 
 case class World[RuneID, RuleID, Literal, Lookup](
@@ -58,7 +58,7 @@ case class PlannerState[RuleID, Literal, Lookup](
   numUnknownsToNumPuzzles: Array[Int],
   numUnknownsToPuzzles: Array[Array[Int]]
 ) {
-  override def hashCode(): Int = vfail() // is mutable, should never be hashed
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vfail() // is mutable, should never be hashed
 
   def deepClone(): PlannerState[RuleID, Literal, Lookup] = {
     PlannerState(

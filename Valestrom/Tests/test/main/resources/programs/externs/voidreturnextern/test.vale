@@ -10,6 +10,6 @@ extern func runExtCommand(b *!MyBox);
 
 exported func main() int {
   b = MyBox(73);
-  runExtCommand(*!b);
+  runExtCommand(&!b);
   ret b.i;
 }

@@ -12,12 +12,15 @@ import net.verdagon.von.{IVonData, VonArray, VonInt, VonMember, VonObject, VonSt
 
 import scala.collection.immutable.List
 
-object NameHammer {
+class NameHammer(translateName: (Hinputs, HamutsBox, INameT) => IVonData) {
   def getReadableName(namePart: INameT): String = {
     namePart match {
       case SelfNameT() => "self"
       case AnonymousSubstructImplNameT() => "AnonSubstructImpl"
-      case VirtualFreeNameT(_, _) => "VirtualFree"
+//      case AbstractVirtualFreeNameT(_, _) => "(abstract vfree)"
+//      case OverrideVirtualFreeNameT(_, _) => "(override vfree)"
+//      case AbstractVirtualDropFunctionNameT(_, _, _) => "vdrop"
+//      case OverrideVirtualDropFunctionNameT(_, _, _) => "vdrop"
       case FreeNameT(templateArgs, parameters) => "Free"
       case AnonymousSubstructMemberNameT(index) => "anonSubstructMember" + index
       case AnonymousSubstructConstructorNameT(templateArgs, params) => "anonSubstructConstructor"
@@ -53,6 +56,8 @@ object NameHammer {
       case TemplarTemporaryVarNameT(num) => "tempVar" + num
       case RuntimeSizedArrayNameT(arr) => "rsa"
       case UnnamedLocalNameT(codeLoc) => "unnamedLocal"
+      case ForwarderFunctionTemplateNameT(inner, index) => "fwdt_" + index + "_" + getReadableName(inner)
+      case ForwarderFunctionNameT(inner, index) => "fwd_" + index + "_" + getReadableName(inner)
     }
   }
 
@@ -61,8 +66,8 @@ object NameHammer {
     hamuts: HamutsBox,
     fullName2: FullNameT[INameT]
   ): FullNameH = {
-    val FullNameT(packageCoord @ PackageCoordinate(project, packageSteps), _, _) = fullName2
-    val newNameParts = fullName2.steps.map(step => VonHammer.translateName(hinputs, hamuts, step))
+    val FullNameT(packageCoord@PackageCoordinate(project, packageSteps), _, _) = fullName2
+    val newNameParts = fullName2.steps.map(step => translateName(hinputs, hamuts, step))
     val readableName = getReadableName(fullName2.last)
 
     val id =
@@ -84,7 +89,9 @@ object NameHammer {
     val id = hamuts.getNameId(s, fullName.packageCoordinate, newNameParts)
     FullNameH(s, id, fullName.packageCoordinate, newNameParts)
   }
+}
 
+object NameHammer {
   def translateCodeLocation(location: CodeLocationS): VonObject = {
     val CodeLocationS(fileCoord, offset) = location
     VonObject(

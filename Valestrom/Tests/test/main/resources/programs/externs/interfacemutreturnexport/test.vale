@@ -1,11 +1,11 @@
 exported interface IShip {
-  func getFuel(virtual ship *IShip) int;
+  func getFuel(virtual ship &IShip) int;
 }
 exported struct Firefly {
   fuel int;
 }
 impl IShip for Firefly;
-func getFuel(ship *Firefly impl IShip) int { ship.fuel }
+func getFuel(ship &Firefly) int { ship.fuel }
 
 exported func makeFirefly(fuel int) IShip {
   Firefly(fuel)
@@ -15,5 +15,5 @@ extern func runExtCommand() IShip;
 
 exported func main() int {
   res = runExtCommand();
-  ret getFuel(*res);
+  ret getFuel(&res);
 }

@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar
 
-import net.verdagon.vale.templar.ast.{FunctionExportT, FunctionExternT, FunctionT, ImplT, KindExportT, KindExternT, PrototypeT, ReturnTE, SignatureT, getFunctionLastName}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.env.{CitizenEnvironment, FunctionEnvironment, PackageEnvironment}
 import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, CitizenNameT, CitizenTemplateNameT, FreeNameT, FreeTemplateNameT, FullNameT, FunctionNameT, ICitizenNameT, IFunctionNameT, INameT}
@@ -27,7 +27,8 @@ case class Temputs() {
 
   // Not all signatures/banners or even return types will have a function here, it might not have
   // been processed yet.
-  private val functions: mutable.ArrayBuffer[FunctionT] = mutable.ArrayBuffer()
+  private val functionsBySignature: mutable.HashMap[SignatureT, FunctionT] = mutable.HashMap()
+  private val functionsByPrototype: mutable.HashMap[PrototypeT, FunctionT] = mutable.HashMap()
   private val envByFunctionSignature: mutable.HashMap[SignatureT, FunctionEnvironment] = mutable.HashMap()
 
   // One must fill this in when putting things into declaredKinds.
@@ -58,6 +59,14 @@ case class Temputs() {
   private val deferredEvaluatingFunctions: mutable.LinkedHashMap[PrototypeT, DeferredEvaluatingFunction] = mutable.LinkedHashMap()
   private var evaluatedDeferredFunctions: mutable.LinkedHashSet[PrototypeT] = mutable.LinkedHashSet()
 
+  def countTopLevelThings(): Int = {
+    staticSizedArrayTypes.size +
+      runtimeSizedArrayTypes.size +
+      functionsBySignature.size +
+      structDefsByRef.size +
+      interfaceDefsByRef.size
+  }
+
   def peekNextDeferredEvaluatingFunction(): Option[DeferredEvaluatingFunction] = {
     deferredEvaluatingFunctions.headOption.map(_._2)
   }
@@ -68,12 +77,12 @@ case class Temputs() {
   }
 
   def lookupFunction(signature2: SignatureT): Option[FunctionT] = {
-    functions.find(_.header.toSignature == signature2)
+    functionsBySignature.get(signature2)
   }
 
   def findImmDestructor(kind: KindT): PrototypeT = {
     vassertOne(
-      functions
+      functionsBySignature.values
         .filter({
 //          case getFunctionLastName(DropNameT(_, CoordT(_, _, k))) if k == kind => true
           case getFunctionLastName(FreeNameT(_, k)) if k == kind => true
@@ -111,21 +120,27 @@ case class Temputs() {
   def addFunction(function: FunctionT): Unit = {
     vassert(declaredSignatures.contains(function.header.toSignature))
     vassert(
-      function.body.result.reference.kind == NeverT() ||
+      function.body.result.reference.kind == NeverT(false) ||
       function.body.result.reference == function.header.returnType)
-    Collector.all(function, {
-      case ReturnTE(innerExpr) => {
-        vassert(
-          innerExpr.result.reference.kind == NeverT() ||
-          innerExpr.result.reference == function.header.returnType)
-      }
-    })
+//    if (!useOptimization) {
+//      Collector.all(function, {
+//        case ReturnTE(innerExpr) => {
+//          vassert(
+//            innerExpr.result.reference.kind == NeverT(false) ||
+//              innerExpr.result.reference == function.header.returnType)
+//        }
+//      })
+//    }
 
-    if (functions.exists(_.header == function.header)) {
+    if (functionsByPrototype.contains(function.header.toPrototype)) {
+      vfail("wot")
+    }
+    if (functionsBySignature.contains(function.header.toSignature)) {
       vfail("wot")
     }
 
-    functions += function
+    functionsBySignature.put(function.header.toSignature, function)
+    functionsByPrototype.put(function.header.toPrototype, function)
   }
 
   // We can't declare the struct at the same time as we declare its mutability or environment,
@@ -211,9 +226,9 @@ case class Temputs() {
     deferredEvaluatingFunctions.put(devf.prototypeT, devf)
   }
 
-  def structDeclared(fullName: FullNameT[ICitizenNameT]): Option[StructTT] = {
+  def structDeclared(structTT: StructTT): Option[StructTT] = {
     // This is the only place besides StructDefinition2 and declareStruct thats allowed to make one of these
-    val structTT = StructTT(fullName)
+//    val structTT = StructTT(fullName)
     if (declaredKinds.contains(structTT)) {
       Some(structTT)
     } else {
@@ -255,9 +270,9 @@ case class Temputs() {
     }
   }
 
-  def interfaceDeclared(fullName: FullNameT[ICitizenNameT]): Option[InterfaceTT] = {
+  def interfaceDeclared(interfaceTT: InterfaceTT): Option[InterfaceTT] = {
     // This is the only place besides InterfaceDefinition2 and declareInterface thats allowed to make one of these
-    val interfaceTT = InterfaceTT(fullName)
+//    val interfaceTT = InterfaceTT(fullName)
     if (declaredKinds.contains(interfaceTT)) {
       Some(interfaceTT)
     } else {
@@ -274,7 +289,7 @@ case class Temputs() {
 
   def getAllStructs(): Iterable[StructDefinitionT] = structDefsByRef.values
   def getAllInterfaces(): Iterable[InterfaceDefinitionT] = interfaceDefsByRef.values
-  def getAllFunctions(): Iterable[FunctionT] = functions
+  def getAllFunctions(): Iterable[FunctionT] = functionsBySignature.values
   def getAllImpls(): Iterable[ImplT] = impls
   def getAllStaticSizedArrays(): Iterable[StaticSizedArrayTT] = staticSizedArrayTypes.values
   def getAllRuntimeSizedArrays(): Iterable[RuntimeSizedArrayTT] = runtimeSizedArrayTypes.values

@@ -1,19 +1,19 @@
 package net.verdagon.vale.templar.function
 
 import net.verdagon.vale.astronomer.FunctionA
-import net.verdagon.vale.scout.patterns.{AtomSP, OverrideSP}
+import net.verdagon.vale.scout.patterns._
 import net.verdagon.vale.scout.rules.RuneUsage
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar.OverloadTemplar.InferFailure
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.ast.{FunctionBannerT, FunctionHeaderT, OverrideT, PrototypeT}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.FunctionTemplar.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
 import net.verdagon.vale.templar.names.{BuildingFunctionNameWithClosuredsAndTemplateArgsT, FullNameT, INameT, NameTranslator, RuneNameT}
-import net.verdagon.vale.{Err, IProfiler, Ok, RangeS, vcurious, vimpl}
+import net.verdagon.vale.{Err, Profiler, Interner, Ok, RangeS, vcurious, vimpl}
 //import net.verdagon.vale.templar.infer.{InferSolveFailure, InferSolveSuccess}
 import net.verdagon.vale.{vassert, vfail, vwat}
 
@@ -27,13 +27,15 @@ import scala.collection.immutable.{List, Set}
 // This file is the outer layer, which spawns a local environment for the function.
 class FunctionTemplarOrdinaryOrTemplatedLayer(
     opts: TemplarOptions,
-  profiler: IProfiler,
-  templataTemplar: TemplataTemplar,
+
+    interner: Interner,
+    nameTranslator: NameTranslator,
+    templataTemplar: TemplataTemplar,
     inferTemplar: InferTemplar,
-  convertHelper: ConvertHelper,
+    convertHelper: ConvertHelper,
     structTemplar: StructTemplar,
     delegate: IFunctionTemplarDelegate) {
-  val middleLayer = new FunctionTemplarMiddleLayer(opts, profiler, templataTemplar, convertHelper, structTemplar, delegate)
+  val middleLayer = new FunctionTemplarMiddleLayer(opts, interner, nameTranslator, templataTemplar, convertHelper, structTemplar, delegate)
 
   // This is for the early stages of Templar when it's scanning banners to put in
   // its env. We just want its banner, we don't want to evaluate it.
@@ -207,7 +209,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     val initialKnowns =
       function.identifyingRunes.flatMap(identifyingRune => {
         nearEnv.lookupNearestWithName(
-          profiler, RuneNameT(identifyingRune.rune), Set(TemplataLookupContext))
+          interner.intern(RuneNameT(identifyingRune.rune)), Set(TemplataLookupContext))
           .map(InitialKnown(identifyingRune, _))
       })
     val inferences =
@@ -295,11 +297,11 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     explicitTemplateArgs: Vector[ITemplata]):
   Vector[InitialKnown] = {
     // Sometimes we look for an overload for a given override, assemble knowns from that here
-    args.zip(function.params).collect({
-      case (ParamFilter(_, Some(OverrideT(argOverrideKind))), ParameterS(AtomSP(_, _, Some(OverrideSP(_, paramOverrideRune)), _, _))) => {
-        InitialKnown(paramOverrideRune, KindTemplata(argOverrideKind))
-      }
-    }) ++
+//    args.zip(function.params).collect({
+//      case (ParamFilter(_, Some(OverrideT(argOverrideKind))), ParameterS(AtomSP(_, _, Some(OverrideSP(_, paramOverrideRune)), _, _))) => {
+//        InitialKnown(paramOverrideRune, KindTemplata(argOverrideKind))
+//      }
+//    }) ++
     function.identifyingRunes.zip(explicitTemplateArgs).map({
       case (identifyingRune, explicitArg) => {
         InitialKnown(identifyingRune, explicitArg)
@@ -315,7 +317,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     function.body match {
       case CodeBodyS(body1) => {
         body1.closuredNames.foreach(name => {
-          vassert(nearEnv.variables.exists(_.id.last == NameTranslator.translateNameStep(name)))
+          vassert(nearEnv.variables.exists(_.id.last == nameTranslator.translateNameStep(name)))
         })
       }
       case _ =>
@@ -343,8 +345,9 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
       parentEnv,
       newName,
       templatas.addEntries(
+        interner,
         templatasByRune.toVector
-          .map({ case (k, v) => (RuneNameT(k), TemplataEnvEntry(v)) })),
+          .map({ case (k, v) => (interner.intern(RuneNameT(k)), TemplataEnvEntry(v)) })),
       function,
       variables)
   }

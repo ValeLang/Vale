@@ -1,51 +1,58 @@
 import v.builtins.panic.*;
 
+#!DeriveInterfaceDrop
 sealed interface Result<OkType, ErrType> where OkType Ref, ErrType Ref { }
+
+#!DeriveStructDrop
 struct Ok<OkType, ErrType> where OkType Ref, ErrType Ref { value OkType; }
+#!DeriveImplDrop
 impl<OkType, ErrType> Result<OkType, ErrType> for Ok<OkType, ErrType>;
+
+#!DeriveStructDrop
 struct Err<OkType, ErrType> where OkType Ref, ErrType Ref { value ErrType; }
+#!DeriveImplDrop
 impl<OkType, ErrType> Result<OkType, ErrType> for Err<OkType, ErrType>;
 
+
+abstract func drop<OkType, ErrType>(virtual self Result<OkType, ErrType>)
+where Prot["drop", Refs(OkType), void], Prot["drop", Refs(ErrType), void];
+
+func drop<OkType, ErrType>(self Ok<OkType, ErrType>)
+where Prot["drop", Refs(OkType), void]
+{
+  [x] = self;
+}
+
+func drop<OkType, ErrType>(self Err<OkType, ErrType>)
+where Prot["drop", Refs(ErrType), void] {
+  [x] = self;
+}
+
 abstract func is_ok<OkType, ErrType>(virtual result &Result<OkType, ErrType>) bool;
-func is_ok<OkType, ErrType>(ok &Ok<OkType, ErrType> impl Result<OkType, ErrType>) bool { ret true; }
-func is_ok<OkType, ErrType>(err &Err<OkType, ErrType> impl Result<OkType, ErrType>) bool { ret false; }
+func is_ok<OkType, ErrType>(ok &Ok<OkType, ErrType>) bool { ret true; }
+func is_ok<OkType, ErrType>(err &Err<OkType, ErrType>) bool { ret false; }
 func is_err<OkType, ErrType>(result &Result<OkType, ErrType>) bool { ret not is_ok(result); }
 
-abstract func is_ok<OkType, ErrType>(virtual result *!Result<OkType, ErrType>) bool;
-func is_ok<OkType, ErrType>(ok *!Ok<OkType, ErrType> impl Result<OkType, ErrType>) bool { ret true; }
-func is_ok<OkType, ErrType>(err *!Err<OkType, ErrType> impl Result<OkType, ErrType>) bool { ret false; }
-func is_err<OkType, ErrType>(result *!Result<OkType, ErrType>) bool { ret not is_ok(result); }
-
-
-
 abstract func expect<OkType, ErrType>(virtual result Result<OkType, ErrType>) OkType;
-func expect<OkType, ErrType>(err Err<OkType, ErrType> impl Result<OkType, ErrType>) OkType { panic("Called expect() on a Err!"); }
-func expect<OkType, ErrType>(ok Ok<OkType, ErrType> impl Result<OkType, ErrType>) OkType {
-  Ok<OkType, ErrType>[value] = ok;
+func expect<OkType, ErrType>(err Err<OkType, ErrType>) OkType { panic("Called expect() on a Err!"); }
+func expect<OkType, ErrType>(ok Ok<OkType, ErrType>) OkType {
+  [value] = ok;
   ret value;
 }
 
-abstract func expect<OkType, ErrType>(virtual result &Result<OkType, ErrType>) *OkType;
-func expect<OkType, ErrType>(err &Err<OkType, ErrType> impl Result<OkType, ErrType>) *OkType { panic("Called expect() on a Err!"); }
-func expect<OkType, ErrType>(ok &Ok<OkType, ErrType> impl Result<OkType, ErrType>) *OkType { ret *ok.value; }
-// Itd be nice to abstract over permission
-abstract func expect<OkType, ErrType>(virtual result *!Result<OkType, ErrType>) *!OkType;
-func expect<OkType, ErrType>(err *!Err<OkType, ErrType> impl Result<OkType, ErrType>) *!OkType { panic("Called expect() on a Err!"); }
-func expect<OkType, ErrType>(ok *!Ok<OkType, ErrType> impl Result<OkType, ErrType>) *!OkType { ret *!ok.value; }
+abstract func expect<OkType, ErrType>(virtual result &Result<OkType, ErrType>) &OkType;
+func expect<OkType, ErrType>(err &Err<OkType, ErrType>) &OkType { panic("Called expect() on a Err!"); }
+func expect<OkType, ErrType>(ok &Ok<OkType, ErrType>) &OkType { ret &ok.value; }
 
 
 
 abstract func expect_err<OkType, ErrType>(virtual result Result<OkType, ErrType>) ErrType;
-func expect_err<OkType, ErrType>(ok Ok<OkType, ErrType> impl Result<OkType, ErrType>) ErrType { panic("Called expect_err() on an Ok!"); }
-func expect_err<OkType, ErrType>(err Err<OkType, ErrType> impl Result<OkType, ErrType>) ErrType {
-  Err<OkType, ErrType>[value] = err;
+func expect_err<OkType, ErrType>(ok Ok<OkType, ErrType>) ErrType { panic("Called expect_err() on an Ok!"); }
+func expect_err<OkType, ErrType>(err Err<OkType, ErrType>) ErrType {
+  [value] = err;
   ret value;
 }
 
-abstract func expect_err<OkType, ErrType>(virtual result &Result<OkType, ErrType>) *ErrType;
-func expect_err<OkType, ErrType>(ok &Ok<OkType, ErrType> impl Result<OkType, ErrType>) *ErrType { panic("Called expect_err() on an Ok!"); }
-func expect_err<OkType, ErrType>(err &Err<OkType, ErrType> impl Result<OkType, ErrType>) *ErrType { ret err.value; }
-// Itd be nice to abstract over permission
-abstract func expect_err<OkType, ErrType>(virtual result *!Result<OkType, ErrType>) *!ErrType;
-func expect_err<OkType, ErrType>(ok *!Ok<OkType, ErrType> impl Result<OkType, ErrType>) infer-ret { panic("Called expect_err() on an Ok!"); }
-func expect_err<OkType, ErrType>(err *!Err<OkType, ErrType> impl Result<OkType, ErrType>) *!ErrType { ret err.value; }
+abstract func expect_err<OkType, ErrType>(virtual result &Result<OkType, ErrType>) &ErrType;
+func expect_err<OkType, ErrType>(ok &Ok<OkType, ErrType>) &ErrType { panic("Called expect_err() on an Ok!"); }
+func expect_err<OkType, ErrType>(err &Err<OkType, ErrType>) &ErrType { ret err.value; }

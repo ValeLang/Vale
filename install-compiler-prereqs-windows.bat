@@ -1,7 +1,7 @@
 
 echo Downloading minimal LLVM...
 
-powershell -c "$ProgressPreference = 'SilentlyContinue' ; Invoke-WebRequest -Uri 'https://firebasestorage.googleapis.com/v0/b/valesite.appspot.com/o/llvm-install-minimal.zip?alt=media&token=7e73117d-5319-4a78-bfba-04f8d3b91060' -OutFile '%temp%\llvm-install-minimal.zip'"
+powershell -c "$ProgressPreference = 'SilentlyContinue' ; Invoke-WebRequest -Uri 'https://github.com/Verdagon/LLVM13WinMinimal/releases/download/v1.1/llvm-project-llvmorg-13.0.1.zip' -OutFile '%temp%\llvm-install-minimal.zip'"
 mkdir %1
 tar xf "%temp%\llvm-install-minimal.zip" -C %1
 

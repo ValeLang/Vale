@@ -2,7 +2,11 @@ package net.verdagon.vale.options
 
 object GlobalOptions {
   def apply(): GlobalOptions = {
-    GlobalOptions(false, true, false, false)
+    GlobalOptions(
+      sanityCheck = false,
+      useOptimizedSolver = true,
+      verboseErrors = false,
+      debugOutput = false)
   }
 
   def test(): GlobalOptions = {

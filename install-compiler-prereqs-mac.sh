@@ -35,5 +35,5 @@ echo 'export PATH=$PATH:~/ValeCompiler-0.1.3.3-Mac' >> ~/.zshrc
 
 # Install misc dependencies
 echo "Downloading and unzipping depdendencies and LLVM..."
-brew install llvm@11 sbt cmake
-echo 'export PATH=$PATH:/usr/local/Cellar/llvm@11/11.1.0_2/bin' >> ~/.zshrc
+brew install llvm@13 sbt cmake
+echo 'export PATH=$PATH:/usr/local/Cellar/llvm@13/13.0.0/bin' >> ~/.zshrc

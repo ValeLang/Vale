@@ -5,21 +5,21 @@ LLVM_DIR="$1"
 if [ "$LLVM_DIR" == "" ]; then
   echo "Please supply the LLVM directory."
   echo "Example: ~/clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10"
-  exit
+  exit 1
 fi
 
 LLVM_CMAKE_DIR="$LLVM_DIR/lib/cmake/llvm"
 if [ ! -d "$LLVM_CMAKE_DIR" ]; then
   echo "Directory not found: $LLVM_CMAKE_DIR"
   echo "Are you sure you specified the right LLVM directory?"
-  exit
+  exit 1
 fi
 
 BOOTSTRAPPING_VALEC_DIR="$2"
 if [ "$BOOTSTRAPPING_VALEC_DIR" == "" ]; then
   echo "Please supply the bootstrapping valec directory."
   echo "Example: ~/ValeCompiler-0.1.3.3-Ubuntu"
-  exit
+  exit 1
 fi
 
 
@@ -51,7 +51,7 @@ mkdir -p ../release-unix || { echo 'Error making new release-unix dir.' ; exit 1
 mkdir -p ../release-unix/samples || { echo 'Error making new samples dir.' ; exit 1; }
 cp ../Valestrom/Valestrom.jar ../release-unix || { echo 'Error copying into release-unix.' ; exit 1; }
 cp -r ../Valestrom/Tests/test/main/resources/programs ../release-unix/samples || { echo 'Error copying into release-unix.' ; exit 1; }
-cp -r ../Midas/src/builtins ../release-unix/builtins || { echo 'Error copying into release-unix.' ; exit 1; }
+cp -r ../Midas/builtins ../release-unix/builtins || { echo 'Error copying into release-unix.' ; exit 1; }
 cp releaseREADME.txt ../release-unix/README.txt || { echo 'Error copying into release-unix.' ; exit 1; }
 cp valec-* ../release-unix || { echo 'Error copying into release-unix.' ; exit 1; }
 cp ../Midas/build/midas ../release-unix/midas || { echo 'Error copying into release-unix.' ; exit 1; }

@@ -1,15 +1,16 @@
 import v.builtins.result.*;
 
 extern("vale_as_subtype")
-func as<TargetKind, SourceType>(left SourceType) Result<TargetType, SourceType>
+func as<TargetKind, SourceType>(left SourceType) Result<SuccessType, FailType>
 where
-  SourceType Ref(own, rw, _),
-  TargetType Ref(own, rw, TargetKind);
+  SourceType Ref = Ref[own, _],
+  FailType Ref = SourceType Ref,
+  SuccessType Ref = Ref[own, TargetKind];
 
 extern("vale_as_subtype")
-func as<TargetKind, SourceType>(left SourceType) Result<*TargetType, *SourceType>
+func as<TargetKind, SourceType>(left SourceType) Result<SuccessType, FailType>
 where
-  SourceOwnership Ownership = borrow | ptr,
-  SourcePermission Permission,
-  SourceType Ref(SourceOwnership, SourcePermission, _),
-  TargetType Ref(SourceOwnership, SourcePermission, TargetKind);
+  SourceKind Kind,
+  SourceType Ref = Ref[borrow, SourceKind],
+  FailType Ref = Ref[borrow, SourceKind],
+  SuccessType Ref = Ref[borrow, TargetKind];

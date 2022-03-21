@@ -3,101 +3,66 @@ package net.verdagon.vale.templar.types
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.ast.{FunctionHeaderT, ICitizenAttributeT, VirtualityT}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.env.IEnvironment
 import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, CitizenNameT, CitizenTemplateNameT, ClosureParamNameT, CodeVarNameT, FullNameT, FunctionNameT, ICitizenNameT, INameT, IVarNameT, ImplDeclareNameT, LambdaCitizenNameT, LetNameT, MagicParamNameT, RawArrayNameT, RuntimeSizedArrayNameT, StaticSizedArrayNameT, UnnamedLocalNameT}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{CodeLocationS, PackageCoordinate, vassert, vcurious, vfail, vimpl, vpass}
+import net.verdagon.vale.{CodeLocationS, IInterning, Interner, PackageCoordinate, vassert, vcurious, vfail, vimpl, vpass}
 
 import scala.collection.immutable.List
 
 sealed trait OwnershipT  {
-  def order: Int;
 }
 case object ShareT extends OwnershipT {
-  override def order: Int = 1
   override def toString: String = "share"
 }
 case object OwnT extends OwnershipT {
-  override def order: Int = 2
   override def toString: String = "own"
 }
 case object BorrowT extends OwnershipT {
-  override def order: Int = 3
   override def toString: String = "borrow"
 }
-case object PointerT extends OwnershipT {
-  override def order: Int = 3
-  override def toString: String = "ptr"
-}
 case object WeakT extends OwnershipT {
-  override def order: Int = 4
   override def toString: String = "weak"
 }
 
 sealed trait MutabilityT  {
-  def order: Int;
 }
 case object MutableT extends MutabilityT {
-  override def order: Int = 1
   override def toString: String = "mut"
 }
 case object ImmutableT extends MutabilityT {
-  override def order: Int = 2
   override def toString: String = "imm"
 }
 
 sealed trait VariabilityT  {
-  def order: Int;
 }
 case object FinalT extends VariabilityT {
-  override def order: Int = 1
   override def toString: String = "final"
 }
 case object VaryingT extends VariabilityT {
-  override def order: Int = 2
   override def toString: String = "vary"
 }
 
-sealed trait PermissionT  {
-  def order: Int;
-}
-case object ReadonlyT extends PermissionT {
-  override def order: Int = 1
-  override def toString: String = "ro"
-}
-case object ReadwriteT extends PermissionT {
-  override def order: Int = 2
-  override def toString: String = "rw"
-}
-
 sealed trait LocationT  {
-  def order: Int;
 }
 case object InlineT extends LocationT {
-  override def order: Int = 1
   override def toString: String = "inl"
 }
 case object YonderT extends LocationT {
-  override def order: Int = 1
   override def toString: String = "heap"
 }
 
 
-case class CoordT(ownership: OwnershipT, permission: PermissionT, kind: KindT)  {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-
+case class CoordT(ownership: OwnershipT, kind: KindT)  {
   vpass()
 
   kind match {
-    case IntT(_) | BoolT() | StrT() | FloatT() | VoidT() | NeverT() => {
+    case IntT(_) | BoolT() | StrT() | FloatT() | VoidT() | NeverT(_) => {
       vassert(ownership == ShareT)
     }
     case _ =>
-  }
-  if (ownership == ShareT) {
-    vassert(permission == ReadonlyT)
   }
   if (ownership == OwnT) {
     // See CSHROOR for why we don't assert this.
@@ -105,8 +70,7 @@ case class CoordT(ownership: OwnershipT, permission: PermissionT, kind: KindT)  
   }
 }
 
-sealed trait KindT  {
-  def order: Int;
+sealed trait KindT {
 
   // Note, we don't have a mutability: Mutability in here because this Kind
   // should be enough to uniquely identify a type, and no more.
@@ -114,15 +78,19 @@ sealed trait KindT  {
 }
 
 // like Scala's Nothing. No instance of this can ever happen.
-case class NeverT() extends KindT {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def order: Int = 6;
+case class NeverT(
+  // True if this Never came from a break.
+  // While will have to know about this; if it's a Never from a return, it should
+  // propagate it, but if its body is a break never, the while produces a void.
+  // See BRCOBS.
+  fromBreak: Boolean
+) extends KindT {
+
 }
 
 // Mostly for interoperability with extern functions
 case class VoidT() extends KindT {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def order: Int = 16;
+
 }
 
 object IntT {
@@ -130,23 +98,18 @@ object IntT {
   val i64: IntT = IntT(64)
 }
 case class IntT(bits: Int) extends KindT {
-  val hash = 546325456 + bits; override def hashCode(): Int = hash;
-  override def order: Int = 8;
 }
 
 case class BoolT() extends KindT {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def order: Int = 9;
+
 }
 
 case class StrT() extends KindT {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def order: Int = 10;
+
 }
 
 case class FloatT() extends KindT {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def order: Int = 11;
+
 }
 
 case class StaticSizedArrayTT(
@@ -154,21 +117,17 @@ case class StaticSizedArrayTT(
   mutability: MutabilityT,
   variability: VariabilityT,
   elementType: CoordT
-) extends KindT {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def order: Int = 12;
-
-  def name: FullNameT[StaticSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, StaticSizedArrayNameT(size, RawArrayNameT(mutability, elementType)))
+) extends KindT with IInterning  {
+  def getName(interner: Interner): FullNameT[StaticSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, interner.intern(StaticSizedArrayNameT(size, interner.intern(RawArrayNameT(mutability, elementType)))))
 }
 
 case class RuntimeSizedArrayTT(
   mutability: MutabilityT,
   elementType: CoordT
-) extends KindT {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def order: Int = 19;
+) extends KindT with IInterning {
 
-  def name: FullNameT[RuntimeSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, RuntimeSizedArrayNameT(RawArrayNameT(mutability, elementType)))
+
+  def getName(interner: Interner): FullNameT[RuntimeSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, interner.intern(RuntimeSizedArrayNameT(interner.intern(RawArrayNameT(mutability, elementType)))))
 }
 
 case class StructMemberT(
@@ -177,8 +136,8 @@ case class StructMemberT(
   variability: VariabilityT,
   tyype: IMemberTypeT
 )  {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
+  vpass()
 }
 
 sealed trait IMemberTypeT  {
@@ -197,14 +156,8 @@ sealed trait IMemberTypeT  {
     }
   }
 }
-case class AddressMemberTypeT(reference: CoordT) extends IMemberTypeT {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-
-}
-case class ReferenceMemberTypeT(reference: CoordT) extends IMemberTypeT {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-
-}
+case class AddressMemberTypeT(reference: CoordT) extends IMemberTypeT
+case class ReferenceMemberTypeT(reference: CoordT) extends IMemberTypeT
 
 trait CitizenDefinitionT {
   def getRef: CitizenRefT;
@@ -214,15 +167,16 @@ trait CitizenDefinitionT {
 // We include templateArgTypes to aid in looking this up... same reason we have name
 case class StructDefinitionT(
   fullName: FullNameT[ICitizenNameT],
+  ref: StructTT,
   attributes: Vector[ICitizenAttributeT],
   weakable: Boolean,
   mutability: MutabilityT,
   members: Vector[StructMemberT],
   isClosure: Boolean
 ) extends CitizenDefinitionT {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
-  override def getRef: StructTT = StructTT(fullName)
+  override def getRef: StructTT = ref
 
 
 
@@ -247,6 +201,7 @@ case class StructDefinitionT(
 
 case class InterfaceDefinitionT(
     fullName: FullNameT[CitizenNameT],
+    ref: InterfaceTT,
     attributes: Vector[ICitizenAttributeT],
     weakable: Boolean,
     mutability: MutabilityT,
@@ -254,48 +209,45 @@ case class InterfaceDefinitionT(
     // See IMRFDI for why we need to remember only the internal methods here.
     internalMethods: Vector[FunctionHeaderT]
 ) extends CitizenDefinitionT  {
-  override def hashCode(): Int = vcurious()
-  override def getRef = InterfaceTT(fullName)
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
+  override def getRef = ref
 }
 
-trait CitizenRefT extends KindT {
+trait CitizenRefT extends KindT with IInterning {
   def fullName: FullNameT[ICitizenNameT]
 }
 
 // These should only be made by struct templar, which puts the definition into temputs at the same time
 case class StructTT(fullName: FullNameT[ICitizenNameT]) extends CitizenRefT {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def order: Int = 14;
-}
 
-// Represents a bunch of functions that have the same name.
-// See ROS.
-// Lowers to an empty struct.
-case class OverloadSet(
-  env: IEnvironment,
-  // The name to look for in the environment.
-  name: IImpreciseNameS
-) extends KindT {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-
-  override def order: Int = 19;
 }
 
 case class InterfaceTT(
   fullName: FullNameT[ICitizenNameT]
 ) extends CitizenRefT  {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
-  override def order: Int = 15;
+
+}
+
+// Represents a bunch of functions that have the same name.
+// See ROS.
+// Lowers to an empty struct.
+case class OverloadSetT(
+  env: IEnvironment,
+  // The name to look for in the environment.
+  name: IImpreciseNameS
+) extends KindT with IInterning {
+
+
 }
 
 // This is what we use to search for overloads.
 case class ParamFilter(
     tyype: CoordT,
-    virtuality: Option[VirtualityT]) {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+    virtuality: Option[AbstractT]) {
+   override def equals(obj: Any): Boolean = vcurious();
 
   def debugString: String = {
-    tyype.toString + virtuality.map(" impl " + _.toString).getOrElse("")
+    tyype.toString + virtuality.map(x => " abstract").getOrElse("")
   }
 }

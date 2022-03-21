@@ -2,9 +2,9 @@ export []<imm>int as ImmIntArray;
 
 func range(begin int, end int) IntRange { ret IntRange(begin, end); }
 struct IntRange { begin int; end int; }
-func begin(self &!IntRange) IntRangeIter { ret IntRangeIter(&self, self.begin); }
+func begin(self &IntRange) IntRangeIter { ret IntRangeIter(&self, self.begin); }
 struct IntRangeIter { range &IntRange; i! int; }
-func next(self &!IntRangeIter) Opt<int> {
+func next(self &IntRangeIter) Opt<int> {
   if self.i < self.range.end {
     Some(set self.i = self.i + 1)
   } else {
@@ -13,7 +13,7 @@ func next(self &!IntRangeIter) Opt<int> {
 }
 
 exported func expSumBytes(arr []<imm>int) int {
-  sum! = 0;
+  sum = 0;
   l = len(arr);
   foreach i in 0..l { set sum = sum + arr[i]; }
   ret sum;

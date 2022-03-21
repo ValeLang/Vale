@@ -1,42 +1,16 @@
 package net.verdagon.vale.parser.patterns
 
 import net.verdagon.vale.parser.ast.Patterns._
-import net.verdagon.vale.parser.old.CombinatorParsers._
+
 import net.verdagon.vale.parser._
-import net.verdagon.vale.parser.ast.{DestructureP, LocalNameDeclarationP, NameOrRunePT, NameP, PatternPP}
-import net.verdagon.vale.parser.old.CombinatorParsers
+import net.verdagon.vale.parser.ast.{DestructureP, IgnoredLocalNameDeclarationP, LocalNameDeclarationP, NameOrRunePT, NameP, PatternPP}
+
 import net.verdagon.vale.{Collector, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
-class DestructureParserTests extends FunSuite with Matchers with Collector {
-  private def compile[T](parser: CombinatorParsers.Parser[T], code: String): T = {
-    CombinatorParsers.parse(parser, code.toCharArray()) match {
-      case CombinatorParsers.NoSuccess(msg, input) => {
-        fail(msg);
-      }
-      case CombinatorParsers.Success(expr, rest) => {
-        if (!rest.atEnd) {
-          vfail(rest.pos.longString)
-        }
-        expr
-      }
-    }
-  }
+class DestructureParserTests extends FunSuite with Matchers with Collector with TestParseUtils {
   private def compile[T](code: String): PatternPP = {
-    compile(atomPattern, code)
-  }
-
-  private def checkFail[T](parser: CombinatorParsers.Parser[T], code: String) = {
-    CombinatorParsers.parse(parser, code) match {
-      case CombinatorParsers.NoSuccess(_, _) =>
-      case CombinatorParsers.Success(_, rest) => {
-        if (!rest.atEnd) {
-          // That's good, it didn't parse all of it
-        } else {
-          fail()
-        }
-      }
-    }
+    compile(new PatternParser().parsePattern(_), code)
   }
 
   test("Only empty destructure") {
@@ -63,7 +37,7 @@ class DestructureParserTests extends FunSuite with Matchers with Collector {
     compile("[_, b]") shouldHave {
       case PatternPP(_,_,
           None,None,
-          Some(DestructureP(_,Vector(PatternPP(_,_,None, None, None, None), capture("b")))),
+          Some(DestructureP(_,Vector(PatternPP(_,_,Some(IgnoredLocalNameDeclarationP(_)), None, None, None), capture("b")))),
           None) =>
     }
   }

@@ -1,8 +1,8 @@
 package net.verdagon.vale.parser
 
 import net.liftweb.json._
+import net.verdagon.vale.options.GlobalOptions
 import net.verdagon.vale.parser.ast.{ConstantStrPE, FileP}
-import net.verdagon.vale.parser.old.CombinatorParsers
 import net.verdagon.vale.{Collector, vassert}
 import net.verdagon.von.{JsonSyntax, VonPrinter}
 import org.scalatest.{FunSuite, Matchers}
@@ -39,14 +39,18 @@ class LoadTests extends FunSuite with Matchers with Collector {
 //  }
 
   test("Simple program") {
-    val originalFile = Parser.runParser("""exported func main() int { ret 42; }""").getOrDie()
+    val p = new Parser(GlobalOptions(true, true, true, true))
+    val originalFile = p.runParser("""exported func main() int { ret 42; }""").getOrDie()
     val von = ParserVonifier.vonifyFile(originalFile)
     val json = new VonPrinter(JsonSyntax, 120).print(von)
     val loadedFile = ParsedLoader.load(json).getOrDie()
-    originalFile shouldEqual loadedFile
+    // This is because we don't want to enable .equals, see EHCFBD.
+    originalFile.toString == loadedFile.toString
   }
 
   test("Strings with special characters") {
+    val p = new Parser(GlobalOptions(true, true, true, true))
+
     val code = "exported func main() str { \"hello\\u001bworld\" }"
     // FALL NOT TO TEMPTATION
     // Scala has some issues here.
@@ -64,7 +68,7 @@ class LoadTests extends FunSuite with Matchers with Collector {
     // Real source files from disk are going to have a backslash character and then a u,
     // they won't have the 0x1b byte.
     vassert(code.contains("\\u001b"))
-    val originalFile = Parser.runParser(code).getOrDie()
+    val originalFile = p.runParser(code).getOrDie()
     originalFile shouldHave { case ConstantStrPE(_, "hello\u001bworld" ) => }
 
     val von = ParserVonifier.vonifyFile(originalFile)
@@ -75,6 +79,7 @@ class LoadTests extends FunSuite with Matchers with Collector {
 
     val loadedJsonStr = new String(generatedBytes, "UTF-8");
     val loadedFile = ParsedLoader.load(loadedJsonStr).getOrDie()
-    originalFile shouldEqual loadedFile
+    // This is because we don't want to enable .equals, see EHCFBD.
+    originalFile.toString shouldEqual loadedFile.toString
   }
 }

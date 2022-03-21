@@ -1,17 +1,17 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale.SourceCodeUtils.{humanizePos, lineBegin, lineContaining, lineRangeContaining}
-import net.verdagon.vale.astronomer.{AstronomerErrorHumanizer, ConstructorNameS, FunctionA, ImmConcreteDestructorNameS, ImmInterfaceDestructorNameS}
-import net.verdagon.vale.scout.ScoutErrorHumanizer.{humanizeImpreciseName, humanizeOwnership, humanizePermission, humanizeRune, humanizeTemplataType}
+import net.verdagon.vale.astronomer.{AstronomerErrorHumanizer, FunctionA}
+import net.verdagon.vale.scout.ScoutErrorHumanizer.{humanizeImpreciseName, humanizeOwnership, humanizeRune, humanizeTemplataType}
 import net.verdagon.vale.scout.rules.{IRulexSR, RuneUsage}
-import net.verdagon.vale.scout.{ArgumentRuneS, CodeRuneS, CodeVarNameS, FunctionNameS, GlobalFunctionFamilyNameS, INameS, IRuneS, IRuneTypeRuleError, ITemplataType, ImplicitRuneS, LambdaDeclarationNameS, RuneTypeSolveError, ScoutErrorHumanizer, TopLevelCitizenDeclarationNameS}
+import net.verdagon.vale.scout.{ArgumentRuneS, CodeRuneS, CodeVarNameS, ConstructorNameS, FunctionNameS, GlobalFunctionFamilyNameS, INameS, IRuneS, IRuneTypeRuleError, ITemplataType, ImmConcreteDestructorNameS, ImmInterfaceDestructorNameS, ImplicitRuneS, LambdaDeclarationNameS, RuneTypeSolveError, ScoutErrorHumanizer, TopLevelCitizenDeclarationNameS}
 import net.verdagon.vale.solver.{FailedSolve, IIncompleteOrFailedSolve, IncompleteSolve, RuleError, SolverConflict, SolverErrorHumanizer}
 import net.verdagon.vale.templar.OverloadTemplar.{FindFunctionFailure, IFindFunctionFailureReason, InferFailure, RuleTypeSolveFailure, SpecificParamDoesntMatchExactly, SpecificParamDoesntSend, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
-import net.verdagon.vale.templar.ast.{AbstractT, FunctionBannerT, FunctionCalleeCandidate, HeaderCalleeCandidate, ICalleeCandidate, OverrideT, PrototypeT, SignatureT}
-import net.verdagon.vale.templar.infer.{CallResultWasntExpectedType, ITemplarSolverError, KindDoesntImplementInterface, KindIsNotConcrete, KindIsNotInterface, LookupFailed, NoAncestorsSatisfyCall, OneOfFailed, OwnershipDidntMatch, PermissionDidntMatch, ReceivingDifferentOwnerships, SendingNonCitizen, SendingNonIdenticalKinds, WrongNumberOfTemplateArgs}
+import net.verdagon.vale.templar.ast._
+import net.verdagon.vale.templar.infer.{CallResultWasntExpectedType, CantShareMutable, CouldntFindFunction, ITemplarSolverError, KindDoesntImplementInterface, KindIsNotConcrete, KindIsNotInterface, LookupFailed, NoAncestorsSatisfyCall, OneOfFailed, OwnershipDidntMatch, ReceivingDifferentOwnerships, SendingNonCitizen, SendingNonIdenticalKinds, WrongNumberOfTemplateArgs}
 import net.verdagon.vale.templar.names.{AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, CitizenNameT, CitizenTemplateNameT, CodeVarNameT, FullNameT, FunctionNameT, INameT, IVarNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT}
-import net.verdagon.vale.templar.templata.{Conversions, CoordListTemplata, CoordTemplata, ITemplata, IntegerTemplata, InterfaceTemplata, KindTemplata, MutabilityTemplata, OwnershipTemplata, PermissionTemplata, PrototypeTemplata, RuntimeSizedArrayTemplateTemplata, StaticSizedArrayTemplateTemplata, StringTemplata, StructTemplata, VariabilityTemplata}
-import net.verdagon.vale.templar.types.{BoolT, BorrowT, CoordT, FinalT, FloatT, ImmutableT, IntT, InterfaceTT, KindT, MutableT, NeverT, OverloadSet, OwnT, ParamFilter, PointerT, ReadonlyT, ReadwriteT, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StrT, StructTT, VaryingT, VoidT, WeakT}
+import net.verdagon.vale.templar.templata.{Conversions, CoordListTemplata, CoordTemplata, ITemplata, IntegerTemplata, InterfaceTemplata, KindTemplata, MutabilityTemplata, OwnershipTemplata, PrototypeTemplata, RuntimeSizedArrayTemplateTemplata, StaticSizedArrayTemplateTemplata, StringTemplata, StructTemplata, VariabilityTemplata}
+import net.verdagon.vale.templar.types.{BoolT, BorrowT, CoordT, FinalT, FloatT, ImmutableT, IntT, InterfaceTT, KindT, MutableT, NeverT, OverloadSetT, OwnT, ParamFilter, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StrT, StructTT, VaryingT, VoidT, WeakT}
 import net.verdagon.vale.{CodeLocationS, FileCoordinate, FileCoordinateMap, RangeS, repeatStr, vimpl}
 
 object TemplarErrorHumanizer {
@@ -27,65 +27,75 @@ object TemplarErrorHumanizer {
         case NewImmRSANeedsCallable(range) => {
           "To make an immutable runtime-sized array, need two params: capacity int, plus lambda to populate that many elements."
         }
+        case IndexedArrayWithNonInteger(range, tyype) => {
+          "Indexed array with non-integer: " + humanizeTemplata(codeMap, CoordTemplata(tyype))
+        }
         case CantUseReadonlyReferenceAsReadwrite(range) => {
-            "Can't make readonly reference into a readwrite one!"
+          "Can't make readonly reference into a readwrite one!"
         }
         case CantReconcileBranchesResults(range, thenResult, elseResult) => {
           "If branches return different types: " + humanizeTemplata(codeMap, CoordTemplata(thenResult)) + " and " + humanizeTemplata(codeMap, CoordTemplata(elseResult))
         }
         case CantMoveOutOfMemberT(range, name) => {
-            "Cannot move out of member (" + name + ")"
+          "Cannot move out of member (" + name + ")"
         }
-        case CantMutateFinalMember(range, fullName, memberName) => {
-            "Cannot mutate final member '" + printableVarName(memberName.last) + "' of container " + printableFullName(fullName)
+        case CantMutateFinalMember(range, struct, memberName) => {
+          "Cannot mutate final member '" + printableVarName(memberName.last) + "' of container " + humanizeTemplata(codeMap, KindTemplata(struct))
         }
         case CantMutateFinalElement(range, coord) => {
-            "Cannot change a slot in array " + humanizeTemplata(codeMap, CoordTemplata(coord)) + " to point to a different element; it's an array of final references."
+          "Cannot change a slot in array " + humanizeTemplata(codeMap, CoordTemplata(coord)) + " to point to a different element; it's an array of final references."
         }
         case LambdaReturnDoesntMatchInterfaceConstructor(range) => {
-            "Argument function return type doesn't match interface method param"
+          "Argument function return type doesn't match interface method param"
         }
         case CantUseUnstackifiedLocal(range, name) => {
-            "Can't use local that was already moved (" + name + ")"
+          "Can't use local that was already moved (" + name + ")"
         }
         case CantUnstackifyOutsideLocalFromInsideWhile(range, name) => {
-            "Can't move a local (" + name + ") from inside a while loop."
+          "Can't move a local (" + name + ") from inside a while loop."
         }
         case CannotSubscriptT(range, tyype) => {
-            "Cannot subscript type: " + humanizeTemplata(codeMap, KindTemplata(tyype)) + "!"
+          "Cannot subscript type: " + humanizeTemplata(codeMap, KindTemplata(tyype)) + "!"
         }
         case CouldntConvertForReturnT(range, expectedType, actualType) => {
-            "Couldn't convert " + humanizeTemplata(codeMap, CoordTemplata(actualType)) + " to expected return type " + humanizeTemplata(codeMap, CoordTemplata(expectedType))
+          "Couldn't convert " + humanizeTemplata(codeMap, CoordTemplata(actualType)) + " to expected return type " + humanizeTemplata(codeMap, CoordTemplata(expectedType))
         }
         case CouldntConvertForMutateT(range, expectedType, actualType) => {
-            "Mutate couldn't convert " + actualType + " to expected destination type " + expectedType
+          "Mutate couldn't convert " + actualType + " to expected destination type " + expectedType
         }
         case CouldntFindMemberT(range, memberName) => {
-            "Couldn't find member " + memberName + "!"
+          "Couldn't find member " + memberName + "!"
         }
         case BodyResultDoesntMatch(range, functionName, expectedReturnType, resultType) => {
-            "Function " + printableName(codeMap, functionName) + " return type " + humanizeTemplata(codeMap, CoordTemplata(expectedReturnType)) + " doesn't match body's result: " + humanizeTemplata(codeMap, CoordTemplata(resultType))
+          "Function " + printableName(codeMap, functionName) + " return type " + humanizeTemplata(codeMap, CoordTemplata(expectedReturnType)) + " doesn't match body's result: " + humanizeTemplata(codeMap, CoordTemplata(resultType))
         }
         case CouldntFindIdentifierToLoadT(range, name) => {
-            "Couldn't find anything named `" + ScoutErrorHumanizer.humanizeImpreciseName(name) + "`!"
+          "Couldn't find anything named `" + ScoutErrorHumanizer.humanizeImpreciseName(name) + "`!"
         }
         case NonReadonlyReferenceFoundInPureFunctionParameter(range, name) => {
-            "Parameter `" + name + "` should be readonly, because it's in a pure function."
+          "Parameter `" + name + "` should be readonly, because it's in a pure function."
         }
         case CouldntFindTypeT(range, name) => {
-            "Couldn't find any type named `" + name + "`!"
+          "Couldn't find any type named `" + name + "`!"
+        }
+        case CouldntNarrowDownCandidates(range, candidateRanges) => {
+          "Multiple candidates for call:" +
+            candidateRanges.map(range => "\n" + humanizePos(codeMap, range.begin) + ":\n  " + lineContaining(codeMap, range.begin))
         }
         case ImmStructCantHaveVaryingMember(range, structName, memberName) => {
-            "Immutable struct (\"" + printableName(codeMap, structName) + "\") cannot have varying member (\"" + memberName + "\")."
+          "Immutable struct (\"" + printableName(codeMap, structName) + "\") cannot have varying member (\"" + memberName + "\")."
+        }
+        case WrongNumberOfDestructuresError(range, actualNum, expectedNum) => {
+          "Wrong number of receivers; receiving " + actualNum + " but should be " + expectedNum + "."
         }
         case CantDowncastUnrelatedTypes(range, sourceKind, targetKind) => {
-            "Can't downcast `" + sourceKind + "` to unrelated `" + targetKind + "`"
+          "Can't downcast `" + sourceKind + "` to unrelated `" + targetKind + "`"
         }
         case CantDowncastToInterface(range, targetKind) => {
-            "Can't downcast to an interface (" + targetKind + ") yet."
+          "Can't downcast to an interface (" + targetKind + ") yet."
         }
         case ArrayElementsHaveDifferentTypes(range, types) => {
-            "Array's elements have different types: " + types.mkString(", ")
+          "Array's elements have different types: " + types.mkString(", ")
         }
         case ExportedFunctionDependedOnNonExportedKind(range, paackage, signature, nonExportedKind) => {
           "Exported function " + signature + " depends on kind " + nonExportedKind + " that wasn't exported from package " + paackage
@@ -104,26 +114,26 @@ object TemplarErrorHumanizer {
           "Exported kind " + signature + " depends on kind " + nonExportedKind + " that wasn't exported from package " + paackage
         }
         case InitializedWrongNumberOfElements(range, expectedNumElements, numElementsInitialized) => {
-            "Supplied " + numElementsInitialized + " elements, but expected " + expectedNumElements + "."
+          "Supplied " + numElementsInitialized + " elements, but expected " + expectedNumElements + "."
         }
         case CouldntFindFunctionToCallT(range, fff) => {
           humanizeFindFunctionFailure(verbose, codeMap, range, fff)
         }
         case FunctionAlreadyExists(oldFunctionRange, newFunctionRange, signature) => {
-            "Function " + humanizeSignature(codeMap, signature) + " already exists! Previous declaration at:\n" +
+          "Function " + humanizeSignature(codeMap, signature) + " already exists! Previous declaration at:\n" +
             humanizePos(codeMap, oldFunctionRange.begin)
         }
         case AbstractMethodOutsideOpenInterface(range) => {
           "Open (non-sealed) interfaces can't have abstract methods defined outside the interface."
         }
         case IfConditionIsntBoolean(range, actualType) => {
-            "If condition should be a bool, but was: " + actualType
+          "If condition should be a bool, but was: " + actualType
         }
         case WhileConditionIsntBoolean(range, actualType) => {
-            "If condition should be a bool, but was: " + actualType
+          "If condition should be a bool, but was: " + actualType
         }
         case CantImplNonInterface(range, struct) => {
-            "Can't extend a non-interface: " + struct
+          "Can't extend a non-interface: " + struct
         }
         case TemplarSolverError(range, failedSolve) => {
           val (text, lineBegins) =
@@ -161,8 +171,7 @@ object TemplarErrorHumanizer {
       ScoutErrorHumanizer.humanizeImpreciseName(name) +
       "(" +
       args.map({
-        case ParamFilter(tyype, Some(OverrideT(interface))) => humanizeTemplata(codeMap, CoordTemplata(tyype)) + " impl " + humanizeTemplata(codeMap, KindTemplata(interface))
-        case ParamFilter(tyype, Some(AbstractT)) => humanizeTemplata(codeMap, CoordTemplata(tyype)) + " abstract"
+        case ParamFilter(tyype, Some(AbstractT())) => humanizeTemplata(codeMap, CoordTemplata(tyype)) + " abstract"
         case ParamFilter(tyype, None) => humanizeTemplata(codeMap, CoordTemplata(tyype))
       }).mkString(", ") +
       "). " +
@@ -200,21 +209,6 @@ object TemplarErrorHumanizer {
       case ImmInterfaceDestructorNameS(_) => vimpl()
 //      case DropNameS(_) => vimpl()
     }
-  }
-
-  private def printableCoordName(coord: CoordT): String = {
-    val CoordT(ownership, permission, kind) = coord
-    (ownership match {
-      case ShareT => ""
-      case OwnT => ""
-      case PointerT => "*"
-      case WeakT => "**"
-    }) +
-    (permission match {
-      case ReadonlyT => ""
-      case ReadwriteT => "!"
-    }) +
-    printableKindName(kind)
   }
 
   private def printableKindName(kind: KindT): String = {
@@ -302,11 +296,17 @@ object TemplarErrorHumanizer {
       case KindDoesntImplementInterface(sub, suuper) => {
         "Kind " + humanizeTemplata(codeMap, KindTemplata(sub)) + " does not implement interface " + humanizeTemplata(codeMap, KindTemplata(suuper))
       }
+      case CantShareMutable(kind) => {
+        "Can't share a mutable kind: " + humanizeTemplata(codeMap, KindTemplata(kind))
+      }
       case SendingNonIdenticalKinds(sendCoord, receiveCoord) => {
         "Sending non-identical kinds: " + humanizeTemplata(codeMap, CoordTemplata(sendCoord)) + " and " + humanizeTemplata(codeMap, CoordTemplata(receiveCoord))
       }
       case SendingNonCitizen(kind) => {
         "Sending non-struct non-interface Kind: " + humanizeTemplata(codeMap, KindTemplata(kind))
+      }
+      case CouldntFindFunction(range, fff) => {
+        "Couldn't find function to call: " + humanizeFindFunctionFailure(false, codeMap, range, fff)
       }
       case WrongNumberOfTemplateArgs(expectedNumArgs) => {
         "Wrong number of template args, expected " + expectedNumArgs + "."
@@ -323,9 +323,6 @@ object TemplarErrorHumanizer {
       }
       case CallResultWasntExpectedType(expected, actual) => {
         "Expected an instantiation of " + humanizeTemplata(codeMap, expected) + " but got " + humanizeTemplata(codeMap, actual)
-      }
-      case PermissionDidntMatch(coord, expectedPermission) => {
-        "Given type " + humanizeTemplata(codeMap, CoordTemplata(coord)) + " doesn't have expected permission " + humanizePermission(Conversions.unevaluatePermission(expectedPermission))
       }
       case OwnershipDidntMatch(coord, expectedOwnership) => {
         "Given type " + humanizeTemplata(codeMap, CoordTemplata(coord)) + " doesn't have expected ownership " + humanizeOwnership(Conversions.unevaluateOwnership(expectedOwnership))
@@ -417,7 +414,6 @@ object TemplarErrorHumanizer {
       case OwnershipTemplata(ownership) => {
         ownership match {
           case OwnT => "own"
-          case PointerT => "ptr"
           case BorrowT => "borrow"
           case WeakT => "weak"
           case ShareT => "share"
@@ -426,28 +422,12 @@ object TemplarErrorHumanizer {
       case PrototypeTemplata(PrototypeT(name, returnType)) => {
         humanizeName(codeMap, name)
       }
-      case CoordTemplata(CoordT(ownership, permission, kind)) => {
+      case CoordTemplata(CoordT(ownership, kind)) => {
         (ownership match {
           case OwnT => ""
           case ShareT => ""
-          case PointerT => {
-            (permission match {
-              case ReadonlyT => "*"
-              case ReadwriteT => "*!"
-            })
-          }
-          case BorrowT => {
-            (permission match {
-              case ReadonlyT => "&"
-              case ReadwriteT => "&!"
-            })
-          }
-          case WeakT => {
-            (permission match {
-              case ReadonlyT => "**"
-              case ReadwriteT => "**!"
-            })
-          }
+          case BorrowT => "&"
+          case WeakT => "**"
         }) +
           humanizeTemplata(codeMap, KindTemplata(kind))
       }
@@ -456,10 +436,10 @@ object TemplarErrorHumanizer {
           case IntT(bits) => "i" + bits
           case BoolT() => "bool"
           case StrT() => "str"
-          case NeverT() => "never"
+          case NeverT(_) => "never"
           case VoidT() => "void"
           case FloatT() => "float"
-          case OverloadSet(_, name) => "(overloads: " + ScoutErrorHumanizer.humanizeImpreciseName(name) + ")"
+          case OverloadSetT(_, name) => "(overloads: " + ScoutErrorHumanizer.humanizeImpreciseName(name) + ")"
           case InterfaceTT(name) => humanizeName(codeMap, name)
           case StructTT(name) => humanizeName(codeMap, name)
           case RuntimeSizedArrayTT(mutability, elementType) => {
@@ -479,7 +459,6 @@ object TemplarErrorHumanizer {
       case CoordListTemplata(coords) => {
         "(" + coords.map(CoordTemplata).map(humanizeTemplata(codeMap, _)).mkString(", ") + ")"
       }
-      case PermissionTemplata(permission) => humanizePermission(Conversions.unevaluatePermission(permission))
       case StringTemplata(value) => "\"" + value + "\""
       case other => vimpl(other)
     }

@@ -1,6 +1,6 @@
 
 exported func main() int {
   i = 3;
-  a = #[#5](*!{_ * 42});
+  a = #[#5](&{_ * 42});
   ret a[1];
 }

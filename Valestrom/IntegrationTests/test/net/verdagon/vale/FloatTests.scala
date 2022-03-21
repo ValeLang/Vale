@@ -26,18 +26,18 @@ class FloatTests extends FunSuite with Matchers {
   test("Float arithmetic") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/floatarithmetic.vale"))
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Float equals") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/floateq.vale"))
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Concat string and float") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/concatstrfloat.vale"))
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 }

@@ -2,7 +2,7 @@ package net.verdagon.vale.scout
 
 import net.verdagon.vale.parser._
 import net.verdagon.vale.parser.ast.{IMacroInclusion, MutabilityP, VariabilityP}
-import net.verdagon.vale.scout.patterns.{AtomSP, VirtualitySP}
+import net.verdagon.vale.scout.patterns.{AtomSP, AbstractSP}
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.{FileCoordinate, PackageCoordinate, RangeS, vassert, vcurious, vimpl, vpass, vwat}
 
@@ -19,7 +19,7 @@ case class ProgramS(
     implementedFunctions: Vector[FunctionS],
     exports: Vector[ExportAsS],
     imports: Vector[ImportS]) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   def lookupFunction(name: String): FunctionS = {
     val matches =
@@ -81,7 +81,7 @@ case class StructS(
 
     rules: Array[IRulexSR],
     members: Vector[IStructMemberS]) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
 //  vassert(isTemplate == identifyingRunes.nonEmpty)
 }
@@ -96,13 +96,13 @@ case class NormalStructMemberS(
     name: String,
     variability: VariabilityP,
     typeRune: RuneUsage) extends IStructMemberS {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 case class VariadicStructMemberS(
   range: RangeS,
   variability: VariabilityP,
   typeRune: RuneUsage) extends IStructMemberS {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class InterfaceS(
@@ -125,7 +125,7 @@ case class InterfaceS(
   rules: Array[IRulexSR],
   // See IMRFDI
   internalMethods: Vector[FunctionS]) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class ImplS(
@@ -137,7 +137,7 @@ case class ImplS(
   runeToExplicitType: Map[IRuneS, ITemplataType],
     structKindRune: RuneUsage,
     interfaceKindRune: RuneUsage) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class ExportAsS(
@@ -146,7 +146,7 @@ case class ExportAsS(
     exportName: ExportAsNameS,
     rune: RuneUsage,
     exportedName: String) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class ImportS(
@@ -154,7 +154,7 @@ case class ImportS(
   moduleName: String,
   packageNames: Vector[String],
   importeeName: String) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 object interfaceSName {
@@ -187,7 +187,7 @@ object structSName {
 case class ParameterS(
     // Note the lack of a VariabilityP here. The only way to get a variability is with a Capture.
     pattern: AtomSP) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   vassert(pattern.coordRune.nonEmpty)
 }
@@ -195,19 +195,19 @@ case class ParameterS(
 case class SimpleParameterS(
     origin: Option[AtomSP],
     name: String,
-    virtuality: Option[VirtualitySP],
+    virtuality: Option[AbstractSP],
     tyype: IRulexSR) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 sealed trait IBodyS
 case object ExternBodyS extends IBodyS
 case object AbstractBodyS extends IBodyS
 case class GeneratedBodyS(generatorId: String) extends IBodyS {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 case class CodeBodyS(body: BodySE) extends IBodyS {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 // template params.
@@ -229,7 +229,7 @@ case class FunctionS(
     rules: Array[IRulexSR],
     body: IBodyS
 ) {
-  override def hashCode(): Int = vcurious()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()
 
   body match {
@@ -266,7 +266,7 @@ class LocationInDenizenBuilder(path: Vector[Int]) {
   private var nextChild: Int = 1
 
   // Note how this is hashing `path`, not `this` like usual.
-  val hash = runtime.ScalaRunTime._hashCode(path.toList); override def hashCode(): Int = hash;
+  val hash = runtime.ScalaRunTime._hashCode(path.toList); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
 
   def child(): LocationInDenizenBuilder = {
     val child = nextChild
@@ -285,4 +285,10 @@ class LocationInDenizenBuilder(path: Vector[Int]) {
 
 case class LocationInDenizen(path: Vector[Int]) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case LocationInDenizen(thatPath) => path == thatPath
+      case _ => false
+    }
+  }
 }

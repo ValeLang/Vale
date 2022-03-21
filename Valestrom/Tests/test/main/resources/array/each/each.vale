@@ -1,40 +1,40 @@
 
 func each<M, V, N, T, F>(arr A, func F) void
-where A Ref(_, _, [#N]<M, V>T) {
-  i! = 0;
+where A Ref = Ref[_, [#N]<M, V>T] {
+  i = 0;
   l = len(&arr);
   while (i < l) {
-    func!(arr[i]);
+    func(arr[i]);
     set i = i + 1;
   }
 }
 
 func eachI<M, V, N, T, F>(arr A, func F) void
-where A Ref(_, _, [#N]<M, V>T) {
-  i! = 0;
+where A Ref = Ref[_, [#N]<M, V>T] {
+  i = 0;
   l = len(&arr);
   while (i < l) {
-    func!(i, arr[i]);
+    func(i, arr[i]);
     set i = i + 1;
   }
 }
 
 func each<M, T, F>(arr A, func F) void
-where A Ref(_, _, []<M>T) {
-  i! = 0;
+where A Ref = Ref[_, []<M>T] {
+  i = 0;
   l = len(&arr);
   while (i < l) {
-    func!(arr[i]);
+    func(arr[i]);
     set i = i + 1;
   }
 }
 
 func eachI<F>(arr A, func F) void
-where A Ref(_, _, []<_>_) {
-  i! = 0;
+where A Ref = Ref[_, []<_>_] {
+  i = 0;
   l = len(&arr);
   while (i < l) {
-    func!(i, arr[i]);
+    func(i, arr[i]);
     set i = i + 1;
   }
 }

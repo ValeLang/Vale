@@ -20,8 +20,8 @@ struct MyList<T> where T Ref {
 }
 
 abstract func forEach<F, T>(virtual opt &MyOption<MyList<T>>, func F) int;
-func forEach<F, T>(opt &MyNone<MyList<T>> impl MyOption<MyList<T>>, func F) int { ret 0; }
-func forEach<F, T>(opt &MySome<MyList<T>> impl MyOption<MyList<T>>, func F) int {
+func forEach<F, T>(opt &MyNone<MyList<T>>, func F) int { ret 0; }
+func forEach<F, T>(opt &MySome<MyList<T>>, func F) int {
    forEach<F, T>(opt.value, func);
    ret 0;
 }

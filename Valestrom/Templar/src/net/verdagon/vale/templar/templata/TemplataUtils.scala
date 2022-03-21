@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar.templata
 
-import net.verdagon.vale.templar.ast.{FunctionHeaderT, FunctionT, PrototypeT}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.names._
 
 object simpleName {

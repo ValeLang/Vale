@@ -1,8 +1,8 @@
 package net.verdagon.vale.templar
 
-import net.verdagon.vale.templar.ast.{AsSubtypeTE, DestroyImmRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoFunctionTE, EdgeT, FunctionCallTE, FunctionT, InterfaceEdgeBlueprint, LockWeakTE, NewImmRuntimeSizedArrayTE, ProgramT, SignatureT, StaticArrayFromCallableTE, getFunctionLastName}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.expression.CallTemplar
-import net.verdagon.vale.templar.names.{FreeNameT, FullNameT, FunctionNameT, IFunctionNameT, VirtualFreeNameT}
+import net.verdagon.vale.templar.names._
 import net.verdagon.vale.templar.templata.CoordTemplata
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.{Collector, PackageCoordinate, vassertOne, vassertSome, vcurious, vimpl, vpass}
@@ -21,7 +21,7 @@ class Reachables(
 }
 
 object Reachability {
-  def findReachables(program: Temputs, edgeBlueprints: Vector[InterfaceEdgeBlueprint], edges: Vector[EdgeT]): Reachables = {
+  def findReachables(program: Temputs, edgeBlueprints: Vector[InterfaceEdgeBlueprint], edges: Map[InterfaceTT, Map[StructTT, Vector[PrototypeT]]]): Reachables = {
     val structs = program.getAllStructs()
     val interfaces = program.getAllInterfaces()
     val functions = program.getAllFunctions()
@@ -49,7 +49,7 @@ object Reachability {
     } while (reachables.size != sizeBefore)
     reachables
   }
-  def visitFunction(program: Temputs, edgeBlueprints: Vector[InterfaceEdgeBlueprint], edges: Vector[EdgeT], reachables: Reachables, calleeSignature: SignatureT): Unit = {
+  def visitFunction(program: Temputs, edgeBlueprints: Vector[InterfaceEdgeBlueprint], edges: Map[InterfaceTT, Map[StructTT, Vector[PrototypeT]]], reachables: Reachables, calleeSignature: SignatureT): Unit = {
     if (reachables.functions.contains(calleeSignature)) {
       return
     }
@@ -80,7 +80,7 @@ object Reachability {
     })
   }
 
-  def visitStruct(program: Temputs, edgeBlueprints: Vector[InterfaceEdgeBlueprint], edges: Vector[EdgeT], reachables: Reachables, structTT: StructTT): Unit = {
+  def visitStruct(program: Temputs, edgeBlueprints: Vector[InterfaceEdgeBlueprint], edges: Map[InterfaceTT, Map[StructTT, Vector[PrototypeT]]], reachables: Reachables, structTT: StructTT): Unit = {
     if (reachables.structs.contains(structTT)) {
       return
     }
@@ -98,7 +98,12 @@ object Reachability {
       case ssa @ StaticSizedArrayTT(_, _, _, _) => visitStaticSizedArray(program, edgeBlueprints, edges, reachables, ssa)
       case rsa @ RuntimeSizedArrayTT(_, _) => visitRuntimeSizedArray(program, edgeBlueprints, edges, reachables, rsa)
     })
-    edges.filter(_.struct == structTT).foreach(visitImpl(program, edgeBlueprints, edges, reachables, _))
+    edges.foreach({ case (interface, structToMethods) =>
+      structToMethods.get(structTT) match {
+        case None =>
+        case Some(methods) => visitImpl(program, edgeBlueprints, edges, reachables, interface, structTT, methods)
+      }
+    })
 
     if (structDef.mutability == ImmutableT) {
       val destructorSignature =
@@ -106,7 +111,8 @@ object Reachability {
           program.getAllFunctions().find(func => {
             func.header.toSignature match {
               case SignatureT(FullNameT(_, _, FreeNameT(_, kind))) if kind == structTT => true
-              case SignatureT(FullNameT(_, _, VirtualFreeNameT(_, kind))) if kind == structTT => true
+//              case SignatureT(FullNameT(_, _, AbstractVirtualFreeNameT(_, kind))) if kind == structTT => true
+//              case SignatureT(FullNameT(_, _, OverrideVirtualFreeNameT(_, kind))) if kind == structTT => true
               case _ => false
             }
           })).header.toSignature
@@ -114,7 +120,7 @@ object Reachability {
     }
   }
 
-  def visitInterface(program: Temputs, edgeBlueprints: Vector[InterfaceEdgeBlueprint], edges: Vector[EdgeT], reachables: Reachables, interfaceTT: InterfaceTT): Unit = {
+  def visitInterface(program: Temputs, edgeBlueprints: Vector[InterfaceEdgeBlueprint], edges: Map[InterfaceTT, Map[StructTT, Vector[PrototypeT]]], reachables: Reachables, interfaceTT: InterfaceTT): Unit = {
     if (reachables.interfaces.contains(interfaceTT)) {
       return
     }
@@ -135,7 +141,9 @@ object Reachability {
     edgeBlueprints.find(_.interface == interfaceTT).get.superFamilyRootBanners.foreach(f => {
       visitFunction(program, edgeBlueprints, edges, reachables, f.toSignature)
     })
-    edges.filter(_.interface == interfaceTT).foreach(visitImpl(program, edgeBlueprints, edges, reachables, _))
+    vassertSome(edges.get(interfaceTT)).foreach({ case (structTT, methods) =>
+      visitImpl(program, edgeBlueprints, edges, reachables, interfaceTT, structTT, methods)
+    })
 
     if (interfaceDef.mutability == ImmutableT) {
       val destructorSignature =
@@ -143,7 +151,8 @@ object Reachability {
           program.getAllFunctions().find(func => {
             func.header.toSignature match {
               case SignatureT(FullNameT(_, _, FreeNameT(_, kind))) if kind == interfaceTT => true
-              case SignatureT(FullNameT(_, _, VirtualFreeNameT(_, kind))) if kind == interfaceTT => true
+//              case SignatureT(FullNameT(_, _, AbstractVirtualFreeNameT(_, kind))) if kind == interfaceTT => true
+//              case SignatureT(FullNameT(_, _, OverrideVirtualFreeNameT(_, kind))) if kind == interfaceTT => true
               case _ => false
             }
           })).header.toSignature
@@ -151,22 +160,31 @@ object Reachability {
     }
   }
 
-  def visitImpl(program: Temputs, edgeBlueprints: Vector[InterfaceEdgeBlueprint], edges: Vector[EdgeT], reachables: Reachables, edge: EdgeT): Unit = {
+  def visitImpl(
+      program: Temputs,
+      edgeBlueprints: Vector[InterfaceEdgeBlueprint],
+      edges: Map[InterfaceTT, Map[StructTT, Vector[PrototypeT]]],
+      reachables: Reachables,
+      interfaceTT: InterfaceTT,
+      structTT: StructTT,
+      methods: Vector[PrototypeT]):
+  Unit = {
+    val edge = EdgeT(structTT, interfaceTT, methods)
     if (reachables.edges.contains(edge)) {
       return
     }
     reachables.edges.add(edge)
     edges.foreach(edge => {
-      visitStruct(program, edgeBlueprints, edges, reachables, edge.struct)
-      visitInterface(program, edgeBlueprints, edges, reachables, edge.interface)
-      edge.methods.map(_.toSignature).foreach(visitFunction(program, edgeBlueprints, edges, reachables, _))
+      visitStruct(program, edgeBlueprints, edges, reachables, structTT)
+      visitInterface(program, edgeBlueprints, edges, reachables, interfaceTT)
+      methods.map(_.toSignature).foreach(visitFunction(program, edgeBlueprints, edges, reachables, _))
     })
   }
 
   def visitStaticSizedArray(
     program: Temputs,
     edgeBlueprints: Vector[InterfaceEdgeBlueprint],
-    edges: Vector[EdgeT],
+    edges: Map[InterfaceTT, Map[StructTT, Vector[PrototypeT]]],
     reachables: Reachables,
     ssa: StaticSizedArrayTT
   ): Unit = {
@@ -183,7 +201,8 @@ object Reachability {
           program.getAllFunctions().find(func => {
             func.header.toSignature match {
               case SignatureT(FullNameT(_, _, FreeNameT(_, kind))) if kind == ssa => true
-              case SignatureT(FullNameT(_, _, VirtualFreeNameT(_, kind))) if kind == ssa => true
+//              case SignatureT(FullNameT(_, _, AbstractVirtualFreeNameT(_, kind))) if kind == ssa => true
+//              case SignatureT(FullNameT(_, _, OverrideVirtualFreeNameT(_, kind))) if kind == ssa => true
               case _ => false
             }
           })).header.toSignature
@@ -194,7 +213,7 @@ object Reachability {
   def visitRuntimeSizedArray(
     program: Temputs,
     edgeBlueprints: Vector[InterfaceEdgeBlueprint],
-    edges: Vector[EdgeT],
+    edges: Map[InterfaceTT, Map[StructTT, Vector[PrototypeT]]],
     reachables: Reachables,
     rsa: RuntimeSizedArrayTT
   ): Unit = {
@@ -211,7 +230,8 @@ object Reachability {
           program.getAllFunctions().find(func => {
             func.header.toSignature match {
               case SignatureT(FullNameT(_, _, FreeNameT(_, kind))) if kind == rsa => true
-              case SignatureT(FullNameT(_, _, VirtualFreeNameT(_, kind))) if kind == rsa => true
+//              case SignatureT(FullNameT(_, _, AbstractVirtualFreeNameT(_, kind))) if kind == rsa => true
+//              case SignatureT(FullNameT(_, _, OverrideVirtualFreeNameT(_, kind))) if kind == rsa => true
               case _ => false
             }
           })).header.toSignature

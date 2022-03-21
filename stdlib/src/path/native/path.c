@@ -52,7 +52,7 @@ static int8_t is_file_internal(char* path) {
 
 static int8_t is_directory_internal(char* path) {
 #ifdef _WIN32
-  return !!(GetFileAttributes(path) & FILE_ATTRIBUTE_DIRECTORY);
+  return !(GetFileAttributes(path) & FILE_ATTRIBUTE_DIRECTORY);
 #else
   struct stat path_stat;
   if (stat(path, &path_stat) != 0) {

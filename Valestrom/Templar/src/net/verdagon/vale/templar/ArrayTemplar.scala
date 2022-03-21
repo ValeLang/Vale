@@ -4,9 +4,9 @@ import net.verdagon.vale.parser.ast.MutableP
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.scout.rules.{IRulexSR, RuneParentEnvLookupSR, RuneUsage}
-import net.verdagon.vale.scout.{CodeNameS, CodeRuneS, CoordTemplataType, IImpreciseNameS, IRuneS, MutabilityTemplataType, RuneTypeSolver, SelfNameS}
+import net.verdagon.vale.scout.{CodeNameS, CodeRuneS, CoordTemplataType, IImpreciseNameS, INameS, IRuneS, MutabilityTemplataType, RuneTypeSolver, SelfNameS}
 import net.verdagon.vale.templar.OverloadTemplar.FindFunctionFailure
-import net.verdagon.vale.templar.ast.{DestroyImmRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoFunctionTE, FunctionCallTE, NewImmRuntimeSizedArrayTE, ProgramT, PrototypeT, ReferenceExpressionTE, RuntimeSizedArrayLookupTE, StaticArrayFromCallableTE, StaticArrayFromValuesTE, StaticSizedArrayLookupTE}
+import net.verdagon.vale.templar.ast._
 import net.verdagon.vale.templar.citizen.{StructTemplar, StructTemplarCore}
 import net.verdagon.vale.templar.env.{CitizenEnvironment, FunctionEnvEntry, FunctionEnvironmentBox, GlobalEnvironment, IEnvironment, IEnvironmentBox, NodeEnvironmentBox, PackageEnvironment, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
 import net.verdagon.vale.templar.expression.CallTemplar
@@ -14,15 +14,18 @@ import net.verdagon.vale.templar.function.DestructorTemplar
 import net.verdagon.vale.templar.names.{FullNameT, FunctionNameT, FunctionTemplateNameT, PackageTopLevelNameT, RuneNameT, SelfNameT}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
-import net.verdagon.vale.{CodeLocationS, Err, IProfiler, Ok, RangeS, vassert, vassertOne, vassertSome, vimpl}
+import net.verdagon.vale.{CodeLocationS, Err, Profiler, Interner, Ok, RangeS, vassert, vassertOne, vassertSome, vimpl}
 
 import scala.collection.immutable.{List, Set}
 
 class ArrayTemplar(
     opts: TemplarOptions,
-    profiler: IProfiler,
+
+    interner: Interner,
     inferTemplar: InferTemplar,
     overloadTemplar: OverloadTemplar) {
+
+  val runeTypeSolver = new RuneTypeSolver(interner)
 
   vassert(overloadTemplar != null)
 
@@ -38,10 +41,10 @@ class ArrayTemplar(
     callableTE: ReferenceExpressionTE):
   StaticArrayFromCallableTE = {
     val runeToType =
-      RuneTypeSolver.solve(
+      runeTypeSolver.solve(
         opts.globalOptions.sanityCheck,
         opts.globalOptions.useOptimizedSolver,
-        (nameS: IImpreciseNameS) => vassertOne(fate.lookupNearestWithImpreciseName(profiler, nameS, Set(TemplataLookupContext))).tyype,
+        (nameS: IImpreciseNameS) => vassertOne(fate.lookupNearestWithImpreciseName(nameS, Set(TemplataLookupContext))).tyype,
         range,
         false,
         rulesA,
@@ -81,10 +84,10 @@ class ArrayTemplar(
     maybeCallableTE: Option[ReferenceExpressionTE]):
   ReferenceExpressionTE = {
     val runeToType =
-      RuneTypeSolver.solve(
+      runeTypeSolver.solve(
         opts.globalOptions.sanityCheck,
         opts.globalOptions.useOptimizedSolver,
-        nameS => vassertOne(nenv.functionEnvironment.lookupNearestWithImpreciseName(profiler, nameS, Set(TemplataLookupContext))).tyype,
+        nameS => vassertOne(nenv.functionEnvironment.lookupNearestWithImpreciseName(nameS, Set(TemplataLookupContext))).tyype,
         range,
         false,
         rulesA,
@@ -132,14 +135,15 @@ class ArrayTemplar(
           overloadTemplar.findFunction(
             nenv.functionEnvironment
               .addEntries(
+                interner,
                 Vector(
-                  (RuneNameT(CodeRuneS("M")), TemplataEnvEntry(MutabilityTemplata(MutableT)))) ++
+                  (interner.intern(RuneNameT(CodeRuneS("M"))), TemplataEnvEntry(MutabilityTemplata(MutableT)))) ++
               maybeElementTypeRune.map(e => {
-                (RuneNameT(e), TemplataEnvEntry(CoordTemplata(getArrayElementType(templatas, e))))
+                (interner.intern(RuneNameT(e)), TemplataEnvEntry(CoordTemplata(getArrayElementType(templatas, e))))
               })),
             temputs,
             range,
-            CodeNameS("Array"),
+            interner.intern(CodeNameS("Array")),
             Vector(
               RuneParentEnvLookupSR(range, RuneUsage(range, CodeRuneS("M")))) ++
             maybeElementTypeRune.map(e => {
@@ -149,7 +153,10 @@ class ArrayTemplar(
             Vector(ParamFilter(sizeTE.result.reference, None)) ++
               maybeCallableTE.map(c => ParamFilter(c.result.reference, None)),
             Vector(),
-            true)
+            true) match {
+            case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, e))
+            case Ok(x) => x
+          }
 
         val elementType =
           prototype.returnType.kind match {
@@ -189,10 +196,10 @@ class ArrayTemplar(
       exprs2: Vector[ReferenceExpressionTE]):
    StaticArrayFromValuesTE = {
     val runeToType =
-      RuneTypeSolver.solve(
+      runeTypeSolver.solve(
         opts.globalOptions.sanityCheck,
         opts.globalOptions.useOptimizedSolver,
-        nameS => vassertOne(fate.lookupNearestWithImpreciseName(profiler, nameS, Set(TemplataLookupContext))).tyype,
+        nameS => vassertOne(fate.lookupNearestWithImpreciseName(nameS, Set(TemplataLookupContext))).tyype,
         range,
         false,
         rulesA,
@@ -228,8 +235,7 @@ class ArrayTemplar(
 
     val staticSizedArrayType = getStaticSizedArrayKind(fate.globalEnv, temputs, mutability, variability, exprs2.size, memberType)
     val ownership = if (staticSizedArrayType.mutability == MutableT) OwnT else ShareT
-    val permission = if (staticSizedArrayType.mutability == MutableT) ReadwriteT else ReadonlyT
-    val finalExpr = StaticArrayFromValuesTE(exprs2, CoordT(ownership, permission, staticSizedArrayType), staticSizedArrayType)
+    val finalExpr = StaticArrayFromValuesTE(exprs2, CoordT(ownership, staticSizedArrayType), staticSizedArrayType)
     (finalExpr)
   }
 
@@ -242,7 +248,7 @@ class ArrayTemplar(
   DestroyStaticSizedArrayIntoFunctionTE = {
     val arrayTT =
       arrTE.result.reference match {
-        case CoordT(_, _, s @ StaticSizedArrayTT(_, _, _, _)) => s
+        case CoordT(_, s @ StaticSizedArrayTT(_, _, _, _)) => s
         case other => {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, "Destroying a non-array with a callable! Destroying: " + other))
         }
@@ -268,7 +274,7 @@ class ArrayTemplar(
   DestroyImmRuntimeSizedArrayTE = {
     val arrayTT =
       arrTE.result.reference match {
-        case CoordT(_, _, s @ RuntimeSizedArrayTT(_, _)) => s
+        case CoordT(_, s @ RuntimeSizedArrayTT(_, _)) => s
         case other => {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, "Destroying a non-array with a callable! Destroying: " + other))
         }
@@ -305,11 +311,10 @@ class ArrayTemplar(
     temputs.getStaticSizedArrayType(size, mutability, variability, type2) match {
       case Some(staticSizedArrayT2) => (staticSizedArrayT2)
       case None => {
-        val staticSizedArrayType = StaticSizedArrayTT(size, mutability, variability, type2)
+        val staticSizedArrayType = interner.intern(StaticSizedArrayTT(size, mutability, variability, type2))
         temputs.addStaticSizedArray(staticSizedArrayType)
         val staticSizedArrayOwnership = if (mutability == MutableT) OwnT else ShareT
-        val staticSizedArrayPermission = if (mutability == MutableT) ReadwriteT else ReadonlyT
-        val staticSizedArrayRefType2 = CoordT(staticSizedArrayOwnership, staticSizedArrayPermission, staticSizedArrayType)
+        val staticSizedArrayRefType2 = CoordT(staticSizedArrayOwnership, staticSizedArrayType)
 
         // We declare the function into the environment that we use to compile the
         // struct, so that those who use the struct can reach into its environment
@@ -318,10 +323,11 @@ class ArrayTemplar(
         val arrayEnv =
           CitizenEnvironment(
             globalEnv,
-            PackageEnvironment(globalEnv, staticSizedArrayType.name, globalEnv.nameToTopLevelEnvironment.values.toVector),
-            staticSizedArrayType.name,
-            TemplatasStore(staticSizedArrayType.name, Map(), Map())
+            PackageEnvironment(globalEnv, staticSizedArrayType.getName(interner), globalEnv.nameToTopLevelEnvironment.values.toVector),
+            staticSizedArrayType.getName(interner),
+            TemplatasStore(staticSizedArrayType.getName(interner), Map(), Map())
               .addEntries(
+                interner,
                 Vector()))
         temputs.declareKind(staticSizedArrayType)
         temputs.declareKindEnv(staticSizedArrayType, arrayEnv)
@@ -343,12 +349,11 @@ class ArrayTemplar(
     temputs.getRuntimeSizedArray(arrayMutability, type2) match {
       case Some(staticSizedArrayT2) => (staticSizedArrayT2)
       case None => {
-        val runtimeSizedArrayType = RuntimeSizedArrayTT(arrayMutability, type2)
+        val runtimeSizedArrayType = interner.intern(RuntimeSizedArrayTT(arrayMutability, type2))
         temputs.addRuntimeSizedArray(runtimeSizedArrayType)
         val runtimeSizedArrayRefType2 =
           CoordT(
             if (arrayMutability == MutableT) OwnT else ShareT,
-            if (arrayMutability == MutableT) ReadwriteT else ReadonlyT,
             runtimeSizedArrayType)
 
         // We declare the function into the environment that we use to compile the
@@ -358,10 +363,11 @@ class ArrayTemplar(
         val arrayEnv =
           CitizenEnvironment(
             globalEnv,
-            PackageEnvironment(globalEnv, runtimeSizedArrayType.name, globalEnv.nameToTopLevelEnvironment.values.toVector),
-            runtimeSizedArrayType.name,
-            TemplatasStore(runtimeSizedArrayType.name, Map(), Map())
+            PackageEnvironment(globalEnv, runtimeSizedArrayType.getName(interner), globalEnv.nameToTopLevelEnvironment.values.toVector),
+            runtimeSizedArrayType.getName(interner),
+            TemplatasStore(runtimeSizedArrayType.getName(interner), Map(), Map())
               .addEntries(
+                interner,
                 Vector()))
         temputs.declareKind(runtimeSizedArrayType)
         temputs.declareKindEnv(runtimeSizedArrayType, arrayEnv)
@@ -395,12 +401,7 @@ class ArrayTemplar(
       indexExpr2: ReferenceExpressionTE,
       at: StaticSizedArrayTT) = {
     val StaticSizedArrayTT(size, mutability, variability, memberType) = at
-    val (effectiveVariability, targetPermission) =
-      Templar.factorVariabilityAndPermission(
-        containerExpr2.result.reference.permission,
-        variability,
-        memberType.permission)
-    StaticSizedArrayLookupTE(range, containerExpr2, at, indexExpr2, targetPermission, effectiveVariability)
+    StaticSizedArrayLookupTE(range, containerExpr2, at, indexExpr2, variability)
   }
 
   def lookupInUnknownSizedArray(
@@ -410,12 +411,11 @@ class ArrayTemplar(
     rsa: RuntimeSizedArrayTT
   ): RuntimeSizedArrayLookupTE = {
     val RuntimeSizedArrayTT(mutability, memberType) = rsa
-    val (effectiveVariability, targetPermission) =
-      Templar.factorVariabilityAndPermission(
-        containerExpr2.result.reference.permission,
-        mutability match { case ImmutableT => FinalT case MutableT => VaryingT },
-        memberType.permission)
-    RuntimeSizedArrayLookupTE(range, containerExpr2, rsa, indexExpr2, targetPermission, effectiveVariability)
+    if (indexExpr2.result.reference != CoordT(ShareT, IntT(32))) {
+      throw CompileErrorExceptionT(IndexedArrayWithNonInteger(range, indexExpr2.result.reference))
+    }
+    val variability = mutability match { case ImmutableT => FinalT case MutableT => VaryingT }
+    RuntimeSizedArrayLookupTE(range, containerExpr2, rsa, indexExpr2, variability)
   }
 
 }

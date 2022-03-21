@@ -1,4 +1,5 @@
 import stdlib.math.*;
+import stdlib.collections.hashset.*;
 
 #!DeriveStructDrop // Because V might not have a default destructor
 struct HashMapNode<K, V> {

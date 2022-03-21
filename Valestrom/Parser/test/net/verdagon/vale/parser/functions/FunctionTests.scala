@@ -63,7 +63,7 @@ class BiggerTests extends FunSuite with Collector with TestParseUtils {
   test("Pure and default region") {
     compileMaybe(
       makeParser().parseTopLevelThing(_),
-      """pure func findNearbyUnits() int 'i 'i { }
+      """pure func findNearbyUnits() 'i int 'i { }
         |""".stripMargin) match {
       case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
@@ -128,9 +128,17 @@ class BiggerTests extends FunSuite with Collector with TestParseUtils {
     }
   }
 
+  test("Readonly region rune") {
+    val TopLevelFunctionP(func) = compileMaybe(
+      makeParser().parseTopLevelThing(_), "func sum<'r ro>(){}")
+    func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
+      case IdentifyingRuneP(_, NameP(_, "r"), Vector(TypeRuneAttributeP(_, RegionTypePR), ReadOnlyRuneAttributeP(_))) =>
+    }
+  }
+
   test("Simple function with apostrophe region-typed identifying rune") {
     val TopLevelFunctionP(func) = compileMaybe(
-      makeParser().parseTopLevelThing(_), "func sum<'r>(a &Marine 'r){a}")
+      makeParser().parseTopLevelThing(_), "func sum<'r>(a 'r &Marine){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_, NameP(_, "r"), Vector(TypeRuneAttributeP(_, RegionTypePR))) =>
     }
@@ -138,7 +146,7 @@ class BiggerTests extends FunSuite with Collector with TestParseUtils {
 
   test("Pool region") {
     val TopLevelFunctionP(func) = compileMaybe(
-      makeParser().parseTopLevelThing(_), "func sum<'r = pool>(a &Marine 'r){a}")
+      makeParser().parseTopLevelThing(_), "func sum<'r = pool>(a 'r &Marine){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_,
         NameP(_, "r"),
@@ -147,9 +155,21 @@ class BiggerTests extends FunSuite with Collector with TestParseUtils {
     }
   }
 
+  test("Pool readonly region") {
+    val TopLevelFunctionP(func) = compileMaybe(
+      makeParser().parseTopLevelThing(_), "func sum<'r ro = pool>(a 'r &Marine){a}")
+    func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
+      case IdentifyingRuneP(_,
+        NameP(_, "r"),
+        Vector(
+          TypeRuneAttributeP(_, RegionTypePR),
+          ReadOnlyRuneAttributeP(_))) =>
+    }
+  }
+
   test("Arena region") {
     val TopLevelFunctionP(func) = compileMaybe(
-      makeParser().parseTopLevelThing(_), "func sum<'x = arena>(a &Marine 'x){a}")
+      makeParser().parseTopLevelThing(_), "func sum<'x = arena>(a 'x &Marine){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_,
         NameP(_, "x"),
@@ -161,7 +181,7 @@ class BiggerTests extends FunSuite with Collector with TestParseUtils {
 
   test("Readonly region") {
     val TopLevelFunctionP(func) = compileMaybe(
-      makeParser().parseTopLevelThing(_), "func sum<'x>(a &Marine 'x){a}")
+      makeParser().parseTopLevelThing(_), "func sum<'x>(a 'x &Marine){a}")
     func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
       case IdentifyingRuneP(_,
         NameP(_, "x"),

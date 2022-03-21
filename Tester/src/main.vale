@@ -411,6 +411,8 @@ Subprocess {
   build_args!.add(region);
   build_args!.add("--llvm_ir");
   build_args!.add("true");
+  build_args!.add("--no_std");
+  build_args!.add("true");
 
   extra_build_flags.each((flag){
     build_args!.add(flag);

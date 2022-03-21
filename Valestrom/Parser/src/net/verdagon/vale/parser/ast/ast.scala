@@ -112,9 +112,9 @@ case class PureAttributeP(range: RangeP) extends IAttributeP { override def equa
 
 sealed trait IRuneAttributeP
 case class TypeRuneAttributeP(range: RangeP, tyype: ITypePR) extends IRuneAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class ReadOnlyRuneAttributeP(range: RangeP) extends IRuneAttributeP {
-  vpass()
-}
+case class ReadOnlyRuneAttributeP(range: RangeP) extends IRuneAttributeP
+case class ReadWriteRuneAttributeP(range: RangeP) extends IRuneAttributeP
+case class ImmutableRuneAttributeP(range: RangeP) extends IRuneAttributeP
 case class PoolRuneAttributeP(range: RangeP) extends IRuneAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class ArenaRuneAttributeP(range: RangeP) extends IRuneAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BumpRuneAttributeP(range: RangeP) extends IRuneAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }

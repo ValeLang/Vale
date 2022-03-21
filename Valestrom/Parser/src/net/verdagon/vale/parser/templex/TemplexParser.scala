@@ -175,23 +175,6 @@ class TemplexParser {
         case Ok(x) => x
       }
 
-    val tentativeIter = originalIter.clone()
-    tentativeIter.consumeWhitespace()
-
-    if (tentativeIter.trySkip("^'".r)) {
-      originalIter.skipTo(tentativeIter.getPos())
-      val iter = originalIter
-
-      val regionName =
-        Parser.parseTypeName(iter) match {
-          case None => return Err(BadRegionName(iter.getPos()))
-          case Some(x) => x
-        }
-      // One day we'll actually have a RegionedPT(...) or something.
-      // For now, just return the inner.
-      return Ok(inner)
-    }
-
     return Ok(inner)
   }
 
@@ -452,7 +435,22 @@ class TemplexParser {
           case None => return Err(BadRegionName(iter.getPos()))
           case Some(x) => x
         }
-      return Ok(RegionRunePT(RangeP(begin, iter.getPos()), regionName))
+
+      if (iter.peek("^\\s*[,>)\\]};{]".r)) {
+        return Ok(RegionRunePT(RangeP(begin, iter.getPos()), regionName))
+      } else {
+        iter.consumeWhitespace()
+
+        val inner =
+          parseTemplexAtomAndCallAndPrefixes(iter) match {
+            case Err(e) => return Err(e)
+            case Ok(t) => t
+          }
+
+        // One day we'll actually have a RegionedPT(...) or something.
+        // For now, just return the inner.
+        return Ok(inner)
+      }
     }
 
     parseTemplexAtomAndCall(iter)

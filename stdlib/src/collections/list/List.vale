@@ -42,6 +42,10 @@ func add<E>(list &List<E>, newElement E) {
   list.maybeExpand();
   list.array.push(newElement);
 }
+func add<E>(list List<E>, newElement E) List<E> {
+  list.add(newElement);
+  ret list;
+}
 func get<E>(list &List<E>, index int) &E {
   a = list.array;
   a[index]
@@ -344,21 +348,4 @@ where T Ref, Prot["__call", Refs(&F, E), T] {
 //  print(list);
 //  println("");
 //}
-
-
-struct ListBuilder<T> {
-  list! List<T>;
-}
-func ListBuilder<T>() ListBuilder<T> {
-  ListBuilder<T>(List<T>())
-}
-func add<T>(self ListBuilder<T>, newElement T) ListBuilder<T> {
-  self.list.add(newElement);
-  ret self;
-}
-func build<T>(self ListBuilder<T>) List<T> {
-  [list] = self;
-  ret list;
-}
-
 

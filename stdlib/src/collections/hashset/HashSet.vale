@@ -62,6 +62,10 @@ func len<K, H, E>(self &HashSet<K, H, E>) int { self.size }
 
 func isEmpty<K, H, E>(self &HashSet<K, H, E>) bool { self.size == 0 }
 
+func add<K, H, E>(self HashSet<K, H, E>, key K) HashSet<K, H, E> {
+  self.add(key);
+  ret self;
+}
 func add<K, H, E>(self &HashSet<K, H, E>, key K) void {
   if self.contains(key) {
     panic("HashSet already has given key!");

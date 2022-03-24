@@ -49,7 +49,7 @@ object TemplarErrorHumanizer {
           "Argument function return type doesn't match interface method param"
         }
         case CantUseUnstackifiedLocal(range, name) => {
-          "Can't use local that was already moved (" + name + ")"
+          "Can't use local that was already moved:" + humanizeName(codeMap, name)
         }
         case CantUnstackifyOutsideLocalFromInsideWhile(range, name) => {
           "Can't move a local (" + name + ") from inside a while loop."

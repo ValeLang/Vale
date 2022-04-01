@@ -78,7 +78,7 @@ cat all/valec-version.txt | sed s/\{valec_exe\}/.\\\/valec/g | sed s/\{sep\}/\\/
 cp -r all/helloworld ../release-mac/samples/helloworld || { echo 'Error copying into release-mac.' ; exit 1; }
 
 cd ../release-mac || { echo 'Error copying into release-mac.' ; exit 1; }
-zip -r ValeCompiler.zip * || { echo 'Error copying into release-mac.' ; exit 1; }
+zip -r Vale-Mac-0.zip * || { echo 'Error copying into release-mac.' ; exit 1; }
 
 if [ "$WHICH_TESTS" == "all" ]
 then

@@ -1,4 +1,4 @@
-package dev.vale.monomorphizing
+package dev.vale.simplifying
 
 import dev.vale.{finalast, vassert, vfail}
 import dev.vale.finalast.{BorrowH, ExpressionH, KindH, LocalLoadH, MemberLoadH, OwnH, ReferenceH, RuntimeSizedArrayLoadH, ShareH, StaticSizedArrayLoadH, YonderH}

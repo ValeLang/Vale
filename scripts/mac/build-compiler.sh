@@ -37,10 +37,10 @@ fi
 touch ~/.zshrc
 source ~/.zshrc
 
-cd Valestrom
+cd Frontend
 
-echo Compiling Valestrom...
-sbt assembly || { echo 'Valestrom build failed, aborting.' ; exit 1; }
+echo Compiling Frontend...
+sbt assembly || { echo 'Frontend build failed, aborting.' ; exit 1; }
 
 cd ../Midas
 
@@ -64,8 +64,8 @@ cd ../scripts
 rm -rf ../release-mac || { echo 'Error removing previous release-mac dir.' ; exit 1; }
 mkdir -p ../release-mac || { echo 'Error making new release-mac dir.' ; exit 1; }
 mkdir -p ../release-mac/samples || { echo 'Error making new samples dir.' ; exit 1; }
-cp ../Valestrom/Valestrom.jar ../release-mac || { echo 'Error copying into release-mac.' ; exit 1; }
-cp -r ../Valestrom/Tests/test/main/resources/programs ../release-mac/samples || { echo 'Error copying into release-mac.' ; exit 1; }
+cp ../Frontend/Frontend.jar ../release-mac || { echo 'Error copying into release-mac.' ; exit 1; }
+cp -r ../Frontend/Tests/test/main/resources/programs ../release-mac/samples || { echo 'Error copying into release-mac.' ; exit 1; }
 cp -r ../Midas/builtins ../release-mac/builtins || { echo 'Error copying into release-mac.' ; exit 1; }
 cp ../Midas/build/midas ../release-mac/midas || { echo 'Error copying into release-mac.' ; exit 1; }
 cp -r ../stdlib ../release-mac/stdlib || { echo 'Error copying into release-mac.' ; exit 1; }
@@ -91,7 +91,7 @@ then
   ./build.sh $BOOTSTRAPPING_VALEC_DIR || { echo 'Tester build failed, aborting.' ; exit 1; }
 
   echo Running Tester...
-  ./build/testvalec --valestrom_path ./BuiltValeCompiler/Valestrom.jar --midas_path ./BuiltValeCompiler/midas --builtins_dir ./BuiltValeCompiler/builtins --valec_path ./BuiltValeCompiler/valec --midas_tests_dir ../Midas/test --valestrom_tests_dir ../Valestrom --concurrent 6 @assist || { echo 'Tests failed, aborting.' ; exit 1; }
+  ./build/testvalec --frontend_path ./BuiltValeCompiler/Frontend.jar --midas_path ./BuiltValeCompiler/midas --builtins_dir ./BuiltValeCompiler/builtins --valec_path ./BuiltValeCompiler/valec --midas_tests_dir ../Midas/test --frontend_tests_dir ../Frontend --concurrent 6 @assist || { echo 'Tests failed, aborting.' ; exit 1; }
 fi
 
 cd ..

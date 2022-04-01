@@ -4,7 +4,7 @@ import dev.vale.passmanager.FullCompilationOptions
 import dev.vale.finalast.{BlockH, CallH, ConsecutorH, ConstantIntH, InlineH, IntH, NeverH, PrototypeH, ReferenceH, ShareH}
 import dev.vale.typing.types.ShareT
 import dev.vale.testvm.PanicException
-import dev.vale.monomorphizing._
+import dev.vale.simplifying._
 import dev.vale.finalast.VariableIdH
 import dev.vale.von.VonInt
 import dev.vale.{finalast => m}

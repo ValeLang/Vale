@@ -1,4 +1,4 @@
-package dev.vale.monomorphizing
+package dev.vale.simplifying
 
 import dev.vale.finalast.{FunctionH, Local, NeverH, PureH, UserFunctionH, VariableIdH}
 import dev.vale.typing.Hinputs

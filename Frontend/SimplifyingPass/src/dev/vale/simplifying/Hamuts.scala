@@ -1,4 +1,4 @@
-package dev.vale.monomorphizing
+package dev.vale.simplifying
 
 import dev.vale.{PackageCoordinate, vassert, vcurious, vfail}
 import dev.vale.finalast.{FullNameH, FunctionH, InterfaceDefinitionH, InterfaceRefH, KindH, PrototypeH, RuntimeSizedArrayDefinitionHT, RuntimeSizedArrayHT, StaticSizedArrayDefinitionHT, StaticSizedArrayHT, StructDefinitionH, StructRefH}

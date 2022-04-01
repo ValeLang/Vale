@@ -2,7 +2,7 @@ package dev.vale
 
 import dev.vale.highertyping.{ICompileErrorA, ProgramA}
 import dev.vale.passmanager.{FullCompilation, FullCompilationOptions}
-import dev.vale.monomorphizing.VonHammer
+import dev.vale.simplifying.VonHammer
 import dev.vale.finalast.{FullNameH, IntH, OwnH, ProgramH, PrototypeH, YonderH}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.FailedParse

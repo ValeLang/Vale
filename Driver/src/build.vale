@@ -63,11 +63,11 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           "../Midas/build",
           "Alternate path for Midas, the codegen phase binary."),
         Flag(
-          "--valestrom_path_override",
+          "--frontend_path_override",
           FLAG_STR(),
-          "Directory containing Valestrom.",
-          "../Valestrom",
-          "Alternate path for Valestrom, the frontend phase binary."),
+          "Directory containing Frontend.",
+          "../Frontend",
+          "Alternate path for Frontend, the frontend phase binary."),
         Flag(
           "--builtins_dir_override",
           FLAG_STR(),
@@ -77,9 +77,9 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
         Flag(
           "--benchmark",
           FLAG_BOOL(),
-          "Whether to benchmark Valestrom.",
+          "Whether to benchmark Frontend.",
           "true",
-          "Whether to benchmark Valestrom."),
+          "Whether to benchmark Frontend."),
         Flag(
           "--verbose",
           FLAG_BOOL(),
@@ -168,12 +168,12 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
   parsed_flags = flags.parse_all_flags(all_args);
 
 
-  valestrom_path = compiler_dir./("Valestrom.jar");
-  maybe_valestrom_path_override = parsed_flags.get_string_flag("--valestrom_path_override");
-  if not maybe_valestrom_path_override.isEmpty() {
-    set valestrom_path = Path(maybe_valestrom_path_override.get());
-    if not valestrom_path.is_file() {
-      panic("Error: --valestrom_path_override's value ({valestrom_path.str()}) is not a file.");
+  frontend_path = compiler_dir./("Frontend.jar");
+  maybe_frontend_path_override = parsed_flags.get_string_flag("--frontend_path_override");
+  if not maybe_frontend_path_override.isEmpty() {
+    set frontend_path = Path(maybe_frontend_path_override.get());
+    if not frontend_path.is_file() {
+      panic("Error: --frontend_path_override's value ({frontend_path.str()}) is not a file.");
     }
   }
 
@@ -262,8 +262,8 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
     }
   }
 
-  if not valestrom_path.exists() {
-    panic("Cannot find Valestrom directory: " + valestrom_path.str());
+  if not frontend_path.exists() {
+    panic("Cannot find Frontend directory: " + frontend_path.str());
   }
   if not midas_path.exists() {
     panic("Cannot find Midas directory: " + midas_path.str());
@@ -273,7 +273,7 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
   }
 
   if verbose {
-    println("Invoking Valestrom...");
+    println("Invoking Frontend...");
   }
 
   if reuse_vast {
@@ -292,9 +292,9 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
       output_dir.Rename(&dest_dir).expect();
     }
     output_dir.CreateDirAll(true);
-    valestrom_process =
-        invoke_valestrom(
-            &valestrom_path,
+    frontend_process =
+        invoke_frontend(
+            &frontend_path,
             &project_directory_declarations,
             &project_vale_input_declarations,
             &project_non_vale_input_declarations,
@@ -305,16 +305,16 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
             output_vast,
             output_vpst,
             &output_dir);
-    println("Running:\n" + valestrom_process.command);
-    valestrom_return_code = (valestrom_process).print_and_join();
-    if valestrom_return_code != 0 {
-      panic("Valestrom returned error code {valestrom_return_code}, aborting.");
+    println("Running:\n" + frontend_process.command);
+    frontend_return_code = (frontend_process).print_and_join();
+    if frontend_return_code != 0 {
+      panic("Frontend returned error code {frontend_return_code}, aborting.");
     }
   }
 
 //            vast_file = None
 //            if len(namespaces_to_build) > 0 and len(user_vast_files) == 0:
-//                proc = self.valestrom("build", namespaces_to_build, user_valestrom_inputs, valestrom_options)
+//                proc = self.frontend("build", namespaces_to_build, user_frontend_inputs, frontend_options)
 //
 //                if proc.returncode == 0:
 //                    vast_file = self.build_dir / "build.vast"
@@ -323,7 +323,7 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
 //                    print(proc.stdout + "\n" + proc.stderr)
 //                    sys.exit(22)
 //                else:
-//                    print(f"Internal error while compiling {user_valestrom_inputs}:\n" + proc.stdout + "\n" + proc.stderr)
+//                    print(f"Internal error while compiling {user_frontend_inputs}:\n" + proc.stdout + "\n" + proc.stderr)
 //                    sys.exit(proc.returncode)
 //            elif len(user_vast_files) > 0 and len(namespaces_to_build) == 0:
 //                if len(user_vast_files) > 1:

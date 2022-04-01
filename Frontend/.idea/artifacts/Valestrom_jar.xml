@@ -10,7 +10,7 @@
       <element id="module-output" name="Templata" />
       <element id="module-output" name="TypingPass" />
       <element id="module-output" name="Tests" />
-      <element id="module-output" name="MonomorphizingPass" />
+      <element id="module-output" name="SimplifyingPass" />
       <element id="module-output" name="FinalAST" />
       <element id="module-output" name="Von" />
       <element id="module-output" name="TestVM" />

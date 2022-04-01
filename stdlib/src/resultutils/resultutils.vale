@@ -12,3 +12,14 @@ abstract func expect<OkType, ErrType>(virtual result &Result<OkType, ErrType>, m
 func expect<OkType, ErrType>(err &Err<OkType, ErrType>, msg str) &OkType { panic(msg); }
 func expect<OkType, ErrType>(ok &Ok<OkType, ErrType>, msg str) &OkType { ret &ok.value; }
 
+
+func get_or<OkType, ErrType, F>(result &Result<OkType, ErrType>, func F)
+&OkType
+where Prot["__call", Refs(&F, ErrType), _]
+{
+  if result.is_ok() {
+    (result).expect()
+  } else {
+    func((result).expect_err())
+  }
+}

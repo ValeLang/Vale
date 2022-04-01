@@ -163,6 +163,16 @@ struct ExecResult {
   stderr str;
 }
 
+func expect_or<F>(result &ExecResult, func F)
+str
+where Prot["__call", Refs(&F, &ExecResult), void]
+{
+  if result.return_code != 0 {
+    func(result);
+  }
+  ret result.stdout;
+}
+
 func capture_and_join(self Subprocess) ExecResult {
   stdout_builder = StringBuilder();
   stderr_builder = StringBuilder();

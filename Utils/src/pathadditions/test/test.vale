@@ -4,15 +4,10 @@ import stdlib.date.*;
 import stdlib.path.*;
 import valecutils.pathadditions.*;
 
-// test_directory = Path("./test_tmp/" + UnixTimestamp().str() + "/bork");
-// test_directory.CreateDirAll();
-// test_file = test_directory./("myfile.txt");
-// test_file.writeString("hello");
-// test_directory./("a.txt").writeString("a");
-// test_directory./("b.txt").writeString("b");
-
 func main() export {
   suite = TestSuite();
+
+  // Things below here have already been added to stdlib
 
   test_directory = Path("./test_tmp/" + UnixTimestamp().str() + "/bork");
 

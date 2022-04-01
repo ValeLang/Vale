@@ -1,4 +1,6 @@
 
+// Things below here have been added to stdlib already
+
 func RemoveDirAll(path &Path) Result<void, FileError> {
   is_symlink_result = path.IsSymLink();
   if (is_symlink_result.is_err()) {

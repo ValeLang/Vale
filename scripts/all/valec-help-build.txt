@@ -1,13 +1,13 @@
 
 USAGE:
-  valec.exe build [options] [module directory mappings]
+  {valec_exe} build [options] [module directory mappings]
 
 Compiles a .vale program into an executable.
 
 Source files can be either .vale, .vast, or .c files.
 
 EXAMPLE:
-  valec.exe build hello=./samples/helloworld stdlib=./stdlib/src
+  {valec_exe} build hello=./samples/helloworld
 
   In this example, we're:
   - Setting up module directory mappings:

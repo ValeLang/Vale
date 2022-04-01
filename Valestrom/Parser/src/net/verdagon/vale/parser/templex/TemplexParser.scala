@@ -12,7 +12,7 @@ class TemplexParser {
   def parseArray(iter: ParsingIterator): Result[Option[ITemplexPT], IParseError] = {
     val begin = iter.getPos()
 
-    if (!iter.trySkip("^\\[".r)) {
+    if (!iter.trySkip("^#?\\[".r)) {
       return Ok(None)
     }
 
@@ -154,7 +154,7 @@ class TemplexParser {
     val ownership =
       if (iter.trySkip("^\\^".r)) { OwnP }
       else if (iter.trySkip("^@".r)) { ShareP }
-      else if (iter.trySkip("^\\*\\*".r)) { WeakP }
+      else if (iter.trySkip("^\\&\\&".r)) { WeakP }
       else if (iter.trySkip("^&".r)) { BorrowP }
       else { return Ok(None) }
 

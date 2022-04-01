@@ -1141,7 +1141,7 @@ class TemplarTests extends FunSuite with Matchers {
         |}
         |struct Spaceship {
         |  name str;
-        |  origin **Base;
+        |  origin &&Base;
         |}
         |func printShipBase(ship &Spaceship) {
         |  maybeOrigin = lock(ship.origin); «14»«15»
@@ -1154,7 +1154,7 @@ class TemplarTests extends FunSuite with Matchers {
         |}
         |exported func main() {
         |  base = Base("Zion");
-        |  ship = Spaceship("Neb", **base);
+        |  ship = Spaceship("Neb", &&base);
         |  printShipBase(&ship);
         |  (base).drop(); // Destroys base.
         |  printShipBase(&ship);

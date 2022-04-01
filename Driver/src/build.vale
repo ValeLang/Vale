@@ -3,8 +3,8 @@ import stdlib.flagger.*;
 import stdlib.path.*;
 
 //fn removeAllRecursively(path &Path) {
-//  if (path.is_dir()) {
-//    iterdir(path).each((entry){
+//  if path.is_dir() {
+//    iterdir(path).each((entry) => {
 //      removeAllRecursively(entry);
 //    });
 //  }
@@ -26,17 +26,17 @@ struct ProjectNonValeInputDeclaration {
   path Path;
 }
 
-fn list_vasts(output_dir &Path) List<Path> {
+func list_vasts(output_dir &Path) List<Path> {
   vast_files = List<Path>();
-  output_dir./("vast").iterdir().each((child){
-    if (child.name().endsWith(".vast")) {
-      vast_files!.add(child.clone());
+  output_dir./("vast")&.iterdir()&.each((child) => {
+    if child.name().endsWith(".vast") {
+      vast_files.add(child.clone());
     }
   });
   ret vast_files;
 }
 
-fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
+func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
 
 
   windows = IsWindows();
@@ -55,7 +55,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
   //     pass
 
   flags =
-      [][
+      [#][
         Flag(
           "--midas_path_override",
           FLAG_STR(),
@@ -170,28 +170,28 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
 
   valestrom_path = compiler_dir./("Valestrom.jar");
   maybe_valestrom_path_override = parsed_flags.get_string_flag("--valestrom_path_override");
-  if (not maybe_valestrom_path_override.isEmpty()) {
+  if not maybe_valestrom_path_override.isEmpty() {
     set valestrom_path = Path(maybe_valestrom_path_override.get());
-    if (not valestrom_path.is_file()) {
+    if not valestrom_path.is_file() {
       panic("Error: --valestrom_path_override's value ({valestrom_path.str()}) is not a file.");
     }
   }
 
-  midas_program_name = if (IsWindows()) { "midas.exe" } else { "midas" };
+  midas_program_name = if IsWindows() { "midas.exe" } else { "midas" };
   midas_path = compiler_dir./(midas_program_name);
   maybe_midas_path_override = parsed_flags.get_string_flag("--midas_path_override");
-  if (not maybe_midas_path_override.isEmpty()) {
+  if not maybe_midas_path_override.isEmpty() {
     set midas_path = Path(maybe_midas_path_override.get());
-    if (not midas_path.is_file()) {
+    if not midas_path.is_file() {
       panic("Error: --midas_path_override's value ({midas_path.str()}) is not a file.");
     }
   }
 
   builtins_dir = compiler_dir./("builtins");
   maybe_builtins_dir_override = parsed_flags.get_string_flag("--builtins_dir_override");
-  if (not maybe_builtins_dir_override.isEmpty()) {
+  if not maybe_builtins_dir_override.isEmpty() {
     set builtins_dir = Path(maybe_builtins_dir_override.get());
-    if (not builtins_dir.is_dir()) {
+    if not builtins_dir.is_dir() {
       panic("Error: --builtins_dir_override's value ({builtins_dir.str()}) is not a directory.");
     }
   }
@@ -221,40 +221,40 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
   elide_checks_for_known_live = parsed_flags.get_bool_flag("--elide_checks_for_known_live", false);
   override_known_live_true = parsed_flags.get_bool_flag("--override_known_live_true", false);
 
-  if (verbose) {
+  if verbose {
     println("Parsing command line inputs...")
   }
 
-  parsed_flags.unrecognized_inputs!.remove(0);
+  parsed_flags.unrecognized_inputs.remove(0);
 
   project_directory_declarations = List<ProjectDirectoryDeclaration>();
   project_vale_input_declarations = List<ProjectValeInputDeclaration>();
   project_non_vale_input_declarations = List<ProjectNonValeInputDeclaration>();
 
-  if (not no_std) {
-    project_directory_declarations!.add(ProjectDirectoryDeclaration("stdlib", compiler_dir./("stdlib")./("src")));
+  if not no_std {
+    project_directory_declarations.add(ProjectDirectoryDeclaration("stdlib", compiler_dir./("stdlib")./("src")));
   }
 
 
-  while (parsed_flags.unrecognized_inputs.len() > 0) {
+  while parsed_flags.unrecognized_inputs.len() > 0 {
     flag = parsed_flags.unrecognized_inputs.get(0);
-    parsed_flags.unrecognized_inputs!.remove(0);
+    parsed_flags.unrecognized_inputs.remove(0);
 
-    if (flag.startsWith("--")) {
+    if flag.startsWith("--") {
       panic("Unrecognized option: " + flag);
     }
 
     maybe_project_name_and_path_str = flag.splitOnce("=");
-    if (not maybe_project_name_and_path_str.isEmpty()) {
-      (project_name, path_str) = maybe_project_name_and_path_str.get();
-      path = Path(path_str.str()).resolve();
-      if (path.is_dir()) {
-        project_directory_declarations!.add(ProjectDirectoryDeclaration(project_name.str(), path));
+    if not maybe_project_name_and_path_str.isEmpty() {
+      [project_name, path_str] = maybe_project_name_and_path_str.get();
+      path = Path(path_str.str())&.resolve();
+      if path.is_dir() {
+        project_directory_declarations.add(ProjectDirectoryDeclaration(project_name.str(), path));
       } else {
-        if (path.name().endsWith(".vale") or path.name().endsWith(".vpst")) {
-          project_vale_input_declarations!.add(ProjectValeInputDeclaration(project_name.str(), path));
+        if path.name().endsWith(".vale") or path.name().endsWith(".vpst") {
+          project_vale_input_declarations.add(ProjectValeInputDeclaration(project_name.str(), path));
         } else {
-          project_non_vale_input_declarations!.add(ProjectNonValeInputDeclaration(project_name.str(), path));
+          project_non_vale_input_declarations.add(ProjectNonValeInputDeclaration(project_name.str(), path));
         }
       }
     } else {
@@ -262,28 +262,28 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
     }
   }
 
-  if (not valestrom_path.exists()) {
+  if not valestrom_path.exists() {
     panic("Cannot find Valestrom directory: " + valestrom_path.str());
   }
-  if (not midas_path.exists()) {
+  if not midas_path.exists() {
     panic("Cannot find Midas directory: " + midas_path.str());
   }
-  if (not builtins_dir.exists()) {
+  if not builtins_dir.exists() {
     panic("Cannot find builtins directory: " + builtins_dir.str());
   }
 
-  if (verbose) {
+  if verbose {
     println("Invoking Valestrom...");
   }
 
-  if (reuse_vast) {
-    if (list_vasts(&output_dir).len() == 0) {
+  if reuse_vast {
+    if list_vasts(&output_dir)&.len() == 0 {
       panic("Error: --reuse_vast specified, but no .vast files found in " + output_dir.str() + ".");
     }
   } else {
-    if (output_dir.exists()) {
+    if output_dir.exists() {
       dest_dir = GetTempDir()./("old_output_dir_" + str(MtpId()));
-      if (dest_dir.exists()) {
+      if dest_dir.exists() {
         println("Deleting existing {dest_dir.str()}.");
         dest_dir.RemoveDirAll().expect();
         vassert(not dest_dir.exists(), "Removing old dir {dest_dir.str()} failed!");
@@ -307,7 +307,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
             &output_dir);
     println("Running:\n" + valestrom_process.command);
     valestrom_return_code = (valestrom_process).print_and_join();
-    if (valestrom_return_code != 0) {
+    if valestrom_return_code != 0 {
       panic("Valestrom returned error code {valestrom_return_code}, aborting.");
     }
   }
@@ -337,7 +337,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
 //                print(f"Both a .vast and non-vast files were specified! If a .vast is specified, it must be the only input.")
 //                sys.exit(1)
 
-  if (verbose) {
+  if verbose {
     println("Invoking Midas...")
   }
 
@@ -361,58 +361,58 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
           override_known_live_true);
   println("Running:\n" + midas_process.command);
   midas_return_code = (midas_process).print_and_join();
-  if (midas_return_code != 0) {
+  if midas_return_code != 0 {
     panic("Midas returned error code {midas_return_code}, aborting.");
   }
 
-  if (verbose) {
+  if verbose {
     println("Collecting cc inputs...")
   }
 
   clang_inputs = List<Path>();
-  if (windows) {
-    clang_inputs!.add(output_dir./("build.obj"));
+  if windows {
+    clang_inputs.add(output_dir./("build.obj"));
   } else {
-    clang_inputs!.add(output_dir./("build.o"));
+    clang_inputs.add(output_dir./("build.o"));
   }
 
-  output_dir.iterdir().each((output_file){
-    if (output_file.name().endsWith(".c")) {
-      clang_inputs!.add(output_file.clone());
+  output_dir.iterdir()&.each((output_file) => {
+    if output_file.name().endsWith(".c") {
+      clang_inputs.add(output_file.clone());
     }
   });
 
-  builtins_dir.iterdir().each((output_file){
-    if (output_file.name().endsWith(".c")) {
-      clang_inputs!.add(output_file.clone());
+  builtins_dir.iterdir()&.each((output_file) => {
+    if output_file.name().endsWith(".c") {
+      clang_inputs.add(output_file.clone());
     }
   });
 
   project_names = List<str>();
 
-  vast_files.each((vast_file){
+  vast_files.each((vast_file) => {
     package_coord_str = vast_file.name().slice(0, vast_file.name().len() - ".vast".len());
     package_coord_parts = package_coord_str.split(".");
     project_name = package_coord_parts.get(0);
-    package_coord_parts!.remove(0);
+    package_coord_parts.remove(0);
     package_steps = package_coord_parts;
 
-    if (not project_names.exists({ _ == project_name })) {
-      project_names!.add(project_name.str());
+    if not project_names.exists({ _ == project_name }) {
+      project_names.add(project_name.str());
     }
 
-    project_directory_declarations.each((project_directory_declaration){
-      if (project_directory_declaration.project_name == project_name) {
+    project_directory_declarations.each((project_directory_declaration) => {
+      if project_directory_declaration.project_name == project_name {
         package_native_dir = project_directory_declaration.path.clone();
-        package_steps.each((package_step){
+        package_steps.each((package_step) => {
           set package_native_dir = package_native_dir./(package_step.str());
         });
         possible_native_dir = package_native_dir./("native");
 
-        if (possible_native_dir.exists()) {
-          possible_native_dir.iterdir().each((native_dir_child){
-            if (native_dir_child.name().endsWith(".c")) {
-              clang_inputs!.add(native_dir_child.clone());
+        if possible_native_dir.exists() {
+          possible_native_dir.iterdir()&.each((native_dir_child) => {
+            if native_dir_child.name().endsWith(".c") {
+              clang_inputs.add(native_dir_child.clone());
             }
           });
         }
@@ -422,29 +422,29 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
 
   abi_dir = output_dir./("abi");
 
-  project_names.each((project_name){
+  project_names.each((project_name) => {
 
     possible_generated_dir = abi_dir./(project_name);
-    if (possible_generated_dir.exists()) {
-      if (not possible_generated_dir.is_dir()) {
+    if possible_generated_dir.exists() {
+      if not possible_generated_dir.is_dir() {
         panic("Generated dir is not a directory: " + possible_generated_dir.str());
       }
 
-      possible_generated_dir.iterdir().each((native_dir_child){
-        if (native_dir_child.name().endsWith(".c")) {
-          clang_inputs!.add(native_dir_child.clone());
+      possible_generated_dir.iterdir()&.each((native_dir_child) => {
+        if native_dir_child.name().endsWith(".c") {
+          clang_inputs.add(native_dir_child.clone());
         }
       });
     }
 
-    project_non_vale_input_declarations.each((project_non_vale_input_declaration){
-      if (project_non_vale_input_declaration.project_name == project_name) {
-        clang_inputs!.add(project_non_vale_input_declaration.path.clone());
+    project_non_vale_input_declarations.each((project_non_vale_input_declaration) => {
+      if project_non_vale_input_declaration.project_name == project_name {
+        clang_inputs.add(project_non_vale_input_declaration.path.clone());
       }
     });
   });
 
-  if (verbose) {
+  if verbose {
     println("Invoking cc...")
   }
 
@@ -458,7 +458,7 @@ fn build_stuff(compiler_dir &Path, all_args &Array<imm, final, str>) {
           &output_dir);
   println("Running:\n" + clang_process.command);
   clang_return_code = (clang_process).print_and_join();
-  if (clang_return_code != 0) {
+  if clang_return_code != 0 {
     panic("clang returned error code {clang_return_code}, aborting.");
   }
 }

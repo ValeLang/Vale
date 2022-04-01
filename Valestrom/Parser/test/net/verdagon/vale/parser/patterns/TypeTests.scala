@@ -76,7 +76,7 @@ class TypeTests extends FunSuite with Matchers with Collector with TestParseUtil
     }
   }
   test("15m") {
-    compile("_ **[#3]<_, _>MutableStruct") shouldHave {
+    compile("_ &&[#3]<_, _>MutableStruct") shouldHave {
       case PatternPP(_,_,
         Some(IgnoredLocalNameDeclarationP(_)),
         Some(

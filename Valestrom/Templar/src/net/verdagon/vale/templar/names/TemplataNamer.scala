@@ -16,7 +16,7 @@ import net.verdagon.vale.{CodeLocationS, vimpl}
 //      ownership match {
 //        case ShareT => "@" //"*"
 //        case PointerT => "*"
-//        case WeakT => "**"
+//        case WeakT => "&&"
 //        case OwnT => "" //"^"
 //      }
 //    val permissionString =

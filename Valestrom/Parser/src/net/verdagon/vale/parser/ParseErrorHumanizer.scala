@@ -1,13 +1,20 @@
 package net.verdagon.vale.parser
 
 import net.verdagon.vale.{CodeLocationS, FileCoordinate, FileCoordinateMap}
-import net.verdagon.vale.SourceCodeUtils.humanizePos
-import net.verdagon.vale.SourceCodeUtils.nextThingAndRestOfLine
+import net.verdagon.vale.SourceCodeUtils.{humanizeFile, humanizePos, nextThingAndRestOfLine}
 
 object ParseErrorHumanizer {
   def humanize(
-      fileMap: FileCoordinateMap[String],
-      fileCoord: FileCoordinate,
+    fileMap: FileCoordinateMap[String],
+    fileCoord: FileCoordinate,
+    err: IParseError):
+  String = {
+    humanize(humanizeFile(fileCoord), fileMap(fileCoord), err)
+  }
+
+  def humanize(
+      humanizedFilePath: String,
+      code: String,
       err: IParseError):
   String = {
     val errorStrBody =
@@ -35,7 +42,7 @@ object ParseErrorHumanizer {
         case BadAttributeError(pos) => "Bad attribute."
         case BadStructContentsBegin(pos) => "Bad start of struct contents."
         case BadInterfaceMember(pos) => "Bad interface member."
-        case BadStringChar(stringBeginPos, pos) => "Bad string character, " + humanizePos(fileMap, CodeLocationS(fileCoord, stringBeginPos)) + "-" + humanizePos(fileMap, CodeLocationS(fileCoord, pos))
+        case BadStringChar(stringBeginPos, pos) => "Bad string character, " + humanizePos(humanizedFilePath, code, stringBeginPos) + "-" + humanizePos(humanizedFilePath, code, pos)
         case BadExpressionBegin(pos) => "Bad start of expression."
         case NeedWhitespaceAroundBinaryOperator(pos) => "Need whitespace around binary operator."
         case UnknownTupleOrSubExpression(pos) => "Saw ( but expression is neither tuple nor sub-expression."
@@ -64,11 +71,11 @@ object ParseErrorHumanizer {
         case BadMutateEqualsError(pos) => "Expected = after set destination"
         case BadLetEndError(pos) => "Expected ; after declarations source"
         case BadArraySizerEnd(pos) => "Bad array sizer; expected ]"
-        case BadLetSourceError(pos, cause) => "Parse error somewhere inside this let source expression. Imprecise inner error: " + humanize(fileMap, fileCoord, cause)
+        case BadLetSourceError(pos, cause) => "Parse error somewhere inside this let source expression. Imprecise inner error: " + humanize(humanizedFilePath, code, cause)
         case other => "Internal error: " + other.toString
       }
-    val posStr = humanizePos(fileMap, CodeLocationS(fileCoord, err.pos))
-    val nextStuff = nextThingAndRestOfLine(fileMap, fileCoord, err.pos)
+    val posStr = humanizePos(humanizedFilePath, code, err.pos)
+    val nextStuff = nextThingAndRestOfLine(code, err.pos)
     f"${posStr} error ${err.errorId}: ${errorStrBody}\n${nextStuff}\n"
   }
 }

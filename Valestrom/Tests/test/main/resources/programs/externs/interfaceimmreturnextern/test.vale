@@ -3,7 +3,7 @@ abstract func getFuel(virtual ship &IShip) int;
 
 exported struct Firefly imm { fuel int; }
 impl IShip for Firefly;
-func getFuel(ship *Firefly) int { ship.fuel }
+func getFuel(ship Firefly) int { ship.fuel }
 
 extern func cMakeShip() IShip;
 

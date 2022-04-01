@@ -93,8 +93,15 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
     }
   }
 
-  test("exporting array") {
+  test("exporting imm array 1") {
     val program = compile("export []<mut>int as IntArray;")
+    program.topLevelThings(0) match {
+      case TopLevelExportAsP(ExportAsP(_,_,NameP(_,"IntArray"))) =>
+    }
+  }
+
+  test("exporting imm array 2") {
+    val program = compile("export #[]int as IntArray;")
     program.topLevelThings(0) match {
       case TopLevelExportAsP(ExportAsP(_,_,NameP(_,"IntArray"))) =>
     }

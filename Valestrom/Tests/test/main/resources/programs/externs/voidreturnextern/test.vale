@@ -2,14 +2,14 @@ exported struct MyBox {
   i! int;
 }
 
-exported func changeInBox(b *!MyBox) {
+exported func changeInBox(b &MyBox) {
   set b.i = 42;
 }
 
-extern func runExtCommand(b *!MyBox);
+extern func runExtCommand(b &MyBox);
 
 exported func main() int {
   b = MyBox(73);
-  runExtCommand(&!b);
+  runExtCommand(&b);
   ret b.i;
 }

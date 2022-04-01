@@ -1147,7 +1147,7 @@ class ExpressionParser(opts: GlobalOptions) {
       case Ok(None) =>
     }
 
-    iter.tryy("^(\\^|&|\\*\\*)".r) match {
+    iter.tryy("^(\\^|\\&\\&?)".r) match {
       case None =>
       case Some(str) => {
         val innerPE =
@@ -1161,7 +1161,7 @@ class ExpressionParser(opts: GlobalOptions) {
           str match {
             case "^" => OwnP
             case "&" => BorrowP
-            case "**" => WeakP
+            case "&&" => WeakP
           }
         val augmentPE = AugmentPE(RangeP(begin, iter.getPos()), targetOwnership, innerPE)
         return Ok(Some(augmentPE))

@@ -11,13 +11,13 @@ import valecutils.pathadditions.*;
 // test_directory./("a.txt").writeString("a");
 // test_directory./("b.txt").writeString("b");
 
-fn main() export {
+func main() export {
   suite = TestSuite();
 
   test_directory = Path("./test_tmp/" + UnixTimestamp().str() + "/bork");
 
-  suite!.sub("remove directory", (sts){
-    sts!.test("create and remove empty dir", {
+  suite.sub("remove directory", (sts){
+    sts.test("create and remove empty dir", {
       doomed_directory = test_directory./("/zork");
       doomed_directory.CreateDirAll(true).expect();
       doomed_directory.RemoveDir().expect();
@@ -25,7 +25,7 @@ fn main() export {
       doomed_directory.exists() should_equal false;
     });
 
-    sts!.test("create and remove full dir", {
+    sts.test("create and remove full dir", {
       doomed_directory = test_directory./("/zork");
       doomed_directory.CreateDir(true).expect();
       inner_directory = doomed_directory./("inner");
@@ -40,7 +40,7 @@ fn main() export {
       doomed_directory.exists() should_equal false;
     });
 
-    sts!.test("move empty dir", {
+    sts.test("move empty dir", {
       original_directory = test_directory./("/zork");
       original_directory.CreateDirAll(true).expect();
 
@@ -51,7 +51,7 @@ fn main() export {
       new_directory.exists() should_equal true;
     });
 
-    sts!.test("move full dir", {
+    sts.test("move full dir", {
       original_directory = test_directory./("/zork");
       original_directory.CreateDir(true).expect();
       original_directory./("inner").CreateDir(true).expect();

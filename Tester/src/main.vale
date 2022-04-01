@@ -9,7 +9,7 @@ struct TestSuite {
   common_build_args List<str>;
   test_filters List<str>;
   max_concurrent_tests int;
-  midas_tests_dir Path;
+  backend_tests_dir Path;
 
   test_instances List<TestInstance>;
   num_successes! int;
@@ -54,7 +54,7 @@ exported func main() int {
   flags =
       [#][
         Flag(
-          "--midas_path",
+          "--backend_path",
           FLAG_STR(),
           "Path to Midas executable.",
           "../Midas/build",
@@ -78,7 +78,7 @@ exported func main() int {
           "../Driver/build/valec",
           "Path to valec executable."),
         Flag(
-          "--midas_tests_dir",
+          "--backend_tests_dir",
           FLAG_STR(),
           "Directory containing Midas tests.",
           "../Midas/build",
@@ -113,9 +113,9 @@ exported func main() int {
   common_build_args.add("--frontend_path_override");
   common_build_args.add(frontend_path.str());
 
-  midas_path = Path(parsed_flags.expect_string_flag(&flags, "--midas_path"));
-  common_build_args.add("--midas_path_override");
-  common_build_args.add(midas_path.str());
+  backend_path = Path(parsed_flags.expect_string_flag(&flags, "--backend_path"));
+  common_build_args.add("--backend_path_override");
+  common_build_args.add(backend_path.str());
 
   builtins_dir = Path(parsed_flags.expect_string_flag(&flags, "--builtins_dir"));
   common_build_args.add("--builtins_dir_override");
@@ -123,7 +123,7 @@ exported func main() int {
 
   valec_path = Path(parsed_flags.expect_string_flag(&flags, "--valec_path"));
 
-  midas_tests_dir = Path(parsed_flags.expect_string_flag(&flags, "--midas_tests_dir"));
+  backend_tests_dir = Path(parsed_flags.expect_string_flag(&flags, "--backend_tests_dir"));
   frontend_tests_dir = Path(parsed_flags.expect_string_flag(&flags, "--frontend_tests_dir"));
 
   verbose = parsed_flags.get_bool_flag("--verbose", false);
@@ -173,7 +173,7 @@ exported func main() int {
           common_build_args,
           test_filters,
           max_concurrent_tests,
-          midas_tests_dir.clone(),
+          backend_tests_dir.clone(),
           List<TestInstance>(),
           0,
           0);
@@ -225,7 +225,7 @@ exported func main() int {
 
   if (include_regions.exists({ _ == "resilient-v4" })) {
     region = "resilient-v4";
-    suite.StartTest(14, "tethercrash", midas_tests_dir./("tethercrash.vale"), &List<str>(), region);
+    suite.StartTest(14, "tethercrash", backend_tests_dir./("tethercrash.vale"), &List<str>(), region);
   }
 
   include_regions.each((region) => {
@@ -297,7 +297,7 @@ exported func main() int {
   });
 
   if (include_regions.exists({ _ == "resilient-v3" }) or include_regions.exists({ _ == "resilient-v4" })) {
-    // suite.StartCTest("twinpages", &midas_tests_dir./("twinpages/test.c"), List([]["noattemptbadwrite"]), "resilient-v3");
+    // suite.StartCTest("twinpages", &backend_tests_dir./("twinpages/test.c"), List([]["noattemptbadwrite"]), "resilient-v3");
   }
 
   suite.FinishTests(0);
@@ -325,7 +325,7 @@ func StartCTest(suite &TestSuite, test_name str, input_c &Path, flags List<str>,
         (Subprocess(
             if (IsWindows()) { "cl.exe" } else { "clang" },
             &List([#][
-                suite.midas_tests_dir./("twinpages/test.c").str(),
+                suite.backend_tests_dir./("twinpages/test.c").str(),
                 "-o",
                 test_build_dir./("main").str()
             ]))).expect();

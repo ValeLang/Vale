@@ -42,16 +42,16 @@ cd Frontend
 echo Compiling Frontend...
 sbt assembly || { echo 'Frontend build failed, aborting.' ; exit 1; }
 
-cd ../Midas
+cd ../Backend
 
-echo Generating Midas...
+echo Generating Backend...
 LLVM_CMAKE_DIR="/usr/local/Cellar/llvm/`ls /usr/local/Cellar/llvm`/lib/cmake/llvm"
-cmake -B build -D LLVM_DIR="$LLVM_CMAKE_DIR" || { echo 'Midas generate failed, aborting.' ; exit 1; }
+cmake -B build -D LLVM_DIR="$LLVM_CMAKE_DIR" || { echo 'Backend generate failed, aborting.' ; exit 1; }
 
 cd build
 
-echo Compiling Midas...
-make || { echo 'Midas build failed, aborting.' ; exit 1; }
+echo Compiling Backend...
+make || { echo 'Backend build failed, aborting.' ; exit 1; }
 
 cd ../../Driver
 
@@ -66,8 +66,8 @@ mkdir -p ../release-mac || { echo 'Error making new release-mac dir.' ; exit 1; 
 mkdir -p ../release-mac/samples || { echo 'Error making new samples dir.' ; exit 1; }
 cp ../Frontend/Frontend.jar ../release-mac || { echo 'Error copying into release-mac.' ; exit 1; }
 cp -r ../Frontend/Tests/test/main/resources/programs ../release-mac/samples || { echo 'Error copying into release-mac.' ; exit 1; }
-cp -r ../Midas/builtins ../release-mac/builtins || { echo 'Error copying into release-mac.' ; exit 1; }
-cp ../Midas/build/midas ../release-mac/midas || { echo 'Error copying into release-mac.' ; exit 1; }
+cp -r ../Backend/builtins ../release-mac/builtins || { echo 'Error copying into release-mac.' ; exit 1; }
+cp ../Backend/build/backend ../release-mac/backend || { echo 'Error copying into release-mac.' ; exit 1; }
 cp -r ../stdlib ../release-mac/stdlib || { echo 'Error copying into release-mac.' ; exit 1; }
 cp ../Driver/build/valec ../release-mac/valec || { echo 'Error copying into release-mac.' ; exit 1; }
 
@@ -91,7 +91,7 @@ then
   ./build.sh $BOOTSTRAPPING_VALEC_DIR || { echo 'Tester build failed, aborting.' ; exit 1; }
 
   echo Running Tester...
-  ./build/testvalec --frontend_path ./BuiltValeCompiler/Frontend.jar --midas_path ./BuiltValeCompiler/midas --builtins_dir ./BuiltValeCompiler/builtins --valec_path ./BuiltValeCompiler/valec --midas_tests_dir ../Midas/test --frontend_tests_dir ../Frontend --concurrent 6 @assist || { echo 'Tests failed, aborting.' ; exit 1; }
+  ./build/testvalec --frontend_path ./BuiltValeCompiler/Frontend.jar --backend_path ./BuiltValeCompiler/backend --builtins_dir ./BuiltValeCompiler/builtins --valec_path ./BuiltValeCompiler/valec --backend_tests_dir ../Backend/test --frontend_tests_dir ../Frontend --concurrent 6 @assist || { echo 'Tests failed, aborting.' ; exit 1; }
 fi
 
 cd ..

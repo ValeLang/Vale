@@ -28,7 +28,7 @@ exported func main() {
 
   if (all_args_list.get(1) == "version" or
       all_args_list.get(1) == "--version") {
-    // with open(str(self.frontend_path / "midas-version.txt"), 'r') as f:
+    // with open(str(self.frontend_path / "backend-version.txt"), 'r') as f:
     //     print(f.read())
   } else if (all_args_list.get(1) == "help" or
       all_args_list.get(1) == "--help") {
@@ -46,7 +46,7 @@ exported func main() {
     // elif args[1] == "paths":
     //     print("Frontend path: " + str(self.frontend_path))
     //     print("Builtins path: " + str(self.builtins_path))
-    //     print("midas path: " + str(self.midas_path))
+    //     print("backend path: " + str(self.backend_path))
     // else:
     //     print("Unknown subcommand: " + args[1])
     // sys.exit(0)

@@ -1,6 +1,6 @@
 
-func invoke_midas(
-  midas_program_path &Path,
+func invoke_backend(
+  backend_program_path &Path,
   vast_files &List<Path>,
   output_dir &Path,
   maybe_region_override &Opt<str>,
@@ -15,11 +15,11 @@ func invoke_midas(
   elide_checks_for_known_live bool,
   override_known_live_true bool)
 Subprocess {
-  //midas_program_name = if (IsWindows()) { "midas.exe" } else { "midas" };
-  //midas_program_path = midas_path./(midas_program_name);
+  //backend_program_name = if (IsWindows()) { "backend.exe" } else { "backend" };
+  //backend_program_path = backend_path./(backend_program_name);
 
-  if (not midas_program_path.exists()) {
-    panic("Cannot find Midas at: " + midas_program_path.str());
+  if (not backend_program_path.exists()) {
+    panic("Cannot find backend at: " + backend_program_path.str());
   }
 
   command_line_args = List<str>();
@@ -64,5 +64,5 @@ Subprocess {
     command_line_args.add(vast_file.str());
   });
 
-  ret (Subprocess(midas_program_path.str(), &command_line_args)).expect();
+  ret (Subprocess(backend_program_path.str(), &command_line_args)).expect();
 }

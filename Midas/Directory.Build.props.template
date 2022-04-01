@@ -1,8 +1,0 @@
-<Project>
- <PropertyGroup>
-   <LLVMBuiltDir>C:\Users\Valerian\llvm11\Debug</LLVMBuiltDir>
-   <LLVMIncludeDir1>C:\Users\Valerian\llvm11\include</LLVMIncludeDir1>
-   <LLVMIncludeDir2>C:\Users\Valerian\llvm-project-llvmorg-11.0.1\llvm\include</LLVMIncludeDir2>
-   <LLVMLibraryDir>C:\Users\Valerian\llvm\Debug\lib</LLVMLibraryDir>
- </PropertyGroup>
-</Project>

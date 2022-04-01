@@ -57,11 +57,11 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
   flags =
       [#][
         Flag(
-          "--midas_path_override",
+          "--backend_path_override",
           FLAG_STR(),
-          "Directory containing Midas.",
-          "../Midas/build",
-          "Alternate path for Midas, the codegen phase binary."),
+          "Directory containing Backend.",
+          "../Backend/build",
+          "Alternate path for Backend, the codegen phase binary."),
         Flag(
           "--frontend_path_override",
           FLAG_STR(),
@@ -71,8 +71,8 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
         Flag(
           "--builtins_dir_override",
           FLAG_STR(),
-          "Directory containing Midas builtins.",
-          "../Midas/src/builtins",
+          "Directory containing Backend builtins.",
+          "../Backend/src/builtins",
           "Alternate path for the temporary C builtin functions."),
         Flag(
           "--benchmark",
@@ -177,13 +177,13 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
     }
   }
 
-  midas_program_name = if IsWindows() { "midas.exe" } else { "midas" };
-  midas_path = compiler_dir./(midas_program_name);
-  maybe_midas_path_override = parsed_flags.get_string_flag("--midas_path_override");
-  if not maybe_midas_path_override.isEmpty() {
-    set midas_path = Path(maybe_midas_path_override.get());
-    if not midas_path.is_file() {
-      panic("Error: --midas_path_override's value ({midas_path.str()}) is not a file.");
+  backend_program_name = if IsWindows() { "backend.exe" } else { "backend" };
+  backend_path = compiler_dir./(backend_program_name);
+  maybe_backend_path_override = parsed_flags.get_string_flag("--backend_path_override");
+  if not maybe_backend_path_override.isEmpty() {
+    set backend_path = Path(maybe_backend_path_override.get());
+    if not backend_path.is_file() {
+      panic("Error: --backend_path_override's value ({backend_path.str()}) is not a file.");
     }
   }
 
@@ -205,7 +205,7 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
   output_vast = parsed_flags.get_bool_flag("--output_vast", true);
   reuse_vast = parsed_flags.get_bool_flag("--reuse_vast", false);
   output_vpst = parsed_flags.get_bool_flag("--output_vpst", true);
-  no_std = parsed_flags.get_bool_flag("--no_std", true);
+  no_std = parsed_flags.get_bool_flag("--no_std", false);
 
   maybe_region_override = parsed_flags.get_string_flag("--region_override");
   maybe_cpu = parsed_flags.get_string_flag("--cpu");
@@ -265,8 +265,8 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
   if not frontend_path.exists() {
     panic("Cannot find Frontend directory: " + frontend_path.str());
   }
-  if not midas_path.exists() {
-    panic("Cannot find Midas directory: " + midas_path.str());
+  if not backend_path.exists() {
+    panic("Cannot find Backend directory: " + backend_path.str());
   }
   if not builtins_dir.exists() {
     panic("Cannot find builtins directory: " + builtins_dir.str());
@@ -338,14 +338,14 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
 //                sys.exit(1)
 
   if verbose {
-    println("Invoking Midas...")
+    println("Invoking Backend...")
   }
 
   vast_files = list_vasts(&output_dir);
 
-  midas_process =
-      invoke_midas(
-          &midas_path,
+  backend_process =
+      invoke_backend(
+          &backend_path,
           &vast_files,
           &output_dir,
           &maybe_region_override,
@@ -359,10 +359,10 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           print_mem_overhead,
           elide_checks_for_known_live,
           override_known_live_true);
-  println("Running:\n" + midas_process.command);
-  midas_return_code = (midas_process).print_and_join();
-  if midas_return_code != 0 {
-    panic("Midas returned error code {midas_return_code}, aborting.");
+  println("Running:\n" + backend_process.command);
+  backend_return_code = (backend_process).print_and_join();
+  if backend_return_code != 0 {
+    panic("Backend returned error code {backend_return_code}, aborting.");
   }
 
   if verbose {

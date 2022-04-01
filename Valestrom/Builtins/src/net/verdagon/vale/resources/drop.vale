@@ -9,4 +9,4 @@ func drop(x str) {}
 // Because e.g. drop(Opt<T>) looks to see if a type has a drop function.
 func drop<T>(x &&T) where T = Ref[_, Kind[mut]] { }
 func drop<T>(x &T) where T = Ref[_, Kind[mut]] { }
-func drop<T>(x **T) where T = Ref[_, Kind[mut]] { }
+func drop<T>(x &&T) where T = Ref[_, Kind[mut]] { }

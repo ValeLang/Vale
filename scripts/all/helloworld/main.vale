@@ -1,5 +1,5 @@
 import stdlib.*;
 
-fn main() export {
+exported func main() {
   println("Hello world!");
 }

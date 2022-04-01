@@ -1,2 +1,0 @@
-Vale Compiler, version 0.2.0
-http://vale.dev/

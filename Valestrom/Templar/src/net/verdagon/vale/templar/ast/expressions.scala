@@ -694,7 +694,7 @@ case class StructToInterfaceUpcastTE(innerExpr: ReferenceExpressionTE, targetInt
   }
 }
 
-// A soft load is one that turns an int** into an int*. a hard load turns an int* into an int.
+// A soft load is one that turns an int&& into an int*. a hard load turns an int* into an int.
 // Turns an Addressible(Pointer) into an OwningPointer. Makes the source owning pointer into null
 
 // If the source was an own and target is borrow, that's a point

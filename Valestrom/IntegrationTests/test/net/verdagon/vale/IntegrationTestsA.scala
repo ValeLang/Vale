@@ -613,10 +613,10 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |impl IMoo for Moo;
         |
         |abstract func func(virtual moo &IMoo) int;
-        |abstract func func(virtual moo **IMoo) int;
+        |abstract func func(virtual moo &&IMoo) int;
         |
         |func func(moo &Moo) int { ret 42; }
-        |func func(moo **Moo) int { ret 73; }
+        |func func(moo &&Moo) int { ret 73; }
         |
         |exported func main() int {
         |  ret func(&Moo());

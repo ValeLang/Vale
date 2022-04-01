@@ -1,5 +1,5 @@
 
-fn invoke_midas(
+func invoke_midas(
   midas_program_path &Path,
   vast_files &List<Path>,
   output_dir &Path,
@@ -23,45 +23,45 @@ Subprocess {
   }
 
   command_line_args = List<str>();
-  command_line_args!.add("--verify");
-  command_line_args!.add("--output_dir");
-  command_line_args!.add(output_dir.str());
+  command_line_args.add("--verify");
+  command_line_args.add("--output_dir");
+  command_line_args.add(output_dir.str());
 
   if (not maybe_region_override.isEmpty()) {
-    command_line_args!.add("--region_override");
-    command_line_args!.add(maybe_region_override.get());
+    command_line_args.add("--region_override");
+    command_line_args.add(maybe_region_override.get());
   }
   if (not maybe_cpu.isEmpty()) {
-    command_line_args!.add("--cpu");
-    command_line_args!.add(maybe_cpu.get());
+    command_line_args.add("--cpu");
+    command_line_args.add(maybe_cpu.get());
   }
   if (flares) {
-    command_line_args!.add("--flares");
+    command_line_args.add("--flares");
   }
   if (gen_heap) {
-    command_line_args!.add("--gen_heap");
+    command_line_args.add("--gen_heap");
   }
   if (census) {
-    command_line_args!.add("--census");
+    command_line_args.add("--census");
   }
   if (verify) {
-    command_line_args!.add("--verify");
+    command_line_args.add("--verify");
   }
   if (llvm_ir) {
-    command_line_args!.add("--llvm_ir");
+    command_line_args.add("--llvm_ir");
   }
   if (print_mem_overhead) {
-    command_line_args!.add("--print_mem_overhead");
+    command_line_args.add("--print_mem_overhead");
   }
   if (elide_checks_for_known_live) {
-    command_line_args!.add("--elide_checks_for_known_live");
+    command_line_args.add("--elide_checks_for_known_live");
   }
   if (override_known_live_true) {
-    command_line_args!.add("--override_known_live_true");
+    command_line_args.add("--override_known_live_true");
   }
 
-  vast_files.each((vast_file){
-    command_line_args!.add(vast_file.str());
+  vast_files.each((vast_file) => {
+    command_line_args.add(vast_file.str());
   });
 
   ret (Subprocess(midas_program_path.str(), &command_line_args)).expect();

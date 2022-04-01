@@ -1,13 +1,3 @@
-// NOTE(Alec):
-//   THIS IS BORKED!
-// 
-//   When building, you will get a big, scary error!
-//   Let's just wait for Verdagon to fix that...
-// NOTE(Evan):
-//   LO, THIS IS NO LONGER BORKED
-///   BEHOLD THE UNBORKENING
-
-
 /// A full representation of a possible flag.
 /// 
 /// # fields:

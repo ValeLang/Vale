@@ -15,7 +15,7 @@ object MetalPrinter {
         "Ref" -> "R",
         "Share" -> "@",
         "Pointer" -> "*",
-        "Weak" -> "**",
+        "Weak" -> "&&",
         "Own" -> "^",
         "Readonly" -> "#",
         "Readwrite" -> "!",

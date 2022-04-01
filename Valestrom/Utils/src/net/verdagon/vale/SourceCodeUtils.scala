@@ -23,6 +23,14 @@ object SourceCodeUtils {
 
     val source = filenamesAndSources(file)
 
+    humanizePos(humanizeFile(file), source, pos)
+  }
+
+  def humanizePos(
+    humanizedFilePath: String,
+    source: String,
+    pos: Int):
+  String = {
     var line = 0
     var lineBegin = 0
     var i = 0
@@ -33,14 +41,19 @@ object SourceCodeUtils {
       }
       i = i + 1
     }
-    humanizeFile(file) + ":" + (line + 1) + ":" + (i - lineBegin + 1)
+    humanizedFilePath + ":" + (line + 1) + ":" + (i - lineBegin + 1)
   }
 
   def nextThingAndRestOfLine(
       filenamesAndSources: FileCoordinateMap[String],
       file: FileCoordinate,
-      position: Int) = {
-    val text = filenamesAndSources(file)
+      position: Int): String = {
+    nextThingAndRestOfLine(filenamesAndSources(file), position)
+  }
+
+  def nextThingAndRestOfLine(
+    text: String,
+    position: Int): String = {
     // TODO: can optimize this
     text.slice(position, text.length).trim().split("\\n")(0).trim()
   }

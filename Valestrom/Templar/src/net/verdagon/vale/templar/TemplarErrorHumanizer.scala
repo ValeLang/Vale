@@ -427,7 +427,7 @@ object TemplarErrorHumanizer {
           case OwnT => ""
           case ShareT => ""
           case BorrowT => "&"
-          case WeakT => "**"
+          case WeakT => "&&"
         }) +
           humanizeTemplata(codeMap, KindTemplata(kind))
       }
@@ -479,6 +479,7 @@ object TemplarErrorHumanizer {
       case LambdaCitizenTemplateNameT(codeLocation) => {
         "λ:" + humanizePos(codeMap, codeLocation)
       }
+      case CodeVarNameT(name) => name
       case LambdaCitizenNameT(template) => humanizeName(codeMap, template) + "<>"
       case FunctionNameT(humanName, templateArgs, parameters) => {
         humanName +

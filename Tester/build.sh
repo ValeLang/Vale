@@ -6,4 +6,4 @@ if [ "$BOOTSTRAPPING_VALEC_DIR" == "" ]; then
 fi
 
 
-$BOOTSTRAPPING_VALEC_DIR/valec build tester=src stdlib=$BOOTSTRAPPING_VALEC_DIR/stdlib/src --output_dir build -o testvalec || { echo 'build failed' ; exit 1; }
+$BOOTSTRAPPING_VALEC_DIR/valec build tester=src stdlib=$BOOTSTRAPPING_VALEC_DIR/stdlib/src valecutils=../Utils/src --output_dir build -o testvalec || { echo 'build failed' ; exit 1; }

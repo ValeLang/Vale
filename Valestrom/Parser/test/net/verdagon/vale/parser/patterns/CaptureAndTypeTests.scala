@@ -49,7 +49,7 @@ class CaptureAndTypeTests extends FunSuite with Matchers with Collector with Tes
     }
   }
   test("Capture with self. in front") {
-    compile("self.arr **R") shouldHave {
+    compile("self.arr &&R") shouldHave {
       case PatternPP(_,_,
       Some(ConstructingMemberNameDeclarationP(NameP(_, "arr"))),
       Some(InterpretedPT(_,WeakP, NameOrRunePT(NameP(_, "R")))),

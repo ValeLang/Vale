@@ -1,17 +1,17 @@
 package dev.vale
 
-import dev.vale.templar.ast.{BorrowToWeakTE, LetNormalTE, SoftLoadTE}
-import dev.vale.templar.citizen.WeakableImplingMismatch
-import dev.vale.templar.env.ReferenceLocalVariableT
-import dev.vale.templar.expression.TookWeakRefOfNonWeakableError
-import dev.vale.templar.names.{CodeVarNameT, FullNameT}
-import dev.vale.templar.templata.simpleName
-import dev.vale.templar.types.{CoordT, FinalT, InterfaceTT, StructTT, WeakT}
-import dev.vale.vivem.ConstraintViolatedException
-import dev.vale.templar._
-import dev.vale.templar.ast._
-import dev.vale.templar.names.CodeVarNameT
-import dev.vale.templar.types._
+import dev.vale.typing.ast.{BorrowToWeakTE, LetNormalTE, SoftLoadTE}
+import dev.vale.typing.citizen.WeakableImplingMismatch
+import dev.vale.typing.env.ReferenceLocalVariableT
+import dev.vale.typing.expression.TookWeakRefOfNonWeakableError
+import dev.vale.typing.names.{CodeVarNameT, FullNameT}
+import dev.vale.typing.templata.simpleName
+import dev.vale.typing.types.{CoordT, FinalT, InterfaceTT, StructTT, WeakT}
+import dev.vale.testvm.ConstraintViolatedException
+import dev.vale.typing._
+import dev.vale.typing.ast._
+import dev.vale.typing.names.CodeVarNameT
+import dev.vale.typing.types._
 import dev.vale.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 
@@ -20,7 +20,7 @@ class WeakTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         Tests.loadExpected("programs/weaks/lockWhileLiveStruct.vale"))
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
     Collector.only(main, {
       case LetNormalTE(ReferenceLocalVariableT(FullNameT(_, _,CodeVarNameT("weakMuta")),FinalT,CoordT(WeakT, _)),refExpr) => {
         refExpr.result.reference match {
@@ -56,7 +56,7 @@ class WeakTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       Tests.loadExpected("programs/weaks/weakFromLocalCRefStruct.vale"))
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
 
     vassert(Collector.all(main.body, { case SoftLoadTE(_, WeakT) => true }).size >= 1)
 
@@ -67,7 +67,7 @@ class WeakTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         Tests.loadExpected("programs/weaks/weakFromCRefStruct.vale"))
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
 
     vassert(Collector.all(main.body, { case SoftLoadTE(_, WeakT) => true }).size >= 1)
 
@@ -82,7 +82,7 @@ class WeakTests extends FunSuite with Matchers {
           |exported func main() int { ret getHp(&&Muta(7)); }
           |""".stripMargin)
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
     Collector.only(main.body, { case BorrowToWeakTE(_) => })
     compile.evalForKind(Vector()) match { case VonInt(7) => }
   }
@@ -96,7 +96,7 @@ class WeakTests extends FunSuite with Matchers {
           |""".stripMargin)
 
     try {
-       compile.expectTemputs().lookupFunction("main")
+       compile.expectCompilerOutputs().lookupFunction("main")
       vfail()
     } catch {
       case TookWeakRefOfNonWeakableError() =>
@@ -115,7 +115,7 @@ class WeakTests extends FunSuite with Matchers {
           |""".stripMargin)
 
     try {
-       compile.expectTemputs().lookupFunction("main")
+       compile.expectCompilerOutputs().lookupFunction("main")
       vfail()
     } catch {
       case WeakableImplingMismatch(true, false) =>
@@ -133,7 +133,7 @@ class WeakTests extends FunSuite with Matchers {
           |""".stripMargin)
 
     try {
-       compile.expectTemputs().lookupFunction("main")
+       compile.expectCompilerOutputs().lookupFunction("main")
       vfail()
     } catch {
       case WeakableImplingMismatch(false, true) =>
@@ -149,7 +149,7 @@ class WeakTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         Tests.loadExpected("programs/weaks/lockWhileLiveInterface.vale"))
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
     Collector.only(main, {
       case LetNormalTE(ReferenceLocalVariableT(FullNameT(_, _,CodeVarNameT("weakUnit")),FinalT,CoordT(WeakT, _)),refExpr) => {
         refExpr.result.reference match {
@@ -185,7 +185,7 @@ class WeakTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         Tests.loadExpected("programs/weaks/weakFromLocalCRefInterface.vale"))
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
 
     vassert(Collector.all(main.body, { case SoftLoadTE(_, WeakT) => true }).size >= 1)
 
@@ -196,7 +196,7 @@ class WeakTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         Tests.loadExpected("programs/weaks/weakFromCRefInterface.vale"))
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
 
     vassert(Collector.all(main.body, { case SoftLoadTE(_, WeakT) => true }).size >= 1)
 
@@ -207,7 +207,7 @@ class WeakTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         Tests.loadExpected("programs/weaks/callWeakSelfMethodAfterDrop.vale"))
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
 
     vassert(Collector.all(main.body, { case SoftLoadTE(_, WeakT) => true }).size >= 1)
 
@@ -220,7 +220,7 @@ class WeakTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         Tests.loadExpected("programs/weaks/callWeakSelfMethodWhileLive.vale"))
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
 
     vassert(Collector.all(main.body, { case SoftLoadTE(_, WeakT) => true }).size >= 1)
 
@@ -254,7 +254,7 @@ class WeakTests extends FunSuite with Matchers {
           |}
           |""".stripMargin)
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
 
     val hamuts = compile.getHamuts()
 

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test" isTestSource="true" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="org.scalatest:scalatest_2.12:3.0.8" level="project" />
+    <orderEntry type="module" module-name="HigherTypingPass" />
+    <orderEntry type="module" module-name="Highlighter" />
+    <orderEntry type="module" module-name="FinalAST" />
+    <orderEntry type="module" module-name="ParsingPass" />
+    <orderEntry type="module" module-name="Tests" />
+    <orderEntry type="module" module-name="PostParsingPass" />
+    <orderEntry type="module" module-name="TypingPass" />
+    <orderEntry type="module" module-name="Utils" />
+    <orderEntry type="module" module-name="Von" />
+    <orderEntry type="module" module-name="Builtins" />
+    <orderEntry type="library" name="scala-sdk-2.12.6" level="application" />
+    <orderEntry type="module" module-name="CompileOptions" />
+  </component>
+</module>

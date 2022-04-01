@@ -1,9 +1,9 @@
 package dev.vale
 
-import dev.vale.scout.{BlockSE, BodySE, CodeBodyS, CodeVarNameS, ConsecutorSE, LocalS, NotUsed}
-import dev.vale.scout._
-import dev.vale.templar._
-import dev.vale.templar.types.BoolT
+import dev.vale.postparsing.{BlockSE, BodySE, CodeBodyS, CodeVarNameS, ConsecutorSE, LocalS, NotUsed}
+import dev.vale.postparsing._
+import dev.vale.typing._
+import dev.vale.typing.types.BoolT
 import dev.vale.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 

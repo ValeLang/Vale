@@ -1,13 +1,13 @@
 package dev.vale
 
-import dev.vale.templar.{ast, types}
-import dev.vale.templar.ast.{AbstractT, SignatureT}
-import dev.vale.templar.names.{CitizenNameT, CitizenTemplateNameT, FullNameT, FunctionNameT}
-import dev.vale.templar.types.{CoordT, IntT, InterfaceTT, OwnT, ShareT}
-import dev.vale.vivem.IntV
-import dev.vale.templar.ast._
-import dev.vale.templar.names.CitizenTemplateNameT
-import dev.vale.templar.types._
+import dev.vale.typing.{ast, types}
+import dev.vale.typing.ast.{AbstractT, SignatureT}
+import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, FullNameT, FunctionNameT}
+import dev.vale.typing.types.{CoordT, IntT, InterfaceTT, OwnT, ShareT}
+import dev.vale.testvm.IntV
+import dev.vale.typing.ast._
+import dev.vale.typing.names.CitizenTemplateNameT
+import dev.vale.typing.types._
 import dev.vale.von.{VonInt, VonStr}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -22,15 +22,15 @@ class VirtualTests extends FunSuite with Matchers {
           |  ret doThing(i);
           |}
         """.stripMargin)
-      val temputs = compile.expectTemputs()
+      val coutputs = compile.expectCompilerOutputs()
       val interner = compile.interner
 
-      vassert(temputs.getAllUserFunctions.size == 2)
-      vassert(temputs.lookupFunction("main").header.returnType == CoordT(ShareT, IntT.i32))
+      vassert(coutputs.getAllUserFunctions.size == 2)
+      vassert(coutputs.lookupFunction("main").header.returnType == CoordT(ShareT, IntT.i32))
 
       val doThing =
         vassertSome(
-          temputs.lookupFunction(
+          coutputs.lookupFunction(
             SignatureT(
               FullNameT(
                 PackageCoordinate.TEST_TLD,
@@ -57,16 +57,16 @@ class VirtualTests extends FunSuite with Matchers {
         |  ret doThing(i);
         |}
       """.stripMargin)
-    val temputs = compile.expectTemputs()
+    val coutputs = compile.expectCompilerOutputs()
     val interner = compile.interner
 
-    vassert(temputs.getAllUserFunctions.size == 2)
-    vassert(temputs.lookupFunction("main").header.returnType == CoordT(ShareT, IntT.i32))
+    vassert(coutputs.getAllUserFunctions.size == 2)
+    vassert(coutputs.lookupFunction("main").header.returnType == CoordT(ShareT, IntT.i32))
 
 
     val doThing =
       vassertSome(
-        temputs.lookupFunction(
+        coutputs.lookupFunction(
           ast.SignatureT(
             FullNameT(
               PackageCoordinate.TEST_TLD,
@@ -100,14 +100,14 @@ class VirtualTests extends FunSuite with Matchers {
         |  ret doThing(i);
         |}
       """.stripMargin)
-    val temputs = compile.expectTemputs()
+    val coutputs = compile.expectCompilerOutputs()
     val interner = compile.interner
 
-    vassert(temputs.getAllUserFunctions.size == 1)
-    vassert(temputs.lookupFunction("main").header.returnType == CoordT(ShareT, IntT.i32))
+    vassert(coutputs.getAllUserFunctions.size == 1)
+    vassert(coutputs.lookupFunction("main").header.returnType == CoordT(ShareT, IntT.i32))
 
 
-    val doThing = temputs.lookupFunction("doThing")
+    val doThing = coutputs.lookupFunction("doThing")
     vassert(doThing.header.params(0).virtuality.get == AbstractT())
   }
 
@@ -122,7 +122,7 @@ class VirtualTests extends FunSuite with Matchers {
           |abstract func collectHeaders2(header &List<&Header>, virtual this &SectionMember);
           |func collectHeaders2(header &List<&Header>, this &Header) { }
         """.stripMargin)
-    val temputs = compile.getHamuts()
+    val coutputs = compile.getHamuts()
   }
 
   test("Open interface constructors") {
@@ -151,7 +151,7 @@ class VirtualTests extends FunSuite with Matchers {
           |  ret hopscotch(&x);
           |}
         """.stripMargin)
-    val temputs = compile.getHamuts()
+    val coutputs = compile.getHamuts()
     compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
 

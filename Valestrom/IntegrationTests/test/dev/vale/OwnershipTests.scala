@@ -1,19 +1,19 @@
 package dev.vale
 
-import dev.vale.scout.patterns.AtomSP
-import dev.vale.templar.ast.{FunctionCallTE, LetAndLendTE, LetNormalTE, UnletTE}
-import dev.vale.templar.env.ReferenceLocalVariableT
-import dev.vale.templar.expression.CallTemplar
-import dev.vale.templar.names.{FullNameT, FunctionNameT, TemplarTemporaryVarNameT}
-import dev.vale.templar.templata.{functionName, simpleName}
-import dev.vale.templar.types.{BorrowT, CoordT, FinalT, OwnT, StructTT}
-import dev.vale.scout._
-import dev.vale.templar._
-import dev.vale.templar.ast._
-import dev.vale.templar.templata.functionName
-import dev.vale.templar.types._
+import dev.vale.postparsing.patterns.AtomSP
+import dev.vale.typing.ast.{FunctionCallTE, LetAndLendTE, LetNormalTE, UnletTE}
+import dev.vale.typing.env.ReferenceLocalVariableT
+import dev.vale.typing.expression.CallCompiler
+import dev.vale.typing.names.{FullNameT, FunctionNameT, TypingPassTemporaryVarNameT}
+import dev.vale.typing.templata.{functionName, simpleName}
+import dev.vale.typing.types.{BorrowT, CoordT, FinalT, OwnT, StructTT}
+import dev.vale.postparsing._
+import dev.vale.typing._
+import dev.vale.typing.ast._
+import dev.vale.typing.templata.functionName
+import dev.vale.typing.types._
 import org.scalatest.{FunSuite, Matchers}
-import dev.vale.templar.names.FunctionNameT
+import dev.vale.typing.names.FunctionNameT
 import dev.vale.von.VonInt
 
 class OwnershipTests extends FunSuite with Matchers {
@@ -26,9 +26,9 @@ class OwnershipTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
     Collector.only(main, {
-      case letTE @ LetAndLendTE(ReferenceLocalVariableT(FullNameT(_, Vector(FunctionNameT("main",Vector(),Vector())),TemplarTemporaryVarNameT(_)),FinalT,_),refExpr,targetOwnership) => {
+      case letTE @ LetAndLendTE(ReferenceLocalVariableT(FullNameT(_, Vector(FunctionNameT("main",Vector(),Vector())),TypingPassTemporaryVarNameT(_)),FinalT,_),refExpr,targetOwnership) => {
         refExpr.result.reference match {
           case CoordT(OwnT, StructTT(simpleName("Muta"))) =>
         }
@@ -53,7 +53,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
     compile.evalForKind(Vector()) match { case VonInt(9) => }
   }
 
@@ -69,7 +69,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
     Collector.only(main, { case FunctionCallTE(functionName("drop"), _) => })
     Collector.all(main, { case FunctionCallTE(_, _) => }).size shouldEqual 2
 
@@ -94,7 +94,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
     Collector.only(main, { case FunctionCallTE(functionName("drop"), _) => })
     Collector.all(main, { case FunctionCallTE(_, _) => }).size shouldEqual 2
 
@@ -119,7 +119,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
     Collector.only(main, { case FunctionCallTE(functionName("drop"), _) => })
 
     compile.evalForKindAndStdout(Vector()) match { case (VonInt(10), "Destroying!\n") => }
@@ -143,7 +143,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
     Collector.only(main, { case FunctionCallTE(functionName("drop"), _) => })
     Collector.all(main, { case FunctionCallTE(_, _) => }).size shouldEqual 2
 
@@ -173,22 +173,22 @@ class OwnershipTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.expectTemputs()
+    val coutputs = compile.expectCompilerOutputs()
 
     // Destructor should only be calling println, NOT the destructor (itself)
-    val destructor = temputs.lookupUserFunction("drop")
+    val destructor = coutputs.lookupUserFunction("drop")
     // The only function lookup should be println
     Collector.only(destructor, { case FunctionCallTE(functionName("println"), _) => })
     // Only one call (the above println)
     Collector.all(destructor, { case FunctionCallTE(_, _) => }).size shouldEqual 1
 
     // moo should be calling the destructor
-    val moo = temputs.lookupFunction("moo")
+    val moo = coutputs.lookupFunction("moo")
     Collector.only(moo, { case FunctionCallTE(functionName("drop"), _) => })
     Collector.only(moo, { case FunctionCallTE(_, _) => })
 
     // main should not be calling the destructor
-    val main = temputs.lookupFunction("main")
+    val main = coutputs.lookupFunction("main")
     Collector.all(main, { case FunctionCallTE(functionName("drop"), _) => true }).size shouldEqual 0
 
     compile.evalForStdout(Vector()) shouldEqual "Destroying!\n"
@@ -213,7 +213,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
     Collector.only(main, { case FunctionCallTE(functionName("drop"), _) => })
     Collector.all(main, { case FunctionCallTE(_, _) => }).size shouldEqual 2
 
@@ -251,7 +251,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
 
     val numVariables =
       Collector.all(main, {

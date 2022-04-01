@@ -1,8 +1,8 @@
 package dev.vale
 
-import dev.vale.templar.env.ReferenceLocalVariableT
-import dev.vale.templar._
-import dev.vale.templar.types._
+import dev.vale.typing.env.ReferenceLocalVariableT
+import dev.vale.typing._
+import dev.vale.typing.types._
 import dev.vale.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 

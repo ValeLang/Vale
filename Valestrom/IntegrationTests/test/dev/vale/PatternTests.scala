@@ -1,10 +1,10 @@
 package dev.vale
 
-import dev.vale.parser.ast.FinalP
-import dev.vale.templar.env.ReferenceLocalVariableT
-import dev.vale.templar.types.{CoordT, IntT, ShareT}
-import dev.vale.templar._
-import dev.vale.templar.types.IntT
+import dev.vale.parsing.ast.FinalP
+import dev.vale.typing.env.ReferenceLocalVariableT
+import dev.vale.typing.types.{CoordT, IntT, ShareT}
+import dev.vale.typing._
+import dev.vale.typing.types.IntT
 import dev.vale.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 
@@ -12,8 +12,8 @@ class PatternTests extends FunSuite with Matchers {
   // To get something like this to work would be rather involved.
   //test("Test matching a single-member pack") {
   //  val compile = RunCompilation.test( "exported func main() int { [x] = (4); = x; }")
-  //  compile.getTemputs()
-  //  val main = temputs.lookupFunction("main")
+  //  compile.getCompilerOutputs()
+  //  val main = coutputs.lookupFunction("main")
   //  main.header.returnType shouldEqual Coord(Share, Readonly, Int2())
   //  compile.evalForKind(Vector()) match { case VonInt(4) => }
   //}
@@ -21,8 +21,8 @@ class PatternTests extends FunSuite with Matchers {
   test("Test matching a multiple-member seq of immutables") {
     // Checks that the 5 made it into y, and it was an int
     val compile = RunCompilation.test( "exported func main() int { [x, y] = (4, 5); ret y; }")
-    val temputs = compile.expectTemputs()
-    val main = temputs.lookupFunction("main")
+    val coutputs = compile.expectCompilerOutputs()
+    val main = coutputs.lookupFunction("main")
     main.header.returnType shouldEqual CoordT(ShareT, IntT.i32)
     compile.evalForKind(Vector()) match { case VonInt(5) => }
   }
@@ -34,8 +34,8 @@ class PatternTests extends FunSuite with Matchers {
         |struct Marine { hp int; }
         |exported func main() int { [x, y] = (Marine(6), Marine(8)); ret y.hp; }
       """.stripMargin)
-    val temputs = compile.expectTemputs()
-    val main = temputs.lookupFunction("main");
+    val coutputs = compile.expectCompilerOutputs()
+    val main = coutputs.lookupFunction("main");
     main.header.returnType shouldEqual CoordT(ShareT, IntT.i32)
     compile.evalForKind(Vector()) match { case VonInt(8) => }
   }
@@ -47,8 +47,8 @@ class PatternTests extends FunSuite with Matchers {
         |struct Marine { hp int; }
         |exported func main() int { [x, y] = (7, Marine(8)); ret y.hp; }
       """.stripMargin)
-    val temputs = compile.expectTemputs()
-    temputs.functions.head.header.returnType == CoordT(ShareT, IntT.i32)
+    val coutputs = compile.expectCompilerOutputs()
+    coutputs.functions.head.header.returnType == CoordT(ShareT, IntT.i32)
     compile.evalForKind(Vector()) match { case VonInt(8) => }
   }
 
@@ -63,8 +63,8 @@ class PatternTests extends FunSuite with Matchers {
         |  ret y.hp;
         |}
       """.stripMargin)
-    val temputs = compile.expectTemputs()
-    temputs.functions.head.header.returnType == CoordT(ShareT, IntT.i32)
+    val coutputs = compile.expectCompilerOutputs()
+    coutputs.functions.head.header.returnType == CoordT(ShareT, IntT.i32)
     compile.evalForKind(Vector()) match { case VonInt(8) => }
   }
 
@@ -80,8 +80,8 @@ class PatternTests extends FunSuite with Matchers {
         |  }
         |}
       """.stripMargin)
-    val temputs = compile.expectTemputs()
-    temputs.functions.head.header.returnType == CoordT(ShareT, IntT.i32)
+    val coutputs = compile.expectCompilerOutputs()
+    coutputs.functions.head.header.returnType == CoordT(ShareT, IntT.i32)
     compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
@@ -107,8 +107,8 @@ class PatternTests extends FunSuite with Matchers {
 //        |    }
 //        |}
 //      """.stripMargin)
-//    val temputs = compile.expectTemputs()
-//    temputs.functions.head.header.returnType == CoordT(ShareT, IntT.i32)
+//    val coutputs = compile.expectCompilerOutputs()
+//    coutputs.functions.head.header.returnType == CoordT(ShareT, IntT.i32)
 //    compile.evalForKind(Vector()) match { case VonInt(8) => }
 //  }
 
@@ -138,8 +138,8 @@ class PatternTests extends FunSuite with Matchers {
 //        |  Vec3(x * len, y * len, z * len)
 //        |}
 //        |""".stripMargin)
-//    val temputs = compile.expectTemputs()
-//    temputs.functions.head.header.returnType == CoordT(ShareT, IntT.i32)
+//    val coutputs = compile.expectCompilerOutputs()
+//    coutputs.functions.head.header.returnType == CoordT(ShareT, IntT.i32)
 //    compile.evalForKind(Vector()) match { case VonInt(8) => }
 //  }
 }

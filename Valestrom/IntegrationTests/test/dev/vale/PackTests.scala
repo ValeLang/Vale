@@ -1,6 +1,6 @@
 package dev.vale
-//import dev.vale.templar.types.{IntT, PackTT}
-import dev.vale.templar.ast.TupleTE
+//import dev.vale.typingpass.types.{IntT, PackTT}
+import dev.vale.typing.ast.TupleTE
 import dev.vale.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 
@@ -14,8 +14,8 @@ class PackTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.expectTemputs()
-    val main = temputs.lookupFunction("main")
+    val coutputs = compile.expectCompilerOutputs()
+    val main = coutputs.lookupFunction("main")
     Collector.all(main, { case TupleTE(Vector(_, _, _), _) => }).size shouldEqual 1
 
     compile.evalForKind(Vector()) match { case VonInt(5) => }
@@ -30,8 +30,8 @@ class PackTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.expectTemputs()
-    val main = temputs.lookupFunction("main")
+    val coutputs = compile.expectCompilerOutputs()
+    val main = coutputs.lookupFunction("main")
     Collector.all(main, {
       case TupleTE(
         Vector(
@@ -52,8 +52,8 @@ class PackTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.expectTemputs()
-    val main = temputs.lookupFunction("main")
+    val coutputs = compile.expectCompilerOutputs()
+    val main = coutputs.lookupFunction("main")
     Collector.all(main, { case TupleTE(Vector(_, TupleTE(Vector(_, _), _)), _) => }).size shouldEqual 1
 
     compile.evalForKind(Vector()) match { case VonInt(5) => }

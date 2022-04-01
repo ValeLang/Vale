@@ -3,5 +3,5 @@ exported func main() int {
   while a < 42 {
     set a = a + 1;
   }
-  ret a;
+  return a;
 }

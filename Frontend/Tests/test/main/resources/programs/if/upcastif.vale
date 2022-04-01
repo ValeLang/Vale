@@ -6,10 +6,10 @@ impl I for A;
 struct B {}
 impl I for B;
 
-func moo(a &A) int { ret 73; }
-func moo(b &B) int { ret 42; }
+func moo(a &A) int { return 73; }
+func moo(b &B) int { return 42; }
 
 exported func main() int {
   myVar I = if (false) { A() } else { B() };
-  ret moo(&myVar);
+  return moo(&myVar);
 }

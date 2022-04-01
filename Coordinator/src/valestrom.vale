@@ -55,5 +55,5 @@ Subprocess {
   });
 
   x = (Subprocess(program, &command_line_args)).expect();
-  ret x;
+  return x;
 }

@@ -20,19 +20,19 @@ struct MyList<T> where T Ref {
 }
 
 abstract func forEach<F, T>(virtual opt &MyOption<MyList<T>>, func F) int;
-func forEach<F, T>(opt &MyNone<MyList<T>>, func F) int { ret 0; }
+func forEach<F, T>(opt &MyNone<MyList<T>>, func F) int { return 0; }
 func forEach<F, T>(opt &MySome<MyList<T>>, func F) int {
    forEach<F, T>(opt.value, func);
-   ret 0;
+   return 0;
 }
 func forEach<F, T>(list &MyList<T>, func F) int {
   func(list.value);
   forEach<F, T>(list.next, func);
-  ret 0;
+  return 0;
 }
 
 exported func main() int {
   list = MyList<int>(10, MySome<^MyList<int>>(MyList<int>(20, MySome<^MyList<int>>(MyList<int>(30, MyNone<^MyList<int>>())))));
   forEach(&list, &print);
-  ret 0;
+  return 0;
 }

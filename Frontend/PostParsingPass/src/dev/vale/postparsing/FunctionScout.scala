@@ -139,7 +139,7 @@ class FunctionScout(
               Some(retTypePT))
           rune
         }
-        case (Some(_), Some(_)) => throw CompileErrorExceptionS(postparsing.RangedInternalErrorS(PostParser.evalRange(file, range), "Can't have return type and infer-ret at the same time"))
+        case (Some(_), Some(_)) => throw CompileErrorExceptionS(postparsing.RangedInternalErrorS(PostParser.evalRange(file, range), "Can't have return type and infer-return at the same time"))
       }
     maybeRetCoordRune.foreach(retCoordRune => runeToExplicitType.put(retCoordRune.rune, CoordTemplataType))
 
@@ -361,7 +361,7 @@ class FunctionScout(
             runeToExplicitType,
             Some(retTypePT))
         }
-        case (Some(_), Some(_)) => throw CompileErrorExceptionS(postparsing.RangedInternalErrorS(PostParser.evalRange(parentStackFrame.file, range), "Can't have return type and infer-ret at the same time"))
+        case (Some(_), Some(_)) => throw CompileErrorExceptionS(postparsing.RangedInternalErrorS(PostParser.evalRange(parentStackFrame.file, range), "Can't have return type and infer-return at the same time"))
       }
     maybeRetCoordRune.foreach(retCoordRune => runeToExplicitType.put(retCoordRune.rune, CoordTemplataType))
 
@@ -562,7 +562,7 @@ class FunctionScout(
             runeToExplicitType,
             Some(retTypePT))
         }
-        case (Some(_), Some(_)) => throw CompileErrorExceptionS(postparsing.RangedInternalErrorS(PostParser.evalRange(myStackFrame.file, range), "Can't have return type and infer-ret at the same time"))
+        case (Some(_), Some(_)) => throw CompileErrorExceptionS(postparsing.RangedInternalErrorS(PostParser.evalRange(myStackFrame.file, range), "Can't have return type and infer-return at the same time"))
       }
     maybeReturnRune.foreach(retCoordRune => runeToExplicitType.put(retCoordRune.rune, CoordTemplataType))
 

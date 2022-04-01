@@ -28,7 +28,7 @@ class PostParserErrorHumanizerTests extends FunSuite with Matchers {
     val error =
       compileForError(
         """
-          |func do(callable) infer-ret {callable()}
+          |func do(callable) infer-return {callable()}
           |""".stripMargin)
     error match {
       case LightFunctionMustHaveParamTypes(_, 0) =>

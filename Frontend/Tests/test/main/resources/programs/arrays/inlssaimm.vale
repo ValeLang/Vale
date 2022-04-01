@@ -1,4 +1,4 @@
 exported func main() int {
   a = #[#][23, 31, 42];
-  ret a.2;
+  return a.2;
 }

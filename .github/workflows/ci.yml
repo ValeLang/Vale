@@ -15,26 +15,26 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: install prereqs
-        run: cmd /c '.\install-compiler-prereqs-windows.bat C:\LLVM13 C:\BootstrappingValeCompiler'
+        run: cmd /c '.\scripts\windows\install-compiler-prereqs.bat C:\LLVM13 C:\BootstrappingValeCompiler'
       - name: run vcvars and build-compiler-windows.bat
-        run: cmd /c '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && .\build-compiler-windows.bat C:\LLVM13\llvm-project-llvmorg-13.0.1 C:\BootstrappingValeCompiler'
+        run: cmd /c '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && .\scripts\windows\build-compiler.bat C:\LLVM13\llvm-project-llvmorg-13.0.1 C:\BootstrappingValeCompiler'
       - uses: actions/upload-artifact@v2
         with:
-          name: ValeCompiler-0-Win.zip
-          path: .\release-windows\ValeCompiler.zip
+          name: Vale-Windows-0.zip
+          path: .\release-windows\Vale-Windows-0.zip
 
   build_and_test_ubuntu:
     runs-on: ubuntu-latest
     steps: 
       - uses: actions/checkout@v2
       - name: install prereqs
-        run: ./install-compiler-prereqs-linux.sh ~/LLVMForVale ~/BootstrappingValeCompiler
+        run: ./scripts/ubuntu/install-compiler-prereqs.sh ~/LLVMForVale ~/BootstrappingValeCompiler
       - name: build compiler 
-        run: ./build-compiler-linux.sh ~/LLVMForVale/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04 ~/BootstrappingValeCompiler
+        run: ./scripts/ubuntu/build-compiler.sh ~/LLVMForVale/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04 ~/BootstrappingValeCompiler --test=all
       - uses: actions/upload-artifact@v2
         with:
-          name: ValeCompiler-0-Ubuntu.zip
-          path: ./release-unix/ValeCompiler.zip
+          name: Vale-Ubuntu-0.zip
+          path: ./release-ubuntu/Vale-Ubuntu-0.zip
 
   build_and_test_mac:
     runs-on: macos-latest
@@ -43,7 +43,7 @@ jobs:
       - name: install prereqs
         run: ./scripts/mac/install-compiler-prereqs.sh ~/BootstrappingValeCompiler
       - name: build compiler
-        run: source ~/.zshrc && ./scripts/mac/build-compiler.sh ~/BootstrappingValeCompiler
+        run: source ~/.zshrc && ./scripts/mac/build-compiler.sh ~/BootstrappingValeCompiler --test=all
       - uses: actions/upload-artifact@v2
         with:
           name: Vale-Mac-0.zip

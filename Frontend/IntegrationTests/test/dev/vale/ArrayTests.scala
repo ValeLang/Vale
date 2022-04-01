@@ -18,9 +18,9 @@ class ArrayTests extends FunSuite with Matchers {
   test("Returning static array from function and dotting it") {
     val compile = RunCompilation.test(
       """
-        |func makeArray() infer-ret { ret [#][2, 3, 4, 5, 6]; }
+        |func makeArray() infer-return { return [#][2, 3, 4, 5, 6]; }
         |exported func main() int {
-        |  ret makeArray().3;
+        |  return makeArray().3;
         |}
       """.stripMargin)
 
@@ -33,7 +33,7 @@ class ArrayTests extends FunSuite with Matchers {
         |exported func main() int {
         |  i = 2;
         |  a = [#][2, 3, 4, 5, 6];
-        |  ret a[i];
+        |  return a[i];
         |}
       """.stripMargin)
 
@@ -53,7 +53,7 @@ class ArrayTests extends FunSuite with Matchers {
         |  a = [#][13, 14, 15];
         |  sum = 0;
         |  drop_into(a, &(e) => { set sum = sum + e; });
-        |  ret sum;
+        |  return sum;
         |}
       """.stripMargin)
 
@@ -67,7 +67,7 @@ class ArrayTests extends FunSuite with Matchers {
         |  a = Array<imm>(3, {13 + _});
         |  sum = 0;
         |  drop_into(a, &(e) => { set sum = sum + e; });
-        |  ret sum;
+        |  return sum;
         |}
       """.stripMargin)
 
@@ -82,7 +82,7 @@ class ArrayTests extends FunSuite with Matchers {
         |  a = [#][Spaceship(13), Spaceship(14), Spaceship(15)];
         |  sum = 0;
         |  drop_into(a, &(e) => { set sum = sum + e.fuel; });
-        |  ret sum;
+        |  return sum;
         |}
       """.stripMargin)
 
@@ -98,7 +98,7 @@ class ArrayTests extends FunSuite with Matchers {
         |  a = MakeVaryArray(3, &{Spaceship(13 + _)});
         |  sum = 0;
         |  drop_into(a, &(e) => { set sum = sum + e.fuel; });
-        |  ret sum;
+        |  return sum;
         |}
       """.stripMargin)
 
@@ -114,7 +114,7 @@ class ArrayTests extends FunSuite with Matchers {
         |  a = Array<mut, Spaceship>(3, &{Spaceship(41 + _)});
         |  b = Array<mut, Spaceship>(3);
         |  migrate(a, &b);
-        |  ret b[1].fuel;
+        |  return b[1].fuel;
         |}
       """.stripMargin)
 
@@ -130,7 +130,7 @@ class ArrayTests extends FunSuite with Matchers {
         |  a = [#3](&{Spaceship(41 + _)});
         |  b = Array<mut, Spaceship>(3);
         |  migrate(a, &b);
-        |  ret b[1].fuel;
+        |  return b[1].fuel;
         |}
       """.stripMargin)
 
@@ -143,7 +143,7 @@ class ArrayTests extends FunSuite with Matchers {
         |exported func main() int {
         |  i = 3;
         |  a = [#5](&{_ * 42});
-        |  ret a[1];
+        |  return a[1];
         |}
         |""".stripMargin)
 
@@ -216,7 +216,7 @@ class ArrayTests extends FunSuite with Matchers {
         |exported func main() int {
         |  i = 3;
         |  a = MakeVaryArray(5, &{_ * 42});
-        |  ret a[1];
+        |  return a[1];
         |}
         |""".stripMargin)
 
@@ -263,11 +263,11 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |func doThings(arr [#5]<imm>int) int {
-        |  ret arr.3;
+        |  return arr.3;
         |}
         |exported func main() int {
         |  a = #[#][2, 3, 4, 5, 6];
-        |  ret doThings(a);
+        |  return doThings(a);
         |}
       """.stripMargin)
 
@@ -282,11 +282,11 @@ class ArrayTests extends FunSuite with Matchers {
         |}
         |
         |func doThings(arr &[#3]^MutableStruct) int {
-        |  ret arr.2.x;
+        |  return arr.2.x;
         |}
         |exported func main() int {
         |  a = [#][MutableStruct(2), MutableStruct(3), MutableStruct(4)];
-        |  ret doThings(&a);
+        |  return doThings(&a);
         |}
       """.stripMargin)
 
@@ -298,11 +298,11 @@ class ArrayTests extends FunSuite with Matchers {
   test("array map with int") {
     val compile = RunCompilation.test(
       """
-        |func __call(lol int, i int) int { ret i; }
+        |func __call(lol int, i int) int { return i; }
         |
         |exported func main() int {
         |  a = #[](10, 1337);
-        |  ret a.3;
+        |  return a.3;
         |}
       """.stripMargin)
 
@@ -323,7 +323,7 @@ class ArrayTests extends FunSuite with Matchers {
         |  a.push(73);
         |  a.push(42);
         |  a.push(73);
-        |  ret a.1;
+        |  return a.1;
         |}
       """.stripMargin)
 
@@ -340,12 +340,12 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Lam imm {}
-        |func __call(lam Lam, i int) int { ret i; }
+        |func __call(lam Lam, i int) int { return i; }
         |
         |exported func main() int
         |where F Prot = Prot["__call", Refs(Lam, int), int] {
         |  a = #[](10, Lam());
-        |  ret a.3;
+        |  return a.3;
         |}
       """.stripMargin)
 
@@ -364,11 +364,11 @@ class ArrayTests extends FunSuite with Matchers {
           |import array.make.*;
           |
           |struct Lam imm {}
-          |func __call(lam Lam, i int) int { ret i; }
+          |func __call(lam Lam, i int) int { return i; }
           |
           |exported func main() int {
           |  a = MakeArray(10, Lam());
-          |  ret a.3;
+          |  return a.3;
           |}
         """.stripMargin)
 
@@ -381,7 +381,7 @@ class ArrayTests extends FunSuite with Matchers {
           |import array.make.*;
           |exported func main() int {
           |  a = MakeArray(10, {_});
-          |  ret a.3;
+          |  return a.3;
           |}
         """.stripMargin)
 
@@ -395,7 +395,7 @@ class ArrayTests extends FunSuite with Matchers {
           |import ifunction.ifunction1.*;
           |exported func main() int {
           |  a = Array<imm, int>(10, &IFunction1<imm, int, int>({_}));
-          |  ret a.3;
+          |  return a.3;
           |}
           |""".stripMargin)
 
@@ -414,7 +414,7 @@ class ArrayTests extends FunSuite with Matchers {
           |exported func main() int {
           |  x = 7;
           |  a = MakeImmArray(10, { _ + x });
-          |  ret a.3;
+          |  return a.3;
           |}
         """.stripMargin)
     compile.evalForKind(Vector()) match { case VonInt(10) => }
@@ -426,7 +426,7 @@ class ArrayTests extends FunSuite with Matchers {
           |exported func main() int {
           |  a = MakeImmArray(10, {_});
           |  i = 5;
-          |  ret a[i];
+          |  return a[i];
           |}
         """.stripMargin)
 
@@ -437,7 +437,7 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() int {
-        |  ret [#][[#][2]].0.0;
+        |  return [#][[#][2]].0.0;
         |}
       """.stripMargin)
 
@@ -453,7 +453,7 @@ class ArrayTests extends FunSuite with Matchers {
           |      MakeArray(
           |          3,
           |          (row) => { MakeArray(3, { row + _ }) });
-          |  ret board.1.2;
+          |  return board.1.2;
           |}
         """.stripMargin)
 
@@ -470,7 +470,7 @@ class ArrayTests extends FunSuite with Matchers {
           |exported func main() int {
           |  box = IntBox(7);
           |  board = MakeArray(3, &(col) => { box.i });
-          |  ret board.1;
+          |  return board.1;
           |}
         """.stripMargin)
 
@@ -483,7 +483,7 @@ class ArrayTests extends FunSuite with Matchers {
         |func myFunc<F>(generator F) T
         |where T Ref, Prot["__call", Refs(F, int), T]
         |{
-        |  ret generator(9);
+        |  return generator(9);
         |}
         |
         |struct IntBox {
@@ -494,7 +494,7 @@ class ArrayTests extends FunSuite with Matchers {
         |  box = IntBox(7);
         |  lam = (col) => { box.i };
         |  board = myFunc(&lam);
-        |  ret board;
+        |  return board;
         |}
       """.stripMargin)
 
@@ -508,7 +508,7 @@ class ArrayTests extends FunSuite with Matchers {
           |exported func main() int {
           |  arr = MakeVaryArray(3, {_});
           |  set arr[1] = 1337;
-          |  ret arr.1;
+          |  return arr.1;
           |}
         """.stripMargin)
 
@@ -521,7 +521,7 @@ class ArrayTests extends FunSuite with Matchers {
           |import ifunction.ifunction1.*;
           |struct MyIntIdentity {}
           |impl IFunction1<mut, int, int> for MyIntIdentity;
-          |func __call(this &MyIntIdentity, i int) int { ret i; }
+          |func __call(this &MyIntIdentity, i int) int { return i; }
           |exported func main() {
           |  m = MyIntIdentity();
           |  arr = MakeArray(10, &m);
@@ -541,12 +541,12 @@ class ArrayTests extends FunSuite with Matchers {
           |
           |struct GoblinMaker {}
           |impl IFunction1<mut, int, Goblin> for GoblinMaker;
-          |func __call(this &GoblinMaker, i int) Goblin { ret Goblin(); }
+          |func __call(this &GoblinMaker, i int) Goblin { return Goblin(); }
           |exported func main() int {
           |  m = GoblinMaker();
           |  arr = MakeVaryArray(1, &m);
           |  set arr.0 = Goblin();
-          |  ret 4;
+          |  return 4;
           |}
         """.stripMargin)
 
@@ -559,7 +559,7 @@ class ArrayTests extends FunSuite with Matchers {
         """import array.make.*;
           |exported func main() int {
           |  a = MakeArray(11, {_});
-          |  ret len(&a);
+          |  return len(&a);
           |}
         """.stripMargin)
     compile.evalForKind(Vector()) match { case VonInt(11) => }
@@ -575,7 +575,7 @@ class ArrayTests extends FunSuite with Matchers {
           |      MakeArray(5, &(i) => {
           |        board[i] + 2
           |      });
-          |  ret result.2;
+          |  return result.2;
           |}
         """.stripMargin)
 
@@ -588,10 +588,10 @@ class ArrayTests extends FunSuite with Matchers {
           |import array.make.*;
           |func toArray<M, N, E>(seq &[#N]<_>E) []<M>E
           |where M Mutability {
-          |  ret MakeArray(N, { seq[_] });
+          |  return MakeArray(N, { seq[_] });
           |}
           |exported func main() int {
-          |  ret #[#][6, 4, 3, 5, 2, 8].toArray<mut>()[3];
+          |  return #[#][6, 4, 3, 5, 2, 8].toArray<mut>()[3];
           |}
           |""".stripMargin)
     compile.evalForKind(Vector()) match { case VonInt(5) => }
@@ -602,7 +602,7 @@ class ArrayTests extends FunSuite with Matchers {
       """
         |import array.make.*;
         |exported func main() int {
-        |  ret #[#][#[#][6, 60].toImmArray(), #[#][4, 40].toImmArray(), #[#][3, 30].toImmArray()].toImmArray()[2][1];
+        |  return #[#][#[#][6, 60].toImmArray(), #[#][4, 40].toImmArray(), #[#][3, 30].toImmArray()].toImmArray()[2][1];
         |}
         |""".stripMargin)
     compile.evalForKind(Vector()) match { case VonInt(30) => }
@@ -617,7 +617,7 @@ class ArrayTests extends FunSuite with Matchers {
         |exported func main() int {
         |  sum = 0;
         |  [#][6, 60, 103].each(&IFunction1<mut, int, void>({ set sum = sum + _; }));
-        |  ret sum;
+        |  return sum;
         |}
         |""".stripMargin)
     compile.evalForKind(Vector()) match { case VonInt(169) => }
@@ -628,7 +628,7 @@ class ArrayTests extends FunSuite with Matchers {
         """
           |import array.has.*;
           |exported func main() bool {
-          |  ret (&[#][6, 60, 103]).has(103);
+          |  return (&[#][6, 60, 103]).has(103);
           |}
           |""".stripMargin)
     compile.evalForKind(Vector()) match { case VonBool(true) => }
@@ -656,7 +656,7 @@ class ArrayTests extends FunSuite with Matchers {
         |exported func main() str {
         |  a = MakeArray(10, { str(_) });
         |  b = a.toImmArray();
-        |  ret a.3;
+        |  return a.3;
         |}
       """.stripMargin)
 
@@ -669,7 +669,7 @@ class ArrayTests extends FunSuite with Matchers {
         |exported func main() int {
         |  a = #[](3);
         |  a.push(73);
-        |  ret a.0;
+        |  return a.0;
         |}
       """.stripMargin)
 
@@ -694,7 +694,7 @@ class ArrayTests extends FunSuite with Matchers {
 //          |            = a * 2;
 //          |          }
 //          |      }));
-//          |  ret newArray.0;
+//          |  return newArray.0;
 //          |}
 //          |""".stripMargin)
 //    compile.evalForKind(Vector()) match { case VonInt(0) => }
@@ -713,7 +713,7 @@ class ArrayTests extends FunSuite with Matchers {
 //        |exported func main() int {
 //        |  board = Array<mut>(5, (x) => { x});
 //        |  result = map(board, {_});
-//        |  ret result.3;
+//        |  return result.3;
 //        |}
 //      """.stripMargin)
 //

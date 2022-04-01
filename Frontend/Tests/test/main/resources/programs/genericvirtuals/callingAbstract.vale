@@ -7,11 +7,11 @@ interface MyInterface<T> where T Ref {
 
 struct MyStruct<T> where T Ref { }
 impl<T> MyInterface<T> for MyStruct<T>;
-func doThing<T>(x MyStruct<T>) int { ret 4; }
+func doThing<T>(x MyStruct<T>) int { return 4; }
 
 exported func main() int {
   x = MyStruct<int>();
   y = MyStruct<str>();
   doThing(x);
-  ret doThing(y);
+  return doThing(y);
 }

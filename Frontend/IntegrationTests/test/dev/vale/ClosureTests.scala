@@ -85,7 +85,7 @@ class ClosureTests extends FunSuite with Matchers {
         |}
         |exported func main() int {
         |  m = Marine(9);
-        |  ret { m.hp }();
+        |  return { m.hp }();
         |}
       """.stripMargin)
 
@@ -93,7 +93,7 @@ class ClosureTests extends FunSuite with Matchers {
   }
 
   test("Test closure's local variables") {
-    val compile = RunCompilation.test("exported func main() int { x = 4; ret {x}(); }")
+    val compile = RunCompilation.test("exported func main() int { x = 4; return {x}(); }")
     val coutputs = compile.expectCompilerOutputs()
 
     val main = coutputs.lookupLambdaIn("main")
@@ -116,7 +116,7 @@ class ClosureTests extends FunSuite with Matchers {
   }
 
   test("Test returning a nonmutable closured variable from the closure") {
-    val compile = RunCompilation.test("exported func main() int { x = 4; ret {x}(); }")
+    val compile = RunCompilation.test("exported func main() int { x = 4; return {x}(); }")
     val coutputs = compile.expectCompilerOutputs()
     val interner = compile.interner
 
@@ -173,7 +173,7 @@ class ClosureTests extends FunSuite with Matchers {
         |exported func main() int {
         |  x = 4;
         |  { set x = x + 1; }();
-        |  ret x;
+        |  return x;
         |}
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -200,7 +200,7 @@ class ClosureTests extends FunSuite with Matchers {
   }
 
   test("Mutates from inside a closure inside a closure") {
-    val compile = RunCompilation.test("exported func main() int { x = 4; { { set x = x + 1; }(); }(); ret x; }")
+    val compile = RunCompilation.test("exported func main() int { x = 4; { { set x = x + 1; }(); }(); return x; }")
 
     compile.evalForKind(Vector()) match { case VonInt(5) => }
   }
@@ -210,7 +210,7 @@ class ClosureTests extends FunSuite with Matchers {
       """
         |exported func main() int {
         |  x = 42;
-        |  ret { { x }() }();
+        |  return { { x }() }();
         |}
         |""".stripMargin)
 

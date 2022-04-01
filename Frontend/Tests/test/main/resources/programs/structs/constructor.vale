@@ -8,5 +8,5 @@ func Marine() Marine {
   self.cool = true;
 }
 exported func main() int {
-  ret Marine().hp;
+  return Marine().hp;
 }

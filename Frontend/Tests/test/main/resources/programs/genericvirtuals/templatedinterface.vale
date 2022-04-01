@@ -11,7 +11,7 @@ struct MyFunc { }
 impl MyIFunction1<int, int> for MyFunc;
 
 func go(this &MyFunc, param int) int {
-  ret param * 2;
+  return param * 2;
 }
 
 exported func main() {

@@ -7,6 +7,6 @@ tar xf "%temp%\llvm-install-minimal.zip" -C %1
 
 echo Downloading bootstrapping Vale compiler...
 
-powershell -c "$ProgressPreference = 'SilentlyContinue' ; Invoke-WebRequest -Uri 'https://vale.dev/releases/ValeCompiler-0.1.3.4-Win.zip' -OutFile '%temp%\ValeCompiler-0.1.3.4-Win.zip'"
+powershell -c "$ProgressPreference = 'SilentlyContinue' ; Invoke-WebRequest -Uri 'https://github.com/ValeLang/Vale/releases/download/v0.2.0.0/Vale-Windows-0.2.0.7.zip' -OutFile '%temp%\BootstrappingValeCompiler.zip'"
 mkdir %2
-tar xf "%temp%\ValeCompiler-0.1.3.4-Win.zip" -C %2
+tar xf "%temp%\BootstrappingValeCompiler.zip" -C %2

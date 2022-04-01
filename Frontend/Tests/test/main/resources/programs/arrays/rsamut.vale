@@ -5,5 +5,5 @@ func __call(this &MyIntIdentity, i int) int { i }
 
 exported func main() int {
   a = Array<mut, int>(5, &MyIntIdentity());
-  ret a[3];
+  return a[3];
 }

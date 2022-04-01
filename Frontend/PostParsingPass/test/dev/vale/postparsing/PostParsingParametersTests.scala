@@ -22,7 +22,7 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
   }
 
   test("Simple rune rule") {
-    val program1 = compile("""func main<T>(moo T) infer-ret { }""")
+    val program1 = compile("""func main<T>(moo T) infer-return { }""")
     val main = program1.lookupFunction("main")
 
     vassert(main.runeToPredictedType.size == 1)
@@ -41,7 +41,7 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
   }
 
   test("Borrowed rune") {
-    val program1 = compile("""func main<T>(moo &T) infer-ret { }""")
+    val program1 = compile("""func main<T>(moo &T) infer-return { }""")
     val main = program1.lookupFunction("main")
     val Vector(param) = main.params
 
@@ -64,7 +64,7 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
   }
 
   test("Anonymous, typed param") {
-    val program1 = compile("""func main(_ int) infer-ret { }""")
+    val program1 = compile("""func main(_ int) infer-return { }""")
     val main = program1.lookupFunction("main")
     val Vector(param) = main.params
     val paramRune =
@@ -84,7 +84,7 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
 
   test("Rune destructure") {
     // This is an ambiguous case but we decided it should destructure a struct or sequence, see CSTODTS in docs.
-    val program1 = compile("""func main<T>(moo T[a int]) infer-ret { }""")
+    val program1 = compile("""func main<T>(moo T[a int]) infer-return { }""")
     val main = program1.lookupFunction("main")
 
     val Vector(param) = main.params
@@ -124,7 +124,7 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
   test("Test param-less lambda identifying runes") {
     val bork = compile(
       """
-        |exported func main() int {do({ ret 3; })}
+        |exported func main() int {do({ return 3; })}
         |""".stripMargin)
 
     val main = bork.lookupFunction("main")

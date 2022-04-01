@@ -49,7 +49,7 @@ class CompilerVirtualTests extends FunSuite with Matchers {
         |
         |exported func main() int {
         |  f = Bork({ 7 });
-        |  ret f.bork();
+        |  return f.bork();
         |}
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -63,7 +63,7 @@ class CompilerVirtualTests extends FunSuite with Matchers {
         |
         |exported func main() int {
         |  f = IFunction1<mut, int, int>({_});
-        |  ret (f)(7);
+        |  return (f)(7);
         |}
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()

@@ -459,7 +459,7 @@ struct FunctionHeaderP {
 
   // Return type. If they leave it off, then we infer the return type.
   // (Someday, leaving off a type might mean void)
-  ret Opt<ITemplexPT>;
+  return Opt<ITemplexPT>;
 }
 
 
@@ -621,7 +621,7 @@ struct PatternPP {
   // `func launch(Spaceship(fuel, wings)) { println(fuel + wings); }`
   destructure Opt<DestructureP>;
 
-  // The `abstract` or `impl` in the parameter, like `func wings(self Serenity impl ISpaceship) int  { ret 2; }`
+  // The `abstract` or `impl` in the parameter, like `func wings(self Serenity impl ISpaceship) int  { return 2; }`
   virtuality Opt<IVirtualityP>;
 }
 
@@ -1088,7 +1088,7 @@ struct MutatePE {
 }
 impl IExpressionPE for MutatePE;
 
-// Return a value, like `ret 5 + 6;`
+// Return a value, like `return 5 + 6;`
 struct ReturnPE {
   range Range;
   expr IExpressionPE;

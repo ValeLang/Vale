@@ -40,7 +40,7 @@ class CompilerTests extends FunSuite with Matchers {
       CompilerTestCompilation.test(
         """
           |import v.builtins.tup.*;
-          |func main() infer-ret { ret 3; }
+          |func main() infer-return { return 3; }
           |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
 
@@ -57,7 +57,7 @@ class CompilerTests extends FunSuite with Matchers {
     val compile = CompilerTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |func main() int { ret 3; }
+        |func main() int { return 3; }
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
 
@@ -69,7 +69,7 @@ class CompilerTests extends FunSuite with Matchers {
     val compile = CompilerTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |exported func main() int { ret -3; }
+        |exported func main() int { return -3; }
         |""".stripMargin)
     val main = compile.expectCompilerOutputs().lookupFunction("main")
     Collector.only(main, { case ConstantIntTE(-3, _) => true })
@@ -79,9 +79,9 @@ class CompilerTests extends FunSuite with Matchers {
     val compile = CompilerTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |exported func main() infer-ret {
+        |exported func main() infer-return {
         |  a = 42;
-        |  ret a;
+        |  return a;
         |}
     """.stripMargin)
     val main = compile.expectCompilerOutputs().lookupFunction("main")
@@ -93,7 +93,7 @@ class CompilerTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |import v.builtins.panic.*;
-        |exported func main() infer-ret {
+        |exported func main() infer-return {
         |  __vbi_panic();
         |  a = 42;
         |}
@@ -106,7 +106,7 @@ class CompilerTests extends FunSuite with Matchers {
     val compile = CompilerTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |func main(a int) int { ret a; }
+        |func main(a int) int { return a; }
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
     Collector.onlyOf(coutputs.lookupFunction("main"), classOf[ParameterT]).tyype == CoordT(ShareT, IntT.i32)
@@ -121,7 +121,7 @@ class CompilerTests extends FunSuite with Matchers {
         """
           |import v.builtins.tup.*;
           |import v.builtins.arith.*;
-          |exported func main() int { ret +(2, 3); }
+          |exported func main() int { return +(2, 3); }
           |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
     val main = coutputs.lookupFunction("main")
@@ -142,7 +142,7 @@ class CompilerTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |exported struct Moo { hp int; }
         |exported func main(moo &Moo) int {
-        |  ret moo.hp;
+        |  return moo.hp;
         |}
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -155,7 +155,7 @@ class CompilerTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |exported struct Moo { hp int; }
         |exported func main() Moo {
-        |  ret Moo(42);
+        |  return Moo(42);
         |}
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -168,7 +168,7 @@ class CompilerTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |exported struct Moo { hp int; }
         |exported func main() int {
-        |  ret Moo(42).hp;
+        |  return Moo(42).hp;
         |}
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -188,7 +188,7 @@ class CompilerTests extends FunSuite with Matchers {
         |  [_] = self;
         |}
         |exported func main() int {
-        |  ret Moo(42).hp;
+        |  return Moo(42).hp;
         |}
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -223,7 +223,7 @@ class CompilerTests extends FunSuite with Matchers {
     val compile = CompilerTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |exported func main() int { ret main(); }
+        |exported func main() int { return main(); }
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
 
@@ -235,7 +235,7 @@ class CompilerTests extends FunSuite with Matchers {
     val compile = CompilerTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |exported func main() int { ret { 7 }(); }
+        |exported func main() int { return { 7 }(); }
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
 
@@ -249,7 +249,7 @@ class CompilerTests extends FunSuite with Matchers {
       CompilerTestCompilation.test(
         """
           |import v.builtins.tup.*;
-          |exported func main() int { ret {_}(3); }
+          |exported func main() int { return {_}(3); }
           |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
 
@@ -269,7 +269,7 @@ class CompilerTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |import v.builtins.arith.*;
         |exported func main() int {
-        |  ret (a int) => {+(a,a)}(3);
+        |  return (a int) => {+(a,a)}(3);
         |}
         |""".stripMargin);
     val coutputs = compile.expectCompilerOutputs()
@@ -326,8 +326,8 @@ class CompilerTests extends FunSuite with Matchers {
     val compile = CompilerTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |func ~<T>(a T, b T)T{ ret a; }
-        |exported func main() int {true ~ false; 2 ~ 2; ret 3 ~ 3;}
+        |func ~<T>(a T, b T)T{ return a; }
+        |exported func main() int {true ~ false; 2 ~ 2; return 3 ~ 3;}
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
 
@@ -339,8 +339,8 @@ class CompilerTests extends FunSuite with Matchers {
     val compile = CompilerTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |func do<F>(callable F) infer-ret { ret callable(); }
-        |exported func main() int { ret do({ ret 3; }); }
+        |func do<F>(callable F) infer-return { return callable(); }
+        |exported func main() int { return do({ return 3; }); }
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
 
@@ -377,7 +377,7 @@ class CompilerTests extends FunSuite with Matchers {
         |impl<X> MyInterface<X> for SomeStruct<X>;
         |
         |func doAThing<T>(t T) SomeStruct<T> {
-        |  ret SomeStruct<T>(t);
+        |  return SomeStruct<T>(t);
         |}
         |
         |exported func main() {
@@ -392,7 +392,7 @@ class CompilerTests extends FunSuite with Matchers {
 //    val compile = RunCompilation.test(
 //      """
 //        |struct MyStruct imm {}
-//        |func wot(b: *MyStruct) int { ret 9; }
+//        |func wot(b: *MyStruct) int { return 9; }
 //      """.stripMargin)
 //    val coutputs = compile.expectCompilerOutputs()
 //
@@ -404,7 +404,7 @@ class CompilerTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct MyStruct { a int; }
-        |exported func main() int { ms = MyStruct(7); ret ms.a; }
+        |exported func main() int { ms = MyStruct(7); return ms.a; }
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
 
@@ -596,7 +596,7 @@ class CompilerTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct MyThing { value int; }
-        |func moo() MyThing { ret MyThing(4) }
+        |func moo() MyThing { return MyThing(4) }
         |exported func main() { moo(); }
       """.stripMargin)
 
@@ -617,7 +617,7 @@ class CompilerTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |struct MySome<T> where T Ref { value T; }
         |exported func main() int {
-        |  ret MySome<int>(4).value;
+        |  return MySome<int>(4).value;
         |}
         |""".stripMargin
     )
@@ -714,7 +714,7 @@ class CompilerTests extends FunSuite with Matchers {
         |
         |exported func main() int {
         |	 Vec3i[x, y, z] = Vec3i(3, 4, 5);
-        |  ret y;
+        |  return y;
         |}
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -749,7 +749,7 @@ class CompilerTests extends FunSuite with Matchers {
         |exported func main() int {
         |  v = Vec3i(3, 4, 5);
         |	 [x, y, z] = &v;
-        |  ret y;
+        |  return y;
         |}
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -779,12 +779,12 @@ class CompilerTests extends FunSuite with Matchers {
         |impl<T> MyOption<T> for MySome<T>;
         |
         |func doSomething(opt MyOption<int>) int {
-        |  ret 9;
+        |  return 9;
         |}
         |
         |exported func main() int {
         |	x MyOption<int> = MySome<int>();
-        |	ret doSomething(x);
+        |	return doSomething(x);
         |}
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -887,13 +887,13 @@ class CompilerTests extends FunSuite with Matchers {
         |struct Bork {
         |  x int;
         |}
-        |func getX(bork &Bork) int { ret bork.x; }
+        |func getX(bork &Bork) int { return bork.x; }
         |struct List {
         |  array! Bork;
         |}
         |exported func main() int {
         |  l = List(Bork(0));
-        |  ret getX(&l.array);
+        |  return getX(&l.array);
         |}
         """.stripMargin)
 
@@ -908,13 +908,13 @@ class CompilerTests extends FunSuite with Matchers {
         |struct Bork {
         |  x int;
         |}
-        |func getX(bork &Bork) int { ret bork.x; }
+        |func getX(bork &Bork) int { return bork.x; }
         |struct List {
         |  array! Bork;
         |}
         |exported func main() int {
         |  l = List(Bork(0));
-        |  ret getX(&l.array);
+        |  return getX(&l.array);
         |}
         """.stripMargin)
 
@@ -1008,7 +1008,7 @@ class CompilerTests extends FunSuite with Matchers {
         |
         |exported func main() int {
         |  a = MakeArray(11, {_});
-        |  ret len(&a);
+        |  return len(&a);
         |}
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -1019,7 +1019,7 @@ class CompilerTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |exported func main() int {
-        |  ret 7;
+        |  return 7;
         |}
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -1034,9 +1034,9 @@ class CompilerTests extends FunSuite with Matchers {
         |import v.builtins.panic.*;
         |exported func main() int {
         |  if (true) {
-        |    ret 7;
+        |    return 7;
         |  } else {
-        |    ret 9;
+        |    return 9;
         |  }
         |  __vbi_panic();
         |}
@@ -1057,11 +1057,11 @@ class CompilerTests extends FunSuite with Matchers {
         |  m = Marine(5);
         |  x =
         |    if (true) {
-        |      ret 7;
+        |      return 7;
         |    } else {
         |      m.hp
         |    };
-        |  ret x;
+        |  return x;
         |}
         |""".stripMargin)// +
 //        Tests.loadExpected("castutils/castutils.vale") +
@@ -1356,7 +1356,7 @@ class CompilerTests extends FunSuite with Matchers {
         |  newWeapon = Weapon(10);
         |  set m.weapon = newWeapon;
         |  set newWeapon.ammo = 11;
-        |  ret 42;
+        |  return 42;
         |}
         |""".stripMargin)
     compile.getCompilerOutputs() match {
@@ -1393,7 +1393,7 @@ class CompilerTests extends FunSuite with Matchers {
         |  newWeapon = Weapon(10);
         |  set m.weapon = newWeapon;
         |  println(newWeapon.ammo);
-        |  ret 42;
+        |  return 42;
         |}
         |""".stripMargin)
     compile.getCompilerOutputs() match {
@@ -1414,7 +1414,7 @@ class CompilerTests extends FunSuite with Matchers {
         |  while (false) {
         |    drop(m);
         |  }
-        |  ret 42;
+        |  return 42;
         |}
         |""".stripMargin)
     compile.getCompilerOutputs() match {
@@ -1432,7 +1432,7 @@ class CompilerTests extends FunSuite with Matchers {
         |
         |exported func main() int {
         |  weapon = Weapon(10);
-        |  ret weapon[42];
+        |  return weapon[42];
         |}
         |""".stripMargin)
     compile.getCompilerOutputs() match {
@@ -1444,8 +1444,8 @@ class CompilerTests extends FunSuite with Matchers {
     val compile = CompilerTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |exported func moo() int { ret 1337; }
-        |exported func moo() int { ret 1448; }
+        |exported func moo() int { return 1337; }
+        |exported func moo() int { return 1448; }
         |""".stripMargin)
     compile.getCompilerOutputs() match {
       case Err(FunctionAlreadyExists(_, _, SignatureT(FullNameT(_, Vector(), FunctionNameT("moo", Vector(), Vector()))))) =>
@@ -1674,7 +1674,7 @@ class CompilerTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |exported func main() int {
         |  arr = [#][true, 42];
-        |  ret arr.1;
+        |  return arr.1;
         |}
         |""".stripMargin)
     compile.getCompilerOutputs() match {
@@ -1694,7 +1694,7 @@ class CompilerTests extends FunSuite with Matchers {
         |}
         |exported func main() bool {
         |  arr = [#4][true, false, false];
-        |  ret arr.0;
+        |  return arr.0;
         |}
         |""".stripMargin)
     compile.getCompilerOutputs() match {
@@ -1724,11 +1724,11 @@ class CompilerTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |
         |struct Firefly {}
-        |func getFuel(self &Firefly) int { ret 7; }
+        |func getFuel(self &Firefly) int { return 7; }
         |
         |exported func main() int {
         |  f = Firefly();
-        |  ret (f).getFuel();
+        |  return (f).getFuel();
         |}
         |""".stripMargin
     )

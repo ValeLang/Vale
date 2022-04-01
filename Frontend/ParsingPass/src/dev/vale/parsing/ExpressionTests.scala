@@ -307,7 +307,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
     // See BRCOBS
     compileExpressionForError(
       """
-        |a(b, ret)
+        |a(b, return)
         |""".stripMargin) match {
       case CantUseReturnInExpression(_) =>
     }

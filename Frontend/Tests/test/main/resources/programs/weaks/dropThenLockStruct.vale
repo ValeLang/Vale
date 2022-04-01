@@ -5,7 +5,7 @@ exported func main() int {
   weakMuta = &&ownMuta;
   drop(ownMuta);
   maybeBorrowMuta = lock(weakMuta);
-  ret if maybeBorrowMuta.isEmpty() {
+  return if maybeBorrowMuta.isEmpty() {
       42
     } else {
       maybeBorrowMuta.get().hp

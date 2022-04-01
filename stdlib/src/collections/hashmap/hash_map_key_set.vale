@@ -20,10 +20,10 @@ func next<K, V>(iter &HashMapKeySetIterator<K, V>) Opt<K> {
   while iter.pos < iter.table.len() {
     if entry = iter.table[set iter.pos = iter.pos + 1];
         not entry.isEmpty() {
-      ret Some<K>((entry).get().key);
+      return Some<K>((entry).get().key);
     }
   }
-  ret None<K>();
+  return None<K>();
 }
 
 func HashSet<K, V, H, E>(
@@ -35,7 +35,7 @@ HashSet<K, H, E> {
   foreach x in iter {
     sett.add(x);
   }
-  ret sett;
+  return sett;
 }
 
 func List<K, V>(
@@ -45,5 +45,5 @@ List<K> {
   foreach x in iter {
     list.add(x);
   }
-  ret list;
+  return list;
 }

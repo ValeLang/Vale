@@ -1,9 +1,9 @@
 
 func round(num float) int {
   distanceToLower = num - float(int(num));
-  ret int(num) + if (distanceToLower < 0.5) { 0 } else { 1 };
+  return int(num) + if (distanceToLower < 0.5) { 0 } else { 1 };
 }
 
 exported func main() int {
-  ret round(7.9);
+  return round(7.9);
 }

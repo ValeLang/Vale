@@ -7,5 +7,5 @@ exported func main() int {
   c = Carrier(73, 73);
   b = &c;
   drop(c);
-  ret b.interceptors;
+  return b.interceptors;
 }

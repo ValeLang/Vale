@@ -89,9 +89,9 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
     }
   }
 
-  test("Test expr starting with ret") {
+  test("Test expr starting with return") {
     // This test is here because we had a bug where we didn't check that there
-    // was whitespace after a "ret".
+    // was whitespace after a "return".
     compileStatement(StopBeforeCloseBrace, false, "retcode()") shouldHave {
       case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, "retcode")),None),Vector()) =>
     }
@@ -99,7 +99,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
 
   test("Test inner set") {
     // This test is here because we had a bug where we didn't check that there
-    // was whitespace after a "ret".
+    // was whitespace after a "return".
     compileStatement(StopBeforeCloseBrace, false,
       "oldArray = set list.array = newArray") shouldHave {
       case LetPE(_,
@@ -112,7 +112,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
 
   test("Test if-statement producing") {
     // This test is here because we had a bug where we didn't check that there
-    // was whitespace after a "ret".
+    // was whitespace after a "return".
     compileStatement(StopBeforeCloseBrace, false,
       "if true { 3 } else { 4 }") shouldHave {
       case IfPE(_,
@@ -178,7 +178,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Ret") {
-    compileStatement(StopBeforeCloseBrace, false, "ret 3") shouldHave {
+    compileStatement(StopBeforeCloseBrace, false, "return 3") shouldHave {
       case ReturnPE(_,ConstantIntPE(_, 3, _)) =>
     }
   }

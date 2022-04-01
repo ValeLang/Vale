@@ -3,11 +3,11 @@ func has<E, F>(arr &[]<_>E, elem E, equator F) bool {
   i = 0;
   while (i < arr.len()) {
     if (equator(arr[i], elem)) {
-      ret true;
+      return true;
     }
     set i = i + 1;
   }
-  ret false;
+  return false;
 }
 
 func has<E>(arr &[]<_>E, elem E) bool {
@@ -18,13 +18,13 @@ func has<E, F>(seq &[#_]<_>E, elem E, equator F) bool {
   i = 0;
   while (i < seq.len()) {
     if (equator(seq[i], elem)) {
-      ret true;
+      return true;
     }
     set i = i + 1;
   }
-  ret false;
+  return false;
 }
 
 func has<E>(seq &[#_]<_>E, elem E) bool {
-  ret has(seq, elem, ==);
+  return has(seq, elem, ==);
 }

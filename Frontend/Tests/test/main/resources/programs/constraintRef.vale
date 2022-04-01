@@ -6,5 +6,5 @@ struct Carrier {
 exported func main() int {
   carrier = Carrier(400, 8);
   ref = &carrier;
-  ret ref.interceptors;
+  return ref.interceptors;
 }

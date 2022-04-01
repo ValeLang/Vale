@@ -9,5 +9,5 @@ extern func cSumFuel_vasp(arr []<imm>Spaceship) int;
 
 exported func main() int {
   a = #[](5, (i) => { Spaceship(i * 2, 7) });
-  ret cSumFuel_vasp(a);
+  return cSumFuel_vasp(a);
 }

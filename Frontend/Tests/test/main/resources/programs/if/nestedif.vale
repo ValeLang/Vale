@@ -3,7 +3,7 @@
 // incorrectly say it was from the then's starting block (same with else).
 
 exported func main() int {
-  ret if (false) { 73 }
+  return if (false) { 73 }
     else if (true) { 42 }
     else { 62 }
 }

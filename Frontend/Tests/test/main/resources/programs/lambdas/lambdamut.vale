@@ -2,5 +2,5 @@
 exported func main() int {
   x = 10;
   ({ set x = 42; })();
-  ret x;
+  return x;
 }

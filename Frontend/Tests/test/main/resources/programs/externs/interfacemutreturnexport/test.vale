@@ -15,5 +15,5 @@ extern func runExtCommand() IShip;
 
 exported func main() int {
   res = runExtCommand();
-  ret getFuel(&res);
+  return getFuel(&res);
 }

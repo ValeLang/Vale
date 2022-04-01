@@ -68,7 +68,7 @@ class ExpressionHammer(
             letHammer.translateDestroy(hinputs, hamuts, currentFunctionHeader, locals, des2)
         // Compiler destructures put things in local variables (even though hammer itself
         // uses registers internally to make that happen).
-        // Since all the members landed in locals, we still need something to return, so we
+        // Since all the members landed in locals, we still need something to ret, so we
         // return a void.
         (destroyH, Vector.empty)
       }
@@ -77,7 +77,7 @@ class ExpressionHammer(
             letHammer.translateDestructureStaticSizedArray(hinputs, hamuts, currentFunctionHeader, locals, des2)
         // Compiler destructures put things in local variables (even though hammer itself
         // uses registers internally to make that happen).
-        // Since all the members landed in locals, we still need something to return, so we
+        // Since all the members landed in locals, we still need something to ret, so we
         // return a void.
         (destructureH, Vector.empty)
       }

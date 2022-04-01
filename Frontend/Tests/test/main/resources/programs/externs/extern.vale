@@ -2,5 +2,5 @@
 import math.*;
 
 exported func main() int {
-  ret int(sqrt(float(16)));
+  return int(sqrt(float(16)));
 }

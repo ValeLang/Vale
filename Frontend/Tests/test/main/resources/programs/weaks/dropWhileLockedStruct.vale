@@ -5,5 +5,5 @@ exported func main() int {
   weakMuta = &&ownMuta;
   maybeBorrowMuta = lock(weakMuta);
   drop(ownMuta);
-  ret maybeBorrowMuta.get().hp;
+  return maybeBorrowMuta.get().hp;
 }

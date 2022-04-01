@@ -12,5 +12,5 @@ impl<T> K<T> for L<T>;
 
 exported func main() int {
   x = L<int>();
-  ret 4;
+  return 4;
 }

@@ -55,7 +55,7 @@ object ParseErrorHumanizer {
         case BadFunctionBodyError(pos) => "expected a function body, or `;` to note there is none. Found:\n"
         case BadStartOfStatementError(pos) => "expected `}` to end the block, but found:\n"
         case BadExpressionEnd(pos) => "expected `;` or `}` after expression, but found:\n"
-        case IfBlocksMustBothOrNeitherReturn(pos) => "If blocks should either both return, or neither return."
+        case IfBlocksMustBothOrNeitherReturn(pos) => "If blocks should either both ret, or neither return."
         case ForgotSetKeyword(pos) => "Need `set` keyword to mutate a variable that already exists."
 //        case BadImport(pos, cause) => "bad import:\n" + cause.toString + "\n"
         case BadStartOfWhileCondition(pos) => "Bad start of while condition, expected ("

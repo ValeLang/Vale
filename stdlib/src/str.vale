@@ -15,14 +15,14 @@ func newStrSlice(string str, begin int, end int) StrSlice {
   vassert(end <= string.len(), "slice end was more than length!");
   vassert(end >= begin, "slice end was before begin!");
 
-  ret StrSlice(string, begin, end);
+  return StrSlice(string, begin, end);
   // this.string = string;
   // this.begin = begin;
   // this.end = end;
 }
 
 func len(s StrSlice) int {
-  ret s.end - s.begin;
+  return s.end - s.begin;
 }
 
 func contains(haystack str, needle str) bool { contains(haystack.slice(), needle.slice()) }
@@ -39,9 +39,9 @@ func find(haystack StrSlice, needle StrSlice) Opt<int> {
           haystack.string, haystack.begin, haystack.end,
           needle.string, needle.begin, needle.end);
   if offsetAfterBegin < 0 {
-    ret None<int>();
+    return None<int>();
   } else {
-    ret Some(offsetAfterBegin);
+    return Some(offsetAfterBegin);
   }
 }
 
@@ -72,7 +72,7 @@ func charAt(s StrSlice, at int) str { s.slice(at, at + 1).str() }
 
 
 func str(s StrSlice) str {
-  ret substring(s.string, s.begin, s.len());
+  return substring(s.string, s.begin, s.len());
 }
 
 
@@ -112,5 +112,5 @@ func toAscii(s StrSlice) int {
 }
 
 func fromAscii(code int) str {
-  ret strfromascii(code);
+  return strfromascii(code);
 }

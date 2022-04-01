@@ -55,7 +55,7 @@ class PostParserTests extends FunSuite with Matchers with Collector {
   }
 
   test("Lookup +") {
-    val program1 = compile("exported func main() int { ret +(3, 4); }")
+    val program1 = compile("exported func main() int { return +(3, 4); }")
     val main = program1.lookupFunction("main")
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
@@ -80,7 +80,7 @@ class PostParserTests extends FunSuite with Matchers with Collector {
   }
 
   test("Lambda") {
-    val program1 = compile("exported func main() int { ret {_ + _}(4, 6); }")
+    val program1 = compile("exported func main() int { return {_ + _}(4, 6); }")
 
     val CodeBodyS(BodySE(_, _, BlockSE(_, _, expr))) = program1.lookupFunction("main").body
     val lambda =
@@ -132,7 +132,7 @@ class PostParserTests extends FunSuite with Matchers with Collector {
   }
 
   test("Method call") {
-    val program1 = compile("exported func main() int { ret true.shout(); }")
+    val program1 = compile("exported func main() int { return true.shout(); }")
     val main = program1.lookupFunction("main")
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
@@ -142,7 +142,7 @@ class PostParserTests extends FunSuite with Matchers with Collector {
   }
 
   test("Moving method call") {
-    val program1 = compile("exported func main() int { x = 4; ret (x).shout(); }")
+    val program1 = compile("exported func main() int { x = 4; return (x).shout(); }")
     val main = program1.lookupFunction("main")
 
     val CodeBodyS(BodySE(_, _, block)) = main.body
@@ -291,7 +291,7 @@ class PostParserTests extends FunSuite with Matchers with Collector {
   test("Test loading from member") {
     val program1 = compile(
       """func MyStruct() {
-        |  ret moo.x;
+        |  return moo.x;
         |}
         |""".stripMargin)
     val main = program1.lookupFunction("MyStruct")
@@ -305,7 +305,7 @@ class PostParserTests extends FunSuite with Matchers with Collector {
   test("Test loading from member 2") {
     val program1 = compile(
       """func MyStruct() {
-        |  ret &moo.x;
+        |  return &moo.x;
         |}
         |""".stripMargin)
     val main = program1.lookupFunction("MyStruct")
@@ -503,7 +503,7 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     compileForError(
       """
         |func doCivicDance(virtual this Car) {
-        |  ret 4;
+        |  return 4;
         |  7
         |}
         """.stripMargin) match {

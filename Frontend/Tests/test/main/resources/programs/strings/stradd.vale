@@ -5,7 +5,7 @@ exported func main() int {
   combined = a + b;
 
   other = "Glory to the Lizard People";
-  ret if (streq(combined, 0, len(combined), other, 0, len(other))) {
+  return if (streq(combined, 0, len(combined), other, 0, len(other))) {
       42
     } else {
       1

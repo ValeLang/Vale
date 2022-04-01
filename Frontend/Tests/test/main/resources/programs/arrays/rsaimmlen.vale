@@ -2,5 +2,5 @@
 
 exported func main() int {
   a = MakeImmArray(5, {_});
-  ret len(a);
+  return len(a);
 }

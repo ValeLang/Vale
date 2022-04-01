@@ -2,5 +2,5 @@
 
 exported func main() int {
   a = #[](5, {_});
-  ret a[3];
+  return a[3];
 }

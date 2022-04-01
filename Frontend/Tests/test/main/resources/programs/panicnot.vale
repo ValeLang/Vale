@@ -3,5 +3,5 @@ exported func main() int {
   if (false) {
     __vbi_panic();
   }
-  ret 42;
+  return 42;
 }

@@ -84,7 +84,7 @@ sealed trait KindT {
 // like Scala's Nothing. No instance of this can ever happen.
 case class NeverT(
   // True if this Never came from a break.
-  // While will have to know about this; if it's a Never from a return, it should
+  // While will have to know about this; if it's a Never from a ret, it should
   // propagate it, but if its body is a break never, the while produces a void.
   // See BRCOBS.
   fromBreak: Boolean

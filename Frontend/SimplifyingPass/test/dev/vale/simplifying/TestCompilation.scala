@@ -1,4 +1,4 @@
-package dev.vale.monomorphizing
+package dev.vale.simplifying
 
 import dev.vale.options.GlobalOptions
 import dev.vale.{Builtins, FileCoordinateMap, PackageCoordinate, Tests}

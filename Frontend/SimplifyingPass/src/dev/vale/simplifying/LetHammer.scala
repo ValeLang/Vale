@@ -1,4 +1,4 @@
-package dev.vale.monomorphizing
+package dev.vale.simplifying
 
 import dev.vale.finalast.{BorrowH, ConsecutorH, DestroyH, DestroyStaticSizedArrayIntoLocalsH, DiscardH, ExpressionH, Final, KindH, Local, NeverH, NewStructH, OwnH, ReferenceH, StackifyH, UnstackifyH, YonderH}
 import dev.vale.typing.Hinputs

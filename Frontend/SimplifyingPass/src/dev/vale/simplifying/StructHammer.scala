@@ -1,4 +1,4 @@
-package dev.vale.monomorphizing
+package dev.vale.simplifying
 
 import dev.vale.{Interner, PackageCoordinate, vassert}
 import dev.vale.finalast.{BorrowH, EdgeH, InterfaceDefinitionH, InterfaceMethodH, InterfaceRefH, KindH, Mutable, PrototypeH, ReferenceH, StructDefinitionH, StructMemberH, StructRefH, YonderH}

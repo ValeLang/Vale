@@ -8,7 +8,7 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="PassManager" />
-    <orderEntry type="module" module-name="MonomorphizingPass" />
+    <orderEntry type="module" module-name="SimplifyingPass" />
     <orderEntry type="module" module-name="FinalAST" />
     <orderEntry type="module" module-name="Utils" />
     <orderEntry type="module" module-name="Von" />

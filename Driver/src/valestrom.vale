@@ -1,6 +1,6 @@
 
-func invoke_valestrom(
-  valestrom_path &Path,
+func invoke_frontend(
+  frontend_path &Path,
   project_directories &List<ProjectDirectoryDeclaration>,
   project_vale_inputs &List<ProjectValeInputDeclaration>,
   project_non_vale_inputs &List<ProjectNonValeInputDeclaration>,
@@ -14,15 +14,15 @@ func invoke_valestrom(
 Subprocess {
   program = if IsWindows() { "java.exe" } else { "java" };
 
-  //valestrom_path = valestrom_dir./("Valestrom.jar");
-  if not valestrom_path.exists() {
-    panic("Cannot find Valestrom.jar at: " + valestrom_path.str());
+  //frontend_path = frontend_dir./("Frontend.jar");
+  if not frontend_path.exists() {
+    panic("Cannot find Frontend.jar at: " + frontend_path.str());
   }
 
   command_line_args = List<str>();
   command_line_args.add("-cp");
-  command_line_args.add(valestrom_path.str());
-  command_line_args.add("net.verdagon.vale.driver.Driver");
+  command_line_args.add(frontend_path.str());
+  command_line_args.add("dev.vale.passmanager.PassManager");
   command_line_args.add("build");
   command_line_args.add("--output-dir");
   command_line_args.add(output_dir.str());

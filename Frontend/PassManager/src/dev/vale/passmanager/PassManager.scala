@@ -1,7 +1,7 @@
 package dev.vale.passmanager
 
 import dev.vale.highertyping.HigherTypingErrorHumanizer
-import dev.vale.monomorphizing.VonHammer
+import dev.vale.simplifying.VonHammer
 import dev.vale.highlighter.{Highlighter, Spanner}
 import dev.vale.finalast.{PackageH, ProgramH}
 import dev.vale.options.GlobalOptions
@@ -14,7 +14,7 @@ import dev.vale.{Builtins, Err, FileCoordinate, Ok, PackageCoordinate, Result, p
 import java.io.{BufferedWriter, File, FileNotFoundException, FileOutputStream, FileWriter, OutputStream, PrintStream}
 import java.util.InputMismatchException
 import dev.vale.highertyping.ProgramA
-import dev.vale.monomorphizing.Hammer
+import dev.vale.simplifying.Hammer
 import dev.vale.highlighter.Spanner
 import dev.vale.finalast.PackageH
 import dev.vale.parsing.FailedParse
@@ -30,22 +30,22 @@ import scala.util.matching.Regex
 object PassManager {
   val DEFAULT_PACKAGE_COORD = PackageCoordinate("my_module", Vector.empty)
 
-  sealed trait IValestromInput {
+  sealed trait IFrontendInput {
     def packageCoord: PackageCoordinate
   }
-  case class ModulePathInput(moduleName: String, path: String) extends IValestromInput {
+  case class ModulePathInput(moduleName: String, path: String) extends IFrontendInput {
     val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
     override def packageCoord: PackageCoordinate = PackageCoordinate(moduleName, Vector.empty)
   }
-  case class DirectFilePathInput(packageCoord: PackageCoordinate, path: String) extends IValestromInput { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
+  case class DirectFilePathInput(packageCoord: PackageCoordinate, path: String) extends IFrontendInput { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
   case class SourceInput(
       packageCoord: PackageCoordinate,
       // Name isnt guaranteed to be unique, we sometimes hand in strings like "builtins.vale"
       name: String,
-      code: String) extends IValestromInput { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
+      code: String) extends IFrontendInput { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
   case class Options(
-    inputs: Vector[IValestromInput],
+    inputs: Vector[IFrontendInput],
 //    modulePaths: Map[String, String],
 //    packagesToBuild: Vector[PackageCoordinate],
     outputDirPath: Option[String],
@@ -127,7 +127,7 @@ object PassManager {
   }
 
   def resolvePackageContents(
-      inputs: Vector[IValestromInput],
+      inputs: Vector[IFrontendInput],
       packageCoord: PackageCoordinate):
   Option[Map[String, String]] = {
     val PackageCoordinate(module, packages) = packageCoord

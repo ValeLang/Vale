@@ -1,4 +1,4 @@
-package dev.vale.monomorphizing
+package dev.vale.simplifying
 
 import dev.vale.finalast.{ArgumentH, ArrayCapacityH, ArrayLengthH, AsSubtypeH, BoolH, BorrowToWeakH, BreakH, CallH, ConsecutorH, ConstantBoolH, ConstantF64H, ConstantIntH, ConstantStrH, ConstantVoidH, DestroyImmRuntimeSizedArrayH, DestroyMutRuntimeSizedArrayH, DestroyStaticSizedArrayIntoFunctionH, DiscardH, ExpressionH, ExternCallH, Final, IfH, InlineH, InterfaceCallH, InterfaceRefH, InterfaceToInterfaceUpcastH, IsSameInstanceH, KindH, LockWeakH, NeverH, NewArrayFromValuesH, NewImmRuntimeSizedArrayH, NewMutRuntimeSizedArrayH, NewStructH, PopRuntimeSizedArrayH, PushRuntimeSizedArrayH, ReferenceH, ReturnH, ShareH, StackifyH, StaticArrayFromCallableH, StructRefH, StructToInterfaceUpcastH, UnstackifyH, VariableIdH, VoidH, WhileH}
 import dev.vale.typing.Hinputs

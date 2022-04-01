@@ -1,4 +1,4 @@
-package dev.vale.monomorphizing
+package dev.vale.simplifying
 
 import dev.vale.finalast.{BoolH, FloatH, InlineH, IntH, KindH, NeverH, PrototypeH, ReferenceH, RuntimeSizedArrayDefinitionHT, RuntimeSizedArrayHT, StaticSizedArrayDefinitionHT, StaticSizedArrayHT, StrH, VoidH, YonderH}
 import dev.vale.typing.Hinputs

@@ -1,6 +1,6 @@
 package dev.vale
 
-import dev.vale.monomorphizing.VonHammer
+import dev.vale.simplifying.VonHammer
 import dev.vale.finalast.YonderH
 import dev.vale.typing._
 import dev.vale.typing.types.StrT

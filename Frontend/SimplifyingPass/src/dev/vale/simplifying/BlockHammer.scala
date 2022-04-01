@@ -1,4 +1,4 @@
-package dev.vale.monomorphizing
+package dev.vale.simplifying
 
 import dev.vale.finalast.{BlockH, NeverH}
 import dev.vale.typing.Hinputs

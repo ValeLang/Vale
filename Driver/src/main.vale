@@ -16,11 +16,11 @@ exported func main() {
   all_args = all_args_list.toImmArray();
 
 
-  driver_path = Path(all_args_list.get(0))&.resolve();
-  if (not driver_path.exists()) {
-    panic("Path {driver_path.str()} does not exist!");
+  passmanager_path = Path(all_args_list.get(0))&.resolve();
+  if (not passmanager_path.exists()) {
+    panic("Path {passmanager_path.str()} does not exist!");
   }
-  compiler_dir = driver_path.directory();
+  compiler_dir = passmanager_path.directory();
 
   if (all_args_list.len() < 2) {
     panic("Must specify a command (build or help).");
@@ -28,23 +28,23 @@ exported func main() {
 
   if (all_args_list.get(1) == "version" or
       all_args_list.get(1) == "--version") {
-    // with open(str(self.valestrom_path / "midas-version.txt"), 'r') as f:
+    // with open(str(self.frontend_path / "midas-version.txt"), 'r') as f:
     //     print(f.read())
   } else if (all_args_list.get(1) == "help" or
       all_args_list.get(1) == "--help") {
     // if len(args) < 2:
-    //     with open(str(self.valestrom_path / "valec-version.txt"), 'r') as f:
+    //     with open(str(self.frontend_path / "valec-version.txt"), 'r') as f:
     //         print(f.read())
-    //     with open(str(self.valestrom_path / "valec-help.txt"), 'r') as f:
+    //     with open(str(self.frontend_path / "valec-help.txt"), 'r') as f:
     //         print(f.read())
     // elif args[1] == "build":
-    //     with open(str(self.valestrom_path / "valec-help-build.txt"), 'r') as f:
+    //     with open(str(self.frontend_path / "valec-help-build.txt"), 'r') as f:
     //         print(f.read())
     // elif args[1] == "run":
-    //     with open(str(self.valestrom_path / "valec-help-run.txt"), 'r') as f:
+    //     with open(str(self.frontend_path / "valec-help-run.txt"), 'r') as f:
     //         print(f.read())
     // elif args[1] == "paths":
-    //     print("Valestrom path: " + str(self.valestrom_path))
+    //     print("Frontend path: " + str(self.frontend_path))
     //     print("Builtins path: " + str(self.builtins_path))
     //     print("midas path: " + str(self.midas_path))
     // else:

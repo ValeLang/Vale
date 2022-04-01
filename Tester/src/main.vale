@@ -60,11 +60,11 @@ exported func main() int {
           "../Midas/build",
           "Alternate path for Midas, the codegen phase binary."),
         Flag(
-          "--valestrom_path",
+          "--frontend_path",
           FLAG_STR(),
-          "Path to Valestrom jar.",
-          "../Valestrom",
-          "Alternate path for Valestrom, the frontend phase binary."),
+          "Path to Frontend jar.",
+          "../Frontend",
+          "Alternate path for Frontend, the frontend phase binary."),
         Flag(
           "--builtins_dir",
           FLAG_STR(),
@@ -84,11 +84,11 @@ exported func main() int {
           "../Midas/build",
           "Directory containing Midas tests."),
         Flag(
-          "--valestrom_tests_dir",
+          "--frontend_tests_dir",
           FLAG_STR(),
-          "Directory containing Valestrom's tests.",
-          "../Valestrom",
-          "Directory containing Valestrom's tests."),
+          "Directory containing Frontend's tests.",
+          "../Frontend",
+          "Directory containing Frontend's tests."),
         Flag(
           "--concurrent",
           FLAG_INT(),
@@ -109,9 +109,9 @@ exported func main() int {
 
   max_concurrent_tests = parsed_flags.get_int_flag("--concurrent", 10);
 
-  valestrom_path = Path(parsed_flags.expect_string_flag(&flags, "--valestrom_path"));
-  common_build_args.add("--valestrom_path_override");
-  common_build_args.add(valestrom_path.str());
+  frontend_path = Path(parsed_flags.expect_string_flag(&flags, "--frontend_path"));
+  common_build_args.add("--frontend_path_override");
+  common_build_args.add(frontend_path.str());
 
   midas_path = Path(parsed_flags.expect_string_flag(&flags, "--midas_path"));
   common_build_args.add("--midas_path_override");
@@ -124,7 +124,7 @@ exported func main() int {
   valec_path = Path(parsed_flags.expect_string_flag(&flags, "--valec_path"));
 
   midas_tests_dir = Path(parsed_flags.expect_string_flag(&flags, "--midas_tests_dir"));
-  valestrom_tests_dir = Path(parsed_flags.expect_string_flag(&flags, "--valestrom_tests_dir"));
+  frontend_tests_dir = Path(parsed_flags.expect_string_flag(&flags, "--frontend_tests_dir"));
 
   verbose = parsed_flags.get_bool_flag("--verbose", false);
 
@@ -150,7 +150,7 @@ exported func main() int {
     set input_i = input_i + 1;
   }
 
-  samples_path = valestrom_tests_dir./("Tests/test/main/resources")&.resolve();
+  samples_path = frontend_tests_dir./("Tests/test/main/resources")&.resolve();
 
 
   if (include_regions.len() == 0) {

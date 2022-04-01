@@ -1,4 +1,4 @@
-package dev.vale.monomorphizing
+package dev.vale.simplifying
 
 import dev.vale.{Interner, PackageCoordinateMap, finalast, vassert, vcurious, vfail, vwat}
 import dev.vale.finalast.{ConsecutorH, ConstantVoidH, ExpressionH, Final, FullNameH, KindH, Local, NeverH, PackageH, ProgramH, PrototypeH, ReferenceH, StackifyH, Variability, VariableIdH, VoidH}

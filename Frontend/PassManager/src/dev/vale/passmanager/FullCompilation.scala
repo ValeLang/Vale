@@ -5,11 +5,11 @@ import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.FileP
 import dev.vale.postparsing.{ICompileErrorS, ProgramS}
 import dev.vale.{FileCoordinateMap, IPackageResolver, PackageCoordinate, PackageCoordinateMap, Result, vcurious}
-import dev.vale.monomorphizing.HammerCompilation
+import dev.vale.simplifying.HammerCompilation
 import dev.vale.highertyping.ICompileErrorA
 import PassManager.SourceInput
 import dev.vale.highertyping.{ICompileErrorA, ProgramA}
-import dev.vale.monomorphizing.{HammerCompilation, HammerCompilationOptions, VonHammer}
+import dev.vale.simplifying.{HammerCompilation, HammerCompilationOptions, VonHammer}
 import dev.vale.parsing.FailedParse
 import dev.vale.typing.{Hinputs, ICompileErrorT}
 import dev.vale.parsing.FailedParse

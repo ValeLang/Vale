@@ -1,4 +1,4 @@
-package dev.vale.monomorphizing
+package dev.vale.simplifying
 
 import dev.vale.highertyping.{ICompileErrorA, ProgramA}
 import dev.vale.finalast.ProgramH

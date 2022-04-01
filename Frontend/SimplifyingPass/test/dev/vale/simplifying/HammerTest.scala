@@ -1,4 +1,4 @@
-package dev.vale.monomorphizing
+package dev.vale.simplifying
 
 import dev.vale.finalast.StackifyH
 import dev.vale.{Collector, PackageCoordinate, vassert}

@@ -9,10 +9,10 @@
       <module fileurl="file://$PROJECT_DIR$/HigherTypingPass/HigherTypingPass.iml" filepath="$PROJECT_DIR$/HigherTypingPass/HigherTypingPass.iml" />
       <module fileurl="file://$PROJECT_DIR$/Highlighter/Highlighter.iml" filepath="$PROJECT_DIR$/Highlighter/Highlighter.iml" />
       <module fileurl="file://$PROJECT_DIR$/IntegrationTests/IntegrationTests.iml" filepath="$PROJECT_DIR$/IntegrationTests/IntegrationTests.iml" />
-      <module fileurl="file://$PROJECT_DIR$/MonomorphizingPass/MonomorphizingPass.iml" filepath="$PROJECT_DIR$/MonomorphizingPass/MonomorphizingPass.iml" />
       <module fileurl="file://$PROJECT_DIR$/ParsingPass/ParsingPass.iml" filepath="$PROJECT_DIR$/ParsingPass/ParsingPass.iml" />
       <module fileurl="file://$PROJECT_DIR$/PassManager/PassManager.iml" filepath="$PROJECT_DIR$/PassManager/PassManager.iml" />
       <module fileurl="file://$PROJECT_DIR$/PostParsingPass/PostParsingPass.iml" filepath="$PROJECT_DIR$/PostParsingPass/PostParsingPass.iml" />
+      <module fileurl="file://$PROJECT_DIR$/SimplifyingPass/SimplifyingPass.iml" filepath="$PROJECT_DIR$/SimplifyingPass/SimplifyingPass.iml" />
       <module fileurl="file://$PROJECT_DIR$/Solver/Solver.iml" filepath="$PROJECT_DIR$/Solver/Solver.iml" />
       <module fileurl="file://$PROJECT_DIR$/TestVM/TestVM.iml" filepath="$PROJECT_DIR$/TestVM/TestVM.iml" />
       <module fileurl="file://$PROJECT_DIR$/Tests/Tests.iml" filepath="$PROJECT_DIR$/Tests/Tests.iml" />

@@ -1,4 +1,4 @@
-package dev.vale.monomorphizing
+package dev.vale.simplifying
 
 import dev.vale.{CodeLocationS, FileCoordinate, PackageCoordinate, finalast, vwat}
 import dev.vale.finalast.FullNameH

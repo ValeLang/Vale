@@ -1,0 +1,112 @@
+package dev.vale.templar
+
+import dev.vale.scout.patterns.AtomSP
+import dev.vale.{Err, Ok, Profiler, RangeS, Result, templar}
+import dev.vale.scout.{CoordTemplataType, IRuneS, ITemplataType}
+import dev.vale.scout.rules.{CoordSendSR, IRulexSR, RuneUsage}
+import dev.vale.solver.{CompleteSolve, FailedSolve, IIncompleteOrFailedSolve, ISolverOutcome, IncompleteSolve}
+import dev.vale.astronomer._
+import dev.vale.scout.rules.CoordSendSR
+import dev.vale.scout.{ArgumentRuneS, CoordTemplataType, IRuneS, ITemplataType}
+import dev.vale.solver.RuleError
+import OverloadTemplar.FindFunctionFailure
+import dev.vale.templar.env.IEnvironment
+import dev.vale.templar.infer.{IInfererDelegate, ITemplarSolverError, TemplarSolver}
+import dev.vale.templar.templata.ITemplata
+import dev.vale.templar.citizen.AncestorHelper
+import dev.vale.templar.env.TemplataLookupContext
+import dev.vale.templar.infer._
+import dev.vale.templar.templata._
+import dev.vale.templar.types._
+import dev.vale.{Err, Ok, Profiler, RangeS, Result, vassert, vassertSome, vfail, vimpl, vwat}
+
+import scala.collection.immutable.List
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+
+case class InitialSend(
+  senderRune: RuneUsage,
+  receiverRune: RuneUsage,
+  sendTemplata: ITemplata)
+
+case class InitialKnown(
+  rune: RuneUsage,
+  templata: ITemplata)
+
+class InferTemplar(
+    opts: TemplarOptions,
+
+    delegate: IInfererDelegate[IEnvironment, Temputs]) {
+  def solveComplete(
+    env: IEnvironment,
+    temputs: Temputs,
+    rules: Vector[IRulexSR],
+    runeToType: Map[IRuneS, ITemplataType],
+    invocationRange: RangeS,
+    initialKnowns: Vector[InitialKnown],
+    initialSends: Vector[InitialSend]):
+  Result[Map[IRuneS, ITemplata], IIncompleteOrFailedSolve[IRulexSR, IRuneS, ITemplata, ITemplarSolverError]] = {
+    solve(env, temputs, rules, runeToType, invocationRange, initialKnowns, initialSends) match {
+      case f @ FailedSolve(_, _, _) => Err(f)
+      case i @ IncompleteSolve(_, _, _) => Err(i)
+      case CompleteSolve(conclusions) => Ok(conclusions)
+    }
+  }
+
+  def solveExpectComplete(
+    env: IEnvironment,
+    temputs: Temputs,
+    rules: Vector[IRulexSR],
+    runeToType: Map[IRuneS, ITemplataType],
+    invocationRange: RangeS,
+    initialKnowns: Vector[InitialKnown],
+    initialSends: Vector[InitialSend]):
+  Map[IRuneS, ITemplata] = {
+    solve(env, temputs, rules, runeToType, invocationRange, initialKnowns, initialSends) match {
+      case f @ FailedSolve(_, _, err) => {
+        throw CompileErrorExceptionT(templar.TemplarSolverError(invocationRange, f))
+      }
+      case i @ IncompleteSolve(_, _, _) => {
+        throw CompileErrorExceptionT(templar.TemplarSolverError(invocationRange, i))
+      }
+      case CompleteSolve(conclusions) => conclusions
+    }
+  }
+
+  def solve(
+    env: IEnvironment,
+    state: Temputs,
+    initialRules: Vector[IRulexSR],
+    initialRuneToType: Map[IRuneS, ITemplataType],
+    invocationRange: RangeS,
+    initialKnowns: Vector[InitialKnown],
+    initialSends: Vector[InitialSend]
+  ): ISolverOutcome[IRulexSR, IRuneS, ITemplata, ITemplarSolverError] = {
+    Profiler.frame(() => {
+
+      val runeToType =
+        initialRuneToType ++
+        initialSends.map({ case InitialSend(senderRune, _, _) =>
+          senderRune.rune -> CoordTemplataType
+        })
+      val rules =
+        initialRules ++
+        initialSends.map({ case InitialSend(senderRune, receiverRune, _) =>
+          CoordSendSR(receiverRune.range, senderRune, receiverRune)
+        })
+      val alreadyKnown =
+        initialKnowns.map({ case InitialKnown(rune, templata) => rune.rune -> templata }).toMap ++
+        initialSends.map({ case InitialSend(senderRune, _, senderTemplata) =>
+          (senderRune.rune -> senderTemplata)
+        })
+
+      new TemplarSolver[IEnvironment, Temputs](opts.globalOptions, delegate).solve(
+          invocationRange,
+          env,
+          state,
+          rules,
+          runeToType,
+          alreadyKnown)
+    })
+  }
+}

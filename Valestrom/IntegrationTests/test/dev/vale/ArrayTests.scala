@@ -1,16 +1,16 @@
 package dev.vale
 
 import com.sun.tools.javac.util.ArrayUtils
-import dev.vale.parser.ast.ImmutableP
-import dev.vale.templar.NewImmRSANeedsCallable
-import dev.vale.templar.ast.{LetNormalTE, NewImmRuntimeSizedArrayTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE}
-import dev.vale.templar.env.ReferenceLocalVariableT
-import dev.vale.templar.names.{CodeVarNameT, FullNameT}
-import dev.vale.templar.types.{CoordT, ImmutableT, IntT, MutableT, OwnT, RuntimeSizedArrayTT, ShareT}
-import dev.vale.templar._
-import dev.vale.templar.ast._
-import dev.vale.templar.names.CodeVarNameT
-import dev.vale.templar.types._
+import dev.vale.parsing.ast.ImmutableP
+import dev.vale.typing.NewImmRSANeedsCallable
+import dev.vale.typing.ast.{LetNormalTE, NewImmRuntimeSizedArrayTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE}
+import dev.vale.typing.env.ReferenceLocalVariableT
+import dev.vale.typing.names.{CodeVarNameT, FullNameT}
+import dev.vale.typing.types.{CoordT, ImmutableT, IntT, MutableT, OwnT, RuntimeSizedArrayTT, ShareT}
+import dev.vale.typing._
+import dev.vale.typing.ast._
+import dev.vale.typing.names.CodeVarNameT
+import dev.vale.typing.types._
 import dev.vale.von.{VonBool, VonInt, VonStr}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -37,8 +37,8 @@ class ArrayTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.expectTemputs()
-    Collector.only(temputs.lookupFunction("main"), {
+    val coutputs = compile.expectCompilerOutputs()
+    Collector.only(coutputs.lookupFunction("main"), {
       case StaticSizedArrayLookupTE(_,_,_,_, _) => {
       }
     })
@@ -147,8 +147,8 @@ class ArrayTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
 
-    val temputs = compile.expectTemputs()
-    Collector.only(temputs.lookupFunction("main"), {
+    val coutputs = compile.expectCompilerOutputs()
+    Collector.only(coutputs.lookupFunction("main"), {
       case StaticSizedArrayLookupTE(_,_,arrayType, _, _) => {
         arrayType.mutability shouldEqual MutableT
       }
@@ -160,8 +160,8 @@ class ArrayTests extends FunSuite with Matchers {
   test("Immutable static array from lambda") {
     val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/ssaimmfromcallable.vale"))
 
-    val temputs = compile.expectTemputs()
-    Collector.only(temputs.lookupFunction("main"), {
+    val coutputs = compile.expectCompilerOutputs()
+    Collector.only(coutputs.lookupFunction("main"), {
       case StaticSizedArrayLookupTE(_,_,arrayType, _, _) => {
         arrayType.mutability shouldEqual ImmutableT
       }
@@ -173,8 +173,8 @@ class ArrayTests extends FunSuite with Matchers {
   test("Mutable static array from lambda") {
     val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/ssamutfromcallable.vale"))
 
-    val temputs = compile.expectTemputs()
-    Collector.only(temputs.lookupFunction("main"), {
+    val coutputs = compile.expectCompilerOutputs()
+    Collector.only(coutputs.lookupFunction("main"), {
       case StaticSizedArrayLookupTE(_,_,arrayType, _, _) => {
         arrayType.mutability shouldEqual MutableT
       }
@@ -186,8 +186,8 @@ class ArrayTests extends FunSuite with Matchers {
   test("Immutable static array from values") {
     val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/ssaimmfromvalues.vale"))
 
-    val temputs = compile.expectTemputs()
-    Collector.only(temputs.lookupFunction("main"), {
+    val coutputs = compile.expectCompilerOutputs()
+    Collector.only(coutputs.lookupFunction("main"), {
       case StaticSizedArrayLookupTE(_,_,arrayType, _, _) => {
         arrayType.mutability shouldEqual ImmutableT
       }
@@ -199,8 +199,8 @@ class ArrayTests extends FunSuite with Matchers {
   test("Mutable static array from values") {
     val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/ssamutfromvalues.vale"))
 
-    val temputs = compile.expectTemputs()
-    Collector.only(temputs.lookupFunction("main"), {
+    val coutputs = compile.expectCompilerOutputs()
+    Collector.only(coutputs.lookupFunction("main"), {
       case StaticSizedArrayLookupTE(_,_,arrayType, _, _) => {
         arrayType.mutability shouldEqual MutableT
       }
@@ -220,8 +220,8 @@ class ArrayTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
 
-    val temputs = compile.expectTemputs()
-    Collector.only(temputs.lookupFunction("main"), {
+    val coutputs = compile.expectCompilerOutputs()
+    Collector.only(coutputs.lookupFunction("main"), {
       case RuntimeSizedArrayLookupTE(_,_,arrayType, _, _) => {
         arrayType.mutability shouldEqual MutableT
       }
@@ -233,8 +233,8 @@ class ArrayTests extends FunSuite with Matchers {
   test("Immutable runtime array from lambda") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/arrays/rsaimmfromcallable.vale"))
 
-    val temputs = compile.expectTemputs()
-    Collector.only(temputs.lookupFunction("main"), {
+    val coutputs = compile.expectCompilerOutputs()
+    Collector.only(coutputs.lookupFunction("main"), {
       case RuntimeSizedArrayLookupTE(_,_,arrayType, _, _) => {
         arrayType.mutability shouldEqual ImmutableT
       }
@@ -248,8 +248,8 @@ class ArrayTests extends FunSuite with Matchers {
       RunCompilation.test(
         Tests.loadExpected("programs/arrays/rsamutfromcallable.vale"))
 
-    val temputs = compile.expectTemputs()
-    Collector.only(temputs.lookupFunction("main"), {
+    val coutputs = compile.expectCompilerOutputs()
+    Collector.only(coutputs.lookupFunction("main"), {
       case RuntimeSizedArrayLookupTE(_,_,arrayType, _, _) => {
         arrayType.mutability shouldEqual MutableT
       }
@@ -306,8 +306,8 @@ class ArrayTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.expectTemputs()
-    val main = temputs.lookupFunction("main")
+    val coutputs = compile.expectCompilerOutputs()
+    val main = coutputs.lookupFunction("main")
     Collector.only(main, {
       case NewImmRuntimeSizedArrayTE(RuntimeSizedArrayTT(ImmutableT, CoordT(ShareT, IntT(_))), _, _, _) =>
     })
@@ -327,8 +327,8 @@ class ArrayTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.expectTemputs()
-    val main = temputs.lookupFunction("main")
+    val coutputs = compile.expectCompilerOutputs()
+    val main = coutputs.lookupFunction("main")
     Collector.only(main, {
       case LetNormalTE(ReferenceLocalVariableT(FullNameT(_,Vector(_),CodeVarNameT("a")),_,CoordT(OwnT,RuntimeSizedArrayTT(MutableT,CoordT(ShareT,IntT(_))))), _) =>
     })
@@ -349,8 +349,8 @@ class ArrayTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.expectTemputs()
-    val main = temputs.lookupFunction("main")
+    val coutputs = compile.expectCompilerOutputs()
+    val main = coutputs.lookupFunction("main")
     Collector.only(main, {
       case NewImmRuntimeSizedArrayTE(RuntimeSizedArrayTT(ImmutableT, CoordT(ShareT, IntT(_))), _, _, _) =>
     })
@@ -399,8 +399,8 @@ class ArrayTests extends FunSuite with Matchers {
           |}
           |""".stripMargin)
 
-    val temputs = compile.expectTemputs()
-    val main = temputs.lookupFunction("Array")
+    val coutputs = compile.expectCompilerOutputs()
+    val main = coutputs.lookupFunction("Array")
     Collector.only(main, {
       case NewImmRuntimeSizedArrayTE(RuntimeSizedArrayTT(ImmutableT, CoordT(ShareT, IntT(_))), _, _, _) =>
     })
@@ -673,7 +673,7 @@ class ArrayTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.getTemputs().expectErr() match {
+    compile.getCompilerOutputs().expectErr() match {
       case NewImmRSANeedsCallable(_) =>
     }
   }

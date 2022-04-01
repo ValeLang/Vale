@@ -3,8 +3,8 @@ package dev.vale.highlighter
 import Spanner._
 import dev.vale.{Err, Ok}
 import dev.vale.options.GlobalOptions
-import dev.vale.parser.Parser
-import dev.vale.parser._
+import dev.vale.parsing.Parser
+import dev.vale.parsing._
 import dev.vale.Err
 import org.scalatest.{FunSuite, Matchers}
 

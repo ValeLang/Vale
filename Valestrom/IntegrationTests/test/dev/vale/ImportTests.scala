@@ -1,9 +1,9 @@
 package dev.vale
 
-import dev.vale.driver.FullCompilationOptions
-import dev.vale.metal._
+import dev.vale.passmanager.FullCompilationOptions
+import dev.vale.finalast._
 import dev.vale.von.VonInt
-import dev.vale.{metal => m}
+import dev.vale.{finalast => m}
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.collection.immutable.List

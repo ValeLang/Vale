@@ -1,7 +1,7 @@
 package dev.vale
 
-import dev.vale.templar.ast.ConstantStrTE
-import dev.vale.templar._
+import dev.vale.typing.ast.ConstantStrTE
+import dev.vale.typing._
 import dev.vale.von.{VonInt, VonStr}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -14,8 +14,8 @@ class StringTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.expectTemputs()
-    Collector.only(temputs.lookupFunction("main"), { case ConstantStrTE("sprogwoggle") => })
+    val coutputs = compile.expectCompilerOutputs()
+    Collector.only(coutputs.lookupFunction("main"), { case ConstantStrTE("sprogwoggle") => })
 
     compile.evalForKind(Vector()) match { case VonStr("sprogwoggle") => }
   }
@@ -28,8 +28,8 @@ class StringTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.expectTemputs()
-    Collector.only(temputs.lookupFunction("main"), { case ConstantStrTE("") => })
+    val coutputs = compile.expectCompilerOutputs()
+    Collector.only(coutputs.lookupFunction("main"), { case ConstantStrTE("") => })
 
     compile.evalForKind(Vector()) match { case VonStr("") => }
   }
@@ -42,8 +42,8 @@ class StringTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
 
-    val temputs = compile.expectTemputs()
-    Collector.only(temputs.lookupFunction("main"), { case ConstantStrTE("sprog\nwoggle") => })
+    val coutputs = compile.expectCompilerOutputs()
+    Collector.only(coutputs.lookupFunction("main"), { case ConstantStrTE("sprog\nwoggle") => })
 
     compile.evalForKind(Vector()) match { case VonStr("sprog\nwoggle") => }
   }
@@ -57,8 +57,8 @@ class StringTests extends FunSuite with Matchers {
 
     val compile = RunCompilation.test(code)
 
-    val temputs = compile.expectTemputs()
-    Collector.only(temputs.lookupFunction("main"), {
+    val coutputs = compile.expectCompilerOutputs()
+    Collector.only(coutputs.lookupFunction("main"), {
       case ConstantStrTE(x) => {
         x shouldEqual "sprog\u001bwoggle"
       }

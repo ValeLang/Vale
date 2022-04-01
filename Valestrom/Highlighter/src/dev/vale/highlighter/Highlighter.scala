@@ -1,7 +1,7 @@
 package dev.vale.highlighter
 
 import dev.vale.{vassert, vfail}
-import dev.vale.parser._
+import dev.vale.parsing._
 import dev.vale.vfail
 
 object Highlighter {

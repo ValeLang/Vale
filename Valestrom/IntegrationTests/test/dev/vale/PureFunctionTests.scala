@@ -1,12 +1,12 @@
 package dev.vale
 
-import dev.vale.hammer.VonHammer
-import dev.vale.metal.YonderH
-import dev.vale.templar._
-import dev.vale.templar.types.StrT
-import dev.vale.vivem.StructInstanceV
+import dev.vale.monomorphizing.VonHammer
+import dev.vale.finalast.YonderH
+import dev.vale.typing._
+import dev.vale.typing.types.StrT
+import dev.vale.testvm.StructInstanceV
 import dev.vale.von.VonInt
-import dev.vale.{metal => m}
+import dev.vale.{finalast => m}
 import org.scalatest.{FunSuite, Matchers}
 
 class PureFunctionTests extends FunSuite with Matchers {

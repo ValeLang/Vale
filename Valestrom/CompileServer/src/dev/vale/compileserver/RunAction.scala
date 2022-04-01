@@ -2,9 +2,9 @@ package dev.vale.compileserver
 
 import java.io.{OutputStream, PrintStream}
 import com.google.cloud.functions.{HttpFunction, HttpRequest, HttpResponse}
-import dev.vale.driver.Driver
-import dev.vale.vivem.Vivem
-import Driver.{Options, SourceInput}
+import dev.vale.passmanager.PassManager
+import dev.vale.testvm.Vivem
+import PassManager.{Options, SourceInput}
 import dev.vale.{Err, Ok}
 import dev.vale.Err
 
@@ -19,11 +19,11 @@ class RunAction extends HttpFunction {
 
     val options =
       Options(
-        Vector(SourceInput(Driver.DEFAULT_PACKAGE_COORD, "in.vale", code)),
+        Vector(SourceInput(PassManager.DEFAULT_PACKAGE_COORD, "in.vale", code)),
         Some(""),
         false, false, true, false, true, None, false, true, true, true)
     val program =
-      Driver.build(options) match {
+      PassManager.build(options) match {
         case Ok(Some(programH)) => programH
         case Err(error) => {
           response.setStatusCode(400)

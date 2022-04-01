@@ -1,9 +1,9 @@
 package dev.vale.compileserver
 
 import com.google.cloud.functions.{HttpFunction, HttpRequest, HttpResponse}
-import dev.vale.driver.Driver
+import dev.vale.passmanager.PassManager
 import dev.vale.Err
-import Driver.{Options, SourceInput, build, jsonifyProgram}
+import PassManager.{Options, SourceInput, build, jsonifyProgram}
 import dev.vale.{Err, Ok, vimpl}
 
 class BuildAction extends HttpFunction {
@@ -17,11 +17,11 @@ class BuildAction extends HttpFunction {
 
     val options =
       Options(
-        Vector(SourceInput(Driver.DEFAULT_PACKAGE_COORD, "in.vale", code)),
+        Vector(SourceInput(PassManager.DEFAULT_PACKAGE_COORD, "in.vale", code)),
         Some(""),
         false, false, true, false, true, None, false, true, true, true)
     val json =
-      Driver.build(options) match {
+      PassManager.build(options) match {
         case Ok(Some(programH)) => jsonifyProgram(vimpl(), programH)
         case Err(error) => {
           response.setStatusCode(400)

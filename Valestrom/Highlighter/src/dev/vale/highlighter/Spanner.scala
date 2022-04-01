@@ -1,10 +1,10 @@
 package dev.vale.highlighter
 
-import dev.vale.parser.ast
-import dev.vale.parser.ast.{AbstractAttributeP, AugmentPE, BinaryCallPE, BlockPE, BraceCallPE, CallPT, ConsecutorPE, ConstantBoolPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, ConstructingMemberNameDeclarationP, DestructPE, DestructureP, DotPE, EachPE, ExportAsP, ExportAttributeP, ExternAttributeP, FileP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IAttributeP, IExpressionPE, INameDeclarationP, IRulexPR, IStructContent, ITemplexPT, IdentifyingRunesP, IfPE, ImplP, ImportP, IndexPE, InlinePT, IntPT, InterfaceP, InterpretedPT, IterableNameDeclarationP, IterationOptionNameDeclarationP, IteratorNameDeclarationP, LambdaPE, LetPE, LocalNameDeclarationP, LookupNameP, LookupPE, MagicParamLookupPE, MethodCallPE, MutabilityPT, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, NotPE, PackPE, ParamsP, PatternPP, PureAttributeP, RangeP, RegionRunePT, ReturnPE, RuntimeSizedArrayPT, RuntimeSizedP, ShortcallPE, StaticSizedArrayPT, StaticSizedP, StrInterpolatePE, StructMembersP, StructMethodP, StructP, SubExpressionPE, TemplateArgsP, TemplateRulesP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, UnitP, VoidPE, WhilePE}
+import dev.vale.parsing.ast
+import dev.vale.parsing.ast.{AbstractAttributeP, AugmentPE, BinaryCallPE, BlockPE, BraceCallPE, CallPT, ConsecutorPE, ConstantBoolPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, ConstructingMemberNameDeclarationP, DestructPE, DestructureP, DotPE, EachPE, ExportAsP, ExportAttributeP, ExternAttributeP, FileP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IAttributeP, IExpressionPE, INameDeclarationP, IRulexPR, IStructContent, ITemplexPT, IdentifyingRunesP, IfPE, ImplP, ImportP, IndexPE, InlinePT, IntPT, InterfaceP, InterpretedPT, IterableNameDeclarationP, IterationOptionNameDeclarationP, IteratorNameDeclarationP, LambdaPE, LetPE, LocalNameDeclarationP, LookupNameP, LookupPE, MagicParamLookupPE, MethodCallPE, MutabilityPT, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, NotPE, PackPE, ParamsP, PatternPP, PureAttributeP, RangeP, RegionRunePT, ReturnPE, RuntimeSizedArrayPT, RuntimeSizedP, ShortcallPE, StaticSizedArrayPT, StaticSizedP, StrInterpolatePE, StructMembersP, StructMethodP, StructP, SubExpressionPE, TemplateArgsP, TemplateRulesP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, UnitP, VoidPE, WhilePE}
 import dev.vale.{vcurious, vimpl}
-import dev.vale.parser.ast._
-import dev.vale.parser.{ast, _}
+import dev.vale.parsing.ast._
+import dev.vale.parsing.{ast, _}
 import dev.vale.vimpl
 
 sealed trait IClass

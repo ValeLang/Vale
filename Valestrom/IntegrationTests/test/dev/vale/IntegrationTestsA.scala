@@ -1,31 +1,31 @@
 package dev.vale
 
-import dev.vale.astronomer.{ICompileErrorA, ProgramA}
-import dev.vale.driver.{FullCompilation, FullCompilationOptions}
-import dev.vale.hammer.VonHammer
-import dev.vale.metal.{FullNameH, IntH, OwnH, ProgramH, PrototypeH, YonderH}
+import dev.vale.highertyping.{ICompileErrorA, ProgramA}
+import dev.vale.passmanager.{FullCompilation, FullCompilationOptions}
+import dev.vale.monomorphizing.VonHammer
+import dev.vale.finalast.{FullNameH, IntH, OwnH, ProgramH, PrototypeH, YonderH}
 import dev.vale.options.GlobalOptions
-import dev.vale.parser.FailedParse
-import dev.vale.parser.ast.FileP
-import dev.vale.scout.{ICompileErrorS, ProgramS}
-import dev.vale.templar.ast.{SignatureT, StructToInterfaceUpcastTE}
-import dev.vale.templar.names.{FullNameT, FunctionNameT}
-import dev.vale.templar.{Hinputs, ICompileErrorT, ast}
-import dev.vale.templar.types.{CoordT, IntT, ShareT, StrT}
-import dev.vale.vivem.{ConstraintViolatedException, Heap, IntV, PrimitiveKindV, ReferenceV, StructInstanceV, Vivem}
-import dev.vale.astronomer.ICompileErrorA
+import dev.vale.parsing.FailedParse
+import dev.vale.parsing.ast.FileP
+import dev.vale.postparsing.{ICompileErrorS, ProgramS}
+import dev.vale.typing.ast.{SignatureT, StructToInterfaceUpcastTE}
+import dev.vale.typing.names.{FullNameT, FunctionNameT}
+import dev.vale.typing.{Hinputs, ICompileErrorT, ast}
+import dev.vale.typing.types.{CoordT, IntT, ShareT, StrT}
+import dev.vale.testvm.{ConstraintViolatedException, Heap, IntV, PrimitiveKindV, ReferenceV, StructInstanceV, Vivem}
+import dev.vale.highertyping.ICompileErrorA
 
 import java.io.FileNotFoundException
-import dev.vale.templar.ast
-import dev.vale.{metal => m}
-import dev.vale.vivem.ReferenceV
+import dev.vale.typing.ast
+import dev.vale.{finalast => m}
+import dev.vale.testvm.ReferenceV
 import org.scalatest.{FunSuite, Matchers}
-import dev.vale.driver.FullCompilation
-import dev.vale.metal.FullNameH
-import dev.vale.scout.ICompileErrorS
-import dev.vale.templar.ast._
-import dev.vale.templar.names.FunctionNameT
-import dev.vale.templar.types.StrT
+import dev.vale.passmanager.FullCompilation
+import dev.vale.finalast.FullNameH
+import dev.vale.postparsing.ICompileErrorS
+import dev.vale.typing.ast._
+import dev.vale.typing.names.FunctionNameT
+import dev.vale.typing.types.StrT
 import dev.vale.von.{IVonData, VonBool, VonFloat, VonInt}
 
 import scala.collection.immutable.List
@@ -56,8 +56,8 @@ class RunCompilation(
   def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = fullCompilation.getVpstMap()
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = fullCompilation.getScoutput()
   def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = fullCompilation.getAstrouts()
-  def getTemputs(): Result[Hinputs, ICompileErrorT] = fullCompilation.getTemputs()
-  def expectTemputs(): Hinputs = fullCompilation.expectTemputs()
+  def getCompilerOutputs(): Result[Hinputs, ICompileErrorT] = fullCompilation.getCompilerOutputs()
+  def expectCompilerOutputs(): Hinputs = fullCompilation.expectCompilerOutputs()
   def getHamuts(): ProgramH = {
     val hamuts = fullCompilation.getHamuts()
     fullCompilation.getVonHammer().vonifyProgram(hamuts)
@@ -246,7 +246,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("Add two i64") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/add64ret.vale"))
-    val temputs = compile.getTemputs()
+    val coutputs = compile.getCompilerOutputs()
     val hamuts = compile.getHamuts()
     compile.evalForKind(Vector()) match { case VonInt(42L) => }
   }
@@ -371,7 +371,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  // implicit drop with pops
         |}
       """.stripMargin)
-    val temputs = compile.expectTemputs()
+    val coutputs = compile.expectCompilerOutputs()
     compile.evalForKind(Vector()) match { case VonInt(9) => }
   }
 
@@ -476,7 +476,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   // function families.
 //  test("Stamp multiple ancestors") {
 //    val compile = RunCompilation.test(Tests.loadExpected("programs/genericvirtuals/stampMultipleAncestors.vale"))
-//    val temputs = compile.expectTemputs()
+//    val coutputs = compile.expectCompilerOutputs()
 //    compile.evalForKind(Vector())
 //  }
 
@@ -521,8 +521,8 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |}
         |""".stripMargin)
 
-    val temputs = compile.expectTemputs()
-    val doIt = temputs.lookupFunction("doIt")
+    val coutputs = compile.expectCompilerOutputs()
+    val doIt = coutputs.lookupFunction("doIt")
     Collector.only(doIt, {
       case StructToInterfaceUpcastTE(_, _) =>
     })
@@ -544,7 +544,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |}
         |""".stripMargin)
 
-    val temputs = compile.expectTemputs()
+    val coutputs = compile.expectCompilerOutputs()
     try {
       compile.evalForKind(Vector())
       vfail()
@@ -568,15 +568,15 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |}
         |""".stripMargin)
 
-    val temputs = compile.expectTemputs()
+    val coutputs = compile.expectCompilerOutputs()
     compile.evalForKind(Vector())
   }
 
   test("Function return with ret upcasts") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/virtuals/retUpcast.vale"))
 
-    val temputs = compile.expectTemputs()
-    val doIt = temputs.lookupFunction("doIt")
+    val coutputs = compile.expectCompilerOutputs()
+    val doIt = coutputs.lookupFunction("doIt")
     Collector.only(doIt, {
       case StructToInterfaceUpcastTE(_, _) =>
     })
@@ -587,7 +587,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Map function") {
     val compile = RunCompilation.test(
         Tests.loadExpected("programs/genericvirtuals/mapFunc.vale"))
-    compile.expectTemputs()
+    compile.expectCompilerOutputs()
 
     compile.evalForKind(Vector()) match { case VonBool(true) => }
   }
@@ -604,7 +604,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  helperFunc(4);
         |}
         |""".stripMargin)
-    val hinputs = compile.expectTemputs()
+    val hinputs = compile.expectCompilerOutputs()
     val interner = compile.interner
 
     vassertSome(hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(FunctionNameT("helperFunc", Vector.empty, Vector(CoordT(ShareT, IntT.i32))))))))
@@ -631,7 +631,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  ret func(&Moo());
         |}
         |""".stripMargin)
-    val temputs = compile.getTemputs()
+    val coutputs = compile.getCompilerOutputs()
 
     compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
@@ -643,7 +643,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  ret ();
         |}
         |""".stripMargin)
-    val temputs = compile.expectTemputs()
+    val coutputs = compile.expectCompilerOutputs()
 
     compile.run(Vector())
   }
@@ -655,7 +655,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  ret TruncateI64ToI32(4300000000i64);
         |}
         |""".stripMargin)
-    val temputs = compile.expectTemputs()
+    val coutputs = compile.expectCompilerOutputs()
 
     compile.evalForKind(Vector()) match { case VonInt(5032704) => }
   }

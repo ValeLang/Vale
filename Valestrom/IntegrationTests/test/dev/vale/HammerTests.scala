@@ -1,13 +1,13 @@
 package dev.vale
 
-import dev.vale.driver.FullCompilationOptions
-import dev.vale.metal.{BlockH, CallH, ConsecutorH, ConstantIntH, InlineH, IntH, NeverH, PrototypeH, ReferenceH, ShareH}
-import dev.vale.templar.types.ShareT
-import dev.vale.vivem.PanicException
-import dev.vale.hammer._
-import dev.vale.metal.VariableIdH
+import dev.vale.passmanager.FullCompilationOptions
+import dev.vale.finalast.{BlockH, CallH, ConsecutorH, ConstantIntH, InlineH, IntH, NeverH, PrototypeH, ReferenceH, ShareH}
+import dev.vale.typing.types.ShareT
+import dev.vale.testvm.PanicException
+import dev.vale.monomorphizing._
+import dev.vale.finalast.VariableIdH
 import dev.vale.von.VonInt
-import dev.vale.{metal => m}
+import dev.vale.{finalast => m}
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.collection.immutable.List

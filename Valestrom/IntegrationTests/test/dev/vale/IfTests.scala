@@ -1,12 +1,12 @@
 package dev.vale
 
-import dev.vale.scout.{ConstantBoolSE, ConstantIntSE, IfSE, ReturnSE}
-import dev.vale.templar.ast.IfTE
-import dev.vale.templar.types.{BoolT, CoordT, IntT, ShareT, StrT}
-import dev.vale.vivem.IntV
-import dev.vale.scout._
-import dev.vale.templar._
-import dev.vale.templar.types._
+import dev.vale.postparsing.{ConstantBoolSE, ConstantIntSE, IfSE, ReturnSE}
+import dev.vale.typing.ast.IfTE
+import dev.vale.typing.types.{BoolT, CoordT, IntT, ShareT, StrT}
+import dev.vale.testvm.IntV
+import dev.vale.postparsing._
+import dev.vale.typing._
+import dev.vale.typing.types._
 import dev.vale.von.{VonInt, VonStr}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -26,8 +26,8 @@ class IfTests extends FunSuite with Matchers {
     Collector.only(iff.thenBody, { case ConstantIntSE(_, 3, _) => })
     Collector.only(iff.elseBody, { case ConstantIntSE(_, 5, _) => })
 
-    val temputs = compile.expectTemputs()
-    Collector.only(temputs.lookupFunction("main"), { case IfTE(_, _, _) => })
+    val coutputs = compile.expectCompilerOutputs()
+    Collector.only(coutputs.lookupFunction("main"), { case IfTE(_, _, _) => })
 
     compile.evalForKind(Vector()) match { case VonInt(3) => }
   }
@@ -51,11 +51,11 @@ class IfTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.expectTemputs()
-    val ifs = Collector.all(temputs.lookupFunction("main"), { case if2 @ IfTE(_, _, _) => if2 })
+    val coutputs = compile.expectCompilerOutputs()
+    val ifs = Collector.all(coutputs.lookupFunction("main"), { case if2 @ IfTE(_, _, _) => if2 })
     ifs.foreach(iff => iff.result.reference shouldEqual CoordT(ShareT, IntT.i32))
     ifs.size shouldEqual 2
-    val userFuncs = temputs.getAllUserFunctions
+    val userFuncs = coutputs.getAllUserFunctions
     userFuncs.foreach(func => {
       func.header.returnType match {
         case CoordT(ShareT, IntT.i32) =>
@@ -82,10 +82,10 @@ class IfTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.expectTemputs()
-    val ifs = Collector.all(temputs.lookupFunction("main"), { case if2 @ IfTE(_, _, _) => if2 })
+    val coutputs = compile.expectCompilerOutputs()
+    val ifs = Collector.all(coutputs.lookupFunction("main"), { case if2 @ IfTE(_, _, _) => if2 })
     ifs.foreach(iff => iff.result.reference shouldEqual CoordT(ShareT, IntT.i32))
-    val userFuncs = temputs.getAllUserFunctions
+    val userFuncs = coutputs.getAllUserFunctions
     userFuncs.foreach(func => {
       func.header.returnType match {
         case CoordT(ShareT, IntT.i32) =>
@@ -108,8 +108,8 @@ class IfTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.expectTemputs()
-    val ifs = Collector.all(temputs.lookupFunction("main"), { case if2 @ IfTE(_, _, _) => if2 })
+    val coutputs = compile.expectCompilerOutputs()
+    val ifs = Collector.all(coutputs.lookupFunction("main"), { case if2 @ IfTE(_, _, _) => if2 })
     ifs.foreach(iff => iff.result.reference shouldEqual CoordT(ShareT, StrT()))
 
     compile.evalForKind(Vector()) match { case VonStr("#") => }
@@ -180,7 +180,7 @@ class IfTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
     compile.evalForStdout(Vector()) shouldEqual "In else!\nIn rest!\nDestroying marine!\n"
   }
 
@@ -209,7 +209,7 @@ class IfTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
     compile.evalForStdout(Vector()) shouldEqual "5\n5\n5\n5\n"
   }
 
@@ -252,7 +252,7 @@ class IfTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
 
-    val main = compile.expectTemputs().lookupFunction("main")
+    val main = compile.expectCompilerOutputs().lookupFunction("main")
     compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 

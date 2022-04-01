@@ -1,10 +1,10 @@
 package dev.vale.highlighter
 
 import dev.vale.options.GlobalOptions
-import dev.vale.parser.{ParserCompilation, ast}
+import dev.vale.parsing.{ParserCompilation, ast}
 import dev.vale.{Err, FileCoordinateMap, Ok, PackageCoordinate}
-import dev.vale.parser.ast.{FileP, RangeP}
-import dev.vale.parser.{ast, _}
+import dev.vale.parsing.ast.{FileP, RangeP}
+import dev.vale.parsing.{ast, _}
 import dev.vale.Err
 import org.scalatest.{FunSuite, Matchers}
 

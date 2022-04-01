@@ -1,8 +1,8 @@
 package dev.vale
 
-import dev.vale.templar.ast.TupleTE
-import dev.vale.templar.types.IntT
-import dev.vale.templar._
+import dev.vale.typing.ast.TupleTE
+import dev.vale.typing.types.IntT
+import dev.vale.typing._
 import dev.vale.von.{VonBool, VonInt}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -22,10 +22,10 @@ class TupleTests extends FunSuite with Matchers {
   test("Simple tuple with one int") {
     val compile = RunCompilation.test( "exported func main() int { ret (9,).0; }")
 
-    val temputs = compile.expectTemputs()
-    temputs.lookupFunction("main").header.returnType.kind shouldEqual IntT.i32
+    val coutputs = compile.expectCompilerOutputs()
+    coutputs.lookupFunction("main").header.returnType.kind shouldEqual IntT.i32
     // Funny story, theres no such thing as a one element tuple! It becomes a one element array.
-    Collector.only(temputs.lookupFunction("main"), { case TupleTE(_, _) => })
+    Collector.only(coutputs.lookupFunction("main"), { case TupleTE(_, _) => })
 
     compile.evalForKind(Vector()) match { case VonInt(9) => }
   }

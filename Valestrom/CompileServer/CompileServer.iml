@@ -7,13 +7,13 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="Driver" />
-    <orderEntry type="module" module-name="Hammer" />
-    <orderEntry type="module" module-name="Metal" />
+    <orderEntry type="module" module-name="PassManager" />
+    <orderEntry type="module" module-name="MonomorphizingPass" />
+    <orderEntry type="module" module-name="FinalAST" />
     <orderEntry type="module" module-name="Utils" />
     <orderEntry type="module" module-name="Von" />
     <orderEntry type="library" name="com.google.cloud.functions:functions-framework-api:1.0.1" level="project" />
-    <orderEntry type="module" module-name="Vivem" />
+    <orderEntry type="module" module-name="TestVM" />
     <orderEntry type="library" name="scala-sdk-2.12.6" level="application" />
   </component>
 </module>

@@ -1,11 +1,11 @@
 package dev.vale.benchmark
 
-import dev.vale.astronomer.AstronomerErrorHumanizer
-import dev.vale.driver.FullCompilationOptions
+import dev.vale.highertyping.HigherTypingErrorHumanizer
+import dev.vale.passmanager.FullCompilationOptions
 import dev.vale.options.GlobalOptions
-import dev.vale.parser.ParseErrorHumanizer
-import dev.vale.scout.ScoutErrorHumanizer
-import dev.vale.templar.TemplarErrorHumanizer
+import dev.vale.parsing.ParseErrorHumanizer
+import dev.vale.postparsing.PostParserErrorHumanizer
+import dev.vale.typing.CompilerErrorHumanizer
 import dev.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, Ok, PackageCoordinate, RunCompilation, Tests, Timer}
 import dev.vale.Err
 
@@ -37,8 +37,8 @@ object Benchmark {
 //      case Err(e) => println(AstronomerErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), e))
 //      case Ok(t) =>
 //    }
-//    compile.getTemputs() match {
-//      case Err(e) => println(TemplarErrorHumanizer.humanize(true, compile.getCodeMap().getOrDie(), e))
+//    compile.getCompilerOutputs() match {
+//      case Err(e) => println(CompilerErrorHumanizer.humanize(true, compile.getCodeMap().getOrDie(), e))
 //      case Ok(t) =>
 //    }
 //    compile.getHamuts()

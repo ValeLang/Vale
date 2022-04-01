@@ -1,6 +1,6 @@
 package dev.vale
 
-import dev.vale.vivem.PanicException
+import dev.vale.testvm.PanicException
 import dev.vale.von.{VonInt, VonStr}
 import org.scalatest.{FunSuite, Matchers}
 

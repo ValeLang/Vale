@@ -1,18 +1,18 @@
 package dev.vale
 
-import dev.vale.scout.{CodeVarNameS, IVariableUseCertainty, LocalS, NotUsed, Used}
-import dev.vale.templar.ast.{AddressMemberLookupTE, ConstructTE, FunctionCallTE, LetNormalTE, LocalLookupTE, MutateTE, ReferenceMemberLookupTE}
-import dev.vale.templar.env.{AddressibleLocalVariableT, ReferenceLocalVariableT}
-import dev.vale.templar.expression.LocalHelper
-import dev.vale.templar.names.{ClosureParamNameT, CodeVarNameT, FullNameT, FunctionNameT, LambdaCitizenNameT, TemplarBlockResultVarNameT}
-import dev.vale.templar.types.{AddressMemberTypeT, CoordT, FinalT, ImmutableT, IntT, MutableT, ReferenceMemberTypeT, ShareT, StructMemberT, StructTT, VaryingT}
-import dev.vale.scout._
-import dev.vale.templar._
-import dev.vale.templar.ast._
-import dev.vale.templar.env.ReferenceLocalVariableT
-import dev.vale.templar.types._
+import dev.vale.postparsing.{CodeVarNameS, IVariableUseCertainty, LocalS, NotUsed, Used}
+import dev.vale.typing.ast.{AddressMemberLookupTE, ConstructTE, FunctionCallTE, LetNormalTE, LocalLookupTE, MutateTE, ReferenceMemberLookupTE}
+import dev.vale.typing.env.{AddressibleLocalVariableT, ReferenceLocalVariableT}
+import dev.vale.typing.expression.LocalHelper
+import dev.vale.typing.names.{ClosureParamNameT, CodeVarNameT, FullNameT, FunctionNameT, LambdaCitizenNameT, TypingPassBlockResultVarNameT}
+import dev.vale.typing.types.{AddressMemberTypeT, CoordT, FinalT, ImmutableT, IntT, MutableT, ReferenceMemberTypeT, ShareT, StructMemberT, StructTT, VaryingT}
+import dev.vale.postparsing._
+import dev.vale.typing._
+import dev.vale.typing.ast._
+import dev.vale.typing.env.ReferenceLocalVariableT
+import dev.vale.typing.types._
 import org.scalatest.{FunSuite, Matchers}
-import dev.vale.templar.names.LambdaCitizenNameT
+import dev.vale.typing.names.LambdaCitizenNameT
 import dev.vale.von.VonInt
 
 class ClosureTests extends FunSuite with Matchers {
@@ -70,7 +70,7 @@ class ClosureTests extends FunSuite with Matchers {
 
   test("Captured own is borrow") {
     // Here, the scout determined that the closure is only ever borrowing
-    // it (during the dereference to get its member) so templar doesn't put
+    // it (during the dereference to get its member) so typingpass doesn't put
     // an address into the closure, it instead puts a reference. Specifically,
     // a borrow reference (because why would we want to move this into the
     // closure struct?).
@@ -94,9 +94,9 @@ class ClosureTests extends FunSuite with Matchers {
 
   test("Test closure's local variables") {
     val compile = RunCompilation.test("exported func main() int { x = 4; ret {x}(); }")
-    val temputs = compile.expectTemputs()
+    val coutputs = compile.expectCompilerOutputs()
 
-    val main = temputs.lookupLambdaIn("main")
+    val main = coutputs.lookupLambdaIn("main")
     Collector.only(main, {
       case LetNormalTE(
         ReferenceLocalVariableT(
@@ -108,7 +108,7 @@ class ClosureTests extends FunSuite with Matchers {
     Collector.only(main, {
       case LetNormalTE(
         ReferenceLocalVariableT(
-          FullNameT(_, Vector(FunctionNameT("main",_,_), LambdaCitizenNameT(_), FunctionNameT("__call",_,_)),TemplarBlockResultVarNameT(_)),
+          FullNameT(_, Vector(FunctionNameT("main",_,_), LambdaCitizenNameT(_), FunctionNameT("__call",_,_)),TypingPassBlockResultVarNameT(_)),
           FinalT,
           CoordT(ShareT,IntT.i32)),
         _) =>
@@ -117,7 +117,7 @@ class ClosureTests extends FunSuite with Matchers {
 
   test("Test returning a nonmutable closured variable from the closure") {
     val compile = RunCompilation.test("exported func main() int { x = 4; ret {x}(); }")
-    val temputs = compile.expectTemputs()
+    val coutputs = compile.expectCompilerOutputs()
     val interner = compile.interner
 
     // The struct should have an int x in it which is a reference type.
@@ -126,11 +126,11 @@ class ClosureTests extends FunSuite with Matchers {
     // to be boxed/addressible.
     val closuredVarsStruct =
       vassertSome(
-        temputs.structs.find(struct => struct.fullName.last match { case l @ LambdaCitizenNameT(_) => true case _ => false }));
+        coutputs.structs.find(struct => struct.fullName.last match { case l @ LambdaCitizenNameT(_) => true case _ => false }));
     val expectedMembers = Vector(StructMemberT(interner.intern(CodeVarNameT("x")), FinalT, ReferenceMemberTypeT(CoordT(ShareT, IntT.i32))));
     vassert(closuredVarsStruct.members == expectedMembers)
 
-    val lambda = temputs.lookupLambdaIn("main")
+    val lambda = coutputs.lookupLambdaIn("main")
     // Make sure we're doing a referencememberlookup, since it's a reference member
     // in the closure struct.
     Collector.only(lambda, {
@@ -140,7 +140,7 @@ class ClosureTests extends FunSuite with Matchers {
     // Make sure there's a function that takes in the closured vars struct, and returns an int
     val lambdaCall =
       vassertSome(
-        temputs.functions.find(func => {
+        coutputs.functions.find(func => {
           func.header.fullName.last match {
             case FunctionNameT("__call", _, _) => true
             case _ => false
@@ -152,7 +152,7 @@ class ClosureTests extends FunSuite with Matchers {
     lambdaCall.header.returnType shouldEqual CoordT(ShareT, IntT.i32)
 
     // Make sure we make it with a function pointer and a constructed vars struct
-    val main = temputs.lookupFunction("main")
+    val main = coutputs.lookupFunction("main")
     Collector.only(main, {
       case ConstructTE(StructTT(FullNameT(_, Vector(FunctionNameT("main",Vector(),Vector())),LambdaCitizenNameT(_))), _, _) =>
     })
@@ -176,22 +176,22 @@ class ClosureTests extends FunSuite with Matchers {
         |  ret x;
         |}
       """.stripMargin)
-    val temputs = compile.expectTemputs()
+    val coutputs = compile.expectCompilerOutputs()
     val interner = compile.interner
 
     // The struct should have an int x in it.
-    val closuredVarsStruct = vassertSome(temputs.structs.find(struct => struct.fullName.last match { case l @ LambdaCitizenNameT(_) => true case _ => false }));
+    val closuredVarsStruct = vassertSome(coutputs.structs.find(struct => struct.fullName.last match { case l @ LambdaCitizenNameT(_) => true case _ => false }));
     val expectedMembers = Vector(StructMemberT(interner.intern(CodeVarNameT("x")), VaryingT, AddressMemberTypeT(CoordT(ShareT, IntT.i32))));
     vassert(closuredVarsStruct.members == expectedMembers)
 
-    val lambda = temputs.lookupLambdaIn("main")
+    val lambda = coutputs.lookupLambdaIn("main")
     Collector.only(lambda, {
       case MutateTE(
         AddressMemberLookupTE(_,_,FullNameT(_, Vector(FunctionNameT("main",Vector(),Vector()), LambdaCitizenNameT(_)),CodeVarNameT("x")),CoordT(ShareT,IntT.i32), _),
         _) =>
     })
 
-    val main = temputs.lookupFunction("main")
+    val main = coutputs.lookupFunction("main")
     Collector.only(main, {
       case LetNormalTE(AddressibleLocalVariableT(_, VaryingT, _), _) =>
     })
@@ -222,9 +222,9 @@ class ClosureTests extends FunSuite with Matchers {
       RunCompilation.test(
         Tests.loadExpected("programs/lambdas/lambdamut.vale"))
 
-    val temputs = compile.expectTemputs()
+    val coutputs = compile.expectCompilerOutputs()
     val closureStruct =
-      temputs.structs.find(struct => {
+      coutputs.structs.find(struct => {
         struct.fullName.last match {
           case LambdaCitizenNameT(_) => true
           case _ => false

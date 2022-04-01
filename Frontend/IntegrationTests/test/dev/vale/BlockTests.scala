@@ -14,7 +14,7 @@ class BlockTests extends FunSuite with Matchers {
         |exported func main() int {
         |  block {
         |  }
-        |  ret 3;
+        |  return 3;
         |}
       """.stripMargin)
     val scoutput = compile.getScoutput().getOrDie().moduleToPackagesToFilenameToContents("test")(Vector.empty)("0.vale")
@@ -30,7 +30,7 @@ class BlockTests extends FunSuite with Matchers {
         |  block {
         |    y = 6;
         |  }
-        |  ret 3;
+        |  return 3;
         |}
       """.stripMargin)
     val scoutput = compile.getScoutput().getOrDie().moduleToPackagesToFilenameToContents("test")(Vector.empty)("0.vale")
@@ -51,7 +51,7 @@ class BlockTests extends FunSuite with Matchers {
         |    y = 6;
         |  }
         |  y = 3;
-        |  ret y;
+        |  return y;
         |}
       """.stripMargin)
     val scoutput = compile.getScoutput().getOrDie()

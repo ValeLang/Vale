@@ -1,9 +1,7 @@
 import stdlib.command.*;
 import stdlib.flagger.*;
 import stdlib.path.*;
-import valecutils.pathadditions.*;
-import valecutils.*;
-import valecutils.mtpid.*;
+import stdlib.mtpid.*;
 
 
 exported func main() {

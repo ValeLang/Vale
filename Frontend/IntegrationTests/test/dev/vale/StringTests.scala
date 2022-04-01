@@ -10,7 +10,7 @@ class StringTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() str {
-        |  ret "sprogwoggle";
+        |  return "sprogwoggle";
         |}
       """.stripMargin)
 
@@ -24,7 +24,7 @@ class StringTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() str {
-        |  ret "";
+        |  return "";
         |}
       """.stripMargin)
 
@@ -38,7 +38,7 @@ class StringTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() str {
-        |  ret "sprog\nwoggle";
+        |  return "sprog\nwoggle";
         |}
         |""".stripMargin)
 
@@ -49,7 +49,7 @@ class StringTests extends FunSuite with Matchers {
   }
 
   test("String with hex escape") {
-    val code = "exported func main() str { ret \"sprog\\u001bwoggle\"; }"
+    val code = "exported func main() str { return \"sprog\\u001bwoggle\"; }"
     // This assert makes sure the above is making the input we actually intend.
     // Real source files from disk are going to have a backslash character and then a u,
     // they won't have the 0x1b byte.
@@ -87,9 +87,9 @@ class StringTests extends FunSuite with Matchers {
 
   test("String interpolate") {
     val compile = RunCompilation.test(
-      "func +(s str, i int) str { ret s + str(i); }\n" +
-      "func ns(i int) int { ret i; }\n" +
-      "exported func main() str { ret \"\"\"bl\"{ns(4)}rg\"\"\"; }")
+      "func +(s str, i int) str { return s + str(i); }\n" +
+      "func ns(i int) int { return i; }\n" +
+      "exported func main() str { return \"\"\"bl\"{ns(4)}rg\"\"\"; }")
 
     compile.evalForKind(Vector()) match { case VonStr("bl\"4rg") => }
   }
@@ -111,36 +111,36 @@ class StringTests extends FunSuite with Matchers {
           |  vassert(begin <= string.len(), "slice begin was more than length!");
           |  vassert(end <= string.len(), "slice end was more than length!");
           |  vassert(end >= begin, "slice end was before begin!");
-          |  ret StrSlice(string, begin, end);
+          |  return StrSlice(string, begin, end);
           |}
           |
           |func slice(s str) StrSlice {
-          |  ret newStrSlice(s, 0, s.len());
+          |  return newStrSlice(s, 0, s.len());
           |}
           |
-          |func slice(s str, begin int) StrSlice { ret s.slice().slice(begin); }
+          |func slice(s str, begin int) StrSlice { return s.slice().slice(begin); }
           |func slice(s StrSlice, begin int) StrSlice {
           |  newBegin = s.begin + begin;
           |  vassert(newBegin <= s.string.len(), "slice begin is more than string length!");
-          |  ret newStrSlice(s.string, newBegin, s.end);
+          |  return newStrSlice(s.string, newBegin, s.end);
           |}
           |
           |func len(s StrSlice) int {
-          |  ret s.end - s.begin;
+          |  return s.end - s.begin;
           |}
           |
           |func slice(s str, begin int, end int) StrSlice {
-          |  ret newStrSlice(s, begin, end);
+          |  return newStrSlice(s, begin, end);
           |}
           |
           |func slice(s StrSlice, begin int, end int) StrSlice {
           |  newGlyphBeginOffset = s.begin + begin;
           |  newGlyphEndOffset = s.begin + end;
-          |  ret newStrSlice(s.string, newGlyphBeginOffset, newGlyphEndOffset);
+          |  return newStrSlice(s.string, newGlyphBeginOffset, newGlyphEndOffset);
           |}
           |
           |exported func main() int {
-          |  ret "hello".slice().slice(1, 4).len();
+          |  return "hello".slice().slice(1, 4).len();
           |}
           |""".stripMargin)
 

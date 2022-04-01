@@ -1,5 +1,5 @@
 
 weakable struct Muta { hp int; }
 exported func main() int {
-  ret Muta(7).hp;
+  return Muta(7).hp;
 }

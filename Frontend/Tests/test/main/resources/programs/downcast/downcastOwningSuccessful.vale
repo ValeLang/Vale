@@ -9,12 +9,12 @@ impl IShip for Raza;
 
 func moo(ship IShip) int {
   maybeRaza Result<Raza, IShip> = (ship).as<Raza>();
-  ret if (maybeRaza.is_ok()) {
+  return if (maybeRaza.is_ok()) {
       maybeRaza.expect().fuel
     } else {
       72
     }
 }
 exported func main() int {
-  ret moo(Raza(42));
+  return moo(Raza(42));
 }

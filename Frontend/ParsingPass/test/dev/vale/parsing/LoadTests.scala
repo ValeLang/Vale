@@ -42,7 +42,7 @@ class LoadTests extends FunSuite with Matchers with Collector {
 
   test("Simple program") {
     val p = new Parser(GlobalOptions(true, true, true, true))
-    val originalFile = p.runParser("""exported func main() int { ret 42; }""").getOrDie()
+    val originalFile = p.runParser("""exported func main() int { return 42; }""").getOrDie()
     val von = ParserVonifier.vonifyFile(originalFile)
     val json = new VonPrinter(JsonSyntax, 120).print(von)
     val loadedFile = ParsedLoader.load(json).getOrDie()

@@ -24,7 +24,7 @@ func List<E, M>(arr &Array<M, E>) List<E> {
 func List<E, M, V, N>(arr [#N]<M, V>E) List<E> {
   list = List<E>(arr.len());
   migrate(arr, &list.array);
-  ret list;
+  return list;
 }
 
 func maybeExpand<E>(list &List<E>) {
@@ -44,7 +44,7 @@ func add<E>(list &List<E>, newElement E) {
 }
 func add<E>(list List<E>, newElement E) List<E> {
   list.add(newElement);
-  ret list;
+  return list;
 }
 func get<E>(list &List<E>, index int) &E {
   a = list.array;
@@ -117,11 +117,11 @@ func toImmArray<E>(list &List<E>) Array<imm, E> {
 //  l = len(*list);
 //  while i < l {
 //    if list.get(i) == element {
-//      ret true;
+//      return true;
 //    }
 //    set i = i + 1;
 //  }
-//  ret false;
+//  return false;
 //}
 //
 //
@@ -140,7 +140,7 @@ func remove<E>(list &List<E>, removeAtIndex int) E {
     set i = i - 1;
   }
 
-  ret (temp).get();
+  return (temp).get();
 }
 
 //import stdlib.*;
@@ -166,7 +166,7 @@ func remove<E>(list &List<E>, removeAtIndex int) E {
 //              result Opt<E> = None<E>();
 //              = result;
 //            };
-//          ret res;
+//          return res;
 //        }));
 //    set list.array = newArray;
 //  }
@@ -182,7 +182,7 @@ func remove<E>(list &List<E>, removeAtIndex int) E {
 //}
 func toVaryArray<E>(list List<E>) []<mut>E {
   [arr] = list;
-  ret arr;
+  return arr;
 }
 //func toImmArray<E>(list &List<E>) Array<imm, E> {
 //  [imm *](list.len(), &(i){ list.get(i) })
@@ -223,11 +223,11 @@ func indexOf<E>(list &List<E>, element E) Opt<int> {
   l = len(&list);
   while i < l {
     if list.get(i) == element {
-      ret Some(i);
+      return Some(i);
     }
     set i = i + 1;
   }
-  ret None<int>();
+  return None<int>();
 }
 
 func indexWhere<E, F>(list &List<E>, func F) Opt<int>
@@ -236,11 +236,11 @@ where Prot["__call", Refs(&F, &E), _] {
   l = len(&list);
   while i < l {
     if func(list.get(i)) {
-      ret Some(i);
+      return Some(i);
     }
     set i = i + 1;
   }
-  ret None<int>();
+  return None<int>();
 }
 
 func contains<E>(list &List<E>, element E) bool {
@@ -248,18 +248,18 @@ func contains<E>(list &List<E>, element E) bool {
   l = len(&list);
   while i < l {
     if list.get(i) == element {
-      ret true;
+      return true;
     }
     set i = i + 1;
   }
-  ret false;
+  return false;
 }
 
 func reverse<E>(list List<E>) List<E> {
   [arr] = list;
   dest = Array<mut, E>(arr.capacity());
   drop_into(arr, &{ dest.push(_); });
-  ret List(dest);
+  return List(dest);
 }
 
 //
@@ -280,7 +280,7 @@ func reverse<E>(list List<E>) List<E> {
 //
 //  set list.size = list.size - 1;
 //
-//  ret (temp).get();
+//  return (temp).get();
 //}
 //
 //
@@ -295,7 +295,7 @@ func join(list &List<str>, joiner str) str {
     combined.print(x);
     set first = false;
   }
-  ret combined.str();
+  return combined.str();
 }
 
 func join(list &List<StrSlice>) str { join(list, "") }
@@ -309,14 +309,14 @@ func join(list &List<StrSlice>, joiner str) str {
     combined.print(x);
     set first = false;
   }
-  ret combined.str();
+  return combined.str();
 }
 
 func map<E, F>(list &List<E>, func &F) List<T>
 where T Ref, Prot["__call", Refs(&F, E), T] {
   result = List<T>();
   list.each({ result.add((func)(_)); });
-  ret result;
+  return result;
 }
 
 
@@ -338,3 +338,15 @@ where T Ref, Prot["__call", Refs(&F, E), T] {
 //  println("");
 //}
 
+
+func exists<E, F>(list &List<E>, func F) bool
+where T Ref, Prot["__call", Refs(&F, E), T] {
+  i = 0;
+  while i < list.len() {
+    if (&func)(list.get(i)) {
+      return true;
+    }
+    set i = i + 1;
+  }
+  return false;
+}

@@ -12,12 +12,12 @@ exported func valeSumFuel(arr [#3]<imm>Spaceship) int {
     set total = total + arr[i].fuel;
     set i = i + 1;
   }
-  ret total;
+  return total;
 }
 
 extern func cSumFuel(arr [#3]<imm>Spaceship) int;
 
 exported func main() int {
   a = #[#3]((i) => { Spaceship(13 + i, i * 2) });
-  ret cSumFuel(a);
+  return cSumFuel(a);
 }

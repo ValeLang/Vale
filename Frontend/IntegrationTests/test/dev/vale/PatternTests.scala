@@ -20,7 +20,7 @@ class PatternTests extends FunSuite with Matchers {
 
   test("Test matching a multiple-member seq of immutables") {
     // Checks that the 5 made it into y, and it was an int
-    val compile = RunCompilation.test( "exported func main() int { [x, y] = (4, 5); ret y; }")
+    val compile = RunCompilation.test( "exported func main() int { [x, y] = (4, 5); return y; }")
     val coutputs = compile.expectCompilerOutputs()
     val main = coutputs.lookupFunction("main")
     main.header.returnType shouldEqual CoordT(ShareT, IntT.i32)
@@ -32,7 +32,7 @@ class PatternTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Marine { hp int; }
-        |exported func main() int { [x, y] = (Marine(6), Marine(8)); ret y.hp; }
+        |exported func main() int { [x, y] = (Marine(6), Marine(8)); return y.hp; }
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
     val main = coutputs.lookupFunction("main");
@@ -45,7 +45,7 @@ class PatternTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Marine { hp int; }
-        |exported func main() int { [x, y] = (7, Marine(8)); ret y.hp; }
+        |exported func main() int { [x, y] = (7, Marine(8)); return y.hp; }
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
     coutputs.functions.head.header.returnType == CoordT(ShareT, IntT.i32)
@@ -60,7 +60,7 @@ class PatternTests extends FunSuite with Matchers {
         |exported func main() int {
         |  m = Marine(8);
         |  [x, y] = (7, &m);
-        |  ret y.hp;
+        |  return y.hp;
         |}
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -76,7 +76,7 @@ class PatternTests extends FunSuite with Matchers {
         |exported func main() int {
         |  sm = #[#][ #[#][42, 73, 73] ];
         |  foreach [i, m1] in sm {
-        |    ret i;
+        |    return i;
         |  }
         |}
       """.stripMargin)
@@ -100,7 +100,7 @@ class PatternTests extends FunSuite with Matchers {
 //        |
 //        |exported func main() int {
 //        |  s ISpaceship = Firefly(42);
-//        |  ret if (Firefly(fuel) = *s) {
+//        |  return if (Firefly(fuel) = *s) {
 //        |      fuel
 //        |    } else {
 //        |      73

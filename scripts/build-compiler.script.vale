@@ -160,7 +160,6 @@ SubprocessBuilder()
     .args(#[#](
       "build",
       "coordinator=src",
-      "stdlib={existing_vale_compiler_path / "stdlib" / "src"}",
       "valecutils={cwd / "Utils" . "src"}",
       "--output_dir", (cwd / "Coordinator" / "build").str(),
       "-o", "valec"))
@@ -267,7 +266,6 @@ if which_tests == "all" {
       .args(#[#](
         "build",
         "tester=src",
-        "stdlib={existing_vale_compiler_path / "stdlib" / "src"}",
         "valecutils={cwd / "Utils" / "src"}",
         "--output_dir", (cwd / "Tester" / "build").str(),
         "-o", "testvalec"))

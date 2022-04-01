@@ -33,5 +33,5 @@ func printNextValue(opt @MySome) void {
 exported func main() int {
   list = MyList(10, MySome(MyList(20, MySome(MyList(30, MyNone())))));
   printValues(list);
-  ret 0;
+  return 0;
 }

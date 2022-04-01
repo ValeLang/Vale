@@ -10,5 +10,5 @@ exported func valeGetFuel(s &Spaceship) int { s.engine.fuel }
 extern func cGetFuel(s &Spaceship) int;
 
 exported func main() int {
-  ret cGetFuel(&Spaceship(Engine(42)));
+  return cGetFuel(&Spaceship(Engine(42)));
 }

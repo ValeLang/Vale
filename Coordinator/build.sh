@@ -7,4 +7,4 @@ if [ "$BOOTSTRAPPING_VALEC_DIR" == "" ]; then
 fi
 shift;
 
-$BOOTSTRAPPING_VALEC_DIR/valec build coordinator=src stdlib=$BOOTSTRAPPING_VALEC_DIR/stdlib/src valecutils=../Utils/src --output_dir build -o valec $@
+$BOOTSTRAPPING_VALEC_DIR/valec build coordinator=src valecutils=../Utils/src --output_dir build -o valec $@

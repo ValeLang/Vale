@@ -18,7 +18,7 @@ class HammerTests extends FunSuite with Matchers {
 
   test("Simple main") {
     val compile = RunCompilation.test(
-      "exported func main() int { ret 3; }")
+      "exported func main() int { return 3; }")
     val hamuts = compile.getHamuts()
 
     val testPackage = hamuts.lookupPackage(PackageCoordinate.TEST_TLD)
@@ -73,7 +73,7 @@ class HammerTests extends FunSuite with Matchers {
 //        |func wot(virtual b *Blark) int abstract;
 //        |struct MyStruct export imm {}
 //        |impl Blark for MyStruct;
-//        |func wot(b *MyStruct impl Blark) int { ret 9; }
+//        |func wot(b *MyStruct impl Blark) int { return 9; }
 //      """.stripMargin)
 //    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
 //    packageH.nonExternFunctions.find(f => f.prototype.fullName.toFullString().startsWith("""F("wot"""")).get;
@@ -89,7 +89,7 @@ class HammerTests extends FunSuite with Matchers {
         |exported func main() int {
         |  __vbi_panic();
         |  a = 42;
-        |  ret a;
+        |  return a;
         |}
       """.stripMargin)
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
@@ -107,7 +107,7 @@ class HammerTests extends FunSuite with Matchers {
         |import intrange.*;
         |
         |exported func main() int {
-        |  ret 3 + __vbi_panic();
+        |  return 3 + __vbi_panic();
         |}
         |""".stripMargin)
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
@@ -131,7 +131,7 @@ class HammerTests extends FunSuite with Matchers {
   test("Tests export function") {
     val compile = RunCompilation.test(
       """
-        |exported func moo() int { ret 42; }
+        |exported func moo() int { return 42; }
         |""".stripMargin)
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
     val moo = packageH.lookupFunction("moo")

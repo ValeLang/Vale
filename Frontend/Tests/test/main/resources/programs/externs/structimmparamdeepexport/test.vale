@@ -16,5 +16,5 @@ exported func expFunc(flam Flamscrankle) int {
 }
 
 exported func main() int {
-  ret extFunc(Flamscrankle(7, Bogglewoggle(21), 14));
+  return extFunc(Flamscrankle(7, Bogglewoggle(21), 14));
 }

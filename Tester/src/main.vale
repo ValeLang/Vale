@@ -1,4 +1,5 @@
 import stdlib.command.*;
+import valecutils.*;
 import stdlib.flagger.*;
 
 
@@ -30,11 +31,11 @@ func matches_filters(name str, filters &List<str>) bool {
   while (i < filters.len()) {
     filter = filters.get(i);
     if (not name.contains(filter)) {
-      ret false;
+      return false;
     }
     set i = i + 1;
   }
-  ret true;
+  return true;
 }
 
 exported func main() int {
@@ -50,6 +51,7 @@ exported func main() int {
   driver_path = Path(all_args_list.get(0))&.resolve();
   cwd = driver_path.directory();
   compiler_dir = cwd.clone();
+
 
   flags =
       [#][
@@ -107,6 +109,12 @@ exported func main() int {
   common_build_args = List<str>();
   common_build_args.add("build");
 
+
+  verbose = parsed_flags.get_bool_flag("--verbose", false);
+  if verbose {
+    println("Tester processing flags");
+  }
+
   max_concurrent_tests = parsed_flags.get_int_flag("--concurrent", 10);
 
   frontend_path = Path(parsed_flags.expect_string_flag(&flags, "--frontend_path"));
@@ -125,8 +133,6 @@ exported func main() int {
 
   backend_tests_dir = Path(parsed_flags.expect_string_flag(&flags, "--backend_tests_dir"));
   frontend_tests_dir = Path(parsed_flags.expect_string_flag(&flags, "--frontend_tests_dir"));
-
-  verbose = parsed_flags.get_bool_flag("--verbose", false);
 
   include_regions = List<str>();
   test_filters = List<str>();
@@ -307,9 +313,9 @@ exported func main() int {
 
   println("Done! Passed {successes}/{successes + failures}");
   if (failures == 0) {
-    ret 0;
+    return 0;
   } else {
-    ret 1;
+    return 1;
   }
 }
 
@@ -426,7 +432,7 @@ Subprocess {
   if (suite.verbose) {
     println("Build command: " + build_process.command);
   }
-  ret build_process;
+  return build_process;
 }
 
 func StartTest(

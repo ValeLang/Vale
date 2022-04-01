@@ -149,7 +149,7 @@ func verify<N>(command_list &CommandList<N>, command_str str) bool {
 
   command_list.flags.each((cmd) => {
     if valid {
-      ret void();
+      return void();
     }
 
     set valid = cmd.name == command_str;
@@ -226,7 +226,7 @@ func parse_flag(args []<imm>str, flag_type int, i int) (ParsedFlag, int) {
   if flag_type == FLAG_NOTHING() {
     vassert(false, "Invalid flag type was passed");
 
-    ret (ParsedFlag(name, FlagString("")), i);
+    return (ParsedFlag(name, FlagString("")), i);
   }
 
   else if (flag_type == FLAG_INT()) {
@@ -236,17 +236,17 @@ func parse_flag(args []<imm>str, flag_type int, i int) (ParsedFlag, int) {
 
     vassert(not val.isEmpty(), "Argument " + str(i) + " \"" + args[i] + "\" is not an int.");
 
-    ret (ParsedFlag(name, FlagInt(val.get())), i);
+    return (ParsedFlag(name, FlagInt(val.get())), i);
   }
 
   else if (flag_type == FLAG_STR()) {
     set i = i + 1;
-    ret (ParsedFlag(name, FlagString(args[i])), i);
+    return (ParsedFlag(name, FlagString(args[i])), i);
   }
 
   else if (flag_type == FLAG_TOKN()) {
     set i = i + 1;
-    ret (ParsedFlag(name, FlagToken(args[i])), i);
+    return (ParsedFlag(name, FlagToken(args[i])), i);
   }
 
   else if (flag_type == FLAG_BOOL()) {
@@ -256,13 +256,13 @@ func parse_flag(args []<imm>str, flag_type int, i int) (ParsedFlag, int) {
 
     vassert((not val and args[i] == "false") or val, "Invalid bool value \"" + args[i] + "\" for flag \"" + args[i - 1] + "\".");
 
-    ret (ParsedFlag(name, FlagBool(val)), i);
+    return (ParsedFlag(name, FlagBool(val)), i);
   }
 
   else {
     vassert(false, "Invalid flag type was passed");
 
-    ret (ParsedFlag(name, FlagString("")), i);
+    return (ParsedFlag(name, FlagString("")), i);
   }
 
   panic("Invalid or unimplemented type has been passed.");
@@ -289,7 +289,7 @@ func explain_flag<N>(
       println("Example: {hay_flag.name}={hay_flag.example}");
       println("");
       println(hay_flag.desc);
-      ret void();
+      return void();
     }
     set i = i + 1;
   }
@@ -308,11 +308,11 @@ func get_nothing_flag(parsed_flag_list &ParsedFlagList, flag_name str) bool {
   i = 0;
   while i < parsed_flag_list.parsed_flags.len() {
     if parsed_flag_list.parsed_flags.get(i).name == flag_name {
-      ret true;
+      return true;
     }
     set i = i + 1;
   }
-  ret false;
+  return false;
 }
 
 /// Returns the string the user supplied for the flag with the given name.
@@ -333,12 +333,12 @@ func get_string_flag(parsed_flag_list &ParsedFlagList, flag_name str) Opt<str> {
       maybe_str_flag = hay_flag.val.as<FlagString>();
       if maybe_str_flag.is_ok() {
         strFlag = maybe_str_flag.expect("zork b");
-        ret Some<str>(strFlag.value);
+        return Some<str>(strFlag.value);
       }
     }
     set i = i + 1;
   }
-  ret None<str>();
+  return None<str>();
 }
 
 
@@ -355,9 +355,9 @@ func get_string_flag(parsed_flag_list &ParsedFlagList, flag_name str) Opt<str> {
 func get_string_flag(parsed_flag_list &ParsedFlagList, flag_name str, default str) str {
   result = get_string_flag(parsed_flag_list, flag_name);
   if not result.isEmpty() {
-    ret (result).get();
+    return (result).get();
   } else {
-    ret default;
+    return default;
   }
 }
 
@@ -381,7 +381,7 @@ func expect_string_flag<N>(
 str {
   maybe_found_flag = get_string_flag(parsed_flag_list, flag_name);
   if not maybe_found_flag.isEmpty() {
-    ret maybe_found_flag.get();
+    return maybe_found_flag.get();
   }
   println("Must specify the " + flag_name + " flag, explained below.");
   println("");
@@ -409,12 +409,12 @@ func get_bool_flag(parsed_flag_list &ParsedFlagList, flag_name str) Opt<bool> {
       maybe_str_flag = hay_flag.val.as<FlagBool>();
       if maybe_str_flag.is_ok() {
         strFlag = maybe_str_flag.expect("zork c");
-        ret Some<bool>(strFlag.value);
+        return Some<bool>(strFlag.value);
       }
     }
     set i = i + 1;
   }
-  ret None<bool>();
+  return None<bool>();
 }
 
 
@@ -431,9 +431,9 @@ func get_bool_flag(parsed_flag_list &ParsedFlagList, flag_name str) Opt<bool> {
 func get_bool_flag(parsed_flag_list &ParsedFlagList, flag_name str, default bool) bool {
   result = get_bool_flag(parsed_flag_list, flag_name);
   if not result.isEmpty() {
-    ret (result).get();
+    return (result).get();
   } else {
-    ret default;
+    return default;
   }
 }
 
@@ -457,7 +457,7 @@ func expect_bool_flag<N>(
 bool {
   maybe_found_flag = get_bool_flag(parsed_flag_list, flag_name);
   if not maybe_found_flag.isEmpty() {
-    ret maybe_found_flag.get();
+    return maybe_found_flag.get();
   }
   println("Must specify the " + flag_name + " flag, explained below.");
   println("");
@@ -485,12 +485,12 @@ func get_int_flag(parsed_flag_list &ParsedFlagList, flag_name str) Opt<int> {
       maybe_str_flag = hay_flag.val.as<FlagInt>();
       if maybe_str_flag.is_ok() {
         strFlag = maybe_str_flag.expect("zork d");
-        ret Some<int>(strFlag.value);
+        return Some<int>(strFlag.value);
       }
     }
     set i = i + 1;
   }
-  ret None<int>();
+  return None<int>();
 }
 
 
@@ -507,9 +507,9 @@ func get_int_flag(parsed_flag_list &ParsedFlagList, flag_name str) Opt<int> {
 func get_int_flag(parsed_flag_list &ParsedFlagList, flag_name str, default int) int {
   result = get_int_flag(parsed_flag_list, flag_name);
   if not result.isEmpty() {
-    ret (result).get();
+    return (result).get();
   } else {
-    ret default;
+    return default;
   }
 }
 
@@ -533,7 +533,7 @@ func expect_int_flag<N>(
 int {
   maybe_found_flag = get_int_flag(parsed_flag_list, flag_name);
   if not maybe_found_flag.isEmpty() {
-    ret maybe_found_flag.get();
+    return maybe_found_flag.get();
   }
   println("Must specify the " + flag_name + " flag, explained below.");
   println("");

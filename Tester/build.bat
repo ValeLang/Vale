@@ -1,2 +1,2 @@
 
-%1\valec.exe build tester=src stdlib=%1\stdlib\src --output_dir build -o testvalec
+%1\valec.exe build tester=src valecutils=..\Utils\src --output_dir build -o testvalec

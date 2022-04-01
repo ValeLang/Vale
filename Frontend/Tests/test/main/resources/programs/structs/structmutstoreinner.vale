@@ -9,5 +9,5 @@ struct Inner {
 exported func main() int {
   o = Outer(Inner(73));
   set o.inner.x = 42;
-  ret o.inner.x;
+  return o.inner.x;
 }

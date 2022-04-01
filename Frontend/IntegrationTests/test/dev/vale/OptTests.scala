@@ -12,7 +12,7 @@ class OptTests extends FunSuite with Matchers {
         """
           |exported func main() int {
           |  opt Opt<int> = Some(9);
-          |  ret if (opt.isEmpty()) { 0 }
+          |  return if (opt.isEmpty()) { 0 }
           |    else { opt.get() }
           |}
         """.stripMargin)
@@ -25,7 +25,7 @@ class OptTests extends FunSuite with Matchers {
         """
           |exported func main() int {
           |  opt Opt<int> = None<int>();
-          |  ret if (opt.isEmpty()) { 0 }
+          |  return if (opt.isEmpty()) { 0 }
           |    else { opt.get() }
           |}
         """.stripMargin)
@@ -44,7 +44,7 @@ class OptTests extends FunSuite with Matchers {
           |exported func main() int {
           |  s = Spaceship(42);
           |  bork = Some<&Spaceship>(&s);
-          |  ret bork.borrowGet().fuel;
+          |  return bork.borrowGet().fuel;
           |}
         """.stripMargin)
 

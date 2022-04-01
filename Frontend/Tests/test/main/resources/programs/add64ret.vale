@@ -1,9 +1,9 @@
 exported func main() i64 {
   // Tests that i32 overflows as expected
   if ((2000000042 * 7) / 7 - 2000000000 == 42) {
-    ret 73i64;
+    return 73i64;
   }
   // Tests that i64 does not
   // Should result in 42
-  ret (2000000042i64 * 7i64) / 7i64 - 2000000000i64;
+  return (2000000042i64 * 7i64) / 7i64 - 2000000000i64;
 }

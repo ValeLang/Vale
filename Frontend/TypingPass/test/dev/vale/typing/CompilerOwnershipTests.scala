@@ -27,11 +27,11 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |struct Bork { a int; }
         |func doSomething(bork Bork) int {
-        |  ret bork.a;
+        |  return bork.a;
         |}
         |func main() int {
         |  bork = Bork(42);
-        |  ret (bork).doSomething();
+        |  return (bork).doSomething();
         |}
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -43,10 +43,10 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |struct Bork { a int; }
         |func doSomething(bork Bork) int {
-        |  ret bork.a;
+        |  return bork.a;
         |}
         |func main() int {
-        |  ret Bork(42).doSomething();
+        |  return Bork(42).doSomething();
         |}
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -58,10 +58,10 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |struct Bork { a int; }
         |func doSomething(bork &Bork) int {
-        |  ret bork.a;
+        |  return bork.a;
         |}
         |func main() int {
-        |  ret Bork(42)&.doSomething();
+        |  return Bork(42)&.doSomething();
         |}
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -73,11 +73,11 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |struct Bork { a int; }
         |func doSomething(bork &Bork) int {
-        |  ret bork.a;
+        |  return bork.a;
         |}
         |func main() int {
         |  bork = Bork(42);
-        |  ret bork.doSomething();
+        |  return bork.doSomething();
         |}
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -90,11 +90,11 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
         |struct Zork { bork Bork; }
         |struct Bork { a int; }
         |func doSomething(bork &Bork) int {
-        |  ret bork.a;
+        |  return bork.a;
         |}
         |func main() int {
         |  zork = Zork(Bork(42));
-        |  ret zork.bork.doSomething();
+        |  return zork.bork.doSomething();
         |}
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -140,7 +140,7 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
         |abstract func get<T>(virtual opt Opt<T>) T;
         |func get<T>(opt Some<T>) T {
         |  [value] = opt;
-        |  ret value;
+        |  return value;
         |}
         |
         |#!DeriveStructDrop

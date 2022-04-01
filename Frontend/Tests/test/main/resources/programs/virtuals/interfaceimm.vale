@@ -16,17 +16,17 @@ struct MyList imm {
 }
 
 func sum(list @MyList) int {
-  ret list.value + sum(list.next);
+  return list.value + sum(list.next);
 }
 
 abstract func sum(virtual opt @MyOption) int;
-func sum(opt @MyNone) int { ret 0; }
+func sum(opt @MyNone) int { return 0; }
 func sum(opt @MySome) int {
-   ret sum(opt.value);
+   return sum(opt.value);
 }
 
 
 exported func main() int {
   list = MyList(7, MySome(MyList(17, MySome(MyList(18, MyNone())))));
-  ret sum(list);
+  return sum(list);
 }

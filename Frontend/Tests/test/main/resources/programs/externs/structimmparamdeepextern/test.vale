@@ -19,5 +19,5 @@ exported struct Spigglewigget imm {
 extern func extFunc_vasp(flam Flamscrankle) int;
 
 exported func main() int {
-  ret extFunc_vasp(Flamscrankle(7, Bogglewoggle(Spigglewigget(5, 7, 4), 5), 14));
+  return extFunc_vasp(Flamscrankle(7, Bogglewoggle(Spigglewigget(5, 7, 4), 5), 14));
 }

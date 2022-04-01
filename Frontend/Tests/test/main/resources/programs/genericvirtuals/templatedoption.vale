@@ -10,10 +10,10 @@ struct MyNone<T> where T Ref { }
 impl<T> MyOption<T> for MyNone<T>;
 
 abstract func len<T>(virtual opt &MyOption<T>) int;
-func len<T>(opt &MyNone<T>) int { ret 0; }
-func len<T>(opt &MySome<T>) int { ret 1; }
+func len<T>(opt &MyNone<T>) int { return 0; }
+func len<T>(opt &MySome<T>) int { return 1; }
 
 exported func main() int {
   myOpt MyOption<int> = MySome<int>(4);
-  ret len(&myOpt);
+  return len(&myOpt);
 }

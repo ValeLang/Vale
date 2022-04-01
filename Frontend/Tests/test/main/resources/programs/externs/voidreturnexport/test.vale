@@ -4,5 +4,5 @@ extern func runExtCommand();
 
 exported func main() int {
   runExtCommand();
-  ret 42;
+  return 42;
 }

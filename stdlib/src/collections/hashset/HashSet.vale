@@ -14,7 +14,7 @@ func HashSet<K, H, E>(source &HashSet<K, H, E>, hasher H, equator E) HashSet<K, 
   foreach x in source {
     self.add(x);
   }
-  ret self;
+  return self;
 }
 
 func HashSet<K, H, E>(hasher H, equator E, capacity int) HashSet<K, H, E> {
@@ -41,7 +41,7 @@ HashSet<K, H, E> {
       this.add(v);
     }
   }
-  ret this;
+  return this;
 }
 
 func HashSet<K, H, E>(
@@ -55,7 +55,7 @@ HashSet<K, H, E> {
       this.add(v);
     }
   }
-  ret this;
+  return this;
 }
 
 func len<K, H, E>(self &HashSet<K, H, E>) int { self.size }
@@ -64,7 +64,7 @@ func isEmpty<K, H, E>(self &HashSet<K, H, E>) bool { self.size == 0 }
 
 func add<K, H, E>(self HashSet<K, H, E>, key K) HashSet<K, H, E> {
   self.add(key);
-  ret self;
+  return self;
 }
 func add<K, H, E>(self &HashSet<K, H, E>, key K) void {
   if self.contains(key) {
@@ -114,7 +114,7 @@ func findEmptyIndexInHashSetForKey<K>(table &Array<mut, Opt<K>>, startIndex int,
     index = (startIndex + i) mod table.len();
     something = table[index];
     if something.isEmpty() {
-      ret index;
+      return index;
     }
     // continue to next node
     set i = i + 1;
@@ -128,32 +128,32 @@ func findIndexOfKey<K, E>(table &Array<mut, Opt<K>>, equator E, startIndex int, 
     index = (startIndex + i) mod table.len();
     something = table[index];
     if something.isEmpty() {
-      ret None<int>();
+      return None<int>();
     }
     node = something.get();
     if (equator)(node, key) {
-      ret Some<int>(index);
+      return Some<int>(index);
     }
     // continue to next node
     set i = i + 1;
   }
-  ret None<int>();
+  return None<int>();
 }
 
 func get<K, H, E>(self &HashSet<K, H, E>, key K) Opt<K> {
   if self.table.len() == 0 {
-    ret None<K>();
+    return None<K>();
   }
   hash int = abs((self.hasher)(key));
   startIndex = hash mod self.table.len();
   maybeIndex = findIndexOfKey(&self.table, self.equator, startIndex, key);
   if maybeIndex.isEmpty() {
     opt Opt<K> = None<K>();
-    ret opt;
+    return opt;
   }
   node = self.table[maybeIndex.get()].get();
   opt Opt<K> = Some<K>(node);
-  ret opt;
+  return opt;
 }
 
 func contains<K, H, E>(self &HashSet<K, H, E>, key K) bool {
@@ -184,7 +184,7 @@ int {
   maybeIndex = findIndexOfKey(&table, &equator, startIndex, key);
   index = maybeIndex.get("HashSet.innerRemove: Element doesn't exist!");
   set table[index] = None<K>();
-  ret index;
+  return index;
 }
 
 func remove<K, H, E>(
@@ -214,14 +214,14 @@ func ==<K, H, E>(
   b &HashSet<K, H, E>
 ) bool {
   if a.len() != b.len() {
-    ret false;
+    return false;
   }
   foreach x in a {
     if not b.contains(x) {
-      ret false;
+      return false;
     }
   }
-  ret true;
+  return true;
 }
 
 func List<K, H, E>(sett &HashSet<K, H, E>) List<K> {
@@ -229,7 +229,7 @@ func List<K, H, E>(sett &HashSet<K, H, E>) List<K> {
   foreach x in sett {
     list.add(x);
   }
-  ret list;
+  return list;
 }
 
 func GetRandomElement<K, H, E>(
@@ -237,12 +237,12 @@ func GetRandomElement<K, H, E>(
     seed int)
 Opt<&K> {
   if self.len() == 0 {
-    ret None<&K>();
+    return None<&K>();
   }
   foreach offset in range(0, self.table.len()) {
     index = (abs(seed) + offset) mod self.table.len();
     if not self.table[index].isEmpty() {
-      ret Some(&self.table[index].get());
+      return Some(&self.table[index].get());
     }
   }
   panic("unreachable");

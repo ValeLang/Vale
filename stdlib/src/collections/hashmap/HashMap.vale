@@ -106,7 +106,7 @@ func findEmptyIndexForKey<K, V>(table &Array<mut, Opt<HashMapNode<K, V>>>, start
     index = (startIndex + i) mod table.len();
     something = table[index];
     if something.isEmpty() {
-      ret index;
+      return index;
     }
     // continue to next node
     set i = i + 1;
@@ -120,33 +120,33 @@ func findIndexOfKey<K, V, E>(table &Array<mut, Opt<HashMapNode<K, V>>>, equator 
     index = (startIndex + i) mod table.len();
     something = table[index];
     if something.isEmpty() {
-      ret None<int>();
+      return None<int>();
     }
     node = something.get();
     if (&equator)(node.key, key) {
-      ret Some<int>(index);
+      return Some<int>(index);
     }
     // continue to next node
     set i = i + 1;
   }
-  ret None<int>();
+  return None<int>();
 }
 
 // Perhaps we can find a way to make a function generic over permission?
 func get<K, V, H, E>(self &HashMap<K, V, H, E>, key K) Opt<&V> {
   if self.table.len() == 0 {
-    ret None<&V>();
+    return None<&V>();
   }
   hash int = abs((&self.hasher)(key));
   startIndex = hash mod self.table.len();
   maybeIndex = findIndexOfKey(&self.table, self.equator, startIndex, key);
   if maybeIndex.isEmpty() {
     opt Opt<&V> = None<&V>();
-    ret opt;
+    return opt;
   }
   node = self.table[maybeIndex.get()].get();
   opt Opt<&V> = Some<&V>(node.value);
-  ret opt;
+  return opt;
 }
 
 func ContainsKey<K, V, H, E>(self &HashMap<K, V, H, E>, key K) bool {
@@ -192,7 +192,7 @@ func innerRemove<K, V, H, E>(
   oldNodeOpt = set table[index] = None<HashMapNode<K, V>>();
   vassert(not oldNodeOpt.isEmpty());
   oldNode = (oldNodeOpt).get();
-  ret (index, oldNode);
+  return (index, oldNode);
 }
 
 func remove<K, V, H, E>(
@@ -217,7 +217,7 @@ V {
   }
 
   [_, value] = oldNode;
-  ret value;
+  return value;
 }
 
 func KeySet<K, V, H, E>(
@@ -229,5 +229,5 @@ HashSet<K, H, E> {
   foreach [key, value] in map {
     sett.add(key);
   }
-  ret sett;
+  return sett;
 }

@@ -180,7 +180,7 @@ object ParsedLoader {
       loadOptionalObject(getObjectField(jobj, "maybeUserSpecifiedIdentifyingRunes"), loadIdentifyingRunes),
       loadOptionalObject(getObjectField(jobj, "templateRules"), loadTemplateRules),
       loadOptionalObject(getObjectField(jobj, "params"), loadParams),
-      loadFunctionReturn(getObjectField(jobj, "ret")))
+      loadFunctionReturn(getObjectField(jobj, "return")))
   }
 
   def loadParams(jobj: JObject): ParamsP = {

@@ -9,5 +9,5 @@ exported func main() int {
   if (false) {
     newPlayerRow = 0;
   }
-  ret 42;
+  return 42;
 }

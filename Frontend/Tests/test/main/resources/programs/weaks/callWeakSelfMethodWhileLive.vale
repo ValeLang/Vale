@@ -4,7 +4,7 @@ weakable interface IUnit { func getHp(virtual self &&IUnit) int; }
 impl IUnit for Muta;
 func getHp(self &&Muta) int {
   maybeBorrowSelf = lock(self);
-  ret if (maybeBorrowSelf.isEmpty()) {
+  return if (maybeBorrowSelf.isEmpty()) {
       drop(maybeBorrowSelf);
       0
     } else {
@@ -16,5 +16,5 @@ func getHp(self &&Muta) int {
 exported func main() int {
   ownMuta = Muta(73);
   weakUnit &&IUnit = &&ownMuta;
-  ret getHp(weakUnit);
+  return getHp(weakUnit);
 }

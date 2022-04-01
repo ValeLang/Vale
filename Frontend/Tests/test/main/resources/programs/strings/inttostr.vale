@@ -1,4 +1,4 @@
 
 exported func main() int {
-  ret len(str(1337));
+  return len(str(1337));
 }

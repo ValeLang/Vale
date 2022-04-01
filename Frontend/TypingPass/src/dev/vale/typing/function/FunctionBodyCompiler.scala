@@ -178,7 +178,7 @@ class BodyCompiler(
       } else {
         (ReturnTE(convertedBodyWithoutReturn), returnsFromInsideMaybeWithNever + convertedBodyWithoutReturn.result.reference)
       }
-    // If we already had a return, then the above will add a Never to the returns, but that's fine, it will be filtered
+    // If we already had a ret, then the above will add a Never to the returns, but that's fine, it will be filtered
     // out below.
 
     val returns =

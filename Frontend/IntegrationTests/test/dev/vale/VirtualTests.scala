@@ -17,9 +17,9 @@ class VirtualTests extends FunSuite with Matchers {
       val compile = RunCompilation.test(
         """
           |sealed interface I  {}
-          |func doThing(virtual i I) int { ret 4; }
+          |func doThing(virtual i I) int { return 4; }
           |func main(i I) int {
-          |  ret doThing(i);
+          |  return doThing(i);
           |}
         """.stripMargin)
       val coutputs = compile.expectCompilerOutputs()
@@ -52,9 +52,9 @@ class VirtualTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |sealed interface I  {}
-        |func doThing(virtual i I) int { ret 4; }
+        |func doThing(virtual i I) int { return 4; }
         |func main(i I) int {
-        |  ret doThing(i);
+        |  return doThing(i);
         |}
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -97,7 +97,7 @@ class VirtualTests extends FunSuite with Matchers {
         |  func doThing(virtual i I) int;
         |}
         |func main(i I) int {
-        |  ret doThing(i);
+        |  return doThing(i);
         |}
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
@@ -134,21 +134,21 @@ class VirtualTests extends FunSuite with Matchers {
           |}
           |
           |struct Human {  }
-          |func hop(s &Human) int { ret 7; }
-          |func skip(s &Human) int { ret 9; }
+          |func hop(s &Human) int { return 7; }
+          |func skip(s &Human) int { return 9; }
           |impl Bipedal for Human;
           |
           |func hopscotch(s &Bipedal) int {
           |  s.hop();
           |  s.skip();
-          |  ret s.hop();
+          |  return s.hop();
           |}
           |
           |exported func main() int {
           |   x = Bipedal({ 3 }, { 5 });
           |  // x is an unnamed substruct which implements Bipedal.
           |
-          |  ret hopscotch(&x);
+          |  return hopscotch(&x);
           |}
         """.stripMargin)
     val coutputs = compile.getHamuts()
@@ -200,7 +200,7 @@ class VirtualTests extends FunSuite with Matchers {
         |}
         |exported func main() str {
         |  func = AFunction2<str, int, bool>((i, b) => { str(i) + str(b) });
-        |  ret func(42, true);
+        |  return func(42, true);
         |}
         |""".stripMargin)
     compile.evalForKind(Vector()) match { case VonStr("42true") => }

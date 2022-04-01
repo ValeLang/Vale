@@ -64,5 +64,5 @@ Subprocess {
     command_line_args.add(vast_file.str());
   });
 
-  ret (Subprocess(backend_program_path.str(), &command_line_args)).expect();
+  return (Subprocess(backend_program_path.str(), &command_line_args)).expect();
 }

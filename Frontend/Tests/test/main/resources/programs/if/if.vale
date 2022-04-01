@@ -1,5 +1,5 @@
 exported func main() int {
-  ret if (true) {
+  return if (true) {
       42
     } else {
       73

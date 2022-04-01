@@ -4,5 +4,5 @@ struct Carrier {
 }
 
 exported func main() int {
-  ret Carrier(400, 8).interceptors;
+  return Carrier(400, 8).interceptors;
 }

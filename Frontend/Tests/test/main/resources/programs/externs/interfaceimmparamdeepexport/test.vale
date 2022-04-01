@@ -10,10 +10,10 @@ impl IShip for Seaship;
 
 abstract func getFuel(virtual this IShip) int;
 func getFuel(this Spaceship) int { this.engine.fuel }
-func getFuel(this Seaship) int { ret 0; }
+func getFuel(this Seaship) int { return 0; }
 
 exported func valeGetShipFuel(s IShip) int {
-  ret s.getFuel();
+  return s.getFuel();
 }
 
 extern func cGetShipFuel(s IShip) int;

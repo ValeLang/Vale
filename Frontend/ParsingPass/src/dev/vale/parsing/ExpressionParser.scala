@@ -209,7 +209,7 @@ class ExpressionParser(opts: GlobalOptions) {
         case ((condBlock, thenBlock), elseBlock) => {
           // We don't check that both branches produce because of cases like:
           //   if blah {
-          //     ret 3;
+          //     return 3;
           //   } else {
           //     6
           //   }
@@ -223,7 +223,7 @@ class ExpressionParser(opts: GlobalOptions) {
     val (rootConditionLambda, rootThenLambda) = rootIf
     // We don't check that both branches produce because of cases like:
     //   if blah {
-    //     ret 3;
+    //     return 3;
     //   } else {
     //     6
     //   }
@@ -547,7 +547,7 @@ class ExpressionParser(opts: GlobalOptions) {
     expectResult: Boolean):
   Result[Option[IExpressionPE], IParseError] = {
     val begin = iter.getPos()
-    if (!iter.trySkip("^ret\\b".r)) {
+    if (!iter.trySkip("^return\\b".r)) {
       return Ok(None)
     }
     iter.consumeWhitespace()
@@ -696,7 +696,7 @@ class ExpressionParser(opts: GlobalOptions) {
       return Err(CantUseBreakInExpression(iter.getPos()))
     }
     // See BRCOBS
-    if (iter.trySkip("^ret\\b".r)) {
+    if (iter.trySkip("^return\\b".r)) {
       return Err(CantUseReturnInExpression(iter.getPos()))
     }
     if (iter.trySkip("^_\\b".r)) {
@@ -1175,7 +1175,7 @@ class ExpressionParser(opts: GlobalOptions) {
     // .foo(5)
     // ..5
     // which all have tighter precedence than the prefixes.
-    // Then we'll return, and our callers will wrap it in the prefixes
+    // Then we'll ret, and our callers will wrap it in the prefixes
     // like & not etc.
     parseAtomAndTightSuffixes(iter, stopBefore) match {
       case Err(err) => return Err(err)

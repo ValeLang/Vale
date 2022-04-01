@@ -8,17 +8,17 @@ interface Car {
 struct Civic {}
 impl Car for Civic;
 func doCivicDance(civic &Civic) int {
-  ret 4;
+  return 4;
 }
 
 struct Toyota {}
 impl Car for Toyota;
 func doCivicDance(toyota &Toyota) int {
-  ret 7;
+  return 7;
 }
 
 exported func main() int {
   x Car = Toyota();
   b = &x;
-  ret doCivicDance(b);
+  return doCivicDance(b);
 }

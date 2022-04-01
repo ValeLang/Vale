@@ -78,8 +78,8 @@ class WeakTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """
           |weakable struct Muta { hp int; }
-          |func getHp(weakMuta &&Muta) int { ret (lock(weakMuta)).get().hp; }
-          |exported func main() int { ret getHp(&&Muta(7)); }
+          |func getHp(weakMuta &&Muta) int { return (lock(weakMuta)).get().hp; }
+          |exported func main() int { return getHp(&&Muta(7)); }
           |""".stripMargin)
 
     val main = compile.expectCompilerOutputs().lookupFunction("main")
@@ -111,7 +111,7 @@ class WeakTests extends FunSuite with Matchers {
           |interface IUnit {}
           |weakable struct Muta { hp int; }
           |impl IUnit for Muta;
-          |func main(muta Muta) int  { ret 7; }
+          |func main(muta Muta) int  { return 7; }
           |""".stripMargin)
 
     try {
@@ -129,7 +129,7 @@ class WeakTests extends FunSuite with Matchers {
           |weakable interface IUnit {}
           |struct Muta { hp int; }
           |impl IUnit for Muta;
-          |func main(muta Muta) int  { ret 7; }
+          |func main(muta Muta) int  { return 7; }
           |""".stripMargin)
 
     try {
@@ -247,9 +247,9 @@ class WeakTests extends FunSuite with Matchers {
           |  maybeOrigin = lock(ship.origin); «14»«15»
           |  if (not maybeOrigin.isEmpty()) { «16»
           |    o = maybeOrigin.get();
-          |    ret o.hp;
+          |    return o.hp;
           |  } else {
-          |    ret 42;
+          |    return 42;
           |  }
           |}
           |""".stripMargin)

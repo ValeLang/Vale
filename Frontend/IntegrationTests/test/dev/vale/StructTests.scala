@@ -55,7 +55,7 @@ class StructTests extends FunSuite with Matchers {
         |exported func main() int {
         |  m = Marine(4, 7);
         |  Marine[hp, ammo] = m;
-        |  ret ammo;
+        |  return ammo;
         |}
       """.stripMargin)
 
@@ -72,7 +72,7 @@ class StructTests extends FunSuite with Matchers {
         |exported func main() int {
         |  m = Marine(4, 7);
         |  destruct m;
-        |  ret 9;
+        |  return 9;
         |}
       """.stripMargin)
 
@@ -167,11 +167,11 @@ class StructTests extends FunSuite with Matchers {
         |
         |
         |func get<T>(opt &XNone<T>) &T { __vbi_panic(); }
-        |func get<T>(opt &XSome<T>) &T { ret opt.value; }
+        |func get<T>(opt &XSome<T>) &T { return opt.value; }
         |
         |exported func main() int {
         |  m XOpt<int> = XNone<int>();
-        |  ret m.get();
+        |  return m.get();
         |}
       """.stripMargin)
 
@@ -186,10 +186,10 @@ class StructTests extends FunSuite with Matchers {
 
   test("Call borrow parameter with shared reference") {
     val compile = RunCompilation.test(
-      """func get<T>(a &T) &T { ret a; }
+      """func get<T>(a &T) &T { return a; }
         |
         |exported func main() int {
-        |  ret get(6);
+        |  return get(6);
         |}
       """.stripMargin)
 

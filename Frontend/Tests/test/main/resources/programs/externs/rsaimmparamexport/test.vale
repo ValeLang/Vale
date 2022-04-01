@@ -1,8 +1,8 @@
-export #[]int as ImmIntArray;
+export []<imm>int as ImmIntArray;
 
-func range(begin int, end int) IntRange { ret IntRange(begin, end); }
+func range(begin int, end int) IntRange { return IntRange(begin, end); }
 struct IntRange { begin int; end int; }
-func begin(self &IntRange) IntRangeIter { ret IntRangeIter(&self, self.begin); }
+func begin(self &IntRange) IntRangeIter { return IntRangeIter(&self, self.begin); }
 struct IntRangeIter { range &IntRange; i! int; }
 func next(self &IntRangeIter) Opt<int> {
   if self.i < self.range.end {
@@ -16,12 +16,12 @@ exported func expSumBytes(arr []<imm>int) int {
   sum = 0;
   l = len(arr);
   foreach i in 0..l { set sum = sum + arr[i]; }
-  ret sum;
+  return sum;
 }
 
 extern func extSumBytes(arr []<imm>int) int;
 
 exported func main() int {
   a = #[](5, {_});
-  ret extSumBytes(a);
+  return extSumBytes(a);
 }

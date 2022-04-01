@@ -3,5 +3,5 @@ struct Marine { hp! int; }
 exported func main() int {
   m = Marine(9);
   set m.hp = 4;
-  ret m.hp;
+  return m.hp;
 }

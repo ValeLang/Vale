@@ -9,7 +9,7 @@ class WhileTests extends FunSuite with Matchers {
       """
         |exported func main() int {
         |  while (false) {}
-        |  ret 5;
+        |  return 5;
         |}
       """.stripMargin)
 
@@ -24,7 +24,7 @@ class WhileTests extends FunSuite with Matchers {
         |  while (i < 4) {
         |    set i = i + 1;
         |  }
-        |  ret i;
+        |  return i;
         |}
       """.stripMargin)
 
@@ -40,7 +40,7 @@ class WhileTests extends FunSuite with Matchers {
         |  while set key = __getch(); key < 96 {
         |    print(key);
         |  }
-        |  ret key;
+        |  return key;
         |}
       """.stripMargin)
 
@@ -59,7 +59,7 @@ class WhileTests extends FunSuite with Matchers {
         |  while set key = __getch(); key != 99 {
         |    print(key);
         |  }
-        |  ret key;
+        |  return key;
         |}
       """.stripMargin)
 
@@ -88,9 +88,9 @@ class WhileTests extends FunSuite with Matchers {
       """
         |exported func main() int {
         |  while (true) {
-        |    ret 9;
+        |    return 9;
         |  }
-        |  ret __vbi_panic();
+        |  return __vbi_panic();
         |}
       """.stripMargin)
 
@@ -107,7 +107,7 @@ class WhileTests extends FunSuite with Matchers {
         |    }
         |    4;
         |  }
-        |  ret 42;
+        |  return 42;
         |}
       """.stripMargin)
 
@@ -121,7 +121,7 @@ class WhileTests extends FunSuite with Matchers {
         |  while true {
         |    break;
         |  }
-        |  ret 42;
+        |  return 42;
         |}
       """.stripMargin)
 
@@ -139,7 +139,7 @@ class WhileTests extends FunSuite with Matchers {
         |      break;
         |    }
         |  }
-        |  ret 42;
+        |  return 42;
         |}
       """.stripMargin)
 
@@ -152,11 +152,11 @@ class WhileTests extends FunSuite with Matchers {
         |exported func main() int {
         |  while true {
         |    if true {
-        |      ret 42;
+        |      return 42;
         |    }
         |    73;
         |  }
-        |  ret 74;
+        |  return 74;
         |}
       """.stripMargin)
 
@@ -168,9 +168,9 @@ class WhileTests extends FunSuite with Matchers {
       """
         |exported func main() int {
         |  while true {
-        |    ret 42;
+        |    return 42;
         |  }
-        |  ret 73;
+        |  return 73;
         |}
       """.stripMargin)
 
@@ -183,12 +183,12 @@ class WhileTests extends FunSuite with Matchers {
         |exported func main() int {
         |  while true {
         |    if true {
-        |      ret 42;
+        |      return 42;
         |    } else {
-        |      ret 73;
+        |      return 73;
         |    }
         |  }
-        |  ret 74;
+        |  return 74;
         |}
       """.stripMargin)
 
@@ -199,8 +199,8 @@ class WhileTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() int {
-        |  while x = 42; x < 50 { ret x; }
-        |  ret 73;
+        |  while x = 42; x < 50 { return x; }
+        |  return 73;
         |}
       """.stripMargin)
 
@@ -217,7 +217,7 @@ class WhileTests extends FunSuite with Matchers {
         |  foreach i in 0..10 {
         |    set sum = sum + i;
         |  }
-        |  ret sum;
+        |  return sum;
         |}
         |""".stripMargin)
     compile.evalForKind(Vector()) match { case VonInt(45) => }
@@ -273,7 +273,7 @@ class WhileTests extends FunSuite with Matchers {
         |  foreach i in &list {
         |    set i.fuel = 42;
         |  }
-        |  ret list.ship.fuel;
+        |  return list.ship.fuel;
         |}
         |""".stripMargin)
     compile.evalForKind(Vector()) match { case VonInt(42) => }
@@ -294,7 +294,7 @@ class WhileTests extends FunSuite with Matchers {
         |      }
         |      3
         |    };
-        |  ret 0;
+        |  return 0;
         |}
         |""".stripMargin)
     compile.evalForKind(Vector()) match { case VonInt(0) => }
@@ -310,7 +310,7 @@ class WhileTests extends FunSuite with Matchers {
         |  foreach i in 0..10 {
         |    break;
         |  }
-        |  ret sum;
+        |  return sum;
         |}
         |""".stripMargin)
     compile.evalForKind(Vector()) match { case VonInt(0) => }
@@ -330,7 +330,7 @@ class WhileTests extends FunSuite with Matchers {
         |      break;
         |    }
         |  }
-        |  ret sum;
+        |  return sum;
         |}
         |""".stripMargin)
     compile.evalForKind(Vector()) match { case VonInt(0) => }
@@ -347,7 +347,7 @@ class WhileTests extends FunSuite with Matchers {
 //        |  while (true) {
 //        |    doThings(m);
 //        |  }
-//        |  ret 4;
+//        |  return 4;
 //        |}
 //      """.stripMargin)
 //

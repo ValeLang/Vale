@@ -1,2 +1,2 @@
 
-exported func main() int { a = 7; ret ({ ({ a })() })(); }
+exported func main() int { a = 7; return ({ ({ a })() })(); }

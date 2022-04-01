@@ -22,7 +22,7 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |struct Muta { hp int; }
         |exported func main() int {
-        |  ret (&Muta(9)).hp;
+        |  return (&Muta(9)).hp;
         |}
       """.stripMargin)
 
@@ -45,11 +45,11 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |struct Muta { hp int; }
         |func take(m Muta) {
-        |  ret m.hp;
+        |  return m.hp;
         |}
         |exported func main() int {
         |  m = Muta(9);
-        |  ret (m).hp;
+        |  return (m).hp;
         |}
       """.stripMargin)
 
@@ -115,7 +115,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |}
         |
         |exported func main() int {
-        |  ret (Muta(10)).hp;
+        |  return (Muta(10)).hp;
         |}
       """.stripMargin)
 
@@ -209,7 +209,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |
         |exported func main() int {
         |  a = Muta(10);
-        |  ret a.hp;
+        |  return a.hp;
         |}
       """.stripMargin)
 
@@ -230,7 +230,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |  wand ^Wand;
         |}
         |exported func main() int {
-        |  ret Wizard(Wand(10)).wand.charges;
+        |  return Wizard(Wand(10)).wand.charges;
         |}
       """.stripMargin)
 
@@ -247,7 +247,7 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |exported func main() int {
         |  i = 0;
-        |  ret i;
+        |  return i;
         |}
       """.stripMargin)
 
@@ -267,15 +267,15 @@ class OwnershipTests extends FunSuite with Matchers {
         |struct Ship { hp! int; fuel! int; }
         |func setHp(ship Ship, hp int) Ship {
         |  set ship.hp = hp;
-        |  ret ship;
+        |  return ship;
         |}
         |func setFuel(ship Ship, fuel int) Ship {
         |  set ship.fuel = fuel;
-        |  ret ship;
+        |  return ship;
         |}
         |exported func main() int {
         |  ship = Ship(0, 0).setHp(42).setFuel(43);
-        |  ret ship.hp;
+        |  return ship.hp;
         |}
         |""".stripMargin)
 
@@ -287,7 +287,7 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |struct Ship { hp int; }
         |exported func main() int {
-        |  ret Ship(42).hp;
+        |  return Ship(42).hp;
         |}
         |""".stripMargin)
 

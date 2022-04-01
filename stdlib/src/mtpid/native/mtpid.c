@@ -6,9 +6,9 @@
 #include <unistd.h>
 #endif
 
-#include "valecutils/MtpIdExtern.h"
+#include "stdlib/MtpIdExtern.h"
 
-extern int64_t valecutils_MtpIdExtern() {
+extern int64_t stdlib_MtpIdExtern() {
   #ifdef _WIN32
     unsigned __int64 freq;
     QueryPerformanceFrequency((LARGE_INTEGER*)&freq);

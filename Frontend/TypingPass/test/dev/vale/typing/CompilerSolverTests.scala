@@ -111,7 +111,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |exported func main() int where N int = 3 {
-        |  ret N;
+        |  return N;
         |}
         |""".stripMargin
     )
@@ -124,7 +124,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |exported func main() int where N int = 3, M int = N {
-        |  ret M;
+        |  return M;
         |}
         |""".stripMargin
     )
@@ -137,7 +137,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |exported func main() int where N int = any(2, 3, 4), N = 3 {
-        |  ret N;
+        |  return N;
         |}
         |""".stripMargin
     )
@@ -155,7 +155,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
         |  MyStruct = Ref[O Ownership, K Kind],
         |  X Ref = Ref[borrow, K]
         |{
-        |  ret &MyStruct();
+        |  return &MyStruct();
         |}
         |""".stripMargin
     )
@@ -169,11 +169,11 @@ class CompilerSolverTests extends FunSuite with Matchers {
     val compile = CompilerTestCompilation.test(
       """
         |import v.builtins.tup.*;
-        |func moo(i int, b bool) str { ret "hello"; }
+        |func moo(i int, b bool) str { return "hello"; }
         |exported func main() str
         |where mooFunc Prot = Prot["moo", Refs(int, bool), _]
         |{
-        |  ret (mooFunc)(5, true);
+        |  return (mooFunc)(5, true);
         |}
         |""".stripMargin
     )
@@ -308,7 +308,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
         |impl<X> MyInterface<X> for SomeStruct<X>;
         |
         |func doAThing<T>(t T) SomeStruct<T> {
-        |  ret SomeStruct<T>(t);
+        |  return SomeStruct<T>(t);
         |}
         |
         |exported func main() {
@@ -327,11 +327,11 @@ class CompilerSolverTests extends FunSuite with Matchers {
         |struct SomeStruct imm { i int; }
         |
         |func bork(x &SomeStruct) int {
-        |  ret x.i;
+        |  return x.i;
         |}
         |
         |exported func main() int {
-        |  ret bork(SomeStruct(7));
+        |  return bork(SomeStruct(7));
         |}
         |""".stripMargin
     )
@@ -365,11 +365,11 @@ class CompilerSolverTests extends FunSuite with Matchers {
         |
         |func bork<X, Z>() Z
         |where X Kind = SomeStruct<int>, X = SomeStruct<Z> {
-        |  ret 9;
+        |  return 9;
         |}
         |
         |exported func main() int {
-        |  ret bork();
+        |  return bork();
         |}
         |""".stripMargin
     )
@@ -385,7 +385,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
         |struct SomeStruct { }
         |
         |func bork<T>(x T) ^T {
-        |  ret SomeStruct();
+        |  return SomeStruct();
         |}
         |
         |exported func main() {
@@ -406,11 +406,11 @@ class CompilerSolverTests extends FunSuite with Matchers {
         |
         |func swap<T, Y>(x (T, Y)) (Y, T) {
         |  [a, b] = x;
-        |  ret (b, a);
+        |  return (b, a);
         |}
         |
         |exported func main() bool {
-        |  ret swap((5, true)).0;
+        |  return swap((5, true)).0;
         |}
         |""".stripMargin
     )
@@ -428,11 +428,11 @@ class CompilerSolverTests extends FunSuite with Matchers {
         |
         |func swap<N, T>(x [#N]T) [#N]T {
         |  [a, b] = x;
-        |  ret [#][b, a];
+        |  return [#][b, a];
         |}
         |
         |exported func main() int {
-        |  ret swap([#][5, 7]).0;
+        |  return swap([#][5, 7]).0;
         |}
         |""".stripMargin
     )
@@ -451,16 +451,16 @@ class CompilerSolverTests extends FunSuite with Matchers {
         |  func getFuel(virtual self &IShip) int;
         |}
         |struct Firefly {}
-        |func getFuel(self &Firefly) int { ret 7; }
+        |func getFuel(self &Firefly) int { return 7; }
         |impl IShip for Firefly;
         |
         |func genericGetFuel<T>(x T) int
         |where implements(T, IShip) {
-        |  ret x.getFuel();
+        |  return x.getFuel();
         |}
         |
         |exported func main() int {
-        |  ret genericGetFuel(Firefly());
+        |  return genericGetFuel(Firefly());
         |}
         |""".stripMargin
     )
@@ -476,7 +476,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |import v.builtins.panic.*;
         |
-        |func moo(i int, b bool) str { ret "hello"; }
+        |func moo(i int, b bool) str { return "hello"; }
         |
         |exported func main() R
         |where mooFunc Prot = Prot["moo", Refs(int, bool), R Ref] {

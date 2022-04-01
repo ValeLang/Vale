@@ -33,7 +33,7 @@ func list_vasts(output_dir &Path) List<Path> {
       vast_files.add(child.clone());
     }
   });
-  ret vast_files;
+  return vast_files;
 }
 
 func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {

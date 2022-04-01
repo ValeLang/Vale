@@ -11,7 +11,7 @@ class SignatureTests extends FunSuite with Collector with TestParseUtils {
 
   test("Impl function") {
     compileTopLevel(
-      "func maxHp(virtual this Marine) { ret 5; }") shouldHave {
+      "func maxHp(virtual this Marine) { return 5; }") shouldHave {
       case FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "maxHp")),Vector(), None, None,

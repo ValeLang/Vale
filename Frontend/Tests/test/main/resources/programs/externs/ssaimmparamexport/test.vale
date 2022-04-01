@@ -7,12 +7,12 @@ exported func valeSumFuel(arr [#3]<imm>int) int {
     set total = total + arr[i];
     set i = i + 1;
   }
-  ret total;
+  return total;
 }
 
 extern func cSumFuel(arr [#3]<imm>int) int;
 
 exported func main() int {
   a = #[#3]((i) => { 13 + i });
-  ret cSumFuel(a);
+  return cSumFuel(a);
 }

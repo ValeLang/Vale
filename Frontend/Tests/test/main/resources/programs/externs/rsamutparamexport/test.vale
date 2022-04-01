@@ -6,5 +6,5 @@ exported func getMutIntArrayElem(arr &[]<mut>int, i int) int { arr[i] }
 
 exported func main() int {
   a = Array<mut, int>(5, {_});
-  ret sumBytes(&a);
+  return sumBytes(&a);
 }

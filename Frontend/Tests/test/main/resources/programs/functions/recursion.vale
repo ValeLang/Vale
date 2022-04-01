@@ -1,6 +1,6 @@
 
 func factorial(x int) int {
-  ret if (x == 0) {
+  return if (x == 0) {
       1
     } else {
       x * factorial(x - 1)
@@ -8,5 +8,5 @@ func factorial(x int) int {
 }
 
 exported func main() int {
-  ret factorial(5);
+  return factorial(5);
 }

@@ -103,7 +103,7 @@ case class FunctionT(
   body: ReferenceExpressionTE)  {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
-  // We always end a function with a return, whose result is a Never.
+  // We always end a function with a ret, whose result is a Never.
   vassert(body.result.kind == NeverT(false))
 }
 

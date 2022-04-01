@@ -9,5 +9,5 @@ extern func cMakeShip() IShip;
 
 exported func main() int {
   res = cMakeShip();
-  ret getFuel(&res);
+  return getFuel(&res);
 }

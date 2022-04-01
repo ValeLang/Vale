@@ -1,5 +1,5 @@
 
 exported func main() int {
   print("'");
-  ret 42;
+  return 42;
 }

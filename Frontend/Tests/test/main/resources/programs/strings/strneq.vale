@@ -1,6 +1,6 @@
 
 exported func main() int {
-  ret if (streq("abc", 0, 3, "def", 0, 3)) {
+  return if (streq("abc", 0, 3, "def", 0, 3)) {
       73
     } else {
       42

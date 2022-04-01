@@ -711,7 +711,7 @@ class Parser(opts: GlobalOptions) {
   }
 
   // Returns:
-  // - The infer-ret range, if any
+  // - The infer-return range, if any
   def parseAttribute(iter: ParsingIterator):
   Result[Option[IAttributeP], IParseError] = {
     val begin = iter.getPos()
@@ -831,7 +831,7 @@ class Parser(opts: GlobalOptions) {
         case Ok(Some(templateRules)) => (Some(templateRules), None, None)
         case Ok(None) => {
           val (maybeInferRet: Option[UnitP], maybeReturnType: Option[ITemplexPT]) =
-            if (iter.trySkip("^\\s*infer-ret\\b".r)) {
+            if (iter.trySkip("^\\s*infer-return\\b".r)) {
               (Some(UnitP(RangeP(retBegin, iter.getPos()))), None)
             } else if (iter.peek("^\\s*where\\b".r)) {
               (None, None)

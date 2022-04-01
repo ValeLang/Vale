@@ -33,7 +33,7 @@ struct Goblin {
 }
 
 func makeBoard() Array<mut, []<mut>str> {
-  ret
+  return
     MakeArray(10, (row) => {
       MakeArray(10, (col) => {
         if (row == 0) { "#" }
@@ -81,15 +81,15 @@ func inputKey() int {
   while (true) {
     set key = __getch();
     if (key == 81) {
-      ret key;
+      return key;
     } else if (key == 119) {
-      ret key;
+      return key;
     } else if (key == 115) {
-      ret key;
+      return key;
     } else if (key == 97) {
-      ret key;
+      return key;
     } else if (key == 100) {
-      ret key;
+      return key;
     } else if (key == 10) {
       // Enter key, do nothing
     }
@@ -108,7 +108,7 @@ bool {
   a = goblins.get(goblinKey);
   b = (a).get();
   [goblinCol, goblinRow] = b.location.values;
-  ret row == goblinRow and col == goblinCol;
+  return row == goblinRow and col == goblinCol;
 }
 
 
@@ -182,5 +182,5 @@ exported func main() int {
       set running = false;
     }
   }
-  ret 0;
+  return 0;
 }

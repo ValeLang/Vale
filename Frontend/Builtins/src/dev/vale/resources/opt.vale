@@ -25,20 +25,20 @@ func drop<T>(opt None<T>) {
 }
 
 abstract func isEmpty<T>(virtual opt &Opt<T>) bool;
-func isEmpty<T>(opt &None<T>) bool { ret true; }
-func isEmpty<T>(opt &Some<T>) bool { ret false; }
+func isEmpty<T>(opt &None<T>) bool { return true; }
+func isEmpty<T>(opt &Some<T>) bool { return false; }
 
 abstract func isEmpty<T>(virtual opt Opt<T>) bool;
-func isEmpty<T>(opt None<T>) bool { ret true; }
-func isEmpty<T>(opt Some<T>) bool { ret false; }
+func isEmpty<T>(opt None<T>) bool { return true; }
+func isEmpty<T>(opt Some<T>) bool { return false; }
 
 abstract func get<T>(virtual opt Opt<T>) T;
 func get<T>(opt None<T>) T { panic("Called get() on a None!"); }
 func get<T>(opt Some<T>) T {
   [value] = opt;
-  ret value;
+  return value;
 }
 
 abstract func get<T>(virtual opt &Opt<T>) &T;
 func get<T>(opt &None<T>) &T { panic("Called get() on a None!"); }
-func get<T>(opt &Some<T>) &T { ret &opt.value; }
+func get<T>(opt &Some<T>) &T { return &opt.value; }

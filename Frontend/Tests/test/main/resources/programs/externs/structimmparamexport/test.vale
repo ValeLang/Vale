@@ -11,5 +11,5 @@ exported func expFunc(flam Flamscrankle) int {
 extern func extFunc(flam Flamscrankle) int;
 
 exported func main() int {
-  ret extFunc(Flamscrankle(7, 35));
+  return extFunc(Flamscrankle(7, 35));
 }

@@ -5,5 +5,5 @@ exported func main() int {
   m = Marine(7);
   b = &m;
   drop(m);
-  ret b.hp;
+  return b.hp;
 }

@@ -209,7 +209,7 @@ object ParserVonifier {
         VonMember("templateRules", vonifyOptional(templateRules, vonifyTemplateRules)),
         VonMember("params", vonifyOptional(params, vonifyParams)),
         VonMember(
-          "ret",
+          "return",
           VonObject(
             "FunctionReturn",
             None,

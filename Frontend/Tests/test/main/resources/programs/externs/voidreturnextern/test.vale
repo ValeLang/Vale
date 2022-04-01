@@ -11,5 +11,5 @@ extern func runExtCommand(b &MyBox);
 exported func main() int {
   b = MyBox(73);
   runExtCommand(&b);
-  ret b.i;
+  return b.i;
 }

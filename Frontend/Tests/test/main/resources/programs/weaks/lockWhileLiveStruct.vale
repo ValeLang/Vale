@@ -3,7 +3,7 @@ exported func main() int {
   ownMuta = Muta(7);
   weakMuta = &&ownMuta;
   maybeBorrowMuta = lock(weakMuta);
-  ret if maybeBorrowMuta.isEmpty() {
+  return if maybeBorrowMuta.isEmpty() {
       73
     } else {
       maybeBorrowMuta.get().hp

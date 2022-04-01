@@ -20,7 +20,7 @@ func sum(list &MyList) int {
 }
 
 abstract func sum(virtual opt &MyOption) int;
-func sum(opt &MyNone) int { ret 0; }
+func sum(opt &MyNone) int { return 0; }
 func sum(opt &MySome) int {
    sum(&opt.value)
 }
@@ -28,5 +28,5 @@ func sum(opt &MySome) int {
 
 exported func main() int {
   list = MyList(7, MySome(MyList(17, MySome(MyList(18, MyNone())))));
-  ret sum(&list);
+  return sum(&list);
 }

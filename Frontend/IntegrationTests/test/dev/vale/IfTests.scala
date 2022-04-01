@@ -15,7 +15,7 @@ class IfTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() int {
-        |  ret if (true) { 3 } else { 5 }
+        |  return if (true) { 3 } else { 5 }
         |}
       """.stripMargin)
     val programS = compile.getScoutput().getOrDie().moduleToPackagesToFilenameToContents("test")(Vector.empty)("0.vale")
@@ -36,7 +36,7 @@ class IfTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() int {
-        |  ret if (false) { 3 } else { 5 }
+        |  return if (false) { 3 } else { 5 }
         |}
       """.stripMargin)
 
@@ -47,7 +47,7 @@ class IfTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() int {
-        |  ret if (false) { 3 } else if (true) { 5 } else { 7 }
+        |  return if (false) { 3 } else if (true) { 5 } else { 7 }
         |}
       """.stripMargin)
 
@@ -72,7 +72,7 @@ class IfTests extends FunSuite with Matchers {
         |struct Marine { x int; }
         |exported func main() int {
         |  m = Marine(5);
-        |  ret if (false) {
+        |  return if (false) {
         |      [x] = m;
         |      x
         |    } else {
@@ -102,7 +102,7 @@ class IfTests extends FunSuite with Matchers {
         |struct Marine { x int; }
         |exported func main() str {
         |  m = Marine(5);
-        |  ret if (m.x == 5) { "#" }
+        |  return if (m.x == 5) { "#" }
         |  else if (0 == 0) { "?" }
         |  else { "." }
         |}
@@ -119,7 +119,7 @@ class IfTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() int {
-        |  ret if x = 42; x < 50 { x }
+        |  return if x = 42; x < 50 { x }
         |    else { 73 }
         |}
       """.stripMargin)
@@ -141,13 +141,13 @@ class IfTests extends FunSuite with Matchers {
         |  x =
         |    if (true) {
         |      println("In then!");
-        |      ret 7;
+        |      return 7;
         |    } else {
         |      println("In else!");
         |      m.hp
         |    };
         |  println("In rest!");
-        |  ret x;
+        |  return x;
         |}
         |""".stripMargin)
 
@@ -170,13 +170,13 @@ class IfTests extends FunSuite with Matchers {
         |  x =
         |    if (false) {
         |      println("In then!");
-        |      ret 7;
+        |      return 7;
         |    } else {
         |      println("In else!");
         |      m.hp
         |    };
         |  println("In rest!");
-        |  ret x;
+        |  return x;
         |}
         |""".stripMargin)
 
@@ -226,11 +226,11 @@ class IfTests extends FunSuite with Matchers {
           |  a = 7;
           |  if false {
           |    panic("lol");
-          |    ret 73;
+          |    return 73;
           |  } else {
-          |    ret 42;
+          |    return 42;
           |  }
-          |  ret 73;
+          |  return 73;
           |}
           |
           |""".stripMargin)
@@ -243,11 +243,11 @@ class IfTests extends FunSuite with Matchers {
         |exported func main() int {
         |  a = 0;
         |  if (a == 2) {
-        |    ret 71;
+        |    return 71;
         |  } else if (a == 5) {
-        |    ret 73;
+        |    return 73;
         |  } else {
-        |    ret 42;
+        |    return 42;
         |  }
         |}
         |""".stripMargin)

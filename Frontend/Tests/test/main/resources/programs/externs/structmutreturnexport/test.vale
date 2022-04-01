@@ -10,5 +10,5 @@ extern func runExtCommand() Thing;
 
 exported func main() int {
   res = runExtCommand();
-  ret len(res.a) + res.b;
+  return len(res.a) + res.b;
 }

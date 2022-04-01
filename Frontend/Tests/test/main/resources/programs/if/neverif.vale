@@ -1,7 +1,7 @@
 exported func main() int {
   if (true) {
-    ret 42;
+    return 42;
   } else {
-    ret 73;
+    return 73;
   }
 }

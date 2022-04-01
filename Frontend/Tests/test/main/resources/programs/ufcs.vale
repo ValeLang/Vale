@@ -6,10 +6,10 @@ struct Spaceship {
 }
 
 func getFuel(a &Spaceship) int {
-  ret a.fuel;
+  return a.fuel;
 }
 
 exported func main() int {
   ship = Spaceship(42);
-  ret (&ship).getFuel();
+  return (&ship).getFuel();
 }

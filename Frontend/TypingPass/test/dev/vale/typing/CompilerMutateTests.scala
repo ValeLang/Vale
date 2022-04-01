@@ -173,7 +173,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
         |  arr.push(1);
         |  arr.push(2);
         |  set arr[1] = 10;
-        |  ret 73;
+        |  return 73;
         |}
         |""".stripMargin)
     compile.expectCompilerOutputs()
@@ -187,7 +187,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
         |exported func main() int {
         |  arr = #[#10]({_});
         |  set arr[4] = 10;
-        |  ret 73;
+        |  return 73;
         |}
         |""".stripMargin)
     compile.getCompilerOutputs() match {

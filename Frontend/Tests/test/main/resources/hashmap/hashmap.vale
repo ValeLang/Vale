@@ -5,10 +5,10 @@ import ifunction.ifunction1.*;
 
 
 struct IntHasher { }
-func __call(this &IntHasher, x int) int { ret x; }
+func __call(this &IntHasher, x int) int { return x; }
 
 struct IntEquator { }
-func __call(this &IntEquator, a int, b int) bool { ret a == b; }
+func __call(this &IntEquator, a int, b int) bool { return a == b; }
 
 struct HashMapNode<K, V> {
   key K;
@@ -23,11 +23,11 @@ struct HashMap<K, V, H, E> {
 }
 
 func HashMap<K, V, H, E>(hasher H, equator E) HashMap<K, V, H, E> {
-  ret HashMap<K, V, H, E>(hasher, equator, 0);
+  return HashMap<K, V, H, E>(hasher, equator, 0);
 }
 
 func HashMap<K, V, H, E>(hasher H, equator E, capacity int) HashMap<K, V, H, E> {
-  ret HashMap<K, V>(
+  return HashMap<K, V>(
       hasher,
       equator,
       MakeVaryArray(
@@ -39,7 +39,7 @@ func HashMap<K, V, H, E>(hasher H, equator E, capacity int) HashMap<K, V, H, E> 
       0);
 }
 
-func len<K, V, H, E>(self &HashMap<K, V, H, E>) int { ret self.size; }
+func len<K, V, H, E>(self &HashMap<K, V, H, E>) int { return self.size; }
 
 func update<K, V, H, E>(self &HashMap<K, V, H, E>, key K, value V) void {
   hash int = (&self.hasher)(key);
@@ -101,12 +101,12 @@ func findEmptyIndexForKey<K, V>(table &Array<mut, Opt<HashMapNode<K, V>>>, start
     index = (startIndex + i) mod table.len();
     something = table[index];
     if (something.isEmpty()) {
-      ret index;
+      return index;
     }
     // continue to next node
     set i = i + 1;
   }
-  ret panic("findEmptyIndexForKey went past end of table!");
+  return panic("findEmptyIndexForKey went past end of table!");
 }
 
 func findIndexOfKey<K, V, E>(table &Array<mut, Opt<HashMapNode<K, V>>>, equator E, startIndex int, key K) Opt<int> {
@@ -115,36 +115,36 @@ func findIndexOfKey<K, V, E>(table &Array<mut, Opt<HashMapNode<K, V>>>, equator 
     index = (startIndex + i) mod table.len();
     something = table[index];
     if (something.isEmpty()) {
-      ret None<int>();
+      return None<int>();
     }
     node = something.get();
     if ((&equator)(node.key, key)) {
-      ret Some<int>(index);
+      return Some<int>(index);
     }
     // continue to next node
     set i = i + 1;
   }
-  ret panic("findIndexOfKey went past end of table! len " + str(table.len()) + " and i " + str(i));
+  return panic("findIndexOfKey went past end of table! len " + str(table.len()) + " and i " + str(i));
 }
 
 func get<K, V, H, E>(self &HashMap<K, V, H, E>, key K) Opt<&V> {
   if (self.table.len() == 0) {
-    ret None<&V>();
+    return None<&V>();
   }
   hash int = (&self.hasher)(key);
   startIndex = abs(hash mod self.table.len());
   maybeIndex = findIndexOfKey(self.table, self.equator, startIndex, key);
   if (maybeIndex.isEmpty()) {
     opt Opt<&V> = None<&V>();
-    ret opt;
+    return opt;
   }
   node = self.table[maybeIndex.get()].get();
   opt Opt<&V> = Some<&V>(&node.value);
-  ret opt;
+  return opt;
 }
 
 func has<K, V, H, E>(self &HashMap<K, V, H, E>, key K) bool {
-  ret not(self.get(key).isEmpty());
+  return not(self.get(key).isEmpty());
 }
 
 func keys<K, V, H, E>(self &HashMap<K, V, H, E>) []<imm>K {
@@ -157,7 +157,7 @@ func keys<K, V, H, E>(self &HashMap<K, V, H, E>) []<imm>K {
     }
     set index = index + 1;
   }
-  ret list.toImmArray();
+  return list.toImmArray();
 }
 
 func values<K, V, H, E>(self &HashMap<K, V, H, E>) []<mut>V {
@@ -170,7 +170,7 @@ func values<K, V, H, E>(self &HashMap<K, V, H, E>) []<mut>V {
     }
     set index = index + 1;
   }
-  ret list.toVaryArray();
+  return list.toVaryArray();
 }
 
 func innerRemove<K, V, H, E>(
@@ -184,7 +184,7 @@ int {
   maybeIndex = findIndexOfKey(&table, equator, startIndex, key);
   index = maybeIndex.get();
   set table[index] = None<HashMapNode<K, V>>();
-  ret index;
+  return index;
 }
 
 func remove<K, V, H, E>(

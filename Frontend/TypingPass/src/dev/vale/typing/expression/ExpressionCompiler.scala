@@ -334,7 +334,7 @@ class ExpressionCompiler(
 
   // returns:
   // - resulting expression
-  // - all the types that are returned from inside the body via ret
+  // - all the types that are returned from inside the body via return
   private def evaluate(
       coutputs: CompilerOutputs,
     nenv: NodeEnvironmentBox,

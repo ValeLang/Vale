@@ -52,7 +52,7 @@ case class IfPE(range: RangeP, condition: IExpressionPE, thenBody: BlockPE, else
   // assert(thenBody.producesResult() == elseBody.producesResult())
   // We dont do the above assert because we might have cases like this:
   //   if blah {
-  //     ret 3;
+  //     return 3;
   //   } else {
   //     6
   //   }

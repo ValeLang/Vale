@@ -3,6 +3,12 @@ project(backend)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++17")
 
+if (MSVC)
+	# Set the stack size to 4mb instead of the default 1mb for visual studio
+	# because for some reason 1mb is too small for the backend on Windows.
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:4194304")
+endif (MSVC)
+
 find_package(LLVM 13 REQUIRED CONFIG)
 add_definitions(${LLVM_DEFINITIONS})
 include_directories(

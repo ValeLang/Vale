@@ -13,7 +13,7 @@ class ResultTests extends FunSuite with Matchers {
           |
           |exported func main() int {
           |  result Result<int, str> = Ok<int, str>(42);
-          |  ret if (result.is_ok()) { result.expect() }
+          |  return if (result.is_ok()) { result.expect() }
           |    else { panic("wat") }
           |}
         """.stripMargin)
@@ -29,7 +29,7 @@ class ResultTests extends FunSuite with Matchers {
           |
           |exported func main() str {
           |  result Result<int, str> = Err<int, str>("file not found!");
-          |  ret if (result.is_err()) { result.expect_err() }
+          |  return if (result.is_err()) { result.expect_err() }
           |    else { panic("fail!") }
           |}
         """.stripMargin)
@@ -45,7 +45,7 @@ class ResultTests extends FunSuite with Matchers {
         |
         |exported func main() int {
         |  result Result<int, str> = Ok<int, str>(42);
-        |  ret (result).expect();
+        |  return (result).expect();
         |}
         """.stripMargin)
 
@@ -60,7 +60,7 @@ class ResultTests extends FunSuite with Matchers {
         |
         |exported func main() str {
         |  result Result<int, str> = Err<int, str>("file not found!");
-        |  ret (result).expect_err();
+        |  return (result).expect_err();
         |}
         """.stripMargin)
 
@@ -75,7 +75,7 @@ class ResultTests extends FunSuite with Matchers {
           |
           |exported func main() int {
           |  result Result<int, str> = Err<int, str>("file not found!");
-          |  ret result.expect();
+          |  return result.expect();
           |}
         """.stripMargin)
 
@@ -95,7 +95,7 @@ class ResultTests extends FunSuite with Matchers {
         |
         |exported func main() str {
         |  result Result<int, str> = Ok<int, str>(73);
-        |  ret result.expect_err();
+        |  return result.expect_err();
         |}
         """.stripMargin)
 

@@ -25,7 +25,7 @@ func +(s str, sett &HashMap<int, int, IntHasher, IntEquator>) str {
 
   combined.print("]");
 
-  ret combined.str();
+  return combined.str();
 }
 func +(s str, sett &HashSet<int, IntHasher, IntEquator>) str {
   combined = StringBuilder();
@@ -43,7 +43,7 @@ func +(s str, sett &HashSet<int, IntHasher, IntEquator>) str {
 
   combined.print("]");
 
-  ret combined.str();
+  return combined.str();
 }
 
 exported func main() {

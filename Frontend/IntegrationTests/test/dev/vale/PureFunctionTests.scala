@@ -21,11 +21,11 @@ class PureFunctionTests extends FunSuite with Matchers {
           |  engine Engine;
           |}
           |pure func pfunc(s &Spaceship) int {
-          |  ret s.engine.fuel;
+          |  return s.engine.fuel;
           |}
           |exported func main() int {
           |  s = Spaceship(Engine(10));
-          |  ret pfunc(&s);
+          |  return pfunc(&s);
           |}
           |""".stripMargin)
     compile.evalForKind(Vector()) match { case VonInt(10) => }

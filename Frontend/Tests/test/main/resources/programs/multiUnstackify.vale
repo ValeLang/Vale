@@ -3,12 +3,12 @@ exported func main() int {
   playerRow = 137;
 
   if (false) {
-    ret 50;
+    return 50;
   } else if (false) {
-    ret 50;
+    return 50;
   } else if (true) {
-    ret 42;
+    return 42;
   }
-  ret playerRow;
+  return playerRow;
 }
 

@@ -68,5 +68,5 @@ Subprocess {
     args.add(clang_input.str());
   });
 
-  ret (Subprocess(program, &args)).expect();
+  return (Subprocess(program, &args)).expect();
 }

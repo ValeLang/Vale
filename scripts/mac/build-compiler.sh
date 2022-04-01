@@ -53,10 +53,10 @@ cd build
 echo Compiling Backend...
 make || { echo 'Backend build failed, aborting.' ; exit 1; }
 
-cd ../../Driver
+cd ../../Coordinator
 
-echo Compiling Driver...
-./build.sh $BOOTSTRAPPING_VALEC_DIR || { echo 'Driver build failed, aborting.' ; exit 1; }
+echo Compiling Coordinator...
+./build.sh $BOOTSTRAPPING_VALEC_DIR || { echo 'Coordinator build failed, aborting.' ; exit 1; }
 
 cd ../scripts
 
@@ -69,7 +69,7 @@ cp -r ../Frontend/Tests/test/main/resources/programs ../release-mac/samples || {
 cp -r ../Backend/builtins ../release-mac/builtins || { echo 'Error copying into release-mac.' ; exit 1; }
 cp ../Backend/build/backend ../release-mac/backend || { echo 'Error copying into release-mac.' ; exit 1; }
 cp -r ../stdlib ../release-mac/stdlib || { echo 'Error copying into release-mac.' ; exit 1; }
-cp ../Driver/build/valec ../release-mac/valec || { echo 'Error copying into release-mac.' ; exit 1; }
+cp ../Coordinator/build/valec ../release-mac/valec || { echo 'Error copying into release-mac.' ; exit 1; }
 
 cat all/README | sed s/\{valec_exe\}/.\\\/valec/g | sed s/\{sep\}/\\/\/g | sed s/\{valec_version\}/$VALEC_VERSION/g > ../release-mac/README || { echo 'Error copying into release-mac.' ; exit 1; }
 cat all/valec-help-build.txt | sed s/\{valec_exe\}/.\\\/valec/g | sed s/\{sep\}/\\/\/g | sed s/\{valec_version\}/$VALEC_VERSION/g > ../release-mac/valec-help-build.txt || { echo 'Error copying into release-mac.' ; exit 1; }

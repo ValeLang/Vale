@@ -1,0 +1,64 @@
+package dev.vale.scout
+
+import dev.vale.{Err, FileCoordinateMap, Ok, RangeS, vassert, vfail}
+import dev.vale.options.GlobalOptions
+import dev.vale.parser._
+import dev.vale.scout.patterns.AbstractSP
+import dev.vale.scout.rules._
+import dev.vale.Err
+import org.scalatest.{FunSuite, Matchers}
+
+class ScoutErrorHumanizerTests extends FunSuite with Matchers {
+
+  private def compile(code: String): ProgramS = {
+    ScoutTestCompilation.test(code).getScoutput() match {
+      case Err(e) => vfail(ScoutErrorHumanizer.humanize(FileCoordinateMap.test(code), e))
+      case Ok(t) => t.expectOne()
+    }
+  }
+
+  private def compileForError(code: String): ICompileErrorS = {
+    ScoutTestCompilation.test(code).getScoutput() match {
+      case Err(e) => e
+      case Ok(t) => vfail("Successfully compiled!\n" + t.toString)
+    }
+  }
+
+  test("Should require identifying runes") {
+    val error =
+      compileForError(
+        """
+          |func do(callable) infer-ret {callable()}
+          |""".stripMargin)
+    error match {
+      case LightFunctionMustHaveParamTypes(_, 0) =>
+    }
+  }
+
+  test("Humanize errors") {
+    val codeMap = FileCoordinateMap.test("blah blah blah\nblah blah blah")
+
+    vassert(ScoutErrorHumanizer.humanize(codeMap,
+      VariableNameAlreadyExists(RangeS.testZero, CodeVarNameS("Spaceship")))
+      .nonEmpty)
+    vassert(ScoutErrorHumanizer.humanize(codeMap,
+      InterfaceMethodNeedsSelf(RangeS.testZero))
+      .nonEmpty)
+    vassert(ScoutErrorHumanizer.humanize(codeMap,
+      ForgotSetKeywordError(RangeS.testZero))
+      .nonEmpty)
+    vassert(ScoutErrorHumanizer.humanize(codeMap,
+      CantUseThatLocalName(RangeS.testZero, "set"))
+      .nonEmpty)
+    vassert(ScoutErrorHumanizer.humanize(codeMap,
+      ExternHasBody(RangeS.testZero))
+      .nonEmpty)
+    vassert(ScoutErrorHumanizer.humanize(codeMap,
+      CantInitializeIndividualElementsOfRuntimeSizedArray(RangeS.testZero))
+      .nonEmpty)
+    vassert(ScoutErrorHumanizer.humanize(codeMap,
+      LightFunctionMustHaveParamTypes(RangeS.testZero, 0))
+      .nonEmpty)
+
+  }
+}

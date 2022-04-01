@@ -41,7 +41,7 @@ jobs:
     steps: 
       - uses: actions/checkout@v2
       - name: install prereqs
-        run: ./scrips/mac/install-compiler-prereqs.sh ~/BootstrappingValeCompiler
+        run: ./scripts/mac/install-compiler-prereqs.sh ~/BootstrappingValeCompiler
       - name: build compiler
         run: source ~/.zshrc && ./scripts/mac/build-compiler.sh ~/BootstrappingValeCompiler
       - uses: actions/upload-artifact@v2

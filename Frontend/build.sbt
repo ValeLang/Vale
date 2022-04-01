@@ -1,4 +1,4 @@
-name := "Valestrom"
+name := "ValeCompilerFrontend"
 
 version := "1.0"
 
@@ -33,10 +33,8 @@ logLevel := Level.Debug
     (baseDirectory.value / "Vivem" / "src"))
     // (baseDirectory.value / "src2"))
 
-unmanagedJars in Compile += (baseDirectory.value / "lib" / "scala-parser-combinators_2.12-1.1.1.jar")
-
 (unmanagedResourceDirectories) in Compile := Seq(
     baseDirectory.value / "Builtins" / "src" / "net" / "verdagon" / "vale" / "resources")
 
-assemblyJarName in assembly := "Valestrom.jar"
-assemblyOutputPath in assembly := (baseDirectory.value / "Valestrom.jar")
+assemblyJarName in assembly := "ValeCompilerFrontend.jar"
+assemblyOutputPath in assembly := (baseDirectory.value / "ValeCompilerFrontend.jar")

@@ -27,6 +27,8 @@ case object Params extends IClass
 case object Pat extends IClass
 case object Destructure extends IClass
 case object Impl extends IClass
+case object Import extends IClass
+case object Export extends IClass
 case object Capture extends IClass
 case object CaptureName extends IClass
 case object Block extends IClass
@@ -69,6 +71,8 @@ object Spanner {
         case TopLevelInterfaceP(i) => forInterface(i)
         case TopLevelStructP(s) => forStruct(s)
         case TopLevelImplP(i) => forImpl(i)
+        case TopLevelExportAsP(export) => forExport(export)
+        case TopLevelImportP(impoort) => forImport(impoort)
       }))
   }
 
@@ -90,6 +94,22 @@ object Spanner {
       identifyingRunes.toVector.map(forIdentifyingRunes) ++
       struct.toVector.map(forTemplex) ++
       Vector(forTemplex(interface)))
+  }
+
+  def forExport(i: ExportAsP): Span = {
+    val ExportAsP(range, struct, exportedName) = i
+    makeSpan(
+      Export,
+      range,
+      Vector(forTemplex(struct)))
+  }
+
+  def forImport(i: ImportP): Span = {
+    val ImportP(range, moduleName, packageSteps, importeeName) = i
+    makeSpan(
+      Import,
+      range,
+      Vector())
   }
 
   def forStruct(struct: StructP): Span = {

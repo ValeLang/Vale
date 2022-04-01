@@ -1,5 +1,5 @@
 
-fn invoke_valestrom(
+func invoke_valestrom(
   valestrom_path &Path,
   project_directories &List<ProjectDirectoryDeclaration>,
   project_vale_inputs &List<ProjectValeInputDeclaration>,
@@ -12,46 +12,46 @@ fn invoke_valestrom(
   output_vpst bool,
   output_dir &Path)
 Subprocess {
-  program = if (IsWindows()) { "java.exe" } else { "java" };
+  program = if IsWindows() { "java.exe" } else { "java" };
 
   //valestrom_path = valestrom_dir./("Valestrom.jar");
-  if (not valestrom_path.exists()) {
+  if not valestrom_path.exists() {
     panic("Cannot find Valestrom.jar at: " + valestrom_path.str());
   }
 
   command_line_args = List<str>();
-  command_line_args!.add("-cp");
-  command_line_args!.add(valestrom_path.str());
-  command_line_args!.add("net.verdagon.vale.driver.Driver");
-  command_line_args!.add("build");
-  command_line_args!.add("--output-dir");
-  command_line_args!.add(output_dir.str());
+  command_line_args.add("-cp");
+  command_line_args.add(valestrom_path.str());
+  command_line_args.add("net.verdagon.vale.driver.Driver");
+  command_line_args.add("build");
+  command_line_args.add("--output-dir");
+  command_line_args.add(output_dir.str());
 
-  if (benchmark) {
-    command_line_args!.add("--benchmark");
+  if benchmark {
+    command_line_args.add("--benchmark");
   }
-  if (verbose) {
-    command_line_args!.add("--verbose");
+  if verbose {
+    command_line_args.add("--verbose");
   }
-  if (debug_output) {
-    command_line_args!.add("--debug_output");
+  if debug_output {
+    command_line_args.add("--debug_output");
   }
-  if (not include_builtins) {
-    command_line_args!.add("--include-builtins false");
+  if not include_builtins {
+    command_line_args.add("--include-builtins false");
   }
-  if (not output_vast) {
-    command_line_args!.add("--output-vast false");
+  if not output_vast {
+    command_line_args.add("--output-vast false");
   }
-  if (not output_vpst) {
-    command_line_args!.add("--output-vpst false");
+  if not output_vpst {
+    command_line_args.add("--output-vpst false");
   }
 
-  project_directories.each((declaration){
-    command_line_args!.add(declaration.project_name + "=" + declaration.path.resolve().str());
+  project_directories.each((declaration) => {
+    command_line_args.add(declaration.project_name + "=" + declaration.path.resolve().str());
   });
 
-  project_vale_inputs.each((declaration){
-    command_line_args!.add(declaration.project_name + "=" + declaration.path.resolve().str());
+  project_vale_inputs.each((declaration) => {
+    command_line_args.add(declaration.project_name + "=" + declaration.path.resolve().str());
   });
 
   x = (Subprocess(program, &command_line_args)).expect();

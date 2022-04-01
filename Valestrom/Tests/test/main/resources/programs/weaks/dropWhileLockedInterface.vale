@@ -6,7 +6,7 @@ func getHp(self &Muta) int { ret self.hp; }
 
 exported func main() int {
   ownMuta = Muta(73);
-  weakUnit **IUnit = **ownMuta;
+  weakUnit &&IUnit = &&ownMuta;
   maybeBorrowUnit = lock(weakUnit);
   drop(ownMuta);
   ret maybeBorrowUnit.get().getHp();

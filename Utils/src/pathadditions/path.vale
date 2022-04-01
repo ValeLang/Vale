@@ -1,24 +1,18 @@
 
-interface FileError { }
-struct FileNotFoundError {
-  path Path;
-}
-impl FileError for FileNotFoundError;
-
-fn RemoveDirAll(path &Path) Result<void, FileError> {
+func RemoveDirAll(path &Path) Result<void, FileError> {
   is_symlink_result = path.IsSymLink();
   if (is_symlink_result.is_err()) {
     ret Err<void, FileError>((is_symlink_result).expect_err());
   }
   is_symlink = is_symlink_result.expect();
-  = if (is_symlink) {
-      RemoveFile(path)
-    } else {
-      RemoveDirAllRecursive(path)
-    }
+  if is_symlink {
+    RemoveFile(path)
+  } else {
+    RemoveDirAllRecursive(path)
+  }
 }
 
-fn RemoveDirAllRecursive(path &Path) Result<void, FileError> {
+func RemoveDirAllRecursive(path &Path) Result<void, FileError> {
   read_dir_result = ListDir(path);
   children =
     if (read_dir_result.is_ok()) {
@@ -57,97 +51,65 @@ fn RemoveDirAllRecursive(path &Path) Result<void, FileError> {
   ret RemoveDir(path);
 }
 
-fn ListDir(path &Path) Result<List<Path>, FileError> {
+func ListDir(path &Path) Result<List<Path>, FileError> {
   Ok<List<Path>, FileError>(iterdir(path))
 }
 
-fn ExternErrorCodeToError(error_code int, path &Path) FileError {
-  = if (error_code == 0) {
-      panic("ExternErrorCodeToError Extern error: bad argument")
-    } else if (error_code == 1) {
-      FileNotFoundError(path.clone())
-    } else {
-      panic("RemoveDir: unknown Extern error code {error_code}")
-    }
+func ExternErrorCodeToError(error_code int, path &Path) FileError {
+  if (error_code == 0) {
+    panic("ExternErrorCodeToError Extern error: bad argument")
+  } else if (error_code == 1) {
+    FileNotFoundError(path.clone())
+  } else {
+    panic("RemoveDir: unknown Extern error code {error_code}")
+  }
 }
 
-fn RemoveDir(path &Path) Result<void, FileError> {
+func RemoveDir(path &Path) Result<void, FileError> {
   error_code = RemoveDirExtern(path.str());
-  = if (error_code == 0) {
-      Ok<void, FileError>(void())
-    } else {
-      Err<void, FileError>(ExternErrorCodeToError(error_code, path))
-    }
+  if (error_code == 0) {
+    Ok<void, FileError>(void())
+  } else {
+    Err<void, FileError>(ExternErrorCodeToError(error_code, path))
+  }
 }
 
-fn RemoveDirExtern(path str) int extern;
+extern func RemoveDirExtern(path str) int;
 
-fn RemoveFile(path &Path) Result<void, FileError> {
+func RemoveFile(path &Path) Result<void, FileError> {
   error_code = RemoveFileExtern(path.str());
-  = if (error_code == 0) {
-      Ok<void, FileError>(void())
-    } else {
-      Err<void, FileError>(ExternErrorCodeToError(error_code, path))
-    }
+  if (error_code == 0) {
+    Ok<void, FileError>(void())
+  } else {
+    Err<void, FileError>(ExternErrorCodeToError(error_code, path))
+  }
 }
 
-fn RemoveFileExtern(path str) int extern;
+extern func RemoveFileExtern(path str) int;
 
-fn IsSymLink(path &Path) Result<bool, FileError> {
+func IsSymLink(path &Path) Result<bool, FileError> {
   Ok<bool, FileError>(IsSymLinkExtern(path.str()))
 }
 
-fn IsSymLinkExtern(path str) bool extern;
+extern func IsSymLinkExtern(path str) bool;
 
-fn IsDirectory(path &Path) Result<bool, FileError> {
+func IsDirectory(path &Path) Result<bool, FileError> {
   Ok<bool, FileError>(is_dir(path))
 }
 
-fn CreateDir(path &Path, allow_already_existing bool) Result<void, FileError> {
-  = if (CreateDirExtern(path.str(), if (allow_already_existing) { 1 } else { 0 })) {
-      Ok<void, FileError>(void())
-    } else {
-      panic("Error in CreateDir")
-    }
-}
-
-fn GetTempDir() Path {
+func GetTempDir() Path {
   Path(GetTempDirExtern())
 }
 
-// change to bool in next version, has fix
-fn CreateDirExtern(path str, allow_already_existing int) bool extern;
-
-fn CreateDirAll(path &Path, allow_already_existing bool) Result<void, FileError> {
-  if (path.segments.len() == 0) {
-    ret Err<void, FileError>(FileNotFoundError(path.clone()));
-  }
-  if (not path.exists()) {
-    // Recurse
-    recurse_result = CreateDirAll(&path.parent(), allow_already_existing);
-    if (recurse_result.is_err()) {
-      ret recurse_result;
-    }
-    recurse_result.expect();
-
-    create_dir_result = path.CreateDir(allow_already_existing);
-    if (create_dir_result.is_err()) {
-      ret create_dir_result;
-    }
-    create_dir_result.expect();
-  }
-  ret Ok<void, FileError>(void());
-}
-
-fn Rename(path &Path, destination &Path) Result<void, FileError> {
+func Rename(path &Path, destination &Path) Result<void, FileError> {
   error_code = RenameExtern(path.str(), destination.str());
-  = if (error_code == 0) {
-      Ok<void, FileError>(void())
-    } else {
-      Err<void, FileError>(ExternErrorCodeToError(error_code, path))
-    }
+  if (error_code == 0) {
+    Ok<void, FileError>(void())
+  } else {
+    Err<void, FileError>(ExternErrorCodeToError(error_code, path))
+  }
 }
 
-fn RenameExtern(path str, destination str) int extern;
+extern func RenameExtern(path str, destination str) int;
 
-fn GetTempDirExtern() str extern;
+extern func GetTempDirExtern() str;

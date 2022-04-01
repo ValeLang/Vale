@@ -222,7 +222,7 @@ object ScoutErrorHumanizer {
       case OwnP => "^"
       case ShareP => "@"
       case BorrowP => "&"
-      case WeakP => "**"
+      case WeakP => "&&"
     }
   }
 }

@@ -3,4 +3,4 @@ struct MyStruct { a int; }
 
 struct OtherStruct { b MyStruct; }
 
-exported func main() int { ms = OtherStruct(MyStruct(11)); = ms.b.a; }
+exported func main() int { ms = OtherStruct(MyStruct(11)); ms.b.a }

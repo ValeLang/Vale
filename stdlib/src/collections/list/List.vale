@@ -319,18 +319,7 @@ where T Ref, Prot["__call", Refs(&F, E), T] {
   ret result;
 }
 
-//func exists<E, F>(list &List<E>, func F) bool
-//rules(T Ref, Prot("__call", Refs(&F, E), T)) {
-//  i = 0;
-//  while i < list.len() {
-//    if (&func)(list.get(i)) {
-//      ret true;
-//    }
-//    set i = i + 1;
-//  }
-//  ret false;
-//}
-//
+
 //func print<T>(list &List<T>) {
 //  print("List(");
 //  first = true;

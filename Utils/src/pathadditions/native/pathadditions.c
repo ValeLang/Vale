@@ -17,7 +17,6 @@
 
 #include "valecutils/RemoveFileExtern.h"
 #include "valecutils/RemoveDirExtern.h"
-#include "valecutils/CreateDirExtern.h"
 #include "valecutils/IsSymLinkExtern.h"
 #include "valecutils/RenameExtern.h"
 
@@ -60,18 +59,6 @@ static int8_t IsSymLink(const char* path) {
   }
   return S_ISLNK(path_stat.st_mode);
 #endif
-}
-
-static int8_t CreateDir(char* path, char allow_already_existing) {
-  if (mkdir(path, 0700) != 0) {
-    if (allow_already_existing && errno == EEXIST) {
-      // fine, continue
-    } else {
-      perror("Couldn't make directory");
-      return 0;
-    }
-  }
-  return 1;
 }
 
 static ValeInt Rename(char* src, char* dest) {
@@ -129,12 +116,6 @@ static ValeInt Rename(char* src, char* dest) {
   // free(dest);
 
   return 0;
-}
-
-extern int8_t valecutils_CreateDirExtern(ValeStr* path, ValeInt allow_already_existing) {
-  int8_t result = CreateDir(path->chars, !!allow_already_existing);
-  free(path);
-  return result;
 }
 
 extern ValeInt valecutils_RemoveFileExtern(ValeStr* path) {

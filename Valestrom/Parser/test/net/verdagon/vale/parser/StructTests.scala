@@ -70,7 +70,7 @@ class StructTests extends FunSuite with Collector with TestParseUtils {
   test("Struct with weak") {
     compileMaybe(
       makeParser().parseTopLevelThing(_),
-      "struct Moo { x **int; }") shouldHave {
+      "struct Moo { x &&int; }") shouldHave {
       case TopLevelStructP(StructP(_, NameP(_, "Moo"), Vector(), MutabilityPT(_, MutableP), None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,WeakP,NameOrRunePT(NameP(_, "int")))))))) =>
     }
   }

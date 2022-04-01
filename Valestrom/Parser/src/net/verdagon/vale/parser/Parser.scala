@@ -122,6 +122,7 @@ class Parser(opts: GlobalOptions) {
   }
 
   def parseTopLevelThing(iter: ParsingIterator): Result[Option[ITopLevelThingP], IParseError] = {
+    val begin = iter.getPos()
     val attributes = ArrayBuffer[IAttributeP]()
     while ({
       parseAttribute(iter) match {
@@ -135,32 +136,32 @@ class Parser(opts: GlobalOptions) {
       }
     }) {}
 
-    parseImpl(iter, attributes.toVector) match {
+    parseImpl(iter, begin, attributes.toVector) match {
       case Err(err) => return Err(err)
       case Ok(Some(result)) => return Ok(Some(TopLevelImplP(result)))
       case Ok(None) =>
     }
-    parseStruct(iter, attributes.toVector) match {
+    parseStruct(iter, begin, attributes.toVector) match {
       case Err(err) => return Err(err)
       case Ok(Some(result)) => return Ok(Some(TopLevelStructP(result)))
       case Ok(None) =>
     }
-    parseInterface(iter, attributes.toVector) match {
+    parseInterface(iter, begin, attributes.toVector) match {
       case Err(err) => return Err(err)
       case Ok(Some(result)) => return Ok(Some(TopLevelInterfaceP(result)))
       case Ok(None) =>
     }
-    parseExportAs(iter, attributes.toVector) match {
+    parseExportAs(iter, begin, attributes.toVector) match {
       case Err(err) => return Err(err)
       case Ok(Some(result)) => return Ok(Some(TopLevelExportAsP(result)))
       case Ok(None) =>
     }
-    parseImport(iter, attributes.toVector) match {
+    parseImport(iter, begin, attributes.toVector) match {
       case Err(err) => return Err(err)
       case Ok(Some(result)) => return Ok(Some(TopLevelImportP(result)))
       case Ok(None) =>
     }
-    parseFunction(iter, attributes.toVector, StopBeforeCloseBrace) match {
+    parseFunction(iter, begin, attributes.toVector, StopBeforeCloseBrace) match {
       case Err(err) => return Err(err)
       case Ok(Some(result)) => return Ok(Some(TopLevelFunctionP(result)))
       case Ok(None) =>
@@ -312,21 +313,23 @@ class Parser(opts: GlobalOptions) {
     }
     iter.consumeWhitespace()
     val runes = mutable.ArrayBuffer[IdentifyingRuneP]()
-    while ({
-      runes +=
-        (parseIdentifyingRune(iter) match {
-          case Err(e) => return Err(e)
-          case Ok(x) => x
-        })
-      if (iter.trySkip("^\\s*>".r)) {
-        false
-      } else if (iter.trySkip("^\\s*,".r)) {
-        iter.consumeWhitespace()
-        true
-      } else {
-        return Err(BadRuneEnd(iter.getPos()))
-      }
-    }) { }
+    if (!iter.trySkip("^>".r)) {
+      while ( {
+        runes +=
+          (parseIdentifyingRune(iter) match {
+            case Err(e) => return Err(e)
+            case Ok(x) => x
+          })
+        if (iter.trySkip("^\\s*>".r)) {
+          false
+        } else if (iter.trySkip("^\\s*,".r)) {
+          iter.consumeWhitespace()
+          true
+        } else {
+          return Err(BadRuneEnd(iter.getPos()))
+        }
+      }) {}
+    }
     Ok(Some(IdentifyingRunesP(RangeP(begin, iter.getPos()), runes.toVector)))
   }
 
@@ -374,10 +377,9 @@ class Parser(opts: GlobalOptions) {
 
   private[parser] def parseStruct(
     iter: ParsingIterator,
+    begin: Int,
     attributes: Vector[IAttributeP]):
   Result[Option[StructP], IParseError] = {
-    val begin = iter.getPos()
-
     if (!iter.trySkip("^struct\\b".r)) {
       return Ok(None)
     }
@@ -473,10 +475,9 @@ class Parser(opts: GlobalOptions) {
 
   private def parseInterface(
     iter: ParsingIterator,
+    begin: Int,
     attributes: Vector[IAttributeP]):
   Result[Option[InterfaceP], IParseError] = {
-    val begin = iter.getPos()
-
     if (!iter.trySkip("^interface\\b".r)) {
       return Ok(None)
     }
@@ -549,10 +550,9 @@ class Parser(opts: GlobalOptions) {
 
   private def parseImpl(
     iter: ParsingIterator,
+    begin: Int,
     attributes: Vector[IAttributeP]
   ): Result[Option[ImplP], IParseError] = {
-    val begin = iter.getPos()
-
     if (!iter.trySkip("^impl\\b".r)) {
       return Ok(None)
     }
@@ -621,9 +621,9 @@ class Parser(opts: GlobalOptions) {
 
   private def parseExportAs(
     iter: ParsingIterator,
+    begin: Int,
     attributes: Vector[IAttributeP]):
   Result[Option[ExportAsP], IParseError] = {
-    val begin = iter.getPos()
 
     if (!iter.trySkip("^export\\b".r)) {
       return Ok(None)
@@ -664,10 +664,9 @@ class Parser(opts: GlobalOptions) {
 
   private def parseImport(
     iter: ParsingIterator,
+    begin: Int,
     attributes: Vector[IAttributeP]):
   Result[Option[ImportP], IParseError] = {
-    val begin = iter.getPos()
-
     if (!iter.trySkip("^import\\b".r)) {
       return Ok(None)
     }
@@ -763,10 +762,10 @@ class Parser(opts: GlobalOptions) {
 
   private[parser] def parseFunction(
     iter: ParsingIterator,
+    begin: Int,
     attributes: Vector[IAttributeP],
     stopBefore: IStopBefore):
   Result[Option[FunctionP], IParseError] = {
-    val funcBegin = iter.getPos()
     if (!iter.trySkip("^(func|funky)\\b".r)) {
       return Ok(None)
     }
@@ -862,7 +861,7 @@ class Parser(opts: GlobalOptions) {
 
     val header =
       FunctionHeaderP(
-        ast.RangeP(funcBegin, iter.getPos()),
+        ast.RangeP(begin, iter.getPos()),
         Some(name),
         attributes,
         maybeIdentifyingRunes,
@@ -873,7 +872,7 @@ class Parser(opts: GlobalOptions) {
 
     iter.consumeWhitespace()
     if (iter.trySkip("^;".r)) {
-      return Ok(Some(ast.FunctionP(RangeP(funcBegin, iter.getPos()), header, None)))
+      return Ok(Some(ast.FunctionP(RangeP(begin, iter.getPos()), header, None)))
     }
     val bodyBegin = iter.getPos()
     if (!iter.trySkip("^('\\w+\\s*)?\\{".r)) {
@@ -896,7 +895,7 @@ class Parser(opts: GlobalOptions) {
     val bodyEnd = iter.getPos()
     val body = BlockPE(RangeP(bodyBegin, bodyEnd), statements)
 
-    Ok(Some(ast.FunctionP(RangeP(funcBegin, bodyEnd), header, Some(body))))
+    Ok(Some(ast.FunctionP(RangeP(begin, bodyEnd), header, Some(body))))
   }
 
 }

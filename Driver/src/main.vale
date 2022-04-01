@@ -2,20 +2,21 @@ import stdlib.command.*;
 import stdlib.flagger.*;
 import stdlib.path.*;
 import valecutils.pathadditions.*;
+import valecutils.*;
 import valecutils.mtpid.*;
 
 
-fn main() export {
+exported func main() {
   all_args_list = List<str>();
-  i! = 0;
+  i = 0;
   while (i < numMainArgs()) {
-    all_args_list!.add(getMainArg(i));
+    all_args_list.add(getMainArg(i));
     mut i = i + 1;
   }
   all_args = all_args_list.toImmArray();
 
 
-  driver_path = Path(all_args_list.get(0)).resolve();
+  driver_path = Path(all_args_list.get(0))&.resolve();
   if (not driver_path.exists()) {
     panic("Path {driver_path.str()} does not exist!");
   }

@@ -14,10 +14,10 @@ func next<K>(iter &HashSetIter<K>) Opt<&K> {
     this_pos = set iter.pos = iter.pos + 1;
     if not iter.table[this_pos].isEmpty() {
       node = &iter.table[this_pos].get();
-      ret Some<&K>(node);
+      return Some<&K>(node);
     }
   }
-  ret None<&K>();
+  return None<&K>();
 }
 
 

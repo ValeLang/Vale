@@ -1,0 +1,23 @@
+
+exported struct Flamscrankle imm {
+  x int;
+  b Bogglewoggle;
+  y int;
+}
+
+exported struct Bogglewoggle imm {
+  s Spigglewigget;
+  x int;
+}
+
+exported struct Spigglewigget imm {
+  x int;
+  y int;
+  z int;
+}
+
+extern func extFunc_vasp(flam Flamscrankle) int;
+
+exported func main() int {
+  return extFunc_vasp(Flamscrankle(7, Bogglewoggle(Spigglewigget(5, 7, 4), 5), 14));
+}

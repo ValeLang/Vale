@@ -1,0 +1,14 @@
+exported struct Thing {
+  a str;
+  b int;
+}
+exported func makeThing(a str, b int) Thing {
+  Thing(a, b)
+}
+
+extern func runExtCommand() Thing;
+
+exported func main() int {
+  res = runExtCommand();
+  return len(res.a) + res.b;
+}

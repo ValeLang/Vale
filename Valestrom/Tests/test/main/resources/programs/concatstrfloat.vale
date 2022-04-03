@@ -1,4 +1,0 @@
-exported func main() int {
-   matches = streq("hello" + str(42.25), 0, 10, "hello42.25", 0, 10);
-   ret if (matches) { 42 } else { 73 }
-}

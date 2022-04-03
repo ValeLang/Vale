@@ -1,6 +1,0 @@
-
-func not(b bool) bool { ret __vbi_not(b); }
-extern func __vbi_not(b bool) bool;
-
-func ==(left bool, right bool) bool { ret __vbi_eqBoolBool(left, right); }
-extern func __vbi_eqBoolBool(left bool, right bool) bool;

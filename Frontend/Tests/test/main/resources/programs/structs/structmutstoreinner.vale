@@ -1,0 +1,13 @@
+struct Outer {
+  inner Inner;
+}
+
+struct Inner {
+  x! int;
+}
+
+exported func main() int {
+  o = Outer(Inner(73));
+  set o.inner.x = 42;
+  return o.inner.x;
+}

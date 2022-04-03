@@ -85,11 +85,15 @@ void stdlib_write_stdin(int64_t cmd, ValeStr* contents) {
 }
 
 void stdlib_close_stdin(int64_t handle){
-  FILE* stdin_handle = subprocess_stdin((struct subprocess_s*)handle);
-  int success = fclose(stdin_handle);
-  if (success != 0) {
-    perror("Couldn't close subprocess stdin");
-    exit(1);
+  struct subprocess_s* subprocess = (struct subprocess_s*)handle;
+  FILE* stdin_handle = subprocess_stdin(subprocess);
+  if (stdin_handle) {
+    int success = fclose(stdin_handle);
+    if (success != 0) {
+      perror("Couldn't close subprocess stdin");
+      exit(1);
+    }
+    subprocess->stdin_file = SUBPROCESS_NULL;
   }
 }
 

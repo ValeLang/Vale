@@ -24,11 +24,11 @@ func next<K, H, E>(iter &HashSetDiffIterator<K, H, E>) Opt<K> {
         not entry.isEmpty() {
       x = (entry).get();
       if not iter.otherTable.contains(x) {
-        ret Some<K>(x);
+        return Some<K>(x);
       }
     }
   }
-  ret None<K>();
+  return None<K>();
 }
 
 func List<K, H, E>(
@@ -38,7 +38,7 @@ List<K> {
   foreach x in iter {
     list.add(x);
   }
-  ret list;
+  return list;
 }
 
 func HashSet<K, H, E>(
@@ -50,5 +50,5 @@ HashSet<K, H, E> {
   foreach x in iter {
     list.add(x);
   }
-  ret list;
+  return list;
 }

@@ -23,9 +23,9 @@ func signum(a int) int {
 }
 
 
-func range(begin int, end int) IntRange { ret IntRange(begin, end); }
+func range(begin int, end int) IntRange { return IntRange(begin, end); }
 struct IntRange { begin int; end int; }
-func begin(self &IntRange) IntRangeIter { ret IntRangeIter(self, self.begin); }
+func begin(self &IntRange) IntRangeIter { return IntRangeIter(self, self.begin); }
 struct IntRangeIter { range &IntRange; i! int; }
 func next(self &IntRangeIter) Opt<int> {
   if self.i < self.range.end {

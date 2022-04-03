@@ -1,8 +1,0 @@
-struct Carrier {
-  hp int;
-  interceptors int;
-}
-
-exported func main() int {
-  ret Carrier(400, 8).interceptors;
-}

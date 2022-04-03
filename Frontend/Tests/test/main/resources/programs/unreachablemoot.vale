@@ -1,0 +1,10 @@
+
+exported func main() int {
+  while (true) {
+    if (true) {
+      return 42;
+    }
+    // Continue
+  }
+  __vbi_panic();
+}

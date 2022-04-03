@@ -1,6 +1,0 @@
-
-struct Marine { hp int; }
-exported func main() int {
-  m = Marine(9);
-  ret m.hp;
-}

@@ -1,0 +1,6 @@
+
+import math.*;
+
+exported func main() int {
+  return int(sqrt(float(16)));
+}

@@ -1,0 +1,14 @@
+import v.builtins.print.*;
+import v.builtins.str.*;
+
+func panic() infer-return {
+  return __vbi_panic();
+}
+
+func panic(msg str) infer-return {
+  print(msg);
+  print("\n");
+  return __vbi_panic();
+}
+
+extern func __vbi_panic() __Never;

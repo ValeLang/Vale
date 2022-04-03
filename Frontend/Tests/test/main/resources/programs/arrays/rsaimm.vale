@@ -1,0 +1,6 @@
+// immutable runtime-size-array
+
+exported func main() int {
+  a = #[](5, {_});
+  return a[3];
+}

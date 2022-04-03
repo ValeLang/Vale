@@ -1,0 +1,1247 @@
+struct Context {
+    code str;
+    index int;
+}
+func advance(c *Context) void {
+    set c.index = c.index + 1;
+}
+func advance(c *Context, count int) void {
+    set c.index = c.index + count;
+}
+func peek(c *Context) StrSlice {
+  c.code.slice(c.index, c.index + 1)
+}
+func peekNext(c *Context) StrSlice {
+  c.code.slice(c.index + 1, c.index + 2)
+}
+
+
+func main() void {
+    code = "\nstruct Hello<A, B> {\n   horse int;\n   pferd str; another str; \n}\nexported func main() int {\n   println(123); \n}";
+    println(code);
+    println("----------- Parsing -----------");
+    parse(code);
+}
+
+// Extra string stuff
+func println(s StrSlice) void {
+    println(s.str());
+}
+func !=(a str, b StrSlice) bool { a.slice() != b }
+func !=(a StrSlice, b str) bool { a != b.slice() }
+func !=(a StrSlice, b StrSlice) bool {
+  streq(a.string, a.begin, a.end, b.string, b.begin, b.end) == false
+}
+//
+
+
+
+func parse(s str) void {
+   c = Context(s, 0);
+   parseRoot(&c);
+}
+
+func readValidChars(c *Context, validChars str) StrSlice {
+  startIndex = c.index;
+  while (not validChars.find(c.peek()).isEmpty()) {
+    c.advance();
+  }
+  c.code.slice(startIndex, c.index)
+}
+
+func readWord(c *Context) StrSlice {
+  readValidChars(c, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_")
+}
+func readWhitespace(c *Context) void {
+    readValidChars(c, " \r\n "); // Why do I need a space in the end?
+}
+
+func parseRoot(c *Context) void {
+
+    readWhitespace(c);
+    while (c.index < c.code.len() - 1) {
+        word = readWord(c);
+        if (word == "func") {
+            c.parseFn();
+            c.readWhitespace();
+        } else if (word == "struct") {
+            c.parseStruct();
+            c.readWhitespace();
+        } else if (word == "interface") {
+            c.parseInterface();
+            c.readWhitespace();
+        } else if (word == "impl") {
+            c.parseImpl();
+            c.readWhitespace();
+        } else {
+            set c.index = 2147483647;
+            print("Unknown root type: " + word.str());
+        }
+    }
+
+}
+
+func parseGenericDefinition(c *Context) {
+    word = c.readWord();
+    if (word.len() == 0) {
+        panic("Expected generic type name, but got: " + c.peek().str());
+    }
+    print("<");
+    print(word.str());
+
+    c.readWhitespace();
+    while (c.peek() == ",") {
+        c.advance();
+        c.readWhitespace();
+
+        set word = c.readWord();
+        if (word.len() == 0) {
+            panic("Expected generic type name, but got: " + c.peek().str());
+        }
+        print(", ");
+        print(word.str());
+    }
+
+    c.readWhitespace();
+    if (c.peek() != ">") {
+        panic("Expected end of generic type >, but got: " + c.peek().str());
+    }
+    c.advance();
+    print(">");
+}
+
+func parseStruct(c *Context) void {
+    c.readWhitespace();
+    structName = c.readWord();
+    if (structName.len() == 0) {
+        panic("Expected struct name, but got: " + c.peek().str());
+    }
+    print("struct " + structName.str());
+
+    c.readWhitespace();
+    if (c.peek() == "<") {
+        c.advance();
+        parseGenericDefinition(c);
+    }
+
+    c.readWhitespace();
+    if (c.peek() != "{") {
+        word = c.readWord();
+        if (word == "imm") {
+            print(" imm ");
+        }
+        else if (word == "export") {
+            print(" export ");
+        }
+        else if (word == "rules") {
+            parseStructRules(c);
+        }
+        else if (word.len() == 0) {
+            panic("Expected start of struct scope {, but got: " + c.peek().str());
+        }
+    }
+    c.advance();
+    print("{ ");
+
+    structP = StructP(
+        Range(0, 0),
+        NameP(Range(0, 0), structName.str()),
+        List<ICitizenAttributeP>(),
+        MutableP(),
+        Some(IdentifyingRunesP(Range(0, 0), List<IdentifyingRuneP>())),
+        Some(TemplateRulesP(Range(0, 0), List<IRulexPR>())),
+        StructMembersP(Range(0, 0), List<IStructContent>())
+    );
+
+    c.readWhitespace();
+    while (c.peek() != "}") {
+        fieldName = c.readWord();
+        if (fieldName.len() == 0) {
+            panic("Expected struct field name, but got: " + c.peek().str());
+        }
+        print(fieldName.str());
+        print(" ");
+
+        c.readWhitespace();
+        type = parseType(c);
+        print(type.str());
+
+        c.readWhitespace();
+        if (c.peek() != ";") {
+            panic("Expected end of struct field type ;, but got: " + c.peek().str());
+        }
+        c.advance();
+        print("; ");
+
+        c.readWhitespace();
+    }
+
+    println("}");
+    c.advance();
+}
+func parseStructwhere c *Context {
+    panic("Struct rules not implemented yet");
+}
+
+func parseInterface(c *Context) void {
+    panic("Interface not implemented yet");
+}
+
+func parseImpl(c *Context) void {
+    panic("Impl not implemented yet");
+}
+
+func parseType(c *Context) StrSlice {
+  //TODO: This should support more than just word types (arrays and stuff)
+  wordType = c.readWord();
+  if (wordType.len() == 0) {
+      panic("Expected type, but got: " + c.peek().str());
+  }
+  wordType
+}
+
+func parseFn(c *Context) void {
+    c.readWhitespace();
+    fnName = c.readWord();
+    if (fnName.len() == 0) {
+        panic("Expected function name, but got: " + c.peek().str());
+    }
+    print("func " + fnName.str());
+
+    c.readWhitespace();
+    if (c.peek() != "(") {
+        panic("Expected start of parameter (, but got: " + c.peek().str());
+    }
+    c.advance();
+    print("(");
+
+    // arguments
+
+    c.readWhitespace();
+    if (c.peek() != ")") {
+        panic("Expected end of func parameter list ), but got: " + c.peek().str());
+    }
+    c.advance();
+    print(")");
+
+    c.readWhitespace();
+    if (c.peek() != "{") {
+        panic("Expected start of func scope {, but got: " + c.peek().str());
+    }
+    c.advance();
+    print("{");
+
+    c.readWhitespace();
+    while (c.peek() != "}") {
+        c.advance();
+    }
+    c.advance();
+    println("}");
+}
+
+
+
+
+
+
+
+
+
+
+// Where something is in the source code.
+struct Range {
+  begin int;
+  end int;
+}
+
+// This is just a pairing of a chunk of source code, with the Range it came from.
+// Its meaning depends on how it's used.
+struct NameP {
+  range Range;
+  string str;
+}
+
+
+struct FileP {
+  topLevelThings List<ITopLevelThingP>;
+}
+
+// Something that can appear at the top level of a file.
+// I'm open to renaming this so it doesn't have "Thing" in it
+interface ITopLevelThingP {}
+impl ITopLevelThingP for FunctionP;
+impl ITopLevelThingP for StructP;
+impl ITopLevelThingP for InterfaceP;
+impl ITopLevelThingP for ImplP;
+
+// Represents an `impl` construct.
+struct ImplP {
+  range Range;
+  // The T and Y in: impl<T, Y> Firefly<T, Y> for Spaceship<T, Y>;
+  // A "rune" is a template param name.
+  identifyingRunes Opt<IdentifyingRunesP>;
+  // Any template rules that come with the impl.
+  rules Opt<TemplateRulesP>;
+  // The struct that will be implementing the interface.
+  struct ITemplexPT;
+  // The interface that the struct is implementing.
+  interface ITemplexPT;
+}
+
+// Any sort of attribute on a struct or an interface.
+// (Structs and interfaces are both "citizens")
+interface ICitizenAttributeP {}
+
+// Makes this citizen visible to outside JS or C etc.
+struct ExportP { range Range; }
+impl ICitizenAttributeP for ExportP;
+
+// Makes it so weak references can point at this citizen.
+struct WeakableP { range Range; }
+impl ICitizenAttributeP for WeakableP;
+
+// Makes it so no structs can implement this interface.
+struct SealedP { range Range; }
+impl ICitizenAttributeP for SealedP;
+
+// A struct.
+struct StructP {
+  range Range;
+  name NameP;
+  // Attributes for this struct, like export, weakable, etc.
+  attributes List<ICitizenAttributeP>;
+  // Whether this struct is mutable or immutable. Ex: struct Vec2 imm { x int; y int; }
+  mutability MutabilityP;
+  // The K V H and E in: struct HashMap<K, V, H, E> { ... }
+  // A "rune" is a template param name.
+  identifyingRunes Opt<IdentifyingRunesP>;
+  // Any template rules that come with the struct.
+  templateRules Opt<TemplateRulesP>;
+  members StructMembersP;
+}
+
+// Something that appears inside the struct in the source code.
+struct StructMembersP {
+  range Range;
+  // Could be a method or a member.
+  contents List<IStructContent>;
+}
+
+interface IStructContent {}
+
+struct StructMethodP {
+  func FunctionP;
+}
+impl IStructContent for StructMethodP;
+
+struct StructMemberP {
+  range Range;
+  // Name of the member, such as "a" in `a int;`
+  name NameP;
+  // Whether this can be changed or not. e.g. `a! int;` vs `a int;`
+  variability VariabilityP;
+  // Type of the member.
+  type ITemplexPT;
+}
+impl IStructContent for StructMemberP;
+
+struct InterfaceP {
+  range Range;
+  name NameP;
+  // Attributes for this interface, like export, weakable, etc.
+  attributes List<ICitizenAttributeP>;
+  // Whether this interface is mutable or immutable.
+  mutability MutabilityP;
+  // The K and V in: interface IMap<K, V> { ... }
+  // A "rune" is a template param name.
+  maybeIdentifyingRunes Opt<IdentifyingRunesP>;
+  // Any template rules that come with the interface.
+  templateRules Opt<TemplateRulesP>;
+  members List<FunctionP>;
+}
+
+interface IFunctionAttributeP {}
+// Whether this function must be overridden.
+// If this attribute is here, then one of the parameters should be virtual.
+struct AbstractAttributeP { range Range; }
+impl IFunctionAttributeP for AbstractAttributeP;
+// Whether this function is defined outside the program (like in JS, C, etc)
+struct ExternAttributeP { range Range; }
+impl IFunctionAttributeP for ExternAttributeP;
+// Whether this function is accessible to the outside (like JS, C, etc)
+struct ExportAttributeP { range Range; }
+impl IFunctionAttributeP for ExportAttributeP;
+// This function doesn't modify any globals, or anything reachable from any parameters.
+struct PureAttributeP { range Range; }
+impl IFunctionAttributeP for PureAttributeP;
+
+// Attributes on a rune.
+// A rune is a template param, like the T in `func sum<T>(a T, b T) { a + b }`
+interface IRuneSttributeP {}
+
+// What kind of rune this is. Most runes are Coord runes (coord means reference), but
+// they can also be integers, booleans, etc.
+struct TypeRuneAttributeP {
+  range Range;
+  type ITypePR;
+}
+impl IRuneSttributeP for TypeRuneAttributeP;
+
+// This rune describes a region, specifically a readonly one.
+struct ReadOnlyRuneAttributeP { range Range; }
+impl IRuneSttributeP for ReadOnlyRuneAttributeP;
+
+// This rune describes a region, specifically a pool region.
+struct PoolRuneAttributeP { range Range; }
+impl IRuneSttributeP for PoolRuneAttributeP;
+
+// This rune describes a region, specifically an arena region.
+struct ArenaRuneAttributeP { range Range; }
+impl IRuneSttributeP for ArenaRuneAttributeP;
+
+// This rune describes a region, specifically a bump region.
+struct BumpRuneAttributeP { range Range; }
+impl IRuneSttributeP for BumpRuneAttributeP;
+
+// An identifying rune
+// A rune is a template param, like the T in `func sum<T>(a T, b T) { a + b }`
+// It's an identifying rune if it appears between the < and >.
+// They're called identifying because sum<int> and sum<bool> are different functions,
+// so the T helps identify the function.
+// Some runes can be non-identifying, such as if they appear in the template rules.
+struct IdentifyingRuneP {
+  range Range;
+  name NameP;
+  attributes List<IRuneSttributeP>;
+}
+
+struct IdentifyingRunesP {
+  range Range;
+  runes List<IdentifyingRuneP>;
+}
+
+// Constraints/rules that we apply to a function, struct, etc
+struct TemplateRulesP {
+  range Range;
+  rules List<IRulexPR>;
+}
+
+// Parameters for a function.
+struct ParamsP {
+  range Range;
+  patterns List<PatternPP>;
+}
+
+struct FunctionP {
+  range Range;
+  header FunctionHeaderP;
+  body Opt<BlockPE>;
+}
+
+// Everything about a function that's not in the body
+struct FunctionHeaderP {
+  range Range;
+  // Some functions have no name, such as lambdas.
+  name Opt<NameP>;
+  // attributes List<IFunctionAttributeP>;
+
+  // If this is None, then the function had no identifying runes.
+  // If it's Some(Vector.empty) it might represent the <> in `func moo<>(a int, b bool) { ... }`
+  // If it's Some(Vector(...)) then it's the <T, Y> in `func moo<T, Y>(a T, b Y) { ... }`
+  maybeUserSpecifiedIdentifyingRunes Opt<IdentifyingRunesP>;
+
+  // Any template rules for the function.
+  templateRules Opt<TemplateRulesP>;
+
+  // Any parameters for the function.
+  // Some functions have no parameters, such as `{_ + _}`
+  params Opt<ParamsP>;
+
+  // Return type. If they leave it off, then we infer the return type.
+  // (Someday, leaving off a type might mean void)
+  return Opt<ITemplexPT>;
+}
+
+
+// A reference contains these things:
+// - The kind; the thing that this reference points at.
+// - The ownership; this reference's relationship to the kind. This can be:
+//   - Share, which means the references all share ownership of the kind. This
+//     means that the kind will only be deallocated once all references to it are
+//     gone. Share references can only point at immutable kinds, and immutable
+//     kinds can *only* be pointed at by share references.
+//   - Owning, which means this reference owns the object, and when this reference
+//     disappears (without being moved), the object should disappear (this is taken
+//     care of by the typing stage). Owning refs can only point at mutable kinds.
+//   - Constraint, which means this reference doesn't own the kind. The kind
+//     is guaranteed not to die while this constraint ref is active (indeed if it did
+//     the program would panic). Constraint refs can only point at mutable kinds.
+//   - Raw, which is a weird ownership and should go away. We point at Void with this.
+//     TODO: Get rid of raw.
+//   - (in the future) Weak, which is a reference that will null itself out when the
+//     kind is destroyed. Weak refs can only point at mutable kinds.
+// - (in the future) Permission, either readonly or readwrite.
+// - (in the future) Location, either inline or yonder. Inline means that this reference
+//   isn't actually a pointer, it's just the value itself, like C's Car vs Car*.
+// In previous stages, this is referred to as a "coord", because these four things can be
+// thought of as dimensions of a coordinate.
+
+// // Ownership is the way a reference relates to the kind's lifetime, see the
+// // above reference explanation.
+interface OwnershipP {}
+struct OwnP {}
+impl OwnershipP for OwnP;
+struct BorrowP {}
+impl OwnershipP for BorrowP;
+// struct WeakP {}
+// impl OwnershipP for WeakP;
+struct ShareP {}
+impl OwnershipP for ShareP;
+
+// Permission says whether a reference can modify the kind it's pointing at.
+// See above reference explanation.
+interface PermissionP {}
+struct NormalP {}
+impl PermissionP for NormalP;
+struct NormalP {}
+impl PermissionP for NormalP;
+struct ExclusiveReadwriteP {}
+impl PermissionP for ExclusiveReadwriteP;
+
+// Location says whether a reference contains the kind's location (yonder) or
+// contains the kind itself (inline).
+// Yes, it's weird to consider a reference containing a kind, but it makes a
+// lot of things simpler for the language.
+// Examples (with C++ translations):
+//   This will create a variable `car` that lives on the stack ("inline"):
+//     Vale: car = inl Car(4, "Honda Civic");
+//     C++:  Car car(4, "Honda Civic");
+//   This will create a variable `car` that lives on the heap ("yonder"):
+//     Vale: car = Car(4, "Honda Civic");
+//     C++:  Car* car = new Car(4, "Honda Civic");
+//   This will create a struct Spaceship whose engine and reactor are allocated
+//   separately somewhere else on the heap (yonder):
+//     Vale: struct Car { engine Engine; reactor Reactor; }
+//     C++:  class Car { Engine* engine; Reactor* reactor; }
+//   This will create a struct Spaceship whose engine and reactor are embedded
+//   into its own memory (inline):
+//     Vale: struct Car { engine inl Engine; reactor inl Reactor; }
+//     C++:  class Car { Engine engine; Reactor reactor; }
+// Note that the compiler will often automatically add an `inl` onto whatever
+// local variables it can, to speed up the program.
+interface LocationP {}
+
+// Means that the kind will be in the containing stack frame or struct.
+struct InlineP {}
+impl LocationP for InlineP;
+
+// Means that the kind will be allocated separately, in the heap.
+struct YonderP {}
+impl LocationP for YonderP;
+
+
+
+// Used to say whether an object can be modified or not.
+// Structs and interfaces specify whether theyre immutable or mutable, but all
+// primitives are immutable (after all, you can't change 4 itself to be another
+// number).
+interface MutabilityP {}
+
+// Mutable objects have a lifetime.
+struct MutableP { }
+impl MutabilityP for MutableP;
+
+// Immutable structs can only contain or point at other immutable structs, in
+// other words, something immutable is *deeply* immutable.
+// Immutable things can only be referred to with Share references.
+struct ImmutableP {}
+impl MutabilityP for ImmutableP;
+
+
+// Used to say whether a variable (or member) reference can be changed to point
+// at something else.
+// Examples (with C++ translations):
+//   This will create a varying local, which can be changed to point elsewhere:
+//     Vale:
+//       x = Car(4, "Honda Civic");
+//       set x = someOtherCar;
+//       set x = Car(4, "Toyota Camry");
+//     C++:
+//       Car* x = new Car(4, "Honda Civic");
+//       x = someOtherCar;
+//       x = new Car(4, "Toyota Camry");
+//   This will create a final local, which can't be changed to point elsewhere:
+//     Vale: x = Car(4, "Honda Civic");
+//     C++:  Car* const x = new Car(4, "Honda Civic");
+//   Note the position of the const, which says that the pointer cannot change,
+//   but we can still change the members of the Car, which is also true in Vale:
+//     Vale:
+//       x = Car(4, "Honda Civic");
+//       mut x.numWheels = 6;
+//     C++:
+//       Car* const x = new Car(4, "Honda Civic");
+//       x->numWheels = 6;
+// In other words, variability affects whether the variable (or member) can be
+// changed to point at something different, but it doesn't affect whether we can
+// change anything inside the kind (this reference's permission and the
+// kind struct's member's variability affect that).
+interface VariabilityP {}
+struct FinalP {}
+impl VariabilityP for FinalP;
+struct VaryingP {}
+impl VariabilityP for VaryingP;
+
+
+
+
+// PATTERNS
+
+
+// A pattern, used for parameter declarations or local declarations.
+// For example:
+// - The `a Spaceship` in `a Spaceship = makeSpaceship();`
+// - The `a Spaceship` in `func launch(a Spaceship) { ... }`
+struct PatternPP {
+  range Range;
+
+  // Whether there's a borrow symbol before the variable name, such
+  // as the `&` in `func launch(&ship) { ... }`
+  preBorrow Opt<Range>;
+
+  // The name of the parameter.
+  // This can be absent, such as in
+  // `func launch(Spaceship(fuel, wings)) { println(fuel + wings); }`
+  // which destructures the incoming spaceship immediately and needs no name.
+  capture Opt<CaptureP>;
+
+  // The type of the parameter, like the `Spaceship` in `func launch(a Spaceship) { ... }`
+  templex Opt<ITemplexPT>;
+
+  // The destructure part of the pattern, like the `(fuel, wings)` in
+  // `func launch(Spaceship(fuel, wings)) { println(fuel + wings); }`
+  destructure Opt<DestructureP>;
+
+  // The `abstract` or `impl` in the parameter, like `func wings(self Serenity impl ISpaceship) int  { return 2; }`
+  virtuality Opt<IVirtualityP>;
+}
+
+// The destructure part of the pattern, like the `(fuel, wings)` in
+// `Spaceship(fuel, wings) = makeSpaceship(...)`
+// or in
+// `func launch(Spaceship(fuel, wings)) { println(fuel + wings); }`
+struct DestructureP {
+  range Range;
+  // The inner patterns, such as the `resonance` and `WarpCoil(factor, _)` in
+  // `WarpEngine(resonance, WarpCoil(factor, _)) = enterprise.engines;`
+  patterns List<PatternPP>;
+}
+
+
+// The name and variability of a local, like the `a` in `a = 5` or the
+// `a!` in `a = 5;`.
+struct CaptureP {
+  range Range;
+  name ICaptureNameP;
+  // variability VariabilityP;
+}
+
+// Name of a variable.
+interface ICaptureNameP {}
+
+// Your average ordinary local, like the `a` in `a = 5;`.
+struct LocalNameP {
+  name NameP;
+}
+impl ICaptureNameP for LocalNameP;
+
+// The `fuel` in `this.fuel = 5;`.
+// this.fuel is conceptually a local variable. At the end of the function,
+// it will be assembled into an implicit call that constructs the object.
+struct ConstructingMemberNameP {
+  name NameP;
+}
+impl ICaptureNameP for ConstructingMemberNameP;
+
+
+
+// Describes how a parameter might enable dynamic dispatch for a function.
+interface IVirtualityP {}
+
+// This parameter is an interface, and will be used to call an overriding
+// function defined elsewhere.
+// In most languages, this keyword is on the function, and we implicitly use the first
+// parameter as the "abstract parameter". In Vale, we put this on any parameter.
+struct AbstractP {}
+impl IVirtualityP for AbstractP;
+
+// This parameter is a struct, and corresponds to an abstract parameter in a function
+// defined elsewhere. When we call that other function, and the interface argument
+// is the same underlying type as the struct in this parameter, this function will
+// be called.
+// In most languages, this keyword is on the function, and we implicitly use the first
+// parameter as the "override parameter". In Vale, we put this on any parameter.
+struct OverrideP {
+  range Range;
+  type ITemplexPT;
+}
+impl IVirtualityP for OverrideP;
+
+
+
+
+// // RULES
+
+
+interface IRulexPR {}
+
+struct EqualsPR {
+  range Range;
+  left IRulexPR;
+  right IRulexPR;
+}
+impl IRulexPR for EqualsPR;
+
+struct OrPR {
+  range Range;
+  possibilities List<IRulexPR>;
+}
+impl IRulexPR for OrPR;
+
+struct DotPR {
+  range Range;
+  container IRulexPR;
+  memberName NameP;
+}
+impl IRulexPR for DotPR;
+
+struct ComponentsPR {
+  range Range;
+  // This is a TypedPR so that we can know the type; so we can know whether this is
+  // a kind components rule or a coord components rule.
+  container TypedPR;
+  components List<IRulexPR>;
+}
+impl IRulexPR for ComponentsPR;
+
+struct TypedPR {
+  range Range;
+  rune Opt<NameP>;
+  type ITypePR;
+}
+impl IRulexPR for TypedPR;
+
+struct TemplexPR {
+  templex ITemplexPT;
+}
+impl IRulexPR for TemplexPR;
+
+// This is for built-in parser functions; such as exists() or isBaseOf() etc.
+struct CallPR {
+  name NameP;
+  args List<IRulexPR>;
+}
+impl IRulexPR for CallPR;
+
+struct ResolveSignaturePR {
+  nameStrRule IRulexPR;
+  argsPackRule PackPR;
+}
+impl IRulexPR for ResolveSignaturePR;
+
+struct PackPR {
+  elements List<IRulexPR>;
+}
+impl IRulexPR for PackPR;
+
+interface ITypePR {}
+
+struct IntTypePR {}
+impl ITypePR for IntTypePR;
+struct BoolTypePR {}
+impl ITypePR for BoolTypePR;
+struct OwnershipTypePR {}
+impl ITypePR for OwnershipTypePR;
+struct MutabilityTypePR {}
+impl ITypePR for MutabilityTypePR;
+struct PermissionTypePR {}
+impl ITypePR for PermissionTypePR;
+struct LocationTypePR {}
+impl ITypePR for LocationTypePR;
+struct CoordTypePR {}
+impl ITypePR for CoordTypePR;
+struct PrototypeTypePR {}
+impl ITypePR for PrototypeTypePR;
+struct KindTypePR {}
+impl ITypePR for KindTypePR;
+struct RegionTypePR {}
+impl ITypePR for RegionTypePR;
+struct CitizenTemplateTypePR {}
+impl ITypePR for CitizenTemplateTypePR;
+
+
+// See PVSBUFI
+interface ITemplexPT {}
+struct IntPT {
+  range Range;
+  value int;
+}
+impl ITemplexPT for IntPT;
+struct MutabilityPT {
+  range Range;
+  mutability MutabilityP;
+}
+impl ITemplexPT for MutabilityPT;
+struct PermissionPT {
+  range Range;
+  permission PermissionP;
+}
+impl ITemplexPT for PermissionPT;
+struct LocationPT {
+  range Range;
+  location LocationP;
+}
+impl ITemplexPT for LocationPT;
+struct OwnershipPT {
+  range Range;
+  ownership OwnershipP;
+}
+impl ITemplexPT for OwnershipPT;
+struct VariabilityPT {
+  range Range;
+  variability VariabilityP;
+}
+impl ITemplexPT for VariabilityPT;
+struct BoolPT {
+  range Range;
+  value bool;
+}
+impl ITemplexPT for BoolPT;
+struct NameOrRunePT {
+  name NameP;
+}
+impl ITemplexPT for NameOrRunePT;
+struct TypedRunePT {
+  range Range;
+  rune NameP;
+  type ITypePR;
+}
+impl ITemplexPT for TypedRunePT;
+struct AnonymousRunePT {
+  range Range;
+}
+impl ITemplexPT for AnonymousRunePT;
+struct BorrowPT {
+  range Range;
+  inner ITemplexPT;
+}
+impl ITemplexPT for BorrowPT;
+struct NamePT {
+  range Range;
+  str NameP;
+}
+impl ITemplexPT for NamePT;
+struct SharePT {
+  range Range;
+  inner ITemplexPT;
+}
+impl ITemplexPT for SharePT;
+struct CallPT {
+  range Range;
+  template ITemplexPT;
+  args List<ITemplexPT>;
+}
+impl ITemplexPT for CallPT;
+// This is for example func(Int)Bool; func<imm>(Int, Int)Str; func:mut()(Str; Bool)
+// It's shorthand for IFunction:(mut; (Int); Bool); IFunction:(mut; (Int; Int); Str); IFunction:(mut; (); (Str; Bool))
+struct FunctionPT {
+  range Range;
+  // This is Optional because they can leave it out; and mut will be assumed.
+  mutability Opt<ITemplexPT>;
+  parameters PackPT;
+  returnType ITemplexPT;
+}
+impl ITemplexPT for FunctionPT;
+struct PrototypePT {
+  range Range;
+  name NameP;
+  parameters List<ITemplexPT>;
+  returnType ITemplexPT;
+}
+impl ITemplexPT for PrototypePT;
+struct PackPT {
+  range Range;
+  members List<ITemplexPT>;
+}
+impl ITemplexPT for PackPT;
+struct RepeaterSequencePT {
+  range Range;
+  mutability ITemplexPT;
+  size ITemplexPT;
+  element ITemplexPT;
+}
+impl RepeaterSequencePT for ITemplexPT;
+struct ManualSequencePT {
+  range Range;
+  elements List<ITemplexPT>;
+}
+impl ITemplexPT for ManualSequencePT;
+
+
+
+
+
+// TEMPLEX
+
+
+// // "templex" is short for "template expression". You can mostly think of it as a "type expression",
+// // though it does a little more than just deal with types.
+// // The `List<int>` in `a List<int> = makeList(...)` is a templex.
+interface ITemplexPT {}
+
+// A rule specifying the ownership of something.
+// For example, in `a &Spaceship = ...;`, `&Spaceship` is an OwnershippedPT rule saying
+// that we want a Borrow of the inner templex (which is Spaceship).
+struct OwnershippedPT {
+  range Range;
+  ownership OwnershipP;
+  inner ITemplexPT;
+}
+impl ITemplexPT for OwnershippedPT;
+
+// A rule that can match anything. For example, in
+//    func has<E>(arr *[]<_>E, elem E) bool { .. }
+// the _ will accept anything that happens to be there.
+// That means this `has` method can work on both mutable
+// and immutable arrays, because it will accept imm or mut there.
+struct AnonymousRunePT {
+  range Range;
+}
+impl ITemplexPT for AnonymousRunePT;
+
+// For example, the T in `List<T>`. It might be a rune, it might be a name, nobody knows!
+// Later stages will figure that out.
+struct NameOrRunePT {
+  name NameP;
+}
+impl ITemplexPT for NameOrRunePT;
+
+// A template call, such as `List<int>`. `List` is conceptually a function, and `int` is
+// an argument, so `List<int>` is a call.
+struct CallPT {
+  range Range;
+  template ITemplexPT;
+  args List<ITemplexPT>;
+}
+impl ITemplexPT for CallPT;
+
+// For example `[#4]int`, a 4-element array.
+struct RepeaterSequencePT {
+  range Range;
+  mutability ITemplexPT;
+  size ITemplexPT;
+  element ITemplexPT;
+}
+impl ITemplexPT for RepeaterSequencePT;
+
+// For example `[int, bool, bool]`
+struct ManualSequencePT {
+  range Range;
+  members List<ITemplexPT>;
+}
+impl ITemplexPT for ManualSequencePT;
+
+// An integer in a templex, for example the 3 in `Vec<3, float>`.
+struct IntPT {
+  range Range;
+  value int;
+}
+impl ITemplexPT for IntPT;
+
+// A boolean in a templex, similar to how we can have an integer in one.
+struct BoolPT {
+  range Range;
+  value bool;
+}
+impl ITemplexPT for BoolPT;
+
+// For example, the `imm` in `a []<imm>int = ...;`
+struct MutabilityPT {
+  range Range;
+  mutability MutabilityP;
+}
+impl ITemplexPT for MutabilityPT;
+
+// Not used anywhere, but we could specify the ownership of a coord with this.
+struct OwnershipPT {
+  range Range;
+  ownership OwnershipP;
+}
+impl ITemplexPT for OwnershipPT;
+
+// Not used anywhere, but we could specify the location of a coord with this.
+struct LocationPT {
+  range Range;
+  location LocationP;
+}
+impl ITemplexPT for LocationPT;
+
+// Not used anywhere, but we could specify the permission of a coord with this.
+struct PermissionPT {
+  range Range;
+  permission PermissionP;
+}
+impl ITemplexPT for PermissionPT;
+
+// Not used anywhere, but this will eventually be the `?` in `?Spaceship`,
+// shorthand for an Opt.
+struct NullablePT {
+  range Range;
+  inner ITemplexPT;
+}
+impl ITemplexPT for NullablePT;
+
+// The `inl` in `List<inl Spaceship>`
+struct InlinePT {
+  range Range;
+  inner ITemplexPT;
+}
+impl ITemplexPT for InlinePT;
+
+// Not used anywhere, we could modify the permission of an inner templex with this.
+struct PermissionedPT {
+  range Range;
+  permission PermissionP;
+  inner ITemplexPT;
+}
+impl ITemplexPT for PermissionedPT;
+
+
+
+
+
+// EXPRESSIONS
+
+// An expression, like you would see inside a function.
+interface IExpressionPE {}
+
+// For example, the `&` in `launch(&ship)`
+struct PointPE {
+  range Range;
+  expr IExpressionPE;
+  // targetOwnership OwnershipP;
+}
+impl IExpressionPE for PointPE;
+
+// For example, the `and` in `if (readyToLaunch and warmedUp) { ... }`
+struct AndPE {
+  left IExpressionPE;
+  right IExpressionPE;
+}
+impl IExpressionPE for AndPE;
+
+// For example, the `or` in `if (teamIsRagtag and pilotIsIncompetent) { ... }`
+struct OrPE {
+  left IExpressionPE;
+  right IExpressionPE;
+}
+impl IExpressionPE for OrPE;
+
+struct IfPE {
+  range Range;
+  condition BlockPE;
+  thenBody BlockPE;
+  elseBody BlockPE;
+}
+impl IExpressionPE for IfPE;
+
+struct WhilePE {
+  range Range;
+  condition BlockPE;
+  body BlockPE;
+}
+impl IExpressionPE for WhilePE;
+
+// For example, `destruct mySpaceship;`
+struct DestructPE {
+  range Range;
+  inner IExpressionPE;
+}
+impl IExpressionPE for DestructPE;
+
+// For example:
+//    mat myShip {
+//      Firefly(hp, _) { println(hp); }
+//      Serenity(fuel, wings) { println(fuel + wings); }
+//    }
+struct MatchPE {
+  range Range;
+  condition IExpressionPE;
+  lambdas List<LambdaPE>;
+}
+impl IExpressionPE for MatchPE;
+
+// Mutate an existing variable, like `set a = 5;`
+struct MutatePE {
+  range Range;
+  mutatee IExpressionPE;
+  expr IExpressionPE;
+}
+impl IExpressionPE for MutatePE;
+
+// Return a value, like `return 5 + 6;`
+struct ReturnPE {
+  range Range;
+  expr IExpressionPE;
+}
+impl IExpressionPE for ReturnPE;
+
+// Produces a void.
+// This is put into a Block if there's nothing else in there, because
+// a block has to return something.
+struct VoidPE {
+  range Range;
+}
+impl IExpressionPE for VoidPE;
+
+// A pattern making some locals from a source expression, for example:
+//    a = 5;
+//    (a, b) = [6, 7];
+//    Spaceship(fuel, _) = makeSpaceship(...);
+struct LetPE {
+  range Range;
+  templateRules Opt<TemplateRulesP>;
+  pattern PatternPP;
+  expr IExpressionPE;
+}
+impl IExpressionPE for LetPE;
+
+// Packages up some values into a tuple, for example `[4, true]`
+struct SequencePE {
+  range Range;
+  elements List<IExpressionPE>;
+}
+impl IExpressionPE for SequencePE;
+
+// A simple integer, like the `5` in `println(5);`
+struct ConstantIntPE {
+  range Range;
+  value int;
+}
+impl IExpressionPE for ConstantIntPE;
+
+// A simple boolean, like the `false` in `println(false);`
+struct ConstantBoolPE {
+  range Range;
+  value bool;
+}
+impl IExpressionPE for ConstantBoolPE;
+
+// A simple string, like the "hello" in `println("hello");`
+struct ConstantStrPE {
+  range Range;
+  value str;
+}
+impl IExpressionPE for ConstantStrPE;
+
+// A simple integer, like the `5.2` in `println(5.2);`
+struct ConstantFloatPE {
+  range Range;
+  value float;
+}
+impl IExpressionPE for ConstantFloatPE;
+
+// Accesses a member of the struct on the left side, like `mySpaceship.fuel`.
+struct DotPE {
+  range Range;
+  left IExpressionPE;
+  // Where in the source code the . is
+  operatorRange Range;
+  // Whether its *. or just .
+  isMapAccess bool;
+  member NameP;
+}
+impl IExpressionPE for DotPE;
+
+// Accesses an element of the array on the left side, like `myArray[5]`.
+struct IndexPE {
+  range Range;
+  left IExpressionPE;
+  args List<IExpressionPE>;
+}
+impl IExpressionPE for IndexPE;
+
+// Calls a function
+struct FunctionCallPE {
+  range Range;
+  // Whether we want the return value to be inl, such as `a = inl Spaceship(5, 6);`
+  inline Opt<Range>;
+  // Callable expression, such as the `moo` in `moo(cow)` or the `(getFunc(4))` in `(getFunc(4))(hp)`
+  callableExpr IExpressionPE;
+  // The arguments for the call.
+  argExprs List<IExpressionPE>;
+  // // If we're calling a lambda or some other callable struct;
+  // // the 'this' ptr parameter might want a certain ownership;
+  // // so the user might specify that.
+  // targetOwnershipForCallable OwnershipP;
+}
+impl IExpressionPE for FunctionCallPE;
+
+// Calls a function, using method call syntax. This is semantically equivalent to a regular function
+// call, but theyre syntactically different.
+// `launch(mySpaceship, 4, 5)` is a function call, `mySpaceship.launch(4, 5)` is a method call.
+struct MethodCallPE {
+  range Range;
+  // The thing to the left of the . like mySpaceship above.
+  callableExpr IExpressionPE;
+  // The range of the . (or the *.).
+  operatorRange Range;
+  // Whether its a *. or just a .
+  isMapCall bool;
+  // The name of the method we're calling, like `launch` above. Could have template args, like
+  // `mySpaceship.launch<bool>(4, 5)`.
+  methodLookup LookupPE;
+  // The arguments for the call.
+  argExprs List<IExpressionPE>;
+}
+impl IExpressionPE for MethodCallPE;
+
+struct TemplateArgsP {
+  range Range;
+  args List<ITemplexPT>;
+}
+
+struct LookupPE {
+  name NameP;
+  // templateArgs Opt<TemplateArgsP>;
+}
+impl IExpressionPE for LookupPE;
+
+// A `_`, like in:
+//   mySpaceships.map({ _.launch(); })
+// It represents a parameter. The above is equivalent to:
+//   mySpaceships.map((s) => { s.launch(); })
+struct MagicParamLookupPE {
+  range Range;
+}
+impl IExpressionPE for MagicParamLookupPE;
+
+// A lambda, like `(s) => { s.launch(); }`
+struct LambdaPE {
+  // Just here for syntax highlighting so far.
+  // Will eventually contain captures for unattached lambdas.
+  captures Opt<Range>;
+  function FunctionP;
+}
+impl IExpressionPE for LambdaPE;
+
+// Multiple expressions in sequence, like we see in if-statements and while-statements.
+struct BlockPE {
+  range Range;
+  elements List<IExpressionPE>;
+}
+impl IExpressionPE for BlockPE;
+
+// Every element should have at least one expression, because a block will
+// return the last expression's result as its result.
+// Even empty blocks aren't empty; they have a void() at the end.
+// vassert(elements.size >= 1)

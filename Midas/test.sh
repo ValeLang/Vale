@@ -1,1 +1,0 @@
-../Tester/build/testvalec --valestrom_path ../Valestrom/Valestrom.jar --midas_path ./build/midas --builtins_dir ./builtins --valec_path ../Driver/build/valec --midas_tests_dir ./test --valestrom_tests_dir ../Valestrom "$@"

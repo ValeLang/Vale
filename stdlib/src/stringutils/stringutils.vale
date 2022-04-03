@@ -5,9 +5,9 @@ func startsWith(a str, b StrSlice) bool { startsWith(a.slice(), b) }
 func startsWith(a StrSlice, b str) bool { startsWith(a, b.slice()) }
 func startsWith(a StrSlice, b StrSlice) bool {
   if b.len() > a.len() {
-    ret false;
+    return false;
   }
-  ret a.slice(0, b.len()) == b;
+  return a.slice(0, b.len()) == b;
 }
 
 
@@ -16,7 +16,7 @@ func endsWith(a str, b StrSlice) bool { endsWith(a.slice(), b) }
 func endsWith(a StrSlice, b str) bool { endsWith(a, b.slice()) }
 func endsWith(a StrSlice, b StrSlice) bool {
   if b.len() > a.len() {
-    ret false;
+    return false;
   }
   a.slice(a.len() - b.len(), a.len()) == b
 }
@@ -25,7 +25,7 @@ func endsWith(a StrSlice, b StrSlice) bool {
 func splice(original str, at int, removeNumChars int, insert str) str {
   before = original.slice(0, at).str();
   after = original.slice(at + removeNumChars, original.len()).str();
-  ret before + insert + after;
+  return before + insert + after;
 }
 
 
@@ -34,10 +34,10 @@ func ltrim(s StrSlice) StrSlice {
   whitespace = " \r\n\t";
   while true {
     if s == "" {
-      ret s;
+      return s;
     }
     if whitespace.find(s.slice(0, 1)).isEmpty() {
-      ret s;
+      return s;
     }
     set s = s.slice(1, s.len());
   }
@@ -48,10 +48,10 @@ func rtrim(s StrSlice) StrSlice {
   whitespace = " \r\n\t";
   while true {
     if s == "" {
-      ret s;
+      return s;
     }
     if whitespace.find(s.slice(s.len() - 1, s.len())).isEmpty() {
-      ret s;
+      return s;
     }
     set s = s.slice(0, s.len() - 1);
   }
@@ -66,11 +66,11 @@ func isWhitespace(s StrSlice) bool {
   while len(s) > 0 {
     if " \r\n\t".find(s).isEmpty() {
       // then its not whitespace
-      ret false;
+      return false;
     }
     set s = s.slice(1);
   }
-  ret true;
+  return true;
 }
 
 
@@ -78,10 +78,10 @@ func ltrimnl(s str) StrSlice { ltrimnl(s.slice()) }
 func ltrimnl(s StrSlice) StrSlice {
   while true {
     if s == "" {
-      ret s;
+      return s;
     }
     if s.slice(0, 1) != "\n" {
-      ret s;
+      return s;
     }
     set s = s.slice(1, s.len());
   }
@@ -92,10 +92,10 @@ func rtrimnl(s StrSlice) StrSlice {
   whitespace = " \r\n\t";
   while true {
     if s == "" {
-      ret s;
+      return s;
     }
     if s.slice(s.len() - 1, s.len()) != "\n" {
-      ret s;
+      return s;
     }
     set s = s.slice(0, s.len() - 1);
   }
@@ -108,7 +108,7 @@ func trimnl(s StrSlice) StrSlice { ltrimnl(rtrimnl(s)) }
 func int(s str) Opt<int> { int(s.slice()) }
 func int(s StrSlice) Opt<int> {
   if s == "" {
-    ret None<int>();
+    return None<int>();
   }
 
   hasNegative =
@@ -127,7 +127,7 @@ func int(s StrSlice) Opt<int> {
 
     ascii = toAscii(digitStr);
     if ascii < 48 or ascii >= 58 {
-      ret None<int>();
+      return None<int>();
     }
     digit = ascii - 48;
 
@@ -138,12 +138,12 @@ func int(s StrSlice) Opt<int> {
 
   if hasNegative {
     if digitsConsumed == 0 {
-      ret None<int>();
+      return None<int>();
     }
     set totalSoFar = totalSoFar * -1;
   }
 
-  ret Some(totalSoFar);
+  return Some(totalSoFar);
 }
 
 struct SplitResult {
@@ -194,7 +194,7 @@ func split(haystack StrSlice, needle StrSlice) List<StrSlice> {
       result_parts.add(haystack.slice(0, 1));
       set haystack = haystack.slice(1, haystack.len());
     }
-    ret result_parts;
+    return result_parts;
   }
 
   // We want to maintain the invariant that
@@ -206,7 +206,7 @@ func split(haystack StrSlice, needle StrSlice) List<StrSlice> {
 
   if needle == "" {
     result_parts.add("".slice());
-    ret result_parts;
+    return result_parts;
   }
 
   // For example, if we do "aabbb".split("a"), we want to take the two "a"s off
@@ -264,7 +264,7 @@ func split(haystack StrSlice, needle StrSlice) List<StrSlice> {
     set i = i + 1;
   }
 
-  ret result_parts;
+  return result_parts;
 }
 
 
@@ -275,7 +275,7 @@ func __call(self &StrSliceHasher, s StrSlice) int {
     set sum = sum * 1337 + toAscii(s.slice(0, 1));
     set s = s.slice(1);
   }
-  ret sum;
+  return sum;
 }
 
 struct StrSliceEquator { }
@@ -291,7 +291,7 @@ func __call(self &StrHasher, original_str str) int {
     set sum = sum * 1337 + toAscii(s.slice(0, 1));
     set s = s.slice(1);
   }
-  ret sum;
+  return sum;
 }
 
 struct StrEquator { }
@@ -311,7 +311,7 @@ func assembleStr(self &StringBuilder) str {
   foreach s in self.parts {
     set result = result + s;
   }
-  ret result;
+  return result;
 }
 func str(self &StringBuilder) str { self.assembleStr() }
 func print(self &StringBuilder, b bool) {
@@ -379,5 +379,5 @@ func replaceAll(remaining_source StrSlice, needle StrSlice, replacement StrSlice
 
   builder.print(remaining_source);
 
-  ret builder.str();
+  return builder.str();
 }

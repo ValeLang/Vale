@@ -1,0 +1,15 @@
+
+import v.builtins.tup.*;
+
+struct Spaceship {
+  fuel! int;
+}
+
+func getFuel(a &Spaceship) int {
+  return a.fuel;
+}
+
+exported func main() int {
+  ship = Spaceship(42);
+  return (&ship).getFuel();
+}

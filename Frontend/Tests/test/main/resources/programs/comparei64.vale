@@ -1,0 +1,4 @@
+
+exported func main() int {
+  return if (1i64 >= 4294967296i64) { 73 } else { 42 }
+}

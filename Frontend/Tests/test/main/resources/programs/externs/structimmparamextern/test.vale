@@ -1,0 +1,11 @@
+
+exported struct Flamscrankle imm {
+  a int;
+  c int;
+}
+
+extern func extFunc(flam Flamscrankle) int;
+
+exported func main() int {
+  return extFunc(Flamscrankle(7, 35));
+}

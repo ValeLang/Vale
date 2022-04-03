@@ -1,0 +1,7 @@
+exported func main() int {
+  a int = 1;
+  while a < 42 {
+    set a = a + 1;
+  }
+  return a;
+}

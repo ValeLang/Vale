@@ -17,7 +17,7 @@ func Subprocess(command str) Result<Subprocess, str> {
   foreach [index, element] in list.entries() {
     if index != 0 { newlist.add(list.get(index)); }
   }
-  ret Subprocess(cmd, &newlist);
+  return Subprocess(cmd, &newlist);
 }
 
 func Subprocess(command str, args &List<str>) Result<Subprocess, str> {
@@ -25,7 +25,7 @@ func Subprocess(command str, args &List<str>) Result<Subprocess, str> {
   foreach element in args {
     newlist.add(slice(element));
   }
-  ret Subprocess(command, &newlist);
+  return Subprocess(command, &newlist);
 }
 
 func FindProgramInPath(relative_program str) Opt<Path> {
@@ -49,7 +49,7 @@ func FindProgramInPath(relative_program str) Opt<Path> {
     }
   }
 
-  ret maybe_found_program_path;
+  return maybe_found_program_path;
 }
 
 func PrintCommandLinePart(builder &StringBuilder, part StrSlice) {
@@ -74,8 +74,8 @@ func Subprocess(relative_program str, args &List<StrSlice>) Result<Subprocess, s
     panic("Unable to find program {relative_program}.");
   }
   program_path = (maybe_program_path).get();
-  if program_path.is_dir() {
-    panic("Unable to execute {relative_program}, is a directory.");
+  if not program_path.is_file() {
+    panic("Unable to execute {relative_program}, is not a file.");
   }
 
 
@@ -97,11 +97,11 @@ func Subprocess(relative_program str, args &List<StrSlice>) Result<Subprocess, s
 
   handle = launch_command(cmd_array);
   if handle == 0i64 {
-    ret Err<Subprocess, str>("Failed to create command!");
+    return Err<Subprocess, str>("Failed to create command!");
   }
 
   retval = Subprocess(command_str, handle);
-  ret Ok<Subprocess, str>(retval);
+  return Ok<Subprocess, str>(retval);
 }
 
 func consume_and_join<StdoutConsumer, StderrConsumer>(
@@ -142,7 +142,7 @@ int {
     }
   }
 
-  ret join(self);
+  return join(self);
 }
 
 func print_and_join(self Subprocess) int {
@@ -154,13 +154,23 @@ func print_and_join(self Subprocess) int {
     &(stderr_chunk) => {
       print(stderr_chunk);
     });
-  ret x;
+  return x;
 }
 
 struct ExecResult {
   return_code int;
   stdout str;
   stderr str;
+}
+
+func expect_or<F>(result &ExecResult, func F)
+str
+where Prot["__call", Refs(&F, &ExecResult), void]
+{
+  if result.return_code != 0 {
+    func(result);
+  }
+  return result.stdout;
 }
 
 func capture_and_join(self Subprocess) ExecResult {
@@ -171,17 +181,17 @@ func capture_and_join(self Subprocess) ExecResult {
           self,
           &(stdout_chunk) => { stdout_builder.print(stdout_chunk); },
           &(stderr_chunk) => { stderr_builder.print(stderr_chunk); });
-  ret ExecResult(return_code, stdout_builder.str(), stderr_builder.str());
+  return ExecResult(return_code, stdout_builder.str(), stderr_builder.str());
 }
 
 func join(self Subprocess) int {
   status = join(self.handle);
   destroy(self.handle);
-  ret status;
+  return status;
 }
 
 func alive(self &Subprocess) bool {
-  ret alive(self.handle);
+  return alive(self.handle);
 }
 
 func read_all_stdout(self &Subprocess) str {
@@ -196,14 +206,14 @@ func read_all_stdout(self &Subprocess) str {
     }
   }
 
-  ret builder.str();
+  return builder.str();
 }
 
 func read_stdout(self &Subprocess, len int) str {
-  ret read_stdout(self.handle, len);
+  return read_stdout(self.handle, len);
 }
 func read_stderr(self &Subprocess, len int) str {
-  ret read_stderr(self.handle, len);
+  return read_stderr(self.handle, len);
 }
 
 extern func get_env_var(name str) str;

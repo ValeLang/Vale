@@ -1,4 +1,0 @@
-exported func main() int {
-  t = (true, 42);
-  ret t.1;
-}

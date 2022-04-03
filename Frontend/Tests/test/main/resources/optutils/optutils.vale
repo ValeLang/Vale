@@ -1,0 +1,20 @@
+
+abstract func getOr<T>(virtual opt &Opt<T>, default T) T;
+func getOr<T>(opt &None<T>, default T) T {
+  return default;
+}
+func getOr<T>(opt &Some<T>, default T) T {
+  return opt.value;
+}
+
+abstract func map<T, R>(virtual opt &Opt<T>, func &IFunction1<mut, &T, R>) Opt<R>;
+func map<T, R>(opt &None<T>, func &IFunction1<mut, &T, R>) Opt<R> {
+  return None<R>();
+}
+func map<T, R>(opt &Some<T>, func &IFunction1<mut, &T, R>) Opt<R> {
+  return Some<R>(func(opt.value));
+}
+
+abstract func len<T>(virtual opt &Opt<T>) int;
+func len<T>(opt &None<T>) int { return 0; }
+func len<T>(opt &Some<T>) int { return 1; }

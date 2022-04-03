@@ -1,0 +1,17 @@
+
+import v.builtins.tup.*;
+
+interface MyInterface<T> where T Ref {
+  func doThing(virtual x MyInterface<T>) int;
+}
+
+struct MyStruct<T> where T Ref { }
+impl<T> MyInterface<T> for MyStruct<T>;
+func doThing<T>(x MyStruct<T>) int { return 4; }
+
+exported func main() int {
+  x = MyStruct<int>();
+  y = MyStruct<str>();
+  doThing(x);
+  return doThing(y);
+}

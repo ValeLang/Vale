@@ -1,5 +1,0 @@
-exported func main() int {
-  x int = 73;
-  set x = 42;
-  ret x;
-}

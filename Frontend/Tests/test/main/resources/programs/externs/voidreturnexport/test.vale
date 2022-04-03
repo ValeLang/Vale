@@ -1,0 +1,8 @@
+exported func donothing() { }
+
+extern func runExtCommand();
+
+exported func main() int {
+  runExtCommand();
+  return 42;
+}

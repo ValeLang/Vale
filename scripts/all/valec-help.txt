@@ -1,0 +1,8 @@
+USAGE:
+    {valec_exe} [subcommand]
+
+SUBCOMMANDS:
+    help        Print this help.
+    build       Compile Vale source files.
+
+Run `{valec_exe} help [subcommand]` for help on a specific subcommand.

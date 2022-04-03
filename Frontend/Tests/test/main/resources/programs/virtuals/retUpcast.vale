@@ -1,0 +1,13 @@
+
+interface XOpt { }
+struct XSome { value int; }
+impl XOpt for XSome;
+
+func doIt() XOpt {
+  return XSome(9);
+}
+
+exported func main() int {
+  a = doIt();
+  return 3;
+}

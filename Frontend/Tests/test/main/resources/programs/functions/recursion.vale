@@ -1,0 +1,12 @@
+
+func factorial(x int) int {
+  return if (x == 0) {
+      1
+    } else {
+      x * factorial(x - 1)
+    }
+}
+
+exported func main() int {
+  return factorial(5);
+}

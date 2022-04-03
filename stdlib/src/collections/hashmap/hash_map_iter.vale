@@ -14,10 +14,10 @@ func next<K, V>(iter &HashMapIter<K, V>) Opt<(K, &V)> {
     this_pos = set iter.pos = iter.pos + 1;
     if not iter.table[this_pos].isEmpty() {
       node = &iter.table[this_pos].get();
-      ret Some<(K, &V)>((node.key, &node.value));
+      return Some<(K, &V)>((node.key, &node.value));
     }
   }
-  ret None<(K, &V)>();
+  return None<(K, &V)>();
 }
 
 

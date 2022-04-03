@@ -1,9 +1,0 @@
-struct Vec3i imm {
-  x int;
-  y int;
-  z int;
-}
-
-exported func main() int {
-  ret Vec3i(4, 5, 6).y;
-}

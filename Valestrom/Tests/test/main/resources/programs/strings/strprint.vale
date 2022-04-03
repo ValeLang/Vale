@@ -1,5 +1,0 @@
-
-exported func main() int {
-  print("Hello");
-  ret 42;
-}

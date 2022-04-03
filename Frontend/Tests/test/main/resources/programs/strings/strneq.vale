@@ -1,0 +1,8 @@
+
+exported func main() int {
+  return if (streq("abc", 0, 3, "def", 0, 3)) {
+      73
+    } else {
+      42
+    }
+}

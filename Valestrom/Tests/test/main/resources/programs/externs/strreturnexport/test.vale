@@ -1,8 +1,0 @@
-exported func getAStr() str { "hello!" }
-
-extern func runExtCommand() str;
-
-exported func main() int {
-  result = runExtCommand();
-  ret result.len();
-}

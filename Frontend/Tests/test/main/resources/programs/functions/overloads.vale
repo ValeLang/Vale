@@ -1,0 +1,8 @@
+
+import v.builtins.tup.*;
+import v.builtins.arith.*;
+import v.builtins.str.*;
+
+func ~(a int, b int) infer-return { return +(a, b); }
+func ~(a str, b str) infer-return { return +(a, b); }
+exported func main() infer-return { return 3 ~ 3; }

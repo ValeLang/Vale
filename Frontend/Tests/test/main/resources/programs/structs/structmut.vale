@@ -1,0 +1,8 @@
+struct Carrier {
+  hp int;
+  interceptors int;
+}
+
+exported func main() int {
+  return Carrier(400, 8).interceptors;
+}

@@ -1,0 +1,3 @@
+
+extern("vale_lock_weak")
+func lock<T>(weak &&T) Opt<&T>;

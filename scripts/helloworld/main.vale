@@ -1,5 +1,0 @@
-import stdlib.*;
-
-fn main() export {
-  println("Hello world!");
-}

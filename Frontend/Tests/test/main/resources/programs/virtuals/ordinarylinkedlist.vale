@@ -1,0 +1,37 @@
+
+import v.builtins.tup.*;
+import printutils.*;
+
+sealed interface MyOption imm { }
+
+struct MySome imm {
+  value @MyList;
+}
+impl MyOption for MySome;
+
+struct MyNone imm { }
+impl MyOption for MyNone;
+
+
+struct MyList imm {
+  value int;
+  next @MyOption;
+}
+
+func printValues(list @MyList) void {
+  print(list.value);
+  printNextValue(list.next);
+}
+
+func printNextValue(virtual opt @MyOption) void { }
+func printNextValue(opt @MyNone) void { }
+func printNextValue(opt @MySome) void {
+  printValues(opt.value);
+}
+
+
+exported func main() int {
+  list = MyList(10, MySome(MyList(20, MySome(MyList(30, MyNone())))));
+  printValues(list);
+  return 0;
+}

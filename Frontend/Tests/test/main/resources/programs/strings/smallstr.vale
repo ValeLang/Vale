@@ -1,0 +1,5 @@
+
+exported func main() int {
+  print("'");
+  return 42;
+}

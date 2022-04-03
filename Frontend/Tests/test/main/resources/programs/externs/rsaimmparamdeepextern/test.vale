@@ -1,0 +1,13 @@
+exported struct Spaceship imm {
+  fuel int;
+  wings int;
+}
+
+export []<imm>Spaceship as ImmSpaceshipArray;
+
+extern func cSumFuel_vasp(arr []<imm>Spaceship) int;
+
+exported func main() int {
+  a = #[](5, (i) => { Spaceship(i * 2, 7) });
+  return cSumFuel_vasp(a);
+}

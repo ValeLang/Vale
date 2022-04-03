@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/Builtins/Builtins.iml" filepath="$PROJECT_DIR$/Builtins/Builtins.iml" />
+      <module fileurl="file://$PROJECT_DIR$/CompileOptions/CompileOptions.iml" filepath="$PROJECT_DIR$/CompileOptions/CompileOptions.iml" />
+      <module fileurl="file://$PROJECT_DIR$/CompileServer/CompileServer.iml" filepath="$PROJECT_DIR$/CompileServer/CompileServer.iml" />
+      <module fileurl="file://$PROJECT_DIR$/FinalAST/FinalAST.iml" filepath="$PROJECT_DIR$/FinalAST/FinalAST.iml" />
+      <module fileurl="file://$PROJECT_DIR$/HigherTypingPass/HigherTypingPass.iml" filepath="$PROJECT_DIR$/HigherTypingPass/HigherTypingPass.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Highlighter/Highlighter.iml" filepath="$PROJECT_DIR$/Highlighter/Highlighter.iml" />
+      <module fileurl="file://$PROJECT_DIR$/IntegrationTests/IntegrationTests.iml" filepath="$PROJECT_DIR$/IntegrationTests/IntegrationTests.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ParsingPass/ParsingPass.iml" filepath="$PROJECT_DIR$/ParsingPass/ParsingPass.iml" />
+      <module fileurl="file://$PROJECT_DIR$/PassManager/PassManager.iml" filepath="$PROJECT_DIR$/PassManager/PassManager.iml" />
+      <module fileurl="file://$PROJECT_DIR$/PostParsingPass/PostParsingPass.iml" filepath="$PROJECT_DIR$/PostParsingPass/PostParsingPass.iml" />
+      <module fileurl="file://$PROJECT_DIR$/SimplifyingPass/SimplifyingPass.iml" filepath="$PROJECT_DIR$/SimplifyingPass/SimplifyingPass.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Solver/Solver.iml" filepath="$PROJECT_DIR$/Solver/Solver.iml" />
+      <module fileurl="file://$PROJECT_DIR$/TestVM/TestVM.iml" filepath="$PROJECT_DIR$/TestVM/TestVM.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Tests/Tests.iml" filepath="$PROJECT_DIR$/Tests/Tests.iml" />
+      <module fileurl="file://$PROJECT_DIR$/TypingPass/TypingPass.iml" filepath="$PROJECT_DIR$/TypingPass/TypingPass.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Utils/Utils.iml" filepath="$PROJECT_DIR$/Utils/Utils.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Von/Von.iml" filepath="$PROJECT_DIR$/Von/Von.iml" />
+    </modules>
+  </component>
+</project>

@@ -1,0 +1,23 @@
+
+import v.builtins.tup.*;
+
+interface Car {
+  func doCivicDance(virtual this Car) int;
+}
+
+struct Civic {}
+impl Car for Civic;
+func doCivicDance(civic Civic) int {
+  return 4;
+}
+
+struct Toyota {}
+impl Car for Toyota;
+func doCivicDance(toyota Toyota) int {
+  return 7;
+}
+
+exported func main() int {
+  x Car = Toyota();
+  return doCivicDance(x);
+}

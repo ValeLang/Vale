@@ -1,0 +1,59 @@
+
+func MakeArray<T, G>(n int, generator G) []<mut>T
+where
+  T Ref,
+  G Ref = Ref[any(share, borrow), _],
+  F Prot = Prot["__call", Refs(G, int), T]
+{
+  arr = Array<mut, T>(n);
+  i = 0;
+  while (i < n) {
+    arr.push(generator(i));
+    set i = i + 1;
+  }
+  return arr;
+}
+
+func MakeVaryArray<T, G>(n int, generator G) []<mut>T
+where
+  T Ref,
+  G Ref = Ref[any(share, borrow), _],
+  F Prot = Prot["__call", Refs(G, int), T]
+{
+  arr = Array<mut, T>(n);
+  i = 0;
+  while (i < n) {
+    arr.push(generator(i));
+    set i = i + 1;
+  }
+  return arr;
+}
+
+func MakeImmArray<G>(n int, generator G) []<imm>T
+where
+  T Ref,
+  G Ref = Ref[any(share, borrow), _],
+  F Prot = Prot["__call", Refs(G, int), T]
+{
+  return Array<imm, T>(n, generator);
+}
+
+func toImmArray<N, E>(seq &[#N]<_, _>E) []<imm>E {
+  return MakeImmArray(N, { seq[_] });
+}
+
+func toImmArray<T>(source &[]<_>T) Array<imm, &T> {
+  return MakeImmArray(source.len(), &{ source[_] });
+}
+
+func toVaryArray<N, E, SM>(seq &[#N]<SM>E) []<mut>E {
+  return MakeVaryArray(N, { seq[_] });
+}
+
+func toVaryArray<T>(source &[]<_>T) Array<mut, &T> {
+  return MakeVaryArray(source.len(), &{ source[_] });
+}
+
+func toArray<T>(source &[]<_>T) Array<mut, &T> {
+  return MakeArray(source.len(), { source[_] });
+}

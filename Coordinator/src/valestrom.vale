@@ -1,0 +1,59 @@
+
+func invoke_frontend(
+  frontend_path &Path,
+  project_directories &List<ProjectDirectoryDeclaration>,
+  project_vale_inputs &List<ProjectValeInputDeclaration>,
+  project_non_vale_inputs &List<ProjectNonValeInputDeclaration>,
+  benchmark bool,
+  verbose bool,
+  debug_output bool,
+  include_builtins bool,
+  output_vast bool,
+  output_vpst bool,
+  output_dir &Path)
+Subprocess {
+  program = if IsWindows() { "java.exe" } else { "java" };
+
+  //frontend_path = frontend_dir./("Frontend.jar");
+  if not frontend_path.exists() {
+    panic("Cannot find Frontend.jar at: " + frontend_path.str());
+  }
+
+  command_line_args = List<str>();
+  command_line_args.add("-cp");
+  command_line_args.add(frontend_path.str());
+  command_line_args.add("dev.vale.passmanager.PassManager");
+  command_line_args.add("build");
+  command_line_args.add("--output-dir");
+  command_line_args.add(output_dir.str());
+
+  if benchmark {
+    command_line_args.add("--benchmark");
+  }
+  if verbose {
+    command_line_args.add("--verbose");
+  }
+  if debug_output {
+    command_line_args.add("--debug_output");
+  }
+  if not include_builtins {
+    command_line_args.add("--include-builtins false");
+  }
+  if not output_vast {
+    command_line_args.add("--output-vast false");
+  }
+  if not output_vpst {
+    command_line_args.add("--output-vpst false");
+  }
+
+  project_directories.each((declaration) => {
+    command_line_args.add(declaration.project_name + "=" + declaration.path.resolve().str());
+  });
+
+  project_vale_inputs.each((declaration) => {
+    command_line_args.add(declaration.project_name + "=" + declaration.path.resolve().str());
+  });
+
+  x = (Subprocess(program, &command_line_args)).expect();
+  return x;
+}

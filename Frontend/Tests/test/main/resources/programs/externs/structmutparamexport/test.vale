@@ -1,0 +1,12 @@
+exported struct Spaceship {
+  a int;
+  b int;
+}
+
+extern func sumSpaceshipFields(s &Spaceship) int;
+exported func spaceshipGetA(s &Spaceship) int { s.a }
+exported func spaceshipGetB(s &Spaceship) int { s.b }
+
+exported func main() int {
+  return sumSpaceshipFields(&Spaceship(37, 5));
+}

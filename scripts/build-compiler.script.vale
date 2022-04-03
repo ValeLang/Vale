@@ -1,0 +1,318 @@
+// This script builds the Vale compiler, runs some tests on it, and also packages up a release zip file.
+// It assumes we've already ran install-compiler-prereqs-mac.sh, or otherwise installed all the dependencies.
+
+// TODO: move to Flagger
+func FindFlagValue(args #[]str, flagName str) Result<Opt<str>, str> {
+  foreach [index, arg] in args.entries() {
+    if arg == flagName {
+      if index + 1 < args.len() {
+        ret Ok<Opt<str>, str>(Some(args[index + 1]));
+      } else {
+        ret Err<Opt<str>, str>("Error: expected a value after {flagName}");
+      }
+    } else if
+        // Can optimize
+        prefix = flagName + "=";
+        arg.startsWith(prefix) {
+      value = arg.slice(prefix.len()).str();
+      ret Ok<Opt<str>, str>(Some(value));
+    } else {
+      // continue
+    }
+  }
+  ret Ok<Opt<str>, str>(None<str>());
+}
+func FindFlagEnumValue(args #[]str, flagName str, possibilities #[]str) Result<Opt<str>, str> {
+  maybe_value_result = FindFlagValue(args, flagName);
+  if maybe_value_result.is_err() {
+    ret maybe_value_result;
+  }
+  maybe_value = maybe_value_result.expect();
+  if maybe_value.isEmpty() {
+    ret maybe_value_result;
+  }
+  value = maybe_value.get();
+
+  foreach possibility in possibilities {
+    if value == possibility {
+      ret Ok<Opt<str>, str>(Some(value));
+    }
+  }
+
+  ret Err<Opt<str>, str>("Error: invalid value for {flagName}: {value}");
+}
+func ReadAsString(path &Path) Result<str, FileError> {
+  // TODO: https://github.com/ValeLang/Vale/issues/467
+  ret Ok<str, FileError>(readAsString(path));
+}
+
+func replacePlaceholders(source str) str {
+  source
+    .replaceAll("\{valec_exe\}", "./valec")
+    .replaceAll("\{sep\}", "/")
+    .replaceAll("\{valec_version\}", valec_version)
+}
+
+
+// In future versions, we'll remove from here...
+import stdlib.*;
+import stdlib.collections.*;
+import stdlib.collections.list.*;
+import stdlib.collections.hashmap.*;
+import stdlib.collections.hashset.*;
+import stdlib.path.*;
+import stdlib.command.*;
+func main() {
+  all_args_list = List<str>();
+  i = 0;
+  while (i < numMainArgs()) {
+    all_args_list.add(getMainArg(i));
+    mut i = i + 1;
+  }
+  args = all_args_list.toImmArray();
+// ...to here, and make it all automatic for anything ending in .script.vale
+// Note to self: have parser/scout lift all contained named functions to global scope.
+
+cwd = Path(args[0]).directory();
+
+existing_vale_compiler_path =
+    FindFlagValue(args, "--existing_vale_compiler")
+    .expect_or({ panic(_) })
+    .or({ panic("Please supply an existing vale compiler with --existing_vale_compiler" )})
+    .Path();
+
+which_tests =
+    FindFlagValue(args, "--test", #[#]["none", "smoke", "all"].toImmArray());
+    .expect_or({ panic(_) })
+    .or({ panic("Please supply --test=none, --test=smoke, or --test=all" )})
+
+valec_version =
+    cwd./("scripts")./("version")
+    .ReadAsString()
+    .expect_or(unused => panic("Bad version! Please put version in a text file at scripts/VERSION."));
+
+println("Compiling Frontend...");
+SubprocessBuilder()
+    .fromDir(cwd / "Frontend")
+    .command("sbt")
+    .args(#[]("assembly"))
+    .start()
+    .expect()
+    .capture_and_join()
+    .expect_or(result => {
+      panic(
+        result.stdout
+        .trim()
+        .+("\n")
+        .result.stderr
+        .trim()
+        .+("\n")
+        .+("Failed to compile Frontend!")
+        .trim());
+    });
+
+llvm_cmake_dir="/usr/local/Cellar/llvm/`ls /usr/local/Cellar/llvm`/lib/cmake/llvm"
+
+println("Generating Backend...");
+SubprocessBuilder()
+    .fromDir(cwd / "Backend")
+    .withEnvVar("LLVM_CMAKE_DIR", llvm_cmake_dir)
+    .command("cmake")
+    .args(#[]("-B", "build", "-D", "LLVM_DIR={llvm_cmake_dir}"))
+    .start()
+    .expect()
+    .capture_and_join()
+    .expect_or(result => {
+      panic(
+        result.stdout
+        .trim()
+        .+("\n")
+        .result.stderr
+        .trim()
+        .+("\n")
+        .+("Failed to generate Backend!")
+        .trim());
+    });
+
+println("Compiling Backend...");
+SubprocessBuilder()
+    .fromDir(cwd / "Backend" / "build")
+    .command("make")
+    .start()
+    .expect()
+    .capture_and_join()
+    .expect_or(result => {
+      panic(
+        result.stdout
+        .trim()
+        .+("\n")
+        .result.stderr
+        .trim()
+        .+("\n")
+        .+("Failed to build Backend!")
+        .trim());
+    });
+
+println("Compiling Coordinator...");
+SubprocessBuilder()
+    .fromDir(cwd / "Coordinator")
+    .command(existing_vale_compiler_path / "valec")
+    .args(#[#](
+      "build",
+      "coordinator=src",
+      "valecutils={cwd / "Utils" . "src"}",
+      "--output_dir", (cwd / "Coordinator" / "build").str(),
+      "-o", "valec"))
+    .start()
+    .expect()
+    .capture_and_join()
+    .expect_or(result => {
+      panic(
+        result.stdout
+        .trim()
+        .+("\n")
+        .result.stderr
+        .trim()
+        .+("\n")
+        .+("Failed to build Coordinator!")
+        .trim());
+    });
+
+println("Packaging up compiler...");
+release_dir = cwd / "release-mac"
+
+RemoveDirAll(release_dir).expect("Error removing previous release-mac dir.");
+CreateDirAll(release_dir, false).expect("Error making new release dir.");
+CreateDirAll(release_dir / "samples", false).expect("Error making new samples dir.");
+CopyInto(cwd / "Frontend" / "Frontend.jar", release_dir).expect("Error copying Frontend.jar.");
+// TODO: add samples back in. Was:
+//   cp -r ../Frontend/Tests/test/main/resources/programs ../release-mac/samples || { echo 'Error copying into release-mac.' ; exit 1; }
+CopyInto(cwd / "Backend" / "builtins", release_dir).expect("Error copying builtins dir.");
+CopyInto(cwd / "Backend" / "build" / "backend", release_dir).expect("Error copying backend.");
+CopyInto(cwd / "stdlib", release_dir).expect("Error copying stdlib.");
+CopyInto(cwd / "Coordinator" / "build" / "valec", release_dir).expect("Error copying coordinator.");
+
+ReadAsString(cwd / "scripts" / "all" / "README")
+    .expect()
+    .replacePlaceholders()
+    .writeToFile(release_dir / "README")
+    .expect();
+ReadAsString(cwd / "scripts" / "all" / "valec-help.txt")
+    .expect()
+    .replacePlaceholders()
+    .writeToFile(release_dir / "valec-help.txt")
+    .expect();
+ReadAsString(cwd / "scripts" / "all" / "valec-help-build.txt")
+    .expect()
+    .replacePlaceholders()
+    .writeToFile(release_dir / "valec-help-build.txt")
+    .expect();
+ReadAsString(cwd / "scripts" / "all" / "valec-version.txt")
+    .expect()
+    .replacePlaceholders()
+    .writeToFile(release_dir / "valec-version.txt")
+    .expect();
+
+CopyInto(cwd / "scripts" / "all" / "helloworld", release_dir / "samples").expect("Error copying helloworld.");
+
+SubprocessBuilder()
+    .fromDir(release_dir)
+    .command("zip")
+    .args(#[#]["-r", "Vale-Mac-0.zip", "*"].toImmArray())
+    .start()
+    .expect()
+    .capture_and_join()
+    .expect_or(result => {
+      panic(
+        result.stdout
+        .trim()
+        .+("\n")
+        .result.stderr
+        .trim()
+        .+("\n")
+        .+("Failed to zip up release!")
+        .trim());
+    });
+
+if which_tests == "all" {
+  RemoveDirAll(cwd / "Tester" / "BuiltValeCompiler").expect();
+
+  SubprocessBuilder()
+      .fromDir(cwd / "Tester")
+      .command("unzip")
+      .args(toImmArray(#[#][
+          (release_dir / "Vale-Mac-0.zip").str(),
+          "-d", str(cwd / "Tester" / "BuiltValeCompiler") ]))
+      .start()
+      .expect()
+      .capture_and_join()
+      .expect_or(result => {
+        panic(
+          result.stdout
+          .trim()
+          .+("\n")
+          .result.stderr
+          .trim()
+          .+("\n")
+          .+("Failed to zip up release!")
+          .trim());
+      });
+
+  println("Compiling Tester...");
+
+  SubprocessBuilder()
+      .fromDir(cwd / "Tester")
+      .command(existing_vale_compiler_path / "valec")
+      .args(#[#](
+        "build",
+        "tester=src",
+        "valecutils={cwd / "Utils" / "src"}",
+        "--output_dir", (cwd / "Tester" / "build").str(),
+        "-o", "testvalec"))
+      .start()
+      .expect()
+      .capture_and_join()
+      .expect_or(result => {
+        panic(
+          result.stdout
+          .trim()
+          .+("\n")
+          .result.stderr
+          .trim()
+          .+("\n")
+          .+("Failed to build Tester!")
+          .trim());
+      });
+
+
+  println("Running Tester...");
+
+  SubprocessBuilder()
+      .fromDir(cwd / "Tester")
+      .command(cwd / "Tester" / "build" / "testvalec")
+      .args(toImmArray(#[#](
+        "--frontend_path", "./BuiltValeCompiler/Frontend.jar",
+        "--backend_path", "./BuiltValeCompiler/backend",
+        "--builtins_dir", "./BuiltValeCompiler/builtins",
+        "--valec_path", "./BuiltValeCompiler/valec",
+        "--backend_tests_dir", str(cwd / "Backend" / "test"),
+        "--frontend_tests_dir", str(cwd / "Frontend"),
+        "--concurrent", "6",
+        "@assist")))
+      .start()
+      .expect()
+      .capture_and_join()
+      .expect_or(result => {
+        panic(
+          result.stdout
+          .trim()
+          .+("\n")
+          .result.stderr
+          .trim()
+          .+("\n")
+          .+("Tests failed!")
+          .trim());
+      });
+}
+
+} // In future versions, we'll remove the need for a wrapping function for .script.vale files.

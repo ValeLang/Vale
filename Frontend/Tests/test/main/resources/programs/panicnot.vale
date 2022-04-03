@@ -1,0 +1,7 @@
+
+exported func main() int {
+  if (false) {
+    __vbi_panic();
+  }
+  return 42;
+}

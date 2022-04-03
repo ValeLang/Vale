@@ -1,0 +1,2 @@
+
+exported func main() int { a = 7; return ({ ({ a })() })(); }

@@ -1,0 +1,10 @@
+export [#5]<mut>int as MutIntArray;
+
+extern func sumBytes(arr &[#5]<mut>int) int;
+exported func getMutIntArrayLen(arr &[#5]<mut>int) int { len(&arr) }
+exported func getMutIntArrayElem(arr &[#5]<mut>int, i int) int { arr[i] }
+
+exported func main() int {
+  a = [#5]({_});
+  return sumBytes(&a);
+}

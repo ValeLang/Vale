@@ -1,0 +1,5 @@
+
+exported func main() int {
+  a = #[#][23, 31, 37, 42, 49];
+  return a.3;
+}

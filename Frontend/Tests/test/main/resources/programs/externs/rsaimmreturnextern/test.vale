@@ -1,0 +1,15 @@
+
+export []<imm>int as ImmIntArray;
+
+extern func cMakeRSA() []<imm>int;
+
+exported func main() int {
+  arr = cMakeRSA();
+  i = 0;
+  total = 0;
+  while (i < arr.len()) {
+    set total = total + arr[i];
+    set i = i + 1;
+  }
+  return total;
+}

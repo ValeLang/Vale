@@ -23,7 +23,7 @@ func +(s str, sett &HashSet<int, IntHasher, IntEquator>) str {
 
   combined.print("]");
 
-  ret combined.str();
+  return combined.str();
 }
 
 exported func main() {

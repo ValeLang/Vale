@@ -1,0 +1,14 @@
+
+exported struct Spaceship {
+  engine Engine;
+}
+// Not exported
+struct Engine { fuel int; }
+
+exported func valeGetFuel(s &Spaceship) int { s.engine.fuel }
+
+extern func cGetFuel(s &Spaceship) int;
+
+exported func main() int {
+  return cGetFuel(&Spaceship(Engine(42)));
+}

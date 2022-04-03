@@ -1,0 +1,51 @@
+
+func +(a str, b str) str { return addStr(a, 0, len(a), b, 0, len(b)); }
+extern func addStr(a str, aBegin int, aEnd int, b str, bBegin int, bEnd int) str;
+
+func str(x int) str { return castI32Str(x); }
+extern func castI32Str(x int) str;
+
+func str(x i64) str { return castI64Str(x); }
+extern func castI64Str(x i64) str;
+
+func str(x float) str { return castFloatStr(x); }
+extern func castFloatStr(x float) str;
+
+func len(s str) int { return __vbi_strLength(s); }
+extern func __vbi_strLength(s str) int;
+
+extern func strtoascii(s str, begin int, end int) int;
+extern func strfromascii(code int) str;
+
+extern func strindexof(
+  haystackContainer str,
+  haystackBegin int,
+  haystackEnd int,
+  needleContainer str,
+  needleBegin int,
+  needleEnd int)
+int;
+
+extern func substring(
+  haystackContainer str,
+  begin int,
+  end int)
+str;
+
+extern func streq(
+  aContainerStr str,
+  aBegin int,
+  aEnd int,
+  bContainerStr str,
+  bBegin int,
+  bEnd int)
+bool;
+
+extern func strcmp(
+  aContainerStr str,
+  aBegin int,
+  aEnd int,
+  bContainerStr str,
+  bBegin int,
+  bEnd int)
+int;

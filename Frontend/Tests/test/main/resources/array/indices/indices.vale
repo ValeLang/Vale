@@ -1,0 +1,4 @@
+
+func indices<>(arr []<_>_) []<imm>int {
+  MakeImmArray(len(arr), {_})
+}

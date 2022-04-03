@@ -1,0 +1,11 @@
+Vale Compiler, version {valec_version}
+http://vale.dev/
+
+To run a program:
+  {valec_exe} build [options] [module directory mappings]
+
+Run `{valec_exe} help build` for more.
+
+Example:
+  {valec_exe} build --output_dir target hello=.{sep}samples{sep}helloworld
+  target{sep}main

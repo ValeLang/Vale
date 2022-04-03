@@ -1,0 +1,28 @@
+
+func str(b bool) str {
+  return if (b) { "true" } else { "false" }
+}
+
+func +(i int, s str) str {
+  return str(i) + s;
+}
+
+func +(s str, i int) str {
+  return s + str(i);
+}
+
+func +(s str, b bool) str {
+  return s + str(b);
+}
+
+func +(b bool, s str) str {
+  return str(b) + s;
+}
+
+func +(f float, s str) str {
+  return str(f) + s;
+}
+
+func +(s str, f float) str {
+  return s + str(f);
+}

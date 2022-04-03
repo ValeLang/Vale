@@ -1,0 +1,19 @@
+
+sealed interface XOpt<T> where T Ref { }
+struct XSome<T> where T Ref { value T; }
+impl<T> XOpt<T> for XSome<T>;
+struct XNone<T> where T Ref { }
+impl<T> XOpt<T> for XNone<T>;
+
+abstract func getOr<T>(virtual opt &XOpt<T>, default T) T;
+func getOr<T>(opt &XNone<T>, default T) T {
+  return default;
+}
+func getOr<T>(opt &XSome<T>, default T) T {
+  return opt.value;
+}
+
+exported func main() int {
+  a XOpt<int> = XSome(9);
+  return a.getOr<int>(12);
+}

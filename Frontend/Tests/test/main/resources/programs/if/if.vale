@@ -1,0 +1,7 @@
+exported func main() int {
+  return if (true) {
+      42
+    } else {
+      73
+    }
+}

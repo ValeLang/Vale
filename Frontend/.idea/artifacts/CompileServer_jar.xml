@@ -1,0 +1,32 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="CompileServer:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/CompileServer_jar</output-path>
+    <root id="archive" name="CompileServer.jar">
+      <element id="module-output" name="CompileServer" />
+      <element id="module-output" name="PassManager" />
+      <element id="module-output" name="HigherTypingPass" />
+      <element id="module-output" name="Highlighter" />
+      <element id="module-output" name="ParsingPass" />
+      <element id="module-output" name="Utils" />
+      <element id="module-output" name="Von" />
+      <element id="module-output" name="Tests" />
+      <element id="module-output" name="PostParsingPass" />
+      <element id="module-output" name="Hinputs" />
+      <element id="module-output" name="Templata" />
+      <element id="module-output" name="TypingPass" />
+      <element id="module-output" name="SimplifyingPass" />
+      <element id="module-output" name="FinalAST" />
+      <element id="module-output" name="TestVM" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/functions-framework-api-1.0.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/scalatest_2.12-3.0.8.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/scala-library-2.12.8.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/scalactic_2.12-3.0.8.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/scala-reflect-2.12.8.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/scala-xml_2.12-1.2.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/commons-lang-2.6.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/scala-parser-combinators_2.12-1.1.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/scala-library-2.12.6.jar" path-in-jar="/" />
+      <element id="dir-copy" path="$PROJECT_DIR$/Tests/test/main/resources" />
+    </root>
+  </artifact>
+</component>

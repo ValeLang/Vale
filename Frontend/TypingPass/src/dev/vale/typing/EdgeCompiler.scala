@@ -55,7 +55,7 @@ class EdgeCompiler(
                   abstractFunctionParamTypes
                     .updated(abstractIndex, abstractParamType.copy(kind = overridingStruct))
 
-                val range = abstractFunctionBanner.originFunction.map(_.range).getOrElse(RangeS.internal(-2976395))
+                val range = abstractFunctionBanner.originFunction.map(_.range).getOrElse(RangeS.internal(interner, -2976395))
                 val foundFunction =
                   compileOverride(
                     coutputs, range, interface, overridingStruct, impreciseName, overrideFunctionParamTypes)

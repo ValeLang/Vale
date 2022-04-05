@@ -46,19 +46,19 @@ class InterfaceFreeMacro(interner: Interner, overloadCompiler: OverloadResolver)
           freeFunctionNameS,
           Vector(),
           TemplateTemplataType(Vector(CoordTemplataType), FunctionTemplataType),
-          Vector(RuneUsage(RangeS.internal(-64002), CodeRuneS("T"))),
+          Vector(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("T"))),
           Map(CodeRuneS("T") -> CoordTemplataType, CodeRuneS("V") -> CoordTemplataType),
           Vector(
             ParameterS(
               AtomSP(
-                RangeS.internal(-1340),
+                RangeS.internal(interner, -1340),
                 Some(CaptureS(interner.intern(CodeVarNameS("this")))),
-                Some(AbstractSP(RangeS.internal(-64002), true)),
-                Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("T"))), None))),
-          Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("V"))),
+                Some(AbstractSP(RangeS.internal(interner, -64002), true)),
+                Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("T"))), None))),
+          Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("V"))),
           Vector(
-            LookupSR(RangeS.internal(-1672155), RuneUsage(RangeS.internal(-64002), CodeRuneS("T")), interner.intern(SelfNameS())),
-            LookupSR(RangeS.internal(-1672156), RuneUsage(RangeS.internal(-64002), CodeRuneS("V")), interner.intern(CodeNameS("void")))),
+            LookupSR(RangeS.internal(interner, -1672155), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("T")), interner.intern(SelfNameS())),
+            LookupSR(RangeS.internal(interner, -1672156), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("V")), interner.intern(CodeNameS("void")))),
           AbstractBodyS)
 
 //      val virtualFreeFunctionNameS = interner.intern(AbstractVirtualFreeDeclarationNameS(interfaceA.range.begin))
@@ -68,19 +68,19 @@ class InterfaceFreeMacro(interner: Interner, overloadCompiler: OverloadResolver)
 //          virtualFreeFunctionNameS,
 //          Vector(),
 //          TemplateTemplataType(Vector(CoordTemplataType), FunctionTemplataType),
-//          Vector(RuneUsage(RangeS.internal(-64002), CodeRuneS("T"))),
+//          Vector(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("T"))),
 //          Map(CodeRuneS("T") -> CoordTemplataType, CodeRuneS("V") -> CoordTemplataType),
 //          Vector(
 //            ParameterS(
 //              AtomSP(
-//                RangeS.internal(-1340),
+//                RangeS.internal(interner, -1340),
 //                Some(CaptureS(interner.intern(CodeVarNameS("this")))),
-//                Some(AbstractSP(RangeS.internal(-1340), true)),
-//                Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("T"))), None))),
-//          Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("V"))),
+//                Some(AbstractSP(RangeS.internal(interner, -1340), true)),
+//                Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("T"))), None))),
+//          Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("V"))),
 //          Vector(
-//            LookupSR(RangeS.internal(-1672157), RuneUsage(RangeS.internal(-64002), CodeRuneS("T")), interner.intern(SelfNameS())),
-//            LookupSR(RangeS.internal(-1672158), RuneUsage(RangeS.internal(-64002), CodeRuneS("V")), interner.intern(CodeNameS("void")))),
+//            LookupSR(RangeS.internal(interner, -1672157), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("T")), interner.intern(SelfNameS())),
+//            LookupSR(RangeS.internal(interner, -1672158), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("V")), interner.intern(CodeNameS("void")))),
 //          GeneratedBodyS("abstractBody"))
 
       Vector(

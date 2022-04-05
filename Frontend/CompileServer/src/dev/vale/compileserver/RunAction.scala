@@ -5,8 +5,7 @@ import com.google.cloud.functions.{HttpFunction, HttpRequest, HttpResponse}
 import dev.vale.passmanager.PassManager
 import dev.vale.testvm.Vivem
 import PassManager.{Options, SourceInput}
-import dev.vale.{Err, Ok}
-import dev.vale.Err
+import dev.vale.{Err, Interner, Ok}
 
 class RunAction extends HttpFunction {
   override def service(request: HttpRequest, response: HttpResponse): Unit = {
@@ -17,13 +16,14 @@ class RunAction extends HttpFunction {
       return
     }
 
+    val interner = new Interner()
     val options =
       Options(
-        Vector(SourceInput(PassManager.DEFAULT_PACKAGE_COORD, "in.vale", code)),
+        Vector(SourceInput(PassManager.DEFAULT_PACKAGE_COORD(interner), "in.vale", code)),
         Some(""),
         false, false, true, false, true, None, false, true, true, true)
     val program =
-      PassManager.build(options) match {
+      PassManager.build(interner, options) match {
         case Ok(Some(programH)) => programH
         case Err(error) => {
           response.setStatusCode(400)

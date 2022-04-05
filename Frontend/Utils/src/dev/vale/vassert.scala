@@ -1,5 +1,7 @@
 package dev.vale
 
+import scala.annotation.elidable
+
 // We use this instead of a regular RuntimeException because ScalaTest likes to print out
 // theException.getMessage then theException.toString then theException.printStackTrace().
 // Since RuntimeException's getMessage and toString both return the message, it means
@@ -32,9 +34,11 @@ object vcheck {
 
 // A condition that reflects a programmer error.
 object vassert {
+  @elidable(elidable.OFF)
   def apply(condition: => Boolean): Unit = {
     vassert(condition, "Assertion failed!")
   }
+  @elidable(elidable.OFF)
   def apply(condition: => Boolean, message: => String): Unit = {
     if (!condition) {
       vfail(message)

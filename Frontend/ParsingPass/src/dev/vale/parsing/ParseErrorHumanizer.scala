@@ -6,7 +6,7 @@ import dev.vale.SourceCodeUtils.{humanizeFile, humanizePos, nextThingAndRestOfLi
 
 object ParseErrorHumanizer {
   def humanize(
-    fileMap: FileCoordinateMap[String],
+    fileMap: Map[FileCoordinate, String],
     fileCoord: FileCoordinate,
     err: IParseError):
   String = {

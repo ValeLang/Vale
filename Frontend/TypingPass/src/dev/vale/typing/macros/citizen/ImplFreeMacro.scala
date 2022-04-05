@@ -42,7 +42,7 @@ class ImplFreeMacro(
 //        TemplateTemplataType(
 //          structA.identifyingRunes.map(_.rune).map(structA.runeToType) :+ KindTemplataType,
 //          FunctionTemplataType),
-//        structA.identifyingRunes :+ RuneUsage(RangeS.internal(-64002), FreeOverrideInterfaceRuneS()),
+//        structA.identifyingRunes :+ RuneUsage(RangeS.internal(interner, -64002), FreeOverrideInterfaceRuneS()),
 //        structA.runeToType +
 //          (ImplDropCoordRuneS() -> CoordTemplataType) +
 //          (ImplDropVoidRuneS() -> CoordTemplataType) +
@@ -52,41 +52,41 @@ class ImplFreeMacro(
 //        Vector(
 //          ParameterS(
 //            AtomSP(
-//              RangeS.internal(-1340),
+//              RangeS.internal(interner, -1340),
 //              Some(CaptureS(interner.intern(CodeVarNameS("this")))),
-//              Some(OverrideSP(RangeS.internal(-64002), RuneUsage(RangeS.internal(-64002), FreeOverrideInterfaceRuneS()))),
-//              Some(RuneUsage(RangeS.internal(-64002), ImplDropCoordRuneS())), None))),
-//        Some(RuneUsage(RangeS.internal(-64002), ImplDropVoidRuneS())),
+//              Some(OverrideSP(RangeS.internal(interner, -64002), RuneUsage(RangeS.internal(interner, -64002), FreeOverrideInterfaceRuneS()))),
+//              Some(RuneUsage(RangeS.internal(interner, -64002), ImplDropCoordRuneS())), None))),
+//        Some(RuneUsage(RangeS.internal(interner, -64002), ImplDropVoidRuneS())),
 //        structA.rules ++
 //        Vector(
 //          CoerceToCoordSR(
-//            RangeS.internal(-1672138),
-//            RuneUsage(RangeS.internal(-167215), ImplDropCoordRuneS()),
-//            RuneUsage(RangeS.internal(-167214), FreeOverrideStructRuneS())),
+//            RangeS.internal(interner, -1672138),
+//            RuneUsage(RangeS.internal(interner, -167215), ImplDropCoordRuneS()),
+//            RuneUsage(RangeS.internal(interner, -167214), FreeOverrideStructRuneS())),
 //          structA.tyype match {
 //            case KindTemplataType => {
 //              EqualsSR(
-//                RangeS.internal(-1672139),
-//                RuneUsage(RangeS.internal(-167219), FreeOverrideStructRuneS()),
-//                RuneUsage(RangeS.internal(-167219), FreeOverrideStructTemplateRuneS()))
+//                RangeS.internal(interner, -1672139),
+//                RuneUsage(RangeS.internal(interner, -167219), FreeOverrideStructRuneS()),
+//                RuneUsage(RangeS.internal(interner, -167219), FreeOverrideStructTemplateRuneS()))
 //            }
 //            case TemplateTemplataType(paramTypes, KindTemplataType) => {
 //              CallSR(
-//                RangeS.internal(-1672140),
-//                RuneUsage(RangeS.internal(-167219), FreeOverrideStructRuneS()),
-//                RuneUsage(RangeS.internal(-167219), FreeOverrideStructTemplateRuneS()),
-//                structA.identifyingRunes.map(_.rune).map(r => RuneUsage(RangeS.internal(-167219), r)).toArray)
+//                RangeS.internal(interner, -1672140),
+//                RuneUsage(RangeS.internal(interner, -167219), FreeOverrideStructRuneS()),
+//                RuneUsage(RangeS.internal(interner, -167219), FreeOverrideStructTemplateRuneS()),
+//                structA.identifyingRunes.map(_.rune).map(r => RuneUsage(RangeS.internal(interner, -167219), r)).toArray)
 //            }
 //          },
-//          LookupSR(RangeS.internal(-1672141),RuneUsage(RangeS.internal(-64002), FreeOverrideStructTemplateRuneS()),structA.name.getImpreciseName(interner)),
-//          LookupSR(RangeS.internal(-1672142),RuneUsage(RangeS.internal(-64002), ImplDropVoidRuneS()),interner.intern(CodeNameS("void")))),
+//          LookupSR(RangeS.internal(interner, -1672141),RuneUsage(RangeS.internal(interner, -64002), FreeOverrideStructTemplateRuneS()),structA.name.getImpreciseName(interner)),
+//          LookupSR(RangeS.internal(interner, -1672142),RuneUsage(RangeS.internal(interner, -64002), ImplDropVoidRuneS()),interner.intern(CodeNameS("void")))),
 ////        GeneratedBodyS(generatorId))
 //        CodeBodyS(
-//          BodySE(RangeS.internal(-1672143),
+//          BodySE(RangeS.internal(interner, -1672143),
 //            Vector(),
-//            BlockSE(RangeS.internal(-1672144),
+//            BlockSE(RangeS.internal(interner, -1672144),
 //              Vector(LocalS(interner.intern(CodeVarNameS("this")), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
-//              ReturnSE(RangeS.internal(-1672145), VoidSE(RangeS.internal(-167214)))))))
+//              ReturnSE(RangeS.internal(interner, -1672145), VoidSE(RangeS.internal(interner, -167214)))))))
 //    Vector((
 //      structName.addStep(nameTranslator.translateFunctionNameToTemplateName(virtualFreeFunctionA.name)),
 //      FunctionEnvEntry(virtualFreeFunctionA)))

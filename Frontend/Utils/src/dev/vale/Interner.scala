@@ -20,8 +20,12 @@ trait IInterning extends Product {
   override def equals(obj: Any): Boolean = {
     obj match {
       case that : IInterning => {
-        vassert(uniqueId.uniqueId != 0)
-        vassert(that.uniqueId.uniqueId != 0)
+        if (uniqueId.uniqueId == 0) {
+          vfail("Forgot to intern: " + this)
+        }
+        if (that.uniqueId.uniqueId == 0) {
+          vfail("Forgot to intern: " + that)
+        }
         uniqueId.uniqueId == that.uniqueId.uniqueId
       }
       case _ => false

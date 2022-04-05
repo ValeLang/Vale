@@ -514,7 +514,7 @@ class OverloadResolver(
           CouldntNarrowDownCandidates(
             callRange,
             survivingBannerIndices.map(banners)
-              .map(_.banner.originFunction.map(_.range).getOrElse(RangeS.internal(-296729)))))
+              .map(_.banner.originFunction.map(_.range).getOrElse(RangeS.internal(interner, -296729)))))
       }
 
     val rejectedBanners =

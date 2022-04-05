@@ -39,7 +39,7 @@ class DestructorCompiler(
     val env =
       PackageEnvironment(
         globalEnv,
-        FullNameT(PackageCoordinate.BUILTIN, Vector(), interner.intern(PackageTopLevelNameT())),
+        FullNameT(PackageCoordinate.BUILTIN(interner), Vector(), interner.intern(PackageTopLevelNameT())),
         globalEnv.nameToTopLevelEnvironment.values.toVector)
     val name = interner.intern(CodeNameS(CallCompiler.DROP_FUNCTION_NAME))
     val args = Vector(ParamFilter(type2, None))
@@ -58,7 +58,7 @@ class DestructorCompiler(
     val env =
       PackageEnvironment(
         globalEnv,
-        FullNameT(PackageCoordinate.BUILTIN, Vector(), interner.intern(PackageTopLevelNameT())),
+        FullNameT(PackageCoordinate.BUILTIN(interner), Vector(), interner.intern(PackageTopLevelNameT())),
         globalEnv.nameToTopLevelEnvironment.values.toVector)
     val name = interner.intern(FreeImpreciseNameS())
     val args = Vector(ParamFilter(type2, None))

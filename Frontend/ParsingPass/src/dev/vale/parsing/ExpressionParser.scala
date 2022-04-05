@@ -53,7 +53,7 @@ class ExpressionParser(opts: GlobalOptions) {
 
   private def parseWhile(iter: ParsingIterator): Result[Option[WhilePE], IParseError] = {
     val whileBegin = iter.getPos()
-    if (!iter.trySkip("^while\\b".r)) {
+    if (!iter.trySkip(() => "^while\\b".r)) {
       return Ok(None)
     }
 
@@ -67,7 +67,7 @@ class ExpressionParser(opts: GlobalOptions) {
 
     iter.consumeWhitespace()
     val bodyBegin = iter.getPos()
-    if (!iter.trySkip("^\\{".r)) {
+    if (!iter.trySkip(() => "^\\{".r)) {
       return Err(BadStartOfWhileBody(iter.position))
     }
     iter.consumeWhitespace()
@@ -78,7 +78,7 @@ class ExpressionParser(opts: GlobalOptions) {
       }
     val bodyEnd = iter.getPos()
     iter.consumeWhitespace()
-    if (!iter.trySkip("^\\}".r)) {
+    if (!iter.trySkip(() => "^\\}".r)) {
       return Err(BadEndOfWhileBody(iter.position))
     }
     val whileEnd = iter.getPos()
@@ -97,8 +97,8 @@ class ExpressionParser(opts: GlobalOptions) {
   Result[Option[EachPE], IParseError] = {
     val eachBegin = originalIter.getPos()
     val tentativeIter = originalIter.clone()
-    tentativeIter.trySkip("^parallel\\s+".r)
-    if (!tentativeIter.trySkip("^foreach".r)) {
+    tentativeIter.trySkip(() => "^parallel\\s+".r)
+    if (!tentativeIter.trySkip(() => "^foreach".r)) {
       return Ok(None)
     }
     originalIter.skipTo(tentativeIter.position)
@@ -112,7 +112,7 @@ class ExpressionParser(opts: GlobalOptions) {
     iter.consumeWhitespace()
 
     val inBegin = iter.getPos()
-    if (!iter.trySkip("^in\\b".r)) {
+    if (!iter.trySkip(() => "^in\\b".r)) {
       return Err(BadForeachInError(iter.getPos()))
     }
     val inEnd = iter.getPos()
@@ -127,7 +127,7 @@ class ExpressionParser(opts: GlobalOptions) {
 
     iter.consumeWhitespace()
     val bodyBegin = iter.getPos()
-    if (!iter.trySkip("^\\{".r)) {
+    if (!iter.trySkip(() => "^\\{".r)) {
       return Err(BadStartOfWhileBody(iter.position))
     }
     iter.consumeWhitespace()
@@ -136,11 +136,11 @@ class ExpressionParser(opts: GlobalOptions) {
         case Ok(result) => result
         case Err(cpe) => return Err(cpe)
       }
-    val bodyEnd = iter.getPos()
     iter.consumeWhitespace()
-    if (!iter.trySkip("^\\}".r)) {
+    if (!iter.trySkip(() => "^\\}".r)) {
       return Err(BadEndOfWhileBody(iter.position))
     }
+    val bodyEnd = iter.getPos()
     val eachEnd = iter.getPos()
 
     Ok(
@@ -156,7 +156,7 @@ class ExpressionParser(opts: GlobalOptions) {
   private def parseIfLadder(iter: ParsingIterator, expectResult: Boolean): Result[Option[IfPE], IParseError] = {
     val ifLadderBegin = iter.getPos()
 
-    if (!iter.peek("^if".r)) {
+    if (!iter.peek(() => "^if".r)) {
       return Ok(None)
     }
 
@@ -167,9 +167,9 @@ class ExpressionParser(opts: GlobalOptions) {
       }
 
     val ifElses = mutable.MutableList[(IExpressionPE, BlockPE)]()
-    while (iter.peek("^\\s*else\\s+if".r)) {
+    while (iter.peek(() => "^\\s*else\\s+if".r)) {
       iter.consumeWhitespace()
-      if (!iter.trySkip("^\\s*else".r)) { vwat() }
+      if (!iter.trySkip(() => "^\\s*else".r)) { vwat() }
       iter.consumeWhitespace()
       ifElses += (
         parseIfPart(iter, expectResult) match {
@@ -179,10 +179,10 @@ class ExpressionParser(opts: GlobalOptions) {
     }
 
     val maybeElseBlock =
-      if (iter.trySkip("^\\s*else".r)) {
+      if (iter.trySkip(() => "^\\s*else".r)) {
         iter.consumeWhitespace()
-        if (!iter.trySkip("^\\{".r)) { return Err(BadStartOfElseBody(iter.getPos())) }
         val elseBegin = iter.getPos()
+        if (!iter.trySkip(() => "^\\{".r)) { return Err(BadStartOfElseBody(iter.getPos())) }
         iter.consumeWhitespace()
         val elseBody =
           parseBlockContents(iter, StopBeforeCloseBrace) match {
@@ -190,8 +190,8 @@ class ExpressionParser(opts: GlobalOptions) {
             case Err(cpe) => return Err(cpe)
           }
         iter.consumeWhitespace()
+        if (!iter.trySkip(() => "^\\}".r)) { return Err(BadEndOfElseBody(iter.getPos())) }
         val elseEnd = iter.getPos()
-        if (!iter.trySkip("^\\}".r)) { return Err(BadEndOfElseBody(iter.getPos())) }
         Some(ast.BlockPE(RangeP(elseBegin, elseEnd), elseBody))
       } else {
         None
@@ -242,7 +242,7 @@ class ExpressionParser(opts: GlobalOptions) {
     expectResult: Boolean):
   Result[Option[MutatePE], IParseError] = {
     val mutateBegin = iter.getPos()
-    if (!iter.trySkip("^(set|mut)\\s".r)) {
+    if (!iter.trySkip(() => "^(set|mut)\\s".r)) {
       return Ok(None)
     }
     iter.consumeWhitespace()
@@ -252,7 +252,7 @@ class ExpressionParser(opts: GlobalOptions) {
         case Ok(expression) => expression
       }
     iter.consumeWhitespace()
-    if (!iter.trySkip("^=[^=]".r)) {
+    if (!iter.trySkip(() => "^=[^=]".r)) {
       return Err(BadMutateEqualsError(iter.position))
     }
     iter.consumeWhitespace()
@@ -263,7 +263,7 @@ class ExpressionParser(opts: GlobalOptions) {
       // and we strip out the ... to get
       //   set x =    ;
       // so let's just interpret it as a void
-      if (iter.peek("^\\s*;".r)) {
+      if (iter.peek(() => "^\\s*;".r)) {
         iter.consumeWhitespace()
         VoidPE(RangeP(iter.getPos(), iter.getPos()))
       } else {
@@ -298,7 +298,7 @@ class ExpressionParser(opts: GlobalOptions) {
     tentativeIter.consumeWhitespace()
     // Because == would be a binary == operator
     // and => would be a lambda
-    if (!tentativeIter.trySkip("^=[^=>]".r)) {
+    if (!tentativeIter.trySkip(() => "^=[^=>]".r)) {
       return Ok(None)
     }
     tentativeIter.consumeWhitespace()
@@ -319,7 +319,7 @@ class ExpressionParser(opts: GlobalOptions) {
       // and we strip out the ... to get
       //   x =    ;
       // so let's just interpret it as a void
-      if (iter.peek("^\\s*;".r)) {
+      if (iter.peek(() => "^\\s*;".r)) {
         iter.consumeWhitespace()
         VoidPE(RangeP(iter.getPos(), iter.getPos()))
       } else {
@@ -340,7 +340,7 @@ class ExpressionParser(opts: GlobalOptions) {
     iter: ParsingIterator,
     expectResult: Boolean):
   Result[(IExpressionPE, BlockPE), IParseError] = {
-    if (!iter.trySkip("^if".r)) {
+    if (!iter.trySkip(() => "^if".r)) {
       vwat()
     }
     iter.consumeWhitespace()
@@ -351,7 +351,7 @@ class ExpressionParser(opts: GlobalOptions) {
       }
     iter.consumeWhitespace()
     val bodyBegin = iter.getPos()
-    if (!iter.trySkip("^\\{".r)) {
+    if (!iter.trySkip(() => "^\\{".r)) {
       return Err(BadStartOfIfBody(iter.position))
     }
     iter.consumeWhitespace()
@@ -360,11 +360,11 @@ class ExpressionParser(opts: GlobalOptions) {
         case Ok(result) => result
         case Err(cpe) => return Err(cpe)
       }
-    val bodyEnd = iter.getPos()
     iter.consumeWhitespace()
-    if (!iter.trySkip("^\\}".r)) {
+    if (!iter.trySkip(() => "^\\}".r)) {
       return Err(BadEndOfIfBody(iter.position))
     }
+    val bodyEnd = iter.getPos()
 
     Ok(
       (
@@ -376,14 +376,14 @@ class ExpressionParser(opts: GlobalOptions) {
     val statements = new mutable.MutableList[IExpressionPE]
 
     // Just ignore this if we see it (as a hack for the syntax highlighter).
-//    iter.trySkip("^\\s*\\.\\.\\.".r)
-    iter.trySkip("^\\s*;".r)
+//    iter.trySkip(() => "^\\s*\\.\\.\\.".r)
+    iter.trySkip(() => "^\\s*;".r)
 
 
     def endingBlock() =
       iter.atEnd() ||
-        iter.peek("^\\s*[\\)\\]\\}]".r) ||
-        (stopBefore == StopBeforeOpenBrace && iter.peek("^\\s*\\{".r))
+        iter.peek(() => "^\\s*[\\)\\]\\}]".r) ||
+        (stopBefore == StopBeforeOpenBrace && iter.peek(() => "^\\s*\\{".r))
 
     var continuing = !endingBlock()
     while (continuing) {
@@ -398,7 +398,7 @@ class ExpressionParser(opts: GlobalOptions) {
         }
       statements += newStatement
       iter.consumeWhitespace()
-      val hadSemicolon = iter.trySkip("^;".r)
+      val hadSemicolon = iter.trySkip(() => "^;".r)
       iter.consumeWhitespace()
 
       if (endingBlock()) {
@@ -488,12 +488,12 @@ class ExpressionParser(opts: GlobalOptions) {
     iter: ParsingIterator,
     expectResult: Boolean):
   Result[Option[IExpressionPE], IParseError] = {
-    if (!iter.trySkip("^block\\b".r)) {
+    if (!iter.trySkip(() => "^block\\b".r)) {
       return Ok(None)
     }
     iter.consumeWhitespace()
     val begin = iter.getPos()
-    if (!iter.trySkip("^\\{".r)) {
+    if (!iter.trySkip(() => "^\\{".r)) {
       return Err(BadStartOfBlock(iter.position))
     }
     iter.consumeWhitespace()
@@ -503,7 +503,7 @@ class ExpressionParser(opts: GlobalOptions) {
         case Ok(result) => result
       }
     iter.consumeWhitespace()
-    if (!iter.trySkip("^\\}".r)) {
+    if (!iter.trySkip(() => "^\\}".r)) {
       return Err(BadEndOfBlock(iter.position))
     }
     val end = iter.getPos()
@@ -516,7 +516,7 @@ class ExpressionParser(opts: GlobalOptions) {
     expectResult: Boolean):
   Result[Option[IExpressionPE], IParseError] = {
     val begin = iter.getPos()
-    if (!iter.trySkip("^destruct\\b".r)) {
+    if (!iter.trySkip(() => "^destruct\\b".r)) {
       return Ok(None)
     }
     iter.consumeWhitespace()
@@ -529,7 +529,7 @@ class ExpressionParser(opts: GlobalOptions) {
     stopBefore: IStopBefore):
   Result[Option[IExpressionPE], IParseError] = {
     val begin = iter.getPos()
-    if (!iter.trySkip("^unlet\\b".r)) {
+    if (!iter.trySkip(() => "^unlet\\b".r)) {
       return Ok(None)
     }
     iter.consumeWhitespace()
@@ -547,7 +547,7 @@ class ExpressionParser(opts: GlobalOptions) {
     expectResult: Boolean):
   Result[Option[IExpressionPE], IParseError] = {
     val begin = iter.getPos()
-    if (!iter.trySkip("^return\\b".r)) {
+    if (!iter.trySkip(() => "^return\\b".r)) {
       return Ok(None)
     }
     iter.consumeWhitespace()
@@ -559,7 +559,7 @@ class ExpressionParser(opts: GlobalOptions) {
     iter: ParsingIterator):
   Result[Option[IExpressionPE], IParseError] = {
     val begin = iter.getPos()
-    if (!iter.trySkip("^break\\b".r)) {
+    if (!iter.trySkip(() => "^break\\b".r)) {
       return Ok(None)
     }
     Ok(Some(BreakPE(RangeP(begin, iter.getPos()))))
@@ -631,11 +631,11 @@ class ExpressionParser(opts: GlobalOptions) {
 
   def parseExpression(iter: ParsingIterator, stopBefore: IStopBefore): Result[IExpressionPE, IParseError] = {
     Profiler.frame(() => {
-      //    if (iter.peek("^if\\s".r)) {
+      //    if (iter.peek(() => "^if\\s".r)) {
       //      parseIfLadder(iter)
-      //    } else if (iter.peek("^foreach\\s".r) || iter.peek("^parallel\\s+foreach\\s".r)) {
+      //    } else if (iter.peek(() => "^foreach\\s".r) || iter.peek(() => "^parallel\\s+foreach\\s".r)) {
       //      parseForeach(iter)
-      //    } else if (iter.peek("^(set|mut)\\s".r)) {
+      //    } else if (iter.peek(() => "^(set|mut)\\s".r)) {
       //      parseMut(iter)
       //    } else {
       //      parseExpression(allowLambda)(iter)
@@ -679,10 +679,10 @@ class ExpressionParser(opts: GlobalOptions) {
 
   def parseBoolean(iter: ParsingIterator): Option[IExpressionPE] = {
     val start = iter.getPos()
-    if (iter.trySkip("^\\s*true\\b".r)) {
+    if (iter.trySkip(() => "^\\s*true\\b".r)) {
       return Some(ConstantBoolPE(RangeP(start, iter.getPos()), true))
     }
-    if (iter.trySkip("^\\s*false\\b".r)) {
+    if (iter.trySkip(() => "^\\s*false\\b".r)) {
       return Some(ConstantBoolPE(RangeP(start, iter.getPos()), false))
     }
     return None
@@ -692,14 +692,14 @@ class ExpressionParser(opts: GlobalOptions) {
     val begin = iter.getPos()
 
     // See BRCOBS
-    if (iter.trySkip("^break\\b".r)) {
+    if (iter.trySkip(() => "^break\\b".r)) {
       return Err(CantUseBreakInExpression(iter.getPos()))
     }
     // See BRCOBS
-    if (iter.trySkip("^return\\b".r)) {
+    if (iter.trySkip(() => "^return\\b".r)) {
       return Err(CantUseReturnInExpression(iter.getPos()))
     }
-    if (iter.trySkip("^_\\b".r)) {
+    if (iter.trySkip(() => "^_\\b".r)) {
       return Ok(Some(MagicParamLookupPE(RangeP(begin, iter.getPos()))))
     }
     parseBoolean(iter) match {
@@ -763,7 +763,7 @@ class ExpressionParser(opts: GlobalOptions) {
   Result[Option[IExpressionPE], IParseError] = {
     val operatorBegin = iter.getPos()
 
-    if (iter.trySkip("^&".r)) {
+    if (iter.trySkip(() => "^&".r)) {
       val rangePE = AugmentPE(RangeP(spreeBegin, iter.getPos()), BorrowP, exprSoFar)
       return Ok(Some(rangePE))
     }
@@ -795,7 +795,7 @@ class ExpressionParser(opts: GlobalOptions) {
       case Ok(None) =>
     }
 
-    if (iter.trySkip("^\\s*\\.\\.".r)) {
+    if (iter.trySkip(() => "^\\s*\\.\\.".r)) {
       parseAtom(iter, stopBefore) match {
         case Err(err) => return Err(err)
         case Ok(None) => return Err(BadRangeOperand(iter.getPos()))
@@ -806,14 +806,14 @@ class ExpressionParser(opts: GlobalOptions) {
       }
     }
 
-    iter.tryy("^\\s*\\s*\\.".r) match {
+    iter.tryy(() => "^\\s*\\s*\\.".r) match {
       case None =>
       case Some(op) => {
         val operatorEnd = iter.getPos()
         iter.consumeWhitespace()
         val nameBegin = iter.getPos()
         val name =
-          iter.tryy("^\\d+".r) match {
+          iter.tryy(() => "^\\d+".r) match {
             case Some(x) => {
               NameP(RangeP(nameBegin, iter.getPos()), x)
             }
@@ -918,19 +918,19 @@ class ExpressionParser(opts: GlobalOptions) {
   def parseChevronPack(iter: ParsingIterator): Result[Option[Vector[ITemplexPT]], IParseError] = {
     // We need one side of the chevron to not have spaces, to avoid ambiguity with
     // the binary < operator.
-    if (iter.peek("^\\s+<\\s+".r)) {
+    if (iter.peek(() => "^\\s+<\\s+".r)) {
       // This is a binary < operator, because there's space on both sides.
       return Ok(None)
-    } else if (iter.peek("^\\s*<=".r)) {
+    } else if (iter.peek(() => "^\\s*<=".r)) {
       // This is a binary <= operator, bail.
       return Ok(None)
-    } else if (iter.peek("^\\s+<[\\S]".r)) {
+    } else if (iter.peek(() => "^\\s+<[\\S]".r)) {
       // This is a template call like:
       //   x = myFunc <int> ();
-      val y = iter.trySkip("^\\s+<".r)
+      val y = iter.trySkip(() => "^\\s+<".r)
       vassert(y)
       // continue
-    } else if (iter.trySkip("^<\\s*".r)) {
+    } else if (iter.trySkip(() => "^<\\s*".r)) {
       // continue
     } else {
       // Nothing we recognize, bail out.
@@ -938,7 +938,7 @@ class ExpressionParser(opts: GlobalOptions) {
     }
     iter.consumeWhitespace()
     val elements = new mutable.ArrayBuffer[ITemplexPT]()
-    while (!iter.trySkip("^\\>".r)) {
+    while (!iter.trySkip(() => "^\\>".r)) {
       val expr =
         new TemplexParser().parseTemplex(iter) match {
           case Err(e) => return Err(e)
@@ -946,7 +946,7 @@ class ExpressionParser(opts: GlobalOptions) {
         }
       elements += expr
       iter.consumeWhitespace()
-      iter.trySkip("^,".r)
+      iter.trySkip(() => "^,".r)
       iter.consumeWhitespace()
     }
 
@@ -975,12 +975,12 @@ class ExpressionParser(opts: GlobalOptions) {
   }
 
   def parsePack(iter: ParsingIterator): Result[Option[Vector[IExpressionPE]], IParseError] = {
-    if (!iter.trySkip("^\\s*\\(".r)) {
+    if (!iter.trySkip(() => "^\\s*\\(".r)) {
       return Ok(None)
     }
     iter.consumeWhitespace()
     val elements = new mutable.ArrayBuffer[IExpressionPE]()
-    while (!iter.trySkip("^\\)".r)) {
+    while (!iter.trySkip(() => "^\\)".r)) {
       val expr =
         parseExpression(iter, StopBeforeCloseParen) match {
           case Err(e) => return Err(e)
@@ -988,19 +988,19 @@ class ExpressionParser(opts: GlobalOptions) {
         }
       elements += expr
       iter.consumeWhitespace()
-      iter.trySkip("^,".r)
+      iter.trySkip(() => "^,".r)
       iter.consumeWhitespace()
     }
     Ok(Some(elements.toVector))
   }
 
   def parseSquarePack(iter: ParsingIterator): Result[Option[Vector[IExpressionPE]], IParseError] = {
-    if (!iter.trySkip("^\\s*\\[".r)) {
+    if (!iter.trySkip(() => "^\\s*\\[".r)) {
       return Ok(None)
     }
     iter.consumeWhitespace()
     val elements = new mutable.ArrayBuffer[IExpressionPE]()
-    while (!iter.trySkip("^\\]".r)) {
+    while (!iter.trySkip(() => "^\\]".r)) {
       val expr =
         parseExpression(iter, StopBeforeCloseSquare) match {
           case Err(e) => return Err(e)
@@ -1008,19 +1008,19 @@ class ExpressionParser(opts: GlobalOptions) {
         }
       elements += expr
       iter.consumeWhitespace()
-      iter.trySkip("^,".r)
+      iter.trySkip(() => "^,".r)
       iter.consumeWhitespace()
     }
     Ok(Some(elements.toVector))
   }
 
   def parseBracePack(iter: ParsingIterator): Result[Option[Vector[IExpressionPE]], IParseError] = {
-    if (!iter.trySkip("^\\s*\\[".r)) {
+    if (!iter.trySkip(() => "^\\s*\\[".r)) {
       return Ok(None)
     }
     iter.consumeWhitespace()
     val elements = new mutable.ArrayBuffer[IExpressionPE]()
-    while (!iter.trySkip("^\\]".r)) {
+    while (!iter.trySkip(() => "^\\]".r)) {
       val expr =
         parseExpression(iter, StopBeforeCloseBrace) match {
           case Err(e) => return Err(e)
@@ -1028,7 +1028,7 @@ class ExpressionParser(opts: GlobalOptions) {
         }
       elements += expr
       iter.consumeWhitespace()
-      iter.trySkip("^,".r)
+      iter.trySkip(() => "^,".r)
       iter.consumeWhitespace()
     }
     Ok(Some(elements.toVector))
@@ -1036,12 +1036,12 @@ class ExpressionParser(opts: GlobalOptions) {
 
   def parseTupleOrSubExpression(iter: ParsingIterator): Result[Option[IExpressionPE], IParseError] = {
     val begin = iter.getPos()
-    if (!iter.trySkip("^\\s*\\(".r)) {
+    if (!iter.trySkip(() => "^\\s*\\(".r)) {
       return Ok(None)
     }
     iter.consumeWhitespace()
 
-    if (iter.trySkip("^\\)".r)) {
+    if (iter.trySkip(() => "^\\)".r)) {
       return Ok(Some(TuplePE(RangeP(begin, iter.getPos()), Vector())))
     }
 
@@ -1055,24 +1055,24 @@ class ExpressionParser(opts: GlobalOptions) {
     iter.consumeWhitespace()
 
     // One-element tuple
-    if (iter.trySkip("^,\\s*\\)".r)) {
+    if (iter.trySkip(() => "^,\\s*\\)".r)) {
       return Ok(Some(ast.TuplePE(RangeP(begin, iter.getPos()), Vector(expr))))
     }
 
     // Just one expression, no comma at end, so its some parens just for
     // a sub expression.
-    if (iter.trySkip("^\\s*\\)".r)) {
+    if (iter.trySkip(() => "^\\s*\\)".r)) {
       return Ok(Some(SubExpressionPE(RangeP(begin, iter.getPos()), expr)))
     }
 
     elements += expr
 
-    if (!iter.trySkip("^\\s*,".r)) {
+    if (!iter.trySkip(() => "^\\s*,".r)) {
       return Err(UnknownTupleOrSubExpression(iter.getPos()))
     }
     iter.consumeWhitespace()
 
-    while (!iter.trySkip("^\\s*\\)".r)) {
+    while (!iter.trySkip(() => "^\\s*\\)".r)) {
       val expr =
         parseExpression(iter, StopBeforeCloseParen) match {
           case Err(e) => return Err(e)
@@ -1080,13 +1080,13 @@ class ExpressionParser(opts: GlobalOptions) {
         }
       elements += expr
       iter.consumeWhitespace()
-      if (iter.peek("^\\s*,\\s*\\)".r)) {
-        val found = iter.trySkip("^\\s*,".r)
+      if (iter.peek(() => "^\\s*,\\s*\\)".r)) {
+        val found = iter.trySkip(() => "^\\s*,".r)
         vassert(found)
-        vassert(iter.peek("^\\s*\\)".r))
+        vassert(iter.peek(() => "^\\s*\\)".r))
       }
       iter.consumeWhitespace()
-      iter.trySkip("^,".r)
+      iter.trySkip(() => "^,".r)
       iter.consumeWhitespace()
     }
     Ok(Some(TuplePE(RangeP(begin, iter.getPos()), elements.toVector)))
@@ -1094,17 +1094,17 @@ class ExpressionParser(opts: GlobalOptions) {
 
   def parseExpressionDataElement(iter: ParsingIterator, stopBefore: IStopBefore): Result[Option[IExpressionPE], IParseError] = {
     val begin = iter.getPos()
-//    iter.tryy("^\\.\\.\\.".r) match {
+//    iter.tryy(() => "^\\.\\.\\.".r) match {
 //      case Some(n) => return Ok(Some(VoidPE(RangeP(begin, iter.getPos()))))
 //      case None =>
 //    }
 
     // We'll ignore these prefixes, they're for documentation and blogs:
-    if (iter.trySkip("^inl\\b".r)) {
+    if (iter.trySkip(() => "^inl\\b".r)) {
       iter.consumeWhitespace()
       return parseExpressionDataElement(iter, stopBefore)
     }
-    if (iter.trySkip("^'\\w+\\b".r)) {
+    if (iter.trySkip(() => "^'\\w+\\b".r)) {
       iter.consumeWhitespace()
       return parseExpressionDataElement(iter, stopBefore)
     }
@@ -1112,7 +1112,7 @@ class ExpressionParser(opts: GlobalOptions) {
     // First, get the prefixes out of the way, such as & not etc.
     // Then we'll parse the atom and suffixes (.moo, ..5, etc.) and
     // &Then* wrap those in the prefixes, so we get e.g. not(x.moo)
-    if (iter.trySkip("^not\\b".r)) {
+    if (iter.trySkip(() => "^not\\b".r)) {
       iter.consumeWhitespace()
       val innerPE =
         parseExpressionDataElement(iter, stopBefore) match {
@@ -1130,7 +1130,7 @@ class ExpressionParser(opts: GlobalOptions) {
       case Ok(None) =>
     }
 
-//    if (iter.trySkip("^not\\b".r)) {
+//    if (iter.trySkip(() => "^not\\b".r)) {
 //      iter.consumeWhitespace()
 //      val innerPE =
 //        parseExpressionDataElement(iter, stopBefore) match {
@@ -1148,7 +1148,7 @@ class ExpressionParser(opts: GlobalOptions) {
       case Ok(None) =>
     }
 
-    iter.tryy("^(\\^|\\&\\&?)".r) match {
+    iter.tryy(() => "^(\\^|\\&\\&?)".r) match {
       case None =>
       case Some(str) => {
         val innerPE =
@@ -1186,7 +1186,7 @@ class ExpressionParser(opts: GlobalOptions) {
   }
 
   def parseBracedBody(iter: ParsingIterator):  Result[Option[BlockPE], IParseError] = {
-    if (!iter.trySkip("^\\s*\\{".r)) {
+    if (!iter.trySkip(() => "^\\s*\\{".r)) {
       return Ok(None)
     }
     iter.consumeWhitespace()
@@ -1196,7 +1196,7 @@ class ExpressionParser(opts: GlobalOptions) {
         case Err(e) => return Err(e)
         case Ok(x) => x
       }
-    if (!iter.trySkip("^\\}".r)) {
+    if (!iter.trySkip(() => "^\\}".r)) {
       vwat()
     }
     Ok(Some(ast.BlockPE(RangeP(bodyBegin, iter.getPos()), bodyContents)))
@@ -1213,7 +1213,7 @@ class ExpressionParser(opts: GlobalOptions) {
     val paramsEnd = tentativeIter.getPos()
 
     tentativeIter.consumeWhitespace()
-    if (!tentativeIter.trySkip("^=>".r)) {
+    if (!tentativeIter.trySkip(() => "^=>".r)) {
       return None
     }
 
@@ -1229,13 +1229,13 @@ class ExpressionParser(opts: GlobalOptions) {
     val tentativeIter = originalIter.clone()
 
     val begin = tentativeIter.getPos()
-    if (!tentativeIter.trySkip("^\\s*\\(".r)) {
+    if (!tentativeIter.trySkip(() => "^\\s*\\(".r)) {
       return None
     }
     tentativeIter.consumeWhitespace()
     val patterns = new mutable.ArrayBuffer[PatternPP]()
 
-    while (!tentativeIter.trySkip("^\\s*\\)".r)) {
+    while (!tentativeIter.trySkip(() => "^\\s*\\)".r)) {
       val pattern =
         new PatternParser().parsePattern(tentativeIter) match {
           case Ok(result) => result
@@ -1243,13 +1243,13 @@ class ExpressionParser(opts: GlobalOptions) {
         }
       patterns += pattern
       tentativeIter.consumeWhitespace()
-      if (tentativeIter.peek("^\\s*,\\s*\\)".r)) {
-        val found = tentativeIter.trySkip("^\\s*,".r)
+      if (tentativeIter.peek(() => "^\\s*,\\s*\\)".r)) {
+        val found = tentativeIter.trySkip(() => "^\\s*,".r)
         vassert(found)
-        vassert(tentativeIter.peek("^\\s*\\)".r))
-      } else if (tentativeIter.trySkip("^\\s*,".r)) {
+        vassert(tentativeIter.peek(() => "^\\s*\\)".r))
+      } else if (tentativeIter.trySkip(() => "^\\s*,".r)) {
         // good, continue
-      } else if (tentativeIter.peek("^\\s*\\)".r)) {
+      } else if (tentativeIter.peek(() => "^\\s*\\)".r)) {
         // good, continue
       } else {
         // At some point, we should return an error here.
@@ -1262,7 +1262,7 @@ class ExpressionParser(opts: GlobalOptions) {
     val paramsEnd = tentativeIter.getPos()
 
     tentativeIter.consumeWhitespace()
-    if (!tentativeIter.trySkip("^=>".r)) {
+    if (!tentativeIter.trySkip(() => "^=>".r)) {
       return None
     }
 
@@ -1282,7 +1282,7 @@ class ExpressionParser(opts: GlobalOptions) {
           parseMultiArgLambdaBegin(iter) match {
             case Some(p) => Some(p)
             case None => {
-              if (stopBefore == StopBeforeOpenBrace && iter.peek("^\\s*\\{".r)) {
+              if (stopBefore == StopBeforeOpenBrace && iter.peek(() => "^\\s*\\{".r)) {
                 return Ok(None)
               } else {
                 None
@@ -1331,22 +1331,22 @@ class ExpressionParser(opts: GlobalOptions) {
     val begin = tentativeIter.getPos()
 
     val mutability =
-      if (tentativeIter.trySkip("^#".r)) {
+      if (tentativeIter.trySkip(() => "^#".r)) {
         MutabilityPT(RangeP(begin, tentativeIter.getPos()), ImmutableP)
       } else {
         MutabilityPT(RangeP(begin, tentativeIter.getPos()), MutableP)
       }
 
-    if (!tentativeIter.trySkip("^\\[".r)) {
+    if (!tentativeIter.trySkip(() => "^\\[".r)) {
       return Ok(None)
     }
     originalIter.skipTo(tentativeIter.position)
     val iter = originalIter
 
     val size =
-      if (iter.trySkip("^#".r)) {
+      if (iter.trySkip(() => "^#".r)) {
         val sizeTemplex =
-          if (iter.peek("^]".r)) {
+          if (iter.peek(() => "^]".r)) {
             None
           } else {
             new TemplexParser().parseTemplex(iter) match {
@@ -1358,12 +1358,12 @@ class ExpressionParser(opts: GlobalOptions) {
       } else {
         RuntimeSizedP
       }
-    if (!iter.trySkip("^\\]".r)) {
+    if (!iter.trySkip(() => "^\\]".r)) {
       return Err(BadArraySizerEnd(iter.getPos()))
     }
 
     val tyype =
-      if (!iter.peek("^\\s*[\\[\\(]".r)) {
+      if (!iter.peek(() => "^\\s*[\\[\\(]".r)) {
         new TemplexParser().parseTemplex(iter) match {
           case Err(e) => return Err(e)
           case Ok(e) => Some(e)
@@ -1373,7 +1373,7 @@ class ExpressionParser(opts: GlobalOptions) {
       }
 
     val (initializingByValues, args) =
-      if (iter.peek("^\\[".r)) {
+      if (iter.peek(() => "^\\[".r)) {
         val values =
           parseSquarePack(iter) match {
             case Ok(None) => vwat()
@@ -1381,7 +1381,7 @@ class ExpressionParser(opts: GlobalOptions) {
             case Err(e) => return Err(e)
           }
         (true, values)
-      } else if (iter.peek("^\\(".r)) {
+      } else if (iter.peek(() => "^\\(".r)) {
         val args =
           parsePack(iter) match {
             case Ok(None) => vwat()
@@ -1469,10 +1469,10 @@ class ExpressionParser(opts: GlobalOptions) {
     if (!iter.consumeWhitespace()) {
       return Ok(None)
     }
-    if (iter.peek("^\\)".r)) {
+    if (iter.peek(() => "^\\)".r)) {
       return Err(BadExpressionEnd(iter.getPos()))
     }
-    if (iter.peek("^\\]".r)) {
+    if (iter.peek(() => "^\\]".r)) {
       return Err(BadExpressionEnd(iter.getPos()))
     }
     Parser.parseFunctionOrLocalOrMemberName(iter) match {
@@ -1484,13 +1484,13 @@ class ExpressionParser(opts: GlobalOptions) {
       }
       case None =>
     }
-    if (iter.peek("^=".r)) {
+    if (iter.peek(() => "^=".r)) {
       return Err(ForgotSetKeyword(iter.getPos()))
     }
     Err(BadBinaryFunctionName(iter.getPos()))
   }
 
   def atExpressionEnd(iter: ParsingIterator, stopBefore: IStopBefore): Boolean = {
-    return Parser.atEnd(iter, stopBefore) || iter.peek("^\\s*;".r)
+    return Parser.atEnd(iter, stopBefore) || iter.peek(() => "^\\s*;".r)
   }
 }

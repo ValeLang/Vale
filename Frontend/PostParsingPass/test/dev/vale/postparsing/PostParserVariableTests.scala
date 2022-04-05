@@ -1,9 +1,8 @@
 package dev.vale.postparsing
 
-import dev.vale.{Collector, Err, FileCoordinateMap, Ok, vassert, vfail}
+import dev.vale.{Collector, Err, FileCoordinateMap, Interner, Ok, vassert, vfail}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.Parser
-import dev.vale.Err
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.runtime.Nothing$
@@ -18,8 +17,9 @@ class PostParserVariableTests extends FunSuite with Matchers {
   }
 
   private def compile(code: String): ProgramS = {
+    val interner = new Interner()
     PostParserTestCompilation.test(code).getScoutput() match {
-      case Err(e) => vfail(PostParserErrorHumanizer.humanize(FileCoordinateMap.test(code), e))
+      case Err(e) => vfail(PostParserErrorHumanizer.humanize(FileCoordinateMap.test(interner, code), e))
       case Ok(t) => t.expectOne()
     }
   }

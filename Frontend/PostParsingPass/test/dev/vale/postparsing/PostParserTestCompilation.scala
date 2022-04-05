@@ -1,14 +1,15 @@
 package dev.vale.postparsing
 
-import dev.vale.{FileCoordinateMap, PackageCoordinate}
+import dev.vale.{FileCoordinateMap, Interner, PackageCoordinate}
 import dev.vale.options.GlobalOptions
-import dev.vale.FileCoordinateMap
 
 object PostParserTestCompilation {
   def test(code: String*): ScoutCompilation = {
+    val interner = new Interner()
     new ScoutCompilation(
       GlobalOptions(true, true, false, false),
-      Vector(PackageCoordinate.TEST_TLD),
-      FileCoordinateMap.test(code.toVector))
+      interner,
+      Vector(PackageCoordinate.TEST_TLD(interner)),
+      FileCoordinateMap.test(interner, code.toVector))
   }
 }

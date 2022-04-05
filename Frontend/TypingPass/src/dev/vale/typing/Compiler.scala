@@ -501,7 +501,7 @@ class Compiler(
               asSubtypeMacro.generatorId -> asSubtypeMacro),
             namespaceNameToTemplatas,
             // Bulitins
-            env.TemplatasStore(FullNameT(PackageCoordinate.BUILTIN, Vector(), interner.intern(PackageTopLevelNameT())), Map(), Map()).addEntries(
+            env.TemplatasStore(FullNameT(PackageCoordinate.BUILTIN(interner), Vector(), interner.intern(PackageTopLevelNameT())), Map(), Map()).addEntries(
               interner,
               Vector[(INameT, IEnvEntry)](
                 interner.intern(PrimitiveNameT("int")) -> TemplataEnvEntry(KindTemplata(IntT.i32)),
@@ -542,7 +542,7 @@ class Compiler(
                     val _ =
                       functionCompiler.evaluateOrdinaryFunctionFromNonCallForPrototype(
                         coutputs,
-                        RangeS.internal(-177),
+                        RangeS.internal(interner, -177),
                         FunctionTemplata(env, functionA))
                   }
                 }
@@ -607,26 +607,26 @@ class Compiler(
 
             coutputs.getAllStructs().foreach(struct => {
               if (struct.mutability == ImmutableT) {
-                destructorCompiler.getDropFunction(globalEnv, coutputs, RangeS.internal(-1663), CoordT(ShareT, struct.getRef))
-                destructorCompiler.getFreeFunction(globalEnv, coutputs, RangeS.internal(-1663), CoordT(ShareT, struct.getRef))
+                destructorCompiler.getDropFunction(globalEnv, coutputs, RangeS.internal(interner, -1663), CoordT(ShareT, struct.getRef))
+                destructorCompiler.getFreeFunction(globalEnv, coutputs, RangeS.internal(interner, -1663), CoordT(ShareT, struct.getRef))
               }
             })
             coutputs.getAllInterfaces().foreach(interface => {
               if (interface.mutability == ImmutableT) {
-                destructorCompiler.getDropFunction(globalEnv, coutputs, RangeS.internal(-1663), CoordT(ShareT, interface.getRef))
-                destructorCompiler.getFreeFunction(globalEnv, coutputs, RangeS.internal(-1663), CoordT(ShareT, interface.getRef))
+                destructorCompiler.getDropFunction(globalEnv, coutputs, RangeS.internal(interner, -1663), CoordT(ShareT, interface.getRef))
+                destructorCompiler.getFreeFunction(globalEnv, coutputs, RangeS.internal(interner, -1663), CoordT(ShareT, interface.getRef))
               }
             })
             coutputs.getAllRuntimeSizedArrays().foreach(rsa => {
               if (rsa.mutability == ImmutableT) {
-                destructorCompiler.getDropFunction(globalEnv, coutputs, RangeS.internal(-1663), types.CoordT(ShareT, rsa))
-                destructorCompiler.getFreeFunction(globalEnv, coutputs, RangeS.internal(-1663), types.CoordT(ShareT, rsa))
+                destructorCompiler.getDropFunction(globalEnv, coutputs, RangeS.internal(interner, -1663), types.CoordT(ShareT, rsa))
+                destructorCompiler.getFreeFunction(globalEnv, coutputs, RangeS.internal(interner, -1663), types.CoordT(ShareT, rsa))
               }
             })
             coutputs.getAllStaticSizedArrays().foreach(ssa => {
               if (ssa.mutability == ImmutableT) {
-                destructorCompiler.getDropFunction(globalEnv, coutputs, RangeS.internal(-1663), types.CoordT(ShareT, ssa))
-                destructorCompiler.getFreeFunction(globalEnv, coutputs, RangeS.internal(-1663), types.CoordT(ShareT, ssa))
+                destructorCompiler.getDropFunction(globalEnv, coutputs, RangeS.internal(interner, -1663), types.CoordT(ShareT, ssa))
+                destructorCompiler.getFreeFunction(globalEnv, coutputs, RangeS.internal(interner, -1663), types.CoordT(ShareT, ssa))
               }
             })
 

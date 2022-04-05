@@ -6,10 +6,12 @@ import dev.vale._
 
 object HigherTypingTestCompilation {
   def test(code: String*): HigherTypingCompilation = {
+    val interner = new Interner()
     new HigherTypingCompilation(
       GlobalOptions.test(),
-      Vector(PackageCoordinate.TEST_TLD),
-      FileCoordinateMap.test(code.toVector)
+      interner,
+      Vector(PackageCoordinate.TEST_TLD(interner)),
+      FileCoordinateMap.test(interner, code.toVector)
         .or(Tests.getPackageToResourceResolver))
   }
 }

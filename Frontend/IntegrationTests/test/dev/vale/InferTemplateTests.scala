@@ -27,7 +27,7 @@ class InferTemplateTests extends FunSuite with Matchers {
       case Vector(ParameterT(CodeVarNameT("m"), _, CoordT(BorrowT,_))) =>
     }
     moo.header.fullName.last.templateArgs match {
-      case Vector(CoordTemplata(CoordT(OwnT, StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("Muta"), Vector())))))) =>
+      case Vector(CoordTemplata(CoordT(OwnT, StructTT(FullNameT(x, Vector(), CitizenNameT(CitizenTemplateNameT("Muta"), Vector())))))) => vassert(x.isTest)
     }
 
     compile.evalForKind(Vector()) match { case VonInt(10) => }

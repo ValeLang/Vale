@@ -1,7 +1,6 @@
 package dev.vale.von
 
-import dev.vale.{vcurious, vimpl}
-import dev.vale.vimpl
+import dev.vale.{Profiler, vcurious, vimpl}
 import org.apache.commons.lang.StringEscapeUtils
 
 sealed trait ISyntax
@@ -22,10 +21,12 @@ class VonPrinter(
   val memberSeparator = if (includeSpaceAfterComma) ", " else ","
 
   def print(data: IVonData): String = {
+    val builder = new StringBuilder()
     printSingleLine(data, lineWidth) match {
-      case Some(str) => str
-      case None => printMultiline(data, 0)
+      case Some(str) => builder ++= str
+      case None => printMultiline(builder, data, 0)
     }
+    builder.toString()
   }
 
   def escape(value: String): String = {
@@ -40,46 +41,56 @@ class VonPrinter(
   }
 
   def printMultiline(
+    builder: StringBuilder,
     data: IVonData,
     indentation: Int):
-  // None if we failed to put it on the one line.
-  String = {
-    data match {
-      case VonInt(value) => value.toString
-      case VonBool(value) => value.toString
-      case VonStr(value) => {
-        val escaped = escape(value)
-        "\"" + escaped + "\""
+  Unit = {
+    Profiler.frame(() => {
+      data match {
+        case VonInt(value) => builder ++= value.toString
+        case VonBool(value) => builder ++= value.toString
+        case VonStr(value) => {
+          builder ++= "\""
+          builder ++= escape(value)
+          builder ++= "\""
+        }
+        case VonReference(id) => vimpl()
+        case o@VonObject(_, _, _) => printObjectMultiline(builder, o, indentation)
+        case a@VonArray(_, _) => printArrayMultiline(builder, a, indentation)
+        case VonListMap(id, members) => vimpl()
+        case VonMap(id, members) => vimpl()
       }
-      case VonReference(id) => vimpl()
-      case o @ VonObject(_, _, _) => printObjectMultiline(o, indentation)
-      case a @ VonArray(_, _) => printArrayMultiline(a, indentation)
-      case VonListMap(id, members) => vimpl()
-      case VonMap(id, members) => vimpl()
-    }
+    })
   }
 
   def repeatStr(str: String, n: Int): String = {
-    var result = "";
+    val resultBuilder = new StringBuilder()
     (0 until n).foreach(i => {
-      result = result + str
+      resultBuilder ++= str
     })
-    result
+    resultBuilder.toString()
   }
 
-  def printObjectMultiline(obbject: VonObject, indentation: Int): String = {
+  def printObjectMultiline(builder: StringBuilder, obbject: VonObject, indentation: Int): Unit = {
     val VonObject(tyype, None, unfilteredMembers) = obbject
 
     val members = filterMembers(unfilteredMembers)
 
-    printObjectStart(tyype, members.nonEmpty) + "\n" + members.zipWithIndex.map({ case (member, index) =>
-      val memberStr =
-        printMemberSingleLine(member, lineWidth) match {
-          case None => printMemberMultiline(member, indentation + 1)
-          case Some(s) => s
-        }
-      repeatStr("  ", indentation + 1) + memberStr + (if (index == members.size - 1) "" else ",")
-    }).mkString("\n") + printObjectEnd(members.nonEmpty)
+    builder ++= printObjectStart(tyype, members.nonEmpty)
+    builder ++= "\n"
+
+    members.zipWithIndex.foreach({ case (member, index) =>
+      builder ++= repeatStr("  ", indentation + 1)
+      printMemberSingleLine(member, lineWidth) match {
+        case None => printMemberMultiline(builder, member, indentation + 1)
+        case Some(s) => builder ++= s
+      }
+      builder ++= (if (index == members.size - 1) "" else ",")
+      if (index > 0) {
+        builder ++= "\n"
+      }
+    })
+    builder ++= printObjectEnd(members.nonEmpty)
   }
 
   def printObjectStart(originalType: String, hasMembers: Boolean): String = {
@@ -115,25 +126,32 @@ class VonPrinter(
     }
   }
 
-  def printArrayMultiline(array: VonArray, indentation: Int): String = {
+  def printArrayMultiline(builder: StringBuilder, array: VonArray, indentation: Int): Unit = {
     val VonArray(None, members) = array
 
-    printArrayStart() + "\n" + members.zipWithIndex.map({ case (member, index) =>
-      val memberStr =
-        printSingleLine(member, lineWidth) match {
-          case None => printMultiline(member, indentation + 1)
-          case Some(s) => s
-        }
-      repeatStr("  ", indentation + 1) + memberStr + (if (index == members.size - 1) "" else ",")
-    }).mkString("\n") + printArrayEnd()
+    builder ++= printArrayStart()
+    builder ++= "\n"
+    members.zipWithIndex.foreach({ case (member, index) =>
+      builder ++= repeatStr("  ", indentation + 1)
+      printSingleLine(member, lineWidth) match {
+        case None => printMultiline(builder, member, indentation + 1)
+        case Some(s) => builder ++= s
+      }
+      builder ++= (if (index == members.size - 1) "" else ",")
+      if (index > 0) {
+        builder ++= "\n"
+      }
+    })
+    builder ++= printArrayEnd()
   }
 
   def printMemberMultiline(
+    builder: StringBuilder,
     member: VonMember,
     indentation: Int):
-  // None if we failed to put it on the one line.
-  String = {
-    getMemberPrefix(member) + printMultiline(member.value, indentation)
+  Unit = {
+    builder ++= getMemberPrefix(member)
+    printMultiline(builder, member.value, indentation)
   }
 
   def getMemberPrefix(member: VonMember):
@@ -151,20 +169,22 @@ class VonPrinter(
     lineWidthRemaining: Int):
   // None if we failed to put it on the one line.
   Option[String] = {
-    data match {
-      case VonInt(value) => Some(value.toString)
-      case VonBool(value) => Some(value.toString)
-      case VonFloat(value) => Some(value.toString)
-      case VonStr(value) => {
-        val escaped = escape(value)
-        Some("\"" + escaped + "\"")
+    Profiler.frame(() => {
+      data match {
+        case VonInt(value) => Some(value.toString)
+        case VonBool(value) => Some(value.toString)
+        case VonFloat(value) => Some(value.toString)
+        case VonStr(value) => {
+          val escaped = escape(value)
+          Some("\"" + escaped + "\"")
+        }
+        case VonReference(id) => vimpl()
+        case o@VonObject(_, _, _) => printObjectSingleLine(o, lineWidthRemaining)
+        case a@VonArray(_, _) => printArraySingleLine(a, lineWidthRemaining)
+        case VonListMap(id, members) => vimpl()
+        case VonMap(id, members) => vimpl()
       }
-      case VonReference(id) => vimpl()
-      case o @ VonObject(_, _, _) => printObjectSingleLine(o, lineWidthRemaining)
-      case a @ VonArray(_, _) => printArraySingleLine(a, lineWidthRemaining)
-      case VonListMap(id, members) => vimpl()
-      case VonMap(id, members) => vimpl()
-    }
+    })
   }
 
   def objectIsEmpty(data: IVonData): Boolean = {

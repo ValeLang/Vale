@@ -2,19 +2,20 @@ package dev.vale.highlighter
 
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.{ParserCompilation, ast}
-import dev.vale.{Err, FileCoordinateMap, Ok, PackageCoordinate}
+import dev.vale.{Err, FileCoordinateMap, Interner, Ok, PackageCoordinate}
 import dev.vale.parsing.ast.{FileP, RangeP}
 import dev.vale.parsing.{ast, _}
-import dev.vale.Err
 import org.scalatest.{FunSuite, Matchers}
 
 class SpannerTests extends FunSuite with Matchers {
   private def compile(code: String): FileP = {
+    val interner = new Interner()
     val compilation =
       new ParserCompilation(
         GlobalOptions(true, true, true, true),
-        Vector(PackageCoordinate.TEST_TLD),
-        FileCoordinateMap.test(code))
+        interner,
+        Vector(PackageCoordinate.TEST_TLD(interner)),
+        FileCoordinateMap.test(interner, code))
     compilation.getParseds() match {
       case Err(err) => fail(err.toString)
       case Ok(program0) => program0.expectOne()._1

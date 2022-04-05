@@ -122,7 +122,7 @@ case class StaticSizedArrayTT(
   variability: VariabilityT,
   elementType: CoordT
 ) extends KindT with IInterning  {
-  def getName(interner: Interner): FullNameT[StaticSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, interner.intern(StaticSizedArrayNameT(size, interner.intern(RawArrayNameT(mutability, elementType)))))
+  def getName(interner: Interner): FullNameT[StaticSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN(interner), Vector.empty, interner.intern(StaticSizedArrayNameT(size, interner.intern(RawArrayNameT(mutability, elementType)))))
 }
 
 case class RuntimeSizedArrayTT(
@@ -131,7 +131,7 @@ case class RuntimeSizedArrayTT(
 ) extends KindT with IInterning {
 
 
-  def getName(interner: Interner): FullNameT[RuntimeSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, interner.intern(RuntimeSizedArrayNameT(interner.intern(RawArrayNameT(mutability, elementType)))))
+  def getName(interner: Interner): FullNameT[RuntimeSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN(interner), Vector.empty, interner.intern(RuntimeSizedArrayNameT(interner.intern(RawArrayNameT(mutability, elementType)))))
 }
 
 case class StructMemberT(

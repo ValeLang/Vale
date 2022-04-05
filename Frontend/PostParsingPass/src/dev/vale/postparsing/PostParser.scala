@@ -4,14 +4,12 @@ package dev.vale.postparsing
 import dev.vale.options.GlobalOptions
 import dev.vale.postparsing.patterns.PatternScout
 import dev.vale.postparsing.rules.{IRulexSR, LiteralSR, MutabilityLiteralSL, RuleScout, RuneUsage, TemplexScout}
-import dev.vale.RangeS
-import dev.vale.RangeS
+import dev.vale.{CodeLocationS, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Ok, PackageCoordinate, Profiler, RangeS, Result, postparsing, vassert, vcurious, vfail, vimpl, vpass, vwat}
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
 import PostParser.determineDenizenType
 import dev.vale.parsing.{FailedParse, ParserCompilation}
 import dev.vale.parsing.ast.{AnonymousRunePT, BoolPT, CallPT, ExportAsP, ExportAttributeP, FileP, IAttributeP, IImpreciseNameP, ITemplexPT, ImplP, ImportP, InlinePT, IntPT, InterfaceP, InterpretedPT, IterableNameP, IterationOptionNameP, IteratorNameP, LocationPT, LookupNameP, MacroCallP, MutabilityP, MutabilityPT, NameOrRunePT, NameP, NormalStructMemberP, OwnershipPT, RangeP, RulePUtils, SealedAttributeP, StaticSizedArrayPT, StructMembersP, StructMethodP, StructP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePT, VariadicStructMemberP, WeakableAttributeP}
-import dev.vale.{CodeLocationS, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Ok, PackageCoordinate, RangeS, Result, postparsing, vassert, vcurious, vfail, vimpl, vpass, vwat}
 //import dev.vale.postparsing.predictor.RuneTypeSolveError
 import dev.vale.postparsing.rules._
 import dev.vale.Err
@@ -240,20 +238,22 @@ class PostParser(
   val functionScout = new FunctionScout(this, interner, templexScout, ruleScout)
 
   def scoutProgram(fileCoordinate: FileCoordinate, parsed: FileP): Result[ProgramS, ICompileErrorS] = {
-    try {
-      val structsS = parsed.topLevelThings.collect({ case TopLevelStructP(s) => s }).map(scoutStruct(fileCoordinate, _));
-      val interfacesS = parsed.topLevelThings.collect({ case TopLevelInterfaceP(i) => i }).map(scoutInterface(fileCoordinate, _));
-      val implsS = parsed.topLevelThings.collect({ case TopLevelImplP(i) => i }).map(scoutImpl(fileCoordinate, _))
-      val functionsS =
-        parsed.topLevelThings
-          .collect({ case TopLevelFunctionP(f) => f }).map(functionScout.scoutTopLevelFunction(fileCoordinate, _))
-      val exportsS = parsed.topLevelThings.collect({ case TopLevelExportAsP(e) => e }).map(scoutExportAs(fileCoordinate, _))
-      val importsS = parsed.topLevelThings.collect({ case TopLevelImportP(e) => e }).map(scoutImport(fileCoordinate, _))
-      val programS = ProgramS(structsS, interfacesS, implsS, functionsS, exportsS, importsS)
-      Ok(programS)
-    } catch {
-      case CompileErrorExceptionS(err) => Err(err)
-    }
+    Profiler.frame(() => {
+      try {
+        val structsS = parsed.topLevelThings.collect({ case TopLevelStructP(s) => s }).map(scoutStruct(fileCoordinate, _));
+        val interfacesS = parsed.topLevelThings.collect({ case TopLevelInterfaceP(i) => i }).map(scoutInterface(fileCoordinate, _));
+        val implsS = parsed.topLevelThings.collect({ case TopLevelImplP(i) => i }).map(scoutImpl(fileCoordinate, _))
+        val functionsS =
+          parsed.topLevelThings
+            .collect({ case TopLevelFunctionP(f) => f }).map(functionScout.scoutTopLevelFunction(fileCoordinate, _))
+        val exportsS = parsed.topLevelThings.collect({ case TopLevelExportAsP(e) => e }).map(scoutExportAs(fileCoordinate, _))
+        val importsS = parsed.topLevelThings.collect({ case TopLevelImportP(e) => e }).map(scoutImport(fileCoordinate, _))
+        val programS = ProgramS(structsS, interfacesS, implsS, functionsS, exportsS, importsS)
+        Ok(programS)
+      } catch {
+        case CompileErrorExceptionS(err) => Err(err)
+      }
+    })
   }
 
   private def scoutImpl(file: FileCoordinate, impl0: ImplP): ImplS = {
@@ -463,16 +463,18 @@ class PostParser(
     runeToExplicitType: Map[IRuneS, ITemplataType],
     rulesS: Array[IRulexSR]):
   Map[IRuneS, ITemplataType] = {
-    val runeSToLocallyPredictedTypes =
-      new RuneTypeSolver(interner).solve(
-        globalOptions.sanityCheck,
-        globalOptions.useOptimizedSolver,
-        (n) => vimpl(), rangeS, true, rulesS, identifyingRunesS, false, runeToExplicitType) match {
-        case Ok(t) => t
-        // This likely cannot happen because we aren't even asking for a complete solve.
-        case Err(e) => throw CompileErrorExceptionS(CouldntSolveRulesS(rangeS, e))
-      }
-    runeSToLocallyPredictedTypes
+    Profiler.frame(() => {
+      val runeSToLocallyPredictedTypes =
+        new RuneTypeSolver(interner).solve(
+          globalOptions.sanityCheck,
+          globalOptions.useOptimizedSolver,
+          (n) => vimpl(), rangeS, true, rulesS, identifyingRunesS, false, runeToExplicitType) match {
+          case Ok(t) => t
+          // This likely cannot happen because we aren't even asking for a complete solve.
+          case Err(e) => throw CompileErrorExceptionS(CouldntSolveRulesS(rangeS, e))
+        }
+      runeSToLocallyPredictedTypes
+    })
   }
 
 
@@ -565,10 +567,10 @@ class PostParser(
 
 class ScoutCompilation(
   globalOptions: GlobalOptions,
+  interner: Interner,
   packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]]) {
-  var parserCompilation = new ParserCompilation(globalOptions, packagesToBuild, packageToContentsResolver)
-  val interner = new Interner()
+  var parserCompilation = new ParserCompilation(globalOptions, interner, packagesToBuild, packageToContentsResolver)
   var scoutputCache: Option[FileCoordinateMap[ProgramS]] = None
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = parserCompilation.getCodeMap()

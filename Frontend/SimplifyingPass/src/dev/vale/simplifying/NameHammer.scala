@@ -107,7 +107,7 @@ object NameHammer {
   }
 
   def translateFileCoordinate(coord: FileCoordinate): VonObject = {
-    val FileCoordinate(module, paackage, filename) = coord
+    val FileCoordinate(PackageCoordinate(module, paackage), filename) = coord
     VonObject(
       "FileCoordinate",
       None,

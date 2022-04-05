@@ -33,7 +33,7 @@ class VirtualTests extends FunSuite with Matchers {
           coutputs.lookupFunction(
             SignatureT(
               FullNameT(
-                PackageCoordinate.TEST_TLD,
+                PackageCoordinate.TEST_TLD(interner),
                 Vector.empty,
                 interner.intern(
                   FunctionNameT(
@@ -44,7 +44,7 @@ class VirtualTests extends FunSuite with Matchers {
                         OwnT,
                         interner.intern(
                           InterfaceTT(
-                            FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("I")), Vector.empty)))))))))))))
+                            FullNameT(PackageCoordinate.TEST_TLD(interner), Vector.empty, interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("I")), Vector.empty)))))))))))))
       vassert(doThing.header.params(0).virtuality.get == AbstractT())
     }
 
@@ -69,7 +69,7 @@ class VirtualTests extends FunSuite with Matchers {
         coutputs.lookupFunction(
           ast.SignatureT(
             FullNameT(
-              PackageCoordinate.TEST_TLD,
+              PackageCoordinate.TEST_TLD(interner),
               Vector.empty,
               interner.intern(
                 FunctionNameT(
@@ -80,7 +80,7 @@ class VirtualTests extends FunSuite with Matchers {
                       OwnT,
                       interner.intern(
                         types.InterfaceTT(
-                          FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("I")), Vector.empty)))))))))))))
+                          FullNameT(PackageCoordinate.TEST_TLD(interner), Vector.empty, interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("I")), Vector.empty)))))))))))))
     vassert(doThing.header.params(0).virtuality.get == AbstractT())
   }
 

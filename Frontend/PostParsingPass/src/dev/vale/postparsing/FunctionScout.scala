@@ -56,10 +56,10 @@ class FunctionScout(
     val codeLocation = PostParser.evalPos(file, range.begin)
     val name =
       (file, originalCodeName) match {
-        case (FileCoordinate("v", Vector("builtins", "arrays"), "arrays.vale"), "__free_replaced") => {
+        case (FileCoordinate(PackageCoordinate("v", Vector("builtins", "arrays")), "arrays.vale"), "__free_replaced") => {
           interner.intern(postparsing.FreeDeclarationNameS(PostParser.evalPos(file, originalNameRange.begin)))
         }
-        case (FileCoordinate("", Vector(), "arrays.vale"), "__free_replaced") => {
+        case (FileCoordinate(PackageCoordinate("", Vector()), "arrays.vale"), "__free_replaced") => {
           interner.intern(FreeDeclarationNameS(PostParser.evalPos(file, originalNameRange.begin)))
         }
         case (_, n) => interner.intern(postparsing.FunctionNameS(n, codeLocation))
@@ -168,8 +168,7 @@ class FunctionScout(
             // We hand these into scoutBody instead of assembling a StackFrame on our own because we want
             // StackFrame's to be made in one place, where we can centralize the logic for tracking variable
             // uses and so on.
-            captureDeclarations,
-            false)
+            captureDeclarations)
         if (magicParams.nonEmpty) {
           throw CompileErrorExceptionS(postparsing.RangedInternalErrorS(rangeS, "Magic param (underscore) in a normal block!"))
         }
@@ -294,8 +293,7 @@ class FunctionScout(
 //          case BlockPE(_, ReturnPE(_, _)) => body0
 //          case BlockPE(range, inner) => BlockPE(range, ReturnPE(range, inner))
 //        },
-        paramDeclarations,
-        true)
+        paramDeclarations)
 
     if (lambdaMagicParamNames.nonEmpty && (explicitParams.nonEmpty)) {
       throw CompileErrorExceptionS(postparsing.RangedInternalErrorS(PostParser.evalRange(parentStackFrame.file, range), "Cant have a lambda with _ and params"))
@@ -394,8 +392,7 @@ class FunctionScout(
     parentStackFrame: Option[StackFrame],
     lidb: LocationInDenizenBuilder,
     body0: BlockPE,
-    initialDeclarations: VariableDeclarations,
-    resultRequested: Boolean):
+    initialDeclarations: VariableDeclarations):
   (BodySE, VariableUses, Vector[MagicParamNameS]) = {
     val functionBodyEnv = functionEnv.child()
 
@@ -410,10 +407,9 @@ class FunctionScout(
         lidb.child(),
         PostParser.evalRange(functionBodyEnv.file, body0.range),
         initialDeclarations,
-        resultRequested,
-        (stackFrame1, lidb, resultRequested) => {
+        (stackFrame1, lidb) => {
           expressionScout.scoutExpressionAndCoerce(
-            stackFrame1, lidb, body0.inner, UseP, resultRequested)
+            stackFrame1, lidb, body0.inner, UseP)
         })
 
     vcurious(

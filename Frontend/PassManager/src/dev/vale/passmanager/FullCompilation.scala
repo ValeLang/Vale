@@ -4,7 +4,7 @@ import dev.vale.finalast.ProgramH
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.FileP
 import dev.vale.postparsing.{ICompileErrorS, ProgramS}
-import dev.vale.{FileCoordinateMap, IPackageResolver, PackageCoordinate, PackageCoordinateMap, Result, vcurious}
+import dev.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Ok, PackageCoordinate, PackageCoordinateMap, Profiler, Result, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 import dev.vale.simplifying.HammerCompilation
 import dev.vale.highertyping.ICompileErrorA
 import PassManager.SourceInput
@@ -15,7 +15,6 @@ import dev.vale.typing.{Hinputs, ICompileErrorT}
 import dev.vale.parsing.FailedParse
 import dev.vale.postparsing.PostParser
 import dev.vale.typing.ICompileErrorT
-import dev.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Ok, PackageCoordinate, PackageCoordinateMap, Profiler, Result, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 import dev.vale.testvm.ReferenceV
 
 import scala.collection.immutable.List
@@ -28,18 +27,19 @@ case class FullCompilationOptions(
 ) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
 class FullCompilation(
+  interner: Interner,
   packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]],
   options: FullCompilationOptions = FullCompilationOptions()) {
   var hammerCompilation =
     new HammerCompilation(
+      interner,
       packagesToBuild,
       packageToContentsResolver,
       HammerCompilationOptions(
         options.debugOut,
         options.globalOptions))
 
-  def interner = hammerCompilation.interner
   def getVonHammer(): VonHammer = hammerCompilation.getVonHammer()
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = hammerCompilation.getCodeMap()

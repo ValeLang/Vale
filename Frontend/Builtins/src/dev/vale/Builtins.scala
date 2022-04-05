@@ -3,7 +3,9 @@ package dev.vale
 import scala.io.Source
 
 object Builtins {
-  val NAMESPACE_COORD = PackageCoordinate("", Vector.empty)
+  def NAMESPACE_COORD(interner: Interner) = {
+    interner.intern(PackageCoordinate("", Vector.empty))
+  }
 
   val moduleToFilename =
     Map(
@@ -38,23 +40,34 @@ object Builtins {
   // bare minimum. For example, the most basic test is `func main() int { return 42; }`, and we don't want it
   // to fail just because the builtin-yet-unused `func as<T, X>(x X) Opt<T> { ... }` doesn't want to
   // work right now.
-  def getModulizedCodeMap(): FileCoordinateMap[String] = {
-    moduleToFilename.foldLeft(FileCoordinateMap[String](Map()))({
-      case (prev, (moduleName, filename)) => {
-        prev.add("v", Vector("builtins", moduleName), filename, load(filename))
-      }
+  def getModulizedCodeMap(interner: Interner): FileCoordinateMap[String] = {
+    val result = new FileCoordinateMap[String]()
+    moduleToFilename.foreach({ case (moduleName, filename) =>
+      result.put(
+        interner.intern(FileCoordinate(
+          interner.intern(PackageCoordinate("v", Vector("builtins", moduleName))),
+          filename)),
+        load(filename))
     })
+    result
   }
 
   // Add an empty v.builtins.whatever so that the aforementioned imports still work.
   // But load the actual files all inside the root paackage.
-  def getCodeMap(): FileCoordinateMap[String] = {
-    moduleToFilename.foldLeft(FileCoordinateMap[String](Map()))({
-      case (prev, (moduleName, filename)) => {
-        prev
-          .add("v", Vector("builtins", moduleName), filename, "")
-          .add(NAMESPACE_COORD.module, NAMESPACE_COORD.packages, filename, load(filename))
-      }
+  def getCodeMap(interner: Interner): FileCoordinateMap[String] = {
+    val result = new FileCoordinateMap[String]()
+    moduleToFilename.foreach({ case (moduleName, filename) =>
+      result.put(
+        interner.intern(FileCoordinate(
+          interner.intern(PackageCoordinate("v", Vector("builtins", moduleName))),
+          filename)),
+        "")
+      result.put(
+        interner.intern(FileCoordinate(
+          interner.intern(PackageCoordinate(NAMESPACE_COORD(interner).module, NAMESPACE_COORD(interner).packages)),
+          filename)),
+        load(filename))
     })
+    result
   }
 }

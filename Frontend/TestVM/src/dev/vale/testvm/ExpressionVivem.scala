@@ -1,9 +1,8 @@
 package dev.vale.testvm
 
 import dev.vale.finalast.{ArgumentH, ArrayCapacityH, ArrayLengthH, AsSubtypeH, BlockH, BoolH, BorrowH, BorrowToWeakH, BreakH, CallH, ConsecutorH, ConstantBoolH, ConstantF64H, ConstantIntH, ConstantStrH, ConstantVoidH, DestroyH, DestroyImmRuntimeSizedArrayH, DestroyMutRuntimeSizedArrayH, DestroyStaticSizedArrayIntoFunctionH, DestroyStaticSizedArrayIntoLocalsH, DiscardH, ExpressionH, FloatH, IfH, InlineH, IntH, InterfaceCallH, InterfaceRefH, IsSameInstanceH, KindH, LocalLoadH, LocalStoreH, LocationH, LockWeakH, MemberLoadH, MemberStoreH, NewArrayFromValuesH, NewImmRuntimeSizedArrayH, NewMutRuntimeSizedArrayH, NewStructH, OwnH, PopRuntimeSizedArrayH, ProgramH, PrototypeH, PushRuntimeSizedArrayH, ReferenceH, ReturnH, RuntimeSizedArrayHT, RuntimeSizedArrayLoadH, RuntimeSizedArrayStoreH, ShareH, StackifyH, StaticArrayFromCallableH, StaticSizedArrayHT, StaticSizedArrayLoadH, StaticSizedArrayStoreH, StrH, StructRefH, StructToInterfaceUpcastH, UnstackifyH, VoidH, WeakH, WhileH, YonderH}
-import dev.vale.{vassert, vassertSome, vcurious, vfail, vimpl, vwat}
+import dev.vale.{vassert, vassertOne, vassertSome, vcurious, vfail, vimpl, vwat, finalast => m}
 import dev.vale.finalast._
-import dev.vale.{finalast => m}
 
 import scala.collection.mutable
 
@@ -1162,7 +1161,10 @@ object ExpressionVivem {
             case InterfaceRefH(_) | StructRefH(_) | RuntimeSizedArrayHT(_) | StaticSizedArrayHT(_) => {
               heap.vivemDout.println()
               heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (discard call)")
-              val prototypeH = vassertSome(programH.lookupPackage(expectedReference.kind.packageCoord).immDestructorsByKind.get(expectedReference.kind))
+              val prototypeH =
+                vassertOne(
+                  programH.packages.packageCoordToContents.values
+                    .flatMap(_.immDestructorsByKind.get(expectedReference.kind)))
               val functionH = programH.lookupFunction(prototypeH)
               val (calleeCallId, retuurn) =
                 FunctionVivem.executeFunction(

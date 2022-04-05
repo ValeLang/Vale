@@ -19,11 +19,13 @@ case class TypingPassCompilationOptions(
 ) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
 class TypingPassCompilation(
+  val interner: Interner,
   packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]],
   options: TypingPassCompilationOptions = TypingPassCompilationOptions()) {
-  var higherTypingCompilation = new HigherTypingCompilation(options.globalOptions, packagesToBuild, packageToContentsResolver)
-  def interner = higherTypingCompilation.interner
+  var higherTypingCompilation =
+    new HigherTypingCompilation(
+      options.globalOptions, interner, packagesToBuild, packageToContentsResolver)
   var hinputsCache: Option[Hinputs] = None
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = higherTypingCompilation.getCodeMap()
@@ -40,7 +42,7 @@ class TypingPassCompilation(
         val compiler =
           new Compiler(
             options.debugOut,
-            higherTypingCompilation.scoutCompilation.interner,
+            interner,
             options.globalOptions)
         compiler.evaluate(higherTypingCompilation.expectAstrouts()) match {
           case Err(e) => Err(e)

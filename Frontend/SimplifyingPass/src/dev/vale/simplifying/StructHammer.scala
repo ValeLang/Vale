@@ -191,7 +191,7 @@ class StructHammer(
     type2: CoordT,
     typeH: ReferenceH[KindH]):
   (StructRefH) = {
-    val boxFullName2 = FullNameT(PackageCoordinate.BUILTIN, Vector.empty, interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT(StructHammer.BOX_HUMAN_NAME)), Vector(CoordTemplata(type2)))))
+    val boxFullName2 = FullNameT(PackageCoordinate.BUILTIN(interner), Vector.empty, interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT(StructHammer.BOX_HUMAN_NAME)), Vector(CoordTemplata(type2)))))
     val boxFullNameH = nameHammer.translateFullName(hinputs, hamuts, boxFullName2)
     hamuts.structDefs.find(_.fullName == boxFullNameH) match {
       case Some(structDefH) => (structDefH.getRef)

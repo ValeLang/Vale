@@ -15,21 +15,21 @@ class TemplexParser {
   def parseArray(iter: ParsingIterator): Result[Option[ITemplexPT], IParseError] = {
     val begin = iter.getPos()
 
-    if (!iter.trySkip("^#?\\[".r)) {
+    if (!iter.trySkip(() => "^#?\\[".r)) {
       return Ok(None)
     }
 
     iter.consumeWhitespace()
 
     val maybeSizeTemplex =
-      if (iter.trySkip("^#".r)) {
+      if (iter.trySkip(() => "^#".r)) {
         iter.consumeWhitespace()
         parseTemplex(iter) match { case Err(e) => return Err(e) case Ok(x) => Some(x) }
       } else {
         None
       }
 
-    if (!iter.trySkip("^]".r)) {
+    if (!iter.trySkip(() => "^]".r)) {
       return Err(BadArraySizerEnd(iter.getPos()))
     }
 
@@ -72,7 +72,7 @@ class TemplexParser {
   def parsePrototype(iter: ParsingIterator): Result[Option[ITemplexPT], IParseError] = {
     val begin = iter.getPos()
 
-    if (!iter.trySkip("^func\\b".r)) {
+    if (!iter.trySkip(() => "^func\\b".r)) {
       return Ok(None)
     }
 
@@ -155,10 +155,10 @@ class TemplexParser {
     val begin = iter.getPos()
 
     val ownership =
-      if (iter.trySkip("^\\^".r)) { OwnP }
-      else if (iter.trySkip("^@".r)) { ShareP }
-      else if (iter.trySkip("^\\&\\&".r)) { WeakP }
-      else if (iter.trySkip("^&".r)) { BorrowP }
+      if (iter.trySkip(() => "^\\^".r)) { OwnP }
+      else if (iter.trySkip(() => "^@".r)) { ShareP }
+      else if (iter.trySkip(() => "^\\&\\&".r)) { WeakP }
+      else if (iter.trySkip(() => "^&".r)) { BorrowP }
       else { return Ok(None) }
 
     val inner =
@@ -183,24 +183,24 @@ class TemplexParser {
 
 
   def parseStringPart(iter: ParsingIterator, stringBeginPos: Int): Result[Char, IParseError] = {
-    if (iter.trySkip("^\\\\".r)) {
-      if (iter.trySkip("^r".r) || iter.trySkip("^\\r".r)) {
+    if (iter.trySkip(() => "^\\\\".r)) {
+      if (iter.trySkip(() => "^r".r) || iter.trySkip(() => "^\\r".r)) {
         Ok('\r')
-      } else if (iter.trySkip("^t".r)) {
+      } else if (iter.trySkip(() => "^t".r)) {
         Ok('\t')
-      } else if (iter.trySkip("^n".r) || iter.trySkip("^\\n".r)) {
+      } else if (iter.trySkip(() => "^n".r) || iter.trySkip(() => "^\\n".r)) {
         Ok('\n')
-      } else if (iter.trySkip("^\\\\".r)) {
+      } else if (iter.trySkip(() => "^\\\\".r)) {
         Ok('\\')
-      } else if (iter.trySkip("^\"".r)) {
+      } else if (iter.trySkip(() => "^\"".r)) {
         Ok('\"')
-      } else if (iter.trySkip("^/".r)) {
+      } else if (iter.trySkip(() => "^/".r)) {
         Ok('/')
-      } else if (iter.trySkip("^\\{".r)) {
+      } else if (iter.trySkip(() => "^\\{".r)) {
         Ok('{')
-      } else if (iter.trySkip("^\\}".r)) {
+      } else if (iter.trySkip(() => "^\\}".r)) {
         Ok('}')
-      } else if (iter.trySkip("^u".r)) {
+      } else if (iter.trySkip(() => "^u".r)) {
         val num =
           StringParser.parseFourDigitHexNum(iter) match {
             case None => {
@@ -210,11 +210,11 @@ class TemplexParser {
           }
         Ok(num.toChar)
       } else {
-        Ok(iter.tryy("^.".r).get.charAt(0))
+        Ok(iter.tryy(() => "^.".r).get.charAt(0))
       }
     } else {
       val c =
-        iter.tryy("^(.|\\n)".r) match {
+        iter.tryy(() => "^(.|\\n)".r) match {
           case None => {
             return Err(BadStringChar(stringBeginPos, iter.getPos()))
           }
@@ -226,11 +226,11 @@ class TemplexParser {
 
   def parseString(iter: ParsingIterator): Result[Option[StringPT], IParseError] = {
     val begin = iter.getPos()
-    if (!iter.trySkip("^\"".r)) {
+    if (!iter.trySkip(() => "^\"".r)) {
       return Ok(None)
     }
     val stringSoFar = new StringBuilder()
-    while (!(iter.atEnd() || iter.trySkip("^\"".r))) {
+    while (!(iter.atEnd() || iter.trySkip(() => "^\"".r))) {
       val c = parseStringPart(iter, begin) match { case Err(e) => return Err(e) case Ok(c) => c }
       stringSoFar += c
     }
@@ -241,55 +241,55 @@ class TemplexParser {
   def parseTemplexAtom(iter: ParsingIterator): Result[ITemplexPT, IParseError] = {
     val begin = iter.getPos()
 
-    if (iter.trySkip("^_\\b".r)) {
+    if (iter.trySkip(() => "^_\\b".r)) {
       return Ok(AnonymousRunePT(RangeP(begin, iter.getPos())))
     }
-    if (iter.trySkip("^true\\b".r)) {
+    if (iter.trySkip(() => "^true\\b".r)) {
       return Ok(BoolPT(RangeP(begin, iter.getPos()), true))
     }
-    if (iter.trySkip("^false\\b".r)) {
+    if (iter.trySkip(() => "^false\\b".r)) {
       return Ok(BoolPT(RangeP(begin, iter.getPos()), false))
     }
-    if (iter.trySkip("^own\\b".r)) {
+    if (iter.trySkip(() => "^own\\b".r)) {
       return Ok(OwnershipPT(RangeP(begin, iter.getPos()), OwnP))
     }
-    if (iter.trySkip("^borrow\\b".r)) {
+    if (iter.trySkip(() => "^borrow\\b".r)) {
       return Ok(OwnershipPT(RangeP(begin, iter.getPos()), BorrowP))
     }
-    if (iter.trySkip("^weak\\b".r)) {
+    if (iter.trySkip(() => "^weak\\b".r)) {
       return Ok(OwnershipPT(RangeP(begin, iter.getPos()), WeakP))
     }
-    if (iter.trySkip("^share\\b".r)) {
+    if (iter.trySkip(() => "^share\\b".r)) {
       return Ok(OwnershipPT(RangeP(begin, iter.getPos()), ShareP))
     }
-    if (iter.trySkip("^inl\\b".r)) {
+    if (iter.trySkip(() => "^inl\\b".r)) {
       return Ok(LocationPT(RangeP(begin, iter.getPos()), InlineP))
     }
-    if (iter.trySkip("^heap\\b".r)) {
+    if (iter.trySkip(() => "^heap\\b".r)) {
       return Ok(LocationPT(RangeP(begin, iter.getPos()), YonderP))
     }
-    if (iter.trySkip("^imm\\b".r)) {
+    if (iter.trySkip(() => "^imm\\b".r)) {
       return Ok(MutabilityPT(RangeP(begin, iter.getPos()), ImmutableP))
     }
-    if (iter.trySkip("^mut\\b".r)) {
+    if (iter.trySkip(() => "^mut\\b".r)) {
       return Ok(MutabilityPT(RangeP(begin, iter.getPos()), MutableP))
     }
-    if (iter.trySkip("^vary\\b".r)) {
+    if (iter.trySkip(() => "^vary\\b".r)) {
       return Ok(VariabilityPT(RangeP(begin, iter.getPos()), VaryingP))
     }
-    if (iter.trySkip("^final\\b".r)) {
+    if (iter.trySkip(() => "^final\\b".r)) {
       return Ok(VariabilityPT(RangeP(begin, iter.getPos()), FinalP))
     }
-    if (iter.trySkip("^borrow\\b".r)) {
+    if (iter.trySkip(() => "^borrow\\b".r)) {
       return Ok(OwnershipPT(RangeP(begin, iter.getPos()), BorrowP))
     }
-    if (iter.trySkip("^weak\\b".r)) {
+    if (iter.trySkip(() => "^weak\\b".r)) {
       return Ok(OwnershipPT(RangeP(begin, iter.getPos()), WeakP))
     }
-    if (iter.trySkip("^own\\b".r)) {
+    if (iter.trySkip(() => "^own\\b".r)) {
       return Ok(OwnershipPT(RangeP(begin, iter.getPos()), OwnP))
     }
-    if (iter.trySkip("^share\\b".r)) {
+    if (iter.trySkip(() => "^share\\b".r)) {
       return Ok(OwnershipPT(RangeP(begin, iter.getPos()), ShareP))
     }
     parsePrototype(iter) match {
@@ -327,7 +327,7 @@ class TemplexParser {
 
   def parseTemplateCallArgs(iter: ParsingIterator): Result[Option[Vector[ITemplexPT]], IParseError] = {
     val begin = iter.getPos()
-    if (!iter.trySkip("^\\s*<".r)) {
+    if (!iter.trySkip(() => "^\\s*<".r)) {
       return Ok(None)
     }
     iter.consumeWhitespace()
@@ -340,9 +340,9 @@ class TemplexParser {
         }
       args += arg
       iter.consumeWhitespace()
-      if (iter.trySkip("^>".r)) {
+      if (iter.trySkip(() => "^>".r)) {
         false
-      } else if (iter.trySkip("^,".r)) {
+      } else if (iter.trySkip(() => "^,".r)) {
         iter.consumeWhitespace()
         true
       } else {
@@ -355,11 +355,11 @@ class TemplexParser {
 
   def parseTuple(iter: ParsingIterator): Result[Option[TuplePT], IParseError] = {
     val begin = iter.getPos()
-    if (!iter.trySkip("^\\(".r)) {
+    if (!iter.trySkip(() => "^\\(".r)) {
       return Ok(None)
     }
     iter.consumeWhitespace()
-    if (iter.trySkip("^\\)".r)) {
+    if (iter.trySkip(() => "^\\)".r)) {
       return Ok(Some(TuplePT(RangeP(begin, iter.getPos()), Vector())))
     }
     val args = mutable.ArrayBuffer[ITemplexPT]()
@@ -371,9 +371,9 @@ class TemplexParser {
         }
       args += arg
       iter.consumeWhitespace()
-      if (iter.trySkip("^\\)".r)) {
+      if (iter.trySkip(() => "^\\)".r)) {
         false
-      } else if (iter.trySkip("^,".r)) {
+      } else if (iter.trySkip(() => "^,".r)) {
         iter.consumeWhitespace()
         true
       } else {
@@ -403,7 +403,7 @@ class TemplexParser {
   }
 
   def parseTemplexAtomAndCallAndPrefixes(iter: ParsingIterator): Result[ITemplexPT, IParseError] = {
-    if (iter.peek("^in\\b".r)) {
+    if (iter.peek(() => "^in\\b".r)) {
       // This is here so if we say:
       //   foreach x in myList { ... }
       // We won't interpret `x in` as a pattern, because
@@ -411,7 +411,7 @@ class TemplexParser {
       // The caller should prevent this.
       vwat()
     }
-    if (iter.peek("^impl\\b".r)) {
+    if (iter.peek(() => "^impl\\b".r)) {
       // func moo(a impl IFoo) { ... }
       // The caller should prevent this.
       vwat()
@@ -425,13 +425,13 @@ class TemplexParser {
       case Ok(None) =>
     }
 
-//    if (iter.trySkip("^inl\\b".r)) {
+//    if (iter.trySkip(() => "^inl\\b".r)) {
 //      iter.consumeWhitespace()
 //      val inner = parseTemplexAtomAndCallAndPrefixes(iter) match { case Err(e) => return Err(e) case Ok(t) => t }
 //      return Ok(InlinePT(RangeP(begin, iter.getPos()), inner))
 //    }
 
-    if (iter.trySkip("^'".r)) {
+    if (iter.trySkip(() => "^'".r)) {
       iter.consumeWhitespace()
       val regionName =
         Parser.parseTypeName(iter) match {
@@ -439,7 +439,7 @@ class TemplexParser {
           case Some(x) => x
         }
 
-      if (iter.peek("^\\s*[,>)\\]};{]".r)) {
+      if (iter.peek(() => "^\\s*[,>)\\]};{]".r)) {
         return Ok(RegionRunePT(RangeP(begin, iter.getPos()), regionName))
       } else {
         iter.consumeWhitespace()
@@ -461,7 +461,7 @@ class TemplexParser {
 
   def parseRegion(iter: ParsingIterator): Result[Option[RegionRunePT], IParseError] = {
     val begin = iter.getPos()
-    if (!iter.trySkip("^'".r)) {
+    if (!iter.trySkip(() => "^'".r)) {
       return Ok(None)
     }
     iter.consumeWhitespace()
@@ -485,7 +485,7 @@ class TemplexParser {
     val tentativeIter = originalIter.clone()
 
     val maybeRuneName =
-      if (tentativeIter.trySkip("^_\\b".r)) {
+      if (tentativeIter.trySkip(() => "^_\\b".r)) {
         None
       } else {
         Parser.parseTypeName(tentativeIter) match {
@@ -514,7 +514,7 @@ class TemplexParser {
   def parseRuleCall(iter: ParsingIterator): Result[Option[IRulexPR], IParseError] = {
     val begin = iter.getPos()
     val nameAndOpenParen =
-    iter.tryy("^\\w+\\(".r) match {
+    iter.tryy(() => "^\\w+\\(".r) match {
       case None => return Ok(None)
       case Some(nameAndOpenParen) => nameAndOpenParen
     }
@@ -524,7 +524,7 @@ class TemplexParser {
     val name = NameP(RangeP(begin, nameEnd), nameStr)
 
     iter.consumeWhitespace()
-    if (iter.trySkip("^\\s*\\)".r)) {
+    if (iter.trySkip(() => "^\\s*\\)".r)) {
       return Ok(Some(BuiltinCallPR(RangeP(begin, iter.getPos()), name, Vector())))
     }
 
@@ -533,9 +533,9 @@ class TemplexParser {
       iter.consumeWhitespace()
       val arg = parseRule(iter) match { case Err(e) => return Err(e) case Ok(t) => t }
       args += arg
-      if (iter.trySkip("^\\s*,".r)) {
+      if (iter.trySkip(() => "^\\s*,".r)) {
         true
-      } else if (iter.trySkip("^\\s*\\)".r)) {
+      } else if (iter.trySkip(() => "^\\s*\\)".r)) {
         false
       } else {
         return Err(BadRuleCallParam(iter.getPos()))
@@ -559,7 +559,7 @@ class TemplexParser {
 
     val typeEnd = tentativeIter.getPos()
 
-    if (!tentativeIter.trySkip("^\\[".r)) {
+    if (!tentativeIter.trySkip(() => "^\\[".r)) {
       return Ok(None)
     }
 
@@ -573,10 +573,10 @@ class TemplexParser {
       iter.consumeWhitespace()
       val arg = parseRule(iter) match { case Err(e) => return Err(e) case Ok(t) => t }
       args += arg
-      if (iter.trySkip("^\\s*,".r)) {
+      if (iter.trySkip(() => "^\\s*,".r)) {
         iter.consumeWhitespace()
         true
-      } else if (iter.trySkip("^\\s*]".r)) {
+      } else if (iter.trySkip(() => "^\\s*]".r)) {
         false
       } else {
         return Err(BadRuleCallParam(iter.getPos()))
@@ -622,7 +622,7 @@ class TemplexParser {
           case Ok(t) => t
         }
 
-      if (iter.trySkip("^\\s*=\\s*".r)) {
+      if (iter.trySkip(() => "^\\s*=\\s*".r)) {
         val right =
           parseRuleUpToEqualsPrecedence(iter) match {
             case Err(e) => return Err(e)

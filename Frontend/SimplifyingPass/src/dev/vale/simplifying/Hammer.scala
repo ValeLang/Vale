@@ -246,7 +246,7 @@ class Hammer(interner: Interner) {
     val packageToFunctionDefs = hamuts.functionDefs.groupBy(_._1.fullName.packageCoord).mapValues(_.values.toVector)
     val packageToStaticSizedArrays = hamuts.staticSizedArrays.values.toVector.groupBy(_.name.packageCoordinate)
     val packageToRuntimeSizedArrays = hamuts.runtimeSizedArrays.values.toVector.groupBy(_.name.packageCoordinate)
-    val packageToImmDestructorPrototypes = immDestructorPrototypesH.groupBy(_._1.packageCoord)
+    val packageToImmDestructorPrototypes = immDestructorPrototypesH.groupBy(_._1.packageCoord(interner))
     val packageToExportNameToKind = hamuts.packageCoordToExportNameToKind
     val packageToExportNameToFunction = hamuts.packageCoordToExportNameToFunction
     val packageToExternNameToKind = hamuts.packageCoordToExternNameToKind
@@ -264,27 +264,24 @@ class Hammer(interner: Interner) {
         packageToExternNameToFunction.keySet ++
         packageToExternNameToKind.keySet
 
-    val packages =
-      allPackageCoords.toVector.map(packageCoord => {
-        packageCoord ->
-          PackageH(
-            packageToInterfaceDefs.getOrElse(packageCoord, Map()).values.toVector,
-            packageToStructDefs.getOrElse(packageCoord, Vector.empty),
-            packageToFunctionDefs.getOrElse(packageCoord, Vector.empty),
-            packageToStaticSizedArrays.getOrElse(packageCoord, Vector.empty),
-            packageToRuntimeSizedArrays.getOrElse(packageCoord, Vector.empty),
-            packageToImmDestructorPrototypes.getOrElse(packageCoord, Map()),
-            packageToExportNameToFunction.getOrElse(packageCoord, Map()),
-            packageToExportNameToKind.getOrElse(packageCoord, Map()),
-            packageToExternNameToFunction.getOrElse(packageCoord, Map()),
-            packageToExternNameToKind.getOrElse(packageCoord, Map()))
-      }).toMap
-        .groupBy(_._1.module)
-        .mapValues(packageCoordToPackage => {
-          packageCoordToPackage.map({ case (packageCoord, paackage) => (packageCoord.packages, paackage) }).toMap
-        })
+    val packages = new PackageCoordinateMap[PackageH]()
+    allPackageCoords.toVector.foreach(packageCoord => {
+      packages.put(
+        packageCoord,
+        PackageH(
+          packageToInterfaceDefs.getOrElse(packageCoord, Map()).values.toVector,
+          packageToStructDefs.getOrElse(packageCoord, Vector.empty),
+          packageToFunctionDefs.getOrElse(packageCoord, Vector.empty),
+          packageToStaticSizedArrays.getOrElse(packageCoord, Vector.empty),
+          packageToRuntimeSizedArrays.getOrElse(packageCoord, Vector.empty),
+          packageToImmDestructorPrototypes.getOrElse(packageCoord, Map()),
+          packageToExportNameToFunction.getOrElse(packageCoord, Map()),
+          packageToExportNameToKind.getOrElse(packageCoord, Map()),
+          packageToExternNameToFunction.getOrElse(packageCoord, Map()),
+          packageToExternNameToKind.getOrElse(packageCoord, Map())))
+    })
 
-    finalast.ProgramH(PackageCoordinateMap(packages))
+    finalast.ProgramH(packages)
   }
 }
 

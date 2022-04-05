@@ -43,30 +43,30 @@ class ImplDropMacro(
 //        Vector(
 //          ParameterS(
 //            AtomSP(
-//              RangeS.internal(-1340),
+//              RangeS.internal(interner, -1340),
 //              Some(CaptureS(interner.intern(CodeVarNameS("this")))),
-//              Some(OverrideSP(RangeS.internal(-64002), RuneUsage(RangeS.internal(-64002), implA.interfaceKindRune.rune))),
-//              Some(RuneUsage(RangeS.internal(-64002), ImplDropCoordRuneS())), None))),
-//        Some(RuneUsage(RangeS.internal(-64002), ImplDropVoidRuneS())),
+//              Some(OverrideSP(RangeS.internal(interner, -64002), RuneUsage(RangeS.internal(interner, -64002), implA.interfaceKindRune.rune))),
+//              Some(RuneUsage(RangeS.internal(interner, -64002), ImplDropCoordRuneS())), None))),
+//        Some(RuneUsage(RangeS.internal(interner, -64002), ImplDropVoidRuneS())),
 //        implA.rules ++
 //        Vector(
 //          CoerceToCoordSR(
-//            RangeS.internal(-1672131),
-//            RuneUsage(RangeS.internal(-167214), ImplDropCoordRuneS()),
-//            RuneUsage(RangeS.internal(-167215), implA.structKindRune.rune)),
-//          LookupSR(RangeS.internal(-1672132),RuneUsage(RangeS.internal(-64002), ImplDropVoidRuneS()),interner.intern(CodeNameS("void")))),
+//            RangeS.internal(interner, -1672131),
+//            RuneUsage(RangeS.internal(interner, -167214), ImplDropCoordRuneS()),
+//            RuneUsage(RangeS.internal(interner, -167215), implA.structKindRune.rune)),
+//          LookupSR(RangeS.internal(interner, -1672132),RuneUsage(RangeS.internal(interner, -64002), ImplDropVoidRuneS()),interner.intern(CodeNameS("void")))),
 //        CodeBodyS(
-//          BodySE(RangeS.internal(-1672133),
+//          BodySE(RangeS.internal(interner, -1672133),
 //            Vector(),
-//            BlockSE(RangeS.internal(-1672134),
+//            BlockSE(RangeS.internal(interner, -1672134),
 //              Vector(LocalS(interner.intern(CodeVarNameS("this")), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
-//              FunctionCallSE(RangeS.internal(-1672135),
-//                OutsideLoadSE(RangeS.internal(-1672136),
+//              FunctionCallSE(RangeS.internal(interner, -1672135),
+//                OutsideLoadSE(RangeS.internal(interner, -1672136),
 //                  Array(),
 //                  interner.intern(CodeNameS(CallCompiler.DROP_FUNCTION_NAME)),
 //                  None,
 //                  LoadAsPointerP(None)),
-//                Vector(LocalLoadSE(RangeS.internal(-1672137), interner.intern(CodeVarNameS("this")), MoveP)))))))
+//                Vector(LocalLoadSE(RangeS.internal(interner, -1672137), interner.intern(CodeVarNameS("this")), MoveP)))))))
 //    Vector((
 //      implName.copy(last = nameTranslator.translateFunctionNameToTemplateName(funcNameA)),
 //      FunctionEnvEntry(dropFunctionA)))

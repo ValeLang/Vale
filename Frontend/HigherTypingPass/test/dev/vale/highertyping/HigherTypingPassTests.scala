@@ -40,7 +40,7 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
           |}
           |""".stripMargin)
     val astrouts = compilation.getAstrouts().getOrDie()
-    val program = vassertSome(astrouts.get(PackageCoordinate.TEST_TLD))
+    val program = vassertSome(astrouts.get(PackageCoordinate.TEST_TLD(compilation.interner)))
     val main = program.lookupFunction("moo")
     main.runeToType(CodeRuneS("T")) shouldEqual CoordTemplataType
   }
@@ -75,7 +75,7 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
           |}
           |""".stripMargin)
     val astrouts = compilation.getAstrouts().getOrDie()
-    val program = vassertSome(astrouts.get(PackageCoordinate.TEST_TLD))
+    val program = vassertSome(astrouts.get(PackageCoordinate.TEST_TLD(compilation.interner)))
     val main = program.lookupStruct("Bork")
     main.runeToType(CodeRuneS("T")) shouldEqual CoordTemplataType
   }
@@ -118,7 +118,7 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
           |}
           |""".stripMargin)
     val astrouts = compilation.getAstrouts().getOrDie()
-    val program = vassertSome(astrouts.get(PackageCoordinate.TEST_TLD))
+    val program = vassertSome(astrouts.get(PackageCoordinate.TEST_TLD(compilation.interner)))
     val main = program.lookupFunction("moo")
     main.runeToType(CodeRuneS("T")) shouldEqual CoordTemplataType
   }
@@ -132,7 +132,7 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
           |}
           |""".stripMargin)
     val astrouts = compilation.expectAstrouts()
-    val program = vassertSome(astrouts.get(PackageCoordinate.TEST_TLD))
+    val program = vassertSome(astrouts.get(PackageCoordinate.TEST_TLD(compilation.interner)))
     val main = program.lookupFunction("moo")
     main.runeToType(CodeRuneS("T")) shouldEqual PackTemplataType(CoordTemplataType)
   }
@@ -146,7 +146,7 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
           |}
           |""".stripMargin)
     val astrouts = compilation.getAstrouts().getOrDie()
-    val program = vassertSome(astrouts.get(PackageCoordinate.TEST_TLD))
+    val program = vassertSome(astrouts.get(PackageCoordinate.TEST_TLD(compilation.interner)))
     val main = program.lookupFunction("moo")
     main.runeToType(CodeRuneS("T")) shouldEqual CoordTemplataType
   }
@@ -160,7 +160,7 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
           |}
           |""".stripMargin)
     val astrouts = compilation.getAstrouts().getOrDie()
-    val program = vassertSome(astrouts.get(PackageCoordinate.TEST_TLD))
+    val program = vassertSome(astrouts.get(PackageCoordinate.TEST_TLD(compilation.interner)))
     val main = program.lookupFunction("moo")
     main.runeToType(CodeRuneS("P")) shouldEqual PackTemplataType(CoordTemplataType)
   }

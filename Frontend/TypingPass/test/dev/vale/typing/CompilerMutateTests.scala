@@ -232,98 +232,99 @@ class CompilerMutateTests extends FunSuite with Matchers {
 
   test("Humanize errors") {
     val interner = new Interner()
-    val fireflyKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(CitizenNameT(CitizenTemplateNameT("Firefly"), Vector.empty))))
+    val fireflyKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector.empty, interner.intern(CitizenNameT(CitizenTemplateNameT("Firefly"), Vector.empty))))
     val fireflyCoord = CoordT(OwnT,fireflyKind)
-    val serenityKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(CitizenNameT(CitizenTemplateNameT("Serenity"), Vector.empty))))
+    val serenityKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector.empty, interner.intern(CitizenNameT(CitizenTemplateNameT("Serenity"), Vector.empty))))
     val serenityCoord = CoordT(OwnT,serenityKind)
 
-    val filenamesAndSources = FileCoordinateMap.test("blah blah blah\nblah blah blah")
+    val filenamesAndSources = FileCoordinateMap.test(interner, "blah blah blah\nblah blah blah")
 
+    val tz = RangeS.testZero(interner)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
-      CouldntFindTypeT(RangeS.testZero, "Spaceship")).nonEmpty)
+      CouldntFindTypeT(tz, "Spaceship")).nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindFunctionToCallT(
-        RangeS.testZero,
+        tz,
         FindFunctionFailure(interner.intern(CodeNameS("")), Vector.empty, Map())))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CannotSubscriptT(
-        RangeS.testZero,
+        tz,
         fireflyKind))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindIdentifierToLoadT(
-        RangeS.testZero,
+        tz,
         interner.intern(CodeNameS("spaceship"))))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindMemberT(
-        RangeS.testZero,
+        tz,
         "hp"))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       BodyResultDoesntMatch(
-        RangeS.testZero,
-        FunctionNameS("myFunc", CodeLocationS.testZero), fireflyCoord, serenityCoord))
+        tz,
+        FunctionNameS("myFunc", CodeLocationS.testZero(interner)), fireflyCoord, serenityCoord))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntConvertForReturnT(
-        RangeS.testZero,
+        tz,
         fireflyCoord, serenityCoord))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntConvertForMutateT(
-        RangeS.testZero,
+        tz,
         fireflyCoord, serenityCoord))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntConvertForMutateT(
-        RangeS.testZero,
+        tz,
         fireflyCoord, serenityCoord))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CantMoveOutOfMemberT(
-        RangeS.testZero,
+        tz,
         interner.intern(CodeVarNameT("hp"))))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CantReconcileBranchesResults(
-        RangeS.testZero,
+        tz,
         fireflyCoord,
         serenityCoord))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CantUseUnstackifiedLocal(
-        RangeS.testZero,
+        tz,
         interner.intern(CodeVarNameT("firefly"))))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       FunctionAlreadyExists(
-        RangeS.testZero,
-        RangeS.testZero,
-        SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(FunctionNameT("myFunc", Vector.empty, Vector.empty))))))
+        tz,
+        tz,
+        SignatureT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector.empty, interner.intern(FunctionNameT("myFunc", Vector.empty, Vector.empty))))))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CantMutateFinalMember(
-        RangeS.testZero,
+        tz,
         serenityKind,
-        FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(CodeVarNameT("bork")))))
+        FullNameT(PackageCoordinate.TEST_TLD(interner), Vector.empty, interner.intern(CodeVarNameT("bork")))))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       LambdaReturnDoesntMatchInterfaceConstructor(
-        RangeS.testZero))
+        tz))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       IfConditionIsntBoolean(
-        RangeS.testZero, fireflyCoord))
+        tz, fireflyCoord))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       WhileConditionIsntBoolean(
-        RangeS.testZero, fireflyCoord))
+        tz, fireflyCoord))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CantImplNonInterface(
-        RangeS.testZero, fireflyKind))
+        tz, fireflyKind))
       .nonEmpty)
   }
 }

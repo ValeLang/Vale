@@ -37,21 +37,24 @@ class CompilerSolverTests extends FunSuite with Matchers {
 
 
   test("Humanize errors") {
-    val fireflyKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("Firefly"), Vector())))
+    val interner = new Interner()
+    val tz = RangeS.testZero(interner)
+
+    val fireflyKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector(), CitizenNameT(CitizenTemplateNameT("Firefly"), Vector())))
     val fireflyCoord = CoordT(OwnT,fireflyKind)
-    val serenityKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("Serenity"), Vector())))
+    val serenityKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector(), CitizenNameT(CitizenTemplateNameT("Serenity"), Vector())))
     val serenityCoord = CoordT(OwnT,serenityKind)
-    val ispaceshipKind = InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("ISpaceship"), Vector())))
+    val ispaceshipKind = InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector(), CitizenNameT(CitizenTemplateNameT("ISpaceship"), Vector())))
     val ispaceshipCoord = CoordT(OwnT,ispaceshipKind)
-    val unrelatedKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), CitizenNameT(CitizenTemplateNameT("Spoon"), Vector())))
+    val unrelatedKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector(), CitizenNameT(CitizenTemplateNameT("Spoon"), Vector())))
     val unrelatedCoord = CoordT(OwnT,unrelatedKind)
-    val fireflySignature = SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector(), FunctionNameT("myFunc", Vector(), Vector(fireflyCoord))))
-    val fireflyExport = KindExportT(RangeS.testZero, fireflyKind, PackageCoordinate.TEST_TLD, "Firefly");
-    val serenityExport = KindExportT(RangeS.testZero, fireflyKind, PackageCoordinate.TEST_TLD, "Serenity");
+    val fireflySignature = SignatureT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector(), FunctionNameT("myFunc", Vector(), Vector(fireflyCoord))))
+    val fireflyExport = KindExportT(tz, fireflyKind, PackageCoordinate.TEST_TLD(interner), "Firefly");
+    val serenityExport = KindExportT(tz, fireflyKind, PackageCoordinate.TEST_TLD(interner), "Serenity");
 
     val codeStr = "Hello I am A large piece Of code [that has An error]"
-    val filenamesAndSources = FileCoordinateMap.test(codeStr)
-    def makeLoc(pos: Int) = CodeLocationS(FileCoordinate.test, pos)
+    val filenamesAndSources = FileCoordinateMap.test(interner, codeStr)
+    def makeLoc(pos: Int) = CodeLocationS(FileCoordinate.test(interner), pos)
     def makeRange(begin: Int, end: Int) = RangeS(makeLoc(begin), makeLoc(end))
 
     val unsolvedRules =
@@ -68,7 +71,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
 
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       TypingPassSolverError(
-        RangeS.testZero,
+        tz,
         FailedSolve(
           Vector(
             Step(
@@ -84,7 +87,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
     val errorText =
       CompilerErrorHumanizer.humanize(false, filenamesAndSources,
         TypingPassSolverError(
-          RangeS.testZero,
+          tz,
           IncompleteSolve(
             Vector(
               Step(

@@ -1,13 +1,13 @@
 package dev.vale.parsing
 
-import dev.vale.{Err, FileCoordinate, FileCoordinateMap, Ok, Result, vassertSome, vfail}
+import dev.vale.{Err, FileCoordinate, FileCoordinateMap, Interner, Ok, Result, vassertSome, vfail}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.{IExpressionPE, ITopLevelThingP}
 import dev.vale.parsing.ast.IExpressionPE
-import dev.vale.Err
 
 trait TestParseUtils {
   def compileMaybe[T](parser: (ParsingIterator) => Result[Option[T], IParseError], untrimpedCode: String): T = {
+    val interner = new Interner()
     val code = untrimpedCode.trim()
     // The trim is in here because things inside the parser don't expect whitespace before and after
     val iter = ParsingIterator(code.trim(), 0)
@@ -16,7 +16,12 @@ trait TestParseUtils {
         vfail("Couldn't parse, not applicable!");
       }
       case Err(err) => {
-        vfail("Couldn't parse!\n" + ParseErrorHumanizer.humanize(FileCoordinateMap.test(code), FileCoordinate.test, err))
+        vfail(
+          "Couldn't parse!\n" +
+            ParseErrorHumanizer.humanize(
+              FileCoordinateMap.test(interner, code).fileCoordToContents.toMap,
+              FileCoordinate.test(interner),
+              err))
       }
       case Ok(Some(result)) => {
         if (!iter.atEnd()) {
@@ -28,12 +33,18 @@ trait TestParseUtils {
   }
 
   def compile[T](parser: (ParsingIterator) => Result[T, IParseError], untrimpedCode: String): T = {
+    val interner = new Interner()
     val code = untrimpedCode.trim()
     // The trim is in here because things inside the parser don't expect whitespace before and after
     val iter = ParsingIterator(code.trim(), 0)
     parser(iter) match {
       case Err(err) => {
-        vfail("Couldn't parse!\n" + ParseErrorHumanizer.humanize(FileCoordinateMap.test(code), FileCoordinate.test, err))
+        vfail(
+          "Couldn't parse!\n" +
+            ParseErrorHumanizer.humanize(
+              FileCoordinateMap.test(interner, code).fileCoordToContents.toMap,
+              FileCoordinate.test(interner),
+              err))
       }
       case Ok(result) => {
         if (!iter.atEnd()) {
@@ -62,12 +73,18 @@ trait TestParseUtils {
   }
 
   def compileForRest[T](parser: (ParsingIterator) => Result[T, IParseError], untrimpedCode: String, expectedRest: String): Unit = {
+    val interner = new Interner()
     val code = untrimpedCode.trim()
     // The trim is in here because things inside the parser don't expect whitespace before and after
     val iter = ParsingIterator(code.trim(), 0)
     parser(iter) match {
       case Err(err) => {
-        vfail("Couldn't parse!\n" + ParseErrorHumanizer.humanize(FileCoordinateMap.test(code), FileCoordinate.test, err))
+        vfail(
+          "Couldn't parse!\n" +
+            ParseErrorHumanizer.humanize(
+              FileCoordinateMap.test(interner, code).fileCoordToContents.toMap,
+              FileCoordinate.test(interner),
+              err))
       }
       case Ok(_) => {
         val rest = iter.code.slice(iter.position, iter.code.length)

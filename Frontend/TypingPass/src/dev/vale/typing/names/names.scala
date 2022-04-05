@@ -38,7 +38,7 @@ case class FullNameT[+T <: INameT](
   vcurious(initSteps.distinct == initSteps)
 
   this match {
-    case FullNameT(PackageCoordinate.TEST_TLD, Vector(), FunctionNameT("main", Vector(), Vector())) =>
+    case FullNameT(z, Vector(), FunctionNameT("main", Vector(), Vector())) if z.isTest =>
     case _ =>
   }
 

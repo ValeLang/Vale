@@ -1,7 +1,6 @@
 package dev.vale.solver
 
-import dev.vale.{Err, Ok, Result, vassert, vfail, vpass}
-import dev.vale.Err
+import dev.vale.{Err, Ok, Profiler, Result, vassert, vfail, vpass}
 
 import scala.collection.immutable.Map
 import scala.collection.mutable
@@ -87,65 +86,67 @@ class Solver[Rule, Rune, Env, State, Conclusion, ErrType](sanityCheck: Boolean, 
     solverState: ISolverState[Rule, Rune, Conclusion],
     solveRule: ISolveRule[Rule, Rune, Env, State, Conclusion, ErrType]
   ): Result[(Stream[Step[Rule, Rune, Conclusion]], Stream[(Rune, Conclusion)]), FailedSolve[Rule, Rune, Conclusion, ErrType]] = {
+    Profiler.frame(() => {
 
-    if (sanityCheck) {
-      solverState.sanityCheck()
-    }
+      if (sanityCheck) {
+        solverState.sanityCheck()
+      }
 
-    while ({
-      while ({
-        solverState.getNextSolvable() match {
-          case None => false
-          case Some(solvingRuleIndex) => {
-            val rule = solverState.getRule(solvingRuleIndex)
-            val step =
-              solverState.simpleStep[ErrType](ruleToPuzzles, solvingRuleIndex, rule, solveRule.solve(state, env, solvingRuleIndex, rule, _)) match {
-                case Ok(step) => step
+      while ( {
+        while ( {
+          solverState.getNextSolvable() match {
+            case None => false
+            case Some(solvingRuleIndex) => {
+              val rule = solverState.getRule(solvingRuleIndex)
+              val step =
+                solverState.simpleStep[ErrType](ruleToPuzzles, solvingRuleIndex, rule, solveRule.solve(state, env, solvingRuleIndex, rule, _)) match {
+                  case Ok(step) => step
+                  case Err(e) => return Err(FailedSolve(solverState.getSteps(), solverState.getUnsolvedRules(), e))
+                }
+
+              val canonicalConclusions =
+                step.conclusions.map({ case (userRune, conclusion) => solverState.getCanonicalRune(userRune) -> conclusion }).toMap
+              //            println(s"Got conclusions for ${solvingRuleIndex}: " + canonicalConclusions.keySet)
+              solverState.markRulesSolved[ErrType](Array(solvingRuleIndex), canonicalConclusions) match {
+                case Ok(_) =>
                 case Err(e) => return Err(FailedSolve(solverState.getSteps(), solverState.getUnsolvedRules(), e))
               }
 
-            val canonicalConclusions =
-              step.conclusions.map({ case (userRune, conclusion) => solverState.getCanonicalRune(userRune) -> conclusion }).toMap
-//            println(s"Got conclusions for ${solvingRuleIndex}: " + canonicalConclusions.keySet)
-            solverState.markRulesSolved[ErrType](Array(solvingRuleIndex), canonicalConclusions) match {
-              case Ok(_) =>
+              if (sanityCheck) {
+                //              println("Sanity checking")
+                solverState.sanityCheck()
+              }
+              true
+            }
+          }
+        }) {}
+
+        if (solverState.getUnsolvedRules().nonEmpty) {
+          val step =
+            solverState.complexStep(ruleToPuzzles, solveRule.complexSolve(state, env, _)) match {
+              case Ok(step) => step
+              case Err(e) => return Err(FailedSolve(solverState.getSteps(), solverState.getUnsolvedRules(), e))
+            }
+          val canonicalConclusions =
+            step.conclusions.map({ case (userRune, conclusion) => solverState.getCanonicalRune(userRune) -> conclusion }).toMap
+          val continue =
+            solverState.markRulesSolved[ErrType](step.solvedRules.map(_._1).toArray, canonicalConclusions) match {
+              case Ok(0) => false // Do nothing, we're done
+              case Ok(_) => true // continue
               case Err(e) => return Err(FailedSolve(solverState.getSteps(), solverState.getUnsolvedRules(), e))
             }
 
-            if (sanityCheck) {
-//              println("Sanity checking")
-              solverState.sanityCheck()
-            }
-            true
+          if (sanityCheck) {
+            solverState.sanityCheck()
           }
+          continue
+        } else {
+          false // no more rules to solve, halt
         }
       }) {}
 
-      if (solverState.getUnsolvedRules().nonEmpty) {
-        val step =
-          solverState.complexStep(ruleToPuzzles, solveRule.complexSolve(state, env, _)) match {
-            case Ok(step) => step
-            case Err(e) => return Err(FailedSolve(solverState.getSteps(), solverState.getUnsolvedRules(), e))
-          }
-        val canonicalConclusions =
-          step.conclusions.map({ case (userRune, conclusion) => solverState.getCanonicalRune(userRune) -> conclusion }).toMap
-        val continue =
-          solverState.markRulesSolved[ErrType](step.solvedRules.map(_._1).toArray, canonicalConclusions) match {
-            case Ok(0) => false // Do nothing, we're done
-            case Ok(_) => true // continue
-            case Err(e) => return Err(FailedSolve(solverState.getSteps(), solverState.getUnsolvedRules(), e))
-          }
-
-        if (sanityCheck) {
-          solverState.sanityCheck()
-        }
-        continue
-      } else {
-        false // no more rules to solve, halt
-      }
-    }) {}
-
-    Ok((solverState.getSteps().toStream, solverState.userifyConclusions()))
+      Ok((solverState.getSteps().toStream, solverState.userifyConclusions()))
+    })
   }
 
   def makeInitialSolverState(
@@ -154,50 +155,52 @@ class Solver[Rule, Rune, Env, State, Conclusion, ErrType](sanityCheck: Boolean, 
     ruleToPuzzles: Rule => Array[Array[Rune]],
     initiallyKnownRunes: Map[Rune, Conclusion]):
   ISolverState[Rule, Rune, Conclusion] = {
-    val solverState: ISolverState[Rule, Rune, Conclusion] =
-      if (useOptimizedSolver) {
-        OptimizedSolverState[Rule, Rune, Conclusion]()
-      } else {
-        SimpleSolverState[Rule, Rune, Conclusion]()
-      }
+    Profiler.frame(() => {
+      val solverState: ISolverState[Rule, Rune, Conclusion] =
+        if (useOptimizedSolver) {
+          OptimizedSolverState[Rule, Rune, Conclusion]()
+        } else {
+          SimpleSolverState[Rule, Rune, Conclusion]()
+        }
 
-    (initialRules.flatMap(ruleToRunes) ++ initiallyKnownRunes.keys).distinct.foreach(solverState.addRune)
+      (initialRules.flatMap(ruleToRunes) ++ initiallyKnownRunes.keys).distinct.foreach(solverState.addRune)
 
-    if (sanityCheck) {
-      solverState.sanityCheck()
-    }
-
-    val step =
-      solverState.initialStep(ruleToPuzzles, (stepState: IStepState[Rule, Rune, Conclusion]) => {
-        initiallyKnownRunes.foreach({ case (rune, conclusion) =>
-          stepState.concludeRune(rune, conclusion)
-        })
-        Ok(())
-      }).getOrDie()
-    step.conclusions.foreach({ case (rune, conclusion) =>
-      solverState.concludeRune(solverState.getCanonicalRune(rune), conclusion)
-    })
-
-    if (sanityCheck) {
-      solverState.sanityCheck()
-    }
-
-    initialRules.foreach(rule => {
-      val ruleIndex = solverState.addRule(rule)
       if (sanityCheck) {
         solverState.sanityCheck()
       }
-      ruleToPuzzles(rule).foreach(puzzleRunes => {
-        solverState.addPuzzle(ruleIndex, puzzleRunes.map(solverState.getCanonicalRune).distinct)
+
+      val step =
+        solverState.initialStep(ruleToPuzzles, (stepState: IStepState[Rule, Rune, Conclusion]) => {
+          initiallyKnownRunes.foreach({ case (rune, conclusion) =>
+            stepState.concludeRune(rune, conclusion)
+          })
+          Ok(())
+        }).getOrDie()
+      step.conclusions.foreach({ case (rune, conclusion) =>
+        solverState.concludeRune(solverState.getCanonicalRune(rune), conclusion)
       })
+
       if (sanityCheck) {
         solverState.sanityCheck()
       }
-    })
 
-    if (sanityCheck) {
-      solverState.sanityCheck()
-    }
-    solverState
+      initialRules.foreach(rule => {
+        val ruleIndex = solverState.addRule(rule)
+        if (sanityCheck) {
+          solverState.sanityCheck()
+        }
+        ruleToPuzzles(rule).foreach(puzzleRunes => {
+          solverState.addPuzzle(ruleIndex, puzzleRunes.map(solverState.getCanonicalRune).distinct)
+        })
+        if (sanityCheck) {
+          solverState.sanityCheck()
+        }
+      })
+
+      if (sanityCheck) {
+        solverState.sanityCheck()
+      }
+      solverState
+    })
   }
 }

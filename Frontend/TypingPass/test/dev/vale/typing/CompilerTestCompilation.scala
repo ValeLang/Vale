@@ -11,10 +11,12 @@ import scala.collection.mutable
 
 object CompilerTestCompilation {
   def test(code: String*): TypingPassCompilation = {
+    val interner = new Interner()
     new TypingPassCompilation(
-      Vector(PackageCoordinate.TEST_TLD),
-      Builtins.getModulizedCodeMap()
-        .or(FileCoordinateMap.test(code.toVector))
+      interner,
+      Vector(PackageCoordinate.TEST_TLD(interner)),
+      Builtins.getModulizedCodeMap(interner)
+        .or(FileCoordinateMap.test(interner, code.toVector))
         .or(Tests.getPackageToResourceResolver),
       TypingPassCompilationOptions(GlobalOptions(true, true, true, true)))
   }

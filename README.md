@@ -45,9 +45,6 @@ For an overview of the project structure, see [Compiler Overview](compiler-overv
 
 # Thank you to our sponsors!
 
-
-*Thank you to our sponsors!*
-
  * [Joseph Jaoudi](https://github.com/linkmonitor) ($25/mo)
  * [Ivo Balbaert](https://github.com/Ivo-Balbaert/) ($5/mo)
  * [Kevin Navero](https://github.com/solstice333/) ($5/mo)

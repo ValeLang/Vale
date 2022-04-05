@@ -4,7 +4,7 @@ import scala.collection.mutable.ArrayBuffer
 
 object SourceCodeUtils {
   def humanizeFile(coordinate: FileCoordinate): String = {
-    val FileCoordinate(module, packages, filepath) = coordinate
+    val FileCoordinate(PackageCoordinate(module, packages), filepath) = coordinate
     module + packages.map("." + _).mkString("") + ":" + filepath
   }
 

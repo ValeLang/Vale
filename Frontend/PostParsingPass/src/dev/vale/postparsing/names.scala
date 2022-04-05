@@ -42,11 +42,11 @@ case class FunctionNameS(name: String, codeLocation: CodeLocationS) extends IFun
   override def getImpreciseName(interner: Interner): IImpreciseNameS = interner.intern(CodeNameS(name))
 }
 //case class AbstractVirtualDropFunctionDeclarationNameS(interfaceName: TopLevelCitizenDeclarationNameS) extends IFunctionDeclarationNameS {
-//  override def packageCoordinate: PackageCoordinate = interfaceName.packageCoordinate
+//  override def packageCoordinate: PackageCoordinate = interfaceName.packageCoord
 //  override def getImpreciseName(interner: Interner): IImpreciseNameS = interner.intern(CodeNameS(Scout.VIRTUAL_DROP_FUNCTION_NAME))
 //}
 //case class OverrideVirtualDropFunctionDeclarationNameS(implName: IImplDeclarationNameS) extends IFunctionDeclarationNameS {
-//  override def packageCoordinate: PackageCoordinate = implName.packageCoordinate
+//  override def packageCoordinate: PackageCoordinate = implName.packageCoord
 //  override def getImpreciseName(interner: Interner): IImpreciseNameS = interner.intern(CodeNameS(Scout.VIRTUAL_DROP_FUNCTION_NAME))
 //}
 case class ForwarderFunctionDeclarationNameS(inner: IFunctionDeclarationNameS, index: Int) extends IFunctionDeclarationNameS {
@@ -188,9 +188,9 @@ case class ImplImpreciseNameS(structImpreciseName: IImpreciseNameS) extends IImp
 //case class VirtualFreeImpreciseNameS() extends IImpreciseNameS { }
 //case class AbstractVirtualFreeDeclarationNameS(codeLoc: CodeLocationS) extends IFunctionDeclarationNameS {
 //  override def getImpreciseName(interner: Interner): IImpreciseNameS = interner.intern(VirtualFreeImpreciseNameS())
-//  override def packageCoordinate: PackageCoordinate = codeLoc.file.packageCoordinate
+//  override def packageCoordinate: PackageCoordinate = codeLoc.file.packageCoord
 //}
 //case class OverrideVirtualFreeDeclarationNameS(codeLoc: CodeLocationS) extends IFunctionDeclarationNameS {
 //  override def getImpreciseName(interner: Interner): IImpreciseNameS = interner.intern(VirtualFreeImpreciseNameS())
-//  override def packageCoordinate: PackageCoordinate = codeLoc.file.packageCoordinate
+//  override def packageCoordinate: PackageCoordinate = codeLoc.file.packageCoord
 //}

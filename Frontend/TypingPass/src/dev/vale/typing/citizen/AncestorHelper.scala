@@ -50,7 +50,7 @@ class AncestorHelper(
         coutputs,
         rules,
         runeToType,
-        RangeS.internal(-1875),
+        RangeS.internal(interner, -1875),
         Vector(InitialKnown(structKindRune, KindTemplata(childCitizenRef))),
         Vector())
 
@@ -66,7 +66,7 @@ class AncestorHelper(
           }
           case it @ InterfaceTemplata(_, _) => {
             val interfaceTT =
-              delegate.getInterfaceRef(coutputs, RangeS.internal(-1875), it, Vector.empty)
+              delegate.getInterfaceRef(coutputs, RangeS.internal(interner, -1875), it, Vector.empty)
             (Some((interfaceTT, implTemplata)))
           }
           case KindTemplata(other) => {

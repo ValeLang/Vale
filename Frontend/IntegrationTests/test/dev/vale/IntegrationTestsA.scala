@@ -33,23 +33,25 @@ import scala.collection.immutable.List
 
 object RunCompilation {
   def test(code: String*): RunCompilation = {
+    val interner = new Interner()
     new RunCompilation(
+      interner,
       Vector(
-        PackageCoordinate.BUILTIN,
-        PackageCoordinate.TEST_TLD),
-      Builtins.getCodeMap()
-        .or(FileCoordinateMap.test(code.toVector))
+        PackageCoordinate.BUILTIN(interner),
+        PackageCoordinate.TEST_TLD(interner)),
+      Builtins.getCodeMap(interner)
+        .or(FileCoordinateMap.test(interner, code.toVector))
         .or(Tests.getPackageToResourceResolver),
       FullCompilationOptions(GlobalOptions(true, true, true, true)))
   }
 }
 
 class RunCompilation(
-  packagesToBuild: Vector[PackageCoordinate],
-  packageToContentsResolver: IPackageResolver[Map[String, String]],
-  options: FullCompilationOptions = FullCompilationOptions()) {
-  var fullCompilation = new FullCompilation(packagesToBuild, packageToContentsResolver, options)
-  def interner = fullCompilation.interner
+    val interner: Interner,
+    packagesToBuild: Vector[PackageCoordinate],
+    packageToContentsResolver: IPackageResolver[Map[String, String]],
+    options: FullCompilationOptions = FullCompilationOptions()) {
+  var fullCompilation = new FullCompilation(interner, packagesToBuild, packageToContentsResolver, options)
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = fullCompilation.getCodeMap()
   def getParseds(): Result[FileCoordinateMap[(FileP, Vector[(Int, Int)])], FailedParse] = fullCompilation.getParseds()
@@ -221,7 +223,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  doAThing<int>(a);
         |}
       """.stripMargin)
-    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
+    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD(compile.interner))
     val heap = new Heap(System.out)
     val ref =
       heap.add(OwnH, YonderH, StructInstanceV(
@@ -607,11 +609,11 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val hinputs = compile.expectCompilerOutputs()
     val interner = compile.interner
 
-    vassertSome(hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(FunctionNameT("helperFunc", Vector.empty, Vector(CoordT(ShareT, IntT.i32))))))))
+    vassertSome(hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector.empty, interner.intern(FunctionNameT("helperFunc", Vector.empty, Vector(CoordT(ShareT, IntT.i32))))))))
 
-    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(FunctionNameT("bork", Vector.empty, Vector(CoordT(ShareT, StrT()))))))))
+    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector.empty, interner.intern(FunctionNameT("bork", Vector.empty, Vector(CoordT(ShareT, StrT()))))))))
 
-    vassert(None == hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD, Vector.empty, interner.intern(FunctionNameT("helperFunc", Vector.empty, Vector(CoordT(ShareT, StrT()))))))))
+    vassert(None == hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector.empty, interner.intern(FunctionNameT("helperFunc", Vector.empty, Vector(CoordT(ShareT, StrT()))))))))
   }
 
   test("Test overloading between borrow and weak") {
@@ -680,7 +682,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Test extern functions") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/externs/extern.vale"))
 
-    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate("math", Vector.empty))
+    val packageH = compile.getHamuts().lookupPackage(compile.interner.intern(PackageCoordinate("math", Vector.empty)))
 
     // The extern we make should have the name we expect
     vassertSome(packageH.externNameToFunction.get("sqrt")) match {
@@ -783,10 +785,10 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("exporting array") {
     val compilation = RunCompilation.test("export []<mut>int as IntArray;")
     val hamuts = compilation.getHamuts()
-    val testPackage = hamuts.lookupPackage(PackageCoordinate.TEST_TLD)
+    val testPackage = hamuts.lookupPackage(PackageCoordinate.TEST_TLD(compilation.interner))
     val kindH = vassertSome(testPackage.exportNameToKind.get("IntArray"))
 
-    val builtinPackage = hamuts.lookupPackage(PackageCoordinate.BUILTIN)
+    val builtinPackage = hamuts.lookupPackage(PackageCoordinate.BUILTIN(compilation.interner))
     val rsa = vassertSome(builtinPackage.runtimeSizedArrays.find(_.kind == kindH))
     rsa.elementType.kind shouldEqual IntH.i32
   }

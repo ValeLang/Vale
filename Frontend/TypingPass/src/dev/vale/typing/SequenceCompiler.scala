@@ -49,7 +49,7 @@ class SequenceCompiler(
           interner.intern(CitizenTemplateNameT(ProgramT.tupleHumanName)), Set(TemplataLookupContext)))
     structCompiler.getStructRef(
       coutputs,
-      RangeS.internal(-17653),
+      RangeS.internal(interner, -17653),
       tupleTemplate,
       Vector(CoordListTemplata(types2)))
   }

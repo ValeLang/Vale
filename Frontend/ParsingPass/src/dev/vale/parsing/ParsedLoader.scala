@@ -1,10 +1,9 @@
 package dev.vale.parsing
 
-import dev.vale.{Err, Ok, Result, vimpl, vwat}
+import dev.vale.{Err, Ok, Profiler, Result, vimpl, vwat}
 import dev.vale.parsing.ast.{AbstractAttributeP, AbstractP, AndPE, AnonymousRunePT, ArenaRuneAttributeP, AugmentPE, BinaryCallPE, BlockPE, BoolTypePR, BorrowP, BorrowPT, BraceCallPE, BreakPE, BuiltinAttributeP, BuiltinCallPR, BumpRuneAttributeP, CallMacro, CallPT, CitizenTemplateTypePR, ComponentsPR, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, ConstructingMemberNameDeclarationP, CoordListTypePR, CoordTypePR, DestructPE, DestructureP, DontCallMacro, DotPE, EachPE, EqualsPR, ExportAsP, ExportAttributeP, ExternAttributeP, FileP, FinalP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IArraySizeP, IAttributeP, IExpressionPE, IImpreciseNameP, INameDeclarationP, IRulexPR, IRuneAttributeP, IStructContent, ITemplexPT, ITypePR, IdentifyingRuneP, IdentifyingRunesP, IfPE, IgnoredLocalNameDeclarationP, ImmutableP, ImmutableRuneAttributeP, ImplP, ImportP, IndexPE, InlinePT, IntPT, IntTypePR, InterfaceP, InterpretedPT, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, KindTypePR, LambdaPE, LetPE, LoadAsBorrowP, LoadAsP, LoadAsWeakP, LocalNameDeclarationP, LocationTypePR, LookupNameP, LookupPE, MacroCallP, MagicParamLookupPE, MethodCallPE, MoveP, MutabilityP, MutabilityPT, MutabilityTypePR, MutableP, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, NotPE, OrPE, OrPR, OwnP, OwnershipP, OwnershipPT, OwnershipTypePR, PackPE, PackPT, ParamsP, PatternPP, PoolRuneAttributeP, PrototypeTypePR, PureAttributeP, RangePE, ReadOnlyRuneAttributeP, ReadWriteRuneAttributeP, RegionRunePT, RegionTypePR, ReturnPE, RuntimeSizedArrayPT, RuntimeSizedP, SealedAttributeP, ShareP, ShortcallPE, StaticSizedArrayPT, StaticSizedP, StrInterpolatePE, StringPT, StructMembersP, StructMethodP, StructP, SubExpressionPE, TemplateArgsP, TemplateRulesP, TemplexPR, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, TuplePT, TypeRuneAttributeP, TypedPR, UnitP, UnletPE, UseP, VariabilityP, VariabilityPT, VariabilityTypePR, VariadicStructMemberP, VaryingP, VoidPE, WeakP, WeakableAttributeP, WhilePE}
 import net.liftweb.json._
 import dev.vale.parsing.ast._
-import dev.vale.Err
 
 object ParsedLoader {
   def expectObject(obj: Object): JObject = {
@@ -97,24 +96,26 @@ object ParsedLoader {
   }
 
   def load(source: String): Result[FileP, IParseError] = {
-    try {
-      val jfile = expectObjectTyped(parse(source), "File")
-      Ok(
-        FileP(
-          getArrayField(jfile, "topLevelThings").map(expectObject).map(topLevelThing => {
-            getType(topLevelThing) match {
-              case "Struct" => TopLevelStructP(loadStruct(topLevelThing))
-              case "Interface" => TopLevelInterfaceP(loadInterface(topLevelThing))
-              case "Function" => TopLevelFunctionP(loadFunction(topLevelThing))
-              case "Impl" => TopLevelImplP(loadImpl(topLevelThing))
-              case "Import" => TopLevelImportP(loadImport(topLevelThing))
-              case "ExportAs" => TopLevelExportAsP(loadExportAs(topLevelThing))
-              case x => vimpl(x.toString)
-            }
-          })))
-    } catch {
-      case BadVPSTException(err) => Err(err)
-    }
+    Profiler.frame(() => {
+      try {
+        val jfile = expectObjectTyped(parse(source), "File")
+        Ok(
+          FileP(
+            getArrayField(jfile, "topLevelThings").map(expectObject).map(topLevelThing => {
+              getType(topLevelThing) match {
+                case "Struct" => TopLevelStructP(loadStruct(topLevelThing))
+                case "Interface" => TopLevelInterfaceP(loadInterface(topLevelThing))
+                case "Function" => TopLevelFunctionP(loadFunction(topLevelThing))
+                case "Impl" => TopLevelImplP(loadImpl(topLevelThing))
+                case "Import" => TopLevelImportP(loadImport(topLevelThing))
+                case "ExportAs" => TopLevelExportAsP(loadExportAs(topLevelThing))
+                case x => vimpl(x.toString)
+              }
+            })))
+      } catch {
+        case BadVPSTException(err) => Err(err)
+      }
+    })
   }
 
   private def loadFunction(topLevelThing: JObject) = {

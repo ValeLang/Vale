@@ -40,32 +40,32 @@ class InterfaceDropMacro(
         interner.intern(FunctionNameS(CallCompiler.DROP_FUNCTION_NAME, interfaceA.name.range.begin)),
         Vector(),
         TemplateTemplataType(Vector(CoordTemplataType), FunctionTemplataType),
-        Vector(RuneUsage(RangeS.internal(-64002), CodeRuneS("T"))),
+        Vector(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("T"))),
         Map(CodeRuneS("T") -> CoordTemplataType, CodeRuneS("V") -> CoordTemplataType),
         Vector(
           ParameterS(
             AtomSP(
-              RangeS.internal(-1340),
+              RangeS.internal(interner, -1340),
               Some(CaptureS(interner.intern(CodeVarNameS("this")))),
-              Some(AbstractSP(RangeS.internal(-64002), true)),
-              Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("T"))), None))),
-        Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("V"))),
+              Some(AbstractSP(RangeS.internal(interner, -64002), true)),
+              Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("T"))), None))),
+        Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("V"))),
         Vector(
-          LookupSR(RangeS.internal(-1672146),RuneUsage(RangeS.internal(-64002), CodeRuneS("T")),interner.intern(SelfNameS())),
-          LookupSR(RangeS.internal(-1672147),RuneUsage(RangeS.internal(-64002), CodeRuneS("V")),interner.intern(CodeNameS("void")))),
+          LookupSR(RangeS.internal(interner, -1672146),RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("T")),interner.intern(SelfNameS())),
+          LookupSR(RangeS.internal(interner, -1672147),RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("V")),interner.intern(CodeNameS("void")))),
         AbstractBodyS)
 //        CodeBodyS(
-//          BodySE(RangeS.internal(-1672148),
+//          BodySE(RangeS.internal(interner, -1672148),
 //            Vector(),
-//            BlockSE(RangeS.internal(-1672149),
+//            BlockSE(RangeS.internal(interner, -1672149),
 //              Vector(LocalS(interner.intern(CodeVarNameS("this")), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
-//              FunctionCallSE(RangeS.internal(-1672150),
-//                OutsideLoadSE(RangeS.internal(-1672151),
+//              FunctionCallSE(RangeS.internal(interner, -1672150),
+//                OutsideLoadSE(RangeS.internal(interner, -1672151),
 //                  Array(),
 //                  interner.intern(CodeNameS(Scout.VIRTUAL_DROP_FUNCTION_NAME)),
 //                  None,
 //                  LoadAsPointerP(None)),
-//                Vector(LocalLoadSE(RangeS.internal(-1672152), interner.intern(CodeVarNameS("this")), MoveP)))))))
+//                Vector(LocalLoadSE(RangeS.internal(interner, -1672152), interner.intern(CodeVarNameS("this")), MoveP)))))))
 //
 //    val virtualDropFunctionNameA =
 //      interner.intern(AbstractVirtualDropFunctionDeclarationNameS(interfaceA.name))
@@ -75,19 +75,19 @@ class InterfaceDropMacro(
 //        virtualDropFunctionNameA,
 //        Vector(),
 //        TemplateTemplataType(Vector(CoordTemplataType), FunctionTemplataType),
-//        Vector(RuneUsage(RangeS.internal(-64002), CodeRuneS("T"))),
+//        Vector(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("T"))),
 //        Map(CodeRuneS("T") -> CoordTemplataType, CodeRuneS("V") -> CoordTemplataType),
 //        Vector(
 //          ParameterS(
 //            AtomSP(
-//              RangeS.internal(-1340),
+//              RangeS.internal(interner, -1340),
 //              Some(CaptureS(interner.intern(CodeVarNameS("this")))),
-//              Some(AbstractSP(RangeS.internal(-1340), true)),
-//              Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("T"))), None))),
-//        Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("V"))),
+//              Some(AbstractSP(RangeS.internal(interner, -1340), true)),
+//              Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("T"))), None))),
+//        Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("V"))),
 //        Vector(
-//          LookupSR(RangeS.internal(-1672153),RuneUsage(RangeS.internal(-64002), CodeRuneS("T")),interner.intern(SelfNameS())),
-//          LookupSR(RangeS.internal(-1672154),RuneUsage(RangeS.internal(-64002), CodeRuneS("V")),interner.intern(CodeNameS("void")))),
+//          LookupSR(RangeS.internal(interner, -1672153),RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("T")),interner.intern(SelfNameS())),
+//          LookupSR(RangeS.internal(interner, -1672154),RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("V")),interner.intern(CodeNameS("void")))),
 //        GeneratedBodyS("abstractBody"))
 
     Vector(

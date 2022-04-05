@@ -2,20 +2,28 @@ package dev.vale
 
 object CodeLocationS {
   // Keep in sync with CodeLocation2
-  val testZero = CodeLocationS.internal(-1)
-  def internal(internalNum: Int): CodeLocationS = {
+  def testZero(interner: Interner): CodeLocationS = {
+    CodeLocationS.internal(interner, -1)
+  }
+  def internal(interner: Interner, internalNum: Int): CodeLocationS = {
     vassert(internalNum < 0)
-    CodeLocationS(FileCoordinate("", Vector.empty, "internal"), internalNum)
+    CodeLocationS(
+      interner.intern(FileCoordinate(
+        interner.intern(PackageCoordinate("", Vector.empty)),
+        "internal")),
+      internalNum)
   }
 }
 
 object RangeS {
   // Should only be used in tests.
-  val testZero = RangeS(CodeLocationS.testZero, CodeLocationS.testZero)
+  def testZero(interner: Interner): RangeS = {
+    RangeS(CodeLocationS.testZero(interner), CodeLocationS.testZero(interner))
+  }
 
-  def internal(internalNum: Int): RangeS = {
+  def internal(interner: Interner, internalNum: Int): RangeS = {
     vassert(internalNum < 0)
-    RangeS(CodeLocationS.internal(internalNum), CodeLocationS.internal(internalNum))
+    RangeS(CodeLocationS.internal(interner, internalNum), CodeLocationS.internal(interner, internalNum))
   }
 }
 
@@ -28,7 +36,7 @@ case class CodeLocationS(
 
   // Just for debug purposes
   override def toString: String = {
-    if (file == FileCoordinate.test) {
+    if (file.isTest()) {
       "tvl" + ":" + offset
     } else {
       file.toString + ":" + offset
@@ -44,7 +52,7 @@ case class RangeS(begin: CodeLocationS, end: CodeLocationS) {
 
   // Just for debug purposes
   override def toString: String = {
-    if (file == FileCoordinate.test) {
+    if (file.isTest()) {
       "tvr" + ":" + begin.offset + "-" + end.offset
     } else {
       "RangeS(" + begin.toString + ", " + end.toString + ")"

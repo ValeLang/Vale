@@ -17,7 +17,11 @@ class BlockTests extends FunSuite with Matchers {
         |  return 3;
         |}
       """.stripMargin)
-    val scoutput = compile.getScoutput().getOrDie().moduleToPackagesToFilenameToContents("test")(Vector.empty)("0.vale")
+    val fileCoord =
+      compile.interner.intern(FileCoordinate(
+        compile.interner.intern(PackageCoordinate("test", Vector.empty)),
+        "0.vale"))
+    val scoutput = compile.getScoutput().getOrDie().fileCoordToContents(fileCoord)
     val main = scoutput.lookupFunction("main")
     main.body match { case CodeBodyS(BodySE(_, _,BlockSE(_, _,ConsecutorSE(Vector(BlockSE(_, _,_), _))))) => }
 
@@ -33,7 +37,11 @@ class BlockTests extends FunSuite with Matchers {
         |  return 3;
         |}
       """.stripMargin)
-    val scoutput = compile.getScoutput().getOrDie().moduleToPackagesToFilenameToContents("test")(Vector.empty)("0.vale")
+    val fileCoord =
+      compile.interner.intern(FileCoordinate(
+        compile.interner.intern(PackageCoordinate("test", Vector.empty)),
+        "0.vale"))
+    val scoutput = compile.getScoutput().getOrDie().fileCoordToContents(fileCoord)
     val main = scoutput.lookupFunction("main")
     val block = main.body match { case CodeBodyS(BodySE(_, _,BlockSE(_, _, ConsecutorSE(Vector(b @ BlockSE(_, _,_), _))))) => b }
     vassert(block.locals.size == 1)

@@ -84,33 +84,33 @@ class StructDropMacro(
           TemplateTemplataType(paramTypes, FunctionTemplataType)
         }
       },
-      structIdentifyingRunes.map(r => RuneUsage(RangeS.internal(-64002), r)),
+      structIdentifyingRunes.map(r => RuneUsage(RangeS.internal(interner, -64002), r)),
       structIdentifyingRuneToType ++
         Map(
           CodeRuneS("DropStruct") -> structType,
           CodeRuneS("DropP1") -> CoordTemplataType,
           CodeRuneS("DropV") -> CoordTemplataType),
       Vector(
-        ParameterS(AtomSP(RangeS.internal(-1342), Some(CaptureS(interner.intern(CodeVarNameS("x")))), None, Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("DropP1"))), None))),
-      Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("DropV"))),
+        ParameterS(AtomSP(RangeS.internal(interner, -1342), Some(CaptureS(interner.intern(CodeVarNameS("x")))), None, Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("DropP1"))), None))),
+      Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("DropV"))),
       Vector(
         structType match {
           case KindTemplataType => {
             EqualsSR(
-              RangeS.internal(-167215),
-              RuneUsage(RangeS.internal(-64002), CodeRuneS("DropP1")),
-              RuneUsage(RangeS.internal(-64002), CodeRuneS("DropStruct")))
+              RangeS.internal(interner, -167215),
+              RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("DropP1")),
+              RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("DropStruct")))
           }
           case TemplateTemplataType(_, KindTemplataType) => {
             CallSR(
-              RangeS.internal(-167215),
-              RuneUsage(RangeS.internal(-64002), CodeRuneS("DropP1")),
-              RuneUsage(RangeS.internal(-64002), CodeRuneS("DropStruct")),
-              structIdentifyingRunes.map(r => RuneUsage(RangeS.internal(-64002), r)).toArray)
+              RangeS.internal(interner, -167215),
+              RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("DropP1")),
+              RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("DropStruct")),
+              structIdentifyingRunes.map(r => RuneUsage(RangeS.internal(interner, -64002), r)).toArray)
           }
         },
-        LookupSR(RangeS.internal(-1672159), RuneUsage(RangeS.internal(-64002), CodeRuneS("DropStruct")), structNameS.getImpreciseName(interner)),
-        LookupSR(RangeS.internal(-1672160), RuneUsage(RangeS.internal(-64002), CodeRuneS("DropV")), interner.intern(CodeNameS("void")))),
+        LookupSR(RangeS.internal(interner, -1672159), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("DropStruct")), structNameS.getImpreciseName(interner)),
+        LookupSR(RangeS.internal(interner, -1672160), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("DropV")), interner.intern(CodeNameS("void")))),
       GeneratedBodyS(dropGeneratorId))
   }
 
@@ -130,14 +130,14 @@ class StructDropMacro(
         CodeRuneS("DropP1") -> CoordTemplataType,
         CodeRuneS("DropV") -> CoordTemplataType),
       Vector(
-        ParameterS(AtomSP(RangeS.internal(-1342), Some(CaptureS(interner.intern(CodeVarNameS("x")))), None, Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("DropP1"))), None))),
-      Some(RuneUsage(RangeS.internal(-64002), CodeRuneS("DropV"))),
+        ParameterS(AtomSP(RangeS.internal(interner, -1342), Some(CaptureS(interner.intern(CodeVarNameS("x")))), None, Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("DropP1"))), None))),
+      Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("DropV"))),
       Vector(
         LookupSR(
-          RangeS.internal(-1672161),
-          RuneUsage(RangeS.internal(-64002), CodeRuneS("DropP1")),
+          RangeS.internal(interner, -1672161),
+          RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("DropP1")),
           interner.intern(SelfNameS())),
-        LookupSR(RangeS.internal(-1672162), RuneUsage(RangeS.internal(-64002), CodeRuneS("DropV")), interner.intern(CodeNameS("void")))),
+        LookupSR(RangeS.internal(interner, -1672162), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("DropV")), interner.intern(CodeNameS("void")))),
       GeneratedBodyS(dropGeneratorId))
   }
 

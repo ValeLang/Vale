@@ -1,6 +1,6 @@
 package dev.vale.postparsing
 
-import dev.vale.{Collector, Err, FileCoordinateMap, Ok, vassert, vfail}
+import dev.vale.{Collector, Err, FileCoordinateMap, Interner, Ok, vassert, vfail}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.BorrowP
 import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
@@ -9,14 +9,14 @@ import dev.vale.parsing._
 import dev.vale.parsing.ast._
 import dev.vale.postparsing.patterns.AtomSP
 import dev.vale.postparsing.rules._
-import dev.vale.Err
 import org.scalatest.{FunSuite, Matchers}
 
 class PostParsingParametersTests extends FunSuite with Matchers with Collector {
 
   private def compile(code: String): ProgramS = {
+    val interner = new Interner()
     PostParserTestCompilation.test(code).getScoutput() match {
-      case Err(e) => vfail(PostParserErrorHumanizer.humanize(FileCoordinateMap.test(code), e))
+      case Err(e) => vfail(PostParserErrorHumanizer.humanize(FileCoordinateMap.test(interner, code), e))
       case Ok(t) => t.expectOne()
     }
   }

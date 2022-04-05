@@ -1,16 +1,16 @@
 package dev.vale.parsing
 
-import dev.vale.{Collector, Err, Ok, Tests, vfail}
+import dev.vale.{Collector, Err, Interner, Ok, Tests, vfail}
 import dev.vale.options.GlobalOptions
-import dev.vale.Err
 import org.scalatest.{FunSuite, Matchers}
 
 
 
 class ParseSamplesTests extends FunSuite with Collector with TestParseUtils {
   def parse(path: String): Unit = {
+    val interner = new Interner()
     val code = Tests.loadExpected(path)
-    val compilation = ParserTestCompilation.test(code)
+    val compilation = ParserTestCompilation.test(interner, code)
     compilation.getParseds() match {
       case Ok(x) => x
       case Err(e) => vfail(ParseErrorHumanizer.humanize(path, code, e.error))

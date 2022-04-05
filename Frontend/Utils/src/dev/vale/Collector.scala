@@ -1,7 +1,13 @@
 package dev.vale
 
 trait Collector {
-  def recursiveCollect[T, R](a: Any, partialFunction: PartialFunction[Any, R]): Iterable[R] = {
+  def collect[T, R](a: Any, partialFunction: PartialFunction[Any, R]): Iterable[R] = {
+    Profiler.frame(() => {
+      recursiveCollect(a, partialFunction)
+    })
+  }
+
+  private def recursiveCollect[T, R](a: Any, partialFunction: PartialFunction[Any, R]): Iterable[R] = {
     (if (partialFunction.isDefinedAt(a)) {
       Vector(partialFunction.apply(a))
     } else {
@@ -15,7 +21,13 @@ trait Collector {
     })
   }
 
-  def recursiveCollectFirst[T, R](a: Any, partialFunction: PartialFunction[Any, R]): Option[R] = {
+  def collectFirst[T, R](a: Any, partialFunction: PartialFunction[Any, R]): Option[R] = {
+    Profiler.frame(() => {
+      recursiveCollectFirst(a, partialFunction)
+    })
+  }
+
+  private def recursiveCollectFirst[T, R](a: Any, partialFunction: PartialFunction[Any, R]): Option[R] = {
     if (partialFunction.isDefinedAt(a)) {
       return Some(partialFunction.apply(a))
     }
@@ -47,7 +59,7 @@ trait Collector {
 
   implicit class ProgramWithExpect(program: Any) {
     def shouldHave[T](f: PartialFunction[Any, T]): T = {
-      recursiveCollectFirst(program, f) match {
+      collectFirst(program, f) match {
         case None => vfail("Couldn't find the thing, in:\n" + program)
         case Some(t) => t
       }

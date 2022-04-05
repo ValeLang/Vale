@@ -1,3 +1,5 @@
+import stdlib.optutils.*;
+
 struct HashSet<K, H, E> {
   hasher H;
   equator E;

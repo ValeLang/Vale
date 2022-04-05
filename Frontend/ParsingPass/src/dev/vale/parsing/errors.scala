@@ -5,7 +5,7 @@ import dev.vale.{FileCoordinate, FileCoordinateMap, vcurious, vpass}
 import dev.vale.vpass
 
 case class FailedParse(
-  codeMapSoFar: FileCoordinateMap[String],
+  codeMapSoFar: Map[FileCoordinate, String],
   fileCoord: FileCoordinate,
   error: IParseError,
 ) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }

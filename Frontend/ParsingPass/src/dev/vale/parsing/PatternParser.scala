@@ -25,15 +25,15 @@ class PatternParser {
   def parsePatternCapture(iter: ParsingIterator): Result[INameDeclarationP, IParseError] = {
     val begin = iter.getPos()
 
-    if (iter.trySkip("^_\\b".r)) {
+    if (iter.trySkip(() => "^_\\b".r)) {
       return Ok(IgnoredLocalNameDeclarationP(RangeP(begin, iter.getPos())))
     }
 
-    if (iter.trySkip("^&self".r)) {
+    if (iter.trySkip(() => "^&self".r)) {
       return Ok(LocalNameDeclarationP(NameP(RangeP(begin, iter.getPos()), "self")))
     }
 
-    if (iter.trySkip("^self\\.".r)) {
+    if (iter.trySkip(() => "^self\\.".r)) {
       val name =
         Parser.parseLocalOrMemberName(iter) match {
           case None => return Err(BadLocalName(iter.getPos()))
@@ -53,22 +53,22 @@ class PatternParser {
   def parseDestructure(iter: ParsingIterator): Result[DestructureP, IParseError] = {
     val begin = iter.getPos()
 
-    if (!iter.trySkip("^\\[".r)) {
+    if (!iter.trySkip(() => "^\\[".r)) {
       return Err(RangedInternalErrorP(iter.getPos(), "No [ ?"))
     }
     iter.consumeWhitespace()
 
     val destructurees = mutable.ArrayBuffer[PatternPP]()
-    if (iter.trySkip("^\\s*\\]".r)) {
+    if (iter.trySkip(() => "^\\s*\\]".r)) {
       return Ok(DestructureP(RangeP(begin, iter.getPos()), Vector()))
     }
     while ({
       val destructuree = parsePattern(iter) match { case Err(e) => return Err(e) case Ok(p) => p }
       destructurees += destructuree
-      if (iter.trySkip("^\\s*,".r)) {
+      if (iter.trySkip(() => "^\\s*,".r)) {
         iter.consumeWhitespace()
         true
-      } else if (iter.trySkip("^\\s*]".r)) {
+      } else if (iter.trySkip(() => "^\\s*]".r)) {
         false
       } else {
         return Err(BadDestructureError(iter.getPos()))
@@ -81,7 +81,7 @@ class PatternParser {
 
 //  def parseOverride(iter: ParsingIterator): Result[Option[OverrideP], IParseError] = {
 //    val begin = iter.getPos()
-//    if (!iter.trySkip("^\\s*impl\\s+".r)) {
+//    if (!iter.trySkip(() => "^\\s*impl\\s+".r)) {
 //      return Ok(None)
 //    }
 //    val tyype =
@@ -97,7 +97,7 @@ class PatternParser {
     val begin = tentativeIter.getPos()
 
     val maybeAbstract =
-      if (tentativeIter.trySkip("^virtual\\b".r)) {
+      if (tentativeIter.trySkip(() => "^virtual\\b".r)) {
         val virtualEnd = tentativeIter.getPos()
         tentativeIter.consumeWhitespace()
         Some(AbstractP(RangeP(begin, virtualEnd)))
@@ -109,7 +109,7 @@ class PatternParser {
     // We dont want to mix up the type []Ship with the destructure [], so types need to come first.
     // We don't want the "a" rule to match "a A[_, _]" just because one starts with the other.
 
-    if (tentativeIter.peek("^\\[".r)) {
+    if (tentativeIter.peek(() => "^\\[".r)) {
       originalIter.skipTo(tentativeIter.getPos())
       val iter = originalIter
       val destructure = parseDestructure(iter) match { case Err(e) => return Err(e) case Ok(p) => p }
@@ -119,7 +119,7 @@ class PatternParser {
     val captureOrType =
       parsePatternCapture(tentativeIter) match { case Err(e) => return Err(e) case Ok(p) => p }
 
-    if (tentativeIter.peek("^\\s*(=|,|\\)|\\])".r)) {
+    if (tentativeIter.peek(() => "^\\s*(=|,|\\)|\\])".r)) {
       // We're ending here, and captureOrType was a capture.
       originalIter.skipTo(tentativeIter.getPos())
       val iter = originalIter
@@ -130,7 +130,7 @@ class PatternParser {
     // If we get here, there's something after the pattern.
 
     // If next is a [# or a [] then it's an array, see https://github.com/ValeLang/Vale/issues/434
-    if (tentativeIter.peek("^\\s+\\[[^#\\]]".r)) {
+    if (tentativeIter.peek(() => "^\\s+\\[[^#\\]]".r)) {
       tentativeIter.consumeWhitespace()
       val destructure = parseDestructure(tentativeIter) match { case Err(e) => return Err(e) case Ok(p) => p }
       originalIter.skipTo(tentativeIter.getPos())
@@ -142,12 +142,12 @@ class PatternParser {
 
     val (maybeCapture, maybeType, maybeDestructure) =
       // We look ahead so we dont parse "in" as a type in: foreach x in myList { ... }
-      if (tentativeIter.atEnd() || tentativeIter.peek("^\\s*(in|impl)\\b".r)) {
+      if (tentativeIter.atEnd() || tentativeIter.peek(() => "^\\s*(in|impl)\\b".r)) {
         originalIter.skipTo(tentativeIter.getPos())
         val iter = originalIter
         val capture = captureOrType
         (Some(capture), None, None)
-      } else if (tentativeIter.peek("^\\[[^#\\]]".r)) { // If next is a [# or a [] then it's an array, see https://github.com/ValeLang/Vale/issues/434
+      } else if (tentativeIter.peek(() => "^\\[[^#\\]]".r)) { // If next is a [# or a [] then it's an array, see https://github.com/ValeLang/Vale/issues/434
         // Note the lack of whitespace before the [
         // That means that we were wrong, the capture wasn't a capture, it was a type.
 
@@ -172,7 +172,7 @@ class PatternParser {
         val tyype = new TemplexParser().parseTemplex(iter) match { case Err(e) => return Err(e) case Ok(p) => p }
 
         val maybeDestructure =
-          if (iter.peek("^\\s*\\[".r)) {
+          if (iter.peek(() => "^\\s*\\[".r)) {
             val destructure = parseDestructure(iter) match { case Err(e) => return Err(e) case Ok(p) => p }
             Some(destructure)
           } else {

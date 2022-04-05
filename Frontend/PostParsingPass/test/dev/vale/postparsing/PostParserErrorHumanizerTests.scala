@@ -1,18 +1,18 @@
 package dev.vale.postparsing
 
-import dev.vale.{Err, FileCoordinateMap, Ok, RangeS, vassert, vfail}
+import dev.vale.{Err, FileCoordinateMap, Interner, Ok, RangeS, vassert, vfail}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing._
 import dev.vale.postparsing.patterns.AbstractSP
 import dev.vale.postparsing.rules._
-import dev.vale.Err
 import org.scalatest.{FunSuite, Matchers}
 
 class PostParserErrorHumanizerTests extends FunSuite with Matchers {
 
   private def compile(code: String): ProgramS = {
+    val interner = new Interner()
     PostParserTestCompilation.test(code).getScoutput() match {
-      case Err(e) => vfail(PostParserErrorHumanizer.humanize(FileCoordinateMap.test(code), e))
+      case Err(e) => vfail(PostParserErrorHumanizer.humanize(FileCoordinateMap.test(interner, code), e))
       case Ok(t) => t.expectOne()
     }
   }
@@ -36,28 +36,30 @@ class PostParserErrorHumanizerTests extends FunSuite with Matchers {
   }
 
   test("Humanize errors") {
-    val codeMap = FileCoordinateMap.test("blah blah blah\nblah blah blah")
+    val interner = new Interner()
+    val codeMap = FileCoordinateMap.test(interner, "blah blah blah\nblah blah blah")
+    val tz = RangeS.testZero(interner)
 
     vassert(PostParserErrorHumanizer.humanize(codeMap,
-      VariableNameAlreadyExists(RangeS.testZero, CodeVarNameS("Spaceship")))
+      VariableNameAlreadyExists(tz, CodeVarNameS("Spaceship")))
       .nonEmpty)
     vassert(PostParserErrorHumanizer.humanize(codeMap,
-      InterfaceMethodNeedsSelf(RangeS.testZero))
+      InterfaceMethodNeedsSelf(tz))
       .nonEmpty)
     vassert(PostParserErrorHumanizer.humanize(codeMap,
-      ForgotSetKeywordError(RangeS.testZero))
+      ForgotSetKeywordError(tz))
       .nonEmpty)
     vassert(PostParserErrorHumanizer.humanize(codeMap,
-      CantUseThatLocalName(RangeS.testZero, "set"))
+      CantUseThatLocalName(tz, "set"))
       .nonEmpty)
     vassert(PostParserErrorHumanizer.humanize(codeMap,
-      ExternHasBody(RangeS.testZero))
+      ExternHasBody(tz))
       .nonEmpty)
     vassert(PostParserErrorHumanizer.humanize(codeMap,
-      CantInitializeIndividualElementsOfRuntimeSizedArray(RangeS.testZero))
+      CantInitializeIndividualElementsOfRuntimeSizedArray(tz))
       .nonEmpty)
     vassert(PostParserErrorHumanizer.humanize(codeMap,
-      LightFunctionMustHaveParamTypes(RangeS.testZero, 0))
+      LightFunctionMustHaveParamTypes(tz, 0))
       .nonEmpty)
 
   }

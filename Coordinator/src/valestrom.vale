@@ -5,6 +5,7 @@ func invoke_frontend(
   project_vale_inputs &List<ProjectValeInputDeclaration>,
   project_non_vale_inputs &List<ProjectNonValeInputDeclaration>,
   benchmark bool,
+  sanity_check bool,
   verbose bool,
   debug_output bool,
   include_builtins bool,
@@ -24,11 +25,15 @@ Subprocess {
   command_line_args.add(frontend_path.str());
   command_line_args.add("dev.vale.passmanager.PassManager");
   command_line_args.add("build");
-  command_line_args.add("--output-dir");
+  command_line_args.add("--output_dir");
   command_line_args.add(output_dir.str());
 
   if benchmark {
     command_line_args.add("--benchmark");
+  }
+  if sanity_check {
+    command_line_args.add("--sanity_check");
+    command_line_args.add("true");
   }
   if verbose {
     command_line_args.add("--verbose");
@@ -37,13 +42,16 @@ Subprocess {
     command_line_args.add("--debug_output");
   }
   if not include_builtins {
-    command_line_args.add("--include-builtins false");
+    command_line_args.add("--include_builtins");
+    command_line_args.add("false");
   }
   if not output_vast {
-    command_line_args.add("--output-vast false");
+    command_line_args.add("--output_vast");
+    command_line_args.add("false");
   }
   if not output_vpst {
-    command_line_args.add("--output-vpst false");
+    command_line_args.add("--output_vpst");
+    command_line_args.add("false");
   }
 
   project_directories.each((declaration) => {

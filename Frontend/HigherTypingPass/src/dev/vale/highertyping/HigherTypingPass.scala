@@ -1,15 +1,14 @@
 package dev.vale.highertyping
 
 import dev.vale
-import dev.vale.{CodeLocationS, Err, FileCoordinateMap, IPackageResolver, Interner, Ok, PackageCoordinate, PackageCoordinateMap, RangeS, Result, highertyping, vcurious, vfail, vimpl, vwat}
+import dev.vale.{CodeLocationS, Err, FileCoordinateMap, IPackageResolver, Interner, Ok, PackageCoordinate, PackageCoordinateMap, Profiler, RangeS, Result, highertyping, vassertSome, vcurious, vfail, vimpl, vwat}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.FailedParse
 import dev.vale.parsing.ast.FileP
 import dev.vale.postparsing.rules.{IRulexSR, RuleScout}
-import dev.vale.postparsing.{CodeNameS, CoordTemplataType, ExportAsS, FunctionS, FunctionTemplataType, ICompileErrorS, IImpreciseNameS, INameS, IRuneS, ITemplataType, ImplImpreciseNameS, ImplS, ImportS, InterfaceS, KindTemplataType, MutabilityTemplataType, ParameterS, ProgramS, RuneNameS, RuneTypeSolver, PostParser, ScoutCompilation, StructS, TemplateTemplataType, TopLevelCitizenDeclarationNameS, UserFunctionS}
+import dev.vale.postparsing.{CodeNameS, CoordTemplataType, ExportAsS, FunctionS, FunctionTemplataType, ICompileErrorS, IImpreciseNameS, INameS, IRuneS, ITemplataType, ImplImpreciseNameS, ImplS, ImportS, InterfaceS, KindTemplataType, MutabilityTemplataType, ParameterS, PostParser, ProgramS, RuneNameS, RuneTypeSolver, ScoutCompilation, StructS, TemplateTemplataType, TopLevelCitizenDeclarationNameS, UserFunctionS}
 import dev.vale.postparsing.RuneTypeSolver
 import dev.vale.postparsing.rules._
-import dev.vale.Err
 
 import scala.collection.immutable.List
 import scala.collection.mutable
@@ -28,12 +27,12 @@ case class Environment(
     runeToType: Map[IRuneS, ITemplataType]) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
-  val structsS: Vector[StructS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.structs)).toVector
-  val interfacesS: Vector[InterfaceS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.interfaces)).toVector
-  val implsS: Vector[ImplS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.impls)).toVector
-  val functionsS: Vector[FunctionS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.implementedFunctions)).toVector
-  val exportsS: Vector[ExportAsS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.exports)).toVector
-  val imports: Vector[ImportS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.imports)).toVector
+  val structsS: Vector[StructS] = codeMap.packageCoordToContents.values.flatMap(_.structs).toVector
+  val interfacesS: Vector[InterfaceS] = codeMap.packageCoordToContents.values.flatMap(_.interfaces).toVector
+  val implsS: Vector[ImplS] = codeMap.packageCoordToContents.values.flatMap(_.impls).toVector
+  val functionsS: Vector[FunctionS] = codeMap.packageCoordToContents.values.flatMap(_.implementedFunctions).toVector
+  val exportsS: Vector[ExportAsS] = codeMap.packageCoordToContents.values.flatMap(_.exports).toVector
+  val imports: Vector[ImportS] = codeMap.packageCoordToContents.values.flatMap(_.imports).toVector
 
   def addRunes(newruneToType: Map[IRuneS, ITemplataType]): Environment = {
     Environment(maybeName, maybeParentEnv, codeMap, runeToType ++ newruneToType)
@@ -393,43 +392,45 @@ class HigherTypingPass(globalOptions: GlobalOptions, interner: Interner) {
 
   def runPass(separateProgramsS: FileCoordinateMap[ProgramS]):
   Either[PackageCoordinateMap[ProgramA], ICompileErrorA] = {
-    val mergedProgramS =
-      PackageCoordinateMap(
-        separateProgramsS.moduleToPackagesToFilenameToContents.mapValues(packagesToFilenameToContents => {
-          packagesToFilenameToContents.mapValues(filenameToContents => {
-            ProgramS(
-              filenameToContents.values.flatMap(_.structs).toVector,
-              filenameToContents.values.flatMap(_.interfaces).toVector,
-              filenameToContents.values.flatMap(_.impls).toVector,
-              filenameToContents.values.flatMap(_.implementedFunctions).toVector,
-              filenameToContents.values.flatMap(_.exports).toVector,
-              filenameToContents.values.flatMap(_.imports).toVector)
-          })
-        }))
+    Profiler.frame(() => {
+      val mergedProgramS =
+        PackageCoordinateMap[ProgramS]()
+      separateProgramsS.packageCoordToFileCoords.foreach({ case (packageCoord, fileCoords) =>
+        val programsS = fileCoords.map(separateProgramsS.fileCoordToContents)
+        mergedProgramS.put(
+          packageCoord,
+          ProgramS(
+            programsS.flatMap(_.structs).toVector,
+            programsS.flatMap(_.interfaces).toVector,
+            programsS.flatMap(_.impls).toVector,
+            programsS.flatMap(_.implementedFunctions).toVector,
+            programsS.flatMap(_.exports).toVector,
+            programsS.flatMap(_.imports).toVector))
+      })
 
-//    val orderedModules = orderModules(mergedProgramS)
+      //    val orderedModules = orderModules(mergedProgramS)
 
-    try {
-      val suppliedFunctions = Vector()
-      val suppliedInterfaces = Vector()
-      val ProgramA(structsA, interfacesA, implsA, functionsA, exportsA) =
-        translateProgram(
-          mergedProgramS, primitives, suppliedFunctions, suppliedInterfaces)
+      try {
+        val suppliedFunctions = Vector()
+        val suppliedInterfaces = Vector()
+        val ProgramA(structsA, interfacesA, implsA, functionsA, exportsA) =
+          translateProgram(
+            mergedProgramS, primitives, suppliedFunctions, suppliedInterfaces)
 
-      val packageToStructsA = structsA.groupBy(_.range.begin.file.packageCoordinate)
-      val packageToInterfacesA = interfacesA.groupBy(_.name.range.begin.file.packageCoordinate)
-      val packageToFunctionsA = functionsA.groupBy(_.name.packageCoordinate)
-      val packageToImplsA = implsA.groupBy(_.name.packageCoordinate)
-      val packageToExportsA = exportsA.groupBy(_.range.file.packageCoordinate)
+        val packageToStructsA = structsA.groupBy(_.range.begin.file.packageCoordinate)
+        val packageToInterfacesA = interfacesA.groupBy(_.name.range.begin.file.packageCoordinate)
+        val packageToFunctionsA = functionsA.groupBy(_.name.packageCoordinate)
+        val packageToImplsA = implsA.groupBy(_.name.packageCoordinate)
+        val packageToExportsA = exportsA.groupBy(_.range.file.packageCoordinate)
 
-      val allPackages =
-        packageToStructsA.keySet ++
-        packageToInterfacesA.keySet ++
-        packageToFunctionsA.keySet ++
-        packageToImplsA.keySet ++
-        packageToExportsA.keySet
-      val packageToContents =
-        allPackages.toVector.map(paackage => {
+        val allPackages =
+          packageToStructsA.keySet ++
+            packageToInterfacesA.keySet ++
+            packageToFunctionsA.keySet ++
+            packageToImplsA.keySet ++
+            packageToExportsA.keySet
+        val packageToContents = mutable.HashMap[PackageCoordinate, ProgramA]()
+        allPackages.foreach(paackage => {
           val contents =
             ProgramA(
               packageToStructsA.getOrElse(paackage, Vector.empty),
@@ -437,31 +438,25 @@ class HigherTypingPass(globalOptions: GlobalOptions, interner: Interner) {
               packageToImplsA.getOrElse(paackage, Vector.empty),
               packageToFunctionsA.getOrElse(paackage, Vector.empty),
               packageToExportsA.getOrElse(paackage, Vector.empty))
-          (paackage -> contents)
-        }).toMap
-      val moduleToPackageToContents =
-        packageToContents.keys.toVector.groupBy(_.module).mapValues(packageCoordinates => {
-          packageCoordinates.map(packageCoordinate => {
-            (packageCoordinate.packages -> packageToContents(packageCoordinate))
-          }).toMap
+          packageToContents.put(paackage, contents)
         })
-      Left(vale.PackageCoordinateMap(moduleToPackageToContents))
-    } catch {
-      case CompileErrorExceptionA(err) => {
-        Right(err)
+        Left(vale.PackageCoordinateMap(packageToContents))
+      } catch {
+        case CompileErrorExceptionA(err) => {
+          Right(err)
+        }
       }
-    }
+    })
   }
 }
 
 class HigherTypingCompilation(
   globalOptions: GlobalOptions,
+  val interner: Interner,
   packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]]) {
-  var scoutCompilation = new ScoutCompilation(globalOptions, packagesToBuild, packageToContentsResolver)
+  var scoutCompilation = new ScoutCompilation(globalOptions, interner, packagesToBuild, packageToContentsResolver)
   var astroutsCache: Option[PackageCoordinateMap[ProgramA]] = None
-
-  def interner = scoutCompilation.interner
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = scoutCompilation.getCodeMap()
   def getParseds(): Result[FileCoordinateMap[(FileP, Vector[(Int, Int)])], FailedParse] = scoutCompilation.getParseds()
@@ -472,7 +467,7 @@ class HigherTypingCompilation(
     astroutsCache match {
       case Some(astrouts) => Ok(astrouts)
       case None => {
-        new HigherTypingPass(globalOptions, scoutCompilation.interner).runPass(scoutCompilation.expectScoutput()) match {
+        new HigherTypingPass(globalOptions, interner).runPass(scoutCompilation.expectScoutput()) match {
           case Right(err) => Err(err)
           case Left(astrouts) => {
             astroutsCache = Some(astrouts)

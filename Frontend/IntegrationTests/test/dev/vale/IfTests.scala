@@ -18,7 +18,12 @@ class IfTests extends FunSuite with Matchers {
         |  return if (true) { 3 } else { 5 }
         |}
       """.stripMargin)
-    val programS = compile.getScoutput().getOrDie().moduleToPackagesToFilenameToContents("test")(Vector.empty)("0.vale")
+    val programS =
+      compile.getScoutput().getOrDie()
+        .fileCoordToContents(
+          compile.interner.intern(FileCoordinate(
+            compile.interner.intern(PackageCoordinate("test", Vector.empty)),
+            "0.vale")))
     val main = programS.lookupFunction("main")
     val ret = Collector.only(main.body, { case r @ ReturnSE(_, _) => r })
     val iff = Collector.only(ret, { case i @ IfSE(_, _, _, _) => i })

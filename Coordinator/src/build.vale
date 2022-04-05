@@ -141,6 +141,24 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           "false",
           "Whether to reuse the VAST created by (presumably) the last run."),
         Flag(
+          "--run_backend",
+          FLAG_BOOL(),
+          "Whether to run the backend.",
+          "true",
+          "Whether to run the backend. True to run it, false to stop after frontend."),
+        Flag(
+          "--run_clang",
+          FLAG_BOOL(),
+          "Whether to run the clang step.",
+          "true",
+          "Whether to run the clang step. True to run it, false to stop after backend."),
+        Flag(
+          "--sanity_check",
+          FLAG_BOOL(),
+          "Whether to run self-diagnostics while compiling.",
+          "true",
+          "Whether to run self-diagnostics while compiling."),
+        Flag(
           "--override_known_live_true",
           FLAG_BOOL(),
           "Whether to always gen-check, even if known live is true.",
@@ -204,6 +222,9 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
   include_builtins = parsed_flags.get_bool_flag("--include_builtins", true);
   output_vast = parsed_flags.get_bool_flag("--output_vast", true);
   reuse_vast = parsed_flags.get_bool_flag("--reuse_vast", false);
+  run_backend = parsed_flags.get_bool_flag("--run_backend", true);
+  run_clang = parsed_flags.get_bool_flag("--run_clang", true);
+  sanity_check = parsed_flags.get_bool_flag("--sanity_check", true);
   output_vpst = parsed_flags.get_bool_flag("--output_vpst", true);
   no_std = parsed_flags.get_bool_flag("--no_std", false);
 
@@ -299,6 +320,7 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
             &project_vale_input_declarations,
             &project_non_vale_input_declarations,
             benchmark,
+            sanity_check,
             verbose,
             debug_output,
             include_builtins,
@@ -337,6 +359,11 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
 //                print(f"Both a .vast and non-vast files were specified! If a .vast is specified, it must be the only input.")
 //                sys.exit(1)
 
+  if not run_backend {
+    println("Not running backend, stopping here.");
+    return void();
+  }
+
   if verbose {
     println("Invoking Backend...")
   }
@@ -363,6 +390,11 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
   backend_return_code = (backend_process).print_and_join();
   if backend_return_code != 0 {
     panic("Backend returned error code {backend_return_code}, aborting.");
+  }
+
+  if not run_clang {
+    println("Not running clang, stopping here.");
+    return void();
   }
 
   if verbose {

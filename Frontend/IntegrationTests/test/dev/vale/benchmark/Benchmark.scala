@@ -6,41 +6,59 @@ import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ParseErrorHumanizer
 import dev.vale.postparsing.PostParserErrorHumanizer
 import dev.vale.typing.CompilerErrorHumanizer
-import dev.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, Ok, PackageCoordinate, RunCompilation, Tests, Timer}
-import dev.vale.Err
+import dev.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, Interner, Ok, PackageCoordinate, Profiler, RunCompilation, Tests, Timer, U, repeatStr}
 
 import scala.collection.immutable.List
 
 object Benchmark {
   def go(useOptimization: Boolean): Long = {
+    val interner = new Interner()
     val timer = new Timer()
     timer.start()
-    val compile =
-      new RunCompilation(
-        Vector(PackageCoordinate.BUILTIN, PackageCoordinate.TEST_TLD),
-        Builtins.getCodeMap()
-//          .or(FileCoordinateMap.test(Tests.loadExpected("programs/addret.vale")))
-          .or(FileCoordinateMap.test(Tests.loadExpected("programs/roguelike.vale")))
-          .or(Tests.getPackageToResourceResolver),
-        FullCompilationOptions(
-          GlobalOptions(false, useOptimization, false, false),
-          debugOut = (_) => {}))
-    compile.getParseds() match {
-      case Err(e) => println(ParseErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), FileCoordinate.test, e.error))
-      case Ok(t) =>
-    }
-//    compile.getScoutput() match {
-//      case Err(e) => println(ScoutErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), e))
-//      case Ok(t) =>
-//    }
-//    compile.getAstrouts() match {
-//      case Err(e) => println(AstronomerErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), e))
-//      case Ok(t) =>
-//    }
-//    compile.getCompilerOutputs() match {
-//      case Err(e) => println(CompilerErrorHumanizer.humanize(true, compile.getCodeMap().getOrDie(), e))
-//      case Ok(t) =>
-//    }
+    // Not really necessary, but it puts it at the top of the stack trace so we can more
+    // easily merge all the Profiler.frame calls in IntelliJ
+    Profiler.frame(() => {
+      val compile =
+        new RunCompilation(
+          interner,
+          Vector(
+            PackageCoordinate.BUILTIN(interner),
+            PackageCoordinate.TEST_TLD(interner)
+          ),
+          Builtins.getCodeMap(interner)
+            //          .or(FileCoordinateMap.test(Tests.loadExpected("programs/addret.vale")))
+            //          .or(FileCoordinateMap.test(Tests.loadExpected("programs/roguelike.vale")))
+            .or(
+              FileCoordinateMap.test(
+                interner,
+                "exported func main() int {\nx = 0;" +
+                  repeatStr("set x = x + 1;", 100) +
+                  "return x;}")),
+          //.or(Tests.getPackageToResourceResolver),
+          FullCompilationOptions(
+            GlobalOptions(
+              sanityCheck = false,
+              useOptimization,
+              false,
+              false),
+            debugOut = (_) => {}))
+      compile.getParseds() match {
+        case Err(e) => println(ParseErrorHumanizer.humanize(compile.getCodeMap().getOrDie().fileCoordToContents.toMap, FileCoordinate.test(interner), e.error))
+        case Ok(t) =>
+      }
+      compile.getScoutput() match {
+        case Err(e) => println(PostParserErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), e))
+        case Ok(t) =>
+      }
+      compile.getAstrouts() match {
+        case Err(e) => println(HigherTypingErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), e))
+        case Ok(t) =>
+      }
+      compile.getCompilerOutputs() match {
+        case Err(e) => println(CompilerErrorHumanizer.humanize(true, compile.getCodeMap().getOrDie(), e))
+        case Ok(t) =>
+      }
+    })
 //    compile.getHamuts()
     timer.stop()
     timer.getNanosecondsSoFar()
@@ -58,9 +76,9 @@ object Benchmark {
       // For now though, this will do.
       go(true)
       go(false)
-      val timesForOldAndNew = (0 until 10).map(_ => (go(false), go(true)))
-      val timesForOld = timesForOldAndNew.map(_._1)
-      val timesForNew = timesForOldAndNew.map(_._2)
+      val timesForOldAndNew = U.makeArray(10, _ => (go(false), go(true)))
+      val timesForOld = U.map(timesForOldAndNew, (x: (Long, Long)) => x._1)
+      val timesForNew = U.map(timesForOldAndNew, (x: (Long, Long)) => x._2)
       val averageTimeForOld = timesForOld.sum / timesForOld.size
       val averageTimeForNew = timesForNew.sum / timesForNew.size
       println("Done benchmarking! Old: " + averageTimeForOld + ", New: " + averageTimeForNew)
@@ -75,7 +93,7 @@ object Benchmark {
 //      println("Warmed up (" + warmupTime + "ns)")
 //      println("Benchmarking...")
 
-      val profiles = (0 until 200).map(_ => go(true))
+      val profiles = U.makeArray(50, _ => go(true))
       val times = profiles
       val averageTime = times.sum / times.size
       println("Done benchmarking! Total: " + averageTime)

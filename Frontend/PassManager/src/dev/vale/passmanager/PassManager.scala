@@ -9,7 +9,7 @@ import dev.vale.parsing.{FailedParse, InputException, ParseErrorHumanizer, Parse
 import dev.vale.postparsing.PostParserErrorHumanizer
 import dev.vale.typing.CompilerErrorHumanizer
 import dev.vale.testvm.Vivem
-import dev.vale.{Builtins, Err, FileCoordinate, Ok, PackageCoordinate, Result, passmanager, vassert, vcheck, vcurious, vfail}
+import dev.vale.{Builtins, Err, FileCoordinate, Interner, Ok, PackageCoordinate, Result, passmanager, vassert, vassertOne, vcheck, vcurious, vfail}
 
 import java.io.{BufferedWriter, File, FileNotFoundException, FileOutputStream, FileWriter, OutputStream, PrintStream}
 import java.util.InputMismatchException
@@ -20,7 +20,6 @@ import dev.vale.finalast.PackageH
 import dev.vale.parsing.FailedParse
 import dev.vale.postparsing.PostParserErrorHumanizer
 import dev.vale.typing.CompilerErrorHumanizer
-import dev.vale.Err
 import dev.vale.von.{IVonData, JsonSyntax, VonPrinter}
 
 import java.nio.charset.Charset
@@ -28,21 +27,27 @@ import scala.io.Source
 import scala.util.matching.Regex
 
 object PassManager {
-  val DEFAULT_PACKAGE_COORD = PackageCoordinate("my_module", Vector.empty)
+  def DEFAULT_PACKAGE_COORD(interner: Interner) = interner.intern(PackageCoordinate("my_module", Vector.empty))
 
   sealed trait IFrontendInput {
-    def packageCoord: PackageCoordinate
+    def packageCoord(interner: Interner): PackageCoordinate
   }
   case class ModulePathInput(moduleName: String, path: String) extends IFrontendInput {
     val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-    override def packageCoord: PackageCoordinate = PackageCoordinate(moduleName, Vector.empty)
+    override def packageCoord(interner: Interner): PackageCoordinate = interner.intern(PackageCoordinate(moduleName, Vector.empty))
   }
-  case class DirectFilePathInput(packageCoord: PackageCoordinate, path: String) extends IFrontendInput { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
+  case class DirectFilePathInput(packageCoordinate: PackageCoordinate, path: String) extends IFrontendInput {
+    val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
+    override def packageCoord(interner: Interner): PackageCoordinate = packageCoordinate
+  }
   case class SourceInput(
-      packageCoord: PackageCoordinate,
+      packageCoordinate: PackageCoordinate,
       // Name isnt guaranteed to be unique, we sometimes hand in strings like "builtins.vale"
       name: String,
-      code: String) extends IFrontendInput { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
+      code: String) extends IFrontendInput {
+    val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
+    override def packageCoord(interner: Interner): PackageCoordinate = packageCoordinate
+  }
 
   case class Options(
     inputs: Vector[IFrontendInput],
@@ -61,38 +66,41 @@ object PassManager {
     debugOutput: Boolean
   ) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
-  def parseOpts(opts: Options, list: List[String]) : Options = {
+  def parseOpts(interner: Interner, opts: Options, list: List[String]) : Options = {
     list match {
       case Nil => opts
-      case "--output-dir" :: value :: tail => {
+      case "--output_dir" :: value :: tail => {
         vcheck(opts.outputDirPath.isEmpty, "Multiple output files specified!", InputException)
-        parseOpts(opts.copy(outputDirPath = Some(value)), tail)
+        parseOpts(interner, opts.copy(outputDirPath = Some(value)), tail)
       }
-      case "--output-vpst" :: value :: tail => {
-        parseOpts(opts.copy(outputVPST = value.toBoolean), tail)
+      case "--output_vpst" :: value :: tail => {
+        parseOpts(interner, opts.copy(outputVPST = value.toBoolean), tail)
       }
-      case "--output-vast" :: value :: tail => {
-        parseOpts(opts.copy(outputVAST = value.toBoolean), tail)
+      case "--output_vast" :: value :: tail => {
+        parseOpts(interner, opts.copy(outputVAST = value.toBoolean), tail)
       }
-      case "--include-builtins" :: value :: tail => {
-        parseOpts(opts.copy(includeBuiltins = value.toBoolean), tail)
+      case "--sanity_check" :: value :: tail => {
+        parseOpts(interner, opts.copy(sanityCheck = value.toBoolean), tail)
+      }
+      case "--include_builtins" :: value :: tail => {
+        parseOpts(interner, opts.copy(includeBuiltins = value.toBoolean), tail)
       }
       case "--benchmark" :: tail => {
-        parseOpts(opts.copy(benchmark = true), tail)
+        parseOpts(interner, opts.copy(benchmark = true), tail)
       }
-      case "--output-highlights" :: value :: tail => {
-        parseOpts(opts.copy(outputHighlights = value.toBoolean), tail)
+      case "--output_highlights" :: value :: tail => {
+        parseOpts(interner, opts.copy(outputHighlights = value.toBoolean), tail)
       }
       case ("-v" | "--verbose") :: tail => {
-        parseOpts(opts.copy(verboseErrors = true), tail)
+        parseOpts(interner, opts.copy(verboseErrors = true), tail)
       }
       case ("--debug_output") :: tail => {
-        parseOpts(opts.copy(debugOutput = true), tail)
+        parseOpts(interner, opts.copy(debugOutput = true), tail)
       }
       case value :: _ if value.startsWith("-") => throw InputException("Unknown option " + value)
       case value :: tail => {
         if (opts.mode.isEmpty) {
-          parseOpts(opts.copy(mode = Some(value)), tail)
+          parseOpts(interner, opts.copy(mode = Some(value)), tail)
         } else {
           if (value.contains("=")) {
             val packageCoordAndPath = value.split("=")
@@ -104,9 +112,9 @@ object PassManager {
             val packageCoordinate =
               if (packageCoordStr.contains(".")) {
                 val packageCoordinateParts = packageCoordStr.split("\\.")
-                PackageCoordinate(packageCoordinateParts.head, packageCoordinateParts.tail.toVector)
+                interner.intern(PackageCoordinate(packageCoordinateParts.head, packageCoordinateParts.tail.toVector))
               } else {
-                PackageCoordinate(packageCoordStr, Vector.empty)
+                interner.intern(PackageCoordinate(packageCoordStr, Vector.empty))
               }
             val input =
               if (path.endsWith(".vale") || path.endsWith(".vpst")) {
@@ -117,7 +125,7 @@ object PassManager {
                 }
                 ModulePathInput(packageCoordinate.module, path)
               }
-            parseOpts(opts.copy(inputs = opts.inputs :+ input), tail)
+            parseOpts(interner, opts.copy(inputs = opts.inputs :+ input), tail)
           } else {
             throw InputException("Unrecognized input: " + value)
           }
@@ -127,6 +135,7 @@ object PassManager {
   }
 
   def resolvePackageContents(
+    interner: Interner,
       inputs: Vector[IFrontendInput],
       packageCoord: PackageCoordinate):
   Option[Map[String, String]] = {
@@ -135,7 +144,7 @@ object PassManager {
 //    println("resolving " + packageCoord + " with inputs:\n" + inputs)
 
     val sourceInputs =
-      inputs.zipWithIndex.filter(_._1.packageCoord.module == module).flatMap({
+      inputs.zipWithIndex.filter(_._1.packageCoord(interner).module == module).flatMap({
         case (SourceInput(_, name, code), index) if (packages == Vector.empty) => {
           // All .vpst and .vale direct inputs are considered part of the root paackage.
           Vector((index + "(" + name + ")" -> code))
@@ -175,7 +184,7 @@ object PassManager {
     Some(filepathToSource)
   }
 
-  def build(opts: Options):
+  def build(interner: Interner, opts: Options):
   Result[Option[ProgramH], String] = {
     new java.io.File(opts.outputDirPath.get).mkdirs()
     new java.io.File(opts.outputDirPath.get + "/vast").mkdir()
@@ -185,14 +194,16 @@ object PassManager {
 
     val compilation =
       new FullCompilation(
-        Vector(PackageCoordinate.BUILTIN) ++ opts.inputs.map(_.packageCoord).distinct,
-        Builtins.getCodeMap().or(packageCoord => resolvePackageContents(opts.inputs, packageCoord)),
+        interner,
+        Vector(PackageCoordinate.BUILTIN(interner)) ++ opts.inputs.map(_.packageCoord(interner)).distinct,
+        Builtins.getCodeMap(interner)
+          .or(packageCoord => resolvePackageContents(interner, opts.inputs, packageCoord)),
         passmanager.FullCompilationOptions(
           GlobalOptions(
-            opts.sanityCheck,
-            opts.useOptimizedSolver,
-            opts.verboseErrors,
-            opts.debugOutput),
+            sanityCheck = opts.sanityCheck,
+            useOptimizedSolver = opts.useOptimizedSolver,
+            verboseErrors = opts.verboseErrors,
+            debugOutput = opts.debugOutput),
           if (opts.debugOutput) {
             (x => {
               println("#: " + x)
@@ -213,7 +224,7 @@ object PassManager {
     val valeCodeMap = compilation.getCodeMap().getOrDie()
 
     if (opts.outputVPST) {
-      parseds.map({ case (FileCoordinate(_, _, filepath), (programP, commentRanges)) =>
+      parseds.map({ case (FileCoordinate(_, filepath), (programP, commentRanges)) =>
         val von = ParserVonifier.vonifyFile(programP)
         val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
         val parts = filepath.split("[/\\\\]")
@@ -297,8 +308,8 @@ object PassManager {
     json
   }
 
-  def buildAndOutput(opts: Options) = {
-      build(opts) match {
+  def buildAndOutput(interner: Interner, opts: Options) = {
+      build(interner, opts) match {
         case Ok(_) => {
         }
         case Err(error) => {
@@ -333,7 +344,25 @@ object PassManager {
 
   def main(args: Array[String]): Unit = {
     try {
-      val opts = parseOpts(Options(Vector.empty, None, false, true, true, false, true, None, false, true, false, false), args.toList)
+      val interner = new Interner()
+
+      val opts =
+        parseOpts(
+          interner,
+          Options(
+            inputs = Vector.empty,
+            outputDirPath = None,
+            benchmark = false,
+            outputVPST = true,
+            outputVAST = true,
+            outputHighlights = false,
+            includeBuiltins = true,
+            mode = None,
+            sanityCheck = false,
+            useOptimizedSolver = true,
+            verboseErrors = false,
+            debugOutput = false),
+          args.toList)
       vcheck(opts.mode.nonEmpty, "No mode!", InputException)
       vcheck(opts.inputs.nonEmpty, "No input files!", InputException)
 
@@ -344,8 +373,9 @@ object PassManager {
 
           val compilation =
             new FullCompilation(
-              opts.inputs.map(_.packageCoord).distinct,
-              Builtins.getCodeMap().or(packageCoord => resolvePackageContents(opts.inputs, packageCoord)),
+              interner,
+              opts.inputs.map(_.packageCoord(interner)).distinct,
+              Builtins.getCodeMap(interner).or(packageCoord => resolvePackageContents(interner, opts.inputs, packageCoord)),
               passmanager.FullCompilationOptions(
                 GlobalOptions(opts.sanityCheck, opts.useOptimizedSolver, opts.verboseErrors, opts.debugOutput),
                 if (opts.verboseErrors) {
@@ -367,14 +397,14 @@ object PassManager {
           val vpstCodeMap = compilation.getVpstMap().getOrDie()
 
           val code =
-            valeCodeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toVector match {
+            valeCodeMap.fileCoordToContents.values.toVector match {
               case Vector() => throw InputException("No vale code given to highlight!")
               case Vector(x) => x
-              case _ => throw InputException("No vale code given to highlight!")
+              case _ => throw InputException("Too many files given to highlight!")
             }
-          val Vector(vpst) = vpstCodeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toVector
+          val vpst = vassertOne(vpstCodeMap.fileCoordToContents.values)
 
-          parseds.map({ case (FileCoordinate(module, packages, filepath), (parsed, commentRanges)) =>
+          parseds.map({ case (FileCoordinate(_, filepath), (parsed, commentRanges)) =>
             val span = Spanner.forProgram(parsed)
             val highlights = Highlighter.toHTML(code, span, commentRanges)
             if (opts.outputDirPath == Some("")) {
@@ -387,7 +417,7 @@ object PassManager {
         }
         case "build" => {
           vcheck(opts.outputDirPath.nonEmpty, "Must specify --output-dir!", InputException)
-          buildAndOutput(opts)
+          buildAndOutput(interner, opts)
         }
         case "run" => {
           throw InputException("Run command has been disabled.");

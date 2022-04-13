@@ -27,12 +27,13 @@ fi
 shift;
 
 
-VALEC_VERSION=`cat scripts/VERSION`
+VALEC_VERSION="$1"
 if [ "$VALEC_VERSION" == "" ]
 then
-  echo "Bad version! Please put version in a text file at scripts/VERSION."
-  exit
+  echo "Please specify the new version."
+  exit 1
 fi
+shift;
 
 touch ~/.zshrc
 source ~/.zshrc

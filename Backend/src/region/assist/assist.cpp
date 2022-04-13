@@ -43,7 +43,7 @@ Assist::Assist(GlobalState* globalState_) :
 }
 
 RegionId* Assist::getRegionId() {
-  return globalState->metalCache->assistRegionId;
+  return globalState->metalCache->mutRegionId;
 }
 
 void Assist::mainSetup(FunctionState* functionState, LLVMBuilderRef builder) {

@@ -210,11 +210,11 @@ public:
 
   RCImm* rcImm = nullptr;
   IRegion* mutRegion = nullptr;
-  IRegion* unsafeRegion = nullptr;
-  IRegion* assistRegion = nullptr;
-  IRegion* naiveRcRegion = nullptr;
-  IRegion* resilientV3Region = nullptr;
-  IRegion* resilientV4Region = nullptr;
+//  IRegion* unsafeRegion = nullptr;
+//  IRegion* assistRegion = nullptr;
+//  IRegion* naiveRcRegion = nullptr;
+//  IRegion* resilientV3Region = nullptr;
+//  IRegion* resilientV4Region = nullptr;
   Linear* linearRegion = nullptr;
   std::unordered_map<RegionId*, IRegion*, AddressHasher<RegionId*>> regions;
 

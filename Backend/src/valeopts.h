@@ -48,6 +48,7 @@ struct ValeOptions {
     bool elideChecksForKnownLive = false;    // Enables generational heap
     bool overrideKnownLiveTrue = false;    // Enables generational heap
     bool printMemOverhead = false;    // Enables generational heap
+    bool enableReplaying = false;    // Enables deterministic replaying
 
     RegionOverride regionOverride = RegionOverride::ASSIST;
 };

@@ -49,6 +49,11 @@ Coordinator has the code for the command line interface (`valec`), and invokes t
 The coordinator is written in Vale itself.
 
 
+## Long-Term Direction
+
+See [Architectural Direction](/architectural-direction.md) for where we're heading with these designs.
+
+
 ## More Details
 
 Let us know if you'd like more details! We're keeping this page light for now, but aim to migrate our internal documentation over to here once it becomes interesting to others.

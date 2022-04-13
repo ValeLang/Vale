@@ -64,7 +64,7 @@ case class CompilerOutputs() {
   private val deferredEvaluatingFunctions: mutable.LinkedHashMap[PrototypeT, DeferredEvaluatingFunction] = mutable.LinkedHashMap()
   private var evaluatedDeferredFunctions: mutable.LinkedHashSet[PrototypeT] = mutable.LinkedHashSet()
 
-  def countTopLevelThings(): Int = {
+  def countDenizens(): Int = {
     staticSizedArrayTypes.size +
       runtimeSizedArrayTypes.size +
       functionsBySignature.size +

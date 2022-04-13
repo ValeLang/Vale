@@ -263,16 +263,16 @@ struct NameP {
 
 
 struct FileP {
-  topLevelThings List<ITopLevelThingP>;
+  denizens List<IDenizenP>;
 }
 
 // Something that can appear at the top level of a file.
 // I'm open to renaming this so it doesn't have "Thing" in it
-interface ITopLevelThingP {}
-impl ITopLevelThingP for FunctionP;
-impl ITopLevelThingP for StructP;
-impl ITopLevelThingP for InterfaceP;
-impl ITopLevelThingP for ImplP;
+interface IDenizenP {}
+impl IDenizenP for FunctionP;
+impl IDenizenP for StructP;
+impl IDenizenP for InterfaceP;
+impl IDenizenP for ImplP;
 
 // Represents an `impl` construct.
 struct ImplP {

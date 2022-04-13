@@ -938,6 +938,24 @@ class CompilerTests extends FunSuite with Matchers {
     val coutputs = compile.expectCompilerOutputs()
   }
 
+  test("Test imm array") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |import v.builtins.panic.*;
+        |import v.builtins.drop.*;
+        |import v.builtins.arrays.*;
+        |import v.builtins.functor1.*;
+        |export #[]int as ImmArrInt;
+        |exported func main(arr #[]int) {
+        |  __vbi_panic();
+        |}
+      """.stripMargin)
+    val coutputs = compile.expectCompilerOutputs()
+    val main = coutputs.lookupFunction("main")
+    main.header.params.head.tyype.kind match { case RuntimeSizedArrayTT(ImmutableT, _) => }
+  }
+
+
   test("Test Array of StructTemplata") {
     val compile = CompilerTestCompilation.test(
       """

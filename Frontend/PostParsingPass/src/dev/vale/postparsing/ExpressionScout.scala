@@ -4,11 +4,12 @@ import dev.vale.postparsing.patterns.PatternScout
 import dev.vale.postparsing.rules.{IRulexSR, IntLiteralSL, LiteralSR, MutabilityLiteralSL, RuleScout, RuneUsage, TemplexScout, VariabilityLiteralSL}
 import dev.vale.parsing.ast._
 import dev.vale.parsing.{ast, _}
-import dev.vale.{Interner, Profiler, RangeS, postparsing, vassert, vcurious, vwat}
+import dev.vale.{Interner, Profiler, RangeS, StrI, postparsing, vassert, vcurious, vwat}
 import PostParser.{evalRange, noDeclarations, noVariableUses}
 import dev.vale
+import dev.vale.lexing.RangeL
 import dev.vale.parsing.ast
-import dev.vale.parsing.ast.{AndPE, AugmentPE, BinaryCallPE, BlockPE, BorrowP, BraceCallPE, BreakPE, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, DestructPE, DotPE, EachPE, FinalP, FunctionCallPE, FunctionP, IExpressionPE, ITemplexPT, IfPE, IndexPE, LambdaPE, LetPE, LoadAsBorrowP, LoadAsP, LoadAsWeakP, LookupNameP, LookupPE, MagicParamLookupPE, MethodCallPE, MoveP, MutableP, MutatePE, NameP, NotPE, OrPE, PackPE, RangeP, RangePE, ReturnPE, RuntimeSizedP, ShortcallPE, StaticSizedP, StrInterpolatePE, SubExpressionPE, TemplateArgsP, TuplePE, UnletPE, UseP, VoidPE, WeakP, WhilePE}
+import dev.vale.parsing.ast.{AndPE, AugmentPE, BinaryCallPE, BlockPE, BorrowP, BraceCallPE, BreakPE, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, DestructPE, DotPE, EachPE, FinalP, FunctionCallPE, FunctionP, IExpressionPE, ITemplexPT, IfPE, IndexPE, LambdaPE, LetPE, LoadAsBorrowP, LoadAsP, LoadAsWeakP, LookupNameP, LookupPE, MagicParamLookupPE, MethodCallPE, MoveP, MutableP, MutatePE, NameP, NotPE, OrPE, PackPE, RangePE, ReturnPE, RuntimeSizedP, ShortcallPE, StaticSizedP, StrInterpolatePE, SubExpressionPE, TemplateArgsP, TuplePE, UnletPE, UseP, VoidPE, WeakP, WhilePE}
 import dev.vale.postparsing.patterns.PatternScout
 //import dev.vale.postparsing.predictor.{Conclusions, PredictorEvaluator}
 import dev.vale.postparsing.rules.TemplexScout
@@ -36,7 +37,7 @@ case class LocalLookupResult(range: RangeS, name: IVarNameS) extends IScoutResul
 // to declare a variable, and we interpreted it as an outside lookup.
 case class OutsideLookupResult(
   range: RangeS,
-  name: String,
+  name: StrI,
   templateArgs: Option[Array[ITemplexPT]]
 ) extends IScoutResult[IExpressionSE] {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
@@ -55,6 +56,13 @@ class ExpressionScout(
     ruleScout: RuleScout,
     patternScout: PatternScout,
     interner: Interner) {
+  val loopPostParser = new LoopPostParser(interner)
+
+  val SELF = interner.intern(StrI("self"))
+  val PLUS = interner.intern(StrI("+"))
+  val NOT = interner.intern(StrI("not"))
+  val RANGE = interner.intern(StrI("range"))
+
   def endsWithReturn(exprSE: IExpressionSE): Boolean = {
     exprSE match {
       case ReturnSE(_, _) => true
@@ -137,17 +145,17 @@ class ExpressionScout(
         val exprsS = exprWithoutConstructingWithoutVoidS
         (stackFrameBeforeConstructing, exprsS, selfUsesBeforeConstructing, childUsesBeforeConstructing)
       } else {
-        val rangeAtEnd = RangeP(rangeS.end.offset, rangeS.end.offset)
+        val rangeAtEnd = RangeL(rangeS.end.offset, rangeS.end.offset)
         val constructorCallP =
           FunctionCallPE(
             rangeAtEnd,
-            ast.RangeP.zero,
+            RangeL.zero,
             LookupPE(
               stackFrameBeforeConstructing.parentEnv.name match {
                 case FunctionNameS(n, _) => LookupNameP(NameP(rangeAtEnd, n))
                 case _ => vwat()
               }, None),
-            constructedMembersNames.map(n => DotPE(rangeAtEnd, LookupPE(LookupNameP(NameP(rangeAtEnd, "self")), None), ast.RangeP.zero, NameP(rangeAtEnd, n))))
+            constructedMembersNames.map(n => DotPE(rangeAtEnd, LookupPE(LookupNameP(NameP(rangeAtEnd, SELF)), None), RangeL.zero, NameP(rangeAtEnd, n))))
 
         val (stackFrameAfterConstructing, NormalResult(constructExpression), selfUsesAfterConstructing, childUsesAfterConstructing) =
           scoutExpression(stackFrameBeforeConstructing, lidb.child(), constructorCallP)
@@ -200,7 +208,7 @@ class ExpressionScout(
     expr: IExpressionPE):
   (StackFrame, IScoutResult[IExpressionSE], VariableUses, VariableUses) = {
     Profiler.frame(() => {
-      val evalRange = (range: RangeP) => PostParser.evalRange(stackFrame0.file, range)
+      val evalRange = (range: RangeL) => PostParser.evalRange(stackFrame0.file, range)
 
       expr match {
         case VoidPE(range) => (stackFrame0, NormalResult(vale.postparsing.VoidSE(evalRange(range))), noVariableUses, noVariableUses)
@@ -222,7 +230,7 @@ class ExpressionScout(
                 val addCallRange = RangeS(prevExpr.range.end, partSE.range.begin)
                 FunctionCallSE(
                   addCallRange,
-                  vale.postparsing.OutsideLoadSE(addCallRange, Array(), interner.intern(CodeNameS("+")), None, LoadAsBorrowP),
+                  vale.postparsing.OutsideLoadSE(addCallRange, Array(), interner.intern(CodeNameS(PLUS)), None, LoadAsBorrowP),
                   Vector(prevExpr, partSE))
               }
             })
@@ -253,7 +261,7 @@ class ExpressionScout(
           (stackFrame0, NormalResult(BreakSE(evalRange(range))), noVariableUses, noVariableUses)
         }
         case NotPE(range, innerPE) => {
-          val callableSE = vale.postparsing.OutsideLoadSE(evalRange(range), Array(), interner.intern(CodeNameS("not")), None, LoadAsBorrowP)
+          val callableSE = vale.postparsing.OutsideLoadSE(evalRange(range), Array(), interner.intern(CodeNameS(NOT)), None, LoadAsBorrowP)
 
           val (stackFrame1, innerSE, innerSelfUses, innerChildUses) =
             scoutExpressionAndCoerce(stackFrame0, lidb.child(), innerPE, UseP)
@@ -265,7 +273,7 @@ class ExpressionScout(
           (stackFrame1, result, innerSelfUses, innerChildUses)
         }
         case RangePE(range, beginPE, endPE) => {
-          val callableSE = vale.postparsing.OutsideLoadSE(evalRange(range), Array(), interner.intern(CodeNameS("range")), None, LoadAsBorrowP)
+          val callableSE = vale.postparsing.OutsideLoadSE(evalRange(range), Array(), interner.intern(CodeNameS(RANGE)), None, LoadAsBorrowP)
 
           val loadBeginAs =
             beginPE match {
@@ -635,7 +643,7 @@ class ExpressionScout(
         }
         case WhilePE(range, conditionPE, uncombinedBodyPE) => {
           val (loopSE, loopSelfUses, loopChildUses) =
-            LoopPostParser.scoutWhile(
+            loopPostParser.scoutWhile(
               this, stackFrame0, lidb, range, conditionPE, uncombinedBodyPE)
 
           (stackFrame0, NormalResult(loopSE), loopSelfUses, loopChildUses)
@@ -674,7 +682,7 @@ class ExpressionScout(
         }
         case EachPE(range, entryPatternPP, inKeywordRange, iterableExpr, body) => {
           val (loopSE, selfUses, childUses) =
-            LoopPostParser.scoutEach(this, stackFrame0, lidb, range, entryPatternPP, inKeywordRange, iterableExpr, body)
+            loopPostParser.scoutEach(this, stackFrame0, lidb, range, entryPatternPP, inKeywordRange, iterableExpr, body)
           (stackFrame0, NormalResult(loopSE), selfUses, childUses)
         }
   //      case BadLetPE(range) => {
@@ -720,7 +728,7 @@ class ExpressionScout(
                 (LocalMutateSE(range, name, sourceExpr1), sourceInnerSelfUses.markMutated(name))
               }
               case OutsideLookupResult(range, name, maybeTemplateArgs) => {
-                throw CompileErrorExceptionS(CouldntFindVarToMutateS(range, name))
+                throw CompileErrorExceptionS(CouldntFindVarToMutateS(range, name.str))
               }
               case NormalResult(destinationExpr1) => {
                 (ExprMutateSE(destinationExpr1.range, destinationExpr1, sourceExpr1), sourceInnerSelfUses)
@@ -734,7 +742,7 @@ class ExpressionScout(
             // We know we're in a constructor if there's no `this` variable yet. After all,
             // in a constructor, `this` is just an imaginary concept until we actually
             // fill all the variables.
-            case LookupPE(LookupNameP(NameP(range, "self")), _) if (stackFrame0.findVariable(interner.intern(CodeNameS("self"))).isEmpty) => {
+            case LookupPE(LookupNameP(NameP(range, StrI("self"))), _) if (stackFrame0.findVariable(interner.intern(CodeNameS("self"))).isEmpty) => {
               val result = vale.postparsing.LocalLookupResult(evalRange(range), interner.intern(ConstructingMemberNameS(memberName)))
               (stackFrame0, result, noVariableUses, noVariableUses)
             }
@@ -763,7 +771,7 @@ class ExpressionScout(
   def newIf(
     stackFrame0: StackFrame,
     lidb: LocationInDenizenBuilder,
-    range: RangeP,
+    range: RangeL,
     makeCondition: (StackFrame, LocationInDenizenBuilder) => (StackFrame, IExpressionSE, VariableUses, VariableUses),
     makeThen: (StackFrame, LocationInDenizenBuilder) => (StackFrame, BlockSE, VariableUses, VariableUses),
     makeElse: (StackFrame, LocationInDenizenBuilder) => (StackFrame, BlockSE, VariableUses, VariableUses)):

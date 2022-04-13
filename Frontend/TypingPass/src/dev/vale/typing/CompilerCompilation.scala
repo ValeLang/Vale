@@ -2,7 +2,6 @@ package dev.vale.typing
 
 import dev.vale.highertyping.{HigherTypingCompilation, ICompileErrorA, ProgramA}
 import dev.vale.options.GlobalOptions
-import dev.vale.parsing.FailedParse
 import dev.vale.parsing.ast.FileP
 import dev.vale.postparsing.{ICompileErrorS, ProgramS}
 import dev.vale.{Err, FileCoordinateMap, IPackageResolver, Ok, PackageCoordinate, PackageCoordinateMap, Result, vcurious, vfail}

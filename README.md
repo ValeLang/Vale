@@ -3,7 +3,7 @@
 Vale is a programming language whose goal is to show the world that **speed and safety can be easy!** Vale is:
 
  * *Fast:* Vale is an AOT compiled language that uses an entirely new approach to memory management: [generational references](https://verdagon.dev/blog/generational-references), which have zero aliasing costs and no garbage collection pauses.
- * *Fearless:* It is the [safest native language](/fearless): zero `unsafe`, region isolation, extern boundaries, and dependency extern whitelisting.
+ * *Fearless:* It is the [safest native language](/fearless): memory safety, data-race safety, region isolation, extern boundaries, and dependency extern whitelisting.
  * *Flexible:* Its new take on [regions](/guide/regions) enables alternate memory management and allocation strategies, with the [region borrow checker](https://verdagon.dev/blog/zero-cost-refs-regions) enabling seamless, fast, and _easy_ interop between them.
 
 

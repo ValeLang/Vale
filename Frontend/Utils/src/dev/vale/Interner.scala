@@ -17,6 +17,8 @@ trait IInterning extends Product {
 
   var uniqueId = new InterningId(0L) // 0 means not interned
 
+  def uid: Long = uniqueId.uniqueId
+
   override def equals(obj: Any): Boolean = {
     obj match {
       case that : IInterning => {
@@ -81,7 +83,6 @@ class Interner {
   }
 }
 
-//trait IInterning
-//class Interner {
-//  def intern[X <: IInterning](x: X): X = x
-//}
+
+// "String Interned"
+case class StrI(str: String) extends IInterning

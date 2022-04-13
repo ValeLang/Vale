@@ -25,7 +25,7 @@ class TypeTests extends FunSuite with Matchers with Collector with TestParseUtil
               MutabilityPT(_,MutableP),
               VariabilityPT(_,FinalP),
               IntPT(_,3),
-              NameOrRunePT(NameP(_, "MutableStruct")))) =>
+              NameOrRunePT(NameP(_, StrI("MutableStruct"))))) =>
     }
   }
 
@@ -36,7 +36,7 @@ class TypeTests extends FunSuite with Matchers with Collector with TestParseUtil
           MutabilityPT(_,ImmutableP),
           VariabilityPT(_,FinalP),
           IntPT(_,3),
-          NameOrRunePT(NameP(_, "MutableStruct")))) =>
+          NameOrRunePT(NameP(_, StrI("MutableStruct"))))) =>
     }
   }
 
@@ -47,17 +47,28 @@ class TypeTests extends FunSuite with Matchers with Collector with TestParseUtil
       MutabilityPT(_,ImmutableP),
       VariabilityPT(_,VaryingP),
       IntPT(_,3),
-      NameOrRunePT(NameP(_, "MutableStruct")))) =>
+      NameOrRunePT(NameP(_, StrI("MutableStruct"))))) =>
     }
   }
+
+  test("15d") {
+    compile("_ #[]int") shouldHave {
+      case withType(
+        RuntimeSizedArrayPT(_,
+          MutabilityPT(_,ImmutableP),
+          NameOrRunePT(NameP(_, StrI("int"))))) =>
+    }
+  }
+
+
 
   test("Sequence type") {
     compile("_ (int, bool)") shouldHave {
       case withType(
           TuplePT(_,
             Vector(
-              NameOrRunePT(NameP(_, "int")),
-              NameOrRunePT(NameP(_, "bool"))))) =>
+              NameOrRunePT(NameP(_, StrI("int"))),
+              NameOrRunePT(NameP(_, StrI("bool")))))) =>
     }
   }
   test("15") {
@@ -71,7 +82,7 @@ class TypeTests extends FunSuite with Matchers with Collector with TestParseUtil
               MutabilityPT(_,MutableP),
               VariabilityPT(_,FinalP),
               IntPT(_,3),
-              NameOrRunePT(NameP(_, "MutableStruct"))))),
+              NameOrRunePT(NameP(_, StrI("MutableStruct")))))),
         None,
         None) =>
     }
@@ -87,7 +98,7 @@ class TypeTests extends FunSuite with Matchers with Collector with TestParseUtil
               AnonymousRunePT(_),
               AnonymousRunePT(_),
               IntPT(_,3),
-              NameOrRunePT(NameP(_, "MutableStruct"))))),
+              NameOrRunePT(NameP(_, StrI("MutableStruct")))))),
         None,
         None) =>
     }
@@ -99,12 +110,12 @@ class TypeTests extends FunSuite with Matchers with Collector with TestParseUtil
         Some(
           CallPT(
             _,
-            NameOrRunePT(NameP(_, "MyOption")),
+            NameOrRunePT(NameP(_, StrI("MyOption"))),
             Vector(
               CallPT(_,
-                NameOrRunePT(NameP(_, "MyList")),
+                NameOrRunePT(NameP(_, StrI("MyList"))),
                 Vector(
-                  NameOrRunePT(NameP(_, "int"))))))),
+                  NameOrRunePT(NameP(_, StrI("int")))))))),
         None,
         None) =>
     }

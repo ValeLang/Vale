@@ -9,10 +9,9 @@ import dev.vale.simplifying.HammerCompilation
 import dev.vale.highertyping.ICompileErrorA
 import PassManager.SourceInput
 import dev.vale.highertyping.{ICompileErrorA, ProgramA}
+import dev.vale.lexing.FailedParse
 import dev.vale.simplifying.{HammerCompilation, HammerCompilationOptions, VonHammer}
-import dev.vale.parsing.FailedParse
 import dev.vale.typing.{Hinputs, ICompileErrorT}
-import dev.vale.parsing.FailedParse
 import dev.vale.postparsing.PostParser
 import dev.vale.typing.ICompileErrorT
 import dev.vale.testvm.ReferenceV

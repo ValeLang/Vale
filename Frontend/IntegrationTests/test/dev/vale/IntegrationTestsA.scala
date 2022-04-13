@@ -5,7 +5,6 @@ import dev.vale.passmanager.{FullCompilation, FullCompilationOptions}
 import dev.vale.simplifying.VonHammer
 import dev.vale.finalast.{FullNameH, IntH, OwnH, ProgramH, PrototypeH, YonderH}
 import dev.vale.options.GlobalOptions
-import dev.vale.parsing.FailedParse
 import dev.vale.parsing.ast.FileP
 import dev.vale.postparsing.{ICompileErrorS, ProgramS}
 import dev.vale.typing.ast.{SignatureT, StructToInterfaceUpcastTE}
@@ -172,6 +171,22 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = RunCompilation.test(Tests.loadExpected("programs/functions/overloads.vale"))
     compile.evalForKind(Vector()) match { case VonInt(6) => }
   }
+
+  test("Test overload set") {
+    val compile =
+      RunCompilation.test(
+        """
+          |import array.each.*;
+          |func myfunc(i int) { }
+          |exported func main() int {
+          |  mylist = [#][1, 3, 3, 7];
+          |  mylist.each(myfunc);
+          |  42
+          |}
+          |""".stripMargin)
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
+  }
+
 
   test("Test block") {
     val compile = RunCompilation.test("exported func main() int {true; 200; return 300;}")

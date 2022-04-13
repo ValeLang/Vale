@@ -603,7 +603,7 @@ class Compiler(
 
         breakable {
           while (true) {
-            val topLevelThingsAtStart = coutputs.countTopLevelThings()
+            val denizensAtStart = coutputs.countDenizens()
 
             coutputs.getAllStructs().foreach(struct => {
               if (struct.mutability == ImmutableT) {
@@ -652,8 +652,8 @@ class Compiler(
             }
 
 
-            val topLevelThingsAtEnd = coutputs.countTopLevelThings()
-            if (topLevelThingsAtStart == topLevelThingsAtEnd)
+            val denizensAtEnd = coutputs.countDenizens()
+            if (denizensAtStart == denizensAtEnd)
               break
           }
         }

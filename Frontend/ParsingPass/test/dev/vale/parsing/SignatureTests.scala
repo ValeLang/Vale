@@ -1,7 +1,6 @@
 package dev.vale.parsing
 
-import dev.vale.Collector
-import dev.vale.parsing.ast.{AbstractP, BlockPE, ConstantIntPE, FunctionHeaderP, FunctionP, FunctionReturnP, IdentifyingRuneP, IdentifyingRunesP, LocalNameDeclarationP, NameOrRunePT, NameP, ParamsP, PatternPP, Patterns, TopLevelFunctionP, VoidPE}
+import dev.vale.{Collector, StrI}
 import dev.vale.parsing.ast._
 import dev.vale.Collector
 import org.scalatest.{FunSuite, Matchers}
@@ -14,14 +13,14 @@ class SignatureTests extends FunSuite with Collector with TestParseUtils {
       "func maxHp(virtual this Marine) { return 5; }") shouldHave {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "maxHp")),Vector(), None, None,
+          Some(NameP(_, StrI("maxHp"))),Vector(), None, None,
           Some(
             ParamsP(
               _,
               Vector(
                 PatternPP(_,_,
-                  Some(LocalNameDeclarationP(NameP(_, "this"))),
-                  Some(NameOrRunePT(NameP(_, "Marine"))),
+                  Some(LocalNameDeclarationP(NameP(_, StrI("this")))),
+                  Some(NameOrRunePT(NameP(_, StrI("Marine")))),
                   None,
                   Some(AbstractP(_)))))),
           FunctionReturnP(_, None,None)),
@@ -32,7 +31,7 @@ class SignatureTests extends FunSuite with Collector with TestParseUtils {
   test("Param") {
     val program = compileTopLevel("func call(f F){f()}")
     program shouldHave {
-      case PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, "f"))),Some(NameOrRunePT(NameP(_, "F"))),None,None) =>
+      case PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, StrI("f")))),Some(NameOrRunePT(NameP(_, StrI("F")))),None,None) =>
     }
   }
 
@@ -41,7 +40,7 @@ class SignatureTests extends FunSuite with Collector with TestParseUtils {
       "func sum () where X int {3}") shouldHave {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "sum")), Vector(), None, Some(_), Some(_), FunctionReturnP(_, None, None)),
+          Some(NameP(_, StrI("sum"))), Vector(), None, Some(_), Some(_), FunctionReturnP(_, None, None)),
         Some(BlockPE(_, ConstantIntPE(_, 3, _)))) =>
     }
   }
@@ -52,12 +51,12 @@ class SignatureTests extends FunSuite with Collector with TestParseUtils {
       "func wrap<A, F>(a A) { }") shouldHave {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "wrap")), Vector(),
+          Some(NameP(_, StrI("wrap"))), Vector(),
           Some(
             IdentifyingRunesP(_,
               Vector(
-              IdentifyingRuneP(_, NameP(_, "A"), Vector()),
-              IdentifyingRuneP(_, NameP(_, "F"), Vector())))),
+              IdentifyingRuneP(_, NameP(_, StrI("A")), Vector()),
+              IdentifyingRuneP(_, NameP(_, StrI("F")), Vector())))),
           None,
           Some(ParamsP(_, Vector(Patterns.capturedWithTypeRune("a", "A")))),
           FunctionReturnP(_, None, None)),
@@ -70,7 +69,7 @@ class SignatureTests extends FunSuite with Collector with TestParseUtils {
     // rune then stopping.
     compileTopLevel(
       "func __vbi_panic() __Never {}") shouldHave {
-      case NameOrRunePT(NameP(_,"__Never")) =>
+      case NameOrRunePT(NameP(_, StrI("__Never"))) =>
     }
   }
 
@@ -80,14 +79,14 @@ class SignatureTests extends FunSuite with Collector with TestParseUtils {
       case TopLevelFunctionP(
         FunctionP(_,
           FunctionHeaderP(_,
-            Some(NameP(_,"moo")),
+            Some(NameP(_, StrI("moo"))),
             Vector(),None,None,
             Some(
               ParamsP(_,
                 Vector(
                   PatternPP(_,
                     None,
-                    Some(LocalNameDeclarationP(NameP(_,"self"))),
+                    Some(LocalNameDeclarationP(NameP(_, StrI("self")))),
                     None,None,None)))),
             FunctionReturnP(_,None,None)),
           Some(BlockPE(_,VoidPE(_))))) =>

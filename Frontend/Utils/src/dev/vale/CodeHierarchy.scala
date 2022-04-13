@@ -13,7 +13,9 @@ object FileCoordinate extends Ordering[FileCoordinate] {
 
   def test(interner: Interner): FileCoordinate = {
     interner.intern(FileCoordinate(
-      interner.intern(PackageCoordinate("test", Vector.empty)),
+      interner.intern(PackageCoordinate(
+        interner.intern(StrI("test")),
+        Vector.empty)),
       "test.vale"))
   }
 
@@ -27,7 +29,7 @@ object FileCoordinate extends Ordering[FileCoordinate] {
   }
 }
 
-case class PackageCoordinate(module: String, packages: Vector[String]) extends IInterning {
+case class PackageCoordinate(module: StrI, packages: Vector[StrI]) extends IInterning {
   def isInternal = module == ""
   def isTest = module == "test" && packages == Vector()
 
@@ -43,26 +45,24 @@ case class PackageCoordinate(module: String, packages: Vector[String]) extends I
 }
 
 object PackageCoordinate extends Ordering[PackageCoordinate] {
-  def TEST_TLD(interner: Interner): PackageCoordinate = interner.intern(PackageCoordinate("test", Vector.empty))
+  def TEST_TLD(interner: Interner): PackageCoordinate = interner.intern(PackageCoordinate(interner.intern(StrI("test")), Vector.empty))
 
-  def BUILTIN(interner: Interner): PackageCoordinate = interner.intern(PackageCoordinate("", Vector.empty))
+  def BUILTIN(interner: Interner): PackageCoordinate = interner.intern(PackageCoordinate(interner.intern(StrI("")), Vector.empty))
 
-  def internal(interner: Interner): PackageCoordinate = interner.intern(PackageCoordinate("", Vector.empty))
+  def internal(interner: Interner): PackageCoordinate = interner.intern(PackageCoordinate(interner.intern(StrI("")), Vector.empty))
 
   override def compare(a: PackageCoordinate, b: PackageCoordinate):Int = {
     val lenDiff = a.packages.length - b.packages.length
     if (lenDiff != 0) {
       return lenDiff
     }
-    val stepsDiff =
-      a.packages.zip(b.packages).foldLeft(0)({
-        case (0, (stepA, stepB)) => stepA.compareTo(stepB)
-        case (diffSoFar, _) => diffSoFar
-      })
-    if (stepsDiff != 0) {
-      return stepsDiff
-    }
-    return a.module.compareTo(b.module)
+    a.packages.zip(b.packages).foreach({ case (stepA, stepB) =>
+      val stepDiff = stepA.uid - stepB.uid
+      if (stepDiff != 0L) {
+        return U.sign(stepDiff)
+      }
+    })
+    return U.sign(a.module.uid - b.module.uid)
   }
 }
 
@@ -73,7 +73,7 @@ object FileCoordinateMap {
     result.put(
       interner.intern(FileCoordinate(
         interner.intern(PackageCoordinate(
-          TEST_MODULE, Vector.empty)),
+          interner.intern(StrI(TEST_MODULE)), Vector.empty)),
         "test.vale")),
       contents)
     result
@@ -87,7 +87,7 @@ object FileCoordinateMap {
       result.put(
         interner.intern(FileCoordinate(
           interner.intern(PackageCoordinate(
-            TEST_MODULE, Vector.empty)),
+            interner.intern(StrI(TEST_MODULE)), Vector.empty)),
           filepath)),
         contents)
     })

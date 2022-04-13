@@ -1,6 +1,6 @@
 package dev.vale.postparsing.rules
 
-import dev.vale.parsing.ast.{BoolTypePR, BuiltinCallPR, ComponentsPR, CoordListTypePR, CoordTypePR, EqualsPR, IRulexPR, ITypePR, IntPT, IntTypePR, KindTypePR, LocationTypePR, MutabilityTypePR, NameP, OrPR, OwnershipPT, OwnershipTypePR, PrototypeTypePR, RangeP, TemplexPR, TypedPR, VariabilityTypePR}
+import dev.vale.parsing.ast.{BoolTypePR, BuiltinCallPR, ComponentsPR, CoordListTypePR, CoordTypePR, EqualsPR, IRulexPR, ITypePR, IntPT, IntTypePR, KindTypePR, LocationTypePR, MutabilityTypePR, NameP, OrPR, OwnershipPT, OwnershipTypePR, PrototypeTypePR, RangeL, TemplexPR, TypedPR, VariabilityTypePR}
 import dev.vale.postparsing.{BooleanTemplataType, CodeRuneS, CompileErrorExceptionS, CoordTemplataType, IEnvironment, IRuneS, ITemplataType, ImplicitRuneS, IntegerTemplataType, KindTemplataType, LocationInDenizenBuilder, LocationTemplataType, MutabilityTemplataType, OwnershipTemplataType, PackTemplataType, PrototypeTemplataType, PostParser, UnknownRuleFunctionS, VariabilityTemplataType, rules}
 import dev.vale.{vassert, vassertOne, vcurious, vfail, vimpl}
 import dev.vale.parsing._
@@ -32,7 +32,7 @@ class RuleScout(templexScout: TemplexScout) {
     runeToExplicitType: mutable.HashMap[IRuneS, ITemplataType],
     rulex: IRulexPR):
   RuneUsage = {
-    val evalRange = (range: RangeP) => PostParser.evalRange(env.file, range)
+    val evalRange = (range: RangeL) => PostParser.evalRange(env.file, range)
 
     rulex match {
       case EqualsPR(range, leftP, rightP) => {

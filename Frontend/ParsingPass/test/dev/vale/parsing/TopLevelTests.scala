@@ -5,6 +5,7 @@ import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.{BlockPE, ExportAsP, FileP, FunctionP, ImportP, NameOrRunePT, NameP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImportP, TopLevelStructP, VoidPE}
 import dev.vale.parsing.ast.BlockPE
 import dev.vale.Collector
+import dev.vale.lexing.{BadStartOfStatementError, IParseError, UnrecognizedDenizenError}
 import org.scalatest.{FunSuite, Matchers}
 
 
@@ -30,8 +31,8 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
         |
         |struct mork { }
         |""".stripMargin)
-    program.topLevelThings(0) match { case TopLevelFunctionP(_) => }
-    program.topLevelThings(1) match { case TopLevelStructP(_) => }
+    program.denizens(0) match { case TopLevelFunctionP(_) => }
+    program.denizens(1) match { case TopLevelStructP(_) => }
   }
 
   test("Ellipses ignored") {
@@ -67,7 +68,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
         |""".stripMargin
     val err = compileForError(code)
     err match {
-      case UnrecognizedTopLevelThingError(_) =>
+      case UnrecognizedDenizenError(_) =>
     }
   }
 
@@ -79,7 +80,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
   // To support the examples on the site for the syntax highlighter
   test("empty") {
     val program = compile("func foo() { ... }")
-    program.topLevelThings(0) match {
+    program.denizens(0) match {
       case TopLevelFunctionP(
       FunctionP(_,
       _,
@@ -89,44 +90,44 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
 
   test("exporting int") {
     val program = compile("export int as NumberThing;")
-    program.topLevelThings(0) match {
-      case TopLevelExportAsP(ExportAsP(_,NameOrRunePT(NameP(_,"int")),NameP(_,"NumberThing"))) =>
+    program.denizens(0) match {
+      case TopLevelExportAsP(ExportAsP(_,NameOrRunePT(NameP(_, StrI("int"))),NameP(_, StrI("NumberThing")))) =>
 
     }
   }
 
   test("exporting imm array 1") {
     val program = compile("export []<mut>int as IntArray;")
-    program.topLevelThings(0) match {
-      case TopLevelExportAsP(ExportAsP(_,_,NameP(_,"IntArray"))) =>
+    program.denizens(0) match {
+      case TopLevelExportAsP(ExportAsP(_,_,NameP(_, StrI("IntArray")))) =>
     }
   }
 
   test("exporting imm array 2") {
     val program = compile("export #[]int as IntArray;")
-    program.topLevelThings(0) match {
-      case TopLevelExportAsP(ExportAsP(_,_,NameP(_,"IntArray"))) =>
+    program.denizens(0) match {
+      case TopLevelExportAsP(ExportAsP(_,_,NameP(_, StrI("IntArray")))) =>
     }
   }
 
   test("import wildcard") {
     val program = compile("import somemodule.*;")
-    program.topLevelThings(0) match {
-      case TopLevelImportP(ImportP(_, NameP(_, "somemodule"), Vector(), NameP(_, "*"))) =>
+    program.denizens(0) match {
+      case TopLevelImportP(ImportP(_, NameP(_, StrI("somemodule")), Vector(), NameP(_, "*"))) =>
     }
   }
 
   test("import just module and thing") {
     val program = compile("import somemodule.List;")
-    program.topLevelThings(0) match {
-      case TopLevelImportP(ImportP(_, NameP(_, "somemodule"), Vector(), NameP(_, "List"))) =>
+    program.denizens(0) match {
+      case TopLevelImportP(ImportP(_, NameP(_, StrI("somemodule")), Vector(), NameP(_, StrI("List")))) =>
     }
   }
 
   test("full import") {
     val program = compile("import somemodule.subpackage.List;")
-    program.topLevelThings(0) match {
-      case TopLevelImportP(ImportP(_, NameP(_, "somemodule"), Vector(NameP(_, "subpackage")), NameP(_, "List"))) =>
+    program.denizens(0) match {
+      case TopLevelImportP(ImportP(_, NameP(_, StrI("somemodule")), Vector(NameP(_, StrI("subpackage"))), NameP(_, StrI("List")))) =>
     }
   }
 
@@ -135,7 +136,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
       """
         |func strongestDesire() IDesire<'r, 'i> { }
         |""".stripMargin)
-    program.topLevelThings(0) match {
+    program.denizens(0) match {
       case TopLevelFunctionP(func) =>
     }
   }

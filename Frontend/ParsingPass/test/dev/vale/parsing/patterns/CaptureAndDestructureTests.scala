@@ -17,13 +17,13 @@ class CaptureAndDestructureTests extends FunSuite with Matchers with Collector w
   test("Capture with destructure with type inside") {
     compile("a [a int, b bool]") shouldHave {
       case PatternPP(_,_,
-          Some(LocalNameDeclarationP(NameP(_, "a"))),
+          Some(LocalNameDeclarationP(NameP(_, StrI("a")))),
           None,
           Some(
           DestructureP(_,
             Vector(
-              capturedWithType("a", NameOrRunePT(NameP(_, "int"))),
-              capturedWithType("b", NameOrRunePT(NameP(_, "bool")))))),
+              capturedWithType("a", NameOrRunePT(NameP(_, StrI("int")))),
+              capturedWithType("b", NameOrRunePT(NameP(_, StrI("bool"))))))),
           None) =>
     }
   }
@@ -38,17 +38,17 @@ class CaptureAndDestructureTests extends FunSuite with Matchers with Collector w
   test("capture with empty destructure") {
     // Needs the space between the braces, see https://github.com/ValeLang/Vale/issues/434
     compile("a [ ]") shouldHave {
-      case PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, "a"))),None,Some(DestructureP(_,Vector())),None) =>
+      case PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, StrI("a")))),None,Some(DestructureP(_,Vector())),None) =>
     }
   }
   test("Destructure with nested atom") {
     compile("a [b int]") shouldHave {
       case PatternPP(_,_,
-          Some(LocalNameDeclarationP(NameP(_, "a"))),
+          Some(LocalNameDeclarationP(NameP(_, StrI("a")))),
           None,
           Some(
           DestructureP(_,
-            Vector(capturedWithType("b", NameOrRunePT(NameP(_, "int")))))),
+            Vector(capturedWithType("b", NameOrRunePT(NameP(_, StrI("int"))))))),
           None) =>
     }
   }

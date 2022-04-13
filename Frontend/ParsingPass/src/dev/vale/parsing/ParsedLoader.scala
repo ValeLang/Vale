@@ -1,11 +1,12 @@
 package dev.vale.parsing
 
-import dev.vale.{Err, Ok, Profiler, Result, vimpl, vwat}
-import dev.vale.parsing.ast.{AbstractAttributeP, AbstractP, AndPE, AnonymousRunePT, ArenaRuneAttributeP, AugmentPE, BinaryCallPE, BlockPE, BoolTypePR, BorrowP, BorrowPT, BraceCallPE, BreakPE, BuiltinAttributeP, BuiltinCallPR, BumpRuneAttributeP, CallMacro, CallPT, CitizenTemplateTypePR, ComponentsPR, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, ConstructingMemberNameDeclarationP, CoordListTypePR, CoordTypePR, DestructPE, DestructureP, DontCallMacro, DotPE, EachPE, EqualsPR, ExportAsP, ExportAttributeP, ExternAttributeP, FileP, FinalP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IArraySizeP, IAttributeP, IExpressionPE, IImpreciseNameP, INameDeclarationP, IRulexPR, IRuneAttributeP, IStructContent, ITemplexPT, ITypePR, IdentifyingRuneP, IdentifyingRunesP, IfPE, IgnoredLocalNameDeclarationP, ImmutableP, ImmutableRuneAttributeP, ImplP, ImportP, IndexPE, InlinePT, IntPT, IntTypePR, InterfaceP, InterpretedPT, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, KindTypePR, LambdaPE, LetPE, LoadAsBorrowP, LoadAsP, LoadAsWeakP, LocalNameDeclarationP, LocationTypePR, LookupNameP, LookupPE, MacroCallP, MagicParamLookupPE, MethodCallPE, MoveP, MutabilityP, MutabilityPT, MutabilityTypePR, MutableP, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, NotPE, OrPE, OrPR, OwnP, OwnershipP, OwnershipPT, OwnershipTypePR, PackPE, PackPT, ParamsP, PatternPP, PoolRuneAttributeP, PrototypeTypePR, PureAttributeP, RangePE, ReadOnlyRuneAttributeP, ReadWriteRuneAttributeP, RegionRunePT, RegionTypePR, ReturnPE, RuntimeSizedArrayPT, RuntimeSizedP, SealedAttributeP, ShareP, ShortcallPE, StaticSizedArrayPT, StaticSizedP, StrInterpolatePE, StringPT, StructMembersP, StructMethodP, StructP, SubExpressionPE, TemplateArgsP, TemplateRulesP, TemplexPR, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, TuplePT, TypeRuneAttributeP, TypedPR, UnitP, UnletPE, UseP, VariabilityP, VariabilityPT, VariabilityTypePR, VariadicStructMemberP, VaryingP, VoidPE, WeakP, WeakableAttributeP, WhilePE}
+import dev.vale.lexing.{BadVPSTError, BadVPSTException, IParseError, RangeL}
+import dev.vale.{Err, Interner, Ok, Profiler, Result, StrI, vimpl, vwat}
+import dev.vale.parsing.ast.{AbstractAttributeP, AbstractP, AndPE, AnonymousRunePT, ArenaRuneAttributeP, AugmentPE, BinaryCallPE, BlockPE, BoolTypePR, BorrowP, BorrowPT, BraceCallPE, BreakPE, BuiltinAttributeP, BuiltinCallPR, BumpRuneAttributeP, CallMacroP, CallPT, CitizenTemplateTypePR, ComponentsPR, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, ConstructingMemberNameDeclarationP, CoordListTypePR, CoordTypePR, DestructPE, DestructureP, DontCallMacroP, DotPE, EachPE, EqualsPR, ExportAsP, ExportAttributeP, ExternAttributeP, FileP, FinalP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IArraySizeP, IAttributeP, IExpressionPE, IImpreciseNameP, INameDeclarationP, IRulexPR, IRuneAttributeP, IStructContent, ITemplexPT, ITypePR, IdentifyingRuneP, IdentifyingRunesP, IfPE, IgnoredLocalNameDeclarationP, ImmutableP, ImmutableRuneAttributeP, ImplP, ImportP, IndexPE, InlinePT, IntPT, IntTypePR, InterfaceP, InterpretedPT, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, KindTypePR, LambdaPE, LetPE, LoadAsBorrowP, LoadAsP, LoadAsWeakP, LocalNameDeclarationP, LocationTypePR, LookupNameP, LookupPE, MacroCallP, MagicParamLookupPE, MethodCallPE, MoveP, MutabilityP, MutabilityPT, MutabilityTypePR, MutableP, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, NotPE, OrPE, OrPR, OwnP, OwnershipP, OwnershipPT, OwnershipTypePR, PackPE, PackPT, ParamsP, PatternPP, PoolRuneAttributeP, PrototypeTypePR, PureAttributeP, RangePE, ReadOnlyRuneAttributeP, ReadWriteRuneAttributeP, RegionRunePT, RegionTypePR, ReturnPE, RuntimeSizedArrayPT, RuntimeSizedP, SealedAttributeP, ShareP, ShortcallPE, StaticSizedArrayPT, StaticSizedP, StrInterpolatePE, StringPT, StructMembersP, StructMethodP, StructP, SubExpressionPE, TemplateArgsP, TemplateRulesP, TemplexPR, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, TuplePT, TypeRuneAttributeP, TypedPR, UnitP, UnletPE, UseP, VariabilityP, VariabilityPT, VariabilityTypePR, VariadicStructMemberP, VaryingP, VoidPE, WeakP, WeakableAttributeP, WhilePE}
 import net.liftweb.json._
 import dev.vale.parsing.ast._
 
-object ParsedLoader {
+class ParsedLoader(interner: Interner) {
   def expectObject(obj: Object): JObject = {
     if (!obj.isInstanceOf[JObject]) {
       throw BadVPSTException(BadVPSTError("Expected JSON object, got: " + obj.getClass.getSimpleName))
@@ -82,9 +83,9 @@ object ParsedLoader {
   def getType(jobj: JObject): String = {
     getStringField(jobj, "__type")
   }
-  def loadRange(jobj: JObject): ast.RangeP = {
+  def loadRange(jobj: JObject): RangeL = {
     expectType(jobj, "Range")
-    ast.RangeP(
+    RangeL(
       getIntField(jobj, "begin"),
       getIntField(jobj, "end"))
   }
@@ -92,7 +93,7 @@ object ParsedLoader {
     expectType(jobj, "Name")
     NameP(
       loadRange(getObjectField(jobj, "range")),
-      getStringField(jobj, "name"))
+      interner.intern(StrI(getStringField(jobj, "name"))))
   }
 
   def load(source: String): Result[FileP, IParseError] = {
@@ -101,14 +102,14 @@ object ParsedLoader {
         val jfile = expectObjectTyped(parse(source), "File")
         Ok(
           FileP(
-            getArrayField(jfile, "topLevelThings").map(expectObject).map(topLevelThing => {
-              getType(topLevelThing) match {
-                case "Struct" => TopLevelStructP(loadStruct(topLevelThing))
-                case "Interface" => TopLevelInterfaceP(loadInterface(topLevelThing))
-                case "Function" => TopLevelFunctionP(loadFunction(topLevelThing))
-                case "Impl" => TopLevelImplP(loadImpl(topLevelThing))
-                case "Import" => TopLevelImportP(loadImport(topLevelThing))
-                case "ExportAs" => TopLevelExportAsP(loadExportAs(topLevelThing))
+            getArrayField(jfile, "denizens").map(expectObject).map(denizen => {
+              getType(denizen) match {
+                case "Struct" => TopLevelStructP(loadStruct(denizen))
+                case "Interface" => TopLevelInterfaceP(loadInterface(denizen))
+                case "Function" => TopLevelFunctionP(loadFunction(denizen))
+                case "Impl" => TopLevelImplP(loadImpl(denizen))
+                case "Import" => TopLevelImportP(loadImport(denizen))
+                case "ExportAs" => TopLevelExportAsP(loadExportAs(denizen))
                 case x => vimpl(x.toString)
               }
             })))
@@ -118,11 +119,11 @@ object ParsedLoader {
     })
   }
 
-  private def loadFunction(topLevelThing: JObject) = {
+  def loadFunction(denizen: JObject) = {
     FunctionP(
-      loadRange(getObjectField(topLevelThing, "range")),
-      loadFunctionHeader(getObjectField(topLevelThing, "header")),
-      loadOptionalObject(getObjectField(topLevelThing, "body"), loadBlock))
+      loadRange(getObjectField(denizen, "range")),
+      loadFunctionHeader(getObjectField(denizen, "header")),
+      loadOptionalObject(getObjectField(denizen, "body"), loadBlock))
   }
 
   private def loadImpl(jobj: JObject) = {
@@ -161,16 +162,16 @@ object ParsedLoader {
       loadStructMembers(getObjectField(jobj, "members")))
   }
 
-  private def loadInterface(topLevelThing: JObject) = {
+  private def loadInterface(denizen: JObject) = {
     InterfaceP(
-      loadRange(getObjectField(topLevelThing, "range")),
-      loadName(getObjectField(topLevelThing, "name")),
-      getArrayField(topLevelThing, "attributes").map(expectObject).map(loadAttribute),
-//      getArrayField(topLevelThing, "attributes").map(expectObject).map(loadCitizenAttribute),
-      loadTemplex(getObjectField(topLevelThing, "mutability")),
-      loadOptionalObject(getObjectField(topLevelThing, "maybeIdentifyingRunes"), loadIdentifyingRunes),
-      loadOptionalObject(getObjectField(topLevelThing, "templateRules"), loadTemplateRules),
-      getArrayField(topLevelThing, "members").map(expectObject).map(loadFunction))
+      loadRange(getObjectField(denizen, "range")),
+      loadName(getObjectField(denizen, "name")),
+      getArrayField(denizen, "attributes").map(expectObject).map(loadAttribute),
+//      getArrayField(denizen, "attributes").map(expectObject).map(loadCitizenAttribute),
+      loadTemplex(getObjectField(denizen, "mutability")),
+      loadOptionalObject(getObjectField(denizen, "maybeIdentifyingRunes"), loadIdentifyingRunes),
+      loadOptionalObject(getObjectField(denizen, "templateRules"), loadTemplateRules),
+      getArrayField(denizen, "members").map(expectObject).map(loadFunction))
   }
 
   def loadFunctionHeader(jobj: JObject): FunctionHeaderP = {
@@ -253,7 +254,7 @@ object ParsedLoader {
   def loadFunctionReturn(jobj: JObject): FunctionReturnP = {
     FunctionReturnP(
       loadRange(getObjectField(jobj, "range")),
-      loadOptionalObject(getObjectField(jobj, "inferRet"), loadUnit),
+      loadOptionalObject(getObjectField(jobj, "inferRet"), loadRange),
       loadOptionalObject(getObjectField(jobj, "retType"), loadTemplex))
   }
 
@@ -665,7 +666,7 @@ object ParsedLoader {
       case "MacroCall" => {
         MacroCallP(
           loadRange(getObjectField(jobj, "range")),
-          if (getBooleanField(jobj, "dontCall")) DontCallMacro else CallMacro,
+          if (getBooleanField(jobj, "dontCall")) DontCallMacroP else CallMacroP,
           loadName(getObjectField(jobj, "name")))
       }
       case x => vimpl(x.toString)

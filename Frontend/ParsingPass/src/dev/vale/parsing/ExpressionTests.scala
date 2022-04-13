@@ -1,10 +1,9 @@
 package dev.vale.parsing
 
-import dev.vale.Collector
-import dev.vale.options.GlobalOptions
+import dev.vale.{Collector, StrI}
 import dev.vale.parsing.ast.{AugmentPE, BinaryCallPE, BlockPE, BorrowP, BraceCallPE, CallPT, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstructArrayPE, DotPE, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, ImmutableP, IntPT, LambdaPE, LocalNameDeclarationP, LookupNameP, LookupPE, MagicParamLookupPE, MethodCallPE, MutabilityPT, MutableP, NameOrRunePT, NameP, NotPE, OrPE, OwnP, ParamsP, PatternPP, RangePE, RuntimeSizedP, StaticSizedP, SubExpressionPE, TemplateArgsP, TuplePE, UnletPE}
-import dev.vale.parsing.expressions.StringParser
 import dev.vale.Collector
+import dev.vale.lexing.{BadExpressionEnd, CantUseBreakInExpression, CantUseReturnInExpression}
 import dev.vale.parsing.ast._
 import org.scalatest.Matchers.convertToAnyShouldWrapper
 import org.scalatest.{FunSuite, Matchers}
@@ -27,7 +26,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
 
   test("Binary operator") {
     compileExpression("4 + 5") shouldHave
-      { case BinaryCallPE(_,NameP(_,"+"),ConstantIntPE(_,4,_),ConstantIntPE(_,5,_)) => }
+      { case BinaryCallPE(_,NameP(_,StrI("+")),ConstantIntPE(_,4,_),ConstantIntPE(_,5,_)) => }
   }
 
   test("Floats") {
@@ -42,27 +41,27 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
 
   test("add as call") {
     compileExpression("+(4, 5)") shouldHave
-      { case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, "+")), None), Vector(ConstantIntPE(_, 4, _), ConstantIntPE(_, 5, _))) => }
+      { case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, StrI("+"))), None), Vector(ConstantIntPE(_, 4, _), ConstantIntPE(_, 5, _))) => }
   }
 
   test("range") {
     compileExpression("a..b") shouldHave
-      { case RangePE(_,LookupPE(LookupNameP(NameP(_,"a")),None),LookupPE(LookupNameP(NameP(_,"b")),None)) =>}
+      { case RangePE(_,LookupPE(LookupNameP(NameP(_,StrI("a"))),None),LookupPE(LookupNameP(NameP(_,StrI("b"))),None)) =>}
   }
 
   test("regular call") {
     compileExpression("x(y)") shouldHave
-      { case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, "x")), None), Vector(LookupPE(LookupNameP(NameP(_, "y")), None))) => }
+      { case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, StrI("x"))), None), Vector(LookupPE(LookupNameP(NameP(_, StrI("y"))), None))) => }
   }
 
   test("not") {
     compileExpression("not y") shouldHave
-      { case NotPE(_,LookupPE(LookupNameP(NameP(_,"y")),None)) => }
+      { case NotPE(_,LookupPE(LookupNameP(NameP(_,StrI("y"))),None)) => }
   }
 
   test("Borrowing result of function call") {
     compileExpression("&Muta()") shouldHave
-      { case AugmentPE(_,BorrowP,FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_,"Muta")),None),Vector())) => }
+      { case AugmentPE(_,BorrowP,FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_,StrI("Muta"))),None),Vector())) => }
   }
 
   test("Specifying heap") {
@@ -72,21 +71,21 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
 
   test("inline call ignored") {
     compileExpression("inl Muta()") shouldHave
-      { case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, "Muta")),None),Vector()) => }
+      { case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, StrI("Muta"))),None),Vector()) => }
   }
 
   test("Method call") {
     compileExpression("x . shout ()") shouldHave
-      { case MethodCallPE(_,LookupPE(LookupNameP(NameP(_,"x")),None),_,LookupPE(LookupNameP(NameP(_,"shout")),None),Vector()) => }
+      { case MethodCallPE(_,LookupPE(LookupNameP(NameP(_,StrI("x"))),None),_,LookupPE(LookupNameP(NameP(_,StrI("shout"))),None),Vector()) => }
   }
 
   test("Method on member") {
     compileExpression("x.moo.shout()") shouldHave
       {
         case MethodCallPE(_,
-          DotPE(_, LookupPE(LookupNameP(NameP(_, "x")),None), _, NameP(_,"moo")),
+          DotPE(_, LookupPE(LookupNameP(NameP(_, StrI("x"))),None), _, NameP(_,StrI("moo"))),
           _,
-          LookupPE(LookupNameP(NameP(_, "shout")),None),
+          LookupPE(LookupNameP(NameP(_, StrI("shout"))),None),
           Vector()) =>
       }
   }
@@ -95,9 +94,9 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
     compileExpression("(x ).shout()") shouldHave
       {
       case MethodCallPE(_,
-        SubExpressionPE(_, LookupPE(LookupNameP(NameP(_, "x")),None)),
+        SubExpressionPE(_, LookupPE(LookupNameP(NameP(_, StrI("x"))),None)),
         _,
-        LookupPE(LookupNameP(NameP(_, "shout")),None),
+        LookupPE(LookupNameP(NameP(_, StrI("shout"))),None),
         Vector()) =>
     }
   }
@@ -106,9 +105,9 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
 //    compileExpression("x*. shout()") shouldHave
 //      {
 //      case MethodCallPE(_,
-//      LookupPE(LookupNameP(NameP(_, "x")),None),
+//      LookupPE(LookupNameP(NameP(_, StrI("x"))),None),
 //      _,false,
-//      LookupPE(LookupNameP(NameP(_, "shout")),None),
+//      LookupPE(LookupNameP(NameP(_, StrI("shout"))),None),
 //      Vector()) =>
 //    }
 //  }
@@ -117,47 +116,47 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
     compileExpression("toArray<imm>( &result)") shouldHave
       {
         case FunctionCallPE(_,_,
-        LookupPE(LookupNameP(NameP(_,"toArray")),Some(TemplateArgsP(_,Vector(MutabilityPT(_,ImmutableP))))),
-        Vector(AugmentPE(_,BorrowP,LookupPE(LookupNameP(NameP(_,"result")),None)))) =>
+        LookupPE(LookupNameP(NameP(_,StrI("toArray"))),Some(TemplateArgsP(_,Vector(MutabilityPT(_,ImmutableP))))),
+        Vector(AugmentPE(_,BorrowP,LookupPE(LookupNameP(NameP(_,StrI("result"))),None)))) =>
       }
   }
 
   test("Templated method call") {
     compileExpression("result.toArray <imm> ()") shouldHave
       {
-      case MethodCallPE(_,LookupPE(LookupNameP(NameP(_, "result")),None),_,LookupPE(LookupNameP(NameP(_, "toArray")),Some(TemplateArgsP(_, Vector(MutabilityPT(_,ImmutableP))))),Vector()) =>
+      case MethodCallPE(_,LookupPE(LookupNameP(NameP(_, StrI("result"))),None),_,LookupPE(LookupNameP(NameP(_, StrI("toArray"))),Some(TemplateArgsP(_, Vector(MutabilityPT(_,ImmutableP))))),Vector()) =>
     }
   }
 
   test("Custom binaries") {
     compileExpression("not y florgle not x") shouldHave
-      { case BinaryCallPE(_,NameP(_,"florgle"),NotPE(_,LookupPE(LookupNameP(NameP(_,"y")),None)),NotPE(_,LookupPE(LookupNameP(NameP(_,"x")),None))) => }
+      { case BinaryCallPE(_,NameP(_,StrI("florgle")),NotPE(_,LookupPE(LookupNameP(NameP(_,StrI("y"))),None)),NotPE(_,LookupPE(LookupNameP(NameP(_,StrI("x"))),None))) => }
   }
 
   test("Custom with noncustom binaries") {
     compileExpression("a + b florgle x * y") shouldHave
       {
         case BinaryCallPE(_,
-          NameP(_,"florgle"),
+          NameP(_,StrI("florgle")),
           BinaryCallPE(_,
-            NameP(_,"+"),
-            LookupPE(LookupNameP(NameP(_,"a")),None),
-            LookupPE(LookupNameP(NameP(_,"b")),None)),
+            NameP(_,StrI("+")),
+            LookupPE(LookupNameP(NameP(_,StrI("a"))),None),
+            LookupPE(LookupNameP(NameP(_,StrI("b"))),None)),
           BinaryCallPE(_,
-            NameP(_,"*"),
-            LookupPE(LookupNameP(NameP(_,"x")),None),
-            LookupPE(LookupNameP(NameP(_,"y")),None))) =>
+            NameP(_,StrI("*")),
+            LookupPE(LookupNameP(NameP(_,StrI("x"))),None),
+            LookupPE(LookupNameP(NameP(_,StrI("y"))),None))) =>
       }
   }
 
   test("Template calling") {
     compileExpression("MyNone< int >()") shouldHave
       {
-        case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, "MyNone")),Some(TemplateArgsP(_,Vector(NameOrRunePT(NameP(_,"int")))))),Vector()) =>
+        case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, StrI("MyNone"))),Some(TemplateArgsP(_,Vector(NameOrRunePT(NameP(_,StrI("int"))))))),Vector()) =>
     }
     compileExpression("MySome< MyNone <int> >()") shouldHave
       {
-      case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, "MySome")), Some(TemplateArgsP(_, Vector(CallPT(_,NameOrRunePT(NameP(_, "MyNone")),Vector(NameOrRunePT(NameP(_, "int")))))))),Vector()) =>
+      case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, StrI("MySome"))), Some(TemplateArgsP(_, Vector(CallPT(_,NameOrRunePT(NameP(_, StrI("MyNone"))),Vector(NameOrRunePT(NameP(_, StrI("int"))))))))),Vector()) =>
     }
   }
 
@@ -167,13 +166,13 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
     // whitespace on both sides, so that it was forced to parse the entire thing.
     compileExpression("9 >= 3") shouldHave
       {
-        case BinaryCallPE(_,NameP(_,">="),ConstantIntPE(_,9,_),ConstantIntPE(_,3,_)) =>
+        case BinaryCallPE(_,NameP(_,StrI(">=")),ConstantIntPE(_,9,_),ConstantIntPE(_,3,_)) =>
     }
   }
 
   test("Indexing") {
     compileExpression("arr [4]") shouldHave
-      { case BraceCallPE(_,_,LookupPE(LookupNameP(NameP(_,"arr")),None),Vector(ConstantIntPE(_,4,_)),_) => }
+      { case BraceCallPE(_,_,LookupPE(LookupNameP(NameP(_,StrI("arr"))),None),Vector(ConstantIntPE(_,4,_)),_) => }
   }
 
   test("Single arg brace lambda") {
@@ -183,9 +182,9 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
           FunctionP(_,
             FunctionHeaderP(_,
               None,Vector(),None,None,
-              Some(ParamsP(_,Vector(PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"x"))),None,None,None)))),
+              Some(ParamsP(_,Vector(PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,StrI("x")))),None,None,None)))),
               FunctionReturnP(_,None,None)),
-            Some(BlockPE(_,LookupPE(LookupNameP(NameP(_,"x")),None))))) =>
+            Some(BlockPE(_,LookupPE(LookupNameP(NameP(_,StrI("x"))),None))))) =>
       }
   }
 
@@ -196,9 +195,9 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
           FunctionP(_,
             FunctionHeaderP(_,
               None,Vector(),None,None,
-              Some(ParamsP(_,Vector(PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"x"))),None,None,None)))),
+              Some(ParamsP(_,Vector(PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,StrI("x")))),None,None,None)))),
               FunctionReturnP(_,None,None)),
-            Some(BlockPE(_,LookupPE(LookupNameP(NameP(_,"x")),None))))) =>
+            Some(BlockPE(_,LookupPE(LookupNameP(NameP(_,StrI("x"))),None))))) =>
       }
   }
 
@@ -209,7 +208,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
           FunctionP(_,
             FunctionHeaderP(_,
               None,Vector(),None,None,
-              Some(ParamsP(_,Vector(PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"x"))),Some(NameOrRunePT(NameP(_,"int"))),None,None)))),
+              Some(ParamsP(_,Vector(PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,StrI("x")))),Some(NameOrRunePT(NameP(_,StrI("int")))),None,None)))),
             _),
           _)) =>
       }
@@ -238,16 +237,16 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
               Some(
                 ParamsP(_,
                   Vector(
-                    PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"x"))),None,None,None),
-                    PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"y"))),None,None,None)))),
-              FunctionReturnP(_,None,None)),Some(BlockPE(_,LookupPE(LookupNameP(NameP(_,"x")),None))))) =>
+                    PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,StrI("x")))),None,None,None),
+                    PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,StrI("y")))),None,None,None)))),
+              FunctionReturnP(_,None,None)),Some(BlockPE(_,LookupPE(LookupNameP(NameP(_,StrI("x"))),None))))) =>
       }
   }
 
   test("!=") {
     compileExpression("3 != 4") shouldHave
       {
-        case BinaryCallPE(_,NameP(_,"!="),ConstantIntPE(_,3,_),ConstantIntPE(_,4,_)) =>
+        case BinaryCallPE(_,NameP(_,StrI("!=")),ConstantIntPE(_,3,_),ConstantIntPE(_,4,_)) =>
     }
   }
 
@@ -265,7 +264,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
 
     program shouldHave
       {
-      case FunctionCallPE(_, _, LookupPE(LookupNameP(NameP(_, "call")), None),Vector(LookupPE(LookupNameP(NameP(_, "sum")), None))) =>
+      case FunctionCallPE(_, _, LookupPE(LookupNameP(NameP(_, StrI("call"))), None),Vector(LookupPE(LookupNameP(NameP(_, StrI("sum"))), None))) =>
     }
   }
 
@@ -273,7 +272,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
     val program = compileExpression("destroy(unlet enemy)")
 
     program shouldHave {
-      case FunctionCallPE(_, _, LookupPE(LookupNameP(NameP(_, "destroy")), None),Vector(UnletPE(_, LookupNameP(NameP(_, "enemy"))))) =>
+      case FunctionCallPE(_, _, LookupPE(LookupNameP(NameP(_, StrI("destroy"))), None),Vector(UnletPE(_, LookupNameP(NameP(_, StrI("enemy")))))) =>
     }
   }
 
@@ -315,16 +314,16 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
 
   test("parens") {
     compileExpression("2 * (5 - 7)") shouldHave
-    { case BinaryCallPE(_,NameP(_,"*"),ConstantIntPE(_,2,_),SubExpressionPE(_, BinaryCallPE(_,NameP(_,"-"),ConstantIntPE(_,5,_),ConstantIntPE(_,7,_)))) => }
+    { case BinaryCallPE(_,NameP(_,StrI("*")),ConstantIntPE(_,2,_),SubExpressionPE(_, BinaryCallPE(_,NameP(_,StrI("-")),ConstantIntPE(_,5,_),ConstantIntPE(_,7,_)))) => }
   }
 
   test("Precedence 1") {
     compileExpression("(5 - 7) * 2") shouldHave
-      { case BinaryCallPE(_,NameP(_,"*"),SubExpressionPE(_, BinaryCallPE(_,NameP(_,"-"),ConstantIntPE(_,5,_),ConstantIntPE(_,7,_))), ConstantIntPE(_,2,_)) => }
+      { case BinaryCallPE(_,NameP(_,StrI("*")),SubExpressionPE(_, BinaryCallPE(_,NameP(_,StrI("-")),ConstantIntPE(_,5,_),ConstantIntPE(_,7,_))), ConstantIntPE(_,2,_)) => }
   }
   test("Precedence 2") {
     compileExpression("5 - 7 * 2") shouldHave
-      { case BinaryCallPE(_,NameP(_,"-"),ConstantIntPE(_,5,_),BinaryCallPE(_,NameP(_,"*"),ConstantIntPE(_,7,_),ConstantIntPE(_,2,_))) => }
+      { case BinaryCallPE(_,NameP(_,StrI("-")),ConstantIntPE(_,5,_),BinaryCallPE(_,NameP(_,StrI("*")),ConstantIntPE(_,7,_),ConstantIntPE(_,2,_))) => }
   }
 
   test("static array from values") {
@@ -348,13 +347,13 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   test("static array from callable with rune") {
     compileExpression("[#N]({_ * 2})") shouldHave
       {
-//      case StaticArrayFromCallablePE(_,NameOrRunePT(NameP(_, "N")),_,_) =>
+//      case StaticArrayFromCallablePE(_,NameOrRunePT(NameP(_, StrI("N"))),_,_) =>
 //      case null =>
       case ConstructArrayPE(_,
         None,
         Some(MutabilityPT(_,MutableP)),
         None,
-        StaticSizedP(Some(NameOrRunePT(NameP(_,"N")))),
+        StaticSizedP(Some(NameOrRunePT(NameP(_,StrI("N"))))),
         false,
         Vector(LambdaPE(None,_))) =>
     }
@@ -363,7 +362,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   test("Less than or equal") {
     compileExpression("a <= b") shouldHave
       {
-        case BinaryCallPE(_,NameP(_,"<="),LookupPE(LookupNameP(NameP(_,"a")),None),LookupPE(LookupNameP(NameP(_,"b")),None)) =>
+        case BinaryCallPE(_,NameP(_,StrI("<=")),LookupPE(LookupNameP(NameP(_,StrI("a"))),None),LookupPE(LookupNameP(NameP(_,StrI("b"))),None)) =>
       }
   }
 
@@ -409,7 +408,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   test("runtime array from callable with rune") {
     compileExpression("[](6, {_ * 2})") shouldHave
       {
-      //      case StaticArrayFromCallablePE(_,NameOrRunePT(NameP(_, "N")),_,_) =>
+      //      case StaticArrayFromCallablePE(_,NameOrRunePT(NameP(_, StrI("N"))),_,_) =>
       //      case null =>
       case ConstructArrayPE(_,
         None,
@@ -478,7 +477,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
       {
       case FunctionCallPE(
           _,_,
-          SubExpressionPE(_, DotPE(_,LookupPE(LookupNameP(NameP(_, "something")),None),_,NameP(_,"callable"))),
+          SubExpressionPE(_, DotPE(_,LookupPE(LookupNameP(NameP(_, StrI("something"))),None),_,NameP(_,StrI("callable")))),
           Vector(_)) =>
       }
   }
@@ -486,11 +485,11 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   test("Array indexing") {
     compileExpression("board[i]") shouldHave
       {
-      case BraceCallPE(_,_,LookupPE(LookupNameP(NameP(_,"board")),None),Vector(LookupPE(LookupNameP(NameP(_,"i")),None)),false) =>
+      case BraceCallPE(_,_,LookupPE(LookupNameP(NameP(_,StrI("board"))),None),Vector(LookupPE(LookupNameP(NameP(_,StrI("i"))),None)),false) =>
       }
     compileExpression("this.board[i]") shouldHave
       {
-      case BraceCallPE(_,_,DotPE(_,LookupPE(LookupNameP(NameP(_, "this")),None),_,NameP(_,"board")),Vector(LookupPE(LookupNameP(NameP(_,"i")),None)),false) =>
+      case BraceCallPE(_,_,DotPE(_,LookupPE(LookupNameP(NameP(_, StrI("this"))),None),_,NameP(_,StrI("board"))),Vector(LookupPE(LookupNameP(NameP(_,StrI("i"))),None)),false) =>
       }
   }
 
@@ -498,9 +497,9 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
     compileExpression("""8 mod 2 == 0""") shouldHave
       {
       case BinaryCallPE(_,
-      NameP(_, "=="),
+      NameP(_, StrI("==")),
         BinaryCallPE(_,
-          NameP(_, "mod"),
+          NameP(_, StrI("mod")),
           ConstantIntPE(_, 8, _),
           ConstantIntPE(_, 2, _)),
         ConstantIntPE(_, 0, _)) =>
@@ -512,7 +511,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
       {
       case OrPE(_,
         BinaryCallPE(_,
-          NameP(_, "=="),
+          NameP(_, StrI("==")),
           ConstantIntPE(_, 2, _),
           ConstantIntPE(_, 0, _)),
         BlockPE(_, ConstantBoolPE(_,false))) =>
@@ -525,10 +524,10 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
       case FunctionCallPE(_, _, SubExpressionPE(_, LambdaPE(_, _)), Vector(ConstantIntPE(_, 3, _))) =>
     }
     program shouldHave {
-      case PatternPP(_,_, Some(LocalNameDeclarationP(NameP(_, "a"))),None,None,None) =>
+      case PatternPP(_,_, Some(LocalNameDeclarationP(NameP(_, StrI("a")))),None,None,None) =>
     }
     program shouldHave {
-      case BinaryCallPE(_, NameP(_, "+"), LookupPE(LookupNameP(NameP(_, "a")), None), LookupPE(LookupNameP(NameP(_, "a")), None)) =>
+      case BinaryCallPE(_, NameP(_, StrI("+")), LookupPE(LookupNameP(NameP(_, StrI("a"))), None), LookupPE(LookupNameP(NameP(_, StrI("a"))), None)) =>
     }
   }
 

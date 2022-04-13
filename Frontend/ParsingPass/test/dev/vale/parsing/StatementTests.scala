@@ -1,56 +1,58 @@
 package dev.vale.parsing
 
-import dev.vale.Collector
-import dev.vale.options.GlobalOptions
+import dev.vale.{Collector, Interner, StrI, vimpl}
 import dev.vale.parsing.ast.{AugmentPE, BlockPE, BorrowP, ConsecutorPE, ConstantBoolPE, ConstantIntPE, ConstantStrPE, DestructPE, DestructureP, DotPE, EachPE, FunctionCallPE, IExpressionPE, IfPE, LetPE, LocalNameDeclarationP, LookupNameP, LookupPE, MutatePE, NameOrRunePT, NameP, PatternPP, Patterns, ReturnPE, TuplePE, UnletPE, VoidPE}
 import dev.vale.parsing.ast._
-import dev.vale.Collector
+import dev.vale.lexing.ForgotSetKeyword
+import dev.vale.options.GlobalOptions
 import org.scalatest.{FunSuite, Matchers}
 
 class StatementTests extends FunSuite with Collector with TestParseUtils {
 
-  def compileBlockContents(stopBefore: IStopBefore, code: String): IExpressionPE = {
-    compile(
-      new ExpressionParser(GlobalOptions(true, true, true, true))
-        .parseBlockContents(_, stopBefore), code)
+  def compileBlockContents(code: String): IExpressionPE = {
+    vimpl()
+//    compile(
+//      new ExpressionParser(new Interner(), GlobalOptions(true, true, true, true))
+//        .parseBlockContents(_), code)
   }
 
-  def compileStatement(stopBefore: IStopBefore, expectResult: Boolean, code: String): IExpressionPE = {
-    compile(
-      new ExpressionParser(GlobalOptions(true, true, true, true))
-        .parseStatement(_, stopBefore, expectResult), code)
+  def compileStatement(code: String): IExpressionPE = {
+    vimpl()
+//    compile(
+//      new ExpressionParser(GlobalOptions(true, true, true, true))
+//        .parseStatement(_, stopBefore, expectResult), code)
   }
 
   test("Simple let") {
-    compileBlockContents(StopBeforeCloseBrace, "x = 4;") shouldHave {
-      case LetPE(_, PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, "x"))), None, None, None), ConstantIntPE(_, 4, _)) =>
+    compileBlockContents( "x = 4;") shouldHave {
+      case LetPE(_, PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, StrI("x")))), None, None, None), ConstantIntPE(_, 4, _)) =>
     }
   }
 
   test("multiple statements") {
-    compileBlockContents(StopBeforeCloseBrace,
+    compileBlockContents(
       """4""".stripMargin) shouldHave {
       case ConstantIntPE(_, 4, _) =>
     }
 
-    compileBlockContents(StopBeforeCloseBrace,
+    compileBlockContents(
       """4;""".stripMargin) shouldHave {
       case ConsecutorPE(Vector(ConstantIntPE(_, 4, _), VoidPE(_))) =>
     }
 
-    compileBlockContents(StopBeforeCloseBrace,
+    compileBlockContents(
       """4; 3""".stripMargin) shouldHave {
       case ConsecutorPE(Vector(ConstantIntPE(_, 4, _), ConstantIntPE(_, 3, _))) =>
     }
 
-    compileBlockContents(StopBeforeCloseBrace,
+    compileBlockContents(
       """4; 3;""".stripMargin) shouldHave {
       case ConsecutorPE(Vector(ConstantIntPE(_, 4, _), ConstantIntPE(_, 3, _), VoidPE(_))) =>
     }
   }
 
   test("8") {
-    compileStatement(StopBeforeCloseBrace, false, "[x, y] = (4, 5)") shouldHave {
+    compileStatement("[x, y] = (4, 5)") shouldHave {
       case LetPE(_,
           PatternPP(_,_,
             None,
@@ -58,62 +60,62 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
             Some(
               DestructureP(_,
                 Vector(
-                  PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, "x"))),None,None,None),
-                  PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, "y"))),None,None,None)))),
+                  PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, StrI("x")))),None,None,None),
+                  PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, StrI("y")))),None,None,None)))),
             None),
           TuplePE(_,Vector(ConstantIntPE(_, 4, _), ConstantIntPE(_, 5, _)))) =>
     }
   }
 
   test("9") {
-    compileStatement(StopBeforeCloseBrace, false, "set x.a = 5") shouldHave {
-      case MutatePE(_, DotPE(_, LookupPE(LookupNameP(NameP(_, "x")), None), _, NameP(_, "a")), ConstantIntPE(_, 5, _)) =>
+    compileStatement("set x.a = 5") shouldHave {
+      case MutatePE(_, DotPE(_, LookupPE(LookupNameP(NameP(_, StrI("x"))), None), _, NameP(_, StrI("a"))), ConstantIntPE(_, 5, _)) =>
     }
   }
 
   test("1PE") {
-    compileStatement(StopBeforeCloseBrace, false, """set board.PE.PE.symbol = "v"""") shouldHave {
-      case MutatePE(_, DotPE(_, DotPE(_, DotPE(_, LookupPE(LookupNameP(NameP(_, "board")), None), _, NameP(_, "PE")), _, NameP(_, "PE")), _, NameP(_, "symbol")), ConstantStrPE(_, "v")) =>
+    compileStatement("""set board.PE.PE.symbol = "v"""") shouldHave {
+      case MutatePE(_, DotPE(_, DotPE(_, DotPE(_, LookupPE(LookupNameP(NameP(_, StrI("board"))), None), _, NameP(_, StrI("PE"))), _, NameP(_, StrI("PE"))), _, NameP(_, StrI("symbol"))), ConstantStrPE(_, "v")) =>
     }
   }
 
   test("Test simple let") {
-    compileStatement(StopBeforeCloseBrace, false, "x = 3") shouldHave {
-      case LetPE(_,PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, "x"))),None,None,None),ConstantIntPE(_, 3, _)) =>
+    compileStatement("x = 3") shouldHave {
+      case LetPE(_,PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, StrI("x")))),None,None,None),ConstantIntPE(_, 3, _)) =>
     }
   }
 
   test("Test simple mut") {
-    compileStatement(StopBeforeCloseBrace, false, "set x = 5") shouldHave {
-      case MutatePE(_, LookupPE(LookupNameP(NameP(_, "x")), None),ConstantIntPE(_, 5, _)) =>
+    compileStatement("set x = 5") shouldHave {
+      case MutatePE(_, LookupPE(LookupNameP(NameP(_, StrI("x"))), None),ConstantIntPE(_, 5, _)) =>
     }
   }
 
   test("Test expr starting with return") {
     // This test is here because we had a bug where we didn't check that there
     // was whitespace after a "return".
-    compileStatement(StopBeforeCloseBrace, false, "retcode()") shouldHave {
-      case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, "retcode")),None),Vector()) =>
+    compileStatement("retcode()") shouldHave {
+      case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, StrI("retcode"))),None),Vector()) =>
     }
   }
 
   test("Test inner set") {
     // This test is here because we had a bug where we didn't check that there
     // was whitespace after a "return".
-    compileStatement(StopBeforeCloseBrace, false,
+    compileStatement(
       "oldArray = set list.array = newArray") shouldHave {
       case LetPE(_,
-        PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"oldArray"))),None,None,None),
+        PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("oldArray")))),None,None,None),
         MutatePE(_,
-          DotPE(_,LookupPE(LookupNameP(NameP(_,"list")),None),_,NameP(_,"array")),
-          LookupPE(LookupNameP(NameP(_,"newArray")),None))) =>
+          DotPE(_,LookupPE(LookupNameP(NameP(_, StrI("list"))),None),_,NameP(_, StrI("array"))),
+          LookupPE(LookupNameP(NameP(_, StrI("newArray"))),None))) =>
     }
   }
 
   test("Test if-statement producing") {
     // This test is here because we had a bug where we didn't check that there
     // was whitespace after a "return".
-    compileStatement(StopBeforeCloseBrace, false,
+    compileStatement(
       "if true { 3 } else { 4 }") shouldHave {
       case IfPE(_,
         ConstantBoolPE(_,true),
@@ -123,118 +125,118 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Test destruct") {
-    compileStatement(StopBeforeCloseBrace, false, "destruct x") shouldHave {
-      case DestructPE(_,LookupPE(LookupNameP(NameP(_, "x")), None)) =>
+    compileStatement("destruct x") shouldHave {
+      case DestructPE(_,LookupPE(LookupNameP(NameP(_, StrI("x"))), None)) =>
     }
   }
 
   test("Test unlet") {
-    compileStatement(StopBeforeCloseBrace, false, "unlet x") shouldHave {
-      case UnletPE(_,LookupNameP(NameP(_, "x"))) =>
+    compileStatement("unlet x") shouldHave {
+      case UnletPE(_,LookupNameP(NameP(_, StrI("x")))) =>
     }
   }
 
   test("Dot on function call's result") {
-    compileStatement(StopBeforeCloseBrace, false, "Wizard(8).charges") shouldHave {
+    compileStatement("Wizard(8).charges") shouldHave {
       case DotPE(_,
           FunctionCallPE(_,_,
-            LookupPE(LookupNameP(NameP(_, "Wizard")), None),
+            LookupPE(LookupNameP(NameP(_, StrI("Wizard"))), None),
             Vector(ConstantIntPE(_, 8, _))),
         _,
-      NameP(_, "charges")) =>
+      NameP(_, StrI("charges"))) =>
     }
   }
 
   test("Let with pattern with only a capture") {
-    compileStatement(StopBeforeCloseBrace, false, "a = m") shouldHave {
-      case LetPE(_,Patterns.capture("a"),LookupPE(LookupNameP(NameP(_, "m")), None)) =>
+    compileStatement("a = m") shouldHave {
+      case LetPE(_,Patterns.capture("a"),LookupPE(LookupNameP(NameP(_, StrI("m"))), None)) =>
     }
   }
 
   test("Let with simple pattern") {
-    compileStatement(StopBeforeCloseBrace, false, "a Moo = m") shouldHave {
+    compileStatement("a Moo = m") shouldHave {
       case LetPE(_,
-        PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, "a"))),Some(NameOrRunePT(NameP(_, "Moo"))),None,None),
-        LookupPE(LookupNameP(NameP(_, "m")), None)) =>
+        PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, StrI("a")))),Some(NameOrRunePT(NameP(_, StrI("Moo")))),None,None),
+        LookupPE(LookupNameP(NameP(_, StrI("m"))), None)) =>
     }
   }
 
   test("Let with simple pattern in seq") {
-    compileStatement(StopBeforeCloseBrace, false, "[a Moo] = m") shouldHave {
+    compileStatement("[a Moo] = m") shouldHave {
       case LetPE(_,
           PatternPP(_,_,
             None,
             None,
-            Some(DestructureP(_,Vector(PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, "a"))),Some(NameOrRunePT(NameP(_, "Moo"))),None,None)))),
+            Some(DestructureP(_,Vector(PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, StrI("a")))),Some(NameOrRunePT(NameP(_, StrI("Moo")))),None,None)))),
             None),
-          LookupPE(LookupNameP(NameP(_, "m")), None)) =>
+          LookupPE(LookupNameP(NameP(_, StrI("m"))), None)) =>
     }
   }
 
   test("Let with destructuring pattern") {
-    compileStatement(StopBeforeCloseBrace, false, "Muta[ ] = m") shouldHave {
-      case LetPE(_,PatternPP(_,_,None,Some(NameOrRunePT(NameP(_, "Muta"))),Some(DestructureP(_,Vector())),None),LookupPE(LookupNameP(NameP(_, "m")), None)) =>
+    compileStatement("Muta[ ] = m") shouldHave {
+      case LetPE(_,PatternPP(_,_,None,Some(NameOrRunePT(NameP(_, StrI("Muta")))),Some(DestructureP(_,Vector())),None),LookupPE(LookupNameP(NameP(_, StrI("m"))), None)) =>
     }
   }
 
   test("Ret") {
-    compileStatement(StopBeforeCloseBrace, false, "return 3") shouldHave {
+    compileStatement("return 3") shouldHave {
       case ReturnPE(_,ConstantIntPE(_, 3, _)) =>
     }
   }
 
   test("foreach") {
-    compileStatement(StopBeforeCloseBrace, false, "foreach i in myList { }") shouldHave {
+    compileStatement("foreach i in myList { }") shouldHave {
       case EachPE(_,
-      PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"i"))),None,None,None),
+      PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("i")))),None,None,None),
       _,
-      LookupPE(LookupNameP(NameP(_, "myList")),None),
+      LookupPE(LookupNameP(NameP(_, StrI("myList"))),None),
       BlockPE(_,_)) =>
     }
   }
 
   test("foreach with borrow") {
-    compileStatement(StopBeforeCloseBrace, false, "foreach i in &myList { }") shouldHave {
+    compileStatement("foreach i in &myList { }") shouldHave {
       case EachPE(_,
-      PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"i"))),None,None,None),
+      PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("i")))),None,None,None),
       _,
-      AugmentPE(_, BorrowP, LookupPE(LookupNameP(NameP(_, "myList")),None)),
+      AugmentPE(_, BorrowP, LookupPE(LookupNameP(NameP(_, StrI("myList"))),None)),
       BlockPE(_,_)) =>
     }
   }
 
   test("foreach with two receivers") {
-    compileStatement(StopBeforeCloseBrace, false, "foreach [a, b] in myList { }") shouldHave {
+    compileStatement("foreach [a, b] in myList { }") shouldHave {
       case EachPE(_,
         PatternPP(_,
           None,None,None,
           Some(
             DestructureP(_,
               Vector(
-                PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"a"))),None,None,None),
-                PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"b"))),None,None,None)))),
+                PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("a")))),None,None,None),
+                PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("b")))),None,None,None)))),
           None),
         _,
-        LookupPE(LookupNameP(NameP(_, "myList")),None),
+        LookupPE(LookupNameP(NameP(_, StrI("myList"))),None),
         BlockPE(_,_)) =>
     }
   }
 
   test("foreach complex iterable") {
-    compileStatement(StopBeforeCloseBrace, false, "foreach i in myList = 3; myList { }") shouldHave {
+    compileStatement("foreach i in myList = 3; myList { }") shouldHave {
       case EachPE(_,
-        PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"i"))),None,None,None),
+        PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("i")))),None,None,None),
         _,
         ConsecutorPE(
           Vector(
-            LetPE(_,PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"myList"))),None,None,None),ConstantIntPE(_,3,_)),
-            LookupPE(LookupNameP(NameP(_,"myList")),None))),
+            LetPE(_,PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("myList")))),None,None,None),ConstantIntPE(_,3,_)),
+            LookupPE(LookupNameP(NameP(_, StrI("myList"))),None))),
         BlockPE(_,VoidPE(_))) =>
     }
   }
 
   test("Multiple statements") {
-    compileBlockContents(StopBeforeCloseBrace,
+    compileBlockContents(
       """
         |42;
         |43;
@@ -242,7 +244,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("If and another statement") {
-    compileBlockContents(StopBeforeCloseBrace,
+    compileBlockContents(
       """
         |newCapacity = if (true) { 1 } else { 2 };
         |newArray = 3;
@@ -250,31 +252,31 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Test block's trailing void presence") {
-    compileBlockContents(StopBeforeCloseBrace,
+    compileBlockContents(
       "moo()") shouldHave {
-      case FunctionCallPE(_, _, LookupPE(LookupNameP(NameP(_, "moo")), None), Vector()) =>
+      case FunctionCallPE(_, _, LookupPE(LookupNameP(NameP(_, StrI("moo"))), None), Vector()) =>
     }
 
-    compileBlockContents(StopBeforeCloseBrace,
+    compileBlockContents(
       "moo();") shouldHave {
-      case ConsecutorPE(Vector(FunctionCallPE(_, _, LookupPE(LookupNameP(NameP(_, "moo")), None), Vector()), VoidPE(_))) =>
+      case ConsecutorPE(Vector(FunctionCallPE(_, _, LookupPE(LookupNameP(NameP(_, StrI("moo"))), None), Vector()), VoidPE(_))) =>
     }
   }
 
 
   test("Block with statement and result") {
-    compileBlockContents(StopBeforeCloseBrace,
+    compileBlockContents(
       """
         |b;
         |a
       """.stripMargin) shouldHave {
-      case Vector(LookupPE(LookupNameP(NameP(_, "b")), None), LookupPE(LookupNameP(NameP(_, "a")), None)) =>
+      case Vector(LookupPE(LookupNameP(NameP(_, StrI("b"))), None), LookupPE(LookupNameP(NameP(_, StrI("a"))), None)) =>
     }
   }
 
 
   test("Block with result") {
-    compileStatement(StopBeforeCloseBrace, false, "3") shouldHave {
+    compileStatement("3") shouldHave {
       case ConstantIntPE(_, 3, _) =>
     }
   }
@@ -282,42 +284,77 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   test("Block with result that could be an expr") {
     // = doThings(a); could be misinterpreted as an expression doThings(=, a) if we're
     // not careful.
-    compileBlockContents(StopBeforeCloseBrace,
+    compileBlockContents(
       """
         |a = 2;
         |doThings(a)
       """.stripMargin) shouldHave {
       case Vector(
-        LetPE(_, PatternPP(_, _,Some(LocalNameDeclarationP(NameP(_, "a"))), None, None, None), ConstantIntPE(_, 2, _)),
-        FunctionCallPE(_, _, LookupPE(LookupNameP(NameP(_, "doThings")), None), Vector(LookupPE(LookupNameP(NameP(_, "a")), None)))) =>
+        LetPE(_, PatternPP(_, _,Some(LocalNameDeclarationP(NameP(_, StrI("a")))), None, None, None), ConstantIntPE(_, 2, _)),
+        FunctionCallPE(_, _, LookupPE(LookupNameP(NameP(_, StrI("doThings"))), None), Vector(LookupPE(LookupNameP(NameP(_, StrI("a"))), None)))) =>
     }
   }
 
   test("Mutating as statement") {
     val program =
-      compileBlockContents(StopBeforeCloseBrace,
+      compileBlockContents(
         "set x = 6;")
     program shouldHave {
-      case MutatePE(_,LookupPE(LookupNameP(NameP(_, "x")), None),ConstantIntPE(_, 6, _)) =>
+      case MutatePE(_,LookupPE(LookupNameP(NameP(_, StrI("x"))), None),ConstantIntPE(_, 6, _)) =>
     }
   }
 
-  test("Forgetting set when changing") {
-    val error =
-      compileForError(
-        new ExpressionParser(GlobalOptions(true, true, true, true))
-          .parseBlockContents(_, StopBeforeCloseBrace),
-        """
-          |ship.x = 4;
-          |""".stripMargin)
-    error match {
-      case ForgotSetKeyword(_) =>
+  test("Lone block") {
+    compileBlockContents(
+      """
+        |block {
+        |  a
+        |}
+      """.stripMargin) shouldHave {
+      case BlockPE(_,LookupPE(LookupNameP(NameP(_, StrI("a"))),None)) =>
     }
+  }
+
+  test("Pure block") {
+    // Just make sure it parses, so that we can highlight it.
+    // The pure block feature doesn't actually exist yet.
+    compileBlockContents(
+      """
+        |pure {
+        |  a
+        |}
+      """.stripMargin)
+  }
+
+  test("Unsafe pure block") {
+    // Just make sure it parses, so that we can highlight it.
+    // The unsafe pure block feature doesn't actually exist yet.
+    compileBlockContents(
+      """
+        |unsafe pure {
+        |  a
+        |}
+      """.stripMargin)
+  }
+
+
+  test("Forgetting set when changing") {
+    vimpl()
+//    val error =
+//      compileForError(
+//        new ExpressionParser(GlobalOptions(true, true, true, true))
+//          .parseBlockContents(_, StopBeforeCloseBrace),
+//        """
+//          |ship.x = 4;
+//          |""".stripMargin)
+//    error match {
+//      case ForgotSetKeyword(_) =>
+//    }
   }
 
   test("foreach 2") {
     val programS =
-      compileBlockContents(StopBeforeCloseBrace,
+      compileBlockContents(
         """
           |foreach i in a {
           |  i
@@ -325,17 +362,17 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
           |""".stripMargin)
     programS shouldHave {
       case EachPE(_,
-        PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,"i"))),None,None,None),
+        PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("i")))),None,None,None),
         _,
-        LookupPE(LookupNameP(NameP(_,"a")),None),
+        LookupPE(LookupNameP(NameP(_, StrI("a"))),None),
         BlockPE(_,
-          LookupPE(LookupNameP(NameP(_,"i")),None))) =>
+          LookupPE(LookupNameP(NameP(_, StrI("i"))),None))) =>
     }
   }
 
   test("foreach expr") {
     val programS =
-      compileBlockContents(StopBeforeCloseBrace,
+      compileBlockContents(
         """
           |a = foreach i in c { i };
           |""".stripMargin)

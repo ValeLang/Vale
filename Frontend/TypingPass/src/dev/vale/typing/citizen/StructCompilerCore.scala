@@ -2,7 +2,7 @@ package dev.vale.typing.citizen
 
 import dev.vale.highertyping.{FunctionA, InterfaceA, StructA}
 import dev.vale.{Interner, vassertOne, vcurious, vfail, vimpl, vwat}
-import dev.vale.parsing.ast.{CallMacro, DontCallMacro}
+import dev.vale.parsing.ast.{CallMacroP, DontCallMacroP}
 import dev.vale.postparsing.rules.RuneUsage
 import dev.vale.postparsing.{ExportS, FreeDeclarationNameS, FunctionNameS, ICitizenAttributeS, IFunctionDeclarationNameS, IStructMemberS, MacroCallS, NormalStructMemberS, RuneNameS, SealedS, TopLevelCitizenDeclarationNameS, VariadicStructMemberS}
 import dev.vale.typing.expression.CallCompiler
@@ -17,7 +17,7 @@ import dev.vale.typing.{ast, _}
 import dev.vale.typing.env._
 import dev.vale.typing.function.FunctionCompiler
 import dev.vale._
-import dev.vale.parsing.ast.DontCallMacro
+import dev.vale.parsing.ast.DontCallMacroP
 import dev.vale.typing.ast.ProgramT.tupleHumanName
 import dev.vale.typing.env.{CitizenEnvironment, FunctionEnvEntry, IEnvironment, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
 import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, CodeVarNameT, FreeTemplateNameT, FunctionTemplateNameT, INameT, LambdaCitizenTemplateNameT, NameTranslator, RuneNameT, SelfNameT}
@@ -69,23 +69,23 @@ class StructCompilerCore(
 
     val defaultCalledMacros =
       Vector(
-        MacroCallS(structA.range, CallMacro, "DeriveStructDrop"),
-        MacroCallS(structA.range, CallMacro, "DeriveStructFree"),
-        MacroCallS(structA.range, CallMacro, "DeriveImplFree"))
+        MacroCallS(structA.range, CallMacroP, "DeriveStructDrop"),
+        MacroCallS(structA.range, CallMacroP, "DeriveStructFree"),
+        MacroCallS(structA.range, CallMacroP, "DeriveImplFree"))
     val macrosToCall =
       structA.attributes.foldLeft(defaultCalledMacros)({
-        case (macrosToCall, mc @ MacroCallS(range, CallMacro, macroName)) => {
+        case (macrosToCall, mc @ MacroCallS(range, CallMacroP, macroName)) => {
           if (macrosToCall.exists(_.macroName == macroName)) {
             throw CompileErrorExceptionT(RangedInternalErrorT(range, "Calling macro twice: " + macroName))
           }
           macrosToCall :+ mc
         }
-        case (macrosToCall, MacroCallS(_, DontCallMacro, macroName)) => macrosToCall.filter(_.macroName != macroName)
+        case (macrosToCall, MacroCallS(_, DontCallMacroP, macroName)) => macrosToCall.filter(_.macroName != macroName)
         case (macrosToCall, _) => macrosToCall
       })
 
     val envEntriesFromMacros =
-      macrosToCall.flatMap({ case MacroCallS(range, CallMacro, macroName) =>
+      macrosToCall.flatMap({ case MacroCallS(range, CallMacroP, macroName) =>
         val maacro =
           structRunesEnv.globalEnv.nameToStructDefinedMacro.get(macroName) match {
             case None => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Macro not found: " + macroName))
@@ -214,17 +214,17 @@ class StructCompilerCore(
 
     val defaultCalledMacros =
       Vector(
-        MacroCallS(interfaceA.range, CallMacro, "DeriveInterfaceDrop"),
-        MacroCallS(interfaceA.range, CallMacro, "DeriveInterfaceFree"))
+        MacroCallS(interfaceA.range, CallMacroP, "DeriveInterfaceDrop"),
+        MacroCallS(interfaceA.range, CallMacroP, "DeriveInterfaceFree"))
     val macrosToCall =
       interfaceA.attributes.foldLeft(defaultCalledMacros)({
-        case (macrosToCall, mc @ MacroCallS(_, CallMacro, _)) => macrosToCall :+ mc
-        case (macrosToCall, MacroCallS(_, DontCallMacro, macroName)) => macrosToCall.filter(_.macroName != macroName)
+        case (macrosToCall, mc @ MacroCallS(_, CallMacroP, _)) => macrosToCall :+ mc
+        case (macrosToCall, MacroCallS(_, DontCallMacroP, macroName)) => macrosToCall.filter(_.macroName != macroName)
         case (macrosToCall, _) => macrosToCall
       })
 
     val envEntriesFromMacros =
-      macrosToCall.flatMap({ case MacroCallS(range, CallMacro, macroName) =>
+      macrosToCall.flatMap({ case MacroCallS(range, CallMacroP, macroName) =>
         val maacro =
           interfaceRunesEnv.globalEnv.nameToInterfaceDefinedMacro.get(macroName) match {
             case None => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Macro not found: " + macroName))

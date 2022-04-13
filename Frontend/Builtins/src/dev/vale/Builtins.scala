@@ -4,7 +4,9 @@ import scala.io.Source
 
 object Builtins {
   def NAMESPACE_COORD(interner: Interner) = {
-    interner.intern(PackageCoordinate("", Vector.empty))
+    interner.intern(PackageCoordinate(
+      interner.intern(StrI("")),
+      Vector.empty))
   }
 
   val moduleToFilename =
@@ -45,7 +47,9 @@ object Builtins {
     moduleToFilename.foreach({ case (moduleName, filename) =>
       result.put(
         interner.intern(FileCoordinate(
-          interner.intern(PackageCoordinate("v", Vector("builtins", moduleName))),
+          interner.intern(PackageCoordinate(
+            interner.intern(StrI("v")),
+            Vector(interner.intern(StrI("builtins")), interner.intern(StrI(moduleName))))),
           filename)),
         load(filename))
     })
@@ -59,7 +63,9 @@ object Builtins {
     moduleToFilename.foreach({ case (moduleName, filename) =>
       result.put(
         interner.intern(FileCoordinate(
-          interner.intern(PackageCoordinate("v", Vector("builtins", moduleName))),
+          interner.intern(PackageCoordinate(
+            interner.intern(StrI("v")),
+            Vector(interner.intern(StrI("builtins")), interner.intern(StrI(moduleName))))),
           filename)),
         "")
       result.put(

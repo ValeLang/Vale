@@ -23,3 +23,18 @@ where Prot["__call", Refs(&F, ErrType), _]
     func((result).expect_err())
   }
 }
+
+
+func expect_or<F, OkType, ErrType>(result &Result<OkType, ErrType>, func F)
+OkType
+where Prot["__call", Refs(&F, &ErrType), _]
+{
+  return if result.is_ok() { result.expect() } else { func(result.expect_err()) };
+}
+
+func expect_or<F, OkType, ErrType>(result Result<OkType, ErrType>, func F)
+OkType
+where Prot["__call", Refs(&F, ErrType), _]
+{
+  return if result.is_ok() { (result).expect() } else { func((result).expect_err()) };
+}

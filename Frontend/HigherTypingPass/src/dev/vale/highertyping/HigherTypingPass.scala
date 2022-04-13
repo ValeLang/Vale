@@ -3,7 +3,6 @@ package dev.vale.highertyping
 import dev.vale
 import dev.vale.{CodeLocationS, Err, FileCoordinateMap, IPackageResolver, Interner, Ok, PackageCoordinate, PackageCoordinateMap, Profiler, RangeS, Result, highertyping, vassertSome, vcurious, vfail, vimpl, vwat}
 import dev.vale.options.GlobalOptions
-import dev.vale.parsing.FailedParse
 import dev.vale.parsing.ast.FileP
 import dev.vale.postparsing.rules.{IRulexSR, RuleScout}
 import dev.vale.postparsing.{CodeNameS, CoordTemplataType, ExportAsS, FunctionS, FunctionTemplataType, ICompileErrorS, IImpreciseNameS, INameS, IRuneS, ITemplataType, ImplImpreciseNameS, ImplS, ImportS, InterfaceS, KindTemplataType, MutabilityTemplataType, ParameterS, PostParser, ProgramS, RuneNameS, RuneTypeSolver, ScoutCompilation, StructS, TemplateTemplataType, TopLevelCitizenDeclarationNameS, UserFunctionS}

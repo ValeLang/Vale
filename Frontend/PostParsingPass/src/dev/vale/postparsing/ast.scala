@@ -1,7 +1,7 @@
 package dev.vale.postparsing
 
 import dev.vale.{PackageCoordinate, RangeS, vassert, vcurious, vpass, vwat}
-import dev.vale.parsing.ast.{IMacroInclusion, MutabilityP, VariabilityP}
+import dev.vale.parsing.ast.{IMacroInclusionP, MutabilityP, VariabilityP}
 import dev.vale.postparsing.patterns.{AbstractSP, AtomSP}
 import dev.vale.postparsing.rules.{IRulexSR, RuneUsage}
 import dev.vale.parsing._
@@ -58,7 +58,7 @@ case object SealedS extends ICitizenAttributeS
 case class BuiltinS(generatorName: String) extends IFunctionAttributeS with ICitizenAttributeS {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 }
-case class MacroCallS(range: RangeS, include: IMacroInclusion, macroName: String) extends ICitizenAttributeS {
+case class MacroCallS(range: RangeS, include: IMacroInclusionP, macroName: String) extends ICitizenAttributeS {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 }
 case class ExportS(packageCoordinate: PackageCoordinate) extends IFunctionAttributeS with ICitizenAttributeS {
@@ -296,3 +296,14 @@ case class LocationInDenizen(path: Vector[Int]) {
     }
   }
 }
+
+
+sealed trait IDenizenS
+case class TopLevelFunctionS(function: FunctionS) extends IDenizenS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class TopLevelStructS(struct: StructS) extends IDenizenS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class TopLevelInterfaceS(interface: InterfaceS) extends IDenizenS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class TopLevelImplS(impl: ImplS) extends IDenizenS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class TopLevelExportAsS(export: ExportAsS) extends IDenizenS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class TopLevelImportS(imporrt: ImportS) extends IDenizenS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+
+case class FileS(denizens: Vector[IDenizenS])

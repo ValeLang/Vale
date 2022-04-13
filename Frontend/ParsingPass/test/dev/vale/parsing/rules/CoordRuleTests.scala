@@ -22,7 +22,7 @@ class CoordRuleTests extends FunSuite with Matchers with Collector with TestPars
 
   test("Coord with rune") {
     compile("T Ref") shouldHave {
-      case TypedPR(_,Some(NameP(_, "T")),CoordTypePR) =>
+      case TypedPR(_,Some(NameP(_, StrI("T"))),CoordTypePR) =>
     }
   }
 
@@ -54,7 +54,7 @@ class CoordRuleTests extends FunSuite with Matchers with Collector with TestPars
     //     Ref#T[_, Ref[_, Int]]:Ref[_, Void]))
     //   (a: #T)
     compile("int") shouldHave {
-      case TemplexPR(NameOrRunePT(NameP(_, "int"))) =>
+      case TemplexPR(NameOrRunePT(NameP(_, StrI("int")))) =>
     }
 //        CoordPR(None,None,None,None,None,Some(Vector(NameTemplexPR("int"))))
 
@@ -64,7 +64,7 @@ class CoordRuleTests extends FunSuite with Matchers with Collector with TestPars
     compile("Ref[_, int]") shouldHave {
       case ComponentsPR(_,
           CoordTypePR,
-          Vector(TemplexPR(AnonymousRunePT(_)), TemplexPR(NameOrRunePT(NameP(_, "int"))))) =>
+          Vector(TemplexPR(AnonymousRunePT(_)), TemplexPR(NameOrRunePT(NameP(_, StrI("int")))))) =>
     }
 //      runedTCoordWithEnvKind("T", "int")
 
@@ -84,8 +84,8 @@ class CoordRuleTests extends FunSuite with Matchers with Collector with TestPars
   test("Coord with value") {
     compile("T Ref = int") shouldHave {
       case EqualsPR(_,
-          TypedPR(_,Some(NameP(_, "T")),CoordTypePR),
-          TemplexPR(NameOrRunePT(NameP(_, "int")))) =>
+          TypedPR(_,Some(NameP(_, StrI("T"))),CoordTypePR),
+          TemplexPR(NameOrRunePT(NameP(_, StrI("int"))))) =>
     }
   }
 
@@ -93,7 +93,7 @@ class CoordRuleTests extends FunSuite with Matchers with Collector with TestPars
     compile("T = Ref[_, _] = int") shouldHave {
       case EqualsPR(_,
           ComponentsPR(_,CoordTypePR,Vector(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))),
-          TemplexPR(NameOrRunePT(NameP(_, "int")))) =>
+          TemplexPR(NameOrRunePT(NameP(_, StrI("int"))))) =>
     }
 //        runedTCoordWithValue("T", NameTemplexPR("int"))
   }
@@ -101,10 +101,10 @@ class CoordRuleTests extends FunSuite with Matchers with Collector with TestPars
   test("Coord with sequence in value spot") {
     compile("T Ref = (int, bool)") shouldHave {
       case EqualsPR(_,
-          TypedPR(_,Some(NameP(_, "T")),CoordTypePR),
+          TypedPR(_,Some(NameP(_, StrI("T"))),CoordTypePR),
           TemplexPR(
             TuplePT(_,
-              Vector(NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "bool")))))) =>
+              Vector(NameOrRunePT(NameP(_, StrI("int"))), NameOrRunePT(NameP(_, StrI("bool"))))))) =>
     }
   }
 
@@ -112,7 +112,7 @@ class CoordRuleTests extends FunSuite with Matchers with Collector with TestPars
     compile("(int, bool)") shouldHave {
       case TemplexPR(
           TuplePT(_,
-            Vector(NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "bool"))))) =>
+            Vector(NameOrRunePT(NameP(_, StrI("int"))), NameOrRunePT(NameP(_, StrI("bool")))))) =>
         }
   }
 }

@@ -5,7 +5,7 @@ import dev.vale.simplifying.VonHammer
 import dev.vale.highlighter.{Highlighter, Spanner}
 import dev.vale.finalast.{PackageH, ProgramH}
 import dev.vale.options.GlobalOptions
-import dev.vale.parsing.{FailedParse, InputException, ParseErrorHumanizer, ParserVonifier}
+import dev.vale.parsing.{InputException, ParseErrorHumanizer, ParserVonifier}
 import dev.vale.postparsing.PostParserErrorHumanizer
 import dev.vale.typing.CompilerErrorHumanizer
 import dev.vale.testvm.Vivem
@@ -17,7 +17,7 @@ import dev.vale.highertyping.ProgramA
 import dev.vale.simplifying.Hammer
 import dev.vale.highlighter.Spanner
 import dev.vale.finalast.PackageH
-import dev.vale.parsing.FailedParse
+import dev.vale.lexing.FailedParse
 import dev.vale.postparsing.PostParserErrorHumanizer
 import dev.vale.typing.CompilerErrorHumanizer
 import dev.vale.von.{IVonData, JsonSyntax, VonPrinter}

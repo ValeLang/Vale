@@ -116,16 +116,16 @@ IRegion* GlobalState::getRegion(RegionId* regionId) {
     return rcImm;
   } else if (regionId == metalCache->linearRegionId) {
     return linearRegion;
-  } else if (regionId == metalCache->unsafeRegionId) {
-    return unsafeRegion;
-  } else if (regionId == metalCache->assistRegionId) {
-    return assistRegion;
-  } else if (regionId == metalCache->naiveRcRegionId) {
-    return naiveRcRegion;
-  } else if (regionId == metalCache->resilientV3RegionId) {
-    return resilientV3Region;
-  } else if (regionId == metalCache->resilientV4RegionId) {
-    return resilientV4Region;
+//  } else if (regionId == metalCache->unsafeRegionId) {
+//    return unsafeRegion;
+//  } else if (regionId == metalCache->assistRegionId) {
+//    return assistRegion;
+//  } else if (regionId == metalCache->naiveRcRegionId) {
+//    return naiveRcRegion;
+//  } else if (regionId == metalCache->resilientV3RegionId) {
+//    return resilientV3Region;
+//  } else if (regionId == metalCache->resilientV4RegionId) {
+//    return resilientV4Region;
   } else {
     assert(false);
   }

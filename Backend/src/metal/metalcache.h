@@ -87,11 +87,7 @@ public:
     builtinPackageCoord = getPackageCoordinate(BUILTIN_PROJECT_NAME, {});
     rcImmRegionId = getRegionId(builtinPackageCoord, "rcimm");
     linearRegionId = getRegionId(builtinPackageCoord, "linear");
-    unsafeRegionId = getRegionId(builtinPackageCoord, "unsafe");
-    assistRegionId = getRegionId(builtinPackageCoord, "assist");
-    naiveRcRegionId = getRegionId(builtinPackageCoord, "naiverc");
-    resilientV3RegionId = getRegionId(builtinPackageCoord, "resilientv3");
-    resilientV4RegionId = getRegionId(builtinPackageCoord, "resilientv4");
+    mutRegionId = getRegionId(builtinPackageCoord, "mut");
 
     i32 = getInt(rcImmRegionId, 32);
     i32Ref = getReference(Ownership::SHARE, Location::INLINE, i32);
@@ -275,12 +271,6 @@ public:
 
   RegionId* rcImmRegionId = nullptr;
   RegionId* linearRegionId = nullptr;
-  RegionId* unsafeRegionId = nullptr;
-  RegionId* naiveRcRegionId = nullptr;
-  RegionId* resilientV3RegionId = nullptr;
-  RegionId* resilientV4RegionId = nullptr;
-  RegionId* assistRegionId = nullptr;
-  // This is temporary, until we can get valestrom to properly fill in coords' regions
   RegionId* mutRegionId = nullptr;
 
 //  I8* i8 = new I8();

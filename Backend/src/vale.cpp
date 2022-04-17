@@ -725,26 +725,6 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
   MetalCache metalCache(&addressNumberer);
   globalState->metalCache = &metalCache;
 
-  switch (globalState->opt->regionOverride) {
-    case RegionOverride::ASSIST:
-      metalCache.mutRegionId = metalCache.assistRegionId;
-      break;
-    case RegionOverride::FAST:
-      metalCache.mutRegionId = metalCache.unsafeRegionId;
-      break;
-    case RegionOverride::NAIVE_RC:
-      metalCache.mutRegionId = metalCache.naiveRcRegionId;
-      break;
-    case RegionOverride::RESILIENT_V3:
-      metalCache.mutRegionId = metalCache.resilientV3RegionId;
-      break;
-    case RegionOverride::RESILIENT_V4:
-      metalCache.mutRegionId = metalCache.resilientV4RegionId;
-      break;
-    default:
-      assert(false);
-  }
-
   Program program(
       std::unordered_map<PackageCoordinate*, Package*, AddressHasher<PackageCoordinate*>, std::equal_to<PackageCoordinate*>>(
           0,
@@ -846,26 +826,32 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
   RCImm rcImm(globalState);
   globalState->rcImm = &rcImm;
   globalState->regions.emplace(globalState->rcImm->getRegionId(), globalState->rcImm);
-  Assist assistRegion(globalState);
-  globalState->assistRegion = &assistRegion;
-  globalState->regions.emplace(globalState->assistRegion->getRegionId(), globalState->assistRegion);
-  NaiveRC naiveRcRegion(globalState, globalState->metalCache->naiveRcRegionId);
-  globalState->naiveRcRegion = &naiveRcRegion;
-  globalState->regions.emplace(globalState->naiveRcRegion->getRegionId(), globalState->naiveRcRegion);
-  Unsafe unsafeRegion(globalState);
-  globalState->unsafeRegion = &unsafeRegion;
-  globalState->regions.emplace(globalState->unsafeRegion->getRegionId(), globalState->unsafeRegion);
-  Linear linearRegion(globalState);
-  globalState->linearRegion = &linearRegion;
-  globalState->regions.emplace(globalState->linearRegion->getRegionId(), globalState->linearRegion);
-  ResilientV3 resilientV3Region(globalState, globalState->metalCache->resilientV3RegionId);
-  globalState->resilientV3Region = &resilientV3Region;
-  globalState->regions.emplace(globalState->resilientV3Region->getRegionId(), globalState->resilientV3Region);
-  ResilientV4 resilientV4Region(globalState, globalState->metalCache->resilientV4RegionId);
-  globalState->resilientV4Region = &resilientV4Region;
-  globalState->regions.emplace(globalState->resilientV4Region->getRegionId(), globalState->resilientV4Region);
 
-  globalState->mutRegion = globalState->getRegion(metalCache.mutRegionId);
+  globalState->linearRegion = new Linear(globalState);
+  globalState->regions.emplace(globalState->linearRegion->getRegionId(), globalState->linearRegion);
+
+
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+      globalState->mutRegion = new Assist(globalState);
+      break;
+    case RegionOverride::NAIVE_RC:
+      globalState->mutRegion = new NaiveRC(globalState, globalState->metalCache->rcImmRegionId);
+      break;
+    case RegionOverride::FAST:
+      globalState->mutRegion = new Unsafe(globalState);
+      break;
+    case RegionOverride::RESILIENT_V3:
+      globalState->mutRegion = new ResilientV3(globalState, globalState->metalCache->mutRegionId);
+      break;
+    case RegionOverride::RESILIENT_V4:
+      globalState->mutRegion = new ResilientV4(globalState, globalState->metalCache->mutRegionId);
+      break;
+    default:
+      assert(false);
+      break;
+  }
+  globalState->regions.emplace(globalState->mutRegion->getRegionId(), globalState->mutRegion);
 
 
   assert(LLVMTypeOf(globalState->neverPtr) == globalState->getRegion(globalState->metalCache->neverRef)->translateType(globalState->metalCache->neverRef));

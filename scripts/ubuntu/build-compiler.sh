@@ -41,6 +41,14 @@ fi
 shift;
 
 
+VALEC_VERSION="$1"
+if [ "$VALEC_VERSION" == "" ]
+then
+  echo "Please specify the new version."
+  exit 1
+fi
+shift;
+
 cd Frontend
 
 echo Compiling Frontend...

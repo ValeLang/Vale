@@ -482,8 +482,7 @@ Ref HybridGenerationalMemory::assembleWeakRef(
 
 
 LLVMTypeRef HybridGenerationalMemory::makeWeakRefHeaderStruct(GlobalState* globalState, RegionId* regionId) {
-  assert(regionId == globalState->metalCache->resilientV3RegionId ||
-             regionId == globalState->metalCache->resilientV4RegionId);
+  assert(regionId == globalState->metalCache->mutRegionId);
 //  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V2 ||
 //      globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
 //      globalState->opt->regionOverride == RegionOverride::RESILIENT_LIMIT);

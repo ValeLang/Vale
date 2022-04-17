@@ -1,4 +1,11 @@
 
+func Array<N, T>(arr [#N]<imm>T) #[]T {
+  #[]T(N, { arr[_] })
+}
+func Array<N, T>(arr [#N]<mut>T) []T {
+  []T(N, { arr[_] })
+}
+
 func each<M, V, N, T, F>(arr A, func F) void
 where A Ref = Ref[_, [#N]<M, V>T] {
   i = 0;

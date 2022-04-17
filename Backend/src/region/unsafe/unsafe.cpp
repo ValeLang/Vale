@@ -36,7 +36,7 @@ void Unsafe::mainCleanup(FunctionState* functionState, LLVMBuilderRef builder) {
 }
 
 RegionId* Unsafe::getRegionId() {
-  return globalState->metalCache->unsafeRegionId;
+  return globalState->metalCache->mutRegionId;
 }
 
 Ref Unsafe::constructStaticSizedArray(

@@ -141,9 +141,93 @@ Vale will have functions equivalent to [Promise.race](https://dotnettutorials.ne
 
 
 
-# Open Questions
+# Possible Improvement: Impure FFI Resilience
 
-## Using Pointers as Hash Keys
+One would think that we can't actually call any FFI functions in a replaying session.
+
+We actually can, with the `#Deterministic` annotation on the function, such as:
+
+```vale
+#Deterministic
+exported func print(s str);
+```
+
+Certain conditions must be met, however. Not all FFI will be replayable, but with some effort, one can make a library replayable.
+
+
+## Output-only Externs
+
+If a function only takes immutable arguments, and returns nothing, it can be marked `#Deterministic`.
+
+
+## Client-Supplied IDs
+
+We can minimize the number of nondeterministic data coming from FFI.
+
+For example, instead of FFI returning a file descriptor:
+
+```
+exported func OpenFile(name str) int;
+```
+
+we can have the library specify the ID itself:
+
+```
+exported func OpenFile(name str, id u128);
+```
+
+and then C could do the mapping of ID to file descriptor.
+
+
+Some drawbacks:
+
+ * It would require a thread-safe global hash map though, which is unfortunate.
+ * We would have to handle collisions, which might require a `FileManager` of sorts.
+
+
+
+## Extern Mapping
+
+Let's say we have these functions:
+
+```
+exported func OpenFile(filepath str) int;
+exported func ReadFile(fd int) str;
+exported func CloseFile(fd int);
+```
+
+It might return a different file descriptor on a different run, so it's deterministic.
+
+However, we can wrap that integer in a specialized type, and add some annotations:
+
+```
+#Mapped
+exported struct FileDescriptor {
+  fd int;
+}
+
+#Deterministic
+exported func OpenFile(filepath str) ^FileDescriptor;
+
+#Deterministic
+exported func ReadFile(fd &FileDescriptor) str;
+
+#Deterministic
+exported func CloseFile(fd ^FileDescriptor);
+```
+
+Now, when we're recording:
+
+ * When we call `OpenFile`, after writing it to the file, we'll add this object to the Object Index Map and the Object Index Vector, as if we're sending it to C.
+ * When we call `ReadFile`, it will:
+    * Write object's index to the file, as it normally would.
+    * Translate it to the original value.
+ * When we call `CloseFile`, after writing it to the file, we'll remove this object from the Object Index Map and the Object Index Vector, as normally happens when we destroy an object.
+
+But, it's hard to say how we'll get the original `fd` back. TODO: Figure that out.
+
+
+# Possible Improvement: Using Pointers as Hash Keys
 
 It would be pretty nice to be able to hash heap-allocated objects, keyed by their address.
 
@@ -151,15 +235,14 @@ However, it's unclear how to do this in a deterministic way.
 
 We *could* just make it deterministic in recording mode, but even then it's not clear that it will be resilient enough; if we even just touch this map the wrong way, change its order of anything, we'll moot our recording.
 
-## More Flexible Channels
+
+# Possible Improvement: More Flexible Channels
 
 It would be nice if we could be a little bit resilient in the case of one green thread sending a bunch of messages to another green thread. Not sure if that's possible though.
 
 
 
-# Alternatives Considered
-
-## Deterministic Malloc
+# Alternative Considered: Deterministic Malloc
 
 For a while, considered having a "relatively deterministic" allocator (even made one!) where it would always return the same addresses.
 
@@ -174,7 +257,7 @@ However, this approach wouldn't be as resilient to code changes. A preferable ap
 For that reason, we went with the Object Index Map approach.
 
 
-## Epochs
+# Alternative Considered: Epochs
 
 An alternative to the message ID / mutex version number scheme. We would hold all writes until all reads are done and the program stalls. Then, we would allow every thread one mutable mutex unlock, and will flush all pending messages in any channels.
 

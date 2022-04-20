@@ -24,7 +24,7 @@ LLVMValueRef checkIndexInBounds(
   auto isNonNegativeLE = LLVMBuildICmp(builder, LLVMIntSGE, indexLE, constI32LE(globalState, 0), "isNonNegative");
   auto isUnderLength = LLVMBuildICmp(builder, LLVMIntSLT, indexLE, sizeLE, "isUnderLength");
   auto isWithinBounds = LLVMBuildAnd(builder, isNonNegativeLE, isUnderLength, "isWithinBounds");
-  buildAssert(globalState, functionState, builder, isWithinBounds, "Index out of bounds!");
+  buildAssertV(globalState, functionState, builder, isWithinBounds, "Index out of bounds!");
 
   return indexLE;
 }

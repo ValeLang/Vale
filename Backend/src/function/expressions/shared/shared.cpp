@@ -158,30 +158,51 @@ void buildPrint(
   buildPrint(globalState, builder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), num, false));
 }
 
+void buildAssertWithExitCode(
+    GlobalState* globalState,
+    LLVMValueRef function,
+    LLVMBuilderRef builder,
+    LLVMValueRef conditionLE,
+    int exitCode,
+    const std::string& failMessage) {
+  buildIfIn(
+      globalState, function, builder, isZeroLE(builder, conditionLE),
+      [globalState, exitCode, failMessage](LLVMBuilderRef thenBuilder) {
+        buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
+        auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), exitCode, false);
+        LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
+      });
+}
+
 // We'll assert if conditionLE is false.
 void buildAssert(
+    GlobalState* globalState,
+    LLVMValueRef function,
+    LLVMBuilderRef builder,
+    LLVMValueRef conditionLE,
+    const std::string& failMessage) {
+  buildAssertWithExitCode(globalState, function, builder, conditionLE, 1, failMessage);
+}
+
+// We'll assert if conditionLE is false.
+void buildAssertV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef conditionLE,
     const std::string& failMessage) {
-  buildAssertWithExitCode(globalState, functionState, builder, conditionLE, 1, failMessage);
+  buildAssertWithExitCodeV(globalState, functionState, builder, conditionLE, 1, failMessage);
 }
 
-void buildAssertWithExitCode(
+
+void buildAssertWithExitCodeV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef conditionLE,
     int exitCode,
     const std::string& failMessage) {
-  buildIf(
-      globalState, functionState, builder, isZeroLE(builder, conditionLE),
-      [globalState, exitCode, failMessage](LLVMBuilderRef thenBuilder) {
-        buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
-        auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), exitCode, false);
-        LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
-      });
+  buildAssertWithExitCode(globalState, functionState->containingFuncL, builder, conditionLE, exitCode, failMessage);
 }
 
 // We'll assert if conditionLE is false.

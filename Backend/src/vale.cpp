@@ -884,6 +884,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
       // std::cout << std::endl;
 
       if (structM->mutability == Mutability::IMMUTABLE) {
+        // TODO: https://github.com/ValeLang/Vale/issues/479
         globalState->linearRegion->declareStruct(structM);
       }
     }
@@ -896,6 +897,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
       auto interfaceM = p.second;
       globalState->getRegion(interfaceM->regionId)->declareInterface(interfaceM);
       if (interfaceM->mutability == Mutability::IMMUTABLE) {
+        // TODO: https://github.com/ValeLang/Vale/issues/479
         globalState->linearRegion->declareInterface(interfaceM);
       }
     }

@@ -1,5 +1,6 @@
-#include "../function/expressions/shared/shared.h"
+#include "branch.h"
 
+#include "../function/expressions/shared/shared.h"
 #include "../translatetype.h"
 
 #include <functional>
@@ -7,6 +8,15 @@
 void buildIf(
     GlobalState* globalState,
     FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMValueRef conditionLE,
+    std::function<void(LLVMBuilderRef)> buildThen) {
+  buildIfIn(globalState, functionState->containingFuncL, builder, conditionLE, buildThen);
+}
+
+void buildIfIn(
+    GlobalState* globalState,
+    LLVMValueRef function,
     LLVMBuilderRef builder,
     LLVMValueRef conditionLE,
     std::function<void(LLVMBuilderRef)> buildThen) {
@@ -25,15 +35,15 @@ void buildIf(
 
   LLVMBasicBlockRef thenStartBlockL =
       LLVMAppendBasicBlockInContext(globalState->context,
-          functionState->containingFuncL,
-          functionState->nextBlockName().c_str());
+          function,
+          "");
   LLVMBuilderRef thenBlockBuilder = LLVMCreateBuilderInContext(globalState->context);
   LLVMPositionBuilderAtEnd(thenBlockBuilder, thenStartBlockL);
 
   LLVMBasicBlockRef afterwardBlockL =
       LLVMAppendBasicBlockInContext(globalState->context,
-          functionState->containingFuncL,
-          functionState->nextBlockName().c_str());
+          function,
+          "");
 
   LLVMBuildCondBr(builder, conditionLE, thenStartBlockL, afterwardBlockL);
 

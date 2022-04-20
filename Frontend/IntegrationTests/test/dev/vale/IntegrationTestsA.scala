@@ -797,7 +797,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |func each<E, F>(func F) void
-        |where Prot["__call", Refs(&F, &E), void] {
+        |where func __call(&F, &E)void {
         |}
         |
         |struct PageMember { x int; }

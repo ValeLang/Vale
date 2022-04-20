@@ -26,6 +26,7 @@ Externs::Externs(LLVMModuleRef mod, LLVMContextRef context) {
   printInt = addExtern(mod, "__vprintI64", voidLT, {int64LT});
   strlen = addExtern(mod, "strlen", int32LT, {int8PtrLT});
   strncpy = addExtern(mod, "strncpy", voidLT, {int8PtrLT, int8PtrLT, int64LT});
+  strncmp = addExtern(mod, "strncmp", int64LT, {int8PtrLT, int8PtrLT, int64LT});
   memcpy = addExtern(mod, "memcpy", int8PtrLT, {int8PtrLT, int8PtrLT, int64LT});
   memset = addExtern(mod, "memset", voidLT, {int8PtrLT, int8LT, int64LT});
 

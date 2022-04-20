@@ -207,7 +207,7 @@ void buildCheckGen(
     LLVMValueRef actualGenLE) {
   auto isValidLE =
       LLVMBuildICmp(builder, LLVMIntSLE, targetGenLE, actualGenLE, "genIsValid");
-  buildAssert(
+  buildAssertV(
       globalState, functionState, builder, isValidLE,
       "Invalid generation, from the future!");
 }
@@ -1152,7 +1152,7 @@ void regularCheckValidReference(
     // We dont check ref count >0 because imm destructors receive with rc=0.
     //      auto rcLE = getRcFromControlBlockPtr(globalState, builder, controlBlockPtrLE);
     //      auto rcPositiveLE = LLVMBuildICmp(builder, LLVMIntSGT, rcLE, constI64LE(globalState, 0), "");
-    //      buildAssert(checkerAFL, globalState, functionState, blockState, builder, rcPositiveLE, "Invalid RC!");
+    //      buildAssertV(checkerAFL, globalState, functionState, blockState, builder, rcPositiveLE, "Invalid RC!");
 
     buildAssertCensusContains(checkerAFL, globalState, functionState, builder,
         controlBlockPtrLE.refLE);

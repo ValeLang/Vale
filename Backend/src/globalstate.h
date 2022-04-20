@@ -58,6 +58,7 @@ public:
   LLVMValueRef writeOnlyGlobal = nullptr;
   LLVMValueRef crashGlobal = nullptr;
 
+  std::optional<LLVMValueRef> recordingModePtrLE = nullptr;
 
   LLVMTypeRef wrcTableStructLT = nullptr;
   LLVMValueRef expandWrcTable = nullptr, checkWrci = nullptr, getNumWrcs = nullptr;

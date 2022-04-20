@@ -74,6 +74,7 @@ add_executable(backend
 		src/function/expressions/shared/members.cpp
 		src/function/expressions/shared/shared.cpp
 		src/utils/branch.cpp
+		src/utils/call.cpp
 		src/function/expressions/shared/string.cpp
 		src/region/common/heap.cpp
 		src/region/common/controlblock.cpp

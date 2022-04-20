@@ -332,7 +332,8 @@ LLVMValueRef HybridGenerationalMemory::getIsAliveFromWeakFatPtr(
     auto isLiveLE = LLVMBuildICmp(builder, LLVMIntEQ, actualGenLE, targetGenLE, "isLive");
     if (knownLive && !elideChecksForKnownLive) {
       // See MPESC for status codes
-      buildAssertWithExitCode(globalState, functionState, builder, isLiveLE, 116, "knownLive is true, but object is dead!");
+      buildAssertWithExitCodeV(
+          globalState, functionState, builder, isLiveLE, 116, "knownLive is true, but object is dead!");
     }
 
     return isLiveLE;

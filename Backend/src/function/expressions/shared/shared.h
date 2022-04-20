@@ -55,14 +55,21 @@ LLVMValueRef strongRcIsZero(
     ControlBlockPtrLE exprLE);
 
 
-void buildAssert(
+void buildAssertV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef conditionLE,
     const std::string& failMessage);
 
-void buildAssertWithExitCode(
+void buildAssert(
+    GlobalState* globalState,
+    LLVMValueRef function,
+    LLVMBuilderRef builder,
+    LLVMValueRef conditionLE,
+    const std::string& failMessage);
+
+void buildAssertWithExitCodeV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,

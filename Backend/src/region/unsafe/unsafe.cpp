@@ -351,7 +351,7 @@ void Unsafe::noteWeakableDestroyed(
     assert(false);
 //    // Only shared stuff is RC'd in fast mode
 //    auto rcIsZeroLE = strongRcIsZero(globalState, &kindStructs, builder, refM, controlBlockPtrLE);
-//    buildAssert(globalState, functionState, builder, rcIsZeroLE,
+//    buildAssertV(globalState, functionState, builder, rcIsZeroLE,
 //        "Tried to free concrete that had nonzero RC!");
   } else {
     // It's a mutable, so mark WRCs dead

@@ -1273,7 +1273,7 @@ std::pair<Ref, Ref> Linear::topLevelSerialize(
 
   auto destinationIntLE = getDestinationOffset(builder, regionInstancePtrLE);
   auto condLE = LLVMBuildICmp(builder, LLVMIntEQ, destinationIntLE, sizeIntLE, "cond");
-  buildAssert(globalState, functionState, builder, condLE, "Serialization start mismatch!");
+  buildAssertV(globalState, functionState, builder, condLE, "Serialization start mismatch!");
 
   auto sizeRef =
       wrap(

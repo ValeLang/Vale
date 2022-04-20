@@ -1,6 +1,11 @@
+#include <utils/branch.h>
+#include <utils/call.h>
 #include "function/function.h"
 #include "function/expressions/expressions.h"
 #include "globalstate.h"
+
+static const std::string VALE_REPLAY_FLAG = "--vale_replay";
+static const std::string VALE_RECORD_FLAG = "--vale_record";
 
 std::tuple<LLVMValueRef, LLVMBuilderRef> makeStringSetupFunction(GlobalState* globalState) {
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
@@ -167,10 +172,48 @@ LLVMValueRef makeEntryFunction(
   LLVMPositionBuilderAtEnd(entryBuilder, blockL);
 
 
-  auto numArgsLE = LLVMGetParam(entryFunctionL, 0);
-  auto argsLE = LLVMGetParam(entryFunctionL, 1);
-  LLVMBuildStore(entryBuilder, numArgsLE, globalState->numMainArgs);
-  LLVMBuildStore(entryBuilder, argsLE, globalState->mainArgs);
+  auto numMainArgsLE = LLVMGetParam(entryFunctionL, 0);
+  auto mainArgsLE = LLVMGetParam(entryFunctionL, 1);
+  LLVMBuildStore(entryBuilder, numMainArgsLE, globalState->numMainArgs);
+  LLVMBuildStore(entryBuilder, mainArgsLE, globalState->mainArgs);
+
+  if (globalState->opt->enableReplaying) {
+    auto condLE =
+        LLVMBuildOr(
+            entryBuilder,
+            buildCall(entryBuilder, globalState->externs->strncmp, {
+                globalState->getOrMakeStringConstant(VALE_REPLAY_FLAG),
+                LLVMBuildLoad(entryBuilder, mainArgsLE, "firstArg"),
+                constI64LE(globalState, VALE_REPLAY_FLAG.size())
+            }),
+            buildCall(entryBuilder, globalState->externs->strncmp, {
+                globalState->getOrMakeStringConstant(VALE_RECORD_FLAG),
+                LLVMBuildLoad(entryBuilder, mainArgsLE, "firstArg"),
+                constI64LE(globalState, VALE_RECORD_FLAG.size())
+            }),
+            "recordingOrReplaying");
+    buildIfIn(
+        globalState, entryFunctionL, entryBuilder, condLE,
+        [globalState, entryFunctionL, mainArgsLE](LLVMBuilderRef thenBuilder){
+          buildCall(thenBuilder, globalState->externs->startDeterministicMode, {
+            LLVMBuildLoad(thenBuilder, mainArgsLE, "firstArg")
+          });
+
+
+          set up that global to be extern linked
+          set up startDeterministicMode
+          write the c code that opens the file
+
+          auto workedLE =
+              LLVMBuildICmp(
+                  thenBuilder,
+                  LLVMIntNE,
+                  LLVMBuildLoad(thenBuilder, globalState->recordingModePtrLE.value(), "isRecording"),
+                  constI64LE(globalState, 0),
+                  "deterministicStarted");
+          buildAssert(globalState, entryFunctionL, thenBuilder, workedLE, "Deterministic mode failed to start!");
+        });
+  }
 
   auto mainResultLE = LLVMBuildCall(entryBuilder, globalState->lookupFunction(valeMainPrototype), nullptr, 0, "");
 

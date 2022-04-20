@@ -393,7 +393,7 @@ void ResilientV3::noteWeakableDestroyed(
   if (refM->ownership == Ownership::SHARE) {
     assert(false);
 //    auto rcIsZeroLE = strongRcIsZero(globalState, &kindStructs, builder, refM, controlBlockPtrLE);
-//    buildAssert(globalState, functionState, builder, rcIsZeroLE,
+//    buildAssertV(globalState, functionState, builder, rcIsZeroLE,
 //                "Tried to free concrete that had nonzero RC!");
   } else {
     assert(refM->ownership == Ownership::OWN);

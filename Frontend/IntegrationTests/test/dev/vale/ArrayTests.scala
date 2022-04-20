@@ -343,7 +343,7 @@ class ArrayTests extends FunSuite with Matchers {
         |func __call(lam Lam, i int) int { return i; }
         |
         |exported func main() int
-        |where F Prot = Prot["__call", Refs(Lam, int), int] {
+        |where F Prot = func __call(Lam, int)int {
         |  a = #[](10, Lam());
         |  return a.3;
         |}
@@ -481,7 +481,7 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |func myFunc<F>(generator F) T
-        |where T Ref, Prot["__call", Refs(F, int), T]
+        |where T Ref, func __call(F, int)T
         |{
         |  return generator(9);
         |}

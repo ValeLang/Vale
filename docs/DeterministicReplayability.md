@@ -1,7 +1,25 @@
+(This is internal documentation and notes, feel free to drop by the discord server if you have any comments or suggestions.)
 
-Deterministic Replayability is how we can execute a program twice, and guarantee that the second run will behave exactly as the first.
+Deterministic Replayability (also known as Perfect Replayability) is how we can execute a program twice, and guarantee that the second run will behave exactly as the first, **even in the presence of multithreading.**
 
 This page describes the final design, though only certain parts are implemented.
+
+# What, Why
+
+One of the biggest headaches in any debugging session is *reproducing the problem.* There are so many uncontrollable factors that affect whether a bug happens:
+
+ * Network latency
+ * Thread scheduling
+ * Time of day
+ * Random number generators
+ * User input
+ * Animation delays
+
+It can be nigh impossible to reproduce certain bugs.
+
+However, if we design a language from the ground up to be _deterministic_ and record the above unpredictable inputs, we can completely solve the reproducing problem, once and for all.
+
+Here's how we'll make it happen.
 
 # Vale FFI Relevant Background
 
@@ -14,7 +32,7 @@ There are two ways Vale can receive immutable objects from C:
 
 ### Immutable Objects are Hierarchical
 
-We know the structure of the data C is sending, because these structs are `exported`. We use that knowledge to recursively copy the data into Vale's memory.
+The Vale compiler knows the structure of the data C is sending, because these structs are `exported`. We use that knowledge to recursively copy the data into Vale's memory.
 
 ## Mutable Objects
 
@@ -141,124 +159,63 @@ Vale will have functions equivalent to [Promise.race](https://dotnettutorials.ne
 
 
 
-# Possible Improvement: Impure FFI Resilience
+# FFI Resilience
 
 One would think that we can't actually call any FFI functions in a replaying session.
 
-We actually can, with the `#Deterministic` annotation on the function, such as:
+We actually can, with the `#AssumeDeterministic` annotation on the function, such as:
 
 ```vale
-#Deterministic
+#AssumeDeterministic
 exported func print(s str);
 ```
 
 Certain conditions must be met, however. Not all FFI will be replayable, but with some effort, one can make a library replayable.
 
 
-## Output-only Externs
+## Pure FFI Resilience
 
-If a function only takes immutable arguments, and returns nothing, it can be marked `#Deterministic`.
+If a function only takes immutable arguments, and returns nothing, it can be marked `#AssumeDeterministic`, and it will happen during replays. `print` is a good candidate for this.
 
 
-## Client-Supplied IDs
+## Impure FFI Resilience
 
-We can minimize the number of nondeterministic data coming from FFI.
+Basically, we can minimize the number of nondeterministic data coming from FFI.
 
 For example, instead of FFI returning a file descriptor:
 
 ```
-exported func OpenFile(name str) int;
+exported func OpenFile(path str) int;
 ```
 
 we can have the library specify the ID itself:
 
 ```
-exported func OpenFile(name str, id u128);
+exported func OpenFile(path str, id u256);
 ```
 
 and then C could do the mapping of ID to file descriptor.
 
-
-Some drawbacks:
-
- * It would require a thread-safe global hash map though, which is unfortunate.
- * We would have to handle collisions, which might require a `FileManager` of sorts.
-
-
-
-## Extern Mapping
-
-Let's say we have these functions:
+Even better than a u256, we could send a gen ref:
 
 ```
-exported func OpenFile(filepath str) int;
-exported func ReadFile(fd int) str;
-exported func CloseFile(fd int);
-```
-
-It might return a different file descriptor on a different run, so it's deterministic.
-
-However, we can wrap that integer in a specialized type, and add some annotations:
-
-```
-#Mapped
-exported struct FileDescriptor {
-  fd int;
+func OpenFile(path str) ^File {
+  file = ^File();
+  OpenFileExtern(path, &file);
+  return file;
 }
+exported func OpenFile(path str, id &File);
 
-#Deterministic
-exported func OpenFile(filepath str) ^FileDescriptor;
-
-#Deterministic
-exported func ReadFile(fd &FileDescriptor) str;
-
-#Deterministic
-exported func CloseFile(fd ^FileDescriptor);
+func CloseFile(file ^File) { ... }
 ```
 
-Now, when we're recording:
+as gen refs are guaranteed to be unique throughout their lifetime.
 
- * When we call `OpenFile`, after writing it to the file, we'll add this object to the Object Index Map and the Object Index Vector, as if we're sending it to C.
- * When we call `ReadFile`, it will:
-    * Write object's index to the file, as it normally would.
-    * Translate it to the original value.
- * When we call `CloseFile`, after writing it to the file, we'll remove this object from the Object Index Map and the Object Index Vector, as normally happens when we destroy an object.
+The only downside here is that it requires a thread-safe global hash map on the C side to do the mapping, which is unfortunate but doable.
 
-But, it's hard to say how we'll get the original `fd` back. TODO: Figure that out.
+Now we can mark all these functions as `#AssumeDeterministic` and let their calls happen even in replaying mode.
 
 
-# Possible Improvement: Using Pointers as Hash Keys
+# Notes
 
-It would be pretty nice to be able to hash heap-allocated objects, keyed by their address.
-
-However, it's unclear how to do this in a deterministic way.
-
-We *could* just make it deterministic in recording mode, but even then it's not clear that it will be resilient enough; if we even just touch this map the wrong way, change its order of anything, we'll moot our recording.
-
-
-# Possible Improvement: More Flexible Channels
-
-It would be nice if we could be a little bit resilient in the case of one green thread sending a bunch of messages to another green thread. Not sure if that's possible though.
-
-
-
-# Alternative Considered: Deterministic Malloc
-
-For a while, considered having a "relatively deterministic" allocator (even made one!) where it would always return the same addresses.
-
-Fun fact: that's not possible, because of ASLR. We also [probably can't force it](https://stackoverflow.com/questions/6446101/how-do-i-choose-a-fixed-address-for-mmap).
-
-But, by making the allocator use 64kb slabs, we could still control the last 16 bits of the address. We could then have the recording file write down the addresses of each slab it allocates. When releasing memory to the OS, it `MADV_FREE`s it instead of `munmap`ping it, and keeps the virtual address range for future reuse.
-
-Also considered forking mimalloc to make it do this.
-
-However, this approach wouldn't be as resilient to code changes. A preferable approach would allow us to add print statements, pure function calls, and even refactor the internals of the program, as long as we don't change any interaction with the FFI boundary.
-
-For that reason, we went with the Object Index Map approach.
-
-
-# Alternative Considered: Epochs
-
-An alternative to the message ID / mutex version number scheme. We would hold all writes until all reads are done and the program stalls. Then, we would allow every thread one mutable mutex unlock, and will flush all pending messages in any channels.
-
-Not sure if it would cause deadlocks though.
+See [DeterministicReplayabilityNotes](DeterministicReplayabilityNotes.md).

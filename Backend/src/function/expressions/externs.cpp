@@ -270,6 +270,35 @@ Ref buildExternCall(
     buildFlare(FL(), globalState, functionState, builder, "Suspending function ", functionState->containingFuncName);
     buildFlare(FL(), globalState, functionState, builder, "Calling extern function ", prototype->name->name);
 
+    start here
+    // might be a good idea to hijack main to do this in a controlled environment with LLVM.
+    //
+    // 1. declare some globals:
+    //    - write_register intrinsic: https://llvm.org/docs/LangRef.html#llvm-read-register-llvm-read-volatile-register-and-llvm-write-register-intrinsics
+    //    - 8mb stack
+    //    - args global, a void*
+    //    - setjmp and longjmp intrinsics: https://stackoverflow.com/a/34432979
+    //
+    // 2. for this function, declare a struct that will hold the args to send to C.
+    //    the first param should be a void* that points to the jmp_buf.
+    //
+    // here:
+    // 3. allocate a jmp_buf on the stack.
+    // 4. instantiate the args struct. set the first member to point to
+    //    the jmp_buf.
+    // 4. call the setjmp intrinsic
+    // 5. if it returns zero, do the below, else, continue on.
+    // 6. call the write_register intrinsic to set the stack pointer
+    //    warning from llvm: Warning: So far it only works with the stack pointer on selected architectures (ARM, AArch64, PowerPC and x86_64). Significant amount of work is needed to support other registers and even more so, allocatable registers.
+    // 7. call the wrapper function
+    //
+    // wrapper func:
+    // 1. extract some args
+    // 2. call the extern function
+    // 3. call the longjmp intrinsic
+    //
+    // could we use the 8mb stack for the immutables? probably not. hmm.
+
     LLVMValueRef hostReturnLE = nullptr;
     if (typeNeedsPointerParameter(globalState, prototype->returnType)) {
       auto hostReturnRefLT = globalState->getRegion(prototype->returnType)->getExternalType(prototype->returnType);
@@ -277,6 +306,7 @@ Ref buildExternCall(
           makeBackendLocal(functionState, builder, hostReturnRefLT, "retOutParam", LLVMGetUndef(hostReturnRefLT));
       buildFlare(FL(), globalState, functionState, builder, "Return ptr! ", ptrToIntLE(globalState, builder, localPtrLE));
       hostArgsLE.insert(hostArgsLE.begin(), localPtrLE);
+
       LLVMBuildCall(builder, externFuncL, hostArgsLE.data(), hostArgsLE.size(), "");
       hostReturnLE = LLVMBuildLoad(builder, localPtrLE, "hostReturn");
       buildFlare(FL(), globalState, functionState, builder, "Loaded the return! ", LLVMABISizeOfType(globalState->dataLayout, LLVMTypeOf(hostReturnLE)));

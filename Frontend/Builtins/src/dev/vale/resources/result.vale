@@ -15,16 +15,16 @@ impl<OkType, ErrType> Result<OkType, ErrType> for Err<OkType, ErrType>;
 
 
 abstract func drop<OkType, ErrType>(virtual self Result<OkType, ErrType>)
-where Prot["drop", Refs(OkType), void], Prot["drop", Refs(ErrType), void];
+where func drop(OkType)void, func drop(ErrType)void;
 
 func drop<OkType, ErrType>(self Ok<OkType, ErrType>)
-where Prot["drop", Refs(OkType), void]
+where func drop(OkType)void
 {
   [x] = self;
 }
 
 func drop<OkType, ErrType>(self Err<OkType, ErrType>)
-where Prot["drop", Refs(ErrType), void] {
+where func drop(ErrType)void {
   [x] = self;
 }
 

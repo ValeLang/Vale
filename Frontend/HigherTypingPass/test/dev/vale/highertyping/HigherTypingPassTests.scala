@@ -141,7 +141,7 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
     val compilation =
       HigherTypingTestCompilation.test(
         """func moo<T>()
-          |where Prot["moo", Refs(T, bool), str]
+          |where func moo(T, bool)str
           |{
           |}
           |""".stripMargin)

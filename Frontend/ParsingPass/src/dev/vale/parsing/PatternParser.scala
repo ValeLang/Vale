@@ -42,11 +42,20 @@ class PatternParser {
       return Ok(ConstructingMemberNameDeclarationP(NameP(ast.RangeP(begin, name.range.end), name.str)))
     }
 
+    if (iter.trySkip(() => "^let".r)) {
+      iter.consumeWhitespace()
+
+      if (iter.trySkip(() => "^mut".r)) {
+        iter.consumeWhitespace()
+      }
+    }
+
     val name =
       Parser.parseLocalOrMemberName(iter) match {
         case None => return Err(BadLocalName(iter.getPos()))
         case Some(n) => n
       }
+    iter.trySkip(() => "^!".r)
     return Ok(LocalNameDeclarationP(name))
   }
 

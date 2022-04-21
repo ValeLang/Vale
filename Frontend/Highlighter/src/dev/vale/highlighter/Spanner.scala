@@ -457,6 +457,12 @@ object Spanner {
           range,
           Vector())
       }
+      case VariabilityPT(range, variability) => {
+        makeSpan(
+          Rune,
+          range,
+          Vector())
+      }
       case other => vimpl(other.toString)
     }
   }

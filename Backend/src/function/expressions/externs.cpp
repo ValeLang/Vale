@@ -286,7 +286,6 @@ Ref buildExternCall(
               globalState, hostReturnRefLT, builder, sideStackI8PtrLE, externFuncL, hostArgsLE);
       assert(LLVMTypeOf(resultLE) == LLVMVoidTypeInContext(globalState->context));
 
-//      LLVMBuildCall(builder, externFuncL, hostArgsLE.data(), hostArgsLE.size(), "");
       hostReturnLE = LLVMBuildLoad(builder, localPtrLE, "hostReturn");
       buildFlare(FL(), globalState, functionState, builder, "Loaded the return! ", LLVMABISizeOfType(globalState->dataLayout, LLVMTypeOf(hostReturnLE)));
     } else {

@@ -1,6 +1,8 @@
 # Building the Compiler
 
-Here's how to build the Vale compiler.
+This page describes how to build the Vale compiler.
+
+Note that the below instructions don't build LLVM from source, but we highly recommend it. Building LLVM from source will enable its debug-only checks, which help immensely when modifying the compiler.
 
 
 ## Ubuntu
@@ -28,9 +30,7 @@ cd Vale
 
 ## Windows
 
-It's much easier to build on Mac or Linux, because [the Windows LLVM release is broken](https://bugs.llvm.org/show_bug.cgi?id=28677) and must be built from scratch. This takes hours, so we recommend using Mac or Linux instead.
-
-If you still want to compile the compiler on Windows, keep reading.
+One *must* build LLVM from source, because [the Windows LLVM release is broken](https://bugs.llvm.org/show_bug.cgi?id=28677).
 
 
 ### Dependencies
@@ -48,7 +48,7 @@ If you still want to compile the compiler on Windows, keep reading.
 
 ### Build LLVM
 
-If you want to skip this, you can download and extract [this file](https://firebasestorage.googleapis.com/v0/b/valesite.appspot.com/o/llvm-install-minimum.zip?alt=media&token=1022ffea-c43b-4fea-a5e9-696c6f0d0175) to `C:\llvm`. **Disclaimer**: Download at your own risk, this is a stripped down and zipped up version of what we got from the below steps.
+If you want to skip this, you can download and extract [this file](https://github.com/Verdagon/LLVM13WinMinimal/releases/download/v1.1/llvm-project-llvmorg-13.0.1.zip) to `C:\llvm`. **Disclaimer**: Download at your own risk; we made this .zip file by building it, stripping it down, and merging the include files to fix the problems with the [regular LLVM windows release](https://bugs.llvm.org/show_bug.cgi?id=28677).
 
 Ensure your machine (or VM) has sufficient resources: 5 cores, 10gb ram, 200gb disk. You'll be building all of LLVM, which is quite resource intensive.
 
@@ -65,7 +65,7 @@ Depending on where visual studio is:
 
 `cd C:\llvm`
 
-`cmake "C:\llvm-project-llvmorg-11.0.1\llvm" -D "CMAKE_INSTALL_PATH=C:\llvm" -D CMAKE_BUILD_TYPE=Release -G "Visual Studio 16 2019" -Thost=x64 -A x64`
+`cmake "C:\llvm-project-llvmorg-13.0.1\llvm" -D "CMAKE_INSTALL_PATH=C:\llvm" -D CMAKE_BUILD_TYPE=Release -G "Visual Studio 16 2019" -Thost=x64 -A x64`
 
 `cmake --build .`
 

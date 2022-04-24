@@ -15,6 +15,7 @@ case object Ext extends IClass
 case object Pure extends IClass
 case object Fn extends IClass
 case object Struct extends IClass
+case object Break extends IClass
 case object FnName extends IClass
 case object StructName extends IClass
 case object Membs extends IClass
@@ -361,6 +362,12 @@ object Spanner {
           range,
           Vector(
             forExpression(inner)))
+      }
+      case BreakPE(range) => {
+        makeSpan(
+          Break,
+          range,
+          Vector())
       }
       case other => vimpl(other.toString)
     }

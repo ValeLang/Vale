@@ -308,7 +308,7 @@ LLVMValueRef LgtWeaks::lockLgtiFatPtr(
     // Do nothing
   } else {
     auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, refM, fatPtrLE, knownLive);
-    buildIf(
+    buildIfV(
         globalState, functionState, builder, isZeroLE(builder, isAliveLE),
         [this, functionState, fatPtrLE](LLVMBuilderRef thenBuilder) {
           //        buildPrintAreaAndFileAndLine(globalState, thenBuilder, from);
@@ -332,7 +332,8 @@ LLVMValueRef LgtWeaks::lockLgtiFatPtr(
           //        auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255, false);
           //        LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
 
-          auto ptrToWriteToLE = LLVMBuildLoad(thenBuilder, globalState->crashGlobal,
+          auto ptrToWriteToLE = LLVMBuildLoad(
+              thenBuilder, globalState->crashGlobal,
               "crashGlobal");// LLVMConstNull(LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0));
           LLVMBuildStore(thenBuilder, constI64LE(globalState, 0), ptrToWriteToLE);
         });
@@ -358,7 +359,7 @@ LLVMValueRef LgtWeaks::getNewLgti(
           resultLgtiLE,
           LLVMBuildLoad(builder, getLgtCapacityPtr(builder), "lgtCapacity"),
           "atCapacity");
-  buildIf(
+  buildIfV(
       globalState, functionState,
       builder,
       atCapacityLE,

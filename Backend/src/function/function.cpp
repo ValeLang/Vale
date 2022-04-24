@@ -139,7 +139,8 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
 
   buildFlare(FL(), globalState, &functionState, builder, "Suspending export function ", functionState.containingFuncName);
   buildFlare(FL(), globalState, &functionState, builder, "Calling vale function ", functionM->prototype->name->name);
-  auto valeReturnRefOrVoid = buildCall(globalState, &functionState, builder, functionM->prototype, argsToActualFunction);
+  auto valeReturnRefOrVoid =
+      buildCallV(globalState, &functionState, builder, functionM->prototype, argsToActualFunction);
   buildFlare(FL(), globalState, &functionState, builder, "Done calling vale function ", functionM->prototype->name->name);
   buildFlare(FL(), globalState, &functionState, builder, "Resuming export function ", functionState.containingFuncName);
 

@@ -311,7 +311,7 @@ Ref translateExpressionInner(
                   FL(), functionState, bodyBuilder, elementType, elementRef);
           std::vector<Ref> argExprRefs = { consumerRef, elementRef };
 
-          buildCall(globalState, functionState, bodyBuilder, consumerMethod, argExprRefs);
+          buildCallV(globalState, functionState, bodyBuilder, consumerMethod, argExprRefs);
         });
 
     if (arrayType->ownership == Ownership::OWN) {
@@ -366,9 +366,10 @@ Ref translateExpressionInner(
                 functionState, builder, globalState->metalCache->i32Ref, arrayCapacityRef);
 
     auto arrayIsFullLE = LLVMBuildICmp(builder, LLVMIntUGE, arrayLenLE, arrayCapacityLE, "hasSpace");
-    buildIf(globalState, functionState, builder, arrayIsFullLE, [globalState](LLVMBuilderRef bodyBuilder) {
-      buildPrint(globalState, bodyBuilder, "Error: Runtime-sized array has no room for new element!");
-    });
+    buildIfV(
+        globalState, functionState, builder, arrayIsFullLE, [globalState](LLVMBuilderRef bodyBuilder) {
+          buildPrint(globalState, bodyBuilder, "Error: Runtime-sized array has no room for new element!");
+        });
 
     auto newcomerRef = translateExpression(globalState, functionState, blockState, builder, newcomerExpr);
     globalState->getRegion(newcomerType)
@@ -411,9 +412,10 @@ Ref translateExpressionInner(
         wrap(globalState->getRegion(globalState->metalCache->i32Ref), globalState->metalCache->i32Ref, indexLE);
 
     auto arrayIsEmptyLE = LLVMBuildICmp(builder, LLVMIntEQ, arrayLenLE, constI32LE(globalState, 0), "hasElements");
-    buildIf(globalState, functionState, builder, arrayIsEmptyLE, [globalState](LLVMBuilderRef bodyBuilder) {
-      buildPrint(globalState, bodyBuilder, "Error: Cannot pop element from empty runtime-sized array!");
-    });
+    buildIfV(
+        globalState, functionState, builder, arrayIsEmptyLE, [globalState](LLVMBuilderRef bodyBuilder) {
+          buildPrint(globalState, bodyBuilder, "Error: Cannot pop element from empty runtime-sized array!");
+        });
 
     auto resultRef =
         globalState->getRegion(arrayType)
@@ -444,9 +446,10 @@ Ref translateExpressionInner(
                 functionState, builder, globalState->metalCache->i32Ref, arrayLenRef);
 
     auto hasElementsLE = LLVMBuildICmp(builder, LLVMIntNE, arrayLenLE, constI32LE(globalState, 0), "hasElements");
-    buildIf(globalState, functionState, builder, hasElementsLE, [globalState](LLVMBuilderRef bodyBuilder) {
-      buildPrint(globalState, bodyBuilder, "Error: Destroying non-empty array!");
-    });
+    buildIfV(
+        globalState, functionState, builder, hasElementsLE, [globalState](LLVMBuilderRef bodyBuilder) {
+          buildPrint(globalState, bodyBuilder, "Error: Destroying non-empty array!");
+        });
 
     if (arrayType->ownership == Ownership::OWN) {
       globalState->getRegion(arrayType)
@@ -503,7 +506,7 @@ Ref translateExpressionInner(
                       functionState, bodyBuilder, arrayType, arrayKind, arrayRef, arrayKnownLive, indexRef);
           std::vector<Ref> argExprRefs = { consumerRef, elementRef };
 
-          buildCall(globalState, functionState, bodyBuilder, consumerMethod, argExprRefs);
+          buildCallV(globalState, functionState, bodyBuilder, consumerMethod, argExprRefs);
 
 //          auto consumerInterfaceMT = dynamic_cast<InterfaceKind*>(consumerType->kind);
 //          assert(consumerInterfaceMT);
@@ -865,7 +868,8 @@ Ref translateExpressionInner(
                       lockWeak->someConstructor->params[0],
                       constraintRef);
               // If we get here, object is alive, return a Some.
-              auto someRef = buildCall(globalState, functionState, thenBuilder, lockWeak->someConstructor, {constraintRef});
+              auto someRef =
+                  buildCallV(globalState, functionState, thenBuilder, lockWeak->someConstructor, {constraintRef});
               globalState->getRegion(lockWeak->someType)
                   ->checkValidReference(
                       FL(), functionState, thenBuilder, lockWeak->someType, someRef);
@@ -882,7 +886,7 @@ Ref translateExpressionInner(
             [globalState, functionState, lockWeak](LLVMBuilderRef elseBuilder) {
               auto noneConstructor = lockWeak->noneConstructor;
               // If we get here, object is dead, return a None.
-              auto noneRef = buildCall(globalState, functionState, elseBuilder, noneConstructor, {});
+              auto noneRef = buildCallV(globalState, functionState, elseBuilder, noneConstructor, {});
               globalState->getRegion(lockWeak->noneType)
                   ->checkValidReference(
                       FL(), functionState, elseBuilder, lockWeak->noneType, noneRef);
@@ -940,7 +944,7 @@ Ref translateExpressionInner(
                       refAsSubtype);
 
               // If we get here, object is of the desired targetType, return a Ok containing it.
-              auto okRef = buildCall(globalState, functionState, thenBuilder, asSubtype->okConstructor, {refAsSubtype});
+              auto okRef = buildCallV(globalState, functionState, thenBuilder, asSubtype->okConstructor, {refAsSubtype});
               globalState->getRegion(asSubtype->okType)
                   ->checkValidReference(
                       FL(), functionState, thenBuilder, asSubtype->okType, okRef);
@@ -956,7 +960,7 @@ Ref translateExpressionInner(
             },
             [globalState, functionState, asSubtype, sourceLE](LLVMBuilderRef thenBuilder) -> Ref {
               // If we get here, object is not of the desired targetType, return a Err containing the original ref.
-              auto errRef = buildCall(globalState, functionState, thenBuilder, asSubtype->errConstructor, {sourceLE});
+              auto errRef = buildCallV(globalState, functionState, thenBuilder, asSubtype->errConstructor, {sourceLE});
               globalState->getRegion(asSubtype->errType)
                   ->checkValidReference(
                       FL(), functionState, thenBuilder, asSubtype->errType, errRef);

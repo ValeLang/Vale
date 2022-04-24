@@ -197,6 +197,8 @@ exported func main() int {
     suite.StartTest(42, "concatstrfloat", samples_path./("programs/concatstrfloat.vale"), &List<str>(), region);
     suite.StartTest(11, "strlenextern", samples_path./("programs/externs/strlenextern"), &List<str>(), region);
     suite.StartTest(42, "voidreturnexport", samples_path./("programs/externs/voidreturnexport"), &List<str>(), region);
+    suite.StartTest(42, "simpleexternreturn", samples_path./("programs/externs/simpleexternreturn"), &List<str>(), region);
+    suite.StartTest(42, "simpleexternparam", samples_path./("programs/externs/simpleexternparam"), &List<str>(), region);
     suite.StartTest(42, "structimmparamextern", samples_path./("programs/externs/structimmparamextern"), &List<str>(), region);
     suite.StartTest(42, "structimmparamexport", samples_path./("programs/externs/structimmparamexport"), &List<str>(), region);
     suite.StartTest(42, "structimmparamdeepextern", samples_path./("programs/externs/structimmparamdeepextern"), &List<str>(), region);

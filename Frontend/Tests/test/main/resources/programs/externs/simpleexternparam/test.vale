@@ -1,0 +1,7 @@
+
+extern func cExit42();
+
+exported func main() int {
+   cExit42();
+   73
+}

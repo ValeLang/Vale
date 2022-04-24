@@ -165,7 +165,7 @@ void NaiveRC::dealias(
     assert(false); // impl
   } else if (sourceMT->ownership == Ownership::BORROW) {
     auto rcLE = adjustStrongRc(from, globalState, functionState, &kindStructs, builder, sourceRef, sourceMT, -1);
-    buildIf(
+    buildIfV(
         globalState, functionState, builder, isZeroLE(builder, rcLE),
         [this, functionState, sourceRef, sourceMT](LLVMBuilderRef thenBuilder) {
           deallocate(FL(), functionState, thenBuilder, sourceMT, sourceRef);
@@ -356,7 +356,7 @@ void NaiveRC::discardOwningRef(
       adjustStrongRc(
           AFL("Destroy decrementing the owning ref"),
           globalState, functionState, &kindStructs, builder, sourceRef, sourceMT, -1);
-  buildIf(
+  buildIfV(
       globalState, functionState, builder, isZeroLE(builder, rcLE),
       [this, functionState, blockState, sourceRef, sourceMT](LLVMBuilderRef thenBuilder) {
         deallocate(FL(), functionState, thenBuilder, sourceMT, sourceRef);

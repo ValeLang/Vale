@@ -270,18 +270,28 @@ Ref buildExternCall(
     buildFlare(FL(), globalState, functionState, builder, "Suspending function ", functionState->containingFuncName);
     buildFlare(FL(), globalState, functionState, builder, "Calling extern function ", prototype->name->name);
 
+    auto sideStackI8PtrLE = LLVMBuildLoad(builder, globalState->sideStack, "sideStack");
+
+    auto hostReturnRefLT = globalState->getRegion(prototype->returnType)->getExternalType(prototype->returnType);
+
     LLVMValueRef hostReturnLE = nullptr;
     if (typeNeedsPointerParameter(globalState, prototype->returnType)) {
-      auto hostReturnRefLT = globalState->getRegion(prototype->returnType)->getExternalType(prototype->returnType);
       auto localPtrLE =
           makeBackendLocal(functionState, builder, hostReturnRefLT, "retOutParam", LLVMGetUndef(hostReturnRefLT));
       buildFlare(FL(), globalState, functionState, builder, "Return ptr! ", ptrToIntLE(globalState, builder, localPtrLE));
       hostArgsLE.insert(hostArgsLE.begin(), localPtrLE);
-      LLVMBuildCall(builder, externFuncL, hostArgsLE.data(), hostArgsLE.size(), "");
+
+      auto resultLE =
+          buildSideCall(
+              globalState, hostReturnRefLT, builder, sideStackI8PtrLE, externFuncL, hostArgsLE);
+      assert(LLVMTypeOf(resultLE) == LLVMVoidTypeInContext(globalState->context));
+
+//      LLVMBuildCall(builder, externFuncL, hostArgsLE.data(), hostArgsLE.size(), "");
       hostReturnLE = LLVMBuildLoad(builder, localPtrLE, "hostReturn");
       buildFlare(FL(), globalState, functionState, builder, "Loaded the return! ", LLVMABISizeOfType(globalState->dataLayout, LLVMTypeOf(hostReturnLE)));
     } else {
-      hostReturnLE = LLVMBuildCall(builder, externFuncL, hostArgsLE.data(), hostArgsLE.size(), "");
+      hostReturnLE =
+          buildSideCall(globalState, hostReturnRefLT, builder, sideStackI8PtrLE, externFuncL, hostArgsLE);
     }
 
     buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);

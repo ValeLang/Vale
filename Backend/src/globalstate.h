@@ -58,7 +58,6 @@ public:
   LLVMValueRef writeOnlyGlobal = nullptr;
   LLVMValueRef crashGlobal = nullptr;
 
-
   LLVMTypeRef wrcTableStructLT = nullptr;
   LLVMValueRef expandWrcTable = nullptr, checkWrci = nullptr, getNumWrcs = nullptr;
 
@@ -70,10 +69,21 @@ public:
   LLVMTypeRef concreteHandleLT = nullptr; // 24 bytes, for SSA, RSA, and structs
   LLVMTypeRef interfaceHandleLT = nullptr; // 32 bytes, for interfaces. concreteHandleLT plus 8b itable ptr.
 
-
   // This is a global, we can return this when we want to return never. It should never actually be
   // used as an input to any expression in any function though.
   LLVMValueRef neverPtr = nullptr;
+
+//  LLVMValueRef coroutineEntryFunc = nullptr;
+
+  // These should eventually be moved into thread local storage when we do multithreading.
+  // Initialized at the beginning of main, used for C FFI.
+  LLVMValueRef sideStack = nullptr;
+  // Used for passing arguments to wrapper functions across stack switches.
+  // At some point we should just pass a pointer to a struct containing all of these.
+  // We should make sure that these don't get destroyed before the coroutine wants them.
+  // Though, I guess thats what structured concurrency is for.
+//  LLVMValueRef sideStackArgReturnDestPtr = nullptr;
+//  LLVMValueRef sideStackArgCalleeFuncPtrPtr = nullptr;
 
   LLVMBuilderRef stringConstantBuilder = nullptr;
   std::unordered_map<std::string, LLVMValueRef> stringConstants;

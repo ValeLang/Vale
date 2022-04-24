@@ -52,7 +52,7 @@ cmake -B build -D LLVM_DIR="$LLVM_CMAKE_DIR" || { echo 'Backend generate failed,
 cd build
 
 echo Compiling Backend...
-make || { echo 'Backend build failed, aborting.' ; exit 1; }
+cmake --build build || { echo 'Backend build failed, aborting.' ; exit 1; }
 
 cd ../../Coordinator
 

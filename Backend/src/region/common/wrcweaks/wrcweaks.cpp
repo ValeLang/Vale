@@ -60,7 +60,7 @@ void WrcWeaks::maybeReleaseWrc(
     LLVMValueRef wrciLE,
     LLVMValueRef ptrToWrcLE,
     LLVMValueRef wrcLE) {
-  buildIf(
+  buildIfV(
       globalState, functionState,
       builder,
       isZeroLE(builder, wrcLE),
@@ -318,7 +318,7 @@ LLVMValueRef WrcWeaks::lockWrciFatPtr(
     Reference* refM,
     WeakFatPtrLE weakFatPtrLE) {
   auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, refM, weakFatPtrLE);
-  buildIf(
+  buildIfV(
       globalState, functionState, builder, isZeroLE(builder, isAliveLE),
       [this, from, functionState, weakFatPtrLE](LLVMBuilderRef thenBuilder) {
         buildPrintAreaAndFileAndLine(globalState, thenBuilder, from);
@@ -357,7 +357,7 @@ LLVMValueRef WrcWeaks::getNewWrci(
           resultWrciLE,
           LLVMBuildLoad(builder, getWrcCapacityPtr(builder), "wrcCapacity"),
           "atCapacity");
-  buildIf(
+  buildIfV(
       globalState, functionState,
       builder,
       atCapacityLE,

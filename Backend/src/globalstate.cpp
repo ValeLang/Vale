@@ -116,6 +116,8 @@ IRegion* GlobalState::getRegion(RegionId* regionId) {
     return rcImm;
   } else if (regionId == metalCache->linearRegionId) {
     return linearRegion;
+  } else if (regionId == metalCache->mutRegionId) {
+    return mutRegion;
 //  } else if (regionId == metalCache->unsafeRegionId) {
 //    return unsafeRegion;
 //  } else if (regionId == metalCache->assistRegionId) {

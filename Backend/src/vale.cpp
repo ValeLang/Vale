@@ -847,7 +847,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
       globalState->mutRegion = new Assist(globalState);
       break;
     case RegionOverride::NAIVE_RC:
-      globalState->mutRegion = new NaiveRC(globalState, globalState->metalCache->rcImmRegionId);
+      globalState->mutRegion = new NaiveRC(globalState, globalState->metalCache->mutRegionId);
       break;
     case RegionOverride::FAST:
       globalState->mutRegion = new Unsafe(globalState);

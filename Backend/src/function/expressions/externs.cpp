@@ -281,16 +281,26 @@ Ref buildExternCall(
       buildFlare(FL(), globalState, functionState, builder, "Return ptr! ", ptrToIntLE(globalState, builder, localPtrLE));
       hostArgsLE.insert(hostArgsLE.begin(), localPtrLE);
 
-      auto resultLE =
-          buildSideCall(
-              globalState, hostReturnRefLT, builder, sideStackI8PtrLE, externFuncL, hostArgsLE);
-      assert(LLVMTypeOf(resultLE) == LLVMVoidTypeInContext(globalState->context));
-
+      if (globalState->opt->enableSideCalling) {
+        auto resultLE =
+            buildSideCall(
+                globalState, LLVMVoidTypeInContext(globalState->context), builder, sideStackI8PtrLE, externFuncL,
+                hostArgsLE);
+        assert(LLVMTypeOf(resultLE) == LLVMVoidTypeInContext(globalState->context));
+      } else {
+        auto resultLE = buildCall(globalState, builder, externFuncL, hostArgsLE);
+        assert(LLVMTypeOf(resultLE) == LLVMVoidTypeInContext(globalState->context));
+      }
       hostReturnLE = LLVMBuildLoad(builder, localPtrLE, "hostReturn");
       buildFlare(FL(), globalState, functionState, builder, "Loaded the return! ", LLVMABISizeOfType(globalState->dataLayout, LLVMTypeOf(hostReturnLE)));
     } else {
-      hostReturnLE =
-          buildSideCall(globalState, hostReturnRefLT, builder, sideStackI8PtrLE, externFuncL, hostArgsLE);
+      if (globalState->opt->enableSideCalling) {
+        hostReturnLE =
+            buildSideCall(globalState, hostReturnRefLT, builder, sideStackI8PtrLE, externFuncL, hostArgsLE);
+      } else {
+        hostReturnLE =
+            buildCall(globalState, builder, externFuncL, hostArgsLE);
+      }
     }
 
     buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);

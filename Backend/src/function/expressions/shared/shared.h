@@ -199,12 +199,18 @@ void buildAssertCensusContains(
     LLVMBuilderRef builder,
     LLVMValueRef ptrLE);
 
-Ref buildCall(
+Ref buildCallV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Prototype* prototype,
     std::vector<Ref> argRefs);
+
+LLVMValueRef buildCall(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef functionLE,
+    std::vector<LLVMValueRef> argsLE);
 
 
 LLVMValueRef addExtern(
@@ -220,5 +226,14 @@ inline LLVMValueRef ptrToVoidPtrLE(GlobalState* globalState, LLVMBuilderRef buil
 inline LLVMValueRef ptrToIntLE(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef ptrLE) {
   return LLVMBuildPointerCast(builder, ptrLE, LLVMInt64TypeInContext(globalState->context), "asI64");
 }
+
+// A side call is a call using different stack memory
+LLVMValueRef buildSideCall(
+    GlobalState* globalState,
+    LLVMTypeRef calleeFuncLT,
+    LLVMBuilderRef entryBuilder,
+    LLVMValueRef sideStackStartPtrAsI8PtrLE,
+    LLVMValueRef calleeFuncLE,
+    const std::vector<LLVMValueRef>& userArgsLE);
 
 #endif

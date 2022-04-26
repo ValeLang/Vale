@@ -388,7 +388,7 @@ void fillRuntimeSizedArray(
         std::vector<Ref> argExprsLE = { generatorLE, indexRef };
 
         auto elementRef =
-            buildCall(
+            buildCallV(
                 globalState, functionState, bodyBuilder, generatorMethod, argExprsLE);
         globalState->getRegion(rsaMT)->pushRuntimeSizedArrayNoBoundsCheck(
             functionState, bodyBuilder, rsaRefMT, rsaMT, rsaRef, true, indexRef, elementRef);
@@ -418,7 +418,7 @@ void fillStaticSizedArrayFromCallable(
         std::vector<Ref> argExprsLE = { generatorLE, indexRef };
 
         auto elementRef =
-            buildCall(
+            buildCallV(
                 globalState, functionState, bodyBuilder, generatorMethod, argExprsLE);
         globalState->getRegion(ssaMT)->initializeElementInSSA(
             functionState, bodyBuilder, ssaRefMT, ssaMT, ssaRef, true, indexRef, elementRef);

@@ -79,10 +79,16 @@ class TemplexParser {
     iter.consumeWhitespace()
 
     val name =
-      Parser.parseFunctionOrLocalOrMemberName(iter) match {
-        case None => return Err(BadPrototypeName(iter.getPos()))
-        case Some(x) => x
+      if (iter.peek(() => "^\\(".r)) {
+        NameP(RangeP(iter.getPos(), iter.getPos()), "__call")
+      } else {
+        Parser.parseFunctionOrLocalOrMemberName(iter) match {
+          case None => return Err(BadPrototypeName(iter.getPos()))
+          case Some(x) => x
+        }
       }
+
+    iter.consumeWhitespace()
 
     val args =
       parseTuple(iter) match {
@@ -511,17 +517,26 @@ class TemplexParser {
     Ok(Some(ast.TypedPR(RangeP(begin, iter.getPos()), maybeRuneName, runeType)))
   }
 
-  def parseRuleCall(iter: ParsingIterator): Result[Option[IRulexPR], IParseError] = {
-    val begin = iter.getPos()
+  def parseRuleCall(originalIter: ParsingIterator): Result[Option[IRulexPR], IParseError] = {
+    val tentativeIter = originalIter.clone()
+
+    val begin = tentativeIter.getPos()
     val nameAndOpenParen =
-    iter.tryy(() => "^\\w+\\(".r) match {
-      case None => return Ok(None)
-      case Some(nameAndOpenParen) => nameAndOpenParen
-    }
+      tentativeIter.tryy(() => "^\\w+\\(".r) match {
+        case None => return Ok(None)
+        case Some(nameAndOpenParen) => nameAndOpenParen
+      }
 
     val nameStr = nameAndOpenParen.init
-    val nameEnd = iter.getPos() - 1
+    if (nameStr == "func") {
+      return Ok(None)
+    }
+
+    val nameEnd = tentativeIter.getPos() - 1
     val name = NameP(RangeP(begin, nameEnd), nameStr)
+
+    originalIter.skipTo(tentativeIter.getPos())
+    val iter = originalIter
 
     iter.consumeWhitespace()
     if (iter.trySkip(() => "^\\s*\\)".r)) {

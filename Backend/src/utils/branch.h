@@ -40,16 +40,16 @@ Ref buildIfElse(
     std::function<Ref(LLVMBuilderRef)> buildThen,
     std::function<Ref(LLVMBuilderRef)> buildElse);
 
-void buildIfIn(
+void buildIfV(
     GlobalState* globalState,
-    LLVMValueRef function,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef conditionLE,
     std::function<void(LLVMBuilderRef)> buildThen);
 
 void buildIf(
     GlobalState* globalState,
-    FunctionState* functionState,
+    LLVMValueRef funcL,
     LLVMBuilderRef builder,
     LLVMValueRef conditionLE,
     std::function<void(LLVMBuilderRef)> buildThen);

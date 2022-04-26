@@ -23,6 +23,16 @@ public:
   LLVMValueRef censusAdd = nullptr;
   LLVMValueRef censusRemove = nullptr;
 
+  // https://llvm.org/docs/LangRef.html#llvm-read-register-llvm-read-volatile-register-and-llvm-write-register-intrinsics
+  LLVMValueRef readRegisterI64Intrinsic = nullptr;
+  LLVMValueRef writeRegisterI64Intrinsinc = nullptr;
+  //https://releases.llvm.org/8.0.0/docs/ExceptionHandling.html#llvm-eh-sjlj-setjmp
+  LLVMValueRef setjmpIntrinsic = nullptr;
+  LLVMValueRef longjmpIntrinsic = nullptr;
+  // https://llvm.org/docs/LangRef.html#llvm-stacksave-intrinsic
+  LLVMValueRef stacksaveIntrinsic = nullptr;
+  LLVMValueRef stackrestoreIntrinsic = nullptr;
+
   Externs(LLVMModuleRef mod, LLVMContextRef context);
 };
 

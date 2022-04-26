@@ -250,6 +250,8 @@ LLVMTypeRef Linear::translateType(Reference* referenceM) {
     auto result = LLVMPointerType(makeNeverType(globalState), 0);
     assert(LLVMTypeOf(globalState->neverPtr) == result);
     return result;
+  } else if (dynamic_cast<Void*>(referenceM->kind)) {
+    return LLVMVoidTypeInContext(globalState->context);
   } else {
     std::cerr << "Unimplemented type: " << typeid(*referenceM->kind).name() << std::endl;
     assert(false);
@@ -418,7 +420,8 @@ void Linear::defineEdgeSerializeFunction(Edge* edge) {
         auto valeObjectRef = wrap(globalState->getRegion(valeObjectRefMT), valeObjectRefMT, LLVMGetParam(functionState->containingFuncL, 1));
         auto dryRunBoolRef = wrap(globalState->getRegion(boolMT), boolMT, LLVMGetParam(functionState->containingFuncL, 2));
 
-        auto structRef = buildCall(globalState, functionState, builder, structPrototype, {regionInstanceRef, valeObjectRef, dryRunBoolRef});
+        auto structRef = buildCallV(
+            globalState, functionState, builder, structPrototype, {regionInstanceRef, valeObjectRef, dryRunBoolRef});
 
         auto hostInterfaceKind = dynamic_cast<InterfaceKind*>(thunkPrototype->returnType->kind);
         assert(hostInterfaceKind);
@@ -855,7 +858,7 @@ Ref Linear::innerConstructStaticSizedArray(
   auto ssaPtrLE = checkValidReference(FL(), functionState, builder, ssaRefMT, ssaRef);
 
   auto dryRunBoolLE = globalState->getRegion(boolMT)->checkValidReference(FL(), functionState, builder, boolMT, dryRunBoolRef);
-  buildIf(
+  buildIfV(
       globalState, functionState, builder, LLVMBuildNot(builder, dryRunBoolLE, "notDryRun"),
       [this, functionState, ssaPtrLE, hostSsaMT](LLVMBuilderRef thenBuilder) mutable {
         buildFlare(FL(), globalState, functionState, thenBuilder);
@@ -903,7 +906,7 @@ Ref Linear::innerConstructRuntimeSizedArray(
   auto rsaPtrLE = checkValidReference(FL(), functionState, builder, rsaRefMT, rsaRef);
 
   auto dryRunBoolLE = globalState->getRegion(boolMT)->checkValidReference(FL(), functionState, builder, boolMT, dryRunBoolRef);
-  buildIf(
+  buildIfV(
       globalState, functionState, builder, LLVMBuildNot(builder, dryRunBoolLE, "notDryRun"),
       [this, functionState, rsaPtrLE, lenI32LE, rsaMT](LLVMBuilderRef thenBuilder) mutable {
         buildFlare(FL(), globalState, functionState, thenBuilder);
@@ -955,10 +958,12 @@ Ref Linear::innerMallocStr(
 
   auto dryRunBoolLE = globalState->getRegion(boolMT)->checkValidReference(FL(), functionState, builder, boolMT, dryRunBoolRef);
 
-  buildIf(
+  buildIfV(
       globalState, functionState, builder, LLVMBuildNot(builder, dryRunBoolLE, "notDryRun"),
-      [this, functionState, strPtrLE, lenI32LE, lenI64LE, strRef, sourceCharsPtrLE](LLVMBuilderRef thenBuilder) mutable {
-        auto strWithLenValLE = LLVMBuildInsertValue(thenBuilder, LLVMGetUndef(structs.getStringStruct()), lenI32LE, 0, "strWithLen");
+      [this, functionState, strPtrLE, lenI32LE, lenI64LE, strRef, sourceCharsPtrLE](
+          LLVMBuilderRef thenBuilder) mutable {
+        auto strWithLenValLE =
+            LLVMBuildInsertValue(thenBuilder, LLVMGetUndef(structs.getStringStruct()), lenI32LE, 0, "strWithLen");
         LLVMBuildStore(thenBuilder, strWithLenValLE, strPtrLE);
 
         buildFlare(FL(), globalState, functionState, thenBuilder, "length for str: ", lenI64LE);
@@ -967,7 +972,7 @@ Ref Linear::innerMallocStr(
 
         buildFlare(FL(), globalState, functionState, thenBuilder);
 
-        std::vector<LLVMValueRef> argsLE = { charsBeginPtr, sourceCharsPtrLE, lenI64LE };
+        std::vector<LLVMValueRef> argsLE = {charsBeginPtr, sourceCharsPtrLE, lenI64LE};
         LLVMBuildCall(thenBuilder, globalState->externs->strncpy, argsLE.data(), argsLE.size(), "");
 
 
@@ -1430,7 +1435,7 @@ Ref Linear::callSerialize(
     return buildInterfaceCall(
         globalState, functionState, builder, prototype, methodFunctionPtrLE, {regionInstanceRef, objectRef, dryRunBoolRef}, 1);
   } else {
-    return buildCall(globalState, functionState, builder, prototype, {regionInstanceRef, objectRef, dryRunBoolRef});
+    return buildCallV(globalState, functionState, builder, prototype, {regionInstanceRef, objectRef, dryRunBoolRef});
   }
 }
 
@@ -1608,7 +1613,7 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
           }
 
           auto dryRunBoolLE = globalState->getRegion(boolMT)->checkValidReference(FL(), functionState, builder, boolMT, dryRunBoolRef);
-          buildIf(
+          buildIfV(
               globalState, functionState, builder, LLVMBuildNot(builder, dryRunBoolLE, "notDryRun"),
               [this, functionState, valeStructDefM, hostMemberRefs, innerStructPtrLE](LLVMBuilderRef thenBuilder) {
                 for (int i = 0; i < valeStructDefM->members.size(); i++) {
@@ -1677,15 +1682,15 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
                         functionState, bodyBuilder, valeMemberRefMT, regionInstanceRef, sourceMemberRef, dryRunBoolRef);
                 buildFlare(FL(), globalState, functionState, bodyBuilder);
                 auto dryRunBoolLE = globalState->getRegion(boolMT)->checkValidReference(FL(), functionState, bodyBuilder, boolMT, dryRunBoolRef);
-                buildIf(
+                buildIfV(
                     globalState, functionState, bodyBuilder, LLVMBuildNot(bodyBuilder, dryRunBoolLE, "notDryRun"),
                     [this, functionState, hostObjectRefMT, hostRsaRef, indexRef, hostElementRef, hostRsaMT](
                         LLVMBuilderRef thenBuilder) mutable {
                       pushRuntimeSizedArrayNoBoundsCheck(
                           functionState, thenBuilder, hostObjectRefMT, hostRsaMT, hostRsaRef, true, indexRef,
                           hostElementRef);
-                    buildFlare(FL(), globalState, functionState, thenBuilder);
-                  });
+                      buildFlare(FL(), globalState, functionState, thenBuilder);
+                    });
               });
 
           buildFlare(FL(), globalState, functionState, builder, "Returning from serialize function!");
@@ -1729,12 +1734,13 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
                         functionState, bodyBuilder, valeMemberRefMT, regionInstanceRef, sourceMemberRef, dryRunBoolRef);
                 buildFlare(FL(), globalState, functionState, bodyBuilder);
                 auto dryRunBoolLE = globalState->getRegion(boolMT)->checkValidReference(FL(), functionState, bodyBuilder, boolMT, dryRunBoolRef);
-                buildIf(
+                buildIfV(
                     globalState, functionState, bodyBuilder, LLVMBuildNot(bodyBuilder, dryRunBoolLE, "notDryRun"),
                     [this, functionState, hostObjectRefMT, hostSsaRef, indexRef, hostElementRef, hostSsaMT](
                         LLVMBuilderRef thenBuilder) mutable {
                       initializeElementInSSA(
-                          functionState, thenBuilder, hostObjectRefMT, hostSsaMT, hostSsaRef, true, indexRef, hostElementRef);
+                          functionState, thenBuilder, hostObjectRefMT, hostSsaMT, hostSsaRef, true, indexRef,
+                          hostElementRef);
                       buildFlare(FL(), globalState, functionState, thenBuilder);
                     });
               });
@@ -1923,14 +1929,14 @@ LLVMValueRef Linear::getInterfaceMethodFunctionPtr(
   auto isValidEdgeNumLE =
       LLVMBuildICmp(builder, LLVMIntULT, edgeNumLE, constI64LE(globalState, orderedSubstructs.size()), "isValidEdgeNum");
 
-  buildIf(
+  buildIfV(
       globalState, functionState, builder, isZeroLE(builder, isValidEdgeNumLE),
       [this, edgeNumLE](LLVMBuilderRef thenBuilder) {
-          buildPrint(globalState, thenBuilder, "Invalid edge number (");
-          buildPrint(globalState, thenBuilder, edgeNumLE);
-          buildPrint(globalState, thenBuilder, "), exiting!\n");
-          auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 1, false);
-          LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
+        buildPrint(globalState, thenBuilder, "Invalid edge number (");
+        buildPrint(globalState, thenBuilder, edgeNumLE);
+        buildPrint(globalState, thenBuilder, "), exiting!\n");
+        auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 1, false);
+        LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
       });
 
   auto functionLT = globalState->getInterfaceFunctionTypes(hostInterfaceMT)[indexInEdge];

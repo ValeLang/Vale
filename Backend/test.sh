@@ -1,1 +1,1 @@
-../Tester/build/testvalec --valestrom_path ../Valestrom/Valestrom.jar --backend_path ./build/backend --builtins_dir ./builtins --valec_path ../Driver/build/valec --backend_tests_dir ./test --valestrom_tests_dir ../Valestrom "$@"
+../Tester/build/testvalec --frontend_path ../Frontend/Frontend.jar --backend_path ./build/backend --builtins_dir ./builtins --valec_path ../Coordinator/build/valec --backend_tests_dir ./test --frontend_tests_dir ../Frontend "$@"

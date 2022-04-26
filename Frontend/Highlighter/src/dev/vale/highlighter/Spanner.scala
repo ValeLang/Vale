@@ -15,6 +15,7 @@ case object Ext extends IClass
 case object Pure extends IClass
 case object Fn extends IClass
 case object Struct extends IClass
+case object Break extends IClass
 case object FnName extends IClass
 case object StructName extends IClass
 case object Membs extends IClass
@@ -134,6 +135,7 @@ object Spanner {
   def forStructContent(c: IStructContent): Span = {
     c match {
       case m @ NormalStructMemberP(_, _, _, _) => forMember(m)
+      case m @ VariadicStructMemberP(_, _, _) => forVariadicMember(m)
       case StructMethodP(f) => forFunction(f)
     }
   }
@@ -145,6 +147,15 @@ object Spanner {
       range,
       Vector(
         makeSpan(MembName, nameRange, Vector.empty),
+        forTemplex(tyype)))
+  }
+
+  def forVariadicMember(member: VariadicStructMemberP): Span = {
+    val VariadicStructMemberP(range, _, tyype) = member
+    makeSpan(
+      Memb,
+      range,
+      Vector(
         forTemplex(tyype)))
   }
 
@@ -362,6 +373,12 @@ object Spanner {
           Vector(
             forExpression(inner)))
       }
+      case BreakPE(range) => {
+        makeSpan(
+          Break,
+          range,
+          Vector())
+      }
       case other => vimpl(other.toString)
     }
   }
@@ -452,6 +469,12 @@ object Spanner {
           Vector())
       }
       case RegionRunePT(range, _) => {
+        makeSpan(
+          Rune,
+          range,
+          Vector())
+      }
+      case VariabilityPT(range, variability) => {
         makeSpan(
           Rune,
           range,

@@ -223,17 +223,23 @@ LLVMValueRef makeEntryFunction(
   LLVMBuildStore(entryBuilder, numArgsLE, globalState->numMainArgs);
   LLVMBuildStore(entryBuilder, argsLE, globalState->mainArgs);
 
-  LLVMBuildStore(
-      entryBuilder,
-      buildCall(globalState, entryBuilder, globalState->externs->malloc, {
-          constI64LE(globalState, STACK_SIZE)
-      }),
-      globalState->sideStack);
+  if (globalState->opt->enableSideCalling) {
+    LLVMBuildStore(
+        entryBuilder,
+        buildCall(
+            globalState, entryBuilder, globalState->externs->malloc,
+            { constI64LE(globalState, STACK_SIZE) }),
+        globalState->sideStack);
+  }
 
   auto calleeUserFunction = globalState->lookupFunction(valeMainPrototype);
   auto resultLE = buildCall(globalState, entryBuilder, calleeUserFunction, {});
 
-  buildPrint(globalState, entryBuilder, "Done!\n");
+  if (globalState->opt->enableSideCalling) {
+    buildCall(
+        globalState, entryBuilder, globalState->externs->free,
+        { LLVMBuildLoad(entryBuilder, globalState->sideStack, "") });
+  }
 
   LLVMBuildRet(entryBuilder, resultLE);
   LLVMDisposeBuilder(entryBuilder);

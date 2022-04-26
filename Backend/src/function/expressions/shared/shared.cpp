@@ -675,7 +675,7 @@ LLVMValueRef buildSideCall(
       //buildPrint(globalState, entryBuilder, "\n");
     }
   } else {
-    callResultAfterReturnLE = makeVoid(globalState);
+    callResultAfterReturnLE = LLVMGetUndef(LLVMVoidTypeInContext(globalState->context));
   }
 
   //buildPrint(globalState, entryBuilder, "Done!\n");

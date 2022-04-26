@@ -135,6 +135,7 @@ object Spanner {
   def forStructContent(c: IStructContent): Span = {
     c match {
       case m @ NormalStructMemberP(_, _, _, _) => forMember(m)
+      case m @ VariadicStructMemberP(_, _, _) => forVariadicMember(m)
       case StructMethodP(f) => forFunction(f)
     }
   }
@@ -146,6 +147,15 @@ object Spanner {
       range,
       Vector(
         makeSpan(MembName, nameRange, Vector.empty),
+        forTemplex(tyype)))
+  }
+
+  def forVariadicMember(member: VariadicStructMemberP): Span = {
+    val VariadicStructMemberP(range, _, tyype) = member
+    makeSpan(
+      Memb,
+      range,
+      Vector(
         forTemplex(tyype)))
   }
 

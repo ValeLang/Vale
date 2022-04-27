@@ -775,6 +775,9 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
   Externs externs(globalState->mod, globalState->context);
   globalState->externs = &externs;
 
+  Determinism determinism;
+  globalState->determinism = &determinism;
+
 //  globalState->stringConstantBuilder = entryBuilder;
 
   LLVMValueRef empty[1] = {};

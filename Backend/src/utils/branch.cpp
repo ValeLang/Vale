@@ -214,7 +214,6 @@ Ref buildIfElse(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Ref conditionRef,
-    LLVMTypeRef resultTypeL,
     Reference* thenResultMT,
     Reference* elseResultMT,
     std::function<Ref(LLVMBuilderRef)> buildThen,
@@ -299,9 +298,10 @@ Ref buildIfElse(
   } else if (elseResultMT == globalState->metalCache->neverRef) {
     return thenResultRef;
   } else {
+    assert(LLVMTypeOf(thenResultLE) == LLVMTypeOf(elseResultLE));
     // Now, we fill in the afterward block, to receive the result value of the
     // then or else block, whichever we just came from.
-    auto phi = LLVMBuildPhi(builder, resultTypeL, "");
+    auto phi = LLVMBuildPhi(builder, LLVMTypeOf(thenResultLE), "");
     LLVMValueRef incomingValueRefs[2] = {thenResultLE, elseResultLE};
     LLVMBasicBlockRef incomingBlocks[2] = {thenFinalBlockL, elseFinalBlockL};
     LLVMAddIncoming(phi, incomingValueRefs, incomingBlocks, 2);
@@ -317,7 +317,7 @@ Ref buildIfElse(
 
 void buildBoolyWhile(
     GlobalState* globalState,
-    FunctionState* functionState,
+    LLVMValueRef containingFuncL,
     LLVMBuilderRef builder,
     std::function<Ref(LLVMBuilderRef)> buildBody) {
 
@@ -337,17 +337,14 @@ void buildBoolyWhile(
   // here.
 
   LLVMBasicBlockRef bodyStartBlockL =
-      LLVMAppendBasicBlockInContext(globalState->context,
-          functionState->containingFuncL,
-          functionState->nextBlockName().c_str());
+      LLVMAppendBasicBlockInContext(globalState->context, containingFuncL, "");
   LLVMBuilderRef bodyBlockBuilder = LLVMCreateBuilderInContext(globalState->context);
   LLVMPositionBuilderAtEnd(bodyBlockBuilder, bodyStartBlockL);
 
   // Jump from our previous block into the body for the first time.
   LLVMBuildBr(builder, bodyStartBlockL);
 
-  auto continueRef = buildBody(bodyBlockBuilder);
-  auto continueLE = globalState->getRegion(globalState->metalCache->boolRef)->checkValidReference(FL(), functionState, builder, globalState->metalCache->boolRef, continueRef);
+  auto continueLE = buildBody(bodyBlockBuilder);
 
   LLVMBasicBlockRef afterwardBlockL =
       LLVMAppendBasicBlockInContext(globalState->context,
@@ -357,6 +354,20 @@ void buildBoolyWhile(
   LLVMBuildCondBr(bodyBlockBuilder, continueLE, bodyStartBlockL, afterwardBlockL);
 
   LLVMPositionBuilderAtEnd(builder, afterwardBlockL);
+}
+
+void buildBoolyWhileV(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    std::function<Ref(LLVMBuilderRef)> buildBody) {
+  buildBoolyWhile(
+      globalState, functionState->containingFuncL, builder,
+      [](LLVMBuilderRef builder) {
+        auto continueRef = buildBody(builder);
+        auto continueLE = globalState->getRegion(globalState->metalCache->boolRef)->checkValidReference(FL(), functionState, builder, globalState->metalCache->boolRef, continueRef);
+        return continueLE;
+      });
 }
 
 void buildBreakyWhile(
@@ -412,7 +423,7 @@ void buildWhile(
     LLVMBuilderRef builder,
     std::function<Ref(LLVMBuilderRef)> buildCondition,
     std::function<void(LLVMBuilderRef)> buildBody) {
-  buildBoolyWhile(
+  buildBoolyWhileV(
       globalState,
       functionState,
       builder,

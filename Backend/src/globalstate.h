@@ -12,6 +12,7 @@
 #include "valeopts.h"
 #include "addresshasher.h"
 #include "externs.h"
+#include "determinism/determinism.h"
 
 class IRegion;
 class KindStructs;
@@ -22,6 +23,12 @@ class RCImm;
 
 constexpr int LGT_ENTRY_MEMBER_INDEX_FOR_GEN = 0;
 constexpr int LGT_ENTRY_MEMBER_INDEX_FOR_NEXT_FREE = 1;
+
+enum class RecordingMode : int64_t {
+  NORMAL = 0,
+  RECORDING = 1,
+  REPLAYING = 2
+};
 
 class GlobalState {
 public:
@@ -38,6 +45,7 @@ public:
   ValeOptions *opt = nullptr;
 
   Externs* externs = nullptr;
+  Determinism* determinism = nullptr;
 
   LLVMTargetDataRef dataLayout = nullptr;
   LLVMModuleRef mod = nullptr;
@@ -58,6 +66,7 @@ public:
   LLVMValueRef writeOnlyGlobal = nullptr;
   LLVMValueRef crashGlobal = nullptr;
 
+  // See RecordingMode
   std::optional<LLVMValueRef> recordingModePtrLE = nullptr;
 
   LLVMTypeRef wrcTableStructLT = nullptr;

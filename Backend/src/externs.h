@@ -15,7 +15,6 @@ public:
   LLVMValueRef memset = nullptr;
   LLVMValueRef strncpy = nullptr;
   LLVMValueRef strncmp = nullptr;
-  LLVMValueRef startDeterministicMode = nullptr;
   LLVMValueRef memcpy = nullptr;
 
 //  LLVMValueRef initTwinPages = nullptr;

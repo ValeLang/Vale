@@ -7,9 +7,6 @@
 
 #define STACK_SIZE (8 * 1024 * 1024)
 
-static const std::string VALE_REPLAY_FLAG = "--vale_replay";
-static const std::string VALE_RECORD_FLAG = "--vale_record";
-
 std::tuple<LLVMValueRef, LLVMBuilderRef> makeStringSetupFunction(GlobalState* globalState) {
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
 
@@ -228,41 +225,7 @@ LLVMValueRef makeEntryFunction(
   LLVMBuildStore(entryBuilder, mainArgsLE, globalState->mainArgs);
 
   if (globalState->opt->enableReplaying) {
-    auto condLE =
-        LLVMBuildOr(
-            entryBuilder,
-            buildCall(entryBuilder, globalState->externs->strncmp, {
-                globalState->getOrMakeStringConstant(VALE_REPLAY_FLAG),
-                LLVMBuildLoad(entryBuilder, mainArgsLE, "firstArg"),
-                constI64LE(globalState, VALE_REPLAY_FLAG.size())
-            }),
-            buildCall(entryBuilder, globalState->externs->strncmp, {
-                globalState->getOrMakeStringConstant(VALE_RECORD_FLAG),
-                LLVMBuildLoad(entryBuilder, mainArgsLE, "firstArg"),
-                constI64LE(globalState, VALE_RECORD_FLAG.size())
-            }),
-            "recordingOrReplaying");
-    buildIfIn(
-        globalState, entryFunctionL, entryBuilder, condLE,
-        [globalState, entryFunctionL, mainArgsLE](LLVMBuilderRef thenBuilder){
-          buildCall(thenBuilder, globalState->externs->startDeterministicMode, {
-            LLVMBuildLoad(thenBuilder, mainArgsLE, "firstArg")
-          });
 
-
-          set up that global to be extern linked
-          set up startDeterministicMode
-          write the c code that opens the file
-
-          auto workedLE =
-              LLVMBuildICmp(
-                  thenBuilder,
-                  LLVMIntNE,
-                  LLVMBuildLoad(thenBuilder, globalState->recordingModePtrLE.value(), "isRecording"),
-                  constI64LE(globalState, 0),
-                  "deterministicStarted");
-          buildAssert(globalState, entryFunctionL, thenBuilder, workedLE, "Deterministic mode failed to start!");
-        });
   }
 
   if (globalState->opt->enableSideCalling) {

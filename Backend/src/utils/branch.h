@@ -34,7 +34,6 @@ Ref buildIfElse(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Ref conditionRef,
-    LLVMTypeRef resultTypeL,
     Reference* thenResultMT,
     Reference* elseResultMT,
     std::function<Ref(LLVMBuilderRef)> buildThen,
@@ -55,11 +54,17 @@ void buildIf(
     std::function<void(LLVMBuilderRef)> buildThen);
 
 
-void buildBoolyWhile(
+void buildBoolyWhileV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     std::function<Ref(LLVMBuilderRef, LLVMBasicBlockRef)> buildBody);
+
+void buildBoolyWhile(
+    GlobalState* globalState,
+    LLVMValueRef funcL,
+    LLVMBuilderRef builder,
+    std::function<LLVMValueRef(LLVMBuilderRef, LLVMBasicBlockRef)> buildBody);
 
 void buildBreakyWhile(
     GlobalState* globalState,

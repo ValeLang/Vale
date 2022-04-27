@@ -98,7 +98,7 @@ add_executable(backend
 		src/region/regions.cpp
 
 		src/fileio.cpp
-		src/options.cpp src/mainFunction.cpp src/externs.cpp)
+		src/options.cpp src/mainFunction.cpp src/externs.cpp src/determinism/determinism.cpp src/determinism/determinism.h)
 
 target_link_libraries(backend ${llvm_libs})
 

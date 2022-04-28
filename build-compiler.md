@@ -10,7 +10,7 @@ sudo apt install -y git
 git clone --single-branch --branch master https://github.com/ValeLang/Vale
 Vale/install-compiler-prereqs-linux.sh ~/LLVMForVale ~/BootstrappingValeCompiler
 cd Vale
-./build-compiler-linux.sh ~/LLVMForVale/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz ~/BootstrappingValeCompiler
+./scripts/ubuntu/build-compiler.sh ~/LLVMForVale/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04 ~/BootstrappingValeCompiler --test=all ./scripts/VERSION
 
 ```
 
@@ -22,7 +22,7 @@ git clone --single-branch --branch master https://github.com/ValeLang/Vale
 Vale/install-compiler-prereqs-mac.sh ~/BootstrappingValeCompiler
 source ~/.zshrc
 cd Vale
-./build-compiler-mac.sh ~/BootstrappingValeCompiler
+./scripts/mac/build-compiler.sh ~/BootstrappingValeCompiler --test=all ./scripts/VERSION
 ```
 
 
@@ -48,7 +48,7 @@ If you still want to compile the compiler on Windows, keep reading.
 
 ### Build LLVM
 
-If you want to skip this, you can download and extract [this file](https://firebasestorage.googleapis.com/v0/b/valesite.appspot.com/o/llvm-install-minimum.zip?alt=media&token=1022ffea-c43b-4fea-a5e9-696c6f0d0175) to `C:\llvm`. **Disclaimer**: Download at your own risk, this is a stripped down and zipped up version of what we got from the below steps.
+If you want to skip this, you can download and extract [this file](https://github.com/Verdagon/LLVM13WinMinimal/releases/download/v1.1/llvm-project-llvmorg-13.0.1.zip) to `C:\llvm`. **Disclaimer**: Download at your own risk, this is a stripped down and zipped up version of what we got from the below steps.
 
 Ensure your machine (or VM) has sufficient resources: 5 cores, 10gb ram, 200gb disk. You'll be building all of LLVM, which is quite resource intensive.
 
@@ -79,5 +79,5 @@ Once youve done the above steps and installed LLVM, run the below commands:
 ```sh
 git clone https://github.com/ValeLang/Vale --single-branch --branch master
 cd Vale
-.\\build-compiler-windows.bat C:\\llvm C:\\OldValeCompiler
+.\scripts\windows\build-compiler.bat C:\llvm\llvm-project-llvmorg-13.0.1 C:\OldValeCompiler --test=all ./scripts/VERSION
 ```

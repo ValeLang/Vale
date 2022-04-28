@@ -27,6 +27,14 @@ call build.bat %2 || echo "Coordinator build failed, aborting." && exit /b 1
 cd ..\scripts
 
 
+if "%3" == "" ( echo "Invalid version file" && exit /b 1 )
+if exist "%3" (
+  set /p VALEC_VERSION=<%3
+  if "%VALEC_VERSION%" == "" ( echo "Invalid version" && exit /b 1 )
+) else (
+  echo "Version file doesn't exist!"
+  exit /b 1
+)
 
 
 

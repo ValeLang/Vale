@@ -8,7 +8,7 @@ struct HashMapNode<K, V> {
 }
 
 func drop<K, V>(self HashMapNode<K, V>) void
-where Prot["drop", Refs(V), void]
+where func drop(V)void
 {
   [k, v] = self;
 }
@@ -39,7 +39,7 @@ func HashMap<K, V, H, E>(hasher H, equator E, capacity int) HashMap<K, V, H, E> 
 }
 
 func drop<K, V, H, E>(self HashMap<K, V, H, E>) void
-where Prot["drop", Refs(V), void]
+where func drop(V)void
 {
   [hasher, equator, table, size] = self;
 }

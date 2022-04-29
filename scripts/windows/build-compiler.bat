@@ -1,3 +1,20 @@
+SETLOCAL ENABLEDELAYEDEXPANSION
+
+if "%5" == "" ( echo "Invalid version file" && exit /b 1 )
+if exist "%5" (
+  set VALEC_VERSION=
+  for /f %%a in (%5) do (
+    set VALEC_VERSION=!VALEC_VERSION!%%a
+  )
+  if "!VALEC_VERSION!" == "" (
+    echo "Invalid version"
+    exit /b 1
+  )
+  echo "Version: !VALEC_VERSION!"
+) else (
+  echo "Version file doesn't exist!"
+  exit /b 1
+)
 
 
 cd Backend
@@ -25,8 +42,6 @@ call build.bat %2 || echo "Coordinator build failed, aborting." && exit /b 1
 
 
 cd ..\scripts
-
-
 
 
 

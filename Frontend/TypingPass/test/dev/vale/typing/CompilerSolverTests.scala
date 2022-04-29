@@ -174,9 +174,27 @@ class CompilerSolverTests extends FunSuite with Matchers {
         |import v.builtins.tup.*;
         |func moo(i int, b bool) str { return "hello"; }
         |exported func main() str
-        |where mooFunc Prot = Prot["moo", Refs(int, bool), _]
+        |where mooFunc Prot = func moo(int, bool)_
         |{
         |  return (mooFunc)(5, true);
+        |}
+        |""".stripMargin
+    )
+    val coutputs = compile.expectCompilerOutputs()
+    Collector.only(coutputs.lookupFunction("main"), {
+      case FunctionCallTE(PrototypeT(simpleName("moo"), _), _) =>
+    })
+  }
+
+  test("Prototype rule sugar") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |import v.builtins.tup.*;
+        |func moo(i int, b bool) str { return "hello"; }
+        |exported func main() str
+        |where func moo(int, bool)_
+        |{
+        |  return moo(5, true);
         |}
         |""".stripMargin
     )

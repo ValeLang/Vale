@@ -100,6 +100,11 @@ When we send a gen ref into the wild:
  1. Don't set the object's "Exported" bit to 1, it's never really used in replay mode.
 
 
+We would have it gradually clean up expired entries (to save space) and use null gen refs for things that don't exist anymore, but we need to keep the mappings true to preserve the behavior of the === operator. Ah, but the === operator does a gen check anyway. so we can periodically clean up things from the map.
+but also note that cleaning things up from a hash map can be tricky.
+
+
+
 # Deterministic Parallelism
 
 Making a program deterministic in the presence of parallelism is deceptively simple.

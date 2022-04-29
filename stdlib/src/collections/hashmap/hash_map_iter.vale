@@ -23,7 +23,7 @@ func next<K, V>(iter &HashMapIter<K, V>) Opt<(K, &V)> {
 
 
 func each<F, K, V, H, E>(self &HashMap<K, V, H, E>, func &F)
-where func(&F, &K, &V)_] {
+where func(&F, &K, &V)_ {
   list = List<K>();
   index = 0;
   while index < self.table.len() {

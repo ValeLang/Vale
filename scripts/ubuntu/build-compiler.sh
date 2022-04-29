@@ -41,7 +41,7 @@ fi
 shift;
 
 
-VALEC_VERSION="$1"
+VALEC_VERSION=`cat "$1"`
 if [ "$VALEC_VERSION" == "" ]
 then
   echo "Please specify the new version."

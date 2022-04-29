@@ -1,0 +1,6 @@
+
+extern func cMake42() int;
+
+exported func main() int {
+   cMake42()
+}

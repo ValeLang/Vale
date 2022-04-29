@@ -703,7 +703,7 @@ void RCImm::discard(
         adjustStrongRc(
             from, globalState, functionState, &kindStructs, builder, sourceRef, sourceMT, -1);
     buildFlare(from, globalState, functionState, builder, "Str RC: ", rcLE);
-    buildIf(
+    buildIfV(
         globalState, functionState,
         builder,
         isZeroLE(builder, rcLE),
@@ -730,7 +730,7 @@ void RCImm::discard(
           adjustStrongRc(
               from, globalState, functionState, &kindStructs, builder, sourceRef, sourceMT, -1);
       buildFlare(FL(), globalState, functionState, builder, rcLE);
-      buildIf(
+      buildIfV(
           globalState, functionState,
           builder,
           isZeroLE(builder, rcLE),
@@ -1056,7 +1056,7 @@ void RCImm::defineEdgeUnserializeFunction(Edge* edge) {
 
         auto hostObjectRef = wrap(globalState->getRegion(hostObjectRefMT), hostObjectRefMT, LLVMGetParam(functionState->containingFuncL, 0));
 
-        auto valeStructRef = buildCall(globalState, functionState, builder, structPrototype, {hostObjectRef});
+        auto valeStructRef = buildCallV(globalState, functionState, builder, structPrototype, {hostObjectRef});
 
         auto valeInterfaceKind = dynamic_cast<InterfaceKind*>(thunkPrototype->returnType->kind);
         assert(valeInterfaceKind);
@@ -1110,7 +1110,7 @@ Ref RCImm::callUnserialize(
     buildFlare(FL(), globalState, functionState, builder);
     return buildInterfaceCall(globalState, functionState, builder, prototype, methodFunctionPtrLE, {objectRef}, 0);
   } else {
-    return buildCall(globalState, functionState, builder, prototype, {objectRef});
+    return buildCallV(globalState, functionState, builder, prototype, {objectRef});
   }
 }
 

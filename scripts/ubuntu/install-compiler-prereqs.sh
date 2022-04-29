@@ -40,7 +40,7 @@ sudo apt install -y sbt
 
 echo "Downloading and unzipping stable bootstrapping valec to $BOOTSTRAPPING_VALEC_DIR..."
 # Install stable valec, for the .vale parts of the compiler
-curl -L https://github.com/ValeLang/Vale/releases/download/v0.2.0.0/Vale-Ubuntu-0.2.0.7.zip -o /tmp/BootstrappingValeCompiler.zip
+curl -L https://github.com/ValeLang/Vale/releases/download/v0.2.0/Vale-Ubuntu-0.2.0.10.zip -o /tmp/BootstrappingValeCompiler.zip
 unzip /tmp/BootstrappingValeCompiler.zip -d $BOOTSTRAPPING_VALEC_DIR
 # Doesnt work, see https://github.com/ValeLang/Vale/issues/306
 # echo 'export PATH=$PATH:~/ValeCompiler-0.1.3.3-Ubuntu' >> ~/.bashrc

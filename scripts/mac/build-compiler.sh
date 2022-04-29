@@ -49,8 +49,6 @@ echo Generating Backend...
 LLVM_CMAKE_DIR="/usr/local/Cellar/llvm/`ls /usr/local/Cellar/llvm`/lib/cmake/llvm"
 cmake -B build -D LLVM_DIR="$LLVM_CMAKE_DIR" || { echo 'Backend generate failed, aborting.' ; exit 1; }
 
-cd build
-
 echo Compiling Backend...
 cmake --build build || { echo 'Backend build failed, aborting.' ; exit 1; }
 

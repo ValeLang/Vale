@@ -49,6 +49,7 @@ enum
     OPT_OVERRIDE_KNOWN_LIVE_TRUE,
     OPT_PRINT_MEM_OVERHEAD,
     OPT_ENABLE_REPLAYING,
+    OPT_ENABLE_SIDE_CALLING,
     OPT_CENSUS,
     OPT_REGION_OVERRIDE,
     OPT_FILENAMES,
@@ -95,6 +96,7 @@ static opt_arg_t args[] =
     { "override_known_live_true", '\0', OPT_ARG_NONE, OPT_OVERRIDE_KNOWN_LIVE_TRUE },
     { "print_mem_overhead", '\0', OPT_ARG_OPTIONAL, OPT_PRINT_MEM_OVERHEAD },
     { "enable_replaying", '\0', OPT_ARG_OPTIONAL, OPT_ENABLE_REPLAYING },
+    { "enable_side_calling", '\0', OPT_ARG_OPTIONAL, OPT_ENABLE_SIDE_CALLING },
     { "census", '\0', OPT_ARG_OPTIONAL, OPT_CENSUS },
     { "region_override", '\0', OPT_ARG_REQUIRED, OPT_REGION_OVERRIDE },
     { "ir", '\0', OPT_ARG_NONE, OPT_IR },
@@ -278,10 +280,21 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
           case OPT_ENABLE_REPLAYING: {
             if (!s.arg_val) {
               opt->enableReplaying = true;
-            } else if (s.arg_val == std::string("on")) {
+            } else if (s.arg_val == std::string("true")) {
               opt->enableReplaying = true;
-            } else if (s.arg_val == std::string("off")) {
+            } else if (s.arg_val == std::string("false")) {
               opt->enableReplaying = false;
+            } else assert(false);
+            break;
+          }
+
+          case OPT_ENABLE_SIDE_CALLING: {
+            if (!s.arg_val) {
+              opt->enableSideCalling = true;
+            } else if (s.arg_val == std::string("true")) {
+              opt->enableSideCalling = true;
+            } else if (s.arg_val == std::string("false")) {
+              opt->enableSideCalling = false;
             } else assert(false);
             break;
           }

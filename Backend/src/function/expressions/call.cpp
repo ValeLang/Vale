@@ -21,5 +21,5 @@ Ref translateCall(
     argsLE.push_back(argLE);
   }
 
-  return buildCall(globalState, functionState, builder, call->function, argsLE);
+  return buildCallV(globalState, functionState, builder, call->function, argsLE);
 }

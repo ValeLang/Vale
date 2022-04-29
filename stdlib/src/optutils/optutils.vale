@@ -14,7 +14,7 @@ func get<T>(opt &None<T>, msg str) &T { panic(msg); }
 func get<T>(opt &Some<T>, msg str) &T { return &opt.value; }
 
 func ==<T>(a &Opt<T>, b &Opt<T>) bool
-where Prot["==", Refs(&T, &T), bool] {
+where func ==(&T, &T)bool {
   if a.isEmpty() and b.isEmpty() {
     return true;
   }
@@ -25,7 +25,7 @@ where Prot["==", Refs(&T, &T), bool] {
 }
 
 func clone<T>(self &Opt<T>) Opt<T>
-where Prot["clone", Refs(&T), T] {
+where func clone(&T)T {
   if self.isEmpty() {
     return None<T>();
   }
@@ -34,7 +34,7 @@ where Prot["clone", Refs(&T), T] {
 
 
 func map<F, T>(self &Opt<T>, func &F) Opt<R>
-where Prot["__call", Refs(&F, &T), R Ref] {
+where func(&F, &T)R Ref] {
   if self.isEmpty() {
     None<R>()
   } else {
@@ -43,7 +43,7 @@ where Prot["__call", Refs(&F, &T), R Ref] {
 }
 
 func or<F, T>(self Opt<T>, func F) T
-where Prot["__call", Refs(&F), _] {
+where func(&F)_] {
   if self.isEmpty() {
     [ ] = self.as<None<T>>().expect("zork f");
     return func();
@@ -53,7 +53,7 @@ where Prot["__call", Refs(&F), _] {
 }
 
 func or<F, T>(self &Opt<T>, func F) &T
-where Prot["__call", Refs(&F), _] {
+where func(&F)_] {
   if self.isEmpty() {
     [ ] = self.as<None<T>>().expect("zork g");
     return func();

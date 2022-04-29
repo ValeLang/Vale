@@ -781,6 +781,13 @@ object ParsedLoader {
           loadRange(getObjectField(jobj, "range")),
           loadTemplex(getObjectField(jobj, "inner")))
       }
+      case "PrototypeT" => {
+        PrototypePT(
+          loadRange(getObjectField(jobj, "range")),
+          loadName(getObjectField(jobj, "name")),
+          getArrayField(jobj, "parameters").map(expectObject).map(loadTemplex),
+          loadTemplex(getObjectField(jobj, "returnType")))
+      }
       case x => vimpl(x.toString)
     }
   }

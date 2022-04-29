@@ -1122,8 +1122,8 @@ class CompilerTests extends FunSuite with Matchers {
     CompilerTestCompilation.test(
       """
         |func moo(a str) { }
-        |func foo<T>(f T) void where Prot["moo", Refs(str), void] { }
-        |func foo<T>(f T) void where Prot["moo", Refs(bool), void] { }
+        |func foo<T>(f T) void where func moo(str)void { }
+        |func foo<T>(f T) void where func moo(bool)void { }
         |func main() { foo("hello"); }
         |""".stripMargin).expectCompilerOutputs()
   }

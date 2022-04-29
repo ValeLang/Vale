@@ -137,15 +137,31 @@ class TemplexScout(
                     translateTemplex(env, lidb.child(), ruleBuilder, returnType)))
               resultRuneS
             }
-            case PrototypePT(range, NameP(_, name), parameters, returnType) => {
+            case PrototypePT(range, NameP(nameRange, name), paramsP, returnTypeP) => {
+
+              val nameRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
+              ruleBuilder +=
+                LiteralSR(evalRange(nameRange), nameRuneS, StringLiteralSL(name))
+
+              val paramsS =
+                paramsP.map(paramP => {
+                  translateTemplex(env, lidb.child(), ruleBuilder, paramP)
+                })
+              val paramListRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
+              ruleBuilder +=
+                PackSR(evalRange(nameRange), paramListRuneS, paramsS.toArray)
+
+              val returnTypeS = translateTemplex(env, lidb.child(), ruleBuilder, returnTypeP)
+
               val resultRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
               ruleBuilder +=
-                PrototypeSR(
-                  evalRange(range),
+                PrototypeComponentsSR(
+                  PostParser.evalRange(env.file, range),
                   resultRuneS,
-                  name,
-                  parameters.map(translateTemplex(env, lidb.child(), ruleBuilder, _)).toArray,
-                  translateTemplex(env, lidb.child(), ruleBuilder, returnType))
+                  nameRuneS,
+                  paramListRuneS,
+                  returnTypeS)
+
               resultRuneS
             }
             case PackPT(range, members) => {

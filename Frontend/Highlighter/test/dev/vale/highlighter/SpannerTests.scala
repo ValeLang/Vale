@@ -29,7 +29,7 @@ class SpannerTests extends FunSuite with Matchers {
       Span(Fn,RangeP(0,30),Vector(
         Span(FnName,ast.RangeP(5,9),Vector.empty),
         Span(Params,ast.RangeP(9,11),Vector.empty),
-        Span(Ret,ast.RangeP(12,25),Vector(Span(Ret,ast.RangeP(12,24),Vector.empty))),
+        Span(Ret,ast.RangeP(12,24),Vector(Span(Ret,ast.RangeP(12,24),Vector.empty))),
         Span(Block,ast.RangeP(25,30),Vector(
           Span(Num,ast.RangeP(27,28),Vector.empty)))))
   }

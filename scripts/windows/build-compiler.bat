@@ -47,9 +47,9 @@ cd ..\scripts
 
 if exist "..\release-windows" rmdir /S /Q "..\release-windows"
 mkdir "..\release-windows"
-mkdir "..\release-windows\samples"
+rem mkdir "..\release-windows\samples"
 copy ..\Frontend\Frontend.jar ..\release-windows\Frontend.jar
-echo d | xcopy /s /e /y ..\Frontend\Tests\test\main\resources\programs ..\release-windows\samples
+rem echo d | xcopy /s /e /y ..\Frontend\Tests\test\main\resources\programs ..\release-windows\samples
 echo d | xcopy /s /e /y ..\Backend\builtins ..\release-windows\builtins
 copy ..\Backend\build\Debug\backend.exe ..\release-windows\backend.exe
 echo d | xcopy /s /e /y ..\stdlib ..\release-windows\stdlib
@@ -59,7 +59,7 @@ copy all\README ..\release-windows\README.txt
 copy all\valec-help-build.txt ..\release-windows\valec-help-build.txt
 copy all\valec-help.txt ..\release-windows\valec-help.txt
 copy all\valec-version.txt ..\release-windows\valec-version.txt
-echo d | xcopy /s /e /y all\helloworld ..\release-windows\samples\helloworld
+rem echo d | xcopy /s /e /y all\helloworld ..\release-windows\samples\helloworld
 
 copy %1\bin\LLVM-C.dll ..\release-windows\LLVM-C.dll
 

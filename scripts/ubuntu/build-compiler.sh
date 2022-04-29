@@ -73,9 +73,9 @@ cd ../scripts
 
 rm -rf ../release-ubuntu || { echo 'Error removing previous release-ubuntu dir.' ; exit 1; }
 mkdir -p ../release-ubuntu || { echo 'Error making new release-ubuntu dir.' ; exit 1; }
-mkdir -p ../release-ubuntu/samples || { echo 'Error making new samples dir.' ; exit 1; }
+# mkdir -p ../release-ubuntu/samples || { echo 'Error making new samples dir.' ; exit 1; }
 cp ../Frontend/Frontend.jar ../release-ubuntu || { echo 'Error copying into release-ubuntu.' ; exit 1; }
-cp -r ../Frontend/Tests/test/main/resources/programs ../release-ubuntu/samples || { echo 'Error copying into release-ubuntu.' ; exit 1; }
+# cp -r ../Frontend/Tests/test/main/resources/programs ../release-ubuntu/samples || { echo 'Error copying into release-ubuntu.' ; exit 1; }
 cp -r ../Backend/builtins ../release-ubuntu/builtins || { echo 'Error copying into release-ubuntu.' ; exit 1; }
 cp ../Backend/build/backend ../release-ubuntu/backend || { echo 'Error copying into release-ubuntu.' ; exit 1; }
 cp -r ../stdlib ../release-ubuntu/stdlib || { echo 'Error copying into release-ubuntu.' ; exit 1; }
@@ -85,7 +85,7 @@ cat all/README | sed s/\{valec_exe\}/.\\\/valec/g | sed s/\{sep\}/\\/\/g | sed s
 cat all/valec-help-build.txt | sed s/\{valec_exe\}/.\\\/valec/g | sed s/\{sep\}/\\/\/g | sed s/\{valec_version\}/$VALEC_VERSION/g > ../release-ubuntu/valec-help-build.txt || { echo 'Error copying into release-ubuntu.' ; exit 1; }
 cat all/valec-help.txt | sed s/\{valec_exe\}/.\\\/valec/g | sed s/\{sep\}/\\/\/g | sed s/\{valec_version\}/$VALEC_VERSION/g > ../release-ubuntu/valec-help.txt || { echo 'Error copying into release-ubuntu.' ; exit 1; }
 cat all/valec-version.txt | sed s/\{valec_exe\}/.\\\/valec/g | sed s/\{sep\}/\\/\/g | sed s/\{valec_version\}/$VALEC_VERSION/g > ../release-ubuntu/valec-version.txt || { echo 'Error copying into release-ubuntu.' ; exit 1; }
-cp -r all/helloworld ../release-ubuntu/samples/helloworld || { echo 'Error copying into release-ubuntu.' ; exit 1; }
+# cp -r all/helloworld ../release-ubuntu/samples/helloworld || { echo 'Error copying into release-ubuntu.' ; exit 1; }
 
 cd ../release-ubuntu || { echo 'Error copying into release-ubuntu.' ; exit 1; }
 zip -r Vale-Ubuntu-0.zip * || { echo 'Error copying into release-ubuntu.' ; exit 1; }

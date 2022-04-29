@@ -833,26 +833,36 @@ class Parser(opts: GlobalOptions) {
 
       iter.consumeWhitespace()
 
-      val retBegin = iter.getPos()
-      val (maybeTemplateRules, maybeInferRet, maybeReturnType) =
+      val retAndRulesBegin = iter.getPos()
+      val (maybeTemplateRules, retRange, maybeInferRet, maybeReturnType) =
         parseTemplateRules(iter) match {
           case Err(e) => return Err(e)
-          case Ok(Some(templateRules)) => (Some(templateRules), None, None)
+          case Ok(Some(templateRules)) => {
+            val retRange = RangeP(retAndRulesBegin, iter.getPos())
+            (Some(templateRules), retRange, None, None)
+          }
           case Ok(None) => {
-            val (maybeInferRet: Option[UnitP], maybeReturnType: Option[ITemplexPT]) =
+            val (retRange, maybeInferRet: Option[UnitP], maybeReturnType: Option[ITemplexPT]) =
               if (iter.trySkip(() => "^\\s*infer-return\\b".r)) {
-                (Some(UnitP(RangeP(retBegin, iter.getPos()))), None)
+                val retRange = RangeP(retAndRulesBegin, iter.getPos())
+                (retRange, Some(UnitP(retRange)), None)
               } else if (iter.peek(() => "^\\s*where\\b".r)) {
-                (None, None)
+                val retRange = RangeP(retAndRulesBegin, iter.getPos())
+                (retRange, None, None)
               } else if (iter.peek(() => "^\\s*\\{".r)) {
-                (None, None)
+                val retRange = RangeP(retAndRulesBegin, iter.getPos())
+                (retRange, None, None)
               } else if (iter.peek(() => "^\\s*;".r)) {
-                (None, None)
+                val retRange = RangeP(retAndRulesBegin, iter.getPos())
+                (retRange, None, None)
               } else {
                 iter.consumeWhitespace()
                 new TemplexParser().parseTemplex(iter) match {
                   case Err(e) => return Err(e)
-                  case Ok(x) => (None, Some(x))
+                  case Ok(x) => {
+                    val retRange = RangeP(retAndRulesBegin, iter.getPos())
+                    (retRange, None, Some(x))
+                  }
                 }
               }
 
@@ -861,7 +871,7 @@ class Parser(opts: GlobalOptions) {
             parseTemplateRules(iter) match {
               case Err(e) => return Err(e)
               case Ok(maybeTemplateRules) => {
-                (maybeTemplateRules, maybeInferRet, maybeReturnType)
+                (maybeTemplateRules, retRange, maybeInferRet, maybeReturnType)
               }
             }
           }
@@ -879,7 +889,7 @@ class Parser(opts: GlobalOptions) {
           maybeTemplateRules,
           Some(params),
           FunctionReturnP(
-            ast.RangeP(retBegin, retEnd), maybeInferRet, maybeReturnType))
+            retRange, maybeInferRet, maybeReturnType))
 
       iter.consumeWhitespace()
       if (iter.trySkip(() => "^;".r)) {

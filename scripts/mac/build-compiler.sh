@@ -64,9 +64,9 @@ cd ../scripts
 
 rm -rf ../release-mac || { echo 'Error removing previous release-mac dir.' ; exit 1; }
 mkdir -p ../release-mac || { echo 'Error making new release-mac dir.' ; exit 1; }
-mkdir -p ../release-mac/samples || { echo 'Error making new samples dir.' ; exit 1; }
+# mkdir -p ../release-mac/samples || { echo 'Error making new samples dir.' ; exit 1; }
 cp ../Frontend/Frontend.jar ../release-mac || { echo 'Error copying into release-mac.' ; exit 1; }
-cp -r ../Frontend/Tests/test/main/resources/programs ../release-mac/samples || { echo 'Error copying into release-mac.' ; exit 1; }
+# cp -r ../Frontend/Tests/test/main/resources/programs ../release-mac/samples || { echo 'Error copying into release-mac.' ; exit 1; }
 cp -r ../Backend/builtins ../release-mac/builtins || { echo 'Error copying into release-mac.' ; exit 1; }
 cp ../Backend/build/backend ../release-mac/backend || { echo 'Error copying into release-mac.' ; exit 1; }
 cp -r ../stdlib ../release-mac/stdlib || { echo 'Error copying into release-mac.' ; exit 1; }
@@ -76,7 +76,7 @@ cat all/README | sed s/\{valec_exe\}/.\\\/valec/g | sed s/\{sep\}/\\/\/g | sed s
 cat all/valec-help-build.txt | sed s/\{valec_exe\}/.\\\/valec/g | sed s/\{sep\}/\\/\/g | sed s/\{valec_version\}/$VALEC_VERSION/g > ../release-mac/valec-help-build.txt || { echo 'Error copying into release-mac.' ; exit 1; }
 cat all/valec-help.txt | sed s/\{valec_exe\}/.\\\/valec/g | sed s/\{sep\}/\\/\/g | sed s/\{valec_version\}/$VALEC_VERSION/g > ../release-mac/valec-help.txt || { echo 'Error copying into release-mac.' ; exit 1; }
 cat all/valec-version.txt | sed s/\{valec_exe\}/.\\\/valec/g | sed s/\{sep\}/\\/\/g | sed s/\{valec_version\}/$VALEC_VERSION/g > ../release-mac/valec-version.txt || { echo 'Error copying into release-mac.' ; exit 1; }
-cp -r all/helloworld ../release-mac/samples/helloworld || { echo 'Error copying into release-mac.' ; exit 1; }
+# cp -r all/helloworld ../release-mac/samples/helloworld || { echo 'Error copying into release-mac.' ; exit 1; }
 
 cd ../release-mac || { echo 'Error copying into release-mac.' ; exit 1; }
 zip -r Vale-Mac-0.zip * || { echo 'Error copying into release-mac.' ; exit 1; }

@@ -13,6 +13,7 @@ case object W extends IClass
 case object Abst extends IClass
 case object Ext extends IClass
 case object Pure extends IClass
+case object Range extends IClass
 case object Fn extends IClass
 case object Struct extends IClass
 case object Break extends IClass
@@ -303,12 +304,12 @@ object Spanner {
         makeSpan(Call, range, allSpans)
       }
       case FunctionCallPE(range, operatorRange, LookupPE(LookupNameP(NameP(nameRange, _)), maybeTemplateArgs), argExprs) => {
-        val opSpan = makeSpan(MemberAccess, operatorRange)
+        //val opSpan = makeSpan(Call, operatorRange)
         val callableSpan = makeSpan(CallLookup, nameRange, Vector.empty)
         val maybeTemplateArgsSpan = maybeTemplateArgs.toVector.map(forTemplateArgs)
         val argSpans = argExprs.map(forExpression)
         val allSpans =
-          (Vector(opSpan, callableSpan) ++ maybeTemplateArgsSpan ++ argSpans)
+          (Vector(callableSpan) ++ maybeTemplateArgsSpan ++ argSpans)
             .sortWith(_.range.begin < _.range.begin)
         makeSpan(Call, range, allSpans)
       }
@@ -316,7 +317,7 @@ object Spanner {
         makeSpan(Call, range, Vector(forExpression(innerPE)))
       }
       case BraceCallPE(range, operatorRange, subjectExpr, argExprs, _) => {
-        val opSpan = makeSpan(MemberAccess, operatorRange)
+        val opSpan = makeSpan(Call, operatorRange)
         val callableSpan = forExpression(subjectExpr)
         val argSpans = argExprs.map(forExpression)
         val allSpans =
@@ -387,6 +388,12 @@ object Spanner {
           Break,
           range,
           Vector())
+      }
+      case RangePE(range, fromExpr, toExpr) => {
+        makeSpan(
+          Range,
+          range,
+          Vector(forExpression(fromExpr), forExpression(toExpr)))
       }
       case other => vimpl(other.toString)
     }

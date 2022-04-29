@@ -165,7 +165,7 @@ struct ExecResult {
 
 func expect_or<F>(result &ExecResult, func F)
 str
-where func(&F, &ExecResult)void]
+where func(&F, &ExecResult)void
 {
   if result.return_code != 0 {
     func(result);

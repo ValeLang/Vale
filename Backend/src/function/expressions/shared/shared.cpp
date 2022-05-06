@@ -24,6 +24,13 @@ LLVMValueRef makeVoid(GlobalState* globalState) {
   return LLVMGetUndef(globalState->rcImm->translateType(globalState->metalCache->voidRef));
 }
 
+LLVMTypeRef makeEmptyStructType(GlobalState* globalState) {
+  return LLVMStructTypeInContext(globalState->context, nullptr, 0, false);
+}
+LLVMValueRef makeEmptyStruct(GlobalState* globalState) {
+  return LLVMConstNamedStruct(makeEmptyStructType(globalState), nullptr, 0);
+}
+
 Ref makeVoidRef(GlobalState* globalState) {
   auto voidLE = makeVoid(globalState);
   auto refMT = globalState->metalCache->voidRef;
@@ -165,7 +172,7 @@ void buildAssertWithExitCode(
     LLVMValueRef conditionLE,
     int exitCode,
     const std::string& failMessage) {
-  buildIfIn(
+  buildIf(
       globalState, function, builder, isZeroLE(builder, conditionLE),
       [globalState, exitCode, failMessage](LLVMBuilderRef thenBuilder) {
         buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");

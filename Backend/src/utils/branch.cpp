@@ -63,12 +63,12 @@ void buildIf(
   // subsequent instructions after the if will keep adding to that.
 }
 
-LLVMValueRef buildSimpleIfElse(
+LLVMValueRef buildIfElse(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef conditionLE,
     LLVMTypeRef resultTypeL,
+    LLVMValueRef conditionLE,
     std::function<LLVMValueRef(LLVMBuilderRef)> buildThen,
     std::function<LLVMValueRef(LLVMBuilderRef)> buildElse) {
 
@@ -209,7 +209,7 @@ void buildVoidIfElse(
   // subsequent instructions after the if will keep adding to that.
 }
 
-Ref buildIfElse(
+Ref buildIfElseV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -319,7 +319,7 @@ void buildBoolyWhile(
     GlobalState* globalState,
     LLVMValueRef containingFuncL,
     LLVMBuilderRef builder,
-    std::function<Ref(LLVMBuilderRef)> buildBody) {
+    std::function<LLVMValueRef(LLVMBuilderRef)> buildBody) {
 
   // While only has a body expr, no separate condition.
   // If the body itself returns true, then we'll run the body again.
@@ -347,9 +347,7 @@ void buildBoolyWhile(
   auto continueLE = buildBody(bodyBlockBuilder);
 
   LLVMBasicBlockRef afterwardBlockL =
-      LLVMAppendBasicBlockInContext(globalState->context,
-          functionState->containingFuncL,
-          functionState->nextBlockName().c_str());
+      LLVMAppendBasicBlockInContext(globalState->context, containingFuncL, "");
 
   LLVMBuildCondBr(bodyBlockBuilder, continueLE, bodyStartBlockL, afterwardBlockL);
 
@@ -363,9 +361,12 @@ void buildBoolyWhileV(
     std::function<Ref(LLVMBuilderRef)> buildBody) {
   buildBoolyWhile(
       globalState, functionState->containingFuncL, builder,
-      [](LLVMBuilderRef builder) {
+      [globalState, functionState, buildBody](LLVMBuilderRef builder) {
         auto continueRef = buildBody(builder);
-        auto continueLE = globalState->getRegion(globalState->metalCache->boolRef)->checkValidReference(FL(), functionState, builder, globalState->metalCache->boolRef, continueRef);
+        auto continueLE =
+            globalState->getRegion(globalState->metalCache->boolRef)->
+                checkValidReference(
+                    FL(), functionState, builder, globalState->metalCache->boolRef, continueRef);
         return continueLE;
       });
 }
@@ -429,12 +430,12 @@ void buildWhile(
       builder,
       [globalState, functionState, buildCondition, buildBody](LLVMBuilderRef bodyBuilder) -> Ref {
         auto conditionLE = buildCondition(bodyBuilder);
-        return buildIfElse(
+        return buildIfElseV(
             globalState,
             functionState,
             bodyBuilder,
             conditionLE,
-            LLVMInt1TypeInContext(globalState->context),
+//            LLVMInt1TypeInContext(globalState->context),
             globalState->metalCache->boolRef,
             globalState->metalCache->boolRef,
             [globalState, functionState, buildBody](LLVMBuilderRef thenBlockBuilder) {

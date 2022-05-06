@@ -3,6 +3,7 @@
 #include "../boundary.h"
 #include "shared/shared.h"
 #include "shared/string.h"
+#include "determinism/determinism.h"
 #include "../../region/common/controlblock.h"
 #include "../../region/common/heap.h"
 #include "../../region/linear/linear.h"
@@ -11,10 +12,6 @@
 
 #include "../expression.h"
 
-
-void replayExport() {
-
-}
 
 Ref buildResultOrEarlyReturnOfNever(
     GlobalState* globalState,
@@ -38,26 +35,22 @@ void replayExportCalls(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder) {
-  // here, we'll need to check if there are any export calls
   buildBoolyWhile(
       globalState, functionState->containingFuncL, builder,
-      [globalState](LLVMBuilderRef whileBuilder, LLVMBasicBlockRef) -> LLVMValueRef {
-        auto nextExportCallStrPtrLE =
-            globalState->determinism->getNextExportCallString();
-        auto nextExportCallStrPtrFirstByteLE =
-            LLVMBuildLoad(whileBuilder, nextExportCallStrPtrLE, "nextExportCallStrPtrFirstByte");
-        auto mustCallExport =
+      [globalState, functionState](LLVMBuilderRef whileBuilder, LLVMBasicBlockRef) -> LLVMValueRef {
+        auto replayerFuncPtrLE =
+            globalState->determinism->buildGetMaybeReplayedFuncForNextExportCall(
+                whileBuilder);
+        auto replayerFuncPtrAsI64LE = ptrToIntLE(globalState, whileBuilder, replayerFuncPtrLE);
+        auto replayerFuncPtrNotNullLE =
             LLVMBuildICmp(
-                whileBuilder, LLVMIntNE, nextExportCallStrPtrFirstByteLE, constI8LE(globalState, 0),)
-
+                whileBuilder, LLVMIntNE, replayerFuncPtrAsI64LE, constI8LE(globalState, 0), "");
         buildIf(
-            globalState, functionState, whileBuilder, mustCallExport,
-            [](LLVMBuilder thenBuilder) {
-              replayExport();
+            globalState, functionState->containingFuncL, whileBuilder, replayerFuncPtrNotNullLE,
+            [replayerFuncPtrLE](LLVMBuilderRef thenBuilder) {
+              buildCall(thenBuilder, replayerFuncPtrLE, {});
             });
-
-        // and if its null, break!
-        return mustCallExport;
+        return replayerFuncPtrNotNullLE;
       });
 }
 
@@ -193,70 +186,92 @@ Ref replayReturnOrCallAndOrRecord(
                 constI64LE(globalState, (int64_t)RecordingMode::NORMAL),
                 "isNormalRun"));
 
-    buildIfElse(
+    return buildIfElseV(
         globalState, functionState, builder, isNormalRunRef, valeReturnRefMT, valeReturnRefMT,
         [globalState, functionState, recordingModeLE, args, prototype, valeReturnRefMT, callUserExtern](
             LLVMBuilderRef outerThenBuilder) -> Ref {
-          auto isRecordingLE =
-              LLVMBuildICmp(
-                  outerThenBuilder, LLVMIntEQ, recordingModeLE,
-                  constI64LE(globalState, (int64_t) RecordingMode::RECORDING), "isRecording");
-          buildVoidIfElse(
-              globalState, functionState, outerThenBuilder, isRecordingLE,
-              [globalState, functionState, prototype, args, valeReturnRefMT, callUserExtern](LLVMBuilderRef thenBuilder) {
+          auto isRecordingRef =
+              wrap(
+                  globalState->getRegion(globalState->metalCache->boolRef),
+                  globalState->metalCache->boolRef,
+                  LLVMBuildICmp(
+                      outerThenBuilder, LLVMIntEQ, recordingModeLE,
+                      constI64LE(globalState, (int64_t) RecordingMode::RECORDING), "isRecording"));
+          auto valeReturnLT = globalState->getRegion(valeReturnRefMT)->getExternalType(valeReturnRefMT);
+          return buildIfElseV(
+              globalState, functionState, outerThenBuilder, isRecordingRef, valeReturnRefMT, valeReturnRefMT,
+              [globalState, functionState, prototype, args, valeReturnRefMT, callUserExtern](
+                  LLVMBuilderRef builder) -> Ref {
                 // If we get here, we're recording.
 
                 // write that we're calling this particular function
-                buildCall(
-                    thenBuilder,
-                    globalState->writeCallToFile,
-                    { globalState->getOrMakeStringConstant(prototype->name->name) });
+                globalState->determinism->buildWriteCallBeginToFile(builder, prototype);
 
+                // write the argument to the file
                 for (int i = 0; i < args.size(); i++) {
                   auto valeArgRefMT = prototype->params[i];
-                  if (valeArgRefMT->ownership != Ownership::SHARE) {
-                    // write to the file
-                    buildCall(thenBuilder, globalState->writeRefToRecordingFile, {valeArgRefMT});
+                  auto argLE =
+                      globalState->getRegion(prototype->params[i])
+                          ->checkValidReference(FL(), functionState, builder, prototype->params[i], args[i]);
+                  if (valeArgRefMT->ownership == Ownership::SHARE) {
+                    // Don't need to:
+                    // globalState->determinism->buildWriteValueToFile(builder, argLE);
+                    // because we dont need to call the
+                  } else {
+                    globalState->determinism->buildWriteRefToFile(builder, argLE);
                   }
                 }
 
-                auto valeReturnRef = callUserExtern(thenBuilder);
+                auto valeReturnRef = callUserExtern(builder);
 
                 // Signal that we're ending the call, rather than having some exports call into us.
-                buildCall(thenBuilder, globalState->writeCallEndToRecordingFile, {valeReturnRef});
-                if (valeReturnRefMT->ownership != Ownership::SHARE) {
-                  // write to the file what ref we received from C
-                  buildCall(thenBuilder, globalState->writeRefToRecordingFile, {valeReturnRef});
+                globalState->determinism->buildRecordCallEnd(builder, prototype);
+                // write to the file what we received from C
+                auto returnLE =
+                    globalState->getRegion(prototype->returnType)
+                        ->checkValidReference(
+                            FL(), functionState, builder, prototype->returnType, valeReturnRef);
+                if (valeReturnRefMT->ownership == Ownership::SHARE) {
+                  globalState->determinism->buildWriteRefToFile(builder, returnLE);
+                } else {
+                  globalState->determinism->buildWriteRefToFile(builder, returnLE);
                 }
 
-                return buildResultOrEarlyReturnOfNever(globalState, functionState, thenBuilder, prototype, valeReturnRef);
+                return buildResultOrEarlyReturnOfNever(
+                    globalState, functionState, builder, prototype, valeReturnRef);
               },
-              [globalState, functionState, args, prototype, valeReturnRefMT](LLVMBuilderRef elseBuilder) {
+              [globalState, functionState, args, prototype, valeReturnRefMT](LLVMBuilderRef builder) -> Ref {
                 // If we get here, we're replaying.
 
                 // should assert that we're calling the same function as last time
-                buildCall(elseBuilder, globalState->matchCallFromRecordingFile, {});
+                globalState->determinism->buildMatchCallFromRecordingFile(builder);
 
                 for (int i = 0; i < args.size(); i++) {
                   auto valeArgRefMT = prototype->params[i];
                   if (valeArgRefMT->ownership != Ownership::SHARE) {
                     // read from the file, add mapping to the hash map
+                    auto argLE =
+                        globalState->getRegion(valeArgRefMT)
+                            ->checkValidReference(FL(), functionState, builder, valeArgRefMT, args[i]);
                     auto recordedRefLE =
-                        buildCall(elseBuilder, globalState->mapRefToRefFromRecordingFile, {valeArgRefMT});
+                        globalState->determinism->buildReadAndMapRefFromFile(builder);
+                    assert(false);
                   }
                 }
 
-                replayExportCalls(globalState, functionState, elseBuilder);
+                replayExportCalls(globalState, functionState, builder);
 
                 // above, we consumed a marker that said we're ending this current extern call.
 
-                Ref valeReturnRef =
+                LLVMValueRef valeReturnRefLE =
                     (valeReturnRefMT->ownership == Ownership::SHARE ?
-                          buildCall(elseBuilder, globalState->readValueFromFile, {}) :
-                          buildCall(elseBuilder, globalState->matchRefFromRecordingFile, {}) );
+                     globalState->determinism->buildReadValueFromFile(builder) :
+                     globalState->determinism->buildReadAndMapRefFromFile(builder));
+                Ref valeReturnRef =
+                    wrap(globalState->getRegion(valeReturnRefMT), valeReturnRefMT, valeReturnRefLE);
 
                 return buildResultOrEarlyReturnOfNever(
-                    globalState, functionState, elseBuilder, prototype, valeReturnRef);
+                    globalState, functionState, builder, prototype, valeReturnRef);
               });
         },
         [globalState, functionState, prototype, callUserExtern](LLVMBuilderRef elseBuilder) -> Ref {

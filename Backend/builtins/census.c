@@ -32,11 +32,11 @@ static int64_t censusFindIndexOf(void* obj) {
   int64_t startIndex = ((uint64_t)obj) % census.capacity;
   for (int64_t i = 0; i < census.capacity; i++) {
     int64_t indexInTable = (startIndex + i) % census.capacity;
-    if (census.entries[indexInTable].address == obj) {
-      return indexInTable;
-    }
     if (census.entries[indexInTable].address == NULL) {
       return -1;
+    }
+    if (census.entries[indexInTable].address == obj) {
+      return indexInTable;
     }
   }
   exit(1); // We shouldnt get here, it would mean the table is full.

@@ -871,12 +871,13 @@ Ref resilientLockWeak(
     Ref isAliveLE,
     LLVMTypeRef resultOptTypeL,
     KindStructs* weakRefStructs) {
-  return buildIfElse(
+  return buildIfElseV(
       globalState, functionState, builder, isAliveLE,
-      resultOptTypeL,
+//      resultOptTypeL,
       resultOptTypeM,
       resultOptTypeM,
-      [globalState, functionState, constraintRefM, weakRefStructs, sourceWeakRefLE, sourceWeakRefMT, buildThen](LLVMBuilderRef thenBuilder) {
+      [globalState, functionState, constraintRefM, weakRefStructs, sourceWeakRefLE, sourceWeakRefMT, buildThen](
+          LLVMBuilderRef thenBuilder) {
         // TODO extract more of this common code out?
         // The incoming "constraint" ref is actually already a weak ref, so just return it
         // (after wrapping it in a different Ref that actually thinks/knows it's a weak
@@ -960,9 +961,9 @@ Ref regularDowncast(
 
   auto resultOptTypeLE = globalState->getRegion(resultOptTypeM)->translateType(resultOptTypeM);
 
-  return buildIfElse(
+  return buildIfElseV(
       globalState, functionState, builder, itablePtrsMatchRef,
-      resultOptTypeLE,
+//      resultOptTypeLE,
       resultOptTypeM,
       resultOptTypeM,
       [globalState, sourceInterfaceRefMT, structs, targetKind, newVirtualArgLE, buildThen](
@@ -1004,9 +1005,9 @@ Ref resilientDowncast(
 
   auto resultOptTypeLE = globalState->getRegion(resultOptTypeM)->translateType(resultOptTypeM);
 
-  return buildIfElse(
+  return buildIfElseV(
       globalState, functionState, builder, itablePtrsMatchRef,
-      resultOptTypeLE,
+//      resultOptTypeLE,
       resultOptTypeM,
       resultOptTypeM,
       [globalState, weakRefStructs, structs, functionState, sourceInterfaceRef, sourceInterfaceRefMT, targetKind, targetStructKind, buildThen](
@@ -1023,7 +1024,8 @@ Ref resilientDowncast(
         switch (sourceInterfaceRefMT->ownership) {
           case Ownership::OWN: {
             auto resultStructRefLE = structs->downcastPtr(thenBuilder, resultStructRefMT, possibilityPtrLE);
-            auto resultStructRef = wrap(globalState->getRegion(resultStructRefMT), resultStructRefMT, resultStructRefLE);
+            auto
+                resultStructRef = wrap(globalState->getRegion(resultStructRefMT), resultStructRefMT, resultStructRefLE);
             return buildThen(thenBuilder, resultStructRef);
           }
           case Ownership::BORROW:
@@ -1723,12 +1725,13 @@ Ref regularInnerLockWeak(
     LLVMTypeRef resultOptTypeL,
     KindStructs* weakRefStructsSource,
     FatWeaks* fatWeaks) {
-  return buildIfElse(
+  return buildIfElseV(
       globalState, functionState, builder, isAliveLE,
-      resultOptTypeL,
+//      resultOptTypeL,
       resultOptTypeM,
       resultOptTypeM,
-      [globalState, functionState, fatWeaks, weakRefStructsSource, constraintRefM, sourceWeakRefLE, sourceWeakRefMT, buildThen](LLVMBuilderRef thenBuilder) {
+      [globalState, functionState, fatWeaks, weakRefStructsSource, constraintRefM, sourceWeakRefLE, sourceWeakRefMT, buildThen](
+          LLVMBuilderRef thenBuilder) {
         auto weakFatPtrLE =
             weakRefStructsSource->makeWeakFatPtr(
                 sourceWeakRefMT,

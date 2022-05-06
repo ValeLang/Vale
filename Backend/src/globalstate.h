@@ -12,7 +12,6 @@
 #include "valeopts.h"
 #include "addresshasher.h"
 #include "externs.h"
-#include "determinism/determinism.h"
 
 class IRegion;
 class KindStructs;
@@ -20,6 +19,7 @@ class KindStructs;
 class ControlBlock;
 class Linear;
 class RCImm;
+class Determinism;
 
 constexpr int LGT_ENTRY_MEMBER_INDEX_FOR_GEN = 0;
 constexpr int LGT_ENTRY_MEMBER_INDEX_FOR_NEXT_FREE = 1;

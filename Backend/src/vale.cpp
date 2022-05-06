@@ -21,6 +21,7 @@
 #include "metal/instructions.h"
 
 #include "function/function.h"
+#include "determinism/determinism.h"
 #include "metal/readjson.h"
 #include "error.h"
 #include "translatetype.h"
@@ -775,9 +776,6 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
   Externs externs(globalState->mod, globalState->context);
   globalState->externs = &externs;
 
-  Determinism determinism;
-  globalState->determinism = &determinism;
-
 //  globalState->stringConstantBuilder = entryBuilder;
 
   LLVMValueRef empty[1] = {};
@@ -866,6 +864,9 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
       break;
   }
   globalState->regions.emplace(globalState->mutRegion->getRegionId(), globalState->mutRegion);
+
+  Determinism determinism(globalState);
+  globalState->determinism = &determinism;
 
 
   assert(LLVMTypeOf(globalState->neverPtr) == globalState->getRegion(globalState->metalCache->neverRef)->translateType(globalState->metalCache->neverRef));

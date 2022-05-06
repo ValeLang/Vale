@@ -17,6 +17,12 @@ public:
   LLVMValueRef strncmp = nullptr;
   LLVMValueRef memcpy = nullptr;
 
+
+  LLVMValueRef fopen = nullptr;
+  LLVMValueRef fclose = nullptr;
+  LLVMValueRef fread = nullptr;
+  LLVMValueRef fwrite = nullptr;
+
 //  LLVMValueRef initTwinPages = nullptr;
   LLVMValueRef censusContains = nullptr;
   LLVMValueRef censusAdd = nullptr;
@@ -31,6 +37,9 @@ public:
   // https://llvm.org/docs/LangRef.html#llvm-stacksave-intrinsic
   LLVMValueRef stacksaveIntrinsic = nullptr;
   LLVMValueRef stackrestoreIntrinsic = nullptr;
+
+  LLVMValueRef strHasherCallLF = nullptr;
+  LLVMValueRef strEquatorCallLF = nullptr;
 
   Externs(LLVMModuleRef mod, LLVMContextRef context);
 };

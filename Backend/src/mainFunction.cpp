@@ -2,6 +2,7 @@
 #include <utils/call.h>
 #include "function/function.h"
 #include "function/expressions/expressions.h"
+#include "determinism/determinism.h"
 #include "globalstate.h"
 #include "translatetype.h"
 
@@ -225,7 +226,11 @@ LLVMValueRef makeEntryFunction(
   LLVMBuildStore(entryBuilder, mainArgsLE, globalState->mainArgs);
 
   if (globalState->opt->enableReplaying) {
-
+    auto numConsumedArgsLE =
+        globalState->determinism->buildMaybeStartDeterministicMode(
+            entryBuilder, mainArgsLE, numMainArgsLE);
+    numMainArgsLE = LLVMBuildSub(entryBuilder, numMainArgsLE, numConsumedArgsLE, "");
+    mainArgsLE = LLVMBuildGEP(entryBuilder, mainArgsLE, &numConsumedArgsLE, 1, "");
   }
 
   if (globalState->opt->enableSideCalling) {

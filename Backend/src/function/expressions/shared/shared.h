@@ -17,6 +17,10 @@
 LLVMTypeRef makeNeverType(GlobalState* globalState);
 
 LLVMValueRef makeVoid(GlobalState* globalState);
+
+LLVMTypeRef makeEmptyStructType(GlobalState* globalState);
+LLVMValueRef makeEmptyStruct(GlobalState* globalState);
+
 Ref makeVoidRef(GlobalState* globalState);
 
 LLVMValueRef makeBackendLocal(
@@ -173,6 +177,10 @@ inline LLVMValueRef constI8LE(GlobalState* globalState, int n) {
 
 inline LLVMValueRef constI64LE(GlobalState* globalState, int64_t n) {
   return LLVMConstInt(LLVMInt64TypeInContext(globalState->context), n, false);
+}
+
+inline LLVMValueRef constI128LEFromI64(GlobalState* globalState, int64_t n1) {
+  return LLVMConstInt(LLVMInt128TypeInContext(globalState->context), n1, false);
 }
 
 inline LLVMValueRef constI48LE(GlobalState* globalState, int64_t n) {

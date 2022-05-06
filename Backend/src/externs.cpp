@@ -4,6 +4,7 @@
 #include "globalstate.h"
 
 Externs::Externs(LLVMModuleRef mod, LLVMContextRef context) {
+  auto emptyLT = LLVMStructTypeInContext(context, nullptr, 0, false);
   auto voidLT = LLVMVoidTypeInContext(context);
   auto int1LT = LLVMInt1TypeInContext(context);
   auto int8LT = LLVMInt8TypeInContext(context);
@@ -32,6 +33,14 @@ Externs::Externs(LLVMModuleRef mod, LLVMContextRef context) {
   memset = addExtern(mod, "memset", voidLT, {int8PtrLT, int8LT, int64LT});
 
 
+  fopen = addExtern(mod, "fopen", int8PtrLT, {int8PtrLT, int8PtrLT});
+  fclose = addExtern(mod, "fclose", int64LT, {int8PtrLT});
+  fread = addExtern(mod, "fread", int64LT, {int8PtrLT, int64LT, int64LT, int8PtrLT});
+  fwrite = addExtern(mod, "fwrite", int64LT, {int8PtrLT, int64LT, int64LT, int8PtrLT});
+
+  strHasherCallLF = addExtern(mod, "strHasherCall", int64LT, {emptyLT, int8PtrLT});
+  strEquatorCallLF = addExtern(mod, "strEquatorCall", int64LT, {emptyLT, int8PtrLT, int8PtrLT})
+
   // https://llvm.org/docs/LangRef.html#llvm-read-register-llvm-read-volatile-register-and-llvm-write-register-intrinsics
   // Warning from docs:
   //   WARNING: So far it only works with the stack pointer on selected architectures
@@ -56,9 +65,9 @@ Externs::Externs(LLVMModuleRef mod, LLVMContextRef context) {
 //  initTwinPages = addExtern(mod, "__vale_initTwinPages", int8PtrLT, {});
 }
 
-bool hasEnding (std::string const &fullString, std::string const &ending) {
+bool hasEnding(std::string const &fullString, std::string const &ending) {
   if (fullString.length() >= ending.length()) {
-    return (0 == fullString.compare (fullString.length() - ending.length(), ending.length(), ending));
+    return (0 == fullString.compare(fullString.length() - ending.length(), ending.length(), ending));
   } else {
     return false;
   }
@@ -77,3 +86,4 @@ bool includeSizeParam(GlobalState* globalState, Prototype* prototype, int paramI
   }
   return false;
 }
+

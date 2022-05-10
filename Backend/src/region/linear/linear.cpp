@@ -74,6 +74,8 @@ Linear::Linear(GlobalState* globalState_)
   globalState->regionIdByKind.emplace(regionKind, globalState->metalCache->linearRegionId);
   structs.declareStruct(regionKind);
   structs.defineStruct(regionKind, {
+      start here, add an offset to it? or can we use that dest buffer there?
+
       // Pointer to the beginning of the destination buffer
       LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
       // Offset into the destination buffer to write to
@@ -747,6 +749,7 @@ LoadResult Linear::loadElementFromSSA(
   auto valeSsaMD = globalState->program->getStaticSizedArray(valeSsaMT);
   auto valeMemberRefMT = valeSsaMD->elementType;
   auto hostMemberRefMT = linearizeReference(valeMemberRefMT);
+  start here
   return loadElementFromSSAInner(
       globalState, functionState, builder, hostSsaRefMT, hostSsaMT, valeSsaMD->size, hostMemberRefMT, indexRef, elementsPtrLE);
 }
@@ -774,6 +777,7 @@ LoadResult Linear::loadElementFromRSA(
   auto hostElementType = linearizeReference(rsaDef->elementType);
 
   buildFlare(FL(), globalState, functionState, builder);
+  start here
   return loadElement(
       globalState, functionState, builder, elementsPtrLE,
       hostElementType, sizeRef, indexRef);
@@ -865,6 +869,7 @@ Ref Linear::innerConstructStaticSizedArray(
 
         auto ssaLT = structs.getStaticSizedArrayStruct(hostSsaMT);
         auto ssaValLE = LLVMGetUndef(ssaLT); // There are no fields
+        start here
         LLVMBuildStore(thenBuilder, ssaValLE, ssaPtrLE);
 
         buildFlare(FL(), globalState, functionState, thenBuilder);
@@ -913,6 +918,7 @@ Ref Linear::innerConstructRuntimeSizedArray(
 
         auto rsaLT = structs.getRuntimeSizedArrayStruct(rsaMT);
         auto rsaWithLenVal = LLVMBuildInsertValue(thenBuilder, LLVMGetUndef(rsaLT), lenI32LE, 0, "rsaWithLen");
+        start here
         LLVMBuildStore(thenBuilder, rsaWithLenVal, rsaPtrLE);
 
         buildFlare(FL(), globalState, functionState, thenBuilder);
@@ -980,6 +986,7 @@ Ref Linear::innerMallocStr(
 
 //        buildFlare(FL(), globalState, functionState, thenBuilder, "storing at ", ptrToIntLE(globalState, thenBuilder, charsEndPtr));
 
+maybe start here probably not?
         LLVMBuildStore(thenBuilder, constI8LE(globalState, 0), charsEndPtr);
 
 //        buildFlare(FL(), globalState, functionState, thenBuilder, "done storing");
@@ -1012,6 +1019,7 @@ LoadResult Linear::loadMember(
     return LoadResult{wrap(globalState->getRegion(expectedMemberType), expectedMemberType, memberLE)};
   } else {
     auto structPtrLE = structRefLE;
+    start here
     return loadInnerInnerStructMember(globalState, functionState, builder, structPtrLE, memberIndex, expectedMemberType, memberName);
   }
 }
@@ -1485,6 +1493,10 @@ LLVMValueRef Linear::getDestinationPtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Ref regionInstanceRef) {
+  start here, is this related at all?
+  // we might want two actually. we'll always have a buffer we're writing into, but we might
+  // want to control whether we write relative or absolute addresses into that buffer.
+
   auto regionInstancePtrLE =
       checkValidReference(FL(), functionState, builder, regionRefMT, regionInstanceRef);
   auto bufferBeginPtrPtrLE = LLVMBuildStructGEP(builder, regionInstancePtrLE, 0, "bufferBeginPtrPtr");
@@ -1603,6 +1615,7 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
           for (int i = 0; i < valeStructDefM->members.size(); i++) {
             auto valeMemberM = valeStructDefM->members[i];
             auto sourceMemberRefMT = valeMemberM->type;
+            might need something here
             auto sourceMemberRef =
                 globalState->getRegion(valeObjectRefMT)->loadMember(
                     functionState, builder, valeObjectRefMT, valeObjectRef, true,
@@ -1625,6 +1638,7 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
                   auto memberLE =
                       globalState->getRegion(hostMemberType)
                           ->checkValidReference(FL(), functionState, thenBuilder, hostMemberType, hostMemberRef);
+                  might need something here
                   LLVMBuildStore(thenBuilder, memberLE, ptrLE);
                 }
               });
@@ -1686,6 +1700,7 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
                     globalState, functionState, bodyBuilder, LLVMBuildNot(bodyBuilder, dryRunBoolLE, "notDryRun"),
                     [this, functionState, hostObjectRefMT, hostRsaRef, indexRef, hostElementRef, hostRsaMT](
                         LLVMBuilderRef thenBuilder) mutable {
+                      start here
                       pushRuntimeSizedArrayNoBoundsCheck(
                           functionState, thenBuilder, hostObjectRefMT, hostRsaMT, hostRsaRef, true, indexRef,
                           hostElementRef);
@@ -1738,6 +1753,7 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
                     globalState, functionState, bodyBuilder, LLVMBuildNot(bodyBuilder, dryRunBoolLE, "notDryRun"),
                     [this, functionState, hostObjectRefMT, hostSsaRef, indexRef, hostElementRef, hostSsaMT](
                         LLVMBuilderRef thenBuilder) mutable {
+                      start here
                       initializeElementInSSA(
                           functionState, thenBuilder, hostObjectRefMT, hostSsaMT, hostSsaRef, true, indexRef,
                           hostElementRef);
@@ -1843,6 +1859,7 @@ void Linear::pushRuntimeSizedArrayNoBoundsCheck(
 //      LLVMBuildGEP(
 //          builder, hostRsaElementsPtrLE, &indexLE, 1, "indexPtr"));
   buildFlare(FL(), globalState, functionState, builder);
+  start here
   storeInnerArrayMember(globalState, functionState, builder, hostRsaElementsPtrLE, indexLE, elementRefLE);
   buildFlare(FL(), globalState, functionState, builder);
 }
@@ -1886,6 +1903,7 @@ void Linear::initializeElementInSSA(
   auto rsaPtrLE = checkValidReference(FL(), functionState, builder, hostSsaRefMT, hostSsaRef);
   auto hostSsaElementsPtrLE = structs.getStaticSizedArrayElementsPtr(functionState, builder, rsaPtrLE);
 
+  start here
   storeInnerArrayMember(globalState, functionState, builder, hostSsaElementsPtrLE, indexLE, elementRefLE);
 }
 

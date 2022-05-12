@@ -51,6 +51,7 @@ For an overview of the project structure, see [Compiler Overview](compiler-overv
  * [Kevin Navero](https://github.com/solstice333/) ($5/mo)
  * Ilya Seletsky ($5/mo)
  * Jean Juang ($100)
+ * [Posnet](https://github.com/Posnet) ($50)
  * Kim Shook ($20)
 
 

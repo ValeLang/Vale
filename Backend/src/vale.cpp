@@ -83,6 +83,7 @@ Prototype* makeValeMainFunction(
 LLVMValueRef makeEntryFunction(
     GlobalState* globalState,
     Prototype* valeMainPrototype);
+//LLVMValueRef makeCoroutineEntryFunc(GlobalState* globalState);
 
 LLVMValueRef declareFunction(
   GlobalState* globalState,
@@ -776,6 +777,8 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
 
 //  globalState->stringConstantBuilder = entryBuilder;
 
+  LLVMValueRef empty[1] = {};
+
   globalState->numMainArgs =
       LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__main_num_args");
   LLVMSetLinkage(globalState->numMainArgs, LLVMExternalLinkage);
@@ -810,8 +813,16 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
   LLVMSetInitializer(globalState->derefCounter, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
 
   globalState->neverPtr = LLVMAddGlobal(globalState->mod, makeNeverType(globalState), "__never");
-  LLVMValueRef empty[1] = {};
   LLVMSetInitializer(globalState->neverPtr, LLVMConstArray(LLVMIntTypeInContext(globalState->context, NEVER_INT_BITS), empty, 0));
+
+  globalState->sideStack = LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "__sideStack");
+  LLVMSetInitializer(globalState->sideStack, LLVMConstNull(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)));
+
+//  globalState->sideStackArgCalleeFuncPtrPtr = LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "sideStackArgCalleeFuncPtrPtr");
+//  LLVMSetInitializer(globalState->sideStackArgCalleeFuncPtrPtr, LLVMConstNull(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)));
+
+//  globalState->sideStackArgReturnDestPtr = LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "sideStackArgReturnDestPtr");
+//  LLVMSetInitializer(globalState->sideStackArgReturnDestPtr, LLVMConstNull(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)));
 
   globalState->mutRcAdjustCounter =
       LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__mutRcAdjustCounter");
@@ -836,7 +847,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
       globalState->mutRegion = new Assist(globalState);
       break;
     case RegionOverride::NAIVE_RC:
-      globalState->mutRegion = new NaiveRC(globalState, globalState->metalCache->rcImmRegionId);
+      globalState->mutRegion = new NaiveRC(globalState, globalState->metalCache->mutRegionId);
       break;
     case RegionOverride::FAST:
       globalState->mutRegion = new Unsafe(globalState);
@@ -1162,7 +1173,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
         LLVMBuildRet(builder, constI64LE(globalState, 0));
       });
 
-
+//  globalState->coroutineEntryFunc = makeCoroutineEntryFunc(globalState);
 
   Prototype* mainM = nullptr;
   for (auto[packageCoord, package] : program.packages) {

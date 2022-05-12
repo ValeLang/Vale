@@ -1,6 +1,6 @@
 package dev.vale.parsing
 
-import dev.vale.parsing.ast.{AbstractAttributeP, AbstractP, AndPE, AnonymousRunePT, ArenaRuneAttributeP, AugmentPE, BinaryCallPE, BlockPE, BoolPT, BoolTypePR, BorrowP, BorrowPT, BraceCallPE, BreakPE, BuiltinAttributeP, BuiltinCallPR, BumpRuneAttributeP, CallPT, CitizenTemplateTypePR, ComponentsPR, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, ConstructingMemberNameDeclarationP, CoordListTypePR, CoordTypePR, DestructPE, DestructureP, DontCallMacro, DotPE, DotPR, EachPE, EqualsPR, ExportAsP, ExportAttributeP, ExternAttributeP, FileP, FinalP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionPT, FunctionReturnP, IArraySizeP, IAttributeP, IExpressionPE, IImpreciseNameP, INameDeclarationP, IRulexPR, IRuneAttributeP, IStructContent, ITemplexPT, ITopLevelThingP, ITypePR, IdentifyingRuneP, IdentifyingRunesP, IfPE, IgnoredLocalNameDeclarationP, ImmutableP, ImmutableRuneAttributeP, ImplP, ImportP, IndexPE, InlineP, InlinePT, IntPT, IntTypePR, InterfaceP, InterpretedPT, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, KindTypePR, LambdaPE, LetPE, LoadAsBorrowP, LoadAsP, LoadAsWeakP, LocalNameDeclarationP, LocationP, LocationPT, LocationTypePR, LookupNameP, LookupPE, MacroCallP, MagicParamLookupPE, MethodCallPE, MoveP, MutabilityP, MutabilityPT, MutabilityTypePR, MutableP, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, NotPE, OrPE, OrPR, OwnP, OwnershipP, OwnershipPT, OwnershipTypePR, PackPE, PackPR, PackPT, ParamsP, PatternPP, PoolRuneAttributeP, PrototypePT, PrototypeTypePR, PureAttributeP, RangeP, RangePE, ReadOnlyRuneAttributeP, ReadWriteRuneAttributeP, RegionRunePT, RegionTypePR, ResolveSignaturePR, ReturnPE, RuntimeSizedArrayPT, RuntimeSizedP, SealedAttributeP, ShareP, SharePT, ShortcallPE, StaticSizedArrayPT, StaticSizedP, StrInterpolatePE, StringPT, StructMembersP, StructMethodP, StructP, SubExpressionPE, TemplateArgsP, TemplateRulesP, TemplexPR, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, TuplePT, TypeRuneAttributeP, TypedPR, TypedRunePT, UnitP, UnletPE, UseP, VariabilityP, VariabilityPT, VariabilityTypePR, VariadicStructMemberP, VaryingP, VoidPE, WeakP, WeakableAttributeP, WhilePE, YonderP}
+import dev.vale.parsing.ast.{AbstractAttributeP, AbstractP, AndPE, AnonymousRunePT, ArenaRuneAttributeP, AugmentPE, BinaryCallPE, BlockPE, BoolPT, BoolTypePR, BorrowP, BorrowPT, BraceCallPE, BreakPE, BuiltinAttributeP, BuiltinCallPR, BumpRuneAttributeP, CallPT, CitizenTemplateTypePR, ComponentsPR, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, ConstructingMemberNameDeclarationP, CoordListTypePR, CoordTypePR, DestructPE, DestructureP, DontCallMacro, DotPE, DotPR, EachPE, EqualsPR, ExportAsP, ExportAttributeP, ExternAttributeP, FileP, FinalP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionPT, FunctionReturnP, IArraySizeP, IAttributeP, IExpressionPE, IImpreciseNameP, INameDeclarationP, IRulexPR, IRuneAttributeP, IStructContent, ITemplexPT, ITopLevelThingP, ITypePR, IdentifyingRuneP, IdentifyingRunesP, IfPE, IgnoredLocalNameDeclarationP, ImmutableP, ImmutableRuneAttributeP, ImplP, ImportP, IndexPE, InlineP, InlinePT, IntPT, IntTypePR, InterfaceP, InterpretedPT, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, KindTypePR, LambdaPE, LetPE, LoadAsBorrowP, LoadAsP, LoadAsWeakP, LocalNameDeclarationP, LocationP, LocationPT, LocationTypePR, LookupNameP, LookupPE, MacroCallP, MagicParamLookupPE, MethodCallPE, MoveP, MutabilityP, MutabilityPT, MutabilityTypePR, MutableP, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, NotPE, OrPE, OrPR, OwnP, OwnershipP, OwnershipPT, OwnershipTypePR, PackPE, PackPR, PackPT, ParamsP, PatternPP, PoolRuneAttributeP, PrototypePT, PrototypeTypePR, PureAttributeP, RangeP, RangePE, ReadOnlyRuneAttributeP, ReadWriteRuneAttributeP, RegionRunePT, RegionTypePR, ReturnPE, RuntimeSizedArrayPT, RuntimeSizedP, SealedAttributeP, ShareP, SharePT, ShortcallPE, StaticSizedArrayPT, StaticSizedP, StrInterpolatePE, StringPT, StructMembersP, StructMethodP, StructP, SubExpressionPE, TemplateArgsP, TemplateRulesP, TemplexPR, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, TuplePT, TypeRuneAttributeP, TypedPR, TypedRunePT, UnitP, UnletPE, UseP, VariabilityP, VariabilityPT, VariabilityTypePR, VariadicStructMemberP, VaryingP, VoidPE, WeakP, WeakableAttributeP, WhilePE, YonderP}
 import dev.vale.{Profiler, vimpl}
 import dev.vale.parsing.ast._
 import dev.vale.von.{IVonData, VonArray, VonBool, VonFloat, VonInt, VonMember, VonObject, VonStr}
@@ -433,17 +433,17 @@ object ParserVonifier {
           )
         )
       }
-      case ResolveSignaturePR(range, nameStrRule, argsPackRule) => {
-        VonObject(
-          "ResolveSignaturePR",
-          None,
-          Vector(
-            VonMember("range", vonifyRange(range)),
-            VonMember("nameStrRule", vonifyRule(nameStrRule)),
-            VonMember("argsPackRule", vonifyRule(argsPackRule)),
-          )
-        )
-      }
+//      case ResolveSignaturePR(range, nameStrRule, argsPackRule) => {
+//        VonObject(
+//          "ResolveSignaturePR",
+//          None,
+//          Vector(
+//            VonMember("range", vonifyRange(range)),
+//            VonMember("nameStrRule", vonifyRule(nameStrRule)),
+//            VonMember("argsPackRule", vonifyRule(argsPackRule)),
+//          )
+//        )
+//      }
       case PackPR(range, elements) => {
         VonObject(
           "PackPR",

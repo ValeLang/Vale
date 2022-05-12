@@ -55,7 +55,7 @@ class StringParser(expressionParser: ExpressionParser) {
       stringSoFar.clear()
     }
     if (parts.isEmpty) {
-      Ok(Some(ConstantStrPE(RangeP(stringSoFarBegin, iter.getPos()), "")))
+      Ok(Some(ConstantStrPE(RangeP(begin, iter.getPos()), "")))
     } else if (parts.size == 1) {
       Ok(Some(parts.head))
     } else {

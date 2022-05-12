@@ -269,7 +269,7 @@ LLVMValueRef HybridGenerationalMemory::lockGenFatPtr(
       adjustCounter(globalState, builder, globalState->metalCache->i64, globalState->livenessCheckCounter, 1);
     }
     auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, refM, fatPtrLE, knownLive);
-    buildIf(
+    buildIfV(
         globalState, functionState, builder, isZeroLE(builder, isAliveLE),
         [this, from](LLVMBuilderRef thenBuilder) {
           fastPanic(globalState, from, thenBuilder);

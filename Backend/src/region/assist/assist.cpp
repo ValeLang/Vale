@@ -291,7 +291,7 @@ void Assist::noteWeakableDestroyed(
     ControlBlockPtrLE controlBlockPtrLE) {
   auto rc = kindStructs.getStrongRcFromControlBlockPtr(builder, refM, controlBlockPtrLE);
   auto conditionLE = LLVMBuildICmp(builder, LLVMIntEQ, rc, constI32LE(globalState, 0), "assertCondition");
-  buildIf(
+  buildIfV(
       globalState, functionState, builder, isZeroLE(builder, conditionLE),
       [this](LLVMBuilderRef thenBuilder) {
         buildPrint(globalState, thenBuilder, "Error: Dangling pointers detected!");

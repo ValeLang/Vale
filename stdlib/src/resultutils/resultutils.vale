@@ -15,7 +15,7 @@ func expect<OkType, ErrType>(ok &Ok<OkType, ErrType>, msg str) &OkType { return 
 
 func get_or<OkType, ErrType, F>(result &Result<OkType, ErrType>, func F)
 &OkType
-where func(&F, ErrType)_]
+where func(&F, ErrType)_
 {
   if result.is_ok() {
     (result).expect()
@@ -27,14 +27,14 @@ where func(&F, ErrType)_]
 
 func expect_or<F, OkType, ErrType>(result &Result<OkType, ErrType>, func F)
 OkType
-where func(&F, &ErrType)_]
+where func(&F, &ErrType)_
 {
   return if result.is_ok() { result.expect() } else { func(result.expect_err()) };
 }
 
 func expect_or<F, OkType, ErrType>(result Result<OkType, ErrType>, func F)
 OkType
-where func(&F, ErrType)_]
+where func(&F, ErrType)_
 {
   return if result.is_ok() { (result).expect() } else { func((result).expect_err()) };
 }

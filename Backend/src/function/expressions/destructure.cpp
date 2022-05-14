@@ -37,7 +37,7 @@ Ref translateDestructure(
     auto memberType = structM->members[i]->type;
     auto memberLE =
         globalState->getRegion(destructureM->structType)->loadMember(
-            functionState, builder, destructureM->structType, structRef, true, i, memberType, memberType, memberName);
+            functionState, builder, globalState->makeTempRegionInstance(), destructureM->structType, structRef, true, i, memberType, memberType, memberName);
     makeHammerLocal(
         globalState, functionState, blockState, builder, destructureM->localIndices[i], memberLE, destructureM->localsKnownLives[i]);
     buildFlare(FL(), globalState, functionState, builder);

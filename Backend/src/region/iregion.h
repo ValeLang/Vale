@@ -66,6 +66,7 @@ public:
   virtual void storeMember(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* structRefMT,
       Ref structRef,
       bool structRefKnownLive,
@@ -77,6 +78,7 @@ public:
   virtual Ref loadMember(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* structRefMT,
       Ref structRef,
       bool structRefKnownLive,
@@ -139,6 +141,7 @@ public:
   virtual Ref getRuntimeSizedArrayLength(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* rsaRefMT,
       Ref arrayRef,
       bool arrayRefKnownLive) = 0;
@@ -146,6 +149,7 @@ public:
   virtual Ref getRuntimeSizedArrayCapacity(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* rsaRefMT,
       Ref arrayRef,
       bool arrayRefKnownLive) = 0;
@@ -269,6 +273,7 @@ public:
   virtual LoadResult loadElementFromRSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* rsaRefMT,
       RuntimeSizedArrayT* rsaMT,
       Ref arrayRef,
@@ -295,6 +300,7 @@ public:
   virtual void pushRuntimeSizedArrayNoBoundsCheck(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* rsaRefMT,
       RuntimeSizedArrayT* rsaMT,
       Ref arrayRef,
@@ -314,6 +320,7 @@ public:
   virtual void initializeElementInSSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* ssaRefMT,
       StaticSizedArrayT* ssaMT,
       Ref arrayRef,
@@ -360,6 +367,7 @@ public:
   virtual LoadResult loadElementFromSSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* ssaRefMT,
       StaticSizedArrayT* ssaMT,
       Ref arrayRef,
@@ -390,9 +398,15 @@ public:
       Ref sourceRef) = 0;
 
   virtual LLVMValueRef getStringBytesPtr(
-      FunctionState* functionState, LLVMBuilderRef builder, Ref ref) = 0;
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      Ref ref) = 0;
   virtual LLVMValueRef getStringLen(
-      FunctionState* functionState, LLVMBuilderRef builder, Ref ref) = 0;
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      Ref ref) = 0;
   // TODO:
   // One use is for makeNewStrFunc, make that private to the unsafe region.
   // Change this to also take in the bytes pointer.

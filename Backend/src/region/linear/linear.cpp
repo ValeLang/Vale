@@ -74,12 +74,12 @@ Linear::Linear(GlobalState* globalState_)
   globalState->regionIdByKind.emplace(regionKind, globalState->metalCache->linearRegionId);
   structs.declareStruct(regionKind);
   structs.defineStruct(regionKind, {
-      start here, add an offset to it? or can we use that dest buffer there?
-
       // Pointer to the beginning of the destination buffer
       LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
       // Offset into the destination buffer to write to
       LLVMInt64TypeInContext(globalState->context),
+      // Serialized Address Adjuster, see PSBCBO.
+      LLVMInt64TypeInContext(globalState->context)
 //      // "rootMetadataBytesNeeded", the number of bytes needed after the next thing is serialized, see MAPOWN.
 //      LLVMInt64TypeInContext(globalState->context),
       // Eventually we might want a hash map or something in here, if we want to avoid serialize duplicates
@@ -422,8 +422,12 @@ void Linear::defineEdgeSerializeFunction(Edge* edge) {
         auto valeObjectRef = wrap(globalState->getRegion(valeObjectRefMT), valeObjectRefMT, LLVMGetParam(functionState->containingFuncL, 1));
         auto dryRunBoolRef = wrap(globalState->getRegion(boolMT), boolMT, LLVMGetParam(functionState->containingFuncL, 2));
 
-        auto structRef = buildCallV(
-            globalState, functionState, builder, structPrototype, {regionInstanceRef, valeObjectRef, dryRunBoolRef});
+        auto structRef =
+            buildCallV(
+                globalState, functionState, builder, structPrototype, {regionInstanceRef, valeObjectRef, dryRunBoolRef});
+        // Note that structRef might not actually be a pointer to a valid struct in memory,
+        // it might instead be an integer offset, masquerading as a pointer. See PSBCBO for more.
+        // The below code doesn't break because we don't need to dereference structs to upcast them.
 
         auto hostInterfaceKind = dynamic_cast<InterfaceKind*>(thunkPrototype->returnType->kind);
         assert(hostInterfaceKind);
@@ -499,6 +503,7 @@ void Linear::noteWeakableDestroyed(
 Ref Linear::loadMember(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* structRefMT,
     Ref structRef,
     bool structKnownLive,
@@ -508,7 +513,7 @@ Ref Linear::loadMember(
     const std::string& memberName) {
   auto memberLE =
       loadMember(
-          functionState, builder, structRefMT, structRef, memberIndex, expectedMemberType,
+          functionState, builder, regionInstanceRef, structRefMT, structRef, memberIndex, expectedMemberType,
           targetMemberType, memberName);
   auto resultRef =
       upgradeLoadResultToRefWithTargetOwnership(
@@ -519,6 +524,7 @@ Ref Linear::loadMember(
 void Linear::storeMember(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* structRefMT,
     Ref structRef,
     bool structKnownLive,
@@ -526,11 +532,38 @@ void Linear::storeMember(
     const std::string& memberName,
     Reference* newMemberRefMT,
     Ref newMemberRef) {
-  auto newMemberLE =
-      globalState->getRegion(newMemberRefMT)->checkValidReference(
-          FL(), functionState, builder, newMemberRefMT, newMemberRef);
+  // storeMember is called when we want to overwrite something, but we don't allow that in linear.
+  // To initialize something, use initializeMember instead.
   assert(false);
 }
+
+
+void Linear::initializeMember(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef,
+    Reference* structRefMT,
+    Ref structRef,
+    bool structKnownLive,
+    int memberIndex,
+    const std::string& memberName,
+    Reference* newMemberRefMT,
+    Ref newMemberRef) {
+  auto unadjustedInnerStructPtrLE =
+      checkValidReference(FL(), functionState, builder, structRefMT, structRef);
+  auto adjustedInnerStructPtrLE =
+      translateBetweenBufferAddressAndPointer(
+          functionState, builder, regionInstanceRef, structRefMT, unadjustedInnerStructPtrLE, true);
+
+  auto memberLE =
+      globalState->getRegion(newMemberRefMT)->checkValidReference(
+          FL(), functionState, builder, newMemberRefMT, newMemberRef);
+
+  auto memberPtrLE =
+      LLVMBuildStructGEP(builder, adjustedInnerStructPtrLE, i, memberName.c_str());
+  LLVMBuildStore(builder, memberLE, memberPtrLE);
+}
+
 
 std::tuple<LLVMValueRef, LLVMValueRef> Linear::explodeInterfaceRef(
     FunctionState* functionState,
@@ -572,10 +605,17 @@ Ref Linear::getIsAliveFromWeakRef(
   exit(1);
 }
 
-LLVMValueRef Linear::getStringBytesPtr(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) {
-  auto strWrapperPtrLE =
+LLVMValueRef Linear::getStringBytesPtr(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef,
+    Ref ref) {
+  auto unadjustedStrWrapperPtrLE =
       checkValidReference(FL(), functionState, builder, linearStrRefMT, ref);
-  return structs.getStringBytesPtr(functionState, builder, strWrapperPtrLE);
+  auto adjustedStrWrapperPtrLE =
+      translateBetweenBufferAddressAndPointer(
+          functionState, builder, regionInstanceRef, linearStrRefMT, unadjustedStrWrapperPtrLE, false);
+  return structs.getStringBytesPtr(functionState, builder, adjustedStrWrapperPtrLE);
 }
 
 Ref Linear::allocate(
@@ -637,20 +677,30 @@ Ref Linear::upcast(
   assert(valeKindByHostKind.find(targetInterfaceTypeM->kind) != valeKindByHostKind.end());
   assert(valeKindByHostKind.find(targetInterfaceKindM) != valeKindByHostKind.end());
 
+  auto structRefLE = checkValidReference(FL(), functionState, builder, sourceStructMT, sourceRef);
+
+  auto edgeNumber = structs.getEdgeNumber(targetInterfaceKindM, sourceStructKindM);
+  LLVMValueRef edgeNumberLE = constI64LE(globalState, edgeNumber);
+
+  return assembleInterfaceRef(builder, targetInterfaceTypeM, structRefLE, edgeNumberLE);
+}
+
+Ref Linear::assembleInterfaceRef(
+    LLVMBuilderRef builder,
+    Reference* targetInterfaceTypeM,
+    LLVMValueRef structRefLE,
+    LLVMValueRef edgeNumberLE) {
   auto i8PtrLT = LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0);
 
-  auto structRefLE = checkValidReference(FL(), functionState, builder, sourceStructMT, sourceRef);
-  auto structI8PtrLE = LLVMBuildPointerCast(builder, structRefLE, i8PtrLT, "objAsVoidPtr");
+  auto interfaceKindM = dynamic_cast<InterfaceKind*>(targetInterfaceTypeM->kind);
+  assert(interfaceKindM);
+  auto interfaceRefLT = structs.getInterfaceRefStruct(interfaceKindM);
 
-  auto interfaceRefLT = structs.getInterfaceRefStruct(targetInterfaceKindM);
+  auto structI8PtrLE = LLVMBuildPointerCast(builder, structRefLE, i8PtrLT, "objAsVoidPtr");
 
   auto interfaceRefLE = LLVMGetUndef(interfaceRefLT);
   interfaceRefLE = LLVMBuildInsertValue(builder, interfaceRefLE, structI8PtrLE, 0, "interfaceRefWithOnlyObj");
-  auto edgeNumber = structs.getEdgeNumber(targetInterfaceKindM, sourceStructKindM);
-  LLVMValueRef edgeNumberLE = constI64LE(globalState, edgeNumber);
   interfaceRefLE = LLVMBuildInsertValue(builder, interfaceRefLE, edgeNumberLE, 1, "interfaceRef");
-
-  buildFlare(FL(), globalState, functionState, builder, "Making the interface ref with 0!");
 
   return wrap(globalState->getRegion(targetInterfaceTypeM), targetInterfaceTypeM, interfaceRefLE);
 }
@@ -669,11 +719,15 @@ WrapperPtrLE Linear::lockWeakRef(
 Ref Linear::getRuntimeSizedArrayLength(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* rsaRefMT,
     Ref arrayRef,
     bool arrayKnownLive) {
-  auto arrayRefLE = checkValidReference(FL(), functionState, builder, rsaRefMT, arrayRef);
-  auto resultLE = LLVMBuildStructGEP(builder, arrayRefLE, 0, "rsaLenPtr");
+  auto unadjustedArrayRefLE = checkValidReference(FL(), functionState, builder, rsaRefMT, arrayRef);
+  auto adjustedArrayRefLE =
+      translateBetweenBufferAddressAndPointer(
+          functionState, builder, regionInstanceRef, rsaRefMT, unadjustedArrayRefLE, false);
+  auto resultLE = LLVMBuildStructGEP(builder, adjustedArrayRefLE, 0, "rsaLenPtr");
   auto intLE = LLVMBuildLoad(builder, resultLE, "rsaLen");
   return wrap(globalState->getRegion(globalState->metalCache->i32Ref), globalState->metalCache->i32Ref, intLE);
 }
@@ -681,10 +735,11 @@ Ref Linear::getRuntimeSizedArrayLength(
 Ref Linear::getRuntimeSizedArrayCapacity(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* rsaRefMT,
     Ref arrayRef,
     bool arrayKnownLive) {
-  return getRuntimeSizedArrayLength(functionState, builder, rsaRefMT, arrayRef, arrayKnownLive);
+  return getRuntimeSizedArrayLength(functionState, builder, regionInstanceRef, rsaRefMT, arrayRef, arrayKnownLive);
 }
 
 LLVMValueRef Linear::checkValidReference(
@@ -736,20 +791,24 @@ void Linear::checkInlineStructType(
 LoadResult Linear::loadElementFromSSA(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* hostSsaRefMT,
     StaticSizedArrayT* hostSsaMT,
     Ref arrayRef,
     bool arrayKnownLive,
     Ref indexRef) {
-  auto arrayRefLE = checkValidReference(FL(), functionState, builder, hostSsaRefMT, arrayRef);
+  auto unadjustedArrayRefLE = checkValidReference(FL(), functionState, builder, hostSsaRefMT, arrayRef);
+  auto adjustedArrayRefLE =
+      translateBetweenBufferAddressAndPointer(
+          functionState, builder, regionInstanceRef, hostSsaRefMT, unadjustedArrayRefLE, false);
   // Array is the only member in the SSA struct.
-  auto elementsPtrLE = LLVMBuildStructGEP(builder, arrayRefLE, 0, "ssaElemsPtr");
+  auto elementsPtrLE = LLVMBuildStructGEP(builder, adjustedArrayRefLE, 0, "ssaElemsPtr");
 
   auto valeSsaMT = unlinearizeSSA(hostSsaMT);
   auto valeSsaMD = globalState->program->getStaticSizedArray(valeSsaMT);
   auto valeMemberRefMT = valeSsaMD->elementType;
   auto hostMemberRefMT = linearizeReference(valeMemberRefMT);
-  start here
+
   return loadElementFromSSAInner(
       globalState, functionState, builder, hostSsaRefMT, hostSsaMT, valeSsaMD->size, hostMemberRefMT, indexRef, elementsPtrLE);
 }
@@ -757,17 +816,21 @@ LoadResult Linear::loadElementFromSSA(
 LoadResult Linear::loadElementFromRSA(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* hostRsaRefMT,
     RuntimeSizedArrayT* hostRsaMT,
     Ref arrayRef,
     bool arrayKnownLive,
     Ref indexRef) {
-  auto arrayRefLE = checkValidReference(FL(), functionState, builder, hostRsaRefMT, arrayRef);
+  auto unadjustedArrayRefLE = checkValidReference(FL(), functionState, builder, hostRsaRefMT, arrayRef);
+  auto adjustedArrayRefLE =
+      translateBetweenBufferAddressAndPointer(
+          functionState, builder, regionInstanceRef, hostRsaRefMT, unadjustedArrayRefLE, false);
   // Size is the first member in the RSA struct.
-  auto sizeLE = LLVMBuildLoad(builder, LLVMBuildStructGEP(builder, arrayRefLE, 0, "rsaSizePtr"), "rsaSize");
+  auto sizeLE = LLVMBuildLoad(builder, LLVMBuildStructGEP(builder, adjustedArrayRefLE, 0, "rsaSizePtr"), "rsaSize");
   auto sizeRef = wrap(this, globalState->metalCache->i32Ref, sizeLE);
   // Elements is the 1th member in the RSA struct, after size.
-  auto elementsPtrLE = LLVMBuildStructGEP(builder, arrayRefLE, 1, "rsaElemsPtr");
+  auto elementsPtrLE = LLVMBuildStructGEP(builder, adjustedArrayRefLE, 1, "rsaElemsPtr");
 
   auto valeRsaRefMT = unlinearizeReference(hostRsaRefMT);
   auto valeRsaMT = dynamic_cast<RuntimeSizedArrayT*>(valeRsaRefMT->kind);
@@ -777,10 +840,9 @@ LoadResult Linear::loadElementFromRSA(
   auto hostElementType = linearizeReference(rsaDef->elementType);
 
   buildFlare(FL(), globalState, functionState, builder);
-  start here
+
   return loadElement(
-      globalState, functionState, builder, elementsPtrLE,
-      hostElementType, sizeRef, indexRef);
+      globalState, functionState, builder, elementsPtrLE, hostElementType, sizeRef, indexRef);
 }
 
 
@@ -864,12 +926,16 @@ Ref Linear::innerConstructStaticSizedArray(
   auto dryRunBoolLE = globalState->getRegion(boolMT)->checkValidReference(FL(), functionState, builder, boolMT, dryRunBoolRef);
   buildIfV(
       globalState, functionState, builder, LLVMBuildNot(builder, dryRunBoolLE, "notDryRun"),
-      [this, functionState, ssaPtrLE, hostSsaMT](LLVMBuilderRef thenBuilder) mutable {
+      [this, functionState, ssaPtrLE, hostSsaMT, ssaRefMT, regionInstanceRef](LLVMBuilderRef thenBuilder) mutable {
         buildFlare(FL(), globalState, functionState, thenBuilder);
 
         auto ssaLT = structs.getStaticSizedArrayStruct(hostSsaMT);
         auto ssaValLE = LLVMGetUndef(ssaLT); // There are no fields
-        start here
+
+        // When we write a pointer, we need to subtract the Serialized Address Adjuster, see PSBCBO.
+        auto adjustedSsaPtrLE =
+            translateBetweenBufferAddressAndPointer(
+                functionState, thenBuilder, regionInstanceRef, ssaRefMT, ssaPtrLE, true);
         LLVMBuildStore(thenBuilder, ssaValLE, ssaPtrLE);
 
         buildFlare(FL(), globalState, functionState, thenBuilder);
@@ -913,12 +979,16 @@ Ref Linear::innerConstructRuntimeSizedArray(
   auto dryRunBoolLE = globalState->getRegion(boolMT)->checkValidReference(FL(), functionState, builder, boolMT, dryRunBoolRef);
   buildIfV(
       globalState, functionState, builder, LLVMBuildNot(builder, dryRunBoolLE, "notDryRun"),
-      [this, functionState, rsaPtrLE, lenI32LE, rsaMT](LLVMBuilderRef thenBuilder) mutable {
+      [this, functionState, rsaPtrLE, lenI32LE, rsaMT, rsaRefMT, regionInstanceRef](LLVMBuilderRef thenBuilder) mutable {
         buildFlare(FL(), globalState, functionState, thenBuilder);
 
         auto rsaLT = structs.getRuntimeSizedArrayStruct(rsaMT);
         auto rsaWithLenVal = LLVMBuildInsertValue(thenBuilder, LLVMGetUndef(rsaLT), lenI32LE, 0, "rsaWithLen");
-        start here
+
+        // When we write a pointer, we need to subtract the Serialized Address Adjuster, see PSBCBO.
+        auto adjustedRsaPtrLE =
+            translateBetweenBufferAddressAndPointer(
+                functionState, thenBuilder, regionInstanceRef, rsaRefMT, rsaPtrLE, true);
         LLVMBuildStore(thenBuilder, rsaWithLenVal, rsaPtrLE);
 
         buildFlare(FL(), globalState, functionState, thenBuilder);
@@ -966,7 +1036,7 @@ Ref Linear::innerMallocStr(
 
   buildIfV(
       globalState, functionState, builder, LLVMBuildNot(builder, dryRunBoolLE, "notDryRun"),
-      [this, functionState, strPtrLE, lenI32LE, lenI64LE, strRef, sourceCharsPtrLE](
+      [this, functionState, regionInstanceRef, strPtrLE, lenI32LE, lenI64LE, strRef, sourceCharsPtrLE](
           LLVMBuilderRef thenBuilder) mutable {
         auto strWithLenValLE =
             LLVMBuildInsertValue(thenBuilder, LLVMGetUndef(structs.getStringStruct()), lenI32LE, 0, "strWithLen");
@@ -974,7 +1044,7 @@ Ref Linear::innerMallocStr(
 
         buildFlare(FL(), globalState, functionState, thenBuilder, "length for str: ", lenI64LE);
 
-        auto charsBeginPtr = getStringBytesPtr(functionState, thenBuilder, strRef);
+        auto charsBeginPtr = getStringBytesPtr(functionState, thenBuilder, regionInstanceRef, strRef);
 
         buildFlare(FL(), globalState, functionState, thenBuilder);
 
@@ -986,7 +1056,8 @@ Ref Linear::innerMallocStr(
 
 //        buildFlare(FL(), globalState, functionState, thenBuilder, "storing at ", ptrToIntLE(globalState, thenBuilder, charsEndPtr));
 
-maybe start here probably not?
+        // When we write a pointer, we need to subtract the Serialized Address Adjuster, see PSBCBO,
+        // but here we're not writing any pointers (just chars) so no need to subtract anything here.
         LLVMBuildStore(thenBuilder, constI8LE(globalState, 0), charsEndPtr);
 
 //        buildFlare(FL(), globalState, functionState, thenBuilder, "done storing");
@@ -999,14 +1070,22 @@ maybe start here probably not?
   return strRef;
 }
 
-LLVMValueRef Linear::getStringLen(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) {
-  auto refPtrLE = checkValidReference(FL(), functionState, builder, linearStrRefMT, ref);
-  return LLVMBuildLoad(builder, LLVMBuildStructGEP(builder, refPtrLE, 0, "lenPtr"), "len");
+LLVMValueRef Linear::getStringLen(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef,
+    Ref ref) {
+  auto unadjustedStrPtrLE = checkValidReference(FL(), functionState, builder, linearStrRefMT, ref);
+  auto adjustedStrPtrLE =
+      translateBetweenBufferAddressAndPointer(
+          functionState, builder, regionInstanceRef, linearStrRefMT, unadjustedStrPtrLE, false);
+  return LLVMBuildLoad(builder, LLVMBuildStructGEP(builder, adjustedStrPtrLE, 0, "lenPtr"), "len");
 }
 
 LoadResult Linear::loadMember(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* structRefMT,
     Ref structRef,
     int memberIndex,
@@ -1016,11 +1095,16 @@ LoadResult Linear::loadMember(
   auto structRefLE = checkValidReference(FL(), functionState, builder, structRefMT, structRef);
   if (structRefMT->location == Location::INLINE) {
     auto memberLE = LLVMBuildExtractValue(builder, structRefLE, memberIndex, memberName.c_str());
+    assert(false); // impl. should inline structs have their pointers adjusted already?
     return LoadResult{wrap(globalState->getRegion(expectedMemberType), expectedMemberType, memberLE)};
   } else {
-    auto structPtrLE = structRefLE;
-    start here
-    return loadInnerInnerStructMember(globalState, functionState, builder, structPtrLE, memberIndex, expectedMemberType, memberName);
+    auto unadjustedStructPtrLE = structRefLE;
+    // When we read a pointer, we need to add the Serialized Address Adjuster, see PSBCBO.
+    auto adjustedStructPtrLE =
+        translateBetweenBufferAddressAndPointer(
+            functionState, builder, regionInstanceRef, expectedMemberType, unadjustedStructPtrLE, false);
+    return loadInnerInnerStructMember(
+          globalState, functionState, builder, adjustedStructPtrLE, memberIndex, expectedMemberType, memberName);
   }
 }
 
@@ -1208,14 +1292,16 @@ std::pair<Ref, Ref> Linear::topLevelSerialize(
           Ownership::SHARE, Location::YONDER, valeKind);
   auto hostRefMT = linearizeReference(valeRefMT);
 
-  auto nullLT = LLVMConstNull(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0));
+  auto nullLE = LLVMConstNull(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0));
   auto dryRunCounterBeginLE = constI64LE(globalState, 0);
+  auto dryRunSerializedAddressAdjusterLE = constI64LE(globalState, 0);
 
   auto regionLT = structs.getStructStruct(regionKind);
 
   auto dryRunInitialRegionStructLE = LLVMGetUndef(regionLT);
-  dryRunInitialRegionStructLE = LLVMBuildInsertValue(builder, dryRunInitialRegionStructLE, nullLT, 0, "regionStruct");
+  dryRunInitialRegionStructLE = LLVMBuildInsertValue(builder, dryRunInitialRegionStructLE, nullLE, 0, "regionStruct");
   dryRunInitialRegionStructLE = LLVMBuildInsertValue(builder, dryRunInitialRegionStructLE, dryRunCounterBeginLE, 1, "regionStruct");
+  dryRunInitialRegionStructLE = LLVMBuildInsertValue(builder, dryRunInitialRegionStructLE, dryRunSerializedAddressAdjusterLE, 2, "regionStruct");
 //  dryRunInitialRegionStructLE = LLVMBuildInsertValue(builder, dryRunInitialRegionStructLE, constI64LE(globalState, rootMetadataSize), 2, "regionStruct");
   auto dryRunRegionInstancePtrLE =
       makeBackendLocal(functionState, builder, regionLT, "region", dryRunInitialRegionStructLE);
@@ -1232,10 +1318,13 @@ std::pair<Ref, Ref> Linear::topLevelSerialize(
 
   LLVMValueRef bufferBeginPtrLE = callMalloc(globalState, builder, sizeIntLE);
 //  buildFlare(FL(), globalState, functionState, builder, "malloced ", sizeIntLE, " got ptr ", ptrToIntLE(globalState, builder, bufferBeginPtrLE));
+  std::cout << "TODO impl" << std::endl;
+  auto serializedAddressAdjusterLE = constI64LE(globalState, 0);
 
   auto initialRegionStructLE = LLVMGetUndef(regionLT);
   initialRegionStructLE = LLVMBuildInsertValue(builder, initialRegionStructLE, bufferBeginPtrLE, 0, "regionStruct");
   initialRegionStructLE = LLVMBuildInsertValue(builder, initialRegionStructLE, constI64LE(globalState, 0), 1, "regionStruct");
+  initialRegionStructLE = LLVMBuildInsertValue(builder, initialRegionStructLE, serializedAddressAdjusterLE, 2, "regionStruct");
 //  initialRegionStructLE = LLVMBuildInsertValue(builder, initialRegionStructLE, constI64LE(globalState, rootMetadataSize), 2, "regionStruct");
   auto regionInstancePtrLE = makeBackendLocal(functionState, builder, regionLT, "region", initialRegionStructLE);
   auto regionInstanceRef = wrap(this, regionRefMT, regionInstancePtrLE);
@@ -1489,14 +1578,21 @@ LLVMValueRef Linear::getDestinationOffset(
   return LLVMBuildLoad(builder, destinationOffsetPtrLE, "destinationOffset");
 }
 
+LLVMValueRef Linear::getSerializedAddressAdjuster(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef) {
+  auto regionInstancePtrLE =
+      checkValidReference(FL(), functionState, builder, regionRefMT, regionInstanceRef);
+  auto destinationOffsetPtrLE =
+      LLVMBuildStructGEP(builder, regionInstancePtrLE, 2, "serializedAddressAdjusterPtr");
+  return LLVMBuildLoad(builder, destinationOffsetPtrLE, "serializedAddressAdjuster");
+}
+
 LLVMValueRef Linear::getDestinationPtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Ref regionInstanceRef) {
-  start here, is this related at all?
-  // we might want two actually. we'll always have a buffer we're writing into, but we might
-  // want to control whether we write relative or absolute addresses into that buffer.
-
   auto regionInstancePtrLE =
       checkValidReference(FL(), functionState, builder, regionRefMT, regionInstanceRef);
   auto bufferBeginPtrPtrLE = LLVMBuildStructGEP(builder, regionInstancePtrLE, 0, "bufferBeginPtrPtr");
@@ -1517,8 +1613,12 @@ Ref Linear::getDestinationRef(
     Reference* desiredRefMT) {
   auto destinationI8PtrLE = getDestinationPtr(functionState, builder, regionInstanceRef);
   auto desiredRefLT = translateType(desiredRefMT);
-  auto destinationPtr = LLVMBuildBitCast(builder, destinationI8PtrLE, desiredRefLT, "destinationPtr");
-  return wrap(this, desiredRefMT, destinationPtr);
+  auto unadjustedDestinationPtrLE = LLVMBuildBitCast(builder, destinationI8PtrLE, desiredRefLT, "unadjustedDestinationPtr");
+
+  auto adjustedDestinationPtr =
+      translateBetweenBufferAddressAndPointer(
+          functionState, builder, regionInstanceRef, desiredRefMT, unadjustedDestinationPtrLE, false);
+  return wrap(this, desiredRefMT, adjustedDestinationPtr);
 }
 
 Prototype* Linear::getSerializePrototype(Kind* valeKind) {
@@ -1554,10 +1654,14 @@ void Linear::declareConcreteSerializeFunction(Kind* valeKind) {
 
 void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
   auto i32MT = globalState->metalCache->i32Ref;
+  auto int64LT = LLVMInt64TypeInContext(globalState->context);
   auto boolMT = globalState->metalCache->boolRef;
 
   auto prototype = getSerializePrototype(valeKind);
 
+  // If given a struct or array or interface, will serialize its contents and
+  // return a pointer to the serialized contents.
+  // If given a primitive, will just return the primitive.
   auto serializeMemberOrElement =
       [this](
           FunctionState* functionState,
@@ -1609,37 +1713,34 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
           auto valeStructDefM = globalState->program->getStruct(valeStructKind);
 
           auto hostObjectRef = innerAllocate(regionInstanceRef, FL(), functionState, builder, hostObjectRefMT);
-          auto innerStructPtrLE = checkValidReference(FL(), functionState, builder, hostObjectRefMT, hostObjectRef);
 
           std::vector<Ref> hostMemberRefs;
           for (int i = 0; i < valeStructDefM->members.size(); i++) {
             auto valeMemberM = valeStructDefM->members[i];
             auto sourceMemberRefMT = valeMemberM->type;
-            might need something here
             auto sourceMemberRef =
                 globalState->getRegion(valeObjectRefMT)->loadMember(
-                    functionState, builder, valeObjectRefMT, valeObjectRef, true,
+                    functionState, builder, regionInstanceRef, valeObjectRefMT, valeObjectRef, true,
                     i, valeMemberM->type, valeMemberM->type, valeMemberM->name);
-            hostMemberRefs.push_back(
+            auto serializedMemberOrElementRef =
                 serializeMemberOrElement(
-                    functionState, builder, sourceMemberRefMT, regionInstanceRef, sourceMemberRef, dryRunBoolRef));
+                    functionState, builder, sourceMemberRefMT, regionInstanceRef, sourceMemberRef, dryRunBoolRef);
+            hostMemberRefs.push_back(serializedMemberOrElementRef);
           }
 
           auto dryRunBoolLE = globalState->getRegion(boolMT)->checkValidReference(FL(), functionState, builder, boolMT, dryRunBoolRef);
           buildIfV(
               globalState, functionState, builder, LLVMBuildNot(builder, dryRunBoolLE, "notDryRun"),
-              [this, functionState, valeStructDefM, hostMemberRefs, innerStructPtrLE](LLVMBuilderRef thenBuilder) {
+              [this, regionInstanceRef, functionState, hostObjectRefMT, valeStructDefM, hostMemberRefs, hostObjectRef](
+                  LLVMBuilderRef thenBuilder) {
                 for (int i = 0; i < valeStructDefM->members.size(); i++) {
                   auto hostMemberRef = hostMemberRefs[i];
                   auto hostMemberType = linearizeReference(valeStructDefM->members[i]->type);
                   auto memberName = valeStructDefM->members[i]->name;
-                  auto ptrLE =
-                      LLVMBuildStructGEP(thenBuilder, innerStructPtrLE, i, memberName.c_str());
-                  auto memberLE =
-                      globalState->getRegion(hostMemberType)
-                          ->checkValidReference(FL(), functionState, thenBuilder, hostMemberType, hostMemberRef);
-                  might need something here
-                  LLVMBuildStore(thenBuilder, memberLE, ptrLE);
+
+                  initializeMember(
+                      functionState, thenBuilder, regionInstanceRef, hostObjectRefMT, hostObjectRef, true,
+                      i, memberName, hostMemberType, hostMemberRef);
                 }
               });
 
@@ -1648,17 +1749,21 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
 //          totalSizeIntLE = hexRoundDown(globalState, builder, totalSizeIntLE);
 
           auto hostObjectRefLE = checkValidReference(FL(), functionState, builder, hostObjectRefMT, hostObjectRef);
-
           LLVMBuildRet(builder, hostObjectRefLE);
-        } else if (dynamic_cast<Str*>(valeObjectRefMT->kind)) {
-          auto lengthLE = globalState->getRegion(valeObjectRefMT)->getStringLen(functionState, builder, valeObjectRef);
-          auto sourceBytesPtrLE = globalState->getRegion(valeObjectRefMT)->getStringBytesPtr(functionState, builder, valeObjectRef);
+        } else if (auto valeStrMT = dynamic_cast<Str*>(valeObjectRefMT->kind)) {
+          auto hostStrMT = hostKindByValeKind.find(valeStrMT)->second;
+          assert(hostStrMT);
+          auto hostStrRefMT = globalState->metalCache->getReference(Ownership::SHARE, Location::YONDER, hostStrMT);
 
-          auto strRef = innerMallocStr(regionInstanceRef, functionState, builder, lengthLE, sourceBytesPtrLE, dryRunBoolRef);
+          auto lengthLE = globalState->getRegion(valeObjectRefMT)->getStringLen(functionState, builder, regionInstanceRef, valeObjectRef);
+          auto sourceBytesPtrLE = globalState->getRegion(valeObjectRefMT)->getStringBytesPtr(functionState, builder, regionInstanceRef, valeObjectRef);
+
+          auto hostStrRef = innerMallocStr(regionInstanceRef, functionState, builder, lengthLE, sourceBytesPtrLE, dryRunBoolRef);
 
           buildFlare(FL(), globalState, functionState, builder, "Returning from serialize function!");
 
-          LLVMBuildRet(builder, checkValidReference(FL(), functionState, builder, linearStrRefMT, strRef));
+          auto hostStrPtrLE = checkValidReference(FL(), functionState, builder, hostObjectRefMT, hostStrRef);
+          LLVMBuildRet(builder, hostStrPtrLE);
         } else if (auto valeRsaMT = dynamic_cast<RuntimeSizedArrayT*>(valeObjectRefMT->kind)) {
 
           buildFlare(FL(), globalState, functionState, builder, "In RSA serialize!");
@@ -1668,7 +1773,7 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
           assert(hostRsaMT);
           auto hostRsaRefMT = globalState->metalCache->getReference(Ownership::SHARE, Location::YONDER, hostKindMT);
 
-          auto lengthRef = globalState->getRegion(valeObjectRefMT)->getRuntimeSizedArrayLength(functionState, builder, valeObjectRefMT, valeObjectRef, true);
+          auto lengthRef = globalState->getRegion(valeObjectRefMT)->getRuntimeSizedArrayLength(functionState, builder, regionInstanceRef, valeObjectRefMT, valeObjectRef, true);
 
           buildFlare(FL(), globalState, functionState, builder);
 
@@ -1688,7 +1793,7 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
 
                 auto sourceMemberRef =
                     globalState->getRegion(valeObjectRefMT)
-                        ->loadElementFromRSA(functionState, bodyBuilder, valeObjectRefMT, valeRsaMT, valeObjectRef, true, indexRef)
+                        ->loadElementFromRSA(functionState, bodyBuilder, regionInstanceRef, valeObjectRefMT, valeRsaMT, valeObjectRef, true, indexRef)
                     .move();
                 buildFlare(FL(), globalState, functionState, bodyBuilder);
                 auto hostElementRef =
@@ -1698,11 +1803,10 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
                 auto dryRunBoolLE = globalState->getRegion(boolMT)->checkValidReference(FL(), functionState, bodyBuilder, boolMT, dryRunBoolRef);
                 buildIfV(
                     globalState, functionState, bodyBuilder, LLVMBuildNot(bodyBuilder, dryRunBoolLE, "notDryRun"),
-                    [this, functionState, hostObjectRefMT, hostRsaRef, indexRef, hostElementRef, hostRsaMT](
+                    [this, functionState, regionInstanceRef, hostObjectRefMT, hostRsaRef, indexRef, hostElementRef, hostRsaMT](
                         LLVMBuilderRef thenBuilder) mutable {
-                      start here
                       pushRuntimeSizedArrayNoBoundsCheck(
-                          functionState, thenBuilder, hostObjectRefMT, hostRsaMT, hostRsaRef, true, indexRef,
+                          functionState, thenBuilder, regionInstanceRef, hostObjectRefMT, hostRsaMT, hostRsaRef, true, indexRef,
                           hostElementRef);
                       buildFlare(FL(), globalState, functionState, thenBuilder);
                     });
@@ -1710,7 +1814,9 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
 
           buildFlare(FL(), globalState, functionState, builder, "Returning from serialize function!");
 
-          LLVMBuildRet(builder, checkValidReference(FL(), functionState, builder, hostRsaRefMT, hostRsaRef));
+          auto hostRsaPtrLE =
+              checkValidReference(FL(), functionState, builder, hostRsaRefMT, hostRsaRef);
+          LLVMBuildRet(builder, hostRsaPtrLE);
         } else if (auto valeSsaMT = dynamic_cast<StaticSizedArrayT*>(valeObjectRefMT->kind)) {
 
           buildFlare(FL(), globalState, functionState, builder, "In RSA serialize!");
@@ -1741,7 +1847,7 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
 
                 auto sourceMemberRef =
                     globalState->getRegion(valeObjectRefMT)
-                        ->loadElementFromSSA(functionState, bodyBuilder, valeObjectRefMT, valeSsaMT, valeObjectRef, true, indexRef)
+                        ->loadElementFromSSA(functionState, bodyBuilder, regionInstanceRef, valeObjectRefMT, valeSsaMT, valeObjectRef, true, indexRef)
                         .move();
                 buildFlare(FL(), globalState, functionState, bodyBuilder);
                 auto hostElementRef =
@@ -1751,11 +1857,10 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
                 auto dryRunBoolLE = globalState->getRegion(boolMT)->checkValidReference(FL(), functionState, bodyBuilder, boolMT, dryRunBoolRef);
                 buildIfV(
                     globalState, functionState, bodyBuilder, LLVMBuildNot(bodyBuilder, dryRunBoolLE, "notDryRun"),
-                    [this, functionState, hostObjectRefMT, hostSsaRef, indexRef, hostElementRef, hostSsaMT](
+                    [this, functionState, regionInstanceRef, hostObjectRefMT, hostSsaRef, indexRef, hostElementRef, hostSsaMT](
                         LLVMBuilderRef thenBuilder) mutable {
-                      start here
                       initializeElementInSSA(
-                          functionState, thenBuilder, hostObjectRefMT, hostSsaMT, hostSsaRef, true, indexRef,
+                          functionState, thenBuilder, regionInstanceRef, hostObjectRefMT, hostSsaMT, hostSsaRef, true, indexRef,
                           hostElementRef);
                       buildFlare(FL(), globalState, functionState, thenBuilder);
                     });
@@ -1763,9 +1868,65 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
 
           buildFlare(FL(), globalState, functionState, builder, "Returning from serialize function!");
 
-          LLVMBuildRet(builder, checkValidReference(FL(), functionState, builder, hostSsaRefMT, hostSsaRef));
+          auto hostSsaPtrLE =
+              checkValidReference(FL(), functionState, builder, hostSsaRefMT, hostSsaRef);
+          LLVMBuildRet(builder, hostSsaPtrLE);
         } else assert(false);
       });
+}
+
+// See PSBCBO
+LLVMValueRef Linear::translateBetweenBufferAddressAndPointer(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef,
+    Reference* hostRefMT,
+    LLVMValueRef unadjustedHostRefLE,
+    bool bufferAddressToPointer) {
+  // Just to sanity check, but also to hand to explodeInterfaceRef below.
+  auto unadjustedHostRef = wrap(this, hostRefMT, unadjustedHostRefLE);
+
+  auto adjustPtr =
+      [this, functionState, builder, regionInstanceRef, bufferAddressToPointer](LLVMValueRef unadjustedHostObjPtrLE) {
+        auto int64LT = LLVMInt64TypeInContext(globalState->context);
+
+        auto serializedAddressAdjusterLE =
+            getSerializedAddressAdjuster(functionState, builder, regionInstanceRef);
+
+        auto unadjustedHostObjPtrAsI64LE =
+            LLVMBuildIntToPtr(builder, unadjustedHostObjPtrLE, int64LT, "unadjustedHostObjPtr");
+        auto adjustedHostObjPtrAsI64LE =
+            bufferAddressToPointer ?
+            LLVMBuildSub(builder, unadjustedHostObjPtrAsI64LE, serializedAddressAdjusterLE, "adjustedHostObjPtrAsI64") :
+            LLVMBuildAdd(builder, unadjustedHostObjPtrAsI64LE, serializedAddressAdjusterLE, "adjustedHostObjPtrAsI64");
+        auto adjustedHostObjPtrLE =
+            LLVMBuildIntToPtr(builder, adjustedHostObjPtrAsI64LE, LLVMTypeOf(unadjustedHostObjPtrLE), "adjustedHostObjPtr");
+
+        return adjustedHostObjPtrLE;
+      };
+
+  if (dynamic_cast<Int*>(hostRefMT->kind) ||
+      dynamic_cast<Bool*>(hostRefMT->kind) ||
+      dynamic_cast<Float*>(hostRefMT->kind)) {
+    return checkValidReference(FL(), functionState, builder, hostRefMT, unadjustedHostRef);
+  } else if (dynamic_cast<StructKind*>(hostRefMT->kind) ||
+      dynamic_cast<RuntimeSizedArrayT*>(hostRefMT->kind) ||
+      dynamic_cast<StaticSizedArrayT*>(hostRefMT->kind) ||
+      dynamic_cast<Str*>(hostRefMT->kind)) {
+    auto unadjustedPtrLE =
+        checkValidReference(FL(), functionState, builder, hostRefMT, unadjustedHostRef);
+    auto adjustedPtrLE = adjustPtr(unadjustedPtrLE);
+    // Just doublechecking
+    return checkValidReference(FL(), functionState, builder, hostRefMT, wrap(this, hostRefMT, adjustedPtrLE));
+  } else if (dynamic_cast<InterfaceKind*>(hostRefMT->kind)) {
+    auto [edgeNumLE, objPtrLE] =
+        explodeInterfaceRef(functionState, builder, hostRefMT, unadjustedHostRef);
+    objPtrLE = adjustPtr(objPtrLE);
+    auto adjustedRef = assembleInterfaceRef(builder, hostRefMT, objPtrLE, edgeNumLE);
+    return checkValidReference(FL(), functionState, builder, hostRefMT, adjustedRef);
+  } else {
+    assert(false);
+  }
 }
 
 Kind* Linear::linearizeKind(Kind* kindMT) {
@@ -1825,6 +1986,7 @@ Reference* Linear::unlinearizeReference(Reference* hostRefMT) {
 void Linear::pushRuntimeSizedArrayNoBoundsCheck(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *hostRsaRefMT,
     RuntimeSizedArrayT *hostRsaMT,
     Ref hostRsaRef,
@@ -1849,8 +2011,11 @@ void Linear::pushRuntimeSizedArrayNoBoundsCheck(
   auto indexLE = globalState->getRegion(i32MT)->checkValidReference(FL(), functionState, builder, i32MT, indexRef);
 
   buildFlare(FL(), globalState, functionState, builder);
-  auto rsaPtrLE = checkValidReference(FL(), functionState, builder, hostRsaRefMT, hostRsaRef);
-  auto hostRsaElementsPtrLE = structs.getRuntimeSizedArrayElementsPtr(functionState, builder, rsaPtrLE);
+  auto unadjustedRsaPtrLE = checkValidReference(FL(), functionState, builder, hostRsaRefMT, hostRsaRef);
+  auto adjustedRsaPtrLE =
+      translateBetweenBufferAddressAndPointer(
+          functionState, builder, regionInstanceRef, hostRsaRefMT, unadjustedRsaPtrLE, true);
+  auto hostRsaElementsPtrLE = structs.getRuntimeSizedArrayElementsPtr(functionState, builder, adjustedRsaPtrLE);
 
   buildFlare(FL(), globalState, functionState, builder, "Storing in: ", indexLE);
 //  LLVMBuildStore(
@@ -1859,7 +2024,8 @@ void Linear::pushRuntimeSizedArrayNoBoundsCheck(
 //      LLVMBuildGEP(
 //          builder, hostRsaElementsPtrLE, &indexLE, 1, "indexPtr"));
   buildFlare(FL(), globalState, functionState, builder);
-  start here
+
+  // When we write a pointer, we need to subtract the Serialized Address Adjuster, see PSBCBO.
   storeInnerArrayMember(globalState, functionState, builder, hostRsaElementsPtrLE, indexLE, elementRefLE);
   buildFlare(FL(), globalState, functionState, builder);
 }
@@ -1879,6 +2045,7 @@ Ref Linear::popRuntimeSizedArrayNoBoundsCheck(
 void Linear::initializeElementInSSA(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* hostSsaRefMT,
     StaticSizedArrayT* hostSsaMT,
     Ref hostSsaRef,
@@ -1903,8 +2070,11 @@ void Linear::initializeElementInSSA(
   auto rsaPtrLE = checkValidReference(FL(), functionState, builder, hostSsaRefMT, hostSsaRef);
   auto hostSsaElementsPtrLE = structs.getStaticSizedArrayElementsPtr(functionState, builder, rsaPtrLE);
 
-  start here
-  storeInnerArrayMember(globalState, functionState, builder, hostSsaElementsPtrLE, indexLE, elementRefLE);
+  // When we write a pointer, we need to subtract the Serialized Address Adjuster, see PSBCBO.
+  auto adjustedElementRefLE =
+      translateBetweenBufferAddressAndPointer(
+          functionState, builder, regionInstanceRef, hostElementRefMT, elementRefLE, true);
+  storeInnerArrayMember(globalState, functionState, builder, hostSsaElementsPtrLE, indexLE, adjustedElementRefLE);
 }
 
 Ref Linear::deinitializeElementFromSSA(

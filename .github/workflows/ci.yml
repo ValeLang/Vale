@@ -11,7 +11,7 @@ env:
 
 jobs:
   build_and_test_windows:
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v2
       - name: install prereqs
@@ -24,7 +24,7 @@ jobs:
           path: .\release-windows\Vale-Windows-0.zip
 
   build_and_test_ubuntu:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps: 
       - uses: actions/checkout@v2
       - name: install prereqs
@@ -37,7 +37,7 @@ jobs:
           path: ./release-ubuntu/Vale-Ubuntu-0.zip
 
   build_and_test_mac:
-    runs-on: macos-latest
+    runs-on: macos-12
     steps: 
       - uses: actions/checkout@v2
       - name: install prereqs

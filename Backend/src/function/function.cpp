@@ -130,9 +130,16 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
       hostArgRefLE = cArgLE;
     }
 
+
+    auto valeRegionInstanceRef =
+        // At some point, look up the actual region instance, perhaps from the FunctionState?
+        globalState->getRegion(valeParamMT)->createRegionInstanceLocal(&functionState, builder);
+    auto hostRegionInstanceRef =
+        globalState->linearRegion->createRegionInstanceLocal(&functionState, builder);
+
     auto valeRef =
         receiveHostObjectIntoVale(
-            globalState, &functionState, builder, hostParamMT, valeParamMT, hostArgRefLE);
+            globalState, &functionState, builder, hostRegionInstanceRef, valeRegionInstanceRef, hostParamMT, valeParamMT, hostArgRefLE);
 
     argsToActualFunction.push_back(valeRef);
   }
@@ -155,9 +162,14 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
          globalState->linearRegion->linearizeReference(valeReturnMT) :
          valeReturnMT);
 
+    auto valeRegionInstanceRef =
+        // At some point, look up the actual region instance, perhaps from the FunctionState?
+        globalState->getRegion(valeReturnMT)->createRegionInstanceLocal(&functionState, builder);
+    auto hostRegionInstanceRef =
+        globalState->linearRegion->createRegionInstanceLocal(&functionState, builder);
     auto [hostReturnRefLE, hostReturnSizeLE] =
         sendValeObjectIntoHost(
-            globalState, &functionState, builder, valeReturnMT, hostReturnMT, valeReturnRef);
+            globalState, &functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef, valeReturnMT, hostReturnMT, valeReturnRef);
 
     buildFlare(FL(), globalState, &functionState, builder, "Done calling export function ", functionState.containingFuncName, " from native");
 

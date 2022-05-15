@@ -206,11 +206,6 @@ public:
   Ref buildMultiply(FunctionState* functionState, LLVMBuilderRef builder, Ref a, Ref b);
   Ref buildDivide(FunctionState* functionState, LLVMBuilderRef builder, Ref a, Ref b);
 
-  // TODO: When we pass region instances around in functions, grab from argument instead of using this
-  Ref makeTempRegionInstance() {
-    return constI64(1337);
-  }
-
   Name* getKindName(Kind* kind);
 
   template<typename T>

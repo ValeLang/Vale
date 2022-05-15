@@ -23,8 +23,22 @@ Unsafe::Unsafe(GlobalState* globalState_) :
         WrcWeaks::makeWeakRefHeaderStruct(globalState)),
     fatWeaks(globalState_, &kindStructs),
     wrcWeaks(globalState_, &kindStructs, &kindStructs) {
-  regionLT = LLVMStructCreateNamed(globalState->context, "__Unsafe_Region");
-  LLVMStructSetBody(regionLT, nullptr, 0, false);
+  regionKind =
+      globalState->metalCache->getStructKind(
+          globalState->metalCache->getName(
+              globalState->metalCache->builtinPackageCoord, namePrefix + "_Region"));
+  regionRefMT =
+      globalState->metalCache->getReference(
+          Ownership::BORROW, Location::YONDER, regionKind);
+  globalState->regionIdByKind.emplace(regionKind, globalState->metalCache->mutRegionId);
+  kindStructs.declareStruct(regionKind, Weakability::NON_WEAKABLE);
+  kindStructs.defineStruct(regionKind, {
+      // This region doesnt need anything
+  });
+}
+
+Reference* Unsafe::getRegionRefType() {
+  return regionRefMT;
 }
 
 void Unsafe::mainSetup(FunctionState* functionState, LLVMBuilderRef builder) {
@@ -227,6 +241,10 @@ Ref Unsafe::asSubtype(
 }
 
 LLVMTypeRef Unsafe::translateType(Reference* referenceM) {
+  if (referenceM == regionRefMT) {
+    // We just have a raw pointer to region structs
+    return LLVMPointerType(kindStructs.getStructInnerStruct(regionKind), 0);
+  }
   switch (referenceM->ownership) {
     case Ownership::SHARE:
       assert(false);
@@ -375,6 +393,7 @@ void Unsafe::noteWeakableDestroyed(
 void Unsafe::storeMember(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* structRefMT,
     Ref structRef,
     bool structKnownLive,
@@ -436,6 +455,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> Unsafe::explodeInterfaceRef(
 Ref Unsafe::getRuntimeSizedArrayLength(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* rsaRefMT,
     Ref arrayRef,
     bool arrayKnownLive) {
@@ -445,6 +465,7 @@ Ref Unsafe::getRuntimeSizedArrayLength(
 Ref Unsafe::getRuntimeSizedArrayCapacity(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* rsaRefMT,
     Ref arrayRef,
     bool arrayKnownLive) {
@@ -616,6 +637,7 @@ void Unsafe::fillControlBlock(
 LoadResult Unsafe::loadElementFromSSA(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* ssaRefMT,
     StaticSizedArrayT* ssaMT,
     Ref arrayRef,
@@ -629,6 +651,7 @@ LoadResult Unsafe::loadElementFromSSA(
 LoadResult Unsafe::loadElementFromRSA(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* rsaRefMT,
     RuntimeSizedArrayT* rsaMT,
     Ref arrayRef,
@@ -728,6 +751,7 @@ Ref Unsafe::constructRuntimeSizedArray(
 Ref Unsafe::loadMember(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* structRefMT,
     Ref structRef,
     bool structKnownLive,
@@ -825,6 +849,8 @@ LLVMTypeRef Unsafe::getInterfaceMethodVirtualParamAnyType(Reference* reference) 
 std::pair<Ref, Ref> Unsafe::receiveUnencryptedAlienReference(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref sourceRegionInstanceRef,
+    Ref targetRegionInstanceRef,
     Reference* sourceRefMT,
     Reference* targetRefMT,
     Ref sourceRef) {
@@ -845,6 +871,7 @@ LLVMValueRef Unsafe::encryptAndSendFamiliarReference(
 void Unsafe::pushRuntimeSizedArrayNoBoundsCheck(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *rsaRefMT,
     RuntimeSizedArrayT *rsaMT,
     Ref rsaRef,
@@ -866,6 +893,7 @@ void Unsafe::pushRuntimeSizedArrayNoBoundsCheck(
 Ref Unsafe::popRuntimeSizedArrayNoBoundsCheck(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref arrayRegionInstanceRef,
     Reference* rsaRefMT,
     RuntimeSizedArrayT* rsaMT,
     Ref arrayRef,
@@ -886,6 +914,7 @@ Ref Unsafe::popRuntimeSizedArrayNoBoundsCheck(
 void Unsafe::initializeElementInSSA(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* ssaRefMT,
     StaticSizedArrayT* ssaMT,
     Ref arrayRef,
@@ -964,4 +993,12 @@ std::string Unsafe::getExportName(
     Reference* reference,
     bool includeProjectName) {
   return package->getKindExportName(reference->kind, includeProjectName) + (reference->location == Location::YONDER ? "Ref" : "");
+}
+
+Ref Unsafe::createRegionInstanceLocal(FunctionState* functionState, LLVMBuilderRef builder) {
+  auto regionLT = kindStructs.getStructInnerStruct(regionKind);
+  auto regionInstancePtrLE =
+      makeBackendLocal(functionState, builder, regionLT, "region", LLVMGetUndef(regionLT));
+  auto regionInstanceRef = wrap(this, regionRefMT, regionInstancePtrLE);
+  return regionInstanceRef;
 }

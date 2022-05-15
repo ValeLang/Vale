@@ -354,6 +354,7 @@ void fillStaticSizedArray(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref arrayRegionInstanceRef,
     Reference* ssaRefMT,
     StaticSizedArrayT* ssaMT,
     Ref ssaRef,
@@ -361,7 +362,7 @@ void fillStaticSizedArray(
 
   for (int i = 0; i < elementRefs.size(); i++) {
     globalState->getRegion(ssaRefMT)->initializeElementInSSA(
-        functionState, builder, ssaRefMT, ssaMT, ssaRef, true, globalState->constI32(i), elementRefs[i]);
+        functionState, builder, arrayRegionInstanceRef, ssaRefMT, ssaMT, ssaRef, true, globalState->constI32(i), elementRefs[i]);
   }
 }
 
@@ -369,6 +370,7 @@ void fillRuntimeSizedArray(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref arrayRegionInstanceRef,
     Reference* rsaRefMT,
     RuntimeSizedArrayT* rsaMT,
     Reference* elementType,
@@ -380,7 +382,7 @@ void fillRuntimeSizedArray(
 
   intRangeLoop(
       globalState, functionState, builder, sizeLE,
-      [globalState, functionState, rsaRefMT, rsaMT, generatorMethod, generatorType, rsaRef, generatorLE](
+      [globalState, functionState, arrayRegionInstanceRef, rsaRefMT, rsaMT, generatorMethod, generatorType, rsaRef, generatorLE](
           Ref indexRef, LLVMBuilderRef bodyBuilder) {
         globalState->getRegion(generatorType)->alias(
             AFL("ConstructRSA generate iteration"),
@@ -391,7 +393,7 @@ void fillRuntimeSizedArray(
             buildCallV(
                 globalState, functionState, bodyBuilder, generatorMethod, argExprsLE);
         globalState->getRegion(rsaMT)->pushRuntimeSizedArrayNoBoundsCheck(
-            functionState, bodyBuilder, rsaRefMT, rsaMT, rsaRef, true, indexRef, elementRef);
+            functionState, bodyBuilder, arrayRegionInstanceRef, rsaRefMT, rsaMT, rsaRef, true, indexRef, elementRef);
       });
 }
 
@@ -399,6 +401,7 @@ void fillStaticSizedArrayFromCallable(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref arrayRegionInstanceRef,
     Reference* ssaRefMT,
     StaticSizedArrayT* ssaMT,
     Reference* elementType,
@@ -410,7 +413,7 @@ void fillStaticSizedArrayFromCallable(
 
   intRangeLoop(
       globalState, functionState, builder, sizeLE,
-      [globalState, functionState, ssaRefMT, ssaMT, generatorMethod, generatorType, ssaRef, generatorLE](
+      [globalState, functionState, arrayRegionInstanceRef, ssaRefMT, ssaMT, generatorMethod, generatorType, ssaRef, generatorLE](
           Ref indexRef, LLVMBuilderRef bodyBuilder) {
         globalState->getRegion(generatorType)->alias(
             AFL("ConstructSSA generate iteration"),
@@ -421,7 +424,7 @@ void fillStaticSizedArrayFromCallable(
             buildCallV(
                 globalState, functionState, bodyBuilder, generatorMethod, argExprsLE);
         globalState->getRegion(ssaMT)->initializeElementInSSA(
-            functionState, bodyBuilder, ssaRefMT, ssaMT, ssaRef, true, indexRef, elementRef);
+            functionState, bodyBuilder, arrayRegionInstanceRef, ssaRefMT, ssaMT, ssaRef, true, indexRef, elementRef);
       });
 }
 

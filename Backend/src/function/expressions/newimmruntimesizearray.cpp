@@ -47,11 +47,16 @@ Ref translateNewImmRuntimeSizedArray(
   globalState->getRegion(arrayRefType)->checkValidReference(FL(), functionState, builder,
       arrayRefType, rsaRef);
 
+  auto arrayRegionInstanceRef =
+      // At some point, look up the actual region instance, perhaps from the FunctionState?
+      globalState->getRegion(arrayRefType)->createRegionInstanceLocal(functionState, builder);
+
   buildFlare(FL(), globalState, functionState, builder);
   fillRuntimeSizedArray(
       globalState,
       functionState,
       builder,
+      arrayRegionInstanceRef,
       arrayRefType,
       runtimeSizedArrayMT,
       elementType,

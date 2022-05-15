@@ -42,6 +42,23 @@ ResilientV3::ResilientV3(GlobalState *globalState_, RegionId *regionId_) :
         &kindStructs,
         globalState->opt->elideChecksForKnownLive,
         false) {
+
+  regionKind =
+      globalState->metalCache->getStructKind(
+          globalState->metalCache->getName(
+              globalState->metalCache->builtinPackageCoord, namePrefix + "_Region"));
+  regionRefMT =
+      globalState->metalCache->getReference(
+          Ownership::BORROW, Location::YONDER, regionKind);
+  globalState->regionIdByKind.emplace(regionKind, globalState->metalCache->mutRegionId);
+  kindStructs.declareStruct(regionKind, Weakability::NON_WEAKABLE);
+  kindStructs.defineStruct(regionKind, {
+      // This region doesnt need anything
+  });
+}
+
+Reference* ResilientV3::getRegionRefType() {
+  return regionRefMT;
 }
 
 void ResilientV3::mainSetup(FunctionState* functionState, LLVMBuilderRef builder) {
@@ -261,6 +278,10 @@ Ref ResilientV3::asSubtype(
 }
 
 LLVMTypeRef ResilientV3::translateType(Reference *referenceM) {
+  if (referenceM == regionRefMT) {
+    // We just have a raw pointer to region structs
+    return LLVMPointerType(kindStructs.getStructInnerStruct(regionKind), 0);
+  }
   switch (referenceM->ownership) {
     case Ownership::SHARE:
       assert(false);
@@ -406,6 +427,7 @@ void ResilientV3::noteWeakableDestroyed(
 void ResilientV3::storeMember(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *structRefMT,
     Ref structRef,
     bool structKnownLive,
@@ -466,6 +488,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> ResilientV3::explodeInterfaceRef(
 Ref ResilientV3::getRuntimeSizedArrayLength(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *rsaRefMT,
     Ref arrayRef,
     bool arrayKnownLive) {
@@ -488,6 +511,7 @@ Ref ResilientV3::getRuntimeSizedArrayLength(
 Ref ResilientV3::getRuntimeSizedArrayCapacity(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *rsaRefMT,
     Ref arrayRef,
     bool arrayKnownLive) {
@@ -639,6 +663,7 @@ void ResilientV3::fillControlBlock(
 LoadResult ResilientV3::loadElementFromSSA(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *ssaRefMT,
     StaticSizedArrayT *ssaMT,
     Ref arrayRef,
@@ -653,6 +678,7 @@ LoadResult ResilientV3::loadElementFromSSA(
 LoadResult ResilientV3::loadElementFromRSA(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *rsaRefMT,
     RuntimeSizedArrayT *rsaMT,
     Ref arrayRef,
@@ -752,6 +778,7 @@ Ref ResilientV3::constructRuntimeSizedArray(
 Ref ResilientV3::loadMember(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *structRefMT,
     Ref structRef,
     bool structKnownLive,
@@ -873,6 +900,8 @@ LLVMTypeRef ResilientV3::getInterfaceMethodVirtualParamAnyType(Reference *refere
 std::pair<Ref, Ref> ResilientV3::receiveUnencryptedAlienReference(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref sourceRegionInstanceRef,
+    Ref targetRegionInstanceRef,
     Reference *sourceRefMT,
     Reference *targetRefMT,
     Ref sourceRef) {
@@ -893,6 +922,7 @@ LLVMValueRef ResilientV3::encryptAndSendFamiliarReference(
 void ResilientV3::pushRuntimeSizedArrayNoBoundsCheck(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *rsaRefMT,
     RuntimeSizedArrayT *rsaMT,
     Ref rsaRef,
@@ -908,6 +938,7 @@ void ResilientV3::pushRuntimeSizedArrayNoBoundsCheck(
 Ref ResilientV3::popRuntimeSizedArrayNoBoundsCheck(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref arrayRegionInstanceRef,
     Reference *rsaRefMT,
     RuntimeSizedArrayT *rsaMT,
     Ref arrayRef,
@@ -925,6 +956,7 @@ Ref ResilientV3::popRuntimeSizedArrayNoBoundsCheck(
 void ResilientV3::initializeElementInSSA(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *ssaRefMT,
     StaticSizedArrayT *ssaMT,
     Ref arrayRef,
@@ -1003,4 +1035,12 @@ std::string ResilientV3::getExportName(
     Reference* reference,
     bool includeProjectName) {
   return package->getKindExportName(reference->kind, includeProjectName) + (reference->location == Location::YONDER ? "Ref" : "");
+}
+
+Ref ResilientV3::createRegionInstanceLocal(FunctionState* functionState, LLVMBuilderRef builder) {
+  auto regionLT = kindStructs.getStructInnerStruct(regionKind);
+  auto regionInstancePtrLE =
+      makeBackendLocal(functionState, builder, regionLT, "region", LLVMGetUndef(regionLT));
+  auto regionInstanceRef = wrap(this, regionRefMT, regionInstancePtrLE);
+  return regionInstanceRef;
 }

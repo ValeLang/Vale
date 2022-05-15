@@ -26,6 +26,10 @@ Ref translateStaticArrayFromCallable(
   auto ssaDefMT = globalState->program->getStaticSizedArray(staticSizedArrayMT);
   auto sizeRef = globalState->constI32(ssaDefMT->size);
 
+  auto arrayRegionInstanceRef =
+      // At some point, look up the actual region instance, perhaps from the FunctionState?
+      globalState->getRegion(arrayRefType)->createRegionInstanceLocal(functionState, builder);
+
   auto generatorRef = translateExpression(globalState, functionState, blockState, builder, generatorExpr);
   globalState->getRegion(generatorType)->checkValidReference(FL(), functionState, builder,
       generatorType, generatorRef);
@@ -52,6 +56,7 @@ Ref translateStaticArrayFromCallable(
         globalState,
         functionState,
         builder,
+        arrayRegionInstanceRef,
         arrayRefType,
         staticSizedArrayMT,
         elementType,

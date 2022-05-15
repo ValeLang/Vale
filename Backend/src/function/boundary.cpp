@@ -7,6 +7,8 @@ Ref receiveHostObjectIntoVale(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref hostRegionInstance,
+    Ref valeRegionInstance,
     Reference* hostRefMT,
     Reference* valeRefMT,
     LLVMValueRef hostRefLE) {
@@ -33,7 +35,7 @@ Ref receiveHostObjectIntoVale(
     auto objRefAndSizeRef =
         globalState->getRegion(valeRefMT)
             ->receiveUnencryptedAlienReference(
-                functionState, builder, hostRefMT, valeRefMT, hostRef);
+                functionState, builder, hostRegionInstance, valeRegionInstance, hostRefMT, valeRefMT, hostRef);
     // Vale doesn't really care about the size of the thing, only the object.
     return objRefAndSizeRef.first;
   } else {
@@ -53,6 +55,8 @@ std::pair<LLVMValueRef, LLVMValueRef> sendValeObjectIntoHost(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref valeRegionInstanceRef,
+    Ref hostRegionInstanceRef,
     Reference* valeRefMT,
     Reference* hostRefMT,
     Ref valeRef) {
@@ -76,7 +80,7 @@ std::pair<LLVMValueRef, LLVMValueRef> sendValeObjectIntoHost(
     auto [hostArgRef, sizeRef] =
         globalState->getRegion(hostRefMT)
             ->receiveUnencryptedAlienReference(
-                functionState, builder, valeRefMT, hostRefMT, valeRef);
+                functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef, valeRefMT, hostRefMT, valeRef);
     globalState->getRegion(valeRefMT)
         ->dealias(FL(), functionState, builder, valeRefMT, valeRef);
     auto hostArgLE =

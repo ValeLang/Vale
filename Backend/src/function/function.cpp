@@ -135,7 +135,8 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
         // At some point, look up the actual region instance, perhaps from the FunctionState?
         globalState->getRegion(valeParamMT)->createRegionInstanceLocal(&functionState, builder);
     auto hostRegionInstanceRef =
-        globalState->linearRegion->createRegionInstanceLocal(&functionState, builder);
+        globalState->linearRegion->createRegionInstanceLocal(
+            &functionState, builder, constI1LE(globalState, 0), constI64LE(globalState, 0));
 
     auto valeRef =
         receiveHostObjectIntoVale(
@@ -166,7 +167,8 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
         // At some point, look up the actual region instance, perhaps from the FunctionState?
         globalState->getRegion(valeReturnMT)->createRegionInstanceLocal(&functionState, builder);
     auto hostRegionInstanceRef =
-        globalState->linearRegion->createRegionInstanceLocal(&functionState, builder);
+        globalState->linearRegion->createRegionInstanceLocal(
+            &functionState, builder, constI1LE(globalState, 0), constI64LE(globalState, 0));
     auto [hostReturnRefLE, hostReturnSizeLE] =
         sendValeObjectIntoHost(
             globalState, &functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef, valeReturnMT, hostReturnMT, valeReturnRef);

@@ -45,19 +45,6 @@ LLVMValueRef hexRoundUp(
       constI64LE(globalState, 1), "subd2");
 }
 
-//LLVMValueRef lowerAndHexRoundDownPointer(
-//    GlobalState* globalState,
-//    LLVMBuilderRef builder,
-//    LLVMValueRef rawPtrLE,
-//    LLVMValueRef subtractIntLE) {
-//  auto rawPtrIntLE =
-//      LLVMBuildPtrToInt(
-//          builder, rawPtrLE, LLVMInt64TypeInContext(globalState->context), "rawPtrInt");
-//  auto loweredRawPointerIntLE = LLVMBuildSub(builder, rawPtrIntLE, subtractIntLE, "loweredRawPtrInt");
-//  auto roundedLoweredRawPointerIntLE = hexRoundDown(globalState, builder, loweredRawPointerIntLE);
-//  return LLVMBuildIntToPtr(builder, roundedLoweredRawPointerIntLE, LLVMTypeOf(rawPtrLE), "loweredRoundedRawPtr");
-//}
-
 Linear::Linear(GlobalState* globalState_)
   : globalState(globalState_),
     structs(globalState_),
@@ -78,8 +65,14 @@ Linear::Linear(GlobalState* globalState_)
       LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
       // Offset into the destination buffer to write to
       LLVMInt64TypeInContext(globalState->context),
+      // Whether we're writing pointers to other parts of the buffer, or just offsets relative to the buffer start.
+      // 0 if we're using pointers, 1 if we're using buffers. If we're using buffers, then the Serialized Address
+      // Adjuster becomes relevant. Only supplied by the outside world, never changed. See PSBCBO.
+      LLVMInt1TypeInContext(globalState->context),
+      // Buffer begin offset, see PSBCBO. Only supplied by the outside world, never changed.
+      LLVMInt64TypeInContext(globalState->context),
       // Serialized Address Adjuster, see PSBCBO.
-      LLVMInt64TypeInContext(globalState->context)
+      LLVMInt64TypeInContext(globalState->context),
       // Eventually we might want a hash map or something in here, if we want to avoid serialize duplicates
   });
 
@@ -1258,10 +1251,7 @@ std::pair<Ref, Ref> Linear::topLevelSerialize(
     Ref sourceRegionInstanceRef,
     Kind* valeKind,
     Ref ref) {
-//  auto rootMetadataSize =
-//      LLVMABISizeOfType(globalState->dataLayout, structs.getStructStruct(rootMetadataKind));
-//  auto startMetadataSize =
-//      LLVMABISizeOfType(globalState->dataLayout, structs.getStructStruct(startMetadataKind));
+  auto int64LT = LLVMInt64TypeInContext(globalState->context);
 
   auto valeRefMT =
       globalState->metalCache->getReference(
@@ -1269,6 +1259,11 @@ std::pair<Ref, Ref> Linear::topLevelSerialize(
   auto hostRefMT = linearizeReference(valeRefMT);
 
   auto regionLT = structs.getStructStruct(regionKind);
+
+  auto useOffsetsLE =
+      getRegionInstanceUseOffsets(functionState, builder, regionInstanceRef);
+  auto bufferBeginOffsetLE =
+      getRegionInstanceBufferBeginOffset(functionState, builder, regionInstanceRef);
 
   // Populate the region instance to zero. Should be unnecessary since we initialized it to
   // zero, but do it anyway.
@@ -1288,22 +1283,31 @@ std::pair<Ref, Ref> Linear::topLevelSerialize(
 //  bumpDestinationOffset(functionState, builder, regionInstanceRef, constI64LE(globalState, startMetadataSize));
 //  buildFlare(FL(), globalState, functionState, builder);
 
-  auto dryRunFinalOffsetLE = getDestinationOffset(builder, regionInstancePtrLE);
+  auto dryRunFinalOffsetLE = getRegionInstanceDestinationOffset(functionState, builder, regionInstanceRef);
   auto sizeIntLE = dryRunFinalOffsetLE;//LLVMBuildSub(builder, dryRunCounterBeginLE, dryRunFinalOffsetLE, "size");
 
   LLVMValueRef bufferBeginPtrLE = callMalloc(globalState, builder, sizeIntLE);
 //  buildFlare(FL(), globalState, functionState, builder, "malloced ", sizeIntLE, " got ptr ", ptrToIntLE(globalState, builder, bufferBeginPtrLE));
-  std::cout << "TODO impl" << std::endl;
-  auto serializedAddressAdjusterLE = constI64LE(globalState, 0);
 
+  auto serializedAddressAdjusterLE =
+      buildSimpleIfElse(
+          globalState, functionState, builder, useOffsetsLE, int64LT,
+          [this, bufferBeginPtrLE, bufferBeginOffsetLE, int64LT](LLVMBuilderRef builder){
+            auto bufferBeginPtrAsI64LE =
+                LLVMBuildPtrToInt(builder, bufferBeginPtrLE, int64LT, "bufferBeginPtrAsI64");
+            return LLVMBuildSub(
+                builder, bufferBeginPtrAsI64LE, bufferBeginOffsetLE, "serializedAddressAdjuster");
+          },
+          [this](LLVMBuilderRef builder){
+            return constI64LE(globalState, 0);
+          });
   // Reset the region instance, now that we're doing the real thing.
   setRegionInstanceDestinationBufferStartPtr(
-      functionState, builder, regionInstanceRef,
-      bufferBeginPtrLE);
+      functionState, builder, regionInstanceRef, bufferBeginPtrLE);
   setRegionInstanceDestinationOffset(
       functionState, builder, regionInstanceRef, constI64LE(globalState, 0));
   setRegionInstanceSerializedAddressAdjuster(
-      functionState, builder, regionInstanceRef, serializedAddressAdjusterLE); // index 2
+      functionState, builder, regionInstanceRef, serializedAddressAdjusterLE);
 
   auto resultRef =
       callSerialize(
@@ -1314,7 +1318,7 @@ std::pair<Ref, Ref> Linear::topLevelSerialize(
           std::get<1>(explodeInterfaceRef(functionState, builder, hostRefMT, resultRef)) :
           checkValidReference(FL(), functionState, builder, hostRefMT, resultRef));
 
-  auto destinationIntLE = getDestinationOffset(builder, regionInstancePtrLE);
+  auto destinationIntLE = getRegionInstanceDestinationOffset(functionState, builder, regionInstanceRef);
   auto condLE = LLVMBuildICmp(builder, LLVMIntEQ, destinationIntLE, sizeIntLE, "cond");
   buildAssert(globalState, functionState, builder, condLE, "Serialization start mismatch!");
 
@@ -1480,25 +1484,6 @@ Ref Linear::callSerialize(
   }
 }
 
-void Linear::bumpDestinationOffset(
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Ref regionInstanceRef,
-    LLVMValueRef sizeIntLE) {
-  auto regionInstancePtrLE =
-      checkValidReference(FL(), functionState, builder, regionRefMT, regionInstanceRef);
-  auto destinationOffsetPtrLE =
-      LLVMBuildStructGEP(builder, regionInstancePtrLE, 1, "destinationOffsetPtr");
-  auto destinationOffsetLE = LLVMBuildLoad(builder, destinationOffsetPtrLE, "destinationOffset");
-  destinationOffsetLE =
-      LLVMBuildAdd(
-//      LLVMBuildSub(
-          builder, destinationOffsetLE, sizeIntLE, "bumpedDestinationOffset");
-  destinationOffsetLE = hexRoundUp(globalState, builder, destinationOffsetLE);
-  LLVMBuildStore(builder, destinationOffsetLE, destinationOffsetPtrLE);
-  buildFlare(FL(), globalState, functionState, builder);
-}
-
 //void Linear::reserveRootMetadataBytesIfNeeded(
 //    FunctionState* functionState,
 //    LLVMBuilderRef builder,
@@ -1513,57 +1498,6 @@ void Linear::bumpDestinationOffset(
 //  // Reset it to zero, we only need it once. This will make the next calls not reserve it. See MAPOWN for more.
 //  LLVMBuildStore(builder, constI64LE(globalState, 0), rootMetadataBytesNeededPtrLE);
 //}
-
-LLVMValueRef Linear::getDestinationOffset(
-    LLVMBuilderRef builder,
-    LLVMValueRef regionInstancePtrLE) {
-  auto destinationOffsetPtrLE =
-      LLVMBuildStructGEP(builder, regionInstancePtrLE, 1, "destinationOffsetPtr");
-  return LLVMBuildLoad(builder, destinationOffsetPtrLE, "destinationOffset");
-}
-
-LLVMValueRef Linear::getSerializedAddressAdjuster(
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Ref regionInstanceRef) {
-  auto regionInstancePtrLE =
-      checkValidReference(FL(), functionState, builder, regionRefMT, regionInstanceRef);
-  auto destinationOffsetPtrLE =
-      LLVMBuildStructGEP(builder, regionInstancePtrLE, 2, "serializedAddressAdjusterPtr");
-  return LLVMBuildLoad(builder, destinationOffsetPtrLE, "serializedAddressAdjuster");
-}
-
-LLVMValueRef Linear::getDestinationPtr(
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Ref regionInstanceRef) {
-  auto regionInstancePtrLE =
-      checkValidReference(FL(), functionState, builder, regionRefMT, regionInstanceRef);
-  auto bufferBeginPtrPtrLE = LLVMBuildStructGEP(builder, regionInstancePtrLE, 0, "bufferBeginPtrPtr");
-  auto bufferBeginPtrLE = LLVMBuildLoad(builder, bufferBeginPtrPtrLE, "bufferBeginPtr");
-
-  auto destinationOffsetPtrLE =
-      LLVMBuildStructGEP(builder, regionInstancePtrLE, 1, "destinationOffsetPtr");
-  auto destinationOffsetLE = LLVMBuildLoad(builder, destinationOffsetPtrLE, "destinationOffset");
-
-  auto destinationI8PtrLE = LLVMBuildGEP(builder, bufferBeginPtrLE, &destinationOffsetLE, 1, "destinationI8Ptr");
-  return destinationI8PtrLE;
-}
-
-Ref Linear::getDestinationRef(
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Ref regionInstanceRef,
-    Reference* desiredRefMT) {
-  auto destinationI8PtrLE = getDestinationPtr(functionState, builder, regionInstanceRef);
-  auto desiredRefLT = translateType(desiredRefMT);
-  auto unadjustedDestinationPtrLE = LLVMBuildBitCast(builder, destinationI8PtrLE, desiredRefLT, "unadjustedDestinationPtr");
-
-  auto adjustedDestinationPtr =
-      translateBetweenBufferAddressAndPointer(
-          functionState, builder, regionInstanceRef, desiredRefMT, unadjustedDestinationPtrLE, false);
-  return wrap(this, desiredRefMT, adjustedDestinationPtr);
-}
 
 Prototype* Linear::getSerializePrototype(Kind* valeKind) {
   auto boolMT = globalState->metalCache->boolRef;
@@ -1849,7 +1783,7 @@ LLVMValueRef Linear::translateBetweenBufferAddressAndPointer(
         auto int64LT = LLVMInt64TypeInContext(globalState->context);
 
         auto serializedAddressAdjusterLE =
-            getSerializedAddressAdjuster(functionState, builder, regionInstanceRef);
+            getRegionInstanceSerializedAddressAdjuster(functionState, builder, regionInstanceRef);
 
         auto unadjustedHostObjPtrAsI64LE =
             LLVMBuildPtrToInt(builder, unadjustedHostObjPtrLE, int64LT, "unadjustedHostObjPtr");
@@ -2134,6 +2068,16 @@ Ref Linear::localStore(FunctionState* functionState, LLVMBuilderRef builder, Loc
 
 
 Ref Linear::createRegionInstanceLocal(FunctionState* functionState, LLVMBuilderRef builder) {
+  // This is the method called via IRegion when we want to make a function-bound region.
+  // Linear isn't used for that though, linear's used for serializing to/from C and files.
+  assert(false);
+}
+
+Ref Linear::createRegionInstanceLocal(
+    FunctionState *functionState,
+    LLVMBuilderRef builder,
+    LLVMValueRef useOffsetsLE,
+    LLVMValueRef bufferBeginOffsetLE) {
   auto regionLT = structs.getStructStruct(regionKind);
   auto regionInstancePtrLE =
       makeBackendLocal(functionState, builder, regionLT, "region", LLVMGetUndef(regionLT));
@@ -2144,6 +2088,10 @@ Ref Linear::createRegionInstanceLocal(FunctionState* functionState, LLVMBuilderR
       LLVMConstNull(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)));
   setRegionInstanceDestinationOffset(
       functionState, builder, regionInstanceRef, constI64LE(globalState, 0));
+  setRegionInstanceUseOffsets(
+      functionState, builder, regionInstanceRef, useOffsetsLE);
+  setRegionInstanceBufferBeginOffset(
+      functionState, builder, regionInstanceRef, bufferBeginOffsetLE);
   setRegionInstanceSerializedAddressAdjuster(
       functionState, builder, regionInstanceRef, constI64LE(globalState, 0));
 
@@ -2161,6 +2109,27 @@ void Linear::setRegionInstanceDestinationBufferStartPtr(
   LLVMBuildStore(builder, destinationBufferStartPtrLE, destBeginningPtrLE);
 }
 
+LLVMValueRef Linear::getRegionInstanceDestinationBufferStartPtr(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef) {
+  auto regionInstancePtrLE =
+      checkValidReference(FL(), functionState, builder, regionRefMT, regionInstanceRef);
+  auto bufferBeginPtrPtrLE = LLVMBuildStructGEP(builder, regionInstancePtrLE, 0, "bufferBeginPtrPtr");
+  return LLVMBuildLoad(builder, bufferBeginPtrPtrLE, "bufferBeginPtr");
+};
+
+LLVMValueRef Linear::getRegionInstanceDestinationOffset(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef) {
+  auto regionInstancePtrLE =
+      checkValidReference(FL(), functionState, builder, regionRefMT, regionInstanceRef);
+  auto destinationOffsetPtrLE =
+      LLVMBuildStructGEP(builder, regionInstancePtrLE, 1, "destinationOffsetPtr");
+  return LLVMBuildLoad(builder, destinationOffsetPtrLE, "destinationOffset");
+}
+
 void Linear::setRegionInstanceDestinationOffset(
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -2172,6 +2141,53 @@ void Linear::setRegionInstanceDestinationOffset(
   LLVMBuildStore(builder, destinationOffsetLE, counterPtrLE);
 }
 
+void Linear::setRegionInstanceUseOffsets(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef,
+    LLVMValueRef useOffsetsLE) {
+  auto regionInstancePtrLE =
+      checkValidReference(
+          FL(), functionState, builder, regionRefMT, regionInstanceRef);
+  auto useOffsetsPtrLE =
+      LLVMBuildStructGEP(builder, regionInstancePtrLE, 2, "useOffsetsPtr");
+  LLVMBuildStore(builder, useOffsetsLE, useOffsetsPtrLE);
+}
+
+LLVMValueRef Linear::getRegionInstanceUseOffsets(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef) {
+  auto regionInstancePtrLE =
+      checkValidReference(FL(), functionState, builder, regionRefMT, regionInstanceRef);
+  auto useOffsetsPtrLE =
+      LLVMBuildStructGEP(builder, regionInstancePtrLE, 2, "useOffsetsPtr");
+  return LLVMBuildLoad(builder, useOffsetsPtrLE, "useOffsets");
+}
+
+void Linear::setRegionInstanceBufferBeginOffset(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef,
+    LLVMValueRef bufferBeginOffsetLE) {
+  auto regionInstancePtrLE =
+      checkValidReference(FL(), functionState, builder, regionRefMT, regionInstanceRef);
+  auto bufferBeginOffsetPtrLE =
+      LLVMBuildStructGEP(builder, regionInstancePtrLE, 3, "bufferBeginOffsetPtr");
+  LLVMBuildStore(builder, bufferBeginOffsetLE, bufferBeginOffsetPtrLE);
+}
+
+LLVMValueRef Linear::getRegionInstanceBufferBeginOffset(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef) {
+  auto regionInstancePtrLE =
+      checkValidReference(FL(), functionState, builder, regionRefMT, regionInstanceRef);
+  auto bufferBeginOffsetPtrLE =
+      LLVMBuildStructGEP(builder, regionInstancePtrLE, 3, "bufferBeginOffsetPtr");
+  return LLVMBuildLoad(builder, bufferBeginOffsetPtrLE, "bufferBeginOffset");
+}
+
 void Linear::setRegionInstanceSerializedAddressAdjuster(
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -2180,6 +2196,59 @@ void Linear::setRegionInstanceSerializedAddressAdjuster(
   auto regionInstancePtrLE =
       checkValidReference(FL(), functionState, builder, regionRefMT, regionInstanceRef);
   auto serializedAddressAdjusterPtrLE =
-      LLVMBuildStructGEP(builder, regionInstancePtrLE, 2, "serializedAddressAdjusterPtr");
+      LLVMBuildStructGEP(builder, regionInstancePtrLE, 4, "serializedAddressAdjusterPtr");
   LLVMBuildStore(builder, serializedAddressAdjusterLE, serializedAddressAdjusterPtrLE);
+}
+
+LLVMValueRef Linear::getRegionInstanceSerializedAddressAdjuster(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef) {
+  auto regionInstancePtrLE =
+      checkValidReference(FL(), functionState, builder, regionRefMT, regionInstanceRef);
+  auto serializedAddressAdjusterPtrLE =
+      LLVMBuildStructGEP(builder, regionInstancePtrLE, 4, "serializedAddressAdjusterPtr");
+  return LLVMBuildLoad(builder, serializedAddressAdjusterPtrLE, "serializedAddressAdjuster");
+}
+
+LLVMValueRef Linear::getDestinationPtr(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef) {
+  auto bufferBeginPtrLE =
+      getRegionInstanceDestinationBufferStartPtr(functionState, builder, regionInstanceRef);
+  auto destinationOffsetLE =
+      getRegionInstanceDestinationOffset(functionState, builder, regionInstanceRef);
+  auto destinationI8PtrLE =
+      LLVMBuildGEP(builder, bufferBeginPtrLE, &destinationOffsetLE, 1, "destinationI8Ptr");
+  return destinationI8PtrLE;
+}
+
+Ref Linear::getDestinationRef(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef,
+    Reference* desiredRefMT) {
+  auto destinationI8PtrLE = getDestinationPtr(functionState, builder, regionInstanceRef);
+  auto desiredRefLT = translateType(desiredRefMT);
+  auto unadjustedDestinationPtrLE = LLVMBuildBitCast(builder, destinationI8PtrLE, desiredRefLT, "unadjustedDestinationPtr");
+
+  auto adjustedDestinationPtr =
+      translateBetweenBufferAddressAndPointer(
+          functionState, builder, regionInstanceRef, desiredRefMT, unadjustedDestinationPtrLE, false);
+  return wrap(this, desiredRefMT, adjustedDestinationPtr);
+}
+
+void Linear::bumpDestinationOffset(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef,
+    LLVMValueRef sizeIntLE) {
+  auto destinationOffsetLE =
+      getRegionInstanceDestinationOffset(functionState, builder, regionInstanceRef);
+  destinationOffsetLE =
+      LLVMBuildAdd(
+          builder, destinationOffsetLE, sizeIntLE, "bumpedDestinationOffset");
+  destinationOffsetLE = hexRoundUp(globalState, builder, destinationOffsetLE);
+  setRegionInstanceDestinationOffset(functionState, builder, regionInstanceRef, destinationOffsetLE);
 }

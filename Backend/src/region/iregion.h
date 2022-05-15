@@ -311,6 +311,7 @@ public:
   virtual Ref popRuntimeSizedArrayNoBoundsCheck(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* rsaRefMT,
       RuntimeSizedArrayT* rsaMT,
       Ref arrayRef,
@@ -379,6 +380,8 @@ public:
   virtual std::pair<Ref, Ref> receiveUnencryptedAlienReference(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref sourceRegionInstanceRef,
+      Ref targetRegionInstanceRef,
       Reference* sourceRefMT,
       Reference* targetRefMT,
       Ref sourceRef) = 0;
@@ -436,6 +439,14 @@ public:
 
   virtual void mainSetup(FunctionState* functionState, LLVMBuilderRef builder) = 0;
   virtual void mainCleanup(FunctionState* functionState, LLVMBuilderRef builder) = 0;
+
+  virtual Reference* getRegionRefType() = 0;
+
+  // This is only temporarily virtual, while we're still creating fake ones on the fly.
+  // Soon it'll be non-virtual, and parameters will differ by region.
+  // Instead of making them on the fly, we'll need to get these regions from somewhere,
+  // perhaps the FunctionState?
+  virtual Ref createRegionInstanceLocal(FunctionState* functionState, LLVMBuilderRef builder) = 0;
 };
 
 #endif

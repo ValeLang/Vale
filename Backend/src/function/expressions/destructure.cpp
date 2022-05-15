@@ -31,13 +31,17 @@ Ref translateDestructure(
 
   auto structM = globalState->program->getStruct(structKind);
 
+  auto structRegionInstanceRef =
+      // At some point, look up the actual region instance, perhaps from the FunctionState?
+      globalState->getRegion(destructureM->structType)->createRegionInstanceLocal(functionState, builder);
+
   for (int i = 0; i < structM->members.size(); i++) {
     buildFlare(FL(), globalState, functionState, builder);
     auto memberName = structM->members[i]->name;
     auto memberType = structM->members[i]->type;
     auto memberLE =
         globalState->getRegion(destructureM->structType)->loadMember(
-            functionState, builder, globalState->makeTempRegionInstance(), destructureM->structType, structRef, true, i, memberType, memberType, memberName);
+            functionState, builder, structRegionInstanceRef, destructureM->structType, structRef, true, i, memberType, memberType, memberName);
     makeHammerLocal(
         globalState, functionState, blockState, builder, destructureM->localIndices[i], memberLE, destructureM->localsKnownLives[i]);
     buildFlare(FL(), globalState, functionState, builder);

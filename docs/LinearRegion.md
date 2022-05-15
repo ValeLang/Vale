@@ -16,6 +16,8 @@ When we're sending something into C, the Serialized Address Adjuster will be 0.
 The address adjuster is stored in the region object. getSerializedAddressAdjuster will read it.
 
 
+When we create the Linear region object, we supply a boolean called the Address Mode. If the Address Mode is 0, we're just using regular pointers. If it's 1, then we're using offsets, and we also specify where in the containing file this buffer begins. If it's 500, then the offset 500 points at the start of our buffer.
+
 
 
 ## Pointers in Registers Can Be Offsets (PRCBO)

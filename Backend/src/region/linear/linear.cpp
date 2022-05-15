@@ -1076,7 +1076,7 @@ LoadResult Linear::loadMember(
     // When we read a pointer, we need to add the Serialized Address Adjuster, see PSBCBO.
     auto adjustedStructPtrLE =
         translateBetweenBufferAddressAndPointer(
-            functionState, builder, regionInstanceRef, expectedMemberType, unadjustedStructPtrLE, false);
+            functionState, builder, regionInstanceRef, structRefMT, unadjustedStructPtrLE, false);
     return loadInnerInnerStructMember(
           globalState, functionState, builder, adjustedStructPtrLE, memberIndex, expectedMemberType, memberName);
   }
@@ -1852,7 +1852,7 @@ LLVMValueRef Linear::translateBetweenBufferAddressAndPointer(
             getSerializedAddressAdjuster(functionState, builder, regionInstanceRef);
 
         auto unadjustedHostObjPtrAsI64LE =
-            LLVMBuildIntToPtr(builder, unadjustedHostObjPtrLE, int64LT, "unadjustedHostObjPtr");
+            LLVMBuildPtrToInt(builder, unadjustedHostObjPtrLE, int64LT, "unadjustedHostObjPtr");
         auto adjustedHostObjPtrAsI64LE =
             bufferAddressToPointer ?
             LLVMBuildSub(builder, unadjustedHostObjPtrAsI64LE, serializedAddressAdjusterLE, "adjustedHostObjPtrAsI64") :

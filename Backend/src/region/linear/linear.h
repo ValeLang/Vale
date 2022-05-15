@@ -116,6 +116,7 @@ public:
   Ref loadMember(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* structRefMT,
       Ref structRef,
       bool structKnownLive,
@@ -127,6 +128,7 @@ public:
   void storeMember(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* structRefMT,
       Ref structRef,
       bool structKnownLive,
@@ -163,7 +165,11 @@ public:
       Ref weakRef,
       bool knownLive) override;
 
-  LLVMValueRef getStringBytesPtr(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override;
+  LLVMValueRef getStringBytesPtr(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      Ref ref) override;
 
   Ref allocate(
       Ref regionInstanceRef,
@@ -212,6 +218,7 @@ public:
   Ref getRuntimeSizedArrayLength(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* rsaRefMT,
       Ref arrayRef,
       bool arrayKnownLive) override;
@@ -219,6 +226,7 @@ public:
   Ref getRuntimeSizedArrayCapacity(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* rsaRefMT,
       Ref arrayRef,
       bool arrayKnownLive) override;
@@ -253,6 +261,7 @@ public:
   LoadResult loadElementFromSSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* ssaRefMT,
       StaticSizedArrayT* ssaMT,
       Ref arrayRef,
@@ -261,6 +270,7 @@ public:
   LoadResult loadElementFromRSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* rsaRefMT,
       RuntimeSizedArrayT* rsaMT,
       Ref arrayRef,
@@ -299,6 +309,7 @@ public:
   void pushRuntimeSizedArrayNoBoundsCheck(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* rsaRefMT,
       RuntimeSizedArrayT* rsaMT,
       Ref arrayRef,
@@ -309,6 +320,7 @@ public:
   Ref popRuntimeSizedArrayNoBoundsCheck(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* rsaRefMT,
       RuntimeSizedArrayT* rsaMT,
       Ref arrayRef,
@@ -318,6 +330,7 @@ public:
   void initializeElementInSSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* ssaRefMT,
       StaticSizedArrayT* ssaMT,
       Ref arrayRef,
@@ -357,7 +370,11 @@ public:
       StaticSizedArrayT* kindM,
       Ref dryRunBoolRef);
 
-  LLVMValueRef getStringLen(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override;
+  LLVMValueRef getStringLen(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      Ref ref) override;
 
   std::string getExportName(Package* currentPackage, Reference* refMT, bool includeProjectName) override;
 
@@ -381,6 +398,8 @@ public:
   std::pair<Ref, Ref> receiveUnencryptedAlienReference(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref sourceRegionInstanceRef,
+      Ref targetRegionInstanceRef,
       Reference* sourceRefMT,
       Reference* targetRefMT,
       Ref sourceRef) override;
@@ -400,6 +419,7 @@ public:
   LoadResult loadMember(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* structRefMT,
       Ref structRef,
       int memberIndex,
@@ -458,12 +478,41 @@ public:
   void mainSetup(FunctionState* functionState, LLVMBuilderRef builder) override {}
   void mainCleanup(FunctionState* functionState, LLVMBuilderRef builder) override {}
 
+  Reference* getRegionRefType() override;
+
+  // This is only temporarily virtual, while we're still creating fake ones on the fly.
+  // Soon it'll be non-virtual, and parameters will differ by region... like the below one.
+  Ref createRegionInstanceLocal(FunctionState* functionState, LLVMBuilderRef builder) override;
+  // This will replace the above createRegionInstanceLocal once it's non-virtual.
+  Ref createRegionInstanceLocal(
+      FunctionState *functionState,
+      LLVMBuilderRef builder,
+      LLVMValueRef useOffsetsLE,
+      LLVMValueRef bufferBeginOffsetLE);
+
 private:
   void declareConcreteSerializeFunction(Kind* valeKindM);
   void defineConcreteSerializeFunction(Kind* valeKindM);
   void declareInterfaceSerializeFunction(InterfaceKind* valeKind);
   void defineEdgeSerializeFunction(Edge* edge);
 
+  void initializeMember(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      Reference* structRefMT,
+      Ref structRef,
+      bool structKnownLive,
+      int memberIndex,
+      const std::string& memberName,
+      Reference* newMemberRefMT,
+      Ref newMemberRef);
+
+  Ref assembleInterfaceRef(
+      LLVMBuilderRef builder,
+      Reference* targetInterfaceTypeM,
+      LLVMValueRef structRefLE,
+      LLVMValueRef edgeNumberLE);
 
   Ref innerConstructRuntimeSizedArray(
       Ref regionInstanceRef,
@@ -501,6 +550,7 @@ private:
       LLVMBuilderRef builder,
       Kind* valeKind,
       Ref regionInstanceRef,
+      Ref sourceRegionInstanceRef,
       Ref objectRef,
       Ref dryRunBoolRef);
 
@@ -510,8 +560,53 @@ private:
   std::pair<Ref, Ref> topLevelSerialize(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      Ref sourceRegionInstanceRef,
       Kind* valeKind,
       Ref ref);
+
+  LLVMValueRef getRegionInstanceDestinationBufferStartPtr(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef);
+  void setRegionInstanceDestinationBufferStartPtr(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      LLVMValueRef destinationBufferStartPtrLE);
+  void setRegionInstanceDestinationOffset(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      LLVMValueRef destinationOffsetLE);
+  void setRegionInstanceUseOffsets(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      LLVMValueRef useOffsetsLE);
+  LLVMValueRef getRegionInstanceUseOffsets(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef);
+  void setRegionInstanceBufferBeginOffset(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      LLVMValueRef bufferBeginOffsetLE);
+  LLVMValueRef getRegionInstanceBufferBeginOffset(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef);
+  void setRegionInstanceSerializedAddressAdjuster(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      LLVMValueRef serializedAddressAdjusterLE);
+  // Returns the address space begin pointer, see PSBCBO.
+  LLVMValueRef getRegionInstanceSerializedAddressAdjuster(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef);
 
   void bumpDestinationOffset(
       FunctionState* functionState,
@@ -535,9 +630,21 @@ private:
       Ref regionInstanceRef,
       Reference* desiredRefMT);
 
-  LLVMValueRef getDestinationOffset(
+  LLVMValueRef getRegionInstanceDestinationOffset(
+      FunctionState* functionState,
       LLVMBuilderRef builder,
-      LLVMValueRef regionInstancePtrLE);
+      Ref regionInstanceRef);
+
+  // This is meant to be called just before we write to a serialized buffer, if it's
+  // a pointer (or a fat pointer) it will make it relative to the buffer begin or file
+  // begin or 0 or whatever, see PSBCBO.
+  LLVMValueRef translateBetweenBufferAddressAndPointer(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      Reference* hostRefMT,
+      LLVMValueRef unadjustedHostRefLE,
+      bool bufferAddressToPointer);
 
   void addMappedKind(Kind* valeKind, Kind* hostKind) {
     hostKindByValeKind.emplace(valeKind, hostKind);
@@ -561,6 +668,7 @@ private:
 
   StructKind* regionKind = nullptr;
   Reference* regionRefMT = nullptr;
+
 
 //  StructKind* startMetadataKind = nullptr;
 //  Reference* startMetadataRefMT = nullptr;

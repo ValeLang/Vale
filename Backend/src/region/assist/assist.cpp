@@ -19,27 +19,27 @@ Assist::Assist(GlobalState* globalState_) :
         makeAssistAndNaiveRCNonWeakableControlBlock(globalState),
         makeAssistAndNaiveRCWeakableControlBlock(globalState),
         WrcWeaks::makeWeakRefHeaderStruct(globalState)),
-//    kindStructs(
-//        globalState,
-//        [this](Kind* kind) -> KindStructs* {
-//          if (globalState->getKindWeakability(kind) == Weakability::NON_WEAKABLE) {
-//            return &kindStructs;
-//          } else {
-//            return &kindStructs;
-//          }
-//        }),
-//    kindStructs(
-//        [this](Kind* kind) -> KindStructs* {
-//          if (globalState->getKindWeakability(kind) == Weakability::NON_WEAKABLE) {
-//            assert(false);
-//          } else {
-//            return &kindStructs;
-//          }
-//        }),
     fatWeaks(globalState_, &kindStructs),
     wrcWeaks(globalState_, &kindStructs, &kindStructs) {
   regionLT = LLVMStructCreateNamed(globalState->context, "__Assist_Region");
   LLVMStructSetBody(regionLT, nullptr, 0, false);
+
+  regionKind =
+      globalState->metalCache->getStructKind(
+          globalState->metalCache->getName(
+              globalState->metalCache->builtinPackageCoord, namePrefix + "_Region"));
+  regionRefMT =
+      globalState->metalCache->getReference(
+          Ownership::BORROW, Location::YONDER, regionKind);
+  globalState->regionIdByKind.emplace(regionKind, globalState->metalCache->mutRegionId);
+  kindStructs.declareStruct(regionKind, Weakability::NON_WEAKABLE);
+  kindStructs.defineStruct(regionKind, {
+      // This region doesnt need anything
+  });
+}
+
+Reference* Assist::getRegionRefType() {
+  return regionRefMT;
 }
 
 RegionId* Assist::getRegionId() {
@@ -153,6 +153,11 @@ Ref Assist::asSubtype(
 }
 
 LLVMTypeRef Assist::translateType(Reference* referenceM) {
+  if (referenceM == regionRefMT) {
+    // We just have a raw pointer to region structs
+    return LLVMPointerType(kindStructs.getStructInnerStruct(regionKind), 0);
+  }
+
   switch (referenceM->ownership) {
     case Ownership::SHARE:
       assert(false);
@@ -315,6 +320,7 @@ void Assist::noteWeakableDestroyed(
 Ref Assist::loadMember(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* structRefMT,
     Ref structRef,
     bool structKnownLive,
@@ -340,6 +346,7 @@ Ref Assist::loadMember(
 void Assist::storeMember(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* structRefMT,
     Ref structRef,
     bool structKnownLive,
@@ -428,7 +435,11 @@ Ref Assist::getIsAliveFromWeakRef(
   return wrcWeaks.getIsAliveFromWeakRef(functionState, builder, weakRefM, weakRef);
 }
 
-LLVMValueRef Assist::getStringBytesPtr(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) {
+LLVMValueRef Assist::getStringBytesPtr(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef,
+    Ref ref) {
   auto strWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder,
@@ -523,6 +534,7 @@ WrapperPtrLE Assist::lockWeakRef(
 Ref Assist::getRuntimeSizedArrayLength(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* rsaRefMT,
     Ref arrayRef,
     bool arrayKnownLive) {
@@ -532,6 +544,7 @@ Ref Assist::getRuntimeSizedArrayLength(
 Ref Assist::getRuntimeSizedArrayCapacity(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* rsaRefMT,
     Ref arrayRef,
     bool arrayKnownLive) {
@@ -696,6 +709,7 @@ void Assist::fillControlBlock(
 LoadResult Assist::loadElementFromSSA(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* ssaRefMT,
     StaticSizedArrayT* ssaMT,
     Ref arrayRef,
@@ -709,6 +723,7 @@ LoadResult Assist::loadElementFromSSA(
 LoadResult Assist::loadElementFromRSA(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* rsaRefMT,
     RuntimeSizedArrayT* rsaMT,
     Ref arrayRef,
@@ -894,6 +909,8 @@ LLVMTypeRef Assist::getInterfaceMethodVirtualParamAnyType(Reference* reference) 
 std::pair<Ref, Ref> Assist::receiveUnencryptedAlienReference(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref sourceRegionInstanceRef,
+    Ref targetRegionInstanceRef,
     Reference* sourceRefMT,
     Reference* targetRefMT,
     Ref sourceRef) {
@@ -904,6 +921,7 @@ std::pair<Ref, Ref> Assist::receiveUnencryptedAlienReference(
 void Assist::pushRuntimeSizedArrayNoBoundsCheck(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *rsaRefMT,
     RuntimeSizedArrayT *rsaMT,
     Ref rsaRef,
@@ -926,12 +944,15 @@ void Assist::pushRuntimeSizedArrayNoBoundsCheck(
 Ref Assist::popRuntimeSizedArrayNoBoundsCheck(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref arrayRegionInstanceRef,
     Reference* rsaRefMT,
     RuntimeSizedArrayT* rsaMT,
     Ref arrayRef,
     bool arrayRefKnownLive,
     Ref indexRef) {
-  auto valLE = loadElementFromRSA(functionState, builder, rsaRefMT, rsaMT, arrayRef, arrayRefKnownLive, indexRef).move();
+  auto valLE =
+      loadElementFromRSA(
+          functionState, builder, arrayRegionInstanceRef, rsaRefMT, rsaMT, arrayRef, arrayRefKnownLive, indexRef).move();
   auto rsaWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, rsaRefMT,
@@ -943,6 +964,7 @@ Ref Assist::popRuntimeSizedArrayNoBoundsCheck(
 void Assist::initializeElementInSSA(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* ssaRefMT,
     StaticSizedArrayT* ssaMT,
     Ref arrayRef,
@@ -1022,4 +1044,12 @@ std::string Assist::getExportName(
     Reference* reference,
     bool includeProjectName) {
   return package->getKindExportName(reference->kind, includeProjectName) + (reference->location == Location::YONDER ? "Ref" : "");
+}
+
+Ref Assist::createRegionInstanceLocal(FunctionState* functionState, LLVMBuilderRef builder) {
+  auto regionLT = kindStructs.getStructInnerStruct(regionKind);
+  auto regionInstancePtrLE =
+      makeBackendLocal(functionState, builder, regionLT, "region", LLVMGetUndef(regionLT));
+  auto regionInstanceRef = wrap(this, regionRefMT, regionInstancePtrLE);
+  return regionInstanceRef;
 }

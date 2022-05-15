@@ -29,6 +29,10 @@ Ref translateNewArrayFromValues(
 
   auto staticSizedArrayMT = dynamic_cast<StaticSizedArrayT*>(newArrayFromValues->arrayRefType->kind);
 
+  auto arrayRegionInstanceRef =
+      // At some point, look up the actual region instance, perhaps from the FunctionState?
+      globalState->getRegion(newArrayFromValues->arrayRefType)->createRegionInstanceLocal(functionState, builder);
+
   if (newArrayFromValues->arrayRefType->location == Location::INLINE) {
 //        auto valStructL =
 //            globalState->getInnerStruct(structKind->fullName);
@@ -48,6 +52,7 @@ Ref translateNewArrayFromValues(
         globalState,
         functionState,
         builder,
+        arrayRegionInstanceRef,
         newArrayFromValues->arrayRefType,
         staticSizedArrayMT,
         resultLE,

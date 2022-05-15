@@ -39,7 +39,7 @@ Externs::Externs(LLVMModuleRef mod, LLVMContextRef context) {
   fwrite = addExtern(mod, "fwrite", int64LT, {int8PtrLT, int64LT, int64LT, int8PtrLT});
 
   strHasherCallLF = addExtern(mod, "strHasherCall", int64LT, {emptyLT, int8PtrLT});
-  strEquatorCallLF = addExtern(mod, "strEquatorCall", int64LT, {emptyLT, int8PtrLT, int8PtrLT})
+  strEquatorCallLF = addExtern(mod, "strEquatorCall", int64LT, {emptyLT, int8PtrLT, int8PtrLT});
 
   // https://llvm.org/docs/LangRef.html#llvm-read-register-llvm-read-volatile-register-and-llvm-write-register-intrinsics
   // Warning from docs:

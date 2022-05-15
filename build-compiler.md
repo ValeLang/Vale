@@ -12,7 +12,7 @@ sudo apt install -y git
 git clone --single-branch --branch master https://github.com/ValeLang/Vale
 Vale/install-compiler-prereqs-linux.sh ~/LLVMForVale ~/BootstrappingValeCompiler
 cd Vale
-./build-compiler-linux.sh ~/LLVMForVale/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz ~/BootstrappingValeCompiler
+./scripts/ubuntu/build-compiler.sh ~/LLVMForVale/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04 ~/BootstrappingValeCompiler --test=all ./scripts/VERSION
 
 ```
 
@@ -24,7 +24,7 @@ git clone --single-branch --branch master https://github.com/ValeLang/Vale
 Vale/install-compiler-prereqs-mac.sh ~/BootstrappingValeCompiler
 source ~/.zshrc
 cd Vale
-./build-compiler-mac.sh ~/BootstrappingValeCompiler
+./scripts/mac/build-compiler.sh ~/BootstrappingValeCompiler --test=all ./scripts/VERSION
 ```
 
 
@@ -79,5 +79,5 @@ Once youve done the above steps and installed LLVM, run the below commands:
 ```sh
 git clone https://github.com/ValeLang/Vale --single-branch --branch master
 cd Vale
-.\\build-compiler-windows.bat C:\\llvm C:\\OldValeCompiler
+.\scripts\windows\build-compiler.bat C:\llvm\llvm-project-llvmorg-13.0.1 C:\OldValeCompiler --test=all ./scripts/VERSION
 ```

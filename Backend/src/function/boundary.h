@@ -8,6 +8,8 @@ Ref receiveHostObjectIntoVale(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref hostRegionInstance,
+    Ref valeRegionInstance,
     Reference* hostRefMT,
     Reference* valeRefMT,
     LLVMValueRef hostRefLE);
@@ -17,6 +19,8 @@ std::pair<LLVMValueRef, LLVMValueRef> sendValeObjectIntoHost(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref valeRegionInstanceRef,
+    Ref hostRegionInstanceRef,
     Reference* valeRefMT,
     Reference* hostRefMT,
     Ref valeRef);

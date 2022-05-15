@@ -100,7 +100,8 @@ When we send a gen ref into the wild:
  1. Don't set the object's "Exported" bit to 1, it's never really used in replay mode.
 
 
-We would have it gradually clean up expired entries (to save space) and use null gen refs for things that don't exist anymore, but we need to keep the mappings true to preserve the behavior of the === operator.
+
+We can periodically clean up expired entries from the hash map to save space. When there's a miss, we can return a null gen ref. This would have interfered with the === operator, but the === operator will need to do a gen-check anyway.
 
 
 # Deterministic Parallelism
@@ -217,6 +218,17 @@ as gen refs are guaranteed to be unique throughout their lifetime.
 The only downside here is that it requires a thread-safe global hash map on the C side to do the mapping, which is unfortunate but doable.
 
 Now we can mark all these functions as `#AssumeDeterministic` and let their calls happen even in replaying mode.
+
+
+
+
+## Stage Messages in Buffers Before Writing to File (SMBBWF)
+
+When we serialize something, we actually jump around quite a bit with random access writes. We allocate at the end of the file, populate it down there, and then jump backward to write its address to some other object that wanted to point at it.
+
+
+For this reason, we write to a temporary buffer before writing to a file. In fact, this is why we use the Linear region to help out with this.
+
 
 
 # Notes

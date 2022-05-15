@@ -27,10 +27,10 @@ fi
 shift;
 
 
-VALEC_VERSION="$1"
+VALEC_VERSION=`cat "$1"`
 if [ "$VALEC_VERSION" == "" ]
 then
-  echo "Please specify the new version."
+  echo "Please specify a file containing the new version."
   exit 1
 fi
 shift;
@@ -49,12 +49,10 @@ echo Generating Backend...
 LLVM_CMAKE_DIR="/usr/local/Cellar/llvm/`ls /usr/local/Cellar/llvm`/lib/cmake/llvm"
 cmake -B build -D LLVM_DIR="$LLVM_CMAKE_DIR" || { echo 'Backend generate failed, aborting.' ; exit 1; }
 
-cd build
-
 echo Compiling Backend...
 cmake --build build || { echo 'Backend build failed, aborting.' ; exit 1; }
 
-cd ../../Coordinator
+cd ../Coordinator
 
 echo Compiling Coordinator...
 ./build.sh $BOOTSTRAPPING_VALEC_DIR || { echo 'Coordinator build failed, aborting.' ; exit 1; }
@@ -64,9 +62,9 @@ cd ../scripts
 
 rm -rf ../release-mac || { echo 'Error removing previous release-mac dir.' ; exit 1; }
 mkdir -p ../release-mac || { echo 'Error making new release-mac dir.' ; exit 1; }
-mkdir -p ../release-mac/samples || { echo 'Error making new samples dir.' ; exit 1; }
+# mkdir -p ../release-mac/samples || { echo 'Error making new samples dir.' ; exit 1; }
 cp ../Frontend/Frontend.jar ../release-mac || { echo 'Error copying into release-mac.' ; exit 1; }
-cp -r ../Frontend/Tests/test/main/resources/programs ../release-mac/samples || { echo 'Error copying into release-mac.' ; exit 1; }
+# cp -r ../Frontend/Tests/test/main/resources/programs ../release-mac/samples || { echo 'Error copying into release-mac.' ; exit 1; }
 cp -r ../Backend/builtins ../release-mac/builtins || { echo 'Error copying into release-mac.' ; exit 1; }
 cp ../Backend/build/backend ../release-mac/backend || { echo 'Error copying into release-mac.' ; exit 1; }
 cp -r ../stdlib ../release-mac/stdlib || { echo 'Error copying into release-mac.' ; exit 1; }
@@ -76,7 +74,7 @@ cat all/README | sed s/\{valec_exe\}/.\\\/valec/g | sed s/\{sep\}/\\/\/g | sed s
 cat all/valec-help-build.txt | sed s/\{valec_exe\}/.\\\/valec/g | sed s/\{sep\}/\\/\/g | sed s/\{valec_version\}/$VALEC_VERSION/g > ../release-mac/valec-help-build.txt || { echo 'Error copying into release-mac.' ; exit 1; }
 cat all/valec-help.txt | sed s/\{valec_exe\}/.\\\/valec/g | sed s/\{sep\}/\\/\/g | sed s/\{valec_version\}/$VALEC_VERSION/g > ../release-mac/valec-help.txt || { echo 'Error copying into release-mac.' ; exit 1; }
 cat all/valec-version.txt | sed s/\{valec_exe\}/.\\\/valec/g | sed s/\{sep\}/\\/\/g | sed s/\{valec_version\}/$VALEC_VERSION/g > ../release-mac/valec-version.txt || { echo 'Error copying into release-mac.' ; exit 1; }
-cp -r all/helloworld ../release-mac/samples/helloworld || { echo 'Error copying into release-mac.' ; exit 1; }
+# cp -r all/helloworld ../release-mac/samples/helloworld || { echo 'Error copying into release-mac.' ; exit 1; }
 
 cd ../release-mac || { echo 'Error copying into release-mac.' ; exit 1; }
 zip -r Vale-Mac-0.zip * || { echo 'Error copying into release-mac.' ; exit 1; }

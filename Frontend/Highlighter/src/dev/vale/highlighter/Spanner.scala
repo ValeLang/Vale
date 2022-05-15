@@ -13,6 +13,7 @@ case object W extends IClass
 case object Abst extends IClass
 case object Ext extends IClass
 case object Pure extends IClass
+case object Range extends IClass
 case object Fn extends IClass
 case object Struct extends IClass
 case object Break extends IClass
@@ -24,7 +25,9 @@ case object Memb extends IClass
 case object Interface extends IClass
 case object MembName extends IClass
 case object Rules extends IClass
+case object Rule extends IClass
 case object Rune extends IClass
+case object Prototype extends IClass
 case object IdentRunes extends IClass
 case object IdentRune extends IClass
 case object Params extends IClass
@@ -62,6 +65,13 @@ case object Comment extends IClass
 case object Mutability extends IClass
 case object Ownership extends IClass
 case object Match extends IClass
+case object EqualsRule extends IClass
+case object OrRule extends IClass
+case object DotRule extends IClass
+case object ComponentsRule extends IClass
+case object TypedRule extends IClass
+case object CallRule extends IClass
+case object PackRule extends IClass
 
 case class Span(classs: IClass, range: RangeP, children: Vector[Span]) { override def hashCode(): Int = vcurious() }
 
@@ -186,7 +196,7 @@ object Spanner {
       attributes.map(forFunctionAttribute) ++
       maybeName.toVector.map(n => makeSpan(FnName, n.range)) ++
       maybeUserSpecifiedIdentifyingRunes.toVector.map(forIdentifyingRunes) ++
-//      templateRules.toVector.map(forTemplateRules) ++
+      maybeTemplateRulesP.toVector.map(forTemplateRules) ++
       params.toVector.map(forParams) ++
       Vector(forFunctionReturn(ret)) ++
       body.toVector.map(forBlock))
@@ -294,12 +304,12 @@ object Spanner {
         makeSpan(Call, range, allSpans)
       }
       case FunctionCallPE(range, operatorRange, LookupPE(LookupNameP(NameP(nameRange, _)), maybeTemplateArgs), argExprs) => {
-        val opSpan = makeSpan(MemberAccess, operatorRange)
+        //val opSpan = makeSpan(Call, operatorRange)
         val callableSpan = makeSpan(CallLookup, nameRange, Vector.empty)
         val maybeTemplateArgsSpan = maybeTemplateArgs.toVector.map(forTemplateArgs)
         val argSpans = argExprs.map(forExpression)
         val allSpans =
-          (Vector(opSpan, callableSpan) ++ maybeTemplateArgsSpan ++ argSpans)
+          (Vector(callableSpan) ++ maybeTemplateArgsSpan ++ argSpans)
             .sortWith(_.range.begin < _.range.begin)
         makeSpan(Call, range, allSpans)
       }
@@ -307,7 +317,7 @@ object Spanner {
         makeSpan(Call, range, Vector(forExpression(innerPE)))
       }
       case BraceCallPE(range, operatorRange, subjectExpr, argExprs, _) => {
-        val opSpan = makeSpan(MemberAccess, operatorRange)
+        val opSpan = makeSpan(Call, operatorRange)
         val callableSpan = forExpression(subjectExpr)
         val argSpans = argExprs.map(forExpression)
         val allSpans =
@@ -378,6 +388,12 @@ object Spanner {
           Break,
           range,
           Vector())
+      }
+      case RangePE(range, fromExpr, toExpr) => {
+        makeSpan(
+          Range,
+          range,
+          Vector(forExpression(fromExpr), forExpression(toExpr)))
       }
       case other => vimpl(other.toString)
     }
@@ -480,6 +496,12 @@ object Spanner {
           range,
           Vector())
       }
+      case PrototypePT(range, name, parameters, returnType) => {
+        makeSpan(
+          Prototype,
+          range,
+          parameters.map(forTemplex) :+ forTemplex(returnType))
+      }
       case other => vimpl(other.toString)
     }
   }
@@ -502,10 +524,30 @@ object Spanner {
   }
 
   def forRulex(rulex: IRulexPR): Span = {
-    makeSpan(
-      Rules,
-      rulex.range,
-      Vector.empty)
+    rulex match {
+      case EqualsPR(range, left, right) => {
+        makeSpan(EqualsRule, range, Vector(forRulex(left), forRulex(right)))
+      }
+      case OrPR(range, possibilities) => {
+        makeSpan(OrRule, range, possibilities.map(forRulex))
+      }
+      case DotPR(range, container, memberName) => {
+        makeSpan(DotRule, range, Vector(forRulex(container)))
+      }
+      case ComponentsPR(range, container, components) => {
+        makeSpan(ComponentsRule, range, components.map(forRulex))
+      }
+      case TypedPR(range, rune, tyype) => {
+        makeSpan(TypedRule, range, Vector())
+      }
+      case TemplexPR(templex) => forTemplex(templex)
+      case BuiltinCallPR(range, name, args) => {
+        makeSpan(CallRule, range, args.map(forRulex))
+      }
+      case PackPR(range, elements) => {
+        makeSpan(PackRule, range, elements.map(forRulex))
+      }
+    }
   }
 
   def forIdentifyingRunes(r: IdentifyingRunesP): Span = {

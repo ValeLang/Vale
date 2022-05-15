@@ -481,8 +481,14 @@ public:
   Reference* getRegionRefType() override;
 
   // This is only temporarily virtual, while we're still creating fake ones on the fly.
-  // Soon it'll be non-virtual, and parameters will differ by region.
+  // Soon it'll be non-virtual, and parameters will differ by region... like the below one.
   Ref createRegionInstanceLocal(FunctionState* functionState, LLVMBuilderRef builder) override;
+  // This will replace the above createRegionInstanceLocal once it's non-virtual.
+  Ref createRegionInstanceLocal(
+      FunctionState *functionState,
+      LLVMBuilderRef builder,
+      LLVMValueRef useOffsetsLE,
+      LLVMValueRef bufferBeginOffsetLE);
 
 private:
   void declareConcreteSerializeFunction(Kind* valeKindM);
@@ -559,6 +565,10 @@ private:
       Kind* valeKind,
       Ref ref);
 
+  LLVMValueRef getRegionInstanceDestinationBufferStartPtr(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef);
   void setRegionInstanceDestinationBufferStartPtr(
       FunctionState* functionState,
       LLVMBuilderRef builder,
@@ -569,11 +579,34 @@ private:
       LLVMBuilderRef builder,
       Ref regionInstanceRef,
       LLVMValueRef destinationOffsetLE);
+  void setRegionInstanceUseOffsets(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      LLVMValueRef useOffsetsLE);
+  LLVMValueRef getRegionInstanceUseOffsets(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef);
+  void setRegionInstanceBufferBeginOffset(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      LLVMValueRef bufferBeginOffsetLE);
+  LLVMValueRef getRegionInstanceBufferBeginOffset(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef);
   void setRegionInstanceSerializedAddressAdjuster(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Ref regionInstanceRef,
       LLVMValueRef serializedAddressAdjusterLE);
+  // Returns the address space begin pointer, see PSBCBO.
+  LLVMValueRef getRegionInstanceSerializedAddressAdjuster(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef);
 
   void bumpDestinationOffset(
       FunctionState* functionState,
@@ -597,12 +630,7 @@ private:
       Ref regionInstanceRef,
       Reference* desiredRefMT);
 
-  LLVMValueRef getDestinationOffset(
-      LLVMBuilderRef builder,
-      LLVMValueRef regionInstancePtrLE);
-
-  // Returns the address space begin pointer, see PSBCBO.
-  LLVMValueRef getSerializedAddressAdjuster(
+  LLVMValueRef getRegionInstanceDestinationOffset(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Ref regionInstanceRef);

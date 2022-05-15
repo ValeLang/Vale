@@ -173,7 +173,13 @@ Ref buildExternCall(
     return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
   } else if (prototype->name->name == "__vbi_strLength") {
     assert(args.size() == 1);
-    auto resultLenLE = globalState->getRegion(globalState->metalCache->strRef)->getStringLen(functionState, builder, args[0]);
+
+    auto strRegionInstanceRef =
+        // At some point, look up the actual region instance, perhaps from the FunctionState?
+        globalState->getRegion(globalState->metalCache->strRef)
+            ->createRegionInstanceLocal(functionState, builder);
+
+    auto resultLenLE = globalState->getRegion(globalState->metalCache->strRef)->getStringLen(functionState, builder, strRegionInstanceRef, args[0]);
     globalState->getRegion(globalState->metalCache->strRef)
         ->dealias(FL(), functionState, builder, globalState->metalCache->strRef, args[0]);
     return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, resultLenLE);
@@ -244,10 +250,16 @@ Ref buildExternCall(
               globalState->linearRegion->linearizeReference(valeArgRefMT) :
               valeArgRefMT);
 
+      auto valeRegionInstanceRef =
+          // At some point, look up the actual region instance, perhaps from the FunctionState?
+          globalState->getRegion(valeArgRefMT)->createRegionInstanceLocal(functionState, builder);
+
+      auto hostRegionInstanceRef =
+          globalState->linearRegion->createRegionInstanceLocal(functionState, builder);
       auto valeArg = valeArgRefs[i];
       auto [hostArgRefLE, argSizeLE] =
           sendValeObjectIntoHost(
-              globalState, functionState, builder, valeArgRefMT, hostArgRefMT, valeArg);
+              globalState, functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef, valeArgRefMT, hostArgRefMT, valeArg);
       if (typeNeedsPointerParameter(globalState, valeArgRefMT)) {
         auto hostArgRefLT = globalState->getRegion(valeArgRefMT)->getExternalType(valeArgRefMT);
         assert(LLVMGetTypeKind(hostArgRefLT) != LLVMPointerTypeKind);
@@ -321,9 +333,15 @@ Ref buildExternCall(
                 globalState->linearRegion->linearizeReference(valeReturnRefMT) :
                 valeReturnRefMT);
 
+        auto valeRegionInstanceRef =
+            // At some point, look up the actual region instance, perhaps from the FunctionState?
+            globalState->getRegion(valeReturnRefMT)->createRegionInstanceLocal(functionState, builder);
+
+        auto hostRegionInstanceRef =
+            globalState->linearRegion->createRegionInstanceLocal(functionState, builder);
         auto valeReturnRef =
             receiveHostObjectIntoVale(
-                globalState, functionState, builder, hostReturnMT, valeReturnRefMT, hostReturnLE);
+                globalState, functionState, builder, hostRegionInstanceRef, valeRegionInstanceRef, hostReturnMT, valeReturnRefMT, hostReturnLE);
 
         return valeReturnRef;
       }

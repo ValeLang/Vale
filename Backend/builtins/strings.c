@@ -213,7 +213,7 @@ ValeStr* __vale_strfromascii(ValeInt code) {
 }
 
 // Compiler extern, put into the program at runtime for internal use
-uint64_t strHasherCall(struct {}*, char* str) {
+uint64_t strHasherCall(struct {}* unused, char* str) {
   uint64_t hash = 0;
   for (int i = 0; str[i]; i++) {
     hash = hash * 37 + str[i];
@@ -222,7 +222,7 @@ uint64_t strHasherCall(struct {}*, char* str) {
 }
 
 // Compiler extern, put into the program at runtime for internal use
-int8_t strEquatorCall(struct {}*, char* strA, char* strB) {
+int8_t strEquatorCall(struct {}* unused, char* strA, char* strB) {
   for (int i = 0; ; i++) {
     if (strA[i] != strB[i]) {
       return FALSE;
@@ -232,6 +232,3 @@ int8_t strEquatorCall(struct {}*, char* strA, char* strB) {
     }
   }
 }
-
-LLVMValueRef strHasherLF = nullptr;
-LLVMValueRef strEquatorLF = nullptr;

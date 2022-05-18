@@ -227,10 +227,11 @@ private:
 
   void defineFindIndexOf() {
     auto int1LT = LLVMInt1TypeInContext(globalState->context);
+    auto int32LT = LLVMInt32TypeInContext(globalState->context);
     auto int64LT = LLVMInt64TypeInContext(globalState->context);
     defineFunctionBody(
         globalState->context, findIndexOfLF, int64LT, mapTypeName + "_findIndexOf",
-        [this, int1LT](FunctionState* functionState, LLVMBuilderRef builder){
+        [this, int1LT, int32LT, int64LT](FunctionState* functionState, LLVMBuilderRef builder){
           auto mapPtrLE = LLVMGetParam(functionState->containingFuncL, 0);
           auto keyLE = LLVMGetParam(functionState->containingFuncL, 1);
           // if (!entries) {
@@ -251,10 +252,12 @@ private:
           auto hashLE = buildSimpleCall(builder, hasherLF, {hasherPtrLE, keyLE});
           auto startIndexLE = LLVMBuildURem(builder, hashLE, capacityLE, "startIndex");
           // for (int64_t i = 0; i < capacity; i++) {
+          auto capacityI32LE = LLVMBuildTrunc(builder, capacityLE, int32LT, "capacityI32");
           intRangeLoop(
-              globalState, functionState, builder, capacityLE,
-              [this, functionState, int1LT, startIndexLE, entriesPtrLE, capacityLE, equatorPtrLE, presencesPtrLE, keyLE](
-                  LLVMValueRef indexLE, LLVMBuilderRef builder){
+              globalState, functionState, builder, capacityI32LE,
+              [this, functionState, int1LT, int64LT, startIndexLE, entriesPtrLE, capacityLE, equatorPtrLE, presencesPtrLE, keyLE](
+                  LLVMValueRef indexI32LE, LLVMBuilderRef builder){
+                auto indexLE = LLVMBuildZExt(builder, indexI32LE, int64LT, "index");
                 // int64_t indexInTable = (startIndex + i) % capacity;
                 auto startIndexPlusILE = LLVMBuildAdd(builder, startIndexLE, indexLE, "");
                 auto indexInTableLE = LLVMBuildURem(builder, startIndexPlusILE, capacityLE, "indexInTable");

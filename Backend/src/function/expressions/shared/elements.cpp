@@ -240,16 +240,16 @@ void intRangeLoop(
     LLVMBuilderRef builder,
     LLVMValueRef sizeLE,
     std::function<void(LLVMValueRef, LLVMBuilderRef)> iterationBuilder) {
-  auto int64LT = LLVMInt64TypeInContext(globalState->context);
-  assert(LLVMTypeOf(sizeLE) == int64LT);
+  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+  assert(LLVMTypeOf(sizeLE) == int32LT);
 
   LLVMValueRef iterationIndexPtrLE =
       makeBackendLocal(
           functionState,
           builder,
-          int64LT,
+          int32LT,
           "iterationIndex",
-          constI64LE(globalState, 0));
+          constI32LE(globalState, 0));
 
   buildWhile(
       globalState,
@@ -265,7 +265,7 @@ void intRangeLoop(
       [globalState, iterationBuilder, iterationIndexPtrLE](LLVMBuilderRef bodyBuilder) {
         auto iterationIndexLE = LLVMBuildLoad(bodyBuilder, iterationIndexPtrLE, "iterationIndex");
         iterationBuilder(iterationIndexLE, bodyBuilder);
-        adjustCounter(globalState, bodyBuilder, globalState->metalCache->i64, iterationIndexPtrLE, 1);
+        adjustCounter(globalState, bodyBuilder, globalState->metalCache->i32, iterationIndexPtrLE, 1);
       });
 }
 

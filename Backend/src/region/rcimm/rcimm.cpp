@@ -954,7 +954,11 @@ std::pair<Ref, Ref> RCImm::receiveUnencryptedAlienReference(
   assert(sourceRegion == globalState->linearRegion);
   auto sourceRefLE = sourceRegion->checkValidReference(FL(), functionState, builder, hostRefMT, sourceRef);
 
-  if (dynamic_cast<Int*>(hostRefMT->kind)) {
+  if (dynamic_cast<Void*>(hostRefMT->kind)) {
+    auto resultRef = wrap(globalState->getRegion(valeRefMT), valeRefMT, makeVoid(globalState));
+    // Vale doesn't care about the size, only extern (linear) does, so just return zero.
+    return std::make_pair(resultRef, globalState->constI32(0));
+  } else if (dynamic_cast<Int*>(hostRefMT->kind)) {
     auto resultRef = wrap(globalState->getRegion(hostRefMT), valeRefMT, sourceRefLE);
     // Vale doesn't care about the size, only extern (linear) does, so just return zero.
     return std::make_pair(resultRef, globalState->constI32(0));

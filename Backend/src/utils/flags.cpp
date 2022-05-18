@@ -12,7 +12,7 @@ LLVMValueRef processFlag(
     const std::string& flagName,
     LLVMValueRef mainArgsCountLE,
     LLVMValueRef mainArgsLE,
-    const std::function<void(LLVMBuilderRef, LLVMValueRef)>& thenBody) {
+    std::function<void(LLVMBuilderRef, LLVMValueRef)> thenBody) {
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
   auto int8LT = LLVMInt8TypeInContext(globalState->context);

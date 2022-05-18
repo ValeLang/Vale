@@ -28,5 +28,17 @@ See https://verdagon.dev/blog/fearless-ffi
 
 
 
+# Universal Reference's Fat Pointer Layout (URFPL)
 
+When we send a mutable object reference into FFI, we need to make it a universal reference.
+
+It's 32 bytes:
+
+ * Object pointer
+ * Region pointer
+ * Object generation (32b)
+ * Region generation (32b)
+ * itable pointer (if interface) or type info pointer (if struct)
+
+With this, given an existing region, we can conjure a reference to an object in there.
 

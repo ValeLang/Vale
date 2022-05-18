@@ -92,7 +92,8 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
   LLVMTypeRef exportFunctionTypeL =
       LLVMFunctionType(exportReturnLT, exportParamTypesL.data(), exportParamTypesL.size(), 0);
 
-  auto exportName = std::string("vale_abi_") + package->getFunctionExportName(functionM->prototype);
+  auto unprefixedExportName = package->getFunctionExportName(functionM->prototype);
+  auto exportName = std::string("vale_abi_") + unprefixedExportName;
 
   // The full name should end in _0, _1, etc. The exported name shouldnt.
   assert(exportName != functionM->prototype->name->name);

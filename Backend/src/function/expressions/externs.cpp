@@ -37,7 +37,7 @@ void replayExportCalls(
     LLVMBuilderRef builder) {
   buildBoolyWhile(
       globalState, functionState->containingFuncL, builder,
-      [globalState, functionState](LLVMBuilderRef whileBuilder, LLVMBasicBlockRef) -> LLVMValueRef {
+      [globalState, functionState](LLVMBuilderRef whileBuilder) -> LLVMValueRef {
         auto replayerFuncPtrLE =
             globalState->determinism->buildGetMaybeReplayedFuncForNextExportCall(
                 whileBuilder);
@@ -260,7 +260,7 @@ Ref replayReturnOrCallAndOrRecord(
                 // If we get here, we're replaying.
 
                 // should assert that we're calling the same function as last time
-                globalState->determinism->buildMatchCallFromRecordingFile(builder);
+                globalState->determinism->buildMatchCallFromRecordingFile(functionState, builder, prototype);
 
                 for (int i = 0; i < args.size(); i++) {
                   auto valeArgRefMT = prototype->params[i];
@@ -270,7 +270,7 @@ Ref replayReturnOrCallAndOrRecord(
                         globalState->getRegion(valeArgRefMT)
                             ->checkValidReference(FL(), functionState, builder, valeArgRefMT, args[i]);
                     auto recordedRefLE =
-                        globalState->determinism->buildReadAndMapRefFromFile(builder);
+                        globalState->determinism->buildReadAndMapRefFromFile(builder, valeArgRefMT);
                     assert(false);
                   }
                 }
@@ -279,12 +279,12 @@ Ref replayReturnOrCallAndOrRecord(
 
                 // above, we consumed a marker that said we're ending this current extern call.
 
-                LLVMValueRef valeReturnRefLE =
-                    (valeReturnRefMT->ownership == Ownership::SHARE ?
-                     globalState->determinism->buildReadValueFromFile(builder) :
-                     globalState->determinism->buildReadAndMapRefFromFile(builder));
                 Ref valeReturnRef =
-                    wrap(globalState->getRegion(valeReturnRefMT), valeReturnRefMT, valeReturnRefLE);
+                    (valeReturnRefMT->ownership == Ownership::SHARE ?
+                     globalState->determinism->buildReadValueFromFile(functionState, builder, valeReturnRefMT) :
+                     globalState->determinism->buildReadAndMapRefFromFile(builder, valeReturnRefMT));
+//                Ref valeReturnRef =
+//                    wrap(globalState->getRegion(valeReturnRefMT), valeReturnRefMT, valeReturnRefLE);
 
                 return buildResultOrEarlyReturnOfNever(
                     globalState, functionState, builder, prototype, valeReturnRef);

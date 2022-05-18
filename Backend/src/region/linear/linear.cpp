@@ -25,26 +25,6 @@ Ref unsafeCast(
   return desiredRef;
 }
 
-LLVMValueRef hexRoundDown(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    LLVMValueRef n) {
-  // Mask off the last four bits, to round downward to the next multiple of 16.
-  auto mask = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), ~0xFULL, false);
-  return LLVMBuildAnd(builder, n, mask, "rounded");
-}
-
-LLVMValueRef hexRoundUp(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    LLVMValueRef n) {
-  return LLVMBuildAdd(builder,
-      LLVMBuildOr(builder,
-          LLVMBuildSub(builder, n, constI64LE(globalState, 1), "subd1"),
-          constI64LE(globalState, 15), "ord"),
-      constI64LE(globalState, 1), "subd2");
-}
-
 Linear::Linear(GlobalState* globalState_)
   : globalState(globalState_),
     structs(globalState_),
@@ -1295,7 +1275,7 @@ std::pair<Ref, Ref> Linear::topLevelSerialize(
 
   auto serializedAddressAdjusterLE =
       buildIfElse(
-          globalState, functionState, builder, useOffsetsLE, int64LT,
+          globalState, functionState, builder, int64LT, useOffsetsLE,
           [this, bufferBeginPtrLE, bufferBeginOffsetLE, int64LT](LLVMBuilderRef builder){
             auto bufferBeginPtrAsI64LE =
                 LLVMBuildPtrToInt(builder, bufferBeginPtrLE, int64LT, "bufferBeginPtrAsI64");

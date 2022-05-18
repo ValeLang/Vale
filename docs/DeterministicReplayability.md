@@ -230,6 +230,11 @@ When we serialize something, we actually jump around quite a bit with random acc
 For this reason, we write to a temporary buffer before writing to a file. In fact, this is why we use the Linear region to help out with this.
 
 
+## Using Regular Function Names Instead of Export Names (URFNIEN)
+
+For the POC, we're using regular function names (`launch`) instead of exported names (`SpaceGame_launch`). Look for URFNIEN in the code to find everywhere we'll need to change that.
+
+
 
 # Notes
 

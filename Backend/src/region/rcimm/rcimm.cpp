@@ -1320,20 +1320,24 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
           auto valeMemberRefMT = globalState->program->getRuntimeSizedArray(valeRsaMT)->elementType;
           auto hostMemberRefMT = globalState->linearRegion->linearizeReference(valeMemberRefMT);
 
-          intRangeLoopReverse(
+          intRangeLoopReverseV(
               globalState, functionState, builder, globalState->metalCache->i32, lengthRef,
 
               [this, functionState, regionInstanceRef, hostRegionInstanceRef, hostObjectRefMT, valeRsaRef, hostMemberRefMT, valeObjectRefMT, hostRsaMT, valeRsaMT, hostObjectRef, valeMemberRefMT, unserializeMemberOrElement](
-                  Ref indexRef, LLVMBuilderRef bodyBuilder){
+                  Ref indexRef, LLVMBuilderRef bodyBuilder) {
                 auto hostMemberRef =
                     globalState->getRegion(hostObjectRefMT)
-                        ->loadElementFromRSA(functionState, bodyBuilder, hostRegionInstanceRef, hostObjectRefMT, hostRsaMT, hostObjectRef, true, indexRef)
+                        ->loadElementFromRSA(
+                            functionState, bodyBuilder, hostRegionInstanceRef, hostObjectRefMT, hostRsaMT,
+                            hostObjectRef, true, indexRef)
                         .move();
                 auto valeElementRef =
                     unserializeMemberOrElement(
-                        functionState, bodyBuilder, regionInstanceRef, hostRegionInstanceRef, hostMemberRefMT, hostMemberRef);
+                        functionState, bodyBuilder, regionInstanceRef, hostRegionInstanceRef, hostMemberRefMT,
+                        hostMemberRef);
                 pushRuntimeSizedArrayNoBoundsCheck(
-                    functionState, bodyBuilder, regionInstanceRef, valeObjectRefMT, valeRsaMT, valeRsaRef, true, indexRef, valeElementRef);
+                    functionState, bodyBuilder, regionInstanceRef, valeObjectRefMT, valeRsaMT, valeRsaRef, true,
+                    indexRef, valeElementRef);
               });
 
           LLVMBuildRet(builder, checkValidReference(FL(), functionState, builder, valeRsaRefMT, valeRsaRef));
@@ -1351,22 +1355,25 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
           int length = valeSsaDefM->size;
           auto valeMemberRefMT = valeSsaDefM->elementType;
 
-          intRangeLoopReverse(
+          intRangeLoopReverseV(
               globalState, functionState, builder, globalState->metalCache->i32, globalState->constI32(length),
               [this, functionState, regionInstanceRef, hostRegionInstanceRef, hostObjectRefMT, valeSsaRef, valeObjectRefMT, hostSsaMT, valeSsaMT, hostObjectRef, valeMemberRefMT, unserializeMemberOrElement](
-                  Ref indexRef, LLVMBuilderRef bodyBuilder){
+                  Ref indexRef, LLVMBuilderRef bodyBuilder) {
 
                 auto hostMemberRef =
                     globalState->getRegion(hostObjectRefMT)
                         ->loadElementFromSSA(
-                            functionState, bodyBuilder, hostRegionInstanceRef, hostObjectRefMT, hostSsaMT, hostObjectRef, true, indexRef)
+                            functionState, bodyBuilder, hostRegionInstanceRef, hostObjectRefMT, hostSsaMT,
+                            hostObjectRef, true, indexRef)
                         .move();
                 auto hostMemberRefMT = globalState->linearRegion->linearizeReference(valeMemberRefMT);
                 auto valeElementRef =
                     unserializeMemberOrElement(
-                        functionState, bodyBuilder, regionInstanceRef, hostRegionInstanceRef, hostMemberRefMT, hostMemberRef);
+                        functionState, bodyBuilder, regionInstanceRef, hostRegionInstanceRef, hostMemberRefMT,
+                        hostMemberRef);
                 initializeElementInSSA(
-                    functionState, bodyBuilder, regionInstanceRef, valeObjectRefMT, valeSsaMT, valeSsaRef, true, indexRef, valeElementRef);
+                    functionState, bodyBuilder, regionInstanceRef, valeObjectRefMT, valeSsaMT, valeSsaRef, true,
+                    indexRef, valeElementRef);
               });
 
 

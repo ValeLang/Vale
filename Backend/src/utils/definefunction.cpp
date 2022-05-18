@@ -2,21 +2,31 @@
 #include "../function/function.h"
 #include "definefunction.h"
 
+LLVMValueRef addFunction(
+    LLVMModuleRef mod,
+    const std::string& name,
+    LLVMTypeRef returnLT,
+    std::vector<LLVMTypeRef> argsLT) {
+  auto functionLT = LLVMFunctionType(returnLT, argsLT.data(), argsLT.size(), false);
+  auto functionLF = LLVMAddFunction(mod, name.c_str(), functionLT);
+  return functionLF;
+}
+
 void defineFunctionBody(
-    GlobalState* globalState,
+    LLVMContextRef context,
     LLVMValueRef functionL,
     LLVMTypeRef returnTypeL,
     const std::string& name,
     std::function<void(FunctionState*, LLVMBuilderRef)> definer) {
 
   auto localsBlockName = std::string("localsBlock");
-  auto localsBuilder = LLVMCreateBuilderInContext(globalState->context);
-  LLVMBasicBlockRef localsBlockL = LLVMAppendBasicBlockInContext(globalState->context, functionL, localsBlockName.c_str());
+  auto localsBuilder = LLVMCreateBuilderInContext(context);
+  LLVMBasicBlockRef localsBlockL = LLVMAppendBasicBlockInContext(context, functionL, localsBlockName.c_str());
   LLVMPositionBuilderAtEnd(localsBuilder, localsBlockL);
 
   auto firstBlockName = std::string("codeStartBlock");
-  LLVMBasicBlockRef firstBlockL = LLVMAppendBasicBlockInContext(globalState->context, functionL, firstBlockName.c_str());
-  LLVMBuilderRef bodyTopLevelBuilder = LLVMCreateBuilderInContext(globalState->context);
+  LLVMBasicBlockRef firstBlockL = LLVMAppendBasicBlockInContext(context, functionL, firstBlockName.c_str());
+  LLVMBuilderRef bodyTopLevelBuilder = LLVMCreateBuilderInContext(context);
   LLVMPositionBuilderAtEnd(bodyTopLevelBuilder, firstBlockL);
 
   FunctionState functionState(name, functionL, returnTypeL, localsBuilder);

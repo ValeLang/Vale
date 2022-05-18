@@ -236,17 +236,17 @@ LLVMValueRef makeEntryFunction(
   if (globalState->opt->enableSideCalling) {
     LLVMBuildStore(
         entryBuilder,
-        buildCall(
+        buildMaybeNeverCall(
             globalState, entryBuilder, globalState->externs->malloc,
             { constI64LE(globalState, STACK_SIZE) }),
         globalState->sideStack);
   }
 
   auto calleeUserFunction = globalState->lookupFunction(valeMainPrototype);
-  auto resultLE = buildCall(globalState, entryBuilder, calleeUserFunction, {});
+  auto resultLE = buildMaybeNeverCall(globalState, entryBuilder, calleeUserFunction, {});
 
   if (globalState->opt->enableSideCalling) {
-    buildCall(
+    buildMaybeNeverCall(
         globalState, entryBuilder, globalState->externs->free,
         { LLVMBuildLoad(entryBuilder, globalState->sideStack, "") });
   }

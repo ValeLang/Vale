@@ -6,11 +6,28 @@
 #include <simplehash/cppsimplehashmap.h>
 #include <simplehash/llvmsimplehashmap.h>
 
+struct PrototypeNameSimpleStringHasher {
+  uint64_t operator()(Prototype* func) const {
+    const char* str = func->name->name.c_str();
+    uint64_t hash = 0;
+    for (int i = 0; str[i]; i++) {
+      hash = hash * 37 + str[i];
+    }
+    return hash;
+  }
+};
+
+struct PrototypeNameSimpleStringEquator {
+  uint64_t operator()(Prototype* a, Prototype* b) const {
+    return a->name->name == b->name->name;
+  }
+};
+
 class Determinism {
 public:
   LLVMValueRef buildMaybeStartDeterministicMode(
       LLVMBuilderRef builder, LLVMValueRef mainArgsLE, LLVMValueRef argcLE);
-  LLVMValueRef buildWriteCallBeginToFile(LLVMBuilderRef builder, Prototype* prototype);
+  void buildWriteCallBeginToFile(LLVMBuilderRef builder, Prototype* prototype);
 //  LLVMValueRef buildGetNextExportCallString(LLVMBuilderRef builder);
   void buildWriteRefToFile(LLVMBuilderRef builder, LLVMValueRef refI256LE);
   void buildRecordCallEnd(LLVMBuilderRef builder, Prototype* prototype);
@@ -27,7 +44,7 @@ public:
       LLVMBuilderRef builder,
       Reference* sourceRefMT,
       Ref sourceRef);
-  Ref buildReadAndMapRefFromFile(LLVMBuilderRef builder, Reference* refMT);
+  Ref buildMapRefFromRecordingFile(LLVMBuilderRef builder, Reference* refMT);
   LLVMValueRef buildGetMaybeReplayedFuncForNextExportCall(LLVMBuilderRef builder);
 
   Determinism(GlobalState* globalState);
@@ -44,7 +61,7 @@ private:
   void makeFuncToRecordCallEnd();
   void makeFuncToMatchCallFromRecordingFile();
 //  void makeFuncToReadValueFromFile();
-  void makeFuncToMatchRefFromRecordingFile();
+  void makeFuncToMapRefFromRecordingFile();
   void makeFuncToStartReplaying();
   void makeFuncToStartRecording();
   void makeFuncToGetReplayerFuncForExportName();
@@ -75,9 +92,13 @@ private:
 
   GlobalState* globalState;
 
-  CppSimpleHashMap<Prototype*, std::tuple<>, AddressHasher<Prototype*>, AddressEquator<Prototype*>> functionsMap;
-  LlvmSimpleHashMap functionsMapLT;
-  std::optional<LLVMValueRef> finalizedExportNameToReplayerFunctionMapGlobalLE;
+  CppSimpleHashMap<Prototype*, std::tuple<>, PrototypeNameSimpleStringHasher, PrototypeNameSimpleStringEquator> functionsMap;
+  std::unique_ptr<LlvmSimpleHashMap> functionsMapLT;
+  bool finalizedFunctions; // True if we've already registered all the exports and externs.
+  LLVMValueRef exportNameToReplayerFunctionMapGlobalLE;
+
+  std::unique_ptr<LlvmSimpleHashMap> recordedRefToReplayedRefMapLT;
+  LLVMValueRef recordedRefToReplayedRefMapGlobalLE;
 
 
   LLVMValueRef maybeStartDeterministicModeLF = nullptr;
@@ -87,7 +108,7 @@ private:
   LLVMValueRef writeRefToFileLF = nullptr;
   LLVMValueRef recordCallEndLF = nullptr;
   LLVMValueRef matchCallFromRecordingFileLF = nullptr;
-  LLVMValueRef readAndMapFromFileLE = nullptr;
+  LLVMValueRef mapRefFromRecordingFileLF = nullptr;
   LLVMValueRef readLimitedStringFromFileLF = nullptr;
   LLVMValueRef getMaybeReplayerFuncForNextExportNameLF = nullptr;
 

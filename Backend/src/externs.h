@@ -40,6 +40,8 @@ public:
 
   LLVMValueRef strHasherCallLF = nullptr;
   LLVMValueRef strEquatorCallLF = nullptr;
+  LLVMValueRef int256HasherCallLF = nullptr;
+  LLVMValueRef int256EquatorCallLF = nullptr;
 
   Externs(LLVMModuleRef mod, LLVMContextRef context);
 };

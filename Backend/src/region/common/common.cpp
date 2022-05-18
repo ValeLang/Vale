@@ -380,14 +380,14 @@ void fillRuntimeSizedArray(
     Ref sizeLE,
     Ref rsaRef) {
 
-  intRangeLoop(
+  intRangeLoopV(
       globalState, functionState, builder, sizeLE,
       [globalState, functionState, arrayRegionInstanceRef, rsaRefMT, rsaMT, generatorMethod, generatorType, rsaRef, generatorLE](
           Ref indexRef, LLVMBuilderRef bodyBuilder) {
         globalState->getRegion(generatorType)->alias(
             AFL("ConstructRSA generate iteration"),
             functionState, bodyBuilder, generatorType, generatorLE);
-        std::vector<Ref> argExprsLE = { generatorLE, indexRef };
+        std::vector<Ref> argExprsLE = {generatorLE, indexRef};
 
         auto elementRef =
             buildCallV(
@@ -411,14 +411,14 @@ void fillStaticSizedArrayFromCallable(
     Ref sizeLE,
     Ref ssaRef) {
 
-  intRangeLoop(
+  intRangeLoopV(
       globalState, functionState, builder, sizeLE,
       [globalState, functionState, arrayRegionInstanceRef, ssaRefMT, ssaMT, generatorMethod, generatorType, ssaRef, generatorLE](
           Ref indexRef, LLVMBuilderRef bodyBuilder) {
         globalState->getRegion(generatorType)->alias(
             AFL("ConstructSSA generate iteration"),
             functionState, bodyBuilder, generatorType, generatorLE);
-        std::vector<Ref> argExprsLE = { generatorLE, indexRef };
+        std::vector<Ref> argExprsLE = {generatorLE, indexRef};
 
         auto elementRef =
             buildCallV(

@@ -3,8 +3,14 @@
 
 #include <globalstate.h>
 
+LLVMValueRef addFunction(
+    LLVMModuleRef mod,
+    const std::string& name,
+    LLVMTypeRef returnLT,
+    std::vector<LLVMTypeRef> argsLT);
+
 void defineFunctionBody(
-    GlobalState* globalState,
+    LLVMContextRef context,
     LLVMValueRef functionL,
     LLVMTypeRef returnTypeL,
     const std::string& name,

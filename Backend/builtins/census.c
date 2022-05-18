@@ -54,12 +54,12 @@ static int64_t censusFindOpenSpaceIndexFor(void* obj) {
   int64_t startIndex = ((uint64_t)obj) % census.capacity;
   for (int64_t i = 0; i < census.capacity; i++) {
     int64_t indexInTable = (startIndex + i) % census.capacity;
+    if (census.entries[indexInTable].address == NULL) {
+      return indexInTable;
+    }
     if (census.entries[indexInTable].address == obj) {
       fprintf(stderr, "Found %p while looking for open census space, it's already present!\n", obj);
       assert(0);
-    }
-    if (census.entries[indexInTable].address == NULL) {
-      return indexInTable;
     }
   }
   exit(1); // We shouldnt get here, it would mean the table is full.
@@ -100,7 +100,7 @@ static void censusExpand() {
 
 void __vcensusAdd(void* obj) {
   assert(obj);
-  if (census.size >= census.capacity) {
+  if (census.size * 2 >= census.capacity) {
     censusExpand();
   }
   if (__vcensusContains(obj)) {

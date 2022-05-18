@@ -81,3 +81,12 @@ git clone https://github.com/ValeLang/Vale --single-branch --branch master
 cd Vale
 .\scripts\windows\build-compiler.bat C:\llvm\llvm-project-llvmorg-13.0.1 C:\OldValeCompiler --test=all ./scripts/VERSION
 ```
+
+
+## For development
+
+If working on the Vale compiler, it's best to:
+
+ * Build LLVM from scratch, in debug mode.
+ * Use CLion.
+    * [Build with a profile](https://www.jetbrains.com/help/clion/cmake-profile.html#CMakeProfileSwitcher), with an environment variable `LLVM_DIR=(llvm build dir)`. [Verify in the CMake log](https://stackoverflow.com/a/34772936/1424454) looking for "Using LLVMConfig.make in (llvm build dir)".

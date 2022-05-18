@@ -2,9 +2,11 @@
 #include "function/expressions/expressions.h"
 #include "externs.h"
 #include "globalstate.h"
+#include "utils/definefunction.h"
 
 Externs::Externs(LLVMModuleRef mod, LLVMContextRef context) {
   auto emptyLT = LLVMStructTypeInContext(context, nullptr, 0, false);
+  auto emptyPtrLT = LLVMPointerType(emptyLT, 0);
   auto voidLT = LLVMVoidTypeInContext(context);
   auto int1LT = LLVMInt1TypeInContext(context);
   auto int8LT = LLVMInt8TypeInContext(context);
@@ -14,6 +16,7 @@ Externs::Externs(LLVMModuleRef mod, LLVMContextRef context) {
   auto voidPtrLT = LLVMPointerType(int8LT, 0);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
   auto metadataLT = LLVMMetadataTypeInContext(context);
+  auto int256LT = LLVMIntTypeInContext(context, 256);
 
   censusContains = addExtern(mod, "__vcensusContains", int64LT, {voidPtrLT});
   censusAdd = addExtern(mod, "__vcensusAdd", voidLT, {voidPtrLT});
@@ -32,14 +35,10 @@ Externs::Externs(LLVMModuleRef mod, LLVMContextRef context) {
   memcpy = addExtern(mod, "memcpy", int8PtrLT, {int8PtrLT, int8PtrLT, int64LT});
   memset = addExtern(mod, "memset", voidLT, {int8PtrLT, int8LT, int64LT});
 
-
   fopen = addExtern(mod, "fopen", int8PtrLT, {int8PtrLT, int8PtrLT});
   fclose = addExtern(mod, "fclose", int64LT, {int8PtrLT});
   fread = addExtern(mod, "fread", int64LT, {int8PtrLT, int64LT, int64LT, int8PtrLT});
   fwrite = addExtern(mod, "fwrite", int64LT, {int8PtrLT, int64LT, int64LT, int8PtrLT});
-
-  strHasherCallLF = addExtern(mod, "strHasherCall", int64LT, {emptyLT, int8PtrLT});
-  strEquatorCallLF = addExtern(mod, "strEquatorCall", int64LT, {emptyLT, int8PtrLT, int8PtrLT});
 
   // https://llvm.org/docs/LangRef.html#llvm-read-register-llvm-read-volatile-register-and-llvm-write-register-intrinsics
   // Warning from docs:
@@ -61,6 +60,53 @@ Externs::Externs(LLVMModuleRef mod, LLVMContextRef context) {
   assert(LLVMGetIntrinsicID(setjmpIntrinsic));
   stackrestoreIntrinsic = addExtern(mod, "llvm.stackrestore", voidLT, {int8PtrLT});
   assert(LLVMGetIntrinsicID(longjmpIntrinsic));
+
+  strHasherCallLF = addExtern(mod, "strHasherCall", int64LT, {emptyPtrLT, int8PtrLT});
+  strEquatorCallLF = addExtern(mod, "strEquatorCall", int64LT, {emptyPtrLT, int8PtrLT, int8PtrLT});
+
+  int256HasherCallLF =
+      addFunction(mod, "int256HasherCall", int64LT, {emptyPtrLT, int256LT});
+  defineFunctionBody(
+      context, int256HasherCallLF, int64LT, "int256HasherCall",
+      [int64LT, int256LT](FunctionState* functionState, LLVMBuilderRef builder) {
+        // Ignore 'this' arg 0
+        auto int256LE = LLVMGetParam(functionState->containingFuncL, 1);
+        auto maskLE = LLVMConstInt(int256LT, 0xFFFFFFFFFFFFFFFF, false);
+        auto firstI64 = LLVMBuildAnd(builder, int256LE, maskLE, "x1");
+
+        auto secondShiftLE = LLVMConstInt(int256LT, 64 * 1, false);
+        auto secondMaskLE = LLVMBuildShl(builder, maskLE, secondShiftLE, "m2");
+        auto unshiftedSecondI64LE = LLVMBuildAnd(builder, int256LE, secondMaskLE, "u2");
+        auto secondI64 = LLVMBuildLShr(builder, unshiftedSecondI64LE, secondShiftLE, "x2");
+
+        auto thirdShiftLE = LLVMConstInt(int256LT, 64 * 2, false);
+        auto thirdMaskLE = LLVMBuildShl(builder, maskLE, thirdShiftLE, "m3");
+        auto unshiftedThirdI64LE = LLVMBuildAnd(builder, int256LE, thirdMaskLE, "u3");
+        auto thirdI64 = LLVMBuildLShr(builder, unshiftedThirdI64LE, thirdShiftLE, "x3");
+
+        auto fourthShiftLE = LLVMConstInt(int256LT, 64 * 3, false);
+        auto fourthMaskLE = LLVMBuildShl(builder, maskLE, fourthShiftLE, "m4");
+        auto unshiftedFourthI64LE = LLVMBuildAnd(builder, int256LE, fourthMaskLE, "u4");
+        auto fourthI64 = LLVMBuildLShr(builder, unshiftedFourthI64LE, fourthShiftLE, "x4");
+
+        auto resultLE = firstI64;
+        resultLE = LLVMBuildXor(builder, resultLE, secondI64, "r2");
+        resultLE = LLVMBuildXor(builder, resultLE, thirdI64, "r3");
+        resultLE = LLVMBuildXor(builder, resultLE, fourthI64, "r4");
+        LLVMBuildRet(builder, resultLE);
+      });
+  int256EquatorCallLF =
+      addFunction(mod, "int256EquatorCall", int1LT, {emptyPtrLT, int256LT, int256LT});
+  defineFunctionBody(
+      context, int256EquatorCallLF, int1LT, "int256HasherCall",
+      [](FunctionState* functionState, LLVMBuilderRef builder) {
+        // Ignore 'this' arg 0
+        LLVMGetParam(functionState->containingFuncL, 0);
+        auto firstInt256LE = LLVMGetParam(functionState->containingFuncL, 1);
+        auto secondInt256LE = LLVMGetParam(functionState->containingFuncL, 2);
+        auto resultLE = LLVMBuildICmp(builder, LLVMIntEQ, firstInt256LE, secondInt256LE, "equal");
+        LLVMBuildRet(builder, resultLE);
+      });
 
 //  initTwinPages = addExtern(mod, "__vale_initTwinPages", int8PtrLT, {});
 }

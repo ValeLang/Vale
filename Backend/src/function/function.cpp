@@ -334,7 +334,7 @@ void defineFunctionBodyV(
   auto functionL = globalState->lookupFunction(prototype);
   auto retType = globalState->getRegion(prototype->returnType)->translateType(prototype->returnType);
   defineFunctionBody(
-      globalState,
+      globalState->context,
       functionL,
       retType,
       prototype->name->name,

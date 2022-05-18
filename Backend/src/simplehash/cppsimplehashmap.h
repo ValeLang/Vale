@@ -34,7 +34,7 @@ public:
   }
 
   void add(K key, V value) {
-    if (size >= capacity) {
+    if (size * 2 >= capacity) {
       expand();
     }
     if (contains(key)) {
@@ -84,12 +84,12 @@ public:
     int64_t startIndex = hasher(key) % capacity;
     for (int64_t i = 0; i < capacity; i++) {
       int64_t indexInTable = (startIndex + i) % capacity;
+      if (!presences[indexInTable]) {
+        return indexInTable;
+      }
       if (equator(entries[indexInTable].key, key)) {
         fprintf(stderr, "Found element while looking for open hashset space, it's already present!\n");
         assert(0);
-      }
-      if (!presences[indexInTable]) {
-        return indexInTable;
       }
     }
     fprintf(stderr, "%s:%d, unreachable!\n", __FILE__, __LINE__);
@@ -100,6 +100,7 @@ public:
   int64_t innerRemove(K key) {
     int64_t originalIndex = findIndexOf(key);
     assert(originalIndex != -1);
+    assert(presences[originalIndex]);
     assert(entries[originalIndex].key == key);
     presences[originalIndex] = false;
     return originalIndex;
@@ -112,6 +113,7 @@ public:
     assert(index != -1);
     assert(!presences[index]);
     entries[index] = CppSimpleHashMapNode<K, V>(key, value);
+    presences[index] = true;
     int64_t doublecheckIndex = findIndexOf(key);
     assert(doublecheckIndex == index);
   }
@@ -119,7 +121,7 @@ public:
   void expand() {
     int64_t oldNumEntries = capacity;
     CppSimpleHashMapNode<K, V>* oldEntries = entries;
-    bool* oldEntryIndexToIsFilled = presences;
+    bool* oldPresences = presences;
 
     //int64_t oldCapacity = capacity;
 
@@ -131,7 +133,7 @@ public:
     int64_t newIndexInSizeList = indexInSizeList + 1;
     auto newCapacity = hashTableSizeList[newIndexInSizeList];
 
-    capacity = hashTableSizeList[newCapacity];
+    capacity = newCapacity;
     entries = new CppSimpleHashMapNode<K, V>[capacity];
     memset(entries, 0, sizeof(CppSimpleHashMapNode<K, V>) * capacity);
     presences = new bool[capacity];
@@ -139,12 +141,12 @@ public:
 
     if (oldEntries) {
       for (int64_t i = 0; i < oldNumEntries; i++) {
-        if (oldEntryIndexToIsFilled[i]) {
+        if (oldPresences[i]) {
           innerAdd(oldEntries[i].key, oldEntries[i].value);
         }
       }
       delete[] oldEntries;
-      delete[] oldEntryIndexToIsFilled;
+      delete[] oldPresences;
     }
   }
 

@@ -21,6 +21,8 @@ void buildIf(
     LLVMBuilderRef builder,
     LLVMValueRef conditionLE,
     std::function<void(LLVMBuilderRef)> buildThen) {
+  auto int1LT = LLVMInt1TypeInContext(globalState->context);
+  assert(LLVMTypeOf(conditionLE) == int1LT);
 
   // We already are in the "current" block (which is what `builder` is
   // pointing at currently), but we're about to make two more: "then" and

@@ -16,9 +16,9 @@ include_directories(
 	"${CMAKE_SOURCE_DIR}/src/"
 )
 
+
 message(STATUS "LLVM VERSION : ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
-
 
 # See either:
 #   llvm-config --libfiles --link-static
@@ -98,7 +98,7 @@ add_executable(backend
 		src/region/regions.cpp
 
 		src/fileio.cpp
-		src/options.cpp src/mainFunction.cpp src/externs.cpp src/determinism/determinism.cpp src/determinism/determinism.h src/utils/definefunction.cpp src/utils/definefunction.h src/utils/flags.cpp src/utils/flags.h src/simplehash/cppsimplehashmap.cpp src/simplehash/cppsimplehashmap.h src/simplehash/llvmsimplehashmap.cpp src/simplehash/llvmsimplehashmap.h)
+		src/options.cpp src/mainFunction.cpp src/externs.cpp src/determinism/determinism.cpp src/determinism/determinism.h src/utils/definefunction.cpp src/utils/definefunction.h src/utils/flags.cpp src/utils/flags.h src/simplehash/cppsimplehashmap.cpp src/simplehash/cppsimplehashmap.h src/simplehash/llvmsimplehashmap.cpp src/simplehash/llvmsimplehashmap.h src/utils/llvm.cpp src/utils/llvm.h)
 
 target_link_libraries(backend ${llvm_libs})
 

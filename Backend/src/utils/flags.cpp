@@ -15,6 +15,7 @@ LLVMValueRef processFlag(
     std::function<void(LLVMBuilderRef, LLVMValueRef)> thenBody) {
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
+  auto int1LT = LLVMInt1TypeInContext(globalState->context);
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
   auto int8PtrPtrLT = LLVMPointerType(int8PtrLT, 0);
@@ -23,16 +24,17 @@ LLVMValueRef processFlag(
   return buildIfElse(
       globalState, functionState, builder, int64LT,
       LLVMBuildICmp(builder, LLVMIntUGT, mainArgsCountLE, constI64LE(globalState, 0), ""),
-      [globalState, functionState, flagName, int8PtrLT, thenBody, mainArgsCountLE, mainArgsLE](
+      [globalState, int1LT, functionState, flagName, int8PtrLT, thenBody, mainArgsCountLE, mainArgsLE](
           LLVMBuilderRef builder) {
         auto firstArgLE = LLVMBuildLoad(builder, mainArgsLE, "firstArg");
-        auto isReplayingLE =
-            buildCall(
+        auto isReplayingI8LE =
+            buildMaybeNeverCall(
                 globalState, builder, globalState->externs->strncmp, {
                     globalState->getOrMakeStringConstant(flagName),
                     firstArgLE,
                     constI64LE(globalState, flagName.size())
                 });
+        auto isReplayingLE = LLVMBuildTrunc(builder, isReplayingI8LE, int1LT, "isReplaying");
         buildIf(
             globalState, functionState->containingFuncL, builder, isReplayingLE,
             [globalState, functionState, flagName, mainArgsCountLE, mainArgsLE, int8PtrLT, thenBody](
@@ -53,9 +55,10 @@ LLVMValueRef processFlag(
                         buildPrint(globalState, builder, "Error: Must supply a value after ");
                         buildPrint(globalState, builder, flagName);
                         buildPrint(globalState, builder, ".\n");
-                        buildCall(globalState, builder, globalState->externs->exit, {constI64LE(globalState, 1)});
+                        buildMaybeNeverCall(globalState, builder, globalState->externs->exit, {constI64LE(globalState, 1)});
                         return LLVMGetUndef(int8PtrLT);
                       });
+              assert(LLVMTypeOf(replayFile) == int8PtrLT);
               thenBody(builder, replayFile);
               return constI64LE(globalState, 2); // 2 means we've consumed two arguments.
             });

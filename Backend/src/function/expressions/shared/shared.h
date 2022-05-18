@@ -218,7 +218,7 @@ Ref buildCallV(
     Prototype* prototype,
     std::vector<Ref> argRefs);
 
-LLVMValueRef buildCall(
+LLVMValueRef buildMaybeNeverCall(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef functionLE,

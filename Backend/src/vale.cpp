@@ -1120,6 +1120,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
         continue;
       }
       declareExternFunction(globalState, package, prototype);
+      determinism.registerFunction(prototype);
     }
   }
 
@@ -1135,9 +1136,12 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
       if (!skipExporting) {
         auto function = program.getFunction(prototype->name);
         exportFunction(globalState, package, function);
+        determinism.registerFunction(prototype);
       }
     }
   }
+
+  determinism.finalizeFunctionsMap();
 
   for (auto[packageCoord, package] : program.packages) {
     for (auto p : package->functions) {

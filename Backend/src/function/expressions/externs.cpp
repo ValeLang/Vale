@@ -48,7 +48,7 @@ void replayExportCalls(
         buildIf(
             globalState, functionState->containingFuncL, whileBuilder, replayerFuncPtrNotNullLE,
             [replayerFuncPtrLE](LLVMBuilderRef thenBuilder) {
-              buildCall(thenBuilder, replayerFuncPtrLE, {});
+              buildSimpleCall(thenBuilder, replayerFuncPtrLE, {});
             });
         return replayerFuncPtrNotNullLE;
       });
@@ -125,7 +125,7 @@ Ref buildCallOrSideCall(
               hostArgsLE);
       assert(LLVMTypeOf(resultLE) == LLVMVoidTypeInContext(globalState->context));
     } else {
-      auto resultLE = buildCall(globalState, builder, externFuncL, hostArgsLE);
+      auto resultLE = buildMaybeNeverCall(globalState, builder, externFuncL, hostArgsLE);
       assert(LLVMTypeOf(resultLE) == LLVMVoidTypeInContext(globalState->context));
     }
     hostReturnLE = LLVMBuildLoad(builder, localPtrLE, "hostReturn");
@@ -138,7 +138,7 @@ Ref buildCallOrSideCall(
           buildSideCall(globalState, hostReturnRefLT, builder, sideStackI8PtrLE, externFuncL, hostArgsLE);
     } else {
       hostReturnLE =
-          buildCall(globalState, builder, externFuncL, hostArgsLE);
+          buildMaybeNeverCall(globalState, builder, externFuncL, hostArgsLE);
     }
   }
 
@@ -270,7 +270,7 @@ Ref replayReturnOrCallAndOrRecord(
                         globalState->getRegion(valeArgRefMT)
                             ->checkValidReference(FL(), functionState, builder, valeArgRefMT, args[i]);
                     auto recordedRefLE =
-                        globalState->determinism->buildReadAndMapRefFromFile(builder, valeArgRefMT);
+                        globalState->determinism->buildMapRefFromRecordingFile(builder, valeArgRefMT);
                     assert(false);
                   }
                 }
@@ -282,7 +282,7 @@ Ref replayReturnOrCallAndOrRecord(
                 Ref valeReturnRef =
                     (valeReturnRefMT->ownership == Ownership::SHARE ?
                      globalState->determinism->buildReadValueFromFile(functionState, builder, valeReturnRefMT) :
-                     globalState->determinism->buildReadAndMapRefFromFile(builder, valeReturnRefMT));
+                     globalState->determinism->buildMapRefFromRecordingFile(builder, valeReturnRefMT));
 //                Ref valeReturnRef =
 //                    wrap(globalState->getRegion(valeReturnRefMT), valeReturnRefMT, valeReturnRefLE);
 

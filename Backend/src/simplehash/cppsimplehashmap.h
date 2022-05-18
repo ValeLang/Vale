@@ -1,6 +1,7 @@
 #ifndef SIMPLEHASH_CPPSIMPLEHASHMAP_H
 #define SIMPLEHASH_CPPSIMPLEHASHMAP_H
 
+#include <cstdlib>
 #include <cstdint>
 #include <cstdio>
 #include <cassert>

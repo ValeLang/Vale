@@ -72,22 +72,26 @@ Externs::Externs(LLVMModuleRef mod, LLVMContextRef context) {
         // Ignore 'this' arg 0
         auto int256LE = LLVMGetParam(functionState->containingFuncL, 1);
         auto maskLE = LLVMConstInt(int256LT, 0xFFFFFFFFFFFFFFFF, false);
-        auto firstI64 = LLVMBuildAnd(builder, int256LE, maskLE, "x1");
+        auto firstI256 = LLVMBuildAnd(builder, int256LE, maskLE, "x1as256");
+        auto firstI64 = LLVMBuildTrunc(builder, firstI256, int64LT, "x1");
 
         auto secondShiftLE = LLVMConstInt(int256LT, 64 * 1, false);
         auto secondMaskLE = LLVMBuildShl(builder, maskLE, secondShiftLE, "m2");
         auto unshiftedSecondI64LE = LLVMBuildAnd(builder, int256LE, secondMaskLE, "u2");
-        auto secondI64 = LLVMBuildLShr(builder, unshiftedSecondI64LE, secondShiftLE, "x2");
+        auto secondI256 = LLVMBuildLShr(builder, unshiftedSecondI64LE, secondShiftLE, "x2");
+        auto secondI64 = LLVMBuildTrunc(builder, secondI256, int64LT, "x1");
 
         auto thirdShiftLE = LLVMConstInt(int256LT, 64 * 2, false);
         auto thirdMaskLE = LLVMBuildShl(builder, maskLE, thirdShiftLE, "m3");
         auto unshiftedThirdI64LE = LLVMBuildAnd(builder, int256LE, thirdMaskLE, "u3");
-        auto thirdI64 = LLVMBuildLShr(builder, unshiftedThirdI64LE, thirdShiftLE, "x3");
+        auto thirdI256 = LLVMBuildLShr(builder, unshiftedThirdI64LE, thirdShiftLE, "x3");
+        auto thirdI64 = LLVMBuildTrunc(builder, thirdI256, int64LT, "x1");
 
         auto fourthShiftLE = LLVMConstInt(int256LT, 64 * 3, false);
         auto fourthMaskLE = LLVMBuildShl(builder, maskLE, fourthShiftLE, "m4");
         auto unshiftedFourthI64LE = LLVMBuildAnd(builder, int256LE, fourthMaskLE, "u4");
-        auto fourthI64 = LLVMBuildLShr(builder, unshiftedFourthI64LE, fourthShiftLE, "x4");
+        auto fourthI256 = LLVMBuildLShr(builder, unshiftedFourthI64LE, fourthShiftLE, "x4");
+        auto fourthI64 = LLVMBuildTrunc(builder, fourthI256, int64LT, "x1");
 
         auto resultLE = firstI64;
         resultLE = LLVMBuildXor(builder, resultLE, secondI64, "r2");

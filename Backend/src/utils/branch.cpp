@@ -15,6 +15,109 @@ void buildIfV(
   buildIf(globalState, functionState->containingFuncL, builder, conditionLE, buildThen);
 }
 
+void buildIfNever(
+    GlobalState* globalState,
+    LLVMValueRef funcL,
+    LLVMBuilderRef builder,
+    LLVMValueRef conditionLE,
+    std::function<void(LLVMBuilderRef)> buildThen) {
+  auto int1LT = LLVMInt1TypeInContext(globalState->context);
+  assert(LLVMTypeOf(conditionLE) == int1LT);
+
+  // We already are in the "current" block (which is what `builder` is
+  // pointing at currently), but we're about to make two more: "then" and
+  // "afterward".
+  //              .-----> then -----.
+  //  current ---:                   :---> afterward
+  //              '-----------------'
+  // Right now, the `builder` is pointed at the "current" block.
+  // After we're done, we'll change it to point at the "afterward" block, so
+  // that subsequent instructions (after the If) can keep using the same
+  // builder, but they'll be adding to the "afterward" block we're making
+  // here.
+
+  LLVMBasicBlockRef thenStartBlockL =
+      LLVMAppendBasicBlockInContext(globalState->context, funcL, "");
+  LLVMBuilderRef thenBlockBuilder = LLVMCreateBuilderInContext(globalState->context);
+  LLVMPositionBuilderAtEnd(thenBlockBuilder, thenStartBlockL);
+
+  LLVMBasicBlockRef afterwardBlockL =
+      LLVMAppendBasicBlockInContext(globalState->context, funcL, "");
+
+  LLVMBuildCondBr(builder, conditionLE, thenStartBlockL, afterwardBlockL);
+
+  // Now, we fill in the "then" block.
+  buildThen(thenBlockBuilder);
+
+  // Don't add an instruction to get to the afterward block, since this part is unreachable.
+  // LLVMBuildBr(thenBlockBuilder, afterwardBlockL);
+  // Instead, have an unreachable instruction:
+  LLVMBuildUnreachable(thenBlockBuilder);
+
+  LLVMDisposeBuilder(thenBlockBuilder);
+
+  // Like explained above, here we're re-pointing the `builder` to point at
+  // the afterward block, so that subsequent instructions (after the If) can
+  // keep using the same builder, but they'll be adding to the "afterward"
+  // block we're making here.
+  LLVMPositionBuilderAtEnd(builder, afterwardBlockL);
+
+  // We're done with the "current" block, and also the "then" and "else"
+  // blocks, nobody else will write to them now.
+  // We re-pointed the `builder` to point at the "afterward" block, and
+  // subsequent instructions after the if will keep adding to that.
+}
+
+void buildIfReturn(
+    GlobalState* globalState,
+    LLVMValueRef funcL,
+    LLVMBuilderRef builder,
+    LLVMValueRef conditionLE,
+    std::function<LLVMValueRef(LLVMBuilderRef)> buildThen) {
+  auto int1LT = LLVMInt1TypeInContext(globalState->context);
+  assert(LLVMTypeOf(conditionLE) == int1LT);
+
+  // We already are in the "current" block (which is what `builder` is
+  // pointing at currently), but we're about to make two more: "then" and
+  // "afterward".
+  //              .-----> then -----.
+  //  current ---:                   :---> afterward
+  //              '-----------------'
+  // Right now, the `builder` is pointed at the "current" block.
+  // After we're done, we'll change it to point at the "afterward" block, so
+  // that subsequent instructions (after the If) can keep using the same
+  // builder, but they'll be adding to the "afterward" block we're making
+  // here.
+
+  LLVMBasicBlockRef thenStartBlockL =
+      LLVMAppendBasicBlockInContext(globalState->context, funcL, "");
+  LLVMBuilderRef thenBlockBuilder = LLVMCreateBuilderInContext(globalState->context);
+  LLVMPositionBuilderAtEnd(thenBlockBuilder, thenStartBlockL);
+
+  LLVMBasicBlockRef afterwardBlockL =
+      LLVMAppendBasicBlockInContext(globalState->context, funcL, "");
+
+  LLVMBuildCondBr(builder, conditionLE, thenStartBlockL, afterwardBlockL);
+
+  // Now, we fill in the "then" block.
+  auto toReturnLE = buildThen(thenBlockBuilder);
+
+  LLVMBuildRet(thenBlockBuilder, toReturnLE);
+
+  LLVMDisposeBuilder(thenBlockBuilder);
+
+  // Like explained above, here we're re-pointing the `builder` to point at
+  // the afterward block, so that subsequent instructions (after the If) can
+  // keep using the same builder, but they'll be adding to the "afterward"
+  // block we're making here.
+  LLVMPositionBuilderAtEnd(builder, afterwardBlockL);
+
+  // We're done with the "current" block, and also the "then" and "else"
+  // blocks, nobody else will write to them now.
+  // We re-pointed the `builder` to point at the "afterward" block, and
+  // subsequent instructions after the if will keep adding to that.
+}
+
 void buildIf(
     GlobalState* globalState,
     LLVMValueRef funcL,

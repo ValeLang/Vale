@@ -238,10 +238,10 @@ private:
           // }
           auto entriesPtrLE = mapStructLT.getMember(builder, mapPtrLE, MapMember::ENTRIES);
           auto entriesNullLE = ptrIsNull(globalState->context, builder, entriesPtrLE);
-          buildIf(
+          buildIfReturn(
               globalState, functionState->containingFuncL, builder, entriesNullLE,
               [this](LLVMBuilderRef builder){
-                LLVMBuildRet(builder, constI64LE(globalState, -1));
+                return constI64LE(globalState, -1);
               });
           // int64_t startIndex = hasher(key) % capacity;
           auto capacityLE = mapStructLT.getMember(builder, mapPtrLE, MapMember::CAPACITY);
@@ -262,27 +262,28 @@ private:
                 auto presenceI8LE = subscript(builder, presencesPtrLE, indexInTableLE, "presenceI8");
                 auto presenceLE = LLVMBuildTrunc(builder, presenceI8LE, int1LT, "presence");
                 auto notPresent = LLVMBuildNot(builder, presenceLE, "notPresent");
-                buildIf(
+                buildIfReturn(
                     globalState, functionState->containingFuncL, builder, notPresent,
                     [this](LLVMBuilderRef builder){
                       // return -1;
-                      LLVMBuildRet(builder, constI64LE(globalState, -1));
+                      return constI64LE(globalState, -1);
                     });
                 // if (equator(entries[indexInTable], key)) {
                 auto entryPtrLE = subscriptForPtr(builder, entriesPtrLE, indexInTableLE, "entry");
                 auto entryKeyLE = nodeStructLT.getMember(builder, entryPtrLE, NodeMember::KEY, "entryKey");
                 auto equalI8LE = buildSimpleCall(builder, equatorLF, {equatorPtrLE, entryKeyLE, keyLE});
                 auto equalLE = LLVMBuildTrunc(builder, equalI8LE, int1LT, "equal");
-                buildIf(
+                buildIfReturn(
                     globalState, functionState->containingFuncL, builder, equalLE,
                     [this, indexInTableLE](LLVMBuilderRef builder){
                       // return indexInTable;
-                      LLVMBuildRet(builder, indexInTableLE);
+                      return indexInTableLE;
                     });
               });
           buildPrint(globalState, builder, "Unreachable!\n");
           // exit(1); // We shouldnt get here, it would mean the table is full.
           buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, -1)});
+          LLVMBuildUnreachable(builder);
         });
   }
 

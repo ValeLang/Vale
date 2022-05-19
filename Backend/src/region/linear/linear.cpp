@@ -2068,6 +2068,7 @@ Ref Linear::createRegionInstanceLocal(FunctionState* functionState, LLVMBuilderR
   // This is the method called via IRegion when we want to make a function-bound region.
   // Linear isn't used for that though, linear's used for serializing to/from C and files.
   assert(false);
+  exit(1);
 }
 
 Ref Linear::createRegionInstanceLocal(

@@ -206,7 +206,6 @@ public:
     assert(false);
   }
 
-
   Weakability getKindWeakability(Kind* kind);
 
   Ref constI64(int64_t x);

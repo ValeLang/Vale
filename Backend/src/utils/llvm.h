@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-inline LLVMValueRef constI64LE(LLVMContextRef context, int64_t n);
+LLVMValueRef constI64LE(LLVMContextRef context, int64_t n);
 
 LLVMValueRef ptrIsNull(LLVMContextRef context, LLVMBuilderRef builder, LLVMValueRef ptrLE);
 

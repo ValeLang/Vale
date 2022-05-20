@@ -247,6 +247,8 @@ Ref replayReturnOrCallAndOrRecord(
                         ->checkValidReference(
                             FL(), functionState, builder, prototype->returnType, valeReturnRef);
                 if (valeReturnRefMT->ownership == Ownership::SHARE) {
+                  start here, need to alienify it.
+                  we dont even need to do the whole i256 thing either, meh
                   globalState->determinism->buildWriteRefToFile(builder, returnLE);
                 } else {
                   globalState->determinism->buildWriteRefToFile(builder, returnLE);

@@ -1887,7 +1887,7 @@ Ref regularReceiveAndDecryptFamiliarReference(
 
     return ref;
   } else if (auto interfaceMT = dynamic_cast<InterfaceKind*>(sourceRefMT->kind)) {
-    auto handleLT = globalState->getInterfaceHandleStruct();
+    auto handleLT = globalState->getUniversalRefStructLT();
     assert(LLVMTypeOf(sourceRefLE) == handleLT);
 
     LLVMValueRef refRegionIdLE = nullptr, refItablePtrIntLE = nullptr, refObjPtrIntLE = nullptr, refGenIntLE = nullptr, refOffsetIntLE = nullptr;
@@ -1959,7 +1959,7 @@ LLVMValueRef regularEncryptAndSendFamiliarReference(
         implodeInterfaceHandle(
             globalState,
             builder,
-            globalState->getInterfaceHandleStruct(),
+            globalState->getUniversalRefStructLT(),
             constI64LE(globalState, externHandleRegionId),
             itablePtrIntLE,
             objPtrIntLE,
@@ -2069,7 +2069,7 @@ Ref resilientReceiveAndDecryptFamiliarReference(
 
         return ref;
       } else if (auto interfaceMT = dynamic_cast<InterfaceKind*>(sourceRefMT->kind)) {
-        auto handleLT = globalState->getInterfaceHandleStruct();
+        auto handleLT = globalState->getUniversalRefStructLT();
         assert(LLVMTypeOf(sourceRefLE) == handleLT);
 
         LLVMValueRef refRegionIdLE = nullptr, refItablePtrIntLE = nullptr, refObjPtrIntLE = nullptr, refGenIntLE = nullptr, refOffsetIntLE = nullptr;
@@ -2214,7 +2214,7 @@ explodeConcreteHandle(GlobalState* globalState, LLVMBuilderRef builder, LLVMValu
 
 std::tuple<LLVMValueRef, LLVMValueRef, LLVMValueRef, LLVMValueRef, LLVMValueRef>
 explodeInterfaceHandle(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef interfaceHandleLE) {
-  assert(LLVMTypeOf(interfaceHandleLE) == globalState->getInterfaceHandleStruct());
+  assert(LLVMTypeOf(interfaceHandleLE) == globalState->getUniversalRefStructLT());
   auto regionIdLE = LLVMBuildExtractValue(builder, interfaceHandleLE, 0, "regionId");
   auto itablePtrIntLE = LLVMBuildExtractValue(builder, interfaceHandleLE, 1, "itablePtrInt");
   auto objPtrIntLE = LLVMBuildExtractValue(builder, interfaceHandleLE, 2, "objPtrInt");

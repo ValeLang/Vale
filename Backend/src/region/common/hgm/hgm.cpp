@@ -566,7 +566,7 @@ LLVMValueRef HybridGenerationalMemory::implodeInterfaceHandle(
       ::implodeInterfaceHandle(
           globalState,
           builder,
-          globalState->getInterfaceHandleStruct(),
+          globalState->getUniversalRefStructLT(),
           constI64LE(globalState, externHandleRegionId),
           LLVMBuildPtrToInt(builder, itablePtrLE, LLVMInt64TypeInContext(globalState->context), "itablePtr"),
           LLVMBuildPtrToInt(builder, controlBlockPtrLE.refLE, LLVMInt64TypeInContext(globalState->context), "objPtrB"),

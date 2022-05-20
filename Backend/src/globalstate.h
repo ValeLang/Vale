@@ -66,8 +66,8 @@ public:
 
 //  LLVMValueRef genMalloc = nullptr, genFree = nullptr;
 
-  LLVMTypeRef concreteHandleLT = nullptr; // 24 bytes, for SSA, RSA, and structs
-  LLVMTypeRef interfaceHandleLT = nullptr; // 32 bytes, for interfaces. concreteHandleLT plus 8b itable ptr.
+  // 32 bytes for the outside world to refer to our objects, see URSL.
+  LLVMTypeRef universalRefStructLT = nullptr;
 
   // This is a global, we can return this when we want to return never. It should never actually be
   // used as an input to any expression in any function though.
@@ -120,8 +120,7 @@ public:
   // This keeps us from adding more edges or interfaces after we've already started compiling them.
   bool interfacesOpen = true;
 
-  LLVMTypeRef getConcreteHandleStruct() { return concreteHandleLT; }
-  LLVMTypeRef getInterfaceHandleStruct() { return interfaceHandleLT; }
+  LLVMTypeRef getUniversalRefStructLT() { return universalRefStructLT; }
 
   void addInterfaceExtraMethod(InterfaceKind* interfaceKind, InterfaceMethod* method) {
     assert(interfacesOpen);

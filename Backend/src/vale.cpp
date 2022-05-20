@@ -652,31 +652,20 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
   {
-    globalState->concreteHandleLT = LLVMStructCreateNamed(globalState->context, "__ExternConcreteHandle");
+    globalState->universalRefStructLT = LLVMStructCreateNamed(globalState->context, "__ExternInterfaceHandle");
     std::vector<LLVMTypeRef> memberTypesL = {
-        LLVMInt64TypeInContext(globalState->context), // region ID
-        LLVMInt64TypeInContext(globalState->context), // object pointer
-        LLVMInt32TypeInContext(globalState->context), // generation
-        LLVMInt32TypeInContext(globalState->context), // offset to generation
+        LLVMIntTypeInContext(globalState->context, 56), // region pointer
+        LLVMIntTypeInContext(globalState->context, 64), // itable pointer
+        LLVMIntTypeInContext(globalState->context, 56), // object pointer
+        LLVMInt32TypeInContext(globalState->context), // object generation
+        LLVMInt32TypeInContext(globalState->context), // region generation
+        LLVMInt16TypeInContext(globalState->context), // offset to generation
     };
-    LLVMStructSetBody(globalState->concreteHandleLT, memberTypesL.data(), memberTypesL.size(), false);
+    // Note the packed=true here, it needs to be packed to fit in 32B.
+    LLVMStructSetBody(
+        globalState->universalRefStructLT, memberTypesL.data(), memberTypesL.size(), /*packed=*/true);
 
-    auto actualSize = LLVMABISizeOfType(globalState->dataLayout, globalState->concreteHandleLT);
-    assert(actualSize == 24);
-  }
-
-  {
-    globalState->interfaceHandleLT = LLVMStructCreateNamed(globalState->context, "__ExternInterfaceHandle");
-    std::vector<LLVMTypeRef> memberTypesL = {
-        LLVMInt64TypeInContext(globalState->context), // region ID
-        LLVMInt64TypeInContext(globalState->context), // itable pointer
-        LLVMInt64TypeInContext(globalState->context), // object pointer
-        LLVMInt32TypeInContext(globalState->context), // generation
-        LLVMInt32TypeInContext(globalState->context), // offset to generation
-    };
-    LLVMStructSetBody(globalState->interfaceHandleLT, memberTypesL.data(), memberTypesL.size(), false);
-
-    auto actualSize = LLVMABISizeOfType(globalState->dataLayout, globalState->interfaceHandleLT);
+    auto actualSize = LLVMABISizeOfType(globalState->dataLayout, globalState->universalRefStructLT);
     assert(actualSize == 32);
   }
 

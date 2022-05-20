@@ -24,37 +24,6 @@ enum MapMember {
   EQUATOR = 5
 };
 
-template<typename EnumType>
-struct StructLT {
-public:
-  StructLT(GlobalState* globalState_, const std::string& name, std::vector<LLVMTypeRef> membersLT_) :
-      globalState(globalState_),
-      membersLT(std::move(membersLT_)) {
-    for (int i = 0; i < membersLT.size(); i++) {
-      assert(LLVMTypeIsSized(membersLT[i]));
-    }
-    structLT = LLVMStructCreateNamed(globalState->context, name.c_str()),
-    LLVMStructSetBody(structLT, membersLT.data(), membersLT.size(), false);
-    assert(LLVMTypeIsSized(structLT));
-  }
-
-  LLVMValueRef getMemberPtr(LLVMBuilderRef builder, LLVMValueRef ptrLE, EnumType member) {
-    assert(LLVMTypeOf(ptrLE) == LLVMPointerType(structLT, 0));
-    return LLVMBuildStructGEP(builder, ptrLE, member, "memberPtr");
-  }
-
-  LLVMValueRef getMember(LLVMBuilderRef builder, LLVMValueRef ptrLE, EnumType member, const std::string& name = "member") {
-    return LLVMBuildLoad(builder, getMemberPtr(builder, ptrLE, member), name.c_str());
-  }
-
-  LLVMTypeRef getStructLT() { return structLT; }
-
-private:
-  GlobalState* globalState;
-  std::vector<LLVMTypeRef> membersLT;
-  LLVMTypeRef structLT;
-};
-
 class LlvmSimpleHashMap {
 public:
   static LlvmSimpleHashMap create(

@@ -191,8 +191,7 @@ Ref replayReturnOrCallAndOrRecord(
     // If we're here, replaying is enabled.
     // We might be replaying, recording, or neither, depending on the flags supplied at runtime.
 
-    auto recordingModePtrLE = globalState->recordingModePtrLE.value();
-    LLVMValueRef recordingModeLE = LLVMBuildLoad(builder, recordingModePtrLE, "recordingMode");
+    LLVMValueRef recordingModeLE = globalState->determinism->buildGetMode(builder);
     Ref isNormalRunRef =
         wrap(
             globalState->getRegion(globalState->metalCache->boolRef),

@@ -24,12 +24,6 @@ class Determinism;
 constexpr int LGT_ENTRY_MEMBER_INDEX_FOR_GEN = 0;
 constexpr int LGT_ENTRY_MEMBER_INDEX_FOR_NEXT_FREE = 1;
 
-enum class RecordingMode : int64_t {
-  NORMAL = 0,
-  RECORDING = 1,
-  REPLAYING = 2
-};
-
 class GlobalState {
 public:
   GlobalState(AddressNumberer* addressNumberer);
@@ -65,9 +59,6 @@ public:
   LLVMValueRef livenessCheckCounter = nullptr;
   LLVMValueRef writeOnlyGlobal = nullptr;
   LLVMValueRef crashGlobal = nullptr;
-
-  // See RecordingMode
-  std::optional<LLVMValueRef> recordingModePtrLE = nullptr;
 
   LLVMTypeRef wrcTableStructLT = nullptr;
   LLVMValueRef expandWrcTable = nullptr, checkWrci = nullptr, getNumWrcs = nullptr;

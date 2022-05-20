@@ -69,10 +69,20 @@ Determinism::Determinism(GlobalState* globalState_) :
   auto int256LT = LLVMIntTypeInContext(globalState->context, 256);
   auto voidFuncPtrLT = LLVMPointerType(LLVMFunctionType(voidLT, nullptr, 0, false), 0);
 
-  fileDescriptorPtrGlobalLE =
+  fileHandleGlobalLE =
       LLVMAddGlobal(globalState->mod, int8PtrLT, "__vale_determinism_file");
-  LLVMSetLinkage(fileDescriptorPtrGlobalLE, LLVMExternalLinkage);
-  LLVMSetInitializer(fileDescriptorPtrGlobalLE, LLVMConstNull(int8PtrLT));
+  LLVMSetLinkage(fileHandleGlobalLE, LLVMExternalLinkage);
+  LLVMSetInitializer(fileHandleGlobalLE, LLVMConstNull(int8PtrLT));
+
+  fileOffsetGlobalLE =
+      LLVMAddGlobal(globalState->mod, int64LT, "__vale_determinism__file_offset");
+  LLVMSetLinkage(fileOffsetGlobalLE, LLVMExternalLinkage);
+  LLVMSetInitializer(fileOffsetGlobalLE, constI64LE(globalState, 0));
+
+  recordingModeGlobalLE =
+      LLVMAddGlobal(globalState->mod, int64LT, "__vale_determinism__mode");
+  LLVMSetLinkage(recordingModeGlobalLE, LLVMExternalLinkage);
+  LLVMSetInitializer(recordingModeGlobalLE, constI64LE(globalState, RecordingMode::NORMAL));
 
 
   std::vector<LLVMTypeRef> hasherParamsLT = {makeEmptyStructType(globalState), int256LT};
@@ -351,9 +361,10 @@ void Determinism::makeFuncToStartReplaying() {
   defineFunctionBody(
       globalState->context, startReplayingLF, voidLT, startReplayingFuncName,
       [this](FunctionState* functionState, LLVMBuilderRef builder){
+        LLVMBuildStore(builder, constI64LE(globalState, RecordingMode::REPLAYING), recordingModeGlobalLE);
         auto recordingFilenameLE = LLVMGetParam(functionState->containingFuncL, 0);
         auto fileLE = openFile(functionState, builder, recordingFilenameLE, FileOpenMode::READ);
-        LLVMBuildStore(builder, fileLE, fileDescriptorPtrGlobalLE);
+        LLVMBuildStore(builder, fileLE, fileHandleGlobalLE);
         writeI64ToFile(functionState, builder, constI64LE(globalState, RECORDING_FILE_CONSTANT));
         LLVMBuildRetVoid(builder);
       });
@@ -364,9 +375,10 @@ void Determinism::makeFuncToStartRecording() {
   defineFunctionBody(
       globalState->context, startRecordingLF, voidLT, startRecordingFuncName,
       [this](FunctionState* functionState, LLVMBuilderRef builder){
+        LLVMBuildStore(builder, constI64LE(globalState, RecordingMode::RECORDING), recordingModeGlobalLE);
         auto recordingFilenameLE = LLVMGetParam(functionState->containingFuncL, 0);
         auto fileLE = openFile(functionState, builder, recordingFilenameLE, FileOpenMode::WRITE);
-        LLVMBuildStore(builder, fileLE, fileDescriptorPtrGlobalLE);
+        LLVMBuildStore(builder, fileLE, fileHandleGlobalLE);
         writeI64ToFile(functionState, builder, constI64LE(globalState, RECORDING_FILE_CONSTANT));
         LLVMBuildRetVoid(builder);
       });
@@ -381,7 +393,7 @@ void Determinism::writeBytesToFile(
               i8PtrLE,
               sizeLE,
               constI64LE(globalState, 1),
-              LLVMBuildLoad(builder, fileDescriptorPtrGlobalLE, ""),
+              LLVMBuildLoad(builder, fileHandleGlobalLE, ""),
           });
   buildIfNever(
       globalState, functionState->containingFuncL, builder,
@@ -454,7 +466,7 @@ LLVMValueRef Determinism::readI64FromFile(
               ptrToVoidPtrLE(globalState, builder, i64PtrLE),
               constI64LE(globalState, int64Size),
               constI64LE(globalState, 1),
-              LLVMBuildLoad(builder, fileDescriptorPtrGlobalLE, "")
+              LLVMBuildLoad(builder, fileHandleGlobalLE, "")
           });
   buildIf(
       globalState, functionState->containingFuncL, builder,
@@ -481,7 +493,7 @@ LLVMValueRef Determinism::readI256FromFile(
               ptrToVoidPtrLE(globalState, builder, i256PtrLE),
               constI64LE(globalState, int256Size),
               constI64LE(globalState, 1),
-              LLVMBuildLoad(builder, fileDescriptorPtrGlobalLE, "")
+              LLVMBuildLoad(builder, fileHandleGlobalLE, "")
           });
   buildIf(
       globalState, functionState->containingFuncL, builder,
@@ -524,7 +536,7 @@ void Determinism::readLimitedStringFromFile(
               bufferPtrLE,
               maxSizeLE,
               constI64LE(globalState, 1),
-              LLVMBuildLoad(builder, fileDescriptorPtrGlobalLE, "")
+              LLVMBuildLoad(builder, fileHandleGlobalLE, "")
           });
   buildIf(
       globalState, functionState->containingFuncL, builder,
@@ -554,7 +566,7 @@ void Determinism::readLimitedStringFromFile(
 //              ptrToVoidPtrLE(globalState, builder, i64PtrLE),
 //              constI64LE(globalState, int64Size),
 //              constI64LE(globalState, 1),
-//              LLVMBuildLoad(builder, fileDescriptorPtrGlobalLE, "")
+//              LLVMBuildLoad(builder, fileHandleGlobalLE, "")
 //          });
 //  buildIf(
 //      globalState, functionState->containingFuncL, builder,
@@ -742,7 +754,7 @@ void Determinism::buildWriteValueToFile(
         // At some point, look up the actual region instance, perhaps from the FunctionState?
         globalState->getRegion(sourceRefMT)->createRegionInstanceLocal(functionState, builder);
     auto useOffsetsLE = constI1LE(globalState, 1);
-    auto fileOffsetLE = LLVMBuildLoad(builder, fileOffsetPtrGlobalLE, "fileOffset");
+    auto fileOffsetLE = LLVMBuildLoad(builder, fileOffsetGlobalLE, "fileOffset");
     auto hostRegionInstanceRef =
         globalState->linearRegion->createRegionInstanceLocal(
             functionState, builder, useOffsetsLE, fileOffsetLE);
@@ -829,7 +841,7 @@ Ref Determinism::buildReadValueFromFile(
                 tempBufferPtrLE,
                 valueSizeLE,
                 constI64LE(globalState, 1),
-                LLVMBuildLoad(builder, fileDescriptorPtrGlobalLE, "")
+                LLVMBuildLoad(builder, fileHandleGlobalLE, "")
             });
     buildIf(
         globalState, functionState->containingFuncL, builder,
@@ -843,7 +855,7 @@ Ref Determinism::buildReadValueFromFile(
         // At some point, look up the actual region instance, perhaps from the FunctionState?
         globalState->getRegion(targetRefMT)->createRegionInstanceLocal(functionState, builder);
     auto useOffsetsLE = constI1LE(globalState, 1);
-    auto fileOffsetLE = LLVMBuildLoad(builder, fileOffsetPtrGlobalLE, "fileOffset");
+    auto fileOffsetLE = LLVMBuildLoad(builder, fileOffsetGlobalLE, "fileOffset");
     auto hostRegionInstanceRef =
         globalState->linearRegion->createRegionInstanceLocal(
             functionState, builder, useOffsetsLE, fileOffsetLE);
@@ -870,6 +882,10 @@ Ref Determinism::buildMapRefFromRecordingFile(LLVMBuilderRef builder, Reference*
 LLVMValueRef Determinism::buildGetMaybeReplayedFuncForNextExportCall(LLVMBuilderRef builder) {
   assert(getMaybeReplayerFuncForNextExportNameLF);
   return buildSimpleCall(builder, getMaybeReplayerFuncForNextExportNameLF, {});
+}
+
+LLVMValueRef Determinism::buildGetMode(LLVMBuilderRef builder) {
+  return LLVMBuildLoad(builder, recordingModeGlobalLE, "recordingMode");
 }
 
 Ref Determinism::i256ToRef(

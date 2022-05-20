@@ -6,6 +6,12 @@
 #include <simplehash/cppsimplehashmap.h>
 #include <simplehash/llvmsimplehashmap.h>
 
+enum RecordingMode {
+  NORMAL = 0,
+  RECORDING = 1,
+  REPLAYING = 2
+};
+
 struct PrototypeNameSimpleStringHasher {
   uint64_t operator()(Prototype* func) const {
     const char* str = func->name->name.c_str();
@@ -46,6 +52,7 @@ public:
       Ref sourceRef);
   Ref buildMapRefFromRecordingFile(LLVMBuilderRef builder, Reference* refMT);
   LLVMValueRef buildGetMaybeReplayedFuncForNextExportCall(LLVMBuilderRef builder);
+  LLVMValueRef buildGetMode(LLVMBuilderRef builder);
 
   Determinism(GlobalState* globalState);
 
@@ -112,8 +119,10 @@ private:
   LLVMValueRef readLimitedStringFromFileLF = nullptr;
   LLVMValueRef getMaybeReplayerFuncForNextExportNameLF = nullptr;
 
-  LLVMValueRef fileDescriptorPtrGlobalLE = nullptr;
-  LLVMValueRef fileOffsetPtrGlobalLE = nullptr;
+  LLVMValueRef fileHandleGlobalLE = nullptr;
+  LLVMValueRef fileOffsetGlobalLE = nullptr;
+  // See RecordingMode
+  LLVMValueRef recordingModeGlobalLE = nullptr;
 };
 
 

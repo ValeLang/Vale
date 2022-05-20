@@ -86,6 +86,7 @@ subprocess_weak int subprocess_create(const char *const command_line[],
 /// @param environment An optional array of strings for the environment to use
 /// for a child process (each element of the form FOO=BAR). The last element
 /// must be NULL to signify the end of the array.
+/// @param working_directory The cwd for the child process.
 /// @param out_process The newly created process.
 /// @return On success zero is returned.
 ///
@@ -94,6 +95,7 @@ subprocess_weak int subprocess_create(const char *const command_line[],
 subprocess_weak int
 subprocess_create_ex(const char *const command_line[], int options,
                      const char *const environment[],
+                     const char* const working_directory,
                      struct subprocess_s *const out_process);
 
 /// @brief Get the standard input file for a process.
@@ -418,7 +420,7 @@ int subprocess_create(const char *const commandLine[], int options,
 
 int subprocess_create_ex(const char *const commandLine[], int options,
                          const char *const environment[],
-                         const char* const workingDirectory,
+                         const char* const working_directory,
                          struct subprocess_s *const out_process) {
 #if defined(_MSC_VER)
   int fd;
@@ -662,7 +664,7 @@ int subprocess_create_ex(const char *const commandLine[], int options,
           1,                   // handles are inherited
           createNoWindow,      // creation flags
           used_environment,    // used environment
-          workingDirectory,     // use parent's current directory
+          working_directory,     // use parent's current directory
           SUBPROCESS_PTR_CAST(LPSTARTUPINFOA,
                               &startInfo), // STARTUPINFO pointer
           SUBPROCESS_PTR_CAST(LPPROCESS_INFORMATION, &processInfo))) {
@@ -748,10 +750,11 @@ int subprocess_create_ex(const char *const commandLine[], int options,
 #pragma clang diagnostic ignored "-Wold-style-cast"
 #endif
 
-    if (workingDirectory) {
-      int chdirResult = chdir(workingDirectory);
+    if (working_directory) {
+      int chdirResult = chdir(working_directory);
       if (chdirResult != 0) {
         perror("Couldn't change directory for subprocess");
+        fprintf(stderr, "Tried changing to: %s\n", working_directory);
         exit(1);
       }
     }

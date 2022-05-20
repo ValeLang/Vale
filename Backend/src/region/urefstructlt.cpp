@@ -31,8 +31,7 @@ UniversalRefStructLT::UniversalRefStructLT(LLVMContextRef context, LLVMTargetDat
               LLVMIntTypeInContext(context, 52), // region pointer
               LLVMInt16TypeInContext(context), // offset to generation
               LLVMInt16TypeInContext(context), // scope tether bits mask
-          },
-          /*packed=*/true);
+          });
   auto actualSize = LLVMABISizeOfType(dataLayout, structLT->getStructLT());
   assert(actualSize == 32);
 }
@@ -69,7 +68,9 @@ UniversalRefStructExplodedMembersLT UniversalRefStructLT::explodeInner(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef urefLE) {
+    LLVMValueRef urefI256LE) {
+  assert(LLVMTypeOf(urefI256LE) == LLVMIntTypeInContext(globalState->context, 256));
+  auto urefLE = buildDecompressStruct(globalState->context, globalState->dataLayout, *structLT, urefI256LE, builder);
   auto regionPtrI52LE = structLT->extractMember(builder, urefLE, UniversalRefStructMember::REGION_PTR);
   auto regionPtrI64LE = decompressI52PtrToI64(globalState, builder, regionPtrI52LE);
   buildAssertIntEq(globalState, functionState, builder, regionPtrI64LE, constI64LE(globalState, universalRefRegionPtrConstant), "Invalid reference in extern boundary! (rp)");
@@ -101,7 +102,10 @@ LLVMValueRef UniversalRefStructLT::implodeForRegularConcrete(
   auto typeInfoPtrI52LE = LLVMConstInt(int52LT, universalRefTypeInfoPtrConstant, false);
   urefBuilder.insertMember(builder, UniversalRefStructMember::TYPE_INFO_PTR, typeInfoPtrI52LE);
   fillUnusedFields(globalState, functionState, builder, &urefBuilder);
-  return urefBuilder.build();
+  auto structLE = urefBuilder.build();
+  auto resultLE = buildCompressStruct(globalState->context, globalState->dataLayout, *structLT, structLE, builder);
+  assert(LLVMSizeOfTypeInBits(globalState->dataLayout, LLVMTypeOf(resultLE)) == 256);
+  return resultLE;
 }
 
 LLVMValueRef UniversalRefStructLT::implodeForGenerationalConcrete(
@@ -118,7 +122,10 @@ LLVMValueRef UniversalRefStructLT::implodeForGenerationalConcrete(
   auto typeInfoPtrI52LE = LLVMConstInt(int52LT, universalRefTypeInfoPtrConstant, false);
   urefBuilder.insertMember(builder, UniversalRefStructMember::TYPE_INFO_PTR, typeInfoPtrI52LE);
   fillUnusedFields(globalState, functionState, builder, &urefBuilder);
-  return urefBuilder.build();
+  auto structLE = urefBuilder.build();
+  auto resultLE = buildCompressStruct(globalState->context, globalState->dataLayout, *structLT, structLE, builder);
+  assert(LLVMSizeOfTypeInBits(globalState->dataLayout, LLVMTypeOf(resultLE)) == 256);
+  return resultLE;
 }
 
 LLVMValueRef UniversalRefStructLT::implodeForRegularInterface(
@@ -135,7 +142,10 @@ LLVMValueRef UniversalRefStructLT::implodeForRegularInterface(
   auto typeInfoPtrI52LE = compressI64PtrToI52(globalState, builder, typeInfoPtrI64LE);
   urefBuilder.insertMember(builder, UniversalRefStructMember::TYPE_INFO_PTR, typeInfoPtrI52LE);
   fillUnusedFields(globalState, functionState, builder, &urefBuilder);
-  return urefBuilder.build();
+  auto structLE = urefBuilder.build();
+  auto resultLE = buildCompressStruct(globalState->context, globalState->dataLayout, *structLT, structLE, builder);
+  assert(LLVMSizeOfTypeInBits(globalState->dataLayout, LLVMTypeOf(resultLE)) == 256);
+  return resultLE;
 }
 
 LLVMValueRef UniversalRefStructLT::implodeForGenerationalInterface(
@@ -152,7 +162,10 @@ LLVMValueRef UniversalRefStructLT::implodeForGenerationalInterface(
   auto typeInfoPtrI52LE = compressI64PtrToI52(globalState, builder, typeInfoPtrI64LE);
   urefBuilder.insertMember(builder, UniversalRefStructMember::TYPE_INFO_PTR, typeInfoPtrI52LE);
   fillUnusedFields(globalState, functionState, builder, &urefBuilder);
-  return urefBuilder.build();
+  auto structLE = urefBuilder.build();
+  auto resultLE = buildCompressStruct(globalState->context, globalState->dataLayout, *structLT, structLE, builder);
+  assert(LLVMSizeOfTypeInBits(globalState->dataLayout, LLVMTypeOf(resultLE)) == 256);
+  return resultLE;
 }
 
 void UniversalRefStructLT::fillUnusedFields(

@@ -815,9 +815,9 @@ LLVMTypeRef Unsafe::getExternalType(Reference* refMT) {
   if (dynamic_cast<StructKind*>(refMT->kind) ||
       dynamic_cast<StaticSizedArrayT*>(refMT->kind) ||
       dynamic_cast<RuntimeSizedArrayT*>(refMT->kind)) {
-    return globalState->getUniversalRefStructLT()->getStructLT();
+    return LLVMIntTypeInContext(globalState->context, 256);
   } else if (dynamic_cast<InterfaceKind*>(refMT->kind)) {
-    return globalState->getUniversalRefStructLT()->getStructLT();
+    return LLVMIntTypeInContext(globalState->context, 256);
   } else {
     assert(false);
   }

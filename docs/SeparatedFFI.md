@@ -28,7 +28,7 @@ See https://verdagon.dev/blog/fearless-ffi
 
 
 
-# Universal Reference's Struct Layout (URSL)
+# Universal Reference Struct Layout (URSL)
 
 When we send a mutable object reference into FFI, we need to make it a universal reference.
 
@@ -40,15 +40,19 @@ These are the members:
  * regionGeneration (32b)
  * typePointer: an itable pointer (if interface) or type info pointer (if struct) (64b)
  * offsetToGeneration (16b)
+ * scopeTetherMask (16b)
 
-To make it fit in 32 bytes (256b), we'll need to scatter the offset into the unused bits. There are some unused bits in:
+To make it fit in 32 bytes (256b), we'll need to scatter the offset and mask into the unused bits. There are some unused bits in:
 
- * objectPointer top 8 bits
- * regionPointer top 8 bits, low 4 bits
- * typePointer top 8 bits, low 4 bits
+ * objectPointer needs only 56, can lose top 8 bits
+ * regionPointer needs only 52, can lose top 8 bits and low 4 bits
+ * typePointer needs only 52, can top 8 bits and low 4 bits
 
-For now, we'll put it in the top 8 bits of objectPointer and regionPointer.
+We'll shrink those to 56, 52, and 52 bits each. Should barely fit into 32B. We'll let LLVM handle the packing.
 
+(This also means, the region pointer must end in 4 zeros, meaning regions need to be at a 16-byte alignment. See RMB16BA.)
 
 With this, given an existing region, we can conjure a reference to an object in there.
+
+We *might* be able to get rid of the region generation. We might scramble generations of any objects leaving their regions, so it could be said that if the generation check passes, the region check will too. We might not be doing that however (it would be nice to sometimes not need to scramble generations) so make sure first.
 

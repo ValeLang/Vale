@@ -7,10 +7,6 @@
 #include "hgm/hgm.h"
 #include "wrcweaks/wrcweaks.h"
 
-constexpr int64_t externHandleRegionId = 13371;
-constexpr int64_t externHandleGen = 65536; // lower 16 bits zero, so it can be or'd with offset
-constexpr int64_t externHandleGenOffset = 42;
-
 LLVMValueRef weakStructPtrToGenWeakInterfacePtr(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -667,36 +663,17 @@ LLVMValueRef resilientEncryptAndSendFamiliarReference(
     Reference* sourceRefMT,
     Ref sourceRef);
 
-LLVMValueRef implodeConcreteHandle(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    LLVMTypeRef concreteHandleLT,
-    LLVMValueRef regionIdLE,
-    LLVMValueRef objPtrIntLE,
-    LLVMValueRef genLE,
-    LLVMValueRef offsetToGenLE);
-
-LLVMValueRef implodeInterfaceHandle(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    LLVMTypeRef interfaceHandleLT,
-    LLVMValueRef regionIdLE,
-    LLVMValueRef itableIntLE,
-    LLVMValueRef objPtrIntLE,
-    LLVMValueRef genLE,
-    LLVMValueRef offsetToGenLE);
-
-
-std::tuple<LLVMValueRef, LLVMValueRef, LLVMValueRef, LLVMValueRef>
-explodeConcreteHandle(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef concreteHandleLE);
-std::tuple<LLVMValueRef, LLVMValueRef, LLVMValueRef, LLVMValueRef, LLVMValueRef>
-explodeInterfaceHandle(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef concreteHandleLE);
-
 std::string generateMutableInterfaceHandleDefC(Package* currentPackage, const std::string& name);
 
 std::string generateMutableConcreteHandleDefC(Package* currentPackage, const std::string& name);
 
 
 void fastPanic(GlobalState* globalState, AreaAndFileAndLine from, LLVMBuilderRef builder);
+
+LLVMValueRef compressI64PtrToI56(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef ptrLE);
+LLVMValueRef compressI64PtrToI52(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef ptrLE);
+LLVMValueRef decompressI56PtrToI64(
+    GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef ptrI56LE);
+LLVMValueRef decompressI52PtrToI64(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef ptrI52LE);
 
 #endif

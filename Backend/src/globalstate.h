@@ -6,12 +6,14 @@
 #include <unordered_map>
 #include "metal/metalcache.h"
 #include "region/common/defaultlayout/structs.h"
+#include "region/urefstructlt.h"
 
 #include "metal/ast.h"
 #include "metal/instructions.h"
 #include "valeopts.h"
 #include "addresshasher.h"
 #include "externs.h"
+#include "utils/structlt.h"
 
 class IRegion;
 class KindStructs;
@@ -67,7 +69,7 @@ public:
 //  LLVMValueRef genMalloc = nullptr, genFree = nullptr;
 
   // 32 bytes for the outside world to refer to our objects, see URSL.
-  LLVMTypeRef universalRefStructLT = nullptr;
+  std::unique_ptr<UniversalRefStructLT> universalRefStructLT;
 
   // This is a global, we can return this when we want to return never. It should never actually be
   // used as an input to any expression in any function though.
@@ -120,7 +122,7 @@ public:
   // This keeps us from adding more edges or interfaces after we've already started compiling them.
   bool interfacesOpen = true;
 
-  LLVMTypeRef getUniversalRefStructLT() { return universalRefStructLT; }
+  UniversalRefStructLT* getUniversalRefStructLT() { return universalRefStructLT.get(); }
 
   void addInterfaceExtraMethod(InterfaceKind* interfaceKind, InterfaceMethod* method) {
     assert(interfacesOpen);

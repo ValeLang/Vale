@@ -909,9 +909,9 @@ LLVMTypeRef ResilientV4::getExternalType(Reference *refMT) {
   if (dynamic_cast<StructKind*>(refMT->kind) ||
       dynamic_cast<StaticSizedArrayT*>(refMT->kind) ||
       dynamic_cast<RuntimeSizedArrayT*>(refMT->kind)) {
-    return globalState->getConcreteHandleStruct();
+    return globalState->getUniversalRefStructLT()->getStructLT();
   } else if (dynamic_cast<InterfaceKind*>(refMT->kind)) {
-    return globalState->getUniversalRefStructLT();
+    return globalState->getUniversalRefStructLT()->getStructLT();
   } else {
     assert(false);
   }

@@ -127,6 +127,10 @@ void buildPrint(
     LLVMValueRef exprLE) {
   if (LLVMTypeOf(exprLE) == LLVMInt64TypeInContext(globalState->context)) {
     LLVMBuildCall(builder, globalState->externs->printInt, &exprLE, 1, "");
+  } else if (LLVMGetTypeKind(LLVMTypeOf(exprLE)) == LLVMIntegerTypeKind) {
+    assert(LLVMSizeOfTypeInBits(globalState->dataLayout, LLVMTypeOf(exprLE)) <= 64);
+    auto int64LE = LLVMBuildZExt(builder, exprLE, LLVMInt64TypeInContext(globalState->context), "");
+    LLVMBuildCall(builder, globalState->externs->printInt, &int64LE, 1, "");
   } else if (LLVMTypeOf(exprLE) == LLVMInt32TypeInContext(globalState->context)) {
     auto i64LE = LLVMBuildZExt(builder, exprLE, LLVMInt64TypeInContext(globalState->context), "asI64");
     LLVMBuildCall(builder, globalState->externs->printInt, &i64LE, 1, "");

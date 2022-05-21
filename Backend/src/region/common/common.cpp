@@ -1869,8 +1869,9 @@ Ref regularReceiveAndDecryptFamiliarReference(
   if (dynamic_cast<StructKind*>(sourceRefMT->kind) ||
       dynamic_cast<StaticSizedArrayT*>(sourceRefMT->kind) ||
       dynamic_cast<RuntimeSizedArrayT*>(sourceRefMT->kind)) {
+    assert(LLVMTypeOf(sourceRefLE) == LLVMIntTypeInContext(globalState->context, 256));
+
     auto urefStructLT = globalState->getUniversalRefStructLT();
-    assert(LLVMTypeOf(sourceRefLE) == urefStructLT->getStructLT());
 
     auto refLT = globalState->getRegion(sourceRefMT)->translateType(sourceRefMT);
 
@@ -1886,8 +1887,9 @@ Ref regularReceiveAndDecryptFamiliarReference(
 
     return ref;
   } else if (auto interfaceMT = dynamic_cast<InterfaceKind*>(sourceRefMT->kind)) {
+    assert(LLVMTypeOf(sourceRefLE) == LLVMIntTypeInContext(globalState->context, 256));
+
     auto urefStructLT = globalState->getUniversalRefStructLT();
-    assert(LLVMTypeOf(sourceRefLE) == urefStructLT->getStructLT());
 
     auto itablePtrLT = LLVMPointerType(kindStructs->getInterfaceTableStruct(interfaceMT), 0);
     auto objPtrLT = LLVMPointerType(kindStructs->getControlBlock(interfaceMT)->getStruct(), 0);
@@ -2113,11 +2115,7 @@ LLVMValueRef resilientEncryptAndSendFamiliarReference(
   assert(false);
 }
 
-std::string generateMutableConcreteHandleDefC(Package* currentPackage, const std::string& name) {
-  return std::string() + "typedef struct " + name + "Ref { uint64_t unused0; uint64_t unused1; uint32_t unused2; uint32_t unused3; } " + name + "Ref;\n";
-}
-
-std::string generateMutableInterfaceHandleDefC(Package* currentPackage, const std::string& name) {
+std::string generateUniversalRefStructDefC(Package* currentPackage, const std::string& name) {
   return std::string() + "typedef struct " + name + "Ref { uint64_t unused0; uint64_t unused1; uint64_t unused2; uint32_t unused3; uint32_t unused4; } " + name + "Ref;\n";
 }
 
@@ -2148,10 +2146,11 @@ LLVMValueRef compressI64PtrToI56(GlobalState* globalState, LLVMBuilderRef builde
 
 LLVMValueRef compressI64PtrToI52(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef ptrI64LE) {
   auto int52LT = LLVMIntTypeInContext(globalState->context, 52);
+  auto int56LT = LLVMIntTypeInContext(globalState->context, 56);
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
   assert(LLVMTypeOf(ptrI64LE) == int64LT);
   auto ptrI56LE = compressI64PtrToI56(globalState, builder, ptrI64LE);
-  auto ptrI56ShiftedLE = LLVMBuildLShr(builder, ptrI56LE, constI64LE(globalState, 4), "ptrI52Shifted");
+  auto ptrI56ShiftedLE = LLVMBuildLShr(builder, ptrI56LE, LLVMConstInt(int56LT, 4, false), "ptrI56Shifted");
   auto ptrI52LE = LLVMBuildTrunc(builder, ptrI56ShiftedLE, int52LT, "ptrI52");
   return ptrI52LE;
 }
@@ -2171,6 +2170,6 @@ LLVMValueRef decompressI52PtrToI64(GlobalState* globalState, LLVMBuilderRef buil
   assert(LLVMTypeOf(ptrI52LE) == int52LT);
   // It starts out shifted, we're going to unshift it below.
   auto ptrI56ShiftedLE = LLVMBuildSExt(builder, ptrI52LE, int56LT, "ptrI56Shifted");
-  auto ptrI56LE = LLVMBuildShl(builder, ptrI52LE, constI64LE(globalState, 4), "ptrI56");
+  auto ptrI56LE = LLVMBuildShl(builder, ptrI56ShiftedLE, LLVMConstInt(int56LT, 4, false), "ptrI56");
   return decompressI56PtrToI64(globalState, builder, ptrI56LE);
 }

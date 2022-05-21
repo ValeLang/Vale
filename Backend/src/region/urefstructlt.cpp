@@ -32,15 +32,15 @@ UniversalRefStructLT::UniversalRefStructLT(LLVMContextRef context, LLVMTargetDat
               LLVMInt16TypeInContext(context), // offset to generation
               LLVMInt16TypeInContext(context), // scope tether bits mask
           });
-  auto actualSize = LLVMABISizeOfType(dataLayout, structLT->getStructLT());
-  assert(actualSize == 32);
+  // The size of the above struct isn't necessarily 32 bytes, it's not compressed by LLVM.
+  // Later, we use buildCompressStruct for that.
 }
 
 UniversalRefStructExplodedMembersLT UniversalRefStructLT::explodeForRegularConcrete(GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef urefLE) {
   UniversalRefStructExplodedMembersLT result = explodeInner(globalState, functionState, builder, urefLE);
   buildAssertIntEq(globalState, functionState, builder, result.objGenI32LE, constI32LE(globalState, universalRefObjectGenConstant), "Invalid reference in extern boundary! (og)");
   result.objGenI32LE = nullptr;
-  buildAssertIntEq(globalState, functionState, builder, result.typeInfoPtrI64LE, constI32LE(globalState, universalRefTypeInfoPtrConstant), "Invalid reference in extern boundary! (t)");
+  buildAssertIntEq(globalState, functionState, builder, result.typeInfoPtrI64LE, constI64LE(globalState, universalRefTypeInfoPtrConstant), "Invalid reference in extern boundary! (t)");
   result.typeInfoPtrI64LE = nullptr;
   return result;
 }
@@ -54,7 +54,7 @@ UniversalRefStructExplodedMembersLT UniversalRefStructLT::explodeForRegularInter
 
 UniversalRefStructExplodedMembersLT UniversalRefStructLT::explodeForGenerationalConcrete(GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef urefLE) {
   UniversalRefStructExplodedMembersLT result = explodeInner(globalState, functionState, builder, urefLE);
-  buildAssertIntEq(globalState, functionState, builder, result.typeInfoPtrI64LE, constI32LE(globalState, universalRefTypeInfoPtrConstant), "Invalid reference in extern boundary! (t)");
+  buildAssertIntEq(globalState, functionState, builder, result.typeInfoPtrI64LE, constI64LE(globalState, universalRefTypeInfoPtrConstant), "Invalid reference in extern boundary! (t)");
   result.typeInfoPtrI64LE = nullptr;
   return result;
 }
@@ -83,8 +83,8 @@ UniversalRefStructExplodedMembersLT UniversalRefStructLT::explodeInner(
   buildAssertIntEq(globalState, functionState, builder, objectPtrOffsetToGenLE, constI16LE(globalState, universalRefObjectPtrOffsetToGenOffsetConstant), "Invalid reference in extern boundary! (oo)");
   auto objectPtrTetherMaskBitsLE = structLT->extractMember(builder, urefLE, UniversalRefStructMember::SCOPE_TETHER_BITS_MASK);
   buildAssertIntEq(globalState, functionState, builder, objectPtrTetherMaskBitsLE, constI16LE(globalState, universalRefScopeTetherMaskBitsConstant), "Invalid reference in extern boundary! (m)");
-  auto objectPtrI52LE = structLT->extractMember(builder, urefLE, UniversalRefStructMember::OBJECT_PTR);
-  auto objectPtrI64LE = decompressI52PtrToI64(globalState, builder, objectPtrI52LE);
+  auto objectPtrI56LE = structLT->extractMember(builder, urefLE, UniversalRefStructMember::OBJECT_PTR);
+  auto objectPtrI64LE = decompressI56PtrToI64(globalState, builder, objectPtrI56LE);
   return UniversalRefStructExplodedMembersLT{objectPtrI64LE, objectGenI32LE, typeInfoPtrI64LE};
 }
 
@@ -180,6 +180,6 @@ void UniversalRefStructLT::fillUnusedFields(
   urefBuilder->insertMember(builder, UniversalRefStructMember::REGION_GEN, regionGenLE);
   auto objectPtrOffsetToGenLE = constI16LE(globalState, universalRefObjectPtrOffsetToGenOffsetConstant);
   urefBuilder->insertMember(builder, UniversalRefStructMember::OBJECT_PTR_OFFSET_TO_GEN, objectPtrOffsetToGenLE);
-  auto tetherMaskBitsLE = constI16LE(globalState, universalRefObjectPtrOffsetToGenOffsetConstant);
+  auto tetherMaskBitsLE = constI16LE(globalState, universalRefScopeTetherMaskBitsConstant);
   urefBuilder->insertMember(builder, UniversalRefStructMember::SCOPE_TETHER_BITS_MASK, tetherMaskBitsLE);
 }

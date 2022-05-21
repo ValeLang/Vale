@@ -56,3 +56,4 @@ With this, given an existing region, we can conjure a reference to an object in 
 
 We *might* be able to get rid of the region generation. We might scramble generations of any objects leaving their regions, so it could be said that if the generation check passes, the region check will too. We might not be doing that however (it would be nice to sometimes not need to scramble generations) so make sure first.
 
+We need the type info even for structs, so that when Vale receives it again, it can be reasonably sure that it's the right type.

@@ -122,7 +122,7 @@ inline LLVMValueRef buildCompressStruct(
     auto memberSmallLE = membersLE[i];
     auto memberBigLE = LLVMBuildZExt(builder, memberSmallLE, bigIntLT, "");
     auto bitsNeeded = LLVMSizeOfTypeInBits(dataLayout, memberLT);
-    resultLE = LLVMBuildShl(builder, resultLE, LLVMConstInt(int64LT, bitsNeeded, false), "");
+    resultLE = LLVMBuildShl(builder, resultLE, LLVMConstInt(bigIntLT, bitsNeeded, false), "");
     resultLE = LLVMBuildOr(builder, resultLE, memberBigLE, "");
   }
   return resultLE;
@@ -154,11 +154,17 @@ inline LLVMValueRef buildDecompressStruct(
 
     auto memberBits = LLVMSizeOfTypeInBits(dataLayout, memberLT);
     int maskBeginBit = totalBits - bitsSoFar - memberBits;
-    auto maskOnesLE = LLVMBuildSExt(builder, LLVMConstInt(int1LT, 1, true), memberLT, "");
-    auto maskLE = LLVMBuildShl(builder, maskOnesLE, LLVMConstInt(int64LT, maskBeginBit, false), "");
+    auto bigIntShiftedLE = LLVMBuildLShr(builder, bigIntLE, LLVMConstInt(bigIntLT, maskBeginBit, false), "");
+
+    auto maskOnesSmallLE = LLVMBuildNot(builder, LLVMConstInt(memberLT, 0, true), "");
+    auto maskOnesBigLE = LLVMBuildZExt(builder, maskOnesSmallLE, bigIntLT, "");
+    auto maskLE = LLVMBuildShl(builder, maskOnesBigLE, LLVMConstInt(bigIntLT, maskBeginBit, false), "");
     auto isolatedMemberLE = LLVMBuildAnd(builder, bigIntLE, maskLE, "");
-    auto memberLE = LLVMBuildLShr(builder, isolatedMemberLE, LLVMConstInt(int64LT, maskBeginBit, false), "");
-    membersLE.push_back(memberLE);
+    auto memberBigLE = LLVMBuildLShr(builder, isolatedMemberLE, LLVMConstInt(bigIntLT, maskBeginBit, false), "");
+    auto memberSmallLE = LLVMBuildTrunc(builder, memberBigLE, memberLT, "");
+    membersLE.push_back(memberSmallLE);
+
+    bitsSoFar += memberBits;
   }
   return structLT.implode(builder, membersLE);
 }

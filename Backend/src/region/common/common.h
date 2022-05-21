@@ -663,9 +663,7 @@ LLVMValueRef resilientEncryptAndSendFamiliarReference(
     Reference* sourceRefMT,
     Ref sourceRef);
 
-std::string generateMutableInterfaceHandleDefC(Package* currentPackage, const std::string& name);
-
-std::string generateMutableConcreteHandleDefC(Package* currentPackage, const std::string& name);
+std::string generateUniversalRefStructDefC(Package* currentPackage, const std::string& name);
 
 
 void fastPanic(GlobalState* globalState, AreaAndFileAndLine from, LLVMBuilderRef builder);

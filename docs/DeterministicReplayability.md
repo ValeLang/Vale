@@ -221,6 +221,17 @@ The only downside here is that it requires a thread-safe global hash map on the 
 Now we can mark all these functions as `#AssumeDeterministic` and let their calls happen even in replaying mode.
 
 
+
+
+## Stage Messages in Buffers Before Writing to File (SMBBWF)
+
+When we serialize something, we actually jump around quite a bit with random access writes. We allocate at the end of the file, populate it down there, and then jump backward to write its address to some other object that wanted to point at it.
+
+
+For this reason, we write to a temporary buffer before writing to a file. In fact, this is why we use the Linear region to help out with this.
+
+
+
 # Notes
 
 See [DeterministicReplayabilityNotes](DeterministicReplayabilityNotes.md).

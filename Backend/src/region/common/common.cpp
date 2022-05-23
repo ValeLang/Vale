@@ -2152,6 +2152,13 @@ LLVMValueRef compressI64PtrToI52(GlobalState* globalState, LLVMBuilderRef builde
   auto ptrI56LE = compressI64PtrToI56(globalState, builder, ptrI64LE);
   auto ptrI56ShiftedLE = LLVMBuildLShr(builder, ptrI56LE, LLVMConstInt(int56LT, 4, false), "ptrI56Shifted");
   auto ptrI52LE = LLVMBuildTrunc(builder, ptrI56ShiftedLE, int52LT, "ptrI52");
+
+  buildPrint(globalState, builder, "Compressed ");
+  buildPrint(globalState, builder, ptrI64LE);
+  buildPrint(globalState, builder, " to ");
+  buildPrint(globalState, builder, ptrI52LE);
+  buildPrint(globalState, builder, "\n");
+
   return ptrI52LE;
 }
 
@@ -2169,7 +2176,15 @@ LLVMValueRef decompressI52PtrToI64(GlobalState* globalState, LLVMBuilderRef buil
   auto int56LT = LLVMIntTypeInContext(globalState->context, 56);
   assert(LLVMTypeOf(ptrI52LE) == int52LT);
   // It starts out shifted, we're going to unshift it below.
-  auto ptrI56ShiftedLE = LLVMBuildSExt(builder, ptrI52LE, int56LT, "ptrI56Shifted");
+  auto ptrI56ShiftedLE = LLVMBuildZExt(builder, ptrI52LE, int56LT, "ptrI56Shifted");
   auto ptrI56LE = LLVMBuildShl(builder, ptrI56ShiftedLE, LLVMConstInt(int56LT, 4, false), "ptrI56");
-  return decompressI56PtrToI64(globalState, builder, ptrI56LE);
+  auto ptrI64LE = decompressI56PtrToI64(globalState, builder, ptrI56LE);
+
+  buildPrint(globalState, builder, "Decompressed ");
+  buildPrint(globalState, builder, ptrI52LE);
+  buildPrint(globalState, builder, " to ");
+  buildPrint(globalState, builder, ptrI64LE);
+  buildPrint(globalState, builder, "\n");
+
+  return ptrI64LE;
 }

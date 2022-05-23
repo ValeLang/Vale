@@ -49,6 +49,7 @@ add_executable(backend
 		src/externs.cpp
 
 		src/utils/counters.cpp
+		src/utils/structlt.cpp
 
 		src/function/function.cpp
 		src/function/boundary.cpp

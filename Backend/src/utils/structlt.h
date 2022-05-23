@@ -2,10 +2,14 @@
 #define UTILS_STRUCTLT_H
 
 #include <llvm-c/Core.h>
+#include <llvm/IR/DataLayout.h>
+#include <llvm-c/Target.h>
 #include <cassert>
 #include <string>
 #include <vector>
 #include <array>
+
+class GlobalState;
 
 template<int NumMembers, typename EnumType>
 struct StructLT {
@@ -98,74 +102,39 @@ private:
   StructLT<NumMembers, EnumType>* structLT;
 };
 
+LLVMValueRef buildCompressStructInner(
+    GlobalState* globalState,
+    const std::vector<LLVMTypeRef>& membersLT,
+    LLVMBuilderRef builder,
+    const std::vector<LLVMValueRef>& membersLE);
+
 template<int NumMembers, typename EnumType>
 inline LLVMValueRef buildCompressStruct(
-    LLVMContextRef context,
-    LLVMTargetDataRef dataLayout,
+    GlobalState* globalState,
     const StructLT<NumMembers, EnumType>& structLT,
-    LLVMValueRef structLE,
-    LLVMBuilderRef builder) {
-  auto int64LT = LLVMInt64TypeInContext(context);
-  int totalBits = 0;
-  for (auto memberLT : structLT.getMembersLT()) {
-    assert(LLVMGetTypeKind(memberLT) == LLVMIntegerTypeKind);
-    totalBits += LLVMSizeOfTypeInBits(dataLayout, memberLT);
-  }
-  auto bigIntLT = LLVMIntTypeInContext(context, totalBits);
-  assert(LLVMSizeOfTypeInBits(dataLayout, bigIntLT) == totalBits);
-
-  auto membersLE = structLT.explode(builder, structLE);
-
-  LLVMValueRef resultLE = LLVMConstInt(bigIntLT, 0, false);
-  for (int i = 0; i < structLT.getMembersLT().size(); i++) {
-    auto memberLT = structLT.getMembersLT()[i];
-    auto memberSmallLE = membersLE[i];
-    auto memberBigLE = LLVMBuildZExt(builder, memberSmallLE, bigIntLT, "");
-    auto bitsNeeded = LLVMSizeOfTypeInBits(dataLayout, memberLT);
-    resultLE = LLVMBuildShl(builder, resultLE, LLVMConstInt(bigIntLT, bitsNeeded, false), "");
-    resultLE = LLVMBuildOr(builder, resultLE, memberBigLE, "");
-  }
-  return resultLE;
+    LLVMBuilderRef builder,
+    LLVMValueRef structLE) {
+  const auto& membersArrLT = structLT.getMembersLT();
+  auto membersLT = std::vector<LLVMTypeRef>(membersArrLT.begin(), membersArrLT.end());
+  auto membersArrLE = structLT.explode(builder, structLE);
+  auto membersLE = std::vector<LLVMValueRef>(membersArrLE.begin(), membersArrLE.end());
+  return buildCompressStructInner(globalState, membersLT, builder, membersLE);
 }
+
+std::vector<LLVMValueRef> buildDecompressStructInner(
+    GlobalState* globalState,
+    const std::vector<LLVMTypeRef>& membersLT,
+    LLVMBuilderRef builder,
+    LLVMValueRef bigIntLE);
 
 template<int NumMembers, typename EnumType>
 inline LLVMValueRef buildDecompressStruct(
-    LLVMContextRef context,
-    LLVMTargetDataRef dataLayout,
+    GlobalState* globalState,
     const StructLT<NumMembers, EnumType>& structLT,
-    LLVMValueRef bigIntLE,
-    LLVMBuilderRef builder) {
-  auto int1LT = LLVMInt1TypeInContext(context);
-  auto int64LT = LLVMInt64TypeInContext(context);
-  int totalBits = 0;
-  for (auto memberLT : structLT.getMembersLT()) {
-    assert(LLVMGetTypeKind(memberLT) == LLVMIntegerTypeKind);
-    totalBits += LLVMSizeOfTypeInBits(dataLayout, memberLT);
-  }
-  auto bigIntLT = LLVMIntTypeInContext(context, totalBits);
-  assert(LLVMSizeOfTypeInBits(dataLayout, bigIntLT) == totalBits);
-  assert(bigIntLT == LLVMTypeOf(bigIntLE));
-
-  std::vector<LLVMValueRef> membersLE;
-
-  int bitsSoFar = 0;
-  for (int i = 0; i < structLT.getMembersLT().size(); i++) {
-    auto memberLT = structLT.getMembersLT()[i];
-
-    auto memberBits = LLVMSizeOfTypeInBits(dataLayout, memberLT);
-    int maskBeginBit = totalBits - bitsSoFar - memberBits;
-    auto bigIntShiftedLE = LLVMBuildLShr(builder, bigIntLE, LLVMConstInt(bigIntLT, maskBeginBit, false), "");
-
-    auto maskOnesSmallLE = LLVMBuildNot(builder, LLVMConstInt(memberLT, 0, true), "");
-    auto maskOnesBigLE = LLVMBuildZExt(builder, maskOnesSmallLE, bigIntLT, "");
-    auto maskLE = LLVMBuildShl(builder, maskOnesBigLE, LLVMConstInt(bigIntLT, maskBeginBit, false), "");
-    auto isolatedMemberLE = LLVMBuildAnd(builder, bigIntLE, maskLE, "");
-    auto memberBigLE = LLVMBuildLShr(builder, isolatedMemberLE, LLVMConstInt(bigIntLT, maskBeginBit, false), "");
-    auto memberSmallLE = LLVMBuildTrunc(builder, memberBigLE, memberLT, "");
-    membersLE.push_back(memberSmallLE);
-
-    bitsSoFar += memberBits;
-  }
+    LLVMBuilderRef builder,
+    LLVMValueRef bigIntLE) {
+  auto membersLT = std::vector<LLVMTypeRef>(structLT.getMembersLT().begin(), structLT.getMembersLT().end());
+  auto membersLE = buildDecompressStructInner(globalState, membersLT, builder, bigIntLE);
   return structLT.implode(builder, membersLE);
 }
 

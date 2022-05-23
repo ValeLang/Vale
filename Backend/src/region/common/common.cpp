@@ -1869,7 +1869,7 @@ Ref regularReceiveAndDecryptFamiliarReference(
   if (dynamic_cast<StructKind*>(sourceRefMT->kind) ||
       dynamic_cast<StaticSizedArrayT*>(sourceRefMT->kind) ||
       dynamic_cast<RuntimeSizedArrayT*>(sourceRefMT->kind)) {
-    assert(LLVMTypeOf(sourceRefLE) == LLVMIntTypeInContext(globalState->context, 256));
+    assert(LLVMTypeOf(sourceRefLE) == globalState->universalRefCompressedStructLT);
 
     auto urefStructLT = globalState->getUniversalRefStructLT();
 
@@ -1887,7 +1887,7 @@ Ref regularReceiveAndDecryptFamiliarReference(
 
     return ref;
   } else if (auto interfaceMT = dynamic_cast<InterfaceKind*>(sourceRefMT->kind)) {
-    assert(LLVMTypeOf(sourceRefLE) == LLVMIntTypeInContext(globalState->context, 256));
+    assert(LLVMTypeOf(sourceRefLE) == globalState->universalRefCompressedStructLT);
 
     auto urefStructLT = globalState->getUniversalRefStructLT();
 

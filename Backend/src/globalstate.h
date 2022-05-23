@@ -70,6 +70,11 @@ public:
 
   // 32 bytes for the outside world to refer to our objects, see URSL.
   std::unique_ptr<UniversalRefStructLT> universalRefStructLT;
+  // This is a tiny wrapper struct around the 32 byte integer, because LLVM does
+  // weird things with bigints that it doesn't do with structs. We were seeing
+  // garbage in the values that we received from C, perhaps big integers behave
+  // differently in some calling conventions or something.
+  LLVMTypeRef universalRefCompressedStructLT;
 
   // This is a global, we can return this when we want to return never. It should never actually be
   // used as an input to any expression in any function though.

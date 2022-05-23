@@ -70,7 +70,9 @@ UniversalRefStructExplodedMembersLT UniversalRefStructLT::explodeInner(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef urefI256LE) {
+    LLVMValueRef urefStructLE) {
+  assert(LLVMTypeOf(urefStructLE) == globalState->universalRefCompressedStructLT);
+  auto urefI256LE = LLVMBuildExtractValue(builder, urefStructLE, 0, "");
   assert(LLVMTypeOf(urefI256LE) == LLVMIntTypeInContext(globalState->context, 256));
   auto urefLE = buildDecompressStruct(globalState, *structLT, builder, urefI256LE);
   auto regionPtrI52LE = structLT->extractMember(builder, urefLE, UniversalRefStructMember::REGION_PTR);
@@ -106,9 +108,11 @@ LLVMValueRef UniversalRefStructLT::implodeForRegularConcrete(
   urefBuilder.insertMember(builder, UniversalRefStructMember::TYPE_INFO_PTR, typeInfoPtrI52LE);
   fillUnusedFields(globalState, functionState, builder, &urefBuilder);
   auto structLE = urefBuilder.build();
-  auto resultLE = buildCompressStruct(globalState, *structLT, builder, structLE);
-  assert(LLVMSizeOfTypeInBits(globalState->dataLayout, LLVMTypeOf(resultLE)) == 256);
-  return resultLE;
+  auto resultI256LE = buildCompressStruct(globalState, *structLT, builder, structLE);
+  assert(LLVMSizeOfTypeInBits(globalState->dataLayout, LLVMTypeOf(resultI256LE)) == 256);
+  auto resultStructLE =
+      LLVMBuildInsertValue(builder, LLVMGetUndef(globalState->universalRefCompressedStructLT), resultI256LE, 0, "");
+  return resultStructLE;
 }
 
 LLVMValueRef UniversalRefStructLT::implodeForGenerationalConcrete(
@@ -127,9 +131,11 @@ LLVMValueRef UniversalRefStructLT::implodeForGenerationalConcrete(
   urefBuilder.insertMember(builder, UniversalRefStructMember::TYPE_INFO_PTR, typeInfoPtrI52LE);
   fillUnusedFields(globalState, functionState, builder, &urefBuilder);
   auto structLE = urefBuilder.build();
-  auto resultLE = buildCompressStruct(globalState, *structLT, builder, structLE);
-  assert(LLVMSizeOfTypeInBits(globalState->dataLayout, LLVMTypeOf(resultLE)) == 256);
-  return resultLE;
+  auto resultI256LE = buildCompressStruct(globalState, *structLT, builder, structLE);
+  assert(LLVMSizeOfTypeInBits(globalState->dataLayout, LLVMTypeOf(resultI256LE)) == 256);
+  auto resultStructLE =
+      LLVMBuildInsertValue(builder, LLVMGetUndef(globalState->universalRefCompressedStructLT), resultI256LE, 0, "");
+  return resultStructLE;
 }
 
 LLVMValueRef UniversalRefStructLT::implodeForRegularInterface(
@@ -147,9 +153,11 @@ LLVMValueRef UniversalRefStructLT::implodeForRegularInterface(
   urefBuilder.insertMember(builder, UniversalRefStructMember::TYPE_INFO_PTR, typeInfoPtrI52LE);
   fillUnusedFields(globalState, functionState, builder, &urefBuilder);
   auto structLE = urefBuilder.build();
-  auto resultLE = buildCompressStruct(globalState, *structLT, builder, structLE);
-  assert(LLVMSizeOfTypeInBits(globalState->dataLayout, LLVMTypeOf(resultLE)) == 256);
-  return resultLE;
+  auto resultI256LE = buildCompressStruct(globalState, *structLT, builder, structLE);
+  assert(LLVMSizeOfTypeInBits(globalState->dataLayout, LLVMTypeOf(resultI256LE)) == 256);
+  auto resultStructLE =
+      LLVMBuildInsertValue(builder, LLVMGetUndef(globalState->universalRefCompressedStructLT), resultI256LE, 0, "");
+  return resultStructLE;
 }
 
 LLVMValueRef UniversalRefStructLT::implodeForGenerationalInterface(
@@ -167,9 +175,11 @@ LLVMValueRef UniversalRefStructLT::implodeForGenerationalInterface(
   urefBuilder.insertMember(builder, UniversalRefStructMember::TYPE_INFO_PTR, typeInfoPtrI52LE);
   fillUnusedFields(globalState, functionState, builder, &urefBuilder);
   auto structLE = urefBuilder.build();
-  auto resultLE = buildCompressStruct(globalState, *structLT, builder, structLE);
-  assert(LLVMSizeOfTypeInBits(globalState->dataLayout, LLVMTypeOf(resultLE)) == 256);
-  return resultLE;
+  auto resultI256LE = buildCompressStruct(globalState, *structLT, builder, structLE);
+  assert(LLVMSizeOfTypeInBits(globalState->dataLayout, LLVMTypeOf(resultI256LE)) == 256);
+  auto resultStructLE =
+      LLVMBuildInsertValue(builder, LLVMGetUndef(globalState->universalRefCompressedStructLT), resultI256LE, 0, "");
+  return resultStructLE;
 }
 
 void UniversalRefStructLT::fillUnusedFields(

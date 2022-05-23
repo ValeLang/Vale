@@ -647,6 +647,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
+  auto int256LT = LLVMIntTypeInContext(globalState->context, 256);
   auto int32LT = LLVMInt32TypeInContext(globalState->context);
   auto int32PtrLT = LLVMPointerType(int32LT, 0);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
@@ -654,6 +655,9 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
   {
     globalState->universalRefStructLT =
         std::make_unique<UniversalRefStructLT>(globalState->context, globalState->dataLayout);
+    globalState->universalRefCompressedStructLT =
+        LLVMStructCreateNamed(globalState->context, "__UniversalRefCompressed");
+    LLVMStructSetBody(globalState->universalRefCompressedStructLT, &int256LT, 1, false);
   }
 
   switch (globalState->opt->regionOverride) {

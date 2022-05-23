@@ -255,7 +255,8 @@ Ref buildExternCall(
           globalState->getRegion(valeArgRefMT)->createRegionInstanceLocal(functionState, builder);
 
       auto hostRegionInstanceRef =
-          globalState->linearRegion->createRegionInstanceLocal(functionState, builder);
+          globalState->linearRegion->createRegionInstanceLocal(
+              functionState, builder, constI1LE(globalState, 0), constI64LE(globalState, 0));
       auto valeArg = valeArgRefs[i];
       auto [hostArgRefLE, argSizeLE] =
           sendValeObjectIntoHost(
@@ -338,7 +339,8 @@ Ref buildExternCall(
             globalState->getRegion(valeReturnRefMT)->createRegionInstanceLocal(functionState, builder);
 
         auto hostRegionInstanceRef =
-            globalState->linearRegion->createRegionInstanceLocal(functionState, builder);
+            globalState->linearRegion->createRegionInstanceLocal(
+                functionState, builder, constI1LE(globalState, 0), constI64LE(globalState, 0));
         auto valeReturnRef =
             receiveHostObjectIntoVale(
                 globalState, functionState, builder, hostRegionInstanceRef, valeRegionInstanceRef, hostReturnMT, valeReturnRefMT, hostReturnLE);

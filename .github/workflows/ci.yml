@@ -11,20 +11,20 @@ env:
 
 jobs:
   build_and_test_windows:
-    runs-on: windows-2022
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
       - name: install prereqs
-        run: cmd /c '.\scripts\windows\install-compiler-prereqs.bat C:\LLVM13 C:\BootstrappingValeCompiler'
+        run: cmd /c '.\scripts\windows\install-compiler-prereqs.bat C:\llvm-project-llvmorg-13.0.1 C:\BootstrappingValeCompiler'
       - name: run vcvars and build-compiler-windows.bat
-        run: cmd /c '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && .\scripts\windows\build-compiler.bat C:\LLVM13\llvm-project-llvmorg-13.0.1 C:\BootstrappingValeCompiler --test=all scripts\VERSION'
+        run: cmd /c '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && .\scripts\windows\build-compiler.bat C:\llvm-project-llvmorg-13.0.1 C:\BootstrappingValeCompiler --test=all scripts\VERSION'
       - uses: actions/upload-artifact@v2
         with:
           name: Vale-Windows-0.zip
           path: .\release-windows\Vale-Windows-0.zip
 
   build_and_test_ubuntu:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps: 
       - uses: actions/checkout@v2
       - name: install prereqs
@@ -37,7 +37,7 @@ jobs:
           path: ./release-ubuntu/Vale-Ubuntu-0.zip
 
   build_and_test_mac:
-    runs-on: macos-12
+    runs-on: macos-latest
     steps: 
       - uses: actions/checkout@v2
       - name: install prereqs

@@ -235,7 +235,8 @@ Ref buildInterfaceCall(
       globalState->getRegion(virtualParamMT)
           ->explodeInterfaceRef(
               functionState, builder, virtualParamMT, virtualArgRef);
-  buildFlare(FL(), globalState, functionState, builder);
+
+  //buildFlare(FL(), globalState, functionState, builder, "Doing an interface call, objPtrLE: ", ptrToIntLE(globalState, builder, newVirtualArgLE), " itablePtrLE ", ptrToIntLE(globalState, builder, itablePtrLE));
 
   // We can't represent these arguments as refs, because this new virtual arg is a void*, and we
   // can't represent that as a ref.
@@ -248,6 +249,7 @@ Ref buildInterfaceCall(
   }
   argsLE[virtualParamIndex] = newVirtualArgLE;
 
+  buildFlare(FL(), globalState, functionState, builder);
   //buildFlare(FL(), globalState, functionState, builder, interfaceKindM->fullName->name, " ", ptrToIntLE(globalState, builder, methodFunctionPtrLE));
 
 //  assert(LLVMGetTypeKind(LLVMTypeOf(itablePtrLE)) == LLVMPointerTypeKind);

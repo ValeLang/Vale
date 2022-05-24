@@ -256,6 +256,8 @@ LLVMValueRef makeInterfaceRefStruct(
           INTERFACE_REF_MEMBER_INDEX_FOR_ITABLE_PTR,
           "interfaceRef");
 
+//  buildFlare(FL(), globalState, functionState, builder, "Imploding, objPtrLE: ", ptrToIntLE(globalState, builder, objControlBlockPtrLE), " itablePtrLE ", ptrToIntLE(globalState, builder, itablePtrLE));
+
   return interfaceRefLE;
 }
 
@@ -1640,7 +1642,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> explodeStrongInterfaceRef(
           functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
   newVirtualArgLE = objVoidPtrLE;
 
-  //buildFlare(FL(), globalState, functionState, builder, "itablePtrLE ", ptrToIntLE(globalState, builder, itablePtrLE));
+//  buildFlare(FL(), globalState, functionState, builder, "Exploding, objPtrLE: ", ptrToIntLE(globalState, builder, objVoidPtrLE), " itablePtrLE ", ptrToIntLE(globalState, builder, itablePtrLE));
 
   return std::make_tuple(itablePtrLE, newVirtualArgLE);
 }
@@ -1897,7 +1899,7 @@ Ref regularReceiveAndDecryptFamiliarReference(
 
     auto membersLE = urefStructLT->explodeForRegularInterface(globalState, functionState, builder, sourceRefLE);
     auto itablePtrLE = LLVMBuildIntToPtr(builder, membersLE.typeInfoPtrI64LE, itablePtrLT, "refC");
-    auto objPtrLE = LLVMBuildIntToPtr(builder, membersLE.typeInfoPtrI64LE, objPtrLT, "refB");
+    auto objPtrLE = LLVMBuildIntToPtr(builder, membersLE.objPtrI64LE, objPtrLT, "refB");
 
     auto interfaceFatPtrRawLE = makeInterfaceRefStruct(globalState, functionState, builder, kindStructs, interfaceMT, objPtrLE, itablePtrLE);
 
@@ -2136,34 +2138,41 @@ void fastPanic(GlobalState* globalState, AreaAndFileAndLine from, LLVMBuilderRef
 }
 
 
-LLVMValueRef compressI64PtrToI56(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef ptrI64LE) {
+LLVMValueRef compressI64PtrToI56(GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef ptrI64LE) {
   auto int56LT = LLVMIntTypeInContext(globalState->context, 56);
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
   assert(LLVMTypeOf(ptrI64LE) == int64LT);
   auto ptrI56LE = LLVMBuildTrunc(builder, ptrI64LE, int56LT, "ptrI56");
+
+  if (globalState->opt->census) {
+    auto decompressedLE = decompressI56PtrToI64(globalState, functionState, builder, ptrI56LE);
+    auto matchesLE = LLVMBuildICmp(builder, LLVMIntEQ, ptrI64LE, decompressedLE, "");
+    buildAssert(globalState, functionState, builder, matchesLE, "Couldn't compress I64 to I56!");
+  }
+
   return ptrI56LE;
 }
 
-LLVMValueRef compressI64PtrToI52(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef ptrI64LE) {
+LLVMValueRef compressI64PtrToI52(GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef ptrI64LE) {
   auto int52LT = LLVMIntTypeInContext(globalState->context, 52);
   auto int56LT = LLVMIntTypeInContext(globalState->context, 56);
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
   assert(LLVMTypeOf(ptrI64LE) == int64LT);
-  auto ptrI56LE = compressI64PtrToI56(globalState, builder, ptrI64LE);
+  auto ptrI56LE = compressI64PtrToI56(globalState, functionState, builder, ptrI64LE);
   auto ptrI56ShiftedLE = LLVMBuildLShr(builder, ptrI56LE, LLVMConstInt(int56LT, 4, false), "ptrI56Shifted");
   auto ptrI52LE = LLVMBuildTrunc(builder, ptrI56ShiftedLE, int52LT, "ptrI52");
 
-  buildPrint(globalState, builder, "Compressed ");
-  buildPrint(globalState, builder, ptrI64LE);
-  buildPrint(globalState, builder, " to ");
-  buildPrint(globalState, builder, ptrI52LE);
-  buildPrint(globalState, builder, "\n");
+  if (globalState->opt->census) {
+    auto decompressedLE = decompressI52PtrToI64(globalState, functionState, builder, ptrI52LE);
+    auto matchesLE = LLVMBuildICmp(builder, LLVMIntEQ, ptrI64LE, decompressedLE, "");
+    buildAssert(globalState, functionState, builder, matchesLE, "Couldn't compress I64 to I52!");
+  }
 
   return ptrI52LE;
 }
 
 LLVMValueRef decompressI56PtrToI64(
-    GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef ptrI56LE) {
+    GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef ptrI56LE) {
   auto int56LT = LLVMIntTypeInContext(globalState->context, 56);
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
   assert(LLVMTypeOf(ptrI56LE) == int56LT);
@@ -2171,20 +2180,14 @@ LLVMValueRef decompressI56PtrToI64(
   return ptrI64LE;
 }
 
-LLVMValueRef decompressI52PtrToI64(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef ptrI52LE) {
+LLVMValueRef decompressI52PtrToI64(GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef ptrI52LE) {
   auto int52LT = LLVMIntTypeInContext(globalState->context, 52);
   auto int56LT = LLVMIntTypeInContext(globalState->context, 56);
   assert(LLVMTypeOf(ptrI52LE) == int52LT);
   // It starts out shifted, we're going to unshift it below.
   auto ptrI56ShiftedLE = LLVMBuildZExt(builder, ptrI52LE, int56LT, "ptrI56Shifted");
   auto ptrI56LE = LLVMBuildShl(builder, ptrI56ShiftedLE, LLVMConstInt(int56LT, 4, false), "ptrI56");
-  auto ptrI64LE = decompressI56PtrToI64(globalState, builder, ptrI56LE);
-
-  buildPrint(globalState, builder, "Decompressed ");
-  buildPrint(globalState, builder, ptrI52LE);
-  buildPrint(globalState, builder, " to ");
-  buildPrint(globalState, builder, ptrI64LE);
-  buildPrint(globalState, builder, "\n");
+  auto ptrI64LE = decompressI56PtrToI64(globalState, functionState, builder, ptrI56LE);
 
   return ptrI64LE;
 }

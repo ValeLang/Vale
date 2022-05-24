@@ -76,19 +76,19 @@ UniversalRefStructExplodedMembersLT UniversalRefStructLT::explodeInner(
   assert(LLVMTypeOf(urefI256LE) == LLVMIntTypeInContext(globalState->context, 256));
   auto urefLE = buildDecompressStruct(globalState, *structLT, builder, urefI256LE);
   auto regionPtrI52LE = structLT->extractMember(builder, urefLE, UniversalRefStructMember::REGION_PTR);
-  auto regionPtrI64LE = decompressI52PtrToI64(globalState, builder, regionPtrI52LE);
+  auto regionPtrI64LE = decompressI52PtrToI64(globalState, functionState, builder, regionPtrI52LE);
   buildAssertIntEq(globalState, functionState, builder, regionPtrI64LE, constI64LE(globalState, universalRefRegionPtrConstant), "Invalid reference in extern boundary! (rp)");
   auto regionGenLE = structLT->extractMember(builder, urefLE, UniversalRefStructMember::REGION_GEN);
   buildAssertIntEq(globalState, functionState, builder, regionGenLE, constI32LE(globalState, universalRefRegionGenConstant), "Invalid reference in extern boundary! (rg)");
   auto typeInfoPtrI52LE = structLT->extractMember(builder, urefLE, UniversalRefStructMember::TYPE_INFO_PTR);
-  auto typeInfoPtrI64LE = decompressI52PtrToI64(globalState, builder, typeInfoPtrI52LE);
+  auto typeInfoPtrI64LE = decompressI52PtrToI64(globalState, functionState, builder, typeInfoPtrI52LE);
   auto objectGenI32LE = structLT->extractMember(builder, urefLE, UniversalRefStructMember::OBJECT_GEN);
   auto objectPtrOffsetToGenLE = structLT->extractMember(builder, urefLE, UniversalRefStructMember::OBJECT_PTR_OFFSET_TO_GEN);
   buildAssertIntEq(globalState, functionState, builder, objectPtrOffsetToGenLE, constI16LE(globalState, universalRefObjectPtrOffsetToGenOffsetConstant), "Invalid reference in extern boundary! (oo)");
   auto objectPtrTetherMaskBitsLE = structLT->extractMember(builder, urefLE, UniversalRefStructMember::SCOPE_TETHER_BITS_MASK);
   buildAssertIntEq(globalState, functionState, builder, objectPtrTetherMaskBitsLE, constI16LE(globalState, universalRefScopeTetherMaskBitsConstant), "Invalid reference in extern boundary! (m)");
   auto objectPtrI56LE = structLT->extractMember(builder, urefLE, UniversalRefStructMember::OBJECT_PTR);
-  auto objectPtrI64LE = decompressI56PtrToI64(globalState, builder, objectPtrI56LE);
+  auto objectPtrI64LE = decompressI56PtrToI64(globalState, functionState, builder, objectPtrI56LE);
   return UniversalRefStructExplodedMembersLT{objectPtrI64LE, objectGenI32LE, typeInfoPtrI64LE};
 }
 
@@ -101,10 +101,10 @@ LLVMValueRef UniversalRefStructLT::implodeForRegularConcrete(
   StructBuilderLT<UniversalRefStructNumMembers, UniversalRefStructMember> urefBuilder(structLT.get());
   auto objectGenLE = constI32LE(globalState, universalRefObjectGenConstant);
   urefBuilder.insertMember(builder, UniversalRefStructMember::OBJECT_GEN, objectGenLE);
-  auto objPtrI56LE = compressI64PtrToI56(globalState, builder, objPtrI64LE);
+  auto objPtrI56LE = compressI64PtrToI56(globalState, functionState, builder, objPtrI64LE);
   urefBuilder.insertMember(builder, UniversalRefStructMember::OBJECT_PTR, objPtrI56LE);
   auto typeInfoPtrI64LE = LLVMConstInt(int64LT, universalRefTypeInfoPtrConstant, false);
-  auto typeInfoPtrI52LE = compressI64PtrToI52(globalState, builder, typeInfoPtrI64LE);
+  auto typeInfoPtrI52LE = compressI64PtrToI52(globalState, functionState, builder, typeInfoPtrI64LE);
   urefBuilder.insertMember(builder, UniversalRefStructMember::TYPE_INFO_PTR, typeInfoPtrI52LE);
   fillUnusedFields(globalState, functionState, builder, &urefBuilder);
   auto structLE = urefBuilder.build();
@@ -124,10 +124,10 @@ LLVMValueRef UniversalRefStructLT::implodeForGenerationalConcrete(
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
   StructBuilderLT<UniversalRefStructNumMembers, UniversalRefStructMember> urefBuilder(structLT.get());
   urefBuilder.insertMember(builder, UniversalRefStructMember::OBJECT_GEN, objGenI32LE);
-  auto objPtrI56LE = compressI64PtrToI56(globalState, builder, objPtrI64LE);
+  auto objPtrI56LE = compressI64PtrToI56(globalState, functionState, builder, objPtrI64LE);
   urefBuilder.insertMember(builder, UniversalRefStructMember::OBJECT_PTR, objPtrI56LE);
   auto typeInfoPtrI64LE = LLVMConstInt(int64LT, universalRefTypeInfoPtrConstant, false);
-  auto typeInfoPtrI52LE = compressI64PtrToI52(globalState, builder, typeInfoPtrI64LE);
+  auto typeInfoPtrI52LE = compressI64PtrToI52(globalState, functionState, builder, typeInfoPtrI64LE);
   urefBuilder.insertMember(builder, UniversalRefStructMember::TYPE_INFO_PTR, typeInfoPtrI52LE);
   fillUnusedFields(globalState, functionState, builder, &urefBuilder);
   auto structLE = urefBuilder.build();
@@ -147,9 +147,9 @@ LLVMValueRef UniversalRefStructLT::implodeForRegularInterface(
   StructBuilderLT<UniversalRefStructNumMembers, UniversalRefStructMember> urefBuilder(structLT.get());
   auto objectGenLE = constI32LE(globalState, universalRefObjectGenConstant);
   urefBuilder.insertMember(builder, UniversalRefStructMember::OBJECT_GEN, objectGenLE);
-  auto objPtrI56LE = compressI64PtrToI56(globalState, builder, objPtrI64LE);
+  auto objPtrI56LE = compressI64PtrToI56(globalState, functionState, builder, objPtrI64LE);
   urefBuilder.insertMember(builder, UniversalRefStructMember::OBJECT_PTR, objPtrI56LE);
-  auto typeInfoPtrI52LE = compressI64PtrToI52(globalState, builder, typeInfoPtrI64LE);
+  auto typeInfoPtrI52LE = compressI64PtrToI52(globalState, functionState, builder, typeInfoPtrI64LE);
   urefBuilder.insertMember(builder, UniversalRefStructMember::TYPE_INFO_PTR, typeInfoPtrI52LE);
   fillUnusedFields(globalState, functionState, builder, &urefBuilder);
   auto structLE = urefBuilder.build();
@@ -169,9 +169,9 @@ LLVMValueRef UniversalRefStructLT::implodeForGenerationalInterface(
     LLVMValueRef objGenI32LE) {
   StructBuilderLT<UniversalRefStructNumMembers, UniversalRefStructMember> urefBuilder(structLT.get());
   urefBuilder.insertMember(builder, UniversalRefStructMember::OBJECT_GEN, objGenI32LE);
-  auto objPtrI56LE = compressI64PtrToI56(globalState, builder, objPtrI64LE);
+  auto objPtrI56LE = compressI64PtrToI56(globalState, functionState, builder, objPtrI64LE);
   urefBuilder.insertMember(builder, UniversalRefStructMember::OBJECT_PTR, objPtrI56LE);
-  auto typeInfoPtrI52LE = compressI64PtrToI52(globalState, builder, typeInfoPtrI64LE);
+  auto typeInfoPtrI52LE = compressI64PtrToI52(globalState, functionState, builder, typeInfoPtrI64LE);
   urefBuilder.insertMember(builder, UniversalRefStructMember::TYPE_INFO_PTR, typeInfoPtrI52LE);
   fillUnusedFields(globalState, functionState, builder, &urefBuilder);
   auto structLE = urefBuilder.build();
@@ -189,7 +189,7 @@ void UniversalRefStructLT::fillUnusedFields(
     StructBuilderLT<UniversalRefStructNumMembers, UniversalRefStructMember>* urefBuilder) {
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
   auto regionPtrI64LE = LLVMConstInt(int64LT, universalRefRegionPtrConstant, false);
-  auto regionPtrI52LE = compressI64PtrToI52(globalState, builder, regionPtrI64LE);
+  auto regionPtrI52LE = compressI64PtrToI52(globalState, functionState, builder, regionPtrI64LE);
   urefBuilder->insertMember(builder, UniversalRefStructMember::REGION_PTR, regionPtrI52LE);
   auto regionGenLE = constI32LE(globalState, universalRefRegionGenConstant);
   urefBuilder->insertMember(builder, UniversalRefStructMember::REGION_GEN, regionGenLE);

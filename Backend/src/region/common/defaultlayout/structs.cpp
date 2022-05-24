@@ -237,6 +237,8 @@ void KindStructs::declareEdge(
   auto itablePtr =
       LLVMAddGlobal(globalState->mod, interfaceTableStructL, edgeName.c_str());
   LLVMSetLinkage(itablePtr, LLVMExternalLinkage);
+  // ITables need to be 16-byte aligned, see ITN16BA.
+  LLVMSetAlignment(itablePtr, 16);
 
   globalState->interfaceTablePtrs.emplace(edge, itablePtr);
 }

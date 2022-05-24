@@ -6,12 +6,14 @@
 #include <unordered_map>
 #include "metal/metalcache.h"
 #include "region/common/defaultlayout/structs.h"
+#include "region/urefstructlt.h"
 
 #include "metal/ast.h"
 #include "metal/instructions.h"
 #include "valeopts.h"
 #include "addresshasher.h"
 #include "externs.h"
+#include "utils/structlt.h"
 
 class IRegion;
 class KindStructs;
@@ -66,8 +68,13 @@ public:
 
 //  LLVMValueRef genMalloc = nullptr, genFree = nullptr;
 
-  LLVMTypeRef concreteHandleLT = nullptr; // 24 bytes, for SSA, RSA, and structs
-  LLVMTypeRef interfaceHandleLT = nullptr; // 32 bytes, for interfaces. concreteHandleLT plus 8b itable ptr.
+  // 32 bytes for the outside world to refer to our objects, see URSL.
+  std::unique_ptr<UniversalRefStructLT> universalRefStructLT;
+  // This is a tiny wrapper struct around the 32 byte integer, because LLVM does
+  // weird things with bigints that it doesn't do with structs. We were seeing
+  // garbage in the values that we received from C, perhaps big integers behave
+  // differently in some calling conventions or something.
+  LLVMTypeRef universalRefCompressedStructLT;
 
   // This is a global, we can return this when we want to return never. It should never actually be
   // used as an input to any expression in any function though.
@@ -120,8 +127,7 @@ public:
   // This keeps us from adding more edges or interfaces after we've already started compiling them.
   bool interfacesOpen = true;
 
-  LLVMTypeRef getConcreteHandleStruct() { return concreteHandleLT; }
-  LLVMTypeRef getInterfaceHandleStruct() { return interfaceHandleLT; }
+  UniversalRefStructLT* getUniversalRefStructLT() { return universalRefStructLT.get(); }
 
   void addInterfaceExtraMethod(InterfaceKind* interfaceKind, InterfaceMethod* method) {
     assert(interfacesOpen);

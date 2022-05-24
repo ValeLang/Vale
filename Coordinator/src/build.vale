@@ -153,6 +153,12 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           "false",
           "If true, the program will be able to make temporary stacks without firing up threads, saving space and making extern calls a bit safer."),
         Flag(
+          "--flares",
+          FLAG_BOOL(),
+          "Internal option, enables flares for debugging.",
+          "false",
+          "Internal option, enables flares for debugging."),
+        Flag(
           "--run_backend",
           FLAG_BOOL(),
           "Whether to run the backend.",

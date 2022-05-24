@@ -419,6 +419,10 @@ Subprocess {
   build_args.add(region);
   build_args.add("--llvm_ir");
   build_args.add("true");
+  build_args.add("--flares");
+  build_args.add("true");
+  //build_args.add("--census");
+  //build_args.add("true");
   //build_args.add("--enable_side_calling");
   //build_args.add("true");
   build_args.add("--no_std");

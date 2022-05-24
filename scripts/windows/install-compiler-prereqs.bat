@@ -1,9 +1,9 @@
 
 echo Downloading minimal LLVM...
 
-powershell -c "$ProgressPreference = 'SilentlyContinue' ; Invoke-WebRequest -Uri 'https://github.com/Verdagon/LLVM13WinMinimal/releases/download/v1.1/llvm-project-llvmorg-13.0.1.zip' -OutFile '%temp%\llvm-install-minimal.zip'"
+powershell -c "$ProgressPreference = 'SilentlyContinue' ; Invoke-WebRequest -Uri 'https://github.com/Verdagon/LLVM13WinMinimal/releases/download/v1.2/llvm-project-llvmorg-13.0.1.zip' -OutFile '%temp%\llvm-project-llvmorg-13.0.1.zip'"
 mkdir %1
-tar xf "%temp%\llvm-install-minimal.zip" -C %1
+tar xf "%temp%\llvm-project-llvmorg-13.0.1.zip" -C %1
 
 echo Downloading bootstrapping Vale compiler...
 

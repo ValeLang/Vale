@@ -61,11 +61,15 @@ Depending on where visual studio is:
  * If in Program Files (x86), use the program "x86_64 Cross Tools Command Prompt for VS 2019"
  * If in Program Files, use the program "Developer Command Prompt for VS 2019"
 
-`mkdir C:\llvm`
+`cd C:\llvm-project-llvmorg-13.0.1`
 
-`cd C:\llvm`
+`mkdir build`
 
-`cmake "C:\llvm-project-llvmorg-13.0.1\llvm" -D "CMAKE_INSTALL_PATH=C:\llvm" -D CMAKE_BUILD_TYPE=Release -G "Visual Studio 16 2019" -Thost=x64 -A x64`
+`cd build`
+
+For when building a distributable (such as for CI) LLVM release: the built LLVM (in the `build` directory here) **will reference things in the original source directory** (the `C:\llvm-project-llvmorg-13.0.1` here). This is why we make a `build` subdirectory under the source directory; we can then package it all up together and distribute it as one archive.
+
+`cmake "C:\llvm-project-llvmorg-13.0.1\llvm" -D "CMAKE_INSTALL_PREFIX=C:\llvm-project-llvmorg-13.0.1\build" -D CMAKE_BUILD_TYPE=Release -G "Visual Studio 17 2022" -Thost=x64 -A x64`
 
 `cmake --build .`
 
@@ -81,6 +85,8 @@ git clone https://github.com/ValeLang/Vale --single-branch --branch master
 cd Vale
 .\scripts\windows\build-compiler.bat C:\llvm\llvm-project-llvmorg-13.0.1 C:\OldValeCompiler --test=all ./scripts/VERSION
 ```
+
+If you get an error "fatal error LNK1112: module machine type 'x86' conflicts with target machine type 'x64'" and you're running in the shell "x64_x86 Cross Tools Command Prompt for VS 2022", try instead running in the shell "x64 Native Tools Command Prompt for VS 2022".
 
 
 ## For development

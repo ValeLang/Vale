@@ -520,14 +520,12 @@ LLVMValueRef HybridGenerationalMemory::implodeConcreteHandle(
   buildFlare(FL(), globalState, functionState, builder, "bork ", targetGenLE);
 
   auto handleLE =
-      ::implodeConcreteHandle(
+      globalState->getUniversalRefStructLT()->implodeForGenerationalConcrete(
           globalState,
+          functionState,
           builder,
-          globalState->getConcreteHandleStruct(),
-          constI64LE(globalState, externHandleRegionId),
           LLVMBuildPtrToInt(builder, innerRefLE, LLVMInt64TypeInContext(globalState->context), "objPtrA"),
-          targetGenLE,
-          constI32LE(globalState, externHandleGenOffset));
+          targetGenLE);
 
   return handleLE;
 }
@@ -564,15 +562,12 @@ LLVMValueRef HybridGenerationalMemory::implodeInterfaceHandle(
           FL(), functionState, builder, weakRefM->kind, interfaceFatPtrLE);
 
   auto handleLE =
-      ::implodeInterfaceHandle(
+      globalState->getUniversalRefStructLT()->implodeForGenerationalInterface(
           globalState,
+          functionState,
           builder,
-          globalState->getInterfaceHandleStruct(),
-          constI64LE(globalState, externHandleRegionId),
           LLVMBuildPtrToInt(builder, itablePtrLE, LLVMInt64TypeInContext(globalState->context), "itablePtr"),
           LLVMBuildPtrToInt(builder, controlBlockPtrLE.refLE, LLVMInt64TypeInContext(globalState->context), "objPtrB"),
-          targetGenLE,
-          constI32LE(globalState, externHandleGenOffset));
-
+          targetGenLE);
   return handleLE;
 }

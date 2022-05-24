@@ -648,37 +648,17 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
+  auto int256LT = LLVMIntTypeInContext(globalState->context, 256);
   auto int32LT = LLVMInt32TypeInContext(globalState->context);
   auto int32PtrLT = LLVMPointerType(int32LT, 0);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
   {
-    globalState->concreteHandleLT = LLVMStructCreateNamed(globalState->context, "__ExternConcreteHandle");
-    std::vector<LLVMTypeRef> memberTypesL = {
-        LLVMInt64TypeInContext(globalState->context), // region ID
-        LLVMInt64TypeInContext(globalState->context), // object pointer
-        LLVMInt32TypeInContext(globalState->context), // generation
-        LLVMInt32TypeInContext(globalState->context), // offset to generation
-    };
-    LLVMStructSetBody(globalState->concreteHandleLT, memberTypesL.data(), memberTypesL.size(), false);
-
-    auto actualSize = LLVMABISizeOfType(globalState->dataLayout, globalState->concreteHandleLT);
-    assert(actualSize == 24);
-  }
-
-  {
-    globalState->interfaceHandleLT = LLVMStructCreateNamed(globalState->context, "__ExternInterfaceHandle");
-    std::vector<LLVMTypeRef> memberTypesL = {
-        LLVMInt64TypeInContext(globalState->context), // region ID
-        LLVMInt64TypeInContext(globalState->context), // itable pointer
-        LLVMInt64TypeInContext(globalState->context), // object pointer
-        LLVMInt32TypeInContext(globalState->context), // generation
-        LLVMInt32TypeInContext(globalState->context), // offset to generation
-    };
-    LLVMStructSetBody(globalState->interfaceHandleLT, memberTypesL.data(), memberTypesL.size(), false);
-
-    auto actualSize = LLVMABISizeOfType(globalState->dataLayout, globalState->interfaceHandleLT);
-    assert(actualSize == 32);
+    globalState->universalRefStructLT =
+        std::make_unique<UniversalRefStructLT>(globalState->context, globalState->dataLayout);
+    globalState->universalRefCompressedStructLT =
+        LLVMStructCreateNamed(globalState->context, "__UniversalRefCompressed");
+    LLVMStructSetBody(globalState->universalRefCompressedStructLT, &int256LT, 1, false);
   }
 
   switch (globalState->opt->regionOverride) {

@@ -49,6 +49,7 @@ add_executable(backend
 		src/externs.cpp
 
 		src/utils/counters.cpp
+		src/utils/structlt.cpp
 
 		src/function/function.cpp
 		src/function/boundary.cpp
@@ -78,6 +79,7 @@ add_executable(backend
 		src/function/expressions/shared/string.cpp
 		src/region/common/heap.cpp
 		src/region/common/controlblock.cpp
+		src/region/urefstructlt.cpp
 		src/function/expressions/shared/ref.cpp
 
 		src/region/common/common.cpp

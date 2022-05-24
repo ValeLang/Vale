@@ -322,7 +322,7 @@ void Determinism::makeFuncToMatchCallFromRecordingFile() {
 //
 //  auto voidLT = LLVMVoidTypeInContext(globalState->context);
 //  defineFunctionBody(
-//      globalState, startRecordingLF, a raw gen ref see URFPL, startRecordingFuncName,
+//      globalState, startRecordingLF, a raw gen ref see URSL, startRecordingFuncName,
 //      [this](FunctionState* functionState, LLVMBuilderRef builder) {
 //
 //      });

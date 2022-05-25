@@ -413,11 +413,12 @@ int subprocess_create_named_pipe_helper(void **rd, void **wr) {
 int subprocess_create(const char *const commandLine[], int options,
                       struct subprocess_s *const out_process) {
   return subprocess_create_ex(commandLine, options, SUBPROCESS_NULL,
-                              out_process);
+                              SUBPROCESS_NULL, out_process);
 }
 
 int subprocess_create_ex(const char *const commandLine[], int options,
                          const char *const environment[],
+                         const char* const workingDirectory,
                          struct subprocess_s *const out_process) {
 #if defined(_MSC_VER)
   int fd;
@@ -661,7 +662,7 @@ int subprocess_create_ex(const char *const commandLine[], int options,
           1,                   // handles are inherited
           createNoWindow,      // creation flags
           used_environment,    // used environment
-          SUBPROCESS_NULL,     // use parent's current directory
+          workingDirectory,     // use parent's current directory
           SUBPROCESS_PTR_CAST(LPSTARTUPINFOA,
                               &startInfo), // STARTUPINFO pointer
           SUBPROCESS_PTR_CAST(LPPROCESS_INFORMATION, &processInfo))) {
@@ -746,6 +747,14 @@ int subprocess_create_ex(const char *const commandLine[], int options,
 #pragma clang diagnostic ignored "-Wcast-qual"
 #pragma clang diagnostic ignored "-Wold-style-cast"
 #endif
+
+    if (workingDirectory) {
+      int chdirResult = chdir(workingDirectory);
+      if (chdirResult != 0) {
+        perror("Couldn't change directory for subprocess");
+        exit(1);
+      }
+    }
 
     if (environment) {
       exit(execve(commandLine[0], (char *const *)commandLine,

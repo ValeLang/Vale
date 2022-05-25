@@ -7,6 +7,7 @@ export Array<mut, str> as MutStrArray;
 
 struct Subprocess {
   command str;
+  maybe_cwd Opt<str>;
   handle i64;
 }
 
@@ -17,7 +18,7 @@ func Subprocess(command str) Result<Subprocess, str> {
   foreach [index, element] in list.entries() {
     if index != 0 { newlist.add(list.get(index)); }
   }
-  return Subprocess(cmd, &newlist);
+  return Subprocess(cmd, &newlist, None<str>());
 }
 
 func Subprocess(command str, args &List<str>) Result<Subprocess, str> {
@@ -25,7 +26,49 @@ func Subprocess(command str, args &List<str>) Result<Subprocess, str> {
   foreach element in args {
     newlist.add(slice(element));
   }
-  return Subprocess(command, &newlist);
+  return Subprocess(command, &newlist, None<str>());
+}
+
+func Subprocess(relative_program str, args &List<StrSlice>, maybe_cwd Opt<str>) Result<Subprocess, str> {
+
+  paths = get_env_var("PATH").split(":");
+
+
+  maybe_program_path = FindProgramInPath(relative_program);
+
+
+  if maybe_program_path.isEmpty() {
+    panic("Unable to find program {relative_program}.");
+  }
+  program_path = (maybe_program_path).get();
+  if not program_path.is_file() {
+    panic("Unable to execute {relative_program}, is not a file.");
+  }
+
+
+  command_str_builder = StringBuilder();
+  command_str_builder.PrintCommandLinePart(program_path.str().slice());
+
+
+  cmdlist = List<str>();
+  cmdlist.add(program_path.str());
+  foreach arg in args {
+    command_str_builder.print(" ");
+    command_str_builder.PrintCommandLinePart(arg);
+    cmdlist.add(arg.str());
+  }
+
+  command_str = command_str_builder.str();
+
+  cmd_array = cmdlist.toImmArray();
+
+  handle = launch_command(cmd_array, maybe_cwd.or(""));
+  if handle == 0i64 {
+    return Err<Subprocess, str>("Failed to create command!");
+  }
+
+  retval = Subprocess(command_str, handle);
+  return Ok<Subprocess, str>(retval);
 }
 
 func FindProgramInPath(relative_program str) Opt<Path> {
@@ -60,48 +103,6 @@ func PrintCommandLinePart(builder &StringBuilder, part StrSlice) {
   } else {
     builder.print(part);
   }
-}
-
-func Subprocess(relative_program str, args &List<StrSlice>) Result<Subprocess, str> {
-
-  paths = get_env_var("PATH").split(":");
-
-
-  maybe_program_path = FindProgramInPath(relative_program);
-
-
-  if maybe_program_path.isEmpty() {
-    panic("Unable to find program {relative_program}.");
-  }
-  program_path = (maybe_program_path).get();
-  if not program_path.is_file() {
-    panic("Unable to execute {relative_program}, is not a file.");
-  }
-
-
-  command_str_builder = StringBuilder();
-  command_str_builder.PrintCommandLinePart(program_path.str().slice());
-
-
-  cmdlist = List<str>();
-  cmdlist.add(program_path.str());
-  foreach arg in args {
-    command_str_builder.print(" ");
-    command_str_builder.PrintCommandLinePart(arg);
-    cmdlist.add(arg.str());
-  }
-
-  command_str = command_str_builder.str();
-
-  cmd_array = cmdlist.toImmArray();
-
-  handle = launch_command(cmd_array);
-  if handle == 0i64 {
-    return Err<Subprocess, str>("Failed to create command!");
-  }
-
-  retval = Subprocess(command_str, handle);
-  return Ok<Subprocess, str>(retval);
 }
 
 func consume_and_join<StdoutConsumer, StderrConsumer>(
@@ -217,7 +218,7 @@ func read_stderr(self &Subprocess, len int) str {
 }
 
 extern func get_env_var(name str) str;
-extern func launch_command(args Array<imm, str>) i64;
+extern func launch_command(args Array<imm, str>, maybe_cwd str) i64;
 extern func write_stdin(cmd i64, s str);
 extern func close_stdin(cmd i64);
 extern func read_stdout(cmd i64, len int) str;

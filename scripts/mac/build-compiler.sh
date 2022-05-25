@@ -35,6 +35,16 @@ then
 fi
 shift;
 
+LLVM_CMAKE_DIR=$1
+if [ "$LLVM_CMAKE_DIR" == "" ]
+then
+  LLVM_CMAKE_DIR="/usr/local/Cellar/llvm/`ls /usr/local/Cellar/llvm`/lib/cmake/llvm"
+  echo "No LLVM override, using one in $LLVM_CMAKE_DIR"
+else
+  echo "Using LLVM dir $LLVM_CMAKE_DIR"
+  shift;
+fi
+
 touch ~/.zshrc
 source ~/.zshrc
 
@@ -46,8 +56,7 @@ sbt assembly || { echo 'Frontend build failed, aborting.' ; exit 1; }
 cd ../Backend
 
 echo Generating Backend...
-LLVM_CMAKE_DIR="/usr/local/Cellar/llvm/`ls /usr/local/Cellar/llvm`/lib/cmake/llvm"
-cmake -B build -D LLVM_DIR="$LLVM_CMAKE_DIR" || { echo 'Backend generate failed, aborting.' ; exit 1; }
+cmake -B build -DLLVM_DIR="$LLVM_CMAKE_DIR" || { echo 'Backend generate failed, aborting.' ; exit 1; }
 
 echo Compiling Backend...
 cmake --build build || { echo 'Backend build failed, aborting.' ; exit 1; }

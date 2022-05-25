@@ -53,7 +53,7 @@ Subprocess {
     command_line_args.add("--llvm_ir");
   }
   if (enable_replaying) {
-    command_line_args.add("--enable_replaying");
+    command_line_args.add("--enable_replaying=true");
   }
   if (enable_side_calling) {
     command_line_args.add("--enable_side_calling=true");

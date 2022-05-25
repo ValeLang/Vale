@@ -100,9 +100,8 @@ When we send a gen ref into the wild:
  1. Don't set the object's "Exported" bit to 1, it's never really used in replay mode.
 
 
-We would have it gradually clean up expired entries (to save space) and use null gen refs for things that don't exist anymore, but we need to keep the mappings true to preserve the behavior of the === operator. Ah, but the === operator does a gen check anyway. so we can periodically clean up things from the map.
-but also note that cleaning things up from a hash map can be tricky.
 
+We can periodically clean up expired entries from the hash map to save space. When there's a miss, we can return a null gen ref. This would have interfered with the === operator, but the === operator will need to do a gen-check anyway.
 
 
 # Deterministic Parallelism
@@ -229,6 +228,11 @@ When we serialize something, we actually jump around quite a bit with random acc
 
 
 For this reason, we write to a temporary buffer before writing to a file. In fact, this is why we use the Linear region to help out with this.
+
+
+## Using Regular Function Names Instead of Export Names (URFNIEN)
+
+For the POC, we're using regular function names (`launch`) instead of exported names (`SpaceGame_launch`). Look for URFNIEN in the code to find everywhere we'll need to change that.
 
 
 

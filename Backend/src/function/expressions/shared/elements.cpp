@@ -24,7 +24,7 @@ LLVMValueRef checkIndexInBounds(
   auto isNonNegativeLE = LLVMBuildICmp(builder, LLVMIntSGE, indexLE, constI32LE(globalState, 0), "isNonNegative");
   auto isUnderLength = LLVMBuildICmp(builder, LLVMIntSLT, indexLE, sizeLE, "isUnderLength");
   auto isWithinBounds = LLVMBuildAnd(builder, isNonNegativeLE, isUnderLength, "isWithinBounds");
-  buildAssert(globalState, functionState, builder, isWithinBounds, "Index out of bounds!");
+  buildAssertV(globalState, functionState, builder, isWithinBounds, "Index out of bounds!");
 
   return indexLE;
 }
@@ -217,7 +217,7 @@ void initializeElementWithoutIncrementSize(
   storeInnerArrayMember(globalState, functionState, builder, elemsPtrLE, indexLE, sourceLE);
 }
 
-void intRangeLoop(
+void intRangeLoopV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -226,12 +226,28 @@ void intRangeLoop(
   auto sizeLE =
       globalState->getRegion(globalState->metalCache->i32Ref)
           ->checkValidReference(FL(), functionState, builder, globalState->metalCache->i32Ref, sizeRef);
+  intRangeLoop(
+      globalState, functionState, builder, sizeLE,
+      [globalState, iterationBuilder](LLVMValueRef iterationIndexLE, LLVMBuilderRef builder) {
+        auto iterationIndexRef = wrap(globalState->getRegion(globalState->metalCache->i32Ref), globalState->metalCache->i32Ref, iterationIndexLE);
+        iterationBuilder(iterationIndexRef, builder);
+      });
+}
+
+void intRangeLoop(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMValueRef sizeLE,
+    std::function<void(LLVMValueRef, LLVMBuilderRef)> iterationBuilder) {
+  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+  assert(LLVMTypeOf(sizeLE) == int32LT);
 
   LLVMValueRef iterationIndexPtrLE =
       makeBackendLocal(
           functionState,
           builder,
-          LLVMInt32TypeInContext(globalState->context),
+          int32LT,
           "iterationIndex",
           constI32LE(globalState, 0));
 
@@ -248,14 +264,13 @@ void intRangeLoop(
       },
       [globalState, iterationBuilder, iterationIndexPtrLE](LLVMBuilderRef bodyBuilder) {
         auto iterationIndexLE = LLVMBuildLoad(bodyBuilder, iterationIndexPtrLE, "iterationIndex");
-        auto iterationIndexRef = wrap(globalState->getRegion(globalState->metalCache->i32Ref), globalState->metalCache->i32Ref, iterationIndexLE);
-        iterationBuilder(iterationIndexRef, bodyBuilder);
+        iterationBuilder(iterationIndexLE, bodyBuilder);
         adjustCounter(globalState, bodyBuilder, globalState->metalCache->i32, iterationIndexPtrLE, 1);
       });
 }
 
 
-void intRangeLoopReverse(
+void intRangeLoopReverseV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,

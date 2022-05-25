@@ -24,12 +24,12 @@ Ref translateIf(
   BlockState elseBlockState(globalState->addressNumberer, parentBlockState, std::nullopt);
 
   auto resultLE =
-      buildIfElse(
+      buildIfElseV(
           globalState,
           functionState,
           builder,
           conditionExpr,
-          globalState->getRegion(iff->commonSupertype)->translateType(iff->commonSupertype),
+//          globalState->getRegion(iff->commonSupertype)->translateType(iff->commonSupertype),
           iff->thenResultType,
           iff->elseResultType,
           [globalState, functionState, &thenBlockState, iff](LLVMBuilderRef thenBlockBuilder) {

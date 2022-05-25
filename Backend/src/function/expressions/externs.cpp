@@ -1,7 +1,9 @@
 #include <iostream>
+#include <utils/branch.h>
 #include "../boundary.h"
 #include "shared/shared.h"
 #include "shared/string.h"
+#include "determinism/determinism.h"
 #include "../../region/common/controlblock.h"
 #include "../../region/common/heap.h"
 #include "../../region/linear/linear.h"
@@ -9,6 +11,295 @@
 #include "../../translatetype.h"
 
 #include "../expression.h"
+
+
+Ref buildResultOrEarlyReturnOfNever(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Prototype* prototype,
+    Ref resultRef) {
+  if (prototype->returnType->kind == globalState->metalCache->never) {
+    LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
+    return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtr);
+  } else {
+    if (prototype->returnType == globalState->metalCache->voidRef) {
+      return makeVoidRef(globalState);
+    } else {
+      return resultRef;
+    }
+  }
+}
+
+void replayExportCalls(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder) {
+  buildBoolyWhile(
+      globalState, functionState->containingFuncL, builder,
+      [globalState, functionState](LLVMBuilderRef builder) -> LLVMValueRef {
+        buildFlare(FL(), globalState, functionState, builder);
+        auto replayerFuncPtrLE =
+            globalState->determinism->buildGetMaybeReplayedFuncForNextExportCall(
+                builder);
+        auto replayerFuncPtrAsI64LE = ptrToIntLE(globalState, builder, replayerFuncPtrLE);
+        auto replayerFuncPtrNotNullLE =
+            LLVMBuildICmp(
+                builder, LLVMIntNE, replayerFuncPtrAsI64LE, constI64LE(globalState, 0), "");
+        buildIf(
+            globalState, functionState->containingFuncL, builder, replayerFuncPtrNotNullLE,
+            [replayerFuncPtrLE](LLVMBuilderRef thenBuilder) {
+              buildSimpleCall(thenBuilder, replayerFuncPtrLE, {});
+            });
+        return replayerFuncPtrNotNullLE;
+      });
+}
+
+Ref buildCallOrSideCall(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Prototype* prototype,
+    const std::vector<Ref>& valeArgRefs) {
+
+  auto hostArgsLE = std::vector<LLVMValueRef>{};
+  hostArgsLE.reserve(valeArgRefs.size() + 1);
+
+  auto sizeArgsLE = std::vector<LLVMValueRef>{};
+  sizeArgsLE.reserve(valeArgRefs.size() + 1);
+
+  for (int i = 0; i < valeArgRefs.size(); i++) {
+    auto valeArgRefMT = prototype->params[i];
+    auto hostArgRefMT =
+        (valeArgRefMT->ownership == Ownership::SHARE ?
+         globalState->linearRegion->linearizeReference(valeArgRefMT) :
+         valeArgRefMT);
+
+    auto valeRegionInstanceRef =
+        // At some point, look up the actual region instance, perhaps from the FunctionState?
+        globalState->getRegion(valeArgRefMT)->createRegionInstanceLocal(functionState, builder);
+
+    auto hostRegionInstanceRef =
+        globalState->linearRegion->createRegionInstanceLocal(
+            functionState, builder, constI1LE(globalState, 0), constI64LE(globalState, 0));
+
+    auto valeArg = valeArgRefs[i];
+    auto[hostArgRefLE, argSizeLE] =
+        sendValeObjectIntoHost(
+            globalState, functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef, valeArgRefMT, hostArgRefMT, valeArg);
+    if (typeNeedsPointerParameter(globalState, valeArgRefMT)) {
+      auto hostArgRefLT = globalState->getRegion(valeArgRefMT)->getExternalType(valeArgRefMT);
+      assert(LLVMGetTypeKind(hostArgRefLT) != LLVMPointerTypeKind);
+      hostArgsLE.push_back(makeBackendLocal(functionState, builder, hostArgRefLT, "ptrParamLocal", hostArgRefLE));
+    } else {
+      hostArgsLE.push_back(hostArgRefLE);
+    }
+    if (includeSizeParam(globalState, prototype, i)) {
+      sizeArgsLE.push_back(argSizeLE);
+    }
+  }
+
+  hostArgsLE.insert(hostArgsLE.end(), sizeArgsLE.begin(), sizeArgsLE.end());
+  sizeArgsLE.clear();
+
+  auto externFuncIter = globalState->externFunctions.find(prototype->name->name);
+  assert(externFuncIter != globalState->externFunctions.end());
+  auto externFuncL = externFuncIter->second;
+
+  buildFlare(FL(), globalState, functionState, builder, "Suspending function ", functionState->containingFuncName);
+  buildFlare(FL(), globalState, functionState, builder, "Calling extern function ", prototype->name->name);
+
+  auto hostReturnRefLT = globalState->getRegion(prototype->returnType)->getExternalType(prototype->returnType);
+
+  LLVMValueRef hostReturnLE = nullptr;
+  if (typeNeedsPointerParameter(globalState, prototype->returnType)) {
+    auto localPtrLE =
+        makeBackendLocal(functionState, builder, hostReturnRefLT, "retOutParam", LLVMGetUndef(hostReturnRefLT));
+    buildFlare(FL(), globalState, functionState, builder, "Return ptr! ", ptrToIntLE(globalState, builder, localPtrLE));
+    hostArgsLE.insert(hostArgsLE.begin(), localPtrLE);
+
+    if (globalState->opt->enableSideCalling) {
+      auto sideStackI8PtrLE = LLVMBuildLoad(builder, globalState->sideStack, "sideStack");
+      auto resultLE =
+          buildSideCall(
+              globalState, LLVMVoidTypeInContext(globalState->context), builder, sideStackI8PtrLE, externFuncL,
+              hostArgsLE);
+      assert(LLVMTypeOf(resultLE) == LLVMVoidTypeInContext(globalState->context));
+    } else {
+      auto resultLE = buildMaybeNeverCall(globalState, builder, externFuncL, hostArgsLE);
+      assert(LLVMTypeOf(resultLE) == LLVMVoidTypeInContext(globalState->context));
+    }
+    hostReturnLE = LLVMBuildLoad(builder, localPtrLE, "hostReturn");
+    buildFlare(FL(), globalState, functionState, builder, "Loaded the return! ",
+        LLVMABISizeOfType(globalState->dataLayout, LLVMTypeOf(hostReturnLE)));
+  } else {
+    if (globalState->opt->enableSideCalling) {
+      auto sideStackI8PtrLE = LLVMBuildLoad(builder, globalState->sideStack, "sideStack");
+      hostReturnLE =
+          buildSideCall(globalState, hostReturnRefLT, builder, sideStackI8PtrLE, externFuncL, hostArgsLE);
+    } else {
+      hostReturnLE =
+          buildMaybeNeverCall(globalState, builder, externFuncL, hostArgsLE);
+    }
+  }
+
+  buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
+  buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
+
+
+  buildFlare(FL(), globalState, functionState, builder);
+
+  auto valeReturnRefMT = prototype->returnType;
+  auto hostReturnMT =
+      (valeReturnRefMT->ownership == Ownership::SHARE ?
+       globalState->linearRegion->linearizeReference(valeReturnRefMT) :
+       valeReturnRefMT);
+
+  auto valeRegionInstanceRef =
+      // At some point, look up the actual region instance, perhaps from the FunctionState?
+      globalState->getRegion(valeReturnRefMT)->createRegionInstanceLocal(functionState, builder);
+
+  auto hostRegionInstanceRef =
+      globalState->linearRegion->createRegionInstanceLocal(
+          functionState, builder, constI1LE(globalState, 0), constI64LE(globalState, 0));
+
+  auto valeReturnRef =
+      receiveHostObjectIntoVale(
+          globalState, functionState, builder, hostRegionInstanceRef, valeRegionInstanceRef, hostReturnMT, valeReturnRefMT, hostReturnLE);
+
+  return valeReturnRef;
+}
+
+// Three options:
+// - Call the function normally
+// - Call the function and record its return value
+// - Just replay the return value from the file, dont call it
+Ref replayReturnOrCallAndOrRecord(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Prototype* prototype,
+    const std::vector<Ref>& args,
+    std::function<Ref(LLVMBuilderRef)> callUserExtern) {
+  auto valeReturnRefMT = prototype->returnType;
+
+  if (!globalState->opt->enableReplaying) {
+    // This is the simple case, no replaying or recording or anything.
+
+    auto valeReturnRef = callUserExtern(builder);
+    return buildResultOrEarlyReturnOfNever(globalState, functionState, builder, prototype, valeReturnRef);
+  } else {
+    // If we're here, replaying is enabled.
+    // We might be replaying, recording, or neither, depending on the flags supplied at runtime.
+
+    LLVMValueRef recordingModeLE = globalState->determinism->buildGetMode(builder);
+    Ref isNormalRunRef =
+        wrap(
+            globalState->getRegion(globalState->metalCache->boolRef),
+            globalState->metalCache->boolRef,
+            LLVMBuildICmp(
+                builder, LLVMIntNE, recordingModeLE,
+                constI64LE(globalState, (int64_t)RecordingMode::NORMAL),
+                "isNormalRun"));
+
+    return buildIfElseV(
+        globalState, functionState, builder, isNormalRunRef, valeReturnRefMT, valeReturnRefMT,
+        [globalState, functionState, recordingModeLE, args, prototype, valeReturnRefMT, callUserExtern](
+            LLVMBuilderRef outerThenBuilder) -> Ref {
+          auto isRecordingRef =
+              wrap(
+                  globalState->getRegion(globalState->metalCache->boolRef),
+                  globalState->metalCache->boolRef,
+                  LLVMBuildICmp(
+                      outerThenBuilder, LLVMIntEQ, recordingModeLE,
+                      constI64LE(globalState, (int64_t) RecordingMode::RECORDING), "isRecording"));
+          auto valeReturnLT = globalState->getRegion(valeReturnRefMT)->getExternalType(valeReturnRefMT);
+          return buildIfElseV(
+              globalState, functionState, outerThenBuilder, isRecordingRef, valeReturnRefMT, valeReturnRefMT,
+              [globalState, functionState, prototype, args, valeReturnRefMT, callUserExtern](
+                  LLVMBuilderRef builder) -> Ref {
+                // If we get here, we're recording.
+
+                // write that we're calling this particular function
+                globalState->determinism->buildWriteCallBeginToFile(builder, prototype);
+
+                // write the argument to the file
+                for (int i = 0; i < args.size(); i++) {
+                  auto valeArgRefMT = prototype->params[i];
+                  auto argLE =
+                      globalState->getRegion(prototype->params[i])
+                          ->checkValidReference(FL(), functionState, builder, prototype->params[i], args[i]);
+                  if (valeArgRefMT->ownership == Ownership::SHARE) {
+                    // Don't need to:
+                    // globalState->determinism->buildWriteValueToFile(builder, argLE);
+                    // because we dont need to call the
+                  } else {
+                    globalState->determinism->buildWriteRefToFile(builder, argLE);
+                  }
+                }
+
+                auto valeReturnRef = callUserExtern(builder);
+
+                // Signal that we're ending the call, rather than having some exports call into us.
+                globalState->determinism->buildRecordCallEnd(builder, prototype);
+                // write to the file what we received from C
+                if (valeReturnRefMT->ownership == Ownership::SHARE) {
+                  globalState->determinism->buildWriteValueToFile(
+                      functionState, builder, prototype->returnType, valeReturnRef);
+                } else {
+                  auto returnLE =
+                      globalState->getRegion(prototype->returnType)
+                          ->encryptAndSendFamiliarReference(
+                              functionState, builder, prototype->returnType, valeReturnRef);
+                  globalState->determinism->buildWriteRefToFile(builder, returnLE);
+                }
+
+                return buildResultOrEarlyReturnOfNever(
+                    globalState, functionState, builder, prototype, valeReturnRef);
+              },
+              [globalState, functionState, args, prototype, valeReturnRefMT](LLVMBuilderRef builder) -> Ref {
+                // If we get here, we're replaying.
+
+                // should assert that we're calling the same function as last time
+                globalState->determinism->buildMatchCallFromRecordingFile(functionState, builder, prototype);
+
+                for (int i = 0; i < args.size(); i++) {
+                  auto valeArgRefMT = prototype->params[i];
+                  if (valeArgRefMT->ownership != Ownership::SHARE) {
+                    // read from the file, add mapping to the hash map
+                    auto argLE =
+                        globalState->getRegion(valeArgRefMT)
+                            ->checkValidReference(FL(), functionState, builder, valeArgRefMT, args[i]);
+                    auto recordedRefLE =
+                        globalState->determinism->buildMapRefFromRecordingFile(builder, valeArgRefMT);
+                    assert(false);
+                  }
+                }
+
+                buildFlare(FL(), globalState, functionState, builder);
+                replayExportCalls(globalState, functionState, builder);
+
+                // above, we consumed a marker that said we're ending this current extern call.
+
+                Ref valeReturnRef =
+                    (valeReturnRefMT->ownership == Ownership::SHARE ?
+                     globalState->determinism->buildReadValueFromFile(functionState, builder, valeReturnRefMT) :
+                     globalState->determinism->buildMapRefFromRecordingFile(builder, valeReturnRefMT));
+//                Ref valeReturnRef =
+//                    wrap(globalState->getRegion(valeReturnRefMT), valeReturnRefMT, valeReturnRefLE);
+
+                return buildResultOrEarlyReturnOfNever(
+                    globalState, functionState, builder, prototype, valeReturnRef);
+              });
+        },
+        [globalState, functionState, prototype, callUserExtern](LLVMBuilderRef elseBuilder) -> Ref {
+          auto valeReturnRef = callUserExtern(elseBuilder);
+          return buildResultOrEarlyReturnOfNever(globalState, functionState, elseBuilder, prototype, valeReturnRef);
+        });
+  }
+}
+
+
 
 Ref buildExternCall(
     GlobalState* globalState,
@@ -231,123 +522,11 @@ Ref buildExternCall(
     auto result = LLVMBuildOr( builder, leftLE, rightLE, "");
     return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
   } else {
-    auto valeArgRefs = std::vector<Ref>{};
-    valeArgRefs.reserve(args.size());
-    for (int i = 0; i < args.size(); i++) {
-      valeArgRefs.push_back(args[i]);
-    }
-
-    auto hostArgsLE = std::vector<LLVMValueRef>{};
-    hostArgsLE.reserve(args.size() + 1);
-
-    auto sizeArgsLE = std::vector<LLVMValueRef>{};
-    sizeArgsLE.reserve(args.size() + 1);
-
-    for (int i = 0; i < args.size(); i++) {
-      auto valeArgRefMT = prototype->params[i];
-      auto hostArgRefMT =
-          (valeArgRefMT->ownership == Ownership::SHARE ?
-              globalState->linearRegion->linearizeReference(valeArgRefMT) :
-              valeArgRefMT);
-
-      auto valeRegionInstanceRef =
-          // At some point, look up the actual region instance, perhaps from the FunctionState?
-          globalState->getRegion(valeArgRefMT)->createRegionInstanceLocal(functionState, builder);
-
-      auto hostRegionInstanceRef =
-          globalState->linearRegion->createRegionInstanceLocal(
-              functionState, builder, constI1LE(globalState, 0), constI64LE(globalState, 0));
-      auto valeArg = valeArgRefs[i];
-      auto [hostArgRefLE, argSizeLE] =
-          sendValeObjectIntoHost(
-              globalState, functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef, valeArgRefMT, hostArgRefMT, valeArg);
-      if (typeNeedsPointerParameter(globalState, valeArgRefMT)) {
-        auto hostArgRefLT = globalState->getRegion(valeArgRefMT)->getExternalType(valeArgRefMT);
-        assert(LLVMGetTypeKind(hostArgRefLT) != LLVMPointerTypeKind);
-        hostArgsLE.push_back(makeBackendLocal(functionState, builder, hostArgRefLT, "ptrParamLocal", hostArgRefLE));
-      } else {
-        hostArgsLE.push_back(hostArgRefLE);
-      }
-      if (includeSizeParam(globalState, prototype, i)) {
-        sizeArgsLE.push_back(argSizeLE);
-      }
-    }
-
-    hostArgsLE.insert(hostArgsLE.end(), sizeArgsLE.begin(), sizeArgsLE.end());
-    sizeArgsLE.clear();
-
-    auto externFuncIter = globalState->externFunctions.find(prototype->name->name);
-    assert(externFuncIter != globalState->externFunctions.end());
-    auto externFuncL = externFuncIter->second;
-
-    buildFlare(FL(), globalState, functionState, builder, "Suspending function ", functionState->containingFuncName);
-    buildFlare(FL(), globalState, functionState, builder, "Calling extern function ", prototype->name->name);
-
-    auto sideStackI8PtrLE = LLVMBuildLoad(builder, globalState->sideStack, "sideStack");
-
-    auto hostReturnRefLT = globalState->getRegion(prototype->returnType)->getExternalType(prototype->returnType);
-
-    LLVMValueRef hostReturnLE = nullptr;
-    if (typeNeedsPointerParameter(globalState, prototype->returnType)) {
-      auto localPtrLE =
-          makeBackendLocal(functionState, builder, hostReturnRefLT, "retOutParam", LLVMGetUndef(hostReturnRefLT));
-      buildFlare(FL(), globalState, functionState, builder, "Return ptr! ", ptrToIntLE(globalState, builder, localPtrLE));
-      hostArgsLE.insert(hostArgsLE.begin(), localPtrLE);
-
-      if (globalState->opt->enableSideCalling) {
-        auto resultLE =
-            buildSideCall(
-                globalState, LLVMVoidTypeInContext(globalState->context), builder, sideStackI8PtrLE, externFuncL,
-                hostArgsLE);
-        assert(LLVMTypeOf(resultLE) == LLVMVoidTypeInContext(globalState->context));
-      } else {
-        auto resultLE = buildCall(globalState, builder, externFuncL, hostArgsLE);
-        assert(LLVMTypeOf(resultLE) == LLVMVoidTypeInContext(globalState->context));
-      }
-      hostReturnLE = LLVMBuildLoad(builder, localPtrLE, "hostReturn");
-      buildFlare(FL(), globalState, functionState, builder, "Loaded the return! ", LLVMABISizeOfType(globalState->dataLayout, LLVMTypeOf(hostReturnLE)));
-    } else {
-      if (globalState->opt->enableSideCalling) {
-        hostReturnLE =
-            buildSideCall(globalState, hostReturnRefLT, builder, sideStackI8PtrLE, externFuncL, hostArgsLE);
-      } else {
-        hostReturnLE =
-            buildCall(globalState, builder, externFuncL, hostArgsLE);
-      }
-    }
-
-    buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
-    buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
-
-    if (prototype->returnType->kind == globalState->metalCache->never) {
-      LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
-      return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtr);
-    } else {
-      if (prototype->returnType == globalState->metalCache->voidRef) {
-        return makeVoidRef(globalState);
-      } else {
-        buildFlare(FL(), globalState, functionState, builder);
-
-        auto valeReturnRefMT = prototype->returnType;
-        auto hostReturnMT =
-            (valeReturnRefMT->ownership == Ownership::SHARE ?
-                globalState->linearRegion->linearizeReference(valeReturnRefMT) :
-                valeReturnRefMT);
-
-        auto valeRegionInstanceRef =
-            // At some point, look up the actual region instance, perhaps from the FunctionState?
-            globalState->getRegion(valeReturnRefMT)->createRegionInstanceLocal(functionState, builder);
-
-        auto hostRegionInstanceRef =
-            globalState->linearRegion->createRegionInstanceLocal(
-                functionState, builder, constI1LE(globalState, 0), constI64LE(globalState, 0));
-        auto valeReturnRef =
-            receiveHostObjectIntoVale(
-                globalState, functionState, builder, hostRegionInstanceRef, valeRegionInstanceRef, hostReturnMT, valeReturnRefMT, hostReturnLE);
-
-        return valeReturnRef;
-      }
-    }
+    return replayReturnOrCallAndOrRecord(
+        globalState, functionState, builder, prototype, args,
+        [globalState, functionState, prototype, args](LLVMBuilderRef builderWhenNotReplaying) {
+          return buildCallOrSideCall(globalState, functionState, builderWhenNotReplaying, prototype, args);
+        });
   }
   assert(false);
 }

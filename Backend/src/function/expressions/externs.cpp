@@ -44,7 +44,7 @@ void replayExportCalls(
         auto replayerFuncPtrAsI64LE = ptrToIntLE(globalState, whileBuilder, replayerFuncPtrLE);
         auto replayerFuncPtrNotNullLE =
             LLVMBuildICmp(
-                whileBuilder, LLVMIntNE, replayerFuncPtrAsI64LE, constI8LE(globalState, 0), "");
+                whileBuilder, LLVMIntNE, replayerFuncPtrAsI64LE, constI64LE(globalState, 0), "");
         buildIf(
             globalState, functionState->containingFuncL, whileBuilder, replayerFuncPtrNotNullLE,
             [replayerFuncPtrLE](LLVMBuilderRef thenBuilder) {
@@ -84,8 +84,8 @@ Ref buildCallOrSideCall(
 
     auto valeArg = valeArgRefs[i];
     auto[hostArgRefLE, argSizeLE] =
-    sendValeObjectIntoHost(
-        globalState, functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef, valeArgRefMT, hostArgRefMT, valeArg);
+        sendValeObjectIntoHost(
+            globalState, functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef, valeArgRefMT, hostArgRefMT, valeArg);
     if (typeNeedsPointerParameter(globalState, valeArgRefMT)) {
       auto hostArgRefLT = globalState->getRegion(valeArgRefMT)->getExternalType(valeArgRefMT);
       assert(LLVMGetTypeKind(hostArgRefLT) != LLVMPointerTypeKind);
@@ -242,15 +242,14 @@ Ref replayReturnOrCallAndOrRecord(
                 // Signal that we're ending the call, rather than having some exports call into us.
                 globalState->determinism->buildRecordCallEnd(builder, prototype);
                 // write to the file what we received from C
-                auto returnLE =
-                    globalState->getRegion(prototype->returnType)
-                        ->checkValidReference(
-                            FL(), functionState, builder, prototype->returnType, valeReturnRef);
                 if (valeReturnRefMT->ownership == Ownership::SHARE) {
-                  start here, need to alienify it.
-                  we dont even need to do the whole i256 thing either, meh
-                  globalState->determinism->buildWriteRefToFile(builder, returnLE);
+                  globalState->determinism->buildWriteValueToFile(
+                      functionState, builder, prototype->returnType, valeReturnRef);
                 } else {
+                  auto returnLE =
+                      globalState->getRegion(prototype->returnType)
+                          ->encryptAndSendFamiliarReference(
+                              functionState, builder, prototype->returnType, valeReturnRef);
                   globalState->determinism->buildWriteRefToFile(builder, returnLE);
                 }
 

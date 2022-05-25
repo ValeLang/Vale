@@ -391,7 +391,24 @@ func FinishTests(suite &TestSuite, until_this_many_left int) {
           println("Running command: " + run_process.command);
         }
         run_result = (run_process).capture_and_join();
-        if (run_result.return_code != expected_return_code) {
+        if (run_result.return_code == expected_return_code) {
+          // Success!
+
+          if suite.verbose {
+            if (run_result.stdout.len() > 0) {
+              println("stdout:");
+              println(run_result.stdout);
+            } else {
+              println("(no stdout)");
+            }
+            if (run_result.stderr.len() > 0) {
+              println("stderr:");
+              println(run_result.stderr);
+            } else {
+              println("(no stderr)");
+            }
+          }
+        } else {
           println("Invalid result for test {test_name} (region {region}). Expected {expected_return_code} but got {run_result.return_code}.");
           if (run_result.stdout.len() > 0) {
             println("stdout:");
@@ -406,7 +423,6 @@ func FinishTests(suite &TestSuite, until_this_many_left int) {
             println("(no stderr)");
           }
           set success = false;
-        } else {
         }
       }
       if success {
@@ -519,8 +535,8 @@ func StartReplayTest(
             test_build_dir,
             build_process,
             List<List<str>>()
-                .add(List<str>().add("--record").add("recording.bin"))
-                .add(List<str>().add("--replay").add("recording.bin"))));
+                .add(List<str>().add("--vale_record").add("recording.bin"))
+                .add(List<str>().add("--vale_replay").add("recording.bin"))));
   } else {
     drop(vale_input);
   }

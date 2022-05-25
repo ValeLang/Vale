@@ -3,6 +3,8 @@
 
 #include <globalstate.h>
 
+// Returns the number of consumed args.
+// The caller should adjust argv and argc accordingly, and maybe move argv[0] to argv[2].
 LLVMValueRef processFlag(
     GlobalState* globalState,
     FunctionState* functionState,

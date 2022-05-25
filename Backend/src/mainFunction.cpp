@@ -228,9 +228,17 @@ LLVMValueRef makeEntryFunction(
   if (globalState->opt->enableReplaying) {
     auto numConsumedArgsLE =
         globalState->determinism->buildMaybeStartDeterministicMode(
-            entryBuilder, mainArgsLE, numMainArgsLE);
-    numMainArgsLE = LLVMBuildSub(entryBuilder, numMainArgsLE, numConsumedArgsLE, "");
-    mainArgsLE = LLVMBuildGEP(entryBuilder, mainArgsLE, &numConsumedArgsLE, 1, "");
+            entryBuilder, numMainArgsLE, mainArgsLE);
+
+    // argv[numConsumed] = argv[0], to move the zeroth arg up.
+    LLVMBuildStore(
+        entryBuilder,
+        LLVMBuildLoad(entryBuilder, mainArgsLE, "zerothArg"),
+        LLVMBuildGEP(entryBuilder, mainArgsLE, &numConsumedArgsLE, 1, "argv+numConsumed"));
+    // argv += numConsumed
+    mainArgsLE = LLVMBuildGEP(entryBuilder, mainArgsLE, &numConsumedArgsLE, 1, "newMainArgs");
+    // argc -= numConsumed
+    numMainArgsLE = LLVMBuildSub(entryBuilder, numMainArgsLE, numConsumedArgsLE, "newMainArgsCount");
   }
 
   if (globalState->opt->enableSideCalling) {

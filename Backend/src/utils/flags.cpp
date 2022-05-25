@@ -4,7 +4,6 @@
 #include "flags.h"
 #include "branch.h"
 
-
 LLVMValueRef processFlag(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -20,51 +19,61 @@ LLVMValueRef processFlag(
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
   auto int8PtrPtrLT = LLVMPointerType(int8PtrLT, 0);
 
-  // The then and else bodies will return the number of arguments they may have consumed.
+  auto zerothArgIndexLE = constI64LE(globalState, 0);
+  auto zerothArgPtrLE = LLVMBuildGEP(builder, mainArgsLE, &zerothArgIndexLE, 1, "zerothArgPtr");
+  auto zerothArgLE = LLVMBuildLoad(builder, zerothArgPtrLE, "zerothArg");
+  auto firstArgIndexLE = constI64LE(globalState, 1);
+  auto firstArgPtrLE = LLVMBuildGEP(builder, mainArgsLE, &firstArgIndexLE, 1, "firstArgPtr");
+  auto firstArgLE = LLVMBuildLoad(builder, firstArgPtrLE, "firstArg");
+  auto secondArgIndexLE = constI64LE(globalState, 2);
+  auto ptrToSecondMainArgLE = LLVMBuildGEP(builder, mainArgsLE, &secondArgIndexLE, 1, "");
+  auto secondMainArgLE = LLVMBuildLoad(builder, ptrToSecondMainArgLE, "");
+
   return buildIfElse(
       globalState, functionState, builder, int64LT,
-      LLVMBuildICmp(builder, LLVMIntUGT, mainArgsCountLE, constI64LE(globalState, 0), ""),
-      [globalState, int1LT, functionState, flagName, int8PtrLT, thenBody, mainArgsCountLE, mainArgsLE](
+      // If >= 2, then there may be args!
+      LLVMBuildICmp(builder, LLVMIntUGE, mainArgsCountLE, constI64LE(globalState, 2), ""),
+      [globalState, int1LT, functionState, flagName, int8PtrLT, thenBody, mainArgsCountLE, zerothArgLE, ptrToSecondMainArgLE, secondMainArgLE, firstArgLE](
           LLVMBuilderRef builder) {
-        auto firstArgLE = LLVMBuildLoad(builder, mainArgsLE, "firstArg");
-        auto isReplayingI8LE =
+        buildFlare(FL(), globalState, functionState, builder);
+
+        buildFlare(FL(), globalState, functionState, builder, "args: ", globalState->getOrMakeStringConstant(flagName), ", ", firstArgLE, ", ", constI64LE(globalState, flagName.size()));
+        auto stringsDifferentI8LE =
             buildMaybeNeverCall(
                 globalState, builder, globalState->externs->strncmp, {
                     globalState->getOrMakeStringConstant(flagName),
                     firstArgLE,
                     constI64LE(globalState, flagName.size())
                 });
-        auto isReplayingLE = LLVMBuildTrunc(builder, isReplayingI8LE, int1LT, "isReplaying");
+        auto stringsDifferentLE = LLVMBuildTrunc(builder, stringsDifferentI8LE, int1LT, "isReplaying");
+        auto isReplayingLE = LLVMBuildNot(builder, stringsDifferentLE, "");
+        buildFlare(FL(), globalState, functionState, builder);
         buildIf(
             globalState, functionState->containingFuncL, builder, isReplayingLE,
-            [globalState, functionState, flagName, mainArgsCountLE, mainArgsLE, int8PtrLT, thenBody](
+            [globalState, functionState, flagName, mainArgsCountLE, zerothArgLE, ptrToSecondMainArgLE, secondMainArgLE, int8PtrLT, thenBody](
                 LLVMBuilderRef builder) {
-              auto replayFile =
-                  buildIfElse(
-                      globalState, functionState, builder,
-                      LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
-                      LLVMBuildICmp(builder, LLVMIntUGT, mainArgsCountLE, constI64LE(globalState, 1), ""),
-                      [globalState, mainArgsLE](LLVMBuilderRef builder) {
-                        std::vector<LLVMValueRef> indices = {constI64LE(globalState, 1)};
-                        auto ptrToSecondMainArgLE =
-                            LLVMBuildGEP(builder, mainArgsLE, indices.data(), indices.size(), "");
-                        auto secondMainArgLE = LLVMBuildLoad(builder, ptrToSecondMainArgLE, "");
-                        return secondMainArgLE;
-                      },
-                      [globalState, flagName, int8PtrLT](LLVMBuilderRef builder) {
-                        buildPrint(globalState, builder, "Error: Must supply a value after ");
-                        buildPrint(globalState, builder, flagName);
-                        buildPrint(globalState, builder, ".\n");
-                        buildMaybeNeverCall(globalState, builder, globalState->externs->exit, {constI64LE(globalState, 1)});
-                        return LLVMGetUndef(int8PtrLT);
-                      });
-              assert(LLVMTypeOf(replayFile) == int8PtrLT);
-              thenBody(builder, replayFile);
-              return constI64LE(globalState, 2); // 2 means we've consumed two arguments.
+              buildFlare(FL(), globalState, functionState, builder);
+              buildIfV(
+                  globalState, functionState, builder,
+                  LLVMBuildICmp(builder, LLVMIntULE, mainArgsCountLE, constI64LE(globalState, 1), ""),
+                  [globalState, flagName, int8PtrLT](LLVMBuilderRef builder) {
+                    buildPrint(globalState, builder, "Error: Must supply a value after ");
+                    buildPrint(globalState, builder, flagName);
+                    buildPrint(globalState, builder, ".\n");
+                    buildMaybeNeverCall(globalState, builder, globalState->externs->exit, {constI64LE(globalState, 1)});
+                    return LLVMGetUndef(int8PtrLT);
+                  });
+              buildFlare(FL(), globalState, functionState, builder);
+              assert(LLVMTypeOf(secondMainArgLE) == int8PtrLT);
+              thenBody(builder, secondMainArgLE);
+
+              return constI64LE(globalState, 2); // We've consumed two arguments.
             });
-        return constI64LE(globalState, 0); // 0 means we've consumed zero arguments.
+        buildFlare(FL(), globalState, functionState, builder);
+        return constI64LE(globalState, 0); // We've consumed zero arguments
       },
-      [globalState](LLVMBuilderRef builder){
-        return constI64LE(globalState, 0); // 0 means we've consumed zero arguments.
+      [globalState, functionState](LLVMBuilderRef builder){
+        buildFlare(FL(), globalState, functionState, builder);
+        return constI64LE(globalState, 0); // We've consumed zero arguments
       });
 }

@@ -32,7 +32,7 @@ struct PrototypeNameSimpleStringEquator {
 class Determinism {
 public:
   LLVMValueRef buildMaybeStartDeterministicMode(
-      LLVMBuilderRef builder, LLVMValueRef mainArgsLE, LLVMValueRef argcLE);
+      LLVMBuilderRef builder, LLVMValueRef argcLE, LLVMValueRef mainArgsLE);
   void buildWriteCallBeginToFile(LLVMBuilderRef builder, Prototype* prototype);
 //  LLVMValueRef buildGetNextExportCallString(LLVMBuilderRef builder);
   void buildWriteRefToFile(LLVMBuilderRef builder, LLVMValueRef refI256LE);

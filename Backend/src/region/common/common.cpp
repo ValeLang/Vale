@@ -2150,7 +2150,7 @@ LLVMValueRef compressI64PtrToI56(GlobalState* globalState, FunctionState* functi
   if (globalState->opt->census) {
     auto decompressedLE = decompressI56PtrToI64(globalState, functionState, builder, ptrI56LE);
     auto matchesLE = LLVMBuildICmp(builder, LLVMIntEQ, ptrI64LE, decompressedLE, "");
-    buildAssert(globalState, functionState, builder, matchesLE, "Couldn't compress I64 to I56!");
+    buildAssertV(globalState, functionState, builder, matchesLE, "Couldn't compress I64 to I56!");
   }
 
   return ptrI56LE;
@@ -2168,7 +2168,7 @@ LLVMValueRef compressI64PtrToI52(GlobalState* globalState, FunctionState* functi
   if (globalState->opt->census) {
     auto decompressedLE = decompressI52PtrToI64(globalState, functionState, builder, ptrI52LE);
     auto matchesLE = LLVMBuildICmp(builder, LLVMIntEQ, ptrI64LE, decompressedLE, "");
-    buildAssert(globalState, functionState, builder, matchesLE, "Couldn't compress I64 to I52!");
+    buildAssertV(globalState, functionState, builder, matchesLE, "Couldn't compress I64 to I52!");
   }
 
   return ptrI52LE;

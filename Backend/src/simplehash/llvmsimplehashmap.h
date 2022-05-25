@@ -14,6 +14,7 @@ enum NodeMember {
   KEY = 0,
   VALUE = 1
 };
+constexpr int NodeNumMembers = 2;
 
 enum MapMember {
   CAPACITY = 0,
@@ -23,6 +24,7 @@ enum MapMember {
   HASHER = 4,
   EQUATOR = 5
 };
+constexpr int MapNumMembers = 6;
 
 class LlvmSimpleHashMap {
 public:
@@ -40,9 +42,11 @@ public:
     auto int64LT = LLVMInt64TypeInContext(globalState->context);
     auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
-    auto nodeStructLT = StructLT<NodeMember>(globalState, mapTypeName + "_Node", { keyLT, valueLT });
+    auto nodeStructLT =
+        StructLT<NodeNumMembers, NodeMember>(
+            globalState->context, mapTypeName + "_Node", { keyLT, valueLT });
 
-    std::vector<LLVMTypeRef> mapStructMembersLT = {
+    std::array<LLVMTypeRef, MapNumMembers> mapStructMembersLT = {
         int64LT, // capacity
         int64LT, // size
         int8PtrLT, // presences
@@ -50,7 +54,9 @@ public:
         hasherLT, // hasher
         equatorLT // equator
     };
-    auto mapStructLT = StructLT<MapMember>(globalState, mapTypeName, mapStructMembersLT);
+    auto mapStructLT =
+        StructLT<MapNumMembers, MapMember>(
+            globalState->context, mapTypeName, mapStructMembersLT);
 
     auto findIndexOfLF =
         addFunction(
@@ -174,8 +180,8 @@ private:
       LLVMTypeRef valueLT,
       LLVMTypeRef hasherLT,
       LLVMTypeRef equatorLT,
-      StructLT<NodeMember> nodeStructLT,
-      StructLT<MapMember> mapStructLT,
+      StructLT<NodeNumMembers, NodeMember> nodeStructLT,
+      StructLT<MapNumMembers, MapMember> mapStructLT,
       LLVMValueRef hasherLF,
       LLVMValueRef equatorLF,
       LLVMValueRef findIndexOfLF) :
@@ -265,8 +271,8 @@ private:
   LLVMTypeRef valueLT; // Equivalent to CppSimpleHashMap's V
   LLVMTypeRef hasherLT; // Equivalent to CppSimpleHashMap's H
   LLVMTypeRef equatorLT; // Equivalent to CppSimpleHashMap's E
-  StructLT<NodeMember> nodeStructLT; // Equivalent to CppSimpleHashMap's CppSimpleHashMapNode<K, V>
-  StructLT<MapMember> mapStructLT; // Equivalent to CppSimpleHashMap's CppSimpleHashMap<K, V, H, E>
+  StructLT<NodeNumMembers, NodeMember> nodeStructLT; // Equivalent to CppSimpleHashMap's CppSimpleHashMapNode<K, V>
+  StructLT<MapNumMembers, MapMember> mapStructLT; // Equivalent to CppSimpleHashMap's CppSimpleHashMap<K, V, H, E>
   LLVMValueRef hasherLF;
   LLVMValueRef equatorLF;
 

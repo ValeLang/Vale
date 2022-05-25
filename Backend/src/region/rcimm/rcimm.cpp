@@ -954,7 +954,11 @@ std::pair<Ref, Ref> RCImm::receiveUnencryptedAlienReference(
   assert(sourceRegion == globalState->linearRegion);
   auto sourceRefLE = sourceRegion->checkValidReference(FL(), functionState, builder, hostRefMT, sourceRef);
 
-  if (dynamic_cast<Int*>(hostRefMT->kind)) {
+  if (dynamic_cast<Void*>(hostRefMT->kind)) {
+    auto resultRef = wrap(globalState->getRegion(valeRefMT), valeRefMT, makeVoid(globalState));
+    // Vale doesn't care about the size, only extern (linear) does, so just return zero.
+    return std::make_pair(resultRef, globalState->constI32(0));
+  } else if (dynamic_cast<Int*>(hostRefMT->kind)) {
     auto resultRef = wrap(globalState->getRegion(hostRefMT), valeRefMT, sourceRefLE);
     // Vale doesn't care about the size, only extern (linear) does, so just return zero.
     return std::make_pair(resultRef, globalState->constI32(0));
@@ -1087,9 +1091,9 @@ void RCImm::defineEdgeUnserializeFunction(Edge* edge) {
   auto boolMT = globalState->metalCache->boolRef;
 
   auto thunkPrototype = getUnserializeThunkPrototype(edge->structName, edge->interfaceName);
-  defineFunctionBody(
+  defineFunctionBodyV(
       globalState, thunkPrototype,
-      [&](FunctionState* functionState, LLVMBuilderRef builder) {
+      [&](FunctionState *functionState, LLVMBuilderRef builder) {
         auto structPrototype = getUnserializePrototype(edge->structName);
 
         auto hostObjectRefMT = structPrototype->params[2];
@@ -1109,16 +1113,17 @@ void RCImm::defineEdgeUnserializeFunction(Edge* edge) {
                 globalState, functionState, builder, structPrototype,
                 {regionInstanceRef, hostRegionInstanceRef, hostObjectRef});
 
-        auto valeInterfaceKind = dynamic_cast<InterfaceKind*>(thunkPrototype->returnType->kind);
+        auto valeInterfaceKind = dynamic_cast<InterfaceKind *>(thunkPrototype->returnType->kind);
         assert(valeInterfaceKind);
-        auto valeStructKind = dynamic_cast<StructKind*>(structPrototype->returnType->kind);
+        auto valeStructKind = dynamic_cast<StructKind *>(structPrototype->returnType->kind);
         assert(valeStructKind);
 
         auto interfaceRef =
             upcast(
                 functionState, builder, structPrototype->returnType, valeStructKind,
                 valeStructRef, thunkPrototype->returnType, valeInterfaceKind);
-        auto interfaceRefLE = checkValidReference(FL(), functionState, builder, thunkPrototype->returnType, interfaceRef);
+        auto interfaceRefLE =
+            checkValidReference(FL(), functionState, builder, thunkPrototype->returnType, interfaceRef);
         LLVMBuildRet(builder, interfaceRefLE);
       });
 }
@@ -1243,7 +1248,7 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
         } else assert(false);
       };
 
-  defineFunctionBody(
+  defineFunctionBodyV(
       globalState, prototype,
       [&](FunctionState* functionState, LLVMBuilderRef builder) -> void {
         auto hostObjectRefMT = prototype->params[2];
@@ -1258,8 +1263,8 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
         auto hostObjectRef =
             wrap(globalState->getRegion(hostObjectRefMT), hostObjectRefMT, LLVMGetParam(functionState->containingFuncL, 2));
 
-        if (auto valeStructKind = dynamic_cast<StructKind*>(valeObjectRefMT->kind)) {
-          auto hostStructKind = dynamic_cast<StructKind*>(hostObjectRefMT->kind);
+        if (auto valeStructKind = dynamic_cast<StructKind *>(valeObjectRefMT->kind)) {
+          auto hostStructKind = dynamic_cast<StructKind *>(hostObjectRefMT->kind);
           assert(hostStructKind);
           auto valeStructDefM = globalState->program->getStruct(valeStructKind);
 
@@ -1299,10 +1304,11 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
 
           buildFlare(FL(), globalState, functionState, builder, "done storing");
 
-          LLVMBuildRet(builder, checkValidReference(FL(), functionState, builder, globalState->metalCache->strRef, strRef));
-        } else if (auto valeRsaMT = dynamic_cast<RuntimeSizedArrayT*>(valeObjectRefMT->kind)) {
+          LLVMBuildRet(
+              builder, checkValidReference(FL(), functionState, builder, globalState->metalCache->strRef, strRef));
+        } else if (auto valeRsaMT = dynamic_cast<RuntimeSizedArrayT *>(valeObjectRefMT->kind)) {
           auto valeRsaRefMT = valeObjectRefMT;
-          auto hostRsaMT = dynamic_cast<RuntimeSizedArrayT*>(hostObjectRefMT->kind);
+          auto hostRsaMT = dynamic_cast<RuntimeSizedArrayT *>(hostObjectRefMT->kind);
           assert(hostRsaMT);
           auto hostRsaRefMT = hostObjectRefMT;
 
@@ -1318,24 +1324,29 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
           auto valeMemberRefMT = globalState->program->getRuntimeSizedArray(valeRsaMT)->elementType;
           auto hostMemberRefMT = globalState->linearRegion->linearizeReference(valeMemberRefMT);
 
-          intRangeLoopReverse(
+          intRangeLoopReverseV(
               globalState, functionState, builder, globalState->metalCache->i32, lengthRef,
+
               [this, functionState, regionInstanceRef, hostRegionInstanceRef, hostObjectRefMT, valeRsaRef, hostMemberRefMT, valeObjectRefMT, hostRsaMT, valeRsaMT, hostObjectRef, valeMemberRefMT, unserializeMemberOrElement](
-                  Ref indexRef, LLVMBuilderRef bodyBuilder){
+                  Ref indexRef, LLVMBuilderRef bodyBuilder) {
                 auto hostMemberRef =
                     globalState->getRegion(hostObjectRefMT)
-                        ->loadElementFromRSA(functionState, bodyBuilder, hostRegionInstanceRef, hostObjectRefMT, hostRsaMT, hostObjectRef, true, indexRef)
+                        ->loadElementFromRSA(
+                            functionState, bodyBuilder, hostRegionInstanceRef, hostObjectRefMT, hostRsaMT,
+                            hostObjectRef, true, indexRef)
                         .move();
                 auto valeElementRef =
                     unserializeMemberOrElement(
-                        functionState, bodyBuilder, regionInstanceRef, hostRegionInstanceRef, hostMemberRefMT, hostMemberRef);
+                        functionState, bodyBuilder, regionInstanceRef, hostRegionInstanceRef, hostMemberRefMT,
+                        hostMemberRef);
                 pushRuntimeSizedArrayNoBoundsCheck(
-                    functionState, bodyBuilder, regionInstanceRef, valeObjectRefMT, valeRsaMT, valeRsaRef, true, indexRef, valeElementRef);
+                    functionState, bodyBuilder, regionInstanceRef, valeObjectRefMT, valeRsaMT, valeRsaRef, true,
+                    indexRef, valeElementRef);
               });
 
           LLVMBuildRet(builder, checkValidReference(FL(), functionState, builder, valeRsaRefMT, valeRsaRef));
-        } else if (auto valeSsaMT = dynamic_cast<StaticSizedArrayT*>(valeObjectRefMT->kind)) {
-          auto hostSsaMT = dynamic_cast<StaticSizedArrayT*>(hostObjectRefMT->kind);
+        } else if (auto valeSsaMT = dynamic_cast<StaticSizedArrayT *>(valeObjectRefMT->kind)) {
+          auto hostSsaMT = dynamic_cast<StaticSizedArrayT *>(hostObjectRefMT->kind);
           assert(hostSsaMT);
           auto valeSsaRefMT = valeObjectRefMT;
           auto hostSsaRefMT = hostObjectRefMT;
@@ -1348,26 +1359,31 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
           int length = valeSsaDefM->size;
           auto valeMemberRefMT = valeSsaDefM->elementType;
 
-          intRangeLoopReverse(
+          intRangeLoopReverseV(
               globalState, functionState, builder, globalState->metalCache->i32, globalState->constI32(length),
               [this, functionState, regionInstanceRef, hostRegionInstanceRef, hostObjectRefMT, valeSsaRef, valeObjectRefMT, hostSsaMT, valeSsaMT, hostObjectRef, valeMemberRefMT, unserializeMemberOrElement](
-                  Ref indexRef, LLVMBuilderRef bodyBuilder){
+                  Ref indexRef, LLVMBuilderRef bodyBuilder) {
 
                 auto hostMemberRef =
                     globalState->getRegion(hostObjectRefMT)
-                        ->loadElementFromSSA(functionState, bodyBuilder, hostRegionInstanceRef, hostObjectRefMT, hostSsaMT, hostObjectRef, true, indexRef)
+                        ->loadElementFromSSA(
+                            functionState, bodyBuilder, hostRegionInstanceRef, hostObjectRefMT, hostSsaMT,
+                            hostObjectRef, true, indexRef)
                         .move();
                 auto hostMemberRefMT = globalState->linearRegion->linearizeReference(valeMemberRefMT);
                 auto valeElementRef =
                     unserializeMemberOrElement(
-                        functionState, bodyBuilder, regionInstanceRef, hostRegionInstanceRef, hostMemberRefMT, hostMemberRef);
+                        functionState, bodyBuilder, regionInstanceRef, hostRegionInstanceRef, hostMemberRefMT,
+                        hostMemberRef);
                 initializeElementInSSA(
-                    functionState, bodyBuilder, regionInstanceRef, valeObjectRefMT, valeSsaMT, valeSsaRef, true, indexRef, valeElementRef);
+                    functionState, bodyBuilder, regionInstanceRef, valeObjectRefMT, valeSsaMT, valeSsaRef, true,
+                    indexRef, valeElementRef);
               });
 
 
           LLVMBuildRet(builder, checkValidReference(FL(), functionState, builder, valeSsaRefMT, valeSsaRef));
-        } else assert(false);
+        } else
+          assert(false);
       });
 }
 

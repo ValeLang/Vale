@@ -303,7 +303,7 @@ Ref translateExpressionInner(
         // At some point, look up the actual region instance, perhaps from the FunctionState?
         globalState->getRegion(arrayType)->createRegionInstanceLocal(functionState, builder);
 
-    intRangeLoopReverse(
+    intRangeLoopReverseV(
         globalState, functionState, builder, globalState->metalCache->i32, sizeRef,
         [globalState, functionState, arrayRegionInstanceRef, elementType, consumerType, consumerMethod, arrayType, arrayKind, consumerRef, arrayRef, arrayKnownLive](
             Ref indexRef, LLVMBuilderRef bodyBuilder) {
@@ -313,13 +313,14 @@ Ref translateExpressionInner(
 
           auto elementLoadResult =
               globalState->getRegion(arrayType)->loadElementFromSSA(
-                  functionState, bodyBuilder, arrayRegionInstanceRef, arrayType, arrayKind, arrayRef, arrayKnownLive, indexRef);
+                  functionState, bodyBuilder, arrayRegionInstanceRef, arrayType, arrayKind, arrayRef, arrayKnownLive,
+                  indexRef);
           auto elementRef = elementLoadResult.move();
 
           globalState->getRegion(elementType)
               ->checkValidReference(
                   FL(), functionState, bodyBuilder, elementType, elementRef);
-          std::vector<Ref> argExprRefs = { consumerRef, elementRef };
+          std::vector<Ref> argExprRefs = {consumerRef, elementRef};
 
           buildCallV(globalState, functionState, bodyBuilder, consumerMethod, argExprRefs);
         });
@@ -520,9 +521,10 @@ Ref translateExpressionInner(
     globalState->getRegion(consumerType)
         ->checkValidReference(FL(), functionState, builder, consumerType, consumerRef);
 
-    intRangeLoopReverse(
+    intRangeLoopReverseV(
         globalState, functionState, builder, globalState->metalCache->i32, arrayLenRef,
-        [globalState, functionState, arrayRegionInstanceRef, consumerType, consumerMethod, arrayKind, arrayType, arrayRef, arrayKnownLive, consumerRef](Ref indexRef, LLVMBuilderRef bodyBuilder) {
+        [globalState, functionState, arrayRegionInstanceRef, consumerType, consumerMethod, arrayKind, arrayType, arrayRef, arrayKnownLive, consumerRef](
+            Ref indexRef, LLVMBuilderRef bodyBuilder) {
           globalState->getRegion(consumerType)
               ->alias(
                   AFL("DestroyRSAIntoF consume iteration"),
@@ -531,8 +533,9 @@ Ref translateExpressionInner(
           auto elementRef =
               globalState->getRegion(arrayType)
                   ->popRuntimeSizedArrayNoBoundsCheck(
-                      functionState, bodyBuilder, arrayRegionInstanceRef, arrayType, arrayKind, arrayRef, arrayKnownLive, indexRef);
-          std::vector<Ref> argExprRefs = { consumerRef, elementRef };
+                      functionState, bodyBuilder, arrayRegionInstanceRef, arrayType, arrayKind, arrayRef,
+                      arrayKnownLive, indexRef);
+          std::vector<Ref> argExprRefs = {consumerRef, elementRef};
 
           buildCallV(globalState, functionState, bodyBuilder, consumerMethod, argExprRefs);
 

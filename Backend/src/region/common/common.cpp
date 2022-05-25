@@ -207,7 +207,7 @@ void buildCheckGen(
     LLVMValueRef actualGenLE) {
   auto isValidLE =
       LLVMBuildICmp(builder, LLVMIntSLE, targetGenLE, actualGenLE, "genIsValid");
-  buildAssert(
+  buildAssertV(
       globalState, functionState, builder, isValidLE,
       "Invalid generation, from the future!");
 }
@@ -382,14 +382,14 @@ void fillRuntimeSizedArray(
     Ref sizeLE,
     Ref rsaRef) {
 
-  intRangeLoop(
+  intRangeLoopV(
       globalState, functionState, builder, sizeLE,
       [globalState, functionState, arrayRegionInstanceRef, rsaRefMT, rsaMT, generatorMethod, generatorType, rsaRef, generatorLE](
           Ref indexRef, LLVMBuilderRef bodyBuilder) {
         globalState->getRegion(generatorType)->alias(
             AFL("ConstructRSA generate iteration"),
             functionState, bodyBuilder, generatorType, generatorLE);
-        std::vector<Ref> argExprsLE = { generatorLE, indexRef };
+        std::vector<Ref> argExprsLE = {generatorLE, indexRef};
 
         auto elementRef =
             buildCallV(
@@ -413,14 +413,14 @@ void fillStaticSizedArrayFromCallable(
     Ref sizeLE,
     Ref ssaRef) {
 
-  intRangeLoop(
+  intRangeLoopV(
       globalState, functionState, builder, sizeLE,
       [globalState, functionState, arrayRegionInstanceRef, ssaRefMT, ssaMT, generatorMethod, generatorType, ssaRef, generatorLE](
           Ref indexRef, LLVMBuilderRef bodyBuilder) {
         globalState->getRegion(generatorType)->alias(
             AFL("ConstructSSA generate iteration"),
             functionState, bodyBuilder, generatorType, generatorLE);
-        std::vector<Ref> argExprsLE = { generatorLE, indexRef };
+        std::vector<Ref> argExprsLE = {generatorLE, indexRef};
 
         auto elementRef =
             buildCallV(
@@ -876,12 +876,13 @@ Ref resilientLockWeak(
     Ref isAliveLE,
     LLVMTypeRef resultOptTypeL,
     KindStructs* weakRefStructs) {
-  return buildIfElse(
+  return buildIfElseV(
       globalState, functionState, builder, isAliveLE,
-      resultOptTypeL,
+//      resultOptTypeL,
       resultOptTypeM,
       resultOptTypeM,
-      [globalState, functionState, constraintRefM, weakRefStructs, sourceWeakRefLE, sourceWeakRefMT, buildThen](LLVMBuilderRef thenBuilder) {
+      [globalState, functionState, constraintRefM, weakRefStructs, sourceWeakRefLE, sourceWeakRefMT, buildThen](
+          LLVMBuilderRef thenBuilder) {
         // TODO extract more of this common code out?
         // The incoming "constraint" ref is actually already a weak ref, so just return it
         // (after wrapping it in a different Ref that actually thinks/knows it's a weak
@@ -965,9 +966,9 @@ Ref regularDowncast(
 
   auto resultOptTypeLE = globalState->getRegion(resultOptTypeM)->translateType(resultOptTypeM);
 
-  return buildIfElse(
+  return buildIfElseV(
       globalState, functionState, builder, itablePtrsMatchRef,
-      resultOptTypeLE,
+//      resultOptTypeLE,
       resultOptTypeM,
       resultOptTypeM,
       [globalState, sourceInterfaceRefMT, structs, targetKind, newVirtualArgLE, buildThen](
@@ -1009,9 +1010,9 @@ Ref resilientDowncast(
 
   auto resultOptTypeLE = globalState->getRegion(resultOptTypeM)->translateType(resultOptTypeM);
 
-  return buildIfElse(
+  return buildIfElseV(
       globalState, functionState, builder, itablePtrsMatchRef,
-      resultOptTypeLE,
+//      resultOptTypeLE,
       resultOptTypeM,
       resultOptTypeM,
       [globalState, weakRefStructs, structs, functionState, sourceInterfaceRef, sourceInterfaceRefMT, targetKind, targetStructKind, buildThen](
@@ -1028,7 +1029,8 @@ Ref resilientDowncast(
         switch (sourceInterfaceRefMT->ownership) {
           case Ownership::OWN: {
             auto resultStructRefLE = structs->downcastPtr(thenBuilder, resultStructRefMT, possibilityPtrLE);
-            auto resultStructRef = wrap(globalState->getRegion(resultStructRefMT), resultStructRefMT, resultStructRefLE);
+            auto
+                resultStructRef = wrap(globalState->getRegion(resultStructRefMT), resultStructRefMT, resultStructRefLE);
             return buildThen(thenBuilder, resultStructRef);
           }
           case Ownership::BORROW:
@@ -1157,7 +1159,7 @@ void regularCheckValidReference(
     // We dont check ref count >0 because imm destructors receive with rc=0.
     //      auto rcLE = getRcFromControlBlockPtr(globalState, builder, controlBlockPtrLE);
     //      auto rcPositiveLE = LLVMBuildICmp(builder, LLVMIntSGT, rcLE, constI64LE(globalState, 0), "");
-    //      buildAssert(checkerAFL, globalState, functionState, blockState, builder, rcPositiveLE, "Invalid RC!");
+    //      buildAssertV(checkerAFL, globalState, functionState, blockState, builder, rcPositiveLE, "Invalid RC!");
 
     buildAssertCensusContains(checkerAFL, globalState, functionState, builder,
         controlBlockPtrLE.refLE);
@@ -1728,12 +1730,13 @@ Ref regularInnerLockWeak(
     LLVMTypeRef resultOptTypeL,
     KindStructs* weakRefStructsSource,
     FatWeaks* fatWeaks) {
-  return buildIfElse(
+  return buildIfElseV(
       globalState, functionState, builder, isAliveLE,
-      resultOptTypeL,
+//      resultOptTypeL,
       resultOptTypeM,
       resultOptTypeM,
-      [globalState, functionState, fatWeaks, weakRefStructsSource, constraintRefM, sourceWeakRefLE, sourceWeakRefMT, buildThen](LLVMBuilderRef thenBuilder) {
+      [globalState, functionState, fatWeaks, weakRefStructsSource, constraintRefM, sourceWeakRefLE, sourceWeakRefMT, buildThen](
+          LLVMBuilderRef thenBuilder) {
         auto weakFatPtrLE =
             weakRefStructsSource->makeWeakFatPtr(
                 sourceWeakRefMT,
@@ -2147,7 +2150,7 @@ LLVMValueRef compressI64PtrToI56(GlobalState* globalState, FunctionState* functi
   if (globalState->opt->census) {
     auto decompressedLE = decompressI56PtrToI64(globalState, functionState, builder, ptrI56LE);
     auto matchesLE = LLVMBuildICmp(builder, LLVMIntEQ, ptrI64LE, decompressedLE, "");
-    buildAssert(globalState, functionState, builder, matchesLE, "Couldn't compress I64 to I56!");
+    buildAssertV(globalState, functionState, builder, matchesLE, "Couldn't compress I64 to I56!");
   }
 
   return ptrI56LE;
@@ -2165,7 +2168,7 @@ LLVMValueRef compressI64PtrToI52(GlobalState* globalState, FunctionState* functi
   if (globalState->opt->census) {
     auto decompressedLE = decompressI52PtrToI64(globalState, functionState, builder, ptrI52LE);
     auto matchesLE = LLVMBuildICmp(builder, LLVMIntEQ, ptrI64LE, decompressedLE, "");
-    buildAssert(globalState, functionState, builder, matchesLE, "Couldn't compress I64 to I52!");
+    buildAssertV(globalState, functionState, builder, matchesLE, "Couldn't compress I64 to I52!");
   }
 
   return ptrI52LE;

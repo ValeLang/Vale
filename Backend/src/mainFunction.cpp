@@ -1,6 +1,8 @@
 #include <utils/branch.h>
+#include <utils/call.h>
 #include "function/function.h"
 #include "function/expressions/expressions.h"
+#include "determinism/determinism.h"
 #include "globalstate.h"
 #include "translatetype.h"
 
@@ -218,25 +220,41 @@ LLVMValueRef makeEntryFunction(
   LLVMPositionBuilderAtEnd(entryBuilder, blockL);
 
 
-  auto numArgsLE = LLVMGetParam(entryFunctionL, 0);
-  auto argsLE = LLVMGetParam(entryFunctionL, 1);
-  LLVMBuildStore(entryBuilder, numArgsLE, globalState->numMainArgs);
-  LLVMBuildStore(entryBuilder, argsLE, globalState->mainArgs);
+  auto numMainArgsLE = LLVMGetParam(entryFunctionL, 0);
+  auto mainArgsLE = LLVMGetParam(entryFunctionL, 1);
+  LLVMBuildStore(entryBuilder, numMainArgsLE, globalState->numMainArgs);
+  LLVMBuildStore(entryBuilder, mainArgsLE, globalState->mainArgs);
+
+  if (globalState->opt->enableReplaying) {
+    auto numConsumedArgsLE =
+        globalState->determinism->buildMaybeStartDeterministicMode(
+            entryBuilder, numMainArgsLE, mainArgsLE);
+
+    // argv[numConsumed] = argv[0], to move the zeroth arg up.
+    LLVMBuildStore(
+        entryBuilder,
+        LLVMBuildLoad(entryBuilder, mainArgsLE, "zerothArg"),
+        LLVMBuildGEP(entryBuilder, mainArgsLE, &numConsumedArgsLE, 1, "argv+numConsumed"));
+    // argv += numConsumed
+    mainArgsLE = LLVMBuildGEP(entryBuilder, mainArgsLE, &numConsumedArgsLE, 1, "newMainArgs");
+    // argc -= numConsumed
+    numMainArgsLE = LLVMBuildSub(entryBuilder, numMainArgsLE, numConsumedArgsLE, "newMainArgsCount");
+  }
 
   if (globalState->opt->enableSideCalling) {
     LLVMBuildStore(
         entryBuilder,
-        buildCall(
+        buildMaybeNeverCall(
             globalState, entryBuilder, globalState->externs->malloc,
             { constI64LE(globalState, STACK_SIZE) }),
         globalState->sideStack);
   }
 
   auto calleeUserFunction = globalState->lookupFunction(valeMainPrototype);
-  auto resultLE = buildCall(globalState, entryBuilder, calleeUserFunction, {});
+  auto resultLE = buildMaybeNeverCall(globalState, entryBuilder, calleeUserFunction, {});
 
   if (globalState->opt->enableSideCalling) {
-    buildCall(
+    buildMaybeNeverCall(
         globalState, entryBuilder, globalState->externs->free,
         { LLVMBuildLoad(entryBuilder, globalState->sideStack, "") });
   }

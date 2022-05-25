@@ -21,6 +21,7 @@ class KindStructs;
 class ControlBlock;
 class Linear;
 class RCImm;
+class Determinism;
 
 constexpr int LGT_ENTRY_MEMBER_INDEX_FOR_GEN = 0;
 constexpr int LGT_ENTRY_MEMBER_INDEX_FOR_NEXT_FREE = 1;
@@ -40,6 +41,7 @@ public:
   ValeOptions *opt = nullptr;
 
   Externs* externs = nullptr;
+  Determinism* determinism = nullptr;
 
   LLVMTargetDataRef dataLayout = nullptr;
   LLVMModuleRef mod = nullptr;
@@ -200,7 +202,6 @@ public:
     std::cerr << "Couldn't find method " << prototype->name->name << " in interface " << interfaceKindM->fullName->name << std::endl;
     assert(false);
   }
-
 
   Weakability getKindWeakability(Kind* kind);
 

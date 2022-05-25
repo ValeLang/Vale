@@ -1,4 +1,4 @@
-import stdlib.command.*;
+import valecutils.command2.*;
 import valecutils.*;
 import stdlib.flagger.*;
 
@@ -23,7 +23,7 @@ struct TestInstance {
   expected_return_code int;
   test_build_dir Path;
   process Subprocess;
-  run_args List<str>;
+  runs_args List<List<str>>;
 }
 
 func matches_filters(name str, filters &List<str>) bool {
@@ -229,6 +229,7 @@ exported func main() int {
   if (include_regions.exists({ _ == "resilient-v3" })) {
     region = "resilient-v3";
     suite.StartTest(116, "kldc", samples_path./("programs/structs/deadmutstruct.vale"), &List([#]["--override_known_live_true", "true"]), region);
+    suite.StartReplayTest(42, "appendandread", samples_path./("programs/externs/appendandread"), &List<str>().add("--enable_replaying").add("true"), region);
   }
 
   if (include_regions.exists({ _ == "resilient-v4" })) {
@@ -330,13 +331,14 @@ func StartCTest(suite &TestSuite, test_name str, input_c &Path, flags List<str>,
     test_build_dir = suite.cwd./("testbuild/{test_name}");
     test_build_dir.makeDirectory();
     process =
-        (Subprocess(
-            if (IsWindows()) { "cl.exe" } else { "clang" },
-            &List([#][
-                suite.backend_tests_dir./("twinpages/test.c").str(),
-                "-o",
-                test_build_dir./("main").str()
-            ]))).expect();
+        SubprocessBuilder()
+            .WithProgram(if (IsWindows()) { "cl.exe" } else { "clang" })
+            .FromDir(test_build_dir.str())
+            .WithArg(suite.backend_tests_dir./("twinpages/test.c").str())
+            .WithArg("-o")
+            .WithArg(test_build_dir./("main").str())
+            .Build()
+            .expect();
     if (suite.verbose) {
       println("Running command: " + process.command);
     }
@@ -347,54 +349,87 @@ func StartCTest(suite &TestSuite, test_name str, input_c &Path, flags List<str>,
   }
 }
 
+func PrintTestFailure(build_result &ExecResult, test_name str, region str) {
+  println("Error {build_result.return_code} building test {test_name} (region {region}).");
+  if (build_result.stdout.len() > 0) {
+    println("stdout:");
+    println(build_result.stdout);
+  } else {
+    println("(no stdout)");
+  }
+  if (build_result.stderr.len() > 0) {
+    println("stderr:");
+    println(build_result.stderr);
+  } else {
+    println("(no stderr)");
+  }
+}
+
 func FinishTests(suite &TestSuite, until_this_many_left int) {
   while (suite.test_instances.len() > until_this_many_left) {
     build_instance = suite.test_instances.remove(0);
-    [test_name, region, expected_return_code, test_build_dir, build_process, run_args] = build_instance;
+    [test_name, region, expected_return_code, test_build_dir, build_process, runs_args] = build_instance;
 
     build_result = (build_process).capture_and_join();
     if (build_result.return_code != 0) {
-      println("Error {build_result.return_code} building test {test_name} (region {region}).");
-      if (build_result.stdout.len() > 0) {
-        println("stdout:");
-        println(build_result.stdout);
-      } else {
-        println("(no stdout)");
-      }
-      if (build_result.stderr.len() > 0) {
-        println("stderr:");
-        println(build_result.stderr);
-      } else {
-        println("(no stderr)");
-      }
+      PrintTestFailure(&build_result, test_name, region);
       set suite.num_failures = suite.num_failures + 1;
     } else {
       program_name = if (IsWindows()) { "main.exe" } else { "main" };
       run_program = test_build_dir./(program_name).str();
 
-      run_process = (Subprocess(run_program, &run_args)).expect();
-      if (suite.verbose) {
-        println("Running command: " + run_process.command);
+      success = true;
+      foreach run_args in &runs_args {
+        run_process =
+            SubprocessBuilder()
+            .FromDir(test_build_dir.str())
+            .WithProgram(run_program)
+            .WithArgs(&run_args)
+            .Build()
+            .expect();
+        if (suite.verbose) {
+          println("Running command: " + run_process.command);
+        }
+        run_result = (run_process).capture_and_join();
+        if (run_result.return_code == expected_return_code) {
+          // Success!
+
+          if suite.verbose {
+            if (run_result.stdout.len() > 0) {
+              println("stdout:");
+              println(run_result.stdout);
+            } else {
+              println("(no stdout)");
+            }
+            if (run_result.stderr.len() > 0) {
+              println("stderr:");
+              println(run_result.stderr);
+            } else {
+              println("(no stderr)");
+            }
+          }
+        } else {
+          println("Invalid result for test {test_name} (region {region}). Expected {expected_return_code} but got {run_result.return_code}.");
+          if (run_result.stdout.len() > 0) {
+            println("stdout:");
+            println(run_result.stdout);
+          } else {
+            println("(no stdout)");
+          }
+          if (run_result.stderr.len() > 0) {
+            println("stderr:");
+            println(run_result.stderr);
+          } else {
+            println("(no stderr)");
+          }
+          set success = false;
+        }
       }
-      run_result = (run_process).capture_and_join();
-      if (run_result.return_code != expected_return_code) {
-        println("Invalid result for test {test_name} (region {region}). Expected {expected_return_code} but got {run_result.return_code}.");
-        if (run_result.stdout.len() > 0) {
-          println("stdout:");
-          println(run_result.stdout);
-        } else {
-          println("(no stdout)");
-        }
-        if (run_result.stderr.len() > 0) {
-          println("stderr:");
-          println(run_result.stderr);
-        } else {
-          println("(no stderr)");
-        }
-        set suite.num_failures = suite.num_failures + 1;
-      } else {
+      if success {
         println("Test {test_name} (region {region}) succeeded!");
         set suite.num_successes = suite.num_successes + 1;
+      } else {
+        set suite.num_failures = suite.num_failures + 1;
       }
     }
   }
@@ -436,7 +471,12 @@ Subprocess {
     println("Starting subprocess...");
   }
 
-  build_process = (Subprocess(suite.valec_path, &build_args)).expect();
+  build_process =
+      SubprocessBuilder()
+      .WithProgram(suite.valec_path)
+      .WithArgs(&build_args)
+      .Build()
+      .expect();
   if (suite.verbose) {
     println("Build command: " + build_process.command);
   }
@@ -463,7 +503,40 @@ func StartTest(
             test_name, vale_input, &extra_build_flags, &test_build_dir, region);
     suite.test_instances.add(
         TestInstance(
-            test_name, region, expected_return_code, test_build_dir, build_process, List<str>()));
+            test_name, region, expected_return_code, test_build_dir, build_process, List<List<str>>().add(List<str>())));
+  } else {
+    drop(vale_input);
+  }
+}
+
+func StartReplayTest(
+    suite &TestSuite,
+    expected_return_code int,
+    test_name str,
+    vale_input Path,
+    extra_build_flags &List<str>,
+    region str) {
+  if (suite.verbose) {
+    println("Considering test {test_name}...");
+  }
+
+  if (matches_filters(test_name, &suite.test_filters)) {
+    suite.FinishTests(suite.max_concurrent_tests - 1);
+
+    test_build_dir = suite.cwd./("testbuild/{test_name}_{region}");
+    build_process =
+        suite.StartBuild(
+            test_name, vale_input, &extra_build_flags, &test_build_dir, region);
+    suite.test_instances.add(
+        TestInstance(
+            test_name,
+            region,
+            expected_return_code,
+            test_build_dir,
+            build_process,
+            List<List<str>>()
+                .add(List<str>().add("--vale_record").add("recording.bin"))
+                .add(List<str>().add("--vale_replay").add("recording.bin"))));
   } else {
     drop(vale_input);
   }

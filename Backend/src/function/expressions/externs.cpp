@@ -37,16 +37,17 @@ void replayExportCalls(
     LLVMBuilderRef builder) {
   buildBoolyWhile(
       globalState, functionState->containingFuncL, builder,
-      [globalState, functionState](LLVMBuilderRef whileBuilder) -> LLVMValueRef {
+      [globalState, functionState](LLVMBuilderRef builder) -> LLVMValueRef {
+        buildFlare(FL(), globalState, functionState, builder);
         auto replayerFuncPtrLE =
             globalState->determinism->buildGetMaybeReplayedFuncForNextExportCall(
-                whileBuilder);
-        auto replayerFuncPtrAsI64LE = ptrToIntLE(globalState, whileBuilder, replayerFuncPtrLE);
+                builder);
+        auto replayerFuncPtrAsI64LE = ptrToIntLE(globalState, builder, replayerFuncPtrLE);
         auto replayerFuncPtrNotNullLE =
             LLVMBuildICmp(
-                whileBuilder, LLVMIntNE, replayerFuncPtrAsI64LE, constI64LE(globalState, 0), "");
+                builder, LLVMIntNE, replayerFuncPtrAsI64LE, constI64LE(globalState, 0), "");
         buildIf(
-            globalState, functionState->containingFuncL, whileBuilder, replayerFuncPtrNotNullLE,
+            globalState, functionState->containingFuncL, builder, replayerFuncPtrNotNullLE,
             [replayerFuncPtrLE](LLVMBuilderRef thenBuilder) {
               buildSimpleCall(thenBuilder, replayerFuncPtrLE, {});
             });
@@ -275,6 +276,7 @@ Ref replayReturnOrCallAndOrRecord(
                   }
                 }
 
+                buildFlare(FL(), globalState, functionState, builder);
                 replayExportCalls(globalState, functionState, builder);
 
                 // above, we consumed a marker that said we're ending this current extern call.

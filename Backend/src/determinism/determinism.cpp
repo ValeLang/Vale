@@ -262,6 +262,7 @@ void Determinism::makeFuncToRecordCallEnd() {
   defineFunctionBody(
       globalState->context, recordCallEndLF, voidLT, recordCallEndFuncName,
       [this](FunctionState *functionState, LLVMBuilderRef builder) {
+        // Write a 0 for the loop that replays export calls
         writeI64ToFile(functionState, builder, constI64LE(globalState, 0));
         LLVMBuildRetVoid(builder);
       });
@@ -274,6 +275,7 @@ void Determinism::makeFuncToMatchCallFromRecordingFile() {
   defineFunctionBody(
       globalState->context, matchCallFromRecordingFileLF, voidLT, matchCallFromRecordingFileFuncName,
       [this, int1LT, int8LT](FunctionState *functionState, LLVMBuilderRef builder) {
+        buildFlare(FL(), globalState, functionState, builder);
         auto replayingCalledFuncNameLenLE = LLVMGetParam(functionState->containingFuncL, 0);
         auto replayingCalledFuncNamePtrLE = LLVMGetParam(functionState->containingFuncL, 1);
 
@@ -281,6 +283,7 @@ void Determinism::makeFuncToMatchCallFromRecordingFile() {
         auto recordedCalledFuncNamePtrLE = ptrToVoidPtrLE(globalState, builder, bufferPtrLE);
         auto recordedCalledFuncNameLenLE = readI64FromFile(functionState, builder);
         auto recordedCalledFuncNameWithPaddingLenLE = calcPaddedStrLen(globalState, builder, recordedCalledFuncNameLenLE);
+        buildFlare(FL(), globalState, functionState, builder);
         readLimitedStringFromFile(functionState, builder, recordedCalledFuncNameWithPaddingLenLE, recordedCalledFuncNamePtrLE);
 
         auto lengthsDifferentLE = LLVMBuildICmp(builder, LLVMIntNE, recordedCalledFuncNameLenLE, replayingCalledFuncNameLenLE, "lengthsDifferent");
@@ -368,7 +371,10 @@ void Determinism::makeFuncToStartReplaying() {
         auto fileLE = openFile(functionState, builder, recordingFilenameLE, FileOpenMode::READ);
         buildFlare(FL(), globalState, functionState, builder, "Opened!");
         LLVMBuildStore(builder, fileLE, fileHandleGlobalLE);
-        writeI64ToFile(functionState, builder, constI64LE(globalState, RECORDING_FILE_CONSTANT));
+        auto recordingFileConstantLE = readI64FromFile(functionState, builder);
+        buildAssertV(
+            globalState, functionState, builder, recordingFileConstantLE,
+            "Invalid recording file! (invalid recording file constant)");
         LLVMBuildRetVoid(builder);
       });
 }
@@ -478,16 +484,20 @@ LLVMValueRef Determinism::readI64FromFile(
   buildIf(
       globalState, functionState->containingFuncL, builder,
       LLVMBuildICmp(builder, LLVMIntULT, resultLE, constI64LE(globalState, 1), ""),
-      [this](LLVMBuilderRef builder){
-        buildPrint(globalState, builder, "Couldn't read from recording file.");
+      [this, functionState, int64LT](LLVMBuilderRef builder){
+        buildFlare(FL(), globalState, functionState, builder);
+        buildPrint(globalState, builder, "Couldn't read from recording file. (1)");
         buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, 1)});
       });
 
-  return LLVMBuildLoad(builder, i64PtrLE, "int64FromFile");
+  auto int64LE = LLVMBuildLoad(builder, i64PtrLE, "int64FromFile");
+  buildFlare(FL(), globalState, functionState, builder, "Read I64: ", int64LE);
+  return int64LE;
 }
 
 LLVMValueRef Determinism::readI256FromFile(
     FunctionState* functionState, LLVMBuilderRef builder) {
+  auto int64LT = LLVMInt64TypeInContext(globalState->context);
   auto int256LT = LLVMIntTypeInContext(globalState->context, 256);
   auto int256Size = LLVMABISizeOfType(globalState->dataLayout, int256LT);
 
@@ -505,12 +515,15 @@ LLVMValueRef Determinism::readI256FromFile(
   buildIf(
       globalState, functionState->containingFuncL, builder,
       LLVMBuildICmp(builder, LLVMIntULT, resultLE, constI64LE(globalState, 1), ""),
-      [this](LLVMBuilderRef builder){
-        buildPrint(globalState, builder, "Couldn't read from recording file.");
+      [this, functionState](LLVMBuilderRef builder){
+        buildFlare(FL(), globalState, functionState, builder);
+        buildPrint(globalState, builder, "Couldn't read from recording file. (2)");
         buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, 1)});
       });
 
-  return LLVMBuildLoad(builder, i256PtrLE, "int256FromFile");
+  auto int256LE = LLVMBuildLoad(builder, i256PtrLE, "int256FromFile");
+  buildFlare(FL(), globalState, functionState, builder, "Read I256 ending in: ", LLVMBuildTrunc(builder, int256LE, int64LT, ""));
+  return int256LE;
 }
 
 LLVMValueRef calcNumTrailingZeroes(
@@ -548,10 +561,13 @@ void Determinism::readLimitedStringFromFile(
   buildIf(
       globalState, functionState->containingFuncL, builder,
       LLVMBuildICmp(builder, LLVMIntULT, resultLE, constI64LE(globalState, 1), ""),
-      [this](LLVMBuilderRef builder){
-        buildPrint(globalState, builder, "Couldn't read from recording file.");
+      [this, functionState](LLVMBuilderRef builder){
+        buildFlare(FL(), globalState, functionState, builder);
+        buildPrint(globalState, builder, "Couldn't read from recording file. (3)");
         buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, 1)});
       });
+
+  buildFlare(FL(), globalState, functionState, builder, "Read str: ", bufferPtrLE);
 }
 
 //LLVMValueRef Determinism::readStringFromFile(
@@ -617,29 +633,42 @@ void Determinism::makeFuncToGetReplayerFuncForExportName() {
       voidFuncPtrLT,
       getMaybeReplayerFuncForNextExportNameFuncName,
       [this, int8LT, replayerFuncLT](FunctionState* functionState, LLVMBuilderRef builder){
+        buildFlare(FL(), globalState, functionState, builder);
         auto bufferPtrLE = LLVMBuildArrayAlloca(builder, int8LT, constI64LE(globalState, 1024), "");
         auto bufferI8PtrLE = ptrToVoidPtrLE(globalState, builder, bufferPtrLE);
         auto strLenLE = readI64FromFile(functionState, builder);
-        auto strWithPaddingLenLE = calcPaddedStrLen(globalState, builder, strLenLE);
-        readLimitedStringFromFile(functionState, builder, strWithPaddingLenLE, bufferI8PtrLE);
-
-        auto foundIndexLE =
-            functionsMapLT->buildFindIndexOf(builder, exportNameToReplayerFunctionMapGlobalLE, bufferI8PtrLE);
-        auto notFoundLE = LLVMBuildICmp(builder, LLVMIntSLT, foundIndexLE, constI64LE(globalState, 0), "");
         auto resultLE =
-          buildIfElse(
-              globalState, functionState, builder, LLVMPointerType(replayerFuncLT, 0), notFoundLE,
-              [this, replayerFuncLT](LLVMBuilderRef builder) -> LLVMValueRef {
-  //              buildPrint(globalState, builder, "Error: Replay contained a call to ");
-  //              buildPrint(globalState, builder, bufferI8PtrLE);
-  //              buildPrint(globalState, builder, " at this point, but that function doesn't exist anymore.\n");
-  //              buildSimpleCall(builder, globalState->externs->exit, { constI64LE(globalState, 1) });
-                return LLVMConstNull(LLVMPointerType(replayerFuncLT, 0));
-              },
-              [this, foundIndexLE](LLVMBuilderRef builder) -> LLVMValueRef {
-                return functionsMapLT->buildGetValueAtIndex(
-                    builder, exportNameToReplayerFunctionMapGlobalLE, foundIndexLE);
-              });
+            buildIfElse(
+                globalState, functionState, builder, LLVMPointerType(replayerFuncLT, 0),
+                LLVMBuildICmp(builder, LLVMIntEQ, strLenLE, constI64LE(globalState, 0), ""),
+                [this, functionState, replayerFuncLT](LLVMBuilderRef builder) -> LLVMValueRef {
+                  return LLVMConstNull(LLVMPointerType(replayerFuncLT, 0));
+                },
+                [this, functionState, replayerFuncLT, strLenLE, bufferI8PtrLE](LLVMBuilderRef builder) -> LLVMValueRef {
+                  auto strWithPaddingLenLE = calcPaddedStrLen(globalState, builder, strLenLE);
+                  buildFlare(FL(), globalState, functionState, builder);
+                  readLimitedStringFromFile(functionState, builder, strWithPaddingLenLE, bufferI8PtrLE);
+
+                  auto foundIndexLE =
+                      functionsMapLT->buildFindIndexOf(builder, exportNameToReplayerFunctionMapGlobalLE, bufferI8PtrLE);
+                  auto notFoundLE = LLVMBuildICmp(builder, LLVMIntSLT, foundIndexLE, constI64LE(globalState, 0), "");
+                  return buildIfElse(
+                      globalState, functionState, builder, LLVMPointerType(replayerFuncLT, 0), notFoundLE,
+                      [this, replayerFuncLT](LLVMBuilderRef builder) -> LLVMValueRef {
+                        //              buildPrint(globalState, builder, "Error: Replay contained a call to ");
+                        //              buildPrint(globalState, builder, bufferI8PtrLE);
+                        //              buildPrint(globalState, builder, " at this point, but that function doesn't exist anymore.\n");
+                        //              buildSimpleCall(builder, globalState->externs->exit, { constI64LE(globalState, 1) });
+                        return LLVMConstNull(LLVMPointerType(replayerFuncLT, 0));
+                      },
+                      [this, foundIndexLE, replayerFuncLT](LLVMBuilderRef builder) -> LLVMValueRef {
+                        auto resultLE =
+                            functionsMapLT->buildGetValueAtIndex(
+                                builder, exportNameToReplayerFunctionMapGlobalLE, foundIndexLE);
+                        assert(LLVMTypeOf(resultLE) == LLVMPointerType(replayerFuncLT, 0));
+                        return resultLE;
+                      });
+                });
         LLVMBuildRet(builder, resultLE);
       });
 }
@@ -670,11 +699,13 @@ void Determinism::makeFuncToMaybeStartDeterministicMode() {
                   buildStartRecording(builder, recordingFilenameStrLE);
                 });
 
+        buildFlare(FL(), globalState, functionState, builder, consumedArgsCountLE);
         consumedArgsCountLE =
             buildIfElse(
                 globalState, functionState, builder, int64LT,
-                LLVMBuildICmp(builder, LLVMIntSGT, consumedArgsCountLE, constI64LE(globalState, 0), ""),
+                LLVMBuildICmp(builder, LLVMIntEQ, consumedArgsCountLE, constI64LE(globalState, 0), ""),
                 [this, functionState, mainArgsCountLE, mainArgsLE](LLVMBuilderRef builder) {
+                  buildFlare(FL(), globalState, functionState, builder);
                   return processFlag(
                       globalState, functionState, builder, VALE_REPLAY_FLAG, mainArgsCountLE, mainArgsLE,
                       [this, functionState](LLVMBuilderRef builder, LLVMValueRef replayingFilenameStrLE) {
@@ -835,6 +866,7 @@ Ref Determinism::buildReadValueFromFile(
   assert(targetRefMT->ownership == Ownership::SHARE); // not implemented for owns
   auto hostRefMT = globalState->linearRegion->linearizeReference(targetRefMT);
 
+  buildFlare(FL(), globalState, functionState, builder);
   if (dynamic_cast<Int*>(targetRefMT->kind)) {
     auto intLE = LLVMBuildTrunc(builder, readI64FromFile(functionState, builder), int32LT, "intFromRecording");
     return wrap(globalState->getRegion(targetRefMT), targetRefMT, intLE);
@@ -860,8 +892,9 @@ Ref Determinism::buildReadValueFromFile(
     buildIf(
         globalState, functionState->containingFuncL, builder,
         LLVMBuildICmp(builder, LLVMIntULT, freadResultLE, constI64LE(globalState, 1), ""),
-        [this](LLVMBuilderRef builder){
-          buildPrint(globalState, builder, "Couldn't read from recording file.");
+        [this, functionState](LLVMBuilderRef builder){
+          buildFlare(FL(), globalState, functionState, builder);
+          buildPrint(globalState, builder, "Couldn't read from recording file. (4)");
           buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, 1)});
         });
 
@@ -880,6 +913,8 @@ Ref Determinism::buildReadValueFromFile(
             hostRefMT, targetRefMT, tempBufferPtrLE);
 
     buildSimpleCall(builder, globalState->externs->free, {tempBufferPtrLE});
+
+    buildFlare(FL(), globalState, functionState, builder, "Read value from file, size ", valueSizeLE);
 
     return valeRef;
   } else {

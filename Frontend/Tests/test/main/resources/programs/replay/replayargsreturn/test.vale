@@ -1,0 +1,6 @@
+
+extern func cAppend(x int) int;
+
+exported func main() int {
+  return cAppend(21);
+}

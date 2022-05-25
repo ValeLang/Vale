@@ -20,10 +20,14 @@ struct TestSuite {
 struct TestInstance {
   test_name str;
   region str;
-  expected_return_code int;
   test_build_dir Path;
   process Subprocess;
-  runs_args List<List<str>>;
+  runs_args List<Step>;
+}
+
+struct Step {
+  args List<str>;
+  expected_return_code int;
 }
 
 func matches_filters(name str, filters &List<str>) bool {
@@ -229,7 +233,8 @@ exported func main() int {
   if (include_regions.exists({ _ == "resilient-v3" })) {
     region = "resilient-v3";
     suite.StartTest(116, "kldc", samples_path./("programs/structs/deadmutstruct.vale"), &List([#]["--override_known_live_true", "true"]), region);
-    suite.StartReplayTest(42, "appendandread", samples_path./("programs/externs/appendandread"), &List<str>().add("--enable_replaying").add("true"), region);
+    suite.StartReplayTest(21, 42, "replayreturn", samples_path./("programs/replay/replayreturn"), &List<str>().add("--enable_replaying").add("true"), region);
+    suite.StartReplayTest(21, 42, "replayargsreturn", samples_path./("programs/replay/replayargsreturn"), &List<str>().add("--enable_replaying").add("true"), region);
   }
 
   if (include_regions.exists({ _ == "resilient-v4" })) {
@@ -368,7 +373,7 @@ func PrintTestFailure(build_result &ExecResult, test_name str, region str) {
 func FinishTests(suite &TestSuite, until_this_many_left int) {
   while (suite.test_instances.len() > until_this_many_left) {
     build_instance = suite.test_instances.remove(0);
-    [test_name, region, expected_return_code, test_build_dir, build_process, runs_args] = build_instance;
+    [test_name, region, test_build_dir, build_process, runs] = build_instance;
 
     build_result = (build_process).capture_and_join();
     if (build_result.return_code != 0) {
@@ -379,12 +384,13 @@ func FinishTests(suite &TestSuite, until_this_many_left int) {
       run_program = test_build_dir./(program_name).str();
 
       success = true;
-      foreach run_args in &runs_args {
+      foreach run in &runs {
+        [args, expected_return_code] = run;
         run_process =
             SubprocessBuilder()
             .FromDir(test_build_dir.str())
             .WithProgram(run_program)
-            .WithArgs(&run_args)
+            .WithArgs(&args)
             .Build()
             .expect();
         if (suite.verbose) {
@@ -503,7 +509,7 @@ func StartTest(
             test_name, vale_input, &extra_build_flags, &test_build_dir, region);
     suite.test_instances.add(
         TestInstance(
-            test_name, region, expected_return_code, test_build_dir, build_process, List<List<str>>().add(List<str>())));
+            test_name, region, test_build_dir, build_process, List<Step>().add(Step(List<str>(), expected_return_code))));
   } else {
     drop(vale_input);
   }
@@ -511,7 +517,8 @@ func StartTest(
 
 func StartReplayTest(
     suite &TestSuite,
-    expected_return_code int,
+    first_expected_return_code int,
+    repeated_expected_return_code int,
     test_name str,
     vale_input Path,
     extra_build_flags &List<str>,
@@ -531,12 +538,12 @@ func StartReplayTest(
         TestInstance(
             test_name,
             region,
-            expected_return_code,
             test_build_dir,
             build_process,
-            List<List<str>>()
-                .add(List<str>().add("--vale_record").add("recording.bin"))
-                .add(List<str>().add("--vale_replay").add("recording.bin"))));
+            List<Step>()
+                .add(Step(List<str>(), first_expected_return_code))
+                .add(Step(List<str>().add("--vale_record").add("recording.bin"), repeated_expected_return_code))
+                .add(Step(List<str>().add("--vale_replay").add("recording.bin"), repeated_expected_return_code))));
   } else {
     drop(vale_input);
   }

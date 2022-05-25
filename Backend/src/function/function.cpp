@@ -1,4 +1,5 @@
 #include <iostream>
+#include <utils/definefunction.h>
 #include "expressions/shared/shared.h"
 #include "../region/linear/linear.h"
 
@@ -50,7 +51,7 @@ bool typeNeedsPointerParameter(GlobalState* globalState, Reference* returnMT) {
   }
 }
 
-LLVMTypeRef translateReturnType(GlobalState* globalState, Reference* returnMT) {
+LLVMTypeRef translateExternReturnType(GlobalState* globalState, Reference* returnMT) {
   if (returnMT == globalState->metalCache->neverRef) {
     return LLVMVoidTypeInContext(globalState->context);
   } else if (returnMT == globalState->metalCache->voidRef) {
@@ -67,7 +68,7 @@ LLVMTypeRef translateReturnType(GlobalState* globalState, Reference* returnMT) {
 }
 
 void exportFunction(GlobalState* globalState, Package* package, Function* functionM) {
-  LLVMTypeRef exportReturnLT = translateReturnType(globalState, functionM->prototype->returnType);
+  LLVMTypeRef exportReturnLT = translateExternReturnType(globalState, functionM->prototype->returnType);
 
   bool usingReturnOutParam = typeNeedsPointerParameter(globalState, functionM->prototype->returnType);
   std::vector<LLVMTypeRef> exportParamTypesL;
@@ -91,7 +92,8 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
   LLVMTypeRef exportFunctionTypeL =
       LLVMFunctionType(exportReturnLT, exportParamTypesL.data(), exportParamTypesL.size(), 0);
 
-  auto exportName = std::string("vale_abi_") + package->getFunctionExportName(functionM->prototype);
+  auto unprefixedExportName = package->getFunctionExportName(functionM->prototype);
+  auto exportName = std::string("vale_abi_") + unprefixedExportName;
 
   // The full name should end in _0, _1, etc. The exported name shouldnt.
   assert(exportName != functionM->prototype->name->name);
@@ -190,7 +192,7 @@ LLVMValueRef declareExternFunction(
     GlobalState* globalState,
     Package* package,
     Prototype* prototypeM) {
-  LLVMTypeRef externReturnLT = translateReturnType(globalState, prototypeM->returnType);
+  LLVMTypeRef externReturnLT = translateExternReturnType(globalState, prototypeM->returnType);
 
   bool usingReturnOutParam = typeNeedsPointerParameter(globalState, prototypeM->returnType);
   std::vector<LLVMTypeRef> externParamTypesL;
@@ -325,34 +327,18 @@ void declareExtraFunction(
   globalState->extraFunctions.emplace(std::make_pair(prototype, functionL));
 }
 
-void defineFunctionBody(
+void defineFunctionBodyV(
     GlobalState* globalState,
     Prototype* prototype,
     std::function<void(FunctionState*, LLVMBuilderRef)> definer) {
   auto functionL = globalState->lookupFunction(prototype);
-
-  auto localsBlockName = std::string("localsBlock");
-  auto localsBuilder = LLVMCreateBuilderInContext(globalState->context);
-  LLVMBasicBlockRef localsBlockL = LLVMAppendBasicBlockInContext(globalState->context, functionL, localsBlockName.c_str());
-  LLVMPositionBuilderAtEnd(localsBuilder, localsBlockL);
-
-  auto firstBlockName = std::string("codeStartBlock");
-  LLVMBasicBlockRef firstBlockL = LLVMAppendBasicBlockInContext(globalState->context, functionL, firstBlockName.c_str());
-  LLVMBuilderRef bodyTopLevelBuilder = LLVMCreateBuilderInContext(globalState->context);
-  LLVMPositionBuilderAtEnd(bodyTopLevelBuilder, firstBlockL);
-
   auto retType = globalState->getRegion(prototype->returnType)->translateType(prototype->returnType);
-  FunctionState functionState(
-      prototype->name->name, functionL, retType, localsBuilder);
-
-  definer(&functionState, bodyTopLevelBuilder);
-
-  // Now that we've added all the locals we need, lets make the locals block jump to the first
-  // code block.
-  LLVMBuildBr(localsBuilder, firstBlockL);
-
-  LLVMDisposeBuilder(bodyTopLevelBuilder);
-  LLVMDisposeBuilder(localsBuilder);
+  defineFunctionBody(
+      globalState->context,
+      functionL,
+      retType,
+      prototype->name->name,
+      definer);
 }
 
 void declareAndDefineExtraFunction(
@@ -361,5 +347,5 @@ void declareAndDefineExtraFunction(
     std::string llvmName,
     std::function<void(FunctionState*, LLVMBuilderRef)> definer) {
   declareExtraFunction(globalState, prototype, llvmName);
-  defineFunctionBody(globalState, prototype, definer);
+  defineFunctionBodyV(globalState, prototype, definer);
 }

@@ -21,6 +21,7 @@
 #include "metal/instructions.h"
 
 #include "function/function.h"
+#include "determinism/determinism.h"
 #include "metal/readjson.h"
 #include "error.h"
 #include "translatetype.h"
@@ -844,6 +845,9 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
   }
   globalState->regions.emplace(globalState->mutRegion->getRegionId(), globalState->mutRegion);
 
+  Determinism determinism(globalState);
+  globalState->determinism = &determinism;
+
 
   assert(LLVMTypeOf(globalState->neverPtr) == globalState->getRegion(globalState->metalCache->neverRef)->translateType(globalState->metalCache->neverRef));
 
@@ -875,6 +879,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
       // std::cout << std::endl;
 
       if (structM->mutability == Mutability::IMMUTABLE) {
+        // TODO: https://github.com/ValeLang/Vale/issues/479
         globalState->linearRegion->declareStruct(structM);
       }
     }
@@ -887,6 +892,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
       auto interfaceM = p.second;
       globalState->getRegion(interfaceM->regionId)->declareInterface(interfaceM);
       if (interfaceM->mutability == Mutability::IMMUTABLE) {
+        // TODO: https://github.com/ValeLang/Vale/issues/479
         globalState->linearRegion->declareInterface(interfaceM);
       }
     }
@@ -1094,6 +1100,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
         continue;
       }
       declareExternFunction(globalState, package, prototype);
+      determinism.registerFunction(prototype);
     }
   }
 
@@ -1109,9 +1116,12 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
       if (!skipExporting) {
         auto function = program.getFunction(prototype->name);
         exportFunction(globalState, package, function);
+        determinism.registerFunction(prototype);
       }
     }
   }
+
+  determinism.finalizeFunctionsMap();
 
   for (auto[packageCoord, package] : program.packages) {
     for (auto p : package->functions) {

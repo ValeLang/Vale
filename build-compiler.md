@@ -87,3 +87,12 @@ cd Vale
 ```
 
 If you get an error "fatal error LNK1112: module machine type 'x86' conflicts with target machine type 'x64'" and you're running in the shell "x64_x86 Cross Tools Command Prompt for VS 2022", try instead running in the shell "x64 Native Tools Command Prompt for VS 2022".
+
+
+## For development
+
+If working on the Vale compiler, it's best to:
+
+ * Build LLVM from scratch, in debug mode.
+ * Use CLion.
+    * [Build with a profile](https://www.jetbrains.com/help/clion/cmake-profile.html#CMakeProfileSwitcher), with an environment variable `LLVM_DIR=(llvm build dir)`. [Verify in the CMake log](https://stackoverflow.com/a/34772936/1424454) looking for "Using LLVMConfig.make in (llvm build dir)".

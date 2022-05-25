@@ -183,7 +183,7 @@ void declareExtraFunction(
     Prototype* prototype,
     std::string llvmName);
 
-void defineFunctionBody(
+void defineFunctionBodyV(
     GlobalState* globalState,
     Prototype* prototype,
     std::function<void(FunctionState*, LLVMBuilderRef)> definer);
@@ -196,6 +196,6 @@ void declareAndDefineExtraFunction(
 
 bool typeNeedsPointerParameter(GlobalState* globalState, Reference* returnMT);
 bool translatesToCVoid(GlobalState* globalState, Reference* returnMT);
-LLVMTypeRef translateReturnType(GlobalState* globalState, Reference* returnMT);
+LLVMTypeRef translateExternReturnType(GlobalState* globalState, Reference* returnMT);
 
 #endif

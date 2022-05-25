@@ -101,7 +101,7 @@ private:
 
   CppSimpleHashMap<Prototype*, std::tuple<>, PrototypeNameSimpleStringHasher, PrototypeNameSimpleStringEquator> functionsMap;
   std::unique_ptr<LlvmSimpleHashMap> functionsMapLT;
-  bool finalizedFunctions; // True if we've already registered all the exports and externs.
+  bool finalizedFunctions = false; // True if we've already registered all the exports and externs.
   LLVMValueRef exportNameToReplayerFunctionMapGlobalLE;
 
   std::unique_ptr<LlvmSimpleHashMap> recordedRefToReplayedRefMapLT;

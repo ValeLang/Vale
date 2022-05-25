@@ -16,4 +16,21 @@ LLVMValueRef adjustCounter(
 LLVMValueRef isZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE);
 LLVMValueRef isNonZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE);
 
+
+LLVMValueRef hexRoundDown(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef n);
+
+LLVMValueRef hexRoundUp(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef n);
+
+LLVMValueRef roundUp(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    int multipleOfThis,
+    LLVMValueRef n);
+
 #endif

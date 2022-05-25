@@ -23,6 +23,7 @@ enum class ControlBlockMember {
   // It's 32B because we put it in the spot where the generational heap puts its size,
   // like we do with the UNUSED_32B elsewhere.
   TETHER_32B,
+  METADATA_BITS_2B,
 };
 
 class ControlBlock {

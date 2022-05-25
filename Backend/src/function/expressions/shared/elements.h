@@ -72,10 +72,17 @@ void intRangeLoop(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    LLVMValueRef sizeRef,
+    std::function<void(LLVMValueRef, LLVMBuilderRef)> iterationBuilder);
+
+void intRangeLoopV(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
     Ref sizeRef,
     std::function<void(Ref, LLVMBuilderRef)> iterationBuilder);
 
-void intRangeLoopReverse(
+void intRangeLoopReverseV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,

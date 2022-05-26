@@ -1,8 +1,12 @@
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
 
-#include "vtest/cExit42.h"
+#include "vtest/myCFunc.h"
 
-extern void vtest_cExit42() {
-  exit(42);
+int64_t incrementIntFile(const char* filename);
+
+extern ValeInt vtest_myCFunc(ValeInt x) {
+  return incrementIntFile("myfile.bin") * x;
 }

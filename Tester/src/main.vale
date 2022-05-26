@@ -52,8 +52,8 @@ exported func main() int {
   all_args = all_args_list.toImmArray();
 
 
-  driver_path = Path(all_args_list.get(0))&.resolve();
-  cwd = driver_path.directory();
+  tester_path = Path(all_args_list.get(0))&.resolve();
+  cwd = tester_path.directory();
   compiler_dir = cwd.clone();
 
 
@@ -190,8 +190,10 @@ exported func main() int {
 
   test_instances = List<TestInstance>();
 
-  if (include_regions.exists({ _ == "assist" })) {
-    region = "assist";
+  if (include_regions.exists({ _ == "resilient-v3" })) {
+    region = "resilient-v3";
+    suite.StartReplayTest(42, 84, "simpleexternreturn", samples_path./("programs/externs/simpleexternreturn"), &List<str>(), region);
+    suite.StartReplayTest(42, 84, "simpleexternparam", samples_path./("programs/externs/simpleexternparam"), &List<str>().add("--enable_replaying").add("true"), region);
     suite.StartTest(7, "addret", samples_path./("programs/addret.vale"), &List<str>(), region);
     suite.StartTest(42, "add64ret", samples_path./("programs/add64ret.vale"), &List<str>(), region);
     suite.StartTest(42, "comparei64", samples_path./("programs/comparei64.vale"), &List<str>(), region);
@@ -201,8 +203,6 @@ exported func main() int {
     suite.StartTest(42, "concatstrfloat", samples_path./("programs/concatstrfloat.vale"), &List<str>(), region);
     suite.StartTest(11, "strlenextern", samples_path./("programs/externs/strlenextern"), &List<str>(), region);
     suite.StartTest(42, "voidreturnexport", samples_path./("programs/externs/voidreturnexport"), &List<str>(), region);
-    suite.StartTest(42, "simpleexternreturn", samples_path./("programs/externs/simpleexternreturn"), &List<str>(), region);
-    suite.StartTest(42, "simpleexternparam", samples_path./("programs/externs/simpleexternparam"), &List<str>(), region);
     suite.StartTest(42, "structimmparamextern", samples_path./("programs/externs/structimmparamextern"), &List<str>(), region);
     suite.StartTest(42, "structimmparamexport", samples_path./("programs/externs/structimmparamexport"), &List<str>(), region);
     suite.StartTest(42, "structimmparamdeepextern", samples_path./("programs/externs/structimmparamdeepextern"), &List<str>(), region);
@@ -234,7 +234,6 @@ exported func main() int {
     region = "resilient-v3";
     suite.StartTest(116, "kldc", samples_path./("programs/structs/deadmutstruct.vale"), &List([#]["--override_known_live_true", "true"]), region);
     suite.StartReplayTest(21, 42, "replayreturn", samples_path./("programs/replay/replayreturn"), &List<str>().add("--enable_replaying").add("true"), region);
-    suite.StartReplayTest(21, 42, "replayargsreturn", samples_path./("programs/replay/replayargsreturn"), &List<str>().add("--enable_replaying").add("true"), region);
   }
 
   if (include_regions.exists({ _ == "resilient-v4" })) {
@@ -454,6 +453,7 @@ Subprocess {
   build_args = List<str>();
   suite.common_build_args.each((arg) => { build_args.add(arg); });
   build_args.add("vtest=" + vale_code_path.str());
+  build_args.add("vtest=" + suite.backend_tests_dir./("testbuiltins.c").str());
   build_args.add("--output_dir");
   build_args.add(test_build_dir.str());
   build_args.add("--region_override");

@@ -3,10 +3,8 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "vtest/cAppend.h"
-
-int64_t addToIntFile(const char* filename, int64_t addend) {
-  FILE* file = fopen("myfile.bin", "a+");
+int64_t incrementIntFile(const char* filename) {
+  FILE* file = fopen(filename, "a+");
   assert(file);
 
   int64_t num = 0;
@@ -22,7 +20,7 @@ int64_t addToIntFile(const char* filename, int64_t addend) {
     assert(readResult);
   }
 
-  num += addend;
+  num++;
 
   // Write added number to the file.
   int seekResult = fseek(file, 0, SEEK_SET);
@@ -34,8 +32,4 @@ int64_t addToIntFile(const char* filename, int64_t addend) {
   assert(closeResult == 0);
 
   return num;
-}
-
-extern ValeInt vtest_cAppend(ValeInt x) {
-  return addToIntFile("myfile.bin", x);
 }

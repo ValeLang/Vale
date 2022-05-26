@@ -247,6 +247,8 @@ We were about to add a lot of tests to exercise sending/receiving all sorts of d
 
 A utility function called `incrementIntFile` increments an integer in a file, so we use it wherever.
 
+We have the first and second test to make sure that the side effect actually works, and then the third test to make sure the side effect doesn't happen.
+
 
 # Notes
 

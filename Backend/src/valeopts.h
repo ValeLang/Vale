@@ -51,7 +51,7 @@ struct ValeOptions {
     bool enableReplaying = false;    // Enables deterministic replaying
     bool enableSideCalling = false;    // Enables side calling, used for fearless FFI
 
-    RegionOverride regionOverride = RegionOverride::ASSIST;
+    RegionOverride regionOverride = RegionOverride::RESILIENT_V3;
 };
 
 int valeOptSet(ValeOptions *opt, int *argc, char **argv);

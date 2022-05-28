@@ -583,6 +583,7 @@ Ref regularInnerLockWeak(
 
 void callFree(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef ptrLE);
 

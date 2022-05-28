@@ -790,6 +790,7 @@ void Assist::deallocate(
     LLVMBuilderRef builder,
     Reference* refMT,
     Ref ref) {
+  buildFlare(FL(), globalState, functionState, builder);
   innerDeallocate(from, globalState, functionState, &kindStructs, builder, refMT, ref);
 }
 

@@ -102,13 +102,17 @@ LoadResult loadInnerInnerStructMember(
 
   auto ptrToMemberLE =
       LLVMBuildStructGEP(builder, innerStructPtrLE, memberIndex, memberName.c_str());
-  buildFlare(FL(), globalState, functionState, builder, "Ptr to member: ", ptrToIntLE(globalState, builder, ptrToMemberLE));
-  auto result =
+  auto resultLE =
       LLVMBuildLoad(
           builder,
           ptrToMemberLE,
           memberName.c_str());
-  return LoadResult{wrap(globalState->getRegion(expectedType), expectedType, result)};
+  if (LLVMGetTypeKind(LLVMTypeOf(resultLE)) == LLVMIntegerTypeKind) {
+    buildFlare(FL(), globalState, functionState, builder, "Ptr to member: ", ptrToIntLE(globalState, builder, ptrToMemberLE), ", value ", resultLE);
+  } else {
+    buildFlare(FL(), globalState, functionState, builder, "Ptr to member: ", ptrToIntLE(globalState, builder, ptrToMemberLE));
+  }
+  return LoadResult{wrap(globalState->getRegion(expectedType), expectedType, resultLE)};
 }
 
 void storeInnerInnerStructMember(
@@ -276,6 +280,7 @@ LLVMValueRef getTablePtrFromInterfaceRef(
 
 void callFree(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef ptrLE) {
   auto concreteAsCharPtrLE =
@@ -284,7 +289,8 @@ void callFree(
           ptrLE,
           LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
           "concreteCharPtrForFree");
-  LLVMBuildCall(builder, globalState->externs->free, &concreteAsCharPtrLE, 1, "");
+  buildFlare(FL(), globalState, functionState, builder, "Freeing ", ptrToIntLE(globalState, builder, concreteAsCharPtrLE));
+//  LLVMBuildCall(builder, globalState->externs->free, &concreteAsCharPtrLE, 1, "");
 }
 
 void innerDeallocateYonder(
@@ -295,6 +301,8 @@ void innerDeallocateYonder(
     LLVMBuilderRef builder,
     Reference* refMT,
     Ref ref) {
+  buildFlare(FL(), globalState, functionState, builder);
+
   if (globalState->opt->census) {
     auto ptrLE =
         globalState->getRegion(refMT)
@@ -322,7 +330,7 @@ void innerDeallocateYonder(
         "");
   }
 
-  callFree(globalState, builder, controlBlockPtrLE.refLE);
+  callFree(globalState, functionState, builder, controlBlockPtrLE.refLE);
 
   if (globalState->opt->census) {
     adjustCounter(globalState, builder, globalState->metalCache->i64, globalState->liveHeapObjCounter, -1);
@@ -337,6 +345,7 @@ void innerDeallocate(
     LLVMBuilderRef builder,
     Reference* refMT,
     Ref ref) {
+  buildFlare(FL(), globalState, functionState, builder);
   if (refMT->ownership == Ownership::SHARE) {
     if (refMT->location == Location::INLINE) {
       // Do nothing, it's inline!

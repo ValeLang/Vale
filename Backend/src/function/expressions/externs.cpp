@@ -85,8 +85,9 @@ Ref buildCallOrSideCall(
 
     auto valeArg = valeArgRefs[i];
     auto[hostArgRefLE, argSizeLE] =
-        sendValeObjectIntoHost(
-            globalState, functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef, valeArgRefMT, hostArgRefMT, valeArg);
+    sendValeObjectIntoHostAndDealias(
+        globalState, functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef, valeArgRefMT, hostArgRefMT,
+        valeArg);
     if (typeNeedsPointerParameter(globalState, valeArgRefMT)) {
       auto hostArgRefLT = globalState->getRegion(valeArgRefMT)->getExternalType(valeArgRefMT);
       assert(LLVMGetTypeKind(hostArgRefLT) != LLVMPointerTypeKind);
@@ -231,8 +232,8 @@ Ref replayReturnOrCallAndOrRecord(
                           ->checkValidReference(FL(), functionState, builder, prototype->params[i], args[i]);
                   if (valeArgRefMT->ownership == Ownership::SHARE) {
                     // Don't need to:
-                    // globalState->determinism->buildWriteValueToFile(builder, argLE);
-                    // because we dont need to call the
+                    //   globalState->determinism->buildWriteValueToFile(builder, argLE);
+                    // because we dont need these values in the recording.
                   } else {
                     globalState->determinism->buildWriteRefToFile(builder, argLE);
                   }

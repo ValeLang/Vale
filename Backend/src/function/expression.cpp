@@ -271,6 +271,13 @@ Ref translateExpressionInner(
             memberName);
     globalState->getRegion(memberLoad->expectedResultType)
         ->checkValidReference(FL(), functionState, builder, memberLoad->expectedResultType, resultRef);
+    if (memberLoad->expectedMemberType == globalState->metalCache->i32Ref) {
+      auto valueForPrintingLE =
+          globalState->getRegion(memberLoad->expectedResultType)
+              ->checkValidReference(FL(), functionState, builder, memberLoad->expectedResultType, resultRef);
+      buildFlare(FL(), globalState, functionState, builder, "Loaded value: ", valueForPrintingLE);
+    }
+
     globalState->getRegion(memberLoad->structType)->dealias(
         AFL("MemberLoad drop struct"),
         functionState, builder, memberLoad->structType, structRef);

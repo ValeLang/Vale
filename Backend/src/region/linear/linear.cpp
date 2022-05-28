@@ -118,6 +118,7 @@ void Linear::dealias(
           LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
           "extStrPtrLE");
 
+  buildFlare(FL(), globalState, functionState, builder, "Freeing ", ptrToIntLE(globalState, builder, sourceI8PtrLE));
   LLVMBuildCall(builder, globalState->externs->free, &sourceI8PtrLE, 1, "");
 }
 
@@ -823,6 +824,7 @@ void Linear::deallocate(
           refLE,
           LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
           "concreteCharPtrForFree");
+  buildFlare(FL(), globalState, functionState, builder, "Freeing ", ptrToIntLE(globalState, builder, concreteAsCharPtrLE));
   LLVMBuildCall(builder, globalState->externs->free, &concreteAsCharPtrLE, 1, "");
 }
 

@@ -172,8 +172,9 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
         globalState->linearRegion->createRegionInstanceLocal(
             &functionState, builder, constI1LE(globalState, 0), constI64LE(globalState, 0));
     auto [hostReturnRefLE, hostReturnSizeLE] =
-        sendValeObjectIntoHost(
-            globalState, &functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef, valeReturnMT, hostReturnMT, valeReturnRef);
+    sendValeObjectIntoHostAndDealias(
+        globalState, &functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef, valeReturnMT, hostReturnMT,
+        valeReturnRef);
 
     buildFlare(FL(), globalState, &functionState, builder, "Done calling export function ", functionState.containingFuncName, " from native");
 

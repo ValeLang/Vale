@@ -46,7 +46,7 @@ Ref receiveHostObjectIntoVale(
   }
 }
 
-std::pair<LLVMValueRef, LLVMValueRef> sendValeObjectIntoHost(
+std::pair<LLVMValueRef, LLVMValueRef> sendValeObjectIntoHostAndDealias(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,

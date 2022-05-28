@@ -565,10 +565,12 @@ private:
       Kind* valeKind,
       Ref ref);
 
+public:
   LLVMValueRef getRegionInstanceDestinationBufferStartPtr(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Ref regionInstanceRef);
+private:
   void setRegionInstanceDestinationBufferStartPtr(
       FunctionState* functionState,
       LLVMBuilderRef builder,

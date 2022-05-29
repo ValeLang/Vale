@@ -7,5 +7,6 @@
 int64_t incrementIntFile(const char* filename);
 
 extern ValeInt vtest_cMake42() {
-  return incrementIntFile("myfile.bin") * 42;
+  int runNumber = incrementIntFile("myfile.bin");
+  return 42 * runNumber;
 }

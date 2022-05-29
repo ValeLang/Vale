@@ -18,6 +18,9 @@ int64_t incrementIntFile(const char* filename) {
     assert(seekResult == 0);
     int readResult = fread(&num, sizeof(int64_t), 1, file);
     assert(readResult);
+    printf("Opened file %s that already had int in it: %d\n", filename, num);
+  } else {
+    printf("Opened file %s that didn't exist.\n", filename);
   }
 
   num++;
@@ -27,6 +30,8 @@ int64_t incrementIntFile(const char* filename) {
   assert(seekResult == 0);
   int writeResult = fwrite(&num, sizeof(int64_t), 1, file);
   assert(writeResult);
+
+  printf("Wrote %d to file %s.\n", num, filename);
 
   int closeResult = fclose(file);
   assert(closeResult == 0);

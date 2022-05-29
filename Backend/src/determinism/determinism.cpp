@@ -461,6 +461,7 @@ void Determinism::writeI64ToFile(
     FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef i64LE) {
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
   assert(LLVMTypeOf(i64LE) == int64LT);
+  buildFlare(FL(), globalState, functionState, builder, "Write I64: ", i64LE);
   auto i64PtrLE = makeBackendLocal(functionState, builder, int64LT, "", i64LE);
   writeBytesToFile(
       functionState,
@@ -499,7 +500,7 @@ LLVMValueRef Determinism::readI64FromFile(
           });
   buildIf(
       globalState, functionState->containingFuncL, builder,
-      LLVMBuildICmp(builder, LLVMIntULT, resultLE, constI64LE(globalState, 1), ""),
+      LLVMBuildICmp(builder, LLVMIntSLT, resultLE, constI64LE(globalState, 1), ""),
       [this, functionState, int64LT](LLVMBuilderRef builder){
         buildFlare(FL(), globalState, functionState, builder);
         buildPrint(globalState, builder, "Couldn't read from recording file. (1)");
@@ -931,7 +932,7 @@ Ref Determinism::buildReadValueFromFile(
             });
     buildIf(
         globalState, functionState->containingFuncL, builder,
-        LLVMBuildICmp(builder, LLVMIntULT, freadResultLE, constI64LE(globalState, 1), ""),
+        LLVMBuildICmp(builder, LLVMIntSLT, freadResultLE, constI64LE(globalState, 1), ""),
         [this, functionState](LLVMBuilderRef builder){
           buildFlare(FL(), globalState, functionState, builder);
           buildPrint(globalState, builder, "Couldn't read from recording file. (4)");

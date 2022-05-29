@@ -232,7 +232,10 @@ exported func main() int {
     suite.StartTest(42, "immtupleaccess", samples_path./("programs/tuples/immtupleaccess.vale"), &List<str>(), region);
     suite.StartTest(42, "ssaimmfromcallable", samples_path./("programs/arrays/ssaimmfromcallable.vale"), &List<str>(), region);
     suite.StartTest(42, "ssaimmfromvalues", samples_path./("programs/arrays/ssaimmfromvalues.vale"), &List<str>(), region);
+  }
 
+  if (include_regions.exists({ _ == "assist" })) {
+    region = "assist";
     suite.StartTest(42, "weakDropThenLockStruct", samples_path./("programs/weaks/dropThenLockStruct.vale"), &List<str>(), region);
     suite.StartTest(7, "weakLockWhileLiveStruct", samples_path./("programs/weaks/lockWhileLiveStruct.vale"), &List<str>(), region);
     suite.StartTest(7, "weakFromLocalCRefStruct", samples_path./("programs/weaks/weakFromLocalCRefStruct.vale"), &List<str>(), region);

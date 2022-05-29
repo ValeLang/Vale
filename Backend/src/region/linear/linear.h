@@ -235,6 +235,7 @@ public:
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      bool expectLive,
       Reference* refM,
       Ref ref) override;
 
@@ -431,6 +432,7 @@ public:
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      bool expectLive,
       KindStructs* kindStructs,
       Reference* refM,
       LLVMValueRef refLE);

@@ -278,7 +278,7 @@ void Assist::discardOwningRef(
   auto exprWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, sourceMT,
-          checkValidReference(FL(), functionState, builder, sourceMT, sourceRef));
+          checkValidReference(FL(), functionState, builder, true, sourceMT, sourceRef));
 
   adjustStrongRc(
       AFL("Destroy decrementing the owning ref"),
@@ -328,6 +328,9 @@ Ref Assist::loadMember(
     Reference* expectedMemberType,
     Reference* targetType,
     const std::string& memberName) {
+  globalState->getRegion(structRefMT)
+      ->checkValidReference(FL(), functionState, builder, true, structRefMT, structRef);
+
   buildFlare(FL(), globalState, functionState, builder);
   if (structRefMT->ownership == Ownership::SHARE) {
     assert(false);
@@ -355,8 +358,8 @@ void Assist::storeMember(
     Reference* newMemberRefMT,
     Ref newMemberRef) {
   auto newMemberLE =
-      globalState->getRegion(newMemberRefMT)->checkValidReference(
-          FL(), functionState, builder, newMemberRefMT, newMemberRef);
+      globalState->getRegion(newMemberRefMT)
+          ->checkValidReference(FL(), functionState, builder, false, newMemberRefMT, newMemberRef);
   switch (structRefMT->ownership) {
     case Ownership::SHARE:
       assert(false);
@@ -445,7 +448,7 @@ LLVMValueRef Assist::getStringBytesPtr(
           FL(), functionState, builder,
           globalState->metalCache->strRef,
           checkValidReference(
-              FL(), functionState, builder, globalState->metalCache->strRef, ref));
+              FL(), functionState, builder, true, globalState->metalCache->strRef, ref));
   return kindStructs.getStringBytesPtr(functionState, builder, strWrapperPtrLE);
 }
 
@@ -520,7 +523,7 @@ WrapperPtrLE Assist::lockWeakRef(
       auto weakFatPtrLE =
           kindStructs.makeWeakFatPtr(
               refM,
-              checkValidReference(FL(), functionState, builder, refM, weakRefLE));
+              checkValidReference(FL(), functionState, builder, false, refM, weakRefLE));
       return kindStructs.makeWrapperPtr(
           FL(), functionState, builder, refM,
           wrcWeaks.lockWrciFatPtr(from, functionState, builder, refM, weakFatPtrLE));
@@ -583,6 +586,7 @@ LLVMValueRef Assist::checkValidReference(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    bool expectLive,
     Reference* refM,
     Ref ref) {
   Reference *actualRefM = nullptr;
@@ -655,10 +659,9 @@ Ref Assist::upgradeLoadResultToRefWithTargetOwnership(
       buildFlare(FL(), globalState, functionState, builder);
       return sourceRef;
     } else if (targetOwnership == Ownership::BORROW) {
-      auto resultRef = transmutePtr(globalState, functionState, builder, sourceType, targetType, sourceRef);
+      auto resultRef = transmutePtr(globalState, functionState, builder, false, sourceType, targetType, sourceRef);
       buildFlare(FL(), globalState, functionState, builder);
-      checkValidReference(FL(),
-          functionState, builder, targetType, resultRef);
+      checkValidReference(FL(), functionState, builder, false, targetType, resultRef);
       buildFlare(FL(), globalState, functionState, builder);
       return resultRef;
     } else if (targetOwnership == Ownership::WEAK) {
@@ -749,7 +752,7 @@ Ref Assist::storeElementInRSA(
   auto arrayWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, rsaRefMT,
-          globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, arrayRef));
+          globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, true, rsaRefMT, arrayRef));
   auto sizeRef = ::getRuntimeSizedArrayLength(globalState, functionState, builder, arrayWrapperPtrLE);
   auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, true, arrayWrapperPtrLE);
   buildFlare(FL(), globalState, functionState, builder);
@@ -830,7 +833,7 @@ void Assist::checkInlineStructType(
     LLVMBuilderRef builder,
     Reference* refMT,
     Ref ref) {
-  auto argLE = checkValidReference(FL(), functionState, builder, refMT, ref);
+  auto argLE = checkValidReference(FL(), functionState, builder, false, refMT, ref);
   auto structKind = dynamic_cast<StructKind*>(refMT->kind);
   assert(structKind);
   assert(LLVMTypeOf(argLE) == kindStructs.getStructInnerStruct(structKind));
@@ -933,7 +936,8 @@ void Assist::pushRuntimeSizedArrayNoBoundsCheck(
   auto arrayWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, rsaRefMT,
-          globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, rsaRef));
+          globalState->getRegion(rsaRefMT)
+              ->checkValidReference(FL(), functionState, builder, true, rsaRefMT, rsaRef));
 
   auto sizePtrLE = ::getRuntimeSizedArrayLengthPtr(globalState, builder, arrayWrapperPtrLE);
   auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, true, arrayWrapperPtrLE);
@@ -957,7 +961,8 @@ Ref Assist::popRuntimeSizedArrayNoBoundsCheck(
   auto rsaWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, rsaRefMT,
-          globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, arrayRef));
+          globalState->getRegion(rsaRefMT)
+              ->checkValidReference(FL(), functionState, builder, true, rsaRefMT, arrayRef));
   decrementRSASize(globalState, functionState, &kindStructs, builder, rsaRefMT, rsaWrapperPtrLE);
   return valLE;
 }
@@ -976,7 +981,8 @@ void Assist::initializeElementInSSA(
   auto arrayWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, ssaRefMT,
-          globalState->getRegion(ssaRefMT)->checkValidReference(FL(), functionState, builder, ssaRefMT, arrayRef));
+          globalState->getRegion(ssaRefMT)
+              ->checkValidReference(FL(), functionState, builder, true, ssaRefMT, arrayRef));
   auto sizeRef = globalState->constI32(ssaDef->size);
   auto arrayElementsPtrLE = getStaticSizedArrayContentsPtr(builder, arrayWrapperPtrLE);
   ::initializeElementWithoutIncrementSize(
@@ -1023,7 +1029,7 @@ LLVMValueRef Assist::stackify(
     Local* local,
     Ref refToStore,
     bool knownLive) {
-  auto toStoreLE = checkValidReference(FL(), functionState, builder, local->type, refToStore);
+  auto toStoreLE = checkValidReference(FL(), functionState, builder, false, local->type, refToStore);
   auto typeLT = translateType(local->type);
   return makeBackendLocal(functionState, builder, typeLT, local->id->maybeName.c_str(), toStoreLE);
 }

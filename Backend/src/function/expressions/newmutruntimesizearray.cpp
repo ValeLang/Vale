@@ -38,8 +38,8 @@ Ref translateNewMutRuntimeSizedArray(
           capacityRef,
           runtimeSizedArrayMT->name->name);
   buildFlare(FL(), globalState, functionState, builder);
-  globalState->getRegion(arrayRefType)->checkValidReference(FL(), functionState, builder,
-      arrayRefType, rsaRef);
+  globalState->getRegion(arrayRefType)
+      ->checkValidReference(FL(), functionState, builder, true, arrayRefType, rsaRef);
 
   globalState->getRegion(sizeType)->dealias(AFL("ConstructRSA"), functionState, builder, sizeType, capacityRef);
 

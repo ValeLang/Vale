@@ -6,10 +6,9 @@ func getHp(self &&Muta) int {
   maybeBorrowSelf = lock(self);
   return if (maybeBorrowSelf.isEmpty()) {
       drop(maybeBorrowSelf);
-      0
-    } else {
-      drop(maybeBorrowSelf);
       42
+    } else {
+      (maybeBorrowSelf).get().hp
     }
 }
 

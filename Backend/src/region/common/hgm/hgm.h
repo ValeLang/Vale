@@ -102,7 +102,7 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* refM,
-      WeakFatPtrLE weakRefLE,
+      Ref ref,
       bool weakRefKnownLive);
 
   void innerNoteWeakableDestroyed(
@@ -118,6 +118,13 @@ public:
       LLVMBuilderRef builder,
       Reference* weakRefMT,
       Ref weakRef);
+
+  void deallocate(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refMT,
+      Ref ref);
 
   void discardWeakRef(
       AreaAndFileAndLine from,
@@ -156,6 +163,7 @@ public:
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      bool expectLive,
       Reference* weakRefM,
       Ref weakRef);
 

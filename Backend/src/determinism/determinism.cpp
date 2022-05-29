@@ -801,7 +801,7 @@ void Determinism::buildWriteValueToFile(
 
   auto sourceRefLE =
       globalState->getRegion(sourceRefMT)
-          ->checkValidReference(FL(), functionState, builder, sourceRefMT, sourceRef);
+          ->checkValidReference(FL(), functionState, builder, true, sourceRefMT, sourceRef);
 
   if (dynamic_cast<Int*>(sourceRefMT->kind)) {
     auto intAsI64LE = LLVMBuildZExt(builder, sourceRefLE, int64LT, "boolAsI64");
@@ -835,10 +835,10 @@ void Determinism::buildWriteValueToFile(
                 functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef, sourceRefMT, hostRefMT, sourceRef);
     auto hostArgLE =
         globalState->getRegion(hostRefMT)
-            ->checkValidReference(FL(), functionState, builder, hostRefMT, hostArgRef);
+            ->checkValidReference(FL(), functionState, builder, true, hostRefMT, hostArgRef);
     auto sizeI32LE =
         globalState->getRegion(hostRefMT)
-            ->checkValidReference(FL(), functionState, builder, globalState->metalCache->i32Ref, sizeRef);
+            ->checkValidReference(FL(), functionState, builder, true, globalState->metalCache->i32Ref, sizeRef);
     auto sizeI64LE = LLVMBuildZExt(builder, sizeI32LE, int64LT, "");
 
     auto linearStartPtrLE =
@@ -1003,7 +1003,7 @@ LLVMValueRef Determinism::refToI256(
   auto refLT = globalState->getRegion(refMT)->translateType(refMT);
   assert(LLVMABISizeOfType(globalState->dataLayout, refLT) <= 32);
   assert(LLVMGetTypeKind(refLT) != LLVMPointerTypeKind);
-  auto refLE = globalState->getRegion(refMT)->checkValidReference(FL(), functionState, builder, refMT, ref);
+  auto refLE = globalState->getRegion(refMT)->checkValidReference(FL(), functionState, builder, true, refMT, ref);
   return LLVMBuildBitCast(builder, refLE, int256LT, "refFrom256");
 }
 

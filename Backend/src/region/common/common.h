@@ -73,6 +73,7 @@ void buildCheckGen(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    bool expectLive,
     LLVMValueRef targetGenLE,
     LLVMValueRef actualGenLE);
 
@@ -227,6 +228,7 @@ Ref transmutePtr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    bool expectLive,
     Reference* sourceRefMT,
     Reference* targetRefMT,
     Ref sourceRef);

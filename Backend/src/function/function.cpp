@@ -145,6 +145,8 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
             globalState, &functionState, builder, hostRegionInstanceRef, valeRegionInstanceRef, hostParamMT, valeParamMT, hostArgRefLE);
 
     argsToActualFunction.push_back(valeRef);
+
+    // dont we have to free here
   }
 
   buildFlare(FL(), globalState, &functionState, builder, "Suspending export function ", functionState.containingFuncName);

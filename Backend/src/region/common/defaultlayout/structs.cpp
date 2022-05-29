@@ -631,31 +631,36 @@ ControlBlockPtrLE KindStructs::getControlBlockPtr(
     auto referenceLE =
         makeInterfaceFatPtr(
             from, functionState, builder, referenceM,
-            globalState->getRegion(referenceM)->checkValidReference(from, functionState, builder, referenceM, ref));
+            globalState->getRegion(referenceM)
+                ->checkValidReference(from, functionState, builder, true, referenceM, ref));
     return getControlBlockPtr(from, functionState, builder, kindM, referenceLE);
   } else if (dynamic_cast<StructKind*>(kindM)) {
     auto referenceLE =
         makeWrapperPtr(
             from, functionState, builder, referenceM,
-            globalState->getRegion(referenceM)->checkValidReference(from, functionState, builder, referenceM, ref));
+            globalState->getRegion(referenceM)
+                ->checkValidReference(from, functionState, builder, true, referenceM, ref));
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
   } else if (dynamic_cast<StaticSizedArrayT*>(kindM)) {
     auto referenceLE =
         makeWrapperPtr(
             from, functionState, builder, referenceM,
-            globalState->getRegion(referenceM)->checkValidReference(from, functionState, builder, referenceM, ref));
+            globalState->getRegion(referenceM)
+                ->checkValidReference(from, functionState, builder, true, referenceM, ref));
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
   } else if (dynamic_cast<RuntimeSizedArrayT*>(kindM)) {
     auto referenceLE =
         makeWrapperPtr(
             from, functionState, builder, referenceM,
-            globalState->getRegion(referenceM)->checkValidReference(from, functionState, builder, referenceM, ref));
+            globalState->getRegion(referenceM)
+                ->checkValidReference(from, functionState, builder, true, referenceM, ref));
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
   } else if (dynamic_cast<Str*>(kindM)) {
     auto referenceLE =
         makeWrapperPtr(
             from, functionState, builder, referenceM,
-            globalState->getRegion(referenceM)->checkValidReference(from, functionState, builder, referenceM, ref));
+            globalState->getRegion(referenceM)
+                ->checkValidReference(from, functionState, builder, true, referenceM, ref));
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
   } else {
     assert(false);

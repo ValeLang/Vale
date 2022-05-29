@@ -382,8 +382,9 @@ void Determinism::makeFuncToStartReplaying() {
         buildFlare(FL(), globalState, functionState, builder, "Opened!");
         LLVMBuildStore(builder, fileLE, fileHandleGlobalLE);
         auto recordingFileConstantLE = readI64FromFile(functionState, builder);
-        buildAssertV(
+        buildAssertIntEq(
             globalState, functionState, builder, recordingFileConstantLE,
+            constI64LE(globalState, RECORDING_FILE_CONSTANT),
             "Invalid recording file! (invalid recording file constant)");
         buildFlare(FL(), globalState, functionState, builder, "Returning from function startReplaying");
         LLVMBuildRetVoid(builder);

@@ -223,7 +223,7 @@ class ExpressionScout(
             scoutElementsAsExpressions(stackFrame0, lidb.child(), partsPE)
 
           val rangeS = evalRange(range)
-          val startingExpr: IExpressionSE = ConstantStrSE(RangeS(rangeS.begin, rangeS.begin), "")
+          val startingExpr: IExpressionSE = ConstantStrSE(RangeS(rangeS.begin, rangeS.begin), interner.intern(StrI("")))
           val addedExpr =
             partsSE.foldLeft(startingExpr)({
               case (prevExpr, partSE) => {
@@ -307,7 +307,7 @@ class ExpressionScout(
         }
         case ConstantIntPE(range, value, bits) => (stackFrame0, NormalResult(ConstantIntSE(evalRange(range), value, bits)), noVariableUses, noVariableUses)
         case ConstantBoolPE(range,value) => (stackFrame0, NormalResult(vale.postparsing.ConstantBoolSE(evalRange(range), value)), noVariableUses, noVariableUses)
-        case ConstantStrPE(range, value) => (stackFrame0, NormalResult(vale.postparsing.ConstantStrSE(evalRange(range), value)), noVariableUses, noVariableUses)
+        case ConstantStrPE(range, value) => (stackFrame0, NormalResult(vale.postparsing.ConstantStrSE(evalRange(range), interner.intern(StrI(value)))), noVariableUses, noVariableUses)
         case ConstantFloatPE(range,value) => (stackFrame0, NormalResult(ConstantFloatSE(evalRange(range), value)), noVariableUses, noVariableUses)
 
         case MagicParamLookupPE(range) => {
@@ -742,7 +742,7 @@ class ExpressionScout(
             // We know we're in a constructor if there's no `this` variable yet. After all,
             // in a constructor, `this` is just an imaginary concept until we actually
             // fill all the variables.
-            case LookupPE(LookupNameP(NameP(range, StrI("self"))), _) if (stackFrame0.findVariable(interner.intern(CodeNameS("self"))).isEmpty) => {
+            case LookupPE(LookupNameP(NameP(range, StrI("self"))), _) if (stackFrame0.findVariable(interner.intern(CodeNameS(interner.intern(StrI("self"))))).isEmpty) => {
               val result = vale.postparsing.LocalLookupResult(evalRange(range), interner.intern(ConstructingMemberNameS(memberName)))
               (stackFrame0, result, noVariableUses, noVariableUses)
             }

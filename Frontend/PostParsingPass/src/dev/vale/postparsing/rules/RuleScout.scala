@@ -1,17 +1,23 @@
 package dev.vale.postparsing.rules
 
-import dev.vale.parsing.ast.{BoolTypePR, BuiltinCallPR, ComponentsPR, CoordListTypePR, CoordTypePR, EqualsPR, IRulexPR, ITypePR, IntPT, IntTypePR, KindTypePR, LocationTypePR, MutabilityTypePR, NameP, OrPR, OwnershipPT, OwnershipTypePR, PrototypeTypePR, RangeL, TemplexPR, TypedPR, VariabilityTypePR}
-import dev.vale.postparsing.{BooleanTemplataType, CodeRuneS, CompileErrorExceptionS, CoordTemplataType, IEnvironment, IRuneS, ITemplataType, ImplicitRuneS, IntegerTemplataType, KindTemplataType, LocationInDenizenBuilder, LocationTemplataType, MutabilityTemplataType, OwnershipTemplataType, PackTemplataType, PrototypeTemplataType, PostParser, UnknownRuleFunctionS, VariabilityTemplataType, rules}
-import dev.vale.{vassert, vassertOne, vcurious, vfail, vimpl}
+import dev.vale.lexing.RangeL
+import dev.vale.parsing.ast.{BoolTypePR, BuiltinCallPR, ComponentsPR, CoordListTypePR, CoordTypePR, EqualsPR, IRulexPR, ITypePR, IntPT, IntTypePR, KindTypePR, LocationTypePR, MutabilityTypePR, NameP, OrPR, OwnershipPT, OwnershipTypePR, PrototypeTypePR, TemplexPR, TypedPR, VariabilityTypePR}
+import dev.vale.postparsing.{BooleanTemplataType, CodeRuneS, CompileErrorExceptionS, CoordTemplataType, IEnvironment, IRuneS, ITemplataType, ImplicitRuneS, IntegerTemplataType, KindTemplataType, LocationInDenizenBuilder, LocationTemplataType, MutabilityTemplataType, OwnershipTemplataType, PackTemplataType, PostParser, PrototypeTemplataType, UnknownRuleFunctionS, VariabilityTemplataType, rules}
+import dev.vale.{Interner, StrI, vassert, vassertOne, vcurious, vfail, vimpl}
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
 import dev.vale.postparsing._
-import dev.vale.vimpl
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class RuleScout(templexScout: TemplexScout) {
+class RuleScout(interner: Interner, templexScout: TemplexScout) {
+  val IS_INTERFACE = interner.intern(StrI("isInterface"))
+  val IMPLEMENTS = interner.intern(StrI("implements"))
+  val REF_LIST_COMPOUND_MUTABILITY = interner.intern(StrI("refListCompoundMutability"))
+  val REFS = interner.intern(StrI("Refs"))
+  val ANY = interner.intern(StrI("any"))
+
   // Returns:
   // - new rules produced on the side while translating the given rules
   // - the translated versions of the given rules
@@ -123,70 +129,63 @@ class RuleScout(templexScout: TemplexScout) {
       }
       case TemplexPR(templex) => templexScout.translateTemplex(env, lidb.child(), builder, templex)
       case BuiltinCallPR(range, name, args) => {
-        name.str match {
-          case "isInterface" => {
-            vassert(args.length == 1)
-            val argRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, args.head)
+        if (name.str == IS_INTERFACE) {
+          vassert(args.length == 1)
+          val argRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, args.head)
 
-    //        val resultRune = ImplicitRuneS(lidb.child().consume())
-            builder += IsInterfaceSR(evalRange(range), argRune)
-    //        runeToExplicitType.put(resultRune, KindTemplataType)
-            runeToExplicitType.put(argRune.rune, KindTemplataType)
+  //        val resultRune = ImplicitRuneS(lidb.child().consume())
+          builder += IsInterfaceSR(evalRange(range), argRune)
+  //        runeToExplicitType.put(resultRune, KindTemplataType)
+          runeToExplicitType.put(argRune.rune, KindTemplataType)
 
-            rules.RuneUsage(evalRange(range), argRune.rune)
-          }
-          case "implements" => {
-            vassert(args.length == 2)
-            val Vector(structRule, interfaceRule) = args
-            val structRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, structRule)
-            runeToExplicitType.put(structRune.rune, CoordTemplataType)
-            val interfaceRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, interfaceRule)
-            runeToExplicitType.put(interfaceRune.rune, CoordTemplataType)
+          rules.RuneUsage(evalRange(range), argRune.rune)
+        } else if (name.str == IMPLEMENTS) {
+          vassert(args.length == 2)
+          val Vector(structRule, interfaceRule) = args
+          val structRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, structRule)
+          runeToExplicitType.put(structRune.rune, CoordTemplataType)
+          val interfaceRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, interfaceRule)
+          runeToExplicitType.put(interfaceRune.rune, CoordTemplataType)
 
-            builder += rules.CoordIsaSR(evalRange(range), structRune, interfaceRune)
+          builder += rules.CoordIsaSR(evalRange(range), structRune, interfaceRune)
 
-            rules.RuneUsage(evalRange(range), structRune.rune)
-          }
-          case "refListCompoundMutability" => {
-            vassert(args.length == 1)
-            val argRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, args.head)
+          rules.RuneUsage(evalRange(range), structRune.rune)
+        } else if (name.str == REF_LIST_COMPOUND_MUTABILITY) {
+          vassert(args.length == 1)
+          val argRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, args.head)
 
-            val resultRune = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
-            builder += RefListCompoundMutabilitySR(evalRange(range), resultRune, argRune)
-            runeToExplicitType.put(resultRune.rune, MutabilityTemplataType)
-            runeToExplicitType.put(argRune.rune, PackTemplataType(CoordTemplataType))
+          val resultRune = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
+          builder += RefListCompoundMutabilitySR(evalRange(range), resultRune, argRune)
+          runeToExplicitType.put(resultRune.rune, MutabilityTemplataType)
+          runeToExplicitType.put(argRune.rune, PackTemplataType(CoordTemplataType))
 
-            rules.RuneUsage(evalRange(range), resultRune.rune)
-          }
-          case "Refs" => {
-            val argRunes =
-              args.map(arg => {
-                translateRulex(env, lidb.child(), builder, runeToExplicitType, arg)
-              })
+          rules.RuneUsage(evalRange(range), resultRune.rune)
+        } else if (name.str == REFS) {
+          val argRunes =
+            args.map(arg => {
+              translateRulex(env, lidb.child(), builder, runeToExplicitType, arg)
+            })
 
-            val resultRune = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
-            builder += rules.PackSR(evalRange(range), resultRune, argRunes.toArray)
-            runeToExplicitType.put(resultRune.rune, PackTemplataType(CoordTemplataType))
+          val resultRune = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
+          builder += rules.PackSR(evalRange(range), resultRune, argRunes.toArray)
+          runeToExplicitType.put(resultRune.rune, PackTemplataType(CoordTemplataType))
 
-            rules.RuneUsage(evalRange(range), resultRune.rune)
-          }
-          case "any" => {
-            val literals: Array[ILiteralSL] =
-              args.map({
-                case TemplexPR(IntPT(_, i)) => IntLiteralSL(i)
-                case TemplexPR(OwnershipPT(_, i)) => OwnershipLiteralSL(i)
-                case other => vimpl(other)
-              }).toArray
+          rules.RuneUsage(evalRange(range), resultRune.rune)
+        } else if (name.str == ANY) {
+          val literals: Array[ILiteralSL] =
+            args.map({
+              case TemplexPR(IntPT(_, i)) => IntLiteralSL(i)
+              case TemplexPR(OwnershipPT(_, i)) => OwnershipLiteralSL(i)
+              case other => vimpl(other)
+            }).toArray
 
-            val resultRune = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
-            builder += rules.OneOfSR(evalRange(range), resultRune, literals)
-            runeToExplicitType.put(resultRune.rune, vassertOne(literals.map(_.getType()).distinct))
+          val resultRune = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
+          builder += rules.OneOfSR(evalRange(range), resultRune, literals)
+          runeToExplicitType.put(resultRune.rune, vassertOne(literals.map(_.getType()).distinct))
 
-            rules.RuneUsage(evalRange(range), resultRune.rune)
-          }
-          case other => {
-            throw new CompileErrorExceptionS(UnknownRuleFunctionS(evalRange(range), other))
-          }
+          rules.RuneUsage(evalRange(range), resultRune.rune)
+        } else {
+          throw new CompileErrorExceptionS(UnknownRuleFunctionS(evalRange(range), name.str.str))
         }
       }
     }

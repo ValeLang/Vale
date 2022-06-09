@@ -1,6 +1,6 @@
 package dev.vale.postparsing
 
-import dev.vale.{PackageCoordinate, RangeS, vassert, vcurious, vpass, vwat}
+import dev.vale.{PackageCoordinate, RangeS, StrI, vassert, vcurious, vpass, vwat}
 import dev.vale.parsing.ast.{IMacroInclusionP, MutabilityP, VariabilityP}
 import dev.vale.postparsing.patterns.{AbstractSP, AtomSP}
 import dev.vale.postparsing.rules.{IRulexSR, RuneUsage}
@@ -8,7 +8,6 @@ import dev.vale.parsing._
 import dev.vale.parsing.ast.VariabilityP
 import dev.vale.postparsing.patterns.{AbstractSP, AtomSP}
 import dev.vale.postparsing.rules._
-import dev.vale.RangeS
 
 import scala.collection.immutable.List
 
@@ -55,7 +54,7 @@ case class ExternS(packageCoord: PackageCoordinate) extends IFunctionAttributeS 
 }
 case object PureS extends IFunctionAttributeS
 case object SealedS extends ICitizenAttributeS
-case class BuiltinS(generatorName: String) extends IFunctionAttributeS with ICitizenAttributeS {
+case class BuiltinS(generatorName: StrI) extends IFunctionAttributeS with ICitizenAttributeS {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 }
 case class MacroCallS(range: RangeS, include: IMacroInclusionP, macroName: String) extends ICitizenAttributeS {

@@ -3,7 +3,7 @@ package dev.vale.postparsing
 import dev.vale.parsing.ast._
 import PostParser.{noDeclarations, noVariableUses}
 import dev.vale.lexing.RangeL
-import dev.vale.parsing.ast.{AugmentPE, BlockPE, BorrowP, ConsecutorPE, FunctionCallPE, IExpressionPE, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, LetPE, LookupNameP, LookupPE, NameP, PatternPP, RangeL, UseP}
+import dev.vale.parsing.ast.{AugmentPE, BlockPE, BorrowP, ConsecutorPE, FunctionCallPE, IExpressionPE, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, LetPE, LookupNameP, LookupPE, NameP, PatternPP, UseP}
 import dev.vale.{Interner, StrI, postparsing}
 
 class LoopPostParser(interner: Interner) {

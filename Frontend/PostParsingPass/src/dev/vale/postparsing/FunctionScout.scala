@@ -56,10 +56,10 @@ class FunctionScout(
     val codeLocation = PostParser.evalPos(file, range.begin)
     val name =
       (file, originalCodeName) match {
-        case (FileCoordinate(PackageCoordinate("v", Vector("builtins", "arrays")), "arrays.vale"), "__free_replaced") => {
+        case (FileCoordinate(PackageCoordinate(StrI("v"), Vector(StrI("builtins"), StrI("arrays"))), "arrays.vale"), StrI("__free_replaced")) => {
           interner.intern(postparsing.FreeDeclarationNameS(PostParser.evalPos(file, originalNameRange.begin)))
         }
-        case (FileCoordinate(PackageCoordinate("", Vector()), "arrays.vale"), "__free_replaced") => {
+        case (FileCoordinate(PackageCoordinate(StrI(""), Vector()), "arrays.vale"), StrI("__free_replaced")) => {
           interner.intern(FreeDeclarationNameS(PostParser.evalPos(file, originalNameRange.begin)))
         }
         case (_, n) => interner.intern(postparsing.FunctionNameS(n, codeLocation))
@@ -124,7 +124,7 @@ class FunctionScout(
           // If nothing's present, assume void
           val rangeS = PostParser.evalRange(file, retRange)
           val rune = rules.RuneUsage(rangeS, ImplicitRuneS(lidb.child().consume()))
-          ruleBuilder += LookupSR(rangeS, rune, interner.intern(CodeNameS("void")))
+          ruleBuilder += LookupSR(rangeS, rune, interner.intern(CodeNameS(StrI("void"))))
           Some(rune)
         }
         case (Some(_), None) => None // Infer the return
@@ -152,7 +152,7 @@ class FunctionScout(
         }
         ExternBodyS
       } else if (attributes.collectFirst({ case BuiltinAttributeP(_, _) => }).nonEmpty) {
-        GeneratedBodyS(attributes.collectFirst({ case BuiltinAttributeP(_, generatorId) => generatorId}).head.str)
+        GeneratedBodyS(attributes.collectFirst({ case BuiltinAttributeP(_, generatorId) => generatorId}).head.str.str)
       } else {
         val body =
           maybeBody0 match {
@@ -543,7 +543,7 @@ class FunctionScout(
         case (None, None) => {
           // If nothing's present, assume void
           val rune = rules.RuneUsage(retRangeS, ImplicitRuneS(lidb.child().consume()))
-          ruleBuilder += rules.LookupSR(retRangeS, rune, interner.intern(CodeNameS("void")))
+          ruleBuilder += rules.LookupSR(retRangeS, rune, interner.intern(CodeNameS(interner.intern(StrI("void")))))
           Some(rune)
         }
         case (Some(_), None) => {

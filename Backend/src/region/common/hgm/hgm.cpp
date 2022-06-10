@@ -597,19 +597,19 @@ void HybridGenerationalMemory::deallocate(
     LLVMBuilderRef builder,
     Reference* sourceRefMT,
     Ref sourceRef) {
-//  // Increment the generation since we're freeing it.
-//  auto sourceRefLE =
-//      globalState->getRegion(sourceRefMT)
-//          ->checkValidReference(FL(), functionState, builder, sourceRefMT, sourceRef);
-//  auto controlBlockPtr =
-//      kindStructs->getConcreteControlBlockPtr(
-//          FL(), functionState, builder, sourceRefMT,
-//          kindStructs->makeWrapperPtr(
-//              FL(), functionState, builder, sourceRefMT, sourceRefLE));
-//  int genMemberIndex =
-//      kindStructs->getControlBlock(sourceRefMT->kind)->getMemberIndex(ControlBlockMember::GENERATION_32B);
-//  auto genPtrLE = LLVMBuildStructGEP(builder, controlBlockPtr.refLE, genMemberIndex, "genPtr");
-//  adjustCounter(globalState, builder, globalState->metalCache->i32, genPtrLE, 1);
+  // Increment the generation since we're freeing it.
+  auto sourceRefLE =
+      globalState->getRegion(sourceRefMT)
+          ->checkValidReference(FL(), functionState, builder, true, sourceRefMT, sourceRef);
+  auto controlBlockPtr =
+      kindStructs->getConcreteControlBlockPtr(
+          FL(), functionState, builder, sourceRefMT,
+          kindStructs->makeWrapperPtr(
+              FL(), functionState, builder, sourceRefMT, sourceRefLE));
+  int genMemberIndex =
+      kindStructs->getControlBlock(sourceRefMT->kind)->getMemberIndex(ControlBlockMember::GENERATION_32B);
+  auto genPtrLE = LLVMBuildStructGEP(builder, controlBlockPtr.refLE, genMemberIndex, "genPtr");
+  adjustCounter(globalState, builder, globalState->metalCache->i32, genPtrLE, 1);
 
   innerDeallocate(from, globalState, functionState, kindStructs, builder, sourceRefMT, sourceRef);
 }

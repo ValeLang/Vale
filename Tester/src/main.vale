@@ -20,10 +20,14 @@ struct TestSuite {
 struct TestInstance {
   test_name str;
   region str;
-  expected_return_code int;
   test_build_dir Path;
   process Subprocess;
-  runs_args List<List<str>>;
+  runs_args List<Step>;
+}
+
+struct Step {
+  args List<str>;
+  expected_return_code int;
 }
 
 func matches_filters(name str, filters &List<str>) bool {
@@ -48,8 +52,8 @@ exported func main() int {
   all_args = all_args_list.toImmArray();
 
 
-  driver_path = Path(all_args_list.get(0))&.resolve();
-  cwd = driver_path.directory();
+  tester_path = Path(all_args_list.get(0))&.resolve();
+  cwd = tester_path.directory();
   compiler_dir = cwd.clone();
 
 
@@ -186,8 +190,10 @@ exported func main() int {
 
   test_instances = List<TestInstance>();
 
-  if (include_regions.exists({ _ == "assist" })) {
-    region = "assist";
+  if (include_regions.exists({ _ == "resilient-v3" })) {
+    region = "resilient-v3";
+    suite.StartReplayTest(42, 84, "simpleexternreturn", samples_path./("programs/externs/simpleexternreturn"), &List<str>(), region);
+    suite.StartReplayTest(42, 84, "simpleexternparam", samples_path./("programs/externs/simpleexternparam"), &List<str>(), region);
     suite.StartTest(7, "addret", samples_path./("programs/addret.vale"), &List<str>(), region);
     suite.StartTest(42, "add64ret", samples_path./("programs/add64ret.vale"), &List<str>(), region);
     suite.StartTest(42, "comparei64", samples_path./("programs/comparei64.vale"), &List<str>(), region);
@@ -197,19 +203,21 @@ exported func main() int {
     suite.StartTest(42, "concatstrfloat", samples_path./("programs/concatstrfloat.vale"), &List<str>(), region);
     suite.StartTest(11, "strlenextern", samples_path./("programs/externs/strlenextern"), &List<str>(), region);
     suite.StartTest(42, "voidreturnexport", samples_path./("programs/externs/voidreturnexport"), &List<str>(), region);
-    suite.StartTest(42, "simpleexternreturn", samples_path./("programs/externs/simpleexternreturn"), &List<str>(), region);
-    suite.StartTest(42, "simpleexternparam", samples_path./("programs/externs/simpleexternparam"), &List<str>(), region);
-    suite.StartTest(42, "structimmparamextern", samples_path./("programs/externs/structimmparamextern"), &List<str>(), region);
-    suite.StartTest(42, "structimmparamexport", samples_path./("programs/externs/structimmparamexport"), &List<str>(), region);
-    suite.StartTest(42, "structimmparamdeepextern", samples_path./("programs/externs/structimmparamdeepextern"), &List<str>(), region);
-    suite.StartTest(42, "structimmparamdeepexport", samples_path./("programs/externs/structimmparamdeepexport"), &List<str>(), region);
+    suite.StartReplayTest(42, 84, "structimmreturnextern", samples_path./("programs/externs/structimmreturnextern"), &List<str>(), region);
+    suite.StartReplayTest(42, 84, "structimmreturnexport", samples_path./("programs/externs/structimmreturnexport"), &List<str>(), region);
+    suite.StartReplayTest(42, 84, "structimmparamextern", samples_path./("programs/externs/structimmparamextern"), &List<str>(), region);
+    suite.StartReplayTest(42, 84, "structimmparamexport", samples_path./("programs/externs/structimmparamexport"), &List<str>(), region);
+    suite.StartReplayTest(42, 84, "structimmparamdeepextern", samples_path./("programs/externs/structimmparamdeepextern"), &List<str>(), region);
+    suite.StartReplayTest(42, 84, "structimmparamdeepexport", samples_path./("programs/externs/structimmparamdeepexport"), &List<str>(), region);
     suite.StartTest(42, "interfaceimmparamextern", samples_path./("programs/externs/interfaceimmparamextern"), &List<str>(), region);
     suite.StartTest(42, "interfaceimmparamexport", samples_path./("programs/externs/interfaceimmparamexport"), &List<str>(), region);
     suite.StartTest(42, "interfaceimmparamdeepextern", samples_path./("programs/externs/interfaceimmparamdeepextern"), &List<str>(), region);
     suite.StartTest(42, "interfaceimmparamdeepexport", samples_path./("programs/externs/interfaceimmparamdeepexport"), &List<str>(), region);
+    suite.StartTest(42, "interfaceimmreturnextern", samples_path./("programs/externs/interfaceimmreturnextern"), &List<str>(), region);
+    suite.StartTest(42, "interfaceimmreturnexport", samples_path./("programs/externs/interfaceimmreturnexport"), &List<str>(), region);
     suite.StartTest(42, "rsaimmreturnextern", samples_path./("programs/externs/rsaimmreturnextern"), &List<str>(), region);
     suite.StartTest(42, "rsaimmreturnexport", samples_path./("programs/externs/rsaimmreturnexport"), &List<str>(), region);
-    suite.StartTest(10, "rsaimmparamextern", samples_path./("programs/externs/rsaimmparamextern"), &List<str>(), region);
+    suite.StartReplayTest(10, 20, "rsaimmparamextern", samples_path./("programs/externs/rsaimmparamextern"), &List<str>(), region);
     suite.StartTest(10, "rsaimmparamexport", samples_path./("programs/externs/rsaimmparamexport"), &List<str>(), region);
     suite.StartTest(20, "rsaimmparamdeepextern", samples_path./("programs/externs/rsaimmparamdeepextern"), &List<str>(), region);
     suite.StartTest(42, "rsaimmparamdeepexport", samples_path./("programs/externs/rsaimmparamdeepexport"), &List<str>(), region);
@@ -238,13 +246,12 @@ exported func main() int {
     suite.StartTest(7, "weakFromLocalCRefInterface", samples_path./("programs/weaks/weakFromLocalCRefInterface.vale"), &List<str>(), region);
     suite.StartTest(7, "weakFromCRefInterface", samples_path./("programs/weaks/weakFromCRefInterface.vale"), &List<str>(), region);
     suite.StartTest(42, "weakSelfMethodCallWhileLive", samples_path./("programs/weaks/callWeakSelfMethodWhileLive.vale"), &List<str>(), region);
-    suite.StartTest(0, "weakSelfMethodCallAfterDrop", samples_path./("programs/weaks/callWeakSelfMethodAfterDrop.vale"), &List<str>(), region);
+    suite.StartTest(42, "weakSelfMethodCallAfterDrop", samples_path./("programs/weaks/callWeakSelfMethodAfterDrop.vale"), &List<str>(), region);
   }
 
   if (include_regions.exists({ _ == "resilient-v3" })) {
     region = "resilient-v3";
     suite.StartTest(116, "kldc", samples_path./("programs/structs/deadmutstruct.vale"), &List([#]["--override_known_live_true", "true"]), region);
-    suite.StartReplayTest(42, "appendandread", samples_path./("programs/externs/appendandread"), &List<str>().add("--enable_replaying").add("true"), region);
   }
 
   if (include_regions.exists({ _ == "resilient-v4" })) {
@@ -372,7 +379,7 @@ func PrintTestFailure(build_result &ExecResult, test_name str, region str) {
 func FinishTests(suite &TestSuite, until_this_many_left int) {
   while (suite.test_instances.len() > until_this_many_left) {
     build_instance = suite.test_instances.remove(0);
-    [test_name, region, expected_return_code, test_build_dir, build_process, runs_args] = build_instance;
+    [test_name, region, test_build_dir, build_process, runs] = build_instance;
 
     build_result = (build_process).capture_and_join();
     if (build_result.return_code != 0) {
@@ -383,12 +390,13 @@ func FinishTests(suite &TestSuite, until_this_many_left int) {
       run_program = test_build_dir./(program_name).str();
 
       success = true;
-      foreach run_args in &runs_args {
+      foreach run in &runs {
+        [args, expected_return_code] = run;
         run_process =
             SubprocessBuilder()
             .FromDir(test_build_dir.str())
             .WithProgram(run_program)
-            .WithArgs(&run_args)
+            .WithArgs(&args)
             .Build()
             .expect();
         if (suite.verbose) {
@@ -452,6 +460,7 @@ Subprocess {
   build_args = List<str>();
   suite.common_build_args.each((arg) => { build_args.add(arg); });
   build_args.add("vtest=" + vale_code_path.str());
+  build_args.add("vtest=" + suite.backend_tests_dir./("testbuiltins.c").str());
   build_args.add("--output_dir");
   build_args.add(test_build_dir.str());
   build_args.add("--region_override");
@@ -460,6 +469,8 @@ Subprocess {
   build_args.add("true");
   build_args.add("--flares");
   build_args.add("true");
+  //build_args.add("--asan");
+  //build_args.add("true");
   //build_args.add("--census");
   //build_args.add("true");
   //build_args.add("--enable_side_calling");
@@ -507,7 +518,7 @@ func StartTest(
             test_name, vale_input, &extra_build_flags, &test_build_dir, region);
     suite.test_instances.add(
         TestInstance(
-            test_name, region, expected_return_code, test_build_dir, build_process, List<List<str>>().add(List<str>())));
+            test_name, region, test_build_dir, build_process, List<Step>().add(Step(List<str>(), expected_return_code))));
   } else {
     drop(vale_input);
   }
@@ -515,10 +526,11 @@ func StartTest(
 
 func StartReplayTest(
     suite &TestSuite,
-    expected_return_code int,
+    first_expected_return_code int,
+    repeated_expected_return_code int,
     test_name str,
     vale_input Path,
-    extra_build_flags &List<str>,
+    specific_extra_build_flags &List<str>,
     region str) {
   if (suite.verbose) {
     println("Considering test {test_name}...");
@@ -526,6 +538,13 @@ func StartReplayTest(
 
   if (matches_filters(test_name, &suite.test_filters)) {
     suite.FinishTests(suite.max_concurrent_tests - 1);
+
+    extra_build_flags = List<str>();
+    foreach flag in specific_extra_build_flags {
+      extra_build_flags.add(flag);
+    }
+    extra_build_flags.add("--enable_replaying");
+    extra_build_flags.add("true");
 
     test_build_dir = suite.cwd./("testbuild/{test_name}_{region}");
     build_process =
@@ -535,12 +554,13 @@ func StartReplayTest(
         TestInstance(
             test_name,
             region,
-            expected_return_code,
             test_build_dir,
             build_process,
-            List<List<str>>()
-                .add(List<str>().add("--vale_record").add("recording.bin"))
-                .add(List<str>().add("--vale_replay").add("recording.bin"))));
+            List<Step>()
+                // See AASETR for why we run the test three times.
+                .add(Step(List<str>(), first_expected_return_code))
+                .add(Step(List<str>().add("--vale_record").add("recording.bin"), repeated_expected_return_code))
+                .add(Step(List<str>().add("--vale_replay").add("recording.bin"), repeated_expected_return_code))));
   } else {
     drop(vale_input);
   }

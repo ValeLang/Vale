@@ -223,20 +223,15 @@ WrapperPtrLE ResilientV4::lockWeakRef(
       auto objPtrLE = weakRefLE;
       auto weakFatPtrLE =
           checkValidReference(
-              FL(), functionState, builder, refM, weakRefLE);
+              FL(), functionState, builder, false, refM, weakRefLE);
       return kindStructs.makeWrapperPtr(FL(), functionState, builder, refM, weakFatPtrLE);
     }
     case Ownership::BORROW:
     case Ownership::WEAK: {
-      auto weakFatPtrLE =
-          kindStructs.makeWeakFatPtr(
-              refM,
-              checkValidReference(
-                  FL(), functionState, builder, refM, weakRefLE));
       return kindStructs.makeWrapperPtr(
           FL(), functionState, builder, refM,
           hgmWeaks.lockGenFatPtr(
-              from, functionState, builder, refM, weakFatPtrLE, weakRefKnownLive));
+              from, functionState, builder, refM, weakRefLE, weakRefKnownLive));
     }
     default:
       assert(false);
@@ -456,7 +451,7 @@ void ResilientV4::storeMember(
     Ref newMemberRef) {
   auto newMemberLE =
       globalState->getRegion(newMemberRefMT)->checkValidReference(
-          FL(), functionState, builder, newMemberRefMT, newMemberRef);
+          FL(), functionState, builder, false, newMemberRefMT, newMemberRef);
   switch (structRefMT->ownership) {
     case Ownership::OWN:
     case Ownership::SHARE: {
@@ -554,6 +549,7 @@ LLVMValueRef ResilientV4::checkValidReference(
     AreaAndFileAndLine checkerAFL,
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    bool expectLive,
     Reference *refM,
     Ref ref) {
   Reference *actualRefM = nullptr;
@@ -569,7 +565,7 @@ LLVMValueRef ResilientV4::checkValidReference(
     } else if (refM->ownership == Ownership::SHARE) {
       assert(false);
     } else {
-      hgmWeaks.buildCheckWeakRef(checkerAFL, functionState, builder, refM, ref);
+      hgmWeaks.buildCheckWeakRef(checkerAFL, functionState, builder, expectLive, refM, ref);
     }
   }
   return refLE;
@@ -621,7 +617,7 @@ Ref ResilientV4::upgradeLoadResultToRefWithTargetOwnership(
   } else if (sourceOwnership == Ownership::BORROW || sourceOwnership == Ownership::WEAK) {
     assert(targetOwnership == Ownership::BORROW || targetOwnership == Ownership::WEAK);
 
-    return transmutePtr(globalState, functionState, builder, sourceType, targetType, sourceRef);
+    return transmutePtr(globalState, functionState, builder, false, sourceType, targetType, sourceRef);
   } else {
     assert(false);
   }
@@ -765,7 +761,7 @@ void ResilientV4::deallocate(
     LLVMBuilderRef builder,
     Reference *refMT,
     Ref ref) {
-  auto sourceRefLE = checkValidReference(FL(), functionState, builder, refMT, ref);
+  auto sourceRefLE = checkValidReference(FL(), functionState, builder, true, refMT, ref);
   auto controlBlockPtrLE = kindStructs.getControlBlockPtr(FL(), functionState, builder, sourceRefLE, refMT);
   auto sourceWrapperPtrLE = kindStructs.makeWrapperPtr(from, functionState, builder, refMT, sourceRefLE);
   auto sourceContentsPtrLE = kindStructs.getStructContentsPtr(builder, refMT->kind, sourceWrapperPtrLE);
@@ -832,8 +828,7 @@ Ref ResilientV4::loadMember(
     assert(false);
   } else {
     if (structRefMT->location == Location::INLINE) {
-      auto structRefLE = checkValidReference(FL(), functionState, builder,
-          structRefMT, structRef);
+      auto structRefLE = checkValidReference(FL(), functionState, builder, false, structRefMT, structRef);
       return wrap(globalState->getRegion(expectedMemberType), expectedMemberType,
           LLVMBuildExtractValue(
               builder, structRefLE, memberIndex, memberName.c_str()));
@@ -872,7 +867,7 @@ void ResilientV4::checkInlineStructType(
     LLVMBuilderRef builder,
     Reference *refMT,
     Ref ref) {
-  auto argLE = checkValidReference(FL(), functionState, builder, refMT, ref);
+  auto argLE = checkValidReference(FL(), functionState, builder, false, refMT, ref);
   auto structKind = dynamic_cast<StructKind *>(refMT->kind);
   assert(structKind);
   assert(LLVMTypeOf(argLE) == kindStructs.getStructInnerStruct(structKind));
@@ -1008,7 +1003,8 @@ void ResilientV4::initializeElementInSSA(
   auto arrayWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, ssaRefMT,
-          globalState->getRegion(ssaRefMT)->checkValidReference(FL(), functionState, builder, ssaRefMT, arrayRef));
+          globalState->getRegion(ssaRefMT)
+              ->checkValidReference(FL(), functionState, builder, true, ssaRefMT, arrayRef));
   auto sizeRef = globalState->constI32(ssaDef->size);
   auto arrayElementsPtrLE = getStaticSizedArrayContentsPtr(builder, arrayWrapperPtrLE);
   ::initializeElementWithoutIncrementSize(
@@ -1103,12 +1099,12 @@ void ResilientV4::storeAndTether(
     assert(false);
   }
   auto wrapperStructPtrLT = LLVMPointerType(wrapperStructLT, 0);
-  auto maybeAliveRefLE = checkValidReference(FL(), functionState, builder, local->type, refToStore);
-  auto weakFatPtrLE = kindStructs.makeWeakFatPtr(local->type, maybeAliveRefLE);
-  auto innerRefLE = fatWeaks.getInnerRefFromWeakRef(functionState, builder, local->type, weakFatPtrLE);
+
+  auto innerRefLE =
+      hgmWeaks.lockGenFatPtr(FL(), functionState, builder, local->type, refToStore, knownLive);
+
   auto wrapperPtrLE = kindStructs.makeWrapperPtr(FL(), functionState, builder, local->type, innerRefLE);
 
-  hgmWeaks.lockGenFatPtr(FL(), functionState, builder, local->type, weakFatPtrLE, knownLive);
 //  auto isAliveLE =
 //      hgmWeaks.getIsAliveFromWeakFatPtr(functionState, builder, local->type, weakFatPtrLE, knownLive);
 //  // If it's alive, refLE will point to the object. Dereferencing it is fine.
@@ -1175,7 +1171,7 @@ LLVMValueRef ResilientV4::stackify(
     case Ownership::OWN:
     case Ownership::SHARE:
     case Ownership::WEAK: {
-      auto refLE = checkValidReference(FL(), functionState, builder, local->type, refToStore);
+      auto refLE = checkValidReference(FL(), functionState, builder, false, local->type, refToStore);
       return makeBackendLocal(functionState, builder, refTypeLT, local->id->maybeName.c_str(), refLE);
     }
     case Ownership::BORROW: {
@@ -1186,7 +1182,7 @@ LLVMValueRef ResilientV4::stackify(
         storeAndTether(functionState, builder, local, refToStore, knownLive, localAddr);
         return localAddr;
       } else {
-        auto refLE = checkValidReference(FL(), functionState, builder, local->type, refToStore);
+        auto refLE = checkValidReference(FL(), functionState, builder, false, local->type, refToStore);
         return makeBackendLocal(functionState, builder, refTypeLT, local->id->maybeName.c_str(), refLE);
       }
     }
@@ -1210,7 +1206,7 @@ Ref ResilientV4::loadLocal(FunctionState* functionState, LLVMBuilderRef builder,
         auto localStructValueLE = LLVMBuildLoad(builder, localAddr, (local->id->maybeName + "__andWasAlive").c_str());
         auto sourceRefLE = LLVMBuildExtractValue(builder, localStructValueLE, 0, local->id->maybeName.c_str());
         auto sourceRef = wrap(this, local->type, sourceRefLE);
-        checkValidReference(FL(), functionState, builder, local->type, sourceRef);
+        checkValidReference(FL(), functionState, builder, false, local->type, sourceRef);
         buildFlare(FL(), globalState, functionState, builder);
         return sourceRef;
       } else {
@@ -1257,7 +1253,7 @@ Ref ResilientV4::localStore(
     case Ownership::OWN:
     case Ownership::SHARE:
     case Ownership::WEAK: {
-      auto refLE = checkValidReference(FL(), functionState, builder, local->type, refToStore);
+      auto refLE = checkValidReference(FL(), functionState, builder, false, local->type, refToStore);
       LLVMBuildStore(builder, refLE, localAddr);
       break;
     }
@@ -1265,7 +1261,7 @@ Ref ResilientV4::localStore(
       if (local->keepAlive) {
         storeAndTether(functionState, builder, local, refToStore, knownLive, localAddr);
       } else {
-        auto refLE = checkValidReference(FL(), functionState, builder, local->type, refToStore);
+        auto refLE = checkValidReference(FL(), functionState, builder, false, local->type, refToStore);
         LLVMBuildStore(builder, refLE, localAddr);
       }
       break;

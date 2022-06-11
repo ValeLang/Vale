@@ -86,7 +86,7 @@ Prototype* makeValeMainFunction(
         auto userMainResultLE =
             globalState->getRegion(userMainFunctionPrototype->returnType)
                 ->checkValidReference(
-                    FL(), functionState, entryBuilder, userMainFunctionPrototype->returnType, userMainResultRef);
+                    FL(), functionState, entryBuilder, true, userMainFunctionPrototype->returnType, userMainResultRef);
 
         buildFlare(FL(), globalState, functionState, entryBuilder);
         buildCallV(globalState, functionState, entryBuilder, mainCleanupFunctionPrototype, {});

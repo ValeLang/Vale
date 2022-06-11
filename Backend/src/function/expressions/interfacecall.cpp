@@ -31,7 +31,7 @@ Ref translateInterfaceCall(
 
     auto argLE = translateExpression(globalState, functionState, blockState, builder, call->argExprs[i]);
     globalState->getRegion(call->functionType->params[i])
-        ->checkValidReference(FL(), functionState, builder, call->functionType->params[i], argLE);
+        ->checkValidReference(FL(), functionState, builder, false, call->functionType->params[i], argLE);
     argsLE.push_back(argLE);
 
     buildFlare(FL(), globalState, functionState, builder);
@@ -61,7 +61,7 @@ Ref translateInterfaceCall(
   buildFlare(FL(), globalState, functionState, builder);
 
   globalState->getRegion(call->functionType->returnType)
-      ->checkValidReference(FL(), functionState, builder, call->functionType->returnType, resultLE);
+      ->checkValidReference(FL(), functionState, builder, false, call->functionType->returnType, resultLE);
 
   if (call->functionType->returnType->kind == globalState->metalCache->never) {
     return wrap(

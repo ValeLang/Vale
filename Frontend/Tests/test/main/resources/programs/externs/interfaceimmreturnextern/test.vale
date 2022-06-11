@@ -1,4 +1,4 @@
-exported interface IShip imm { }
+exported sealed interface IShip imm { }
 abstract func getFuel(virtual ship &IShip) int;
 
 exported struct Firefly imm { fuel int; }

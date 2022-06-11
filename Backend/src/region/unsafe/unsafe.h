@@ -149,6 +149,7 @@ public:
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      bool expectLive,
       Reference* refM,
       Ref ref) override;
 
@@ -398,7 +399,7 @@ public:
             FL(), functionState, builder,
             globalState->metalCache->strRef,
             checkValidReference(
-                FL(), functionState, builder, globalState->metalCache->strRef, ref));
+                FL(), functionState, builder, true, globalState->metalCache->strRef, ref));
     return kindStructs.getStringBytesPtr(functionState, builder, strWrapperPtrLE);
   }
   LLVMValueRef getStringLen(
@@ -411,7 +412,7 @@ public:
             FL(), functionState, builder,
             globalState->metalCache->strRef,
             checkValidReference(
-                FL(), functionState, builder, globalState->metalCache->strRef, ref));
+                FL(), functionState, builder, true, globalState->metalCache->strRef, ref));
     return kindStructs.getStringLen(functionState, builder, strWrapperPtrLE);
   }
 //  LLVMTypeRef getWeakRefHeaderStruct(Kind* kind) override {

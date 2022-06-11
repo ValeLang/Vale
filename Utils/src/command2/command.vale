@@ -211,7 +211,7 @@ struct ExecResult {
 
 func expect_or<F>(result &ExecResult, func F)
 str
-where func(&F, &ExecResult)void
+where Prot["__call", Refs(&F, &ExecResult), void]
 {
   if result.return_code != 0 {
     func(result);

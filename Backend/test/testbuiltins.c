@@ -10,6 +10,7 @@
 #include <sys\stat.h>
 #endif
 
+#ifdef _WIN32
 void myInvalidParameterHandler(const wchar_t* expression,
                                const wchar_t* function,
                                const wchar_t* file,
@@ -21,14 +22,17 @@ void myInvalidParameterHandler(const wchar_t* expression,
   wprintf(L"Expression: %s\n", expression);
   abort();
 }
+#endif
 
 int64_t incrementIntFile(const char* filename) {
   printf("In increment %d\n", __LINE__);
   printf("Filename: %s\n", filename);
 
+#ifdef _WIN32
   _invalid_parameter_handler oldHandler, newHandler;
   newHandler = myInvalidParameterHandler;
   oldHandler = _set_invalid_parameter_handler(newHandler);
+#endif
 
   printf("In increment %d\n", __LINE__);
 
@@ -95,7 +99,7 @@ int64_t incrementIntFile(const char* filename) {
 #ifdef _WIN32
   _set_invalid_parameter_handler(oldHandler);
 #endif
-  
+
   printf("In increment %d\n", __LINE__);
 
   return num;

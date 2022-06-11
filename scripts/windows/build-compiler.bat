@@ -81,6 +81,6 @@ echo Compiling Tester...
 call build.bat %2 || echo "Tester build failed, aborting." && exit /b 1
 
 echo Running Tester...
-build\testvalec --frontend_path .\BuiltValeCompiler\Frontend.jar --backend_path .\BuiltValeCompiler\backend.exe --builtins_dir .\BuiltValeCompiler\builtins --valec_path .\BuiltValeCompiler\valec.exe --backend_tests_dir ..\Backend\test --frontend_tests_dir ..\Frontend --concurrent 6 @assist || echo "Tests failed, aborting." && exit /b 1
+build\testvalec --frontend_path .\BuiltValeCompiler\Frontend.jar --backend_path .\BuiltValeCompiler\backend.exe --builtins_dir .\BuiltValeCompiler\builtins --valec_path .\BuiltValeCompiler\valec.exe --backend_tests_dir ..\Backend\test --frontend_tests_dir ..\Frontend --concurrent 6 @resilient-v3 || echo "Tests failed, aborting." && exit /b 1
 
 cd ..

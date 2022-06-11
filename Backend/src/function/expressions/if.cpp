@@ -42,7 +42,7 @@ Ref translateIf(
           });
   globalState->getRegion(iff->commonSupertype)
       ->checkValidReference(
-          FL(), functionState, builder, iff->commonSupertype, resultLE);
+          FL(), functionState, builder, false, iff->commonSupertype, resultLE);
 
 
   bool thenContinues = iff->thenResultType->kind != globalState->metalCache->never;

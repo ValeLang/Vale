@@ -124,6 +124,7 @@ public:
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      bool expectLive,
       Reference* weakRefM,
       Ref weakRef);
 

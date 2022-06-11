@@ -21,7 +21,7 @@ Ref translateDestructure(
       translateExpression(
           globalState, functionState, blockState, builder, destructureM->structExpr);
   globalState->getRegion(destructureM->structType)->checkValidReference(FL(),
-      functionState, builder, destructureM->structType, structRef);
+      functionState, builder, true, destructureM->structType, structRef);
 
   buildFlare(FL(), globalState, functionState, builder);
 

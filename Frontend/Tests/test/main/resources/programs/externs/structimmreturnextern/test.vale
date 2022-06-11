@@ -1,0 +1,12 @@
+
+exported struct Flamscrankle imm {
+  a int;
+  c int;
+}
+
+extern func cMakeStruct() Flamscrankle;
+
+exported func main() int {
+  flam = cMakeStruct();
+  return flam.a + flam.c;
+}

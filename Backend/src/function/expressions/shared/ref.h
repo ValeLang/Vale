@@ -87,6 +87,7 @@ LLVMValueRef checkValidInternalReference(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    bool expectLive,
     Reference* refM,
     Ref ref);
 

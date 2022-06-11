@@ -279,7 +279,7 @@ Ref buildInterfaceCall(
     argsLE.push_back(
         globalState->getRegion(prototype->params[i])
             ->checkValidReference(FL(),
-                functionState, builder, prototype->params[i], argRefs[i]));
+                functionState, builder, false, prototype->params[i], argRefs[i]));
   }
   argsLE[virtualParamIndex] = newVirtualArgLE;
 
@@ -368,7 +368,7 @@ Ref buildCallV(
     argsLE.push_back(
         globalState->getRegion(prototype->params[i])
             ->checkValidReference(FL(),
-                functionState, builder, prototype->params[i], argRefs[i]));
+                functionState, builder, false, prototype->params[i], argRefs[i]));
   }
 
   buildFlare(FL(), globalState, functionState, builder, "Doing call");
@@ -378,7 +378,8 @@ Ref buildCallV(
   buildFlare(FL(), globalState, functionState, builder, "Done with call");
 
   auto resultRef = wrap(globalState->getRegion(prototype->returnType), prototype->returnType, resultLE);
-  globalState->getRegion(prototype->returnType)->checkValidReference(FL(), functionState, builder, prototype->returnType, resultRef);
+  globalState->getRegion(prototype->returnType)
+      ->checkValidReference(FL(), functionState, builder, false, prototype->returnType, resultRef);
 
   if (prototype->returnType->kind == globalState->metalCache->never) {
     buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);

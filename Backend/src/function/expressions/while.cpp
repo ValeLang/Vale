@@ -23,7 +23,7 @@ Ref translateWhile(
             translateExpression(
                 globalState, functionState, &childBlockState, bodyBuilder, whiile->bodyExpr);
         globalState->getRegion(globalState->metalCache->voidRef)
-            ->checkValidReference(FL(), functionState, bodyBuilder, globalState->metalCache->voidRef, resultRef);
+            ->checkValidReference(FL(), functionState, bodyBuilder, false, globalState->metalCache->voidRef, resultRef);
       });
   // Nobody should use a result of a while, so we'll just return a Never.
   return makeVoidRef(globalState);

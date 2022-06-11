@@ -808,13 +808,16 @@ void Determinism::buildWriteValueToFile(
   if (dynamic_cast<Int*>(sourceRefMT->kind)) {
     auto intAsI64LE = LLVMBuildZExt(builder, sourceRefLE, int64LT, "boolAsI64");
     writeI64ToFile(functionState, builder, intAsI64LE);
+  } else if (dynamic_cast<Void*>(sourceRefMT->kind)) {
   } else if (dynamic_cast<Bool*>(sourceRefMT->kind)) {
     auto boolAsI64LE = LLVMBuildZExt(builder, sourceRefLE, int64LT, "boolAsI64");
     writeI64ToFile(functionState, builder, boolAsI64LE);
   } else if (dynamic_cast<Float*>(sourceRefMT->kind)) {
     auto floatAsI64LE = LLVMBuildBitCast(builder, sourceRefLE, floatLT, "floatFromRecording");
     writeI64ToFile(functionState, builder, floatAsI64LE);
-  } else if (dynamic_cast<StructKind*>(sourceRefMT->kind)) {
+  } else if (dynamic_cast<StructKind*>(sourceRefMT->kind) ||
+             dynamic_cast<StaticSizedArrayT*>(sourceRefMT->kind) ||
+             dynamic_cast<RuntimeSizedArrayT*>(sourceRefMT->kind)) {
     buildFlare(FL(), globalState, functionState, builder, "Entering buildWriteValueToFile for struct");
 
     auto valeRegionInstanceRef =
@@ -826,18 +829,13 @@ void Determinism::buildWriteValueToFile(
         globalState->linearRegion->createRegionInstanceLocal(
             functionState, builder, useOffsetsLE, fileOffsetLE);
 
-//    auto[unusedHostRefLE, sizeI32LE] =
-//    sendValeObjectIntoHostAndDealias(
-//        globalState, functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef,
-//        sourceRefMT, hostRefMT, sourceRef);
-
-    auto [hostArgRef, sizeRef] =
+    auto [unused, sizeRef] =
         globalState->getRegion(hostRefMT)
             ->receiveUnencryptedAlienReference(
                 functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef, sourceRefMT, hostRefMT, sourceRef);
-    auto hostArgLE =
-        globalState->getRegion(hostRefMT)
-            ->checkValidReference(FL(), functionState, builder, true, hostRefMT, hostArgRef);
+//    auto hostArgLE =
+//        globalState->getRegion(hostRefMT)
+//            ->checkValidReference(FL(), functionState, builder, true, hostRefMT, hostArgRef);
     auto sizeI32LE =
         globalState->getRegion(hostRefMT)
             ->checkValidReference(FL(), functionState, builder, true, globalState->metalCache->i32Ref, sizeRef);
@@ -911,13 +909,17 @@ Ref Determinism::buildReadValueFromFile(
   if (dynamic_cast<Int*>(targetRefMT->kind)) {
     auto intLE = LLVMBuildTrunc(builder, readI64FromFile(functionState, builder), int32LT, "intFromRecording");
     return wrap(globalState->getRegion(targetRefMT), targetRefMT, intLE);
+  } else if (dynamic_cast<Void*>(targetRefMT->kind)) {
+    return makeVoidRef(globalState);
   } else if (dynamic_cast<Bool*>(targetRefMT->kind)) {
     auto boolLE = LLVMBuildTrunc(builder, readI64FromFile(functionState, builder), int1LT, "boolFromRecording");
     return wrap(globalState->getRegion(targetRefMT), targetRefMT, boolLE);
   } else if (dynamic_cast<Float*>(targetRefMT->kind)) {
     auto floatLE = LLVMBuildBitCast(builder, readI64FromFile(functionState, builder), floatLT, "floatFromRecording");
     return wrap(globalState->getRegion(targetRefMT), targetRefMT, floatLE);
-  } else if (dynamic_cast<StructKind*>(targetRefMT->kind)) {
+  } else if (dynamic_cast<StructKind*>(targetRefMT->kind) ||
+      dynamic_cast<StaticSizedArrayT*>(targetRefMT->kind) ||
+      dynamic_cast<RuntimeSizedArrayT*>(targetRefMT->kind)) {
     buildFlare(FL(), globalState, functionState, builder, "Entering buildReadValueFromFile for struct");
     auto valueSizeLE = readI64FromFile(functionState, builder);
     auto tempBufferPtrLE = buildSimpleCall(builder, globalState->externs->malloc, {valueSizeLE});

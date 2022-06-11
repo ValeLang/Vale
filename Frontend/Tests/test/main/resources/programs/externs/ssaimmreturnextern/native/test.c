@@ -3,12 +3,12 @@
 #include <assert.h>
 
 #include "vtest/ImmIntArray.h"
-#include "vtest/cMakeRSA.h"
+#include "vtest/cMakeSSA.h"
 
 // We use incrementIntFile to get some side effects to test replayability, see AASETR.
 int64_t incrementIntFile(const char* filename);
 
-vtest_ImmIntArray* vtest_cMakeRSA() {
+vtest_ImmIntArray* vtest_cMakeSSA() {
   int runNumber = incrementIntFile("myfile.bin");
 
   assert(vtest_ImmIntArray_SIZE == 3);

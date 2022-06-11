@@ -216,7 +216,7 @@ exported func main() int {
     suite.StartTest(42, "interfaceimmreturnextern", samples_path./("programs/externs/interfaceimmreturnextern"), &List<str>(), region);
     suite.StartTest(42, "interfaceimmreturnexport", samples_path./("programs/externs/interfaceimmreturnexport"), &List<str>(), region);
     suite.StartReplayTest(42, 84, "rsaimmreturnextern", samples_path./("programs/externs/rsaimmreturnextern"), &List<str>(), region);
-    suite.StartTest(42, 84, "rsaimmreturnexport", samples_path./("programs/externs/rsaimmreturnexport"), &List<str>(), region);
+    suite.StartTest(42, "rsaimmreturnexport", samples_path./("programs/externs/rsaimmreturnexport"), &List<str>(), region);
     suite.StartReplayTest(10, 20, "rsaimmparamextern", samples_path./("programs/externs/rsaimmparamextern"), &List<str>(), region);
     suite.StartReplayTest(10, 20, "rsaimmparamexport", samples_path./("programs/externs/rsaimmparamexport"), &List<str>(), region);
     suite.StartReplayTest(20, 40, "rsaimmparamdeepextern", samples_path./("programs/externs/rsaimmparamdeepextern"), &List<str>(), region);

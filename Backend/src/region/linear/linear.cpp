@@ -951,7 +951,7 @@ Ref Linear::innerConstructRuntimeSizedArray(
         auto adjustedRsaPtrLE =
             translateBetweenBufferAddressAndPointer(
                 functionState, thenBuilder, regionInstanceRef, rsaRefMT, rsaPtrLE, true);
-        LLVMBuildStore(thenBuilder, rsaWithLenVal, rsaPtrLE);
+        LLVMBuildStore(thenBuilder, rsaWithLenVal, adjustedRsaPtrLE);
 
         buildFlare(FL(), globalState, functionState, thenBuilder);
 
@@ -1760,16 +1760,19 @@ void Linear::defineConcreteSerializeFunction(Kind* valeKind) {
                 auto dryRunBoolLE =
                     globalState->getRegion(boolMT)
                         ->checkValidReference(FL(), functionState, bodyBuilder, true, boolMT, dryRunBoolRef);
+                buildFlare(FL(), globalState, functionState, bodyBuilder);
                 buildIfV(
                     globalState, functionState, bodyBuilder, LLVMBuildNot(bodyBuilder, dryRunBoolLE, "notDryRun"),
                     [this, functionState, hostRegionInstanceRef, hostObjectRefMT, hostSsaRef, indexRef, hostElementRef, hostSsaMT](
                         LLVMBuilderRef thenBuilder) mutable {
+                      buildFlare(FL(), globalState, functionState, thenBuilder);
                       initializeElementInSSA(
                           functionState, thenBuilder, hostRegionInstanceRef, hostObjectRefMT, hostSsaMT, hostSsaRef,
                           true, indexRef,
                           hostElementRef);
                       buildFlare(FL(), globalState, functionState, thenBuilder);
                     });
+                buildFlare(FL(), globalState, functionState, bodyBuilder);
               });
 
           buildFlare(FL(), globalState, functionState, builder, "Returning from serialize function!");
@@ -1918,21 +1921,22 @@ void Linear::pushRuntimeSizedArrayNoBoundsCheck(
 
   buildFlare(FL(), globalState, functionState, builder);
   auto unadjustedRsaPtrLE = checkValidReference(FL(), functionState, builder, true, hostRsaRefMT, hostRsaRef);
+  // When we write a pointer, we need to subtract the Serialized Address Adjuster, see PSBCBO.
   auto adjustedRsaPtrLE =
       translateBetweenBufferAddressAndPointer(
           functionState, builder, regionInstanceRef, hostRsaRefMT, unadjustedRsaPtrLE, true);
   auto hostRsaElementsPtrLE = structs.getRuntimeSizedArrayElementsPtr(functionState, builder, adjustedRsaPtrLE);
 
-  buildFlare(FL(), globalState, functionState, builder, "Storing in: ", indexLE);
-//  LLVMBuildStore(
-//      builder,
-//      elementRefLE,
-//      LLVMBuildGEP(
-//          builder, hostRsaElementsPtrLE, &indexLE, 1, "indexPtr"));
+  buildFlare(FL(), globalState, functionState, builder);
+
+  auto adjustedHostRsaElementsPtrLE =
+      structs.getRuntimeSizedArrayElementsPtr(functionState, builder, adjustedRsaPtrLE);
+
   buildFlare(FL(), globalState, functionState, builder);
 
   // When we write a pointer, we need to subtract the Serialized Address Adjuster, see PSBCBO.
-  storeInnerArrayMember(globalState, functionState, builder, hostRsaElementsPtrLE, indexLE, elementRefLE);
+  storeInnerArrayMember(
+      globalState, functionState, builder, adjustedHostRsaElementsPtrLE, indexLE, elementRefLE);
   buildFlare(FL(), globalState, functionState, builder);
 }
 
@@ -1959,6 +1963,7 @@ void Linear::initializeElementInSSA(
     bool arrayRefKnownLive,
     Ref indexRef,
     Ref elementRef) {
+  buildFlare(FL(), globalState, functionState, builder);
 
   assert(hostSsaRefMT->kind == hostSsaMT);
   assert(globalState->getRegion(hostSsaMT) == this);
@@ -1974,14 +1979,26 @@ void Linear::initializeElementInSSA(
 
   auto indexLE = globalState->getRegion(i32MT)->checkValidReference(FL(), functionState, builder, true, i32MT, indexRef);
 
-  auto rsaPtrLE = checkValidReference(FL(), functionState, builder, true, hostSsaRefMT, hostSsaRef);
-  auto hostSsaElementsPtrLE = structs.getStaticSizedArrayElementsPtr(functionState, builder, rsaPtrLE);
+  auto ssaPtrLE = checkValidReference(FL(), functionState, builder, true, hostSsaRefMT, hostSsaRef);
+
+  buildFlare(FL(), globalState, functionState, builder);
 
   // When we write a pointer, we need to subtract the Serialized Address Adjuster, see PSBCBO.
-  auto adjustedElementRefLE =
+  auto adjustedHostSsaPtrLE =
       translateBetweenBufferAddressAndPointer(
-          functionState, builder, regionInstanceRef, hostElementRefMT, elementRefLE, true);
-  storeInnerArrayMember(globalState, functionState, builder, hostSsaElementsPtrLE, indexLE, adjustedElementRefLE);
+          functionState, builder, regionInstanceRef, hostSsaRefMT, ssaPtrLE, true);
+
+  buildFlare(FL(), globalState, functionState, builder);
+
+  auto adjustedHostSsaElementsPtrLE =
+      structs.getStaticSizedArrayElementsPtr(functionState, builder, adjustedHostSsaPtrLE);
+
+  buildFlare(FL(), globalState, functionState, builder);
+
+  storeInnerArrayMember(
+      globalState, functionState, builder, adjustedHostSsaElementsPtrLE, indexLE, elementRefLE);
+
+  buildFlare(FL(), globalState, functionState, builder);
 }
 
 Ref Linear::deinitializeElementFromSSA(

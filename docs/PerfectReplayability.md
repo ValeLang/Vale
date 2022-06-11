@@ -235,6 +235,20 @@ For this reason, we write to a temporary buffer before writing to a file. In fac
 For the POC, we're using regular function names (`launch`) instead of exported names (`SpaceGame_launch`). Look for URFNIEN in the code to find everywhere we'll need to change that.
 
 
+## Adding Artificial Side Effects to Test Replayability (AASETR)
+
+A basic way to test perfect replayability is to make an extern function that increments an integer in a file and returns it, and then run it three times:
+
+ * Once regularly, and we check it returns 1.
+ * Once with recording on, and we check it returns 2.
+ * Once with replaying on, and we check it also returns 2.
+
+We were about to add a lot of tests to exercise sending/receiving all sorts of data across the FFI boundary for replaying, but they looked almost identical to our existing FFI tests. So, we just make our existing FFI tests do the above file operations whenever possible, so we can use them to test replayability.
+
+A utility function called `incrementIntFile` increments an integer in a file, so we use it wherever.
+
+We have the first and second test to make sure that the side effect actually works, and then the third test to make sure the side effect doesn't happen.
+
 
 # Notes
 

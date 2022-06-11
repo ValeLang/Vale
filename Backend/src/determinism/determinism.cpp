@@ -230,9 +230,11 @@ void Determinism::makeFuncToWriteCallBeginToFile() {
       voidLT,
       writeCallBeginToFileFuncName,
       [this](FunctionState* functionState, LLVMBuilderRef builder){
+        buildFlare(FL(), globalState, functionState, builder, "Calling function writeCallBeginToFile");
         auto nameLenLE = LLVMGetParam(functionState->containingFuncL, 0);
         auto nameI8PtrLE = LLVMGetParam(functionState->containingFuncL, 1);
         writeStringToFile(functionState, builder, nameLenLE, nameI8PtrLE);
+        buildFlare(FL(), globalState, functionState, builder, "Returning from function writeCallBeginToFile");
         LLVMBuildRetVoid(builder);
       });
 }
@@ -250,9 +252,11 @@ void Determinism::makeFuncToWriteRefToFile() {
       voidLT,
       writeRefToFileFuncName,
       [this, int256LT](FunctionState* functionState, LLVMBuilderRef builder){
+        buildFlare(FL(), globalState, functionState, builder, "Calling function writeRefToFile");
         auto refI256LE = LLVMGetParam(functionState->containingFuncL, 0);
         assert(LLVMTypeOf(refI256LE) == int256LT);
         writeI256ToFile(functionState, builder, refI256LE);
+        buildFlare(FL(), globalState, functionState, builder, "Returning from function writeRefToFile");
         LLVMBuildRetVoid(builder);
       });
 }
@@ -262,8 +266,10 @@ void Determinism::makeFuncToRecordCallEnd() {
   defineFunctionBody(
       globalState->context, recordCallEndLF, voidLT, recordCallEndFuncName,
       [this](FunctionState *functionState, LLVMBuilderRef builder) {
+        buildFlare(FL(), globalState, functionState, builder, "Calling function recordCallEnd");
         // Write a 0 for the loop that replays export calls
         writeI64ToFile(functionState, builder, constI64LE(globalState, 0));
+        buildFlare(FL(), globalState, functionState, builder, "Returning from function recordCallEnd");
         LLVMBuildRetVoid(builder);
       });
 }
@@ -275,7 +281,7 @@ void Determinism::makeFuncToMatchCallFromRecordingFile() {
   defineFunctionBody(
       globalState->context, matchCallFromRecordingFileLF, voidLT, matchCallFromRecordingFileFuncName,
       [this, int1LT, int8LT](FunctionState *functionState, LLVMBuilderRef builder) {
-        buildFlare(FL(), globalState, functionState, builder);
+        buildFlare(FL(), globalState, functionState, builder, "Calling function matchCallFromRecordingFile");
         auto replayingCalledFuncNameLenLE = LLVMGetParam(functionState->containingFuncL, 0);
         auto replayingCalledFuncNamePtrLE = LLVMGetParam(functionState->containingFuncL, 1);
 
@@ -312,6 +318,7 @@ void Determinism::makeFuncToMatchCallFromRecordingFile() {
               buildPrint(globalState, builder, ", aborting!\n");
               buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, 1)});
             });
+        buildFlare(FL(), globalState, functionState, builder, "Returning from function matchCallFromRecordingFile");
         LLVMBuildRetVoid(builder);
       });
   // take in a name argument
@@ -339,6 +346,7 @@ void Determinism::makeFuncToMapRefFromRecordingFile() {
   defineFunctionBody(
       globalState->context, mapRefFromRecordingFileLF, int256LT, mapRefFromRecordingFileFuncName,
       [this, int256LT](FunctionState* functionState, LLVMBuilderRef builder) {
+        buildFlare(FL(), globalState, functionState, builder, "Calling function mapRefFromRecordingFile");
         auto fatRefLE = readI256FromFile(functionState, builder);
         auto indexLE =
             recordedRefToReplayedRefMapLT->buildFindIndexOf(
@@ -355,6 +363,7 @@ void Determinism::makeFuncToMapRefFromRecordingFile() {
                 [this](LLVMBuilderRef builder) {
                   return constI256LEFromI64(globalState, 0);
                 });
+        buildFlare(FL(), globalState, functionState, builder, "Returning from function mapRefFromRecordingFile");
         LLVMBuildRet(builder, resultLE);
       });
 }
@@ -364,6 +373,7 @@ void Determinism::makeFuncToStartReplaying() {
   defineFunctionBody(
       globalState->context, startReplayingLF, voidLT, startReplayingFuncName,
       [this](FunctionState* functionState, LLVMBuilderRef builder){
+        buildFlare(FL(), globalState, functionState, builder, "Calling function startReplaying");
         buildFlare(FL(), globalState, functionState, builder, "startReplaying!");
         LLVMBuildStore(builder, constI64LE(globalState, RecordingMode::REPLAYING), recordingModeGlobalLE);
         auto recordingFilenameLE = LLVMGetParam(functionState->containingFuncL, 0);
@@ -372,9 +382,11 @@ void Determinism::makeFuncToStartReplaying() {
         buildFlare(FL(), globalState, functionState, builder, "Opened!");
         LLVMBuildStore(builder, fileLE, fileHandleGlobalLE);
         auto recordingFileConstantLE = readI64FromFile(functionState, builder);
-        buildAssertV(
+        buildAssertIntEq(
             globalState, functionState, builder, recordingFileConstantLE,
+            constI64LE(globalState, RECORDING_FILE_CONSTANT),
             "Invalid recording file! (invalid recording file constant)");
+        buildFlare(FL(), globalState, functionState, builder, "Returning from function startReplaying");
         LLVMBuildRetVoid(builder);
       });
 }
@@ -384,6 +396,7 @@ void Determinism::makeFuncToStartRecording() {
   defineFunctionBody(
       globalState->context, startRecordingLF, voidLT, startRecordingFuncName,
       [this](FunctionState* functionState, LLVMBuilderRef builder){
+        buildFlare(FL(), globalState, functionState, builder, "Calling function startRecording");
         buildFlare(FL(), globalState, functionState, builder, "In startRecording!");
         LLVMBuildStore(builder, constI64LE(globalState, RecordingMode::RECORDING), recordingModeGlobalLE);
         auto recordingFilenameLE = LLVMGetParam(functionState->containingFuncL, 0);
@@ -392,12 +405,16 @@ void Determinism::makeFuncToStartRecording() {
         buildFlare(FL(), globalState, functionState, builder, "Opened!");
         LLVMBuildStore(builder, fileLE, fileHandleGlobalLE);
         writeI64ToFile(functionState, builder, constI64LE(globalState, RECORDING_FILE_CONSTANT));
+        buildFlare(FL(), globalState, functionState, builder, "Returning from function startRecording");
         LLVMBuildRetVoid(builder);
       });
 }
 
 void Determinism::writeBytesToFile(
     FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef sizeLE, LLVMValueRef i8PtrLE) {
+  auto int8LT = LLVMInt8TypeInContext(globalState->context);
+  auto int8PtrLT = LLVMPointerType(int8LT, 0);
+  assert(LLVMTypeOf(i8PtrLE) == int8PtrLT);
   auto resultLE =
       buildSimpleCall(
           builder, globalState->externs->fwrite,
@@ -445,6 +462,7 @@ void Determinism::writeI64ToFile(
     FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef i64LE) {
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
   assert(LLVMTypeOf(i64LE) == int64LT);
+  buildFlare(FL(), globalState, functionState, builder, "Write I64: ", i64LE);
   auto i64PtrLE = makeBackendLocal(functionState, builder, int64LT, "", i64LE);
   writeBytesToFile(
       functionState,
@@ -483,7 +501,7 @@ LLVMValueRef Determinism::readI64FromFile(
           });
   buildIf(
       globalState, functionState->containingFuncL, builder,
-      LLVMBuildICmp(builder, LLVMIntULT, resultLE, constI64LE(globalState, 1), ""),
+      LLVMBuildICmp(builder, LLVMIntSLT, resultLE, constI64LE(globalState, 1), ""),
       [this, functionState, int64LT](LLVMBuilderRef builder){
         buildFlare(FL(), globalState, functionState, builder);
         buildPrint(globalState, builder, "Couldn't read from recording file. (1)");
@@ -633,7 +651,7 @@ void Determinism::makeFuncToGetReplayerFuncForExportName() {
       voidFuncPtrLT,
       getMaybeReplayerFuncForNextExportNameFuncName,
       [this, int8LT, replayerFuncLT](FunctionState* functionState, LLVMBuilderRef builder){
-        buildFlare(FL(), globalState, functionState, builder);
+        buildFlare(FL(), globalState, functionState, builder, "Calling function getMaybeReplayerFuncForExportName");
         auto bufferPtrLE = LLVMBuildArrayAlloca(builder, int8LT, constI64LE(globalState, 1024), "");
         auto bufferI8PtrLE = ptrToVoidPtrLE(globalState, builder, bufferPtrLE);
         auto strLenLE = readI64FromFile(functionState, builder);
@@ -669,6 +687,7 @@ void Determinism::makeFuncToGetReplayerFuncForExportName() {
                         return resultLE;
                       });
                 });
+        buildFlare(FL(), globalState, functionState, builder, "Returning from function getMaybeReplayerFuncForExportName");
         LLVMBuildRet(builder, resultLE);
       });
 }
@@ -686,7 +705,7 @@ void Determinism::makeFuncToMaybeStartDeterministicMode() {
       voidLT,
       maybeStartDeterministicModeFuncName,
       [this, int8PtrLT, int64LT](FunctionState* functionState, LLVMBuilderRef builder){
-        buildFlare(FL(), globalState, functionState, builder, "In ", maybeStartDeterministicModeFuncName);
+        buildFlare(FL(), globalState, functionState, builder, "Calling function maybeStartDeterministicMode");
         auto mainArgsCountLE = LLVMGetParam(functionState->containingFuncL, 0);
         auto mainArgsLE = LLVMGetParam(functionState->containingFuncL, 1);
         // processFlag will remove the found flag and value from argv, and return the new count.
@@ -717,6 +736,7 @@ void Determinism::makeFuncToMaybeStartDeterministicMode() {
                   return constI64LE(globalState, 0);
                 });
 
+        buildFlare(FL(), globalState, functionState, builder, "Returning from function maybeStartDeterministicMode");
         LLVMBuildRet(builder, consumedArgsCountLE);
       });
 
@@ -775,13 +795,15 @@ void Determinism::buildWriteValueToFile(
   auto int1LT = LLVMInt1TypeInContext(globalState->context);
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
   auto floatLT = LLVMDoubleTypeInContext(globalState->context);
+  auto int8LT = LLVMInt8TypeInContext(globalState->context);
+  auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
   assert(sourceRefMT->ownership == Ownership::SHARE); // not implemented for owns
   auto hostRefMT = globalState->linearRegion->linearizeReference(sourceRefMT);
 
   auto sourceRefLE =
       globalState->getRegion(sourceRefMT)
-          ->checkValidReference(FL(), functionState, builder, sourceRefMT, sourceRef);
+          ->checkValidReference(FL(), functionState, builder, true, sourceRefMT, sourceRef);
 
   if (dynamic_cast<Int*>(sourceRefMT->kind)) {
     auto intAsI64LE = LLVMBuildZExt(builder, sourceRefLE, int64LT, "boolAsI64");
@@ -793,6 +815,7 @@ void Determinism::buildWriteValueToFile(
     auto floatAsI64LE = LLVMBuildBitCast(builder, sourceRefLE, floatLT, "floatFromRecording");
     writeI64ToFile(functionState, builder, floatAsI64LE);
   } else if (dynamic_cast<StructKind*>(sourceRefMT->kind)) {
+    buildFlare(FL(), globalState, functionState, builder, "Entering buildWriteValueToFile for struct");
 
     auto valeRegionInstanceRef =
         // At some point, look up the actual region instance, perhaps from the FunctionState?
@@ -803,17 +826,35 @@ void Determinism::buildWriteValueToFile(
         globalState->linearRegion->createRegionInstanceLocal(
             functionState, builder, useOffsetsLE, fileOffsetLE);
 
-    LLVMValueRef hostRefLE = nullptr;
-    LLVMValueRef sizeLE = nullptr;
-    std::tie(hostRefLE, sizeLE) =
-        sendValeObjectIntoHost(
-            globalState, functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef,
-            sourceRefMT, hostRefMT, sourceRef);
+//    auto[unusedHostRefLE, sizeI32LE] =
+//    sendValeObjectIntoHostAndDealias(
+//        globalState, functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef,
+//        sourceRefMT, hostRefMT, sourceRef);
 
-    writeI64ToFile(functionState, builder, sizeLE);
-    writeBytesToFile(functionState, builder, sizeLE, hostRefLE);
+    auto [hostArgRef, sizeRef] =
+        globalState->getRegion(hostRefMT)
+            ->receiveUnencryptedAlienReference(
+                functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef, sourceRefMT, hostRefMT, sourceRef);
+    auto hostArgLE =
+        globalState->getRegion(hostRefMT)
+            ->checkValidReference(FL(), functionState, builder, true, hostRefMT, hostArgRef);
+    auto sizeI32LE =
+        globalState->getRegion(hostRefMT)
+            ->checkValidReference(FL(), functionState, builder, true, globalState->metalCache->i32Ref, sizeRef);
+    auto sizeI64LE = LLVMBuildZExt(builder, sizeI32LE, int64LT, "");
 
-    buildSimpleCall(builder, globalState->externs->free, {hostRefLE});
+    auto linearStartPtrLE =
+        globalState->linearRegion->getRegionInstanceDestinationBufferStartPtr(
+            functionState, builder, hostRegionInstanceRef);
+
+    writeI64ToFile(functionState, builder, sizeI64LE);
+
+    writeBytesToFile(functionState, builder, sizeI64LE, linearStartPtrLE);
+
+    buildFlare(FL(), globalState, functionState, builder, "Freeing ", ptrToIntLE(globalState, builder, linearStartPtrLE));
+    buildSimpleCall(builder, globalState->externs->free, {linearStartPtrLE});
+
+    buildFlare(FL(), globalState, functionState, builder, "Leaving buildWriteValueToFile for struct");
   } else {
     assert(false);
   }
@@ -877,6 +918,7 @@ Ref Determinism::buildReadValueFromFile(
     auto floatLE = LLVMBuildBitCast(builder, readI64FromFile(functionState, builder), floatLT, "floatFromRecording");
     return wrap(globalState->getRegion(targetRefMT), targetRefMT, floatLE);
   } else if (dynamic_cast<StructKind*>(targetRefMT->kind)) {
+    buildFlare(FL(), globalState, functionState, builder, "Entering buildReadValueFromFile for struct");
     auto valueSizeLE = readI64FromFile(functionState, builder);
     auto tempBufferPtrLE = buildSimpleCall(builder, globalState->externs->malloc, {valueSizeLE});
 
@@ -891,7 +933,7 @@ Ref Determinism::buildReadValueFromFile(
             });
     buildIf(
         globalState, functionState->containingFuncL, builder,
-        LLVMBuildICmp(builder, LLVMIntULT, freadResultLE, constI64LE(globalState, 1), ""),
+        LLVMBuildICmp(builder, LLVMIntSLT, freadResultLE, constI64LE(globalState, 1), ""),
         [this, functionState](LLVMBuilderRef builder){
           buildFlare(FL(), globalState, functionState, builder);
           buildPrint(globalState, builder, "Couldn't read from recording file. (4)");
@@ -907,15 +949,20 @@ Ref Determinism::buildReadValueFromFile(
         globalState->linearRegion->createRegionInstanceLocal(
             functionState, builder, useOffsetsLE, fileOffsetLE);
 
+    auto hostStructRefLT = globalState->linearRegion->translateType(hostRefMT);
+    auto hostStructPtrLE = LLVMBuildPointerCast(builder, tempBufferPtrLE, hostStructRefLT, "structPtr");
     auto valeRef =
         receiveHostObjectIntoVale(
             globalState, functionState, builder, hostRegionInstanceRef, valeRegionInstanceRef,
-            hostRefMT, targetRefMT, tempBufferPtrLE);
+            hostRefMT, targetRefMT, hostStructPtrLE);
 
+
+    buildFlare(FL(), globalState, functionState, builder, "Freeing ", ptrToIntLE(globalState, builder, tempBufferPtrLE));
     buildSimpleCall(builder, globalState->externs->free, {tempBufferPtrLE});
 
     buildFlare(FL(), globalState, functionState, builder, "Read value from file, size ", valueSizeLE);
 
+    buildFlare(FL(), globalState, functionState, builder, "Leaving buildReadValueFromFile for struct");
     return valeRef;
   } else {
     assert(false);
@@ -958,7 +1005,7 @@ LLVMValueRef Determinism::refToI256(
   auto refLT = globalState->getRegion(refMT)->translateType(refMT);
   assert(LLVMABISizeOfType(globalState->dataLayout, refLT) <= 32);
   assert(LLVMGetTypeKind(refLT) != LLVMPointerTypeKind);
-  auto refLE = globalState->getRegion(refMT)->checkValidReference(FL(), functionState, builder, refMT, ref);
+  auto refLE = globalState->getRegion(refMT)->checkValidReference(FL(), functionState, builder, true, refMT, ref);
   return LLVMBuildBitCast(builder, refLE, int256LT, "refFrom256");
 }
 

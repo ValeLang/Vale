@@ -24,7 +24,7 @@ Ref translateNewArrayFromValues(
   for (auto elementLE : elementsLE) {
     globalState->getRegion(ssaDefM->elementType)
         ->checkValidReference(
-            FL(), functionState, builder, ssaDefM->elementType, elementLE);
+            FL(), functionState, builder, false, ssaDefM->elementType, elementLE);
   }
 
   auto staticSizedArrayMT = dynamic_cast<StaticSizedArrayT*>(newArrayFromValues->arrayRefType->kind);
@@ -57,8 +57,8 @@ Ref translateNewArrayFromValues(
         staticSizedArrayMT,
         resultLE,
         elementsLE);
-    globalState->getRegion(newArrayFromValues->arrayRefType)->checkValidReference(FL(), functionState, builder,
-        newArrayFromValues->arrayRefType, resultLE);
+    globalState->getRegion(newArrayFromValues->arrayRefType)
+        ->checkValidReference(FL(), functionState, builder, true, newArrayFromValues->arrayRefType, resultLE);
     return resultLE;
   }
 }

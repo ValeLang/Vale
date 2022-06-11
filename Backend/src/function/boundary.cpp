@@ -46,7 +46,7 @@ Ref receiveHostObjectIntoVale(
   }
 }
 
-std::pair<LLVMValueRef, LLVMValueRef> sendValeObjectIntoHost(
+std::pair<LLVMValueRef, LLVMValueRef> sendValeObjectIntoHostAndDealias(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -80,10 +80,10 @@ std::pair<LLVMValueRef, LLVMValueRef> sendValeObjectIntoHost(
         ->dealias(FL(), functionState, builder, valeRefMT, valeRef);
     auto hostArgLE =
         globalState->getRegion(hostRefMT)
-            ->checkValidReference(FL(), functionState, builder, hostRefMT, hostArgRef);
+            ->checkValidReference(FL(), functionState, builder, true, hostRefMT, hostArgRef);
     auto sizeLE =
         globalState->getRegion(hostRefMT)
-            ->checkValidReference(FL(), functionState, builder, globalState->metalCache->i32Ref, sizeRef);
+            ->checkValidReference(FL(), functionState, builder, true, globalState->metalCache->i32Ref, sizeRef);
     return std::make_pair(hostArgLE, sizeLE);
   } else {
     auto encryptedValeRefLE =

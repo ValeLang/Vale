@@ -41,7 +41,7 @@ int64_t incrementIntFile(const char* filename) {
   assert(descriptor >= 0);
   FILE* file = fdopen(descriptor, "rb+");
 #else
-  FILE* file = fopen(filename, "rb+");
+  FILE* file = fopen(filename, "ab+");
 #endif
 
   printf("In increment %d\n", __LINE__);

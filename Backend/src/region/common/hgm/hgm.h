@@ -191,14 +191,12 @@ private:
   Prototype* makeMainSetupFunction();
 
   GlobalState* globalState = nullptr;
-//  ControlBlock* controlBlock = nullptr;
   FatWeaks fatWeaks;
   KindStructs* kindStructs;
-//  KindStructs* weakRefStructsSource;
 
   bool elideChecksForKnownLive = false;
 
-  std::unordered_map<Kind*, LLVMValueRef, AddressHasher<Kind*>> globalNullPtrPtrByKind;
+  LLVMValueRef nextGenGlobalI32LE = nullptr;
 };
 
 #endif

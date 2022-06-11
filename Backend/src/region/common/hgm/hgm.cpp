@@ -10,17 +10,20 @@
 
 constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN = 0;
 
+constexpr int FIRST_GEN = 25600;
+
 HybridGenerationalMemory::HybridGenerationalMemory(
     GlobalState* globalState_,
     KindStructs* kindStructs_,
     bool elideChecksForKnownLive_,
-    bool false_)
+    bool limitMode_)
   : globalState(globalState_),
     fatWeaks(globalState_, kindStructs_),
     kindStructs(kindStructs_),
-    elideChecksForKnownLive(elideChecksForKnownLive_),
-//    false(false_),
-    globalNullPtrPtrByKind(0, globalState->makeAddressHasher<Kind*>()) {
+    elideChecksForKnownLive(elideChecksForKnownLive_) {
+  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+  nextGenGlobalI32LE = LLVMAddGlobal(globalState_->mod, int32LT, "__vale_nextGen");
+  LLVMSetInitializer(nextGenGlobalI32LE, constI32LE(globalState, FIRST_GEN));
 }
 
 LLVMValueRef HybridGenerationalMemory::getTargetGenFromWeakRef(
@@ -388,9 +391,18 @@ LLVMValueRef HybridGenerationalMemory::fillWeakableControlBlock(
     LLVMBuilderRef builder,
     Kind* kindM,
     LLVMValueRef controlBlockLE) {
-  // The generation was already incremented when we freed it (or malloc'd it for the first time),
-  // so nothing to do here!
-  return controlBlockLE;
+  // The generation was already incremented when we freed it (or malloc'd it for the first time), but
+  // it's very likely that someone else overwrote it with something else, such as a zero. We don't want
+  // to use that, we want to use a random gen.
+  auto newGenLE =
+      adjustCounterReturnOld(globalState, builder, globalState->metalCache->i32, nextGenGlobalI32LE, 1);
+
+  int genMemberIndex =
+      kindStructs->getControlBlock(kindM)->getMemberIndex(ControlBlockMember::GENERATION_32B);
+  auto newControlBlockLE =
+      LLVMBuildInsertValue(builder, controlBlockLE, newGenLE, genMemberIndex, "newControlBlock");
+
+  return newControlBlockLE;
 }
 
 WeakFatPtrLE HybridGenerationalMemory::weakInterfaceRefToWeakStructRef(

@@ -1568,12 +1568,11 @@ void gmFillControlBlock(
     HybridGenerationalMemory* hgmWeaks) {
 
   LLVMValueRef newControlBlockLE = LLVMGetUndef(structs->getControlBlock(kindM)->getStruct());
-
   newControlBlockLE =
       fillControlBlockCensusFields(
           from, globalState, functionState, structs, builder, kindM, newControlBlockLE, typeName);
-  newControlBlockLE = hgmWeaks->fillWeakableControlBlock(functionState, builder, kindM,
-      newControlBlockLE);
+  newControlBlockLE =
+      hgmWeaks->fillWeakableControlBlock(functionState, builder, kindM, newControlBlockLE);
   LLVMBuildStore(
       builder,
       newControlBlockLE,

@@ -92,8 +92,10 @@ int64_t incrementIntFile(const char* filename) {
 
   printf("In increment %d\n", __LINE__);
 
+#ifdef _WIN32
   _set_invalid_parameter_handler(oldHandler);
-
+#endif
+  
   printf("In increment %d\n", __LINE__);
 
   return num;

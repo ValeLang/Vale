@@ -1,7 +1,6 @@
 
-extern func cExit42();
+extern func myCFunc(x int) int;
 
 exported func main() int {
-   cExit42();
-   73
+  return myCFunc(42);
 }

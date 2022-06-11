@@ -24,6 +24,8 @@ Ref translateLocalLoad(
       globalState->metalCache->getReference(
           targetOwnership, targetLocation, localType->kind);
 
+  buildFlare(FL(), globalState, functionState, builder);
+
   auto localAddr = blockState->getLocalAddr(localId);
 
   auto sourceRef = globalState->getRegion(localType)->loadLocal(functionState, builder, local, localAddr);

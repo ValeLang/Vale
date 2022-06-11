@@ -16,6 +16,21 @@ LLVMValueRef adjustCounter(
   return newValLE;
 }
 
+LLVMValueRef adjustCounterReturnOld(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Int* innt,
+    LLVMValueRef counterPtrLE,
+    int adjustAmount) {
+  auto prevValLE = LLVMBuildLoad(builder, counterPtrLE, "counterPrevVal");
+  auto adjustByLE = LLVMConstInt(LLVMIntTypeInContext(globalState->context, innt->bits), adjustAmount, true);
+  assert(LLVMTypeOf(prevValLE) == LLVMTypeOf(adjustByLE));
+  auto newValLE =LLVMBuildAdd(builder, prevValLE, adjustByLE, "counterNewVal");
+  LLVMBuildStore(builder, newValLE, counterPtrLE);
+
+  return prevValLE;
+}
+
 LLVMValueRef isZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE) {
   return LLVMBuildICmp(
       builder,

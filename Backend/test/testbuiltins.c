@@ -3,14 +3,64 @@
 #include <stdio.h>
 #include <assert.h>
 
+#ifdef _WIN32
+#include <io.h>
+#include <fcntl.h>
+#include <sys\types.h>
+#include <sys\stat.h>
+#endif
+
+void myInvalidParameterHandler(const wchar_t* expression,
+                               const wchar_t* function,
+                               const wchar_t* file,
+                               unsigned int line,
+                               uintptr_t pReserved)
+{
+  wprintf(L"Invalid parameter detected in function %s."
+          L" File: %s Line: %d\n", function, file, line);
+  wprintf(L"Expression: %s\n", expression);
+  abort();
+}
+
 int64_t incrementIntFile(const char* filename) {
-  FILE* file = fopen(filename, "a+");
+  printf("In increment %d\n", __LINE__);
+  printf("Filename: %s\n", filename);
+
+  _invalid_parameter_handler oldHandler, newHandler;
+  newHandler = myInvalidParameterHandler;
+  oldHandler = _set_invalid_parameter_handler(newHandler);
+
+  printf("In increment %d\n", __LINE__);
+
+#ifdef _WIN32
+  int descriptor = _open(filename, _O_BINARY | _O_CREAT | _O_RDWR, _S_IREAD | _S_IWRITE);
+  assert(descriptor >= 0);
+  FILE* file = fdopen(descriptor, "rb+");
+#else
+  FILE* file = fopen(filename, "rb+");
+#endif
+
+  printf("In increment %d\n", __LINE__);
+
   assert(file);
+
+  printf("In increment %d\n", __LINE__);
+
+  int initialSeekResult = fseek(file, 0, SEEK_END);
+  assert(file);
+
+  printf("In increment %d\n", __LINE__);
 
   int64_t num = 0;
 
+  printf("In increment %d\n", __LINE__);
+
   int pos = ftell(file);
+
+  printf("In increment %d\n", __LINE__);
+
   if (pos != 0) {
+    printf("In increment %d\n", __LINE__);
     // If we get here, the file already existed.
 
     // Read the int that was already there.
@@ -23,7 +73,11 @@ int64_t incrementIntFile(const char* filename) {
     printf("Opened file %s that didn't exist.\n", filename);
   }
 
+  printf("In increment %d\n", __LINE__);
+
   num++;
+
+  printf("In increment %d\n", __LINE__);
 
   // Write added number to the file.
   int seekResult = fseek(file, 0, SEEK_SET);
@@ -36,5 +90,12 @@ int64_t incrementIntFile(const char* filename) {
   int closeResult = fclose(file);
   assert(closeResult == 0);
 
+  printf("In increment %d\n", __LINE__);
+
+  _set_invalid_parameter_handler(oldHandler);
+
+  printf("In increment %d\n", __LINE__);
+
   return num;
 }
+

@@ -17,7 +17,8 @@ Ref translateCall(
   for (int i = 0; i < call->argExprs.size(); i++) {
     auto argLE = translateExpression(globalState, functionState, blockState, builder, call->argExprs[i]);
     buildFlare(FL(), globalState, functionState, builder);
-    globalState->getRegion(call->function->params[i])->checkValidReference(FL(), functionState, builder, call->function->params[i], argLE);
+    globalState->getRegion(call->function->params[i])
+        ->checkValidReference(FL(), functionState, builder, false, call->function->params[i], argLE);
     argsLE.push_back(argLE);
   }
 

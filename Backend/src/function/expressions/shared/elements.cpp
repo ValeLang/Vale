@@ -17,10 +17,10 @@ LLVMValueRef checkIndexInBounds(
   auto inntRefMT = globalState->metalCache->getReference(Ownership::SHARE, Location::INLINE, intMT);
   auto sizeLE =
       globalState->getRegion(inntRefMT)
-          ->checkValidReference(FL(), functionState, builder, inntRefMT, sizeRef);
+          ->checkValidReference(FL(), functionState, builder, true, inntRefMT, sizeRef);
   auto indexLE =
       globalState->getRegion(inntRefMT)
-          ->checkValidReference(FL(), functionState, builder, inntRefMT, indexRef);
+          ->checkValidReference(FL(), functionState, builder, true, inntRefMT, indexRef);
   auto isNonNegativeLE = LLVMBuildICmp(builder, LLVMIntSGE, indexLE, constI32LE(globalState, 0), "isNonNegative");
   auto isUnderLength = LLVMBuildICmp(builder, LLVMIntSLT, indexLE, sizeLE, "isUnderLength");
   auto isWithinBounds = LLVMBuildAnd(builder, isNonNegativeLE, isUnderLength, "isWithinBounds");
@@ -113,7 +113,7 @@ LoadResult loadElement(
 
   auto sourceRef = wrap(globalState->getRegion(elementRefM), elementRefM, fromArrayLE);
   globalState->getRegion(elementRefM)
-      ->checkValidReference(FL(), functionState, builder, elementRefM, sourceRef);
+      ->checkValidReference(FL(), functionState, builder, false, elementRefM, sourceRef);
   return LoadResult{sourceRef};
 }
 
@@ -166,10 +166,11 @@ Ref swapElement(
     Ref sourceRef) {
   assert(location != Location::INLINE); // impl
 
-  auto indexLE = checkIndexInBounds(globalState, functionState, builder, globalState->metalCache->i32, sizeRef, indexRef);
+  auto indexLE =
+      checkIndexInBounds(globalState, functionState, builder, globalState->metalCache->i32, sizeRef, indexRef);
   auto sourceLE =
       globalState->getRegion(elementRefM)
-          ->checkValidReference(FL(), functionState, builder, elementRefM, sourceRef);
+          ->checkValidReference(FL(), functionState, builder, false, elementRefM, sourceRef);
   buildFlare(FL(), globalState, functionState, builder);
   auto resultLE = loadElement(globalState, functionState, builder, arrayPtrLE, elementRefM, sizeRef, indexRef);
   storeInnerArrayMember(globalState, functionState, builder, arrayPtrLE, indexLE, sourceLE);
@@ -194,7 +195,7 @@ void initializeElementAndIncrementSize(
   auto indexLE = checkIndexInBounds(globalState, functionState, builder, globalState->metalCache->i32, sizeRef, indexRef);
   auto sourceLE =
       globalState->getRegion(elementRefM)
-          ->checkValidReference(FL(), functionState, builder, elementRefM, sourceRef);
+          ->checkValidReference(FL(), functionState, builder, false, elementRefM, sourceRef);
   storeInnerArrayMember(globalState, functionState, builder, elemsPtrLE, indexLE, sourceLE);
 }
 
@@ -213,7 +214,7 @@ void initializeElementWithoutIncrementSize(
   auto indexLE = checkIndexInBounds(globalState, functionState, builder, globalState->metalCache->i32, sizeRef, indexRef);
   auto sourceLE =
       globalState->getRegion(elementRefM)
-          ->checkValidReference(FL(), functionState, builder, elementRefM, sourceRef);
+          ->checkValidReference(FL(), functionState, builder, false, elementRefM, sourceRef);
   storeInnerArrayMember(globalState, functionState, builder, elemsPtrLE, indexLE, sourceLE);
 }
 
@@ -225,7 +226,7 @@ void intRangeLoopV(
     std::function<void(Ref, LLVMBuilderRef)> iterationBuilder) {
   auto sizeLE =
       globalState->getRegion(globalState->metalCache->i32Ref)
-          ->checkValidReference(FL(), functionState, builder, globalState->metalCache->i32Ref, sizeRef);
+          ->checkValidReference(FL(), functionState, builder, true, globalState->metalCache->i32Ref, sizeRef);
   intRangeLoop(
       globalState, functionState, builder, sizeLE,
       [globalState, iterationBuilder](LLVMValueRef iterationIndexLE, LLVMBuilderRef builder) {
@@ -281,7 +282,7 @@ void intRangeLoopReverseV(
   auto inntRefMT = globalState->metalCache->getReference(Ownership::SHARE, Location::INLINE, innt);
   auto sizeLE =
       globalState->getRegion(inntRefMT)
-          ->checkValidReference(FL(), functionState, builder, inntRefMT, sizeRef);
+          ->checkValidReference(FL(), functionState, builder, true, inntRefMT, sizeRef);
 
   LLVMValueRef iterationIndexPtrLE =
       makeBackendLocal(functionState, builder, intLT, "iterationIndex", sizeLE);

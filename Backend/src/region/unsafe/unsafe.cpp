@@ -188,7 +188,7 @@ WrapperPtrLE Unsafe::lockWeakRef(
       auto weakFatPtrLE =
           kindStructs.makeWeakFatPtr(
               refM,
-              checkValidReference(FL(), functionState, builder, refM, weakRefLE));
+              checkValidReference(FL(), functionState, builder, false, refM, weakRefLE));
       return kindStructs.makeWrapperPtr(
           FL(), functionState, builder, refM,
           wrcWeaks.lockWrciFatPtr(from, functionState, builder, refM, weakFatPtrLE));
@@ -403,7 +403,7 @@ void Unsafe::storeMember(
     Ref newMemberRef) {
   auto newMemberLE =
       globalState->getRegion(newMemberRefMT)->checkValidReference(
-          FL(), functionState, builder, newMemberRefMT, newMemberRef);
+          FL(), functionState, builder, false, newMemberRefMT, newMemberRef);
   switch (structRefMT->ownership) {
     case Ownership::OWN:
     case Ownership::SHARE:
@@ -476,6 +476,7 @@ LLVMValueRef Unsafe::checkValidReference(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    bool expectLive,
     Reference* refM,
     Ref ref) {
   Reference *actualRefM = nullptr;
@@ -538,9 +539,8 @@ Ref Unsafe::upgradeLoadResultToRefWithTargetOwnership(
       // - Swapping from a member
       return sourceRef;
     } else if (targetOwnership == Ownership::BORROW) {
-      auto resultRef = transmutePtr(globalState, functionState, builder, sourceType, targetType, sourceRef);
-      checkValidReference(FL(),
-                          functionState, builder, targetType, resultRef);
+      auto resultRef = transmutePtr(globalState, functionState, builder, false, sourceType, targetType, sourceRef);
+      checkValidReference(FL(), functionState, builder, false, targetType, resultRef);
       return resultRef;
     } else if (targetOwnership == Ownership::WEAK) {
       return wrcWeaks.assembleWeakRef(functionState, builder, sourceType, targetType, sourceRef);
@@ -675,7 +675,8 @@ Ref Unsafe::storeElementInRSA(
   auto arrayWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, rsaRefMT,
-          globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, arrayRef));
+          globalState->getRegion(rsaRefMT)
+              ->checkValidReference(FL(), functionState, builder, true, rsaRefMT, arrayRef));
   auto sizeRef = ::getRuntimeSizedArrayLength(globalState, functionState, builder, arrayWrapperPtrLE);
   auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, true, arrayWrapperPtrLE);
   buildFlare(FL(), globalState, functionState, builder);
@@ -777,7 +778,7 @@ void Unsafe::checkInlineStructType(
     LLVMBuilderRef builder,
     Reference* refMT,
     Ref ref) {
-  auto argLE = checkValidReference(FL(), functionState, builder, refMT, ref);
+  auto argLE = checkValidReference(FL(), functionState, builder, false, refMT, ref);
   auto structKind = dynamic_cast<StructKind*>(refMT->kind);
   assert(structKind);
   assert(LLVMTypeOf(argLE) == kindStructs.getStructInnerStruct(structKind));
@@ -882,7 +883,8 @@ void Unsafe::pushRuntimeSizedArrayNoBoundsCheck(
   auto arrayWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, rsaRefMT,
-          globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, rsaRef));
+          globalState->getRegion(rsaRefMT)
+              ->checkValidReference(FL(), functionState, builder, true, rsaRefMT, rsaRef));
   auto sizePtrLE = ::getRuntimeSizedArrayLengthPtr(globalState, builder, arrayWrapperPtrLE);
   auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, true, arrayWrapperPtrLE);
   ::initializeElementAndIncrementSize(
@@ -906,7 +908,8 @@ Ref Unsafe::popRuntimeSizedArrayNoBoundsCheck(
   auto rsaWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, rsaRefMT,
-          globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, arrayRef));
+          globalState->getRegion(rsaRefMT)
+              ->checkValidReference(FL(), functionState, builder, true, rsaRefMT, arrayRef));
   decrementRSASize(globalState, functionState, &kindStructs, builder, rsaRefMT, rsaWrapperPtrLE);
   return elementLE;
 }
@@ -925,7 +928,8 @@ void Unsafe::initializeElementInSSA(
   auto arrayWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, ssaRefMT,
-          globalState->getRegion(ssaRefMT)->checkValidReference(FL(), functionState, builder, ssaRefMT, arrayRef));
+          globalState->getRegion(ssaRefMT)
+              ->checkValidReference(FL(), functionState, builder, true, ssaRefMT, arrayRef));
   auto sizeRef = globalState->constI32(ssaDef->size);
   auto arrayElementsPtrLE = getStaticSizedArrayContentsPtr(builder, arrayWrapperPtrLE);
   ::initializeElementWithoutIncrementSize(
@@ -971,7 +975,7 @@ LLVMValueRef Unsafe::stackify(
     Local* local,
     Ref refToStore,
     bool knownLive) {
-  auto toStoreLE = checkValidReference(FL(), functionState, builder, local->type, refToStore);
+  auto toStoreLE = checkValidReference(FL(), functionState, builder, false, local->type, refToStore);
   auto typeLT = translateType(local->type);
   return makeBackendLocal(functionState, builder, typeLT, local->id->maybeName.c_str(), toStoreLE);
 }

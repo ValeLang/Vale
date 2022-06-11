@@ -24,7 +24,7 @@ Ref translateDiscard(
   }
 
   globalState->getRegion(sourceResultType)
-      ->checkValidReference(FL(), functionState, builder, sourceResultType, sourceRef);
+      ->checkValidReference(FL(), functionState, builder, false, sourceResultType, sourceRef);
   buildFlare(FL(), globalState, functionState, builder, "discarding!");
   globalState->getRegion(sourceResultType)
       ->dealias(

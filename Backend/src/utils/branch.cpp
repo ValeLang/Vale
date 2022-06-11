@@ -346,7 +346,7 @@ Ref buildIfElseV(
   auto thenResultRef = buildThen(thenBlockBuilder);
   auto thenResultLE =
       globalState->getRegion(thenResultMT)
-          ->checkValidReference(FL(), functionState, thenBlockBuilder, thenResultMT, thenResultRef);
+          ->checkValidReference(FL(), functionState, thenBlockBuilder, false, thenResultMT, thenResultRef);
   // A builder can point to different blocks, so get the latest one so we can
   // pull from it for the phi.
   auto thenFinalBlockL = LLVMGetInsertBlock(thenBlockBuilder);
@@ -362,12 +362,14 @@ Ref buildIfElseV(
   auto elseResultRef = buildElse(elseBlockBuilder);
   auto elseResultLE =
       globalState->getRegion(elseResultMT)
-          ->checkValidReference(FL(), functionState, elseBlockBuilder, elseResultMT, elseResultRef);
+          ->checkValidReference(FL(), functionState, elseBlockBuilder, false, elseResultMT, elseResultRef);
   // A builder can point to different blocks, so get the latest one so we can
   // pull from it for the phi.
   auto elseFinalBlockL = LLVMGetInsertBlock(elseBlockBuilder);
 
-  auto conditionLE = globalState->getRegion(globalState->metalCache->boolRef)->checkValidReference(FL(), functionState, builder, globalState->metalCache->boolRef, conditionRef);
+  auto conditionLE =
+      globalState->getRegion(globalState->metalCache->boolRef)
+          ->checkValidReference(FL(), functionState, builder, true, globalState->metalCache->boolRef, conditionRef);
   LLVMBuildCondBr(builder, conditionLE, thenStartBlockL, elseStartBlockL);
 
   if (thenResultMT == globalState->metalCache->neverRef && elseResultMT == globalState->metalCache->neverRef) {
@@ -471,7 +473,7 @@ void buildBoolyWhileV(
         auto continueLE =
             globalState->getRegion(globalState->metalCache->boolRef)->
                 checkValidReference(
-                    FL(), functionState, builder, globalState->metalCache->boolRef, continueRef);
+                    FL(), functionState, builder, true, globalState->metalCache->boolRef, continueRef);
         return continueLE;
       });
 }

@@ -426,7 +426,7 @@ void Determinism::writeBytesToFile(
           });
   buildIfNever(
       globalState, functionState->containingFuncL, builder,
-      LLVMBuildICmp(builder, LLVMIntULT, resultLE, constI64LE(globalState, 1), ""),
+      LLVMBuildICmp(builder, LLVMIntSLT, resultLE, constI64LE(globalState, 1), ""),
       [this](LLVMBuilderRef builder){
         buildPrint(globalState, builder, "Couldn't write to recording file.");
         buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, 1)});
@@ -534,7 +534,7 @@ LLVMValueRef Determinism::readI256FromFile(
           });
   buildIf(
       globalState, functionState->containingFuncL, builder,
-      LLVMBuildICmp(builder, LLVMIntULT, resultLE, constI64LE(globalState, 1), ""),
+      LLVMBuildICmp(builder, LLVMIntSLT, resultLE, constI64LE(globalState, 1), ""),
       [this, functionState](LLVMBuilderRef builder){
         buildFlare(FL(), globalState, functionState, builder);
         buildSimpleCall(builder, globalState->externs->perror, {
@@ -582,7 +582,7 @@ void Determinism::readLimitedStringFromFile(
           });
   buildIf(
       globalState, functionState->containingFuncL, builder,
-      LLVMBuildICmp(builder, LLVMIntULT, resultLE, constI64LE(globalState, 1), ""),
+      LLVMBuildICmp(builder, LLVMIntSLT, resultLE, constI64LE(globalState, 1), ""),
       [this, functionState](LLVMBuilderRef builder){
         buildFlare(FL(), globalState, functionState, builder);
         buildSimpleCall(builder, globalState->externs->perror, {
@@ -617,7 +617,7 @@ void Determinism::readLimitedStringFromFile(
 //          });
 //  buildIf(
 //      globalState, functionState->containingFuncL, builder,
-//      LLVMBuildICmp(builder, LLVMIntULT, resultLE, constI64LE(globalState, 1), ""),
+//      LLVMBuildICmp(builder, LLVMIntSLT, resultLE, constI64LE(globalState, 1), ""),
 //      [this](LLVMBuilderRef builder){
 //        buildPrint(globalState, builder, "Couldn't read from recording file.");
 //        buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, 1)});

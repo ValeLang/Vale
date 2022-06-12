@@ -7,6 +7,7 @@ public:
   LLVMValueRef free = nullptr;
   LLVMValueRef assert = nullptr;
   LLVMValueRef exit = nullptr;
+  LLVMValueRef perror = nullptr;
   LLVMValueRef assertI64Eq = nullptr;
   LLVMValueRef printCStr = nullptr;
   LLVMValueRef getch = nullptr;

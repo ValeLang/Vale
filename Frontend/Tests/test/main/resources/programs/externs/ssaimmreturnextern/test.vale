@@ -1,10 +1,10 @@
 
 export [#3]<imm>int as ImmIntArray;
 
-extern func cMakeRSA() [#3]<imm>int;
+extern func cMakeSSA() [#3]<imm>int;
 
 exported func main() int {
-  arr = cMakeRSA();
+  arr = cMakeSSA();
   i = 0;
   total = 0;
   while (i < arr.len()) {

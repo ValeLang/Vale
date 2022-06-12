@@ -259,6 +259,11 @@ LLVMValueRef makeEntryFunction(
         { LLVMBuildLoad(entryBuilder, globalState->sideStack, "") });
   }
 
+  if (globalState->opt->enableReplaying) {
+    globalState->determinism->buildMaybeStopDeterministicMode(
+        entryFunctionL, entryBuilder);
+  }
+
   LLVMBuildRet(entryBuilder, resultLE);
   LLVMDisposeBuilder(entryBuilder);
 

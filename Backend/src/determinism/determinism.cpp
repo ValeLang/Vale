@@ -426,7 +426,7 @@ void Determinism::writeBytesToFile(
           });
   buildIfNever(
       globalState, functionState->containingFuncL, builder,
-      LLVMBuildICmp(builder, LLVMIntULT, resultLE, constI64LE(globalState, 1), ""),
+      LLVMBuildICmp(builder, LLVMIntSLT, resultLE, constI64LE(globalState, 1), ""),
       [this](LLVMBuilderRef builder){
         buildPrint(globalState, builder, "Couldn't write to recording file.");
         buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, 1)});
@@ -437,10 +437,10 @@ LLVMValueRef Determinism::openFile(FunctionState* functionState, LLVMBuilderRef 
   LLVMValueRef modeStrLE = nullptr;
   switch (mode) {
     case FileOpenMode::READ:
-      modeStrLE = globalState->getOrMakeStringConstant("r");
+      modeStrLE = globalState->getOrMakeStringConstant("rb");
       break;
     case FileOpenMode::WRITE:
-      modeStrLE = globalState->getOrMakeStringConstant("w");
+      modeStrLE = globalState->getOrMakeStringConstant("wb");
       break;
     default:
       assert(false);
@@ -504,7 +504,9 @@ LLVMValueRef Determinism::readI64FromFile(
       LLVMBuildICmp(builder, LLVMIntSLT, resultLE, constI64LE(globalState, 1), ""),
       [this, functionState, int64LT](LLVMBuilderRef builder){
         buildFlare(FL(), globalState, functionState, builder);
-        buildPrint(globalState, builder, "Couldn't read from recording file. (1)");
+        buildSimpleCall(builder, globalState->externs->perror, {
+            globalState->getOrMakeStringConstant("Couldn't read from recording file (1)")
+        });
         buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, 1)});
       });
 
@@ -532,10 +534,12 @@ LLVMValueRef Determinism::readI256FromFile(
           });
   buildIf(
       globalState, functionState->containingFuncL, builder,
-      LLVMBuildICmp(builder, LLVMIntULT, resultLE, constI64LE(globalState, 1), ""),
+      LLVMBuildICmp(builder, LLVMIntSLT, resultLE, constI64LE(globalState, 1), ""),
       [this, functionState](LLVMBuilderRef builder){
         buildFlare(FL(), globalState, functionState, builder);
-        buildPrint(globalState, builder, "Couldn't read from recording file. (2)");
+        buildSimpleCall(builder, globalState->externs->perror, {
+            globalState->getOrMakeStringConstant("Couldn't read from recording file (2)")
+        });
         buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, 1)});
       });
 
@@ -578,10 +582,12 @@ void Determinism::readLimitedStringFromFile(
           });
   buildIf(
       globalState, functionState->containingFuncL, builder,
-      LLVMBuildICmp(builder, LLVMIntULT, resultLE, constI64LE(globalState, 1), ""),
+      LLVMBuildICmp(builder, LLVMIntSLT, resultLE, constI64LE(globalState, 1), ""),
       [this, functionState](LLVMBuilderRef builder){
         buildFlare(FL(), globalState, functionState, builder);
-        buildPrint(globalState, builder, "Couldn't read from recording file. (3)");
+        buildSimpleCall(builder, globalState->externs->perror, {
+            globalState->getOrMakeStringConstant("Couldn't read from recording file (3)")
+        });
         buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, 1)});
       });
 
@@ -611,7 +617,7 @@ void Determinism::readLimitedStringFromFile(
 //          });
 //  buildIf(
 //      globalState, functionState->containingFuncL, builder,
-//      LLVMBuildICmp(builder, LLVMIntULT, resultLE, constI64LE(globalState, 1), ""),
+//      LLVMBuildICmp(builder, LLVMIntSLT, resultLE, constI64LE(globalState, 1), ""),
 //      [this](LLVMBuilderRef builder){
 //        buildPrint(globalState, builder, "Couldn't read from recording file.");
 //        buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, 1)});
@@ -808,13 +814,16 @@ void Determinism::buildWriteValueToFile(
   if (dynamic_cast<Int*>(sourceRefMT->kind)) {
     auto intAsI64LE = LLVMBuildZExt(builder, sourceRefLE, int64LT, "boolAsI64");
     writeI64ToFile(functionState, builder, intAsI64LE);
+  } else if (dynamic_cast<Void*>(sourceRefMT->kind)) {
   } else if (dynamic_cast<Bool*>(sourceRefMT->kind)) {
     auto boolAsI64LE = LLVMBuildZExt(builder, sourceRefLE, int64LT, "boolAsI64");
     writeI64ToFile(functionState, builder, boolAsI64LE);
   } else if (dynamic_cast<Float*>(sourceRefMT->kind)) {
     auto floatAsI64LE = LLVMBuildBitCast(builder, sourceRefLE, floatLT, "floatFromRecording");
     writeI64ToFile(functionState, builder, floatAsI64LE);
-  } else if (dynamic_cast<StructKind*>(sourceRefMT->kind)) {
+  } else if (dynamic_cast<StructKind*>(sourceRefMT->kind) ||
+             dynamic_cast<StaticSizedArrayT*>(sourceRefMT->kind) ||
+             dynamic_cast<RuntimeSizedArrayT*>(sourceRefMT->kind)) {
     buildFlare(FL(), globalState, functionState, builder, "Entering buildWriteValueToFile for struct");
 
     auto valeRegionInstanceRef =
@@ -826,18 +835,13 @@ void Determinism::buildWriteValueToFile(
         globalState->linearRegion->createRegionInstanceLocal(
             functionState, builder, useOffsetsLE, fileOffsetLE);
 
-//    auto[unusedHostRefLE, sizeI32LE] =
-//    sendValeObjectIntoHostAndDealias(
-//        globalState, functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef,
-//        sourceRefMT, hostRefMT, sourceRef);
-
-    auto [hostArgRef, sizeRef] =
+    auto [unused, sizeRef] =
         globalState->getRegion(hostRefMT)
             ->receiveUnencryptedAlienReference(
                 functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef, sourceRefMT, hostRefMT, sourceRef);
-    auto hostArgLE =
-        globalState->getRegion(hostRefMT)
-            ->checkValidReference(FL(), functionState, builder, true, hostRefMT, hostArgRef);
+//    auto hostArgLE =
+//        globalState->getRegion(hostRefMT)
+//            ->checkValidReference(FL(), functionState, builder, true, hostRefMT, hostArgRef);
     auto sizeI32LE =
         globalState->getRegion(hostRefMT)
             ->checkValidReference(FL(), functionState, builder, true, globalState->metalCache->i32Ref, sizeRef);
@@ -865,6 +869,20 @@ LLVMValueRef Determinism::buildMaybeStartDeterministicMode(
     LLVMBuilderRef builder, LLVMValueRef argcLE, LLVMValueRef mainArgsLE) {
   assert(maybeStartDeterministicModeLF);
   return buildSimpleCall(builder, maybeStartDeterministicModeLF, {argcLE, mainArgsLE});
+}
+
+void Determinism::buildMaybeStopDeterministicMode(
+    LLVMValueRef containingFunction, LLVMBuilderRef builder) {
+  auto int64LT = LLVMInt64TypeInContext(globalState->context);
+
+  auto fileHandleLE = LLVMBuildLoad(builder, fileHandleGlobalLE, "file");
+  auto fileHandleI64LE = LLVMBuildPtrToInt(builder, fileHandleLE, int64LT, "fileI64");
+  auto fileNotNullLE = LLVMBuildICmp(builder, LLVMIntNE, fileHandleI64LE, constI64LE(globalState, 0), "fileNotNull");
+  buildIf(
+      globalState, containingFunction, builder, fileNotNullLE,
+      [this, fileHandleLE](LLVMBuilderRef builder) {
+        buildSimpleCall(builder, globalState->externs->fclose, {fileHandleLE});
+      });
 }
 
 
@@ -911,16 +929,21 @@ Ref Determinism::buildReadValueFromFile(
   if (dynamic_cast<Int*>(targetRefMT->kind)) {
     auto intLE = LLVMBuildTrunc(builder, readI64FromFile(functionState, builder), int32LT, "intFromRecording");
     return wrap(globalState->getRegion(targetRefMT), targetRefMT, intLE);
+  } else if (dynamic_cast<Void*>(targetRefMT->kind)) {
+    return makeVoidRef(globalState);
   } else if (dynamic_cast<Bool*>(targetRefMT->kind)) {
     auto boolLE = LLVMBuildTrunc(builder, readI64FromFile(functionState, builder), int1LT, "boolFromRecording");
     return wrap(globalState->getRegion(targetRefMT), targetRefMT, boolLE);
   } else if (dynamic_cast<Float*>(targetRefMT->kind)) {
     auto floatLE = LLVMBuildBitCast(builder, readI64FromFile(functionState, builder), floatLT, "floatFromRecording");
     return wrap(globalState->getRegion(targetRefMT), targetRefMT, floatLE);
-  } else if (dynamic_cast<StructKind*>(targetRefMT->kind)) {
+  } else if (dynamic_cast<StructKind*>(targetRefMT->kind) ||
+      dynamic_cast<StaticSizedArrayT*>(targetRefMT->kind) ||
+      dynamic_cast<RuntimeSizedArrayT*>(targetRefMT->kind)) {
     buildFlare(FL(), globalState, functionState, builder, "Entering buildReadValueFromFile for struct");
     auto valueSizeLE = readI64FromFile(functionState, builder);
     auto tempBufferPtrLE = buildSimpleCall(builder, globalState->externs->malloc, {valueSizeLE});
+    buildFlare(FL(), globalState, functionState, builder, "Size ", valueSizeLE);
 
     auto freadResultLE =
         buildSimpleCall(
@@ -936,7 +959,9 @@ Ref Determinism::buildReadValueFromFile(
         LLVMBuildICmp(builder, LLVMIntSLT, freadResultLE, constI64LE(globalState, 1), ""),
         [this, functionState](LLVMBuilderRef builder){
           buildFlare(FL(), globalState, functionState, builder);
-          buildPrint(globalState, builder, "Couldn't read from recording file. (4)");
+          buildSimpleCall(builder, globalState->externs->perror, {
+            globalState->getOrMakeStringConstant("Couldn't read from recording file (4)")
+          });
           buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, 1)});
         });
 

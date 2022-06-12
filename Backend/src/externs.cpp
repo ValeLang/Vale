@@ -24,6 +24,7 @@ Externs::Externs(LLVMModuleRef mod, LLVMContextRef context) {
   malloc = addExtern(mod, "malloc", int8PtrLT, {int64LT});
   free = addExtern(mod, "free", voidLT, {int8PtrLT});
   exit = addExtern(mod, "exit", voidLT, {int64LT});
+  perror = addExtern(mod, "perror", voidLT, {int8PtrLT});
   assert = addExtern(mod, "__vassert", voidLT, {int1LT, int8PtrLT});
   assertI64Eq = addExtern(mod, "__vassertI64Eq", voidLT, {int64LT, int64LT, int8PtrLT});
   printCStr = addExtern(mod, "__vprintCStr", voidLT, {int8PtrLT});

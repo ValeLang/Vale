@@ -504,7 +504,9 @@ LLVMValueRef Determinism::readI64FromFile(
       LLVMBuildICmp(builder, LLVMIntSLT, resultLE, constI64LE(globalState, 1), ""),
       [this, functionState, int64LT](LLVMBuilderRef builder){
         buildFlare(FL(), globalState, functionState, builder);
-        buildPrint(globalState, builder, "Couldn't read from recording file. (1)");
+        buildSimpleCall(builder, globalState->externs->perror, {
+            globalState->getOrMakeStringConstant("Couldn't read from recording file (1)")
+        });
         buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, 1)});
       });
 
@@ -535,7 +537,9 @@ LLVMValueRef Determinism::readI256FromFile(
       LLVMBuildICmp(builder, LLVMIntULT, resultLE, constI64LE(globalState, 1), ""),
       [this, functionState](LLVMBuilderRef builder){
         buildFlare(FL(), globalState, functionState, builder);
-        buildPrint(globalState, builder, "Couldn't read from recording file. (2)");
+        buildSimpleCall(builder, globalState->externs->perror, {
+            globalState->getOrMakeStringConstant("Couldn't read from recording file (2)")
+        });
         buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, 1)});
       });
 
@@ -581,7 +585,9 @@ void Determinism::readLimitedStringFromFile(
       LLVMBuildICmp(builder, LLVMIntULT, resultLE, constI64LE(globalState, 1), ""),
       [this, functionState](LLVMBuilderRef builder){
         buildFlare(FL(), globalState, functionState, builder);
-        buildPrint(globalState, builder, "Couldn't read from recording file. (3)");
+        buildSimpleCall(builder, globalState->externs->perror, {
+            globalState->getOrMakeStringConstant("Couldn't read from recording file (3)")
+        });
         buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, 1)});
       });
 
@@ -953,7 +959,9 @@ Ref Determinism::buildReadValueFromFile(
         LLVMBuildICmp(builder, LLVMIntSLT, freadResultLE, constI64LE(globalState, 1), ""),
         [this, functionState](LLVMBuilderRef builder){
           buildFlare(FL(), globalState, functionState, builder);
-          buildPrint(globalState, builder, "Couldn't read from recording file. (4)");
+          buildSimpleCall(builder, globalState->externs->perror, {
+            globalState->getOrMakeStringConstant("Couldn't read from recording file (4)")
+          });
           buildSimpleCall(builder, globalState->externs->exit, {constI64LE(globalState, 1)});
         });
 

@@ -865,6 +865,20 @@ LLVMValueRef Determinism::buildMaybeStartDeterministicMode(
   return buildSimpleCall(builder, maybeStartDeterministicModeLF, {argcLE, mainArgsLE});
 }
 
+void Determinism::buildMaybeStopDeterministicMode(
+    LLVMValueRef containingFunction, LLVMBuilderRef builder) {
+  auto int64LT = LLVMInt64TypeInContext(globalState->context);
+
+  auto fileHandleLE = LLVMBuildLoad(builder, fileHandleGlobalLE, "file");
+  auto fileHandleI64LE = LLVMBuildPtrToInt(builder, fileHandleLE, int64LT, "fileI64");
+  auto fileNotNullLE = LLVMBuildICmp(builder, LLVMIntNE, fileHandleI64LE, constI64LE(globalState, 0), "fileNotNull");
+  buildIf(
+      globalState, containingFunction, builder, fileNotNullLE,
+      [this, fileHandleLE](LLVMBuilderRef builder) {
+        buildSimpleCall(builder, globalState->externs->fclose, {fileHandleLE});
+      });
+}
+
 
 void Determinism::buildWriteRefToFile(LLVMBuilderRef builder, LLVMValueRef refI256LE) {
   assert(writeRefToFileLF);

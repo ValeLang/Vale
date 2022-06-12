@@ -937,6 +937,7 @@ Ref Determinism::buildReadValueFromFile(
     buildFlare(FL(), globalState, functionState, builder, "Entering buildReadValueFromFile for struct");
     auto valueSizeLE = readI64FromFile(functionState, builder);
     auto tempBufferPtrLE = buildSimpleCall(builder, globalState->externs->malloc, {valueSizeLE});
+    buildFlare(FL(), globalState, functionState, builder, "Size ", valueSizeLE);
 
     auto freadResultLE =
         buildSimpleCall(

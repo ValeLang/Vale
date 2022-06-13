@@ -23,25 +23,25 @@ NaiveRC::NaiveRC(GlobalState* globalState_, RegionId* regionId_) :
         makeAssistAndNaiveRCNonWeakableControlBlock(globalState),
         makeAssistAndNaiveRCWeakableControlBlock(globalState),
         WrcWeaks::makeWeakRefHeaderStruct(globalState)),
-//    kindStructs(
-//        globalState,
-//        [this](Kind* kind) -> KindStructs* {
-//          if (globalState->getKindWeakability(kind) == Weakability::NON_WEAKABLE) {
-//            return &mutNonWeakableStructs;
-//          } else {
-//            return &mutWeakableStructs;
-//          }
-//        }),
-//    kindStructs(
-//        [this](Kind* kind) -> KindStructs* {
-//          if (globalState->getKindWeakability(kind) == Weakability::NON_WEAKABLE) {
-//            assert(false);
-//          } else {
-//            return &mutWeakableStructs;
-//          }
-//        }),
     fatWeaks(globalState_, &kindStructs),
     wrcWeaks(globalState_, &kindStructs, &kindStructs) {
+
+  regionKind =
+      globalState->metalCache->getStructKind(
+          globalState->metalCache->getName(
+              globalState->metalCache->builtinPackageCoord, namePrefix + "_Region"));
+  regionRefMT =
+      globalState->metalCache->getReference(
+          Ownership::BORROW, Location::YONDER, regionKind);
+  globalState->regionIdByKind.emplace(regionKind, globalState->metalCache->mutRegionId);
+  kindStructs.declareStruct(regionKind, Weakability::NON_WEAKABLE);
+  kindStructs.defineStruct(regionKind, {
+      // This region doesnt need anything
+  });
+}
+
+Reference* NaiveRC::getRegionRefType() {
+  return regionRefMT;
 }
 
 RegionId* NaiveRC::getRegionId() {
@@ -165,7 +165,7 @@ void NaiveRC::dealias(
     assert(false); // impl
   } else if (sourceMT->ownership == Ownership::BORROW) {
     auto rcLE = adjustStrongRc(from, globalState, functionState, &kindStructs, builder, sourceRef, sourceMT, -1);
-    buildIf(
+    buildIfV(
         globalState, functionState, builder, isZeroLE(builder, rcLE),
         [this, functionState, sourceRef, sourceMT](LLVMBuilderRef thenBuilder) {
           deallocate(FL(), functionState, thenBuilder, sourceMT, sourceRef);
@@ -198,7 +198,7 @@ WrapperPtrLE NaiveRC::lockWeakRef(
       auto weakFatPtrLE =
           kindStructs.makeWeakFatPtr(
               refM,
-              checkValidReference(FL(), functionState, builder, refM, weakRefLE));
+              checkValidReference(FL(), functionState, builder, false, refM, weakRefLE));
       return kindStructs.makeWrapperPtr(
           FL(), functionState, builder, refM,
           wrcWeaks.lockWrciFatPtr(from, functionState, builder, refM, weakFatPtrLE));
@@ -250,6 +250,11 @@ Ref NaiveRC::asSubtype(
 }
 
 LLVMTypeRef NaiveRC::translateType(Reference* referenceM) {
+  if (referenceM == regionRefMT) {
+    // We just have a raw pointer to region structs
+    return LLVMPointerType(kindStructs.getStructInnerStruct(regionKind), 0);
+  }
+
   switch (referenceM->ownership) {
     case Ownership::SHARE:
       assert(false);
@@ -356,7 +361,7 @@ void NaiveRC::discardOwningRef(
       adjustStrongRc(
           AFL("Destroy decrementing the owning ref"),
           globalState, functionState, &kindStructs, builder, sourceRef, sourceMT, -1);
-  buildIf(
+  buildIfV(
       globalState, functionState, builder, isZeroLE(builder, rcLE),
       [this, functionState, blockState, sourceRef, sourceMT](LLVMBuilderRef thenBuilder) {
         deallocate(FL(), functionState, thenBuilder, sourceMT, sourceRef);
@@ -387,6 +392,7 @@ void NaiveRC::noteWeakableDestroyed(
 void NaiveRC::storeMember(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* structRefMT,
     Ref structRef,
     bool structKnownLive,
@@ -400,7 +406,7 @@ void NaiveRC::storeMember(
     case Ownership::BORROW: {
       auto newMemberLE =
           globalState->getRegion(newMemberRefMT)->checkValidReference(
-              FL(), functionState, builder, newMemberRefMT, newMemberRef);
+              FL(), functionState, builder, false, newMemberRefMT, newMemberRef);
       storeMemberStrong(
           globalState, functionState, builder, &kindStructs, structRefMT, structRef,
           structKnownLive, memberIndex, memberName, newMemberLE);
@@ -409,7 +415,7 @@ void NaiveRC::storeMember(
     case Ownership::WEAK: {
       auto newMemberLE =
           globalState->getRegion(newMemberRefMT)->checkValidReference(
-              FL(), functionState, builder, newMemberRefMT, newMemberRef);
+              FL(), functionState, builder, false, newMemberRefMT, newMemberRef);
       storeMemberWeak(
           globalState, functionState, builder, &kindStructs, structRefMT, structRef,
           structKnownLive, memberIndex, memberName, newMemberLE);
@@ -451,6 +457,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> NaiveRC::explodeInterfaceRef(
 Ref NaiveRC::getRuntimeSizedArrayLength(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* rsaRefMT,
     Ref arrayRef,
     bool arrayKnownLive) {
@@ -460,6 +467,7 @@ Ref NaiveRC::getRuntimeSizedArrayLength(
 Ref NaiveRC::getRuntimeSizedArrayCapacity(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* rsaRefMT,
     Ref arrayRef,
     bool arrayKnownLive) {
@@ -470,6 +478,7 @@ LLVMValueRef NaiveRC::checkValidReference(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    bool expectLive,
     Reference* refM,
     Ref ref) {
   Reference *actualRefM = nullptr;
@@ -536,9 +545,8 @@ Ref NaiveRC::upgradeLoadResultToRefWithTargetOwnership(
       // - Swapping from a member
       return sourceRef;
     } else if (targetOwnership == Ownership::BORROW) {
-      auto resultRef = transmutePtr(globalState, functionState, builder, sourceType, targetType, sourceRef);
-      checkValidReference(FL(),
-                          functionState, builder, targetType, resultRef);
+      auto resultRef = transmutePtr(globalState, functionState, builder, false, sourceType, targetType, sourceRef);
+      checkValidReference(FL(), functionState, builder, false, targetType, resultRef);
       return resultRef;
     } else if (targetOwnership == Ownership::WEAK) {
       return wrcWeaks.assembleWeakRef(functionState, builder, sourceType, targetType, sourceRef);
@@ -621,6 +629,7 @@ void NaiveRC::fillControlBlock(
 LoadResult NaiveRC::loadElementFromSSA(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* ssaRefMT,
     StaticSizedArrayT* ssaMT,
     Ref arrayRef,
@@ -634,6 +643,7 @@ LoadResult NaiveRC::loadElementFromSSA(
 LoadResult NaiveRC::loadElementFromRSA(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* rsaRefMT,
     RuntimeSizedArrayT* rsaMT,
     Ref arrayRef,
@@ -657,7 +667,8 @@ Ref NaiveRC::storeElementInRSA(
   auto arrayWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, rsaRefMT,
-          globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, arrayRef));
+          globalState->getRegion(rsaRefMT)
+              ->checkValidReference(FL(), functionState, builder, true, rsaRefMT, arrayRef));
   auto sizeRef = ::getRuntimeSizedArrayLength(globalState, functionState, builder, arrayWrapperPtrLE);
   auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, true, arrayWrapperPtrLE);
   buildFlare(FL(), globalState, functionState, builder);
@@ -697,6 +708,7 @@ void NaiveRC::deallocate(
     LLVMBuilderRef builder,
     Reference* refMT,
     Ref ref) {
+  buildFlare(FL(), globalState, functionState, builder);
   innerDeallocate(from, globalState, functionState, &kindStructs, builder, refMT, ref);
 }
 
@@ -729,6 +741,7 @@ Ref NaiveRC::constructRuntimeSizedArray(
 Ref NaiveRC::loadMember(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* structRefMT,
     Ref structRef,
     bool structKnownLive,
@@ -736,6 +749,8 @@ Ref NaiveRC::loadMember(
     Reference* expectedMemberType,
     Reference* targetType,
     const std::string& memberName) {
+  globalState->getRegion(structRefMT)
+      ->checkValidReference(FL(), functionState, builder, true, structRefMT, structRef);
 
   switch (globalState->opt->regionOverride) {
     case RegionOverride::NAIVE_RC: {
@@ -755,8 +770,7 @@ Ref NaiveRC::loadMember(
         assert(false);
       } else {
         if (structRefMT->location == Location::INLINE) {
-          auto structRefLE = checkValidReference(FL(), functionState, builder,
-                                                 structRefMT, structRef);
+          auto structRefLE = checkValidReference(FL(), functionState, builder, false, structRefMT, structRef);
           return wrap(globalState->getRegion(expectedMemberType), expectedMemberType,
                       LLVMBuildExtractValue(
                           builder, structRefLE, memberIndex, memberName.c_str()));
@@ -799,7 +813,7 @@ void NaiveRC::checkInlineStructType(
     LLVMBuilderRef builder,
     Reference* refMT,
     Ref ref) {
-  auto argLE = checkValidReference(FL(), functionState, builder, refMT, ref);
+  auto argLE = checkValidReference(FL(), functionState, builder, false, refMT, ref);
   auto structKind = dynamic_cast<StructKind*>(refMT->kind);
   assert(structKind);
   assert(LLVMTypeOf(argLE) == kindStructs.getStructInnerStruct(structKind));
@@ -916,6 +930,8 @@ LLVMTypeRef NaiveRC::getInterfaceMethodVirtualParamAnyType(Reference* reference)
 std::pair<Ref, Ref> NaiveRC::receiveUnencryptedAlienReference(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref sourceRegionInstanceRef,
+    Ref targetRegionInstanceRef,
     Reference* sourceRefMT,
     Reference* targetRefMT,
     Ref sourceRef) {
@@ -936,6 +952,7 @@ LLVMValueRef NaiveRC::encryptAndSendFamiliarReference(
 void NaiveRC::pushRuntimeSizedArrayNoBoundsCheck(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *rsaRefMT,
     RuntimeSizedArrayT *rsaMT,
     Ref rsaRef,
@@ -945,7 +962,7 @@ void NaiveRC::pushRuntimeSizedArrayNoBoundsCheck(
   auto arrayWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, rsaRefMT,
-          globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, rsaRef));
+          globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, true, rsaRefMT, rsaRef));
   ::initializeElementInRSA(
       globalState, functionState, builder, &kindStructs, true, true, rsaMT, rsaRefMT, arrayWrapperPtrLE, rsaRef, indexRef, elementRef);
 }
@@ -953,6 +970,7 @@ void NaiveRC::pushRuntimeSizedArrayNoBoundsCheck(
 Ref NaiveRC::popRuntimeSizedArrayNoBoundsCheck(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref arrayRegionInstanceRef,
     Reference* rsaRefMT,
     RuntimeSizedArrayT* rsaMT,
     Ref arrayRef,
@@ -964,7 +982,8 @@ Ref NaiveRC::popRuntimeSizedArrayNoBoundsCheck(
   auto rsaWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, rsaRefMT,
-          globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, arrayRef));
+          globalState->getRegion(rsaRefMT)
+              ->checkValidReference(FL(), functionState, builder, true, rsaRefMT, arrayRef));
   decrementRSASize(globalState, functionState, &kindStructs, builder, rsaRefMT, rsaWrapperPtrLE);
   return elementLE;
 }
@@ -972,6 +991,7 @@ Ref NaiveRC::popRuntimeSizedArrayNoBoundsCheck(
 void NaiveRC::initializeElementInSSA(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* ssaRefMT,
     StaticSizedArrayT* ssaMT,
     Ref arrayRef,
@@ -982,7 +1002,8 @@ void NaiveRC::initializeElementInSSA(
   auto arrayWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, ssaRefMT,
-          globalState->getRegion(ssaRefMT)->checkValidReference(FL(), functionState, builder, ssaRefMT, arrayRef));
+          globalState->getRegion(ssaRefMT)
+              ->checkValidReference(FL(), functionState, builder, true, ssaRefMT, arrayRef));
   auto sizeRef = globalState->constI32(ssaDef->size);
   auto arrayElementsPtrLE = getStaticSizedArrayContentsPtr(builder, arrayWrapperPtrLE);
   ::initializeElementWithoutIncrementSize(
@@ -1028,7 +1049,7 @@ LLVMValueRef NaiveRC::stackify(
     Local* local,
     Ref refToStore,
     bool knownLive) {
-  auto toStoreLE = checkValidReference(FL(), functionState, builder, local->type, refToStore);
+  auto toStoreLE = checkValidReference(FL(), functionState, builder, false, local->type, refToStore);
   auto typeLT = translateType(local->type);
   return makeBackendLocal(functionState, builder, typeLT, local->id->maybeName.c_str(), toStoreLE);
 }
@@ -1050,4 +1071,13 @@ std::string NaiveRC::getExportName(
     Reference* reference,
     bool includeProjectName) {
   return package->getKindExportName(reference->kind, includeProjectName) + (reference->location == Location::YONDER ? "Ref" : "");
+}
+
+Ref NaiveRC::createRegionInstanceLocal(FunctionState* functionState, LLVMBuilderRef builder) {
+  auto regionLT = kindStructs.getStructInnerStruct(regionKind);
+  auto regionInstancePtrLE =
+      makeBackendLocal(functionState, builder, regionLT, "region", LLVMGetUndef(regionLT));
+  auto regionInstanceRef = wrap(this, regionRefMT, regionInstancePtrLE);
+
+  return regionInstanceRef;
 }

@@ -11,6 +11,8 @@ func invoke_backend(
   census bool,
   verify bool,
   llvm_ir bool,
+  enable_replaying bool,
+  enable_side_calling bool,
   print_mem_overhead bool,
   elide_checks_for_known_live bool,
   override_known_live_true bool)
@@ -49,6 +51,12 @@ Subprocess {
   }
   if (llvm_ir) {
     command_line_args.add("--llvm_ir");
+  }
+  if (enable_replaying) {
+    command_line_args.add("--enable_replaying=true");
+  }
+  if (enable_side_calling) {
+    command_line_args.add("--enable_side_calling=true");
   }
   if (print_mem_overhead) {
     command_line_args.add("--print_mem_overhead");

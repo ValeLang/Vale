@@ -237,6 +237,8 @@ void KindStructs::declareEdge(
   auto itablePtr =
       LLVMAddGlobal(globalState->mod, interfaceTableStructL, edgeName.c_str());
   LLVMSetLinkage(itablePtr, LLVMExternalLinkage);
+  // ITables need to be 16-byte aligned, see ITN16BA.
+  LLVMSetAlignment(itablePtr, 16);
 
   globalState->interfaceTablePtrs.emplace(edge, itablePtr);
 }
@@ -629,31 +631,36 @@ ControlBlockPtrLE KindStructs::getControlBlockPtr(
     auto referenceLE =
         makeInterfaceFatPtr(
             from, functionState, builder, referenceM,
-            globalState->getRegion(referenceM)->checkValidReference(from, functionState, builder, referenceM, ref));
+            globalState->getRegion(referenceM)
+                ->checkValidReference(from, functionState, builder, true, referenceM, ref));
     return getControlBlockPtr(from, functionState, builder, kindM, referenceLE);
   } else if (dynamic_cast<StructKind*>(kindM)) {
     auto referenceLE =
         makeWrapperPtr(
             from, functionState, builder, referenceM,
-            globalState->getRegion(referenceM)->checkValidReference(from, functionState, builder, referenceM, ref));
+            globalState->getRegion(referenceM)
+                ->checkValidReference(from, functionState, builder, true, referenceM, ref));
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
   } else if (dynamic_cast<StaticSizedArrayT*>(kindM)) {
     auto referenceLE =
         makeWrapperPtr(
             from, functionState, builder, referenceM,
-            globalState->getRegion(referenceM)->checkValidReference(from, functionState, builder, referenceM, ref));
+            globalState->getRegion(referenceM)
+                ->checkValidReference(from, functionState, builder, true, referenceM, ref));
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
   } else if (dynamic_cast<RuntimeSizedArrayT*>(kindM)) {
     auto referenceLE =
         makeWrapperPtr(
             from, functionState, builder, referenceM,
-            globalState->getRegion(referenceM)->checkValidReference(from, functionState, builder, referenceM, ref));
+            globalState->getRegion(referenceM)
+                ->checkValidReference(from, functionState, builder, true, referenceM, ref));
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
   } else if (dynamic_cast<Str*>(kindM)) {
     auto referenceLE =
         makeWrapperPtr(
             from, functionState, builder, referenceM,
-            globalState->getRegion(referenceM)->checkValidReference(from, functionState, builder, referenceM, ref));
+            globalState->getRegion(referenceM)
+                ->checkValidReference(from, functionState, builder, true, referenceM, ref));
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
   } else {
     assert(false);

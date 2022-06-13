@@ -6,12 +6,14 @@
 #include <unordered_map>
 #include "metal/metalcache.h"
 #include "region/common/defaultlayout/structs.h"
+#include "region/urefstructlt.h"
 
 #include "metal/ast.h"
 #include "metal/instructions.h"
 #include "valeopts.h"
 #include "addresshasher.h"
 #include "externs.h"
+#include "utils/structlt.h"
 
 class IRegion;
 class KindStructs;
@@ -19,6 +21,7 @@ class KindStructs;
 class ControlBlock;
 class Linear;
 class RCImm;
+class Determinism;
 
 constexpr int LGT_ENTRY_MEMBER_INDEX_FOR_GEN = 0;
 constexpr int LGT_ENTRY_MEMBER_INDEX_FOR_NEXT_FREE = 1;
@@ -38,6 +41,7 @@ public:
   ValeOptions *opt = nullptr;
 
   Externs* externs = nullptr;
+  Determinism* determinism = nullptr;
 
   LLVMTargetDataRef dataLayout = nullptr;
   LLVMModuleRef mod = nullptr;
@@ -58,7 +62,6 @@ public:
   LLVMValueRef writeOnlyGlobal = nullptr;
   LLVMValueRef crashGlobal = nullptr;
 
-
   LLVMTypeRef wrcTableStructLT = nullptr;
   LLVMValueRef expandWrcTable = nullptr, checkWrci = nullptr, getNumWrcs = nullptr;
 
@@ -67,13 +70,29 @@ public:
 
 //  LLVMValueRef genMalloc = nullptr, genFree = nullptr;
 
-  LLVMTypeRef concreteHandleLT = nullptr; // 24 bytes, for SSA, RSA, and structs
-  LLVMTypeRef interfaceHandleLT = nullptr; // 32 bytes, for interfaces. concreteHandleLT plus 8b itable ptr.
-
+  // 32 bytes for the outside world to refer to our objects, see URSL.
+  std::unique_ptr<UniversalRefStructLT> universalRefStructLT;
+  // This is a tiny wrapper struct around the 32 byte integer, because LLVM does
+  // weird things with bigints that it doesn't do with structs. We were seeing
+  // garbage in the values that we received from C, perhaps big integers behave
+  // differently in some calling conventions or something.
+  LLVMTypeRef universalRefCompressedStructLT;
 
   // This is a global, we can return this when we want to return never. It should never actually be
   // used as an input to any expression in any function though.
   LLVMValueRef neverPtr = nullptr;
+
+//  LLVMValueRef coroutineEntryFunc = nullptr;
+
+  // These should eventually be moved into thread local storage when we do multithreading.
+  // Initialized at the beginning of main, used for C FFI.
+  LLVMValueRef sideStack = nullptr;
+  // Used for passing arguments to wrapper functions across stack switches.
+  // At some point we should just pass a pointer to a struct containing all of these.
+  // We should make sure that these don't get destroyed before the coroutine wants them.
+  // Though, I guess thats what structured concurrency is for.
+//  LLVMValueRef sideStackArgReturnDestPtr = nullptr;
+//  LLVMValueRef sideStackArgCalleeFuncPtrPtr = nullptr;
 
   LLVMBuilderRef stringConstantBuilder = nullptr;
   std::unordered_map<std::string, LLVMValueRef> stringConstants;
@@ -110,8 +129,7 @@ public:
   // This keeps us from adding more edges or interfaces after we've already started compiling them.
   bool interfacesOpen = true;
 
-  LLVMTypeRef getConcreteHandleStruct() { return concreteHandleLT; }
-  LLVMTypeRef getInterfaceHandleStruct() { return interfaceHandleLT; }
+  UniversalRefStructLT* getUniversalRefStructLT() { return universalRefStructLT.get(); }
 
   void addInterfaceExtraMethod(InterfaceKind* interfaceKind, InterfaceMethod* method) {
     assert(interfacesOpen);
@@ -185,7 +203,6 @@ public:
     assert(false);
   }
 
-
   Weakability getKindWeakability(Kind* kind);
 
   Ref constI64(int64_t x);
@@ -210,11 +227,11 @@ public:
 
   RCImm* rcImm = nullptr;
   IRegion* mutRegion = nullptr;
-  IRegion* unsafeRegion = nullptr;
-  IRegion* assistRegion = nullptr;
-  IRegion* naiveRcRegion = nullptr;
-  IRegion* resilientV3Region = nullptr;
-  IRegion* resilientV4Region = nullptr;
+//  IRegion* unsafeRegion = nullptr;
+//  IRegion* assistRegion = nullptr;
+//  IRegion* naiveRcRegion = nullptr;
+//  IRegion* resilientV3Region = nullptr;
+//  IRegion* resilientV4Region = nullptr;
   Linear* linearRegion = nullptr;
   std::unordered_map<RegionId*, IRegion*, AddressHasher<RegionId*>> regions;
 

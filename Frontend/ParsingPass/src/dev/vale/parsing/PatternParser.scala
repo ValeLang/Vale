@@ -27,11 +27,11 @@ class PatternParser {
 //    val begin = iter.getPos()
 //
 //    if (iter.trySkip(() => "^_\\b".r)) {
-//      return Ok(IgnoredLocalNameDeclarationP(RangeL(begin, iter.getPos())))
+//      return Ok(IgnoredLocalNameDeclarationP(RangeP(begin, iter.getPos())))
 //    }
 //
 //    if (iter.trySkip(() => "^&self".r)) {
-//      return Ok(LocalNameDeclarationP(NameP(RangeL(begin, iter.getPos()), "self")))
+//      return Ok(LocalNameDeclarationP(NameP(RangeP(begin, iter.getPos()), "self")))
 //    }
 //
 //    if (iter.trySkip(() => "^self\\.".r)) {
@@ -40,7 +40,15 @@ class PatternParser {
 //          case None => return Err(BadLocalName(iter.getPos()))
 //          case Some(n) => n
 //        }
-//      return Ok(ConstructingMemberNameDeclarationP(NameP(ast.RangeL(begin, name.range.end), name.str)))
+//      return Ok(ConstructingMemberNameDeclarationP(NameP(ast.RangeP(begin, name.range.end), name.str)))
+//    }
+//
+//    if (iter.trySkip(() => "^let".r)) {
+//      iter.consumeWhitespace()
+//
+//      if (iter.trySkip(() => "^mut".r)) {
+//        iter.consumeWhitespace()
+//      }
 //    }
 //
 //    val name =
@@ -48,6 +56,7 @@ class PatternParser {
 //        case None => return Err(BadLocalName(iter.getPos()))
 //        case Some(n) => n
 //      }
+//    iter.trySkip(() => "^!".r)
 //    return Ok(LocalNameDeclarationP(name))
   }
 

@@ -188,17 +188,6 @@ case class CallSR(
   override def runeUsages: Array[RuneUsage] = Array(resultRune, templateRune) ++ args
 }
 
-case class PrototypeSR(
-  range: RangeS,
-  resultRune: RuneUsage,
-  name: StrI,
-  parameters: Array[RuneUsage],
-  returnTypeRune: RuneUsage
-) extends IRulexSR {
-  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
-  override def runeUsages: Array[RuneUsage] = Array(resultRune, returnTypeRune) ++ parameters
-}
-
 case class PackSR(
   range: RangeS,
   resultRune: RuneUsage,

@@ -27,13 +27,23 @@ fi
 shift;
 
 
-VALEC_VERSION="$1"
+VALEC_VERSION=`cat "$1"`
 if [ "$VALEC_VERSION" == "" ]
 then
-  echo "Please specify the new version."
+  echo "Please specify a file containing the new version."
   exit 1
 fi
 shift;
+
+LLVM_CMAKE_DIR=$1
+if [ "$LLVM_CMAKE_DIR" == "" ]
+then
+  LLVM_CMAKE_DIR="/usr/local/Cellar/llvm/`ls /usr/local/Cellar/llvm`/lib/cmake/llvm"
+  echo "No LLVM override, using one in $LLVM_CMAKE_DIR"
+else
+  echo "Using LLVM dir $LLVM_CMAKE_DIR"
+  shift;
+fi
 
 touch ~/.zshrc
 source ~/.zshrc
@@ -46,15 +56,12 @@ sbt assembly || { echo 'Frontend build failed, aborting.' ; exit 1; }
 cd ../Backend
 
 echo Generating Backend...
-LLVM_CMAKE_DIR="/usr/local/Cellar/llvm/`ls /usr/local/Cellar/llvm`/lib/cmake/llvm"
-cmake -B build -D LLVM_DIR="$LLVM_CMAKE_DIR" || { echo 'Backend generate failed, aborting.' ; exit 1; }
-
-cd build
+cmake -B build -DLLVM_DIR="$LLVM_CMAKE_DIR" || { echo 'Backend generate failed, aborting.' ; exit 1; }
 
 echo Compiling Backend...
-make || { echo 'Backend build failed, aborting.' ; exit 1; }
+cmake --build build || { echo 'Backend build failed, aborting.' ; exit 1; }
 
-cd ../../Coordinator
+cd ../Coordinator
 
 echo Compiling Coordinator...
 ./build.sh $BOOTSTRAPPING_VALEC_DIR || { echo 'Coordinator build failed, aborting.' ; exit 1; }
@@ -64,9 +71,9 @@ cd ../scripts
 
 rm -rf ../release-mac || { echo 'Error removing previous release-mac dir.' ; exit 1; }
 mkdir -p ../release-mac || { echo 'Error making new release-mac dir.' ; exit 1; }
-mkdir -p ../release-mac/samples || { echo 'Error making new samples dir.' ; exit 1; }
+# mkdir -p ../release-mac/samples || { echo 'Error making new samples dir.' ; exit 1; }
 cp ../Frontend/Frontend.jar ../release-mac || { echo 'Error copying into release-mac.' ; exit 1; }
-cp -r ../Frontend/Tests/test/main/resources/programs ../release-mac/samples || { echo 'Error copying into release-mac.' ; exit 1; }
+# cp -r ../Frontend/Tests/test/main/resources/programs ../release-mac/samples || { echo 'Error copying into release-mac.' ; exit 1; }
 cp -r ../Backend/builtins ../release-mac/builtins || { echo 'Error copying into release-mac.' ; exit 1; }
 cp ../Backend/build/backend ../release-mac/backend || { echo 'Error copying into release-mac.' ; exit 1; }
 cp -r ../stdlib ../release-mac/stdlib || { echo 'Error copying into release-mac.' ; exit 1; }
@@ -76,7 +83,7 @@ cat all/README | sed s/\{valec_exe\}/.\\\/valec/g | sed s/\{sep\}/\\/\/g | sed s
 cat all/valec-help-build.txt | sed s/\{valec_exe\}/.\\\/valec/g | sed s/\{sep\}/\\/\/g | sed s/\{valec_version\}/$VALEC_VERSION/g > ../release-mac/valec-help-build.txt || { echo 'Error copying into release-mac.' ; exit 1; }
 cat all/valec-help.txt | sed s/\{valec_exe\}/.\\\/valec/g | sed s/\{sep\}/\\/\/g | sed s/\{valec_version\}/$VALEC_VERSION/g > ../release-mac/valec-help.txt || { echo 'Error copying into release-mac.' ; exit 1; }
 cat all/valec-version.txt | sed s/\{valec_exe\}/.\\\/valec/g | sed s/\{sep\}/\\/\/g | sed s/\{valec_version\}/$VALEC_VERSION/g > ../release-mac/valec-version.txt || { echo 'Error copying into release-mac.' ; exit 1; }
-cp -r all/helloworld ../release-mac/samples/helloworld || { echo 'Error copying into release-mac.' ; exit 1; }
+# cp -r all/helloworld ../release-mac/samples/helloworld || { echo 'Error copying into release-mac.' ; exit 1; }
 
 cd ../release-mac || { echo 'Error copying into release-mac.' ; exit 1; }
 zip -r Vale-Mac-0.zip * || { echo 'Error copying into release-mac.' ; exit 1; }
@@ -92,7 +99,7 @@ then
   ./build.sh $BOOTSTRAPPING_VALEC_DIR || { echo 'Tester build failed, aborting.' ; exit 1; }
 
   echo Running Tester...
-  ./build/testvalec --frontend_path ./BuiltValeCompiler/Frontend.jar --backend_path ./BuiltValeCompiler/backend --builtins_dir ./BuiltValeCompiler/builtins --valec_path ./BuiltValeCompiler/valec --backend_tests_dir ../Backend/test --frontend_tests_dir ../Frontend --concurrent 6 @assist || { echo 'Tests failed, aborting.' ; exit 1; }
+  ./build/testvalec --frontend_path ./BuiltValeCompiler/Frontend.jar --backend_path ./BuiltValeCompiler/backend --builtins_dir ./BuiltValeCompiler/builtins --valec_path ./BuiltValeCompiler/valec --backend_tests_dir ../Backend/test --frontend_tests_dir ../Frontend --concurrent 6 @resilient-v3 || { echo 'Tests failed, aborting.' ; exit 1; }
 fi
 
 cd ..

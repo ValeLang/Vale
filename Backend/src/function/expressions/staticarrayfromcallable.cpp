@@ -26,9 +26,13 @@ Ref translateStaticArrayFromCallable(
   auto ssaDefMT = globalState->program->getStaticSizedArray(staticSizedArrayMT);
   auto sizeRef = globalState->constI32(ssaDefMT->size);
 
+  auto arrayRegionInstanceRef =
+      // At some point, look up the actual region instance, perhaps from the FunctionState?
+      globalState->getRegion(arrayRefType)->createRegionInstanceLocal(functionState, builder);
+
   auto generatorRef = translateExpression(globalState, functionState, blockState, builder, generatorExpr);
-  globalState->getRegion(generatorType)->checkValidReference(FL(), functionState, builder,
-      generatorType, generatorRef);
+  globalState->getRegion(generatorType)
+      ->checkValidReference(FL(), functionState, builder, true, generatorType, generatorRef);
 
   std::unique_ptr<Ref> result;
   if (staticArrayFromCallable->arrayRefType->location == Location::INLINE) {
@@ -52,6 +56,7 @@ Ref translateStaticArrayFromCallable(
         globalState,
         functionState,
         builder,
+        arrayRegionInstanceRef,
         arrayRefType,
         staticSizedArrayMT,
         elementType,
@@ -62,8 +67,8 @@ Ref translateStaticArrayFromCallable(
         ssaRef);//getRuntimeSizedArrayContentsPtr(builder, rsaWrapperPtrLE));
     buildFlare(FL(), globalState, functionState, builder);
 
-    globalState->getRegion(staticArrayFromCallable->arrayRefType)->checkValidReference(FL(), functionState, builder,
-        staticArrayFromCallable->arrayRefType, ssaRef);
+    globalState->getRegion(staticArrayFromCallable->arrayRefType)
+        ->checkValidReference(FL(), functionState, builder, true, staticArrayFromCallable->arrayRefType, ssaRef);
     result.reset(new Ref(ssaRef));
   }
 

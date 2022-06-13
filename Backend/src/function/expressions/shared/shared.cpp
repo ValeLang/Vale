@@ -24,6 +24,13 @@ LLVMValueRef makeVoid(GlobalState* globalState) {
   return LLVMGetUndef(globalState->rcImm->translateType(globalState->metalCache->voidRef));
 }
 
+LLVMTypeRef makeEmptyStructType(GlobalState* globalState) {
+  return LLVMStructTypeInContext(globalState->context, nullptr, 0, false);
+}
+LLVMValueRef makeEmptyStruct(GlobalState* globalState) {
+  return LLVMConstNamedStruct(makeEmptyStructType(globalState), nullptr, 0);
+}
+
 Ref makeVoidRef(GlobalState* globalState) {
   auto voidLE = makeVoid(globalState);
   auto refMT = globalState->metalCache->voidRef;
@@ -127,6 +134,10 @@ void buildPrint(
     LLVMValueRef exprLE) {
   if (LLVMTypeOf(exprLE) == LLVMInt64TypeInContext(globalState->context)) {
     LLVMBuildCall(builder, globalState->externs->printInt, &exprLE, 1, "");
+  } else if (LLVMGetTypeKind(LLVMTypeOf(exprLE)) == LLVMIntegerTypeKind) {
+    assert(LLVMSizeOfTypeInBits(globalState->dataLayout, LLVMTypeOf(exprLE)) <= 64);
+    auto int64LE = LLVMBuildZExt(builder, exprLE, LLVMInt64TypeInContext(globalState->context), "");
+    LLVMBuildCall(builder, globalState->externs->printInt, &int64LE, 1, "");
   } else if (LLVMTypeOf(exprLE) == LLVMInt32TypeInContext(globalState->context)) {
     auto i64LE = LLVMBuildZExt(builder, exprLE, LLVMInt64TypeInContext(globalState->context), "asI64");
     LLVMBuildCall(builder, globalState->externs->printInt, &i64LE, 1, "");
@@ -158,24 +169,51 @@ void buildPrint(
   buildPrint(globalState, builder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), num, false));
 }
 
+void buildAssertWithExitCode(
+    GlobalState* globalState,
+    LLVMValueRef function,
+    LLVMBuilderRef builder,
+    LLVMValueRef conditionLE,
+    int exitCode,
+    const std::string& failMessage) {
+  buildIf(
+      globalState, function, builder, isZeroLE(builder, conditionLE),
+      [globalState, exitCode, failMessage](LLVMBuilderRef thenBuilder) {
+        buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
+        auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), exitCode, false);
+        LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
+      });
+}
+
 // We'll assert if conditionLE is false.
 void buildAssert(
+    GlobalState* globalState,
+    LLVMValueRef function,
+    LLVMBuilderRef builder,
+    LLVMValueRef conditionLE,
+    const std::string& failMessage) {
+  buildAssertWithExitCode(globalState, function, builder, conditionLE, 1, failMessage);
+}
+
+// We'll assert if conditionLE is false.
+void buildAssertV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef conditionLE,
     const std::string& failMessage) {
-  buildAssertWithExitCode(globalState, functionState, builder, conditionLE, 1, failMessage);
+  buildAssertWithExitCodeV(globalState, functionState, builder, conditionLE, 1, failMessage);
 }
 
-void buildAssertWithExitCode(
+
+void buildAssertWithExitCodeV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef conditionLE,
     int exitCode,
     const std::string& failMessage) {
-  buildIf(
+  buildIfV(
       globalState, functionState, builder, isZeroLE(builder, conditionLE),
       [globalState, exitCode, failMessage](LLVMBuilderRef thenBuilder) {
         buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
@@ -194,7 +232,7 @@ void buildAssertIntEq(
     const std::string& failMessage) {
   assert(LLVMTypeOf(aLE) == LLVMTypeOf(bLE));
   auto conditionLE = LLVMBuildICmp(builder, LLVMIntEQ, aLE, bLE, "assertCondition");
-  buildIf(
+  buildIfV(
       globalState, functionState, builder, isZeroLE(builder, conditionLE),
       [globalState, functionState, failMessage, aLE, bLE](LLVMBuilderRef thenBuilder) {
         buildPrint(globalState, thenBuilder, "Assertion failed! Expected ");
@@ -231,7 +269,8 @@ Ref buildInterfaceCall(
       globalState->getRegion(virtualParamMT)
           ->explodeInterfaceRef(
               functionState, builder, virtualParamMT, virtualArgRef);
-  buildFlare(FL(), globalState, functionState, builder);
+
+  //buildFlare(FL(), globalState, functionState, builder, "Doing an interface call, objPtrLE: ", ptrToIntLE(globalState, builder, newVirtualArgLE), " itablePtrLE ", ptrToIntLE(globalState, builder, itablePtrLE));
 
   // We can't represent these arguments as refs, because this new virtual arg is a void*, and we
   // can't represent that as a ref.
@@ -240,10 +279,11 @@ Ref buildInterfaceCall(
     argsLE.push_back(
         globalState->getRegion(prototype->params[i])
             ->checkValidReference(FL(),
-                functionState, builder, prototype->params[i], argRefs[i]));
+                functionState, builder, false, prototype->params[i], argRefs[i]));
   }
   argsLE[virtualParamIndex] = newVirtualArgLE;
 
+  buildFlare(FL(), globalState, functionState, builder);
   //buildFlare(FL(), globalState, functionState, builder, interfaceKindM->fullName->name, " ", ptrToIntLE(globalState, builder, methodFunctionPtrLE));
 
 //  assert(LLVMGetTypeKind(LLVMTypeOf(itablePtrLE)) == LLVMPointerTypeKind);
@@ -282,14 +322,15 @@ void buildAssertCensusContains(
             builder, ptrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
 
     auto isNullLE = LLVMBuildIsNull(builder, resultAsVoidPtrLE, "isNull");
-    buildIf(globalState, functionState, builder, isNullLE,
-            [globalState, checkerAFL, ptrLE](LLVMBuilderRef thenBuilder) {
-              buildPrintAreaAndFileAndLine(globalState, thenBuilder, checkerAFL);
-              buildPrint(globalState, thenBuilder, "Object null, so not in census, exiting!\n");
-              // See MPESC for status codes
-              auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 14, false);
-              LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
-            });
+    buildIfV(
+        globalState, functionState, builder, isNullLE,
+        [globalState, checkerAFL, ptrLE](LLVMBuilderRef thenBuilder) {
+          buildPrintAreaAndFileAndLine(globalState, thenBuilder, checkerAFL);
+          buildPrint(globalState, thenBuilder, "Object null, so not in census, exiting!\n");
+          // See MPESC for status codes
+          auto exitCodeIntLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 14, false);
+          LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
+        });
 
     auto isRegisteredIntLE =
         LLVMBuildCall(
@@ -297,7 +338,8 @@ void buildAssertCensusContains(
     auto isRegisteredBoolLE =
         LLVMBuildTruncOrBitCast(
             builder, isRegisteredIntLE, LLVMInt1TypeInContext(globalState->context), "");
-    buildIf(globalState, functionState, builder, isZeroLE(builder, isRegisteredBoolLE),
+    buildIfV(
+        globalState, functionState, builder, isZeroLE(builder, isRegisteredBoolLE),
         [globalState, checkerAFL, ptrLE](LLVMBuilderRef thenBuilder) {
           buildPrintAreaAndFileAndLine(globalState, thenBuilder, checkerAFL);
           buildPrint(globalState, thenBuilder, "Object &");
@@ -310,7 +352,7 @@ void buildAssertCensusContains(
   }
 }
 
-Ref buildCall(
+Ref buildCallV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -326,7 +368,7 @@ Ref buildCall(
     argsLE.push_back(
         globalState->getRegion(prototype->params[i])
             ->checkValidReference(FL(),
-                functionState, builder, prototype->params[i], argRefs[i]));
+                functionState, builder, false, prototype->params[i], argRefs[i]));
   }
 
   buildFlare(FL(), globalState, functionState, builder, "Doing call");
@@ -336,7 +378,8 @@ Ref buildCall(
   buildFlare(FL(), globalState, functionState, builder, "Done with call");
 
   auto resultRef = wrap(globalState->getRegion(prototype->returnType), prototype->returnType, resultLE);
-  globalState->getRegion(prototype->returnType)->checkValidReference(FL(), functionState, builder, prototype->returnType, resultRef);
+  globalState->getRegion(prototype->returnType)
+      ->checkValidReference(FL(), functionState, builder, false, prototype->returnType, resultRef);
 
   if (prototype->returnType->kind == globalState->metalCache->never) {
     buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
@@ -348,6 +391,315 @@ Ref buildCall(
     buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
     return resultRef;
   }
+}
+
+
+LLVMValueRef buildMaybeNeverCall(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef funcL,
+    std::vector<LLVMValueRef> argsLE) {
+  auto resultLE = LLVMBuildCall(builder, funcL, argsLE.data(), argsLE.size(), "");
+
+  auto returnLT = LLVMTypeOf(resultLE);
+  if (returnLT == makeNeverType(globalState)) {
+    LLVMBuildRet(builder, LLVMGetUndef(returnLT));
+    return globalState->neverPtr;
+  } else {
+    return resultLE;
+  }
+}
+
+LLVMValueRef getArgsAreaPtr(
+    GlobalState* globalState,
+    LLVMTypeRef argsStructLT,
+    int64_t argsAreaSize,
+    LLVMBuilderRef builder,
+    LLVMValueRef sideStackStartPtrAsI8PtrLE) {
+  auto argsStructPtrLT = LLVMPointerType(argsStructLT, 0);
+
+  auto offsetIntoNewStackLE = constI64LE(globalState, -argsAreaSize);
+  auto sideStackPtrBeforeSwitchAsI8PtrLE =
+      LLVMBuildGEP(builder, sideStackStartPtrAsI8PtrLE, &offsetIntoNewStackLE, 1, "sideStackPtr");
+
+  auto argsAreaPtrBeforeSwitchLE =
+      LLVMBuildPointerCast(builder, sideStackPtrBeforeSwitchAsI8PtrLE, argsStructPtrLT, "");
+
+  return argsAreaPtrBeforeSwitchLE;
+}
+
+// A side call is a call using different stack memory
+LLVMValueRef buildSideCall(
+    GlobalState* globalState,
+    LLVMTypeRef returnLT,
+    LLVMBuilderRef entryBuilder,
+    LLVMValueRef sideStackStartPtrAsI8PtrLE,
+    LLVMValueRef calleeFuncLE,
+    const std::vector<LLVMValueRef>& userArgsLE) {
+  buildPrint(globalState, entryBuilder, "In buildSideCall!\n");
+
+  auto int8LT = LLVMInt8TypeInContext(globalState->context);
+  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+  auto int64LT = LLVMInt64TypeInContext(globalState->context);
+  auto voidLT = LLVMVoidTypeInContext(globalState->context);
+  auto voidPtrLT = LLVMPointerType(int8LT, 0);
+  auto int8PtrLT = LLVMPointerType(int8LT, 0);
+
+  assert(LLVMTypeOf(sideStackStartPtrAsI8PtrLE) == int8PtrLT);
+  //assert(LLVMTypeOf(calleeFuncLE) == LLVMPointerType(calleeFuncLT, 0));
+
+  // Eventually we'll make this point at a tiny struct that contains
+  // the other arguments for the native call, plus this pointer.
+  // For now, it just has the jmp_buf pointer from the setjmp call.
+  auto originalStackPtrLE =
+      buildMaybeNeverCall(globalState, entryBuilder, globalState->externs->stacksaveIntrinsic, {
+          // If this was setjmp, we would supply the jmpBufPtrLE here.
+      });
+
+
+  auto mdstring = LLVMMDString("rsp\00", 4);
+  auto metadata = LLVMMDNodeInContext(globalState->context, &mdstring, 1);
+
+  int numPaddingInts = 0;//32;
+
+  //assert(userArgsLE.size() == LLVMCountParamTypes(calleeFuncLT));
+  std::vector<LLVMTypeRef> argsLT;
+  // Padding for any spilling that needs to happen
+  for (int i = 0; i < numPaddingInts; i++) {
+    argsLT.push_back(int64LT);
+  }
+  for (auto userArgLE : userArgsLE) {
+    argsLT.push_back(LLVMTypeOf(userArgLE));
+  }
+  argsLT.push_back(int8PtrLT);
+  argsLT.push_back(LLVMTypeOf(calleeFuncLE));
+  if (returnLT != voidLT) {
+    argsLT.push_back(returnLT);
+  }
+  auto argsStructLT =
+      LLVMStructTypeInContext(
+          globalState->context, argsLT.data(), argsLT.size(), false);
+  // auto argsStructPtrLT = LLVMPointerType(argsStructLT, 0);
+
+  // We hex round up because we get a bus error if we set the PC to something
+  // that's not a multiple of 16 before a call.
+  // It seems to be part of the calling convention, see
+  // https://staffwww.fullcoll.edu/aclifton/cs241/lecture-stack-c-functions.html
+  int64_t argsAreaSize =
+      (((LLVMABISizeOfType(globalState->dataLayout, argsStructLT) - 1) | 15) + 1);
+
+  // auto sideStackPtrBeforeSwitchAsI64LE =
+  //     buildMaybeNeverCall(
+  //         globalState, entryBuilder, globalState->externs->readRegisterI64Intrinsic,
+  //         {metadata});
+
+  // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
+  // change our registers and maybe spill onto the stack, causing havoc.
+
+  {
+    // Couldn't use the setjmp/longjmp pattern here of branching off the
+    // setjmp return, because LLVM's longjmp intrinsic doesn't allow us
+    // to give a result value for the second setjmp return.
+    //   buildIf(
+    //       globalState, entryFunctionL, entryBuilder,
+    //       LLVMBuildLoad(entryBuilder, ""),
+    //       [globalState, int64LT, metadata](LLVMBuilderRef thenBuilder) {
+    //         //buildPrint(globalState, thenBuilder, "Inside then!\n");
+
+    // NO INSTRUCTIONS should be reordered past here!
+    // Otherwise, they might spill onto the old stack, rather than
+    // the side stack, where they're probably expected.
+    // We don't want the RSP change to be further up, or any above instructions to come down to after the RSP change.
+    // We *hope* this fence works, but there is doubt, see
+    // https://preshing.com/20131125/acquire-and-release-fences-dont-work-the-way-youd-expect/
+    LLVMBuildFence(entryBuilder, LLVMAtomicOrderingAcquireRelease, /*singleThread=*/true, "");
+
+    // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
+    // change our registers and maybe spill onto the stack, causing havoc.
+
+    auto argsAreaPtrBeforeSwitchLE =
+        getArgsAreaPtr(globalState, argsStructLT, argsAreaSize, entryBuilder, sideStackStartPtrAsI8PtrLE);
+
+    // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
+    // change our registers and maybe spill onto the stack, causing havoc.
+
+    auto argsStructBeforeSwitchLE = LLVMGetUndef(argsStructLT);
+    for (int i = 0; i < userArgsLE.size(); i++) {
+      argsStructBeforeSwitchLE =
+          LLVMBuildInsertValue(
+              entryBuilder, argsStructBeforeSwitchLE, userArgsLE[i], numPaddingInts + i, "argsStruct");
+    }
+    argsStructBeforeSwitchLE =
+        LLVMBuildInsertValue(
+            entryBuilder, argsStructBeforeSwitchLE, originalStackPtrLE, numPaddingInts + userArgsLE.size() + 0, "argsStruct");
+    argsStructBeforeSwitchLE =
+        LLVMBuildInsertValue(
+            entryBuilder, argsStructBeforeSwitchLE, calleeFuncLE, numPaddingInts + userArgsLE.size() + 1, "argsStruct");
+    // We dont put anything in the return slot yet, so dont need to fill that part of the args area here
+
+    // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
+    // change our registers and maybe spill onto the stack, causing havoc.
+
+    LLVMBuildStore(entryBuilder, argsStructBeforeSwitchLE, argsAreaPtrBeforeSwitchLE);
+
+    // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
+    // change our registers and maybe spill onto the stack, causing havoc.
+
+    auto sideStackPtrAsI64BeforeSwitchLE =
+        LLVMBuildPointerCast(entryBuilder, argsAreaPtrBeforeSwitchLE, int64LT, "");
+    // Write the side stack pointer to the stack pointer register.
+    buildMaybeNeverCall(
+        globalState, entryBuilder, globalState->externs->writeRegisterI64Intrinsinc,
+        { metadata, sideStackPtrAsI64BeforeSwitchLE });
+  }
+  // We don't want the RSP change to be further down, or any below instructions to come up to before the RSP change.
+  // We *hope* this fence works, but there is doubt, see
+  // https://preshing.com/20131125/acquire-and-release-fences-dont-work-the-way-youd-expect/
+  LLVMBuildFence(entryBuilder, LLVMAtomicOrderingAcquireRelease, /*singleThread=*/true, "");
+
+  // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
+  // change our registers and maybe spill onto the stack, causing havoc.
+
+  // We must LOAD NO LOCALS here that were created before the above stack switch.
+  // We might be loading them from the wrong stack.
+  // Normally, we load locals from %rbp which is still good at this point,
+  // but if we specify -fomit-frame-pointer we'll be loading it from %rsp,
+  // *which we just changed*.
+
+  // So, we load them from the side stack.
+
+  auto sideStackPtrAfterSwitchAsI64LE =
+      buildMaybeNeverCall(
+          globalState, entryBuilder, globalState->externs->readRegisterI64Intrinsic,
+          {metadata});
+
+  // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
+  // change our registers and maybe spill onto the stack, causing havoc.
+
+  // We dont want the above RSP read to happen after the below call.
+  // We *hope* this fence works, but there is doubt, see
+  // https://preshing.com/20131125/acquire-and-release-fences-dont-work-the-way-youd-expect/
+  LLVMBuildFence(entryBuilder, LLVMAtomicOrderingAcquireRelease, /*singleThread=*/true, "");
+
+  // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
+  // change our registers and maybe spill onto the stack, causing havoc.
+
+  auto sideStackPtrAsI8PtrAfterSwitchLE =
+      LLVMBuildIntToPtr(entryBuilder, sideStackPtrAfterSwitchAsI64LE, int8PtrLT, "");
+  auto argsAreaPtrAfterSwitchLE =
+      LLVMBuildPointerCast(
+          entryBuilder,
+          sideStackPtrAsI8PtrAfterSwitchLE, LLVMPointerType(argsStructLT, 0), "");
+
+  // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
+  // change our registers and maybe spill onto the stack, causing havoc.
+
+  auto argsStructAfterSwitchLE =
+      LLVMBuildLoad(entryBuilder, argsAreaPtrAfterSwitchLE, "argsAreaPtrAfterSwitch");
+
+  std::vector<LLVMValueRef> argsAfterSwitchLE;
+  for (int i = 0; i < userArgsLE.size(); i++) {
+    std::string argRegisterName = std::string("userArg") + std::to_string(i) + "AfterSwitch";
+    argsAfterSwitchLE.push_back(
+        LLVMBuildExtractValue(
+            entryBuilder, argsStructAfterSwitchLE, numPaddingInts + i, argRegisterName.c_str()));
+  }
+
+  // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
+  // change our registers and maybe spill onto the stack, causing havoc.
+
+  auto sideStackArgReturnDestPtrAfterSwitchLE =
+      LLVMBuildExtractValue(entryBuilder, argsStructAfterSwitchLE, numPaddingInts + userArgsLE.size() + 0, "returnDest");
+  auto calleeFuncPtrAfterSwitchLE =
+      LLVMBuildExtractValue(entryBuilder, argsStructAfterSwitchLE, numPaddingInts + userArgsLE.size() + 1, "calleeFuncPtr");
+
+  // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
+  // change our registers and maybe spill onto the stack, causing havoc.
+
+  // Now that we're on the side stack, call the other function.
+  // WARNING: If this is inlined, there might be some catastrophic instruction
+  // reordering to before the above stack pointer switch.
+  // Hopefully this is helped by the fences.
+  // If it's inlined (which we have no way to prevent), but not reordered past
+  // the fences, things might work fine. It will be writing and reading
+  // at a bit higher offsets from %rbp, but that should just result in some
+  // wasted bytes at the base of the stack.
+  // Don't take my word for it though, low level = black magic. - Verdagon
+  auto callResultBeforeReturnLE =
+      buildMaybeNeverCall(globalState, entryBuilder, calleeFuncPtrAfterSwitchLE, argsAfterSwitchLE);
+
+  // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
+  // change our registers and maybe spill onto the stack, causing havoc.
+
+  if (returnLT != voidLT) {
+    auto callResultPtrBeforeReturnLE =
+        LLVMBuildStructGEP(entryBuilder, argsAreaPtrAfterSwitchLE, numPaddingInts + userArgsLE.size() + 2, "");
+
+    // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
+    // change our registers and maybe spill onto the stack, causing havoc.
+
+    LLVMBuildStore(entryBuilder, callResultBeforeReturnLE, callResultPtrBeforeReturnLE);
+  }
+
+  // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
+  // change our registers and maybe spill onto the stack, causing havoc.
+
+  // NO INSTRUCTIONS should be reordered past here!
+  // Otherwise, they might spill onto the side stack, rather than
+  // the original stack, where they're probably expected.
+  // We *hope* this fence works, but there is doubt, see
+  // https://preshing.com/20131125/acquire-and-release-fences-dont-work-the-way-youd-expect/
+  LLVMBuildFence(entryBuilder, LLVMAtomicOrderingAcquireRelease, /*singleThread=*/true, "");
+
+  // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
+  // change our registers and maybe spill onto the stack, causing havoc.
+
+  // Load the return stack address from the thread local. We shouldn't load it
+  // from the stack because the stack pointer register still points to the other stack.
+  //auto sideStackArgReturnDest = LLVMBuildLoad(entryBuilder, globalState->sideStackArgReturnDestPtr, "");
+  auto originalStackAddrAsIntLE =
+      LLVMBuildPointerCast(entryBuilder, sideStackArgReturnDestPtrAfterSwitchLE, int64LT, "");
+  // Restore the original stack address.
+  buildMaybeNeverCall(
+      globalState, entryBuilder, globalState->externs->writeRegisterI64Intrinsinc,
+      { metadata, originalStackAddrAsIntLE });
+
+  // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
+  // change our registers and maybe spill onto the stack, causing havoc.
+
+  // We don't want the RSP change to be further down, or any below instructions to come up to before the RSP change.
+  LLVMBuildFence(entryBuilder, LLVMAtomicOrderingAcquireRelease, /*singleThread=*/true, "");
+
+  // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
+  // change our registers and maybe spill onto the stack, causing havoc.
+
+//  auto sideStackPtrAfterReturnAsI64LE =
+//      buildMaybeNeverCall(
+//          globalState, entryBuilder, globalState->externs->readRegisterI64Intrinsic,
+//          {metadata});
+
+  // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
+  // change our registers and maybe spill onto the stack, causing havoc.
+
+  LLVMValueRef callResultAfterReturnLE = nullptr;
+  if (returnLT != voidLT) {
+    auto argsAreaPtrAfterReturnLE =
+        getArgsAreaPtr(globalState, argsStructLT, argsAreaSize, entryBuilder, sideStackStartPtrAsI8PtrLE);
+
+    // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
+    // change our registers and maybe spill onto the stack, causing havoc.
+
+    auto callResultPtrAfterReturnLE =
+        LLVMBuildStructGEP(entryBuilder, argsAreaPtrAfterReturnLE, numPaddingInts + userArgsLE.size() + 2, "callResultPtrAfterReturn");
+    callResultAfterReturnLE = LLVMBuildLoad(entryBuilder, callResultPtrAfterReturnLE, "callResultAfterReturn");
+
+    // Careful, adding any instructions, INCLUDING PRINTING FOR DEBUGGING, could
+    // change our registers and maybe spill onto the stack, causing havoc.
+  } else {
+    callResultAfterReturnLE = LLVMGetUndef(LLVMVoidTypeInContext(globalState->context));
+  }
+
+  return callResultAfterReturnLE;
 }
 
 

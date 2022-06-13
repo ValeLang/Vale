@@ -42,6 +42,23 @@ ResilientV3::ResilientV3(GlobalState *globalState_, RegionId *regionId_) :
         &kindStructs,
         globalState->opt->elideChecksForKnownLive,
         false) {
+
+  regionKind =
+      globalState->metalCache->getStructKind(
+          globalState->metalCache->getName(
+              globalState->metalCache->builtinPackageCoord, namePrefix + "_Region"));
+  regionRefMT =
+      globalState->metalCache->getReference(
+          Ownership::BORROW, Location::YONDER, regionKind);
+  globalState->regionIdByKind.emplace(regionKind, globalState->metalCache->mutRegionId);
+  kindStructs.declareStruct(regionKind, Weakability::NON_WEAKABLE);
+  kindStructs.defineStruct(regionKind, {
+      // This region doesnt need anything
+  });
+}
+
+Reference* ResilientV3::getRegionRefType() {
+  return regionRefMT;
 }
 
 void ResilientV3::mainSetup(FunctionState* functionState, LLVMBuilderRef builder) {
@@ -140,6 +157,7 @@ void ResilientV3::alias(
       if (sourceRef->location == Location::INLINE) {
         // Do nothing, we can just let inline structs disappear
       } else {
+        assert(false); // curious
         adjustStrongRc(from, globalState, functionState, &kindStructs, builder, expr, sourceRef, 1);
       }
     } else
@@ -194,20 +212,15 @@ WrapperPtrLE ResilientV3::lockWeakRef(
       auto objPtrLE = weakRefLE;
       auto weakFatPtrLE =
           checkValidReference(
-              FL(), functionState, builder, refM, weakRefLE);
+              FL(), functionState, builder, false, refM, weakRefLE);
       return kindStructs.makeWrapperPtr(FL(), functionState, builder, refM, weakFatPtrLE);
     }
     case Ownership::BORROW:
     case Ownership::WEAK: {
-      auto weakFatPtrLE =
-          kindStructs.makeWeakFatPtr(
-              refM,
-              checkValidReference(
-                  FL(), functionState, builder, refM, weakRefLE));
       return kindStructs.makeWrapperPtr(
           FL(), functionState, builder, refM,
           hgmWeaks.lockGenFatPtr(
-              from, functionState, builder, refM, weakFatPtrLE, weakRefKnownLive));
+              from, functionState, builder, refM, weakRefLE, weakRefKnownLive));
     }
     default:
       assert(false);
@@ -261,6 +274,10 @@ Ref ResilientV3::asSubtype(
 }
 
 LLVMTypeRef ResilientV3::translateType(Reference *referenceM) {
+  if (referenceM == regionRefMT) {
+    // We just have a raw pointer to region structs
+    return LLVMPointerType(kindStructs.getStructInnerStruct(regionKind), 0);
+  }
   switch (referenceM->ownership) {
     case Ownership::SHARE:
       assert(false);
@@ -393,7 +410,7 @@ void ResilientV3::noteWeakableDestroyed(
   if (refM->ownership == Ownership::SHARE) {
     assert(false);
 //    auto rcIsZeroLE = strongRcIsZero(globalState, &kindStructs, builder, refM, controlBlockPtrLE);
-//    buildAssert(globalState, functionState, builder, rcIsZeroLE,
+//    buildAssertV(globalState, functionState, builder, rcIsZeroLE,
 //                "Tried to free concrete that had nonzero RC!");
   } else {
     assert(refM->ownership == Ownership::OWN);
@@ -406,6 +423,7 @@ void ResilientV3::noteWeakableDestroyed(
 void ResilientV3::storeMember(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *structRefMT,
     Ref structRef,
     bool structKnownLive,
@@ -415,7 +433,7 @@ void ResilientV3::storeMember(
     Ref newMemberRef) {
   auto newMemberLE =
       globalState->getRegion(newMemberRefMT)->checkValidReference(
-          FL(), functionState, builder, newMemberRefMT, newMemberRef);
+          FL(), functionState, builder, false, newMemberRefMT, newMemberRef);
   switch (structRefMT->ownership) {
     case Ownership::OWN:
     case Ownership::SHARE: {
@@ -466,6 +484,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> ResilientV3::explodeInterfaceRef(
 Ref ResilientV3::getRuntimeSizedArrayLength(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *rsaRefMT,
     Ref arrayRef,
     bool arrayKnownLive) {
@@ -488,6 +507,7 @@ Ref ResilientV3::getRuntimeSizedArrayLength(
 Ref ResilientV3::getRuntimeSizedArrayCapacity(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *rsaRefMT,
     Ref arrayRef,
     bool arrayKnownLive) {
@@ -511,6 +531,7 @@ LLVMValueRef ResilientV3::checkValidReference(
     AreaAndFileAndLine checkerAFL,
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    bool expectLive,
     Reference *refM,
     Ref ref) {
   Reference *actualRefM = nullptr;
@@ -526,7 +547,7 @@ LLVMValueRef ResilientV3::checkValidReference(
     } else if (refM->ownership == Ownership::SHARE) {
       assert(false);
     } else {
-      hgmWeaks.buildCheckWeakRef(checkerAFL, functionState, builder, refM, ref);
+      hgmWeaks.buildCheckWeakRef(checkerAFL, functionState, builder, expectLive, refM, ref);
     }
   }
   return refLE;
@@ -578,7 +599,7 @@ Ref ResilientV3::upgradeLoadResultToRefWithTargetOwnership(
   } else if (sourceOwnership == Ownership::BORROW || sourceOwnership == Ownership::WEAK) {
     assert(targetOwnership == Ownership::BORROW || targetOwnership == Ownership::WEAK);
 
-    return transmutePtr(globalState, functionState, builder, sourceType, targetType, sourceRef);
+    return transmutePtr(globalState, functionState, builder, false, sourceType, targetType, sourceRef);
   } else {
     assert(false);
   }
@@ -639,6 +660,7 @@ void ResilientV3::fillControlBlock(
 LoadResult ResilientV3::loadElementFromSSA(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *ssaRefMT,
     StaticSizedArrayT *ssaMT,
     Ref arrayRef,
@@ -653,6 +675,7 @@ LoadResult ResilientV3::loadElementFromSSA(
 LoadResult ResilientV3::loadElementFromRSA(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *rsaRefMT,
     RuntimeSizedArrayT *rsaMT,
     Ref arrayRef,
@@ -719,7 +742,7 @@ void ResilientV3::deallocate(
     LLVMBuilderRef builder,
     Reference *refMT,
     Ref ref) {
-  innerDeallocate(from, globalState, functionState, &kindStructs, builder, refMT, ref);
+  hgmWeaks.deallocate(from, functionState, builder, refMT, ref);
 }
 
 Ref ResilientV3::constructRuntimeSizedArray(
@@ -752,6 +775,7 @@ Ref ResilientV3::constructRuntimeSizedArray(
 Ref ResilientV3::loadMember(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *structRefMT,
     Ref structRef,
     bool structKnownLive,
@@ -764,8 +788,8 @@ Ref ResilientV3::loadMember(
     assert(false);
   } else {
     if (structRefMT->location == Location::INLINE) {
-      auto structRefLE = checkValidReference(FL(), functionState, builder,
-          structRefMT, structRef);
+      auto structRefLE =
+          checkValidReference(FL(), functionState, builder, true, structRefMT, structRef);
       return wrap(globalState->getRegion(expectedMemberType), expectedMemberType,
           LLVMBuildExtractValue(
               builder, structRefLE, memberIndex, memberName.c_str()));
@@ -773,6 +797,8 @@ Ref ResilientV3::loadMember(
       switch (structRefMT->ownership) {
         case Ownership::OWN:
         case Ownership::SHARE: {
+          globalState->getRegion(structRefMT)
+              ->checkValidReference(FL(), functionState, builder, true, structRefMT, structRef);
           auto unupgradedMemberLE =
               regularLoadMember(
                   globalState, functionState, builder, &kindStructs, structRefMT, structRef,
@@ -804,7 +830,7 @@ void ResilientV3::checkInlineStructType(
     LLVMBuilderRef builder,
     Reference *refMT,
     Ref ref) {
-  auto argLE = checkValidReference(FL(), functionState, builder, refMT, ref);
+  auto argLE = checkValidReference(FL(), functionState, builder, false, refMT, ref);
   auto structKind = dynamic_cast<StructKind *>(refMT->kind);
   assert(structKind);
   assert(LLVMTypeOf(argLE) == kindStructs.getStructInnerStruct(structKind));
@@ -815,35 +841,35 @@ std::string ResilientV3::generateRuntimeSizedArrayDefsC(
     Package* currentPackage,
     RuntimeSizedArrayDefinitionT* rsaDefM) {
   assert(rsaDefM->mutability == Mutability::MUTABLE);
-  return generateMutableConcreteHandleDefC(currentPackage, currentPackage->getKindExportName(rsaDefM->kind, true));
+  return generateUniversalRefStructDefC(currentPackage, currentPackage->getKindExportName(rsaDefM->kind, true));
 }
 
 std::string ResilientV3::generateStaticSizedArrayDefsC(
     Package* currentPackage,
     StaticSizedArrayDefinitionT* ssaDefM) {
   assert(ssaDefM->mutability == Mutability::MUTABLE);
-  return generateMutableConcreteHandleDefC(currentPackage, currentPackage->getKindExportName(ssaDefM->kind, true));
+  return generateUniversalRefStructDefC(currentPackage, currentPackage->getKindExportName(ssaDefM->kind, true));
 }
 
 std::string ResilientV3::generateStructDefsC(
     Package* currentPackage, StructDefinition* structDefM) {
   assert(structDefM->mutability == Mutability::MUTABLE);
-  return generateMutableConcreteHandleDefC(currentPackage, currentPackage->getKindExportName(structDefM->kind, true));
+  return generateUniversalRefStructDefC(currentPackage, currentPackage->getKindExportName(structDefM->kind, true));
 }
 
 std::string ResilientV3::generateInterfaceDefsC(
     Package* currentPackage, InterfaceDefinition* interfaceDefM) {
   assert(interfaceDefM->mutability == Mutability::MUTABLE);
-  return generateMutableInterfaceHandleDefC(currentPackage, currentPackage->getKindExportName(interfaceDefM->kind, true));
+  return generateUniversalRefStructDefC(currentPackage, currentPackage->getKindExportName(interfaceDefM->kind, true));
 }
 
 LLVMTypeRef ResilientV3::getExternalType(Reference *refMT) {
   if (dynamic_cast<StructKind*>(refMT->kind) ||
       dynamic_cast<StaticSizedArrayT*>(refMT->kind) ||
       dynamic_cast<RuntimeSizedArrayT*>(refMT->kind)) {
-    return globalState->getConcreteHandleStruct();
+    return globalState->universalRefCompressedStructLT;
   } else if (dynamic_cast<InterfaceKind*>(refMT->kind)) {
-    return globalState->getInterfaceHandleStruct();
+    return globalState->universalRefCompressedStructLT;
   } else {
     assert(false);
   }
@@ -873,6 +899,8 @@ LLVMTypeRef ResilientV3::getInterfaceMethodVirtualParamAnyType(Reference *refere
 std::pair<Ref, Ref> ResilientV3::receiveUnencryptedAlienReference(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref sourceRegionInstanceRef,
+    Ref targetRegionInstanceRef,
     Reference *sourceRefMT,
     Reference *targetRefMT,
     Ref sourceRef) {
@@ -893,6 +921,7 @@ LLVMValueRef ResilientV3::encryptAndSendFamiliarReference(
 void ResilientV3::pushRuntimeSizedArrayNoBoundsCheck(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *rsaRefMT,
     RuntimeSizedArrayT *rsaMT,
     Ref rsaRef,
@@ -908,6 +937,7 @@ void ResilientV3::pushRuntimeSizedArrayNoBoundsCheck(
 Ref ResilientV3::popRuntimeSizedArrayNoBoundsCheck(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref arrayRegionInstanceRef,
     Reference *rsaRefMT,
     RuntimeSizedArrayT *rsaMT,
     Ref arrayRef,
@@ -925,6 +955,7 @@ Ref ResilientV3::popRuntimeSizedArrayNoBoundsCheck(
 void ResilientV3::initializeElementInSSA(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *ssaRefMT,
     StaticSizedArrayT *ssaMT,
     Ref arrayRef,
@@ -935,7 +966,8 @@ void ResilientV3::initializeElementInSSA(
   auto arrayWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, ssaRefMT,
-          globalState->getRegion(ssaRefMT)->checkValidReference(FL(), functionState, builder, ssaRefMT, arrayRef));
+          globalState->getRegion(ssaRefMT)
+              ->checkValidReference(FL(), functionState, builder, true, ssaRefMT, arrayRef));
   auto sizeRef = globalState->constI32(ssaDef->size);
   auto arrayElementsPtrLE = getStaticSizedArrayContentsPtr(builder, arrayWrapperPtrLE);
   ::initializeElementWithoutIncrementSize(
@@ -981,7 +1013,7 @@ LLVMValueRef ResilientV3::stackify(
     Local* local,
     Ref refToStore,
     bool knownLive) {
-  auto toStoreLE = checkValidReference(FL(), functionState, builder, local->type, refToStore);
+  auto toStoreLE = checkValidReference(FL(), functionState, builder, false, local->type, refToStore);
   auto typeLT = translateType(local->type);
   return makeBackendLocal(functionState, builder, typeLT, local->id->maybeName.c_str(), toStoreLE);
 }
@@ -1003,4 +1035,12 @@ std::string ResilientV3::getExportName(
     Reference* reference,
     bool includeProjectName) {
   return package->getKindExportName(reference->kind, includeProjectName) + (reference->location == Location::YONDER ? "Ref" : "");
+}
+
+Ref ResilientV3::createRegionInstanceLocal(FunctionState* functionState, LLVMBuilderRef builder) {
+  auto regionLT = kindStructs.getStructInnerStruct(regionKind);
+  auto regionInstancePtrLE =
+      makeBackendLocal(functionState, builder, regionLT, "region", LLVMGetUndef(regionLT));
+  auto regionInstanceRef = wrap(this, regionRefMT, regionInstancePtrLE);
+  return regionInstanceRef;
 }

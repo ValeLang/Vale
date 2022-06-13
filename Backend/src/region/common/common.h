@@ -7,10 +7,6 @@
 #include "hgm/hgm.h"
 #include "wrcweaks/wrcweaks.h"
 
-constexpr int64_t externHandleRegionId = 13371;
-constexpr int64_t externHandleGen = 65536; // lower 16 bits zero, so it can be or'd with offset
-constexpr int64_t externHandleGenOffset = 42;
-
 LLVMValueRef weakStructPtrToGenWeakInterfacePtr(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -77,6 +73,7 @@ void buildCheckGen(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    bool expectLive,
     LLVMValueRef targetGenLE,
     LLVMValueRef actualGenLE);
 
@@ -130,6 +127,7 @@ void fillRuntimeSizedArray(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref arrayRegionInstanceRef,
     Reference* rsaRefMT,
     RuntimeSizedArrayT* rsaMT,
     Reference* elementType,
@@ -143,6 +141,7 @@ void fillStaticSizedArrayFromCallable(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref arrayRegionInstanceRef,
     Reference* ssaRefMT,
     StaticSizedArrayT* ssaMT,
     Reference* elementType,
@@ -229,6 +228,7 @@ Ref transmutePtr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    bool expectLive,
     Reference* sourceRefMT,
     Reference* targetRefMT,
     Ref sourceRef);
@@ -289,6 +289,7 @@ void fillStaticSizedArray(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref arrayRegionInstanceRef,
     Reference* ssaRefMT,
     StaticSizedArrayT* ssaMT,
     Ref ssaRef,
@@ -584,6 +585,7 @@ Ref regularInnerLockWeak(
 
 void callFree(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef ptrLE);
 
@@ -664,36 +666,15 @@ LLVMValueRef resilientEncryptAndSendFamiliarReference(
     Reference* sourceRefMT,
     Ref sourceRef);
 
-LLVMValueRef implodeConcreteHandle(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    LLVMTypeRef concreteHandleLT,
-    LLVMValueRef regionIdLE,
-    LLVMValueRef objPtrIntLE,
-    LLVMValueRef genLE,
-    LLVMValueRef offsetToGenLE);
-
-LLVMValueRef implodeInterfaceHandle(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    LLVMTypeRef interfaceHandleLT,
-    LLVMValueRef regionIdLE,
-    LLVMValueRef itableIntLE,
-    LLVMValueRef objPtrIntLE,
-    LLVMValueRef genLE,
-    LLVMValueRef offsetToGenLE);
-
-
-std::tuple<LLVMValueRef, LLVMValueRef, LLVMValueRef, LLVMValueRef>
-explodeConcreteHandle(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef concreteHandleLE);
-std::tuple<LLVMValueRef, LLVMValueRef, LLVMValueRef, LLVMValueRef, LLVMValueRef>
-explodeInterfaceHandle(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef concreteHandleLE);
-
-std::string generateMutableInterfaceHandleDefC(Package* currentPackage, const std::string& name);
-
-std::string generateMutableConcreteHandleDefC(Package* currentPackage, const std::string& name);
+std::string generateUniversalRefStructDefC(Package* currentPackage, const std::string& name);
 
 
 void fastPanic(GlobalState* globalState, AreaAndFileAndLine from, LLVMBuilderRef builder);
+
+LLVMValueRef compressI64PtrToI56(GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef ptrLE);
+LLVMValueRef compressI64PtrToI52(GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef ptrLE);
+LLVMValueRef decompressI56PtrToI64(
+    GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef ptrI56LE);
+LLVMValueRef decompressI52PtrToI64(GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef ptrI52LE);
 
 #endif

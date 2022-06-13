@@ -17,6 +17,10 @@
 LLVMTypeRef makeNeverType(GlobalState* globalState);
 
 LLVMValueRef makeVoid(GlobalState* globalState);
+
+LLVMTypeRef makeEmptyStructType(GlobalState* globalState);
+LLVMValueRef makeEmptyStruct(GlobalState* globalState);
+
 Ref makeVoidRef(GlobalState* globalState);
 
 LLVMValueRef makeBackendLocal(
@@ -55,14 +59,21 @@ LLVMValueRef strongRcIsZero(
     ControlBlockPtrLE exprLE);
 
 
-void buildAssert(
+void buildAssertV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef conditionLE,
     const std::string& failMessage);
 
-void buildAssertWithExitCode(
+void buildAssert(
+    GlobalState* globalState,
+    LLVMValueRef function,
+    LLVMBuilderRef builder,
+    LLVMValueRef conditionLE,
+    const std::string& failMessage);
+
+void buildAssertWithExitCodeV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -168,6 +179,14 @@ inline LLVMValueRef constI64LE(GlobalState* globalState, int64_t n) {
   return LLVMConstInt(LLVMInt64TypeInContext(globalState->context), n, false);
 }
 
+inline LLVMValueRef constI128LEFromI64(GlobalState* globalState, int64_t n1) {
+  return LLVMConstInt(LLVMInt128TypeInContext(globalState->context), n1, false);
+}
+
+inline LLVMValueRef constI256LEFromI64(GlobalState* globalState, int64_t n1) {
+  return LLVMConstInt(LLVMIntTypeInContext(globalState->context, 256), n1, false);
+}
+
 inline LLVMValueRef constI48LE(GlobalState* globalState, int64_t n) {
   return LLVMConstInt(LLVMIntTypeInContext(globalState->context, 48), n, false);
 }
@@ -192,12 +211,18 @@ void buildAssertCensusContains(
     LLVMBuilderRef builder,
     LLVMValueRef ptrLE);
 
-Ref buildCall(
+Ref buildCallV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Prototype* prototype,
     std::vector<Ref> argRefs);
+
+LLVMValueRef buildMaybeNeverCall(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef functionLE,
+    std::vector<LLVMValueRef> argsLE);
 
 
 LLVMValueRef addExtern(
@@ -213,5 +238,14 @@ inline LLVMValueRef ptrToVoidPtrLE(GlobalState* globalState, LLVMBuilderRef buil
 inline LLVMValueRef ptrToIntLE(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef ptrLE) {
   return LLVMBuildPointerCast(builder, ptrLE, LLVMInt64TypeInContext(globalState->context), "asI64");
 }
+
+// A side call is a call using different stack memory
+LLVMValueRef buildSideCall(
+    GlobalState* globalState,
+    LLVMTypeRef calleeFuncLT,
+    LLVMBuilderRef entryBuilder,
+    LLVMValueRef sideStackStartPtrAsI8PtrLE,
+    LLVMValueRef calleeFuncLE,
+    const std::vector<LLVMValueRef>& userArgsLE);
 
 #endif

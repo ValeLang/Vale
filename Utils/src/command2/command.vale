@@ -1,110 +1,120 @@
-
 import stdlib.stringutils.*;
 import stdlib.path.*;
+import stdlib.collections.hashmap.*;
 import stdlib.os.*;
 
 export Array<imm, str> as StrArray;
 export Array<mut, str> as MutStrArray;
 
-interface SubprocessStartError { }
-struct UnknownSubprocessStartError { }
-impl SubprocessStartError for UnknownSubprocessStartError;
-struct CantFindProgramError { program str; }
-impl CantFindProgramError for UnknownSubprocessStartError;
-struct CantExecuteProgramError { program Path; }
-impl CantExecuteProgramError for UnknownSubprocessStartError;
+struct Subprocess {
+  command str;
+  handle i64;
+}
+
 
 struct SubprocessBuilder {
-  working_dir Opt<str>;
+  maybe_working_dir Opt<str>;
   env_vars HashMap<str, str, StrHasher, StrEquator>;
   program Opt<str>;
   args List<str>;
 }
 func SubprocessBuilder() SubprocessBuilder {
-  SubprocessBuilderNoCommand(
+  SubprocessBuilder(
       None<str>(),
-      HashMap<str, str, StrHasher, StrEquator>(),
+      HashMap<str, str, StrHasher, StrEquator>(StrHasher(), StrEquator()),
       None<str>(),
       List<str>())
 }
-func WithProgram(self SubprocessBuilder, program str) {
-  [working_dir, env_vars, old_program, args] = self;
+func WithProgram(self SubprocessBuilder, program str) SubprocessBuilder {
+  [maybe_working_dir, env_vars, old_program, args] = self;
   vassert(old_program.isEmpty(), "SubprocessBuilder specified program twice!");
-  return SubprocessBuilder(working_dir, env_vars, Some(program), args);
+  return SubprocessBuilder(maybe_working_dir, env_vars, Some(program), args);
 }
-func FromDir(self SubprocessBuilder, working_dir str) {
-  [old_working_dir, env_vars, program, args] = self;
-  vassert(old_working_dir.isEmpty(), "SubprocessBuilder specified working dir twice!");
-  return SubprocessBuilder(Some(working_dir), env_vars, program, args);
+func WithProgramAndArgs(self SubprocessBuilder, command str) SubprocessBuilder {
+  parts = command.split(" ");
+  program = str(parts.get(0));
+  args = List<str>();
+  foreach [index, arg] in parts.entries() {
+    if index != 0 {
+      args.add(arg.str());
+    }
+  }
+  return (self).WithProgram(program).WithArgs(&args);
 }
-func WithEnvVar(self SubprocessBuilder, var_name str, value str) {
+func FromDir(self SubprocessBuilder, maybe_working_dir str) SubprocessBuilder {
+  [old_maybe_working_dir, env_vars, program, args] = self;
+  vassert(old_maybe_working_dir.isEmpty(), "SubprocessBuilder specified working dir twice!");
+  return SubprocessBuilder(Some(maybe_working_dir), env_vars, program, args);
+}
+func WithEnvVar(self SubprocessBuilder, var_name str, value str) SubprocessBuilder {
   self.env_vars.add(var_name, value);
   return self;
 }
-func WithArg(self SubprocessBuilder, arg str) {
-  self.args.add(var_name, value);
+func WithArg(self SubprocessBuilder, arg str) SubprocessBuilder {
+  self.args.add(str);
   return self;
 }
-func WithArgs(self SubprocessBuilder, args &List<str>) {
+func WithArgs(self SubprocessBuilder, args &List<str>) SubprocessBuilder {
   foreach arg in args {
-    self.args.add(var_name, value);
+    self.args.add(arg);
   }
   return self;
 }
-func Start(builder SubprocessBuilder) Result<Subprocess, SubprocessStartError> {
+func Build(self SubprocessBuilder) Result<Subprocess, str> {
+  [maybe_working_dir, env_vars, program, args] = self;
+  vassert(not program.isEmpty(), "Called SubprocessBuilder.Build without specifying program!");
+  vassert(env_vars.len() == 0, "Subprocess env vars not supported yet.");
+  return Subprocess(program.get(), &args, maybe_working_dir);
+}
+
+func Subprocess(relative_program str, args &List<str>, maybe_cwd_str Opt<str>) Result<Subprocess, str> {
+
   paths = get_env_var("PATH").split(":");
+
 
   maybe_program_path = FindProgramInPath(relative_program);
 
+
   if maybe_program_path.isEmpty() {
-    return Err<Subprocess, SubprocessStartError>(CantFindProgramError(relative_program));
+    panic("Unable to find program {relative_program}.");
   }
   program_path = (maybe_program_path).get();
   if not program_path.is_file() {
-    return Err<Subprocess, SubprocessStartError>(CantExecuteProgramError(program_path));
+    panic("Unable to execute {relative_program}, is not a file.");
   }
 
 
-  command_parts = List<str>();
-  command_parts.add(program_path.str());
+  command_str_builder = StringBuilder();
+  command_str_builder.PrintCommandLinePart(program_path.str().slice());
+
+
+  cmdlist = List<str>();
+  cmdlist.add(program_path.str());
   foreach arg in args {
-    command_parts.add(arg.str());
+    command_str_builder.print(" ");
+    command_str_builder.PrintCommandLinePart(arg.slice());
+    cmdlist.add(arg);
   }
-  cmd_array = command_parts.toImmArray();
 
-  handle = launch_command(cmd_array);
+  command_str = command_str_builder.str();
+
+  cmd_array = cmdlist.toImmArray();
+
+  cwd_resolved_str_maybe_empty =
+      if maybe_cwd_str.isEmpty() {
+        ""
+      } else {
+        Path(maybe_cwd_str.get()).str()
+      };
+
+  handle = launch_command(cmd_array, cwd_resolved_str_maybe_empty);
   if handle == 0i64 {
-    return Err<Subprocess, SubprocessStartError>(UnknownSubprocessStartError());
+    return Err<Subprocess, str>("Failed to create command!");
   }
 
-  retval = Subprocess(builder, handle);
-  return Ok<Subprocess, SubprocessStartError>(retval);
+  retval = Subprocess(command_str, handle);
+  return Ok<Subprocess, str>(retval);
 }
-
-
-#!DeriveStructDrop
-struct Subprocess {
-  builder SubprocessBuilder;
-  handle i64;
-}
-//
-//func Subprocess(command str) Result<Subprocess, str> {
-//  list = command.split(" ");
-//  cmd = str(list.get(0));
-//  newlist = List<StrSlice>();
-//  foreach [index, element] in list.entries() {
-//    if index != 0 { newlist.add(list.get(index)); }
-//  }
-//  return Subprocess(cmd, &newlist);
-//}
-//
-//func Subprocess(command str, args &List<str>) Result<Subprocess, str> {
-//  newlist = List<StrSlice>();
-//  foreach element in args {
-//    newlist.add(slice(element));
-//  }
-//  return Subprocess(command, &newlist);
-//}
 
 func FindProgramInPath(relative_program str) Opt<Path> {
   path_env_var = get_env_var("PATH");
@@ -130,14 +140,25 @@ func FindProgramInPath(relative_program str) Opt<Path> {
   return maybe_found_program_path;
 }
 
-func ConsumeAndJoin<StdoutConsumer, StderrConsumer>(
+func PrintCommandLinePart(builder &StringBuilder, part StrSlice) {
+  if part.contains(" ") {
+    builder.print("\"");
+    builder.print(part.replaceAll("\"", "\\\""));
+    builder.print("\"");
+  } else {
+    builder.print(part);
+  }
+}
+
+func consume_and_join<StdoutConsumer, StderrConsumer>(
   self Subprocess,
   stdout_consumer StdoutConsumer,
   stderr_consumer StderrConsumer)
 int {
-  CloseStdinExtern(self.handle);
+  close_stdin(self.handle);
 
-  while true {
+  running = true;
+  while running {
     stdout_consumed_anything = false;
     stdout_consuming = true;
     while stdout_consuming {
@@ -163,15 +184,15 @@ int {
     }
 
     if not stdout_consumed_anything and not stderr_consumed_anything and not self.alive() {
-      break;
+      set running = false;
     }
   }
 
-  return Join(self);
+  return join(self);
 }
 
-func PrintAndJoin(self Subprocess) Result<(), int> {
-  x = ConsumeAndJoin(
+func print_and_join(self Subprocess) int {
+  x = consume_and_join(
     self,
     &(stdout_chunk) => {
       print(stdout_chunk);
@@ -198,33 +219,33 @@ where Prot["__call", Refs(&F, &ExecResult), void]
   return result.stdout;
 }
 
-func CaptureAndJoin(self Subprocess) ExecResult {
+func capture_and_join(self Subprocess) ExecResult {
   stdout_builder = StringBuilder();
   stderr_builder = StringBuilder();
   return_code =
-      ConsumeAndJoin(
+      consume_and_join(
           self,
           &(stdout_chunk) => { stdout_builder.print(stdout_chunk); },
           &(stderr_chunk) => { stderr_builder.print(stderr_chunk); });
   return ExecResult(return_code, stdout_builder.str(), stderr_builder.str());
 }
 
-func Join(self Subprocess) int {
-  status = JoinExtern(self.handle);
-  DestroyExtern(self.handle);
+func join(self Subprocess) int {
+  status = join(self.handle);
+  destroy(self.handle);
   return status;
 }
 
-func Alive(self &Subprocess) bool {
-  return AliveExtern(self.handle);
+func alive(self &Subprocess) bool {
+  return alive(self.handle);
 }
 
-func ReadAllStdout(self &Subprocess) str {
+func read_all_stdout(self &Subprocess) str {
   builder = StringBuilder();
 
   running = true;
   while running {
-    s = self.ReadStdoutChunk(1000);
+    s = self.read_stdout(1000);
     builder.print(s);
     if s.len() == 0 and not self.alive() {
       set running = false;
@@ -234,18 +255,18 @@ func ReadAllStdout(self &Subprocess) str {
   return builder.str();
 }
 
-func ReadStdout(self &Subprocess, len int) str {
-  return ReadStdoutExtern(self.handle, len);
+func read_stdout(self &Subprocess, len int) str {
+  return read_stdout(self.handle, len);
 }
 func read_stderr(self &Subprocess, len int) str {
   return read_stderr(self.handle, len);
 }
 
 extern func get_env_var(name str) str;
-extern func launch_command(args Array<imm, str>) i64;
+extern func launch_command(args Array<imm, str>, maybe_cwd str) i64;
 extern func write_stdin(cmd i64, s str);
 extern func close_stdin(cmd i64);
-extern func ReadStdoutExtern(cmd i64, len int) str;
+extern func read_stdout(cmd i64, len int) str;
 extern func read_stderr(cmd i64, len int) str;
 extern func join(cmd i64) int;
 extern func alive(cmd i64) bool;

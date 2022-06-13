@@ -16,7 +16,12 @@ size_t floorMultipleOf16(size_t x) {
   return x & ~0xF;
 }
 
+// We use incrementIntFile to get some side effects to test replayability, see AASETR.
+int64_t incrementIntFile(const char* filename);
+
 ValeInt vtest_extFunc_vasp(vtest_Flamscrankle* flam, ValeInt flamMessageSize) {
+  int runNumber = incrementIntFile("myfile.bin");
+
   // Make sure the root pointer is at a multiple of 16.
   // If this fails, that means we have a bug, or malloc is breaking our assumptions
   // about alignment.
@@ -59,5 +64,5 @@ ValeInt vtest_extFunc_vasp(vtest_Flamscrankle* flam, ValeInt flamMessageSize) {
   assert(flamMessageSize == (spigAPEndAddr - flamAddr));
 
   free(flam);
-  return result;
+  return result * runNumber;
 }

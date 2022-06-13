@@ -6,11 +6,16 @@
 #include "vtest/ImmSpaceshipArray.h"
 #include "vtest/cSumFuel_vasp.h"
 
+// We use incrementIntFile to get some side effects to test replayability, see AASETR.
+int64_t incrementIntFile(const char* filename);
+
 int64_t nextMultipleOf16(int64_t x) {
   return ((x - 1) | 15) + 1;
 }
 
 extern ValeInt vtest_cSumFuel_vasp(vtest_ImmSpaceshipArray* arr, ValeInt arrSize) {
+  int runNumber = incrementIntFile("myfile.bin");
+
   assert(arr->length == 5);
   int64_t arrayAddr = (int64_t)(void*)arr;
   int64_t arrayShallowSize = sizeof(vtest_ImmSpaceshipArray) + sizeof(vtest_Spaceship*) * arr->length;
@@ -53,5 +58,5 @@ extern ValeInt vtest_cSumFuel_vasp(vtest_ImmSpaceshipArray* arr, ValeInt arrSize
     total += arr->elements[i]->fuel;
   }
   free(arr);
-  return total;
+  return total * runNumber;
 }

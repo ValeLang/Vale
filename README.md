@@ -2,9 +2,9 @@
 
 Vale is a programming language whose goal is to show the world that **speed and safety can be easy!** Vale is:
 
- * *Fast:* Vale is an AOT compiled language that uses an entirely new approach to memory management: [generational references](https://verdagon.dev/blog/generational-references), which have zero aliasing costs and no garbage collection pauses.
- * *Fearless:* It is the [safest native language](/fearless): memory safety, data-race safety, region isolation, extern boundaries, and dependency extern whitelisting.
- * *Flexible:* Its new take on [regions](/guide/regions) enables alternate memory management and allocation strategies, with the [region borrow checker](https://verdagon.dev/blog/zero-cost-refs-regions) enabling seamless, fast, and _easy_ interop between them.
+ * *Fast:* Vale is an AOT compiled language that uses the new [generational references](https://verdagon.dev/blog/generational-references) technique, enabling memory-safe control over data layout.
+ * *Fearless:* It is the [safest native language](/fearless), using region isolation and "Fearless FFI" to keep extern code's bugs from affecting Vale objects.
+ * *Flexible:* Its new take on [regions](/guide/regions) enables alternate memory management and allocation strategies, with the planned [region borrow checker](https://verdagon.dev/blog/zero-cost-refs-regions) enabling easy interop between them, and eliminating the vast majority of generational references' overhead.
 
 
 Vale is part of the [Vale Language Project](https://vale.dev/project), which explores, discovers, and publishes new programming language mechanisms that enable speed, safety, and ease of use. 
@@ -46,10 +46,13 @@ For an overview of the project structure, see [Compiler Overview](compiler-overv
 # Thank you to our sponsors!
 
  * [Joseph Jaoudi](https://github.com/linkmonitor) ($25/mo)
+ * [Sergey "Shnatsel" Davidoff](https://github.com/Shnatsel) ($12/mo)
+ * [Ian (linuxy)](https://github.com/linuxy) ($12/mo)
  * [Ivo Balbaert](https://github.com/Ivo-Balbaert/) ($5/mo)
  * [Kevin Navero](https://github.com/solstice333/) ($5/mo)
  * Ilya Seletsky ($5/mo)
  * Jean Juang ($100)
+ * [Posnet](https://github.com/Posnet) ($50)
  * Kim Shook ($20)
 
 

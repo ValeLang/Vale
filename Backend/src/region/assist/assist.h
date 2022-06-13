@@ -128,6 +128,7 @@ public:
   Ref loadMember(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* structRefMT,
       Ref structRef,
       bool structKnownLive,
@@ -139,6 +140,7 @@ public:
   void storeMember(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* structRefMT,
       Ref structRef,
       bool structKnownLive,
@@ -175,7 +177,11 @@ public:
       Ref weakRef,
       bool knownLive) override;
 
-  LLVMValueRef getStringBytesPtr(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override;
+  LLVMValueRef getStringBytesPtr(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      Ref ref) override;
 
   Ref allocate(
       Ref regionInstanceRef,
@@ -224,6 +230,7 @@ public:
   Ref getRuntimeSizedArrayLength(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* rsaRefMT,
       Ref arrayRef,
       bool arrayKnownLive) override;
@@ -231,6 +238,7 @@ public:
   Ref getRuntimeSizedArrayCapacity(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* rsaRefMT,
       Ref arrayRef,
       bool arrayKnownLive) override;
@@ -239,6 +247,7 @@ public:
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      bool expectLive,
       Reference* refM,
       Ref ref) override;
 
@@ -265,6 +274,7 @@ public:
   LoadResult loadElementFromSSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* ssaRefMT,
       StaticSizedArrayT* ssaMT,
       Ref arrayRef,
@@ -273,6 +283,7 @@ public:
   LoadResult loadElementFromRSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* rsaRefMT,
       RuntimeSizedArrayT* rsaMT,
       Ref arrayRef,
@@ -311,6 +322,7 @@ public:
   void pushRuntimeSizedArrayNoBoundsCheck(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* rsaRefMT,
       RuntimeSizedArrayT* rsaMT,
       Ref arrayRef,
@@ -321,6 +333,7 @@ public:
   Ref popRuntimeSizedArrayNoBoundsCheck(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref arrayRegionInstanceRef,
       Reference* rsaRefMT,
       RuntimeSizedArrayT* rsaMT,
       Ref arrayRef,
@@ -330,6 +343,7 @@ public:
   void initializeElementInSSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref regionInstanceRef,
       Reference* ssaRefMT,
       StaticSizedArrayT* ssaMT,
       Ref arrayRef,
@@ -382,13 +396,17 @@ public:
 //  KindStructs* getWeakRefStructsSource() override {
 //    return &weakRefStructs;
 //  }
-  LLVMValueRef getStringLen(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override {
+  LLVMValueRef getStringLen(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      Ref ref) override {
     auto strWrapperPtrLE =
         kindStructs.makeWrapperPtr(
             FL(), functionState, builder,
             globalState->metalCache->strRef,
             checkValidReference(
-                FL(), functionState, builder, globalState->metalCache->strRef, ref));
+                FL(), functionState, builder, true, globalState->metalCache->strRef, ref));
     return kindStructs.getStringLen(functionState, builder, strWrapperPtrLE);
   }
 //  LLVMTypeRef getWeakRefHeaderStruct(Kind* kind) override {
@@ -430,6 +448,8 @@ public:
   std::pair<Ref, Ref> receiveUnencryptedAlienReference(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      Ref sourceRegionInstanceRef,
+      Ref targetRegionInstanceRef,
       Reference* sourceRefMT,
       Reference* targetRefMT,
       Ref sourceRef) override;
@@ -485,6 +505,12 @@ public:
   void mainSetup(FunctionState* functionState, LLVMBuilderRef builder) override;
   void mainCleanup(FunctionState* functionState, LLVMBuilderRef builder) override;
 
+  Reference* getRegionRefType() override;
+
+  // This is only temporarily virtual, while we're still creating fake ones on the fly.
+  // Soon it'll be non-virtual, and parameters will differ by region.
+  Ref createRegionInstanceLocal(FunctionState* functionState, LLVMBuilderRef builder) override;
+
 private:
 
   GlobalState* globalState = nullptr;
@@ -499,6 +525,11 @@ private:
 
   FatWeaks fatWeaks;
   WrcWeaks wrcWeaks;
+
+  std::string namePrefix = "__Assist";
+
+  StructKind* regionKind = nullptr;
+  Reference* regionRefMT = nullptr;
 };
 
 #endif

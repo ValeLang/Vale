@@ -211,3 +211,24 @@ ValeStr* __vale_strfromascii(ValeInt code) {
   *dest = code;
   return result;
 }
+
+// Compiler extern, put into the program at runtime for internal use
+uint64_t strHasherCall(void* unused, char* str) {
+  uint64_t hash = 0;
+  for (int i = 0; str[i]; i++) {
+    hash = hash * 37 + str[i];
+  }
+  return hash;
+}
+
+// Compiler extern, put into the program at runtime for internal use
+int8_t strEquatorCall(void* unused, char* strA, char* strB) {
+  for (int i = 0; ; i++) {
+    if (strA[i] != strB[i]) {
+      return FALSE;
+    }
+    if (strA[i] == 0) {
+      return TRUE;
+    }
+  }
+}

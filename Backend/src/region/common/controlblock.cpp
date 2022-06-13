@@ -58,6 +58,8 @@ void ControlBlock::build() {
       case ControlBlockMember::CENSUS_TYPE_STR:
         membersL.push_back(int8PtrLT);
         break;
+      default:
+        assert(false);
     }
   }
 

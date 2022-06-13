@@ -24,10 +24,14 @@ Ref translateNewArrayFromValues(
   for (auto elementLE : elementsLE) {
     globalState->getRegion(ssaDefM->elementType)
         ->checkValidReference(
-            FL(), functionState, builder, ssaDefM->elementType, elementLE);
+            FL(), functionState, builder, false, ssaDefM->elementType, elementLE);
   }
 
   auto staticSizedArrayMT = dynamic_cast<StaticSizedArrayT*>(newArrayFromValues->arrayRefType->kind);
+
+  auto arrayRegionInstanceRef =
+      // At some point, look up the actual region instance, perhaps from the FunctionState?
+      globalState->getRegion(newArrayFromValues->arrayRefType)->createRegionInstanceLocal(functionState, builder);
 
   if (newArrayFromValues->arrayRefType->location == Location::INLINE) {
 //        auto valStructL =
@@ -48,12 +52,13 @@ Ref translateNewArrayFromValues(
         globalState,
         functionState,
         builder,
+        arrayRegionInstanceRef,
         newArrayFromValues->arrayRefType,
         staticSizedArrayMT,
         resultLE,
         elementsLE);
-    globalState->getRegion(newArrayFromValues->arrayRefType)->checkValidReference(FL(), functionState, builder,
-        newArrayFromValues->arrayRefType, resultLE);
+    globalState->getRegion(newArrayFromValues->arrayRefType)
+        ->checkValidReference(FL(), functionState, builder, true, newArrayFromValues->arrayRefType, resultLE);
     return resultLE;
   }
 }

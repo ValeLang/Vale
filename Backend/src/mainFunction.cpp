@@ -1,6 +1,12 @@
+#include <utils/branch.h>
+#include <utils/call.h>
 #include "function/function.h"
 #include "function/expressions/expressions.h"
+#include "determinism/determinism.h"
 #include "globalstate.h"
+#include "translatetype.h"
+
+#define STACK_SIZE (8 * 1024 * 1024)
 
 std::tuple<LLVMValueRef, LLVMBuilderRef> makeStringSetupFunction(GlobalState* globalState) {
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
@@ -76,14 +82,14 @@ Prototype* makeValeMainFunction(
         }
         buildFlare(FL(), globalState, functionState, entryBuilder);
 
-        auto userMainResultRef = buildCall(globalState, functionState, entryBuilder, userMainFunctionPrototype, {});
+        auto userMainResultRef = buildCallV(globalState, functionState, entryBuilder, userMainFunctionPrototype, {});
         auto userMainResultLE =
             globalState->getRegion(userMainFunctionPrototype->returnType)
                 ->checkValidReference(
-                    FL(), functionState, entryBuilder, userMainFunctionPrototype->returnType, userMainResultRef);
+                    FL(), functionState, entryBuilder, true, userMainFunctionPrototype->returnType, userMainResultRef);
 
         buildFlare(FL(), globalState, functionState, entryBuilder);
-        buildCall(globalState, functionState, entryBuilder, mainCleanupFunctionPrototype, {});
+        buildCallV(globalState, functionState, entryBuilder, mainCleanupFunctionPrototype, {});
         buildFlare(FL(), globalState, functionState, entryBuilder);
 
         if (globalState->opt->printMemOverhead) {
@@ -139,6 +145,53 @@ Prototype* makeValeMainFunction(
   return valeMainProto;
 }
 
+//LLVMValueRef makeCoroutineEntryFunc(GlobalState* globalState) {
+//  auto voidLT = LLVMVoidTypeInContext(globalState->context);
+//  auto int1LT = LLVMInt1TypeInContext(globalState->context);
+//  auto int8LT = LLVMInt8TypeInContext(globalState->context);
+//  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+//  auto int32PtrLT = LLVMPointerType(int32LT, 0);
+//  auto int64LT = LLVMInt64TypeInContext(globalState->context);
+//  auto voidPtrLT = LLVMPointerType(int8LT, 0);
+//  auto int8PtrLT = LLVMPointerType(int8LT, 0);
+//
+//  LLVMTypeRef functionTypeL = LLVMFunctionType(voidLT, NULL, 0, 0);
+//  LLVMValueRef entryFunctionL = LLVMAddFunction(globalState->mod, "__coroutineEntry", functionTypeL);
+//
+//  LLVMBuilderRef entryBuilder = LLVMCreateBuilderInContext(globalState->context);
+//  LLVMBasicBlockRef blockL =
+//      LLVMAppendBasicBlockInContext(globalState->context, entryFunctionL, "thebestblock");
+//  LLVMPositionBuilderAtEnd(entryBuilder, blockL);
+//
+//  buildPrint(globalState, entryBuilder, "Inside other func!\n");
+//
+////  std::vector<LLVMTypeRef> paramTypes;
+////  auto calleeFuncPtrLE =
+////      LLVMBuildPointerCast(
+////          entryBuilder,
+////          LLVMBuildLoad(entryBuilder, globalState->sideStackArgCalleeFuncPtrPtr, "calleeFuncPtr"),
+////          LLVMPointerType(LLVMFunctionType(int64LT, paramTypes.data(), paramTypes.size(), false), 0),
+////          "calleeFuncPtrCasted");
+////  buildCall(globalState, entryBuilder, calleeFuncPtrLE, {});
+//
+////  auto returnDestPtrLE =
+////      LLVMBuildLoad(entryBuilder, globalState->sideStackArgReturnDestPtr, "returnDestPtr");
+////  buildPrint(globalState, entryBuilder, "Jumping back to:");
+////  buildPrint(globalState, entryBuilder, ptrToIntLE(globalState, entryBuilder, returnDestPtrLE));
+////  buildPrint(globalState, entryBuilder, "\n");
+//
+////  //start here
+////  // seems the been-here workaround doesnt work.
+////  // lets try the stacksave and stackrestore that zig was doing.
+////  LLVMBuildCall(entryBuilder, globalState->externs->longjmpIntrinsic, &returnDestPtrLE, 1, "");
+//
+//  LLVMBuildRetVoid(entryBuilder);
+//
+//  LLVMDisposeBuilder(entryBuilder);
+//
+//  return entryFunctionL;
+//}
+
 LLVMValueRef makeEntryFunction(
     GlobalState* globalState,
     Prototype* valeMainPrototype) {
@@ -167,14 +220,51 @@ LLVMValueRef makeEntryFunction(
   LLVMPositionBuilderAtEnd(entryBuilder, blockL);
 
 
-  auto numArgsLE = LLVMGetParam(entryFunctionL, 0);
-  auto argsLE = LLVMGetParam(entryFunctionL, 1);
-  LLVMBuildStore(entryBuilder, numArgsLE, globalState->numMainArgs);
-  LLVMBuildStore(entryBuilder, argsLE, globalState->mainArgs);
+  auto numMainArgsLE = LLVMGetParam(entryFunctionL, 0);
+  auto mainArgsLE = LLVMGetParam(entryFunctionL, 1);
+  LLVMBuildStore(entryBuilder, numMainArgsLE, globalState->numMainArgs);
+  LLVMBuildStore(entryBuilder, mainArgsLE, globalState->mainArgs);
 
-  auto mainResultLE = LLVMBuildCall(entryBuilder, globalState->lookupFunction(valeMainPrototype), nullptr, 0, "");
+  if (globalState->opt->enableReplaying) {
+    auto numConsumedArgsLE =
+        globalState->determinism->buildMaybeStartDeterministicMode(
+            entryBuilder, numMainArgsLE, mainArgsLE);
 
-  LLVMBuildRet(entryBuilder, mainResultLE);
+    // argv[numConsumed] = argv[0], to move the zeroth arg up.
+    LLVMBuildStore(
+        entryBuilder,
+        LLVMBuildLoad(entryBuilder, mainArgsLE, "zerothArg"),
+        LLVMBuildGEP(entryBuilder, mainArgsLE, &numConsumedArgsLE, 1, "argv+numConsumed"));
+    // argv += numConsumed
+    mainArgsLE = LLVMBuildGEP(entryBuilder, mainArgsLE, &numConsumedArgsLE, 1, "newMainArgs");
+    // argc -= numConsumed
+    numMainArgsLE = LLVMBuildSub(entryBuilder, numMainArgsLE, numConsumedArgsLE, "newMainArgsCount");
+  }
+
+  if (globalState->opt->enableSideCalling) {
+    LLVMBuildStore(
+        entryBuilder,
+        buildMaybeNeverCall(
+            globalState, entryBuilder, globalState->externs->malloc,
+            { constI64LE(globalState, STACK_SIZE) }),
+        globalState->sideStack);
+  }
+
+  auto calleeUserFunction = globalState->lookupFunction(valeMainPrototype);
+  auto resultLE = buildMaybeNeverCall(globalState, entryBuilder, calleeUserFunction, {});
+
+  if (globalState->opt->enableSideCalling) {
+    buildMaybeNeverCall(
+        globalState, entryBuilder, globalState->externs->free,
+        { LLVMBuildLoad(entryBuilder, globalState->sideStack, "") });
+  }
+
+  if (globalState->opt->enableReplaying) {
+    globalState->determinism->buildMaybeStopDeterministicMode(
+        entryFunctionL, entryBuilder);
+  }
+
+  LLVMBuildRet(entryBuilder, resultLE);
   LLVMDisposeBuilder(entryBuilder);
 
   return entryFunctionL;

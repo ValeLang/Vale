@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.4.3)
 project(backend)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++17")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++17 -fvisibility=hidden")
 
 if (MSVC)
 	# Set the stack size to 4mb instead of the default 1mb for visual studio
@@ -16,9 +16,9 @@ include_directories(
 	"${CMAKE_SOURCE_DIR}/src/"
 )
 
+
 message(STATUS "LLVM VERSION : ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
-
 
 # See either:
 #   llvm-config --libfiles --link-static
@@ -49,6 +49,7 @@ add_executable(backend
 		src/externs.cpp
 
 		src/utils/counters.cpp
+		src/utils/structlt.cpp
 
 		src/function/function.cpp
 		src/function/boundary.cpp
@@ -74,9 +75,11 @@ add_executable(backend
 		src/function/expressions/shared/members.cpp
 		src/function/expressions/shared/shared.cpp
 		src/utils/branch.cpp
+		src/utils/call.cpp
 		src/function/expressions/shared/string.cpp
 		src/region/common/heap.cpp
 		src/region/common/controlblock.cpp
+		src/region/urefstructlt.cpp
 		src/function/expressions/shared/ref.cpp
 
 		src/region/common/common.cpp
@@ -97,7 +100,7 @@ add_executable(backend
 		src/region/regions.cpp
 
 		src/fileio.cpp
-		src/options.cpp src/mainFunction.cpp src/externs.cpp)
+		src/options.cpp src/mainFunction.cpp src/externs.cpp src/determinism/determinism.cpp src/determinism/determinism.h src/utils/definefunction.cpp src/utils/definefunction.h src/utils/flags.cpp src/utils/flags.h src/simplehash/cppsimplehashmap.cpp src/simplehash/cppsimplehashmap.h src/simplehash/llvmsimplehashmap.cpp src/simplehash/llvmsimplehashmap.h src/utils/llvm.cpp src/utils/llvm.h src/utils/structlt.h)
 
 target_link_libraries(backend ${llvm_libs})
 

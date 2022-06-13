@@ -60,7 +60,7 @@ void WrcWeaks::maybeReleaseWrc(
     LLVMValueRef wrciLE,
     LLVMValueRef ptrToWrcLE,
     LLVMValueRef wrcLE) {
-  buildIf(
+  buildIfV(
       globalState, functionState,
       builder,
       isZeroLE(builder, wrcLE),
@@ -318,7 +318,7 @@ LLVMValueRef WrcWeaks::lockWrciFatPtr(
     Reference* refM,
     WeakFatPtrLE weakFatPtrLE) {
   auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, refM, weakFatPtrLE);
-  buildIf(
+  buildIfV(
       globalState, functionState, builder, isZeroLE(builder, isAliveLE),
       [this, from, functionState, weakFatPtrLE](LLVMBuilderRef thenBuilder) {
         buildPrintAreaAndFileAndLine(globalState, thenBuilder, from);
@@ -357,7 +357,7 @@ LLVMValueRef WrcWeaks::getNewWrci(
           resultWrciLE,
           LLVMBuildLoad(builder, getWrcCapacityPtr(builder), "wrcCapacity"),
           "atCapacity");
-  buildIf(
+  buildIfV(
       globalState, functionState,
       builder,
       atCapacityLE,
@@ -426,7 +426,7 @@ void WrcWeaks::aliasWeakRef(
       weakRefStructsSource->makeWeakFatPtr(
           weakRefMT,
           globalState->getRegion(weakRefMT)
-              ->checkValidReference(FL(), functionState, builder, weakRefMT, weakRef));
+              ->checkValidReference(FL(), functionState, builder, false, weakRefMT, weakRef));
   auto wrciLE = getWrciFromWeakRef(builder, weakFatPtrLE);
   if (globalState->opt->census) {
     buildCheckWrc(builder, wrciLE);
@@ -446,7 +446,7 @@ void WrcWeaks::discardWeakRef(
       weakRefStructsSource->makeWeakFatPtr(
           weakRefMT,
           globalState->getRegion(weakRefMT)
-              ->checkValidReference(FL(), functionState, builder, weakRefMT, weakRef));
+              ->checkValidReference(FL(), functionState, builder, false, weakRefMT, weakRef));
   auto wrciLE = getWrciFromWeakRef(builder, weakFatPtrLE);
   if (globalState->opt->census) {
     buildCheckWrc(builder, wrciLE);
@@ -510,7 +510,7 @@ Ref WrcWeaks::getIsAliveFromWeakRef(
       weakRefStructsSource->makeWeakFatPtr(
           weakRefM,
           globalState->getRegion(weakRefM)
-              ->checkValidReference(FL(), functionState, builder, weakRefM, weakRef));
+              ->checkValidReference(FL(), functionState, builder, false, weakRefM, weakRef));
   auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, weakRefM, weakFatPtrLE);
   return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
 }
@@ -607,28 +607,37 @@ Ref WrcWeaks::assembleWeakRef(
     Ref sourceRef) {
   // Now we need to package it up into a weak ref.
   if (auto structKind = dynamic_cast<StructKind*>(sourceType->kind)) {
-    auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
+    // I *think* we expect it to be live at this point.
+    auto sourceRefLE =
+        globalState->getRegion(sourceType)
+            ->checkValidReference(FL(), functionState, builder, false, sourceType, sourceRef);
     auto sourceWrapperPtrLE = kindStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleStructWeakRef(
             functionState, builder, sourceType, targetType, structKind, sourceWrapperPtrLE);
     return wrap(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto interfaceKindM = dynamic_cast<InterfaceKind*>(sourceType->kind)) {
-    auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
+    auto sourceRefLE =
+        globalState->getRegion(sourceType)
+            ->checkValidReference(FL(), functionState, builder, false, sourceType, sourceRef);
     auto sourceInterfaceFatPtrLE = kindStructsSource->makeInterfaceFatPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleInterfaceWeakRef(
             functionState, builder, sourceType, targetType, interfaceKindM, sourceInterfaceFatPtrLE);
     return wrap(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto staticSizedArray = dynamic_cast<StaticSizedArrayT*>(sourceType->kind)) {
-    auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
+    auto sourceRefLE =
+        globalState->getRegion(sourceType)
+            ->checkValidReference(FL(), functionState, builder, false, sourceType, sourceRef);
     auto sourceWrapperPtrLE = kindStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleStaticSizedArrayWeakRef(
             functionState, builder, sourceType, staticSizedArray, targetType, sourceWrapperPtrLE);
     return wrap(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto runtimeSizedArray = dynamic_cast<RuntimeSizedArrayT*>(sourceType->kind)) {
-    auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
+    auto sourceRefLE =
+        globalState->getRegion(sourceType)
+            ->checkValidReference(FL(), functionState, builder, false, sourceType, sourceRef);
     auto sourceWrapperPtrLE = kindStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleRuntimeSizedArrayWeakRef(

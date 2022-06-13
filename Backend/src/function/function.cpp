@@ -1,4 +1,5 @@
 #include <iostream>
+#include <utils/definefunction.h>
 #include "expressions/shared/shared.h"
 #include "../region/linear/linear.h"
 
@@ -50,7 +51,7 @@ bool typeNeedsPointerParameter(GlobalState* globalState, Reference* returnMT) {
   }
 }
 
-LLVMTypeRef translateReturnType(GlobalState* globalState, Reference* returnMT) {
+LLVMTypeRef translateExternReturnType(GlobalState* globalState, Reference* returnMT) {
   if (returnMT == globalState->metalCache->neverRef) {
     return LLVMVoidTypeInContext(globalState->context);
   } else if (returnMT == globalState->metalCache->voidRef) {
@@ -67,7 +68,7 @@ LLVMTypeRef translateReturnType(GlobalState* globalState, Reference* returnMT) {
 }
 
 void exportFunction(GlobalState* globalState, Package* package, Function* functionM) {
-  LLVMTypeRef exportReturnLT = translateReturnType(globalState, functionM->prototype->returnType);
+  LLVMTypeRef exportReturnLT = translateExternReturnType(globalState, functionM->prototype->returnType);
 
   bool usingReturnOutParam = typeNeedsPointerParameter(globalState, functionM->prototype->returnType);
   std::vector<LLVMTypeRef> exportParamTypesL;
@@ -91,7 +92,8 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
   LLVMTypeRef exportFunctionTypeL =
       LLVMFunctionType(exportReturnLT, exportParamTypesL.data(), exportParamTypesL.size(), 0);
 
-  auto exportName = std::string("vale_abi_") + package->getFunctionExportName(functionM->prototype);
+  auto unprefixedExportName = package->getFunctionExportName(functionM->prototype);
+  auto exportName = std::string("vale_abi_") + unprefixedExportName;
 
   // The full name should end in _0, _1, etc. The exported name shouldnt.
   assert(exportName != functionM->prototype->name->name);
@@ -130,16 +132,27 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
       hostArgRefLE = cArgLE;
     }
 
+
+    auto valeRegionInstanceRef =
+        // At some point, look up the actual region instance, perhaps from the FunctionState?
+        globalState->getRegion(valeParamMT)->createRegionInstanceLocal(&functionState, builder);
+    auto hostRegionInstanceRef =
+        globalState->linearRegion->createRegionInstanceLocal(
+            &functionState, builder, constI1LE(globalState, 0), constI64LE(globalState, 0));
+
     auto valeRef =
         receiveHostObjectIntoVale(
-            globalState, &functionState, builder, hostParamMT, valeParamMT, hostArgRefLE);
+            globalState, &functionState, builder, hostRegionInstanceRef, valeRegionInstanceRef, hostParamMT, valeParamMT, hostArgRefLE);
 
     argsToActualFunction.push_back(valeRef);
+
+    // dont we have to free here
   }
 
   buildFlare(FL(), globalState, &functionState, builder, "Suspending export function ", functionState.containingFuncName);
   buildFlare(FL(), globalState, &functionState, builder, "Calling vale function ", functionM->prototype->name->name);
-  auto valeReturnRefOrVoid = buildCall(globalState, &functionState, builder, functionM->prototype, argsToActualFunction);
+  auto valeReturnRefOrVoid =
+      buildCallV(globalState, &functionState, builder, functionM->prototype, argsToActualFunction);
   buildFlare(FL(), globalState, &functionState, builder, "Done calling vale function ", functionM->prototype->name->name);
   buildFlare(FL(), globalState, &functionState, builder, "Resuming export function ", functionState.containingFuncName);
 
@@ -154,9 +167,16 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
          globalState->linearRegion->linearizeReference(valeReturnMT) :
          valeReturnMT);
 
+    auto valeRegionInstanceRef =
+        // At some point, look up the actual region instance, perhaps from the FunctionState?
+        globalState->getRegion(valeReturnMT)->createRegionInstanceLocal(&functionState, builder);
+    auto hostRegionInstanceRef =
+        globalState->linearRegion->createRegionInstanceLocal(
+            &functionState, builder, constI1LE(globalState, 0), constI64LE(globalState, 0));
     auto [hostReturnRefLE, hostReturnSizeLE] =
-        sendValeObjectIntoHost(
-            globalState, &functionState, builder, valeReturnMT, hostReturnMT, valeReturnRef);
+    sendValeObjectIntoHostAndDealias(
+        globalState, &functionState, builder, valeRegionInstanceRef, hostRegionInstanceRef, valeReturnMT, hostReturnMT,
+        valeReturnRef);
 
     buildFlare(FL(), globalState, &functionState, builder, "Done calling export function ", functionState.containingFuncName, " from native");
 
@@ -175,7 +195,7 @@ LLVMValueRef declareExternFunction(
     GlobalState* globalState,
     Package* package,
     Prototype* prototypeM) {
-  LLVMTypeRef externReturnLT = translateReturnType(globalState, prototypeM->returnType);
+  LLVMTypeRef externReturnLT = translateExternReturnType(globalState, prototypeM->returnType);
 
   bool usingReturnOutParam = typeNeedsPointerParameter(globalState, prototypeM->returnType);
   std::vector<LLVMTypeRef> externParamTypesL;
@@ -310,34 +330,18 @@ void declareExtraFunction(
   globalState->extraFunctions.emplace(std::make_pair(prototype, functionL));
 }
 
-void defineFunctionBody(
+void defineFunctionBodyV(
     GlobalState* globalState,
     Prototype* prototype,
     std::function<void(FunctionState*, LLVMBuilderRef)> definer) {
   auto functionL = globalState->lookupFunction(prototype);
-
-  auto localsBlockName = std::string("localsBlock");
-  auto localsBuilder = LLVMCreateBuilderInContext(globalState->context);
-  LLVMBasicBlockRef localsBlockL = LLVMAppendBasicBlockInContext(globalState->context, functionL, localsBlockName.c_str());
-  LLVMPositionBuilderAtEnd(localsBuilder, localsBlockL);
-
-  auto firstBlockName = std::string("codeStartBlock");
-  LLVMBasicBlockRef firstBlockL = LLVMAppendBasicBlockInContext(globalState->context, functionL, firstBlockName.c_str());
-  LLVMBuilderRef bodyTopLevelBuilder = LLVMCreateBuilderInContext(globalState->context);
-  LLVMPositionBuilderAtEnd(bodyTopLevelBuilder, firstBlockL);
-
   auto retType = globalState->getRegion(prototype->returnType)->translateType(prototype->returnType);
-  FunctionState functionState(
-      prototype->name->name, functionL, retType, localsBuilder);
-
-  definer(&functionState, bodyTopLevelBuilder);
-
-  // Now that we've added all the locals we need, lets make the locals block jump to the first
-  // code block.
-  LLVMBuildBr(localsBuilder, firstBlockL);
-
-  LLVMDisposeBuilder(bodyTopLevelBuilder);
-  LLVMDisposeBuilder(localsBuilder);
+  defineFunctionBody(
+      globalState->context,
+      functionL,
+      retType,
+      prototype->name->name,
+      definer);
 }
 
 void declareAndDefineExtraFunction(
@@ -346,5 +350,5 @@ void declareAndDefineExtraFunction(
     std::string llvmName,
     std::function<void(FunctionState*, LLVMBuilderRef)> definer) {
   declareExtraFunction(globalState, prototype, llvmName);
-  defineFunctionBody(globalState, prototype, definer);
+  defineFunctionBodyV(globalState, prototype, definer);
 }

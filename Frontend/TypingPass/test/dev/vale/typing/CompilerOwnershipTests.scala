@@ -129,10 +129,10 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
         |impl<T> Opt<T> for Some<T>;
         |
         |abstract func drop<T>(virtual opt Opt<T>)
-        |where Prot["drop", Refs(T), void];
+        |where func drop(T)void;
         |
         |func drop<T>(opt Some<T>)
-        |where Prot["drop", Refs(T), void]
+        |where func drop(T)void
         |{
         |  [x] = opt;
         |}
@@ -173,10 +173,10 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
         |impl<T> Opt<T> for Some<T>;
         |
         |abstract func drop<T>(virtual opt Opt<T>)
-        |where Prot["drop", Refs(T), void];
+        |where func drop(T)void;
         |
         |func drop<T>(opt Some<T>)
-        |where Prot["drop", Refs(T), void]
+        |where func drop(T)void
         |{
         |  [x] = opt;
         |}

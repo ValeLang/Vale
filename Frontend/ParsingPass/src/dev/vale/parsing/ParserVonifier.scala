@@ -456,17 +456,17 @@ object ParserVonifier {
           )
         )
       }
-      case ResolveSignaturePR(range, nameStrRule, argsPackRule) => {
-        VonObject(
-          "ResolveSignaturePR",
-          None,
-          Vector(
-            VonMember("range", vonifyRange(range)),
-            VonMember("nameStrRule", vonifyRule(nameStrRule)),
-            VonMember("argsPackRule", vonifyRule(argsPackRule)),
-          )
-        )
-      }
+//      case ResolveSignaturePR(range, nameStrRule, argsPackRule) => {
+//        VonObject(
+//          "ResolveSignaturePR",
+//          None,
+//          Vector(
+//            VonMember("range", vonifyRange(range)),
+//            VonMember("nameStrRule", vonifyRule(nameStrRule)),
+//            VonMember("argsPackRule", vonifyRule(argsPackRule)),
+//          )
+//        )
+//      }
       case PackPR(range, elements) => {
         VonObject(
           "PackPR",

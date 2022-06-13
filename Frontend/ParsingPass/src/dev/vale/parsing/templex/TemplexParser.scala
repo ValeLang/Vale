@@ -101,9 +101,13 @@ class TemplexParser(interner: Interner) {
     }
 
     val name = vimpl()
-//      Parser.parseFunctionOrLocalOrMemberName(iter) match {
-//        case None => return Err(BadPrototypeName(iter.getPos()))
-//        case Some(x) => x
+//      if (iter.peek(() => "^\\(".r)) {
+//        NameP(RangeP(iter.getPos(), iter.getPos()), "__call")
+//      } else {
+//        Parser.parseFunctionOrLocalOrMemberName(iter) match {
+//          case None => return Err(BadPrototypeName(iter.getPos()))
+//          case Some(x) => x
+//        }
 //      }
 
     val args =
@@ -450,16 +454,12 @@ class TemplexParser(interner: Interner) {
 //        }
       }
 
-
-
     val runeType = vimpl()
 //      Parser.parseRuneType(tentativeIter, Vector()) match {
 //        case Err(e) => return Ok(None)
 //        case Ok(None) => return Ok(None)
 //        case Ok(Some(x)) => x
 //      }
-
-
 
     originalIter.skipTo(tentativeIter)
     val iter = originalIter
@@ -469,37 +469,31 @@ class TemplexParser(interner: Interner) {
 
   def parseRuleCall(iter: ScrambleIterator): Result[Option[IRulexPR], IParseError] = {
     vimpl()
-//    val begin = iter.getPos()
+
+//    val tentativeIter = originalIter.clone()
+//
+//    val begin = tentativeIter.getPos()
 //    val nameAndOpenParen =
-//      iter.tryy(() => "^\\w+\\(".r) match {
+//      tentativeIter.tryy(() => "^\\w+\\(".r) match {
 //        case None => return Ok(None)
 //        case Some(nameAndOpenParen) => nameAndOpenParen
 //      }
 //
 //    val nameStr = nameAndOpenParen.init
-//    val nameEnd = iter.getPos() - 1
-//    val name = NameP(RangeL(begin, nameEnd), nameStr)
-//
-//
-//    if (iter.trySkip(() => "^\\s*\\)".r)) {
-//      return Ok(Some(BuiltinCallPR(RangeL(begin, iter.getPos()), name, Vector())))
+//    if (nameStr == "func") {
+//      return Ok(None)
 //    }
 //
-//    val args = mutable.ArrayBuffer[IRulexPR]()
-//    while ({
+//    val nameEnd = tentativeIter.getPos() - 1
+//    val name = NameP(RangeP(begin, nameEnd), nameStr)
 //
-//      val arg = parseRule(iter) match { case Err(e) => return Err(e) case Ok(t) => t }
-//      args += arg
-//      if (iter.trySkip(() => "^\\s*,".r)) {
-//        true
-//      } else if (iter.trySkip(() => "^\\s*\\)".r)) {
-//        false
-//      } else {
-//        return Err(BadRuleCallParam(iter.getPos()))
-//      }
-//    }) {}
+//    originalIter.skipTo(tentativeIter.getPos())
+//    val iter = originalIter
 //
-//    Ok(Some(BuiltinCallPR(RangeL(begin, iter.getPos()), name, args.toVector)))
+//    iter.consumeWhitespace()
+//    if (iter.trySkip(() => "^\\s*\\)".r)) {
+//      return Ok(Some(BuiltinCallPR(RangeP(begin, iter.getPos()), name, Vector())))
+//    }
   }
 
   def parseRuleDestructure(originalIter: ScrambleIterator): Result[Option[IRulexPR], IParseError] = {

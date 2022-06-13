@@ -20,39 +20,64 @@ void buildVoidIfElse(
     std::function<void(LLVMBuilderRef)> buildThen,
     std::function<void(LLVMBuilderRef)> buildElse);
 
-LLVMValueRef buildSimpleIfElse(
+LLVMValueRef buildIfElse(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef conditionLE,
     LLVMTypeRef resultTypeL,
+    LLVMValueRef conditionLE,
     std::function<LLVMValueRef(LLVMBuilderRef)> buildThen,
     std::function<LLVMValueRef(LLVMBuilderRef)> buildElse);
 
-Ref buildIfElse(
+Ref buildIfElseV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Ref conditionRef,
-    LLVMTypeRef resultTypeL,
     Reference* thenResultMT,
     Reference* elseResultMT,
     std::function<Ref(LLVMBuilderRef)> buildThen,
     std::function<Ref(LLVMBuilderRef)> buildElse);
 
-void buildIf(
+void buildIfV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef conditionLE,
     std::function<void(LLVMBuilderRef)> buildThen);
 
+void buildIfNever(
+    GlobalState* globalState,
+    LLVMValueRef funcL,
+    LLVMBuilderRef builder,
+    LLVMValueRef conditionLE,
+    std::function<void(LLVMBuilderRef)> buildThen);
 
-void buildBoolyWhile(
+void buildIfReturn(
+    GlobalState* globalState,
+    LLVMValueRef funcL,
+    LLVMBuilderRef builder,
+    LLVMValueRef conditionLE,
+    std::function<LLVMValueRef(LLVMBuilderRef)> buildThen);
+
+void buildIf(
+    GlobalState* globalState,
+    LLVMValueRef funcL,
+    LLVMBuilderRef builder,
+    LLVMValueRef conditionLE,
+    std::function<void(LLVMBuilderRef)> buildThen);
+
+void buildBoolyWhileV(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    std::function<Ref(LLVMBuilderRef, LLVMBasicBlockRef)> buildBody);
+    std::function<Ref(LLVMBuilderRef)> buildBody);
+
+void buildBoolyWhile(
+    GlobalState* globalState,
+    LLVMValueRef containingFuncL,
+    LLVMBuilderRef builder,
+    std::function<LLVMValueRef(LLVMBuilderRef)> buildBody);
 
 void buildBreakyWhile(
     GlobalState* globalState,

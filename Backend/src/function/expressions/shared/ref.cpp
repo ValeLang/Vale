@@ -31,7 +31,9 @@ LLVMValueRef checkValidInternalReference(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    bool expectLive,
     Reference* refM,
     Ref ref) {
-  return globalState->getRegion(refM)->checkValidReference(checkerAFL, functionState, builder, refM, ref);
+  return globalState->getRegion(refM)
+      ->checkValidReference(checkerAFL, functionState, builder, expectLive, refM, ref);
 }

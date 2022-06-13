@@ -199,7 +199,7 @@ func toVaryArray<E>(list List<E>) []<mut>E {
 func each<E, F>(list &List<E>, func F) void
 where
     F = Ref[_, _],
-    Prot["__call", Refs(&F, &E), void] {
+    func(&F, &E)void {
   i = 0;
   l = len(&list);
   while i < l {
@@ -231,7 +231,7 @@ func indexOf<E>(list &List<E>, element E) Opt<int> {
 }
 
 func indexWhere<E, F>(list &List<E>, func F) Opt<int>
-where Prot["__call", Refs(&F, &E), _] {
+where func(&F, &E)_ {
   i = 0;
   l = len(&list);
   while i < l {
@@ -313,7 +313,7 @@ func join(list &List<StrSlice>, joiner str) str {
 }
 
 func map<E, F>(list &List<E>, func &F) List<T>
-where T Ref, Prot["__call", Refs(&F, E), T] {
+where T Ref, func(&F, E)T {
   result = List<T>();
   list.each({ result.add((func)(_)); });
   return result;
@@ -340,7 +340,7 @@ where T Ref, Prot["__call", Refs(&F, E), T] {
 
 
 func exists<E, F>(list &List<E>, func F) bool
-where T Ref, Prot["__call", Refs(&F, E), T] {
+where T Ref, func(&F, E)T {
   i = 0;
   while i < list.len() {
     if (&func)(list.get(i)) {

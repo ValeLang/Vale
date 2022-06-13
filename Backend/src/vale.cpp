@@ -21,6 +21,7 @@
 #include "metal/instructions.h"
 
 #include "function/function.h"
+#include "determinism/determinism.h"
 #include "metal/readjson.h"
 #include "error.h"
 #include "translatetype.h"
@@ -83,6 +84,7 @@ Prototype* makeValeMainFunction(
 LLVMValueRef makeEntryFunction(
     GlobalState* globalState,
     Prototype* valeMainPrototype);
+//LLVMValueRef makeCoroutineEntryFunc(GlobalState* globalState);
 
 LLVMValueRef declareFunction(
   GlobalState* globalState,
@@ -646,37 +648,17 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
+  auto int256LT = LLVMIntTypeInContext(globalState->context, 256);
   auto int32LT = LLVMInt32TypeInContext(globalState->context);
   auto int32PtrLT = LLVMPointerType(int32LT, 0);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
   {
-    globalState->concreteHandleLT = LLVMStructCreateNamed(globalState->context, "__ExternConcreteHandle");
-    std::vector<LLVMTypeRef> memberTypesL = {
-        LLVMInt64TypeInContext(globalState->context), // region ID
-        LLVMInt64TypeInContext(globalState->context), // object pointer
-        LLVMInt32TypeInContext(globalState->context), // generation
-        LLVMInt32TypeInContext(globalState->context), // offset to generation
-    };
-    LLVMStructSetBody(globalState->concreteHandleLT, memberTypesL.data(), memberTypesL.size(), false);
-
-    auto actualSize = LLVMABISizeOfType(globalState->dataLayout, globalState->concreteHandleLT);
-    assert(actualSize == 24);
-  }
-
-  {
-    globalState->interfaceHandleLT = LLVMStructCreateNamed(globalState->context, "__ExternInterfaceHandle");
-    std::vector<LLVMTypeRef> memberTypesL = {
-        LLVMInt64TypeInContext(globalState->context), // region ID
-        LLVMInt64TypeInContext(globalState->context), // itable pointer
-        LLVMInt64TypeInContext(globalState->context), // object pointer
-        LLVMInt32TypeInContext(globalState->context), // generation
-        LLVMInt32TypeInContext(globalState->context), // offset to generation
-    };
-    LLVMStructSetBody(globalState->interfaceHandleLT, memberTypesL.data(), memberTypesL.size(), false);
-
-    auto actualSize = LLVMABISizeOfType(globalState->dataLayout, globalState->interfaceHandleLT);
-    assert(actualSize == 32);
+    globalState->universalRefStructLT =
+        std::make_unique<UniversalRefStructLT>(globalState->context, globalState->dataLayout);
+    globalState->universalRefCompressedStructLT =
+        LLVMStructCreateNamed(globalState->context, "__UniversalRefCompressed");
+    LLVMStructSetBody(globalState->universalRefCompressedStructLT, &int256LT, 1, false);
   }
 
   switch (globalState->opt->regionOverride) {
@@ -724,26 +706,6 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
   AddressNumberer addressNumberer;
   MetalCache metalCache(&addressNumberer);
   globalState->metalCache = &metalCache;
-
-  switch (globalState->opt->regionOverride) {
-    case RegionOverride::ASSIST:
-      metalCache.mutRegionId = metalCache.assistRegionId;
-      break;
-    case RegionOverride::FAST:
-      metalCache.mutRegionId = metalCache.unsafeRegionId;
-      break;
-    case RegionOverride::NAIVE_RC:
-      metalCache.mutRegionId = metalCache.naiveRcRegionId;
-      break;
-    case RegionOverride::RESILIENT_V3:
-      metalCache.mutRegionId = metalCache.resilientV3RegionId;
-      break;
-    case RegionOverride::RESILIENT_V4:
-      metalCache.mutRegionId = metalCache.resilientV4RegionId;
-      break;
-    default:
-      assert(false);
-  }
 
   Program program(
       std::unordered_map<PackageCoordinate*, Package*, AddressHasher<PackageCoordinate*>, std::equal_to<PackageCoordinate*>>(
@@ -796,6 +758,8 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
 
 //  globalState->stringConstantBuilder = entryBuilder;
 
+  LLVMValueRef empty[1] = {};
+
   globalState->numMainArgs =
       LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__main_num_args");
   LLVMSetLinkage(globalState->numMainArgs, LLVMExternalLinkage);
@@ -830,8 +794,16 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
   LLVMSetInitializer(globalState->derefCounter, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
 
   globalState->neverPtr = LLVMAddGlobal(globalState->mod, makeNeverType(globalState), "__never");
-  LLVMValueRef empty[1] = {};
   LLVMSetInitializer(globalState->neverPtr, LLVMConstArray(LLVMIntTypeInContext(globalState->context, NEVER_INT_BITS), empty, 0));
+
+  globalState->sideStack = LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "__sideStack");
+  LLVMSetInitializer(globalState->sideStack, LLVMConstNull(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)));
+
+//  globalState->sideStackArgCalleeFuncPtrPtr = LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "sideStackArgCalleeFuncPtrPtr");
+//  LLVMSetInitializer(globalState->sideStackArgCalleeFuncPtrPtr, LLVMConstNull(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)));
+
+//  globalState->sideStackArgReturnDestPtr = LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "sideStackArgReturnDestPtr");
+//  LLVMSetInitializer(globalState->sideStackArgReturnDestPtr, LLVMConstNull(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)));
 
   globalState->mutRcAdjustCounter =
       LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__mutRcAdjustCounter");
@@ -846,26 +818,35 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
   RCImm rcImm(globalState);
   globalState->rcImm = &rcImm;
   globalState->regions.emplace(globalState->rcImm->getRegionId(), globalState->rcImm);
-  Assist assistRegion(globalState);
-  globalState->assistRegion = &assistRegion;
-  globalState->regions.emplace(globalState->assistRegion->getRegionId(), globalState->assistRegion);
-  NaiveRC naiveRcRegion(globalState, globalState->metalCache->naiveRcRegionId);
-  globalState->naiveRcRegion = &naiveRcRegion;
-  globalState->regions.emplace(globalState->naiveRcRegion->getRegionId(), globalState->naiveRcRegion);
-  Unsafe unsafeRegion(globalState);
-  globalState->unsafeRegion = &unsafeRegion;
-  globalState->regions.emplace(globalState->unsafeRegion->getRegionId(), globalState->unsafeRegion);
-  Linear linearRegion(globalState);
-  globalState->linearRegion = &linearRegion;
-  globalState->regions.emplace(globalState->linearRegion->getRegionId(), globalState->linearRegion);
-  ResilientV3 resilientV3Region(globalState, globalState->metalCache->resilientV3RegionId);
-  globalState->resilientV3Region = &resilientV3Region;
-  globalState->regions.emplace(globalState->resilientV3Region->getRegionId(), globalState->resilientV3Region);
-  ResilientV4 resilientV4Region(globalState, globalState->metalCache->resilientV4RegionId);
-  globalState->resilientV4Region = &resilientV4Region;
-  globalState->regions.emplace(globalState->resilientV4Region->getRegionId(), globalState->resilientV4Region);
 
-  globalState->mutRegion = globalState->getRegion(metalCache.mutRegionId);
+  globalState->linearRegion = new Linear(globalState);
+  globalState->regions.emplace(globalState->linearRegion->getRegionId(), globalState->linearRegion);
+
+
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+      globalState->mutRegion = new Assist(globalState);
+      break;
+    case RegionOverride::NAIVE_RC:
+      globalState->mutRegion = new NaiveRC(globalState, globalState->metalCache->mutRegionId);
+      break;
+    case RegionOverride::FAST:
+      globalState->mutRegion = new Unsafe(globalState);
+      break;
+    case RegionOverride::RESILIENT_V3:
+      globalState->mutRegion = new ResilientV3(globalState, globalState->metalCache->mutRegionId);
+      break;
+    case RegionOverride::RESILIENT_V4:
+      globalState->mutRegion = new ResilientV4(globalState, globalState->metalCache->mutRegionId);
+      break;
+    default:
+      assert(false);
+      break;
+  }
+  globalState->regions.emplace(globalState->mutRegion->getRegionId(), globalState->mutRegion);
+
+  Determinism determinism(globalState);
+  globalState->determinism = &determinism;
 
 
   assert(LLVMTypeOf(globalState->neverPtr) == globalState->getRegion(globalState->metalCache->neverRef)->translateType(globalState->metalCache->neverRef));
@@ -898,6 +879,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
       // std::cout << std::endl;
 
       if (structM->mutability == Mutability::IMMUTABLE) {
+        // TODO: https://github.com/ValeLang/Vale/issues/479
         globalState->linearRegion->declareStruct(structM);
       }
     }
@@ -910,6 +892,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
       auto interfaceM = p.second;
       globalState->getRegion(interfaceM->regionId)->declareInterface(interfaceM);
       if (interfaceM->mutability == Mutability::IMMUTABLE) {
+        // TODO: https://github.com/ValeLang/Vale/issues/479
         globalState->linearRegion->declareInterface(interfaceM);
       }
     }
@@ -1117,6 +1100,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
         continue;
       }
       declareExternFunction(globalState, package, prototype);
+      determinism.registerFunction(prototype);
     }
   }
 
@@ -1132,9 +1116,12 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
       if (!skipExporting) {
         auto function = program.getFunction(prototype->name);
         exportFunction(globalState, package, function);
+        determinism.registerFunction(prototype);
       }
     }
   }
+
+  determinism.finalizeFunctionsMap();
 
   for (auto[packageCoord, package] : program.packages) {
     for (auto p : package->functions) {
@@ -1176,7 +1163,7 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
         LLVMBuildRet(builder, constI64LE(globalState, 0));
       });
 
-
+//  globalState->coroutineEntryFunc = makeCoroutineEntryFunc(globalState);
 
   Prototype* mainM = nullptr;
   for (auto[packageCoord, package] : program.packages) {

@@ -22,21 +22,32 @@ Ref translateInterfaceCall(
   auto argExprsLE =
       translateExpressions(globalState, functionState, blockState, builder, call->argExprs);
 
+  buildFlare(FL(), globalState, functionState, builder);
+
   auto argsLE = std::vector<Ref>{};
   argsLE.reserve(call->argExprs.size());
   for (int i = 0; i < call->argExprs.size(); i++) {
+    buildFlare(FL(), globalState, functionState, builder);
+
     auto argLE = translateExpression(globalState, functionState, blockState, builder, call->argExprs[i]);
     globalState->getRegion(call->functionType->params[i])
-        ->checkValidReference(FL(), functionState, builder, call->functionType->params[i], argLE);
+        ->checkValidReference(FL(), functionState, builder, false, call->functionType->params[i], argLE);
     argsLE.push_back(argLE);
+
+    buildFlare(FL(), globalState, functionState, builder);
   }
 
+
+  buildFlare(FL(), globalState, functionState, builder);
 
   auto virtualArgRefMT = functionType->params[virtualParamIndex];
   auto virtualArgRef = argsLE[virtualParamIndex];
   auto methodFunctionPtrLE =
       globalState->getRegion(virtualArgRefMT)
           ->getInterfaceMethodFunctionPtr(functionState, builder, virtualArgRefMT, virtualArgRef, indexInEdge);
+
+  buildFlare(FL(), globalState, functionState, builder);
+
   auto resultLE =
       buildInterfaceCall(
           globalState,
@@ -46,8 +57,11 @@ Ref translateInterfaceCall(
           methodFunctionPtrLE,
           argExprsLE,
           call->virtualParamIndex);
+
+  buildFlare(FL(), globalState, functionState, builder);
+
   globalState->getRegion(call->functionType->returnType)
-      ->checkValidReference(FL(), functionState, builder, call->functionType->returnType, resultLE);
+      ->checkValidReference(FL(), functionState, builder, false, call->functionType->returnType, resultLE);
 
   if (call->functionType->returnType->kind == globalState->metalCache->never) {
     return wrap(

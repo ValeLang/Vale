@@ -30,8 +30,8 @@ Ref translateNewImmRuntimeSizedArray(
   auto capacityRef = translateExpression(globalState, functionState, blockState, builder, sizeExpr);
 
   auto generatorRef = translateExpression(globalState, functionState, blockState, builder, generatorExpr);
-  globalState->getRegion(generatorType)->checkValidReference(FL(), functionState, builder,
-      generatorType, generatorRef);
+  globalState->getRegion(generatorType)
+      ->checkValidReference(FL(), functionState, builder, true, generatorType, generatorRef);
 
   // If we get here, arrayLT is a pointer to our counted struct.
   auto rsaRef =
@@ -44,14 +44,19 @@ Ref translateNewImmRuntimeSizedArray(
           capacityRef,
           runtimeSizedArrayMT->name->name);
   buildFlare(FL(), globalState, functionState, builder);
-  globalState->getRegion(arrayRefType)->checkValidReference(FL(), functionState, builder,
-      arrayRefType, rsaRef);
+  globalState->getRegion(arrayRefType)
+      ->checkValidReference(FL(), functionState, builder, true, arrayRefType, rsaRef);
+
+  auto arrayRegionInstanceRef =
+      // At some point, look up the actual region instance, perhaps from the FunctionState?
+      globalState->getRegion(arrayRefType)->createRegionInstanceLocal(functionState, builder);
 
   buildFlare(FL(), globalState, functionState, builder);
   fillRuntimeSizedArray(
       globalState,
       functionState,
       builder,
+      arrayRegionInstanceRef,
       arrayRefType,
       runtimeSizedArrayMT,
       elementType,

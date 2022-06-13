@@ -24,12 +24,12 @@ Ref translateIf(
   BlockState elseBlockState(globalState->addressNumberer, parentBlockState, std::nullopt);
 
   auto resultLE =
-      buildIfElse(
+      buildIfElseV(
           globalState,
           functionState,
           builder,
           conditionExpr,
-          globalState->getRegion(iff->commonSupertype)->translateType(iff->commonSupertype),
+//          globalState->getRegion(iff->commonSupertype)->translateType(iff->commonSupertype),
           iff->thenResultType,
           iff->elseResultType,
           [globalState, functionState, &thenBlockState, iff](LLVMBuilderRef thenBlockBuilder) {
@@ -42,7 +42,7 @@ Ref translateIf(
           });
   globalState->getRegion(iff->commonSupertype)
       ->checkValidReference(
-          FL(), functionState, builder, iff->commonSupertype, resultLE);
+          FL(), functionState, builder, false, iff->commonSupertype, resultLE);
 
 
   bool thenContinues = iff->thenResultType->kind != globalState->metalCache->never;

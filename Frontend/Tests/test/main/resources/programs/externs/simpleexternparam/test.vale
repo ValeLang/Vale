@@ -1,0 +1,6 @@
+
+extern func myCFunc(x int) int;
+
+exported func main() int {
+  return myCFunc(42);
+}

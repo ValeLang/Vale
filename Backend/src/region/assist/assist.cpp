@@ -19,31 +19,31 @@ Assist::Assist(GlobalState* globalState_) :
         makeAssistAndNaiveRCNonWeakableControlBlock(globalState),
         makeAssistAndNaiveRCWeakableControlBlock(globalState),
         WrcWeaks::makeWeakRefHeaderStruct(globalState)),
-//    kindStructs(
-//        globalState,
-//        [this](Kind* kind) -> KindStructs* {
-//          if (globalState->getKindWeakability(kind) == Weakability::NON_WEAKABLE) {
-//            return &kindStructs;
-//          } else {
-//            return &kindStructs;
-//          }
-//        }),
-//    kindStructs(
-//        [this](Kind* kind) -> KindStructs* {
-//          if (globalState->getKindWeakability(kind) == Weakability::NON_WEAKABLE) {
-//            assert(false);
-//          } else {
-//            return &kindStructs;
-//          }
-//        }),
     fatWeaks(globalState_, &kindStructs),
     wrcWeaks(globalState_, &kindStructs, &kindStructs) {
   regionLT = LLVMStructCreateNamed(globalState->context, "__Assist_Region");
   LLVMStructSetBody(regionLT, nullptr, 0, false);
+
+  regionKind =
+      globalState->metalCache->getStructKind(
+          globalState->metalCache->getName(
+              globalState->metalCache->builtinPackageCoord, namePrefix + "_Region"));
+  regionRefMT =
+      globalState->metalCache->getReference(
+          Ownership::BORROW, Location::YONDER, regionKind);
+  globalState->regionIdByKind.emplace(regionKind, globalState->metalCache->mutRegionId);
+  kindStructs.declareStruct(regionKind, Weakability::NON_WEAKABLE);
+  kindStructs.defineStruct(regionKind, {
+      // This region doesnt need anything
+  });
+}
+
+Reference* Assist::getRegionRefType() {
+  return regionRefMT;
 }
 
 RegionId* Assist::getRegionId() {
-  return globalState->metalCache->assistRegionId;
+  return globalState->metalCache->mutRegionId;
 }
 
 void Assist::mainSetup(FunctionState* functionState, LLVMBuilderRef builder) {
@@ -153,6 +153,11 @@ Ref Assist::asSubtype(
 }
 
 LLVMTypeRef Assist::translateType(Reference* referenceM) {
+  if (referenceM == regionRefMT) {
+    // We just have a raw pointer to region structs
+    return LLVMPointerType(kindStructs.getStructInnerStruct(regionKind), 0);
+  }
+
   switch (referenceM->ownership) {
     case Ownership::SHARE:
       assert(false);
@@ -273,7 +278,7 @@ void Assist::discardOwningRef(
   auto exprWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, sourceMT,
-          checkValidReference(FL(), functionState, builder, sourceMT, sourceRef));
+          checkValidReference(FL(), functionState, builder, true, sourceMT, sourceRef));
 
   adjustStrongRc(
       AFL("Destroy decrementing the owning ref"),
@@ -291,7 +296,7 @@ void Assist::noteWeakableDestroyed(
     ControlBlockPtrLE controlBlockPtrLE) {
   auto rc = kindStructs.getStrongRcFromControlBlockPtr(builder, refM, controlBlockPtrLE);
   auto conditionLE = LLVMBuildICmp(builder, LLVMIntEQ, rc, constI32LE(globalState, 0), "assertCondition");
-  buildIf(
+  buildIfV(
       globalState, functionState, builder, isZeroLE(builder, conditionLE),
       [this](LLVMBuilderRef thenBuilder) {
         buildPrint(globalState, thenBuilder, "Error: Dangling pointers detected!");
@@ -315,6 +320,7 @@ void Assist::noteWeakableDestroyed(
 Ref Assist::loadMember(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* structRefMT,
     Ref structRef,
     bool structKnownLive,
@@ -322,6 +328,9 @@ Ref Assist::loadMember(
     Reference* expectedMemberType,
     Reference* targetType,
     const std::string& memberName) {
+  globalState->getRegion(structRefMT)
+      ->checkValidReference(FL(), functionState, builder, true, structRefMT, structRef);
+
   buildFlare(FL(), globalState, functionState, builder);
   if (structRefMT->ownership == Ownership::SHARE) {
     assert(false);
@@ -340,6 +349,7 @@ Ref Assist::loadMember(
 void Assist::storeMember(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* structRefMT,
     Ref structRef,
     bool structKnownLive,
@@ -348,8 +358,8 @@ void Assist::storeMember(
     Reference* newMemberRefMT,
     Ref newMemberRef) {
   auto newMemberLE =
-      globalState->getRegion(newMemberRefMT)->checkValidReference(
-          FL(), functionState, builder, newMemberRefMT, newMemberRef);
+      globalState->getRegion(newMemberRefMT)
+          ->checkValidReference(FL(), functionState, builder, false, newMemberRefMT, newMemberRef);
   switch (structRefMT->ownership) {
     case Ownership::SHARE:
       assert(false);
@@ -428,13 +438,17 @@ Ref Assist::getIsAliveFromWeakRef(
   return wrcWeaks.getIsAliveFromWeakRef(functionState, builder, weakRefM, weakRef);
 }
 
-LLVMValueRef Assist::getStringBytesPtr(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) {
+LLVMValueRef Assist::getStringBytesPtr(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef,
+    Ref ref) {
   auto strWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder,
           globalState->metalCache->strRef,
           checkValidReference(
-              FL(), functionState, builder, globalState->metalCache->strRef, ref));
+              FL(), functionState, builder, true, globalState->metalCache->strRef, ref));
   return kindStructs.getStringBytesPtr(functionState, builder, strWrapperPtrLE);
 }
 
@@ -509,7 +523,7 @@ WrapperPtrLE Assist::lockWeakRef(
       auto weakFatPtrLE =
           kindStructs.makeWeakFatPtr(
               refM,
-              checkValidReference(FL(), functionState, builder, refM, weakRefLE));
+              checkValidReference(FL(), functionState, builder, false, refM, weakRefLE));
       return kindStructs.makeWrapperPtr(
           FL(), functionState, builder, refM,
           wrcWeaks.lockWrciFatPtr(from, functionState, builder, refM, weakFatPtrLE));
@@ -523,6 +537,7 @@ WrapperPtrLE Assist::lockWeakRef(
 Ref Assist::getRuntimeSizedArrayLength(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* rsaRefMT,
     Ref arrayRef,
     bool arrayKnownLive) {
@@ -532,6 +547,7 @@ Ref Assist::getRuntimeSizedArrayLength(
 Ref Assist::getRuntimeSizedArrayCapacity(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* rsaRefMT,
     Ref arrayRef,
     bool arrayKnownLive) {
@@ -570,6 +586,7 @@ LLVMValueRef Assist::checkValidReference(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    bool expectLive,
     Reference* refM,
     Ref ref) {
   Reference *actualRefM = nullptr;
@@ -642,10 +659,9 @@ Ref Assist::upgradeLoadResultToRefWithTargetOwnership(
       buildFlare(FL(), globalState, functionState, builder);
       return sourceRef;
     } else if (targetOwnership == Ownership::BORROW) {
-      auto resultRef = transmutePtr(globalState, functionState, builder, sourceType, targetType, sourceRef);
+      auto resultRef = transmutePtr(globalState, functionState, builder, false, sourceType, targetType, sourceRef);
       buildFlare(FL(), globalState, functionState, builder);
-      checkValidReference(FL(),
-          functionState, builder, targetType, resultRef);
+      checkValidReference(FL(), functionState, builder, false, targetType, resultRef);
       buildFlare(FL(), globalState, functionState, builder);
       return resultRef;
     } else if (targetOwnership == Ownership::WEAK) {
@@ -696,6 +712,7 @@ void Assist::fillControlBlock(
 LoadResult Assist::loadElementFromSSA(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* ssaRefMT,
     StaticSizedArrayT* ssaMT,
     Ref arrayRef,
@@ -709,6 +726,7 @@ LoadResult Assist::loadElementFromSSA(
 LoadResult Assist::loadElementFromRSA(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* rsaRefMT,
     RuntimeSizedArrayT* rsaMT,
     Ref arrayRef,
@@ -734,7 +752,7 @@ Ref Assist::storeElementInRSA(
   auto arrayWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, rsaRefMT,
-          globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, arrayRef));
+          globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, true, rsaRefMT, arrayRef));
   auto sizeRef = ::getRuntimeSizedArrayLength(globalState, functionState, builder, arrayWrapperPtrLE);
   auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, true, arrayWrapperPtrLE);
   buildFlare(FL(), globalState, functionState, builder);
@@ -775,6 +793,7 @@ void Assist::deallocate(
     LLVMBuilderRef builder,
     Reference* refMT,
     Ref ref) {
+  buildFlare(FL(), globalState, functionState, builder);
   innerDeallocate(from, globalState, functionState, &kindStructs, builder, refMT, ref);
 }
 
@@ -814,7 +833,7 @@ void Assist::checkInlineStructType(
     LLVMBuilderRef builder,
     Reference* refMT,
     Ref ref) {
-  auto argLE = checkValidReference(FL(), functionState, builder, refMT, ref);
+  auto argLE = checkValidReference(FL(), functionState, builder, false, refMT, ref);
   auto structKind = dynamic_cast<StructKind*>(refMT->kind);
   assert(structKind);
   assert(LLVMTypeOf(argLE) == kindStructs.getStructInnerStruct(structKind));
@@ -824,35 +843,35 @@ std::string Assist::generateRuntimeSizedArrayDefsC(
     Package* currentPackage,
     RuntimeSizedArrayDefinitionT* rsaDefM) {
   assert(rsaDefM->mutability == Mutability::MUTABLE);
-  return generateMutableConcreteHandleDefC(currentPackage, currentPackage->getKindExportName(rsaDefM->kind, true));
+  return generateUniversalRefStructDefC(currentPackage, currentPackage->getKindExportName(rsaDefM->kind, true));
 }
 
 std::string Assist::generateStaticSizedArrayDefsC(
     Package* currentPackage,
     StaticSizedArrayDefinitionT* ssaDefM) {
   assert(ssaDefM->mutability == Mutability::MUTABLE);
-  return generateMutableConcreteHandleDefC(currentPackage, currentPackage->getKindExportName(ssaDefM->kind, true));
+  return generateUniversalRefStructDefC(currentPackage, currentPackage->getKindExportName(ssaDefM->kind, true));
 }
 
 std::string Assist::generateStructDefsC(
     Package* currentPackage, StructDefinition* structDefM) {
   assert(structDefM->mutability == Mutability::MUTABLE);
-  return generateMutableConcreteHandleDefC(currentPackage, currentPackage->getKindExportName(structDefM->kind, true));
+  return generateUniversalRefStructDefC(currentPackage, currentPackage->getKindExportName(structDefM->kind, true));
 }
 
 std::string Assist::generateInterfaceDefsC(
     Package* currentPackage, InterfaceDefinition* interfaceDefM) {
   assert(interfaceDefM->mutability == Mutability::MUTABLE);
-  return generateMutableInterfaceHandleDefC(currentPackage, currentPackage->getKindExportName(interfaceDefM->kind, true));
+  return generateUniversalRefStructDefC(currentPackage, currentPackage->getKindExportName(interfaceDefM->kind, true));
 }
 
 LLVMTypeRef Assist::getExternalType(Reference* refMT) {
   if (dynamic_cast<StructKind*>(refMT->kind) ||
       dynamic_cast<StaticSizedArrayT*>(refMT->kind) ||
       dynamic_cast<RuntimeSizedArrayT*>(refMT->kind)) {
-    return globalState->getConcreteHandleStruct();
+    return globalState->universalRefCompressedStructLT;
   } else if (dynamic_cast<InterfaceKind*>(refMT->kind)) {
-    return globalState->getInterfaceHandleStruct();
+    return globalState->universalRefCompressedStructLT;
   } else {
     assert(false);
   }
@@ -894,6 +913,8 @@ LLVMTypeRef Assist::getInterfaceMethodVirtualParamAnyType(Reference* reference) 
 std::pair<Ref, Ref> Assist::receiveUnencryptedAlienReference(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref sourceRegionInstanceRef,
+    Ref targetRegionInstanceRef,
     Reference* sourceRefMT,
     Reference* targetRefMT,
     Ref sourceRef) {
@@ -904,6 +925,7 @@ std::pair<Ref, Ref> Assist::receiveUnencryptedAlienReference(
 void Assist::pushRuntimeSizedArrayNoBoundsCheck(
     FunctionState *functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference *rsaRefMT,
     RuntimeSizedArrayT *rsaMT,
     Ref rsaRef,
@@ -914,7 +936,8 @@ void Assist::pushRuntimeSizedArrayNoBoundsCheck(
   auto arrayWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, rsaRefMT,
-          globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, rsaRef));
+          globalState->getRegion(rsaRefMT)
+              ->checkValidReference(FL(), functionState, builder, true, rsaRefMT, rsaRef));
 
   auto sizePtrLE = ::getRuntimeSizedArrayLengthPtr(globalState, builder, arrayWrapperPtrLE);
   auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, true, arrayWrapperPtrLE);
@@ -926,16 +949,20 @@ void Assist::pushRuntimeSizedArrayNoBoundsCheck(
 Ref Assist::popRuntimeSizedArrayNoBoundsCheck(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref arrayRegionInstanceRef,
     Reference* rsaRefMT,
     RuntimeSizedArrayT* rsaMT,
     Ref arrayRef,
     bool arrayRefKnownLive,
     Ref indexRef) {
-  auto valLE = loadElementFromRSA(functionState, builder, rsaRefMT, rsaMT, arrayRef, arrayRefKnownLive, indexRef).move();
+  auto valLE =
+      loadElementFromRSA(
+          functionState, builder, arrayRegionInstanceRef, rsaRefMT, rsaMT, arrayRef, arrayRefKnownLive, indexRef).move();
   auto rsaWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, rsaRefMT,
-          globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, arrayRef));
+          globalState->getRegion(rsaRefMT)
+              ->checkValidReference(FL(), functionState, builder, true, rsaRefMT, arrayRef));
   decrementRSASize(globalState, functionState, &kindStructs, builder, rsaRefMT, rsaWrapperPtrLE);
   return valLE;
 }
@@ -943,6 +970,7 @@ Ref Assist::popRuntimeSizedArrayNoBoundsCheck(
 void Assist::initializeElementInSSA(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Ref regionInstanceRef,
     Reference* ssaRefMT,
     StaticSizedArrayT* ssaMT,
     Ref arrayRef,
@@ -953,7 +981,8 @@ void Assist::initializeElementInSSA(
   auto arrayWrapperPtrLE =
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, ssaRefMT,
-          globalState->getRegion(ssaRefMT)->checkValidReference(FL(), functionState, builder, ssaRefMT, arrayRef));
+          globalState->getRegion(ssaRefMT)
+              ->checkValidReference(FL(), functionState, builder, true, ssaRefMT, arrayRef));
   auto sizeRef = globalState->constI32(ssaDef->size);
   auto arrayElementsPtrLE = getStaticSizedArrayContentsPtr(builder, arrayWrapperPtrLE);
   ::initializeElementWithoutIncrementSize(
@@ -1000,7 +1029,7 @@ LLVMValueRef Assist::stackify(
     Local* local,
     Ref refToStore,
     bool knownLive) {
-  auto toStoreLE = checkValidReference(FL(), functionState, builder, local->type, refToStore);
+  auto toStoreLE = checkValidReference(FL(), functionState, builder, false, local->type, refToStore);
   auto typeLT = translateType(local->type);
   return makeBackendLocal(functionState, builder, typeLT, local->id->maybeName.c_str(), toStoreLE);
 }
@@ -1022,4 +1051,12 @@ std::string Assist::getExportName(
     Reference* reference,
     bool includeProjectName) {
   return package->getKindExportName(reference->kind, includeProjectName) + (reference->location == Location::YONDER ? "Ref" : "");
+}
+
+Ref Assist::createRegionInstanceLocal(FunctionState* functionState, LLVMBuilderRef builder) {
+  auto regionLT = kindStructs.getStructInnerStruct(regionKind);
+  auto regionInstancePtrLE =
+      makeBackendLocal(functionState, builder, regionLT, "region", LLVMGetUndef(regionLT));
+  auto regionInstanceRef = wrap(this, regionRefMT, regionInstancePtrLE);
+  return regionInstanceRef;
 }

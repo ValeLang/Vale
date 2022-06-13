@@ -77,7 +77,7 @@ object Spanner {
         case TopLevelImplP(i) => forImpl(i)
         case TopLevelExportAsP(export) => forExport(export)
         case TopLevelImportP(impoort) => forImport(impoort)
-      }))
+      }).toVector)
   }
 
   def forInterface(i: InterfaceP): Span = {

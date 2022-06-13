@@ -57,7 +57,7 @@ case object SealedS extends ICitizenAttributeS
 case class BuiltinS(generatorName: StrI) extends IFunctionAttributeS with ICitizenAttributeS {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 }
-case class MacroCallS(range: RangeS, include: IMacroInclusionP, macroName: String) extends ICitizenAttributeS {
+case class MacroCallS(range: RangeS, include: IMacroInclusionP, macroName: StrI) extends ICitizenAttributeS {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 }
 case class ExportS(packageCoordinate: PackageCoordinate) extends IFunctionAttributeS with ICitizenAttributeS {
@@ -96,7 +96,7 @@ sealed trait IStructMemberS {
 }
 case class NormalStructMemberS(
     range: RangeS,
-    name: String,
+    name: StrI,
     variability: VariabilityP,
     typeRune: RuneUsage) extends IStructMemberS {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
@@ -148,15 +148,15 @@ case class ExportAsS(
     rules: Array[IRulexSR],
     exportName: ExportAsNameS,
     rune: RuneUsage,
-    exportedName: String) {
+    exportedName: StrI) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class ImportS(
   range: RangeS,
-  moduleName: String,
-  packageNames: Vector[String],
-  importeeName: String) {
+  moduleName: StrI,
+  packageNames: Vector[StrI],
+  importeeName: StrI) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 

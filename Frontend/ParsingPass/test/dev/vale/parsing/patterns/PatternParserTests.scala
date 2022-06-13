@@ -1,25 +1,27 @@
 package dev.vale.parsing.patterns
 
-import dev.vale.Collector
+import dev.vale.{Collector, Err, StrI, vimpl}
 import dev.vale.parsing.{PatternParser, TestParseUtils}
 import dev.vale.parsing.ast.{AbstractP, DestructureP, IgnoredLocalNameDeclarationP, LocalNameDeclarationP, NameOrRunePT, NameP, PatternPP, Patterns, TuplePT}
 import dev.vale.parsing.ast.Patterns._
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
-import dev.vale.Err
 import org.scalatest.{FunSuite, Matchers}
 
 class PatternParserTests extends FunSuite with Matchers with Collector with TestParseUtils {
   private def compile[T](code: String): PatternPP = {
-    compile(new PatternParser().parsePattern(_), code)
+    compilePattern(code)
+//    compile(new PatternParser().parsePattern(_), code)
   }
 
   private def checkFail[T](code: String) = {
-    compileForError(new PatternParser().parsePattern(_), code)
+    vimpl()
+//    compileForError(new PatternParser().parsePattern(_), code)
   }
 
   private def checkRest[T](code: String, expectedRest: String) = {
-    compileForRest(new PatternParser().parsePattern(_), code, expectedRest)
+    vimpl()
+//    compileForRest(new PatternParser().parsePattern(_), code, expectedRest)
   }
 
   test("Simple Int") {

@@ -1,6 +1,6 @@
 package dev.vale.postparsing
 
-import dev.vale.{Collector, Err, FileCoordinateMap, Interner, Ok, vassert, vfail}
+import dev.vale.{Collector, Err, FileCoordinateMap, Interner, Ok, StrI, vassert, vfail}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.Parser
 import org.scalatest.{FunSuite, Matchers}
@@ -31,7 +31,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     vassert(body.block.locals.size == 1)
     body.block.locals.head match {
       case LocalS(
-      CodeVarNameS("x"),
+      CodeVarNameS(StrI("x")),
       NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
@@ -45,7 +45,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
 
   test("Reports defining same-name variable") {
     compileForError("exported func main() { x = 4; x = 5; }") match {
-      case VariableNameAlreadyExists(_, CodeVarNameS("x")) =>
+      case VariableNameAlreadyExists(_, CodeVarNameS(StrI("x"))) =>
     }
   }
 
@@ -55,7 +55,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-      CodeVarNameS("x"),
+      CodeVarNameS(StrI("x")),
       Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
@@ -66,7 +66,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-      CodeVarNameS("x"),
+      CodeVarNameS(StrI("x")),
       Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
@@ -77,7 +77,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-      CodeVarNameS("x"),
+      CodeVarNameS(StrI("x")),
       NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
@@ -88,7 +88,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-      CodeVarNameS("x"),
+      CodeVarNameS(StrI("x")),
       NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
@@ -99,7 +99,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-      CodeVarNameS("x"),
+      CodeVarNameS(StrI("x")),
        NotUsed, NotUsed, Used, NotUsed, NotUsed, NotUsed) =>
     }
   }
@@ -110,7 +110,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-      CodeVarNameS("x"),
+      CodeVarNameS(StrI("x")),
        NotUsed, Used, Used, NotUsed, NotUsed, NotUsed) =>
     }
   }
@@ -127,7 +127,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
            NotUsed, NotUsed, NotUsed, Used, NotUsed, NotUsed) =>
     }
   }
@@ -144,7 +144,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
            NotUsed, NotUsed, NotUsed, NotUsed, Used, NotUsed) =>
     }
   }
@@ -161,7 +161,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
            NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, Used) =>
     }
   }
@@ -177,7 +177,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val main = program1.lookupFunction("main")
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
-      case LocalS(CodeVarNameS("x"), Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+      case LocalS(CodeVarNameS(StrI("x")), Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -193,7 +193,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
            NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
@@ -210,7 +210,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
            NotUsed, NotUsed, Used, NotUsed, NotUsed, NotUsed) =>
     }
   }
@@ -227,7 +227,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
           NotUsed, NotUsed, NotUsed, Used, NotUsed, NotUsed) =>
     }
   }
@@ -244,7 +244,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
           NotUsed, NotUsed, NotUsed, NotUsed, Used, NotUsed) =>
     }
   }
@@ -261,7 +261,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
           NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, Used) =>
     }
   }
@@ -278,7 +278,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
            Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
@@ -295,7 +295,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
           NotUsed, NotUsed, NotUsed, Used, NotUsed, NotUsed) =>
     }
   }
@@ -312,7 +312,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
            NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
@@ -329,7 +329,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
           NotUsed, NotUsed, NotUsed, NotUsed, Used, NotUsed) =>
     }
   }
@@ -346,7 +346,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
            NotUsed, NotUsed, Used, NotUsed, NotUsed, NotUsed) =>
     }
   }
@@ -363,7 +363,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
            NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, Used) =>
     }
   }
@@ -380,7 +380,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
            Used, Used, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
@@ -397,7 +397,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
           NotUsed, NotUsed, NotUsed, Used, Used, NotUsed) =>
     }
   }
@@ -414,7 +414,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
            NotUsed, Used, Used, NotUsed, NotUsed, NotUsed) =>
     }
   }
@@ -431,7 +431,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
            NotUsed, NotUsed, NotUsed, NotUsed, Used, Used) =>
     }
   }
@@ -442,7 +442,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
            NotUsed, Used, Used, NotUsed, NotUsed, NotUsed) =>
     }
   }
@@ -453,7 +453,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
            NotUsed, NotUsed, NotUsed, NotUsed, Used, Used) =>
     }
   }
@@ -469,7 +469,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
            Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
@@ -485,7 +485,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
           NotUsed, NotUsed, NotUsed, Used, NotUsed, NotUsed) =>
     }
   }
@@ -502,7 +502,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
            Used, Used, Used, NotUsed, NotUsed, NotUsed) =>
     }
   }
@@ -519,7 +519,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
            NotUsed, NotUsed, NotUsed, Used, Used, Used) =>
     }
   }
@@ -537,7 +537,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
            Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }
@@ -554,7 +554,7 @@ class PostParserVariableTests extends FunSuite with Matchers {
     val CodeBodyS(body) = main.body
     body.block.locals.head match {
       case LocalS(
-          CodeVarNameS("x"),
+          CodeVarNameS(StrI("x")),
            Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
   }

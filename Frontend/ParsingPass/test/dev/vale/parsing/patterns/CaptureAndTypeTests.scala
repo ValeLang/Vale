@@ -1,7 +1,6 @@
 package dev.vale.parsing.patterns
 
-import dev.vale.Collector
-import dev.vale.parsing.{PatternParser, TestParseUtils}
+import dev.vale.{Collector, StrI}
 import dev.vale.parsing.ast.{BorrowP, ConstructingMemberNameDeclarationP, InterpretedPT, LocalNameDeclarationP, NameOrRunePT, NameP, PatternPP, WeakP}
 import dev.vale.parsing.ast.Patterns.{capturedWithType, capturedWithTypeRune}
 import dev.vale.parsing._
@@ -24,7 +23,8 @@ class CaptureAndTypeTests extends FunSuite with Matchers with Collector with Tes
 //    }
 //  }
   private def compile[T](code: String): PatternPP = {
-    compile(new PatternParser().parsePattern(_), code)
+    compilePattern(code)
+//    compile(new PatternParser().parsePattern(_), code)
   }
 
   test("No capture, with type") {

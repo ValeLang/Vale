@@ -8,7 +8,7 @@ import dev.vale.{CodeLocationS, Err, FileCoordinate, FileCoordinateMap, IPackage
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
 import PostParser.determineDenizenType
-import dev.vale.lexing.RangeL
+import dev.vale.lexing.{FailedParse, RangeL}
 import dev.vale.parsing.ParserCompilation
 import dev.vale.parsing.ast.{AnonymousRunePT, BoolPT, CallPT, ExportAsP, ExportAttributeP, FileP, IAttributeP, IImpreciseNameP, ITemplexPT, ImplP, ImportP, InlinePT, IntPT, InterfaceP, InterpretedPT, IterableNameP, IterationOptionNameP, IteratorNameP, LocationPT, LookupNameP, MacroCallP, MutabilityP, MutabilityPT, NameOrRunePT, NameP, NormalStructMemberP, OwnershipPT, RulePUtils, SealedAttributeP, StaticSizedArrayPT, StructMembersP, StructMethodP, StructP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePT, VariadicStructMemberP, WeakableAttributeP}
 //import dev.vale.postparsing.predictor.RuneTypeSolveError
@@ -235,7 +235,7 @@ class PostParser(
     globalOptions: GlobalOptions,
     interner: Interner) {
   val templexScout = new TemplexScout(interner)
-  val ruleScout = new RuleScout(templexScout)
+  val ruleScout = new RuleScout(interner, templexScout)
   val functionScout = new FunctionScout(this, interner, templexScout, ruleScout)
 
   def scoutProgram(fileCoordinate: FileCoordinate, parsed: FileP): Result[ProgramS, ICompileErrorS] = {
@@ -249,7 +249,7 @@ class PostParser(
             .collect({ case TopLevelFunctionP(f) => f }).map(functionScout.scoutTopLevelFunction(fileCoordinate, _))
         val exportsS = parsed.denizens.collect({ case TopLevelExportAsP(e) => e }).map(scoutExportAs(fileCoordinate, _))
         val importsS = parsed.denizens.collect({ case TopLevelImportP(e) => e }).map(scoutImport(fileCoordinate, _))
-        val programS = ProgramS(structsS, interfacesS, implsS, functionsS, exportsS, importsS)
+        val programS = ProgramS(structsS.toVector, interfacesS.toVector, implsS.toVector, functionsS.toVector, exportsS.toVector, importsS.toVector)
         Ok(programS)
       } catch {
         case CompileErrorExceptionS(err) => Err(err)

@@ -1,7 +1,7 @@
 package dev.vale.highertyping
 
 import dev.vale
-import dev.vale.{CodeLocationS, Err, FileCoordinateMap, IPackageResolver, Interner, Ok, PackageCoordinate, PackageCoordinateMap, Profiler, RangeS, Result, highertyping, vassertSome, vcurious, vfail, vimpl, vwat}
+import dev.vale.{CodeLocationS, Err, FileCoordinateMap, IPackageResolver, Interner, Ok, PackageCoordinate, PackageCoordinateMap, Profiler, RangeS, Result, StrI, highertyping, vassertSome, vcurious, vfail, vimpl, vwat}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.FileP
 import dev.vale.postparsing.rules.{IRulexSR, RuleScout}
@@ -41,15 +41,15 @@ case class Environment(
 class HigherTypingPass(globalOptions: GlobalOptions, interner: Interner) {
   val primitives =
     Map(
-      "int" -> KindTemplataType,
-      "i64" -> KindTemplataType,
-      "str" -> KindTemplataType,
-      "bool" -> KindTemplataType,
-      "float" -> KindTemplataType,
-      "void" -> KindTemplataType,
-      "__Never" -> KindTemplataType,
-//      "IFunction1" -> TemplateTypeSR(Vector(MutabilityTypeSR, CoordTypeSR, CoordTypeSR), KindTypeSR),
-      "Array" -> TemplateTemplataType(Vector(MutabilityTemplataType, CoordTemplataType), KindTemplataType))
+      interner.intern(StrI("int")) -> KindTemplataType,
+      interner.intern(StrI("i64")) -> KindTemplataType,
+      interner.intern(StrI("str")) -> KindTemplataType,
+      interner.intern(StrI("bool")) -> KindTemplataType,
+      interner.intern(StrI("float")) -> KindTemplataType,
+      interner.intern(StrI("void")) -> KindTemplataType,
+      interner.intern(StrI("__Never")) -> KindTemplataType,
+//      interner.intern(StrI("IFunction1")) -> TemplateTypeSR(Vector(MutabilityTypeSR, CoordTypeSR, CoordTypeSR), KindTypeSR),
+      interner.intern(StrI("Array")) -> TemplateTemplataType(Vector(MutabilityTemplataType, CoordTemplataType), KindTemplataType))
 
 
 
@@ -359,7 +359,7 @@ class HigherTypingPass(globalOptions: GlobalOptions, interner: Interner) {
 
   def translateProgram(
       codeMap: PackageCoordinateMap[ProgramS],
-      primitives: Map[String, ITemplataType],
+      primitives: Map[StrI, ITemplataType],
       suppliedFunctions: Vector[FunctionA],
       suppliedInterfaces: Vector[InterfaceA]):
   ProgramA = {

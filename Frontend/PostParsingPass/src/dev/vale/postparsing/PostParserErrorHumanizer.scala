@@ -88,20 +88,20 @@ object PostParserErrorHumanizer {
       case GlobalFunctionFamilyNameS(n) => n
 //      case DropNameS(_) => "(drop)"
       case MagicParamNameS(codeLocation) => "(magic)"
-      case CodeVarNameS(name) => name
+      case CodeVarNameS(name) => name.str
       case ArbitraryNameS() => "(arbitrary)"
       case RuneNameS(rune) => humanizeRune(rune)
       case ConstructingMemberNameS(name) => "member " + name
-      case FunctionNameS(name, codeLocation) => name
+      case FunctionNameS(name, codeLocation) => name.str
       case AnonymousSubstructTemplateNameS(tlcd) => humanizeName(tlcd) + ".anonymous"
-      case TopLevelCitizenDeclarationNameS(name, range) => name
+      case TopLevelCitizenDeclarationNameS(name, range) => name.str
     }
   }
 
   def humanizeImpreciseName(name: IImpreciseNameS): String = {
     name match {
       case SelfNameS() => "(self)"
-      case CodeNameS(n) => n
+      case CodeNameS(n) => n.str
       case FreeImpreciseNameS() => "(free)"
       case RuneNameS(rune) => humanizeRune(rune)
       case AnonymousSubstructTemplateImpreciseNameS(interfaceHumanName) => "(anon substruct template of " + humanizeImpreciseName(interfaceHumanName) + ")"
@@ -116,7 +116,7 @@ object PostParserErrorHumanizer {
     rune match {
       case ImplicitRuneS(lid) => "_" + lid.path.mkString("")
       case MagicParamRuneS(lid) => "_" + lid.path.mkString("")
-      case CodeRuneS(name) => name
+      case CodeRuneS(name) => name.str
       case ArgumentRuneS(paramIndex) => "(arg " + paramIndex + ")"
       case AnonymousSubstructMemberRuneS(index) => "(anon member " + index + ")"
       case SelfKindRuneS() => "(self kind)"

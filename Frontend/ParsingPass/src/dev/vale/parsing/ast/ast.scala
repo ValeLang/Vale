@@ -3,14 +3,17 @@
 package dev.vale.parsing.ast
 
 import dev.vale.lexing.RangeL
-import dev.vale.{StrI, vassert, vcurious, vpass}
+import dev.vale.{FileCoordinate, StrI, vassert, vcurious, vpass}
 
 // Something that exists in the source code. An Option[UnitP] is better than a boolean
 // because it also contains the range it was found.
 case class UnitP(range: RangeL) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class NameP(range: RangeL, str: StrI) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
-case class FileP(denizens: Vector[IDenizenP]) {
+case class FileP(
+  fileCoord: FileCoordinate,
+  commentsRanges: Array[RangeL],
+  denizens: Array[IDenizenP]) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   def lookupFunction(name: String) = {
     val results =

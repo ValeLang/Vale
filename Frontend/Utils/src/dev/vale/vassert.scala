@@ -84,6 +84,15 @@ object vassertOne {
   def apply[T](thing: Iterable[T]): T = {
     apply(thing, "Expected exactly one element!")
   }
+  def apply[T](thing: Array[T], message: String): T = {
+    thing.toList match {
+      case List(x) => x
+      case _ => vfail(message)
+    }
+  }
+  def apply[T](thing: Array[T]): T = {
+    apply(thing, "Expected exactly one element!")
+  }
 }
 
 object vfail {

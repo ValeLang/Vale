@@ -2,7 +2,7 @@ package dev.vale.parsing
 
 import dev.vale.lexing.RangeL
 import dev.vale.parsing.ast.{AbstractAttributeP, AbstractP, AndPE, AnonymousRunePT, ArenaRuneAttributeP, AugmentPE, BinaryCallPE, BlockPE, BoolPT, BoolTypePR, BorrowP, BorrowPT, BraceCallPE, BreakPE, BuiltinAttributeP, BuiltinCallPR, BumpRuneAttributeP, CallPT, CitizenTemplateTypePR, ComponentsPR, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, ConstructingMemberNameDeclarationP, CoordListTypePR, CoordTypePR, DestructPE, DestructureP, DontCallMacroP, DotPE, DotPR, EachPE, EqualsPR, ExportAsP, ExportAttributeP, ExternAttributeP, FileP, FinalP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionPT, FunctionReturnP, IArraySizeP, IAttributeP, IDenizenP, IExpressionPE, IImpreciseNameP, INameDeclarationP, IRulexPR, IRuneAttributeP, IStructContent, ITemplexPT, ITypePR, IdentifyingRuneP, IdentifyingRunesP, IfPE, IgnoredLocalNameDeclarationP, ImmutableP, ImmutableRuneAttributeP, ImplP, ImportP, IndexPE, InlineP, InlinePT, IntPT, IntTypePR, InterfaceP, InterpretedPT, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, KindTypePR, LambdaPE, LetPE, LoadAsBorrowP, LoadAsP, LoadAsWeakP, LocalNameDeclarationP, LocationP, LocationPT, LocationTypePR, LookupNameP, LookupPE, MacroCallP, MagicParamLookupPE, MethodCallPE, MoveP, MutabilityP, MutabilityPT, MutabilityTypePR, MutableP, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, NotPE, OrPE, OrPR, OwnP, OwnershipP, OwnershipPT, OwnershipTypePR, PackPE, PackPR, PackPT, ParamsP, PatternPP, PoolRuneAttributeP, PrototypePT, PrototypeTypePR, PureAttributeP, RangePE, ReadOnlyRuneAttributeP, ReadWriteRuneAttributeP, RegionRunePT, RegionTypePR, ResolveSignaturePR, ReturnPE, RuntimeSizedArrayPT, RuntimeSizedP, SealedAttributeP, ShareP, SharePT, ShortcallPE, StaticSizedArrayPT, StaticSizedP, StrInterpolatePE, StringPT, StructMembersP, StructMethodP, StructP, SubExpressionPE, TemplateArgsP, TemplateRulesP, TemplexPR, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, TuplePT, TypeRuneAttributeP, TypedPR, TypedRunePT, UnitP, UnletPE, UseP, VariabilityP, VariabilityPT, VariabilityTypePR, VariadicStructMemberP, VaryingP, VoidPE, WeakP, WeakableAttributeP, WhilePE, YonderP}
-import dev.vale.{Profiler, vimpl}
+import dev.vale.{FileCoordinate, PackageCoordinate, Profiler, vimpl}
 import dev.vale.parsing.ast._
 import dev.vale.von.{IVonData, VonArray, VonBool, VonFloat, VonInt, VonMember, VonObject, VonStr}
 
@@ -17,12 +17,14 @@ object ParserVonifier {
 
   def vonifyFile(file: FileP): IVonData = {
     Profiler.frame(() => {
-      val FileP(denizens) = file
+      val FileP(fileCoord, commentsRanges, denizens) = file
 
       VonObject(
         "File",
         None,
         Vector(
+          VonMember("fileCoord", vonifyFileCoord(fileCoord)),
+          VonMember("commentsRanges", VonArray(None, commentsRanges.map(vonifyRange).toVector)),
           VonMember("denizens", VonArray(None, denizens.map(vonifyDenizen).toVector))))
     })
   }
@@ -176,6 +178,26 @@ object ParserVonifier {
         VonMember("moduleName", vonifyName(moduleName)),
         VonMember("packageSteps", VonArray(None, packageSteps.map(vonifyName).toVector)),
         VonMember("importeeName", vonifyName(importeeName))))
+  }
+
+  def vonifyFileCoord(range: FileCoordinate): VonObject = {
+    val FileCoordinate(packageCoord, filepath) = range
+    VonObject(
+      "FileCoordinate",
+      None,
+      Vector(
+        VonMember("packageCoord", vonifyPackageCoord(packageCoord)),
+        VonMember("end", VonStr(filepath))))
+  }
+
+  def vonifyPackageCoord(range: PackageCoordinate): VonObject = {
+    val PackageCoordinate(module, packages) = range
+    VonObject(
+      "PackageCoordinate",
+      None,
+      Vector(
+        VonMember("module", VonStr(module.str)),
+        VonMember("packages", VonArray(None, packages.map(p => VonStr(p.str))))))
   }
 
   def vonifyRange(range: RangeL): VonObject = {

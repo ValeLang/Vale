@@ -7,6 +7,37 @@ import scala.collection.immutable.Map
 import scala.collection.mutable
 
 object LexAndExplore {
+  // This is a helper function that one doesn't need to use, but it can be handy and also
+  // serves as a great example on how to use the lexAndExplore() method.
+  def lexAndExploreAndCollect[D, F](
+    interner: Interner,
+    packages: Array[PackageCoordinate],
+    resolver: IPackageResolver[Map[String, String]]):
+  Result[
+    (
+      Accumulator[(FileCoordinate, String, Array[ImportL], IDenizenL)],
+      Accumulator[(FileCoordinate, String, Array[RangeL], Array[IDenizenL])]),
+  FailedParse] = {
+    val denizens = new Accumulator[(FileCoordinate, String, Array[ImportL], IDenizenL)]()
+    val files = new Accumulator[(FileCoordinate, String, Array[RangeL], Array[IDenizenL])]()
+
+    lexAndExplore[IDenizenL, Unit](
+      interner, packages, resolver,
+      (file, code, imports, denizen) => {
+        denizens.add((file, code, imports, denizen))
+        denizen
+      },
+      (file, code, ranges, denizens) => {
+        files.add((file, code, ranges.buildArray(), denizens.buildArray()))
+        Unit
+      }) match {
+      case Err(e) => return Err(e)
+      case Ok(_) =>
+    }
+
+    Ok((denizens, files))
+  }
+
   // It would be pretty cool to turn this into an iterator of some sort
   def lexAndExplore[D, F](
     interner: Interner,

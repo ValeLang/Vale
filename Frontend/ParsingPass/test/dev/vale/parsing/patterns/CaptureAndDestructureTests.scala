@@ -1,17 +1,16 @@
 package dev.vale.parsing.patterns
 
-import dev.vale.Collector
-import dev.vale.parsing.{PatternParser, TestParseUtils}
+import dev.vale.{Collector, StrI, vimpl}
 import dev.vale.parsing.ast.{DestructureP, LocalNameDeclarationP, NameOrRunePT, NameP, PatternPP, TuplePT}
 import dev.vale.parsing.ast.Patterns._
 import dev.vale.parsing._
 import dev.vale.parsing.ast.{DestructureP, LocalNameDeclarationP, NameOrRunePT, NameP, PatternPP, TuplePT}
-import dev.vale.Collector
 import org.scalatest.{FunSuite, Matchers}
 
 class CaptureAndDestructureTests extends FunSuite with Matchers with Collector with TestParseUtils {
   private def compile[T](code: String): PatternPP = {
-    compile(x => new PatternParser().parsePattern(x), code)
+    compilePattern(code)
+//    compile(x => new PatternParser().parsePattern(x), code)
   }
 
   test("Capture with destructure with type inside") {
@@ -33,7 +32,8 @@ class CaptureAndDestructureTests extends FunSuite with Matchers with Collector w
     }
   }
   test("empty destructure") {
-    compile(new PatternParser().parseDestructure(_),"[]") shouldHave { case Nil => }
+    vimpl()
+//    compile(new PatternParser().parseDestructure(_),"[]") shouldHave { case Nil => }
   }
   test("capture with empty destructure") {
     // Needs the space between the braces, see https://github.com/ValeLang/Vale/issues/434

@@ -1,27 +1,21 @@
 package dev.vale.parsing
 
-import dev.vale.Collector
-import dev.vale.options.GlobalOptions
+import dev.vale.{Collector, Interner, StrI, vassertOne}
 import dev.vale.parsing.ast.{BlockPE, ExportAsP, FileP, FunctionP, ImportP, NameOrRunePT, NameP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImportP, TopLevelStructP, VoidPE}
 import dev.vale.parsing.ast.BlockPE
-import dev.vale.Collector
-import dev.vale.lexing.{BadStartOfStatementError, IParseError, UnrecognizedDenizenError}
+import dev.vale.lexing.{BadStartOfStatementError, IParseError, Lexer, UnrecognizedDenizenError}
+import dev.vale.options.GlobalOptions
 import org.scalatest.{FunSuite, Matchers}
 
 
 
 class TopLevelTests extends FunSuite with Matchers with Collector with TestParseUtils {
   def compile(code: String): FileP = {
-    new Parser(GlobalOptions(true, true, true, true))
-      .runParserForProgramAndCommentRanges(code)
-      .getOrDie()
-      ._1
+    compileFile(code).getOrDie()
   }
 
   def compileForError(code: String): IParseError = {
-    new Parser(GlobalOptions(true, true, true, true))
-      .runParserForProgramAndCommentRanges(code)
-      .expectErr()
+    compileFile(code).expectErr().error
   }
 
   test("Function then struct") {
@@ -113,7 +107,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
   test("import wildcard") {
     val program = compile("import somemodule.*;")
     program.denizens(0) match {
-      case TopLevelImportP(ImportP(_, NameP(_, StrI("somemodule")), Vector(), NameP(_, "*"))) =>
+      case TopLevelImportP(ImportP(_, NameP(_, StrI("somemodule")), Vector(), NameP(_, StrI("*")))) =>
     }
   }
 

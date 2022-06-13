@@ -9,6 +9,23 @@ import dev.vale._
 import scala.collection.immutable.Map
 
 object ParseAndExplore {
+  // This is a helper function that one doesn't need to use, but it can be handy and also
+  // serves as a great example on how to use the parseAndExplore() method.
+  def parseAndExploreAndCollect(
+    interner: Interner,
+    opts: GlobalOptions,
+    parser: Parser,
+    packages: Array[PackageCoordinate],
+    resolver: IPackageResolver[Map[String, String]]):
+  Result[Accumulator[(String, FileP)], FailedParse] = {
+    parseAndExplore[IDenizenP, (String, FileP)](
+      interner, opts, parser, packages, resolver,
+      (file, code, imports, denizen) => denizen,
+      (file, code, commentRanges, denizens) => {
+        (code, FileP(file, commentRanges.buildArray(), denizens.buildArray()))
+      })
+  }
+
   def parseAndExplore[D, F](
     interner: Interner,
     opts: GlobalOptions,
@@ -33,11 +50,6 @@ object ParseAndExplore {
                 })
             }
           }
-        if (opts.sanityCheck) {
-          val von = ParserVonifier.vonifyFile(FileP(Vector(denizenP)))
-          val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
-          new ParsedLoader(interner).load(vpstJson)
-        }
         handleParsedDenizen(fileCoord, code, imports, denizenP)
       },
       (fileCoord: FileCoordinate, code: String, commentsRanges: Accumulator[RangeL], denizensAcc: Accumulator[D]) => {

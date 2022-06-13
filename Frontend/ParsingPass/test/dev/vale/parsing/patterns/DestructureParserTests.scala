@@ -1,7 +1,6 @@
 package dev.vale.parsing.patterns
 
-import dev.vale.Collector
-import dev.vale.parsing.{PatternParser, TestParseUtils}
+import dev.vale.{Collector, StrI}
 import dev.vale.parsing.ast.{DestructureP, IgnoredLocalNameDeclarationP, LocalNameDeclarationP, NameOrRunePT, NameP, PatternPP}
 import dev.vale.parsing.ast.Patterns._
 import dev.vale.parsing._
@@ -11,7 +10,8 @@ import org.scalatest.{FunSuite, Matchers}
 
 class DestructureParserTests extends FunSuite with Matchers with Collector with TestParseUtils {
   private def compile[T](code: String): PatternPP = {
-    compile(new PatternParser().parsePattern(_), code)
+    compilePattern(code)
+//    compile(new PatternParser().parsePattern(_), code)
   }
 
   test("Only empty destructure") {

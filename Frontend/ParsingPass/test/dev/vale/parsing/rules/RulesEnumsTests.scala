@@ -1,17 +1,17 @@
 package dev.vale.parsing.rules
 
-import dev.vale.Collector
+import dev.vale.{Collector, StrI, parsing}
 import dev.vale.parsing.TestParseUtils
 import dev.vale.parsing.ast.{BorrowP, BuiltinCallPR, EqualsPR, IRulexPR, ImmutableP, InlineP, LocationPT, LocationTypePR, MutabilityPT, MutabilityTypePR, MutableP, NameOrRunePT, NameP, OwnP, OwnershipPT, OwnershipTypePR, ShareP, TemplexPR, TypedPR, WeakP, YonderP}
 import dev.vale.parsing.templex.TemplexParser
-import dev.vale.parsing
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
 import org.scalatest.{FunSuite, Matchers}
 
 class RulesEnumsTests extends FunSuite with Matchers with Collector with TestParseUtils {
   private def compile[T](code: String): IRulexPR = {
-    compile(new TemplexParser().parseRule(_), code)
+    compileRulex(code)
+//    compile(new TemplexParser().parseRule(_), code)
   }
 
   test("Ownership") {

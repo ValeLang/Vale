@@ -1,7 +1,7 @@
 package dev.vale.parsing
 
 import dev.vale.lexing.{BadVPSTError, BadVPSTException, IParseError, RangeL}
-import dev.vale.{Err, Interner, Ok, Profiler, Result, StrI, vimpl, vwat}
+import dev.vale.{Err, FileCoordinate, Interner, Ok, PackageCoordinate, Profiler, Result, StrI, vimpl, vwat}
 import dev.vale.parsing.ast.{AbstractAttributeP, AbstractP, AndPE, AnonymousRunePT, ArenaRuneAttributeP, AugmentPE, BinaryCallPE, BlockPE, BoolTypePR, BorrowP, BorrowPT, BraceCallPE, BreakPE, BuiltinAttributeP, BuiltinCallPR, BumpRuneAttributeP, CallMacroP, CallPT, CitizenTemplateTypePR, ComponentsPR, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, ConstructingMemberNameDeclarationP, CoordListTypePR, CoordTypePR, DestructPE, DestructureP, DontCallMacroP, DotPE, EachPE, EqualsPR, ExportAsP, ExportAttributeP, ExternAttributeP, FileP, FinalP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IArraySizeP, IAttributeP, IExpressionPE, IImpreciseNameP, INameDeclarationP, IRulexPR, IRuneAttributeP, IStructContent, ITemplexPT, ITypePR, IdentifyingRuneP, IdentifyingRunesP, IfPE, IgnoredLocalNameDeclarationP, ImmutableP, ImmutableRuneAttributeP, ImplP, ImportP, IndexPE, InlinePT, IntPT, IntTypePR, InterfaceP, InterpretedPT, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, KindTypePR, LambdaPE, LetPE, LoadAsBorrowP, LoadAsP, LoadAsWeakP, LocalNameDeclarationP, LocationTypePR, LookupNameP, LookupPE, MacroCallP, MagicParamLookupPE, MethodCallPE, MoveP, MutabilityP, MutabilityPT, MutabilityTypePR, MutableP, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, NotPE, OrPE, OrPR, OwnP, OwnershipP, OwnershipPT, OwnershipTypePR, PackPE, PackPT, ParamsP, PatternPP, PoolRuneAttributeP, PrototypeTypePR, PureAttributeP, RangePE, ReadOnlyRuneAttributeP, ReadWriteRuneAttributeP, RegionRunePT, RegionTypePR, ReturnPE, RuntimeSizedArrayPT, RuntimeSizedP, SealedAttributeP, ShareP, ShortcallPE, StaticSizedArrayPT, StaticSizedP, StrInterpolatePE, StringPT, StructMembersP, StructMethodP, StructP, SubExpressionPE, TemplateArgsP, TemplateRulesP, TemplexPR, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, TuplePT, TypeRuneAttributeP, TypedPR, UnitP, UnletPE, UseP, VariabilityP, VariabilityPT, VariabilityTypePR, VariadicStructMemberP, VaryingP, VoidPE, WeakP, WeakableAttributeP, WhilePE}
 import net.liftweb.json._
 import dev.vale.parsing.ast._
@@ -12,6 +12,12 @@ class ParsedLoader(interner: Interner) {
       throw BadVPSTException(BadVPSTError("Expected JSON object, got: " + obj.getClass.getSimpleName))
     }
     obj.asInstanceOf[JObject]
+  }
+  def expectString(obj: Object): JString = {
+    if (!obj.isInstanceOf[JString]) {
+      throw BadVPSTException(BadVPSTError("Expected JSON string, got: " + obj.getClass.getSimpleName))
+    }
+    obj.asInstanceOf[JString]
   }
   def expectObjectTyped(obj: JValue, expectedType: String): JObject = {
     val jobj = expectObject(obj)
@@ -102,6 +108,12 @@ class ParsedLoader(interner: Interner) {
         val jfile = expectObjectTyped(parse(source), "File")
         Ok(
           FileP(
+            FileCoordinate(
+              PackageCoordinate(
+                interner.intern(StrI(getStringField(jfile, "module"))),
+                getArrayField(jfile, "packages").map(expectString).map(s => interner.intern(StrI(s.s)))),
+              getStringField(jfile, "filepath")),
+            getArrayField(jfile, "commentsRanges").map(expectObject).map(x => loadRange(x)).toArray,
             getArrayField(jfile, "denizens").map(expectObject).map(denizen => {
               getType(denizen) match {
                 case "Struct" => TopLevelStructP(loadStruct(denizen))
@@ -112,7 +124,7 @@ class ParsedLoader(interner: Interner) {
                 case "ExportAs" => TopLevelExportAsP(loadExportAs(denizen))
                 case x => vimpl(x.toString)
               }
-            })))
+            }).toArray))
       } catch {
         case BadVPSTException(err) => Err(err)
       }

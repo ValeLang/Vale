@@ -1,17 +1,16 @@
 package dev.vale.parsing.rules
 
-import dev.vale.Collector
-import dev.vale.parsing.TestParseUtils
+import dev.vale.{Collector, Interner, StrI}
 import dev.vale.parsing.ast.{AnonymousRunePT, ComponentsPR, CoordTypePR, EqualsPR, IRulexPR, KindTypePR, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnP, OwnershipPT, TemplexPR, TuplePT, TypedPR}
 import dev.vale.parsing.templex.TemplexParser
 import dev.vale.parsing._
 import dev.vale.parsing.ast.PatternPP
-import dev.vale.Collector
 import org.scalatest.{FunSuite, Matchers}
 
 class CoordRuleTests extends FunSuite with Matchers with Collector with TestParseUtils {
   private def compile[T](code: String): IRulexPR = {
-    compile(new TemplexParser().parseRule(_), code)
+    compileRulex(code)
+//    compile(new TemplexParser(interner).parseRule(_), code)
   }
 
   test("Empty Coord rule") {

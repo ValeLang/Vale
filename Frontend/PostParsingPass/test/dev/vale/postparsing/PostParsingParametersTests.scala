@@ -1,6 +1,6 @@
 package dev.vale.postparsing
 
-import dev.vale.{Collector, Err, FileCoordinateMap, Interner, Ok, vassert, vfail}
+import dev.vale.{Collector, Err, FileCoordinateMap, Interner, Ok, StrI, vassert, vfail}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.BorrowP
 import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
@@ -28,7 +28,7 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
     vassert(main.runeToPredictedType.size == 1)
 
     main.identifyingRunes match {
-      case Vector(RuneUsage(_, CodeRuneS("T"))) =>
+      case Vector(RuneUsage(_, CodeRuneS(StrI("T")))) =>
     }
   }
 
@@ -36,8 +36,8 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
     val program1 = compile("""func main<T>(moo T) T { moo }""")
     val main = program1.lookupFunction("main")
 
-    vassert(main.identifyingRunes.map(_.rune).contains(CodeRuneS("T")))
-    main.maybeRetCoordRune match { case Some(RuneUsage(_, CodeRuneS("T"))) => }
+    vassert(main.identifyingRunes.map(_.rune).contains(CodeRuneS(StrI("T"))))
+    main.maybeRetCoordRune match { case Some(RuneUsage(_, CodeRuneS(StrI("T")))) => }
   }
 
   test("Borrowed rune") {
@@ -49,7 +49,7 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
       param match {
         case ParameterS(
           AtomSP(_,
-            Some(CaptureS(CodeVarNameS("moo"))),
+            Some(CaptureS(CodeVarNameS(StrI("moo")))),
             None,
             Some(RuneUsage(_, tcr @ ImplicitRuneS(_))),
             None)) => tcr
@@ -57,7 +57,7 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
 
     val tCoordRuneFromRules =
       main.rules shouldHave {
-        case AugmentSR(_, tcr, BorrowP, RuneUsage(_, CodeRuneS("T"))) => tcr
+        case AugmentSR(_, tcr, BorrowP, RuneUsage(_, CodeRuneS(StrI("T")))) => tcr
       }
 
     tCoordRuneFromParams shouldEqual tCoordRuneFromRules.rune
@@ -78,7 +78,7 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
       }
 
     main.rules shouldHave {
-      case LookupSR(_, pr, CodeNameS("int")) => vassert(pr.rune == paramRune)
+      case LookupSR(_, pr, CodeNameS(StrI("int"))) => vassert(pr.rune == paramRune)
     }
   }
 
@@ -93,20 +93,20 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
       param match {
         case ParameterS(
           AtomSP(_,
-            Some(CaptureS(CodeVarNameS("moo"))),
+            Some(CaptureS(CodeVarNameS(StrI("moo")))),
             None,
             Some(tr),
             Some(
               Vector(
                 AtomSP(_,
-                  Some(CaptureS(CodeVarNameS("a"))),
+                  Some(CaptureS(CodeVarNameS(StrI("a")))),
                   None,
                   Some(RuneUsage(_, ar @ ImplicitRuneS(_))),
                 None))))) => (ar, tr)
       }
 
     main.rules shouldHave {
-      case LookupSR(_, air, CodeNameS("int")) => vassert(air.rune == aRune)
+      case LookupSR(_, air, CodeNameS(StrI("int"))) => vassert(air.rune == aRune)
     }
 
     // See CCAUIR.

@@ -87,9 +87,9 @@ case class AnonymousSubstructConstructorTemplateImpreciseNameS(interfaceImprecis
 
 }
 case class AnonymousSubstructMemberNameS(index: Int) extends IVarNameS {  }
-case class CodeVarNameS(name: String) extends IVarNameS {
-  vcheck(name != "set", "Can't name a variable 'set'")
-  vcheck(name != "mut", "Can't name a variable 'mut'")
+case class CodeVarNameS(name: StrI) extends IVarNameS {
+  vcheck(name.str != "set", "Can't name a variable 'set'")
+  vcheck(name.str != "mut", "Can't name a variable 'mut'")
 }
 case class ConstructingMemberNameS(name: StrI) extends IVarNameS {  }
 case class IterableNameS(range: RangeS) extends IVarNameS with IImpreciseNameS {  }

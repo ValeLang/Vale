@@ -1,9 +1,8 @@
 package dev.vale.parsing.patterns
 
-import dev.vale.Collector
+import dev.vale.{Collector, StrI, parsing}
 import dev.vale.parsing.{PatternParser, TestParseUtils}
 import dev.vale.parsing.ast.{AnonymousRunePT, BorrowP, CallPT, FinalP, IgnoredLocalNameDeclarationP, ImmutableP, IntPT, InterpretedPT, MutabilityPT, MutableP, NameOrRunePT, NameP, PatternPP, StaticSizedArrayPT, TuplePT, VariabilityPT, VaryingP, WeakP}
-import dev.vale.parsing
 import dev.vale.parsing.ast.Patterns.{fromEnv, withType}
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
@@ -11,7 +10,8 @@ import org.scalatest.{FunSuite, Matchers}
 
 class TypeTests extends FunSuite with Matchers with Collector with TestParseUtils {
   private def compile[T](code: String): PatternPP = {
-    compile(new PatternParser().parsePattern(_), code)
+    compilePattern(code)
+//    compile(new PatternParser().parsePattern(_), code)
   }
 
   test("Ignoring name") {

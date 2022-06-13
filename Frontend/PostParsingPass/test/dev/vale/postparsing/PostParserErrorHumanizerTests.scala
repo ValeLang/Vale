@@ -1,6 +1,6 @@
 package dev.vale.postparsing
 
-import dev.vale.{Err, FileCoordinateMap, Interner, Ok, RangeS, vassert, vfail}
+import dev.vale.{Err, FileCoordinateMap, Interner, Ok, RangeS, StrI, vassert, vfail}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing._
 import dev.vale.postparsing.patterns.AbstractSP
@@ -41,7 +41,7 @@ class PostParserErrorHumanizerTests extends FunSuite with Matchers {
     val tz = RangeS.testZero(interner)
 
     vassert(PostParserErrorHumanizer.humanize(codeMap,
-      VariableNameAlreadyExists(tz, CodeVarNameS("Spaceship")))
+      VariableNameAlreadyExists(tz, CodeVarNameS(interner.intern(StrI("Spaceship")))))
       .nonEmpty)
     vassert(PostParserErrorHumanizer.humanize(codeMap,
       InterfaceMethodNeedsSelf(tz))

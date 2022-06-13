@@ -1,13 +1,12 @@
 package dev.vale.highertyping
 
-import dev.vale.{RangeS, vassert, vcurious, vpass, vwat}
+import dev.vale.{RangeS, StrI, vassert, vcurious, vpass, vwat}
 import dev.vale.parsing.ast.MutabilityP
 import dev.vale.postparsing.rules.{IRulexSR, RuneUsage}
 import dev.vale.postparsing.{AbstractBodyS, CodeBodyS, ExternBodyS, FunctionNameS, FunctionTemplataType, GeneratedBodyS, IBodyS, ICitizenAttributeS, ICitizenDeclarationNameS, IFunctionAttributeS, IFunctionDeclarationNameS, IImplDeclarationNameS, INameS, IRuneS, IStructMemberS, ITemplataType, ImplImpreciseNameS, KindTemplataType, ParameterS, TemplateTemplataType, TopLevelCitizenDeclarationNameS}
 import dev.vale.parsing._
 import dev.vale.postparsing.rules.IRulexSR
 import dev.vale.postparsing._
-import dev.vale.RangeS
 
 import scala.collection.immutable.List
 
@@ -127,7 +126,7 @@ case class ImplA(
 
 case class ExportAsA(
     range: RangeS,
-    exportedName: String,
+    exportedName: StrI,
   rules: Vector[IRulexSR],
     runeToType: Map[IRuneS, ITemplataType],
     typeRune: RuneUsage) {

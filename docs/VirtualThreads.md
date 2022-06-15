@@ -201,12 +201,12 @@ There is also a small binary size cost: all vtables are about twice as big, and 
 
 The only challenge is in determining how much stack space functions need, such as the above 184 bytes in the example. This needs to be determined *after* any optimizations happen, and is dependent on the target machine (x86, ARM, etc.) which means we can't use the more vanilla LLVM APIs. Some possible leads: MachineFrameInfo, TargetFrameLowering, and [hints from rustc](https://internals.rust-lang.org/t/how-to-let-rustc-compile-functions-with-segmented-stack/16380). In theory, it's possible, but worst case it might require forking LLVM.
 
-Luckily, stack switching won't be a problem, since we implemented it as part of the Separated FFI prototype. We can also in theory reuse Go's context switching, or Google's cooperative OS thread switching mechanisms.
+Luckily, stack switching won't be a problem, since we implemented it as part of the Fearless FFI prototype. We can also in theory reuse Go's context switching, or Google's cooperative OS thread switching mechanisms.
 
 
 # More Resources
 
-[User-space cooperative multitasking](https://brennan.io/2020/05/24/userspace-cooperative-multitasking/) (used for the separated FFI prototype, in fact)
+[User-space cooperative multitasking](https://brennan.io/2020/05/24/userspace-cooperative-multitasking/) (used for the faerless FFI prototype, in fact)
 
 [Achieving 5M persistent connections with Project Loom virtual threads](https://github.com/ebarlas/project-loom-c5m), some interesting comments about not liking async/await
 

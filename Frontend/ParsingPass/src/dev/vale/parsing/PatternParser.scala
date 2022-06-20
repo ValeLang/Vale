@@ -1,14 +1,16 @@
 package dev.vale.parsing
 
-import dev.vale.{Err, Ok, Result, vimpl}
+import dev.vale.{Err, Interner, Ok, Result, StrI, vimpl}
 import dev.vale.parsing.ast.{AbstractP, ConstructingMemberNameDeclarationP, DestructureP, INameDeclarationP, IgnoredLocalNameDeclarationP, LocalNameDeclarationP, NameP, PatternPP}
 import dev.vale.parsing.templex.TemplexParser
-import dev.vale.lexing.{BadDestructureError, BadLocalName, INodeLE, IParseError, RangedInternalErrorP, ScrambleLE}
+import dev.vale.lexing.{BadDestructureError, BadLocalName, BadNameBeforeDestructure, EmptyParameter, FoundBothAbstractAndOverride, INodeLE, IParseError, RangedInternalErrorP, ScrambleLE, SquaredLE, WordLE}
 import dev.vale.parsing.ast._
 
 import scala.collection.mutable
 
-class PatternParser {
+class PatternParser(interner: Interner) {
+  val VIRTUAL = interner.intern(StrI("virtual"))
+  val IMPL = interner.intern(StrI("impl"))
 
 //  // Remember, for pattern parsers, something *must* be present, don't match empty.
 //  // Luckily, for this rule, we always have the expr identifier.
@@ -104,19 +106,83 @@ class PatternParser {
 //  }
 
   def parsePattern(node: ScrambleLE): Result[PatternPP, IParseError] = {
-    vimpl()
-//    val tentativeIter = originalIter.clone()
-//    val begin = tentativeIter.getPos()
-//
-//    val maybeAbstract =
-//      if (tentativeIter.trySkip(() => "^virtual\\b".r)) {
-//        val virtualEnd = tentativeIter.getPos()
-//        tentativeIter.consumeWhitespace()
-//        Some(AbstractP(RangeL(begin, virtualEnd)))
-//      } else {
-//        None
-//      }
-//
+    val patternRange = node.range
+
+    if (node.elements.isEmpty) {
+      return Err(EmptyParameter(node.range.begin))
+    }
+
+    val (elementsAfterVirtual, maybeVirtual) =
+      node.elements(0) match {
+        case WordLE(range, s) if s == VIRTUAL => {
+          val els = node.elements.slice(1, node.elements.length)
+          val maybeVirtual = Some(range)
+          (els, maybeVirtual)
+        }
+        case _ => (node.elements, None)
+      }
+
+    if (elementsAfterVirtual.isEmpty) {
+      return Err(EmptyParameter(node.range.begin))
+    }
+
+    val (elementsBetweenVirtualAndOverride, maybeOverride) =
+      if (elementsAfterVirtual.size >= 3) {
+        elementsAfterVirtual.slice(elementsAfterVirtual.length - 3, elementsAfterVirtual.length) match {
+          case Array(_, WordLE(_, impl), templexL) if impl == IMPL => {
+            val templexP = templexParser.parseTemplex(templexL)
+            val rest = elementsAfterVirtual.slice(0, elementsAfterVirtual.length - 2)
+            (rest, Some(templexP))
+          }
+          case _ => (elementsAfterVirtual, None)
+        }
+      } else {
+        (elementsAfterVirtual, None)
+      }
+
+    val virtuality =
+      (maybeVirtual) match {
+        case (None) => None
+        case (Some(virtual)) => Some(AbstractP(virtual))
+      }
+
+    elementsBetweenVirtualAndOverride match {
+      case Array(WordLE(range, str)) => {
+        val name = Some(LocalNameDeclarationP(NameP(range, str)))
+        return Ok(PatternPP(range, None, name, None, None, None))
+      }
+      case Array(WordLE(_, nameStr), templexStr, SquaredLE(range, contents)) => {
+
+      }
+      case Array(nameOrTypeNode, SquaredLE(destructureRange, destructureElements)) => {
+        val (maybeName, maybeType) =
+          if (nameOrTypeNode.range.end == destructureRange.begin) {
+            // Theyre right next to each other, so the nameOrType is really a type.
+            (None, Some(templexParser.parseType(nameOrTypeNode)))
+          } else {
+            // There's some space before the destructure, so the nameOrType is a name.
+            nameOrTypeNode match {
+              case WordLE(nameRange, str) => {
+                (Some(LocalNameDeclarationP(NameP(nameRange, str))), None)
+              }
+              case _ => return Err(BadNameBeforeDestructure(nameOrTypeNode.range.begin))
+            }
+          }
+
+        val destructure =
+          DestructureP(
+            destructureRange,
+            destructureElements.elements.map(destructureElement => {
+              parsePattern(destructureElement) match {
+                case Err(e) => return Err(e)
+                case Ok(x) => x
+              }
+            }).toVector)
+
+        PatternPP(patternRange, None, maybeName, maybeType, Some(destructure), virtuality)
+      }
+    }
+
 //    // The order here matters.
 //    // We dont want to mix up the type []Ship with the destructure [], so types need to come first.
 //    // We don't want the "a" rule to match "a A[_, _]" just because one starts with the other.

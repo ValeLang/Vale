@@ -108,9 +108,11 @@ class Lexer(interner: Interner) {
         case Ok(Some(x)) => x
       }
 
+    iter.consumeCommentsAndWhitespace()
+
     val returnBegin = iter.getPos()
     val maybeReturn =
-      if (!iter.peekCompleteWord("where") && !iter.peekCompleteWord("region") && !iter.trySkip('{') && !iter.trySkip(';')) {
+      if (!iter.peekCompleteWord("where") && !iter.peekCompleteWord("region") && iter.peek() != '{' && !iter.trySkip(';')) {
         if (iter.trySkipCompleteWord("infer-return")) {
           val range = RangeL(returnBegin, iter.getPos())
           FunctionReturnL(range, Some(range), None)
@@ -128,6 +130,8 @@ class Lexer(interner: Interner) {
         FunctionReturnL(range, None, None)
       }
 
+    iter.consumeCommentsAndWhitespace()
+
     val maybeRules =
       if (iter.trySkipCompleteWord("where")) {
         Some(
@@ -138,6 +142,8 @@ class Lexer(interner: Interner) {
       } else {
         None
       }
+
+    iter.consumeCommentsAndWhitespace()
 
     val headerEnd = iter.getPos()
 
@@ -210,7 +216,9 @@ class Lexer(interner: Interner) {
   def lexCurlied(iter: LexingIterator, stopOnOpenBrace: Boolean): Result[Option[CurliedLE], IParseError] = {
     val begin = iter.getPos()
 
-    vassert(!stopOnOpenBrace)
+    if (iter.peek() == '{' && stopOnOpenBrace) {
+      return Ok(None)
+    }
 
     if (!iter.trySkip('{')) {
       return Ok(None)
@@ -385,7 +393,7 @@ class Lexer(interner: Interner) {
     val innards = new Accumulator[ScrambleLE]()
     var trailingComma = false
 
-    while (!atEnd(iter, stopOnOpenBrace, stopOnWhere) && iter.trySkip(',')) {
+    while (!atEnd(iter, stopOnOpenBrace, stopOnWhere) && !iter.trySkip(',')) {
       iter.consumeCommentsAndWhitespace()
 
       if (atEnd(iter, stopOnOpenBrace, stopOnWhere)) {
@@ -491,12 +499,11 @@ class Lexer(interner: Interner) {
     }
 
     val begin = iter.getPos()
-    if (iter.advance().isUnicodeIdentifierPart) {
+    if (iter.peek().isUnicodeIdentifierPart) {
       // If it was a word char, then keep eating until we reach the end of the word chars.
-      while ({
-        val c = iter.advance()
-        c.isUnicodeIdentifierPart
-      }) {}
+      while (iter.peek().isUnicodeIdentifierPart) {
+        iter.advance()
+      }
 
       val end = iter.getPos()
       val word = iter.code.slice(begin, end)

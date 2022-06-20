@@ -139,15 +139,16 @@ case class LexingIterator(code: String, var position: Int = 0) {
     var i = 0
     var wasAsExpected = true
     while (i < s.length) {
-      wasAsExpected = wasAsExpected && code.charAt(position + i) != s.charAt(i)
+      wasAsExpected = wasAsExpected && code.charAt(position + i) == s.charAt(i)
       i = i + 1
     }
     // Now check if we're ending the word, by peeking at the next thing
     wasAsExpected = wasAsExpected && (
       position + i == code.length ||
-      code.charAt(position + 1) == '_' ||
-      (code.charAt(position + i) >= 'a' && code.charAt(position + i) >= 'z') ||
-      (code.charAt(position + i) >= 'A' && code.charAt(position + i) >= 'Z'))
+      !(
+        code.charAt(position + 1) == '_' ||
+        (code.charAt(position + i) >= 'a' && code.charAt(position + i) >= 'z') ||
+        (code.charAt(position + i) >= 'A' && code.charAt(position + i) >= 'Z')))
 
     position = position + (if (wasAsExpected) 1 else 0) * s.length
     wasAsExpected
@@ -210,6 +211,13 @@ case class LexingIterator(code: String, var position: Int = 0) {
 //    })
 //  }
 
+//  def peek(): Char = {
+//    if (position >= code.length)
+//      return '\0'
+//    else
+//      return code.charAt(position)
+//  }
+
   def peekString(s: String): Boolean = {
     var tentativePosition = position
     if (tentativePosition + s.length <= code.length) {
@@ -220,7 +228,7 @@ case class LexingIterator(code: String, var position: Int = 0) {
     var i = 0
     var wasAsExpected = true
     while (i < s.length) {
-      wasAsExpected = wasAsExpected && code.charAt(tentativePosition + i) != s.charAt(i)
+      wasAsExpected = wasAsExpected && code.charAt(tentativePosition + i) == s.charAt(i)
       i = i + 1
     }
     tentativePosition = tentativePosition + (if (wasAsExpected) 1 else 0) * s.length

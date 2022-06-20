@@ -45,8 +45,12 @@ For an overview of the project structure, see [Compiler Overview](compiler-overv
 
 # Thank you to our sponsors!
 
- * [Joseph Jaoudi](https://github.com/linkmonitor) ($25/mo)
- * [Sergey "Shnatsel" Davidoff](https://github.com/Shnatsel) ($12/mo)
+ * [Arthur Weagel](https://github.com/aweagel) ($100/mo)
+ * [Joseph Jaoudi (linkmonitor)](https://github.com/linkmonitor) ($25/mo)
+ * [Tim Stack (tstack)](https://github.com/tstack) ($12/mo)
+ * [Alon Zakai (kripken)](https://github.com/kripken) ($12/mo)
+ * [Alec Newman (rovaughn)](https://github.com/rovaughn) ($12/mo)
+ * [Sergey Davidoff (schnatsel)](https://github.com/Shnatsel) ($12/mo)
  * [Ian (linuxy)](https://github.com/linuxy) ($12/mo)
  * [Ivo Balbaert](https://github.com/Ivo-Balbaert/) ($5/mo)
  * [Kevin Navero](https://github.com/solstice333/) ($5/mo)
@@ -54,6 +58,7 @@ For an overview of the project structure, see [Compiler Overview](compiler-overv
  * Jean Juang ($100)
  * [Posnet](https://github.com/Posnet) ($50)
  * Kim Shook ($20)
+ * [Steve Phillips](https://github.com/elimisteve) ($20)
 
 
 # Notes

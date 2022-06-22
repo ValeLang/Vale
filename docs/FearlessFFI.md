@@ -22,7 +22,7 @@ We know the structure of the data C is sending, because these structs are `expor
 
 # How Fearless FFI Works
 
-See https://verdagon.dev/blog/fearless-ffi
+See https://verdagon.dev/blog/next-fearless-ffi
 
 (TODO: copy it into here once it's published)
 
@@ -48,7 +48,7 @@ To make it fit in 32 bytes (256b), we'll need to scatter the offset and mask int
  * regionPointer needs only 52, can lose top 8 bits and low 4 bits
  * typePointer needs only 52, can top 8 bits and low 4 bits
 
-We'll shrink those to 56, 52, and 52 bits each. Should barely fit into 32B. We'll let LLVM handle the packing.
+We shrink those to 56, 52, and 52 bits each, so it fits into 32B.
 
 This also means the region pointer must end in 4 zeros, meaning regions need to be at a 16-byte alignment (see RMB16BA) and itables as well (see ITN16BA).
 

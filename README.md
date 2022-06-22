@@ -18,10 +18,11 @@ See also our [treasure trove of working examples](https://github.com/Ivo-Balbaer
 
 ## Building a Vale Program
 
- 1. Download the latest binary at http://vale.dev/download
+ 1. Download the latest binary from https://github.com/ValeLang/Vale/releases
  1. Unzip it into, for example, `~/Vale`, and `cd` into it.
- 1. Compile a program: `valec build hello=./samples/helloworld --output_dir target`
- 1. Run the program: `target/main`
+ 1. Make a file `hello.vale` containing some vale code, like `exported func main() { println("Hello world!"); }`
+ 1. Compile a program: `build mymod=hello.vale --output_dir target`
+ 1. Run the program: `target/main`, and you should see the output `Hello world!`
 
 
 ## Learning Vale
@@ -43,17 +44,22 @@ For an overview of the project structure, see [Compiler Overview](compiler-overv
 - [Vim plugin](https://github.com/jfecher/vale.vim): Syntax-highlighting
 
 
-# Thank you to our sponsors!
+# Thank you to all of our sponsors!
 
- * [Joseph Jaoudi](https://github.com/linkmonitor) ($25/mo)
- * [Sergey "Shnatsel" Davidoff](https://github.com/Shnatsel) ($12/mo)
- * [Ian (linuxy)](https://github.com/linuxy) ($12/mo)
- * [Ivo Balbaert](https://github.com/Ivo-Balbaert/) ($5/mo)
- * [Kevin Navero](https://github.com/solstice333/) ($5/mo)
- * Ilya Seletsky ($5/mo)
- * Jean Juang ($100)
- * [Posnet](https://github.com/Posnet) ($50)
- * Kim Shook ($20)
+ * [Arthur Weagel](https://github.com/aweagel)
+ * [Joseph Jaoudi (linkmonitor)](https://github.com/linkmonitor)
+ * [Tim Stack (tstack)](https://github.com/tstack)
+ * [Alon Zakai (kripken)](https://github.com/kripken)
+ * [Alec Newman (rovaughn)](https://github.com/rovaughn)
+ * [Sergey Davidoff (schnatsel)](https://github.com/Shnatsel)
+ * [Ian (linuxy)](https://github.com/linuxy)
+ * [Ivo Balbaert](https://github.com/Ivo-Balbaert/)
+ * [Kevin Navero](https://github.com/solstice333/)
+ * Ilya Seletsky
+ * Jean Juang
+ * [Posnet](https://github.com/Posnet)
+ * Kim Shook
+ * [Steve Phillips](https://github.com/elimisteve)
 
 
 # Notes

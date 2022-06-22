@@ -43,22 +43,22 @@ For an overview of the project structure, see [Compiler Overview](compiler-overv
 - [Vim plugin](https://github.com/jfecher/vale.vim): Syntax-highlighting
 
 
-# Thank you to our sponsors!
+# Thank you to all of our sponsors!
 
- * [Arthur Weagel](https://github.com/aweagel) ($100/mo)
- * [Joseph Jaoudi (linkmonitor)](https://github.com/linkmonitor) ($25/mo)
- * [Tim Stack (tstack)](https://github.com/tstack) ($12/mo)
- * [Alon Zakai (kripken)](https://github.com/kripken) ($12/mo)
- * [Alec Newman (rovaughn)](https://github.com/rovaughn) ($12/mo)
- * [Sergey Davidoff (schnatsel)](https://github.com/Shnatsel) ($12/mo)
- * [Ian (linuxy)](https://github.com/linuxy) ($12/mo)
- * [Ivo Balbaert](https://github.com/Ivo-Balbaert/) ($5/mo)
- * [Kevin Navero](https://github.com/solstice333/) ($5/mo)
- * Ilya Seletsky ($5/mo)
- * Jean Juang ($100)
- * [Posnet](https://github.com/Posnet) ($50)
- * Kim Shook ($20)
- * [Steve Phillips](https://github.com/elimisteve) ($20)
+ * [Arthur Weagel](https://github.com/aweagel)
+ * [Joseph Jaoudi (linkmonitor)](https://github.com/linkmonitor)
+ * [Tim Stack (tstack)](https://github.com/tstack)
+ * [Alon Zakai (kripken)](https://github.com/kripken)
+ * [Alec Newman (rovaughn)](https://github.com/rovaughn)
+ * [Sergey Davidoff (schnatsel)](https://github.com/Shnatsel)
+ * [Ian (linuxy)](https://github.com/linuxy)
+ * [Ivo Balbaert](https://github.com/Ivo-Balbaert/)
+ * [Kevin Navero](https://github.com/solstice333/)
+ * Ilya Seletsky
+ * Jean Juang
+ * [Posnet](https://github.com/Posnet)
+ * Kim Shook
+ * [Steve Phillips](https://github.com/elimisteve)
 
 
 # Notes

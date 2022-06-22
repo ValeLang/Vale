@@ -18,10 +18,11 @@ See also our [treasure trove of working examples](https://github.com/Ivo-Balbaer
 
 ## Building a Vale Program
 
- 1. Download the latest binary at http://vale.dev/download
+ 1. Download the latest binary from https://github.com/ValeLang/Vale/releases
  1. Unzip it into, for example, `~/Vale`, and `cd` into it.
- 1. Compile a program: `valec build hello=./samples/helloworld --output_dir target`
- 1. Run the program: `target/main`
+ 1. Make a file `hello.vale` containing some vale code, like `exported func main() { println("Hello world!"); }`
+ 1. Compile a program: `build mymod=hello.vale --output_dir target`
+ 1. Run the program: `target/main`, and you should see the output `Hello world!`
 
 
 ## Learning Vale

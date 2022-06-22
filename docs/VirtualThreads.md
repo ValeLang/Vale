@@ -206,7 +206,7 @@ Luckily, stack switching won't be a problem, since we implemented it as part of 
 
 # More Resources
 
-[User-space cooperative multitasking](https://brennan.io/2020/05/24/userspace-cooperative-multitasking/) (used for the faerless FFI prototype, in fact)
+[User-space cooperative multitasking](https://brennan.io/2020/05/24/userspace-cooperative-multitasking/) (used for the fearless FFI prototype, in fact)
 
 [Achieving 5M persistent connections with Project Loom virtual threads](https://github.com/ebarlas/project-loom-c5m), some interesting comments about not liking async/await
 

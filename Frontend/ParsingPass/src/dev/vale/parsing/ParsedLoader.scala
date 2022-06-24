@@ -168,7 +168,7 @@ class ParsedLoader(interner: Interner) {
       loadRange(getObjectField(jobj, "range")),
       loadName(getObjectField(jobj, "name")),
       getArrayField(jobj, "attributes").map(expectObject).map(loadAttribute),
-      loadTemplex(getObjectField(jobj, "mutability")),
+      loadOptionalObject(getObjectField(jobj, "mutability"), loadTemplex),
       loadOptionalObject(getObjectField(jobj, "identifyingRunes"), loadIdentifyingRunes),
       loadOptionalObject(getObjectField(jobj, "templateRules"), loadTemplateRules),
       loadStructMembers(getObjectField(jobj, "members")))
@@ -206,7 +206,7 @@ class ParsedLoader(interner: Interner) {
   def loadPattern(jobj: JObject): PatternPP = {
     ast.PatternPP(
       loadRange(getObjectField(jobj, "range")),
-      loadOptionalObject(getObjectField(jobj, "preBorrow"), loadUnit),
+      loadOptionalObject(getObjectField(jobj, "preBorrow"), loadRange),
       loadOptionalObject(getObjectField(jobj, "capture"), loadNameDeclaration),
       loadOptionalObject(getObjectField(jobj, "templex"), loadTemplex),
       loadOptionalObject(getObjectField(jobj, "destructure"), loadDestructure),

@@ -130,12 +130,12 @@ trait TestParseUtils {
 //    new ExpressionParser(GlobalOptions(true, true, true, true))
   }
 
-  def compileFile(code: String): Result[FileP, FailedParse] = {
-    val interner = new Interner()
+  def compileFileInner(
+    interner: Interner,
+    codeMap: FileCoordinateMap[String]):
+  Result[FileP, FailedParse] = {
     val opts = GlobalOptions(true, true, true, true)
     val p = new Parser(interner, opts)
-    val codeMap = FileCoordinateMap.test(interner, Vector(code))
-
     ParseAndExplore.parseAndExploreAndCollect(
       interner,
       opts,
@@ -149,6 +149,21 @@ trait TestParseUtils {
       }) match {
       case Err(e) => Err(e)
       case Ok(x) => Ok(vassertOne(x.buildArray().map(_._2)))
+    }
+  }
+
+  def compileFile(code: String): Result[FileP, FailedParse] = {
+    val interner = new Interner()
+    val codeMap = FileCoordinateMap.test(interner, Vector(code))
+    compileFileInner(interner, codeMap)
+  }
+
+  def compileFileExpect(code: String): FileP = {
+    val interner = new Interner()
+    val codeMap = FileCoordinateMap.test(interner, Vector(code))
+    compileFileInner(interner, codeMap) match {
+      case Err(e) => vfail(ParseErrorHumanizer.humanize(codeMap.fileCoordToContents.toMap, e.fileCoord, e.error))
+      case Ok(x) => x
     }
   }
 

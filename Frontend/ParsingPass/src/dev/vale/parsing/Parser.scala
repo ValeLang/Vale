@@ -15,6 +15,17 @@ import scala.util.matching.Regex
 
 
 class Parser(interner: Interner, opts: GlobalOptions) {
+  val UNDERSCORE = interner.intern(StrI("_"))
+  val INT = interner.intern(StrI("int"))
+  val REF = interner.intern(StrI("Ref"))
+  val KIND = interner.intern(StrI("Kind"))
+  val PROT = interner.intern(StrI("Prot"))
+  val REFLIST = interner.intern(StrI("RefList"))
+  val OWNERSHIP = interner.intern(StrI("Ownership"))
+  val VARIABILITY = interner.intern(StrI("Variability"))
+  val MUTABILITY = interner.intern(StrI("Mutability"))
+  val LOCATION = interner.intern(StrI("Location"))
+
   val templexParser = new TemplexParser(interner)
 
 //  def runParserForProgramAndCommentRanges(codeWithComments: String): Result[(FileP, Vector[(Int, Int)]), IParseError] = {
@@ -102,7 +113,7 @@ class Parser(interner: Interner, opts: GlobalOptions) {
         case s @ ScrambleLE(_, _, _) => s
         case other => ScrambleLE(other.range, Array(other), false)
       }
-    val iter = new ScrambleIterator(scramble, 0)
+    val iter = new ScrambleIterator(scramble, 0, scramble.elements.length)
     if (iter.trySkipSymbol('\'')) {
       val name =
         iter.nextWord() match {
@@ -133,21 +144,19 @@ class Parser(interner: Interner, opts: GlobalOptions) {
       Ok(IdentifyingRuneP(node.range, NameP(name.range, name.str), attributes))
     } else {
       val name =
-        vimpl()
-//        parseFunctionOrLocalOrMemberName(iter) match {
-//          case Some(n) => n
-//          case None => return Err(BadRuneNameError(iter.getPos()))
-//        }
+        iter.advance() match {
+          case WordLE(range, str) => NameP(range, str)
+          case _ => return Err(BadRuneNameError(iter.getPos()))
+        }
 
       val typeBegin = iter.getPos()
       val maybeRuneType =
-        vimpl()
-//        Parser.parseRuneType(iter, Vector(StopBeforeCloseChevron, StopBeforeComma, StopBeforeEquals)) match {
-//          case Err(e) => return Err(e)
-//          case Ok(Some(x)) => Some(ast.TypeRuneAttributeP(RangeL(typeBegin, iter.getPos()), x))
-//          case Ok(None) => None
-//        }
-      Ok(IdentifyingRuneP(node.range, name, maybeRuneType))
+        parseRuneType(iter) match {
+          case Err(e) => return Err(e)
+          case Ok(Some(x)) => Some(ast.TypeRuneAttributeP(RangeL(typeBegin, iter.getPos()), x))
+          case Ok(None) => None
+        }
+      Ok(IdentifyingRuneP(node.range, name, maybeRuneType.toVector))
     }
   }
 
@@ -167,38 +176,116 @@ class Parser(interner: Interner, opts: GlobalOptions) {
   private[parsing] def parseStructMember(
     iter: ScrambleIterator):
   Result[IStructContent, IParseError] = {
-    vimpl()
-//    val begin = iter.getPos()
-//
-//    val name =
-//      parseLocalOrMemberName(iter) match {
-//        case None => return Err(BadStructMember(iter.getPos()))
-//        case Some(x) => x
-//      }
-//
-//    val variability = if (iter.trySkip("!")) VaryingP else FinalP
-//
-//    val variadic = iter.trySkip("\\.\\.")
-//
-//    val tyype =
-//      templexParser.parseTemplex(iter) match {
-//        case Err(e) => return Err(e)
-//        case Ok(x) => x
-//      }
-//
-//    if (!iter.trySkip(";")) {
-//      return Err(BadMemberEnd(iter.getPos()))
-//    }
-//
-//    if (variadic) {
-//      if (name.str != "_") {
-//        return Err(VariadicStructMemberHasName(iter.getPos()))
-//      }
-//
-//      Ok(VariadicStructMemberP(RangeL(begin, iter.getPos()), variability, tyype))
-//    } else {
-//      Ok(NormalStructMemberP(RangeL(begin, iter.getPos()), name, variability, tyype))
-//    }
+    val begin = iter.getPos()
+
+    val name =
+      iter.nextWord() match {
+        case None => return Err(BadStructMember(iter.getPos()))
+        case Some(WordLE(range, str)) => NameP(range, str)
+      }
+
+    val variability = if (iter.trySkipSymbol('!')) VaryingP else FinalP
+
+    val variadic =
+      iter.peek(2) match {
+        case Array(Some(SymbolLE(_, '.')), Some(SymbolLE(_, '.'))) => {
+          iter.advance()
+          iter.advance()
+          true
+        }
+        case _ => false
+      }
+
+    val tyype =
+      templexParser.parseTemplex(iter) match {
+        case Err(e) => return Err(e)
+        case Ok(x) => x
+      }
+
+    if (variadic) {
+      if (name.str != UNDERSCORE) {
+        return Err(VariadicStructMemberHasName(iter.getPos()))
+      }
+
+      Ok(VariadicStructMemberP(RangeL(begin, iter.getPos()), variability, tyype))
+    } else {
+      Ok(NormalStructMemberP(RangeL(begin, iter.getPos()), name, variability, tyype))
+    }
+  }
+
+  def parseStruct(functionL: StructL):
+  Result[StructP, IParseError] = {
+    Profiler.frame(() => {
+      val StructL(structRange, nameL, attributesL, maybeMutabilityL, maybeIdentifyingRunesL, maybeTemplateRulesL, membersL) = functionL
+
+      val maybeIdentifyingRunes =
+        maybeIdentifyingRunesL.map(userSpecifiedIdentifyingRunes => {
+          parseIdentifyingRunes(userSpecifiedIdentifyingRunes) match {
+            case Err(cpe) => return Err(cpe)
+            case Ok(x) => x
+          }
+        })
+
+      val maybeTemplateRulesP =
+        maybeTemplateRulesL.map(templateRules => {
+          TemplateRulesP(
+            templateRules.range,
+            U.map[ScrambleLE, IRulexPR](
+              templateRules.elements,
+              templexL => {
+                templexParser.parseRule(templexL) match {
+                  case Err(e) => return Err(e)
+                  case Ok(x) => x
+                }
+              }).toVector)
+        })
+
+      val attributesP =
+        U.map[IAttributeL, IAttributeP](
+          attributesL,
+          attributeL => {
+            parseAttribute(attributeL) match {
+              case Err(e) => return Err(e)
+              case Ok(x) => x
+            }
+          })
+
+      val maybeMutabilityP =
+        maybeMutabilityL.map(returnTypeL => {
+          val scramble =
+            returnTypeL match {
+              case s @ ScrambleLE(_, _, _) => s
+              case other => ScrambleLE(other.range, Array(other), false)
+            }
+          templexParser.parseTemplex(new ScrambleIterator(scramble, 0, scramble.elements.length)) match {
+            case Err(e) => return Err(e)
+            case Ok(x) => x
+          }
+        })
+
+      val membersP =
+        StructMembersP(
+          membersL.range,
+          U.map[ScrambleLE, IStructContent](
+            membersL.contents,
+            paramL => {
+              parseStructMember(new ScrambleIterator(paramL, 0, paramL.elements.length)) match {
+                case Err(e) => return Err(e)
+                case Ok(x) => x
+              }
+            }).toVector)
+
+      val struct =
+        StructP(
+          structRange,
+          toName(nameL),
+          attributesP.toVector,
+          maybeMutabilityP,
+          maybeIdentifyingRunes,
+          maybeTemplateRulesP,
+          membersP)
+      Ok(struct)
+    })
   }
 
   private[parsing] def parseStruct(
@@ -347,6 +434,23 @@ class Parser(interner: Interner, opts: GlobalOptions) {
 //        maybeTemplateRules,
 //        methods.toVector)
 //    Ok(Some(interface))
+  }
+
+  def parseRuneType(iter: ScrambleIterator):
+  Result[Option[ITypePR], IParseError] = {
+    iter.nextWord() match {
+      case None => Ok(None)
+      case Some(w) if w == INT => Ok(Some(IntTypePR))
+      case Some(w) if w == REF => Ok(Some(CoordTypePR))
+      case Some(w) if w == KIND => Ok(Some(KindTypePR))
+      case Some(w) if w == PROT => Ok(Some(PrototypeTypePR))
+      case Some(w) if w == REFLIST => Ok(Some(CoordListTypePR))
+      case Some(w) if w == OWNERSHIP => Ok(Some(OwnershipTypePR))
+      case Some(w) if w == VARIABILITY => Ok(Some(VariabilityTypePR))
+      case Some(w) if w == MUTABILITY => Ok(Some(MutabilityTypePR))
+      case Some(w) if w == LOCATION => Ok(Some(LocationTypePR))
+      case _ => return Err(BadRuneTypeError(iter.getPos()))
+    }
   }
 
   private[parsing] def parseImpl(
@@ -554,7 +658,7 @@ class Parser(interner: Interner, opts: GlobalOptions) {
           U.map[ScrambleLE, PatternPP](
             paramsL.contents.elements,
             paramL => {
-              new PatternParser().parsePattern(paramL) match {
+              new PatternParser(interner, templexParser).parsePattern(paramL) match {
                 case Err(e) => return Err(e)
                 case Ok(x) => x
               }
@@ -591,7 +695,7 @@ class Parser(interner: Interner, opts: GlobalOptions) {
               case s @ ScrambleLE(_, _, _) => s
               case other => ScrambleLE(other.range, Array(other), false)
             }
-          templexParser.parseTemplex(new ScrambleIterator(scramble, 0)) match {
+          templexParser.parseTemplex(new ScrambleIterator(scramble, 0, scramble.elements.length)) match {
             case Err(e) => return Err(e)
             case Ok(x) => x
           }
@@ -760,31 +864,12 @@ object Parser {
 //      case None => None
 //    }
 //  }
-//
+
 //  def parseTypeName(iter: ScrambleIterator): Option[NameP] = {
 //    val begin = iter.getPos()
 //    iter.tryy("[A-Za-z_][A-Za-z0-9_]*") match {
 //      case Some(str) => Some(NameP(RangeL(begin, iter.getPos()), str))
 //      case None => None
-//    }
-//  }
-//
-//  def parseRuneType(iter: ScrambleIterator, stopBefore: Vector[IStopBefore]):
-//  Result[Option[ITypePR], IParseError] = {
-//    if (atEnd(iter, stopBefore)) {
-//      return Ok(None)
-//    }
-//    iter.tryy("\\w+") match {
-//      case Some("int") => Ok(Some(IntTypePR))
-//      case Some("Ref") => Ok(Some(CoordTypePR))
-//      case Some("Kind") => Ok(Some(KindTypePR))
-//      case Some("Prot") => Ok(Some(PrototypeTypePR))
-//      case Some("RefList") => Ok(Some(CoordListTypePR))
-//      case Some("Ownership") => Ok(Some(OwnershipTypePR))
-//      case Some("Variability") => Ok(Some(VariabilityTypePR))
-//      case Some("Mutability") => Ok(Some(MutabilityTypePR))
-//      case Some("Location") => Ok(Some(LocationTypePR))
-//      case _ => return Err(BadRuneTypeError(iter.getPos()))
 //    }
 //  }
 }

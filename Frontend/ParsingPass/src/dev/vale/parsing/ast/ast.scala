@@ -68,7 +68,7 @@ case class StructP(
   range: RangeL,
   name: NameP,
   attributes: Vector[IAttributeP],
-  mutability: ITemplexPT,
+  mutability: Option[ITemplexPT],
   identifyingRunes: Option[IdentifyingRunesP],
   templateRules: Option[TemplateRulesP],
   members: StructMembersP) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }

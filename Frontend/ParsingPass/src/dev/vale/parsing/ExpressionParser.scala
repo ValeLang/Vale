@@ -33,9 +33,11 @@ object ExpressionParser {
   val MIN_PRECEDENCE = 1
 }
 
-class ScrambleIterator(scramble: ScrambleLE, var index: Int) {
+class ScrambleIterator(scramble: ScrambleLE, var index: Int, var end: Int) {
+  assert(end <= scramble.elements.length)
+
   def getPos(): Int = {
-    if (index >= scramble.elements.length) {
+    if (index >= end) {
       scramble.range.end
     } else {
       scramble.elements(index).range.begin
@@ -44,13 +46,21 @@ class ScrambleIterator(scramble: ScrambleLE, var index: Int) {
   def skipTo(that: ScrambleIterator): Unit = {
     index = that.index
   }
-  override def clone(): ScrambleIterator = new ScrambleIterator(scramble, index)
+  def stop(): Unit = {
+    index = end
+  }
+  override def clone(): ScrambleIterator = new ScrambleIterator(scramble, index, end)
+  def hasNext: Boolean = index < end
   def peek(): Option[INodeLE] = {
-    if (index >= scramble.elements.length) None
+    if (index >= end) None
     else Some(scramble.elements(index))
   }
-  def peek(n: Int): Array[INodeLE] = {
-    scramble.elements.slice(index, index + n)
+  def take(): Option[INodeLE] = {
+    if (index >= end) None
+    else Some(advance())
+  }
+  def peek(n: Int): Array[Option[INodeLE]] = {
+    index.until(index + n).map(scramble.elements.lift).toArray
   }
   def peekWord(word: StrI): Boolean = {
     peek() match {
@@ -59,9 +69,23 @@ class ScrambleIterator(scramble: ScrambleLE, var index: Int) {
     }
   }
   def advance(): INodeLE = {
+    assert(hasNext)
     val result = scramble.elements(index)
     index = index + 1
     result
+  }
+  def peekLast(): Option[INodeLE] = {
+    if (hasNext) Some(scramble.elements.last)
+    else None
+  }
+  def takeLast(): INodeLE = {
+    peekLast() match {
+      case Some(x) => {
+        end = end - 1
+        x
+      }
+      case None => assert(false); vfail()
+    }
   }
   def trySkip[R](f: PartialFunction[INodeLE, R]): Option[INodeLE] = {
     peek().filter(f.isDefinedAt)
@@ -77,12 +101,12 @@ class ScrambleIterator(scramble: ScrambleLE, var index: Int) {
     }
   }
   def trySkipSymbols(symbols: Array[Char]): Boolean = {
-    if (index + symbols.length >= scramble.elements.length) {
+    if (index + symbols.length >= end) {
       return false
     }
     var i = 0
-    while (true) {
-      scramble.elements(i) match {
+    while (i < symbols.length) {
+      scramble.elements(index + i) match {
         case SymbolLE(_, s) if s == symbols(i) =>
         case _ => return false
       }
@@ -657,7 +681,7 @@ class ExpressionParser(interner: Interner, opts: GlobalOptions) {
       }
     vassert(scramble.elements.nonEmpty)
 
-    val iter = new ScrambleIterator(scramble, 0)
+    val iter = new ScrambleIterator(scramble, 0, scramble.elements.length)
 
     parseWhile(iter) match {
       case Err(e) => return Err(e)
@@ -1103,7 +1127,7 @@ class ExpressionParser(interner: Interner, opts: GlobalOptions) {
             U.map[ScrambleLE, ITemplexPT](
               inners.elements,
               el => {
-                new TemplexParser(interner).parseTemplex(new ScrambleIterator(el, 0)) match {
+                new TemplexParser(interner).parseTemplex(new ScrambleIterator(el, 0, el.elements.length)) match {
                   case Err(e) => return Err(e)
                   case Ok(x) => x
                 }

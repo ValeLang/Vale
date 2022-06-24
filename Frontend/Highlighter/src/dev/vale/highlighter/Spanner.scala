@@ -410,7 +410,7 @@ object Spanner {
     makeSpan(
       Pat,
       range,
-      maybePreBorrow.toVector.map(b => makeSpan(Point, b.range, Vector.empty)) ++
+      maybePreBorrow.toVector.map(b => makeSpan(Point, b, Vector.empty)) ++
       capture.toVector.map(forCapture) ++
       templex.toVector.map(forTemplex) ++
       maybeDestructure.toVector.map(forDestructure))

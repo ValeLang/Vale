@@ -1,8 +1,8 @@
 package dev.vale.parsing
 
-import dev.vale.lexing.{FailedParse, IDenizenL, ImportL, LexAndExplore, RangeL, TopLevelFunctionL}
+import dev.vale.lexing.{FailedParse, IDenizenL, ImportL, LexAndExplore, RangeL, TopLevelFunctionL, TopLevelStructL}
 import dev.vale.options.GlobalOptions
-import dev.vale.parsing.ast.{FileP, IDenizenP, TopLevelFunctionP}
+import dev.vale.parsing.ast.{FileP, IDenizenP, TopLevelFunctionP, TopLevelStructP}
 import dev.vale.von.{JsonSyntax, VonPrinter}
 import dev.vale._
 
@@ -45,6 +45,13 @@ object ParseAndExplore {
             case TopLevelFunctionL(functionL) => {
               TopLevelFunctionP(
                 parser.parseFunction(functionL) match {
+                  case Err(e) => return Err(FailedParse(code, fileCoord, e))
+                  case Ok(x) => x
+                })
+            }
+            case TopLevelStructL(structL) => {
+              TopLevelStructP(
+                parser.parseStruct(structL) match {
                   case Err(e) => return Err(FailedParse(code, fileCoord, e))
                   case Ok(x) => x
                 })

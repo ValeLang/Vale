@@ -1,16 +1,17 @@
 package dev.vale.parsing
 
-import dev.vale.{Err, Interner, Ok, Result, StrI, vimpl}
+import dev.vale.{Err, Interner, Ok, Result, StrI, vassert, vassertSome, vimpl, vwat}
 import dev.vale.parsing.ast.{AbstractP, ConstructingMemberNameDeclarationP, DestructureP, INameDeclarationP, IgnoredLocalNameDeclarationP, LocalNameDeclarationP, NameP, PatternPP}
 import dev.vale.parsing.templex.TemplexParser
-import dev.vale.lexing.{BadDestructureError, BadLocalName, BadNameBeforeDestructure, EmptyParameter, FoundBothAbstractAndOverride, INodeLE, IParseError, RangedInternalErrorP, ScrambleLE, SquaredLE, WordLE}
+import dev.vale.lexing.{BadDestructureError, BadLocalName, BadNameBeforeDestructure, BadThingAfterTypeInPattern, EmptyParameter, EmptyPattern, FoundBothAbstractAndOverride, FoundParameterWithoutType, INodeLE, IParseError, RangedInternalErrorP, ScrambleLE, SquaredLE, SymbolLE, WordLE}
 import dev.vale.parsing.ast._
 
 import scala.collection.mutable
 
-class PatternParser(interner: Interner) {
+class PatternParser(interner: Interner, templexParser: TemplexParser) {
   val VIRTUAL = interner.intern(StrI("virtual"))
   val IMPL = interner.intern(StrI("impl"))
+  val IN = interner.intern(StrI("in"))
 
 //  // Remember, for pattern parsers, something *must* be present, don't match empty.
 //  // Luckily, for this rule, we always have the expr identifier.
@@ -105,172 +106,137 @@ class PatternParser(interner: Interner) {
 //    Ok(Some(OverrideP(RangeP(begin, iter.getPos()), tyype)))
 //  }
 
+  def parseParameter(node: ScrambleLE, isInLambda: Boolean): Result[PatternPP, IParseError] = {
+    val patternRange = node.range
+
+    val iter = new ScrambleIterator(node, 0, node.elements.length)
+
+    val maybeVirtual =
+      iter.peek() match {
+        case None => return Err(EmptyParameter(patternRange.begin))
+        case Some(WordLE(range, s)) if s == VIRTUAL => {
+          iter.advance()
+          Some(AbstractP(range))
+        }
+        case Some(_) => None
+      }
+
+    val maybePreBorrow =
+      iter.peek() match {
+        case None => return Err(EmptyParameter(patternRange.begin))
+        case Some(SymbolLE(range, '&')) => Some(range)
+        case Some(_) => None
+      }
+
+    val name =
+      iter.peek() match {
+        case None => return Err(EmptyParameter(patternRange.begin))
+        case Some(WordLE(range, str)) => Some(LocalNameDeclarationP(NameP(range, str)))
+        case Some(other) => return Err(BadLocalName(other.range.begin))
+      }
+
+    val maybeType =
+      if (iter.hasNext) {
+        templexParser.parseTemplex(iter) match {
+          case Err(e) => return Err(e)
+          case Ok(x) => Some(x)
+        }
+      } else {
+        if (isInLambda) {
+          // Allow it
+          None
+        } else {
+          return Err(FoundParameterWithoutType(patternRange.end))
+        }
+      }
+
+    Ok(PatternPP(patternRange, maybePreBorrow, name, maybeType, None, maybeVirtual))
+  }
+
   def parsePattern(node: ScrambleLE): Result[PatternPP, IParseError] = {
     val patternRange = node.range
 
+    val iter = new ScrambleIterator(node, 0, node.elements.length)
+
     if (node.elements.isEmpty) {
-      return Err(EmptyParameter(node.range.begin))
+      return Err(EmptyPattern(node.range.begin))
     }
 
-    val (elementsAfterVirtual, maybeVirtual) =
-      node.elements(0) match {
-        case WordLE(range, s) if s == VIRTUAL => {
-          val els = node.elements.slice(1, node.elements.length)
-          val maybeVirtual = Some(range)
-          (els, maybeVirtual)
-        }
-        case _ => (node.elements, None)
-      }
-
-    if (elementsAfterVirtual.isEmpty) {
-      return Err(EmptyParameter(node.range.begin))
-    }
-
-    val (elementsBetweenVirtualAndOverride, maybeOverride) =
-      if (elementsAfterVirtual.size >= 3) {
-        elementsAfterVirtual.slice(elementsAfterVirtual.length - 3, elementsAfterVirtual.length) match {
-          case Array(_, WordLE(_, impl), templexL) if impl == IMPL => {
-            val templexP = templexParser.parseTemplex(templexL)
-            val rest = elementsAfterVirtual.slice(0, elementsAfterVirtual.length - 2)
-            (rest, Some(templexP))
+    val nameIsNext =
+      iter.peek(2) match {
+        case Array(None, None) => vwat() // impossible
+        case Array(Some(_), None) => true
+        case Array(Some(first), Some(second)) => {
+          if (first.range.begin < second.range.end) {
+            // There's a space after the first thing, so it's a name.
+            true
+          } else {
+            // There's no space after the first thing, so not a name.
+            false
           }
-          case _ => (elementsAfterVirtual, None)
+        }
+      }
+    val maybeName =
+      if (nameIsNext) {
+        iter.advance() match {
+          case WordLE(range, str) => Some(LocalNameDeclarationP(NameP(range, str)))
+          case other => return Err(BadLocalName(other.range.begin))
         }
       } else {
-        (elementsAfterVirtual, None)
+        None
       }
 
-    val virtuality =
-      (maybeVirtual) match {
-        case (None) => None
-        case (Some(virtual)) => Some(AbstractP(virtual))
-      }
-
-    elementsBetweenVirtualAndOverride match {
-      case Array(WordLE(range, str)) => {
-        val name = Some(LocalNameDeclarationP(NameP(range, str)))
-        return Ok(PatternPP(range, None, name, None, None, None))
-      }
-      case Array(WordLE(_, nameStr), templexStr, SquaredLE(range, contents)) => {
-
-      }
-      case Array(nameOrTypeNode, SquaredLE(destructureRange, destructureElements)) => {
-        val (maybeName, maybeType) =
-          if (nameOrTypeNode.range.end == destructureRange.begin) {
-            // Theyre right next to each other, so the nameOrType is really a type.
-            (None, Some(templexParser.parseType(nameOrTypeNode)))
-          } else {
-            // There's some space before the destructure, so the nameOrType is a name.
-            nameOrTypeNode match {
-              case WordLE(nameRange, str) => {
-                (Some(LocalNameDeclarationP(NameP(nameRange, str))), None)
-              }
-              case _ => return Err(BadNameBeforeDestructure(nameOrTypeNode.range.begin))
-            }
-          }
-
-        val destructure =
-          DestructureP(
-            destructureRange,
-            destructureElements.elements.map(destructureElement => {
-              parsePattern(destructureElement) match {
-                case Err(e) => return Err(e)
-                case Ok(x) => x
-              }
-            }).toVector)
-
-        PatternPP(patternRange, None, maybeName, maybeType, Some(destructure), virtuality)
-      }
+    // We look ahead so we dont parse "in" as a type in: foreach x in myList { ... }
+    iter.peek() match {
+      case None =>
+      case Some(WordLE(_, in)) if in == IN => iter.stop()
+      case Some(_) =>
     }
 
-//    // The order here matters.
-//    // We dont want to mix up the type []Ship with the destructure [], so types need to come first.
-//    // We don't want the "a" rule to match "a A[_, _]" just because one starts with the other.
-//
-//    if (tentativeIter.peek(() => "^\\[".r)) {
-//      originalIter.skipTo(tentativeIter.getPos())
-//      val iter = originalIter
-//      val destructure = parseDestructure(iter) match { case Err(e) => return Err(e) case Ok(p) => p }
-//      return Ok(ast.PatternPP(RangeL(begin, iter.getPos()), None, None, None, Some(destructure), None))
-//    }
-//
-//    val captureOrType =
-//      parsePatternCapture(tentativeIter) match { case Err(e) => return Err(e) case Ok(p) => p }
-//
-//    if (tentativeIter.peek(() => "^\\s*(=|,|\\)|\\])".r)) {
-//      // We're ending here, and captureOrType was a capture.
-//      originalIter.skipTo(tentativeIter.getPos())
-//      val iter = originalIter
-//      val capture = captureOrType
-//      return Ok(ast.PatternPP(RangeL(begin, iter.getPos()), None, Some(capture), None, None, None))
-//    }
-//
-//    // If we get here, there's something after the pattern.
-//
-//    // If next is a [# or a [] then it's an array, see https://github.com/ValeLang/Vale/issues/434
-//    if (tentativeIter.peek(() => "^\\s+\\[[^#\\]]".r)) {
-//      tentativeIter.consumeWhitespace()
-//      val destructure = parseDestructure(tentativeIter) match { case Err(e) => return Err(e) case Ok(p) => p }
-//      originalIter.skipTo(tentativeIter.getPos())
-//      val iter = originalIter
-//      // There's space between the capture/type thing and the destructure, so it was a capture.
-//      val capture = captureOrType
-//      return Ok(ast.PatternPP(RangeL(begin, iter.getPos()), None, Some(capture), None, Some(destructure), None))
-//    }
-//
-//    val (maybeCapture, maybeType, maybeDestructure) =
-//      // We look ahead so we dont parse "in" as a type in: foreach x in myList { ... }
-//      if (tentativeIter.atEnd() || tentativeIter.peek(() => "^\\s*(in|impl)\\b".r)) {
-//        originalIter.skipTo(tentativeIter.getPos())
-//        val iter = originalIter
-//        val capture = captureOrType
-//        (Some(capture), None, None)
-//      } else if (tentativeIter.peek(() => "^\\[[^#\\]]".r)) { // If next is a [# or a [] then it's an array, see https://github.com/ValeLang/Vale/issues/434
-//        // Note the lack of whitespace before the [
-//        // That means that we were wrong, the capture wasn't a capture, it was a type.
-//
-//        // Throw away the tentative iter, we're going all in on it being a type.
-//        val iter = originalIter
-//
-//        val tyype = new TemplexParser().parseTemplex(iter) match { case Err(e) => return Err(e) case Ok(p) => p }
-//
-////        // We should be at the same place.
-////        vassert(iter.getPos() == tentativeIter.getPos())
-//
-//        val destructure = parseDestructure(iter) match { case Err(e) => return Err(e) case Ok(p) => p }
-//
-//        (None, Some(tyype), Some(destructure))
-//      } else {
-//        // If we get here, the capture/type thing was a capture, and there's a type after the capture.
-//        originalIter.skipTo(tentativeIter.getPos())
-//        val iter = originalIter
-//        val capture = captureOrType
-//        iter.consumeWhitespace()
-//
-//        val tyype = new TemplexParser().parseTemplex(iter) match { case Err(e) => return Err(e) case Ok(p) => p }
-//
-//        val maybeDestructure =
-//          if (iter.peek(() => "^\\s*\\[".r)) {
-//            val destructure = parseDestructure(iter) match { case Err(e) => return Err(e) case Ok(p) => p }
-//            Some(destructure)
-//          } else {
-//            None
-//          }
-//
-//        (Some(capture), Some(tyype), maybeDestructure)
-//      }
-//    val iter = originalIter
-//
-////    val maybeOverride = parseOverride(iter) match { case Err(e) => return Err(e) case Ok(p) => p }
-////    val maybeVirtuality =
-////      (maybeAbstract, maybeOverride) match {
-////        case (Some(_), Some(_)) => return Err(FoundBothAbstractAndOverride(begin))
-////        case (a, b) => (a ++ b).headOption
-////      }
-//
-//    val pattern =
-//      ast.PatternPP(RangeL(begin, iter.getPos()), None, maybeCapture, maybeType, maybeDestructure, maybeAbstract)
-//    Ok(pattern)
+    // The next thing might be a type or a destructure.
+    // If it's a square-braced thing with nothing after it, it's a destructure.
+    // See https://github.com/ValeLang/Vale/issues/434
+    val nextIsType =
+      iter.peek(2) match {
+        case Array(None, None) => false
+        case Array(Some(SquaredLE(_, _)), maybeAfter) => {
+          // If there's something after it, it's an array.
+          maybeAfter.nonEmpty
+        }
+        case Array(Some(_), _) => {
+          // There's something that's not square-braced, so it's a type.
+          true
+        }
+      }
+    val maybeType =
+      if (nextIsType) {
+        templexParser.parseTemplex(iter) match {
+          case Err(e) => return Err(e)
+          case Ok(x) => Some(x)
+        }
+      } else {
+        None
+      }
+
+    val maybeDestructure =
+      iter.take() match {
+        case Some(SquaredLE(destructureRange, destructureElements)) => {
+          val destructure =
+            DestructureP(
+              destructureRange,
+              destructureElements.elements.map(destructureElement => {
+                parsePattern(destructureElement) match {
+                  case Err(e) => return Err(e)
+                  case Ok(x) => x
+                }
+              }).toVector)
+          Some(destructure)
+        }
+        case Some(other) => return Err(BadThingAfterTypeInPattern(other.range.begin))
+        case None => None
+      }
+
+      Ok(PatternPP(patternRange, None, maybeName, maybeType, maybeDestructure, None))
   }
 
   //    pos ~

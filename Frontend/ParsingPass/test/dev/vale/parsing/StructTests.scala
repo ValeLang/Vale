@@ -27,12 +27,11 @@ class StructTests extends FunSuite with Collector with TestParseUtils {
       case TopLevelStructP(StructP(_,
       NameP(_, StrI("Moo")),
       Vector(),
-      MutabilityPT(_, MutableP),
+      None,
       None,
       None,
       StructMembersP(_,
-      Vector(
-      NormalStructMemberP(_, NameP(_, StrI("x")), FinalP, InterpretedPT(_,BorrowP,NameOrRunePT(NameP(_, StrI("int"))))))))) =>
+      Vector()))) =>
     }
   }
 
@@ -78,19 +77,19 @@ class StructTests extends FunSuite with Collector with TestParseUtils {
 
   test("Struct with weak") {
     vassertOne(compileFile("struct Moo { x &&int; }").getOrDie().denizens) shouldHave {
-      case TopLevelStructP(StructP(_, NameP(_, StrI("Moo")), Vector(), MutabilityPT(_, MutableP), None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, StrI("x")), FinalP, InterpretedPT(_,WeakP,NameOrRunePT(NameP(_, StrI("int"))))))))) =>
+      case TopLevelStructP(StructP(_, NameP(_, StrI("Moo")), Vector(), None, None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, StrI("x")), FinalP, InterpretedPT(_,WeakP,NameOrRunePT(NameP(_, StrI("int"))))))))) =>
     }
   }
 
   test("Struct with heap") {
     vassertOne(compileFile("struct Moo { x ^Marine; }").getOrDie().denizens) shouldHave {
-      case TopLevelStructP(StructP(_,NameP(_, StrI("Moo")),Vector(), MutabilityPT(_, MutableP),None,None,StructMembersP(_,Vector(NormalStructMemberP(_,NameP(_, StrI("x")),FinalP,InterpretedPT(_,OwnP,NameOrRunePT(NameP(_, StrI("Marine"))))))))) =>
+      case TopLevelStructP(StructP(_,NameP(_, StrI("Moo")),Vector(), None,None,None,StructMembersP(_,Vector(NormalStructMemberP(_,NameP(_, StrI("x")),FinalP,InterpretedPT(_,OwnP,NameOrRunePT(NameP(_, StrI("Marine"))))))))) =>
     }
   }
 
   test("Export struct") {
     vassertOne(compileFile("exported struct Moo { x &int; }").getOrDie().denizens) shouldHave {
-      case TopLevelStructP(StructP(_, NameP(_, StrI("Moo")), Vector(ExportAttributeP(_)), MutabilityPT(_, MutableP), None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, StrI("x")), FinalP, InterpretedPT(_,BorrowP,NameOrRunePT(NameP(_, StrI("int"))))))))) =>
+      case TopLevelStructP(StructP(_, NameP(_, StrI("Moo")), Vector(ExportAttributeP(_)), None, None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, StrI("x")), FinalP, InterpretedPT(_,BorrowP,NameOrRunePT(NameP(_, StrI("int"))))))))) =>
     }
   }
 
@@ -107,7 +106,7 @@ class StructTests extends FunSuite with Collector with TestParseUtils {
         _,
         NameP(_, StrI("ListNode")),
         Vector(),
-        MutabilityPT(_, MutableP),
+        None,
         Some(IdentifyingRunesP(_, Vector(IdentifyingRuneP(_, NameP(_, StrI("E")), Vector())))),
         None,
         StructMembersP(_,
@@ -131,7 +130,7 @@ class StructTests extends FunSuite with Collector with TestParseUtils {
         _,
         NameP(_, StrI("Vecf")),
         Vector(),
-        MutabilityPT(_, MutableP),
+        None,
         Some(IdentifyingRunesP(_, Vector(IdentifyingRuneP(_, NameP(_, StrI("N")), Vector())))),
         Some(TemplateRulesP(_, Vector(TypedPR(_,Some(NameP(_, StrI("N"))), IntTypePR)))),
         StructMembersP(_, Vector(NormalStructMemberP(_,NameP(_, StrI("values")), FinalP, StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, StrI("N"))), NameOrRunePT(NameP(_, StrI("float"))))))))) =>
@@ -152,7 +151,7 @@ class StructTests extends FunSuite with Collector with TestParseUtils {
             _,
             NameP(_, StrI("Vecf")),
             Vector(),
-            MutabilityPT(_, MutableP),
+            None,
             Some(IdentifyingRunesP(_, Vector(IdentifyingRuneP(_, NameP(_, StrI("N")), Vector())))),
             Some(TemplateRulesP(_, Vector(TypedPR(_,Some(NameP(_, StrI("N"))),IntTypePR)))),
             StructMembersP(_, Vector(NormalStructMemberP(_,NameP(_, StrI("values")),FinalP,StaticSizedArrayPT(_,MutabilityPT(_,ImmutableP), VariabilityPT(_, FinalP), NameOrRunePT(NameP(_, StrI("N"))), NameOrRunePT(NameP(_, StrI("float"))))))))) =>

@@ -16,18 +16,19 @@ class Accumulator[T] {
 
   def buildArray()(implicit m: ClassTag[T]): Array[T] = {
     val attributes = new Array[T](elementsReversed.length)
-    var i = 0;
+    var i = elementsReversed.length;
     while ( {
       elementsReversed match {
         case head :: tail => {
+          i = i - 1
           attributes(i) = head
           elementsReversed = tail
-          i = i + 1
           true
         }
         case Nil => false
       }
     }) {}
+    vassert(i == 0)
     attributes
   }
 }

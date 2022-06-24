@@ -9,7 +9,7 @@ case class AbstractP(range: RangeL)// extends IVirtualityP
 
 case class PatternPP(
     range: RangeL,
-    preBorrow: Option[UnitP],
+    preBorrow: Option[RangeL],
     capture: Option[INameDeclarationP],
 
     // If they just have a destructure, this will probably be a ManualSequence(None).

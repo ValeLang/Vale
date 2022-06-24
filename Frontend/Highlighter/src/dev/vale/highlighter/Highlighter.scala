@@ -60,12 +60,12 @@ object Highlighter {
     }
   }
 
-  def toHTML(builder: StringBuilder, iter: CommentingCodeIter, span: Span): Unit = {
+  def spanToHTML(builder: StringBuilder, iter: CommentingCodeIter, span: Span): Unit = {
     iter.advanceTo(span.range.begin)
     builder.append(s"""<span class="${span.classs}">""")
     span.children.foreach(child => {
       iter.advanceTo(child.range.begin)
-      toHTML(builder, iter, child)
+      spanToHTML(builder, iter, child)
       iter.advanceTo(child.range.end)
     })
     iter.advanceTo(span.range.end)
@@ -84,7 +84,7 @@ object Highlighter {
   def toHTML(code: String, span: Span, commentRanges: Vector[(Int, Int)]): String = {
     val builder = new StringBuilder()
     val iter = new CommentingCodeIter(code, commentRanges, builder)
-    toHTML(builder, iter, span)
+    spanToHTML(builder, iter, span)
     builder.toString()
   }
 }

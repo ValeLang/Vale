@@ -69,7 +69,7 @@ object ParserVonifier {
         VonMember("range", vonifyRange(range)),
         VonMember("name", vonifyName(name)),
         VonMember("attributes", VonArray(None, attributes.map(vonifyAttribute).toVector)),
-        VonMember("mutability", vonifyTemplex(mutability)),
+        VonMember("mutability", vonifyOptional(mutability, vonifyTemplex)),
         VonMember("identifyingRunes", vonifyOptional(identifyingRunes, vonifyIdentifyingRunes)),
         VonMember("templateRules", vonifyOptional(templateRules, vonifyTemplateRules)),
         VonMember("members", vonifyStructMembers(members))))
@@ -261,7 +261,7 @@ object ParserVonifier {
       None,
       Vector(
         VonMember("range", vonifyRange(range)),
-        VonMember("preBorrow", vonifyOptional(preBorrow, vonifyUnit)),
+        VonMember("preBorrow", vonifyOptional(preBorrow, vonifyRange)),
         VonMember("capture", vonifyOptional(capture, vonifyNameDeclaration)),
         VonMember("templex", vonifyOptional(templex, vonifyTemplex)),
         VonMember("destructure", vonifyOptional(destructure, vonifyDestructure)),

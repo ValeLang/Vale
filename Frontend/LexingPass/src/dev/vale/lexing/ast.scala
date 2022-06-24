@@ -50,14 +50,14 @@ case class StructL(
   range: RangeL,
   name: WordLE,
   attributes: Array[IAttributeL],
-  mutability: INodeLE,
-  identifyingRunes: Option[INodeLE],
+  mutability: Option[ScrambleLE],
+  identifyingRunes: Option[AngledLE],
   templateRules: Option[CommaSeparatedListLE],
   members: StructMembersL) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class StructMembersL(
   range: RangeL,
-  contents: Array[INodeLE]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+  contents: Array[ScrambleLE]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class InterfaceL(
   range: RangeL,
@@ -140,11 +140,12 @@ case class SquaredLE(range: RangeL, contents: CommaSeparatedListLE) extends INod
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
 }
 
-case class CurliedLE(range: RangeL, contents: INodeLE) extends INodeLE {
+case class CurliedLE(range: RangeL, contents: SemicolonSeparatedListLE) extends INodeLE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
 }
 
 case class WordLE(range: RangeL, str: StrI) extends INodeLE {
+  vassert(!str.str.contains("<"))
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
 }
 

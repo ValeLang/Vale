@@ -1,5 +1,6 @@
 package dev.vale.highlighter
 
+import dev.vale.lexing.RangeL
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.{ParserCompilation, ast}
 import dev.vale.{Err, FileCoordinateMap, Interner, Ok, PackageCoordinate}

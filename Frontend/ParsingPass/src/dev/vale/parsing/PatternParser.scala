@@ -3,7 +3,7 @@ package dev.vale.parsing
 import dev.vale.{Err, Interner, Ok, Result, StrI, vassert, vassertSome, vimpl, vwat}
 import dev.vale.parsing.ast.{AbstractP, ConstructingMemberNameDeclarationP, DestructureP, INameDeclarationP, IgnoredLocalNameDeclarationP, LocalNameDeclarationP, NameP, PatternPP}
 import dev.vale.parsing.templex.TemplexParser
-import dev.vale.lexing.{BadDestructureError, BadLocalName, BadNameBeforeDestructure, BadThingAfterTypeInPattern, EmptyParameter, EmptyPattern, FoundBothAbstractAndOverride, FoundParameterWithoutType, INodeLE, IParseError, RangedInternalErrorP, ScrambleLE, SquaredLE, SymbolLE, WordLE}
+import dev.vale.lexing.{BadDestructureError, BadLocalName, BadNameBeforeDestructure, BadThingAfterTypeInPattern, EmptyParameter, EmptyPattern, FoundBothAbstractAndOverride, FoundParameterWithoutType, INodeLE, IParseError, RangeL, RangedInternalErrorP, ScrambleLE, SquaredLE, SymbolLE, WordLE}
 import dev.vale.parsing.ast._
 
 import scala.collection.mutable
@@ -153,13 +153,11 @@ class PatternParser(interner: Interner, templexParser: TemplexParser) {
     Ok(PatternPP(patternRange, maybePreBorrow, name, maybeType, None, maybeVirtual))
   }
 
-  def parsePattern(node: ScrambleLE): Result[PatternPP, IParseError] = {
-    val patternRange = node.range
+  def parsePattern(iter: ScrambleIterator): Result[PatternPP, IParseError] = {
+    val patternBegin = iter.getPos()
 
-    val iter = new ScrambleIterator(node, 0, node.elements.length)
-
-    if (node.elements.isEmpty) {
-      return Err(EmptyPattern(node.range.begin))
+    if (!iter.hasNext) {
+      return Err(EmptyPattern(patternBegin))
     }
 
     val nameIsNext =
@@ -225,7 +223,9 @@ class PatternParser(interner: Interner, templexParser: TemplexParser) {
             DestructureP(
               destructureRange,
               destructureElements.elements.map(destructureElement => {
-                parsePattern(destructureElement) match {
+                val patternIter =
+                  new ScrambleIterator(destructureElement, 0, destructureElement.elements.length)
+                parsePattern(patternIter) match {
                   case Err(e) => return Err(e)
                   case Ok(x) => x
                 }
@@ -236,7 +236,7 @@ class PatternParser(interner: Interner, templexParser: TemplexParser) {
         case None => None
       }
 
-      Ok(PatternPP(patternRange, None, maybeName, maybeType, maybeDestructure, None))
+      Ok(PatternPP(RangeL(patternBegin, iter.getPos()), None, maybeName, maybeType, maybeDestructure, None))
   }
 
   //    pos ~

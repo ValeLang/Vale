@@ -49,6 +49,7 @@ case class LexingIterator(code: String, var position: Int = 0) {
         return None
       } else {
         position = position + 1
+        vassert(position <= code.length)
         if (code.charAt(position) == needle) {
           return Some(code.slice(begin, position))
         }
@@ -64,6 +65,7 @@ case class LexingIterator(code: String, var position: Int = 0) {
       } else {
         val isNeedle = code.charAt(position) == needle
         position = position + 1
+        vassert(position <= code.length)
         !isNeedle
       }
     }) {}
@@ -75,6 +77,7 @@ case class LexingIterator(code: String, var position: Int = 0) {
       code.charAt(tentativePositionAfterWhitespace) == '«') {
       val begin = position
       position = tentativePositionAfterWhitespace + 1
+      vassert(position <= code.length)
       skipToPast('»')
       comments.add(RangeL(begin, position))
       consumeComments()
@@ -88,25 +91,20 @@ case class LexingIterator(code: String, var position: Int = 0) {
         code.charAt(tentativePositionAfterWhitespace + 1) == '/') {
       val begin = tentativePositionAfterWhitespace
       position = tentativePositionAfterWhitespace + 2
+      vassert(position <= code.length)
       skipToPast('\n')
       comments.add(RangeL(begin, position))
       consumeComments()
     }
   }
 
-  def currentChar(): Char = {
-    // TODO: could use type-state programming to make this line obsolete; have a
-    // variant that knows that it already checked for comments
-    consumeComments()
-    code.charAt(position)
-  }
-
   def advance(): Char = {
     // TODO: could use type-state programming to make this line obsolete; have a
     // variant that knows that it already checked for comments
     consumeComments()
-    val c = currentChar()
+    val c = peek()
     position = position + 1
+    vassert(position <= code.length)
     c
   }
 
@@ -116,8 +114,9 @@ case class LexingIterator(code: String, var position: Int = 0) {
     } else {
       return false
     }
-    val wasAsExpected = (currentChar() == c)
+    val wasAsExpected = (peek() == c)
     position = position + (if (wasAsExpected) 1 else 0)
+    vassert(position <= code.length)
     wasAsExpected
   }
 
@@ -125,6 +124,7 @@ case class LexingIterator(code: String, var position: Int = 0) {
   def trySkip(s: String): Boolean = {
     val wasAsExpected = peekString(s)
     position = position + (if (wasAsExpected) 1 else 0) * s.length
+    vassert(position <= code.length)
     wasAsExpected
   }
 
@@ -151,6 +151,7 @@ case class LexingIterator(code: String, var position: Int = 0) {
         (code.charAt(position + i) >= 'A' && code.charAt(position + i) >= 'Z')))
 
     position = position + (if (wasAsExpected) 1 else 0) * s.length
+    vassert(position <= code.length)
     wasAsExpected
   }
 
@@ -161,6 +162,7 @@ case class LexingIterator(code: String, var position: Int = 0) {
   def skipTo(newPosition: Int) = {
     vassert(newPosition >= position)
     position = newPosition
+    vassert(position <= code.length)
   }
 
   def getPos(): Int = {
@@ -170,7 +172,7 @@ case class LexingIterator(code: String, var position: Int = 0) {
   def consumeWhitespace(): Boolean = {
     var foundAny = false
     while (!atEnd()) {
-      currentChar() match {
+      peek() match {
         case ' ' | '\t' | '\n' | '\r' => foundAny = true
         case _ => return foundAny
       }
@@ -241,16 +243,21 @@ case class LexingIterator(code: String, var position: Int = 0) {
     val posAfterWord = position + s.length
 
     // Now check if we're ending the word, by peeking at the next thing
-    wasAsExpected = wasAsExpected && (
-      posAfterWord == code.length ||
-        code.charAt(posAfterWord + 1) == '_' ||
-        (code.charAt(posAfterWord) >= 'a' && code.charAt(posAfterWord) >= 'z') ||
-        (code.charAt(posAfterWord) >= 'A' && code.charAt(posAfterWord) >= 'Z'))
+    wasAsExpected =
+      wasAsExpected &&
+        (posAfterWord == code.length || !code.charAt(posAfterWord).isUnicodeIdentifierPart)
 
     wasAsExpected
   }
 
-  def peek(): Char = code.charAt(position)
+  def peek(): Char = {
+    // TODO: could use type-state programming to make this line obsolete; have a
+    // variant that knows that it already checked for comments
+    consumeComments()
+
+    if (position >= code.length) '\0'
+    else code.charAt(position)
+  }
 
   def peek(n: Int): Option[String] = {
     val s = code.slice(position, position + n)

@@ -10,8 +10,8 @@ import org.scalatest.{FunSuite, Matchers}
 
 class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   test("Simple int") {
-    compileExpression("4") shouldHave
-      { case ConstantIntPE(_, 4, 32) => }
+    val expr = compileExpression("4")
+     expr shouldHave { case ConstantIntPE(_, 4, 32) => }
   }
 
   test("Simple bool") {

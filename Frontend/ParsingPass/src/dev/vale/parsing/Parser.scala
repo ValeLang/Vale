@@ -15,18 +15,10 @@ import scala.util.matching.Regex
 
 
 class Parser(interner: Interner, opts: GlobalOptions) {
-  val UNDERSCORE = interner.intern(StrI("_"))
-  val INT = interner.intern(StrI("int"))
-  val REF = interner.intern(StrI("Ref"))
-  val KIND = interner.intern(StrI("Kind"))
-  val PROT = interner.intern(StrI("Prot"))
-  val REFLIST = interner.intern(StrI("RefList"))
-  val OWNERSHIP = interner.intern(StrI("Ownership"))
-  val VARIABILITY = interner.intern(StrI("Variability"))
-  val MUTABILITY = interner.intern(StrI("Mutability"))
-  val LOCATION = interner.intern(StrI("Location"))
-
-  val templexParser = new TemplexParser(interner)
+  val keywords = new Keywords(interner)
+  val templexParser = new TemplexParser(interner, keywords)
+  val patternParser = new PatternParser(interner, templexParser)
+  val expressionParser = new ExpressionParser(interner, keywords, opts, templexParser)
 
 //  def runParserForProgramAndCommentRanges(codeWithComments: String): Result[(FileP, Vector[(Int, Int)]), IParseError] = {
 //    Profiler.frame(() => {
@@ -111,7 +103,7 @@ class Parser(interner: Interner, opts: GlobalOptions) {
     val scramble =
       node match {
         case s @ ScrambleLE(_, _, _) => s
-        case other => ScrambleLE(other.range, Array(other), false)
+        case other => ScrambleLE(other.range, Array(other), None)
       }
     val iter = new ScrambleIterator(scramble, 0, scramble.elements.length)
     if (iter.trySkipSymbol('\'')) {
@@ -151,7 +143,7 @@ class Parser(interner: Interner, opts: GlobalOptions) {
 
       val typeBegin = iter.getPos()
       val maybeRuneType =
-        parseRuneType(iter) match {
+        templexParser.parseRuneType(iter) match {
           case Err(e) => return Err(e)
           case Ok(Some(x)) => Some(ast.TypeRuneAttributeP(RangeL(typeBegin, iter.getPos()), x))
           case Ok(None) => None
@@ -203,7 +195,7 @@ class Parser(interner: Interner, opts: GlobalOptions) {
       }
 
     if (variadic) {
-      if (name.str != UNDERSCORE) {
+      if (name.str != keywords.UNDERSCORE) {
         return Err(VariadicStructMemberHasName(iter.getPos()))
       }
 
@@ -255,7 +247,7 @@ class Parser(interner: Interner, opts: GlobalOptions) {
           val scramble =
             returnTypeL match {
               case s @ ScrambleLE(_, _, _) => s
-              case other => ScrambleLE(other.range, Array(other), false)
+              case other => ScrambleLE(other.range, Array(other), None)
             }
           templexParser.parseTemplex(new ScrambleIterator(scramble, 0, scramble.elements.length)) match {
             case Err(e) => return Err(e)
@@ -434,23 +426,6 @@ class Parser(interner: Interner, opts: GlobalOptions) {
 //        maybeTemplateRules,
 //        methods.toVector)
 //    Ok(Some(interface))
-  }
-
-  def parseRuneType(iter: ScrambleIterator):
-  Result[Option[ITypePR], IParseError] = {
-    iter.nextWord() match {
-      case None => Ok(None)
-      case Some(w) if w == INT => Ok(Some(IntTypePR))
-      case Some(w) if w == REF => Ok(Some(CoordTypePR))
-      case Some(w) if w == KIND => Ok(Some(KindTypePR))
-      case Some(w) if w == PROT => Ok(Some(PrototypeTypePR))
-      case Some(w) if w == REFLIST => Ok(Some(CoordListTypePR))
-      case Some(w) if w == OWNERSHIP => Ok(Some(OwnershipTypePR))
-      case Some(w) if w == VARIABILITY => Ok(Some(VariabilityTypePR))
-      case Some(w) if w == MUTABILITY => Ok(Some(MutabilityTypePR))
-      case Some(w) if w == LOCATION => Ok(Some(LocationTypePR))
-      case _ => return Err(BadRuneTypeError(iter.getPos()))
-    }
   }
 
   private[parsing] def parseImpl(
@@ -658,7 +633,8 @@ class Parser(interner: Interner, opts: GlobalOptions) {
           U.map[ScrambleLE, PatternPP](
             paramsL.contents.elements,
             paramL => {
-              new PatternParser(interner, templexParser).parsePattern(paramL) match {
+              val patternIter = new ScrambleIterator(paramL, 0, paramL.elements.length)
+              patternParser.parsePattern(patternIter) match {
                 case Err(e) => return Err(e)
                 case Ok(x) => x
               }
@@ -693,7 +669,7 @@ class Parser(interner: Interner, opts: GlobalOptions) {
           val scramble =
             returnTypeL match {
               case s @ ScrambleLE(_, _, _) => s
-              case other => ScrambleLE(other.range, Array(other), false)
+              case other => ScrambleLE(other.range, Array(other), None)
             }
           templexParser.parseTemplex(new ScrambleIterator(scramble, 0, scramble.elements.length)) match {
             case Err(e) => return Err(e)
@@ -723,7 +699,7 @@ class Parser(interner: Interner, opts: GlobalOptions) {
               }
             })
           val statementsP =
-            new ExpressionParser(interner, opts).parseBlock(blockL) match {
+            expressionParser.parseBlock(blockL) match {
               case Err(err) => return Err(err)
               case Ok(result) => result
             }

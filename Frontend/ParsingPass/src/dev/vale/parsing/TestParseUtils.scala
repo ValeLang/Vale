@@ -4,6 +4,7 @@ import dev.vale.lexing.{FailedParse, IParseError, Lexer, LexingIterator}
 import dev.vale.{Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Ok, PackageCoordinate, PackageCoordinateMap, Result, vassertOne, vassertSome, vfail, vimpl}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.{FileP, IDenizenP, IExpressionPE, IRulexPR, ITemplexPT, PatternPP}
+import dev.vale.parsing.templex.TemplexParser
 
 import scala.collection.immutable.Map
 
@@ -102,7 +103,7 @@ trait TestParseUtils {
   }
 
   def compileExpression(code: String): IExpressionPE = {
-    vimpl()
+    compileExpr(code)
 //    compile(
 //      makeExpressionParser()
 //        .parseExpression(_, StopBeforeCloseBrace), code)
@@ -182,14 +183,20 @@ trait TestParseUtils {
     }
   }
 
+  def compileDenizenExpect(code: String): IDenizenP = {
+    compileDenizen(code).getOrDie()
+  }
+
   def compileExpr(code: String): IExpressionPE = {
     val interner = new Interner()
+    val keywords = new Keywords(interner)
+    val lexer = new Lexer(interner)
+    val templexParser = new TemplexParser(interner, keywords)
     val node =
-      new Lexer(interner)
-        .lexNode(LexingIterator(code), false, false)
+      lexer.lexNode(LexingIterator(code), false, false)
         .getOrDie()
     val exprP =
-      new ExpressionParser(interner, GlobalOptions(true, false, true, true))
+      new ExpressionParser(interner, keywords, GlobalOptions(true, false, true, true), templexParser)
         .parseExpression(node)
         .getOrDie()
     exprP

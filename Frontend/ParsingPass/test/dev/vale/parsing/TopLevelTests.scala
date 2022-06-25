@@ -30,15 +30,63 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
   }
 
   test("Ellipses ignored") {
+    // Unicode … symbol is treated as an expression by the parser
+    compile("""exported func main() int {x = …;}""".stripMargin)
+    compile("""exported func main() int {set x = …;}""".stripMargin)
+
+    // Three dots is treated as a comment
     compile("""exported func main(...) int {}""".stripMargin)
     compile("""exported func main() ... {}""".stripMargin)
     compile("""exported func main() int {} ... """.stripMargin)
     compile("""exported func main() int {...}""".stripMargin)
     compile("""exported func main() int {moo(...)}""".stripMargin)
-    compile("""exported func main() int {x = ...;}""".stripMargin)
-    compile("""exported func main() int {set x = ...;}""".stripMargin)
     compile("""struct Moo {} ... """.stripMargin)
     compile("""struct Moo {...}""".stripMargin)
+  }
+
+  test("Comments ignored") {
+    compile(
+      """
+        |exported func main(
+        |        // moo
+        |) int {}
+        |""".stripMargin)
+    compile(
+      """
+        |exported func main()
+        |        // moo
+        |{}
+        |""".stripMargin)
+    compile(
+      """
+        |exported func main() int {}
+        |        // moo
+        |""".stripMargin)
+    compile(
+      """
+        |exported func main() int {
+        |        // moo
+        |}
+        |""".stripMargin)
+    compile(
+      """
+        |exported func main() int {
+        |  moo(
+        |        // moo
+        |  )
+        |}
+        |""".stripMargin)
+    compile(
+      """
+        |struct Moo {}
+        |        // moo
+        |""".stripMargin)
+    compile(
+      """
+        |struct Moo {
+        |        // moo
+        |}
+        |""".stripMargin)
   }
 
 //  test("Function containing if") {

@@ -116,7 +116,8 @@ trait INodeLE {
   def range: RangeL
 }
 
-case class ScrambleLE(range: RangeL, elements: Array[INodeLE], hasEquals: Boolean) extends INodeLE {
+case class ScrambleLE(range: RangeL, elements: Array[INodeLE], maybeEqualsIndex: Option[Int]) extends INodeLE {
+  vassert(elements.nonEmpty)
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
 }
 

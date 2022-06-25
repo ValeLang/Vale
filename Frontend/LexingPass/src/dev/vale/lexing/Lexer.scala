@@ -549,7 +549,7 @@ class Lexer(interner: Interner) {
 
     val innards = new Accumulator[INodeLE]()
 
-    var hasEquals = false
+    var maybeEqualsIndex: Option[Int] = None
 
     while (!atEnd(iter, stopOnOpenBrace, stopOnWhere)) {
       val node =
@@ -557,16 +557,20 @@ class Lexer(interner: Interner) {
           case Err(e) => return Err(e)
           case Ok(x) => x
         }
-      innards.add(node)
 
-      hasEquals = hasEquals || (node match { case SymbolLE(_, '=') => true case _ => false })
+      node match {
+        case SymbolLE(_, '=') => maybeEqualsIndex = Some(innards.size)
+        case _ =>
+      }
+
+      innards.add(node)
 
       iter.consumeCommentsAndWhitespace()
     }
 
     val end = iter.getPos()
 
-    Ok(ScrambleLE(RangeL(begin, end), innards.buildArray(), hasEquals))
+    Ok(ScrambleLE(RangeL(begin, end), innards.buildArray(), maybeEqualsIndex))
   }
 
 
@@ -620,7 +624,7 @@ class Lexer(interner: Interner) {
   def lexIdentifier(iter: LexingIterator): WordLE = {
     val begin = iter.getPos()
     // If it was a word char, then keep eating until we reach the end of the word chars.
-    while (iter.peek().isUnicodeIdentifierPart) {
+    while (!iter.atEnd() && iter.peek().isUnicodeIdentifierPart) {
       iter.advance()
     }
     val end = iter.getPos()
@@ -837,7 +841,7 @@ class Lexer(interner: Interner) {
     while ({
       val c = iter.peek()
       if (c >= '0' && c <= '9') {
-        integer = integer * 10L + c.toLong
+        integer = integer * 10L + (c.toInt - '0')
         digitsConsumed += 1
         iter.advance()
         true
@@ -858,7 +862,7 @@ class Lexer(interner: Interner) {
         val c = iter.peek()
         if (c >= '0' && c <= '9') {
           digitMultiplier = digitMultiplier * 0.1
-          mantissa = mantissa + c.toInt * digitMultiplier
+          mantissa = mantissa + (c.toInt - '0') * digitMultiplier
           iter.advance()
           true
         } else {
@@ -879,7 +883,7 @@ class Lexer(interner: Interner) {
           while ({
             val c = iter.peek()
             if (c >= '0' && c <= '9') {
-              bits = bits * 10 + c.toInt
+              bits = bits * 10 + (c.toInt - '0')
               iter.advance()
               true
             } else {

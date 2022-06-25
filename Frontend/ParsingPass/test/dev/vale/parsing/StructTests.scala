@@ -154,7 +154,15 @@ class StructTests extends FunSuite with Collector with TestParseUtils {
             None,
             Some(IdentifyingRunesP(_, Vector(IdentifyingRuneP(_, NameP(_, StrI("N")), Vector())))),
             Some(TemplateRulesP(_, Vector(TypedPR(_,Some(NameP(_, StrI("N"))),IntTypePR)))),
-            StructMembersP(_, Vector(NormalStructMemberP(_,NameP(_, StrI("values")),FinalP,StaticSizedArrayPT(_,MutabilityPT(_,ImmutableP), VariabilityPT(_, FinalP), NameOrRunePT(NameP(_, StrI("N"))), NameOrRunePT(NameP(_, StrI("float"))))))))) =>
+            StructMembersP(_, Vector(NormalStructMemberP(_,NameP(_, StrI("values")),FinalP,StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_, FinalP), NameOrRunePT(NameP(_, StrI("N"))), NameOrRunePT(NameP(_, StrI("float"))))))))) =>
+//      case TopLevelStructP(
+//        StructP(_,
+//          NameP(_,StrI("Vecf")),
+//          Vector(),
+//          None,
+//          Some(IdentifyingRunesP(_,Vector(IdentifyingRuneP(_,NameP(_,StrI("N")),Vector())))),
+//          Some(TemplateRulesP(_,Vector(TypedPR(_,Some(NameP(_,StrI("N"))),IntTypePR)))),
+//          StructMembersP(_,Vector(NormalStructMemberP(_,NameP(_,StrI("values")),FinalP,StaticSizedArrayPT(_,MutabilityPT(_,mut),VariabilityPT(_,final),NameOrRunePT(NameP(_,StrI(N))),NameOrRunePT(NameP(_,StrI(float)))))))))
     }
   }
 }

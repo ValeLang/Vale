@@ -130,6 +130,7 @@ case class BadFunctionAfterParam(pos: Int) extends IParseError { override def er
 case class BadAttributeError(pos: Int) extends IParseError { override def errorId: String = "P1032"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadExportName(pos: Int) extends IParseError { override def errorId: String = "P1037"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadExportEnd(pos: Int) extends IParseError { override def errorId: String = "P1037"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class BadForeachIterableError(pos: Int) extends IParseError { override def errorId: String = "P1037"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadArraySpecifier(pos: Int) extends IParseError { override def errorId: String = "P1039"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadLocalName(pos: Int) extends IParseError { override def errorId: String = "P1041"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadThingAfterTypeInPattern(pos: Int) extends IParseError { override def errorId: String = "P1041"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }

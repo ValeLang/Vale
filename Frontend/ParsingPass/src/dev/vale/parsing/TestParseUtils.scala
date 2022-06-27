@@ -193,7 +193,7 @@ trait TestParseUtils {
     val lexer = new Lexer(interner)
     val templexParser = new TemplexParser(interner, keywords)
     val node =
-      lexer.lexNode(LexingIterator(code), false, false)
+      lexer.lexScramble(LexingIterator(code), false, false)
         .getOrDie()
     val exprP =
       new ExpressionParser(interner, keywords, GlobalOptions(true, false, true, true), templexParser)

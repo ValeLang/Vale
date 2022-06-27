@@ -53,11 +53,7 @@ case class StructL(
   mutability: Option[ScrambleLE],
   identifyingRunes: Option[AngledLE],
   templateRules: Option[ScrambleLE],
-  members: StructMembersL) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-
-case class StructMembersL(
-  range: RangeL,
-  contents: Array[ScrambleLE]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+  members: ScrambleLE) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class InterfaceL(
   range: RangeL,
@@ -133,7 +129,6 @@ case class ScrambleLE(
 //  semicolonPositions: Array[Int],
 //  equalsPositions: Array[Int]
 ) extends INodeLE {
-  vassert(elements.nonEmpty)
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
 }
 
@@ -171,5 +166,5 @@ case class StringPartExpr(expr: INodeLE) extends StringPart
 
 
 sealed trait IParsedNumberLE extends INodeLE
-case class ParsedIntegerLE(range: RangeL, int: Long, bits: Int) extends IParsedNumberLE
-case class ParsedDoubleLE(range: RangeL, double: Double, bits: Int) extends IParsedNumberLE
+case class ParsedIntegerLE(range: RangeL, int: Long, bits: Option[Long]) extends IParsedNumberLE
+case class ParsedDoubleLE(range: RangeL, double: Double, bits: Option[Long]) extends IParsedNumberLE

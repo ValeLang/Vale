@@ -261,25 +261,15 @@ class Lexer(interner: Interner) {
 
     val membersAcc = new Accumulator[ScrambleLE]()
 
-    while (!iter.trySkip('}')) {
-      val member =
-        lexScramble(iter, false, false) match {
-          case Err(e) => return Err(e)
-          case Ok(x) => x
-        }
-
-      iter.consumeCommentsAndWhitespace()
-
-      if (!iter.trySkip(';')) {
-        return Err(BadMemberEnd(iter.getPos()))
+    val contents =
+      lexScramble(iter, false, false) match {
+        case Err(e) => return Err(e)
+        case Ok(x) => x
       }
 
-      membersAcc.add(member)
-
-      iter.consumeCommentsAndWhitespace()
+    if (!iter.trySkip('}')) {
+      return Err(BadStructContentsEnd(iter.getPos()))
     }
-
-    val members = StructMembersL(RangeL(membersBegin, iter.getPos()), membersAcc.buildArray())
 
     iter.consumeCommentsAndWhitespace()
 
@@ -293,7 +283,7 @@ class Lexer(interner: Interner) {
         maybeMutability,
         maybeGenericArgs,
         maybeRules,
-        members)
+        contents)
     Ok(Some(struct))
   }
 
@@ -540,7 +530,6 @@ class Lexer(interner: Interner) {
     }
   }
 
-  // There are no commas or semicolons inside a scramble, just a list of nodes separated by space
   def lexScramble(iter: LexingIterator, stopOnOpenBrace: Boolean, stopOnWhere: Boolean): Result[ScrambleLE, IParseError] = {
     val begin = iter.getPos()
 
@@ -813,7 +802,6 @@ class Lexer(interner: Interner) {
   // This is here in the lexer because it's a little awkward to identify things with i like 7i32.
   // But it's only a minor reason, we can move it to the parser if we want.
   def lexNumber(originalIter: LexingIterator): Result[Option[IParsedNumberLE], IParseError] = {
-    val defaultBits = 32
     val begin = originalIter.getPos()
 
     val tentativeIter = originalIter.clone()
@@ -846,7 +834,7 @@ class Lexer(interner: Interner) {
 
     if (iter.peekString("..")) {
       // This is followed by the range operator, so just stop here.
-      Ok(Some(ParsedIntegerLE(RangeL(begin, iter.getPos()), integer, defaultBits)))
+      Ok(Some(ParsedIntegerLE(RangeL(begin, iter.getPos()), integer, None)))
     } else if (iter.trySkip('.')) {
       var mantissa = 0.0
       var digitMultiplier = 1.0
@@ -868,7 +856,7 @@ class Lexer(interner: Interner) {
       }
 
       val result = (integer + mantissa) * (if (negative) -1 else 1)
-      Ok(Some(ParsedDoubleLE(RangeL(begin, iter.getPos()), result, defaultBits)))
+      Ok(Some(ParsedDoubleLE(RangeL(begin, iter.getPos()), result, None)))
     } else {
       val bits =
         if (iter.trySkip("i")) {
@@ -884,9 +872,9 @@ class Lexer(interner: Interner) {
             }
           }) {}
           vassert(bits > 0)
-          bits
+          Some(bits)
         } else {
-          defaultBits
+          None
         }
 
       val result = integer * (if (negative) -1 else 1)

@@ -147,7 +147,7 @@ case class ConstructArrayPE(
   override def producesResult(): Boolean = true
 }
 
-case class ConstantIntPE(range: RangeL, value: Long, bits: Int) extends IExpressionPE {
+case class ConstantIntPE(range: RangeL, value: Long, bits: Option[Long]) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true

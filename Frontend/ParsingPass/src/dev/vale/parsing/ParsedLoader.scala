@@ -19,6 +19,12 @@ class ParsedLoader(interner: Interner) {
     }
     obj.asInstanceOf[JString]
   }
+  def expectNumber(obj: Object): BigInt = {
+    if (!obj.isInstanceOf[JInt]) {
+      throw BadVPSTException(BadVPSTError("Expected JSON number, got: " + obj.getClass.getSimpleName))
+    }
+    obj.asInstanceOf[JInt].num
+  }
   def expectObjectTyped(obj: JValue, expectedType: String): JObject = {
     val jobj = expectObject(obj)
     val actualType = getStringField(jobj, "__type")
@@ -334,7 +340,7 @@ class ParsedLoader(interner: Interner) {
         ConstantIntPE(
           loadRange(getObjectField(jobj, "range")),
           getLongField(jobj, "value"),
-          getIntField(jobj, "bits"))
+          loadOptionalObject(getObjectField(jobj, "bits"), expectNumber).map(_.toInt))
       }
       case "ConstantFloat" => {
         ConstantFloatPE(

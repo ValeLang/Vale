@@ -33,7 +33,10 @@ object ExpressionParser {
   val MIN_PRECEDENCE = 1
 }
 
-class ScrambleIterator(val scramble: ScrambleLE, var index: Int, var end: Int) {
+class ScrambleIterator(
+    val scramble: ScrambleLE,
+    var index: Int,
+    var end: Int) {
   def this(scramble: ScrambleLE) {
     this(scramble, 0, scramble.elements.length)
   }
@@ -159,7 +162,22 @@ class ScrambleIterator(val scramble: ScrambleLE, var index: Int, var end: Int) {
 //    U.findIndexWhere(scramble.elements, func, index, end)
 //  }
 
-  def splitOnSymbol(needle: Char): Array[ScrambleIterator] = {
+
+  // We use this splitOnSymbol method for things like comma-separated
+  // lists and things.
+  // TODO: Soon, it will fall apart on certain cases. For example,
+  // in a struct, we can have:
+  //   struct Moo {
+  //     x int;
+  //     func bork() { }
+  //     func zork() { }
+  //   }
+  // so it doesn't make much sense to split on semicolon.
+  // Instead, we should make the iterator go until it finds a certain symbol.
+  //
+  // includeEmptyTrailingSection means that if we end with a needle,
+  // we'll still return an empty iterator for the end.
+  def splitOnSymbol(needle: Char, includeEmptyTrailing: Boolean): Array[ScrambleIterator] = {
     val iters = new Accumulator[ScrambleIterator]()
     var start = index
     var i = start
@@ -168,17 +186,33 @@ class ScrambleIterator(val scramble: ScrambleLE, var index: Int, var end: Int) {
         case SymbolLE(_, c) if c == needle => {
           iters.add(new ScrambleIterator(scramble, start, i))
           start = i + 1
-          i = i + 2 // Note the 2 here
+          i = i + 1 // Note the 2 here
         }
         case _ => {
           i = i + 1
         }
       }
     }
+    if (start < end) {
+      // If we get in here, the scramble didnt end in this needle.
+      // So, just add this as the last result.
+      iters.add(new ScrambleIterator(scramble, start, end))
+    } else if (start == end) {
+      // If start == end, then we ended in a needle.
+      if (includeEmptyTrailing) {
+        iters.add(new ScrambleIterator(scramble, start, end))
+      }
+    }
+
     iters.buildArray()
   }
 
-  def splitOnEquals(): Option[(ScrambleIterator, ScrambleIterator)] = {
+  // This method modifies the current iterator to skip it past the next = symbol
+  // that's surrounded by spaces. Note that it won't catch an = at the beginning or
+  // end of the statement.
+  // It returns None if there wasn't one (which leaves self untouched) or a Some
+  // containing everything we skipped past (minus the =).
+  def trySkipPastEquals(): Option[ScrambleIterator] = {
     val scoutingIter = clone()
     while (scoutingIter.hasNext) {
       scoutingIter.peek(3) match {
@@ -186,15 +220,16 @@ class ScrambleIterator(val scramble: ScrambleLE, var index: Int, var end: Int) {
           val surroundedBySpaces =
             prev.range.end < range.begin && range.end < next.range.begin
           if (surroundedBySpaces) {
-
+            // We'll return this iterator for the things that come before the =
             val beforeIter = clone()
             beforeIter.end = scoutingIter.index + 1
 
-            val afterIter = scoutingIter.clone()
-            afterIter.advance()
-            afterIter.advance()
+            // Now modify self to skip past it.
+            skipTo(scoutingIter)
+            advance()
+            advance()
 
-            return Some((beforeIter, afterIter))
+            return Some(beforeIter)
           }
         }
         case _ =>
@@ -420,20 +455,19 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
       return Ok(None)
     }
 
-    iter.splitOnEquals() match {
+    iter.trySkipPastEquals() match {
       case None => return Err(BadMutateEqualsError(iter.getPos()))
-      case Some((destIter, sourceIter)) => {
+      case Some(destIter) => {
         val mutatee =
           parseExpression(destIter) match {
             case Err(err) => return Err(err)
             case Ok(expression) => expression
           }
         val source =
-          parseExpression(sourceIter) match {
+          parseExpression(iter) match {
             case Err(err) => return Err(err)
             case Ok(expression) => expression
           }
-        iter.skipTo(sourceIter)
         val mutateEnd = iter.getPos()
 
         Ok(Some(ast.MutatePE(RangeL(mutateBegin, mutateEnd), mutatee, source)))
@@ -537,13 +571,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
   }
 
   def parseBlock(blockL: CurliedLE): Result[IExpressionPE, IParseError] = {
-    vimpl()
-//    blockL.contents match {
-//      case s @ SemicolonSeparatedListLE(_, _, _) => {
-//        parseBlockContents(s)
-//      }
-//      case _ => vimpl()
-//    }
+    parseBlockContents(blockL.contents)
   }
 
   def parseBlockContents(scramble: ScrambleLE): Result[IExpressionPE, IParseError] = {
@@ -719,14 +747,13 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
       case Ok(None) =>
     }
 
-    iter.splitOnEquals() match {
-      case Some((beforeIter, afterIter)) => {
+    iter.trySkipPastEquals() match {
+      case Some(destIter) => {
         val let =
-          parseLet(beforeIter, afterIter) match {
+          parseLet(destIter, iter) match {
             case Err(e) => return Err(e)
             case Ok(x) => x
           }
-        iter.skipTo(afterIter)
         Ok(let)
       }
       case None => parseExpression(iter)
@@ -817,7 +844,23 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
   }
 
   def parseLookup(iter: ScrambleIterator): Option[IExpressionPE] = {
-    vimpl()
+    iter.peek() match {
+      case Some(SymbolLE(range, c)) => {
+        iter.advance()
+        Some(
+          LookupPE(
+            LookupNameP(NameP(range, interner.intern(StrI(c.toString)))),
+            None))
+      }
+      case Some(WordLE(range, str)) => {
+        iter.advance()
+        Some(
+          LookupPE(
+            LookupNameP(NameP(range, str)),
+            None))
+      }
+      case _ => None
+    }
 //    Parser.parseFunctionOrLocalOrMemberName(iter) match {
 //      case Some(name) => Some(LookupPE(LookupNameP(name), None))
 //      case None => None
@@ -897,7 +940,6 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
       case Some(e) => return Ok(Some(e))
       case None =>
     }
-    vimpl()
 //    parseArray(iter) match {
 //      case Err(err) => return Err(err)
 //      case Ok(Some(e)) => return Ok(Some(e))
@@ -908,18 +950,19 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
 //      case Ok(Some(e)) => return Ok(Some(e))
 //      case Ok(None) =>
 //    }
-//    parseLookup(iter) match {
-//      case Some(e) => return Ok(Some(e))
-//      case None =>
-//    }
-//    parseTupleOrSubExpression(iter) match {
-//      case Err(err) => return Err(err)
-//      case Ok(Some(e)) => {
-//        return Ok(Some(e))
-//      }
-//      case Ok(None) =>
-//    }
+    parseLookup(iter) match {
+      case Some(e) => return Ok(Some(e))
+      case None =>
+    }
+    parseTupleOrSubExpression(iter) match {
+      case Err(err) => return Err(err)
+      case Ok(Some(e)) => {
+        return Ok(Some(e))
+      }
+      case Ok(None) =>
+    }
 //    Ok(None)
+    vimpl()
   }
 
 //  def parseNumberExpr(originalIter: ScrambleIterator): Result[Option[IExpressionPE], IParseError] = {
@@ -1024,18 +1067,23 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
 
       val nameBegin = iter.getPos()
       val name =
-        vimpl()
-//        iter.tryy(() => "^\\d+") match {
-//          case Some(x) => {
-//            NameP(RangeL(nameBegin, iter.getPos()), x)
-//          }
-//          case None => {
-//            Parser.parseFunctionOrLocalOrMemberName(iter) match {
-//              case Some(n) => n
-//              case None => return Err(BadDot(iter.getPos()))
-//            }
-//          }
-//        }
+        iter.peek() match {
+          case Some(ParsedIntegerLE(_, int, bits)) => {
+            iter.advance()
+            if (int < 0) {
+              return Err(BadDot(iter.getPos()))
+            }
+            if (bits.nonEmpty) {
+              return Err(BadDot(iter.getPos()))
+            }
+            NameP(RangeL(nameBegin, iter.getPos()), interner.intern(StrI(int.toString)))
+          }
+          case Some(WordLE(_, str)) => {
+            iter.advance()
+            NameP(RangeL(nameBegin, iter.getPos()), str)
+          }
+          case _ => return Err(BadDot(iter.getPos()))
+        }
 
       val maybeTemplateArgs =
         parseChevronPack(iter) match {
@@ -1134,7 +1182,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
         Ok(
           Some(
             U.map[ScrambleIterator, ITemplexPT](
-              new ScrambleIterator(innerScramble).splitOnSymbol(','),
+              new ScrambleIterator(innerScramble).splitOnSymbol(',', false),
               elementIter => {
                 templexParser.parseTemplex(elementIter) match {
                   case Err(e) => return Err(e)
@@ -1176,7 +1224,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
 
     val elements =
       U.map[ScrambleIterator, IExpressionPE](
-        new ScrambleIterator(parendLE.contents).splitOnSymbol(','),
+        new ScrambleIterator(parendLE.contents).splitOnSymbol(',', false),
         elementIter => {
           parseExpression(elementIter) match {
             case Err(e) => return Err(e)
@@ -1195,7 +1243,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
 
     val elementsP =
       U.map[ScrambleIterator, IExpressionPE](
-        new ScrambleIterator(squaredLE.contents).splitOnSymbol(','),
+        new ScrambleIterator(squaredLE.contents).splitOnSymbol(',', false),
         elementIter => {
           parseExpression(elementIter) match {
             case Err(e) => return Err(e)
@@ -1208,6 +1256,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
   def parseBracePack(iter: ScrambleIterator): Result[Option[Vector[IExpressionPE]], IParseError] = {
     iter.peek() match {
       case Some(SquaredLE(_, contents)) => {
+        iter.advance()
         val elements =
           contents.elements.map(line => {
             parseExpression(line) match {
@@ -1221,69 +1270,53 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
     }
   }
 
-  def parseTupleOrSubExpression(iter: ScrambleIterator): Result[IExpressionPE, IParseError] = {
-    vimpl()
-//    val begin = iter.getPos()
-//    if (!iter.trySkipWord("\\s*\\(")) {
-//      return Ok(None)
-//    }
-//
-//
-//    if (iter.trySkipWord("\\)")) {
-//      return Ok(Some(TuplePE(RangeL(begin, iter.getPos()), Vector())))
-//    }
-//
-//    val elements = new mutable.ArrayBuffer[IExpressionPE]()
-//
-//    val expr =
-//      parseExpression(iter) match {
-//        case Err(e) => return Err(e)
-//        case Ok(expr) => expr
-//      }
-//
-//
-//    // One-element tuple
-//    if (iter.trySkipWord(",\\s*\\)")) {
-//      return Ok(Some(ast.TuplePE(RangeL(begin, iter.getPos()), Vector(expr))))
-//    }
-//
-//    // Just one expression, no comma at end, so its some parens just for
-//    // a sub expression.
-//    if (iter.trySkipWord("\\s*\\)")) {
-//      return Ok(Some(SubExpressionPE(RangeL(begin, iter.getPos()), expr)))
-//    }
-//
-//    elements += expr
-//
-//    if (!iter.trySkipWord("\\s*,")) {
-//      return Err(UnknownTupleOrSubExpression(iter.getPos()))
-//    }
-//
-//
-//    while (!iter.trySkipWord("\\s*\\)")) {
-//      val expr =
-//        parseExpression(iter) match {
-//          case Err(e) => return Err(e)
-//          case Ok(expr) => expr
-//        }
-//      elements += expr
-//
-//      if (iter.peek(() => "^\\s*,\\s*\\)")) {
-//        val found = iter.trySkipWord("\\s*,")
-//        vassert(found)
-//        vassert(iter.peek(() => "^\\s*\\)"))
-//      }
-//
-//      iter.trySkipWord(",")
-//
-//    }
-//    Ok(Some(TuplePE(RangeL(begin, iter.getPos()), elements.toVector)))
+  def parseTupleOrSubExpression(iter: ScrambleIterator): Result[Option[IExpressionPE], IParseError] = {
+    iter.peek() match {
+      case Some(ParendLE(range, contents)) => {
+        iter.advance()
+        val iters =
+          new ScrambleIterator(contents).splitOnSymbol(',', true)
+        vassert(iters.nonEmpty)
+        if (iters.length == 1) {
+          if (!iters.head.hasNext) {
+            // Then we have e.g. ()
+            return Ok(Some(TuplePE(range, Vector())))
+          } else {
+            // Then we have e.g. (true)
+            val inner =
+              parseExpression(iters.head) match {
+                case Err(e) => return Err(e)
+                case Ok(x) => x
+              }
+            return Ok(Some(SubExpressionPE(range, inner)))
+          }
+        } else {
+          // Then we have e.g. (true,) or (true,true) etc.
+          val elementIters =
+            if (!iters.last.hasNext) {
+              // Last is empty, like in (true,) so take it out
+              iters.init
+            } else {
+              iters
+            }
+          val elementsP =
+            elementIters.map(elementIter => {
+              parseExpression(elementIter) match {
+                case Err(e) => return Err(e)
+                case Ok(x) => x
+              }
+            })
+          Ok(Some(TuplePE(range, elementsP.toVector)))
+        }
+      }
+      case _ => Ok(None)
+    }
   }
 
   def parseExpressionDataElement(iter: ScrambleIterator): Result[Option[IExpressionPE], IParseError] = {
     val begin = iter.getPos()
     if (iter.trySkipSymbol('…')) {
-      return Ok(Some(ConstantIntPE(RangeL(begin, iter.getPos()), 0, 32)))
+      return Ok(Some(ConstantIntPE(RangeL(begin, iter.getPos()), 0, None)))
     }
 
     iter.peek(2) match {
@@ -1334,17 +1367,21 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
               Some(WeakP)
             }
             case _ => {
-              iter.advance()
               Some(BorrowP)
             }
           }
+        }
+        // This is just a hack to get the syntax highlighter to highlight inl
+        case Some(WordLE(range, inl)) if inl == keywords.INL => {
+          iter.advance()
+          Some(OwnP)
         }
         case _ => None
       }
     maybeTargetOwnership match {
       case Some(targetOwnership) => {
         val innerPE =
-          parseExpressionDataElement(iter) match {
+          parseAtomAndTightSuffixes(iter) match {
             case Err(err) => return Err(err)
             case Ok(None) => return Err(UnrecognizableExpressionAfterAugment(iter.getPos()))
             case Ok(Some(e)) => e
@@ -1662,6 +1699,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
       iter.peek() match {
         case None => return Ok(None)
         case Some(WordLE(range, str)) => NameP(range, str)
+        case Some(SymbolLE(range, str)) => NameP(range, interner.intern(StrI(str.toString)))
         case Some(_) => return Err(BadBinaryFunctionName(iter.getPos()))
       }
     iter.advance()

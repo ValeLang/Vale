@@ -42,7 +42,7 @@ class IfTests extends FunSuite with Matchers with Collector with TestParseUtils 
       case IfPE(_,
         ConsecutorPE(
           Vector(
-            LetPE(_,PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("x")))),None,None,None),ConstantIntPE(_,4,32)),
+            LetPE(_,PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("x")))),None,None,None),ConstantIntPE(_,4,None)),
             NotPE(_,MethodCallPE(_,LookupPE(LookupNameP(NameP(_, StrI("x"))),None),_,LookupPE(LookupNameP(NameP(_, StrI("isEmpty"))),None),Vector())))),
         BlockPE(_,VoidPE(_)),
         BlockPE(_,VoidPE(_))) =>

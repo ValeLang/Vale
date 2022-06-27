@@ -313,7 +313,7 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
     iter.advance()
     val elementsP =
       U.map[ScrambleIterator, ITemplexPT](
-        new ScrambleIterator(angled.contents).splitOnSymbol(','),
+        new ScrambleIterator(angled.contents).splitOnSymbol(',', false),
         elementIter => {
           parseTemplex(elementIter) match {
             case Err(e) => return Err(e)
@@ -452,7 +452,7 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
         val range = RangeL(nameRange.begin, argsRange.end)
         val argsPR =
           U.map[ScrambleIterator, IRulexPR](
-            new ScrambleIterator(argsLR).splitOnSymbol(','),
+            new ScrambleIterator(argsLR).splitOnSymbol(',', false),
             argIter => {
               parseRule(argIter) match {
                 case Err(e) => return Err(e)
@@ -494,7 +494,7 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
           }
         val componentsP =
           U.map[ScrambleIterator, IRulexPR](
-            new ScrambleIterator(componentsL).splitOnSymbol(','),
+            new ScrambleIterator(componentsL).splitOnSymbol(',', false),
             componentIter => {
               parseRule(componentIter) match {
                 case Err(e) => return Err(e)
@@ -534,22 +534,22 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
     }
   }
 
-  def parseRuleUpToEqualsPrecedence(s: ScrambleIterator): Result[IRulexPR, IParseError] = {
+  def parseRuleUpToEqualsPrecedence(iter: ScrambleIterator): Result[IRulexPR, IParseError] = {
     Profiler.frame(() => {
-      s.splitOnEquals() match {
-        case None => parseRuleAtom(s)
-        case Some((beforeIter, afterIter)) => {
+      iter.trySkipPastEquals() match {
+        case None => parseRuleAtom(iter)
+        case Some(beforeIter) => {
           val left =
             parseRuleAtom(beforeIter) match {
               case Err(e) => return Err(e)
               case Ok(x) => x
             }
           val right =
-            parseRuleAtom(afterIter) match {
+            parseRuleAtom(iter) match {
               case Err(e) => return Err(e)
               case Ok(x) => x
             }
-          Ok(EqualsPR(s.range, left, right))
+          Ok(EqualsPR(iter.range, left, right))
         }
       }
     })

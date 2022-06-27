@@ -46,6 +46,7 @@ class StructTests extends FunSuite with Collector with TestParseUtils {
             |""".stripMargin).getOrDie().denizens)
     denizen shouldHave {
       case NormalStructMemberP(_, NameP(_, StrI("a")), FinalP, InterpretedPT(_,ShareP,CallPT(_,NameOrRunePT(NameP(_, StrI("ListNode"))), Vector(NameOrRunePT(NameP(_, StrI("T"))))))) =>
+//      case NormalStructMemberP(_,NameP(_,StrI(a)),final,InterpretedPT(_,share,CallPT(_,NameOrRunePT(NameP(_,StrI(ListNode))),Vector())))
     }
   }
 

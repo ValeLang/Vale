@@ -11,7 +11,7 @@ import org.scalatest.{FunSuite, Matchers}
 class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   test("Simple int") {
     val expr = compileExpression("4")
-     expr shouldHave { case ConstantIntPE(_, 4, 32) => }
+     expr shouldHave { case ConstantIntPE(_, 4, None) => }
   }
 
   test("Simple bool") {
@@ -21,7 +21,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
 
   test("i64") {
     compileExpression("4i64") shouldHave
-      { case ConstantIntPE(_, 4, 64) => }
+      { case ConstantIntPE(_, 4L, Some(64L)) => }
   }
 
   test("Binary operator") {

@@ -223,7 +223,7 @@ class PatternParser(interner: Interner, templexParser: TemplexParser) {
             DestructureP(
               destructureRange,
               U.map[ScrambleIterator, PatternPP](
-                new ScrambleIterator(destructureElements).splitOnSymbol(','),
+                new ScrambleIterator(destructureElements).splitOnSymbol(',', false),
                 destructureElementIter => {
                   parsePattern(destructureElementIter) match {
                     case Err(e) => return Err(e)

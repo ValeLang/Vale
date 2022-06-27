@@ -925,7 +925,7 @@ object ParserVonifier {
           Vector(
             VonMember("range", vonifyRange(range)),
             VonMember("value", VonStr(value.toString)),
-            VonMember("bits", VonInt(bits))))
+            VonMember("bits", vonifyOptional(bits, VonInt(_)))))
       }
       case AugmentPE(range, targetOwnership, inner) => {
         VonObject(

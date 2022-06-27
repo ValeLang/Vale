@@ -208,7 +208,7 @@ class Parser(interner: Interner, opts: GlobalOptions) {
   def parseStruct(functionL: StructL):
   Result[StructP, IParseError] = {
     Profiler.frame(() => {
-      val StructL(structRange, nameL, attributesL, maybeMutabilityL, maybeIdentifyingRunesL, maybeTemplateRulesL, membersL) = functionL
+      val StructL(structRange, nameL, attributesL, maybeMutabilityL, maybeIdentifyingRunesL, maybeTemplateRulesL, contentsL) = functionL
 
       val maybeIdentifyingRunes =
         maybeIdentifyingRunesL.map(userSpecifiedIdentifyingRunes => {
@@ -223,7 +223,7 @@ class Parser(interner: Interner, opts: GlobalOptions) {
         maybeTemplateRulesL.map(templateRulesScramble => {
           val elementsPR =
             U.map[ScrambleIterator, IRulexPR](
-              new ScrambleIterator(templateRulesScramble).splitOnSymbol(','),
+              new ScrambleIterator(templateRulesScramble).splitOnSymbol(',', false),
               ruleIter => {
                 templexParser.parseRule(ruleIter) match {
                   case Err(e) => return Err(e)
@@ -258,11 +258,11 @@ class Parser(interner: Interner, opts: GlobalOptions) {
 
       val membersP =
         StructMembersP(
-          membersL.range,
-          U.map[ScrambleLE, IStructContent](
-            membersL.contents,
-            paramL => {
-              parseStructMember(new ScrambleIterator(paramL, 0, paramL.elements.length)) match {
+          contentsL.range,
+          U.map[ScrambleIterator, IStructContent](
+            new ScrambleIterator(contentsL).splitOnSymbol(';', false),
+            member => {
+              parseStructMember(member) match {
                 case Err(e) => return Err(e)
                 case Ok(x) => x
               }
@@ -632,7 +632,7 @@ class Parser(interner: Interner, opts: GlobalOptions) {
         ParamsP(
           paramsL.range,
           U.map[ScrambleIterator, PatternPP](
-            new ScrambleIterator(paramsL.contents).splitOnSymbol(','),
+            new ScrambleIterator(paramsL.contents).splitOnSymbol(',', false),
             patternIter => {
               patternParser.parsePattern(patternIter) match {
                 case Err(e) => return Err(e)
@@ -645,7 +645,7 @@ class Parser(interner: Interner, opts: GlobalOptions) {
           TemplateRulesP(
             templateRules.range,
             U.map[ScrambleIterator, IRulexPR](
-              new ScrambleIterator(templateRules).splitOnSymbol(','),
+              new ScrambleIterator(templateRules).splitOnSymbol(',', false),
               templexL => {
                 templexParser.parseRule(templexL) match {
                   case Err(e) => return Err(e)

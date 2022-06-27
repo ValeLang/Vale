@@ -1,6 +1,6 @@
 package dev.vale.parsing
 
-import dev.vale.{Err, Interner, Ok, Result, StrI, vassert, vassertSome, vimpl, vwat}
+import dev.vale.{Err, Interner, Ok, Result, StrI, U, vassert, vassertSome, vimpl, vwat}
 import dev.vale.parsing.ast.{AbstractP, ConstructingMemberNameDeclarationP, DestructureP, INameDeclarationP, IgnoredLocalNameDeclarationP, LocalNameDeclarationP, NameP, PatternPP}
 import dev.vale.parsing.templex.TemplexParser
 import dev.vale.lexing.{BadDestructureError, BadLocalName, BadNameBeforeDestructure, BadThingAfterTypeInPattern, EmptyParameter, EmptyPattern, FoundBothAbstractAndOverride, FoundParameterWithoutType, INodeLE, IParseError, RangeL, RangedInternalErrorP, ScrambleLE, SquaredLE, SymbolLE, WordLE}
@@ -222,13 +222,13 @@ class PatternParser(interner: Interner, templexParser: TemplexParser) {
           val destructure =
             DestructureP(
               destructureRange,
-              destructureElements.elements.map(destructureElement => {
-                val patternIter =
-                  new ScrambleIterator(destructureElement, 0, destructureElement.elements.length)
-                parsePattern(patternIter) match {
-                  case Err(e) => return Err(e)
-                  case Ok(x) => x
-                }
+              U.map[ScrambleIterator, PatternPP](
+                new ScrambleIterator(destructureElements).splitOnSymbol(','),
+                destructureElementIter => {
+                  parsePattern(destructureElementIter) match {
+                    case Err(e) => return Err(e)
+                    case Ok(x) => x
+                  }
               }).toVector)
           Some(destructure)
         }

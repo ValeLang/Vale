@@ -28,7 +28,7 @@ case class TopLevelImportL(imporrt: ImportL) extends IDenizenL { override def eq
 case class ImplL(
   range: RangeL,
   identifyingRunes: Option[INodeLE],
-  templateRules: Option[CommaSeparatedListLE],
+  templateRules: Option[ScrambleLE],
   // Option because we can say `impl MyInterface;` inside a struct.
   struct: Option[INodeLE],
   interface: INodeLE,
@@ -52,7 +52,7 @@ case class StructL(
   attributes: Array[IAttributeL],
   mutability: Option[ScrambleLE],
   identifyingRunes: Option[AngledLE],
-  templateRules: Option[CommaSeparatedListLE],
+  templateRules: Option[ScrambleLE],
   members: StructMembersL) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class StructMembersL(
@@ -65,7 +65,7 @@ case class InterfaceL(
   attributes: Array[IAttributeL],
   mutability: INodeLE,
   maybeIdentifyingRunes: Option[INodeLE],
-  templateRules: Option[CommaSeparatedListLE],
+  templateRules: Option[ScrambleLE],
   members: Array[FunctionL]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 sealed trait IAttributeL
@@ -98,7 +98,7 @@ case class FunctionHeaderL(
   attributes: Array[IAttributeL],
 
   maybeUserSpecifiedIdentifyingRunes: Option[AngledLE],
-  templateRules: Option[CommaSeparatedListLE],
+  templateRules: Option[ScrambleLE],
 
   params: ParendLE,
   ret: FunctionReturnL
@@ -116,32 +116,40 @@ trait INodeLE {
   def range: RangeL
 }
 
-case class ScrambleLE(range: RangeL, elements: Array[INodeLE], maybeEqualsIndex: Option[Int]) extends INodeLE {
+case class ScrambleLE(
+  range: RangeL,
+  elements: Array[INodeLE],
+
+//  // This is redundant with the above, a cache/index for the parser to be able
+//  // to look ahead in constant time.
+//  // For example if we see a = before the next ; then we're in a let statement.
+//  sequencingSymbols: Array[SymbolLE]
+
+//  // These are redundant with the above, a cache/index for the parser to be able
+//  // to look ahead in constant time.
+//  // For example if we see a = before the next ; then we're in a let statement.
+//  // In the eventual arena-based AST thing we might make these linked lists.
+//  commaPositions: Array[Int],
+//  semicolonPositions: Array[Int],
+//  equalsPositions: Array[Int]
+) extends INodeLE {
   vassert(elements.nonEmpty)
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
 }
 
-case class CommaSeparatedListLE(range: RangeL, elements: Array[ScrambleLE], trailingComma: Boolean) extends INodeLE {
+case class ParendLE(range: RangeL, contents: ScrambleLE) extends INodeLE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
 }
 
-case class SemicolonSeparatedListLE(range: RangeL, elements: Array[ScrambleLE], trailingSemicolon: Boolean) extends INodeLE {
+case class AngledLE(range: RangeL, contents: ScrambleLE) extends INodeLE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
 }
 
-case class ParendLE(range: RangeL, contents: CommaSeparatedListLE) extends INodeLE {
+case class SquaredLE(range: RangeL, contents: ScrambleLE) extends INodeLE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
 }
 
-case class AngledLE(range: RangeL, contents: CommaSeparatedListLE) extends INodeLE {
-  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
-}
-
-case class SquaredLE(range: RangeL, contents: CommaSeparatedListLE) extends INodeLE {
-  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
-}
-
-case class CurliedLE(range: RangeL, contents: SemicolonSeparatedListLE) extends INodeLE {
+case class CurliedLE(range: RangeL, contents: ScrambleLE) extends INodeLE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
 }
 

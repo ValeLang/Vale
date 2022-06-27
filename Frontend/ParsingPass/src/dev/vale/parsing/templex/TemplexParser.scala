@@ -17,16 +17,11 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
 
     val immutable = tentativeIter.trySkipSymbol('#')
 
-    val maybeSizeScrambleL =
+    val sizeScrambleIterL =
       tentativeIter.peek() match {
-        case Some(SquaredLE(range, elements)) => {
+        case Some(SquaredLE(range, squareContents)) => {
           tentativeIter.advance()
-          if (elements.elements.isEmpty) {
-            None
-          } else {
-            val scramble = elements.elements.head
-            Some(scramble)
-          }
+          new ScrambleIterator(squareContents)
         }
         case _ => return Ok(None)
       }
@@ -35,19 +30,17 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
     val iter = originalIter
 
     val maybeSizeTemplex =
-      maybeSizeScrambleL match {
-        case None => None
-        case Some(scramble) => {
-          val iter = new ScrambleIterator(scramble, 0, scramble.elements.length)
-          if (iter.trySkipSymbol('#')) {
-            parseTemplex(iter) match {
-              case Err(e) => return Err(e)
-              case Ok(x) => Some(x)
-            }
-          } else {
-            None
+      if (sizeScrambleIterL.hasNext) {
+        if (sizeScrambleIterL.trySkipSymbol('#')) {
+          parseTemplex(sizeScrambleIterL) match {
+            case Err(e) => return Err(e)
+            case Ok(x) => Some(x)
           }
+        } else {
+          None
         }
+      } else {
+        None
       }
 
     val templateArgsBegin = iter.getPos()
@@ -319,10 +312,10 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
       }
     iter.advance()
     val elementsP =
-      U.map[ScrambleLE, ITemplexPT](
-        angled.contents.elements,
-        element => {
-          parseTemplex(new ScrambleIterator(element, 0, element.elements.length)) match {
+      U.map[ScrambleIterator, ITemplexPT](
+        new ScrambleIterator(angled.contents).splitOnSymbol(','),
+        elementIter => {
+          parseTemplex(elementIter) match {
             case Err(e) => return Err(e)
             case Ok(x) => x
           }
@@ -458,12 +451,14 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
       case Array(Some(WordLE(nameRange, name)), Some(ParendLE(argsRange, argsLR))) => {
         val range = RangeL(nameRange.begin, argsRange.end)
         val argsPR =
-          argsLR.elements.map(argLR => {
-            parseRule(argLR) match {
-              case Err(e) => return Err(e)
-              case Ok(x) => x
-            }
-          })
+          U.map[ScrambleIterator, IRulexPR](
+            new ScrambleIterator(argsLR).splitOnSymbol(','),
+            argIter => {
+              parseRule(argIter) match {
+                case Err(e) => return Err(e)
+                case Ok(x) => x
+              }
+            })
         Ok(Some(BuiltinCallPR(range, NameP(nameRange, name), argsPR.toVector)))
       }
       case _ => return Ok(None)
@@ -498,12 +493,14 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
             case Ok(Some(x)) => x
           }
         val componentsP =
-          componentsL.elements.map(componentL => {
-            parseRule(componentL) match {
-              case Err(e) => return Err(e)
-              case Ok(x) => x
-            }
-          })
+          U.map[ScrambleIterator, IRulexPR](
+            new ScrambleIterator(componentsL).splitOnSymbol(','),
+            componentIter => {
+              parseRule(componentIter) match {
+                case Err(e) => return Err(e)
+                case Ok(x) => x
+              }
+            })
         Ok(Some(ComponentsPR(RangeL(begin, end), runeType, componentsP.toVector)))
       }
       case _ => Ok(None)
@@ -537,20 +534,18 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
     }
   }
 
-  def parseRuleUpToEqualsPrecedence(s: ScrambleLE): Result[IRulexPR, IParseError] = {
+  def parseRuleUpToEqualsPrecedence(s: ScrambleIterator): Result[IRulexPR, IParseError] = {
     Profiler.frame(() => {
-      s.maybeEqualsIndex match {
-        case None => {
-          parseRuleAtom(new ScrambleIterator(s, 0, s.elements.length))
-        }
-        case Some(equalsIndex) => {
+      s.splitOnEquals() match {
+        case None => parseRuleAtom(s)
+        case Some((beforeIter, afterIter)) => {
           val left =
-            parseRuleAtom(new ScrambleIterator(s, 0, equalsIndex)) match {
+            parseRuleAtom(beforeIter) match {
               case Err(e) => return Err(e)
               case Ok(x) => x
             }
           val right =
-            parseRuleAtom(new ScrambleIterator(s, equalsIndex + 1, s.elements.length)) match {
+            parseRuleAtom(afterIter) match {
               case Err(e) => return Err(e)
               case Ok(x) => x
             }
@@ -560,7 +555,7 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
     })
   }
 
-  def parseRule(s: ScrambleLE): Result[IRulexPR, IParseError] = {
+  def parseRule(s: ScrambleIterator): Result[IRulexPR, IParseError] = {
     parseRuleUpToEqualsPrecedence(s)
   }
 

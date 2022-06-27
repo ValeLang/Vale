@@ -102,8 +102,8 @@ class Parser(interner: Interner, opts: GlobalOptions) {
   Result[IdentifyingRuneP, IParseError] = {
     val scramble =
       node match {
-        case s @ ScrambleLE(_, _, _) => s
-        case other => ScrambleLE(other.range, Array(other), None)
+        case s @ ScrambleLE(_, _) => s
+        case other => ScrambleLE(other.range, Array(other))
       }
     val iter = new ScrambleIterator(scramble, 0, scramble.elements.length)
     if (iter.trySkipSymbol('\'')) {
@@ -218,18 +218,19 @@ class Parser(interner: Interner, opts: GlobalOptions) {
           }
         })
 
+
       val maybeTemplateRulesP =
-        maybeTemplateRulesL.map(templateRules => {
-          TemplateRulesP(
-            templateRules.range,
-            U.map[ScrambleLE, IRulexPR](
-              templateRules.elements,
-              templexL => {
-                templexParser.parseRule(templexL) match {
+        maybeTemplateRulesL.map(templateRulesScramble => {
+          val elementsPR =
+            U.map[ScrambleIterator, IRulexPR](
+              new ScrambleIterator(templateRulesScramble).splitOnSymbol(','),
+              ruleIter => {
+                templexParser.parseRule(ruleIter) match {
                   case Err(e) => return Err(e)
                   case Ok(x) => x
                 }
-              }).toVector)
+              })
+          TemplateRulesP(templateRulesScramble.range, elementsPR.toVector)
         })
 
       val attributesP =
@@ -246,8 +247,8 @@ class Parser(interner: Interner, opts: GlobalOptions) {
         maybeMutabilityL.map(returnTypeL => {
           val scramble =
             returnTypeL match {
-              case s @ ScrambleLE(_, _, _) => s
-              case other => ScrambleLE(other.range, Array(other), None)
+              case s @ ScrambleLE(_, _) => s
+              case other => ScrambleLE(other.range, Array(other))
             }
           templexParser.parseTemplex(new ScrambleIterator(scramble, 0, scramble.elements.length)) match {
             case Err(e) => return Err(e)
@@ -627,13 +628,12 @@ class Parser(interner: Interner, opts: GlobalOptions) {
           }
         })
 
-      val params =
+      val paramsP =
         ParamsP(
           paramsL.range,
-          U.map[ScrambleLE, PatternPP](
-            paramsL.contents.elements,
-            paramL => {
-              val patternIter = new ScrambleIterator(paramL, 0, paramL.elements.length)
+          U.map[ScrambleIterator, PatternPP](
+            new ScrambleIterator(paramsL.contents).splitOnSymbol(','),
+            patternIter => {
               patternParser.parsePattern(patternIter) match {
                 case Err(e) => return Err(e)
                 case Ok(x) => x
@@ -644,8 +644,8 @@ class Parser(interner: Interner, opts: GlobalOptions) {
         maybeTemplateRulesL.map(templateRules => {
           TemplateRulesP(
             templateRules.range,
-            U.map[ScrambleLE, IRulexPR](
-              templateRules.elements,
+            U.map[ScrambleIterator, IRulexPR](
+              new ScrambleIterator(templateRules).splitOnSymbol(','),
               templexL => {
                 templexParser.parseRule(templexL) match {
                   case Err(e) => return Err(e)
@@ -668,8 +668,8 @@ class Parser(interner: Interner, opts: GlobalOptions) {
         maybeReturnTypeL.map(returnTypeL => {
           val scramble =
             returnTypeL match {
-              case s @ ScrambleLE(_, _, _) => s
-              case other => ScrambleLE(other.range, Array(other), None)
+              case s @ ScrambleLE(_, _) => s
+              case other => ScrambleLE(other.range, Array(other))
             }
           templexParser.parseTemplex(new ScrambleIterator(scramble, 0, scramble.elements.length)) match {
             case Err(e) => return Err(e)
@@ -684,7 +684,7 @@ class Parser(interner: Interner, opts: GlobalOptions) {
           attributesP.toVector,
           maybeIdentifyingRunes,
           maybeTemplateRulesP,
-          Some(params),
+          Some(paramsP),
           FunctionReturnP(
             returnRangeL, maybeInferRetL, maybeReturnTypeP))
 

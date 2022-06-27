@@ -59,4 +59,37 @@ object U {
     if (n > 0) return 1
     0
   }
+  def findIndexWhere[T](vec: Array[T], func: scala.Function1[T, Boolean]): Option[Int] = {
+    findIndexWhereFromUntil(vec, func, 0, vec.length)
+  }
+  def findIndexWhereFrom[T](vec: Array[T], func: scala.Function1[T, Boolean], startIndex: Int): Option[Int] = {
+    findIndexWhereFromUntil(vec, func, startIndex, vec.length)
+  }
+  def findIndexWhereFromUntil[T](vec: Array[T], func: scala.Function1[T, Boolean], startIndex: Int, endIndex: Int): Option[Int] = {
+    var i = startIndex
+    while (i < endIndex) {
+      if (func(vec(i))) {
+        return Some(i)
+      }
+      i = i + 1
+    }
+    return None
+  }
+
+  def exists[T](vec: Array[T], func: scala.Function1[T, Boolean]): Boolean = {
+    exists(vec, func, 0, vec.length)
+  }
+  def exists[T](vec: Array[T], func: scala.Function1[T, Boolean], startIndex: Int): Boolean = {
+    exists(vec, func, startIndex, vec.length)
+  }
+  def exists[T](vec: Array[T], func: scala.Function1[T, Boolean], startIndex: Int, endIndex: Int): Boolean = {
+    var i = startIndex
+    while (i < endIndex) {
+      if (func(vec(i))) {
+        return true
+      }
+      i = i + 1
+    }
+    return false
+  }
 }

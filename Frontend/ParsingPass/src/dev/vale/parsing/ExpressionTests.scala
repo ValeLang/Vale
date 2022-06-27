@@ -25,7 +25,8 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Binary operator") {
-    compileExpression("4 + 5") shouldHave
+    val expr = compileExpression("4 + 5")
+    expr shouldHave
       { case BinaryCallPE(_,NameP(_,StrI("+")),ConstantIntPE(_,4,_),ConstantIntPE(_,5,_)) => }
   }
 

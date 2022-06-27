@@ -139,7 +139,7 @@ class Lexer(interner: Interner) {
     val maybeRules =
       if (iter.trySkipCompleteWord("where")) {
         Some(
-          lexCommaSeparatedList(iter, true, false) match {
+          lexScramble(iter, true, false) match {
             case Err(e) => return Err(e)
             case Ok(x) => x
           })
@@ -227,7 +227,7 @@ class Lexer(interner: Interner) {
     val maybeRules =
       if (iter.trySkipCompleteWord("where")) {
         Some(
-          lexCommaSeparatedList(iter, true, false) match {
+          lexScramble(iter, true, false) match {
             case Err(e) => return Err(e)
             case Ok(x) => x
           })
@@ -307,7 +307,7 @@ class Lexer(interner: Interner) {
     iter.consumeCommentsAndWhitespace()
 
     val innards =
-      lexCommaSeparatedList(iter, false, false) match {
+      lexScramble(iter, false, false) match {
         case Err(e) => return Err(e)
         case Ok(x) => x
       }
@@ -337,7 +337,7 @@ class Lexer(interner: Interner) {
     iter.consumeCommentsAndWhitespace()
 
     val innards =
-      lexSemicolonSeparatedList(iter, false, false) match {
+      lexScramble(iter, false, false) match {
         case Err(e) => return Err(e)
         case Ok(x) => x
       }
@@ -363,7 +363,7 @@ class Lexer(interner: Interner) {
     iter.consumeCommentsAndWhitespace()
 
     val innards =
-      lexCommaSeparatedList(iter, false, false) match {
+      lexScramble(iter, false, false) match {
         case Err(e) => return Err(e)
         case Ok(x) => x
       }
@@ -389,7 +389,7 @@ class Lexer(interner: Interner) {
     iter.consumeCommentsAndWhitespace()
 
     val innards =
-      lexCommaSeparatedList(iter, false, false) match {
+      lexScramble(iter, false, false) match {
         case Err(e) => return Err(e)
         case Ok(x) => x
       }
@@ -463,67 +463,67 @@ class Lexer(interner: Interner) {
     isBinaryOperator
   }
 
-  def lexSemicolonSeparatedList(iter: LexingIterator, stopOnOpenBrace: Boolean, stopOnWhere: Boolean): Result[SemicolonSeparatedListLE, IParseError] = {
-    val begin = iter.getPos()
+//  def lexSemicolonSeparatedList(iter: LexingIterator, stopOnOpenBrace: Boolean, stopOnWhere: Boolean): Result[SemicolonSeparatedListLE, IParseError] = {
+//    val begin = iter.getPos()
+//
+//    // If this encounters a ; or or ) or } a non-binary > then it should stop.
+//    iter.consumeCommentsAndWhitespace()
+//
+//    val elements = new Accumulator[ScrambleLE]()
+//    var trailingSemicolon = false
+//
+//    while (!atEnd(iter, stopOnOpenBrace, stopOnWhere) && iter.trySkip(';')) {
+//      iter.consumeCommentsAndWhitespace()
+//
+//      if (atEnd(iter, stopOnOpenBrace, stopOnWhere)) {
+//        trailingSemicolon = true
+//      } else {
+//        val node =
+//          lexScramble(iter, stopOnOpenBrace, stopOnWhere) match {
+//            case Err(e) => return Err(e)
+//            case Ok(x) => x
+//          }
+//        elements.add(node)
+//      }
+//
+//      iter.consumeCommentsAndWhitespace()
+//    }
+//
+//    val end = iter.getPos()
+//
+//    Ok(SemicolonSeparatedListLE(RangeL(begin, end), elements.buildArray(), trailingSemicolon))
+//  }
 
-    // If this encounters a ; or or ) or } a non-binary > then it should stop.
-    iter.consumeCommentsAndWhitespace()
-
-    val elements = new Accumulator[ScrambleLE]()
-    var trailingSemicolon = false
-
-    while (!atEnd(iter, stopOnOpenBrace, stopOnWhere) && iter.trySkip(';')) {
-      iter.consumeCommentsAndWhitespace()
-
-      if (atEnd(iter, stopOnOpenBrace, stopOnWhere)) {
-        trailingSemicolon = true
-      } else {
-        val node =
-          lexScramble(iter, stopOnOpenBrace, stopOnWhere) match {
-            case Err(e) => return Err(e)
-            case Ok(x) => x
-          }
-        elements.add(node)
-      }
-
-      iter.consumeCommentsAndWhitespace()
-    }
-
-    val end = iter.getPos()
-
-    Ok(SemicolonSeparatedListLE(RangeL(begin, end), elements.buildArray(), trailingSemicolon))
-  }
-
-  def lexCommaSeparatedList(iter: LexingIterator, stopOnOpenBrace: Boolean, stopOnWhere: Boolean): Result[CommaSeparatedListLE, IParseError] = {
-    val begin = iter.getPos()
-
-    // If this encounters a ; or or ) or } a non-binary > then it should stop.
-    iter.consumeCommentsAndWhitespace()
-
-    val innards = new Accumulator[ScrambleLE]()
-    var trailingComma = false
-
-    while (!atEnd(iter, stopOnOpenBrace, stopOnWhere) && !iter.trySkip(',')) {
-      iter.consumeCommentsAndWhitespace()
-
-      if (atEnd(iter, stopOnOpenBrace, stopOnWhere)) {
-        trailingComma = true
-      } else {
-        val node =
-          lexScramble(iter, stopOnOpenBrace, stopOnWhere) match {
-            case Err(e) => return Err(e)
-            case Ok(x) => x
-          }
-        innards.add(node)
-      }
-
-      iter.consumeCommentsAndWhitespace()
-    }
-
-    val end = iter.getPos()
-
-    Ok(CommaSeparatedListLE(RangeL(begin, end), innards.buildArray(), trailingComma))
-  }
+//  def lexCommaSeparatedList(iter: LexingIterator, stopOnOpenBrace: Boolean, stopOnWhere: Boolean): Result[CommaSeparatedListLE, IParseError] = {
+//    val begin = iter.getPos()
+//
+//    // If this encounters a ; or or ) or } a non-binary > then it should stop.
+//    iter.consumeCommentsAndWhitespace()
+//
+//    val innards = new Accumulator[ScrambleLE]()
+//    var trailingComma = false
+//
+//    while (!atEnd(iter, stopOnOpenBrace, stopOnWhere) && !iter.trySkip(',')) {
+//      iter.consumeCommentsAndWhitespace()
+//
+//      if (atEnd(iter, stopOnOpenBrace, stopOnWhere)) {
+//        trailingComma = true
+//      } else {
+//        val node =
+//          lexScramble(iter, stopOnOpenBrace, stopOnWhere) match {
+//            case Err(e) => return Err(e)
+//            case Ok(x) => x
+//          }
+//        innards.add(node)
+//      }
+//
+//      iter.consumeCommentsAndWhitespace()
+//    }
+//
+//    val end = iter.getPos()
+//
+//    Ok(CommaSeparatedListLE(RangeL(begin, end), innards.buildArray(), trailingComma))
+//  }
 
   def atEnd(iter: LexingIterator, stopOnOpenBrace: Boolean, stopOnWhere: Boolean): Boolean = {
     if (iter.atEnd()) {
@@ -533,7 +533,7 @@ class Lexer(interner: Interner) {
       return true
     }
     iter.peek() match {
-      case ',' | ';' | ')' | '}' | ']' => true
+      case ')' | '}' | ']' => true
       case '{' => stopOnOpenBrace
       case '>' => !isAtBinaryChevron(iter)
       case _ => false
@@ -549,19 +549,12 @@ class Lexer(interner: Interner) {
 
     val innards = new Accumulator[INodeLE]()
 
-    var maybeEqualsIndex: Option[Int] = None
-
     while (!atEnd(iter, stopOnOpenBrace, stopOnWhere)) {
       val node =
         lexNode(iter, stopOnOpenBrace, stopOnWhere) match {
           case Err(e) => return Err(e)
           case Ok(x) => x
         }
-
-      node match {
-        case SymbolLE(_, '=') => maybeEqualsIndex = Some(innards.size)
-        case _ =>
-      }
 
       innards.add(node)
 
@@ -570,7 +563,7 @@ class Lexer(interner: Interner) {
 
     val end = iter.getPos()
 
-    Ok(ScrambleLE(RangeL(begin, end), innards.buildArray(), maybeEqualsIndex))
+    Ok(ScrambleLE(RangeL(begin, end), innards.buildArray()))
   }
 
 

@@ -27,7 +27,6 @@ class Keywords(interner: Interner) {
   val VARY = interner.intern(StrI("vary"))
   val FINAL = interner.intern(StrI("final"))
 
-  val sett = interner.intern(StrI("set"))
   val iff = interner.intern(StrI("if"))
   val elsse = interner.intern(StrI("elsse"))
   val foreeach = interner.intern(StrI("foreach"))

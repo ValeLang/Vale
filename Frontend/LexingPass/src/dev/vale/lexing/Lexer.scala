@@ -116,7 +116,7 @@ class Lexer(interner: Interner) {
 
     val returnBegin = iter.getPos()
     val maybeReturn =
-      if (!iter.peekCompleteWord("where") && !iter.peekCompleteWord("region") && iter.peek() != '{' && !iter.trySkip(';')) {
+      if (!iter.peekCompleteWord("where") && !iter.peekCompleteWord("region") && iter.peek() != '{' && iter.peek() != ';') {
         if (iter.trySkipCompleteWord("infer-return")) {
           val range = RangeL(returnBegin, iter.getPos())
           FunctionReturnL(range, Some(range), None)
@@ -860,7 +860,7 @@ class Lexer(interner: Interner) {
     } else {
       val bits =
         if (iter.trySkip("i")) {
-          var bits = 0
+          var bits = 0L
           while ({
             val c = iter.peek()
             if (c >= '0' && c <= '9') {

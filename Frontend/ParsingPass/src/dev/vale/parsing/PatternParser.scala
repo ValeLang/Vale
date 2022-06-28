@@ -8,7 +8,7 @@ import dev.vale.parsing.ast._
 
 import scala.collection.mutable
 
-class PatternParser(interner: Interner, templexParser: TemplexParser) {
+class PatternParser(interner: Interner, keywords: Keywords, templexParser: TemplexParser) {
   val VIRTUAL = interner.intern(StrI("virtual"))
   val IMPL = interner.intern(StrI("impl"))
   val IN = interner.intern(StrI("in"))
@@ -176,9 +176,17 @@ class PatternParser(interner: Interner, templexParser: TemplexParser) {
       }
     val maybeName =
       if (nameIsNext) {
-        iter.advance() match {
-          case WordLE(range, str) => Some(LocalNameDeclarationP(NameP(range, str)))
-          case other => return Err(BadLocalName(other.range.begin))
+        iter.peek() match {
+          case Some(WordLE(range, str)) => {
+            iter.advance()
+            if (str == keywords.UNDERSCORE) {
+              Some(IgnoredLocalNameDeclarationP(range))
+            } else {
+              Some(LocalNameDeclarationP(NameP(range, str)))
+            }
+          }
+          case Some(SquaredLE(_, _)) => None
+          case _ => return Err(BadLocalName(iter.getPos()))
         }
       } else {
         None

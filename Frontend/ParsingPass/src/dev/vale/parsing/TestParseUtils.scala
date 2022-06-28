@@ -188,31 +188,41 @@ trait TestParseUtils {
   }
 
   def compileExpr(code: String): IExpressionPE = {
+    val opts = GlobalOptions(true, false, true, true)
     val interner = new Interner()
-    val keywords = new Keywords(interner)
     val lexer = new Lexer(interner)
-    val templexParser = new TemplexParser(interner, keywords)
     val node =
       lexer.lexScramble(LexingIterator(code), false, false)
         .getOrDie()
-    val exprP =
-      new ExpressionParser(interner, keywords, GlobalOptions(true, false, true, true), templexParser)
-        .parseExpression(node)
+    val parser = new Parser(interner, opts)
+    val exprP = parser.expressionParser.parseExpression(node).getOrDie()
+    exprP
+  }
+
+  def compileStatement(code: String): IExpressionPE = {
+    val opts = GlobalOptions(true, false, true, true)
+    val interner = new Interner()
+    val lexer = new Lexer(interner)
+    val node =
+      lexer.lexScramble(LexingIterator(code), false, false)
         .getOrDie()
+    val parser = new Parser(interner, opts)
+    val exprP = parser.expressionParser.parseStatement(new ScrambleIterator(node)).getOrDie()
     exprP
   }
 
   def compilePattern(code: String): PatternPP = {
     val interner = new Interner()
+    val keywords = new Keywords(interner)
+    val lexer = new Lexer(interner)
     val node =
-      new Lexer(interner)
-        .lexNode(LexingIterator(code), false, false)
+      lexer.lexScramble(LexingIterator(code), false, false)
         .getOrDie()
+    val templexParser = new TemplexParser(interner, keywords)
     val exprP =
-      vimpl()
-//      new PatternParser(interner, GlobalOptions(true, false, true, true))
-//        .parseExpression(node)
-//        .getOrDie()
+      new PatternParser(interner, keywords, templexParser)
+        .parsePattern(new ScrambleIterator(node))
+        .getOrDie()
     exprP
   }
 

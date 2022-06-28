@@ -1,14 +1,13 @@
 package dev.vale.parsing.functions
 
 import dev.vale.{Collector, StrI, vassertOne}
-import dev.vale.parsing.ast.{AbstractAttributeP, AbstractP, BlockPE, ConstantIntPE, CoordTypePR, ExternAttributeP, FunctionHeaderP, FunctionP, FunctionReturnP, IdentifyingRuneP, LocalNameDeclarationP, NameOrRunePT, NameP, ParamsP, PatternPP, PureAttributeP, ReadOnlyRuneAttributeP, RegionTypePR, TopLevelFunctionP, TopLevelStructP, TypeRuneAttributeP, VoidPE}
+import dev.vale.parsing.ast._
 import dev.vale.parsing._
-import dev.vale.parsing.ast.BlockPE
 import dev.vale.lexing.BadFunctionBodyError
 import org.scalatest.{FunSuite, Matchers}
 
 
-class BiggerTests extends FunSuite with Collector with TestParseUtils {
+class FunctionTests extends FunSuite with Collector with TestParseUtils {
   test("Function then struct") {
     val program =
       compileFile(
@@ -199,6 +198,131 @@ class BiggerTests extends FunSuite with Collector with TestParseUtils {
           |func doCivicDance(virtual this Car) moo blork
         """.stripMargin).expectErr().error match {
       case BadFunctionBodyError(_) =>
+    }
+  }
+
+
+  test("Simple function") {
+    vassertOne(compileFileExpect("""func main() { }""").denizens) match {
+      case TopLevelFunctionP(
+        FunctionP(_,
+          FunctionHeaderP(_,
+            Some(NameP(_,StrI("main"))),
+            Vector(),None,None,Some(ParamsP(_,Vector())),
+            FunctionReturnP(_,None,None)),
+          Some(BlockPE(_,VoidPE(_))))) =>
+    }
+  }
+
+  test("Function with parameter and return") {
+    vassertOne(compileFileExpect("""func main(moo T) T { }""").denizens) shouldHave {
+      case TopLevelFunctionP(
+        FunctionP(_,
+          FunctionHeaderP(_,
+            Some(NameP(_,StrI("main"))),Vector(),None,None,
+            Some(ParamsP(_,Vector(PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,StrI("moo")))),Some(NameOrRunePT(NameP(_,StrI("T")))),None,None)))),
+            FunctionReturnP(_,None,Some(NameOrRunePT(NameP(_,StrI("T")))))),
+          Some(BlockPE(_,VoidPE(_))))) =>
+    }
+  }
+
+  test("Function with generics") {
+    vassertOne(compileFileExpect("""func main<T>() { }""").denizens) shouldHave {
+      case TopLevelFunctionP(
+        FunctionP(_,
+          FunctionHeaderP(_,
+            Some(NameP(_,StrI("main"))),
+            Vector(),
+            Some(IdentifyingRunesP(_,Vector(IdentifyingRuneP(_,NameP(_,StrI("T")),Vector())))),
+            None,
+            _,
+            _),
+          _)) =>
+    }
+  }
+
+  test("Impl function") {
+    compileTopLevel(
+      "func maxHp(virtual this Marine) { return 5; }") shouldHave {
+      case FunctionP(_,
+        FunctionHeaderP(_,
+          Some(NameP(_, StrI("maxHp"))),Vector(), None, None,
+          Some(
+            ParamsP(
+              _,
+              Vector(
+                PatternPP(_,_,
+                  Some(LocalNameDeclarationP(NameP(_, StrI("this")))),
+                  Some(NameOrRunePT(NameP(_, StrI("Marine")))),
+                  None,
+                  Some(AbstractP(_)))))),
+          FunctionReturnP(_, None,None)),
+        Some(BlockPE(_, _))) =>
+    }
+  }
+
+  test("Param") {
+    val program = compileTopLevel("func call(f F){f()}")
+    program shouldHave {
+      case PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, StrI("f")))),Some(NameOrRunePT(NameP(_, StrI("F")))),None,None) =>
+    }
+  }
+
+  test("Func with rules") {
+    compileTopLevel(
+      "func sum () where X int {3}") shouldHave {
+      case FunctionP(_,
+        FunctionHeaderP(_,
+          Some(NameP(_, StrI("sum"))), Vector(), None, Some(_), Some(_), FunctionReturnP(_, None, None)),
+        Some(BlockPE(_, ConstantIntPE(_, 3, _)))) =>
+    }
+  }
+
+
+  test("Identifying runes") {
+    compileTopLevel(
+      "func wrap<A, F>(a A) { }") shouldHave {
+      case FunctionP(_,
+        FunctionHeaderP(_,
+          Some(NameP(_, StrI("wrap"))), Vector(),
+          Some(
+            IdentifyingRunesP(_,
+              Vector(
+              IdentifyingRuneP(_, NameP(_, StrI("A")), Vector()),
+              IdentifyingRuneP(_, NameP(_, StrI("F")), Vector())))),
+          None,
+          Some(ParamsP(_, Vector(Patterns.capturedWithTypeRune("a", "A")))),
+          FunctionReturnP(_, None, None)),
+        Some(BlockPE(_, VoidPE(_)))) =>
+    }
+  }
+
+  test("Never signature") {
+    // This test is here because we were parsing the first _ of __Never as an anonymous
+    // rune then stopping.
+    compileTopLevel(
+      "func __vbi_panic() __Never {}") shouldHave {
+      case NameOrRunePT(NameP(_, StrI("__Never"))) =>
+    }
+  }
+
+  test("Short self") {
+    compileTopLevel(
+      "func moo(&self) {}") shouldHave {
+      case TopLevelFunctionP(
+        FunctionP(_,
+          FunctionHeaderP(_,
+            Some(NameP(_, StrI("moo"))),
+            Vector(),None,None,
+            Some(
+              ParamsP(_,
+                Vector(
+                  PatternPP(_,
+                    None,
+                    Some(LocalNameDeclarationP(NameP(_, StrI("self")))),
+                    None,None,None)))),
+            FunctionReturnP(_,None,None)),
+          Some(BlockPE(_,VoidPE(_))))) =>
     }
   }
 }

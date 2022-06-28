@@ -17,8 +17,8 @@ import scala.util.matching.Regex
 class Parser(interner: Interner, opts: GlobalOptions) {
   val keywords = new Keywords(interner)
   val templexParser = new TemplexParser(interner, keywords)
-  val patternParser = new PatternParser(interner, templexParser)
-  val expressionParser = new ExpressionParser(interner, keywords, opts, templexParser)
+  val patternParser = new PatternParser(interner, keywords, templexParser)
+  val expressionParser = new ExpressionParser(interner, keywords, opts, patternParser, templexParser)
 
 //  def runParserForProgramAndCommentRanges(codeWithComments: String): Result[(FileP, Vector[(Int, Int)]), IParseError] = {
 //    Profiler.frame(() => {

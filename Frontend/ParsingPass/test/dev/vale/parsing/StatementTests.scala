@@ -10,17 +10,10 @@ import org.scalatest.{FunSuite, Matchers}
 class StatementTests extends FunSuite with Collector with TestParseUtils {
 
   def compileBlockContents(code: String): IExpressionPE = {
-    vimpl()
+    compileStatement(code)
 //    compile(
 //      new ExpressionParser(new Interner(), GlobalOptions(true, true, true, true))
 //        .parseBlockContents(_), code)
-  }
-
-  def compileStatement(code: String): IExpressionPE = {
-    vimpl()
-//    compile(
-//      new ExpressionParser(GlobalOptions(true, true, true, true))
-//        .parseStatement(_, stopBefore, expectResult), code)
   }
 
   test("Simple let") {

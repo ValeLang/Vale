@@ -1,9 +1,9 @@
 package dev.vale.parsing.templex
 
-import dev.vale.{Err, Interner, Ok, Profiler, Result, StrI, U, vassert, vimpl, vwat}
+import dev.vale.{Err, Interner, Ok, Profiler, Result, StrI, U, vassert, vassertSome, vimpl, vwat}
 import dev.vale.parsing.{Parser, StopBeforeCloseSquare, StopBeforeComma, ast}
 import dev.vale.parsing.ast.{AnonymousRunePT, BoolPT, BorrowP, BuiltinCallPR, CallPT, ComponentsPR, EqualsPR, FinalP, IRulexPR, ITemplexPT, ImmutableP, InlineP, IntPT, InterpretedPT, LocationPT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnP, OwnershipPT, PrototypePT, RegionRunePT, RuntimeSizedArrayPT, ShareP, StaticSizedArrayPT, StringPT, TemplexPR, TuplePT, TypedPR, VariabilityPT, VaryingP, WeakP, YonderP}
-import dev.vale.lexing.{AngledLE, BadArraySizer, BadArraySizerEnd, BadPrototypeName, BadPrototypeParams, BadRegionName, BadRuleCallParam, BadRuneTypeError, BadStringChar, BadStringInTemplex, BadTemplateCallParam, BadTypeExpression, BadUnicodeChar, FoundBothImmutableAndMutabilityInArray, INodeLE, IParseError, ParendLE, ParsedDoubleLE, ParsedIntegerLE, RangeL, RangedInternalErrorP, ScrambleLE, SquaredLE, StringLE, StringPartLiteral, SymbolLE, WordLE}
+import dev.vale.lexing.{AngledLE, BadArraySizer, BadArraySizerEnd, BadPrototypeName, BadPrototypeParams, BadRegionName, BadRuleCallParam, BadRuneTypeError, BadStringChar, BadStringInTemplex, BadTemplateCallParam, BadTupleElement, BadTypeExpression, BadUnicodeChar, CurliedLE, FoundBothImmutableAndMutabilityInArray, INodeLE, IParseError, ParendLE, ParsedDoubleLE, ParsedIntegerLE, RangeL, RangedInternalErrorP, ScrambleLE, SquaredLE, StringLE, StringPartLiteral, SymbolLE, WordLE}
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
 
@@ -221,6 +221,7 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
   }
 
   def parseTemplexAtom(iter: ScrambleIterator): Result[ITemplexPT, IParseError] = {
+    vassert(iter.peek().nonEmpty)
     val begin = iter.getPos()
 
     if (iter.trySkipWord(keywords.UNDERSCORE)) {
@@ -289,16 +290,26 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
       case Ok(Some(array)) => return Ok(array)
       case Ok(None) =>
     }
-    iter.advance() match {
+    vassertSome(iter.peek()) match {
       case StringLE(range, parts) => {
+        iter.advance()
         parts match {
           case Array(StringPartLiteral(range, s)) => Ok(StringPT(range, s))
           case _ => return Err(BadStringInTemplex(range.begin))
         }
       }
-      case ParsedIntegerLE(range, int, bits) => Ok(IntPT(range, int))
-      case ParsedDoubleLE(range, double, bits) => return Err(RangedInternalErrorP(range.begin, "Floats in types not supported!"))
-      case WordLE(range, str) => Ok(NameOrRunePT(NameP(range, str)))
+      case ParsedIntegerLE(range, int, bits) => {
+        iter.advance()
+        Ok(IntPT(range, int))
+      }
+      case ParsedDoubleLE(range, double, bits) => {
+        iter.advance()
+        return Err(RangedInternalErrorP(range.begin, "Floats in types not supported!"))
+      }
+      case WordLE(range, str) => {
+        iter.advance()
+        Ok(NameOrRunePT(NameP(range, str)))
+      }
       case _ => return Err(BadTypeExpression(iter.getPos()))
     }
   }
@@ -323,34 +334,24 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
     Ok(Some(elementsP.toVector))
   }
 
-  def parseTuple(iter: ScrambleIterator): Result[Option[TuplePT], IParseError] = {
-    val begin = iter.getPos()
-    if (!iter.trySkipSymbol('(')) {
-      return Ok(None)
-    }
-
-    if (iter.trySkipSymbol(')')) {
-      return Ok(Some(TuplePT(RangeL(begin, iter.getPos()), Vector())))
-    }
-    val args = mutable.ArrayBuffer[ITemplexPT]()
-    while ({
-      val arg =
-        parseTemplex(iter) match {
-          case Err(e) => return Err(e)
-          case Ok(x) => x
-        }
-      args += arg
-
-      if (iter.trySkipSymbol(')')) {
-        false
-      } else if (iter.trySkipSymbol(',')) {
-        true
-      } else {
-        return Err(BadTemplateCallParam(iter.getPos()))
+  def parseTuple(outerIter: ScrambleIterator): Result[Option[TuplePT], IParseError] = {
+    val begin = outerIter.getPos()
+    outerIter.peek() match {
+      case Some(ParendLE(range, contents)) => {
+        outerIter.advance()
+        val elements =
+          U.map[ScrambleIterator, ITemplexPT](
+            new ScrambleIterator(contents).splitOnSymbol(',', false),
+            iter => {
+              parseTemplex(iter) match {
+                case Err(e) => return Err(e)
+                case Ok(x) => x
+              }
+            })
+        Ok(Some(TuplePT(range, elements.toVector)))
       }
-    }) {}
-
-    Ok(Some(TuplePT(RangeL(begin, iter.getPos()), args.toVector)))
+      case _ => Ok(None)
+    }
   }
 
   def parseTemplexAtomAndCall(iter: ScrambleIterator): Result[ITemplexPT, IParseError] = {
@@ -536,7 +537,15 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
 
   def parseRuleUpToEqualsPrecedence(iter: ScrambleIterator): Result[IRulexPR, IParseError] = {
     Profiler.frame(() => {
-      iter.trySkipPastEquals() match {
+      ParseUtils.trySkipPastEqualsWhile(iter, scoutingIter => {
+        scoutingIter.peek() match {
+          // Stop on comma
+          case Some(SymbolLE(_, ',')) => false
+          // Stop if we hit an open brace, its the function body
+          case Some(CurliedLE(_, _)) => false
+          case _ => true
+        }
+      })  match {
         case None => parseRuleAtom(iter)
         case Some(beforeIter) => {
           val left =

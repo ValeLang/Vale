@@ -32,8 +32,8 @@ class CaptureAndDestructureTests extends FunSuite with Matchers with Collector w
     }
   }
   test("empty destructure") {
-    vimpl()
-//    compile(new PatternParser().parseDestructure(_),"[]") shouldHave { case Nil => }
+    compilePattern("[]") shouldHave
+      { case PatternPP(_,None,None,None,Some(DestructureP(_,Vector())),None) => }
   }
   test("capture with empty destructure") {
     // Needs the space between the braces, see https://github.com/ValeLang/Vale/issues/434

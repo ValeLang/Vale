@@ -23,7 +23,7 @@ class WhileTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("While with condition declarations") {
-    compileBlockContents("while x = 4; x > 6; { }") shouldHave {
+    compileBlockContents("while x = 4; x > 6 { }") shouldHave {
       case ConsecutorPE(
         Vector(
           WhilePE(_,

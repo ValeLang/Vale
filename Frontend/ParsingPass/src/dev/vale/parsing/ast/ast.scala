@@ -94,7 +94,7 @@ case class InterfaceP(
   range: RangeL,
   name: NameP,
   attributes: Vector[IAttributeP],
-  mutability: ITemplexPT,
+  mutability: Option[ITemplexPT],
   maybeIdentifyingRunes: Option[IdentifyingRunesP],
   templateRules: Option[TemplateRulesP],
   members: Vector[FunctionP]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }

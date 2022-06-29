@@ -196,7 +196,7 @@ trait TestParseUtils {
     val keywords = new Keywords(interner)
     val lexer = new Lexer(interner, keywords)
     val node =
-      lexer.lexScramble(LexingIterator(code), false, false)
+      lexer.lexScramble(LexingIterator(code), false, false, false)
         .getOrDie()
     val parser = new Parser(interner, keywords, opts)
     val exprP = parser.expressionParser.parseExpression(node).getOrDie()
@@ -209,7 +209,7 @@ trait TestParseUtils {
     val keywords = new Keywords(interner)
     val lexer = new Lexer(interner, keywords)
     val node =
-      lexer.lexScramble(LexingIterator(code), false, false)
+      lexer.lexScramble(LexingIterator(code), false, false, false)
         .getOrDie()
     val parser = new Parser(interner, keywords, opts)
     val exprP = parser.expressionParser.parseBlockContents(new ScrambleIterator(node)).getOrDie()
@@ -222,7 +222,7 @@ trait TestParseUtils {
     val keywords = new Keywords(interner)
     val lexer = new Lexer(interner, keywords)
     val node =
-      lexer.lexScramble(LexingIterator(code), false, false)
+      lexer.lexScramble(LexingIterator(code), false, false, false)
         .getOrDie()
     val parser = new Parser(interner, keywords, opts)
     val exprP = parser.expressionParser.parseStatement(new ScrambleIterator(node)).getOrDie()
@@ -234,7 +234,7 @@ trait TestParseUtils {
     val keywords = new Keywords(interner)
     val lexer = new Lexer(interner, keywords)
     val node =
-      lexer.lexScramble(LexingIterator(code), false, false)
+      lexer.lexScramble(LexingIterator(code), false, false, false)
         .getOrDie()
     val templexParser = new TemplexParser(interner, keywords)
     val exprP =
@@ -249,7 +249,7 @@ trait TestParseUtils {
     val keywords = new Keywords(interner)
     val node =
       new Lexer(interner, keywords)
-        .lexScramble(LexingIterator(code), false, false)
+        .lexScramble(LexingIterator(code), false, false, true)
         .getOrDie()
     val exprP =
         new TemplexParser(interner, keywords)
@@ -263,7 +263,7 @@ trait TestParseUtils {
     val keywords = new Keywords(interner)
     val node =
       new Lexer(interner, keywords)
-        .lexScramble(LexingIterator(code), false, false)
+        .lexScramble(LexingIterator(code), false, false, true)
         .getOrDie()
     val exprP =
           new TemplexParser(interner, keywords)

@@ -164,6 +164,18 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
       return Err(EmptyPattern(patternBegin))
     }
 
+
+    val isConstructing =
+      iter.peek(2) match {
+        case Array(Some(WordLE(_, self)), Some(SymbolLE(range, '.')))
+          if self == keywords.self => {
+          iter.advance()
+          iter.advance()
+          true
+        }
+        case _ => false
+      }
+
     // A hack so we can highlight &self
     iter.trySkipSymbol('&')
 
@@ -189,7 +201,11 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
             if (str == keywords.UNDERSCORE) {
               Some(IgnoredLocalNameDeclarationP(range))
             } else {
-              Some(LocalNameDeclarationP(NameP(range, str)))
+              if (isConstructing) {
+                Some(ConstructingMemberNameDeclarationP(NameP(range, str)))
+              } else {
+                Some(LocalNameDeclarationP(NameP(range, str)))
+              }
             }
           }
           case Some(SquaredLE(_, _)) => None

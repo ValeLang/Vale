@@ -285,12 +285,78 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
     })
   }
 
-  private def parseInterface(
-    iter: ScrambleIterator,
-    begin: Int,
-    attributes: Vector[IAttributeP]):
-  Result[Option[InterfaceP], IParseError] = {
-    vimpl()
+  def parseInterface(interfaceL: InterfaceL):
+  Result[InterfaceP, IParseError] = {
+    Profiler.frame(() => {
+      val InterfaceL(interfaceRange, nameL, attributesL, maybeMutabilityL, maybeIdentifyingRunesL, maybeTemplateRulesL, methodsL) = interfaceL
+
+      val maybeIdentifyingRunes =
+        maybeIdentifyingRunesL.map(userSpecifiedIdentifyingRunes => {
+          parseIdentifyingRunes(userSpecifiedIdentifyingRunes) match {
+            case Err(cpe) => return Err(cpe)
+            case Ok(x) => x
+          }
+        })
+
+
+      val maybeTemplateRulesP =
+        maybeTemplateRulesL.map(templateRulesScramble => {
+          val elementsPR =
+            U.map[ScrambleIterator, IRulexPR](
+              new ScrambleIterator(templateRulesScramble).splitOnSymbol(',', false),
+              ruleIter => {
+                templexParser.parseRule(ruleIter) match {
+                  case Err(e) => return Err(e)
+                  case Ok(x) => x
+                }
+              })
+          TemplateRulesP(templateRulesScramble.range, elementsPR.toVector)
+        })
+
+      val attributesP =
+        U.map[IAttributeL, IAttributeP](
+          attributesL,
+          attributeL => {
+            parseAttribute(attributeL) match {
+              case Err(e) => return Err(e)
+              case Ok(x) => x
+            }
+          })
+
+      val maybeMutabilityP =
+        maybeMutabilityL.map(returnTypeL => {
+          val scramble =
+            returnTypeL match {
+              case s @ ScrambleLE(_, _) => s
+              case other => ScrambleLE(other.range, Array(other))
+            }
+          templexParser.parseTemplex(new ScrambleIterator(scramble, 0, scramble.elements.length)) match {
+            case Err(e) => return Err(e)
+            case Ok(x) => x
+          }
+        })
+
+      val membersP =
+          U.map[FunctionL, FunctionP](
+            methodsL,
+            methodL => {
+              parseFunction(methodL) match {
+                case Err(e) => return Err(e)
+                case Ok(x) => x
+              }
+            })
+
+      val interface =
+        InterfaceP(
+          interfaceRange,
+          toName(nameL),
+          attributesP.toVector,
+          maybeMutabilityP,
+          maybeIdentifyingRunes,
+          maybeTemplateRulesP,
+          membersP.toVector)
+      Ok(interface)
+    })
 
 //    if (!iter.trySkip("interface")) {
 //      return Ok(None)
@@ -424,52 +490,39 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
 
   val export = interner.intern(StrI("export"))
 
-  private def parseExportAs(
-    iter: ScrambleIterator,
-    begin: Int,
-    attributes: Vector[IAttributeP]):
-  Result[Option[ExportAsP], IParseError] = {
-    vimpl()
+  def parseExportAs(
+    expoort: ExportAsL):
+  Result[ExportAsP, IParseError] = {
+    val iter = new ScrambleIterator(expoort.contents)
 
-//    if (!iter.trySkipWord(export)) {
-//      return Ok(None)
-//    }
-//
-//
-//
-//    if (attributes.nonEmpty) {
-//      return Err(UnexpectedAttributes(iter.getPos()))
-//    }
-//
-//    val templex =
-//      templexParser.parseTemplex(iter) match {
-//        case Err(e) => return Err(e)
-//        case Ok(x) => x
-//      }
-//
-//
-//
-//    if (!iter.trySkipWord(as)) {
-//      return Err(BadExportAs(iter.getPos()))
-//    }
-//
-//
-//
-//    val name =
-//      Parser.parseTypeName(iter) match {
-//        case None => return Err(BadExportName(iter.getPos()))
-//        case Some(n) => n
-//      }
-//
-//    if (!iter.trySkipSymbol(';')) {
-//      return Err(BadExportEnd(iter.getPos()))
-//    }
-//
-//    Ok(Some(ast.ExportAsP(ast.RangeL(begin, iter.getPos()), templex, name)))
+    val exportee =
+      ParseUtils.trySkipPastKeywordWhile(
+        iter,
+        keywords.as,
+        iter => iter.peek() match {
+          case None => false
+          case Some(SymbolLE(range, ';')) => false
+          case _ => true
+        }) match {
+        case None => return Err(BadExportAs(iter.getPos()))
+        case Some((asKeyword, beforeAsIter)) => {
+          val templex =
+            templexParser.parseTemplex(beforeAsIter) match {
+              case Err(e) => return Err(e)
+              case Ok(x) => x
+            }
+          templex
+        }
+      }
+
+    val name =
+      iter.peek() match {
+        case None => return Err(BadExportEnd(iter.getPos()))
+        case Some(WordLE(range, str)) => NameP(range, str)
+      }
+
+    Ok(ast.ExportAsP(expoort.range, exportee, name))
   }
-
-  val as = interner.intern(StrI("as"))
-  val impoort = interner.intern(StrI("import"))
 
   private def parseImport(
     iter: ScrambleIterator,

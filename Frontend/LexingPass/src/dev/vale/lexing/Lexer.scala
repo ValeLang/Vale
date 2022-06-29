@@ -10,6 +10,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
   def lexAttributes(iter: LexingIterator): Array[IAttributeL] = {
     val attributesAccum = new Accumulator[IAttributeL]()
     while ({
+      iter.consumeCommentsAndWhitespace()
       lexAttribute(iter) match {
         case Some(attrL) => attributesAccum.add(attrL); true
         case None => false
@@ -98,7 +99,13 @@ class Lexer(interner: Interner, keywords: Keywords) {
       case Ok(None) =>
     }
 
-    vfail()
+    lexExport(iter, denizenBegin, attributes) match {
+      case Err(e) => return Err(e)
+      case Ok(Some(x)) => return Ok(TopLevelExportAsL(x))
+      case Ok(None) =>
+    }
+
+    return Err(UnrecognizedDenizenError(iter.getPos()))
   }
 
   def lexImpl(iter: LexingIterator, begin: Int, attributes: Array[IAttributeL]):
@@ -178,7 +185,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
     val maybeRules =
       if (iter.trySkipCompleteWord("where")) {
         Some(
-          lexScramble(iter, true, false) match {
+          lexScramble(iter, true, false, true) match {
             case Err(e) => return Err(e)
             case Ok(x) => x
           })
@@ -209,7 +216,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
 
   def lexFunction(iter: LexingIterator, begin: Int, attributes: Array[IAttributeL]):
   Result[Option[FunctionL], IParseError] = {
-    if (!iter.trySkipCompleteWord("func")) {
+    if (!iter.trySkipCompleteWord("func") && !iter.trySkipCompleteWord("funky")) {
       return Ok(None)
     }
 
@@ -230,7 +237,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
               case Some("==") => "=="
               case _ => {
                 iter.peek() match {
-                  case '>' | '<' => iter.peek().toString
+                  case '>' | '<' | '+' | '-' | '*' | '/' => iter.peek().toString
                   case _ => return Err(BadFunctionName(iter.getPos()))
                 }
               }
@@ -267,7 +274,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
           FunctionReturnL(range, Some(range), None)
         } else {
           val returnType =
-            lexNode(iter, true, true) match {
+            lexScramble(iter, true, true, true) match {
               case Err(e) => return Err(e)
               case Ok(x) => x
             }
@@ -284,7 +291,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
     val maybeRules =
       if (iter.trySkipCompleteWord("where")) {
         Some(
-          lexScramble(iter, true, false) match {
+          lexScramble(iter, true, false, true) match {
             case Err(e) => return Err(e)
             case Ok(x) => x
           })
@@ -363,7 +370,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
 
     val maybeMutability =
       if (!iter.peekCompleteWord("where") && iter.peek() != '{') {
-        lexScramble(iter, true, true) match {
+        lexScramble(iter, true, true, true) match {
           case Err(e) => return Err(e)
           case Ok(x) => Some(x)
         }
@@ -376,7 +383,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
     val maybeRules =
       if (iter.trySkipCompleteWord("where")) {
         Some(
-          lexScramble(iter, true, false) match {
+          lexScramble(iter, true, false, true) match {
             case Err(e) => return Err(e)
             case Ok(x) => x
           })
@@ -411,7 +418,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
     val membersAcc = new Accumulator[ScrambleLE]()
 
     val contents =
-      lexScramble(iter, false, false) match {
+      lexScramble(iter, false, false, false) match {
         case Err(e) => return Err(e)
         case Ok(x) => x
       }
@@ -463,7 +470,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
 
     val maybeMutability =
       if (!iter.peekCompleteWord("where") && iter.peek() != '{') {
-        lexScramble(iter, true, true) match {
+        lexScramble(iter, true, true, true) match {
           case Err(e) => return Err(e)
           case Ok(x) => Some(x)
         }
@@ -476,7 +483,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
     val maybeRules =
       if (iter.trySkipCompleteWord("where")) {
         Some(
-          lexScramble(iter, true, false) match {
+          lexScramble(iter, true, false, true) match {
             case Err(e) => return Err(e)
             case Ok(x) => x
           })
@@ -519,6 +526,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
         }
         case Ok(None) => return Err(BadInterfaceMember(iter.getPos()))
       }
+      iter.consumeCommentsAndWhitespace()
     }
     val members = membersAcc.buildArray()
 
@@ -582,6 +590,36 @@ class Lexer(interner: Interner, keywords: Keywords) {
     Ok(Some(imporrt))
   }
 
+  def lexExport(iter: LexingIterator, begin: Int, attributes: Array[IAttributeL]):
+  Result[Option[ExportAsL], IParseError] = {
+    if (!iter.trySkipCompleteWord(keywords.export.str)) {
+      return Ok(None)
+    }
+
+    if (attributes.nonEmpty) {
+      return Err(UnexpectedAttributes(iter.getPos()))
+    }
+
+    val scramble =
+      lexScramble(iter, false, false, true) match {
+        case Err(e) => return Err(e)
+        case Ok(s) => s
+      }
+
+    iter.consumeCommentsAndWhitespace()
+
+    if (iter.trySkip('.')) {
+      true
+    } else if (iter.trySkip(';')) {
+      false
+    } else {
+      return Err(BadImportEnd(iter.getPos()))
+    }
+
+    val export = ExportAsL(RangeL(begin, iter.getPos()), scramble)
+    Ok(Some(export))
+  }
+
   def lexParend(iter: LexingIterator): Result[Option[ParendLE], IParseError] = {
     val begin = iter.getPos()
 
@@ -592,7 +630,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
     iter.consumeCommentsAndWhitespace()
 
     val innards =
-      lexScramble(iter, false, false) match {
+      lexScramble(iter, false, false, false) match {
         case Err(e) => return Err(e)
         case Ok(x) => x
       }
@@ -622,7 +660,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
     iter.consumeCommentsAndWhitespace()
 
     val innards =
-      lexScramble(iter, false, false) match {
+      lexScramble(iter, false, false, false) match {
         case Err(e) => return Err(e)
         case Ok(x) => x
       }
@@ -648,7 +686,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
     iter.consumeCommentsAndWhitespace()
 
     val innards =
-      lexScramble(iter, false, false) match {
+      lexScramble(iter, false, false, false) match {
         case Err(e) => return Err(e)
         case Ok(x) => x
       }
@@ -675,7 +713,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
     iter.consumeCommentsAndWhitespace()
 
     val innards =
-      lexScramble(iter, false, false) match {
+      lexScramble(iter, false, false, false) match {
         case Err(e) => return Err(e)
         case Ok(x) => x
       }
@@ -824,7 +862,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
 //    Ok(CommaSeparatedListLE(RangeL(begin, end), innards.buildArray(), trailingComma))
 //  }
 
-  def atEnd(iter: LexingIterator, stopOnOpenBrace: Boolean, stopOnWhere: Boolean): Boolean = {
+  def atEnd(iter: LexingIterator, stopOnOpenBrace: Boolean, stopOnWhere: Boolean, stopOnSemicolon: Boolean): Boolean = {
     if (iter.atEnd()) {
       return true
     }
@@ -834,12 +872,13 @@ class Lexer(interner: Interner, keywords: Keywords) {
     iter.peek() match {
       case ')' | '}' | ']' => true
       case '{' => stopOnOpenBrace
+      case ';' => stopOnSemicolon
       case '>' => angleIsOpenOrClose(iter)
       case _ => false
     }
   }
 
-  def lexScramble(iter: LexingIterator, stopOnOpenBrace: Boolean, stopOnWhere: Boolean): Result[ScrambleLE, IParseError] = {
+  def lexScramble(iter: LexingIterator, stopOnOpenBrace: Boolean, stopOnWhere: Boolean, stopOnSemicolon: Boolean): Result[ScrambleLE, IParseError] = {
     val begin = iter.getPos()
 
     iter.consumeCommentsAndWhitespace()
@@ -847,7 +886,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
     val innards = new Accumulator[INodeLE]()
 
     // If this encounters a ; or or ) or } a non-binary > then it should stop.
-    while (!atEnd(iter, stopOnOpenBrace, stopOnWhere)) {
+    while (!atEnd(iter, stopOnOpenBrace, stopOnWhere, stopOnSemicolon)) {
       val node =
         lexNode(iter, stopOnOpenBrace, stopOnWhere) match {
           case Err(e) => return Err(e)
@@ -1056,12 +1095,12 @@ class Lexer(interner: Interner, keywords: Keywords) {
     //   """
     // The newline is because we dont want to interpolate when its a { then a newline.
     // If they want that, then they should do {\
-    if (iter.trySkip("{\\\n")) { // line ending in {\
-      lexScramble(iter, false, false).map(Right(_))
+    if (iter.trySkip("{\n")) { // line ending in {\
+      lexScramble(iter, false, false, false).map(Right(_))
     } else if (iter.trySkip("{\n")) { // line ending in {
       Ok(Left('{'))
-    } else if (iter.trySkip('\n')) { // { with stuff after
-      lexScramble(iter, false, false).map(Right(_))
+    } else if (iter.trySkip('{')) { // { with stuff after
+      lexScramble(iter, false, false, false).map(Right(_))
     } else if (iter.trySkip('\\')) {
       if (iter.trySkip('r') || iter.trySkip('\r')) {
         Ok(Left('\r'))
@@ -1114,7 +1153,6 @@ class Lexer(interner: Interner, keywords: Keywords) {
       }
       i = i + 1;
     }
-    iter.skipTo(iter.position + 4)
     Some(Integer.parseInt(str, 16))
   }
 

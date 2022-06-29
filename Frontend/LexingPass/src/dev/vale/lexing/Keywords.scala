@@ -27,6 +27,7 @@ class Keywords(interner: Interner) {
   val VARY = interner.intern(StrI("vary"))
   val FINAL = interner.intern(StrI("final"))
 
+  val self = interner.intern(StrI("self"))
   val iff = interner.intern(StrI("if"))
   val elsse = interner.intern(StrI("else"))
   val foreeach = interner.intern(StrI("foreach"))
@@ -58,8 +59,10 @@ class Keywords(interner: Interner) {
   val AND = interner.intern(StrI("and"))
   val OR = interner.intern(StrI("or"))
   val NOT = interner.intern(StrI("not"))
+  val as = interner.intern(StrI("as"))
 
   val underscoresCall = interner.intern(StrI("__call"))
 
   val impoort = interner.intern(StrI("import"))
+  val export = interner.intern(StrI("export"))
 }

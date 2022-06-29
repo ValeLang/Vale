@@ -85,10 +85,4 @@ class PatternParserTests extends FunSuite with Matchers with Collector with Test
           None) =>
     }
   }
-
-  test("Virtual function") {
-    compile("virtual this Car") shouldHave {
-      case PatternPP(_, _,Some(LocalNameDeclarationP(NameP(_, StrI("this")))),Some(NameOrRunePT(NameP(_, StrI("Car")))),None,Some(AbstractP(_))) =>
-    }
-  }
 }

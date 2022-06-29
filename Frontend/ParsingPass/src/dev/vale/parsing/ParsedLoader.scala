@@ -186,7 +186,7 @@ class ParsedLoader(interner: Interner) {
       loadName(getObjectField(denizen, "name")),
       getArrayField(denizen, "attributes").map(expectObject).map(loadAttribute),
 //      getArrayField(denizen, "attributes").map(expectObject).map(loadCitizenAttribute),
-      loadTemplex(getObjectField(denizen, "mutability")),
+      loadOptionalObject(getObjectField(denizen, "mutability"), loadTemplex),
       loadOptionalObject(getObjectField(denizen, "maybeIdentifyingRunes"), loadIdentifyingRunes),
       loadOptionalObject(getObjectField(denizen, "templateRules"), loadTemplateRules),
       getArrayField(denizen, "members").map(expectObject).map(loadFunction))

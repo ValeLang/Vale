@@ -37,8 +37,7 @@ case class ImplL(
 
 case class ExportAsL(
   range: RangeL,
-  struct: INodeLE,
-  exportedName: WordLE) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+  contents: ScrambleLE) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class ImportL(
   range: RangeL,
@@ -60,7 +59,7 @@ case class InterfaceL(
   name: WordLE,
   attributes: Array[IAttributeL],
   mutability: Option[ScrambleLE],
-  maybeIdentifyingRunes: Option[INodeLE],
+  maybeIdentifyingRunes: Option[AngledLE],
   templateRules: Option[ScrambleLE],
   members: Array[FunctionL]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
@@ -105,7 +104,7 @@ case class FunctionHeaderL(
 case class FunctionReturnL(
   range: RangeL,
   inferRet: Option[RangeL],
-  retType: Option[INodeLE]
+  retType: Option[ScrambleLE]
 ) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 trait INodeLE {

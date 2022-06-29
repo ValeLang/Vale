@@ -134,7 +134,7 @@ object ParserVonifier {
         VonMember("range", vonifyRange(range)),
         VonMember("name", vonifyName(name)),
         VonMember("attributes", VonArray(None, attributes.map(vonifyAttribute).toVector)),
-        VonMember("mutability", vonifyTemplex(mutability)),
+        VonMember("mutability", vonifyOptional(mutability, vonifyTemplex)),
         VonMember("maybeIdentifyingRunes", vonifyOptional(maybeIdentifyingRunes, vonifyIdentifyingRunes)),
         VonMember("templateRules", vonifyOptional(templateRules, vonifyTemplateRules)),
         VonMember("members", VonArray(None, members.map(vonifyFunction).toVector))))

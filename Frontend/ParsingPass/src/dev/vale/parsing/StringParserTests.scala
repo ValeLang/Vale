@@ -1,7 +1,8 @@
 package dev.vale.parsing
 
+import dev.vale.lexing.{Keywords, Lexer, LexingIterator}
 import dev.vale.parsing.ast._
-import dev.vale.{Collector, StrI, vimpl}
+import dev.vale.{Collector, Interner, StrI, vimpl}
 import dev.vale.parsing.ast.{ConstantIntPE, ConstantStrPE, FunctionCallPE, LookupNameP, LookupPE, NameP, StrInterpolatePE}
 import org.scalatest.FunSuite
 import org.scalatest.Matchers.convertToAnyShouldWrapper
@@ -28,26 +29,25 @@ class StringParserTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("String with unicode") {
-    vimpl()
-//    val e = new ExpressionParser(GlobalOptions(true, true, true, true))
-//    StringParser.parseFourDigitHexNum(ParsingIterator("000a")) shouldEqual Some(10)
-//    compile(e.stringParser.parseStringPart(_, 0), "\\u000a") shouldEqual StringPartChar('\n')
-//    compile(e.stringParser.parseStringPart(_, 0), "\\u001b") shouldEqual StringPartChar('\u001b')
-//    compileMaybe(e.stringParser.parseString, "\"\\u001b\"") match { case ConstantStrPE(_, "\u001b") => }
-//    compileMaybe(e.stringParser.parseString, "\"foo\\u001bbar\"") match { case ConstantStrPE(_, "foo\u001bbar") => }
-//
-//    compileExpression("\"foo\\u001bbar\"") match { case ConstantStrPE(_, "foo\u001bbar") => }
-//    // FALL NOT TO TEMPTATION
-//    // Scala has some issues here.
-//    // The above "\"\\u001b\"" seems like it could be expressed """"\\u001b"""" but it can't.
-//    // Nothing seems to work:
-//    // - vassert("\"\\u001b\"" == """"\u001b"""") fails
-//    // - vassert("\"\\u001b\"" == """"\\u001b"""") fails
-//    // - vassert("\"\\u001b\"" == """\"\\u001b\"""") fails
-//    // This took quite a while to figure out.
-//    // So, just stick with regular scala string literals, scala's good with those.
-//    // Other tests have this, search TEMPTATION.
-//    // NOW GO YE AND PROSPER
+    val interner = new Interner()
+    val keywords = new Keywords(interner)
+    val lexer = new Lexer(interner, keywords)
+    lexer.parseFourDigitHexNum(new LexingIterator("000a", 0)) shouldEqual Some(10)
+
+    compileExpression("\"\\u000a\"") match { case ConstantStrPE(_, "\n") => }
+    compileExpression("\"\\u001b\"") match { case ConstantStrPE(_, "\u001b") => }
+    compileExpression("\"foo\\u001bbar\"") match { case ConstantStrPE(_, "foo\u001bbar") => }
+    // FALL NOT TO TEMPTATION
+    // Scala has some issues here.
+    // The above "\"\\u001b\"" seems like it could be expressed """"\\u001b"""" but it can't.
+    // Nothing seems to work:
+    // - vassert("\"\\u001b\"" == """"\u001b"""") fails
+    // - vassert("\"\\u001b\"" == """"\\u001b"""") fails
+    // - vassert("\"\\u001b\"" == """\"\\u001b\"""") fails
+    // This took quite a while to figure out.
+    // So, just stick with regular scala string literals, scala's good with those.
+    // Other tests have this, search TEMPTATION.
+    // NOW GO YE AND PROSPER
   }
 
   test("String with apostrophe inside") {

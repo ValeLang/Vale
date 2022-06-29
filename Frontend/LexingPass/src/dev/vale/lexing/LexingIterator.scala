@@ -37,6 +37,7 @@ case class LexingIterator(code: String, var position: Int = 0) {
   def consumeComments(): Unit = {
     consumeLineComments()
     consumeChevronComments()
+    consumeEllipsesComments()
   }
 
   def getUntil(needle: Char): Option[String] = {
@@ -82,6 +83,10 @@ case class LexingIterator(code: String, var position: Int = 0) {
       comments.add(RangeL(begin, position))
       consumeComments()
     }
+  }
+
+  def consumeEllipsesComments(): Unit = {
+    trySkip("...")
   }
 
   def consumeLineComments(): Unit = {

@@ -1,5 +1,6 @@
 package dev.vale.parsing
 
+import dev.vale.lexing.Keywords
 import dev.vale.{Collector, Err, Interner, Ok, Tests, vfail}
 import dev.vale.options.GlobalOptions
 import org.scalatest.{FunSuite, Matchers}
@@ -9,8 +10,9 @@ import org.scalatest.{FunSuite, Matchers}
 class ParseSamplesTests extends FunSuite with Collector with TestParseUtils {
   def parse(path: String): Unit = {
     val interner = new Interner()
+    val keywords = new Keywords(interner)
     val code = Tests.loadExpected(path)
-    val compilation = ParserTestCompilation.test(interner, code)
+    val compilation = ParserTestCompilation.test(interner, keywords, code)
     compilation.getParseds() match {
       case Ok(x) => x
       case Err(e) => vfail(ParseErrorHumanizer.humanize(path, code, e.error))

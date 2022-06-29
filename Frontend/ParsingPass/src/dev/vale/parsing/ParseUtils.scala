@@ -1,6 +1,7 @@
 package dev.vale.parsing
 
-import dev.vale.lexing.SymbolLE
+import dev.vale.StrI
+import dev.vale.lexing.{SymbolLE, WordLE}
 
 object ParseUtils {
 
@@ -33,6 +34,92 @@ object ParseUtils {
       }
       scoutingIter.advance()
     }
+
+    return None
+  }
+
+  // This method modifies the current iterator to skip it past the next = symbol
+  // that's surrounded by spaces. Note that it won't catch an = at the beginning or
+  // end of the statement.
+  // It returns None if there wasn't one (which leaves self untouched) or a Some
+  // containing everything we skipped past (minus the =).
+  def trySkipPastSemicolonWhile(iter: ScrambleIterator, continueWhile: ScrambleIterator => Boolean): Option[ScrambleIterator] = {
+    val scoutingIter = iter.clone()
+    while (continueWhile(scoutingIter)) {
+      scoutingIter.peek() match {
+        case Some(SymbolLE(_, ';')) => {
+          // We'll return this iterator for the things that come before the =
+          val beforeIter = iter.clone()
+          beforeIter.end = scoutingIter.index + 1
+
+          // Now modify self to skip past it.
+          iter.skipTo(scoutingIter)
+          iter.advance()
+
+          return Some(beforeIter)
+        }
+        case _ =>
+      }
+      scoutingIter.advance()
+    }
+
+    return None
+  }
+
+  // This method modifies the current iterator to skip it past the next = symbol
+  // that's surrounded by spaces. Note that it won't catch an = at the beginning or
+  // end of the statement.
+  // It returns None if there wasn't one (which leaves self untouched) or a Some
+  // containing everything we skipped past (minus the =).
+  def trySkipPastKeywordWhile(
+      iter: ScrambleIterator,
+      keyword: StrI,
+      continueWhile: ScrambleIterator => Boolean):
+  Option[(WordLE, ScrambleIterator)] = {
+    val scoutingIter = iter.clone()
+    while (continueWhile(scoutingIter)) {
+      scoutingIter.peek() match {
+        case Some(w @ WordLE(_, kw)) if kw == keyword => {
+          // We'll return this iterator for the things that come before the =
+          val beforeIter = iter.clone()
+          beforeIter.end = scoutingIter.index
+
+          // Now modify self to skip past it.
+          iter.skipTo(scoutingIter)
+          iter.advance()
+
+          return Some((w, beforeIter))
+        }
+        case _ =>
+      }
+      scoutingIter.advance()
+    }
+
+    return None
+  }
+
+  def trySkipTo(
+    iter: ScrambleIterator,
+    stopAt: ScrambleIterator => Boolean):
+  Option[ScrambleIterator] = {
+    val scoutingIter = iter.clone()
+    while ({
+      if (stopAt(scoutingIter)) {
+        // We'll return this iterator
+        val beforeIter = iter.clone()
+        beforeIter.end = scoutingIter.index
+
+        // Now modify self to skip past it.
+        iter.skipTo(scoutingIter)
+
+        return Some(beforeIter)
+      } else {
+        // continue
+        scoutingIter.advance()
+        true
+      }
+    }) { }
+    // We never hit the condition, so stop.
 
     return None
   }

@@ -14,8 +14,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.matching.Regex
 
 
-class Parser(interner: Interner, opts: GlobalOptions) {
-  val keywords = new Keywords(interner)
+class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
   val templexParser = new TemplexParser(interner, keywords)
   val patternParser = new PatternParser(interner, keywords, templexParser)
   val expressionParser = new ExpressionParser(interner, keywords, opts, patternParser, templexParser)
@@ -98,14 +97,9 @@ class Parser(interner: Interner, opts: GlobalOptions) {
   val rw = interner.intern(StrI("rw"))
   val imm = interner.intern(StrI("imm"))
 
-  private[parsing] def parseIdentifyingRune(node: INodeLE):
+  private[parsing] def parseIdentifyingRune(iter: ScrambleIterator):
   Result[IdentifyingRuneP, IParseError] = {
-    val scramble =
-      node match {
-        case s @ ScrambleLE(_, _) => s
-        case other => ScrambleLE(other.range, Array(other))
-      }
-    val iter = new ScrambleIterator(scramble, 0, scramble.elements.length)
+    val range = iter.range
     if (iter.trySkipSymbol('\'')) {
       val name =
         iter.nextWord() match {
@@ -116,15 +110,20 @@ class Parser(interner: Interner, opts: GlobalOptions) {
       val regionTypeBegin = iter.getPos()
       val attributes =
         Vector(TypeRuneAttributeP(RangeL(regionTypeBegin, iter.getPos()), RegionTypePR)) ++
-        (if (iter.trySkipWord(ro)) {
-          Vector(ReadOnlyRuneAttributeP(RangeL(regionTypeBegin, iter.getPos())))
-        } else if (iter.trySkipWord(rw)) {
-          Vector(ReadWriteRuneAttributeP(RangeL(regionTypeBegin, iter.getPos())))
-        } else if (iter.trySkipWord(imm)) {
-          Vector(ImmutableRuneAttributeP(RangeL(regionTypeBegin, iter.getPos())))
-        } else {
-          Vector()
-        })
+          (iter.trySkipWord(ro) match {
+            case Some(range) => Vector(ReadOnlyRuneAttributeP(range))
+            case None => {
+              iter.trySkipWord(rw) match {
+                case Some(range) => Vector(ReadWriteRuneAttributeP(range))
+                case None => {
+                  iter.trySkipWord(imm) match {
+                    case Some(range) => Vector(ImmutableRuneAttributeP(range))
+                    case None => Vector()
+                  }
+                }
+              }
+            }
+          })
 
       if (iter.trySkipSymbol('=')) {
         templexParser.parseTemplex(iter) match {
@@ -133,11 +132,14 @@ class Parser(interner: Interner, opts: GlobalOptions) {
         }
       }
 
-      Ok(IdentifyingRuneP(node.range, NameP(name.range, name.str), attributes))
+      Ok(IdentifyingRuneP(range, NameP(name.range, name.str), attributes))
     } else {
       val name =
-        iter.advance() match {
-          case WordLE(range, str) => NameP(range, str)
+        iter.peek() match {
+          case Some(WordLE(range, str)) => {
+            iter.advance()
+            NameP(range, str)
+          }
           case _ => return Err(BadRuneNameError(iter.getPos()))
         }
 
@@ -148,14 +150,16 @@ class Parser(interner: Interner, opts: GlobalOptions) {
           case Ok(Some(x)) => Some(ast.TypeRuneAttributeP(RangeL(typeBegin, iter.getPos()), x))
           case Ok(None) => None
         }
-      Ok(IdentifyingRuneP(node.range, name, maybeRuneType.toVector))
+      Ok(IdentifyingRuneP(range, name, maybeRuneType.toVector))
     }
   }
 
   private[parsing] def parseIdentifyingRunes(node: AngledLE):
   Result[IdentifyingRunesP, IParseError] = {
     val runesP =
-      U.map(node.contents.elements, (inner: INodeLE) => {
+      U.map[ScrambleIterator, IdentifyingRuneP](
+        new ScrambleIterator(node.contents).splitOnSymbol(',', false),
+        inner => {
         parseIdentifyingRune(inner) match {
           case Err(e) => return Err(e)
           case Ok(x) => x
@@ -281,83 +285,6 @@ class Parser(interner: Interner, opts: GlobalOptions) {
     })
   }
 
-  private[parsing] def parseStruct(
-    iter: ScrambleIterator,
-    begin: Int,
-    attributes: Vector[IAttributeP]):
-  Result[Option[StructP], IParseError] = {
-    vimpl()
-
-//    if (!iter.trySkip("struct")) {
-//      return Ok(None)
-//    }
-//
-//    val name =
-//      Parser.parseTypeName(iter) match {
-//        case None => return Err(BadStructName(iter.getPos()))
-//        case Some(x) => x
-//      }
-//
-//    val maybeIdentifyingRunes =
-//      parseIdentifyingRunes(iter) match {
-//        case Err(e) => return Err(e)
-//        case Ok(x) => x
-//      }
-//
-//    val (mutabilityRange, maybeMutability, maybeTemplateRules) =
-//      parseCitizenSuffix(iter) match {
-//        case Err(e) => return Err(e)
-//        case Ok((a, b, c)) => (a, b, c)
-//      }
-//
-//
-//
-//    val contentsBegin = iter.getPos()
-//
-//    if (!iter.trySkip("\\{")) {
-//      return Err(BadStructContentsBegin(iter.getPos()))
-//    }
-//
-//    val contents = ArrayBuffer[IStructContent]()
-//
-//
-//    while (!Parser.atEnd(iter, StopBeforeCloseBrace)) {
-//
-//      parseDenizen(iter) match {
-//        case Err(e) => return Err(e)
-//        case Ok(Some(TopLevelFunctionP(func))) => contents += StructMethodP(func)
-//        case Ok(Some(_)) => {
-//          // Ignore these, we have `impl MyInterface;` inside structs in articles
-//        }
-//        case Ok(None) => {
-//          parseStructMember(iter) match {
-//            case Ok(m) => contents += m
-//            case Err(e) => return Err(e)
-//          }
-//        }
-//      }
-//    }
-//
-//
-//    if (!iter.trySkip("\\}")) {
-//      return Err(BadStructContentsEnd(iter.getPos()))
-//    }
-//
-//    val contentsEnd = iter.getPos()
-//
-//    val struct =
-//      ast.StructP(
-//        ast.RangeL(begin, iter.getPos()),
-//        name,
-//        attributes.toVector,
-//        maybeMutability.getOrElse(MutabilityPT(mutabilityRange, MutableP)),
-//        maybeIdentifyingRunes,
-//        maybeTemplateRules,
-//        StructMembersP(ast.RangeL(contentsBegin, contentsEnd),
-//        contents.toVector))
-//    Ok(Some(struct))
-  }
-
   private def parseInterface(
     iter: ScrambleIterator,
     begin: Int,
@@ -429,69 +356,70 @@ class Parser(interner: Interner, opts: GlobalOptions) {
 //    Ok(Some(interface))
   }
 
-  private[parsing] def parseImpl(
-    implL: ImplL
-  ): Result[ImplP, IParseError] = {
-    vimpl()
+  def parseImpl(functionL: ImplL):
+  Result[ImplP, IParseError] = {
+    Profiler.frame(() => {
+      val ImplL(implRange, maybeIdentifyingRunesL, maybeTemplateRulesL, structL, interfaceL, attributesL) = functionL
 
-//    if (!iter.trySkip("impl")) {
-//      return Ok(None)
-//    }
-//
-//    val maybeIdentifyingRunes =
-//      parseIdentifyingRunes(iter) match {
-//        case Err(e) => vwat()
-//        case Ok(x) => x
-//      }
-//
-//    //
-//    //
-//    //
-//    //    val maybeTemplateRules =
-//    //      iter.consumeWithCombinator(CombinatorParsers.opt(CombinatorParsers.templateRulesPR)) match {
-//    //        case Err(e) => vwat()
-//    //        case Ok(e) => e
-//    //      }
-//
-//    val interface =
-//      templexParser.parseTemplex(iter) match {
-//        case Err(e) => vwat()
-//        case Ok(e) => e
-//      }
-//
-//
-//
-//    val struct =
-//      if (iter.trySkip("for")) {
-//
-//
-//        templexParser.parseTemplex(iter) match {
-//          case Err(e) => vwat()
-//          case Ok(e) => Some(e)
-//        }
-//      } else {
-//        None
-//      }
-//
-//    val maybeTemplateRules =
-//      parseTemplateRules(iter) match {
-//        case Err(e) => return Err(e)
-//        case Ok(r) => r
-//      }
-//
-//    if (!iter.trySkipSymbol(';')) {
-//      return Err(NeedSemicolon(iter.getPos()))
-//    }
-//
-//    val impl =
-//      ast.ImplP(
-//        ast.RangeL(begin, iter.getPos()),
-//        maybeIdentifyingRunes,
-//        maybeTemplateRules,
-//        struct,
-//        interface,
-//        attributes)
-//    Ok(Some(impl))
+      val maybeIdentifyingRunes =
+        maybeIdentifyingRunesL.map(userSpecifiedIdentifyingRunes => {
+          parseIdentifyingRunes(userSpecifiedIdentifyingRunes) match {
+            case Err(cpe) => return Err(cpe)
+            case Ok(x) => x
+          }
+        })
+
+      val maybeTemplateRulesP =
+        maybeTemplateRulesL.map(templateRulesScramble => {
+          val elementsPR =
+            U.map[ScrambleIterator, IRulexPR](
+              new ScrambleIterator(templateRulesScramble).splitOnSymbol(',', false),
+              ruleIter => {
+                templexParser.parseRule(ruleIter) match {
+                  case Err(e) => return Err(e)
+                  case Ok(x) => x
+                }
+              })
+          TemplateRulesP(templateRulesScramble.range, elementsPR.toVector)
+        })
+
+      val structP =
+        structL match {
+          case None => None
+          case Some(structL) => {
+            templexParser.parseTemplex(new ScrambleIterator(structL)) match {
+              case Err(e) => return Err(e)
+              case Ok(x) => Some(x)
+            }
+          }
+        }
+
+      val interfaceP =
+        templexParser.parseTemplex(new ScrambleIterator(interfaceL)) match {
+          case Err(e) => return Err(e)
+          case Ok(x) => x
+        }
+
+      val attributesP =
+        U.map[IAttributeL, IAttributeP](
+          attributesL,
+          attributeL => {
+            parseAttribute(attributeL) match {
+              case Err(e) => return Err(e)
+              case Ok(x) => x
+            }
+          })
+
+      val impl =
+        ImplP(
+          implRange,
+          maybeIdentifyingRunes,
+          maybeTemplateRulesP,
+          structP,
+          interfaceP,
+          attributesP.toVector)
+      Ok(impl)
+    })
   }
 
   val export = interner.intern(StrI("export"))
@@ -634,7 +562,7 @@ class Parser(interner: Interner, opts: GlobalOptions) {
           U.map[ScrambleIterator, PatternPP](
             new ScrambleIterator(paramsL.contents).splitOnSymbol(',', false),
             patternIter => {
-              patternParser.parsePattern(patternIter) match {
+              patternParser.parseParameter(patternIter, false) match {
                 case Err(e) => return Err(e)
                 case Ok(x) => x
               }
@@ -719,31 +647,36 @@ class Parser(interner: Interner, opts: GlobalOptions) {
 class ParserCompilation(
   opts: GlobalOptions,
   interner: Interner,
+  keywords: Keywords,
   packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]]
 ) {
+  val parser = new Parser(interner, keywords, opts)
+
   def loadAndParse(
     neededPackages: Vector[PackageCoordinate],
     resolver: IPackageResolver[Map[String, String]]):
-  Result[(FileCoordinateMap[String], FileCoordinateMap[(FileP, Vector[(Int, Int)])]), FailedParse] = {
-    vimpl()
+  Result[(FileCoordinateMap[String], FileCoordinateMap[(FileP, Vector[RangeL])]), FailedParse] = {
+    vassert(neededPackages.size == neededPackages.distinct.size, "Duplicate modules in: " + neededPackages.mkString(", "))
 
-//    vassert(neededPackages.size == neededPackages.distinct.size, "Duplicate modules in: " + neededPackages.mkString(", "))
-//
-////    neededPackages.foreach(x => println("Originally requested package: " + x))
-//
-//    val foundCodeMap = new FileCoordinateMap[String]()
-//    val parsedMap = new FileCoordinateMap[(FileP, Vector[(Int, Int)])]()
-//    loadAndParseIteration(neededPackages, foundCodeMap, parsedMap, resolver) match {
-//      case Err(e) => return Err(e)
-//      case Ok(()) =>
-//    }
-//    Ok((foundCodeMap, parsedMap))
+    val foundCodeMap = new FileCoordinateMap[String]()
+    val parsedMap = new FileCoordinateMap[(FileP, Vector[RangeL])]()
+
+    ParseAndExplore.parseAndExplore[IDenizenP, Unit](
+      interner, keywords, opts, parser, packagesToBuild.toArray, resolver,
+      (fileCoord, code, imports, denizen) => denizen,
+      (fileCoord, code, commentRanges, denizens) => {
+        foundCodeMap.put(fileCoord, code)
+        val file = FileP(fileCoord, commentRanges.buildArray(), denizens.buildArray())
+        parsedMap.put(fileCoord, (file, commentRanges.buildArray().toVector))
+      })
+
+    Ok((foundCodeMap, parsedMap))
   }
 
   var codeMapCache: Option[FileCoordinateMap[String]] = None
   var vpstMapCache: Option[FileCoordinateMap[String]] = None
-  var parsedsCache: Option[FileCoordinateMap[(FileP, Vector[(Int, Int)])]] = None
+  var parsedsCache: Option[FileCoordinateMap[(FileP, Vector[RangeL])]] = None
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = {
     getParseds() match {
@@ -755,7 +688,7 @@ class ParserCompilation(
     getCodeMap().getOrDie()
   }
 
-  def getParseds(): Result[FileCoordinateMap[(FileP, Vector[(Int, Int)])], FailedParse] = {
+  def getParseds(): Result[FileCoordinateMap[(FileP, Vector[RangeL])], FailedParse] = {
     parsedsCache match {
       case Some(parseds) => Ok(parseds)
       case None => {
@@ -771,7 +704,7 @@ class ParserCompilation(
       }
     }
   }
-  def expectParseds(): FileCoordinateMap[(FileP, Vector[(Int, Int)])] = {
+  def expectParseds(): FileCoordinateMap[(FileP, Vector[RangeL])] = {
     getParseds() match {
       case Err(FailedParse(codeMap, fileCoord, err)) => {
 //        vfail(ParseErrorHumanizer.humanize(codeMap, fileCoord, err))

@@ -1,6 +1,6 @@
 package dev.vale.parsing
 
-import dev.vale.lexing.{FailedParse, IParseError, Lexer, LexingIterator}
+import dev.vale.lexing.{FailedParse, IParseError, Keywords, Lexer, LexingIterator}
 import dev.vale.{Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Ok, PackageCoordinate, PackageCoordinateMap, Result, vassertOne, vassertSome, vfail, vimpl}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.{FileP, IDenizenP, IExpressionPE, IRulexPR, ITemplexPT, PatternPP}
@@ -110,8 +110,7 @@ trait TestParseUtils {
   }
 
   def compileTopLevel(code: String): IDenizenP = {
-    vimpl()
-//    vassertSome(compile(makeParser().parseDenizen(_), code))
+    compileDenizen(code).getOrDie()
   }
 
   def compileExpressionForError(code: String): IParseError = {
@@ -133,12 +132,14 @@ trait TestParseUtils {
 
   def compileFileInner(
     interner: Interner,
+    keywords: Keywords,
     codeMap: FileCoordinateMap[String]):
   Result[FileP, FailedParse] = {
     val opts = GlobalOptions(true, true, true, true)
-    val p = new Parser(interner, opts)
+    val p = new Parser(interner, keywords, opts)
     ParseAndExplore.parseAndExploreAndCollect(
       interner,
+      keywords,
       opts,
       p,
       Array(PackageCoordinate.TEST_TLD(interner)),
@@ -155,14 +156,16 @@ trait TestParseUtils {
 
   def compileFile(code: String): Result[FileP, FailedParse] = {
     val interner = new Interner()
+    val keywords = new Keywords(interner)
     val codeMap = FileCoordinateMap.test(interner, Vector(code))
-    compileFileInner(interner, codeMap)
+    compileFileInner(interner, keywords, codeMap)
   }
 
   def compileFileExpect(code: String): FileP = {
     val interner = new Interner()
+    val keywords = new Keywords(interner)
     val codeMap = FileCoordinateMap.test(interner, Vector(code))
-    compileFileInner(interner, codeMap) match {
+    compileFileInner(interner, keywords, codeMap) match {
       case Err(e) => vfail(ParseErrorHumanizer.humanize(codeMap.fileCoordToContents.toMap, e.fileCoord, e.error))
       case Ok(x) => x
     }
@@ -190,23 +193,38 @@ trait TestParseUtils {
   def compileExpr(code: String): IExpressionPE = {
     val opts = GlobalOptions(true, false, true, true)
     val interner = new Interner()
-    val lexer = new Lexer(interner)
+    val keywords = new Keywords(interner)
+    val lexer = new Lexer(interner, keywords)
     val node =
       lexer.lexScramble(LexingIterator(code), false, false)
         .getOrDie()
-    val parser = new Parser(interner, opts)
+    val parser = new Parser(interner, keywords, opts)
     val exprP = parser.expressionParser.parseExpression(node).getOrDie()
+    exprP
+  }
+
+  def compileBlockContents(code: String): IExpressionPE = {
+    val opts = GlobalOptions(true, false, true, true)
+    val interner = new Interner()
+    val keywords = new Keywords(interner)
+    val lexer = new Lexer(interner, keywords)
+    val node =
+      lexer.lexScramble(LexingIterator(code), false, false)
+        .getOrDie()
+    val parser = new Parser(interner, keywords, opts)
+    val exprP = parser.expressionParser.parseBlockContents(new ScrambleIterator(node)).getOrDie()
     exprP
   }
 
   def compileStatement(code: String): IExpressionPE = {
     val opts = GlobalOptions(true, false, true, true)
     val interner = new Interner()
-    val lexer = new Lexer(interner)
+    val keywords = new Keywords(interner)
+    val lexer = new Lexer(interner, keywords)
     val node =
       lexer.lexScramble(LexingIterator(code), false, false)
         .getOrDie()
-    val parser = new Parser(interner, opts)
+    val parser = new Parser(interner, keywords, opts)
     val exprP = parser.expressionParser.parseStatement(new ScrambleIterator(node)).getOrDie()
     exprP
   }
@@ -214,7 +232,7 @@ trait TestParseUtils {
   def compilePattern(code: String): PatternPP = {
     val interner = new Interner()
     val keywords = new Keywords(interner)
-    val lexer = new Lexer(interner)
+    val lexer = new Lexer(interner, keywords)
     val node =
       lexer.lexScramble(LexingIterator(code), false, false)
         .getOrDie()
@@ -228,29 +246,29 @@ trait TestParseUtils {
 
   def compileTemplex(code: String): ITemplexPT = {
     val interner = new Interner()
+    val keywords = new Keywords(interner)
     val node =
-      new Lexer(interner)
-        .lexNode(LexingIterator(code), false, false)
+      new Lexer(interner, keywords)
+        .lexScramble(LexingIterator(code), false, false)
         .getOrDie()
     val exprP =
-      vimpl()
-    //      new PatternParser(interner, GlobalOptions(true, false, true, true))
-    //        .parseExpression(node)
-    //        .getOrDie()
+        new TemplexParser(interner, keywords)
+          .parseTemplex(new ScrambleIterator(node))
+          .getOrDie()
     exprP
   }
 
   def compileRulex(code: String): IRulexPR = {
     val interner = new Interner()
+    val keywords = new Keywords(interner)
     val node =
-      new Lexer(interner)
-        .lexNode(LexingIterator(code), false, false)
+      new Lexer(interner, keywords)
+        .lexScramble(LexingIterator(code), false, false)
         .getOrDie()
     val exprP =
-      vimpl()
-    //      new PatternParser(interner, GlobalOptions(true, false, true, true))
-    //        .parseExpression(node)
-    //        .getOrDie()
+          new TemplexParser(interner, keywords)
+            .parseRule(new ScrambleIterator(node))
+            .getOrDie()
     exprP
   }
 }

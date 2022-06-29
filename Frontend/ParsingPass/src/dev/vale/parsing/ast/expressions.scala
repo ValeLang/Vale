@@ -148,6 +148,7 @@ case class ConstructArrayPE(
 }
 
 case class ConstantIntPE(range: RangeL, value: Long, bits: Option[Long]) extends IExpressionPE {
+  vpass()
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true
@@ -268,6 +269,7 @@ case class LookupPE(
   name: IImpreciseNameP,
   templateArgs: Option[TemplateArgsP]
 ) extends IExpressionPE {
+  vpass()
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def range: RangeL = name.range
   override def needsSemicolonBeforeNextStatement: Boolean = true

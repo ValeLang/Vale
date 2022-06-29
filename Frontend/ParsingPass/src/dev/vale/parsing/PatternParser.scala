@@ -3,7 +3,7 @@ package dev.vale.parsing
 import dev.vale.{Err, Interner, Ok, Result, StrI, U, vassert, vassertSome, vimpl, vwat}
 import dev.vale.parsing.ast.{AbstractP, ConstructingMemberNameDeclarationP, DestructureP, INameDeclarationP, IgnoredLocalNameDeclarationP, LocalNameDeclarationP, NameP, PatternPP}
 import dev.vale.parsing.templex.TemplexParser
-import dev.vale.lexing.{BadDestructureError, BadLocalName, BadNameBeforeDestructure, BadThingAfterTypeInPattern, EmptyParameter, EmptyPattern, FoundBothAbstractAndOverride, FoundParameterWithoutType, INodeLE, IParseError, RangeL, RangedInternalErrorP, ScrambleLE, SquaredLE, SymbolLE, WordLE}
+import dev.vale.lexing.{BadDestructureError, BadLocalName, BadNameBeforeDestructure, BadThingAfterTypeInPattern, EmptyParameter, EmptyPattern, FoundBothAbstractAndOverride, FoundParameterWithoutType, INodeLE, IParseError, Keywords, RangeL, RangedInternalErrorP, ScrambleLE, SquaredLE, SymbolLE, WordLE}
 import dev.vale.parsing.ast._
 
 import scala.collection.mutable
@@ -106,10 +106,8 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
 //    Ok(Some(OverrideP(RangeP(begin, iter.getPos()), tyype)))
 //  }
 
-  def parseParameter(node: ScrambleLE, isInLambda: Boolean): Result[PatternPP, IParseError] = {
-    val patternRange = node.range
-
-    val iter = new ScrambleIterator(node, 0, node.elements.length)
+  def parseParameter(iter: ScrambleIterator, isInLambda: Boolean): Result[PatternPP, IParseError] = {
+    val patternRange = iter.range
 
     val maybeVirtual =
       iter.peek() match {
@@ -124,15 +122,21 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
     val maybePreBorrow =
       iter.peek() match {
         case None => return Err(EmptyParameter(patternRange.begin))
-        case Some(SymbolLE(range, '&')) => Some(range)
+        case Some(SymbolLE(range, '&')) => {
+          iter.advance()
+          Some(range)
+        }
         case Some(_) => None
       }
 
     val name =
       iter.peek() match {
-        case None => return Err(EmptyParameter(patternRange.begin))
-        case Some(WordLE(range, str)) => Some(LocalNameDeclarationP(NameP(range, str)))
+        case Some(WordLE(range, str)) => {
+          iter.advance()
+          Some(LocalNameDeclarationP(NameP(range, str)))
+        }
         case Some(other) => return Err(BadLocalName(other.range.begin))
+        case None => return Err(EmptyParameter(patternRange.begin))
       }
 
     val maybeType =
@@ -160,12 +164,15 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
       return Err(EmptyPattern(patternBegin))
     }
 
+    // A hack so we can highlight &self
+    iter.trySkipSymbol('&')
+
     val nameIsNext =
       iter.peek(2) match {
         case Array(None, None) => vwat() // impossible
         case Array(Some(_), None) => true
         case Array(Some(first), Some(second)) => {
-          if (first.range.begin < second.range.end) {
+          if (first.range.end < second.range.begin) {
             // There's a space after the first thing, so it's a name.
             true
           } else {
@@ -225,8 +232,9 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
       }
 
     val maybeDestructure =
-      iter.take() match {
+      iter.peek() match {
         case Some(SquaredLE(destructureRange, destructureElements)) => {
+          iter.advance()
           val destructure =
             DestructureP(
               destructureRange,

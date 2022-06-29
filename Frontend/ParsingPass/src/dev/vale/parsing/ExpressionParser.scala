@@ -44,14 +44,10 @@ class ScrambleIterator(
   assert(end <= scramble.elements.length)
 
   def range: RangeL = {
-    if (scramble.elements.isEmpty) {
-      scramble.range
-    }
-    else {
-      RangeL(
-        scramble.elements(index).range.begin,
-        scramble.elements(end - 1).range.end)
-    }
+    vassert(index < end)
+    RangeL(
+      scramble.elements(index).range.begin,
+      scramble.elements(end - 1).range.end)
   }
 
   def getPos(): Int = {
@@ -77,6 +73,9 @@ class ScrambleIterator(
     if (index >= end) None
     else Some(advance())
   }
+  // This is an Array[Option[INodeLE]] instead of an Array[INodeLE]
+  // because we like to be able to ignore the tail end of something like
+  // case Array(Some(whatever), _)
   def peek(n: Int): Array[Option[INodeLE]] = {
     index.until(index + n).map(i => {
       if (i < end) Some(scramble.elements(i))
@@ -146,16 +145,16 @@ class ScrambleIterator(
     }
   }
   def expectWord(str: StrI): Unit = {
-    val found = trySkipWord(str)
+    val found = trySkipWord(str).nonEmpty
     vassert(found)
   }
-  def trySkipWord(str: StrI): Boolean = {
+  def trySkipWord(str: StrI): Option[RangeL] = {
     peek() match {
-      case Some(WordLE(_, s)) if s == str => {
+      case Some(WordLE(range, s)) if s == str => {
         advance()
-        true
+        Some(range)
       }
-      case _ => false
+      case _ => None
     }
   }
 //  def exists(func: scala.Function1[INodeLE, Boolean]): Boolean = {
@@ -217,7 +216,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
   private def parseWhile(iter: ScrambleIterator): Result[Option[WhilePE], IParseError] = {
     val whileBegin = iter.getPos()
 
-    if (!iter.trySkipWord(keywords.whiile)) {
+    if (iter.trySkipWord(keywords.whiile).isEmpty) {
       return Ok(None)
     }
 
@@ -258,42 +257,57 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
 
     val tentativeIter = originalIter.clone()
 
-    if (tentativeIter.trySkipWord(keywords.parallel)) {
+    if (tentativeIter.trySkipWord(keywords.parallel).nonEmpty) {
       // do nothing for now
     }
 
-    if (!tentativeIter.trySkipWord(keywords.foreeach)) {
+    if (tentativeIter.trySkipWord(keywords.foreeach).isEmpty) {
       return Ok(None)
     }
     originalIter.skipTo(tentativeIter)
     val iter = originalIter
 
-    val pattern =
-      patternParser.parsePattern(iter) match {
-        case Err(cpe) => return Err(cpe)
-        case Ok(result) => result
-      }
-
-
-    val inBegin = iter.getPos()
-    if (!iter.trySkipWord(keywords.in)) {
-      return Err(BadForeachInError(iter.getPos()))
-    }
-    val inEnd = iter.getPos()
-
-
-
-    val iterableExpr =
-      iter.peek() match {
-        case None => return Err(BadForeachIterableError(iter.getPos()))
-        case Some(CurliedLE(range, contents)) => {
-          parseBlockContents(new ScrambleIterator(contents)) match {
-            case Err(err) => return Err(err)
-            case Ok(expression) => expression
+    val (inRange, pattern) =
+      ParseUtils.trySkipPastKeywordWhile(
+        iter,
+        keywords.in,
+        it => {
+          it.peek() match {
+            // Stop if we hit the end or a semicolon or a curly brace
+            case None => false
+            case Some(SymbolLE(_, ';')) => false
+            case Some(CurliedLE(_, _)) => false
+            // Continue for anything else
+            case Some(_) => true
+          }
+        }) match {
+        case None => return Err(BadForeachInError(iter.getPos()))
+        case Some((in, patternIter)) => {
+          patternParser.parsePattern(patternIter) match {
+            case Err(cpe) => return Err(cpe)
+            case Ok(result) => (in.range, result)
           }
         }
-        case Some(s) => {
-          parseExpression(s) match {
+      }
+
+    val iterableExpr =
+      ParseUtils.trySkipTo(
+        iter,
+        it => {
+          it.peek() match {
+            case None => true
+            case Some(CurliedLE(_, _)) => true
+
+            // We actually can encounter a semicolon, if we have a complex
+            // iterable like in: foreach x in ship = moo(); ship.alive { ... }
+            // case Some(SymbolLE(_, ';')) => true
+
+            case _ => false
+          }
+        }) match {
+        case None => return Err(BadForeachIterableError(iter.getPos()))
+        case Some(iterableIter) => {
+          parseBlockContents(iterableIter) match {
             case Err(err) => return Err(err)
             case Ok(expression) => expression
           }
@@ -305,6 +319,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
     val body =
       iter.peek() match {
         case Some(CurliedLE(_, contents)) => {
+          iter.advance()
           parseBlockContents(new ScrambleIterator(contents)) match {
             case Err(cpe) => return Err(cpe)
             case Ok(result) => result
@@ -321,7 +336,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
         EachPE(
           RangeL(eachBegin, eachEnd),
           pattern,
-          RangeL(inBegin, inEnd),
+          inRange,
           iterableExpr,
           ast.BlockPE(RangeL(bodyBegin, bodyEnd), body))))
   }
@@ -329,8 +344,9 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
   private def parseIfLadder(iter: ScrambleIterator): Result[Option[IfPE], IParseError] = {
     val ifLadderBegin = iter.getPos()
 
-    if (!iter.trySkipWord(keywords.iff)) {
-      return Ok(None)
+    iter.peek() match {
+      case Some(WordLE(_, str)) if str == keywords.iff =>
+      case _ => return Ok(None)
     }
 
     val rootIf =
@@ -356,7 +372,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
 
     val elseBegin = iter.getPos()
     val maybeElseBlock =
-      if (iter.trySkipWord(keywords.elsse)) {
+      if (iter.trySkipWord(keywords.elsse).nonEmpty) {
         val body =
           iter.peek() match {
             case Some(b @ CurliedLE(_, _)) => iter.advance(); b
@@ -418,12 +434,13 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
     iter: ScrambleIterator):
   Result[Option[MutatePE], IParseError] = {
     val mutateBegin = iter.getPos()
-    if (!iter.trySkipWord(keywords.set)) {
+    if (iter.trySkipWord(keywords.set).isEmpty) {
       return Ok(None)
     }
 
     ParseUtils.trySkipPastEqualsWhile(iter, scoutingIter => {
       scoutingIter.peek() match {
+        case None => false
         case Some(SymbolLE(_, ';')) => false
         case _ => true
       }
@@ -476,37 +493,50 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
   private def parseIfPart(
     iter: ScrambleIterator):
   Result[(IExpressionPE, BlockPE), IParseError] = {
-    vimpl()
-//    if (!iter.trySkipWord("if")) {
-//      vwat()
-//    }
-//
-//    val condition =
-//      parseBlockContents(iter) match {
-//        case Ok(result) => result
-//        case Err(cpe) => return Err(cpe)
-//      }
-//
-//    val bodyBegin = iter.getPos()
-//    if (!iter.trySkipWord("\\{")) {
-//      return Err(BadStartOfIfBody(iter.position))
-//    }
-//
-//    val body =
-//      parseBlockContents(iter) match {
-//        case Ok(result) => result
-//        case Err(cpe) => return Err(cpe)
-//      }
-//
-//    if (!iter.trySkipWord("\\}")) {
-//      return Err(BadEndOfIfBody(iter.position))
-//    }
-//    val bodyEnd = iter.getPos()
-//
-//    Ok(
-//      (
-//        condition,
-//        ast.BlockPE(RangeL(bodyBegin, bodyEnd), body)))
+    if (iter.trySkipWord(keywords.iff).isEmpty) {
+      vwat()
+    }
+
+    val conditionPE =
+      ParseUtils.trySkipTo(
+        iter,
+        it => {
+          it.peek() match {
+            case None => true
+            case Some(CurliedLE(_, _)) => true
+
+            // We actually can encounter a semicolon, if we have a complex
+            // condition like in: if ship = moo(); ship.alive { ... }
+            // case Some(SymbolLE(_, ';')) => true
+
+            case _ => false
+          }
+        }) match {
+        case None => return Err(BadEndOfIfCondition(iter.getPos()))
+        case Some(conditionIter) => {
+          parseBlockContents(conditionIter) match {
+            case Err(err) => return Err(err)
+            case Ok(expression) => expression
+          }
+        }
+      }
+
+    val body =
+      iter.peek() match {
+        case Some(CurliedLE(_, contents)) => {
+          iter.advance()
+          parseBlockContents(new ScrambleIterator(contents)) match {
+            case Ok(result) => result
+            case Err(cpe) => return Err(cpe)
+          }
+        }
+        case None => return Err(BadStartOfIfBody(iter.getPos()))
+      }
+
+    Ok(
+      (
+        conditionPE,
+        ast.BlockPE(body.range, body)))
   }
 
   def parseBlock(blockL: CurliedLE): Result[IExpressionPE, IParseError] = {
@@ -516,37 +546,44 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
   def parseBlockContents(iter: ScrambleIterator): Result[IExpressionPE, IParseError] = {
     val statementsP = new Accumulator[IExpressionPE]()
 
-    val endedInSemicolon =
-      if (iter.scramble.elements.nonEmpty) {
-        iter.scramble.elements(iter.end - 1) match {
-          case SymbolLE(range, ';') => true
-          case _ => false
-        }
-      } else {
-        false
-      }
+//    val endedInSemicolon =
+//      if (iter.scramble.elements.nonEmpty) {
+//        iter.scramble.elements(iter.end - 1) match {
+//          case SymbolLE(range, ';') => true
+//          case _ => false
+//        }
+//      } else {
+//        false
+//      }
 
     while (iter.hasNext) {
-      val statementEnd =
-        iter.findIndexWhere({
-          case SymbolLE(_, ';') => true
-          case _ => false
-        }) match {
-          case None => iter.end
-          case Some(index) => index
+      ParseUtils.trySkipPastSemicolonWhile(iter, it => it.hasNext) match {
+        case None => {
+          if (iter.hasNext) {
+            val statementP =
+              parseStatement(iter) match {
+                case Err(error) => return Err(error)
+                case Ok(s) => s
+              }
+            statementsP.add(statementP)
+          } else {
+            statementsP.add(VoidPE(RangeL(iter.getPos(), iter.getPos())))
+          }
         }
-      iter.end = statementEnd
+        case Some(iterBeforeSemicolon) => {
+          val statementP =
+            parseStatement(iterBeforeSemicolon) match {
+              case Err(error) => return Err(error)
+              case Ok(s) => s
+            }
+          statementsP.add(statementP)
 
-      val statementP =
-        parseStatement(iter) match {
-          case Err(error) => return Err(error)
-          case Ok(s) => s
+          // If we just ate a semicolon, but there's nothing after it, then add a void.
+          if (!iter.hasNext) {
+            statementsP.add(VoidPE(RangeL(iter.getPos(), iter.getPos())))
+          }
         }
-      statementsP.add(statementP)
-    }
-
-    if (endedInSemicolon) {
-      statementsP.add(VoidPE(RangeL(iter.getPos(), iter.getPos())))
+      }
     }
 
     statementsP.size match {
@@ -566,7 +603,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
     tentativeIter.trySkipWord(keywords.unsafe)
     tentativeIter.trySkipWord(keywords.pure)
 
-    if (!tentativeIter.trySkipWord(keywords.block)) {
+    if (tentativeIter.trySkipWord(keywords.block).isEmpty) {
       return Ok(None)
     }
 
@@ -597,7 +634,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
     iter: ScrambleIterator):
   Result[Option[IExpressionPE], IParseError] = {
     val begin = iter.getPos()
-    if (!iter.trySkipWord(keywords.destruct)) {
+    if (iter.trySkipWord(keywords.destruct).isEmpty) {
       return Ok(None)
     }
 
@@ -609,7 +646,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
     iter: ScrambleIterator):
   Result[Option[IExpressionPE], IParseError] = {
     val begin = iter.getPos()
-    if (!iter.trySkipWord(keywords.unlet)) {
+    if (iter.trySkipWord(keywords.unlet).isEmpty) {
       return Ok(None)
     }
     val local =
@@ -624,7 +661,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
     iter: ScrambleIterator):
   Result[Option[IExpressionPE], IParseError] = {
     val begin = iter.getPos()
-    if (!iter.trySkipWord(keywords.retuurn)) {
+    if (iter.trySkipWord(keywords.retuurn).isEmpty) {
       return Ok(None)
     }
 
@@ -636,14 +673,12 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
     iter: ScrambleIterator):
   Result[Option[IExpressionPE], IParseError] = {
     val begin = iter.getPos()
-    if (!iter.trySkipWord(keywords.break)) {
+    if (iter.trySkipWord(keywords.break).isEmpty) {
       return Ok(None)
     }
     Ok(Some(BreakPE(RangeL(begin, iter.getPos()))))
   }
 
-  // expectEnder should be true if we should expect to end with a semicolon or a right brace.
-  // expectResult should be true if we should expect the statement to produce a result.
   private[parsing] def parseStatement(
     iter: ScrambleIterator):
   Result[IExpressionPE, IParseError] = {
@@ -696,6 +731,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
 
     ParseUtils.trySkipPastEqualsWhile(iter, scoutingIter => {
       scoutingIter.peek() match {
+        case None => false
         case Some(SymbolLE(_, ';')) => false
         case _ => true
       }
@@ -824,28 +860,35 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
 
   def parseBoolean(iter: ScrambleIterator): Option[IExpressionPE] = {
     val start = iter.getPos()
-    if (iter.trySkipWord(truue)) {
-      return Some(ConstantBoolPE(RangeL(start, iter.getPos()), true))
+    iter.trySkipWord(truue) match {
+      case Some(range) => return Some(ConstantBoolPE(range, true))
+      case _ =>
     }
-    if (iter.trySkipWord(faalse)) {
-      return Some(ConstantBoolPE(RangeL(start, iter.getPos()), false))
+    iter.trySkipWord(faalse) match {
+      case Some(range) => return Some(ConstantBoolPE(range, false))
+      case _ =>
     }
     return None
   }
 
   def parseAtom(iter: ScrambleIterator): Result[Option[IExpressionPE], IParseError] = {
+    vassert(iter.hasNext)
     val begin = iter.getPos()
 
     // See BRCOBS
-    if (iter.trySkipWord(keywords.break)) {
+    if (iter.trySkipWord(keywords.break).nonEmpty) {
       return Err(CantUseBreakInExpression(iter.getPos()))
     }
     // See BRCOBS
-    if (iter.trySkipWord(keywords.retuurn)) {
+    if (iter.trySkipWord(keywords.retuurn).nonEmpty) {
       return Err(CantUseReturnInExpression(iter.getPos()))
     }
-    if (iter.trySkipWord(keywords.UNDERSCORE)) {
-      return Ok(Some(MagicParamLookupPE(RangeL(begin, iter.getPos()))))
+    if (iter.trySkipWord(keywords.whiile).nonEmpty) {
+      return Err(CantUseWhileInExpression(iter.getPos()))
+    }
+    iter.trySkipWord(keywords.UNDERSCORE) match {
+      case Some(range) => return Ok(Some(MagicParamLookupPE(range)))
+      case _ =>
     }
     parseForeach(iter) match {
       case Err(e) => return Err(e)
@@ -892,16 +935,16 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
       case Some(e) => return Ok(Some(e))
       case None =>
     }
-//    parseArray(iter) match {
-//      case Err(err) => return Err(err)
-//      case Ok(Some(e)) => return Ok(Some(e))
-//      case Ok(None) =>
-//    }
-//    parseLambda(iter) match {
-//      case Err(err) => return Err(err)
-//      case Ok(Some(e)) => return Ok(Some(e))
-//      case Ok(None) =>
-//    }
+    parseArray(iter) match {
+      case Err(err) => return Err(err)
+      case Ok(Some(e)) => return Ok(Some(e))
+      case Ok(None) =>
+    }
+    parseLambda(iter) match {
+      case Err(err) => return Err(err)
+      case Ok(Some(e)) => return Ok(Some(e))
+      case Ok(None) =>
+    }
     parseLookup(iter) match {
       case Some(e) => return Ok(Some(e))
       case None =>
@@ -1189,7 +1232,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
   def parseSquarePack(iter: ScrambleIterator): Result[Option[Vector[IExpressionPE]], IParseError] = {
     val squaredLE =
       iter.peek() match {
-        case Some(p @ ParendLE(_, _)) => iter.advance(); p
+        case Some(p @ SquaredLE(_, _)) => iter.advance(); p
         case None => return Ok(None)
       }
 
@@ -1283,14 +1326,14 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
     // First, get the prefixes out of the way, such as & not etc.
     // Then we'll parse the atom and suffixes (.moo, ..5, etc.) and
     // *then* wrap those in the prefixes, so we get e.g. not(x.moo)
-    if (iter.trySkipWord(keywords.NOT)) {
+    if (iter.trySkipWord(keywords.NOT).nonEmpty) {
       val innerPE =
         parseExpressionDataElement(iter) match {
           case Err(e) => return Err(e)
           case Ok(None) => vwat()
           case Ok(Some(x)) => x
         }
-      return Ok(Some(NotPE(RangeL(begin, iter.getPos()), innerPE)))
+      return Ok(Some(NotPE(RangeL(begin, innerPE.range.end), innerPE)))
     }
 
     parseIfLadder(iter) match {
@@ -1363,7 +1406,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
 
   def parseBracedBody(iter: ScrambleIterator):  Result[BlockPE, IParseError] = {
     vimpl()
-//    if (!iter.trySkipWord("\\s*\\{")) {
+//    if (iter.trySkipWord("\\s*\\{").isEmpty) {
 //      return Ok(None)
 //    }
 //
@@ -1373,7 +1416,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
 //        case Err(e) => return Err(e)
 //        case Ok(x) => x
 //      }
-//    if (!iter.trySkipWord("\\}")) {
+//    if (iter.trySkipWord("\\}").isEmpty) {
 //      vwat()
 //    }
 //    Ok(Some(ast.BlockPE(RangeL(bodyBegin, iter.getPos()), bodyContents)))
@@ -1452,137 +1495,181 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
 //    Some(params)
   }
 
-  def parseLambda(iter: ScrambleIterator): Result[IExpressionPE, IParseError] = {
-    vimpl()
-//    val begin = iter.getPos()
-//    val maybeParams =
-//      parseSingleArgLambdaBegin(iter) match {
-//        case Some(p) => Some(p)
-//        case None => {
-//          parseMultiArgLambdaBegin(iter) match {
-//            case Some(p) => Some(p)
-//            case None => {
-//              if (stopBefore == StopBeforeOpenBrace && iter.peek(() => "^\\s*\\{")) {
-//                return Ok(None)
-//              } else {
-//                None
-//              }
-//            }
-//          }
-//        }
-//      }
-//
-//
-//    val body =
-//      parseBracedBody(iter) match {
-//        case Err(e) => return Err(e)
-//        case Ok(Some(x)) => x
-//        case Ok(None) => {
-//          if (maybeParams.isEmpty) {
-//            // If theres no params and no braces, we're done here
-//            return Ok(None)
-//          }
-//          val bodyBegin = iter.getPos()
-//          parseExpression(iter) match {
-//            case Err(e) => return Err(e)
-//            case Ok(x) => BlockPE(RangeL(bodyBegin, iter.getPos()), x)
-//          }
-//        }
-//      }
-//    val lam =
-//      LambdaPE(
-//        None,
-//        FunctionP(
-//          RangeL(begin, iter.getPos()),
-//          FunctionHeaderP(
-//            RangeL(begin, iter.getPos()),
-//            None,
-//            Vector(),
-//            None,
-//            None,
-//            maybeParams,
-//            FunctionReturnP(RangeL(iter.getPos(), iter.getPos()), None, None)),
-//          Some(body)))
-//    Ok(Some(lam))
+  def parseLambda(iter: ScrambleIterator): Result[Option[IExpressionPE], IParseError] = {
+    val begin = iter.getPos()
+    val headerP =
+      iter.peek(3) match {
+        case Array(Some(CurliedLE(range, contents)), _, _) => {
+          val retuurn = FunctionReturnP(RangeL(iter.getPos(), iter.getPos()), None, None)
+          // Don't iter.advance() because we still need to parse this later
+          FunctionHeaderP(range, None, Vector(), None, None, None, retuurn)
+        }
+        case Array(Some(CurliedLE(range, contents)), _, _) => {
+          val retuurn = FunctionReturnP(RangeL(iter.getPos(), iter.getPos()), None, None)
+          // Don't iter.advance() because we still need to parse this later
+          FunctionHeaderP(range, None, Vector(), None, None, None, retuurn)
+        }
+        case Array(Some(WordLE(paramRange, paramName)), Some(SymbolLE(eqRange, '=')), Some(SymbolLE(gtRange, '>'))) => {
+          if (eqRange.end != gtRange.begin) {
+            return Err(BadLambdaBegin(eqRange.begin))
+          }
+          iter.advance()
+          iter.advance()
+          iter.advance()
+          val param = PatternPP(paramRange, None, Some(LocalNameDeclarationP(NameP(paramRange, paramName))), None, None, None)
+          val params = ParamsP(paramRange, Vector(param))
+          val retuurn = FunctionReturnP(RangeL(iter.getPos(), iter.getPos()), None, None)
+          val range = RangeL(begin, iter.getPos())
+          FunctionHeaderP(range, None, Vector(), None, None, Some(params), retuurn)
+        }
+        case Array(Some(ParendLE(paramsRange, paramsContents)), Some(SymbolLE(eqRange, '=')), Some(SymbolLE(gtRange, '>'))) => {
+          if (eqRange.end != gtRange.begin) {
+            return Err(BadLambdaBegin(eqRange.begin))
+          }
+          iter.advance()
+          iter.advance()
+          iter.advance()
+          val paramsP =
+            ParamsP(
+              paramsRange,
+              U.map[ScrambleIterator, PatternPP](
+                new ScrambleIterator(paramsContents).splitOnSymbol(',', false),
+                patternIter => {
+                  patternParser.parseParameter(patternIter, true) match {
+                    case Err(e) => return Err(e)
+                    case Ok(x) => x
+                  }
+                }).toVector)
+          val retuurn = FunctionReturnP(RangeL(iter.getPos(), iter.getPos()), None, None)
+          val range = RangeL(begin, iter.getPos())
+          FunctionHeaderP(range, None, Vector(), None, None, Some(paramsP), retuurn)
+        }
+        case Array(_, _, _) => return Ok(None)
+      }
+
+    val bodyP =
+      iter.peek() match {
+        case Some(blockL@CurliedLE(range, contents)) => {
+          iter.advance()
+          val statementsP =
+            parseBlock(blockL) match {
+              case Err(err) => return Err(err)
+              case Ok(result) => result
+            }
+          BlockPE(blockL.range, statementsP)
+        }
+        case Some(_) => {
+          parseExpression(iter) match {
+            case Err(err) => return Err(err)
+            case Ok(result) => BlockPE(result.range, result)
+          }
+        }
+        case _ => vwat()
+      }
+
+    val lam = LambdaPE(None, FunctionP(RangeL(begin, iter.getPos()), headerP, Some(bodyP)))
+    Ok(Some(lam))
   }
 
-  def parseArray(originalIter: ScrambleIterator): Result[IExpressionPE, IParseError] = {
-    vimpl()
-//    val tentativeIter = originalIter.clone()
-//    val begin = tentativeIter.getPos()
-//
-//    val mutability =
-//      if (tentativeIter.trySkipWord("#")) {
-//        MutabilityPT(RangeL(begin, tentativeIter.getPos()), ImmutableP)
-//      } else {
-//        MutabilityPT(RangeL(begin, tentativeIter.getPos()), MutableP)
-//      }
-//
-//    if (!tentativeIter.trySkipWord("\\[")) {
-//      return Ok(None)
-//    }
-//    originalIter.skipTo(tentativeIter.position)
-//    val iter = originalIter
-//
-//    val size =
-//      if (iter.trySkipWord("#")) {
-//        val sizeTemplex =
-//          if (iter.peek(() => "^]")) {
-//            None
-//          } else {
-//            new TemplexParser().parseTemplex(iter) match {
-//              case Err(e) => return Err(e)
-//              case Ok(e) => Some(e)
-//            }
-//          }
-//        StaticSizedP(sizeTemplex)
-//      } else {
-//        RuntimeSizedP
-//      }
-//    if (!iter.trySkipWord("\\]")) {
-//      return Err(BadArraySizerEnd(iter.getPos()))
-//    }
-//
-//    val tyype =
-//      if (!iter.peek(() => "^\\s*[\\[\\(]")) {
-//        new TemplexParser().parseTemplex(iter) match {
-//          case Err(e) => return Err(e)
-//          case Ok(e) => Some(e)
-//        }
-//      } else {
-//        None
-//      }
-//
-//    val (initializingByValues, args) =
-//      if (iter.peek(() => "^\\[")) {
-//        val values =
-//          parseSquarePack(iter) match {
-//            case Ok(None) => vwat()
-//            case Ok(Some(e)) => e
-//            case Err(e) => return Err(e)
-//          }
-//        (true, values)
-//      } else if (iter.peek(() => "^\\(")) {
-//        val args =
-//          parsePack(iter) match {
-//            case Ok(None) => vwat()
-//            case Ok(Some(e)) => e
-//            case Err(e) => return Err(e)
-//          }
-//        (false, args)
-//      } else {
-//        return Err(BadArraySpecifier(iter.getPos()))
-//      }
-//    val arrayPE =
-//      ConstructArrayPE(
-//        RangeL(begin, iter.getPos()),
-//        tyype,
-//        Some(mutability),
-//        None,
-//        size,
-//        initializingByValues,
-//        args)
-//    Ok(Some(arrayPE))
+  def parseArray(originalIter: ScrambleIterator): Result[Option[IExpressionPE], IParseError] = {
+    val tentativeIter = originalIter.clone()
+    val begin = tentativeIter.getPos()
+
+    val mutability =
+      if (tentativeIter.trySkipSymbol('#')) {
+        MutabilityPT(RangeL(begin, tentativeIter.getPos()), ImmutableP)
+      } else {
+        MutabilityPT(RangeL(begin, tentativeIter.getPos()), MutableP)
+      }
+
+    // If there's no square, we're not making an array.
+    val sizer =
+      tentativeIter.peek() match {
+        case Some(s @ SquaredLE(_, _)) => s
+        case _ => return Ok(None)
+      }
+    tentativeIter.advance()
+
+
+    val isArray =
+      tentativeIter.peek() match {
+        // If there's nothing after the square brackets, it's not an array.
+        case None => false
+        case Some(SymbolLE(range, '.')) => false
+        case _ => true
+      }
+
+    if (!isArray) {
+      // Not an array, bail.
+      // TODO: Someday, we could interpret this occurrence as a way to make a List.
+      return Ok(None)
+    }
+
+    originalIter.skipTo(tentativeIter)
+    val iter = originalIter
+
+    val sizerIter = new ScrambleIterator(sizer.contents)
+    val size =
+      if (sizerIter.trySkipSymbol('#')) {
+        val sizeTemplex =
+          if (sizerIter.hasNext) {
+            templexParser.parseTemplex(sizerIter) match {
+              case Err(e) => return Err(e)
+              case Ok(e) => Some(e)
+            }
+          } else {
+            None
+          }
+        StaticSizedP(sizeTemplex)
+      } else {
+        RuntimeSizedP
+      }
+
+    val tyype =
+      iter.peek() match {
+        case Some(SquaredLE(range, contents)) => None
+        case Some(ParendLE(range, contents)) => None
+        case _ => {
+          templexParser.parseTemplex(iter) match {
+            case Err(e) => return Err(e)
+            case Ok(e) => Some(e)
+          }
+        }
+        case _ => return Err(BadArraySpecifier(iter.getPos()))
+      }
+
+    val (initializingByValues, args) =
+      iter.peek() match {
+        case Some(SquaredLE(_, _)) => {
+          val values =
+            parseSquarePack(iter) match {
+              case Ok(None) => vwat()
+              case Ok(Some(e)) => e
+              case Err(e) => return Err(e)
+            }
+          (true, values)
+        }
+        case Some(ParendLE(range, contents)) => {
+          val args =
+            parsePack(iter) match {
+              case Ok(None) => vwat()
+              case Ok(Some(e)) => e
+              case Err(e) => return Err(e)
+            }
+          (false, args)
+        }
+        case _ => return Err(BadArraySpecifier(iter.getPos()))
+      }
+    val arrayPE =
+      ConstructArrayPE(
+        RangeL(begin, iter.getPos()),
+        tyype,
+        Some(mutability),
+        None,
+        size,
+        initializingByValues,
+        args)
+    Ok(Some(arrayPE))
   }
 
   // Returns the index we stopped at, which will be either
@@ -1648,13 +1735,27 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
   def parseBinaryCall(iter: ScrambleIterator):
   Result[Option[NameP], IParseError] = {
     val name =
-      iter.peek() match {
-        case None => return Ok(None)
-        case Some(WordLE(range, str)) => NameP(range, str)
-        case Some(SymbolLE(range, str)) => NameP(range, interner.intern(StrI(str.toString)))
-        case Some(_) => return Err(BadBinaryFunctionName(iter.getPos()))
+      iter.peek(2) match {
+        case Array(Some(WordLE(range, str)), _) => {
+          iter.advance()
+          NameP(range, str)
+        }
+        case Array(Some(SymbolLE(range, s @ ('+' | '-' | '*' | '/'))), _) => {
+          iter.advance()
+          NameP(range, interner.intern(StrI(s.toString)))
+        }
+        case Array(Some(SymbolLE(range1, s1 @ ('>' | '<' | '=' | '!'))), Some(SymbolLE(range2, '='))) => {
+          iter.advance()
+          iter.advance()
+          NameP(RangeL(range1.begin, range2.end), interner.intern(StrI(s1.toString + '=')))
+        }
+        case Array(Some(SymbolLE(range, s @ ('>' | '<'))), _) => {
+          iter.advance()
+          NameP(range, interner.intern(StrI(s.toString)))
+        }
+        case Array(_, _) => return Ok(None)
       }
-    iter.advance()
+
     Ok(Some(name))
   }
 

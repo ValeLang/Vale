@@ -50,19 +50,17 @@ class IfTests extends FunSuite with Matchers with Collector with TestParseUtils 
   }
 
   test("19") {
-    vimpl()
-//    val e = new ExpressionParser(GlobalOptions(true, true, true, true))
-//    compile(e.parseBlockContents(_),
-//      "newLen = if num == 0 { 1 } else { 2 };") shouldHave {
-//      case ConsecutorPE(
-//        Vector(
-//          LetPE(_,
-//            PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, StrI("newLen")))),None,None,None),
-//            IfPE(_,
-//              BinaryCallPE(_,NameP(_,StrI("==")),LookupPE(LookupNameP(NameP(_, StrI("num"))),None),ConstantIntPE(_,0,_)),
-//              BlockPE(_,ConstantIntPE(_,1,_)),
-//              BlockPE(_,ConstantIntPE(_,2,32)))),
-//          VoidPE(_))) =>
-//    }
+    compileBlockContents(
+      "newLen = if num == 0 { 1 } else { 2 };") shouldHave {
+      case ConsecutorPE(
+        Vector(
+          LetPE(_,
+            PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, StrI("newLen")))),None,None,None),
+            IfPE(_,
+              BinaryCallPE(_,NameP(_,StrI("==")),LookupPE(LookupNameP(NameP(_, StrI("num"))),None),ConstantIntPE(_,0,_)),
+              BlockPE(_,ConstantIntPE(_,1,_)),
+              BlockPE(_,ConstantIntPE(_,2,None)))),
+          VoidPE(_))) =>
+    }
   }
 }

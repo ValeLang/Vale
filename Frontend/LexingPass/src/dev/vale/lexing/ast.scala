@@ -1,6 +1,6 @@
 package dev.vale.lexing
 
-import dev.vale.{IInterning, StrI, vassert, vcurious, vwat}
+import dev.vale.{IInterning, StrI, vassert, vcurious, vpass, vwat}
 
 case class RangeL(begin: Int, end: Int) {
   override def hashCode(): Int = vcurious()
@@ -27,11 +27,11 @@ case class TopLevelImportL(imporrt: ImportL) extends IDenizenL { override def eq
 
 case class ImplL(
   range: RangeL,
-  identifyingRunes: Option[INodeLE],
+  identifyingRunes: Option[AngledLE],
   templateRules: Option[ScrambleLE],
   // Option because we can say `impl MyInterface;` inside a struct.
-  struct: Option[INodeLE],
-  interface: INodeLE,
+  struct: Option[ScrambleLE],
+  interface: ScrambleLE,
   attributes: Array[IAttributeL]
 ) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
@@ -59,7 +59,7 @@ case class InterfaceL(
   range: RangeL,
   name: WordLE,
   attributes: Array[IAttributeL],
-  mutability: INodeLE,
+  mutability: Option[ScrambleLE],
   maybeIdentifyingRunes: Option[INodeLE],
   templateRules: Option[ScrambleLE],
   members: Array[FunctionL]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
@@ -129,6 +129,8 @@ case class ScrambleLE(
 //  semicolonPositions: Array[Int],
 //  equalsPositions: Array[Int]
 ) extends INodeLE {
+  vpass()
+
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
 
   elements.foreach({
@@ -154,7 +156,6 @@ case class CurliedLE(range: RangeL, contents: ScrambleLE) extends INodeLE {
 }
 
 case class WordLE(range: RangeL, str: StrI) extends INodeLE {
-  vassert(!str.str.contains("<"))
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
 }
 

@@ -8,6 +8,27 @@ import org.scalatest.{FunSuite, Matchers}
 
 
 class FunctionTests extends FunSuite with Collector with TestParseUtils {
+  test("Simple function") {
+    vassertOne(compileFileExpect("""func main() { }""").denizens) match {
+      case TopLevelFunctionP(
+      FunctionP(_,
+      FunctionHeaderP(_,
+      Some(NameP(_,StrI("main"))),
+      Vector(),None,None,Some(ParamsP(_,Vector())),
+      FunctionReturnP(_,None,None)),
+      Some(BlockPE(_,VoidPE(_))))) =>
+    }
+  }
+
+  test("Functions with weird names") {
+    vassertOne(compileFileExpect("""func !=() { }""").denizens)
+    vassertOne(compileFileExpect("""func <=() { }""").denizens)
+    vassertOne(compileFileExpect("""func >=() { }""").denizens)
+    vassertOne(compileFileExpect("""func <() { }""").denizens)
+    vassertOne(compileFileExpect("""func >() { }""").denizens)
+    vassertOne(compileFileExpect("""func ==() { }""").denizens)
+  }
+
   test("Function then struct") {
     val program =
       compileFile(
@@ -20,7 +41,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
     program.denizens(1) match { case TopLevelStructP(_) => }
   }
 
-  test("Simple function") {
+  test("Simple function with return") {
     compileDenizen("func sum() int {3}").getOrDie() match {
       case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
@@ -201,18 +222,6 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
     }
   }
 
-
-  test("Simple function") {
-    vassertOne(compileFileExpect("""func main() { }""").denizens) match {
-      case TopLevelFunctionP(
-        FunctionP(_,
-          FunctionHeaderP(_,
-            Some(NameP(_,StrI("main"))),
-            Vector(),None,None,Some(ParamsP(_,Vector())),
-            FunctionReturnP(_,None,None)),
-          Some(BlockPE(_,VoidPE(_))))) =>
-    }
-  }
 
   test("Function with parameter and return") {
     vassertOne(compileFileExpect("""func main(moo T) T { }""").denizens) shouldHave {

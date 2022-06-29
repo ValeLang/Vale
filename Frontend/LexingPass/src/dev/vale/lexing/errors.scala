@@ -16,6 +16,8 @@ case class RangedInternalErrorP(pos: Int, msg: String) extends IParseError { ove
 case class UnrecognizableExpressionAfterAugment(pos: Int) extends IParseError { override def errorId: String = "P1001"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class OnlyRegionRunesCanHaveMutability(pos: Int) extends IParseError { override def errorId: String = "P1001"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadMemberEnd(pos: Int) extends IParseError { override def errorId: String = "P1001"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class BadLambdaBegin(pos: Int) extends IParseError { override def errorId: String = "P1001"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class BadLambdaBodyBegin(pos: Int) extends IParseError { override def errorId: String = "P1001"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class EmptyParameter(pos: Int) extends IParseError { override def errorId: String = "P1001"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class EmptyPattern(pos: Int) extends IParseError { override def errorId: String = "P1001"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class FoundParameterWithoutType(pos: Int) extends IParseError { override def errorId: String = "P1001"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
@@ -61,6 +63,7 @@ case class UnknownTupleOrSubExpression(pos: Int) extends IParseError { override 
 case class BadRangeOperand(pos: Int) extends IParseError { override def errorId: String = "P1005"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class CantUseBreakInExpression(pos: Int) extends IParseError { override def errorId: String = "P1005"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class CantUseReturnInExpression(pos: Int) extends IParseError { override def errorId: String = "P1005"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class CantUseWhileInExpression(pos: Int) extends IParseError { override def errorId: String = "P1005"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class NeedSemicolon(pos: Int) extends IParseError {
   override def errorId: String = "P1005"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()
@@ -114,14 +117,19 @@ case class BadVPSTError(message: String) extends IParseError {
 case class BadArraySizerEnd(pos: Int) extends IParseError { override def errorId: String = "P1022"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadArraySizer(pos: Int) extends IParseError { override def errorId: String = "P1022"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadStructName(pos: Int) extends IParseError { override def errorId: String = "P1027"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class BadInterfaceName(pos: Int) extends IParseError { override def errorId: String = "P1027"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadStructContentsBegin(pos: Int) extends IParseError { override def errorId: String = "P1027"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadStructContentsEnd(pos: Int) extends IParseError { override def errorId: String = "P1027"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadStructMember(pos: Int) extends IParseError { override def errorId: String = "P1027"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadStructMemberType(pos: Int) extends IParseError { override def errorId: String = "P1027"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class VariadicStructMemberHasName(pos: Int) extends IParseError { override def errorId: String = "P1027"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadInterfaceMember(pos: Int) extends IParseError { override def errorId: String = "P1027"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class BadInterfaceContentsBegin(pos: Int) extends IParseError { override def errorId: String = "P1027"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadInterfaceHeader(pos: Int) extends IParseError { override def errorId: String = "P1028"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadImpl(pos: Int) extends IParseError { override def errorId: String = "P1029"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class BadImplStruct(pos: Int) extends IParseError { override def errorId: String = "P1029"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class BadImplInterface(pos: Int) extends IParseError { override def errorId: String = "P1029"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class BadImplEnd(pos: Int) extends IParseError { override def errorId: String = "P1029"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadImplFor(pos: Int) extends IParseError { override def errorId: String = "P1029"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadExportAs(pos: Int) extends IParseError { override def errorId: String = "P1029"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class BadImportEnd(pos: Int) extends IParseError { override def errorId: String = "P1031"; override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }

@@ -122,44 +122,42 @@ class KindRuleTests extends FunSuite with Matchers with Collector with TestParse
   }
 
   test("Static sized array") {
-    vimpl()
-//    compile(new TemplexParser().parseArray(_), "[#_]_") shouldHave {
-//      case StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), AnonymousRunePT(_),AnonymousRunePT(_)) =>
-//    }
-//    compile(new TemplexParser().parseArray(_), "[#_]<imm>_") shouldHave {
-//      case StaticSizedArrayPT(_,MutabilityPT(_,ImmutableP), VariabilityPT(_,FinalP), AnonymousRunePT(_),AnonymousRunePT(_)) =>
-//    }
-//    compile(new TemplexParser().parseArray(_), "[#3]int") shouldHave {
-//      case StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), IntPT(_,3),NameOrRunePT(NameP(_, StrI("int")))) =>
-//    }
-//    compile(new TemplexParser().parseArray(_), "[#N]int") shouldHave {
-//        case StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, StrI("N"))),NameOrRunePT(NameP(_, StrI("int")))) =>
-//    }
-//    compile(new TemplexParser().parseArray(_), "[#_]int") shouldHave {
-//        case StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), AnonymousRunePT(_),NameOrRunePT(NameP(_, StrI("int")))) =>
-//    }
-//    compile(new TemplexParser().parseArray(_), "[#N]T") shouldHave {
-//        case StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, StrI("N"))),NameOrRunePT(NameP(_, StrI("T")))) =>
-//    }
+    compileTemplex("[#_]_") shouldHave {
+      case StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), AnonymousRunePT(_),AnonymousRunePT(_)) =>
+    }
+    compileTemplex("[#_]<imm>_") shouldHave {
+      case StaticSizedArrayPT(_,MutabilityPT(_,ImmutableP), VariabilityPT(_,FinalP), AnonymousRunePT(_),AnonymousRunePT(_)) =>
+    }
+    compileTemplex("[#3]int") shouldHave {
+      case StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), IntPT(_,3),NameOrRunePT(NameP(_, StrI("int")))) =>
+    }
+    compileTemplex("[#N]int") shouldHave {
+        case StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, StrI("N"))),NameOrRunePT(NameP(_, StrI("int")))) =>
+    }
+    compileTemplex("[#_]int") shouldHave {
+        case StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), AnonymousRunePT(_),NameOrRunePT(NameP(_, StrI("int")))) =>
+    }
+    compileTemplex("[#N]T") shouldHave {
+        case StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, StrI("N"))),NameOrRunePT(NameP(_, StrI("T")))) =>
+    }
   }
 
   test("Regular sequence") {
-    vimpl()
-//    compile(new TemplexParser().parseTuple(_), "()") shouldHave {
-//        case TuplePT(_,Vector()) =>
-//    }
-//    compile(new TemplexParser().parseTuple(_), "(int)") shouldHave {
-//        case TuplePT(_,Vector(NameOrRunePT(NameP(_, StrI("int"))))) =>
-//    }
-//    compile(new TemplexParser().parseTuple(_), "(int, bool)") shouldHave {
-//        case TuplePT(_,Vector(NameOrRunePT(NameP(_, StrI("int"))), NameOrRunePT(NameP(_, StrI("bool"))))) =>
-//    }
-//    compile(new TemplexParser().parseTuple(_), "(_, bool)") shouldHave {
-//        case TuplePT(_,Vector(AnonymousRunePT(_), NameOrRunePT(NameP(_, StrI("bool"))))) =>
-//    }
-//    compile(new TemplexParser().parseTuple(_), "(_, _)") shouldHave {
-//        case TuplePT(_,Vector(AnonymousRunePT(_), AnonymousRunePT(_))) =>
-//    }
+    compileTemplex("()") shouldHave {
+        case TuplePT(_,Vector()) =>
+    }
+    compileTemplex("(int)") shouldHave {
+        case TuplePT(_,Vector(NameOrRunePT(NameP(_, StrI("int"))))) =>
+    }
+    compileTemplex("(int, bool)") shouldHave {
+        case TuplePT(_,Vector(NameOrRunePT(NameP(_, StrI("int"))), NameOrRunePT(NameP(_, StrI("bool"))))) =>
+    }
+    compileTemplex("(_, bool)") shouldHave {
+        case TuplePT(_,Vector(AnonymousRunePT(_), NameOrRunePT(NameP(_, StrI("bool"))))) =>
+    }
+    compileTemplex("(_, _)") shouldHave {
+        case TuplePT(_,Vector(AnonymousRunePT(_), AnonymousRunePT(_))) =>
+    }
   }
 
 //  test("Callable kind rule") {
@@ -168,12 +166,11 @@ class KindRuleTests extends FunSuite with Matchers with Collector with TestParse
 //  }
 
   test("Prototype kind rule") {
-    vimpl()
-//    compile(new TemplexParser().parsePrototype(_), "func moo(int)void") shouldHave {
-//        case PrototypePT(_,NameP(_, StrI("moo")), Vector(NameOrRunePT(NameP(_, StrI("int")))),NameOrRunePT(NameP(_, StrI("void")))) =>
-//    }
-//    compile(new TemplexParser().parsePrototype(_), "func moo(T)R") shouldHave {
-//        case PrototypePT(_,NameP(_, StrI("moo")), Vector(NameOrRunePT(NameP(_, StrI("T")))),NameOrRunePT(NameP(_, StrI("R")))) =>
-//    }
+    compileTemplex("func moo(int)void") shouldHave {
+        case PrototypePT(_,NameP(_, StrI("moo")), Vector(NameOrRunePT(NameP(_, StrI("int")))),NameOrRunePT(NameP(_, StrI("void")))) =>
+    }
+    compileTemplex("func moo(T)R") shouldHave {
+        case PrototypePT(_,NameP(_, StrI("moo")), Vector(NameOrRunePT(NameP(_, StrI("T")))),NameOrRunePT(NameP(_, StrI("R")))) =>
+    }
   }
 }

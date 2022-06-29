@@ -9,13 +9,13 @@ import org.scalatest.{FunSuite, Matchers}
 
 class WhileTests extends FunSuite with Collector with TestParseUtils {
   test("Simple while loop") {
-    compileExpr("while true {}") shouldHave {
+    compileBlockContents("while true {}") shouldHave {
       case ConsecutorPE(Vector(WhilePE(_, ConstantBoolPE(_, true), BlockPE(_, VoidPE(_))), VoidPE(_))) =>
     }
   }
 
   test("Result after while loop") {
-    compileExpr("while true {} false") shouldHave {
+    compileBlockContents("while true {} false") shouldHave {
       case Vector(
       WhilePE(_, ConstantBoolPE(_, true), BlockPE(_, VoidPE(_))),
       ConstantBoolPE(_, false)) =>
@@ -23,7 +23,7 @@ class WhileTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("While with condition declarations") {
-    compileExpr("while x = 4; x > 6; { }") shouldHave {
+    compileBlockContents("while x = 4; x > 6; { }") shouldHave {
       case ConsecutorPE(
         Vector(
           WhilePE(_,

@@ -575,7 +575,7 @@ class ScoutCompilation(
   var scoutputCache: Option[FileCoordinateMap[ProgramS]] = None
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = parserCompilation.getCodeMap()
-  def getParseds(): Result[FileCoordinateMap[(FileP, Vector[(Int, Int)])], FailedParse] = parserCompilation.getParseds()
+  def getParseds(): Result[FileCoordinateMap[(FileP, Vector[RangeL])], FailedParse] = parserCompilation.getParseds()
   def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = parserCompilation.getVpstMap()
 
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = {

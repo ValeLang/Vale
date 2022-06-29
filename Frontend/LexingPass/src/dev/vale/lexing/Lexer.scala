@@ -1,70 +1,70 @@
 package dev.vale.lexing
 
-import dev.vale.{Accumulator, Err, Interner, Ok, Result, StrI, vassert, vfail, vimpl, vwat}
+import dev.vale.{Accumulator, Err, Interner, Ok, Result, StrI, vassert, vassertSome, vfail, vimpl, vwat}
 
 import scala.collection.mutable
 
-class Lexer(interner: Interner) {
+class Lexer(interner: Interner, keywords: Keywords) {
   val DeriveStructDrop = interner.intern(StrI("DeriveStructDrop"))
+
+  def lexAttributes(iter: LexingIterator): Array[IAttributeL] = {
+    val attributesAccum = new Accumulator[IAttributeL]()
+    while ({
+      lexAttribute(iter) match {
+        case Some(attrL) => attributesAccum.add(attrL); true
+        case None => false
+      }
+    }) {}
+    attributesAccum.buildArray()
+  }
+
+  def lexAttribute(iter: LexingIterator): Option[IAttributeL] = {
+    // Optimize: can xor the next 8 chars into a u64 and then
+    // use xor and bitwise and to do these string comparisons
+    // Might be a good idea to switch to trait so it fits in 8 letters lol
+    val attributeBegin = iter.getPos()
+    if (iter.trySkipCompleteWord("#DeriveStructDrop")) {
+      val end = iter.getPos()
+      Some(
+        MacroCallL(
+          RangeL(attributeBegin, end),
+          CallMacroL,
+          WordLE(RangeL(attributeBegin, end), DeriveStructDrop)))
+    } else if (iter.trySkipCompleteWord("#!DeriveStructDrop")) {
+      val end = iter.getPos()
+      Some(
+        MacroCallL(
+          RangeL(attributeBegin, end),
+          DontCallMacroL,
+          WordLE(RangeL(attributeBegin, end), DeriveStructDrop)))
+    } else if (iter.trySkipCompleteWord("abstract")) {
+      val end = iter.getPos()
+      Some(AbstractAttributeL(RangeL(attributeBegin, end)))
+    } else if (iter.trySkipCompleteWord("pure")) {
+      val end = iter.getPos()
+      Some(PureAttributeL(RangeL(attributeBegin, end)))
+    } else if (iter.trySkipCompleteWord("extern")) {
+      val end = iter.getPos()
+      Some(ExternAttributeL(RangeL(attributeBegin, end)))
+    } else if (iter.trySkipCompleteWord("exported")) {
+      val end = iter.getPos()
+      Some(ExportAttributeL(RangeL(attributeBegin, end)))
+    } else if (iter.trySkipCompleteWord("weakable")) {
+      val end = iter.getPos()
+      Some(WeakableAttributeL(RangeL(attributeBegin, end)))
+    } else if (iter.trySkipCompleteWord("sealed")) {
+      val end = iter.getPos()
+      Some(SealedAttributeL(RangeL(attributeBegin, end)))
+    } else {
+      None
+    }
+  }
 
   def lexDenizen(iter: LexingIterator):
   Result[IDenizenL, IParseError] = {
     val denizenBegin = iter.getPos()
 
-    val attributes = {
-      val attributesAccum = new Accumulator[IAttributeL]()
-
-      while ({
-        // Optimize: can xor the next 8 chars into a u64 and then
-        // use xor and bitwise and to do these string comparisons
-        // Might be a good idea to switch to trait so it fits in 8 letters lol
-        val attributeBegin = iter.getPos()
-        if (iter.trySkipCompleteWord("#DeriveStructDrop")) {
-          val end = iter.getPos()
-          attributesAccum.add(
-            MacroCallL(
-              RangeL(attributeBegin, end),
-              CallMacroL,
-              WordLE(RangeL(attributeBegin, end), DeriveStructDrop)))
-          true
-        } else if (iter.trySkipCompleteWord("#!DeriveStructDrop")) {
-          val end = iter.getPos()
-          attributesAccum.add(
-            MacroCallL(
-              RangeL(attributeBegin, end),
-              DontCallMacroL,
-              WordLE(RangeL(attributeBegin, end), DeriveStructDrop)))
-          true
-        } else if (iter.trySkipCompleteWord("abstract")) {
-          val end = iter.getPos()
-          attributesAccum.add(AbstractAttributeL(RangeL(attributeBegin, end)))
-          true
-        } else if (iter.trySkipCompleteWord("pure")) {
-          val end = iter.getPos()
-          attributesAccum.add(PureAttributeL(RangeL(attributeBegin, end)))
-          true
-        } else if (iter.trySkipCompleteWord("extern")) {
-          val end = iter.getPos()
-          attributesAccum.add(ExternAttributeL(RangeL(attributeBegin, end)))
-          true
-        } else if (iter.trySkipCompleteWord("exported")) {
-          val end = iter.getPos()
-          attributesAccum.add(ExportAttributeL(RangeL(attributeBegin, end)))
-          true
-        } else if (iter.trySkipCompleteWord("weakable")) {
-          val end = iter.getPos()
-          attributesAccum.add(WeakableAttributeL(RangeL(attributeBegin, end)))
-          true
-        } else if (iter.trySkipCompleteWord("sealed")) {
-          val end = iter.getPos()
-          attributesAccum.add(SealedAttributeL(RangeL(attributeBegin, end)))
-          true
-        } else {
-          false
-        }
-      }) {}
-      attributesAccum.buildArray()
-    }
+    val attributes = lexAttributes(iter)
 
     iter.consumeCommentsAndWhitespace()
 
@@ -80,12 +80,131 @@ class Lexer(interner: Interner) {
       case Ok(None) =>
     }
 
+    lexInterface(iter, denizenBegin, attributes) match {
+      case Err(e) => return Err(e)
+      case Ok(Some(x)) => return Ok(TopLevelInterfaceL(x))
+      case Ok(None) =>
+    }
+
+    lexImpl(iter, denizenBegin, attributes) match {
+      case Err(e) => return Err(e)
+      case Ok(Some(x)) => return Ok(TopLevelImplL(x))
+      case Ok(None) =>
+    }
+
+    lexImport(iter, denizenBegin, attributes) match {
+      case Err(e) => return Err(e)
+      case Ok(Some(x)) => return Ok(TopLevelImportL(x))
+      case Ok(None) =>
+    }
+
     vfail()
   }
 
   def lexImpl(iter: LexingIterator, begin: Int, attributes: Array[IAttributeL]):
   Result[Option[ImplL], IParseError] = {
-    vimpl()
+    if (!iter.trySkipCompleteWord("impl")) {
+      return Ok(None)
+    }
+
+    iter.consumeCommentsAndWhitespace()
+
+    val maybeIdentifyingRunes =
+      lexAngled(iter) match {
+        case Err(e) => return Err(e)
+        case Ok(x) => x
+      }
+
+    iter.consumeCommentsAndWhitespace()
+
+    val interfaceName =
+      lexIdentifier(iter) match {
+        case None => return Err(BadImplInterface(iter.getPos()))
+        case Some(x) => x
+      }
+
+    iter.consumeCommentsAndWhitespace()
+
+    val maybeInterfaceGenericArgs =
+      lexAngled(iter) match {
+        case Err(e) => return Err(e)
+        case Ok(x) => x
+      }
+
+    val interface =
+      maybeInterfaceGenericArgs match {
+        case None => ScrambleLE(interfaceName.range, Array(interfaceName))
+        case Some(interfaceGenericArgs) => {
+          ScrambleLE(
+            RangeL(interfaceName.range.begin, interfaceGenericArgs.range.end),
+            Array(interfaceName, interfaceGenericArgs))
+        }
+      }
+
+    iter.consumeCommentsAndWhitespace()
+
+    if (!iter.trySkipCompleteWord("for")) {
+      return Err(BadImplFor(iter.getPos()))
+    }
+
+    iter.consumeCommentsAndWhitespace()
+
+    val structName =
+      lexIdentifier(iter) match {
+        case None => return Err(BadImplStruct(iter.getPos()))
+        case Some(x) => x
+      }
+
+    iter.consumeCommentsAndWhitespace()
+
+    val maybeStructGenericArgs =
+      lexAngled(iter) match {
+        case Err(e) => return Err(e)
+        case Ok(x) => x
+      }
+
+    val struct =
+      maybeStructGenericArgs match {
+        case None => ScrambleLE(structName.range, Array(structName))
+        case Some(structGenericArgs) => {
+          ScrambleLE(
+            RangeL(structName.range.begin, structGenericArgs.range.end),
+            Array(structName, structGenericArgs))
+        }
+      }
+
+    iter.consumeCommentsAndWhitespace()
+
+    val maybeRules =
+      if (iter.trySkipCompleteWord("where")) {
+        Some(
+          lexScramble(iter, true, false) match {
+            case Err(e) => return Err(e)
+            case Ok(x) => x
+          })
+      } else {
+        None
+      }
+
+    iter.consumeCommentsAndWhitespace()
+
+    if (!iter.trySkip(';')) {
+      return Err(BadImplEnd(iter.getPos()))
+    }
+
+    iter.consumeCommentsAndWhitespace()
+
+    val end = iter.getPos()
+
+    val impl =
+      ImplL(
+        RangeL(begin, end),
+        maybeIdentifyingRunes,
+        maybeRules,
+        Some(struct),
+        interface,
+        attributes)
+    Ok(Some(impl))
   }
 
   def lexFunction(iter: LexingIterator, begin: Int, attributes: Array[IAttributeL]):
@@ -97,13 +216,39 @@ class Lexer(interner: Interner) {
     iter.consumeCommentsAndWhitespace()
 
     val nameBegin = iter.getPos()
-    val name = lexIdentifier(iter)
+    val name =
+      lexIdentifier(iter) match {
+        case None => {
+          val begin = iter.getPos()
+          val nameStr =
+            iter.peek(2) match {
+              case Some("!=") => "!="
+              case Some("<=") => "<="
+              case Some("<") => "<"
+              case Some(">=") => ">="
+              case Some(">") => ">"
+              case Some("==") => "=="
+              case _ => {
+                iter.peek() match {
+                  case '>' | '<' => iter.peek().toString
+                  case _ => return Err(BadFunctionName(iter.getPos()))
+                }
+              }
+            }
+          iter.skipTo(begin + nameStr.length)
+          val end = iter.getPos()
+          WordLE(RangeL(begin, iter.getPos()), interner.intern(StrI(nameStr)))
+        }
+        case Some(x) => x
+      }
 
     val maybeGenericArgs =
       lexAngled(iter) match {
         case Err(e) => return Err(e)
         case Ok(x) => x
       }
+
+    iter.consumeCommentsAndWhitespace()
 
     val params =
       lexParend(iter) match {
@@ -200,7 +345,11 @@ class Lexer(interner: Interner) {
     iter.consumeCommentsAndWhitespace()
 
     val nameBegin = iter.getPos()
-    val name = lexIdentifier(iter)
+    val name =
+      lexIdentifier(iter) match {
+        case None => return Err(BadStructName(iter.getPos()))
+        case Some(x) => x
+      }
 
     iter.consumeCommentsAndWhitespace()
 
@@ -285,6 +434,152 @@ class Lexer(interner: Interner) {
         maybeRules,
         contents)
     Ok(Some(struct))
+  }
+
+  def lexInterface(iter: LexingIterator, begin: Int, attributes: Array[IAttributeL]):
+  Result[Option[InterfaceL], IParseError] = {
+    if (!iter.trySkipCompleteWord("interface")) {
+      return Ok(None)
+    }
+
+    iter.consumeCommentsAndWhitespace()
+
+    val nameBegin = iter.getPos()
+    val name =
+      lexIdentifier(iter) match {
+        case None => return Err(BadInterfaceName(iter.getPos()))
+        case Some(x) => x
+      }
+
+    iter.consumeCommentsAndWhitespace()
+
+    val maybeGenericArgs =
+      lexAngled(iter) match {
+        case Err(e) => return Err(e)
+        case Ok(x) => x
+      }
+
+    iter.consumeCommentsAndWhitespace()
+
+    val maybeMutability =
+      if (!iter.peekCompleteWord("where") && iter.peek() != '{') {
+        lexScramble(iter, true, true) match {
+          case Err(e) => return Err(e)
+          case Ok(x) => Some(x)
+        }
+      } else {
+        None
+      }
+
+    iter.consumeCommentsAndWhitespace()
+
+    val maybeRules =
+      if (iter.trySkipCompleteWord("where")) {
+        Some(
+          lexScramble(iter, true, false) match {
+            case Err(e) => return Err(e)
+            case Ok(x) => x
+          })
+      } else {
+        None
+      }
+
+    iter.consumeCommentsAndWhitespace()
+
+    val headerEnd = iter.getPos()
+
+    val maybeDefaultRegion =
+      if (iter.trySkipCompleteWord("region")) {
+        Some(
+          lexNode(iter, true, false) match {
+            case Err(e) => return Err(e)
+            case Ok(x) => x
+          })
+      } else {
+        None
+      }
+
+    iter.consumeCommentsAndWhitespace()
+
+    if (!iter.trySkip('{')) {
+      return Err(BadInterfaceContentsBegin(iter.getPos()))
+    }
+    val membersBegin = iter.getPos()
+
+    iter.consumeCommentsAndWhitespace()
+
+    val membersAcc = new Accumulator[FunctionL]()
+    while (!iter.atEnd() && !iter.trySkip('}')) {
+      val memberBegin = iter.getPos()
+      val attributes = lexAttributes(iter)
+      lexFunction(iter, memberBegin, attributes) match {
+        case Err(e) => return Err(e)
+        case Ok(Some(func)) => {
+          membersAcc.add(func)
+        }
+        case Ok(None) => return Err(BadInterfaceMember(iter.getPos()))
+      }
+    }
+    val members = membersAcc.buildArray()
+
+    iter.consumeCommentsAndWhitespace()
+
+    val end = iter.getPos()
+
+    val interface =
+      InterfaceL(
+        RangeL(begin, headerEnd),
+        name,
+        attributes,
+        maybeMutability,
+        maybeGenericArgs,
+        maybeRules,
+        members)
+    Ok(Some(interface))
+  }
+
+  def lexImport(iter: LexingIterator, begin: Int, attributes: Array[IAttributeL]):
+  Result[Option[ImportL], IParseError] = {
+    if (!iter.trySkipCompleteWord(keywords.impoort.str)) {
+      return Ok(None)
+    }
+
+    if (attributes.nonEmpty) {
+      return Err(UnexpectedAttributes(iter.getPos()))
+    }
+
+    val steps = mutable.ArrayBuffer[WordLE]()
+    while ({
+      iter.consumeCommentsAndWhitespace()
+
+      val stepBegin = iter.getPos()
+      val name =
+        if (iter.trySkip('*')) {
+          WordLE(RangeL(stepBegin, iter.getPos()), interner.intern(StrI("*")))
+        } else {
+          lexIdentifier(iter) match {
+            case None => return Err(BadImportName(iter.getPos()))
+            case Some(n) => n
+          }
+        }
+      steps += name
+
+      iter.consumeCommentsAndWhitespace()
+
+      if (iter.trySkip('.')) {
+        true
+      } else if (iter.trySkip(';')) {
+        false
+      } else {
+        return Err(BadImportEnd(iter.getPos()))
+      }
+    }) {}
+
+    val moduleName = steps.head
+    val importee = steps.last
+    val packageSteps = steps.init.tail
+    val imporrt = ImportL(RangeL(begin, iter.getPos()), moduleName, packageSteps.toArray, importee)
+    Ok(Some(imporrt))
   }
 
   def lexParend(iter: LexingIterator): Result[Option[ParendLE], IParseError] = {
@@ -372,9 +667,10 @@ class Lexer(interner: Interner) {
   def lexAngled(iter: LexingIterator): Result[Option[AngledLE], IParseError] = {
     val begin = iter.getPos()
 
-    if (!iter.trySkip('<')) {
+    if (!(iter.peek() == '<' && angleIsOpenOrClose(iter))) {
       return Ok(None)
     }
+    iter.advance()
 
     iter.consumeCommentsAndWhitespace()
 
@@ -431,11 +727,24 @@ class Lexer(interner: Interner) {
     //    Ok(Some(elements.toVector))
   }
 
-  def isAtBinaryChevron(iter: LexingIterator): Boolean = {
+  def angleIsOpenOrClose(iter: LexingIterator): Boolean = {
     iter.peek() match {
       case '<' | '>' => // continue
       case _ => return false
     }
+    iter.peek(2) match {
+      case Some(">=") => return false
+      case Some("<=") => return false
+      case _ => // continue
+    }
+    // If we're encountering a > after a =, then its a => like in a lambda.
+    // Not a closer.
+    if (iter.position - 1 >= 0 &&
+        iter.code.charAt(iter.position - 1) == '=' &&
+        iter.code.charAt(iter.position) == '>') {
+      return false
+    }
+
     val whitespaceBefore =
       iter.position - 1 >= 0 &&
         (iter.code.charAt(iter.position - 1) match {
@@ -449,8 +758,8 @@ class Lexer(interner: Interner) {
           case _ => false
         })
     val whitespaceOnBothSides = whitespaceBefore && whitespaceAfter
-    val isBinaryOperator = whitespaceOnBothSides
-    isBinaryOperator
+    val isOpenOrClose = !whitespaceOnBothSides
+    isOpenOrClose
   }
 
 //  def lexSemicolonSeparatedList(iter: LexingIterator, stopOnOpenBrace: Boolean, stopOnWhere: Boolean): Result[SemicolonSeparatedListLE, IParseError] = {
@@ -525,7 +834,7 @@ class Lexer(interner: Interner) {
     iter.peek() match {
       case ')' | '}' | ']' => true
       case '{' => stopOnOpenBrace
-      case '>' => !isAtBinaryChevron(iter)
+      case '>' => angleIsOpenOrClose(iter)
       case _ => false
     }
   }
@@ -533,11 +842,11 @@ class Lexer(interner: Interner) {
   def lexScramble(iter: LexingIterator, stopOnOpenBrace: Boolean, stopOnWhere: Boolean): Result[ScrambleLE, IParseError] = {
     val begin = iter.getPos()
 
-    // If this encounters a ; or or ) or } a non-binary > then it should stop.
     iter.consumeCommentsAndWhitespace()
 
     val innards = new Accumulator[INodeLE]()
 
+    // If this encounters a ; or or ) or } a non-binary > then it should stop.
     while (!atEnd(iter, stopOnOpenBrace, stopOnWhere)) {
       val node =
         lexNode(iter, stopOnOpenBrace, stopOnWhere) match {
@@ -594,16 +903,22 @@ class Lexer(interner: Interner) {
       case Ok(None) =>
     }
 
+    lexString(iter) match {
+      case Err(e) => return Err(e)
+      case Ok(Some(n)) => return Ok(n)
+      case Ok(None) =>
+    }
+
     val begin = iter.getPos()
     if (iter.peek().isUnicodeIdentifierPart) {
-      Ok(lexIdentifier(iter))
+      Ok(vassertSome(lexIdentifier(iter)))
     } else {
       iter.advance()
       Ok(SymbolLE(RangeL(begin, iter.getPos()), iter.code.charAt(begin)))
     }
   }
 
-  def lexIdentifier(iter: LexingIterator): WordLE = {
+  def lexIdentifier(iter: LexingIterator): Option[WordLE] = {
     val begin = iter.getPos()
     // If it was a word char, then keep eating until we reach the end of the word chars.
     while (!iter.atEnd() && iter.peek().isUnicodeIdentifierPart) {
@@ -611,11 +926,15 @@ class Lexer(interner: Interner) {
     }
     val end = iter.getPos()
     val word = iter.code.slice(begin, end)
-    WordLE(RangeL(begin, end), interner.intern(StrI(word)))
+    if (word.isEmpty) {
+      None
+    } else {
+      Some(WordLE(RangeL(begin, end), interner.intern(StrI(word))))
+    }
   }
 
 //
-//  def parseStringPart(iter: LexingIterator, stringBeginPos: Int): Result[Char, IParseError] = {
+//  def lexStringPart(iter: LexingIterator, stringBeginPos: Int): Result[Char, IParseError] = {
 //    if (iter.trySkip(() => "^\\\\".r)) {
 //      if (iter.trySkip(() => "^r".r) || iter.trySkip(() => "^\\r".r)) {
 //        Ok('\r')
@@ -657,24 +976,24 @@ class Lexer(interner: Interner) {
 //    }
 //  }
 //
-//  def parseString(iter: LexingIterator): Result[Option[StringPT], IParseError] = {
+//  def lexString(iter: LexingIterator): Result[Option[StringPT], IParseError] = {
 //    val begin = iter.getPos()
 //    if (!iter.trySkip(() => "^\"".r)) {
 //      return Ok(None)
 //    }
 //    val stringSoFar = new StringBuilder()
 //    while (!(iter.atEnd() || iter.trySkip(() => "^\"".r))) {
-//      val c = parseStringPart(iter, begin) match { case Err(e) => return Err(e) case Ok(c) => c }
+//      val c = lexStringPart(iter, begin) match { case Err(e) => return Err(e) case Ok(c) => c }
 //      stringSoFar += c
 //    }
 //    Ok(Some(StringPT(RangeL(begin, iter.getPos()), stringSoFar.toString())))
 //  }
 
-  def parseStringEnd(iter: LexingIterator, isLongString: Boolean): Boolean = {
-    iter.atEnd() || iter.trySkip(if (isLongString) "^\"\"\"" else "^\"")
+  def lexStringEnd(iter: LexingIterator, isLongString: Boolean): Boolean = {
+    iter.atEnd() || iter.trySkip(if (isLongString) "\"\"\"" else "\"")
   }
 
-  def parseString(iter: LexingIterator): Result[Option[INodeLE], IParseError] = {
+  def lexString(iter: LexingIterator): Result[Option[INodeLE], IParseError] = {
     val begin = iter.getPos()
     val isLongString =
       if (iter.trySkip("\"\"\"")) {
@@ -689,8 +1008,8 @@ class Lexer(interner: Interner) {
     var stringSoFarBegin = iter.getPos()
     var stringSoFar = new StringBuilder()
 
-    while (!parseStringEnd(iter, isLongString)) {
-      parseStringPart(iter, begin) match {
+    while (!lexStringEnd(iter, isLongString)) {
+      lexStringPart(iter, begin) match {
         case Err(e) => return Err(e)
         case Ok(Left(c)) => {
           stringSoFar += c
@@ -715,7 +1034,7 @@ class Lexer(interner: Interner) {
     Ok(Some(StringLE(RangeL(stringSoFarBegin, iter.getPos()), parts.buildArray())))
   }
 
-  def parseStringPart(iter: LexingIterator, stringBeginPos: Int):
+  def lexStringPart(iter: LexingIterator, stringBeginPos: Int):
   Result[Either[Char, INodeLE], IParseError] = {
     // Normally, we interpret as an expression anything after a `{`. However, we handle
     // newlines in a special way.
@@ -773,7 +1092,7 @@ class Lexer(interner: Interner) {
         Ok(Left(iter.advance()))
       }
     } else {
-      val c = iter.peek()
+      val c = iter.advance()
       Ok(Left(c))
     }
   }

@@ -42,7 +42,7 @@ class FullCompilation(
   def getVonHammer(): VonHammer = hammerCompilation.getVonHammer()
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = hammerCompilation.getCodeMap()
-  def getParseds(): Result[FileCoordinateMap[(FileP, Vector[(Int, Int)])], FailedParse] = hammerCompilation.getParseds()
+  def getParseds(): Result[FileCoordinateMap[(FileP, Vector[RangeL])], FailedParse] = hammerCompilation.getParseds()
   def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = hammerCompilation.getVpstMap()
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = hammerCompilation.getScoutput()
   def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = hammerCompilation.getAstrouts()

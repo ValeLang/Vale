@@ -1,6 +1,6 @@
 package dev.vale.parsing
 
-import dev.vale.{Collector, Interner, StrI, vimpl}
+import dev.vale.{Collector, Interner, StrI, vimpl, vwat}
 import dev.vale.parsing.ast.{AugmentPE, BlockPE, BorrowP, ConsecutorPE, ConstantBoolPE, ConstantIntPE, ConstantStrPE, DestructPE, DestructureP, DotPE, EachPE, FunctionCallPE, IExpressionPE, IfPE, LetPE, LocalNameDeclarationP, LookupNameP, LookupPE, MutatePE, NameOrRunePT, NameP, PatternPP, Patterns, ReturnPE, TuplePE, UnletPE, VoidPE}
 import dev.vale.parsing.ast._
 import dev.vale.lexing.ForgotSetKeyword
@@ -8,13 +8,6 @@ import dev.vale.options.GlobalOptions
 import org.scalatest.{FunSuite, Matchers}
 
 class StatementTests extends FunSuite with Collector with TestParseUtils {
-
-  def compileBlockContents(code: String): IExpressionPE = {
-    compileStatement(code)
-//    compile(
-//      new ExpressionParser(new Interner(), GlobalOptions(true, true, true, true))
-//        .parseBlockContents(_), code)
-  }
 
   test("Simple let") {
     compileBlockContents( "x = 4;") shouldHave {
@@ -313,7 +306,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
     // The pure block feature doesn't actually exist yet.
     compileBlockContents(
       """
-        |pure {
+        |pure block {
         |  a
         |}
       """.stripMargin)
@@ -324,7 +317,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
     // The unsafe pure block feature doesn't actually exist yet.
     compileBlockContents(
       """
-        |unsafe pure {
+        |unsafe pure block {
         |  a
         |}
       """.stripMargin)

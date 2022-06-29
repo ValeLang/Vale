@@ -11,6 +11,7 @@ object LexAndExplore {
   // serves as a great example on how to use the lexAndExplore() method.
   def lexAndExploreAndCollect[D, F](
     interner: Interner,
+    keywords: Keywords,
     packages: Array[PackageCoordinate],
     resolver: IPackageResolver[Map[String, String]]):
   Result[
@@ -22,7 +23,7 @@ object LexAndExplore {
     val files = new Accumulator[(FileCoordinate, String, Array[RangeL], Array[IDenizenL])]()
 
     lexAndExplore[IDenizenL, Unit](
-      interner, packages, resolver,
+      interner, keywords, packages, resolver,
       (file, code, imports, denizen) => {
         denizens.add((file, code, imports, denizen))
         denizen
@@ -41,6 +42,7 @@ object LexAndExplore {
   // It would be pretty cool to turn this into an iterator of some sort
   def lexAndExplore[D, F](
     interner: Interner,
+    keywords: Keywords,
     packages: Array[PackageCoordinate],
     resolver: IPackageResolver[Map[String, String]],
     denizenHandler: (FileCoordinate, String, Array[ImportL], IDenizenL) => D,
@@ -78,7 +80,7 @@ object LexAndExplore {
           val resultAcc = new Accumulator[D]()
 
           val iter = new LexingIterator(code, 0)
-          val lexer = new Lexer(interner)
+          val lexer = new Lexer(interner, keywords)
 
           iter.consumeCommentsAndWhitespace()
 

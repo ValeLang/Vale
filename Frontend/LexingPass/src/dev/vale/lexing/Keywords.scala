@@ -1,4 +1,4 @@
-package dev.vale.parsing
+package dev.vale.lexing
 
 import dev.vale.{Interner, StrI}
 
@@ -28,7 +28,7 @@ class Keywords(interner: Interner) {
   val FINAL = interner.intern(StrI("final"))
 
   val iff = interner.intern(StrI("if"))
-  val elsse = interner.intern(StrI("elsse"))
+  val elsse = interner.intern(StrI("else"))
   val foreeach = interner.intern(StrI("foreach"))
   val in = interner.intern(StrI("in"))
   val parallel = interner.intern(StrI("parallel"))
@@ -58,4 +58,8 @@ class Keywords(interner: Interner) {
   val AND = interner.intern(StrI("and"))
   val OR = interner.intern(StrI("or"))
   val NOT = interner.intern(StrI("not"))
+
+  val underscoresCall = interner.intern(StrI("__call"))
+
+  val impoort = interner.intern(StrI("import"))
 }

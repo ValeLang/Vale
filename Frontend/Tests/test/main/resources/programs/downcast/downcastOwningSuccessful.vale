@@ -13,7 +13,7 @@ func moo(ship IShip) int {
       maybeRaza.expect().fuel
     } else {
       72
-    }
+    };
 }
 exported func main() int {
   return moo(Raza(42));

@@ -63,7 +63,7 @@ case class PackageH(
   def lookupFunction(readableName: String) = {
     val matches =
       (Vector.empty ++
-        exportNameToFunction.find(_._1.str == readableName).toVector ++
+        exportNameToFunction.find(_._1.str == readableName).map(_._2).toVector ++
         functions.filter(_.prototype.fullName.readableName == readableName).map(_.prototype))
         .distinct
     vassert(matches.nonEmpty)
@@ -253,6 +253,6 @@ case class FullNameH(
 
 object FullNameH {
   def namePartsToString(packageCoordinate: PackageCoordinate, parts: Vector[IVonData]) = {
-    packageCoordinate.module + "::" + packageCoordinate.packages.map(_ + "::").mkString("") + parts.map(MetalPrinter.print).mkString(":")
+    packageCoordinate.module.str + "::" + packageCoordinate.packages.map(_ + "::").mkString("") + parts.map(MetalPrinter.print).mkString(":")
   }
 }

@@ -163,8 +163,8 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
 
 
     val isConstructing =
-      iter.peek(2) match {
-        case Array(Some(WordLE(_, self)), Some(SymbolLE(range, '.')))
+      iter.peek2() match {
+        case (Some(WordLE(_, self)), Some(SymbolLE(range, '.')))
           if self == keywords.self => {
           iter.advance()
           iter.advance()
@@ -177,10 +177,10 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
     iter.trySkipSymbol('&')
 
     val nameIsNext =
-      iter.peek(2) match {
-        case Array(None, None) => vwat() // impossible
-        case Array(Some(_), None) => true
-        case Array(Some(first), Some(second)) => {
+      iter.peek2() match {
+        case (None, None) => vwat() // impossible
+        case (Some(_), None) => true
+        case (Some(first), Some(second)) => {
           if (first.range.end < second.range.begin) {
             // There's a space after the first thing, so it's a name.
             true
@@ -223,13 +223,13 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
     // If it's a square-braced thing with nothing after it, it's a destructure.
     // See https://github.com/ValeLang/Vale/issues/434
     val nextIsType =
-      iter.peek(2) match {
-        case Array(None, None) => false
-        case Array(Some(SquaredLE(_, _)), maybeAfter) => {
+      iter.peek2() match {
+        case (None, None) => false
+        case (Some(SquaredLE(_, _)), maybeAfter) => {
           // If there's something after it, it's an array.
           maybeAfter.nonEmpty
         }
-        case Array(Some(_), _) => {
+        case (Some(_), _) => {
           // There's something that's not square-braced, so it's a type.
           true
         }
@@ -265,7 +265,7 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
         case None => None
       }
 
-      Ok(PatternPP(RangeL(patternBegin, iter.getPos()), None, maybeName, maybeType, maybeDestructure, None))
+      Ok(PatternPP(RangeL(patternBegin, iter.getPrevEndPos()), None, maybeName, maybeType, maybeDestructure, None))
   }
 
   //    pos ~

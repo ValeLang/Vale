@@ -103,9 +103,8 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
           case None => return Err(BadRuneNameError(iter.getPos()))
         }
 
-      val regionTypeBegin = iter.getPos()
       val attributes =
-        Vector(TypeRuneAttributeP(RangeL(regionTypeBegin, iter.getPos()), RegionTypePR)) ++
+        Vector(TypeRuneAttributeP(RangeL(range.begin, iter.getPrevEndPos()), RegionTypePR)) ++
           (iter.trySkipWord(keywords.ro) match {
             case Some(range) => Vector(ReadOnlyRuneAttributeP(range))
             case None => {
@@ -143,7 +142,7 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
       val maybeRuneType =
         templexParser.parseRuneType(iter) match {
           case Err(e) => return Err(e)
-          case Ok(Some(x)) => Some(ast.TypeRuneAttributeP(RangeL(typeBegin, iter.getPos()), x))
+          case Ok(Some(x)) => Some(ast.TypeRuneAttributeP(RangeL(typeBegin, iter.getPrevEndPos()), x))
           case Ok(None) => None
         }
       Ok(IdentifyingRuneP(range, name, maybeRuneType.toVector))
@@ -179,8 +178,8 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
     val variability = if (iter.trySkipSymbol('!')) VaryingP else FinalP
 
     val variadic =
-      iter.peek(2) match {
-        case Array(Some(SymbolLE(_, '.')), Some(SymbolLE(_, '.'))) => {
+      iter.peek2() match {
+        case (Some(SymbolLE(_, '.')), Some(SymbolLE(_, '.'))) => {
           iter.advance()
           iter.advance()
           true
@@ -199,9 +198,9 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
         return Err(VariadicStructMemberHasName(iter.getPos()))
       }
 
-      Ok(VariadicStructMemberP(RangeL(begin, iter.getPos()), variability, tyype))
+      Ok(VariadicStructMemberP(RangeL(begin, iter.getPrevEndPos()), variability, tyype))
     } else {
-      Ok(NormalStructMemberP(RangeL(begin, iter.getPos()), name, variability, tyype))
+      Ok(NormalStructMemberP(RangeL(begin, iter.getPrevEndPos()), name, variability, tyype))
     }
   }
 
@@ -730,7 +729,10 @@ class ParserCompilation(
         foundCodeMap.put(fileCoord, code)
         val file = FileP(fileCoord, commentRanges.buildArray(), denizens.buildArray())
         parsedMap.put(fileCoord, (file, commentRanges.buildArray().toVector))
-      }).getOrDie()
+      }) match {
+      case Err(e) => return Err(e)
+      case Ok(_) =>
+    }
 
     Ok((foundCodeMap, parsedMap))
   }
@@ -746,7 +748,7 @@ class ParserCompilation(
     }
   }
   def expectCodeMap(): FileCoordinateMap[String] = {
-    getCodeMap().getOrDie()
+    vassertSome(codeMapCache)
   }
 
   def getParseds(): Result[FileCoordinateMap[(FileP, Vector[RangeL])], FailedParse] = {
@@ -767,9 +769,8 @@ class ParserCompilation(
   }
   def expectParseds(): FileCoordinateMap[(FileP, Vector[RangeL])] = {
     getParseds() match {
-      case Err(FailedParse(codeMap, fileCoord, err)) => {
-//        vfail(ParseErrorHumanizer.humanize(codeMap, fileCoord, err))
-        vimpl()
+      case Err(FailedParse(code, fileCoord, err)) => {
+        vfail(ParseErrorHumanizer.humanize(SourceCodeUtils.humanizeFile(fileCoord), code, err))
       }
       case Ok(x) => x
     }

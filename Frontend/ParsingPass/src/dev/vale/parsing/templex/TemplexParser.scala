@@ -67,13 +67,13 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
       maybeSizeTemplex match {
         case None => {
           RuntimeSizedArrayPT(
-            RangeL(begin, iter.getPos()),
+            RangeL(begin, iter.getPrevEndPos()),
             mutability,
             elementType)
         }
         case Some(sizeTemplex) => {
           StaticSizedArrayPT(
-            RangeL(begin, iter.getPos()),
+            RangeL(begin, iter.getPrevEndPos()),
             mutability,
             variability,
             sizeTemplex,
@@ -112,7 +112,7 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
 
     val returnType = parseTemplex(iter) match { case Err(e) => return Err(e) case Ok(x) => x }
 
-    val result = PrototypePT(RangeL(begin, iter.getPos()), name, args, returnType)
+    val result = PrototypePT(RangeL(begin, iter.getPrevEndPos()), name, args, returnType)
     Ok(Some(result))
   }
 
@@ -207,7 +207,7 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
         case Ok(t) => t
       }
 
-    Ok(Some(ast.InterpretedPT(RangeL(begin, iter.getPos()), ownership, inner)))
+    Ok(Some(ast.InterpretedPT(RangeL(begin, iter.getPrevEndPos()), ownership, inner)))
   }
 
 
@@ -383,7 +383,7 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
 
     parseTemplateCallArgs(iter) match {
       case Err(e) => return Err(e)
-      case Ok(Some(args)) => return Ok(CallPT(RangeL(begin, iter.getPos()), atom, args))
+      case Ok(Some(args)) => return Ok(CallPT(RangeL(begin, iter.getPrevEndPos()), atom, args))
       case Ok(None) =>
     }
 
@@ -450,12 +450,12 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
   }
 
   def parseTypedRune(originalIter: ScrambleIterator): Result[Option[TypedPR], IParseError] = {
-    originalIter.peek(2) match {
+    originalIter.peek2() match {
       // So we dont parse func moo()void
-      case Array(Some(WordLE(nameRange, nameStr)), _) if nameStr == keywords.func => {
+      case (Some(WordLE(nameRange, nameStr)), _) if nameStr == keywords.func => {
         Ok(None)
       }
-      case Array(Some(WordLE(nameRange, nameStr)), Some(WordLE(typeRange, _))) => {
+      case (Some(WordLE(nameRange, nameStr)), Some(WordLE(typeRange, _))) => {
         val maybeName =
           if (nameStr == keywords.UNDERSCORE) {
             None
@@ -476,9 +476,9 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
   }
 
   def parseRuleCall(iter: ScrambleIterator): Result[Option[IRulexPR], IParseError] = {
-    iter.peek(2) match {
-      case Array(Some(WordLE(_, StrI("func"))), _) => return Ok(None)
-      case Array(Some(WordLE(nameRange, name)), Some(ParendLE(argsRange, argsLR))) => {
+    iter.peek2() match {
+      case (Some(WordLE(_, StrI("func"))), _) => return Ok(None)
+      case (Some(WordLE(nameRange, name)), Some(ParendLE(argsRange, argsLR))) => {
         val range = RangeL(nameRange.begin, argsRange.end)
         val argsPR =
           U.map[ScrambleIterator, IRulexPR](
@@ -512,8 +512,8 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
   }
 
   def parseRuleDestructure(originalIter: ScrambleIterator): Result[Option[IRulexPR], IParseError] = {
-    originalIter.peek(2) match {
-      case Array(Some(WordLE(RangeL(begin, _), _)), Some(SquaredLE(RangeL(_, end), componentsL))) => {
+    originalIter.peek2() match {
+      case (Some(WordLE(RangeL(begin, _), _)), Some(SquaredLE(RangeL(_, end), componentsL))) => {
         val runeType =
           parseRuneType(originalIter) match {
             case Ok(None) => vwat()

@@ -9,7 +9,7 @@ import dev.vale.parsing.{ParseErrorHumanizer, ParserVonifier}
 import dev.vale.postparsing.PostParserErrorHumanizer
 import dev.vale.typing.CompilerErrorHumanizer
 import dev.vale.testvm.Vivem
-import dev.vale.{Builtins, Err, FileCoordinate, Interner, Keywords, Ok, PackageCoordinate, Result, StrI, passmanager, vassert, vassertOne, vcheck, vcurious, vfail}
+import dev.vale.{Builtins, Err, FileCoordinate, Interner, Keywords, Ok, PackageCoordinate, Result, SourceCodeUtils, StrI, passmanager, vassert, vassertOne, vcheck, vcurious, vfail}
 
 import java.io.{BufferedWriter, File, FileNotFoundException, FileOutputStream, FileWriter, OutputStream, PrintStream}
 import java.util.InputMismatchException
@@ -223,9 +223,8 @@ object PassManager {
 
     val parseds =
       compilation.getParseds() match {
-        case Err(FailedParse(_, fileCoord, error)) => {
-          val codeMap = compilation.getCodeMap().getOrDie().fileCoordToContents.toMap
-          return Err(ParseErrorHumanizer.humanizeFromMap(codeMap, fileCoord, error))
+        case Err(FailedParse(code, fileCoord, err)) => {
+          vfail(ParseErrorHumanizer.humanize(SourceCodeUtils.humanizeFile(fileCoord), code, err))
         }
         case Ok(p) => p
       }
@@ -398,9 +397,8 @@ object PassManager {
 
           val parseds =
             compilation.getParseds() match {
-              case Err(FailedParse(_, fileCoord, error)) => {
-                val codeMap = compilation.getCodeMap().getOrDie().fileCoordToContents.toMap
-                throw InputException(ParseErrorHumanizer.humanizeFromMap(codeMap, fileCoord, error))
+              case Err(FailedParse(code, fileCoord, error)) => {
+                throw InputException(ParseErrorHumanizer.humanize(SourceCodeUtils.humanizeFile(fileCoord), code, error))
               }
               case Ok(p) => p
             }

@@ -13,8 +13,7 @@ import org.scalatest.{FunSuite, Matchers}
 
 class PostParsingParametersTests extends FunSuite with Matchers with Collector {
 
-  private def compile(code: String): ProgramS = {
-    val interner = new Interner()
+  private def compile(code: String, interner: Interner = new Interner()): ProgramS = {
     PostParserTestCompilation.test(code).getScoutput() match {
       case Err(e) => vfail(PostParserErrorHumanizer.humanize(FileCoordinateMap.test(interner, code), e))
       case Ok(t) => t.expectOne()
@@ -33,10 +32,11 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
   }
 
   test("Returned rune") {
-    val program1 = compile("""func main<T>(moo T) T { moo }""")
+    val interner = new Interner()
+    val program1 = compile("""func main<T>(moo T) T { moo }""", interner)
     val main = program1.lookupFunction("main")
 
-    vassert(main.identifyingRunes.map(_.rune).contains(CodeRuneS(StrI("T"))))
+    vassert(main.identifyingRunes.map(_.rune).contains(CodeRuneS(interner.intern(StrI("T")))))
     main.maybeRetCoordRune match { case Some(RuneUsage(_, CodeRuneS(StrI("T")))) => }
   }
 

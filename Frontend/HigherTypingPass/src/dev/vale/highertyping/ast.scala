@@ -26,7 +26,7 @@ case class ProgramA(
   def lookupFunction(name: String) = {
     val matches = functions.filter(function => {
       function.name match {
-        case FunctionNameS(n, _) => n == name
+        case FunctionNameS(n, _) => n.str == name
         case _ => false
       }
     })
@@ -50,7 +50,7 @@ case class ProgramA(
   def lookupStruct(name: String) = {
     val matches = structs.filter(struct => {
       struct.name match {
-        case TopLevelCitizenDeclarationNameS(n, _) => n == name
+        case TopLevelCitizenDeclarationNameS(n, _) => n.str == name
         case _ => false
       }
     })

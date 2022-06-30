@@ -178,4 +178,15 @@ class Keywords(interner: Interner) {
   val asterisk = interner.intern(StrI("*"))
 
   val my_module: StrI = interner.intern(StrI("my_module"))
+
+  val notEquals: StrI = interner.intern(StrI("!="))
+  val tripleEquals: StrI = interner.intern(StrI("==="))
+  val doubleEquals: StrI = interner.intern(StrI("=="))
+  val greaterEquals: StrI = interner.intern(StrI(">="))
+  val greater: StrI = interner.intern(StrI(">"))
+  val lessEquals: StrI = interner.intern(StrI("<="))
+  val less: StrI = interner.intern(StrI("<"))
+  val plus: StrI = interner.intern(StrI("+"))
+  val minus: StrI = interner.intern(StrI("-"))
+  val slash: StrI = interner.intern(StrI("/"))
 }

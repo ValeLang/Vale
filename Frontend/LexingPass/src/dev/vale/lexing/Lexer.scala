@@ -275,23 +275,49 @@ class Lexer(interner: Interner, keywords: Keywords) {
         case None => {
           val begin = iter.getPos()
           val nameStr =
-            iter.peek(2) match {
-              case Some("!=") => "!="
-              case Some("<=") => "<="
-              case Some("<") => "<"
-              case Some(">=") => ">="
-              case Some(">") => ">"
-              case Some("==") => "=="
-              case _ => {
-                iter.peek() match {
-                  case '>' | '<' | '+' | '-' | '*' | '/' => iter.peek().toString
+            iter.peek() match {
+              case '!' => {
+                iter.peek(2) match {
+                  case Some("!=") => keywords.notEquals
                   case _ => return Err(BadFunctionName(iter.getPos()))
                 }
               }
+              case '=' => {
+                iter.peek(2) match {
+                  case Some("==") => {
+                    iter.peek(3) match {
+                      case Some("===") => keywords.tripleEquals
+                      case _ => keywords.doubleEquals
+                    }
+                  }
+                  case _ => return Err(BadFunctionName(iter.getPos()))
+                }
+              }
+              case '>' => {
+                iter.peek(2) match {
+                  case Some(">=") => keywords.greaterEquals
+                  case _ => keywords.greater
+                }
+              }
+              case '<' => {
+                iter.peek(2) match {
+                  case Some("<=") => {
+                    iter.peek(3) match {
+                      case Some("<=>") => keywords.SPACESHIP
+                      case _ => keywords.lessEquals
+                    }
+                  }
+                  case _ => keywords.less
+                }
+              }
+              case '+' => keywords.plus
+              case '-' => keywords.minus
+              case '*' => keywords.asterisk
+              case '/' => keywords.slash
             }
-          iter.skipTo(begin + nameStr.length)
+          iter.skipTo(begin + nameStr.str.length)
           val end = iter.getPos()
-          WordLE(RangeL(begin, iter.getPos()), interner.intern(StrI(nameStr)))
+          WordLE(RangeL(begin, iter.getPos()), nameStr)
         }
         case Some(x) => x
       }
@@ -369,7 +395,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
           lexCurlied(iter, false) match {
             case Err(e) => return Err(e)
             case Ok(Some(x)) => x
-            case Ok(None) => vfail()
+            case Ok(None) => return Err(BadFunctionBodyError(iter.getPos()))
           }
 
         Some(FunctionBodyL(maybeDefaultRegion, body))
@@ -1126,7 +1152,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
   }
 
   def lexStringPart(iter: LexingIterator, stringBeginPos: Int):
-  Result[Either[Char, INodeLE], IParseError] = {
+  Result[Either[Char, ScrambleLE], IParseError] = {
     // Normally, we interpret as an expression anything after a `{`. However, we handle
     // newlines in a special way.
     // We don't want to interpolate { if its followed by a newline, such as in

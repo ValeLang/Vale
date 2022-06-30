@@ -13,8 +13,8 @@ object ParseUtils {
   def trySkipPastEqualsWhile(iter: ScrambleIterator, continueWhile: ScrambleIterator => Boolean): Option[ScrambleIterator] = {
     val scoutingIter = iter.clone()
     while (continueWhile(scoutingIter)) {
-      scoutingIter.peek(3) match {
-        case Array(Some(prev), Some(SymbolLE(range, '=')), Some(next)) => {
+      scoutingIter.peek3() match {
+        case (Some(prev), Some(SymbolLE(range, '=')), Some(next)) => {
           val surroundedBySpaces =
             prev.range.end < range.begin && range.end < next.range.begin
           if (surroundedBySpaces) {

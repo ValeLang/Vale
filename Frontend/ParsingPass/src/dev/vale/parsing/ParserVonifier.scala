@@ -189,7 +189,7 @@ object ParserVonifier {
       None,
       Vector(
         VonMember("packageCoord", vonifyPackageCoord(packageCoord)),
-        VonMember("end", VonStr(filepath))))
+        VonMember("filepath", VonStr(filepath))))
   }
 
   def vonifyPackageCoord(range: PackageCoordinate): VonObject = {

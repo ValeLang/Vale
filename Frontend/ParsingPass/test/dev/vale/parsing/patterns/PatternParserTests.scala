@@ -36,13 +36,6 @@ class PatternParserTests extends FunSuite with Matchers with Collector with Test
       case PatternPP(_, _,Some(LocalNameDeclarationP(NameP(_, StrI("a")))), None, None, None) =>
     }
   }
-  test("Simple pattern doesn't eat = after it") {
-    compile( "a Int")
-    checkRest("a Int=", "=")
-    checkRest("a Int =", " =")
-    checkRest("a Int = m", " = m")
-    checkRest("a Int = m;", " = m;")
-  }
   test("Empty pattern") {
     compile("_") match { case PatternPP(_,_, Some(IgnoredLocalNameDeclarationP(_)),None,None,None) => }
   }

@@ -38,7 +38,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("8") {
-    compileStatement("[x, y] = (4, 5)") shouldHave {
+    compileStatement("[x, y] = (4, 5);") shouldHave {
       case LetPE(_,
           PatternPP(_,_,
             None,
@@ -54,25 +54,25 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("9") {
-    compileStatement("set x.a = 5") shouldHave {
+    compileStatement("set x.a = 5;") shouldHave {
       case MutatePE(_, DotPE(_, LookupPE(LookupNameP(NameP(_, StrI("x"))), None), _, NameP(_, StrI("a"))), ConstantIntPE(_, 5, _)) =>
     }
   }
 
   test("1PE") {
-    compileStatement("""set board.PE.PE.symbol = "v"""") shouldHave {
+    compileStatement("""set board.PE.PE.symbol = "v";""") shouldHave {
       case MutatePE(_, DotPE(_, DotPE(_, DotPE(_, LookupPE(LookupNameP(NameP(_, StrI("board"))), None), _, NameP(_, StrI("PE"))), _, NameP(_, StrI("PE"))), _, NameP(_, StrI("symbol"))), ConstantStrPE(_, "v")) =>
     }
   }
 
   test("Test simple let") {
-    compileStatement("x = 3") shouldHave {
+    compileStatement("x = 3;") shouldHave {
       case LetPE(_,PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, StrI("x")))),None,None,None),ConstantIntPE(_, 3, _)) =>
     }
   }
 
   test("Test simple mut") {
-    compileStatement("set x = 5") shouldHave {
+    compileStatement("set x = 5;") shouldHave {
       case MutatePE(_, LookupPE(LookupNameP(NameP(_, StrI("x"))), None),ConstantIntPE(_, 5, _)) =>
     }
   }
@@ -89,7 +89,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
     // This test is here because we had a bug where we didn't check that there
     // was whitespace after a "return".
     compileStatement(
-      "oldArray = set list.array = newArray") shouldHave {
+      "oldArray = set list.array = newArray;") shouldHave {
       case LetPE(_,
         PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("oldArray")))),None,None,None),
         MutatePE(_,
@@ -111,7 +111,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Test destruct") {
-    compileStatement("destruct x") shouldHave {
+    compileStatement("destruct x;") shouldHave {
       case DestructPE(_,LookupPE(LookupNameP(NameP(_, StrI("x"))), None)) =>
     }
   }
@@ -134,21 +134,21 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Let with pattern with only a capture") {
-    compileStatement("a = m") shouldHave {
+    compileStatement("a = m;") shouldHave {
       case LetPE(_,Patterns.capture("a"),LookupPE(LookupNameP(NameP(_, StrI("m"))), None)) =>
     }
   }
 
   test("Let with simple pattern") {
-    compileStatement("a Moo = m") shouldHave {
+    compileStatement("a Moo = m;") shouldHave {
       case LetPE(_,
         PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, StrI("a")))),Some(NameOrRunePT(NameP(_, StrI("Moo")))),None,None),
         LookupPE(LookupNameP(NameP(_, StrI("m"))), None)) =>
     }
   }
 
-  test("Let with simple pattern in seq") {
-    compileStatement("[a Moo] = m") shouldHave {
+  test("Let with simple pattern in destructure") {
+    compileStatement("[a Moo] = m;") shouldHave {
       case LetPE(_,
           PatternPP(_,_,
             None,
@@ -160,13 +160,13 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Let with destructuring pattern") {
-    compileStatement("Muta[ ] = m") shouldHave {
+    compileStatement("Muta[ ] = m;") shouldHave {
       case LetPE(_,PatternPP(_,_,None,Some(NameOrRunePT(NameP(_, StrI("Muta")))),Some(DestructureP(_,Vector())),None),LookupPE(LookupNameP(NameP(_, StrI("m"))), None)) =>
     }
   }
 
   test("Ret") {
-    compileStatement("return 3") shouldHave {
+    compileStatement("return 3;") shouldHave {
       case ReturnPE(_,ConstantIntPE(_, 3, _)) =>
     }
   }

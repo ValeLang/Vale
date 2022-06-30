@@ -199,7 +199,7 @@ trait TestParseUtils {
       lexer.lexScramble(LexingIterator(code), false, false, false)
         .getOrDie()
     val parser = new Parser(interner, keywords, opts)
-    val exprP = parser.expressionParser.parseExpression(node).getOrDie()
+    val exprP = parser.expressionParser.parseExpression(new ScrambleIterator(node)).getOrDie()
     exprP
   }
 

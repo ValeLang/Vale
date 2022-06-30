@@ -200,8 +200,8 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Test templates") {
     val compile = RunCompilation.test(
       """
-        |func ~<T>(a T, b T) T { return a; }
-        |exported func main() int {true ~ false; 2 ~ 2; return 3 ~ 3;}
+        |func bork<T>(a T, b T) T { return a; }
+        |exported func main() int {true bork false; 2 bork 2; return 3 bork 3;}
       """.stripMargin)
     compile.evalForKind(Vector()) match { case VonInt(3) => }
   }

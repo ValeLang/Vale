@@ -72,7 +72,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
     vassertOne(compileFile("extern(\"bork\") func sum();").getOrDie().denizens) match {
       case TopLevelFunctionP(FunctionP(_,
       FunctionHeaderP(_,
-      Some(NameP(_, StrI("sum"))), Vector(ExternAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
+      Some(NameP(_, StrI("sum"))), Vector(BuiltinAttributeP(_, NameP(_, StrI("bork")))), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
       None)) =>
     }
   }

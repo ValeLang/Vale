@@ -168,7 +168,7 @@ case class StringLE(range: RangeL, parts: Array[StringPart]) extends INodeLE {
 }
 sealed trait StringPart
 case class StringPartLiteral(range: RangeL, s: String) extends StringPart
-case class StringPartExpr(expr: INodeLE) extends StringPart
+case class StringPartExpr(expr: ScrambleLE) extends StringPart
 
 
 sealed trait IParsedNumberLE extends INodeLE

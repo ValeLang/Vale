@@ -114,11 +114,7 @@ class ParsedLoader(interner: Interner) {
         val jfile = expectObjectTyped(parse(source), "File")
         Ok(
           FileP(
-            FileCoordinate(
-              PackageCoordinate(
-                interner.intern(StrI(getStringField(jfile, "module"))),
-                getArrayField(jfile, "packages").map(expectString).map(s => interner.intern(StrI(s.s)))),
-              getStringField(jfile, "filepath")),
+            loadFileCoord(getObjectField(jfile, "fileCoord")),
             getArrayField(jfile, "commentsRanges").map(expectObject).map(x => loadRange(x)).toArray,
             getArrayField(jfile, "denizens").map(expectObject).map(denizen => {
               getType(denizen) match {
@@ -203,6 +199,18 @@ class ParsedLoader(interner: Interner) {
       loadOptionalObject(getObjectField(jobj, "templateRules"), loadTemplateRules),
       loadOptionalObject(getObjectField(jobj, "params"), loadParams),
       loadFunctionReturn(getObjectField(jobj, "return")))
+  }
+
+  def loadFileCoord(jobj: JObject): FileCoordinate = {
+    FileCoordinate(
+      loadPackageCoord(getObjectField(jobj, "packageCoord")),
+      getStringField(jobj, "filepath")),
+  }
+
+  def loadPackageCoord(jobj: JObject): PackageCoordinate = {
+    PackageCoordinate(
+      interner.intern(StrI(getStringField(jobj, "module"))),
+      getArrayField(jobj, "packages").map(expectString).map(s => interner.intern(StrI(s.s))))
   }
 
   def loadParams(jobj: JObject): ParamsP = {

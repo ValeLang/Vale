@@ -45,6 +45,16 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
       { case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, StrI("+"))), None), Vector(ConstantIntPE(_, 4, _), ConstantIntPE(_, 5, _))) => }
   }
 
+  test("Passing == overload set") {
+    compileExpression("moo(4, ==)") shouldHave {
+      case FunctionCallPE(_,_,
+        _,
+        Vector(
+          _,
+          LookupPE(LookupNameP(NameP(_,StrI("=="))),None))) =>
+    }
+  }
+
   test("Call then binary operator") {
     compileExpression("str(i) + 5") shouldHave {
       case BinaryCallPE(_,

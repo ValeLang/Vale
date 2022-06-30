@@ -15,7 +15,7 @@ class IfTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() int {
-        |  return if (true) { 3 } else { 5 }
+        |  return if (true) { 3 } else { 5 };
         |}
       """.stripMargin)
     val programS =
@@ -43,7 +43,7 @@ class IfTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() int {
-        |  return if (false) { 3 } else { 5 }
+        |  return if (false) { 3 } else { 5 };
         |}
       """.stripMargin)
 
@@ -54,7 +54,7 @@ class IfTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() int {
-        |  return if (false) { 3 } else if (true) { 5 } else { 7 }
+        |  return if (false) { 3 } else if (true) { 5 } else { 7 };
         |}
       """.stripMargin)
 
@@ -85,7 +85,7 @@ class IfTests extends FunSuite with Matchers {
         |    } else {
         |      [y] = m;
         |      y
-        |    }
+        |    };
         |}
       """.stripMargin)
 
@@ -111,7 +111,7 @@ class IfTests extends FunSuite with Matchers {
         |  m = Marine(5);
         |  return if (m.x == 5) { "#" }
         |  else if (0 == 0) { "?" }
-        |  else { "." }
+        |  else { "." };
         |}
       """.stripMargin)
 
@@ -127,7 +127,7 @@ class IfTests extends FunSuite with Matchers {
       """
         |exported func main() int {
         |  return if x = 42; x < 50 { x }
-        |    else { 73 }
+        |    else { 73 };
         |}
       """.stripMargin)
 

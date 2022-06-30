@@ -38,19 +38,21 @@ class CompilerSolverTests extends FunSuite with Matchers {
 
   test("Humanize errors") {
     val interner = new Interner()
+    val keywords = new Keywords(interner)
     val tz = RangeS.testZero(interner)
+    val testPackageCoord = PackageCoordinate.TEST_TLD(interner, keywords)
 
-    val fireflyKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector(), CitizenNameT(CitizenTemplateNameT("Firefly"), Vector())))
+    val fireflyKind = StructTT(FullNameT(testPackageCoord, Vector(), CitizenNameT(CitizenTemplateNameT(StrI("Firefly")), Vector())))
     val fireflyCoord = CoordT(OwnT,fireflyKind)
-    val serenityKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector(), CitizenNameT(CitizenTemplateNameT("Serenity"), Vector())))
+    val serenityKind = StructTT(FullNameT(testPackageCoord, Vector(), CitizenNameT(CitizenTemplateNameT(StrI("Serenity")), Vector())))
     val serenityCoord = CoordT(OwnT,serenityKind)
-    val ispaceshipKind = InterfaceTT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector(), CitizenNameT(CitizenTemplateNameT("ISpaceship"), Vector())))
+    val ispaceshipKind = InterfaceTT(FullNameT(testPackageCoord, Vector(), CitizenNameT(CitizenTemplateNameT(StrI("ISpaceship")), Vector())))
     val ispaceshipCoord = CoordT(OwnT,ispaceshipKind)
-    val unrelatedKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector(), CitizenNameT(CitizenTemplateNameT("Spoon"), Vector())))
+    val unrelatedKind = StructTT(FullNameT(testPackageCoord, Vector(), CitizenNameT(CitizenTemplateNameT(StrI("Spoon")), Vector())))
     val unrelatedCoord = CoordT(OwnT,unrelatedKind)
-    val fireflySignature = SignatureT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector(), FunctionNameT("myFunc", Vector(), Vector(fireflyCoord))))
-    val fireflyExport = KindExportT(tz, fireflyKind, PackageCoordinate.TEST_TLD(interner), "Firefly");
-    val serenityExport = KindExportT(tz, fireflyKind, PackageCoordinate.TEST_TLD(interner), "Serenity");
+    val fireflySignature = SignatureT(FullNameT(testPackageCoord, Vector(), FunctionNameT(interner.intern(StrI("myFunc")), Vector(), Vector(fireflyCoord))))
+    val fireflyExport = KindExportT(tz, fireflyKind, testPackageCoord, interner.intern(StrI("Firefly")));
+    val serenityExport = KindExportT(tz, fireflyKind, testPackageCoord, interner.intern(StrI("Serenity")));
 
     val codeStr = "Hello I am A large piece Of code [that has An error]"
     val filenamesAndSources = FileCoordinateMap.test(interner, codeStr)
@@ -61,13 +63,13 @@ class CompilerSolverTests extends FunSuite with Matchers {
       Vector(
         CoordComponentsSR(
           makeRange(0, codeStr.length),
-          RuneUsage(makeRange(6, 7), CodeRuneS("I")),
-          RuneUsage(makeRange(11, 12), CodeRuneS("A")),
+          RuneUsage(makeRange(6, 7), CodeRuneS(StrI("I"))),
+          RuneUsage(makeRange(11, 12), CodeRuneS(StrI("A"))),
           RuneUsage(makeRange(33, 52), ImplicitRuneS(LocationInDenizen(Vector(7))))),
         KindComponentsSR(
           makeRange(33, 52),
           RuneUsage(makeRange(33, 52), ImplicitRuneS(LocationInDenizen(Vector(7)))),
-          RuneUsage(makeRange(43, 45), CodeRuneS("An"))))
+          RuneUsage(makeRange(43, 45), CodeRuneS(StrI("An")))))
 
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       TypingPassSolverError(
@@ -79,7 +81,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
               Vector(),
               Vector(),
               Map(
-                CodeRuneS("A") -> OwnershipTemplata(OwnT)))),
+                CodeRuneS(StrI("A")) -> OwnershipTemplata(OwnT)))),
           unsolvedRules,
           RuleError(KindIsNotConcrete(ispaceshipKind)))))
       .nonEmpty)
@@ -95,12 +97,12 @@ class CompilerSolverTests extends FunSuite with Matchers {
                 Vector(),
                 Vector(),
                 Map(
-                  CodeRuneS("A") -> OwnershipTemplata(OwnT)))),
+                  CodeRuneS(StrI("A")) -> OwnershipTemplata(OwnT)))),
             unsolvedRules,
             Set(
-              CodeRuneS("I"),
-              CodeRuneS("Of"),
-              CodeRuneS("An"),
+              CodeRuneS(StrI("I")),
+              CodeRuneS(StrI("Of")),
+              CodeRuneS(StrI("An")),
               ImplicitRuneS(LocationInDenizen(Vector(7)))))))
     println(errorText)
     vassert(errorText.nonEmpty)
@@ -313,7 +315,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
     )
     compile.getCompilerOutputs() match {
       case Err(TypingPassSolverError(_,IncompleteSolve(_,Vector(),unsolved))) => {
-        unsolved shouldEqual Set(CodeRuneS("N"))
+        unsolved shouldEqual Set(CodeRuneS(StrI("N")))
       }
     }
   }
@@ -371,8 +373,8 @@ class CompilerSolverTests extends FunSuite with Matchers {
         |""".stripMargin
     )
     compile.getCompilerOutputs() match {
-      case Err(TypingPassSolverError(_, FailedSolve(_, _, SolverConflict(_, KindTemplata(StructTT(FullNameT(_,_,CitizenNameT(CitizenTemplateNameT("ShipA"),_)))), KindTemplata(StructTT(FullNameT(_,_,CitizenNameT(CitizenTemplateNameT("ShipB"),_)))))))) =>
-      case Err(TypingPassSolverError(_, FailedSolve(_, _, SolverConflict(_, KindTemplata(StructTT(FullNameT(_,_,CitizenNameT(CitizenTemplateNameT("ShipB"),_)))), KindTemplata(StructTT(FullNameT(_,_,CitizenNameT(CitizenTemplateNameT("ShipA"),_)))))))) =>
+      case Err(TypingPassSolverError(_, FailedSolve(_, _, SolverConflict(_, KindTemplata(StructTT(FullNameT(_,_,CitizenNameT(CitizenTemplateNameT(StrI("ShipA")),_)))), KindTemplata(StructTT(FullNameT(_,_,CitizenNameT(CitizenTemplateNameT(StrI("ShipB")),_)))))))) =>
+      case Err(TypingPassSolverError(_, FailedSolve(_, _, SolverConflict(_, KindTemplata(StructTT(FullNameT(_,_,CitizenNameT(CitizenTemplateNameT(StrI("ShipB")),_)))), KindTemplata(StructTT(FullNameT(_,_,CitizenNameT(CitizenTemplateNameT(StrI("ShipA")),_)))))))) =>
       case other => vfail(other)
     }
   }
@@ -487,7 +489,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
     )
     val coutputs = compile.expectCompilerOutputs()
     coutputs.lookupFunction("genericGetFuel").header.fullName.last.templateArgs.last match {
-      case CoordTemplata(CoordT(_,StructTT(FullNameT(_,_,CitizenNameT(CitizenTemplateNameT("Firefly"),_))))) =>
+      case CoordTemplata(CoordT(_,StructTT(FullNameT(_,_,CitizenNameT(CitizenTemplateNameT(StrI("Firefly")),_))))) =>
     }
   }
 

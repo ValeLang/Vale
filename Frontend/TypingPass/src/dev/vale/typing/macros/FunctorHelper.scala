@@ -1,7 +1,7 @@
 package dev.vale.typing.macros
 
 import dev.vale.postparsing.CodeNameS
-import dev.vale.{Interner, RangeS, vwat}
+import dev.vale.{Interner, Keywords, Profiler, RangeS, StrI, vwat}
 import dev.vale.typing.CompilerOutputs
 import dev.vale.typing.ast.{ConstructTE, PrototypeT}
 import dev.vale.typing.citizen.StructCompiler
@@ -12,15 +12,14 @@ import dev.vale.typing.ast._
 import dev.vale.typing.env.TemplataLookupContext
 import dev.vale.typing.templata.PrototypeTemplata
 import dev.vale.typing.types.CoordT
-import dev.vale.{Interner, Profiler, RangeS, vwat}
 
-class FunctorHelper( interner: Interner, structCompiler: StructCompiler) {
+class FunctorHelper( interner: Interner, keywords: Keywords, structCompiler: StructCompiler) {
   def getFunctorForPrototype(
     env: FunctionEnvironment, coutputs: CompilerOutputs, callRange: RangeS, dropFunction: PrototypeT):
   ConstructTE = {
     val functorTemplate =
       env.lookupNearestWithImpreciseName(
-        interner.intern(CodeNameS("Functor1")), Set(TemplataLookupContext)) match {
+        interner.intern(CodeNameS(keywords.Functor1)), Set(TemplataLookupContext)) match {
         case Some(st@StructTemplata(_, _)) => st
         case other => vwat(other)
       }

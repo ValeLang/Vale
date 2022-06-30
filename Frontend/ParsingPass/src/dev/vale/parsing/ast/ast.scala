@@ -71,6 +71,7 @@ case class StructP(
   mutability: Option[ITemplexPT],
   identifyingRunes: Option[IdentifyingRunesP],
   templateRules: Option[TemplateRulesP],
+  bodyRange: RangeL,
   members: StructMembersP) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class StructMembersP(
@@ -97,6 +98,7 @@ case class InterfaceP(
   mutability: Option[ITemplexPT],
   maybeIdentifyingRunes: Option[IdentifyingRunesP],
   templateRules: Option[TemplateRulesP],
+  bodyRange: RangeL,
   members: Vector[FunctionP]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 sealed trait IAttributeP

@@ -3,7 +3,7 @@ package dev.vale.postparsing.rules
 import dev.vale.lexing.RangeL
 import dev.vale.parsing.ast.{BoolTypePR, BuiltinCallPR, ComponentsPR, CoordListTypePR, CoordTypePR, EqualsPR, IRulexPR, ITypePR, IntPT, IntTypePR, KindTypePR, LocationTypePR, MutabilityTypePR, NameP, OrPR, OwnershipPT, OwnershipTypePR, PrototypeTypePR, TemplexPR, TypedPR, VariabilityTypePR}
 import dev.vale.postparsing.{BooleanTemplataType, CodeRuneS, CompileErrorExceptionS, CoordTemplataType, IEnvironment, IRuneS, ITemplataType, ImplicitRuneS, IntegerTemplataType, KindTemplataType, LocationInDenizenBuilder, LocationTemplataType, MutabilityTemplataType, OwnershipTemplataType, PackTemplataType, PostParser, PrototypeTemplataType, UnknownRuleFunctionS, VariabilityTemplataType, rules}
-import dev.vale.{Interner, StrI, vassert, vassertOne, vcurious, vfail, vimpl}
+import dev.vale.{Interner, Keywords, StrI, vassert, vassertOne, vcurious, vfail, vimpl}
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
 import dev.vale.postparsing._
@@ -11,13 +11,7 @@ import dev.vale.postparsing._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class RuleScout(interner: Interner, templexScout: TemplexScout) {
-  val IS_INTERFACE = interner.intern(StrI("isInterface"))
-  val IMPLEMENTS = interner.intern(StrI("implements"))
-  val REF_LIST_COMPOUND_MUTABILITY = interner.intern(StrI("refListCompoundMutability"))
-  val REFS = interner.intern(StrI("Refs"))
-  val ANY = interner.intern(StrI("any"))
-
+class RuleScout(interner: Interner, keywords: Keywords, templexScout: TemplexScout) {
   // Returns:
   // - new rules produced on the side while translating the given rules
   // - the translated versions of the given rules
@@ -129,7 +123,7 @@ class RuleScout(interner: Interner, templexScout: TemplexScout) {
       }
       case TemplexPR(templex) => templexScout.translateTemplex(env, lidb.child(), builder, templex)
       case BuiltinCallPR(range, name, args) => {
-        if (name.str == IS_INTERFACE) {
+        if (name.str == keywords.IS_INTERFACE) {
           vassert(args.length == 1)
           val argRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, args.head)
 
@@ -139,7 +133,7 @@ class RuleScout(interner: Interner, templexScout: TemplexScout) {
           runeToExplicitType.put(argRune.rune, KindTemplataType)
 
           rules.RuneUsage(evalRange(range), argRune.rune)
-        } else if (name.str == IMPLEMENTS) {
+        } else if (name.str == keywords.IMPLEMENTS) {
           vassert(args.length == 2)
           val Vector(structRule, interfaceRule) = args
           val structRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, structRule)
@@ -150,7 +144,7 @@ class RuleScout(interner: Interner, templexScout: TemplexScout) {
           builder += rules.CoordIsaSR(evalRange(range), structRune, interfaceRune)
 
           rules.RuneUsage(evalRange(range), structRune.rune)
-        } else if (name.str == REF_LIST_COMPOUND_MUTABILITY) {
+        } else if (name.str == keywords.REF_LIST_COMPOUND_MUTABILITY) {
           vassert(args.length == 1)
           val argRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, args.head)
 
@@ -160,7 +154,7 @@ class RuleScout(interner: Interner, templexScout: TemplexScout) {
           runeToExplicitType.put(argRune.rune, PackTemplataType(CoordTemplataType))
 
           rules.RuneUsage(evalRange(range), resultRune.rune)
-        } else if (name.str == REFS) {
+        } else if (name.str == keywords.REFS) {
           val argRunes =
             args.map(arg => {
               translateRulex(env, lidb.child(), builder, runeToExplicitType, arg)
@@ -171,7 +165,7 @@ class RuleScout(interner: Interner, templexScout: TemplexScout) {
           runeToExplicitType.put(resultRune.rune, PackTemplataType(CoordTemplataType))
 
           rules.RuneUsage(evalRange(range), resultRune.rune)
-        } else if (name.str == ANY) {
+        } else if (name.str == keywords.ANY) {
           val literals: Array[ILiteralSL] =
             args.map({
               case TemplexPR(IntPT(_, i)) => IntLiteralSL(i)

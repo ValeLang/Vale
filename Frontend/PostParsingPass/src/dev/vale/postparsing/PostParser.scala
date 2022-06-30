@@ -4,7 +4,7 @@ package dev.vale.postparsing
 import dev.vale.options.GlobalOptions
 import dev.vale.postparsing.patterns.PatternScout
 import dev.vale.postparsing.rules.{IRulexSR, LiteralSR, MutabilityLiteralSL, RuleScout, RuneUsage, TemplexScout}
-import dev.vale.{CodeLocationS, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Ok, PackageCoordinate, Profiler, RangeS, Result, postparsing, vassert, vcurious, vfail, vimpl, vpass, vwat}
+import dev.vale.{CodeLocationS, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Keywords, Ok, PackageCoordinate, Profiler, RangeS, Result, postparsing, vassert, vcurious, vfail, vimpl, vpass, vwat}
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
 import PostParser.determineDenizenType
@@ -233,10 +233,11 @@ object PostParser {
 
 class PostParser(
     globalOptions: GlobalOptions,
-    interner: Interner) {
-  val templexScout = new TemplexScout(interner)
-  val ruleScout = new RuleScout(interner, templexScout)
-  val functionScout = new FunctionScout(this, interner, templexScout, ruleScout)
+    interner: Interner,
+    keywords: Keywords) {
+  val templexScout = new TemplexScout(interner, keywords)
+  val ruleScout = new RuleScout(interner, keywords, templexScout)
+  val functionScout = new FunctionScout(this, interner, keywords, templexScout, ruleScout)
 
   def scoutProgram(fileCoordinate: FileCoordinate, parsed: FileP): Result[ProgramS, ICompileErrorS] = {
     Profiler.frame(() => {
@@ -368,7 +369,7 @@ class PostParser(
   }
 
   private def scoutStruct(file: FileCoordinate, head: StructP): StructS = {
-    val StructP(rangeP, NameP(structNameRange, structHumanName), attributesP, mutabilityPT, maybeIdentifyingRunes, maybeTemplateRulesP, StructMembersP(_, members)) = head
+    val StructP(rangeP, NameP(structNameRange, structHumanName), attributesP, mutabilityPT, maybeIdentifyingRunes, maybeTemplateRulesP, bodyRange, StructMembersP(_, members)) = head
 
     val structRangeS = PostParser.evalRange(file, rangeP)
     val structName = interner.intern(postparsing.TopLevelCitizenDeclarationNameS(structHumanName, PostParser.evalRange(file, structNameRange)))
@@ -410,7 +411,9 @@ class PostParser(
 
     ruleScout.translateRulexes(structEnv, lidb.child(), ruleBuilder, runeToExplicitType, templateRulesP)
 
-    val mutabilityRuneS = templexScout.translateTemplex(structEnv, lidb.child(), ruleBuilder, mutabilityPT)
+    val mutability =
+      mutabilityPT.getOrElse(MutabilityPT(RangeL(bodyRange.begin, bodyRange.begin), MutableP))
+    val mutabilityRuneS = templexScout.translateTemplex(structEnv, lidb.child(), ruleBuilder, mutability)
     runeToExplicitType.put(mutabilityRuneS.rune, MutabilityTemplataType)
 
     val rulesS = ruleBuilder.toArray
@@ -497,7 +500,7 @@ class PostParser(
     file: FileCoordinate,
     containingInterfaceP: InterfaceP):
   InterfaceS = {
-    val InterfaceP(interfaceRange, NameP(interfaceNameRangeS, interfaceHumanName), attributesP, mutabilityPT, maybeIdentifyingRunes, maybeRulesP, internalMethodsP) = containingInterfaceP
+    val InterfaceP(interfaceRange, NameP(interfaceNameRangeS, interfaceHumanName), attributesP, mutabilityPT, maybeIdentifyingRunes, maybeRulesP, bodyRange, internalMethodsP) = containingInterfaceP
     val interfaceRangeS = PostParser.evalRange(file, interfaceRange)
     val interfaceFullName = interner.intern(postparsing.TopLevelCitizenDeclarationNameS(interfaceHumanName, PostParser.evalRange(file, interfaceNameRangeS)))
     val rulesP = maybeRulesP.toVector.flatMap(_.rules)
@@ -515,7 +518,9 @@ class PostParser(
 
     ruleScout.translateRulexes(interfaceEnv, lidb.child(), ruleBuilder, runeToExplicitType, rulesP)
 
-    val mutabilityRuneS = templexScout.translateTemplex(interfaceEnv, lidb.child(), ruleBuilder, mutabilityPT)
+    val mutability =
+      mutabilityPT.getOrElse(MutabilityPT(RangeL(bodyRange.begin, bodyRange.begin), MutableP))
+    val mutabilityRuneS = templexScout.translateTemplex(interfaceEnv, lidb.child(), ruleBuilder, mutability)
 
 
     val rulesS = ruleBuilder.toArray
@@ -569,9 +574,10 @@ class PostParser(
 class ScoutCompilation(
   globalOptions: GlobalOptions,
   interner: Interner,
+  keywords: Keywords,
   packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]]) {
-  var parserCompilation = new ParserCompilation(globalOptions, interner, packagesToBuild, packageToContentsResolver)
+  var parserCompilation = new ParserCompilation(globalOptions, interner, keywords, packagesToBuild, packageToContentsResolver)
   var scoutputCache: Option[FileCoordinateMap[ProgramS]] = None
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = parserCompilation.getCodeMap()
@@ -584,7 +590,7 @@ class ScoutCompilation(
       case None => {
         val scoutput =
           parserCompilation.expectParseds().map({ case (fileCoordinate, (code, commentsAndRanges)) =>
-            new PostParser(globalOptions, interner).scoutProgram(fileCoordinate, code) match {
+            new PostParser(globalOptions, interner, keywords).scoutProgram(fileCoordinate, code) match {
               case Err(e) => return Err(e)
               case Ok(p) => p
             }

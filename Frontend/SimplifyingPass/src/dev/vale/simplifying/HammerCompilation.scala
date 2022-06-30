@@ -6,8 +6,9 @@ import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.FileP
 import dev.vale.postparsing.{ICompileErrorS, ProgramS}
 import dev.vale.typing.{Hinputs, ICompileErrorT, TypingPassCompilation, TypingPassCompilationOptions}
-import dev.vale.{FileCoordinateMap, IPackageResolver, Interner, PackageCoordinate, PackageCoordinateMap, Profiler, Result, vassertSome, vcurious, vimpl}
+import dev.vale.{FileCoordinateMap, IPackageResolver, Interner, Keywords, PackageCoordinate, PackageCoordinateMap, Profiler, Result, vassertSome, vcurious, vimpl}
 import dev.vale.highertyping.ICompileErrorA
+import dev.vale.lexing.{FailedParse, RangeL}
 import dev.vale.postparsing.ICompileErrorS
 import dev.vale.typing.ICompileErrorT
 
@@ -22,12 +23,14 @@ case class HammerCompilationOptions(
 
 class HammerCompilation(
   val interner: Interner,
+  val keywords: Keywords,
   packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]],
   options: HammerCompilationOptions = HammerCompilationOptions()) {
   var typingPassCompilation =
     new TypingPassCompilation(
       interner,
+      keywords,
       packagesToBuild,
       packageToContentsResolver,
       TypingPassCompilationOptions(
@@ -50,7 +53,7 @@ class HammerCompilation(
     hamutsCache match {
       case Some(hamuts) => hamuts
       case None => {
-        val hammer = new Hammer(interner)
+        val hammer = new Hammer(interner, keywords)
         val hamuts = hammer.translate(typingPassCompilation.expectCompilerOutputs())
         hamutsCache = Some(hamuts)
         vonHammerCache = Some(hammer.vonHammer)

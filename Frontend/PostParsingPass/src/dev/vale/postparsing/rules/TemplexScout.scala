@@ -2,7 +2,7 @@ package dev.vale.postparsing.rules
 
 import dev.vale.lexing.RangeL
 import dev.vale.parsing.ast.{AnonymousRunePT, BoolPT, BorrowP, BorrowPT, CallPT, FunctionPT, ITemplexPT, InlinePT, IntPT, InterpretedPT, LocationPT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnershipPT, PackPT, PrototypePT, RegionRunePT, RuntimeSizedArrayPT, StaticSizedArrayPT, StringPT, TuplePT, VariabilityPT}
-import dev.vale.{Interner, Profiler, RangeS, StrI}
+import dev.vale.{Interner, Keywords, Profiler, RangeS, StrI}
 import dev.vale.postparsing.{CodeNameS, CodeRuneS, IEnvironment, IImpreciseNameS, IRuneS, ITemplataType, ImplicitRuneS, LocationInDenizenBuilder, PostParser, rules}
 import dev.vale.parsing.ast._
 import dev.vale.postparsing._
@@ -11,10 +11,8 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 class TemplexScout(
-    interner: Interner) {
-  val IFUNCTION = interner.intern(StrI("IFunction"))
-  val TUP = interner.intern(StrI("Tup"))
-
+    interner: Interner,
+  keywords: Keywords) {
   def addLiteralRule(
     lidb: LocationInDenizenBuilder,
     ruleBuilder: ArrayBuffer[IRulexSR],
@@ -124,7 +122,7 @@ class TemplexScout(
             }
             case FunctionPT(range, mutability, paramsPack, returnType) => {
               val resultRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
-              val templateNameRuneS = addLookupRule(lidb.child(), ruleBuilder, evalRange(range), interner.intern(CodeNameS(IFUNCTION)))
+              val templateNameRuneS = addLookupRule(lidb.child(), ruleBuilder, evalRange(range), interner.intern(CodeNameS(keywords.IFUNCTION)))
               val mutabilityRuneS =
                 mutability match {
                   case None => addLiteralRule(lidb.child(), ruleBuilder, evalRange(range), rules.MutabilityLiteralSL(MutableP))
@@ -145,7 +143,7 @@ class TemplexScout(
 
               val nameRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
               ruleBuilder +=
-                LiteralSR(evalRange(nameRange), nameRuneS, StringLiteralSL(name))
+                LiteralSR(evalRange(nameRange), nameRuneS, StringLiteralSL(name.str))
 
               val paramsS =
                 paramsP.map(paramP => {
@@ -207,7 +205,7 @@ class TemplexScout(
                 rules.LookupSR(
                   evalRange(range),
                   templateRuneS,
-                  interner.intern(CodeNameS(TUP)))
+                  interner.intern(CodeNameS(keywords.TUP)))
               ruleBuilder +=
                 rules.CallSR(
                   evalRange(range),

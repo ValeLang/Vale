@@ -61,15 +61,15 @@ case class InterfaceL(
   mutability: Option[ScrambleLE],
   maybeIdentifyingRunes: Option[AngledLE],
   templateRules: Option[ScrambleLE],
+  bodyRange: RangeL,
   members: Array[FunctionL]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 sealed trait IAttributeL
 
 case class AbstractAttributeL(range: RangeL) extends IAttributeL { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class ExternAttributeL(range: RangeL) extends IAttributeL { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class ExportAttributeL(range: RangeL) extends IAttributeL { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class PureAttributeL(range: RangeL) extends IAttributeL { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-
+case class ExternAttributeL(range: RangeL, maybeCustomName: Option[ParendLE]) extends IAttributeL { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class WeakableAttributeL(range: RangeL) extends IAttributeL { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class SealedAttributeL(range: RangeL) extends IAttributeL { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
@@ -85,7 +85,8 @@ case class FunctionL(
 
 case class FunctionBodyL(
   defaultRegion: Option[INodeLE],
-  body: CurliedLE)
+  body: CurliedLE
+) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class FunctionHeaderL(
   range: RangeL,

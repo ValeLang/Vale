@@ -4,14 +4,9 @@ import dev.vale.parsing.ast._
 import PostParser.{noDeclarations, noVariableUses}
 import dev.vale.lexing.RangeL
 import dev.vale.parsing.ast.{AugmentPE, BlockPE, BorrowP, ConsecutorPE, FunctionCallPE, IExpressionPE, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, LetPE, LookupNameP, LookupPE, NameP, PatternPP, UseP}
-import dev.vale.{Interner, StrI, postparsing}
+import dev.vale.{Interner, Keywords, StrI, postparsing}
 
-class LoopPostParser(interner: Interner) {
-  val BEGIN = interner.intern(StrI("begin"))
-  val NEXT = interner.intern(StrI("next"))
-  val IS_EMPTY = interner.intern(StrI("isEmpty"))
-  val GET = interner.intern(StrI("get"))
-
+class LoopPostParser(interner: Interner, keywords: Keywords) {
   def scoutLoop(
     expressionScout: ExpressionScout,
     stackFrame0: StackFrame,
@@ -61,7 +56,7 @@ class LoopPostParser(interner: Interner) {
               PatternPP(inKeywordRange, None, Some(IteratorNameDeclarationP(inKeywordRange)), None, None, None),
               FunctionCallPE(
                 inKeywordRange, inKeywordRange,
-                LookupPE(LookupNameP(NameP(inKeywordRange, BEGIN)), None),
+                LookupPE(LookupNameP(NameP(inKeywordRange, keywords.BEGIN)), None),
                 Vector(
                   AugmentPE(
                     inKeywordRange, BorrowP,
@@ -123,7 +118,7 @@ class LoopPostParser(interner: Interner) {
                     FunctionCallPE(
                       inKeywordRange,
                       inKeywordRange,
-                      LookupPE(LookupNameP(NameP(inKeywordRange, NEXT)), None),
+                      LookupPE(LookupNameP(NameP(inKeywordRange, keywords.NEXT)), None),
                       Vector(
                         AugmentPE(
                           inKeywordRange,
@@ -132,7 +127,7 @@ class LoopPostParser(interner: Interner) {
                   FunctionCallPE(
                     inKeywordRange,
                     inKeywordRange,
-                    LookupPE(LookupNameP(NameP(inKeywordRange, IS_EMPTY)), None),
+                    LookupPE(LookupNameP(NameP(inKeywordRange, keywords.IS_EMPTY)), None),
                     Vector(
                       AugmentPE(
                         inKeywordRange,
@@ -178,7 +173,7 @@ class LoopPostParser(interner: Interner) {
           FunctionCallPE(
             inKeywordRange,
             inKeywordRange,
-            LookupPE(LookupNameP(NameP(inKeywordRange, GET)), None),
+            LookupPE(LookupNameP(NameP(inKeywordRange, keywords.GET)), None),
             Vector(
               LookupPE(IterationOptionNameP(inKeywordRange), None)))),
         UseP)

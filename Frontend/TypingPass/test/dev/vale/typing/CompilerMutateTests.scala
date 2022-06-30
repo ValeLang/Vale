@@ -37,7 +37,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs();
     val main = coutputs.lookupFunction("main")
-    Collector.only(main, { case MutateTE(LocalLookupTE(_,ReferenceLocalVariableT(FullNameT(_,_, CodeVarNameT("a")), VaryingT, _)), ConstantIntTE(4, _)) => })
+    Collector.only(main, { case MutateTE(LocalLookupTE(_,ReferenceLocalVariableT(FullNameT(_,_, CodeVarNameT(StrI("a"))), VaryingT, _)), ConstantIntTE(4, _)) => })
 
     val lookup = Collector.only(main, { case l @ LocalLookupTE(range, localVariable) => l })
     val resultCoord = lookup.result.reference
@@ -130,10 +130,10 @@ class CompilerMutateTests extends FunSuite with Matchers {
     compile.getCompilerOutputs() match {
       case Err(CantMutateFinalMember(_, structTT, memberName)) => {
         structTT match {
-          case StructTT(FullNameT(_, _, CitizenNameT(CitizenTemplateNameT("Vec3"), Vector()))) =>
+          case StructTT(FullNameT(_, _, CitizenNameT(CitizenTemplateNameT(StrI("Vec3")), Vector()))) =>
         }
         memberName.last match {
-          case CodeVarNameT("x") =>
+          case CodeVarNameT(StrI("x")) =>
         }
       }
     }
@@ -152,10 +152,10 @@ class CompilerMutateTests extends FunSuite with Matchers {
     compile.getCompilerOutputs() match {
       case Err(CantMutateFinalMember(_, structTT, memberName)) => {
         structTT match {
-          case StructTT(FullNameT(_, _, CitizenNameT(CitizenTemplateNameT("Vec3"), Vector()))) =>
+          case StructTT(FullNameT(_, _, CitizenNameT(CitizenTemplateNameT(StrI("Vec3")), Vector()))) =>
         }
         memberName.last match {
-          case CodeVarNameT("x") =>
+          case CodeVarNameT(StrI("x")) =>
         }
       }
     }
@@ -232,9 +232,10 @@ class CompilerMutateTests extends FunSuite with Matchers {
 
   test("Humanize errors") {
     val interner = new Interner()
-    val fireflyKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector.empty, interner.intern(CitizenNameT(CitizenTemplateNameT("Firefly"), Vector.empty))))
+    val keywords = new Keywords(interner)
+    val fireflyKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(CitizenNameT(CitizenTemplateNameT(StrI("Firefly")), Vector.empty))))
     val fireflyCoord = CoordT(OwnT,fireflyKind)
-    val serenityKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector.empty, interner.intern(CitizenNameT(CitizenTemplateNameT("Serenity"), Vector.empty))))
+    val serenityKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(CitizenNameT(CitizenTemplateNameT(StrI("Serenity")), Vector.empty))))
     val serenityCoord = CoordT(OwnT,serenityKind)
 
     val filenamesAndSources = FileCoordinateMap.test(interner, "blah blah blah\nblah blah blah")
@@ -245,7 +246,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindFunctionToCallT(
         tz,
-        FindFunctionFailure(interner.intern(CodeNameS("")), Vector.empty, Map())))
+        FindFunctionFailure(interner.intern(CodeNameS(interner.intern(StrI("")))), Vector.empty, Map())))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CannotSubscriptT(
@@ -255,7 +256,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindIdentifierToLoadT(
         tz,
-        interner.intern(CodeNameS("spaceship"))))
+        interner.intern(CodeNameS(StrI("spaceship")))))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindMemberT(
@@ -265,7 +266,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       BodyResultDoesntMatch(
         tz,
-        FunctionNameS("myFunc", CodeLocationS.testZero(interner)), fireflyCoord, serenityCoord))
+        FunctionNameS(interner.intern(StrI("myFunc")), CodeLocationS.testZero(interner)), fireflyCoord, serenityCoord))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntConvertForReturnT(
@@ -285,7 +286,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CantMoveOutOfMemberT(
         tz,
-        interner.intern(CodeVarNameT("hp"))))
+        interner.intern(CodeVarNameT(StrI("hp")))))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CantReconcileBranchesResults(
@@ -296,19 +297,19 @@ class CompilerMutateTests extends FunSuite with Matchers {
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CantUseUnstackifiedLocal(
         tz,
-        interner.intern(CodeVarNameT("firefly"))))
+        interner.intern(CodeVarNameT(StrI("firefly")))))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       FunctionAlreadyExists(
         tz,
         tz,
-        SignatureT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector.empty, interner.intern(FunctionNameT("myFunc", Vector.empty, Vector.empty))))))
+        SignatureT(FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(FunctionNameT(interner.intern(StrI("myFunc")), Vector.empty, Vector.empty))))))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CantMutateFinalMember(
         tz,
         serenityKind,
-        FullNameT(PackageCoordinate.TEST_TLD(interner), Vector.empty, interner.intern(CodeVarNameT("bork")))))
+        FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(CodeVarNameT(StrI("bork"))))))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       LambdaReturnDoesntMatchInterfaceConstructor(

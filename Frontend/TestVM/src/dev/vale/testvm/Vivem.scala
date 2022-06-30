@@ -79,7 +79,7 @@ object Vivem {
       stdout: String => Unit): IVonData = {
     val main =
       programH.packages.flatMap({ case (packageCoord, paackage) =>
-        paackage.exportNameToFunction.get("main").map(prototype => paackage.functions.find(_.prototype == prototype).get).toVector
+        paackage.exportNameToFunction.find(_._1.str == "main").map(prototype => paackage.functions.find(_.prototype == prototype).get).toVector
       }).flatten.toVector match {
         case Vector() => vfail()
         case Vector(m) => m

@@ -127,6 +127,11 @@ object LexAndExplore {
             }
           }
 
+          unexploredPackages ++=
+            maybeImports.toArray.flatten.map(x => {
+              interner.intern(PackageCoordinate(x.moduleName.str, x.packageSteps.map(_.str).toVector))
+            }).toSet -- startedPackages
+
           val commentsRanges = iter.comments
           val file = fileHandler(fileCoord, code, commentsRanges, resultAcc)
           filesAcc.add(file)

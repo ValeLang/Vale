@@ -1,5 +1,6 @@
 package dev.vale.highlighter
 
+import dev.vale.lexing.RangeL
 import dev.vale.{vassert, vfail}
 import dev.vale.parsing._
 import dev.vale.vfail
@@ -45,14 +46,14 @@ object Highlighter {
         if (commentRanges.isEmpty) {
           builder.append(escape(iter.advanceTo(untilPos, Int.MaxValue)))
         } else {
-          builder.append(escape(iter.advanceTo(untilPos, commentRanges.head._1)))
+          builder.append(escape(iter.advanceTo(untilPos, commentRanges.head.begin)))
         }
 
         // If we're at the beginning of the next comment, consume it.
-        while (iter.index < code.length && commentRanges.nonEmpty && iter.index == commentRanges.head._1) {
+        while (iter.index < code.length && commentRanges.nonEmpty && iter.index == commentRanges.head.begin) {
           builder.append(s"""<span class="${Comment}">""")
-          builder.append(escape(iter.advanceTo(Int.MaxValue, commentRanges.head._2)))
-          vassert(iter.index == commentRanges.head._2)
+          builder.append(escape(iter.advanceTo(Int.MaxValue, commentRanges.head.end)))
+          vassert(iter.index == commentRanges.head.end)
           builder.append(s"""</span>""")
           commentRanges = commentRanges.tail
         }

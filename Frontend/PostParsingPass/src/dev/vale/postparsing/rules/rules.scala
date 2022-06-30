@@ -227,7 +227,7 @@ case class IntLiteralSL(value: Long) extends ILiteralSL {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def getType(): ITemplataType = IntegerTemplataType
 }
-case class StringLiteralSL(value: StrI) extends ILiteralSL {
+case class StringLiteralSL(value: String) extends ILiteralSL {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def getType(): ITemplataType = StringTemplataType
 }

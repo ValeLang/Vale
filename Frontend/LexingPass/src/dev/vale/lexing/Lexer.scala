@@ -1,63 +1,106 @@
 package dev.vale.lexing
 
-import dev.vale.{Accumulator, Err, Interner, Ok, Result, StrI, vassert, vassertSome, vfail, vimpl, vwat}
+import dev.vale.{Accumulator, Err, Interner, Keywords, Ok, Result, StrI, vassert, vassertSome, vfail, vimpl, vwat}
 
 import scala.collection.mutable
 
 class Lexer(interner: Interner, keywords: Keywords) {
-  val DeriveStructDrop = interner.intern(StrI("DeriveStructDrop"))
-
-  def lexAttributes(iter: LexingIterator): Array[IAttributeL] = {
+  def lexAttributes(iter: LexingIterator): Result[Array[IAttributeL], IParseError] = {
     val attributesAccum = new Accumulator[IAttributeL]()
     while ({
       iter.consumeCommentsAndWhitespace()
       lexAttribute(iter) match {
-        case Some(attrL) => attributesAccum.add(attrL); true
-        case None => false
+        case Err(e) => return Err(e)
+        case Ok(Some(attrL)) => attributesAccum.add(attrL); true
+        case Ok(None) => false
       }
     }) {}
-    attributesAccum.buildArray()
+    Ok(attributesAccum.buildArray())
   }
 
-  def lexAttribute(iter: LexingIterator): Option[IAttributeL] = {
+  def lexAttribute(iter: LexingIterator): Result[Option[IAttributeL], IParseError] = {
     // Optimize: can xor the next 8 chars into a u64 and then
     // use xor and bitwise and to do these string comparisons
     // Might be a good idea to switch to trait so it fits in 8 letters lol
     val attributeBegin = iter.getPos()
     if (iter.trySkipCompleteWord("#DeriveStructDrop")) {
       val end = iter.getPos()
-      Some(
-        MacroCallL(
-          RangeL(attributeBegin, end),
-          CallMacroL,
-          WordLE(RangeL(attributeBegin, end), DeriveStructDrop)))
+      Ok(
+        Some(
+          MacroCallL(
+            RangeL(attributeBegin, end),
+            CallMacroL,
+            WordLE(RangeL(attributeBegin, end), keywords.DeriveStructDrop))))
     } else if (iter.trySkipCompleteWord("#!DeriveStructDrop")) {
       val end = iter.getPos()
-      Some(
-        MacroCallL(
-          RangeL(attributeBegin, end),
-          DontCallMacroL,
-          WordLE(RangeL(attributeBegin, end), DeriveStructDrop)))
+      Ok(
+        Some(
+          MacroCallL(
+            RangeL(attributeBegin, end),
+            DontCallMacroL,
+            WordLE(RangeL(attributeBegin, end), keywords.DeriveStructDrop))))
+    } else if (iter.trySkipCompleteWord("#DeriveInterfaceDrop")) {
+      val end = iter.getPos()
+      Ok(
+        Some(
+          MacroCallL(
+            RangeL(attributeBegin, end),
+            CallMacroL,
+            WordLE(RangeL(attributeBegin, end), keywords.DeriveInterfaceDrop))))
+    } else if (iter.trySkipCompleteWord("#!DeriveInterfaceDrop")) {
+      val end = iter.getPos()
+      Ok(
+        Some(
+          MacroCallL(
+            RangeL(attributeBegin, end),
+            DontCallMacroL,
+            WordLE(RangeL(attributeBegin, end), keywords.DeriveInterfaceDrop))))
+    } else if (iter.trySkipCompleteWord("#DeriveImplDrop")) {
+      val end = iter.getPos()
+      Ok(
+        Some(
+          MacroCallL(
+            RangeL(attributeBegin, end),
+            CallMacroL,
+            WordLE(RangeL(attributeBegin, end), keywords.DeriveImplDrop))))
+    } else if (iter.trySkipCompleteWord("#!DeriveImplDrop")) {
+      val end = iter.getPos()
+      Ok(
+        Some(
+          MacroCallL(
+            RangeL(attributeBegin, end),
+            DontCallMacroL,
+            WordLE(RangeL(attributeBegin, end), keywords.DeriveImplDrop))))
     } else if (iter.trySkipCompleteWord("abstract")) {
       val end = iter.getPos()
-      Some(AbstractAttributeL(RangeL(attributeBegin, end)))
+      Ok(Some(AbstractAttributeL(RangeL(attributeBegin, end))))
     } else if (iter.trySkipCompleteWord("pure")) {
       val end = iter.getPos()
-      Some(PureAttributeL(RangeL(attributeBegin, end)))
+      Ok(Some(PureAttributeL(RangeL(attributeBegin, end))))
     } else if (iter.trySkipCompleteWord("extern")) {
+      val maybeCustomName =
+        if (iter.peek() == '(') {
+          lexParend(iter) match {
+            case Err(e) => return Err(e)
+            case Ok(None) => vwat()
+            case Ok(Some(x)) => Some(x)
+          }
+        } else {
+          None
+        }
       val end = iter.getPos()
-      Some(ExternAttributeL(RangeL(attributeBegin, end)))
+      Ok(Some(ExternAttributeL(RangeL(attributeBegin, end), maybeCustomName)))
     } else if (iter.trySkipCompleteWord("exported")) {
       val end = iter.getPos()
-      Some(ExportAttributeL(RangeL(attributeBegin, end)))
+      Ok(Some(ExportAttributeL(RangeL(attributeBegin, end))))
     } else if (iter.trySkipCompleteWord("weakable")) {
       val end = iter.getPos()
-      Some(WeakableAttributeL(RangeL(attributeBegin, end)))
+      Ok(Some(WeakableAttributeL(RangeL(attributeBegin, end))))
     } else if (iter.trySkipCompleteWord("sealed")) {
       val end = iter.getPos()
-      Some(SealedAttributeL(RangeL(attributeBegin, end)))
+      Ok(Some(SealedAttributeL(RangeL(attributeBegin, end))))
     } else {
-      None
+      Ok(None)
     }
   }
 
@@ -65,7 +108,11 @@ class Lexer(interner: Interner, keywords: Keywords) {
   Result[IDenizenL, IParseError] = {
     val denizenBegin = iter.getPos()
 
-    val attributes = lexAttributes(iter)
+    val attributes =
+      lexAttributes(iter) match {
+        case Err(e) => return Err(e)
+        case Ok(a) => a
+      }
 
     iter.consumeCommentsAndWhitespace()
 
@@ -268,7 +315,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
 
     val returnBegin = iter.getPos()
     val maybeReturn =
-      if (!iter.peekCompleteWord("where") && !iter.peekCompleteWord("region") && iter.peek() != '{' && iter.peek() != ';') {
+      if (!iter.peekCompleteWord("where") && !iter.peekCompleteWord("region") && !iter.peekCompleteWord("extern") && iter.peek() != '{' && iter.peek() != ';') {
         if (iter.trySkipCompleteWord("infer-return")) {
           val range = RangeL(returnBegin, iter.getPos())
           FunctionReturnL(range, Some(range), None)
@@ -518,7 +565,11 @@ class Lexer(interner: Interner, keywords: Keywords) {
     val membersAcc = new Accumulator[FunctionL]()
     while (!iter.atEnd() && !iter.trySkip('}')) {
       val memberBegin = iter.getPos()
-      val attributes = lexAttributes(iter)
+      val attributes =
+        lexAttributes(iter) match {
+          case Err(e) => return Err(e)
+          case Ok(a) => a
+        }
       lexFunction(iter, memberBegin, attributes) match {
         case Err(e) => return Err(e)
         case Ok(Some(func)) => {
@@ -542,6 +593,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
         maybeMutability,
         maybeGenericArgs,
         maybeRules,
+        RangeL(membersBegin, end),
         members)
     Ok(Some(interface))
   }
@@ -563,7 +615,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
       val stepBegin = iter.getPos()
       val name =
         if (iter.trySkip('*')) {
-          WordLE(RangeL(stepBegin, iter.getPos()), interner.intern(StrI("*")))
+          WordLE(RangeL(stepBegin, iter.getPos()), keywords.asterisk)
         } else {
           lexIdentifier(iter) match {
             case None => return Err(BadImportName(iter.getPos()))

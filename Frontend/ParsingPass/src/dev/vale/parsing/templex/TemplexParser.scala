@@ -1,9 +1,9 @@
 package dev.vale.parsing.templex
 
-import dev.vale.{Err, Interner, Ok, Profiler, Result, StrI, U, vassert, vassertSome, vimpl, vwat}
+import dev.vale.{Err, Interner, Keywords, Ok, Profiler, Result, StrI, U, vassert, vassertSome, vimpl, vwat}
 import dev.vale.parsing.{Parser, StopBeforeCloseSquare, StopBeforeComma, ast}
 import dev.vale.parsing.ast.{AnonymousRunePT, BoolPT, BorrowP, BuiltinCallPR, CallPT, ComponentsPR, EqualsPR, FinalP, IRulexPR, ITemplexPT, ImmutableP, InlineP, IntPT, InterpretedPT, LocationPT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnP, OwnershipPT, PrototypePT, RegionRunePT, RuntimeSizedArrayPT, ShareP, StaticSizedArrayPT, StringPT, TemplexPR, TuplePT, TypedPR, VariabilityPT, VaryingP, WeakP, YonderP}
-import dev.vale.lexing.{AngledLE, BadArraySizer, BadArraySizerEnd, BadPrototypeName, BadPrototypeParams, BadRegionName, BadRuleCallParam, BadRuneTypeError, BadStringChar, BadStringInTemplex, BadTemplateCallParam, BadTupleElement, BadTypeExpression, BadUnicodeChar, CurliedLE, FoundBothImmutableAndMutabilityInArray, INodeLE, IParseError, Keywords, ParendLE, ParsedDoubleLE, ParsedIntegerLE, RangeL, RangedInternalErrorP, ScrambleLE, SquaredLE, StringLE, StringPartLiteral, SymbolLE, WordLE}
+import dev.vale.lexing.{AngledLE, BadArraySizer, BadArraySizerEnd, BadPrototypeName, BadPrototypeParams, BadRegionName, BadRuleCallParam, BadRuneTypeError, BadStringChar, BadStringInTemplex, BadTemplateCallParam, BadTupleElement, BadTypeExpression, BadUnicodeChar, CurliedLE, FoundBothImmutableAndMutabilityInArray, INodeLE, IParseError, ParendLE, ParsedDoubleLE, ParsedIntegerLE, RangeL, RangedInternalErrorP, ScrambleLE, SquaredLE, StringLE, StringPartLiteral, SymbolLE, WordLE}
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
 
@@ -83,12 +83,10 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
     Ok(Some(result))
   }
 
-  val FUNC = interner.intern(StrI("func"))
-
   def parsePrototype(iter: ScrambleIterator): Result[Option[ITemplexPT], IParseError] = {
     val begin = iter.getPos()
 
-    if (iter.trySkipWord(FUNC).isEmpty) {
+    if (iter.trySkipWord(keywords.func).isEmpty) {
       return Ok(None)
     }
 
@@ -231,11 +229,11 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
       case Some(range) => return Ok(AnonymousRunePT(range))
       case None =>
     }
-    iter.trySkipWord(keywords.TRUE) match {
+    iter.trySkipWord(keywords.truue) match {
       case Some(range) => return Ok(BoolPT(range, true))
       case None =>
     }
-    iter.trySkipWord(keywords.FALSE) match {
+    iter.trySkipWord(keywords.faalse) match {
       case Some(range) => return Ok(BoolPT(range, false))
       case None =>
     }
@@ -396,7 +394,7 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
     vassert(iter.hasNext)
 
     iter.peek() match {
-      case Some(WordLE(_, StrI("in"))) => {
+      case Some(WordLE(_, in)) if in == keywords.in => {
         // This is here so if we say:
         //   foreach x in myList { ... }
         // We won't interpret `x in` as a pattern, because
@@ -453,6 +451,10 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
 
   def parseTypedRune(originalIter: ScrambleIterator): Result[Option[TypedPR], IParseError] = {
     originalIter.peek(2) match {
+      // So we dont parse func moo()void
+      case Array(Some(WordLE(nameRange, nameStr)), _) if nameStr == keywords.func => {
+        Ok(None)
+      }
       case Array(Some(WordLE(nameRange, nameStr)), Some(WordLE(typeRange, _))) => {
         val maybeName =
           if (nameStr == keywords.UNDERSCORE) {
@@ -597,17 +599,36 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
 
   def parseRuneType(iter: ScrambleIterator):
   Result[Option[ITypePR], IParseError] = {
-    iter.nextWord() match {
+    iter.peek() match {
       case None => Ok(None)
-      case Some(w) if w.str == keywords.INT => Ok(Some(IntTypePR))
-      case Some(w) if w.str == keywords.REF => Ok(Some(CoordTypePR))
-      case Some(w) if w.str == keywords.KIND => Ok(Some(KindTypePR))
-      case Some(w) if w.str == keywords.PROT => Ok(Some(PrototypeTypePR))
-      case Some(w) if w.str == keywords.REFLIST => Ok(Some(CoordListTypePR))
-      case Some(w) if w.str == keywords.OWNERSHIP => Ok(Some(OwnershipTypePR))
-      case Some(w) if w.str == keywords.VARIABILITY => Ok(Some(VariabilityTypePR))
-      case Some(w) if w.str == keywords.MUTABILITY => Ok(Some(MutabilityTypePR))
-      case Some(w) if w.str == keywords.LOCATION => Ok(Some(LocationTypePR))
+
+      case Some(WordLE(_, w)) if w == keywords.INT => {
+        iter.advance(); Ok(Some(IntTypePR))
+      }
+      case Some(WordLE(_, w)) if w == keywords.REF => {
+        iter.advance(); Ok(Some(CoordTypePR))
+      }
+      case Some(WordLE(_, w)) if w == keywords.KIND => {
+        iter.advance(); Ok(Some(KindTypePR))
+      }
+      case Some(WordLE(_, w)) if w == keywords.PROT => {
+        iter.advance(); Ok(Some(PrototypeTypePR))
+      }
+      case Some(WordLE(_, w)) if w == keywords.REFLIST => {
+        iter.advance(); Ok(Some(CoordListTypePR))
+      }
+      case Some(WordLE(_, w)) if w == keywords.OWNERSHIP => {
+        iter.advance(); Ok(Some(OwnershipTypePR))
+      }
+      case Some(WordLE(_, w)) if w == keywords.VARIABILITY => {
+        iter.advance(); Ok(Some(VariabilityTypePR))
+      }
+      case Some(WordLE(_, w)) if w == keywords.MUTABILITY => {
+        iter.advance(); Ok(Some(MutabilityTypePR))
+      }
+      case Some(WordLE(_, w)) if w == keywords.LOCATION => {
+        iter.advance(); Ok(Some(LocationTypePR))
+      }
       case _ => return Err(BadRuneTypeError(iter.getPos()))
     }
   }

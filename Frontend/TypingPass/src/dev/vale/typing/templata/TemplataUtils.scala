@@ -14,10 +14,10 @@ object simpleName {
       case FreeNameT(_, _) => None
       case ClosureParamNameT() => None
       case MagicParamNameT(_) => None
-      case CodeVarNameT(name) => Some(name)
-      case FunctionNameT(humanName, _, _) => Some(humanName)
+      case CodeVarNameT(name) => Some(name.str)
+      case FunctionNameT(humanName, _, _) => Some(humanName.str)
       case LambdaCitizenNameT(_) => None
-      case CitizenNameT(CitizenTemplateNameT(humanName), _) => Some(humanName)
+      case CitizenNameT(CitizenTemplateNameT(humanName), _) => Some(humanName.str)
     }
   }
 }

@@ -1,8 +1,7 @@
 package dev.vale.parsing.ast
 
 import dev.vale.lexing.RangeL
-import dev.vale.{vassert, vcurious, vpass}
-import dev.vale.vpass
+import dev.vale.{StrI, vassert, vcurious, vpass}
 
 // See PVSBUFI
 

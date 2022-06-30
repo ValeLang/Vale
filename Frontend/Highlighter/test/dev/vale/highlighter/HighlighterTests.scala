@@ -1,7 +1,8 @@
 package dev.vale.highlighter
 
 import Spanner._
-import dev.vale.{Err, FileCoordinateMap, IPackageResolver, Interner, Ok, PackageCoordinate}
+import dev.vale.lexing.RangeL
+import dev.vale.{Err, FileCoordinateMap, IPackageResolver, Interner, Keywords, Ok, PackageCoordinate}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.Parser
 import dev.vale.parsing._
@@ -12,13 +13,15 @@ import scala.collection.immutable.Map
 class HighlighterTests extends FunSuite with Matchers {
   private def highlight(code: String): String = {
     val interner = new Interner()
+    val keywords = new Keywords(interner)
     val opts = GlobalOptions(true, true, true, true)
     val codeMap = FileCoordinateMap.test(interner, Vector(code))
     ParseAndExplore.parseAndExploreAndCollect(
       interner,
+      keywords,
       opts,
-      new Parser(interner, opts),
-      Array(PackageCoordinate.TEST_TLD(interner)),
+      new Parser(interner, keywords, opts),
+      Array(PackageCoordinate.TEST_TLD(interner, keywords)),
       new IPackageResolver[Map[String, String]]() {
         override def resolve(packageCoord: PackageCoordinate): Option[Map[String, String]] = {
           // For testing the parser, we dont want it to fetch things with import statements
@@ -29,7 +32,7 @@ class HighlighterTests extends FunSuite with Matchers {
       case Ok(accumulator) => {
         val file = accumulator.buildArray().head._2
         val span = Spanner.forProgram(file)
-        Highlighter.toHTML(code, span, file.commentsRanges.map(x => (x.begin, x.end)).toVector)
+        Highlighter.toHTML(code, span, file.commentsRanges.map(x => RangeL(x.begin, x.end)).toVector)
       }
     }
   }

@@ -61,7 +61,7 @@ object ParserVonifier {
   }
 
   def vonifyStruct(thing: StructP): VonObject = {
-    val StructP(range, name, attributes, mutability, identifyingRunes, templateRules, members) = thing
+    val StructP(range, name, attributes, mutability, identifyingRunes, templateRules, bodyRange, members) = thing
     VonObject(
       "Struct",
       None,
@@ -72,6 +72,7 @@ object ParserVonifier {
         VonMember("mutability", vonifyOptional(mutability, vonifyTemplex)),
         VonMember("identifyingRunes", vonifyOptional(identifyingRunes, vonifyIdentifyingRunes)),
         VonMember("templateRules", vonifyOptional(templateRules, vonifyTemplateRules)),
+        VonMember("bodyRange", vonifyRange(range)),
         VonMember("members", vonifyStructMembers(members))))
   }
 
@@ -126,7 +127,7 @@ object ParserVonifier {
   }
 
   def vonifyInterface(thing: InterfaceP): VonObject = {
-    val InterfaceP(range, name, attributes, mutability, maybeIdentifyingRunes, templateRules, members) = thing
+    val InterfaceP(range, name, attributes, mutability, maybeIdentifyingRunes, templateRules, bodyRange, members) = thing
     VonObject(
       "Interface",
       None,
@@ -137,6 +138,7 @@ object ParserVonifier {
         VonMember("mutability", vonifyOptional(mutability, vonifyTemplex)),
         VonMember("maybeIdentifyingRunes", vonifyOptional(maybeIdentifyingRunes, vonifyIdentifyingRunes)),
         VonMember("templateRules", vonifyOptional(templateRules, vonifyTemplateRules)),
+        VonMember("bodyRange", vonifyRange(range)),
         VonMember("members", VonArray(None, members.map(vonifyFunction).toVector))))
   }
 

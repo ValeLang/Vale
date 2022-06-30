@@ -22,7 +22,9 @@ class IfTests extends FunSuite with Matchers {
       compile.getScoutput().getOrDie()
         .fileCoordToContents(
           compile.interner.intern(FileCoordinate(
-            compile.interner.intern(PackageCoordinate("test", Vector.empty)),
+            compile.interner.intern(PackageCoordinate(
+              compile.interner.intern(StrI("test")),
+              Vector.empty)),
             "0.vale")))
     val main = programS.lookupFunction("main")
     val ret = Collector.only(main.body, { case r @ ReturnSE(_, _) => r })

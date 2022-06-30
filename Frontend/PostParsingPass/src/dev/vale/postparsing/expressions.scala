@@ -223,7 +223,7 @@ case class ConstantBoolSE(range: RangeS, value: Boolean) extends IExpressionSE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
-case class ConstantStrSE(range: RangeS, value: StrI) extends IExpressionSE {
+case class ConstantStrSE(range: RangeS, value: String) extends IExpressionSE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 

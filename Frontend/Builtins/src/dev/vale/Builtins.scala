@@ -1,14 +1,10 @@
 package dev.vale
 
+import com.sun.org.apache.xpath.internal.compiler.Keywords
+
 import scala.io.Source
 
 object Builtins {
-  def NAMESPACE_COORD(interner: Interner) = {
-    interner.intern(PackageCoordinate(
-      interner.intern(StrI("")),
-      Vector.empty))
-  }
-
   val moduleToFilename =
     Map(
       "arith" -> "arith.vale",
@@ -42,14 +38,14 @@ object Builtins {
   // bare minimum. For example, the most basic test is `func main() int { return 42; }`, and we don't want it
   // to fail just because the builtin-yet-unused `func as<T, X>(x X) Opt<T> { ... }` doesn't want to
   // work right now.
-  def getModulizedCodeMap(interner: Interner): FileCoordinateMap[String] = {
+  def getModulizedCodeMap(interner: Interner, keywords: Keywords): FileCoordinateMap[String] = {
     val result = new FileCoordinateMap[String]()
     moduleToFilename.foreach({ case (moduleName, filename) =>
       result.put(
         interner.intern(FileCoordinate(
           interner.intern(PackageCoordinate(
-            interner.intern(StrI("v")),
-            Vector(interner.intern(StrI("builtins")), interner.intern(StrI(moduleName))))),
+            keywords.v,
+            Vector(keywords.builtins, interner.intern(StrI(moduleName))))),
           filename)),
         load(filename))
     })
@@ -58,20 +54,20 @@ object Builtins {
 
   // Add an empty v.builtins.whatever so that the aforementioned imports still work.
   // But load the actual files all inside the root paackage.
-  def getCodeMap(interner: Interner): FileCoordinateMap[String] = {
+  def getCodeMap(interner: Interner, keywords: Keywords): FileCoordinateMap[String] = {
+    val builtinNamespaceCoord =
+      interner.intern(PackageCoordinate(keywords.emptyString, Vector.empty))
     val result = new FileCoordinateMap[String]()
     moduleToFilename.foreach({ case (moduleName, filename) =>
       result.put(
         interner.intern(FileCoordinate(
           interner.intern(PackageCoordinate(
-            interner.intern(StrI("v")),
-            Vector(interner.intern(StrI("builtins")), interner.intern(StrI(moduleName))))),
+            keywords.v,
+            Vector(keywords.builtins, interner.intern(StrI(moduleName))))),
           filename)),
         "")
       result.put(
-        interner.intern(FileCoordinate(
-          interner.intern(PackageCoordinate(NAMESPACE_COORD(interner).module, NAMESPACE_COORD(interner).packages)),
-          filename)),
+        interner.intern(FileCoordinate(builtinNamespaceCoord, filename)),
         load(filename))
     })
     result

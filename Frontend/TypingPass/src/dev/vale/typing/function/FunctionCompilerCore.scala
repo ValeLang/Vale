@@ -1,10 +1,10 @@
 package dev.vale.typing.function
 
 import dev.vale.highertyping.FunctionA
-import dev.vale.{Interner, RangeS, vassertOne, vassertSome, vcurious, vfail, vimpl, vwat}
+import dev.vale.{Err, Interner, Keywords, Ok, Profiler, RangeS, vassert, vassertOne, vassertSome, vcheck, vcurious, vfail, vimpl, vwat}
 import dev.vale.postparsing.{AbstractBodyS, BlockSE, CodeBodyS, ExportS, ExternBodyS, ExternS, GeneratedBodyS, IFunctionAttributeS, PureS, RuneNameS, UserFunctionS}
 import dev.vale.postparsing.patterns.AtomSP
-import dev.vale.typing.{CompileErrorExceptionT, ConvertHelper, DeferredEvaluatingFunction, RangedInternalErrorT, TypingPassOptions, TemplataCompiler, CompilerOutputs, ast}
+import dev.vale.typing.{CompileErrorExceptionT, CompilerOutputs, ConvertHelper, DeferredEvaluatingFunction, RangedInternalErrorT, TemplataCompiler, TypingPassOptions, ast}
 import dev.vale.typing.ast.{ArgLookupTE, ExternFunctionCallTE, ExternT, FunctionHeaderT, FunctionT, IFunctionAttributeT, LocationInFunctionEnvironment, ParameterT, PrototypeT, PureT, ReferenceExpressionTE, ReturnTE, SignatureT, UserFunctionT}
 import dev.vale.typing.env.{FunctionEnvironment, FunctionEnvironmentBox, NodeEnvironment, NodeEnvironmentBox, TemplataLookupContext}
 import dev.vale.typing.expression.CallCompiler
@@ -19,7 +19,6 @@ import dev.vale.typing.ast._
 import dev.vale.typing.citizen.AncestorHelper
 import dev.vale.typing.env._
 import dev.vale.typing.names.FunctionNameT
-import dev.vale.{Err, Interner, Ok, Profiler, RangeS, vassert, vassertOne, vassertSome, vcheck, vcurious, vfail, vimpl, vwat}
 
 import scala.collection.immutable.{List, Set}
 
@@ -27,8 +26,8 @@ case class ResultTypeMismatchError(expectedType: CoordT, actualType: CoordT) { v
 
 class FunctionCompilerCore(
     opts: TypingPassOptions,
-
     interner: Interner,
+    keywords: Keywords,
     nameTranslator: NameTranslator,
 
     templataCompiler: TemplataCompiler,
@@ -76,7 +75,7 @@ class FunctionCompilerCore(
       params2.nonEmpty &&
       params2.head.tyype.ownership == OwnT &&
       (startingFullEnv.fullName.last match {
-        case FunctionNameT(humanName, _, _) if humanName == CallCompiler.DROP_FUNCTION_NAME => true
+        case FunctionNameT(humanName, _, _) if humanName == keywords.DROP_FUNCTION_NAME => true
         case _ => false
       })
 
@@ -112,7 +111,7 @@ class FunctionCompilerCore(
         case AbstractBodyS | GeneratedBodyS(_) => {
           val generatorId =
             startingFullEnv.function.body match {
-              case AbstractBodyS => "abstractBody"
+              case AbstractBodyS => keywords.abstractBody
               case GeneratedBodyS(generatorId) => generatorId
             }
           val signature2 = SignatureT(fullEnv.fullName);

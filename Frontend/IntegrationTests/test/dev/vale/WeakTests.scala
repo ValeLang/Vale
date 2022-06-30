@@ -22,7 +22,7 @@ class WeakTests extends FunSuite with Matchers {
 
     val main = compile.expectCompilerOutputs().lookupFunction("main")
     Collector.only(main, {
-      case LetNormalTE(ReferenceLocalVariableT(FullNameT(_, _,CodeVarNameT("weakMuta")),FinalT,CoordT(WeakT, _)),refExpr) => {
+      case LetNormalTE(ReferenceLocalVariableT(FullNameT(_, _,CodeVarNameT(StrI("weakMuta"))),FinalT,CoordT(WeakT, _)),refExpr) => {
         refExpr.result.reference match {
           case CoordT(WeakT, StructTT(simpleName("Muta"))) =>
         }
@@ -151,7 +151,7 @@ class WeakTests extends FunSuite with Matchers {
 
     val main = compile.expectCompilerOutputs().lookupFunction("main")
     Collector.only(main, {
-      case LetNormalTE(ReferenceLocalVariableT(FullNameT(_, _,CodeVarNameT("weakUnit")),FinalT,CoordT(WeakT, _)),refExpr) => {
+      case LetNormalTE(ReferenceLocalVariableT(FullNameT(_, _,CodeVarNameT(StrI("weakUnit"))),FinalT,CoordT(WeakT, _)),refExpr) => {
         refExpr.result.reference match {
           case CoordT(WeakT, InterfaceTT(simpleName("IUnit"))) =>
         }

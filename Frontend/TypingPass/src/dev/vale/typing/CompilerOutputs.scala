@@ -5,12 +5,11 @@ import dev.vale.typing.env.{CitizenEnvironment, FunctionEnvironment}
 import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.names.{AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, CitizenTemplateNameT, FreeNameT, FullNameT, IFunctionNameT, INameT}
 import dev.vale.typing.types.{CitizenDefinitionT, CitizenRefT, CoordT, ImmutableT, InterfaceDefinitionT, InterfaceTT, KindT, MutabilityT, NeverT, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StructDefinitionT, StructTT, VariabilityT}
-import dev.vale.{PackageCoordinate, RangeS, vassert, vassertOne, vassertSome, vfail, vpass}
+import dev.vale.{Collector, PackageCoordinate, RangeS, StrI, vassert, vassertOne, vassertSome, vfail, vpass}
 import dev.vale.typing.ast._
 import dev.vale.typing.env.CitizenEnvironment
 import dev.vale.typing.names.AnonymousSubstructNameT
 import dev.vale.typing.types.InterfaceTT
-import dev.vale.Collector
 
 import scala.collection.immutable.{List, Map}
 import scala.collection.mutable
@@ -161,13 +160,6 @@ case class CompilerOutputs() {
     kindTT: CitizenRefT,
     mutability: MutabilityT
   ): Unit = {
-    kindTT match {
-      case StructTT(FullNameT(_, _, AnonymousSubstructNameT(AnonymousSubstructTemplateNameT(CitizenTemplateNameT("IFunction1")), _))) => {
-        vpass()
-      }
-      case _ =>
-    }
-
     vassert(declaredKinds.contains(kindTT))
     vassert(!mutabilitiesByCitizenRef.contains(kindTT))
     mutabilitiesByCitizenRef += (kindTT -> mutability)
@@ -211,19 +203,19 @@ case class CompilerOutputs() {
     impls += ImplT(structTT, interfaceTT)
   }
 
-  def addKindExport(range: RangeS, kind: KindT, packageCoord: PackageCoordinate, exportedName: String): Unit = {
+  def addKindExport(range: RangeS, kind: KindT, packageCoord: PackageCoordinate, exportedName: StrI): Unit = {
     kindExports += KindExportT(range, kind, packageCoord, exportedName)
   }
 
-  def addFunctionExport(range: RangeS, function: PrototypeT, packageCoord: PackageCoordinate, exportedName: String): Unit = {
+  def addFunctionExport(range: RangeS, function: PrototypeT, packageCoord: PackageCoordinate, exportedName: StrI): Unit = {
     functionExports += FunctionExportT(range, function, packageCoord, exportedName)
   }
 
-  def addKindExtern(kind: KindT, packageCoord: PackageCoordinate, exportedName: String): Unit = {
+  def addKindExtern(kind: KindT, packageCoord: PackageCoordinate, exportedName: StrI): Unit = {
     kindExterns += KindExternT(kind, packageCoord, exportedName)
   }
 
-  def addFunctionExtern(range: RangeS, function: PrototypeT, packageCoord: PackageCoordinate, exportedName: String): Unit = {
+  def addFunctionExtern(range: RangeS, function: PrototypeT, packageCoord: PackageCoordinate, exportedName: StrI): Unit = {
     functionExterns += FunctionExternT(range, function, packageCoord, exportedName)
   }
 

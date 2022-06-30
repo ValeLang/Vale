@@ -1,7 +1,8 @@
 package dev.vale.highertyping
 
 import dev.vale
-import dev.vale.{CodeLocationS, Err, FileCoordinateMap, IPackageResolver, Interner, Ok, PackageCoordinate, PackageCoordinateMap, Profiler, RangeS, Result, StrI, highertyping, vassertSome, vcurious, vfail, vimpl, vwat}
+import dev.vale.lexing.{FailedParse, RangeL}
+import dev.vale.{CodeLocationS, Err, FileCoordinateMap, IPackageResolver, Interner, Keywords, Ok, PackageCoordinate, PackageCoordinateMap, Profiler, RangeS, Result, StrI, highertyping, vassertSome, vcurious, vfail, vimpl, vwat}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.FileP
 import dev.vale.postparsing.rules.{IRulexSR, RuleScout}
@@ -38,18 +39,17 @@ case class Environment(
   }
 }
 
-class HigherTypingPass(globalOptions: GlobalOptions, interner: Interner) {
+class HigherTypingPass(globalOptions: GlobalOptions, interner: Interner, keywords: Keywords) {
   val primitives =
     Map(
-      interner.intern(StrI("int")) -> KindTemplataType,
-      interner.intern(StrI("i64")) -> KindTemplataType,
-      interner.intern(StrI("str")) -> KindTemplataType,
-      interner.intern(StrI("bool")) -> KindTemplataType,
-      interner.intern(StrI("float")) -> KindTemplataType,
-      interner.intern(StrI("void")) -> KindTemplataType,
-      interner.intern(StrI("__Never")) -> KindTemplataType,
-//      interner.intern(StrI("IFunction1")) -> TemplateTypeSR(Vector(MutabilityTypeSR, CoordTypeSR, CoordTypeSR), KindTypeSR),
-      interner.intern(StrI("Array")) -> TemplateTemplataType(Vector(MutabilityTemplataType, CoordTemplataType), KindTemplataType))
+      keywords.int -> KindTemplataType,
+      keywords.i64 -> KindTemplataType,
+      keywords.str -> KindTemplataType,
+      keywords.bool -> KindTemplataType,
+      keywords.float -> KindTemplataType,
+      keywords.void -> KindTemplataType,
+      keywords.__Never -> KindTemplataType,
+      keywords.Array -> TemplateTemplataType(Vector(MutabilityTemplataType, CoordTemplataType), KindTemplataType))
 
 
 
@@ -452,9 +452,10 @@ class HigherTypingPass(globalOptions: GlobalOptions, interner: Interner) {
 class HigherTypingCompilation(
   globalOptions: GlobalOptions,
   val interner: Interner,
+  val keywords: Keywords,
   packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]]) {
-  var scoutCompilation = new ScoutCompilation(globalOptions, interner, packagesToBuild, packageToContentsResolver)
+  var scoutCompilation = new ScoutCompilation(globalOptions, interner, keywords, packagesToBuild, packageToContentsResolver)
   var astroutsCache: Option[PackageCoordinateMap[ProgramA]] = None
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = scoutCompilation.getCodeMap()
@@ -466,7 +467,7 @@ class HigherTypingCompilation(
     astroutsCache match {
       case Some(astrouts) => Ok(astrouts)
       case None => {
-        new HigherTypingPass(globalOptions, interner).runPass(scoutCompilation.expectScoutput()) match {
+        new HigherTypingPass(globalOptions, interner, keywords).runPass(scoutCompilation.expectScoutput()) match {
           case Right(err) => Err(err)
           case Left(astrouts) => {
             astroutsCache = Some(astrouts)

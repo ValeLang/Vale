@@ -43,6 +43,16 @@ class RuleTests extends FunSuite with Matchers with Collector with TestParseUtil
     }
   }
 
+  test("func") {
+    compile("func moo()T") shouldHave {
+      case TemplexPR(
+        PrototypePT(_,
+          NameP(_,StrI("moo")),
+          Vector(),
+          NameOrRunePT(NameP(_,StrI("T"))))) =>
+    }
+  }
+
   test("prototype with coords") {
     compile("Prot[_, pack(int, bool), _]") shouldHave {
       case ComponentsPR(_,

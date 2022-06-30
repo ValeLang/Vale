@@ -30,8 +30,8 @@ object FileCoordinate extends Ordering[FileCoordinate] {
 }
 
 case class PackageCoordinate(module: StrI, packages: Vector[StrI]) extends IInterning {
-  def isInternal = module == ""
-  def isTest = module == "test" && packages == Vector()
+  def isInternal = module.str == ""
+  def isTest = module.str == "test" && packages == Vector()
 
   def compareTo(that: PackageCoordinate) = PackageCoordinate.compare(this, that)
 
@@ -45,11 +45,11 @@ case class PackageCoordinate(module: StrI, packages: Vector[StrI]) extends IInte
 }
 
 object PackageCoordinate extends Ordering[PackageCoordinate] {
-  def TEST_TLD(interner: Interner): PackageCoordinate = interner.intern(PackageCoordinate(interner.intern(StrI("test")), Vector.empty))
+  def TEST_TLD(interner: Interner, keywords: Keywords): PackageCoordinate = interner.intern(PackageCoordinate(interner.intern(StrI("test")), Vector.empty))
 
-  def BUILTIN(interner: Interner): PackageCoordinate = interner.intern(PackageCoordinate(interner.intern(StrI("")), Vector.empty))
+  def BUILTIN(interner: Interner, keywords: Keywords): PackageCoordinate = interner.intern(PackageCoordinate(keywords.emptyString, Vector.empty))
 
-  def internal(interner: Interner): PackageCoordinate = interner.intern(PackageCoordinate(interner.intern(StrI("")), Vector.empty))
+  def internal(interner: Interner, keywords: Keywords): PackageCoordinate = interner.intern(PackageCoordinate(keywords.emptyString, Vector.empty))
 
   override def compare(a: PackageCoordinate, b: PackageCoordinate):Int = {
     val lenDiff = a.packages.length - b.packages.length

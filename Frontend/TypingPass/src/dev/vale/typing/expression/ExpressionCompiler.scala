@@ -2,17 +2,16 @@ package dev.vale.typing.expression
 
 import dev.vale
 import dev.vale.highertyping.{CompileErrorExceptionA, CouldntSolveRulesA, FunctionA, PatternSUtils}
-import dev.vale.{Err, Interner, Ok, Profiler, RangeS, vassert, vassertOne, vassertSome, vcheck, vcurious, vfail, vimpl, vwat}
+import dev.vale.{Err, Interner, Keywords, Ok, Profiler, RangeS, vassert, vassertOne, vassertSome, vcheck, vcurious, vfail, vimpl, vwat, _}
 import dev.vale.parsing.ast.{LoadAsBorrowP, LoadAsP, LoadAsWeakP, MoveP, UseP}
 import dev.vale.postparsing.patterns.AtomSP
 import dev.vale.postparsing.rules.{RuneParentEnvLookupSR, RuneUsage}
-import dev.vale.postparsing.{ArbitraryNameS, ArgLookupSE, BlockSE, BreakSE, CodeNameS, ConsecutorSE, ConstantBoolSE, ConstantFloatSE, ConstantIntSE, ConstantStrSE, CoordTemplataType, DestructSE, DotSE, ExprMutateSE, FunctionCallSE, FunctionS, FunctionSE, FunctionTemplataType, IExpressionSE, IFunctionDeclarationNameS, IImpreciseNameS, IVarNameS, IfSE, IndexSE, LambdaStructImpreciseNameS, LetSE, LocalLoadSE, LocalMutateSE, MapSE, NewRuntimeSizedArraySE, OutsideLoadSE, OwnershippedSE, ReturnSE, RuneLookupSE, RuneNameS, RuneTypeSolver, PostParser, SelfRuneS, StaticArrayFromCallableSE, StaticArrayFromValuesSE, TupleSE, UnletSE, UserFunctionS, VoidSE, WhileSE}
-import dev.vale.typing.{ArrayCompiler, CannotSubscriptT, CantMoveFromGlobal, CantMutateFinalElement, CantMutateFinalMember, CantReconcileBranchesResults, CantUnstackifyOutsideLocalFromInsideWhile, CantUseUnstackifiedLocal, CompileErrorExceptionT, ConvertHelper, CouldntConvertForMutateT, CouldntConvertForReturnT, CouldntFindIdentifierToLoadT, CouldntFindMemberT, IfConditionIsntBoolean, HigherTypingInferError, InferCompiler, OverloadResolver, RangedInternalErrorT, SequenceCompiler, Compiler, TypingPassOptions, TemplataCompiler, CompilerOutputs, ast, templata}
-import dev.vale.typing.ast.{AddressExpressionTE, AddressMemberLookupTE, ArgLookupTE, BlockTE, BorrowToWeakTE, BreakTE, ConstantBoolTE, ConstantFloatTE, ConstantIntTE, ConstantStrTE, ConstructTE, DestroyTE, ExpressionT, IfTE, LetNormalTE, LocalLookupTE, LocationInFunctionEnvironment, MutateTE, PrototypeT, ReferenceExpressionTE, ReferenceMemberLookupTE, ReturnTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE, ReinterpretTE, VoidLiteralTE, WhileTE}
+import dev.vale.postparsing.{ArbitraryNameS, ArgLookupSE, BlockSE, BreakSE, CodeNameS, ConsecutorSE, ConstantBoolSE, ConstantFloatSE, ConstantIntSE, ConstantStrSE, CoordTemplataType, DestructSE, DotSE, ExprMutateSE, FunctionCallSE, FunctionS, FunctionSE, FunctionTemplataType, IExpressionSE, IFunctionDeclarationNameS, IImpreciseNameS, IVarNameS, IfSE, IndexSE, LambdaStructImpreciseNameS, LetSE, LocalLoadSE, LocalMutateSE, MapSE, NewRuntimeSizedArraySE, OutsideLoadSE, OwnershippedSE, PostParser, ReturnSE, RuneLookupSE, RuneNameS, RuneTypeSolver, SelfRuneS, StaticArrayFromCallableSE, StaticArrayFromValuesSE, TupleSE, UnletSE, UserFunctionS, VoidSE, WhileSE}
+import dev.vale.typing.{ArrayCompiler, CannotSubscriptT, CantMoveFromGlobal, CantMutateFinalElement, CantMutateFinalMember, CantReconcileBranchesResults, CantUnstackifyOutsideLocalFromInsideWhile, CantUseUnstackifiedLocal, CompileErrorExceptionT, Compiler, CompilerOutputs, ConvertHelper, CouldntConvertForMutateT, CouldntConvertForReturnT, CouldntFindIdentifierToLoadT, CouldntFindMemberT, HigherTypingInferError, IfConditionIsntBoolean, InferCompiler, OverloadResolver, RangedInternalErrorT, SequenceCompiler, TemplataCompiler, TypingPassOptions, ast, templata}
+import dev.vale.typing.ast.{AddressExpressionTE, AddressMemberLookupTE, ArgLookupTE, BlockTE, BorrowToWeakTE, BreakTE, ConstantBoolTE, ConstantFloatTE, ConstantIntTE, ConstantStrTE, ConstructTE, DestroyTE, ExpressionT, IfTE, LetNormalTE, LocalLookupTE, LocationInFunctionEnvironment, MutateTE, PrototypeT, ReferenceExpressionTE, ReferenceMemberLookupTE, ReinterpretTE, ReturnTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE, VoidLiteralTE, WhileTE}
 import dev.vale.typing.citizen.{AncestorHelper, StructCompiler}
 import dev.vale.typing.env.{AddressibleClosureVariableT, AddressibleLocalVariableT, ExpressionLookupContext, FunctionEnvironment, IEnvironment, ILocalVariableT, NodeEnvironment, NodeEnvironmentBox, ReferenceClosureVariableT, ReferenceLocalVariableT, TemplataEnvEntry, TemplataLookupContext}
 import dev.vale.typing.function.DestructorCompiler
-import dev.vale._
 import dev.vale.highertyping._
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
@@ -54,8 +53,8 @@ trait IExpressionCompilerDelegate {
 
 class ExpressionCompiler(
     opts: TypingPassOptions,
-
     interner: Interner,
+    keywords: Keywords,
     nameTranslator: NameTranslator,
 
     templataCompiler: TemplataCompiler,
@@ -69,7 +68,7 @@ class ExpressionCompiler(
     convertHelper: ConvertHelper,
     delegate: IExpressionCompilerDelegate) {
   val localHelper = new LocalHelper(opts, interner, nameTranslator, destructorCompiler)
-  val callCompiler = new CallCompiler(opts, interner, templataCompiler, convertHelper, localHelper, overloadCompiler)
+  val callCompiler = new CallCompiler(opts, interner, keywords, templataCompiler, convertHelper, localHelper, overloadCompiler)
   val patternCompiler = new PatternCompiler(opts, interner, inferCompiler, arrayCompiler, convertHelper, destructorCompiler, localHelper)
   val blockCompiler = new BlockCompiler(opts, destructorCompiler, localHelper, new IBlockCompilerDelegate {
     override def evaluateAndCoerceToReferenceExpression(
@@ -637,7 +636,7 @@ class ExpressionCompiler(
                 val structDef = coutputs.lookupStruct(structTT)
                 val (structMember, memberIndex) =
                   structDef.getMemberAndIndex(memberName) match {
-                    case None => throw CompileErrorExceptionT(CouldntFindMemberT(range, memberName.name))
+                    case None => throw CompileErrorExceptionT(CouldntFindMemberT(range, memberName.name.str))
                     case Some(x) => x
                   }
                 val memberFullName = structDef.fullName.addStep(structDef.members(memberIndex).name)
@@ -648,15 +647,15 @@ class ExpressionCompiler(
                 ast.ReferenceMemberLookupTE(range, containerExpr2, memberFullName, memberType, structMember.variability)
               }
               case as@StaticSizedArrayTT(_, _, _, _) => {
-                if (memberNameStr.forall(Character.isDigit)) {
-                  arrayCompiler.lookupInStaticSizedArray(range, containerExpr2, ConstantIntTE(memberNameStr.toInt, 32), as)
+                if (memberNameStr.str.forall(Character.isDigit)) {
+                  arrayCompiler.lookupInStaticSizedArray(range, containerExpr2, ConstantIntTE(memberNameStr.str.toInt, 32), as)
                 } else {
                   throw CompileErrorExceptionT(RangedInternalErrorT(range, "Sequence has no member named " + memberNameStr))
                 }
               }
               case at@RuntimeSizedArrayTT(_, _) => {
-                if (memberNameStr.forall(Character.isDigit)) {
-                  arrayCompiler.lookupInUnknownSizedArray(range, containerExpr2, ConstantIntTE(memberNameStr.toInt, 32), at)
+                if (memberNameStr.str.forall(Character.isDigit)) {
+                  arrayCompiler.lookupInUnknownSizedArray(range, containerExpr2, ConstantIntTE(memberNameStr.str.toInt, 32), at)
                 } else {
                   throw CompileErrorExceptionT(RangedInternalErrorT(range, "Array has no member named " + memberNameStr))
                 }
@@ -911,7 +910,7 @@ class ExpressionCompiler(
               nenv,
               life + 1,
               range,
-              newGlobalFunctionGroupExpression(callEnv, coutputs, interner.intern(CodeNameS("List"))),
+              newGlobalFunctionGroupExpression(callEnv, coutputs, interner.intern(CodeNameS(keywords.List))),
               Vector(RuneParentEnvLookupSR(range, RuneUsage(range, SelfRuneS()))),
               Array(SelfRuneS()),
               Vector())
@@ -945,7 +944,7 @@ class ExpressionCompiler(
                   nenv,
                   life + 4,
                   range,
-                  newGlobalFunctionGroupExpression(callEnv, coutputs, interner.intern(CodeNameS("add"))),
+                  newGlobalFunctionGroupExpression(callEnv, coutputs, interner.intern(CodeNameS(keywords.add))),
                   Vector(),
                   Array(),
                   Vector(
@@ -1141,7 +1140,7 @@ class ExpressionCompiler(
   def getOption(coutputs: CompilerOutputs, nenv: FunctionEnvironment, range: RangeS, containedCoord: CoordT):
   (CoordT, PrototypeT, PrototypeT) = {
     val interfaceTemplata =
-      nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS("Opt")), Set(TemplataLookupContext)).toList match {
+      nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS(keywords.Opt)), Set(TemplataLookupContext)).toList match {
         case List(it@InterfaceTemplata(_, _)) => it
         case _ => vfail()
       }
@@ -1150,7 +1149,7 @@ class ExpressionCompiler(
     val ownOptCoord = CoordT(OwnT, optInterfaceRef)
 
     val someConstructorTemplata =
-      nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS("Some")), Set(ExpressionLookupContext)).toList match {
+      nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS(keywords.Some)), Set(ExpressionLookupContext)).toList match {
         case List(ft@FunctionTemplata(_, _)) => ft
         case _ => vwat();
       }
@@ -1162,7 +1161,7 @@ class ExpressionCompiler(
       }
 
     val noneConstructorTemplata =
-      nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS("None")), Set(ExpressionLookupContext)).toList match {
+      nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS(keywords.None)), Set(ExpressionLookupContext)).toList match {
         case List(ft@FunctionTemplata(_, _)) => ft
         case _ => vwat();
       }
@@ -1178,7 +1177,7 @@ class ExpressionCompiler(
   def getResult(coutputs: CompilerOutputs, nenv: FunctionEnvironment, range: RangeS, containedSuccessCoord: CoordT, containedFailCoord: CoordT):
   (CoordT, PrototypeT, PrototypeT) = {
     val interfaceTemplata =
-      nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS("Result")), Set(TemplataLookupContext)).toList match {
+      nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS(keywords.Result)), Set(TemplataLookupContext)).toList match {
         case List(it@InterfaceTemplata(_, _)) => it
         case _ => vfail()
       }
@@ -1187,7 +1186,7 @@ class ExpressionCompiler(
     val ownResultCoord = CoordT(OwnT, resultInterfaceRef)
 
     val okConstructorTemplata =
-      nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS("Ok")), Set(ExpressionLookupContext)).toList match {
+      nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS(keywords.Ok)), Set(ExpressionLookupContext)).toList match {
         case List(ft@FunctionTemplata(_, _)) => ft
         case _ => vwat();
       }
@@ -1199,7 +1198,7 @@ class ExpressionCompiler(
       }
 
     val errConstructorTemplata =
-      nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS("Err")), Set(ExpressionLookupContext)).toList match {
+      nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS(keywords.Err)), Set(ExpressionLookupContext)).toList match {
         case List(ft@FunctionTemplata(_, _)) => ft
         case _ => vwat();
       }

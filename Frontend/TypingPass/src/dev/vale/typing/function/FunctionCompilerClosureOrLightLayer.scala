@@ -1,6 +1,6 @@
 package dev.vale.typing.function
 
-import dev.vale.{Interner, RangeS, vassert, vfail}
+import dev.vale.{Interner, Keywords, Profiler, RangeS, vassert, vfail, vimpl}
 import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing.{AbstractBodyS, CodeBodyS, ExternBodyS, GeneratedBodyS, IFunctionDeclarationNameS}
 import dev.vale.typing.citizen.StructCompiler
@@ -13,12 +13,11 @@ import dev.vale.typing.env._
 import FunctionCompiler.IEvaluateFunctionResult
 import dev.vale.typing.ast.{FunctionBannerT, FunctionHeaderT, PrototypeT}
 import dev.vale.typing.env.{AddressibleClosureVariableT, BuildingFunctionEnvironmentWithClosureds, IEnvEntry, IEnvironment, IVariableT, ReferenceClosureVariableT, TemplataEnvEntry, TemplatasStore}
-import dev.vale.typing.{ConvertHelper, InferCompiler, TypingPassOptions, TemplataCompiler, CompilerOutputs, env}
+import dev.vale.typing.{CompilerOutputs, ConvertHelper, InferCompiler, TemplataCompiler, TypingPassOptions, env}
 import dev.vale.typing.names.{BuildingFunctionNameWithClosuredsT, FullNameT, INameT, NameTranslator}
 import dev.vale.typing.templata.{ITemplata, KindTemplata}
 import dev.vale.typing.types.{AddressMemberTypeT, ParamFilter, ReferenceMemberTypeT, StructTT}
 import dev.vale.typing.names.BuildingFunctionNameWithClosuredsT
-import dev.vale.{Interner, Profiler, RangeS, vassert, vfail, vimpl}
 
 import scala.collection.immutable.{List, Map}
 
@@ -30,8 +29,8 @@ import scala.collection.immutable.{List, Map}
 // This file is the outer layer, which spawns a local environment for the function.
 class FunctionCompilerClosureOrLightLayer(
     opts: TypingPassOptions,
-
     interner: Interner,
+    keywords: Keywords,
     nameTranslator: NameTranslator,
     templataCompiler: TemplataCompiler,
     inferCompiler: InferCompiler,
@@ -40,7 +39,7 @@ class FunctionCompilerClosureOrLightLayer(
     delegate: IFunctionCompilerDelegate) {
   val ordinaryOrTemplatedLayer =
     new FunctionCompilerOrdinaryOrTemplatedLayer(
-      opts, interner, nameTranslator, templataCompiler, inferCompiler, convertHelper, structCompiler, delegate)
+      opts, interner, keywords, nameTranslator, templataCompiler, inferCompiler, convertHelper, structCompiler, delegate)
 
   // This is for the early stages of Compiler when it's scanning banners to put in
   // its env. We just want its banner, we don't want to evaluate it.

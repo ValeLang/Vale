@@ -3,7 +3,7 @@ package dev.vale.highlighter
 import dev.vale.lexing.RangeL
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.{ParserCompilation, ast}
-import dev.vale.{Err, FileCoordinateMap, Interner, Ok, PackageCoordinate}
+import dev.vale.{Err, FileCoordinateMap, Interner, Keywords, Ok, PackageCoordinate}
 import dev.vale.parsing.ast.FileP
 import dev.vale.parsing.{ast, _}
 import org.scalatest.{FunSuite, Matchers}
@@ -11,11 +11,13 @@ import org.scalatest.{FunSuite, Matchers}
 class SpannerTests extends FunSuite with Matchers {
   private def compile(code: String): FileP = {
     val interner = new Interner()
+    val keywords = new Keywords(interner)
     val compilation =
       new ParserCompilation(
         GlobalOptions(true, true, true, true),
         interner,
-        Vector(PackageCoordinate.TEST_TLD(interner)),
+        keywords,
+        Vector(PackageCoordinate.TEST_TLD(interner, keywords)),
         FileCoordinateMap.test(interner, code))
     compilation.getParseds() match {
       case Err(err) => fail(err.toString)
@@ -28,11 +30,11 @@ class SpannerTests extends FunSuite with Matchers {
     val main = program1.lookupFunction("main")
     Spanner.forFunction(main) shouldEqual
       Span(Fn,RangeL(0,30),Vector(
-        Span(FnName,ast.RangeL(5,9),Vector.empty),
-        Span(Params,ast.RangeL(9,11),Vector.empty),
-        Span(Ret,ast.RangeL(12,24),Vector(Span(Ret,ast.RangeL(12,24),Vector.empty))),
-        Span(Block,ast.RangeL(25,30),Vector(
-          Span(Num,ast.RangeL(27,28),Vector.empty)))))
+        Span(FnName,RangeL(5,9),Vector.empty),
+        Span(Params,RangeL(9,11),Vector.empty),
+        Span(Ret,RangeL(12,24),Vector(Span(Ret,RangeL(12,24),Vector.empty))),
+        Span(Block,RangeL(25,30),Vector(
+          Span(Num,RangeL(27,28),Vector.empty)))))
   }
 
 

@@ -1,8 +1,8 @@
 package dev.vale.parsing
 
-import dev.vale.lexing.{Keywords, Lexer, LexingIterator}
+import dev.vale.lexing.{Lexer, LexingIterator}
 import dev.vale.parsing.ast._
-import dev.vale.{Collector, Interner, StrI, vimpl}
+import dev.vale.{Collector, Interner, Keywords, StrI, vimpl}
 import dev.vale.parsing.ast.{ConstantIntPE, ConstantStrPE, FunctionCallPE, LookupNameP, LookupPE, NameP, StrInterpolatePE}
 import org.scalatest.FunSuite
 import org.scalatest.Matchers.convertToAnyShouldWrapper

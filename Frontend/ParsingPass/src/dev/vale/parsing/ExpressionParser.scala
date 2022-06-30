@@ -4,7 +4,7 @@ import dev.vale.options.GlobalOptions
 import dev.vale.parsing.templex.TemplexParser
 import ExpressionParser.{MAX_PRECEDENCE, MIN_PRECEDENCE}
 import dev.vale.parsing.ast._
-import dev.vale.{Accumulator, Err, Interner, Ok, Profiler, Result, StrI, U, parsing, vassert, vcurious, vfail, vimpl, vwat}
+import dev.vale.{Accumulator, Err, Interner, Keywords, Ok, Profiler, Result, StrI, U, parsing, vassert, vcurious, vfail, vimpl, vwat}
 import dev.vale.parsing.ast._
 import dev.vale.lexing._
 
@@ -790,8 +790,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
         val subExpr =
           parseExpressionDataElement(iter) match {
             case Err(error) => return Err(error)
-            case Ok(Some(x)) => x
-            case Ok(None) => return Err(BadExpressionBegin(iter.getPos()))
+            case Ok(x) => x
           }
         elements += parsing.DataElement(subExpr)
 
@@ -855,23 +854,20 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
 //    }
   }
 
-  val truue = interner.intern(StrI("true"))
-  val faalse = interner.intern(StrI("false"))
-
   def parseBoolean(iter: ScrambleIterator): Option[IExpressionPE] = {
     val start = iter.getPos()
-    iter.trySkipWord(truue) match {
+    iter.trySkipWord(keywords.truue) match {
       case Some(range) => return Some(ConstantBoolPE(range, true))
       case _ =>
     }
-    iter.trySkipWord(faalse) match {
+    iter.trySkipWord(keywords.faalse) match {
       case Some(range) => return Some(ConstantBoolPE(range, false))
       case _ =>
     }
     return None
   }
 
-  def parseAtom(iter: ScrambleIterator): Result[Option[IExpressionPE], IParseError] = {
+  def parseAtom(iter: ScrambleIterator): Result[IExpressionPE, IParseError] = {
     vassert(iter.hasNext)
     val begin = iter.getPos()
 
@@ -887,33 +883,33 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
       return Err(CantUseWhileInExpression(iter.getPos()))
     }
     iter.trySkipWord(keywords.UNDERSCORE) match {
-      case Some(range) => return Ok(Some(MagicParamLookupPE(range)))
+      case Some(range) => return Ok(MagicParamLookupPE(range))
       case _ =>
     }
     parseForeach(iter) match {
       case Err(e) => return Err(e)
-      case Ok(Some(x)) => return Ok(Some(x))
+      case Ok(Some(x)) => return Ok(x)
       case Ok(None) =>
     }
 
     parseMut(iter) match {
       case Err(e) => return Err(e)
-      case Ok(Some(x)) => return Ok(Some(x))
+      case Ok(Some(x)) => return Ok(x)
       case Ok(None) =>
     }
 
     iter.peek() match {
       case Some(ParsedIntegerLE(range, num, bits)) => {
         iter.advance()
-        return Ok(Some(ConstantIntPE(range, num, bits)))
+        return Ok(ConstantIntPE(range, num, bits))
       }
       case Some(ParsedDoubleLE(range, num, bits)) => {
         iter.advance()
-        return Ok(Some(ConstantFloatPE(range, num)))
+        return Ok(ConstantFloatPE(range, num))
       }
       case Some(StringLE(range, Array(StringPartLiteral(_, s)))) => {
         iter.advance()
-        return Ok(Some(ConstantStrPE(range, s)))
+        return Ok(ConstantStrPE(range, s))
       }
       case Some(StringLE(range, partsL)) => {
         iter.advance()
@@ -927,37 +923,36 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
               }
             }
           })
-        Ok(StrInterpolatePE(range, partsP.toVector))
+        return Ok(StrInterpolatePE(range, partsP.toVector))
       }
       case _ =>
     }
     parseBoolean(iter) match {
-      case Some(e) => return Ok(Some(e))
+      case Some(e) => return Ok(e)
       case None =>
     }
     parseArray(iter) match {
       case Err(err) => return Err(err)
-      case Ok(Some(e)) => return Ok(Some(e))
+      case Ok(Some(e)) => return Ok(e)
       case Ok(None) =>
     }
     parseLambda(iter) match {
       case Err(err) => return Err(err)
-      case Ok(Some(e)) => return Ok(Some(e))
+      case Ok(Some(e)) => return Ok(e)
       case Ok(None) =>
     }
     parseLookup(iter) match {
-      case Some(e) => return Ok(Some(e))
+      case Some(e) => return Ok(e)
       case None =>
     }
     parseTupleOrSubExpression(iter) match {
       case Err(err) => return Err(err)
       case Ok(Some(e)) => {
-        return Ok(Some(e))
+        return Ok(e)
       }
       case Ok(None) =>
     }
-//    Ok(None)
-    vimpl()
+    return Err(BadExpressionBegin(iter.getPos()))
   }
 
 //  def parseNumberExpr(originalIter: ScrambleIterator): Result[Option[IExpressionPE], IParseError] = {
@@ -1049,8 +1044,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
     if (iter.trySkipSymbols(Array('.', '.'))) {
       parseAtom(iter) match {
         case Err(err) => return Err(err)
-        case Ok(None) => return Err(BadRangeOperand(iter.getPos()))
-        case Ok(Some(operand)) => {
+        case Ok(operand) => {
           val rangePE = RangePE(RangeL(spreeBegin, iter.getPos()), exprSoFar, operand)
           return Ok(Some(rangePE))
         }
@@ -1091,11 +1085,11 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
 
       parsePack(iter) match {
         case Err(e) => return Err(e)
-        case Ok(Some(x)) => {
+        case Ok(Some((range, x))) => {
           return Ok(
             Some(
               MethodCallPE(
-                RangeL(spreeBegin, iter.getPos()),
+                range,
                 exprSoFar,
                 RangeL(operatorBegin, operatorEnd),
                 LookupPE(LookupNameP(name), maybeTemplateArgs),
@@ -1128,14 +1122,14 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
     parsePack(tentativeIter) match {
       case Err(e) => Err(e)
       case Ok(None) => Ok(None)
-      case Ok(Some(args)) => {
+      case Ok(Some((range, args))) => {
         originalIter.skipTo(tentativeIter)
         val iter = originalIter
         Ok(
           Some(
             FunctionCallPE(
-              RangeL(spreeBegin, iter.getPos()),
-              RangeL(operatorBegin, iter.getPos()),
+              RangeL(spreeBegin, range.end),
+              RangeL(operatorBegin, range.end),
               exprSoFar,
               args)))
       }
@@ -1143,14 +1137,14 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
   }
 
   def parseAtomAndTightSuffixes(iter: ScrambleIterator):
-  Result[Option[IExpressionPE], IParseError] = {
+  Result[IExpressionPE, IParseError] = {
+    vassert(iter.hasNext)
     val begin = iter.getPos()
 
     var exprSoFar =
       parseAtom(iter) match {
         case Err(err) => return Err(err)
-        case Ok(None) => return Ok(None)
-        case Ok(Some(e)) => e
+        case Ok(e) => e
       }
 
     var continuing = true
@@ -1166,7 +1160,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
       }
     }
 
-    Ok(Some(exprSoFar))
+    Ok(exprSoFar)
   }
 
   def parseChevronPack(iter: ScrambleIterator): Result[Option[Vector[ITemplexPT]], IParseError] = {
@@ -1210,7 +1204,8 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
     Ok(Some(resultPE))
   }
 
-  def parsePack(iter: ScrambleIterator): Result[Option[Vector[IExpressionPE]], IParseError] = {
+  def parsePack(iter: ScrambleIterator):
+  Result[Option[(RangeL, Vector[IExpressionPE])], IParseError] = {
     val parendLE =
       iter.peek() match {
         case Some(p @ ParendLE(_, _)) => iter.advance(); p
@@ -1226,7 +1221,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
             case Ok(expr) => expr
           }
       })
-    Ok(Some(elements.toVector))
+    Ok(Some((parendLE.range, elements.toVector)))
   }
 
   def parseSquarePack(iter: ScrambleIterator): Result[Option[Vector[IExpressionPE]], IParseError] = {
@@ -1308,10 +1303,12 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
     }
   }
 
-  def parseExpressionDataElement(iter: ScrambleIterator): Result[Option[IExpressionPE], IParseError] = {
+  def parseExpressionDataElement(iter: ScrambleIterator): Result[IExpressionPE, IParseError] = {
+    vassert(iter.hasNext)
+
     val begin = iter.getPos()
     if (iter.trySkipSymbol('…')) {
-      return Ok(Some(ConstantIntPE(RangeL(begin, iter.getPos()), 0, None)))
+      return Ok(ConstantIntPE(RangeL(begin, iter.getPos()), 0, None))
     }
 
     iter.peek(2) match {
@@ -1330,21 +1327,20 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
       val innerPE =
         parseExpressionDataElement(iter) match {
           case Err(e) => return Err(e)
-          case Ok(None) => vwat()
-          case Ok(Some(x)) => x
+          case Ok(x) => x
         }
-      return Ok(Some(NotPE(RangeL(begin, innerPE.range.end), innerPE)))
+      return Ok(NotPE(RangeL(begin, innerPE.range.end), innerPE))
     }
 
     parseIfLadder(iter) match {
       case Err(e) => return Err(e)
-      case Ok(Some(e)) => return Ok(Some(e))
+      case Ok(Some(e)) => return Ok(e)
       case Ok(None) =>
     }
 
     parseUnlet(iter) match {
       case Err(e) => return Err(e)
-      case Ok(Some(x)) => return Ok(Some(x))
+      case Ok(Some(x)) => return Ok(x)
       case Ok(None) =>
     }
 
@@ -1378,11 +1374,10 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
         val innerPE =
           parseAtomAndTightSuffixes(iter) match {
             case Err(err) => return Err(err)
-            case Ok(None) => return Err(UnrecognizableExpressionAfterAugment(iter.getPos()))
-            case Ok(Some(e)) => e
+            case Ok(e) => e
           }
         val augmentPE = ast.AugmentPE(RangeL(begin, iter.getPos()), targetOwnership, innerPE)
-        return Ok(Some(augmentPE))
+        return Ok(augmentPE)
       }
       case None =>
     }
@@ -1395,13 +1390,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
     // which all have tighter precedence than the prefixes.
     // Then we'll ret, and our callers will wrap it in the prefixes
     // like & not etc.
-    parseAtomAndTightSuffixes(iter) match {
-      case Err(err) => return Err(err)
-      case Ok(Some(e)) => return Ok(Some(e))
-      case Ok(None) =>
-    }
-
-    Ok(None)
+    return parseAtomAndTightSuffixes(iter)
   }
 
   def parseBracedBody(iter: ScrambleIterator):  Result[BlockPE, IParseError] = {
@@ -1653,7 +1642,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
           val args =
             parsePack(iter) match {
               case Ok(None) => vwat()
-              case Ok(Some(e)) => e
+              case Ok(Some((range, e))) => e
               case Err(e) => return Err(e)
             }
           (false, args)

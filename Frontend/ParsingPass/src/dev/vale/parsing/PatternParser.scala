@@ -1,17 +1,14 @@
 package dev.vale.parsing
 
-import dev.vale.{Err, Interner, Ok, Result, StrI, U, vassert, vassertSome, vimpl, vwat}
+import dev.vale.{Err, Interner, Keywords, Ok, Result, StrI, U, vassert, vassertSome, vimpl, vwat}
 import dev.vale.parsing.ast.{AbstractP, ConstructingMemberNameDeclarationP, DestructureP, INameDeclarationP, IgnoredLocalNameDeclarationP, LocalNameDeclarationP, NameP, PatternPP}
 import dev.vale.parsing.templex.TemplexParser
-import dev.vale.lexing.{BadDestructureError, BadLocalName, BadNameBeforeDestructure, BadThingAfterTypeInPattern, EmptyParameter, EmptyPattern, FoundBothAbstractAndOverride, FoundParameterWithoutType, INodeLE, IParseError, Keywords, RangeL, RangedInternalErrorP, ScrambleLE, SquaredLE, SymbolLE, WordLE}
+import dev.vale.lexing.{BadDestructureError, BadLocalName, BadNameBeforeDestructure, BadThingAfterTypeInPattern, EmptyParameter, EmptyPattern, FoundBothAbstractAndOverride, FoundParameterWithoutType, INodeLE, IParseError, RangeL, RangedInternalErrorP, ScrambleLE, SquaredLE, SymbolLE, WordLE}
 import dev.vale.parsing.ast._
 
 import scala.collection.mutable
 
 class PatternParser(interner: Interner, keywords: Keywords, templexParser: TemplexParser) {
-  val VIRTUAL = interner.intern(StrI("virtual"))
-  val IMPL = interner.intern(StrI("impl"))
-  val IN = interner.intern(StrI("in"))
 
 //  // Remember, for pattern parsers, something *must* be present, don't match empty.
 //  // Luckily, for this rule, we always have the expr identifier.
@@ -112,7 +109,7 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
     val maybeVirtual =
       iter.peek() match {
         case None => return Err(EmptyParameter(patternRange.begin))
-        case Some(WordLE(range, s)) if s == VIRTUAL => {
+        case Some(WordLE(range, s)) if s == keywords.VIRTUAL => {
           iter.advance()
           Some(AbstractP(range))
         }
@@ -218,7 +215,7 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
     // We look ahead so we dont parse "in" as a type in: foreach x in myList { ... }
     iter.peek() match {
       case None =>
-      case Some(WordLE(_, in)) if in == IN => iter.stop()
+      case Some(WordLE(_, in)) if in == keywords.IN => iter.stop()
       case Some(_) =>
     }
 

@@ -6,7 +6,7 @@ import dev.vale.SourceCodeUtils.{humanizeFile, humanizePos, nextThingAndRestOfLi
 import dev.vale.lexing.{BadArraySizerEnd, BadAttributeError, BadBinaryFunctionName, BadDestructureError, BadDot, BadEndOfElseBody, BadEndOfIfBody, BadEndOfIfCondition, BadEndOfWhileBody, BadEndOfWhileCondition, BadExpressionBegin, BadExpressionEnd, BadForeachInError, BadFunctionAfterParam, BadFunctionBodyError, BadImplFor, BadInterfaceHeader, BadInterfaceMember, BadLetEndError, BadLetEqualsError, BadLetSourceError, BadLocalName, BadMemberEnd, BadMutateEqualsError, BadRuleCallParam, BadRuneTypeError, BadStartOfBlock, BadStartOfElseBody, BadStartOfIfBody, BadStartOfIfCondition, BadStartOfStatementError, BadStartOfWhileBody, BadStartOfWhileCondition, BadStringChar, BadStringInterpolationEnd, BadStructContentsBegin, BadStructMember, BadTemplateCallParam, BadTypeExpression, CantUseBreakInExpression, CantUseReturnInExpression, DontNeedSemicolon, ForgotSetKeyword, IParseError, IfBlocksMustBothOrNeitherReturn, NeedSemicolon, NeedWhitespaceAroundBinaryOperator, OnlyRegionRunesCanHaveMutability, RangedInternalErrorP, UnknownTupleOrSubExpression, UnrecognizableExpressionAfterAugment, UnrecognizedDenizenError}
 
 object ParseErrorHumanizer {
-  def humanize(
+  def humanizeFromMap(
     fileMap: Map[FileCoordinate, String],
     fileCoord: FileCoordinate,
     err: IParseError):

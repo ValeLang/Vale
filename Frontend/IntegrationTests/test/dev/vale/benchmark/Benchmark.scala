@@ -6,13 +6,14 @@ import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ParseErrorHumanizer
 import dev.vale.postparsing.PostParserErrorHumanizer
 import dev.vale.typing.CompilerErrorHumanizer
-import dev.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, Interner, Ok, PackageCoordinate, Profiler, RunCompilation, Tests, Timer, U, repeatStr}
+import dev.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, Interner, Keywords, Ok, PackageCoordinate, Profiler, RunCompilation, Tests, Timer, U, repeatStr}
 
 import scala.collection.immutable.List
 
 object Benchmark {
   def go(useOptimization: Boolean): Long = {
     val interner = new Interner()
+    val keywords = new Keywords(interner)
     val timer = new Timer()
     timer.start()
     // Not really necessary, but it puts it at the top of the stack trace so we can more
@@ -21,11 +22,12 @@ object Benchmark {
       val compile =
         new RunCompilation(
           interner,
+          keywords,
           Vector(
-            PackageCoordinate.BUILTIN(interner),
-            PackageCoordinate.TEST_TLD(interner)
+            PackageCoordinate.BUILTIN(interner, keywords),
+            PackageCoordinate.TEST_TLD(interner, keywords)
           ),
-          Builtins.getCodeMap(interner)
+          Builtins.getCodeMap(interner, keywords)
             //          .or(FileCoordinateMap.test(Tests.loadExpected("programs/addret.vale")))
             //          .or(FileCoordinateMap.test(Tests.loadExpected("programs/roguelike.vale")))
             .or(
@@ -43,7 +45,7 @@ object Benchmark {
               false),
             debugOut = (_) => {}))
       compile.getParseds() match {
-        case Err(e) => println(ParseErrorHumanizer.humanize(compile.getCodeMap().getOrDie().fileCoordToContents.toMap, FileCoordinate.test(interner), e.error))
+        case Err(e) => println(ParseErrorHumanizer.humanizeFromMap(compile.getCodeMap().getOrDie().fileCoordToContents.toMap, FileCoordinate.test(interner), e.error))
         case Ok(t) =>
       }
       compile.getScoutput() match {

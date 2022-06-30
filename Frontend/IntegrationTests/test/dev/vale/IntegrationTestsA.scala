@@ -21,6 +21,7 @@ import dev.vale.testvm.ReferenceV
 import org.scalatest.{FunSuite, Matchers}
 import dev.vale.passmanager.FullCompilation
 import dev.vale.finalast.FullNameH
+import dev.vale.lexing.{FailedParse, RangeL}
 import dev.vale.postparsing.ICompileErrorS
 import dev.vale.typing.ast._
 import dev.vale.typing.names.FunctionNameT
@@ -33,12 +34,14 @@ import scala.collection.immutable.List
 object RunCompilation {
   def test(code: String*): RunCompilation = {
     val interner = new Interner()
+    val keywords = new Keywords(interner)
     new RunCompilation(
       interner,
+      keywords,
       Vector(
-        PackageCoordinate.BUILTIN(interner),
-        PackageCoordinate.TEST_TLD(interner)),
-      Builtins.getCodeMap(interner)
+        PackageCoordinate.BUILTIN(interner, keywords),
+        PackageCoordinate.TEST_TLD(interner, keywords)),
+      Builtins.getCodeMap(interner, keywords)
         .or(FileCoordinateMap.test(interner, code.toVector))
         .or(Tests.getPackageToResourceResolver),
       FullCompilationOptions(GlobalOptions(true, true, true, true)))
@@ -47,10 +50,11 @@ object RunCompilation {
 
 class RunCompilation(
     val interner: Interner,
+    val keywords: Keywords,
     packagesToBuild: Vector[PackageCoordinate],
     packageToContentsResolver: IPackageResolver[Map[String, String]],
     options: FullCompilationOptions = FullCompilationOptions()) {
-  var fullCompilation = new FullCompilation(interner, packagesToBuild, packageToContentsResolver, options)
+  var fullCompilation = new FullCompilation(interner, keywords, packagesToBuild, packageToContentsResolver, options)
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = fullCompilation.getCodeMap()
   def getParseds(): Result[FileCoordinateMap[(FileP, Vector[RangeL])], FailedParse] = fullCompilation.getParseds()
@@ -238,7 +242,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  doAThing<int>(a);
         |}
       """.stripMargin)
-    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD(compile.interner))
+    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD(compile.interner, compile.keywords))
     val heap = new Heap(System.out)
     val ref =
       heap.add(OwnH, YonderH, StructInstanceV(
@@ -623,12 +627,13 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |""".stripMargin)
     val hinputs = compile.expectCompilerOutputs()
     val interner = compile.interner
+    val keywords = compile.keywords
 
-    vassertSome(hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector.empty, interner.intern(FunctionNameT("helperFunc", Vector.empty, Vector(CoordT(ShareT, IntT.i32))))))))
+    vassertSome(hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(FunctionNameT(StrI("helperFunc"), Vector.empty, Vector(CoordT(ShareT, IntT.i32))))))))
 
-    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector.empty, interner.intern(FunctionNameT("bork", Vector.empty, Vector(CoordT(ShareT, StrT()))))))))
+    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(FunctionNameT(StrI("bork"), Vector.empty, Vector(CoordT(ShareT, StrT()))))))))
 
-    vassert(None == hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD(interner), Vector.empty, interner.intern(FunctionNameT("helperFunc", Vector.empty, Vector(CoordT(ShareT, StrT()))))))))
+    vassert(None == hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(FunctionNameT(StrI("helperFunc"), Vector.empty, Vector(CoordT(ShareT, StrT()))))))))
   }
 
   test("Test overloading between borrow and weak") {
@@ -696,12 +701,14 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("Test extern functions") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/externs/extern.vale"))
+    val interner = compile.interner
+    val keywords = compile.keywords
 
-    val packageH = compile.getHamuts().lookupPackage(compile.interner.intern(PackageCoordinate("math", Vector.empty)))
+    val packageH = compile.getHamuts().lookupPackage(interner.intern(PackageCoordinate(interner.intern(StrI("math")), Vector.empty)))
 
     // The extern we make should have the name we expect
-    vassertSome(packageH.externNameToFunction.get("sqrt")) match {
-      case PrototypeH(FullNameH("sqrt",_,PackageCoordinate("math",Vector()),_),_,_) =>
+    vassertSome(packageH.externNameToFunction.get(interner.intern(StrI("sqrt")))) match {
+      case PrototypeH(FullNameH("sqrt",_,PackageCoordinate(StrI("math"),Vector()),_),_,_) =>
     }
 
     // We also made an internal function that contains an extern call
@@ -800,10 +807,10 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("exporting array") {
     val compilation = RunCompilation.test("export []<mut>int as IntArray;")
     val hamuts = compilation.getHamuts()
-    val testPackage = hamuts.lookupPackage(PackageCoordinate.TEST_TLD(compilation.interner))
-    val kindH = vassertSome(testPackage.exportNameToKind.get("IntArray"))
+    val testPackage = hamuts.lookupPackage(PackageCoordinate.TEST_TLD(compilation.interner, compilation.keywords))
+    val kindH = vassertSome(testPackage.exportNameToKind.get(compilation.interner.intern(StrI("IntArray"))))
 
-    val builtinPackage = hamuts.lookupPackage(PackageCoordinate.BUILTIN(compilation.interner))
+    val builtinPackage = hamuts.lookupPackage(PackageCoordinate.BUILTIN(compilation.interner, compilation.keywords))
     val rsa = vassertSome(builtinPackage.runtimeSizedArrays.find(_.kind == kindH))
     rsa.elementType.kind shouldEqual IntH.i32
   }

@@ -1,7 +1,6 @@
 package dev.vale.parsing
 
-import dev.vale.lexing.Keywords
-import dev.vale.{Collector, Err, Interner, Ok, Tests, vfail}
+import dev.vale.{Collector, Err, Interner, Keywords, Ok, Tests, vfail}
 import dev.vale.options.GlobalOptions
 import org.scalatest.{FunSuite, Matchers}
 

@@ -70,7 +70,7 @@ class BigHashMap[A, B](initSize : Int) extends mutable.HashMap[A, B] {
 }
 
 class Interner {
-  val map = new BigHashMap[MemberWiseEqualsWrapper, Any](100000)
+  val map = new BigHashMap[MemberWiseEqualsWrapper, Any](10000)
   def intern[X <: IInterning](x: X): X = {
     map.get(MemberWiseEqualsWrapper(x)) match {
       case Some(original) => return original.asInstanceOf[X]
@@ -85,4 +85,5 @@ class Interner {
 
 
 // "String Interned"
-case class StrI(str: String) extends IInterning
+case class StrI(str: String) extends IInterning {
+}

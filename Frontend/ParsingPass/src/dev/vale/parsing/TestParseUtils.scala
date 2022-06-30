@@ -1,7 +1,7 @@
 package dev.vale.parsing
 
-import dev.vale.lexing.{FailedParse, IParseError, Keywords, Lexer, LexingIterator}
-import dev.vale.{Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Ok, PackageCoordinate, PackageCoordinateMap, Result, vassertOne, vassertSome, vfail, vimpl}
+import dev.vale.lexing.{FailedParse, IParseError, Lexer, LexingIterator}
+import dev.vale.{Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Keywords, Ok, PackageCoordinate, PackageCoordinateMap, Result, vassertOne, vassertSome, vfail, vimpl}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.{FileP, IDenizenP, IExpressionPE, IRulexPR, ITemplexPT, PatternPP}
 import dev.vale.parsing.templex.TemplexParser
@@ -142,7 +142,7 @@ trait TestParseUtils {
       keywords,
       opts,
       p,
-      Array(PackageCoordinate.TEST_TLD(interner)),
+      Array(PackageCoordinate.TEST_TLD(interner, keywords)),
       new IPackageResolver[Map[String, String]]() {
         override def resolve(packageCoord: PackageCoordinate): Option[Map[String, String]] = {
           // For testing the parser, we dont want it to fetch things with import statements
@@ -166,7 +166,7 @@ trait TestParseUtils {
     val keywords = new Keywords(interner)
     val codeMap = FileCoordinateMap.test(interner, Vector(code))
     compileFileInner(interner, keywords, codeMap) match {
-      case Err(e) => vfail(ParseErrorHumanizer.humanize(codeMap.fileCoordToContents.toMap, e.fileCoord, e.error))
+      case Err(e) => vfail(ParseErrorHumanizer.humanizeFromMap(codeMap.fileCoordToContents.toMap, e.fileCoord, e.error))
       case Ok(x) => x
     }
   }

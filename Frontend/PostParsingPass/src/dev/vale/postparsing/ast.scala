@@ -27,21 +27,21 @@ case class ProgramS(
   def lookupFunction(name: String): FunctionS = {
     val matches =
       implementedFunctions
-        .find(f => f.name match { case FunctionNameS(n, _) => n == name })
+        .find(f => f.name match { case FunctionNameS(n, _) => n.str == name })
     vassert(matches.size == 1)
     matches.head
   }
   def lookupInterface(name: String): InterfaceS = {
     val matches =
       interfaces
-        .find(f => f.name match { case TopLevelCitizenDeclarationNameS(n, _) => n == name })
+        .find(f => f.name match { case TopLevelCitizenDeclarationNameS(n, _) => n.str == name })
     vassert(matches.size == 1)
     matches.head
   }
   def lookupStruct(name: String): StructS = {
     val matches =
       structs
-        .find(f => f.name match { case TopLevelCitizenDeclarationNameS(n, _) => n == name })
+        .find(f => f.name match { case TopLevelCitizenDeclarationNameS(n, _) => n.str == name })
     vassert(matches.size == 1)
     matches.head
   }
@@ -206,7 +206,7 @@ case class SimpleParameterS(
 sealed trait IBodyS
 case object ExternBodyS extends IBodyS
 case object AbstractBodyS extends IBodyS
-case class GeneratedBodyS(generatorId: String) extends IBodyS {
+case class GeneratedBodyS(generatorId: StrI) extends IBodyS {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 case class CodeBodyS(body: BodySE) extends IBodyS {

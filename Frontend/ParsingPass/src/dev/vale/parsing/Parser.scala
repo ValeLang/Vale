@@ -93,10 +93,6 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
 //    }
   }
 
-  val ro = interner.intern(StrI("ro"))
-  val rw = interner.intern(StrI("rw"))
-  val imm = interner.intern(StrI("imm"))
-
   private[parsing] def parseIdentifyingRune(iter: ScrambleIterator):
   Result[IdentifyingRuneP, IParseError] = {
     val range = iter.range
@@ -110,13 +106,13 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
       val regionTypeBegin = iter.getPos()
       val attributes =
         Vector(TypeRuneAttributeP(RangeL(regionTypeBegin, iter.getPos()), RegionTypePR)) ++
-          (iter.trySkipWord(ro) match {
+          (iter.trySkipWord(keywords.ro) match {
             case Some(range) => Vector(ReadOnlyRuneAttributeP(range))
             case None => {
-              iter.trySkipWord(rw) match {
+              iter.trySkipWord(keywords.rw) match {
                 case Some(range) => Vector(ReadWriteRuneAttributeP(range))
                 case None => {
-                  iter.trySkipWord(imm) match {
+                  iter.trySkipWord(keywords.imm) match {
                     case Some(range) => Vector(ImmutableRuneAttributeP(range))
                     case None => Vector()
                   }
@@ -280,6 +276,7 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
           maybeMutabilityP,
           maybeIdentifyingRunes,
           maybeTemplateRulesP,
+          contentsL.range,
           membersP)
       Ok(struct)
     })
@@ -288,7 +285,7 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
   def parseInterface(interfaceL: InterfaceL):
   Result[InterfaceP, IParseError] = {
     Profiler.frame(() => {
-      val InterfaceL(interfaceRange, nameL, attributesL, maybeMutabilityL, maybeIdentifyingRunesL, maybeTemplateRulesL, methodsL) = interfaceL
+      val InterfaceL(interfaceRange, nameL, attributesL, maybeMutabilityL, maybeIdentifyingRunesL, maybeTemplateRulesL, bodyRange, methodsL) = interfaceL
 
       val maybeIdentifyingRunes =
         maybeIdentifyingRunesL.map(userSpecifiedIdentifyingRunes => {
@@ -354,6 +351,7 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
           maybeMutabilityP,
           maybeIdentifyingRunes,
           maybeTemplateRulesP,
+          bodyRange,
           membersP.toVector)
       Ok(interface)
     })
@@ -576,7 +574,17 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
   Result[IAttributeP, IParseError] = {
     attrL match {
       case AbstractAttributeL(range) => Ok(AbstractAttributeP(range))
-      case ExternAttributeL(range) => Ok(ExternAttributeP(range))
+      case ExternAttributeL(range, None) => Ok(ExternAttributeP(range))
+      case ExternAttributeL(range, Some(maybeName)) => {
+        val name =
+          maybeName.contents match {
+            case ScrambleLE(_, Array(StringLE(_, Array(StringPartLiteral(range, s))))) => {
+              NameP(range, interner.intern(StrI(s)))
+            }
+            case _ => vfail("Bad builtin extern!")
+          }
+        Ok(BuiltinAttributeP(range, name))
+      }
       case ExportAttributeL(range) => Ok(ExportAttributeP(range))
       case PureAttributeL(range) => Ok(PureAttributeP(range))
       case WeakableAttributeL(range) => Ok(WeakableAttributeP(range))
@@ -722,7 +730,7 @@ class ParserCompilation(
         foundCodeMap.put(fileCoord, code)
         val file = FileP(fileCoord, commentRanges.buildArray(), denizens.buildArray())
         parsedMap.put(fileCoord, (file, commentRanges.buildArray().toVector))
-      })
+      }).getOrDie()
 
     Ok((foundCodeMap, parsedMap))
   }

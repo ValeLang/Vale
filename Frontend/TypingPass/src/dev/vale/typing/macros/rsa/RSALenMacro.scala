@@ -1,6 +1,6 @@
 package dev.vale.typing.macros.rsa
 
-import dev.vale.RangeS
+import dev.vale.{Keywords, RangeS, StrI}
 import dev.vale.highertyping.FunctionA
 import dev.vale.typing.CompilerOutputs
 import dev.vale.typing.ast.{ArgLookupTE, ArrayLengthTE, BlockTE, FunctionHeaderT, FunctionT, LocationInFunctionEnvironment, ParameterT, ReturnTE}
@@ -11,13 +11,13 @@ import dev.vale.typing.ast._
 import dev.vale.typing.ast
 
 
-class RSALenMacro() extends IFunctionBodyMacro {
-  val generatorId: String = "vale_runtime_sized_array_len"
+class RSALenMacro(keywords: Keywords) extends IFunctionBodyMacro {
+  val generatorId: StrI = keywords.vale_runtime_sized_array_len
 
   def generateFunctionBody(
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
-    generatorId: String,
+    generatorId: StrI,
     life: LocationInFunctionEnvironment,
     callRange: RangeS,
     originFunction: Option[FunctionA],

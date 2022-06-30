@@ -4,7 +4,7 @@ import dev.vale.postparsing.patterns.PatternScout
 import dev.vale.postparsing.rules.{IRulexSR, IntLiteralSL, LiteralSR, MutabilityLiteralSL, RuleScout, RuneUsage, TemplexScout, VariabilityLiteralSL}
 import dev.vale.parsing.ast._
 import dev.vale.parsing.{ast, _}
-import dev.vale.{Interner, Profiler, RangeS, StrI, postparsing, vassert, vcurious, vwat}
+import dev.vale.{Interner, Keywords, Profiler, RangeS, StrI, postparsing, vassert, vcurious, vwat}
 import PostParser.{evalRange, noDeclarations, noVariableUses}
 import dev.vale
 import dev.vale.lexing.RangeL
@@ -55,13 +55,9 @@ class ExpressionScout(
     templexScout: TemplexScout,
     ruleScout: RuleScout,
     patternScout: PatternScout,
-    interner: Interner) {
-  val loopPostParser = new LoopPostParser(interner)
-
-  val SELF = interner.intern(StrI("self"))
-  val PLUS = interner.intern(StrI("+"))
-  val NOT = interner.intern(StrI("not"))
-  val RANGE = interner.intern(StrI("range"))
+    interner: Interner,
+    keywords: Keywords) {
+  val loopPostParser = new LoopPostParser(interner, keywords)
 
   def endsWithReturn(exprSE: IExpressionSE): Boolean = {
     exprSE match {
@@ -155,7 +151,7 @@ class ExpressionScout(
                 case FunctionNameS(n, _) => LookupNameP(NameP(rangeAtEnd, n))
                 case _ => vwat()
               }, None),
-            constructedMembersNames.map(n => DotPE(rangeAtEnd, LookupPE(LookupNameP(NameP(rangeAtEnd, SELF)), None), RangeL.zero, NameP(rangeAtEnd, n))))
+            constructedMembersNames.map(n => DotPE(rangeAtEnd, LookupPE(LookupNameP(NameP(rangeAtEnd, keywords.SELF)), None), RangeL.zero, NameP(rangeAtEnd, n))))
 
         val (stackFrameAfterConstructing, NormalResult(constructExpression), selfUsesAfterConstructing, childUsesAfterConstructing) =
           scoutExpression(stackFrameBeforeConstructing, lidb.child(), constructorCallP)
@@ -223,14 +219,14 @@ class ExpressionScout(
             scoutElementsAsExpressions(stackFrame0, lidb.child(), partsPE)
 
           val rangeS = evalRange(range)
-          val startingExpr: IExpressionSE = ConstantStrSE(RangeS(rangeS.begin, rangeS.begin), interner.intern(StrI("")))
+          val startingExpr: IExpressionSE = ConstantStrSE(RangeS(rangeS.begin, rangeS.begin), "")
           val addedExpr =
             partsSE.foldLeft(startingExpr)({
               case (prevExpr, partSE) => {
                 val addCallRange = RangeS(prevExpr.range.end, partSE.range.begin)
                 FunctionCallSE(
                   addCallRange,
-                  vale.postparsing.OutsideLoadSE(addCallRange, Array(), interner.intern(CodeNameS(PLUS)), None, LoadAsBorrowP),
+                  vale.postparsing.OutsideLoadSE(addCallRange, Array(), interner.intern(CodeNameS(keywords.PLUS)), None, LoadAsBorrowP),
                   Vector(prevExpr, partSE))
               }
             })
@@ -261,7 +257,7 @@ class ExpressionScout(
           (stackFrame0, NormalResult(BreakSE(evalRange(range))), noVariableUses, noVariableUses)
         }
         case NotPE(range, innerPE) => {
-          val callableSE = vale.postparsing.OutsideLoadSE(evalRange(range), Array(), interner.intern(CodeNameS(NOT)), None, LoadAsBorrowP)
+          val callableSE = vale.postparsing.OutsideLoadSE(evalRange(range), Array(), interner.intern(CodeNameS(keywords.NOT)), None, LoadAsBorrowP)
 
           val (stackFrame1, innerSE, innerSelfUses, innerChildUses) =
             scoutExpressionAndCoerce(stackFrame0, lidb.child(), innerPE, UseP)
@@ -273,7 +269,7 @@ class ExpressionScout(
           (stackFrame1, result, innerSelfUses, innerChildUses)
         }
         case RangePE(range, beginPE, endPE) => {
-          val callableSE = vale.postparsing.OutsideLoadSE(evalRange(range), Array(), interner.intern(CodeNameS(RANGE)), None, LoadAsBorrowP)
+          val callableSE = vale.postparsing.OutsideLoadSE(evalRange(range), Array(), interner.intern(CodeNameS(keywords.RANGE)), None, LoadAsBorrowP)
 
           val loadBeginAs =
             beginPE match {
@@ -305,9 +301,12 @@ class ExpressionScout(
             scoutExpressionAndCoerce(stackFrame0, lidb.child(), innerPE, UseP)
           (stackFrame1, NormalResult(inner1), innerSelfUses, innerChildUses)
         }
-        case ConstantIntPE(range, value, bits) => (stackFrame0, NormalResult(ConstantIntSE(evalRange(range), value, bits)), noVariableUses, noVariableUses)
+        case ConstantIntPE(range, value, bitsP) => {
+          val bits = bitsP.getOrElse(32L).toInt
+          (stackFrame0, NormalResult(ConstantIntSE(evalRange(range), value, bits)), noVariableUses, noVariableUses)
+        }
         case ConstantBoolPE(range,value) => (stackFrame0, NormalResult(vale.postparsing.ConstantBoolSE(evalRange(range), value)), noVariableUses, noVariableUses)
-        case ConstantStrPE(range, value) => (stackFrame0, NormalResult(vale.postparsing.ConstantStrSE(evalRange(range), interner.intern(StrI(value)))), noVariableUses, noVariableUses)
+        case ConstantStrPE(range, value) => (stackFrame0, NormalResult(vale.postparsing.ConstantStrSE(evalRange(range), value)), noVariableUses, noVariableUses)
         case ConstantFloatPE(range,value) => (stackFrame0, NormalResult(ConstantFloatSE(evalRange(range), value)), noVariableUses, noVariableUses)
 
         case MagicParamLookupPE(range) => {
@@ -742,7 +741,7 @@ class ExpressionScout(
             // We know we're in a constructor if there's no `this` variable yet. After all,
             // in a constructor, `this` is just an imaginary concept until we actually
             // fill all the variables.
-            case LookupPE(LookupNameP(NameP(range, StrI("self"))), _) if (stackFrame0.findVariable(interner.intern(CodeNameS(interner.intern(StrI("self"))))).isEmpty) => {
+            case LookupPE(LookupNameP(NameP(range, s)), _) if s == keywords.self && (stackFrame0.findVariable(interner.intern(CodeNameS(interner.intern(StrI("self"))))).isEmpty) => {
               val result = vale.postparsing.LocalLookupResult(evalRange(range), interner.intern(ConstructingMemberNameS(memberName)))
               (stackFrame0, result, noVariableUses, noVariableUses)
             }

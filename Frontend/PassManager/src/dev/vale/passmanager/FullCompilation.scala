@@ -4,12 +4,12 @@ import dev.vale.finalast.ProgramH
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.FileP
 import dev.vale.postparsing.{ICompileErrorS, ProgramS}
-import dev.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Ok, PackageCoordinate, PackageCoordinateMap, Profiler, Result, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
+import dev.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Keywords, Ok, PackageCoordinate, PackageCoordinateMap, Profiler, Result, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 import dev.vale.simplifying.HammerCompilation
 import dev.vale.highertyping.ICompileErrorA
 import PassManager.SourceInput
 import dev.vale.highertyping.{ICompileErrorA, ProgramA}
-import dev.vale.lexing.FailedParse
+import dev.vale.lexing.{FailedParse, RangeL}
 import dev.vale.simplifying.{HammerCompilation, HammerCompilationOptions, VonHammer}
 import dev.vale.typing.{Hinputs, ICompileErrorT}
 import dev.vale.postparsing.PostParser
@@ -27,12 +27,14 @@ case class FullCompilationOptions(
 
 class FullCompilation(
   interner: Interner,
+  keywords: Keywords,
   packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]],
   options: FullCompilationOptions = FullCompilationOptions()) {
   var hammerCompilation =
     new HammerCompilation(
       interner,
+      keywords,
       packagesToBuild,
       packageToContentsResolver,
       HammerCompilationOptions(

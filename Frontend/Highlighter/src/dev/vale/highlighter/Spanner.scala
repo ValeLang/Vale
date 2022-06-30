@@ -92,7 +92,7 @@ object Spanner {
   }
 
   def forInterface(i: InterfaceP): Span = {
-    val InterfaceP(range, name, attributes, mutability, maybeIdentifyingRunes, maybeTemplateRulesP, members) = i
+    val InterfaceP(range, name, attributes, mutability, maybeIdentifyingRunes, maybeTemplateRulesP, _, members) = i
 
     makeSpan(
       Interface,
@@ -128,7 +128,7 @@ object Spanner {
   }
 
   def forStruct(struct: StructP): Span = {
-    val StructP(range, NameP(nameRange, _), _, _, maybeIdentifyingRunesP, maybeTemplateRulesP, StructMembersP(membersRange, members)) = struct
+    val StructP(range, NameP(nameRange, _), _, _, maybeIdentifyingRunesP, maybeTemplateRulesP, _, StructMembersP(membersRange, members)) = struct
 
     makeSpan(
       Struct,

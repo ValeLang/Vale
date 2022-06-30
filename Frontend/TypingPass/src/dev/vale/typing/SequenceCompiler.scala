@@ -1,7 +1,7 @@
 package dev.vale.typing
 
 import dev.vale.typing.ast.{ProgramT, ReferenceExpressionTE, TupleTE}
-import dev.vale.{Interner, RangeS, vassertSome}
+import dev.vale.{Interner, Keywords, Profiler, RangeS, vassert, vassertSome, vimpl}
 import dev.vale.typing.citizen.StructCompiler
 import dev.vale.typing.env.{IEnvironment, TemplataLookupContext}
 import dev.vale.typing.names.CitizenTemplateNameT
@@ -13,12 +13,11 @@ import dev.vale.typing.templata._
 import dev.vale.typing.citizen.StructCompilerCore
 import dev.vale.typing.env.PackageEnvironment
 import dev.vale.typing.function.FunctionCompiler
-import dev.vale.{Interner, Profiler, RangeS, vassert, vassertSome, vimpl}
 
 class SequenceCompiler(
   opts: TypingPassOptions,
-
   interner: Interner,
+  keywords: Keywords,
     structCompiler: StructCompiler,
     templataCompiler: TemplataCompiler) {
   def makeEmptyTuple(
@@ -46,7 +45,7 @@ class SequenceCompiler(
     val tupleTemplate @ StructTemplata(_, _) =
       vassertSome(
         env.lookupNearestWithName(
-          interner.intern(CitizenTemplateNameT(ProgramT.tupleHumanName)), Set(TemplataLookupContext)))
+          interner.intern(CitizenTemplateNameT(keywords.tupleHumanName)), Set(TemplataLookupContext)))
     structCompiler.getStructRef(
       coutputs,
       RangeS.internal(interner, -17653),

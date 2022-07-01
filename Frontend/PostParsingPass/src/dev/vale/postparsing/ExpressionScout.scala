@@ -305,7 +305,9 @@ class ExpressionScout(
           (stackFrame0, NormalResult(ConstantIntSE(evalRange(range), value, bits)), noVariableUses, noVariableUses)
         }
         case ConstantBoolPE(range,value) => (stackFrame0, NormalResult(vale.postparsing.ConstantBoolSE(evalRange(range), value)), noVariableUses, noVariableUses)
-        case ConstantStrPE(range, value) => (stackFrame0, NormalResult(vale.postparsing.ConstantStrSE(evalRange(range), value)), noVariableUses, noVariableUses)
+        case ConstantStrPE(range, value) => {
+          (stackFrame0, NormalResult(vale.postparsing.ConstantStrSE(evalRange(range), value)), noVariableUses, noVariableUses)
+        }
         case ConstantFloatPE(range,value) => (stackFrame0, NormalResult(ConstantFloatSE(evalRange(range), value)), noVariableUses, noVariableUses)
 
         case MagicParamLookupPE(range) => {

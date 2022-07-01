@@ -14,8 +14,9 @@ import org.scalatest.{FunSuite, Matchers}
 class PostParsingParametersTests extends FunSuite with Matchers with Collector {
 
   private def compile(code: String, interner: Interner = new Interner()): ProgramS = {
-    PostParserTestCompilation.test(code).getScoutput() match {
-      case Err(e) => vfail(PostParserErrorHumanizer.humanize(FileCoordinateMap.test(interner, code), e))
+    val compilation = PostParserTestCompilation.test(code, interner)
+    compilation.getScoutput() match {
+      case Err(e) => vfail(PostParserErrorHumanizer.humanize(compilation.getCodeMap().getOrDie(), e))
       case Ok(t) => t.expectOne()
     }
   }
@@ -80,37 +81,6 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
     main.rules shouldHave {
       case LookupSR(_, pr, CodeNameS(StrI("int"))) => vassert(pr.rune == paramRune)
     }
-  }
-
-  test("Rune destructure") {
-    // This is an ambiguous case but we decided it should destructure a struct or sequence, see CSTODTS in docs.
-    val program1 = compile("""func main<T>(moo T[a int]) infer-return { }""")
-    val main = program1.lookupFunction("main")
-
-    val Vector(param) = main.params
-
-    val (aRune, tRune) =
-      param match {
-        case ParameterS(
-          AtomSP(_,
-            Some(CaptureS(CodeVarNameS(StrI("moo")))),
-            None,
-            Some(tr),
-            Some(
-              Vector(
-                AtomSP(_,
-                  Some(CaptureS(CodeVarNameS(StrI("a")))),
-                  None,
-                  Some(RuneUsage(_, ar @ ImplicitRuneS(_))),
-                None))))) => (ar, tr)
-      }
-
-    main.rules shouldHave {
-      case LookupSR(_, air, CodeNameS(StrI("int"))) => vassert(air.rune == aRune)
-    }
-
-    // See CCAUIR.
-    main.identifyingRunes.map(_.rune) shouldEqual Vector(tRune.rune)
   }
 
   test("Regioned pure function") {

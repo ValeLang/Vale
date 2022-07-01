@@ -1134,6 +1134,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
     var stringSoFar = new StringBuilder()
 
     while (!lexStringEnd(iter, isLongString)) {
+      val stringSoFarEndPos = iter.getPos()
       lexStringPart(iter, begin) match {
         case Err(e) => return Err(e)
         case Ok(Left(c)) => {
@@ -1141,7 +1142,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
         }
         case Ok(Right(expr)) => {
           if (stringSoFar.nonEmpty) {
-            parts.add(StringPartLiteral(RangeL(stringSoFarBegin, iter.getPos()), stringSoFar.toString()))
+            parts.add(StringPartLiteral(RangeL(stringSoFarBegin, stringSoFarEndPos), stringSoFar.toString()))
             stringSoFar.clear()
           }
           parts.add(StringPartExpr(expr))
@@ -1156,7 +1157,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
       parts.add(StringPartLiteral(RangeL(stringSoFarBegin, iter.getPos()), stringSoFar.toString()))
       stringSoFar.clear()
     }
-    Ok(Some(StringLE(RangeL(stringSoFarBegin, iter.getPos()), parts.buildArray())))
+    Ok(Some(StringLE(RangeL(begin, iter.getPos()), parts.buildArray())))
   }
 
   def lexStringPart(iter: LexingIterator, stringBeginPos: Int):

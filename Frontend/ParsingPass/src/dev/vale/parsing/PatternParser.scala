@@ -128,6 +128,10 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
 
     val name =
       iter.peek() match {
+        case Some(WordLE(range, s)) if s == keywords.UNDERSCORE => {
+          iter.advance()
+          Some(IgnoredLocalNameDeclarationP(range))
+        }
         case Some(WordLE(range, str)) => {
           iter.advance()
           Some(LocalNameDeclarationP(NameP(range, str)))

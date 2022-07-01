@@ -16,8 +16,9 @@ import org.scalatest.{FunSuite, Matchers}
 class PostParserTests extends FunSuite with Matchers with Collector {
 
   private def compile(code: String, interner: Interner = new Interner()): ProgramS = {
-    PostParserTestCompilation.test(code, interner).getScoutput() match {
-      case Err(e) => vfail(PostParserErrorHumanizer.humanize(FileCoordinateMap.test(interner, code), e))
+    val compile = PostParserTestCompilation.test(code, interner)
+    compile.getScoutput() match {
+      case Err(e) => vfail(PostParserErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), e))
       case Ok(t) => t.expectOne()
     }
   }
@@ -151,6 +152,18 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     val CodeBodyS(BodySE(_, _, block)) = main.body
     val ret = Collector.only(block, { case r @ ReturnSE(_, _) => r })
     Collector.only(ret, { case FunctionCallSE(_, OutsideLoadSE(_, _, CodeNameS(StrI("shout")), _, _), Vector(LocalLoadSE(_,CodeVarNameS(StrI("x")), UseP))) => })
+  }
+
+  test("Pure regioned function") {
+    val program1 = compile("pure func main<'r>(ship 'r &Spaceship) 't { }")
+    val main = program1.lookupFunction("main")
+    vassert(main.identifyingRunes.isEmpty)
+
+    // We just want to make sure its not a region rune.
+    // Implicit rune is fine, it does that when there's no return.
+    main.maybeRetCoordRune match {
+      case Some(RuneUsage(_, ImplicitRuneS(_))) =>
+    }
   }
 
   test("Function with magic lambda and regular lambda") {

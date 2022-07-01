@@ -22,16 +22,12 @@ class WhileTests extends FunSuite with Collector with TestParseUtils {
 
   test("While with condition declarations") {
     compileBlockContentsExpect("while x = 4; x > 6 { }") shouldHave {
-      case ConsecutorPE(
-        Vector(
-          WhilePE(_,
-            ConsecutorPE(
-              Vector(
-                LetPE(_,PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("x")))),None,None,None),ConstantIntPE(_,4,None)),
-              BinaryCallPE(_,NameP(_,StrI(">")),LookupPE(LookupNameP(NameP(_, StrI("x"))),None),ConstantIntPE(_,6,None)),
-              VoidPE(_))),
-            BlockPE(_,VoidPE(_))),
-        VoidPE(_))) =>
+      case WhilePE(_,
+        ConsecutorPE(
+          Vector(
+            LetPE(_,PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("x")))),None,None,None),ConstantIntPE(_,4,None)),
+          BinaryCallPE(_,NameP(_,StrI(">")),LookupPE(LookupNameP(NameP(_, StrI("x"))),None),ConstantIntPE(_,6,None)))),
+        BlockPE(_,VoidPE(_))) =>
     }
   }
 }

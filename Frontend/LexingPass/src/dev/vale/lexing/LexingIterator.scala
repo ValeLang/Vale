@@ -1,6 +1,6 @@
 package dev.vale.lexing
 
-import dev.vale.{Accumulator, Ok, Profiler, vassert, vcurious, vwat}
+import dev.vale.{Accumulator, Ok, Profiler, vassert, vcurious, vfail, vwat}
 
 import scala.util.matching.Regex
 
@@ -62,7 +62,7 @@ case class LexingIterator(code: String, var position: Int = 0) {
   def skipToPast(needle: Char): Unit = {
     while ({
       if (position == code.length) {
-        false
+        vfail()
       } else {
         val isNeedle = code.charAt(position) == needle
         position = position + 1
@@ -86,6 +86,18 @@ case class LexingIterator(code: String, var position: Int = 0) {
   }
 
   def consumeEllipsesComments(): Unit = {
+    val tentativePositionAfterWhitespace = findWhitespaceEnd()
+    if (tentativePositionAfterWhitespace < code.length &&
+      code.charAt(tentativePositionAfterWhitespace) == '.' &&
+      code.charAt(tentativePositionAfterWhitespace + 1) == '.' &&
+      code.charAt(tentativePositionAfterWhitespace + 2) == '.') {
+      val begin = position
+      position = tentativePositionAfterWhitespace + 3
+      vassert(position <= code.length)
+      comments.add(RangeL(begin, position))
+      consumeComments()
+    }
+
     trySkip("...")
   }
 
@@ -98,15 +110,12 @@ case class LexingIterator(code: String, var position: Int = 0) {
       position = tentativePositionAfterWhitespace + 2
       vassert(position <= code.length)
       skipToPast('\n')
-      comments.add(RangeL(begin, position))
+      comments.add(RangeL(begin, position - 1))
       consumeComments()
     }
   }
 
   def advance(): Char = {
-    // TODO: could use type-state programming to make this line obsolete; have a
-    // variant that knows that it already checked for comments
-    consumeComments()
     val c = peek()
     position = position + 1
     vassert(position <= code.length)
@@ -256,10 +265,6 @@ case class LexingIterator(code: String, var position: Int = 0) {
   }
 
   def peek(): Char = {
-    // TODO: could use type-state programming to make this line obsolete; have a
-    // variant that knows that it already checked for comments
-    consumeComments()
-
     if (position >= code.length) '\0'
     else code.charAt(position)
   }

@@ -159,6 +159,7 @@ case class ConstantBoolPE(range: RangeL, value: Boolean) extends IExpressionPE {
   override def producesResult(): Boolean = true
 }
 case class ConstantStrPE(range: RangeL, value: String) extends IExpressionPE {
+  vpass()
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true

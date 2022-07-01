@@ -123,7 +123,7 @@ class FunctionScout(
 
     val maybeRetCoordRune =
       (maybeInferRet, maybeRetType) match {
-        case (None, None) => {
+        case (None, None | Some(RegionRunePT(_, _))) => {
           // If nothing's present, assume void
           val rangeS = PostParser.evalRange(file, retRange)
           val rune = rules.RuneUsage(rangeS, ImplicitRuneS(lidb.child().consume()))
@@ -352,7 +352,7 @@ class FunctionScout(
 
     val maybeRetCoordRune =
       (maybeInferRet, maybeRetType) match {
-        case (_, None) => None // Infer the return
+        case (_, None | Some(RegionRunePT(_, _))) => None // Infer the return
         case (None, Some(retTypePT)) => {
           templexScout.translateMaybeTypeIntoMaybeRune(
             functionEnv,
@@ -543,7 +543,7 @@ class FunctionScout(
 
     val maybeReturnRune =
       (maybeInferRet, maybeRetType) match {
-        case (None, None) => {
+        case (None, None | Some(RegionRunePT(_, _))) => {
           // If nothing's present, assume void
           val rune = rules.RuneUsage(retRangeS, ImplicitRuneS(lidb.child().consume()))
           ruleBuilder += rules.LookupSR(retRangeS, rune, interner.intern(CodeNameS(interner.intern(keywords.void))))

@@ -167,7 +167,9 @@ case class StringLE(range: RangeL, parts: Array[StringPart]) extends INodeLE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
 }
 sealed trait StringPart
-case class StringPartLiteral(range: RangeL, s: String) extends StringPart
+case class StringPartLiteral(range: RangeL, s: String) extends StringPart {
+  vpass()
+}
 case class StringPartExpr(expr: ScrambleLE) extends StringPart
 
 

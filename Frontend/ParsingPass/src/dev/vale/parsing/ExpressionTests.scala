@@ -10,43 +10,43 @@ import org.scalatest.{FunSuite, Matchers}
 
 class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   test("Simple int") {
-    val expr = compileExpression("4")
+    val expr = compileExpressionExpect("4")
      expr shouldHave { case ConstantIntPE(_, 4, None) => }
   }
 
   test("Simple bool") {
-    compileExpression("true") shouldHave
+    compileExpressionExpect("true") shouldHave
       { case ConstantBoolPE(_, true) => }
   }
 
   test("i64") {
-    compileExpression("4i64") shouldHave
+    compileExpressionExpect("4i64") shouldHave
       { case ConstantIntPE(_, 4L, Some(64L)) => }
   }
 
   test("Binary operator") {
-    val expr = compileExpression("4 + 5")
+    val expr = compileExpressionExpect("4 + 5")
     expr shouldHave
       { case BinaryCallPE(_,NameP(_,StrI("+")),ConstantIntPE(_,4,_),ConstantIntPE(_,5,_)) => }
   }
 
   test("Floats") {
-    compileExpression("4.2") shouldHave
+    compileExpressionExpect("4.2") shouldHave
       { case ConstantFloatPE(_, 4.2) => }
   }
 
   test("Number range") {
-    compileExpression("0..5") shouldHave
+    compileExpressionExpect("0..5") shouldHave
       { case RangePE(_,ConstantIntPE(_,0,_),ConstantIntPE(_,5,_)) => }
   }
 
   test("add as call") {
-    compileExpression("+(4, 5)") shouldHave
+    compileExpressionExpect("+(4, 5)") shouldHave
       { case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, StrI("+"))), None), Vector(ConstantIntPE(_, 4, _), ConstantIntPE(_, 5, _))) => }
   }
 
   test("Passing == overload set") {
-    compileExpression("moo(4, ==)") shouldHave {
+    compileExpressionExpect("moo(4, ==)") shouldHave {
       case FunctionCallPE(_,_,
         _,
         Vector(
@@ -56,7 +56,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Call then binary operator") {
-    compileExpression("str(i) + 5") shouldHave {
+    compileExpressionExpect("str(i) + 5") shouldHave {
       case BinaryCallPE(_,
         NameP(_,StrI("+")),
         FunctionCallPE(_,
@@ -68,42 +68,42 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("range") {
-    compileExpression("a..b") shouldHave
+    compileExpressionExpect("a..b") shouldHave
       { case RangePE(_,LookupPE(LookupNameP(NameP(_,StrI("a"))),None),LookupPE(LookupNameP(NameP(_,StrI("b"))),None)) =>}
   }
 
   test("regular call") {
-    compileExpression("x(y)") shouldHave
+    compileExpressionExpect("x(y)") shouldHave
       { case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, StrI("x"))), None), Vector(LookupPE(LookupNameP(NameP(_, StrI("y"))), None))) => }
   }
 
   test("not") {
-    compileExpression("not y") shouldHave
+    compileExpressionExpect("not y") shouldHave
       { case NotPE(_,LookupPE(LookupNameP(NameP(_,StrI("y"))),None)) => }
   }
 
   test("Borrowing result of function call") {
-    compileExpression("&Muta()") shouldHave
+    compileExpressionExpect("&Muta()") shouldHave
       { case AugmentPE(_,BorrowP,FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_,StrI("Muta"))),None),Vector())) => }
   }
 
   test("Specifying heap") {
-    compileExpression("^Muta()") shouldHave
+    compileExpressionExpect("^Muta()") shouldHave
       { case AugmentPE(_,OwnP,FunctionCallPE(_,_,_,_)) => }
   }
 
   test("inline call ignored") {
-    compileExpression("inl Muta()") shouldHave
+    compileExpressionExpect("inl Muta()") shouldHave
       { case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, StrI("Muta"))),None),Vector()) => }
   }
 
   test("Method call") {
-    compileExpression("x . shout ()") shouldHave
+    compileExpressionExpect("x . shout ()") shouldHave
       { case MethodCallPE(_,LookupPE(LookupNameP(NameP(_,StrI("x"))),None),_,LookupPE(LookupNameP(NameP(_,StrI("shout"))),None),Vector()) => }
   }
 
   test("Method on member") {
-    compileExpression("x.moo.shout()") shouldHave
+    compileExpressionExpect("x.moo.shout()") shouldHave
       {
         case MethodCallPE(_,
           DotPE(_, LookupPE(LookupNameP(NameP(_, StrI("x"))),None), _, NameP(_,StrI("moo"))),
@@ -114,7 +114,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Moving method call") {
-    compileExpression("(x ).shout()") shouldHave
+    compileExpressionExpect("(x ).shout()") shouldHave
       {
       case MethodCallPE(_,
         SubExpressionPE(_, LookupPE(LookupNameP(NameP(_, StrI("x"))),None)),
@@ -136,7 +136,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
 //  }
 
   test("Templated function call") {
-    compileExpression("toArray<imm>( &result)") shouldHave
+    compileExpressionExpect("toArray<imm>( &result)") shouldHave
       {
         case FunctionCallPE(_,_,
         LookupPE(LookupNameP(NameP(_,StrI("toArray"))),Some(TemplateArgsP(_,Vector(MutabilityPT(_,ImmutableP))))),
@@ -145,19 +145,19 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Templated method call") {
-    compileExpression("result.toArray <imm> ()") shouldHave
+    compileExpressionExpect("result.toArray <imm> ()") shouldHave
       {
       case MethodCallPE(_,LookupPE(LookupNameP(NameP(_, StrI("result"))),None),_,LookupPE(LookupNameP(NameP(_, StrI("toArray"))),Some(TemplateArgsP(_, Vector(MutabilityPT(_,ImmutableP))))),Vector()) =>
     }
   }
 
   test("Custom binaries") {
-    compileExpression("not y florgle not x") shouldHave
+    compileExpressionExpect("not y florgle not x") shouldHave
       { case BinaryCallPE(_,NameP(_,StrI("florgle")),NotPE(_,LookupPE(LookupNameP(NameP(_,StrI("y"))),None)),NotPE(_,LookupPE(LookupNameP(NameP(_,StrI("x"))),None))) => }
   }
 
   test("Custom with noncustom binaries") {
-    compileExpression("a + b florgle x * y") shouldHave
+    compileExpressionExpect("a + b florgle x * y") shouldHave
       {
         case BinaryCallPE(_,
           NameP(_,StrI("florgle")),
@@ -173,11 +173,11 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Template calling") {
-    compileExpression("MyNone< int >()") shouldHave
+    compileExpressionExpect("MyNone< int >()") shouldHave
       {
         case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, StrI("MyNone"))),Some(TemplateArgsP(_,Vector(NameOrRunePT(NameP(_,StrI("int"))))))),Vector()) =>
     }
-    compileExpression("MySome< MyNone <int> >()") shouldHave
+    compileExpressionExpect("MySome< MyNone <int> >()") shouldHave
       {
       case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, StrI("MySome"))), Some(TemplateArgsP(_, Vector(CallPT(_,NameOrRunePT(NameP(_, StrI("MyNone"))),Vector(NameOrRunePT(NameP(_, StrI("int"))))))))),Vector()) =>
     }
@@ -187,19 +187,19 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
     // It turns out, this was only parsing "9 >=" because it was looking for > specifically (in fact, it was looking
     // for + - * / < >) so it parsed as >(9, =) which was bad. We changed the infix operator parser to expect the
     // whitespace on both sides, so that it was forced to parse the entire thing.
-    compileExpression("9 >= 3") shouldHave
+    compileExpressionExpect("9 >= 3") shouldHave
       {
         case BinaryCallPE(_,NameP(_,StrI(">=")),ConstantIntPE(_,9,_),ConstantIntPE(_,3,_)) =>
     }
   }
 
   test("Indexing") {
-    compileExpression("arr [4]") shouldHave
+    compileExpressionExpect("arr [4]") shouldHave
       { case BraceCallPE(_,_,LookupPE(LookupNameP(NameP(_,StrI("arr"))),None),Vector(ConstantIntPE(_,4,_)),_) => }
   }
 
   test("Single arg brace lambda") {
-    compileExpression("x => { x }") shouldHave
+    compileExpressionExpect("x => { x }") shouldHave
       {
         case LambdaPE(_,
           FunctionP(_,
@@ -212,7 +212,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Single arg no-brace lambda") {
-    compileExpression("x => x") shouldHave
+    compileExpressionExpect("x => x") shouldHave
       {
         case LambdaPE(_,
           FunctionP(_,
@@ -225,7 +225,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Single arg typed brace lambda") {
-    compileExpression("(x int) => { x }") shouldHave
+    compileExpressionExpect("(x int) => { x }") shouldHave
       {
         case LambdaPE(_,
           FunctionP(_,
@@ -238,7 +238,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Argless lambda") {
-    compileExpression("{_}") shouldHave
+    compileExpressionExpect("{_}") shouldHave
       {
         case LambdaPE(
           None,
@@ -250,7 +250,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Multi arg typed brace lambda") {
-    compileExpression("(x, y) => x") shouldHave
+    compileExpressionExpect("(x, y) => x") shouldHave
       {
         case LambdaPE(
           None,
@@ -267,14 +267,33 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("!=") {
-    compileExpression("3 != 4") shouldHave
+    compileExpressionExpect("3 != 4") shouldHave
       {
         case BinaryCallPE(_,NameP(_,StrI("!=")),ConstantIntPE(_,3,_),ConstantIntPE(_,4,_)) =>
     }
   }
 
+  test("set call isn't interpreted as a set expression") {
+    compileExpressionExpect("set(true)") shouldHave {
+      case FunctionCallPE(_,_, LookupPE(LookupNameP(NameP(_,StrI("set"))),None), _) =>
+    }
+  }
+
+  test("2D array access") {
+    // We had a bug where the lexer was interpreting that 2.1 as a float.
+    compileExpressionExpect("arr.2.1") shouldHave {
+      case DotPE(_,
+        DotPE(_,
+          LookupPE(LookupNameP(NameP(_,StrI("arr"))),None),
+          _,
+          NameP(_,StrI("2"))),
+        _,
+        NameP(_,StrI("1"))) =>
+    }
+  }
+
   test("lambda without surrounding parens") {
-    compileExpression("{ 0 }()") shouldHave
+    compileExpressionExpect("{ 0 }()") shouldHave
       {
       case FunctionCallPE(_,_,LambdaPE(None,_),Vector()) =>
     }
@@ -282,7 +301,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
 
 
   test("Function call") {
-    val program = compileExpression("call(sum)")
+    val program = compileExpressionExpect("call(sum)")
     //    val main = program.lookupFunction("main")
 
     program shouldHave
@@ -292,26 +311,10 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Test inner expression unlet") {
-    val program = compileExpression("destroy(unlet enemy)")
+    val program = compileExpressionExpect("destroy(unlet enemy)")
 
     program shouldHave {
       case FunctionCallPE(_, _, LookupPE(LookupNameP(NameP(_, StrI("destroy"))), None),Vector(UnletPE(_, LookupNameP(NameP(_, StrI("enemy")))))) =>
-    }
-  }
-
-  test("Report leaving out semicolon or ending body after expression") {
-    compileExpressionForError(
-      """
-        |  a = 3;
-        |  set x = 7 )
-        """.stripMargin) match {
-      case BadExpressionEnd(_) =>
-    }
-    compileExpressionForError(
-      """
-        |  floop() ]
-        """.stripMargin) match {
-      case BadExpressionEnd(_) =>
     }
   }
 
@@ -336,21 +339,21 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("parens") {
-    compileExpression("2 * (5 - 7)") shouldHave
+    compileExpressionExpect("2 * (5 - 7)") shouldHave
     { case BinaryCallPE(_,NameP(_,StrI("*")),ConstantIntPE(_,2,_),SubExpressionPE(_, BinaryCallPE(_,NameP(_,StrI("-")),ConstantIntPE(_,5,_),ConstantIntPE(_,7,_)))) => }
   }
 
   test("Precedence 1") {
-    compileExpression("(5 - 7) * 2") shouldHave
+    compileExpressionExpect("(5 - 7) * 2") shouldHave
       { case BinaryCallPE(_,NameP(_,StrI("*")),SubExpressionPE(_, BinaryCallPE(_,NameP(_,StrI("-")),ConstantIntPE(_,5,_),ConstantIntPE(_,7,_))), ConstantIntPE(_,2,_)) => }
   }
   test("Precedence 2") {
-    compileExpression("5 - 7 * 2") shouldHave
+    compileExpressionExpect("5 - 7 * 2") shouldHave
       { case BinaryCallPE(_,NameP(_,StrI("-")),ConstantIntPE(_,5,_),BinaryCallPE(_,NameP(_,StrI("*")),ConstantIntPE(_,7,_),ConstantIntPE(_,2,_))) => }
   }
 
   test("static array from values") {
-    compileExpression("[#][3, 5, 6]") shouldHave
+    compileExpressionExpect("[#][3, 5, 6]") shouldHave
       {
 //      case StaticArrayFromValuesPE(_,Vector(ConstantIntPE(_, 3, _), ConstantIntPE(_, 5, _), ConstantIntPE(_, 6, _))) =>
 //      case null =>
@@ -359,7 +362,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("static array from values with newlines") {
-    compileExpression("[#][\n3\n]") shouldHave
+    compileExpressionExpect("[#][\n3\n]") shouldHave
       {
         //      case StaticArrayFromValuesPE(_,Vector(ConstantIntPE(_, 3, _), ConstantIntPE(_, 5, _), ConstantIntPE(_, 6, _))) =>
         //      case null =>
@@ -368,7 +371,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("static array from callable with rune") {
-    compileExpression("[#N]({_ * 2})") shouldHave
+    compileExpressionExpect("[#N]({_ * 2})") shouldHave
       {
 //      case StaticArrayFromCallablePE(_,NameOrRunePT(NameP(_, StrI("N"))),_,_) =>
 //      case null =>
@@ -383,14 +386,14 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Less than or equal") {
-    compileExpression("a <= b") shouldHave
+    compileExpressionExpect("a <= b") shouldHave
       {
         case BinaryCallPE(_,NameP(_,StrI("<=")),LookupPE(LookupNameP(NameP(_,StrI("a"))),None),LookupPE(LookupNameP(NameP(_,StrI("b"))),None)) =>
       }
   }
 
   test("static array from callable") {
-    compileExpression("[#3](triple)") shouldHave
+    compileExpressionExpect("[#3](triple)") shouldHave
       {
       case ConstructArrayPE(_,
         None,
@@ -403,7 +406,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("immutable static array from callable") {
-    compileExpression("#[#3](triple)") shouldHave
+    compileExpressionExpect("#[#3](triple)") shouldHave
       {
       case ConstructArrayPE(_,
         None,
@@ -416,7 +419,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("immutable static array from callable, no size") {
-    compileExpression("#[#][3, 4, 5]") shouldHave
+    compileExpressionExpect("#[#][3, 4, 5]") shouldHave
       {
       case ConstructArrayPE(_,
         None,
@@ -429,7 +432,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("runtime array from callable with rune") {
-    compileExpression("[](6, {_ * 2})") shouldHave
+    compileExpressionExpect("[](6, {_ * 2})") shouldHave
       {
       //      case StaticArrayFromCallablePE(_,NameOrRunePT(NameP(_, StrI("N"))),_,_) =>
       //      case null =>
@@ -444,7 +447,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("runtime array from callable") {
-    compileExpression("[](6, triple)") shouldHave
+    compileExpressionExpect("[](6, triple)") shouldHave
       {
       case ConstructArrayPE(_,
         None,
@@ -457,7 +460,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("immutable runtime array from callable") {
-    compileExpression("#[](6, triple)") shouldHave
+    compileExpressionExpect("#[](6, triple)") shouldHave
       {
       case ConstructArrayPE(_,
         None,
@@ -471,32 +474,32 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
 
 
   test("One element tuple") {
-    compileExpression("(3,)") shouldHave
+    compileExpressionExpect("(3,)") shouldHave
       { case TuplePE(_,Vector(ConstantIntPE(_,3,_))) => }
   }
 
   test("Zero element tuple") {
-    compileExpression("()") shouldHave
+    compileExpressionExpect("()") shouldHave
       { case TuplePE(_,Vector()) => }
   }
 
   test("Two element tuple") {
-    compileExpression("(3,4)") shouldHave
+    compileExpressionExpect("(3,4)") shouldHave
       { case TuplePE(_,Vector(ConstantIntPE(_,3,_), ConstantIntPE(_,4,_))) => }
   }
 
   test("Three element tuple") {
-    compileExpression("(3,4,5)") shouldHave
+    compileExpressionExpect("(3,4,5)") shouldHave
       { case TuplePE(_,Vector(ConstantIntPE(_,3,_), ConstantIntPE(_,4,_), ConstantIntPE(_,5,_))) => }
   }
 
   test("Three element tuple trailing comma") {
-    compileExpression("(3,4,5,)") shouldHave
+    compileExpressionExpect("(3,4,5,)") shouldHave
       { case TuplePE(_,Vector(ConstantIntPE(_,3,_), ConstantIntPE(_,4,_), ConstantIntPE(_,5,_))) => }
   }
 
   test("Call callable expr") {
-    compileExpression("(something.callable)(3)") shouldHave
+    compileExpressionExpect("(something.callable)(3)") shouldHave
       {
       case FunctionCallPE(
           _,_,
@@ -506,18 +509,18 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Array indexing") {
-    compileExpression("board[i]") shouldHave
+    compileExpressionExpect("board[i]") shouldHave
       {
       case BraceCallPE(_,_,LookupPE(LookupNameP(NameP(_,StrI("board"))),None),Vector(LookupPE(LookupNameP(NameP(_,StrI("i"))),None)),false) =>
       }
-    compileExpression("this.board[i]") shouldHave
+    compileExpressionExpect("this.board[i]") shouldHave
       {
       case BraceCallPE(_,_,DotPE(_,LookupPE(LookupNameP(NameP(_, StrI("this"))),None),_,NameP(_,StrI("board"))),Vector(LookupPE(LookupNameP(NameP(_,StrI("i"))),None)),false) =>
       }
   }
 
   test("mod and == precedence") {
-    compileExpression("""8 mod 2 == 0""") shouldHave
+    compileExpressionExpect("""8 mod 2 == 0""") shouldHave
       {
       case BinaryCallPE(_,
       NameP(_, StrI("==")),
@@ -530,7 +533,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("or and == precedence") {
-    compileExpression("""2 == 0 or false""") shouldHave
+    compileExpressionExpect("""2 == 0 or false""") shouldHave
       {
       case OrPE(_,
         BinaryCallPE(_,
@@ -542,7 +545,7 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Test templated lambda param") {
-    val program = compileExpression("(a => a + a)(3)")
+    val program = compileExpressionExpect("(a => a + a)(3)")
     program shouldHave {
       case FunctionCallPE(_, _, SubExpressionPE(_, LambdaPE(_, _)), Vector(ConstantIntPE(_, 3, _))) =>
     }

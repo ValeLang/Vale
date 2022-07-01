@@ -93,7 +93,7 @@ object LexAndExplore {
           while (!iter.atEnd()) {
             val denizen =
               lexer.lexDenizen(iter) match {
-                case Err(e) => vfail(e)
+                case Err(e) => return Err(FailedParse(code, fileCoord, e))
                 case Ok(x) => x
               }
             iter.consumeCommentsAndWhitespace()
@@ -112,6 +112,8 @@ object LexAndExplore {
                 if (!startedPackages.contains(nextNeededPackageCoord)) {
                   unexploredPackages.add(nextNeededPackageCoord)
                 }
+                val denizenResult = denizenHandler(fileCoord, code, Array(), denizen)
+                resultAcc.add(denizenResult)
               }
               case _ => {
                 maybeImportsAccum match {

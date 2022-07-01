@@ -51,7 +51,6 @@ object PostParserErrorHumanizer {
         }
         case VariableNameAlreadyExists(range, name) => s": Local named " + humanizeName(name) + " already exists!\n(If you meant to modify the variable, use the `set` keyword beforehand.)"
         case InterfaceMethodNeedsSelf(range) => s": Interface's method needs a virtual param of interface's type!"
-        case LightFunctionMustHaveParamTypes(range, paramIndex) => s": Function parameter must have a type!"
         case ForgotSetKeywordError(range) => s": Changing a struct's member must start with the `set` keyword."
         case CantUseThatLocalName(range, name) => s": Can't use the name ${name} for a local."
         case ExternHasBody(range) => s": Extern function can't have a body too."

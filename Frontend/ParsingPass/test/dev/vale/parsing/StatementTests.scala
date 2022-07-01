@@ -3,42 +3,42 @@ package dev.vale.parsing
 import dev.vale.{Collector, Interner, StrI, vimpl, vwat}
 import dev.vale.parsing.ast.{AugmentPE, BlockPE, BorrowP, ConsecutorPE, ConstantBoolPE, ConstantIntPE, ConstantStrPE, DestructPE, DestructureP, DotPE, EachPE, FunctionCallPE, IExpressionPE, IfPE, LetPE, LocalNameDeclarationP, LookupNameP, LookupPE, MutatePE, NameOrRunePT, NameP, PatternPP, Patterns, ReturnPE, TuplePE, UnletPE, VoidPE}
 import dev.vale.parsing.ast._
-import dev.vale.lexing.ForgotSetKeyword
+import dev.vale.lexing.{BadExpressionEnd, BadStartOfStatementError, ForgotSetKeyword}
 import dev.vale.options.GlobalOptions
 import org.scalatest.{FunSuite, Matchers}
 
 class StatementTests extends FunSuite with Collector with TestParseUtils {
 
   test("Simple let") {
-    compileBlockContents( "x = 4;") shouldHave {
+    compileBlockContentsExpect( "x = 4;") shouldHave {
       case LetPE(_, PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, StrI("x")))), None, None, None), ConstantIntPE(_, 4, _)) =>
     }
   }
 
   test("multiple statements") {
-    compileBlockContents(
+    compileBlockContentsExpect(
       """4""".stripMargin) shouldHave {
       case ConstantIntPE(_, 4, _) =>
     }
 
-    compileBlockContents(
+    compileBlockContentsExpect(
       """4;""".stripMargin) shouldHave {
       case ConsecutorPE(Vector(ConstantIntPE(_, 4, _), VoidPE(_))) =>
     }
 
-    compileBlockContents(
+    compileBlockContentsExpect(
       """4; 3""".stripMargin) shouldHave {
       case ConsecutorPE(Vector(ConstantIntPE(_, 4, _), ConstantIntPE(_, 3, _))) =>
     }
 
-    compileBlockContents(
+    compileBlockContentsExpect(
       """4; 3;""".stripMargin) shouldHave {
       case ConsecutorPE(Vector(ConstantIntPE(_, 4, _), ConstantIntPE(_, 3, _), VoidPE(_))) =>
     }
   }
 
   test("8") {
-    compileStatement("[x, y] = (4, 5);") shouldHave {
+    compileStatementExpect("[x, y] = (4, 5);") shouldHave {
       case LetPE(_,
           PatternPP(_,_,
             None,
@@ -54,25 +54,25 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("9") {
-    compileStatement("set x.a = 5;") shouldHave {
+    compileStatementExpect("set x.a = 5;") shouldHave {
       case MutatePE(_, DotPE(_, LookupPE(LookupNameP(NameP(_, StrI("x"))), None), _, NameP(_, StrI("a"))), ConstantIntPE(_, 5, _)) =>
     }
   }
 
   test("1PE") {
-    compileStatement("""set board.PE.PE.symbol = "v";""") shouldHave {
+    compileStatementExpect("""set board.PE.PE.symbol = "v";""") shouldHave {
       case MutatePE(_, DotPE(_, DotPE(_, DotPE(_, LookupPE(LookupNameP(NameP(_, StrI("board"))), None), _, NameP(_, StrI("PE"))), _, NameP(_, StrI("PE"))), _, NameP(_, StrI("symbol"))), ConstantStrPE(_, "v")) =>
     }
   }
 
   test("Test simple let") {
-    compileStatement("x = 3;") shouldHave {
+    compileStatementExpect("x = 3;") shouldHave {
       case LetPE(_,PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, StrI("x")))),None,None,None),ConstantIntPE(_, 3, _)) =>
     }
   }
 
   test("Test simple mut") {
-    compileStatement("set x = 5;") shouldHave {
+    compileStatementExpect("set x = 5;") shouldHave {
       case MutatePE(_, LookupPE(LookupNameP(NameP(_, StrI("x"))), None),ConstantIntPE(_, 5, _)) =>
     }
   }
@@ -80,7 +80,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   test("Test expr starting with return") {
     // This test is here because we had a bug where we didn't check that there
     // was whitespace after a "return".
-    compileStatement("retcode()") shouldHave {
+    compileStatementExpect("retcode()") shouldHave {
       case FunctionCallPE(_,_,LookupPE(LookupNameP(NameP(_, StrI("retcode"))),None),Vector()) =>
     }
   }
@@ -88,7 +88,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   test("Test inner set") {
     // This test is here because we had a bug where we didn't check that there
     // was whitespace after a "return".
-    compileStatement(
+    compileStatementExpect(
       "oldArray = set list.array = newArray;") shouldHave {
       case LetPE(_,
         PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("oldArray")))),None,None,None),
@@ -101,7 +101,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   test("Test if-statement producing") {
     // This test is here because we had a bug where we didn't check that there
     // was whitespace after a "return".
-    compileStatement(
+    compileStatementExpect(
       "if true { 3 } else { 4 }") shouldHave {
       case IfPE(_,
         ConstantBoolPE(_,true),
@@ -111,19 +111,19 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Test destruct") {
-    compileStatement("destruct x;") shouldHave {
+    compileStatementExpect("destruct x;") shouldHave {
       case DestructPE(_,LookupPE(LookupNameP(NameP(_, StrI("x"))), None)) =>
     }
   }
 
   test("Test unlet") {
-    compileStatement("unlet x") shouldHave {
+    compileStatementExpect("unlet x") shouldHave {
       case UnletPE(_,LookupNameP(NameP(_, StrI("x")))) =>
     }
   }
 
   test("Dot on function call's result") {
-    compileStatement("Wizard(8).charges") shouldHave {
+    compileStatementExpect("Wizard(8).charges") shouldHave {
       case DotPE(_,
           FunctionCallPE(_,_,
             LookupPE(LookupNameP(NameP(_, StrI("Wizard"))), None),
@@ -134,13 +134,13 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Let with pattern with only a capture") {
-    compileStatement("a = m;") shouldHave {
+    compileStatementExpect("a = m;") shouldHave {
       case LetPE(_,Patterns.capture("a"),LookupPE(LookupNameP(NameP(_, StrI("m"))), None)) =>
     }
   }
 
   test("Let with simple pattern") {
-    compileStatement("a Moo = m;") shouldHave {
+    compileStatementExpect("a Moo = m;") shouldHave {
       case LetPE(_,
         PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, StrI("a")))),Some(NameOrRunePT(NameP(_, StrI("Moo")))),None,None),
         LookupPE(LookupNameP(NameP(_, StrI("m"))), None)) =>
@@ -148,7 +148,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Let with simple pattern in destructure") {
-    compileStatement("[a Moo] = m;") shouldHave {
+    compileStatementExpect("[a Moo] = m;") shouldHave {
       case LetPE(_,
           PatternPP(_,_,
             None,
@@ -160,19 +160,19 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Let with destructuring pattern") {
-    compileStatement("Muta[ ] = m;") shouldHave {
+    compileStatementExpect("Muta[ ] = m;") shouldHave {
       case LetPE(_,PatternPP(_,_,None,Some(NameOrRunePT(NameP(_, StrI("Muta")))),Some(DestructureP(_,Vector())),None),LookupPE(LookupNameP(NameP(_, StrI("m"))), None)) =>
     }
   }
 
   test("Ret") {
-    compileStatement("return 3;") shouldHave {
+    compileStatementExpect("return 3;") shouldHave {
       case ReturnPE(_,ConstantIntPE(_, 3, _)) =>
     }
   }
 
   test("foreach") {
-    compileStatement("foreach i in myList { }") shouldHave {
+    compileStatementExpect("foreach i in myList { }") shouldHave {
       case EachPE(_,
       PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("i")))),None,None,None),
       _,
@@ -182,7 +182,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("foreach with borrow") {
-    compileStatement("foreach i in &myList { }") shouldHave {
+    compileStatementExpect("foreach i in &myList { }") shouldHave {
       case EachPE(_,
       PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("i")))),None,None,None),
       _,
@@ -192,7 +192,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("foreach with two receivers") {
-    compileStatement("foreach [a, b] in myList { }") shouldHave {
+    compileStatementExpect("foreach [a, b] in myList { }") shouldHave {
       case EachPE(_,
         PatternPP(_,
           None,None,None,
@@ -209,7 +209,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("foreach complex iterable") {
-    compileStatement("foreach i in myList = 3; myList { }") shouldHave {
+    compileStatementExpect("foreach i in myList = 3; myList { }") shouldHave {
       case EachPE(_,
         PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_, StrI("i")))),None,None,None),
         _,
@@ -222,7 +222,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Multiple statements") {
-    compileBlockContents(
+    compileBlockContentsExpect(
       """
         |42;
         |43;
@@ -230,7 +230,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("If and another statement") {
-    compileBlockContents(
+    compileBlockContentsExpect(
       """
         |newCapacity = if (true) { 1 } else { 2 };
         |newArray = 3;
@@ -238,12 +238,12 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Test block's trailing void presence") {
-    compileBlockContents(
+    compileBlockContentsExpect(
       "moo()") shouldHave {
       case FunctionCallPE(_, _, LookupPE(LookupNameP(NameP(_, StrI("moo"))), None), Vector()) =>
     }
 
-    compileBlockContents(
+    compileBlockContentsExpect(
       "moo();") shouldHave {
       case ConsecutorPE(Vector(FunctionCallPE(_, _, LookupPE(LookupNameP(NameP(_, StrI("moo"))), None), Vector()), VoidPE(_))) =>
     }
@@ -251,7 +251,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
 
 
   test("Block with statement and result") {
-    compileBlockContents(
+    compileBlockContentsExpect(
       """
         |b;
         |a
@@ -262,7 +262,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
 
 
   test("Block with result") {
-    compileStatement("3") shouldHave {
+    compileStatementExpect("3") shouldHave {
       case ConstantIntPE(_, 3, _) =>
     }
   }
@@ -270,7 +270,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   test("Block with result that could be an expr") {
     // = doThings(a); could be misinterpreted as an expression doThings(=, a) if we're
     // not careful.
-    compileBlockContents(
+    compileBlockContentsExpect(
       """
         |a = 2;
         |doThings(a)
@@ -283,7 +283,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
 
   test("Mutating as statement") {
     val program =
-      compileBlockContents(
+      compileBlockContentsExpect(
         "set x = 6;")
     program shouldHave {
       case MutatePE(_,LookupPE(LookupNameP(NameP(_, StrI("x"))), None),ConstantIntPE(_, 6, _)) =>
@@ -291,7 +291,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Lone block") {
-    compileBlockContents(
+    compileBlockContentsExpect(
       """
         |block {
         |  a
@@ -304,7 +304,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   test("Pure block") {
     // Just make sure it parses, so that we can highlight it.
     // The pure block feature doesn't actually exist yet.
-    compileBlockContents(
+    compileBlockContentsExpect(
       """
         |pure block {
         |  a
@@ -315,7 +315,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   test("Unsafe pure block") {
     // Just make sure it parses, so that we can highlight it.
     // The unsafe pure block feature doesn't actually exist yet.
-    compileBlockContents(
+    compileBlockContentsExpect(
       """
         |unsafe pure block {
         |  a
@@ -325,22 +325,38 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
 
 
   test("Forgetting set when changing") {
-    vimpl()
-//    val error =
-//      compileForError(
-//        new ExpressionParser(GlobalOptions(true, true, true, true))
-//          .parseBlockContents(_, StopBeforeCloseBrace),
-//        """
-//          |ship.x = 4;
-//          |""".stripMargin)
-//    error match {
-//      case ForgotSetKeyword(_) =>
-//    }
+    val error =
+      compileStatement(
+        """ship.x = 4;""".stripMargin).expectErr()
+    error match {
+      case ForgotSetKeyword(_) =>
+    }
+  }
+
+  test("Report leaving out semicolon or ending body after expression, for paren") {
+    compileBlockContents(
+      """
+        |  a = 3;
+        |  set x = 7 )
+        """.stripMargin).expectErr() match {
+      case BadExpressionEnd(_) =>
+    }
+  }
+
+  test("Report leaving out semicolon or ending body after expression, for square") {
+    compileStatement(
+      """
+        |block {
+        |  floop() ]
+        |}
+        """.stripMargin).expectErr() match {
+      case BadStartOfStatementError(_) =>
+    }
   }
 
   test("foreach 2") {
     val programS =
-      compileBlockContents(
+      compileBlockContentsExpect(
         """
           |foreach i in a {
           |  i
@@ -358,7 +374,7 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
 
   test("foreach expr") {
     val programS =
-      compileBlockContents(
+      compileBlockContentsExpect(
         """
           |a = foreach i in c { i };
           |""".stripMargin)

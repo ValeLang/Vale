@@ -89,7 +89,7 @@ class CoordRuleTests extends FunSuite with Matchers with Collector with TestPars
   }
 
   test("Coord with destructure and value") {
-    compile("T = Ref[_, _] = int") shouldHave {
+    compile("Ref[_, _] = int") shouldHave {
       case EqualsPR(_,
           ComponentsPR(_,CoordTypePR,Vector(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))),
           TemplexPR(NameOrRunePT(NameP(_, StrI("int"))))) =>

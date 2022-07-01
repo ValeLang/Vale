@@ -213,7 +213,7 @@ class WeakTests extends FunSuite with Matchers {
 
     val hamuts = compile.getHamuts()
 
-    compile.evalForKind(Vector()) match { case VonInt(0) => }
+    compile.evalForKind(Vector()) match { case VonInt(42) => }
   }
 
   test("Call weak-self method, while alive") {

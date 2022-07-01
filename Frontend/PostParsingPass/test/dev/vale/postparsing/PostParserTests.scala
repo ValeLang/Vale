@@ -16,7 +16,7 @@ import org.scalatest.{FunSuite, Matchers}
 class PostParserTests extends FunSuite with Matchers with Collector {
 
   private def compile(code: String, interner: Interner = new Interner()): ProgramS = {
-    PostParserTestCompilation.test(code).getScoutput() match {
+    PostParserTestCompilation.test(code, interner).getScoutput() match {
       case Err(e) => vfail(PostParserErrorHumanizer.humanize(FileCoordinateMap.test(interner, code), e))
       case Ok(t) => t.expectOne()
     }
@@ -106,7 +106,7 @@ class PostParserTests extends FunSuite with Matchers with Collector {
 
   test("Generic interface") {
     val interner = new Interner()
-    val program1 = compile("interface IMoo<T> { func blork(virtual this &IMoo, a T)void; }")
+    val program1 = compile("interface IMoo<T> { func blork(virtual this &IMoo, a T)void; }", interner)
     val imoo = program1.lookupInterface("IMoo")
 
     val blork = imoo.internalMethods.head
@@ -114,7 +114,10 @@ class PostParserTests extends FunSuite with Matchers with Collector {
       case FunctionNameS(StrI("blork"), _) =>
     }
 
-    vassert(imoo.identifyingRunes.map(_.rune).contains(CodeRuneS(interner.intern(StrI("T")))))
+    val imooRunes = imoo.identifyingRunes.map(_.rune)
+    val t = CodeRuneS(interner.intern(StrI("T")))
+    vassert(imooRunes(0) == t)
+    vassert(imooRunes.contains(t))
     // Interface methods of generic interfaces will have the same identifying runes of their
     // generic interfaces, see IMCBT.
     vassert(blork.identifyingRunes.map(_.rune).contains(CodeRuneS(interner.intern(StrI("T")))))

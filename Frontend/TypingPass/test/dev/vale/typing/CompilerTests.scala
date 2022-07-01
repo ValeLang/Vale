@@ -598,7 +598,7 @@ class CompilerTests extends FunSuite with Matchers {
       """
         |import v.builtins.tup.*;
         |struct MyThing { value int; }
-        |func moo() MyThing { return MyThing(4) }
+        |func moo() MyThing { return MyThing(4); }
         |exported func main() { moo(); }
       """.stripMargin)
 

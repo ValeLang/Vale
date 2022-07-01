@@ -9,22 +9,22 @@ import org.scalatest.Matchers.convertToAnyShouldWrapper
 
 class StringParserTests extends FunSuite with Collector with TestParseUtils {
   test("Simple string") {
-    compileExpression(""""moo"""") shouldHave
+    compileExpressionExpect(""""moo"""") shouldHave
       { case ConstantStrPE(_, "moo") => }
   }
 
   test("String with newline") {
-    compileExpression("\"\"\"m\noo\"\"\"") shouldHave
+    compileExpressionExpect("\"\"\"m\noo\"\"\"") shouldHave
       { case ConstantStrPE(_, "m\noo") => }
   }
 
   test("String with escaped braces") {
-    compileExpression("\"\\{\\}\"") shouldHave
+    compileExpressionExpect("\"\\{\\}\"") shouldHave
       { case ConstantStrPE(_, "{}") => }
   }
 
   test("String with quote inside") {
-    compileExpression(""""m\"oo"""") shouldHave
+    compileExpressionExpect(""""m\"oo"""") shouldHave
       { case ConstantStrPE(_, "m\"oo") => }
   }
 
@@ -34,9 +34,9 @@ class StringParserTests extends FunSuite with Collector with TestParseUtils {
     val lexer = new Lexer(interner, keywords)
     lexer.parseFourDigitHexNum(new LexingIterator("000a", 0)) shouldEqual Some(10)
 
-    compileExpression("\"\\u000a\"") match { case ConstantStrPE(_, "\n") => }
-    compileExpression("\"\\u001b\"") match { case ConstantStrPE(_, "\u001b") => }
-    compileExpression("\"foo\\u001bbar\"") match { case ConstantStrPE(_, "foo\u001bbar") => }
+    compileExpressionExpect("\"\\u000a\"") match { case ConstantStrPE(_, "\n") => }
+    compileExpressionExpect("\"\\u001b\"") match { case ConstantStrPE(_, "\u001b") => }
+    compileExpressionExpect("\"foo\\u001bbar\"") match { case ConstantStrPE(_, "foo\u001bbar") => }
     // FALL NOT TO TEMPTATION
     // Scala has some issues here.
     // The above "\"\\u001b\"" seems like it could be expressed """"\\u001b"""" but it can't.
@@ -51,19 +51,19 @@ class StringParserTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("String with apostrophe inside") {
-    compileExpression(""""m'oo"""") shouldHave
+    compileExpressionExpect(""""m'oo"""") shouldHave
       { case ConstantStrPE(_, "m'oo") => }
-    compileExpression("\"\"\"m\'oo\"\"\"") shouldHave
+    compileExpressionExpect("\"\"\"m\'oo\"\"\"") shouldHave
       { case ConstantStrPE(_, "m'oo") => }
   }
 
   test("Short string interpolating") {
-    compileExpression(""""bl{4}rg"""") shouldHave
+    compileExpressionExpect(""""bl{4}rg"""") shouldHave
       { case StrInterpolatePE(_, Vector(ConstantStrPE(_, "bl"), ConstantIntPE(_, 4, _), ConstantStrPE(_, "rg"))) => }
   }
 
   test("Short string interpolating with call") {
-    compileExpression(""""bl{ns(4)}rg"""") shouldHave
+    compileExpressionExpect(""""bl{ns(4)}rg"""") shouldHave
       {
       case StrInterpolatePE(_,
         Vector(
@@ -74,24 +74,24 @@ class StringParserTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Long string interpolating") {
-    compileExpression("\"\"\"bl{4}rg\"\"\"") shouldHave
+    compileExpressionExpect("\"\"\"bl{4}rg\"\"\"") shouldHave
       { case StrInterpolatePE(_, Vector(ConstantStrPE(_, "bl"), ConstantIntPE(_, 4, _), ConstantStrPE(_, "rg"))) => }
   }
 
   test("Long string doesnt interpolate with brace then newline") {
-    compileExpression(
+    compileExpressionExpect(
       "\"\"\"bl{\n4}rg\"\"\"") shouldHave
       { case ConstantStrPE(_, "bl{\n4}rg") => }
   }
 
   test("Long string interpolates with brace then backslash") {
-    compileExpression(
+    compileExpressionExpect(
       "\"\"\"bl{\\\n4}rg\"\"\"") shouldHave
       { case StrInterpolatePE(_, Vector(ConstantStrPE(_, "bl"), ConstantIntPE(_, 4, _), ConstantStrPE(_, "rg"))) => }
   }
 
   test("Long string interpolating with call") {
-    compileExpression("\"\"\"bl\"{ns(4)}rg\"\"\"") shouldHave
+    compileExpressionExpect("\"\"\"bl\"{ns(4)}rg\"\"\"") shouldHave
       {
       case StrInterpolatePE(_,
       Vector(

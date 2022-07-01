@@ -3,7 +3,7 @@ package dev.vale.parsing
 import dev.vale.{FileCoordinate, FileCoordinateMap}
 import dev.vale.CodeLocationS
 import dev.vale.SourceCodeUtils.{humanizeFile, humanizePos, nextThingAndRestOfLine}
-import dev.vale.lexing.{BadArraySizerEnd, BadAttributeError, BadBinaryFunctionName, BadDestructureError, BadDot, BadEndOfElseBody, BadEndOfIfBody, BadEndOfIfCondition, BadEndOfWhileBody, BadEndOfWhileCondition, BadExpressionBegin, BadExpressionEnd, BadForeachInError, BadFunctionAfterParam, BadFunctionBodyError, BadImplFor, BadInterfaceHeader, BadInterfaceMember, BadLetEndError, BadLetEqualsError, BadLetSourceError, BadLocalName, BadMemberEnd, BadMutateEqualsError, BadRuleCallParam, BadRuneTypeError, BadStartOfBlock, BadStartOfElseBody, BadStartOfIfBody, BadStartOfIfCondition, BadStartOfStatementError, BadStartOfWhileBody, BadStartOfWhileCondition, BadStringChar, BadStringInterpolationEnd, BadStructContentsBegin, BadStructMember, BadTemplateCallParam, BadTypeExpression, CantUseBreakInExpression, CantUseReturnInExpression, DontNeedSemicolon, ForgotSetKeyword, IParseError, IfBlocksMustBothOrNeitherReturn, NeedSemicolon, NeedWhitespaceAroundBinaryOperator, OnlyRegionRunesCanHaveMutability, RangedInternalErrorP, UnknownTupleOrSubExpression, UnrecognizableExpressionAfterAugment, UnrecognizedDenizenError}
+import dev.vale.lexing.{BadArraySizerEnd, BadAttributeError, BadBinaryFunctionName, BadDestructureError, BadDot, BadEndOfElseBody, BadEndOfIfBody, BadEndOfIfCondition, BadEndOfWhileBody, BadEndOfWhileCondition, BadExpressionBegin, BadExpressionEnd, BadForeachInError, BadFunctionAfterParam, BadFunctionBodyError, BadImplFor, BadInterfaceHeader, BadInterfaceMember, BadLetEndError, BadLetEqualsError, BadLetSourceError, BadLocalName, BadMemberEnd, BadMutateEqualsError, BadRuleCallParam, BadRuneTypeError, BadStartOfBlock, BadStartOfElseBody, BadStartOfIfBody, BadStartOfIfCondition, BadStartOfStatementError, BadStartOfWhileBody, BadStartOfWhileCondition, BadStringChar, BadStringInterpolationEnd, BadStructContentsBegin, BadStructMember, BadTemplateCallParam, BadTypeExpression, CantUseBreakInExpression, CantUseReturnInExpression, DontNeedSemicolon, ForgotSetKeyword, IParseError, IfBlocksMustBothOrNeitherReturn, LightFunctionMustHaveParamTypes, NeedSemicolon, NeedWhitespaceAroundBinaryOperator, OnlyRegionRunesCanHaveMutability, RangedInternalErrorP, UnknownTupleOrSubExpression, UnrecognizableExpressionAfterAugment, UnrecognizedDenizenError}
 
 object ParseErrorHumanizer {
   def humanizeFromMap(
@@ -32,6 +32,7 @@ object ParseErrorHumanizer {
         case BadDestructureError(pos) => "Bad destructure."
         case BadTypeExpression(pos) => "Bad type expression."
         case BadLocalName(pos) => "Bad local name."
+        case LightFunctionMustHaveParamTypes(range, paramIndex) => s": Function parameter must have a type!"
         case BadStringInterpolationEnd(pos) => "Bad string interpolation end."
         case CantUseBreakInExpression(pos) => "Can't use break inside an expression."
         case CantUseReturnInExpression(pos) => "Can't use return inside an expression."

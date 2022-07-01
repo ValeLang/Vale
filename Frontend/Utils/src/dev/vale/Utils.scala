@@ -20,6 +20,15 @@ object U {
     }
     result
   }
+  def mapWithIndex[T, R](vec: Array[T], func: scala.Function2[Int, T, R])(implicit m: ClassTag[R]): Array[R] = {
+    val result = new Array[R](vec.size)
+    var i = 0
+    while (i < vec.size) {
+      result(i) = func(i, vec(i))
+      i = i + 1
+    }
+    result
+  }
   def mapVec[T, R](vec: Vector[T], func: scala.Function1[T, R])(implicit m: ClassTag[R]): Vector[R] = {
     val result = new Array[R](vec.size)
     var i = 0

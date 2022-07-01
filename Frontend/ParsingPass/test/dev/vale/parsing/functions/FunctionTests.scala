@@ -3,7 +3,8 @@ package dev.vale.parsing.functions
 import dev.vale.{Collector, StrI, vassertOne}
 import dev.vale.parsing.ast._
 import dev.vale.parsing._
-import dev.vale.lexing.BadFunctionBodyError
+import dev.vale.lexing.{BadFunctionBodyError, LightFunctionMustHaveParamTypes}
+import org.scalatest.Matchers.convertToAnyShouldWrapper
 import org.scalatest.{FunSuite, Matchers}
 
 
@@ -269,7 +270,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Impl function") {
-    compileTopLevel(
+    compileDenizenExpect(
       "func maxHp(virtual this Marine) { return 5; }") shouldHave {
       case FunctionP(_,
         FunctionHeaderP(_,
@@ -289,14 +290,14 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
   }
 
   test("Param") {
-    val program = compileTopLevel("func call(f F){f()}")
+    val program = compileDenizenExpect("func call(f F){f()}")
     program shouldHave {
       case PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, StrI("f")))),Some(NameOrRunePT(NameP(_, StrI("F")))),None,None) =>
     }
   }
 
   test("Func with rules") {
-    compileTopLevel(
+    compileDenizenExpect(
       "func sum () where X int {3}") shouldHave {
       case FunctionP(_,
         FunctionHeaderP(_,
@@ -307,7 +308,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
 
 
   test("Identifying runes") {
-    compileTopLevel(
+    compileDenizenExpect(
       "func wrap<A, F>(a A) { }") shouldHave {
       case FunctionP(_,
         FunctionHeaderP(_,
@@ -327,29 +328,47 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
   test("Never signature") {
     // This test is here because we were parsing the first _ of __Never as an anonymous
     // rune then stopping.
-    compileTopLevel(
+    compileDenizenExpect(
       "func __vbi_panic() __Never {}") shouldHave {
       case NameOrRunePT(NameP(_, StrI("__Never"))) =>
     }
   }
 
+  test("Should require identifying runes") {
+    val error =
+      compileDenizen(
+        """
+          |func do(callable) infer-return {callable()}
+          |""".stripMargin).expectErr().error
+    error match {
+      case LightFunctionMustHaveParamTypes(_, 0) =>
+    }
+  }
+
   test("Short self") {
-    compileTopLevel(
-      "func moo(&self) {}") shouldHave {
-      case TopLevelFunctionP(
-        FunctionP(_,
-          FunctionHeaderP(_,
-            Some(NameP(_, StrI("moo"))),
-            Vector(),None,None,
-            Some(
-              ParamsP(_,
-                Vector(
-                  PatternPP(_,
-                    None,
-                    Some(LocalNameDeclarationP(NameP(_, StrI("self")))),
-                    None,None,None)))),
-            FunctionReturnP(_,None,None)),
-          Some(BlockPE(_,VoidPE(_))))) =>
+    compileDenizenExpect(
+      """
+        |interface IMoo {
+        |  func moo(&self) {}
+        |}
+        |""".stripMargin) shouldHave {
+      case TopLevelInterfaceP(
+        InterfaceP(_,
+          NameP(_,StrI("IMoo")),Vector(),None,None,None,_,
+          Vector(
+            FunctionP(_,
+              FunctionHeaderP(_,
+                Some(NameP(_, StrI("moo"))),
+                Vector(),None,None,
+                Some(
+                  ParamsP(_,
+                    Vector(
+                      PatternPP(_,
+                        Some(_),
+                        Some(LocalNameDeclarationP(NameP(_, StrI("self")))),
+                        None,None,None)))),
+                _),
+              _)))) =>
     }
   }
 }

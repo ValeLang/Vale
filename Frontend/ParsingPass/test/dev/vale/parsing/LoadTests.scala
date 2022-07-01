@@ -1,8 +1,9 @@
 package dev.vale.parsing
 
+import dev.vale.lexing.{Lexer, LexingIterator}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.ConstantStrPE
-import dev.vale.{Collector, Interner, vassert, vimpl}
+import dev.vale.{Collector, Interner, Keywords, vassert, vimpl}
 import net.liftweb.json._
 import dev.vale.parsing.ast.ConstantStrPE
 import dev.vale.von.{JsonSyntax, VonPrinter}
@@ -50,38 +51,42 @@ class LoadTests extends FunSuite with Matchers with Collector with TestParseUtil
   }
 
   test("Strings with special characters") {
-    vimpl()
-//    val p = new Parser(GlobalOptions(true, true, true, true))
-//
-//    val code = "exported func main() str { \"hello\\u001bworld\" }"
-//    // FALL NOT TO TEMPTATION
-//    // Scala has some issues here.
-//    // The above "\"\\u001b\"" seems like it could be expressed """"\\u001b"""" but it can't.
-//    // Nothing seems to work:
-//    // - vassert("\"\\u001b\"" == """"\u001b"""") fails
-//    // - vassert("\"\\u001b\"" == """"\\u001b"""") fails
-//    // - vassert("\"\\u001b\"" == """\"\\u001b\"""") fails
-//    // This took quite a while to figure out.
-//    // So, just stick with regular scala string literals, scala's good with those.
-//    // Other tests have this, search TEMPTATION.
-//    // NOW GO YE AND PROSPER
-//
-//    // This assert makes sure the above is making the input we actually intend.
-//    // Real source files from disk are going to have a backslash character and then a u,
-//    // they won't have the 0x1b byte.
-//    vassert(code.contains("\\u001b"))
-//    val originalFile = p.runParser(code).getOrDie()
-//    originalFile shouldHave { case ConstantStrPE(_, "hello\u001bworld" ) => }
-//
-//    val von = ParserVonifier.vonifyFile(originalFile)
-//    val generatedJsonStr = new VonPrinter(JsonSyntax, 120).print(von)
-////    vassert(generatedJsonStr.contains("hello\u001bworld") || generatedJsonStr.contains("hello\u001Bworld"))
-////    vassert(!generatedJsonStr.contains("hello\\\\u"))
-//    val generatedBytes = generatedJsonStr.getBytes(Charset.forName("UTF-8"))
-//
-//    val loadedJsonStr = new String(generatedBytes, "UTF-8");
-//    val loadedFile = ParsedLoader.load(loadedJsonStr).getOrDie()
-//    // This is because we don't want to enable .equals, see EHCFBD.
-//    originalFile.toString shouldEqual loadedFile.toString
+    val interner = new Interner()
+    val keywords = new Keywords(interner)
+    val lexer = new Lexer(interner, keywords)
+    lexer.parseFourDigitHexNum(new LexingIterator("000a", 0)) shouldEqual Some(10)
+
+    val code = "exported func main() str { \"hello\\u001bworld\" }"
+    // FALL NOT TO TEMPTATION
+    // Scala has some issues here.
+    // The above "\"\\u001b\"" seems like it could be expressed """"\\u001b"""" but it can't.
+    // Nothing seems to work:
+    // - vassert("\"\\u001b\"" == """"\u001b"""") fails
+    // - vassert("\"\\u001b\"" == """"\\u001b"""") fails
+    // - vassert("\"\\u001b\"" == """\"\\u001b\"""") fails
+    // This took quite a while to figure out.
+    // So, just stick with regular scala string literals, scala's good with those.
+    // Other tests have this, search TEMPTATION.
+    // NOW GO YE AND PROSPER
+
+    // This assert makes sure the above is making the input we actually intend.
+    // Real source files from disk are going to have a backslash character and then a u,
+    // they won't have the 0x1b byte.
+    vassert(code.contains("\\u001b"))
+
+    val expr = compileExpressionExpect(code)
+    val von = ParserVonifier.vonifyExpression(expr)
+    val generatedJsonStr = new VonPrinter(JsonSyntax, 120).print(von)
+//    vassert(generatedJsonStr.contains("hello\u001bworld") || generatedJsonStr.contains("hello\u001Bworld"))
+//    vassert(!generatedJsonStr.contains("hello\\\\u"))
+    val generatedBytes = generatedJsonStr.getBytes(Charset.forName("UTF-8"))
+
+    val loader = new ParsedLoader(interner)
+    val loadedJsonStr = new String(generatedBytes, "UTF-8");
+    val jnode = parse(loadedJsonStr)
+    val jobj = loader.expectObject(jnode)
+    val loadedExpr = loader.loadExpression(jobj)
+    // This is because we don't want to enable .equals, see EHCFBD.
+    expr.toString shouldEqual loadedExpr.toString
   }
 }

@@ -1,8 +1,8 @@
 package dev.vale.parsing
 
-import dev.vale.lexing.{FailedParse, IDenizenL, ImportL, LexAndExplore, RangeL, TopLevelExportAsL, TopLevelFunctionL, TopLevelImplL, TopLevelInterfaceL, TopLevelStructL}
+import dev.vale.lexing.{FailedParse, IDenizenL, ImportL, LexAndExplore, RangeL, TopLevelExportAsL, TopLevelFunctionL, TopLevelImplL, TopLevelImportL, TopLevelInterfaceL, TopLevelStructL}
 import dev.vale.options.GlobalOptions
-import dev.vale.parsing.ast.{FileP, IDenizenP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelInterfaceP, TopLevelStructP}
+import dev.vale.parsing.ast.{FileP, IDenizenP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP}
 import dev.vale.von.{JsonSyntax, VonPrinter}
 import dev.vale._
 
@@ -45,9 +45,16 @@ object ParseAndExplore {
       (fileCoord: FileCoordinate, code: String, imports: Array[ImportL], denizenL: IDenizenL) => {
         val denizenP: IDenizenP =
           denizenL match {
+            case TopLevelImportL(imporrt) => {
+              TopLevelImportP(
+                parser.parseImport(imporrt) match {
+                  case Err(e) => return Err(FailedParse(code, fileCoord, e))
+                  case Ok(x) => x
+                })
+            }
             case TopLevelFunctionL(functionL) => {
               TopLevelFunctionP(
-                parser.parseFunction(functionL) match {
+                parser.parseFunction(functionL, false) match {
                   case Err(e) => return Err(FailedParse(code, fileCoord, e))
                   case Ok(x) => x
                 })

@@ -224,10 +224,9 @@ class ExpressionScout(
             partsSE.foldLeft(startingExpr)({
               case (prevExpr, partSE) => {
                 val addCallRange = RangeS(prevExpr.range.end, partSE.range.begin)
-                FunctionCallSE(
-                  addCallRange,
-                  vale.postparsing.OutsideLoadSE(addCallRange, Array(), interner.intern(CodeNameS(keywords.PLUS)), None, LoadAsBorrowP),
-                  Vector(prevExpr, partSE))
+                val callableExpr =
+                  vale.postparsing.OutsideLoadSE(addCallRange, Array(), interner.intern(CodeNameS(keywords.PLUS)), None, LoadAsBorrowP)
+                FunctionCallSE(addCallRange, callableExpr, Vector(prevExpr, partSE))
               }
             })
           (stackFrame1, NormalResult(addedExpr), partsSelfUses, partsChildUses)

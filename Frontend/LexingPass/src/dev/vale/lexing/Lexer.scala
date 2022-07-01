@@ -745,6 +745,14 @@ class Lexer(interner: Interner, keywords: Keywords) {
 
     iter.consumeCommentsAndWhitespace()
 
+    if (iter.trySkip(')')) {
+      return Err(BadStartOfStatementError(iter.getPos()))
+    }
+
+    if (iter.trySkip(']')) {
+      return Err(BadStartOfStatementError(iter.getPos()))
+    }
+
     if (!iter.trySkip('}')) {
       vfail()
     }
@@ -1173,9 +1181,10 @@ class Lexer(interner: Interner, keywords: Keywords) {
     //   """
     // The newline is because we dont want to interpolate when its a { then a newline.
     // If they want that, then they should do {\
-    if (iter.trySkip("{\n")) { // line ending in {\
+    if (iter.trySkip("{\\\n")) { // line ending in {\
       lexScramble(iter, false, false, false).map(Right(_))
-    } else if (iter.trySkip("{\n")) { // line ending in {
+    } else if (iter.peekString("{\n")) { // line ending in {
+      iter.advance()
       Ok(Left('{'))
     } else if (iter.trySkip('{')) { // { with stuff after
       lexScramble(iter, false, false, false).map(Right(_))
@@ -1239,6 +1248,11 @@ class Lexer(interner: Interner, keywords: Keywords) {
   def lexNumber(originalIter: LexingIterator): Result[Option[IParsedNumberLE], IParseError] = {
     val begin = originalIter.getPos()
 
+    // This is so if we have an expression like arr.2.1 to get an element in
+    // a 2D array, we don't interpret that 2.1 as a float.
+    val isName =
+      originalIter.position >= 1 && originalIter.code(originalIter.position - 1) == '.'
+
     val tentativeIter = originalIter.clone()
 
     val negative = tentativeIter.trySkip("-")
@@ -1270,51 +1284,56 @@ class Lexer(interner: Interner, keywords: Keywords) {
     if (iter.peekString("..")) {
       // This is followed by the range operator, so just stop here.
       Ok(Some(ParsedIntegerLE(RangeL(begin, iter.getPos()), integer, None)))
-    } else if (iter.trySkip('.')) {
-      var mantissa = 0.0
-      var digitMultiplier = 1.0
-
-      while ({
-        val c = iter.peek()
-        if (c >= '0' && c <= '9') {
-          digitMultiplier = digitMultiplier * 0.1
-          mantissa = mantissa + (c.toInt - '0') * digitMultiplier
-          iter.advance()
-          true
-        } else {
-          false
-        }
-      }) {}
-
-      if (iter.trySkip("f")) {
-        vimpl()
-      }
-
-      val result = (integer + mantissa) * (if (negative) -1 else 1)
-      Ok(Some(ParsedDoubleLE(RangeL(begin, iter.getPos()), result, None)))
+    } else if (isName) {
+      // This is a name for accessing in a tuple or array, so stop here.
+      Ok(Some(ParsedIntegerLE(RangeL(begin, iter.getPos()), integer, None)))
     } else {
-      val bits =
-        if (iter.trySkip("i")) {
-          var bits = 0L
-          while ({
-            val c = iter.peek()
-            if (c >= '0' && c <= '9') {
-              bits = bits * 10 + (c.toInt - '0')
-              iter.advance()
-              true
-            } else {
-              false
-            }
-          }) {}
-          vassert(bits > 0)
-          Some(bits)
-        } else {
-          None
+      if (iter.trySkip('.')) {
+        var mantissa = 0.0
+        var digitMultiplier = 1.0
+
+        while ( {
+          val c = iter.peek()
+          if (c >= '0' && c <= '9') {
+            digitMultiplier = digitMultiplier * 0.1
+            mantissa = mantissa + (c.toInt - '0') * digitMultiplier
+            iter.advance()
+            true
+          } else {
+            false
+          }
+        }) {}
+
+        if (iter.trySkip("f")) {
+          vimpl()
         }
 
-      val result = integer * (if (negative) -1 else 1)
+        val result = (integer + mantissa) * (if (negative) -1 else 1)
+        Ok(Some(ParsedDoubleLE(RangeL(begin, iter.getPos()), result, None)))
+      } else {
+        val bits =
+          if (iter.trySkip("i")) {
+            var bits = 0L
+            while ( {
+              val c = iter.peek()
+              if (c >= '0' && c <= '9') {
+                bits = bits * 10 + (c.toInt - '0')
+                iter.advance()
+                true
+              } else {
+                false
+              }
+            }) {}
+            vassert(bits > 0)
+            Some(bits)
+          } else {
+            None
+          }
 
-      Ok(Some(ParsedIntegerLE(RangeL(begin, iter.getPos()), result, bits)))
+        val result = integer * (if (negative) -1 else 1)
+
+        Ok(Some(ParsedIntegerLE(RangeL(begin, iter.getPos()), result, bits)))
+      }
     }
   }
 }

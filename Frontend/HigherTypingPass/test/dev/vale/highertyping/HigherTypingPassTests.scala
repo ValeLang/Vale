@@ -162,7 +162,7 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
     val astrouts = compilation.getAstrouts().getOrDie()
     val program = vassertSome(astrouts.get(PackageCoordinate.TEST_TLD(compilation.interner, compilation.keywords)))
     val main = program.lookupFunction("moo")
-    main.runeToType(CodeRuneS(StrI("P"))) shouldEqual PackTemplataType(CoordTemplataType)
+    main.runeToType(CodeRuneS(compilation.interner.intern(StrI("P")))) shouldEqual PackTemplataType(CoordTemplataType)
   }
 
 //  test("Test cant solve empty Pack") {

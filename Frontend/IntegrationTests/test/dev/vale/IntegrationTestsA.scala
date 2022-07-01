@@ -629,11 +629,11 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val interner = compile.interner
     val keywords = compile.keywords
 
-    vassertSome(hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(FunctionNameT(StrI("helperFunc"), Vector.empty, Vector(CoordT(ShareT, IntT.i32))))))))
+    vassertSome(hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(FunctionNameT(interner.intern(StrI("helperFunc")), Vector.empty, Vector(CoordT(ShareT, IntT.i32))))))))
 
-    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(FunctionNameT(StrI("bork"), Vector.empty, Vector(CoordT(ShareT, StrT()))))))))
+    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(FunctionNameT(interner.intern(StrI("bork")), Vector.empty, Vector(CoordT(ShareT, StrT()))))))))
 
-    vassert(None == hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(FunctionNameT(StrI("helperFunc"), Vector.empty, Vector(CoordT(ShareT, StrT()))))))))
+    vassert(None == hinputs.lookupFunction(ast.SignatureT(FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(FunctionNameT(interner.intern(StrI("helperFunc")), Vector.empty, Vector(CoordT(ShareT, StrT()))))))))
   }
 
   test("Test overloading between borrow and weak") {

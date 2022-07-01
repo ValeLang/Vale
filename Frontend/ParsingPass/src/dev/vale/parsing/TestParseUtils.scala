@@ -1,7 +1,7 @@
 package dev.vale.parsing
 
 import dev.vale.lexing.{FailedParse, IParseError, Lexer, LexingIterator}
-import dev.vale.{Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Keywords, Ok, PackageCoordinate, PackageCoordinateMap, Result, vassertOne, vassertSome, vfail, vimpl}
+import dev.vale.{Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Keywords, Ok, PackageCoordinate, PackageCoordinateMap, Result, SourceCodeUtils, vassertOne, vassertSome, vfail, vimpl}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.{FileP, IDenizenP, IExpressionPE, IRulexPR, ITemplexPT, PatternPP}
 import dev.vale.parsing.templex.TemplexParser
@@ -102,22 +102,8 @@ trait TestParseUtils {
 //    }
   }
 
-  def compileExpression(code: String): IExpressionPE = {
-    compileExpr(code)
-//    compile(
-//      makeExpressionParser()
-//        .parseExpression(_, StopBeforeCloseBrace), code)
-  }
-
-  def compileTopLevel(code: String): IDenizenP = {
-    compileDenizen(code).getOrDie()
-  }
-
   def compileExpressionForError(code: String): IParseError = {
-    vimpl()
-//    compileForError(
-//      makeExpressionParser()
-//        .parseBlockContents(_, StopBeforeCloseBrace), code)
+    compileExpression(code).expectErr()
   }
 
   def makeParser(): Parser = {
@@ -146,7 +132,7 @@ trait TestParseUtils {
       new IPackageResolver[Map[String, String]]() {
         override def resolve(packageCoord: PackageCoordinate): Option[Map[String, String]] = {
           // For testing the parser, we dont want it to fetch things with import statements
-          Some(codeMap.resolve(packageCoord).getOrElse(Map("" -> "")))
+          Some(codeMap.resolve(packageCoord).getOrElse(Map()))
         }
       }) match {
       case Err(e) => Err(e)
@@ -187,10 +173,17 @@ trait TestParseUtils {
   }
 
   def compileDenizenExpect(code: String): IDenizenP = {
-    compileDenizen(code).getOrDie()
+    compileDenizen(code) match {
+      case Err(FailedParse(code, fileCoord, error)) => {
+        vfail(
+          ParseErrorHumanizer.humanize(
+            SourceCodeUtils.humanizeFile(fileCoord), code, error))
+      }
+      case Ok(x) => x
+    }
   }
 
-  def compileExpr(code: String): IExpressionPE = {
+  def compileExpression(code: String): Result[IExpressionPE, IParseError] = {
     val opts = GlobalOptions(true, false, true, true)
     val interner = new Interner()
     val keywords = new Keywords(interner)
@@ -199,34 +192,46 @@ trait TestParseUtils {
       lexer.lexScramble(LexingIterator(code), false, false, false)
         .getOrDie()
     val parser = new Parser(interner, keywords, opts)
-    val exprP = parser.expressionParser.parseExpression(new ScrambleIterator(node)).getOrDie()
-    exprP
+    parser.expressionParser.parseExpression(new ScrambleIterator(node), false)
   }
 
-  def compileBlockContents(code: String): IExpressionPE = {
+  def compileExpressionExpect(code: String): IExpressionPE = {
+    compileExpression(code).getOrDie()
+  }
+
+  def compileBlockContents(code: String): Result[IExpressionPE, IParseError] = {
+    val opts = GlobalOptions(true, false, true, true)
+    val interner = new Interner()
+    val keywords = new Keywords(interner)
+    val lexer = new Lexer(interner, keywords)
+    val iter = LexingIterator(code)
+    val node =
+      lexer.lexScramble(iter, false, false, false)
+        .getOrDie()
+    val parser = new Parser(interner, keywords, opts)
+    parser.expressionParser.parseBlockContents(new ScrambleIterator(node), false)
+  }
+
+  def compileBlockContentsExpect(code: String): IExpressionPE = {
+    compileBlockContents(code).getOrDie()
+  }
+
+  def compileStatement(code: String): Result[IExpressionPE, IParseError] = {
     val opts = GlobalOptions(true, false, true, true)
     val interner = new Interner()
     val keywords = new Keywords(interner)
     val lexer = new Lexer(interner, keywords)
     val node =
-      lexer.lexScramble(LexingIterator(code), false, false, false)
-        .getOrDie()
+      lexer.lexScramble(LexingIterator(code), false, false, false) match {
+        case Err(e) => return Err(e)
+        case Ok(x) => x
+      }
     val parser = new Parser(interner, keywords, opts)
-    val exprP = parser.expressionParser.parseBlockContents(new ScrambleIterator(node)).getOrDie()
-    exprP
+    parser.expressionParser.parseStatement(new ScrambleIterator(node), false)
   }
 
-  def compileStatement(code: String): IExpressionPE = {
-    val opts = GlobalOptions(true, false, true, true)
-    val interner = new Interner()
-    val keywords = new Keywords(interner)
-    val lexer = new Lexer(interner, keywords)
-    val node =
-      lexer.lexScramble(LexingIterator(code), false, false, false)
-        .getOrDie()
-    val parser = new Parser(interner, keywords, opts)
-    val exprP = parser.expressionParser.parseStatement(new ScrambleIterator(node)).getOrDie()
-    exprP
+  def compileStatementExpect(code: String): IExpressionPE = {
+    compileStatement(code).getOrDie()
   }
 
   def compilePattern(code: String): PatternPP = {

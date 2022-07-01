@@ -18,7 +18,7 @@ case class FileP(
   def lookupFunction(name: String) = {
     val results =
       denizens.collect({
-        case TopLevelFunctionP(f) if f.header.name.exists(_.str == name) => f
+        case TopLevelFunctionP(f) if f.header.name.exists(_.str.str == name) => f
       })
     vassert(results.size == 1)
     results.head

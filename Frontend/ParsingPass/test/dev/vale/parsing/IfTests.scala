@@ -9,7 +9,7 @@ import org.scalatest.{FunSuite, Matchers}
 
 class IfTests extends FunSuite with Matchers with Collector with TestParseUtils {
   test("ifs") {
-    compileExpression("if true { doBlarks(&x) } else { }") shouldHave {
+    compileExpressionExpect("if true { doBlarks(&x) } else { }") shouldHave {
 
       case IfPE(_,
         ConstantBoolPE(_, true),
@@ -22,7 +22,7 @@ class IfTests extends FunSuite with Matchers with Collector with TestParseUtils 
   }
 
   test("if let") {
-    compileExpression("if [u] = a {}") shouldHave {
+    compileExpressionExpect("if [u] = a {}") shouldHave {
       case IfPE(_,
         LetPE(_,
           PatternPP(_,None,None,None,
@@ -38,7 +38,7 @@ class IfTests extends FunSuite with Matchers with Collector with TestParseUtils 
   }
 
   test("If with condition declarations") {
-    compileExpression("if x = 4; not x.isEmpty() { }") shouldHave {
+    compileExpressionExpect("if x = 4; not x.isEmpty() { }") shouldHave {
       case IfPE(_,
         ConsecutorPE(
           Vector(
@@ -50,7 +50,7 @@ class IfTests extends FunSuite with Matchers with Collector with TestParseUtils 
   }
 
   test("19") {
-    compileBlockContents(
+    compileBlockContentsExpect(
       "newLen = if num == 0 { 1 } else { 2 };") shouldHave {
       case ConsecutorPE(
         Vector(

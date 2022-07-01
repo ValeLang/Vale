@@ -3,7 +3,7 @@ package dev.vale.parsing
 import dev.vale.{Err, Interner, Keywords, Ok, Result, StrI, U, vassert, vassertSome, vimpl, vwat}
 import dev.vale.parsing.ast.{AbstractP, ConstructingMemberNameDeclarationP, DestructureP, INameDeclarationP, IgnoredLocalNameDeclarationP, LocalNameDeclarationP, NameP, PatternPP}
 import dev.vale.parsing.templex.TemplexParser
-import dev.vale.lexing.{BadDestructureError, BadLocalName, BadNameBeforeDestructure, BadThingAfterTypeInPattern, EmptyParameter, EmptyPattern, FoundBothAbstractAndOverride, FoundParameterWithoutType, INodeLE, IParseError, RangeL, RangedInternalErrorP, ScrambleLE, SquaredLE, SymbolLE, WordLE}
+import dev.vale.lexing.{BadDestructureError, BadLocalName, BadNameBeforeDestructure, BadThingAfterTypeInPattern, EmptyParameter, EmptyPattern, FoundBothAbstractAndOverride, INodeLE, IParseError, LightFunctionMustHaveParamTypes, RangeL, RangedInternalErrorP, ScrambleLE, SquaredLE, SymbolLE, WordLE}
 import dev.vale.parsing.ast._
 
 import scala.collection.mutable
@@ -103,7 +103,7 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
 //    Ok(Some(OverrideP(RangeP(begin, iter.getPos()), tyype)))
 //  }
 
-  def parseParameter(iter: ScrambleIterator, isInLambda: Boolean): Result[PatternPP, IParseError] = {
+  def parseParameter(iter: ScrambleIterator, index: Int, isInCitizen: Boolean, isInLambda: Boolean): Result[PatternPP, IParseError] = {
     val patternRange = iter.range
 
     val maybeVirtual =
@@ -144,10 +144,13 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
         }
       } else {
         if (isInLambda) {
-          // Allow it
+          // Allow it, lambdas can figure out their type from the callee.
+          None
+        } else if (isInCitizen) {
+          // Allow it, just assume it's the containing struct.
           None
         } else {
-          return Err(FoundParameterWithoutType(patternRange.end))
+          return Err(LightFunctionMustHaveParamTypes(patternRange.end, index))
         }
       }
 

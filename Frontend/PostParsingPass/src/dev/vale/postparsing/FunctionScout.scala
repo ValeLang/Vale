@@ -106,9 +106,8 @@ class FunctionScout(
     val patternsP =
       paramsP.toVector.map(_.patterns).flatten.zipWithIndex.map({
         case (pattern, index) => {
-          if (pattern.templex.isEmpty) {
-            throw CompileErrorExceptionS(LightFunctionMustHaveParamTypes(rangeS, index))
-          }
+          // Should have been caught by LightFunctionMustHaveParamTypes error in parser,
+          vassert(pattern.templex.nonEmpty)
           pattern
         }
       })

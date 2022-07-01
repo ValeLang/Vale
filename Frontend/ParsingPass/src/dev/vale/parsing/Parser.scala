@@ -19,80 +19,6 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
   val patternParser = new PatternParser(interner, keywords, templexParser)
   val expressionParser = new ExpressionParser(interner, keywords, opts, patternParser, templexParser)
 
-//  def runParserForProgramAndCommentRanges(codeWithComments: String): Result[(FileP, Vector[(Int, Int)]), IParseError] = {
-//    Profiler.frame(() => {
-//      val regex = "(\\.\\.\\.|//[^\\r\\n]*|«\\w+»)".r
-//      val commentRanges = regex.findAllMatchIn(codeWithComments).map(mat => (mat.start, mat.end)).toVector
-//      var code = codeWithComments
-//      commentRanges.foreach({ case (begin, end) =>
-//        code = code.substring(0, begin) + repeatStr(" ", (end - begin)) + code.substring(end)
-//      })
-//      val codeWithoutComments = code
-//
-//      runParser(codeWithoutComments) match {
-//        case f@Err(err) => Err(err)
-//        case Ok(program0) => Ok((program0, commentRanges))
-//      }
-//    })
-//  }
-
-  private[parsing] def parseDenizen(denizen: IDenizenL): Result[IDenizenP, IParseError] = {
-    denizen match {
-      case TopLevelFunctionL(f @ FunctionL(_, _, _)) => parseFunction(f).map(TopLevelFunctionP)
-    }
-  }
-
-  def parseTemplateRules(node: INodeLE):
-  Result[Option[TemplateRulesP], IParseError] = {
-    vimpl()
-//    val rules = ArrayBuffer[IRulexPR]()
-//
-//    rules +=
-//      (templexParser.parseRule(iter) match {
-//        case Err(e) => return Err(e)
-//        case Ok(x) => x
-//      })
-//
-//    while (iter.trySkip(",")) {
-//      rules +=
-//        (templexParser.parseRule(iter) match {
-//          case Err(e) => return Err(e)
-//          case Ok(x) => x
-//        })
-//    }
-//
-//    Ok(Some(TemplateRulesP(node.range, rules.toVector)))
-  }
-
-  private def parseCitizenSuffix(iter: ScrambleIterator):
-  Result[(RangeL, Option[ITemplexPT], Option[TemplateRulesP]), IParseError] = {
-    vimpl()
-//    parseTemplateRules(iter) match {
-//      case Err(e) => return Err(e)
-//      case Ok(Some(r)) => Ok(RangeL(iter.getPos(), iter.getPos()), None, Some(r))
-//      case Ok(None) => {
-//        val mutabilityBegin = iter.getPos()
-//        val maybeMutability =
-//          if (iter.peek(() => "^\\s*where")) {
-//            None
-//          } else if (iter.peek(() => "^\\s*\\{")) {
-//            None
-//          } else {
-//            templexParser.parseTemplex(iter) match {
-//              case Err(e) => return Err(e)
-//              case Ok(x) => Some(x)
-//            }
-//          }
-//        val mutabilityRange = RangeL(mutabilityBegin, iter.getPos())
-//
-//        parseTemplateRules(iter) match {
-//          case Err(e) => return Err(e)
-//          case Ok(maybeTemplateRules) => Ok((mutabilityRange, maybeMutability, maybeTemplateRules))
-//        }
-//      }
-//    }
-  }
-
   private[parsing] def parseIdentifyingRune(iter: ScrambleIterator):
   Result[IdentifyingRuneP, IParseError] = {
     val range = iter.range
@@ -336,7 +262,7 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
           U.map[FunctionL, FunctionP](
             methodsL,
             methodL => {
-              parseFunction(methodL) match {
+              parseFunction(methodL, true) match {
                 case Err(e) => return Err(e)
                 case Ok(x) => x
               }
@@ -521,50 +447,23 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
     Ok(ast.ExportAsP(expoort.range, exportee, name))
   }
 
-  private def parseImport(
-    iter: ScrambleIterator,
-    begin: Int,
-    attributes: Vector[IAttributeP]):
-  Result[Option[ImportP], IParseError] = {
-    vimpl()
+  def parseImport(
+    importL: ImportL):
+  Result[ImportP, IParseError] = {
+    val ImportL(range, moduleNameL, packageStepsL, importeeNameL) = importL
 
-//    if (!iter.trySkipWord(impoort)) {
-//      return Ok(None)
-//    }
-//
-//    if (attributes.nonEmpty) {
-//      return Err(UnexpectedAttributes(iter.getPos()))
-//    }
-//
-//    val steps = mutable.ArrayBuffer[NameP]()
-//    while ({
-//      val stepBegin = iter.getPos()
-//      val name =
-//        if (iter.trySkip("\\*")) {
-//          NameP(RangeL(stepBegin, iter.getPos()), "*")
-//        } else {
-//          Parser.parseTypeName(iter) match {
-//            case None => return Err(BadImportName(iter.getPos()))
-//            case Some(n) => n
-//          }
-//        }
-//      steps += name
-//
-//      if (iter.trySkip("\\.")) {
-//
-//        true
-//      } else if (iter.trySkip(";")) {
-//        false
-//      } else {
-//        return Err(BadImportEnd(iter.getPos()))
-//      }
-//    }) {}
-//
-//    val moduleName = steps.head
-//    val importee = steps.last
-//    val packageSteps = steps.init.tail
-//    val imporrt = ast.ImportP(ast.RangeL(begin, iter.getPos()), moduleName, packageSteps.toVector, importee)
-//    Ok(Some(imporrt))
+    val WordLE(moduleNameRange, moduleNameStr) = moduleNameL
+    val moduleNameP = NameP(moduleNameRange, moduleNameStr)
+
+    val packageStepsP =
+      packageStepsL.map({ case WordLE(moduleNameRange, moduleNameStr) =>
+        NameP(moduleNameRange, moduleNameStr)
+      })
+
+    val WordLE(importeeNameRange, importeeNameStr) = importeeNameL
+    val importeeNameP = NameP(importeeNameRange, importeeNameStr)
+
+    Ok(ImportP(range, moduleNameP, packageStepsP.toVector, importeeNameP))
   }
 
   // Returns:
@@ -601,7 +500,7 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
     }
   }
 
-  def parseFunction(functionL: FunctionL):
+  def parseFunction(functionL: FunctionL, isInCitizen: Boolean):
   Result[FunctionP, IParseError] = {
     Profiler.frame(() => {
       val FunctionL(funcRangeL, headerL, maybeBodyL) = functionL
@@ -619,10 +518,10 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
       val paramsP =
         ParamsP(
           paramsL.range,
-          U.map[ScrambleIterator, PatternPP](
+          U.mapWithIndex[ScrambleIterator, PatternPP](
             new ScrambleIterator(paramsL.contents).splitOnSymbol(',', false),
-            patternIter => {
-              patternParser.parseParameter(patternIter, false) match {
+            (index, patternIter) => {
+              patternParser.parseParameter(patternIter, index, isInCitizen, false) match {
                 case Err(e) => return Err(e)
                 case Ok(x) => x
               }

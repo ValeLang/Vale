@@ -63,13 +63,13 @@ class CompilerSolverTests extends FunSuite with Matchers {
       Vector(
         CoordComponentsSR(
           makeRange(0, codeStr.length),
-          RuneUsage(makeRange(6, 7), CodeRuneS(StrI("I"))),
-          RuneUsage(makeRange(11, 12), CodeRuneS(StrI("A"))),
+          RuneUsage(makeRange(6, 7), CodeRuneS(interner.intern(StrI("I")))),
+          RuneUsage(makeRange(11, 12), CodeRuneS(interner.intern(StrI("A")))),
           RuneUsage(makeRange(33, 52), ImplicitRuneS(LocationInDenizen(Vector(7))))),
         KindComponentsSR(
           makeRange(33, 52),
           RuneUsage(makeRange(33, 52), ImplicitRuneS(LocationInDenizen(Vector(7)))),
-          RuneUsage(makeRange(43, 45), CodeRuneS(StrI("An")))))
+          RuneUsage(makeRange(43, 45), CodeRuneS(interner.intern(StrI("An"))))))
 
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       TypingPassSolverError(
@@ -81,7 +81,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
               Vector(),
               Vector(),
               Map(
-                CodeRuneS(StrI("A")) -> OwnershipTemplata(OwnT)))),
+                CodeRuneS(interner.intern(StrI("A"))) -> OwnershipTemplata(OwnT)))),
           unsolvedRules,
           RuleError(KindIsNotConcrete(ispaceshipKind)))))
       .nonEmpty)
@@ -97,12 +97,12 @@ class CompilerSolverTests extends FunSuite with Matchers {
                 Vector(),
                 Vector(),
                 Map(
-                  CodeRuneS(StrI("A")) -> OwnershipTemplata(OwnT)))),
+                  CodeRuneS(interner.intern(StrI("A"))) -> OwnershipTemplata(OwnT)))),
             unsolvedRules,
             Set(
-              CodeRuneS(StrI("I")),
-              CodeRuneS(StrI("Of")),
-              CodeRuneS(StrI("An")),
+              CodeRuneS(interner.intern(StrI("I"))),
+              CodeRuneS(interner.intern(StrI("Of"))),
+              CodeRuneS(interner.intern(StrI("An"))),
               ImplicitRuneS(LocationInDenizen(Vector(7)))))))
     println(errorText)
     vassert(errorText.nonEmpty)
@@ -305,17 +305,18 @@ class CompilerSolverTests extends FunSuite with Matchers {
   }
 
   test("Reports incomplete solve") {
+    val interner = new Interner()
     val compile = CompilerTestCompilation.test(
       """
         |import v.builtins.tup.*;
         |exported func main() int where N int {
         |  M
         |}
-        |""".stripMargin
-    )
+        |""".stripMargin,
+      interner)
     compile.getCompilerOutputs() match {
       case Err(TypingPassSolverError(_,IncompleteSolve(_,Vector(),unsolved))) => {
-        unsolved shouldEqual Set(CodeRuneS(StrI("N")))
+        unsolved shouldEqual Set(CodeRuneS(interner.intern(interner.intern(StrI("N")))))
       }
     }
   }

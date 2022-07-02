@@ -39,7 +39,7 @@ jobs:
           path: ./release-ubuntu/Vale-Ubuntu-0.zip
 
   build_and_test_mac:
-    runs-on: macos-latest
+    runs-on: macOS-11
     steps: 
       - uses: actions/checkout@v2
       - name: install prereqs

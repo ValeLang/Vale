@@ -289,7 +289,7 @@ object PassManager {
           (if (packageCoord.isInternal) {
             "__vale"
           } else {
-            packageCoord.module + packageCoord.packages.map("." + _).mkString("")
+            packageCoord.module.str + packageCoord.packages.map("." + _.str).mkString("")
           }) +
           ".vast"
         val json = jsonifyPackage(compilation.getVonHammer(), packageCoord, paackage)

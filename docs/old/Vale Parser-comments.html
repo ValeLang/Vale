@@ -1,0 +1,92 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Vale Parser Comments</title><style>
+    .comment {
+      overflow: hidden;
+      padding: 18px 0 7px 0;
+      clear: both;
+    }
+
+    .comment + .comment {
+      border-top: 1px solid #e8e8e8;
+    }
+
+    .comment > .json {
+      display: none;
+    }
+
+    .comment-box {
+      background-color: #fffbe1;
+      overflow: hidden;
+      padding: 6px 12px;
+      margin-bottom: 8px;
+    }
+
+    .reply-box {
+      background-color: #eff2f9;
+      padding: 6px 12px 6px 6px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .user-name {
+      font-weight: bold;
+      padding-right: 10px;
+    }
+
+    .comment > .author-picture {
+      float: left;
+      padding: 0 20px;
+    }
+
+    .reply-box > .author-picture {
+      float: left;
+      padding: 0 6px;
+    }
+
+    .comment-deleted {
+      color: red;
+      padding-right: 10px;
+    }
+
+    .author-picture + div, .user-name, .user-name + .comment-deleted, .user-name + .comment-action {
+      float: left;
+    }
+
+    .created-date {
+      color: #999;
+    }
+
+    .comment-box .comment-content {
+      clear: both;
+    }
+
+    .comment-box > .created-date {
+      float: right;
+    }
+
+    .reply-box .created-date {
+      clear: both;
+    }
+
+    .comment-context-intro {
+      color: #999;
+      clear: both;
+    }
+
+    .comment-context-value {
+      border-left: 1px solid #ccc;
+      font-style: italic;
+      padding: 3px 10px 3px 10px;
+    }
+
+    .comment-action {
+      font-style: italic;
+    }
+
+    .comment-status {
+      font-style: italic;
+      color: green;
+      float: left;
+      font-weight: bold;
+      padding-right: 10px;
+    }
+  </style></head><body><section class="header"><h1>Vale Parser - Drive File Comments</h1></section><section><div id="AAAAG-VH7qA" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a/AATXAJxCEArbKudCh8sW4KbFGucnRTV39XZ4XnlB01hm=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Eske Hansen</div><div class="comment-status"></div><div class="created-date">Sep 20, 2020, 3:43 PM(edited: Sep 20, 2020, 6:54 PM)</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">?</div></div><div class="comment-content">Isn&#39;t this required?</div></div><div class="reply-list"><div id="AAAAG-VH7qw" class="reply-box"><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="24" height="24" alt="Author profile image"></div><div class="reply-data"><div class="user-name">Evan Ovadia</div><div class="comment-content">This is so the site can have a snippet like:<br>struct Spaceship {<br>  ...<br>}<br>but in actual code we often see:<br>struct Spaceship { }<br>so we dont need the ...</div><div class="created-date">Sep 20, 2020, 5:49 PM</div></div></div><div id="AAAAG-VH7q0" class="reply-box"><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="24" height="24" alt="Author profile image"></div><div class="reply-data"><div class="user-name">Evan Ovadia</div><div class="comment-content">Scratch that, you&#39;re totally right, that whitespace is required!</div><div class="created-date">Sep 20, 2020, 6:54 PM</div></div></div></div></div></div><div id="AAAAJ6PbeFU" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Sep 14, 2020, 1:36 AM</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">export<br>imm<br>rules(N int)</div></div><div class="comment-content">i ackn this is a language design mess, there&#39;s definitely some room for improvement here lol</div></div><div class="reply-list"></div></div></div><div id="AAAAJ6PbeFI" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Sep 13, 2020, 11:44 PM</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">pos ~ (&amp;quot;&amp;#39;&amp;quot; ~&amp;gt; white? ~&amp;gt; exprIdentifier &amp;lt;~ white?)? ~</div></div><div class="comment-content">Another regions hack for syntax highlighting</div></div><div class="reply-list"></div></div></div><div id="AAAAJ6PbeFE" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Sep 13, 2020, 11:41 PM</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">(&amp;quot;&amp;#39;&amp;quot; ~&amp;gt; white? ~&amp;gt; exprIdentifier &amp;lt;~ white?)? ~&amp;gt;</div></div><div class="comment-content">This is here for the snippets on the site that show a future addition to the language (regions)</div></div><div class="reply-list"></div></div></div><div id="AAAAJ6PbeDM" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Sep 13, 2020, 11:26 PM</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">&amp;quot;...&amp;quot; &amp;lt;~ white?</div></div><div class="comment-content">This is here for the syntax highlighter on the site to allow us to say ... for examples</div></div><div class="reply-list"></div></div></div></section></body></html>

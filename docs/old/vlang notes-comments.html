@@ -1,0 +1,92 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>vlang notes Comments</title><style>
+    .comment {
+      overflow: hidden;
+      padding: 18px 0 7px 0;
+      clear: both;
+    }
+
+    .comment + .comment {
+      border-top: 1px solid #e8e8e8;
+    }
+
+    .comment > .json {
+      display: none;
+    }
+
+    .comment-box {
+      background-color: #fffbe1;
+      overflow: hidden;
+      padding: 6px 12px;
+      margin-bottom: 8px;
+    }
+
+    .reply-box {
+      background-color: #eff2f9;
+      padding: 6px 12px 6px 6px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .user-name {
+      font-weight: bold;
+      padding-right: 10px;
+    }
+
+    .comment > .author-picture {
+      float: left;
+      padding: 0 20px;
+    }
+
+    .reply-box > .author-picture {
+      float: left;
+      padding: 0 6px;
+    }
+
+    .comment-deleted {
+      color: red;
+      padding-right: 10px;
+    }
+
+    .author-picture + div, .user-name, .user-name + .comment-deleted, .user-name + .comment-action {
+      float: left;
+    }
+
+    .created-date {
+      color: #999;
+    }
+
+    .comment-box .comment-content {
+      clear: both;
+    }
+
+    .comment-box > .created-date {
+      float: right;
+    }
+
+    .reply-box .created-date {
+      clear: both;
+    }
+
+    .comment-context-intro {
+      color: #999;
+      clear: both;
+    }
+
+    .comment-context-value {
+      border-left: 1px solid #ccc;
+      font-style: italic;
+      padding: 3px 10px 3px 10px;
+    }
+
+    .comment-action {
+      font-style: italic;
+    }
+
+    .comment-status {
+      font-style: italic;
+      color: green;
+      float: left;
+      font-weight: bold;
+      padding-right: 10px;
+    }
+  </style></head><body><section class="header"><h1>vlang notes - Drive File Comments</h1></section><section><div id="AAAABTjm-pc" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Aug 4, 2017, 6:57 AM</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">if(condition: ()bool)(body: ()#T) {<br>	__if(condition, body)<br>}</div></div><div class="comment-content">we might need native support to handle else ifs and elses...</div></div><div class="reply-list"></div></div></div><div id="AAAABTjm-pY" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Aug 4, 2017, 6:21 AM</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">&amp;amp;</div></div><div class="comment-content">does this mean that this is the lend operator?</div></div><div class="reply-list"></div></div></div><div id="AAAABPjp6AA" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Aug 3, 2017, 5:30 AM</div><div class="comment-content">what if we say that tuples have to use tup(fdsf, sfdsf, sdfdsf), which frees up [] for possible use in lambdas, meaning we dont have to have lam?<br><br>(probably better the way it is)</div></div><div class="reply-list"></div></div></div><div id="AAAABPig6Zg" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status">Resolved</div><div class="created-date">Aug 1, 2017, 5:22 PM</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">myList.foldLeftStartingWith(0){ _ + _ }</div></div><div class="comment-content">alternate syntax:<br>myList foldLeftStartingWith 0 {_ + _}</div></div><div class="reply-list"><div id="AAAABPig6Zk" class="reply-box"><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="24" height="24" alt="Author profile image"></div><div class="reply-data"><div class="user-name">Evan Ovadia</div><div class="comment-action">Marked as resolved</div><div class="comment-content"></div><div class="created-date">Aug 1, 2017, 5:22 PM</div></div></div></div></div></div><div id="AAAAA_k-0ik" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Aug 1, 2017, 5:51 AM</div><div class="comment-content">write here about what match statements would look like?</div></div><div class="reply-list"></div></div></div></section></body></html>

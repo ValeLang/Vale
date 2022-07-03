@@ -1,0 +1,92 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Thesis Draft Comments</title><style>
+    .comment {
+      overflow: hidden;
+      padding: 18px 0 7px 0;
+      clear: both;
+    }
+
+    .comment + .comment {
+      border-top: 1px solid #e8e8e8;
+    }
+
+    .comment > .json {
+      display: none;
+    }
+
+    .comment-box {
+      background-color: #fffbe1;
+      overflow: hidden;
+      padding: 6px 12px;
+      margin-bottom: 8px;
+    }
+
+    .reply-box {
+      background-color: #eff2f9;
+      padding: 6px 12px 6px 6px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .user-name {
+      font-weight: bold;
+      padding-right: 10px;
+    }
+
+    .comment > .author-picture {
+      float: left;
+      padding: 0 20px;
+    }
+
+    .reply-box > .author-picture {
+      float: left;
+      padding: 0 6px;
+    }
+
+    .comment-deleted {
+      color: red;
+      padding-right: 10px;
+    }
+
+    .author-picture + div, .user-name, .user-name + .comment-deleted, .user-name + .comment-action {
+      float: left;
+    }
+
+    .created-date {
+      color: #999;
+    }
+
+    .comment-box .comment-content {
+      clear: both;
+    }
+
+    .comment-box > .created-date {
+      float: right;
+    }
+
+    .reply-box .created-date {
+      clear: both;
+    }
+
+    .comment-context-intro {
+      color: #999;
+      clear: both;
+    }
+
+    .comment-context-value {
+      border-left: 1px solid #ccc;
+      font-style: italic;
+      padding: 3px 10px 3px 10px;
+    }
+
+    .comment-action {
+      font-style: italic;
+    }
+
+    .comment-status {
+      font-style: italic;
+      color: green;
+      float: left;
+      font-weight: bold;
+      padding-right: 10px;
+    }
+  </style></head><body><section class="header"><h1>Thesis Draft - Drive File Comments</h1></section><section><div id="AAAAIU46jUA" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Apr 20, 2021, 11:55 PM(edited: Apr 23, 2021, 4:12 AM)</div><div class="comment-content"><div style="font-size:13px;color:#333"><span style="font-weight:bold">Add:</span> <span style="white-space:pre-line;color:#777;font-style:italic">“At run-time,”</span></div></div></div><div class="reply-list"><div id="AAAAMOTfMo0" class="reply-box"><div class="author-picture"><img src="https://lh3.googleusercontent.com/a/AATXAJwYthrgOXuziPg39wCu8ceCQPItvC-6_aQE8Iq6Og=s50-c-k-no" width="24" height="24" alt="Author profile image"></div><div class="reply-data"><div class="user-name">Theo Watkins</div><div class="comment-action">Accepted suggestion</div><div class="comment-content"></div><div class="created-date">Apr 23, 2021, 4:12 AM</div></div></div></div></div></div><div id="AAAAIU46jT8" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Apr 20, 2021, 11:55 PM</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">.</div></div><div class="comment-content">mention cache misses, itll sound hella smrt</div></div><div class="reply-list"></div></div></div><div id="AAAAIU46jT4" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Apr 20, 2021, 11:54 PM</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">Additional overhead can also occur when the number of references to an object no longer fits in the memory allocated for the counter.</div></div><div class="comment-content">it&#39;s <i>very</i> unlikely to have more than 2^64 references to an object, almost not worth mentioning</div></div><div class="reply-list"></div></div></div><div id="AAAAIU46jT0" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status">Resolved</div><div class="created-date">Apr 20, 2021, 11:53 PM(edited: Apr 23, 2021, 3:52 AM)</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">destroyed (goes out of scope?)</div></div><div class="comment-content">either phrasing is fine</div></div><div class="reply-list"><div id="AAAAMOTfMow" class="reply-box"><div class="author-picture"><img src="https://lh3.googleusercontent.com/a/AATXAJwYthrgOXuziPg39wCu8ceCQPItvC-6_aQE8Iq6Og=s50-c-k-no" width="24" height="24" alt="Author profile image"></div><div class="reply-data"><div class="user-name">Theo Watkins</div><div class="comment-action">Marked as resolved</div><div class="comment-content"></div><div class="created-date">Apr 23, 2021, 3:52 AM</div></div></div></div></div></div><div id="AAAAIU46jTw" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Apr 20, 2021, 11:52 PM(edited: Apr 20, 2021, 11:53 PM)</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">faster</div></div><div class="comment-content">more specifically:<br>- GC has better <i>throughput</i>; in an hour of runtime, GC will spend less time on memory management, and produce more useful calculations. however, itll periodically pause.<br>- RC has better <i>latency</i>, because it doesn&#39;t periodically pause. we can guarantee &quot;each request is handled within 1ms&quot; with RC, but not with RC.<br><br>(by &quot;latency&quot; i dont mean over the network, i mean time to do a calculation within the machine)<br><br>for example (making up numbers):<br>- an RC server can handle 1000 QPS guaranteeing &lt;5ms per request (nice)<br>- a GC server can handle 1500 QPS but only guaranteeing &lt;50ms per request (ew)<br>- hopefully, HGM can give us 1600 QPS with &lt;2ms per request</div></div><div class="reply-list"></div></div></div><div id="AAAAIU46jTs" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Apr 20, 2021, 11:47 PM</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">Rust</div></div><div class="comment-content">could mention somewhere that rust isnt <i>completely</i> safe, not as safe as java/javascript/python; rust code often uses unsafe blocks to get around the borrow checker</div></div><div class="reply-list"></div></div></div><div id="AAAAIU46jTo" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Apr 20, 2021, 11:45 PM</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">In general, better memory management correlates to slower runtime speeds</div></div><div class="comment-content">someone familiar with rust will bristle at this statement. rust is fast and safe, but sacrifices other things (simplicity).</div></div><div class="reply-list"></div></div></div><div id="AAAAIU46jTk" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Apr 20, 2021, 11:25 PM</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">reduces the workload of the programmer</div></div><div class="comment-content">this is really important, i&#39;d expand on this. Rust forces people into fast patterns, but it takes longer to code in rust. i&#39;ll link a bunch of discussions about this at the bottom of the doc.</div></div><div class="reply-list"></div></div></div><div id="AAAAIU46jTQ" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Apr 20, 2021, 11:01 PM(edited: Apr 20, 2021, 11:11 PM)</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">C,</div></div><div class="comment-content">go into detail about these.<br><br>C is wonderfully simple, we&#39;d like something as simple as C.<br><br>However, C++ introduces a bit of complexity with its unique_ptr and shared_ptr.<br><br>Rust introduces a <b>ton</b> of complexity. Some easy problems become hard, and some become impossible.</div></div><div class="reply-list"></div></div></div><div id="AAAAIU46jTI" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Apr 20, 2021, 10:59 PM</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">out-perform</div></div><div class="comment-content">out-perform often refers to runtime speed, different phrase here would be good</div></div><div class="reply-list"></div></div></div><div id="AAAAISkOEro" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a/AATXAJwYthrgOXuziPg39wCu8ceCQPItvC-6_aQE8Iq6Og=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Theo Watkins</div><div class="comment-status"></div><div class="created-date">Apr 15, 2021, 10:16 PM</div><div class="comment-content"><div style="font-size:13px;color:#333"><span style="font-weight:bold">Delete paragraph</span></div></div></div><div class="reply-list"><div id="AAAAISkOErs" class="reply-box"><div class="author-picture"><img src="https://lh3.googleusercontent.com/a/AATXAJwYthrgOXuziPg39wCu8ceCQPItvC-6_aQE8Iq6Og=s50-c-k-no" width="24" height="24" alt="Author profile image"></div><div class="reply-data"><div class="user-name">Theo Watkins</div><div class="comment-action">Rejected suggestion</div><div class="comment-content"></div><div class="created-date">Apr 15, 2021, 10:16 PM</div></div></div></div></div></div></section></body></html>

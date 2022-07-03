@@ -1,0 +1,92 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>HGM Overhead Analysis Comments</title><style>
+    .comment {
+      overflow: hidden;
+      padding: 18px 0 7px 0;
+      clear: both;
+    }
+
+    .comment + .comment {
+      border-top: 1px solid #e8e8e8;
+    }
+
+    .comment > .json {
+      display: none;
+    }
+
+    .comment-box {
+      background-color: #fffbe1;
+      overflow: hidden;
+      padding: 6px 12px;
+      margin-bottom: 8px;
+    }
+
+    .reply-box {
+      background-color: #eff2f9;
+      padding: 6px 12px 6px 6px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .user-name {
+      font-weight: bold;
+      padding-right: 10px;
+    }
+
+    .comment > .author-picture {
+      float: left;
+      padding: 0 20px;
+    }
+
+    .reply-box > .author-picture {
+      float: left;
+      padding: 0 6px;
+    }
+
+    .comment-deleted {
+      color: red;
+      padding-right: 10px;
+    }
+
+    .author-picture + div, .user-name, .user-name + .comment-deleted, .user-name + .comment-action {
+      float: left;
+    }
+
+    .created-date {
+      color: #999;
+    }
+
+    .comment-box .comment-content {
+      clear: both;
+    }
+
+    .comment-box > .created-date {
+      float: right;
+    }
+
+    .reply-box .created-date {
+      clear: both;
+    }
+
+    .comment-context-intro {
+      color: #999;
+      clear: both;
+    }
+
+    .comment-context-value {
+      border-left: 1px solid #ccc;
+      font-style: italic;
+      padding: 3px 10px 3px 10px;
+    }
+
+    .comment-action {
+      font-style: italic;
+    }
+
+    .comment-status {
+      font-style: italic;
+      color: green;
+      float: left;
+      font-weight: bold;
+      padding-right: 10px;
+    }
+  </style></head><body><section class="header"><h1>HGM Overhead Analysis - Drive File Comments</h1></section><section><div id="AAAAR8e8W64" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Nov 27, 2021, 5:47 AM(edited: Nov 27, 2021, 5:53 AM)</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">2.2</div></div><div class="comment-content">This is likely in another array somewhere, with a gen index or something.</div></div><div class="reply-list"><div id="AAAAR8e8W68" class="reply-box"><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="24" height="24" alt="Author profile image"></div><div class="reply-data"><div class="user-name">Evan Ovadia</div><div class="comment-content">Honestly, this whole section for IRL Rust is shaky, because you can&#39;t modify something while you have a regular borrow ref. Youll often see things split here, causing bounds checks, or effectively using generational memory.</div><div class="created-date">Nov 27, 2021, 5:53 AM</div></div></div></div></div></div><div id="AAAAR8e8W6w" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status">Resolved</div><div class="created-date">Nov 27, 2021, 5:46 AM(edited: Nov 27, 2021, 5:47 AM)</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">2.2</div></div><div class="comment-content">If it varies, it has to be in a different array</div></div><div class="reply-list"><div id="AAAAR8e8W60" class="reply-box"><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="24" height="24" alt="Author profile image"></div><div class="reply-data"><div class="user-name">Evan Ovadia</div><div class="comment-action">Marked as resolved</div><div class="comment-content"></div><div class="created-date">Nov 27, 2021, 5:47 AM</div></div></div></div></div></div><div id="AAAAR8e8W6s" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Nov 27, 2021, 5:39 AM</div><div class="comment-content">Impossible, Rust can&#39;t have a generational index to a field, has to be to an element</div></div><div class="reply-list"></div></div></div><div id="AAAAR8e8W6o" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Nov 27, 2021, 5:35 AM(edited: Nov 27, 2021, 5:36 AM)</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">1.2</div></div><div class="comment-content">Turning one gen index into another:<br>- Load Vector pointer to get array pointer (assumed hot, so generous, given for free)<br>- 0.1: Bounds check<br>- Add to array to get element address (generous, given for free)<br>- 1.0: Dereference to get generation<br>- 0.1: Check generation<br>- 1.0: Load member</div></div><div class="reply-list"></div></div></div><div id="AAAAR8e8W6k" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Nov 27, 2021, 5:34 AM</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">1.2</div></div><div class="comment-content">Turning one gen index into another:<br>- Load Vector pointer to get array pointer (assumed hot, so generous, given for free)<br>- 0.1: Bounds check<br>- Add to array to get element address (generous, given for free)<br>- 1.0: Dereference to get generation<br>- 0.1: Check generation</div></div><div class="reply-list"></div></div></div></section></body></html>

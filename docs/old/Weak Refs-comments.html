@@ -1,0 +1,92 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Weak Refs Comments</title><style>
+    .comment {
+      overflow: hidden;
+      padding: 18px 0 7px 0;
+      clear: both;
+    }
+
+    .comment + .comment {
+      border-top: 1px solid #e8e8e8;
+    }
+
+    .comment > .json {
+      display: none;
+    }
+
+    .comment-box {
+      background-color: #fffbe1;
+      overflow: hidden;
+      padding: 6px 12px;
+      margin-bottom: 8px;
+    }
+
+    .reply-box {
+      background-color: #eff2f9;
+      padding: 6px 12px 6px 6px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .user-name {
+      font-weight: bold;
+      padding-right: 10px;
+    }
+
+    .comment > .author-picture {
+      float: left;
+      padding: 0 20px;
+    }
+
+    .reply-box > .author-picture {
+      float: left;
+      padding: 0 6px;
+    }
+
+    .comment-deleted {
+      color: red;
+      padding-right: 10px;
+    }
+
+    .author-picture + div, .user-name, .user-name + .comment-deleted, .user-name + .comment-action {
+      float: left;
+    }
+
+    .created-date {
+      color: #999;
+    }
+
+    .comment-box .comment-content {
+      clear: both;
+    }
+
+    .comment-box > .created-date {
+      float: right;
+    }
+
+    .reply-box .created-date {
+      clear: both;
+    }
+
+    .comment-context-intro {
+      color: #999;
+      clear: both;
+    }
+
+    .comment-context-value {
+      border-left: 1px solid #ccc;
+      font-style: italic;
+      padding: 3px 10px 3px 10px;
+    }
+
+    .comment-action {
+      font-style: italic;
+    }
+
+    .comment-status {
+      font-style: italic;
+      color: green;
+      float: left;
+      font-weight: bold;
+      padding-right: 10px;
+    }
+  </style></head><body><section class="header"><h1>Weak Refs - Drive File Comments</h1></section><section><div id="AAAACQB0wZY" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GgtUpKGoXyJ2aq3kz7HriLdBUnUhoRzNW0sOCuP=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Jonathan Goodwin</div><div class="comment-status"></div><div class="created-date">Oct 29, 2018, 8:39 PM(edited: Oct 29, 2018, 9:38 PM)</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">Three</div></div><div class="comment-content">Option C:  Use a linked list to track weak references. A weak reference brings its own storage to the table. Maintenance is easy and cheap.</div></div><div class="reply-list"><div id="AAAACQB0waE" class="reply-box"><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="24" height="24" alt="Author profile image"></div><div class="reply-data"><div class="user-name">Evan Ovadia</div><div class="comment-content">A good thought, but I think these vector-like tables will be much better since a weak ref&#39;s death will use random access to remove itself from the table in O(1) time.<br><br>Though, linked lists could be better on long-term memory usage... these vectors seem to just keep growing.</div><div class="created-date">Oct 29, 2018, 8:50 PM(edited: Oct 29, 2018, 8:51 PM)</div></div></div><div id="AAAACQB0wao" class="reply-box"><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GgtUpKGoXyJ2aq3kz7HriLdBUnUhoRzNW0sOCuP=s50-c-k-no" width="24" height="24" alt="Author profile image"></div><div class="reply-data"><div class="user-name">Jonathan Goodwin</div><div class="comment-content">I would be interested in benchmarks one way vs. another (I may do it at some point). I agree that weak expiration is not necessarily O(1), but setting up hash tables and owner tables across all objects is not cheap either. If use of weaks is infrequent, I doubt you would notice perf cost of linked lists, but benchmarks would show me I am wrong.</div><div class="created-date">Oct 29, 2018, 9:38 PM</div></div></div></div></div></div></section></body></html>

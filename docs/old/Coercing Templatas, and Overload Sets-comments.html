@@ -1,0 +1,92 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Coercing Templatas, and Overload Sets Comments</title><style>
+    .comment {
+      overflow: hidden;
+      padding: 18px 0 7px 0;
+      clear: both;
+    }
+
+    .comment + .comment {
+      border-top: 1px solid #e8e8e8;
+    }
+
+    .comment > .json {
+      display: none;
+    }
+
+    .comment-box {
+      background-color: #fffbe1;
+      overflow: hidden;
+      padding: 6px 12px;
+      margin-bottom: 8px;
+    }
+
+    .reply-box {
+      background-color: #eff2f9;
+      padding: 6px 12px 6px 6px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .user-name {
+      font-weight: bold;
+      padding-right: 10px;
+    }
+
+    .comment > .author-picture {
+      float: left;
+      padding: 0 20px;
+    }
+
+    .reply-box > .author-picture {
+      float: left;
+      padding: 0 6px;
+    }
+
+    .comment-deleted {
+      color: red;
+      padding-right: 10px;
+    }
+
+    .author-picture + div, .user-name, .user-name + .comment-deleted, .user-name + .comment-action {
+      float: left;
+    }
+
+    .created-date {
+      color: #999;
+    }
+
+    .comment-box .comment-content {
+      clear: both;
+    }
+
+    .comment-box > .created-date {
+      float: right;
+    }
+
+    .reply-box .created-date {
+      clear: both;
+    }
+
+    .comment-context-intro {
+      color: #999;
+      clear: both;
+    }
+
+    .comment-context-value {
+      border-left: 1px solid #ccc;
+      font-style: italic;
+      padding: 3px 10px 3px 10px;
+    }
+
+    .comment-action {
+      font-style: italic;
+    }
+
+    .comment-status {
+      font-style: italic;
+      color: green;
+      float: left;
+      font-weight: bold;
+      padding-right: 10px;
+    }
+  </style></head><body><section class="header"><h1>Coercing Templatas, and Overload Sets - Drive File Comments</h1></section><section><div id="AAAADB9_QQw" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">May 28, 2019, 4:34 AM</div><div class="comment-content">start here</div></div><div class="reply-list"></div></div></div><div id="AAAADB9_QQs" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">May 28, 2019, 3:56 AM</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">struct shout { }<br>fn __call(__functor: shout</div></div><div class="comment-content">this is all wrong, this makes it seem like all print functions are using the same functor...</div></div><div class="reply-list"></div></div></div><div id="AAAADCMwqLw" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">May 27, 2019, 4:51 PM</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">does this Solves problem 2: ?</div></div><div class="comment-content">start here</div></div><div class="reply-list"></div></div></div><div id="AAAADCJLCMI" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">May 26, 2019, 11:00 PM</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">not sure</div></div><div class="comment-content">This might be a useful pattern... figure out a way to represent this syntactically?</div></div><div class="reply-list"></div></div></div></section></body></html>

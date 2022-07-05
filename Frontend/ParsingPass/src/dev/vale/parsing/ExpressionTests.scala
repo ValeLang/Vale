@@ -266,6 +266,41 @@ class ExpressionTests extends FunSuite with Collector with TestParseUtils {
       }
   }
 
+  test("Destructuring lambda") {
+    compileExpressionExpect("([x, y]) => x") shouldHave
+      {
+        case LambdaPE(
+          None,
+          FunctionP(_,
+            FunctionHeaderP(_,
+              None,Vector(),None,None,
+              Some(
+                ParamsP(_,
+                  Vector(
+                    PatternPP(_,
+                      None,None,None,
+                      Some(
+                        DestructureP(_,
+                          Vector(
+                            PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,StrI("x")))),None,None,None),
+                            PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,StrI("y")))),None,None,None)))),
+                      None)))),
+              FunctionReturnP(_,None,None)),
+            Some(BlockPE(_,LookupPE(LookupNameP(NameP(_,StrI("x"))),None))))) =>
+      }
+  }
+
+  test("dot symbol") {
+    compileExpressionExpect("""myPath./("subdir")""") shouldHave
+      {
+        case MethodCallPE(_,
+          LookupPE(LookupNameP(NameP(_,StrI("myPath"))),None),
+          _,
+          LookupPE(LookupNameP(NameP(_,StrI("/"))),None),
+          Vector(ConstantStrPE(_,"subdir"))) =>
+      }
+  }
+
   test("!=") {
     compileExpressionExpect("3 != 4") shouldHave
       {

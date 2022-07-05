@@ -89,22 +89,13 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
 //    Ok(DestructureP(RangeL(begin, iter.getPos()), destructurees.toVector))
   }
 
-
-//  def parseOverride(iter: ParsingIterator): Result[Option[OverrideP], IParseError] = {
-//    val begin = iter.getPos()
-//    if (!iter.trySkip(() => "^\\s*impl\\s+".r)) {
-//      return Ok(None)
-//    }
-//    val tyype =
-//      new TemplexParser().parseTemplex(iter) match {
-//        case Err(e) => return Err(e)
-//        case Ok(p) => p
-//      }
-//    Ok(Some(OverrideP(RangeP(begin, iter.getPos()), tyype)))
-//  }
-
-  def parseParameter(iter: ScrambleIterator, index: Int, isInCitizen: Boolean, isInLambda: Boolean): Result[PatternPP, IParseError] = {
+  def parsePattern(iter: ScrambleIterator, index: Int, isInCitizen: Boolean, isInFunction: Boolean, isInLambda: Boolean): Result[PatternPP, IParseError] = {
+    val patternBegin = iter.getPos()
     val patternRange = iter.range
+
+    if (!iter.hasNext) {
+      return Err(EmptyPattern(patternBegin))
+    }
 
     val maybeVirtual =
       iter.peek() match {
@@ -125,49 +116,6 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
         }
         case Some(_) => None
       }
-
-    val name =
-      iter.peek() match {
-        case Some(WordLE(range, s)) if s == keywords.UNDERSCORE => {
-          iter.advance()
-          Some(IgnoredLocalNameDeclarationP(range))
-        }
-        case Some(WordLE(range, str)) => {
-          iter.advance()
-          Some(LocalNameDeclarationP(NameP(range, str)))
-        }
-        case Some(other) => return Err(BadLocalName(other.range.begin))
-        case None => return Err(EmptyParameter(patternRange.begin))
-      }
-
-    val maybeType =
-      if (iter.hasNext) {
-        templexParser.parseTemplex(iter) match {
-          case Err(e) => return Err(e)
-          case Ok(x) => Some(x)
-        }
-      } else {
-        if (isInLambda) {
-          // Allow it, lambdas can figure out their type from the callee.
-          None
-        } else if (isInCitizen) {
-          // Allow it, just assume it's the containing struct.
-          None
-        } else {
-          return Err(LightFunctionMustHaveParamTypes(patternRange.end, index))
-        }
-      }
-
-    Ok(PatternPP(patternRange, maybePreBorrow, name, maybeType, None, maybeVirtual))
-  }
-
-  def parsePattern(iter: ScrambleIterator): Result[PatternPP, IParseError] = {
-    val patternBegin = iter.getPos()
-
-    if (!iter.hasNext) {
-      return Err(EmptyPattern(patternBegin))
-    }
-
 
     val isConstructing =
       iter.peek2() match {
@@ -248,7 +196,18 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
           case Ok(x) => Some(x)
         }
       } else {
-        None
+        if (isInLambda) {
+          // Allow it, lambdas can figure out their type from the callee.
+          None
+        } else if (isInCitizen) {
+          // Allow it, just assume it's the containing struct.
+          None
+        } else if (isInFunction) {
+          return Err(LightFunctionMustHaveParamTypes(patternRange.end, index))
+        } else {
+          // Allow it, just a regular pattern
+          None
+        }
       }
 
     val maybeDestructure =
@@ -258,10 +217,10 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
           val destructure =
             DestructureP(
               destructureRange,
-              U.map[ScrambleIterator, PatternPP](
+              U.mapWithIndex[ScrambleIterator, PatternPP](
                 new ScrambleIterator(destructureElements).splitOnSymbol(',', false),
-                destructureElementIter => {
-                  parsePattern(destructureElementIter) match {
+                (index, destructureElementIter) => {
+                  parsePattern(destructureElementIter, index, false, false, false) match {
                     case Err(e) => return Err(e)
                     case Ok(x) => x
                   }
@@ -272,7 +231,10 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
         case None => None
       }
 
-      Ok(PatternPP(RangeL(patternBegin, iter.getPrevEndPos()), None, maybeName, maybeType, maybeDestructure, None))
+      Ok(
+        PatternPP(
+          RangeL(patternBegin, iter.getPrevEndPos()),
+          maybePreBorrow, maybeName, maybeType, maybeDestructure, maybeVirtual))
   }
 
   //    pos ~

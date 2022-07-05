@@ -60,6 +60,8 @@ object LexAndExplore {
         unexploredPackages.remove(neededPackageCoord)
         startedPackages.add(neededPackageCoord)
 
+//        println(s"Processing ${neededPackageCoord}")
+
         val filepathsAndContents =
           resolver.resolve(neededPackageCoord) match {
             case None => {
@@ -68,6 +70,7 @@ object LexAndExplore {
             case Some(filepathToCode) => {
               filepathToCode.map({ case (filepath, code) =>
                 vassert(interner != null)
+//                println(s"Found ${neededPackageCoord} file ${filepath}")
                 val fileCoord = interner.intern(FileCoordinate(neededPackageCoord, filepath))
                 vassert(!alreadyFoundFileToCode.fileCoordToContents.contains(fileCoord))
                 fileCoord -> code
@@ -108,8 +111,10 @@ object LexAndExplore {
                 // This is where we could fire off another thread to do any parsing in parallel,
                 // because we're still only partway through the lexing.
                 val nextNeededPackageCoord =
-                interner.intern(PackageCoordinate(moduleName.str, packageSteps.map(_.str).toVector))
+                  interner.intern(PackageCoordinate(moduleName.str, packageSteps.map(_.str).toVector))
+//                println(s"Want to import ${nextNeededPackageCoord}")
                 if (!startedPackages.contains(nextNeededPackageCoord)) {
+//                  println(s"Unseen, so adding.")
                   unexploredPackages.add(nextNeededPackageCoord)
                 }
                 val denizenResult = denizenHandler(fileCoord, code, Array(), denizen)

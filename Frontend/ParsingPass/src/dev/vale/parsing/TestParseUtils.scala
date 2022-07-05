@@ -244,7 +244,7 @@ trait TestParseUtils {
     val templexParser = new TemplexParser(interner, keywords)
     val exprP =
       new PatternParser(interner, keywords, templexParser)
-        .parsePattern(new ScrambleIterator(node))
+        .parsePattern(new ScrambleIterator(node), 0, false, false, false)
         .getOrDie()
     exprP
   }

@@ -87,6 +87,11 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
         |        // moo
         |}
         |""".stripMargin)
+    compile(
+      """
+        |struct Moo {
+        |}
+        |// moo""".stripMargin)
   }
 
 //  test("Function containing if") {

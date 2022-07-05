@@ -59,10 +59,10 @@ case class LexingIterator(code: String, var position: Int = 0) {
     vwat()
   }
 
-  def skipToPast(needle: Char): Unit = {
+  def skipToPast(needle: Char): Boolean = {
     while ({
       if (position == code.length) {
-        vfail()
+        return false
       } else {
         val isNeedle = code.charAt(position) == needle
         position = position + 1
@@ -70,6 +70,7 @@ case class LexingIterator(code: String, var position: Int = 0) {
         !isNeedle
       }
     }) {}
+    true
   }
 
   def consumeChevronComments(): Unit = {

@@ -155,7 +155,7 @@ object PassManager {
         }
         case (mpi @ ModulePathInput(_, modulePath), _) => {
 //          println("checking with modulepathinput " + mpi)
-          val directoryPath = modulePath + packages.map(File.separator + _).mkString("")
+          val directoryPath = modulePath + packages.map(File.separator + _.str).mkString("")
 //          println("looking in dir " + directoryPath)
           val directory = new java.io.File(directoryPath)
           val filesInDirectory = directory.listFiles()

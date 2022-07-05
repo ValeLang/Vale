@@ -69,6 +69,15 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
     }
   }
 
+  test("Function ending with set") {
+    compileDenizenExpect(
+      """
+        |func moo() {
+        |  set bork = value
+        |}
+        |""".stripMargin)
+  }
+
   test("Extern function generated") {
     vassertOne(compileFile("extern(\"bork\") func sum();").getOrDie().denizens) match {
       case TopLevelFunctionP(FunctionP(_,

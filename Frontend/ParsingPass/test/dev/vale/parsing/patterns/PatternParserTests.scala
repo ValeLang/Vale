@@ -78,4 +78,5 @@ class PatternParserTests extends FunSuite with Matchers with Collector with Test
           None) =>
     }
   }
+
 }

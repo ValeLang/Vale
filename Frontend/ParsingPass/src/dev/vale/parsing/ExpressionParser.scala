@@ -284,7 +284,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
         }) match {
         case None => return Err(BadForeachInError(iter.getPos()))
         case Some((in, patternIter)) => {
-          patternParser.parsePattern(patternIter) match {
+          patternParser.parsePattern(patternIter, 0, false, false, false) match {
             case Err(cpe) => return Err(cpe)
             case Ok(result) => (in.range, result)
           }
@@ -456,35 +456,13 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
     Ok(Some(MutatePE(RangeL(mutateBegin, iter.getPrevEndPos()), mutateeExpr, sourceExpr)))
   }
 
-  private def parseMutStatement(
-    iter: ScrambleIterator,
-    stopOnCurlied: Boolean):
-  Result[Option[MutatePE], IParseError] = {
-    if (!nextIsSetExpr(iter)) {
-      return Ok(None)
-    }
-
-    val mutExpr =
-      parseMutExpr(iter, stopOnCurlied) match {
-        case Err(e) => return Err(e)
-        case Ok(None) => vwat()
-        case Ok(Some(x)) => x
-      }
-
-    if (!iter.trySkipSymbol(';')) {
-      return Err(BadExpressionEnd(iter.getPos()))
-    }
-
-    return Ok(Some(mutExpr))
-  }
-
   private def parseLet(
     patternIter: ScrambleIterator,
     iter: ScrambleIterator,
     stopOnCurlied: Boolean):
   Result[LetPE, IParseError] = {
     val pattern =
-      patternParser.parsePattern(patternIter) match {
+      patternParser.parsePattern(patternIter, 0, false, false, false) match {
         case Ok(result) => result
         case Err(e) => return Err(e)
       }
@@ -745,33 +723,35 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
       case Ok(None) =>
     }
 
-    parseMutStatement(iter, stopOnCurlied) match {
-      case Err(e) => return Err(e)
-      case Ok(Some(x)) => return Ok(x)
-      case Ok(None) =>
-    }
-
     vassert(iter.hasNext)
 
     val letOrLoneExpr =
-      ParseUtils.trySkipPastEqualsWhile(iter, scoutingIter => {
-        scoutingIter.peek() match {
-          case None => false
-          case Some(CurliedLE(range, contents)) if stopOnCurlied => false
-          case Some(SymbolLE(_, ';')) => false
-          case _ => true
+      if (nextIsSetExpr(iter)) {
+        parseMutExpr(iter, stopOnCurlied) match {
+          case Err(e) => return Err(e)
+          case Ok(None) => vwat()
+          case Ok(Some(x)) => x
         }
-      }) match {
-        case Some(destIter) => {
-          parseLet(destIter, iter, stopOnCurlied) match {
-            case Err(e) => return Err(e)
-            case Ok(x) => x
+      } else {
+        ParseUtils.trySkipPastEqualsWhile(iter, scoutingIter => {
+          scoutingIter.peek() match {
+            case None => false
+            case Some(CurliedLE(range, contents)) if stopOnCurlied => false
+            case Some(SymbolLE(_, ';')) => false
+            case _ => true
           }
-        }
-        case None => {
-          parseExpression(iter, stopOnCurlied) match {
-            case Err(e) => return Err(e)
-            case Ok(x) => x
+        }) match {
+          case Some(destIter) => {
+            parseLet(destIter, iter, stopOnCurlied) match {
+              case Err(e) => return Err(e)
+              case Ok(x) => x
+            }
+          }
+          case None => {
+            parseExpression(iter, stopOnCurlied) match {
+              case Err(e) => return Err(e)
+              case Ok(x) => x
+            }
           }
         }
       }
@@ -1108,6 +1088,23 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
               return Err(BadDot(iter.getPos()))
             }
             NameP(RangeL(nameBegin, iter.getPrevEndPos()), interner.intern(StrI(int.toString)))
+          }
+          case Some(SymbolLE(_, _)) => {
+            val name =
+              iter.peek3() match {
+                case (Some(SymbolLE(_, '<')), Some(SymbolLE(_, '=')), Some(SymbolLE(_, '>'))) => keywords.SPACESHIP
+                case (Some(SymbolLE(_, '=')), Some(SymbolLE(_, '=')), Some(SymbolLE(_, '='))) => keywords.tripleEquals
+                case (Some(SymbolLE(_, '>')), Some(SymbolLE(_, '=')), _) => keywords.greaterEquals
+                case (Some(SymbolLE(_, '<')), Some(SymbolLE(_, '=')), _) => keywords.lessEquals
+                case (Some(SymbolLE(_, '!')), Some(SymbolLE(_, '=')), _) => keywords.notEquals
+                case (Some(SymbolLE(_, '=')), Some(SymbolLE(_, '=')), _) => keywords.doubleEquals
+                case (Some(SymbolLE(_, '+')), _, _) => keywords.plus
+                case (Some(SymbolLE(_, '-')), _, _) => keywords.minus
+                case (Some(SymbolLE(_, '*')), _, _) => keywords.asterisk
+                case (Some(SymbolLE(_, '/')), _, _) => keywords.slash
+              }
+            0.until(name.str.length).foreach(_ => iter.advance())
+            NameP(RangeL(nameBegin, iter.getPrevEndPos()), name)
           }
           case Some(WordLE(_, str)) => {
             iter.advance()
@@ -1575,7 +1572,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
               U.mapWithIndex[ScrambleIterator, PatternPP](
                 new ScrambleIterator(paramsContents).splitOnSymbol(',', false),
                 (index, patternIter) => {
-                  patternParser.parseParameter(patternIter, index, false, true) match {
+                  patternParser.parsePattern(patternIter, index, false, true, true) match {
                     case Err(e) => return Err(e)
                     case Ok(x) => x
                   }

@@ -521,7 +521,7 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
           U.mapWithIndex[ScrambleIterator, PatternPP](
             new ScrambleIterator(paramsL.contents).splitOnSymbol(',', false),
             (index, patternIter) => {
-              patternParser.parseParameter(patternIter, index, isInCitizen, false) match {
+              patternParser.parsePattern(patternIter, index, isInCitizen, true, false) match {
                 case Err(e) => return Err(e)
                 case Ok(x) => x
               }

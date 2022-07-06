@@ -30,6 +30,7 @@ set(LLVM_LINK_COMPONENTS
 		Core
 		Support
 		IRReader
+		Passes
 		x86asmparser x86codegen x86desc x86disassembler x86info
 )
 
@@ -47,6 +48,8 @@ add_executable(backend
 		src/valeopts.cpp
 		src/mainFunction.cpp
 		src/externs.cpp
+
+		src/concurrency/size.cpp
 
 		src/utils/counters.cpp
 		src/utils/structlt.cpp

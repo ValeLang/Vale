@@ -1,8 +1,9 @@
 #include <llvm-c/Core.h>
 #include <llvm-c/DebugInfo.h>
-#include <llvm-c/ExecutionEngine.h>
 #include <llvm-c/Analysis.h>
-#include <llvm-c/IRReader.h>
+#include <llvm-c/TargetMachine.h>
+#include "llvm/IR/DataLayout.h"
+#include "llvm/IR/LegacyPassManager.h"
 
 #include <sys/stat.h>
 
@@ -36,6 +37,7 @@
 #include "region/unsafe/unsafe.h"
 #include "function/expressions/shared/string.h"
 #include <sstream>
+#include <concurrency/size.h>
 #include "region/linear/linear.h"
 #include "function/expressions/shared/members.h"
 #include "function/expressions/expressions.h"
@@ -1337,8 +1339,22 @@ void generateModule(std::vector<std::string>& inputFilepaths, GlobalState *globa
 //    LLVMAddFunctionInliningPass(passmgr);        // Function inlining
 //  }
 
+  llvm::AddStackSizePass(globalState->mod, passmgr);
+
+
   LLVMRunPassManager(passmgr, globalState->mod);
   LLVMDisposePassManager(passmgr);
+//
+//  auto module = llvm::unwrap(globalState->mod);
+//  auto mainFunction = module->getFunction("main");
+//  assert(mainFunction != nullptr);
+//  auto machine = llvm::unwrap(globalState->machine);
+//
+//
+
+
+//  mainFunction->
+  //->setSourceFileName(StringRef(Name, Len));
 
   // Serialize the LLVM IR, if requested
   if (globalState->opt->print_llvmir) {

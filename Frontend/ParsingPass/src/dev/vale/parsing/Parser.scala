@@ -456,7 +456,7 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
     val moduleNameP = NameP(moduleNameRange, moduleNameStr)
 
     val packageStepsP =
-      packageStepsL.map({ case WordLE(moduleNameRange, moduleNameStr) =>
+      U.map[WordLE, NameP](packageStepsL, { case WordLE(moduleNameRange, moduleNameStr) =>
         NameP(moduleNameRange, moduleNameStr)
       })
 

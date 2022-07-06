@@ -84,10 +84,13 @@ class ScrambleIterator(
   // because we like to be able to ignore the tail end of something like
   // case Array(Some(whatever), _)
   def peek(n: Int): Array[Option[INodeLE]] = {
-    index.until(index + n).map(i => {
-      if (i < end) Some(scramble.elements(i))
-      else None
-    }).toArray
+    U.mapRange[Option[INodeLE]](
+      index,
+      index + n,
+      i => {
+        if (i < end) Some(scramble.elements(i))
+        else None
+      })
   }
   def peek2(): (Option[INodeLE], Option[INodeLE]) = {
     (
@@ -1103,7 +1106,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
                 case (Some(SymbolLE(_, '*')), _, _) => keywords.asterisk
                 case (Some(SymbolLE(_, '/')), _, _) => keywords.slash
               }
-            0.until(name.str.length).foreach(_ => iter.advance())
+            U.loop(name.str.length, _ => iter.advance())
             NameP(RangeL(nameBegin, iter.getPrevEndPos()), name)
           }
           case Some(WordLE(_, str)) => {
@@ -1331,12 +1334,14 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
               iters
             }
           val elementsP =
-            elementIters.map(elementIter => {
-              parseExpression(elementIter, false) match {
-                case Err(e) => return Err(e)
-                case Ok(x) => x
-              }
-            })
+            U.map[ScrambleIterator, IExpressionPE](
+              elementIters,
+              elementIter => {
+                parseExpression(elementIter, false) match {
+                  case Err(e) => return Err(e)
+                  case Ok(x) => x
+                }
+              })
           Ok(Some(TuplePE(range, elementsP.toVector)))
         }
       }

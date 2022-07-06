@@ -460,41 +460,43 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
   }
 
   def parseTemplexAtomAndCallAndPrefixes(iter: ScrambleIterator): Result[ITemplexPT, IParseError] = {
-    vassert(iter.hasNext)
+    Profiler.frame(() => {
+      vassert(iter.hasNext)
 
-    iter.peek() match {
-      case Some(WordLE(_, in)) if in == keywords.in => {
-        // This is here so if we say:
-        //   foreach x in myList { ... }
-        // We won't interpret `x in` as a pattern, because
-        // we don't interpret `in` as a valid templex.
-        // The caller should prevent this.
-        vwat()
+      iter.peek() match {
+        case Some(WordLE(_, in)) if in == keywords.in => {
+          // This is here so if we say:
+          //   foreach x in myList { ... }
+          // We won't interpret `x in` as a pattern, because
+          // we don't interpret `in` as a valid templex.
+          // The caller should prevent this.
+          vwat()
+        }
+        case _ =>
       }
-      case _ =>
-    }
 
-    val begin = iter.getPos()
+      val begin = iter.getPos()
 
-    //    if (iter.trySkip(() => "^inl\\b".r)) {
-    //
-    //      val inner = parseTemplexAtomAndCallAndPrefixes(iter) match { case Err(e) => return Err(e) case Ok(t) => t }
-    //      return Ok(InlinePT(RangeP(begin, iter.getPos()), inner))
-    //    }
+      //    if (iter.trySkip(() => "^inl\\b".r)) {
+      //
+      //      val inner = parseTemplexAtomAndCallAndPrefixes(iter) match { case Err(e) => return Err(e) case Ok(t) => t }
+      //      return Ok(InlinePT(RangeP(begin, iter.getPos()), inner))
+      //    }
 
-    parseRegioned(iter) match {
-      case Err(e) => return Err(e)
-      case Ok(Some(x)) => return Ok(x)
-      case Ok(None) =>
-    }
+      parseRegioned(iter) match {
+        case Err(e) => return Err(e)
+        case Ok(Some(x)) => return Ok(x)
+        case Ok(None) =>
+      }
 
-    parseInterpreted(iter) match {
-      case Err(e) => return Err(e)
-      case Ok(Some(x)) => return Ok(x)
-      case Ok(None) =>
-    }
+      parseInterpreted(iter) match {
+        case Err(e) => return Err(e)
+        case Ok(Some(x)) => return Ok(x)
+        case Ok(None) =>
+      }
 
-    parseTemplexAtomAndCall(iter)
+      parseTemplexAtomAndCall(iter)
+    })
   }
 
   def parseRegion(node: INodeLE): Result[Option[RegionRunePT], IParseError] = {

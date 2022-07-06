@@ -43,6 +43,12 @@ trait IInterning extends Product {
     getClass == thatObj.getClass &&
     productIterator.sameElements(thatObj.asInstanceOf[Product].productIterator)
   }
+
+  // Can be overridden, such as by StrI.
+  //
+  def shortcutNewInterningId(): Long = {
+    0
+  }
 }
 
 // Normally, an IInterning subclass will just use the uniqueId to perform
@@ -69,21 +75,77 @@ class BigHashMap[A, B](initSize : Int) extends mutable.HashMap[A, B] {
   override def initialSize: Int = initSize // 16 - by default
 }
 
+object Interner {
+  // Anything under this is reserved for short strings, strings of max length 7.
+  // See {StrI.makeInterningId} for why the +1.
+  val MIN_INTERNING_ID: Long = (1L << (7 * 8)) + 1L
+}
 class Interner {
   val map = new BigHashMap[MemberWiseEqualsWrapper, Any](10000)
   def intern[X <: IInterning](x: X): X = {
+    val shortcutInterningID = x.shortcutNewInterningId()
+    if (shortcutInterningID != 0) {
+      x.uniqueId = new InterningId(shortcutInterningID)
+      return x
+    }
     map.get(MemberWiseEqualsWrapper(x)) match {
       case Some(original) => return original.asInstanceOf[X]
       case None =>
     }
     // If we get here, we need to insert it.
-    x.uniqueId = new InterningId(map.size + 1)
+    x.uniqueId = new InterningId(map.size + Interner.MIN_INTERNING_ID)
     map.put(MemberWiseEqualsWrapper(x), x)
     x
   }
 }
-
-
 // "String Interned"
 case class StrI(str: String) extends IInterning {
+  override def shortcutNewInterningId(): Long = {
+    if (str.length > 8) {
+      return 0
+    }
+    val buffer = new Array[Char](8)
+    str.getChars(0, str.length, buffer, 0)
+    val char0 = buffer(0)
+    val char1 = buffer(1)
+    val char2 = buffer(2)
+    val char3 = buffer(3)
+    val char4 = buffer(4)
+    val char5 = buffer(5)
+    val char6 = buffer(6)
+    val char7 = buffer(7)
+    if (char0 >= 128 ||
+      char1 >= 128 ||
+      char2 >= 128 ||
+      char3 >= 128 ||
+      char4 >= 128 ||
+      char5 >= 128 ||
+      char6 >= 128 ||
+      char7 >= 128) {
+      return 0
+    }
+    // We do +1 so that we don't collide with 0, which already means not interned.
+    val total: Long =
+      1 + ((char0 << (7 * 7)) |
+        (char1 << (7 * 6)) |
+        (char2 << (7 * 5)) |
+        (char3 << (7 * 4)) |
+        (char4 << (7 * 3)) |
+        (char5 << (7 * 2)) |
+        (char6 << (7 * 1)) |
+        (char7 << (7 * 0)));
+    vassert(total < Interner.MIN_INTERNING_ID)
+    total
+  }
 }
+
+//// These can be used to test out how fast the compiler is without interning.
+//// When just measuring the parser, it's 3% slower without interning.
+//trait IInterning extends Product { }
+//class Interner {
+//  def intern[X <: IInterning](x: X): X = {
+//    x
+//  }
+//}
+//case class StrI(str: String) extends IInterning {
+//}

@@ -68,7 +68,7 @@ object LexAndExplore {
               throw InputException("Couldn't find: " + neededPackageCoord)
             }
             case Some(filepathToCode) => {
-              filepathToCode.map({ case (filepath, code) =>
+              U.map[(String, String), (FileCoordinate, String)](filepathToCode.toArray, { case (filepath, code) =>
                 vassert(interner != null)
 //                println(s"Found ${neededPackageCoord} file ${filepath}")
                 val fileCoord = interner.intern(FileCoordinate(neededPackageCoord, filepath))
@@ -77,9 +77,9 @@ object LexAndExplore {
               })
             }
           }
-        alreadyFoundFileToCode.putPackage(interner, neededPackageCoord, filepathsAndContents)
+        alreadyFoundFileToCode.putPackage(interner, neededPackageCoord, filepathsAndContents.toMap)
 
-        filepathsAndContents.foreach({ case (fileCoord, code) =>
+        U.foreach[(FileCoordinate, String)](filepathsAndContents, { case (fileCoord, code) =>
           val resultAcc = new Accumulator[D]()
 
           val iter = new LexingIterator(code, 0)
@@ -111,7 +111,7 @@ object LexAndExplore {
                 // This is where we could fire off another thread to do any parsing in parallel,
                 // because we're still only partway through the lexing.
                 val nextNeededPackageCoord =
-                  interner.intern(PackageCoordinate(moduleName.str, packageSteps.map(_.str).toVector))
+                  interner.intern(PackageCoordinate(moduleName.str, U.map[WordLE, StrI](packageSteps, x => x.str).toVector))
 //                println(s"Want to import ${nextNeededPackageCoord}")
                 if (!startedPackages.contains(nextNeededPackageCoord)) {
 //                  println(s"Unseen, so adding.")
@@ -135,8 +135,8 @@ object LexAndExplore {
           }
 
           unexploredPackages ++=
-            maybeImports.toArray.flatten.map(x => {
-              interner.intern(PackageCoordinate(x.moduleName.str, x.packageSteps.map(_.str).toVector))
+            U.map[ImportL, PackageCoordinate](maybeImports.toArray.flatten, x => {
+              interner.intern(PackageCoordinate(x.moduleName.str, U.map[WordLE, StrI](x.packageSteps, _.str).toVector))
             }).toSet -- startedPackages
 
           val commentsRanges = iter.comments

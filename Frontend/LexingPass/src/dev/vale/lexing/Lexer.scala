@@ -1,6 +1,6 @@
 package dev.vale.lexing
 
-import dev.vale.{Accumulator, Err, Interner, Keywords, Ok, Result, StrI, vassert, vassertSome, vfail, vimpl, vwat}
+import dev.vale.{Accumulator, Err, Interner, Keywords, Ok, Profiler, Result, StrI, vassert, vassertSome, vfail, vimpl, vwat}
 
 import scala.collection.mutable
 
@@ -699,156 +699,128 @@ class Lexer(interner: Interner, keywords: Keywords) {
   }
 
   def lexParend(iter: LexingIterator): Result[Option[ParendLE], IParseError] = {
-    val begin = iter.getPos()
+    Profiler.frame(() => {
+      val begin = iter.getPos()
 
-    if (!iter.trySkip('(')) {
-      return Ok(None)
-    }
-
-    iter.consumeCommentsAndWhitespace()
-
-    val innards =
-      lexScramble(iter, false, false, false) match {
-        case Err(e) => return Err(e)
-        case Ok(x) => x
+      if (!iter.trySkip('(')) {
+        return Ok(None)
       }
 
-    iter.consumeCommentsAndWhitespace()
+      iter.consumeCommentsAndWhitespace()
 
-    if (!iter.trySkip(')')) {
-      vfail()
-    }
+      val innards =
+        lexScramble(iter, false, false, false) match {
+          case Err(e) => return Err(e)
+          case Ok(x) => x
+        }
 
-    val end = iter.getPos()
+      iter.consumeCommentsAndWhitespace()
 
-    Ok(Some(ParendLE(RangeL(begin, end), innards)))
+      if (!iter.trySkip(')')) {
+        vfail()
+      }
+
+      val end = iter.getPos()
+
+      Ok(Some(ParendLE(RangeL(begin, end), innards)))
+    })
   }
 
   def lexCurlied(iter: LexingIterator, stopOnOpenBrace: Boolean): Result[Option[CurliedLE], IParseError] = {
-    val begin = iter.getPos()
+    Profiler.frame(() => {
+      val begin = iter.getPos()
 
-    if (iter.peek() == '{' && stopOnOpenBrace) {
-      return Ok(None)
-    }
-
-    if (!iter.trySkip('{')) {
-      return Ok(None)
-    }
-
-    iter.consumeCommentsAndWhitespace()
-
-    val innards =
-      lexScramble(iter, false, false, false) match {
-        case Err(e) => return Err(e)
-        case Ok(x) => x
+      if (iter.peek() == '{' && stopOnOpenBrace) {
+        return Ok(None)
       }
 
-    iter.consumeCommentsAndWhitespace()
+      if (!iter.trySkip('{')) {
+        return Ok(None)
+      }
 
-    if (iter.trySkip(')')) {
-      return Err(BadStartOfStatementError(iter.getPos()))
-    }
+      iter.consumeCommentsAndWhitespace()
 
-    if (iter.trySkip(']')) {
-      return Err(BadStartOfStatementError(iter.getPos()))
-    }
+      val innards =
+        lexScramble(iter, false, false, false) match {
+          case Err(e) => return Err(e)
+          case Ok(x) => x
+        }
 
-    if (!iter.trySkip('}')) {
-      vfail()
-    }
+      iter.consumeCommentsAndWhitespace()
 
-    val end = iter.getPos()
+      if (iter.trySkip(')')) {
+        return Err(BadStartOfStatementError(iter.getPos()))
+      }
 
-    Ok(Some(CurliedLE(RangeL(begin, end), innards)))
+      if (iter.trySkip(']')) {
+        return Err(BadStartOfStatementError(iter.getPos()))
+      }
+
+      if (!iter.trySkip('}')) {
+        vfail()
+      }
+
+      val end = iter.getPos()
+
+      Ok(Some(CurliedLE(RangeL(begin, end), innards)))
+    })
   }
 
   def lexSquared(iter: LexingIterator): Result[Option[SquaredLE], IParseError] = {
-    val begin = iter.getPos()
+    Profiler.frame(() => {
+      val begin = iter.getPos()
 
-    if (!iter.trySkip('[')) {
-      return Ok(None)
-    }
-
-    iter.consumeCommentsAndWhitespace()
-
-    val innards =
-      lexScramble(iter, false, false, false) match {
-        case Err(e) => return Err(e)
-        case Ok(x) => x
+      if (!iter.trySkip('[')) {
+        return Ok(None)
       }
 
-    iter.consumeCommentsAndWhitespace()
+      iter.consumeCommentsAndWhitespace()
 
-    if (!iter.trySkip(']')) {
-      vfail()
-    }
+      val innards =
+        lexScramble(iter, false, false, false) match {
+          case Err(e) => return Err(e)
+          case Ok(x) => x
+        }
 
-    val end = iter.getPos()
+      iter.consumeCommentsAndWhitespace()
 
-    Ok(Some(SquaredLE(RangeL(begin, end), innards)))
+      if (!iter.trySkip(']')) {
+        vfail()
+      }
+
+      val end = iter.getPos()
+
+      Ok(Some(SquaredLE(RangeL(begin, end), innards)))
+    })
   }
 
   def lexAngled(iter: LexingIterator): Result[Option[AngledLE], IParseError] = {
-    val begin = iter.getPos()
+    Profiler.frame(() => {
+      val begin = iter.getPos()
 
-    if (!(iter.peek() == '<' && angleIsOpenOrClose(iter))) {
-      return Ok(None)
-    }
-    iter.advance()
+      if (!(iter.peek() == '<' && angleIsOpenOrClose(iter))) {
+        return Ok(None)
+      }
+      iter.advance()
 
-    iter.consumeCommentsAndWhitespace()
+      iter.consumeCommentsAndWhitespace()
 
-    val innards =
-      lexScramble(iter, false, false, false) match {
-        case Err(e) => return Err(e)
-        case Ok(x) => x
+      val innards =
+        lexScramble(iter, false, false, false) match {
+          case Err(e) => return Err(e)
+          case Ok(x) => x
+        }
+
+      iter.consumeCommentsAndWhitespace()
+
+      if (!iter.trySkip('>')) {
+        vfail()
       }
 
-    iter.consumeCommentsAndWhitespace()
+      val end = iter.getPos()
 
-    if (!iter.trySkip('>')) {
-      vfail()
-    }
-
-    val end = iter.getPos()
-
-    Ok(Some(AngledLE(RangeL(begin, end), innards)))
-
-    //    // We need one side of the chevron to not have spaces, to avoid ambiguity with
-    //    // the binary < operator.
-    //    if (iter.peek(() => "^\\s+<\\s+")) {
-    //      // This is a binary < operator, because there's space on both sides.
-    //      return Ok(None)
-    //    } else if (iter.peek(() => "^\\s*<=")) {
-    //      // This is a binary <= operator, bail.
-    //      return Ok(None)
-    //    } else if (iter.peek(() => "^\\s+<[\\S]")) {
-    //      // This is a template call like:
-    //      //   x = myFunc <int> ();
-    //      val y = iter.trySkipWord("\\s+<")
-    //      vassert(y)
-    //      // continue
-    //    } else if (iter.trySkipWord("<\\s*")) {
-    //      // continue
-    //    } else {
-    //      // Nothing we recognize, bail out.
-    //      return Ok(None)
-    //    }
-    //    iter.consumeWhitespace()
-    //    val elements = new mutable.ArrayBuffer[ITemplexPT]()
-    //    while (!iter.trySkipWord("\\>")) {
-    //      val expr =
-    //        new TemplexParser().parseTemplex(iter) match {
-    //          case Err(e) => return Err(e)
-    //          case Ok(expr) => expr
-    //        }
-    //      elements += expr
-    //      iter.consumeWhitespace()
-    //      iter.trySkipWord(",")
-    //      iter.consumeWhitespace()
-    //    }
-    //
-    //    Ok(Some(elements.toVector))
+      Ok(Some(AngledLE(RangeL(begin, end), innards)))
+    })
   }
 
   def angleIsOpenOrClose(iter: LexingIterator): Boolean = {
@@ -965,28 +937,30 @@ class Lexer(interner: Interner, keywords: Keywords) {
   }
 
   def lexScramble(iter: LexingIterator, stopOnOpenBrace: Boolean, stopOnWhere: Boolean, stopOnSemicolon: Boolean): Result[ScrambleLE, IParseError] = {
-    val begin = iter.getPos()
-
-    iter.consumeCommentsAndWhitespace()
-
-    val innards = new Accumulator[INodeLE]()
-
-    // If this encounters a ; or or ) or } a non-binary > then it should stop.
-    while (!atEnd(iter, stopOnOpenBrace, stopOnWhere, stopOnSemicolon)) {
-      val node =
-        lexNode(iter, stopOnOpenBrace, stopOnWhere) match {
-          case Err(e) => return Err(e)
-          case Ok(x) => x
-        }
-
-      innards.add(node)
+    Profiler.frame(() => {
+      val begin = iter.getPos()
 
       iter.consumeCommentsAndWhitespace()
-    }
 
-    val end = iter.getPos()
+      val innards = new Accumulator[INodeLE]()
 
-    Ok(ScrambleLE(RangeL(begin, end), innards.buildArray()))
+      // If this encounters a ; or or ) or } a non-binary > then it should stop.
+      while (!atEnd(iter, stopOnOpenBrace, stopOnWhere, stopOnSemicolon)) {
+        val node =
+          lexNode(iter, stopOnOpenBrace, stopOnWhere) match {
+            case Err(e) => return Err(e)
+            case Ok(x) => x
+          }
+
+        innards.add(node)
+
+        iter.consumeCommentsAndWhitespace()
+      }
+
+      val end = iter.getPos()
+
+      Ok(ScrambleLE(RangeL(begin, end), innards.buildArray()))
+    })
   }
 
 

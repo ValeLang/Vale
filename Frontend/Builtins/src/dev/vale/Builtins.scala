@@ -2,11 +2,12 @@ package dev.vale
 
 import com.sun.org.apache.xpath.internal.compiler.Keywords
 
+import java.nio.charset.Charset
 import scala.io.Source
 
 object Builtins {
   val moduleToFilename =
-    Map(
+    Array(
       "arith" -> "arith.vale",
       "functor1" -> "functor1.vale",
       "logic" -> "logic.vale",
@@ -25,11 +26,34 @@ object Builtins {
       "weak" -> "weak.vale")
 
   def load(resourceFilename: String): String = {
-    val stream = getClass().getClassLoader().getResourceAsStream(resourceFilename)
-    vassert(stream != null)
-    val source = Source.fromInputStream(stream)
-    vassert(source != null)
-    source.mkString("")
+    val stream =
+      Profiler.frame(() => {
+        getClass().getClassLoader().getResourceAsStream(resourceFilename)
+      })
+    Profiler.frame(() => {
+//      // 4807 samples
+//      vassert(stream != null)
+//      val source = Source.fromInputStream(stream)
+//      vassert(source != null)
+//      source.mkString("")
+//
+//      // 655 samples
+//      vassert(stream != null)
+//      val stringBuffer = new StringBuffer()
+//      val bytes = new Array[Byte](1024)
+//      while ({
+//        val bytesRead = stream.read(bytes)
+//        if (bytesRead > 0) {
+//          stringBuffer.append(new String(bytes, 0, bytesRead, Charset.defaultCharset()))
+//        }
+//        bytesRead > 0
+//      }) { }
+//      stringBuffer.toString
+
+      // 571 samples
+      val bytes = stream.readAllBytes()
+      new String(bytes, 0, bytes.length, Charset.defaultCharset())
+    })
   }
 
   // Modulized is a made up word, it means we're pretending the builtins are in different modules.

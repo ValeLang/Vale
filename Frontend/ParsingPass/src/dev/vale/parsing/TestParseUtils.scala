@@ -1,7 +1,7 @@
 package dev.vale.parsing
 
 import dev.vale.lexing.{FailedParse, IParseError, Lexer, LexingIterator}
-import dev.vale.{Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Keywords, Ok, PackageCoordinate, PackageCoordinateMap, Result, SourceCodeUtils, vassertOne, vassertSome, vfail, vimpl}
+import dev.vale.{Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Keywords, Ok, PackageCoordinate, PackageCoordinateMap, Result, SourceCodeUtils, U, vassertOne, vassertSome, vfail, vimpl}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.{FileP, IDenizenP, IExpressionPE, IRulexPR, ITemplexPT, PatternPP}
 import dev.vale.parsing.templex.TemplexParser
@@ -136,7 +136,7 @@ trait TestParseUtils {
         }
       }) match {
       case Err(e) => Err(e)
-      case Ok(x) => Ok(vassertOne(x.buildArray().map(_._2)))
+      case Ok(x) => Ok(vassertOne(U.map[(String, FileP), FileP](x.buildArray(), _._2)))
     }
   }
 

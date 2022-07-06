@@ -1,6 +1,6 @@
 package dev.vale.lexing
 
-import dev.vale.{IInterning, StrI, vassert, vcurious, vpass, vwat}
+import dev.vale.{IInterning, StrI, U, vassert, vcurious, vpass, vwat}
 
 case class RangeL(begin: Int, end: Int) {
   override def hashCode(): Int = vcurious()
@@ -133,7 +133,7 @@ case class ScrambleLE(
 
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
 
-  elements.foreach({
+  U.foreach[INodeLE](elements, {
     case ScrambleLE(_, _) => vwat()
     case _ =>
   })

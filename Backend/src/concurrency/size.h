@@ -8,13 +8,13 @@
 
 namespace llvm {
 
-struct ValeConcurrencyStackMeasuringPass : public llvm::MachineFunctionPass {
+struct ValeConcurrencyStackMeasuringPass : public llvm::FunctionPass {
   static char ID;
   ValeConcurrencyStackMeasuringPass();
 
   llvm::StringRef getPassName() const override;
 
-  bool runOnMachineFunction(llvm::MachineFunction &F) override;
+  bool runOnFunction(llvm::Function &F) override;
 }; // end of struct ValeConcurrencyStackMeasuringPass
 
 void AddStackSizePass(LLVMModuleRef moduleRef, LLVMPassManagerRef passManager);

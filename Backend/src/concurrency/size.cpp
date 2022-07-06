@@ -22,14 +22,14 @@ llvm::StringRef ValeConcurrencyStackMeasuringPass::getPassName() const {
   return "ValeConcurrencyStackMeasuringPass";
 }
 
-bool ValeConcurrencyStackMeasuringPass::runOnMachineFunction(MachineFunction &F) {
+bool ValeConcurrencyStackMeasuringPass::runOnFunction(Function &F) {
   errs() << "ValeConcurrencyStackMeasuringPass: ";
   errs().write_escaped(F.getName()) << '\n';
   return false;
 }
 
 ValeConcurrencyStackMeasuringPass::ValeConcurrencyStackMeasuringPass()
-: llvm::MachineFunctionPass(ID) {
+: llvm::FunctionPass(ID) {
 }
 
 INITIALIZE_PASS(

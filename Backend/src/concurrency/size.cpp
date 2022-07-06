@@ -49,22 +49,6 @@ void AddStackSizePass(LLVMModuleRef moduleRef, LLVMPassManagerRef passManagerRef
 }
 }
 
-//INITIALIZE_PASS_BEGIN(ValeConcurrencyStackMeasuringPass, "ValeConcurrencyStackMeasuringPass", " This pass print the function name, if enable-name-printer option is mentioned with -O2",
-//    false /* Only looks at CFG */,
-//    false /* Analysis Pass */)
-//// Add pass dependencies here:
-//INITIALIZE_PASS_DEPENDENCY(PromoteLegacyPass)
-//INITIALIZE_PASS_END(ValeConcurrencyStackMeasuringPass, "ValeConcurrencyStackMeasuringPass", " This pass print the function name, if enable-name-printer option is mentioned with -O2",
-//    false /* Only looks at CFG */, false /* Analysis Pass */)
-
-//static RegisterPass<ValeConcurrencyStackMeasuringPass> X(
-//    "ValeConcurrencyStackMeasuringPass",
-//    "ValeConcurrencyStackMeasuringPass World Pass",
-//    false /* Only looks at CFG */,
-//    false /* Analysis Pass */);
-//
-//static llvm::RegisterStandardPasses Y(
-//    llvm::PassManagerBuilder::EP_OptimizerLast,
-//    [](const llvm::PassManagerBuilder &Builder, llvm::legacy::PassManagerBase &PM) {
-//      PM.add(new ValeConcurrencyStackMeasuringPass());
-//    });
+// The above is just for a regular FunctionPass, but other things like the optimizer might mess with
+// the generated code and throw our stack size measurements off. We have to make a MachineFunctionPass
+// presumably like the one described in https://www.kharghoshal.xyz/blog/writing-machinefunctionpass.

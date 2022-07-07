@@ -48,24 +48,3 @@ void AddStackSizePass(LLVMModuleRef moduleRef, LLVMPassManagerRef passManagerRef
   passManager->add(new ValeConcurrencyStackMeasuringPass());
 }
 }
-
-// The above is just for a regular FunctionPass, but other things like the optimizer might mess with
-// the generated code and throw our stack size measurements off. We have to make a MachineFunctionPass
-// presumably like the one described in https://www.kharghoshal.xyz/blog/writing-machinefunctionpass.
-
-// It might be easiest to fork LLVM itself to do this. Maybe we can dynamically link a library in,
-// like something did with -load?
-
-// It'll probably be a good idea to put this behind a flag, so we can either spawn threads or use this
-// weird stack thing. And perhaps yet another flag that's halfway between, kind of like the google
-// approach.
-
-// Other relevant links:
-// - https://internals.rust-lang.org/t/how-to-let-rustc-compile-functions-with-segmented-stack/16380
-// - https://lists.llvm.org/pipermail/llvm-dev/2013-September/065333.html
-//   > If you want something that includes stack-spill slots and the like, then
-//   > you'd need to write a MachineFunction Pass and examine the generated
-//   > machine instructions.  Alternatively, there might be a way in a
-//   > MachineFunctionPass to get a pointer to a MachineFrame object and to
-//   > query its size.
-// - https://lists.llvm.org/pipermail/llvm-dev/2015-November/092030.html

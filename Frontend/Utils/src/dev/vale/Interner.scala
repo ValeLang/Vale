@@ -41,7 +41,7 @@ trait IInterning extends Product {
     // it doesnt matter that thatObj.uniqueId is nonzero and this.uniqueId is zero.
     // InterningId.equals will always return true.
     getClass == thatObj.getClass &&
-    productIterator.sameElements(thatObj.asInstanceOf[Product].productIterator)
+      productIterator.sameElements(thatObj.asInstanceOf[Product].productIterator)
   }
 
   // Can be overridden, such as by StrI.
@@ -106,14 +106,14 @@ case class StrI(str: String) extends IInterning {
     }
     val buffer = new Array[Char](8)
     str.getChars(0, str.length, buffer, 0)
-    val char0 = buffer(0)
-    val char1 = buffer(1)
-    val char2 = buffer(2)
-    val char3 = buffer(3)
-    val char4 = buffer(4)
-    val char5 = buffer(5)
-    val char6 = buffer(6)
-    val char7 = buffer(7)
+    val char0: Long = buffer(0)
+    val char1: Long = buffer(1)
+    val char2: Long = buffer(2)
+    val char3: Long = buffer(3)
+    val char4: Long = buffer(4)
+    val char5: Long = buffer(5)
+    val char6: Long = buffer(6)
+    val char7: Long = buffer(7)
     if (char0 >= 128 ||
       char1 >= 128 ||
       char2 >= 128 ||
@@ -126,14 +126,14 @@ case class StrI(str: String) extends IInterning {
     }
     // We do +1 so that we don't collide with 0, which already means not interned.
     val total: Long =
-      1 + ((char0 << (7 * 7)) |
-        (char1 << (7 * 6)) |
-        (char2 << (7 * 5)) |
-        (char3 << (7 * 4)) |
-        (char4 << (7 * 3)) |
-        (char5 << (7 * 2)) |
-        (char6 << (7 * 1)) |
-        (char7 << (7 * 0)));
+      1L + ((char0 << (7 * 7)) |
+        (char1 << (7L * 6L)) |
+        (char2 << (7L * 5L)) |
+        (char3 << (7L * 4L)) |
+        (char4 << (7L * 3L)) |
+        (char5 << (7L * 2L)) |
+        (char6 << (7L * 1L)) |
+        (char7 << (7L * 0L)));
     vassert(total < Interner.MIN_INTERNING_ID)
     total
   }

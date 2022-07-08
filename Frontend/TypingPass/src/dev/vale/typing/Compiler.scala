@@ -1,6 +1,6 @@
 package dev.vale.typing
 
-import dev.vale.{Err, Interner, Ok, PackageCoordinate, PackageCoordinateMap, Profiler, RangeS, Result, vassert, vassertOne, vcurious, vfail, vimpl, vwat}
+import dev.vale.{Err, Interner, Keywords, Ok, PackageCoordinate, PackageCoordinateMap, Profiler, RangeS, Result, vassert, vassertOne, vcurious, vfail, vimpl, vwat, _}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.UseP
 import dev.vale.postparsing.patterns.AtomSP
@@ -12,7 +12,6 @@ import dev.vale.typing.expression.{ExpressionCompiler, IExpressionCompilerDelega
 import dev.vale.typing.function.{DestructorCompiler, FunctionCompiler, FunctionCompilerCore, IFunctionCompilerDelegate, VirtualCompiler}
 import dev.vale.typing.infer.IInfererDelegate
 import dev.vale.typing.types.{BoolT, CitizenRefT, CoordT, FloatT, ImmutableT, IntT, InterfaceTT, KindT, MutabilityT, NeverT, OverloadSetT, ParamFilter, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StrT, StructMemberT, StructTT, VariabilityT, VoidT}
-import dev.vale._
 import dev.vale.highertyping._
 import dev.vale.postparsing.ICompileErrorS
 import OverloadResolver.FindFunctionFailure
@@ -83,6 +82,7 @@ class Compiler(
     debugOut: (=> String) => Unit,
 
     interner: Interner,
+    keywords: Keywords,
     globalOptions: GlobalOptions) {
   val opts = TypingPassOptions(debugOut, globalOptions)
 
@@ -252,7 +252,7 @@ class Compiler(
         }
 
         override def resolveExactSignature(env: IEnvironment, state: CompilerOutputs, range: RangeS, name: String, coords: Vector[CoordT]): Result[PrototypeT, FindFunctionFailure] = {
-            overloadCompiler.findFunction(env, state, range, interner.intern(CodeNameS(name)), Vector.empty, Array.empty, coords.map(ParamFilter(_, None)), Vector.empty, true)
+            overloadCompiler.findFunction(env, state, range, interner.intern(CodeNameS(interner.intern(StrI(name)))), Vector.empty, Array.empty, coords.map(ParamFilter(_, None)), Vector.empty, true)
         }
       })
   val convertHelper =
@@ -274,8 +274,8 @@ class Compiler(
   val structCompiler: StructCompiler =
     new StructCompiler(
       opts,
-
       interner,
+      keywords,
       nameTranslator,
       inferCompiler,
       ancestorHelper,
@@ -304,7 +304,7 @@ class Compiler(
       })
 
   val functionCompiler: FunctionCompiler =
-    new FunctionCompiler(opts, interner, nameTranslator, templataCompiler, inferCompiler, convertHelper, structCompiler,
+    new FunctionCompiler(opts, interner, keywords, nameTranslator, templataCompiler, inferCompiler, convertHelper, structCompiler,
       new IFunctionCompilerDelegate {
     override def evaluateBlockStatements(
         coutputs: CompilerOutputs,
@@ -346,26 +346,26 @@ class Compiler(
         functionCompilerCore, structCompiler, destructorCompiler, arrayCompiler, fullEnv, coutputs, life, callRange, originFunction, paramCoords, maybeRetCoord)
     }
   })
-  val overloadCompiler: OverloadResolver = new OverloadResolver(opts, interner, templataCompiler, inferCompiler, functionCompiler)
-  val destructorCompiler: DestructorCompiler = new DestructorCompiler(opts, interner, structCompiler, overloadCompiler)
+  val overloadCompiler: OverloadResolver = new OverloadResolver(opts, interner, keywords, templataCompiler, inferCompiler, functionCompiler)
+  val destructorCompiler: DestructorCompiler = new DestructorCompiler(opts, interner, keywords, structCompiler, overloadCompiler)
 
   val virtualCompiler = new VirtualCompiler(opts, interner, overloadCompiler)
 
-  val sequenceCompiler = new SequenceCompiler(opts, interner, structCompiler, templataCompiler)
+  val sequenceCompiler = new SequenceCompiler(opts, interner, keywords, structCompiler, templataCompiler)
 
   val arrayCompiler =
     new ArrayCompiler(
       opts,
-
       interner,
+      keywords,
       inferCompiler,
       overloadCompiler)
 
   val expressionCompiler: ExpressionCompiler =
     new ExpressionCompiler(
       opts,
-
       interner,
+      keywords,
       nameTranslator,
       templataCompiler,
       inferCompiler,
@@ -388,30 +388,30 @@ class Compiler(
 
   val edgeCompiler = new EdgeCompiler(interner, overloadCompiler)
 
-  val functorHelper = new FunctorHelper(interner, structCompiler)
-  val structConstructorMacro = new StructConstructorMacro(opts, interner, nameTranslator)
-  val structDropMacro = new StructDropMacro(interner, nameTranslator, destructorCompiler)
-  val structFreeMacro = new StructFreeMacro(interner, nameTranslator, destructorCompiler)
-  val interfaceFreeMacro = new InterfaceFreeMacro(interner, overloadCompiler)
-  val asSubtypeMacro = new AsSubtypeMacro(ancestorHelper, expressionCompiler)
-  val rsaLenMacro = new RSALenMacro()
-  val rsaMutNewMacro = new RSAMutableNewMacro(interner)
-  val rsaImmNewMacro = new RSAImmutableNewMacro(interner)
-  val rsaPushMacro = new RSAMutablePushMacro(interner)
-  val rsaPopMacro = new RSAMutablePopMacro(interner)
-  val rsaCapacityMacro = new RSAMutableCapacityMacro(interner)
-  val ssaLenMacro = new SSALenMacro()
-  val rsaDropMacro = new RSADropIntoMacro(arrayCompiler)
-  val ssaDropMacro = new SSADropIntoMacro(arrayCompiler)
-  val rsaFreeMacro = new RSAFreeMacro(arrayCompiler, destructorCompiler)
-  val ssaFreeMacro = new SSAFreeMacro(arrayCompiler, destructorCompiler)
-//  val ssaLenMacro = new SSALenMacro()
+  val functorHelper = new FunctorHelper(interner, keywords, structCompiler)
+  val structConstructorMacro = new StructConstructorMacro(opts, interner, keywords, nameTranslator)
+  val structDropMacro = new StructDropMacro(interner, keywords, nameTranslator, destructorCompiler)
+  val structFreeMacro = new StructFreeMacro(interner, keywords, nameTranslator, destructorCompiler)
+  val interfaceFreeMacro = new InterfaceFreeMacro(interner, keywords, overloadCompiler)
+  val asSubtypeMacro = new AsSubtypeMacro(keywords, ancestorHelper, expressionCompiler)
+  val rsaLenMacro = new RSALenMacro(keywords)
+  val rsaMutNewMacro = new RSAMutableNewMacro(interner, keywords)
+  val rsaImmNewMacro = new RSAImmutableNewMacro(interner, keywords)
+  val rsaPushMacro = new RSAMutablePushMacro(interner, keywords)
+  val rsaPopMacro = new RSAMutablePopMacro(interner, keywords)
+  val rsaCapacityMacro = new RSAMutableCapacityMacro(interner, keywords)
+  val ssaLenMacro = new SSALenMacro(keywords)
+  val rsaDropMacro = new RSADropIntoMacro(keywords, arrayCompiler)
+  val ssaDropMacro = new SSADropIntoMacro(keywords, arrayCompiler)
+  val rsaFreeMacro = new RSAFreeMacro(keywords, arrayCompiler, destructorCompiler)
+  val ssaFreeMacro = new SSAFreeMacro(keywords, arrayCompiler, destructorCompiler)
+//  val ssaLenMacro = new SSALenMacro(keywords)
   val implDropMacro = new ImplDropMacro(interner, nameTranslator)
-  val implFreeMacro = new ImplFreeMacro(interner, nameTranslator)
-  val interfaceDropMacro = new InterfaceDropMacro(interner, nameTranslator)
-  val abstractBodyMacro = new AbstractBodyMacro()
-  val lockWeakMacro = new LockWeakMacro(expressionCompiler)
-  val sameInstanceMacro = new SameInstanceMacro()
+  val implFreeMacro = new ImplFreeMacro(interner, keywords, nameTranslator)
+  val interfaceDropMacro = new InterfaceDropMacro(interner, keywords, nameTranslator)
+  val abstractBodyMacro = new AbstractBodyMacro(keywords)
+  val lockWeakMacro = new LockWeakMacro(keywords, expressionCompiler)
+  val sameInstanceMacro = new SameInstanceMacro(keywords)
   val anonymousInterfaceMacro =
     new AnonymousInterfaceMacro(
       opts, interner, nameTranslator, overloadCompiler, structCompiler, structConstructorMacro, structDropMacro, structFreeMacro, interfaceFreeMacro, implDropMacro)
@@ -501,17 +501,17 @@ class Compiler(
               asSubtypeMacro.generatorId -> asSubtypeMacro),
             namespaceNameToTemplatas,
             // Bulitins
-            env.TemplatasStore(FullNameT(PackageCoordinate.BUILTIN(interner), Vector(), interner.intern(PackageTopLevelNameT())), Map(), Map()).addEntries(
+            env.TemplatasStore(FullNameT(PackageCoordinate.BUILTIN(interner, keywords), Vector(), interner.intern(PackageTopLevelNameT())), Map(), Map()).addEntries(
               interner,
               Vector[(INameT, IEnvEntry)](
-                interner.intern(PrimitiveNameT("int")) -> TemplataEnvEntry(KindTemplata(IntT.i32)),
-                interner.intern(PrimitiveNameT("i64")) -> TemplataEnvEntry(KindTemplata(IntT.i64)),
-                interner.intern(PrimitiveNameT("Array")) -> TemplataEnvEntry(RuntimeSizedArrayTemplateTemplata()),
-                interner.intern(PrimitiveNameT("bool")) -> TemplataEnvEntry(KindTemplata(BoolT())),
-                interner.intern(PrimitiveNameT("float")) -> TemplataEnvEntry(KindTemplata(FloatT())),
-                interner.intern(PrimitiveNameT("__Never")) -> TemplataEnvEntry(KindTemplata(NeverT(false))),
-                interner.intern(PrimitiveNameT("str")) -> TemplataEnvEntry(KindTemplata(StrT())),
-                interner.intern(PrimitiveNameT("void")) -> TemplataEnvEntry(KindTemplata(VoidT())))))
+                interner.intern(PrimitiveNameT(keywords.int)) -> TemplataEnvEntry(KindTemplata(IntT.i32)),
+                interner.intern(PrimitiveNameT(keywords.i64)) -> TemplataEnvEntry(KindTemplata(IntT.i64)),
+                interner.intern(PrimitiveNameT(keywords.Array)) -> TemplataEnvEntry(RuntimeSizedArrayTemplateTemplata()),
+                interner.intern(PrimitiveNameT(keywords.bool)) -> TemplataEnvEntry(KindTemplata(BoolT())),
+                interner.intern(PrimitiveNameT(keywords.float)) -> TemplataEnvEntry(KindTemplata(FloatT())),
+                interner.intern(PrimitiveNameT(keywords.__Never)) -> TemplataEnvEntry(KindTemplata(NeverT(false))),
+                interner.intern(PrimitiveNameT(keywords.str)) -> TemplataEnvEntry(KindTemplata(StrT())),
+                interner.intern(PrimitiveNameT(keywords.void)) -> TemplataEnvEntry(KindTemplata(VoidT())))))
 
         val coutputs = CompilerOutputs()
 
@@ -603,7 +603,7 @@ class Compiler(
 
         breakable {
           while (true) {
-            val topLevelThingsAtStart = coutputs.countTopLevelThings()
+            val denizensAtStart = coutputs.countDenizens()
 
             coutputs.getAllStructs().foreach(struct => {
               if (struct.mutability == ImmutableT) {
@@ -652,8 +652,8 @@ class Compiler(
             }
 
 
-            val topLevelThingsAtEnd = coutputs.countTopLevelThings()
-            if (topLevelThingsAtStart == topLevelThingsAtEnd)
+            val denizensAtEnd = coutputs.countDenizens()
+            if (denizensAtStart == denizensAtEnd)
               break
           }
         }
@@ -833,7 +833,7 @@ class Compiler(
   // Returns whether we should eagerly compile this and anything it depends on.
   def isRootFunction(functionA: FunctionA): Boolean = {
     functionA.name match {
-      case FunctionNameS("main", _) => return true
+      case FunctionNameS(StrI("main"), _) => return true
       case _ =>
     }
     functionA.attributes.exists({

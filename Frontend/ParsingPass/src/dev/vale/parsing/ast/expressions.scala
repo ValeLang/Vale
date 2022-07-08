@@ -1,15 +1,16 @@
 package dev.vale.parsing.ast
 
+import dev.vale.lexing.RangeL
 import dev.vale.{vassert, vcurious, vpass}
 import dev.vale.vpass
 
 trait IExpressionPE {
-  def range: RangeP
+  def range: RangeL
   def needsSemicolonBeforeNextStatement: Boolean
   def producesResult(): Boolean
 }
 
-case class VoidPE(range: RangeP) extends IExpressionPE {
+case class VoidPE(range: RangeL) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = false
   override def producesResult(): Boolean = false
@@ -19,32 +20,32 @@ case class VoidPE(range: RangeP) extends IExpressionPE {
 // We have this because it sometimes even a single-member pack can change the semantics.
 // (moo).someMethod() will move moo, and moo.someMethod() will point moo.
 // There's probably a better way to distinguish this...
-case class PackPE(range: RangeP, inners: Vector[IExpressionPE]) extends IExpressionPE {
+case class PackPE(range: RangeL, inners: Vector[IExpressionPE]) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true
 }
 
 // Parens that we use for precedence
-case class SubExpressionPE(range: RangeP, inner: IExpressionPE) extends IExpressionPE {
+case class SubExpressionPE(range: RangeL, inner: IExpressionPE) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true
 }
 
-case class AndPE(range: RangeP, left: IExpressionPE, right: BlockPE) extends IExpressionPE {
+case class AndPE(range: RangeL, left: IExpressionPE, right: BlockPE) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true
 }
 
-case class OrPE(range: RangeP, left: IExpressionPE, right: BlockPE) extends IExpressionPE {
+case class OrPE(range: RangeL, left: IExpressionPE, right: BlockPE) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true
 }
 
-case class IfPE(range: RangeP, condition: IExpressionPE, thenBody: BlockPE, elseBody: BlockPE) extends IExpressionPE {
+case class IfPE(range: RangeL, condition: IExpressionPE, thenBody: BlockPE, elseBody: BlockPE) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = false
   vcurious(!condition.isInstanceOf[BlockPE])
@@ -64,27 +65,27 @@ case class IfPE(range: RangeP, condition: IExpressionPE, thenBody: BlockPE, else
 // condition and body are both blocks because otherwise, if we declare a variable inside them, then
 // we could be declaring a variable twice. a block ensures that its scope is cleaned up, which helps
 // know we can run it again.
-case class WhilePE(range: RangeP, condition: IExpressionPE, body: BlockPE) extends IExpressionPE {
+case class WhilePE(range: RangeL, condition: IExpressionPE, body: BlockPE) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = false
   override def producesResult(): Boolean = false
 }
-case class EachPE(range: RangeP, entryPattern: PatternPP, inKeywordRange: RangeP, iterableExpr: IExpressionPE, body: BlockPE) extends IExpressionPE {
+case class EachPE(range: RangeL, entryPattern: PatternPP, inKeywordRange: RangeL, iterableExpr: IExpressionPE, body: BlockPE) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = false
   override def producesResult(): Boolean = body.producesResult()
 }
-case class RangePE(range: RangeP, fromExpr: IExpressionPE, toExpr: IExpressionPE) extends IExpressionPE {
+case class RangePE(range: RangeL, fromExpr: IExpressionPE, toExpr: IExpressionPE) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true
 }
-case class DestructPE(range: RangeP, inner: IExpressionPE) extends IExpressionPE {
+case class DestructPE(range: RangeL, inner: IExpressionPE) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = false
 }
-case class UnletPE(range: RangeP, name: IImpreciseNameP) extends IExpressionPE {
+case class UnletPE(range: RangeL, name: IImpreciseNameP) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = false
@@ -93,24 +94,24 @@ case class UnletPE(range: RangeP, name: IImpreciseNameP) extends IExpressionPE {
 //  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
 //  override def needsSemicolonAtEndOfStatement: Boolean = false
 //}
-case class MutatePE(range: RangeP, mutatee: IExpressionPE, source: IExpressionPE) extends IExpressionPE {
+case class MutatePE(range: RangeL, mutatee: IExpressionPE, source: IExpressionPE) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true
 }
-case class ReturnPE(range: RangeP, expr: IExpressionPE) extends IExpressionPE {
+case class ReturnPE(range: RangeL, expr: IExpressionPE) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = false
 }
-case class BreakPE(range: RangeP) extends IExpressionPE {
+case class BreakPE(range: RangeL) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = false
 }
 
 case class LetPE(
-  range: RangeP,
+  range: RangeL,
 //  templateRules: Option[TemplateRulesP],
   pattern: PatternPP,
   source: IExpressionPE
@@ -120,7 +121,7 @@ case class LetPE(
   override def producesResult(): Boolean = false
 }
 
-case class TuplePE(range: RangeP, elements: Vector[IExpressionPE]) extends IExpressionPE {
+case class TuplePE(range: RangeL, elements: Vector[IExpressionPE]) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true
@@ -131,7 +132,7 @@ case object RuntimeSizedP extends IArraySizeP
 case class StaticSizedP(sizePT: Option[ITemplexPT]) extends IArraySizeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class ConstructArrayPE(
-  range: RangeP,
+  range: RangeL,
   typePT: Option[ITemplexPT],
   mutabilityPT: Option[ITemplexPT],
   variabilityPT: Option[ITemplexPT],
@@ -146,52 +147,54 @@ case class ConstructArrayPE(
   override def producesResult(): Boolean = true
 }
 
-case class ConstantIntPE(range: RangeP, value: Long, bits: Int) extends IExpressionPE {
+case class ConstantIntPE(range: RangeL, value: Long, bits: Option[Long]) extends IExpressionPE {
+  vpass()
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true
 }
-case class ConstantBoolPE(range: RangeP, value: Boolean) extends IExpressionPE {
+case class ConstantBoolPE(range: RangeL, value: Boolean) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true
 }
-case class ConstantStrPE(range: RangeP, value: String) extends IExpressionPE {
+case class ConstantStrPE(range: RangeL, value: String) extends IExpressionPE {
+  vpass()
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true
 }
-case class ConstantFloatPE(range: RangeP, value: Double) extends IExpressionPE {
+case class ConstantFloatPE(range: RangeL, value: Double) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true
 }
 
-case class StrInterpolatePE(range: RangeP, parts: Vector[IExpressionPE]) extends IExpressionPE {
+case class StrInterpolatePE(range: RangeL, parts: Vector[IExpressionPE]) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true
 }
 
 case class DotPE(
-  range: RangeP,
+  range: RangeL,
   left: IExpressionPE,
-  operatorRange: RangeP,
+  operatorRange: RangeL,
   member: NameP) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true
 }
 
-case class IndexPE(range: RangeP, left: IExpressionPE, args: Vector[IExpressionPE]) extends IExpressionPE {
+case class IndexPE(range: RangeL, left: IExpressionPE, args: Vector[IExpressionPE]) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true
 }
 
 case class FunctionCallPE(
-  range: RangeP,
-  operatorRange: RangeP,
+  range: RangeL,
+  operatorRange: RangeL,
   callableExpr: IExpressionPE,
   argExprs: Vector[IExpressionPE]
 ) extends IExpressionPE {
@@ -201,8 +204,8 @@ case class FunctionCallPE(
 }
 
 case class BraceCallPE(
-  range: RangeP,
-  operatorRange: RangeP,
+  range: RangeL,
+  operatorRange: RangeL,
   subjectExpr: IExpressionPE,
   argExprs: Vector[IExpressionPE],
   callableReadwrite: Boolean
@@ -212,7 +215,7 @@ case class BraceCallPE(
   override def producesResult(): Boolean = true
 }
 
-case class NotPE(range: RangeP, inner: IExpressionPE) extends IExpressionPE {
+case class NotPE(range: RangeL, inner: IExpressionPE) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true
@@ -220,7 +223,7 @@ case class NotPE(range: RangeP, inner: IExpressionPE) extends IExpressionPE {
 }
 
 case class AugmentPE(
-  range: RangeP,
+  range: RangeL,
   targetOwnership: OwnershipP,
   inner: IExpressionPE
 ) extends IExpressionPE {
@@ -232,7 +235,7 @@ case class AugmentPE(
 }
 
 case class BinaryCallPE(
-  range: RangeP,
+  range: RangeL,
   functionName: NameP,
   leftExpr: IExpressionPE,
   rightExpr: IExpressionPE
@@ -243,9 +246,9 @@ case class BinaryCallPE(
 }
 
 case class MethodCallPE(
-  range: RangeP,
+  range: RangeL,
   subjectExpr: IExpressionPE,
-  operatorRange: RangeP,
+  operatorRange: RangeL,
   methodLookup: LookupPE,
   argExprs: Vector[IExpressionPE]
 ) extends IExpressionPE {
@@ -256,27 +259,28 @@ case class MethodCallPE(
 }
 
 sealed trait IImpreciseNameP {
-  def range: RangeP
+  def range: RangeL
 }
-case class LookupNameP(name: NameP) extends IImpreciseNameP { override def range: RangeP = name.range }
-case class IterableNameP(range: RangeP) extends IImpreciseNameP
-case class IteratorNameP(range: RangeP) extends IImpreciseNameP
-case class IterationOptionNameP(range: RangeP) extends IImpreciseNameP
+case class LookupNameP(name: NameP) extends IImpreciseNameP { override def range: RangeL = name.range }
+case class IterableNameP(range: RangeL) extends IImpreciseNameP
+case class IteratorNameP(range: RangeL) extends IImpreciseNameP
+case class IterationOptionNameP(range: RangeL) extends IImpreciseNameP
 
 case class LookupPE(
   name: IImpreciseNameP,
   templateArgs: Option[TemplateArgsP]
 ) extends IExpressionPE {
+  vpass()
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
-  override def range: RangeP = name.range
+  override def range: RangeL = name.range
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true
 }
-case class TemplateArgsP(range: RangeP, args: Vector[ITemplexPT]) {
+case class TemplateArgsP(range: RangeL, args: Vector[ITemplexPT]) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
-case class MagicParamLookupPE(range: RangeP) extends IExpressionPE {
+case class MagicParamLookupPE(range: RangeL) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true
@@ -288,12 +292,12 @@ case class LambdaPE(
   function: FunctionP
 ) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
-  override def range: RangeP = function.range
+  override def range: RangeL = function.range
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true
 }
 
-case class BlockPE(range: RangeP, inner: IExpressionPE) extends IExpressionPE {
+case class BlockPE(range: RangeL, inner: IExpressionPE) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
   override def needsSemicolonBeforeNextStatement: Boolean = false
   override def producesResult(): Boolean = inner.producesResult()
@@ -307,13 +311,13 @@ case class ConsecutorPE(inners: Vector[IExpressionPE]) extends IExpressionPE {
 
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
 
-  override def range: RangeP = RangeP(inners.head.range.begin, inners.last.range.end)
+  override def range: RangeL = RangeL(inners.head.range.begin, inners.last.range.end)
 
   override def needsSemicolonBeforeNextStatement: Boolean = inners.last.needsSemicolonBeforeNextStatement
   override def producesResult(): Boolean = inners.last.producesResult()
 }
 
-case class ShortcallPE(range: RangeP, argExprs: Vector[IExpressionPE]) extends IExpressionPE {
+case class ShortcallPE(range: RangeL, argExprs: Vector[IExpressionPE]) extends IExpressionPE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def needsSemicolonBeforeNextStatement: Boolean = true
   override def producesResult(): Boolean = true

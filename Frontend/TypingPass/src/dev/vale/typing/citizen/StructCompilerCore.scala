@@ -1,8 +1,8 @@
 package dev.vale.typing.citizen
 
 import dev.vale.highertyping.{FunctionA, InterfaceA, StructA}
-import dev.vale.{Interner, vassertOne, vcurious, vfail, vimpl, vwat}
-import dev.vale.parsing.ast.{CallMacro, DontCallMacro}
+import dev.vale.{Interner, Keywords, vassertOne, vcurious, vfail, vimpl, vwat, _}
+import dev.vale.parsing.ast.{CallMacroP, DontCallMacroP}
 import dev.vale.postparsing.rules.RuneUsage
 import dev.vale.postparsing.{ExportS, FreeDeclarationNameS, FunctionNameS, ICitizenAttributeS, IFunctionDeclarationNameS, IStructMemberS, MacroCallS, NormalStructMemberS, RuneNameS, SealedS, TopLevelCitizenDeclarationNameS, VariadicStructMemberS}
 import dev.vale.typing.expression.CallCompiler
@@ -12,13 +12,11 @@ import dev.vale.typing.templata._
 import dev.vale.postparsing._
 import dev.vale.typing.OverloadResolver.FindFunctionFailure
 import dev.vale.typing.ast.{ICitizenAttributeT, SealedT}
-import dev.vale.typing.{CompileErrorExceptionT, ImmStructCantHaveVaryingMember, RangedInternalErrorT, TypingPassOptions, CompilerOutputs, env}
+import dev.vale.typing.{CompileErrorExceptionT, CompilerOutputs, ImmStructCantHaveVaryingMember, RangedInternalErrorT, TypingPassOptions, env}
 import dev.vale.typing.{ast, _}
 import dev.vale.typing.env._
 import dev.vale.typing.function.FunctionCompiler
-import dev.vale._
-import dev.vale.parsing.ast.DontCallMacro
-import dev.vale.typing.ast.ProgramT.tupleHumanName
+import dev.vale.parsing.ast.DontCallMacroP
 import dev.vale.typing.env.{CitizenEnvironment, FunctionEnvEntry, IEnvironment, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
 import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, CodeVarNameT, FreeTemplateNameT, FunctionTemplateNameT, INameT, LambdaCitizenTemplateNameT, NameTranslator, RuneNameT, SelfNameT}
 import dev.vale.typing.templata.{Conversions, CoordListTemplata, CoordTemplata, FunctionTemplata, ITemplata, KindTemplata, MutabilityTemplata}
@@ -30,8 +28,8 @@ import scala.collection.immutable.List
 
 class StructCompilerCore(
   opts: TypingPassOptions,
-
   interner: Interner,
+  keywords: Keywords,
   nameTranslator: NameTranslator,
   ancestorHelper: AncestorHelper,
   delegate: IStructCompilerDelegate) {
@@ -69,23 +67,23 @@ class StructCompilerCore(
 
     val defaultCalledMacros =
       Vector(
-        MacroCallS(structA.range, CallMacro, "DeriveStructDrop"),
-        MacroCallS(structA.range, CallMacro, "DeriveStructFree"),
-        MacroCallS(structA.range, CallMacro, "DeriveImplFree"))
+        MacroCallS(structA.range, CallMacroP, keywords.DeriveStructDrop),
+        MacroCallS(structA.range, CallMacroP, keywords.DeriveStructFree),
+        MacroCallS(structA.range, CallMacroP, keywords.DeriveImplFree))
     val macrosToCall =
       structA.attributes.foldLeft(defaultCalledMacros)({
-        case (macrosToCall, mc @ MacroCallS(range, CallMacro, macroName)) => {
+        case (macrosToCall, mc @ MacroCallS(range, CallMacroP, macroName)) => {
           if (macrosToCall.exists(_.macroName == macroName)) {
             throw CompileErrorExceptionT(RangedInternalErrorT(range, "Calling macro twice: " + macroName))
           }
           macrosToCall :+ mc
         }
-        case (macrosToCall, MacroCallS(_, DontCallMacro, macroName)) => macrosToCall.filter(_.macroName != macroName)
+        case (macrosToCall, MacroCallS(_, DontCallMacroP, macroName)) => macrosToCall.filter(_.macroName != macroName)
         case (macrosToCall, _) => macrosToCall
       })
 
     val envEntriesFromMacros =
-      macrosToCall.flatMap({ case MacroCallS(range, CallMacro, macroName) =>
+      macrosToCall.flatMap({ case MacroCallS(range, CallMacroP, macroName) =>
         val maacro =
           structRunesEnv.globalEnv.nameToStructDefinedMacro.get(macroName) match {
             case None => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Macro not found: " + macroName))
@@ -119,7 +117,7 @@ class StructCompilerCore(
               structA.members(index).range,
               structA.name,
               structA.members(index) match {
-                case NormalStructMemberS(range, name, variability, typeRune) => name
+                case NormalStructMemberS(range, name, variability, typeRune) => name.str
                 case VariadicStructMemberS(range, variability, typeRune) => "(unnamed)"
               }))
         }
@@ -214,17 +212,17 @@ class StructCompilerCore(
 
     val defaultCalledMacros =
       Vector(
-        MacroCallS(interfaceA.range, CallMacro, "DeriveInterfaceDrop"),
-        MacroCallS(interfaceA.range, CallMacro, "DeriveInterfaceFree"))
+        MacroCallS(interfaceA.range, CallMacroP, keywords.DeriveInterfaceDrop),
+        MacroCallS(interfaceA.range, CallMacroP, keywords.DeriveInterfaceFree))
     val macrosToCall =
       interfaceA.attributes.foldLeft(defaultCalledMacros)({
-        case (macrosToCall, mc @ MacroCallS(_, CallMacro, _)) => macrosToCall :+ mc
-        case (macrosToCall, MacroCallS(_, DontCallMacro, macroName)) => macrosToCall.filter(_.macroName != macroName)
+        case (macrosToCall, mc @ MacroCallS(_, CallMacroP, _)) => macrosToCall :+ mc
+        case (macrosToCall, MacroCallS(_, DontCallMacroP, macroName)) => macrosToCall.filter(_.macroName != macroName)
         case (macrosToCall, _) => macrosToCall
       })
 
     val envEntriesFromMacros =
-      macrosToCall.flatMap({ case MacroCallS(range, CallMacro, macroName) =>
+      macrosToCall.flatMap({ case MacroCallS(range, CallMacroP, macroName) =>
         val maacro =
           interfaceRunesEnv.globalEnv.nameToInterfaceDefinedMacro.get(macroName) match {
             case None => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Macro not found: " + macroName))
@@ -338,7 +336,7 @@ class StructCompilerCore(
       case VariadicStructMemberS(_, _, _) => {
         val CoordListTemplata(coords) = typeTemplata
         coords.zipWithIndex.map({ case (coord, index) =>
-          StructMemberT(interner.intern(CodeVarNameT(index.toString)), variabilityT, ReferenceMemberTypeT(coord))
+          StructMemberT(interner.intern(CodeVarNameT(interner.intern(StrI(index.toString)))), variabilityT, ReferenceMemberTypeT(coord))
         })
       }
     }
@@ -389,12 +387,12 @@ class StructCompilerCore(
           .addEntries(
             interner,
             Vector(
-              interner.intern(FunctionTemplateNameT(CallCompiler.CALL_FUNCTION_NAME, functionA.range.begin)) ->
+              interner.intern(FunctionTemplateNameT(keywords.CALL_FUNCTION_NAME, functionA.range.begin)) ->
                 env.FunctionEnvEntry(functionA),
-              interner.intern(FunctionTemplateNameT(CallCompiler.DROP_FUNCTION_NAME, functionA.range.begin)) ->
+              interner.intern(FunctionTemplateNameT(keywords.DROP_FUNCTION_NAME, functionA.range.begin)) ->
                 FunctionEnvEntry(
                   containingFunctionEnv.globalEnv.structDropMacro.makeImplicitDropFunction(
-                    interner.intern(FunctionNameS(CallCompiler.DROP_FUNCTION_NAME, functionA.range.begin)), functionA.range)),
+                    interner.intern(FunctionNameS(keywords.DROP_FUNCTION_NAME, functionA.range.begin)), functionA.range)),
               nearName -> TemplataEnvEntry(KindTemplata(structTT)),
               interner.intern(SelfNameT()) -> TemplataEnvEntry(KindTemplata(structTT))) ++
               (if (mutability == ImmutableT) {

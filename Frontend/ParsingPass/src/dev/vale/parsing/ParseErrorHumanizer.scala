@@ -3,9 +3,10 @@ package dev.vale.parsing
 import dev.vale.{FileCoordinate, FileCoordinateMap}
 import dev.vale.CodeLocationS
 import dev.vale.SourceCodeUtils.{humanizeFile, humanizePos, nextThingAndRestOfLine}
+import dev.vale.lexing.{BadArraySizerEnd, BadAttributeError, BadBinaryFunctionName, BadDestructureError, BadDot, BadEndOfElseBody, BadEndOfIfBody, BadEndOfIfCondition, BadEndOfWhileBody, BadEndOfWhileCondition, BadExpressionBegin, BadExpressionEnd, BadForeachInError, BadFunctionAfterParam, BadFunctionBodyError, BadImplFor, BadInterfaceHeader, BadInterfaceMember, BadLetEndError, BadLetEqualsError, BadLetSourceError, BadLocalName, BadMemberEnd, BadMutateEqualsError, BadRuleCallParam, BadRuneTypeError, BadStartOfBlock, BadStartOfElseBody, BadStartOfIfBody, BadStartOfIfCondition, BadStartOfStatementError, BadStartOfWhileBody, BadStartOfWhileCondition, BadStringChar, BadStringInterpolationEnd, BadStructContentsBegin, BadStructMember, BadTemplateCallParam, BadTypeExpression, CantUseBreakInExpression, CantUseReturnInExpression, DontNeedSemicolon, ForgotSetKeyword, IParseError, IfBlocksMustBothOrNeitherReturn, LightFunctionMustHaveParamTypes, NeedSemicolon, NeedWhitespaceAroundBinaryOperator, OnlyRegionRunesCanHaveMutability, RangedInternalErrorP, UnknownTupleOrSubExpression, UnrecognizableExpressionAfterAugment, UnrecognizedDenizenError}
 
 object ParseErrorHumanizer {
-  def humanize(
+  def humanizeFromMap(
     fileMap: Map[FileCoordinate, String],
     fileCoord: FileCoordinate,
     err: IParseError):
@@ -31,6 +32,7 @@ object ParseErrorHumanizer {
         case BadDestructureError(pos) => "Bad destructure."
         case BadTypeExpression(pos) => "Bad type expression."
         case BadLocalName(pos) => "Bad local name."
+        case LightFunctionMustHaveParamTypes(range, paramIndex) => s": Function parameter must have a type!"
         case BadStringInterpolationEnd(pos) => "Bad string interpolation end."
         case CantUseBreakInExpression(pos) => "Can't use break inside an expression."
         case CantUseReturnInExpression(pos) => "Can't use return inside an expression."
@@ -51,7 +53,7 @@ object ParseErrorHumanizer {
         case BadStructMember(pos) => "Bad struct member."
         case BadBinaryFunctionName(pos) => "Bad binary function name."
 //        case CombinatorParseError(pos, msg) => "Internal parser error: " + msg + ":\n"
-        case UnrecognizedTopLevelThingError(pos) => "expected func, struct, interface, impl, import, or export, but found:\n"
+        case UnrecognizedDenizenError(pos) => "expected func, struct, interface, impl, import, or export, but found:\n"
         case BadFunctionBodyError(pos) => "expected a function body, or `;` to note there is none. Found:\n"
         case BadStartOfStatementError(pos) => "expected `}` to end the block, but found:\n"
         case BadExpressionEnd(pos) => "expected `;` or `}` after expression, but found:\n"

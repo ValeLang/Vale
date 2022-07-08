@@ -1,6 +1,6 @@
 package dev.vale.typing.macros
 
-import dev.vale.RangeS
+import dev.vale.{Keywords, RangeS, StrI}
 import dev.vale.highertyping.FunctionA
 import dev.vale.typing.CompilerOutputs
 import dev.vale.typing.ast.{ArgLookupTE, BlockTE, FunctionHeaderT, FunctionT, LocationInFunctionEnvironment, LockWeakTE, ParameterT, ReturnTE}
@@ -13,14 +13,15 @@ import dev.vale.typing.ast
 
 
 class LockWeakMacro(
+  keywords: Keywords,
   expressionCompiler: ExpressionCompiler
 ) extends IFunctionBodyMacro {
-  val generatorId: String = "vale_lock_weak"
+  val generatorId: StrI = keywords.vale_lock_weak
 
   def generateFunctionBody(
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
-    generatorId: String,
+    generatorId: StrI,
     life: LocationInFunctionEnvironment,
     callRange: RangeS,
     originFunction: Option[FunctionA],

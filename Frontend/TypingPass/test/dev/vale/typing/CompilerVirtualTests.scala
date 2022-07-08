@@ -4,10 +4,9 @@ import dev.vale.typing.ast.AsSubtypeTE
 import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, FullNameT}
 import dev.vale.typing.templata.CoordTemplata
 import dev.vale.typing.types.{BorrowT, CoordT, InterfaceTT, OwnT, StructTT}
-import dev.vale.{Collector, vassert}
+import dev.vale.{Collector, StrI, vassert}
 import dev.vale.typing.names.CitizenTemplateNameT
 import dev.vale.typing.types.InterfaceTT
-import dev.vale.Collector
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.collection.immutable.Set
@@ -106,10 +105,10 @@ class CompilerVirtualTests extends FunSuite with Matchers {
     Collector.only(coutputs.lookupFunction("as"), {
       case as @ AsSubtypeTE(sourceExpr, targetSubtype, resultOptType, okConstructor, errConstructor) => {
         sourceExpr.result.reference match {
-          case CoordT(BorrowT,InterfaceTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("IShip"),Vector())))) =>
+          case CoordT(BorrowT,InterfaceTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT(StrI("IShip")),Vector())))) =>
         }
         targetSubtype match {
-          case StructTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("Raza"),Vector()))) =>
+          case StructTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT(StrI("Raza")),Vector()))) =>
         }
         val (firstGenericArg, secondGenericArg) =
           resultOptType match {
@@ -119,7 +118,7 @@ class CompilerVirtualTests extends FunSuite with Matchers {
                 FullNameT(
                   _, Vector(),
                   CitizenNameT(
-                    CitizenTemplateNameT("Result"),
+                    CitizenTemplateNameT(StrI("Result")),
                     Vector(firstGenericArg, secondGenericArg))))) => (firstGenericArg, secondGenericArg)
           }
         // They should both be pointers, since we dont really do borrows in structs yet
@@ -127,13 +126,13 @@ class CompilerVirtualTests extends FunSuite with Matchers {
           case CoordTemplata(
             CoordT(
               BorrowT,
-              StructTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("Raza"),Vector()))))) =>
+              StructTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT(StrI("Raza")),Vector()))))) =>
         }
         secondGenericArg match {
           case CoordTemplata(
             CoordT(
               BorrowT,
-              InterfaceTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT("IShip"),Vector()))))) =>
+              InterfaceTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT(StrI("IShip")),Vector()))))) =>
         }
         vassert(okConstructor.paramTypes.head.kind == targetSubtype)
         vassert(errConstructor.paramTypes.head.kind == sourceExpr.result.reference.kind)

@@ -1,13 +1,12 @@
 package dev.vale.typing.function
 
-import dev.vale.{Interner, Profiler, RangeS, vassertOne, vimpl, vwat}
+import dev.vale.{Interner, Keywords, Profiler, RangeS, postparsing, vassertOne, vimpl, vwat}
 import dev.vale.postparsing.{BlockSE, CodeBodyS, IFunctionDeclarationNameS, IVarNameS, LambdaDeclarationNameS}
 import dev.vale.postparsing.patterns.AtomSP
 import dev.vale.highertyping.CouldntSolveRulesA
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
 import dev.vale.parsing._
-import dev.vale.postparsing
 import dev.vale.postparsing.RuneTypeSolver
 import dev.vale.postparsing.patterns._
 import dev.vale.postparsing.rules._
@@ -17,7 +16,7 @@ import dev.vale.typing.ast._
 import dev.vale.typing.env._
 import FunctionCompiler.IEvaluateFunctionResult
 import dev.vale.highertyping.FunctionA
-import dev.vale.typing.{ConvertHelper, IFunctionGenerator, InferCompiler, TypingPassOptions, TemplataCompiler, CompilerOutputs}
+import dev.vale.typing.{CompilerOutputs, ConvertHelper, IFunctionGenerator, InferCompiler, TemplataCompiler, TypingPassOptions}
 import dev.vale.typing.ast.{FunctionBannerT, FunctionHeaderT, LocationInFunctionEnvironment, ParameterT, PrototypeT, ReferenceExpressionTE}
 import dev.vale.typing.citizen.StructCompiler
 import dev.vale.typing.env.{AddressibleClosureVariableT, AddressibleLocalVariableT, FunctionEnvironment, IEnvironment, NodeEnvironment, NodeEnvironmentBox, ReferenceClosureVariableT, ReferenceLocalVariableT, TemplataLookupContext}
@@ -79,8 +78,8 @@ object FunctionCompiler {
 // This file is the outer layer, which spawns a local environment for the function.
 class FunctionCompiler(
     opts: TypingPassOptions,
-
     interner: Interner,
+    keywords: Keywords,
     nameTranslator: NameTranslator,
     templataCompiler: TemplataCompiler,
     inferCompiler: InferCompiler,
@@ -89,7 +88,7 @@ class FunctionCompiler(
     delegate: IFunctionCompilerDelegate) {
   val closureOrLightLayer =
     new FunctionCompilerClosureOrLightLayer(
-      opts, interner, nameTranslator, templataCompiler, inferCompiler, convertHelper, structCompiler, delegate)
+      opts, interner, keywords, nameTranslator, templataCompiler, inferCompiler, convertHelper, structCompiler, delegate)
 
   private def determineClosureVariableMember(
       env: NodeEnvironment,

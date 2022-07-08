@@ -1,7 +1,6 @@
 package dev.vale.parsing.patterns
 
-import dev.vale.Collector
-import dev.vale.parsing.{PatternParser, TestParseUtils}
+import dev.vale.{Collector, StrI}
 import dev.vale.parsing.ast.{DestructureP, IgnoredLocalNameDeclarationP, LocalNameDeclarationP, NameOrRunePT, NameP, PatternPP}
 import dev.vale.parsing.ast.Patterns._
 import dev.vale.parsing._
@@ -11,7 +10,8 @@ import org.scalatest.{FunSuite, Matchers}
 
 class DestructureParserTests extends FunSuite with Matchers with Collector with TestParseUtils {
   private def compile[T](code: String): PatternPP = {
-    compile(new PatternParser().parsePattern(_), code)
+    compilePattern(code)
+//    compile(new PatternParser().parsePattern(_), code)
   }
 
   test("Only empty destructure") {
@@ -26,7 +26,7 @@ class DestructureParserTests extends FunSuite with Matchers with Collector with 
   }
   test("One typed element destructure") {
     compile("[ _ A ]") shouldHave {
-      case withDestructure(Vector(withType(NameOrRunePT(NameP(_, "A"))))) =>
+      case withDestructure(Vector(withType(NameOrRunePT(NameP(_, StrI("A")))))) =>
     }
   }
   test("Only two-element destructure") {
@@ -45,7 +45,7 @@ class DestructureParserTests extends FunSuite with Matchers with Collector with 
   test("Capture with destructure") {
     compile("a [x, y]") shouldHave {
       case PatternPP(_,_,
-        Some(LocalNameDeclarationP(NameP(_, "a"))),
+        Some(LocalNameDeclarationP(NameP(_, StrI("a")))),
         None,
         Some(DestructureP(_,Vector(capture("x"), capture("y")))),
         None) =>
@@ -55,7 +55,7 @@ class DestructureParserTests extends FunSuite with Matchers with Collector with 
     compile("A[a, b]") shouldHave {
       case PatternPP(_,_,
         None,
-        Some(NameOrRunePT(NameP(_, "A"))),
+        Some(NameOrRunePT(NameP(_, StrI("A")))),
         Some(DestructureP(_,Vector(capture("a"), capture("b")))),
         None) =>
     }
@@ -63,8 +63,8 @@ class DestructureParserTests extends FunSuite with Matchers with Collector with 
   test("Capture and type with destructure") {
     compile("a A[x, y]") shouldHave {
       case PatternPP(_,_,
-        Some(LocalNameDeclarationP(NameP(_, "a"))),
-        Some(NameOrRunePT(NameP(_, "A"))),
+        Some(LocalNameDeclarationP(NameP(_, StrI("a")))),
+        Some(NameOrRunePT(NameP(_, StrI("A")))),
         Some(DestructureP(_,Vector(capture("x"), capture("y")))),
         None) =>
     }
@@ -72,7 +72,7 @@ class DestructureParserTests extends FunSuite with Matchers with Collector with 
   test("Capture with types inside") {
     compile("a [_ int, _ bool]") shouldHave {
       case PatternPP(_,_,
-          Some(LocalNameDeclarationP(NameP(_, "a"))),
+          Some(LocalNameDeclarationP(NameP(_, StrI("a")))),
           None,
           Some(DestructureP(_,Vector(fromEnv("int"), fromEnv("bool")))),
           None) =>
@@ -82,8 +82,8 @@ class DestructureParserTests extends FunSuite with Matchers with Collector with 
     compile("[a int, b bool]") shouldHave {
       case withDestructure(
       Vector(
-          capturedWithType("a", NameOrRunePT(NameP(_, "int"))),
-          capturedWithType("b", NameOrRunePT(NameP(_, "bool"))))) =>
+          capturedWithType("a", NameOrRunePT(NameP(_, StrI("int")))),
+          capturedWithType("b", NameOrRunePT(NameP(_, StrI("bool")))))) =>
     }
   }
   test("Nested destructures A") {

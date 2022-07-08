@@ -2,8 +2,7 @@ package dev.vale.postparsing.rules
 
 import dev.vale.parsing.ast.{LocationP, MutabilityP, OwnershipP, VariabilityP}
 import dev.vale.postparsing.{BooleanTemplataType, IImpreciseNameS, IRuneS, ITemplataType, IntegerTemplataType, LocationTemplataType, MutabilityTemplataType, OwnershipTemplataType, StringTemplataType, VariabilityTemplataType}
-import dev.vale.{RangeS, vassert, vcurious, vpass}
-import dev.vale.RangeS
+import dev.vale.{RangeS, StrI, vassert, vcurious, vpass}
 import dev.vale.parsing.ast._
 import dev.vale.postparsing._
 
@@ -188,17 +187,6 @@ case class CallSR(
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def runeUsages: Array[RuneUsage] = Array(resultRune, templateRune) ++ args
 }
-
-//case class PrototypeSR(
-//  range: RangeS,
-//  resultRune: RuneUsage,
-//  name: String,
-//  parameters: Array[RuneUsage],
-//  returnTypeRune: RuneUsage
-//) extends IRulexSR {
-//  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
-//  override def runeUsages: Array[RuneUsage] = Array(resultRune, returnTypeRune) ++ parameters
-//}
 
 case class PackSR(
   range: RangeS,

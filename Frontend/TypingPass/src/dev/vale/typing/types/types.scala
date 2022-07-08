@@ -1,6 +1,6 @@
 package dev.vale.typing.types
 
-import dev.vale.{IInterning, Interner, PackageCoordinate, vassert, vcurious, vfail, vpass}
+import dev.vale.{CodeLocationS, IInterning, Interner, Keywords, PackageCoordinate, vassert, vcurious, vfail, vpass}
 import dev.vale.postparsing.IImpreciseNameS
 import dev.vale.typing.ast.{AbstractT, FunctionHeaderT, ICitizenAttributeT}
 import dev.vale.typing.env.IEnvironment
@@ -12,7 +12,6 @@ import dev.vale.typing.ast._
 import dev.vale.typing.names.AnonymousSubstructNameT
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
-import dev.vale.CodeLocationS
 
 import scala.collection.immutable.List
 
@@ -122,7 +121,7 @@ case class StaticSizedArrayTT(
   variability: VariabilityT,
   elementType: CoordT
 ) extends KindT with IInterning  {
-  def getName(interner: Interner): FullNameT[StaticSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN(interner), Vector.empty, interner.intern(StaticSizedArrayNameT(size, interner.intern(RawArrayNameT(mutability, elementType)))))
+  def getName(interner: Interner, keywords: Keywords): FullNameT[StaticSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN(interner, keywords), Vector.empty, interner.intern(StaticSizedArrayNameT(size, interner.intern(RawArrayNameT(mutability, elementType)))))
 }
 
 case class RuntimeSizedArrayTT(
@@ -131,7 +130,7 @@ case class RuntimeSizedArrayTT(
 ) extends KindT with IInterning {
 
 
-  def getName(interner: Interner): FullNameT[RuntimeSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN(interner), Vector.empty, interner.intern(RuntimeSizedArrayNameT(interner.intern(RawArrayNameT(mutability, elementType)))))
+  def getName(interner: Interner, keywords: Keywords): FullNameT[RuntimeSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN(interner, keywords), Vector.empty, interner.intern(RuntimeSizedArrayNameT(interner.intern(RawArrayNameT(mutability, elementType)))))
 }
 
 case class StructMemberT(

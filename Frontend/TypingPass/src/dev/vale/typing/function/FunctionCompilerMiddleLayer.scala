@@ -1,10 +1,10 @@
 package dev.vale.typing.function
 
-import dev.vale.{Interner, RangeS, vassert, vassertSome, vfail, vimpl, vwat}
+import dev.vale.{Interner, Keywords, Profiler, RangeS, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing.{CodeBodyS, IRuneS, ParameterS, RuneNameS}
 import dev.vale.postparsing.patterns.AbstractSP
-import dev.vale.typing.{AbstractMethodOutsideOpenInterface, CompileErrorExceptionT, ConvertHelper, FunctionAlreadyExists, RangedInternalErrorT, TypingPassOptions, TemplataCompiler, CompilerOutputs, ast, env}
+import dev.vale.typing.{AbstractMethodOutsideOpenInterface, CompileErrorExceptionT, CompilerOutputs, ConvertHelper, FunctionAlreadyExists, RangedInternalErrorT, TemplataCompiler, TypingPassOptions, ast, env}
 import dev.vale.typing.ast.{AbstractT, FunctionBannerT, FunctionHeaderT, FunctionT, ParameterT, PrototypeT, SealedT, SignatureT}
 import dev.vale.typing.citizen.StructCompiler
 import dev.vale.typing.env.{BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs, ExpressionLookupContext, FunctionEnvironment, IEnvironment, TemplataLookupContext}
@@ -18,21 +18,20 @@ import dev.vale.postparsing.patterns._
 import dev.vale.typing.{ast, names, _}
 import dev.vale.typing.ast._
 import dev.vale.typing.env._
-import dev.vale.{Interner, Profiler, RangeS, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 import dev.vale.typing.names.AnonymousSubstructConstructorNameT
 
 import scala.collection.immutable.{List, Set}
 
 class FunctionCompilerMiddleLayer(
     opts: TypingPassOptions,
-
     interner: Interner,
+    keywords: Keywords,
     nameTranslator: NameTranslator,
     templataCompiler: TemplataCompiler,
     convertHelper: ConvertHelper,
     structCompiler: StructCompiler,
     delegate: IFunctionCompilerDelegate) {
-  val core = new FunctionCompilerCore(opts, interner, nameTranslator, templataCompiler, convertHelper, delegate)
+  val core = new FunctionCompilerCore(opts, interner, keywords, nameTranslator, templataCompiler, convertHelper, delegate)
 
   // This is for the early stages of Compiler when it's scanning banners to put in
   // its env. We just want its banner, we don't want to evaluate it.
@@ -311,7 +310,7 @@ class FunctionCompilerMiddleLayer(
     params: Vector[CoordT]):
   FullNameT[IFunctionNameT] = {
     val BuildingFunctionNameWithClosuredsAndTemplateArgsT(templateName, templateArgs) = name.last
-    val newLastStep = templateName.makeFunctionName(interner, templateArgs, params)
+    val newLastStep = templateName.makeFunctionName(interner, keywords, templateArgs, params)
     FullNameT(name.packageCoord, name.initSteps, newLastStep)
   }
 

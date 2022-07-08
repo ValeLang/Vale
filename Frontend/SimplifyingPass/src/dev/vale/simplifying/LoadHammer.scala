@@ -1,6 +1,6 @@
 package dev.vale.simplifying
 
-import dev.vale.{finalast, vassert, vfail}
+import dev.vale.{Keywords, finalast, vassert, vfail}
 import dev.vale.finalast.{BorrowH, ExpressionH, KindH, LocalLoadH, MemberLoadH, OwnH, ReferenceH, RuntimeSizedArrayLoadH, ShareH, StaticSizedArrayLoadH, YonderH}
 import dev.vale.typing.Hinputs
 import dev.vale.typing.ast.{AddressMemberLookupTE, ExpressionT, FunctionHeaderT, LocalLookupTE, ReferenceExpressionTE, ReferenceMemberLookupTE, RuntimeSizedArrayLookupTE, SoftLoadTE, StaticSizedArrayLookupTE}
@@ -8,15 +8,14 @@ import dev.vale.typing.env.{AddressibleLocalVariableT, ReferenceLocalVariableT}
 import dev.vale.typing.names.{FullNameT, IVarNameT}
 import dev.vale.typing.types.{CoordT, OwnershipT, StructTT, VariabilityT, VaryingT}
 import dev.vale.finalast._
-import dev.vale.{finalast => m}
 import dev.vale.typing.{types => t, _}
 import dev.vale.typing.ast._
 import dev.vale.typing.env.ReferenceLocalVariableT
 import dev.vale.typing.names.IVarNameT
 import dev.vale.typing.types._
-import dev.vale.vfail
 
 class LoadHammer(
+    keywords: Keywords,
     typeHammer: TypeHammer,
     nameHammer: NameHammer,
     structHammer: StructHammer,
@@ -207,10 +206,10 @@ class LoadHammer(
     val loadedNodeH =
         MemberLoadH(
           loadBoxNode.expectStructAccess(),
-          StructHammer.BOX_MEMBER_INDEX,
+          LetHammer.BOX_MEMBER_INDEX,
           boxedTypeH,
           loadResultType,
-          nameHammer.addStep(hamuts, boxStructRefH.fullName, StructHammer.BOX_MEMBER_NAME))
+          nameHammer.addStep(hamuts, boxStructRefH.fullName, keywords.BOX_MEMBER_NAME.str))
     (loadedNodeH, structDeferreds)
   }
 
@@ -291,10 +290,10 @@ class LoadHammer(
     val loadedNode =
         MemberLoadH(
           loadBoxNode.expectStructAccess(),
-          StructHammer.BOX_MEMBER_INDEX,
+          LetHammer.BOX_MEMBER_INDEX,
           localTypeH,
           loadResultType,
-          nameHammer.addStep(hamuts, boxStructRefH.fullName, StructHammer.BOX_MEMBER_NAME))
+          nameHammer.addStep(hamuts, boxStructRefH.fullName, keywords.BOX_MEMBER_NAME.str))
     (loadedNode, Vector.empty)
   }
 

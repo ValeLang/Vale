@@ -113,7 +113,7 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     compile.getCompilerOutputs().expectErr() match {
-      case CouldntFindFunctionToCallT(_, FindFunctionFailure(CodeNameS("drop"), _, _)) =>
+      case CouldntFindFunctionToCallT(_, FindFunctionFailure(CodeNameS(StrI("drop")), _, _)) =>
     }
   }
 

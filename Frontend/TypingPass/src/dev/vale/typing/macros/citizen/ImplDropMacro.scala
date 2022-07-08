@@ -54,7 +54,7 @@ class ImplDropMacro(
 //            RangeS.internal(interner, -1672131),
 //            RuneUsage(RangeS.internal(interner, -167214), ImplDropCoordRuneS()),
 //            RuneUsage(RangeS.internal(interner, -167215), implA.structKindRune.rune)),
-//          LookupSR(RangeS.internal(interner, -1672132),RuneUsage(RangeS.internal(interner, -64002), ImplDropVoidRuneS()),interner.intern(CodeNameS("void")))),
+//          LookupSR(RangeS.internal(interner, -1672132),RuneUsage(RangeS.internal(interner, -64002), ImplDropVoidRuneS()),interner.intern(CodeNameS(StrI("void"))))),
 //        CodeBodyS(
 //          BodySE(RangeS.internal(interner, -1672133),
 //            Vector(),

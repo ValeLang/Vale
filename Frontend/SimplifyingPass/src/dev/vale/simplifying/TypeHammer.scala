@@ -4,9 +4,8 @@ import dev.vale.finalast.{BoolH, FloatH, InlineH, IntH, KindH, NeverH, Prototype
 import dev.vale.typing.Hinputs
 import dev.vale.typing.ast.PrototypeT
 import dev.vale.typing.types.{BoolT, BorrowT, CoordT, FloatT, IntT, InterfaceTT, KindT, NeverT, OverloadSetT, OwnT, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StrT, StructTT, VoidT, WeakT}
-import dev.vale.{Interner, vfail}
+import dev.vale.{Interner, Keywords, vfail, finalast => m}
 import dev.vale.finalast._
-import dev.vale.{finalast => m}
 import dev.vale.typing._
 import dev.vale.typing.names.CitizenTemplateNameT
 //import dev.vale.typingpass.templata.FunctionHeaderT
@@ -14,6 +13,7 @@ import dev.vale.typing.types._
 
 class TypeHammer(
     interner: Interner,
+    keywords: Keywords,
     nameHammer: NameHammer,
     structHammer: StructHammer) {
   def translateKind(hinputs: Hinputs, hamuts: HamutsBox, tyype: KindT):
@@ -82,7 +82,7 @@ class TypeHammer(
     hamuts.staticSizedArrays.get(ssaTT) match {
       case Some(x) => x.kind
       case None => {
-        val name = nameHammer.translateFullName(hinputs, hamuts, ssaTT.getName(interner))
+        val name = nameHammer.translateFullName(hinputs, hamuts, ssaTT.getName(interner, keywords))
         val StaticSizedArrayTT(_, mutabilityT, variabilityT, memberType) = ssaTT
         val memberReferenceH = translateReference(hinputs, hamuts, memberType)
         val mutability = Conversions.evaluateMutability(mutabilityT)
@@ -98,7 +98,7 @@ class TypeHammer(
     hamuts.runtimeSizedArrays.get(rsaTT) match {
       case Some(x) => x.kind
       case None => {
-        val nameH = nameHammer.translateFullName(hinputs, hamuts, rsaTT.getName(interner))
+        val nameH = nameHammer.translateFullName(hinputs, hamuts, rsaTT.getName(interner, keywords))
         val RuntimeSizedArrayTT(mutabilityT, memberType) = rsaTT
         val memberReferenceH = translateReference(hinputs, hamuts, memberType)
         val mutability = Conversions.evaluateMutability(mutabilityT)

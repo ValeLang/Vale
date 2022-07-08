@@ -5,11 +5,10 @@ import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.names.{FreeNameT, FullNameT, FunctionNameT}
 import dev.vale.typing.templata.CoordTemplata
 import dev.vale.typing.types.{ImmutableT, InterfaceTT, RuntimeSizedArrayTT, StaticSizedArrayTT, StructTT}
-import dev.vale.{Collector, vassertOne, vassertSome, vcurious, vpass}
+import dev.vale.{Collector, StrI, vassertOne, vassertSome, vcurious, vpass}
 import dev.vale.typing.ast._
 import dev.vale.typing.names._
 import dev.vale.typing.types._
-import dev.vale.Collector
 
 import scala.collection.mutable
 
@@ -35,7 +34,7 @@ object Reachability {
     val exposedFunctions =
       functions.filter(func => {
         (func.header.fullName.last match {
-          case FunctionNameT("main", _, _) => true
+          case FunctionNameT(StrI("main"), _, _) => true
           case _ => false
         }) ||
         exportedFunctionSignatures.contains(func.header.toSignature)

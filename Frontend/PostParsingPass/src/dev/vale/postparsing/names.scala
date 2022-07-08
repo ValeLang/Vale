@@ -1,7 +1,6 @@
 package dev.vale.postparsing
 
-import dev.vale.{CodeLocationS, IInterning, Interner, PackageCoordinate, RangeS, vassert, vcheck, vimpl, vpass}
-import dev.vale.RangeS
+import dev.vale.{CodeLocationS, IInterning, Interner, PackageCoordinate, RangeS, StrI, vassert, vcheck, vimpl, vpass}
 
 trait INameS extends IInterning
 trait IImpreciseNameS extends IInterning
@@ -37,7 +36,7 @@ case class LambdaDeclarationNameS(
 case class LambdaImpreciseNameS() extends IImpreciseNameS {
 
 }
-case class FunctionNameS(name: String, codeLocation: CodeLocationS) extends IFunctionDeclarationNameS {
+case class FunctionNameS(name: StrI, codeLocation: CodeLocationS) extends IFunctionDeclarationNameS {
   override def packageCoordinate: PackageCoordinate = codeLocation.file.packageCoordinate
   override def getImpreciseName(interner: Interner): IImpreciseNameS = interner.intern(CodeNameS(name))
 }
@@ -53,7 +52,7 @@ case class ForwarderFunctionDeclarationNameS(inner: IFunctionDeclarationNameS, i
   override def packageCoordinate: PackageCoordinate = inner.packageCoordinate
   override def getImpreciseName(interner: Interner): IImpreciseNameS = inner.getImpreciseName(interner)
 }
-case class TopLevelCitizenDeclarationNameS(name: String, range: RangeS) extends ICitizenDeclarationNameS {
+case class TopLevelCitizenDeclarationNameS(name: StrI, range: RangeS) extends ICitizenDeclarationNameS {
 
   vpass()
   override def packageCoordinate: PackageCoordinate = range.file.packageCoordinate
@@ -88,11 +87,11 @@ case class AnonymousSubstructConstructorTemplateImpreciseNameS(interfaceImprecis
 
 }
 case class AnonymousSubstructMemberNameS(index: Int) extends IVarNameS {  }
-case class CodeVarNameS(name: String) extends IVarNameS {
-  vcheck(name != "set", "Can't name a variable 'set'")
-  vcheck(name != "mut", "Can't name a variable 'mut'")
+case class CodeVarNameS(name: StrI) extends IVarNameS {
+  vcheck(name.str != "set", "Can't name a variable 'set'")
+  vcheck(name.str != "mut", "Can't name a variable 'mut'")
 }
-case class ConstructingMemberNameS(name: String) extends IVarNameS {  }
+case class ConstructingMemberNameS(name: StrI) extends IVarNameS {  }
 case class IterableNameS(range: RangeS) extends IVarNameS with IImpreciseNameS {  }
 case class IteratorNameS(range: RangeS) extends IVarNameS with IImpreciseNameS {  }
 case class IterationOptionNameS(range: RangeS) extends IVarNameS with IImpreciseNameS {  }
@@ -110,7 +109,7 @@ case class RuneNameS(rune: IRuneS) extends INameS with IImpreciseNameS {  }
 // prefixes and names like __implicit_0, __paramRune_0, etc.
 // This extends INameS so we can use it as a lookup key in Compiler's environments.
 trait IRuneS
-case class CodeRuneS(name: String) extends IRuneS {
+case class CodeRuneS(name: StrI) extends IRuneS {
   vpass()
 }
 case class ImplDropCoordRuneS() extends IRuneS
@@ -145,7 +144,7 @@ case class SelfRuneS() extends IRuneS {  }
 case class SelfOwnershipRuneS() extends IRuneS {  }
 case class SelfKindRuneS() extends IRuneS {  }
 case class SelfKindTemplateRuneS() extends IRuneS {  }
-case class CodeNameS(name: String) extends IImpreciseNameS {
+case class CodeNameS(name: StrI) extends IImpreciseNameS {
 
   vpass()
   vassert(name != "_")

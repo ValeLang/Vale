@@ -3,7 +3,7 @@ package dev.vale.typing.macros.citizen
 import dev.vale.highertyping.{FunctionA, InterfaceA}
 import dev.vale.postparsing.patterns.{AbstractSP, AtomSP, CaptureS}
 import dev.vale.postparsing.rules.{LookupSR, RuneUsage}
-import dev.vale.{Interner, RangeS}
+import dev.vale.{Err, Interner, Keywords, RangeS, StrI}
 import dev.vale.postparsing.{AbstractBodyS, CodeNameS, CodeRuneS, CodeVarNameS, CoordTemplataType, FreeDeclarationNameS, FunctionTemplataType, ParameterS, SelfNameS, TemplateTemplataType}
 import dev.vale.typing.OverloadResolver
 import dev.vale.typing.env.FunctionEnvEntry
@@ -21,13 +21,12 @@ import dev.vale.typing.macros.IOnInterfaceDefinedMacro
 import dev.vale.typing.names._
 import dev.vale.typing.types._
 import dev.vale.typing.env
-import dev.vale.Err
 
-class InterfaceFreeMacro(interner: Interner, overloadCompiler: OverloadResolver) extends IOnInterfaceDefinedMacro {
+class InterfaceFreeMacro(interner: Interner, keywords: Keywords, overloadCompiler: OverloadResolver) extends IOnInterfaceDefinedMacro {
 
-  val generatorId = "interfaceFreeGenerator"
+  val generatorId: StrI = keywords.interfaceFreeGenerator
 
-  val macroName: String = "DeriveInterfaceFree"
+  val macroName: StrI = keywords.DeriveInterfaceFree
 
   override def getInterfaceSiblingEntries(interfaceName: FullNameT[INameT], interfaceA: InterfaceA): Vector[(FullNameT[INameT], FunctionEnvEntry)] = {
     Vector()
@@ -46,19 +45,19 @@ class InterfaceFreeMacro(interner: Interner, overloadCompiler: OverloadResolver)
           freeFunctionNameS,
           Vector(),
           TemplateTemplataType(Vector(CoordTemplataType), FunctionTemplataType),
-          Vector(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("T"))),
-          Map(CodeRuneS("T") -> CoordTemplataType, CodeRuneS("V") -> CoordTemplataType),
+          Vector(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.T))),
+          Map(CodeRuneS(keywords.T) -> CoordTemplataType, CodeRuneS(keywords.V) -> CoordTemplataType),
           Vector(
             ParameterS(
               AtomSP(
                 RangeS.internal(interner, -1340),
-                Some(CaptureS(interner.intern(CodeVarNameS("this")))),
+                Some(CaptureS(interner.intern(CodeVarNameS(keywords.thiss)))),
                 Some(AbstractSP(RangeS.internal(interner, -64002), true)),
-                Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("T"))), None))),
-          Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("V"))),
+                Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.T))), None))),
+          Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.V))),
           Vector(
-            LookupSR(RangeS.internal(interner, -1672155), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("T")), interner.intern(SelfNameS())),
-            LookupSR(RangeS.internal(interner, -1672156), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("V")), interner.intern(CodeNameS("void")))),
+            LookupSR(RangeS.internal(interner, -1672155), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.T)), interner.intern(SelfNameS())),
+            LookupSR(RangeS.internal(interner, -1672156), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.V)), interner.intern(CodeNameS(keywords.void)))),
           AbstractBodyS)
 
 //      val virtualFreeFunctionNameS = interner.intern(AbstractVirtualFreeDeclarationNameS(interfaceA.range.begin))
@@ -68,19 +67,19 @@ class InterfaceFreeMacro(interner: Interner, overloadCompiler: OverloadResolver)
 //          virtualFreeFunctionNameS,
 //          Vector(),
 //          TemplateTemplataType(Vector(CoordTemplataType), FunctionTemplataType),
-//          Vector(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("T"))),
-//          Map(CodeRuneS("T") -> CoordTemplataType, CodeRuneS("V") -> CoordTemplataType),
+//          Vector(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.T)),
+//                Map(CodeRuneS(keywords.T ->) CoordTemplataType, CodeRuneS(keywords.V ->) CoordTemplataType),
 //          Vector(
 //            ParameterS(
 //              AtomSP(
 //                RangeS.internal(interner, -1340),
 //                Some(CaptureS(interner.intern(CodeVarNameS("this")))),
 //                Some(AbstractSP(RangeS.internal(interner, -1340), true)),
-//                Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("T"))), None))),
-//          Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("V"))),
-//          Vector(
-//            LookupSR(RangeS.internal(interner, -1672157), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("T")), interner.intern(SelfNameS())),
-//            LookupSR(RangeS.internal(interner, -1672158), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS("V")), interner.intern(CodeNameS("void")))),
+//                Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.T)), None)))),
+//          Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.V)),
+//                Vector(
+//            LookupSR(RangeS.internal(interner, -1672157), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.T), interner).intern(SelfNameS())),
+//            LookupSR(RangeS.internal(interner, -1672158), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.V), interner).intern(CodeNameS(keywords.void)))),
 //          GeneratedBodyS("abstractBody"))
 
       Vector(
@@ -96,7 +95,7 @@ class InterfaceFreeMacro(interner: Interner, overloadCompiler: OverloadResolver)
 //  override def generateFunctionBody(
 //    env: FunctionEnvironment,
 //    coutputs: CompilerOutputs,
-//    generatorId: String,
+//    generatorId: StrI,
 //    life: LocationInFunctionEnvironment,
 //    callRange: RangeS,
 //    originFunction1: Option[FunctionA],

@@ -228,7 +228,7 @@ class CompilerSolver[Env, State](
               fullName.last match {
                 case FunctionNameT(humanName, _, _) => humanName
               }
-            stepState.concludeRune[ITypingPassSolverError](nameRune.rune, templata.StringTemplata(humanName))
+            stepState.concludeRune[ITypingPassSolverError](nameRune.rune, templata.StringTemplata(humanName.str))
             stepState.concludeRune[ITypingPassSolverError](returnRune.rune, CoordTemplata(returnType))
             Ok(())
           }

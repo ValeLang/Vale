@@ -13,5 +13,5 @@ exported func main() int {
       42
     } else {
       maybeBorrowUnit.get().getHp()
-    }
+    };
 }

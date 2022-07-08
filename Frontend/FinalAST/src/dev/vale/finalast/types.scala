@@ -1,6 +1,6 @@
 package dev.vale.finalast
 
-import dev.vale.{FileCoordinate, Interner, PackageCoordinate, vassert, vfail, vimpl}
+import dev.vale.{FileCoordinate, Interner, Keywords, PackageCoordinate, vassert, vfail, vimpl}
 
 // Represents a reference type.
 // A reference contains these things:
@@ -92,30 +92,30 @@ case class ReferenceH[+T <: KindH](
 
 // A value, a thing that can be pointed at. See ReferenceH for more information.
 sealed trait KindH {
-  def packageCoord(interner: Interner): PackageCoordinate
+  def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate
 }
 object IntH {
   val i32 = IntH(32)
 }
 case class IntH(bits: Int) extends KindH {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def packageCoord(interner: Interner): PackageCoordinate = PackageCoordinate.BUILTIN(interner)
+  override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = PackageCoordinate.BUILTIN(interner, keywords)
 }
 case class VoidH() extends KindH {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def packageCoord(interner: Interner): PackageCoordinate = PackageCoordinate.BUILTIN(interner)
+  override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = PackageCoordinate.BUILTIN(interner, keywords)
 }
 case class BoolH() extends KindH {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def packageCoord(interner: Interner): PackageCoordinate = PackageCoordinate.BUILTIN(interner)
+  override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = PackageCoordinate.BUILTIN(interner, keywords)
 }
 case class StrH() extends KindH {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def packageCoord(interner: Interner): PackageCoordinate = PackageCoordinate.BUILTIN(interner)
+  override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = PackageCoordinate.BUILTIN(interner, keywords)
 }
 case class FloatH() extends KindH {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def packageCoord(interner: Interner): PackageCoordinate = PackageCoordinate.BUILTIN(interner)
+  override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = PackageCoordinate.BUILTIN(interner, keywords)
 }
 // A primitive which can never be instantiated. If something returns this, it
 // means that it will never actually return. For example, the return type of
@@ -125,7 +125,7 @@ case class FloatH() extends KindH {
 // where None is never, Some(None) is Void, and Some(Some(_)) is a normal thing.
 case class NeverH(fromBreak: Boolean) extends KindH {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def packageCoord(interner: Interner): PackageCoordinate = PackageCoordinate.BUILTIN(interner)
+  override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = PackageCoordinate.BUILTIN(interner, keywords)
 }
 
 case class InterfaceRefH(
@@ -133,7 +133,7 @@ case class InterfaceRefH(
   fullName: FullNameH
 ) extends KindH {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def packageCoord(interner: Interner): PackageCoordinate = fullName.packageCoordinate
+  override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = fullName.packageCoordinate
 }
 
 case class StructRefH(
@@ -141,7 +141,7 @@ case class StructRefH(
   fullName: FullNameH
 ) extends KindH {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def packageCoord(interner: Interner): PackageCoordinate = fullName.packageCoordinate
+  override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = fullName.packageCoordinate
 }
 
 // An array whose size is known at compile time, and therefore doesn't need to
@@ -151,7 +151,7 @@ case class StaticSizedArrayHT(
   name: FullNameH,
 ) extends KindH {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def packageCoord(interner: Interner): PackageCoordinate = name.packageCoordinate
+  override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = name.packageCoordinate
 }
 
 // An array whose size is known at compile time, and therefore doesn't need to
@@ -174,7 +174,7 @@ case class RuntimeSizedArrayHT(
   name: FullNameH,
 ) extends KindH {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  override def packageCoord(interner: Interner): PackageCoordinate = name.packageCoordinate
+  override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = name.packageCoordinate
 }
 
 case class RuntimeSizedArrayDefinitionHT(

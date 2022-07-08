@@ -9,7 +9,7 @@ func getHp(self &&Muta) int {
       42
     } else {
       (maybeBorrowSelf).get().hp
-    }
+    };
 }
 
 exported func main() int {

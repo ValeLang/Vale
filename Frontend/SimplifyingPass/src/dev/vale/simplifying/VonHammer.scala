@@ -82,7 +82,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
                 "Entry",
                 None,
                 Vector(
-                  VonMember("exportName", VonStr(exportName)),
+                  VonMember("exportName", VonStr(exportName.str)),
                   VonMember("prototype", vonifyPrototype(prototype))))
             }))),
         VonMember(
@@ -94,7 +94,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
                 "Entry",
                 None,
                 Vector(
-                  VonMember("exportName", VonStr(exportName)),
+                  VonMember("exportName", VonStr(exportName.str)),
                   VonMember("kind", vonifyKind(kind))))
             }))),
         VonMember(
@@ -106,7 +106,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
                 "Entry",
                 None,
                 Vector(
-                  VonMember("externName", VonStr(externName)),
+                  VonMember("externName", VonStr(externName.str)),
                   VonMember("prototype", vonifyPrototype(prototype))))
             }))),
         VonMember(
@@ -118,7 +118,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
                 "Entry",
                 None,
                 Vector(
-                  VonMember("externName", VonStr(externName)),
+                  VonMember("externName", VonStr(externName.str)),
                   VonMember("kind", vonifyKind(kind))))
             })))))
   }
@@ -1028,7 +1028,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
           "ConstructingMemberName",
           None,
           Vector(
-            VonMember("name", VonStr(name))))
+            VonMember("name", VonStr(name.str))))
       }
       case SelfNameT() => {
         VonObject(
@@ -1153,7 +1153,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
           "CodeVarName",
           None,
           Vector(
-            VonMember("name", VonStr(name))))
+            VonMember("name", VonStr(name.str))))
       }
       case AnonymousSubstructConstructorNameT(templateArgs, params) => {
         VonObject(
@@ -1193,7 +1193,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
           "PrimitiveName",
           None,
           Vector(
-            VonMember(humanName, VonStr(humanName))))
+            VonMember(humanName.str, VonStr(humanName.str))))
       }
       case PackageTopLevelNameT() => {
         VonObject(
@@ -1206,7 +1206,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
           "EF",
           None,
           Vector(
-            VonMember("humanName", VonStr(humanName))))
+            VonMember("humanName", VonStr(humanName.str))))
       }
       case FreeNameT(templateArgs, kind) => {
         VonObject(
@@ -1262,7 +1262,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
           "F",
           None,
           Vector(
-            VonMember("humanName", VonStr(humanName)),
+            VonMember("humanName", VonStr(humanName.str)),
             VonMember(
               "templateArgs",
               VonArray(
@@ -1344,7 +1344,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
           "FunctionTemplateName",
           None,
           Vector(
-            VonMember(humanName, VonStr(humanName)),
+            VonMember(humanName.str, VonStr(humanName.str)),
             VonMember("codeLocation", vonifyCodeLocation2(codeLocation))))
       }
       case LambdaTemplateNameT(codeLocation) => {
@@ -1393,7 +1393,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
           "CitizenTemplateName",
           None,
           Vector(
-            VonMember(humanName, VonStr(humanName))))
+            VonMember(humanName.str, VonStr(humanName.str))))
       }
       case AnonymousSubstructNameT(template, callables) => {
         VonObject(

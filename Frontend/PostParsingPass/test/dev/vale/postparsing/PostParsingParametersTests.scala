@@ -1,6 +1,6 @@
 package dev.vale.postparsing
 
-import dev.vale.{Collector, Err, FileCoordinateMap, Interner, Ok, vassert, vfail}
+import dev.vale.{Collector, Err, FileCoordinateMap, Interner, Ok, StrI, vassert, vfail}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.BorrowP
 import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
@@ -13,10 +13,10 @@ import org.scalatest.{FunSuite, Matchers}
 
 class PostParsingParametersTests extends FunSuite with Matchers with Collector {
 
-  private def compile(code: String): ProgramS = {
-    val interner = new Interner()
-    PostParserTestCompilation.test(code).getScoutput() match {
-      case Err(e) => vfail(PostParserErrorHumanizer.humanize(FileCoordinateMap.test(interner, code), e))
+  private def compile(code: String, interner: Interner = new Interner()): ProgramS = {
+    val compilation = PostParserTestCompilation.test(code, interner)
+    compilation.getScoutput() match {
+      case Err(e) => vfail(PostParserErrorHumanizer.humanize(compilation.getCodeMap().getOrDie(), e))
       case Ok(t) => t.expectOne()
     }
   }
@@ -28,16 +28,17 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
     vassert(main.runeToPredictedType.size == 1)
 
     main.identifyingRunes match {
-      case Vector(RuneUsage(_, CodeRuneS("T"))) =>
+      case Vector(RuneUsage(_, CodeRuneS(StrI("T")))) =>
     }
   }
 
   test("Returned rune") {
-    val program1 = compile("""func main<T>(moo T) T { moo }""")
+    val interner = new Interner()
+    val program1 = compile("""func main<T>(moo T) T { moo }""", interner)
     val main = program1.lookupFunction("main")
 
-    vassert(main.identifyingRunes.map(_.rune).contains(CodeRuneS("T")))
-    main.maybeRetCoordRune match { case Some(RuneUsage(_, CodeRuneS("T"))) => }
+    vassert(main.identifyingRunes.map(_.rune).contains(CodeRuneS(interner.intern(StrI("T")))))
+    main.maybeRetCoordRune match { case Some(RuneUsage(_, CodeRuneS(StrI("T")))) => }
   }
 
   test("Borrowed rune") {
@@ -49,7 +50,7 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
       param match {
         case ParameterS(
           AtomSP(_,
-            Some(CaptureS(CodeVarNameS("moo"))),
+            Some(CaptureS(CodeVarNameS(StrI("moo")))),
             None,
             Some(RuneUsage(_, tcr @ ImplicitRuneS(_))),
             None)) => tcr
@@ -57,7 +58,7 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
 
     val tCoordRuneFromRules =
       main.rules shouldHave {
-        case AugmentSR(_, tcr, BorrowP, RuneUsage(_, CodeRuneS("T"))) => tcr
+        case AugmentSR(_, tcr, BorrowP, RuneUsage(_, CodeRuneS(StrI("T")))) => tcr
       }
 
     tCoordRuneFromParams shouldEqual tCoordRuneFromRules.rune
@@ -78,39 +79,8 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
       }
 
     main.rules shouldHave {
-      case LookupSR(_, pr, CodeNameS("int")) => vassert(pr.rune == paramRune)
+      case LookupSR(_, pr, CodeNameS(StrI("int"))) => vassert(pr.rune == paramRune)
     }
-  }
-
-  test("Rune destructure") {
-    // This is an ambiguous case but we decided it should destructure a struct or sequence, see CSTODTS in docs.
-    val program1 = compile("""func main<T>(moo T[a int]) infer-return { }""")
-    val main = program1.lookupFunction("main")
-
-    val Vector(param) = main.params
-
-    val (aRune, tRune) =
-      param match {
-        case ParameterS(
-          AtomSP(_,
-            Some(CaptureS(CodeVarNameS("moo"))),
-            None,
-            Some(tr),
-            Some(
-              Vector(
-                AtomSP(_,
-                  Some(CaptureS(CodeVarNameS("a"))),
-                  None,
-                  Some(RuneUsage(_, ar @ ImplicitRuneS(_))),
-                None))))) => (ar, tr)
-      }
-
-    main.rules shouldHave {
-      case LookupSR(_, air, CodeNameS("int")) => vassert(air.rune == aRune)
-    }
-
-    // See CCAUIR.
-    main.identifyingRunes.map(_.rune) shouldEqual Vector(tRune.rune)
   }
 
   test("Regioned pure function") {

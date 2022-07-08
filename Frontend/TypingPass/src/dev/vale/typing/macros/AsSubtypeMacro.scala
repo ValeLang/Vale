@@ -1,29 +1,29 @@
 package dev.vale.typing.macros
 
-import dev.vale.{RangeS, vassertSome, vfail}
+import dev.vale.{Keywords, RangeS, StrI, vassertSome, vfail}
 import dev.vale.highertyping.FunctionA
-import dev.vale.typing.{CantDowncastToInterface, CantDowncastUnrelatedTypes, CompileErrorExceptionT, RangedInternalErrorT, CompilerOutputs}
+import dev.vale.typing.{CantDowncastToInterface, CantDowncastUnrelatedTypes, CompileErrorExceptionT, CompilerOutputs, RangedInternalErrorT}
 import dev.vale.typing.ast.{ArgLookupTE, AsSubtypeTE, BlockTE, FunctionCallTE, FunctionHeaderT, FunctionT, LocationInFunctionEnvironment, ParameterT, ReferenceExpressionTE, ReturnTE}
 import dev.vale.typing.citizen.AncestorHelper
 import dev.vale.typing.env.FunctionEnvironment
 import dev.vale.typing.expression.ExpressionCompiler
 import dev.vale.typing.templata.KindTemplata
 import dev.vale.typing.types.{CitizenRefT, CoordT, InterfaceTT, StructTT}
-import dev.vale.RangeS
 import dev.vale.typing.ast._
 import dev.vale.typing.env.FunctionEnvironmentBox
 import dev.vale.typing.types.InterfaceTT
 import dev.vale.typing.ast
 
 class AsSubtypeMacro(
+  keywords: Keywords,
   ancestorHelper: AncestorHelper,
   expressionCompiler: ExpressionCompiler) extends IFunctionBodyMacro {
-  val generatorId: String = "vale_as_subtype"
+  val generatorId: StrI = keywords.vale_as_subtype
 
   def generateFunctionBody(
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
-    generatorId: String,
+    generatorId: StrI,
     life: LocationInFunctionEnvironment,
     callRange: RangeS,
     originFunction: Option[FunctionA],

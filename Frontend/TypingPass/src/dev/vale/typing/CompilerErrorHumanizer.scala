@@ -210,8 +210,8 @@ object CompilerErrorHumanizer {
     name: INameS):
   String = {
     name match {
-      case CodeVarNameS(name) => name
-      case TopLevelCitizenDeclarationNameS(name, codeLocation) => name
+      case CodeVarNameS(name) => name.str
+      case TopLevelCitizenDeclarationNameS(name, codeLocation) => name.str
       case LambdaDeclarationNameS(codeLocation) => humanizePos(codeMap, codeLocation) + ": " + "(lambda)"
       case FunctionNameS(name, codeLocation) => humanizePos(codeMap, codeLocation) + ": " + name
       case ConstructorNameS(TopLevelCitizenDeclarationNameS(name, range)) => humanizePos(codeMap, range.begin) + ": " + name
@@ -241,7 +241,7 @@ object CompilerErrorHumanizer {
     name: IVarNameT):
   String = {
     name match {
-      case CodeVarNameT(n) => n
+      case CodeVarNameT(n) => n.str
     }
   }
 
@@ -406,7 +406,7 @@ object CompilerErrorHumanizer {
     templata match {
       case RuntimeSizedArrayTemplateTemplata() => "Array"
       case StaticSizedArrayTemplateTemplata() => "StaticArray"
-      case InterfaceTemplata(env, originInterface) => originInterface.name.name
+      case InterfaceTemplata(env, originInterface) => originInterface.name.name.str
       case StructTemplata(env, originStruct) => PostParserErrorHumanizer.humanizeName(originStruct.name)
       case VariabilityTemplata(variability) => {
         variability match {
@@ -489,7 +489,7 @@ object CompilerErrorHumanizer {
       case LambdaCitizenTemplateNameT(codeLocation) => {
         "λ:" + humanizePos(codeMap, codeLocation)
       }
-      case CodeVarNameT(name) => name
+      case CodeVarNameT(name) => name.str
       case LambdaCitizenNameT(template) => humanizeName(codeMap, template) + "<>"
       case FunctionNameT(humanName, templateArgs, parameters) => {
         humanName +
@@ -519,7 +519,7 @@ object CompilerErrorHumanizer {
       case AnonymousSubstructTemplateNameT(interface) => {
         humanizeName(codeMap, interface) + ".anonymous"
       }
-      case CitizenTemplateNameT(humanName) => humanName
+      case CitizenTemplateNameT(humanName) => humanName.str
     }
   }
 

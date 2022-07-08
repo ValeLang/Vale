@@ -1,6 +1,6 @@
 package dev.vale.typing
 
-import dev.vale.{PackageCoordinate, Tests, vassert, vassertSome}
+import dev.vale.{PackageCoordinate, StrI, Tests, vassert, vassertSome}
 import dev.vale.typing.ast.SignatureT
 import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, FullNameT, FunctionNameT, LambdaCitizenNameT}
 import dev.vale.typing.templata.CoordTemplata
@@ -23,7 +23,7 @@ class CompilerProjectTests extends FunSuite with Matchers {
     val coutputs = compile.expectCompilerOutputs()
     val interner = compile.interner
 
-    val fullName = FullNameT(PackageCoordinate.TEST_TLD(interner), Vector(), interner.intern(FunctionNameT("main", Vector(), Vector())))
+    val fullName = FullNameT(PackageCoordinate.TEST_TLD(interner, compile.keywords), Vector(), interner.intern(FunctionNameT(interner.intern(StrI("main")), Vector(), Vector())))
     vassertSome(coutputs.lookupFunction(SignatureT(fullName)))
   }
 
@@ -42,8 +42,8 @@ class CompilerProjectTests extends FunSuite with Matchers {
     lamFunc.header.fullName match {
       case FullNameT(
         x,
-        Vector(FunctionNameT("main",Vector(),Vector()), LambdaCitizenNameT(_)),
-        FunctionNameT("__call",Vector(),Vector(CoordT(ShareT,_)))) =>
+        Vector(FunctionNameT(StrI("main"),Vector(),Vector()), LambdaCitizenNameT(_)),
+        FunctionNameT(StrI("__call"),Vector(),Vector(CoordT(ShareT,_)))) =>
         vassert(x.isTest)
     }
   }
@@ -59,7 +59,7 @@ class CompilerProjectTests extends FunSuite with Matchers {
 
     val struct = coutputs.lookupStruct("MyStruct")
     struct.fullName match {
-      case FullNameT(x,Vector(),CitizenNameT(CitizenTemplateNameT("MyStruct"),Vector())) => {
+      case FullNameT(x,Vector(),CitizenNameT(CitizenTemplateNameT(StrI("MyStruct")),Vector())) => {
         vassert(x.isTest)
       }
     }

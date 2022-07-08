@@ -1,6 +1,6 @@
 package dev.vale.typing.macros
 
-import dev.vale.{RangeS, vassert, vassertSome}
+import dev.vale.{Keywords, RangeS, StrI, vassert, vassertSome}
 import dev.vale.highertyping.FunctionA
 import dev.vale.typing.CompilerOutputs
 import dev.vale.typing.ast.{AbstractT, ArgLookupTE, BlockTE, FunctionHeaderT, FunctionT, InterfaceFunctionCallTE, LocationInFunctionEnvironment, ParameterT, ReturnTE}
@@ -8,15 +8,14 @@ import dev.vale.typing.env.FunctionEnvironment
 import dev.vale.typing.types.CoordT
 import dev.vale.typing.ast
 import dev.vale.typing.ast._
-import dev.vale.RangeS
 
-class AbstractBodyMacro() extends IFunctionBodyMacro {
-  val generatorId: String = "abstractBody"
+class AbstractBodyMacro(keywords: Keywords) extends IFunctionBodyMacro {
+  val generatorId: StrI = keywords.abstractBody
 
   override def generateFunctionBody(
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
-    generatorId: String,
+    generatorId: StrI,
     life: LocationInFunctionEnvironment,
     callRange: RangeS,
     originFunction: Option[FunctionA],

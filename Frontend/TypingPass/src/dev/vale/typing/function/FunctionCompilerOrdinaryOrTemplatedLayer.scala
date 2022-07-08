@@ -1,6 +1,6 @@
 package dev.vale.typing.function
 
-import dev.vale.{Err, Interner, Ok, RangeS, vassert}
+import dev.vale.{Err, Interner, Keywords, Ok, Profiler, RangeS, vassert, vcurious, vimpl}
 import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing.{ArgumentRuneS, CodeBodyS, IRuneS}
 import dev.vale.postparsing.rules.RuneUsage
@@ -17,12 +17,11 @@ import dev.vale.typing.env._
 import FunctionCompiler.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
 import dev.vale.typing.ast.{FunctionBannerT, FunctionHeaderT, PrototypeT}
 import dev.vale.typing.env.{BuildingFunctionEnvironmentWithClosureds, BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs, TemplataEnvEntry, TemplataLookupContext}
-import dev.vale.typing.{ConvertHelper, InferCompiler, InitialKnown, InitialSend, TypingPassOptions, TemplataCompiler, CompilerOutputs}
+import dev.vale.typing.{CompilerOutputs, ConvertHelper, InferCompiler, InitialKnown, InitialSend, TemplataCompiler, TypingPassOptions}
 import dev.vale.typing.names.{BuildingFunctionNameWithClosuredsAndTemplateArgsT, FullNameT, NameTranslator, RuneNameT}
 import dev.vale.typing.templata.{CoordTemplata, ITemplata}
 import dev.vale.typing.types.ParamFilter
 import dev.vale.typing.names.BuildingFunctionNameWithClosuredsAndTemplateArgsT
-import dev.vale.{Err, Interner, Ok, Profiler, RangeS, vcurious, vimpl}
 //import dev.vale.typingpass.infer.{InferSolveFailure, InferSolveSuccess}
 import dev.vale.vwat
 
@@ -36,15 +35,15 @@ import scala.collection.immutable.{List, Set}
 // This file is the outer layer, which spawns a local environment for the function.
 class FunctionCompilerOrdinaryOrTemplatedLayer(
     opts: TypingPassOptions,
-
     interner: Interner,
+    keywords: Keywords,
     nameTranslator: NameTranslator,
     templataCompiler: TemplataCompiler,
     inferCompiler: InferCompiler,
     convertHelper: ConvertHelper,
     structCompiler: StructCompiler,
     delegate: IFunctionCompilerDelegate) {
-  val middleLayer = new FunctionCompilerMiddleLayer(opts, interner, nameTranslator, templataCompiler, convertHelper, structCompiler, delegate)
+  val middleLayer = new FunctionCompilerMiddleLayer(opts, interner, keywords, nameTranslator, templataCompiler, convertHelper, structCompiler, delegate)
 
   // This is for the early stages of Compiler when it's scanning banners to put in
   // its env. We just want its banner, we don't want to evaluate it.

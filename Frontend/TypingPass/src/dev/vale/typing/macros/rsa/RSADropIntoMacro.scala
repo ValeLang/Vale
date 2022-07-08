@@ -1,6 +1,6 @@
 package dev.vale.typing.macros.rsa
 
-import dev.vale.RangeS
+import dev.vale.{Keywords, RangeS, StrI}
 import dev.vale.highertyping.FunctionA
 import dev.vale.typing.ast.{ArgLookupTE, BlockTE, FunctionHeaderT, FunctionT, LocationInFunctionEnvironment, ParameterT, ReturnTE}
 import dev.vale.typing.env.{FunctionEnvironment, FunctionEnvironmentBox}
@@ -11,13 +11,13 @@ import dev.vale.typing.ast._
 import dev.vale.typing.env.FunctionEnvironmentBox
 import dev.vale.typing.ast
 
-class RSADropIntoMacro(arrayCompiler: ArrayCompiler) extends IFunctionBodyMacro {
-  val generatorId: String = "vale_runtime_sized_array_drop_into"
+class RSADropIntoMacro(keywords: Keywords, arrayCompiler: ArrayCompiler) extends IFunctionBodyMacro {
+  val generatorId: StrI = keywords.vale_runtime_sized_array_drop_into
 
   def generateFunctionBody(
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
-    generatorId: String,
+    generatorId: StrI,
     life: LocationInFunctionEnvironment,
     callRange: RangeS,
     originFunction: Option[FunctionA],

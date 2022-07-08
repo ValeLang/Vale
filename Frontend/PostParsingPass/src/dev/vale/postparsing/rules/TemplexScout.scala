@@ -1,7 +1,8 @@
 package dev.vale.postparsing.rules
 
-import dev.vale.parsing.ast.{AnonymousRunePT, BoolPT, BorrowP, BorrowPT, CallPT, FunctionPT, ITemplexPT, InlinePT, IntPT, InterpretedPT, LocationPT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnershipPT, PackPT, PrototypePT, RangeP, RegionRunePT, RuntimeSizedArrayPT, StaticSizedArrayPT, StringPT, TuplePT, VariabilityPT}
-import dev.vale.{Interner, Profiler, RangeS}
+import dev.vale.lexing.RangeL
+import dev.vale.parsing.ast.{AnonymousRunePT, BoolPT, BorrowP, BorrowPT, CallPT, FunctionPT, ITemplexPT, InlinePT, IntPT, InterpretedPT, LocationPT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnershipPT, PackPT, PrototypePT, RegionRunePT, RuntimeSizedArrayPT, StaticSizedArrayPT, StringPT, TuplePT, VariabilityPT}
+import dev.vale.{Interner, Keywords, Profiler, RangeS, StrI}
 import dev.vale.postparsing.{CodeNameS, CodeRuneS, IEnvironment, IImpreciseNameS, IRuneS, ITemplataType, ImplicitRuneS, LocationInDenizenBuilder, PostParser, rules}
 import dev.vale.parsing.ast._
 import dev.vale.postparsing._
@@ -10,7 +11,8 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 class TemplexScout(
-    interner: Interner) {
+    interner: Interner,
+  keywords: Keywords) {
   def addLiteralRule(
     lidb: LocationInDenizenBuilder,
     ruleBuilder: ArrayBuffer[IRulexSR],
@@ -64,7 +66,7 @@ class TemplexScout(
     templex: ITemplexPT):
   RuneUsage = {
     Profiler.frame(() => {
-      val evalRange = (range: RangeP) => PostParser.evalRange(env.file, range)
+      val evalRange = (range: RangeL) => PostParser.evalRange(env.file, range)
 
       translateValueTemplex(templex) match {
         case Some(x) => addLiteralRule(lidb.child(), ruleBuilder, evalRange(templex.range), x)
@@ -120,7 +122,7 @@ class TemplexScout(
             }
             case FunctionPT(range, mutability, paramsPack, returnType) => {
               val resultRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
-              val templateNameRuneS = addLookupRule(lidb.child(), ruleBuilder, evalRange(range), interner.intern(CodeNameS("IFunction")))
+              val templateNameRuneS = addLookupRule(lidb.child(), ruleBuilder, evalRange(range), interner.intern(CodeNameS(keywords.IFUNCTION)))
               val mutabilityRuneS =
                 mutability match {
                   case None => addLiteralRule(lidb.child(), ruleBuilder, evalRange(range), rules.MutabilityLiteralSL(MutableP))
@@ -141,7 +143,7 @@ class TemplexScout(
 
               val nameRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
               ruleBuilder +=
-                LiteralSR(evalRange(nameRange), nameRuneS, StringLiteralSL(name))
+                LiteralSR(evalRange(nameRange), nameRuneS, StringLiteralSL(name.str))
 
               val paramsS =
                 paramsP.map(paramP => {
@@ -203,7 +205,7 @@ class TemplexScout(
                 rules.LookupSR(
                   evalRange(range),
                   templateRuneS,
-                  interner.intern(CodeNameS("Tup")))
+                  interner.intern(CodeNameS(keywords.TUP)))
               ruleBuilder +=
                 rules.CallSR(
                   evalRange(range),

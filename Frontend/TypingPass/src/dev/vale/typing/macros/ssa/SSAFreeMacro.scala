@@ -1,6 +1,6 @@
 package dev.vale.typing.macros.ssa
 
-import dev.vale.RangeS
+import dev.vale.{Keywords, RangeS, StrI}
 import dev.vale.highertyping.FunctionA
 import dev.vale.typing.ast.{ArgLookupTE, BlockTE, FunctionHeaderT, FunctionT, LocationInFunctionEnvironment, ParameterT, ReturnTE, VoidLiteralTE}
 import dev.vale.typing.env.{FunctionEnvironment, FunctionEnvironmentBox}
@@ -14,16 +14,17 @@ import dev.vale.typing.types._
 import dev.vale.typing.ArrayCompiler
 
 class SSAFreeMacro(
+  keywords: Keywords,
   arrayCompiler: ArrayCompiler,
   destructorCompiler: DestructorCompiler
 ) extends IFunctionBodyMacro {
 
-  val generatorId: String = "vale_static_sized_array_free"
+  val generatorId: StrI = keywords.vale_static_sized_array_free
 
   override def generateFunctionBody(
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
-    generatorId: String,
+    generatorId: StrI,
     life: LocationInFunctionEnvironment,
     callRange: RangeS,
     originFunction1: Option[FunctionA],

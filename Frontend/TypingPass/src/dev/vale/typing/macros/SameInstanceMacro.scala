@@ -1,24 +1,23 @@
 package dev.vale.typing.macros
 
-import dev.vale.RangeS
-import dev.vale.highertyping.FunctionA
+import dev.vale.{Keywords, RangeS, StrI}
 import dev.vale.typing.CompilerOutputs
 import dev.vale.typing.ast.{ArgLookupTE, BlockTE, FunctionHeaderT, FunctionT, IsSameInstanceTE, LocationInFunctionEnvironment, ParameterT, ReturnTE}
 import dev.vale.typing.citizen.StructCompiler
 import dev.vale.typing.env.FunctionEnvironment
 import dev.vale.typing.types.CoordT
-import dev.vale.RangeS
+import dev.vale.highertyping.FunctionA
 import dev.vale.typing.ast
 import dev.vale.typing.ast._
 import dev.vale.typing.function.FunctionCompilerCore
 
-class SameInstanceMacro() extends IFunctionBodyMacro {
-  val generatorId: String = "vale_same_instance"
+class SameInstanceMacro(keywords: Keywords) extends IFunctionBodyMacro {
+  val generatorId: StrI = keywords.vale_same_instance
 
   def generateFunctionBody(
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
-    generatorId: String,
+    generatorId: StrI,
     life: LocationInFunctionEnvironment,
     callRange: RangeS,
     originFunction: Option[FunctionA],

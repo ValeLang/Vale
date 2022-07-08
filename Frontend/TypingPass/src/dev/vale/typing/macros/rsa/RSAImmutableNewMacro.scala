@@ -8,23 +8,22 @@ import dev.vale.typing.env.{FunctionEnvironment, TemplataLookupContext}
 import dev.vale.typing.macros.IFunctionBodyMacro
 import dev.vale.typing.templata.{CoordTemplata, MutabilityTemplata, PrototypeTemplata}
 import dev.vale.typing.types.{CoordT, FinalT, ImmutableT, MutableT, RuntimeSizedArrayTT, VaryingT}
-import dev.vale.{Interner, RangeS, vassertSome}
+import dev.vale.{Interner, Keywords, Profiler, RangeS, StrI, vassertSome}
 import dev.vale.postparsing.CodeRuneS
 import dev.vale.typing.ast._
 import dev.vale.typing.env.TemplataLookupContext
 import dev.vale.typing.templata.PrototypeTemplata
 import dev.vale.typing.types._
 import dev.vale.typing.ast
-import dev.vale.{Interner, Profiler, RangeS, vassertSome}
 
 
-class RSAImmutableNewMacro( interner: Interner) extends IFunctionBodyMacro {
-  val generatorId: String = "vale_runtime_sized_array_imm_new"
+class RSAImmutableNewMacro(interner: Interner, keywords: Keywords) extends IFunctionBodyMacro {
+  val generatorId: StrI = keywords.vale_runtime_sized_array_imm_new
 
   def generateFunctionBody(
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
-    generatorId: String,
+    generatorId: StrI,
     life: LocationInFunctionEnvironment,
     callRange: RangeS,
     originFunction: Option[FunctionA],
@@ -39,17 +38,17 @@ class RSAImmutableNewMacro( interner: Interner) extends IFunctionBodyMacro {
     val CoordTemplata(elementType) =
       vassertSome(
         env.lookupNearestWithImpreciseName(
-          interner.intern(RuneNameS(CodeRuneS("E"))), Set(TemplataLookupContext)))
+          interner.intern(RuneNameS(CodeRuneS(keywords.E))), Set(TemplataLookupContext)))
 
     val MutabilityTemplata(mutability) =
       vassertSome(
         env.lookupNearestWithImpreciseName(
-          interner.intern(RuneNameS(CodeRuneS("M"))), Set(TemplataLookupContext)))
+          interner.intern(RuneNameS(CodeRuneS(keywords.M))), Set(TemplataLookupContext)))
 
     val PrototypeTemplata(generatorPrototype) =
       vassertSome(
         env.lookupNearestWithImpreciseName(
-          interner.intern(RuneNameS(CodeRuneS("F"))), Set(TemplataLookupContext)))
+          interner.intern(RuneNameS(CodeRuneS(keywords.F))), Set(TemplataLookupContext)))
 
     val variability =
       mutability match {

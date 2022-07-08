@@ -1,20 +1,20 @@
 
 func min(a int, b int) int {
-  return if (a <= b) { a } else { b }
+  return if (a <= b) { a } else { b };
 }
 
 func max(a int, b int) int {
-  return if (a >= b) { a } else { b }
+  return if (a >= b) { a } else { b };
 }
 
 func abs(a int) int {
-  return if (a < 0) { a * -1 } else { a }
+  return if (a < 0) { a * -1 } else { a };
 }
 
 func signum(a int) int {
   return if (a < 0) { -1 }
     else if (a > 0) { 1 }
-    else { 0 }
+    else { 0 };
 }
 
 extern func sqrt(x float) float;

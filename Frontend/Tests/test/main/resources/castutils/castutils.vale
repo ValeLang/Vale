@@ -1,6 +1,6 @@
 
 func str(b bool) str {
-  return if (b) { "true" } else { "false" }
+  return if (b) { "true" } else { "false" };
 }
 
 func +(i int, s str) str {

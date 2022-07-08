@@ -1,10 +1,10 @@
 package dev.vale.parsing
 
-import dev.vale.Collector
+import dev.vale.lexing.ImportL
 import dev.vale.options.GlobalOptions
+import dev.vale.{Collector, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, PackageCoordinate, StrI, vassertOne}
 import dev.vale.parsing.ast.{BorrowP, CallPT, ExportAttributeP, FinalP, IdentifyingRuneP, IdentifyingRunesP, ImmutableP, IntTypePR, InterpretedPT, MutabilityPT, MutableP, NameOrRunePT, NameP, NormalStructMemberP, OwnP, RuntimeSizedArrayPT, ShareP, StaticSizedArrayPT, StructMembersP, StructP, TemplateRulesP, TopLevelStructP, TypedPR, VariabilityPT, VariadicStructMemberP, VaryingP, WeakP}
 import dev.vale.parsing.ast._
-import dev.vale.Collector
 import org.scalatest.{FunSuite, Matchers}
 
 
@@ -22,139 +22,152 @@ class StructTests extends FunSuite with Collector with TestParseUtils {
 //    }
 //  }
 
-  test("17") {
-    compile(makeParser().parseStructMember(_), "a @ListNode<T>;") shouldHave {
-      case NormalStructMemberP(_, NameP(_, "a"), FinalP, InterpretedPT(_,ShareP,CallPT(_,NameOrRunePT(NameP(_, "ListNode")), Vector(NameOrRunePT(NameP(_, "T")))))) =>
+  test("Simple struct") {
+    vassertOne(compileFile("""struct Moo { }""").getOrDie().denizens) shouldHave {
+      case TopLevelStructP(StructP(_,
+      NameP(_, StrI("Moo")),
+      Vector(),
+      None,
+      None,
+      None,
+      _,
+      StructMembersP(_,
+      Vector()))) =>
+    }
+  }
+
+  test("17a") {
+    val denizen =
+      vassertOne(
+        compileFile(
+          """
+            |struct Mork {
+            |  a @ListNode<T>;
+            |}
+            |""".stripMargin).getOrDie().denizens)
+    denizen shouldHave {
+      case NormalStructMemberP(_, NameP(_, StrI("a")), FinalP, InterpretedPT(_,ShareP,CallPT(_,NameOrRunePT(NameP(_, StrI("ListNode"))), Vector(NameOrRunePT(NameP(_, StrI("T"))))))) =>
+//      case NormalStructMemberP(_,NameP(_,StrI(a)),final,InterpretedPT(_,share,CallPT(_,NameOrRunePT(NameP(_,StrI(ListNode))),Vector())))
     }
   }
 
   test("18") {
-    compile(makeParser().parseStructMember(_), "a []<imm>T;") shouldHave {
-      case NormalStructMemberP(_,NameP(_,"a"),FinalP,RuntimeSizedArrayPT(_,MutabilityPT(_,ImmutableP),NameOrRunePT(NameP(_,"T")))) =>
-    }
-  }
-
-  test("Simple struct") {
-    compileMaybe(
-      makeParser().parseTopLevelThing(_),
-      "struct Moo { x &int; }") shouldHave {
-      case TopLevelStructP(StructP(_,
-        NameP(_, "Moo"),
-        Vector(),
-        MutabilityPT(_, MutableP),
-        None,
-        None,
-        StructMembersP(_,
-          Vector(
-            NormalStructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,BorrowP,NameOrRunePT(NameP(_, "int")))))))) =>
+    vassertOne(
+      compileFile(
+        """
+          |struct Mork {
+          |  a []<imm>T;
+          |}
+          |""".stripMargin).getOrDie().denizens) shouldHave {
+      case NormalStructMemberP(_,NameP(_, StrI("a")),FinalP,RuntimeSizedArrayPT(_,MutabilityPT(_,ImmutableP),NameOrRunePT(NameP(_, StrI("T"))))) =>
     }
   }
 
   test("Variadic struct") {
-    val thing = compileMaybe(
-      makeParser().parseTopLevelThing(_),
-      "struct Moo<T> { _ ..T; }")
-    Collector.only(thing, {
-      case StructMembersP(_, Vector(VariadicStructMemberP(_, FinalP, NameOrRunePT(NameP(_, "T"))))) =>
-    })
+    Collector.only(
+      vassertOne(compileFile("struct Moo<T> { _ ..T; }").getOrDie().denizens),
+      {
+        case StructMembersP(_, Vector(VariadicStructMemberP(_, FinalP, NameOrRunePT(NameP(_, StrI("T")))))) =>
+      })
   }
 
   test("Variadic struct with varying") {
-    val thing = compileMaybe(
-      makeParser().parseTopLevelThing(_),
-      "struct Moo<T> { _! ..T; }")
-    Collector.only(thing, {
-      case StructMembersP(_, Vector(VariadicStructMemberP(_, VaryingP, NameOrRunePT(NameP(_, "T"))))) =>
+    Collector.only(vassertOne(compileFile("struct Moo<T> { _! ..T; }").getOrDie().denizens), {
+      case StructMembersP(_, Vector(VariadicStructMemberP(_, VaryingP, NameOrRunePT(NameP(_, StrI("T")))))) =>
     })
   }
 
   test("Struct with weak") {
-    compileMaybe(
-      makeParser().parseTopLevelThing(_),
-      "struct Moo { x &&int; }") shouldHave {
-      case TopLevelStructP(StructP(_, NameP(_, "Moo"), Vector(), MutabilityPT(_, MutableP), None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,WeakP,NameOrRunePT(NameP(_, "int")))))))) =>
+    vassertOne(compileFile("struct Moo { x &&int; }").getOrDie().denizens) shouldHave {
+      case TopLevelStructP(StructP(_, NameP(_, StrI("Moo")), Vector(), None, None, None, _, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, StrI("x")), FinalP, InterpretedPT(_,WeakP,NameOrRunePT(NameP(_, StrI("int"))))))))) =>
     }
   }
 
   test("Struct with heap") {
-    compileMaybe(
-      makeParser().parseTopLevelThing(_),
-      "struct Moo { x ^Marine; }") shouldHave {
-      case TopLevelStructP(StructP(_,NameP(_,"Moo"),Vector(), MutabilityPT(_, MutableP),None,None,StructMembersP(_,Vector(NormalStructMemberP(_,NameP(_,"x"),FinalP,InterpretedPT(_,OwnP,NameOrRunePT(NameP(_,"Marine")))))))) =>
+    vassertOne(compileFile("struct Moo { x ^Marine; }").getOrDie().denizens) shouldHave {
+      case TopLevelStructP(StructP(_,NameP(_, StrI("Moo")),Vector(), None,None,None,_, StructMembersP(_,Vector(NormalStructMemberP(_,NameP(_, StrI("x")),FinalP,InterpretedPT(_,OwnP,NameOrRunePT(NameP(_, StrI("Marine"))))))))) =>
     }
   }
 
   test("Export struct") {
-    compileMaybe(
-      makeParser().parseTopLevelThing(_),
-      "exported struct Moo { x &int; }") shouldHave {
-      case TopLevelStructP(StructP(_, NameP(_, "Moo"), Vector(ExportAttributeP(_)), MutabilityPT(_, MutableP), None, None, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, "x"), FinalP, InterpretedPT(_,BorrowP,NameOrRunePT(NameP(_, "int")))))))) =>
+    vassertOne(compileFile("exported struct Moo { x &int; }").getOrDie().denizens) shouldHave {
+      case TopLevelStructP(StructP(_, NameP(_, StrI("Moo")), Vector(ExportAttributeP(_)), None, None, None, _, StructMembersP(_, Vector(NormalStructMemberP(_, NameP(_, StrI("x")), FinalP, InterpretedPT(_,BorrowP,NameOrRunePT(NameP(_, StrI("int"))))))))) =>
     }
   }
 
   test("Struct with rune") {
-    compileMaybe(
-      makeParser().parseTopLevelThing(_),
-      """
-        |struct ListNode<E> {
-        |  value E;
-        |  next ListNode<E>;
-        |}
-      """.stripMargin.strip()) shouldHave {
+    vassertOne(
+      compileFile(
+        """
+          |struct ListNode<E> {
+          |  value E;
+          |  next ListNode<E>;
+          |}
+        """.stripMargin).getOrDie().denizens) shouldHave {
       case TopLevelStructP(StructP(
         _,
-        NameP(_, "ListNode"),
+        NameP(_, StrI("ListNode")),
         Vector(),
-        MutabilityPT(_, MutableP),
-        Some(IdentifyingRunesP(_, Vector(IdentifyingRuneP(_, NameP(_, "E"), Vector())))),
         None,
+        Some(IdentifyingRunesP(_, Vector(IdentifyingRuneP(_, NameP(_, StrI("E")), Vector())))),
+        None,
+        _,
         StructMembersP(_,
           Vector(
-            NormalStructMemberP(_,NameP(_, "value"),FinalP,NameOrRunePT(NameP(_, "E"))),
-            NormalStructMemberP(_,NameP(_, "next"),FinalP,CallPT(_,NameOrRunePT(NameP(_, "ListNode")),Vector(NameOrRunePT(NameP(_, "E"))))))))) =>
+            NormalStructMemberP(_,NameP(_, StrI("value")),FinalP,NameOrRunePT(NameP(_, StrI("E")))),
+            NormalStructMemberP(_,NameP(_, StrI("next")),FinalP,CallPT(_,NameOrRunePT(NameP(_, StrI("ListNode"))),Vector(NameOrRunePT(NameP(_, StrI("E")))))))))) =>
     }
   }
 
   test("Struct with int rune") {
-    compileMaybe(
-      makeParser().parseTopLevelThing(_),
-      """
-        |struct Vecf<N> where N int
-        |{
-        |  values [#N]float;
-        |}
-        |
-      """.stripMargin.strip()) shouldHave {
+    vassertOne(
+      compileFile(
+        """
+          |struct Vecf<N> where N int
+          |{
+          |  values [#N]float;
+          |}
+          |
+      """.stripMargin).getOrDie().denizens) shouldHave {
       case TopLevelStructP(StructP(
         _,
-        NameP(_, "Vecf"),
+        NameP(_, StrI("Vecf")),
         Vector(),
-        MutabilityPT(_, MutableP),
-        Some(IdentifyingRunesP(_, Vector(IdentifyingRuneP(_, NameP(_, "N"), Vector())))),
-        Some(TemplateRulesP(_, Vector(TypedPR(_,Some(NameP(_, "N")), IntTypePR)))),
-        StructMembersP(_, Vector(NormalStructMemberP(_,NameP(_, "values"), FinalP, StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, "N")), NameOrRunePT(NameP(_, "float")))))))) =>
+        None,
+        Some(IdentifyingRunesP(_, Vector(IdentifyingRuneP(_, NameP(_, StrI("N")), Vector())))),
+        Some(TemplateRulesP(_, Vector(TypedPR(_,Some(NameP(_, StrI("N"))), IntTypePR)))),
+        _,
+        StructMembersP(_, Vector(NormalStructMemberP(_,NameP(_, StrI("values")), FinalP, StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, StrI("N"))), NameOrRunePT(NameP(_, StrI("float"))))))))) =>
     }
   }
 
   test("Struct with int rune, array sequence specifies mutability") {
-    compileMaybe(
-      makeParser().parseTopLevelThing(_),
-      """
-        |struct Vecf<N> where N int
-        |{
-        |  values [#N]<imm>float;
-        |}
-        |
-      """.stripMargin.strip()) shouldHave {
+    vassertOne(
+      compileFile(
+        """
+          |struct Vecf<N> where N int
+          |{
+          |  values [#N]float;
+          |}
+      """.stripMargin).getOrDie().denizens) shouldHave {
       case TopLevelStructP(
           StructP(
             _,
-            NameP(_, "Vecf"),
+            NameP(_, StrI("Vecf")),
             Vector(),
-            MutabilityPT(_, MutableP),
-            Some(IdentifyingRunesP(_, Vector(IdentifyingRuneP(_, NameP(_, "N"), Vector())))),
-            Some(TemplateRulesP(_, Vector(TypedPR(_,Some(NameP(_, "N")),IntTypePR)))),
-            StructMembersP(_, Vector(NormalStructMemberP(_,NameP(_, "values"),FinalP,StaticSizedArrayPT(_,MutabilityPT(_,ImmutableP), VariabilityPT(_, FinalP), NameOrRunePT(NameP(_, "N")), NameOrRunePT(NameP(_, "float")))))))) =>
+            None,
+            Some(IdentifyingRunesP(_, Vector(IdentifyingRuneP(_, NameP(_, StrI("N")), Vector())))),
+            Some(TemplateRulesP(_, Vector(TypedPR(_,Some(NameP(_, StrI("N"))),IntTypePR)))),
+            _,
+            StructMembersP(_, Vector(NormalStructMemberP(_,NameP(_, StrI("values")),FinalP,StaticSizedArrayPT(_,MutabilityPT(_,MutableP), VariabilityPT(_, FinalP), NameOrRunePT(NameP(_, StrI("N"))), NameOrRunePT(NameP(_, StrI("float"))))))))) =>
+//      case TopLevelStructP(
+//        StructP(_,
+//          NameP(_,StrI("Vecf")),
+//          Vector(),
+//          None,
+//          Some(IdentifyingRunesP(_,Vector(IdentifyingRuneP(_,NameP(_,StrI("N")),Vector())))),
+//          Some(TemplateRulesP(_,Vector(TypedPR(_,Some(NameP(_,StrI("N"))),IntTypePR)))),
+//          StructMembersP(_,Vector(NormalStructMemberP(_,NameP(_,StrI("values")),FinalP,StaticSizedArrayPT(_,MutabilityPT(_,mut),VariabilityPT(_,final),NameOrRunePT(NameP(_,StrI(N))),NameOrRunePT(NameP(_,StrI(float)))))))))
     }
   }
 }

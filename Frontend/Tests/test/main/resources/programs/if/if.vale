@@ -3,5 +3,5 @@ exported func main() int {
       42
     } else {
       73
-    }
+    };
 }

@@ -4,12 +4,12 @@ import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing.IFunctionDeclarationNameS
 import dev.vale.postparsing.rules.RuneUsage
 import dev.vale.typing.env.IEnvironment
-import dev.vale.typing.{InferCompiler, InitialKnown, TypingPassOptions, CompilerOutputs}
+import dev.vale.typing.{CompilerOutputs, InferCompiler, InitialKnown, TypingPassOptions}
 import dev.vale.typing.function.FunctionCompiler
 import dev.vale.typing.names.NameTranslator
 import dev.vale.typing.templata.{Conversions, FunctionTemplata, ITemplata, InterfaceTemplata, MutabilityTemplata, StructTemplata}
 import dev.vale.typing.types.{InterfaceTT, MutabilityT, StructMemberT, StructTT}
-import dev.vale.{Interner, Profiler, RangeS, vassert, vfail}
+import dev.vale.{Interner, Keywords, Profiler, RangeS, vassert, vfail, vimpl, vwat}
 import dev.vale.highertyping._
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
@@ -18,19 +18,18 @@ import dev.vale.typing.ast._
 import dev.vale.typing.citizen.StructCompilerMiddle
 import dev.vale.typing.env._
 import dev.vale.typing.names.AnonymousSubstructNameT
-import dev.vale.{Interner, Profiler, RangeS, vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
 class StructCompilerGenericArgsLayer(
     opts: TypingPassOptions,
-
     interner: Interner,
+    keywords: Keywords,
     nameTranslator: NameTranslator,
     inferCompiler: InferCompiler,
     ancestorHelper: AncestorHelper,
     delegate: IStructCompilerDelegate) {
-  val middle = new StructCompilerMiddle(opts, interner, nameTranslator, ancestorHelper, delegate)
+  val middle = new StructCompilerMiddle(opts, interner, keywords, nameTranslator, ancestorHelper, delegate)
 
   def getStructRef(
     coutputs: CompilerOutputs,

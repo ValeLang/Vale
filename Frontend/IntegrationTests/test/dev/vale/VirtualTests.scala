@@ -24,6 +24,7 @@ class VirtualTests extends FunSuite with Matchers {
         """.stripMargin)
       val coutputs = compile.expectCompilerOutputs()
       val interner = compile.interner
+      val keywords = compile.keywords
 
       vassert(coutputs.getAllUserFunctions.size == 2)
       vassert(coutputs.lookupFunction("main").header.returnType == CoordT(ShareT, IntT.i32))
@@ -33,18 +34,18 @@ class VirtualTests extends FunSuite with Matchers {
           coutputs.lookupFunction(
             SignatureT(
               FullNameT(
-                PackageCoordinate.TEST_TLD(interner),
+                PackageCoordinate.TEST_TLD(interner, keywords),
                 Vector.empty,
                 interner.intern(
                   FunctionNameT(
-                    "doThing",
+                    interner.intern(StrI("doThing")),
                     Vector.empty,
                     Vector(
                       CoordT(
                         OwnT,
                         interner.intern(
                           InterfaceTT(
-                            FullNameT(PackageCoordinate.TEST_TLD(interner), Vector.empty, interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("I")), Vector.empty)))))))))))))
+                            FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT(interner.intern(StrI("I")))), Vector.empty)))))))))))))
       vassert(doThing.header.params(0).virtuality.get == AbstractT())
     }
 
@@ -59,6 +60,7 @@ class VirtualTests extends FunSuite with Matchers {
       """.stripMargin)
     val coutputs = compile.expectCompilerOutputs()
     val interner = compile.interner
+    val keywords = compile.keywords
 
     vassert(coutputs.getAllUserFunctions.size == 2)
     vassert(coutputs.lookupFunction("main").header.returnType == CoordT(ShareT, IntT.i32))
@@ -69,18 +71,18 @@ class VirtualTests extends FunSuite with Matchers {
         coutputs.lookupFunction(
           ast.SignatureT(
             FullNameT(
-              PackageCoordinate.TEST_TLD(interner),
+              PackageCoordinate.TEST_TLD(interner, keywords),
               Vector.empty,
               interner.intern(
                 FunctionNameT(
-                  "doThing",
+                  interner.intern(StrI("doThing")),
                   Vector.empty,
                   Vector(
                     CoordT(
                       OwnT,
                       interner.intern(
                         types.InterfaceTT(
-                          FullNameT(PackageCoordinate.TEST_TLD(interner), Vector.empty, interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT("I")), Vector.empty)))))))))))))
+                          FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT(interner.intern(StrI("I")))), Vector.empty)))))))))))))
     vassert(doThing.header.params(0).virtuality.get == AbstractT())
   }
 

@@ -35,7 +35,7 @@ case class KindExportT(
   range: RangeS,
   tyype: KindT,
   packageCoordinate: PackageCoordinate,
-  exportedName: String
+  exportedName: StrI
 )  {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
@@ -45,7 +45,7 @@ case class FunctionExportT(
   range: RangeS,
   prototype: PrototypeT,
   packageCoordinate: PackageCoordinate,
-  exportedName: String
+  exportedName: StrI
 )  {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
@@ -54,7 +54,7 @@ case class FunctionExportT(
 case class KindExternT(
   tyype: KindT,
   packageCoordinate: PackageCoordinate,
-  externName: String
+  externName: StrI
 )  {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
@@ -64,7 +64,7 @@ case class FunctionExternT(
   range: RangeS,
   prototype: PrototypeT,
   packageCoordinate: PackageCoordinate,
-  externName: String
+  externName: StrI
 )  {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
@@ -90,7 +90,6 @@ case class EdgeT(
 }
 
 object ProgramT {
-  val tupleHumanName = "Tup"
 //  val emptyTupleTT =
 //    StructTT(FullNameT(PackageCoordinate.BUILTIN, Vector(), CitizenNameT(CitizenTemplateNameT(tupleHumanName), Vector(CoordListTemplata(Vector())))))
 

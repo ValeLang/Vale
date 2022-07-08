@@ -1,12 +1,12 @@
 package dev.vale.typing.citizen
 
 import dev.vale.highertyping.FunctionA
-import dev.vale.{Interner, Profiler, RangeS, vcurious}
+import dev.vale.{Interner, Keywords, Profiler, RangeS, vcurious, _}
 import dev.vale.postparsing.{IFunctionDeclarationNameS, IImpreciseNameS, IRuneS, IEnvironment => _}
 import dev.vale.postparsing.rules.IRulexSR
 import dev.vale.typing.ast.{FunctionHeaderT, PrototypeT}
 import dev.vale.typing.env.IEnvironment
-import dev.vale.typing.{InferCompiler, TypingPassOptions, CompilerOutputs}
+import dev.vale.typing.{CompilerOutputs, InferCompiler, TypingPassOptions}
 import dev.vale.typing.names.NameTranslator
 import dev.vale.typing.templata.{FunctionTemplata, ITemplata, InterfaceTemplata, StructTemplata}
 import dev.vale.typing.types.{AddressMemberTypeT, CoordT, ImmutableT, InterfaceTT, MutabilityT, MutableT, ParamFilter, ReferenceMemberTypeT, ShareT, StructMemberT, StructTT}
@@ -19,7 +19,6 @@ import dev.vale.postparsing.rules._
 import dev.vale.typing._
 import dev.vale.typing.env._
 import dev.vale.typing.function.FunctionCompiler
-import dev.vale._
 import dev.vale.typing.ast._
 import dev.vale.typing.names.ICitizenNameT
 
@@ -55,13 +54,14 @@ trait IStructCompilerDelegate {
 class StructCompiler(
     opts: TypingPassOptions,
     interner: Interner,
+    keywords: Keywords,
     nameTranslator: NameTranslator,
     inferCompiler: InferCompiler,
     ancestorHelper: AncestorHelper,
     delegate: IStructCompilerDelegate) {
   val templateArgsLayer =
     new StructCompilerGenericArgsLayer(
-      opts, interner, nameTranslator, inferCompiler, ancestorHelper, delegate)
+      opts, interner, keywords, nameTranslator, inferCompiler, ancestorHelper, delegate)
 
   def getStructRef(
     coutputs: CompilerOutputs,

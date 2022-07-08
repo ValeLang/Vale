@@ -5,7 +5,7 @@ import dev.vale.parsing._
 import dev.vale.parsing.ast._
 import PostParser.noDeclarations
 import dev.vale
-import dev.vale.{FileCoordinate, Interner, RangeS, postparsing, vassertSome, vcurious, vimpl, vwat}
+import dev.vale.{FileCoordinate, Interner, Keywords, RangeS, postparsing, vassertSome, vcurious, vimpl, vwat}
 import dev.vale.parsing.ast.{AbstractAttributeP, AbstractP, BlockPE, BorrowP, BuiltinAttributeP, ExportAttributeP, ExternAttributeP, FunctionHeaderP, FunctionP, FunctionReturnP, IAttributeP, IdentifyingRuneP, NameP, PureAttributeP, RegionTypePR, RulePUtils, TypeRuneAttributeP, UseP}
 import dev.vale.postparsing.patterns.{AtomSP, CaptureS, PatternScout}
 import dev.vale.postparsing.patterns._
@@ -23,6 +23,7 @@ import scala.collection.immutable.{List, Range}
 class FunctionScout(
     postParser: PostParser,
     interner: Interner,
+    keywords: Keywords,
     templexScout: TemplexScout,
     ruleScout: RuleScout) {
   val patternScout = new PatternScout(interner, templexScout)
@@ -36,7 +37,8 @@ class FunctionScout(
       templexScout,
       ruleScout,
       patternScout,
-      interner
+      interner,
+      keywords
     )
 
   def scoutTopLevelFunction(file: FileCoordinate, functionP: FunctionP): FunctionS = {
@@ -56,10 +58,12 @@ class FunctionScout(
     val codeLocation = PostParser.evalPos(file, range.begin)
     val name =
       (file, originalCodeName) match {
-        case (FileCoordinate(PackageCoordinate("v", Vector("builtins", "arrays")), "arrays.vale"), "__free_replaced") => {
+        case (FileCoordinate(PackageCoordinate(v, Vector(builtins, arrays)), "arrays.vale"), __free_replaced)
+        if v == keywords.v && builtins == keywords.builtins && arrays == keywords.arrays && __free_replaced == keywords.__free_replaced => {
           interner.intern(postparsing.FreeDeclarationNameS(PostParser.evalPos(file, originalNameRange.begin)))
         }
-        case (FileCoordinate(PackageCoordinate("", Vector()), "arrays.vale"), "__free_replaced") => {
+        case (FileCoordinate(PackageCoordinate(emptyString, Vector()), "arrays.vale"), __free_replaced)
+        if emptyString == keywords.emptyString && __free_replaced == keywords.__free_replaced => {
           interner.intern(FreeDeclarationNameS(PostParser.evalPos(file, originalNameRange.begin)))
         }
         case (_, n) => interner.intern(postparsing.FunctionNameS(n, codeLocation))
@@ -102,9 +106,8 @@ class FunctionScout(
     val patternsP =
       paramsP.toVector.map(_.patterns).flatten.zipWithIndex.map({
         case (pattern, index) => {
-          if (pattern.templex.isEmpty) {
-            throw CompileErrorExceptionS(LightFunctionMustHaveParamTypes(rangeS, index))
-          }
+          // Should have been caught by LightFunctionMustHaveParamTypes error in parser,
+          vassert(pattern.templex.nonEmpty)
           pattern
         }
       })
@@ -120,11 +123,11 @@ class FunctionScout(
 
     val maybeRetCoordRune =
       (maybeInferRet, maybeRetType) match {
-        case (None, None) => {
+        case (None, None | Some(RegionRunePT(_, _))) => {
           // If nothing's present, assume void
           val rangeS = PostParser.evalRange(file, retRange)
           val rune = rules.RuneUsage(rangeS, ImplicitRuneS(lidb.child().consume()))
-          ruleBuilder += LookupSR(rangeS, rune, interner.intern(CodeNameS("void")))
+          ruleBuilder += LookupSR(rangeS, rune, interner.intern(CodeNameS(keywords.void)))
           Some(rune)
         }
         case (Some(_), None) => None // Infer the return
@@ -349,7 +352,7 @@ class FunctionScout(
 
     val maybeRetCoordRune =
       (maybeInferRet, maybeRetType) match {
-        case (_, None) => None // Infer the return
+        case (_, None | Some(RegionRunePT(_, _))) => None // Infer the return
         case (None, Some(retTypePT)) => {
           templexScout.translateMaybeTypeIntoMaybeRune(
             functionEnv,
@@ -540,10 +543,10 @@ class FunctionScout(
 
     val maybeReturnRune =
       (maybeInferRet, maybeRetType) match {
-        case (None, None) => {
+        case (None, None | Some(RegionRunePT(_, _))) => {
           // If nothing's present, assume void
           val rune = rules.RuneUsage(retRangeS, ImplicitRuneS(lidb.child().consume()))
-          ruleBuilder += rules.LookupSR(retRangeS, rune, interner.intern(CodeNameS("void")))
+          ruleBuilder += rules.LookupSR(retRangeS, rune, interner.intern(CodeNameS(interner.intern(keywords.void))))
           Some(rune)
         }
         case (Some(_), None) => {

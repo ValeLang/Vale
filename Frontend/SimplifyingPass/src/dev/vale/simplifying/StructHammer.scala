@@ -1,6 +1,6 @@
 package dev.vale.simplifying
 
-import dev.vale.{Interner, PackageCoordinate, vassert}
+import dev.vale.{Interner, Keywords, PackageCoordinate, vassert, finalast => m}
 import dev.vale.finalast.{BorrowH, EdgeH, InterfaceDefinitionH, InterfaceMethodH, InterfaceRefH, KindH, Mutable, PrototypeH, ReferenceH, StructDefinitionH, StructMemberH, StructRefH, YonderH}
 import dev.vale.typing.Hinputs
 import dev.vale.typing.ast.{EdgeT, PrototypeT}
@@ -8,7 +8,6 @@ import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, FreeNameT, Ful
 import dev.vale.typing.templata.CoordTemplata
 import dev.vale.typing.types.{AddressMemberTypeT, CoordT, ImmutableT, InterfaceTT, MutableT, ReferenceMemberTypeT, StructMemberT, StructTT, VariabilityT, VaryingT}
 import dev.vale.finalast._
-import dev.vale.{finalast => m}
 import dev.vale.typing._
 import dev.vale.typing.ast._
 import dev.vale.typing.names.CitizenTemplateNameT
@@ -16,16 +15,10 @@ import dev.vale.typing.types._
 
 import scala.collection.immutable.ListMap
 
-object StructHammer {
-  val BOX_HUMAN_NAME = "__Box"
-  val BOX_MEMBER_INDEX = 0
-  val BOX_MEMBER_NAME = "__boxee"
-}
-
-
 
 class StructHammer(
     interner: Interner,
+    keywords: Keywords,
     nameHammer: NameHammer,
     translatePrototype: (Hinputs, HamutsBox, PrototypeT) => PrototypeH,
     translateReference: (Hinputs, HamutsBox, CoordT) => ReferenceH[KindH]) {
@@ -191,7 +184,7 @@ class StructHammer(
     type2: CoordT,
     typeH: ReferenceH[KindH]):
   (StructRefH) = {
-    val boxFullName2 = FullNameT(PackageCoordinate.BUILTIN(interner), Vector.empty, interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT(StructHammer.BOX_HUMAN_NAME)), Vector(CoordTemplata(type2)))))
+    val boxFullName2 = FullNameT(PackageCoordinate.BUILTIN(interner, keywords), Vector.empty, interner.intern(CitizenNameT(interner.intern(CitizenTemplateNameT(keywords.BOX_HUMAN_NAME)), Vector(CoordTemplata(type2)))))
     val boxFullNameH = nameHammer.translateFullName(hinputs, hamuts, boxFullName2)
     hamuts.structDefs.find(_.fullName == boxFullNameH) match {
       case Some(structDefH) => (structDefH.getRef)
@@ -205,7 +198,7 @@ class StructHammer(
 
         val memberH =
           StructMemberH(
-            nameHammer.addStep(hamuts, temporaryStructRefH.fullName, StructHammer.BOX_MEMBER_NAME),
+            nameHammer.addStep(hamuts, temporaryStructRefH.fullName, keywords.BOX_MEMBER_NAME.str),
             Conversions.evaluateVariability(actualVariability), typeH)
 
         val structDefH =

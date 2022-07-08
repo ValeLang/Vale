@@ -618,7 +618,7 @@ case class DestroyStaticSizedArrayIntoFunctionTE(
   // See https://github.com/ValeLang/Vale/issues/375
   consumerMethod.returnType.kind match {
     case StructTT(FullNameT(_, _, CitizenNameT(CitizenTemplateNameT(name), _))) => {
-      vassert(name == ProgramT.tupleHumanName)
+      vassert(name.str == "Tup")
     }
     case VoidT() =>
     case _ => vwat()
@@ -779,7 +779,7 @@ case class NewImmRuntimeSizedArrayTE(
 }
 
 object referenceExprResultStructName {
-  def unapply(expr: ReferenceExpressionTE): Option[String] = {
+  def unapply(expr: ReferenceExpressionTE): Option[StrI] = {
     expr.result.reference.kind match {
       case StructTT(FullNameT(_, _, CitizenNameT(CitizenTemplateNameT(name), _))) => Some(name)
       case _ => None

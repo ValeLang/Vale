@@ -19,6 +19,7 @@ logLevel := Level.Debug
     (baseDirectory.value / "Von" / "src"),
     (baseDirectory.value / "Utils" / "src"),
     (baseDirectory.value / "ParsingPass" / "src"),
+    (baseDirectory.value / "LexingPass" / "src"),
     (baseDirectory.value / "HigherTypingPass" / "src"),
     (baseDirectory.value / "PassManager" / "src"),
     (baseDirectory.value / "SimplifyingPass" / "src"),

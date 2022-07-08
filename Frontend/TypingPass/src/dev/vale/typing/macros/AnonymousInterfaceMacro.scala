@@ -1,7 +1,7 @@
 package dev.vale.typing.macros
 
 import dev.vale.highertyping.{FunctionA, ImplA, InterfaceA, StructA}
-import dev.vale.{Interner, RangeS, vassert, vassertSome, vimpl}
+import dev.vale.{CodeLocationS, Interner, PackageCoordinate, Profiler, RangeS, StrI, vassert, vassertOne, vassertSome, vfail, vimpl, vwat}
 import dev.vale.parsing.ast.{FinalP, UseP}
 import dev.vale.postparsing.patterns.{AbstractSP, AtomSP, CaptureS}
 import dev.vale.postparsing.{AnonymousSubstructImplDeclarationNameS, AnonymousSubstructMemberRuneS, AnonymousSubstructParentInterfaceRuneS, AnonymousSubstructParentInterfaceTemplateRuneS, AnonymousSubstructRuneS, AnonymousSubstructTemplateImpreciseNameS, AnonymousSubstructTemplateNameS, AnonymousSubstructTemplateRuneS, BlockSE, BodySE, CodeBodyS, CoordTemplataType, DotSE, ForwarderFunctionDeclarationNameS, FunctionCallSE, FunctionTemplataType, ITemplataType, ImplImpreciseNameS, KindTemplataType, LocalLoadSE, LocalS, NormalStructMemberS, NotUsed, OwnershipTemplataType, ParameterS, SelfKindRuneS, SelfKindTemplateRuneS, SelfNameS, SelfOwnershipRuneS, SelfRuneS, TemplateTemplataType, Used}
@@ -13,7 +13,6 @@ import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.macros.citizen.{ImplDropMacro, InterfaceFreeMacro, StructDropMacro, StructFreeMacro}
 import dev.vale.typing.names.{FullNameT, INameT, NameTranslator}
 import dev.vale.typing.types.MutabilityT
-import dev.vale.{CodeLocationS, Interner, PackageCoordinate, Profiler, RangeS, vassert, vassertOne, vassertSome, vfail, vimpl, vwat}
 import dev.vale.highertyping.FunctionA
 import dev.vale.parsing.ast.UseP
 import dev.vale.postparsing.ImplImpreciseNameS
@@ -60,7 +59,7 @@ class AnonymousInterfaceMacro(
       })
     val members =
       interfaceA.internalMethods.zip(memberRunes).zipWithIndex.map({ case ((method, rune), index) =>
-        NormalStructMemberS(method.range, index.toString, FinalP, rune)
+        NormalStructMemberS(method.range, interner.intern(StrI(index.toString)), FinalP, rune)
       })
 
     val structNameS = interner.intern(AnonymousSubstructTemplateNameS(interfaceA.name))
@@ -222,7 +221,7 @@ class AnonymousInterfaceMacro(
         DotSE(
           methodRange,
           LocalLoadSE(methodRange, interner.intern(SelfNameS()), UseP),
-          methodIndex.toString,
+          interner.intern(StrI(methodIndex.toString)),
           false),
         // Params minus the abstract param
         (newParams.slice(0, abstractParamIndex) ++ newParams.slice(abstractParamIndex + 1, newParams.length))

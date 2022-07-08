@@ -88,7 +88,7 @@ func add<K, H, E>(self &HashSet<K, H, E>, key K) void {
       if self.table[i].isEmpty() {
         // do nothing
       } else {
-        maybeNode = (mut self.table[i] = None<K>());
+        maybeNode = (set self.table[i] = None<K>());
         node = get(maybeNode);
         addNodeToHashSetTable(&newTable, self.hasher, node);
       }
@@ -199,7 +199,7 @@ void {
   i = 1;
   while (i < self.table.len()) {
     neighborIndex = (originalIndex + i) mod len(&self.table);
-    maybeNeighbor = (mut self.table[neighborIndex] = None<K>());
+    maybeNeighbor = (set self.table[neighborIndex] = None<K>());
     if not maybeNeighbor.isEmpty() {
       neighborKey = (maybeNeighbor).get();
       addNodeToHashSetTable(&self.table, self.hasher, neighborKey);

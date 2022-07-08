@@ -1,6 +1,6 @@
 package dev.vale.parsing
 
-import dev.vale.{Collector, Interner, StrI, vassertOne}
+import dev.vale.{Collector, Interner, StrI, vassert, vassertOne}
 import dev.vale.parsing.ast.{BlockPE, ExportAsP, FileP, FunctionP, ImportP, NameOrRunePT, NameP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImportP, TopLevelStructP, VoidPE}
 import dev.vale.parsing.ast.BlockPE
 import dev.vale.lexing.{BadStartOfStatementError, IParseError, Lexer, UnrecognizedDenizenError}
@@ -117,6 +117,16 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
     err match {
       case UnrecognizedDenizenError(_) =>
     }
+  }
+
+  test("Test interning") {
+    // We had a bug where these were considered equal, because we were using Chars
+    // and Ints in the StrI ID calculation when we should have been using Longs.
+    // Seems we were overflowing those smaller temporary values.
+    val interner = new Interner()
+    val forEachStr = interner.intern(StrI("forEach"))
+    val foreachStr = interner.intern(StrI("foreach"))
+    vassert(forEachStr != foreachStr)
   }
 
   // lol

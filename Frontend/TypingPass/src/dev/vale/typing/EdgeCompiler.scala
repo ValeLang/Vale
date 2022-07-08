@@ -84,7 +84,7 @@ class EdgeCompiler(
       impreciseName,
       Vector.empty, // No explicitly specified ones. It has to be findable just by param filters.
       Array.empty,
-      paramTypes.map(ParamFilter(_, None)),
+      paramTypes.map(c => ParamFilter(c.ownership, c.kind, None)),
       Vector(coutputs.getEnvForKind(overridingStruct)),
       true) match {
       case Err(e) => throw CompileErrorExceptionT(CouldntFindOverrideT(range, e))

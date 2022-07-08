@@ -42,7 +42,7 @@ class DestructorCompiler(
         FullNameT(PackageCoordinate.BUILTIN(interner, keywords), Vector(), interner.intern(PackageTopLevelNameT())),
         globalEnv.nameToTopLevelEnvironment.values.toVector)
     val name = interner.intern(CodeNameS(keywords.DROP_FUNCTION_NAME))
-    val args = Vector(ParamFilter(type2, None))
+    val args = Vector(ParamFilter(type2.ownership, type2.kind, None))
     overloadCompiler.findFunction(env, coutputs, callRange, name, Vector.empty, Array.empty, args, Vector(), true) match {
       case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(callRange, e))
       case Ok(x) => x
@@ -61,7 +61,7 @@ class DestructorCompiler(
         FullNameT(PackageCoordinate.BUILTIN(interner, keywords), Vector(), interner.intern(PackageTopLevelNameT())),
         globalEnv.nameToTopLevelEnvironment.values.toVector)
     val name = interner.intern(FreeImpreciseNameS())
-    val args = Vector(ParamFilter(type2, None))
+    val args = Vector(ParamFilter(type2.ownership, type2.kind, None))
     overloadCompiler.findFunction(env, coutputs, callRange, name, Vector.empty, Array.empty, args, Vector(), true) match {
       case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(callRange, e))
       case Ok(x) => x

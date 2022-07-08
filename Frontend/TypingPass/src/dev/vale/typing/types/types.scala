@@ -246,11 +246,17 @@ case class OverloadSetT(
 
 // This is what we use to search for overloads.
 case class ParamFilter(
-    tyype: CoordT,
+    ownership: OwnershipT,
+    kind: KindT,
     virtuality: Option[AbstractT]) {
    override def equals(obj: Any): Boolean = vcurious();
 
   def debugString: String = {
-    tyype.toString + virtuality.map(x => " abstract").getOrElse("")
+    "" +
+      ownership +
+      kind +
+//      ownership.map(_.toString + " ").getOrElse("") +
+//      kind.map(_.toString + " ").getOrElse("") +
+      virtuality.map(x => " abstract").getOrElse("")
   }
 }

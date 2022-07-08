@@ -1,10 +1,10 @@
 package dev.vale.typing
 
 import dev.vale.{FileCoordinate, FileCoordinateMap, RangeS, vimpl}
-import dev.vale.postparsing.{CodeVarNameS, ConstructorNameS, FunctionNameS, INameS, IRuneS, IRuneTypeRuleError, ITemplataType, ImmConcreteDestructorNameS, ImmInterfaceDestructorNameS, LambdaDeclarationNameS, RuneTypeSolveError, PostParserErrorHumanizer, TopLevelCitizenDeclarationNameS}
+import dev.vale.postparsing.{CodeVarNameS, ConstructorNameS, FunctionNameS, INameS, IRuneS, IRuneTypeRuleError, ITemplataType, ImmConcreteDestructorNameS, ImmInterfaceDestructorNameS, LambdaDeclarationNameS, PostParserErrorHumanizer, RuneTypeSolveError, TopLevelCitizenDeclarationNameS}
 import dev.vale.postparsing.rules.IRulexSR
 import dev.vale.solver.{IIncompleteOrFailedSolve, SolverErrorHumanizer}
-import dev.vale.typing.types.{BoolT, BorrowT, CoordT, FinalT, FloatT, ImmutableT, IntT, InterfaceTT, KindT, MutableT, NeverT, OverloadSetT, OwnT, ParamFilter, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StrT, StructTT, VaryingT, VoidT, WeakT}
+import dev.vale.typing.types.{BoolT, BorrowT, CoordT, FinalT, FloatT, ImmutableT, IntT, InterfaceTT, KindT, MutableT, NeverT, OverloadSetT, OwnT, OwnershipT, ParamFilter, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StrT, StructTT, VaryingT, VoidT, WeakT}
 import dev.vale.SourceCodeUtils.{humanizePos, lineBegin, lineContaining, lineRangeContaining}
 import dev.vale.highertyping.FunctionA
 import PostParserErrorHumanizer.{humanizeImpreciseName, humanizeOwnership, humanizeRune, humanizeTemplataType}
@@ -12,7 +12,7 @@ import dev.vale.postparsing.rules.IRulexSR
 import dev.vale.postparsing.PostParserErrorHumanizer
 import dev.vale.solver.RuleError
 import OverloadResolver.{FindFunctionFailure, IFindFunctionFailureReason, InferFailure, RuleTypeSolveFailure, SpecificParamDoesntMatchExactly, SpecificParamDoesntSend, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
-import dev.vale.highertyping.{HigherTypingErrorHumanizer, FunctionA}
+import dev.vale.highertyping.{FunctionA, HigherTypingErrorHumanizer}
 import dev.vale.typing.ast.{AbstractT, FunctionBannerT, FunctionCalleeCandidate, HeaderCalleeCandidate, ICalleeCandidate, PrototypeT, SignatureT}
 import dev.vale.typing.infer.{CallResultWasntExpectedType, CantShareMutable, CouldntFindFunction, ITypingPassSolverError, KindDoesntImplementInterface, KindIsNotConcrete, KindIsNotInterface, LookupFailed, NoAncestorsSatisfyCall, OneOfFailed, OwnershipDidntMatch, ReceivingDifferentOwnerships, SendingNonCitizen, SendingNonIdenticalKinds, WrongNumberOfTemplateArgs}
 import dev.vale.typing.names.{AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, CitizenNameT, CitizenTemplateNameT, CodeVarNameT, FullNameT, FunctionNameT, INameT, IVarNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT}
@@ -21,7 +21,6 @@ import dev.vale.typing.ast._
 import dev.vale.typing.infer.WrongNumberOfTemplateArgs
 import dev.vale.typing.names.AnonymousSubstructNameT
 import dev.vale.typing.templata.Conversions
-import dev.vale.typing.types.ParamFilter
 import dev.vale.RangeS
 
 object CompilerErrorHumanizer {
@@ -181,8 +180,8 @@ object CompilerErrorHumanizer {
       PostParserErrorHumanizer.humanizeImpreciseName(name) +
       "(" +
       args.map({
-        case ParamFilter(tyype, Some(AbstractT())) => humanizeTemplata(codeMap, CoordTemplata(tyype)) + " abstract"
-        case ParamFilter(tyype, None) => humanizeTemplata(codeMap, CoordTemplata(tyype))
+        case ParamFilter(ownership, kind, Some(AbstractT())) => humanizeOwnership(ownership) + humanizeKind(codeMap, kind) + " abstract"
+        case ParamFilter(ownership, kind, None) => humanizeOwnership(ownership) + humanizeKind(codeMap, kind)
       }).mkString(", ") +
       "). " +
       (if (rejectedCalleeToReason.isEmpty) {
@@ -213,8 +212,8 @@ object CompilerErrorHumanizer {
       case CodeVarNameS(name) => name.str
       case TopLevelCitizenDeclarationNameS(name, codeLocation) => name.str
       case LambdaDeclarationNameS(codeLocation) => humanizePos(codeMap, codeLocation) + ": " + "(lambda)"
-      case FunctionNameS(name, codeLocation) => humanizePos(codeMap, codeLocation) + ": " + name
-      case ConstructorNameS(TopLevelCitizenDeclarationNameS(name, range)) => humanizePos(codeMap, range.begin) + ": " + name
+      case FunctionNameS(name, codeLocation) => humanizePos(codeMap, codeLocation) + ": " + name.str
+      case ConstructorNameS(TopLevelCitizenDeclarationNameS(name, range)) => humanizePos(codeMap, range.begin) + ": " + name.str
       case ImmConcreteDestructorNameS(_) => vimpl()
       case ImmInterfaceDestructorNameS(_) => vimpl()
 //      case DropNameS(_) => vimpl()
@@ -277,14 +276,14 @@ object CompilerErrorHumanizer {
         "\n" + humanizeCandidate(codeMap, candidate) + "\n" +
         "Number of template params doesn't match! Supplied " + supplied + " but function takes " + expected
       }
-      case SpecificParamDoesntMatchExactly(index, arg, param) => {
+      case SpecificParamDoesntMatchExactly(index, paramFilter, param) => {
         "\n" + humanizeCandidate(codeMap, candidate) + "\n" +
-          "Index " + index + " argument " + humanizeTemplata(codeMap, CoordTemplata(arg)) +
+          "Index " + index + " argument " + humanizeParamFilter(codeMap, paramFilter) +
           " isn't the same exact type as expected parameter " + humanizeTemplata(codeMap, CoordTemplata(param))
       }
-      case SpecificParamDoesntSend(index, arg, param) => {
+      case SpecificParamDoesntSend(index, paramFilter, param) => {
         "\n" + humanizeCandidate(codeMap, candidate) + "\n" +
-          " Index " + index + " argument " + humanizeTemplata(codeMap, CoordTemplata(arg)) +
+          " Index " + index + " argument " + humanizeParamFilter(codeMap, paramFilter) +
           " can't be given to expected parameter " + humanizeTemplata(codeMap, CoordTemplata(param))
       }
       case SpecificParamVirtualityDoesntMatch(index) => {
@@ -335,7 +334,7 @@ object CompilerErrorHumanizer {
         "Expected an instantiation of " + humanizeTemplata(codeMap, expected) + " but got " + humanizeTemplata(codeMap, actual)
       }
       case OwnershipDidntMatch(coord, expectedOwnership) => {
-        "Given type " + humanizeTemplata(codeMap, CoordTemplata(coord)) + " doesn't have expected ownership " + humanizeOwnership(Conversions.unevaluateOwnership(expectedOwnership))
+        "Given type " + humanizeTemplata(codeMap, CoordTemplata(coord)) + " doesn't have expected ownership " + humanizeOwnership(expectedOwnership)
       }
       case ReceivingDifferentOwnerships(params) => {
         "Received conflicting ownerships: " +
@@ -399,6 +398,15 @@ object CompilerErrorHumanizer {
     }
   }
 
+  def humanizeParamFilter(
+    codeMap: FileCoordinateMap[String],
+    paramFilter: ParamFilter):
+  String = {
+    paramFilter.virtuality.map(_.toString + " ").getOrElse("") +
+      humanizeOwnership(paramFilter.ownership) +
+      humanizeKind(codeMap, paramFilter.kind)
+  }
+
   def humanizeTemplata(
     codeMap: FileCoordinateMap[String],
     templata: ITemplata):
@@ -433,38 +441,10 @@ object CompilerErrorHumanizer {
         humanizeName(codeMap, name)
       }
       case CoordTemplata(CoordT(ownership, kind)) => {
-        (ownership match {
-          case OwnT => ""
-          case ShareT => ""
-          case BorrowT => "&"
-          case WeakT => "&&"
-        }) +
-          humanizeTemplata(codeMap, KindTemplata(kind))
+        humanizeOwnership(ownership) + humanizeKind(codeMap, kind)
       }
       case KindTemplata(kind) => {
-        kind match {
-          case IntT(bits) => "i" + bits
-          case BoolT() => "bool"
-          case StrT() => "str"
-          case NeverT(_) => "never"
-          case VoidT() => "void"
-          case FloatT() => "float"
-          case OverloadSetT(_, name) => "(overloads: " + PostParserErrorHumanizer.humanizeImpreciseName(name) + ")"
-          case InterfaceTT(name) => humanizeName(codeMap, name)
-          case StructTT(name) => humanizeName(codeMap, name)
-          case RuntimeSizedArrayTT(mutability, elementType) => {
-            "Array<" +
-              humanizeTemplata(codeMap, MutabilityTemplata(mutability)) + ", " +
-              humanizeTemplata(codeMap, CoordTemplata(elementType)) + ">"
-          }
-          case StaticSizedArrayTT(size, mutability, variability, elementType) => {
-            "StaticArray<" +
-              humanizeTemplata(codeMap, IntegerTemplata(size)) + ", " +
-              humanizeTemplata(codeMap, MutabilityTemplata(mutability)) + ", " +
-              humanizeTemplata(codeMap, VariabilityTemplata(variability)) + ", " +
-              humanizeTemplata(codeMap, CoordTemplata(elementType)) + ">"
-          }
-        }
+        humanizeKind(codeMap, kind)
       }
       case CoordListTemplata(coords) => {
         "(" + coords.map(CoordTemplata).map(humanizeTemplata(codeMap, _)).mkString(", ") + ")"
@@ -525,5 +505,40 @@ object CompilerErrorHumanizer {
 
   def humanizeSignature(codeMap: FileCoordinateMap[String], signature: SignatureT): String = {
     humanizeName(codeMap, signature.fullName)
+  }
+
+  def humanizeOwnership(p: OwnershipT) = {
+    p match {
+      case OwnT => "^"
+      case ShareT => "@"
+      case BorrowT => "&"
+      case WeakT => "&&"
+    }
+  }
+
+  def humanizeKind(codeMap: FileCoordinateMap[String], kind: KindT): String = {
+    kind match {
+      case IntT(bits) => "i" + bits
+      case BoolT() => "bool"
+      case StrT() => "str"
+      case NeverT(_) => "never"
+      case VoidT() => "void"
+      case FloatT() => "float"
+      case OverloadSetT(_, name) => "(overloads: " + PostParserErrorHumanizer.humanizeImpreciseName(name) + ")"
+      case InterfaceTT(name) => humanizeName(codeMap, name)
+      case StructTT(name) => humanizeName(codeMap, name)
+      case RuntimeSizedArrayTT(mutability, elementType) => {
+        "Array<" +
+          humanizeTemplata(codeMap, MutabilityTemplata(mutability)) + ", " +
+          humanizeTemplata(codeMap, CoordTemplata(elementType)) + ">"
+      }
+      case StaticSizedArrayTT(size, mutability, variability, elementType) => {
+        "StaticArray<" +
+          humanizeTemplata(codeMap, IntegerTemplata(size)) + ", " +
+          humanizeTemplata(codeMap, MutabilityTemplata(mutability)) + ", " +
+          humanizeTemplata(codeMap, VariabilityTemplata(variability)) + ", " +
+          humanizeTemplata(codeMap, CoordTemplata(elementType)) + ">"
+      }
+    }
   }
 }

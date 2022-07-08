@@ -39,8 +39,8 @@ object OverloadResolver {
     override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   }
   case class WrongNumberOfTemplateArguments(supplied: Int, expected: Int) extends IFindFunctionFailureReason { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-  case class SpecificParamDoesntSend(index: Int, argument: CoordT, parameter: CoordT) extends IFindFunctionFailureReason { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-  case class SpecificParamDoesntMatchExactly(index: Int, argument: CoordT, parameter: CoordT) extends IFindFunctionFailureReason {
+  case class SpecificParamDoesntSend(index: Int, paramFilter: ParamFilter, parameter: CoordT) extends IFindFunctionFailureReason { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+  case class SpecificParamDoesntMatchExactly(index: Int, paramFilter: ParamFilter, parameter: CoordT) extends IFindFunctionFailureReason {
     override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
     vpass()
   }
@@ -110,16 +110,17 @@ class OverloadResolver(
     }
     desiredParams.zip(candidateParams).zipWithIndex.foreach({
       case ((desiredParam, candidateParam), paramIndex) => {
-        val ParamFilter(desiredTemplata, desiredMaybeVirtuality) = desiredParam
-        val ParameterT(_, candidateMaybeVirtuality, candidateType) = candidateParam
+        val ParamFilter(desiredOwnership, desiredKind, desiredMaybeVirtuality) = desiredParam
+        val ParameterT(_, candidateMaybeVirtuality, candidateCoord @ CoordT(candidateOwnership, candidateKind)) = candidateParam
 
         if (exact) {
-          if (desiredTemplata != candidateType) {
-            return Err(SpecificParamDoesntMatchExactly(paramIndex, desiredTemplata, candidateType))
+          if (desiredOwnership != candidateOwnership || desiredKind != candidateKind) {
+            return Err(SpecificParamDoesntMatchExactly(paramIndex, desiredParam, candidateCoord))
           }
         } else {
-          if (!templataCompiler.isTypeConvertible(coutputs, desiredTemplata, candidateType)) {
-            return Err(SpecificParamDoesntSend(paramIndex, desiredTemplata, candidateType))
+          if (!templataCompiler.isOwnershipConvertible(desiredOwnership, candidateOwnership) ||
+            !templataCompiler.isKindConvertible(coutputs, desiredKind, candidateKind)) {
+            return Err(SpecificParamDoesntSend(paramIndex, desiredParam, candidateCoord))
           }
         }
         desiredMaybeVirtuality match {
@@ -328,8 +329,8 @@ class OverloadResolver(
   // Gets all the environments for all the arguments.
   private def getParamEnvironments(coutputs: CompilerOutputs, paramFilters: Vector[ParamFilter]):
   Vector[IEnvironment] = {
-    paramFilters.flatMap({ case ParamFilter(tyype, virtuality) =>
-      (tyype.kind match {
+    paramFilters.flatMap({ case ParamFilter(ownership, kind, virtuality) =>
+      (kind match {
         case sr @ StructTT(_) => Vector(coutputs.getEnvForKind(sr))
         case ir @ InterfaceTT(_) => Vector(coutputs.getEnvForKind(ir))
         case _ => Vector.empty
@@ -394,7 +395,7 @@ class OverloadResolver(
       Ok(successes.head)
     } else {
       val (best, outscoreReasonByBanner) =
-        narrowDownCallableOverloads(coutputs, callRange, successes, args.map(_.tyype))
+        narrowDownCallableOverloads(coutputs, callRange, successes, args)
       Ok(best)
     }
   }
@@ -405,17 +406,17 @@ class OverloadResolver(
   private def getBannerParamScores(
     coutputs: CompilerOutputs,
     banner: IValidCalleeCandidate,
-    argTypes: Vector[CoordT]):
+    argTypes: Vector[ParamFilter]):
   (Option[Vector[Boolean]]) = {
     val initial: Option[Vector[Boolean]] = Some(Vector())
     banner.banner.paramTypes.zip(argTypes)
       .foldLeft(initial)({
         case (None, _) => None
         case (Some(previous), (paramType, argType)) => {
-          if (argType == paramType) {
+          if (argType.ownership == paramType.ownership && argType.kind == paramType.kind) {
             Some(previous :+ false)
           } else {
-            if (templataCompiler.isTypeConvertible(coutputs, argType, paramType)) {
+            if (templataCompiler.matchesParamFilter(coutputs, argType, paramType)) {
               Some(previous :+ true)
             } else {
               None
@@ -429,7 +430,7 @@ class OverloadResolver(
       coutputs: CompilerOutputs,
       callRange: RangeS,
       unfilteredBanners: Iterable[IValidCalleeCandidate],
-      argTypes: Vector[CoordT]):
+      argTypes: Vector[ParamFilter]):
   (
     IValidCalleeCandidate,
     // Rejection reason by banner
@@ -535,7 +536,7 @@ class OverloadResolver(
         if (ft.function.isTemplate) {
           val (EvaluateFunctionSuccess(banner)) =
             functionCompiler.evaluateTemplatedLightFunctionFromCallForBanner(
-              coutputs, callRange, ft, Vector.empty, signature.paramTypes.map(p => ParamFilter(p, None)));
+              coutputs, callRange, ft, Vector.empty, signature.paramTypes.map(p => ParamFilter(p.ownership, p.kind, None)));
           (banner)
         } else {
           functionCompiler.evaluateOrdinaryFunctionFromNonCallForBanner(
@@ -586,8 +587,8 @@ class OverloadResolver(
     val funcName = interner.intern(CodeNameS(keywords.CALL_FUNCTION_NAME))
     val paramFilters =
       Vector(
-        ParamFilter(callableTE.result.underlyingReference, None),
-        ParamFilter(CoordT(ShareT, IntT.i32), None))
+        ParamFilter(callableTE.result.underlyingReference.ownership, callableTE.result.underlyingReference.kind, None),
+        ParamFilter(ShareT, IntT.i32, None))
       findFunction(
         fate, coutputs, range, funcName, Vector.empty, Array.empty,
         paramFilters, Vector.empty, false) match {
@@ -606,8 +607,8 @@ class OverloadResolver(
     val funcName = interner.intern(CodeNameS(keywords.CALL_FUNCTION_NAME))
     val paramFilters =
       Vector(
-        ParamFilter(callableTE.result.underlyingReference, None),
-        ParamFilter(elementType, None))
+        ParamFilter(callableTE.result.underlyingReference.ownership, callableTE.result.underlyingReference.kind, None),
+        ParamFilter(elementType.ownership, elementType.kind, None))
     findFunction(
       fate.snapshot, coutputs, range, funcName, Vector.empty, Array.empty, paramFilters, Vector.empty, false) match {
       case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, e))

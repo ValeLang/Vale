@@ -61,38 +61,60 @@ class TemplataCompiler(
   nameTranslator: NameTranslator,
   delegate: ITemplataCompilerDelegate) {
 
+  def matchesParamFilter(
+    coutputs: CompilerOutputs,
+    sourcePointerType: ParamFilter,
+    targetPointerType: CoordT):
+  Boolean = {
+    isOwnershipConvertible(sourcePointerType.ownership, targetPointerType.ownership) &&
+      isKindConvertible(coutputs, sourcePointerType.kind, targetPointerType.kind)
+  }
+
   def isTypeConvertible(
     coutputs: CompilerOutputs,
     sourcePointerType: CoordT,
     targetPointerType: CoordT):
   Boolean = {
+    sourcePointerType.kind match {
+      case NeverT(_) => return true
+      case _ =>
+    }
+    isOwnershipConvertible(sourcePointerType.ownership, targetPointerType.ownership) &&
+      isKindConvertible(coutputs, sourcePointerType.kind, targetPointerType.kind)
+  }
 
-    val CoordT(targetOwnership, targetType) = targetPointerType;
-    val CoordT(sourceOwnership, sourceType) = sourcePointerType;
-
-    // Note the Never case will short-circuit a true, regardless of the other checks (ownership)
-
-    (sourceType, targetType) match {
+  def isKindConvertible(
+    coutputs: CompilerOutputs,
+    sourceKind: KindT,
+    targetKind: KindT):
+  Boolean = {
+    (sourceKind, targetKind) match {
       case (NeverT(_), _) => return true
       case (a, b) if a == b =>
       case (VoidT() | IntT(_) | BoolT() | StrT() | FloatT() | RuntimeSizedArrayTT(_, _) | StaticSizedArrayTT(_, _, _, _), _) => return false
       case (_, VoidT() | IntT(_) | BoolT() | StrT() | FloatT() | RuntimeSizedArrayTT(_, _) | StaticSizedArrayTT(_, _, _, _)) => return false
       case (_, StructTT(_)) => return false
-      case (a @ StructTT(_), b @ InterfaceTT(_)) => {
+      case (a@StructTT(_), b@InterfaceTT(_)) => {
         if (!delegate.isAncestor(coutputs, a, b)) {
           return false
         }
       }
-      case (a @ InterfaceTT(_), b @ InterfaceTT(_)) => {
+      case (a@InterfaceTT(_), b@InterfaceTT(_)) => {
         if (!delegate.isAncestor(coutputs, a, b)) {
           return false
         }
       }
       case _ => {
-        vfail("Dont know if we can convert from " + sourceType + " to " + targetType)
+        vfail("Dont know if we can convert from " + sourceKind + " to " + targetKind)
       }
     }
+    true
+  }
 
+  def isOwnershipConvertible(
+    sourceOwnership: OwnershipT,
+    targetOwnership: OwnershipT):
+  Boolean = {
     (sourceOwnership, targetOwnership) match {
       case (a, b) if a == b =>
       // At some point maybe we should automatically convert borrow to pointer and vice versa
@@ -110,7 +132,6 @@ class TemplataCompiler(
       case (ShareT, WeakT) => return false
       case (ShareT, OwnT) => return false
     }
-
     true
   }
 //

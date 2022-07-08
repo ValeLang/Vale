@@ -59,7 +59,7 @@ class CallCompiler(
 
         val argsParamFilters =
           unconvertedArgsPointerTypes2.map(unconvertedArgsPointerType2 => {
-            ParamFilter(unconvertedArgsPointerType2, None)
+            ParamFilter(unconvertedArgsPointerType2.ownership, unconvertedArgsPointerType2.kind, None)
           })
 
         val prototype =
@@ -109,7 +109,7 @@ class CallCompiler(
 
     val argsParamFilters =
       unconvertedArgsPointerTypes2.map(unconvertedArgsPointerType2 => {
-        ParamFilter(unconvertedArgsPointerType2, None)
+        ParamFilter(unconvertedArgsPointerType2.ownership, unconvertedArgsPointerType2.kind, None)
       })
 
     val prototype =
@@ -185,8 +185,8 @@ class CallCompiler(
         givenCallableBorrowExpr2.result.reference.ownership,
         citizenRef)
     val paramFilters =
-      Vector(ParamFilter(closureParamType, None)) ++
-        argsTypes2.map(argType => ParamFilter(argType, None))
+      Vector(ParamFilter(closureParamType.ownership, closureParamType.kind, None)) ++
+        argsTypes2.map(argType => ParamFilter(argType.ownership, argType.kind, None))
     val prototype2 =
       overloadCompiler.findFunction(
         env, coutputs, range, interner.intern(CodeNameS(keywords.CALL_FUNCTION_NAME)), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, false) match {

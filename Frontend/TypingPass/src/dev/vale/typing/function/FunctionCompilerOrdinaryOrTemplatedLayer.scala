@@ -129,7 +129,12 @@ class FunctionCompilerOrdinaryOrTemplatedLayer(
   Vector[InitialSend] = {
     function.params.map(_.pattern.coordRune.get).zip(args).zipWithIndex
       .map({ case ((paramRune, argTemplata), argIndex) =>
-        InitialSend(RuneUsage(callRange, ArgumentRuneS(argIndex)), paramRune, CoordTemplata(argTemplata.tyype))
+        InitialSend(
+          RuneUsage(callRange, ArgumentRuneS(argIndex)),
+          paramRune,
+          // when we add regions, that middle one will probably want to take on the
+          // region of the receiving parameter.
+          CoordTemplata(CoordT(argTemplata.ownership, argTemplata.kind)))
       })
   }
 

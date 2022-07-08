@@ -33,7 +33,7 @@ class HammerTest extends FunSuite with Matchers with Collector {
           |}
           |""".stripMargin)
     val hamuts = compile.getHamuts()
-    val paackage = hamuts.lookupPackage(PackageCoordinate.TEST_TLD(compile.interner))
+    val paackage = hamuts.lookupPackage(PackageCoordinate.TEST_TLD(compile.interner, compile.keywords))
     val main = paackage.lookupFunction("main")
 
     vassert(paackage.exportNameToFunction.exists(_._2 == main.prototype))

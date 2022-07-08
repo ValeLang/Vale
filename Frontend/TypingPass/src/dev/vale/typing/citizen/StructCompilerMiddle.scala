@@ -3,11 +3,11 @@ package dev.vale.typing.citizen
 import dev.vale.highertyping.{FunctionA, InterfaceA, StructA}
 import dev.vale.postparsing.{IFunctionDeclarationNameS, IRuneS}
 import dev.vale.typing.env.{CitizenEnvironment, IEnvironment, TemplataEnvEntry, TemplatasStore}
-import dev.vale.typing.{TypingPassOptions, CompilerOutputs, env}
+import dev.vale.typing.{CompilerOutputs, TypingPassOptions, env}
 import dev.vale.typing.names.{NameTranslator, RuneNameT}
 import dev.vale.typing.templata.{FunctionTemplata, ITemplata}
 import dev.vale.typing.types.{InterfaceTT, MutabilityT, StructMemberT, StructTT}
-import dev.vale.{Interner, RangeS}
+import dev.vale.{Interner, Keywords, Profiler, RangeS, vfail, vimpl}
 import dev.vale.highertyping.FunctionA
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
@@ -17,19 +17,18 @@ import dev.vale.typing.ast._
 import dev.vale.typing.env.CitizenEnvironment
 import dev.vale.typing.function.FunctionCompiler
 import dev.vale.typing.names.AnonymousSubstructNameT
-import dev.vale.{Interner, Profiler, RangeS, vfail, vimpl}
 
 import scala.collection.immutable.List
 
 class StructCompilerMiddle(
     opts: TypingPassOptions,
-
     interner: Interner,
+  keywords: Keywords,
     nameTranslator: NameTranslator,
 
     ancestorHelper: AncestorHelper,
     delegate: IStructCompilerDelegate) {
-  val core = new StructCompilerCore(opts, interner, nameTranslator, ancestorHelper, delegate)
+  val core = new StructCompilerCore(opts, interner, keywords, nameTranslator, ancestorHelper, delegate)
 
   def getStructRef(
     structOuterEnv: IEnvironment,

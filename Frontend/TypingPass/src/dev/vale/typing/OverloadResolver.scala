@@ -1,7 +1,7 @@
 package dev.vale.typing
 
-import dev.vale.{Err, Interner, Ok, Profiler, RangeS, Result, vassertSome, vcurious, vfail, vpass}
-import dev.vale.postparsing.{CodeNameS, FunctionTemplataType, IImpreciseNameS, IRuneS, RuneNameS, RuneTypeSolveError, RuneTypeSolver, PostParserErrorHumanizer, TemplateTemplataType}
+import dev.vale.{Err, Interner, Keywords, Ok, Profiler, RangeS, Result, vassertSome, vcurious, vfail, vpass}
+import dev.vale.postparsing.{CodeNameS, FunctionTemplataType, IImpreciseNameS, IRuneS, PostParserErrorHumanizer, RuneNameS, RuneTypeSolveError, RuneTypeSolver, TemplateTemplataType}
 import dev.vale.postparsing.rules.{IRulexSR, RuneParentEnvLookupSR}
 import dev.vale.solver.IIncompleteOrFailedSolve
 import dev.vale.typing.expression.CallCompiler
@@ -17,7 +17,6 @@ import dev.vale.typing.ast.{AbstractT, FunctionBannerT, FunctionCalleeCandidate,
 import dev.vale.typing.env.{ExpressionLookupContext, FunctionEnvironmentBox, IEnvironment, IEnvironmentBox, TemplataLookupContext}
 import dev.vale.typing.templata.{ExternFunctionTemplata, FunctionTemplata, ITemplata, KindTemplata, PrototypeTemplata}
 import dev.vale.typing.ast._
-import dev.vale.Err
 //import dev.vale.astronomer.ruletyper.{IRuleTyperEvaluatorDelegate, RuleTyperEvaluator, RuleTyperSolveFailure, RuleTyperSolveSuccess}
 //import dev.vale.postparsing.rules.{EqualsSR, TemplexSR, TypedSR}
 import dev.vale.typing.types._
@@ -63,8 +62,8 @@ object OverloadResolver {
 
 class OverloadResolver(
     opts: TypingPassOptions,
-
     interner: Interner,
+    keywords: Keywords,
     templataCompiler: TemplataCompiler,
     inferCompiler: InferCompiler,
     functionCompiler: FunctionCompiler) {
@@ -159,12 +158,12 @@ class OverloadResolver(
       case KindTemplata(sr@StructTT(_)) => {
         val structEnv = coutputs.getEnvForKind(sr)
         getCandidateBanners(
-          structEnv, coutputs, callRange, interner.intern(CodeNameS(CallCompiler.CALL_FUNCTION_NAME)), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, exact)
+          structEnv, coutputs, callRange, interner.intern(CodeNameS(keywords.CALL_FUNCTION_NAME)), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, exact)
       }
       case KindTemplata(sr@InterfaceTT(_)) => {
         val interfaceEnv = coutputs.getEnvForKind(sr)
         getCandidateBanners(
-          interfaceEnv, coutputs, callRange, interner.intern(CodeNameS(CallCompiler.CALL_FUNCTION_NAME)), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, exact)
+          interfaceEnv, coutputs, callRange, interner.intern(CodeNameS(keywords.CALL_FUNCTION_NAME)), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, exact)
       }
       case ExternFunctionTemplata(header) => {
         Vector(HeaderCalleeCandidate(header))
@@ -584,7 +583,7 @@ class OverloadResolver(
     range: RangeS,
     callableTE: ReferenceExpressionTE):
   PrototypeT = {
-    val funcName = interner.intern(CodeNameS(CallCompiler.CALL_FUNCTION_NAME))
+    val funcName = interner.intern(CodeNameS(keywords.CALL_FUNCTION_NAME))
     val paramFilters =
       Vector(
         ParamFilter(callableTE.result.underlyingReference, None),
@@ -604,7 +603,7 @@ class OverloadResolver(
     callableTE: ReferenceExpressionTE,
     elementType: CoordT):
   PrototypeT = {
-    val funcName = interner.intern(CodeNameS(CallCompiler.CALL_FUNCTION_NAME))
+    val funcName = interner.intern(CodeNameS(keywords.CALL_FUNCTION_NAME))
     val paramFilters =
       Vector(
         ParamFilter(callableTE.result.underlyingReference, None),

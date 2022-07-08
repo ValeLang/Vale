@@ -96,8 +96,8 @@ class PatternScout(
           None
         }
         case Some(LocalNameDeclarationP(NameP(_, name))) => {
-          if (name == "set" || name == "mut") {
-            throw CompileErrorExceptionS(CantUseThatLocalName(PostParser.evalRange(stackFrame.file, range), name))
+          if (name.str == "set" || name.str == "mut") {
+            throw CompileErrorExceptionS(CantUseThatLocalName(PostParser.evalRange(stackFrame.file, range), name.str))
           }
           Some(CaptureS(interner.intern(CodeVarNameS(name))))
         }

@@ -1,8 +1,8 @@
 package dev.vale.typing.macros.ssa
 
-import dev.vale.RangeS
+import dev.vale.{Keywords, RangeS, StrI}
 import dev.vale.highertyping.FunctionA
-import dev.vale.typing.{CompileErrorExceptionT, RangedInternalErrorT, CompilerOutputs}
+import dev.vale.typing.{CompileErrorExceptionT, CompilerOutputs, RangedInternalErrorT}
 import dev.vale.typing.ast.{ArgLookupTE, BlockTE, ConsecutorTE, ConstantIntTE, DiscardTE, FunctionHeaderT, FunctionT, LocationInFunctionEnvironment, ParameterT, ReturnTE}
 import dev.vale.typing.env.FunctionEnvironment
 import dev.vale.typing.macros.IFunctionBodyMacro
@@ -12,13 +12,13 @@ import dev.vale.typing.types.StaticSizedArrayTT
 import dev.vale.typing.ast
 
 
-class SSALenMacro() extends IFunctionBodyMacro {
-  val generatorId: String = "vale_static_sized_array_len"
+class SSALenMacro(keywords: Keywords) extends IFunctionBodyMacro {
+  val generatorId: StrI = keywords.vale_static_sized_array_len
 
   def generateFunctionBody(
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
-    generatorId: String,
+    generatorId: StrI,
     life: LocationInFunctionEnvironment,
     callRange: RangeS,
     originFunction: Option[FunctionA],

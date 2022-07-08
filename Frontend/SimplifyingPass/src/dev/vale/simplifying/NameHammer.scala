@@ -32,15 +32,15 @@ class NameHammer(translateName: (Hinputs, HamutsBox, INameT) => IVonData) {
       case BuildingFunctionNameWithClosuredsT(_) => vwat() // Shouldnt see this in hammer
       case BuildingFunctionNameWithClosuredsAndTemplateArgsT(_, _) => vwat() // Shouldnt see this in hammer
       case CitizenNameT(templateName, templateArgs) => getReadableName(templateName)
-      case CitizenTemplateNameT(humanName) => humanName
+      case CitizenTemplateNameT(humanName) => humanName.str
       case ClosureParamNameT() => "closure"
-      case CodeVarNameT(name) => name
-      case ConstructingMemberNameT(name) => name
+      case CodeVarNameT(name) => name.str
+      case ConstructingMemberNameT(name) => name.str
       case ConstructorNameT(params) => "constructor"
       case ConstructorTemplateNameT(codeLoc) => "constructorTemplate"
-      case ExternFunctionNameT(humanName, params) => humanName
-      case FunctionNameT(humanName, templateArgs, params) => humanName
-      case FunctionTemplateNameT(humanName, codeLoc) => humanName
+      case ExternFunctionNameT(humanName, params) => humanName.str
+      case FunctionNameT(humanName, templateArgs, params) => humanName.str
+      case FunctionTemplateNameT(humanName, codeLoc) => humanName.str
       case PackageTopLevelNameT() => vwat() // Does this ever make it to hammer?
       case ImplDeclareNameT(codeLoc) => "impl" + codeLoc
       case StaticSizedArrayNameT(size, arr) => "ssa" + size
@@ -51,7 +51,7 @@ class NameHammer(translateName: (Hinputs, HamutsBox, INameT) => IVonData) {
       case IteratorNameT(range) => "iterator"
       case IterationOptionNameT(range) => "iterationOption"
       case MagicParamNameT(codeLoc) => "magicParam"
-      case PrimitiveNameT(humanName) => humanName
+      case PrimitiveNameT(humanName) => humanName.str
       case RawArrayNameT(mutability, elementType) => "rawArr"
       case TypingPassBlockResultVarNameT(num) => "blockResult" + num
       case TypingPassFunctionResultVarNameT() => "funcResult"
@@ -112,19 +112,19 @@ object NameHammer {
       "FileCoordinate",
       None,
       Vector(
-        VonMember("module", VonStr(module)),
-        VonMember("paackage", VonArray(None, paackage.map(VonStr).toVector)),
+        VonMember("module", VonStr(module.str)),
+        VonMember("paackage", VonArray(None, paackage.map(_.str).map(VonStr).toVector)),
         VonMember("filename", VonStr(filename))))
   }
 
   def translatePackageCoordinate(coord: PackageCoordinate): VonObject = {
     val PackageCoordinate(module, paackage) = coord
-    val nonEmptyModuleName = if (module == "") "__vale" else module;
+    val nonEmptyModuleName = if (module.str == "") "__vale" else module.str;
     VonObject(
       "PackageCoordinate",
       None,
       Vector(
         VonMember("project", VonStr(nonEmptyModuleName)),
-        VonMember("packageSteps", VonArray(None, paackage.map(VonStr).toVector))))
+        VonMember("packageSteps", VonArray(None, paackage.map(_.str).map(VonStr).toVector))))
   }
 }

@@ -1,5 +1,6 @@
 package dev.vale.highlighter
 
+import dev.vale.lexing.RangeL
 import dev.vale.{vassert, vfail}
 import dev.vale.parsing._
 import dev.vale.vfail
@@ -34,7 +35,7 @@ object Highlighter {
     }
   }
 
-  class CommentingCodeIter(code: String, var commentRanges: Vector[(Int, Int)], builder: StringBuilder) {
+  class CommentingCodeIter(code: String, var commentRanges: Vector[RangeL], builder: StringBuilder) {
     val iter = new CodeIter(code)
 
     // Advances the underlying CodeIter until we get to untilPos, but also
@@ -45,14 +46,14 @@ object Highlighter {
         if (commentRanges.isEmpty) {
           builder.append(escape(iter.advanceTo(untilPos, Int.MaxValue)))
         } else {
-          builder.append(escape(iter.advanceTo(untilPos, commentRanges.head._1)))
+          builder.append(escape(iter.advanceTo(untilPos, commentRanges.head.begin)))
         }
 
         // If we're at the beginning of the next comment, consume it.
-        while (iter.index < code.length && commentRanges.nonEmpty && iter.index == commentRanges.head._1) {
+        while (iter.index < code.length && commentRanges.nonEmpty && iter.index == commentRanges.head.begin) {
           builder.append(s"""<span class="${Comment}">""")
-          builder.append(escape(iter.advanceTo(Int.MaxValue, commentRanges.head._2)))
-          vassert(iter.index == commentRanges.head._2)
+          builder.append(escape(iter.advanceTo(Int.MaxValue, commentRanges.head.end)))
+          vassert(iter.index == commentRanges.head.end)
           builder.append(s"""</span>""")
           commentRanges = commentRanges.tail
         }
@@ -60,12 +61,12 @@ object Highlighter {
     }
   }
 
-  def toHTML(builder: StringBuilder, iter: CommentingCodeIter, span: Span): Unit = {
+  def spanToHTML(builder: StringBuilder, iter: CommentingCodeIter, span: Span): Unit = {
     iter.advanceTo(span.range.begin)
     builder.append(s"""<span class="${span.classs}">""")
     span.children.foreach(child => {
       iter.advanceTo(child.range.begin)
-      toHTML(builder, iter, child)
+      spanToHTML(builder, iter, child)
       iter.advanceTo(child.range.end)
     })
     iter.advanceTo(span.range.end)
@@ -81,10 +82,10 @@ object Highlighter {
       .replaceAll("\\n", "<br />")
   }
 
-  def toHTML(code: String, span: Span, commentRanges: Vector[(Int, Int)]): String = {
+  def toHTML(code: String, span: Span, commentRanges: Vector[RangeL]): String = {
     val builder = new StringBuilder()
     val iter = new CommentingCodeIter(code, commentRanges, builder)
-    toHTML(builder, iter, span)
+    spanToHTML(builder, iter, span)
     builder.toString()
   }
 }

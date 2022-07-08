@@ -4,7 +4,7 @@ func factorial(x int) int {
       1
     } else {
       x * factorial(x - 1)
-    }
+    };
 }
 
 exported func main() int {

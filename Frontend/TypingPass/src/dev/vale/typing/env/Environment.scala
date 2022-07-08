@@ -1,6 +1,6 @@
 package dev.vale.typing.env
 
-import dev.vale.{CodeLocationS, Interner, Profiler, vassert, vcurious, vfail, vimpl, vwat}
+import dev.vale.{CodeLocationS, Err, Interner, Ok, PackageCoordinate, Profiler, Result, StrI, vassert, vcurious, vfail, vimpl, vwat}
 import dev.vale.postparsing.{AnonymousSubstructTemplateImpreciseNameS, ArbitraryNameS, ClosureParamNameS, CodeNameS, FreeImpreciseNameS, IImpreciseNameS, LambdaImpreciseNameS, LambdaStructImpreciseNameS, RuneNameS, SelfNameS}
 import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.macros.citizen.{InterfaceDropMacro, InterfaceFreeMacro, StructDropMacro, StructFreeMacro}
@@ -16,7 +16,6 @@ import dev.vale.typing.macros.citizen._
 import dev.vale.typing.macros.IOnImplDefinedMacro
 import dev.vale.typing.names._
 import dev.vale.typing.templata._
-import dev.vale.{CodeLocationS, Err, Interner, Ok, PackageCoordinate, Profiler, Result, vassert, vcurious, vfail, vimpl, vwat}
 
 import scala.collection.immutable.{List, Map, Set}
 
@@ -116,10 +115,10 @@ case class GlobalEnvironment(
   interfaceDropMacro: InterfaceDropMacro,
   interfaceFreeMacro: InterfaceFreeMacro,
   anonymousInterfaceMacro: AnonymousInterfaceMacro,
-  nameToStructDefinedMacro: Map[String, IOnStructDefinedMacro],
-  nameToInterfaceDefinedMacro: Map[String, IOnInterfaceDefinedMacro],
-  nameToImplDefinedMacro: Map[String, IOnImplDefinedMacro],
-  nameToFunctionBodyMacro: Map[String, IFunctionBodyMacro],
+  nameToStructDefinedMacro: Map[StrI, IOnStructDefinedMacro],
+  nameToInterfaceDefinedMacro: Map[StrI, IOnInterfaceDefinedMacro],
+  nameToImplDefinedMacro: Map[StrI, IOnImplDefinedMacro],
+  nameToFunctionBodyMacro: Map[StrI, IFunctionBodyMacro],
   // We *dont* search through these in lookupWithName etc.
   // This doesn't just contain the user's things, it can contain generated things
   // like struct constructors, interface constructors, etc.

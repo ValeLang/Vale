@@ -4,7 +4,7 @@ package dev.vale.typing.function
 import dev.vale.postparsing.{CodeNameS, FreeImpreciseNameS}
 import dev.vale.typing.citizen.StructCompiler
 import dev.vale.typing.expression.CallCompiler
-import dev.vale.{Err, Interner, Ok, PackageCoordinate, RangeS}
+import dev.vale.{Err, Interner, Keywords, Ok, PackageCoordinate, RangeS}
 import dev.vale.highertyping._
 import dev.vale.postparsing.patterns._
 import dev.vale.postparsing.rules.OwnershipLiteralSL
@@ -12,7 +12,7 @@ import dev.vale.postparsing.GlobalFunctionFamilyNameS
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
 import dev.vale.typing.OverloadResolver.FindFunctionFailure
-import dev.vale.typing.{CompileErrorExceptionT, CouldntFindFunctionToCallT, OverloadResolver, RangedInternalErrorT, TypingPassOptions, CompilerOutputs}
+import dev.vale.typing.{CompileErrorExceptionT, CompilerOutputs, CouldntFindFunctionToCallT, OverloadResolver, RangedInternalErrorT, TypingPassOptions}
 import dev.vale.typing.ast.{DiscardTE, FunctionCallTE, PrototypeT, ReferenceExpressionTE}
 import dev.vale.typing.env.{GlobalEnvironment, IEnvironment, PackageEnvironment}
 import dev.vale.typing.names.{FullNameT, PackageTopLevelNameT}
@@ -21,13 +21,13 @@ import dev.vale.typing.{ast, _}
 import dev.vale.typing.ast._
 import dev.vale.typing.env._
 import dev.vale.typing.names.PackageTopLevelNameT
-import dev.vale.Err
 
 import scala.collection.immutable.List
 
 class DestructorCompiler(
     opts: TypingPassOptions,
     interner: Interner,
+    keywords: Keywords,
     structCompiler: StructCompiler,
     overloadCompiler: OverloadResolver) {
   def getDropFunction(
@@ -39,9 +39,9 @@ class DestructorCompiler(
     val env =
       PackageEnvironment(
         globalEnv,
-        FullNameT(PackageCoordinate.BUILTIN(interner), Vector(), interner.intern(PackageTopLevelNameT())),
+        FullNameT(PackageCoordinate.BUILTIN(interner, keywords), Vector(), interner.intern(PackageTopLevelNameT())),
         globalEnv.nameToTopLevelEnvironment.values.toVector)
-    val name = interner.intern(CodeNameS(CallCompiler.DROP_FUNCTION_NAME))
+    val name = interner.intern(CodeNameS(keywords.DROP_FUNCTION_NAME))
     val args = Vector(ParamFilter(type2, None))
     overloadCompiler.findFunction(env, coutputs, callRange, name, Vector.empty, Array.empty, args, Vector(), true) match {
       case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(callRange, e))
@@ -58,7 +58,7 @@ class DestructorCompiler(
     val env =
       PackageEnvironment(
         globalEnv,
-        FullNameT(PackageCoordinate.BUILTIN(interner), Vector(), interner.intern(PackageTopLevelNameT())),
+        FullNameT(PackageCoordinate.BUILTIN(interner, keywords), Vector(), interner.intern(PackageTopLevelNameT())),
         globalEnv.nameToTopLevelEnvironment.values.toVector)
     val name = interner.intern(FreeImpreciseNameS())
     val args = Vector(ParamFilter(type2, None))

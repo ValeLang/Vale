@@ -6,7 +6,7 @@ import dev.vale.postparsing.rules.{IRulexSR, RuneParentEnvLookupSR, RuneUsage}
 import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.function.DestructorCompiler
 import dev.vale.typing.types.{CoordT, FinalT, ImmutableT, IntT, MutabilityT, MutableT, OwnT, ParamFilter, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, VariabilityT, VaryingT}
-import dev.vale.{Err, Interner, Ok, RangeS, vassert, vassertOne, vassertSome}
+import dev.vale.{CodeLocationS, Err, Interner, Keywords, Ok, Profiler, RangeS, StrI, vassert, vassertOne, vassertSome, vimpl}
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
 import dev.vale.postparsing.rules.RuneParentEnvLookupSR
@@ -22,14 +22,13 @@ import dev.vale.typing.env.CitizenEnvironment
 import dev.vale.typing.names.SelfNameT
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
-import dev.vale.{CodeLocationS, Err, Interner, Ok, Profiler, RangeS, vassert, vassertOne, vassertSome, vimpl}
 
 import scala.collection.immutable.{List, Set}
 
 class ArrayCompiler(
     opts: TypingPassOptions,
-
     interner: Interner,
+  keywords: Keywords,
     inferCompiler: InferCompiler,
     overloadResolver: OverloadResolver) {
 
@@ -145,19 +144,19 @@ class ArrayCompiler(
               .addEntries(
                 interner,
                 Vector(
-                  (interner.intern(RuneNameT(CodeRuneS("M"))), TemplataEnvEntry(MutabilityTemplata(MutableT)))) ++
+                  (interner.intern(RuneNameT(CodeRuneS(keywords.M))), TemplataEnvEntry(MutabilityTemplata(MutableT)))) ++
               maybeElementTypeRune.map(e => {
                 (interner.intern(RuneNameT(e)), TemplataEnvEntry(CoordTemplata(getArrayElementType(templatas, e))))
               })),
             coutputs,
             range,
-            interner.intern(CodeNameS("Array")),
+            interner.intern(CodeNameS(keywords.Array)),
             Vector(
-              RuneParentEnvLookupSR(range, RuneUsage(range, CodeRuneS("M")))) ++
+              RuneParentEnvLookupSR(range, RuneUsage(range, CodeRuneS(keywords.M)))) ++
             maybeElementTypeRune.map(e => {
               RuneParentEnvLookupSR(range, RuneUsage(range, e))
             }),
-            Array(CodeRuneS("M")) ++ maybeElementTypeRune,
+            Array(CodeRuneS(keywords.M)) ++ maybeElementTypeRune,
             Vector(ParamFilter(sizeTE.result.reference, None)) ++
               maybeCallableTE.map(c => ParamFilter(c.result.reference, None)),
             Vector(),
@@ -331,9 +330,9 @@ class ArrayCompiler(
         val arrayEnv =
           CitizenEnvironment(
             globalEnv,
-            PackageEnvironment(globalEnv, staticSizedArrayType.getName(interner), globalEnv.nameToTopLevelEnvironment.values.toVector),
-            staticSizedArrayType.getName(interner),
-            TemplatasStore(staticSizedArrayType.getName(interner), Map(), Map())
+            PackageEnvironment(globalEnv, staticSizedArrayType.getName(interner, keywords), globalEnv.nameToTopLevelEnvironment.values.toVector),
+            staticSizedArrayType.getName(interner, keywords),
+            TemplatasStore(staticSizedArrayType.getName(interner, keywords), Map(), Map())
               .addEntries(
                 interner,
                 Vector()))
@@ -371,9 +370,9 @@ class ArrayCompiler(
         val arrayEnv =
           env.CitizenEnvironment(
             globalEnv,
-            env.PackageEnvironment(globalEnv, runtimeSizedArrayType.getName(interner), globalEnv.nameToTopLevelEnvironment.values.toVector),
-            runtimeSizedArrayType.getName(interner),
-            env.TemplatasStore(runtimeSizedArrayType.getName(interner), Map(), Map())
+            env.PackageEnvironment(globalEnv, runtimeSizedArrayType.getName(interner, keywords), globalEnv.nameToTopLevelEnvironment.values.toVector),
+            runtimeSizedArrayType.getName(interner, keywords),
+            env.TemplatasStore(runtimeSizedArrayType.getName(interner, keywords), Map(), Map())
               .addEntries(
                 interner,
                 Vector()))

@@ -13,7 +13,7 @@ class OptTests extends FunSuite with Matchers {
           |exported func main() int {
           |  opt Opt<int> = Some(9);
           |  return if (opt.isEmpty()) { 0 }
-          |    else { opt.get() }
+          |    else { opt.get() };
           |}
         """.stripMargin)
 
@@ -26,7 +26,7 @@ class OptTests extends FunSuite with Matchers {
           |exported func main() int {
           |  opt Opt<int> = None<int>();
           |  return if (opt.isEmpty()) { 0 }
-          |    else { opt.get() }
+          |    else { opt.get() };
           |}
         """.stripMargin)
 

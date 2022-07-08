@@ -18,8 +18,8 @@ jobs:
       - name: Setup JDK
         uses: actions/setup-java@v3
         with:
-          distribution: temurin
-          java-version: 9
+          distribution: adopt
+          java-version: 11
       - name: install prereqs
         run: cmd /c '.\scripts\windows\install-compiler-prereqs.bat C:\llvm-project-llvmorg-13.0.1 C:\BootstrappingValeCompiler'
       - name: run vcvars and build-compiler-windows.bat
@@ -37,8 +37,8 @@ jobs:
       - name: Setup JDK
         uses: actions/setup-java@v3
         with:
-          distribution: temurin
-          java-version: 9
+          distribution: adopt
+          java-version: 11
       - name: install prereqs
         run: ./scripts/ubuntu/install-compiler-prereqs.sh ~/LLVMForVale ~/BootstrappingValeCompiler
       - name: build compiler 
@@ -58,8 +58,8 @@ jobs:
       - name: Setup JDK
         uses: actions/setup-java@v3
         with:
-          distribution: temurin
-          java-version: 9
+          distribution: adopt
+          java-version: 11
       - name: install prereqs
         run: ./scripts/mac/install-compiler-prereqs.sh ~/BootstrappingValeCompiler
       - name: build compiler

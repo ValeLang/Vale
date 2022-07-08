@@ -3,10 +3,9 @@ package dev.vale.typing.names
 import dev.vale.postparsing.IRuneS
 import dev.vale.typing.ast.LocationInFunctionEnvironment
 import dev.vale.typing.expression.CallCompiler
-import dev.vale.{CodeLocationS, IInterning, Interner, PackageCoordinate, RangeS, vassert, vcurious, vimpl, vpass, vwat}
+import dev.vale.{CodeLocationS, IInterning, Interner, Keywords, PackageCoordinate, RangeS, vassert, vcurious, vimpl, vpass, vwat, _}
 import dev.vale.typing.templata.ITemplata
 import dev.vale.typing.types.{CoordT, KindT, MutabilityT, ShareT}
-import dev.vale._
 import dev.vale.typing.templata.CoordTemplata
 import dev.vale.typing.types._
 
@@ -36,11 +35,6 @@ case class FullNameT[+T <: INameT](
     case _ => false
   }))
   vcurious(initSteps.distinct == initSteps)
-
-  this match {
-    case FullNameT(z, Vector(), FunctionNameT("main", Vector(), Vector())) if z.isTest =>
-    case _ =>
-  }
 
   def steps: Vector[INameT] = {
     last match {
@@ -93,7 +87,7 @@ case class FullNameT[+T <: INameT](
 sealed trait INameT extends IInterning
 sealed trait ITemplateNameT extends INameT
 sealed trait IFunctionTemplateNameT extends ITemplateNameT {
-  def makeFunctionName(interner: Interner, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT
+  def makeFunctionName(interner: Interner, keywords: Keywords, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT
 }
 sealed trait IFunctionNameT extends INameT {
   def templateArgs: Vector[ITemplata]
@@ -125,20 +119,20 @@ case class TypingIgnoredParamNameT(num: Int) extends IVarNameT {    }
 case class TypingPassPatternDestructureeNameT(life: LocationInFunctionEnvironment) extends IVarNameT {    }
 case class UnnamedLocalNameT(codeLocation: CodeLocationS) extends IVarNameT {    }
 case class ClosureParamNameT() extends IVarNameT {    }
-case class ConstructingMemberNameT(name: String) extends IVarNameT {    }
+case class ConstructingMemberNameT(name: StrI) extends IVarNameT {    }
 case class WhileCondResultNameT(range: RangeS) extends IVarNameT {    }
 case class IterableNameT(range: RangeS) extends IVarNameT {  }
 case class IteratorNameT(range: RangeS) extends IVarNameT {  }
 case class IterationOptionNameT(range: RangeS) extends IVarNameT {  }
 case class MagicParamNameT(codeLocation2: CodeLocationS) extends IVarNameT {    }
-case class CodeVarNameT(name: String) extends IVarNameT {    }
+case class CodeVarNameT(name: StrI) extends IVarNameT {    }
 // We dont use CodeVarName2(0), CodeVarName2(1) etc because we dont want the user to address these members directly.
 case class AnonymousSubstructMemberNameT(index: Int) extends IVarNameT {    }
-case class PrimitiveNameT(humanName: String) extends INameT {    }
+case class PrimitiveNameT(humanName: StrI) extends INameT {    }
 // Only made in typingpass
 case class PackageTopLevelNameT() extends INameT {    }
-case class ProjectNameT(name: String) extends INameT {    }
-case class PackageNameT(name: String) extends INameT {    }
+case class ProjectNameT(name: StrI) extends INameT {    }
+case class PackageNameT(name: StrI) extends INameT {    }
 case class RuneNameT(rune: IRuneS) extends INameT {    }
 
 // This is the name of a function that we're still figuring out in the function typingpass.
@@ -162,7 +156,7 @@ case class BuildingFunctionNameWithClosuredsAndTemplateArgsT(
 }
 
 case class ExternFunctionNameT(
-  humanName: String,
+  humanName: StrI,
   parameters: Vector[CoordT]
 ) extends IFunctionNameT {
 
@@ -173,7 +167,7 @@ case class ExternFunctionNameT(
 }
 
 case class FunctionNameT(
-  humanName: String,
+  humanName: StrI,
   templateArgs: Vector[ITemplata],
   parameters: Vector[CoordT]
 ) extends IFunctionNameT
@@ -188,11 +182,11 @@ case class ForwarderFunctionNameT(
 }
 
 case class FunctionTemplateNameT(
-    humanName: String,
+    humanName: StrI,
     codeLocation: CodeLocationS
 ) extends INameT with IFunctionTemplateNameT {
   vpass()
-  override def makeFunctionName(interner: Interner, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
+  override def makeFunctionName(interner: Interner, keywords: Keywords, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
     interner.intern(FunctionNameT(humanName, templateArgs, params))
   }
 }
@@ -201,8 +195,8 @@ case class ForwarderFunctionTemplateNameT(
   inner: IFunctionTemplateNameT,
   index: Int
 ) extends INameT with IFunctionTemplateNameT {
-  override def makeFunctionName(interner: Interner, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
-    interner.intern(ForwarderFunctionNameT(inner.makeFunctionName(interner, templateArgs, params), index))
+  override def makeFunctionName(interner: Interner, keywords: Keywords, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
+    interner.intern(ForwarderFunctionNameT(inner.makeFunctionName(interner, keywords, templateArgs, params), index))
   }
 }
 
@@ -210,7 +204,7 @@ case class ForwarderFunctionTemplateNameT(
 //case class AbstractVirtualDropFunctionTemplateNameT(
 //  implName: INameT
 //) extends INameT with IFunctionTemplateNameT {
-//  override def makeFunctionName(interner: Interner, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
+//  override def makeFunctionName(interner: Interner, keywords: Keywords, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
 //    interner.intern(
 //      AbstractVirtualDropFunctionNameT(implName, templateArgs, params))
 //  }
@@ -225,7 +219,7 @@ case class ForwarderFunctionTemplateNameT(
 //case class OverrideVirtualDropFunctionTemplateNameT(
 //  implName: INameT
 //) extends INameT with IFunctionTemplateNameT {
-//  override def makeFunctionName(interner: Interner, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
+//  override def makeFunctionName(interner: Interner, keywords: Keywords, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
 //    interner.intern(
 //      OverrideVirtualDropFunctionNameT(implName, templateArgs, params))
 //  }
@@ -240,18 +234,18 @@ case class ForwarderFunctionTemplateNameT(
 case class LambdaTemplateNameT(
   codeLocation: CodeLocationS
 ) extends INameT with IFunctionTemplateNameT {
-  override def makeFunctionName(interner: Interner, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
-    interner.intern(FunctionNameT(CallCompiler.CALL_FUNCTION_NAME, templateArgs, params))
+  override def makeFunctionName(interner: Interner, keywords: Keywords, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
+    interner.intern(FunctionNameT(keywords.CALL_FUNCTION_NAME, templateArgs, params))
   }
 }
 case class ConstructorTemplateNameT(
   codeLocation: CodeLocationS
 ) extends INameT with IFunctionTemplateNameT {
-  override def makeFunctionName(interner: Interner, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = vimpl()
+  override def makeFunctionName(interner: Interner, keywords: Keywords, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = vimpl()
 }
 
 case class FreeTemplateNameT(codeLoc: CodeLocationS) extends INameT with IFunctionTemplateNameT {
-  override def makeFunctionName(interner: Interner, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
+  override def makeFunctionName(interner: Interner, keywords: Keywords, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
     val Vector(CoordT(ShareT, kind)) = params
     interner.intern(FreeNameT(templateArgs, kind))
   }
@@ -262,7 +256,7 @@ case class FreeNameT(templateArgs: Vector[ITemplata], kind: KindT) extends IFunc
 
 //// See NSIDN for why we have these virtual names
 //case class AbstractVirtualFreeTemplateNameT(codeLoc: CodeLocationS) extends INameT with IFunctionTemplateNameT {
-//  override def makeFunctionName(interner: Interner, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
+//  override def makeFunctionName(interner: Interner, keywords: Keywords, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
 //    val Vector(CoordT(ShareT, kind)) = params
 //    interner.intern(AbstractVirtualFreeNameT(templateArgs, kind))
 //  }
@@ -274,7 +268,7 @@ case class FreeNameT(templateArgs: Vector[ITemplata], kind: KindT) extends IFunc
 //
 //// See NSIDN for why we have these virtual names
 //case class OverrideVirtualFreeTemplateNameT(codeLoc: CodeLocationS) extends INameT with IFunctionTemplateNameT {
-//  override def makeFunctionName(interner: Interner, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
+//  override def makeFunctionName(interner: Interner, keywords: Keywords, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
 //    val Vector(CoordT(ShareT, kind)) = params
 //    interner.intern(OverrideVirtualFreeNameT(templateArgs, kind))
 //  }
@@ -334,7 +328,7 @@ case class AnonymousSubstructLambdaNameT(
 }
 
 case class CitizenTemplateNameT(
-  humanName: String,
+  humanName: StrI,
   // We don't include a CodeLocation here because:
   // - There's no struct overloading, so there should only ever be one, we don't have to disambiguate
   //   with code locations
@@ -374,7 +368,7 @@ case class AnonymousSubstructTemplateNameT(
 case class AnonymousSubstructConstructorTemplateNameT(
   substruct: ICitizenTemplateNameT
 ) extends IFunctionTemplateNameT {
-  override def makeFunctionName(interner: Interner, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
+  override def makeFunctionName(interner: Interner, keywords: Keywords, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
     interner.intern(AnonymousSubstructConstructorNameT(templateArgs, params))
   }
 }

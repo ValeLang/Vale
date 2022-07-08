@@ -1,11 +1,11 @@
 package dev.vale.typing.expression
 
-import dev.vale.{Err, Interner, Ok, RangeS, vassert, vfail, vwat}
+import dev.vale.{Err, Interner, Keywords, Ok, RangeS, vassert, vfail, vwat}
 import dev.vale.postparsing.{CodeNameS, IImpreciseNameS, IRuneS}
 import dev.vale.postparsing.rules.IRulexSR
 import dev.vale.postparsing.GlobalFunctionFamilyNameS
 import dev.vale.typing.OverloadResolver.FindFunctionFailure
-import dev.vale.typing.{CompileErrorExceptionT, ConvertHelper, CouldntFindFunctionToCallT, OverloadResolver, RangedInternalErrorT, Compiler, TypingPassOptions, TemplataCompiler, CompilerOutputs, ast}
+import dev.vale.typing.{CompileErrorExceptionT, Compiler, CompilerOutputs, ConvertHelper, CouldntFindFunctionToCallT, OverloadResolver, RangedInternalErrorT, TemplataCompiler, TypingPassOptions, ast}
 import dev.vale.typing.ast.{FunctionCallTE, LocationInFunctionEnvironment, ReferenceExpressionTE}
 import dev.vale.typing.env.{NodeEnvironment, NodeEnvironmentBox}
 import dev.vale.typing.types.{BoolT, BorrowT, CitizenRefT, CoordT, InterfaceTT, MutableT, NeverT, OverloadSetT, OwnT, ParamFilter, ShareT, StructTT}
@@ -14,25 +14,13 @@ import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.typing.{ast, _}
 import dev.vale.typing.ast._
-import dev.vale.Err
 
 import scala.collection.immutable.List
-
-object CallCompiler {
-  val CALL_FUNCTION_NAME = "__call"
-
-  // See NSIDN for more on this.
-  // Every type, including interfaces, has a function of this name. These won't be virtual.
-  val DROP_FUNCTION_NAME = "drop"
-  // Every interface *also* has a function of this name. It's abstract, and an override is defined for each impl.
-//  val VIRTUAL_DROP_FUNCTION_NAME = "vdrop"
-//  // Interface's drop function simply calls vdrop.
-//  // A struct's vdrop function calls the struct's drop function.
-}
 
 class CallCompiler(
     opts: TypingPassOptions,
     interner: Interner,
+    keywords: Keywords,
     templataCompiler: TemplataCompiler,
     convertHelper: ConvertHelper,
     localHelper: LocalHelper,
@@ -201,7 +189,7 @@ class CallCompiler(
         argsTypes2.map(argType => ParamFilter(argType, None))
     val prototype2 =
       overloadCompiler.findFunction(
-        env, coutputs, range, interner.intern(CodeNameS(CallCompiler.CALL_FUNCTION_NAME)), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, false) match {
+        env, coutputs, range, interner.intern(CodeNameS(keywords.CALL_FUNCTION_NAME)), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, false) match {
         case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, e))
         case Ok(x) => x
       }

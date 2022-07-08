@@ -1,6 +1,6 @@
 package dev.vale.simplifying
 
-import dev.vale.{finalast, vassert}
+import dev.vale.{Keywords, finalast, vassert}
 import dev.vale.finalast.{BorrowH, ExpressionH, KindH, LocalLoadH, LocalStoreH, MemberLoadH, MemberStoreH, ReferenceH, RuntimeSizedArrayStoreH, StaticSizedArrayStoreH, YonderH}
 import dev.vale.typing.Hinputs
 import dev.vale.typing.ast.{AddressMemberLookupTE, ExpressionT, FunctionHeaderT, LocalLookupTE, MutateTE, ReferenceExpressionTE, ReferenceMemberLookupTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE}
@@ -8,7 +8,6 @@ import dev.vale.typing.env.{AddressibleLocalVariableT, ReferenceLocalVariableT}
 import dev.vale.typing.names.{FullNameT, IVarNameT}
 import dev.vale.typing.types.{CoordT, StructTT, VariabilityT}
 import dev.vale.finalast._
-import dev.vale.{finalast => m}
 import dev.vale.typing._
 import dev.vale.typing.ast._
 import dev.vale.typing.env.ReferenceLocalVariableT
@@ -16,6 +15,7 @@ import dev.vale.typing.names.IVarNameT
 import dev.vale.typing.types._
 
 class MutateHammer(
+    keywords: Keywords,
     typeHammer: TypeHammer,
     nameHammer: NameHammer,
     structHammer: StructHammer,
@@ -171,9 +171,9 @@ class MutateHammer(
         MemberStoreH(
           boxedTypeH,
           loadBoxNode.expectStructAccess(),
-          StructHammer.BOX_MEMBER_INDEX,
+          LetHammer.BOX_MEMBER_INDEX,
           sourceExprResultLine,
-          nameHammer.addStep(hamuts, boxStructRefH.fullName, StructHammer.BOX_MEMBER_NAME))
+          nameHammer.addStep(hamuts, boxStructRefH.fullName, keywords.BOX_MEMBER_NAME.str))
     (storeNode, destinationDeferreds)
   }
 
@@ -241,9 +241,9 @@ class MutateHammer(
         MemberStoreH(
           structDefH.members.head.tyype,
           loadBoxNode.expectStructAccess(),
-          StructHammer.BOX_MEMBER_INDEX,
+          LetHammer.BOX_MEMBER_INDEX,
           sourceExprResultLine,
-          nameHammer.addStep(hamuts, boxStructRefH.fullName, StructHammer.BOX_MEMBER_NAME))
+          nameHammer.addStep(hamuts, boxStructRefH.fullName, keywords.BOX_MEMBER_NAME.str))
     (storeNode, Vector.empty)
   }
 

@@ -8,22 +8,21 @@ import dev.vale.typing.env.{FunctionEnvironment, TemplataLookupContext}
 import dev.vale.typing.macros.IFunctionBodyMacro
 import dev.vale.typing.templata.CoordTemplata
 import dev.vale.typing.types.{CoordT, MutableT, RuntimeSizedArrayTT}
-import dev.vale.{Interner, RangeS, vassertSome}
+import dev.vale.{Interner, Keywords, Profiler, RangeS, StrI, vassertSome}
 import dev.vale.postparsing.CodeRuneS
 import dev.vale.typing.ast._
 import dev.vale.typing.env.TemplataLookupContext
 import dev.vale.typing.types._
 import dev.vale.typing.ast
-import dev.vale.{Interner, Profiler, RangeS, vassertSome}
 
 
-class RSAMutablePopMacro( interner: Interner) extends IFunctionBodyMacro {
-  val generatorId: String = "vale_runtime_sized_array_pop"
+class RSAMutablePopMacro(interner: Interner, keywords: Keywords) extends IFunctionBodyMacro {
+  val generatorId: StrI = keywords.vale_runtime_sized_array_pop
 
   def generateFunctionBody(
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
-    generatorId: String,
+    generatorId: StrI,
     life: LocationInFunctionEnvironment,
     callRange: RangeS,
     originFunction: Option[FunctionA],
@@ -38,7 +37,7 @@ class RSAMutablePopMacro( interner: Interner) extends IFunctionBodyMacro {
     val CoordTemplata(elementType) =
       vassertSome(
         env.lookupNearestWithImpreciseName(
-          interner.intern(RuneNameS(CodeRuneS("E"))), Set(TemplataLookupContext)))
+          interner.intern(RuneNameS(CodeRuneS(keywords.E))), Set(TemplataLookupContext)))
 
     val arrayTT = interner.intern(RuntimeSizedArrayTT(MutableT, elementType))
 

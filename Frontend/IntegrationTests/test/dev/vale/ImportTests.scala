@@ -26,23 +26,27 @@ class ImportTests extends FunSuite with Matchers {
       """.stripMargin
 
     val interner = new Interner()
+    val keywords = new Keywords(interner)
     val map = new FileCoordinateMap[String]()
     map.put(
       interner.intern(FileCoordinate(
-        interner.intern(PackageCoordinate("moduleA", Vector.empty)),
+        interner.intern(PackageCoordinate(
+          interner.intern(StrI("moduleA")),
+          Vector.empty)),
         "moduleA.vale")),
       moduleACode)
     map.put(
       interner.intern(FileCoordinate(
-        interner.intern(PackageCoordinate("moduleB", Vector.empty)),
+        interner.intern(PackageCoordinate(interner.intern(StrI("moduleB")), Vector.empty)),
         "moduleB.vale")),
       moduleBCode)
 
     val compile =
       new RunCompilation(
         interner,
-        Vector(PackageCoordinate.BUILTIN(interner), interner.intern(PackageCoordinate("moduleA", Vector.empty))),
-        Builtins.getCodeMap(interner)
+        keywords,
+        Vector(PackageCoordinate.BUILTIN(interner, keywords), interner.intern(PackageCoordinate(interner.intern(StrI("moduleA")), Vector.empty))),
+        Builtins.getCodeMap(interner, keywords)
           .or(map)
           .or(Tests.getPackageToResourceResolver),
         FullCompilationOptions())
@@ -66,8 +70,9 @@ class ImportTests extends FunSuite with Matchers {
 
 
     val interner = new Interner()
-    val moduleACoord = interner.intern(PackageCoordinate("moduleA", Vector.empty))
-    val moduleBCoord = interner.intern(PackageCoordinate("moduleB", Vector.empty))
+    val keywords = new Keywords(interner)
+    val moduleACoord = interner.intern(PackageCoordinate(interner.intern(StrI("moduleA")), Vector.empty))
+    val moduleBCoord = interner.intern(PackageCoordinate(interner.intern(StrI("moduleB")), Vector.empty))
     val map = new FileCoordinateMap[String]()
     map.put(
       interner.intern(FileCoordinate(moduleACoord, "moduleA.vale")),
@@ -79,8 +84,9 @@ class ImportTests extends FunSuite with Matchers {
     val compile =
       new RunCompilation(
         interner,
-        Vector(PackageCoordinate.BUILTIN(interner), moduleACoord),
-        Builtins.getCodeMap(interner)
+        keywords,
+        Vector(PackageCoordinate.BUILTIN(interner, keywords), moduleACoord),
+        Builtins.getCodeMap(interner, keywords)
           .or(map)
           .or(Tests.getPackageToResourceResolver),
         FullCompilationOptions())
@@ -107,8 +113,9 @@ class ImportTests extends FunSuite with Matchers {
       """.stripMargin
 
     val interner = new Interner()
-    val moduleACoord = interner.intern(PackageCoordinate("moduleA", Vector.empty))
-    val moduleBCoord = interner.intern(PackageCoordinate("moduleB", Vector("bork")))
+    val keywords = new Keywords(interner)
+    val moduleACoord = interner.intern(PackageCoordinate(interner.intern(StrI("moduleA")), Vector.empty))
+    val moduleBCoord = interner.intern(PackageCoordinate(interner.intern(StrI("moduleB")), Vector(interner.intern(StrI("bork")))))
     val map = new FileCoordinateMap[String]()
     map.put(
       interner.intern(FileCoordinate(moduleACoord, "moduleA.vale")),
@@ -120,8 +127,9 @@ class ImportTests extends FunSuite with Matchers {
     val compile =
       new RunCompilation(
         interner,
-        Vector(PackageCoordinate.BUILTIN(interner), moduleACoord),
-        Builtins.getCodeMap(interner)
+        keywords,
+        Vector(PackageCoordinate.BUILTIN(interner, keywords), moduleACoord),
+        Builtins.getCodeMap(interner, keywords)
           .or(map)
           .or(Tests.getPackageToResourceResolver),
         FullCompilationOptions())
@@ -141,8 +149,9 @@ class ImportTests extends FunSuite with Matchers {
       """.stripMargin
 
     val interner = new Interner()
-    val moduleACoord = interner.intern(PackageCoordinate("moduleA", Vector.empty))
-    val moduleBCoord = interner.intern(PackageCoordinate("moduleB", Vector("bork")))
+    val keywords = new Keywords(interner)
+    val moduleACoord = interner.intern(PackageCoordinate(interner.intern(StrI("moduleA")), Vector.empty))
+    val moduleBCoord = interner.intern(PackageCoordinate(interner.intern(StrI("moduleB")), Vector(interner.intern(StrI("bork")))))
     val map = new FileCoordinateMap[String]()
     map.put(
       interner.intern(FileCoordinate(moduleACoord, "moduleA.vale")),
@@ -151,11 +160,12 @@ class ImportTests extends FunSuite with Matchers {
     val compile =
       new RunCompilation(
         interner,
-        Vector(PackageCoordinate.BUILTIN(interner), interner.intern(PackageCoordinate("moduleA", Vector.empty))),
-        Builtins.getCodeMap(interner)
+        keywords,
+        Vector(PackageCoordinate.BUILTIN(interner, keywords), interner.intern(PackageCoordinate(interner.intern(StrI("moduleA")), Vector.empty))),
+        Builtins.getCodeMap(interner, keywords)
           .or(Tests.getPackageToResourceResolver)
           .or(map)
-          .or({ case PackageCoordinate("moduleB", Vector("bork")) => Some(Map()) }),
+          .or({ case PackageCoordinate(StrI("moduleB"), Vector(StrI("bork"))) => Some(Map()) }),
     FullCompilationOptions())
 
     compile.evalForKind(Vector()) match { case VonInt(42) => }

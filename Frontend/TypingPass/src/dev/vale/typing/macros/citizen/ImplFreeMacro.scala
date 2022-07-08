@@ -1,13 +1,12 @@
 package dev.vale.typing.macros.citizen
 
-import dev.vale.Interner
+import dev.vale.{Interner, Keywords, _}
 import dev.vale.highertyping.StructA
 import dev.vale.typing.env.IEnvEntry
 import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.macros.IOnStructDefinedMacro
 import dev.vale.typing.names.{FullNameT, INameT, NameTranslator}
 import dev.vale.typing.types.MutabilityT
-import dev.vale._
 import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing._
 import dev.vale.postparsing.patterns._
@@ -21,16 +20,17 @@ import dev.vale.typing.types.ParamFilter
 
 class ImplFreeMacro(
   interner: Interner,
+  keywords: Keywords,
   nameTranslator: NameTranslator,
 ) extends IOnStructDefinedMacro {
-  val macroName: String = "DeriveImplFree"
+  val macroName: StrI = keywords.DeriveImplFree
 //  val generatorId = "freeImplGenerator"
 
-  override def getStructSiblingEntries(macroName: String, structName: FullNameT[INameT], structA: StructA): Vector[(FullNameT[INameT], IEnvEntry)] = {
+  override def getStructSiblingEntries(macroName: StrI, structName: FullNameT[INameT], structA: StructA): Vector[(FullNameT[INameT], IEnvEntry)] = {
     Vector()
   }
 
-  override def getStructChildEntries(macroName: String, structName: FullNameT[INameT], structA: StructA, mutability: MutabilityT): Vector[(FullNameT[INameT], IEnvEntry)] = {
+  override def getStructChildEntries(macroName: StrI, structName: FullNameT[INameT], structA: StructA, mutability: MutabilityT): Vector[(FullNameT[INameT], IEnvEntry)] = {
 //    if (mutability != ImmutableT) {
 //      return Vector()
 //    }
@@ -79,7 +79,7 @@ class ImplFreeMacro(
 //            }
 //          },
 //          LookupSR(RangeS.internal(interner, -1672141),RuneUsage(RangeS.internal(interner, -64002), FreeOverrideStructTemplateRuneS()),structA.name.getImpreciseName(interner)),
-//          LookupSR(RangeS.internal(interner, -1672142),RuneUsage(RangeS.internal(interner, -64002), ImplDropVoidRuneS()),interner.intern(CodeNameS("void")))),
+//          LookupSR(RangeS.internal(interner, -1672142),RuneUsage(RangeS.internal(interner, -64002), ImplDropVoidRuneS()),interner.intern(CodeNameS(StrI("void"))))),
 ////        GeneratedBodyS(generatorId))
 //        CodeBodyS(
 //          BodySE(RangeS.internal(interner, -1672143),

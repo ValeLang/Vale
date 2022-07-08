@@ -2,7 +2,7 @@ package dev.vale.compileserver
 
 import com.google.cloud.functions.{HttpFunction, HttpRequest, HttpResponse}
 import dev.vale.passmanager.PassManager
-import dev.vale.{Err, Interner, Ok, vimpl}
+import dev.vale.{Err, Interner, Keywords, Ok, vimpl}
 import PassManager.{Options, SourceInput, build, jsonifyProgram}
 
 class BuildAction extends HttpFunction {
@@ -15,13 +15,14 @@ class BuildAction extends HttpFunction {
     }
 
     val interner = new Interner()
+    val keywords = new Keywords(interner)
     val options =
       Options(
-        Vector(SourceInput(PassManager.DEFAULT_PACKAGE_COORD(interner), "in.vale", code)),
+        Vector(SourceInput(PassManager.DEFAULT_PACKAGE_COORD(interner, keywords), "in.vale", code)),
         Some(""),
         false, false, true, false, true, None, false, true, true, true)
     val json =
-      PassManager.build(interner, options) match {
+      PassManager.build(interner, keywords, options) match {
         case Ok(Some(programH)) => jsonifyProgram(vimpl(), programH)
         case Err(error) => {
           response.setStatusCode(400)

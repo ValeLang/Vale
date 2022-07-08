@@ -2,12 +2,12 @@ package dev.vale.typing
 
 import dev.vale.highertyping.{HigherTypingCompilation, ICompileErrorA, ProgramA}
 import dev.vale.options.GlobalOptions
-import dev.vale.parsing.FailedParse
 import dev.vale.parsing.ast.FileP
 import dev.vale.postparsing.{ICompileErrorS, ProgramS}
 import dev.vale.{Err, FileCoordinateMap, IPackageResolver, Ok, PackageCoordinate, PackageCoordinateMap, Result, vcurious, vfail}
 import dev.vale._
 import dev.vale.highertyping._
+import dev.vale.lexing.{FailedParse, RangeL}
 import dev.vale.postparsing.ICompileErrorS
 
 import scala.collection.immutable.{List, ListMap, Map, Set}
@@ -20,16 +20,17 @@ case class TypingPassCompilationOptions(
 
 class TypingPassCompilation(
   val interner: Interner,
+  val keywords: Keywords,
   packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]],
   options: TypingPassCompilationOptions = TypingPassCompilationOptions()) {
   var higherTypingCompilation =
     new HigherTypingCompilation(
-      options.globalOptions, interner, packagesToBuild, packageToContentsResolver)
+      options.globalOptions, interner, keywords, packagesToBuild, packageToContentsResolver)
   var hinputsCache: Option[Hinputs] = None
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = higherTypingCompilation.getCodeMap()
-  def getParseds(): Result[FileCoordinateMap[(FileP, Vector[(Int, Int)])], FailedParse] = higherTypingCompilation.getParseds()
+  def getParseds(): Result[FileCoordinateMap[(FileP, Vector[RangeL])], FailedParse] = higherTypingCompilation.getParseds()
   def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = higherTypingCompilation.getVpstMap()
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = higherTypingCompilation.getScoutput()
 
@@ -43,6 +44,7 @@ class TypingPassCompilation(
           new Compiler(
             options.debugOut,
             interner,
+            keywords,
             options.globalOptions)
         compiler.evaluate(higherTypingCompilation.expectAstrouts()) match {
           case Err(e) => Err(e)

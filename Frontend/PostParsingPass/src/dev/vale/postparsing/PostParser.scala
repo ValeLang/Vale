@@ -4,12 +4,13 @@ package dev.vale.postparsing
 import dev.vale.options.GlobalOptions
 import dev.vale.postparsing.patterns.PatternScout
 import dev.vale.postparsing.rules.{IRulexSR, LiteralSR, MutabilityLiteralSL, RuleScout, RuneUsage, TemplexScout}
-import dev.vale.{CodeLocationS, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Ok, PackageCoordinate, Profiler, RangeS, Result, postparsing, vassert, vcurious, vfail, vimpl, vpass, vwat}
+import dev.vale.{CodeLocationS, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Keywords, Ok, PackageCoordinate, Profiler, RangeS, Result, postparsing, vassert, vcurious, vfail, vimpl, vpass, vwat}
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
 import PostParser.determineDenizenType
-import dev.vale.parsing.{FailedParse, ParserCompilation}
-import dev.vale.parsing.ast.{AnonymousRunePT, BoolPT, CallPT, ExportAsP, ExportAttributeP, FileP, IAttributeP, IImpreciseNameP, ITemplexPT, ImplP, ImportP, InlinePT, IntPT, InterfaceP, InterpretedPT, IterableNameP, IterationOptionNameP, IteratorNameP, LocationPT, LookupNameP, MacroCallP, MutabilityP, MutabilityPT, NameOrRunePT, NameP, NormalStructMemberP, OwnershipPT, RangeP, RulePUtils, SealedAttributeP, StaticSizedArrayPT, StructMembersP, StructMethodP, StructP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePT, VariadicStructMemberP, WeakableAttributeP}
+import dev.vale.lexing.{FailedParse, RangeL}
+import dev.vale.parsing.ParserCompilation
+import dev.vale.parsing.ast.{AnonymousRunePT, BoolPT, CallPT, ExportAsP, ExportAttributeP, FileP, IAttributeP, IImpreciseNameP, ITemplexPT, ImplP, ImportP, InlinePT, IntPT, InterfaceP, InterpretedPT, IterableNameP, IterationOptionNameP, IteratorNameP, LocationPT, LookupNameP, MacroCallP, MutabilityP, MutabilityPT, NameOrRunePT, NameP, NormalStructMemberP, OwnershipPT, RulePUtils, SealedAttributeP, StaticSizedArrayPT, StructMembersP, StructMethodP, StructP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePT, VariadicStructMemberP, WeakableAttributeP}
 //import dev.vale.postparsing.predictor.RuneTypeSolveError
 import dev.vale.postparsing.rules._
 import dev.vale.Err
@@ -44,7 +45,6 @@ case class VirtualAndAbstractGoTogether(range: RangeS) extends ICompileErrorS { 
 case class CouldntSolveRulesS(range: RangeS, error: RuneTypeSolveError) extends ICompileErrorS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class IdentifyingRunesIncompleteS(range: RangeS, error: IdentifiabilitySolveError) extends ICompileErrorS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class RangedInternalErrorS(range: RangeS, message: String) extends ICompileErrorS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class LightFunctionMustHaveParamTypes(range: RangeS, paramIndex: Int) extends ICompileErrorS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 sealed trait IEnvironment {
   def file: FileCoordinate
@@ -130,7 +130,7 @@ object PostParser {
   def noVariableUses = VariableUses(Vector.empty)
   def noDeclarations = VariableDeclarations(Vector.empty)
 
-  def evalRange(file: FileCoordinate, range: RangeP): RangeS = {
+  def evalRange(file: FileCoordinate, range: RangeL): RangeS = {
     RangeS(evalPos(file, range.begin), evalPos(file, range.end))
   }
 
@@ -232,23 +232,24 @@ object PostParser {
 
 class PostParser(
     globalOptions: GlobalOptions,
-    interner: Interner) {
-  val templexScout = new TemplexScout(interner)
-  val ruleScout = new RuleScout(templexScout)
-  val functionScout = new FunctionScout(this, interner, templexScout, ruleScout)
+    interner: Interner,
+    keywords: Keywords) {
+  val templexScout = new TemplexScout(interner, keywords)
+  val ruleScout = new RuleScout(interner, keywords, templexScout)
+  val functionScout = new FunctionScout(this, interner, keywords, templexScout, ruleScout)
 
   def scoutProgram(fileCoordinate: FileCoordinate, parsed: FileP): Result[ProgramS, ICompileErrorS] = {
     Profiler.frame(() => {
       try {
-        val structsS = parsed.topLevelThings.collect({ case TopLevelStructP(s) => s }).map(scoutStruct(fileCoordinate, _));
-        val interfacesS = parsed.topLevelThings.collect({ case TopLevelInterfaceP(i) => i }).map(scoutInterface(fileCoordinate, _));
-        val implsS = parsed.topLevelThings.collect({ case TopLevelImplP(i) => i }).map(scoutImpl(fileCoordinate, _))
+        val structsS = parsed.denizens.collect({ case TopLevelStructP(s) => s }).map(scoutStruct(fileCoordinate, _));
+        val interfacesS = parsed.denizens.collect({ case TopLevelInterfaceP(i) => i }).map(scoutInterface(fileCoordinate, _));
+        val implsS = parsed.denizens.collect({ case TopLevelImplP(i) => i }).map(scoutImpl(fileCoordinate, _))
         val functionsS =
-          parsed.topLevelThings
+          parsed.denizens
             .collect({ case TopLevelFunctionP(f) => f }).map(functionScout.scoutTopLevelFunction(fileCoordinate, _))
-        val exportsS = parsed.topLevelThings.collect({ case TopLevelExportAsP(e) => e }).map(scoutExportAs(fileCoordinate, _))
-        val importsS = parsed.topLevelThings.collect({ case TopLevelImportP(e) => e }).map(scoutImport(fileCoordinate, _))
-        val programS = ProgramS(structsS, interfacesS, implsS, functionsS, exportsS, importsS)
+        val exportsS = parsed.denizens.collect({ case TopLevelExportAsP(e) => e }).map(scoutExportAs(fileCoordinate, _))
+        val importsS = parsed.denizens.collect({ case TopLevelImportP(e) => e }).map(scoutImport(fileCoordinate, _))
+        val programS = ProgramS(structsS.toVector, interfacesS.toVector, implsS.toVector, functionsS.toVector, exportsS.toVector, importsS.toVector)
         Ok(programS)
       } catch {
         case CompileErrorExceptionS(err) => Err(err)
@@ -367,7 +368,7 @@ class PostParser(
   }
 
   private def scoutStruct(file: FileCoordinate, head: StructP): StructS = {
-    val StructP(rangeP, NameP(structNameRange, structHumanName), attributesP, mutabilityPT, maybeIdentifyingRunes, maybeTemplateRulesP, StructMembersP(_, members)) = head
+    val StructP(rangeP, NameP(structNameRange, structHumanName), attributesP, mutabilityPT, maybeIdentifyingRunes, maybeTemplateRulesP, bodyRange, StructMembersP(_, members)) = head
 
     val structRangeS = PostParser.evalRange(file, rangeP)
     val structName = interner.intern(postparsing.TopLevelCitizenDeclarationNameS(structHumanName, PostParser.evalRange(file, structNameRange)))
@@ -409,7 +410,9 @@ class PostParser(
 
     ruleScout.translateRulexes(structEnv, lidb.child(), ruleBuilder, runeToExplicitType, templateRulesP)
 
-    val mutabilityRuneS = templexScout.translateTemplex(structEnv, lidb.child(), ruleBuilder, mutabilityPT)
+    val mutability =
+      mutabilityPT.getOrElse(MutabilityPT(RangeL(bodyRange.begin, bodyRange.begin), MutableP))
+    val mutabilityRuneS = templexScout.translateTemplex(structEnv, lidb.child(), ruleBuilder, mutability)
     runeToExplicitType.put(mutabilityRuneS.rune, MutabilityTemplataType)
 
     val rulesS = ruleBuilder.toArray
@@ -496,7 +499,7 @@ class PostParser(
     file: FileCoordinate,
     containingInterfaceP: InterfaceP):
   InterfaceS = {
-    val InterfaceP(interfaceRange, NameP(interfaceNameRangeS, interfaceHumanName), attributesP, mutabilityPT, maybeIdentifyingRunes, maybeRulesP, internalMethodsP) = containingInterfaceP
+    val InterfaceP(interfaceRange, NameP(interfaceNameRangeS, interfaceHumanName), attributesP, mutabilityPT, maybeIdentifyingRunes, maybeRulesP, bodyRange, internalMethodsP) = containingInterfaceP
     val interfaceRangeS = PostParser.evalRange(file, interfaceRange)
     val interfaceFullName = interner.intern(postparsing.TopLevelCitizenDeclarationNameS(interfaceHumanName, PostParser.evalRange(file, interfaceNameRangeS)))
     val rulesP = maybeRulesP.toVector.flatMap(_.rules)
@@ -514,7 +517,9 @@ class PostParser(
 
     ruleScout.translateRulexes(interfaceEnv, lidb.child(), ruleBuilder, runeToExplicitType, rulesP)
 
-    val mutabilityRuneS = templexScout.translateTemplex(interfaceEnv, lidb.child(), ruleBuilder, mutabilityPT)
+    val mutability =
+      mutabilityPT.getOrElse(MutabilityPT(RangeL(bodyRange.begin, bodyRange.begin), MutableP))
+    val mutabilityRuneS = templexScout.translateTemplex(interfaceEnv, lidb.child(), ruleBuilder, mutability)
 
 
     val rulesS = ruleBuilder.toArray
@@ -568,13 +573,14 @@ class PostParser(
 class ScoutCompilation(
   globalOptions: GlobalOptions,
   interner: Interner,
+  keywords: Keywords,
   packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]]) {
-  var parserCompilation = new ParserCompilation(globalOptions, interner, packagesToBuild, packageToContentsResolver)
+  var parserCompilation = new ParserCompilation(globalOptions, interner, keywords, packagesToBuild, packageToContentsResolver)
   var scoutputCache: Option[FileCoordinateMap[ProgramS]] = None
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = parserCompilation.getCodeMap()
-  def getParseds(): Result[FileCoordinateMap[(FileP, Vector[(Int, Int)])], FailedParse] = parserCompilation.getParseds()
+  def getParseds(): Result[FileCoordinateMap[(FileP, Vector[RangeL])], FailedParse] = parserCompilation.getParseds()
   def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = parserCompilation.getVpstMap()
 
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = {
@@ -583,7 +589,7 @@ class ScoutCompilation(
       case None => {
         val scoutput =
           parserCompilation.expectParseds().map({ case (fileCoordinate, (code, commentsAndRanges)) =>
-            new PostParser(globalOptions, interner).scoutProgram(fileCoordinate, code) match {
+            new PostParser(globalOptions, interner, keywords).scoutProgram(fileCoordinate, code) match {
               case Err(e) => return Err(e)
               case Ok(p) => p
             }

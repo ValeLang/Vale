@@ -15,6 +15,10 @@ import dev.vale.typing.env.ReferenceLocalVariableT
 import dev.vale.typing.names.IVarNameT
 import dev.vale.typing.types._
 
+object LetHammer {
+  val BOX_MEMBER_INDEX: Int = 0
+}
+
 class LetHammer(
     typeHammer: TypeHammer,
     nameHammer: NameHammer,

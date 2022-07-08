@@ -4,11 +4,10 @@ import dev.vale.typing.ast.{EdgeT, FunctionExportT, FunctionExternT, FunctionT, 
 import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, FullNameT, FunctionNameT, IFunctionNameT, LambdaCitizenNameT}
 import dev.vale.typing.templata.simpleName
 import dev.vale.typing.types.{InterfaceDefinitionT, InterfaceTT, KindT, StructDefinitionT, StructTT}
-import dev.vale.{vassertSome, vcurious, vfail}
+import dev.vale.{StrI, vassertSome, vcurious, vfail}
 import dev.vale.typing.ast._
 import dev.vale.typing.names._
 import dev.vale.typing.types._
-import dev.vale.vfail
 
 case class Hinputs(
   interfaces: Vector[InterfaceDefinitionT],
@@ -42,7 +41,7 @@ case class Hinputs(
   def lookupFunction(humanName: String): FunctionT = {
     val matches = functions.filter(f => {
       f.header.fullName.last match {
-        case FunctionNameT(n, _, _) if n == humanName => true
+        case FunctionNameT(n, _, _) if n.str == humanName => true
         case _ => false
       }
     })
@@ -57,7 +56,7 @@ case class Hinputs(
   def lookupStruct(humanName: String): StructDefinitionT = {
     val matches = structs.filter(s => {
       s.fullName.last match {
-        case CitizenNameT(CitizenTemplateNameT(n), _) if n == humanName => true
+        case CitizenNameT(CitizenTemplateNameT(n), _) if n.str == humanName => true
         case _ => false
       }
     })
@@ -76,7 +75,7 @@ case class Hinputs(
   def lookupInterface(humanName: String): InterfaceDefinitionT = {
     val matches = interfaces.filter(s => {
       s.fullName.last match {
-        case CitizenNameT(CitizenTemplateNameT(n), _) if n == humanName => true
+        case CitizenNameT(CitizenTemplateNameT(n), _) if n.str == humanName => true
         case _ => false
       }
     })
@@ -107,7 +106,7 @@ case class Hinputs(
       case Vector(
       FunctionNameT(functionHumanName, _, _),
       LambdaCitizenNameT(_),
-      FunctionNameT("__call", _, _)) if functionHumanName == needleFunctionHumanName => true
+      FunctionNameT(StrI("__call"), _, _)) if functionHumanName.str == needleFunctionHumanName => true
       case _ => false
     }
   }

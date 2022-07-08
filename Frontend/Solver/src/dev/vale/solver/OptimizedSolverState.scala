@@ -481,13 +481,14 @@ case class OptimizedSolverState[Rule, Rune, Conclusion](
     Ok(true)
   }
 
-  private def removeRule(ruleIndex: Int) = {
-    // Here we used to check that the rule's runes were solved, but we don't do that anymore
-    // because some rules leave their runes as mysteries, see SAIRFU.
-    //val ruleRunes = ruleToRunes(ruleIndex)
-    //ruleRunes.foreach(canonicalRune => {
-    //  vassert(getConclusion(canonicalRune).nonEmpty, "Didn't conclude a rune!")
-    //})
+  private def removeRule(ruleIndex: Int): Unit = {
+    // Here we used to check that the rule's runes were solved, but
+    // we don't do that anymore because some rules leave their runes
+    // as mysteries, see SAIRFU.
+    //   val ruleRunes = ruleToRunes(ruleIndex)
+    //   ruleRunes.foreach(canonicalRune => {
+    //     assert(getConclusion(canonicalRune).nonEmpty)
+    //   })
 
     ruleToPuzzles(ruleIndex).foreach(rulePuzzle => {
       puzzleToExecuted(rulePuzzle) = true

@@ -1,10 +1,10 @@
 # Vale
 
-Vale is a programming language that's aims to be not only *fast* and *memory-safe*, but also *easy and flexible*.
+Vale is a programming language that's aims to be not only **fast** and **memory-safe**, but also **easy and flexible**.
 
-* *Fast:* Vale is AOT compiled to LLVM, statically-typed, and uses the new [generational references](https://verdagon.dev/blog/generational-references) technique for memory safety with speed and flexibility, and will soon have [region borrow checking](https://verdagon.dev/blog/zero-cost-refs-regions) to make it even faster.
- * *Safe:* It is the [safest native language](https://vale.dev/memory-safe), thanks to [generational references](https://verdagon.dev/blog/generational-references) and [Fearless FFI](https://verdagon.dev/blog/fearless-ffi).
- * *Easy:* Vale has memory-safe single ownership without garbage collection or a borrow checker, which makes it easy to write safe, fast code.
+* **Fast:** Vale is AOT compiled to LLVM, statically-typed, and uses the new [generational references](https://verdagon.dev/blog/generational-references) technique for memory safety with speed and flexibility, and will soon have [region borrow checking](https://verdagon.dev/blog/zero-cost-refs-regions) to make it even faster.
+ * **Safe:** It is the [safest native language](https://vale.dev/memory-safe), thanks to [generational references](https://verdagon.dev/blog/generational-references) and [Fearless FFI](https://verdagon.dev/blog/fearless-ffi).
+ * **Easy:** Vale has memory-safe single ownership without garbage collection or a borrow checker, which makes it easy to write safe, fast code.
 
 
 See http://vale.dev/ for more information on the language. We're also open for [sponsorship](https://github.com/sponsors/ValeLang), thank you to all our sponsors for enabling our ambitious endeavor!

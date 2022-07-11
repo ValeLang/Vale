@@ -4,6 +4,7 @@ release-windows
 release-unix
 Driver.jar
 .DS_Store
+__MACOSX
 Frontend/lib/lift-json_2.12-3.3.0-RC1.jar
 Frontend/lib/scala-library-2.12.8.jar
 Frontend/lib/scala-reflect-2.12.8.jar
@@ -14,3 +15,6 @@ Catalyst/.*
 Catalyst/catalyst/target/
 Catalyst/testing/test*/out/
 removeextra.sh
+target
+project
+.metals

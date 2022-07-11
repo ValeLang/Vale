@@ -1,16 +1,13 @@
 # Vale
 
-Vale is a programming language whose goal is to show the world that **speed and safety can be easy!** Vale is:
+Vale is a programming language that's aims to be not only *fast* and *memory-safe*, but also *easy and flexible*.
 
- * *Fast:* Vale is an AOT compiled language that uses the new [generational references](https://verdagon.dev/blog/generational-references) technique, enabling memory-safe control over data layout.
- * *Fearless:* It is the [safest native language](https://vale.dev/fearless), using region isolation and "Fearless FFI" to keep extern code's bugs from affecting Vale objects.
- * *Flexible:* Its new take on [regions](/guide/regions) enables alternate memory management and allocation strategies, with the planned [region borrow checker](https://verdagon.dev/blog/zero-cost-refs-regions) enabling easy interop between them, and eliminating the vast majority of generational references' overhead.
-
-
-Vale is part of the [Vale Language Project](https://vale.dev/project), which explores, discovers, and publishes new programming language mechanisms that enable speed, safety, and ease of use. 
+* *Fast:* Vale is AOT compiled to LLVM, statically-typed, and uses the new [generational references](https://verdagon.dev/blog/generational-references) technique for memory safety with speed and flexibility, and will soon have [region borrow checking](https://verdagon.dev/blog/zero-cost-refs-regions) to make it even faster.
+ * *Safe:* It is the [safest native language](https://vale.dev/memory-safe), thanks to [generational references](https://verdagon.dev/blog/generational-references) and [Fearless FFI](https://verdagon.dev/blog/fearless-ffi).
+ * *Easy:* Vale has memory-safe single ownership without garbage collection or a borrow checker, which makes it easy to write safe, fast code.
 
 
-See http://vale.dev/ for more information on the language, and please consider [sponsoring us](https://github.com/sponsors/ValeLang) so that we can work on this even more!
+See http://vale.dev/ for more information on the language. We're also open for [sponsorship](https://github.com/sponsors/ValeLang), thank you to all our sponsors for enabling our ambitious endeavor!
 
 
 See also our [treasure trove of working examples](https://github.com/Ivo-Balbaert/Vale_Examples), grouped by functionality.

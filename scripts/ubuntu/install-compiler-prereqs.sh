@@ -22,6 +22,9 @@ bail() {
   exit 1
 }
 
+CLANG_VERSION="14.0.0"
+CLANG_UBUNTU_VERSION="18.04"
+
 INSTALL_JAVA=0
 INSTALL_SBT=0
 LLVM_DIR=""
@@ -62,12 +65,11 @@ TEXT_RESET=`tput sgr0`
 # Install misc dependencies
 echo "${TEXT_GREEN}Installing dependencies...${TEXT_RESET}"
 
-apt install sudo
 sudo apt update -y
 sudo apt install -y software-properties-common curl git clang cmake zlib1g-dev zip unzip wget
 
 # Install Java
-if [ $INSTALL_JAVA != 0 ]; then
+if [[ $INSTALL_JAVA != 0 ]]; then
   echo -e "\n${TEXT_GREEN}Installing Java...${TEXT_RESET}"
   wget -qO - https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | sudo apt-key add -
   sudo add-apt-repository --yes https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/
@@ -76,7 +78,7 @@ if [ $INSTALL_JAVA != 0 ]; then
 fi
 
 # Install SBT
-if [ $INSTALL_SBT != 0 ]; then
+if [[ $INSTALL_SBT != 0 ]]; then
   echo -e "\n${TEXT_GREEN}Installing sbt...${TEXT_RESET}"
   echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" | sudo tee /etc/apt/sources.list.d/sbt.list
   echo "deb https://repo.scala-sbt.org/scalasbt/debian /" | sudo tee /etc/apt/sources.list.d/sbt_old.list
@@ -86,7 +88,7 @@ if [ $INSTALL_SBT != 0 ]; then
 fi
 
 # Install bootstrap compiler
-if [ $BOOTSTRAPPING_VALEC_DIR != "" ]; then
+if [[ $BOOTSTRAPPING_VALEC_DIR != "" ]]; then
   echo -e "\n${TEXT_GREEN}Downloading and unzipping stable bootstrapping valec to $BOOTSTRAPPING_VALEC_DIR...${TEXT_RESET}"
   # Install stable valec, for the .vale parts of the compiler
   curl -L https://github.com/ValeLang/Vale/releases/download/v0.2.0/Vale-Ubuntu-0.2.0.11.zip -o /tmp/BootstrappingValeCompiler.zip
@@ -96,11 +98,11 @@ if [ $BOOTSTRAPPING_VALEC_DIR != "" ]; then
 fi
 
 # Install LLVM
-if [ $LLVM_DIR != "" ]; then
+if [[ $LLVM_DIR != "" ]]; then
   echo -e "\n${TEXT_GREEN}Downloading and unzipping LLVM to $LLVM_DIR...${TEXT_RESET}"
   # Install LLVM 13.0.0 (from https://github.com/llvm/llvm-project/releases/tag/llvmorg-13.0.0)
-  curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz --output /tmp/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz
+  curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-$CLANG_VERSION/clang+llvm-$CLANG_VERSION-x86_64-linux-gnu-ubuntu-$CLANG_UBUNTU_VERSION.tar.xz --output /tmp/clang+llvm-$CLANG_VERSION-x86_64-linux-gnu-ubuntu-$CLANG_UBUNTU_VERSION.tar.xz
   mkdir -p $LLVM_DIR
-  tar xf /tmp/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz -C $LLVM_DIR
+  tar xf /tmp/clang+llvm-$CLANG_VERSION-x86_64-linux-gnu-ubuntu-$CLANG_UBUNTU_VERSION.tar.xz -C $LLVM_DIR
   # Later, we'll need to feed this to a cmake command so it knows where the LLVM libraries are.
 fi

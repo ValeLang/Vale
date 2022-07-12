@@ -151,7 +151,7 @@ class ExpressionScout(
                 case FunctionNameS(n, _) => LookupNameP(NameP(rangeAtEnd, n))
                 case _ => vwat()
               }, None),
-            constructedMembersNames.map(n => DotPE(rangeAtEnd, LookupPE(LookupNameP(NameP(rangeAtEnd, keywords.SELF)), None), RangeL.zero, NameP(rangeAtEnd, n))))
+            constructedMembersNames.map(n => DotPE(rangeAtEnd, LookupPE(LookupNameP(NameP(rangeAtEnd, keywords.self)), None), RangeL.zero, NameP(rangeAtEnd, n))))
 
         val (stackFrameAfterConstructing, NormalResult(constructExpression), selfUsesAfterConstructing, childUsesAfterConstructing) =
           scoutExpression(stackFrameBeforeConstructing, lidb.child(), constructorCallP)
@@ -225,7 +225,7 @@ class ExpressionScout(
               case (prevExpr, partSE) => {
                 val addCallRange = RangeS(prevExpr.range.end, partSE.range.begin)
                 val callableExpr =
-                  vale.postparsing.OutsideLoadSE(addCallRange, Array(), interner.intern(CodeNameS(keywords.PLUS)), None, LoadAsBorrowP)
+                  vale.postparsing.OutsideLoadSE(addCallRange, Array(), interner.intern(CodeNameS(keywords.plus)), None, LoadAsBorrowP)
                 FunctionCallSE(addCallRange, callableExpr, Vector(prevExpr, partSE))
               }
             })
@@ -256,7 +256,7 @@ class ExpressionScout(
           (stackFrame0, NormalResult(BreakSE(evalRange(range))), noVariableUses, noVariableUses)
         }
         case NotPE(range, innerPE) => {
-          val callableSE = vale.postparsing.OutsideLoadSE(evalRange(range), Array(), interner.intern(CodeNameS(keywords.NOT)), None, LoadAsBorrowP)
+          val callableSE = vale.postparsing.OutsideLoadSE(evalRange(range), Array(), interner.intern(CodeNameS(keywords.not)), None, LoadAsBorrowP)
 
           val (stackFrame1, innerSE, innerSelfUses, innerChildUses) =
             scoutExpressionAndCoerce(stackFrame0, lidb.child(), innerPE, UseP)
@@ -268,7 +268,7 @@ class ExpressionScout(
           (stackFrame1, result, innerSelfUses, innerChildUses)
         }
         case RangePE(range, beginPE, endPE) => {
-          val callableSE = vale.postparsing.OutsideLoadSE(evalRange(range), Array(), interner.intern(CodeNameS(keywords.RANGE)), None, LoadAsBorrowP)
+          val callableSE = vale.postparsing.OutsideLoadSE(evalRange(range), Array(), interner.intern(CodeNameS(keywords.range)), None, LoadAsBorrowP)
 
           val loadBeginAs =
             beginPE match {

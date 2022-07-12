@@ -100,7 +100,7 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
     val maybeVirtual =
       iter.peek() match {
         case None => return Err(EmptyParameter(patternRange.begin))
-        case Some(WordLE(range, s)) if s == keywords.VIRTUAL => {
+        case Some(WordLE(range, s)) if s == keywords.virtual => {
           iter.advance()
           Some(AbstractP(range))
         }
@@ -170,7 +170,7 @@ class PatternParser(interner: Interner, keywords: Keywords, templexParser: Templ
     // We look ahead so we dont parse "in" as a type in: foreach x in myList { ... }
     iter.peek() match {
       case None =>
-      case Some(WordLE(_, in)) if in == keywords.IN => iter.stop()
+      case Some(WordLE(_, in)) if in == keywords.in => iter.stop()
       case Some(_) =>
     }
 

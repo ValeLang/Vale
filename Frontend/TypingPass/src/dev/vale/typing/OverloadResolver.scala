@@ -158,12 +158,12 @@ class OverloadResolver(
       case KindTemplata(sr@StructTT(_)) => {
         val structEnv = coutputs.getEnvForKind(sr)
         getCandidateBanners(
-          structEnv, coutputs, callRange, interner.intern(CodeNameS(keywords.CALL_FUNCTION_NAME)), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, exact)
+          structEnv, coutputs, callRange, interner.intern(CodeNameS(keywords.underscoresCall)), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, exact)
       }
       case KindTemplata(sr@InterfaceTT(_)) => {
         val interfaceEnv = coutputs.getEnvForKind(sr)
         getCandidateBanners(
-          interfaceEnv, coutputs, callRange, interner.intern(CodeNameS(keywords.CALL_FUNCTION_NAME)), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, exact)
+          interfaceEnv, coutputs, callRange, interner.intern(CodeNameS(keywords.underscoresCall)), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, exact)
       }
       case ExternFunctionTemplata(header) => {
         Vector(HeaderCalleeCandidate(header))
@@ -583,7 +583,7 @@ class OverloadResolver(
     range: RangeS,
     callableTE: ReferenceExpressionTE):
   PrototypeT = {
-    val funcName = interner.intern(CodeNameS(keywords.CALL_FUNCTION_NAME))
+    val funcName = interner.intern(CodeNameS(keywords.underscoresCall))
     val paramFilters =
       Vector(
         ParamFilter(callableTE.result.underlyingReference, None),
@@ -603,7 +603,7 @@ class OverloadResolver(
     callableTE: ReferenceExpressionTE,
     elementType: CoordT):
   PrototypeT = {
-    val funcName = interner.intern(CodeNameS(keywords.CALL_FUNCTION_NAME))
+    val funcName = interner.intern(CodeNameS(keywords.underscoresCall))
     val paramFilters =
       Vector(
         ParamFilter(callableTE.result.underlyingReference, None),

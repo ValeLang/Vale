@@ -1,5 +1,9 @@
+#!/usr/bin/env bash
+
 # This script builds the Vale compiler, runs some tests on it, and also packages up a release zip file.
 # It assumes we've already ran prereqs-linux.sh, or otherwise installed all the dependencies.
+
+set -eu
 
 LLVM_DIR="$1"
 if [ "$LLVM_DIR" == "" ]; then

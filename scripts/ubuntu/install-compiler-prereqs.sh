@@ -64,8 +64,8 @@ if [[ $INSTALL_JAVA == 0 && $INSTALL_SBT == 0 && $BOOTSTRAPPING_VALEC_DIR == "" 
   bail
 fi
 
-TEXT_GREEN=`tput setaf 2`
-TEXT_RESET=`tput sgr0`
+TEXT_GREEN=`tput -T xterm-256color setaf 2`
+TEXT_RESET=`tput -T xterm-256color sgr0`
 
 # Install misc dependencies
 echo "${TEXT_GREEN}Installing dependencies...${TEXT_RESET}"

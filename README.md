@@ -63,3 +63,7 @@ For an overview of the project structure, see [Compiler Overview](compiler-overv
 # Notes
 
 Vale started in January 2013, and back then we called it "VLang", though there's now another language with that name. We then called it GelLLVM, in honor of Gel, the first language to offer constraint references. Since then, we've settled on the name "Vale". Note that Vale and Vala are two different languages.
+
+
+
+bork

@@ -13,7 +13,7 @@ git clone --single-branch --branch master https://github.com/ValeLang/Vale
 # Add the -j and -s flags to the below command to also install Java and SBT from external APT repositories
 Vale/scripts/ubuntu/install-compiler-prereqs.sh -l LLVMForVale -b BootstrappingValeCompiler
 cd Vale
-./scripts/ubuntu/build-compiler.sh ../LLVMForVale/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04 ../BootstrappingValeCompiler --test=all ./scripts/VERSION
+./scripts/ubuntu/build-compiler.sh "$PWD/../LLVMForVale/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04" "$PWD/../BootstrappingValeCompiler" --test=all ./scripts/VERSION
 
 ```
 

@@ -10,6 +10,7 @@ set -euo pipefail
 usage() {
   echo "Usage: $(basename $0) [options]"
   echo -e "\nOptions:"
+  echo " -d        install basic build tools from APT"
   echo " -j        install Java from JFrog.io APT repository"
   echo " -s        install SBT from scala-sbt.org APT repository"
   echo " -b <DIR>  install Vale bootstrap compiler to specified directory"
@@ -22,19 +23,23 @@ bail() {
   exit 1
 }
 
-CLANG_VERSION="13.0.1"
+CLANG_VERSION="14.0.0"
 CLANG_UBUNTU_VERSION="18.04"
 
+INSTALL_DEBS=0
 INSTALL_JAVA=0
 INSTALL_SBT=0
 LLVM_DIR=""
 BOOTSTRAPPING_VALEC_DIR=""
 
-while getopts ":hjsb:l:" opt; do
+while getopts ":hdjsb:l:" opt; do
   case ${opt} in
     h )
       usage
       exit 0
+      ;;
+    d )
+      INSTALL_DEBS=1
       ;;
     j )
       INSTALL_JAVA=1
@@ -65,8 +70,10 @@ TEXT_RESET=`tput sgr0`
 # Install misc dependencies
 echo "${TEXT_GREEN}Installing dependencies...${TEXT_RESET}"
 
-sudo apt update -y
-sudo apt install -y software-properties-common curl git clang cmake zlib1g-dev zip unzip wget
+if [[ $INSTALL_DEBS != 0 ]]; then
+  sudo apt update -y
+  sudo apt install -y software-properties-common curl git clang cmake zlib1g-dev zip unzip wget
+fi
 
 # Install Java
 if [[ $INSTALL_JAVA != 0 ]]; then

@@ -13,6 +13,7 @@ func invoke_backend(
   llvm_ir bool,
   enable_replaying bool,
   enable_side_calling bool,
+  pic bool,
   print_mem_overhead bool,
   elide_checks_for_known_live bool,
   override_known_live_true bool)
@@ -57,6 +58,9 @@ Subprocess {
   }
   if (enable_side_calling) {
     command_line_args.add("--enable_side_calling=true");
+  }
+  if (pic) {
+    command_line_args.add("--pic");
   }
   if (print_mem_overhead) {
     command_line_args.add("--print_mem_overhead");

@@ -5,6 +5,7 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -40,7 +41,7 @@ jobs:
           distribution: adopt
           java-version: 11
       - name: install prereqs
-        run: ./scripts/ubuntu/install-compiler-prereqs.sh ~/LLVMForVale ~/BootstrappingValeCompiler
+        run: ./scripts/ubuntu/install-compiler-prereqs.sh -j -s -l ~/LLVMForVale -b ~/BootstrappingValeCompiler
       - name: build compiler 
         run: ./scripts/ubuntu/build-compiler.sh ~/LLVMForVale/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04 ~/BootstrappingValeCompiler --test=all ./scripts/VERSION
       - name: gimme files 

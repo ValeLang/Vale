@@ -1,6 +1,6 @@
 # This is a scratch file for people to commit to, so that their subsequent PRs can run our CI, the GitHub Actions workflows.
 # 
-# Why is this needed? It's because Github doesn't allow first-time contributors to trigger CI runs.
+# Why is this needed? It's because Github only allows people to trigger CI runs if they've previously contributed to a project.
 #
 # So, just:
 #  1. Make a new SEPARATE pull request, containing a change to this file.

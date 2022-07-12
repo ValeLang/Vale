@@ -56,7 +56,7 @@ class LoopPostParser(interner: Interner, keywords: Keywords) {
               PatternPP(inKeywordRange, None, Some(IteratorNameDeclarationP(inKeywordRange)), None, None, None),
               FunctionCallPE(
                 inKeywordRange, inKeywordRange,
-                LookupPE(LookupNameP(NameP(inKeywordRange, keywords.BEGIN)), None),
+                LookupPE(LookupNameP(NameP(inKeywordRange, keywords.begin)), None),
                 Vector(
                   AugmentPE(
                     inKeywordRange, BorrowP,
@@ -118,7 +118,7 @@ class LoopPostParser(interner: Interner, keywords: Keywords) {
                     FunctionCallPE(
                       inKeywordRange,
                       inKeywordRange,
-                      LookupPE(LookupNameP(NameP(inKeywordRange, keywords.NEXT)), None),
+                      LookupPE(LookupNameP(NameP(inKeywordRange, keywords.next)), None),
                       Vector(
                         AugmentPE(
                           inKeywordRange,
@@ -127,7 +127,7 @@ class LoopPostParser(interner: Interner, keywords: Keywords) {
                   FunctionCallPE(
                     inKeywordRange,
                     inKeywordRange,
-                    LookupPE(LookupNameP(NameP(inKeywordRange, keywords.IS_EMPTY)), None),
+                    LookupPE(LookupNameP(NameP(inKeywordRange, keywords.isEmpty)), None),
                     Vector(
                       AugmentPE(
                         inKeywordRange,
@@ -173,7 +173,7 @@ class LoopPostParser(interner: Interner, keywords: Keywords) {
           FunctionCallPE(
             inKeywordRange,
             inKeywordRange,
-            LookupPE(LookupNameP(NameP(inKeywordRange, keywords.GET)), None),
+            LookupPE(LookupNameP(NameP(inKeywordRange, keywords.get)), None),
             Vector(
               LookupPE(IterationOptionNameP(inKeywordRange), None)))),
         UseP)

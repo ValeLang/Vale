@@ -75,7 +75,7 @@ class FunctionCompilerCore(
       params2.nonEmpty &&
       params2.head.tyype.ownership == OwnT &&
       (startingFullEnv.fullName.last match {
-        case FunctionNameT(humanName, _, _) if humanName == keywords.DROP_FUNCTION_NAME => true
+        case FunctionNameT(humanName, _, _) if humanName == keywords.drop => true
         case _ => false
       })
 

@@ -1,0 +1,16 @@
+# This is a scratch file for people to commit to, so that their subsequent PRs can run our CI, the GitHub Actions workflows.
+# 
+# Why is this needed? It's because Github only allows people to trigger CI runs if they've previously contributed to a project.
+#
+# So, just:
+#  1. Make a new SEPARATE pull request, containing a change to this file.
+#  2. We'll approve and merge in that PR.
+#
+# And now, GitHub trusts you to run CI on your other PR!
+
+# These people are awesome:
+Verdagon
+solstice333
+Ivo-Balbaert
+theowatkins
+DestyNova

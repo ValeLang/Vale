@@ -1,7 +1,7 @@
 
 There are a lot of existing approaches for concurrency, with plenty of benefits and drawbacks:
 
- * OO threads: Easy, but uses slow context switching, each thread wastes a lot of address space (8mb) and physical memory (~2kb avg).
+ * OS threads: Easy, but uses slow context switching, each thread wastes a lot of address space (8mb) and physical memory (~2kb avg).
  * Async/await: Compact, but has viral function coloring, can be difficult to use with recursion and virtual calls.
  * Zig's colorless async/await: Compact, easy, but doubles binary sizes, and can't work with recursion or through interfaces (not that Zig has interfaces).
  * Goroutines w/ stack copying: Compact, easy, but requires GC.

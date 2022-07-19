@@ -86,9 +86,7 @@ launch: 80
 
 > If you want something that includes stack-spill slots and the like, then you'd need to write a MachineFunctionPass and examine the generated machine instructions.  Alternatively, there might be a way in a MachineFunctionPass to get a pointer to a MachineFrame object and to query its size.
 
-A compiler itself (or anyone using the LLVM library) [can add a FunctionPass](https://github.com/ValeLang/Vale/pull/517/files#diff-50f983f79bbc423ae8cc3e5056f7bd277a9f2d2ffc7112c9feec3eab87b02cf4), but [apparently not a MachineFunctionPass](https://lists.llvm.org/pipermail/llvm-dev/2015-November/092033.html). [Kharghoshal](https://www.kharghoshal.xyz/blog/writing-machinefunctionpass) says that we can "hack LLVM’s source to get llc to run your MachineFunctionPass when you invoke it for the architecture you’re working on."
-
-I think this means we'll need to fork LLVM so we can make an `llc` binary that includes our MachineFunctionPass. It sounds like this is a pretty common thing to do, and that page explains how.
+A compiler can normally [add a FunctionPass](https://github.com/ValeLang/Vale/pull/517/files#diff-50f983f79bbc423ae8cc3e5056f7bd277a9f2d2ffc7112c9feec3eab87b02cf4), but [apparently not a MachineFunctionPass](https://lists.llvm.org/pipermail/llvm-dev/2015-November/092033.html). It seems we [must modify the LLVM source itself](https://discourse.llvm.org/t/can-a-normal-compiler-include-a-machinefunctionpass/63911/3)). [Kharghoshal](https://www.kharghoshal.xyz/blog/writing-machinefunctionpass) says that we can "hack LLVM’s source to get llc to run your MachineFunctionPass when you invoke it for the architecture you’re working on." and gives some steps on how to do so.
 
 [This email thread](https://lists.llvm.org/pipermail/llvm-dev/2015-November/092030.html) also explains how we can add a MachineFunctionPass.
 
@@ -102,7 +100,6 @@ line somewhere to run your pass when the MIPS code generator is used,
 and then recompile llvm/lib and llvm/tools/llc.
 
 The only question remaining is whether we really can get the stack sizes from a MachineFunctionPass. [MachineFrameInfo.getStackSize](https://llvm.org/doxygen/classllvm_1_1MachineFrameInfo.html#a14c39a24bf6ebbe339ae8a453c7fdd11) looks promising.
-
 
 
 

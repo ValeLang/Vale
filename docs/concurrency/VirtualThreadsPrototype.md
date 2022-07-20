@@ -14,7 +14,8 @@ This mechanism is called "Vale Virtual Threads" and the full explanation can be 
 
 This is just a prototype, and we'll be simulating it with an existing native language that supports async, such as Rust or Zig.
 
-This won't involve modifying any compilers. If it works, this will later be added to the Vale compiler (not as part of this project).
+This won't involve modifying any compilers. If it works, this will later be added to the Vale compiler (not as part of this project). Long-term, this mechanism could very well be added to other languages.
+
 
 
 # Steps

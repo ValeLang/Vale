@@ -1,0 +1,20 @@
+// An utility to support random numbers in Vale.
+
+// Fully functional example:
+
+// import stdlib.random.*;
+// exported func main() {
+//   randomize();
+//   i = random(1, 5);
+//   o = random(1, 5);
+//   p = random(1, 5);
+//   println(i + " " + o + " " + p);
+// }
+
+// Sets time as the random number seed. (So it's not a cryptographically secure number.)
+// Should be called only once.
+extern func randomize() void;
+
+// Returns a random integer between the two integers "lower" and "upper".
+// If you call it like x = random(1, 5), x can be 1, 2, 3, 4 or 5.
+extern func random(lower int, upper int) int;

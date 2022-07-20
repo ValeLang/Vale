@@ -1,0 +1,17 @@
+import stdlib.testsuite.*;
+import stdlib.random.*;
+
+exported func main() {
+  suite = TestSuite();
+  suite.test("first random", {
+    random(1, 5) should_equal 4;
+  });
+
+  suite.test("second random", {
+    random(1, 5) should_equal 2;
+  });
+
+  suite.test("third random", {
+    random(1, 5) should_equal 3;
+  });
+}

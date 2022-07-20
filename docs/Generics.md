@@ -93,6 +93,54 @@ And then we should make placeholders for P1 and R, and let the 3rd param's Defin
 
 
 
+# Struct Can Impl Interface Multiple Times (SCIIMT)
+
+A struct might implement an interface in multiple ways.
+
+For example `MyController<T>` might implement `IObserver<SignalA>` and `IObserver<SignalB>`, so there would be two ImplT's for it:
+
+ * `ImplT(MyController, MyController<Placeholder(0)>, IObserver, IObserver<SignalA>)`
+ * `ImplT(MyController, MyController<Placeholder(0)>, IObserver, IObserver<SignalB>)`
+
+
+## Must Look Up Impls By Template Name (MLUIBTN)
+
+The above (SCIIMT) also means that one cannot just look for `ImplT(_, _, _, IObserver<Placeholder(0)>`, as there are none in that table.
+
+They should instead search by the template name, like `ImplT(_, _, IObserver, _)`.
+
+
+# Require Explicit Multiple Upcasting to Indirect Descendants and Ancestors (REMUIDDA)
+
+If we have a Serenity which impls IFirefly which impls IShip:
+
+```
+interface IShip { }
+
+interface IFirefly { }
+impl IFirefly for IShip { }
+
+struct Serenity { }
+impl Serenity for IFirefly { }
+```
+
+Then we can't directly upcast a Serenity to an IShip, like:
+
+```
+ship IShip = Serenity();
+```
+
+We'll have to upcast it to an IFirefly first:
+
+```
+ship IShip = Serenity.as<IFirefly>();
+```
+
+This is just to save some compile speed. This way, we can just index the direct parents and children of structs and interfaces, and don't have to do any transitive calculations, for example to find out if a struct indirectly implements an interface.
+
+This will likely also save us some space and complexity in the vtables; each vtable won't need *all* the descendants and ancestors.
+
+
 # Don't Add Placeholders for Generic Params with Defaults (DAPGPD)
 
 Having a default parameter implies that the call site has enough information such that with this default value there will be enough to solve the entire function. So for any information the call site can provide, we just need an equivalent at definition time.
@@ -113,7 +161,15 @@ theres three possibilities if we have a default argument:
    - hope that it can be figured out from other things, such as the normal arguments
 - calling, supplied an argument: want to use CallSiteFuncSR
 - defining: want to use DefinitionFuncSR
+   - but... (see below)
 
+
+if we use DefinitionFuncSR to make a PrototypeTemplata instead of a Placeholder, then the resulting FunctionT will have a bunch of those PrototypeTemplata's around. Shouldnt the hammer see some Placeholders instead?
+this is another hint that we're doing something slightly off.
+perhaps we should hand in a type, and then DefinitionFuncSR can add a prototypetemplata to the env. then the placeholder can still work.
+but then what happens to definitionfuncsr when we get to hammer?
+
+its funny, we're really just trying to establish that there _is_ a prototype like that. we dont know the actual prototype, we're just establishing its shape. why is that so hard to represent/know/encode in these type systems?
 
 
 

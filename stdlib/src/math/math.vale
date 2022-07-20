@@ -50,3 +50,5 @@ extern func xor(a i64, b i64) i64;
 extern func i64(x int) i64;
 
 //extern func mod(a i64, b i64) i64;
+
+extern func random(lower int, upper int) int;

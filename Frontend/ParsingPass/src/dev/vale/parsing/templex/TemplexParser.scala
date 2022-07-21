@@ -109,7 +109,7 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
               iter.advance()
               iter.advance()
               iter.advance()
-              NameP(RangeL(begin, iter.getPrevEndPos()), keywords.SPACESHIP)
+              NameP(RangeL(begin, iter.getPrevEndPos()), keywords.spaceship)
             }
             case (Some(SymbolLE(_, '=')), Some(SymbolLE(_, '=')), _) => {
               iter.advance()
@@ -306,59 +306,59 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
       case Some(range) => return Ok(BoolPT(range, false))
       case None =>
     }
-    iter.trySkipWord(keywords.OWN) match {
+    iter.trySkipWord(keywords.own) match {
       case Some(range) => return Ok(OwnershipPT(range, OwnP))
       case None =>
     }
-    iter.trySkipWord(keywords.BORROW) match {
+    iter.trySkipWord(keywords.borrow) match {
       case Some(range) => return Ok(OwnershipPT(range, BorrowP))
       case None =>
     }
-    iter.trySkipWord(keywords.WEAK) match {
+    iter.trySkipWord(keywords.weak) match {
       case Some(range) => return Ok(OwnershipPT(range, WeakP))
       case None =>
     }
-    iter.trySkipWord(keywords.SHARE) match {
+    iter.trySkipWord(keywords.share) match {
       case Some(range) => return Ok(OwnershipPT(range, ShareP))
       case None =>
     }
-    iter.trySkipWord(keywords.INL) match {
+    iter.trySkipWord(keywords.inl) match {
       case Some(range) => return Ok(LocationPT(range, InlineP))
       case None =>
     }
-    iter.trySkipWord(keywords.HEAP) match {
+    iter.trySkipWord(keywords.heap) match {
       case Some(range) => return Ok(LocationPT(range, YonderP))
       case None =>
     }
-    iter.trySkipWord(keywords.IMM) match {
+    iter.trySkipWord(keywords.imm) match {
       case Some(range) => return Ok(MutabilityPT(range, ImmutableP))
       case None =>
     }
-    iter.trySkipWord(keywords.MUT) match {
+    iter.trySkipWord(keywords.mut) match {
       case Some(range) => return Ok(MutabilityPT(range, MutableP))
       case None =>
     }
-    iter.trySkipWord(keywords.VARY) match {
+    iter.trySkipWord(keywords.vary) match {
       case Some(range) => return Ok(VariabilityPT(range, VaryingP))
       case None =>
     }
-    iter.trySkipWord(keywords.FINAL) match {
+    iter.trySkipWord(keywords.fiinal) match {
       case Some(range) => return Ok(VariabilityPT(range, FinalP))
       case None =>
     }
-    iter.trySkipWord(keywords.BORROW) match {
+    iter.trySkipWord(keywords.borrow) match {
       case Some(range) => return Ok(OwnershipPT(range, BorrowP))
       case None =>
     }
-    iter.trySkipWord(keywords.WEAK) match {
+    iter.trySkipWord(keywords.weak) match {
       case Some(range) => return Ok(OwnershipPT(range, WeakP))
       case None =>
     }
-    iter.trySkipWord(keywords.OWN) match {
+    iter.trySkipWord(keywords.own) match {
       case Some(range) => return Ok(OwnershipPT(range, OwnP))
       case None =>
     }
-    iter.trySkipWord(keywords.SHARE) match {
+    iter.trySkipWord(keywords.share) match {
       case Some(range) => return Ok(OwnershipPT(range, ShareP))
       case None =>
     }
@@ -673,31 +673,31 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
     iter.peek() match {
       case None => Ok(None)
 
-      case Some(WordLE(_, w)) if w == keywords.INT => {
+      case Some(WordLE(_, w)) if w == keywords.int => {
         iter.advance(); Ok(Some(IntTypePR))
       }
-      case Some(WordLE(_, w)) if w == keywords.REF => {
+      case Some(WordLE(_, w)) if w == keywords.Ref => {
         iter.advance(); Ok(Some(CoordTypePR))
       }
-      case Some(WordLE(_, w)) if w == keywords.KIND => {
+      case Some(WordLE(_, w)) if w == keywords.Kind => {
         iter.advance(); Ok(Some(KindTypePR))
       }
-      case Some(WordLE(_, w)) if w == keywords.PROT => {
+      case Some(WordLE(_, w)) if w == keywords.Prot => {
         iter.advance(); Ok(Some(PrototypeTypePR))
       }
-      case Some(WordLE(_, w)) if w == keywords.REFLIST => {
+      case Some(WordLE(_, w)) if w == keywords.RefList => {
         iter.advance(); Ok(Some(CoordListTypePR))
       }
-      case Some(WordLE(_, w)) if w == keywords.OWNERSHIP => {
+      case Some(WordLE(_, w)) if w == keywords.Ownership => {
         iter.advance(); Ok(Some(OwnershipTypePR))
       }
-      case Some(WordLE(_, w)) if w == keywords.VARIABILITY => {
+      case Some(WordLE(_, w)) if w == keywords.Variability => {
         iter.advance(); Ok(Some(VariabilityTypePR))
       }
-      case Some(WordLE(_, w)) if w == keywords.MUTABILITY => {
+      case Some(WordLE(_, w)) if w == keywords.Mutability => {
         iter.advance(); Ok(Some(MutabilityTypePR))
       }
-      case Some(WordLE(_, w)) if w == keywords.LOCATION => {
+      case Some(WordLE(_, w)) if w == keywords.Location => {
         iter.advance(); Ok(Some(LocationTypePR))
       }
       case _ => return Err(BadRuneTypeError(iter.getPos()))

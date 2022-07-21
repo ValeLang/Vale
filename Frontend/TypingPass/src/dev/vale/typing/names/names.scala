@@ -235,7 +235,7 @@ case class LambdaTemplateNameT(
   codeLocation: CodeLocationS
 ) extends INameT with IFunctionTemplateNameT {
   override def makeFunctionName(interner: Interner, keywords: Keywords, templateArgs: Vector[ITemplata], params: Vector[CoordT]): IFunctionNameT = {
-    interner.intern(FunctionNameT(keywords.CALL_FUNCTION_NAME, templateArgs, params))
+    interner.intern(FunctionNameT(keywords.underscoresCall, templateArgs, params))
   }
 }
 case class ConstructorTemplateNameT(

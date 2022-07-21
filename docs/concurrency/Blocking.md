@@ -19,64 +19,84 @@ However, there are a few issues remaining, around **accidental blocking.** Shnat
 
 So, this doc explores the problem and some options that could help with accidental blocking.
 
-# Design Constraints and Advantages
 
-There are some aspects of Vale which sometimes mean we can't do what other languages do.
+## Cooperative Yielding Approach
 
- * Vale code can have pointers to objects on the stack (like C/C++/Rust, and unlike GC'd languages) which means we generally can't copy stacks around like Go or Loom can.
- * Vale aims to be extremely fast, so we might not be able to inject "safe points" into the code like Go does.
- * Vale needs to remain 100% memory-safe.
+In all of these approaches, we use the approach in [VirtualThreads.md](VirtualThreads.md), specifically that we expand the stack on any recursive or virtual call if more space is needed.
 
-Of course, Vale has some advantages too:
+This is often done as part of structured concurrency, as described in [Seamless, Fearless, Structred Concurrency](https://verdagon.dev/blog/seamless-fearless-structured-concurrency), with a `parallel foreach` loop. The thread that launches tasks this way is called the "original thread".
 
- * Vale is a high level language, which means we can introduce abstractions that other languages can't. For example:
-    * Generational references are generally impossible in C++ or Rust.
-    * We don't have to treat tasks and threads differently, we can decide that they're the same thing, just run differently.
- * We can decide to not directly expose some use cases if they're too niche (and then delegate them to FFI), such as thread local storage.
- * The region borrow checker allows us to know when something's immutable.
+In these approaches we use **cooperative yielding**, in other words the task will give up control to the most recent `parallel foreach` loop so it can make some progress on another iteration for a while.
 
+Cooperative yielding can use any underlying stack-switching mechanism, such as [user-level threads](https://www.youtube.com/watch?v=KXuZi9aeGTw) if they [reach Linux](https://www.phoronix.com/scan.php?page=news_item&px=Google-User-Thread-Futex-Swap)), [cooperative user-space multitasking](https://brennan.io/2020/05/24/userspace-cooperative-multitasking/), or Go's stack-switching mechanism. The mechanism we use for that is orthogonal / out of scope for this doc, this doc is about **what to do if a task goes a very long time without yielding.**
 
-# Approach 1: OS Threads with Vale Virtual Stacks
+### Consistently Yielding Ecosystem
 
-It seems like OS threads are actually pretty good in a lot of cases, especially because they use the OS scheduler which is pretty good at fairness.
+A major source of blocking is when someone accidentally uses a blocking system call.
 
-The only drawbacks are:
+For example:
 
- * They they use a lot of space for the stack: 8 megabytes on linux!
- * The context switching overhead can sometimes be significant.
+ * Rust has a `Mutex` class with a `lock` method which should never be used during cooperative concurrency, because it blocks the entire thread. One should instead use async_std's `Mutex` whose `lock` is `async` and therefore yields.
+ * Rust's `fs::read_to_string(filename)` will block. People should instead use `tokio::fs::File`.
 
-However, we might be able to solve that first one. If we can create an OS thread backed by **our own allocation strategy** from Vale Virtual Threads, we can get the advantages of OS threads without the high memory usage.
-
-We can use our own memory for a thread's stack, using [pthread_attr_setstacksize](https://man7.org/linux/man-pages/man3/pthread_attr_setstacksize.3.html), [pthread_attr_setstack](https://docs.oracle.com/cd/E19120-01/open.solaris/816-5137/attrib-95722/index.html) with malloc, with PTHREAD_STACK_MIN to factor into the size.
-
-Possible downsides:
-
- * It would be hard to share a pool of allocated chunks of memory between multiple threads. We might as well rely on malloc for that, as it's pretty good at managing memory across multiple threads. Though, this downside exists for Rust async as well, so it's not too unacceptable.
- * We'd need some extra stack space when calling into FFI.
-    * Perhaps we would put this work item onto some work queue, so a thread with a bigger stack can execute the FFI call?
+Vale wouldn't have this problem. Because it's colorless (see [VirtualThreads.md](VirtualThreads.md)) we can yield at any point during any function if we want to, and the entire standard library yields on all long-lived operations, such as mutex locking or reading from files or sockets.
 
 
-# Approach 2: Just Do What Tokio Does™
-
-We can have our thread (the "original thread") launch a bunch of tasks using cooperative concurrency, as described in [VirtualThreads.md](VirtualThreads.md). This can use any underlying stack-switching mechanism, such as [user-level threads](https://www.youtube.com/watch?v=KXuZi9aeGTw) if they [reach Linux](https://www.phoronix.com/scan.php?page=news_item&px=Google-User-Thread-Futex-Swap)), [cooperative user-space multitasking](https://brennan.io/2020/05/24/userspace-cooperative-multitasking/), or Go's stack-switching mechanism.
+### Time Budgets
 
 Tokio uses ["automatic cooperative task yielding"](https://tokio.rs/blog/2020-04-preemption). Basically, each task has a time budget, and if it hits a possible yield point and its time budget is used up, it will yield even if it _could_ progress.
 
-Vale is even more naturally suited to this approach because its entire standard library can conform to this scheme, not just Tokio-aware resources.
+We'll build that functionality into Vale's yielding.
 
 
-# Approach 3: Monitor Thread
+### Spawning for CPU Intensive Usage
 
-Like Approach 2, we can have our thread (the "original thread") launch a bunch of tasks using cooperative concurrency, as described in [VirtualThreads.md](VirtualThreads.md). This can use any underlying stack-switching mechanism, such as [user-level threads](https://www.youtube.com/watch?v=KXuZi9aeGTw) if they [reach Linux](https://www.phoronix.com/scan.php?page=news_item&px=Google-User-Thread-Futex-Swap)), [cooperative user-space multitasking](https://brennan.io/2020/05/24/userspace-cooperative-multitasking/), or Go's stack-switching mechanism.
+A common source of unwanted task blocking is when a task needs to do a lot of heavy CPU computation.
 
-First, note that the Vale stdlib will never block; it always yields before any blocking.
+Tokio solves this with [spawn_blocking](https://docs.rs/tokio/1.0.1/tokio/task/fn.spawn_blocking.html) which will fire up a thread for the calculations:
 
-We'll give the user some tools to make their program more well-behaved:
+```
+use tokio::task;
 
- * The user can spawn child threads for their CPU-intensive sections.
- * The user can annotate `extern` functions with `#Async` to put them on a work queue and yield until they're done.
+let res =
+    task::spawn_blocking(move || {
+        // do some compute-heavy work or call synchronous code
+        "done computing"
+    }).await?;
 
-We still need to handle "misbehaving" tasks, which do CPU intensive calculations or block in FFI. For this, we'll use a monitor thread, explained below.
+assert_eq!(res, "done computing");
+```
+
+In Vale, this would be doable with the `parallel` keyword in front of a regular `block` statement, like:
+
+```
+res =
+    parallel block {
+        // do some compute-heavy work or call synchronous code
+        "done computing"
+    }
+
+assert_eq(res, "done computing");
+```
+
+### Spawning for FFI
+
+Another common source of unwanted task blocking is when a task calls into FFI which blocks or does some heavy CPU computation.
+
+For that, we would put `parallel` in front of the FFI function's declaration:
+
+```
+parallel extern func readFile(filename str) str;
+```
+
+
+### Monitor Thread
+
+The above measures (consistently yielding ecosystem, time budgets, `parallel` blocks and FFI) solve the blocking problem for well-behaved applications.
+
+However, we might still have some _accidental_ blocking, in our code or our dependencies' code.
+
+So, when we do a `parallel foreach` loop, we'll also launch a "monitor thread".
 
 The monitor thread will periodically looks into the original thread's memory to see how long it's been running the current task.
 
@@ -86,14 +106,14 @@ When it sees that a task has been running too long, the monitor thread will:
  * Mitigate the original thread's CPU usage. See below for two possible ways to do that.
 
 
-## Approach 3A: Monitor Thread with Pinning
+#### Pinning Misbehaving Tasks
 
 To mitigate the original thread's CPU usage, the monitor thread can **pin the original thread** to a single "CPU computation" core that's shared with all other non-behaving threads like this.
 
 We then let the OS scheduler figure out the scheduling for all those CPU intensive threads.
 
 
-## Approach 3B: Monitor Thread with Suspending
+#### Suspending Misbehaving Tasks
 
 To mitigate the original thread's CPU usage, the monitor thread can **suspend the original thread** for a while.
 
@@ -107,7 +127,7 @@ On POSIX, we could send a thread signal to the original thread. Then we look up 
 The monitor thread then periodically wakes up the thread (maybe every 50ms?) for a few milliseconds so it can progress.
 
 
-## Approach 3's Drawbacks
+### Monitor Thread Drawbacks
 
 Tokio has done some [research on the topic](https://tokio.rs/blog/2020-04-preemption#a-note-on-blocking) and have concluded that monitor threads aren't a very good fit, because:
 
@@ -116,13 +136,57 @@ Tokio has done some [research on the topic](https://tokio.rs/blog/2020-04-preemp
 
 It's unclear whether CPU pinning and/or suspending will help these drawbacks.
 
+Also, if we make the monitor thread opt-in, the user can decide whether it would be appropriate for their use case. The Tokio post suggests that it would be good for coarse-grained tasks, such as ones taking 100ms or more.
 
 
-https://users.rust-lang.org/t/blocking-tasks-in-async-std/70660/13
+## OS Threads with Vale Virtual Stacks
+
+All of the above talks about using cooperative yielding. **This is an alternative, which does not use cooperative yielding.** It instead makes OS threads use less space for their stacks.
+
+TL;DR: Use the mechanism from [VirtualThreads.md](VirtualThreads.md) which expand the stack whenever there's a recursive or virtual call... _for regular OS threads._ We'll call them SmallThreads.
+
+It uses the same exact mechanism as described in [VirtualThreads.md](VirtualThreads.md). Phrased in terms of SmallThreads:
+
+ * Whenever we want to launch a SmallThread, we allocate a small stack for it with malloc (PTHREAD_STACK_MIN plus the stack space needed for the Vale function) and set it using [pthread_attr_setstacksize](https://man7.org/linux/man-pages/man3/pthread_attr_setstacksize.3.html) and [pthread_attr_setstack](https://docs.oracle.com/cd/E19120-01/open.solaris/816-5137/attrib-95722/index.html).
+ * Have a thread-local (or a context word passed down through every function) which contains a bit called `isInSmallThread`, initialize it to 1 for SmallThreads, otherwise 0.
+ * On any virtual call if `isInSmallThread` is true, and on any recursive function, we check if we need to malloc another chunk of memory for the stack.
 
 
+This solves the age-old drawback of threads, that they usually need 8mb of stack space (and at least 4kb of physical memory).
+
+Advantages:
+
+ * We can use the OS's regular scheduler which already ensures fairness between all threads. It solves the blocking problem.
+
+Possible concerns and mitigations:
+
+ * The context switching overhead is still sometimes significant, since these are regular OS threads.
+    * This _might_ be solved by [pinning threads to specific cores](https://github.com/jimblandy/context-switch): "The async advantage also goes away in our microbenchmark if the program is pinned to a single core."
+ * It takes a while to create and destroy threads.
+    * This is solvable with thread pooling.
+ * It would be hard to share a pool of allocated chunks of memory between multiple threads. We might as well rely on malloc for that, as it's pretty good at managing memory across multiple threads.
+    * This downside exists for Rust async as well, so we're at least not worse than the baseline.
+ * We'd need some extra stack space when calling into FFI.
+    * Perhaps we would put this work item onto some work queue, so a thread with a bigger stack can execute the FFI call?
+
+Either way, this can be offered as an option to the user, so they can experiment and see if this or cooperative yielding works better for them.
 
 
+## Notes
 
+### Design Constraints and Advantages
 
+There are some aspects of Vale which sometimes mean we can't do what other languages do.
+
+ * Vale code can have pointers to objects on the stack (like C/C++/Rust, and unlike GC'd languages) which means we generally can't copy stacks around like Go or Loom can.
+ * Vale aims to be extremely fast, so we might not be able to inject "safe points" into the code like Go does.
+ * Vale needs to remain 100% memory-safe.
+
+Of course, Vale has some advantages too. Knowing these might help us figure out more approaches.
+
+ * Vale is a high level language, which means we can introduce abstractions that other languages can't. For example:
+    * Generational references are generally impossible in C++ or Rust.
+    * We don't have to treat tasks and threads differently, we can decide that they're the same thing, just run differently.
+ * We can decide to not directly expose some use cases if they're too niche (and then delegate them to FFI), such as thread local storage.
+ * The region borrow checker allows us to know when something's immutable.
 

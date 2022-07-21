@@ -199,7 +199,7 @@ There is also a small binary size cost: all vtables are about twice as big, and 
 
 # Implementation Challenges
 
-The only challenge is in determining how much stack space functions need, such as the above 184 bytes in the example. This needs to be determined *after* any optimizations happen, and is dependent on the target machine (x86, ARM, etc.) which means we can't use the more vanilla LLVM APIs. Some possible leads: MachineFrameInfo, TargetFrameLowering, and [hints from rustc](https://internals.rust-lang.org/t/how-to-let-rustc-compile-functions-with-segmented-stack/16380). In theory, it's possible, but worst case it might require forking LLVM.
+The only real challenge is in determining how much stack space functions need, such as the above 184 bytes in the example. This needs to be determined *after* any optimizations happen, and is dependent on the target machine (x86, ARM, etc.) which means we can't use the more vanilla LLVM APIs. Fortunately, there's an `llc` flag which tells us just this! We just need to assemble them into constants and link them into the program.
 
 Luckily, stack switching won't be a problem, since we implemented it as part of the Fearless FFI prototype. We can also in theory reuse Go's context switching, or Google's cooperative OS thread switching mechanisms.
 
@@ -212,4 +212,6 @@ Luckily, stack switching won't be a problem, since we implemented it as part of 
 
 Dynamic linking will slow down thread-local storage ([source](http://david-grs.github.io/tls_performance_overhead_cost_linux/))
 
-[Notes](notes/VirtualThreadsNotes.md)
+[Prototype Plan](VirtualThreadsPrototype.md)
+
+[Notes](/docs/notes/VirtualThreadsNotes.md)

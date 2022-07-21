@@ -71,7 +71,7 @@ class StructDropMacro(
   FunctionA = {
     val nameS =
       if (isDrop) {
-        interner.intern(FunctionNameS(keywords.DROP_FUNCTION_NAME, structRange.begin))
+        interner.intern(FunctionNameS(keywords.drop, structRange.begin))
       } else {
         interner.intern(FreeDeclarationNameS(structRange.begin))
       }

@@ -772,15 +772,15 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
 
   def getPrecedence(str: StrI): Int = {
     if (str == keywords.DOT_DOT) 6
-    else if (str == keywords.ASTERISK || str == keywords.SLASH) 5
-    else if (str == keywords.PLUS || str == keywords.MINUS) 4
+    else if (str == keywords.asterisk || str == keywords.slash) 5
+    else if (str == keywords.plus || str == keywords.minus) 4
     // _ => 3 Everything else is 3, see end case
-    else if (str == keywords.ASTERISK || str == keywords.SLASH) 5
-    else if (str == keywords.SPACESHIP || str == keywords.LESS_THAN_OR_EQUAL ||
-      str == keywords.LESS_THAN || str == keywords.GREATER_THAN_OR_EQUAL ||
-      str == keywords.GREATER_THAN || str == keywords.TRIPLE_EQUALS ||
-      str == keywords.DOUBLE_EQUALS || str == keywords.NOT_EQUAL) 2
-    else if (str == keywords.AND || str == keywords.OR) 1
+    else if (str == keywords.asterisk || str == keywords.slash) 5
+    else if (str == keywords.spaceship || str == keywords.lessEquals ||
+      str == keywords.less || str == keywords.greaterEquals ||
+      str == keywords.greater || str == keywords.tripleEquals ||
+      str == keywords.doubleEquals || str == keywords.notEquals) 2
+    else if (str == keywords.and || str == keywords.or) 1
     else 3 // This is so we can have 3 mod 2 == 1
   }
 
@@ -846,7 +846,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
         iter.advance()
         Some(
           LookupPE(
-            LookupNameP(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.SPACESHIP)),
+            LookupNameP(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.spaceship)),
             None))
       }
       case (Some(SymbolLE(range1, c1 @ ('=' | '>' | '<' | '!'))), Some(SymbolLE(range2, c2 @ '=')), _) => {
@@ -1095,7 +1095,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
           case Some(SymbolLE(_, _)) => {
             val name =
               iter.peek3() match {
-                case (Some(SymbolLE(_, '<')), Some(SymbolLE(_, '=')), Some(SymbolLE(_, '>'))) => keywords.SPACESHIP
+                case (Some(SymbolLE(_, '<')), Some(SymbolLE(_, '=')), Some(SymbolLE(_, '>'))) => keywords.spaceship
                 case (Some(SymbolLE(_, '=')), Some(SymbolLE(_, '=')), Some(SymbolLE(_, '='))) => keywords.tripleEquals
                 case (Some(SymbolLE(_, '>')), Some(SymbolLE(_, '=')), _) => keywords.greaterEquals
                 case (Some(SymbolLE(_, '<')), Some(SymbolLE(_, '=')), _) => keywords.lessEquals
@@ -1370,7 +1370,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
     // First, get the prefixes out of the way, such as & not etc.
     // Then we'll parse the atom and suffixes (.moo, ..5, etc.) and
     // *then* wrap those in the prefixes, so we get e.g. not(x.moo)
-    if (iter.trySkipWord(keywords.NOT).nonEmpty) {
+    if (iter.trySkipWord(keywords.not).nonEmpty) {
       val innerPE =
         parseExpressionDataElement(iter, stopOnCurlied) match {
           case Err(e) => return Err(e)
@@ -1416,7 +1416,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
           }
         }
         // This is just a hack to get the syntax highlighter to highlight inl
-        case Some(WordLE(range, inl)) if inl == keywords.INL => {
+        case Some(WordLE(range, inl)) if inl == keywords.inl => {
           iter.advance()
           Some(OwnP)
         }
@@ -1749,13 +1749,13 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
 
       leftOperand =
         binaryCall.symbol.str match {
-          case s if s == keywords.AND => {
+          case s if s == keywords.and => {
             AndPE(
               RangeL(leftOperand.range.begin, leftOperand.range.end),
               leftOperand,
               BlockPE(rightOperand.range, rightOperand))
           }
-          case s if s == keywords.OR => {
+          case s if s == keywords.or => {
             OrPE(
               RangeL(leftOperand.range.begin, leftOperand.range.end),
               leftOperand,
@@ -1800,7 +1800,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
           iter.advance()
           iter.advance()
           val end = iter.getPrevEndPos()
-          NameP(RangeL(begin, end), keywords.SPACESHIP)
+          NameP(RangeL(begin, end), keywords.spaceship)
         }
         case (Some(SymbolLE(range1, s1 @ ('>' | '<' | '=' | '!'))), Some(SymbolLE(range2, '=')), _) => {
           iter.advance()

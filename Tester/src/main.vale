@@ -6,11 +6,12 @@ import stdlib.flagger.*;
 struct TestSuite {
   cwd Path;
   verbose bool;
-  valec_path str;
+  valec_path Path;
   common_build_args List<str>;
   test_filters List<str>;
   max_concurrent_tests int;
   backend_tests_dir Path;
+  stdlib_dir Path;
 
   test_instances List<TestInstance>;
   num_successes! int;
@@ -96,6 +97,12 @@ exported func main() int {
           "../Frontend",
           "Directory containing Frontend's tests."),
         Flag(
+          "--stdlib_dir",
+          FLAG_STR(),
+          "Directory containing the stdlib to use in the tests.",
+          "../Frontend",
+          "Directory containing the stdlib to use in the tests."),
+        Flag(
           "--concurrent",
           FLAG_INT(),
           "How many tests to run in parallel.",
@@ -134,6 +141,8 @@ exported func main() int {
   common_build_args.add(builtins_dir.str());
 
   valec_path = Path(parsed_flags.expect_string_flag(&flags, "--valec_path"));
+
+  stdlib_dir = Path(parsed_flags.expect_string_flag(&flags, "--stdlib_dir"));
 
   backend_tests_dir = Path(parsed_flags.expect_string_flag(&flags, "--backend_tests_dir"));
   frontend_tests_dir = Path(parsed_flags.expect_string_flag(&flags, "--frontend_tests_dir"));
@@ -179,11 +188,12 @@ exported func main() int {
       TestSuite(
           cwd,
           verbose,
-          valec_path.str(),
+          valec_path,
           common_build_args,
           test_filters,
           max_concurrent_tests,
           backend_tests_dir.clone(),
+          stdlib_dir.clone(),
           List<TestInstance>(),
           0,
           0);
@@ -192,133 +202,141 @@ exported func main() int {
 
   if (include_regions.exists({ _ == "resilient-v3" })) {
     region = "resilient-v3";
-    suite.StartReplayTest(42, 84, "simpleexternreturn", samples_path./("programs/externs/simpleexternreturn"), &List<str>(), region);
-    suite.StartReplayTest(42, 84, "simpleexternparam", samples_path./("programs/externs/simpleexternparam"), &List<str>(), region);
-    suite.StartTest(7, "addret", samples_path./("programs/addret.vale"), &List<str>(), region);
-    suite.StartTest(42, "add64ret", samples_path./("programs/add64ret.vale"), &List<str>(), region);
-    suite.StartTest(42, "comparei64", samples_path./("programs/comparei64.vale"), &List<str>(), region);
-    suite.StartTest(42, "truncate", samples_path./("programs/truncate.vale"), &List<str>(), region);
-    suite.StartTest(42, "floatarithmetic", samples_path./("programs/floatarithmetic.vale"), &List<str>(), region);
-    suite.StartTest(42, "floateq", samples_path./("programs/floateq.vale"), &List<str>(), region);
-    suite.StartTest(42, "concatstrfloat", samples_path./("programs/concatstrfloat.vale"), &List<str>(), region);
-    suite.StartTest(11, "strlenextern", samples_path./("programs/externs/strlenextern"), &List<str>(), region);
-    suite.StartTest(42, "voidreturnexport", samples_path./("programs/externs/voidreturnexport"), &List<str>(), region);
-    suite.StartReplayTest(42, 84, "structimmreturnextern", samples_path./("programs/externs/structimmreturnextern"), &List<str>(), region);
-    suite.StartReplayTest(42, 84, "structimmreturnexport", samples_path./("programs/externs/structimmreturnexport"), &List<str>(), region);
-    suite.StartReplayTest(42, 84, "structimmparamextern", samples_path./("programs/externs/structimmparamextern"), &List<str>(), region);
-    suite.StartReplayTest(42, 84, "structimmparamexport", samples_path./("programs/externs/structimmparamexport"), &List<str>(), region);
-    suite.StartReplayTest(42, 84, "structimmparamdeepextern", samples_path./("programs/externs/structimmparamdeepextern"), &List<str>(), region);
-    suite.StartReplayTest(42, 84, "structimmparamdeepexport", samples_path./("programs/externs/structimmparamdeepexport"), &List<str>(), region);
-    suite.StartTest(42, "interfaceimmparamextern", samples_path./("programs/externs/interfaceimmparamextern"), &List<str>(), region);
-    suite.StartTest(42, "interfaceimmparamexport", samples_path./("programs/externs/interfaceimmparamexport"), &List<str>(), region);
-    suite.StartTest(42, "interfaceimmparamdeepextern", samples_path./("programs/externs/interfaceimmparamdeepextern"), &List<str>(), region);
-    suite.StartTest(42, "interfaceimmparamdeepexport", samples_path./("programs/externs/interfaceimmparamdeepexport"), &List<str>(), region);
-    suite.StartTest(42, "interfaceimmreturnextern", samples_path./("programs/externs/interfaceimmreturnextern"), &List<str>(), region);
-    suite.StartTest(42, "interfaceimmreturnexport", samples_path./("programs/externs/interfaceimmreturnexport"), &List<str>(), region);
-    suite.StartReplayTest(42, 84, "rsaimmreturnextern", samples_path./("programs/externs/rsaimmreturnextern"), &List<str>(), region);
-    suite.StartTest(42, "rsaimmreturnexport", samples_path./("programs/externs/rsaimmreturnexport"), &List<str>(), region);
-    suite.StartReplayTest(10, 20, "rsaimmparamextern", samples_path./("programs/externs/rsaimmparamextern"), &List<str>(), region);
-    suite.StartReplayTest(10, 20, "rsaimmparamexport", samples_path./("programs/externs/rsaimmparamexport"), &List<str>(), region);
-    suite.StartReplayTest(20, 40, "rsaimmparamdeepextern", samples_path./("programs/externs/rsaimmparamdeepextern"), &List<str>(), region);
-    suite.StartReplayTest(42, 84, "rsaimmparamdeepexport", samples_path./("programs/externs/rsaimmparamdeepexport"), &List<str>(), region);
-    suite.StartReplayTest(42, 84, "ssaimmparamextern", samples_path./("programs/externs/ssaimmparamextern"), &List<str>(), region);
-    suite.StartReplayTest(42, 84, "ssaimmparamexport", samples_path./("programs/externs/ssaimmparamexport"), &List<str>(), region);
-    suite.StartReplayTest(42, 84, "ssaimmreturnextern", samples_path./("programs/externs/ssaimmreturnextern"), &List<str>(), region);
-    suite.StartTest(42, "ssaimmreturnexport", samples_path./("programs/externs/ssaimmreturnexport"), &List<str>(), region);
-    suite.StartReplayTest(42, 84, "ssaimmparamdeepextern", samples_path./("programs/externs/ssaimmparamdeepextern"), &List<str>(), region);
-    suite.StartReplayTest(42, 84, "ssaimmparamdeepexport", samples_path./("programs/externs/ssaimmparamdeepexport"), &List<str>(), region);
-    suite.StartTest(6, "strreturnexport", samples_path./("programs/externs/strreturnexport"), &List<str>(), region);
-    suite.StartTest(42, "smallstr", samples_path./("programs/strings/smallstr.vale"), &List<str>(), region);
-    suite.StartTest(42, "immtupleaccess", samples_path./("programs/tuples/immtupleaccess.vale"), &List<str>(), region);
-    suite.StartTest(42, "ssaimmfromcallable", samples_path./("programs/arrays/ssaimmfromcallable.vale"), &List<str>(), region);
-    suite.StartTest(42, "ssaimmfromvalues", samples_path./("programs/arrays/ssaimmfromvalues.vale"), &List<str>(), region);
+    suite.StartReplayTest(42, 84, "simpleexternreturn", samples_path./("programs/externs/simpleexternreturn"), &List<str>(), region, false);
+    suite.StartReplayTest(42, 84, "simpleexternparam", samples_path./("programs/externs/simpleexternparam"), &List<str>(), region, false);
+    suite.StartTest(7, "addret", samples_path./("programs/addret.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "add64ret", samples_path./("programs/add64ret.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "comparei64", samples_path./("programs/comparei64.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "truncate", samples_path./("programs/truncate.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "floatarithmetic", samples_path./("programs/floatarithmetic.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "floateq", samples_path./("programs/floateq.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "concatstrfloat", samples_path./("programs/concatstrfloat.vale"), &List<str>(), region, false);
+    suite.StartTest(11, "strlenextern", samples_path./("programs/externs/strlenextern"), &List<str>(), region, false);
+    suite.StartTest(42, "voidreturnexport", samples_path./("programs/externs/voidreturnexport"), &List<str>(), region, false);
+    suite.StartReplayTest(42, 84, "structimmreturnextern", samples_path./("programs/externs/structimmreturnextern"), &List<str>(), region, false);
+    suite.StartReplayTest(42, 84, "structimmreturnexport", samples_path./("programs/externs/structimmreturnexport"), &List<str>(), region, false);
+    suite.StartReplayTest(42, 84, "structimmparamextern", samples_path./("programs/externs/structimmparamextern"), &List<str>(), region, false);
+    suite.StartReplayTest(42, 84, "structimmparamexport", samples_path./("programs/externs/structimmparamexport"), &List<str>(), region, false);
+    suite.StartReplayTest(42, 84, "structimmparamdeepextern", samples_path./("programs/externs/structimmparamdeepextern"), &List<str>(), region, false);
+    suite.StartReplayTest(42, 84, "structimmparamdeepexport", samples_path./("programs/externs/structimmparamdeepexport"), &List<str>(), region, false);
+    suite.StartTest(42, "interfaceimmparamextern", samples_path./("programs/externs/interfaceimmparamextern"), &List<str>(), region, false);
+    suite.StartTest(42, "interfaceimmparamexport", samples_path./("programs/externs/interfaceimmparamexport"), &List<str>(), region, false);
+    suite.StartTest(42, "interfaceimmparamdeepextern", samples_path./("programs/externs/interfaceimmparamdeepextern"), &List<str>(), region, false);
+    suite.StartTest(42, "interfaceimmparamdeepexport", samples_path./("programs/externs/interfaceimmparamdeepexport"), &List<str>(), region, false);
+    suite.StartTest(42, "interfaceimmreturnextern", samples_path./("programs/externs/interfaceimmreturnextern"), &List<str>(), region, false);
+    suite.StartTest(42, "interfaceimmreturnexport", samples_path./("programs/externs/interfaceimmreturnexport"), &List<str>(), region, false);
+    suite.StartReplayTest(42, 84, "rsaimmreturnextern", samples_path./("programs/externs/rsaimmreturnextern"), &List<str>(), region, false);
+    suite.StartTest(42, "rsaimmreturnexport", samples_path./("programs/externs/rsaimmreturnexport"), &List<str>(), region, false);
+    suite.StartReplayTest(10, 20, "rsaimmparamextern", samples_path./("programs/externs/rsaimmparamextern"), &List<str>(), region, false);
+    suite.StartReplayTest(10, 20, "rsaimmparamexport", samples_path./("programs/externs/rsaimmparamexport"), &List<str>(), region, false);
+    suite.StartReplayTest(20, 40, "rsaimmparamdeepextern", samples_path./("programs/externs/rsaimmparamdeepextern"), &List<str>(), region, false);
+    suite.StartReplayTest(42, 84, "rsaimmparamdeepexport", samples_path./("programs/externs/rsaimmparamdeepexport"), &List<str>(), region, false);
+    suite.StartReplayTest(42, 84, "ssaimmparamextern", samples_path./("programs/externs/ssaimmparamextern"), &List<str>(), region, false);
+    suite.StartReplayTest(42, 84, "ssaimmparamexport", samples_path./("programs/externs/ssaimmparamexport"), &List<str>(), region, false);
+    suite.StartReplayTest(42, 84, "ssaimmreturnextern", samples_path./("programs/externs/ssaimmreturnextern"), &List<str>(), region, false);
+    suite.StartTest(42, "ssaimmreturnexport", samples_path./("programs/externs/ssaimmreturnexport"), &List<str>(), region, false);
+    suite.StartReplayTest(42, 84, "ssaimmparamdeepextern", samples_path./("programs/externs/ssaimmparamdeepextern"), &List<str>(), region, false);
+    suite.StartReplayTest(42, 84, "ssaimmparamdeepexport", samples_path./("programs/externs/ssaimmparamdeepexport"), &List<str>(), region, false);
+    suite.StartTest(6, "strreturnexport", samples_path./("programs/externs/strreturnexport"), &List<str>(), region, false);
+    suite.StartTest(42, "smallstr", samples_path./("programs/strings/smallstr.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "immtupleaccess", samples_path./("programs/tuples/immtupleaccess.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "ssaimmfromcallable", samples_path./("programs/arrays/ssaimmfromcallable.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "ssaimmfromvalues", samples_path./("programs/arrays/ssaimmfromvalues.vale"), &List<str>(), region, false);
   }
 
   if (include_regions.exists({ _ == "assist" })) {
     region = "assist";
-    suite.StartTest(42, "weakDropThenLockStruct", samples_path./("programs/weaks/dropThenLockStruct.vale"), &List<str>(), region);
-    suite.StartTest(7, "weakLockWhileLiveStruct", samples_path./("programs/weaks/lockWhileLiveStruct.vale"), &List<str>(), region);
-    suite.StartTest(7, "weakFromLocalCRefStruct", samples_path./("programs/weaks/weakFromLocalCRefStruct.vale"), &List<str>(), region);
-    suite.StartTest(7, "weakFromCRefStruct", samples_path./("programs/weaks/weakFromCRefStruct.vale"), &List<str>(), region);
-    suite.StartTest(7, "loadFromWeakable", samples_path./("programs/weaks/loadFromWeakable.vale"), &List<str>(), region);
-    suite.StartTest(42, "weakDropThenLockInterface", samples_path./("programs/weaks/dropThenLockInterface.vale"), &List<str>(), region);
-    suite.StartTest(7, "weakLockWhileLiveInterface", samples_path./("programs/weaks/lockWhileLiveInterface.vale"), &List<str>(), region);
-    suite.StartTest(7, "weakFromLocalCRefInterface", samples_path./("programs/weaks/weakFromLocalCRefInterface.vale"), &List<str>(), region);
-    suite.StartTest(7, "weakFromCRefInterface", samples_path./("programs/weaks/weakFromCRefInterface.vale"), &List<str>(), region);
-    suite.StartTest(42, "weakSelfMethodCallWhileLive", samples_path./("programs/weaks/callWeakSelfMethodWhileLive.vale"), &List<str>(), region);
-    suite.StartTest(42, "weakSelfMethodCallAfterDrop", samples_path./("programs/weaks/callWeakSelfMethodAfterDrop.vale"), &List<str>(), region);
+    suite.StartTest(42, "weakDropThenLockStruct", samples_path./("programs/weaks/dropThenLockStruct.vale"), &List<str>(), region, false);
+    suite.StartTest(7, "weakLockWhileLiveStruct", samples_path./("programs/weaks/lockWhileLiveStruct.vale"), &List<str>(), region, false);
+    suite.StartTest(7, "weakFromLocalCRefStruct", samples_path./("programs/weaks/weakFromLocalCRefStruct.vale"), &List<str>(), region, false);
+    suite.StartTest(7, "weakFromCRefStruct", samples_path./("programs/weaks/weakFromCRefStruct.vale"), &List<str>(), region, false);
+    suite.StartTest(7, "loadFromWeakable", samples_path./("programs/weaks/loadFromWeakable.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "weakDropThenLockInterface", samples_path./("programs/weaks/dropThenLockInterface.vale"), &List<str>(), region, false);
+    suite.StartTest(7, "weakLockWhileLiveInterface", samples_path./("programs/weaks/lockWhileLiveInterface.vale"), &List<str>(), region, false);
+    suite.StartTest(7, "weakFromLocalCRefInterface", samples_path./("programs/weaks/weakFromLocalCRefInterface.vale"), &List<str>(), region, false);
+    suite.StartTest(7, "weakFromCRefInterface", samples_path./("programs/weaks/weakFromCRefInterface.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "weakSelfMethodCallWhileLive", samples_path./("programs/weaks/callWeakSelfMethodWhileLive.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "weakSelfMethodCallAfterDrop", samples_path./("programs/weaks/callWeakSelfMethodAfterDrop.vale"), &List<str>(), region, false);
   }
 
   if (include_regions.exists({ _ == "resilient-v3" })) {
     region = "resilient-v3";
-    suite.StartTest(116, "kldc", samples_path./("programs/structs/deadmutstruct.vale"), &List([#]["--override_known_live_true", "true"]), region);
+    suite.StartTest(116, "kldc", samples_path./("programs/structs/deadmutstruct.vale"), &List([#]["--override_known_live_true", "true"]), region, false);
   }
 
   if (include_regions.exists({ _ == "resilient-v4" })) {
     region = "resilient-v4";
-    suite.StartTest(14, "tethercrash", backend_tests_dir./("tethercrash.vale"), &List<str>(), region);
+    suite.StartTest(14, "tethercrash", backend_tests_dir./("tethercrash.vale"), &List<str>(), region, false);
   }
 
   include_regions.each((region) => {
-    suite.StartTest(42, "mutswaplocals", samples_path./("programs/mutswaplocals.vale"), &List<str>(), region);
-    suite.StartTest(5, "structimm", samples_path./("programs/structs/structimm.vale"), &List<str>(), region);
-    suite.StartTest(5, "memberrefcount", samples_path./("programs/structs/memberrefcount.vale"), &List<str>(), region);
-    suite.StartTest(42, "bigstructimm", samples_path./("programs/structs/bigstructimm.vale"), &List<str>(), region);
-    suite.StartTest(8, "structmut", samples_path./("programs/structs/structmut.vale"), &List<str>(), region);
-    suite.StartTest(42, "lambda", samples_path./("programs/lambdas/lambda.vale"), &List<str>(), region);
-    suite.StartTest(42, "if", samples_path./("programs/if/if.vale"), &List<str>(), region);
-    suite.StartTest(42, "upcastif", samples_path./("programs/if/upcastif.vale"), &List<str>(), region);
-    suite.StartTest(42, "ifnevers", samples_path./("programs/if/ifnevers.vale"), &List<str>(), region);
-    suite.StartTest(42, "mutlocal", samples_path./("programs/mutlocal.vale"), &List<str>(), region);
-    suite.StartTest(42, "while", samples_path./("programs/while/while.vale"), &List<str>(), region);
-    suite.StartTest(45, "foreach", samples_path./("programs/while/foreach.vale"), &List<str>(), region);
-    suite.StartTest(8, "constraintRef", samples_path./("programs/constraintRef.vale"), &List<str>(), region);
-    suite.StartTest(42, "ssamutfromcallable", samples_path./("programs/arrays/ssamutfromcallable.vale"), &List<str>(), region);
-    suite.StartTest(42, "ssamutfromvalues", samples_path./("programs/arrays/ssamutfromvalues.vale"), &List<str>(), region);
-    suite.StartTest(42, "interfaceimm", samples_path./("programs/virtuals/interfaceimm.vale"), &List<str>(), region);
-    suite.StartTest(42, "interfacemut", samples_path./("programs/virtuals/interfacemut.vale"), &List<str>(), region);
-    suite.StartTest(42, "structmutstore", samples_path./("programs/structs/structmutstore.vale"), &List<str>(), region);
-    suite.StartTest(42, "structmutstoreinner", samples_path./("programs/structs/structmutstoreinner.vale"), &List<str>(), region);
-    suite.StartTest(3, "rsaimm", samples_path./("programs/arrays/rsaimm.vale"), &List<str>(), region);
-    suite.StartTest(3, "rsamut", samples_path./("programs/arrays/rsamut.vale"), &List<str>(), region);
-    suite.StartTest(42, "rsamutdestroyintocallable", samples_path./("programs/arrays/rsamutdestroyintocallable.vale"), &List<str>(), region);
-    suite.StartTest(42, "ssamutdestroyintocallable", samples_path./("programs/arrays/ssamutdestroyintocallable.vale"), &List<str>(), region);
-    suite.StartTest(5, "rsamutlen", samples_path./("programs/arrays/rsamutlen.vale"), &List<str>(), region);
-    suite.StartTest(42, "rsamutcapacity", samples_path./("programs/arrays/rsamutcapacity.vale"), &List<str>(), region);
-    suite.StartTest(42, "stradd", samples_path./("programs/strings/stradd.vale"), &List<str>(), region);
-    suite.StartTest(42, "strneq", samples_path./("programs/strings/strneq.vale"), &List<str>(), region);
-    suite.StartTest(42, "lambdamut", samples_path./("programs/lambdas/lambdamut.vale"), &List<str>(), region);
-    suite.StartTest(42, "strprint", samples_path./("programs/strings/strprint.vale"), &List<str>(), region);
-    suite.StartTest(4, "inttostr", samples_path./("programs/strings/inttostr.vale"), &List<str>(), region);
-    suite.StartTest(4, "i64tostr", samples_path./("programs/strings/i64tostr.vale"), &List<str>(), region);
-    suite.StartTest(42, "nestedif", samples_path./("programs/if/nestedif.vale"), &List<str>(), region);
-    suite.StartTest(42, "unstackifyret", samples_path./("programs/unstackifyret.vale"), &List<str>(), region);
-    suite.StartTest(42, "swaprsamutdestroy", samples_path./("programs/arrays/swaprsamutdestroy.vale"), &List<str>(), region);
-    suite.StartTest(42, "downcastBorrowSuccessful", samples_path./("programs/downcast/downcastBorrowSuccessful.vale"), &List<str>(), region);
-    suite.StartTest(42, "downcastBorrowFailed", samples_path./("programs/downcast/downcastBorrowFailed.vale"), &List<str>(), region);
-    suite.StartTest(42, "downcastOwningSuccessful", samples_path./("programs/downcast/downcastOwningSuccessful.vale"), &List<str>(), region);
-    suite.StartTest(42, "downcastOwningFailed", samples_path./("programs/downcast/downcastOwningFailed.vale"), &List<str>(), region);
-    suite.StartTest(42, "unreachablemoot", samples_path./("programs/unreachablemoot.vale"), &List<str>(), region);
-    suite.StartTest(1, "panic", samples_path./("programs/panic.vale"), &List<str>(), region);
-    suite.StartTest(42, "panicnot", samples_path./("programs/panicnot.vale"), &List<str>(), region);
-    suite.StartTest(42, "nestedblocks", samples_path./("programs/nestedblocks.vale"), &List<str>(), region);
+    suite.StartTest(42, "mutswaplocals", samples_path./("programs/mutswaplocals.vale"), &List<str>(), region, false);
+    suite.StartTest(5, "structimm", samples_path./("programs/structs/structimm.vale"), &List<str>(), region, false);
+    suite.StartTest(5, "memberrefcount", samples_path./("programs/structs/memberrefcount.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "bigstructimm", samples_path./("programs/structs/bigstructimm.vale"), &List<str>(), region, false);
+    suite.StartTest(8, "structmut", samples_path./("programs/structs/structmut.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "lambda", samples_path./("programs/lambdas/lambda.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "if", samples_path./("programs/if/if.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "upcastif", samples_path./("programs/if/upcastif.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "ifnevers", samples_path./("programs/if/ifnevers.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "mutlocal", samples_path./("programs/mutlocal.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "while", samples_path./("programs/while/while.vale"), &List<str>(), region, false);
+    suite.StartTest(45, "foreach", samples_path./("programs/while/foreach.vale"), &List<str>(), region, false);
+    suite.StartTest(8, "constraintRef", samples_path./("programs/constraintRef.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "ssamutfromcallable", samples_path./("programs/arrays/ssamutfromcallable.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "ssamutfromvalues", samples_path./("programs/arrays/ssamutfromvalues.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "interfaceimm", samples_path./("programs/virtuals/interfaceimm.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "interfacemut", samples_path./("programs/virtuals/interfacemut.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "structmutstore", samples_path./("programs/structs/structmutstore.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "structmutstoreinner", samples_path./("programs/structs/structmutstoreinner.vale"), &List<str>(), region, false);
+    suite.StartTest(3, "rsaimm", samples_path./("programs/arrays/rsaimm.vale"), &List<str>(), region, false);
+    suite.StartTest(3, "rsamut", samples_path./("programs/arrays/rsamut.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "rsamutdestroyintocallable", samples_path./("programs/arrays/rsamutdestroyintocallable.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "ssamutdestroyintocallable", samples_path./("programs/arrays/ssamutdestroyintocallable.vale"), &List<str>(), region, false);
+    suite.StartTest(5, "rsamutlen", samples_path./("programs/arrays/rsamutlen.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "rsamutcapacity", samples_path./("programs/arrays/rsamutcapacity.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "stradd", samples_path./("programs/strings/stradd.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "strneq", samples_path./("programs/strings/strneq.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "lambdamut", samples_path./("programs/lambdas/lambdamut.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "strprint", samples_path./("programs/strings/strprint.vale"), &List<str>(), region, false);
+    suite.StartTest(4, "inttostr", samples_path./("programs/strings/inttostr.vale"), &List<str>(), region, false);
+    suite.StartTest(4, "i64tostr", samples_path./("programs/strings/i64tostr.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "nestedif", samples_path./("programs/if/nestedif.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "unstackifyret", samples_path./("programs/unstackifyret.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "swaprsamutdestroy", samples_path./("programs/arrays/swaprsamutdestroy.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "downcastBorrowSuccessful", samples_path./("programs/downcast/downcastBorrowSuccessful.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "downcastBorrowFailed", samples_path./("programs/downcast/downcastBorrowFailed.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "downcastOwningSuccessful", samples_path./("programs/downcast/downcastOwningSuccessful.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "downcastOwningFailed", samples_path./("programs/downcast/downcastOwningFailed.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "unreachablemoot", samples_path./("programs/unreachablemoot.vale"), &List<str>(), region, false);
+    suite.StartTest(1, "panic", samples_path./("programs/panic.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "panicnot", samples_path./("programs/panicnot.vale"), &List<str>(), region, false);
+    suite.StartTest(42, "nestedblocks", samples_path./("programs/nestedblocks.vale"), &List<str>(), region, false);
     
     if (region != "naive-rc") {
-      suite.StartTest(42, "interfacemutreturnexport", samples_path./("programs/externs/interfacemutreturnexport"), &List<str>(), region);
-      suite.StartTest(42, "interfacemutparamexport", samples_path./("programs/externs/interfacemutparamexport"), &List<str>(), region);
-      suite.StartTest(42, "structmutreturnexport", samples_path./("programs/externs/structmutreturnexport"), &List<str>(), region);
-      suite.StartTest(42, "structmutparamexport", samples_path./("programs/externs/structmutparamexport"), &List<str>(), region);
-      suite.StartTest(42, "structmutparamdeepexport", samples_path./("programs/externs/structmutparamdeepexport"), &List<str>(), region);
-      suite.StartTest(10, "rsamutparamexport", samples_path./("programs/externs/rsamutparamexport"), &List<str>(), region);
-      suite.StartTest(42, "rsamutreturnexport", samples_path./("programs/externs/rsamutreturnexport"), &List<str>(), region);
-      suite.StartTest(10, "ssamutparamexport", samples_path./("programs/externs/ssamutparamexport"), &List<str>(), region);
-      suite.StartTest(42, "ssamutreturnexport", samples_path./("programs/externs/ssamutreturnexport"), &List<str>(), region);
+      suite.StartTest(42, "interfacemutreturnexport", samples_path./("programs/externs/interfacemutreturnexport"), &List<str>(), region, false);
+      suite.StartTest(42, "interfacemutparamexport", samples_path./("programs/externs/interfacemutparamexport"), &List<str>(), region, false);
+      suite.StartTest(42, "structmutreturnexport", samples_path./("programs/externs/structmutreturnexport"), &List<str>(), region, false);
+      suite.StartTest(42, "structmutparamexport", samples_path./("programs/externs/structmutparamexport"), &List<str>(), region, false);
+      suite.StartTest(42, "structmutparamdeepexport", samples_path./("programs/externs/structmutparamdeepexport"), &List<str>(), region, false);
+      suite.StartTest(10, "rsamutparamexport", samples_path./("programs/externs/rsamutparamexport"), &List<str>(), region, false);
+      suite.StartTest(42, "rsamutreturnexport", samples_path./("programs/externs/rsamutreturnexport"), &List<str>(), region, false);
+      suite.StartTest(10, "ssamutparamexport", samples_path./("programs/externs/ssamutparamexport"), &List<str>(), region, false);
+      suite.StartTest(42, "ssamutreturnexport", samples_path./("programs/externs/ssamutreturnexport"), &List<str>(), region, false);
     }
   });
 
   if (include_regions.exists({ _ == "resilient-v3" }) or include_regions.exists({ _ == "resilient-v4" })) {
     // suite.StartCTest("twinpages", &backend_tests_dir./("twinpages/test.c"), List([]["noattemptbadwrite"]), "resilient-v3");
   }
+
+
+  if (include_regions.exists({ _ == "resilient-v3" })) {
+    region = "resilient-v3";
+    suite.StartTest(0, "stdlib_list", stdlib_dir./("src/collections/list/test"), &List<str>(), region, true);
+    suite.StartTest(0, "stdlib_hashmap", stdlib_dir./("src/collections/hashmap/test"), &List<str>(), region, true);
+  }
+
 
   suite.FinishTests(0);
 
@@ -453,7 +471,8 @@ func StartBuild(
     vale_code_path Path,
     extra_build_flags &List<str>,
     test_build_dir &Path,
-    region str)
+    region str,
+    include_stdlib bool)
 Subprocess {
   println("Starting {test_name}, region {region}...");
 
@@ -475,8 +494,14 @@ Subprocess {
   //build_args.add("true");
   //build_args.add("--enable_side_calling");
   //build_args.add("true");
+
+  // Never include the stdlib that came with the bootstrapping compiler.
   build_args.add("--no_std");
   build_args.add("true");
+  // If we want a stdlib, we use the one that's at HEAD, in this repo.
+  if include_stdlib {
+    build_args.add("stdlib=" + suite.stdlib_dir./("src").str());
+  }
 
   extra_build_flags.each((flag) => {
     build_args.add(flag);
@@ -488,7 +513,7 @@ Subprocess {
 
   build_process =
       SubprocessBuilder()
-      .WithProgram(suite.valec_path)
+      .WithProgram(suite.valec_path.str())
       .WithArgs(&build_args)
       .Build()
       .expect();
@@ -504,7 +529,8 @@ func StartTest(
     test_name str,
     vale_input Path,
     extra_build_flags &List<str>,
-    region str) {
+    region str,
+    include_stdlib bool) {
   if (suite.verbose) {
     println("Considering test {test_name}...");
   }
@@ -515,7 +541,7 @@ func StartTest(
     test_build_dir = suite.cwd./("testbuild/{test_name}_{region}");
     build_process =
         suite.StartBuild(
-            test_name, vale_input, &extra_build_flags, &test_build_dir, region);
+            test_name, vale_input, &extra_build_flags, &test_build_dir, region, include_stdlib);
     suite.test_instances.add(
         TestInstance(
             test_name, region, test_build_dir, build_process, List<Step>().add(Step(List<str>(), expected_return_code))));
@@ -531,7 +557,8 @@ func StartReplayTest(
     test_name str,
     vale_input Path,
     specific_extra_build_flags &List<str>,
-    region str) {
+    region str,
+    include_stdlib bool) {
   if (suite.verbose) {
     println("Considering test {test_name}...");
   }
@@ -549,7 +576,7 @@ func StartReplayTest(
     test_build_dir = suite.cwd./("testbuild/{test_name}_{region}");
     build_process =
         suite.StartBuild(
-            test_name, vale_input, &extra_build_flags, &test_build_dir, region);
+            test_name, vale_input, &extra_build_flags, &test_build_dir, region, include_stdlib);
     suite.test_instances.add(
         TestInstance(
             test_name,

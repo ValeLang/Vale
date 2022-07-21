@@ -335,6 +335,7 @@ exported func main() int {
     region = "resilient-v3";
     suite.StartTest(0, "stdlib_list", stdlib_dir./("src/collections/list/test"), &List<str>(), region, true);
     suite.StartTest(0, "stdlib_hashmap", stdlib_dir./("src/collections/hashmap/test"), &List<str>(), region, true);
+    suite.StartTest(0, "stdlib_random", stdlib_dir./("src/random/test"), &List<str>(), region, true);
   }
 
 

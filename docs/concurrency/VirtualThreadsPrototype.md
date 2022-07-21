@@ -23,13 +23,17 @@ This won't involve modifying any compilers. If it works, this will later be adde
 This project would be divided into six steps:
 
  1. Implement a sample program using async/await and regular OS threads, in Rust or Zig
- 1. Implement cooperative yielding
  1. Calculate stack size
  1. Implement a sample program simulating Vale virtual threads
  1. Benchmark
  1. Write paper!
 
-**Total estimate:** 69-183 hours if plan A `llc` goes well, otherwise 69-318 hours.
+**Total estimate:**
+
+ * **63-96 hours** for the entire project if stack-size plan A goes well.
+ * If we need to use stack-size plan B, add 30-45 hours, total 93-141 hours.
+ * If we need to use stack-size plan C, add 15-90 hours, total 108-231 hours.
+ * Optionally add 9-90 hours to use cooperative yielding to compete with async/await.
 
 Each step has estimates below.
 
@@ -53,18 +57,8 @@ Then, we'll make another version of the program that uses OS threads and blockin
 
 **Estimate:** 6 hours, perhaps 12.
 
-## Step 2: Implement sample program with cooperative yielding
 
-Now, we'll use the technique described in [User-space Cooperative Multitasking](https://brennan.io/2020/05/24/userspace-cooperative-multitasking/) to implement cooperative user-space threads.
-
-The hard part (stack switching) is actually already provided in [yielding.c](yielding.c). We'd just need to make it work for the sample program.
-
-**Estimate:** 9 hours in theory, but possibly up to 90 if there are mysterious bugs.
-
-This program allocates 8mb for the stack space. It could be much better if we knew exactly how much to allocate. Luckily, that's what the next step figures out!
-
-
-## Step 3: Calculating Stack Size
+## Step 2: Calculating Stack Size
 
 To make this work, we need to know how much stack space a function will use.
 
@@ -198,19 +192,20 @@ We could compile Vale code to a static library, and then open it up and inspect 
 **Estimate:** Not sure. 15 hours if consulting with someone experienced with x86, otherwise 90 hours.
 
 
-## Step 4: Implement a sample program simulating Vale virtual threads
+## Step 3: Implement a sample program simulating Vale virtual threads
 
 We'll make some adjustments to the sample program.
 
  1. If in Rust, stop using trait objects and instead do the dynamic dispatch manually, using an array of function pointers (a very common tactic in C).
  2. Make wrapper functions for all the override functions, like described in [VirtualThreads.md](VirtualThreads.md). Each wrapper function should malloc a new chunk of stack, according to the stack space we figured out in step 3.
  3. Pass a `int64_t isConcurrent` as the first argument of every function. In main, pass in a 1 for this. This should make it call our wrapper functions.
+ 4. When creating the thread, use [pthread_attr_setstacksize](https://man7.org/linux/man-pages/man3/pthread_attr_setstacksize.3.html), [pthread_attr_setstack](https://docs.oracle.com/cd/E19120-01/open.solaris/816-5137/attrib-95722/index.html), malloc, and PTHREAD_STACK_MIN, to initialize a stack with the correct size.
 
 
-**Estimate:** 15 hours to understand and implement, perhaps 30.
+**Estimate:** 18 hours to understand and implement, perhaps 33.
 
 
-## Step 5: Benchmark
+## Step 4: Benchmark
 
 Run our program and see how it compares to async/await and OS threads.
 
@@ -220,8 +215,22 @@ Prediction: Should be almost as good as async/await, and much better than OS thr
 **Estimate:** 3 hours.
 
 
-## Step 6: Write paper!
+## Step 5: Write paper!
 
 Write a glorious paper!
 
 **Estimate:** 30 hours.
+
+
+## (Optional) Step 6: Implement sample program with cooperative yielding
+
+Now, we'll use the technique described in [User-space Cooperative Multitasking](https://brennan.io/2020/05/24/userspace-cooperative-multitasking/) to implement cooperative user-space threads.
+
+The hard part (stack switching) is actually already provided in [yielding.c](yielding.c). We'd just need to make it work for the sample program.
+
+**Estimate:** 9 hours in theory, but possibly up to 90 if there are mysterious bugs.
+
+This program allocates 8mb for the stack space. It could be much better if we knew exactly how much to allocate. Luckily, that's what the next step figures out!
+
+
+

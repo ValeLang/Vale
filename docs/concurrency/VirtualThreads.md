@@ -6,7 +6,7 @@ There are a lot of existing approaches for concurrency, with plenty of benefits 
  * Zig's colorless async/await: Compact, easy, but doubles binary sizes, and can't work with recursion or through interfaces (not that Zig has interfaces).
  * Goroutines w/ stack copying: Compact, easy, but requires GC.
  * Goroutines w/ segmented stacks: Easy, but can have mysterious heap churning in loops.
- * Google's cooperative OS threads: Easy, but each thread wastes a lot of address space (8mb) and physical memory (~2kb avg).
+ * Google's [cooperative OS threads](https://www.youtube.com/watch?v=KXuZi9aeGTw&ab_channel=LinuxPlumbersConference): Easy, but each thread wastes a lot of address space (8mb) and physical memory (~2kb avg) (+ in [Linux](https://www.phoronix.com/scan.php?page=news_item&px=Google-User-Thread-Futex-Swap). (Thank you [Shnatsel](https://www.reddit.com/r/rust/comments/kjz7w7/comment/ggzp8wk/?utm_source=reddit&utm_medium=web2x&context=3)!)
  * Actors: Compact, but must program without a stack, similar to making a state machine like in days of yore.
  * Loom: Compact, easy, but requires GC. Also does a little more copying than goroutines. ([source](https://youtu.be/NV46KFV1m-4))
 

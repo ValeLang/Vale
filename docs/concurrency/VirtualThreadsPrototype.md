@@ -197,7 +197,7 @@ We could compile Vale code to a static library, and then open it up and inspect 
 We'll make some adjustments to the sample program.
 
  1. If in Rust, stop using trait objects and instead do the dynamic dispatch manually, using an array of function pointers (a very common tactic in C).
- 2. Make wrapper functions for all the override functions, like described in [VirtualThreads.md](VirtualThreads.md). Each wrapper function should malloc a new chunk of stack, according to the stack space we figured out in step 3.
+ 2. Make wrapper functions for all the override functions, like described in [VirtualThreads.md](VirtualThreads.md). Each wrapper function should malloc a new chunk of stack, according to the stack space we figured out in step 3, and then switch to it using the code in [yielding.c](yielding.c).
  3. Pass a `int64_t isConcurrent` as the first argument of every function. In main, pass in a 1 for this. This should make it call our wrapper functions.
  4. When creating the thread, use [pthread_attr_setstacksize](https://man7.org/linux/man-pages/man3/pthread_attr_setstacksize.3.html), [pthread_attr_setstack](https://docs.oracle.com/cd/E19120-01/open.solaris/816-5137/attrib-95722/index.html), malloc, and PTHREAD_STACK_MIN, to initialize a stack with the correct size.
 
@@ -226,7 +226,7 @@ Write a glorious paper!
 
 Now, we'll use the technique described in [User-space Cooperative Multitasking](https://brennan.io/2020/05/24/userspace-cooperative-multitasking/) to implement cooperative user-space threads.
 
-The hard part (stack switching) is actually already provided in [yielding.c](yielding.c). We'd just need to make it work for the sample program.
+The hard part (stack switching) is actually already provided in [yielding.c](yielding.c). We'd just need to make a primitive scheduler that uses it for the sample program.
 
 **Estimate:** 9 hours in theory, but possibly up to 90 if there are mysterious bugs.
 

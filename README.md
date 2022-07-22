@@ -44,7 +44,10 @@ For an overview of the project structure, see [Compiler Overview](compiler-overv
 # Thank you to all of our sponsors!
 
  * [Arthur Weagel](https://github.com/aweagel)
+ * [Geomitron](https://github.com/Geomitron)
+ * [Chiuzon](https://github.com/chiuzon)
  * [Joseph Jaoudi (linkmonitor)](https://github.com/linkmonitor)
+ * [Luke Puchner-Hardman (lupuchard)](https://github.com/lupuchard)
  * [Jonathan Zielinski (tootoobeepbeep)](https://github.com/tootoobeepbeep)
  * [Tim Stack (tstack)](https://github.com/tstack)
  * [Alon Zakai (kripken)](https://github.com/kripken)
@@ -52,12 +55,6 @@ For an overview of the project structure, see [Compiler Overview](compiler-overv
  * [Sergey Davidoff (schnatsel)](https://github.com/Shnatsel)
  * [Ian (linuxy)](https://github.com/linuxy)
  * [Ivo Balbaert](https://github.com/Ivo-Balbaert/)
- * [Kevin Navero](https://github.com/solstice333/)
- * Ilya Seletsky
- * Jean Juang
- * [Posnet](https://github.com/Posnet)
- * Kim Shook
- * [Steve Phillips](https://github.com/elimisteve)
 
 
 # Notes

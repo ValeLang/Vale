@@ -172,6 +172,28 @@ Possible concerns and mitigations:
 Either way, this can be offered as an option to the user, so they can experiment and see if this or cooperative yielding works better for them.
 
 
+## Comparison
+
+There are three approaches listed above:
+
+ * Cooperative yielding, which includes consistently yielding ecosystem, time budgets, `parallel` blocks and FFI.
+ * Cooperative yielding plus monitor threads.
+ * "Small Threads": OS Threads plus Vale's stack expansion mechanism.
+
+So when would a user choose one over the other?
+
+The user would likely want one of the cooperative yielding approaches if:
+
+ * They need more speed.
+    * One thread can run thousands of tasks, sharing a free-list for stack chunks.
+    * There's no context switching overhead.
+    * We won't need any expensive mechanisms for FFI, we just use the thread's stack.
+
+The user would likely want Small Threads if:
+
+ * They need more scheduling fairness.
+
+
 ## Notes
 
 ### Design Constraints and Advantages
@@ -190,3 +212,14 @@ Of course, Vale has some advantages too. Knowing these might help us figure out 
  * We can decide to not directly expose some use cases if they're too niche (and then delegate them to FFI), such as thread local storage.
  * The region borrow checker allows us to know when something's immutable.
 
+### Heap Usage
+
+Rust async tasks often need to use the heap.
+
+> "async functions compile down to state machines that have to be placed somewhere, so usually the outermost async function of a task will be placed on the heap anyway" [source](https://www.reddit.com/r/rust/comments/pd4ygo/comment/haox4lj/?utm_source=reddit&utm_medium=web2x&context=3)
+
+> "When something is "on the stack" in an async fn, things are a bit different. The async fn is going to be stored as a future somewhere, and anything in the async fn's stack gets stored as a field inside the future. That future will typically be heap allocated somewhere." [source](https://www.reddit.com/r/rust/comments/pd4ygo/comment/haq3kqt/?utm_source=reddit&utm_medium=web2x&context=3)
+
+> There is one major exception: traits. Async functions in traits are currently not possible, but something quite similar can be achieved using the async-trait crate. This performs some of the same rewriting that the compiler does with regular async functions, but for various reasons, it needs to allocate futures on the heap. [source](https://www.reddit.com/r/rust/comments/w4cwvj/comment/ih1bw08/?utm_source=reddit&utm_medium=web2x&context=3)
+
+In Vale's cooperative yielding approaches, they would automatically share a free-list of stack chunks, and avoid malloc altogether. This means that Vale's cooperative yielding approaches _might_ be even faster than Rust's in practice.

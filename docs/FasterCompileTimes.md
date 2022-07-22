@@ -44,7 +44,6 @@ Existing languages (Rust, C++, etc) cannot do this, because generics can
 change the size of an object.
 
  * In C++, `std::array<Vec3, 2>` is bigger than `std::array<Vec2, 2>`
-
  * In Java, `Tuple2<Vec3, Vec3>` is the same size as `Tuple2<Vec2, Vec2>`, because under the hood, Tuple2 *only contains references.*
 
 In other words, in Java, a generic class only ever holds references to

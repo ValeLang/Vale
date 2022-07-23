@@ -41,9 +41,9 @@ jobs:
           distribution: adopt
           java-version: 11
       - name: install prereqs
-        run: ./scripts/ubuntu/install-compiler-prereqs.sh -j -s -l ~/LLVMForVale -b ~/BootstrappingValeCompiler
+        run: ./scripts/ubuntu/install-compiler-prereqs.sh -j -s -l -b ~/BootstrappingValeCompiler
       - name: build compiler 
-        run: ./scripts/ubuntu/build-compiler.sh ~/LLVMForVale/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04 ~/BootstrappingValeCompiler --test=all ./scripts/VERSION
+        run: ./scripts/ubuntu/build-compiler.sh ~/BootstrappingValeCompiler --test=all ./scripts/VERSION
       - uses: actions/upload-artifact@v2
         with:
           name: Vale-Ubuntu-0.zip

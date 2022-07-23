@@ -9,7 +9,7 @@ if (MSVC)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:4194304")
 endif (MSVC)
 
-find_package(LLVM 13 REQUIRED CONFIG)
+find_package(LLVM 14 REQUIRED CONFIG)
 add_definitions(${LLVM_DEFINITIONS})
 include_directories(
 	${LLVM_INCLUDE_DIRS}
@@ -101,7 +101,3 @@ add_executable(backend
 
 		src/fileio.cpp
 		src/options.cpp src/mainFunction.cpp src/externs.cpp src/determinism/determinism.cpp src/determinism/determinism.h src/utils/definefunction.cpp src/utils/definefunction.h src/utils/flags.cpp src/utils/flags.h src/simplehash/cppsimplehashmap.cpp src/simplehash/cppsimplehashmap.h src/simplehash/llvmsimplehashmap.cpp src/simplehash/llvmsimplehashmap.h src/utils/llvm.cpp src/utils/llvm.h src/utils/structlt.h)
-
-target_link_libraries(backend ${llvm_libs})
-
-target_compile_features(backend PRIVATE cxx_std_17)

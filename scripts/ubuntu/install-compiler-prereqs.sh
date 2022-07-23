@@ -65,7 +65,7 @@ TEXT_RESET=`tput -T xterm-256color sgr0`
 # Install misc dependencies
 echo "${TEXT_GREEN}Installing dependencies...${TEXT_RESET}"
 
-sudo apt update -y
+sudo apt --fix-missing update -y
 sudo apt install -y software-properties-common curl git clang cmake zlib1g-dev zip unzip wget
 
 # Install Java

@@ -10,10 +10,11 @@ set -euo pipefail
 usage() {
   echo "Usage: $(basename $0) [options]"
   echo -e "\nOptions:"
+  echo " -d        install basic build tools from APT"
   echo " -j        install Java from JFrog.io APT repository"
   echo " -s        install SBT from scala-sbt.org APT repository"
   echo " -b <DIR>  install Vale bootstrap compiler to specified directory"
-  echo " -l <DIR>  install LLVM to specified directory"
+  echo " -l        install LLVM from https://apt.llvm.org/llvm.sh"
   echo " -h        display this help and exit"
 }
 
@@ -22,16 +23,20 @@ bail() {
   exit 1
 }
 
+INSTALL_DEBS=0
 INSTALL_JAVA=0
 INSTALL_SBT=0
 INSTALL_LLVM=0
 BOOTSTRAPPING_VALEC_DIR=""
 
-while getopts ":hjslb:" opt; do
+while getopts ":hdjslb:" opt; do
   case ${opt} in
     h )
       usage
       exit 0
+      ;;
+    d )
+      INSTALL_DEBS=1
       ;;
     j )
       INSTALL_JAVA=1
@@ -62,8 +67,10 @@ TEXT_RESET=`tput -T xterm-256color sgr0`
 # Install misc dependencies
 echo "${TEXT_GREEN}Installing dependencies...${TEXT_RESET}"
 
-sudo apt update -y
-sudo apt install -y software-properties-common curl git cmake zlib1g-dev zip unzip wget
+if [[ $INSTALL_DEBS != 0 ]]; then
+  sudo apt update -y
+  sudo apt install -y software-properties-common curl git cmake zlib1g-dev zip unzip wget
+fi
 
 # Install Java
 if [[ $INSTALL_JAVA != 0 ]]; then

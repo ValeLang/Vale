@@ -11,7 +11,7 @@ fi
 shift;
 
 LLVM_MAJOR_VER=14
-LLVM_FULL_VER=14.0.6
+LLVM_FULL_VER=14.0.6_1
 
 WHICH_TESTS="$1"
 if [ "$WHICH_TESTS" == "--test=none" ]

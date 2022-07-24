@@ -135,6 +135,12 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           "false",
           "Whether to output LLVM IR."),
         Flag(
+          "--pic",
+          FLAG_BOOL(),
+          "Whether to use position independent code.",
+          "true",
+          "Whether to use position independent code."),
+        Flag(
           "--reuse_vast",
           FLAG_BOOL(),
           "Whether to reuse existing VAST",

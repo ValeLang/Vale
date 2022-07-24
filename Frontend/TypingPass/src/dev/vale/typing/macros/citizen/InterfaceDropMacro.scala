@@ -37,7 +37,7 @@ class InterfaceDropMacro(
     val dropFunctionA =
       FunctionA(
         interfaceA.name.range,
-        interner.intern(FunctionNameS(keywords.DROP_FUNCTION_NAME, interfaceA.name.range.begin)),
+        interner.intern(FunctionNameS(keywords.drop, interfaceA.name.range.begin)),
         Vector(),
         TemplateTemplataType(Vector(CoordTemplataType), FunctionTemplataType),
         Vector(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.T))),

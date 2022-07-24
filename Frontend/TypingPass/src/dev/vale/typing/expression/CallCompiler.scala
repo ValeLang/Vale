@@ -189,7 +189,7 @@ class CallCompiler(
         argsTypes2.map(argType => ParamFilter(argType, None))
     val prototype2 =
       overloadCompiler.findFunction(
-        env, coutputs, range, interner.intern(CodeNameS(keywords.CALL_FUNCTION_NAME)), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, false) match {
+        env, coutputs, range, interner.intern(CodeNameS(keywords.underscoresCall)), explicitTemplateArgRulesS, explicitTemplateArgRunesS, paramFilters, Vector.empty, false) match {
         case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, e))
         case Ok(x) => x
       }

@@ -71,7 +71,7 @@ TEXT_RESET=`tput -T xterm-256color sgr0`
 echo "${TEXT_GREEN}Installing dependencies...${TEXT_RESET}"
 
 if [[ $INSTALL_DEBS != 0 ]]; then
-  sudo apt update -y
+  sudo apt --fix-missing update -y
   sudo apt install -y software-properties-common curl git clang cmake zlib1g-dev zip unzip wget
 fi
 

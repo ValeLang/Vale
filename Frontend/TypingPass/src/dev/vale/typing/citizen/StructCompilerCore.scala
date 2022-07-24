@@ -387,12 +387,12 @@ class StructCompilerCore(
           .addEntries(
             interner,
             Vector(
-              interner.intern(FunctionTemplateNameT(keywords.CALL_FUNCTION_NAME, functionA.range.begin)) ->
+              interner.intern(FunctionTemplateNameT(keywords.underscoresCall, functionA.range.begin)) ->
                 env.FunctionEnvEntry(functionA),
-              interner.intern(FunctionTemplateNameT(keywords.DROP_FUNCTION_NAME, functionA.range.begin)) ->
+              interner.intern(FunctionTemplateNameT(keywords.drop, functionA.range.begin)) ->
                 FunctionEnvEntry(
                   containingFunctionEnv.globalEnv.structDropMacro.makeImplicitDropFunction(
-                    interner.intern(FunctionNameS(keywords.DROP_FUNCTION_NAME, functionA.range.begin)), functionA.range)),
+                    interner.intern(FunctionNameS(keywords.drop, functionA.range.begin)), functionA.range)),
               nearName -> TemplataEnvEntry(KindTemplata(structTT)),
               interner.intern(SelfNameT()) -> TemplataEnvEntry(KindTemplata(structTT))) ++
               (if (mutability == ImmutableT) {

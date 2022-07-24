@@ -154,7 +154,7 @@ class RuleScout(interner: Interner, keywords: Keywords, templexScout: TemplexSco
           runeToExplicitType.put(argRune.rune, PackTemplataType(CoordTemplataType))
 
           rules.RuneUsage(evalRange(range), resultRune.rune)
-        } else if (name.str == keywords.REFS) {
+        } else if (name.str == keywords.Refs) {
           val argRunes =
             args.map(arg => {
               translateRulex(env, lidb.child(), builder, runeToExplicitType, arg)

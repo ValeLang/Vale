@@ -12,8 +12,8 @@ endif (MSVC)
 find_package(LLVM 13 REQUIRED CONFIG)
 add_definitions(${LLVM_DEFINITIONS})
 include_directories(
-	${LLVM_INCLUDE_DIRS}
-	"${CMAKE_SOURCE_DIR}/src/"
+		${LLVM_INCLUDE_DIRS}
+		"${CMAKE_SOURCE_DIR}/src/"
 )
 
 
@@ -31,7 +31,10 @@ set(LLVM_LINK_COMPONENTS
 		Support
 		IRReader
 		x86asmparser x86codegen x86desc x86disassembler x86info
-)
+		arm armasmparser armcodegen armdesc armdisassembler arminfo armutils asmparser asmprinter
+		amdgpu amdgpuasmparser amdgpucodegen amdgpudesc amdgpudisassembler amdgpuinfo amdgpuutils
+		aarch64 aarch64asmparser aarch64codegen aarch64desc aarch64disassembler aarch64info aarch64utils
+		)
 
 llvm_map_components_to_libnames(llvm_libs ${LLVM_LINK_COMPONENTS})
 

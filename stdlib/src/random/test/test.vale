@@ -3,15 +3,19 @@ import stdlib.random.*;
 
 exported func main() {
   suite = TestSuite();
-  suite.test("first random", {
-    random(1, 5) should_equal 4;
+  suite.test("random boolean", {
+    randomBool() should_equal true;
   });
 
-  suite.test("second random", {
-    random(1, 5) should_equal 2;
+  suite.test("random int", {
+    randomInt(0, 5) should_equal 4;
   });
 
-  suite.test("third random", {
-    random(1, 5) should_equal 3;
+  suite.test("random i64", {
+    randomI64(i64(5), i64(10)) should_equal 8;
+  });
+
+  suite.test("random float", {
+    randomFloat(0.2, 0.6) should_equal 0.519376;
   });
 }

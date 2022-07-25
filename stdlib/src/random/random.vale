@@ -5,16 +5,29 @@
 // import stdlib.random.*;
 // exported func main() {
 //   randomize();
-//   i = random(1, 5);
-//   o = random(1, 5);
-//   p = random(1, 5);
-//   println(i + " " + o + " " + p);
+//   a = randomBool();
+//   b = randomInt(0, 5);
+//   c = randomI64(i64(5), i64(10));
+//   d = randomFloat(0.2, 1.3);
+//   println(a + " " + b + " " + c + " " + d + " ");
 // }
 
 // Sets time as the random number seed. (So it's not a cryptographically secure number.)
 // Should be called only once.
 extern func randomize() void;
 
+// Returns a random boolean.
+extern func randomBool() bool;
+
 // Returns a random integer between the two integers "lower" and "upper".
-// If you call it like x = random(1, 5), x can be 1, 2, 3, 4 or 5.
-extern func random(lower int, upper int) int;
+// If you call it like x = randomInt(1, 5), x can be 1, 2, 3, 4 or 5.
+extern func randomInt(lower int, upper int) int;
+
+// Returns a random i64 between the two i64-s "lower" and "upper".
+// If you call it like x = randomI64(i64(1), i64(5)), x can be 1, 2, 3, 4 or 5.
+extern func randomI64(lower i64, upper i64) i64;
+
+// Returns a random float between the two floats "lower" and "upper".
+// If you call it like x = randomFloat(1.0, 2.5), x can be:
+// 1.000000, 1.000001 ... 2.500000
+extern func randomFloat(lower float, upper float) float;

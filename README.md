@@ -47,6 +47,7 @@ For an overview of the project structure, see [Compiler Overview](compiler-overv
  * [Radek Miček](https://github.com/radekm)
  * [Geomitron](https://github.com/Geomitron)
  * [Chiuzon](https://github.com/chiuzon)
+ * [Felix Scholz](https://github.com/soupertonic)
  * [Joseph Jaoudi](https://github.com/linkmonitor)
  * [Luke Puchner-Hardman](https://github.com/lupuchard)
  * [Jonathan Zielinski](https://github.com/tootoobeepbeep)

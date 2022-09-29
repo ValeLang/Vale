@@ -2,7 +2,7 @@ package dev.vale.highertyping
 
 import dev.vale.{RangeS, vcurious, vpass}
 import dev.vale.postparsing.rules.IRulexSR
-import dev.vale.postparsing.{IImpreciseNameS, RuneTypeSolveError}
+import dev.vale.postparsing._
 import dev.vale.postparsing.RuneTypeSolveError
 import dev.vale.RangeS
 

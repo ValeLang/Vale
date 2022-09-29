@@ -3,7 +3,7 @@ package dev.vale.highertyping
 import dev.vale.{RangeS, StrI, vassert, vcurious, vpass, vwat}
 import dev.vale.parsing.ast.MutabilityP
 import dev.vale.postparsing.rules.{IRulexSR, RuneUsage}
-import dev.vale.postparsing.{AbstractBodyS, CodeBodyS, ExternBodyS, FunctionNameS, FunctionTemplataType, GeneratedBodyS, IBodyS, ICitizenAttributeS, ICitizenDeclarationNameS, IFunctionAttributeS, IFunctionDeclarationNameS, IImplDeclarationNameS, INameS, IRuneS, IStructMemberS, ITemplataType, ImplImpreciseNameS, KindTemplataType, ParameterS, TemplateTemplataType, TopLevelCitizenDeclarationNameS}
+import dev.vale.postparsing._
 import dev.vale.parsing._
 import dev.vale.postparsing.rules.IRulexSR
 import dev.vale.postparsing._
@@ -44,7 +44,7 @@ case class ProgramA(
     val matches = structs.find(_.name == name)
     vassert(matches.size == 1)
     matches.head match {
-      case i @ StructA(_, _, _, _, _, _, _, _, _, _, _) => i
+      case i @ StructA(_, _, _, _, _, _, _, _, _, _, _, _, _) => i
     }
   }
   def lookupStruct(name: String) = {
@@ -59,14 +59,9 @@ case class ProgramA(
   }
 }
 
-
-trait TypeDefinitionA {
-  def name: INameS;
-}
-
 case class StructA(
     range: RangeS,
-    name: ICitizenDeclarationNameS,
+    name: IStructDeclarationNameS,
     attributes: Vector[ICitizenAttributeS],
     weakable: Boolean,
     mutabilityRune: RuneUsage,
@@ -77,11 +72,16 @@ case class StructA(
     //   }
     maybePredictedMutability: Option[MutabilityP],
     tyype: ITemplataType,
-    identifyingRunes: Vector[RuneUsage],
-    runeToType: Map[IRuneS, ITemplataType],
-    rules: Vector[IRulexSR],
+    genericParameters: Vector[GenericParameterS],
+
+    // These are separated so that these alone can be run during resolving, see SMRASDR.
+    headerRuneToType: Map[IRuneS, ITemplataType],
+    headerRules: Vector[IRulexSR],
+    // These are separated so they can be skipped during resolving, see SMRASDR.
+    membersRuneToType: Map[IRuneS, ITemplataType],
+    memberRules: Vector[IRulexSR],
     members: Vector[IStructMemberS]
-) extends TypeDefinitionA {
+) extends CitizenA {
   val hash = range.hashCode() + name.hashCode()
   override def hashCode(): Int = hash;
 
@@ -97,7 +97,7 @@ case class StructA(
 //  vassert((localRunes -- runeToType.keySet).isEmpty)
 
   def isTemplate: Boolean = tyype match {
-    case KindTemplataType => false
+    case KindTemplataType() => false
     case TemplateTemplataType(_, _) => true
     case _ => vwat()
   }
@@ -106,12 +106,13 @@ case class StructA(
 case class ImplA(
   range: RangeS,
   name: IImplDeclarationNameS,
-  impreciseName: ImplImpreciseNameS, // The name of an impl is the human name of the subcitizen, see INSHN.
-  identifyingRunes: Vector[RuneUsage],
+  genericParams: Vector[GenericParameterS],
   rules: Vector[IRulexSR],
   runeToType: Map[IRuneS, ITemplataType],
-  structKindRune: RuneUsage,
-  interfaceKindRune: RuneUsage) {
+  subCitizenRune: RuneUsage,
+  subCitizenImpreciseName: IImpreciseNameS,
+  interfaceKindRune: RuneUsage,
+  superInterfaceImpreciseName: IImpreciseNameS) {
 
   val hash = range.hashCode() + name.hashCode()
   override def hashCode(): Int = hash;
@@ -121,7 +122,7 @@ case class ImplA(
     return range == that.range && name == that.name;
   }
 
-  def isTemplate: Boolean = identifyingRunes.nonEmpty
+  def isTemplate: Boolean = genericParams.nonEmpty
 }
 
 case class ExportAsA(
@@ -139,9 +140,11 @@ case class ExportAsA(
   }
 }
 
+sealed trait CitizenA
+
 case class InterfaceA(
     range: RangeS,
-    name: TopLevelCitizenDeclarationNameS,
+    name: TopLevelInterfaceDeclarationNameS,
     attributes: Vector[ICitizenAttributeS],
     weakable: Boolean,
     mutabilityRune: RuneUsage,
@@ -152,12 +155,13 @@ case class InterfaceA(
     maybePredictedMutability: Option[MutabilityP],
     tyype: ITemplataType,
 //    knowableRunes: Set[IRuneS],
-    identifyingRunes: Vector[RuneUsage],
+    genericParameters: Vector[GenericParameterS],
 //    localRunes: Set[IRuneS],
     runeToType: Map[IRuneS, ITemplataType],
   rules: Vector[IRulexSR],
     // See IMRFDI
-    internalMethods: Vector[FunctionA]) {
+    internalMethods: Vector[FunctionA]
+) extends CitizenA {
   val hash = range.hashCode() + name.hashCode()
   override def hashCode(): Int = hash;
   override def equals(obj: Any): Boolean = {
@@ -170,12 +174,12 @@ case class InterfaceA(
 //  vassert((localRunes -- runeToType.keySet).isEmpty)
 
   internalMethods.foreach(internalMethod => {
-    vassert(identifyingRunes == internalMethod.identifyingRunes)
+    vassert(genericParameters == internalMethod.genericParameters)
     vassert(isTemplate == internalMethod.isTemplate);
   })
 
   def isTemplate: Boolean = tyype match {
-    case KindTemplataType => false
+    case KindTemplataType() => false
     case TemplateTemplataType(_, _) => true
     case _ => vwat()
   }
@@ -221,7 +225,7 @@ case class FunctionA(
     tyype: ITemplataType,
     // This is not necessarily only what the user specified, the compiler can add
     // things to the end here, see CCAUIR.
-    identifyingRunes: Vector[RuneUsage],
+    genericParameters: Vector[GenericParameterS],
 
     runeToType: Map[IRuneS, ITemplataType],
 
@@ -263,8 +267,15 @@ case class FunctionA(
     }
   }
 
+  def isLambda(): Boolean = {
+    name match {
+      case LambdaDeclarationNameS(_) => true
+      case _ => false
+    }
+  }
+
   def isTemplate: Boolean = tyype match {
-    case FunctionTemplataType => false
+    case FunctionTemplataType() => false
     case TemplateTemplataType(_, _) => true
     case _ => vwat()
   }

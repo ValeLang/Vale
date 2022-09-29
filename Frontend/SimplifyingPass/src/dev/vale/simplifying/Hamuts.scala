@@ -3,7 +3,7 @@ package dev.vale.simplifying
 import dev.vale.{PackageCoordinate, StrI, vassert, vcurious, vfail, vimpl}
 import dev.vale.finalast.{FullNameH, FunctionH, InterfaceDefinitionH, InterfaceRefH, KindH, PrototypeH, RuntimeSizedArrayDefinitionHT, RuntimeSizedArrayHT, StaticSizedArrayDefinitionHT, StaticSizedArrayHT, StructDefinitionH, StructRefH}
 import dev.vale.typing.ast.PrototypeT
-import dev.vale.typing.types.{InterfaceTT, RuntimeSizedArrayTT, StaticSizedArrayTT, StructTT}
+import dev.vale.typing.types._
 import dev.vale.finalast._
 import dev.vale.typing.types.InterfaceTT
 import dev.vale.von.IVonData

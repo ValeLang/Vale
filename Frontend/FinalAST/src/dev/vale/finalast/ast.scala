@@ -37,7 +37,7 @@ case class PackageH(
     // Used for native compilation only, not JVM/CLR/JS/iOS.
     // These are pointing into the specific functions (in the `functions` field)
     // which should be called when we drop a reference to an immutable object.
-    immDestructorsByKind: Map[KindH, PrototypeH],
+//    immDestructorsByKind: Map[KindH, PrototypeH],
     // Translations for backends to use if they need to export a name.
     exportNameToFunction: Map[StrI, PrototypeH],
     // Translations for backends to use if they need to export a name.
@@ -98,7 +98,9 @@ case class ProgramH(
   }
   def lookupFunction(prototype: PrototypeH): FunctionH = {
     val paackage = lookupPackage(prototype.fullName.packageCoordinate)
-    vassertSome(paackage.functions.find(_.fullName == prototype.fullName))
+    val result = vassertSome(paackage.functions.find(_.fullName == prototype.fullName))
+    vassert(prototype == result.prototype)
+    result
   }
   def lookupStruct(structRefH: StructRefH): StructDefinitionH = {
     val paackage = lookupPackage(structRefH.fullName.packageCoordinate)

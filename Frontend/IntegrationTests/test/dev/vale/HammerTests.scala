@@ -42,18 +42,25 @@ class HammerTests extends FunSuite with Matchers {
   test("Two templated structs make it into hamuts") {
     val compile = RunCompilation.test(
       """
-        |interface MyOption<T> imm where T Ref { }
-        |struct MyNone<T> imm where T Ref { }
-        |impl<T> MyOption<T> for MyNone<T>;
-        |struct MySome<T> imm where T Ref { value T; }
-        |impl<T> MyOption<T> for MySome<T>;
+        |func __pretend<T>() T { __vbi_panic() }
         |
-        |func main(a @MySome<int>, b @MyNone<int>) {}
+        |interface MyOption<T Ref imm> imm { }
+        |struct MyNone<T Ref imm> imm { }
+        |impl<T Ref imm> MyOption<T> for MyNone<T>;
+        |struct MySome<T Ref imm> imm { value T; }
+        |impl<T Ref imm> MyOption<T> for MySome<T>;
+        |
+        |exported func main() {
+        |  x = __pretend<MySome<int>>();
+        |  y = __pretend<MyNone<int>>();
+        |  z MyOption<int> = x;
+        |}
       """.stripMargin)
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD(compile.interner, compile.keywords))
-    packageH.interfaces.find(interface => {
-      interface.fullName.toFullString() == """test::C(CT("MyOption"),[TR(R(@,<,i(32)))])"""
-    }).get;
+    vassertSome(
+      packageH.interfaces.find(interface => {
+        interface.fullName.toFullString() == """test::C(CT("MyOption"),[TR(R(@,<,i(32)))])"""
+      }))
 
     val mySome = packageH.structs.find(_.fullName.toFullString() == """test::C(CT("MySome"),[TR(R(@,<,i(32)))])""").get;
     vassert(mySome.members.size == 1);

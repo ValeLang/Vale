@@ -1,4 +1,5 @@
 import v.builtins.panic.*;
+import v.builtins.drop.*;
 
 #!DeriveInterfaceDrop
 sealed interface Opt<T> where T Ref { }
@@ -28,9 +29,15 @@ abstract func isEmpty<T>(virtual opt &Opt<T>) bool;
 func isEmpty<T>(opt &None<T>) bool { return true; }
 func isEmpty<T>(opt &Some<T>) bool { return false; }
 
-abstract func isEmpty<T>(virtual opt Opt<T>) bool;
-func isEmpty<T>(opt None<T>) bool { return true; }
-func isEmpty<T>(opt Some<T>) bool { return false; }
+abstract func isEmpty<T>(virtual opt Opt<T>) bool
+where func drop(T)void;
+func isEmpty<T>(opt None<T>) bool
+where func drop(T)void
+{ return true; }
+
+func isEmpty<T>(opt Some<T>) bool
+where func drop(T)void
+{ return false; }
 
 abstract func get<T>(virtual opt Opt<T>) T;
 func get<T>(opt None<T>) T { panic("Called get() on a None!"); }
@@ -42,3 +49,7 @@ func get<T>(opt Some<T>) T {
 abstract func get<T>(virtual opt &Opt<T>) &T;
 func get<T>(opt &None<T>) &T { panic("Called get() on a None!"); }
 func get<T>(opt &Some<T>) &T { return &opt.value; }
+
+abstract func expect_none<T>(virtual opt Opt<T>) None<T>;
+func expect_none<T>(opt Some<T>) None<T> { panic("Called expect_none() on a Some!"); }
+func expect_none<T>(opt None<T>) None<T> { opt }

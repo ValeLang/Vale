@@ -1,7 +1,5 @@
 
-import v.builtins.tup.*;
-
-interface Car {
+sealed interface Car {
   func doCivicDance(virtual this Car) int;
 }
 

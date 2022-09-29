@@ -45,9 +45,8 @@ public:
   std::unordered_map<std::string, StructDefinition*> structs;
   std::unordered_map<std::string, StaticSizedArrayDefinitionT*> staticSizedArrays;
   std::unordered_map<std::string, RuntimeSizedArrayDefinitionT*> runtimeSizedArrays;
-//  std::unordered_map<std::string, Prototype*> externs;
   std::unordered_map<std::string, Function*> functions;
-  std::unordered_map<Kind*, Prototype*, AddressHasher<Kind*>> immDestructorsByKind;
+//  std::unordered_map<Kind*, Prototype*, AddressHasher<Kind*>> immDestructorsByKind;
 
   // This only contains exports defined in this package. Though, the things they're exporting can
   // be defined somewhere else.
@@ -69,7 +68,7 @@ public:
     std::unordered_map<std::string, StaticSizedArrayDefinitionT*> staticSizedArrays_,
     std::unordered_map<std::string, RuntimeSizedArrayDefinitionT*> runtimeSizedArrays_,
     std::unordered_map<std::string, Function*> functions_,
-    std::unordered_map<Kind*, Prototype*, AddressHasher<Kind*>> immDestructorsByKind_,
+//    std::unordered_map<Kind*, Prototype*, AddressHasher<Kind*>> immDestructorsByKind_,
     std::unordered_map<std::string, Prototype*> exportNameToFunction_,
     std::unordered_map<std::string, Kind*> exportNameToKind_,
     std::unordered_map<std::string, Prototype*> externNameToFunction_,
@@ -80,7 +79,7 @@ public:
       staticSizedArrays(std::move(staticSizedArrays_)),
       runtimeSizedArrays(std::move(runtimeSizedArrays_)),
       functions(std::move(functions_)),
-      immDestructorsByKind(std::move(immDestructorsByKind_)),
+//      immDestructorsByKind(std::move(immDestructorsByKind_)),
       exportNameToFunction(std::move(exportNameToFunction_)),
       exportNameToKind(std::move(exportNameToKind_)),
       externNameToFunction(std::move(externNameToFunction_)),
@@ -173,11 +172,11 @@ public:
     }
     return std::optional(iter->second);
   }
-  Prototype* getImmDestructor(Kind* kind) {
-    auto iter = immDestructorsByKind.find(kind);
-    assert(iter != immDestructorsByKind.end());
-    return iter->second;
-  }
+//  Prototype* getImmDestructor(Kind* kind) {
+//    auto iter = immDestructorsByKind.find(kind);
+//    assert(iter != immDestructorsByKind.end());
+//    return iter->second;
+//  }
 
   std::string getKindExportName(Kind* kind, bool includeProjectName) const {
     if (auto innt = dynamic_cast<Int *>(kind)) {
@@ -299,9 +298,9 @@ public:
   RuntimeSizedArrayDefinitionT* getRuntimeSizedArray(RuntimeSizedArrayT* rsaMT) {
     return getPackage(rsaMT->name->packageCoord)->getRuntimeSizedArray(rsaMT);
   }
-  Prototype* getImmDestructor(Kind* kind) {
-    return getPackage(kind->getPackageCoordinate())->getImmDestructor(kind);
-  }
+//  Prototype* getImmDestructor(Kind* kind) {
+//    return getPackage(kind->getPackageCoordinate())->getImmDestructor(kind);
+//  }
 //  bool isExported(Name* name) {
 //    return getPackage(name->packageCoord)->isExported(name);
 //  }

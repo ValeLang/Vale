@@ -49,18 +49,18 @@ then
     exit 1
   fi
 
-  if [ ! -d "$LLVM_OUTER_DIR/13.0.1" ]
+  if [ ! -d "$LLVM_OUTER_DIR/13.0.1_1" ]
   then
-    echo "$LLVM_OUTER_DIR doesn't contain 13.0.1. Has instead:"
+    echo "$LLVM_OUTER_DIR doesn't contain 13.0.1_1. Has instead:"
     ls $LLVM_OUTER_DIR
     exit 1
   fi
 
-  LLVM_CMAKE_DIR="$LLVM_OUTER_DIR/13.0.1/lib/cmake/llvm"
+  LLVM_CMAKE_DIR="$LLVM_OUTER_DIR/13.0.1_1/lib/cmake/llvm"
   
   if [ ! -d "$LLVM_CMAKE_DIR" ]
   then
-    echo "$LLVM_OUTER_DIR/13.0.1 doesn't contain ./lib/cmake/llvm!"
+    echo "$LLVM_OUTER_DIR/13.0.1_1 doesn't contain ./lib/cmake/llvm!"
     exit 1
   fi
 

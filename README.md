@@ -52,6 +52,7 @@ For an overview of the project structure, see [Compiler Overview](compiler-overv
  * [Luke Puchner-Hardman](https://github.com/lupuchard)
  * [Jonathan Zielinski](https://github.com/tootoobeepbeep)
  * [Albin Kocheril Chacko](https://github.com/albinkc)
+ * [Svintooo](https://github.com/Svintooo)
  * [Tim Stack](https://github.com/tstack)
  * [Alon Zakai](https://github.com/kripken)
  * [Alec Newman](https://github.com/rovaughn)

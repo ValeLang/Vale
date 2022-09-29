@@ -4,67 +4,67 @@ import dev.vale.{vassert, vcurious, vfail, vwat}
 import dev.vale.vimpl
 
 // Common trait for all instructions.
-sealed trait ExpressionH[+T <: KindH] {
-  def resultType: ReferenceH[T]
+sealed trait ExpressionH[+T <: KindHT] {
+  def resultType: CoordH[T]
 
   // Convenience functions for accessing this expression as the kind returning
   // a certain type.
-  def expectStructAccess(): ExpressionH[StructRefH] = {
+  def expectStructAccess(): ExpressionH[StructHT] = {
     resultType match {
-      case ReferenceH(_, _, x @ StructRefH(_)) => {
-        this.asInstanceOf[ExpressionH[StructRefH]]
+      case CoordH(_, _, x @ StructHT(_)) => {
+        this.asInstanceOf[ExpressionH[StructHT]]
       }
       case _ => vfail()
     }
   }
-  def expectInterfaceAccess(): ExpressionH[InterfaceRefH] = {
+  def expectInterfaceAccess(): ExpressionH[InterfaceHT] = {
     resultType match {
-      case ReferenceH(_, _, x @ InterfaceRefH(_)) => {
-        this.asInstanceOf[ExpressionH[InterfaceRefH]]
+      case CoordH(_, _, x @ InterfaceHT(_)) => {
+        this.asInstanceOf[ExpressionH[InterfaceHT]]
       }
     }
   }
   def expectRuntimeSizedArrayAccess(): ExpressionH[RuntimeSizedArrayHT] = {
     resultType match {
-      case ReferenceH(_, _, x @ RuntimeSizedArrayHT(_)) => {
+      case CoordH(_, _, x @ RuntimeSizedArrayHT(_)) => {
         this.asInstanceOf[ExpressionH[RuntimeSizedArrayHT]]
       }
     }
   }
   def expectStaticSizedArrayAccess(): ExpressionH[StaticSizedArrayHT] = {
     resultType match {
-      case ReferenceH(_, _, x @ StaticSizedArrayHT(_)) => {
+      case CoordH(_, _, x @ StaticSizedArrayHT(_)) => {
         this.asInstanceOf[ExpressionH[StaticSizedArrayHT]]
       }
     }
   }
-  def expectIntAccess(): ExpressionH[IntH] = {
+  def expectIntAccess(): ExpressionH[IntHT] = {
     resultType match {
-      case ReferenceH(_, _, x @ IntH(32)) => {
-        this.asInstanceOf[ExpressionH[IntH]]
+      case CoordH(_, _, x @ IntHT(32)) => {
+        this.asInstanceOf[ExpressionH[IntHT]]
       }
     }
   }
-  def expectI64Access(): ExpressionH[IntH] = {
+  def expectI64Access(): ExpressionH[IntHT] = {
     resultType match {
-      case ReferenceH(_, _, x @ IntH(64)) => {
-        this.asInstanceOf[ExpressionH[IntH]]
+      case CoordH(_, _, x @ IntHT(64)) => {
+        this.asInstanceOf[ExpressionH[IntHT]]
       }
     }
   }
-  def expectBoolAccess(): ExpressionH[BoolH] = {
+  def expectBoolAccess(): ExpressionH[BoolHT] = {
     resultType match {
-      case ReferenceH(_, _, x @ BoolH()) => {
-        this.asInstanceOf[ExpressionH[BoolH]]
+      case CoordH(_, _, x @ BoolHT()) => {
+        this.asInstanceOf[ExpressionH[BoolHT]]
       }
     }
   }
 }
 
 // Produces a void.
-case class ConstantVoidH() extends ExpressionH[VoidH] {
+case class ConstantVoidH() extends ExpressionH[VoidHT] {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = 1337
-  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, VoidH())
+  override def resultType: CoordH[VoidHT] = CoordH(ShareH, InlineH, VoidHT())
 }
 
 // Produces an integer.
@@ -72,64 +72,64 @@ case class ConstantIntH(
   // The value of the integer.
   value: Long,
   bits: Int
-) extends ExpressionH[IntH] {
+) extends ExpressionH[IntHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  override def resultType: ReferenceH[IntH] = ReferenceH(ShareH, InlineH, IntH(bits))
+  override def resultType: CoordH[IntHT] = CoordH(ShareH, InlineH, IntHT(bits))
 }
 
 // Produces a boolean.
 case class ConstantBoolH(
   // The value of the boolean.
   value: Boolean
-) extends ExpressionH[BoolH] {
+) extends ExpressionH[BoolHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  override def resultType: ReferenceH[BoolH] = ReferenceH(ShareH, InlineH, BoolH())
+  override def resultType: CoordH[BoolHT] = CoordH(ShareH, InlineH, BoolHT())
 }
 
 // Produces a string.
 case class ConstantStrH(
   // The value of the string.
   value: String
-) extends ExpressionH[StrH] {
+) extends ExpressionH[StrHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  override def resultType: ReferenceH[StrH] = ReferenceH(ShareH, YonderH, StrH())
+  override def resultType: CoordH[StrHT] = CoordH(ShareH, YonderH, StrHT())
 }
 
 // Produces a float.
 case class ConstantF64H(
   // The value of the float.
   value: Double
-) extends ExpressionH[FloatH] {
+) extends ExpressionH[FloatHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  override def resultType: ReferenceH[FloatH] = ReferenceH(ShareH, InlineH, FloatH())
+  override def resultType: CoordH[FloatHT] = CoordH(ShareH, InlineH, FloatHT())
 }
 
 // Produces the value from an argument.
 // There can only be one of these per argument; this conceptually destroys
 // the containing argument and produces its value.
 case class ArgumentH(
-  resultType: ReferenceH[KindH],
+  resultType: CoordH[KindHT],
   // The index of the argument, starting at 0.
   argumentIndex: Int
-) extends ExpressionH[KindH]
+) extends ExpressionH[KindHT]
 
 // Takes a value from the source expression and puts it into a local
 // variable on the stack.
 case class StackifyH(
   // The expressions to read a value from.
-  sourceExpr: ExpressionH[KindH],
+  sourceExpr: ExpressionH[KindHT],
   // Describes the local we're making.
   local: Local,
   // Name of the local variable. Used for debugging.
-  name: Option[FullNameH]
-) extends ExpressionH[KindH] {
+  name: Option[IdH]
+) extends ExpressionH[KindHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
 
   // See BRCOBS, source shouldn't be Never.
-  sourceExpr.resultType.kind match { case NeverH(_) => vwat() case _ => }
+  sourceExpr.resultType.kind match { case NeverHT(_) => vwat() case _ => }
   vassert(sourceExpr.resultType == local.typeH)
 
-  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, VoidH())
+  override def resultType: CoordH[VoidHT] = CoordH(ShareH, InlineH, VoidHT())
 }
 
 // Takes a value from a local variable on the stack, and produces it.
@@ -139,12 +139,12 @@ case class UnstackifyH(
   // Describes the local we're pulling from. This is equal to the corresponding
   // StackifyH's `local` member.
   local: Local
-) extends ExpressionH[KindH] {
+) extends ExpressionH[KindHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
   // Panics if this is ever not the case.
   vcurious(local.typeH == resultType)
 
-  override def resultType: ReferenceH[KindH] = local.typeH
+  override def resultType: CoordH[KindHT] = local.typeH
 }
 
 // Takes a struct from the given expressions, and destroys it.
@@ -154,13 +154,13 @@ case class UnstackifyH(
 // the values from the dying struct instance.
 case class DestroyH(
   // The expressions to take the struct from.
-  structExpression: ExpressionH[StructRefH],
+  structExpression: ExpressionH[StructHT],
   // A list of types, one for each local variable we'll make.
   // TODO: If the vcurious below doesn't panic, get rid of this redundant member.
-  localTypes: Vector[ReferenceH[KindH]],
+  localTypes: Vector[CoordH[KindHT]],
   // The locals to put the struct's members into.
   localIndices: Vector[Local],
-) extends ExpressionH[VoidH] {
+) extends ExpressionH[VoidHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
   vassert(localTypes.size == localIndices.size)
   vcurious(localTypes == localIndices.map(_.typeH).toVector)
@@ -169,7 +169,7 @@ case class DestroyH(
   // Nevermind, type system guarantees it
   // structExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
 
-  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, VoidH())
+  override def resultType: CoordH[VoidHT] = CoordH(ShareH, InlineH, VoidHT())
 }
 
 // Takes a struct from the given expressions, and destroys it.
@@ -182,10 +182,10 @@ case class DestroyStaticSizedArrayIntoLocalsH(
   structExpression: ExpressionH[StaticSizedArrayHT],
   // A list of types, one for each local variable we'll make.
   // TODO: If the vcurious below doesn't panic, get rid of this redundant member.
-  localTypes: Vector[ReferenceH[KindH]],
+  localTypes: Vector[CoordH[KindHT]],
   // The locals to put the struct's members into.
   localIndices: Vector[Local]
-) extends ExpressionH[VoidH] {
+) extends ExpressionH[VoidHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
   vassert(localTypes.size == localIndices.size)
   vcurious(localTypes == localIndices.map(_.typeH).toVector)
@@ -194,17 +194,17 @@ case class DestroyStaticSizedArrayIntoLocalsH(
   // Nevermind, type system guarantees it
   // structExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
 
-  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, VoidH())
+  override def resultType: CoordH[VoidHT] = CoordH(ShareH, InlineH, VoidHT())
 }
 
 // Takes a struct reference from the "source" expressions, and makes an interface reference
 // to it, as the "target" reference, and puts it into another expressions.
 case class StructToInterfaceUpcastH(
   // The expressions to get the struct reference from.
-  sourceExpression: ExpressionH[StructRefH],
+  sourceExpression: ExpressionH[StructHT],
   // The type of interface to cast to.
-  targetInterfaceRef: InterfaceRefH
-) extends ExpressionH[InterfaceRefH] {
+  targetInterface: InterfaceHT
+) extends ExpressionH[InterfaceHT] {
 
   // See BRCOBS, source shouldn't be Never.
   // Nevermind, type system guarantees it
@@ -212,17 +212,17 @@ case class StructToInterfaceUpcastH(
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
   // The resulting type will have the same ownership as the source expressions had.
-  def resultType = ReferenceH(sourceExpression.resultType.ownership, sourceExpression.resultType.location, targetInterfaceRef)
+  def resultType = CoordH(sourceExpression.resultType.ownership, sourceExpression.resultType.location, targetInterface)
 }
 
 // Takes an interface reference from the "source" expressions, and makes another reference
 // to it, as the "target" inference, and puts it into another expressions.
 case class InterfaceToInterfaceUpcastH(
   // The expressions to get the source interface reference from.
-  sourceExpression: ExpressionH[InterfaceRefH],
+  sourceExpression: ExpressionH[InterfaceHT],
   // The type of interface to cast to.
-  targetInterfaceRef: InterfaceRefH
-) extends ExpressionH[InterfaceRefH] {
+  targetInterface: InterfaceHT
+) extends ExpressionH[InterfaceHT] {
 
   // See BRCOBS, source shouldn't be Never.
   // Nevermind, type system guarantees it
@@ -230,7 +230,7 @@ case class InterfaceToInterfaceUpcastH(
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
   // The resulting type will have the same ownership as the source expressions had.
-  def resultType = ReferenceH(sourceExpression.resultType.ownership, sourceExpression.resultType.location, targetInterfaceRef)
+  def resultType = CoordH(sourceExpression.resultType.ownership, sourceExpression.resultType.location, targetInterface)
 }
 
 // Takes a reference from the given "source" expressions, and puts it into an *existing*
@@ -239,16 +239,16 @@ case class LocalStoreH(
   // The existing local to store into.
   local: Local,
   // The expressions to get the source reference from.
-  sourceExpression: ExpressionH[KindH],
+  sourceExpression: ExpressionH[KindHT],
   // Name of the local variable, for debug purposes.
-  localName: FullNameH
-) extends ExpressionH[KindH] {
+  localName: IdH
+) extends ExpressionH[KindHT] {
 
   // See BRCOBS, source shouldn't be Never.
-  sourceExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
+  sourceExpression.resultType.kind match { case NeverHT(_) => vwat() case _ => }
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  override def resultType: ReferenceH[KindH] = local.typeH
+  override def resultType: CoordH[KindHT] = local.typeH
 }
 
 // Takes a reference from the given local variable, and puts it into a new expressions.
@@ -262,12 +262,12 @@ case class LocalLoadH(
   // to load a borrow reference from an owning local.
   targetOwnership: OwnershipH,
   // Name of the local variable, for debug purposes.
-  localName: FullNameH
-) extends ExpressionH[KindH] {
+  localName: IdH
+) extends ExpressionH[KindHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
   vassert(targetOwnership != OwnH) // must unstackify to get an owning reference
 
-  override def resultType: ReferenceH[KindH] = {
+  override def resultType: CoordH[KindHT] = {
     val location =
       (targetOwnership, local.typeH.location) match {
         case (BorrowH, _) => YonderH
@@ -275,29 +275,29 @@ case class LocalLoadH(
         case (OwnH, location) => location
         case (ShareH, location) => location
       }
-    ReferenceH(targetOwnership, location, local.typeH.kind)
+    CoordH(targetOwnership, location, local.typeH.kind)
   }
 }
 
 // Takes a reference from the given "source" expressions, and swaps it into the given
 // struct's member. The member's old reference is put into a new expressions.
 case class MemberStoreH(
-  resultType: ReferenceH[KindH],
+  resultType: CoordH[KindHT],
   // Expression containing a reference to the struct whose member we will swap.
-  structExpression: ExpressionH[StructRefH],
+  structExpression: ExpressionH[StructHT],
   // Which member to swap out, starting at 0.
   memberIndex: Int,
   // Expression containing the new value for the struct's member.
-  sourceExpression: ExpressionH[KindH],
+  sourceExpression: ExpressionH[KindHT],
   // Name of the member, for debug purposes.
-  memberName: FullNameH
-) extends ExpressionH[KindH] {
+  memberName: IdH
+) extends ExpressionH[KindHT] {
 
   // See BRCOBS, struct shouldn't be Never.
   // Nevermind, type system guarantees it
   //  structExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
   // See BRCOBS, source shouldn't be Never.
-  sourceExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
+  sourceExpression.resultType.kind match { case NeverHT(_) => vwat() case _ => }
 
 }
 
@@ -305,17 +305,17 @@ case class MemberStoreH(
 // expressions. This can never move a reference, only alias it.
 case class MemberLoadH(
   // Expression containing a reference to the struct whose member we will read.
-  structExpression: ExpressionH[StructRefH],
+  structExpression: ExpressionH[StructHT],
   // Which member to read from, starting at 0.
   memberIndex: Int,
   // The type we expect the member to be. This can easily be looked up, but is provided
   // here to be convenient for LLVM.
-  expectedMemberType: ReferenceH[KindH],
+  expectedMemberType: CoordH[KindHT],
   // The type of the resulting reference.
-  resultType: ReferenceH[KindH],
+  resultType: CoordH[KindHT],
   // Member's name, for debug purposes.
-  memberName: FullNameH
-) extends ExpressionH[KindH] {
+  memberName: IdH
+) extends ExpressionH[KindHT] {
 
   // See BRCOBS, source shouldn't be Never.
   // Nevermind, type system guarantees it
@@ -333,14 +333,14 @@ case class MemberLoadH(
 case class NewArrayFromValuesH(
   // The resulting type of the array.
   // TODO: See if we can infer this from the types in the expressions.
-  resultType: ReferenceH[StaticSizedArrayHT],
+  resultType: CoordH[StaticSizedArrayHT],
   // The expressions from which we'll get the values to put into the array.
-  sourceExpressions: Vector[ExpressionH[KindH]]
+  sourceExpressions: Vector[ExpressionH[KindHT]]
 ) extends ExpressionH[StaticSizedArrayHT] {
 
   // See BRCOBS, source shouldn't be Never.
   sourceExpressions.foreach(expr => {
-    expr.resultType.kind match { case NeverH(_) => vwat() case _ => }
+    expr.resultType.kind match { case NeverHT(_) => vwat() case _ => }
   })
 }
 
@@ -354,19 +354,19 @@ case class StaticSizedArrayStoreH(
   // Expression containing the array whose element we'll swap out.
   arrayExpression: ExpressionH[StaticSizedArrayHT],
   // Expression containing the index of the element we'll swap out.
-  indexExpression: ExpressionH[IntH],
+  indexExpression: ExpressionH[IntHT],
   // Expression containing the value we'll swap into the array.
-  sourceExpression: ExpressionH[KindH],
-  resultType: ReferenceH[KindH],
-) extends ExpressionH[KindH] {
+  sourceExpression: ExpressionH[KindHT],
+  resultType: CoordH[KindHT],
+) extends ExpressionH[KindHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  vassert(indexExpression.resultType.kind == IntH.i32)
+  vassert(indexExpression.resultType.kind == IntHT.i32)
 
   // See BRCOBS, source shouldn't be Never.
   // Nevermind, type system guarantees it
   //  arrayExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
   //  indexExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
-  sourceExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
+  sourceExpression.resultType.kind match { case NeverHT(_) => vwat() case _ => }
 }
 
 // Loads from the "source" expressions and swaps it into the array from arrayExpression at
@@ -379,19 +379,19 @@ case class RuntimeSizedArrayStoreH(
   // Expression containing the array whose element we'll swap out.
   arrayExpression: ExpressionH[RuntimeSizedArrayHT],
   // Expression containing the index of the element we'll swap out.
-  indexExpression: ExpressionH[IntH],
+  indexExpression: ExpressionH[IntHT],
   // Expression containing the value we'll swap into the array.
-  sourceExpression: ExpressionH[KindH],
-  resultType: ReferenceH[KindH],
-) extends ExpressionH[KindH] {
+  sourceExpression: ExpressionH[KindHT],
+  resultType: CoordH[KindHT],
+) extends ExpressionH[KindHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  vassert(indexExpression.resultType.kind == IntH.i32)
+  vassert(indexExpression.resultType.kind == IntHT.i32)
 
   // See BRCOBS, source shouldn't be Never.
   // Nevermind, type system guarantees it
   //  arrayExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
   //  indexExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
-  sourceExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
+  sourceExpression.resultType.kind match { case NeverHT(_) => vwat() case _ => }
 }
 
 // Loads from the array in arrayExpression at the index in indexExpression, and stores
@@ -403,15 +403,15 @@ case class RuntimeSizedArrayLoadH(
   // Expression containing the array whose element we'll read.
   arrayExpression: ExpressionH[RuntimeSizedArrayHT],
   // Expression containing the index of the element we'll read.
-  indexExpression: ExpressionH[IntH],
+  indexExpression: ExpressionH[IntHT],
   // The ownership to load as. For example, we might load a borrow reference from a
   // owning Car reference element.
   targetOwnership: OwnershipH,
-  expectedElementType: ReferenceH[KindH],
-  resultType: ReferenceH[KindH],
-) extends ExpressionH[KindH] {
+  expectedElementType: CoordH[KindHT],
+  resultType: CoordH[KindHT],
+) extends ExpressionH[KindHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  vassert(indexExpression.resultType.kind == IntH.i32)
+  vassert(indexExpression.resultType.kind == IntHT.i32)
 
   // See BRCOBS, source shouldn't be Never.
   // Nevermind, type system guarantees it
@@ -428,16 +428,16 @@ case class StaticSizedArrayLoadH(
   // Expression containing the array whose element we'll read.
   arrayExpression: ExpressionH[StaticSizedArrayHT],
   // Expression containing the index of the element we'll read.
-  indexExpression: ExpressionH[IntH],
+  indexExpression: ExpressionH[IntHT],
   // The ownership to load as. For example, we might load a borrow reference from a
   // owning Car reference element.
   targetOwnership: OwnershipH,
-  expectedElementType: ReferenceH[KindH],
+  expectedElementType: CoordH[KindHT],
   arraySize: Long,
-  resultType: ReferenceH[KindH],
-) extends ExpressionH[KindH] {
+  resultType: CoordH[KindHT],
+) extends ExpressionH[KindHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  vassert(indexExpression.resultType.kind == IntH.i32)
+  vassert(indexExpression.resultType.kind == IntHT.i32)
 
   // See BRCOBS, source shouldn't be Never.
   // Nevermind, type system guarantees it
@@ -450,15 +450,15 @@ case class CallH(
   // Identifies which function to call.
   function: PrototypeH,
   // Expressions containing the arguments to pass to the function.
-  argsExpressions: Vector[ExpressionH[KindH]]
-) extends ExpressionH[KindH] {
+  argsExpressions: Vector[ExpressionH[KindHT]]
+) extends ExpressionH[KindHT] {
   // See BRCOBS, no arguments should be Never.
   argsExpressions.foreach(expr => {
-    expr.resultType.kind match { case NeverH(_) => vwat() case _ => }
+    expr.resultType.kind match { case NeverHT(_) => vwat() case _ => }
   })
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  override def resultType: ReferenceH[KindH] = function.returnType
+  override def resultType: CoordH[KindHT] = function.returnType
 }
 
 // Calls a function defined in some other module.
@@ -466,26 +466,26 @@ case class ExternCallH(
   // Identifies which function to call.
   function: PrototypeH,
   // Expressions containing the arguments to pass to the function.
-  argsExpressions: Vector[ExpressionH[KindH]]
-) extends ExpressionH[KindH] {
+  argsExpressions: Vector[ExpressionH[KindHT]]
+) extends ExpressionH[KindHT] {
   // See BRCOBS, no arguments should be Never.
   argsExpressions.foreach(expr => {
-    expr.resultType.kind match { case NeverH(_) => vwat() case _ => }
+    expr.resultType.kind match { case NeverHT(_) => vwat() case _ => }
   })
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  override def resultType: ReferenceH[KindH] = function.returnType
+  override def resultType: CoordH[KindHT] = function.returnType
 }
 
 // Calls a function on an interface.
 case class InterfaceCallH(
   // Expressions containing the arguments to pass to the function.
-  argsExpressions: Vector[ExpressionH[KindH]],
+  argsExpressions: Vector[ExpressionH[KindHT]],
   // Which parameter has the interface whose table we'll read to get the function.
   virtualParamIndex: Int,
   // The type of the interface.
   // TODO: Take this out, it's redundant, can get it from argsExpressions[virtualParamIndex]
-  interfaceRefH: InterfaceRefH,
+  interfaceH: InterfaceHT,
   // The index in the vtable for the function.
   indexInEdge: Int,
   // The function we expect to be calling. Note that this is the prototype for the abstract
@@ -493,14 +493,14 @@ case class InterfaceCallH(
   // difference is that this prototype will have an interface at the virtualParamIndex'th
   // parameter, and the function that is eventually called will have a struct there.
   functionType: PrototypeH
-) extends ExpressionH[KindH] {
+) extends ExpressionH[KindHT] {
   // See BRCOBS, no arguments should be Never.
   argsExpressions.foreach(expr => {
-    expr.resultType.kind match { case NeverH(_) => vwat() case _ => }
+    expr.resultType.kind match { case NeverHT(_) => vwat() case _ => }
   })
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  override def resultType: ReferenceH[KindH] = functionType.returnType
+  override def resultType: CoordH[KindHT] = functionType.returnType
   vassert(indexInEdge >= 0)
 }
 
@@ -510,51 +510,51 @@ case class InterfaceCallH(
 case class IfH(
   // The block for the condition. If this results in a true, we'll run thenBlock, otherwise
   // we'll run elseBlock.
-  conditionBlock: ExpressionH[BoolH],
+  conditionBlock: ExpressionH[BoolHT],
   // The block to run if conditionBlock results in a true. The result of this block will be
   // put into expressionsId.
-  thenBlock: ExpressionH[KindH],
+  thenBlock: ExpressionH[KindHT],
   // The block to run if conditionBlock results in a false. The result of this block will be
   // put into expressionsId.
-  elseBlock: ExpressionH[KindH],
+  elseBlock: ExpressionH[KindHT],
 
-  commonSupertype: ReferenceH[KindH],
-) extends ExpressionH[KindH] {
+  commonSupertype: CoordH[KindHT],
+) extends ExpressionH[KindHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
   (thenBlock.resultType.kind, elseBlock.resultType.kind) match {
-    case (NeverH(false), _) =>
-    case (_, NeverH(false)) =>
-    case (NeverH(true), _) =>
-    case (_, NeverH(true)) =>
+    case (NeverHT(false), _) =>
+    case (_, NeverHT(false)) =>
+    case (NeverHT(true), _) =>
+    case (_, NeverHT(true)) =>
     case (a, b) if a == b =>
     case _ => vwat()
   }
-  override def resultType: ReferenceH[KindH] = commonSupertype
+  override def resultType: CoordH[KindHT] = commonSupertype
 }
 
 // A while loop. Continuously runs bodyBlock until it returns false.
 case class WhileH(
   // The block to run until it returns false.
-  bodyBlock: ExpressionH[KindH]
-) extends ExpressionH[KindH] {
+  bodyBlock: ExpressionH[KindHT]
+) extends ExpressionH[KindHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
 
   val resultCoord =
     bodyBlock.resultType.kind match {
-      case VoidH() => ReferenceH(ShareH, InlineH, VoidH())
-      case NeverH(true) => ReferenceH(ShareH, InlineH, VoidH())
-      case NeverH(false) => ReferenceH(ShareH, InlineH, NeverH(false))
+      case VoidHT() => CoordH(ShareH, InlineH, VoidHT())
+      case NeverHT(true) => CoordH(ShareH, InlineH, VoidHT())
+      case NeverHT(false) => CoordH(ShareH, InlineH, NeverHT(false))
       case _ => vwat()
     }
 
-  override def resultType: ReferenceH[KindH] = resultCoord
+  override def resultType: CoordH[KindHT] = resultCoord
 }
 
 // A collection of instructions. The last one will be used as the block's result.
 case class ConsecutorH(
   // The instructions to run.
-  exprs: Vector[ExpressionH[KindH]],
-) extends ExpressionH[KindH] {
+  exprs: Vector[ExpressionH[KindHT]],
+) extends ExpressionH[KindHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
   // We should simplify these away
   vassert(exprs.nonEmpty)
@@ -563,18 +563,18 @@ case class ConsecutorH(
     // The init ones should never just be VoidLiteralHs, those should be stripped out.
     // Use Hammer.consecutive to conform to this.
     nonLastResultLine match {
-      case NewStructH(Vector(), Vector(), ReferenceH(_, InlineH, _)) => vfail("Should be no creating voids in the middle of a consecutor!")
+      case NewStructH(Vector(), Vector(), CoordH(_, InlineH, _)) => vfail("Should be no creating voids in the middle of a consecutor!")
       case _ =>
     }
 
     // The init ones should always return void structs.
     // If there's a never somewhere in there, then there should be nothing afterward.
     // Use Hammer.consecutive to conform to this.
-    vassert(nonLastResultLine.resultType == ReferenceH(ShareH, InlineH, VoidH()))
+    vassert(nonLastResultLine.resultType == CoordH(ShareH, InlineH, VoidHT()))
   })
 
   val indexOfFirstNever =
-    exprs.map(_.resultType.kind).indexWhere({ case NeverH(_) => true case _ => false })
+    exprs.map(_.resultType.kind).indexWhere({ case NeverHT(_) => true case _ => false })
   if (indexOfFirstNever >= 0) {
     // The first never should be the last line. There shouldn't be anything after never.
     if (indexOfFirstNever != exprs.size - 1) {
@@ -582,7 +582,7 @@ case class ConsecutorH(
     }
   }
 
-  override def resultType: ReferenceH[KindH] = exprs.last.resultType
+  override def resultType: CoordH[KindHT] = exprs.last.resultType
 }
 
 //// A collection of instructions to evaluate, knowing that we'll never
@@ -630,23 +630,23 @@ case class ConsecutorH(
 // An expression where all locals declared inside will be destroyed by the time we exit.
 case class BlockH(
   // The instructions to run. This will probably be a consecutor.
-  inner: ExpressionH[KindH],
-) extends ExpressionH[KindH] {
+  inner: ExpressionH[KindHT],
+) extends ExpressionH[KindHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  override def resultType: ReferenceH[KindH] = inner.resultType
+  override def resultType: CoordH[KindHT] = inner.resultType
 }
 
 // Ends the current function and returns a reference. A function will always end
 // with a return statement.
 case class ReturnH(
   // The expressions to read from, whose value we'll return from the function.
-  sourceExpression: ExpressionH[KindH]
-) extends ExpressionH[NeverH] {
+  sourceExpression: ExpressionH[KindHT]
+) extends ExpressionH[NeverHT] {
   // See BRCOBS, no arguments should be Never.
-  sourceExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
+  sourceExpression.resultType.kind match { case NeverHT(_) => vwat() case _ => }
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  override def resultType: ReferenceH[NeverH] = ReferenceH(ShareH, InlineH, NeverH(false))
+  override def resultType: CoordH[NeverHT] = CoordH(ShareH, InlineH, NeverHT(false))
 }
 
 // Constructs an immutable unknown-size array, whose length is the integer from sizeExpression,
@@ -654,33 +654,33 @@ case class ReturnH(
 // result in a new expressions.
 case class NewImmRuntimeSizedArrayH(
   // Expression containing the size of the new array.
-  sizeExpression: ExpressionH[IntH],
+  sizeExpression: ExpressionH[IntHT],
   // Expression containing the IFunction<int, T> interface reference which we'll
   // call to generate each element of the array.
   // More specifically, we'll call the "__call" function on the interface, which
   // should be the only function on it.
   // This is a borrow reference.
-  generatorExpression: ExpressionH[KindH],
+  generatorExpression: ExpressionH[KindHT],
   // The prototype for the "__call" function to call on the interface for each element.
   generatorMethod: PrototypeH,
 
-  elementType: ReferenceH[KindH],
+  elementType: CoordH[KindHT],
   // The resulting type of the array.
   // TODO: Remove this, it's redundant with the generatorExpression's interface's
   // only method's return type.
-  resultType: ReferenceH[RuntimeSizedArrayHT]
+  resultType: CoordH[RuntimeSizedArrayHT]
 ) extends ExpressionH[RuntimeSizedArrayHT] {
   // See BRCOBS, no arguments should be Never.
   // Nevermind, type system guarantees it
   //  sizeExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
-  generatorExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
+  generatorExpression.resultType.kind match { case NeverHT(_) => vwat() case _ => }
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
   generatorExpression.resultType.ownership match {
     case ShareH | BorrowH =>
     case other => vwat(other)
   }
-  vassert(sizeExpression.resultType.kind == IntH.i32)
+  vassert(sizeExpression.resultType.kind == IntHT.i32)
 }
 
 // Constructs an empty mutable unknown-size array, whose length is the integer from capacityExpression,
@@ -688,12 +688,12 @@ case class NewImmRuntimeSizedArrayH(
 // result in a new expressions.
 case class NewMutRuntimeSizedArrayH(
   // Expression containing the capacity of the new array.
-  capacityExpression: ExpressionH[IntH],
+  capacityExpression: ExpressionH[IntHT],
 
-  elementType: ReferenceH[KindH],
+  elementType: CoordH[KindHT],
 
   // The resulting type of the array.
-  resultType: ReferenceH[RuntimeSizedArrayHT]
+  resultType: CoordH[RuntimeSizedArrayHT]
 ) extends ExpressionH[RuntimeSizedArrayHT] {
   // See BRCOBS, no arguments should be Never.
   // Nevermind, type system guarantees it
@@ -707,16 +707,16 @@ case class PushRuntimeSizedArrayH(
   // Expression for the array to add to.
   arrayExpression: ExpressionH[RuntimeSizedArrayHT],
   // Expression for the new element.
-  newcomerExpression: ExpressionH[KindH],
-) extends ExpressionH[KindH] {
+  newcomerExpression: ExpressionH[KindHT],
+) extends ExpressionH[KindHT] {
   // See BRCOBS, no arguments should be Never.
   // Nevermind, type system guarantees it
 //  arrayExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
-  newcomerExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
+  newcomerExpression.resultType.kind match { case NeverHT(_) => vwat() case _ => }
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
 
-  override def resultType: ReferenceH[KindH] = ReferenceH(ShareH, InlineH, VoidH())
+  override def resultType: CoordH[KindHT] = CoordH(ShareH, InlineH, VoidHT())
 }
 
 // Adds a new element to the end of a mutable unknown-size array.
@@ -724,15 +724,15 @@ case class PopRuntimeSizedArrayH(
   // Expression for the array to add to.
   arrayExpression: ExpressionH[RuntimeSizedArrayHT],
   // The element type for the array.
-  elementType: ReferenceH[KindH]
-) extends ExpressionH[KindH] {
+  elementType: CoordH[KindHT]
+) extends ExpressionH[KindHT] {
   // See BRCOBS, no arguments should be Never.
   // Nevermind, type system guarantees it
 //  arrayExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
 
-  override def resultType: ReferenceH[KindH] = elementType
+  override def resultType: CoordH[KindHT] = elementType
 }
 
 // Constructs an unknown-size array, whose length is the integer from sizeExpression,
@@ -744,18 +744,18 @@ case class StaticArrayFromCallableH(
   // More specifically, we'll call the "__call" function on the interface, which
   // should be the only function on it.
   // This is a borrow reference.
-  generatorExpression: ExpressionH[KindH],
+  generatorExpression: ExpressionH[KindHT],
   // The prototype for the "__call" function to call on the interface for each element.
   generatorMethod: PrototypeH,
 
-  elementType: ReferenceH[KindH],
+  elementType: CoordH[KindHT],
   // The resulting type of the array.
   // TODO: Remove this, it's redundant with the generatorExpression's interface's
   // only method's return type.
-  resultType: ReferenceH[StaticSizedArrayHT]
+  resultType: CoordH[StaticSizedArrayHT]
 ) extends ExpressionH[StaticSizedArrayHT] {
   // See BRCOBS, no arguments should be Never.
-  generatorExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
+  generatorExpression.resultType.kind match { case NeverHT(_) => vwat() case _ => }
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
   vassert(
@@ -769,19 +769,19 @@ case class DestroyStaticSizedArrayIntoFunctionH(
   // This is an owning reference.
   arrayExpression: ExpressionH[StaticSizedArrayHT],
   // Expression containing the argument we'll pass to consumerMethod with the element.
-  consumerExpression: ExpressionH[KindH],
+  consumerExpression: ExpressionH[KindHT],
   // The prototype for the "__call" function to call on the interface for each element.
   consumerMethod: PrototypeH,
-  arrayElementType: ReferenceH[KindH],
+  arrayElementType: CoordH[KindHT],
   arraySize: Long
-) extends ExpressionH[VoidH] {
+) extends ExpressionH[VoidHT] {
   // See BRCOBS, no arguments should be Never.
   // Nevermind, type system guarantees it
 //  arrayExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
-  consumerExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
+  consumerExpression.resultType.kind match { case NeverHT(_) => vwat() case _ => }
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, VoidH())
+  override def resultType: CoordH[VoidHT] = CoordH(ShareH, InlineH, VoidHT())
 }
 
 // Destroys an array previously created with ConstructRuntimeSizedArrayH.
@@ -790,18 +790,18 @@ case class DestroyImmRuntimeSizedArrayH(
   // This is an owning reference.
   arrayExpression: ExpressionH[RuntimeSizedArrayHT],
   // Expression containing the argument we'll pass to consumerMethod with the element.
-  consumerExpression: ExpressionH[KindH],
+  consumerExpression: ExpressionH[KindHT],
   // The prototype for the "__call" function to call on the interface for each element.
   consumerMethod: PrototypeH,
-  arrayElementType: ReferenceH[KindH],
-) extends ExpressionH[VoidH] {
+  arrayElementType: CoordH[KindHT],
+) extends ExpressionH[VoidHT] {
   // See BRCOBS, no arguments should be Never.
   // Nevermind, type system guarantees it
 //  arrayExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
-  consumerExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
+  consumerExpression.resultType.kind match { case NeverHT(_) => vwat() case _ => }
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, VoidH())
+  override def resultType: CoordH[VoidHT] = CoordH(ShareH, InlineH, VoidHT())
 }
 
 // Destroys an array previously created with ConstructRuntimeSizedArrayH.
@@ -809,132 +809,132 @@ case class DestroyMutRuntimeSizedArrayH(
   // Expression containing the array we'll destroy.
   // This is an owning reference.
   arrayExpression: ExpressionH[RuntimeSizedArrayHT]
-) extends ExpressionH[VoidH] {
+) extends ExpressionH[VoidHT] {
   // See BRCOBS, no arguments should be Never.
   // Nevermind, type system guarantees it
 //  arrayExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, VoidH())
+  override def resultType: CoordH[VoidHT] = CoordH(ShareH, InlineH, VoidHT())
 }
 
 // Jumps to after the closest containing loop.
-case class BreakH() extends ExpressionH[NeverH] {
+case class BreakH() extends ExpressionH[NeverHT] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  override def resultType: ReferenceH[NeverH] = ReferenceH(ShareH, InlineH, NeverH(true))
+  override def resultType: CoordH[NeverHT] = CoordH(ShareH, InlineH, NeverHT(true))
 }
 
 // Creates a new struct instance.
 case class NewStructH(
   // Expressions containing the values we'll use as members of the new struct.
-  sourceExpressions: Vector[ExpressionH[KindH]],
+  sourceExpressions: Vector[ExpressionH[KindHT]],
   // Names of the members of the struct, in order.
-  targetMemberNames: Vector[FullNameH],
+  targetMemberNames: Vector[IdH],
   // The type of struct we'll create.
-  resultType: ReferenceH[StructRefH]
-) extends ExpressionH[StructRefH] {
+  resultType: CoordH[StructHT]
+) extends ExpressionH[StructHT] {
   // See BRCOBS, no arguments should be Never.
   sourceExpressions.foreach(expr => {
-    expr.resultType.kind match { case NeverH(_) => vwat() case _ => }
+    expr.resultType.kind match { case NeverHT(_) => vwat() case _ => }
   })
 }
 
 // Gets the length of an unknown-sized array.
 case class ArrayLengthH(
   // Expression containing the array whose length we'll get.
-  sourceExpression: ExpressionH[KindH],
-) extends ExpressionH[IntH] {
+  sourceExpression: ExpressionH[KindHT],
+) extends ExpressionH[IntHT] {
   // See BRCOBS, no arguments should be Never.
-  sourceExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
+  sourceExpression.resultType.kind match { case NeverHT(_) => vwat() case _ => }
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  override def resultType: ReferenceH[IntH] = ReferenceH(ShareH, InlineH, IntH.i32)
+  override def resultType: CoordH[IntHT] = CoordH(ShareH, InlineH, IntHT.i32)
 }
 
 // Gets the capacity of an unknown-sized array.
 case class ArrayCapacityH(
   // Expression containing the array whose length we'll get.
-  sourceExpression: ExpressionH[KindH],
-) extends ExpressionH[IntH] {
+  sourceExpression: ExpressionH[KindHT],
+) extends ExpressionH[IntHT] {
   // See BRCOBS, no arguments should be Never.
-  sourceExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
+  sourceExpression.resultType.kind match { case NeverHT(_) => vwat() case _ => }
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  override def resultType: ReferenceH[IntH] = ReferenceH(ShareH, InlineH, IntH.i32)
+  override def resultType: CoordH[IntHT] = CoordH(ShareH, InlineH, IntHT.i32)
 }
 
 // Turns a borrow ref into a weak ref.
 case class BorrowToWeakH(
   // Expression containing the borrow reference to turn into a weak ref.
-  refExpression: ExpressionH[KindH],
-) extends ExpressionH[KindH] {
+  refExpression: ExpressionH[KindHT],
+) extends ExpressionH[KindHT] {
   // See BRCOBS, no arguments should be Never.
-  refExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
+  refExpression.resultType.kind match { case NeverHT(_) => vwat() case _ => }
 
   vassert(refExpression.resultType.ownership == BorrowH)
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  override def resultType: ReferenceH[KindH] = ReferenceH(WeakH, YonderH, refExpression.resultType.kind)
+  override def resultType: CoordH[KindHT] = CoordH(WeakH, YonderH, refExpression.resultType.kind)
 }
 
 // Checks if the given args are the same instance.
 case class IsSameInstanceH(
-  leftExpression: ExpressionH[KindH],
-  rightExpression: ExpressionH[KindH],
-) extends ExpressionH[KindH] {
+  leftExpression: ExpressionH[KindHT],
+  rightExpression: ExpressionH[KindHT],
+) extends ExpressionH[KindHT] {
   // See BRCOBS, no arguments should be Never.
-  leftExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
-  rightExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
+  leftExpression.resultType.kind match { case NeverHT(_) => vwat() case _ => }
+  rightExpression.resultType.kind match { case NeverHT(_) => vwat() case _ => }
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-  override def resultType: ReferenceH[KindH] = ReferenceH(ShareH, InlineH, BoolH())
+  override def resultType: CoordH[KindHT] = CoordH(ShareH, InlineH, BoolHT())
 }
 
 // Tries to downcast to the specified subtype and wrap in a Some.
 // If it fails, will result in a None.
 case class AsSubtypeH(
   // Expression whose result we'll try to downcast
-  sourceExpression: ExpressionH[KindH],
+  sourceExpression: ExpressionH[KindHT],
   // The subtype to try and cast the source to.
-  targetType: KindH,
+  targetType: KindHT,
   // Should be an owned ref to optional of something
-  resultType: ReferenceH[InterfaceRefH],
+  resultType: CoordH[InterfaceHT],
   // Function to give a ref to to make a Some(ref) {
   // val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
   someConstructor: PrototypeH,
   // Function to make a None of the right type
   noneConstructor: PrototypeH,
-) extends ExpressionH[KindH] {
+) extends ExpressionH[KindHT] {
   // See BRCOBS, no arguments should be Never.
-  sourceExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
+  sourceExpression.resultType.kind match { case NeverHT(_) => vwat() case _ => }
 }
 
 // Locks a weak ref to turn it into an optional of borrow ref.
 case class LockWeakH(
   // Expression containing the array whose length we'll get.
-  sourceExpression: ExpressionH[KindH],
+  sourceExpression: ExpressionH[KindHT],
   // Should be an owned ref to optional of borrow ref of something
-  resultType: ReferenceH[InterfaceRefH],
+  resultType: CoordH[InterfaceHT],
   // Function to give a borrow ref to to make a Some(borrow ref)
   someConstructor: PrototypeH,
   // Function to make a None of the right type
   noneConstructor: PrototypeH,
-) extends ExpressionH[KindH] {
+) extends ExpressionH[KindHT] {
   // See BRCOBS, no arguments should be Never.
-  sourceExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
+  sourceExpression.resultType.kind match { case NeverHT(_) => vwat() case _ => }
 }
 
 // See DINSIE for why this isn't three instructions, and why we don't have the
 // destructor prototype in it.
-case class DiscardH(sourceExpression: ExpressionH[KindH]) extends ExpressionH[VoidH] {
+case class DiscardH(sourceExpression: ExpressionH[KindHT]) extends ExpressionH[VoidHT] {
   // See BRCOBS, no arguments should be Never.
-  sourceExpression.resultType.kind match { case NeverH(_) => vwat() case _ => }
+  sourceExpression.resultType.kind match { case NeverHT(_) => vwat() case _ => }
 
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
   sourceExpression.resultType.ownership match {
     case BorrowH | ShareH | WeakH =>
   }
-  override def resultType: ReferenceH[VoidH] = ReferenceH(ShareH, InlineH, VoidH())
+  override def resultType: CoordH[VoidHT] = CoordH(ShareH, InlineH, VoidHT())
 }
 
 trait IExpressionH {
@@ -951,9 +951,9 @@ trait IExpressionH {
     }
   }
 }
-case class ReferenceExpressionH(reference: ReferenceH[KindH]) extends IExpressionH {
+case class ReferenceExpressionH(reference: CoordH[KindHT]) extends IExpressionH {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
-case class AddressExpressionH(reference: ReferenceH[KindH]) extends IExpressionH {
+case class AddressExpressionH(reference: CoordH[KindHT]) extends IExpressionH {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
 // Identifies a local variable.
@@ -965,7 +965,7 @@ case class Local(
   variability: Variability,
 
   // The type of the reference this local variable has.
-  typeH: ReferenceH[KindH],
+  typeH: CoordH[KindHT],
 
   // Usually filled by catalyst, for Midas' benefit. Used in HGM.
   keepAlive: Boolean) {
@@ -978,6 +978,6 @@ case class VariableIdH(
   // Where the variable is relative to the stack frame's beginning.
   height: Int,
   // Just for debugging purposes
-  name: Option[FullNameH]) {
+  name: Option[IdH]) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 }

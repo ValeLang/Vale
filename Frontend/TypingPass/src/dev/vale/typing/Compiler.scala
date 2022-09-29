@@ -143,15 +143,15 @@ class Compiler(
       keywords,
       nameTranslator,
       new IInfererDelegate {
-        def getPlaceholdersInFullName(accum: Accumulator[FullNameT[INameT]], fullName: FullNameT[INameT]): Unit = {
-          fullName.last match {
+        def getPlaceholdersInFullName(accum: Accumulator[IdT[INameT]], fullName: IdT[INameT]): Unit = {
+          fullName.localName match {
             case PlaceholderNameT(_) => accum.add(fullName)
             case PlaceholderTemplateNameT(_) => accum.add(fullName)
             case _ =>
           }
         }
 
-        def getPlaceholdersInTemplata(accum: Accumulator[FullNameT[INameT]], templata: ITemplata[ITemplataType]): Unit = {
+        def getPlaceholdersInTemplata(accum: Accumulator[IdT[INameT]], templata: ITemplata[ITemplataType]): Unit = {
           templata match {
             case KindTemplata(kind) => getPlaceholdersInKind(accum, kind)
             case CoordTemplata(CoordT(_, kind)) => getPlaceholdersInKind(accum, kind)
@@ -182,7 +182,7 @@ class Compiler(
           }
         }
 
-        def getPlaceholdersInKind(accum: Accumulator[FullNameT[INameT]], kind: KindT): Unit = {
+        def getPlaceholdersInKind(accum: Accumulator[IdT[INameT]], kind: KindT): Unit = {
           kind match {
             case IntT(_) =>
             case BoolT() =>
@@ -200,8 +200,8 @@ class Compiler(
               getPlaceholdersInTemplata(accum, variability)
               getPlaceholdersInKind(accum, elementType.kind)
             }
-            case StructTT(FullNameT(_,_,name)) => name.templateArgs.foreach(getPlaceholdersInTemplata(accum, _))
-            case InterfaceTT(FullNameT(_,_,name)) => name.templateArgs.foreach(getPlaceholdersInTemplata(accum, _))
+            case StructTT(IdT(_,_,name)) => name.templateArgs.foreach(getPlaceholdersInTemplata(accum, _))
+            case InterfaceTT(IdT(_,_,name)) => name.templateArgs.foreach(getPlaceholdersInTemplata(accum, _))
             case PlaceholderT(fullName) => accum.add(fullName)
             case OverloadSetT(env, name) =>
             case other => vimpl(other)
@@ -209,22 +209,22 @@ class Compiler(
         }
 
         override def sanityCheckConclusion(env: InferEnv, state: CompilerOutputs, rune: IRuneS, templata: ITemplata[ITemplataType]): Unit = {
-          val accum = new Accumulator[FullNameT[INameT]]()
+          val accum = new Accumulator[IdT[INameT]]()
           getPlaceholdersInTemplata(accum, templata)
 
           if (accum.elementsReversed.nonEmpty) {
             val rootDenizenEnv = env.originalCallingEnv.rootCompilingDenizenEnv
             val originalCallingEnvTemplateName =
               rootDenizenEnv.fullName match {
-                case FullNameT(packageCoord, initSteps, x: ITemplateNameT) => {
-                  FullNameT(packageCoord, initSteps, x)
+                case IdT(packageCoord, initSteps, x: ITemplateNameT) => {
+                  IdT(packageCoord, initSteps, x)
                 }
                 // When we compile a generic function, we populate some placeholders for its template
                 // args. Then, we start compiling its body expressions. At that point, we're in an
                 // environment that has a FullName with placeholders in it.
                 // That's what we'll see in this case.
-                case FullNameT(packageCoord, initSteps, x: IInstantiationNameT) => {
-                  FullNameT(packageCoord, initSteps, x.template)
+                case IdT(packageCoord, initSteps, x: IInstantiationNameT) => {
+                  IdT(packageCoord, initSteps, x.template)
                 }
                 case other => vfail(other)
               }
@@ -692,7 +692,7 @@ class Compiler(
   val rsaFreeMacro = new RSAFreeMacro(interner, keywords, arrayCompiler, overloadResolver, destructorCompiler)
   val ssaFreeMacro = new SSAFreeMacro(interner, keywords, arrayCompiler, overloadResolver, destructorCompiler)
 //  val ssaLenMacro = new SSALenMacro(keywords)
-  val implDropMacro = new ImplDropMacro(interner, nameTranslator)
+//  val implDropMacro = new ImplDropMacro(interner, nameTranslator)
 //  val implFreeMacro = new ImplFreeMacro(interner, keywords, nameTranslator)
   val interfaceDropMacro = new InterfaceDropMacro(interner, keywords, nameTranslator)
   val abstractBodyMacro = new AbstractBodyMacro(interner, keywords, overloadResolver)
@@ -700,7 +700,7 @@ class Compiler(
   val sameInstanceMacro = new SameInstanceMacro(keywords)
   val anonymousInterfaceMacro =
     new AnonymousInterfaceMacro(
-      opts, interner, keywords, nameTranslator, overloadResolver, structCompiler, structConstructorMacro, structDropMacro, implDropMacro)
+      opts, interner, keywords, nameTranslator, overloadResolver, structCompiler, structConstructorMacro, structDropMacro)
 
 
   def evaluate(packageToProgramA: PackageCoordinateMap[ProgramA]): Result[Hinputs, ICompileErrorT] = {
@@ -739,9 +739,9 @@ class Compiler(
             sameInstanceMacro.generatorId -> sameInstanceMacro,
             asSubtypeMacro.generatorId -> asSubtypeMacro)
 
-        val fullNameAndEnvEntry: Vector[(FullNameT[INameT], IEnvEntry)] =
+        val fullNameAndEnvEntry: Vector[(IdT[INameT], IEnvEntry)] =
           packageToProgramA.flatMap({ case (coord, programA) =>
-            val packageName = FullNameT(coord, Vector(), interner.intern(PackageTopLevelNameT()))
+            val packageName = IdT(coord, Vector(), interner.intern(PackageTopLevelNameT()))
             programA.structs.map(structA => {
               val structNameT = packageName.addStep(nameTranslator.translateNameStep(structA.name))
               Vector((structNameT, StructEnvEntry(structA))) ++
@@ -754,8 +754,7 @@ class Compiler(
             }) ++
             programA.impls.map(implA => {
               val implNameT = packageName.addStep(nameTranslator.translateImplName(implA.name))
-              Vector((implNameT, ImplEnvEntry(implA))) ++
-              implDropMacro.getImplSiblingEntries(implNameT, implA)
+              Vector((implNameT, ImplEnvEntry(implA)))
             }) ++
             programA.functions.map(functionA => {
               val functionNameT = packageName.addStep(nameTranslator.translateGenericFunctionName(functionA.name))
@@ -766,7 +765,7 @@ class Compiler(
         val namespaceNameToTemplatas =
           fullNameAndEnvEntry
             .map({ case (name, envEntry) =>
-              (name.copy(last = interner.intern(PackageTopLevelNameT())), name.last, envEntry)
+              (name.copy(localName = interner.intern(PackageTopLevelNameT())), name.localName, envEntry)
             })
             .groupBy(_._1)
             .map({ case (packageFullName, envEntries) =>
@@ -790,7 +789,7 @@ class Compiler(
             nameToFunctionBodyMacro,
             namespaceNameToTemplatas,
             // Bulitins
-            env.TemplatasStore(FullNameT(PackageCoordinate.BUILTIN(interner, keywords), Vector(), interner.intern(PackageTopLevelNameT())), Map(), Map()).addEntries(
+            env.TemplatasStore(IdT(PackageCoordinate.BUILTIN(interner, keywords), Vector(), interner.intern(PackageTopLevelNameT())), Map(), Map()).addEntries(
               interner,
               Vector[(INameT, IEnvEntry)](
                 interner.intern(PrimitiveNameT(keywords.int)) -> TemplataEnvEntry(KindTemplata(IntT.i32)),
@@ -871,7 +870,7 @@ class Compiler(
 
         globalEnv.nameToTopLevelEnvironment.foreach({
           // Anything in global scope should be compiled
-          case (namespaceCoord @ FullNameT(_, Vector(), PackageTopLevelNameT()), templatas) => {
+          case (namespaceCoord @ IdT(_, Vector(), PackageTopLevelNameT()), templatas) => {
             val env = PackageEnvironment.makeTopLevelEnvironment(globalEnv, namespaceCoord)
             templatas.entriesByNameT.map({ case (name, entry) =>
               entry match {
@@ -884,13 +883,13 @@ class Compiler(
             })
           }
           // Anything underneath something else should be skipped, we'll evaluate those later on.
-          case (FullNameT(_, anythingElse, PackageTopLevelNameT()), _) =>
+          case (IdT(_, anythingElse, PackageTopLevelNameT()), _) =>
         })
 
         packageToProgramA.flatMap({ case (packageCoord, programA) =>
           val env =
             PackageEnvironment.makeTopLevelEnvironment(
-              globalEnv, FullNameT(packageCoord, Vector(), interner.intern(PackageTopLevelNameT())))
+              globalEnv, IdT(packageCoord, Vector(), interner.intern(PackageTopLevelNameT())))
 
           programA.exports.foreach({ case ExportAsA(range, exportedName, rules, runeToType, typeRuneA) =>
             val typeRuneT = typeRuneA
@@ -919,7 +918,7 @@ class Compiler(
         val rootPackageEnv =
           PackageEnvironment.makeTopLevelEnvironment(
             globalEnv,
-            FullNameT(builtinPackageCoord, Vector(), interner.intern(PackageTopLevelNameT())))
+            IdT(builtinPackageCoord, Vector(), interner.intern(PackageTopLevelNameT())))
 
 //        val freeImpreciseName = interner.intern(FreeImpreciseNameS())
 //        val dropImpreciseName = interner.intern(CodeNameS(keywords.drop))
@@ -1072,7 +1071,7 @@ class Compiler(
             reachableInterfaces.toVector,
             reachableStructs.toVector,
             reachableFunctions.toVector,
-//            Map(), // Will be populated by monomorphizer
+//            Map(), // Will be populated by instantiator
             interfaceEdgeBlueprints.groupBy(_.interface).mapValues(vassertOne(_)),
             interfaceToSubCitizenToEdge,
             coutputs.getInstantiationNameToFunctionBoundToRune(),
@@ -1092,8 +1091,8 @@ class Compiler(
 
   private def preprocessStruct(
     nameToStructDefinedMacro: Map[StrI, IOnStructDefinedMacro],
-    structNameT: FullNameT[INameT],
-    structA: StructA): Vector[(FullNameT[INameT], IEnvEntry)] = {
+    structNameT: IdT[INameT],
+    structA: StructA): Vector[(IdT[INameT], IEnvEntry)] = {
     val defaultCalledMacros =
       Vector(
         MacroCallS(structA.range, CallMacroP, keywords.DeriveStructConstructor),
@@ -1106,9 +1105,9 @@ class Compiler(
 
   private def preprocessInterface(
     nameToInterfaceDefinedMacro: Map[StrI, IOnInterfaceDefinedMacro],
-    interfaceNameT: FullNameT[INameT],
+    interfaceNameT: IdT[INameT],
     interfaceA: InterfaceA):
-  Vector[(FullNameT[INameT], IEnvEntry)] = {
+  Vector[(IdT[INameT], IEnvEntry)] = {
     val defaultCalledMacros =
       Vector(
         MacroCallS(interfaceA.range, CallMacroP, keywords.DeriveInterfaceDrop),

@@ -22,7 +22,7 @@ import dev.vale.typing.{ast, _}
 import dev.vale.typing.ast._
 import dev.vale.typing.env._
 import dev.vale.typing.function.FunctionCompiler.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
-import dev.vale.typing.names.{ArbitraryNameT, CitizenTemplateNameT, ClosureParamNameT, CodeVarNameT, FullNameT, IImplNameT, IVarNameT, NameTranslator, RuneNameT, TypingPassBlockResultVarNameT, TypingPassFunctionResultVarNameT}
+import dev.vale.typing.names.{ArbitraryNameT, CitizenTemplateNameT, ClosureParamNameT, CodeVarNameT, IdT, IImplNameT, IVarNameT, NameTranslator, RuneNameT, TypingPassBlockResultVarNameT, TypingPassFunctionResultVarNameT}
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
@@ -175,7 +175,7 @@ class ExpressionCompiler(
         val closuredVarsStructDef = coutputs.lookupStruct(closuredVarsStructRef)
         vassert(closuredVarsStructDef.members.exists(member => closuredVarsStructRef.fullName.addStep(member.name) == id))
 
-        val index = closuredVarsStructDef.members.indexWhere(_.name == id.last)
+        val index = closuredVarsStructDef.members.indexWhere(_.name == id.localName)
 //        val ownershipInClosureStruct = closuredVarsStructDef.members(index).tyype.reference.ownership
         val lookup = ast.AddressMemberLookupTE(loadRange, borrowExpr, id, tyype, variability)
         Some(lookup)
@@ -218,7 +218,7 @@ class ExpressionCompiler(
       }
       case Some(rlv @ ReferenceLocalVariableT(varId, variability, reference)) => {
         if (nenv.unstackifieds.contains(varId)) {
-          throw CompileErrorExceptionT(CantUseUnstackifiedLocal(ranges, varId.last))
+          throw CompileErrorExceptionT(CantUseUnstackifiedLocal(ranges, varId.localName))
         }
         Some(LocalLookupTE(ranges.head, rlv))
       }
@@ -243,7 +243,7 @@ class ExpressionCompiler(
 
         vassert(closuredVarsStructRef.fullName.steps == id.steps.init)
 
-        vassert(closuredVarsStructDef.members.map(_.name).contains(id.last))
+        vassert(closuredVarsStructDef.members.map(_.name).contains(id.localName))
         val lookup = AddressMemberLookupTE(ranges.head, borrowExpr, id, tyype, variability)
         Some(lookup)
       }
@@ -261,7 +261,7 @@ class ExpressionCompiler(
         val closuredVarsStructRefCoord = CoordT(ownership, closuredVarsStructRef)
         val closuredVarsStructDef = coutputs.lookupStruct(closuredVarsStructRef)
 
-        vassert(closuredVarsStructDef.members.map(_.name).contains(varName.last))
+        vassert(closuredVarsStructDef.members.map(_.name).contains(varName.localName))
 
         val borrowExpr =
           localHelper.borrowSoftLoad(
@@ -306,7 +306,7 @@ class ExpressionCompiler(
               val coord = substituter.substituteForCoord(coutputs, unsubstitutedCoord)
               // We might have to softload an own into a borrow, but the kinds
               // should at least be the same right here.
-              vassert(coord.kind == lookup.result.reference.kind)
+              vassert(coord.kind == lookup.result.coord.kind)
               // Closures never contain owning references.
               // If we're capturing an own, then on the inside of the closure
               // it's a borrow or a weak. See "Captured own is borrow" test for more.
@@ -316,7 +316,7 @@ class ExpressionCompiler(
             }
             case AddressMemberTypeT(unsubstitutedCoord) => {
               val coord = substituter.substituteForCoord(coutputs, unsubstitutedCoord)
-              vassert(coord == lookup.result.reference)
+              vassert(coord == lookup.result.coord)
               (lookup)
             }
             case _ => vwat()
@@ -401,7 +401,7 @@ class ExpressionCompiler(
           val paramCoordRune = nenv.function.params(index).pattern.coordRune.get
           val paramCoordTemplata = vassertOne(nenv.lookupNearestWithImpreciseName(interner.intern(RuneNameS(paramCoordRune.rune)), Set(TemplataLookupContext)))
           val CoordTemplata(paramCoord) = paramCoordTemplata
-          vassert(nenv.functionEnvironment.fullName.last.parameters(index) == paramCoord)
+          vassert(nenv.functionEnvironment.fullName.localName.parameters(index) == paramCoord)
           (ArgLookupTE(index, paramCoord), Set())
         }
         case FunctionCallSE(range, OutsideLoadSE(_, rules, name, maybeTemplateArgs, callableTargetOwnership), argsExprs1) => {
@@ -454,7 +454,7 @@ class ExpressionCompiler(
           val (sourceTE, returnsFromInner) =
             evaluateAndCoerceToReferenceExpression(coutputs, nenv, life + 0, parentRanges, sourceSE);
           val resultExpr2 =
-            sourceTE.result.underlyingReference.ownership match {
+            sourceTE.result.underlyingCoord.ownership match {
               case OwnT => {
                 loadAsP match {
                   case MoveP => {
@@ -564,15 +564,15 @@ class ExpressionCompiler(
 
           val isConvertible =
             templataCompiler.isTypeConvertible(
-              coutputs, nenv.snapshot, range :: parentRanges, unconvertedSourceExpr2.result.reference, destinationExpr2.result.reference)
+              coutputs, nenv.snapshot, range :: parentRanges, unconvertedSourceExpr2.result.coord, destinationExpr2.result.coord)
           if (!isConvertible) {
             throw CompileErrorExceptionT(
               CouldntConvertForMutateT(
-                range :: parentRanges, destinationExpr2.result.reference, unconvertedSourceExpr2.result.reference))
+                range :: parentRanges, destinationExpr2.result.coord, unconvertedSourceExpr2.result.coord))
           }
           vassert(isConvertible)
           val convertedSourceExpr2 =
-            convertHelper.convert(nenv.snapshot, coutputs, range :: parentRanges, unconvertedSourceExpr2, destinationExpr2.result.reference);
+            convertHelper.convert(nenv.snapshot, coutputs, range :: parentRanges, unconvertedSourceExpr2, destinationExpr2.result.coord);
 
           val mutate2 = MutateTE(destinationExpr2, convertedSourceExpr2);
           (mutate2, returnsFromSource)
@@ -593,22 +593,22 @@ class ExpressionCompiler(
                 }
               }
               case RuntimeSizedArrayLookupTE(range, arrayExpr, arrayType, _, _) => {
-                throw CompileErrorExceptionT(CantMutateFinalElement(range :: parentRanges, arrayExpr.result.reference))
+                throw CompileErrorExceptionT(CantMutateFinalElement(range :: parentRanges, arrayExpr.result.coord))
               }
               case StaticSizedArrayLookupTE(range, arrayExpr, arrayType, _, _) => {
-                throw CompileErrorExceptionT(CantMutateFinalElement(range :: parentRanges, arrayExpr.result.reference))
+                throw CompileErrorExceptionT(CantMutateFinalElement(range :: parentRanges, arrayExpr.result.coord))
               }
               case x => vimpl(x.toString)
             }
           }
 
           val isConvertible =
-            templataCompiler.isTypeConvertible(coutputs, nenv.snapshot, range :: parentRanges, unconvertedSourceExpr2.result.reference, destinationExpr2.result.reference)
+            templataCompiler.isTypeConvertible(coutputs, nenv.snapshot, range :: parentRanges, unconvertedSourceExpr2.result.coord, destinationExpr2.result.coord)
           if (!isConvertible) {
-            throw CompileErrorExceptionT(CouldntConvertForMutateT(range :: parentRanges, destinationExpr2.result.reference, unconvertedSourceExpr2.result.reference))
+            throw CompileErrorExceptionT(CouldntConvertForMutateT(range :: parentRanges, destinationExpr2.result.coord, unconvertedSourceExpr2.result.coord))
           }
           val convertedSourceExpr2 =
-            convertHelper.convert(nenv.snapshot, coutputs, range :: parentRanges, unconvertedSourceExpr2, destinationExpr2.result.reference);
+            convertHelper.convert(nenv.snapshot, coutputs, range :: parentRanges, unconvertedSourceExpr2, destinationExpr2.result.coord);
 
           val mutate2 = MutateTE(destinationExpr2, convertedSourceExpr2);
           (mutate2, returnsFromSource ++ returnsFromDestination)
@@ -627,7 +627,7 @@ class ExpressionCompiler(
             evaluateAndCoerceToReferenceExpression(coutputs, nenv, life + 2, parentRanges, indexExpr1);
 
           val exprTemplata =
-            containerExpr2.result.reference.kind match {
+            containerExpr2.result.coord.kind match {
               case rsa @ contentsRuntimeSizedArrayTT(_, _) => {
                 arrayCompiler.lookupInUnknownSizedArray(parentRanges, range, containerExpr2, indexExpr2, rsa)
               }
@@ -655,7 +655,7 @@ class ExpressionCompiler(
 //                  case _ => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Struct random access not implemented yet!"))
 //                }
 //              }
-              case _ => throw CompileErrorExceptionT(CannotSubscriptT(range :: parentRanges, containerExpr2.result.reference.kind))
+              case _ => throw CompileErrorExceptionT(CannotSubscriptT(range :: parentRanges, containerExpr2.result.coord.kind))
               // later on, a map type could go here
             }
           (exprTemplata, returnsFromContainerExpr ++ returnsFromIndexExpr)
@@ -668,7 +668,7 @@ class ExpressionCompiler(
             dotBorrow(coutputs, nenv, range :: parentRanges, life + 1, unborrowedContainerExpr2)
 
           val expr2 =
-            containerExpr2.result.reference.kind match {
+            containerExpr2.result.coord.kind match {
               case structTT@StructTT(_) => {
                 val structDef = coutputs.lookupStruct(structTT)
                 val (structMember, memberIndex) =
@@ -816,8 +816,8 @@ class ExpressionCompiler(
 
           val (conditionExpr, returnsFromCondition) =
             evaluateAndCoerceToReferenceExpression(coutputs, nenv, life + 1, parentRanges, conditionSE)
-          if (conditionExpr.result.reference != CoordT(ShareT, BoolT())) {
-            throw CompileErrorExceptionT(IfConditionIsntBoolean(conditionSE.range :: parentRanges, conditionExpr.result.reference))
+          if (conditionExpr.result.coord != CoordT(ShareT, BoolT())) {
+            throw CompileErrorExceptionT(IfConditionIsntBoolean(conditionSE.range :: parentRanges, conditionExpr.result.coord))
           }
 
 
@@ -829,7 +829,7 @@ class ExpressionCompiler(
 
           val thenUnstackifiedAncestorLocals = thenFate.snapshot.getEffectsSince(nenv.snapshot)
           val thenContinues =
-            uncoercedThenBlock2.result.reference.kind match {
+            uncoercedThenBlock2.result.coord.kind match {
               case NeverT(_) => false
               case _ => true
             }
@@ -842,34 +842,34 @@ class ExpressionCompiler(
 
           val elseUnstackifiedAncestorLocals = elseFate.snapshot.getEffectsSince(nenv.snapshot)
           val elseContinues =
-            uncoercedElseBlock2.result.reference.kind match {
+            uncoercedElseBlock2.result.coord.kind match {
               case NeverT(_) => false
               case _ => true
             }
 
-          if (thenContinues && elseContinues && uncoercedThenBlock2.result.reference.ownership != uncoercedElseBlock2.result.reference.ownership) {
-            throw CompileErrorExceptionT(CantReconcileBranchesResults(range :: parentRanges, uncoercedThenBlock2.result.reference, uncoercedElseBlock2.result.reference))
+          if (thenContinues && elseContinues && uncoercedThenBlock2.result.coord.ownership != uncoercedElseBlock2.result.coord.ownership) {
+            throw CompileErrorExceptionT(CantReconcileBranchesResults(range :: parentRanges, uncoercedThenBlock2.result.coord, uncoercedElseBlock2.result.coord))
           }
 
           val commonType =
             (uncoercedThenBlock2.kind, uncoercedElseBlock2.kind) match {
               // If one side has a return-never, use the other side.
-              case (NeverT(false), _) => uncoercedElseBlock2.result.reference
-              case (_, NeverT(false)) => uncoercedThenBlock2.result.reference
+              case (NeverT(false), _) => uncoercedElseBlock2.result.coord
+              case (_, NeverT(false)) => uncoercedThenBlock2.result.coord
               // If we get here, theres no return-nevers in play.
               // If one side has a break-never, use the other side.
-              case (NeverT(true), _) => uncoercedElseBlock2.result.reference
-              case (_, NeverT(true)) => uncoercedThenBlock2.result.reference
-              case (a, b) if a == b => uncoercedThenBlock2.result.reference
+              case (NeverT(true), _) => uncoercedElseBlock2.result.coord
+              case (_, NeverT(true)) => uncoercedThenBlock2.result.coord
+              case (a, b) if a == b => uncoercedThenBlock2.result.coord
               case (a : ICitizenTT, b : ICitizenTT) => {
                 val aAncestors = ancestorHelper.getParents(coutputs, parentRanges, nenv.snapshot, a, true).toSet
                 val bAncestors = ancestorHelper.getParents(coutputs, parentRanges, nenv.snapshot, b, true).toSet
                 val commonAncestors = aAncestors.intersect(bAncestors)
 
-                if (uncoercedElseBlock2.result.reference.ownership != uncoercedElseBlock2.result.reference.ownership) {
+                if (uncoercedElseBlock2.result.coord.ownership != uncoercedElseBlock2.result.coord.ownership) {
                   throw CompileErrorExceptionT(RangedInternalErrorT(range :: parentRanges, "Two branches of if have different ownerships!\\n${a}\\n${b}"))
                 }
-                val ownership = uncoercedElseBlock2.result.reference.ownership
+                val ownership = uncoercedElseBlock2.result.coord.ownership
 
                 if (commonAncestors.isEmpty) {
                   throw CompileErrorExceptionT(RangedInternalErrorT(range :: parentRanges, s"No common ancestors of two branches of if:\n${a}\n${b}"))
@@ -880,7 +880,7 @@ class ExpressionCompiler(
                 }
               }
               case (a, b) => {
-                throw CompileErrorExceptionT(CantReconcileBranchesResults(range :: parentRanges, uncoercedThenBlock2.result.reference, uncoercedElseBlock2.result.reference))
+                throw CompileErrorExceptionT(CantReconcileBranchesResults(range :: parentRanges, uncoercedThenBlock2.result.coord, uncoercedElseBlock2.result.coord))
               }
             }
           val thenExpr2 = convertHelper.convert(thenFate.snapshot, coutputs, range :: parentRanges, uncoercedThenBlock2, commonType)
@@ -928,7 +928,7 @@ class ExpressionCompiler(
             case _ => {
               val bodyUnstackifiedAncestorLocals = loopBlockFate.snapshot.getEffectsSince(nenv.snapshot)
               if (bodyUnstackifiedAncestorLocals.nonEmpty) {
-                throw CompileErrorExceptionT(CantUnstackifyOutsideLocalFromInsideWhile(range :: parentRanges, bodyUnstackifiedAncestorLocals.head.last))
+                throw CompileErrorExceptionT(CantUnstackifyOutsideLocalFromInsideWhile(range :: parentRanges, bodyUnstackifiedAncestorLocals.head.localName))
               }
             }
           }
@@ -948,7 +948,7 @@ class ExpressionCompiler(
               val loopBlockFate = NodeEnvironmentBox(loopNenv.makeChild(bodySE))
               val (bodyExpressionsWithResult, _) =
                 evaluateBlockStatements(coutputs, loopBlockFate.snapshot, loopBlockFate, life + 1, parentRanges, bodySE)
-              bodyExpressionsWithResult.result.reference
+              bodyExpressionsWithResult.result.coord
             }
 
           // Now that we know the result type, let's make a temporary list.
@@ -971,7 +971,7 @@ class ExpressionCompiler(
 
           val listLocal =
             localHelper.makeTemporaryLocal(
-              nenv, life + 2, makeListTE.result.reference)
+              nenv, life + 2, makeListTE.result.coord)
           val letListTE =
             LetNormalTE(listLocal, makeListTE)
 
@@ -988,7 +988,7 @@ class ExpressionCompiler(
               // breaks, and we can't have a BreakTE inside a FunctionCallTE, see BRCOBS.
               val iterationResultLocal =
                 localHelper.makeTemporaryLocal(
-                  nenv, life + 3, userBodyTE.result.reference)
+                  nenv, life + 3, userBodyTE.result.coord)
               val letIterationResultTE =
                 LetNormalTE(iterationResultLocal, userBodyTE)
 
@@ -1012,7 +1012,7 @@ class ExpressionCompiler(
 
               val bodyUnstackifiedAncestorLocals = loopBlockFate.snapshot.getEffectsSince(nenv.snapshot)
               if (bodyUnstackifiedAncestorLocals.nonEmpty) {
-                throw CompileErrorExceptionT(CantUnstackifyOutsideLocalFromInsideWhile(range :: parentRanges, bodyUnstackifiedAncestorLocals.head.last))
+                throw CompileErrorExceptionT(CantUnstackifyOutsideLocalFromInsideWhile(range :: parentRanges, bodyUnstackifiedAncestorLocals.head.localName))
               }
 
               val whileTE = WhileTE(bodyTE)
@@ -1063,7 +1063,7 @@ class ExpressionCompiler(
             evaluateAndCoerceToReferenceExpression(coutputs, nenv, life + 0, parentRanges, innerAE);
 
           // should just ignore others, TODO impl
-          vcheck(innerExpr2.result.reference.ownership == OwnT, "can only destruct own")
+          vcheck(innerExpr2.result.coord.ownership == OwnT, "can only destruct own")
 
           val destroy2 =
             innerExpr2.kind match {
@@ -1120,10 +1120,10 @@ class ExpressionCompiler(
             nenv.maybeReturnType match {
               case None => (uncastedInnerExpr2)
               case Some(returnType) => {
-                templataCompiler.isTypeConvertible(coutputs, nenv.snapshot, range :: parentRanges, uncastedInnerExpr2.result.reference, returnType) match {
+                templataCompiler.isTypeConvertible(coutputs, nenv.snapshot, range :: parentRanges, uncastedInnerExpr2.result.coord, returnType) match {
                   case (false) => {
                     throw CompileErrorExceptionT(
-                      CouldntConvertForReturnT(range :: parentRanges, returnType, uncastedInnerExpr2.result.reference))
+                      CouldntConvertForReturnT(range :: parentRanges, returnType, uncastedInnerExpr2.result.coord))
                   }
                   case (true) => {
                     convertHelper.convert(nenv.snapshot, coutputs, range :: parentRanges, uncastedInnerExpr2, returnType)
@@ -1137,10 +1137,10 @@ class ExpressionCompiler(
           val variablesToDestruct = allLocals.filter(x => !unstackifiedLocals.contains(x.id))
           val reversedVariablesToDestruct = variablesToDestruct.reverse
 
-          val returns = returnsFromInnerExpr + innerExpr2.result.reference
+          val returns = returnsFromInnerExpr + innerExpr2.result.coord
 
           val resultVarId = nenv.fullName.addStep(interner.intern(TypingPassFunctionResultVarNameT()))
-          val resultVariable = ReferenceLocalVariableT(resultVarId, FinalT, innerExpr2.result.reference)
+          val resultVariable = ReferenceLocalVariableT(resultVarId, FinalT, innerExpr2.result.coord)
           val resultLet = ast.LetNormalTE(resultVariable, innerExpr2)
           nenv.addVariable(resultVariable)
 
@@ -1205,7 +1205,7 @@ class ExpressionCompiler(
     nenv: FunctionEnvironment,
     range: List[RangeS],
     containedCoord: CoordT):
-  (CoordT, PrototypeT, PrototypeT, FullNameT[IImplNameT], FullNameT[IImplNameT]) = {
+  (CoordT, PrototypeT, PrototypeT, IdT[IImplNameT], IdT[IImplNameT]) = {
     val interfaceTemplata =
       nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS(keywords.Opt)), Set(TemplataLookupContext)).toList match {
         case List(it@InterfaceDefinitionTemplata(_, _)) => it
@@ -1261,7 +1261,7 @@ class ExpressionCompiler(
     range: List[RangeS],
     containedSuccessCoord: CoordT,
     containedFailCoord: CoordT):
-  (CoordT, PrototypeT, FullNameT[IImplNameT], PrototypeT, FullNameT[IImplNameT]) = {
+  (CoordT, PrototypeT, IdT[IImplNameT], PrototypeT, IdT[IImplNameT]) = {
     val interfaceTemplata =
       nenv.lookupNearestWithImpreciseName(interner.intern(CodeNameS(keywords.Result)), Set(TemplataLookupContext)).toList match {
         case List(it@InterfaceDefinitionTemplata(_, _)) => it
@@ -1323,7 +1323,7 @@ class ExpressionCompiler(
       case _ => vfail()
     }
 
-    expr.result.reference.ownership match {
+    expr.result.coord.ownership match {
       case BorrowT => BorrowToWeakTE(expr)
       case other => vale.vwat(other)
     }
@@ -1345,7 +1345,7 @@ class ExpressionCompiler(
       }
       case r: ReferenceExpressionTE => {
         val unborrowedContainerExpr2 = r// decaySoloPack(nenv, life + 0, r)
-        unborrowedContainerExpr2.result.reference.ownership match {
+        unborrowedContainerExpr2.result.coord.ownership match {
           case OwnT => localHelper.makeTemporaryLocal(coutputs, nenv, range, life + 1, unborrowedContainerExpr2, BorrowT)
           case BorrowT | ShareT => (unborrowedContainerExpr2)
         }
@@ -1377,7 +1377,7 @@ class ExpressionCompiler(
     val constructExpr2 =
       makeClosureStructConstructExpression(
         coutputs, nenv, functionA.range :: parentRanges, closurestructTT)
-    vassert(constructExpr2.result.reference == closureCoord)
+    vassert(constructExpr2.result.coord == closureCoord)
     // The result of a constructor is always an own or a share.
 
     // The below code was here, but i see no reason we need to put it in a temporary and point it out.
@@ -1542,7 +1542,7 @@ class ExpressionCompiler(
     expr: ReferenceExpressionTE):
   (ReferenceExpressionTE, ReferenceLocalVariableT) = {
     val resultVarId = nenv.fullName.addStep(interner.intern(TypingPassBlockResultVarNameT(life)))
-    val resultVariable = ReferenceLocalVariableT(resultVarId, FinalT, expr.result.reference)
+    val resultVariable = ReferenceLocalVariableT(resultVarId, FinalT, expr.result.coord)
     val resultLet = LetNormalTE(resultVariable, expr)
     nenv.addVariable(resultVariable)
     (resultLet, resultVariable)

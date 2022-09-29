@@ -1,10 +1,10 @@
 package dev.vale.simplifying
 
 import dev.vale.{Builtins, FileCoordinateMap, IPackageResolver, Interner, Keywords, PackageCoordinate, PackageCoordinateMap, Profiler, Result, finalast, vassert, vcurious, vfail, vwat}
-import dev.vale.finalast.{ConsecutorH, ConstantVoidH, ExpressionH, Final, FullNameH, KindH, Local, NeverH, PackageH, ProgramH, PrototypeH, ReferenceH, StackifyH, Variability, VariableIdH, VoidH}
+import dev.vale.finalast.{ConsecutorH, ConstantVoidH, ExpressionH, Final, IdH, KindHT, Local, NeverHT, PackageH, ProgramH, PrototypeH, CoordH, StackifyH, Variability, VariableIdH, VoidHT}
 import dev.vale.typing.Hinputs
 import dev.vale.typing.ast.{FunctionExportT, FunctionExternT, KindExportT, KindExternT}
-import dev.vale.typing.names.{FullNameT, IVarNameT}
+import dev.vale.typing.names.{IdT, IVarNameT}
 import dev.vale.highertyping.ICompileErrorA
 import dev.vale.finalast._
 import dev.vale.postparsing.ICompileErrorS
@@ -25,15 +25,15 @@ case class LocalsBox(var inner: Locals) {
 
   def snapshot = inner
 
-  def typingPassLocals: Map[FullNameT[IVarNameT], VariableIdH] = inner.typingPassLocals
+  def typingPassLocals: Map[IdT[IVarNameT], VariableIdH] = inner.typingPassLocals
   def unstackifiedVars: Set[VariableIdH] = inner.unstackifiedVars
   def locals: Map[VariableIdH, Local] = inner.locals
   def nextLocalIdNumber: Int = inner.nextLocalIdNumber
 
-  def get(id: FullNameT[IVarNameT]) = inner.get(id)
+  def get(id: IdT[IVarNameT]) = inner.get(id)
   def get(id: VariableIdH) = inner.get(id)
 
-  def markUnstackified(varId2: FullNameT[IVarNameT]): Unit = {
+  def markUnstackified(varId2: IdT[IVarNameT]): Unit = {
     inner = inner.markUnstackified(varId2)
   }
 
@@ -45,7 +45,7 @@ case class LocalsBox(var inner: Locals) {
   }
 
   def addHammerLocal(
-    tyype: ReferenceH[KindH],
+    tyype: CoordH[KindHT],
     variability: Variability):
   Local = {
     val (newInner, local) = inner.addHammerLocal(tyype, variability)
@@ -54,10 +54,10 @@ case class LocalsBox(var inner: Locals) {
   }
 
   def addTypingPassLocal(
-    varId2: FullNameT[IVarNameT],
-    varIdNameH: FullNameH,
+    varId2: IdT[IVarNameT],
+    varIdNameH: IdH,
     variability: Variability,
-    tyype: ReferenceH[KindH]):
+    tyype: CoordH[KindHT]):
   Local = {
     val (newInner, local) = inner.addCompilerLocal(varId2, varIdNameH, variability, tyype)
     inner = newInner
@@ -72,7 +72,7 @@ case class LocalsBox(var inner: Locals) {
 case class Locals(
      // This doesn't have all the locals that are in the locals list, this just
      // has any locals added by typingpass.
-     typingPassLocals: Map[FullNameT[IVarNameT], VariableIdH],
+     typingPassLocals: Map[IdT[IVarNameT], VariableIdH],
 
      unstackifiedVars: Set[VariableIdH],
 
@@ -83,10 +83,10 @@ case class Locals(
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   def addCompilerLocal(
-    varId2: FullNameT[IVarNameT],
-    varIdNameH: FullNameH,
+    varId2: IdT[IVarNameT],
+    varIdNameH: IdH,
     variability: Variability,
-    tyype: ReferenceH[KindH]):
+    tyype: CoordH[KindHT]):
   (Locals, Local) = {
     if (typingPassLocals.contains(varId2)) {
       vfail("There's already a typingpass local named: " + varId2)
@@ -107,7 +107,7 @@ case class Locals(
   }
 
   def addHammerLocal(
-    tyype: ReferenceH[KindH],
+    tyype: CoordH[KindHT],
     variability: Variability):
   (Locals, Local) = {
     val newLocalHeight = locals.size
@@ -123,7 +123,7 @@ case class Locals(
     (newLocals, newLocal)
   }
 
-  def markUnstackified(varId2: FullNameT[IVarNameT]): Locals = {
+  def markUnstackified(varId2: IdT[IVarNameT]): Locals = {
     markUnstackified(typingPassLocals(varId2))
   }
 
@@ -136,7 +136,7 @@ case class Locals(
     Locals(typingPassLocals, unstackifiedVars + varIdH, locals, nextLocalIdNumber)
   }
 
-  def get(varId: FullNameT[IVarNameT]): Option[Local] = {
+  def get(varId: IdT[IVarNameT]): Option[Local] = {
     typingPassLocals.get(varId) match {
       case None => None
       case Some(index) => Some(locals(index))
@@ -159,7 +159,7 @@ class Hammer(interner: Interner, keywords: Keywords) {
       keywords,
       nameHammer,
       (hinputs, hamuts, prototypeT) => typeHammer.translatePrototype(hinputs, hamuts, prototypeT),
-      (hinputs, hamuts, referenceT) => typeHammer.translateReference(hinputs, hamuts, referenceT))
+      (hinputs, hamuts, referenceT) => typeHammer.translateCoord(hinputs, hamuts, referenceT))
   val typeHammer: TypeHammer = new TypeHammer(interner, keywords, nameHammer, structHammer)
   val functionHammer = new FunctionHammer(keywords, typeHammer, nameHammer, structHammer)
   val vonHammer = new VonHammer(nameHammer, typeHammer)
@@ -241,7 +241,7 @@ class Hammer(interner: Interner, keywords: Keywords) {
 //      vassert(immDestructorPrototypeH.params.head.kind == kindH)
 //    })
 
-    val packageToInterfaceDefs = hamuts.interfaceDefs.groupBy(_._1.fullName.packageCoord)
+    val packageToInterfaceDefs = hamuts.interfaceTToInterfaceDefH.groupBy(_._1.fullName.packageCoord)
     val packageToStructDefs = hamuts.structDefs.groupBy(_.fullName.packageCoordinate)
     val packageToFunctionDefs = hamuts.functionDefs.groupBy(_._1.fullName.packageCoord).mapValues(_.values.toVector)
     val packageToStaticSizedArrays = hamuts.staticSizedArrays.values.toVector.groupBy(_.name.packageCoordinate)
@@ -287,7 +287,7 @@ class Hammer(interner: Interner, keywords: Keywords) {
 
 object Hammer {
 
-  private def flattenAndFilterVoids(unfilteredExprsHE: Vector[ExpressionH[KindH]]): Vector[ExpressionH[KindH]] = {
+  private def flattenAndFilterVoids(unfilteredExprsHE: Vector[ExpressionH[KindHT]]): Vector[ExpressionH[KindHT]] = {
     val flattenedExprsHE =
       unfilteredExprsHE.flatMap({
         case ConsecutorH(innersHE) => innersHE
@@ -295,7 +295,7 @@ object Hammer {
       })
     flattenedExprsHE.init.foreach(exprHE => {
       exprHE.resultType.kind match {
-        case NeverH(_) => vwat()
+        case NeverHT(_) => vwat()
         case _ =>
       }
     })
@@ -313,7 +313,7 @@ object Hammer {
     filteredFlattenedExprsHE
   }
 
-  def consecutive(unfilteredExprsHE: Vector[ExpressionH[KindH]]): ExpressionH[KindH] = {
+  def consecutive(unfilteredExprsHE: Vector[ExpressionH[KindHT]]): ExpressionH[KindHT] = {
     val filteredFlattenedExprsHE = flattenAndFilterVoids(unfilteredExprsHE)
 
     filteredFlattenedExprsHE match {
@@ -330,10 +330,10 @@ object Hammer {
   // See BRCOBS.
   def consecrash(
     locals: LocalsBox,
-    unfilteredExprsHE: Vector[ExpressionH[KindH]]):
-  ExpressionH[KindH] = {
+    unfilteredExprsHE: Vector[ExpressionH[KindHT]]):
+  ExpressionH[KindHT] = {
     unfilteredExprsHE.last.resultType.kind match {
-      case NeverH(_) =>
+      case NeverHT(_) =>
       case _ => vwat()
     }
 
@@ -343,7 +343,7 @@ object Hammer {
     val exprsWithStackifiedInitHE =
       exprsHE.init
         .map(expr => {
-          if (expr.resultType.kind == VoidH()) {
+          if (expr.resultType.kind == VoidHT()) {
             // Dont need a temporary if it's void, we can just drop it.
             expr
           } else {

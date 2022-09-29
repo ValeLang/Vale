@@ -158,19 +158,19 @@ func get<K Ref imm, V, H, E>(self &HashMap<K, V, H, E>, key K) Opt<&V> {
 func ContainsKey<K Ref imm, V, H, E>(self &HashMap<K, V, H, E>, key K) bool {
   not(self.get(key).isEmpty())
 }
-//
-//func keys<K Ref imm, V, H, E>(self &HashMap<K, V, H, E>) Array<imm, K> {
-//  list = List<K>();
-//  index = 0;
-//  while index < self.table.len() {
-//    maybeNode = self.table[index];
-//    if not(maybeNode.isEmpty()) {
-//      list.add(maybeNode.get().key);
-//    }
-//    set index = index + 1;
-//  }
-//  list.toImmArray()
-//}
+
+func keys<K Ref imm, V, H, E>(self &HashMap<K, V, H, E>) Array<imm, K> {
+  list = List<K>();
+  index = 0;
+  while index < self.table.len() {
+    maybeNode = self.table[index];
+    if not(maybeNode.isEmpty()) {
+      list.add(maybeNode.get().key);
+    }
+    set index = index + 1;
+  }
+  list.toImmArray()
+}
 
 func values<K Ref imm, V, H, E>(self &HashMap<K, V, H, E>) Array<mut, &V> {
   list = List<&V>();

@@ -3,7 +3,7 @@ package dev.vale.typing.macros
 import dev.vale.{Keywords, RangeS, StrI, vassertSome, vfail, vimpl, vwat}
 import dev.vale.highertyping.FunctionA
 import dev.vale.typing.{CantDowncastToInterface, CantDowncastUnrelatedTypes, CompileErrorExceptionT, CompilerOutputs, RangedInternalErrorT}
-import dev.vale.typing.ast.{ArgLookupTE, AsSubtypeTE, BlockTE, FunctionCallTE, FunctionHeaderT, FunctionT, LocationInFunctionEnvironment, ParameterT, ReferenceExpressionTE, ReturnTE}
+import dev.vale.typing.ast.{ArgLookupTE, AsSubtypeTE, BlockTE, FunctionCallTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironment, ParameterT, ReferenceExpressionTE, ReturnTE}
 import dev.vale.typing.citizen.{ImplCompiler, IsParent, IsntParent}
 import dev.vale.typing.env.FunctionEnvironment
 import dev.vale.typing.expression.ExpressionCompiler
@@ -35,8 +35,8 @@ class AsSubtypeMacro(
     val header =
       FunctionHeaderT(env.fullName, Vector.empty, paramCoords, maybeRetCoord.get, Some(env.templata))
 
-    val CoordTemplata(CoordT(_, targetKind)) = vassertSome(env.fullName.last.templateArgs.headOption)
-    val CoordT(incomingOwnership, _) = vassertSome(env.fullName.last.parameters.headOption)
+    val CoordTemplata(CoordT(_, targetKind)) = vassertSome(env.fullName.localName.templateArgs.headOption)
+    val CoordT(incomingOwnership, _) = vassertSome(env.fullName.localName.parameters.headOption)
 
     val incomingCoord = paramCoords(0).tyype
     val incomingKind = incomingCoord.kind

@@ -18,7 +18,7 @@ import dev.vale.typing.env._
 import dev.vale.typing.function.FunctionCompiler
 import dev.vale.parsing.ast.DontCallMacroP
 import dev.vale.typing.env.{CitizenEnvironment, FunctionEnvEntry, IEnvironment, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
-import dev.vale.typing.names.{AnonymousSubstructImplNameT, CitizenNameT, CitizenTemplateNameT, CodeVarNameT, FullNameT, FunctionTemplateNameT, ICitizenTemplateNameT, IInterfaceNameT, IInterfaceTemplateNameT, INameT, IStructNameT, IStructTemplateNameT, InterfaceNameT, InterfaceTemplateNameT, LambdaCitizenTemplateNameT, NameTranslator, PackageTopLevelNameT, RuneNameT, SelfNameT, StructNameT, StructTemplateNameT}
+import dev.vale.typing.names.{AnonymousSubstructImplNameT, CitizenNameT, CitizenTemplateNameT, CodeVarNameT, IdT, FunctionTemplateNameT, ICitizenTemplateNameT, IInterfaceNameT, IInterfaceTemplateNameT, INameT, IStructNameT, IStructTemplateNameT, InterfaceNameT, InterfaceTemplateNameT, LambdaCitizenTemplateNameT, NameTranslator, PackageTopLevelNameT, RuneNameT, SelfNameT, StructNameT, StructTemplateNameT}
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.typing.ast._
@@ -40,11 +40,11 @@ class StructCompilerCore(
     parentRanges: List[RangeS],
     structA: StructA):
   Unit = {
-    val templateArgs = structRunesEnv.fullName.last.templateArgs
+    val templateArgs = structRunesEnv.fullName.localName.templateArgs
     val templateFullNameT = structRunesEnv.templateName
-    val templateNameT = templateFullNameT.last
+    val templateNameT = templateFullNameT.localName
     val placeholderedNameT = templateNameT.makeStructName(interner, templateArgs)
-    val placeholderedFullNameT = templateFullNameT.copy(last = placeholderedNameT)
+    val placeholderedFullNameT = templateFullNameT.copy(localName = placeholderedNameT)
 
     // Usually when we make a StructTT we put the instantiation bounds into the coutputs,
     // but this isn't really an instantiation, so we don't here.
@@ -99,7 +99,7 @@ class StructCompilerCore(
         val newEntries =
           newEntriesList.map({ case (entryName, value) =>
             vcurious(placeholderedFullNameT.steps.size + 1 == entryName.steps.size)
-            val last = entryName.last
+            val last = entryName.localName
             last -> value
           })
         newEntries
@@ -185,7 +185,7 @@ class StructCompilerCore(
       case None =>
       case Some(exportPackageCoord) => {
         val exportedName =
-          placeholderedFullNameT.last match {
+          placeholderedFullNameT.localName match {
             case StructNameT(StructTemplateNameT(humanName), _) => humanName
             case _ => vfail("Can't export something that doesn't have a human readable name!")
           }
@@ -220,11 +220,11 @@ class StructCompilerCore(
     parentRanges: List[RangeS],
     interfaceA: InterfaceA):
   (InterfaceDefinitionT) = {
-    val templateArgs = interfaceRunesEnv.fullName.last.templateArgs
+    val templateArgs = interfaceRunesEnv.fullName.localName.templateArgs
     val templateFullNameT = interfaceRunesEnv.templateName
-    val templateNameT = templateFullNameT.last
+    val templateNameT = templateFullNameT.localName
     val placeholderedNameT = templateNameT.makeInterfaceName(interner, templateArgs)
-    val placeholderedFullNameT = templateFullNameT.copy(last = placeholderedNameT)
+    val placeholderedFullNameT = templateFullNameT.copy(localName = placeholderedNameT)
 
     // Usually when we make a StructTT we put the instantiation bounds into the coutputs,
     // but this isn't really an instantiation, so we don't here.
@@ -323,7 +323,7 @@ class StructCompilerCore(
       case None =>
       case Some(exportPackageCoord) => {
         val exportedName =
-          placeholderedFullNameT.last match {
+          placeholderedFullNameT.localName match {
             case InterfaceNameT(InterfaceTemplateNameT(humanName), _) => humanName
             case _ => vfail("Can't export something that doesn't have a human readable name!")
           }

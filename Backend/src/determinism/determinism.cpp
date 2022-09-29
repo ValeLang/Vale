@@ -822,6 +822,7 @@ void Determinism::buildWriteValueToFile(
     auto floatAsI64LE = LLVMBuildBitCast(builder, sourceRefLE, floatLT, "floatFromRecording");
     writeI64ToFile(functionState, builder, floatAsI64LE);
   } else if (dynamic_cast<StructKind*>(sourceRefMT->kind) ||
+             dynamic_cast<Str*>(sourceRefMT->kind) ||
              dynamic_cast<StaticSizedArrayT*>(sourceRefMT->kind) ||
              dynamic_cast<RuntimeSizedArrayT*>(sourceRefMT->kind)) {
     buildFlare(FL(), globalState, functionState, builder, "Entering buildWriteValueToFile for struct");
@@ -939,6 +940,7 @@ Ref Determinism::buildReadValueFromFile(
     return wrap(globalState->getRegion(targetRefMT), targetRefMT, floatLE);
   } else if (dynamic_cast<StructKind*>(targetRefMT->kind) ||
       dynamic_cast<StaticSizedArrayT*>(targetRefMT->kind) ||
+      dynamic_cast<Str*>(targetRefMT->kind) ||
       dynamic_cast<RuntimeSizedArrayT*>(targetRefMT->kind)) {
     buildFlare(FL(), globalState, functionState, builder, "Entering buildReadValueFromFile for struct");
     auto valueSizeLE = readI64FromFile(functionState, builder);

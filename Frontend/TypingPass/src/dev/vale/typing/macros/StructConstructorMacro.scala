@@ -5,10 +5,10 @@ import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
 import dev.vale.postparsing.rules.{CallSR, IRulexSR, LookupSR, RuneUsage}
 import dev.vale.postparsing._
 import dev.vale.typing.{ArrayCompiler, CompileErrorExceptionT, CompilerOutputs, CouldntFindFunctionToCallT, OverloadResolver, TemplataCompiler, InheritBoundsFromTypeItself, TypingPassOptions, UseBoundsFromContainer, ast}
-import dev.vale.typing.ast.{ArgLookupTE, BlockTE, ConstructTE, FunctionHeaderT, FunctionT, LocationInFunctionEnvironment, ParameterT, ReturnTE}
+import dev.vale.typing.ast.{ArgLookupTE, BlockTE, ConstructTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironment, ParameterT, ReturnTE}
 import dev.vale.typing.citizen.StructCompiler
 import dev.vale.typing.env.{FunctionEnvEntry, FunctionEnvironment}
-import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, FullNameT, FunctionNameT, ICitizenNameT, ICitizenTemplateNameT, IFunctionNameT, IFunctionTemplateNameT, INameT, ITemplateNameT, NameTranslator, PlaceholderNameT}
+import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, IdT, FunctionNameT, ICitizenNameT, ICitizenTemplateNameT, IFunctionNameT, IFunctionTemplateNameT, INameT, ITemplateNameT, NameTranslator, PlaceholderNameT}
 import dev.vale.{Err, Interner, Keywords, Ok, PackageCoordinate, Profiler, RangeS, StrI, vassert, vassertSome, vcurious, vimpl}
 import dev.vale.typing.types._
 import dev.vale.highertyping.FunctionA
@@ -42,15 +42,15 @@ class StructConstructorMacro(
 
   override def getStructChildEntries(
     macroName: StrI,
-    structName: FullNameT[INameT],
+    structName: IdT[INameT],
     structA: StructA,
     mutability: ITemplata[MutabilityTemplataType]):
-  Vector[(FullNameT[INameT], FunctionEnvEntry)] = {
+  Vector[(IdT[INameT], FunctionEnvEntry)] = {
     Vector()
   }
 
-  override def getStructSiblingEntries(structName: FullNameT[INameT], structA: StructA):
-  Vector[(FullNameT[INameT], FunctionEnvEntry)] = {
+  override def getStructSiblingEntries(structName: IdT[INameT], structA: StructA):
+  Vector[(IdT[INameT], FunctionEnvEntry)] = {
     if (structA.members.collect({ case VariadicStructMemberS(_, _, _) => }).nonEmpty) {
       // Dont generate constructors for variadic structs, not supported yet.
       // Only one we have right now is tuple, which has its own special syntax for constructing.
@@ -104,7 +104,7 @@ class StructConstructorMacro(
         GeneratedBodyS(generatorId))
 
     Vector(
-      structName.copy(last = nameTranslator.translateNameStep(functionA.name)) ->
+      structName.copy(localName = nameTranslator.translateNameStep(functionA.name)) ->
         FunctionEnvEntry(functionA))
   }
 
@@ -142,7 +142,7 @@ class StructConstructorMacro(
       })
 
     val constructorFullName = env.fullName
-    vassert(constructorFullName.last.parameters.size == members.size)
+    vassert(constructorFullName.localName.parameters.size == members.size)
     val constructorParams =
       members.map({ case (name, coord) => ParameterT(name, None, coord) })
     val mutability =

@@ -7,13 +7,14 @@ import scala.io.Source
 
 object Builtins {
   val moduleToFilename =
-    Array(
+    Vector(
       "arith" -> "arith.vale",
       "functor1" -> "functor1.vale",
       "logic" -> "logic.vale",
       "migrate" -> "migrate.vale",
       "str" -> "str.vale",
       "drop" -> "drop.vale",
+      "clone" -> "clone.vale",
       "arrays" -> "arrays.vale",
       "mainargs" -> "mainargs.vale",
       "as" -> "as.vale",
@@ -40,7 +41,7 @@ object Builtins {
 //      // 655 samples
 //      vassert(stream != null)
 //      val stringBuffer = new StringBuffer()
-//      val bytes = new Array[Byte](1024)
+//      val bytes = new Vector[Byte](1024)
 //      while ({
 //        val bytesRead = stream.read(bytes)
 //        if (bytesRead > 0) {

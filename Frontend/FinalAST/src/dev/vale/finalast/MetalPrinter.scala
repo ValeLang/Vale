@@ -26,6 +26,8 @@ object MetalPrinter {
         "CitizenName" -> "C",
         "CoordListTemplata" -> "TRL",
         "CitizenTemplateName" -> "CT",
+        "InterfaceTemplateName" -> "CT",
+        "StructTemplateName" -> "CT",
         "Immutable" -> "imm",
         "MutabilityTemplata" -> "TM",
         "StructId" -> "SId",

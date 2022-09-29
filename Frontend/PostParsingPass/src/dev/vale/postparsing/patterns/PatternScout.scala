@@ -1,8 +1,8 @@
 package dev.vale.postparsing.patterns
 
 import dev.vale.Interner
-import dev.vale.parsing.ast.{AbstractP, ConstructingMemberNameDeclarationP, DestructureP, IgnoredLocalNameDeclarationP, IterableNameDeclarationP, IterationOptionNameDeclarationP, IteratorNameDeclarationP, LocalNameDeclarationP, NameP, PatternPP}
-import dev.vale.postparsing.{CantUseThatLocalName, CodeVarNameS, CompileErrorExceptionS, ConstructingMemberNameS, CoordTemplataType, IRuneS, ITemplataType, IterableNameS, IterationOptionNameS, IteratorNameS, LocationInDenizenBuilder, PostParser, StackFrame, VariableDeclaration}
+import dev.vale.parsing.ast._
+import dev.vale.postparsing._
 import dev.vale.postparsing.rules.{IRulexSR, TemplexScout}
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
@@ -71,7 +71,7 @@ class PatternScout(
             PostParser.evalRange(stackFrame.file, range),
             ruleBuilder,
             maybeTypeP)
-        runeToExplicitType.put(runeS.rune, CoordTemplataType)
+        runeToExplicitType.put(runeS.rune, CoordTemplataType())
         runeS
       })
 

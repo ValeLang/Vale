@@ -29,6 +29,10 @@ func Subprocess(command str, args &List<str>) Result<Subprocess, str> {
   return Subprocess(command, &newlist, None<str>());
 }
 
+func Subprocess(relative_program str, args &List<StrSlice>) Result<Subprocess, str> {
+  Subprocess(relative_program, args, None<str>())
+}
+
 func Subprocess(relative_program str, args &List<StrSlice>, maybe_cwd Opt<str>) Result<Subprocess, str> {
 
   paths = get_env_var("PATH").split(":");
@@ -62,12 +66,12 @@ func Subprocess(relative_program str, args &List<StrSlice>, maybe_cwd Opt<str>) 
 
   cmd_array = cmdlist.toImmArray();
 
-  handle = launch_command(cmd_array, maybe_cwd.or(""));
+  handle = launch_command(cmd_array, maybe_cwd.or({""}));
   if handle == 0i64 {
     return Err<Subprocess, str>("Failed to create command!");
   }
 
-  retval = Subprocess(command_str, handle);
+  retval = Subprocess(command_str, None<str>(), handle);
   return Ok<Subprocess, str>(retval);
 }
 
@@ -107,9 +111,11 @@ func PrintCommandLinePart(builder &StringBuilder, part StrSlice) {
 
 func consume_and_join<StdoutConsumer, StderrConsumer>(
   self Subprocess,
-  stdout_consumer StdoutConsumer,
-  stderr_consumer StderrConsumer)
-int {
+  stdout_consumer &StdoutConsumer,
+  stderr_consumer &StderrConsumer)
+int
+where func(&StdoutConsumer, str)void, func(&StderrConsumer, str)void
+{
   close_stdin(self.handle);
 
   running = true;
@@ -164,7 +170,7 @@ struct ExecResult {
   stderr str;
 }
 
-func expect_or<F>(result &ExecResult, func F)
+func expect_or<F>(result &ExecResult, func &F)
 str
 where func(&F, &ExecResult)void
 {

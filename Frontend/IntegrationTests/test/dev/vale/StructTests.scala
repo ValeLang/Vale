@@ -5,6 +5,43 @@ import dev.vale.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 
 class StructTests extends FunSuite with Matchers {
+  test("Make empty imm struct") {
+    val compile = RunCompilation.test(
+      """
+        |struct Marine imm {}
+        |exported func main() {
+        |  Marine();
+        |}
+      """.stripMargin)
+
+    compile.run(Vector())
+  }
+
+  test("Make imm struct with one member") {
+    val compile = RunCompilation.test(
+      """
+        |struct Marine imm { hp int; }
+        |exported func main() {
+        |  Marine(7);
+        |}
+      """.stripMargin)
+
+    compile.run(Vector())
+  }
+
+  test("Make nested imm struct") {
+    val compile = RunCompilation.test(
+      """
+        |struct Weapon imm { ammo int; }
+        |struct Marine imm { hp int; weapon Weapon; }
+        |exported func main() {
+        |  Marine(5, Weapon(7));
+        |}
+      """.stripMargin)
+
+    compile.run(Vector())
+  }
+
   test("Make empty mut struct") {
     val compile = RunCompilation.test(
       """
@@ -157,17 +194,17 @@ class StructTests extends FunSuite with Matchers {
   test("Panic function") {
     val compile = RunCompilation.test(
       """
-        |interface XOpt<T> where T Ref {
+        |sealed interface XOpt<T Ref>
+        |where func drop(T)void {
         |  func get(virtual opt &XOpt<T>) &T;
         |}
-        |struct XSome<T> where T Ref { value T; }
-        |impl<T> XOpt<T> for XSome<T>;
-        |struct XNone<T> where T Ref { }
+        |
+        |struct XNone<T Ref> where func drop(T)void  { }
         |impl<T> XOpt<T> for XNone<T>;
         |
-        |
-        |func get<T>(opt &XNone<T>) &T { __vbi_panic(); }
-        |func get<T>(opt &XSome<T>) &T { return opt.value; }
+        |func get<T>(opt &XNone<T>) &T {
+        |  __vbi_panic();
+        |}
         |
         |exported func main() int {
         |  m XOpt<int> = XNone<int>();
@@ -181,18 +218,5 @@ class StructTests extends FunSuite with Matchers {
     } catch {
       case PanicException() =>
     }
-  }
-
-
-  test("Call borrow parameter with shared reference") {
-    val compile = RunCompilation.test(
-      """func get<T>(a &T) &T { return a; }
-        |
-        |exported func main() int {
-        |  return get(6);
-        |}
-      """.stripMargin)
-
-    compile.evalForKind(Vector()) match { case VonInt(6) => }
   }
 }

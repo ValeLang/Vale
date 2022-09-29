@@ -1,8 +1,8 @@
 package dev.vale
 
-import dev.vale.postparsing.{ConstantBoolSE, ConstantIntSE, IfSE, ReturnSE}
+import dev.vale.postparsing._
 import dev.vale.typing.ast.IfTE
-import dev.vale.typing.types.{BoolT, CoordT, IntT, ShareT, StrT}
+import dev.vale.typing.types._
 import dev.vale.testvm.IntV
 import dev.vale.postparsing._
 import dev.vale.typing._
@@ -56,7 +56,7 @@ class IfTests extends FunSuite with Matchers {
         |exported func main() int {
         |  return if (false) { 3 } else if (true) { 5 } else { 7 };
         |}
-      """.stripMargin)
+      """.stripMargin, false)
 
     val coutputs = compile.expectCompilerOutputs()
     val ifs = Collector.all(coutputs.lookupFunction("main"), { case if2 @ IfTE(_, _, _) => if2 })
@@ -67,6 +67,7 @@ class IfTests extends FunSuite with Matchers {
       func.header.returnType match {
         case CoordT(ShareT, IntT.i32) =>
         case CoordT(ShareT, BoolT()) =>
+        case other => vwat(other)
       }
     })
 
@@ -87,7 +88,7 @@ class IfTests extends FunSuite with Matchers {
         |      y
         |    };
         |}
-      """.stripMargin)
+      """.stripMargin, false)
 
     val coutputs = compile.expectCompilerOutputs()
     val ifs = Collector.all(coutputs.lookupFunction("main"), { case if2 @ IfTE(_, _, _) => if2 })

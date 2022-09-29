@@ -1,4 +1,5 @@
 import printutils.*;
+import v.builtins.logic.*;
 
 func __pretend<T>() T { __vbi_panic() }
 
@@ -12,10 +13,12 @@ func vassert(cond bool, msg str) {
   }
 }
 
-func vassertEq<T>(a T, b T) void {
-  vassert(a == b, "Assertion failed, not equal!");
+func vassertEq<T>(a T, b T) void
+where func ==(T, T)bool {
+  vassert(==(a, b), "Assertion failed, not equal!");
 }
 
-func vassertEq<T>(a T, b T, msg str) void {
-  vassert(a == b, msg);
+func vassertEq<T>(a T, b T, msg str) void
+where func ==(T, T)bool {
+  vassert(==(a, b), msg);
 }

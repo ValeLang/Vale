@@ -1,38 +1,38 @@
 
-import v.builtins.tup.*;
+
 import v.builtins.opt.*;
+import v.builtins.logic.*;
+import v.builtins.drop.*;
 import printutils.*;
 
-sealed interface MyOption<T> where T Ref { }
-
-struct MySome<T> where T Ref {
+struct MyList<T Ref> where func drop(T)void {
   value T;
-}
-impl<T> MyOption<T> for MySome<T>;
-
-struct MyNone<T> where T Ref { }
-impl<T> MyOption<T> for MyNone<T>;
-
-
-struct MyList<T> where T Ref {
-  value T;
-  next ^MyOption<^MyList<T>>;
+  next ^Opt<^MyList<T>>;
 }
 
-abstract func forEach<F, T>(virtual opt &MyOption<MyList<T>>, func F) int;
-func forEach<F, T>(opt &MyNone<MyList<T>>, func F) int { return 0; }
-func forEach<F, T>(opt &MySome<MyList<T>>, func F) int {
-   forEach<F, T>(opt.value, func);
-   return 0;
+func forEach<F, T>(
+  opt &Opt<MyList<T>>,
+  func F)
+int
+where func drop(T)void, func(&F, &T)void, func drop(F)void {
+  if not opt.isEmpty() {
+    forEach<F, T>(opt.get(), func);
+  } else {
+    (func);
+  }
+  return 0;
 }
-func forEach<F, T>(list &MyList<T>, func F) int {
+
+func forEach<F, T>(list &MyList<T>, func F) int
+where func drop(T)void, func(&F, &T)void, func drop(F)void
+{
   func(list.value);
   forEach<F, T>(list.next, func);
   return 0;
 }
 
 exported func main() int {
-  list = MyList<int>(10, MySome<^MyList<int>>(MyList<int>(20, MySome<^MyList<int>>(MyList<int>(30, MyNone<^MyList<int>>())))));
-  forEach(&list, &print);
+  list = MyList<int>(10, Some<^MyList<int>>(MyList<int>(20, Some<^MyList<int>>(MyList<int>(30, None<^MyList<int>>())))));
+  forEach(&list, { print(_); });
   return 0;
 }

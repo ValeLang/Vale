@@ -82,7 +82,7 @@ object RulePUtils {
           getOrderedRuneDeclarationsFromTemplexWithDuplicates(parameters) ++
           getOrderedRuneDeclarationsFromTemplexWithDuplicates(returnType)
       }
-      case PrototypePT(_, name, parameters, returnType) => getOrderedRuneDeclarationsFromTemplexesWithDuplicates((parameters :+ returnType))
+      case FuncPT(_, name, paramsRange, parameters, returnType) => getOrderedRuneDeclarationsFromTemplexesWithDuplicates((parameters :+ returnType))
       case PackPT(_, members) => getOrderedRuneDeclarationsFromTemplexesWithDuplicates(members)
       case StaticSizedArrayPT(_, mutability, variability, size, element) => getOrderedRuneDeclarationsFromTemplexesWithDuplicates(Vector(mutability, variability, size, element))
       case RuntimeSizedArrayPT(_, mutability, element) => getOrderedRuneDeclarationsFromTemplexesWithDuplicates(Vector(mutability, element))

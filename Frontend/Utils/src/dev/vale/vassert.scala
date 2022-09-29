@@ -82,15 +82,19 @@ object vassertOne {
     }
   }
   def apply[T](thing: Iterable[T]): T = {
-    apply(thing, "Expected exactly one element!")
+    thing.toList match {
+      case List() => vfail("Expected one element, but was empty.")
+      case List(x) => x
+      case other => vfail("Expected one element, but was size " + other.size + ".")
+    }
   }
-  def apply[T](thing: Array[T], message: String): T = {
+  def apply[T](thing: Vector[T], message: String): T = {
     thing.toList match {
       case List(x) => x
       case _ => vfail(message)
     }
   }
-  def apply[T](thing: Array[T]): T = {
+  def apply[T](thing: Vector[T]): T = {
     apply(thing, "Expected exactly one element!")
   }
 }
@@ -108,8 +112,8 @@ object vwat {
   def apply(): Nothing = {
     vfail("wat")
   }
-  def apply(message: Object): Nothing = {
-    vfail("wat: " + message.toString)
+  def apply(message: Object*): Nothing = {
+    vfail("wat: " + message.toVector.mkString(", "))
   }
 }
 

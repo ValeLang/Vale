@@ -1,11 +1,10 @@
 package dev.vale.typing
 
-import dev.vale.typing.ast.AsSubtypeTE
-import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, FullNameT}
+import dev.vale.typing.ast.{AsSubtypeTE, FunctionHeaderT, PrototypeT, SignatureT}
+import dev.vale.typing.names._
 import dev.vale.typing.templata.CoordTemplata
-import dev.vale.typing.types.{BorrowT, CoordT, InterfaceTT, OwnT, StructTT}
-import dev.vale.{Collector, StrI, vassert}
-import dev.vale.typing.names.CitizenTemplateNameT
+import dev.vale.typing.types._
+import dev.vale.{Collector, StrI, Tests, vassert}
 import dev.vale.typing.types.InterfaceTT
 import org.scalatest.{FunSuite, Matchers}
 
@@ -13,12 +12,59 @@ import scala.collection.immutable.Set
 
 class CompilerVirtualTests extends FunSuite with Matchers {
 
+  test("Regular interface and struct") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |sealed interface Opt { }
+        |
+        |struct Some { x int; }
+        |impl Opt for Some;
+      """.stripMargin)
+    val interner = compile.interner
+    val coutputs = compile.expectCompilerOutputs()
+
+    // Make sure there's two drop functions
+    val dropFuncNames =
+      coutputs.functions.map(_.header.fullName).collect({
+        case f @ FullNameT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("drop"), _), _, _)) => f
+      })
+    vassert(dropFuncNames.size == 2)
+
+    val interface = coutputs.lookupInterface("Opt")
+    interface.internalMethods
+  }
+
+  test("Regular open interface and struct, no anonymous interface") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |#!DeriveAnonymousSubstruct
+        |interface Opt { }
+        |
+        |struct Some { x int; }
+        |impl Opt for Some;
+      """.stripMargin)
+    val interner = compile.interner
+    val coutputs = compile.expectCompilerOutputs()
+
+    // Make sure there's two drop functions
+    val dropFuncNames =
+      coutputs.functions.map(_.header.fullName).collect({
+        case f @ FullNameT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("drop"), _), _, _)) => f
+      })
+    dropFuncNames.size shouldEqual 2
+
+//    val interface = coutputs.lookupInterface("Opt")
+//    interface.internalMethods.collect({
+//      case (PrototypeT(FullNameT(_, _, FreeNameT(FreeTemplateNameT(_), _, coord)), _), _) => {
+//        vassert(coord.kind == interface.ref)
+//      }
+//    }).size shouldEqual 1
+  }
+
   test("Implementing two interfaces causes no vdrop conflict") {
     // See NIIRII
     val compile = CompilerTestCompilation.test(
       """
-        |import v.builtins.tup.*;
-        |
         |struct MyStruct {}
         |
         |interface IA {}
@@ -37,41 +83,10 @@ class CompilerVirtualTests extends FunSuite with Matchers {
     val coutputs = compile.expectCompilerOutputs()
   }
 
-  test("Basic interface anonymous subclass") {
-    val compile = CompilerTestCompilation.test(
-      """
-        |import v.builtins.tup.*;
-        |
-        |interface Bork {
-        |  func bork(virtual self &Bork) int;
-        |}
-        |
-        |exported func main() int {
-        |  f = Bork({ 7 });
-        |  return f.bork();
-        |}
-      """.stripMargin)
-    val coutputs = compile.expectCompilerOutputs()
-  }
-
-  test("Basic IFunction1 anonymous subclass") {
-    val compile = CompilerTestCompilation.test(
-      """
-        |import v.builtins.tup.*;
-        |import ifunction.ifunction1.*;
-        |
-        |exported func main() int {
-        |  f = IFunction1<mut, int, int>({_});
-        |  return (f)(7);
-        |}
-      """.stripMargin)
-    val coutputs = compile.expectCompilerOutputs()
-  }
-
   test("Upcast") {
     val compile = CompilerTestCompilation.test(
       """
-        |import v.builtins.tup.*;
+        |
         |interface IShip {}
         |struct Raza { fuel int; }
         |impl IShip for Raza;
@@ -81,64 +96,6 @@ class CompilerVirtualTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs()
-  }
-
-  test("Downcast with as") {
-    val compile = CompilerTestCompilation.test(
-      """
-        |import v.builtins.tup.*;
-        |import v.builtins.as.*;
-        |import v.builtins.drop.*;
-        |
-        |interface IShip {}
-        |
-        |struct Raza { fuel int; }
-        |impl IShip for Raza;
-        |
-        |exported func main() {
-        |  ship IShip = Raza(42);
-        |  ship.as<Raza>();
-        |}
-        |""".stripMargin)
-    val coutputs = compile.expectCompilerOutputs()
-
-    Collector.only(coutputs.lookupFunction("as"), {
-      case as @ AsSubtypeTE(sourceExpr, targetSubtype, resultOptType, okConstructor, errConstructor) => {
-        sourceExpr.result.reference match {
-          case CoordT(BorrowT,InterfaceTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT(StrI("IShip")),Vector())))) =>
-        }
-        targetSubtype match {
-          case StructTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT(StrI("Raza")),Vector()))) =>
-        }
-        val (firstGenericArg, secondGenericArg) =
-          resultOptType match {
-            case CoordT(
-              OwnT,
-              InterfaceTT(
-                FullNameT(
-                  _, Vector(),
-                  CitizenNameT(
-                    CitizenTemplateNameT(StrI("Result")),
-                    Vector(firstGenericArg, secondGenericArg))))) => (firstGenericArg, secondGenericArg)
-          }
-        // They should both be pointers, since we dont really do borrows in structs yet
-        firstGenericArg match {
-          case CoordTemplata(
-            CoordT(
-              BorrowT,
-              StructTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT(StrI("Raza")),Vector()))))) =>
-        }
-        secondGenericArg match {
-          case CoordTemplata(
-            CoordT(
-              BorrowT,
-              InterfaceTT(FullNameT(_, Vector(),CitizenNameT(CitizenTemplateNameT(StrI("IShip")),Vector()))))) =>
-        }
-        vassert(okConstructor.paramTypes.head.kind == targetSubtype)
-        vassert(errConstructor.paramTypes.head.kind == sourceExpr.result.reference.kind)
-        as
-      }
-    })
   }
 
   test("Virtual with body") {
@@ -153,6 +110,257 @@ class CompilerVirtualTests extends FunSuite with Matchers {
         |  rebork(&Bork());
         |}
         |""".stripMargin)
+  }
+
+  test("Templated interface and struct") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |sealed interface Opt<T Ref>
+        |where func drop(T)void
+        |{ }
+        |
+        |struct Some<T>
+        |where func drop(T)void
+        |{ x T; }
+        |
+        |impl<T> Opt<T> for Some<T>
+        |where func drop(T)void;
+        |""".stripMargin)
+    val interner = compile.interner
+    val coutputs = compile.expectCompilerOutputs()
+    val dropFuncNames =
+      coutputs.functions.map(_.header.fullName).collect({
+        case f @ FullNameT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("drop"), _), _, _)) => f
+      })
+    dropFuncNames.size shouldEqual 2
+  }
+
+  test("Custom drop with concept function") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |#!DeriveInterfaceDrop
+        |sealed interface Opt<T Ref> { }
+        |
+        |abstract func drop<T>(virtual opt Opt<T>)
+        |where func drop(T)void;
+        |
+        |#!DeriveStructDrop
+        |struct Some<T> { x T; }
+        |impl<T> Opt<T> for Some<T>;
+        |
+        |func drop<T>(opt Some<T>)
+        |where func drop(T)void
+        |{
+        |  [x] = opt;
+        |}
+      """.stripMargin)
+    val coutputs = compile.expectCompilerOutputs()
+  }
+
+  test("Test complex interface") {
+    val compile = CompilerTestCompilation.test(
+      Tests.loadExpected("programs/genericvirtuals/templatedinterface.vale"))
+    val coutputs = compile.expectCompilerOutputs()
+  }
+
+  test("Test specializing interface") {
+    val compile = CompilerTestCompilation.test(
+      Tests.loadExpected("programs/genericvirtuals/specializeinterface.vale"))
+    val coutputs = compile.expectCompilerOutputs()
+  }
+
+  test("Use bound from struct") {
+    // See NBIFP.
+    // Without it, when it tries to compile (1), at (2) it tries to resolve BorkForwarder
+    // and fails bound (3) because (1) has no such bound.
+    // NBIFP says we should first get that knowledge from (2).
+    val compile = CompilerTestCompilation.test(
+      """
+        |#!DeriveStructDrop
+        |struct BorkForwarder<Lam>
+        |where func __call(&Lam)int // 3
+        |{
+        |  lam Lam;
+        |}
+        |
+        |
+        |func bork<Lam>( // 1
+        |  self &BorkForwarder<Lam> // 2
+        |) int {
+        |  return (self.lam)();
+        |}
+        |
+        |exported func main() {
+        |  b = BorkForwarder({ 7 });
+        |  b.bork();
+        |  [_] = b;
+        |}
+      """.stripMargin)
+    val coutputs = compile.expectCompilerOutputs()
+  }
+
+  test("Basic interface forwarder") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |#!DeriveInterfaceDrop
+        |sealed interface Bork {
+        |  func bork(virtual self &Bork) int;
+        |}
+        |
+        |#!DeriveStructDrop
+        |struct BorkForwarder<Lam>
+        |where func drop(Lam)void, func __call(&Lam)int {
+        |  lam Lam;
+        |}
+        |
+        |impl<Lam> Bork for BorkForwarder<Lam>;
+        |
+        |func bork<Lam>(self &BorkForwarder<Lam>) int {
+        |  return (self.lam)();
+        |}
+        |
+        |exported func main() int {
+        |  f = BorkForwarder({ 7 });
+        |  z = f.bork();
+        |  [_] = f;
+        |  return z;
+        |}
+      """.stripMargin)
+    val coutputs = compile.expectCompilerOutputs()
+  }
+
+  test("Generic interface forwarder") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |#!DeriveInterfaceDrop
+        |sealed interface Bork<T Ref> {
+        |  func bork(virtual self &Bork<T>) int;
+        |}
+        |
+        |#!DeriveStructDrop
+        |struct BorkForwarder<T Ref, Lam>
+        |where func drop(Lam)void, func __call(&Lam)T {
+        |  lam Lam;
+        |}
+        |
+        |impl<T, Lam> Bork<T> for BorkForwarder<T, Lam>;
+        |
+        |func bork<T, Lam>(self &BorkForwarder<T, Lam>) T {
+        |  return (self.lam)();
+        |}
+        |
+        |exported func main() int {
+        |  f = BorkForwarder<int>({ 7 });
+        |  z = f.bork();
+        |  [_] = f;
+        |  return z;
+        |}
+      """.stripMargin)
+    val coutputs = compile.expectCompilerOutputs()
+  }
+
+  test("Generic interface forwarder with bound") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |#!DeriveInterfaceDrop
+        |sealed interface Bork<T Ref>
+        |where func threeify(T)T {
+        |  func bork(virtual self &Bork<T>) int;
+        |}
+        |
+        |#!DeriveStructDrop
+        |struct BorkForwarder<T Ref, Lam>
+        |where func drop(Lam)void, func __call(&Lam)T, func threeify(T)T {
+        |  lam Lam;
+        |}
+        |
+        |impl<T, Lam> Bork<T> for BorkForwarder<T, Lam>;
+        |
+        |func bork<T, Lam>(self &BorkForwarder<T, Lam>) T {
+        |  return (self.lam)().threeify();
+        |}
+        |
+        |func threeify(x int) int { 3 }
+        |
+        |exported func main() int {
+        |  f = BorkForwarder<int>({ 7 });
+        |  z = f.bork();
+        |  [_] = f;
+        |  return z;
+        |}
+      """.stripMargin)
+    val coutputs = compile.expectCompilerOutputs()
+  }
+
+  test("Basic interface anonymous subclass") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |interface Bork {
+        |  func bork(virtual self &Bork) int;
+        |}
+        |
+        |exported func main() int {
+        |  f = Bork({ 7 });
+        |  return f.bork();
+        |}
+        |
+      """.stripMargin)
+    val coutputs = compile.expectCompilerOutputs()
+  }
+
+  test("Lambda is compatible with interface anonymous substruct") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |import v.builtins.str.*;
+        |
+        |interface AFunction2<R Ref, P1 Ref> {
+        |  func __call(virtual this &AFunction2<R, P1>, a P1) R;
+        |}
+        |exported func main() str {
+        |  func = AFunction2<str, int>((i) => { str(i) });
+        |  return func(42);
+        |}
+      """.stripMargin)
+    val coutputs = compile.expectCompilerOutputs()
+  }
+
+  test("Implementing a non-generic interface call") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |#!DeriveInterfaceDrop
+        |interface IObserver<T Ref> { }
+        |
+        |#!DeriveStructDrop
+        |struct MyThing { }
+        |
+        |impl<T> IObserver<T> for MyThing;
+        |
+      """.stripMargin)
+    val coutputs = compile.expectCompilerOutputs()
+  }
+
+  test("Anonymous substruct 8") {
+    val compile = CompilerTestCompilation.test(
+      """
+        |import v.builtins.arrays.*;
+        |//import array.make.*;
+        |
+        |interface IThing {
+        |  func __call(virtual self &IThing, i int) int;
+        |}
+        |
+        |struct MyThing { }
+        |func __call(self &MyThing, i int) int { i }
+        |
+        |impl IThing for MyThing;
+        |
+        |exported func main() int {
+        |  i IThing = MyThing();
+        |  a = Array<imm, int>(10, &i);
+        |  return a.3;
+        |}
+      """.stripMargin)
+    val coutputs = compile.expectCompilerOutputs()
   }
 
 }

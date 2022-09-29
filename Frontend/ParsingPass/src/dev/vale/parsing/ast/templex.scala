@@ -30,7 +30,7 @@ case class MutabilityPT(range: RangeL, mutability: MutabilityP) extends ITemplex
 case class NameOrRunePT(name: NameP) extends ITemplexPT {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   def range = name.range
-  vassert(name.str != "_")
+  vassert(name.str.str != "_")
 }
 //case class NullablePT(range: Range, inner: ITemplexPT) extends ITemplexPT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class InterpretedPT(range: RangeL, ownership: OwnershipP, inner: ITemplexPT) extends ITemplexPT {
@@ -39,7 +39,7 @@ case class InterpretedPT(range: RangeL, ownership: OwnershipP, inner: ITemplexPT
 }
 case class OwnershipPT(range: RangeL, ownership: OwnershipP) extends ITemplexPT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class PackPT(range: RangeL, members: Vector[ITemplexPT]) extends ITemplexPT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class PrototypePT(range: RangeL, name: NameP, parameters: Vector[ITemplexPT], returnType: ITemplexPT) extends ITemplexPT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class FuncPT(range: RangeL, name: NameP, paramsRange: RangeL, parameters: Vector[ITemplexPT], returnType: ITemplexPT) extends ITemplexPT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class StaticSizedArrayPT(
   range: RangeL,
   mutability: ITemplexPT,

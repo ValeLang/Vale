@@ -169,9 +169,10 @@ class Hammer(interner: Interner, keywords: Keywords) {
     interfaces,
     structs,
     functions,
-    kindToDestructor,
-    edgeBlueprintsByInterface,
+//    kindToDestructor,
+    interfaceToEdgeBlueprints,
     edges,
+    _,
     kindExports,
     functionExports,
     kindExterns,
@@ -229,24 +230,23 @@ class Hammer(interner: Interner, keywords: Keywords) {
     functionHammer.translateFunctions(hinputs, hamuts, userFunctions)
     functionHammer.translateFunctions(hinputs, hamuts, nonUserFunctions)
 
-    val immDestructorPrototypesH =
-      kindToDestructor.map({ case (kind, destructor) =>
-        val kindH = typeHammer.translateKind(hinputs, hamuts, kind)
-        val immDestructorPrototypeH = typeHammer.translatePrototype(hinputs, hamuts, destructor)
-        (kindH -> immDestructorPrototypeH)
-      }).toMap
-
-    immDestructorPrototypesH.foreach({ case (kindH, immDestructorPrototypeH) => {
-      vassert(immDestructorPrototypeH.params.head.kind == kindH)
-    }
-    })
+//    val immDestructorPrototypesH =
+//      kindToDestructor.map({ case (kind, destructor) =>
+//        val kindH = typeHammer.translateKind(hinputs, hamuts, kind)
+//        val immDestructorPrototypeH = typeHammer.translatePrototype(hinputs, hamuts, destructor)
+//        (kindH -> immDestructorPrototypeH)
+//      }).toMap
+//
+//    immDestructorPrototypesH.foreach({ case (kindH, immDestructorPrototypeH) =>
+//      vassert(immDestructorPrototypeH.params.head.kind == kindH)
+//    })
 
     val packageToInterfaceDefs = hamuts.interfaceDefs.groupBy(_._1.fullName.packageCoord)
     val packageToStructDefs = hamuts.structDefs.groupBy(_.fullName.packageCoordinate)
     val packageToFunctionDefs = hamuts.functionDefs.groupBy(_._1.fullName.packageCoord).mapValues(_.values.toVector)
     val packageToStaticSizedArrays = hamuts.staticSizedArrays.values.toVector.groupBy(_.name.packageCoordinate)
     val packageToRuntimeSizedArrays = hamuts.runtimeSizedArrays.values.toVector.groupBy(_.name.packageCoordinate)
-    val packageToImmDestructorPrototypes = immDestructorPrototypesH.groupBy(_._1.packageCoord(interner, keywords))
+//    val packageToImmDestructorPrototypes = immDestructorPrototypesH.groupBy(_._1.packageCoord(interner, keywords))
     val packageToExportNameToKind = hamuts.packageCoordToExportNameToKind
     val packageToExportNameToFunction = hamuts.packageCoordToExportNameToFunction
     val packageToExternNameToKind = hamuts.packageCoordToExternNameToKind
@@ -258,7 +258,7 @@ class Hammer(interner: Interner, keywords: Keywords) {
         packageToFunctionDefs.keySet ++
         packageToStaticSizedArrays.keySet ++
         packageToRuntimeSizedArrays.keySet ++
-        packageToImmDestructorPrototypes.keySet ++
+//        packageToImmDestructorPrototypes.keySet ++
         packageToExportNameToFunction.keySet ++
         packageToExportNameToKind.keySet ++
         packageToExternNameToFunction.keySet ++
@@ -274,7 +274,7 @@ class Hammer(interner: Interner, keywords: Keywords) {
           packageToFunctionDefs.getOrElse(packageCoord, Vector.empty),
           packageToStaticSizedArrays.getOrElse(packageCoord, Vector.empty),
           packageToRuntimeSizedArrays.getOrElse(packageCoord, Vector.empty),
-          packageToImmDestructorPrototypes.getOrElse(packageCoord, Map()),
+//          packageToImmDestructorPrototypes.getOrElse(packageCoord, Map()),
           packageToExportNameToFunction.getOrElse(packageCoord, Map()),
           packageToExportNameToKind.getOrElse(packageCoord, Map()),
           packageToExternNameToFunction.getOrElse(packageCoord, Map()),

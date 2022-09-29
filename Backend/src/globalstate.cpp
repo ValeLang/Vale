@@ -55,8 +55,8 @@ std::vector<LLVMValueRef> GlobalState::getEdgeFunctions(Edge* edge) {
   for (int i = 0; i < edge->structPrototypesByInterfaceMethod.size(); i++) {
     assert(edge->structPrototypesByInterfaceMethod[i].first == interfaceM->methods[i]);
 
-    auto funcName = edge->structPrototypesByInterfaceMethod[i].second->name;
-    auto edgeFunctionL = getFunction(funcName);
+    auto funcPrototype = edge->structPrototypesByInterfaceMethod[i].second;
+    auto edgeFunctionL = getFunction(funcPrototype);
     edgeFunctionsL.push_back(edgeFunctionL);
   }
 
@@ -133,10 +133,18 @@ IRegion* GlobalState::getRegion(RegionId* regionId) {
   }
 }
 
-LLVMValueRef GlobalState::getFunction(Name* name) {
-  auto functionIter = functions.find(name->name);
-  assert(functionIter != functions.end());
-  return functionIter->second;
+LLVMValueRef GlobalState::getFunction(Prototype* prototype) {
+  auto functionIter = functions.find(prototype->name->name);
+  if (functionIter != functions.end()) {
+    return functionIter->second;
+  }
+
+  auto extraFunctionIter = extraFunctions.find(prototype);
+  if (extraFunctionIter != extraFunctions.end()) {
+    return extraFunctionIter->second;
+  }
+
+  assert(false);
 }
 
 LLVMValueRef GlobalState::getInterfaceTablePtr(Edge* edge) {

@@ -22,6 +22,6 @@ exported func expSumBytes(arr []<imm>int) int {
 extern func extSumBytes(arr []<imm>int) int;
 
 exported func main() int {
-  a = #[](5, {_});
+  a = #[]int(5, {_});
   return extSumBytes(a);
 }

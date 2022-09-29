@@ -1,14 +1,14 @@
-package dev.vale.monomorphizing
+package dev.vale.instantiating
 
 import dev.vale.options.GlobalOptions
 import dev.vale.{Builtins, FileCoordinateMap, Interner, Keywords, PackageCoordinate, Tests}
 import org.scalatest.{FunSuite, Matchers}
 
-object MonomorphizingCompilation {
-  def test(code: String*): MonomorphizedCompilation = {
+object InstantiatingCompilation {
+  def test(code: String*): InstantiatedCompilation = {
     val interner = new Interner()
     val keywords = new Keywords(interner)
-    new MonomorphizedCompilation(
+    new InstantiatedCompilation(
       interner,
       keywords,
       Vector(
@@ -16,15 +16,15 @@ object MonomorphizingCompilation {
       Builtins.getCodeMap(interner, keywords)
         .or(FileCoordinateMap.test(interner, code.toVector))
         .or(Tests.getPackageToResourceResolver),
-      MonomorphizedCompilationOptions(
+      InstantiatorCompilationOptions(
         GlobalOptions(true, true, true, true)))
   }
 }
 
-class MonomorphizingTests extends FunSuite with Matchers {
+class InstantiatedTests extends FunSuite with Matchers {
 
   test("Test templates") {
-    val compile = MonomorphizingCompilation.test(
+    val compile = InstantiatingCompilation.test(
       """
         |func drop(x int) { }
         |func bork<T>(a T) void where func drop(T)void {

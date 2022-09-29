@@ -6,7 +6,7 @@ import dev.vale.postparsing.rules.{IRulexSR, RuneUsage}
 import dev.vale.typing.env.IEnvironment
 import dev.vale.typing.{CompilerOutputs, InferCompiler, InitialKnown, TypingPassOptions}
 import dev.vale.typing.function.FunctionCompiler
-import dev.vale.typing.names.{AnonymousSubstructNameT, FullNameT, IInterfaceNameT, IInterfaceTemplateNameT, IStructNameT, IStructTemplateNameT, NameTranslator, PackageTopLevelNameT, RuneNameT, StructTemplateNameT}
+import dev.vale.typing.names.{AnonymousSubstructNameT, IdT, IInterfaceNameT, IInterfaceTemplateNameT, IStructNameT, IStructTemplateNameT, NameTranslator, PackageTopLevelNameT, RuneNameT, StructTemplateNameT}
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.{Accumulator, Err, Interner, Keywords, Ok, Profiler, RangeS, typing, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
@@ -470,18 +470,18 @@ class StructCompilerGenericArgsLayer(
   }
 
   def assembleStructName(
-    templateName: FullNameT[IStructTemplateNameT],
+    templateName: IdT[IStructTemplateNameT],
     templateArgs: Vector[ITemplata[ITemplataType]]):
-  FullNameT[IStructNameT] = {
+  IdT[IStructNameT] = {
     templateName.copy(
-      last = templateName.last.makeStructName(interner, templateArgs))
+      localName = templateName.localName.makeStructName(interner, templateArgs))
   }
 
   def assembleInterfaceName(
-    templateName: FullNameT[IInterfaceTemplateNameT],
+    templateName: IdT[IInterfaceTemplateNameT],
     templateArgs: Vector[ITemplata[ITemplataType]]):
-  FullNameT[IInterfaceNameT] = {
+  IdT[IInterfaceNameT] = {
     templateName.copy(
-      last = templateName.last.makeInterfaceName(interner, templateArgs))
+      localName = templateName.localName.makeInterfaceName(interner, templateArgs))
   }
 }

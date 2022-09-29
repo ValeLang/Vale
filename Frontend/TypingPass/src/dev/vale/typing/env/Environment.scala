@@ -91,7 +91,7 @@ trait IEnvironment {
     })
   }
 
-  def fullName: FullNameT[INameT]
+  def fullName: IdT[INameT]
 }
 
 trait IEnvironmentBox extends IEnvironment {
@@ -101,7 +101,7 @@ trait IEnvironmentBox extends IEnvironment {
   }
   def globalEnv: GlobalEnvironment
 
-  def fullName: FullNameT[INameT]
+  def fullName: IdT[INameT]
 }
 
 sealed trait ILookupContext
@@ -126,7 +126,7 @@ case class GlobalEnvironment(
   // This isn't just packages, structs can have entries here too, because their
   // environments might have things, like a struct's methods might be here.
   // Any particular IEnvironment subclass has a subset of these.
-  nameToTopLevelEnvironment: Map[FullNameT[PackageTopLevelNameT], TemplatasStore],
+  nameToTopLevelEnvironment: Map[IdT[PackageTopLevelNameT], TemplatasStore],
   // Primitives and other builtins
   builtins: TemplatasStore
 )
@@ -236,7 +236,7 @@ object TemplatasStore {
 
 // See DBTSAE for difference between TemplatasStore and Environment.
 case class TemplatasStore(
-  templatasStoreName: FullNameT[INameT],
+  templatasStoreName: IdT[INameT],
   // This is the source of truth. Anything in the environment is in here.
   entriesByNameT: Map[INameT, IEnvEntry],
   // This is just an index for quick looking up of things by their imprecise name.
@@ -283,7 +283,7 @@ case class TemplatasStore(
             // then that prototype will be accessible via not only ImplicitRune(1.4.6.1)
             // but also CodeNameS("moo").
             getImpreciseName(interner, key).toList.map(_ -> value) ++
-              getImpreciseName(interner, prototype.fullName.last).map(_ -> value) ++
+              getImpreciseName(interner, prototype.fullName.localName).map(_ -> value) ++
               List(interner.intern(PrototypeNameS()) -> value)
           }
           case (key, entry @ ImplEnvEntry(implA)) => {
@@ -295,15 +295,15 @@ case class TemplatasStore(
           case (key, entry @ TemplataEnvEntry(IsaTemplata(_, _, subKind, superKind))) => {
             val subImpreciseName =
               subKind match {
-                case StructTT(fullName) => vassertSome(getImpreciseName(interner, fullName.last))
-                case InterfaceTT(fullName) => vassertSome(getImpreciseName(interner, fullName.last))
-                case PlaceholderT(fullName) => vassertSome(getImpreciseName(interner, fullName.last))
+                case StructTT(fullName) => vassertSome(getImpreciseName(interner, fullName.localName))
+                case InterfaceTT(fullName) => vassertSome(getImpreciseName(interner, fullName.localName))
+                case PlaceholderT(fullName) => vassertSome(getImpreciseName(interner, fullName.localName))
                 case _ => vwat()
               }
             val superImpreciseName =
               superKind match {
-                case InterfaceTT(fullName) => vassertSome(getImpreciseName(interner, fullName.last))
-                case PlaceholderT(fullName) => vassertSome(getImpreciseName(interner, fullName.last))
+                case InterfaceTT(fullName) => vassertSome(getImpreciseName(interner, fullName.localName))
+                case PlaceholderT(fullName) => vassertSome(getImpreciseName(interner, fullName.localName))
                 case _ => vwat()
               }
             getImpreciseName(interner, key).toList.map(_ -> entry) ++
@@ -359,7 +359,7 @@ case class TemplatasStore(
 object PackageEnvironment {
   // THIS IS TEMPORARY, it pulls in all global namespaces!
   // See https://github.com/ValeLang/Vale/issues/356
-  def makeTopLevelEnvironment(globalEnv: GlobalEnvironment, namespaceName: FullNameT[INameT]): PackageEnvironment[INameT] = {
+  def makeTopLevelEnvironment(globalEnv: GlobalEnvironment, namespaceName: IdT[INameT]): PackageEnvironment[INameT] = {
     PackageEnvironment(
       globalEnv,
       namespaceName,
@@ -369,7 +369,7 @@ object PackageEnvironment {
 
 case class PackageEnvironment[+T <: INameT](
   globalEnv: GlobalEnvironment,
-  fullName: FullNameT[T],
+  fullName: IdT[T],
 
   // These are ones that the user imports (or the ancestors that we implicitly import)
   globalNamespaces: Vector[TemplatasStore]
@@ -419,8 +419,8 @@ case class PackageEnvironment[+T <: INameT](
 case class CitizenEnvironment[+T <: INameT, +Y <: ITemplateNameT](
   globalEnv: GlobalEnvironment,
   parentEnv: IEnvironment,
-  templateName: FullNameT[Y],
-  fullName: FullNameT[T],
+  templateName: IdT[Y],
+  fullName: IdT[T],
   templatas: TemplatasStore
 ) extends IEnvironment {
   vassert(templatas.templatasStoreName == fullName)
@@ -434,12 +434,12 @@ case class CitizenEnvironment[+T <: INameT, +Y <: ITemplateNameT](
   }
 
   override def rootCompilingDenizenEnv: IEnvironment = {
-    (fullName.last, parentEnv.fullName.last) match {
+    (fullName.localName, parentEnv.fullName.localName) match {
       case (_ : IInstantiationNameT, _ : ITemplateNameT) => this
       case (_, PackageTopLevelNameT()) => this
       case _ => {
         val result = parentEnv.rootCompilingDenizenEnv
-        result.fullName.last match {
+        result.fullName.localName match {
           case _ : IInstantiationNameT =>
           case other => vwat(other)
         }
@@ -481,7 +481,7 @@ object GeneralEnvironment {
   def childOf[Y <: INameT](
     interner: Interner,
     parentEnv: IEnvironment,
-    newName: FullNameT[Y],
+    newName: IdT[Y],
     newEntriesList: Vector[(INameT, IEnvEntry)] = Vector()):
   GeneralEnvironment[Y] = {
     GeneralEnvironment(
@@ -496,7 +496,7 @@ object GeneralEnvironment {
 case class GeneralEnvironment[+T <: INameT](
   globalEnv: GlobalEnvironment,
   parentEnv: IEnvironment,
-  fullName: FullNameT[T],
+  fullName: IdT[T],
   templatas: TemplatasStore
 ) extends IEnvironment {
   override def equals(obj: Any): Boolean = vcurious();

@@ -12,7 +12,7 @@ import dev.vale.typing.citizen.{IResolveOutcome, IsParent, IsParentResult, IsntP
 import dev.vale.typing.env.{CitizenEnvironment, EnvironmentHelper, GeneralEnvironment, GlobalEnvironment, IEnvEntry, IEnvironment, ILookupContext, IVariableT, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
 import dev.vale.typing.function.FunctionCompiler.EvaluateFunctionSuccess
 import dev.vale.typing.infer.{CompilerSolver, CouldntFindFunction, CouldntFindImpl, CouldntResolveKind, IInfererDelegate, ITypingPassSolverError, ReturnTypeConflict}
-import dev.vale.typing.names.{BuildingFunctionNameWithClosuredsT, FullNameT, IImplNameT, INameT, ITemplateNameT, ImplNameT, NameTranslator, ReachablePrototypeNameT, ResolvingEnvNameT, RuneNameT}
+import dev.vale.typing.names.{BuildingFunctionNameWithClosuredsT, IdT, IImplNameT, INameT, ITemplateNameT, ImplNameT, NameTranslator, ReachablePrototypeNameT, ResolvingEnvNameT, RuneNameT}
 import dev.vale.typing.templata.{CoordListTemplata, CoordTemplata, ITemplata, InterfaceDefinitionTemplata, KindTemplata, PrototypeTemplata, RuntimeSizedArrayTemplateTemplata, StructDefinitionTemplata}
 import dev.vale.typing.types.{CoordT, ICitizenTT, ISubKindTT, ISuperKindTT, InterfaceTT, KindT, RuntimeSizedArrayTT, StaticSizedArrayTT, StructTT}
 
@@ -404,11 +404,11 @@ class InferCompiler(
         case Ok(x) => x
       }
 
-    if (funcSuccess.function.prototype.returnType != returnCoord) {
-      return Err(RuleError(ReturnTypeConflict(range :: ranges, returnCoord, funcSuccess.function.prototype)))
+    if (funcSuccess.prototype.prototype.returnType != returnCoord) {
+      return Err(RuleError(ReturnTypeConflict(range :: ranges, returnCoord, funcSuccess.prototype.prototype)))
     }
 
-    Ok(Some((resultRune.rune, funcSuccess.function.prototype)))
+    Ok(Some((resultRune.rune, funcSuccess.prototype.prototype)))
   }
 
   // Returns None for any call that we don't even have params for,
@@ -419,7 +419,7 @@ class InferCompiler(
     ranges: List[RangeS],
     c: CallSiteCoordIsaSR,
     conclusions: Map[IRuneS, ITemplata[ITemplataType]]):
-  Result[Option[(IRuneS, FullNameT[IImplNameT])], ISolverError[IRuneS, ITemplata[ITemplataType], ITypingPassSolverError]] = {
+  Result[Option[(IRuneS, IdT[IImplNameT])], ISolverError[IRuneS, ITemplata[ITemplataType], ITypingPassSolverError]] = {
     val CallSiteCoordIsaSR(range, resultRune, subRune, superRune) = c
 
     // If it was an incomplete solve, then just skip.

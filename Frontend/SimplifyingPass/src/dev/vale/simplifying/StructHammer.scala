@@ -1,7 +1,7 @@
 package dev.vale.simplifying
 
 import dev.vale.{Interner, Keywords, PackageCoordinate, vassert, vassertSome, vimpl, finalast => m}
-import dev.vale.finalast.{BorrowH, EdgeH, InterfaceDefinitionH, InterfaceMethodH, InterfaceRefH, KindH, Mutable, PrototypeH, ReferenceH, StructDefinitionH, StructMemberH, StructRefH, YonderH}
+import dev.vale.finalast.{BorrowH, EdgeH, InterfaceDefinitionH, InterfaceMethodH, InterfaceHT, KindHT, Mutable, PrototypeH, CoordH, StructDefinitionH, StructMemberH, StructHT, YonderH}
 import dev.vale.typing.Hinputs
 import dev.vale.typing.ast.{EdgeT, PrototypeT}
 import dev.vale.typing.names._
@@ -20,17 +20,9 @@ class StructHammer(
     keywords: Keywords,
     nameHammer: NameHammer,
     translatePrototype: (Hinputs, HamutsBox, PrototypeT) => PrototypeH,
-    translateReference: (Hinputs, HamutsBox, CoordT) => ReferenceH[KindH]) {
+    translateReference: (Hinputs, HamutsBox, CoordT) => CoordH[KindHT]) {
   def translateInterfaces(hinputs: Hinputs, hamuts: HamutsBox): Unit = {
-    hinputs.interfaces.foreach(interface => translateInterfaceRef(hinputs, hamuts, interface.instantiatedInterface))
-  }
-
-  private def translateInterfaceRefs(
-      hinputs: Hinputs,
-    hamuts: HamutsBox,
-      interfaceRefs2: Vector[InterfaceTT]):
-  (Vector[InterfaceRefH]) = {
-    interfaceRefs2.map(translateInterfaceRef(hinputs, hamuts, _))
+    hinputs.interfaces.foreach(interface => translateInterface(hinputs, hamuts, interface.instantiatedInterface))
   }
 
   def translateInterfaceMethods(
@@ -51,17 +43,17 @@ class StructHammer(
     methodsH
   }
 
-  def translateInterfaceRef(
+  def translateInterface(
     hinputs: Hinputs,
     hamuts: HamutsBox,
     interfaceTT: InterfaceTT):
-  InterfaceRefH = {
-    hamuts.interfaceRefs.get(interfaceTT) match {
+  InterfaceHT = {
+    hamuts.interfaceTToInterfaceH.get(interfaceTT) match {
       case Some(structRefH) => structRefH
       case None => {
         val fullNameH = nameHammer.translateFullName(hinputs, hamuts, interfaceTT.fullName)
         // This is the only place besides InterfaceDefinitionH that can make a InterfaceRefH
-        val temporaryInterfaceRefH = InterfaceRefH(fullNameH);
+        val temporaryInterfaceRefH = InterfaceHT(fullNameH);
         hamuts.forwardDeclareInterface(interfaceTT, temporaryInterfaceRefH)
         val interfaceDefT = hinputs.lookupInterface(interfaceTT.fullName);
 
@@ -98,20 +90,20 @@ class StructHammer(
   }
 
   def translateStructs(hinputs: Hinputs, hamuts: HamutsBox): Unit = {
-    hinputs.structs.foreach(structDefT => translateStructRef(hinputs, hamuts, structDefT.instantiatedCitizen))
+    hinputs.structs.foreach(structDefT => translateStructT(hinputs, hamuts, structDefT.instantiatedCitizen))
   }
 
-  def translateStructRef(
+  def translateStructT(
       hinputs: Hinputs,
       hamuts: HamutsBox,
       structTT: StructTT):
-  (StructRefH) = {
-    hamuts.structRefsByRef2.get(structTT) match {
+  (StructHT) = {
+    hamuts.structTToStructH.get(structTT) match {
       case Some(structRefH) => structRefH
       case None => {
         val (fullNameH) = nameHammer.translateFullName(hinputs, hamuts, structTT.fullName)
         // This is the only place besides StructDefinitionH that can make a StructRefH
-        val temporaryStructRefH = StructRefH(fullNameH);
+        val temporaryStructRefH = StructHT(fullNameH);
         hamuts.forwardDeclareStruct(structTT, temporaryStructRefH)
         val structDefT = hinputs.lookupStruct(structTT.fullName);
         val (membersH) =
@@ -149,12 +141,12 @@ class StructHammer(
     }
   }
 
-  def translateMembers(hinputs: Hinputs, hamuts: HamutsBox, structName: FullNameT[INameT], members: Vector[IStructMemberT]):
+  def translateMembers(hinputs: Hinputs, hamuts: HamutsBox, structName: IdT[INameT], members: Vector[IStructMemberT]):
   (Vector[StructMemberH]) = {
     members.map(translateMember(hinputs, hamuts, structName, _))
   }
 
-  def translateMember(hinputs: Hinputs, hamuts: HamutsBox, structName: FullNameT[INameT], member2: IStructMemberT):
+  def translateMember(hinputs: Hinputs, hamuts: HamutsBox, structName: IdT[INameT], member2: IStructMemberT):
   (StructMemberH) = {
     val (variability, memberType) =
       member2 match {
@@ -168,7 +160,7 @@ class StructHammer(
           val (boxStructRefH) =
             makeBox(hinputs, hamuts, variability, coord, referenceH)
           // The stack owns the box, closure structs just borrow it.
-          (variability, ReferenceH(BorrowH, YonderH, boxStructRefH))
+          (variability, CoordH(BorrowH, YonderH, boxStructRefH))
         }
       }
     StructMemberH(
@@ -182,10 +174,10 @@ class StructHammer(
     hamuts: HamutsBox,
     conceptualVariability: VariabilityT,
     type2: CoordT,
-    typeH: ReferenceH[KindH]):
-  (StructRefH) = {
+    typeH: CoordH[KindHT]):
+  (StructHT) = {
     val boxFullName2 =
-      FullNameT(
+      IdT(
         PackageCoordinate.BUILTIN(interner, keywords),
         Vector.empty,
         interner.intern(StructNameT(
@@ -195,7 +187,7 @@ class StructHammer(
     hamuts.structDefs.find(_.fullName == boxFullNameH) match {
       case Some(structDefH) => (structDefH.getRef)
       case None => {
-        val temporaryStructRefH = StructRefH(boxFullNameH);
+        val temporaryStructRefH = StructHT(boxFullNameH);
 
         // We don't actually care about the given variability, because even if it's final, we still need
         // the box to contain a varying reference, see VCBAAF.
@@ -223,7 +215,7 @@ class StructHammer(
 
   private def translateEdgesForStruct(
       hinputs: Hinputs, hamuts: HamutsBox,
-      structRefH: StructRefH,
+      structRefH: StructHT,
       structTT: StructTT):
   (Vector[EdgeH]) = {
     val edges2 = hinputs.interfaceToSubCitizenToEdge.values.flatMap(_.values).filter(_.subCitizen.fullName == structTT.fullName)
@@ -232,17 +224,17 @@ class StructHammer(
 
   private def translateEdgesForStruct(
       hinputs: Hinputs, hamuts: HamutsBox,
-      structRefH: StructRefH,
+      structRefH: StructHT,
       edges2: Vector[EdgeT]):
   (Vector[EdgeH]) = {
     edges2.map(e => translateEdge(hinputs, hamuts, structRefH, interner.intern(InterfaceTT(e.superInterface)), e))
   }
 
 
-  private def translateEdge(hinputs: Hinputs, hamuts: HamutsBox, structRefH: StructRefH, interfaceTT: InterfaceTT, edge2: EdgeT):
+  private def translateEdge(hinputs: Hinputs, hamuts: HamutsBox, structRefH: StructHT, interfaceTT: InterfaceTT, edge2: EdgeT):
   (EdgeH) = {
     // Purposefully not trying to translate the entire struct here, because we might hit a circular dependency
-    val interfaceRefH = translateInterfaceRef(hinputs, hamuts, interfaceTT)
+    val interfaceRefH = translateInterface(hinputs, hamuts, interfaceTT)
     val interfacePrototypesH = translateInterfaceMethods(hinputs, hamuts, interfaceTT)
 
     val prototypesH =

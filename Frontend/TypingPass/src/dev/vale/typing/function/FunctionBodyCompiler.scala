@@ -86,7 +86,7 @@ class BodyCompiler(
           val returnType2 =
             if (returns.isEmpty && body2.result.kind == NeverT(false)) {
               // No returns yet the body results in a Never. This can happen if we call panic from inside.
-              body2.result.reference
+              body2.result.coord
             } else {
               vassert(returns.nonEmpty)
               if (returns.size > 1) {
@@ -163,14 +163,14 @@ class BodyCompiler(
       maybeExpectedResultType match {
         case None => unconvertedBodyWithoutReturn
         case Some(expectedResultType) => {
-          if (templataCompiler.isTypeConvertible(coutputs, startingEnv, parentRanges, unconvertedBodyWithoutReturn.result.reference, expectedResultType)) {
+          if (templataCompiler.isTypeConvertible(coutputs, startingEnv, parentRanges, unconvertedBodyWithoutReturn.result.coord, expectedResultType)) {
             if (unconvertedBodyWithoutReturn.kind == NeverT(false)) {
               unconvertedBodyWithoutReturn
             } else {
               convertHelper.convert(funcOuterEnv.snapshot, coutputs, body1.range :: parentRanges, unconvertedBodyWithoutReturn, expectedResultType);
             }
           } else {
-            return Err(ResultTypeMismatchError(expectedResultType, unconvertedBodyWithoutReturn.result.reference))
+            return Err(ResultTypeMismatchError(expectedResultType, unconvertedBodyWithoutReturn.result.coord))
           }
         }
       }
@@ -181,7 +181,7 @@ class BodyCompiler(
       if (convertedBodyWithoutReturn.kind == NeverT(false)) {
         (convertedBodyWithoutReturn, returnsFromInsideMaybeWithNever)
       } else {
-        (ReturnTE(convertedBodyWithoutReturn), returnsFromInsideMaybeWithNever + convertedBodyWithoutReturn.result.reference)
+        (ReturnTE(convertedBodyWithoutReturn), returnsFromInsideMaybeWithNever + convertedBodyWithoutReturn.result.coord)
       }
     // If we already had a ret, then the above will add a Never to the returns, but that's fine, it will be filtered
     // out below.
@@ -200,7 +200,7 @@ class BodyCompiler(
       // We don't want the user to accidentally just move it somewhere, they need to
       // promise it gets destroyed.
       val destructeeName = params2.head.name
-      if (!env.unstackifieds.exists(_.last == destructeeName)) {
+      if (!env.unstackifieds.exists(_.localName == destructeeName)) {
         throw CompileErrorExceptionT(RangedInternalErrorT(body1.range :: parentRanges, "Destructee wasn't moved/destroyed!"))
       }
     }
@@ -228,7 +228,7 @@ class BodyCompiler(
 
     params1.foreach({
       case ParameterS(AtomSP(_, Some(CaptureS(name)), _, _, _)) => {
-        if (!nenv.declaredLocals.exists(_.id.last == nameTranslator.translateVarNameStep(name))) {
+        if (!nenv.declaredLocals.exists(_.id.localName == nameTranslator.translateVarNameStep(name))) {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot couldnt find " + name))
         }
       }

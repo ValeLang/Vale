@@ -14,14 +14,14 @@ import dev.vale.typing.types._
 // but Compiler's correspond more to what packages and stamped functions / structs
 // they're in. See TNAD.
 
-case class FullNameT[+T <: INameT](
+case class IdT[+T <: INameT](
   packageCoord: PackageCoordinate,
   initSteps: Vector[INameT],
-  last: T
+  localName: T
 )  {
 
   this match {
-    case FullNameT(_,Vector(),ImplNameT(ImplTemplateNameT(_),Vector(CoordTemplata(CoordT(ShareT,StructTT(FullNameT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_))))))),StructTT(FullNameT(_,Vector(),AnonymousSubstructNameT(AnonymousSubstructTemplateNameT(InterfaceTemplateNameT(StrI("Bipedal"))),Vector(CoordTemplata(CoordT(ShareT,StructTT(FullNameT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_)))))))))))) => {
+    case IdT(_,Vector(),ImplNameT(ImplTemplateNameT(_),Vector(CoordTemplata(CoordT(ShareT,StructTT(IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_))))))),StructTT(IdT(_,Vector(),AnonymousSubstructNameT(AnonymousSubstructTemplateNameT(InterfaceTemplateNameT(StrI("Bipedal"))),Vector(CoordTemplata(CoordT(ShareT,StructTT(IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_)))))))))))) => {
       vpass()
     }
     case _ =>
@@ -36,7 +36,7 @@ case class FullNameT[+T <: INameT](
   // Placeholders are under the template name.
   // There's really no other way; we make the placeholders before knowing the function's
   // instantated name.
-  last match {
+  localName match {
     case PlaceholderNameT(_) => {
       initSteps.last match {
         case _ : ITemplateNameT =>
@@ -59,33 +59,33 @@ case class FullNameT[+T <: INameT](
 
   override def equals(obj: Any): Boolean = {
     obj match {
-      case FullNameT(thatPackageCoord, thatInitSteps, thatLast) => {
-        packageCoord == thatPackageCoord && initSteps == thatInitSteps && last == thatLast
+      case IdT(thatPackageCoord, thatInitSteps, thatLast) => {
+        packageCoord == thatPackageCoord && initSteps == thatInitSteps && localName == thatLast
       }
       case _ => false
     }
   }
 
-  def packageFullName(interner: Interner): FullNameT[PackageTopLevelNameT] = {
-    FullNameT(packageCoord, Vector(), interner.intern(PackageTopLevelNameT()))
+  def packageFullName(interner: Interner): IdT[PackageTopLevelNameT] = {
+    IdT(packageCoord, Vector(), interner.intern(PackageTopLevelNameT()))
   }
 
-  def initFullName(interner: Interner): FullNameT[INameT] = {
+  def initFullName(interner: Interner): IdT[INameT] = {
     if (initSteps.isEmpty) {
-      FullNameT(packageCoord, Vector(), interner.intern(PackageTopLevelNameT()))
+      IdT(packageCoord, Vector(), interner.intern(PackageTopLevelNameT()))
     } else {
-      FullNameT(packageCoord, initSteps.init, initSteps.last)
+      IdT(packageCoord, initSteps.init, initSteps.last)
     }
   }
 
   def steps: Vector[INameT] = {
-    last match {
+    localName match {
       case PackageTopLevelNameT() => initSteps
-      case _ => initSteps :+ last
+      case _ => initSteps :+ localName
     }
   }
-  def addStep[Y <: INameT](newLast: Y): FullNameT[Y] = {
-    FullNameT[Y](packageCoord, steps, newLast)
+  def addStep[Y <: INameT](newLast: Y): IdT[Y] = {
+    IdT[Y](packageCoord, steps, newLast)
   }
 
 
@@ -161,7 +161,7 @@ case class ImplTemplateNameT(codeLocationS: CodeLocationS) extends IImplTemplate
 case class ImplNameT(
   template: ImplTemplateNameT,
   templateArgs: Vector[ITemplata[ITemplataType]],
-  // The monomorphizer wants this so it can know the struct type up-front before monomorphizing the
+  // The instantiator wants this so it can know the struct type up-front before monomorphizing the
   // whole impl, so it can hoist some bounds out of the struct, like NBIFP.
   subCitizen: ICitizenTT
 ) extends IImplNameT {
@@ -200,7 +200,7 @@ case class StaticSizedArrayTemplateNameT() extends ICitizenTemplateNameT {
     val size = expectInteger(templateArgs(0))
     val mutability = expectMutability(templateArgs(1))
     val variability = expectVariability(templateArgs(2))
-    val elementType = expectCoordTemplata(templateArgs(3)).reference
+    val elementType = expectCoordTemplata(templateArgs(3)).coord
     interner.intern(StaticSizedArrayNameT(this, size, variability, RawArrayNameT(mutability, elementType)))
   }
 }
@@ -218,7 +218,7 @@ case class RuntimeSizedArrayTemplateNameT() extends ICitizenTemplateNameT {
   override def makeCitizenName(interner: Interner, templateArgs: Vector[ITemplata[ITemplataType]]): ICitizenNameT = {
     vassert(templateArgs.size == 2)
     val mutability = expectMutability(templateArgs(0))
-    val elementType = expectCoordTemplata(templateArgs(1)).reference
+    val elementType = expectCoordTemplata(templateArgs(1)).coord
     interner.intern(RuntimeSizedArrayNameT(this, RawArrayNameT(mutability, elementType)))
   }
 }
@@ -239,7 +239,7 @@ case class PlaceholderNameT(template: PlaceholderTemplateNameT) extends ISubKind
 
 // See NNSPAFOC.
 case class OverrideDispatcherTemplateNameT(
-  implFullName: FullNameT[IImplTemplateNameT]
+  implFullName: IdT[IImplTemplateNameT]
 ) extends IFunctionTemplateNameT {
   override def makeFunctionName(
     interner: Interner,
@@ -377,7 +377,7 @@ case class LambdaCallFunctionTemplateNameT(
   paramTypes: Vector[CoordT]
 ) extends INameT with IFunctionTemplateNameT {
   override def makeFunctionName(interner: Interner, keywords: Keywords, templateArgs: Vector[ITemplata[ITemplataType]], params: Vector[CoordT]): IFunctionNameT = {
-    // Post monomorphizer, the params will be real, but our template paramTypes will still be placeholders
+    // Post instantiator, the params will be real, but our template paramTypes will still be placeholders
     // vassert(params == paramTypes)
     interner.intern(LambdaCallFunctionNameT(this, templateArgs, params))
   }

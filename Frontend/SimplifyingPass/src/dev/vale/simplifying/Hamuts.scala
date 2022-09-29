@@ -1,7 +1,7 @@
 package dev.vale.simplifying
 
 import dev.vale.{PackageCoordinate, StrI, vassert, vcurious, vfail, vimpl}
-import dev.vale.finalast.{FullNameH, FunctionH, InterfaceDefinitionH, InterfaceRefH, KindH, PrototypeH, RuntimeSizedArrayDefinitionHT, RuntimeSizedArrayHT, StaticSizedArrayDefinitionHT, StaticSizedArrayHT, StructDefinitionH, StructRefH}
+import dev.vale.finalast.{IdH, FunctionH, InterfaceDefinitionH, InterfaceHT, KindHT, PrototypeH, RuntimeSizedArrayDefinitionHT, RuntimeSizedArrayHT, StaticSizedArrayDefinitionHT, StaticSizedArrayHT, StructDefinitionH, StructHT}
 import dev.vale.typing.ast.PrototypeT
 import dev.vale.typing.types._
 import dev.vale.finalast._
@@ -13,20 +13,20 @@ case class HamutsBox(var inner: Hamuts) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vfail() // Shouldnt hash, is mutable
 
   def packageCoordToExportNameToFunction: Map[PackageCoordinate, Map[StrI, PrototypeH]] = inner.packageCoordToExportNameToFunction
-  def packageCoordToExportNameToKind: Map[PackageCoordinate, Map[StrI, KindH]] = inner.packageCoordToExportNameToKind
+  def packageCoordToExportNameToKind: Map[PackageCoordinate, Map[StrI, KindHT]] = inner.packageCoordToExportNameToKind
   def packageCoordToExternNameToFunction: Map[PackageCoordinate, Map[StrI, PrototypeH]] = inner.packageCoordToExternNameToFunction
-  def packageCoordToExternNameToKind: Map[PackageCoordinate, Map[StrI, KindH]] = inner.packageCoordToExternNameToKind
-  def structRefsByRef2: Map[StructTT, StructRefH] = inner.structRefsByRef2
-  def structDefsByRefT: Map[StructTT, StructDefinitionH] = inner.structDefsByRef2
+  def packageCoordToExternNameToKind: Map[PackageCoordinate, Map[StrI, KindHT]] = inner.packageCoordToExternNameToKind
+  def structTToStructH: Map[StructTT, StructHT] = inner.structTToStructH
+  def structTToStructDefH: Map[StructTT, StructDefinitionH] = inner.structTToStructDefH
   def structDefs: Vector[StructDefinitionH] = inner.structDefs
-  def interfaceRefs: Map[InterfaceTT, InterfaceRefH] = inner.interfaceRefs
-  def interfaceDefs: Map[InterfaceTT, InterfaceDefinitionH] = inner.interfaceDefs
+  def interfaceTToInterfaceH: Map[InterfaceTT, InterfaceHT] = inner.interfaceTToInterfaceH
+  def interfaceTToInterfaceDefH: Map[InterfaceTT, InterfaceDefinitionH] = inner.interfaceTToInterfaceDefH
   def functionRefs: Map[PrototypeT, FunctionRefH] = inner.functionRefs
   def functionDefs: Map[PrototypeT, FunctionH] = inner.functionDefs
   def staticSizedArrays: Map[StaticSizedArrayTT, StaticSizedArrayDefinitionHT] = inner.staticSizedArrays
   def runtimeSizedArrays: Map[RuntimeSizedArrayTT, RuntimeSizedArrayDefinitionHT] = inner.runtimeSizedArrays
 
-  def forwardDeclareStruct(structTT: StructTT, structRefH: StructRefH): Unit = {
+  def forwardDeclareStruct(structTT: StructTT, structRefH: StructHT): Unit = {
     inner = inner.forwardDeclareStruct(structTT, structRefH)
   }
 
@@ -38,7 +38,7 @@ case class HamutsBox(var inner: Hamuts) {
     inner = inner.addStructOriginatingFromHammer(structDefH)
   }
 
-  def forwardDeclareInterface(interfaceTT: InterfaceTT, interfaceRefH: InterfaceRefH): Unit = {
+  def forwardDeclareInterface(interfaceTT: InterfaceTT, interfaceRefH: InterfaceHT): Unit = {
     inner = inner.forwardDeclareInterface(interfaceTT, interfaceRefH)
   }
 
@@ -62,11 +62,11 @@ case class HamutsBox(var inner: Hamuts) {
     inner = inner.addFunction(functionRef2, functionDefH)
   }
 
-  def addKindExport(kind: KindH, packageCoordinate: PackageCoordinate, exportedName: StrI): Unit = {
+  def addKindExport(kind: KindHT, packageCoordinate: PackageCoordinate, exportedName: StrI): Unit = {
     inner = inner.addKindExport(kind, packageCoordinate, exportedName)
   }
 
-  def addKindExtern(kind: KindH, packageCoordinate: PackageCoordinate, exportedName: StrI): Unit = {
+  def addKindExtern(kind: KindHT, packageCoordinate: PackageCoordinate, exportedName: StrI): Unit = {
     inner = inner.addKindExtern(kind, packageCoordinate, exportedName)
   }
 
@@ -94,35 +94,35 @@ case class HamutsBox(var inner: Hamuts) {
 
 case class Hamuts(
     humanNameToFullNameToId: Map[String, Map[String, Int]],
-    structRefsByRef2: Map[StructTT, StructRefH],
-    structDefsByRef2: Map[StructTT, StructDefinitionH],
+    structTToStructH: Map[StructTT, StructHT],
+    structTToStructDefH: Map[StructTT, StructDefinitionH],
     structDefs: Vector[StructDefinitionH],
     staticSizedArrays: Map[StaticSizedArrayTT, StaticSizedArrayDefinitionHT],
     runtimeSizedArrays: Map[RuntimeSizedArrayTT, RuntimeSizedArrayDefinitionHT],
-    interfaceRefs: Map[InterfaceTT, InterfaceRefH],
-    interfaceDefs: Map[InterfaceTT, InterfaceDefinitionH],
+    interfaceTToInterfaceH: Map[InterfaceTT, InterfaceHT],
+    interfaceTToInterfaceDefH: Map[InterfaceTT, InterfaceDefinitionH],
     functionRefs: Map[PrototypeT, FunctionRefH],
     functionDefs: Map[PrototypeT, FunctionH],
     packageCoordToExportNameToFunction: Map[PackageCoordinate, Map[StrI, PrototypeH]],
-    packageCoordToExportNameToKind: Map[PackageCoordinate, Map[StrI, KindH]],
+    packageCoordToExportNameToKind: Map[PackageCoordinate, Map[StrI, KindHT]],
     packageCoordToExternNameToFunction: Map[PackageCoordinate, Map[StrI, PrototypeH]],
-    packageCoordToExternNameToKind: Map[PackageCoordinate, Map[StrI, KindH]]) {
+    packageCoordToExternNameToKind: Map[PackageCoordinate, Map[StrI, KindHT]]) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vfail() // Would need a really good reason to hash something this big
 
   vassert(functionDefs.values.map(_.fullName).toVector.distinct.size == functionDefs.values.size)
   vassert(structDefs.map(_.fullName).distinct.size == structDefs.size)
   vassert(runtimeSizedArrays.values.map(_.name).toVector.distinct.size == runtimeSizedArrays.size)
 
-  def forwardDeclareStruct(structTT: StructTT, structRefH: StructRefH): Hamuts = {
+  def forwardDeclareStruct(structTT: StructTT, structRefH: StructHT): Hamuts = {
     Hamuts(
       humanNameToFullNameToId,
-      structRefsByRef2 + (structTT -> structRefH),
-      structDefsByRef2,
+      structTToStructH + (structTT -> structRefH),
+      structTToStructDefH,
       structDefs,
       staticSizedArrays,
       runtimeSizedArrays,
-      interfaceRefs,
-      interfaceDefs,
+      interfaceTToInterfaceH,
+      interfaceTToInterfaceDefH,
       functionRefs,
       functionDefs,
       packageCoordToExportNameToFunction,
@@ -132,17 +132,17 @@ case class Hamuts(
   }
 
   def addStructOriginatingFromTypingPass(structTT: StructTT, structDefH: StructDefinitionH): Hamuts = {
-    vassert(structRefsByRef2.contains(structTT))
-    vassert(!structDefsByRef2.contains(structTT))
+    vassert(structTToStructH.contains(structTT))
+    vassert(!structTToStructDefH.contains(structTT))
     Hamuts(
       humanNameToFullNameToId,
-      structRefsByRef2,
-      structDefsByRef2 + (structTT -> structDefH),
+      structTToStructH,
+      structTToStructDefH + (structTT -> structDefH),
       structDefs :+ structDefH,
       staticSizedArrays,
       runtimeSizedArrays,
-      interfaceRefs,
-      interfaceDefs,
+      interfaceTToInterfaceH,
+      interfaceTToInterfaceDefH,
       functionRefs,
       functionDefs,
       packageCoordToExportNameToFunction,
@@ -156,13 +156,13 @@ case class Hamuts(
 
     Hamuts(
       humanNameToFullNameToId,
-      structRefsByRef2,
-      structDefsByRef2,
+      structTToStructH,
+      structTToStructDefH,
       structDefs :+ structDefH,
       staticSizedArrays,
       runtimeSizedArrays,
-      interfaceRefs,
-      interfaceDefs,
+      interfaceTToInterfaceH,
+      interfaceTToInterfaceDefH,
       functionRefs,
       functionDefs,
       packageCoordToExportNameToFunction,
@@ -171,16 +171,16 @@ case class Hamuts(
       packageCoordToExternNameToKind)
   }
 
-  def forwardDeclareInterface(interfaceTT: InterfaceTT, interfaceRefH: InterfaceRefH): Hamuts = {
+  def forwardDeclareInterface(interfaceTT: InterfaceTT, interfaceRefH: InterfaceHT): Hamuts = {
     Hamuts(
       humanNameToFullNameToId,
-      structRefsByRef2,
-      structDefsByRef2,
+      structTToStructH,
+      structTToStructDefH,
       structDefs,
       staticSizedArrays,
       runtimeSizedArrays,
-      interfaceRefs + (interfaceTT -> interfaceRefH),
-      interfaceDefs,
+      interfaceTToInterfaceH + (interfaceTT -> interfaceRefH),
+      interfaceTToInterfaceDefH,
       functionRefs,
       functionDefs,
       packageCoordToExportNameToFunction,
@@ -190,16 +190,16 @@ case class Hamuts(
   }
 
   def addInterface(interfaceTT: InterfaceTT, interfaceDefH: InterfaceDefinitionH): Hamuts = {
-    vassert(interfaceRefs.contains(interfaceTT))
+    vassert(interfaceTToInterfaceH.contains(interfaceTT))
     Hamuts(
       humanNameToFullNameToId,
-      structRefsByRef2,
-      structDefsByRef2,
+      structTToStructH,
+      structTToStructDefH,
       structDefs,
       staticSizedArrays,
       runtimeSizedArrays,
-      interfaceRefs,
-      interfaceDefs + (interfaceTT -> interfaceDefH),
+      interfaceTToInterfaceH,
+      interfaceTToInterfaceDefH + (interfaceTT -> interfaceDefH),
       functionRefs,
       functionDefs,
       packageCoordToExportNameToFunction,
@@ -213,13 +213,13 @@ case class Hamuts(
 
     Hamuts(
       humanNameToFullNameToId,
-      structRefsByRef2,
-      structDefsByRef2,
+      structTToStructH,
+      structTToStructDefH,
       structDefs,
       staticSizedArrays,
       runtimeSizedArrays,
-      interfaceRefs,
-      interfaceDefs,
+      interfaceTToInterfaceH,
+      interfaceTToInterfaceDefH,
       functionRefs + (functionRef2 -> functionRefH),
       functionDefs,
       packageCoordToExportNameToFunction,
@@ -239,13 +239,13 @@ case class Hamuts(
 
     Hamuts(
       humanNameToFullNameToId,
-      structRefsByRef2,
-      structDefsByRef2,
+      structTToStructH,
+      structTToStructDefH,
       structDefs,
       staticSizedArrays,
       runtimeSizedArrays,
-      interfaceRefs,
-      interfaceDefs,
+      interfaceTToInterfaceH,
+      interfaceTToInterfaceDefH,
       functionRefs,
       functionDefs + (functionRef2 -> functionDefH),
       packageCoordToExportNameToFunction,
@@ -254,7 +254,7 @@ case class Hamuts(
       packageCoordToExternNameToKind)
   }
 
-  def addKindExport(kind: KindH, packageCoordinate: PackageCoordinate, exportedName: StrI): Hamuts = {
+  def addKindExport(kind: KindHT, packageCoordinate: PackageCoordinate, exportedName: StrI): Hamuts = {
     val newPackageCoordToExportNameToKind =
       packageCoordToExportNameToKind.get(packageCoordinate) match {
         case None => {
@@ -274,13 +274,13 @@ case class Hamuts(
 
     Hamuts(
       humanNameToFullNameToId,
-      structRefsByRef2,
-      structDefsByRef2,
+      structTToStructH,
+      structTToStructDefH,
       structDefs,
       staticSizedArrays,
       runtimeSizedArrays,
-      interfaceRefs,
-      interfaceDefs,
+      interfaceTToInterfaceH,
+      interfaceTToInterfaceDefH,
       functionRefs,
       functionDefs,
       packageCoordToExportNameToFunction,
@@ -309,13 +309,13 @@ case class Hamuts(
 
     Hamuts(
       humanNameToFullNameToId,
-      structRefsByRef2,
-      structDefsByRef2,
+      structTToStructH,
+      structTToStructDefH,
       structDefs,
       staticSizedArrays,
       runtimeSizedArrays,
-      interfaceRefs,
-      interfaceDefs,
+      interfaceTToInterfaceH,
+      interfaceTToInterfaceDefH,
       functionRefs,
       functionDefs,
       newPackageCoordToExportNameToFunction,
@@ -324,7 +324,7 @@ case class Hamuts(
       packageCoordToExternNameToKind)
   }
 
-  def addKindExtern(kind: KindH, packageCoordinate: PackageCoordinate, exportedName: StrI): Hamuts = {
+  def addKindExtern(kind: KindHT, packageCoordinate: PackageCoordinate, exportedName: StrI): Hamuts = {
     val newPackageCoordToExternNameToKind =
       packageCoordToExternNameToKind.get(packageCoordinate) match {
         case None => {
@@ -344,13 +344,13 @@ case class Hamuts(
 
     Hamuts(
       humanNameToFullNameToId,
-      structRefsByRef2,
-      structDefsByRef2,
+      structTToStructH,
+      structTToStructDefH,
       structDefs,
       staticSizedArrays,
       runtimeSizedArrays,
-      interfaceRefs,
-      interfaceDefs,
+      interfaceTToInterfaceH,
+      interfaceTToInterfaceDefH,
       functionRefs,
       functionDefs,
       packageCoordToExportNameToFunction,
@@ -379,13 +379,13 @@ case class Hamuts(
 
     Hamuts(
       humanNameToFullNameToId,
-      structRefsByRef2,
-      structDefsByRef2,
+      structTToStructH,
+      structTToStructDefH,
       structDefs,
       staticSizedArrays,
       runtimeSizedArrays,
-      interfaceRefs,
-      interfaceDefs,
+      interfaceTToInterfaceH,
+      interfaceTToInterfaceDefH,
       functionRefs,
       functionDefs,
       packageCoordToExportNameToFunction,
@@ -400,13 +400,13 @@ case class Hamuts(
   ): Hamuts = {
     Hamuts(
       humanNameToFullNameToId,
-      structRefsByRef2,
-      structDefsByRef2,
+      structTToStructH,
+      structTToStructDefH,
       structDefs,
       staticSizedArrays + (ssaTT -> staticSizedArrayDefinitionHT),
       runtimeSizedArrays,
-      interfaceRefs,
-      interfaceDefs,
+      interfaceTToInterfaceH,
+      interfaceTToInterfaceDefH,
       functionRefs,
       functionDefs,
       packageCoordToExportNameToFunction,
@@ -421,13 +421,13 @@ case class Hamuts(
   ): Hamuts = {
     Hamuts(
       humanNameToFullNameToId,
-      structRefsByRef2,
-      structDefsByRef2,
+      structTToStructH,
+      structTToStructDefH,
       structDefs,
       staticSizedArrays,
       runtimeSizedArrays + (rsaTT -> runtimeSizedArrayDefinitionHT),
-      interfaceRefs,
-      interfaceDefs,
+      interfaceTToInterfaceH,
+      interfaceTToInterfaceDefH,
       functionRefs,
       functionDefs,
       packageCoordToExportNameToFunction,
@@ -440,7 +440,7 @@ case class Hamuts(
   // Two things with two different human names could result in the same ID here.
   // This ID is meant to be concatenated onto the human name.
   def getNameId(readableName: String, packageCoordinate: PackageCoordinate, parts: Vector[IVonData]): (Hamuts, Int) = {
-    val namePartsString = FullNameH.namePartsToString(packageCoordinate, parts)
+    val namePartsString = IdH.namePartsToString(packageCoordinate, parts)
     val idByFullNameForHumanName =
       humanNameToFullNameToId.get(readableName) match {
         case None => Map[String, Int]()
@@ -456,13 +456,13 @@ case class Hamuts(
     val newHamuts =
       Hamuts(
         idByFullNameByHumanNameNew,
-        structRefsByRef2,
-        structDefsByRef2,
+        structTToStructH,
+        structTToStructDefH,
         structDefs,
         staticSizedArrays,
         runtimeSizedArrays,
-        interfaceRefs,
-        interfaceDefs,
+        interfaceTToInterfaceH,
+        interfaceTToInterfaceDefH,
         functionRefs,
         functionDefs,
         packageCoordToExportNameToFunction,

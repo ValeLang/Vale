@@ -1,9 +1,9 @@
 
-import v.builtins.tup.*;
+
 import v.builtins.arith.*;
 import printutils.*;
 
-interface MyIFunction1<P1, R> where P1 Ref, R Ref {
+sealed interface MyIFunction1<P1 Ref, R Ref> {
   func go(virtual this &MyIFunction1<P1, R>, param P1) R;
 }
 

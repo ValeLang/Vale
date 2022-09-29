@@ -1,5 +1,0 @@
-
-interface IFunction1<M, P1, R> M
-where M Mutability, P1 Ref, R Ref {
-  func __call(virtual self &IFunction1<M, P1, R>, p1 P1) R;
-}

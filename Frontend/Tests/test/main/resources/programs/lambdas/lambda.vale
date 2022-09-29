@@ -1,8 +1,8 @@
 
-func do<F>(callable F) int {
+func do<F>(callable &F) int where func(&F)int {
   callable()
 }
 
 exported func main() int {
-  do({ 42 })
+  do(&{ 42 })
 }

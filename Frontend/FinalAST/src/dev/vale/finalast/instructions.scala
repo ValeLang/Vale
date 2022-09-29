@@ -433,7 +433,7 @@ case class StaticSizedArrayLoadH(
   // owning Car reference element.
   targetOwnership: OwnershipH,
   expectedElementType: ReferenceH[KindH],
-  arraySize: Int,
+  arraySize: Long,
   resultType: ReferenceH[KindH],
 ) extends ExpressionH[KindH] {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
@@ -678,6 +678,7 @@ case class NewImmRuntimeSizedArrayH(
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
   generatorExpression.resultType.ownership match {
     case ShareH | BorrowH =>
+    case other => vwat(other)
   }
   vassert(sizeExpression.resultType.kind == IntH.i32)
 }
@@ -772,7 +773,7 @@ case class DestroyStaticSizedArrayIntoFunctionH(
   // The prototype for the "__call" function to call on the interface for each element.
   consumerMethod: PrototypeH,
   arrayElementType: ReferenceH[KindH],
-  arraySize: Int
+  arraySize: Long
 ) extends ExpressionH[VoidH] {
   // See BRCOBS, no arguments should be Never.
   // Nevermind, type system guarantees it

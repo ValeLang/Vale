@@ -4,3 +4,8 @@ package dev.vale
 object vpass {
   def apply(): Unit = { }
 }
+object vbreak {
+  def apply(): Unit = {
+    vpass()
+  }
+}

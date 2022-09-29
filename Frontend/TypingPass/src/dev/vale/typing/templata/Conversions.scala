@@ -1,7 +1,7 @@
 package dev.vale.typing.templata
 
 import dev.vale.parsing.ast.{BorrowP, FinalP, ImmutableP, InlineP, LocationP, MutabilityP, MutableP, OwnP, OwnershipP, ShareP, VariabilityP, VaryingP, WeakP, YonderP}
-import dev.vale.typing.types.{BorrowT, FinalT, ImmutableT, InlineT, LocationT, MutabilityT, MutableT, OwnT, OwnershipT, ShareT, VariabilityT, VaryingT, WeakT, YonderT}
+import dev.vale.typing.types._
 import dev.vale.vimpl
 import dev.vale.highertyping._
 import dev.vale.parsing._

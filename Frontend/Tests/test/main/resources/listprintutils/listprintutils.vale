@@ -1,5 +1,6 @@
 
-func println<E>(list &List<E>) {
+func println<E>(list &List<E>)
+where func print(&E)void {
     print("[");
   l = len(list);
   foreach i in 0..l {

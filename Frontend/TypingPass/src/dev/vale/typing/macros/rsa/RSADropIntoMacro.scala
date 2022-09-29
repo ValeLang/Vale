@@ -1,6 +1,6 @@
 package dev.vale.typing.macros.rsa
 
-import dev.vale.{Keywords, RangeS, StrI}
+import dev.vale.{Keywords, RangeS, StrI, vimpl}
 import dev.vale.highertyping.FunctionA
 import dev.vale.typing.ast.{ArgLookupTE, BlockTE, FunctionHeaderT, FunctionT, LocationInFunctionEnvironment, ParameterT, ReturnTE}
 import dev.vale.typing.env.{FunctionEnvironment, FunctionEnvironmentBox}
@@ -19,26 +19,23 @@ class RSADropIntoMacro(keywords: Keywords, arrayCompiler: ArrayCompiler) extends
     coutputs: CompilerOutputs,
     generatorId: StrI,
     life: LocationInFunctionEnvironment,
-    callRange: RangeS,
+    callRange: List[RangeS],
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
-  FunctionHeaderT = {
+  (FunctionHeaderT, ReferenceExpressionTE) = {
     val header =
-      FunctionHeaderT(env.fullName, Vector.empty, paramCoords, maybeRetCoord.get, originFunction)
-    coutputs.declareFunctionReturnType(header.toSignature, header.returnType)
+      FunctionHeaderT(env.fullName, Vector.empty, paramCoords, maybeRetCoord.get, Some(env.templata))
     val fate = FunctionEnvironmentBox(env)
-    coutputs.addFunction(
-      FunctionT(
-        header,
-        BlockTE(
-          ReturnTE(
-            arrayCompiler.evaluateDestroyRuntimeSizedArrayIntoCallable(
-              coutputs,
-              fate,
-              callRange,
-              ArgLookupTE(0, paramCoords(0).tyype),
-              ArgLookupTE(1, paramCoords(1).tyype))))))
-    header
+    val body =
+      BlockTE(
+        ReturnTE(
+          arrayCompiler.evaluateDestroyRuntimeSizedArrayIntoCallable(
+            coutputs,
+            fate,
+            callRange,
+            ArgLookupTE(0, paramCoords(0).tyype),
+            ArgLookupTE(1, paramCoords(1).tyype))))
+    (header, body)
   }
 }

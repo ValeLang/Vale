@@ -8,7 +8,7 @@ import dev.vale.postparsing._
 import dev.vale.solver.{CompleteSolve, FailedSolve, ISolveRule, ISolverError, ISolverOutcome, ISolverState, IStepState, IncompleteSolve, RuleError, Solver, SolverConflict}
 import dev.vale.typing.OverloadResolver.FindFunctionFailure
 import dev.vale.typing.ast.PrototypeT
-import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, FullNameT, FunctionNameT, IFunctionNameT, IImplNameT, INameT}
+import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, IdT, FunctionNameT, IFunctionNameT, IImplNameT, INameT}
 import dev.vale.typing.templata.{Conversions, CoordTemplata, PlaceholderTemplata, _}
 import dev.vale.typing.types._
 import dev.vale._
@@ -958,8 +958,8 @@ class CompilerRuleSolver(
                     if (!delegate.kindIsFromTemplate(state, interface, it)) {
                       return Err(CallResultWasntExpectedType(it, result))
                     }
-                    vassert(argRunes.size == interface.fullName.last.templateArgs.size)
-                    argRunes.zip(interface.fullName.last.templateArgs).foreach({ case (rune, templateArg) =>
+                    vassert(argRunes.size == interface.fullName.localName.templateArgs.size)
+                    argRunes.zip(interface.fullName.localName.templateArgs).foreach({ case (rune, templateArg) =>
                       stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, rune.rune, templateArg)
                     })
                     Ok(())
@@ -968,8 +968,8 @@ class CompilerRuleSolver(
                     if (!delegate.kindIsFromTemplate(state, interface, it)) {
                       return Err(CallResultWasntExpectedType(it, result))
                     }
-                    vassert(argRunes.size == interface.fullName.last.templateArgs.size)
-                    argRunes.zip(interface.fullName.last.templateArgs).foreach({ case (rune, templateArg) =>
+                    vassert(argRunes.size == interface.fullName.localName.templateArgs.size)
+                    argRunes.zip(interface.fullName.localName.templateArgs).foreach({ case (rune, templateArg) =>
                       stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, rune.rune, templateArg)
                     })
                     Ok(())
@@ -983,7 +983,7 @@ class CompilerRuleSolver(
                     if (templateInterface != instantiationInterface) {
                       return Err(CallResultWasntExpectedType(it, result))
                     }
-                    argRunes.zip(instantiationInterface.fullName.last.templateArgs).foreach({ case (rune, templateArg) =>
+                    argRunes.zip(instantiationInterface.fullName.localName.templateArgs).foreach({ case (rune, templateArg) =>
                       stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, rune.rune, templateArg)
                     })
                     Ok(())
@@ -992,7 +992,7 @@ class CompilerRuleSolver(
                     if (templateInterface != instantiationInterface) {
                       return Err(CallResultWasntExpectedType(it, result))
                     }
-                    argRunes.zip(instantiationInterface.fullName.last.templateArgs).foreach({ case (rune, templateArg) =>
+                    argRunes.zip(instantiationInterface.fullName.localName.templateArgs).foreach({ case (rune, templateArg) =>
                       stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, rune.rune, templateArg)
                     })
                     Ok(())
@@ -1006,8 +1006,8 @@ class CompilerRuleSolver(
                     if (!delegate.kindIsFromTemplate(state, struct, st)) {
                       return Err(CallResultWasntExpectedType(st, result))
                     }
-                    vassert(argRunes.size == struct.fullName.last.templateArgs.size)
-                    argRunes.zip(struct.fullName.last.templateArgs).foreach({ case (rune, templateArg) =>
+                    vassert(argRunes.size == struct.fullName.localName.templateArgs.size)
+                    argRunes.zip(struct.fullName.localName.templateArgs).foreach({ case (rune, templateArg) =>
                       stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, rune.rune, templateArg)
                     })
                     Ok(())
@@ -1016,8 +1016,8 @@ class CompilerRuleSolver(
                     if (!delegate.kindIsFromTemplate(state, struct, st)) {
                       return Err(CallResultWasntExpectedType(st, result))
                     }
-                    vassert(argRunes.size == struct.fullName.last.templateArgs.size)
-                    argRunes.zip(struct.fullName.last.templateArgs).foreach({ case (rune, templateArg) =>
+                    vassert(argRunes.size == struct.fullName.localName.templateArgs.size)
+                    argRunes.zip(struct.fullName.localName.templateArgs).foreach({ case (rune, templateArg) =>
                       stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, rune.rune, templateArg)
                     })
                     Ok(())
@@ -1031,7 +1031,7 @@ class CompilerRuleSolver(
                     if (structTT != instantiationStruct) {
                       return Err(CallResultWasntExpectedType(it, result))
                     }
-                    argRunes.zip(instantiationStruct.fullName.last.templateArgs).foreach({ case (rune, templateArg) =>
+                    argRunes.zip(instantiationStruct.fullName.localName.templateArgs).foreach({ case (rune, templateArg) =>
                       stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, rune.rune, templateArg)
                     })
                     Ok(())
@@ -1040,7 +1040,7 @@ class CompilerRuleSolver(
                     if (structTT != instantiationStruct) {
                       return Err(CallResultWasntExpectedType(it, result))
                     }
-                    argRunes.zip(instantiationStruct.fullName.last.templateArgs).foreach({ case (rune, templateArg) =>
+                    argRunes.zip(instantiationStruct.fullName.localName.templateArgs).foreach({ case (rune, templateArg) =>
                       stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, rune.rune, templateArg)
                     })
                     Ok(())

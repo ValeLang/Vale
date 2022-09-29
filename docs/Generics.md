@@ -273,7 +273,7 @@ func repeat<N int>(s str) {
 We'll conjure up a `PlaceholderTemplata(repeat$0, IntegerTemplataType)` to serve as our `N`.
 
 
-Later on in the monomorphizer, we'll see who calls `repeat` with what actual integers, and we'll do the substitution then.
+Later on in the instantiator, we'll see who calls `repeat` with what actual integers, and we'll do the substitution then.
 
 
 Any kind of templata works like this... except for kinds.
@@ -495,7 +495,7 @@ It failed because `main` wasn't passing any functions to satisfy the bounds whic
 
 ### Monomorphizer
 
-The monomorphizer also needs to do this. This example (search NBIFP for test case) shows why:
+The instantiator also needs to do this. This example (search NBIFP for test case) shows why:
 
 ```
 struct IntHasher { }
@@ -672,7 +672,7 @@ These are each generic functions, just like a normal `func moo<T>(a T) { ... }`/
 
 They are disambiguated by the "generic template args" (eg `{bool}`). It's just a list of coords to disambiguate them from each other. These are not generic args, they are generic **template** args.
 
-In this program, we're calling only `genFunc(7)` so after the monomorphizer pass these would be the three final instantiations in total:
+In this program, we're calling only `genFunc(7)` so after the instantiator pass these would be the three final instantiations in total:
 
  * `mvtest/genFunc<int>.lam:2:6.__call{bool}<bool>`
  * `mvtest/genFunc<int>.lam:2:6.__call{int}<int>`
@@ -805,7 +805,7 @@ But now the challenge is: What is `mvtest/genFunc<str>.lam:2:6.__call{str}<str>`
 
 We apply the same rules to get the generic full name, and end up with `mvtest/genFunc.lam:2:6.__call{str}`. **However, that doesn't exist.** There is no generic by that name.
 
-This happened because we were looking for something nonsensical. How did that `__call{str}` even happen, and why were we looking for something with that? It's because our translator in monomorphizer was blindly replacing *all* placeholders.
+This happened because we were looking for something nonsensical. How did that `__call{str}` even happen, and why were we looking for something with that? It's because our translator in instantiator was blindly replacing *all* placeholders.
 
 Moral of the story: It shouldn't replace placeholders in generic names, such as `__call{genFunc$0)`. It should leave that alone, so that we instead looked for `mvtest/genFunc<str>.lam:2:6.__call{$genFunc0}<str>`.
 
@@ -842,7 +842,7 @@ Then when we monomorphize the lambda, the instantiator needs to remember the sup
 
 ## Lambdas and Children Need Bound Arguments From Above (LCNBAFA)
 
-When we're monomorphizing a lambda, it will be calling function bounds that came from the parent function. So, the monomorphizer needs to convey those downward when we stamp a lambda generic template.
+When we're monomorphizing a lambda, it will be calling function bounds that came from the parent function. So, the instantiator needs to convey those downward when we stamp a lambda generic template.
 
 
 For example, when we're inside
@@ -854,7 +854,7 @@ it will want to call
 `add:204<int, int, ^IntHasher>(&HashMap<int, int, ^IntHasher>).lam:281` which might call `HashMap.bound:__call<>(&add$2, @add$0)int`. But the lambda itself doesn't know any bounds... it really should contain the mapping `IntHasher.__call<>(&IntHasher, int)` ->
 `HashMap.bound:__call<>(&add$2, @add$0)int` somehow.
 
-So in the monomorphizer, when a function tries to instantiate something beginning with its own name, it will pass down its own bounds into it as well.
+So in the instantiator, when a function tries to instantiate something beginning with its own name, it will pass down its own bounds into it as well.
 
 
 Additionally, we run into the same problem with child functions of the lambda (and likely will again with interfaces' child functions).
@@ -871,7 +871,7 @@ add:204<int, int, ^IntHasher>(&HashMap<int, int, ^IntHasher>)
 
 so it tries to monomorphize that. It takes a `@add:204<int, int, ^IntHasher>(&HashMap<int, int, ^IntHasher>).lam:281` argument, which has a template arg of `HashMap<int, int, ^IntHasher>`, but when it sees that it doesn't see that we satisfied its bounds (similar to above) so it dies.
 
-The solution is the same: in the monomorphizer, when a function tries to instantiate something beginning with its own name, it will pass down its own bounds into it as well.
+The solution is the same: in the instantiator, when a function tries to instantiate something beginning with its own name, it will pass down its own bounds into it as well.
 
 
 
@@ -1278,7 +1278,7 @@ In the end, `send<T>` is calling `dis<dis$X>(&IObs<Opt<dis$X>>, Opt<dis$X>)` and
 
 Of course, if this was an actual call AST, some asserts would definitely trigger, because we're sending an `&IObs<send$T>` into a parameter expecting a `&IObs<Opt<dis$X>>`, and the other argument doesn't match either.
 
-This is an unusual call. It's manufacturing a `dis$X` out of thin air. The abstract function doesn't have that, and has no idea where it comes from, while it's in the typing pass. It's up to the monomorphizer to substitute `send$T` and `dis$X` correctly so that the arguments and parameters line up.
+This is an unusual call. It's manufacturing a `dis$X` out of thin air. The abstract function doesn't have that, and has no idea where it comes from, while it's in the typing pass. It's up to the instantiator to substitute `send$T` and `dis$X` correctly so that the arguments and parameters line up.
 
 
 ### Monomorphizing

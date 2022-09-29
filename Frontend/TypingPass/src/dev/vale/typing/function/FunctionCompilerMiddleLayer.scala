@@ -5,11 +5,11 @@ import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing._
 import dev.vale.postparsing.patterns.AbstractSP
 import dev.vale.typing.{AbstractMethodOutsideOpenInterface, CompileErrorExceptionT, CompilerOutputs, ConvertHelper, FunctionAlreadyExists, RangedInternalErrorT, TemplataCompiler, TypingPassOptions, ast, env}
-import dev.vale.typing.ast.{AbstractT, FunctionBannerT, FunctionHeaderT, FunctionT, ParameterT, PrototypeT, SealedT, SignatureT}
+import dev.vale.typing.ast.{AbstractT, FunctionBannerT, FunctionHeaderT, FunctionDefinitionT, ParameterT, PrototypeT, SealedT, SignatureT}
 import dev.vale.typing.citizen.StructCompiler
 import dev.vale.typing.env.{BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs, ExpressionLookupContext, FunctionEnvironment, IEnvironment, TemplataLookupContext}
 import dev.vale.typing.expression.CallCompiler
-import dev.vale.typing.names.{AnonymousSubstructConstructorNameT, FullNameT, IFunctionNameT, IFunctionTemplateNameT, NameTranslator, TypingIgnoredParamNameT}
+import dev.vale.typing.names.{AnonymousSubstructConstructorNameT, IdT, IFunctionNameT, IFunctionTemplateNameT, NameTranslator, TypingIgnoredParamNameT}
 import dev.vale.typing.templata.CoordTemplata
 import dev.vale.typing.types._
 import dev.vale.typing.types._
@@ -130,7 +130,7 @@ class FunctionCompilerMiddleLayer(
     val banner = ast.FunctionBannerT(Some(namedEnv.templata), namedEnv.fullName)//, params2)
 
     coutputs.lookupFunction(SignatureT(banner.name)) match {
-      case Some(FunctionT(header, _, _, _)) => {
+      case Some(FunctionDefinitionT(header, _, _, _)) => {
         PrototypeTemplata(function1.range, header.toPrototype)
       }
       case None => {
@@ -179,7 +179,7 @@ class FunctionCompilerMiddleLayer(
     val functionFullName = assembleName(runedEnv.fullName, runedEnv.templateArgs, paramTypes2)
     val needleSignature = SignatureT(functionFullName)
     coutputs.lookupFunction(needleSignature) match {
-      case Some(FunctionT(header, _, _, _)) => {
+      case Some(FunctionDefinitionT(header, _, _, _)) => {
         (header)
       }
       case None => {
@@ -451,12 +451,12 @@ class FunctionCompilerMiddleLayer(
 //  }
 
   def assembleName(
-      templateName: FullNameT[IFunctionTemplateNameT],
+      templateName: IdT[IFunctionTemplateNameT],
       templateArgs: Vector[ITemplata[ITemplataType]],
       paramTypes: Vector[CoordT]):
-  FullNameT[IFunctionNameT] = {
+  IdT[IFunctionNameT] = {
     templateName.copy(
-      last = templateName.last.makeFunctionName(interner, keywords, templateArgs, paramTypes))
+      localName = templateName.localName.makeFunctionName(interner, keywords, templateArgs, paramTypes))
   }
 
   def makeNamedEnv(

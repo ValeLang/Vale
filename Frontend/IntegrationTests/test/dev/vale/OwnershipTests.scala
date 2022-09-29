@@ -4,7 +4,7 @@ import dev.vale.postparsing.patterns.AtomSP
 import dev.vale.typing.ast.{FunctionCallTE, LetAndLendTE, LetNormalTE, UnletTE}
 import dev.vale.typing.env.ReferenceLocalVariableT
 import dev.vale.typing.expression.CallCompiler
-import dev.vale.typing.names.{FullNameT, FunctionNameT, FunctionTemplateNameT, StructNameT, StructTemplateNameT, TypingPassTemporaryVarNameT}
+import dev.vale.typing.names.{IdT, FunctionNameT, FunctionTemplateNameT, StructNameT, StructTemplateNameT, TypingPassTemporaryVarNameT}
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.postparsing._
@@ -27,12 +27,12 @@ class OwnershipTests extends FunSuite with Matchers {
 
     val main = compile.expectCompilerOutputs().lookupFunction("main")
     Collector.only(main, {
-      case letTE @ LetAndLendTE(ReferenceLocalVariableT(FullNameT(_, Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"), _),Vector(),Vector())),TypingPassTemporaryVarNameT(_)),FinalT,_),refExpr,targetOwnership) => {
-        refExpr.result.reference match {
+      case letTE @ LetAndLendTE(ReferenceLocalVariableT(IdT(_, Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"), _),Vector(),Vector())),TypingPassTemporaryVarNameT(_)),FinalT,_),refExpr,targetOwnership) => {
+        refExpr.result.coord match {
           case CoordT(OwnT, StructTT(simpleName("Muta"))) =>
         }
         targetOwnership shouldEqual BorrowT
-        letTE.result.reference.ownership shouldEqual BorrowT
+        letTE.result.coord.ownership shouldEqual BorrowT
       }
     })
 
@@ -178,8 +178,8 @@ class OwnershipTests extends FunSuite with Matchers {
     val destructor =
       vassertOne(
         coutputs.functions.find(func => {
-          func.header.fullName.last match {
-            case FunctionNameT(FunctionTemplateNameT(StrI("drop"), _), _, Vector(CoordT(OwnT, StructTT(FullNameT(_, _, StructNameT(StructTemplateNameT(StrI("Muta")), _)))))) => true
+          func.header.fullName.localName match {
+            case FunctionNameT(FunctionTemplateNameT(StrI("drop"), _), _, Vector(CoordT(OwnT, StructTT(IdT(_, _, StructNameT(StructTemplateNameT(StrI("Muta")), _)))))) => true
             case _ => false
           }
         }))

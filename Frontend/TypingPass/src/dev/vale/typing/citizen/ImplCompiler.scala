@@ -25,7 +25,7 @@ sealed trait IsParentResult
 case class IsParent(
   templata: ITemplata[ImplTemplataType],
   conclusions: Map[IRuneS, ITemplata[ITemplataType]],
-  implFullName: FullNameT[IImplNameT]
+  implFullName: IdT[IImplNameT]
 ) extends IsParentResult
 case class IsntParent(
   candidates: Vector[IIncompleteOrFailedCompilerSolve]
@@ -295,12 +295,12 @@ class ImplCompiler(
   }
 
   def assembleImplName(
-    templateName: FullNameT[IImplTemplateNameT],
+    templateName: IdT[IImplTemplateNameT],
     templateArgs: Vector[ITemplata[ITemplataType]],
     subCitizen: ICitizenTT):
-  FullNameT[IImplNameT] = {
+  IdT[IImplNameT] = {
     templateName.copy(
-      last = templateName.last.makeImplName(interner, templateArgs, subCitizen))
+      localName = templateName.localName.makeImplName(interner, templateArgs, subCitizen))
   }
 
   //    // First, figure out what citizen is implementing.
@@ -532,7 +532,7 @@ class ImplCompiler(
     val subKindTemplateName = TemplataCompiler.getSubKindTemplate(subKindFullName)
     val subKindEnv = coutputs.getOuterEnvForType(parentRanges, subKindTemplateName)
     val subKindImpreciseName =
-      TemplatasStore.getImpreciseName(interner, subKindFullName.last) match {
+      TemplatasStore.getImpreciseName(interner, subKindFullName.localName) match {
         case None => return Vector()
         case Some(n) => n
       }
@@ -589,12 +589,12 @@ class ImplCompiler(
     superKindTT: ISuperKindTT):
   IsParentResult = {
     val superKindImpreciseName =
-      TemplatasStore.getImpreciseName(interner, superKindTT.fullName.last) match {
+      TemplatasStore.getImpreciseName(interner, superKindTT.fullName.localName) match {
         case None => return IsntParent(Vector())
         case Some(n) => n
       }
     val subKindImpreciseName =
-      TemplatasStore.getImpreciseName(interner, subKindTT.fullName.last) match {
+      TemplatasStore.getImpreciseName(interner, subKindTT.fullName.localName) match {
         case None => return IsntParent(Vector())
         case Some(n) => n
       }

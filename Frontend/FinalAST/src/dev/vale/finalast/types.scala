@@ -27,7 +27,7 @@ import dev.vale.{FileCoordinate, Interner, Keywords, PackageCoordinate, vassert,
 //   isn't actually a pointer, it's just the value itself, like C's Car vs Car*.
 // In previous stages, this is referred to as a "coord", because these four things can be
 // thought of as dimensions of a coordinate.
-case class ReferenceH[+T <: KindH](
+case class CoordH[+T <: KindHT](
     ownership: OwnershipH, location: LocationH, kind: T) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
@@ -40,17 +40,17 @@ case class ReferenceH[+T <: KindH](
   }
 
   kind match {
-    case IntH(_) | BoolH() | FloatH() | NeverH(_) => {
+    case IntHT(_) | BoolHT() | FloatHT() | NeverHT(_) => {
       // Make sure that if we're pointing at a primitives, it's via a Share reference.
       vassert(ownership == ShareH)
       vassert(location == InlineH)
     }
-    case StrH() => {
+    case StrHT() => {
       // Strings need to be yonder because Midas needs to do refcounting for them.
       vassert(ownership == ShareH)
       vassert(location == YonderH)
     }
-    case StructRefH(name) => {
+    case StructHT(name) => {
       val isBox = name.toFullString.startsWith("::C(\"__Box\"")
 
       if (isBox) {
@@ -62,58 +62,58 @@ case class ReferenceH[+T <: KindH](
 
   // Convenience function for casting this to a Reference which the compiler knows
   // points at a static sized array.
-  def expectStaticSizedArrayReference() = {
+  def expectStaticSizedArrayCoord() = {
     kind match {
-      case atH @ StaticSizedArrayHT(_) => ReferenceH[StaticSizedArrayHT](ownership, location, atH)
+      case atH @ StaticSizedArrayHT(_) => CoordH[StaticSizedArrayHT](ownership, location, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
   // points at an unstatic sized array.
-  def expectRuntimeSizedArrayReference() = {
+  def expectRuntimeSizedArrayCoord() = {
     kind match {
-      case atH @ RuntimeSizedArrayHT(_) => ReferenceH[RuntimeSizedArrayHT](ownership, location, atH)
+      case atH @ RuntimeSizedArrayHT(_) => CoordH[RuntimeSizedArrayHT](ownership, location, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
   // points at struct.
-  def expectStructReference() = {
+  def expectStructCoord() = {
     kind match {
-      case atH @ StructRefH(_) => ReferenceH[StructRefH](ownership, location, atH)
+      case atH @ StructHT(_) => CoordH[StructHT](ownership, location, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
   // points at interface.
-  def expectInterfaceReference() = {
+  def expectInterfaceCoord() = {
     kind match {
-      case atH @ InterfaceRefH(_) => ReferenceH[InterfaceRefH](ownership, location, atH)
+      case atH @ InterfaceHT(_) => CoordH[InterfaceHT](ownership, location, atH)
     }
   }
 }
 
 // A value, a thing that can be pointed at. See ReferenceH for more information.
-sealed trait KindH {
+sealed trait KindHT {
   def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate
 }
-object IntH {
-  val i32 = IntH(32)
+object IntHT {
+  val i32 = IntHT(32)
 }
-case class IntH(bits: Int) extends KindH {
+case class IntHT(bits: Int) extends KindHT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = PackageCoordinate.BUILTIN(interner, keywords)
 }
-case class VoidH() extends KindH {
+case class VoidHT() extends KindHT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = PackageCoordinate.BUILTIN(interner, keywords)
 }
-case class BoolH() extends KindH {
+case class BoolHT() extends KindHT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = PackageCoordinate.BUILTIN(interner, keywords)
 }
-case class StrH() extends KindH {
+case class StrHT() extends KindHT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = PackageCoordinate.BUILTIN(interner, keywords)
 }
-case class FloatH() extends KindH {
+case class FloatHT() extends KindHT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = PackageCoordinate.BUILTIN(interner, keywords)
 }
@@ -123,23 +123,23 @@ case class FloatH() extends KindH {
 // TODO: This feels weird being a kind in metal. Figure out a way to not
 // have this? Perhaps replace all kinds with Optional[Optional[KindH]],
 // where None is never, Some(None) is Void, and Some(Some(_)) is a normal thing.
-case class NeverH(fromBreak: Boolean) extends KindH {
+case class NeverHT(fromBreak: Boolean) extends KindHT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = PackageCoordinate.BUILTIN(interner, keywords)
 }
 
-case class InterfaceRefH(
+case class InterfaceHT(
   // Unique identifier for the interface.
-  fullName: FullNameH
-) extends KindH {
+  fullName: IdH
+) extends KindHT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = fullName.packageCoordinate
 }
 
-case class StructRefH(
+case class StructHT(
   // Unique identifier for the interface.
-  fullName: FullNameH
-) extends KindH {
+  fullName: IdH
+) extends KindHT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = fullName.packageCoordinate
 }
@@ -148,8 +148,8 @@ case class StructRefH(
 // carry around its size at runtime.
 case class StaticSizedArrayHT(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
-  name: FullNameH,
-) extends KindH {
+  name: IdH,
+) extends KindHT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = name.packageCoordinate
 }
@@ -158,12 +158,12 @@ case class StaticSizedArrayHT(
 // carry around its size at runtime.
 case class StaticSizedArrayDefinitionHT(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
-  name: FullNameH,
+  name: IdH,
   // The size of the array.
   size: Long,
   mutability: Mutability,
   variability: Variability,
-  elementType: ReferenceH[KindH]
+  elementType: CoordH[KindHT]
 ) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def kind = StaticSizedArrayHT(name)
@@ -171,17 +171,17 @@ case class StaticSizedArrayDefinitionHT(
 
 case class RuntimeSizedArrayHT(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
-  name: FullNameH,
-) extends KindH {
+  name: IdH,
+) extends KindHT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   override def packageCoord(interner: Interner, keywords: Keywords): PackageCoordinate = name.packageCoordinate
 }
 
 case class RuntimeSizedArrayDefinitionHT(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
-  name: FullNameH,
+  name: IdH,
   mutability: Mutability,
-  elementType: ReferenceH[KindH]
+  elementType: CoordH[KindHT]
 ) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
   def kind = RuntimeSizedArrayHT(name)

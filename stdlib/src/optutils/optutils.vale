@@ -33,8 +33,8 @@ where func clone(&T)T {
 }
 
 
-func map<F, T>(self &Opt<T>, func &F) Opt<R>
-where R Ref, func(&F, &T)R {
+func map<R, F, T>(self &Opt<T>, func &F) Opt<R>
+where func(&F, &T)R {
   if self.isEmpty() {
     None<R>()
   } else {
@@ -43,9 +43,9 @@ where R Ref, func(&F, &T)R {
 }
 
 func or<F, T>(self Opt<T>, func F) T
-where func(&F)_ {
+where func(&F)T, func drop(F)void {
   if self.isEmpty() {
-    [ ] = self.as<None<T>>().expect("zork f");
+    [ ] = (self).as<None<T>>().expect("zork f");
     return func();
   } else {
     return (self).get();
@@ -53,7 +53,7 @@ where func(&F)_ {
 }
 
 func or<F, T>(self &Opt<T>, func F) &T
-where func(&F)_ {
+where func(&F)&T, func drop(F)void {
   if self.isEmpty() {
     [ ] = self.as<None<T>>().expect("zork g");
     return func();

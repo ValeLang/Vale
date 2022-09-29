@@ -16,23 +16,24 @@ func finish(suite TestSuite) {
   }
 }
 
-func test<F>(suite &TestSuite, name str, lambda F) {
+func test<F>(suite &TestSuite, name str, lambda F) where func drop(F)void, func(&F)void {
   if name.contains(suite.filter) {
     set suite.num_tests_ran = suite.num_tests_ran + 1;
     println("Test: " + name);
-    lambda();
+    (lambda)();
   } else {
+    drop(lambda);
     set suite.num_tests_skipped = suite.num_tests_skipped + 1;
   }
 }
 
-func should_equal<T>(a T, b T) {
+func should_equal<T>(a &T, b &T) where func ==(&T, &T)bool, func +(str, &T)str {
   if not (a == b) {
     panic("Check failed! Expected:\n{a}\nto equal:\n{b}");
   }
 }
 
-func should_not_equal<T>(a T, b T) {
+func should_not_equal<T>(a &T, b &T) where func ==(&T, &T)bool, func +(str, &T)str {
   if a == b {
     panic("Check failed! Expected a difference, but both were: {a}");
   }
@@ -42,11 +43,11 @@ struct SubTestSuite {
   suite &TestSuite;
   prefix str;
 }
-func test<F>(subSuite &SubTestSuite, name str, func F) {
+func test<F>(subSuite &SubTestSuite, name str, func F) where func drop(F)void, func(&F)void {
   (subSuite.suite).test(subSuite.prefix + " / " + name, func);
 }
 
-func sub<F>(suite &TestSuite, prefix str, body F) {
+func sub<F>(suite &TestSuite, prefix str, body F) where func drop(F)void, func(&F, SubTestSuite)void {
   subSuite = SubTestSuite(&suite, prefix);
   body(subSuite);
 }

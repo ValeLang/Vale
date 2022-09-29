@@ -10,12 +10,14 @@ class OptTests extends FunSuite with Matchers {
   test("Test empty and get for Some") {
     val compile = RunCompilation.test(
         """
+          |import v.builtins.opt.*;
+          |
           |exported func main() int {
           |  opt Opt<int> = Some(9);
           |  return if (opt.isEmpty()) { 0 }
           |    else { opt.get() };
           |}
-        """.stripMargin)
+        """.stripMargin, false)
 
     compile.evalForKind(Vector()) match { case VonInt(9) => }
   }

@@ -11,7 +11,7 @@ import dev.vale.postparsing.rules.ILiteralSL
 // collide with other things
 case class LetSE(
     range: RangeS,
-    rules: Array[IRulexSR],
+    rules: Vector[IRulexSR],
     pattern: AtomSP,
     expr: IExpressionSE) extends IExpressionSE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
@@ -174,7 +174,7 @@ case class TupleSE(range: RangeS, elements: Vector[IExpressionSE]) extends IExpr
 }
 case class StaticArrayFromValuesSE(
   range: RangeS,
-  rules: Array[IRulexSR],
+  rules: Vector[IRulexSR],
   maybeElementTypeST: Option[RuneUsage],
   mutabilityST: RuneUsage,
   variabilityST: RuneUsage,
@@ -185,7 +185,7 @@ case class StaticArrayFromValuesSE(
 }
 case class StaticArrayFromCallableSE(
   range: RangeS,
-  rules: Array[IRulexSR],
+  rules: Vector[IRulexSR],
   maybeElementTypeST: Option[RuneUsage],
   mutabilityST: RuneUsage,
   variabilityST: RuneUsage,
@@ -196,7 +196,7 @@ case class StaticArrayFromCallableSE(
 }
 case class NewRuntimeSizedArraySE(
   range: RangeS,
-  rules: Array[IRulexSR],
+  rules: Vector[IRulexSR],
   maybeElementTypeST: Option[RuneUsage],
   mutabilityST: RuneUsage,
   size: IExpressionSE,
@@ -264,9 +264,9 @@ case class LocalLoadSE(range: RangeS, name: IVarNameS, targetOwnership: LoadAsP)
 // tried to access a variable they forgot to declare.
 case class OutsideLoadSE(
   range: RangeS,
-  rules: Array[IRulexSR],
+  rules: Vector[IRulexSR],
   name: IImpreciseNameS,
-  maybeTemplateArgs: Option[Array[RuneUsage]],
+  maybeTemplateArgs: Option[Vector[RuneUsage]],
   targetOwnership: LoadAsP
 ) extends IExpressionSE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()

@@ -1,9 +1,7 @@
 
-func MakeArray<T, G>(n int, generator G) []<mut>T
-where
-  T Ref,
-  G Ref = Ref[any(share, borrow), _],
-  F Prot = func(G, int)T
+func MakeArray<T Ref, G Ref>(n int, generator G)
+[]<mut>T
+where func(&G, int)T, func drop(G)void
 {
   arr = Array<mut, T>(n);
   i = 0;
@@ -14,46 +12,31 @@ where
   return arr;
 }
 
-func MakeVaryArray<T, G>(n int, generator G) []<mut>T
-where
-  T Ref,
-  G Ref = Ref[any(share, borrow), _],
-  F Prot = func(G, int)T
-{
-  arr = Array<mut, T>(n);
-  i = 0;
-  while (i < n) {
-    arr.push(generator(i));
-    set i = i + 1;
-  }
-  return arr;
-}
-
-func MakeImmArray<G>(n int, generator G) []<imm>T
-where
-  T Ref,
-  G Ref = Ref[any(share, borrow), _],
-  F Prot = func(G, int)T
+func MakeImmArray<T Ref imm, G Ref>(n int, generator &G) []<imm>T
+where F Prot = func(&G, int)T, func drop(T)void
 {
   return Array<imm, T>(n, generator);
 }
 
-func toImmArray<N, E>(seq &[#N]<_, _>E) []<imm>E {
-  return MakeImmArray(N, { seq[_] });
+func toImmArray<N, E Ref imm, X, Y>(seq &[#N]<X, Y>E) []<imm>E
+where func drop(E)void
+{
+  return MakeImmArray<E>(N, &{ seq[_] });
 }
 
-func toImmArray<T>(source &[]<_>T) Array<imm, &T> {
-  return MakeImmArray(source.len(), &{ source[_] });
+func toImmArray<T Ref imm, M>(source &[]<M>T) Array<imm, T>
+where func drop(T)void {
+  return MakeImmArray<T>(source.len(), &{ source[_] });
 }
 
-func toVaryArray<N, E, SM>(seq &[#N]<SM>E) []<mut>E {
-  return MakeVaryArray(N, { seq[_] });
-}
-
-func toVaryArray<T>(source &[]<_>T) Array<mut, &T> {
-  return MakeVaryArray(source.len(), &{ source[_] });
-}
-
-func toArray<T>(source &[]<_>T) Array<mut, &T> {
-  return MakeArray(source.len(), { source[_] });
-}
+// func toVaryArray<N, E, SM>(seq &[#N]<SM>E) []<mut>E {
+//   return MakeVaryArray(N, { seq[_] });
+// }
+//
+// func toVaryArray<T>(source &[]<_>T) Array<mut, &T> {
+//   return MakeVaryArray(source.len(), &{ source[_] });
+// }
+//
+// func toArray<T>(source &[]<_>T) Array<mut, &T> {
+//   return MakeArray(source.len(), { source[_] });
+// }

@@ -9,14 +9,14 @@ class PackTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() int {
-        |  [x, y, z] = (5, 6, 7);
+        |  [x, y] = (5, 6);
         |  return x;
         |}
       """.stripMargin)
 
     val coutputs = compile.expectCompilerOutputs()
     val main = coutputs.lookupFunction("main")
-    Collector.all(main, { case TupleTE(Vector(_, _, _), _) => }).size shouldEqual 1
+    Collector.all(main, { case TupleTE(Vector(_, _), _) => }).size shouldEqual 1
 
     compile.evalForKind(Vector()) match { case VonInt(5) => }
   }

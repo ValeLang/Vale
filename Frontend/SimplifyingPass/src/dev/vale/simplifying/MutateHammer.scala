@@ -1,12 +1,12 @@
 package dev.vale.simplifying
 
-import dev.vale.{Keywords, finalast, vassert}
+import dev.vale.{Keywords, finalast, vassert, vimpl}
 import dev.vale.finalast.{BorrowH, ExpressionH, KindH, LocalLoadH, LocalStoreH, MemberLoadH, MemberStoreH, ReferenceH, RuntimeSizedArrayStoreH, StaticSizedArrayStoreH, YonderH}
 import dev.vale.typing.Hinputs
 import dev.vale.typing.ast.{AddressMemberLookupTE, ExpressionT, FunctionHeaderT, LocalLookupTE, MutateTE, ReferenceExpressionTE, ReferenceMemberLookupTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE}
 import dev.vale.typing.env.{AddressibleLocalVariableT, ReferenceLocalVariableT}
 import dev.vale.typing.names.{FullNameT, IVarNameT}
-import dev.vale.typing.types.{CoordT, StructTT, VariabilityT}
+import dev.vale.typing.types._
 import dev.vale.finalast._
 import dev.vale.typing._
 import dev.vale.typing.ast._
@@ -134,10 +134,14 @@ class MutateHammer(
 //        case TupleTT(_, sr) => sr
 //        case PackTT(_, sr) => sr
       }
-    val structDefT = hinputs.lookupStruct(structTT)
-    val memberIndex = structDefT.members.indexWhere(member => structDefT.fullName.addStep(member.name) == memberName)
+    val structDefT = hinputs.lookupStruct(structTT.fullName)
+    val memberIndex = structDefT.members.indexWhere(member => structDefT.instantiatedCitizen.fullName.addStep(member.name) == memberName)
     vassert(memberIndex >= 0)
-    val member2 = structDefT.members(memberIndex)
+    val member2 =
+      structDefT.members(memberIndex) match {
+        case n @ NormalStructMemberT(name, variability, tyype) => n
+        case VariadicStructMemberT(name, tyype) => vimpl()
+      }
 
     val variability = member2.variability
 
@@ -193,10 +197,10 @@ class MutateHammer(
       structExpr2.result.reference.kind match {
         case sr @ StructTT(_) => sr
       }
-    val structDefT = hinputs.lookupStruct(structTT)
+    val structDefT = hinputs.lookupStruct(structTT.fullName)
     val memberIndex =
       structDefT.members
-        .indexWhere(member => structDefT.fullName.addStep(member.name) == memberName)
+        .indexWhere(member => structDefT.templateName.addStep(member.name) == memberName)
     vassert(memberIndex >= 0)
 
     val structDefH = hamuts.structDefsByRefT(structTT)

@@ -193,6 +193,7 @@ void RCImm::declareStruct(
 
 void RCImm::declareStructExtraFunctions(StructDefinition* structDefM) {
   declareConcreteUnserializeFunction(structDefM->kind);
+  declareConcreteFreeFunction(structDefM->kind);
 }
 
 void RCImm::defineStruct(
@@ -208,6 +209,7 @@ void RCImm::defineStruct(
 
 void RCImm::defineStructExtraFunctions(StructDefinition* structDefM) {
   defineConcreteUnserializeFunction(structDefM->kind);
+  defineConcreteFreeFunction(structDefM->kind);
 }
 
 void RCImm::declareStaticSizedArray(
@@ -219,6 +221,7 @@ void RCImm::declareStaticSizedArray(
 
 void RCImm::declareStaticSizedArrayExtraFunctions(StaticSizedArrayDefinitionT* ssaDef) {
   declareConcreteUnserializeFunction(ssaDef->kind);
+  declareConcreteFreeFunction(ssaDef->kind);
 }
 
 void RCImm::defineStaticSizedArray(
@@ -231,6 +234,7 @@ void RCImm::defineStaticSizedArray(
 
 void RCImm::defineStaticSizedArrayExtraFunctions(StaticSizedArrayDefinitionT* ssaDef) {
   defineConcreteUnserializeFunction(ssaDef->kind);
+  defineConcreteFreeFunction(ssaDef->kind);
 }
 
 void RCImm::declareRuntimeSizedArray(
@@ -242,6 +246,7 @@ void RCImm::declareRuntimeSizedArray(
 
 void RCImm::declareRuntimeSizedArrayExtraFunctions(RuntimeSizedArrayDefinitionT* rsaDefM) {
   declareConcreteUnserializeFunction(rsaDefM->kind);
+  declareConcreteFreeFunction(rsaDefM->kind);
 }
 
 void RCImm::defineRuntimeSizedArray(
@@ -254,6 +259,7 @@ void RCImm::defineRuntimeSizedArray(
 
 void RCImm::defineRuntimeSizedArrayExtraFunctions(RuntimeSizedArrayDefinitionT* rsaDefM) {
   defineConcreteUnserializeFunction(rsaDefM->kind);
+  defineConcreteFreeFunction(rsaDefM->kind);
 }
 
 void RCImm::declareInterface(
@@ -265,6 +271,7 @@ void RCImm::declareInterface(
 
 void RCImm::declareInterfaceExtraFunctions(InterfaceDefinition* interfaceDefM) {
   declareInterfaceUnserializeFunction(interfaceDefM->kind);
+  declareInterfaceFreeFunction(interfaceDefM->kind);
 }
 
 void RCImm::defineInterface(
@@ -279,14 +286,22 @@ void RCImm::defineInterfaceExtraFunctions(InterfaceDefinition* interfaceDefM) {
 void RCImm::declareEdge(Edge* edge) {
   kindStructs.declareEdge(edge);
 
-  auto hostStructMT = globalState->linearRegion->linearizeStructKind(edge->structName);
-  auto hostInterfaceMT = globalState->linearRegion->linearizeInterfaceKind(edge->interfaceName);
+  {
+    auto hostStructMT = globalState->linearRegion->linearizeStructKind(edge->structName);
+    auto hostInterfaceMT = globalState->linearRegion->linearizeInterfaceKind(edge->interfaceName);
 
-  auto interfaceMethod = getUnserializeInterfaceMethod(edge->interfaceName);
-  auto thunkPrototype = getUnserializeThunkPrototype(edge->structName, edge->interfaceName);
-  globalState->addEdgeExtraMethod(hostInterfaceMT, hostStructMT, interfaceMethod, thunkPrototype);
-  auto nameL = globalState->unserializeName->name + "__" + edge->interfaceName->fullName->name + "__" + edge->structName->fullName->name;
-  declareExtraFunction(globalState, thunkPrototype, nameL);
+    auto interfaceUnserializeMethod = getUnserializeInterfaceMethod(edge->interfaceName);
+    auto unserializeThunkPrototype = getUnserializeThunkPrototype(edge->structName, edge->interfaceName);
+    globalState->addEdgeExtraMethod(hostInterfaceMT, hostStructMT, interfaceUnserializeMethod, unserializeThunkPrototype);
+    auto unserializeNameL = globalState->unserializeName->name + "__" + edge->interfaceName->fullName->name + "__" + edge->structName->fullName->name;
+    declareExtraFunction(globalState, unserializeThunkPrototype, unserializeNameL);
+  }
+
+  auto interfaceFreeMethod = getFreeInterfaceMethod(edge->interfaceName);
+  auto freeThunkPrototype = getFreeThunkPrototype(edge->structName, edge->interfaceName);
+  globalState->addEdgeExtraMethod(edge->interfaceName, edge->structName, interfaceFreeMethod, freeThunkPrototype);
+  auto freeNameL = globalState->freeName->name + "__" + edge->interfaceName->fullName->name + "__" + edge->structName->fullName->name;
+  declareExtraFunction(globalState, freeThunkPrototype, freeNameL);
 }
 
 void RCImm::defineEdge(Edge* edge) {
@@ -297,6 +312,7 @@ void RCImm::defineEdge(Edge* edge) {
   kindStructs.defineEdge(edge, interfaceFunctionsLT, edgeFunctionsL);
 
   defineEdgeUnserializeFunction(edge);
+  defineEdgeFreeFunction(edge);
 }
 
 Ref RCImm::weakAlias(
@@ -648,7 +664,9 @@ void RCImm::deallocate(
     Reference* refMT,
     Ref ref) {
   buildFlare(FL(), globalState, functionState, builder);
-  innerDeallocate(from, globalState, functionState, &kindStructs, builder, refMT, ref);
+  assert(false); // Outside shouldnt be able to deallocate anything of ours.
+  // We deallocate things ourselves when we discard references, via discard.
+  // We call innerDeallocate directly.
 }
 
 
@@ -734,23 +752,9 @@ void RCImm::discard(
       dynamic_cast<Float *>(sourceRnd)) {
     buildFlare(FL(), globalState, functionState, builder);
     // Do nothing for these, they're always inlined and copied.
-  } else if (dynamic_cast<Str *>(sourceRnd)) {
-    buildFlare(FL(), globalState, functionState, builder);
-    assert(sourceMT->ownership == Ownership::SHARE);
-    auto rcLE =
-        adjustStrongRc(
-            from, globalState, functionState, &kindStructs, builder, sourceRef, sourceMT, -1);
-    buildFlare(from, globalState, functionState, builder, "Str RC: ", rcLE);
-    buildIfV(
-        globalState, functionState,
-        builder,
-        isZeroLE(builder, rcLE),
-        [this, from, globalState, functionState, sourceRef, sourceMT](
-            LLVMBuilderRef thenBuilder) {
-          buildFlare(from, globalState, functionState, thenBuilder, "Freeing shared str!");
-          innerDeallocate(from, globalState, functionState, &kindStructs, thenBuilder, sourceMT, sourceRef);
-        });
-  } else if (dynamic_cast<InterfaceKind *>(sourceRnd) ||
+  } else if (
+      dynamic_cast<Str *>(sourceRnd) ||
+      dynamic_cast<InterfaceKind *>(sourceRnd) ||
       dynamic_cast<StructKind *>(sourceRnd) ||
       dynamic_cast<StaticSizedArrayT *>(sourceRnd) ||
       dynamic_cast<RuntimeSizedArrayT *>(sourceRnd)) {
@@ -772,16 +776,19 @@ void RCImm::discard(
           globalState, functionState,
           builder,
           isZeroLE(builder, rcLE),
-          [from, globalState, functionState, sourceRef, sourceMT](LLVMBuilderRef thenBuilder) {
+          [this, from, globalState, functionState, sourceRef, sourceMT](LLVMBuilderRef thenBuilder) {
             buildFlare(FL(), globalState, functionState, thenBuilder);
-            auto immDestructor = globalState->program->getImmDestructor(sourceMT->kind);
-            auto funcL = globalState->getFunction(immDestructor->name);
-
-            auto sourceLE =
-                globalState->getRegion(sourceMT)->checkValidReference(FL(),
-                    functionState, thenBuilder, true, sourceMT, sourceRef);
-            std::vector<LLVMValueRef> argExprsL = {sourceLE};
-            return LLVMBuildCall(thenBuilder, funcL, argExprsL.data(), argExprsL.size(), "");
+            auto regionInstanceRef = makeRegionInstance(thenBuilder);
+            callFree(functionState, thenBuilder, regionInstanceRef, sourceMT->kind, sourceRef);
+//            auto immDestructor = getFreePrototype(sourceMT->kind);
+////                globalState->program->getImmDestructor(sourceMT->kind);
+//            auto funcL = globalState->getFunction(immDestructor);
+//
+//            auto sourceLE =
+//                globalState->getRegion(sourceMT)->checkValidReference(FL(),
+//                    functionState, thenBuilder, true, sourceMT, sourceRef);
+//            std::vector<LLVMValueRef> argExprsL = {sourceLE};
+//            return LLVMBuildCall(thenBuilder, funcL, argExprsL.data(), argExprsL.size(), "");
           });
     }
   } else {
@@ -1086,16 +1093,25 @@ void RCImm::declareExtraFunctions() {
           Ownership::SHARE,
           Location::YONDER,
           globalState->metalCache->getStr(globalState->metalCache->linearRegionId));
-  auto prototype =
+
+  auto unserializePrototype =
       globalState->metalCache->getPrototype(
           globalState->unserializeName, valeStrMT,
           {getRegionRefType(), globalState->linearRegion->getRegionRefType(), hostStrMT});
-  auto nameL = globalState->unserializeName->name + "__str";
-  declareExtraFunction(globalState, prototype, nameL);
+  auto unserializeNameL = globalState->unserializeName->name + "__str";
+  declareExtraFunction(globalState, unserializePrototype, unserializeNameL);
+
+  auto freePrototype =
+      globalState->metalCache->getPrototype(
+          globalState->freeName, globalState->metalCache->voidRef,
+          {getRegionRefType(), valeStrMT});
+  auto freeNameL = globalState->freeName->name + "__str";
+  declareExtraFunction(globalState, freePrototype, freeNameL);
 }
 
 void RCImm::defineExtraFunctions() {
   defineConcreteUnserializeFunction(globalState->metalCache->str);
+  defineConcreteFreeFunction(globalState->metalCache->str);
 }
 
 void RCImm::defineEdgeUnserializeFunction(Edge* edge) {
@@ -1451,4 +1467,192 @@ Ref RCImm::createRegionInstanceLocal(FunctionState* functionState, LLVMBuilderRe
   auto regionInstanceRef = wrap(this, regionRefMT, regionInstancePtrLE);
 
   return regionInstanceRef;
+}
+
+void RCImm::declareConcreteFreeFunction(Kind* valeKind) {
+  auto prototype = getFreePrototype(valeKind);
+  auto nameL = globalState->freeName->name + "__" + globalState->getKindName(valeKind)->name;
+  declareExtraFunction(globalState, prototype, nameL);
+}
+
+void RCImm::defineConcreteFreeFunction(Kind* valeKind) {
+  auto i32MT = globalState->metalCache->i32Ref;
+  auto boolMT = globalState->metalCache->boolRef;
+
+  auto prototype = getFreePrototype(valeKind);
+
+  defineFunctionBodyV(
+      globalState, prototype,
+      [&](FunctionState* functionState, LLVMBuilderRef builder) -> void {
+        auto objectRefMT = prototype->params[1];
+
+        auto regionInstanceRef = makeRegionInstance(builder);
+
+        auto objectRef =
+            wrap(
+                globalState->getRegion(objectRefMT),
+                objectRefMT,
+                LLVMGetParam(functionState->containingFuncL, 1));
+
+        if (auto structKind = dynamic_cast<StructKind *>(objectRefMT->kind)) {
+          auto structDefM = globalState->program->getStruct(structKind);
+
+          for (int i = 0; i < structDefM->members.size(); i++) {
+            auto memberM = structDefM->members[i];
+            auto memberRefMT = memberM->type;
+            auto memberRef =
+                globalState->getRegion(objectRefMT)->loadMember(
+                    functionState, builder, regionInstanceRef, objectRefMT, objectRef, true,
+                    i, memberRefMT, memberRefMT, memberM->name);
+            discard(FL(), globalState, functionState, builder, memberRefMT, memberRef);
+          }
+
+          innerDeallocate(FL(), globalState, functionState, &kindStructs, builder, objectRefMT, objectRef);
+          LLVMBuildRet(builder, makeVoid(globalState));
+        } else if (dynamic_cast<Str*>(objectRefMT->kind)) {
+          buildFlare(FL(), globalState, functionState, builder, "done storing");
+
+          innerDeallocate(FL(), globalState, functionState, &kindStructs, builder, objectRefMT, objectRef);
+          LLVMBuildRet(builder, makeVoid(globalState));
+        } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT *>(objectRefMT->kind)) { // XEGDWR combine with below case
+          auto rsaRefMT = objectRefMT;
+
+          auto lengthRef =
+              getRuntimeSizedArrayLength(
+                  functionState, builder, regionInstanceRef, objectRefMT, objectRef, true);
+
+          auto memberRefMT = globalState->program->getRuntimeSizedArray(rsaMT)->elementType;
+
+          intRangeLoopReverseV(
+              globalState, functionState, builder, globalState->metalCache->i32, lengthRef,
+
+              [this, functionState, regionInstanceRef, objectRefMT, rsaMT, objectRef, memberRefMT](
+                  Ref indexRef, LLVMBuilderRef bodyBuilder) {
+                auto memberRef =
+                    globalState->getRegion(objectRefMT)
+                        ->loadElementFromRSA(
+                            functionState, bodyBuilder, regionInstanceRef, objectRefMT, rsaMT,
+                            objectRef, true, indexRef)
+                        .move();
+                discard(FL(), globalState, functionState, bodyBuilder, memberRefMT, memberRef);
+              });
+
+          LLVMBuildRet(builder, makeVoid(globalState));
+        } else if (auto valeSsaMT = dynamic_cast<StaticSizedArrayT *>(objectRefMT->kind)) { // XEGDWR combine with above case
+          auto hostSsaMT = dynamic_cast<StaticSizedArrayT *>(objectRefMT->kind);
+          assert(hostSsaMT);
+          auto ssaRefMT = objectRefMT;
+
+          auto ssaDefM = globalState->program->getStaticSizedArray(valeSsaMT);
+          int length = ssaDefM->size;
+          auto memberRefMT = ssaDefM->elementType;
+
+          intRangeLoopReverseV(
+              globalState, functionState, builder, globalState->metalCache->i32, globalState->constI32(length),
+              [this, functionState, regionInstanceRef, objectRefMT, hostSsaMT, objectRef, memberRefMT](
+                  Ref indexRef, LLVMBuilderRef bodyBuilder) {
+
+                auto memberRef =
+                    globalState->getRegion(objectRefMT)
+                        ->loadElementFromSSA(
+                            functionState, bodyBuilder, regionInstanceRef, objectRefMT, hostSsaMT,
+                            objectRef, true, indexRef)
+                        .move();
+                discard(FL(), globalState, functionState, bodyBuilder, memberRefMT, memberRef);
+              });
+
+          LLVMBuildRet(builder, makeVoid(globalState));
+        } else
+          assert(false);
+      });
+}
+
+void RCImm::callFree(
+    FunctionState *functionState,
+    LLVMBuilderRef builder,
+    Ref regionInstanceRef,
+    Kind* kind,
+    Ref objectRef) {
+  auto prototype = getFreePrototype(kind);
+  if (auto interfaceMT = dynamic_cast<InterfaceKind*>(kind)) {
+    buildFlare(FL(), globalState, functionState, builder);
+    auto virtualArgRefMT = prototype->params[1];
+    int indexInEdge = globalState->getInterfaceMethodIndex(interfaceMT, prototype);
+    buildFlare(FL(), globalState, functionState, builder);
+    auto methodFunctionPtrLE =
+        globalState->getRegion(virtualArgRefMT)
+            ->getInterfaceMethodFunctionPtr(functionState, builder, virtualArgRefMT, objectRef, indexInEdge);
+    buildFlare(FL(), globalState, functionState, builder);
+    buildInterfaceCall(globalState, functionState, builder, prototype, methodFunctionPtrLE, {regionInstanceRef, objectRef}, 1);
+  } else {
+    buildCallV(globalState, functionState, builder, prototype, {regionInstanceRef, objectRef});
+  }
+}
+
+Prototype* RCImm::getFreePrototype(Kind* valeKind) {
+  auto boolMT = globalState->metalCache->boolRef;
+  auto refMT =
+      globalState->metalCache->getReference(
+          Ownership::SHARE, Location::YONDER, valeKind);
+  return globalState->metalCache->getPrototype(
+      globalState->freeName, globalState->metalCache->voidRef, {regionRefMT, refMT});
+}
+
+Prototype* RCImm::getFreeThunkPrototype(StructKind* valeStructKind, InterfaceKind* valeInterfaceKind) {
+  auto boolMT = globalState->metalCache->boolRef;
+  auto structRefMT =
+      globalState->metalCache->getReference(
+          Ownership::SHARE, Location::YONDER, valeStructKind);
+  auto interfaceRefMT =
+      globalState->metalCache->getReference(
+          Ownership::SHARE, Location::YONDER, valeInterfaceKind);
+  return globalState->metalCache->getPrototype(
+      globalState->freeThunkName, globalState->metalCache->voidRef,
+      {getRegionRefType(), structRefMT});
+}
+
+void RCImm::defineEdgeFreeFunction(Edge* edge) {
+  auto boolMT = globalState->metalCache->boolRef;
+
+  auto thunkPrototype = getFreeThunkPrototype(edge->structName, edge->interfaceName);
+  defineFunctionBodyV(
+      globalState, thunkPrototype,
+      [&](FunctionState *functionState, LLVMBuilderRef builder) {
+        auto structPrototype = getFreePrototype(edge->structName);
+
+        auto objectRefMT = structPrototype->params[1];
+
+        auto regionInstanceRef =
+            wrap(this, regionRefMT, LLVMGetParam(functionState->containingFuncL, 0));
+        auto objectRef =
+            wrap(globalState->getRegion(objectRefMT), objectRefMT, LLVMGetParam(functionState->containingFuncL, 1));
+
+        buildCallV(
+            globalState, functionState, builder, structPrototype,
+            {regionInstanceRef, objectRef});
+
+//        auto interfaceKind = dynamic_cast<InterfaceKind *>(thunkPrototype->returnType->kind);
+//        assert(interfaceKind);
+//        auto structKind = dynamic_cast<StructKind *>(structPrototype->returnType->kind);
+//        assert(structKind);
+
+//        auto interfaceRef =
+//            upcast(
+//                functionState, builder, structPrototype->returnType, structKind,
+//                objectRef, thunkPrototype->returnType, interfaceKind);
+//
+//        checkValidReference(FL(), functionState, builder, true, thunkPrototype->returnType, interfaceRef);
+        LLVMBuildRet(builder, makeVoid(globalState));
+      });
+}
+
+void RCImm::declareInterfaceFreeFunction(InterfaceKind* kind) {
+  auto interface = dynamic_cast<InterfaceKind*>(kind);
+  auto interfaceMethod = getFreeInterfaceMethod(kind);
+  globalState->addInterfaceExtraMethod(interface, interfaceMethod);
+}
+
+InterfaceMethod* RCImm::getFreeInterfaceMethod(Kind* valeKind) {
+  return globalState->metalCache->getInterfaceMethod(
+      getFreePrototype(valeKind), 1);
 }

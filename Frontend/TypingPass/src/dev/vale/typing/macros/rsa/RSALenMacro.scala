@@ -3,7 +3,7 @@ package dev.vale.typing.macros.rsa
 import dev.vale.{Keywords, RangeS, StrI, vimpl}
 import dev.vale.highertyping.FunctionA
 import dev.vale.typing.CompilerOutputs
-import dev.vale.typing.ast.{ArgLookupTE, ArrayLengthTE, BlockTE, FunctionHeaderT, FunctionT, LocationInFunctionEnvironment, ParameterT, ReturnTE}
+import dev.vale.typing.ast.{ArgLookupTE, ArrayLengthTE, BlockTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironment, ParameterT, ReturnTE}
 import dev.vale.typing.env.FunctionEnvironment
 import dev.vale.typing.macros.IFunctionBodyMacro
 import dev.vale.typing.types.CoordT

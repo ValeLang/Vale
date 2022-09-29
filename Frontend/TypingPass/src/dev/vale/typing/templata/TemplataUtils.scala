@@ -1,13 +1,13 @@
 package dev.vale.typing.templata
 
-import dev.vale.typing.ast.{FunctionHeaderT, FunctionT, PrototypeT}
+import dev.vale.typing.ast.{FunctionHeaderT, FunctionDefinitionT, PrototypeT}
 import dev.vale.typing.names._
 import dev.vale.typing.ast._
 import dev.vale.typing.names._
 
 object simpleName {
-  def unapply(fullName: FullNameT[INameT]): Option[String] = {
-    fullName.last match {
+  def unapply(fullName: IdT[INameT]): Option[String] = {
+    fullName.localName match {
 //      case ImplDeclareNameT(_) => None
       case LambdaCallFunctionNameT(_, _, _) => Some("__call")
       case LetNameT(_) => None
@@ -28,7 +28,7 @@ object simpleName {
 }
 
 object functionName {
-  def unapply(function2: FunctionT): Option[String] = {
+  def unapply(function2: FunctionDefinitionT): Option[String] = {
     unapply(function2.header)
   }
   def unapply(header: FunctionHeaderT): Option[String] = {

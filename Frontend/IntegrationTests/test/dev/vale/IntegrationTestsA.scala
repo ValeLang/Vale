@@ -3,12 +3,12 @@ package dev.vale
 import dev.vale.highertyping.{ICompileErrorA, ProgramA}
 import dev.vale.passmanager.{FullCompilation, FullCompilationOptions}
 import dev.vale.simplifying.VonHammer
-import dev.vale.finalast.{FullNameH, IntH, OwnH, ProgramH, PrototypeH, YonderH}
+import dev.vale.finalast.{IdH, IntHT, OwnH, ProgramH, PrototypeH, YonderH}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.FileP
 import dev.vale.postparsing._
 import dev.vale.typing.ast._
-import dev.vale.typing.names.{FullNameT, FunctionNameT, FunctionTemplateNameT}
+import dev.vale.typing.names.{IdT, FunctionNameT, FunctionTemplateNameT}
 import dev.vale.typing.{Hinputs, ICompileErrorT, ast}
 import dev.vale.typing.types._
 import dev.vale.testvm.{ConstraintViolatedException, Heap, IntV, PrimitiveKindV, ReferenceV, StructInstanceV, Vivem}
@@ -20,7 +20,7 @@ import dev.vale.{finalast => m}
 import dev.vale.testvm.ReferenceV
 import org.scalatest.{FunSuite, Matchers}
 import dev.vale.passmanager.FullCompilation
-import dev.vale.finalast.FullNameH
+import dev.vale.finalast.IdH
 import dev.vale.lexing.{FailedParse, RangeL}
 import dev.vale.postparsing.ICompileErrorS
 import dev.vale.typing.ast._
@@ -777,13 +777,13 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val keywords = compile.keywords
 
     vassert(
-      hinputs.functions.filter(func => func.header.fullName.last match {
+      hinputs.functions.filter(func => func.header.fullName.localName match {
         case FunctionNameT(FunctionTemplateNameT(StrI("bork"), _), _, _) => true
         case _ => false
       }).isEmpty)
 
     vassert(
-      hinputs.functions.find(func => func.header.fullName.last match {
+      hinputs.functions.find(func => func.header.fullName.localName match {
         case FunctionNameT(FunctionTemplateNameT(StrI("helperFunc"), _), _, _) => true
         case _ => false
       }).size == 1)
@@ -849,7 +849,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
     // The extern we make should have the name we expect
     vassertSome(packageH.externNameToFunction.get(interner.intern(StrI("sqrt")))) match {
-      case PrototypeH(FullNameH("sqrt",_,PackageCoordinate(StrI("math"),Vector()),_),_,_) =>
+      case PrototypeH(IdH("sqrt",_,PackageCoordinate(StrI("math"),Vector()),_),_,_) =>
     }
 
     // We also made an internal function that contains an extern call
@@ -953,7 +953,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
     val builtinPackage = hamuts.lookupPackage(PackageCoordinate.BUILTIN(compilation.interner, compilation.keywords))
     val rsa = vassertSome(builtinPackage.runtimeSizedArrays.find(_.kind == kindH))
-    rsa.elementType.kind shouldEqual IntH.i32
+    rsa.elementType.kind shouldEqual IntHT.i32
   }
 
   test("Call borrow parameter with shared reference") {

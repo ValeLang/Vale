@@ -1,11 +1,11 @@
 package dev.vale.simplifying
 
 import dev.vale.{Keywords, finalast, vassert, vimpl}
-import dev.vale.finalast.{BorrowH, ExpressionH, KindH, LocalLoadH, LocalStoreH, MemberLoadH, MemberStoreH, ReferenceH, RuntimeSizedArrayStoreH, StaticSizedArrayStoreH, YonderH}
+import dev.vale.finalast.{BorrowH, ExpressionH, KindHT, LocalLoadH, LocalStoreH, MemberLoadH, MemberStoreH, CoordH, RuntimeSizedArrayStoreH, StaticSizedArrayStoreH, YonderH}
 import dev.vale.typing.Hinputs
 import dev.vale.typing.ast.{AddressMemberLookupTE, ExpressionT, FunctionHeaderT, LocalLookupTE, MutateTE, ReferenceExpressionTE, ReferenceMemberLookupTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE}
 import dev.vale.typing.env.{AddressibleLocalVariableT, ReferenceLocalVariableT}
-import dev.vale.typing.names.{FullNameT, IVarNameT}
+import dev.vale.typing.names.{IdT, IVarNameT}
 import dev.vale.typing.types._
 import dev.vale.finalast._
 import dev.vale.typing._
@@ -27,13 +27,13 @@ class MutateHammer(
     currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
       mutate2: MutateTE):
-  (ExpressionH[KindH]) = {
+  (ExpressionH[KindHT]) = {
     val MutateTE(destinationExpr2, sourceExpr2) = mutate2
 
     val (sourceExprResultLine, sourceDeferreds) =
       expressionHammer.translate(hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2);
     val (sourceResultPointerTypeH) =
-      typeHammer.translateReference(hinputs, hamuts, sourceExpr2.result.reference)
+      typeHammer.translateCoord(hinputs, hamuts, sourceExpr2.result.coord)
 
     val (oldValueAccess, destinationDeferreds) =
       destinationExpr2 match {
@@ -65,10 +65,10 @@ class MutateHammer(
     hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeaderT,
     locals: LocalsBox,
-    sourceExprResultLine: ExpressionH[KindH],
+    sourceExprResultLine: ExpressionH[KindHT],
     arrayExpr2: ReferenceExpressionTE,
     indexExpr2: ReferenceExpressionTE
-  ): (ExpressionH[KindH], Vector[ExpressionT]) = {
+  ): (ExpressionH[KindHT], Vector[ExpressionT]) = {
     val (destinationResultLine, destinationDeferreds) =
       expressionHammer.translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
     val (indexExprResultLine, indexDeferreds) =
@@ -93,10 +93,10 @@ class MutateHammer(
                                                     hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeaderT,
                                                     locals: LocalsBox,
-                                                    sourceExprResultLine: ExpressionH[KindH],
+                                                    sourceExprResultLine: ExpressionH[KindHT],
                                                     arrayExpr2: ReferenceExpressionTE,
                                                     indexExpr2: ReferenceExpressionTE
-  ): (ExpressionH[KindH], Vector[ExpressionT]) = {
+  ): (ExpressionH[KindHT], Vector[ExpressionT]) = {
     val (destinationResultLine, destinationDeferreds) =
       expressionHammer.translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
     val (indexExprResultLine, indexDeferreds) =
@@ -121,15 +121,15 @@ class MutateHammer(
     hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeaderT,
     locals: LocalsBox,
-    sourceExprResultLine: ExpressionH[KindH],
+    sourceExprResultLine: ExpressionH[KindHT],
     structExpr2: ReferenceExpressionTE,
-    memberName: FullNameT[IVarNameT]
-  ): (ExpressionH[KindH], Vector[ExpressionT]) = {
+    memberName: IdT[IVarNameT]
+  ): (ExpressionH[KindHT], Vector[ExpressionT]) = {
     val (destinationResultLine, destinationDeferreds) =
       expressionHammer.translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val structTT =
-      structExpr2.result.reference.kind match {
+      structExpr2.result.coord.kind match {
         case sr @ StructTT(_) => sr
 //        case TupleTT(_, sr) => sr
 //        case PackTT(_, sr) => sr
@@ -148,19 +148,19 @@ class MutateHammer(
     val boxedType2 = member2.tyype.expectAddressMember().reference
 
     val (boxedTypeH) =
-      typeHammer.translateReference(hinputs, hamuts, boxedType2);
+      typeHammer.translateCoord(hinputs, hamuts, boxedType2);
 
     val (boxStructRefH) =
       structHammer.makeBox(hinputs, hamuts, variability, boxedType2, boxedTypeH)
 
     // Remember, structs can never own boxes, they only borrow them
-    val expectedStructBoxMemberType = ReferenceH(BorrowH, YonderH, boxStructRefH)
+    val expectedStructBoxMemberType = CoordH(BorrowH, YonderH, boxStructRefH)
 
     // We're storing into a struct's member that is a box. The stack is also
     // pointing at this box. First, get the box, then mutate what's inside.
     val nameH = nameHammer.translateFullName(hinputs, hamuts, memberName)
     val loadResultType =
-      ReferenceH(
+      CoordH(
         finalast.BorrowH,
         YonderH,
         boxStructRefH)
@@ -186,15 +186,15 @@ class MutateHammer(
     hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeaderT,
     locals: LocalsBox,
-    sourceExprResultLine: ExpressionH[KindH],
+    sourceExprResultLine: ExpressionH[KindHT],
     structExpr2: ReferenceExpressionTE,
-    memberName: FullNameT[IVarNameT]
-  ): (ExpressionH[KindH], Vector[ExpressionT]) = {
+    memberName: IdT[IVarNameT]
+  ): (ExpressionH[KindHT], Vector[ExpressionT]) = {
     val (destinationResultLine, destinationDeferreds) =
       expressionHammer.translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val structTT =
-      structExpr2.result.reference.kind match {
+      structExpr2.result.coord.kind match {
         case sr @ StructTT(_) => sr
       }
     val structDefT = hinputs.lookupStruct(structTT.fullName)
@@ -203,7 +203,7 @@ class MutateHammer(
         .indexWhere(member => structDefT.templateName.addStep(member.name) == memberName)
     vassert(memberIndex >= 0)
 
-    val structDefH = hamuts.structDefsByRefT(structTT)
+    val structDefH = hamuts.structTToStructDefH(structTT)
 
     // We're storing into a regular reference member of a struct.
     val storeNode =
@@ -221,12 +221,12 @@ class MutateHammer(
     hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeaderT,
     locals: LocalsBox,
-    sourceExprResultLine: ExpressionH[KindH],
-    sourceResultPointerTypeH: ReferenceH[KindH],
-    varId: FullNameT[IVarNameT],
+    sourceExprResultLine: ExpressionH[KindHT],
+    sourceResultPointerTypeH: CoordH[KindHT],
+    varId: IdT[IVarNameT],
     variability: VariabilityT,
     reference: CoordT
-  ): (ExpressionH[KindH], Vector[ExpressionT]) = {
+  ): (ExpressionH[KindHT], Vector[ExpressionT]) = {
     val local = locals.get(varId).get
     val (boxStructRefH) =
       structHammer.makeBox(hinputs, hamuts, variability, reference, sourceResultPointerTypeH)
@@ -256,9 +256,9 @@ class MutateHammer(
                                            hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeaderT,
                                            locals: LocalsBox,
-                                           sourceExprResultLine: ExpressionH[KindH],
-                                           varId: FullNameT[IVarNameT]
-  ): (ExpressionH[KindH], Vector[ExpressionT]) = {
+                                           sourceExprResultLine: ExpressionH[KindHT],
+                                           varId: IdT[IVarNameT]
+  ): (ExpressionH[KindHT], Vector[ExpressionT]) = {
     val local = locals.get(varId).get
     vassert(!locals.unstackifiedVars.contains(local.id))
     val newStoreNode =

@@ -1,14 +1,14 @@
 package dev.vale.testvm
 
-import dev.vale.finalast.{BoolH, FloatH, IntH, KindH, Local, LocationH, OwnershipH, PrototypeH, ReferenceH, StrH, StructDefinitionH, VoidH}
+import dev.vale.finalast.{BoolHT, FloatHT, IntHT, KindHT, Local, LocationH, OwnershipH, PrototypeH, CoordH, StrHT, StructDefinitionH, VoidHT}
 import dev.vale.{vassert, vcheck, vfail}
 import dev.vale.finalast._
 import dev.vale.vimpl
 
 // RR = Runtime Result. Don't use these to determine behavior, just use
 // these to check that things are as we expect.
-case class RRReference(hamut: ReferenceH[KindH]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;  }
-case class RRKind(hamut: KindH) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
+case class RRReference(hamut: CoordH[KindHT]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;  }
+case class RRKind(hamut: KindHT) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; }
 
 class Allocation(
     val reference: ReferenceV, // note that this cannot change
@@ -119,19 +119,19 @@ sealed trait KindV {
 }
 sealed trait PrimitiveKindV extends KindV
 case object VoidV extends PrimitiveKindV {
-  override def tyype = RRKind(VoidH())
+  override def tyype = RRKind(VoidHT())
 }
 case class IntV(value: Long, bits: Int) extends PrimitiveKindV {
-  override def tyype = RRKind(IntH(bits))
+  override def tyype = RRKind(IntHT(bits))
 }
 case class BoolV(value: Boolean) extends PrimitiveKindV {
-  override def tyype = RRKind(BoolH())
+  override def tyype = RRKind(BoolHT())
 }
 case class FloatV(value: Double) extends PrimitiveKindV {
-  override def tyype = RRKind(FloatH())
+  override def tyype = RRKind(FloatHT())
 }
 case class StrV(value: String) extends PrimitiveKindV {
-  override def tyype = RRKind(StrH())
+  override def tyype = RRKind(StrHT())
 }
 
 case class StructInstanceV(
@@ -161,8 +161,8 @@ case class StructInstanceV(
 }
 
 case class ArrayInstanceV(
-    typeH: ReferenceH[KindH],
-    elementTypeH: ReferenceH[KindH],
+    typeH: CoordH[KindHT],
+    elementTypeH: CoordH[KindHT],
     capacity: Int,
     private var elements: Vector[ReferenceV]
 ) extends KindV {
@@ -221,8 +221,8 @@ case class ReferenceV(
   num: Int
 ) {
   def allocId = AllocationId(RRKind(actualKind.hamut), num)
-  val actualCoord: RRReference = RRReference(ReferenceH(ownership, location, actualKind.hamut))
-  val seenAsCoord: RRReference = RRReference(ReferenceH(ownership, location, seenAsKind.hamut))
+  val actualCoord: RRReference = RRReference(CoordH(ownership, location, actualKind.hamut))
+  val seenAsCoord: RRReference = RRReference(CoordH(ownership, location, seenAsKind.hamut))
 }
 
 sealed trait IObjectReferrer {
@@ -265,7 +265,7 @@ case class ArgumentId(callId: CallId, index: Int) { val hash = runtime.ScalaRunT
 case class VariableV(
     id: VariableAddressV,
     var reference: ReferenceV,
-    expectedType: ReferenceH[KindH]) {
+    expectedType: CoordH[KindHT]) {
 }
 
 case class ExpressionId(

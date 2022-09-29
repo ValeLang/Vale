@@ -9,7 +9,7 @@ import dev.vale.typing.{Hinputs, ICompileErrorT}
 import dev.vale.{FileCoordinateMap, IPackageResolver, Interner, Keywords, PackageCoordinate, PackageCoordinateMap, Profiler, Result, vassertSome, vcurious, vimpl}
 import dev.vale.highertyping.ICompileErrorA
 import dev.vale.lexing.{FailedParse, RangeL}
-import dev.vale.monomorphizing.{MonomorphizedCompilation, MonomorphizedCompilationOptions}
+import dev.vale.instantiating.{InstantiatedCompilation, InstantiatorCompilationOptions}
 import dev.vale.postparsing.ICompileErrorS
 import dev.vale.typing.ICompileErrorT
 
@@ -28,13 +28,13 @@ class HammerCompilation(
   packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]],
   options: HammerCompilationOptions = HammerCompilationOptions()) {
-  var monomorphizedCompilation =
-    new MonomorphizedCompilation(
+  var instantiatedCompilation =
+    new InstantiatedCompilation(
       interner,
       keywords,
       packagesToBuild,
       packageToContentsResolver,
-      MonomorphizedCompilationOptions(
+      InstantiatorCompilationOptions(
         options.globalOptions,
         options.debugOut))
   var hamutsCache: Option[ProgramH] = None
@@ -42,21 +42,21 @@ class HammerCompilation(
 
   def getVonHammer() = vassertSome(vonHammerCache)
 
-  def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = monomorphizedCompilation.getCodeMap()
-  def getParseds(): Result[FileCoordinateMap[(FileP, Vector[RangeL])], FailedParse] = monomorphizedCompilation.getParseds()
-  def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = monomorphizedCompilation.getVpstMap()
-  def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = monomorphizedCompilation.getScoutput()
-  def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = monomorphizedCompilation.getAstrouts()
-  def getCompilerOutputs(): Result[Hinputs, ICompileErrorT] = monomorphizedCompilation.getCompilerOutputs()
-  def getMonouts(): Hinputs = monomorphizedCompilation.getMonouts()
-  def expectCompilerOutputs(): Hinputs = monomorphizedCompilation.expectCompilerOutputs()
+  def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = instantiatedCompilation.getCodeMap()
+  def getParseds(): Result[FileCoordinateMap[(FileP, Vector[RangeL])], FailedParse] = instantiatedCompilation.getParseds()
+  def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = instantiatedCompilation.getVpstMap()
+  def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = instantiatedCompilation.getScoutput()
+  def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = instantiatedCompilation.getAstrouts()
+  def getCompilerOutputs(): Result[Hinputs, ICompileErrorT] = instantiatedCompilation.getCompilerOutputs()
+  def getMonouts(): Hinputs = instantiatedCompilation.getMonouts()
+  def expectCompilerOutputs(): Hinputs = instantiatedCompilation.expectCompilerOutputs()
 
   def getHamuts(): ProgramH = {
     hamutsCache match {
       case Some(hamuts) => hamuts
       case None => {
         val hammer = new Hammer(interner, keywords)
-        val hamuts = hammer.translate(monomorphizedCompilation.getMonouts())
+        val hamuts = hammer.translate(instantiatedCompilation.getMonouts())
         hamutsCache = Some(hamuts)
         vonHammerCache = Some(hammer.vonHammer)
         hamuts

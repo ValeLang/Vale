@@ -1,9 +1,9 @@
 package dev.vale.simplifying
 
-import dev.vale.finalast.{FunctionH, Local, NeverH, PureH, UserFunctionH, VariableIdH}
+import dev.vale.finalast.{FunctionH, Local, NeverHT, PureH, UserFunctionH, VariableIdH}
 import dev.vale.typing.Hinputs
-import dev.vale.typing.ast.{ExternT, FunctionHeaderT, FunctionT, IFunctionAttributeT, PrototypeT, PureT, UserFunctionT}
-import dev.vale.typing.names.{FullNameT, IVarNameT}
+import dev.vale.typing.ast.{ExternT, FunctionHeaderT, FunctionDefinitionT, IFunctionAttributeT, PrototypeT, PureT, UserFunctionT}
+import dev.vale.typing.names.{IdT, IVarNameT}
 import dev.vale.{Keywords, vassert, vfail, vimpl, vwat, finalast => m}
 import dev.vale.finalast._
 import dev.vale.typing._
@@ -21,7 +21,7 @@ class FunctionHammer(
   def translateFunctions(
     hinputs: Hinputs,
     hamuts: HamutsBox,
-    functions2: Vector[FunctionT]):
+    functions2: Vector[FunctionDefinitionT]):
   (Vector[FunctionRefH]) = {
     functions2.foldLeft((Vector[FunctionRefH]()))({
       case ((previousFunctionsH), function2) => {
@@ -34,13 +34,13 @@ class FunctionHammer(
   def translateFunction(
     hinputs: Hinputs,
     hamuts: HamutsBox,
-    function2: FunctionT):
+    function2: FunctionDefinitionT):
   (FunctionRefH) = {
 //    opts.debugOut("Translating function " + function2.header.fullName)
     hamuts.functionRefs.get(function2.header.toPrototype) match {
       case Some(functionRefH) => functionRefH
       case None => {
-        val FunctionT(
+        val FunctionDefinitionT(
             header @ FunctionHeaderT(humanName, attrs2, params2, returnType2, _),
             _,
             _,
@@ -53,7 +53,7 @@ class FunctionHammer(
         val locals =
           LocalsBox(
             Locals(
-              Map[FullNameT[IVarNameT], VariableIdH](),
+              Map[IdT[IVarNameT], VariableIdH](),
               Set[VariableIdH](),
               Map[VariableIdH,Local](),
               1));
@@ -63,7 +63,7 @@ class FunctionHammer(
         val resultCoord = bodyH.resultType
         if (resultCoord != prototypeH.returnType) {
           resultCoord.kind match {
-            case NeverH(_) => // meh its fine
+            case NeverHT(_) => // meh its fine
             case _ => {
               vfail(
                 "Result of body's instructions didnt match return type!\n" +

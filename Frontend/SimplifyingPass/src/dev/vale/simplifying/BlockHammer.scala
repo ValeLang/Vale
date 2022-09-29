@@ -1,6 +1,6 @@
 package dev.vale.simplifying
 
-import dev.vale.finalast.{BlockH, NeverH}
+import dev.vale.finalast.{BlockH, NeverHT}
 import dev.vale.typing.Hinputs
 import dev.vale.typing.ast.{BlockTE, FunctionHeaderT}
 import dev.vale.vfail
@@ -31,7 +31,7 @@ class BlockHammer(expressionHammer: ExpressionHammer) {
 
     if (localIdsInThisBlock != unstackifiedLocalIdsInThisBlock) {
       exprH.resultType.kind match {
-        case NeverH(_) => {
+        case NeverHT(_) => {
           // Then it's forgivable, because the block never reaches its end.
         }
         case _ => {

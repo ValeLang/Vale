@@ -5,10 +5,10 @@ import dev.vale.{Err, Interner, Keywords, Ok, Profiler, RangeS, vassert, vassert
 import dev.vale.postparsing._
 import dev.vale.postparsing.patterns.AtomSP
 import dev.vale.typing.{CompileErrorExceptionT, CompilerOutputs, ConvertHelper, DeferredEvaluatingFunctionBody, RangedInternalErrorT, TemplataCompiler, TypingPassOptions, ast}
-import dev.vale.typing.ast.{ArgLookupTE, ExternFunctionCallTE, ExternT, FunctionHeaderT, FunctionT, IFunctionAttributeT, LocationInFunctionEnvironment, ParameterT, PrototypeT, PureT, ReferenceExpressionTE, ReturnTE, SignatureT, UserFunctionT}
+import dev.vale.typing.ast.{ArgLookupTE, ExternFunctionCallTE, ExternT, FunctionHeaderT, FunctionDefinitionT, IFunctionAttributeT, LocationInFunctionEnvironment, ParameterT, PrototypeT, PureT, ReferenceExpressionTE, ReturnTE, SignatureT, UserFunctionT}
 import dev.vale.typing.env._
 import dev.vale.typing.expression.CallCompiler
-import dev.vale.typing.names.{ExternFunctionNameT, FullNameT, FunctionNameT, FunctionTemplateNameT, IFunctionNameT, NameTranslator, RuneNameT}
+import dev.vale.typing.names.{ExternFunctionNameT, IdT, FunctionNameT, FunctionTemplateNameT, IFunctionNameT, NameTranslator, RuneNameT}
 import dev.vale.typing.templata.CoordTemplata
 import dev.vale.typing.types._
 import dev.vale.highertyping._
@@ -76,7 +76,7 @@ class FunctionCompilerCore(
     val isDestructor =
       params2.nonEmpty &&
         params2.head.tyype.ownership == OwnT &&
-        (fullEnv.fullName.last match {
+        (fullEnv.fullName.localName match {
           case FunctionNameT(humanName, _, _) if humanName == keywords.drop => true
           case _ => false
         })
@@ -199,7 +199,7 @@ class FunctionCompilerCore(
           coutputs.declareFunctionReturnType(header.toSignature, header.returnType)
           val neededFunctionBounds = TemplataCompiler.assembleRuneToFunctionBound(fullEnv.templatas)
           val neededImplBounds = TemplataCompiler.assembleRuneToImplBound(fullEnv.templatas)
-          coutputs.addFunction(FunctionT(header, neededFunctionBounds, neededImplBounds, body))
+          coutputs.addFunction(FunctionDefinitionT(header, neededFunctionBounds, neededImplBounds, body))
 
           if (header.toSignature != signature2) {
             throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Generator made a function whose signature doesn't match the expected one!\n" +
@@ -214,7 +214,7 @@ class FunctionCompilerCore(
       case None =>
       case Some(exportPackageCoord) => {
         val exportedName =
-          fullEnv.fullName.last match {
+          fullEnv.fullName.localName match {
             case FunctionNameT(FunctionTemplateNameT(humanName, _), _, _) => humanName
             case _ => vfail("Can't export something that doesn't have a human readable name!")
           }
@@ -254,7 +254,7 @@ class FunctionCompilerCore(
 
   def getFunctionPrototypeInnerForCall(
     fullEnv: FunctionEnvironment,
-    fullName: FullNameT[IFunctionNameT]):
+    fullName: IdT[IFunctionNameT]):
   PrototypeT = {
     val retCoordRune = vassertSome(fullEnv.function.maybeRetCoordRune)
     val returnCoord =
@@ -320,7 +320,7 @@ class FunctionCompilerCore(
     vassert(coutputs.lookupFunction(header.toSignature).isEmpty)
     val neededFunctionBounds = TemplataCompiler.assembleRuneToFunctionBound(fullEnvSnapshot.templatas)
     val neededImplBounds = TemplataCompiler.assembleRuneToImplBound(fullEnvSnapshot.templatas)
-    val function2 = FunctionT(header, neededFunctionBounds, neededImplBounds, body2);
+    val function2 = FunctionDefinitionT(header, neededFunctionBounds, neededImplBounds, body2);
     coutputs.addFunction(function2)
     header
   }
@@ -335,14 +335,14 @@ class FunctionCompilerCore(
 
   def makeExternFunction(
       coutputs: CompilerOutputs,
-      fullName: FullNameT[IFunctionNameT],
+      fullName: IdT[IFunctionNameT],
       range: RangeS,
       attributes: Vector[IFunctionAttributeT],
       params2: Vector[ParameterT],
       returnType2: CoordT,
       maybeOrigin: Option[FunctionTemplata]):
   (FunctionHeaderT) = {
-    fullName.last match {
+    fullName.localName match {
       case FunctionNameT(FunctionTemplateNameT(humanName, _), Vector(), params) => {
         val header =
           ast.FunctionHeaderT(
@@ -352,7 +352,7 @@ class FunctionCompilerCore(
             returnType2,
             maybeOrigin)
 
-        val externFullName = FullNameT(fullName.packageCoord, Vector.empty, interner.intern(ExternFunctionNameT(humanName, params)))
+        val externFullName = IdT(fullName.packageCoord, Vector.empty, interner.intern(ExternFunctionNameT(humanName, params)))
         val externPrototype = PrototypeT(externFullName, header.returnType)
         coutputs.addFunctionExtern(range, externPrototype, fullName.packageCoord, humanName)
         coutputs.addInstantiationBounds(externPrototype.fullName, InstantiationBoundArguments(Map(), Map()))
@@ -360,7 +360,7 @@ class FunctionCompilerCore(
         val argLookups =
           header.params.zipWithIndex.map({ case (param2, index) => ArgLookupTE(index, param2.tyype) })
         val function2 =
-          FunctionT(
+          FunctionDefinitionT(
             header,
             Map(),
             Map(),

@@ -5,13 +5,13 @@ import dev.vale.postparsing.patterns.{AbstractSP, AtomSP, CaptureS}
 import dev.vale.postparsing.rules.{CallSR, CoerceToCoordSR, CoordComponentsSR, EqualsSR, IRulexSR, LookupSR, RuneUsage}
 import dev.vale.{Accumulator, Interner, Keywords, RangeS, StrI, vimpl, vwat}
 import dev.vale.postparsing._
-import dev.vale.typing.ast.{ArgLookupTE, BlockTE, DestroyTE, DiscardTE, FunctionHeaderT, FunctionT, LocationInFunctionEnvironment, ParameterT, ReturnTE, UnletTE, VoidLiteralTE}
+import dev.vale.typing.ast.{ArgLookupTE, BlockTE, DestroyTE, DiscardTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironment, ParameterT, ReturnTE, UnletTE, VoidLiteralTE}
 import dev.vale.typing.env.{FunctionEnvEntry, FunctionEnvironment, FunctionEnvironmentBox, ReferenceLocalVariableT}
 import dev.vale.typing.{Compiler, CompilerOutputs, OverloadResolver, TemplataCompiler, InheritBoundsFromTypeItself, ast, env}
 import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.function.DestructorCompiler
 import dev.vale.typing.macros.{IFunctionBodyMacro, IOnStructDefinedMacro}
-import dev.vale.typing.names.{FullNameT, INameT, NameTranslator}
+import dev.vale.typing.names.{IdT, INameT, NameTranslator}
 import dev.vale.typing.types._
 import dev.vale.typing.ast._
 import dev.vale.typing.macros.IOnStructDefinedMacro
@@ -33,8 +33,8 @@ class StructDropMacro(
   val dropGeneratorId: StrI = keywords.dropGenerator
 
   override def getStructSiblingEntries(
-    structName: FullNameT[INameT], structA: StructA):
-  Vector[(FullNameT[INameT], FunctionEnvEntry)] = {
+    structName: IdT[INameT], structA: StructA):
+  Vector[(IdT[INameT], FunctionEnvEntry)] = {
     def range(n: Int) = RangeS.internal(interner, n)
     def use(n: Int, rune: IRuneS) = RuneUsage(range(n), rune)
 
@@ -99,8 +99,8 @@ class StructDropMacro(
   }
 
   override def getStructChildEntries(
-    macroName: StrI, structName: FullNameT[INameT], structA: StructA, mutability: ITemplata[MutabilityTemplataType]):
-  Vector[(FullNameT[INameT], FunctionEnvEntry)] = {
+    macroName: StrI, structName: IdT[INameT], structA: StructA, mutability: ITemplata[MutabilityTemplataType]):
+  Vector[(IdT[INameT], FunctionEnvEntry)] = {
     Vector()
   }
 

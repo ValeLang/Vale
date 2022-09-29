@@ -160,7 +160,7 @@ case class StaticSizedArrayDefinitionHT(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
   // The size of the array.
-  size: Int,
+  size: Long,
   mutability: Mutability,
   variability: Variability,
   elementType: ReferenceH[KindH]

@@ -23,7 +23,7 @@ import ioutils.*;
 // already occupied by a goblin ("g"), it will destroy the goblin.
 
 
-struct Vec<N, T> where N int
+struct Vec<N, T> where N Int
 {
   values [#N]<imm>T;
 }

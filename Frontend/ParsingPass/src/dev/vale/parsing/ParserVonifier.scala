@@ -1,7 +1,7 @@
 package dev.vale.parsing
 
 import dev.vale.lexing.RangeL
-import dev.vale.parsing.ast.{AbstractAttributeP, AbstractP, AndPE, AnonymousRunePT, ArenaRuneAttributeP, AugmentPE, BinaryCallPE, BlockPE, BoolPT, BoolTypePR, BorrowP, BorrowPT, BraceCallPE, BreakPE, BuiltinAttributeP, BuiltinCallPR, BumpRuneAttributeP, CallPT, CitizenTemplateTypePR, ComponentsPR, ConsecutorPE, ConstantBoolPE, ConstantFloatPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, ConstructingMemberNameDeclarationP, CoordListTypePR, CoordTypePR, DestructPE, DestructureP, DontCallMacroP, DotPE, DotPR, EachPE, EqualsPR, ExportAsP, ExportAttributeP, ExternAttributeP, FileP, FinalP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionPT, FunctionReturnP, IArraySizeP, IAttributeP, IDenizenP, IExpressionPE, IImpreciseNameP, INameDeclarationP, IRulexPR, IRuneAttributeP, IStructContent, ITemplexPT, ITypePR, IdentifyingRuneP, IdentifyingRunesP, IfPE, IgnoredLocalNameDeclarationP, ImmutableP, ImmutableRuneAttributeP, ImplP, ImportP, IndexPE, InlineP, InlinePT, IntPT, IntTypePR, InterfaceP, InterpretedPT, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, KindTypePR, LambdaPE, LetPE, LoadAsBorrowP, LoadAsP, LoadAsWeakP, LocalNameDeclarationP, LocationP, LocationPT, LocationTypePR, LookupNameP, LookupPE, MacroCallP, MagicParamLookupPE, MethodCallPE, MoveP, MutabilityP, MutabilityPT, MutabilityTypePR, MutableP, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, NotPE, OrPE, OrPR, OwnP, OwnershipP, OwnershipPT, OwnershipTypePR, PackPE, PackPR, PackPT, ParamsP, PatternPP, PoolRuneAttributeP, PrototypePT, PrototypeTypePR, PureAttributeP, RangePE, ReadOnlyRuneAttributeP, ReadWriteRuneAttributeP, RegionRunePT, RegionTypePR, ReturnPE, RuntimeSizedArrayPT, RuntimeSizedP, SealedAttributeP, ShareP, SharePT, ShortcallPE, StaticSizedArrayPT, StaticSizedP, StrInterpolatePE, StringPT, StructMembersP, StructMethodP, StructP, SubExpressionPE, TemplateArgsP, TemplateRulesP, TemplexPR, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, TuplePT, TypeRuneAttributeP, TypedPR, TypedRunePT, UnitP, UnletPE, UseP, VariabilityP, VariabilityPT, VariabilityTypePR, VariadicStructMemberP, VaryingP, VoidPE, WeakP, WeakableAttributeP, WhilePE, YonderP}
+import dev.vale.parsing.ast._
 import dev.vale.{FileCoordinate, PackageCoordinate, Profiler, vimpl}
 import dev.vale.parsing.ast._
 import dev.vale.von.{IVonData, VonArray, VonBool, VonFloat, VonInt, VonMember, VonObject, VonStr}
@@ -40,22 +40,26 @@ object ParserVonifier {
     }
   }
 
+  def vonifyGenericParameterType(thing: GenericParameterTypeP): VonObject = {
+    val GenericParameterTypeP(range, tyype) = thing
+    VonObject(
+      "GenericParameterType",
+      None,
+      Vector(
+        VonMember("range", vonifyRange(range)),
+        VonMember("type", vonifyRuneType(tyype))))
+  }
+
   def vonifyRuneAttribute(thing: IRuneAttributeP): VonObject = {
     thing match {
-      case TypeRuneAttributeP(range, tyype) => {
-        VonObject(
-          "TypeRuneAttribute",
-          None,
-          Vector(
-            VonMember("range", vonifyRange(range)),
-            VonMember("type", vonifyRuneType(tyype))))
-      }
-      case ReadOnlyRuneAttributeP(range) => VonObject("ReadOnlyRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
-      case ReadWriteRuneAttributeP(range) => VonObject("ReadWriteRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
-      case ImmutableRuneAttributeP(range) => VonObject("ImmutableRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+      case ReadOnlyRegionRuneAttributeP(range) => VonObject("ReadOnlyRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+      case ReadWriteRegionRuneAttributeP(range) => VonObject("ReadWriteRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+      case ImmutableRegionRuneAttributeP(range) => VonObject("ImmutableRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case PoolRuneAttributeP(range) => VonObject("PoolRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case ArenaRuneAttributeP(range) => VonObject("ArenaRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case BumpRuneAttributeP(range) => VonObject("BumpRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+      case ImmutableRegionRuneAttributeP(range) => VonObject("ImmutableRegionRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+      case ImmutableRuneAttributeP(range) => VonObject("ImmutableRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case x => vimpl(x.toString)
     }
   }
@@ -499,25 +503,27 @@ object ParserVonifier {
     }
   }
 
-  def vonifyIdentifyingRunes(thing: IdentifyingRunesP): VonObject = {
-    val IdentifyingRunesP(range, identifyingRunesP) = thing
+  def vonifyIdentifyingRunes(thing: GenericParametersP): VonObject = {
+    val GenericParametersP(range, identifyingRunesP) = thing
     VonObject(
       "IdentifyingRunes",
       None,
       Vector(
         VonMember("range", vonifyRange(range)),
-        VonMember("identifyingRunes", VonArray(None, identifyingRunesP.map(vonifyIdentifyingRune).toVector))))
+        VonMember("identifyingRunes", VonArray(None, identifyingRunesP.map(vonifyGenericParameter).toVector))))
   }
 
-  def vonifyIdentifyingRune(thing: IdentifyingRuneP): VonObject = {
-    val IdentifyingRuneP(range, name, attributes) = thing
+  def vonifyGenericParameter(thing: GenericParameterP): VonObject = {
+    val GenericParameterP(range, name, maybeType, attributes, maybeDefault) = thing
     VonObject(
       "IdentifyingRune",
       None,
       Vector(
         VonMember("range", vonifyRange(range)),
         VonMember("name", vonifyName(name)),
-        VonMember("attributes", VonArray(None, attributes.map(vonifyRuneAttribute).toVector))))
+        VonMember("maybeType", vonifyOptional(maybeType, vonifyGenericParameterType)),
+        VonMember("attributes", VonArray(None, attributes.map(vonifyRuneAttribute).toVector)),
+        VonMember("maybeDefault", vonifyOptional(maybeDefault, vonifyTemplex))))
   }
 
   def vonifyName(thing: NameP): VonObject = {
@@ -674,13 +680,14 @@ object ParserVonifier {
             VonMember("range", vonifyRange(range)),
             VonMember("members", VonArray(None, members.map(vonifyTemplex).toVector))))
       }
-      case PrototypePT(range, name, parameters, returnType) => {
+      case FuncPT(range, name, paramsRange, parameters, returnType) => {
         VonObject(
           "PrototypeT",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
             VonMember("name", vonifyName(name)),
+            VonMember("paramsRange", vonifyRange(paramsRange)),
             VonMember("parameters", VonArray(None, parameters.map(vonifyTemplex).toVector)),
             VonMember("returnType", vonifyTemplex(returnType))))
       }

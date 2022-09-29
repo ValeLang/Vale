@@ -1,32 +1,4 @@
-[[Can Coerce Kinds To Coords]{.underline}](#can-coerce-kinds-to-coords)
-
-> [[Need Types on Every Rule and
-> Templex]{.underline}](#need-types-on-every-rule-and-templex)
-
-[[Can Use Lambdas for
-Interfaces]{.underline}](#can-use-lambdas-for-interfaces)
-
-> [[A. Implement IFunction
-> Automatically]{.underline}](#a.-implement-ifunction-automatically)
->
-> [[B. Become the Receiver
-> Type]{.underline}](#b.-become-the-receiver-type)
->
-> [[C. Be a Template]{.underline}](#c.-be-a-template)
->
-> [[D. Make New Subclass]{.underline}](#d.-make-new-subclass)
-
-[[Can Coerce Functions to
-Structs]{.underline}](#can-coerce-functions-to-structs)
-
-[[Concepts]{.underline}](#concepts)
-
-> [[Interfaces Must Remember Functions Declared
-> Inside]{.underline}](#interfaces-must-remember-functions-declared-inside)
-
-# Can Coerce Kinds To Coords
-
-CCKTC
+# Can Coerce Kinds To Coords (CCKTC)
 
 Let\'s say we have Map:(Int, &Marine). Knowing the definition of Map,
 those parameters are obviously coords. However, it\'s not obvious when
@@ -113,9 +85,7 @@ Ref components.
 
 I suspect we\'ll very rarely need to specify the type for something.
 
-## Need Types on Every Rule and Templex
-
-NTERT
+## Need Types on Every Rule and Templex (NTERT)
 
 For the evaluation part of the inferer, we need to know what type is
 expected when we hand it in to a call.
@@ -269,9 +239,9 @@ This will call the IThing constructor with whatever\'s given.
 
 For now we\'ll go with C and D, minus the implicit keyword.
 
-# Can Coerce Functions to Structs
+# Can Coerce Functions to Structs (CCFTS)
 
-CCFTS
+Note: We don't have this yet, and it's unsure if/how this might overlap with OverloadSetT.
 
 In other words, every Function Has A Functor
 
@@ -344,88 +314,6 @@ That #F like IFunction\<mut, Int, #T\> means that #F doesn\'t
 necessarily need to implement that interface, but it should have all the
 same members. IOW, structural subtyping instead of nominal subtyping.
 
-## Interfaces Must Remember Functions Declared Inside
-
-IMRFDI
-
-For the like rule, we need to know, at rule-time, all of the functions
-for a given interface. This is difficult because we also want to be able
-to declare abstract functions outside the interface, such as:
-
-> def lookup(citizenRef: abstract CitizenRef2): CitizenDefinition2 = {
->
-> if :StructRef2 =\> lookupStruct(citizenRef)
->
-> if :InterfaceRef2 =\> lookupInterface(citizenRef)
->
-> }
-
-which actually makes two overrides. (Let\'s also keep in mind that this
-kind of external abstract function can only be used for sealed
-interfaces.)
-
-Option A: Make two kinds of interfaces: traits and concepts. A
-concept\'s functions must all be inside its declaration.
-
-> concept IRulexTR {
->
-> fn resultType() ITemplataType;
->
-> }
-
-This has a high cost of introducing a new keyword and idea to the user.
-
-Option B: When used like a concept, only the functions inside the
-interface\'s namespace are considered part of the contract. This will
-inflict spooky-action-at-a-distance on us; an abstract function way over
-there will affect users way over here.
-
-Option C: When used like a concept, only the functions inside its
-declaration are considered part of the contract.
-
-> interface IRulexTR {
->
-> fn resultType() ITemplataType;
->
-> }
->
-> fn eval(state: &!State, rule: abstract &IRulexTR)
-> IEvalResult\<ITemplata\> {
->
-> if :EqualsTR =\> evaluateEqualsRule(state, r)
->
-> if :ConformsTR =\> evaluateConformsRule(state, r)
->
-> if :OrTR =\> evaluateOrRule(state, r)
->
-> if :ComponentsTR =\> evaluateComponentsRule(state, r)
->
-> if :TemplexTR =\> evaluateTemplex(state, templex)
->
-> if :CallTR =\> evaluateRuleCall(state, r)
->
-> }
-
-We\'re going with C.
-
-Note from later: we might need different entire mechanisms. There\'s no
-way to have an interface express that we want this:
-
-> concept Printer {
->
-> fn \_\_call(x: #X) Str;
->
-> }
-
-Another note from later: We might need these internal methods anyway.
-When we\'re conforming a closure to an interface (or if we want to feed
-multiple closures into an anonymous subclass) we need a defined ordering
-to the methods of the thing we\'re creating. For that, we need internal
-methods.
-
-Also, we cant just put FunctionA\'s in there, we need to somehow see
-them from the global environment too to enable UFCS.
-
 # Astronomer
 
 (also Must Delay Rule Typing Calls Until Templar, MDRTCUT)
@@ -438,9 +326,9 @@ words, it runs the Rule Typer on the functions. It figures out every
 rune in every function, and especially the hard part of figuring out
 whether e.g. \"Int\" is the rune int or the coord int.
 
-It also does it for closures.
+It also does it for closures. (Note from later: it doesn't do that)
 
-It also runs it on Lets, to figure out their rules, because why not.
+It also runs it on Lets, to figure out their rules, because why not. (Note from later: it doesn't do that)
 
 However, it still can\'t run the rule typer on the doStuff line here:
 

@@ -2,7 +2,7 @@ package dev.vale.parsing
 
 import dev.vale.lexing.Lexer
 import dev.vale.{Collector, Interner, StrI, vassertOne, vimpl}
-import dev.vale.parsing.ast.{CallPT, IDenizenP, IdentifyingRuneP, IdentifyingRunesP, ImplP, MutabilityPT, MutableP, NameOrRunePT, NameP, TopLevelImplP}
+import dev.vale.parsing.ast.{CallPT, IDenizenP, GenericParameterP, GenericParametersP, ImplP, MutabilityPT, MutableP, NameOrRunePT, NameP, TopLevelImplP}
 import dev.vale.options.GlobalOptions
 import org.scalatest.{FunSuite, Matchers}
 
@@ -30,7 +30,7 @@ class ImplTests extends FunSuite with Matchers with Collector with TestParseUtil
           |impl<T> MyInterface<T> for SomeStruct<T>;
       """.stripMargin).getOrDie().denizens) shouldHave {
       case TopLevelImplP(ImplP(_,
-        Some(IdentifyingRunesP(_, Vector(IdentifyingRuneP(_, NameP(_, StrI("T")), Vector())))),
+        Some(GenericParametersP(_, Vector(GenericParameterP(_, NameP(_, StrI("T")), _, Vector(), None)))),
         None,
         Some(CallPT(_,NameOrRunePT(NameP(_, StrI("SomeStruct"))), Vector(NameOrRunePT(NameP(_, StrI("T")))))),
         CallPT(_,NameOrRunePT(NameP(_, StrI("MyInterface"))), Vector(NameOrRunePT(NameP(_, StrI("T"))))),

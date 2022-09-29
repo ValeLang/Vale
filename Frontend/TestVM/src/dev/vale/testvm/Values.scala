@@ -168,18 +168,18 @@ case class ArrayInstanceV(
 ) extends KindV {
   override def tyype = RRKind(typeH.kind)
 
-  def getElement(index: Int): ReferenceV = {
+  def getElement(index: Long): ReferenceV = {
     if (index < 0 || index >= elements.size) {
       throw PanicException();
     }
-    elements(index)
+    elements(index.toInt)
   }
 
-  def setElement(index: Int, ref: ReferenceV) = {
+  def setElement(index: Long, ref: ReferenceV) = {
     if (index < 0 || index >= elements.size) {
       throw PanicException();
     }
-    elements = elements.updated(index, ref)
+    elements = elements.updated(index.toInt, ref)
   }
 
   def initializeElement(ref: ReferenceV) = {
@@ -251,7 +251,7 @@ case class VariableAddressV(callId: CallId, local: Local) {
 case class MemberAddressV(structId: AllocationId, fieldIndex: Int) {
   override def toString: String = "*o:" + structId.num + "." + fieldIndex
 }
-case class ElementAddressV(arrayId: AllocationId, elementIndex: Int) {
+case class ElementAddressV(arrayId: AllocationId, elementIndex: Long) {
   override def toString: String = "*o:" + arrayId.num + "." + elementIndex
 }
 

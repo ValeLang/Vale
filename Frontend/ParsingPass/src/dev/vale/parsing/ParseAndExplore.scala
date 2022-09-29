@@ -16,7 +16,7 @@ object ParseAndExplore {
     keywords: Keywords,
     opts: GlobalOptions,
     parser: Parser,
-    packages: Array[PackageCoordinate],
+    packages: Vector[PackageCoordinate],
     resolver: IPackageResolver[Map[String, String]]):
   Result[Accumulator[(String, FileP)], FailedParse] = {
     parseAndExplore[IDenizenP, (String, FileP)](
@@ -32,9 +32,9 @@ object ParseAndExplore {
     keywords: Keywords,
     opts: GlobalOptions,
     parser: Parser,
-    packages: Array[PackageCoordinate],
+    packages: Vector[PackageCoordinate],
     resolver: IPackageResolver[Map[String, String]],
-    handleParsedDenizen: (FileCoordinate, String, Array[ImportL], IDenizenP) => D,
+    handleParsedDenizen: (FileCoordinate, String, Vector[ImportL], IDenizenP) => D,
     fileHandler: (FileCoordinate, String, Accumulator[RangeL], Accumulator[D]) => F
   ): Result[Accumulator[F], FailedParse] = {
     LexAndExplore.lexAndExplore[D, F](
@@ -42,7 +42,7 @@ object ParseAndExplore {
       keywords,
       packages,
       resolver,
-      (fileCoord: FileCoordinate, code: String, imports: Array[ImportL], denizenL: IDenizenL) => {
+      (fileCoord: FileCoordinate, code: String, imports: Vector[ImportL], denizenL: IDenizenL) => {
         val denizenP: IDenizenP =
           denizenL match {
             case TopLevelImportL(imporrt) => {

@@ -12,10 +12,12 @@ func vassert(cond bool, msg str) {
   }
 }
 
-func vassertEq<T>(a T, b T) void {
+func vassertEq<T>(a &T, b &T) void
+where func ==(&T, &T)bool {
   vassert(a == b, "Assertion failed, not equal!");
 }
 
-func vassertEq<T>(a T, b T, msg str) void {
+func vassertEq<T>(a &T, b &T, msg str) void
+where func ==(&T, &T)bool {
   vassert(a == b, msg);
 }

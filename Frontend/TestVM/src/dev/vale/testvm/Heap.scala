@@ -106,11 +106,11 @@ class AllocationMap(vivemDout: PrintStream) {
     if (nonInternedObjects.nonEmpty) {
       nonInternedObjects
         .map(_.reference.allocId.num)
-        .toArray
+        .toVector
         .sorted
         .foreach(objId => print("o" + objId + " "))
       println()
-      nonInternedObjects.toArray.sortWith(_.reference.allocId.num < _.reference.allocId.num).foreach(_.printRefs())
+      nonInternedObjects.toVector.sortWith(_.reference.allocId.num < _.reference.allocId.num).foreach(_.printRefs())
       vfail("Memory leaks! See above for ")
     }
   }
@@ -129,6 +129,7 @@ class Heap(in_vivemDout: PrintStream) {
 
   def addLocal(varAddr: VariableAddressV, reference: ReferenceV, expectedType: ReferenceH[KindH]) = {
     val call = getCurrentCall(varAddr.callId)
+    checkReference(expectedType, reference)
     call.addLocal(varAddr, reference, expectedType)
     incrementReferenceRefCount(VariableToObjectReferrer(varAddr, expectedType.ownership), reference)
   }
@@ -691,7 +692,7 @@ class Heap(in_vivemDout: PrintStream) {
         val structImplementsInterface =
           structDefH.edges.exists(_.interface == irH)
         if (!structImplementsInterface) {
-          vfail("Struct " + structDefH.getRef + " doesnt implement interface " + irH);
+          vfail("Struct " + structDefH.getRef + " doesnt implement interface " + irH)
         }
       }
       case (a, b) => {

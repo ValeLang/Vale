@@ -1,0 +1,10 @@
+
+func clone(x int) int { x }
+func clone(x bool) bool { x }
+func clone(x float) float { x }
+func clone(x void) { }
+func clone(x i64) i64 { x }
+func clone(x str) str { x }
+
+// func clone<T>(x &T) &T where T = Ref[_, Kind[mut]] { x }
+// func clone<T>(x &&T) &&T where T = Ref[_, Kind[mut]] { x }

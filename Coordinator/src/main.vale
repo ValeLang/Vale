@@ -26,23 +26,23 @@ exported func main() {
 
   if (all_args_list.get(1) == "version" or
       all_args_list.get(1) == "--version") {
-    println(readFileAsString(compiler_dir / "valec-version.txt"));
+    println(readFileAsString(str(compiler_dir / "valec-version.txt")));
   } else if (all_args_list.get(1) == "help" or
       all_args_list.get(1) == "--help") {
     if all_args_list.len() < 2 {
-      println(readFileAsString(compiler_dir / "valec-help.txt"));
-    } else if args[1] == "build" {
-      println(readFileAsString(compiler_dir / "valec-help-build.txt"));
+      println(readFileAsString(str(compiler_dir / "valec-help.txt")));
+    } else if all_args_list.get(1) == "build" {
+      println(readFileAsString(str(compiler_dir / "valec-help-build.txt")));
     } else {
-      println("Unknown subcommand: " + args[1]);
+      println("Unknown subcommand: " + all_args_list.get(1));
       println("");
-      println(readFileAsString(compiler_dir / "valec-help.txt"));
+      println(readFileAsString(str(compiler_dir / "valec-help.txt")));
     }
   } else if (all_args_list.get(1) == "build") {
     build_stuff(&compiler_dir, &all_args);
   } else {
     println("Unknown command: {all_args_list.get(1)}.");
     println("");
-    println(readFileAsString(compiler_dir / "valec-help.txt"));
+    println(readFileAsString(str(compiler_dir / "valec-help.txt")));
   }
 }

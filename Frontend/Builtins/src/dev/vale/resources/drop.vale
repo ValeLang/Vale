@@ -6,6 +6,11 @@ func drop(x void) {}
 func drop(x i64) {}
 func drop(x str) {}
 
+func drop<T>(v void, x T)
+where func drop(T)void {
+  drop(x)
+}
+
 // Because e.g. drop(Opt<T>) looks to see if a type has a drop function.
 func drop<T>(x &&T) where T = Ref[_, Kind[mut]] { }
 func drop<T>(x &T) where T = Ref[_, Kind[mut]] { }

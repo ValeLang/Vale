@@ -1,23 +1,28 @@
 package dev.vale.typing.templata
 
 import dev.vale.typing.ast.{FunctionHeaderT, FunctionT, PrototypeT}
-import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, ClosureParamNameT, CodeVarNameT, FreeNameT, FullNameT, FunctionNameT, INameT, ImplDeclareNameT, LambdaCitizenNameT, LetNameT, MagicParamNameT, UnnamedLocalNameT}
+import dev.vale.typing.names._
 import dev.vale.typing.ast._
 import dev.vale.typing.names._
 
 object simpleName {
   def unapply(fullName: FullNameT[INameT]): Option[String] = {
     fullName.last match {
-      case ImplDeclareNameT(_) => None
+//      case ImplDeclareNameT(_) => None
+      case LambdaCallFunctionNameT(_, _, _) => Some("__call")
       case LetNameT(_) => None
       case UnnamedLocalNameT(_) => None
-      case FreeNameT(_, _) => None
+      case FunctionBoundNameT(FunctionBoundTemplateNameT(humanName, _), _, _) => Some(humanName.str)
       case ClosureParamNameT() => None
       case MagicParamNameT(_) => None
       case CodeVarNameT(name) => Some(name.str)
-      case FunctionNameT(humanName, _, _) => Some(humanName.str)
+      case FunctionNameT(FunctionTemplateNameT(humanName, _), _, _) => Some(humanName.str)
       case LambdaCitizenNameT(_) => None
-      case CitizenNameT(CitizenTemplateNameT(humanName), _) => Some(humanName.str)
+      case StructNameT(StructTemplateNameT(humanName), _) => Some(humanName.str)
+      case StructTemplateNameT(humanName) => Some(humanName.str)
+      case InterfaceNameT(InterfaceTemplateNameT(humanName), _) => Some(humanName.str)
+      case InterfaceTemplateNameT(humanName) => Some(humanName.str)
+      case AnonymousSubstructTemplateNameT(InterfaceTemplateNameT(humanNamee)) => Some(humanNamee.str)
     }
   }
 }

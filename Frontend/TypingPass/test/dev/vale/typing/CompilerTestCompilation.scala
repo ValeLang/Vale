@@ -18,6 +18,9 @@ object CompilerTestCompilation {
       Builtins.getModulizedCodeMap(interner, keywords)
         .or(FileCoordinateMap.test(interner, code))
         .or(Tests.getPackageToResourceResolver),
-      TypingPassCompilationOptions(GlobalOptions(true, true, true, true)))
+      TypingPassOptions(
+        GlobalOptions(true, true, true, true),
+        x => println(x),
+        false))
   }
 }

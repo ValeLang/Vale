@@ -40,13 +40,13 @@ case class PlannerState[RuleID, Literal, Lookup](
   // For each rule, whether it's been actually executed or not
   puzzleToExecuted: Array[Boolean],
 
-  // Together, these basically form a Array[Vector[Int]]
+  // Together, these basically form a Array[Array[Int]]
   puzzleToNumUnknownRunes: Array[Int],
   puzzleToUnknownRunes: Array[Array[Int]],
   // This is the puzzle's index in the below numUnknownsToPuzzle map.
   puzzleToIndexInNumUnknowns: Array[Int],
 
-  // Together, these basically form a Array[Vector[Int]]
+  // Together, these basically form a Array[Array[Int]]
   // which will have five elements: 0, 1, 2, 3, 4
   // At slot 4 is all the puzzles that have 4 unknowns left
   // At slot 3 is all the puzzles that have 3 unknowns left

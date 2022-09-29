@@ -147,7 +147,7 @@ impl FlagType for FlagAnyList;
 func verify<N>(command_list &CommandList<N>, command_str str) bool {
   valid = false;
 
-  command_list.flags.each((cmd) => {
+  command_list.commands.each(&(cmd) => {
     if valid {
       return void();
     }
@@ -170,7 +170,7 @@ func verify<N>(command_list &CommandList<N>, command_str str) bool {
 /// 
 /// # returns:
 ///   1. A list of parsed and invalid flags.
-func parse_all_flags<N>(flag_list &[#N]<_, _>Flag, args []<imm>str) ParsedFlagList {
+func parse_all_flags<N, M, V>(flag_list &[#N]<M, V>Flag, args []<imm>str) ParsedFlagList {
   parsed_flag_list = ParsedFlagList(List<ParsedFlag>(), List<str>());
 
   i = 1;

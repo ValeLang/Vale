@@ -157,7 +157,7 @@ func writeString(path &Path, contentsVStr str) {
   writeStringToFile(path.str(), contentsVStr)
 }
 func writeToFile(contentsVStr str, path &Path) {
-  writeString(path, str)
+  writeString(path, contentsVStr)
 }
 
 func CreateDir(path &Path, allow_already_existing bool) Result<void, FileError> {
@@ -192,9 +192,9 @@ func CreateDirAll(path &Path, allow_already_existing bool) Result<void, FileErro
 func RemoveDirAll(path &Path) Result<void, FileError> {
   is_symlink_result = path.IsSymLink();
   if (is_symlink_result.is_err()) {
-    return Err<void, FileError>((is_symlink_result).expect_err());
+    return Err<void, FileError>((is_symlink_result).expect_err("criminey"));
   }
-  is_symlink = is_symlink_result.expect();
+  is_symlink = is_symlink_result.expect("jeebus");
   if is_symlink {
     RemoveFile(path)
   } else {
@@ -206,9 +206,9 @@ func RemoveDirAllRecursive(path &Path) Result<void, FileError> {
   read_dir_result = ListDir(path);
   children =
     if (read_dir_result.is_ok()) {
-      read_dir_result.expect()
+      read_dir_result.expect("wat")
     } else {
-      return Err<void, FileError>((read_dir_result).expect_err());
+      return Err<void, FileError>((read_dir_result).expect_err("wot"));
     };
 
   i = 0;
@@ -216,23 +216,23 @@ func RemoveDirAllRecursive(path &Path) Result<void, FileError> {
     child = children.get(i);
     is_directory_result = IsDirectory(child);
     if (is_directory_result.is_err()) {
-      return Err<void, FileError>((is_directory_result).expect_err());
+      return Err<void, FileError>((is_directory_result).expect_err("ehwot"));
     }
-    is_dir = is_directory_result.expect();
+    is_dir = is_directory_result.expect("blimey");
 
     if (is_dir) {
       remove_dir_all_recursive_result = RemoveDirAllRecursive(child);
       if (remove_dir_all_recursive_result.is_err()) {
-        return Err<void, FileError>((remove_dir_all_recursive_result).expect_err());
+        return Err<void, FileError>((remove_dir_all_recursive_result).expect_err("bollocks"));
       }
-      remove_dir_all_recursive_result.expect();
+      remove_dir_all_recursive_result.expect("hogwash");
       // continue
     } else {
       remove_file_result = RemoveFile(child);
       if (remove_file_result.is_err()) {
-        return Err<void, FileError>((remove_file_result).expect_err());
+        return Err<void, FileError>((remove_file_result).expect_err("crikey"));
       }
-      remove_file_result.expect();
+      remove_file_result.expect("bloody");
       // continue
     }
     set i = i + 1;

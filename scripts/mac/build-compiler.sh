@@ -10,6 +10,9 @@ then
 fi
 shift;
 
+LLVM_MAJOR_VER=14
+LLVM_FULL_VER=14.0.6_1
+
 WHICH_TESTS="$1"
 if [ "$WHICH_TESTS" == "--test=none" ]
 then
@@ -38,29 +41,29 @@ shift;
 LLVM_CMAKE_DIR=$1
 if [ "$LLVM_CMAKE_DIR" == "" ]
 then
-  if [ -d "/usr/local/Cellar/llvm@13" ]
+  if [ -d "/usr/local/Cellar/llvm@$LLVM_MAJOR_VER" ]
   then
-    LLVM_OUTER_DIR="/usr/local/Cellar/llvm@13"
+    LLVM_OUTER_DIR="/usr/local/Cellar/llvm@$LLVM_MAJOR_VER"
   elif [ -d "/usr/local/Cellar/llvm" ]
   then
     LLVM_OUTER_DIR="/usr/local/Cellar/llvm"
   else
-    echo "No LLVM override specified, and couldn't find /usr/local/Cellar/llvm@13 or /usr/local/Cellar/llvm!"
+    echo "No LLVM override specified, and couldn't find /usr/local/Cellar/llvm@$LLVM_MAJOR_VER or /usr/local/Cellar/llvm!"
     exit 1
   fi
 
-  if [ ! -d "$LLVM_OUTER_DIR/13.0.1_1" ]
+  if [ ! -d "$LLVM_OUTER_DIR/$LLVM_FULL_VER" ]
   then
-    echo "$LLVM_OUTER_DIR doesn't contain 13.0.1_1. Has instead:"
+    echo "$LLVM_OUTER_DIR doesn't contain $LLVM_FULL_VER. Has instead:"
     ls $LLVM_OUTER_DIR
     exit 1
   fi
 
-  LLVM_CMAKE_DIR="$LLVM_OUTER_DIR/13.0.1_1/lib/cmake/llvm"
+  LLVM_CMAKE_DIR="$LLVM_OUTER_DIR/$LLVM_FULL_VER/lib/cmake/llvm"
   
   if [ ! -d "$LLVM_CMAKE_DIR" ]
   then
-    echo "$LLVM_OUTER_DIR/13.0.1_1 doesn't contain ./lib/cmake/llvm!"
+    echo "$LLVM_OUTER_DIR/$LLVM_FULL_VER doesn't contain ./lib/cmake/llvm!"
     exit 1
   fi
 

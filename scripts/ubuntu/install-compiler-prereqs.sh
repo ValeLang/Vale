@@ -10,6 +10,7 @@ set -euo pipefail
 usage() {
   echo "Usage: $(basename $0) [options]"
   echo -e "\nOptions:"
+  echo " -d        install basic build tools from APT"
   echo " -j        install Java from JFrog.io APT repository"
   echo " -s        install SBT from scala-sbt.org APT repository"
   echo " -b <DIR>  install Vale bootstrap compiler to specified directory"
@@ -22,19 +23,23 @@ bail() {
   exit 1
 }
 
-CLANG_VERSION="13.0.1"
+CLANG_VERSION="14.0.0"
 CLANG_UBUNTU_VERSION="18.04"
 
+INSTALL_DEBS=0
 INSTALL_JAVA=0
 INSTALL_SBT=0
 LLVM_DIR=""
 BOOTSTRAPPING_VALEC_DIR=""
 
-while getopts ":hjsb:l:" opt; do
+while getopts ":hdjsb:l:" opt; do
   case ${opt} in
     h )
       usage
       exit 0
+      ;;
+    d )
+      INSTALL_DEBS=1
       ;;
     j )
       INSTALL_JAVA=1
@@ -65,8 +70,10 @@ TEXT_RESET=`tput -T xterm-256color sgr0`
 # Install misc dependencies
 echo "${TEXT_GREEN}Installing dependencies...${TEXT_RESET}"
 
-sudo apt --fix-missing update -y
-sudo apt install -y software-properties-common curl git clang cmake zlib1g-dev zip unzip wget
+if [[ $INSTALL_DEBS != 0 ]]; then
+  sudo apt --fix-missing update -y
+  sudo apt install -y software-properties-common curl git clang cmake zlib1g-dev zip unzip wget
+fi
 
 # Install Java
 if [[ $INSTALL_JAVA != 0 ]]; then
@@ -100,7 +107,6 @@ fi
 # Install LLVM
 if [[ $LLVM_DIR != "" ]]; then
   echo -e "\n${TEXT_GREEN}Downloading and unzipping LLVM to $LLVM_DIR...${TEXT_RESET}"
-  # Install LLVM 13.0.0 (from https://github.com/llvm/llvm-project/releases/tag/llvmorg-13.0.0)
   curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-$CLANG_VERSION/clang+llvm-$CLANG_VERSION-x86_64-linux-gnu-ubuntu-$CLANG_UBUNTU_VERSION.tar.xz --output /tmp/clang+llvm-$CLANG_VERSION-x86_64-linux-gnu-ubuntu-$CLANG_UBUNTU_VERSION.tar.xz
   mkdir -p $LLVM_DIR
   tar xf /tmp/clang+llvm-$CLANG_VERSION-x86_64-linux-gnu-ubuntu-$CLANG_UBUNTU_VERSION.tar.xz -C $LLVM_DIR

@@ -10,6 +10,7 @@
       <module fileurl="file://$PROJECT_DIR$/Highlighter/Highlighter.iml" filepath="$PROJECT_DIR$/Highlighter/Highlighter.iml" />
       <module fileurl="file://$PROJECT_DIR$/IntegrationTests/IntegrationTests.iml" filepath="$PROJECT_DIR$/IntegrationTests/IntegrationTests.iml" />
       <module fileurl="file://$PROJECT_DIR$/LexingPass/LexingPass.iml" filepath="$PROJECT_DIR$/LexingPass/LexingPass.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Monomorphizing/Monomorphizing.iml" filepath="$PROJECT_DIR$/Monomorphizing/Monomorphizing.iml" />
       <module fileurl="file://$PROJECT_DIR$/ParsingPass/ParsingPass.iml" filepath="$PROJECT_DIR$/ParsingPass/ParsingPass.iml" />
       <module fileurl="file://$PROJECT_DIR$/PassManager/PassManager.iml" filepath="$PROJECT_DIR$/PassManager/PassManager.iml" />
       <module fileurl="file://$PROJECT_DIR$/PostParsingPass/PostParsingPass.iml" filepath="$PROJECT_DIR$/PostParsingPass/PostParsingPass.iml" />

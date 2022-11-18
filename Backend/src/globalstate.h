@@ -224,6 +224,8 @@ public:
   Name* serializeThunkName = nullptr;
   Name* unserializeName = nullptr;
   Name* unserializeThunkName = nullptr;
+  Name* freeName = nullptr;
+  Name* freeThunkName = nullptr;
 
   RCImm* rcImm = nullptr;
   IRegion* mutRegion = nullptr;
@@ -244,7 +246,7 @@ public:
   IRegion* getRegion(Reference* referenceM);
   IRegion* getRegion(Kind* kindM);
   IRegion* getRegion(RegionId* regionId);
-  LLVMValueRef getFunction(Name* name);
+  LLVMValueRef getFunction(Prototype* proto);
   LLVMValueRef getInterfaceTablePtr(Edge* edge);
   LLVMValueRef getOrMakeStringConstant(const std::string& str);
 };

@@ -1,0 +1,26 @@
+// This test is complex because it's a templated struct specializing a templated interface.
+
+import v.builtins.arith.*;
+import v.builtins.drop.*;
+import printutils.*;
+
+sealed interface MyIFunction1<P1 Ref, R Ref> {
+  func myFunc(virtual this &MyIFunction1<P1, R>, param P1) R
+    where func drop(P1)void;
+}
+
+struct MyToBool<T Ref> { }
+
+impl<T> MyIFunction1<T, bool> for MyToBool<T>;
+
+func myFunc<T>(this &MyToBool<T>, param T) bool
+where func drop(T)void {
+  return true;
+}
+
+exported func main() {
+  m = MyToBool<int>();
+  i &MyIFunction1<int, bool> = &m;
+  println(i.myFunc(3));
+  println(i.myFunc(7));
+}

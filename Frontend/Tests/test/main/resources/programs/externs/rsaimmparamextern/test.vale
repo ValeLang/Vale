@@ -3,6 +3,6 @@ export []<imm>int as ImmIntArray;
 extern func sumBytes(arr []<imm>int) int;
 
 exported func main() int {
-  a = #[](5, {_});
+  a = #[]int(5, {_});
   return sumBytes(a);
 }

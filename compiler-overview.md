@@ -15,7 +15,8 @@ The frontend is written in a very simple, imperative kind of Scala, closer to Ja
 
 It contains multiple passes:
 
- * **ParsingPass** parses the code that the user wrote.
+ * **PreParsingPass** produces a hierarchy of tokens.
+ * **ParsingPass** parses that hierarchy into a syntactical AST.
  * **PostParsingPass** does a brief glance at the parser's outputs, and notes what variables are later modified or used from closures.
  * **HigherTypingPass** looks at all generic parameters (such as the `T` in `List<T>`) and determines whether they're values, references, integers, or booleans.
  * **TypingPass** is the largest pass. It does everything the other passes don't.
@@ -34,7 +35,7 @@ The Frontend has a few other useful libraries:
  * **CompilerServer** is a cloud function that invokes the compiler on input received from the web.
 
 
-The Frontend has almost a thousand tests, mostly under the IntegrationTests/ directory.
+The Frontend has over a thousand tests, mostly under the IntegrationTests/ directory.
 
 
 ## Backend

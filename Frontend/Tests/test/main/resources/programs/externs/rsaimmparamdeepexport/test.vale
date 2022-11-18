@@ -18,6 +18,6 @@ exported func valeSumFuel(arr []<imm>Spaceship) int {
 extern func cSumFuel(arr []<imm>Spaceship) int;
 
 exported func main() int {
-  a = #[](3, (i) => { Spaceship(13 + i, i * 2) });
+  a = #[]Spaceship(3, (i) => { Spaceship(13 + i, i * 2) });
   return cSumFuel(a);
 }

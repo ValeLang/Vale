@@ -17,6 +17,10 @@ object CodeLocationS {
   }
 }
 
+sealed trait ICrumb
+case class RangeCrumb(range: RangeS) extends ICrumb
+case class InternalCrumb(num: Int) extends ICrumb
+
 object RangeS {
   // Should only be used in tests.
   def testZero(interner: Interner): RangeS = {

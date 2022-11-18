@@ -1,7 +1,7 @@
 package dev.vale.parsing.rules
 
 import dev.vale.{Collector, StrI}
-import dev.vale.parsing.ast.{AnonymousRunePT, BuiltinCallPR, ComponentsPR, EqualsPR, IRulexPR, NameOrRunePT, NameP, PrototypePT, PrototypeTypePR, TemplexPR}
+import dev.vale.parsing.ast.{AnonymousRunePT, BuiltinCallPR, ComponentsPR, EqualsPR, IRulexPR, NameOrRunePT, NameP, FuncPT, PrototypeTypePR, TemplexPR}
 import dev.vale.parsing.templex.TemplexParser
 import dev.vale.parsing._
 import dev.vale.parsing.ast.PatternPP
@@ -25,7 +25,7 @@ class RuleTests extends FunSuite with Matchers with Collector with TestParseUtil
         case BuiltinCallPR(_, NameP(_, StrI("implements")),Vector(TemplexPR(NameOrRunePT(NameP(_, StrI("MyObject")))), TemplexPR(NameOrRunePT(NameP(_, StrI("T")))))) =>
     }
     compile("exists(func +(T)int)") shouldHave {
-        case BuiltinCallPR(_, NameP(_, StrI("exists")), Vector(TemplexPR(PrototypePT(_,NameP(_, StrI("+")), Vector(NameOrRunePT(NameP(_, StrI("T")))), NameOrRunePT(NameP(_, StrI("int"))))))) =>
+        case BuiltinCallPR(_, NameP(_, StrI("exists")), Vector(TemplexPR(FuncPT(_,NameP(_, StrI("+")), _, Vector(NameOrRunePT(NameP(_, StrI("T")))), NameOrRunePT(NameP(_, StrI("int"))))))) =>
     }
   }
 
@@ -46,8 +46,9 @@ class RuleTests extends FunSuite with Matchers with Collector with TestParseUtil
   test("func") {
     compile("func moo()T") shouldHave {
       case TemplexPR(
-        PrototypePT(_,
+        FuncPT(_,
           NameP(_,StrI("moo")),
+          _,
           Vector(),
           NameOrRunePT(NameP(_,StrI("T"))))) =>
     }

@@ -1,7 +1,7 @@
 package dev.vale.postparsing
 
 import dev.vale.{FileCoordinateMap, vimpl}
-import dev.vale.postparsing.rules.{AugmentSR, CallSR, CoerceToCoordSR, CoordComponentsSR, CoordIsaSR, CoordSendSR, EqualsSR, ILiteralSL, IRulexSR, IntLiteralSL, IsInterfaceSR, IsStructSR, KindComponentsSR, LiteralSR, LookupSR, MutabilityLiteralSL, OneOfSR, OwnershipLiteralSL, PackSR, PrototypeComponentsSR, RefListCompoundMutabilitySR, RuneParentEnvLookupSR, RuntimeSizedArraySR, StaticSizedArraySR, StringLiteralSL, VariabilityLiteralSL}
+import dev.vale.postparsing.rules._
 import dev.vale.solver.SolverErrorHumanizer
 import dev.vale.vimpl
 import dev.vale.SourceCodeUtils.{humanizePos, lineContaining, nextThingAndRestOfLine}
@@ -82,7 +82,7 @@ object PostParserErrorHumanizer {
     name match {
 //      case UnnamedLocalNameS(codeLocation) => "(unnamed)"
       case ClosureParamNameS() => "(closure)"
-      case FreeDeclarationNameS(_) => "(free)"
+//      case FreeDeclarationNameS(_) => "(free)"
 //      case CodeNameS(n) => n
       case GlobalFunctionFamilyNameS(n) => n
 //      case DropNameS(_) => "(drop)"
@@ -99,13 +99,13 @@ object PostParserErrorHumanizer {
 
   def humanizeImpreciseName(name: IImpreciseNameS): String = {
     name match {
-      case SelfNameS() => "(self)"
+      case SelfNameS() => "_Self"
       case CodeNameS(n) => n.str
-      case FreeImpreciseNameS() => "(free)"
+//      case FreeImpreciseNameS() => "_Free"
       case RuneNameS(rune) => humanizeRune(rune)
-      case AnonymousSubstructTemplateImpreciseNameS(interfaceHumanName) => "(anon substruct template of " + humanizeImpreciseName(interfaceHumanName) + ")"
+      case AnonymousSubstructTemplateImpreciseNameS(interfaceHumanName) => humanizeImpreciseName(interfaceHumanName) + "._AnonSub"
       case LambdaStructImpreciseNameS(lambdaName) => humanizeImpreciseName(lambdaName) + ".struct"
-      case LambdaImpreciseNameS() => "(lambda)"
+      case LambdaImpreciseNameS() => "_Lam"
 //      case VirtualFreeImpreciseNameS() => "(abstract virtual free)"
 //      case VirtualFreeImpreciseNameS() => "(override virtual free)"
     }
@@ -117,7 +117,6 @@ object PostParserErrorHumanizer {
       case MagicParamRuneS(lid) => "_" + lid.path.mkString("")
       case CodeRuneS(name) => name.str
       case ArgumentRuneS(paramIndex) => "(arg " + paramIndex + ")"
-      case AnonymousSubstructMemberRuneS(index) => "(anon member " + index + ")"
       case SelfKindRuneS() => "(self kind)"
       case SelfOwnershipRuneS() => "(self ownership)"
       case SelfKindTemplateRuneS() => "(self kind template)"
@@ -135,24 +134,39 @@ object PostParserErrorHumanizer {
       case AnonymousSubstructParentInterfaceRuneS() => "(anon sub parent)"
       case StructNameRuneS(inner) => humanizeName(inner)
       case FreeOverrideStructTemplateRuneS() => "(free override template)"
+      case FunctorPrototypeRuneNameS() => "(functor prototype)"
+      case MacroSelfRuneS() => "_MSelf"
+      case MacroVoidRuneS() => "_MVoid"
+      case AnonymousSubstructMemberRuneS(interface, method) => "$" + humanizeName(interface) + ".anon." + humanizeName(method) + ".functor"
+      case AnonymousSubstructFunctionBoundParamsListRuneS(interface, method) => "$" + humanizeName(interface) + ".anon." + humanizeName(method) + ".params"
+      case AnonymousSubstructFunctionBoundPrototypeRuneS(interface, method) => "$" + humanizeName(interface) + ".anon." + humanizeName(method) + ".proto"
+      case AnonymousSubstructFunctionInterfaceTemplateRune(interface, method) => "$" + humanizeName(interface) + ".anon." + humanizeName(method) + ".itemplate"
+//      case AnonymousSubstructFunctionInterfaceKindRune(interface, method) => "$" + humanizeName(interface) + ".anon." + humanizeName(method) + ".ikind"
+//      case AnonymousSubstructFunctionInterfaceOwnershipRune(interface, method) => "$" + humanizeName(interface) + ".anon." + humanizeName(method) + ".iown"
+      case AnonymousSubstructDropBoundParamsListRuneS(interface, method) => "$" + humanizeName(interface) + ".anon.drop.params"
+      case AnonymousSubstructDropBoundPrototypeRuneS(interface, method) => "$" + humanizeName(interface) + ".anon.drop.proto"
+      case AnonymousSubstructMethodInheritedRuneS(interface, method, inner) => "$" + humanizeName(interface) + ".anon." + humanizeName(method) + ":" + humanizeRune(inner)
+      case AnonymousSubstructMethodSelfOwnCoordRuneS(interface, method) => "$" + humanizeName(interface) + ".anon." + humanizeName(method) + ".ownself"
+      case AnonymousSubstructMethodSelfBorrowCoordRuneS(interface, method) => "$" + humanizeName(interface) + ".anon." + humanizeName(method) + ".borrowself"
+      case AnonymousSubstructVoidRuneS() => "anon.void"
       case other => vimpl(other)
     }
   }
 
   def humanizeTemplataType(tyype: ITemplataType): String = {
     tyype match {
-      case KindTemplataType => "kind"
-      case CoordTemplataType => "type"
-      case FunctionTemplataType => "func"
-      case IntegerTemplataType => "int"
-      case BooleanTemplataType => "bool"
-      case MutabilityTemplataType => "mut"
-      case PrototypeTemplataType => "prot"
-      case StringTemplataType => "str"
-      case LocationTemplataType => "loc"
-      case OwnershipTemplataType => "own"
-      case VariabilityTemplataType => "vary"
-      case PackTemplataType(elementType) => "pack<" + humanizeTemplataType(elementType) + ">"
+      case KindTemplataType() => "Kind"
+      case CoordTemplataType() => "Type"
+      case FunctionTemplataType() => "Func"
+      case IntegerTemplataType() => "Int"
+      case BooleanTemplataType() => "Bool"
+      case MutabilityTemplataType() => "Mut"
+      case PrototypeTemplataType() => "Prot"
+      case StringTemplataType() => "Str"
+      case LocationTemplataType() => "Loc"
+      case OwnershipTemplataType() => "Own"
+      case VariabilityTemplataType() => "Vary"
+      case PackTemplataType(elementType) => "Pack<" + humanizeTemplataType(elementType) + ">"
       case TemplateTemplataType(params, ret) => humanizeTemplataType(ret) + "<" + params.map(humanizeTemplataType).mkString(",") + ">"
     }
   }
@@ -160,10 +174,13 @@ object PostParserErrorHumanizer {
   def humanizeRule(rule: IRulexSR): String = {
     rule match {
       case KindComponentsSR(range, kindRune, mutabilityRune) => {
-        humanizeRune(kindRune.rune) + " = Kind(" + humanizeRune(mutabilityRune.rune) + ")"
+        humanizeRune(kindRune.rune) + " = Kind[" + humanizeRune(mutabilityRune.rune) + "]"
       }
       case CoordComponentsSR(range, resultRune, ownershipRune, kindRune) => {
-        humanizeRune(resultRune.rune) + " = Ref(" + humanizeRune(ownershipRune.rune) + ", " + humanizeRune(kindRune.rune) + ")"
+        humanizeRune(resultRune.rune) + " = Ref[" + humanizeRune(ownershipRune.rune) + ", " + humanizeRune(kindRune.rune) + "]"
+      }
+      case PrototypeComponentsSR(range, resultRune, paramsRune, returnRune) => {
+        humanizeRune(resultRune.rune) + " = Prot[" + humanizeRune(paramsRune.rune) + ", " + humanizeRune(returnRune.rune) + "]"
       }
       case OneOfSR(range, resultRune, literals) => {
         humanizeRune(resultRune.rune) + " = " + literals.map(_.toString).mkString(" | ")
@@ -171,7 +188,8 @@ object PostParserErrorHumanizer {
       case IsInterfaceSR(range, resultRune) => "isInterface(" + humanizeRune(resultRune.rune) + ")"
       case IsStructSR(range, resultRune) => "isStruct(" + humanizeRune(resultRune.rune) + ")"
       case RefListCompoundMutabilitySR(range, resultRune, coordListRune) => humanizeRune(resultRune.rune) + " = refListCompoundMutability(" + humanizeRune(coordListRune.rune) + ")"
-      case CoordIsaSR(range, subRune, superRune) => humanizeRune(subRune.rune) + " isa " + humanizeRune(superRune.rune)
+      case DefinitionCoordIsaSR(range, resultRune, subRune, superRune) => humanizeRune(resultRune.rune) + " = " + humanizeRune(subRune.rune) + " def-isa " + humanizeRune(superRune.rune)
+      case CallSiteCoordIsaSR(range, resultRune, subRune, superRune) => resultRune.map(r => humanizeRune(r.rune)).getOrElse("_") + " = " + humanizeRune(subRune.rune) + " call-isa " + humanizeRune(superRune.rune)
       case CoordSendSR(range, senderRune, receiverRune) => humanizeRune(senderRune.rune) + " -> " + humanizeRune(receiverRune.rune)
       case CoerceToCoordSR(range, coordRune, kindRune) => "coerceToCoord(" + humanizeRune(coordRune.rune) + ", " + humanizeRune(kindRune.rune) + ")"
       case CallSR(range, resultRune, templateRune, argRunes) => humanizeRune(resultRune.rune) + " = " + humanizeRune(templateRune.rune) + "<" + argRunes.map(_.rune).map(humanizeRune).mkString(", ") + ">"
@@ -181,8 +199,14 @@ object PostParserErrorHumanizer {
       case EqualsSR(range, left, right) => humanizeRune(left.rune) + " = " + humanizeRune(right.rune)
       case RuneParentEnvLookupSR(range, rune) => "inherit " + humanizeRune(rune.rune)
       case PackSR(range, resultRune, members) => humanizeRune(resultRune.rune) + " = (" + members.map(x => humanizeRune(x.rune)).mkString(", ") + ")"
-      case PrototypeComponentsSR(range, resultRune, nameRune, paramsListRune, returnRune) => {
-        humanizeRune(resultRune.rune) + " = Prot[" + humanizeRune(nameRune.rune) + ", " + humanizeRune(paramsListRune.rune) + ", " + humanizeRune(returnRune.rune) + "]"
+      case ResolveSR(range, resultRune, name, paramsListRune, returnRune) => {
+        humanizeRune(resultRune.rune) + " = resolve-func " + name + "(" + humanizeRune(paramsListRune.rune) + ")" + humanizeRune(returnRune.rune)
+      }
+      case CallSiteFuncSR(range, resultRune, name, paramsListRune, returnRune) => {
+        humanizeRune(resultRune.rune) + " = callsite-func " + name + "(" + humanizeRune(paramsListRune.rune) + ")" + humanizeRune(returnRune.rune)
+      }
+      case DefinitionFuncSR(range, resultRune, name, paramsListRune, returnRune) => {
+        humanizeRune(resultRune.rune) + " = definition-func " + name + "(" + humanizeRune(paramsListRune.rune) + ")" + humanizeRune(returnRune.rune)
       }
       case StaticSizedArraySR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => {
         humanizeRune(resultRune.rune) + " = " + "[#" + humanizeRune(sizeRune.rune) + "]<" + humanizeRune(mutabilityRune.rune) + ", " + humanizeRune(variabilityRune.rune) + ">" + humanizeRune(elementRune.rune)

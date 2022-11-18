@@ -12,15 +12,15 @@ object LexAndExplore {
   def lexAndExploreAndCollect[D, F](
     interner: Interner,
     keywords: Keywords,
-    packages: Array[PackageCoordinate],
+    packages: Vector[PackageCoordinate],
     resolver: IPackageResolver[Map[String, String]]):
   Result[
     (
-      Accumulator[(FileCoordinate, String, Array[ImportL], IDenizenL)],
-      Accumulator[(FileCoordinate, String, Array[RangeL], Array[IDenizenL])]),
+      Accumulator[(FileCoordinate, String, Vector[ImportL], IDenizenL)],
+      Accumulator[(FileCoordinate, String, Vector[RangeL], Vector[IDenizenL])]),
   FailedParse] = {
-    val denizens = new Accumulator[(FileCoordinate, String, Array[ImportL], IDenizenL)]()
-    val files = new Accumulator[(FileCoordinate, String, Array[RangeL], Array[IDenizenL])]()
+    val denizens = new Accumulator[(FileCoordinate, String, Vector[ImportL], IDenizenL)]()
+    val files = new Accumulator[(FileCoordinate, String, Vector[RangeL], Vector[IDenizenL])]()
 
     lexAndExplore[IDenizenL, Unit](
       interner, keywords, packages, resolver,
@@ -43,9 +43,9 @@ object LexAndExplore {
   def lexAndExplore[D, F](
     interner: Interner,
     keywords: Keywords,
-    packages: Array[PackageCoordinate],
+    packages: Vector[PackageCoordinate],
     resolver: IPackageResolver[Map[String, String]],
-    denizenHandler: (FileCoordinate, String, Array[ImportL], IDenizenL) => D,
+    denizenHandler: (FileCoordinate, String, Vector[ImportL], IDenizenL) => D,
     fileHandler: (FileCoordinate, String, Accumulator[RangeL], Accumulator[D]) => F):
   Result[Accumulator[F], FailedParse] = {
     Profiler.frame(() => {
@@ -68,7 +68,7 @@ object LexAndExplore {
               throw InputException("Couldn't find: " + neededPackageCoord)
             }
             case Some(filepathToCode) => {
-              U.map[(String, String), (FileCoordinate, String)](filepathToCode.toArray, { case (filepath, code) =>
+              U.map[(String, String), (FileCoordinate, String)](filepathToCode.toVector, { case (filepath, code) =>
                 vassert(interner != null)
 //                println(s"Found ${neededPackageCoord} file ${filepath}")
                 val fileCoord = interner.intern(FileCoordinate(neededPackageCoord, filepath))
@@ -88,7 +88,7 @@ object LexAndExplore {
           iter.consumeCommentsAndWhitespace()
 
           var maybeImportsAccum: Option[Accumulator[ImportL]] = Some(new Accumulator[ImportL]())
-          var maybeImports: Option[Array[ImportL]] = None
+          var maybeImports: Option[Vector[ImportL]] = None
 
           // Imports must come first, so that we can ship these denizens off with all
           // their relevant imports.
@@ -117,7 +117,7 @@ object LexAndExplore {
 //                  println(s"Unseen, so adding.")
                   unexploredPackages.add(nextNeededPackageCoord)
                 }
-                val denizenResult = denizenHandler(fileCoord, code, Array(), denizen)
+                val denizenResult = denizenHandler(fileCoord, code, Vector(), denizen)
                 resultAcc.add(denizenResult)
               }
               case _ => {
@@ -135,7 +135,7 @@ object LexAndExplore {
           }
 
           unexploredPackages ++=
-            U.map[ImportL, PackageCoordinate](maybeImports.toArray.flatten, x => {
+            U.map[ImportL, PackageCoordinate](maybeImports.toVector.flatten, x => {
               interner.intern(PackageCoordinate(x.moduleName.str, U.map[WordLE, StrI](x.packageSteps, _.str).toVector))
             }).toSet -- startedPackages
 

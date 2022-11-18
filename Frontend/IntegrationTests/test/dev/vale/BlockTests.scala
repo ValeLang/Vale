@@ -1,6 +1,6 @@
 package dev.vale
 
-import dev.vale.postparsing.{BlockSE, BodySE, CodeBodyS, CodeVarNameS, ConsecutorSE, LocalS, NotUsed}
+import dev.vale.postparsing._
 import dev.vale.postparsing._
 import dev.vale.typing._
 import dev.vale.typing.types.BoolT

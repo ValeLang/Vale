@@ -1,21 +1,27 @@
 package dev.vale.typing.macros.ssa
 
-import dev.vale.{Keywords, RangeS, StrI}
+import dev.vale.{Err, Interner, Keywords, Ok, RangeS, StrI, vassertSome, vimpl}
 import dev.vale.highertyping.FunctionA
+import dev.vale.postparsing.rules.{RuneParentEnvLookupSR, RuneUsage}
+import dev.vale.postparsing.{CodeNameS, CodeRuneS, FunctorParamRuneNameS, FunctorPrototypeRuneNameS, FunctorReturnRuneNameS, IRuneS, RuneNameS}
 import dev.vale.typing.ast.{ArgLookupTE, BlockTE, FunctionHeaderT, FunctionT, LocationInFunctionEnvironment, ParameterT, ReturnTE, VoidLiteralTE}
-import dev.vale.typing.env.{FunctionEnvironment, FunctionEnvironmentBox}
-import dev.vale.typing.{ArrayCompiler, Compiler, CompilerOutputs}
-import dev.vale.typing.function.DestructorCompiler
+import dev.vale.typing.env.{FunctionEnvironment, FunctionEnvironmentBox, TemplataEnvEntry, TemplataLookupContext}
+import dev.vale.typing.{ArrayCompiler, CompileErrorExceptionT, Compiler, CompilerOutputs, CouldntEvaluateFunction, CouldntFindFunctionToCallT, OverloadResolver, RangedInternalErrorT, ast}
+import dev.vale.typing.function.{DestructorCompiler, FunctionCompiler}
 import dev.vale.typing.macros.IFunctionBodyMacro
-import dev.vale.typing.types.{CoordT, ShareT, StaticSizedArrayTT, VoidT}
-import dev.vale.typing.ast._
-import dev.vale.typing.env.FunctionEnvironmentBox
 import dev.vale.typing.types._
-import dev.vale.typing.ArrayCompiler
+import dev.vale.typing.ast._
+import dev.vale.typing.types._
+import dev.vale.typing.expression.CallCompiler
+import dev.vale.typing.function.FunctionCompiler.{EvaluateFunctionFailure, EvaluateFunctionSuccess}
+import dev.vale.typing.names.RuneNameT
+import dev.vale.typing.templata.{CoordTemplata, PrototypeTemplata}
 
 class SSAFreeMacro(
+  interner: Interner,
   keywords: Keywords,
   arrayCompiler: ArrayCompiler,
+  overloadResolver: OverloadResolver,
   destructorCompiler: DestructorCompiler
 ) extends IFunctionBodyMacro {
 
@@ -26,32 +32,25 @@ class SSAFreeMacro(
     coutputs: CompilerOutputs,
     generatorId: StrI,
     life: LocationInFunctionEnvironment,
-    callRange: RangeS,
+    callRange: List[RangeS],
     originFunction1: Option[FunctionA],
     params2: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
-  FunctionHeaderT = {
-    val bodyEnv = FunctionEnvironmentBox(env)
-
-    val Vector(rsaCoord @ CoordT(ShareT, StaticSizedArrayTT(_, _, _, elementCoord))) = params2.map(_.tyype)
+  (FunctionHeaderT, ReferenceExpressionTE) = {
+    val Vector(ssaCoord @ CoordT(ShareT, arrayTT @ contentsStaticSizedArrayTT(_, _, _, elementCoord))) = params2.map(_.tyype)
 
     val ret = CoordT(ShareT, VoidT())
-    val header = FunctionHeaderT(env.fullName, Vector.empty, params2, ret, originFunction1)
+    val header = FunctionHeaderT(env.fullName, Vector.empty, params2, ret, Some(env.templata))
 
-    coutputs.declareFunctionReturnType(header.toSignature, header.returnType)
-
-    val elementDropFunction = destructorCompiler.getDropFunction(env.globalEnv, coutputs, callRange, elementCoord)
-    val elementDropFunctorTE =
-      env.globalEnv.functorHelper.getFunctorForPrototype(env, coutputs, callRange, elementDropFunction)
-
+    val PrototypeTemplata(_, dropPrototype) =
+      vassertSome(
+        env.lookupNearestWithImpreciseName(
+          interner.intern(RuneNameS(CodeRuneS(keywords.D))),
+          Set(TemplataLookupContext)))
     val expr =
-      arrayCompiler.evaluateDestroyStaticSizedArrayIntoCallable(
-        coutputs, bodyEnv, originFunction1.get.range,
-        ArgLookupTE(0, rsaCoord),
-        elementDropFunctorTE)
-
-    val function2 = FunctionT(header, BlockTE(Compiler.consecutive(Vector(expr, ReturnTE(VoidLiteralTE())))))
-    coutputs.addFunction(function2)
-    function2.header
+      DestroyStaticSizedArrayIntoFunctionTE(
+        ArgLookupTE(0, ssaCoord), arrayTT, VoidLiteralTE(), dropPrototype)
+    val body = BlockTE(Compiler.consecutive(Vector(expr, ReturnTE(VoidLiteralTE()))))
+    (header, body)
   }
 }

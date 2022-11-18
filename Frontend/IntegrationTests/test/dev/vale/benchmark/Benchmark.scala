@@ -66,7 +66,7 @@ object Benchmark {
     timer.getNanosecondsSoFar()
   }
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Vector[String]): Unit = {
     val compareOptimization = false
 
     println("Starting benchmarking...")

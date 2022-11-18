@@ -13,8 +13,11 @@ class Accumulator[T] {
   def add(element: T): Unit = {
     elementsReversed = element :: elementsReversed
   }
+  def addAll[I <: Iterable[T]](c: I): Unit = {
+    U.foreachIterable(c, x => add(x))
+  }
 
-  def buildArray()(implicit m: ClassTag[T]): Array[T] = {
+  def buildArray()(implicit m: ClassTag[T]): Vector[T] = {
     val attributes = new Array[T](elementsReversed.length)
     var i = elementsReversed.length;
     while ( {
@@ -29,6 +32,6 @@ class Accumulator[T] {
       }
     }) {}
     vassert(i == 0)
-    attributes
+    attributes.toVector
   }
 }

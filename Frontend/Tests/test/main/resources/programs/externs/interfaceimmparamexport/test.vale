@@ -17,5 +17,6 @@ exported func valeGetShipFuel(s IShip) int {
 extern func cGetShipFuel(s IShip) int;
 
 exported func main() int {
-   cGetShipFuel(Seaship(37, 5))
+  x IShip = Spaceship(7); // to force the above impl to happen
+  cGetShipFuel(Seaship(37, 5))
 }

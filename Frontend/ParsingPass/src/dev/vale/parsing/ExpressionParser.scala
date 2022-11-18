@@ -80,10 +80,10 @@ class ScrambleIterator(
     if (index >= end) None
     else Some(advance())
   }
-  // This is an Array[Option[INodeLE]] instead of an Array[INodeLE]
+  // This is an Vector[Option[INodeLE]] instead of an Vector[INodeLE]
   // because we like to be able to ignore the tail end of something like
-  // case Array(Some(whatever), _)
-  def peek(n: Int): Array[Option[INodeLE]] = {
+  // case Vector(Some(whatever), _)
+  def peek(n: Int): Vector[Option[INodeLE]] = {
     U.mapRange[Option[INodeLE]](
       index,
       index + n,
@@ -128,7 +128,7 @@ class ScrambleIterator(
       case _ => false
     }
   }
-  def trySkipSymbols(symbols: Array[Char]): Boolean = {
+  def trySkipSymbols(symbols: Vector[Char]): Boolean = {
     if (index + symbols.length >= end) {
       return false
     }
@@ -187,7 +187,7 @@ class ScrambleIterator(
   //
   // includeEmptyTrailingSection means that if we end with a needle,
   // we'll still return an empty iterator for the end.
-  def splitOnSymbol(needle: Char, includeEmptyTrailing: Boolean): Array[ScrambleIterator] = {
+  def splitOnSymbol(needle: Char, includeEmptyTrailing: Boolean): Vector[ScrambleIterator] = {
     val iters = new Accumulator[ScrambleIterator]()
     var start = index
     var i = start
@@ -832,7 +832,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
       }) {}
 
       val (exprPE, _) =
-        descramble(elements.toArray, 0, elements.size - 1, MIN_PRECEDENCE)
+        descramble(elements.toVector, 0, elements.size - 1, MIN_PRECEDENCE)
       Ok(exprPE)
     })
   }
@@ -934,7 +934,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
         iter.advance()
         return Ok(ConstantFloatPE(range, num))
       }
-      case Some(StringLE(range, Array(StringPartLiteral(_, s)))) => {
+      case Some(StringLE(range, Vector(StringPartLiteral(_, s)))) => {
         iter.advance()
         return Ok(ConstantStrPE(range, s))
       }
@@ -989,7 +989,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
 //
 //    val isNegative =
 //      tentativeIter.peek(2) match {
-//        case Array(SymbolLE(range, '-'), IntLE(intRange, _, _)) => {
+//        case Vector(SymbolLE(range, '-'), IntLE(intRange, _, _)) => {
 //          // Only consider it a negative if it's right next to the next thing
 //          if (range.end != intRange.begin) {
 //            return Ok(None)
@@ -997,7 +997,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
 //          tentativeIter.advance()
 //          true
 //        }
-//        case Array(IntLE(_, _, _), _) => false
+//        case Vector(IntLE(_, _, _), _) => false
 //        case _ => return Ok(None)
 //      }
 //    val integer =
@@ -1068,7 +1068,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
       case Ok(None) =>
     }
 
-    if (iter.trySkipSymbols(Array('.', '.'))) {
+    if (iter.trySkipSymbols(Vector('.', '.'))) {
       parseAtom(iter, stopOnCurlied) match {
         case Err(err) => return Err(err)
         case Ok(operand) => {
@@ -1717,7 +1717,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
   // Returns the index we stopped at, which will be either
   // the end of the array or one past endIndexInclusive.
   def descramble(
-    elements: Array[IExpressionElement],
+    elements: Vector[IExpressionElement],
     beginIndexInclusive: Int,
     endIndexInclusive: Int,
     minPrecedence: Int):

@@ -3,7 +3,7 @@ package dev.vale.typing
 import dev.vale.highertyping.{HigherTypingCompilation, ICompileErrorA, ProgramA}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.FileP
-import dev.vale.postparsing.{ICompileErrorS, ProgramS}
+import dev.vale.postparsing._
 import dev.vale.{Err, FileCoordinateMap, IPackageResolver, Ok, PackageCoordinate, PackageCoordinateMap, Result, vcurious, vfail}
 import dev.vale._
 import dev.vale.highertyping._
@@ -13,9 +13,10 @@ import dev.vale.postparsing.ICompileErrorS
 import scala.collection.immutable.{List, ListMap, Map, Set}
 import scala.collection.mutable
 
-case class TypingPassCompilationOptions(
+case class TypingPassOptions(
   globalOptions: GlobalOptions = GlobalOptions(),
   debugOut: (=> String) => Unit = DefaultPrintyThing.print,
+  treeShakingEnabled: Boolean = true
 ) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
 class TypingPassCompilation(
@@ -23,7 +24,7 @@ class TypingPassCompilation(
   val keywords: Keywords,
   packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]],
-  options: TypingPassCompilationOptions = TypingPassCompilationOptions()) {
+  options: TypingPassOptions = TypingPassOptions()) {
   var higherTypingCompilation =
     new HigherTypingCompilation(
       options.globalOptions, interner, keywords, packagesToBuild, packageToContentsResolver)
@@ -42,10 +43,9 @@ class TypingPassCompilation(
       case None => {
         val compiler =
           new Compiler(
-            options.debugOut,
+            options,
             interner,
-            keywords,
-            options.globalOptions)
+            keywords)
         compiler.evaluate(higherTypingCompilation.expectAstrouts()) match {
           case Err(e) => Err(e)
           case Ok(hinputs) => {

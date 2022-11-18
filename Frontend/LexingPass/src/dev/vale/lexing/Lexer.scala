@@ -5,7 +5,7 @@ import dev.vale.{Accumulator, Err, Interner, Keywords, Ok, Profiler, Result, Str
 import scala.collection.mutable
 
 class Lexer(interner: Interner, keywords: Keywords) {
-  def lexAttributes(iter: LexingIterator): Result[Array[IAttributeL], IParseError] = {
+  def lexAttributes(iter: LexingIterator): Result[Vector[IAttributeL], IParseError] = {
     val attributesAccum = new Accumulator[IAttributeL]()
     while ({
       iter.consumeCommentsAndWhitespace()
@@ -39,6 +39,22 @@ class Lexer(interner: Interner, keywords: Keywords) {
             RangeL(attributeBegin, end),
             DontCallMacroL,
             WordLE(RangeL(attributeBegin, end), keywords.DeriveStructDrop))))
+    } else if (iter.trySkipCompleteWord("#DeriveAnonymousSubstruct")) {
+        val end = iter.getPos()
+        Ok(
+          Some(
+            MacroCallL(
+              RangeL(attributeBegin, end),
+              CallMacroL,
+              WordLE(RangeL(attributeBegin, end), keywords.DeriveAnonymousSubstruct))))
+    } else if (iter.trySkipCompleteWord("#!DeriveAnonymousSubstruct")) {
+      val end = iter.getPos()
+      Ok(
+        Some(
+          MacroCallL(
+            RangeL(attributeBegin, end),
+            DontCallMacroL,
+            WordLE(RangeL(attributeBegin, end), keywords.DeriveAnonymousSubstruct))))
     } else if (iter.trySkipCompleteWord("#DeriveInterfaceDrop")) {
       val end = iter.getPos()
       Ok(
@@ -155,7 +171,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
     return Err(UnrecognizedDenizenError(iter.getPos()))
   }
 
-  def lexImpl(iter: LexingIterator, begin: Int, attributes: Array[IAttributeL]):
+  def lexImpl(iter: LexingIterator, begin: Int, attributes: Vector[IAttributeL]):
   Result[Option[ImplL], IParseError] = {
     if (!iter.trySkipCompleteWord("impl")) {
       return Ok(None)
@@ -187,11 +203,11 @@ class Lexer(interner: Interner, keywords: Keywords) {
 
     val interface =
       maybeInterfaceGenericArgs match {
-        case None => ScrambleLE(interfaceName.range, Array(interfaceName))
+        case None => ScrambleLE(interfaceName.range, Vector(interfaceName))
         case Some(interfaceGenericArgs) => {
           ScrambleLE(
             RangeL(interfaceName.range.begin, interfaceGenericArgs.range.end),
-            Array(interfaceName, interfaceGenericArgs))
+            Vector(interfaceName, interfaceGenericArgs))
         }
       }
 
@@ -219,11 +235,11 @@ class Lexer(interner: Interner, keywords: Keywords) {
 
     val struct =
       maybeStructGenericArgs match {
-        case None => ScrambleLE(structName.range, Array(structName))
+        case None => ScrambleLE(structName.range, Vector(structName))
         case Some(structGenericArgs) => {
           ScrambleLE(
             RangeL(structName.range.begin, structGenericArgs.range.end),
-            Array(structName, structGenericArgs))
+            Vector(structName, structGenericArgs))
         }
       }
 
@@ -261,7 +277,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
     Ok(Some(impl))
   }
 
-  def lexFunction(iter: LexingIterator, begin: Int, attributes: Array[IAttributeL]):
+  def lexFunction(iter: LexingIterator, begin: Int, attributes: Vector[IAttributeL]):
   Result[Option[FunctionL], IParseError] = {
     if (!iter.trySkipCompleteWord("func") && !iter.trySkipCompleteWord("funky")) {
       return Ok(None)
@@ -342,10 +358,10 @@ class Lexer(interner: Interner, keywords: Keywords) {
     val returnBegin = iter.getPos()
     val maybeReturn =
       if (!iter.peekCompleteWord("where") && !iter.peekCompleteWord("region") && !iter.peekCompleteWord("extern") && iter.peek() != '{' && iter.peek() != ';') {
-        if (iter.trySkipCompleteWord("infer-return")) {
-          val range = RangeL(returnBegin, iter.getPos())
-          FunctionReturnL(range, Some(range), None)
-        } else {
+//        if (iter.trySkipCompleteWord("infer-return")) {
+//          val range = RangeL(returnBegin, iter.getPos())
+//          FunctionReturnL(range, Some(range), None)
+//        } else {
           val returnType =
             lexScramble(iter, true, true, true) match {
               case Err(e) => return Err(e)
@@ -353,7 +369,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
             }
           val range = RangeL(returnBegin, iter.getPos())
           FunctionReturnL(range, None, Some(returnType))
-        }
+//        }
       } else {
         val range = RangeL(returnBegin, iter.getPos())
         FunctionReturnL(range, None, None)
@@ -416,7 +432,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
     Ok(Some(func))
   }
 
-  def lexStruct(iter: LexingIterator, begin: Int, attributes: Array[IAttributeL]):
+  def lexStruct(iter: LexingIterator, begin: Int, attributes: Vector[IAttributeL]):
   Result[Option[StructL], IParseError] = {
     if (!iter.trySkipCompleteWord("struct")) {
       return Ok(None)
@@ -516,7 +532,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
     Ok(Some(struct))
   }
 
-  def lexInterface(iter: LexingIterator, begin: Int, attributes: Array[IAttributeL]):
+  def lexInterface(iter: LexingIterator, begin: Int, attributes: Vector[IAttributeL]):
   Result[Option[InterfaceL], IParseError] = {
     if (!iter.trySkipCompleteWord("interface")) {
       return Ok(None)
@@ -624,7 +640,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
     Ok(Some(interface))
   }
 
-  def lexImport(iter: LexingIterator, begin: Int, attributes: Array[IAttributeL]):
+  def lexImport(iter: LexingIterator, begin: Int, attributes: Vector[IAttributeL]):
   Result[Option[ImportL], IParseError] = {
     if (!iter.trySkipCompleteWord(keywords.impoort.str)) {
       return Ok(None)
@@ -664,11 +680,11 @@ class Lexer(interner: Interner, keywords: Keywords) {
     val moduleName = steps.head
     val importee = steps.last
     val packageSteps = steps.init.tail
-    val imporrt = ImportL(RangeL(begin, iter.getPos()), moduleName, packageSteps.toArray, importee)
+    val imporrt = ImportL(RangeL(begin, iter.getPos()), moduleName, packageSteps.toVector, importee)
     Ok(Some(imporrt))
   }
 
-  def lexExport(iter: LexingIterator, begin: Int, attributes: Array[IAttributeL]):
+  def lexExport(iter: LexingIterator, begin: Int, attributes: Vector[IAttributeL]):
   Result[Option[ExportAsL], IParseError] = {
     if (!iter.trySkipCompleteWord(keywords.export.str)) {
       return Ok(None)

@@ -239,7 +239,7 @@ void translateFunction(
     GlobalState* globalState,
     Function* functionM) {
 
-  auto functionL = globalState->getFunction(functionM->prototype->name);
+  auto functionL = globalState->getFunction(functionM->prototype);
   auto returnTypeL = globalState->getRegion(functionM->prototype->returnType)->translateType(functionM->prototype->returnType);
 
   auto localsBlockName = std::string("localsBlock");

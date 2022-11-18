@@ -71,7 +71,7 @@ object SourceCodeUtils {
     codeLocationS: CodeLocationS):
   (Int, Int) = {
     val CodeLocationS(file, offset) = codeLocationS
-    if (file.isInternal) {
+    if (offset < 0) {
       return (-1, 0)
     }
     val text = filenamesAndSources(file)
@@ -99,13 +99,13 @@ object SourceCodeUtils {
     filenamesAndSources: FileCoordinateMap[String],
     beginCodeLoc: CodeLocationS,
     endCodeLoc: CodeLocationS):
-  Array[(Int, Int)] = {
+  Vector[(Int, Int)] = {
     vassert(beginCodeLoc.file == endCodeLoc.file)
     vassert(beginCodeLoc.offset <= endCodeLoc.offset)
 
     val CodeLocationS(file, offset) = beginCodeLoc
     if (file.isInternal) {
-      return Array()
+      return Vector()
     }
     val result = ArrayBuffer[(Int, Int)]()
 
@@ -121,7 +121,7 @@ object SourceCodeUtils {
         }
       result += ((lineBegin, lineEnd))
     }
-    return result.toArray
+    return result.toVector
   }
 
   def lineContaining(

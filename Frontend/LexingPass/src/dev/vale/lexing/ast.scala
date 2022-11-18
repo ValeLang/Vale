@@ -11,8 +11,8 @@ object RangeL {
 }
 
 case class FileL(
-  denizens: Array[IDenizenL],
-  commentRanges: Array[RangeL]
+  denizens: Vector[IDenizenL],
+  commentRanges: Vector[RangeL]
 ) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
@@ -32,7 +32,7 @@ case class ImplL(
   // Option because we can say `impl MyInterface;` inside a struct.
   struct: Option[ScrambleLE],
   interface: ScrambleLE,
-  attributes: Array[IAttributeL]
+  attributes: Vector[IAttributeL]
 ) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class ExportAsL(
@@ -42,13 +42,13 @@ case class ExportAsL(
 case class ImportL(
   range: RangeL,
   moduleName: WordLE,
-  packageSteps: Array[WordLE],
+  packageSteps: Vector[WordLE],
   importeeName: WordLE) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class StructL(
   range: RangeL,
   name: WordLE,
-  attributes: Array[IAttributeL],
+  attributes: Vector[IAttributeL],
   mutability: Option[ScrambleLE],
   identifyingRunes: Option[AngledLE],
   templateRules: Option[ScrambleLE],
@@ -57,12 +57,12 @@ case class StructL(
 case class InterfaceL(
   range: RangeL,
   name: WordLE,
-  attributes: Array[IAttributeL],
+  attributes: Vector[IAttributeL],
   mutability: Option[ScrambleLE],
   maybeIdentifyingRunes: Option[AngledLE],
   templateRules: Option[ScrambleLE],
   bodyRange: RangeL,
-  members: Array[FunctionL]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+  members: Vector[FunctionL]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 sealed trait IAttributeL
 
@@ -91,7 +91,7 @@ case class FunctionBodyL(
 case class FunctionHeaderL(
   range: RangeL,
   name: WordLE,
-  attributes: Array[IAttributeL],
+  attributes: Vector[IAttributeL],
 
   maybeUserSpecifiedIdentifyingRunes: Option[AngledLE],
   templateRules: Option[ScrambleLE],
@@ -114,20 +114,20 @@ trait INodeLE {
 
 case class ScrambleLE(
   range: RangeL,
-  elements: Array[INodeLE],
+  elements: Vector[INodeLE],
 
 //  // This is redundant with the above, a cache/index for the parser to be able
 //  // to look ahead in constant time.
 //  // For example if we see a = before the next ; then we're in a let statement.
-//  sequencingSymbols: Array[SymbolLE]
+//  sequencingSymbols: Vector[SymbolLE]
 
 //  // These are redundant with the above, a cache/index for the parser to be able
 //  // to look ahead in constant time.
 //  // For example if we see a = before the next ; then we're in a let statement.
 //  // In the eventual arena-based AST thing we might make these linked lists.
-//  commaPositions: Array[Int],
-//  semicolonPositions: Array[Int],
-//  equalsPositions: Array[Int]
+//  commaPositions: Vector[Int],
+//  semicolonPositions: Vector[Int],
+//  equalsPositions: Vector[Int]
 ) extends INodeLE {
   vpass()
 
@@ -163,7 +163,7 @@ case class SymbolLE(range: RangeL, c: Char) extends INodeLE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
 }
 
-case class StringLE(range: RangeL, parts: Array[StringPart]) extends INodeLE {
+case class StringLE(range: RangeL, parts: Vector[StringPart]) extends INodeLE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious();
 }
 sealed trait StringPart

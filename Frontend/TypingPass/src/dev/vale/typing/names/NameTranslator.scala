@@ -1,35 +1,37 @@
 package dev.vale.typing.names
 
-import dev.vale.{CodeLocationS, Interner, vimpl}
-import dev.vale.postparsing.{AnonymousSubstructImplDeclarationNameS, AnonymousSubstructMemberNameS, AnonymousSubstructTemplateNameS, ClosureParamNameS, CodeVarNameS, ConstructingMemberNameS, ConstructorNameS, ExportAsNameS, ForwarderFunctionDeclarationNameS, FreeDeclarationNameS, FunctionNameS, ICitizenDeclarationNameS, IFunctionDeclarationNameS, IImplDeclarationNameS, INameS, IVarNameS, ImplDeclarationNameS, IterableNameS, IterationOptionNameS, IteratorNameS, LambdaDeclarationNameS, LambdaStructDeclarationNameS, LetNameS, MagicParamNameS, SelfNameS, TopLevelCitizenDeclarationNameS, WhileCondResultNameS}
-import dev.vale.typing.types.CitizenRefT
+import dev.vale.{CodeLocationS, Interner, vcurious, vfail, vimpl, vwat}
+import dev.vale.postparsing._
+import dev.vale.typing.types.{CoordT, ICitizenTT}
 import dev.vale.highertyping._
 import dev.vale.postparsing._
-import dev.vale.CodeLocationS
 
 import scala.collection.mutable
 
 
 class NameTranslator(interner: Interner) {
-  def translateFunctionNameToTemplateName(functionName: IFunctionDeclarationNameS): IFunctionTemplateNameT = {
+  def translateGenericTemplateFunctionName(
+    functionName: IFunctionDeclarationNameS,
+    params: Vector[CoordT]):
+  IFunctionTemplateNameT = {
     functionName match {
-      case LambdaDeclarationNameS(/*parent, */ codeLocation) => {
-        interner.intern(LambdaTemplateNameT(translateCodeLocation(codeLocation)))
+      case LambdaDeclarationNameS(codeLocation) => {
+        interner.intern(LambdaCallFunctionTemplateNameT(translateCodeLocation(codeLocation), params))
       }
-      case FreeDeclarationNameS(codeLocationS) => {
-        interner.intern(FreeTemplateNameT(translateCodeLocation(codeLocationS)))
+      case other => vwat(other) // Only templates should call this
+    }
+  }
+
+  def translateGenericFunctionName(functionName: IFunctionDeclarationNameS): IFunctionTemplateNameT = {
+    functionName match {
+      case LambdaDeclarationNameS(codeLocation) => {
+        vfail() // Lambdas are generic templates, not generics
       }
-//      case AbstractVirtualFreeDeclarationNameS(codeLoc) => {
-//        interner.intern(AbstractVirtualFreeTemplateNameT(codeLoc))
-//      }
-//      case OverrideVirtualFreeDeclarationNameS(codeLoc) => {
-//        interner.intern(OverrideVirtualFreeTemplateNameT(codeLoc))
-//      }
       case FunctionNameS(name, codeLocation) => {
         interner.intern(FunctionTemplateNameT(name, translateCodeLocation(codeLocation)))
       }
       case ForwarderFunctionDeclarationNameS(inner, index) => {
-        interner.intern(ForwarderFunctionTemplateNameT(translateFunctionNameToTemplateName(inner), index))
+        interner.intern(ForwarderFunctionTemplateNameT(translateGenericFunctionName(inner), index))
       }
       case ConstructorNameS(TopLevelCitizenDeclarationNameS(name, codeLocation)) => {
         interner.intern(FunctionTemplateNameT(name, translateCodeLocation(codeLocation.begin)))
@@ -37,25 +39,40 @@ class NameTranslator(interner: Interner) {
       case ConstructorNameS(thing @ AnonymousSubstructTemplateNameS(_)) => {
         interner.intern(AnonymousSubstructConstructorTemplateNameT(translateCitizenName(thing)))
       }
-//      case OverrideVirtualDropFunctionDeclarationNameS(implName) => {
-//        interner.intern(OverrideVirtualDropFunctionTemplateNameT(
-//          translateNameStep(implName)))
-//      }
-//      case AbstractVirtualDropFunctionDeclarationNameS(implName) => {
-//        interner.intern(AbstractVirtualDropFunctionTemplateNameT(
-//          translateNameStep(implName)))
-//      }
+    }
+  }
+
+  def translateStructName(name: IStructDeclarationNameS): IStructTemplateNameT = {
+    name match {
+      case TopLevelCitizenDeclarationNameS(humanName, codeLocation) => {
+        interner.intern(StructTemplateNameT(humanName))
+      }
+      case AnonymousSubstructTemplateNameS(interfaceName) => {
+        // Now strip it off, stuff it inside our new name. See LNASC.
+        interner.intern(AnonymousSubstructTemplateNameT(translateInterfaceName(interfaceName)))
+      }
+    }
+  }
+
+  def translateInterfaceName(name: IInterfaceDeclarationNameS): IInterfaceTemplateNameT = {
+    name match {
+      case TopLevelCitizenDeclarationNameS(humanName, codeLocation) => {
+        interner.intern(InterfaceTemplateNameT(humanName))
+      }
     }
   }
 
   def translateCitizenName(name: ICitizenDeclarationNameS): ICitizenTemplateNameT = {
     name match {
       case TopLevelCitizenDeclarationNameS(humanName, codeLocation) => {
-        interner.intern(CitizenTemplateNameT(humanName))
+        interner.intern(StructTemplateNameT(humanName))
       }
       case AnonymousSubstructTemplateNameS(interfaceName) => {
         // Now strip it off, stuff it inside our new name. See LNASC.
-        interner.intern(AnonymousSubstructTemplateNameT(translateCitizenName(interfaceName)))
+        interner.intern(AnonymousSubstructTemplateNameT(translateInterfaceName(interfaceName)))
+      }
+      case TopLevelCitizenDeclarationNameS(humanName, codeLocation) => {
+        interner.intern(InterfaceTemplateNameT(humanName))
       }
     }
   }
@@ -68,9 +85,11 @@ class NameTranslator(interner: Interner) {
       case ClosureParamNameS() => interner.intern(ClosureParamNameT())
       case MagicParamNameS(codeLocation) => interner.intern(MagicParamNameT(translateCodeLocation(codeLocation)))
       case CodeVarNameS(name) => interner.intern(CodeVarNameT(name))
-      case t@TopLevelCitizenDeclarationNameS(_, _) => translateCitizenName(t)
+      case s @ TopLevelStructDeclarationNameS(_, _) => translateStructName(s)
+      case s @ TopLevelInterfaceDeclarationNameS(_, _) => translateInterfaceName(s)
       case LambdaDeclarationNameS(codeLocation) => {
-        interner.intern(LambdaTemplateNameT(translateCodeLocation(codeLocation)))
+        vcurious()
+//        interner.intern(LambdaTemplateNameT(translateCodeLocation(codeLocation)))
       }
       case FunctionNameS(name, codeLocation) => {
         interner.intern(FunctionTemplateNameT(name, translateCodeLocation(codeLocation)))
@@ -84,14 +103,15 @@ class NameTranslator(interner: Interner) {
       }
       case AnonymousSubstructTemplateNameS(tlcd) => {
         // See LNASC.
-        interner.intern(AnonymousSubstructTemplateNameT(translateCitizenName(tlcd)))
+        interner.intern(AnonymousSubstructTemplateNameT(translateInterfaceName(tlcd)))
       }
       case AnonymousSubstructImplDeclarationNameS(tlcd) => {
         // See LNASC.
-        interner.intern(AnonymousSubstructImplTemplateNameT(translateCitizenName(tlcd)))
+        interner.intern(AnonymousSubstructImplTemplateNameT(translateInterfaceName(tlcd)))
       }
       case ImplDeclarationNameS(codeLocation) => {
-        interner.intern(ImplDeclareNameT(codeLocation))
+        vimpl()
+//        interner.intern(ImplDeclareNameT(codeLocation))
       }
       case _ => vimpl(name.toString)
     }
@@ -118,13 +138,13 @@ class NameTranslator(interner: Interner) {
     }
   }
 
-  def translateImplName(n: IImplDeclarationNameS): IImplDeclareNameT = {
+  def translateImplName(n: IImplDeclarationNameS): IImplTemplateNameT = {
     n match {
       case ImplDeclarationNameS(l) => {
-        interner.intern(ImplDeclareNameT(translateCodeLocation(l)))
+        interner.intern(ImplTemplateNameT(translateCodeLocation(l)))
       }
       case AnonymousSubstructImplDeclarationNameS(interfaceName) => {
-        interner.intern(AnonymousSubstructImplDeclarationNameT(translateNameStep(interfaceName)))
+        interner.intern(AnonymousSubstructImplTemplateNameT(translateInterfaceName(interfaceName)))
       }
     }
   }

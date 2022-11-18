@@ -11,7 +11,7 @@ import dev.vale.postparsing.RuneTypeSolveError
 import dev.vale.solver.FailedSolve
 import OverloadResolver.{EvaluateFunctionFailure, FindFunctionFailure, IFindFunctionFailureReason}
 import dev.vale.typing.ast.{KindExportT, SignatureT}
-import dev.vale.typing.names.{FullNameT, IFunctionNameT, IFunctionTemplateNameT, INameT, IVarNameT}
+import dev.vale.typing.names.{IdT, IFunctionNameT, IFunctionTemplateNameT, INameT, IVarNameT}
 import dev.vale.typing.ast._
 import dev.vale.typing.types.InterfaceTT
 
@@ -94,11 +94,11 @@ case class CantUseUnstackifiedLocal(range: List[RangeS], localId: IVarNameT) ext
   vpass()
 }
 case class CantUnstackifyOutsideLocalFromInsideWhile(range: List[RangeS], localId: IVarNameT) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class FunctionAlreadyExists(oldFunctionRange: RangeS, newFunctionRange: RangeS, signature: FullNameT[IFunctionNameT]) extends ICompileErrorT {
+case class FunctionAlreadyExists(oldFunctionRange: RangeS, newFunctionRange: RangeS, signature: IdT[IFunctionNameT]) extends ICompileErrorT {
   override def range: List[RangeS] = List(newFunctionRange)
   vpass()
 }
-case class CantMutateFinalMember(range: List[RangeS], struct: StructTT, memberName: FullNameT[IVarNameT]) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class CantMutateFinalMember(range: List[RangeS], struct: StructTT, memberName: IdT[IVarNameT]) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class CantMutateFinalElement(range: List[RangeS], coord: CoordT) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class CantUseReadonlyReferenceAsReadwrite(range: List[RangeS]) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class LambdaReturnDoesntMatchInterfaceConstructor(range: List[RangeS]) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }

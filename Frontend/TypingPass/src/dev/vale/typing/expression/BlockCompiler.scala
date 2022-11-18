@@ -7,7 +7,7 @@ import dev.vale.typing.{TypingPassOptions, CompilerOutputs}
 import dev.vale.typing.ast.{BlockTE, LocationInFunctionEnvironment, ReferenceExpressionTE}
 import dev.vale.typing.env.{FunctionEnvironmentBox, NodeEnvironment, NodeEnvironmentBox}
 import dev.vale.typing.function.DestructorCompiler
-import dev.vale.typing.names.{FullNameT, IVarNameT}
+import dev.vale.typing.names.{IdT, IVarNameT}
 import dev.vale.typing.types.CoordT
 import dev.vale.postparsing.ExpressionScout
 import dev.vale.typing.{ast, _}
@@ -59,7 +59,7 @@ class BlockCompiler(
     life: LocationInFunctionEnvironment,
     parentRanges: List[RangeS],
     block1: BlockSE):
-  (BlockTE, Set[FullNameT[IVarNameT]], Set[CoordT]) = {
+  (BlockTE, Set[IdT[IVarNameT]], Set[CoordT]) = {
     val nenv = NodeEnvironmentBox(parentFate.makeChildNodeEnvironment(block1, life))
     val startingNenv = nenv.snapshot
 

@@ -5,7 +5,7 @@ sealed interface XOpt<T Ref> { }
 #!DeriveStructDrop
 struct XSome<T Ref> { value T; }
 
-#!DeriveImplDrop
+
 impl<T> XOpt<T> for XSome<T>;
 
 abstract func drop<T>(virtual opt XOpt<T>) void

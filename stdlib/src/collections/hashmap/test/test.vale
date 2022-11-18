@@ -59,7 +59,7 @@ exported func main() {
     map.len() should_equal 5;
   });
 
-  suite.test("Hash map keys", {
+  suite.test("Hash map keys iter", {
     map = HashMap<int, int, IntHasher, IntEquator>(IntHasher(), IntEquator());
     map.add(39, 1);
     map.add(42, 2);
@@ -75,6 +75,24 @@ exported func main() {
     sett.add(89);
 
     &(&map.KeysIter()).HashSet(IntHasher(), IntEquator()) should_equal &sett;
+  });
+
+  suite.test("Hash map keys", {
+    map = HashMap<int, int, IntHasher, IntEquator>(IntHasher(), IntEquator());
+    map.add(39, 1);
+    map.add(42, 2);
+    map.add(51, 3);
+    map.add(72, 4);
+    map.add(89, 5);
+
+    sett = HashSet<int, IntHasher, IntEquator>(IntHasher(), IntEquator());
+    sett.add(39);
+    sett.add(42);
+    sett.add(51);
+    sett.add(72);
+    sett.add(89);
+
+    map.keys().HashSet(IntHasher(), IntEquator()) should_equal &sett;
   });
 
   suite.test("Update", {

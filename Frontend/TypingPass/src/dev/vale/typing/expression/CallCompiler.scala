@@ -35,14 +35,14 @@ class CallCompiler(
       explicitTemplateArgRunesS: Vector[IRuneS],
       givenArgsExprs2: Vector[ReferenceExpressionTE]):
   (FunctionCallTE) = {
-    callableExpr.result.reference.kind match {
+    callableExpr.result.coord.kind match {
       case NeverT(true) => vwat()
       case NeverT(false) | BoolT() => {
-        throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot " + callableExpr.result.reference.kind))
+        throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot " + callableExpr.result.coord.kind))
       }
       case OverloadSetT(overloadSetEnv, functionName) => {
         val unconvertedArgsPointerTypes2 =
-          givenArgsExprs2.map(_.result.expectReference().reference)
+          givenArgsExprs2.map(_.result.expectReference().coord)
 
         // We want to get the prototype here, not the entire header, because
         // we might be in the middle of a recursive call like:
@@ -65,18 +65,18 @@ class CallCompiler(
           }
         val argsExprs2 =
           convertHelper.convertExprs(
-            nenv.snapshot, coutputs, range, givenArgsExprs2, prototype.function.prototype.paramTypes)
+            nenv.snapshot, coutputs, range, givenArgsExprs2, prototype.prototype.prototype.paramTypes)
 
         checkTypes(
           coutputs,
           nenv.snapshot,
           range,
-          prototype.function.prototype.paramTypes,
-          argsExprs2.map(a => a.result.reference),
+          prototype.prototype.prototype.paramTypes,
+          argsExprs2.map(a => a.result.coord),
           exact = true)
 
-        vassert(coutputs.getInstantiationBounds(prototype.function.prototype.fullName).nonEmpty)
-        (ast.FunctionCallTE(prototype.function.prototype, argsExprs2))
+        vassert(coutputs.getInstantiationBounds(prototype.prototype.prototype.fullName).nonEmpty)
+        (ast.FunctionCallTE(prototype.prototype.prototype, argsExprs2))
       }
       case other => {
         evaluateCustomCall(
@@ -84,7 +84,7 @@ class CallCompiler(
           coutputs,
           life,
           range,
-          callableExpr.result.reference.kind,
+          callableExpr.result.coord.kind,
           explicitTemplateArgRulesS,
           explicitTemplateArgRunesS,
           callableExpr,
@@ -120,7 +120,7 @@ class CallCompiler(
       (FunctionCallTE) = {
     // Whether we're given a borrow or an own, the call itself will be given a borrow.
     val givenCallableBorrowExpr2 =
-      givenCallableUnborrowedExpr2.result.reference match {
+      givenCallableUnborrowedExpr2.result.coord match {
         case CoordT(BorrowT | ShareT, _) => (givenCallableUnborrowedExpr2)
         case CoordT(OwnT, _) => {
           localHelper.makeTemporaryLocal(coutputs, nenv, range, life, givenCallableUnborrowedExpr2, BorrowT)
@@ -134,8 +134,8 @@ class CallCompiler(
 //        case ir @ InterfaceTT(_) => coutputs.getEnvForKind(ir) // coutputs.envByInterfaceRef(ir)
 //      }
 
-    val argsTypes2 = givenArgsExprs2.map(_.result.reference)
-    val closureParamType = CoordT(givenCallableBorrowExpr2.result.reference.ownership, kind)
+    val argsTypes2 = givenArgsExprs2.map(_.result.coord)
+    val closureParamType = CoordT(givenCallableBorrowExpr2.result.coord.ownership, kind)
     val paramFilters = Vector(closureParamType) ++ argsTypes2
     val resolved =
       overloadCompiler.findFunction(
@@ -153,20 +153,20 @@ class CallCompiler(
         case MutabilityTemplata(ImmutableT) => ShareT
         case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => BorrowT
       }
-    vassert(givenCallableBorrowExpr2.result.reference.ownership == ownership)
+    vassert(givenCallableBorrowExpr2.result.coord.ownership == ownership)
     val actualCallableExpr2 = givenCallableBorrowExpr2
 
     val actualArgsExprs2 = Vector(actualCallableExpr2) ++ givenArgsExprs2
 
-    val argTypes = actualArgsExprs2.map(_.result.reference)
-    if (argTypes != resolved.function.prototype.paramTypes) {
-      throw CompileErrorExceptionT(RangedInternalErrorT(range, "arg param type mismatch. params: " + resolved.function.prototype.paramTypes + " args: " + argTypes))
+    val argTypes = actualArgsExprs2.map(_.result.coord)
+    if (argTypes != resolved.prototype.prototype.paramTypes) {
+      throw CompileErrorExceptionT(RangedInternalErrorT(range, "arg param type mismatch. params: " + resolved.prototype.prototype.paramTypes + " args: " + argTypes))
     }
 
-    checkTypes(coutputs, env, range, resolved.function.prototype.paramTypes, argTypes, exact = true)
+    checkTypes(coutputs, env, range, resolved.prototype.prototype.paramTypes, argTypes, exact = true)
 
-    vassert(coutputs.getInstantiationBounds(resolved.function.prototype.fullName).nonEmpty)
-    val resultingExpr2 = FunctionCallTE(resolved.function.prototype, actualArgsExprs2);
+    vassert(coutputs.getInstantiationBounds(resolved.prototype.prototype.fullName).nonEmpty)
+    val resultingExpr2 = FunctionCallTE(resolved.prototype.prototype, actualArgsExprs2);
 
     (resultingExpr2)
   }

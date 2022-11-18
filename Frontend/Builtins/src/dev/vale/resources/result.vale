@@ -1,15 +1,16 @@
 import v.builtins.panic.*;
+import v.builtins.logic.*;
 
 #!DeriveInterfaceDrop
-sealed interface Result<OkType, ErrType> where OkType Ref, ErrType Ref { }
+sealed interface Result<OkType Ref, ErrType Ref> { }
 
 #!DeriveStructDrop
-struct Ok<OkType, ErrType> where OkType Ref, ErrType Ref { value OkType; }
+struct Ok<OkType Ref, ErrType Ref> { value OkType; }
 #!DeriveImplDrop
 impl<OkType, ErrType> Result<OkType, ErrType> for Ok<OkType, ErrType>;
 
 #!DeriveStructDrop
-struct Err<OkType, ErrType> where OkType Ref, ErrType Ref { value ErrType; }
+struct Err<OkType Ref, ErrType Ref> { value ErrType; }
 #!DeriveImplDrop
 impl<OkType, ErrType> Result<OkType, ErrType> for Err<OkType, ErrType>;
 
@@ -33,26 +34,26 @@ func is_ok<OkType, ErrType>(ok &Ok<OkType, ErrType>) bool { return true; }
 func is_ok<OkType, ErrType>(err &Err<OkType, ErrType>) bool { return false; }
 func is_err<OkType, ErrType>(result &Result<OkType, ErrType>) bool { return not is_ok(result); }
 
-abstract func expect<OkType, ErrType>(virtual result Result<OkType, ErrType>) OkType;
-func expect<OkType, ErrType>(err Err<OkType, ErrType>) OkType { panic("Called expect() on a Err!"); }
-func expect<OkType, ErrType>(ok Ok<OkType, ErrType>) OkType {
+abstract func expect<OkType, ErrType>(virtual result Result<OkType, ErrType>, msg str) OkType;
+func expect<OkType, ErrType>(err Err<OkType, ErrType>, msg str) OkType { panic(msg); }
+func expect<OkType, ErrType>(ok Ok<OkType, ErrType>, msg str) OkType {
   [value] = ok;
   return value;
 }
 
-abstract func expect<OkType, ErrType>(virtual result &Result<OkType, ErrType>) &OkType;
-func expect<OkType, ErrType>(err &Err<OkType, ErrType>) &OkType { panic("Called expect() on a Err!"); }
-func expect<OkType, ErrType>(ok &Ok<OkType, ErrType>) &OkType { return &ok.value; }
+abstract func expect<OkType, ErrType>(virtual result &Result<OkType, ErrType>, msg str) &OkType;
+func expect<OkType, ErrType>(err &Err<OkType, ErrType>, msg str) &OkType { panic(msg); }
+func expect<OkType, ErrType>(ok &Ok<OkType, ErrType>, msg str) &OkType { return &ok.value; }
 
 
 
-abstract func expect_err<OkType, ErrType>(virtual result Result<OkType, ErrType>) ErrType;
-func expect_err<OkType, ErrType>(ok Ok<OkType, ErrType>) ErrType { panic("Called expect_err() on an Ok!"); }
-func expect_err<OkType, ErrType>(err Err<OkType, ErrType>) ErrType {
+abstract func expect_err<OkType, ErrType>(virtual result Result<OkType, ErrType>, msg str) ErrType;
+func expect_err<OkType, ErrType>(ok Ok<OkType, ErrType>, msg str) ErrType { panic("Called expect_err() on an Ok!"); }
+func expect_err<OkType, ErrType>(err Err<OkType, ErrType>, msg str) ErrType {
   [value] = err;
   return value;
 }
 
-abstract func expect_err<OkType, ErrType>(virtual result &Result<OkType, ErrType>) &ErrType;
-func expect_err<OkType, ErrType>(ok &Ok<OkType, ErrType>) &ErrType { panic("Called expect_err() on an Ok!"); }
-func expect_err<OkType, ErrType>(err &Err<OkType, ErrType>) &ErrType { return err.value; }
+abstract func expect_err<OkType, ErrType>(virtual result &Result<OkType, ErrType>, msg str) &ErrType;
+func expect_err<OkType, ErrType>(ok &Ok<OkType, ErrType>, msg str) &ErrType { panic(msg); }
+func expect_err<OkType, ErrType>(err &Err<OkType, ErrType>, msg str) &ErrType { return err.value; }

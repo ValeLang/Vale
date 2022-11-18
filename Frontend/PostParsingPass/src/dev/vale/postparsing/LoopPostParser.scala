@@ -2,15 +2,16 @@ package dev.vale.postparsing
 
 import dev.vale.parsing.ast._
 import PostParser.{noDeclarations, noVariableUses}
-import dev.vale.parsing.ast.{AugmentPE, BlockPE, BorrowP, ConsecutorPE, FunctionCallPE, IExpressionPE, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, LetPE, LookupNameP, LookupPE, NameP, PatternPP, RangeP, UseP}
-import dev.vale.postparsing
+import dev.vale.lexing.RangeL
+import dev.vale.parsing.ast.{AugmentPE, BlockPE, BorrowP, ConsecutorPE, FunctionCallPE, IExpressionPE, IterableNameDeclarationP, IterableNameP, IterationOptionNameDeclarationP, IterationOptionNameP, IteratorNameDeclarationP, IteratorNameP, LetPE, LookupNameP, LookupPE, NameP, PatternPP, UseP}
+import dev.vale.{Interner, Keywords, StrI, postparsing}
 
-object LoopPostParser {
+class LoopPostParser(interner: Interner, keywords: Keywords) {
   def scoutLoop(
     expressionScout: ExpressionScout,
     stackFrame0: StackFrame,
     lidb: LocationInDenizenBuilder,
-    rangeP: RangeP,
+    rangeP: RangeL,
     makeContents: (StackFrame, LocationInDenizenBuilder, Boolean) => (StackFrame, BlockSE, VariableUses, VariableUses)):
   (BlockSE, VariableUses, VariableUses) = {
     // This just scopes the iterable's expression so its things dont outlive the foreach block.
@@ -29,9 +30,9 @@ object LoopPostParser {
     expressionScout: ExpressionScout,
     stackFrame0: StackFrame,
     lidb: LocationInDenizenBuilder,
-    range: RangeP,
+    range: RangeL,
     entryPatternPP: PatternPP,
-    inKeywordRange: RangeP,
+    inKeywordRange: RangeL,
     iterableExpr: IExpressionPE,
     body: BlockPE):
   (BlockSE, VariableUses, VariableUses) = {
@@ -55,7 +56,7 @@ object LoopPostParser {
               PatternPP(inKeywordRange, None, Some(IteratorNameDeclarationP(inKeywordRange)), None, None, None),
               FunctionCallPE(
                 inKeywordRange, inKeywordRange,
-                LookupPE(LookupNameP(NameP(inKeywordRange, "begin")), None),
+                LookupPE(LookupNameP(NameP(inKeywordRange, keywords.begin)), None),
                 Vector(
                   AugmentPE(
                     inKeywordRange, BorrowP,
@@ -96,8 +97,8 @@ object LoopPostParser {
     expressionScout: ExpressionScout,
     stackFrame0: StackFrame,
     lidb: LocationInDenizenBuilder,
-    range: RangeP,
-    inKeywordRange: RangeP,
+    range: RangeL,
+    inKeywordRange: RangeL,
     entryPatternPP: PatternPP,
     bodyPE: BlockPE,
   ): (StackFrame, IExpressionSE, VariableUses, VariableUses) = {
@@ -117,7 +118,7 @@ object LoopPostParser {
                     FunctionCallPE(
                       inKeywordRange,
                       inKeywordRange,
-                      LookupPE(LookupNameP(NameP(inKeywordRange, "next")), None),
+                      LookupPE(LookupNameP(NameP(inKeywordRange, keywords.next)), None),
                       Vector(
                         AugmentPE(
                           inKeywordRange,
@@ -126,7 +127,7 @@ object LoopPostParser {
                   FunctionCallPE(
                     inKeywordRange,
                     inKeywordRange,
-                    LookupPE(LookupNameP(NameP(inKeywordRange, "isEmpty")), None),
+                    LookupPE(LookupNameP(NameP(inKeywordRange, keywords.isEmpty)), None),
                     Vector(
                       AugmentPE(
                         inKeywordRange,
@@ -172,7 +173,7 @@ object LoopPostParser {
           FunctionCallPE(
             inKeywordRange,
             inKeywordRange,
-            LookupPE(LookupNameP(NameP(inKeywordRange, "get")), None),
+            LookupPE(LookupNameP(NameP(inKeywordRange, keywords.get)), None),
             Vector(
               LookupPE(IterationOptionNameP(inKeywordRange), None)))),
         UseP)
@@ -195,7 +196,7 @@ object LoopPostParser {
     expressionScout: ExpressionScout,
     stackFrame0: StackFrame,
     lidb: LocationInDenizenBuilder,
-    range: RangeP,
+    range: RangeL,
     conditionPE: IExpressionPE,
     body: BlockPE):
   (BlockSE, VariableUses, VariableUses) = {
@@ -226,7 +227,7 @@ object LoopPostParser {
     expressionScout: ExpressionScout,
     stackFrame0: StackFrame,
     lidb: LocationInDenizenBuilder,
-    range: RangeP,
+    range: RangeL,
     conditionPE: IExpressionPE,
     bodyPE: BlockPE,
   ): (StackFrame, IExpressionSE, VariableUses, VariableUses) = {

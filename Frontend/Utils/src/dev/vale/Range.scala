@@ -9,11 +9,17 @@ object CodeLocationS {
     vassert(internalNum < 0)
     CodeLocationS(
       interner.intern(FileCoordinate(
-        interner.intern(PackageCoordinate("", Vector.empty)),
+        interner.intern(PackageCoordinate(
+          interner.intern(StrI("")),
+          Vector.empty)),
         "internal")),
       internalNum)
   }
 }
+
+sealed trait ICrumb
+case class RangeCrumb(range: RangeS) extends ICrumb
+case class InternalCrumb(num: Int) extends ICrumb
 
 object RangeS {
   // Should only be used in tests.

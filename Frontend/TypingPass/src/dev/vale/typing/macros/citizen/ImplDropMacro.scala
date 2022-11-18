@@ -35,11 +35,11 @@ class ImplDropMacro(
 //        funcNameA,
 //        Vector(),
 //        TemplateTemplataType(
-//          implA.identifyingRunes.map(_.rune).map(implA.runeToType) :+ KindTemplataType,
-//          FunctionTemplataType),
+//          implA.identifyingRunes.map(_.rune).map(implA.runeToType) :+ KindTemplataType(),
+//          FunctionTemplataType()),
 //        // See NIIRII for why we add the interface rune as an identifying rune.
 //        implA.identifyingRunes :+ implA.interfaceKindRune,
-//        implA.runeToType + (ImplDropCoordRuneS() -> CoordTemplataType) + (ImplDropVoidRuneS() -> CoordTemplataType),
+//        implA.runeToType + (ImplDropCoordRuneS() -> CoordTemplataType()) + (ImplDropVoidRuneS() -> CoordTemplataType()),
 //        Vector(
 //          ParameterS(
 //            AtomSP(
@@ -54,7 +54,7 @@ class ImplDropMacro(
 //            RangeS.internal(interner, -1672131),
 //            RuneUsage(RangeS.internal(interner, -167214), ImplDropCoordRuneS()),
 //            RuneUsage(RangeS.internal(interner, -167215), implA.structKindRune.rune)),
-//          LookupSR(RangeS.internal(interner, -1672132),RuneUsage(RangeS.internal(interner, -64002), ImplDropVoidRuneS()),interner.intern(CodeNameS("void")))),
+//          LookupSR(RangeS.internal(interner, -1672132),RuneUsage(RangeS.internal(interner, -64002), ImplDropVoidRuneS()),interner.intern(CodeNameS(StrI("void"))))),
 //        CodeBodyS(
 //          BodySE(RangeS.internal(interner, -1672133),
 //            Vector(),
@@ -62,7 +62,7 @@ class ImplDropMacro(
 //              Vector(LocalS(interner.intern(CodeVarNameS("this")), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
 //              FunctionCallSE(RangeS.internal(interner, -1672135),
 //                OutsideLoadSE(RangeS.internal(interner, -1672136),
-//                  Array(),
+//                  Vector(),
 //                  interner.intern(CodeNameS(CallCompiler.DROP_FUNCTION_NAME)),
 //                  None,
 //                  LoadAsPointerP(None)),

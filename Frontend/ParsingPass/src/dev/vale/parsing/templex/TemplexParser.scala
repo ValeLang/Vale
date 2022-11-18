@@ -1,37 +1,47 @@
 package dev.vale.parsing.templex
 
-import dev.vale.{Err, Ok, Profiler, Result, vimpl, vwat}
-import dev.vale.parsing.expressions.StringParser
-import dev.vale.parsing.{BadArraySizerEnd, BadPrototypeName, BadPrototypeParams, BadRegionName, BadRuleCallParam, BadStringChar, BadTemplateCallParam, BadTypeExpression, BadUnicodeChar, IParseError, Parser, ParsingIterator, StopBeforeCloseSquare, StopBeforeComma, ast}
-import dev.vale.parsing.Parser.{ParsedDouble, ParsedInteger, parseRuneType, parseTypeName}
-import dev.vale.parsing.ast.{AnonymousRunePT, BoolPT, BorrowP, BuiltinCallPR, CallPT, ComponentsPR, EqualsPR, FinalP, IRulexPR, ITemplexPT, ImmutableP, InlineP, IntPT, InterpretedPT, LocationPT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnP, OwnershipPT, PrototypePT, RangeP, RegionRunePT, RuntimeSizedArrayPT, ShareP, StaticSizedArrayPT, StringPT, TemplexPR, TuplePT, TypedPR, VariabilityPT, VaryingP, WeakP, YonderP}
-import dev.vale.Err
+import dev.vale.{Err, Interner, Keywords, Ok, Profiler, Result, StrI, U, vassert, vassertSome, vimpl, vwat}
+import dev.vale.parsing.{Parser, StopBeforeCloseSquare, StopBeforeComma, ast}
+import dev.vale.parsing.ast.{AnonymousRunePT, BoolPT, BorrowP, BuiltinCallPR, CallPT, ComponentsPR, EqualsPR, FinalP, IRulexPR, ITemplexPT, ImmutableP, InlineP, IntPT, InterpretedPT, LocationPT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnP, OwnershipPT, FuncPT, RegionRunePT, RuntimeSizedArrayPT, ShareP, StaticSizedArrayPT, StringPT, TemplexPR, TuplePT, TypedPR, VariabilityPT, VaryingP, WeakP, YonderP}
+import dev.vale.lexing.{AngledLE, BadArraySizer, BadArraySizerEnd, BadPrototypeName, BadPrototypeParams, BadRegionName, BadRuleCallParam, BadRuneTypeError, BadStringChar, BadStringInTemplex, BadTemplateCallParam, BadTupleElement, BadTypeExpression, BadUnicodeChar, CurliedLE, FoundBothImmutableAndMutabilityInArray, INodeLE, IParseError, ParendLE, ParsedDoubleLE, ParsedIntegerLE, RangeL, RangedInternalErrorP, ScrambleLE, SquaredLE, StringLE, StringPartLiteral, SymbolLE, WordLE}
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
 
 import scala.collection.mutable
 
-class TemplexParser {
-  def parseArray(iter: ParsingIterator): Result[Option[ITemplexPT], IParseError] = {
-    val begin = iter.getPos()
+class TemplexParser(interner: Interner, keywords: Keywords) {
+  def parseArray(originalIter: ScrambleIterator): Result[Option[ITemplexPT], IParseError] = {
+    val begin = originalIter.getPos()
 
-    if (!iter.trySkip(() => "^#?\\[".r)) {
-      return Ok(None)
-    }
+    val tentativeIter = originalIter.clone()
 
-    iter.consumeWhitespace()
+    val immutable = tentativeIter.trySkipSymbol('#')
+
+    val sizeScrambleIterL =
+      tentativeIter.peek() match {
+        case Some(SquaredLE(range, squareContents)) => {
+          tentativeIter.advance()
+          new ScrambleIterator(squareContents)
+        }
+        case _ => return Ok(None)
+      }
+
+    originalIter.skipTo(tentativeIter)
+    val iter = originalIter
 
     val maybeSizeTemplex =
-      if (iter.trySkip(() => "^#".r)) {
-        iter.consumeWhitespace()
-        parseTemplex(iter) match { case Err(e) => return Err(e) case Ok(x) => Some(x) }
+      if (sizeScrambleIterL.hasNext) {
+        if (sizeScrambleIterL.trySkipSymbol('#')) {
+          parseTemplex(sizeScrambleIterL) match {
+            case Err(e) => return Err(e)
+            case Ok(x) => Some(x)
+          }
+        } else {
+          None
+        }
       } else {
         None
       }
-
-    if (!iter.trySkip(() => "^]".r)) {
-      return Err(BadArraySizerEnd(iter.getPos()))
-    }
 
     val templateArgsBegin = iter.getPos()
     val maybeTemplateArgs =
@@ -41,11 +51,15 @@ class TemplexParser {
       }
     val templateArgsEnd = iter.getPos()
     val mutability =
-      maybeTemplateArgs.toList.flatten.lift(0)
-        .getOrElse(MutabilityPT(RangeP(templateArgsBegin, templateArgsEnd), MutableP))
+      (immutable, maybeTemplateArgs.toList.flatten.lift(0)) match {
+        case (true, Some(_)) => return Err(FoundBothImmutableAndMutabilityInArray(begin))
+        case (false, Some(templex)) => templex
+        case (true, None) => MutabilityPT(RangeL(templateArgsBegin, templateArgsEnd), ImmutableP)
+        case (false, None) => MutabilityPT(RangeL(templateArgsBegin, templateArgsEnd), MutableP)
+      }
     val variability =
       maybeTemplateArgs.toList.flatten.lift(1)
-        .getOrElse(VariabilityPT(RangeP(templateArgsBegin, templateArgsEnd), FinalP))
+        .getOrElse(VariabilityPT(RangeL(templateArgsBegin, templateArgsEnd), FinalP))
 
     val elementType = parseTemplex(iter) match { case Err(e) => return Err(e) case Ok(x) => x }
 
@@ -53,13 +67,13 @@ class TemplexParser {
       maybeSizeTemplex match {
         case None => {
           RuntimeSizedArrayPT(
-            RangeP(begin, iter.getPos()),
+            RangeL(begin, iter.getPrevEndPos()),
             mutability,
             elementType)
         }
         case Some(sizeTemplex) => {
           StaticSizedArrayPT(
-            RangeP(begin, iter.getPos()),
+            RangeL(begin, iter.getPrevEndPos()),
             mutability,
             variability,
             sizeTemplex,
@@ -69,37 +83,107 @@ class TemplexParser {
     Ok(Some(result))
   }
 
-  def parsePrototype(iter: ParsingIterator): Result[Option[ITemplexPT], IParseError] = {
+  def parseFunctionName(iter: ScrambleIterator): Option[NameP] = {
+    iter.peek() match {
+      case Some(WordLE(range, name)) => {
+        iter.advance()
+        Some(NameP(range, name))
+      }
+      case Some(SymbolLE(_, _)) => {
+        val begin = iter.getPos()
+        iter.peek3() match {
+          case (Some(SymbolLE(_, '=')), Some(SymbolLE(_, '=')), Some(SymbolLE(_, '='))) => {
+            iter.advance()
+            iter.advance()
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.tripleEquals))
+          }
+          case (Some(SymbolLE(_, '<')), Some(SymbolLE(_, '=')), Some(SymbolLE(_, '>'))) => {
+            iter.advance()
+            iter.advance()
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.spaceship))
+          }
+          case (Some(SymbolLE(_, '=')), Some(SymbolLE(_, '=')), _) => {
+            iter.advance()
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.doubleEquals))
+          }
+          case (Some(SymbolLE(_, '!')), Some(SymbolLE(_, '=')), _) => {
+            iter.advance()
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.notEquals))
+          }
+          case (Some(SymbolLE(_, '<')), Some(SymbolLE(_, '=')), _) => {
+            iter.advance()
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.lessEquals))
+          }
+          case (Some(SymbolLE(_, '>')), Some(SymbolLE(_, '=')), _) => {
+            iter.advance()
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.greaterEquals))
+          }
+          case (Some(SymbolLE(_, '<')), _, _) => {
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.less))
+          }
+          case (Some(SymbolLE(_, '>')), _, _) => {
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.greater))
+          }
+          case (Some(SymbolLE(_, '+')), _, _) => {
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.plus))
+          }
+          case (Some(SymbolLE(_, '-')), _, _) => {
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.minus))
+          }
+          case (Some(SymbolLE(_, '*')), _, _) => {
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.asterisk))
+          }
+          case (Some(SymbolLE(_, '/')), _, _) => {
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.slash))
+          }
+          case _ => None
+        }
+      }
+      case Some(ParendLE(range, _)) => {
+        // Dont iter.advance(), we do that below.
+        Some(NameP(RangeL(range.begin, range.begin), keywords.underscoresCall))
+      }
+      case _ => None
+    }
+  }
+
+  def parsePrototype(iter: ScrambleIterator): Result[Option[ITemplexPT], IParseError] = {
     val begin = iter.getPos()
 
-    if (!iter.trySkip(() => "^func\\b".r)) {
+    if (iter.trySkipWord(keywords.func).isEmpty) {
       return Ok(None)
     }
 
-    iter.consumeWhitespace()
-
     val name =
-      if (iter.peek(() => "^\\(".r)) {
-        NameP(RangeP(iter.getPos(), iter.getPos()), "__call")
-      } else {
-        Parser.parseFunctionOrLocalOrMemberName(iter) match {
-          case None => return Err(BadPrototypeName(iter.getPos()))
-          case Some(x) => x
-        }
+      parseFunctionName(iter) match {
+        case Some(n) => n
+        case None => return Err(BadPrototypeName(iter.getPos()))
       }
 
-    iter.consumeWhitespace()
-
+    val argsBegin = iter.getPos()
     val args =
       parseTuple(iter) match {
         case Err(e) => return Err(e)
         case Ok(None) => return Err(BadPrototypeParams(iter.getPos()))
         case Ok(Some(x)) => x.elements
       }
+    val argsEnd = iter.getPrevEndPos()
 
     val returnType = parseTemplex(iter) match { case Err(e) => return Err(e) case Ok(x) => x }
 
-    val result = PrototypePT(RangeP(begin, iter.getPos()), name, args, returnType)
+    val result = FuncPT(RangeL(begin, iter.getPrevEndPos()), name, RangeL(argsBegin, argsEnd), args, returnType)
     Ok(Some(result))
   }
 
@@ -157,14 +241,42 @@ class TemplexParser {
   //  }
   //
 
-  def parseInterpreted(iter: ParsingIterator): Result[Option[InterpretedPT], IParseError] = {
+  def parseRegioned(iter: ScrambleIterator): Result[Option[ITemplexPT], IParseError] = {
+    val begin = iter.getPos()
+    if (!iter.trySkipSymbol('\'')) {
+      return Ok(None)
+    }
+
+    val name =
+      iter.nextWord() match {
+        case None => return Err(BadRegionName(iter.getPos()))
+        case Some(x) => x
+      }
+
+    if (iter.hasNext) {
+      val inner =
+        parseTemplexAtomAndCallAndPrefixes(iter) match {
+          case Err(e) => return Err(e)
+          case Ok(t) => t
+        }
+      Ok(Some(inner))
+    } else {
+      val rune =
+        RegionRunePT(
+          RangeL(begin, iter.getPrevEndPos()),
+          NameP(name.range, name.str))
+      Ok(Some(rune))
+    }
+  }
+
+  def parseInterpreted(iter: ScrambleIterator): Result[Option[InterpretedPT], IParseError] = {
     val begin = iter.getPos()
 
     val ownership =
-      if (iter.trySkip(() => "^\\^".r)) { OwnP }
-      else if (iter.trySkip(() => "^@".r)) { ShareP }
-      else if (iter.trySkip(() => "^\\&\\&".r)) { WeakP }
-      else if (iter.trySkip(() => "^&".r)) { BorrowP }
+      if (iter.trySkipSymbol('^')) { OwnP }
+      else if (iter.trySkipSymbol('@')) { ShareP }
+      else if (iter.trySkipSymbols(Vector('&', '&'))) { WeakP }
+      else if (iter.trySkipSymbol('&')) { BorrowP }
       else { return Ok(None) }
 
     val inner =
@@ -173,11 +285,11 @@ class TemplexParser {
         case Ok(t) => t
       }
 
-    Ok(Some(ast.InterpretedPT(RangeP(begin, iter.getPos()), ownership, inner)))
+    Ok(Some(ast.InterpretedPT(RangeL(begin, iter.getPrevEndPos()), ownership, inner)))
   }
 
 
-  def parseTemplexAtomAndCallAndPrefixesAndSuffixes(originalIter: ParsingIterator): Result[ITemplexPT, IParseError] = {
+  def parseTemplexAtomAndCallAndPrefixesAndSuffixes(originalIter: ScrambleIterator): Result[ITemplexPT, IParseError] = {
     val inner =
       parseTemplexAtomAndCallAndPrefixes(originalIter) match {
         case Err(e) => return Err(e)
@@ -187,116 +299,77 @@ class TemplexParser {
     return Ok(inner)
   }
 
-
-  def parseStringPart(iter: ParsingIterator, stringBeginPos: Int): Result[Char, IParseError] = {
-    if (iter.trySkip(() => "^\\\\".r)) {
-      if (iter.trySkip(() => "^r".r) || iter.trySkip(() => "^\\r".r)) {
-        Ok('\r')
-      } else if (iter.trySkip(() => "^t".r)) {
-        Ok('\t')
-      } else if (iter.trySkip(() => "^n".r) || iter.trySkip(() => "^\\n".r)) {
-        Ok('\n')
-      } else if (iter.trySkip(() => "^\\\\".r)) {
-        Ok('\\')
-      } else if (iter.trySkip(() => "^\"".r)) {
-        Ok('\"')
-      } else if (iter.trySkip(() => "^/".r)) {
-        Ok('/')
-      } else if (iter.trySkip(() => "^\\{".r)) {
-        Ok('{')
-      } else if (iter.trySkip(() => "^\\}".r)) {
-        Ok('}')
-      } else if (iter.trySkip(() => "^u".r)) {
-        val num =
-          StringParser.parseFourDigitHexNum(iter) match {
-            case None => {
-              return Err(BadUnicodeChar(iter.getPos()))
-            }
-            case Some(x) => x
-          }
-        Ok(num.toChar)
-      } else {
-        Ok(iter.tryy(() => "^.".r).get.charAt(0))
-      }
-    } else {
-      val c =
-        iter.tryy(() => "^(.|\\n)".r) match {
-          case None => {
-            return Err(BadStringChar(stringBeginPos, iter.getPos()))
-          }
-          case Some(x) => x
-        }
-      Ok(c.charAt(0))
-    }
-  }
-
-  def parseString(iter: ParsingIterator): Result[Option[StringPT], IParseError] = {
-    val begin = iter.getPos()
-    if (!iter.trySkip(() => "^\"".r)) {
-      return Ok(None)
-    }
-    val stringSoFar = new StringBuilder()
-    while (!(iter.atEnd() || iter.trySkip(() => "^\"".r))) {
-      val c = parseStringPart(iter, begin) match { case Err(e) => return Err(e) case Ok(c) => c }
-      stringSoFar += c
-    }
-    Ok(Some(StringPT(RangeP(begin, iter.getPos()), stringSoFar.toString())))
-  }
-
-
-  def parseTemplexAtom(iter: ParsingIterator): Result[ITemplexPT, IParseError] = {
+  def parseTemplexAtom(iter: ScrambleIterator): Result[ITemplexPT, IParseError] = {
+    vassert(iter.peek().nonEmpty)
     val begin = iter.getPos()
 
-    if (iter.trySkip(() => "^_\\b".r)) {
-      return Ok(AnonymousRunePT(RangeP(begin, iter.getPos())))
+    iter.trySkipWord(keywords.UNDERSCORE) match {
+      case Some(range) => return Ok(AnonymousRunePT(range))
+      case None =>
     }
-    if (iter.trySkip(() => "^true\\b".r)) {
-      return Ok(BoolPT(RangeP(begin, iter.getPos()), true))
+    iter.trySkipWord(keywords.truue) match {
+      case Some(range) => return Ok(BoolPT(range, true))
+      case None =>
     }
-    if (iter.trySkip(() => "^false\\b".r)) {
-      return Ok(BoolPT(RangeP(begin, iter.getPos()), false))
+    iter.trySkipWord(keywords.faalse) match {
+      case Some(range) => return Ok(BoolPT(range, false))
+      case None =>
     }
-    if (iter.trySkip(() => "^own\\b".r)) {
-      return Ok(OwnershipPT(RangeP(begin, iter.getPos()), OwnP))
+    iter.trySkipWord(keywords.own) match {
+      case Some(range) => return Ok(OwnershipPT(range, OwnP))
+      case None =>
     }
-    if (iter.trySkip(() => "^borrow\\b".r)) {
-      return Ok(OwnershipPT(RangeP(begin, iter.getPos()), BorrowP))
+    iter.trySkipWord(keywords.borrow) match {
+      case Some(range) => return Ok(OwnershipPT(range, BorrowP))
+      case None =>
     }
-    if (iter.trySkip(() => "^weak\\b".r)) {
-      return Ok(OwnershipPT(RangeP(begin, iter.getPos()), WeakP))
+    iter.trySkipWord(keywords.weak) match {
+      case Some(range) => return Ok(OwnershipPT(range, WeakP))
+      case None =>
     }
-    if (iter.trySkip(() => "^share\\b".r)) {
-      return Ok(OwnershipPT(RangeP(begin, iter.getPos()), ShareP))
+    iter.trySkipWord(keywords.share) match {
+      case Some(range) => return Ok(OwnershipPT(range, ShareP))
+      case None =>
     }
-    if (iter.trySkip(() => "^inl\\b".r)) {
-      return Ok(LocationPT(RangeP(begin, iter.getPos()), InlineP))
+    iter.trySkipWord(keywords.inl) match {
+      case Some(range) => return Ok(LocationPT(range, InlineP))
+      case None =>
     }
-    if (iter.trySkip(() => "^heap\\b".r)) {
-      return Ok(LocationPT(RangeP(begin, iter.getPos()), YonderP))
+    iter.trySkipWord(keywords.heap) match {
+      case Some(range) => return Ok(LocationPT(range, YonderP))
+      case None =>
     }
-    if (iter.trySkip(() => "^imm\\b".r)) {
-      return Ok(MutabilityPT(RangeP(begin, iter.getPos()), ImmutableP))
+    iter.trySkipWord(keywords.imm) match {
+      case Some(range) => return Ok(MutabilityPT(range, ImmutableP))
+      case None =>
     }
-    if (iter.trySkip(() => "^mut\\b".r)) {
-      return Ok(MutabilityPT(RangeP(begin, iter.getPos()), MutableP))
+    iter.trySkipWord(keywords.mut) match {
+      case Some(range) => return Ok(MutabilityPT(range, MutableP))
+      case None =>
     }
-    if (iter.trySkip(() => "^vary\\b".r)) {
-      return Ok(VariabilityPT(RangeP(begin, iter.getPos()), VaryingP))
+    iter.trySkipWord(keywords.vary) match {
+      case Some(range) => return Ok(VariabilityPT(range, VaryingP))
+      case None =>
     }
-    if (iter.trySkip(() => "^final\\b".r)) {
-      return Ok(VariabilityPT(RangeP(begin, iter.getPos()), FinalP))
+    iter.trySkipWord(keywords.fiinal) match {
+      case Some(range) => return Ok(VariabilityPT(range, FinalP))
+      case None =>
     }
-    if (iter.trySkip(() => "^borrow\\b".r)) {
-      return Ok(OwnershipPT(RangeP(begin, iter.getPos()), BorrowP))
+    iter.trySkipWord(keywords.borrow) match {
+      case Some(range) => return Ok(OwnershipPT(range, BorrowP))
+      case None =>
     }
-    if (iter.trySkip(() => "^weak\\b".r)) {
-      return Ok(OwnershipPT(RangeP(begin, iter.getPos()), WeakP))
+    iter.trySkipWord(keywords.weak) match {
+      case Some(range) => return Ok(OwnershipPT(range, WeakP))
+      case None =>
     }
-    if (iter.trySkip(() => "^own\\b".r)) {
-      return Ok(OwnershipPT(RangeP(begin, iter.getPos()), OwnP))
+    iter.trySkipWord(keywords.own) match {
+      case Some(range) => return Ok(OwnershipPT(range, OwnP))
+      case None =>
     }
-    if (iter.trySkip(() => "^share\\b".r)) {
-      return Ok(OwnershipPT(RangeP(begin, iter.getPos()), ShareP))
+    iter.trySkipWord(keywords.share) match {
+      case Some(range) => return Ok(OwnershipPT(range, ShareP))
+      case None =>
     }
     parsePrototype(iter) match {
       case Err(e) => return Err(e)
@@ -313,84 +386,71 @@ class TemplexParser {
       case Ok(Some(array)) => return Ok(array)
       case Ok(None) =>
     }
-    parseString(iter) match {
-      case Err(e) => return Err(e)
-      case Ok(Some(s)) => return Ok(s)
-      case Ok(None) =>
-    }
-    Parser.parseNumber(iter) match {
-      case Err(e) => return Err(e)
-      case Ok(Some(ParsedInteger(range, int, bits))) => return Ok(IntPT(range, int))
-      case Ok(Some(ParsedDouble(range, int, bits))) => vimpl()
-      case Ok(None) =>
-    }
-    Parser.parseTypeName(iter) match {
-      case Some(name) => return Ok(NameOrRunePT(name))
-      case None =>
-    }
-    return Err(BadTypeExpression(iter.getPos()))
-  }
-
-  def parseTemplateCallArgs(iter: ParsingIterator): Result[Option[Vector[ITemplexPT]], IParseError] = {
-    val begin = iter.getPos()
-    if (!iter.trySkip(() => "^\\s*<".r)) {
-      return Ok(None)
-    }
-    iter.consumeWhitespace()
-    val args = mutable.ArrayBuffer[ITemplexPT]()
-    while ({
-      val arg =
-        parseTemplex(iter) match {
-          case Err(e) => return Err(e)
-          case Ok(x) => x
+    vassertSome(iter.peek()) match {
+      case StringLE(range, parts) => {
+        iter.advance()
+        parts match {
+          case Vector(StringPartLiteral(range, s)) => Ok(StringPT(range, s))
+          case _ => return Err(BadStringInTemplex(range.begin))
         }
-      args += arg
-      iter.consumeWhitespace()
-      if (iter.trySkip(() => "^>".r)) {
-        false
-      } else if (iter.trySkip(() => "^,".r)) {
-        iter.consumeWhitespace()
-        true
-      } else {
-        return Err(BadTemplateCallParam(iter.getPos()))
       }
-    }) {}
-
-    Ok(Some(args.toVector))
+      case ParsedIntegerLE(range, int, bits) => {
+        iter.advance()
+        Ok(IntPT(range, int))
+      }
+      case ParsedDoubleLE(range, double, bits) => {
+        iter.advance()
+        return Err(RangedInternalErrorP(range.begin, "Floats in types not supported!"))
+      }
+      case WordLE(range, str) => {
+        iter.advance()
+        Ok(NameOrRunePT(NameP(range, str)))
+      }
+      case _ => return Err(BadTypeExpression(iter.getPos()))
+    }
   }
 
-  def parseTuple(iter: ParsingIterator): Result[Option[TuplePT], IParseError] = {
-    val begin = iter.getPos()
-    if (!iter.trySkip(() => "^\\(".r)) {
-      return Ok(None)
-    }
-    iter.consumeWhitespace()
-    if (iter.trySkip(() => "^\\)".r)) {
-      return Ok(Some(TuplePT(RangeP(begin, iter.getPos()), Vector())))
-    }
-    val args = mutable.ArrayBuffer[ITemplexPT]()
-    while ({
-      val arg =
-        parseTemplex(iter) match {
-          case Err(e) => return Err(e)
-          case Ok(x) => x
-        }
-      args += arg
-      iter.consumeWhitespace()
-      if (iter.trySkip(() => "^\\)".r)) {
-        false
-      } else if (iter.trySkip(() => "^,".r)) {
-        iter.consumeWhitespace()
-        true
-      } else {
-        return Err(BadTemplateCallParam(iter.getPos()))
+  def parseTemplateCallArgs(iter: ScrambleIterator): Result[Option[Vector[ITemplexPT]], IParseError] = {
+    val angled =
+      iter.peek() match {
+        case Some(a @ AngledLE(range, contents)) => a
+        case Some(_) => return Ok(None)
+        case None => return Ok(None)
       }
-    }) {}
-
-    Ok(Some(TuplePT(RangeP(begin, iter.getPos()), args.toVector)))
+    iter.advance()
+    val elementsP =
+      U.map[ScrambleIterator, ITemplexPT](
+        new ScrambleIterator(angled.contents).splitOnSymbol(',', false),
+        elementIter => {
+          parseTemplex(elementIter) match {
+            case Err(e) => return Err(e)
+            case Ok(x) => x
+          }
+        })
+    Ok(Some(elementsP.toVector))
   }
 
-  def parseTemplexAtomAndCall(iter: ParsingIterator): Result[ITemplexPT, IParseError] = {
+  def parseTuple(outerIter: ScrambleIterator): Result[Option[TuplePT], IParseError] = {
+    val begin = outerIter.getPos()
+    outerIter.peek() match {
+      case Some(ParendLE(range, contents)) => {
+        outerIter.advance()
+        val elements =
+          U.map[ScrambleIterator, ITemplexPT](
+            new ScrambleIterator(contents).splitOnSymbol(',', false),
+            iter => {
+              parseTemplex(iter) match {
+                case Err(e) => return Err(e)
+                case Ok(x) => x
+              }
+            })
+        Ok(Some(TuplePT(range, elements.toVector)))
+      }
+      case _ => Ok(None)
+    }
+  }
+
+  def parseTemplexAtomAndCall(iter: ScrambleIterator): Result[ITemplexPT, IParseError] = {
     val begin = iter.getPos()
 
     val atom =
@@ -401,207 +461,162 @@ class TemplexParser {
 
     parseTemplateCallArgs(iter) match {
       case Err(e) => return Err(e)
-      case Ok(Some(args)) => return Ok(CallPT(RangeP(begin, iter.getPos()), atom, args))
+      case Ok(Some(args)) => return Ok(CallPT(RangeL(begin, iter.getPrevEndPos()), atom, args))
       case Ok(None) =>
     }
 
     Ok(atom)
   }
 
-  def parseTemplexAtomAndCallAndPrefixes(iter: ParsingIterator): Result[ITemplexPT, IParseError] = {
-    if (iter.peek(() => "^in\\b".r)) {
-      // This is here so if we say:
-      //   foreach x in myList { ... }
-      // We won't interpret `x in` as a pattern, because
-      // we don't interpret `in` as a valid templex.
-      // The caller should prevent this.
-      vwat()
-    }
-    if (iter.peek(() => "^impl\\b".r)) {
-      // func moo(a impl IFoo) { ... }
-      // The caller should prevent this.
-      vwat()
-    }
+  def parseTemplexAtomAndCallAndPrefixes(iter: ScrambleIterator): Result[ITemplexPT, IParseError] = {
+    Profiler.frame(() => {
+      vassert(iter.hasNext)
 
-    val begin = iter.getPos()
-
-    parseInterpreted(iter) match {
-      case Err(e) => return Err(e)
-      case Ok(Some(x)) => return Ok(x)
-      case Ok(None) =>
-    }
-
-//    if (iter.trySkip(() => "^inl\\b".r)) {
-//      iter.consumeWhitespace()
-//      val inner = parseTemplexAtomAndCallAndPrefixes(iter) match { case Err(e) => return Err(e) case Ok(t) => t }
-//      return Ok(InlinePT(RangeP(begin, iter.getPos()), inner))
-//    }
-
-    if (iter.trySkip(() => "^'".r)) {
-      iter.consumeWhitespace()
-      val regionName =
-        Parser.parseTypeName(iter) match {
-          case None => return Err(BadRegionName(iter.getPos()))
-          case Some(x) => x
+      iter.peek() match {
+        case Some(WordLE(_, in)) if in == keywords.in => {
+          // This is here so if we say:
+          //   foreach x in myList { ... }
+          // We won't interpret `x in` as a pattern, because
+          // we don't interpret `in` as a valid templex.
+          // The caller should prevent this.
+          vwat()
         }
-
-      if (iter.peek(() => "^\\s*[,>)\\]};{]".r)) {
-        return Ok(RegionRunePT(RangeP(begin, iter.getPos()), regionName))
-      } else {
-        iter.consumeWhitespace()
-
-        val inner =
-          parseTemplexAtomAndCallAndPrefixes(iter) match {
-            case Err(e) => return Err(e)
-            case Ok(t) => t
-          }
-
-        // One day we'll actually have a RegionedPT(...) or something.
-        // For now, just return the inner.
-        return Ok(inner)
+        case _ =>
       }
-    }
 
-    parseTemplexAtomAndCall(iter)
+      val begin = iter.getPos()
+
+      //    if (iter.trySkip(() => "^inl\\b".r)) {
+      //
+      //      val inner = parseTemplexAtomAndCallAndPrefixes(iter) match { case Err(e) => return Err(e) case Ok(t) => t }
+      //      return Ok(InlinePT(RangeP(begin, iter.getPos()), inner))
+      //    }
+
+      parseRegioned(iter) match {
+        case Err(e) => return Err(e)
+        case Ok(Some(x)) => return Ok(x)
+        case Ok(None) =>
+      }
+
+      parseInterpreted(iter) match {
+        case Err(e) => return Err(e)
+        case Ok(Some(x)) => return Ok(x)
+        case Ok(None) =>
+      }
+
+      parseTemplexAtomAndCall(iter)
+    })
   }
 
-  def parseRegion(iter: ParsingIterator): Result[Option[RegionRunePT], IParseError] = {
-    val begin = iter.getPos()
-    if (!iter.trySkip(() => "^'".r)) {
-      return Ok(None)
-    }
-    iter.consumeWhitespace()
-    val regionName =
-      Parser.parseTypeName(iter) match {
-        case None => return Err(BadRegionName(iter.getPos()))
-        case Some(x) => x
-      }
-    Ok(Some(RegionRunePT(RangeP(begin, iter.getPos()), regionName)))
+  def parseRegion(node: INodeLE): Result[Option[RegionRunePT], IParseError] = {
+    vimpl()
+//    val begin = iter.getPos()
+//    if (!iter.trySkip(() => "^'".r)) {
+//      return Ok(None)
+//    }
+//
+//    val regionName =
+//      Parser.parseTypeName(iter) match {
+//        case None => return Err(BadRegionName(iter.getPos()))
+//        case Some(x) => x
+//      }
+//    Ok(Some(RegionRunePT(RangeL(begin, iter.getPos()), regionName)))
   }
 
-  def parseTemplex(iter: ParsingIterator): Result[ITemplexPT, IParseError] = {
+  def parseTemplex(iter: ScrambleIterator): Result[ITemplexPT, IParseError] = {
     Profiler.frame(() => {
       parseTemplexAtomAndCallAndPrefixesAndSuffixes(iter)
     })
   }
 
-  def parseTypedRune(originalIter: ParsingIterator): Result[Option[TypedPR], IParseError] = {
-    val begin = originalIter.getPos()
-
-    val tentativeIter = originalIter.clone()
-
-    val maybeRuneName =
-      if (tentativeIter.trySkip(() => "^_\\b".r)) {
-        None
-      } else {
-        Parser.parseTypeName(tentativeIter) match {
-          case None => return Ok(None)
-          case Some(x) => Some(x)
-        }
+  def parseTypedRune(originalIter: ScrambleIterator): Result[Option[TypedPR], IParseError] = {
+    originalIter.peek2() match {
+      // So we dont parse func moo()void
+      case (Some(WordLE(nameRange, nameStr)), _) if nameStr == keywords.func => {
+        Ok(None)
       }
-
-    tentativeIter.consumeWhitespace()
-
-    val runeType =
-      Parser.parseRuneType(tentativeIter, Vector()) match {
-        case Err(e) => return Ok(None)
-        case Ok(None) => return Ok(None)
-        case Ok(Some(x)) => x
+      case (Some(WordLE(nameRange, nameStr)), Some(WordLE(typeRange, _))) => {
+        val maybeName =
+          if (nameStr == keywords.UNDERSCORE) {
+            None
+          } else {
+            Some(NameP(nameRange, nameStr))
+          }
+        originalIter.advance()
+        val tyype =
+          parseRuneType(originalIter) match {
+            case Err(e) => return Err(e)
+            case Ok(None) => vwat()
+            case Ok(Some(x)) => x
+          }
+        Ok(Some(ast.TypedPR(RangeL(nameRange.begin, typeRange.end), maybeName, tyype)))
       }
-
-    tentativeIter.consumeWhitespace()
-
-    originalIter.skipTo(tentativeIter.getPos())
-    val iter = originalIter
-
-    Ok(Some(ast.TypedPR(RangeP(begin, iter.getPos()), maybeRuneName, runeType)))
+      case _ => Ok(None)
+    }
   }
 
-  def parseRuleCall(originalIter: ParsingIterator): Result[Option[IRulexPR], IParseError] = {
-    val tentativeIter = originalIter.clone()
-
-    val begin = tentativeIter.getPos()
-    val nameAndOpenParen =
-      tentativeIter.tryy(() => "^\\w+\\(".r) match {
-        case None => return Ok(None)
-        case Some(nameAndOpenParen) => nameAndOpenParen
+  def parseRuleCall(iter: ScrambleIterator): Result[Option[IRulexPR], IParseError] = {
+    iter.peek2() match {
+      case (Some(WordLE(_, StrI("func"))), _) => return Ok(None)
+      case (Some(WordLE(nameRange, name)), Some(ParendLE(argsRange, argsLR))) => {
+        val range = RangeL(nameRange.begin, argsRange.end)
+        val argsPR =
+          U.map[ScrambleIterator, IRulexPR](
+            new ScrambleIterator(argsLR).splitOnSymbol(',', false),
+            argIter => {
+              parseRule(argIter) match {
+                case Err(e) => return Err(e)
+                case Ok(x) => x
+              }
+            })
+        Ok(Some(BuiltinCallPR(range, NameP(nameRange, name), argsPR.toVector)))
       }
-
-    val nameStr = nameAndOpenParen.init
-    if (nameStr == "func") {
-      return Ok(None)
+      case _ => return Ok(None)
     }
 
-    val nameEnd = tentativeIter.getPos() - 1
-    val name = NameP(RangeP(begin, nameEnd), nameStr)
-
-    originalIter.skipTo(tentativeIter.getPos())
-    val iter = originalIter
-
-    iter.consumeWhitespace()
-    if (iter.trySkip(() => "^\\s*\\)".r)) {
-      return Ok(Some(BuiltinCallPR(RangeP(begin, iter.getPos()), name, Vector())))
-    }
-
-    val args = mutable.ArrayBuffer[IRulexPR]()
-    while ({
-      iter.consumeWhitespace()
-      val arg = parseRule(iter) match { case Err(e) => return Err(e) case Ok(t) => t }
-      args += arg
-      if (iter.trySkip(() => "^\\s*,".r)) {
-        true
-      } else if (iter.trySkip(() => "^\\s*\\)".r)) {
-        false
-      } else {
-        return Err(BadRuleCallParam(iter.getPos()))
-      }
-    }) {}
-
-    Ok(Some(BuiltinCallPR(RangeP(begin, iter.getPos()), name, args.toVector)))
-  }
-
-  def parseRuleDestructure(originalIter: ParsingIterator): Result[Option[IRulexPR], IParseError] = {
-    val begin = originalIter.getPos()
-
-    val tentativeIter = originalIter.clone()
-
-    val tyype =
-      parseRuneType(tentativeIter, Vector(StopBeforeComma, StopBeforeCloseSquare)) match {
-        case Err(e) => return Ok(None)
-        case Ok(None) => return Ok(None)
-        case Ok(Some(t)) => t
-      }
-
-    val typeEnd = tentativeIter.getPos()
-
-    if (!tentativeIter.trySkip(() => "^\\[".r)) {
-      return Ok(None)
-    }
-
-    originalIter.skipTo(tentativeIter.getPos())
-    val iter = originalIter
-
+//    val nameStr = nameAndOpenParen.init
+//    if (nameStr == "func") {
+//      return Ok(None)
+//    }
+//
+//    val nameEnd = tentativeIter.getPos() - 1
 //    val name = NameP(RangeP(begin, nameEnd), nameStr)
-
-    val args = mutable.ArrayBuffer[IRulexPR]()
-    while ({
-      iter.consumeWhitespace()
-      val arg = parseRule(iter) match { case Err(e) => return Err(e) case Ok(t) => t }
-      args += arg
-      if (iter.trySkip(() => "^\\s*,".r)) {
-        iter.consumeWhitespace()
-        true
-      } else if (iter.trySkip(() => "^\\s*]".r)) {
-        false
-      } else {
-        return Err(BadRuleCallParam(iter.getPos()))
-      }
-    }) {}
-
-    Ok(Some(ComponentsPR(RangeP(begin, iter.getPos()), tyype, args.toVector)))
+//
+//    originalIter.skipTo(tentativeIter.getPos())
+//    val iter = originalIter
+//
+//    iter.consumeWhitespace()
+//    if (iter.trySkip(() => "^\\s*\\)".r)) {
+//      return Ok(Some(BuiltinCallPR(RangeP(begin, iter.getPos()), name, Vector())))
+//    }
   }
 
-  def parseRuleAtom(iter: ParsingIterator): Result[IRulexPR, IParseError] = {
+  def parseRuleDestructure(originalIter: ScrambleIterator): Result[Option[IRulexPR], IParseError] = {
+    originalIter.peek2() match {
+      case (Some(WordLE(RangeL(begin, _), _)), Some(SquaredLE(RangeL(_, end), componentsL))) => {
+        val runeType =
+          parseRuneType(originalIter) match {
+            case Ok(None) => vwat()
+            case Err(e) => return Err(e)
+            case Ok(Some(x)) => x
+          }
+        originalIter.advance()
+        val componentsP =
+          U.map[ScrambleIterator, IRulexPR](
+            new ScrambleIterator(componentsL).splitOnSymbol(',', false),
+            componentIter => {
+              parseRule(componentIter) match {
+                case Err(e) => return Err(e)
+                case Ok(x) => x
+              }
+            })
+        Ok(Some(ComponentsPR(RangeL(begin, end), runeType, componentsP.toVector)))
+      }
+      case _ => Ok(None)
+    }
+  }
+
+  def parseRuleAtom(iter: ScrambleIterator): Result[IRulexPR, IParseError] = {
     val begin = iter.getPos()
 
     parseRuleCall(iter) match {
@@ -628,29 +643,73 @@ class TemplexParser {
     }
   }
 
-  def parseRuleUpToEqualsPrecedence(iter: ParsingIterator): Result[IRulexPR, IParseError] = {
+  def parseRuleUpToEqualsPrecedence(iter: ScrambleIterator): Result[IRulexPR, IParseError] = {
     Profiler.frame(() => {
-      val begin = iter.getPos()
-      val inner =
-        parseRuleAtom(iter) match {
-          case Err(e) => return Err(e)
-          case Ok(t) => t
+      ParseUtils.trySkipPastEqualsWhile(iter, scoutingIter => {
+        scoutingIter.peek() match {
+          case None => false
+          // Stop on comma
+          case Some(SymbolLE(_, ',')) => false
+          // Stop if we hit an open brace, its the function body
+          case Some(CurliedLE(_, _)) => false
+          case _ => true
         }
-
-      if (iter.trySkip(() => "^\\s*=\\s*".r)) {
-        val right =
-          parseRuleUpToEqualsPrecedence(iter) match {
-            case Err(e) => return Err(e)
-            case Ok(t) => t
-          }
-        return Ok(EqualsPR(RangeP(begin, iter.getPos()), inner, right))
+      })  match {
+        case None => parseRuleAtom(iter)
+        case Some(beforeIter) => {
+          val left =
+            parseRuleAtom(beforeIter) match {
+              case Err(e) => return Err(e)
+              case Ok(x) => x
+            }
+          val right =
+            parseRuleAtom(iter) match {
+              case Err(e) => return Err(e)
+              case Ok(x) => x
+            }
+          Ok(EqualsPR(RangeL(left.range.begin, right.range.end), left, right))
+        }
       }
-
-      return Ok(inner)
     })
   }
 
-  def parseRule(iter: ParsingIterator): Result[IRulexPR, IParseError] = {
-    parseRuleUpToEqualsPrecedence(iter)
+  def parseRule(s: ScrambleIterator): Result[IRulexPR, IParseError] = {
+    parseRuleUpToEqualsPrecedence(s)
+  }
+
+  def parseRuneType(iter: ScrambleIterator):
+  Result[Option[ITypePR], IParseError] = {
+    iter.peek() match {
+      case None => Ok(None)
+
+      case Some(WordLE(_, w)) if w == keywords.IntCapitalized => {
+        iter.advance(); Ok(Some(IntTypePR))
+      }
+      case Some(WordLE(_, w)) if w == keywords.Ref => {
+        iter.advance(); Ok(Some(CoordTypePR))
+      }
+      case Some(WordLE(_, w)) if w == keywords.Kind => {
+        iter.advance(); Ok(Some(KindTypePR))
+      }
+      case Some(WordLE(_, w)) if w == keywords.Prot => {
+        iter.advance(); Ok(Some(PrototypeTypePR))
+      }
+      case Some(WordLE(_, w)) if w == keywords.RefList => {
+        iter.advance(); Ok(Some(CoordListTypePR))
+      }
+      case Some(WordLE(_, w)) if w == keywords.Ownership => {
+        iter.advance(); Ok(Some(OwnershipTypePR))
+      }
+      case Some(WordLE(_, w)) if w == keywords.Variability => {
+        iter.advance(); Ok(Some(VariabilityTypePR))
+      }
+      case Some(WordLE(_, w)) if w == keywords.Mutability => {
+        iter.advance(); Ok(Some(MutabilityTypePR))
+      }
+      case Some(WordLE(_, w)) if w == keywords.Location => {
+        iter.advance(); Ok(Some(LocationTypePR))
+      }
+      case _ => return Err(BadRuneTypeError(iter.getPos()))
+    }
   }
 }

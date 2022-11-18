@@ -1,22 +1,23 @@
 import stdlib.collections.list.*;
 import stdlib.math.*;
 
-struct HashMapKeySetIterator<K, V> {
+struct HashMapKeySetIterator<K Ref imm, V>
+where func drop(K)void {
   table &[]Opt<HashMapNode<K, V>>;
   pos! int;
 }
 
-func KeysIter<K, V, H, E>(map &HashMap<K, V, H, E>)
+func KeysIter<K Ref imm, V, H, E>(map &HashMap<K, V, H, E>)
 HashMapKeySetIterator<K, V> {
   HashMapKeySetIterator(map.table, 0)
 }
 
-func begin<K, V>(iter &HashMapKeySetIterator<K, V>)
+func begin<K Ref imm, V>(iter &HashMapKeySetIterator<K, V>)
 HashMapKeySetIterator<K, V> {
   HashMapKeySetIterator<K, V>(iter.table, iter.pos)
 }
 
-func next<K, V>(iter &HashMapKeySetIterator<K, V>) Opt<K> {
+func next<K Ref imm, V>(iter &HashMapKeySetIterator<K, V>) Opt<K> {
   while iter.pos < iter.table.len() {
     if entry = iter.table[set iter.pos = iter.pos + 1];
         not entry.isEmpty() {
@@ -26,11 +27,12 @@ func next<K, V>(iter &HashMapKeySetIterator<K, V>) Opt<K> {
   return None<K>();
 }
 
-func HashSet<K, V, H, E>(
+func HashSet<K Ref imm, V, H, E>(
   iter &HashMapKeySetIterator<K, V>,
   hasher H,
   equator E)
-HashSet<K, H, E> {
+HashSet<K, H, E>
+where func(&H, K)int, func(&E, K, K)bool, func drop(K)void {
   sett = HashSet<K, H, E>(hasher, equator);
   foreach x in iter {
     sett.add(x);
@@ -38,7 +40,7 @@ HashSet<K, H, E> {
   return sett;
 }
 
-func List<K, V>(
+func List<K Ref imm, V>(
   iter &HashMapKeySetIterator<K, V>)
 List<K> {
   list = List<K>();

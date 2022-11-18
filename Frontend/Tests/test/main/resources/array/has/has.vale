@@ -1,5 +1,6 @@
 
-func has<E, F>(arr &[]<_>E, elem E, equator F) bool {
+func has<E, F, M>(arr &[]<M>E, elem &E, equator &F) bool
+where func(&F, &E, &E)bool {
   i = 0;
   while (i < arr.len()) {
     if (equator(arr[i], elem)) {
@@ -10,11 +11,13 @@ func has<E, F>(arr &[]<_>E, elem E, equator F) bool {
   return false;
 }
 
-func has<E>(arr &[]<_>E, elem E) bool {
-  has(arr, elem, ==)
+func has<E, M>(arr &[]<M>E, elem &E) bool
+where func ==(&E, &E)bool {
+  has(arr, elem, { _ == _ })
 }
 
-func has<E, F>(seq &[#_]<_>E, elem E, equator F) bool {
+func has<E, F, N, M>(seq &[#N]<M>E, elem &E, equator &F) bool
+where func(&F, &E, &E)bool {
   i = 0;
   while (i < seq.len()) {
     if (equator(seq[i], elem)) {
@@ -25,6 +28,7 @@ func has<E, F>(seq &[#_]<_>E, elem E, equator F) bool {
   return false;
 }
 
-func has<E>(seq &[#_]<_>E, elem E) bool {
-  return has(seq, elem, ==);
+func has<E, N, M>(seq &[#N]<M>E, elem &E) bool
+where func ==(&E, &E)bool {
+  return has(seq, elem, { _ == _ });
 }

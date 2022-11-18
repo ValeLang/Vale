@@ -450,6 +450,9 @@ public:
   Prototype* getUnserializePrototype(Kind* valeKind);
   Prototype* getUnserializeThunkPrototype(StructKind* structKind, InterfaceKind* interfaceKind);
 
+  Prototype* getFreePrototype(Kind* valeKind);
+  Prototype* getFreeThunkPrototype(StructKind* structKind, InterfaceKind* interfaceKind);
+
   LLVMValueRef stackify(
       FunctionState* functionState,
       LLVMBuilderRef builder,
@@ -478,6 +481,11 @@ private:
   void declareInterfaceUnserializeFunction(InterfaceKind* valeKind);
   void defineEdgeUnserializeFunction(Edge* edge);
 
+  void declareConcreteFreeFunction(Kind* valeKindM);
+  void defineConcreteFreeFunction(Kind* valeKindM);
+  void declareInterfaceFreeFunction(InterfaceKind* kind);
+  void defineEdgeFreeFunction(Edge* edge);
+
   InterfaceMethod* getUnserializeInterfaceMethod(Kind* valeKind);
 
   Ref callUnserialize(
@@ -497,6 +505,25 @@ private:
       Ref sourceRegionInstanceRef,
       Kind* valeKind,
       Ref ref);
+
+  InterfaceMethod* getFreeInterfaceMethod(Kind* valeKind);
+
+  void callFree(
+      FunctionState *functionState,
+      LLVMBuilderRef builder,
+      Ref regionInstanceRef,
+      Kind* kind,
+      Ref objectRef);
+
+//  // Does the entire serialization process: measuring the length, allocating a buffer, and
+//  // serializing into it.
+//  Ref topLevelFree(
+//      FunctionState* functionState,
+//      LLVMBuilderRef builder,
+//      Ref regionInstanceRef,
+//      Ref sourceRegionInstanceRef,
+//      Kind* valeKind,
+//      Ref ref);
 
   Ref makeRegionInstance(LLVMBuilderRef builder);
 

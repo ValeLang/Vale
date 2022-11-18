@@ -1,5 +1,9 @@
+#!/usr/bin/env bash
+
 # This script builds the Vale compiler, runs some tests on it, and also packages up a release zip file.
 # It assumes we've already ran prereqs-linux.sh, or otherwise installed all the dependencies.
+
+set -eu
 
 LLVM_DIR="$1"
 if [ "$LLVM_DIR" == "" ]; then
@@ -100,7 +104,7 @@ then
   ./build.sh $BOOTSTRAPPING_VALEC_DIR || { echo 'Tester build failed, aborting.' ; exit 1; }
 
   echo Running Tester...
-  ./build/testvalec --frontend_path ./BuiltValeCompiler/Frontend.jar --backend_path ./BuiltValeCompiler/backend --builtins_dir ./BuiltValeCompiler/builtins --valec_path ./BuiltValeCompiler/valec --backend_tests_dir ../Backend/test --frontend_tests_dir ../Frontend --concurrent 6 @resilient-v3 || { echo 'Tests failed, aborting.' ; exit 1; }
+  ./build/testvalec --frontend_path ./BuiltValeCompiler/Frontend.jar --backend_path ./BuiltValeCompiler/backend --builtins_dir ./BuiltValeCompiler/builtins --valec_path ./BuiltValeCompiler/valec --backend_tests_dir ../Backend/test --frontend_tests_dir ../Frontend  --stdlib_dir ./BuiltValeCompiler/stdlib --concurrent 6 @resilient-v3 || { echo 'Tests failed, aborting.' ; exit 1; }
 fi
 
 cd ..

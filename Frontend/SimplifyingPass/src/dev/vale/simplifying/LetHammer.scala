@@ -5,15 +5,19 @@ import dev.vale.typing.Hinputs
 import dev.vale.typing.ast.{DestroyStaticSizedArrayIntoLocalsTE, DestroyTE, FunctionHeaderT, LetAndLendTE, LetNormalTE, ReferenceExpressionTE, UnletTE}
 import dev.vale.typing.env.{AddressibleLocalVariableT, ReferenceLocalVariableT}
 import dev.vale.typing.names.{FullNameT, IVarNameT}
-import dev.vale.typing.types.{AddressMemberTypeT, CoordT, ReferenceMemberTypeT, VariabilityT}
-import dev.vale.{finalast, vassert, vfail, vwat}
-import dev.vale.{finalast => m}
+import dev.vale.typing.types._
+import dev.vale.{vassert, vfail, vimpl, vwat, finalast => m}
 import dev.vale.finalast._
 import dev.vale.typing._
 import dev.vale.typing.ast._
 import dev.vale.typing.env.ReferenceLocalVariableT
 import dev.vale.typing.names.IVarNameT
+import dev.vale.typing.templata.ITemplata.expectIntegerTemplata
 import dev.vale.typing.types._
+
+object LetHammer {
+  val BOX_MEMBER_INDEX: Int = 0
+}
 
 class LetHammer(
     typeHammer: TypeHammer,
@@ -234,7 +238,7 @@ class LetHammer(
         val structRefH =
           structHammer.makeBox(hinputs, hamuts, variability, innerType2, innerTypeH)
 
-        val unstackifyBoxNode = finalast.UnstackifyH(local)
+        val unstackifyBoxNode = UnstackifyH(local)
         locals.markUnstackified(varId)
 
         val innerLocal = locals.addHammerLocal(innerTypeH, Conversions.evaluateVariability(variability))
@@ -265,7 +269,7 @@ class LetHammer(
     val (sourceExprHE, sourceExprDeferreds) =
       expressionHammer.translate(hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2);
 
-    vassert(destinationReferenceLocalVariables.size == arrSeqT.size)
+    vassert(destinationReferenceLocalVariables.size == expectIntegerTemplata(arrSeqT.size).value)
 
     // Destructure2 will immediately destroy any addressible references inside it
     // (see Destructure2 comments).
@@ -314,7 +318,8 @@ class LetHammer(
     val (sourceExprHE, sourceExprDeferreds) =
       expressionHammer.translate(hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2);
 
-    val structDefT = hinputs.lookupStruct(structTT)
+//    val structDefT = hinputs.lookupStruct(TemplataCompiler.getStructTemplate(structTT.fullName))
+    val structDefT = structHammer.lookupStruct(hinputs, hamuts, structTT)
 
     // Destructure2 will immediately destroy any addressible references inside it
     // (see Destructure2 comments).
@@ -330,8 +335,8 @@ class LetHammer(
     val (Vector(), localTypes, localIndices) =
       structDefT.members.foldLeft((destinationReferenceLocalVariables, Vector[ReferenceH[KindH]](), Vector[Local]()))({
         case ((remainingDestinationReferenceLocalVariables, previousLocalTypes, previousLocalIndices), member2) => {
-          member2.tyype match {
-            case ReferenceMemberTypeT(memberRefType2) => {
+          member2 match {
+            case NormalStructMemberT(name, variability, ReferenceMemberTypeT(memberRefType2)) => {
               val destinationReferenceLocalVariable = remainingDestinationReferenceLocalVariables.head
 
               val (memberRefTypeH) =
@@ -349,13 +354,13 @@ class LetHammer(
             // borrow refs of boxes which contain things. We're moving that borrow
             // ref into a local variable. We'll then unlet the local variable, and
             // unborrow it.
-            case AddressMemberTypeT(memberRefType2) => {
+            case NormalStructMemberT(name, variability, AddressMemberTypeT(memberRefType2)) => {
               val (memberRefTypeH) =
                 typeHammer.translateReference(hinputs, hamuts, memberRefType2);
               // In the case of an addressible struct member, its variability refers to the
               // variability of the pointee variable, see structMember2
               val (boxStructRefH) =
-                structHammer.makeBox(hinputs, hamuts, member2.variability, memberRefType2, memberRefTypeH)
+                structHammer.makeBox(hinputs, hamuts, variability, memberRefType2, memberRefTypeH)
               // Structs only ever borrow boxes, boxes are only ever owned by the stack.
               val localBoxType = ReferenceH(BorrowH, YonderH, boxStructRefH)
               val localIndex = locals.addHammerLocal(localBoxType, Final)
@@ -374,21 +379,18 @@ class LetHammer(
 
     val unboxingsH =
       structDefT.members.zip(localTypes.zip(localIndices)).flatMap({
-        case (structMember2, (localType, local)) => {
-          structMember2.tyype match {
-            case ReferenceMemberTypeT(_) => Vector.empty
-            case AddressMemberTypeT(_) => {
-              // localType is the box type.
-              // First, unlet it, then discard the contents.
-              // We discard instead of putting it into a local because address members
-              // can't own, they only refer to a box owned elsewhere.
-              val unstackifyNode = UnstackifyH(local)
-              locals.markUnstackified(local.id)
+        case (VariadicStructMemberT(_, _), (localType, local)) => vimpl()
+        case (NormalStructMemberT(_, _, ReferenceMemberTypeT(_)), (localType, local)) => Vector.empty
+        case (NormalStructMemberT(_, _, AddressMemberTypeT(_)), (localType, local)) => {
+          // localType is the box type.
+          // First, unlet it, then discard the contents.
+          // We discard instead of putting it into a local because address members
+          // can't own, they only refer to a box owned elsewhere.
+          val unstackifyNode = UnstackifyH(local)
+          locals.markUnstackified(local.id)
 
-              val discardNode = DiscardH(unstackifyNode)
-              Vector(discardNode)
-            }
-          }
+          val discardNode = DiscardH(unstackifyNode)
+          Vector(discardNode)
         }
       })
 

@@ -24,7 +24,7 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
   test("Parenthesized method syntax will move instead of borrow") {
     val compile = CompilerTestCompilation.test(
       """
-        |import v.builtins.tup.*;
+        |
         |struct Bork { a int; }
         |func doSomething(bork Bork) int {
         |  return bork.a;
@@ -40,7 +40,7 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
   test("Calling a method on a returned own ref will supply owning arg") {
     val compile = CompilerTestCompilation.test(
       """
-        |import v.builtins.tup.*;
+        |
         |struct Bork { a int; }
         |func doSomething(bork Bork) int {
         |  return bork.a;
@@ -55,7 +55,7 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
   test("Explicit borrow method call") {
     val compile = CompilerTestCompilation.test(
       """
-        |import v.builtins.tup.*;
+        |
         |struct Bork { a int; }
         |func doSomething(bork &Bork) int {
         |  return bork.a;
@@ -70,7 +70,7 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
   test("Calling a method on a local will supply borrow ref") {
     val compile = CompilerTestCompilation.test(
       """
-        |import v.builtins.tup.*;
+        |
         |struct Bork { a int; }
         |func doSomething(bork &Bork) int {
         |  return bork.a;
@@ -86,7 +86,7 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
   test("Calling a method on a member will supply borrow ref") {
     val compile = CompilerTestCompilation.test(
       """
-        |import v.builtins.tup.*;
+        |
         |struct Zork { bork Bork; }
         |struct Bork { a int; }
         |func doSomething(bork &Bork) int {
@@ -103,7 +103,7 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
   test("No derived or custom drop gives error") {
     val compile = CompilerTestCompilation.test(
       """
-        |import v.builtins.tup.*;
+        |
         |
         |#!DeriveStructDrop
         |struct Muta { }
@@ -113,7 +113,7 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     compile.getCompilerOutputs().expectErr() match {
-      case CouldntFindFunctionToCallT(_, FindFunctionFailure(CodeNameS("drop"), _, _)) =>
+      case CouldntFindFunctionToCallT(_, FindFunctionFailure(CodeNameS(StrI("drop")), _, _)) =>
     }
   }
 
@@ -165,10 +165,10 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
         |import v.builtins.drop.*;
         |
         |#!DeriveInterfaceDrop
-        |sealed interface Opt<T> where T Ref { }
+        |sealed interface Opt<T Ref> { }
         |
         |#!DeriveStructDrop
-        |struct Some<T> where T Ref { value T; }
+        |struct Some<T Ref> { value T; }
         |#!DeriveImplDrop
         |impl<T> Opt<T> for Some<T>;
         |

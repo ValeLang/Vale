@@ -1,7 +1,7 @@
 package dev.vale.highertyping
 
 import dev.vale.postparsing.rules.IRulexSR
-import dev.vale.postparsing.{ITemplataType, RuneTypeSolveError, PostParserErrorHumanizer}
+import dev.vale.postparsing._
 import dev.vale.solver.SolverErrorHumanizer
 import dev.vale.{FileCoordinateMap, RangeS}
 import dev.vale.RangeS
@@ -20,12 +20,11 @@ object HigherTypingErrorHumanizer {
     f"${posStr} error ${errorId}: ${errorStrBody}\n${nextStuff}\n"
   }
 
-  def humanize(
+  def humanizeRuneTypeSolveError(
     filenamesAndSources: FileCoordinateMap[String],
-    range: RangeS,
     err: RuneTypeSolveError):
   String = {
-    ": Couldn't solve generics rules:\n" +
+    ": Couldn't solve generics types:\n" +
     SolverErrorHumanizer.humanizeFailedSolve(
       filenamesAndSources,
       PostParserErrorHumanizer.humanizeRune,

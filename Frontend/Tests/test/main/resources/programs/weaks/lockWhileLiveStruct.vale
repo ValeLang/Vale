@@ -7,5 +7,5 @@ exported func main() int {
       73
     } else {
       maybeBorrowMuta.get().hp
-    }
+    };
 }

@@ -3,7 +3,7 @@ export []<imm>int as ImmIntArray;
 
 exported func valeMakeRSA() []<imm>int {
   ssa = #[#][5, 7, 9, 10, 11];
-  return #[](ssa.len(), { ssa[_] });
+  return #[]int(ssa.len(), { ssa[_] });
 }
 
 extern func cMakeRSA() []<imm>int;

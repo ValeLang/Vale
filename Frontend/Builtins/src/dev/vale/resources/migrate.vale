@@ -1,3 +1,4 @@
+import v.builtins.arrays.*;
 
 func migrate<E>(from []<mut>E, to &[]<mut>E) {
   intermediate = Array<mut, E>(from.capacity());

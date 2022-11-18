@@ -3,16 +3,15 @@ package dev.vale.postparsing
 import dev.vale.parsing.ast.{LoadAsBorrowP, LoadAsP, LoadAsWeakP, MoveP}
 import dev.vale.postparsing.patterns.AtomSP
 import dev.vale.postparsing.rules.{IRulexSR, RuneUsage}
-import dev.vale.{RangeS, vassert, vcurious, vpass, vwat}
+import dev.vale.{RangeS, StrI, vassert, vcurious, vpass, vwat}
 import dev.vale.parsing.ast._
 import dev.vale.postparsing.rules.ILiteralSL
-import dev.vale.RangeS
 
 // patternId is a unique number, can be used to make temporary variables that wont
 // collide with other things
 case class LetSE(
     range: RangeS,
-    rules: Array[IRulexSR],
+    rules: Vector[IRulexSR],
     pattern: AtomSP,
     expr: IExpressionSE) extends IExpressionSE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
@@ -175,7 +174,7 @@ case class TupleSE(range: RangeS, elements: Vector[IExpressionSE]) extends IExpr
 }
 case class StaticArrayFromValuesSE(
   range: RangeS,
-  rules: Array[IRulexSR],
+  rules: Vector[IRulexSR],
   maybeElementTypeST: Option[RuneUsage],
   mutabilityST: RuneUsage,
   variabilityST: RuneUsage,
@@ -186,7 +185,7 @@ case class StaticArrayFromValuesSE(
 }
 case class StaticArrayFromCallableSE(
   range: RangeS,
-  rules: Array[IRulexSR],
+  rules: Vector[IRulexSR],
   maybeElementTypeST: Option[RuneUsage],
   mutabilityST: RuneUsage,
   variabilityST: RuneUsage,
@@ -197,7 +196,7 @@ case class StaticArrayFromCallableSE(
 }
 case class NewRuntimeSizedArraySE(
   range: RangeS,
-  rules: Array[IRulexSR],
+  rules: Vector[IRulexSR],
   maybeElementTypeST: Option[RuneUsage],
   mutabilityST: RuneUsage,
   size: IExpressionSE,
@@ -225,6 +224,7 @@ case class ConstantBoolSE(range: RangeS, value: Boolean) extends IExpressionSE {
 }
 
 case class ConstantStrSE(range: RangeS, value: String) extends IExpressionSE {
+  vpass()
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
@@ -244,7 +244,7 @@ case class FunctionSE(function: FunctionS) extends IExpressionSE {
   override def range: RangeS = function.range
 }
 
-case class DotSE(range: RangeS, left: IExpressionSE, member: String, borrowContainer: Boolean) extends IExpressionSE {
+case class DotSE(range: RangeS, left: IExpressionSE, member: StrI, borrowContainer: Boolean) extends IExpressionSE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
@@ -264,9 +264,9 @@ case class LocalLoadSE(range: RangeS, name: IVarNameS, targetOwnership: LoadAsP)
 // tried to access a variable they forgot to declare.
 case class OutsideLoadSE(
   range: RangeS,
-  rules: Array[IRulexSR],
+  rules: Vector[IRulexSR],
   name: IImpreciseNameS,
-  maybeTemplateArgs: Option[Array[RuneUsage]],
+  maybeTemplateArgs: Option[Vector[RuneUsage]],
   targetOwnership: LoadAsP
 ) extends IExpressionSE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()

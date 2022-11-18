@@ -1,3 +1,6 @@
+Vale Compiler, version {valec_version}
+http://vale.dev/
+
 USAGE:
     {valec_exe} [subcommand]
 

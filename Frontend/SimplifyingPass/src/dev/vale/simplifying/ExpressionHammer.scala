@@ -1,27 +1,28 @@
 package dev.vale.simplifying
 
-import dev.vale.finalast.{ArgumentH, ArrayCapacityH, ArrayLengthH, AsSubtypeH, BoolH, BorrowToWeakH, BreakH, CallH, ConsecutorH, ConstantBoolH, ConstantF64H, ConstantIntH, ConstantStrH, ConstantVoidH, DestroyImmRuntimeSizedArrayH, DestroyMutRuntimeSizedArrayH, DestroyStaticSizedArrayIntoFunctionH, DiscardH, ExpressionH, ExternCallH, Final, IfH, InlineH, InterfaceCallH, InterfaceRefH, InterfaceToInterfaceUpcastH, IsSameInstanceH, KindH, LockWeakH, NeverH, NewArrayFromValuesH, NewImmRuntimeSizedArrayH, NewMutRuntimeSizedArrayH, NewStructH, PopRuntimeSizedArrayH, PushRuntimeSizedArrayH, ReferenceH, ReturnH, ShareH, StackifyH, StaticArrayFromCallableH, StructRefH, StructToInterfaceUpcastH, UnstackifyH, VariableIdH, VoidH, WhileH}
+import dev.vale.finalast._
 import dev.vale.typing.Hinputs
-import dev.vale.typing.ast.{AddressMemberLookupTE, ArgLookupTE, ArrayLengthTE, AsSubtypeTE, BlockTE, BorrowToWeakTE, BreakTE, ConsecutorTE, ConstantBoolTE, ConstantFloatTE, ConstantIntTE, ConstantStrTE, ConstructTE, DeferTE, DestroyImmRuntimeSizedArrayTE, DestroyMutRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoFunctionTE, DestroyStaticSizedArrayIntoLocalsTE, DestroyTE, DiscardTE, ExpressionT, ExternFunctionCallTE, FunctionCallTE, FunctionHeaderT, IfTE, InterfaceFunctionCallTE, InterfaceToInterfaceUpcastTE, IsSameInstanceTE, LetAndLendTE, LetNormalTE, LocalLookupTE, LockWeakTE, MutateTE, NewImmRuntimeSizedArrayTE, NewMutRuntimeSizedArrayTE, PopRuntimeSizedArrayTE, PrototypeT, PushRuntimeSizedArrayTE, ReferenceExpressionTE, ReturnTE, RuntimeSizedArrayCapacityTE, SoftLoadTE, StaticArrayFromCallableTE, StaticArrayFromValuesTE, StructToInterfaceUpcastTE, ReinterpretTE, TupleTE, UnletTE, VoidLiteralTE, WhileTE}
+import dev.vale.typing.ast._
 import dev.vale.typing.env.AddressibleLocalVariableT
-import dev.vale.typing.types.{CoordT, InterfaceTT, NeverT, StructTT}
-import dev.vale.{vassert, vcurious, vfail}
-import dev.vale.{finalast => m}
-import dev.vale.{finalast => m}
+import dev.vale.typing.types._
+import dev.vale.{Keywords, vassert, vcurious, vfail, vimpl, finalast => m}
 import dev.vale.finalast._
 import dev.vale.typing._
 import dev.vale.typing.ast._
 import dev.vale.typing.types._
 
+import scala.collection.immutable.Map
+
 class ExpressionHammer(
+    keywords: Keywords,
     typeHammer: TypeHammer,
     nameHammer: NameHammer,
     structHammer: StructHammer,
     functionHammer: FunctionHammer) {
   val blockHammer = new BlockHammer(this)
-  val loadHammer = new LoadHammer(typeHammer, nameHammer, structHammer, this)
+  val loadHammer = new LoadHammer(keywords, typeHammer, nameHammer, structHammer, this)
   val letHammer = new LetHammer(typeHammer, nameHammer, structHammer, this, loadHammer)
-  val mutateHammer = new MutateHammer(typeHammer, nameHammer, structHammer, this)
+  val mutateHammer = new MutateHammer(keywords, typeHammer, nameHammer, structHammer, this)
 
   // stackHeight is the number of locals that have been declared in ancestor
   // blocks and previously in this block. It's used to figure out the index of
@@ -37,8 +38,9 @@ class ExpressionHammer(
       expr2: ExpressionT
   ): (ExpressionH[KindH], Vector[ExpressionT]) = {
     expr2 match {
-      case ConstantIntTE(value, bits) => {
-        (ConstantIntH(value, bits), Vector.empty)
+      case ConstantIntTE(numTemplata, bits) => {
+        val num = Conversions.evaluateIntegerTemplata(numTemplata)
+        (ConstantIntH(num, bits), Vector.empty)
       }
       case VoidLiteralTE() => {
         val constructH = ConstantVoidH()
@@ -104,10 +106,10 @@ class ExpressionHammer(
         (access, Vector.empty)
       }
 
-      case InterfaceFunctionCallTE(superFunctionHeader, resultType2, argsExprs2) => {
+      case InterfaceFunctionCallTE(superFunctionPrototype, virtualParamIndex, resultType2, argsExprs2) => {
         val access =
           translateInterfaceFunctionCall(
-            hinputs, hamuts, currentFunctionHeader, locals, superFunctionHeader, resultType2, argsExprs2)
+            hinputs, hamuts, currentFunctionHeader, locals, superFunctionPrototype, virtualParamIndex, resultType2, argsExprs2)
         (access, Vector.empty)
       }
 
@@ -164,7 +166,7 @@ class ExpressionHammer(
         (arrayLengthAndDeferredsExprH, Vector.empty)
       }
 
-      case LockWeakTE(innerExpr2, resultOptBorrowType2, someConstructor, noneConstructor) => {
+      case LockWeakTE(innerExpr2, resultOptBorrowType2, someConstructor, noneConstructor, _, _) => {
         val (resultHE, deferreds) =
           translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr2);
         val (resultOptBorrowTypeH) =
@@ -429,7 +431,7 @@ class ExpressionHammer(
         (upcastNode, innerDeferreds)
       }
 
-      case up @ StructToInterfaceUpcastTE(innerExpr, targetInterfaceRef2) => {
+      case up @ UpcastTE(innerExpr, targetInterfaceRef2, _) => {
         val targetPointerType2 = up.result.reference;
         val sourcePointerType2 = innerExpr.result.reference
 
@@ -559,11 +561,11 @@ class ExpressionHammer(
         (expr, Vector.empty)
       }
 
-      case AsSubtypeTE(leftExprT, targetSubtype, resultOptType, someConstructor, noneConstructor) => {
+      case AsSubtypeTE(leftExprT, targetSubtype, resultOptType, someConstructor, noneConstructor, _, _, _) => {
         val (resultHE, deferreds) =
           translate(hinputs, hamuts, currentFunctionHeader, locals, leftExprT);
         val (targetSubtypeH) =
-          typeHammer.translateKind(hinputs, hamuts, targetSubtype)
+          typeHammer.translateReference(hinputs, hamuts, targetSubtype).kind
         val (resultOptTypeH) =
           typeHammer.translateReference(hinputs, hamuts, resultOptType).expectInterfaceReference()
 
@@ -1060,7 +1062,8 @@ class ExpressionHammer(
     hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeaderT,
     locals: LocalsBox,
-    superFunctionHeader: FunctionHeaderT,
+    superFunctionPrototype: PrototypeT,
+    virtualParamIndex: Int,
     resultType2: CoordT,
     argsExprs2: Vector[ExpressionT]):
   ExpressionH[KindH] = {
@@ -1072,17 +1075,17 @@ class ExpressionHammer(
       return Hammer.consecrash(locals, argsHE)
     }
 
-    val virtualParamIndex = superFunctionHeader.getVirtualIndex.get
+//    val virtualParamIndex = superFunctionHeader.getVirtualIndex.get
     val CoordT(_, interfaceTT @ InterfaceTT(_)) =
-      superFunctionHeader.paramTypes(virtualParamIndex)
+      superFunctionPrototype.paramTypes(virtualParamIndex)
     val (interfaceRefH) =
       structHammer.translateInterfaceRef(hinputs, hamuts, interfaceTT)
-    val edge = hinputs.edgeBlueprintsByInterface(interfaceTT)
-    vassert(edge.interface == interfaceTT)
-    val indexInEdge = edge.superFamilyRootBanners.indexWhere(x => superFunctionHeader.toBanner.same(x))
+    val edge = hinputs.interfaceToEdgeBlueprints(interfaceTT.fullName)
+    vassert(edge.interface == interfaceTT.fullName)
+    val indexInEdge = edge.superFamilyRootHeaders.indexWhere(x => superFunctionPrototype.toSignature == x._1.toSignature)
     vassert(indexInEdge >= 0)
 
-    val (prototypeH) = typeHammer.translatePrototype(hinputs, hamuts, superFunctionHeader.toPrototype)
+    val (prototypeH) = typeHammer.translatePrototype(hinputs, hamuts, superFunctionPrototype)
 
     val callNode =
       InterfaceCallH(

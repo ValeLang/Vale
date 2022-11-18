@@ -1,24 +1,25 @@
 import stdlib.collections.list.*;
 import stdlib.math.*;
 
-struct HashSetDiffIterator<K, H, E> {
+struct HashSetDiffIterator<K Ref imm, H, E>
+where func(&H, K)int, func(&E, K, K)bool, func drop(K)void {
   table &[]Opt<K>;
   otherTable &HashSet<K, H, E>;
   pos! int;
 }
 
-func diff_iter<K, H, E>(
+func diff_iter<K Ref imm, H, E>(
   a &HashSet<K, H, E>,
   b &HashSet<K, H, E>)
 HashSetDiffIterator<K, H, E> {
   HashSetDiffIterator(a.table, b, 0)
 }
 
-func begin<K, H, E>(iter &HashSetDiffIterator<K, H, E>) HashSetDiffIterator<K, H, E> {
+func begin<K Ref imm, H, E>(iter &HashSetDiffIterator<K, H, E>) HashSetDiffIterator<K, H, E> {
   HashSetDiffIterator<K, H, E>(iter.table, iter.otherTable, iter.pos)
 }
 
-func next<K, H, E>(iter &HashSetDiffIterator<K, H, E>) Opt<K> {
+func next<K Ref imm, H, E>(iter &HashSetDiffIterator<K, H, E>) Opt<K> {
   while iter.pos < iter.table.len() {
     if entry = iter.table[set iter.pos = iter.pos + 1];
         not entry.isEmpty() {
@@ -31,7 +32,7 @@ func next<K, H, E>(iter &HashSetDiffIterator<K, H, E>) Opt<K> {
   return None<K>();
 }
 
-func List<K, H, E>(
+func List<K Ref imm, H, E>(
   iter &HashSetDiffIterator<K, H, E>)
 List<K> {
   list = List<K>();
@@ -41,7 +42,7 @@ List<K> {
   return list;
 }
 
-func HashSet<K, H, E>(
+func HashSet<K Ref imm, H, E>(
   iter &HashSetDiffIterator<K, H, E>,
   hasher H,
   equator E)

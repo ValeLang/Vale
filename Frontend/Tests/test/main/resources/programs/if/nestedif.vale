@@ -5,5 +5,5 @@
 exported func main() int {
   return if (false) { 73 }
     else if (true) { 42 }
-    else { 62 }
+    else { 62 };
 }

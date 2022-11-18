@@ -13,7 +13,7 @@ sealed trait IRulexAR[RuneID, RuleID, Literal, Lookup] {
 case class OneOfAR[RuneID, RuleID, Literal, Lookup](
   range: RuleID,
   resultRune: RuneID,
-  literals: Array[Literal]
+  literals: Vector[Literal]
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def allRunes: Vector[RuneID] = Vector(resultRune)
@@ -114,7 +114,7 @@ case class CallAR[RuneID, RuleID, Literal, Lookup](
   range: RuleID,
   resultRune: RuneID,
   templateRune: RuneID,
-  args: Array[RuneID]
+  args: Vector[RuneID]
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def allRunes: Vector[RuneID] = Vector(resultRune, templateRune) ++ args
@@ -124,7 +124,7 @@ case class PrototypeAR[RuneID, RuleID, Literal, Lookup](
   range: RuleID,
   resultRune: RuneID,
   name: String,
-  parameters: Array[RuneID],
+  parameters: Vector[RuneID],
   returnTypeRune: RuneID
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
@@ -146,7 +146,7 @@ case class RepeaterSequenceAR[RuneID, RuleID, Literal, Lookup](
 case class ManualSequenceAR[RuneID, RuleID, Literal, Lookup](
   range: RuleID,
   resultRune: RuneID,
-  elements: Array[RuneID]
+  elements: Vector[RuneID]
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def allRunes: Vector[RuneID] = Vector(resultRune) ++ elements
@@ -155,7 +155,7 @@ case class ManualSequenceAR[RuneID, RuleID, Literal, Lookup](
 case class CoordListAR[RuneID, RuleID, Literal, Lookup](
   range: RuleID,
   resultRune: RuneID,
-  elements: Array[RuneID]
+  elements: Vector[RuneID]
 ) extends IRulexAR[RuneID, RuleID, Literal, Lookup] {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def allRunes: Vector[RuneID] = Vector(resultRune) ++ elements

@@ -1,43 +1,40 @@
 package dev.vale.typing
 
-import dev.vale.{Err, Interner, Ok, PackageCoordinate, PackageCoordinateMap, Profiler, RangeS, Result, vassert, vassertOne, vcurious, vfail, vimpl, vwat}
+import dev.vale.{Err, Interner, Keywords, Ok, PackageCoordinate, PackageCoordinateMap, Profiler, RangeS, Result, vassert, vassertOne, vcurious, vfail, vimpl, vwat, _}
 import dev.vale.options.GlobalOptions
-import dev.vale.parsing.ast.UseP
+import dev.vale.parsing.ast.{CallMacroP, DontCallMacroP, UseP}
 import dev.vale.postparsing.patterns.AtomSP
 import dev.vale.postparsing.rules.IRulexSR
-import dev.vale.postparsing.{BlockSE, CodeNameS, ExportS, ExternS, FunctionNameS, IFunctionDeclarationNameS, IImpreciseNameS, IRuneS, ITemplataType, SealedS}
+import dev.vale.postparsing._
 import dev.vale.typing.OverloadResolver.FindFunctionFailure
-import dev.vale.typing.citizen.{AncestorHelper, IAncestorHelperDelegate, IStructCompilerDelegate, StructCompiler}
+import dev.vale.typing.citizen._
 import dev.vale.typing.expression.{ExpressionCompiler, IExpressionCompilerDelegate}
 import dev.vale.typing.function.{DestructorCompiler, FunctionCompiler, FunctionCompilerCore, IFunctionCompilerDelegate, VirtualCompiler}
 import dev.vale.typing.infer.IInfererDelegate
-import dev.vale.typing.types.{BoolT, CitizenRefT, CoordT, FloatT, ImmutableT, IntT, InterfaceTT, KindT, MutabilityT, NeverT, OverloadSetT, ParamFilter, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StrT, StructMemberT, StructTT, VariabilityT, VoidT}
-import dev.vale._
+import dev.vale.typing.types._
 import dev.vale.highertyping._
-import dev.vale.postparsing.ICompileErrorS
 import OverloadResolver.FindFunctionFailure
 import dev.vale
 import dev.vale.highertyping.{ExportAsA, FunctionA, InterfaceA, ProgramA, StructA}
 import dev.vale.typing.ast.{ConsecutorTE, EdgeT, FunctionHeaderT, LocationInFunctionEnvironment, ParameterT, PrototypeT, ReferenceExpressionTE, VoidLiteralTE}
 import dev.vale.typing.env.{FunctionEnvEntry, FunctionEnvironment, GlobalEnvironment, IEnvEntry, IEnvironment, ImplEnvEntry, InterfaceEnvEntry, NodeEnvironment, NodeEnvironmentBox, PackageEnvironment, StructEnvEntry, TemplataEnvEntry, TemplatasStore}
-import dev.vale.typing.macros.{AbstractBodyMacro, AnonymousInterfaceMacro, AsSubtypeMacro, FunctorHelper, LockWeakMacro, SameInstanceMacro, StructConstructorMacro}
-import dev.vale.typing.macros.citizen.{ImplDropMacro, ImplFreeMacro, InterfaceDropMacro, InterfaceFreeMacro, StructDropMacro, StructFreeMacro}
+import dev.vale.typing.macros.{AbstractBodyMacro, AnonymousInterfaceMacro, AsSubtypeMacro, FunctorHelper, IOnImplDefinedMacro, IOnInterfaceDefinedMacro, IOnStructDefinedMacro, LockWeakMacro, SameInstanceMacro, StructConstructorMacro}
+import dev.vale.typing.macros.citizen._
 import dev.vale.typing.macros.rsa.{RSADropIntoMacro, RSAFreeMacro, RSAImmutableNewMacro, RSALenMacro, RSAMutableCapacityMacro, RSAMutableNewMacro, RSAMutablePopMacro, RSAMutablePushMacro}
 import dev.vale.typing.macros.ssa.{SSADropIntoMacro, SSAFreeMacro, SSALenMacro}
-import dev.vale.typing.names.{FullNameT, INameT, NameTranslator, PackageTopLevelNameT, PrimitiveNameT}
-import dev.vale.typing.templata.{FunctionTemplata, ITemplata, InterfaceTemplata, KindTemplata, PrototypeTemplata, RuntimeSizedArrayTemplateTemplata, StaticSizedArrayTemplateTemplata, StructTemplata}
+import dev.vale.typing.names._
+import dev.vale.typing.templata._
 import dev.vale.typing.ast._
-import dev.vale.typing.citizen.AncestorHelper
+import dev.vale.typing.citizen.ImplCompiler
 import dev.vale.typing.env._
 import dev.vale.typing.expression.LocalHelper
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
 import dev.vale.typing.function.FunctionCompiler
+import dev.vale.typing.function.FunctionCompiler.{EvaluateFunctionSuccess, IEvaluateFunctionResult}
 import dev.vale.typing.macros.citizen.StructDropMacro
 import dev.vale.typing.macros.rsa.RSALenMacro
 import dev.vale.typing.macros.ssa.SSALenMacro
-import dev.vale.typing.macros.SameInstanceMacro
-import dev.vale.typing.names.CitizenTemplateNameT
 
 import scala.collection.immutable.{List, ListMap, Map, Set}
 import scala.collection.mutable
@@ -56,7 +53,7 @@ trait IFunctionGenerator {
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
     life: LocationInFunctionEnvironment,
-    callRange: RangeS,
+    callRange: List[RangeS],
     // We might be able to move these all into the function environment... maybe....
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
@@ -70,88 +67,206 @@ object DefaultPrintyThing {
   }
 }
 
-case class TypingPassOptions(
-  debugOut: (=> String) => Unit = DefaultPrintyThing.print,
-  globalOptions: GlobalOptions
-) {
-  val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
-}
-
 
 
 class Compiler(
-    debugOut: (=> String) => Unit,
-
+    opts: TypingPassOptions,
     interner: Interner,
-    globalOptions: GlobalOptions) {
-  val opts = TypingPassOptions(debugOut, globalOptions)
+    keywords: Keywords) {
+  val debugOut = opts.debugOut
+  val globalOptions = opts.globalOptions
 
   val nameTranslator = new NameTranslator(interner)
 
   val templataCompiler =
     new TemplataCompiler(
+      interner,
       opts,
-
       nameTranslator,
       new ITemplataCompilerDelegate {
-        override def isAncestor(coutputs: CompilerOutputs, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT): Boolean = {
-          ancestorHelper.isAncestor(coutputs, descendantCitizenRef, ancestorInterfaceRef).nonEmpty
+        override def isParent(
+          coutputs: CompilerOutputs,
+          callingEnv: IEnvironment,
+          parentRanges: List[RangeS],
+          subKindTT: ISubKindTT,
+          superKindTT: ISuperKindTT):
+        IsParentResult = {
+          implCompiler.isParent(coutputs, callingEnv, parentRanges, subKindTT, superKindTT)
         }
 
-        override def getStructRef(coutputs: CompilerOutputs, callRange: RangeS,structTemplata: StructTemplata, uncoercedTemplateArgs: Vector[ITemplata]): StructTT = {
-          structCompiler.getStructRef(coutputs, callRange, structTemplata, uncoercedTemplateArgs)
+        override def resolveStruct(
+          coutputs: CompilerOutputs,
+          callingEnv: IEnvironment,
+          callRange: List[RangeS],
+          structTemplata: StructDefinitionTemplata,
+          uncoercedTemplateArgs: Vector[ITemplata[ITemplataType]]):
+        IResolveOutcome[StructTT] = {
+          structCompiler.resolveStruct(
+            coutputs, callingEnv, callRange, structTemplata, uncoercedTemplateArgs)
         }
 
-        override def getInterfaceRef(coutputs: CompilerOutputs, callRange: RangeS,interfaceTemplata: InterfaceTemplata, uncoercedTemplateArgs: Vector[ITemplata]): InterfaceTT = {
-          structCompiler.getInterfaceRef(coutputs, callRange, interfaceTemplata, uncoercedTemplateArgs)
+        override def resolveInterface(
+            coutputs: CompilerOutputs,
+            callingEnv: IEnvironment, // See CSSNCE
+            callRange: List[RangeS],
+            interfaceTemplata: InterfaceDefinitionTemplata,
+            uncoercedTemplateArgs: Vector[ITemplata[ITemplataType]]):
+        IResolveOutcome[InterfaceTT] = {
+          structCompiler.resolveInterface(
+            coutputs, callingEnv, callRange, interfaceTemplata, uncoercedTemplateArgs)
         }
 
-        override def getStaticSizedArrayKind(
+        override def resolveStaticSizedArrayKind(
             env: IEnvironment,
             coutputs: CompilerOutputs,
-            mutability: MutabilityT,
-            variability: VariabilityT,
-            size: Int,
+            mutability: ITemplata[MutabilityTemplataType],
+            variability: ITemplata[VariabilityTemplataType],
+            size: ITemplata[IntegerTemplataType],
             type2: CoordT
         ): StaticSizedArrayTT = {
-          arrayCompiler.getStaticSizedArrayKind(env.globalEnv, coutputs, mutability, variability, size, type2)
+          arrayCompiler.resolveStaticSizedArray(mutability, variability, size, type2)
         }
 
-        override def getRuntimeSizedArrayKind(env: IEnvironment, state: CompilerOutputs, element: CoordT, arrayMutability: MutabilityT): RuntimeSizedArrayTT = {
-          arrayCompiler.getRuntimeSizedArrayKind(env.globalEnv, state, element, arrayMutability)
+        override def resolveRuntimeSizedArrayKind(
+            env: IEnvironment,
+            state: CompilerOutputs,
+            element: CoordT,
+            arrayMutability: ITemplata[MutabilityTemplataType]):
+        RuntimeSizedArrayTT = {
+          arrayCompiler.resolveRuntimeSizedArray(element, arrayMutability)
         }
       })
   val inferCompiler: InferCompiler =
     new InferCompiler(
       opts,
+      interner,
+      keywords,
+      nameTranslator,
+      new IInfererDelegate {
+        def getPlaceholdersInFullName(accum: Accumulator[FullNameT[INameT]], fullName: FullNameT[INameT]): Unit = {
+          fullName.last match {
+            case PlaceholderNameT(_) => accum.add(fullName)
+            case PlaceholderTemplateNameT(_) => accum.add(fullName)
+            case _ =>
+          }
+        }
 
-      new IInfererDelegate[IEnvironment, CompilerOutputs] {
+        def getPlaceholdersInTemplata(accum: Accumulator[FullNameT[INameT]], templata: ITemplata[ITemplataType]): Unit = {
+          templata match {
+            case KindTemplata(kind) => getPlaceholdersInKind(accum, kind)
+            case CoordTemplata(CoordT(_, kind)) => getPlaceholdersInKind(accum, kind)
+            case CoordTemplata(CoordT(_, _)) =>
+            case PlaceholderTemplata(fullNameT, _) => accum.add(fullNameT)
+            case IntegerTemplata(_) =>
+            case BooleanTemplata(_) =>
+            case StringTemplata(_) =>
+            case RuntimeSizedArrayTemplateTemplata() =>
+            case StaticSizedArrayTemplateTemplata() =>
+            case VariabilityTemplata(_) =>
+            case OwnershipTemplata(_) =>
+            case MutabilityTemplata(_) =>
+            case InterfaceDefinitionTemplata(_,_) =>
+            case StructDefinitionTemplata(_,_) =>
+            case ImplDefinitionTemplata(_,_) =>
+            case CoordListTemplata(coords) => coords.foreach(c => getPlaceholdersInKind(accum, c.kind))
+            case PrototypeTemplata(_, prototype) => {
+              getPlaceholdersInFullName(accum, prototype.fullName)
+              prototype.paramTypes.foreach(c => getPlaceholdersInKind(accum, c.kind))
+              getPlaceholdersInKind(accum, prototype.returnType.kind)
+            }
+            case IsaTemplata(_, _, subKind, superKind) => {
+              getPlaceholdersInKind(accum, subKind)
+              getPlaceholdersInKind(accum, superKind)
+            }
+            case other => vimpl(other)
+          }
+        }
+
+        def getPlaceholdersInKind(accum: Accumulator[FullNameT[INameT]], kind: KindT): Unit = {
+          kind match {
+            case IntT(_) =>
+            case BoolT() =>
+            case FloatT() =>
+            case VoidT() =>
+            case NeverT(_) =>
+            case StrT() =>
+            case contentsRuntimeSizedArrayTT(mutability, elementType) => {
+              getPlaceholdersInTemplata(accum, mutability)
+              getPlaceholdersInKind(accum, elementType.kind)
+            }
+            case contentsStaticSizedArrayTT(size, mutability, variability, elementType) => {
+              getPlaceholdersInTemplata(accum, size)
+              getPlaceholdersInTemplata(accum, mutability)
+              getPlaceholdersInTemplata(accum, variability)
+              getPlaceholdersInKind(accum, elementType.kind)
+            }
+            case StructTT(FullNameT(_,_,name)) => name.templateArgs.foreach(getPlaceholdersInTemplata(accum, _))
+            case InterfaceTT(FullNameT(_,_,name)) => name.templateArgs.foreach(getPlaceholdersInTemplata(accum, _))
+            case PlaceholderT(fullName) => accum.add(fullName)
+            case OverloadSetT(env, name) =>
+            case other => vimpl(other)
+          }
+        }
+
+        override def sanityCheckConclusion(env: InferEnv, state: CompilerOutputs, rune: IRuneS, templata: ITemplata[ITemplataType]): Unit = {
+          val accum = new Accumulator[FullNameT[INameT]]()
+          getPlaceholdersInTemplata(accum, templata)
+
+          if (accum.elementsReversed.nonEmpty) {
+            val rootDenizenEnv = env.originalCallingEnv.rootCompilingDenizenEnv
+            val originalCallingEnvTemplateName =
+              rootDenizenEnv.fullName match {
+                case FullNameT(packageCoord, initSteps, x: ITemplateNameT) => {
+                  FullNameT(packageCoord, initSteps, x)
+                }
+                // When we compile a generic function, we populate some placeholders for its template
+                // args. Then, we start compiling its body expressions. At that point, we're in an
+                // environment that has a FullName with placeholders in it.
+                // That's what we'll see in this case.
+                case FullNameT(packageCoord, initSteps, x: IInstantiationNameT) => {
+                  FullNameT(packageCoord, initSteps, x.template)
+                }
+                case other => vfail(other)
+              }
+            accum.elementsReversed.foreach(placeholderName => {
+              // There should only ever be placeholders from the original calling environment, we should
+              // *never* mix placeholders from two environments.
+              // If this assert trips, that means we're not correctly phrasing everything in terms of
+              // placeholders from this top level denizen.
+              // See OWPFRD.
+              vassert(placeholderName.steps.startsWith(originalCallingEnvTemplateName.steps))
+            })
+          }
+        }
+
         override def lookupTemplata(
-          env: IEnvironment,
+          envs: InferEnv,
           coutputs: CompilerOutputs,
-          range: RangeS,
+          range: List[RangeS],
           name: INameT):
-        ITemplata = {
-          templataCompiler.lookupTemplata(env, coutputs, range, name)
+        ITemplata[ITemplataType] = {
+          templataCompiler.lookupTemplata(envs.selfEnv, coutputs, range, name)
         }
 
         override def isDescendant(
-          env: IEnvironment,
+          envs: InferEnv,
           coutputs: CompilerOutputs,
           kind: KindT):
         Boolean = {
           kind match {
-            case RuntimeSizedArrayTT(_, _) => false
+            case p @ PlaceholderT(_) => implCompiler.isDescendant(coutputs, envs.parentRanges, envs.originalCallingEnv, p, false)
+            case contentsRuntimeSizedArrayTT(_, _) => false
             case OverloadSetT(_, _) => false
-            case StaticSizedArrayTT(_, _, _, _) => false
-            case s @ StructTT(_) => ancestorHelper.getAncestorInterfaces(coutputs, s).nonEmpty
-            case i @ InterfaceTT(_) => ancestorHelper.getAncestorInterfaces(coutputs, i).nonEmpty
+            case NeverT(fromBreak) => true
+            case contentsStaticSizedArrayTT(_, _, _, _) => false
+            case s @ StructTT(_) => implCompiler.isDescendant(coutputs, envs.parentRanges, envs.originalCallingEnv, s, false)
+            case i @ InterfaceTT(_) => implCompiler.isDescendant(coutputs, envs.parentRanges, envs.originalCallingEnv, i, false)
             case IntT(_) | BoolT() | FloatT() | StrT() | VoidT() => false
           }
         }
 
         override def isAncestor(
-          env: IEnvironment,
+          envs: InferEnv,
           coutputs: CompilerOutputs,
           kind: KindT):
         Boolean = {
@@ -161,172 +276,314 @@ class Compiler(
           }
         }
 
-        def coerce(env: IEnvironment, state: CompilerOutputs, range: RangeS, toType: ITemplataType, templata: ITemplata): ITemplata = {
-          templataCompiler.coerce(state, range, templata, toType)
+        override def isParent(
+          env: InferEnv,
+          coutputs: CompilerOutputs,
+          parentRanges: List[RangeS],
+          subKindTT: ISubKindTT,
+          superKindTT: ISuperKindTT,
+          includeSelf: Boolean):
+        Option[ITemplata[ImplTemplataType]] = {
+          implCompiler.isParent(coutputs, env.originalCallingEnv, parentRanges, subKindTT, superKindTT) match {
+            case IsParent(implTemplata, _, _) => Some(implTemplata)
+            case IsntParent(candidates) => None
+          }
         }
 
-        override def lookupTemplataImprecise(env: IEnvironment, state: CompilerOutputs, range: RangeS, name: IImpreciseNameS): Option[ITemplata] = {
-          templataCompiler.lookupTemplata(env, state, range, name)
+        def coerce(envs: InferEnv, state: CompilerOutputs, range: List[RangeS], toType: ITemplataType, templata: ITemplata[ITemplataType]): ITemplata[ITemplataType] = {
+          templataCompiler.coerce(state, envs.originalCallingEnv, range, templata, toType)
         }
 
-        override def lookupMemberTypes(state: CompilerOutputs, kind: KindT, expectedNumMembers: Int): Option[Vector[CoordT]] = {
-            val underlyingstructTT =
-              kind match {
-                case sr@StructTT(_) => sr
-                case _ => return None
-              }
-            val structDefT = state.lookupStruct(underlyingstructTT)
-            val structMemberTypes = structDefT.members.map(_.tyype.reference)
-            Some(structMemberTypes)
+        override def lookupTemplataImprecise(envs: InferEnv, state: CompilerOutputs, range: List[RangeS], name: IImpreciseNameS): Option[ITemplata[ITemplataType]] = {
+          templataCompiler.lookupTemplata(envs.selfEnv, state, range, name)
         }
 
-        override def getMutability(state: CompilerOutputs, kind: KindT): MutabilityT = {
+        override def getMutability(state: CompilerOutputs, kind: KindT): ITemplata[MutabilityTemplataType] = {
             Compiler.getMutability(state, kind)
         }
 
-        override def getStaticSizedArrayKind(env: IEnvironment, state: CompilerOutputs, mutability: MutabilityT, variability: VariabilityT, size: Int, element: CoordT): (StaticSizedArrayTT) = {
-            arrayCompiler.getStaticSizedArrayKind(env.globalEnv, state, mutability, variability, size, element)
+        override def predictStaticSizedArrayKind(envs: InferEnv, state: CompilerOutputs, mutability: ITemplata[MutabilityTemplataType], variability: ITemplata[VariabilityTemplataType], size: ITemplata[IntegerTemplataType], element: CoordT): (StaticSizedArrayTT) = {
+            arrayCompiler.resolveStaticSizedArray(mutability, variability, size, element)
         }
 
-        override def getRuntimeSizedArrayKind(env: IEnvironment, state: CompilerOutputs, element: CoordT, arrayMutability: MutabilityT): RuntimeSizedArrayTT = {
-            arrayCompiler.getRuntimeSizedArrayKind(env.globalEnv, state, element, arrayMutability)
+        override def predictRuntimeSizedArrayKind(envs: InferEnv, state: CompilerOutputs, element: CoordT, arrayMutability: ITemplata[MutabilityTemplataType]): RuntimeSizedArrayTT = {
+            arrayCompiler.resolveRuntimeSizedArray(element, arrayMutability)
         }
 
-        override def evaluateInterfaceTemplata(
+        override def predictInterface(
+          env: InferEnv,
           state: CompilerOutputs,
-          callRange: RangeS,
-          templata: InterfaceTemplata,
-          templateArgs: Vector[ITemplata]):
+          templata: InterfaceDefinitionTemplata,
+          templateArgs: Vector[ITemplata[ITemplataType]]):
         (KindT) = {
-            structCompiler.getInterfaceRef(state, callRange, templata, templateArgs)
+            structCompiler.predictInterface(
+              state, env.originalCallingEnv, env.parentRanges, templata, templateArgs)
         }
 
-        override def evaluateStructTemplata(
+        override def predictStruct(
+          env: InferEnv,
           state: CompilerOutputs,
-          callRange: RangeS,
-          templata: StructTemplata,
-          templateArgs: Vector[ITemplata]):
+          templata: StructDefinitionTemplata,
+          templateArgs: Vector[ITemplata[ITemplataType]]):
         (KindT) = {
-          structCompiler.getStructRef(state, callRange, templata, templateArgs)
+          structCompiler.predictStruct(
+            state, env.originalCallingEnv, env.parentRanges, templata, templateArgs)
         }
 
         override def kindIsFromTemplate(
           coutputs: CompilerOutputs,
           actualCitizenRef: KindT,
-          expectedCitizenTemplata: ITemplata):
+          expectedCitizenTemplata: ITemplata[ITemplataType]):
         Boolean = {
           actualCitizenRef match {
-            case s : CitizenRefT => templataCompiler.citizenIsFromTemplate(s, expectedCitizenTemplata)
-            case RuntimeSizedArrayTT(_, _) => (expectedCitizenTemplata == RuntimeSizedArrayTemplateTemplata())
-            case StaticSizedArrayTT(_, _, _, _) => (expectedCitizenTemplata == StaticSizedArrayTemplateTemplata())
+            case s : ICitizenTT => templataCompiler.citizenIsFromTemplate(s, expectedCitizenTemplata)
+            case contentsRuntimeSizedArrayTT(_, _) => (expectedCitizenTemplata == RuntimeSizedArrayTemplateTemplata())
+            case contentsStaticSizedArrayTT(_, _, _, _) => (expectedCitizenTemplata == StaticSizedArrayTemplateTemplata())
             case _ => false
           }
         }
 
-        override def getAncestors(coutputs: CompilerOutputs, descendant: KindT, includeSelf: Boolean): Set[KindT] = {
-            (if (includeSelf) Set[KindT](descendant) else Set[KindT]()) ++
+        override def getAncestors(
+          envs: InferEnv,
+          coutputs: CompilerOutputs,
+          descendant: KindT,
+          includeSelf: Boolean):
+        Set[KindT] = {
+            (if (includeSelf) {
+              Set[KindT](descendant)
+            } else {
+              Set[KindT]()
+            }) ++
               (descendant match {
-                case s : CitizenRefT => ancestorHelper.getAncestorInterfaces(coutputs, s).keys
-                case _ => Set()
+                case s : ISubKindTT => implCompiler.getParents(coutputs, envs.parentRanges, envs.originalCallingEnv, s, true)
+                case _ => Vector[KindT]()
               })
         }
 
-        override def getMemberCoords(state: CompilerOutputs, structTT: StructTT): Vector[CoordT] = {
-            structCompiler.getMemberCoords(state, structTT)
-
-        }
-
-
-        override def getInterfaceTemplataType(it: InterfaceTemplata): ITemplataType = {
-            it.originInterface.tyype
-
-        }
-
-        override def getStructTemplataType(st: StructTemplata): ITemplataType = {
-            st.originStruct.tyype
-        }
-
         override def structIsClosure(state: CompilerOutputs, structTT: StructTT): Boolean = {
-            val structDef = state.getStructDefForRef(structTT)
+            val structDef = state.lookupStruct(structTT)
             structDef.isClosure
         }
 
-        override def resolveExactSignature(env: IEnvironment, state: CompilerOutputs, range: RangeS, name: String, coords: Vector[CoordT]): Result[PrototypeT, FindFunctionFailure] = {
-            overloadCompiler.findFunction(env, state, range, interner.intern(CodeNameS(name)), Vector.empty, Array.empty, coords.map(ParamFilter(_, None)), Vector.empty, true)
+        def predictFunction(
+          envs: InferEnv,
+          state: CompilerOutputs,
+          functionRange: RangeS,
+          name: StrI,
+          paramCoords: Vector[CoordT],
+          returnCoord: CoordT):
+        PrototypeTemplata = {
+          PrototypeTemplata(
+            functionRange,
+            PrototypeT(
+              envs.selfEnv.fullName.addStep(
+                interner.intern(
+                  FunctionNameT(
+                    interner.intern(FunctionTemplateNameT(name, functionRange.begin)),
+                    Vector(),
+                    paramCoords))),
+              returnCoord))
+        }
+
+        override def assemblePrototype(
+            envs: InferEnv,
+          state: CompilerOutputs,
+            range: RangeS,
+            name: StrI,
+            coords: Vector[CoordT],
+            returnType: CoordT):
+        PrototypeT = {
+          val result =
+            PrototypeT(
+              envs.selfEnv.fullName.addStep(
+                interner.intern(FunctionBoundNameT(
+                  interner.intern(FunctionBoundTemplateNameT(name, range.begin)), Vector(), coords))),
+              returnType)
+
+          // This is a function bound, and there's no such thing as a function bound with function bounds.
+          state.addInstantiationBounds(result.fullName, InstantiationBoundArguments(Map(), Map()))
+
+          result
+        }
+
+        override def assembleImpl(env: InferEnv, range: RangeS, subKind: KindT, superKind: KindT): IsaTemplata = {
+          IsaTemplata(
+            range,
+            env.selfEnv.fullName.addStep(
+              interner.intern(
+                ImplBoundNameT(
+                  interner.intern(ImplBoundTemplateNameT(range.begin)),
+                  Vector()))),
+            subKind,
+            superKind)
+        }
+      },
+      new IInferCompilerDelegate {
+        override def resolveInterface(
+          callingEnv: IEnvironment,
+          state: CompilerOutputs,
+          callRange: List[RangeS],
+          templata: InterfaceDefinitionTemplata,
+          templateArgs: Vector[ITemplata[ITemplataType]],
+          verifyConclusions: Boolean):
+        IResolveOutcome[InterfaceTT] = {
+          vassert(verifyConclusions) // If we dont want to be verifying, we shouldnt be calling this func
+          structCompiler.resolveInterface(state, callingEnv, callRange, templata, templateArgs)
+        }
+
+        override def resolveStruct(
+          callingEnv: IEnvironment,
+          state: CompilerOutputs,
+          callRange: List[RangeS],
+          templata: StructDefinitionTemplata,
+          templateArgs: Vector[ITemplata[ITemplataType]],
+          verifyConclusions: Boolean):
+        IResolveOutcome[StructTT] = {
+          vassert(verifyConclusions) // If we dont want to be verifying, we shouldnt be calling this func
+          structCompiler.resolveStruct(state, callingEnv, callRange, templata, templateArgs)
+        }
+
+        override def resolveFunction(
+          callingEnv: IEnvironment,
+          state: CompilerOutputs,
+          range: List[RangeS],
+          name: StrI,
+          coords: Vector[CoordT],
+          verifyConclusions: Boolean):
+        Result[EvaluateFunctionSuccess, FindFunctionFailure] = {
+          overloadResolver.findFunction(
+            callingEnv,
+            state,
+            range,
+            interner.intern(CodeNameS(interner.intern(name))),
+            Vector.empty,
+            Vector.empty,
+            coords,
+            Vector.empty,
+            true,
+            verifyConclusions)
+        }
+
+        override def resolveStaticSizedArrayKind(coutputs: CompilerOutputs, mutability: ITemplata[MutabilityTemplataType], variability: ITemplata[VariabilityTemplataType], size: ITemplata[IntegerTemplataType], element: CoordT): StaticSizedArrayTT = {
+          arrayCompiler.resolveStaticSizedArray(mutability, variability, size, element)
+        }
+
+        override def resolveRuntimeSizedArrayKind(coutputs: CompilerOutputs, element: CoordT, arrayMutability: ITemplata[MutabilityTemplataType]): RuntimeSizedArrayTT = {
+          arrayCompiler.resolveRuntimeSizedArray(element, arrayMutability)
+        }
+
+        override def resolveImpl(
+          callingEnv: IEnvironment,
+          state: CompilerOutputs,
+          range: List[RangeS],
+          subKind: ISubKindTT,
+          superKind: ISuperKindTT):
+        IsParentResult = {
+          implCompiler.isParent(state, callingEnv, range, subKind, superKind)
         }
       })
   val convertHelper =
     new ConvertHelper(
       opts,
       new IConvertHelperDelegate {
-        override def isAncestor(coutputs: CompilerOutputs, descendantCitizenRef: CitizenRefT, ancestorInterfaceRef: InterfaceTT): Boolean = {
-          ancestorHelper.isAncestor(coutputs, descendantCitizenRef, ancestorInterfaceRef).nonEmpty
+        override def isParent(
+          coutputs: CompilerOutputs,
+          callingEnv: IEnvironment,
+          parentRanges: List[RangeS],
+          descendantCitizenRef: ISubKindTT,
+          ancestorInterfaceRef: ISuperKindTT):
+        IsParentResult = {
+          implCompiler.isParent(
+            coutputs, callingEnv, parentRanges, descendantCitizenRef, ancestorInterfaceRef)
         }
       })
-
-  val ancestorHelper: AncestorHelper =
-    new AncestorHelper(opts, interner, inferCompiler, new IAncestorHelperDelegate {
-      override def getInterfaceRef(coutputs: CompilerOutputs, callRange: RangeS, interfaceTemplata: InterfaceTemplata, uncoercedTemplateArgs: Vector[ITemplata]): InterfaceTT = {
-        structCompiler.getInterfaceRef(coutputs, callRange, interfaceTemplata, uncoercedTemplateArgs)
-      }
-    })
 
   val structCompiler: StructCompiler =
     new StructCompiler(
       opts,
-
       interner,
+      keywords,
       nameTranslator,
+      templataCompiler,
       inferCompiler,
-      ancestorHelper,
       new IStructCompilerDelegate {
-        override def evaluateOrdinaryFunctionFromNonCallForHeader(coutputs: CompilerOutputs, functionTemplata: FunctionTemplata): FunctionHeaderT = {
-          functionCompiler.evaluateOrdinaryFunctionFromNonCallForHeader(coutputs, functionTemplata)
+//
+//        override def evaluateOrdinaryFunctionFromNonCallForHeader(
+//          coutputs: CompilerOutputs,
+//          parentRanges: List[RangeS],
+//          functionTemplata: FunctionTemplata,
+//          verifyConclusions: Boolean):
+//        FunctionHeaderT = {
+//          functionCompiler.evaluateOrdinaryFunctionFromNonCallForHeader(
+//            coutputs, parentRanges, functionTemplata, verifyConclusions)
+//        }
+
+        override def evaluateGenericFunctionFromNonCallForHeader(
+          coutputs: CompilerOutputs,
+          parentRanges: List[RangeS],
+          functionTemplata: FunctionTemplata,
+          verifyConclusions: Boolean):
+        FunctionHeaderT = {
+          functionCompiler.evaluateGenericFunctionFromNonCall(
+            coutputs, parentRanges, functionTemplata, verifyConclusions)
         }
 
-        override def evaluateTemplatedFunctionFromNonCallForHeader(coutputs: CompilerOutputs, functionTemplata: FunctionTemplata): FunctionHeaderT = {
-          functionCompiler.evaluateTemplatedFunctionFromNonCallForHeader(coutputs, functionTemplata)
-        }
+//        override def evaluateGenericLightFunctionFromCallForPrototype(
+//          coutputs: CompilerOutputs,
+//          callRange: List[RangeS],
+//          callingEnv: IEnvironment, // See CSSNCE
+//          functionTemplata: FunctionTemplata,
+//          explicitTemplateArgs: Vector[ITemplata[ITemplataType]],
+//          args: Vector[Option[CoordT]]):
+//        IEvaluateFunctionResult = {
+//          functionCompiler.evaluateGenericLightFunctionFromCallForPrototype(
+//            coutputs, callRange, callingEnv, functionTemplata, explicitTemplateArgs, args)
+//        }
 
         override def scoutExpectedFunctionForPrototype(
-          env: IEnvironment, coutputs: CompilerOutputs, callRange: RangeS, functionName: IImpreciseNameS,
+          env: IEnvironment, coutputs: CompilerOutputs, callRange: List[RangeS], functionName: IImpreciseNameS,
           explicitTemplateArgRulesS: Vector[IRulexSR],
-          explicitTemplateArgRunesS: Array[IRuneS],
-          args: Vector[ParamFilter], extraEnvsToLookIn: Vector[IEnvironment], exact: Boolean):
-        PrototypeT = {
-          overloadCompiler.findFunction(env, coutputs, callRange, functionName,
+          explicitTemplateArgRunesS: Vector[IRuneS],
+          args: Vector[CoordT], extraEnvsToLookIn: Vector[IEnvironment], exact: Boolean, verifyConclusions: Boolean):
+        EvaluateFunctionSuccess = {
+          overloadResolver.findFunction(env, coutputs, callRange, functionName,
             explicitTemplateArgRulesS,
-            explicitTemplateArgRunesS, args, extraEnvsToLookIn, exact) match {
+            explicitTemplateArgRunesS, args, extraEnvsToLookIn, exact, verifyConclusions) match {
             case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(callRange, e))
             case Ok(x) => x
           }
         }
       })
 
+  val implCompiler: ImplCompiler =
+    new ImplCompiler(opts, interner, nameTranslator, structCompiler, templataCompiler, inferCompiler)
+
   val functionCompiler: FunctionCompiler =
-    new FunctionCompiler(opts, interner, nameTranslator, templataCompiler, inferCompiler, convertHelper, structCompiler,
+    new FunctionCompiler(opts, interner, keywords, nameTranslator, templataCompiler, inferCompiler, convertHelper, structCompiler,
       new IFunctionCompilerDelegate {
     override def evaluateBlockStatements(
         coutputs: CompilerOutputs,
         startingNenv: NodeEnvironment,
         nenv: NodeEnvironmentBox,
         life: LocationInFunctionEnvironment,
+      ranges: List[RangeS],
         exprs: BlockSE
     ): (ReferenceExpressionTE, Set[CoordT]) = {
-      expressionCompiler.evaluateBlockStatements(coutputs, startingNenv, nenv, life, exprs)
+      expressionCompiler.evaluateBlockStatements(coutputs, startingNenv, nenv, life, ranges, exprs)
     }
 
     override def translatePatternList(
       coutputs: CompilerOutputs,
       nenv: NodeEnvironmentBox,
       life: LocationInFunctionEnvironment,
+      ranges: List[RangeS],
       patterns1: Vector[AtomSP],
       patternInputExprs2: Vector[ReferenceExpressionTE]
     ): ReferenceExpressionTE = {
-      expressionCompiler.translatePatternList(coutputs, nenv, life, patterns1, patternInputExprs2)
+      expressionCompiler.translatePatternList(coutputs, nenv, life, ranges, patterns1, patternInputExprs2)
     }
 
-//    override def evaluateParent(env: IEnvironment, coutputs: CompilerOutputs, callRange: RangeS, sparkHeader: FunctionHeaderT): Unit = {
+//    override def evaluateParent(env: IEnvironment, coutputs: CompilerOutputs, callRange: List[RangeS], sparkHeader: FunctionHeaderT): Unit = {
 //      virtualCompiler.evaluateParent(env, coutputs, callRange, sparkHeader)
 //    }
 
@@ -336,7 +593,7 @@ class Compiler(
       fullEnv: FunctionEnvironment,
       coutputs: CompilerOutputs,
       life: LocationInFunctionEnvironment,
-      callRange: RangeS,
+      callRange: List[RangeS],
       originFunction: Option[FunctionA],
       paramCoords: Vector[ParameterT],
       maybeRetCoord: Option[CoordT]):
@@ -346,96 +603,154 @@ class Compiler(
         functionCompilerCore, structCompiler, destructorCompiler, arrayCompiler, fullEnv, coutputs, life, callRange, originFunction, paramCoords, maybeRetCoord)
     }
   })
-  val overloadCompiler: OverloadResolver = new OverloadResolver(opts, interner, templataCompiler, inferCompiler, functionCompiler)
-  val destructorCompiler: DestructorCompiler = new DestructorCompiler(opts, interner, structCompiler, overloadCompiler)
+  val overloadResolver: OverloadResolver = new OverloadResolver(opts, interner, keywords, templataCompiler, inferCompiler, functionCompiler)
+  val destructorCompiler: DestructorCompiler = new DestructorCompiler(opts, interner, keywords, structCompiler, overloadResolver)
 
-  val virtualCompiler = new VirtualCompiler(opts, interner, overloadCompiler)
+  val virtualCompiler = new VirtualCompiler(opts, interner, overloadResolver)
 
-  val sequenceCompiler = new SequenceCompiler(opts, interner, structCompiler, templataCompiler)
+  val sequenceCompiler = new SequenceCompiler(opts, interner, keywords, structCompiler, templataCompiler)
 
-  val arrayCompiler =
+  val arrayCompiler: ArrayCompiler =
     new ArrayCompiler(
       opts,
-
       interner,
+      keywords,
       inferCompiler,
-      overloadCompiler)
+      overloadResolver,
+      destructorCompiler,
+      templataCompiler)
 
   val expressionCompiler: ExpressionCompiler =
     new ExpressionCompiler(
       opts,
-
       interner,
+      keywords,
       nameTranslator,
       templataCompiler,
       inferCompiler,
       arrayCompiler,
       structCompiler,
-      ancestorHelper,
+      implCompiler,
       sequenceCompiler,
-      overloadCompiler,
+      overloadResolver,
       destructorCompiler,
+      implCompiler,
       convertHelper,
       new IExpressionCompilerDelegate {
-        override def evaluateTemplatedFunctionFromCallForPrototype(coutputs: CompilerOutputs, callRange: RangeS, functionTemplata: FunctionTemplata, explicitTemplateArgs: Vector[ITemplata], args: Vector[ParamFilter]): FunctionCompiler.IEvaluateFunctionResult[PrototypeT] = {
-          functionCompiler.evaluateTemplatedFunctionFromCallForPrototype(coutputs, callRange, functionTemplata, explicitTemplateArgs, args)
+        override def evaluateTemplatedFunctionFromCallForPrototype(
+            coutputs: CompilerOutputs,
+            callingEnv: IEnvironment, // See CSSNCE
+            callRange: List[RangeS],
+            functionTemplata: FunctionTemplata,
+            explicitTemplateArgs: Vector[ITemplata[ITemplataType]],
+            args: Vector[CoordT]):
+        FunctionCompiler.IEvaluateFunctionResult = {
+          functionCompiler.evaluateTemplatedFunctionFromCallForPrototype(
+            coutputs, callRange, callingEnv, functionTemplata, explicitTemplateArgs, args, true)
         }
 
-        override def evaluateClosureStruct(coutputs: CompilerOutputs, containingNodeEnv: NodeEnvironment, callRange: RangeS, name: IFunctionDeclarationNameS, function1: FunctionA): StructTT = {
-          functionCompiler.evaluateClosureStruct(coutputs, containingNodeEnv, callRange, name, function1)
+        override def evaluateGenericFunctionFromCallForPrototype(
+          coutputs: CompilerOutputs,
+          callingEnv: IEnvironment, // See CSSNCE
+          callRange: List[RangeS],
+          functionTemplata: FunctionTemplata,
+          explicitTemplateArgs: Vector[ITemplata[ITemplataType]],
+          args: Vector[CoordT]):
+        FunctionCompiler.IEvaluateFunctionResult = {
+          functionCompiler.evaluateGenericLightFunctionFromCallForPrototype(
+            coutputs, callRange, callingEnv, functionTemplata, explicitTemplateArgs, args)
+        }
+
+        override def evaluateClosureStruct(
+            coutputs: CompilerOutputs,
+            containingNodeEnv: NodeEnvironment,
+            callRange: List[RangeS],
+            name: IFunctionDeclarationNameS,
+            function1: FunctionA):
+        StructTT = {
+          functionCompiler.evaluateClosureStruct(coutputs, containingNodeEnv, callRange, name, function1, true)
         }
       })
 
-  val edgeCompiler = new EdgeCompiler(interner, overloadCompiler)
+  val edgeCompiler = new EdgeCompiler(interner, keywords, functionCompiler, overloadResolver, implCompiler)
 
-  val functorHelper = new FunctorHelper(interner, structCompiler)
-  val structConstructorMacro = new StructConstructorMacro(opts, interner, nameTranslator)
-  val structDropMacro = new StructDropMacro(interner, nameTranslator, destructorCompiler)
-  val structFreeMacro = new StructFreeMacro(interner, nameTranslator, destructorCompiler)
-  val interfaceFreeMacro = new InterfaceFreeMacro(interner, overloadCompiler)
-  val asSubtypeMacro = new AsSubtypeMacro(ancestorHelper, expressionCompiler)
-  val rsaLenMacro = new RSALenMacro()
-  val rsaMutNewMacro = new RSAMutableNewMacro(interner)
-  val rsaImmNewMacro = new RSAImmutableNewMacro(interner)
-  val rsaPushMacro = new RSAMutablePushMacro(interner)
-  val rsaPopMacro = new RSAMutablePopMacro(interner)
-  val rsaCapacityMacro = new RSAMutableCapacityMacro(interner)
-  val ssaLenMacro = new SSALenMacro()
-  val rsaDropMacro = new RSADropIntoMacro(arrayCompiler)
-  val ssaDropMacro = new SSADropIntoMacro(arrayCompiler)
-  val rsaFreeMacro = new RSAFreeMacro(arrayCompiler, destructorCompiler)
-  val ssaFreeMacro = new SSAFreeMacro(arrayCompiler, destructorCompiler)
-//  val ssaLenMacro = new SSALenMacro()
+  val functorHelper = new FunctorHelper(interner, keywords)
+  val structConstructorMacro = new StructConstructorMacro(opts, interner, keywords, nameTranslator, destructorCompiler)
+  val structDropMacro = new StructDropMacro(interner, keywords, nameTranslator, destructorCompiler)
+//  val structFreeMacro = new StructFreeMacro(interner, keywords, nameTranslator, destructorCompiler)
+//  val interfaceFreeMacro = new InterfaceFreeMacro(interner, keywords, nameTranslator)
+  val asSubtypeMacro = new AsSubtypeMacro(keywords, implCompiler, expressionCompiler, destructorCompiler)
+  val rsaLenMacro = new RSALenMacro(keywords)
+  val rsaMutNewMacro = new RSAMutableNewMacro(interner, keywords, arrayCompiler, destructorCompiler)
+  val rsaImmNewMacro = new RSAImmutableNewMacro(interner, keywords, overloadResolver, arrayCompiler, destructorCompiler)
+  val rsaPushMacro = new RSAMutablePushMacro(interner, keywords)
+  val rsaPopMacro = new RSAMutablePopMacro(interner, keywords)
+  val rsaCapacityMacro = new RSAMutableCapacityMacro(interner, keywords)
+  val ssaLenMacro = new SSALenMacro(keywords)
+  val rsaDropMacro = new RSADropIntoMacro(keywords, arrayCompiler)
+  val ssaDropMacro = new SSADropIntoMacro(keywords, arrayCompiler)
+  val rsaFreeMacro = new RSAFreeMacro(interner, keywords, arrayCompiler, overloadResolver, destructorCompiler)
+  val ssaFreeMacro = new SSAFreeMacro(interner, keywords, arrayCompiler, overloadResolver, destructorCompiler)
+//  val ssaLenMacro = new SSALenMacro(keywords)
   val implDropMacro = new ImplDropMacro(interner, nameTranslator)
-  val implFreeMacro = new ImplFreeMacro(interner, nameTranslator)
-  val interfaceDropMacro = new InterfaceDropMacro(interner, nameTranslator)
-  val abstractBodyMacro = new AbstractBodyMacro()
-  val lockWeakMacro = new LockWeakMacro(expressionCompiler)
-  val sameInstanceMacro = new SameInstanceMacro()
+//  val implFreeMacro = new ImplFreeMacro(interner, keywords, nameTranslator)
+  val interfaceDropMacro = new InterfaceDropMacro(interner, keywords, nameTranslator)
+  val abstractBodyMacro = new AbstractBodyMacro(interner, keywords, overloadResolver)
+  val lockWeakMacro = new LockWeakMacro(keywords, expressionCompiler)
+  val sameInstanceMacro = new SameInstanceMacro(keywords)
   val anonymousInterfaceMacro =
     new AnonymousInterfaceMacro(
-      opts, interner, nameTranslator, overloadCompiler, structCompiler, structConstructorMacro, structDropMacro, structFreeMacro, interfaceFreeMacro, implDropMacro)
+      opts, interner, keywords, nameTranslator, overloadResolver, structCompiler, structConstructorMacro, structDropMacro, implDropMacro)
 
 
   def evaluate(packageToProgramA: PackageCoordinateMap[ProgramA]): Result[Hinputs, ICompileErrorT] = {
     try {
       Profiler.frame(() => {
+        val nameToStructDefinedMacro =
+          Map(
+            structConstructorMacro.macroName -> structConstructorMacro,
+            structDropMacro.macroName -> structDropMacro)//,
+//            structFreeMacro.macroName -> structFreeMacro,
+//            implFreeMacro.macroName -> implFreeMacro)
+        val nameToInterfaceDefinedMacro =
+          Map(
+            interfaceDropMacro.macroName -> interfaceDropMacro,
+//            interfaceFreeMacro.macroName -> interfaceFreeMacro,
+            anonymousInterfaceMacro.macroName -> anonymousInterfaceMacro)
+        val nameToImplDefinedMacro = Map[StrI, IOnImplDefinedMacro]()
+        val nameToFunctionBodyMacro =
+          Map(
+            abstractBodyMacro.generatorId -> abstractBodyMacro,
+            structConstructorMacro.generatorId -> structConstructorMacro,
+//            structFreeMacro.freeGeneratorId -> structFreeMacro,
+            structDropMacro.dropGeneratorId -> structDropMacro,
+            rsaLenMacro.generatorId -> rsaLenMacro,
+            rsaMutNewMacro.generatorId -> rsaMutNewMacro,
+            rsaImmNewMacro.generatorId -> rsaImmNewMacro,
+            rsaPushMacro.generatorId -> rsaPushMacro,
+            rsaPopMacro.generatorId -> rsaPopMacro,
+            rsaCapacityMacro.generatorId -> rsaCapacityMacro,
+            ssaLenMacro.generatorId -> ssaLenMacro,
+            rsaDropMacro.generatorId -> rsaDropMacro,
+            ssaDropMacro.generatorId -> ssaDropMacro,
+            rsaFreeMacro.generatorId -> rsaFreeMacro,
+            ssaFreeMacro.generatorId -> ssaFreeMacro,
+            lockWeakMacro.generatorId -> lockWeakMacro,
+            sameInstanceMacro.generatorId -> sameInstanceMacro,
+            asSubtypeMacro.generatorId -> asSubtypeMacro)
+
         val fullNameAndEnvEntry: Vector[(FullNameT[INameT], IEnvEntry)] =
           packageToProgramA.flatMap({ case (coord, programA) =>
             val packageName = FullNameT(coord, Vector(), interner.intern(PackageTopLevelNameT()))
             programA.structs.map(structA => {
               val structNameT = packageName.addStep(nameTranslator.translateNameStep(structA.name))
               Vector((structNameT, StructEnvEntry(structA))) ++
-              structConstructorMacro.getStructSiblingEntries(structConstructorMacro.macroName, structNameT, structA)
+                preprocessStruct(nameToStructDefinedMacro, structNameT, structA)
             }) ++
             programA.interfaces.map(interfaceA => {
               val interfaceNameT = packageName.addStep(nameTranslator.translateNameStep(interfaceA.name))
               Vector((interfaceNameT, InterfaceEnvEntry(interfaceA))) ++
-                (if (interfaceA.attributes.contains(SealedS)) {
-                  Vector()
-                } else {
-                  anonymousInterfaceMacro.getInterfaceSiblingEntries(interfaceNameT, interfaceA)
-                })
+                preprocessInterface(nameToInterfaceDefinedMacro, interfaceNameT, interfaceA)
             }) ++
             programA.impls.map(implA => {
               val implNameT = packageName.addStep(nameTranslator.translateImplName(implA.name))
@@ -443,23 +758,21 @@ class Compiler(
               implDropMacro.getImplSiblingEntries(implNameT, implA)
             }) ++
             programA.functions.map(functionA => {
-              val functionNameT = packageName.addStep(nameTranslator.translateFunctionNameToTemplateName(functionA.name))
+              val functionNameT = packageName.addStep(nameTranslator.translateGenericFunctionName(functionA.name))
               Vector((functionNameT, FunctionEnvEntry(functionA)))
             })
           }).flatten.flatten.toVector
 
         val namespaceNameToTemplatas =
           fullNameAndEnvEntry
-            .map({
-              case (name, envEntry) => {
-                (name.copy(last = interner.intern(PackageTopLevelNameT())), name.last, envEntry)
-              }
+            .map({ case (name, envEntry) =>
+              (name.copy(last = interner.intern(PackageTopLevelNameT())), name.last, envEntry)
             })
             .groupBy(_._1)
-            .map({ case (namespaceFullName, envEntries) =>
-              namespaceFullName ->
-              TemplatasStore(namespaceFullName, Map(), Map())
-                .addEntries(interner, envEntries.map({ case (_, b, c) => (b, c) }))
+            .map({ case (packageFullName, envEntries) =>
+              packageFullName ->
+                TemplatasStore(packageFullName, Map(), Map())
+                  .addEntries(interner, envEntries.map({ case (_, b, c) => (b, c) }))
              }).toMap
 
         val globalEnv =
@@ -467,51 +780,27 @@ class Compiler(
             functorHelper,
             structConstructorMacro,
             structDropMacro,
-            structFreeMacro,
+//            structFreeMacro,
             interfaceDropMacro,
-            interfaceFreeMacro,
+//            interfaceFreeMacro,
             anonymousInterfaceMacro,
-            Map(
-              structDropMacro.macroName -> structDropMacro,
-              structFreeMacro.macroName -> structFreeMacro,
-              implFreeMacro.macroName -> implFreeMacro),
-            Map(
-              interfaceDropMacro.macroName -> interfaceDropMacro,
-              interfaceFreeMacro.macroName -> interfaceFreeMacro),
-            Map(),
-            Map(
-              abstractBodyMacro.generatorId -> abstractBodyMacro,
-              structConstructorMacro.generatorId -> structConstructorMacro,
-              structFreeMacro.freeGeneratorId -> structFreeMacro,
-//              interfaceFreeMacro.generatorId -> interfaceFreeMacro,
-              structDropMacro.dropGeneratorId -> structDropMacro,
-              rsaLenMacro.generatorId -> rsaLenMacro,
-              rsaMutNewMacro.generatorId -> rsaMutNewMacro,
-              rsaImmNewMacro.generatorId -> rsaImmNewMacro,
-              rsaPushMacro.generatorId -> rsaPushMacro,
-              rsaPopMacro.generatorId -> rsaPopMacro,
-              rsaCapacityMacro.generatorId -> rsaCapacityMacro,
-              ssaLenMacro.generatorId -> ssaLenMacro,
-              rsaDropMacro.generatorId -> rsaDropMacro,
-              ssaDropMacro.generatorId -> ssaDropMacro,
-              rsaFreeMacro.generatorId -> rsaFreeMacro,
-              ssaFreeMacro.generatorId -> ssaFreeMacro,
-              lockWeakMacro.generatorId -> lockWeakMacro,
-              sameInstanceMacro.generatorId -> sameInstanceMacro,
-              asSubtypeMacro.generatorId -> asSubtypeMacro),
+            nameToStructDefinedMacro,
+            nameToInterfaceDefinedMacro,
+            nameToImplDefinedMacro,
+            nameToFunctionBodyMacro,
             namespaceNameToTemplatas,
             // Bulitins
-            env.TemplatasStore(FullNameT(PackageCoordinate.BUILTIN(interner), Vector(), interner.intern(PackageTopLevelNameT())), Map(), Map()).addEntries(
+            env.TemplatasStore(FullNameT(PackageCoordinate.BUILTIN(interner, keywords), Vector(), interner.intern(PackageTopLevelNameT())), Map(), Map()).addEntries(
               interner,
               Vector[(INameT, IEnvEntry)](
-                interner.intern(PrimitiveNameT("int")) -> TemplataEnvEntry(KindTemplata(IntT.i32)),
-                interner.intern(PrimitiveNameT("i64")) -> TemplataEnvEntry(KindTemplata(IntT.i64)),
-                interner.intern(PrimitiveNameT("Array")) -> TemplataEnvEntry(RuntimeSizedArrayTemplateTemplata()),
-                interner.intern(PrimitiveNameT("bool")) -> TemplataEnvEntry(KindTemplata(BoolT())),
-                interner.intern(PrimitiveNameT("float")) -> TemplataEnvEntry(KindTemplata(FloatT())),
-                interner.intern(PrimitiveNameT("__Never")) -> TemplataEnvEntry(KindTemplata(NeverT(false))),
-                interner.intern(PrimitiveNameT("str")) -> TemplataEnvEntry(KindTemplata(StrT())),
-                interner.intern(PrimitiveNameT("void")) -> TemplataEnvEntry(KindTemplata(VoidT())))))
+                interner.intern(PrimitiveNameT(keywords.int)) -> TemplataEnvEntry(KindTemplata(IntT.i32)),
+                interner.intern(PrimitiveNameT(keywords.i64)) -> TemplataEnvEntry(KindTemplata(IntT.i64)),
+                interner.intern(PrimitiveNameT(keywords.Array)) -> TemplataEnvEntry(RuntimeSizedArrayTemplateTemplata()),
+                interner.intern(PrimitiveNameT(keywords.bool)) -> TemplataEnvEntry(KindTemplata(BoolT())),
+                interner.intern(PrimitiveNameT(keywords.float)) -> TemplataEnvEntry(KindTemplata(FloatT())),
+                interner.intern(PrimitiveNameT(keywords.__Never)) -> TemplataEnvEntry(KindTemplata(NeverT(false))),
+                interner.intern(PrimitiveNameT(keywords.str)) -> TemplataEnvEntry(KindTemplata(StrT())),
+                interner.intern(PrimitiveNameT(keywords.void)) -> TemplataEnvEntry(KindTemplata(VoidT())))))
 
         val coutputs = CompilerOutputs()
 
@@ -528,54 +817,74 @@ class Compiler(
 //            coutputs,
 //            Vector())
 
+        arrayCompiler.compileStaticSizedArray(globalEnv, coutputs)
+        arrayCompiler.compileRuntimeSizedArray(globalEnv, coutputs)
+
+
         globalEnv.nameToTopLevelEnvironment.foreach({ case (namespaceCoord, templatas) =>
           val env = PackageEnvironment.makeTopLevelEnvironment(globalEnv, namespaceCoord)
-
           templatas.entriesByNameT.map({ case (name, entry) =>
             entry match {
-              case TemplataEnvEntry(_) =>
-              case FunctionEnvEntry(functionA) => {
-                if (functionA.isTemplate) {
-                  // Do nothing, it's a template
-                } else {
-                  if (isRootFunction(functionA)) {
-                    val _ =
-                      functionCompiler.evaluateOrdinaryFunctionFromNonCallForPrototype(
-                        coutputs,
-                        RangeS.internal(interner, -177),
-                        FunctionTemplata(env, functionA))
-                  }
-                }
-              }
               case StructEnvEntry(structA) => {
-                if (structA.isTemplate) {
-                  // Do nothing, it's a template
-                } else {
-                  if (isRootStruct(structA)) {
-                    val templata = StructTemplata(env, structA)
-                    val _ = structCompiler.getStructRef(coutputs, structA.range, templata, Vector.empty)
-                  }
-                }
+                val templata = StructDefinitionTemplata(env, structA)
+                structCompiler.precompileStruct(coutputs, templata)
               }
               case InterfaceEnvEntry(interfaceA) => {
-                if (interfaceA.isTemplate) {
-                  // Do nothing, it's a template
-                } else {
-                  if (isRootInterface(interfaceA)) {
-                    val templata = InterfaceTemplata(env, interfaceA)
-                    val _ = structCompiler.getInterfaceRef(coutputs, interfaceA.range, templata, Vector.empty)
-                  }
-                }
+                val templata = InterfaceDefinitionTemplata(env, interfaceA)
+                structCompiler.precompileInterface(coutputs, templata)
               }
-              case ImplEnvEntry(impl) => {
-                if (impl.isTemplate) {
-                  // Do nothing, it's a template
-                } else {
-
-                }
-              }
+              case _ =>
             }
           })
+        })
+
+        // Indexing phase
+
+        globalEnv.nameToTopLevelEnvironment.foreach({ case (namespaceCoord, templatas) =>
+          val env = PackageEnvironment.makeTopLevelEnvironment(globalEnv, namespaceCoord)
+          templatas.entriesByNameT.map({ case (name, entry) =>
+            entry match {
+              case StructEnvEntry(structA) => {
+                val templata = StructDefinitionTemplata(env, structA)
+                structCompiler.compileStruct(coutputs, List(), templata)
+              }
+              case InterfaceEnvEntry(interfaceA) => {
+                val templata = InterfaceDefinitionTemplata(env, interfaceA)
+                structCompiler.compileInterface(coutputs, List(), templata)
+              }
+              case _ =>
+            }
+          })
+        })
+
+        globalEnv.nameToTopLevelEnvironment.foreach({ case (namespaceCoord, templatas) =>
+          val env = PackageEnvironment.makeTopLevelEnvironment(globalEnv, namespaceCoord)
+          templatas.entriesByNameT.map({ case (name, entry) =>
+            entry match {
+              case ImplEnvEntry(impl) => {
+                implCompiler.compileImpl(coutputs, ImplDefinitionTemplata(env, impl))
+              }
+              case _ =>
+            }
+          })
+        })
+
+        globalEnv.nameToTopLevelEnvironment.foreach({
+          // Anything in global scope should be compiled
+          case (namespaceCoord @ FullNameT(_, Vector(), PackageTopLevelNameT()), templatas) => {
+            val env = PackageEnvironment.makeTopLevelEnvironment(globalEnv, namespaceCoord)
+            templatas.entriesByNameT.map({ case (name, entry) =>
+              entry match {
+                case FunctionEnvEntry(functionA) => {
+                  functionCompiler.evaluateGenericFunctionFromNonCall(
+                    coutputs, List(), FunctionTemplata(env, functionA), true)
+                }
+                case _ =>
+              }
+            })
+          }
+          // Anything underneath something else should be skipped, we'll evaluate those later on.
+          case (FullNameT(_, anythingElse, PackageTopLevelNameT()), _) =>
         })
 
         packageToProgramA.flatMap({ case (packageCoord, programA) =>
@@ -586,14 +895,15 @@ class Compiler(
           programA.exports.foreach({ case ExportAsA(range, exportedName, rules, runeToType, typeRuneA) =>
             val typeRuneT = typeRuneA
 
-            val templataByRune =
-              inferCompiler.solveExpectComplete(env, coutputs, rules, runeToType, range, Vector(), Vector())
+            val CompleteCompilerSolve(_, templataByRune, _, Vector()) =
+              inferCompiler.solveExpectComplete(
+                InferEnv(env, List(range), env), coutputs, rules, runeToType, List(range), Vector(), Vector(), true, true, Vector())
             val kind =
               templataByRune.get(typeRuneT.rune) match {
                 case Some(KindTemplata(kind)) => {
                   coutputs.addKindExport(range, kind, range.file.packageCoordinate, exportedName)
                 }
-                case Some(PrototypeTemplata(prototype)) => {
+                case Some(prototype) => {
                   vimpl()
                 }
                 case _ => vfail()
@@ -601,36 +911,42 @@ class Compiler(
           })
         })
 
-        breakable {
-          while (true) {
-            val topLevelThingsAtStart = coutputs.countTopLevelThings()
+//        breakable {
+//          while (true) {
+        val denizensAtStart = coutputs.countDenizens()
 
-            coutputs.getAllStructs().foreach(struct => {
-              if (struct.mutability == ImmutableT) {
-                destructorCompiler.getDropFunction(globalEnv, coutputs, RangeS.internal(interner, -1663), CoordT(ShareT, struct.getRef))
-                destructorCompiler.getFreeFunction(globalEnv, coutputs, RangeS.internal(interner, -1663), CoordT(ShareT, struct.getRef))
-              }
-            })
-            coutputs.getAllInterfaces().foreach(interface => {
-              if (interface.mutability == ImmutableT) {
-                destructorCompiler.getDropFunction(globalEnv, coutputs, RangeS.internal(interner, -1663), CoordT(ShareT, interface.getRef))
-                destructorCompiler.getFreeFunction(globalEnv, coutputs, RangeS.internal(interner, -1663), CoordT(ShareT, interface.getRef))
-              }
-            })
-            coutputs.getAllRuntimeSizedArrays().foreach(rsa => {
-              if (rsa.mutability == ImmutableT) {
-                destructorCompiler.getDropFunction(globalEnv, coutputs, RangeS.internal(interner, -1663), types.CoordT(ShareT, rsa))
-                destructorCompiler.getFreeFunction(globalEnv, coutputs, RangeS.internal(interner, -1663), types.CoordT(ShareT, rsa))
-              }
-            })
-            coutputs.getAllStaticSizedArrays().foreach(ssa => {
-              if (ssa.mutability == ImmutableT) {
-                destructorCompiler.getDropFunction(globalEnv, coutputs, RangeS.internal(interner, -1663), types.CoordT(ShareT, ssa))
-                destructorCompiler.getFreeFunction(globalEnv, coutputs, RangeS.internal(interner, -1663), types.CoordT(ShareT, ssa))
-              }
-            })
+        val builtinPackageCoord = PackageCoordinate.BUILTIN(interner, keywords)
+        val rootPackageEnv =
+          PackageEnvironment.makeTopLevelEnvironment(
+            globalEnv,
+            FullNameT(builtinPackageCoord, Vector(), interner.intern(PackageTopLevelNameT())))
 
-              Profiler.frame(() => {
+//        val freeImpreciseName = interner.intern(FreeImpreciseNameS())
+//        val dropImpreciseName = interner.intern(CodeNameS(keywords.drop))
+
+//        val immutableKinds =
+//          coutputs.getAllStructs().filter(_.mutability == MutabilityTemplata(ImmutableT)).map(_.templateName) ++
+//            coutputs.getAllInterfaces().filter(_.mutability == ImmutableT).map(_.templateName) ++
+//            coutputs.getAllRuntimeSizedArrays().filter(_.mutability == MutabilityTemplata(ImmutableT)) ++
+//            coutputs.getAllStaticSizedArrays().filter(_.mutability == MutabilityTemplata(ImmutableT))
+//        immutableKinds.foreach(kind => {
+//          val kindEnv = coutputs.getEnvForTemplate(kind)
+//          functionCompiler.evaluateGenericFunctionFromNonCall(
+//            coutputs,
+//            kindEnv.lookupNearestWithImpreciseName(freeImpreciseName, Set(ExpressionLookupContext)) match {
+//              case Some(ft@FunctionTemplata(_, _)) => ft
+//              case _ => throw CompileErrorExceptionT(RangedInternalErrorT(RangeS.internal(interner, -1663), "Couldn't find free for immutable struct!"))
+//            })
+//          functionCompiler.evaluateGenericFunctionFromNonCall(
+//            coutputs,
+//            kindEnv.lookupNearestWithImpreciseName(dropImpreciseName, Set(ExpressionLookupContext)) match {
+//              case Some(ft@FunctionTemplata(_, _)) => ft
+//              case _ => throw CompileErrorExceptionT(RangedInternalErrorT(RangeS.internal(interner, -1663), "Couldn't find free for immutable struct!"))
+//            })
+//        })
+
+        val (interfaceEdgeBlueprints, interfaceToSubCitizenToEdge) =
+          Profiler.frame(() => {
 //                val env =
 //                  PackageEnvironment.makeTopLevelEnvironment(
 //                    globalEnv, FullNameT(PackageCoordinate.BUILTIN, Vector(), interner.intern(PackageTopLevelNameT())))
@@ -639,118 +955,197 @@ class Compiler(
                 // This doesnt actually stamp *all* overrides, just the ones we can immediately
                 // see missing. We don't know if, in the process of stamping these, we'll find more.
                 // Also note, these don't stamp them right now, they defer them for later evaluating.
-                edgeCompiler.compileITables(coutputs)
-              })
+            edgeCompiler.compileITables(coutputs)
+          })
 
-            var deferredFunctionsEvaluated = 0
-            while (coutputs.peekNextDeferredEvaluatingFunction().nonEmpty) {
-              val nextDeferredEvaluatingFunction = coutputs.peekNextDeferredEvaluatingFunction().get
-              deferredFunctionsEvaluated += 1
-              // No, IntelliJ, I assure you this has side effects
-              (nextDeferredEvaluatingFunction.call) (coutputs)
-              coutputs.markDeferredFunctionEvaluated(nextDeferredEvaluatingFunction.prototypeT)
-            }
+        while (coutputs.peekNextDeferredFunctionBodyCompile().nonEmpty || coutputs.peekNextDeferredFunctionCompile().nonEmpty) {
+          while (coutputs.peekNextDeferredFunctionCompile().nonEmpty) {
+            val nextDeferredEvaluatingFunction = coutputs.peekNextDeferredFunctionCompile().get
+            // No, IntelliJ, I assure you this has side effects
+            (nextDeferredEvaluatingFunction.call) (coutputs)
+            coutputs.markDeferredFunctionCompiled(nextDeferredEvaluatingFunction.name)
+          }
 
-
-            val topLevelThingsAtEnd = coutputs.countTopLevelThings()
-            if (topLevelThingsAtStart == topLevelThingsAtEnd)
-              break
+          // No particular reason for this if/while mismatch, it just feels a bit better to get started on more before
+          // we finish any.
+          if (coutputs.peekNextDeferredFunctionBodyCompile().nonEmpty) {
+            val nextDeferredEvaluatingFunctionBody = coutputs.peekNextDeferredFunctionBodyCompile().get
+            // No, IntelliJ, I assure you this has side effects
+            (nextDeferredEvaluatingFunctionBody.call) (coutputs)
+            coutputs.markDeferredFunctionBodyCompiled(nextDeferredEvaluatingFunctionBody.prototypeT)
           }
         }
 
-        val (interfaceEdgeBlueprints, interfaceToStructToMethods) = edgeCompiler.compileITables(coutputs)
-        val edges =
-          interfaceToStructToMethods.flatMap({ case (interface, structToMethods) =>
-            structToMethods.map({ case (struct, methods) =>
-              EdgeT(struct, interface, methods)
-            })
-          })
+
+//            val denizensAtEnd = coutputs.countDenizens()
+//            if (denizensAtStart == denizensAtEnd)
+//              break
+//          }
+//        }
 
 //        // NEVER ZIP TWO SETS TOGETHER
 //        val edgeBlueprintsAsList = edgeBlueprints.toVector
-//        val edgeBlueprintsByInterface = edgeBlueprintsAsList.map(_.interface).zip(edgeBlueprintsAsList).toMap;
+//        val interfaceToEdgeBlueprints = edgeBlueprintsAsList.map(_.interface).zip(edgeBlueprintsAsList).toMap;
 //
-//        edgeBlueprintsByInterface.foreach({ case (interfaceTT, edgeBlueprint) =>
+//        interfaceToEdgeBlueprints.foreach({ case (interfaceTT, edgeBlueprint) =>
 //          vassert(edgeBlueprint.interface == interfaceTT)
 //        })
 
         ensureDeepExports(coutputs)
 
-        Profiler.frame(() => {
-          val reachables = Reachability.findReachables(coutputs, interfaceEdgeBlueprints, interfaceToStructToMethods)
+        val (
+          reachableInterfaces,
+          reachableStructs,
+//          reachableSSAs,
+//          reachableRSAs,
+          reachableFunctions) =
+//        if (opts.treeShakingEnabled) {
+//          Profiler.frame(() => {
+//            val reachables = Reachability.findReachables(coutputs, interfaceEdgeBlueprints, interfaceToStructToMethods)
+//
+//            val categorizedFunctions = coutputs.getAllFunctions().groupBy(f => reachables.functions.contains(f.header.toSignature))
+//            val reachableFunctions = categorizedFunctions.getOrElse(true, Vector.empty)
+//            val unreachableFunctions = categorizedFunctions.getOrElse(false, Vector.empty)
+//            unreachableFunctions.foreach(f => debugOut("Shaking out unreachable: " + f.header.fullName))
+//            reachableFunctions.foreach(f => debugOut("Including: " + f.header.fullName))
+//
+//            val categorizedSSAs = coutputs.getAllStaticSizedArrays().groupBy(f => reachables.staticSizedArrays.contains(f))
+//            val reachableSSAs = categorizedSSAs.getOrElse(true, Vector.empty)
+//            val unreachableSSAs = categorizedSSAs.getOrElse(false, Vector.empty)
+//            unreachableSSAs.foreach(f => debugOut("Shaking out unreachable: " + f))
+//            reachableSSAs.foreach(f => debugOut("Including: " + f))
+//
+//            val categorizedRSAs = coutputs.getAllRuntimeSizedArrays().groupBy(f => reachables.runtimeSizedArrays.contains(f))
+//            val reachableRSAs = categorizedRSAs.getOrElse(true, Vector.empty)
+//            val unreachableRSAs = categorizedRSAs.getOrElse(false, Vector.empty)
+//            unreachableRSAs.foreach(f => debugOut("Shaking out unreachable: " + f))
+//            reachableRSAs.foreach(f => debugOut("Including: " + f))
+//
+//            val categorizedStructs = coutputs.getAllStructs().groupBy(f => reachables.structs.contains(f.getRef))
+//            val reachableStructs = categorizedStructs.getOrElse(true, Vector.empty)
+//            val unreachableStructs = categorizedStructs.getOrElse(false, Vector.empty)
+//            unreachableStructs.foreach(f => {
+//              debugOut("Shaking out unreachable: " + f.fullName)
+//            })
+//            reachableStructs.foreach(f => debugOut("Including: " + f.fullName))
+//
+//            val categorizedInterfaces = coutputs.getAllInterfaces().groupBy(f => reachables.interfaces.contains(f.getRef))
+//            val reachableInterfaces = categorizedInterfaces.getOrElse(true, Vector.empty)
+//            val unreachableInterfaces = categorizedInterfaces.getOrElse(false, Vector.empty)
+//            unreachableInterfaces.foreach(f => debugOut("Shaking out unreachable: " + f.fullName))
+//            reachableInterfaces.foreach(f => debugOut("Including: " + f.fullName))
+//
+//            val categorizedEdges =
+//              edges.groupBy(f => reachables.edges.contains(f))
+//            val reachableEdges = categorizedEdges.getOrElse(true, Vector.empty)
+//            val unreachableEdges = categorizedEdges.getOrElse(false, Vector.empty)
+//            unreachableEdges.foreach(f => debugOut("Shaking out unreachable: " + f))
+//            reachableEdges.foreach(f => debugOut("Including: " + f))
+//
+//            (reachableInterfaces, reachableStructs, reachableSSAs, reachableRSAs, reachableFunctions)
+//          })
+//        } else {
+          (
+            coutputs.getAllInterfaces(),
+            coutputs.getAllStructs(),
+//            coutputs.getAllStaticSizedArrays(),
+//            coutputs.getAllRuntimeSizedArrays(),
+            coutputs.getAllFunctions())
+//        }
 
-          val categorizedFunctions = coutputs.getAllFunctions().groupBy(f => reachables.functions.contains(f.header.toSignature))
-          val reachableFunctions = categorizedFunctions.getOrElse(true, Vector.empty)
-          val unreachableFunctions = categorizedFunctions.getOrElse(false, Vector.empty)
-          unreachableFunctions.foreach(f => debugOut("Shaking out unreachable: " + f.header.fullName))
-          reachableFunctions.foreach(f => debugOut("Including: " + f.header.fullName))
+//      val allKinds =
+//        reachableStructs.map(_.place) ++ reachableInterfaces.map(_.getRef) ++ reachableSSAs ++ reachableRSAs
+//      val reachableImmKinds: Vector[KindT] =
+//        allKinds
+//          .filter({
+//            case s@StructTT(_) => coutputs.lookupMutability(s) == ImmutableT
+//            case i@InterfaceTT(_) => coutputs.lookupMutability(i) == ImmutableT
+//            case contentsStaticSizedArrayTT(_, m, _, _) => m == ImmutableT
+//            case contentsRuntimeSizedArrayTT(m, _) => m == ImmutableT
+//            case _ => true
+//          })
+//          .toVector
+//      val reachableImmKindToDestructor = reachableImmKinds.zip(reachableImmKinds.map(coutputs.findImmDestructor)).toMap
 
-          val categorizedSSAs = coutputs.getAllStaticSizedArrays().groupBy(f => reachables.staticSizedArrays.contains(f))
-          val reachableSSAs = categorizedSSAs.getOrElse(true, Vector.empty)
-          val unreachableSSAs = categorizedSSAs.getOrElse(false, Vector.empty)
-          unreachableSSAs.foreach(f => debugOut("Shaking out unreachable: " + f))
-          reachableSSAs.foreach(f => debugOut("Including: " + f))
+      val hinputs =
+          vale.typing.Hinputs(
+            reachableInterfaces.toVector,
+            reachableStructs.toVector,
+            reachableFunctions.toVector,
+//            Map(), // Will be populated by monomorphizer
+            interfaceEdgeBlueprints.groupBy(_.interface).mapValues(vassertOne(_)),
+            interfaceToSubCitizenToEdge,
+            coutputs.getInstantiationNameToFunctionBoundToRune(),
+            coutputs.getKindExports,
+            coutputs.getFunctionExports,
+            coutputs.getKindExterns,
+            coutputs.getFunctionExterns)
 
-          val categorizedRSAs = coutputs.getAllRuntimeSizedArrays().groupBy(f => reachables.runtimeSizedArrays.contains(f))
-          val reachableRSAs = categorizedRSAs.getOrElse(true, Vector.empty)
-          val unreachableRSAs = categorizedRSAs.getOrElse(false, Vector.empty)
-          unreachableRSAs.foreach(f => debugOut("Shaking out unreachable: " + f))
-          reachableRSAs.foreach(f => debugOut("Including: " + f))
+        vassert(reachableFunctions.toVector.map(_.header.fullName).distinct.size == reachableFunctions.toVector.map(_.header.fullName).size)
 
-          val categorizedStructs = coutputs.getAllStructs().groupBy(f => reachables.structs.contains(f.getRef))
-          val reachableStructs = categorizedStructs.getOrElse(true, Vector.empty)
-          val unreachableStructs = categorizedStructs.getOrElse(false, Vector.empty)
-          unreachableStructs.foreach(f => debugOut("Shaking out unreachable: " + f.fullName))
-          reachableStructs.foreach(f => debugOut("Including: " + f.fullName))
-
-          val categorizedInterfaces = coutputs.getAllInterfaces().groupBy(f => reachables.interfaces.contains(f.getRef))
-          val reachableInterfaces = categorizedInterfaces.getOrElse(true, Vector.empty)
-          val unreachableInterfaces = categorizedInterfaces.getOrElse(false, Vector.empty)
-          unreachableInterfaces.foreach(f => debugOut("Shaking out unreachable: " + f.fullName))
-          reachableInterfaces.foreach(f => debugOut("Including: " + f.fullName))
-
-          val categorizedEdges =
-            edges.groupBy(f => reachables.edges.contains(f))
-          val reachableEdges = categorizedEdges.getOrElse(true, Vector.empty)
-          val unreachableEdges = categorizedEdges.getOrElse(false, Vector.empty)
-          unreachableEdges.foreach(f => debugOut("Shaking out unreachable: " + f))
-          reachableEdges.foreach(f => debugOut("Including: " + f))
-
-          val allKinds =
-            reachableStructs.map(_.getRef) ++ reachableInterfaces.map(_.getRef) ++ reachableSSAs ++ reachableRSAs
-          val reachableImmKinds: Vector[KindT] =
-            allKinds
-              .filter({
-                case s@StructTT(_) => coutputs.lookupMutability(s) == ImmutableT
-                case i@InterfaceTT(_) => coutputs.lookupMutability(i) == ImmutableT
-                case StaticSizedArrayTT(_, m, _, _) => m == ImmutableT
-                case RuntimeSizedArrayTT(m, _) => m == ImmutableT
-                case _ => true
-              })
-              .toVector
-          val reachableImmKindToDestructor = reachableImmKinds.zip(reachableImmKinds.map(coutputs.findImmDestructor)).toMap
-
-          val hinputs =
-            vale.typing.Hinputs(
-              reachableInterfaces.toVector,
-              reachableStructs.toVector,
-              reachableFunctions.toVector,
-              reachableImmKindToDestructor,
-              interfaceEdgeBlueprints.groupBy(_.interface).mapValues(vassertOne(_)),
-              edges.toVector,
-              coutputs.getKindExports,
-              coutputs.getFunctionExports,
-              coutputs.getKindExterns,
-              coutputs.getFunctionExterns)
-
-          vassert(reachableFunctions.toVector.map(_.header.fullName).distinct.size == reachableFunctions.toVector.map(_.header.fullName).size)
-
-          Ok(hinputs)
-        })
+        Ok(hinputs)
       })
     } catch {
       case CompileErrorExceptionT(err) => Err(err)
     }
+  }
+
+  private def preprocessStruct(
+    nameToStructDefinedMacro: Map[StrI, IOnStructDefinedMacro],
+    structNameT: FullNameT[INameT],
+    structA: StructA): Vector[(FullNameT[INameT], IEnvEntry)] = {
+    val defaultCalledMacros =
+      Vector(
+        MacroCallS(structA.range, CallMacroP, keywords.DeriveStructConstructor),
+        MacroCallS(structA.range, CallMacroP, keywords.DeriveStructDrop))//,
+//        MacroCallS(structA.range, CallMacroP, keywords.DeriveStructFree),
+//        MacroCallS(structA.range, CallMacroP, keywords.DeriveImplFree))
+    determineMacrosToCall(nameToStructDefinedMacro, defaultCalledMacros, List(structA.range), structA.attributes)
+      .flatMap(_.getStructSiblingEntries(structNameT, structA))
+  }
+
+  private def preprocessInterface(
+    nameToInterfaceDefinedMacro: Map[StrI, IOnInterfaceDefinedMacro],
+    interfaceNameT: FullNameT[INameT],
+    interfaceA: InterfaceA):
+  Vector[(FullNameT[INameT], IEnvEntry)] = {
+    val defaultCalledMacros =
+      Vector(
+        MacroCallS(interfaceA.range, CallMacroP, keywords.DeriveInterfaceDrop),
+//        MacroCallS(interfaceA.range, CallMacroP, keywords.DeriveInterfaceFree),
+        MacroCallS(interfaceA.range, CallMacroP, keywords.DeriveAnonymousSubstruct))
+    val macrosToCall =
+      determineMacrosToCall(nameToInterfaceDefinedMacro, defaultCalledMacros, List(interfaceA.range), interfaceA.attributes)
+    vpass()
+    val results =
+      macrosToCall.flatMap(_.getInterfaceSiblingEntries(interfaceNameT, interfaceA))
+    vpass()
+    results
+  }
+
+  private def determineMacrosToCall[T](
+    nameToMacro: Map[StrI, T],
+    defaultCalledMacros: Vector[MacroCallS],
+    parentRanges: List[RangeS],
+    attributes: Vector[ICitizenAttributeS]):
+  Vector[T] = {
+    attributes.foldLeft(defaultCalledMacros)({
+      case (macrosToCall, mc@MacroCallS(range, CallMacroP, macroName)) => {
+        if (macrosToCall.exists(_.macroName == macroName)) {
+          throw CompileErrorExceptionT(RangedInternalErrorT(range :: parentRanges, "Calling macro twice: " + macroName))
+        }
+        macrosToCall :+ mc
+      }
+      case (macrosToCall, MacroCallS(_, DontCallMacroP, macroName)) => macrosToCall.filter(_.macroName != macroName)
+      case (macrosToCall, _) => macrosToCall
+    }).map(macroCall => {
+      nameToMacro.get(macroCall.macroName) match {
+        case None => {
+          throw CompileErrorExceptionT(RangedInternalErrorT(macroCall.range :: parentRanges, "Macro not found: " + macroCall.macroName))
+        }
+        case Some(m) => m
+      }
+    })
   }
 
   def ensureDeepExports(coutputs: CompilerOutputs): Unit = {
@@ -768,7 +1163,7 @@ class Compiler(
                 val exports = multiple.map(_._2)
                 throw CompileErrorExceptionT(
                   TypeExportedMultipleTimes(
-                    exports.head.range,
+                    List(exports.head.range),
                     exports.head.packageCoordinate,
                     exports))
               }
@@ -781,7 +1176,7 @@ class Compiler(
           if (!Compiler.isPrimitive(paramType.kind) && !exportedKindToExport.contains(paramType.kind)) {
             throw CompileErrorExceptionT(
               ExportedFunctionDependedOnNonExportedKind(
-                funcExport.range, funcExport.packageCoordinate, funcExport.prototype.toSignature, paramType.kind))
+                List(funcExport.range), funcExport.packageCoordinate, funcExport.prototype.toSignature, paramType.kind))
           }
         })
     })
@@ -792,7 +1187,7 @@ class Compiler(
           if (!Compiler.isPrimitive(paramType.kind) && !exportedKindToExport.contains(paramType.kind)) {
             throw CompileErrorExceptionT(
               ExternFunctionDependedOnNonExportedKind(
-                functionExtern.range, functionExtern.packageCoordinate, functionExtern.prototype.toSignature, paramType.kind))
+                List(functionExtern.range), functionExtern.packageCoordinate, functionExtern.prototype.toSignature, paramType.kind))
           }
         })
     })
@@ -800,28 +1195,43 @@ class Compiler(
       exportedKindToExport.foreach({ case (exportedKind, (kind, export)) =>
         exportedKind match {
           case sr@StructTT(_) => {
-            val structDef = coutputs.getStructDefForRef(sr)
-            structDef.members.foreach({ case StructMemberT(_, _, member) =>
-              val CoordT(_, memberKind) = member.reference
-              if (structDef.mutability == ImmutableT && !Compiler.isPrimitive(memberKind) && !exportedKindToExport.contains(memberKind)) {
-                throw CompileErrorExceptionT(
-                  vale.typing.ExportedImmutableKindDependedOnNonExportedKind(
-                    export.range, packageCoord, exportedKind, memberKind))
+            val structDef = coutputs.lookupStruct(sr)
+
+            val substituter =
+              TemplataCompiler.getPlaceholderSubstituter(
+                interner, keywords, sr.fullName,
+                InheritBoundsFromTypeItself)
+
+            structDef.members.foreach({
+              case VariadicStructMemberT(name, tyype) => {
+                vimpl()
+              }
+              case NormalStructMemberT(name, variability, AddressMemberTypeT(reference)) => {
+                vimpl()
+              }
+              case NormalStructMemberT(_, _, ReferenceMemberTypeT(unsubstitutedMemberCoord)) => {
+                val memberCoord = substituter.substituteForCoord(coutputs, unsubstitutedMemberCoord)
+                val memberKind = memberCoord.kind
+                if (structDef.mutability == MutabilityTemplata(ImmutableT) && !Compiler.isPrimitive(memberKind) && !exportedKindToExport.contains(memberKind)) {
+                  throw CompileErrorExceptionT(
+                    vale.typing.ExportedImmutableKindDependedOnNonExportedKind(
+                      List(export.range), packageCoord, exportedKind, memberKind))
+                }
               }
             })
           }
-          case StaticSizedArrayTT(_, mutability, _, CoordT(_, elementKind)) => {
-            if (mutability == ImmutableT && !Compiler.isPrimitive(elementKind) && !exportedKindToExport.contains(elementKind)) {
+          case contentsStaticSizedArrayTT(_, mutability, _, CoordT(_, elementKind)) => {
+            if (mutability == MutabilityTemplata(ImmutableT) && !Compiler.isPrimitive(elementKind) && !exportedKindToExport.contains(elementKind)) {
               throw CompileErrorExceptionT(
                 vale.typing.ExportedImmutableKindDependedOnNonExportedKind(
-                  export.range, packageCoord, exportedKind, elementKind))
+                  List(export.range), packageCoord, exportedKind, elementKind))
             }
           }
-          case RuntimeSizedArrayTT(mutability, CoordT(_, elementKind)) => {
-            if (mutability == ImmutableT && !Compiler.isPrimitive(elementKind) && !exportedKindToExport.contains(elementKind)) {
+          case contentsRuntimeSizedArrayTT(mutability, CoordT(_, elementKind)) => {
+            if (mutability == MutabilityTemplata(ImmutableT) && !Compiler.isPrimitive(elementKind) && !exportedKindToExport.contains(elementKind)) {
               throw CompileErrorExceptionT(
                 vale.typing.ExportedImmutableKindDependedOnNonExportedKind(
-                  export.range, packageCoord, exportedKind, elementKind))
+                  List(export.range), packageCoord, exportedKind, elementKind))
             }
           }
           case InterfaceTT(_) =>
@@ -833,7 +1243,7 @@ class Compiler(
   // Returns whether we should eagerly compile this and anything it depends on.
   def isRootFunction(functionA: FunctionA): Boolean = {
     functionA.name match {
-      case FunctionNameS("main", _) => return true
+      case FunctionNameS(StrI("main"), _) => return true
       case _ =>
     }
     functionA.attributes.exists({
@@ -886,36 +1296,38 @@ object Compiler {
     kind match {
       case VoidT() | IntT(_) | BoolT() | StrT() | NeverT(_) | FloatT() => true
 //      case TupleTT(_, understruct) => isPrimitive(understruct)
+      case PlaceholderT(_) => false
       case StructTT(_) => false
       case InterfaceTT(_) => false
-      case StaticSizedArrayTT(_, _, _, _) => false
-      case RuntimeSizedArrayTT(_, _) => false
+      case contentsStaticSizedArrayTT(_, _, _, _) => false
+      case contentsRuntimeSizedArrayTT(_, _) => false
     }
   }
 
   def getMutabilities(coutputs: CompilerOutputs, concreteValues2: Vector[KindT]):
-  Vector[MutabilityT] = {
+  Vector[ITemplata[MutabilityTemplataType]] = {
     concreteValues2.map(concreteValue2 => getMutability(coutputs, concreteValue2))
   }
 
   def getMutability(coutputs: CompilerOutputs, concreteValue2: KindT):
-  MutabilityT = {
+  ITemplata[MutabilityTemplataType] = {
     concreteValue2 match {
-      case NeverT(_) => ImmutableT
-      case IntT(_) => ImmutableT
-      case FloatT() => ImmutableT
-      case BoolT() => ImmutableT
-      case StrT() => ImmutableT
-      case VoidT() => ImmutableT
-      case RuntimeSizedArrayTT(mutability, _) => mutability
-      case StaticSizedArrayTT(_, mutability, _, _) => mutability
-      case sr @ StructTT(_) => coutputs.lookupMutability(sr)
-      case ir @ InterfaceTT(_) => coutputs.lookupMutability(ir)
+      case PlaceholderT(fullName) => coutputs.lookupMutability(TemplataCompiler.getPlaceholderTemplate(fullName))
+      case NeverT(_) => MutabilityTemplata(ImmutableT)
+      case IntT(_) => MutabilityTemplata(ImmutableT)
+      case FloatT() => MutabilityTemplata(ImmutableT)
+      case BoolT() => MutabilityTemplata(ImmutableT)
+      case StrT() => MutabilityTemplata(ImmutableT)
+      case VoidT() => MutabilityTemplata(ImmutableT)
+      case contentsRuntimeSizedArrayTT(mutability, _) => mutability
+      case contentsStaticSizedArrayTT(_, mutability, _, _) => mutability
+      case sr @ StructTT(name) => coutputs.lookupMutability(TemplataCompiler.getStructTemplate(name))
+      case ir @ InterfaceTT(name) => coutputs.lookupMutability(TemplataCompiler.getInterfaceTemplate(name))
 //      case PackTT(_, sr) => coutputs.lookupMutability(sr)
 //      case TupleTT(_, sr) => coutputs.lookupMutability(sr)
       case OverloadSetT(_, _) => {
         // Just like FunctionT2
-        ImmutableT
+        MutabilityTemplata(ImmutableT)
       }
     }
   }

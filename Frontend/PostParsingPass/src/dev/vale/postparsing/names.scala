@@ -1,7 +1,6 @@
 package dev.vale.postparsing
 
-import dev.vale.{CodeLocationS, IInterning, Interner, PackageCoordinate, RangeS, vassert, vcheck, vimpl, vpass}
-import dev.vale.RangeS
+import dev.vale.{CodeLocationS, IInterning, Interner, PackageCoordinate, RangeS, StrI, vassert, vcheck, vimpl, vpass}
 
 trait INameS extends IInterning
 trait IImpreciseNameS extends IInterning
@@ -18,14 +17,14 @@ trait ICitizenDeclarationNameS extends INameS {
   def packageCoordinate: PackageCoordinate
   def getImpreciseName(interner: Interner): IImpreciseNameS
 }
-case class FreeDeclarationNameS(codeLocationS: CodeLocationS) extends IFunctionDeclarationNameS {
-
-  override def packageCoordinate: PackageCoordinate = codeLocationS.file.packageCoordinate
-  override def getImpreciseName(interner: Interner): IImpreciseNameS = interner.intern(FreeImpreciseNameS())
-}
-case class FreeImpreciseNameS() extends IImpreciseNameS {
-
-}
+//case class FreeDeclarationNameS(codeLocationS: CodeLocationS) extends IFunctionDeclarationNameS {
+//
+//  override def packageCoordinate: PackageCoordinate = codeLocationS.file.packageCoordinate
+//  override def getImpreciseName(interner: Interner): IImpreciseNameS = interner.intern(FreeImpreciseNameS())
+//}
+//case class FreeImpreciseNameS() extends IImpreciseNameS {
+//
+//}
 case class LambdaDeclarationNameS(
 //  parentName: INameS,
   codeLocation: CodeLocationS
@@ -35,9 +34,10 @@ case class LambdaDeclarationNameS(
   override def getImpreciseName(interner: Interner): LambdaImpreciseNameS = interner.intern(LambdaImpreciseNameS())
 }
 case class LambdaImpreciseNameS() extends IImpreciseNameS {
-
 }
-case class FunctionNameS(name: String, codeLocation: CodeLocationS) extends IFunctionDeclarationNameS {
+case class PlaceholderImpreciseNameS(index: Int) extends IImpreciseNameS {
+}
+case class FunctionNameS(name: StrI, codeLocation: CodeLocationS) extends IFunctionDeclarationNameS {
   override def packageCoordinate: PackageCoordinate = codeLocation.file.packageCoordinate
   override def getImpreciseName(interner: Interner): IImpreciseNameS = interner.intern(CodeNameS(name))
 }
@@ -53,11 +53,22 @@ case class ForwarderFunctionDeclarationNameS(inner: IFunctionDeclarationNameS, i
   override def packageCoordinate: PackageCoordinate = inner.packageCoordinate
   override def getImpreciseName(interner: Interner): IImpreciseNameS = inner.getImpreciseName(interner)
 }
-case class TopLevelCitizenDeclarationNameS(name: String, range: RangeS) extends ICitizenDeclarationNameS {
-
-  vpass()
+sealed trait TopLevelCitizenDeclarationNameS extends ICitizenDeclarationNameS {
+  def name: StrI
+  def range: RangeS
   override def packageCoordinate: PackageCoordinate = range.file.packageCoordinate
   override def getImpreciseName(interner: Interner): IImpreciseNameS = interner.intern(CodeNameS(name))
+}
+object TopLevelCitizenDeclarationNameS {
+  def unapply(n: TopLevelCitizenDeclarationNameS): Option[(StrI, RangeS)] = {
+    Some((n.name, n.range))
+  }
+}
+sealed trait IStructDeclarationNameS extends ICitizenDeclarationNameS
+case class TopLevelStructDeclarationNameS(name: StrI, range: RangeS) extends IStructDeclarationNameS with TopLevelCitizenDeclarationNameS {
+}
+sealed trait IInterfaceDeclarationNameS extends ICitizenDeclarationNameS
+case class TopLevelInterfaceDeclarationNameS(name: StrI, range: RangeS) extends IInterfaceDeclarationNameS with TopLevelCitizenDeclarationNameS {
 }
 case class LambdaStructDeclarationNameS(lambdaName: LambdaDeclarationNameS) extends INameS {
   def getImpreciseName(interner: Interner): LambdaStructImpreciseNameS = interner.intern(LambdaStructImpreciseNameS(lambdaName.getImpreciseName(interner)))
@@ -66,16 +77,17 @@ case class LambdaStructImpreciseNameS(lambdaName: LambdaImpreciseNameS) extends 
 case class ImplDeclarationNameS(codeLocation: CodeLocationS) extends IImplDeclarationNameS {
   override def packageCoordinate: PackageCoordinate = codeLocation.file.packageCoordinate
 }
-case class AnonymousSubstructImplDeclarationNameS(interface: TopLevelCitizenDeclarationNameS) extends IImplDeclarationNameS {
+case class AnonymousSubstructImplDeclarationNameS(interface: TopLevelInterfaceDeclarationNameS) extends IImplDeclarationNameS {
   override def packageCoordinate: PackageCoordinate = interface.packageCoordinate
 }
 case class ExportAsNameS(codeLocation: CodeLocationS) extends INameS {  }
 case class LetNameS(codeLocation: CodeLocationS) extends INameS {  }
 //case class UnnamedLocalNameS(codeLocation: CodeLocationS) extends IVarNameS {  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class ClosureParamNameS() extends IVarNameS with IImpreciseNameS {  }
+// All prototypes can be looked up via this name.
+case class PrototypeNameS() extends IImpreciseNameS {  }
 case class MagicParamNameS(codeLocation: CodeLocationS) extends IVarNameS {  }
-case class AnonymousSubstructTemplateNameS(interfaceName: TopLevelCitizenDeclarationNameS) extends ICitizenDeclarationNameS {
-
+case class AnonymousSubstructTemplateNameS(interfaceName: TopLevelInterfaceDeclarationNameS) extends IStructDeclarationNameS {
   vpass()
   override def packageCoordinate: PackageCoordinate = interfaceName.packageCoordinate
   override def getImpreciseName(interner: Interner): IImpreciseNameS = interner.intern(AnonymousSubstructTemplateImpreciseNameS(interfaceName.getImpreciseName(interner)))
@@ -88,11 +100,11 @@ case class AnonymousSubstructConstructorTemplateImpreciseNameS(interfaceImprecis
 
 }
 case class AnonymousSubstructMemberNameS(index: Int) extends IVarNameS {  }
-case class CodeVarNameS(name: String) extends IVarNameS {
-  vcheck(name != "set", "Can't name a variable 'set'")
-  vcheck(name != "mut", "Can't name a variable 'mut'")
+case class CodeVarNameS(name: StrI) extends IVarNameS {
+  vcheck(name.str != "set", "Can't name a variable 'set'")
+  vcheck(name.str != "mut", "Can't name a variable 'mut'")
 }
-case class ConstructingMemberNameS(name: String) extends IVarNameS {  }
+case class ConstructingMemberNameS(name: StrI) extends IVarNameS {  }
 case class IterableNameS(range: RangeS) extends IVarNameS with IImpreciseNameS {  }
 case class IteratorNameS(range: RangeS) extends IVarNameS with IImpreciseNameS {  }
 case class IterationOptionNameS(range: RangeS) extends IVarNameS with IImpreciseNameS {  }
@@ -110,7 +122,7 @@ case class RuneNameS(rune: IRuneS) extends INameS with IImpreciseNameS {  }
 // prefixes and names like __implicit_0, __paramRune_0, etc.
 // This extends INameS so we can use it as a lookup key in Compiler's environments.
 trait IRuneS
-case class CodeRuneS(name: String) extends IRuneS {
+case class CodeRuneS(name: StrI) extends IRuneS {
   vpass()
 }
 case class ImplDropCoordRuneS() extends IRuneS
@@ -118,43 +130,38 @@ case class ImplDropVoidRuneS() extends IRuneS
 case class ImplicitRuneS(lid: LocationInDenizen) extends IRuneS {
   vpass()
 }
+case class ReachablePrototypeRuneS(num: Int) extends IRuneS
 case class FreeOverrideStructTemplateRuneS() extends IRuneS
 case class FreeOverrideStructRuneS() extends IRuneS
 case class FreeOverrideInterfaceRuneS() extends IRuneS
 case class LetImplicitRuneS(lid: LocationInDenizen) extends IRuneS {  }
 case class MagicParamRuneS(lid: LocationInDenizen) extends IRuneS {  }
-case class MemberRuneS(memberIndex: Int) extends IRuneS {
+case class MemberRuneS(memberIndex: Int) extends IRuneS
 
-}
 // Used to type the templex handed to the size part of the static sized array expressions
 case class ArraySizeImplicitRuneS() extends IRuneS {  }
 // Used to type the templex handed to the mutability part of the static sized array expressions
 case class ArrayMutabilityImplicitRuneS() extends IRuneS {  }
 // Used to type the templex handed to the variability part of the static sized array expressions
 case class ArrayVariabilityImplicitRuneS() extends IRuneS {  }
-case class ReturnRuneS() extends IRuneS {
-
-  vpass()
-}
-case class StructNameRuneS(structName: ICitizenDeclarationNameS) extends IRuneS {
-
-  vpass()
-}
+case class ReturnRuneS() extends IRuneS
+case class StructNameRuneS(structName: ICitizenDeclarationNameS) extends IRuneS
+case class InterfaceNameRuneS(interfaceName: ICitizenDeclarationNameS) extends IRuneS
 // Vale has no notion of Self, it's just a convenient name for a first parameter.
 case class SelfRuneS() extends IRuneS {  }
 case class SelfOwnershipRuneS() extends IRuneS {  }
 case class SelfKindRuneS() extends IRuneS {  }
 case class SelfKindTemplateRuneS() extends IRuneS {  }
-case class CodeNameS(name: String) extends IImpreciseNameS {
-
+case class MacroVoidRuneS() extends IRuneS {  }
+case class MacroSelfRuneS() extends IRuneS {  }
+case class CodeNameS(name: StrI) extends IImpreciseNameS {
   vpass()
-  vassert(name != "_")
+  vassert(name.str != "_")
 }
 // When we're calling a function, we're addressing an overload set, not a specific function.
 // If we want a specific function, we use TopLevelDeclarationNameS.
-case class GlobalFunctionFamilyNameS(name: String) extends INameS {
+case class GlobalFunctionFamilyNameS(name: String) extends INameS
 
-}
 // These are only made by the typingpass
 case class ArgumentRuneS(argIndex: Int) extends IRuneS {  }
 case class PatternInputRuneS(codeLoc: CodeLocationS) extends IRuneS {  }
@@ -163,7 +170,22 @@ case class AnonymousSubstructParentInterfaceTemplateRuneS() extends IRuneS {  }
 case class AnonymousSubstructParentInterfaceRuneS() extends IRuneS {  }
 case class AnonymousSubstructTemplateRuneS() extends IRuneS {  }
 case class AnonymousSubstructRuneS() extends IRuneS {  }
-case class AnonymousSubstructMemberRuneS(index: Int) extends IRuneS {  }
+case class AnonymousSubstructCoordRuneS() extends IRuneS {  }
+case class AnonymousSubstructVoidRuneS() extends IRuneS {  }
+case class AnonymousSubstructMemberRuneS(interface: TopLevelInterfaceDeclarationNameS, method: IFunctionDeclarationNameS) extends IRuneS {  }
+case class AnonymousSubstructMethodSelfBorrowCoordRuneS(interface: TopLevelInterfaceDeclarationNameS, method: IFunctionDeclarationNameS) extends IRuneS { }
+case class AnonymousSubstructMethodSelfOwnCoordRuneS(interface: TopLevelInterfaceDeclarationNameS, method: IFunctionDeclarationNameS) extends IRuneS { }
+case class AnonymousSubstructDropBoundPrototypeRuneS(interface: TopLevelInterfaceDeclarationNameS, method: IFunctionDeclarationNameS) extends IRuneS { }
+case class AnonymousSubstructDropBoundParamsListRuneS(interface: TopLevelInterfaceDeclarationNameS, method: IFunctionDeclarationNameS) extends IRuneS { }
+case class AnonymousSubstructFunctionBoundPrototypeRuneS(interface: TopLevelInterfaceDeclarationNameS, method: IFunctionDeclarationNameS) extends IRuneS { }
+case class AnonymousSubstructFunctionBoundParamsListRuneS(interface: TopLevelInterfaceDeclarationNameS, method: IFunctionDeclarationNameS) extends IRuneS { }
+//case class AnonymousSubstructFunctionInterfaceKindRune(interface: TopLevelInterfaceDeclarationNameS, method: IFunctionDeclarationNameS) extends IRuneS { }
+//case class AnonymousSubstructFunctionInterfaceOwnershipRune(interface: TopLevelInterfaceDeclarationNameS, method: IFunctionDeclarationNameS) extends IRuneS { }
+case class AnonymousSubstructFunctionInterfaceTemplateRune(interface: TopLevelInterfaceDeclarationNameS, method: IFunctionDeclarationNameS) extends IRuneS { }
+case class AnonymousSubstructMethodInheritedRuneS(interface: TopLevelInterfaceDeclarationNameS, method: IFunctionDeclarationNameS, inner: IRuneS) extends IRuneS { }
+case class FunctorPrototypeRuneNameS() extends IRuneS
+case class FunctorParamRuneNameS(index: Int) extends IRuneS
+case class FunctorReturnRuneNameS() extends IRuneS
 // Vale has no notion of Self, it's just a convenient name for a first parameter.
 case class SelfNameS() extends IVarNameS with IImpreciseNameS {  }
 // A miscellaneous name, for when a name doesn't really make sense, like it's the only entry in the environment or something.
@@ -182,7 +204,9 @@ case class ImmInterfaceDestructorNameS(packageCoordinate: PackageCoordinate) ext
   override def getImpreciseName(interner: Interner): IImpreciseNameS = vimpl()
 }
 
-case class ImplImpreciseNameS(structImpreciseName: IImpreciseNameS) extends IImpreciseNameS { }
+case class ImplImpreciseNameS(subCitizenImpreciseName: IImpreciseNameS, superInterfaceImpreciseName: IImpreciseNameS) extends IImpreciseNameS { }
+case class ImplSubCitizenImpreciseNameS(subCitizenImpreciseName: IImpreciseNameS) extends IImpreciseNameS { }
+case class ImplSuperInterfaceImpreciseNameS(superInterfaceImpreciseName: IImpreciseNameS) extends IImpreciseNameS { }
 
 // See NSIDN for why we need this virtual name
 //case class VirtualFreeImpreciseNameS() extends IImpreciseNameS { }

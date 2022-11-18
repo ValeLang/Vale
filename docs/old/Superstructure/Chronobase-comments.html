@@ -1,0 +1,92 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Chronobase Comments</title><style>
+    .comment {
+      overflow: hidden;
+      padding: 18px 0 7px 0;
+      clear: both;
+    }
+
+    .comment + .comment {
+      border-top: 1px solid #e8e8e8;
+    }
+
+    .comment > .json {
+      display: none;
+    }
+
+    .comment-box {
+      background-color: #fffbe1;
+      overflow: hidden;
+      padding: 6px 12px;
+      margin-bottom: 8px;
+    }
+
+    .reply-box {
+      background-color: #eff2f9;
+      padding: 6px 12px 6px 6px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .user-name {
+      font-weight: bold;
+      padding-right: 10px;
+    }
+
+    .comment > .author-picture {
+      float: left;
+      padding: 0 20px;
+    }
+
+    .reply-box > .author-picture {
+      float: left;
+      padding: 0 6px;
+    }
+
+    .comment-deleted {
+      color: red;
+      padding-right: 10px;
+    }
+
+    .author-picture + div, .user-name, .user-name + .comment-deleted, .user-name + .comment-action {
+      float: left;
+    }
+
+    .created-date {
+      color: #999;
+    }
+
+    .comment-box .comment-content {
+      clear: both;
+    }
+
+    .comment-box > .created-date {
+      float: right;
+    }
+
+    .reply-box .created-date {
+      clear: both;
+    }
+
+    .comment-context-intro {
+      color: #999;
+      clear: both;
+    }
+
+    .comment-context-value {
+      border-left: 1px solid #ccc;
+      font-style: italic;
+      padding: 3px 10px 3px 10px;
+    }
+
+    .comment-action {
+      font-style: italic;
+    }
+
+    .comment-status {
+      font-style: italic;
+      color: green;
+      float: left;
+      font-weight: bold;
+      padding-right: 10px;
+    }
+  </style></head><body><section class="header"><h1>Chronobase - Drive File Comments</h1></section><section><div id="AAAABu_ombs" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Apr 4, 2018, 5:12 AM</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">__versionNumber: Int;</div></div><div class="comment-content">this can go at the front of the page if we have a lot of modifications per snapshot</div></div><div class="reply-list"></div></div></div><div id="AAAABu_ombk" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Apr 4, 2018, 5:11 AM</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">__vptr: virtual pointer;</div></div><div class="comment-content">if we wanted to get super clever, we could get Unit&#39;s vptr from the UnitController.</div></div><div class="reply-list"></div></div></div><div id="AAAABu_oma0" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Apr 4, 2018, 4:13 AM</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">__owningCount: Int; // shared ref count</div></div><div class="comment-content">can go away now that we&#39;re gc&#39;ing</div></div><div class="reply-list"></div></div></div><div id="AAAABu_omaw" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status"></div><div class="created-date">Apr 4, 2018, 4:13 AM(edited: Apr 4, 2018, 4:14 AM)</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">__modelCount: Int; // Count models that point at this controller</div></div><div class="comment-content">can go away now that we&#39;re gc&#39;ing</div></div><div class="reply-list"><div id="AAAABu_oma4" class="reply-box"><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="24" height="24" alt="Author profile image"></div><div class="reply-data"><div class="user-name">Evan Ovadia</div><div class="comment-content">nevermind, no it cant. this controller needs to go away asap? i think?</div><div class="created-date">Apr 4, 2018, 4:14 AM</div></div></div></div></div></div><div id="AAAABcFAH-k" class="comment"><div class="json">null</div><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="48" height="48" alt="Author profile image"></div><div class="comment-data"><div class="comment-box"><div class="user-name">Evan Ovadia</div><div class="comment-status">Resolved</div><div class="created-date">Dec 18, 2017, 1:27 AM(edited: Dec 18, 2017, 1:28 AM)</div><div class="comment-context"><div class="comment-context-intro">Selected text:</div><div class="comment-context-value">But that presents big challenges for forking, rewinding, and snapshotting.</div></div><div class="comment-content">revisit, is this still true</div></div><div class="reply-list"><div id="AAAABcFAH-o" class="reply-box"><div class="author-picture"><img src="https://lh3.googleusercontent.com/a-/AOh14GjoOXwuji1Q0p6FX0IRu-PBtgN-CxWdF8wvbNemn1A=s50-c-k-no" width="24" height="24" alt="Author profile image"></div><div class="reply-data"><div class="user-name">Evan Ovadia</div><div class="comment-action">Marked as resolved</div><div class="comment-content"></div><div class="created-date">Dec 18, 2017, 1:28 AM</div></div></div></div></div></div></section></body></html>

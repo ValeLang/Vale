@@ -18,7 +18,7 @@ class VirtualCompiler(opts: TypingPassOptions, interner: Interner, overloadCompi
 //  // See Virtuals doc for this function's purpose.
 //  // For the "Templated parent case"
 //  def evaluateParent(
-//    env: IEnvironment, coutputs: CompilerOutputs, callRange: RangeS, sparkHeader: FunctionHeaderT):
+//    env: IEnvironment, coutputs: CompilerOutputs, callRange: List[RangeS], sparkHeader: FunctionHeaderT):
 //  Unit = {
 //    vassert(sparkHeader.params.count(_.virtuality.nonEmpty) <= 1)
 //    val maybeSuperInterfaceAndIndex =
@@ -64,7 +64,7 @@ class VirtualCompiler(opts: TypingPassOptions, interner: Interner, overloadCompi
 //          callRange,
 //          nameToScoutFor,
 //          Vector.empty,
-//          Array.empty, needleSuperFunctionParamFilters, extraEnvsToLookIn, true) match {
+//          Vector.empty, needleSuperFunctionParamFilters, extraEnvsToLookIn, true) match {
 //          case Err(e) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(callRange, e))
 //          case Ok(x) => x
 //        }

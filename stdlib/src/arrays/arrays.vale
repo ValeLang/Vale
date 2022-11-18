@@ -1,0 +1,127 @@
+//
+//func Array<N, T>(arr [#N]<imm>T) #[]T {
+//  #[]T(N, { arr[_] })
+//}
+//func Array<N, T>(arr [#N]<mut>T) []T {
+//  []T(N, { arr[_] })
+//}
+
+func each<M, V, N, T, F>(arr &[#N]<M, V>T, func &F) void
+where func(&F,&T)void {
+  i = 0;
+  l = len(&arr);
+  while (i < l) {
+    func(arr[i]);
+    set i = i + 1;
+  }
+}
+
+func eachI<M, V, N, T, F>(arr &[#N]<M, V>T, func F) void
+where func drop(F)void, func(&F,int,&T)void {
+  i = 0;
+  l = len(&arr);
+  while (i < l) {
+    func(i, arr[i]);
+    set i = i + 1;
+  }
+}
+
+func each<M, T, F>(arr &[]<M>T, func &F) void
+where func(&F,&T)void {
+  i = 0;
+  l = len(&arr);
+  while (i < l) {
+    func(arr[i]);
+    set i = i + 1;
+  }
+}
+
+func eachI<F, M, T>(arr &[]<M>T, func F) void
+where func drop(F)void, func(&F,int,&T)void {
+  i = 0;
+  l = len(&arr);
+  while (i < l) {
+    func(i, arr[i]);
+    set i = i + 1;
+  }
+}
+
+
+
+
+
+
+struct StaticSizedArrayIter<N, M, V, E> where E Ref {
+  arr &[#N]<M, V>E;
+  pos! int;
+}
+func begin<N, M, V, E>(arr &[#N]<M, V>E) StaticSizedArrayIter<N, M, V, E> {
+  StaticSizedArrayIter<N, M, V, E>(arr, 0)
+}
+func next<N, M, V, E>(iter &StaticSizedArrayIter<N, M, V, E>) Opt<&E> {
+  if iter.pos < iter.arr.len() {
+    Some<&E>(&iter.arr[set iter.pos = iter.pos + 1])
+  } else {
+    None<&E>()
+  }
+}
+
+struct StaticSizedArrayEntriesIter<N, M, V, E> {
+  arr &[#N]<M, V>E;
+  pos! int;
+}
+func entries<N, M, V, E>(arr &[#N]<M, V>E) StaticSizedArrayEntriesIter<N, M, V, E> {
+  StaticSizedArrayEntriesIter<N, M, V, E>(arr, 0)
+}
+func begin<N, M, V, E>(iter &StaticSizedArrayEntriesIter<N, M, V, E>)
+StaticSizedArrayEntriesIter<N, M, V, E> {
+  StaticSizedArrayEntriesIter<N, M, V, E>(iter.arr, iter.pos)
+}
+func next<N, M, V, E>(iter &StaticSizedArrayEntriesIter<N, M, V, E>) Opt<(int, &E)> {
+  if iter.pos < iter.arr.len() {
+    Some<(int, &E)>((iter.pos, &iter.arr[set iter.pos = iter.pos + 1]))
+  } else {
+    None<(int, &E)>()
+  }
+}
+
+
+
+struct RuntimeSizedArrayIter<M, E> where E Ref {
+  arr &[]<M>E;
+  pos! int;
+}
+
+func begin<M, E>(arr &[]<M>E) RuntimeSizedArrayIter<M, E> {
+  RuntimeSizedArrayIter<M, E>(arr, 0)
+}
+
+func next<M, E>(iter &RuntimeSizedArrayIter<M, E>) Opt<&E> {
+  if iter.pos < iter.arr.len() {
+    Some<&E>(&iter.arr[set iter.pos = iter.pos + 1])
+  } else {
+    None<&E>()
+  }
+}
+
+//struct RuntimeSizedArrayEntriesIter<M, E> {
+//  arr &[]<M>E;
+//  pos! int;
+//}
+//
+//func entries<M, E>(arr &[]<M>E) RuntimeSizedArrayEntriesIter<M, E> {
+//  RuntimeSizedArrayEntriesIter<M, E>(arr, 0)
+//}
+//func begin<M, E>(iter &RuntimeSizedArrayEntriesIter<M, E>)
+//RuntimeSizedArrayEntriesIter<M, E> {
+//  RuntimeSizedArrayEntriesIter<M, E>(iter.arr, iter.pos)
+//}
+//
+//func next<M, E>(iter &RuntimeSizedArrayEntriesIter<M, E>) Opt<(int, &E)> {
+//  if iter.pos < iter.arr.len() {
+//    Some<(int, &E)>((iter.pos, &iter.arr[set iter.pos = iter.pos + 1]))
+//  } else {
+//    None<(int, &E)>()
+//  }
+//}
+

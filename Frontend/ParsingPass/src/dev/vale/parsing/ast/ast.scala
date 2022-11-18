@@ -2,44 +2,40 @@
 
 package dev.vale.parsing.ast
 
-import dev.vale.{vassert, vcurious}
-import dev.vale.vpass
+import dev.vale.lexing.RangeL
+import dev.vale.{FileCoordinate, StrI, vassert, vcurious, vpass}
 
-case class RangeP(begin: Int, end: Int) {
-  override def hashCode(): Int = vcurious()
-  vassert(begin == end || begin <= end)
-}
-object RangeP {
-  val zero = RangeP(0, 0)
-}
 // Something that exists in the source code. An Option[UnitP] is better than a boolean
 // because it also contains the range it was found.
-case class UnitP(range: RangeP) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class NameP(range: RangeP, str: String) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class UnitP(range: RangeL) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class NameP(range: RangeL, str: StrI) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
-case class FileP(topLevelThings: Vector[ITopLevelThingP]) {
+case class FileP(
+  fileCoord: FileCoordinate,
+  commentsRanges: Vector[RangeL],
+  denizens: Vector[IDenizenP]) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   def lookupFunction(name: String) = {
     val results =
-      topLevelThings.collect({
-        case TopLevelFunctionP(f) if f.header.name.exists(_.str == name) => f
+      denizens.collect({
+        case TopLevelFunctionP(f) if f.header.name.exists(_.str.str == name) => f
       })
     vassert(results.size == 1)
     results.head
   }
 }
 
-sealed trait ITopLevelThingP
-case class TopLevelFunctionP(function: FunctionP) extends ITopLevelThingP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class TopLevelStructP(struct: StructP) extends ITopLevelThingP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class TopLevelInterfaceP(interface: InterfaceP) extends ITopLevelThingP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class TopLevelImplP(impl: ImplP) extends ITopLevelThingP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class TopLevelExportAsP(export: ExportAsP) extends ITopLevelThingP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class TopLevelImportP(imporrt: ImportP) extends ITopLevelThingP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+sealed trait IDenizenP
+case class TopLevelFunctionP(function: FunctionP) extends IDenizenP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class TopLevelStructP(struct: StructP) extends IDenizenP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class TopLevelInterfaceP(interface: InterfaceP) extends IDenizenP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class TopLevelImplP(impl: ImplP) extends IDenizenP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class TopLevelExportAsP(export: ExportAsP) extends IDenizenP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class TopLevelImportP(imporrt: ImportP) extends IDenizenP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class ImplP(
-  range: RangeP,
-  identifyingRunes: Option[IdentifyingRunesP],
+  range: RangeL,
+  genericParams: Option[GenericParametersP],
   templateRules: Option[TemplateRulesP],
   // Option because we can say `impl MyInterface;` inside a struct.
   struct: Option[ITemplexPT],
@@ -48,102 +44,116 @@ case class ImplP(
 ) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class ExportAsP(
-  range: RangeP,
+  range: RangeL,
   struct: ITemplexPT,
   exportedName: NameP) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class ImportP(
-  range: RangeP,
+  range: RangeL,
   moduleName: NameP,
   packageSteps: Vector[NameP],
   importeeName: NameP) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 //sealed trait IAttributeP
 //case class ExportP(range: RangeP) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class WeakableAttributeP(range: RangeP) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class SealedAttributeP(range: RangeP) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class WeakableAttributeP(range: RangeL) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class SealedAttributeP(range: RangeL) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
-sealed trait IMacroInclusion
-case object CallMacro extends IMacroInclusion
-case object DontCallMacro extends IMacroInclusion
-case class MacroCallP(range: RangeP, inclusion: IMacroInclusion, name: NameP) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+sealed trait IMacroInclusionP
+case object CallMacroP extends IMacroInclusionP
+case object DontCallMacroP extends IMacroInclusionP
+case class MacroCallP(range: RangeL, inclusion: IMacroInclusionP, name: NameP) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class StructP(
-  range: RangeP,
+  range: RangeL,
   name: NameP,
   attributes: Vector[IAttributeP],
-  mutability: ITemplexPT,
-  identifyingRunes: Option[IdentifyingRunesP],
+  mutability: Option[ITemplexPT],
+  identifyingRunes: Option[GenericParametersP],
   templateRules: Option[TemplateRulesP],
+  bodyRange: RangeL,
   members: StructMembersP) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class StructMembersP(
-  range: RangeP,
+  range: RangeL,
   contents: Vector[IStructContent]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 sealed trait IStructContent
 case class StructMethodP(func: FunctionP) extends IStructContent { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class NormalStructMemberP(
-  range: RangeP,
+  range: RangeL,
   name: NameP,
   variability: VariabilityP,
   tyype: ITemplexPT
 ) extends IStructContent { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class VariadicStructMemberP(
-  range: RangeP,
+  range: RangeL,
   variability: VariabilityP,
   tyype: ITemplexPT
 ) extends IStructContent { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class InterfaceP(
-  range: RangeP,
+  range: RangeL,
   name: NameP,
   attributes: Vector[IAttributeP],
-  mutability: ITemplexPT,
-  maybeIdentifyingRunes: Option[IdentifyingRunesP],
+  mutability: Option[ITemplexPT],
+  maybeIdentifyingRunes: Option[GenericParametersP],
   templateRules: Option[TemplateRulesP],
+  bodyRange: RangeL,
   members: Vector[FunctionP]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 sealed trait IAttributeP
-case class AbstractAttributeP(range: RangeP) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class ExternAttributeP(range: RangeP) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class BuiltinAttributeP(range: RangeP, generatorName: NameP) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class ExportAttributeP(range: RangeP) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class PureAttributeP(range: RangeP) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class AbstractAttributeP(range: RangeL) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class ExternAttributeP(range: RangeL) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class BuiltinAttributeP(range: RangeL, generatorName: NameP) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class ExportAttributeP(range: RangeL) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class PureAttributeP(range: RangeL) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 //case class RuleAttributeP(rule: IRulexPR) extends IAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 sealed trait IRuneAttributeP
-case class TypeRuneAttributeP(range: RangeP, tyype: ITypePR) extends IRuneAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class ReadOnlyRuneAttributeP(range: RangeP) extends IRuneAttributeP
-case class ReadWriteRuneAttributeP(range: RangeP) extends IRuneAttributeP
-case class ImmutableRuneAttributeP(range: RangeP) extends IRuneAttributeP
-case class PoolRuneAttributeP(range: RangeP) extends IRuneAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class ArenaRuneAttributeP(range: RangeP) extends IRuneAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class BumpRuneAttributeP(range: RangeP) extends IRuneAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class ImmutableRuneAttributeP(range: RangeL) extends IRuneAttributeP
+//case class TypeRuneAttributeP(range: RangeL, tyype: ITypePR) extends IRuneAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class ReadOnlyRegionRuneAttributeP(range: RangeL) extends IRuneAttributeP
+case class ReadWriteRegionRuneAttributeP(range: RangeL) extends IRuneAttributeP
+case class ImmutableRegionRuneAttributeP(range: RangeL) extends IRuneAttributeP
+case class PoolRuneAttributeP(range: RangeL) extends IRuneAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class ArenaRuneAttributeP(range: RangeL) extends IRuneAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class BumpRuneAttributeP(range: RangeL) extends IRuneAttributeP { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
-case class IdentifyingRuneP(range: RangeP, name: NameP, attributes: Vector[IRuneAttributeP]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class GenericParameterP(
+  range: RangeL,
+  name: NameP,
+  maybeType: Option[GenericParameterTypeP],
+  attributes: Vector[IRuneAttributeP],
+  maybeDefault: Option[ITemplexPT]
+) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
-case class IdentifyingRunesP(range: RangeP, runes: Vector[IdentifyingRuneP]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class TemplateRulesP(range: RangeP, rules: Vector[IRulexPR]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
-case class ParamsP(range: RangeP, patterns: Vector[PatternPP]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class GenericParameterTypeP(
+  range: RangeL,
+  tyype: ITypePR
+)
+
+case class GenericParametersP(range: RangeL, params: Vector[GenericParameterP]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class TemplateRulesP(range: RangeL, rules: Vector[IRulexPR]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class ParamsP(range: RangeL, patterns: Vector[PatternPP]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class FunctionP(
-  range: RangeP,
+  range: RangeL,
   header: FunctionHeaderP,
   body: Option[BlockPE]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class FunctionReturnP(
-  range: RangeP,
-  inferRet: Option[UnitP],
+  range: RangeL,
+  inferRet: Option[RangeL],
   retType: Option[ITemplexPT]
 ) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class FunctionHeaderP(
-  range: RangeP,
+  range: RangeL,
   name: Option[NameP],
   attributes: Vector[IAttributeP],
 
   // If Some(Vector.empty), should show up like the <> in func moo<>(a int, b bool)
-  maybeUserSpecifiedIdentifyingRunes: Option[IdentifyingRunesP],
+  genericParameters: Option[GenericParametersP],
   templateRules: Option[TemplateRulesP],
 
   params: Option[ParamsP],

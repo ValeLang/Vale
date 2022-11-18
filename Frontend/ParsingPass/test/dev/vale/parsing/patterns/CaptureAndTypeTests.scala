@@ -1,7 +1,6 @@
 package dev.vale.parsing.patterns
 
-import dev.vale.Collector
-import dev.vale.parsing.{PatternParser, TestParseUtils}
+import dev.vale.{Collector, StrI}
 import dev.vale.parsing.ast.{BorrowP, ConstructingMemberNameDeclarationP, InterpretedPT, LocalNameDeclarationP, NameOrRunePT, NameP, PatternPP, WeakP}
 import dev.vale.parsing.ast.Patterns.{capturedWithType, capturedWithTypeRune}
 import dev.vale.parsing._
@@ -24,17 +23,18 @@ class CaptureAndTypeTests extends FunSuite with Matchers with Collector with Tes
 //    }
 //  }
   private def compile[T](code: String): PatternPP = {
-    compile(new PatternParser().parsePattern(_), code)
+    compilePattern(code)
+//    compile(new PatternParser().parsePattern(_), code)
   }
 
   test("No capture, with type") {
     compile("_ int") shouldHave {
-      case PatternPP(_,None, _, Some(NameOrRunePT(NameP(_, "int"))), None, None) =>
+      case PatternPP(_,None, _, Some(NameOrRunePT(NameP(_, StrI("int")))), None, None) =>
     }
   }
   test("Capture with type") {
     compile("a int") shouldHave {
-      case capturedWithType("a", NameOrRunePT(NameP(_, "int"))) =>
+      case capturedWithType("a", NameOrRunePT(NameP(_, StrI("int")))) =>
     }
   }
   test("Simple capture with tame") {
@@ -45,8 +45,8 @@ class CaptureAndTypeTests extends FunSuite with Matchers with Collector with Tes
   test("Capture with borrow tame") {
     compile("arr &R") shouldHave {
       case PatternPP(_,_,
-      Some(LocalNameDeclarationP(NameP(_, "arr"))),
-      Some(InterpretedPT(_,BorrowP, NameOrRunePT(NameP(_, "R")))),
+      Some(LocalNameDeclarationP(NameP(_, StrI("arr")))),
+      Some(InterpretedPT(_,BorrowP, NameOrRunePT(NameP(_, StrI("R"))))),
       None,
       None) =>
     }
@@ -54,8 +54,8 @@ class CaptureAndTypeTests extends FunSuite with Matchers with Collector with Tes
   test("Capture with self. in front") {
     compile("self.arr &&R") shouldHave {
       case PatternPP(_,_,
-      Some(ConstructingMemberNameDeclarationP(NameP(_, "arr"))),
-      Some(InterpretedPT(_,WeakP, NameOrRunePT(NameP(_, "R")))),
+      Some(ConstructingMemberNameDeclarationP(NameP(_, StrI("arr")))),
+      Some(InterpretedPT(_,WeakP, NameOrRunePT(NameP(_, StrI("R"))))),
       None,
       None) =>
     }

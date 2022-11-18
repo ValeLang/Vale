@@ -5,8 +5,7 @@ import dev.vale.parsing._
 import dev.vale.parsing.ast._
 import PostParser.noDeclarations
 import dev.vale
-import dev.vale.{FileCoordinate, Interner, RangeS, postparsing, vassertSome, vcurious, vimpl, vwat}
-import dev.vale.parsing.ast.{AbstractAttributeP, AbstractP, BlockPE, BorrowP, BuiltinAttributeP, ExportAttributeP, ExternAttributeP, FunctionHeaderP, FunctionP, FunctionReturnP, IAttributeP, IdentifyingRuneP, NameP, PureAttributeP, RegionTypePR, RulePUtils, TypeRuneAttributeP, UseP}
+import dev.vale.{FileCoordinate, Interner, Keywords, RangeS, postparsing, vassertSome, vcurious, vimpl, vwat}
 import dev.vale.postparsing.patterns.{AtomSP, CaptureS, PatternScout}
 import dev.vale.postparsing.patterns._
 //import dev.vale.postparsing.predictor.{Conclusions, PredictorEvaluator}
@@ -23,6 +22,7 @@ import scala.collection.immutable.{List, Range}
 class FunctionScout(
     postParser: PostParser,
     interner: Interner,
+    keywords: Keywords,
     templexScout: TemplexScout,
     ruleScout: RuleScout) {
   val patternScout = new PatternScout(interner, templexScout)
@@ -36,45 +36,54 @@ class FunctionScout(
       templexScout,
       ruleScout,
       patternScout,
-      interner
+      interner,
+      keywords
     )
 
   def scoutTopLevelFunction(file: FileCoordinate, functionP: FunctionP): FunctionS = {
     val FunctionP(
-      range,
-      FunctionHeaderP(_,
-        Some(NameP(originalNameRange, originalCodeName)),
-        attributes,
-        userSpecifiedIdentifyingRuneNames,
-        templateRulesP,
-        paramsP,
-        FunctionReturnP(retRange, maybeInferRet, maybeRetType)),
-      maybeBody0
+    range,
+    FunctionHeaderP(_,
+    Some(NameP(originalNameRange, originalCodeName)),
+    attributes,
+    maybeGenericParametersP,
+    templateRulesP,
+    paramsP,
+    FunctionReturnP(retRange, maybeInferRet, maybeRetType)),
+    maybeBody0
     ) = functionP
 
     val rangeS = PostParser.evalRange(file, retRange)
     val codeLocation = PostParser.evalPos(file, range.begin)
     val name =
       (file, originalCodeName) match {
-        case (FileCoordinate(PackageCoordinate("v", Vector("builtins", "arrays")), "arrays.vale"), "__free_replaced") => {
-          interner.intern(postparsing.FreeDeclarationNameS(PostParser.evalPos(file, originalNameRange.begin)))
-        }
-        case (FileCoordinate(PackageCoordinate("", Vector()), "arrays.vale"), "__free_replaced") => {
-          interner.intern(FreeDeclarationNameS(PostParser.evalPos(file, originalNameRange.begin)))
-        }
+//        case (FileCoordinate(PackageCoordinate(v, Vector(builtins, arrays)), "arrays.vale"), __free_replaced)
+//          if v == keywords.v && builtins == keywords.builtins && arrays == keywords.arrays && __free_replaced == keywords.__free_replaced => {
+//          interner.intern(postparsing.FreeDeclarationNameS(PostParser.evalPos(file, originalNameRange.begin)))
+//        }
+//        case (FileCoordinate(PackageCoordinate(emptyString, Vector()), "arrays.vale"), __free_replaced)
+//          if emptyString == keywords.emptyString && __free_replaced == keywords.__free_replaced => {
+//          interner.intern(FreeDeclarationNameS(PostParser.evalPos(file, originalNameRange.begin)))
+//        }
         case (_, n) => interner.intern(postparsing.FunctionNameS(n, codeLocation))
       }
 
 
     val lidb = new LocationInDenizenBuilder(Vector())
 
-    val userSpecifiedIdentifyingRunes =
-      userSpecifiedIdentifyingRuneNames
+    val genericParametersP =
+      maybeGenericParametersP
         .toVector
-        .flatMap(_.runes)
+        .flatMap(_.params)
         // Filter out any regions, we dont do those yet
-        .filter({ case IdentifyingRuneP(_, _, attributes) => !attributes.exists({ case TypeRuneAttributeP(_, RegionTypePR) => true case _ => false }) })
-        .map({ case IdentifyingRuneP(_, NameP(range, identifyingRuneName), _) =>
+        .filter({
+          case GenericParameterP(_, _, Some(GenericParameterTypeP(_, RegionTypePR)), _, _) => false
+          case _ => true
+        })
+
+    val userSpecifiedIdentifyingRunes =
+      genericParametersP
+        .map({ case GenericParameterP(_, NameP(range, identifyingRuneName), _, _, _) =>
           rules.RuneUsage(PostParser.evalRange(file, range), CodeRuneS(identifyingRuneName))
         })
 
@@ -86,10 +95,19 @@ class FunctionScout(
         .map({ case NameP(range, identifyingRuneName) => rules.RuneUsage(PostParser.evalRange(file, range), CodeRuneS(identifyingRuneName)) })
     val userDeclaredRunes = (userSpecifiedIdentifyingRunes ++ userRunesFromRules).distinct
 
-    val functionEnv = postparsing.FunctionEnvironment(file, name, None, userDeclaredRunes.map(_.rune).toSet, paramsP.size, false)
+    val functionEnv = postparsing.FunctionEnvironmentS(file, name, None, userDeclaredRunes.map(_.rune).toSet, paramsP.size, false)
 
     val ruleBuilder = ArrayBuffer[IRulexSR]()
+
     val runeToExplicitType = mutable.HashMap[IRuneS, ITemplataType]()
+
+    val genericParametersS =
+      genericParametersP.zip(userSpecifiedIdentifyingRunes)
+        .map({ case (g, r) =>
+          PostParser.scoutGenericParameter(
+            templexScout, functionEnv, lidb.child(), runeToExplicitType, ruleBuilder, g, r)
+        })
+
     ruleScout.translateRulexes(
       functionEnv,
       lidb.child(),
@@ -102,9 +120,8 @@ class FunctionScout(
     val patternsP =
       paramsP.toVector.map(_.patterns).flatten.zipWithIndex.map({
         case (pattern, index) => {
-          if (pattern.templex.isEmpty) {
-            throw CompileErrorExceptionS(LightFunctionMustHaveParamTypes(rangeS, index))
-          }
+          // Should have been caught by LightFunctionMustHaveParamTypes error in parser,
+          vassert(pattern.templex.nonEmpty)
           pattern
         }
       })
@@ -120,11 +137,11 @@ class FunctionScout(
 
     val maybeRetCoordRune =
       (maybeInferRet, maybeRetType) match {
-        case (None, None) => {
+        case (None, None | Some(RegionRunePT(_, _))) => {
           // If nothing's present, assume void
           val rangeS = PostParser.evalRange(file, retRange)
           val rune = rules.RuneUsage(rangeS, ImplicitRuneS(lidb.child().consume()))
-          ruleBuilder += LookupSR(rangeS, rune, interner.intern(CodeNameS("void")))
+          ruleBuilder += LookupSR(rangeS, rune, interner.intern(CodeNameS(keywords.void)))
           Some(rune)
         }
         case (Some(_), None) => None // Infer the return
@@ -141,7 +158,7 @@ class FunctionScout(
         }
         case (Some(_), Some(_)) => throw CompileErrorExceptionS(postparsing.RangedInternalErrorS(PostParser.evalRange(file, range), "Can't have return type and infer-return at the same time"))
       }
-    maybeRetCoordRune.foreach(retCoordRune => runeToExplicitType.put(retCoordRune.rune, CoordTemplataType))
+    maybeRetCoordRune.foreach(retCoordRune => runeToExplicitType.put(retCoordRune.rune, CoordTemplataType()))
 
     val body1 =
       if (attributes.collectFirst({ case AbstractAttributeP(_) => }).nonEmpty) {
@@ -152,7 +169,7 @@ class FunctionScout(
         }
         ExternBodyS
       } else if (attributes.collectFirst({ case BuiltinAttributeP(_, _) => }).nonEmpty) {
-        GeneratedBodyS(attributes.collectFirst({ case BuiltinAttributeP(_, generatorId) => generatorId}).head.str)
+        GeneratedBodyS(attributes.collectFirst({ case BuiltinAttributeP(_, generatorId) => generatorId }).head.str)
       } else {
         val body =
           maybeBody0 match {
@@ -178,29 +195,29 @@ class FunctionScout(
         CodeBodyS(body1)
       }
 
-    val attrsS = translateFunctionAttributes(file, attributes.filter({ case AbstractAttributeP(_) => false case _ => true}))
+    val attrsS = translateFunctionAttributes(file, attributes.filter({ case AbstractAttributeP(_) => false case _ => true }))
 
     val runeToPredictedType =
       postParser.predictRuneTypes(
         rangeS,
         userSpecifiedIdentifyingRunes.map(_.rune),
         runeToExplicitType.toMap,
-        ruleBuilder.toArray)
+        ruleBuilder.toVector)
 
     postParser.checkIdentifiability(
       rangeS,
       userSpecifiedIdentifyingRunes.map(_.rune),
-      ruleBuilder.toArray)
+      ruleBuilder.toVector)
 
-    postparsing.FunctionS(
+    FunctionS(
       PostParser.evalRange(file, range),
       name,
       attrsS,
-      userSpecifiedIdentifyingRunes,
+      genericParametersS,
       runeToPredictedType,
       explicitParams1,
       maybeRetCoordRune,
-      ruleBuilder.toArray,
+      ruleBuilder.toVector,
       body1)
   }
 
@@ -216,23 +233,24 @@ class FunctionScout(
   }
 
   def scoutLambda(
-      parentStackFrame: StackFrame,
-      lambdaFunction0: FunctionP):
+    parentStackFrame: StackFrame,
+    lambdaFunction0: FunctionP):
   (FunctionS, VariableUses) = {
-    val FunctionP(range,
-      FunctionHeaderP(_,
-        _, attrsP, userSpecifiedIdentifyingRuneNames, None, paramsP, FunctionReturnP(retRange, maybeInferRet, maybeRetType)),
-      Some(body0)) = lambdaFunction0;
+    val FunctionP(range, headerP, Some(body0)) = lambdaFunction0
+    val FunctionHeaderP(_, _, attrsP, maybeGenericParametersP, None, paramsP, returnP) = headerP
+    val FunctionReturnP(retRange, maybeInferRet, maybeRetType) = returnP
+    val file = parentStackFrame.file
+
     val codeLocation = PostParser.evalPos(parentStackFrame.file, range.begin)
 
-    vcurious(userSpecifiedIdentifyingRuneNames.isEmpty)
+    vcurious(maybeGenericParametersP.isEmpty)
 
     val lambdaName = interner.intern(LambdaDeclarationNameS(/*parentStackFrame.name,*/ codeLocation))
     // Every lambda has a closure as its first arg, even if its empty
     val closureStructName = interner.intern(LambdaStructDeclarationNameS(lambdaName))
 
     val functionEnv =
-      FunctionEnvironment(
+      FunctionEnvironmentS(
         parentStackFrame.file,
         lambdaName,
         Some(parentStackFrame.parentEnv),
@@ -245,25 +263,41 @@ class FunctionScout(
 
     val lidb = new LocationInDenizenBuilder(Vector())
 
+    val genericParametersP =
+      maybeGenericParametersP
+        .toVector
+        .flatMap(_.params)
+        // Filter out any regions, we dont do those yet
+        .filter({
+          case GenericParameterP(_, _, Some(GenericParameterTypeP(_, RegionTypePR)), _, _) => false
+          case _ => true
+        })
+
+    val userSpecifiedIdentifyingRunes =
+      genericParametersP
+        .map({ case GenericParameterP(_, NameP(range, identifyingRuneName), _, _, _) =>
+          rules.RuneUsage(PostParser.evalRange(file, range), CodeRuneS(identifyingRuneName))
+        })
+
     val ruleBuilder = ArrayBuffer[IRulexSR]()
     val runeToExplicitType = mutable.HashMap[IRuneS, ITemplataType]()
 
     // We say PerhapsTypeless because they might be anonymous params like in `(_) => { true }`
     // Later on, we'll make identifying runes for these.
     val explicitParamPatternsPerhapsTypeless =
-      patternScout.scoutPatterns(
-        myStackFrameWithoutParams,
-        lidb.child(),
-        ruleBuilder,
-        runeToExplicitType,
-        paramsP.toVector.flatMap(_.patterns))
+    patternScout.scoutPatterns(
+      myStackFrameWithoutParams,
+      lidb.child(),
+      ruleBuilder,
+      runeToExplicitType,
+      paramsP.toVector.flatMap(_.patterns))
 
     val explicitParamPatternsAndIdentifyingRunes =
       explicitParamPatternsPerhapsTypeless.map({
-        case a @ AtomSP(_, _, _, Some(_), _) => (a, None)
+        case a@AtomSP(_, _, _, Some(_), _) => (a, None)
         case AtomSP(range, name, virtuality, None, destructure) => {
           val rune = rules.RuneUsage(range, ImplicitRuneS(lidb.child().consume()))
-          runeToExplicitType.put(rune.rune, CoordTemplataType)
+          runeToExplicitType.put(rune.rune, CoordTemplataType())
           val newParam = patterns.AtomSP(range, name, virtuality, Some(rune), destructure)
           (newParam, Some(rune))
         }
@@ -271,7 +305,7 @@ class FunctionScout(
     val explicitParams = explicitParamPatternsAndIdentifyingRunes.map(_._1).map(ParameterS)
     val identifyingRunesFromExplicitParams = explicitParamPatternsAndIdentifyingRunes.flatMap(_._2)
 
-//    vassert(exportedTemplateParamNames.size == exportedTemplateParamNames.toSet.size)
+    //    vassert(exportedTemplateParamNames.size == exportedTemplateParamNames.toSet.size)
 
     val closureParamName = interner.intern(ClosureParamNameS())
 
@@ -289,17 +323,17 @@ class FunctionScout(
         Some(parentStackFrame),
         lidb.child(),
         body0,
-//        body0 match {
-//          case BlockPE(_, ReturnPE(_, _)) => body0
-//          case BlockPE(range, inner) => BlockPE(range, ReturnPE(range, inner))
-//        },
+        //        body0 match {
+        //          case BlockPE(_, ReturnPE(_, _)) => body0
+        //          case BlockPE(range, inner) => BlockPE(range, ReturnPE(range, inner))
+        //        },
         paramDeclarations)
 
     if (lambdaMagicParamNames.nonEmpty && (explicitParams.nonEmpty)) {
       throw CompileErrorExceptionS(postparsing.RangedInternalErrorS(PostParser.evalRange(parentStackFrame.file, range), "Cant have a lambda with _ and params"))
     }
 
-//    val closurePatternId = fate.nextPatternNumber();
+    //    val closurePatternId = fate.nextPatternNumber();
 
     val closureParamPos = PostParser.evalPos(parentStackFrame.file, range.begin)
     val closureParamRange = RangeS(closureParamPos, closureParamPos)
@@ -325,31 +359,43 @@ class FunctionScout(
           None))
 
     val magicParams =
-        lambdaMagicParamNames.map({
-          case mpn @ MagicParamNameS(codeLocation) => {
-            val magicParamRange = vale.RangeS(codeLocation, codeLocation)
-            val magicParamRune = rules.RuneUsage(magicParamRange, MagicParamRuneS(lidb.child().consume()))
-            runeToExplicitType.put(magicParamRune.rune,CoordTemplataType)
-            val paramS =
-              ParameterS(
-                AtomSP(
-                  magicParamRange,
-                  Some(patterns.CaptureS(mpn)),None,Some(magicParamRune),None))
-            paramS
-          }
+      lambdaMagicParamNames.map({
+        case mpn@MagicParamNameS(codeLocation) => {
+          val magicParamRange = vale.RangeS(codeLocation, codeLocation)
+          val magicParamRune = rules.RuneUsage(magicParamRange, MagicParamRuneS(lidb.child().consume()))
+          runeToExplicitType.put(magicParamRune.rune, CoordTemplataType())
+          val paramS =
+            ParameterS(
+              AtomSP(
+                magicParamRange,
+                Some(patterns.CaptureS(mpn)), None, Some(magicParamRune), None))
+          paramS
+        }
+      })
+
+    val genericParametersS =
+      genericParametersP.zip(userSpecifiedIdentifyingRunes)
+        .map({ case (g, r) =>
+          PostParser.scoutGenericParameter(
+            templexScout, functionEnv, lidb.child(), runeToExplicitType, ruleBuilder, g, r)
+        }) ++
+        // Lambdas identifying runes are determined by their magic params.
+        // See: Lambdas Dont Need Explicit Identifying Runes (LDNEIR)
+        magicParams.map(param => {
+          GenericParameterS(param.pattern.range, vassertSome(param.pattern.coordRune), Vector(), None)
         })
 
     // Lambdas identifying runes are determined by their magic params.
     // See: Lambdas Dont Need Explicit Identifying Runes (LDNEIR)
     val identifyingRunes =
-      identifyingRunesFromExplicitParams ++
+    identifyingRunesFromExplicitParams ++
       magicParams.map(param => vassertSome(param.pattern.coordRune))
 
     val totalParams = Vector(closureParamS) ++ explicitParams ++ magicParams;
 
     val maybeRetCoordRune =
       (maybeInferRet, maybeRetType) match {
-        case (_, None) => None // Infer the return
+        case (_, None | Some(RegionRunePT(_, _))) => None // Infer the return
         case (None, Some(retTypePT)) => {
           templexScout.translateMaybeTypeIntoMaybeRune(
             functionEnv,
@@ -361,23 +407,23 @@ class FunctionScout(
         }
         case (Some(_), Some(_)) => throw CompileErrorExceptionS(postparsing.RangedInternalErrorS(PostParser.evalRange(parentStackFrame.file, range), "Can't have return type and infer-return at the same time"))
       }
-    maybeRetCoordRune.foreach(retCoordRune => runeToExplicitType.put(retCoordRune.rune, CoordTemplataType))
+    maybeRetCoordRune.foreach(retCoordRune => runeToExplicitType.put(retCoordRune.rune, CoordTemplataType()))
 
     postParser.checkIdentifiability(
       closureParamRange,
       identifyingRunes.map(_.rune),
-      ruleBuilder.toArray)
+      ruleBuilder.toVector)
 
     val function1 =
-      postparsing.FunctionS(
+      FunctionS(
         PostParser.evalRange(parentStackFrame.file, range),
         lambdaName,
         translateFunctionAttributes(parentStackFrame.file, attrsP),
-        identifyingRunes,
+        genericParametersS,
         runeToExplicitType.toMap,
         totalParams,
         maybeRetCoordRune,
-        ruleBuilder.toArray,
+        ruleBuilder.toVector,
         CodeBodyS(body1))
     (function1, variableUses)
   }
@@ -387,7 +433,7 @@ class FunctionScout(
   // - Uses of parent variables.
   // - Magic params made/used inside.
   private def scoutBody(
-    functionEnv: FunctionEnvironment,
+    functionEnv: FunctionEnvironmentS,
     // This might be the block containing the lambda that we're evaluating now.
     parentStackFrame: Option[StackFrame],
     lidb: LocationInDenizenBuilder,
@@ -401,21 +447,21 @@ class FunctionScout(
     // 'm' will be turned into an expression, which means that's how it's
     // destroyed. So, thats how we destroy things before their time.
     val (block1, selfUses, childUses) =
-      expressionScout.newBlock(
-        functionBodyEnv,
-        parentStackFrame,
-        lidb.child(),
-        PostParser.evalRange(functionBodyEnv.file, body0.range),
-        initialDeclarations,
-        (stackFrame1, lidb) => {
-          expressionScout.scoutExpressionAndCoerce(
-            stackFrame1, lidb, body0.inner, UseP)
-        })
+    expressionScout.newBlock(
+      functionBodyEnv,
+      parentStackFrame,
+      lidb.child(),
+      PostParser.evalRange(functionBodyEnv.file, body0.range),
+      initialDeclarations,
+      (stackFrame1, lidb) => {
+        expressionScout.scoutExpressionAndCoerce(
+          stackFrame1, lidb, body0.inner, UseP)
+      })
 
     vcurious(
-      childUses.uses.map(_.name).collect({ case mpn @ MagicParamNameS(_) => mpn }).isEmpty)
+      childUses.uses.map(_.name).collect({ case mpn@MagicParamNameS(_) => mpn }).isEmpty)
     val magicParamNames =
-      selfUses.uses.map(_.name).collect({ case mpn @ MagicParamNameS(_) => mpn })
+      selfUses.uses.map(_.name).collect({ case mpn@MagicParamNameS(_) => mpn })
     val magicParamVars = magicParamNames.map(n => VariableDeclaration(n))
 
     val magicParamLocals =
@@ -450,44 +496,38 @@ class FunctionScout(
     // so if we're using variables from our grandparent, our parent can know
     // that it needs to capture them for us.
     val usesOfParentVariables =
-      allUses.uses.filter(use => {
-        if (block1WithParamLocals.locals.exists(_.varName == use.name)) {
-          // This is a use of a variable declared in this function.
-          false
-        } else {
-          use.name match {
-            case MagicParamNameS(_) => {
-              // We're using a magic param, which we'll have in this function's params.
-              false
-            }
-            case _ => {
-              // This is a use of a variable from somewhere above.
-              true
-            }
+    allUses.uses.filter(use => {
+      if (block1WithParamLocals.locals.exists(_.varName == use.name)) {
+        // This is a use of a variable declared in this function.
+        false
+      } else {
+        use.name match {
+          case MagicParamNameS(_) => {
+            // We're using a magic param, which we'll have in this function's params.
+            false
+          }
+          case _ => {
+            // This is a use of a variable from somewhere above.
+            true
           }
         }
-      })
+      }
+    })
 
     val bodySE = postparsing.BodySE(PostParser.evalRange(functionBodyEnv.file, body0.range), usesOfParentVariables.map(_.name), block1WithParamLocals)
     (bodySE, VariableUses(usesOfParentVariables), magicParamNames)
   }
 
   def scoutInterfaceMember(
-    interfaceEnv: Environment,
-    interfaceIdentifyingRunes: Array[RuneUsage],
-    interfaceRules: Array[IRulexSR],
+    interfaceEnv: EnvironmentS,
+    interfaceGenericParams: Vector[GenericParameterS],
+    interfaceRules: Vector[IRulexSR],
     interfaceRuneToExplicitType: Map[IRuneS, ITemplataType],
     functionP: FunctionP): FunctionS = {
-    val FunctionP(
-      range,
-      FunctionHeaderP(_,
-        Some(NameP(_, codeName)),
-        attrsP,
-        userSpecifiedIdentifyingRuneNames,
-        templateRulesP,
-        maybeParamsP,
-        FunctionReturnP(retRange, maybeInferRet, maybeRetType)),
-      None) = functionP;
+    val FunctionP(range, headerP, None) = functionP;
+    val FunctionHeaderP(_, Some(NameP(_, codeName)), attrsP, maybeGenericParametersP, templateRulesP, maybeParamsP, returnP) = headerP
+    val FunctionReturnP(retRange, maybeInferRet, maybeRetType) = returnP
+    val file = interfaceEnv.file
     val rangeS = PostParser.evalRange(interfaceEnv.file, range)
     val retRangeS = PostParser.evalRange(interfaceEnv.file, retRange)
 
@@ -500,15 +540,24 @@ class FunctionScout(
       }
     }
 
+    val genericParametersP =
+      maybeGenericParametersP
+        .toVector
+        .flatMap(_.params)
+        // Filter out any regions, we dont do those yet
+        .filter({
+          case GenericParameterP(_, _, Some(GenericParameterTypeP(_, RegionTypePR)), _, _) => false
+          case _ => true
+        })
+
+    val userSpecifiedIdentifyingRunes =
+      genericParametersP
+        .map({ case GenericParameterP(_, NameP(range, identifyingRuneName), _, _, _) =>
+          rules.RuneUsage(PostParser.evalRange(file, range), CodeRuneS(identifyingRuneName))
+        })
+
     val codeLocation = PostParser.evalPos(interfaceEnv.file, range.begin)
     val funcName = interner.intern(FunctionNameS(codeName, codeLocation))
-    val explicitIdentifyingRunes: Vector[RuneUsage] =
-      userSpecifiedIdentifyingRuneNames
-          .toVector
-        .flatMap(_.runes)
-        // Filter out any regions, we dont do those yet
-        .filter({ case IdentifyingRuneP(_, _, attributes) => !attributes.exists({ case TypeRuneAttributeP(_, RegionTypePR) => true case _ => false }) })
-        .map({ case IdentifyingRuneP(_, NameP(range, identifyingRuneName), _) => rules.RuneUsage(PostParser.evalRange(interfaceEnv.file, range), CodeRuneS(identifyingRuneName)) })
 
     // See: Must Scan For Declared Runes First (MSFDRF)
     val userRunesFromRules =
@@ -517,12 +566,12 @@ class FunctionScout(
         .flatMap(rules => RulePUtils.getOrderedRuneDeclarationsFromRulexesWithDuplicates(rules.rules))
         .map({ case NameP(range, identifyingRuneName) => rules.RuneUsage(PostParser.evalRange(interfaceEnv.file, range), CodeRuneS(identifyingRuneName)) })
 
-    val userDeclaredRunes = (explicitIdentifyingRunes ++ userRunesFromRules).distinct
-    val identifyingRunes = explicitIdentifyingRunes ++ interfaceIdentifyingRunes
+    val userDeclaredRunes = (userSpecifiedIdentifyingRunes ++ userRunesFromRules).distinct
 
     val lidb = new LocationInDenizenBuilder(Vector())
 
     val ruleBuilder = ArrayBuffer[IRulexSR]()
+
     ruleBuilder ++= interfaceRules
     val runeToExplicitType = mutable.HashMap[IRuneS, ITemplataType]()
     runeToExplicitType ++= interfaceRuneToExplicitType
@@ -530,8 +579,17 @@ class FunctionScout(
     ruleScout.translateRulexes(interfaceEnv, lidb.child(), ruleBuilder, runeToExplicitType, templateRulesP.toVector.flatMap(_.rules))
 
     val functionEnv =
-      postparsing.FunctionEnvironment(
+      postparsing.FunctionEnvironmentS(
         interfaceEnv.file, funcName, Some(interfaceEnv), userDeclaredRunes.map(_.rune).toSet, maybeParamsP.size, true)
+
+    val functionUserSpecifiedGenericParametersS =
+      genericParametersP.zip(userSpecifiedIdentifyingRunes)
+        .map({ case (g, r) =>
+          PostParser.scoutGenericParameter(
+            templexScout, functionEnv, lidb.child(), runeToExplicitType, ruleBuilder, g, r)
+        })
+    val genericParametersS = functionUserSpecifiedGenericParametersS ++ interfaceGenericParams
+
     val myStackFrame = StackFrame(interfaceEnv.file, funcName, functionEnv, None, noDeclarations)
     val patternsS =
       patternScout.scoutPatterns(myStackFrame, lidb.child(), ruleBuilder, runeToExplicitType, maybeParamsP.toVector.flatMap(_.patterns))
@@ -540,10 +598,10 @@ class FunctionScout(
 
     val maybeReturnRune =
       (maybeInferRet, maybeRetType) match {
-        case (None, None) => {
+        case (None, None | Some(RegionRunePT(_, _))) => {
           // If nothing's present, assume void
           val rune = rules.RuneUsage(retRangeS, ImplicitRuneS(lidb.child().consume()))
-          ruleBuilder += rules.LookupSR(retRangeS, rune, interner.intern(CodeNameS("void")))
+          ruleBuilder += rules.LookupSR(retRangeS, rune, interner.intern(CodeNameS(interner.intern(keywords.void))))
           Some(rune)
         }
         case (Some(_), None) => {
@@ -560,30 +618,40 @@ class FunctionScout(
         }
         case (Some(_), Some(_)) => throw CompileErrorExceptionS(postparsing.RangedInternalErrorS(PostParser.evalRange(myStackFrame.file, range), "Can't have return type and infer-return at the same time"))
       }
-    maybeReturnRune.foreach(retCoordRune => runeToExplicitType.put(retCoordRune.rune, CoordTemplataType))
+    maybeReturnRune.foreach(retCoordRune => runeToExplicitType.put(retCoordRune.rune, CoordTemplataType()))
 
-    if (attrsP.collect({ case AbstractAttributeP(_) => true  }).nonEmpty) {
+    if (attrsP.collect({ case AbstractAttributeP(_) => true }).nonEmpty) {
       throw CompileErrorExceptionS(RangedInternalErrorS(PostParser.evalRange(interfaceEnv.file, range), "Dont need abstract here"))
     }
 
+    val unfilteredRulesArray = ruleBuilder.toVector
+    // Filter out any RuneParentEnvLookupSR rules, we don't want these methods to look up these runes
+    // from the environment. See MKRFA.
+    val rulesArray =
+      unfilteredRulesArray.filter({
+        case RuneParentEnvLookupSR(_, _) => false
+        case _ => true
+      })
+
     postParser.checkIdentifiability(
       rangeS,
-      identifyingRunes.map(_.rune),
-      ruleBuilder.toArray)
+      genericParametersS.map(_.rune.rune),
+      rulesArray)
 
-    postparsing.FunctionS(
+    FunctionS(
       PostParser.evalRange(functionEnv.file, range),
       funcName,
       translateFunctionAttributes(functionEnv.file, attrsP),
-//      knowableValueRunes,
-      identifyingRunes,
+      //      knowableValueRunes,
+      genericParametersS,
       runeToExplicitType.toMap,
-//      localRunes,
-//      maybePredictedType,
+      //      localRunes,
+      //      maybePredictedType,
       paramsS,
       maybeReturnRune,
-//      isTemplate,
-      ruleBuilder.toArray,
+      //      isTemplate,
+      rulesArray,
       AbstractBodyS)
   }
 }
+

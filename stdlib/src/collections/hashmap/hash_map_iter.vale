@@ -1,15 +1,16 @@
 
 
-struct HashMapIter<K, V> {
+struct HashMapIter<K Ref imm, V>
+where func drop(K)void {
   table &Array<mut, Opt<HashMapNode<K, V>>>;
   pos! int;
 }
 
-func begin<K, V, H, E>(map &HashMap<K, V, H, E>) HashMapIter<K, V> {
+func begin<K Ref imm, V, H, E>(map &HashMap<K, V, H, E>) HashMapIter<K, V> {
   HashMapIter<K, V>(map.table, 0)
 }
 
-func next<K, V>(iter &HashMapIter<K, V>) Opt<(K, &V)> {
+func next<K Ref imm, V>(iter &HashMapIter<K, V>) Opt<(K, &V)> {
   while iter.pos < iter.table.len() {
     this_pos = set iter.pos = iter.pos + 1;
     if not iter.table[this_pos].isEmpty() {
@@ -22,8 +23,8 @@ func next<K, V>(iter &HashMapIter<K, V>) Opt<(K, &V)> {
 
 
 
-func each<F, K, V, H, E>(self &HashMap<K, V, H, E>, func &F)
-where func(&F, &K, &V)_ {
+func each<K Ref imm, V, H, E, F>(self &HashMap<K, V, H, E>, func &F)
+where func(&F, K, &V)void {
   list = List<K>();
   index = 0;
   while index < self.table.len() {

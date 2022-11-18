@@ -1,14 +1,12 @@
 package dev.vale.postparsing
 
-import dev.vale.{PackageCoordinate, RangeS, vassert, vcurious, vpass, vwat}
-import dev.vale.parsing.ast.{IMacroInclusion, MutabilityP, VariabilityP}
+import dev.vale.{PackageCoordinate, RangeS, StrI, vassert, vcurious, vpass, vwat}
+import dev.vale.parsing.ast.{IMacroInclusionP, IRuneAttributeP, MutabilityP, VariabilityP}
 import dev.vale.postparsing.patterns.{AbstractSP, AtomSP}
 import dev.vale.postparsing.rules.{IRulexSR, RuneUsage}
 import dev.vale.parsing._
-import dev.vale.parsing.ast.VariabilityP
 import dev.vale.postparsing.patterns.{AbstractSP, AtomSP}
 import dev.vale.postparsing.rules._
-import dev.vale.RangeS
 
 import scala.collection.immutable.List
 
@@ -28,21 +26,21 @@ case class ProgramS(
   def lookupFunction(name: String): FunctionS = {
     val matches =
       implementedFunctions
-        .find(f => f.name match { case FunctionNameS(n, _) => n == name })
+        .find(f => f.name match { case FunctionNameS(n, _) => n.str == name })
     vassert(matches.size == 1)
     matches.head
   }
   def lookupInterface(name: String): InterfaceS = {
     val matches =
       interfaces
-        .find(f => f.name match { case TopLevelCitizenDeclarationNameS(n, _) => n == name })
+        .find(f => f.name match { case TopLevelCitizenDeclarationNameS(n, _) => n.str == name })
     vassert(matches.size == 1)
     matches.head
   }
   def lookupStruct(name: String): StructS = {
     val matches =
       structs
-        .find(f => f.name match { case TopLevelCitizenDeclarationNameS(n, _) => n == name })
+        .find(f => f.name match { case TopLevelCitizenDeclarationNameS(n, _) => n.str == name })
     vassert(matches.size == 1)
     matches.head
   }
@@ -55,10 +53,10 @@ case class ExternS(packageCoord: PackageCoordinate) extends IFunctionAttributeS 
 }
 case object PureS extends IFunctionAttributeS
 case object SealedS extends ICitizenAttributeS
-case class BuiltinS(generatorName: String) extends IFunctionAttributeS with ICitizenAttributeS {
+case class BuiltinS(generatorName: StrI) extends IFunctionAttributeS with ICitizenAttributeS {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 }
-case class MacroCallS(range: RangeS, include: IMacroInclusion, macroName: String) extends ICitizenAttributeS {
+case class MacroCallS(range: RangeS, include: IMacroInclusionP, macroName: StrI) extends ICitizenAttributeS {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 }
 case class ExportS(packageCoordinate: PackageCoordinate) extends IFunctionAttributeS with ICitizenAttributeS {
@@ -68,11 +66,10 @@ case object UserFunctionS extends IFunctionAttributeS // Whether it was written 
 
 case class StructS(
     range: RangeS,
-    name: TopLevelCitizenDeclarationNameS,
+    name: TopLevelStructDeclarationNameS,
     attributes: Vector[ICitizenAttributeS],
     weakable: Boolean,
-    userSpecifiedIdentifyingRunes: Vector[RuneUsage],
-    runeToExplicitType: Map[IRuneS, ITemplataType],
+    genericParams: Vector[GenericParameterS],
     mutabilityRune: RuneUsage,
 
     // This is needed for recursive structures like
@@ -80,10 +77,17 @@ case class StructS(
     //     tail ListNode<T>;
     //   }
     maybePredictedMutability: Option[MutabilityP],
-    predictedRuneToType: Map[IRuneS, ITemplataType],
     maybePredictedType: Option[ITemplataType],
 
-    rules: Array[IRulexSR],
+    // These are separated so that these alone can be run during resolving, see SMRASDR.
+    headerRuneToExplicitType: Map[IRuneS, ITemplataType],
+    headerPredictedRuneToType: Map[IRuneS, ITemplataType],
+    headerRules: Vector[IRulexSR],
+    // These are separated so they can be skipped during resolving, see SMRASDR.
+    membersRuneToExplicitType: Map[IRuneS, ITemplataType],
+    membersPredictedRuneToType: Map[IRuneS, ITemplataType],
+    memberRules: Vector[IRulexSR],
+
     members: Vector[IStructMemberS]) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
@@ -97,7 +101,7 @@ sealed trait IStructMemberS {
 }
 case class NormalStructMemberS(
     range: RangeS,
-    name: String,
+    name: StrI,
     variability: VariabilityP,
     typeRune: RuneUsage) extends IStructMemberS {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
@@ -111,10 +115,10 @@ case class VariadicStructMemberS(
 
 case class InterfaceS(
   range: RangeS,
-  name: TopLevelCitizenDeclarationNameS,
+  name: TopLevelInterfaceDeclarationNameS,
   attributes: Vector[ICitizenAttributeS],
   weakable: Boolean,
-  identifyingRunes: Vector[RuneUsage],
+  genericParams: Vector[GenericParameterS],
   runeToExplicitType: Map[IRuneS, ITemplataType],
   mutabilityRune: RuneUsage,
 
@@ -126,38 +130,45 @@ case class InterfaceS(
   predictedRuneToType: Map[IRuneS, ITemplataType],
   maybePredictedType: Option[ITemplataType],
 
-  rules: Array[IRulexSR],
+  rules: Vector[IRulexSR],
   // See IMRFDI
   internalMethods: Vector[FunctionS]) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
+
+  internalMethods.foreach(internalMethod => {
+    vassert(genericParams == internalMethod.genericParams)
+  })
+
 }
 
 case class ImplS(
     range: RangeS,
     // The name of an impl is the human name of the subcitizen, see INSHN.
     name: ImplDeclarationNameS,
-    userSpecifiedIdentifyingRunes: Vector[RuneUsage],
-    rules: Array[IRulexSR],
-  runeToExplicitType: Map[IRuneS, ITemplataType],
+    userSpecifiedIdentifyingRunes: Vector[GenericParameterS],
+    rules: Vector[IRulexSR],
+    runeToExplicitType: Map[IRuneS, ITemplataType],
     structKindRune: RuneUsage,
-    interfaceKindRune: RuneUsage) {
+    subCitizenImpreciseName: IImpreciseNameS,
+    interfaceKindRune: RuneUsage,
+    superInterfaceImpreciseName: IImpreciseNameS) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class ExportAsS(
     range: RangeS,
-    rules: Array[IRulexSR],
+    rules: Vector[IRulexSR],
     exportName: ExportAsNameS,
     rune: RuneUsage,
-    exportedName: String) {
+    exportedName: StrI) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
 case class ImportS(
   range: RangeS,
-  moduleName: String,
-  packageNames: Vector[String],
-  importeeName: String) {
+  moduleName: StrI,
+  packageNames: Vector[StrI],
+  importeeName: StrI) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
@@ -207,14 +218,27 @@ case class SimpleParameterS(
 sealed trait IBodyS
 case object ExternBodyS extends IBodyS
 case object AbstractBodyS extends IBodyS
-case class GeneratedBodyS(generatorId: String) extends IBodyS {
+case class GeneratedBodyS(generatorId: StrI) extends IBodyS {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 case class CodeBodyS(body: BodySE) extends IBodyS {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
 
-// template params.
+case class GenericParameterS(
+  range: RangeS,
+  rune: RuneUsage,
+  attributes: Vector[IRuneAttributeS],
+  default: Option[GenericParameterDefaultS])
+
+sealed trait IRuneAttributeS
+case class ImmutableRuneAttributeS(range: RangeS) extends IRuneAttributeS
+
+case class GenericParameterDefaultS(
+  // One day, when we want more rules in here, we might need to have a runeToType map
+  // and other things to make it its own little world.
+  resultRune: IRuneS,
+  rules: Vector[IRulexSR])
 
 // Underlying class for all XYZFunctionS types
 case class FunctionS(
@@ -222,7 +246,7 @@ case class FunctionS(
     name: IFunctionDeclarationNameS,
     attributes: Vector[IFunctionAttributeS],
 
-    identifyingRunes: Vector[RuneUsage],
+    genericParams: Vector[GenericParameterS],
     runeToPredictedType: Map[IRuneS, ITemplataType],
 
     params: Vector[ParameterS],
@@ -230,7 +254,7 @@ case class FunctionS(
     // We need to leave it an option to signal that the compiler can infer the return type.
     maybeRetCoordRune: Option[RuneUsage],
 
-    rules: Array[IRulexSR],
+    rules: Vector[IRulexSR],
     body: IBodyS
 ) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
@@ -296,3 +320,14 @@ case class LocationInDenizen(path: Vector[Int]) {
     }
   }
 }
+
+
+sealed trait IDenizenS
+case class TopLevelFunctionS(function: FunctionS) extends IDenizenS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class TopLevelStructS(struct: StructS) extends IDenizenS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class TopLevelInterfaceS(interface: InterfaceS) extends IDenizenS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class TopLevelImplS(impl: ImplS) extends IDenizenS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class TopLevelExportAsS(export: ExportAsS) extends IDenizenS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class TopLevelImportS(imporrt: ImportS) extends IDenizenS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+
+case class FileS(denizens: Vector[IDenizenS])

@@ -6,49 +6,49 @@ import org.scalatest.{FunSuite, Matchers}
 import scala.collection.immutable.Map
 
 sealed trait IRule {
-  def allRunes: Array[Long]
-  def allPuzzles: Array[Array[Long]]
+  def allRunes: Vector[Long]
+  def allPuzzles: Vector[Vector[Long]]
 }
 case class Lookup(rune: Long, name: String) extends IRule {
-  override def allRunes: Array[Long] = Array(rune)
-  override def allPuzzles: Array[Array[Long]] = Array(Array())
+  override def allRunes: Vector[Long] = Vector(rune)
+  override def allPuzzles: Vector[Vector[Long]] = Vector(Vector())
 }
 case class Literal(rune: Long, value: String) extends IRule {
-  override def allRunes: Array[Long] = Array(rune)
-  override def allPuzzles: Array[Array[Long]] = Array(Array())
+  override def allRunes: Vector[Long] = Vector(rune)
+  override def allPuzzles: Vector[Vector[Long]] = Vector(Vector())
 }
 case class Equals(leftRune: Long, rightRune: Long) extends IRule {
-  override def allRunes: Array[Long] = Array(leftRune, rightRune)
-  override def allPuzzles: Array[Array[Long]] = Array(Array(leftRune), Array(rightRune))
+  override def allRunes: Vector[Long] = Vector(leftRune, rightRune)
+  override def allPuzzles: Vector[Vector[Long]] = Vector(Vector(leftRune), Vector(rightRune))
 }
 case class CoordComponents(coordRune: Long, ownershipRune: Long, kindRune: Long) extends IRule {
-  override def allRunes: Array[Long] = Array(coordRune, ownershipRune, kindRune)
-  override def allPuzzles: Array[Array[Long]] = Array(Array(coordRune), Array(ownershipRune, kindRune))
+  override def allRunes: Vector[Long] = Vector(coordRune, ownershipRune, kindRune)
+  override def allPuzzles: Vector[Vector[Long]] = Vector(Vector(coordRune), Vector(ownershipRune, kindRune))
 }
-case class OneOf(coordRune: Long, possibleValues: Array[String]) extends IRule {
-  override def allRunes: Array[Long] = Array(coordRune)
-  override def allPuzzles: Array[Array[Long]] = Array(Array(coordRune))
+case class OneOf(coordRune: Long, possibleValues: Vector[String]) extends IRule {
+  override def allRunes: Vector[Long] = Vector(coordRune)
+  override def allPuzzles: Vector[Vector[Long]] = Vector(Vector(coordRune))
 }
 case class Call(resultRune: Long, nameRune: Long, argRune: Long) extends IRule {
-  override def allRunes: Array[Long] = Array(resultRune, nameRune, argRune)
-  override def allPuzzles: Array[Array[Long]] = Array(Array(resultRune, nameRune), Array(nameRune, argRune))
+  override def allRunes: Vector[Long] = Vector(resultRune, nameRune, argRune)
+  override def allPuzzles: Vector[Vector[Long]] = Vector(Vector(resultRune, nameRune), Vector(nameRune, argRune))
 }
 // See IRFU and SRCAMP for what this rule is doing
 case class Send(senderRune: Long, receiverRune: Long) extends IRule {
-  override def allRunes: Array[Long] = Array(receiverRune, senderRune)
-  override def allPuzzles: Array[Array[Long]] = Array(Array(receiverRune))
+  override def allRunes: Vector[Long] = Vector(receiverRune, senderRune)
+  override def allPuzzles: Vector[Vector[Long]] = Vector(Vector(receiverRune))
 }
 case class Implements(subRune: Long, superRune: Long) extends IRule {
-  override def allRunes: Array[Long] = Array(subRune, superRune)
-  override def allPuzzles: Array[Array[Long]] = Array(Array(subRune, superRune))
+  override def allRunes: Vector[Long] = Vector(subRune, superRune)
+  override def allPuzzles: Vector[Vector[Long]] = Vector(Vector(subRune, superRune))
 }
-case class Pack(resultRune: Long, memberRunes: Array[Long]) extends IRule {
-  override def allRunes: Array[Long] = Array(resultRune) ++ memberRunes
-  override def allPuzzles: Array[Array[Long]] = {
+case class Pack(resultRune: Long, memberRunes: Vector[Long]) extends IRule {
+  override def allRunes: Vector[Long] = Vector(resultRune) ++ memberRunes
+  override def allPuzzles: Vector[Vector[Long]] = {
     if (memberRunes.isEmpty) {
-      Array(Array(resultRune))
+      Vector(Vector(resultRune))
     } else {
-      Array(Array(resultRune), memberRunes)
+      Vector(Vector(resultRune), memberRunes)
     }
   }
 }

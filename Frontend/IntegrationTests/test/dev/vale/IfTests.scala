@@ -1,8 +1,8 @@
 package dev.vale
 
-import dev.vale.postparsing.{ConstantBoolSE, ConstantIntSE, IfSE, ReturnSE}
+import dev.vale.postparsing._
 import dev.vale.typing.ast.IfTE
-import dev.vale.typing.types.{BoolT, CoordT, IntT, ShareT, StrT}
+import dev.vale.typing.types._
 import dev.vale.testvm.IntV
 import dev.vale.postparsing._
 import dev.vale.typing._
@@ -15,14 +15,16 @@ class IfTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() int {
-        |  return if (true) { 3 } else { 5 }
+        |  return if (true) { 3 } else { 5 };
         |}
       """.stripMargin)
     val programS =
       compile.getScoutput().getOrDie()
         .fileCoordToContents(
           compile.interner.intern(FileCoordinate(
-            compile.interner.intern(PackageCoordinate("test", Vector.empty)),
+            compile.interner.intern(PackageCoordinate(
+              compile.interner.intern(StrI("test")),
+              Vector.empty)),
             "0.vale")))
     val main = programS.lookupFunction("main")
     val ret = Collector.only(main.body, { case r @ ReturnSE(_, _) => r })
@@ -41,7 +43,7 @@ class IfTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() int {
-        |  return if (false) { 3 } else { 5 }
+        |  return if (false) { 3 } else { 5 };
         |}
       """.stripMargin)
 
@@ -52,9 +54,9 @@ class IfTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |exported func main() int {
-        |  return if (false) { 3 } else if (true) { 5 } else { 7 }
+        |  return if (false) { 3 } else if (true) { 5 } else { 7 };
         |}
-      """.stripMargin)
+      """.stripMargin, false)
 
     val coutputs = compile.expectCompilerOutputs()
     val ifs = Collector.all(coutputs.lookupFunction("main"), { case if2 @ IfTE(_, _, _) => if2 })
@@ -65,6 +67,7 @@ class IfTests extends FunSuite with Matchers {
       func.header.returnType match {
         case CoordT(ShareT, IntT.i32) =>
         case CoordT(ShareT, BoolT()) =>
+        case other => vwat(other)
       }
     })
 
@@ -83,9 +86,9 @@ class IfTests extends FunSuite with Matchers {
         |    } else {
         |      [y] = m;
         |      y
-        |    }
+        |    };
         |}
-      """.stripMargin)
+      """.stripMargin, false)
 
     val coutputs = compile.expectCompilerOutputs()
     val ifs = Collector.all(coutputs.lookupFunction("main"), { case if2 @ IfTE(_, _, _) => if2 })
@@ -109,7 +112,7 @@ class IfTests extends FunSuite with Matchers {
         |  m = Marine(5);
         |  return if (m.x == 5) { "#" }
         |  else if (0 == 0) { "?" }
-        |  else { "." }
+        |  else { "." };
         |}
       """.stripMargin)
 
@@ -125,7 +128,7 @@ class IfTests extends FunSuite with Matchers {
       """
         |exported func main() int {
         |  return if x = 42; x < 50 { x }
-        |    else { 73 }
+        |    else { 73 };
         |}
       """.stripMargin)
 

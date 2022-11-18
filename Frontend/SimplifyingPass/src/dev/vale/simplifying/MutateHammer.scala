@@ -1,14 +1,13 @@
 package dev.vale.simplifying
 
-import dev.vale.{finalast, vassert}
+import dev.vale.{Keywords, finalast, vassert, vimpl}
 import dev.vale.finalast.{BorrowH, ExpressionH, KindH, LocalLoadH, LocalStoreH, MemberLoadH, MemberStoreH, ReferenceH, RuntimeSizedArrayStoreH, StaticSizedArrayStoreH, YonderH}
 import dev.vale.typing.Hinputs
 import dev.vale.typing.ast.{AddressMemberLookupTE, ExpressionT, FunctionHeaderT, LocalLookupTE, MutateTE, ReferenceExpressionTE, ReferenceMemberLookupTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE}
 import dev.vale.typing.env.{AddressibleLocalVariableT, ReferenceLocalVariableT}
 import dev.vale.typing.names.{FullNameT, IVarNameT}
-import dev.vale.typing.types.{CoordT, StructTT, VariabilityT}
+import dev.vale.typing.types._
 import dev.vale.finalast._
-import dev.vale.{finalast => m}
 import dev.vale.typing._
 import dev.vale.typing.ast._
 import dev.vale.typing.env.ReferenceLocalVariableT
@@ -16,6 +15,7 @@ import dev.vale.typing.names.IVarNameT
 import dev.vale.typing.types._
 
 class MutateHammer(
+    keywords: Keywords,
     typeHammer: TypeHammer,
     nameHammer: NameHammer,
     structHammer: StructHammer,
@@ -134,10 +134,14 @@ class MutateHammer(
 //        case TupleTT(_, sr) => sr
 //        case PackTT(_, sr) => sr
       }
-    val structDefT = hinputs.lookupStruct(structTT)
-    val memberIndex = structDefT.members.indexWhere(member => structDefT.fullName.addStep(member.name) == memberName)
+    val structDefT = hinputs.lookupStruct(structTT.fullName)
+    val memberIndex = structDefT.members.indexWhere(member => structDefT.instantiatedCitizen.fullName.addStep(member.name) == memberName)
     vassert(memberIndex >= 0)
-    val member2 = structDefT.members(memberIndex)
+    val member2 =
+      structDefT.members(memberIndex) match {
+        case n @ NormalStructMemberT(name, variability, tyype) => n
+        case VariadicStructMemberT(name, tyype) => vimpl()
+      }
 
     val variability = member2.variability
 
@@ -171,9 +175,9 @@ class MutateHammer(
         MemberStoreH(
           boxedTypeH,
           loadBoxNode.expectStructAccess(),
-          StructHammer.BOX_MEMBER_INDEX,
+          LetHammer.BOX_MEMBER_INDEX,
           sourceExprResultLine,
-          nameHammer.addStep(hamuts, boxStructRefH.fullName, StructHammer.BOX_MEMBER_NAME))
+          nameHammer.addStep(hamuts, boxStructRefH.fullName, keywords.BOX_MEMBER_NAME.str))
     (storeNode, destinationDeferreds)
   }
 
@@ -193,10 +197,10 @@ class MutateHammer(
       structExpr2.result.reference.kind match {
         case sr @ StructTT(_) => sr
       }
-    val structDefT = hinputs.lookupStruct(structTT)
+    val structDefT = hinputs.lookupStruct(structTT.fullName)
     val memberIndex =
       structDefT.members
-        .indexWhere(member => structDefT.fullName.addStep(member.name) == memberName)
+        .indexWhere(member => structDefT.templateName.addStep(member.name) == memberName)
     vassert(memberIndex >= 0)
 
     val structDefH = hamuts.structDefsByRefT(structTT)
@@ -241,9 +245,9 @@ class MutateHammer(
         MemberStoreH(
           structDefH.members.head.tyype,
           loadBoxNode.expectStructAccess(),
-          StructHammer.BOX_MEMBER_INDEX,
+          LetHammer.BOX_MEMBER_INDEX,
           sourceExprResultLine,
-          nameHammer.addStep(hamuts, boxStructRefH.fullName, StructHammer.BOX_MEMBER_NAME))
+          nameHammer.addStep(hamuts, boxStructRefH.fullName, keywords.BOX_MEMBER_NAME.str))
     (storeNode, Vector.empty)
   }
 

@@ -1,220 +1,406 @@
 package dev.vale.parsing.functions
 
-import dev.vale.Collector
-import dev.vale.parsing.{BadFunctionBodyError, TestParseUtils}
-import dev.vale.parsing.ast.{AbstractAttributeP, AbstractP, BlockPE, ConstantIntPE, CoordTypePR, ExternAttributeP, FunctionHeaderP, FunctionP, FunctionReturnP, IdentifyingRuneP, LocalNameDeclarationP, NameOrRunePT, NameP, ParamsP, PatternPP, PureAttributeP, ReadOnlyRuneAttributeP, RegionTypePR, TopLevelFunctionP, TopLevelStructP, TypeRuneAttributeP, VoidPE}
+import dev.vale.{Collector, StrI, vassertOne, vimpl}
+import dev.vale.parsing.ast._
 import dev.vale.parsing._
-import dev.vale.parsing.ast.BlockPE
-import dev.vale.Collector
+import dev.vale.lexing.{BadFunctionBodyError, LightFunctionMustHaveParamTypes}
+import org.scalatest.Matchers.convertToAnyShouldWrapper
 import org.scalatest.{FunSuite, Matchers}
 
 
-class BiggerTests extends FunSuite with Collector with TestParseUtils {
-  test("Function then struct") {
-    val program =
-      compile(
-        makeParser().runParserInner(_),
-      """
-        |exported func main() int {}
-        |
-        |struct mork { }
-        |""".stripMargin)
-    program.topLevelThings(0) match { case TopLevelFunctionP(_) => }
-    program.topLevelThings(1) match { case TopLevelStructP(_) => }
+class FunctionTests extends FunSuite with Collector with TestParseUtils {
+  test("Simple function") {
+    vassertOne(compileFileExpect("""func main() { }""").denizens) match {
+      case TopLevelFunctionP(
+      FunctionP(_,
+      FunctionHeaderP(_,
+      Some(NameP(_,StrI("main"))),
+      Vector(),None,None,Some(ParamsP(_,Vector())),
+      FunctionReturnP(_,None,None)),
+      Some(BlockPE(_,VoidPE(_))))) =>
+    }
   }
 
-  test("Simple function") {
-    compileMaybe(
-      makeParser().parseTopLevelThing(_), "func sum() int {3}") match {
+  test("Functions with weird names") {
+    vassertOne(compileFileExpect("""func !=() { }""").denizens)
+    vassertOne(compileFileExpect("""func <=() { }""").denizens)
+    vassertOne(compileFileExpect("""func >=() { }""").denizens)
+    vassertOne(compileFileExpect("""func <() { }""").denizens)
+    vassertOne(compileFileExpect("""func >() { }""").denizens)
+    vassertOne(compileFileExpect("""func ==() { }""").denizens)
+  }
+
+  test("Function then struct") {
+    val program =
+      compileFile(
+        """
+          |exported func main() int {}
+          |
+          |struct mork { }
+          |""".stripMargin).getOrDie()
+    program.denizens(0) match { case TopLevelFunctionP(_) => }
+    program.denizens(1) match { case TopLevelStructP(_) => }
+  }
+
+  test("Simple function with return") {
+    compileDenizen("func sum() int {3}").getOrDie() match {
       case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "sum")), Vector(), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, Some(_))),
+          Some(NameP(_, StrI("sum"))), Vector(), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, Some(_))),
         Some(BlockPE(_, ConstantIntPE(_, 3, _))))) =>
     }
   }
 
   test("Pure function") {
-    compileMaybe(
-      makeParser().parseTopLevelThing(_), "pure func sum() {3}") match {
+    compileDenizen("pure func sum() {3}").getOrDie() match {
       case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "sum")), Vector(PureAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
+          Some(NameP(_, StrI("sum"))), Vector(PureAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
         Some(BlockPE(_, ConstantIntPE(_, 3, _))))) =>
     }
   }
 
   test("Extern function") {
-    compileMaybe(
-      makeParser().parseTopLevelThing(_), "extern func sum();") match {
+    vassertOne(compileFile("extern func sum();").getOrDie().denizens) match {
       case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "sum")), Vector(ExternAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
+          Some(NameP(_, StrI("sum"))), Vector(ExternAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
         None)) =>
     }
   }
 
+  test("Function ending with set") {
+    compileDenizenExpect(
+      """
+        |func moo() {
+        |  set bork = value
+        |}
+        |""".stripMargin)
+  }
+
+  test("Extern function generated") {
+    vassertOne(compileFile("extern(\"bork\") func sum();").getOrDie().denizens) match {
+      case TopLevelFunctionP(FunctionP(_,
+      FunctionHeaderP(_,
+      Some(NameP(_, StrI("sum"))), Vector(BuiltinAttributeP(_, NameP(_, StrI("bork")))), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
+      None)) =>
+    }
+  }
+
+  test("Extern function with return") {
+    vassertOne(compileFile("extern func sum() int;").getOrDie().denizens) match {
+      case TopLevelFunctionP(FunctionP(_,
+      FunctionHeaderP(_,
+      Some(NameP(_, StrI("sum"))), Vector(ExternAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_, StrI("int")))))),
+      None)) =>
+    }
+  }
+
   test("Abstract function") {
-    compileMaybe(
-      makeParser().parseTopLevelThing(_), "abstract func sum();") match {
+    compileDenizen("abstract func sum();").getOrDie() match {
       case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "sum")), Vector(AbstractAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
+          Some(NameP(_, StrI("sum"))), Vector(AbstractAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
         None)) =>
     }
   }
 
   test("Pure and default region") {
-    compileMaybe(
-      makeParser().parseTopLevelThing(_),
-      """pure func findNearbyUnits() 'i int 'i { }
-        |""".stripMargin) match {
+    compileDenizen("""pure func findNearbyUnits() 'i int 'i { }""").getOrDie() match {
       case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_,"findNearbyUnits")),
+          Some(NameP(_, StrI("findNearbyUnits"))),
           Vector(PureAttributeP(_)),
           None,
           None, Some(ParamsP(_,Vector())),
-          FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_,"int"))))),
+          FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_, StrI("int")))))),
         Some(BlockPE(_,VoidPE(_))))) =>
     }
   }
 
   test("Attribute after return") {
-    compileMaybe(
-      makeParser().parseTopLevelThing(_), "abstract func sum() Int;") match {
+    compileDenizen("abstract func sum() Int;").getOrDie() match {
       case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "sum")),
+          Some(NameP(_, StrI("sum"))),
           Vector(AbstractAttributeP(_)),
           None,
           None, Some(ParamsP(_,Vector())),
-          FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_,"Int"))))),
+          FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_, StrI("Int")))))),
         None)) =>
     }
   }
 
   test("Attribute before return") {
-    compileMaybe(
-      makeParser().parseTopLevelThing(_), "abstract func sum() Int;") match {
+    compileDenizen("abstract func sum() Int;").getOrDie() match {
       case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "sum")),
+          Some(NameP(_, StrI("sum"))),
           Vector(AbstractAttributeP(_)),
           None,
           None, Some(ParamsP(_,Vector())),
-          FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_,"Int"))))),
+          FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_, StrI("Int")))))),
         None)) =>
     }
   }
 
   test("Simple function with identifying rune") {
-    val TopLevelFunctionP(func) = compileMaybe(
-      makeParser().parseTopLevelThing(_), "func sum<A>(a A){a}")
-    func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
-      case IdentifyingRuneP(_, NameP(_, "A"), Vector()) =>
+    val TopLevelFunctionP(func) =
+      compileDenizen("func sum<A>(a A){a}").getOrDie()
+    func.header.genericParameters.get.params.head match {
+      case GenericParameterP(_, NameP(_, StrI("A")), None, Vector(), None) =>
     }
   }
 
   test("Simple function with coord-typed identifying rune") {
-    val TopLevelFunctionP(func) = compileMaybe(
-      makeParser().parseTopLevelThing(_), "func sum<A Ref>(a A){a}")
-    func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
-      case IdentifyingRuneP(_, NameP(_, "A"), Vector(TypeRuneAttributeP(_, CoordTypePR))) =>
+    val TopLevelFunctionP(func) =
+      compileDenizen("func sum<A Ref>(a A){a}").getOrDie()
+    func.header.genericParameters.get.params.head match {
+      case GenericParameterP(_, NameP(_, StrI("A")), Some(GenericParameterTypeP(_, CoordTypePR)), Vector(), None) =>
     }
   }
 
   test("Simple function with region-typed identifying rune") {
-    val TopLevelFunctionP(func) = compileMaybe(
-      makeParser().parseTopLevelThing(_), "func sum<'a>(){}")
-    func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
-      case IdentifyingRuneP(_, NameP(_, "a"), Vector(TypeRuneAttributeP(_, RegionTypePR))) =>
+    val TopLevelFunctionP(func) =
+      compileDenizen("func sum<'a>(){}").getOrDie()
+    func.header.genericParameters.get.params.head match {
+      case GenericParameterP(_, NameP(_, StrI("a")), Some(GenericParameterTypeP(_, RegionTypePR)), Vector(), None) =>
     }
   }
 
   test("Readonly region rune") {
-    val TopLevelFunctionP(func) = compileMaybe(
-      makeParser().parseTopLevelThing(_), "func sum<'r ro>(){}")
-    func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
-      case IdentifyingRuneP(_, NameP(_, "r"), Vector(TypeRuneAttributeP(_, RegionTypePR), ReadOnlyRuneAttributeP(_))) =>
+    val TopLevelFunctionP(func) =
+      compileDenizen("func sum<'r ro>(){}").getOrDie()
+    func.header.genericParameters.get.params.head match {
+      case GenericParameterP(_, NameP(_, StrI("r")), Some(GenericParameterTypeP(_, RegionTypePR)), Vector(ReadOnlyRegionRuneAttributeP(_)), None) =>
     }
   }
 
   test("Simple function with apostrophe region-typed identifying rune") {
-    val TopLevelFunctionP(func) = compileMaybe(
-      makeParser().parseTopLevelThing(_), "func sum<'r>(a 'r &Marine){a}")
-    func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
-      case IdentifyingRuneP(_, NameP(_, "r"), Vector(TypeRuneAttributeP(_, RegionTypePR))) =>
+    val TopLevelFunctionP(func) =
+      compileDenizen("func sum<'r>(a 'r &Marine){a}").getOrDie()
+    func.header.genericParameters.get.params.head match {
+      case GenericParameterP(_, NameP(_, StrI("r")), Some(GenericParameterTypeP(_, RegionTypePR)), Vector(), None) =>
     }
   }
 
   test("Pool region") {
-    val TopLevelFunctionP(func) = compileMaybe(
-      makeParser().parseTopLevelThing(_), "func sum<'r = pool>(a 'r &Marine){a}")
-    func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
-      case IdentifyingRuneP(_,
-        NameP(_, "r"),
-        Vector(
-          TypeRuneAttributeP(_, RegionTypePR))) =>
+    val TopLevelFunctionP(func) =
+      compileDenizen("func sum<'r = pool>(a 'r &Marine){a}").getOrDie()
+    func.header.genericParameters.get.params.head match {
+      case GenericParameterP(_,
+        NameP(_, StrI("r")),
+        Some(GenericParameterTypeP(_, RegionTypePR)),
+        Vector(),
+        Some(NameOrRunePT(NameP(_,StrI("pool"))))) =>
     }
   }
 
   test("Pool readonly region") {
-    val TopLevelFunctionP(func) = compileMaybe(
-      makeParser().parseTopLevelThing(_), "func sum<'r ro = pool>(a 'r &Marine){a}")
-    func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
-      case IdentifyingRuneP(_,
-        NameP(_, "r"),
-        Vector(
-          TypeRuneAttributeP(_, RegionTypePR),
-          ReadOnlyRuneAttributeP(_))) =>
+    val TopLevelFunctionP(func) =
+      compileDenizen("func sum<'r ro = pool>(a 'r &Marine){a}").getOrDie()
+    func.header.genericParameters.get.params.head match {
+      case GenericParameterP(_,
+        NameP(_, StrI("r")),
+        Some(GenericParameterTypeP(_, RegionTypePR)),
+        Vector(ReadOnlyRegionRuneAttributeP(_)),
+        Some(NameOrRunePT(NameP(_,StrI("pool"))))) =>
     }
   }
 
   test("Arena region") {
-    val TopLevelFunctionP(func) = compileMaybe(
-      makeParser().parseTopLevelThing(_), "func sum<'x = arena>(a 'x &Marine){a}")
-    func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
-      case IdentifyingRuneP(_,
-        NameP(_, "x"),
-        Vector(
-          TypeRuneAttributeP(_, RegionTypePR))) =>
+    val TopLevelFunctionP(func) =
+      compileDenizen("func sum<'x = arena>(a 'x &Marine){a}").getOrDie()
+    func.header.genericParameters.get.params.head match {
+      case GenericParameterP(_,
+        NameP(_, StrI("x")),
+        Some(GenericParameterTypeP(_, RegionTypePR)),
+        Vector(),
+        Some(NameOrRunePT(NameP(_,StrI("arena"))))) =>
     }
   }
 
 
   test("Readonly region") {
-    val TopLevelFunctionP(func) = compileMaybe(
-      makeParser().parseTopLevelThing(_), "func sum<'x>(a 'x &Marine){a}")
-    func.header.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
-      case IdentifyingRuneP(_,
-        NameP(_, "x"),
-        Vector(
-          TypeRuneAttributeP(_, RegionTypePR))) =>
+    val TopLevelFunctionP(func) =
+      compileDenizen("func sum<'x>(a 'x &Marine){a}").getOrDie()
+    func.header.genericParameters.get.params.head match {
+      case GenericParameterP(_,
+        NameP(_, StrI("x")),
+        Some(GenericParameterTypeP(_, RegionTypePR)),
+        Vector(),
+        None) =>
     }
   }
 
   test("Virtual function") {
-    compileMaybe(
-      makeParser().parseTopLevelThing(_),
-      """
-        |func doCivicDance(virtual this Car) int;
-      """.stripMargin) shouldHave {
+    compileDenizen("func doCivicDance(virtual this Car) int;".stripMargin).getOrDie() shouldHave {
       case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, "doCivicDance")), Vector(), None,
-          None, Some(ParamsP(_, Vector(PatternPP(_, _,Some(LocalNameDeclarationP(NameP(_, "this"))), Some(NameOrRunePT(NameP(_, "Car"))), None, Some(AbstractP(_)))))),
-          FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_, "int"))))),
+          Some(NameP(_, StrI("doCivicDance"))), Vector(), None,
+          None, Some(ParamsP(_, Vector(PatternPP(_, _,Some(LocalNameDeclarationP(NameP(_, StrI("this")))), Some(NameOrRunePT(NameP(_, StrI("Car")))), None, Some(AbstractP(_)))))),
+          FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_, StrI("int")))))),
         None)) =>
     }
   }
 
   test("Bad thing for body") {
-    compileForError(
-      makeParser().runParserInner(_),
+    compileDenizen(
         """
           |func doCivicDance(virtual this Car) moo blork
-        """.stripMargin) match {
+        """.stripMargin).expectErr().error match {
       case BadFunctionBodyError(_) =>
+    }
+  }
+
+
+  test("Function with parameter and return") {
+    vassertOne(compileFileExpect("""func main(moo T) T { }""").denizens) shouldHave {
+      case TopLevelFunctionP(
+        FunctionP(_,
+          FunctionHeaderP(_,
+            Some(NameP(_,StrI("main"))),Vector(),None,None,
+            Some(ParamsP(_,Vector(PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,StrI("moo")))),Some(NameOrRunePT(NameP(_,StrI("T")))),None,None)))),
+            FunctionReturnP(_,None,Some(NameOrRunePT(NameP(_,StrI("T")))))),
+          Some(BlockPE(_,VoidPE(_))))) =>
+    }
+  }
+
+  test("Function with generics") {
+    vassertOne(compileFileExpect("""func main<T>() { }""").denizens) shouldHave {
+      case TopLevelFunctionP(
+        FunctionP(_,
+          FunctionHeaderP(_,
+            Some(NameP(_,StrI("main"))),
+            Vector(),
+            Some(GenericParametersP(_,Vector(GenericParameterP(_,NameP(_,StrI("T")),None,Vector(), None)))),
+            None,
+            _,
+            _),
+          _)) =>
+    }
+  }
+
+  test("Impl function") {
+    compileDenizenExpect(
+      "func maxHp(virtual this Marine) { return 5; }") shouldHave {
+      case FunctionP(_,
+        FunctionHeaderP(_,
+          Some(NameP(_, StrI("maxHp"))),Vector(), None, None,
+          Some(
+            ParamsP(
+              _,
+              Vector(
+                PatternPP(_,_,
+                  Some(LocalNameDeclarationP(NameP(_, StrI("this")))),
+                  Some(NameOrRunePT(NameP(_, StrI("Marine")))),
+                  None,
+                  Some(AbstractP(_)))))),
+          FunctionReturnP(_, None,None)),
+        Some(BlockPE(_, _))) =>
+    }
+  }
+
+  test("Param") {
+    val program = compileDenizenExpect("func call(f F){f()}")
+    program shouldHave {
+      case PatternPP(_,_,Some(LocalNameDeclarationP(NameP(_, StrI("f")))),Some(NameOrRunePT(NameP(_, StrI("F")))),None,None) =>
+    }
+  }
+
+  test("Func with rules") {
+    compileDenizenExpect(
+      "func sum () where X Int {3}") shouldHave {
+      case FunctionP(_,
+        FunctionHeaderP(_,
+          Some(NameP(_, StrI("sum"))), Vector(), None, Some(_), Some(_), FunctionReturnP(_, None, None)),
+        Some(BlockPE(_, ConstantIntPE(_, 3, _)))) =>
+    }
+  }
+
+  test("Func with func bound") {
+    compileDenizenExpect(
+      "func sum<T>() where func moo(&T)void {3}") shouldHave {
+      case TopLevelFunctionP(
+        FunctionP(_,
+          FunctionHeaderP(_,_,_,_,
+            Some(
+              TemplateRulesP(_,
+                Vector(
+                  TemplexPR(
+                    FuncPT(_,
+                      NameP(_,StrI("moo")),
+                      _,
+                      Vector(InterpretedPT(_,BorrowP,NameOrRunePT(NameP(_,StrI("T"))))),
+                      NameOrRunePT(NameP(_,StrI("void")))))))),
+          _,_),_)) =>
+    }
+  }
+
+
+
+  test("Identifying runes") {
+    compileDenizenExpect(
+      "func wrap<A, F>(a A) { }") shouldHave {
+      case FunctionP(_,
+        FunctionHeaderP(_,
+          Some(NameP(_, StrI("wrap"))), Vector(),
+          Some(
+            GenericParametersP(_,
+              Vector(
+              GenericParameterP(_, NameP(_, StrI("A")), None, Vector(), None),
+              GenericParameterP(_, NameP(_, StrI("F")), None, Vector(), None)))),
+          None,
+          Some(ParamsP(_, Vector(Patterns.capturedWithTypeRune("a", "A")))),
+          FunctionReturnP(_, None, None)),
+        Some(BlockPE(_, VoidPE(_)))) =>
+    }
+  }
+
+  test("Never signature") {
+    // This test is here because we were parsing the first _ of __Never as an anonymous
+    // rune then stopping.
+    compileDenizenExpect(
+      "func __vbi_panic() __Never {}") shouldHave {
+      case NameOrRunePT(NameP(_, StrI("__Never"))) =>
+    }
+  }
+
+  test("Should require identifying runes") {
+    val error =
+      compileDenizen(
+        """
+          |func do(callable) int {callable()}
+          |""".stripMargin).expectErr().error
+    error match {
+      case LightFunctionMustHaveParamTypes(_, 0) =>
+    }
+  }
+
+  test("Short self") {
+    compileDenizenExpect(
+      """
+        |interface IMoo {
+        |  func moo(&self) {}
+        |}
+        |""".stripMargin) shouldHave {
+      case TopLevelInterfaceP(
+        InterfaceP(_,
+          NameP(_,StrI("IMoo")),Vector(),None,None,None,_,
+          Vector(
+            FunctionP(_,
+              FunctionHeaderP(_,
+                Some(NameP(_, StrI("moo"))),
+                Vector(),None,None,
+                Some(
+                  ParamsP(_,
+                    Vector(
+                      PatternPP(_,
+                        Some(_),
+                        Some(LocalNameDeclarationP(NameP(_, StrI("self")))),
+                        None,None,None)))),
+                _),
+              _)))) =>
     }
   }
 }

@@ -1,8 +1,8 @@
 package dev.vale.testvm
 
-import dev.vale.finalast.{KindH, ReferenceH}
+import dev.vale.finalast.{KindHT, CoordH}
 import dev.vale.{vassert, vassertSome, vfail}
-import dev.vale.finalast.{KindH, ReferenceH}
+import dev.vale.finalast.{KindHT, CoordH}
 import dev.vale.vfail
 
 import scala.collection.mutable
@@ -12,7 +12,7 @@ class Call(callId: CallId, in_args: Vector[ReferenceV]) {
 
   private val locals = mutable.HashMap[VariableAddressV, VariableV]()
 
-  def addLocal(varAddr: VariableAddressV, reference: ReferenceV, tyype: ReferenceH[KindH]): Unit = {
+  def addLocal(varAddr: VariableAddressV, reference: ReferenceV, tyype: CoordH[KindHT]): Unit = {
     vassert(varAddr.callId == callId)
     vassert(!locals.contains(varAddr))
     vassert(!locals.exists(_._1.local.id.number == varAddr.local.id.number))
@@ -29,7 +29,7 @@ class Call(callId: CallId, in_args: Vector[ReferenceV]) {
     vassertSome(locals.get(addr))
   }
 
-  def mutateLocal(varAddr: VariableAddressV, reference: ReferenceV, expectedType: ReferenceH[KindH]): Unit = {
+  def mutateLocal(varAddr: VariableAddressV, reference: ReferenceV, expectedType: CoordH[KindHT]): Unit = {
     locals(varAddr).reference = reference
   }
 

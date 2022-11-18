@@ -15,7 +15,7 @@ import dev.vale.typing.OverloadResolver.FindFunctionFailure
 import dev.vale.typing.{CompileErrorExceptionT, CompilerOutputs, CouldntFindFunctionToCallT, OverloadResolver, RangedInternalErrorT, TypingPassOptions}
 import dev.vale.typing.ast.{DiscardTE, FunctionCallTE, PrototypeT, ReferenceExpressionTE}
 import dev.vale.typing.env.{GlobalEnvironment, IEnvironment, PackageEnvironment}
-import dev.vale.typing.names.{FullNameT, PackageTopLevelNameT}
+import dev.vale.typing.names.{IdT, PackageTopLevelNameT}
 import dev.vale.typing.types._
 import dev.vale.typing.{ast, _}
 import dev.vale.typing.ast._
@@ -53,24 +53,24 @@ class DestructorCompiler(
     undestructedExpr2: ReferenceExpressionTE):
   (ReferenceExpressionTE) = {
     val resultExpr2 =
-      undestructedExpr2.result.reference match {
+      undestructedExpr2.result.coord match {
         case CoordT(ShareT, NeverT(_)) => undestructedExpr2
         case CoordT(ShareT, _) => DiscardTE(undestructedExpr2)
         case r@CoordT(OwnT, _) => {
           val destructorPrototype = getDropFunction(env, coutputs, callRange, r)
-          vassert(coutputs.getInstantiationBounds(destructorPrototype.function.prototype.fullName).nonEmpty)
-          FunctionCallTE(destructorPrototype.function.prototype, Vector(undestructedExpr2))
+          vassert(coutputs.getInstantiationBounds(destructorPrototype.prototype.prototype.fullName).nonEmpty)
+          FunctionCallTE(destructorPrototype.prototype.prototype, Vector(undestructedExpr2))
         }
         case CoordT(BorrowT, _) => (DiscardTE(undestructedExpr2))
         case CoordT(WeakT, _) => (DiscardTE(undestructedExpr2))
       }
-    resultExpr2.result.reference.kind match {
+    resultExpr2.result.coord.kind match {
       case VoidT() | NeverT(_) =>
       case _ => {
         throw CompileErrorExceptionT(
           RangedInternalErrorT(
             callRange,
-            "Unexpected return type for drop autocall.\nReturn: " + resultExpr2.result.reference.kind + "\nParam: " + undestructedExpr2.result.reference))
+            "Unexpected return type for drop autocall.\nReturn: " + resultExpr2.result.coord.kind + "\nParam: " + undestructedExpr2.result.coord))
       }
     }
     resultExpr2

@@ -1,7 +1,7 @@
 package dev.vale.simplifying
 
 import dev.vale.{CodeLocationS, FileCoordinate, PackageCoordinate, finalast, vwat}
-import dev.vale.finalast.FullNameH
+import dev.vale.finalast.IdH
 import dev.vale.typing.Hinputs
 import dev.vale.typing.names._
 import dev.vale.finalast._
@@ -69,30 +69,30 @@ class NameHammer(translateName: (Hinputs, HamutsBox, INameT) => IVonData) {
   def translateFullName(
     hinputs: Hinputs,
     hamuts: HamutsBox,
-    fullName2: FullNameT[INameT]
-  ): FullNameH = {
-    val FullNameT(packageCoord@PackageCoordinate(project, packageSteps), _, _) = fullName2
+    fullName2: IdT[INameT]
+  ): IdH = {
+    val IdT(packageCoord@PackageCoordinate(project, packageSteps), _, _) = fullName2
     val newNameParts = fullName2.steps.map(step => translateName(hinputs, hamuts, step))
-    val readableName = getReadableName(fullName2.last)
+    val readableName = getReadableName(fullName2.localName)
 
     val id =
-      if (fullName2.last.isInstanceOf[ExternFunctionNameT]) {
+      if (fullName2.localName.isInstanceOf[ExternFunctionNameT]) {
         -1
       } else {
         hamuts.getNameId(readableName, packageCoord, newNameParts)
       }
-    finalast.FullNameH(readableName, id, packageCoord, newNameParts)
+    finalast.IdH(readableName, id, packageCoord, newNameParts)
   }
 
   // Adds a step to the name.
   def addStep(
     hamuts: HamutsBox,
-    fullName: FullNameH,
+    fullName: IdH,
     s: String):
-  FullNameH = {
+  IdH = {
     val newNameParts = fullName.parts :+ VonStr(s)
     val id = hamuts.getNameId(s, fullName.packageCoordinate, newNameParts)
-    FullNameH(s, id, fullName.packageCoordinate, newNameParts)
+    IdH(s, id, fullName.packageCoordinate, newNameParts)
   }
 }
 

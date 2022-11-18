@@ -137,8 +137,8 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
             kinds.map(vonifyKind).toVector))))
   }
 
-  def vonifyStructRef(ref: StructRefH): IVonData = {
-    val StructRefH(fullName) = ref
+  def vonifyStructH(ref: StructHT): IVonData = {
+    val StructHT(fullName) = ref
 
     VonObject(
       "StructId",
@@ -147,8 +147,8 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
         VonMember("name", vonifyName(fullName))))
   }
 
-  def vonifyInterfaceRef(ref: InterfaceRefH): IVonData = {
-    val InterfaceRefH(fullName) = ref
+  def vonifyInterface(ref: InterfaceHT): IVonData = {
+    val InterfaceHT(fullName) = ref
 
     VonObject(
       "InterfaceId",
@@ -176,10 +176,10 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
       None,
       Vector(
         VonMember("name", vonifyName(fullName)),
-        VonMember("kind", vonifyInterfaceRef(interface.getRef)),
+        VonMember("kind", vonifyInterface(interface.getRef)),
         VonMember("weakable", VonBool(weakable)),
         VonMember("mutability", vonifyMutability(mutability)),
-        VonMember("superInterfaces", VonArray(None, superInterfaces.map(vonifyInterfaceRef).toVector)),
+        VonMember("superInterfaces", VonArray(None, superInterfaces.map(vonifyInterface).toVector)),
         VonMember("methods", VonArray(None, prototypes.map(vonifyInterfaceMethod).toVector))))
   }
 
@@ -191,7 +191,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
       None,
       Vector(
         VonMember("name", vonifyName(fullName)),
-        VonMember("kind", vonifyStructRef(struct.getRef)),
+        VonMember("kind", vonifyStructH(struct.getRef)),
         VonMember("weakable", VonBool(weakable)),
         VonMember("mutability", vonifyMutability(mutability)),
         VonMember("edges", VonArray(None, edges.map(edge => vonifyEdge(edge)).toVector)),
@@ -231,8 +231,8 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
         VonMember("return", vonifyCoord(returnType))))
   }
 
-  def vonifyCoord(coord: ReferenceH[KindH]): IVonData = {
-    val ReferenceH(ownership, location, kind) = coord
+  def vonifyCoord(coord: CoordH[KindHT]): IVonData = {
+    val CoordH(ownership, location, kind) = coord
 
     VonObject(
       "Ref",
@@ -250,8 +250,8 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
       "Edge",
       None,
       Vector(
-        VonMember("structName", vonifyStructRef(struct)),
-        VonMember("interfaceName", vonifyInterfaceRef(interface)),
+        VonMember("structName", vonifyStructH(struct)),
+        VonMember("interfaceName", vonifyInterface(interface)),
         VonMember(
           "methods",
           VonArray(
@@ -314,16 +314,16 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
         VonMember("elementType", vonifyCoord(elementType))))
   }
 
-  def vonifyKind(kind: KindH): IVonData = {
+  def vonifyKind(kind: KindHT): IVonData = {
     kind match {
-      case NeverH(_) => VonObject("Never", None, Vector())
-      case IntH(bits) => VonObject("Int", None, Vector(VonMember("bits", VonInt(bits))))
-      case BoolH() => VonObject("Bool", None, Vector())
-      case StrH() => VonObject("Str", None, Vector())
-      case VoidH() => VonObject("Void", None, Vector())
-      case FloatH() => VonObject("Float", None, Vector())
-      case ir @ InterfaceRefH(_) => vonifyInterfaceRef(ir)
-      case sr @ StructRefH(_) => vonifyStructRef(sr)
+      case NeverHT(_) => VonObject("Never", None, Vector())
+      case IntHT(bits) => VonObject("Int", None, Vector(VonMember("bits", VonInt(bits))))
+      case BoolHT() => VonObject("Bool", None, Vector())
+      case StrHT() => VonObject("Str", None, Vector())
+      case VoidHT() => VonObject("Void", None, Vector())
+      case FloatHT() => VonObject("Float", None, Vector())
+      case ir @ InterfaceHT(_) => vonifyInterface(ir)
+      case sr @ StructHT(_) => vonifyStructH(sr)
       case RuntimeSizedArrayHT(name) => {
         VonObject(
           "RuntimeSizedArray",
@@ -353,7 +353,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
         VonMember("block", vonifyExpression(body))))
   }
 
-  def vonifyExpression(node: ExpressionH[KindH]): IVonData = {
+  def vonifyExpression(node: ExpressionH[KindHT]): IVonData = {
     node match {
       case ConstantVoidH() => {
         VonObject("ConstantVoid", None, Vector())
@@ -511,7 +511,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
             VonMember("sourceExpr", vonifyExpression(sourceExpr)),
             VonMember("local", vonifyLocal(local)),
             VonMember("knownLive", VonBool(false)),
-            VonMember("optName", vonifyOptional[FullNameH](name, n => vonifyName(n)))))
+            VonMember("optName", vonifyOptional[IdH](name, n => vonifyName(n)))))
       }
       case UnstackifyH(local) => {
         VonObject(
@@ -620,9 +620,9 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
           Vector(
             VonMember("sourceExpr", vonifyExpression(sourceExpr)),
             VonMember("sourceStructType", vonifyCoord(sourceExpr.resultType)),
-            VonMember("sourceStructKind", vonifyStructRef(sourceExpr.resultType.kind)),
+            VonMember("sourceStructKind", vonifyStructH(sourceExpr.resultType.kind)),
             VonMember("targetInterfaceType", vonifyCoord(si.resultType)),
-            VonMember("targetInterfaceKind", vonifyInterfaceRef(targetInterfaceRef))))
+            VonMember("targetInterfaceKind", vonifyInterface(targetInterfaceRef))))
       }
       case InterfaceToInterfaceUpcastH(sourceExpr, targetInterfaceRef) => {
         vimpl()
@@ -665,7 +665,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
           None,
           Vector(
             VonMember("structExpr", vonifyExpression(structExpr)),
-            VonMember("structId", vonifyStructRef(structExpr.resultType.kind)),
+            VonMember("structId", vonifyStructH(structExpr.resultType.kind)),
             VonMember("structType", vonifyCoord(structExpr.resultType)),
             VonMember("structKnownLive", VonBool(false)),
             VonMember("memberIndex", VonInt(memberIndex)),
@@ -801,7 +801,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
           Vector(
             VonMember("argExprs", VonArray(None, argsExprs.toVector.map(vonifyExpression))),
             VonMember("virtualParamIndex", VonInt(virtualParamIndex)),
-            VonMember("interfaceRef", vonifyInterfaceRef(interfaceRefH)),
+            VonMember("interfaceRef", vonifyInterface(interfaceRefH)),
             VonMember("indexInEdge", VonInt(indexInEdge)),
             VonMember("functionType", vonifyPrototype(functionType))))
       }
@@ -886,7 +886,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
         VonMember("height", VonInt(number)),
         VonMember(
           "optName",
-          vonifyOptional[FullNameH](maybeName, x => vonifyName(x)))))
+          vonifyOptional[IdH](maybeName, x => vonifyName(x)))))
   }
 
   def vonifyOptional[T](opt: Option[T], func: (T) => IVonData): IVonData = {
@@ -896,8 +896,8 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
     }
   }
 
-  def vonifyTypingPassName(hinputs: Hinputs, hamuts: HamutsBox, fullName2: FullNameT[INameT]): VonStr = {
-    val str = FullNameH.namePartsToString(fullName2.packageCoord, fullName2.steps.map(step => translateName(hinputs, hamuts, step)))
+  def vonifyTypingPassName(hinputs: Hinputs, hamuts: HamutsBox, fullName2: IdT[INameT]): VonStr = {
+    val str = IdH.namePartsToString(fullName2.packageCoord, fullName2.steps.map(step => translateName(hinputs, hamuts, step)))
     VonStr(str)
   }
 
@@ -912,7 +912,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
           "CoordTemplata",
           None,
           Vector(
-            VonMember("coord", vonifyCoord(typeHammer.translateReference(hinputs, hamuts, coord)))))
+            VonMember("coord", vonifyCoord(typeHammer.translateCoord(hinputs, hamuts, coord)))))
       }
       case CoordListTemplata(coords) => {
         VonObject(
@@ -922,7 +922,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
             VonMember("coords",
               VonArray(
                 None,
-                coords.map(coord => vonifyCoord(typeHammer.translateReference(hinputs, hamuts, coord)))))))
+                coords.map(coord => vonifyCoord(typeHammer.translateCoord(hinputs, hamuts, coord)))))))
       }
       case KindTemplata(kind) => {
         VonObject(
@@ -1100,7 +1100,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
           None,
           Vector(
             VonMember("mutability", vonifyMutability(Conversions.evaluateMutabilityTemplata(mutability))),
-            VonMember("elementType", vonifyCoord(typeHammer.translateReference(hinputs, hamuts, elementType)))))
+            VonMember("elementType", vonifyCoord(typeHammer.translateCoord(hinputs, hamuts, elementType)))))
       }
       case TypingPassBlockResultVarNameT(life) => {
         VonObject(
@@ -1297,7 +1297,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
               VonArray(
                 None,
                 parameters
-                  .map(templateArg => typeHammer.translateReference(hinputs, hamuts, templateArg))
+                  .map(templateArg => typeHammer.translateCoord(hinputs, hamuts, templateArg))
                   .map(vonifyCoord)
                   .toVector))))
       }
@@ -1387,7 +1387,7 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
               VonArray(
                 None,
                 parameters
-                  .map(templateArg => typeHammer.translateReference(hinputs, hamuts, templateArg))
+                  .map(templateArg => typeHammer.translateCoord(hinputs, hamuts, templateArg))
                   .map(vonifyCoord)
                   .toVector))))
       }
@@ -1485,8 +1485,8 @@ class VonHammer(nameHammer: NameHammer, typeHammer: TypeHammer) {
     }
   }
 
-  def vonifyName(h: FullNameH): IVonData = {
-    val FullNameH(readableName, id, packageCoordinate, parts) = h
+  def vonifyName(h: IdH): IVonData = {
+    val IdH(readableName, id, packageCoordinate, parts) = h
     VonObject(
       "Name",
       None,

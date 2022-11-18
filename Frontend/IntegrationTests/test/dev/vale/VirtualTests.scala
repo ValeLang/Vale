@@ -2,7 +2,7 @@ package dev.vale
 
 import dev.vale.typing.{ast, types}
 import dev.vale.typing.ast.{AbstractT, SignatureT}
-import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, FullNameT, FunctionNameT, FunctionTemplateNameT, InterfaceNameT, InterfaceTemplateNameT}
+import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, IdT, FunctionNameT, FunctionTemplateNameT, InterfaceNameT, InterfaceTemplateNameT}
 import dev.vale.typing.types._
 import dev.vale.testvm.IntV
 import dev.vale.typing.ast._
@@ -33,7 +33,7 @@ class VirtualTests extends FunSuite with Matchers {
         vassertSome(
           coutputs.lookupFunction(
             SignatureT(
-              FullNameT(
+              IdT(
                 PackageCoordinate.TEST_TLD(interner, keywords),
                 Vector.empty,
                 interner.intern(
@@ -49,7 +49,7 @@ class VirtualTests extends FunSuite with Matchers {
                         OwnT,
                         interner.intern(
                           InterfaceTT(
-                            FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(InterfaceNameT(interner.intern(InterfaceTemplateNameT(interner.intern(StrI("I")))), Vector.empty)))))))))))))
+                            IdT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(InterfaceNameT(interner.intern(InterfaceTemplateNameT(interner.intern(StrI("I")))), Vector.empty)))))))))))))
       vassert(doThing.header.params(0).virtuality.get == AbstractT())
     }
 
@@ -74,7 +74,7 @@ class VirtualTests extends FunSuite with Matchers {
       vassertSome(
         coutputs.lookupFunction(
           ast.SignatureT(
-            FullNameT(
+            IdT(
               PackageCoordinate.TEST_TLD(interner, keywords),
               Vector.empty,
               interner.intern(
@@ -91,7 +91,7 @@ class VirtualTests extends FunSuite with Matchers {
                       OwnT,
                       interner.intern(
                         InterfaceTT(
-                          FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(InterfaceNameT(interner.intern(InterfaceTemplateNameT(interner.intern(StrI("I")))), Vector.empty)))))))))))))
+                          IdT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(InterfaceNameT(interner.intern(InterfaceTemplateNameT(interner.intern(StrI("I")))), Vector.empty)))))))))))))
     vassert(doThing.header.params(0).virtuality.get == AbstractT())
   }
 
@@ -339,28 +339,28 @@ class VirtualTests extends FunSuite with Matchers {
       val moo = compile.expectCompilerOutputs().lookupFunction("moo")
       val (destVar, returnType) =
         Collector.only(moo, {
-          case LetNormalTE(destVar, FunctionCallTE(PrototypeT(FullNameT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("as"), _), _, _)), returnType), _)) => {
+          case LetNormalTE(destVar, FunctionCallTE(PrototypeT(IdT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("as"), _), _, _)), returnType), _)) => {
             (destVar, returnType)
           }
         })
-      vassert(destVar.reference == returnType)
-      val Vector(successType, failType) = returnType.kind.expectInterface().fullName.last.templateArgs
-      vassert(expectCoordTemplata(successType).reference.ownership == BorrowT)
-      vassert(expectCoordTemplata(failType).reference.ownership == BorrowT)
+      vassert(destVar.coord == returnType)
+      val Vector(successType, failType) = returnType.kind.expectInterface().fullName.localName.templateArgs
+      vassert(expectCoordTemplata(successType).coord.ownership == BorrowT)
+      vassert(expectCoordTemplata(failType).coord.ownership == BorrowT)
     }
 
     {
       val moo = compile.getMonouts().lookupFunction("moo")
       val (destVar, returnType) =
         Collector.only(moo, {
-          case LetNormalTE(destVar, FunctionCallTE(PrototypeT(FullNameT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("as"), _), _, _)), returnType), _)) => {
+          case LetNormalTE(destVar, FunctionCallTE(PrototypeT(IdT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("as"), _), _, _)), returnType), _)) => {
             (destVar, returnType)
           }
         })
-      vassert(destVar.reference == returnType)
-      val Vector(successType, failType) = returnType.kind.expectInterface().fullName.last.templateArgs
-      vassert(expectCoordTemplata(successType).reference.ownership == BorrowT)
-      vassert(expectCoordTemplata(failType).reference.ownership == BorrowT)
+      vassert(destVar.coord == returnType)
+      val Vector(successType, failType) = returnType.kind.expectInterface().fullName.localName.templateArgs
+      vassert(expectCoordTemplata(successType).coord.ownership == BorrowT)
+      vassert(expectCoordTemplata(failType).coord.ownership == BorrowT)
     }
 
     compile.evalForKind(Vector()) match { case VonInt(42) => }

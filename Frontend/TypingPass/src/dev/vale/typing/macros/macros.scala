@@ -4,7 +4,7 @@ import dev.vale.{RangeS, StrI}
 import dev.vale.typing.CompilerOutputs
 import dev.vale.typing.ast.{FunctionHeaderT, LocationInFunctionEnvironment, ParameterT}
 import dev.vale.typing.env.{FunctionEnvironment, IEnvEntry}
-import dev.vale.typing.names.{FullNameT, INameT}
+import dev.vale.typing.names.{IdT, INameT}
 import dev.vale.typing.types._
 import dev.vale.RangeS
 import dev.vale.highertyping.{FunctionA, ImplA, InterfaceA, StructA}
@@ -32,24 +32,24 @@ trait IFunctionBodyMacro {
 
 trait IOnStructDefinedMacro {
   def getStructSiblingEntries(
-    structName: FullNameT[INameT], structA: StructA):
-  Vector[(FullNameT[INameT], IEnvEntry)]
+    structName: IdT[INameT], structA: StructA):
+  Vector[(IdT[INameT], IEnvEntry)]
 
   def getStructChildEntries(
     macroName: StrI,
-    structName: FullNameT[INameT],
+    structName: IdT[INameT],
     structA: StructA,
     mutability: ITemplata[MutabilityTemplataType]):
-  Vector[(FullNameT[INameT], IEnvEntry)]
+  Vector[(IdT[INameT], IEnvEntry)]
 }
 
 trait IOnInterfaceDefinedMacro {
   def getInterfaceSiblingEntries(
-    interfaceName: FullNameT[INameT], interfaceA: InterfaceA):
-  Vector[(FullNameT[INameT], IEnvEntry)]
+    interfaceName: IdT[INameT], interfaceA: InterfaceA):
+  Vector[(IdT[INameT], IEnvEntry)]
 }
 
 trait IOnImplDefinedMacro {
-  def getImplSiblingEntries(implName: FullNameT[INameT], implA: ImplA):
-  Vector[(FullNameT[INameT], IEnvEntry)]
+  def getImplSiblingEntries(implName: IdT[INameT], implA: ImplA):
+  Vector[(IdT[INameT], IEnvEntry)]
 }

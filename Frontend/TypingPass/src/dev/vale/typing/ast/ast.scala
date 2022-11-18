@@ -33,24 +33,24 @@ case class ImplT(
 
   implOuterEnv: IEnvironment,
 
-  instantiatedFullName: FullNameT[IImplNameT],
-  templateFullName: FullNameT[IImplTemplateNameT],
+  instantiatedFullName: IdT[IImplNameT],
+  templateFullName: IdT[IImplTemplateNameT],
 
-  subCitizenTemplateFullName: FullNameT[ICitizenTemplateNameT],
+  subCitizenTemplateFullName: IdT[ICitizenTemplateNameT],
   subCitizen: ICitizenTT,
 
   superInterface: InterfaceTT,
-  superInterfaceTemplateName: FullNameT[IInterfaceTemplateNameT],
+  superInterfaceTemplateName: IdT[IInterfaceTemplateNameT],
 
   // This is similar to FunctionT.runeToFuncBound
-  runeToFuncBound: Map[IRuneS, FullNameT[FunctionBoundNameT]],
-  runeToImplBound: Map[IRuneS, FullNameT[ImplBoundNameT]],
+  runeToFuncBound: Map[IRuneS, IdT[FunctionBoundNameT]],
+  runeToImplBound: Map[IRuneS, IdT[ImplBoundNameT]],
 
   runeIndexToIndependence: Vector[Boolean],
 
   // A function will inherit bounds from its parameters' kinds. Same with an impl from its sub
   // citizen, and a case block from its receiving kind.
-  // We'll need to remember those, so the monomorphizer can do its thing.
+  // We'll need to remember those, so the instantiator can do its thing.
   // See TIBANFC for more.
   reachableBoundsFromSubCitizen: Vector[PrototypeT]
 
@@ -99,8 +99,8 @@ case class FunctionExternT(
 }
 
 case class InterfaceEdgeBlueprint(
-  // The typing pass keys this by placeholdered name, and the monomorphizer keys this by non-placeholdered names
-  interface: FullNameT[IInterfaceNameT],
+  // The typing pass keys this by placeholdered name, and the instantiator keys this by non-placeholdered names
+  interface: IdT[IInterfaceNameT],
   superFamilyRootHeaders: Vector[(PrototypeT, Int)]) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
 case class OverrideT(
@@ -124,26 +124,26 @@ case class OverrideT(
   //   func add<Opt<int>>(self &IObserver<Opt<int>>, event Opt<int>) void
   // as you can see there may be some interesting templatas in there like that Opt<int>, they
   // might not be simple placeholders
-  dispatcherCallFullName: FullNameT[OverrideDispatcherNameT],
+  dispatcherCallFullName: IdT[OverrideDispatcherNameT],
 
-  implPlaceholderToDispatcherPlaceholder: Vector[(FullNameT[PlaceholderNameT], ITemplata[ITemplataType])],
-  implPlaceholderToCasePlaceholder: Vector[(FullNameT[PlaceholderNameT], ITemplata[ITemplataType])],
+  implPlaceholderToDispatcherPlaceholder: Vector[(IdT[PlaceholderNameT], ITemplata[ITemplataType])],
+  implPlaceholderToCasePlaceholder: Vector[(IdT[PlaceholderNameT], ITemplata[ITemplataType])],
 
   // This is needed for bringing in the impl's bound args for the override dispatcher's case, see
   // TIBANFC.
-  implSubCitizenReachableBoundsToCaseSubCitizenReachableBounds: Map[FullNameT[FunctionBoundNameT], FullNameT[FunctionBoundNameT]],
+  implSubCitizenReachableBoundsToCaseSubCitizenReachableBounds: Map[IdT[FunctionBoundNameT], IdT[FunctionBoundNameT]],
 
   // Any FunctionT has a runeToFunctionBound, which is a map of the function's rune to its required
   // bounds. This is the one for our conceptual dispatcher function.
-  dispatcherRuneToFunctionBound: Map[IRuneS, FullNameT[FunctionBoundNameT]],
-  dispatcherRuneToImplBound: Map[IRuneS, FullNameT[ImplBoundNameT]],
+  dispatcherRuneToFunctionBound: Map[IRuneS, IdT[FunctionBoundNameT]],
+  dispatcherRuneToImplBound: Map[IRuneS, IdT[ImplBoundNameT]],
 
   // This is the name of the conceptual case that's calling the override prototype. It'll have
   // template args inherited from the dispatcher function and template args inherited from the
   // impl. After typing pass these will be placeholders, and after instantiator these will be
   // actual real templatas.
   // This will have some placeholders from the impl; this is the impl calling the case, kind of.
-  caseFullName: FullNameT[OverrideDispatcherCaseNameT],
+  caseFullName: IdT[OverrideDispatcherCaseNameT],
 
   // The override function we're calling.
   // Conceptually, this is being called from the case's environment. It might even have some complex stuff
@@ -152,17 +152,17 @@ case class OverrideT(
 )
 
 case class EdgeT(
-  // The typing pass keys this by placeholdered name, and the monomorphizer keys this by non-placeholdered names
-  edgeFullName: FullNameT[IImplNameT],
-  // The typing pass keys this by placeholdered name, and the monomorphizer keys this by non-placeholdered names
+  // The typing pass keys this by placeholdered name, and the instantiator keys this by non-placeholdered names
+  edgeFullName: IdT[IImplNameT],
+  // The typing pass keys this by placeholdered name, and the instantiator keys this by non-placeholdered names
   subCitizen: ICitizenTT,
-  // The typing pass keys this by placeholdered name, and the monomorphizer keys this by non-placeholdered names
-  superInterface: FullNameT[IInterfaceNameT],
+  // The typing pass keys this by placeholdered name, and the instantiator keys this by non-placeholdered names
+  superInterface: IdT[IInterfaceNameT],
   // This is similar to FunctionT.runeToFuncBound
-  runeToFuncBound: Map[IRuneS, FullNameT[FunctionBoundNameT]],
-  runeToImplBound: Map[IRuneS, FullNameT[ImplBoundNameT]],
-  // The typing pass keys this by placeholdered name, and the monomorphizer keys this by non-placeholdered names
-  abstractFuncToOverrideFunc: Map[FullNameT[IFunctionNameT], OverrideT]
+  runeToFuncBound: Map[IRuneS, IdT[FunctionBoundNameT]],
+  runeToImplBound: Map[IRuneS, IdT[ImplBoundNameT]],
+  // The typing pass keys this by placeholdered name, and the instantiator keys this by non-placeholdered names
+  abstractFuncToOverrideFunc: Map[IdT[IFunctionNameT], OverrideT]
 ) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
@@ -187,10 +187,10 @@ object ProgramT {
   val boolType = CoordT(ShareT, BoolT())
 }
 
-case class FunctionT(
+case class FunctionDefinitionT(
   header: FunctionHeaderT,
-  runeToFuncBound: Map[IRuneS, FullNameT[FunctionBoundNameT]],
-  runeToImplBound: Map[IRuneS, FullNameT[ImplBoundNameT]],
+  runeToFuncBound: Map[IRuneS, IdT[FunctionBoundNameT]],
+  runeToImplBound: Map[IRuneS, IdT[ImplBoundNameT]],
   body: ReferenceExpressionTE)  {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
@@ -199,7 +199,7 @@ case class FunctionT(
 }
 
 object getFunctionLastName {
-  def unapply(f: FunctionT): Option[IFunctionNameT] = Some(f.header.fullName.last)
+  def unapply(f: FunctionDefinitionT): Option[IFunctionNameT] = Some(f.header.fullName.localName)
 }
 
 // A unique location in a function. Environment is in the name so it spells LIFE!
@@ -261,7 +261,7 @@ case class ValidPrototypeTemplataCalleeCandidate(
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
 
   override def range: Option[RangeS] = Some(prototype.declarationRange)
-  override def paramTypes: Vector[CoordT] = prototype.prototype.fullName.last.parameters.toVector
+  override def paramTypes: Vector[CoordT] = prototype.prototype.fullName.localName.parameters.toVector
 }
 case class ValidCalleeCandidate(
   banner: FunctionHeaderT,
@@ -286,14 +286,14 @@ case class ValidCalleeCandidate(
 // function headers, because functions don't have to specify their return types and
 // it takes a complete typingpass evaluate to deduce a function's return type.
 
-case class SignatureT(fullName: FullNameT[IFunctionNameT]) {
+case class SignatureT(fullName: IdT[IFunctionNameT]) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  def paramTypes: Vector[CoordT] = fullName.last.parameters
+  def paramTypes: Vector[CoordT] = fullName.localName.parameters
 }
 
 case class FunctionBannerT(
   originFunctionTemplata: Option[FunctionTemplata],
-  name: FullNameT[IFunctionNameT])   {
+  name: IdT[IFunctionNameT])   {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
 
   // Use same instead, see EHCFBD for why we dont like equals.
@@ -330,7 +330,7 @@ case object UserFunctionT extends IFunctionAttributeT // Whether it was written 
 
 case class FunctionHeaderT(
   // This one little name field can illuminate much of how the compiler works, see UINIT.
-  fullName: FullNameT[IFunctionNameT],
+  fullName: IdT[IFunctionNameT],
   attributes: Vector[IFunctionAttributeT],
   params: Vector[ParameterT],
   returnType: CoordT,
@@ -349,8 +349,8 @@ case class FunctionHeaderT(
           })
         // Filter out any placeholders that came from the parent, in case this is a lambda function.
         val placeholdersOfThisFunction =
-          placeholders.filter({ case FullNameT(packageCoord, initSteps, last) =>
-            val parentName = FullNameT(packageCoord, initSteps.init, initSteps.last)
+          placeholders.filter({ case IdT(packageCoord, initSteps, last) =>
+            val parentName = IdT(packageCoord, initSteps.init, initSteps.last)
             // Not sure which one it is, this should catch both.
             parentName == fullName || parentName == templateName
           })
@@ -365,8 +365,8 @@ case class FunctionHeaderT(
           } else {
             // make sure all the placeholders in the parameters exist as template args
             placeholdersOfThisFunction.foreach({
-              case placeholderName @ FullNameT(_, _, PlaceholderNameT(PlaceholderTemplateNameT(index))) => {
-                fullName.last.templateArgs(index) match {
+              case placeholderName @ IdT(_, _, PlaceholderNameT(PlaceholderTemplateNameT(index))) => {
+                fullName.localName.templateArgs(index) match {
                   case KindTemplata(PlaceholderT(placeholderNameAtIndex)) => {
                     vassert(placeholderName == placeholderNameAtIndex)
                   }
@@ -399,7 +399,7 @@ case class FunctionHeaderT(
   // Make sure there's no duplicate names
   vassert(params.map(_.name).toSet.size == params.size);
 
-  vassert(fullName.last.parameters == paramTypes)
+  vassert(fullName.localName.parameters == paramTypes)
 
   def isExtern = attributes.exists({ case ExternT(_) => true case _ => false })
   //  def isExport = attributes.exists({ case Export2(_) => true case _ => false })
@@ -453,17 +453,17 @@ case class FunctionHeaderT(
     toPrototype.toSignature
   }
 
-  def paramTypes: Vector[CoordT] = fullName.last.parameters
+  def paramTypes: Vector[CoordT] = fullName.localName.parameters
 
-  def unapply(arg: FunctionHeaderT): Option[(FullNameT[IFunctionNameT], Vector[ParameterT], CoordT)] = {
+  def unapply(arg: FunctionHeaderT): Option[(IdT[IFunctionNameT], Vector[ParameterT], CoordT)] = {
     Some(fullName, params, returnType)
   }
 }
 
 case class PrototypeT(
-    fullName: FullNameT[IFunctionNameT],
+    fullName: IdT[IFunctionNameT],
     returnType: CoordT) {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash;
-  def paramTypes: Vector[CoordT] = fullName.last.parameters
+  def paramTypes: Vector[CoordT] = fullName.localName.parameters
   def toSignature: SignatureT = SignatureT(fullName)
 }

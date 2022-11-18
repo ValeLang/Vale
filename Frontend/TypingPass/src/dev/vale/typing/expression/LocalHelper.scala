@@ -52,7 +52,7 @@ class LocalHelper(
       case BorrowT =>
     }
 
-    val rlv = makeTemporaryLocal(nenv, life, r.result.reference)
+    val rlv = makeTemporaryLocal(nenv, life, r.result.coord)
     val letExpr2 = LetAndLendTE(rlv, r, targetOwnership)
 
     val unlet = unletLocalWithoutDropping(nenv, rlv)
@@ -144,7 +144,7 @@ class LocalHelper(
       a: AddressExpressionTE,
       loadAsP: LoadAsP):
   ReferenceExpressionTE = {
-    a.result.reference.ownership match {
+    a.result.coord.ownership match {
       case ShareT => {
         SoftLoadTE(a, ShareT)
       }
@@ -170,10 +170,10 @@ class LocalHelper(
                 UnletTE(lv)
               }
               case ReferenceMemberLookupTE(_,_, name, _, _) => {
-                throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name.last))
+                throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name.localName))
               }
               case AddressMemberLookupTE(_, _, name, _, _) => {
-                throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name.last))
+                throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name.localName))
               }
             }
           }
@@ -184,7 +184,7 @@ class LocalHelper(
       case BorrowT => {
         loadAsP match {
           case MoveP => vfail()
-          case UseP => SoftLoadTE(a, a.result.reference.ownership)
+          case UseP => SoftLoadTE(a, a.result.coord.ownership)
           case LoadAsBorrowP => SoftLoadTE(a, BorrowT)
           case LoadAsWeakP => SoftLoadTE(a, WeakT)
         }
@@ -202,7 +202,7 @@ class LocalHelper(
 
   def borrowSoftLoad(coutputs: CompilerOutputs, expr2: AddressExpressionTE):
   ReferenceExpressionTE = {
-    val ownership = getBorrowOwnership(coutputs, expr2.result.reference.kind)
+    val ownership = getBorrowOwnership(coutputs, expr2.result.coord.kind)
     ast.SoftLoadTE(expr2, ownership)
   }
 

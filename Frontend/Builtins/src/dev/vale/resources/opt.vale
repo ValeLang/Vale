@@ -5,11 +5,11 @@ import v.builtins.drop.*;
 sealed interface Opt<T> where T Ref { }
 #!DeriveStructDrop
 struct Some<T> where T Ref { value T; }
-#!DeriveImplDrop
+
 impl<T> Opt<T> for Some<T>;
 #!DeriveStructDrop
 struct None<T> where T Ref { }
-#!DeriveImplDrop
+
 impl<T> Opt<T> for None<T>;
 
 abstract func drop<T>(virtual opt Opt<T>)

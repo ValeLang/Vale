@@ -18,7 +18,7 @@ import dev.vale.solver.{CompleteSolve, FailedSolve, IncompleteSolve}
 import dev.vale.typing.ast.{FunctionBannerT, FunctionHeaderT, PrototypeT}
 import dev.vale.typing.env.{BuildingFunctionEnvironmentWithClosureds, BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs, TemplataEnvEntry, TemplataLookupContext}
 import dev.vale.typing.{CompilerOutputs, ConvertHelper, InferCompiler, InitialKnown, InitialSend, TemplataCompiler, TypingPassOptions}
-import dev.vale.typing.names.{FullNameT, FunctionNameT, FunctionTemplateNameT, NameTranslator, PlaceholderNameT, PlaceholderTemplateNameT, ReachablePrototypeNameT, RuneNameT, StructNameT, StructTemplateNameT}
+import dev.vale.typing.names.{IdT, FunctionNameT, FunctionTemplateNameT, NameTranslator, PlaceholderNameT, PlaceholderTemplateNameT, ReachablePrototypeNameT, RuneNameT, StructNameT, StructTemplateNameT}
 import dev.vale.typing.templata._
 import dev.vale.typing.types.CoordT
 //import dev.vale.typingpass.infer.{InferSolveFailure, InferSolveSuccess}
@@ -32,7 +32,7 @@ import scala.collection.immutable.{List, Set}
 // - Incorporate any template arguments into the environment
 // There's a layer to take care of each of these things.
 // This file is the outer layer, which spawns a local environment for the function.
-class FunctionCompilerOrdinaryOrTemplatedLayer(
+class FunctionCompilerSolvingLayer(
     opts: TypingPassOptions,
     interner: Interner,
     keywords: Keywords,
@@ -43,50 +43,6 @@ class FunctionCompilerOrdinaryOrTemplatedLayer(
     structCompiler: StructCompiler,
     delegate: IFunctionCompilerDelegate) {
   val middleLayer = new FunctionCompilerMiddleLayer(opts, interner, keywords, nameTranslator, templataCompiler, convertHelper, structCompiler, delegate)
-
-//  // This is for the early stages of Compiler when it's scanning banners to put in
-//  // its env. We just want its banner, we don't want to evaluate it.
-//  def predictOrdinaryFunctionBanner(
-//    // The environment the function was defined in.
-//    nearEnv: BuildingFunctionEnvironmentWithClosureds,
-//    coutputs: CompilerOutputs):
-//  (FunctionBannerT) = {
-//    val function = nearEnv.function
-//    checkClosureConcernsHandled(nearEnv)
-//
-//    val inferences =
-//      inferCompiler.solveExpectComplete(
-//        nearEnv, coutputs, vimpl()/*function.rules*/, function.runeToType, function.range, Vector(), Vector())
-//    val runedEnv = addRunedDataToNearEnv(nearEnv, Vector.empty, inferences)
-//
-//    middleLayer.predictOrdinaryFunctionBanner(
-//      runedEnv, coutputs, function)
-//  }
-
-//  def evaluateOrdinaryFunctionFromNonCallForBanner(
-//      // The environment the function was defined in.
-//      nearEnv: BuildingFunctionEnvironmentWithClosureds,
-//      coutputs: CompilerOutputs,
-//      callRange: List[RangeS],
-//      verifyConclusions: Boolean):
-//  (PrototypeTemplata) = {
-//    val function = nearEnv.function
-//    checkClosureConcernsHandled(nearEnv)
-//    vassert(!function.isTemplate)
-//
-//    val definitionRules =
-//      function.rules.filter(InferCompiler.includeRuleInDefinitionSolve)
-//
-//    val inferences =
-//      inferCompiler.solveExpectComplete(
-//        InferEnv(nearEnv, callRange, nearEnv),
-//        coutputs, definitionRules, function.runeToType, function.range :: callRange, Vector(), Vector(), true, true)
-//    val runedEnv = addRunedDataToNearEnv(nearEnv, Vector.empty, inferences)
-//
-//    coutputs.declareFunctionInnerEnv(nearEnv.fullName, runedEnv)
-//
-//    middleLayer.getOrEvaluateFunctionForBanner(runedEnv, coutputs, callRange, function)
-//  }
 
   // We would want only the prototype instead of the entire header if, for example,
   // we were calling the function. This is necessary for a recursive function like
@@ -141,17 +97,6 @@ class FunctionCompilerOrdinaryOrTemplatedLayer(
     EvaluateFunctionSuccess(PrototypeTemplata(function.range, header.toPrototype), inferredTemplatas)
   }
 
-  private def assembleInitialSendsFromArgs(callRange: RangeS, function: FunctionA, args: Vector[Option[CoordT]]):
-  Vector[InitialSend] = {
-    function.params.map(_.pattern.coordRune.get).zip(args).zipWithIndex
-      .flatMap({
-        case ((_, None), _) => None
-        case ((paramRune, Some(argTemplata)), argIndex) => {
-          Some(InitialSend(RuneUsage(callRange, ArgumentRuneS(argIndex)), paramRune, CoordTemplata(argTemplata)))
-        }
-      })
-  }
-
   // Preconditions:
   // - either no closured vars, or they were already added to the env.
   // - env is the environment the templated function was made in
@@ -203,146 +148,6 @@ class FunctionCompilerOrdinaryOrTemplatedLayer(
 
     EvaluateFunctionSuccess(prototype, inferredTemplatas)
   }
-
-//  // Preconditions:
-//  // - either no closured vars, or they were already added to the env.
-//  def evaluateOrdinaryFunctionFromNonCallForHeader(
-//      // The environment the function was defined in.
-//      declaringEnv: BuildingFunctionEnvironmentWithClosureds,
-//      coutputs: CompilerOutputs,
-//    parentRanges: List[RangeS],
-//      verifyConclusions: Boolean):
-//  (FunctionHeaderT) = {
-//    val function = declaringEnv.function
-//    // Check preconditions
-//    checkClosureConcernsHandled(declaringEnv)
-//    vassert(!function.isTemplate)
-//
-//    val definitionRules =
-//      function.rules.filter(
-//        InferCompiler.includeRuleInDefinitionSolve)
-//
-//    val inferences =
-//      inferCompiler.solveExpectComplete(
-//        InferEnv(declaringEnv, parentRanges, declaringEnv),
-//        coutputs, definitionRules, function.runeToType, function.range :: parentRanges, Vector(), Vector(), true, true)
-//    val runedEnv = addRunedDataToNearEnv(declaringEnv, Vector.empty, inferences)
-//
-//    coutputs.declareFunctionInnerEnv(declaringEnv.fullName, runedEnv)
-//
-//    middleLayer.getOrEvaluateFunctionForHeader(
-//      runedEnv, coutputs, function.range :: parentRanges, function)
-//  }
-//
-//  // Preconditions:
-//  // - either no closured vars, or they were already added to the env.
-//  def evaluateOrdinaryFunctionFromCallForPrototype(
-//    // The environment the function was defined in.
-//    nearEnv: BuildingFunctionEnvironmentWithClosureds,
-//    originalCallingEnv: IEnvironment, // See CSSNCE
-//    coutputs: CompilerOutputs,
-//    parentRanges: List[RangeS]):
-//  (PrototypeTemplata) = {
-//    val function = nearEnv.function
-//    // Check preconditions
-//    checkClosureConcernsHandled(nearEnv)
-//    vassert(!function.isTemplate)
-//
-//    val callSiteRules =
-//        TemplataCompiler.assembleCallSiteRules(
-//            function.rules, function.genericParameters, 0)
-//
-//    val inferences =
-//      inferCompiler.solveExpectComplete(
-//        InferEnv(originalCallingEnv, nearEnv),
-//        coutputs, callSiteRules, function.runeToType, function.range :: parentRanges, Vector(), Vector(), true, false)
-//    val runedEnv = addRunedDataToNearEnv(nearEnv, Vector.empty, inferences)
-//
-//    coutputs.declareFunctionInnerEnv(nearEnv.fullName, runedEnv)
-//
-//    middleLayer.getOrEvaluateOrdinaryFunctionForPrototype(
-//      runedEnv, coutputs, function.range :: parentRanges, function)
-//  }
-
-//  // We would want only the prototype instead of the entire header if, for example,
-//  // we were calling the function. This is necessary for a recursive function like
-//  // func main():Int{main()}
-//  def evaluateOrdinaryFunctionFromCallForPrototype(
-//    // The environment the function was defined in.
-//    nearEnv: BuildingFunctionEnvironmentWithClosureds,
-//    originalCallingEnv: IEnvironment, // See CSSNCE
-//    coutputs: CompilerOutputs,
-//    callRange: List[RangeS]):
-//  (PrototypeTemplata) = {
-//    val function = nearEnv.function
-//    // Check preconditions
-//    checkClosureConcernsHandled(nearEnv)
-//    vassert(!function.isTemplate)
-//
-//    val callSiteRules =
-//      TemplataCompiler.assembleCallSiteRules(
-//        function.rules, function.genericParameters, 0)
-//
-//    val inferences =
-//      inferCompiler.solveExpectComplete(
-//        InferEnv(originalCallingEnv, callRange, nearEnv),
-//        coutputs, callSiteRules, function.runeToType, function.range :: callRange, Vector(), Vector(), true, false)
-//    val runedEnv = addRunedDataToNearEnv(nearEnv, Vector.empty, inferences)
-//
-//    coutputs.declareFunction(runedEnv.fullName)
-//    coutputs.declareFunctionOuterEnv(runedEnv.fullName, runedEnv)
-//
-//    middleLayer.getOrEvaluateOrdinaryFunctionForPrototype(
-//      runedEnv, coutputs, callRange, function)
-//  }
-//
-//  // Preconditions:
-//  // - either no closured vars, or they were already added to the env.
-//  def evaluateTemplatedFunctionFromNonCallForHeader(
-//    // The environment the function was defined in.
-//    nearEnv: BuildingFunctionEnvironmentWithClosureds,
-//    coutputs: CompilerOutputs,
-//    parentRanges: List[RangeS],
-//    verifyConclusions: Boolean):
-//  (FunctionHeaderT) = {
-//    val function = nearEnv.function
-//    // Check preconditions
-//    checkClosureConcernsHandled(nearEnv)
-//
-//    // Check preconditions
-//    function.body match {
-//      case CodeBodyS(body1) => vassert(body1.closuredNames.isEmpty)
-//      case _ =>
-//    }
-////    vassert(nearEnv.function.isTemplate)
-//
-//    // See IMCBT for why we can look up identifying runes in the environment.
-//    val initialKnowns =
-//      function.genericParameters.flatMap(genericParam => {
-//        nearEnv.lookupNearestWithName(
-//          interner.intern(RuneNameT(genericParam.rune.rune)), Set(TemplataLookupContext))
-//          .map(InitialKnown(genericParam.rune, _))
-//      })
-//
-//    val definitionRules =
-//      function.rules.filter(
-//        InferCompiler.includeRuleInDefinitionSolve)
-//
-//    val CompleteCompilerSolve(_, inferences, runeToFunctionBound) =
-//      inferCompiler.solveExpectComplete(
-//        InferEnv(nearEnv, parentRanges, nearEnv),
-//        coutputs, definitionRules, function.runeToType, function.range :: parentRanges, initialKnowns, Vector(), true, true, true)
-//
-//    // See FunctionCompiler doc for what outer/runes/inner envs are.
-//    val runedEnv =
-//      addRunedDataToNearEnv(
-//        nearEnv, function.genericParameters.map(_.rune.rune), inferences)
-//
-//    coutputs.addInstantiationBounds(header.toPrototype.fullName, runeToFunctionBound)
-//    middleLayer.getOrEvaluateFunctionForHeader(
-//      runedEnv, coutputs, function.range :: parentRanges, function)
-//  }
-
 
   // This is called while we're trying to figure out what functionSs to call when there
   // are a lot of overloads available.
@@ -401,12 +206,6 @@ class FunctionCompilerOrdinaryOrTemplatedLayer(
     function: FunctionA,
     explicitTemplateArgs: Vector[ITemplata[ITemplataType]]):
   Vector[InitialKnown] = {
-    // Sometimes we look for an overload for a given override, assemble knowns from that here
-//    args.zip(function.params).collect({
-//      case (ParamFilter(_, Some(OverrideT(argOverrideKind))), ParameterS(AtomSP(_, _, Some(OverrideSP(_, paramOverrideRune)), _, _))) => {
-//        InitialKnown(paramOverrideRune, KindTemplata(argOverrideKind))
-//      }
-//    }) ++
     function.genericParameters.zip(explicitTemplateArgs).map({
       case (genericParam, explicitArg) => {
         InitialKnown(genericParam.rune, explicitArg)
@@ -422,7 +221,7 @@ class FunctionCompilerOrdinaryOrTemplatedLayer(
     function.body match {
       case CodeBodyS(body1) => {
         body1.closuredNames.foreach(name => {
-          vassert(nearEnv.variables.exists(_.id.last == nameTranslator.translateNameStep(name)))
+          vassert(nearEnv.variables.exists(_.id.localName == nameTranslator.translateNameStep(name)))
         })
       }
       case _ =>
@@ -686,7 +485,7 @@ class FunctionCompilerOrdinaryOrTemplatedLayer(
     // coutputs.addInstantiationBounds(header.toPrototype.fullName, runeToFunctionBound)
 
     header.fullName match {
-      case FullNameT(_,Vector(),FunctionNameT(FunctionTemplateNameT(StrI("keys"),_),Vector(_),Vector(CoordT(BorrowT,StructTT(FullNameT(_,Vector(),StructNameT(StructTemplateNameT(StrI("HashMap")),Vector(_)))))))) => {
+      case IdT(_,Vector(),FunctionNameT(FunctionTemplateNameT(StrI("keys"),_),Vector(_),Vector(CoordT(BorrowT,StructTT(IdT(_,Vector(),StructNameT(StructTemplateNameT(StrI("HashMap")),Vector(_)))))))) => {
         vpass()
       }
       case _ =>
@@ -694,4 +493,16 @@ class FunctionCompilerOrdinaryOrTemplatedLayer(
 
     header
   }
+
+  private def assembleInitialSendsFromArgs(callRange: RangeS, function: FunctionA, args: Vector[Option[CoordT]]):
+  Vector[InitialSend] = {
+    function.params.map(_.pattern.coordRune.get).zip(args).zipWithIndex
+      .flatMap({
+        case ((_, None), _) => None
+        case ((paramRune, Some(argTemplata)), argIndex) => {
+          Some(InitialSend(RuneUsage(callRange, ArgumentRuneS(argIndex)), paramRune, CoordTemplata(argTemplata)))
+        }
+      })
+  }
+
 }

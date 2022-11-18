@@ -14,7 +14,7 @@ import OverloadResolver.{FindFunctionFailure, IFindFunctionFailureReason, InferF
 import dev.vale.highertyping.{FunctionA, HigherTypingErrorHumanizer}
 import dev.vale.typing.ast.{AbstractT, FunctionBannerT, FunctionCalleeCandidate, HeaderCalleeCandidate, ICalleeCandidate, PrototypeT, SignatureT}
 import dev.vale.typing.infer.{BadIsaSubKind, BadIsaSuperKind, CallResultWasntExpectedType, CantCheckPlaceholder, CantGetComponentsOfPlaceholderPrototype, CantShareMutable, CouldntFindFunction, CouldntResolveKind, ITypingPassSolverError, IsaFailed, KindIsNotConcrete, KindIsNotInterface, LookupFailed, NoAncestorsSatisfyCall, OneOfFailed, OwnershipDidntMatch, ReceivingDifferentOwnerships, ReturnTypeConflict, SendingNonCitizen, SendingNonIdenticalKinds, WrongNumberOfTemplateArgs}
-import dev.vale.typing.names.{AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, CitizenNameT, CitizenTemplateNameT, CodeVarNameT, FullNameT, FunctionBoundNameT, FunctionBoundTemplateNameT, FunctionNameT, FunctionTemplateNameT, INameT, IVarNameT, InterfaceTemplateNameT, LambdaCallFunctionNameT, LambdaCallFunctionTemplateNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT, PlaceholderNameT, PlaceholderTemplateNameT, StructTemplateNameT}
+import dev.vale.typing.names.{AnonymousSubstructNameT, AnonymousSubstructTemplateNameT, CitizenNameT, CitizenTemplateNameT, CodeVarNameT, IdT, FunctionBoundNameT, FunctionBoundTemplateNameT, FunctionNameT, FunctionTemplateNameT, INameT, IVarNameT, InterfaceTemplateNameT, LambdaCallFunctionNameT, LambdaCallFunctionTemplateNameT, LambdaCitizenNameT, LambdaCitizenTemplateNameT, PlaceholderNameT, PlaceholderTemplateNameT, StructTemplateNameT}
 import dev.vale.typing.templata._
 import dev.vale.typing.ast._
 import dev.vale.typing.templata.Conversions
@@ -56,7 +56,7 @@ object CompilerErrorHumanizer {
           "Cannot move out of member (" + name + ")"
         }
         case CantMutateFinalMember(range, struct, memberName) => {
-          "Cannot mutate final member '" + printableVarName(memberName.last) + "' of container " + humanizeTemplata(codeMap, KindTemplata(struct))
+          "Cannot mutate final member '" + printableVarName(memberName.localName) + "' of container " + humanizeTemplata(codeMap, KindTemplata(struct))
         }
         case CantMutateFinalElement(range, coord) => {
           "Cannot change a slot in array " + humanizeTemplata(codeMap, CoordTemplata(coord)) + " to point to a different element; it's an array of final references."
@@ -287,8 +287,8 @@ object CompilerErrorHumanizer {
       case StructTT(f) => printableFullName(f)
     }
   }
-  private def printableFullName(fullName2: FullNameT[INameT]): String = {
-    fullName2.last match {
+  private def printableFullName(fullName2: IdT[INameT]): String = {
+    fullName2.localName match {
       case CitizenNameT(humanName, templateArgs) => humanName + (if (templateArgs.isEmpty) "" else "<" + templateArgs.map(_.toString.mkString) + ">")
       case x => x.toString
     }
@@ -550,9 +550,9 @@ object CompilerErrorHumanizer {
 
   def humanizeName[T <: INameT](
     codeMap: FileCoordinateMap[String],
-    name: FullNameT[T]):
+    name: IdT[T]):
   String = {
-    humanizeName(codeMap, name.last)
+    humanizeName(codeMap, name.localName)
   }
 
   def humanizeName(

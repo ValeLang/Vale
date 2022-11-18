@@ -11,7 +11,7 @@ import dev.vale.typing.citizen.StructCompiler
 import dev.vale.typing.env.{FunctionEnvEntry, IEnvEntry, ImplEnvEntry, StructEnvEntry}
 import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.macros.citizen._
-import dev.vale.typing.names.{FullNameT, INameT, NameTranslator}
+import dev.vale.typing.names.{IdT, INameT, NameTranslator}
 import dev.vale.typing.types.MutabilityT
 import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing.patterns._
@@ -35,10 +35,7 @@ class AnonymousInterfaceMacro(
     overloadCompiler: OverloadResolver,
     structCompiler: StructCompiler,
     structConstructorMacro: StructConstructorMacro,
-    structDropMacro: StructDropMacro,
-//    structFreeMacro: StructFreeMacro,
-//    interfaceFreeMacro: InterfaceFreeMacro,
-    implDropMacro: ImplDropMacro
+    structDropMacro: StructDropMacro
 ) extends IOnInterfaceDefinedMacro {
 
   val macroName: StrI = keywords.DeriveAnonymousSubstruct
@@ -49,7 +46,7 @@ class AnonymousInterfaceMacro(
 //    vimpl()
 //  }
 
-  override def getInterfaceSiblingEntries(interfaceName: FullNameT[INameT], interfaceA: InterfaceA): Vector[(FullNameT[INameT], IEnvEntry)] = {
+  override def getInterfaceSiblingEntries(interfaceName: IdT[INameT], interfaceA: InterfaceA): Vector[(IdT[INameT], IEnvEntry)] = {
     if (interfaceA.attributes.contains(SealedS)) {
       return Vector()
     }
@@ -64,7 +61,7 @@ class AnonymousInterfaceMacro(
       })
 
     val structNameS = interner.intern(AnonymousSubstructTemplateNameS(interfaceA.name))
-    val structNameT = interfaceName.copy(last = nameTranslator.translateNameStep(structNameS))
+    val structNameT = interfaceName.copy(localName = nameTranslator.translateNameStep(structNameS))
     val structA = makeStruct(interfaceA, memberRunes, members, structNameS)
 
     val moreEntries =
@@ -75,7 +72,7 @@ class AnonymousInterfaceMacro(
 
     val forwarderMethods =
       interfaceA.internalMethods.zip(memberRunes).zipWithIndex.map({ case ((method, rune), methodIndex) =>
-        val name = structNameT.copy(last = nameTranslator.translateGenericFunctionName(method.name))
+        val name = structNameT.copy(localName = nameTranslator.translateGenericFunctionName(method.name))
         (name, FunctionEnvEntry(makeForwarderFunction(structNameS, interfaceA, structA, method, methodIndex)))
       })
 
@@ -131,16 +128,15 @@ class AnonymousInterfaceMacro(
         structA.name.getImpreciseName(interner),
         interfaceKindRuneS,
         interfaceA.name.getImpreciseName(interner))
-    val implNameT = structNameT.copy(last = nameTranslator.translateNameStep(implA.name))
-    val implSiblingEntries =
-      implDropMacro.getImplSiblingEntries(implNameT, implA)
+    val implNameT = structNameT.copy(localName = nameTranslator.translateNameStep(implA.name))
+//    val implSiblingEntries =
+//      implDropMacro.getImplSiblingEntries(implNameT, implA)
 
-    Vector[(FullNameT[INameT], IEnvEntry)](
+    Vector[(IdT[INameT], IEnvEntry)](
       (structNameT, StructEnvEntry(structA)),
       (implNameT, ImplEnvEntry(implA))) ++
       moreEntries ++
-      forwarderMethods ++
-      implSiblingEntries
+      forwarderMethods
   }
 
   private def mapRunes(rule: IRulexSR, func: IRuneS => IRuneS): IRulexSR = {

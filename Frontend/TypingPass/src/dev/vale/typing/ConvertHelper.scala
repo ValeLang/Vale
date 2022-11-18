@@ -57,13 +57,13 @@ class ConvertHelper(
       sourceExpr: ReferenceExpressionTE,
       targetPointerType: CoordT):
   (ReferenceExpressionTE) = {
-    val sourcePointerType = sourceExpr.result.reference
+    val sourcePointerType = sourceExpr.result.coord
 
-    if (sourceExpr.result.reference == targetPointerType) {
+    if (sourceExpr.result.coord == targetPointerType) {
       return sourceExpr
     }
 
-    sourceExpr.result.reference.kind match {
+    sourceExpr.result.coord.kind match {
       case NeverT(_) => return sourceExpr
       case _ =>
     }

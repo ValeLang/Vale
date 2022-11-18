@@ -168,7 +168,7 @@ class AfterRegionsTests extends FunSuite with Matchers {
         |""".stripMargin
     )
     val coutputs = compile.expectCompilerOutputs()
-    coutputs.lookupFunction("bork").header.fullName.last.templateArgs.last match {
+    coutputs.lookupFunction("bork").header.fullName.localName.templateArgs.last match {
       case CoordTemplata(CoordT(OwnT, _)) =>
     }
   }
@@ -197,8 +197,8 @@ class AfterRegionsTests extends FunSuite with Matchers {
         |""".stripMargin
     )
     val coutputs = compile.expectCompilerOutputs()
-    coutputs.lookupFunction("genericGetFuel").header.fullName.last.templateArgs.last match {
-      case CoordTemplata(CoordT(_,StructTT(FullNameT(_,_,StructNameT(StructTemplateNameT(StrI("Firefly")),_))))) =>
+    coutputs.lookupFunction("genericGetFuel").header.fullName.localName.templateArgs.last match {
+      case CoordTemplata(CoordT(_,StructTT(IdT(_,_,StructNameT(StructTemplateNameT(StrI("Firefly")),_))))) =>
     }
   }
 
@@ -224,7 +224,7 @@ class AfterRegionsTests extends FunSuite with Matchers {
 
     val lambdaFuncs =
       coutputs.functions.filter(func => {
-        func.header.fullName.last.template match {
+        func.header.fullName.localName.template match {
           case FunctionTemplateNameT(StrI("__call"), _) => true
           case _ => false
         }
@@ -256,11 +256,11 @@ class AfterRegionsTests extends FunSuite with Matchers {
     val coutputs = compile.expectCompilerOutputs()
     val moo = coutputs.lookupFunction("moo")
     val variable = Collector.only(moo, { case LetNormalTE(v, _) => v })
-    variable.reference match {
+    variable.coord match {
       case CoordT(
       OwnT,
       StructTT(
-      FullNameT(_,_,
+      IdT(_,_,
       StructNameT(
       StructTemplateNameT(StrI("MyHashSet")),
       Vector(
@@ -284,7 +284,7 @@ class AfterRegionsTests extends FunSuite with Matchers {
       case CoordT(
       OwnT,
       InterfaceTT(
-      FullNameT(_,_,
+      IdT(_,_,
       InterfaceNameT(
       InterfaceTemplateNameT(StrI("MyInterface")),
       Vector(

@@ -14,7 +14,7 @@ import FunctionCompiler.IEvaluateFunctionResult
 import dev.vale.typing.ast.{FunctionBannerT, FunctionHeaderT, PrototypeT}
 import dev.vale.typing.env.{AddressibleClosureVariableT, BuildingFunctionEnvironmentWithClosureds, IEnvEntry, IEnvironment, IVariableT, ReferenceClosureVariableT, TemplataEnvEntry, TemplatasStore}
 import dev.vale.typing.{CompilerOutputs, ConvertHelper, InferCompiler, TemplataCompiler, TypingPassOptions, env}
-import dev.vale.typing.names.{BuildingFunctionNameWithClosuredsT, FullNameT, IFunctionTemplateNameT, INameT, NameTranslator}
+import dev.vale.typing.names.{BuildingFunctionNameWithClosuredsT, IdT, IFunctionTemplateNameT, INameT, NameTranslator}
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 
@@ -37,7 +37,7 @@ class FunctionCompilerClosureOrLightLayer(
     structCompiler: StructCompiler,
     delegate: IFunctionCompilerDelegate) {
   val ordinaryOrTemplatedLayer =
-    new FunctionCompilerOrdinaryOrTemplatedLayer(
+    new FunctionCompilerSolvingLayer(
       opts, interner, keywords, nameTranslator, templataCompiler, inferCompiler, convertHelper, structCompiler, delegate)
 //
 //  // This is for the early stages of Compiler when it's scanning banners to put in
@@ -406,7 +406,7 @@ class FunctionCompilerClosureOrLightLayer(
   private def makeEnvWithoutClosureStuff(
     outerEnv: IEnvironment,
     function: FunctionA,
-    name: FullNameT[IFunctionTemplateNameT],
+    name: IdT[IFunctionTemplateNameT],
     isRootCompilingDenizen: Boolean
   ): BuildingFunctionEnvironmentWithClosureds = {
     env.BuildingFunctionEnvironmentWithClosureds(
@@ -454,7 +454,7 @@ class FunctionCompilerClosureOrLightLayer(
       })
     val entries =
       Vector[(INameT, IEnvEntry)](
-        closureStructRef.fullName.last ->
+        closureStructRef.fullName.localName ->
           TemplataEnvEntry(KindTemplata(closureStructRef)))
     (variables, entries)
   }

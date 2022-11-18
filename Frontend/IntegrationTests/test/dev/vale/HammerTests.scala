@@ -1,7 +1,7 @@
 package dev.vale
 
 import dev.vale.passmanager.FullCompilationOptions
-import dev.vale.finalast.{BlockH, CallH, ConsecutorH, ConstantIntH, InlineH, IntH, NeverH, PrototypeH, ReferenceH, ShareH}
+import dev.vale.finalast.{BlockH, CallH, ConsecutorH, ConstantIntH, InlineH, IntHT, NeverHT, PrototypeH, CoordH, ShareH}
 import dev.vale.typing.types.ShareT
 import dev.vale.testvm.PanicException
 import dev.vale.simplifying._
@@ -64,7 +64,7 @@ class HammerTests extends FunSuite with Matchers {
 
     val mySome = packageH.structs.find(_.fullName.toFullString() == """test::C(CT("MySome"),[TR(R(@,<,i(32)))])""").get;
     vassert(mySome.members.size == 1);
-    vassert(mySome.members.head.tyype == ReferenceH[IntH](ShareH, InlineH, IntH.i32))
+    vassert(mySome.members.head.tyype == CoordH[IntHT](ShareH, InlineH, IntHT.i32))
 
     val myNone = packageH.structs.find(_.fullName.toFullString() == """test::C(CT("MyNone"),[TR(R(@,<,i(32)))])""").get;
     vassert(myNone.members.isEmpty);
@@ -102,7 +102,7 @@ class HammerTests extends FunSuite with Matchers {
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD(compile.interner, compile.keywords))
     val main = packageH.lookupFunction("main")
     main.body match {
-      case BlockH(CallH(PrototypeH(fullNameH, Vector(), ReferenceH(_, _, NeverH(_))), Vector())) => {
+      case BlockH(CallH(PrototypeH(fullNameH, Vector(), CoordH(_, _, NeverHT(_))), Vector())) => {
         vassert(fullNameH.toFullString().contains("__vbi_panic"))
       }
     }
@@ -125,7 +125,7 @@ class HammerTests extends FunSuite with Matchers {
           ConsecutorH(Vector(
             intExpr,
             CallH(
-              PrototypeH(_,Vector(),ReferenceH(_,_,NeverH(_))),
+              PrototypeH(_,Vector(),CoordH(_,_,NeverHT(_))),
               Vector())))) => {
           intExpr
         }

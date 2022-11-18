@@ -1,6 +1,6 @@
 package dev.vale.testvm
 
-import dev.vale.finalast.{ArgumentH, ArrayCapacityH, ArrayLengthH, AsSubtypeH, BlockH, BoolH, BorrowH, BorrowToWeakH, BreakH, CallH, ConsecutorH, ConstantBoolH, ConstantF64H, ConstantIntH, ConstantStrH, ConstantVoidH, DestroyH, DestroyImmRuntimeSizedArrayH, DestroyMutRuntimeSizedArrayH, DestroyStaticSizedArrayIntoFunctionH, DestroyStaticSizedArrayIntoLocalsH, DiscardH, ExpressionH, FloatH, IfH, InlineH, IntH, InterfaceCallH, InterfaceRefH, IsSameInstanceH, KindH, LocalLoadH, LocalStoreH, LocationH, LockWeakH, MemberLoadH, MemberStoreH, NewArrayFromValuesH, NewImmRuntimeSizedArrayH, NewMutRuntimeSizedArrayH, NewStructH, OwnH, PopRuntimeSizedArrayH, ProgramH, PrototypeH, PushRuntimeSizedArrayH, ReferenceH, ReturnH, RuntimeSizedArrayHT, RuntimeSizedArrayLoadH, RuntimeSizedArrayStoreH, ShareH, StackifyH, StaticArrayFromCallableH, StaticSizedArrayHT, StaticSizedArrayLoadH, StaticSizedArrayStoreH, StrH, StructRefH, StructToInterfaceUpcastH, UnstackifyH, VoidH, WeakH, WhileH, YonderH}
+import dev.vale.finalast.{ArgumentH, ArrayCapacityH, ArrayLengthH, AsSubtypeH, BlockH, BoolHT, BorrowH, BorrowToWeakH, BreakH, CallH, ConsecutorH, ConstantBoolH, ConstantF64H, ConstantIntH, ConstantStrH, ConstantVoidH, DestroyH, DestroyImmRuntimeSizedArrayH, DestroyMutRuntimeSizedArrayH, DestroyStaticSizedArrayIntoFunctionH, DestroyStaticSizedArrayIntoLocalsH, DiscardH, ExpressionH, FloatHT, IfH, InlineH, IntHT, InterfaceCallH, InterfaceHT, IsSameInstanceH, KindHT, LocalLoadH, LocalStoreH, LocationH, LockWeakH, MemberLoadH, MemberStoreH, NewArrayFromValuesH, NewImmRuntimeSizedArrayH, NewMutRuntimeSizedArrayH, NewStructH, OwnH, PopRuntimeSizedArrayH, ProgramH, PrototypeH, PushRuntimeSizedArrayH, CoordH, ReturnH, RuntimeSizedArrayHT, RuntimeSizedArrayLoadH, RuntimeSizedArrayStoreH, ShareH, StackifyH, StaticArrayFromCallableH, StaticSizedArrayHT, StaticSizedArrayLoadH, StaticSizedArrayStoreH, StrHT, StructHT, StructToInterfaceUpcastH, UnstackifyH, VoidHT, WeakH, WhileH, YonderH}
 import dev.vale.{vassert, vassertOne, vassertSome, vcurious, vfail, vimpl, vwat, finalast => m}
 import dev.vale.finalast._
 
@@ -23,7 +23,7 @@ object ExpressionVivem {
     ref
   }
 
-  def takeArgument(heap: Heap, callId: CallId, argumentIndex: Int, resultType: ReferenceH[KindH]) = {
+  def takeArgument(heap: Heap, callId: CallId, argumentIndex: Int, resultType: CoordH[KindHT]) = {
     val ref = heap.takeArgument(callId, argumentIndex, resultType)
     heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, resultType.ownership), ref)
     ref
@@ -35,7 +35,7 @@ object ExpressionVivem {
     result.returnRef
   }
 
-  def upcast(sourceReference: ReferenceV, targetInterfaceRef: InterfaceRefH): ReferenceV = {
+  def upcast(sourceReference: ReferenceV, targetInterfaceRef: InterfaceHT): ReferenceV = {
     ReferenceV(
       sourceReference.actualKind,
       RRKind(targetInterfaceRef),
@@ -50,7 +50,7 @@ object ExpressionVivem {
     stdout: (String => Unit),
     heap: Heap,
     expressionId: ExpressionId,
-    node: ExpressionH[KindH] // rename to expression
+    node: ExpressionH[KindHT] // rename to expression
   ): INodeExecuteResult = {
     heap.vivemDout.print("<" + node.getClass.getSimpleName + "> ")
     val result = executeNodeInner(programH, stdin, stdout, heap, expressionId, node)
@@ -64,7 +64,7 @@ object ExpressionVivem {
                    stdout: (String => Unit),
                    heap: Heap,
                    expressionId: ExpressionId,
-                   node: ExpressionH[KindH] // rename to expression
+                   node: ExpressionH[KindHT] // rename to expression
   ): INodeExecuteResult = {
     val callId = expressionId.callId
 
@@ -325,7 +325,7 @@ object ExpressionVivem {
         vassert(weakRef.ownership == WeakH)
 
         if (heap.containsLiveObject(weakRef)) {
-          val expectedRef = ReferenceH(BorrowH, YonderH, sourceExpr.resultType.kind)
+          val expectedRef = CoordH(BorrowH, YonderH, sourceExpr.resultType.kind)
           val constraintRef = heap.transmute(weakRef, sourceExpr.resultType, expectedRef)
 
           heap.vivemDout.println()
@@ -1034,7 +1034,7 @@ object ExpressionVivem {
       heap: Heap,
       undeviewedArgReferences: Vector[ReferenceV],
       virtualParamIndex: Int,
-      interfaceRefH: InterfaceRefH,
+      interfaceRefH: InterfaceHT,
       indexInEdge: Int,
       functionType: PrototypeH) = {
 
@@ -1092,7 +1092,7 @@ object ExpressionVivem {
     stdout: String => Unit,
     stdin: () => String,
     callId: CallId,
-    expectedReference: ReferenceH[KindH],
+    expectedReference: CoordH[KindHT],
     actualReference: ReferenceV
   ): Unit = {
     heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId, actualReference.ownership), actualReference)
@@ -1105,7 +1105,7 @@ object ExpressionVivem {
     stdout: String => Unit,
     stdin: () => String,
     callId: CallId,
-    expectedReference: ReferenceH[KindH],
+    expectedReference: CoordH[KindHT],
     actualReference: ReferenceV
   ): Unit = {
 
@@ -1118,7 +1118,7 @@ object ExpressionVivem {
         case BorrowH => // Do nothing.
         case ShareH => {
           expectedReference.kind match {
-            case VoidH() | IntH(_) | BoolH() | StrH() | FloatH() => {
+            case VoidHT() | IntHT(_) | BoolHT() | StrHT() | FloatHT() => {
               heap.zero(actualReference)
               heap.deallocateIfNoWeakRefs(actualReference)
             }
@@ -1135,7 +1135,7 @@ object ExpressionVivem {
             //              vassert(returnRef.actualKind.hamut == ProgramH.emptyTupleStructRef)
             //              discard(programH, heap, stdout, stdin, callId, prototypeH.returnType, returnRef)
             //            }
-            case sr @ StructRefH(_) => {
+            case sr @ StructHT(_) => {
               val structDef = programH.lookupStruct(sr)
               val memberExpectedTypes = structDef.members.map(_.tyype)
               val memberRefs = heap.destructure(actualReference)
@@ -1144,9 +1144,9 @@ object ExpressionVivem {
                 cleanup(programH, heap, stdout, stdin, callId, memberExpectedType, memberRef)
               })
             }
-            case ir @ InterfaceRefH(_) => {
+            case ir @ InterfaceHT(_) => {
               val actualConcreteType =
-                actualReference.actualKind.hamut match { case sr @ StructRefH(_) => sr case other => vwat(other) }
+                actualReference.actualKind.hamut match { case sr @ StructHT(_) => sr case other => vwat(other) }
               val structDef = programH.lookupStruct(actualConcreteType)
               val memberExpectedTypes = structDef.members.map(_.tyype)
               val memberRefs = heap.destructure(actualReference)

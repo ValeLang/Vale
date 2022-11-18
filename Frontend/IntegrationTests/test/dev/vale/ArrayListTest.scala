@@ -2,7 +2,7 @@ package dev.vale
 
 import dev.vale.typing.ast.LetNormalTE
 import dev.vale.typing.env.AddressibleLocalVariableT
-import dev.vale.typing.names.{CodeVarNameT, FullNameT}
+import dev.vale.typing.names.{CodeVarNameT, IdT}
 import dev.vale.typing.types.VaryingT
 import dev.vale.typing.names.CodeVarNameT
 import dev.vale.von.VonInt
@@ -153,7 +153,7 @@ class ArrayListTest extends FunSuite with Matchers {
     val coutputs = compile.expectCompilerOutputs()
     val main = coutputs.lookupFunction("main");
     Collector.only(main, {
-      case LetNormalTE(AddressibleLocalVariableT(FullNameT(_, _, CodeVarNameT(StrI("m"))), VaryingT, _), _) => {
+      case LetNormalTE(AddressibleLocalVariableT(IdT(_, _, CodeVarNameT(StrI("m"))), VaryingT, _), _) => {
         vpass()
       }
     })
@@ -178,7 +178,7 @@ class ArrayListTest extends FunSuite with Matchers {
 
     val coutputs = compile.expectCompilerOutputs()
     val main = coutputs.lookupFunction("main");
-    Collector.only(main, { case LetNormalTE(AddressibleLocalVariableT(FullNameT(_, _, CodeVarNameT(StrI("m"))), VaryingT, _), _) => })
+    Collector.only(main, { case LetNormalTE(AddressibleLocalVariableT(IdT(_, _, CodeVarNameT(StrI("m"))), VaryingT, _), _) => })
 
     compile.evalForKind(Vector()) match { case VonInt(6) => }
   }

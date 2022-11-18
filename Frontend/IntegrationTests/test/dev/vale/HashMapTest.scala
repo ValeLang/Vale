@@ -8,7 +8,7 @@ import org.scalatest.{FunSuite, Matchers}
 
 class HashMapTest extends FunSuite with Matchers {
   test("Monomorphize problem") {
-    // See NBIFP, the monomorphizer has to grab bounds from its params too
+    // See NBIFP, the instantiator has to grab bounds from its params too
 
     val compile = RunCompilation.test(
       """

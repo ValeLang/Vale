@@ -11,7 +11,6 @@ fi
 shift;
 
 LLVM_MAJOR_VER=14
-LLVM_FULL_VER=14.0.6_1
 
 WHICH_TESTS="$1"
 if [ "$WHICH_TESTS" == "--test=none" ]
@@ -38,40 +37,37 @@ then
 fi
 shift;
 
-LLVM_CMAKE_DIR=$1
-if [ "$LLVM_CMAKE_DIR" == "" ]
+LLVM_OUTER_DIR=$1
+if [ "$LLVM_OUTER_DIR" == "" ]
 then
-  if [ -d "/usr/local/Cellar/llvm@$LLVM_MAJOR_VER" ]
+  LLVM_PREFIX=`brew --prefix llvm@$LLVM_MAJOR_VER`
+  LLVM_DIR=`readlink -f $LLVM_PREFIX`
+
+  if [ ! -d "$LLVM_DIR" ]
   then
-    LLVM_OUTER_DIR="/usr/local/Cellar/llvm@$LLVM_MAJOR_VER"
-  elif [ -d "/usr/local/Cellar/llvm" ]
-  then
-    LLVM_OUTER_DIR="/usr/local/Cellar/llvm"
-  else
-    echo "No LLVM override specified, and couldn't find /usr/local/Cellar/llvm@$LLVM_MAJOR_VER or /usr/local/Cellar/llvm!"
+    echo "No LLVM override specified, and couldn't find brew cellar for LLVM."
     exit 1
   fi
 
-  if [ ! -d "$LLVM_OUTER_DIR/$LLVM_FULL_VER" ]
-  then
-    echo "$LLVM_OUTER_DIR doesn't contain $LLVM_FULL_VER. Has instead:"
-    ls $LLVM_OUTER_DIR
-    exit 1
-  fi
-
-  LLVM_CMAKE_DIR="$LLVM_OUTER_DIR/$LLVM_FULL_VER/lib/cmake/llvm"
-  
+  LLVM_CMAKE_DIR="$LLVM_DIR/lib/cmake/llvm"
   if [ ! -d "$LLVM_CMAKE_DIR" ]
   then
-    echo "$LLVM_OUTER_DIR/$LLVM_FULL_VER doesn't contain ./lib/cmake/llvm!"
+    echo "$LLVM_DIR doesn't contain ./lib/cmake/llvm!"
     exit 1
   fi
-
-  echo "No LLVM override, using one in $LLVM_CMAKE_DIR"
 else
-  echo "Using LLVM dir $LLVM_CMAKE_DIR"
+  LLVM_CMAKE_DIR="$LLVM_OUTER_DIR/lib/cmake/llvm"
   shift;
 fi
+
+
+if [ ! -d "$LLVM_CMAKE_DIR" ]
+then
+  echo "$LLVM_CMAKE_DIR doesn't exist!"
+  exit 1
+fi
+echo "Using LLVM dir $LLVM_CMAKE_DIR"
+
 
 touch ~/.zshrc
 source ~/.zshrc
@@ -84,6 +80,7 @@ sbt assembly || { echo 'Frontend build failed, aborting.' ; exit 1; }
 cd ../Backend
 
 echo Generating Backend...
+echo cmake -B build -DLLVM_DIR="$LLVM_CMAKE_DIR"
 cmake -B build -DLLVM_DIR="$LLVM_CMAKE_DIR" || { echo 'Backend generate failed, aborting.' ; exit 1; }
 
 echo Compiling Backend...

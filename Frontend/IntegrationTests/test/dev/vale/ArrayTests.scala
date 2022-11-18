@@ -5,7 +5,7 @@ import dev.vale.parsing.ast.ImmutableP
 import dev.vale.typing.NewImmRSANeedsCallable
 import dev.vale.typing.ast.{LetNormalTE, NewImmRuntimeSizedArrayTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE}
 import dev.vale.typing.env.ReferenceLocalVariableT
-import dev.vale.typing.names.{CodeVarNameT, FullNameT}
+import dev.vale.typing.names.{CodeVarNameT, IdT}
 import dev.vale.typing.types._
 import dev.vale.typing._
 import dev.vale.typing.ast._
@@ -331,7 +331,7 @@ class ArrayTests extends FunSuite with Matchers {
     val coutputs = compile.expectCompilerOutputs()
     val main = coutputs.lookupFunction("main")
     Collector.only(main, {
-      case LetNormalTE(ReferenceLocalVariableT(FullNameT(_,Vector(_),CodeVarNameT(StrI("a"))),_,CoordT(OwnT,contentsRuntimeSizedArrayTT(MutabilityTemplata(MutableT),CoordT(ShareT,IntT(_))))), _) =>
+      case LetNormalTE(ReferenceLocalVariableT(IdT(_,Vector(_),CodeVarNameT(StrI("a"))),_,CoordT(OwnT,contentsRuntimeSizedArrayTT(MutabilityTemplata(MutableT),CoordT(ShareT,IntT(_))))), _) =>
     })
 
     compile.evalForKind(Vector()) match { case VonInt(42) => }

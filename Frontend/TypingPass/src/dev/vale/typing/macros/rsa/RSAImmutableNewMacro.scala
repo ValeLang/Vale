@@ -3,7 +3,7 @@ package dev.vale.typing.macros.rsa
 import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing._
 import dev.vale.typing.{ArrayCompiler, CompileErrorExceptionT, CompilerErrorHumanizer, CompilerOutputs, CouldntFindFunctionToCallT, OverloadResolver, ast}
-import dev.vale.typing.ast.{ArgLookupTE, BlockTE, FunctionHeaderT, FunctionT, LocationInFunctionEnvironment, NewImmRuntimeSizedArrayTE, ParameterT, ReturnTE}
+import dev.vale.typing.ast.{ArgLookupTE, BlockTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironment, NewImmRuntimeSizedArrayTE, ParameterT, ReturnTE}
 import dev.vale.typing.env.{FunctionEnvironment, TemplataLookupContext}
 import dev.vale.typing.macros.IFunctionBodyMacro
 import dev.vale.typing.templata._
@@ -89,7 +89,7 @@ class RSAImmutableNewMacro(
         case Ok(x) => x
       }
 
-    vassert(generatorPrototype.function.prototype.returnType.ownership == ShareT)
+    vassert(generatorPrototype.prototype.prototype.returnType.ownership == ShareT)
 
     val sizeTE = ArgLookupTE(0, paramCoords(0).tyype)
     val generatorTE = ArgLookupTE(1, paramCoords(1).tyype)
@@ -101,7 +101,7 @@ class RSAImmutableNewMacro(
             arrayTT,
             sizeTE,
             generatorTE,
-            generatorPrototype.function.prototype)))
+            generatorPrototype.prototype.prototype)))
     (header, body)
   }
 }

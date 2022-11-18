@@ -1,6 +1,6 @@
 package dev.vale
 
-import dev.vale.postparsing.{BlockSE, BodySE, CodeBodyS, CodeVarNameS, ConsecutorSE, LocalS, NotUsed}
+import dev.vale.postparsing._
 import dev.vale.postparsing._
 import dev.vale.typing._
 import dev.vale.typing.types.BoolT
@@ -19,7 +19,9 @@ class BlockTests extends FunSuite with Matchers {
       """.stripMargin)
     val fileCoord =
       compile.interner.intern(FileCoordinate(
-        compile.interner.intern(PackageCoordinate("test", Vector.empty)),
+        compile.interner.intern(PackageCoordinate(
+          compile.interner.intern(StrI("test")),
+          Vector.empty)),
         "0.vale"))
     val scoutput = compile.getScoutput().getOrDie().fileCoordToContents(fileCoord)
     val main = scoutput.lookupFunction("main")
@@ -39,14 +41,16 @@ class BlockTests extends FunSuite with Matchers {
       """.stripMargin)
     val fileCoord =
       compile.interner.intern(FileCoordinate(
-        compile.interner.intern(PackageCoordinate("test", Vector.empty)),
+        compile.interner.intern(PackageCoordinate(
+          compile.interner.intern(StrI("test")),
+          Vector.empty)),
         "0.vale"))
     val scoutput = compile.getScoutput().getOrDie().fileCoordToContents(fileCoord)
     val main = scoutput.lookupFunction("main")
     val block = main.body match { case CodeBodyS(BodySE(_, _,BlockSE(_, _, ConsecutorSE(Vector(b @ BlockSE(_, _,_), _))))) => b }
     vassert(block.locals.size == 1)
     block.locals.head match {
-      case LocalS(CodeVarNameS("y"), NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+      case LocalS(CodeVarNameS(StrI("y")), NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
 
     compile.evalForKind(Vector()) match { case VonInt(3) => }

@@ -1,8 +1,17 @@
 
-struct Functor1<M, F> M
-where M Mutability, F Prot {
+// This is mainly used for arrays.
+// It's not particularly great because it's got that `drop` name hardcoded in there.
+// Hopefully soon we can upgrade our generics system to not need this, see CFWG.
+func __call<P1 Ref, R Ref>(v void, param P1) R
+where F Prot = func drop(P1)R {
+  F(param)
 }
-func __call<M, F>(self &Functor1<M, F>, param1 Param1Type) RetType
-where F Prot = Prot[_, Refs(Param1Type), RetType], Param1Type Ref, RetType Ref {
-  F(param1)
-}
+
+
+
+// struct Functor1<P1 Ref, R Ref, F Prot = func(P1)R> imm { }
+//
+// func __call<F Prot>(self &Functor1<P1, R, F>, param1 P1) R
+// where P1 Ref, R Ref, F = Prot[_, R] {
+//  F(param1)
+// }

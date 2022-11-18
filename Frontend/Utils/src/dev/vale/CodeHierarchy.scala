@@ -6,32 +6,34 @@ import scala.collection.mutable
 case class FileCoordinate(packageCoordinate: PackageCoordinate, filepath: String) extends IInterning {
   def isInternal = packageCoordinate.isInternal
   def isTest(): Boolean = packageCoordinate.isTest && filepath == "test.vale"
-  def compareTo(that: FileCoordinate) = FileCoordinate.compare(this, that)
+//  def compareTo(that: FileCoordinate) = FileCoordinate.compare(this, that)
 }
 
-object FileCoordinate extends Ordering[FileCoordinate] {
+object FileCoordinate {// extends Ordering[FileCoordinate] {
 
   def test(interner: Interner): FileCoordinate = {
     interner.intern(FileCoordinate(
-      interner.intern(PackageCoordinate("test", Vector.empty)),
+      interner.intern(PackageCoordinate(
+        interner.intern(StrI("test")),
+        Vector.empty)),
       "test.vale"))
   }
 
-  override def compare(a: FileCoordinate, b: FileCoordinate):Int = {
-    val diff = a.packageCoordinate.compareTo(b.packageCoordinate)
-    if (diff != 0) {
-      diff
-    } else {
-      a.filepath.compareTo(b.filepath)
-    }
-  }
+//  override def compare(a: FileCoordinate, b: FileCoordinate):Int = {
+//    val diff = a.packageCoordinate.compareTo(b.packageCoordinate)
+//    if (diff != 0) {
+//      diff
+//    } else {
+//      a.filepath.compareTo(b.filepath)
+//    }
+//  }
 }
 
-case class PackageCoordinate(module: String, packages: Vector[String]) extends IInterning {
-  def isInternal = module == ""
-  def isTest = module == "test" && packages == Vector()
+case class PackageCoordinate(module: StrI, packages: Vector[StrI]) extends IInterning {
+  def isInternal = module.str == ""
+  def isTest = module.str == "test" && packages == Vector()
 
-  def compareTo(that: PackageCoordinate) = PackageCoordinate.compare(this, that)
+//  def compareTo(that: PackageCoordinate) = PackageCoordinate.compare(this, that)
 
   def parent(interner: Interner): Option[PackageCoordinate] = {
     if (packages.isEmpty) {
@@ -42,28 +44,26 @@ case class PackageCoordinate(module: String, packages: Vector[String]) extends I
   }
 }
 
-object PackageCoordinate extends Ordering[PackageCoordinate] {
-  def TEST_TLD(interner: Interner): PackageCoordinate = interner.intern(PackageCoordinate("test", Vector.empty))
+object PackageCoordinate {// extends Ordering[PackageCoordinate] {
+  def TEST_TLD(interner: Interner, keywords: Keywords): PackageCoordinate = interner.intern(PackageCoordinate(interner.intern(StrI("test")), Vector.empty))
 
-  def BUILTIN(interner: Interner): PackageCoordinate = interner.intern(PackageCoordinate("", Vector.empty))
+  def BUILTIN(interner: Interner, keywords: Keywords): PackageCoordinate = interner.intern(PackageCoordinate(keywords.emptyString, Vector.empty))
 
-  def internal(interner: Interner): PackageCoordinate = interner.intern(PackageCoordinate("", Vector.empty))
-
-  override def compare(a: PackageCoordinate, b: PackageCoordinate):Int = {
-    val lenDiff = a.packages.length - b.packages.length
-    if (lenDiff != 0) {
-      return lenDiff
-    }
-    val stepsDiff =
-      a.packages.zip(b.packages).foldLeft(0)({
-        case (0, (stepA, stepB)) => stepA.compareTo(stepB)
-        case (diffSoFar, _) => diffSoFar
-      })
-    if (stepsDiff != 0) {
-      return stepsDiff
-    }
-    return a.module.compareTo(b.module)
-  }
+  def internal(interner: Interner, keywords: Keywords): PackageCoordinate = interner.intern(PackageCoordinate(keywords.emptyString, Vector.empty))
+//
+//  override def compare(a: PackageCoordinate, b: PackageCoordinate):Int = {
+//    val lenDiff = a.packages.length - b.packages.length
+//    if (lenDiff != 0) {
+//      return lenDiff
+//    }
+//    a.packages.zip(b.packages).foreach({ case (stepA, stepB) =>
+//      val stepDiff = stepA.uid - stepB.uid
+//      if (stepDiff != 0L) {
+//        return U.sign(stepDiff)
+//      }
+//    })
+//    return U.sign(a.module.uid - b.module.uid)
+//  }
 }
 
 object FileCoordinateMap {
@@ -73,7 +73,7 @@ object FileCoordinateMap {
     result.put(
       interner.intern(FileCoordinate(
         interner.intern(PackageCoordinate(
-          TEST_MODULE, Vector.empty)),
+          interner.intern(StrI(TEST_MODULE)), Vector.empty)),
         "test.vale")),
       contents)
     result
@@ -87,7 +87,7 @@ object FileCoordinateMap {
       result.put(
         interner.intern(FileCoordinate(
           interner.intern(PackageCoordinate(
-            TEST_MODULE, Vector.empty)),
+            interner.intern(StrI(TEST_MODULE)), Vector.empty)),
           filepath)),
         contents)
     })

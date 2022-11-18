@@ -1,8 +1,9 @@
 package dev.vale.postparsing.rules
 
-import dev.vale.parsing.ast.{AnonymousRunePT, BoolPT, BorrowP, BorrowPT, CallPT, FunctionPT, ITemplexPT, InlinePT, IntPT, InterpretedPT, LocationPT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnershipPT, PackPT, PrototypePT, RangeP, RegionRunePT, RuntimeSizedArrayPT, StaticSizedArrayPT, StringPT, TuplePT, VariabilityPT}
-import dev.vale.{Interner, Profiler, RangeS}
-import dev.vale.postparsing.{CodeNameS, CodeRuneS, IEnvironment, IImpreciseNameS, IRuneS, ITemplataType, ImplicitRuneS, LocationInDenizenBuilder, PostParser, rules}
+import dev.vale.lexing.RangeL
+import dev.vale.parsing.ast.{AnonymousRunePT, BoolPT, BorrowP, BorrowPT, CallPT, FunctionPT, ITemplexPT, InlinePT, IntPT, InterpretedPT, LocationPT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnershipPT, PackPT, FuncPT, RegionRunePT, RuntimeSizedArrayPT, StaticSizedArrayPT, StringPT, TuplePT, VariabilityPT}
+import dev.vale.{Interner, Keywords, Profiler, RangeS, StrI}
+import dev.vale.postparsing._
 import dev.vale.parsing.ast._
 import dev.vale.postparsing._
 
@@ -10,7 +11,8 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 class TemplexScout(
-    interner: Interner) {
+    interner: Interner,
+  keywords: Keywords) {
   def addLiteralRule(
     lidb: LocationInDenizenBuilder,
     ruleBuilder: ArrayBuffer[IRulexSR],
@@ -58,13 +60,13 @@ class TemplexScout(
   }
 
   def translateTemplex(
-    env: IEnvironment,
+    env: IEnvironmentS,
     lidb: LocationInDenizenBuilder,
     ruleBuilder: ArrayBuffer[IRulexSR],
     templex: ITemplexPT):
   RuneUsage = {
     Profiler.frame(() => {
-      val evalRange = (range: RangeP) => PostParser.evalRange(env.file, range)
+      val evalRange = (range: RangeL) => PostParser.evalRange(env.file, range)
 
       translateValueTemplex(templex) match {
         case Some(x) => addLiteralRule(lidb.child(), ruleBuilder, evalRange(templex.range), x)
@@ -115,12 +117,12 @@ class TemplexScout(
                   evalRange(range),
                   resultRuneS,
                   translateTemplex(env, lidb.child(), ruleBuilder, template),
-                  args.map(translateTemplex(env, lidb.child(), ruleBuilder, _)).toArray)
+                  args.map(translateTemplex(env, lidb.child(), ruleBuilder, _)).toVector)
               resultRuneS
             }
             case FunctionPT(range, mutability, paramsPack, returnType) => {
               val resultRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
-              val templateNameRuneS = addLookupRule(lidb.child(), ruleBuilder, evalRange(range), interner.intern(CodeNameS("IFunction")))
+              val templateNameRuneS = addLookupRule(lidb.child(), ruleBuilder, evalRange(range), interner.intern(CodeNameS(keywords.IFUNCTION)))
               val mutabilityRuneS =
                 mutability match {
                   case None => addLiteralRule(lidb.child(), ruleBuilder, evalRange(range), rules.MutabilityLiteralSL(MutableP))
@@ -131,47 +133,56 @@ class TemplexScout(
                   evalRange(range),
                   resultRuneS,
                   templateNameRuneS,
-                  Array(
+                  Vector(
                     mutabilityRuneS,
                     translateTemplex(env, lidb.child(), ruleBuilder, paramsPack),
                     translateTemplex(env, lidb.child(), ruleBuilder, returnType)))
               resultRuneS
             }
-            case PrototypePT(range, NameP(nameRange, name), paramsP, returnTypeP) => {
-
-              val nameRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
-              ruleBuilder +=
-                LiteralSR(evalRange(nameRange), nameRuneS, StringLiteralSL(name))
-
+            case FuncPT(range, NameP(nameRange, name), paramsRangeL, paramsP, returnTypeP) => {
+              val rangeS = PostParser.evalRange(env.file, range)
+              val paramsRangeS = PostParser.evalRange(env.file, paramsRangeL)
               val paramsS =
                 paramsP.map(paramP => {
                   translateTemplex(env, lidb.child(), ruleBuilder, paramP)
                 })
-              val paramListRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
-              ruleBuilder +=
-                PackSR(evalRange(nameRange), paramListRuneS, paramsS.toArray)
+              val paramListRuneS = rules.RuneUsage(paramsRangeS, ImplicitRuneS(lidb.child().consume()))
+              ruleBuilder += PackSR(paramsRangeS, paramListRuneS, paramsS.toVector)
 
-              val returnTypeS = translateTemplex(env, lidb.child(), ruleBuilder, returnTypeP)
+              val returnRuneS = translateTemplex(env, lidb.child(), ruleBuilder, returnTypeP)
 
               val resultRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
-              ruleBuilder +=
-                PrototypeComponentsSR(
-                  PostParser.evalRange(env.file, range),
-                  resultRuneS,
-                  nameRuneS,
-                  paramListRuneS,
-                  returnTypeS)
+
+              // Only appears in call site; filtered out when solving definition
+              ruleBuilder += CallSiteFuncSR(rangeS, resultRuneS, name, paramListRuneS, returnRuneS)
+              // Only appears in definition; filtered out when solving call site
+              ruleBuilder += DefinitionFuncSR(rangeS, resultRuneS, name, paramListRuneS, returnRuneS)
+              // Only appears in call site; filtered out when solving definition
+              ruleBuilder += ResolveSR(rangeS, resultRuneS, name, paramListRuneS, returnRuneS)
 
               resultRuneS
             }
             case PackPT(range, members) => {
+              val rangeS = PostParser.evalRange(env.file, range)
+
+              val templateRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
+              ruleBuilder += LookupSR(rangeS, templateRuneS, CodeNameS(keywords.tupleHumanName))
+
               val resultRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
-              ruleBuilder +=
-                rules.PackSR(
-                  evalRange(range),
-                  resultRuneS,
-                  members.map(translateTemplex(env, lidb.child(), ruleBuilder, _)).toArray)
+              ruleBuilder += CallSR(
+                rangeS,
+                resultRuneS,
+                templateRuneS,
+                members.map(translateTemplex(env, lidb.child(), ruleBuilder, _)).toVector)
+
               resultRuneS
+//              val resultRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
+//              ruleBuilder +=
+//                rules.PackSR(
+//                  evalRange(range),
+//                  resultRuneS,
+//                  members.map(translateTemplex(env, lidb.child(), ruleBuilder, _)).toVector)
+//              resultRuneS
             }
             case StaticSizedArrayPT(range, mutability, variability, size, element) => {
               val resultRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
@@ -203,18 +214,24 @@ class TemplexScout(
                 rules.LookupSR(
                   evalRange(range),
                   templateRuneS,
-                  interner.intern(CodeNameS("Tup")))
+                  interner.intern(CodeNameS(keywords.TUP)))
               ruleBuilder +=
                 rules.CallSR(
                   evalRange(range),
                   resultRuneS,
                   templateRuneS,
-                  Array(packRuneS))
-              ruleBuilder +=
-                rules.PackSR(
-                  evalRange(range),
-                  packRuneS,
-                  elements.map(translateTemplex(env, lidb.child(), ruleBuilder, _)).toArray)
+                  elements.map(translateTemplex(env, lidb.child(), ruleBuilder, _)).toVector)
+//              ruleBuilder +=
+//                rules.CallSR(
+//                  evalRange(range),
+//                  resultRuneS,
+//                  templateRuneS,
+//                  Vector(packRuneS))
+//              ruleBuilder +=
+//                rules.PackSR(
+//                  evalRange(range),
+//                  packRuneS,
+//                  elements.map(translateTemplex(env, lidb.child(), ruleBuilder, _)).toVector)
               resultRuneS
             }
           }
@@ -224,7 +241,7 @@ class TemplexScout(
   }
 
   def translateTypeIntoRune(
-    env: IEnvironment,
+    env: IEnvironmentS,
     lidb: LocationInDenizenBuilder,
     ruleBuilder: ArrayBuffer[IRulexSR],
     typeP: ITemplexPT):
@@ -242,7 +259,7 @@ class TemplexScout(
     }
   }
   def translateMaybeTypeIntoRune(
-    env: IEnvironment,
+    env: IEnvironmentS,
     lidb: LocationInDenizenBuilder,
     range: RangeS,
     ruleBuilder: ArrayBuffer[IRulexSR],
@@ -259,7 +276,7 @@ class TemplexScout(
     }
   }
   def translateMaybeTypeIntoMaybeRune(
-    env: IEnvironment,
+    env: IEnvironmentS,
     lidb: LocationInDenizenBuilder,
     range: RangeS,
     ruleBuilder: ArrayBuffer[IRulexSR],

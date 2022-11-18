@@ -1,6 +1,6 @@
 
-func each<M, V, N, T, F>(arr A, func F) void
-where A Ref = Ref[_, [#N]<M, V>T] {
+func each<M, V, N, T, F>(arr &[#N]<M, V>T, func &F) void
+where func(&F,&T)void {
   i = 0;
   l = len(&arr);
   while (i < l) {
@@ -9,8 +9,8 @@ where A Ref = Ref[_, [#N]<M, V>T] {
   }
 }
 
-func eachI<M, V, N, T, F>(arr A, func F) void
-where A Ref = Ref[_, [#N]<M, V>T] {
+func eachI<M, V, N, T, F>(arr &[#N]<M, V>T, func F) void
+where func drop(F)void, func(&F,int,&T)void {
   i = 0;
   l = len(&arr);
   while (i < l) {
@@ -19,8 +19,8 @@ where A Ref = Ref[_, [#N]<M, V>T] {
   }
 }
 
-func each<M, T, F>(arr A, func F) void
-where A Ref = Ref[_, []<M>T] {
+func each<M, T, F>(arr &[]<M>T, func F) void
+where func drop(F)void, func(&F,&T)void {
   i = 0;
   l = len(&arr);
   while (i < l) {
@@ -29,8 +29,8 @@ where A Ref = Ref[_, []<M>T] {
   }
 }
 
-func eachI<F>(arr A, func F) void
-where A Ref = Ref[_, []<_>_] {
+func eachI<F, M, T>(arr &[]<M>T, func F) void
+where func drop(F)void, func(&F,int,&T)void {
   i = 0;
   l = len(&arr);
   while (i < l) {

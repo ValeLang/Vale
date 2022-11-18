@@ -4,19 +4,19 @@ import dev.vale.finalast.{FunctionH, Local, NeverH, PureH, UserFunctionH, Variab
 import dev.vale.typing.Hinputs
 import dev.vale.typing.ast.{ExternT, FunctionHeaderT, FunctionT, IFunctionAttributeT, PrototypeT, PureT, UserFunctionT}
 import dev.vale.typing.names.{FullNameT, IVarNameT}
-import dev.vale.{vassert, vfail, vimpl, vwat}
+import dev.vale.{Keywords, vassert, vfail, vimpl, vwat, finalast => m}
 import dev.vale.finalast._
-import dev.vale.{finalast => m}
 import dev.vale.typing._
 import dev.vale.typing.ast._
 import dev.vale.typing.names.IVarNameT
 
 class FunctionHammer(
+    keywords: Keywords,
     typeHammer: TypeHammer,
     nameHammer: NameHammer,
     structHammer: StructHammer) {
   val expressionHammer =
-    new ExpressionHammer(typeHammer, nameHammer, structHammer, this)
+    new ExpressionHammer(keywords, typeHammer, nameHammer, structHammer, this)
 
   def translateFunctions(
     hinputs: Hinputs,
@@ -42,6 +42,8 @@ class FunctionHammer(
       case None => {
         val FunctionT(
             header @ FunctionHeaderT(humanName, attrs2, params2, returnType2, _),
+            _,
+            _,
             body) = function2;
 
         val (prototypeH) = typeHammer.translatePrototype(hinputs, hamuts, header.toPrototype);

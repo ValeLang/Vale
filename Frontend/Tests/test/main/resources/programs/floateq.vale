@@ -1,4 +1,4 @@
 exported func main() int {
    x = 32.0 == 16.0 + 16.0;
-   return if (x) { 42 } else { 73 }
+   return if (x) { 42 } else { 73 };
 }

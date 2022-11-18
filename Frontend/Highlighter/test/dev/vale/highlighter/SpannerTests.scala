@@ -1,20 +1,23 @@
 package dev.vale.highlighter
 
+import dev.vale.lexing.RangeL
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.{ParserCompilation, ast}
-import dev.vale.{Err, FileCoordinateMap, Interner, Ok, PackageCoordinate}
-import dev.vale.parsing.ast.{FileP, RangeP}
+import dev.vale.{Err, FileCoordinateMap, Interner, Keywords, Ok, PackageCoordinate}
+import dev.vale.parsing.ast.FileP
 import dev.vale.parsing.{ast, _}
 import org.scalatest.{FunSuite, Matchers}
 
 class SpannerTests extends FunSuite with Matchers {
   private def compile(code: String): FileP = {
     val interner = new Interner()
+    val keywords = new Keywords(interner)
     val compilation =
       new ParserCompilation(
         GlobalOptions(true, true, true, true),
         interner,
-        Vector(PackageCoordinate.TEST_TLD(interner)),
+        keywords,
+        Vector(PackageCoordinate.TEST_TLD(interner, keywords)),
         FileCoordinateMap.test(interner, code))
     compilation.getParseds() match {
       case Err(err) => fail(err.toString)
@@ -23,21 +26,21 @@ class SpannerTests extends FunSuite with Matchers {
   }
 
   test("Spanner simple function") {
-    val program1 = compile("func main() infer-return { 3 }")
+    val program1 = compile("func main() int { 3 }")
     val main = program1.lookupFunction("main")
     Spanner.forFunction(main) shouldEqual
-      Span(Fn,RangeP(0,30),Vector(
-        Span(FnName,ast.RangeP(5,9),Vector.empty),
-        Span(Params,ast.RangeP(9,11),Vector.empty),
-        Span(Ret,ast.RangeP(12,24),Vector(Span(Ret,ast.RangeP(12,24),Vector.empty))),
-        Span(Block,ast.RangeP(25,30),Vector(
-          Span(Num,ast.RangeP(27,28),Vector.empty)))))
+      Span(Fn,RangeL(0,21),Vector(
+        Span(FnName,RangeL(5,9),Vector.empty),
+        Span(Params,RangeL(9,11),Vector.empty),
+        Span(Ret,RangeL(12,16),Vector(Span(Typ,RangeL(12,15),Vector.empty))),
+        Span(Block,RangeL(16,21),Vector(
+          Span(Num,RangeL(18,19),Vector.empty)))))
   }
 
 
   test("Spanner map call") {
     val program1 = compile(
-      """func main() infer-return {
+      """func main() int {
         |  this.abilities.getImpulse();
         |}
         |""".stripMargin)
@@ -48,7 +51,7 @@ class SpannerTests extends FunSuite with Matchers {
         Vector(
           Span(FnName,_,Vector()),
           Span(Params,_,Vector()),
-          Span(Ret,_,Vector(Span(Ret,_,Vector()))),
+          Span(Ret,RangeL(12,16),Vector(Span(Typ,RangeL(12,15),Vector()))),
           Span(Block,_,
             Vector(
               Span(Consecutor,_,

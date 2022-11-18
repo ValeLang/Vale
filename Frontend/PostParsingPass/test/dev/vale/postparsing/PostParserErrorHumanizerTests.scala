@@ -1,6 +1,6 @@
 package dev.vale.postparsing
 
-import dev.vale.{Err, FileCoordinateMap, Interner, Ok, RangeS, vassert, vfail}
+import dev.vale.{Err, FileCoordinateMap, Interner, Ok, RangeS, StrI, vassert, vfail}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing._
 import dev.vale.postparsing.patterns.AbstractSP
@@ -24,24 +24,13 @@ class PostParserErrorHumanizerTests extends FunSuite with Matchers {
     }
   }
 
-  test("Should require identifying runes") {
-    val error =
-      compileForError(
-        """
-          |func do(callable) infer-return {callable()}
-          |""".stripMargin)
-    error match {
-      case LightFunctionMustHaveParamTypes(_, 0) =>
-    }
-  }
-
   test("Humanize errors") {
     val interner = new Interner()
     val codeMap = FileCoordinateMap.test(interner, "blah blah blah\nblah blah blah")
     val tz = RangeS.testZero(interner)
 
     vassert(PostParserErrorHumanizer.humanize(codeMap,
-      VariableNameAlreadyExists(tz, CodeVarNameS("Spaceship")))
+      VariableNameAlreadyExists(tz, CodeVarNameS(interner.intern(StrI("Spaceship")))))
       .nonEmpty)
     vassert(PostParserErrorHumanizer.humanize(codeMap,
       InterfaceMethodNeedsSelf(tz))
@@ -57,9 +46,6 @@ class PostParserErrorHumanizerTests extends FunSuite with Matchers {
       .nonEmpty)
     vassert(PostParserErrorHumanizer.humanize(codeMap,
       CantInitializeIndividualElementsOfRuntimeSizedArray(tz))
-      .nonEmpty)
-    vassert(PostParserErrorHumanizer.humanize(codeMap,
-      LightFunctionMustHaveParamTypes(tz, 0))
       .nonEmpty)
 
   }

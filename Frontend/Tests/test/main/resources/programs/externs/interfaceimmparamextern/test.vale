@@ -9,5 +9,6 @@ impl IShip for Seaship;
 extern func cGetShipFuel(s IShip) int;
 
 exported func main() int {
+  x IShip = Spaceship(7); // to force the above impl to happen
   cGetShipFuel(Seaship(37, 5))
 }

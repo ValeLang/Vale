@@ -1,7 +1,6 @@
 package dev.vale.finalast
 
-import dev.vale.{PackageCoordinate, PackageCoordinateMap, vassert, vassertSome, vcurious, vfail}
-import dev.vale.vimpl
+import dev.vale.{PackageCoordinate, PackageCoordinateMap, StrI, vassert, vassertSome, vcurious, vfail, vimpl}
 import dev.vale.von.IVonData
 
 import scala.collection.immutable.ListMap
@@ -38,15 +37,15 @@ case class PackageH(
     // Used for native compilation only, not JVM/CLR/JS/iOS.
     // These are pointing into the specific functions (in the `functions` field)
     // which should be called when we drop a reference to an immutable object.
-    immDestructorsByKind: Map[KindH, PrototypeH],
+//    immDestructorsByKind: Map[KindH, PrototypeH],
     // Translations for backends to use if they need to export a name.
-    exportNameToFunction: Map[String, PrototypeH],
+    exportNameToFunction: Map[StrI, PrototypeH],
     // Translations for backends to use if they need to export a name.
-    exportNameToKind: Map[String, KindH],
+    exportNameToKind: Map[StrI, KindH],
     // Translations for backends to use if they need to export a name.
-    externNameToFunction: Map[String, PrototypeH],
+    externNameToFunction: Map[StrI, PrototypeH],
     // Translations for backends to use if they need to export a name.
-    externNameToKind: Map[String, KindH]
+    externNameToKind: Map[StrI, KindH]
 ) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vfail() // Would need a really good reason to hash something this big
 
@@ -64,7 +63,7 @@ case class PackageH(
   def lookupFunction(readableName: String) = {
     val matches =
       (Vector.empty ++
-        exportNameToFunction.get(readableName).toVector ++
+        exportNameToFunction.find(_._1.str == readableName).map(_._2).toVector ++
         functions.filter(_.prototype.fullName.readableName == readableName).map(_.prototype))
         .distinct
     vassert(matches.nonEmpty)
@@ -99,7 +98,9 @@ case class ProgramH(
   }
   def lookupFunction(prototype: PrototypeH): FunctionH = {
     val paackage = lookupPackage(prototype.fullName.packageCoordinate)
-    vassertSome(paackage.functions.find(_.fullName == prototype.fullName))
+    val result = vassertSome(paackage.functions.find(_.fullName == prototype.fullName))
+    vassert(prototype == result.prototype)
+    result
   }
   def lookupStruct(structRefH: StructRefH): StructDefinitionH = {
     val paackage = lookupPackage(structRefH.fullName.packageCoordinate)
@@ -254,6 +255,6 @@ case class FullNameH(
 
 object FullNameH {
   def namePartsToString(packageCoordinate: PackageCoordinate, parts: Vector[IVonData]) = {
-    packageCoordinate.module + "::" + packageCoordinate.packages.map(_ + "::").mkString("") + parts.map(MetalPrinter.print).mkString(":")
+    packageCoordinate.module.str + "::" + packageCoordinate.packages.map(_ + "::").mkString("") + parts.map(MetalPrinter.print).mkString(":")
   }
 }

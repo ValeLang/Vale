@@ -3,16 +3,15 @@ package dev.vale.passmanager
 import dev.vale.finalast.ProgramH
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.FileP
-import dev.vale.postparsing.{ICompileErrorS, ProgramS}
-import dev.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Ok, PackageCoordinate, PackageCoordinateMap, Profiler, Result, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
+import dev.vale.postparsing._
+import dev.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Keywords, Ok, PackageCoordinate, PackageCoordinateMap, Profiler, Result, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 import dev.vale.simplifying.HammerCompilation
 import dev.vale.highertyping.ICompileErrorA
 import PassManager.SourceInput
 import dev.vale.highertyping.{ICompileErrorA, ProgramA}
+import dev.vale.lexing.{FailedParse, RangeL}
 import dev.vale.simplifying.{HammerCompilation, HammerCompilationOptions, VonHammer}
-import dev.vale.parsing.FailedParse
 import dev.vale.typing.{Hinputs, ICompileErrorT}
-import dev.vale.parsing.FailedParse
 import dev.vale.postparsing.PostParser
 import dev.vale.typing.ICompileErrorT
 import dev.vale.testvm.ReferenceV
@@ -28,12 +27,14 @@ case class FullCompilationOptions(
 
 class FullCompilation(
   interner: Interner,
+  keywords: Keywords,
   packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]],
   options: FullCompilationOptions = FullCompilationOptions()) {
   var hammerCompilation =
     new HammerCompilation(
       interner,
+      keywords,
       packagesToBuild,
       packageToContentsResolver,
       HammerCompilationOptions(
@@ -43,11 +44,12 @@ class FullCompilation(
   def getVonHammer(): VonHammer = hammerCompilation.getVonHammer()
 
   def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = hammerCompilation.getCodeMap()
-  def getParseds(): Result[FileCoordinateMap[(FileP, Vector[(Int, Int)])], FailedParse] = hammerCompilation.getParseds()
+  def getParseds(): Result[FileCoordinateMap[(FileP, Vector[RangeL])], FailedParse] = hammerCompilation.getParseds()
   def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = hammerCompilation.getVpstMap()
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = hammerCompilation.getScoutput()
   def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = hammerCompilation.getAstrouts()
   def getCompilerOutputs(): Result[Hinputs, ICompileErrorT] = hammerCompilation.getCompilerOutputs()
   def expectCompilerOutputs(): Hinputs = hammerCompilation.expectCompilerOutputs()
   def getHamuts(): ProgramH = hammerCompilation.getHamuts()
+  def getMonouts(): Hinputs = hammerCompilation.getMonouts()
 }

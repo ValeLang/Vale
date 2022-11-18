@@ -4,16 +4,15 @@ import dev.vale.postparsing.patterns.AtomSP
 import dev.vale.typing.ast.{FunctionCallTE, LetAndLendTE, LetNormalTE, UnletTE}
 import dev.vale.typing.env.ReferenceLocalVariableT
 import dev.vale.typing.expression.CallCompiler
-import dev.vale.typing.names.{FullNameT, FunctionNameT, TypingPassTemporaryVarNameT}
-import dev.vale.typing.templata.{functionName, simpleName}
-import dev.vale.typing.types.{BorrowT, CoordT, FinalT, OwnT, StructTT}
+import dev.vale.typing.names.{FullNameT, FunctionNameT, FunctionTemplateNameT, StructNameT, StructTemplateNameT, TypingPassTemporaryVarNameT}
+import dev.vale.typing.templata._
+import dev.vale.typing.types._
 import dev.vale.postparsing._
 import dev.vale.typing._
 import dev.vale.typing.ast._
 import dev.vale.typing.templata.functionName
 import dev.vale.typing.types._
 import org.scalatest.{FunSuite, Matchers}
-import dev.vale.typing.names.FunctionNameT
 import dev.vale.von.VonInt
 
 class OwnershipTests extends FunSuite with Matchers {
@@ -28,7 +27,7 @@ class OwnershipTests extends FunSuite with Matchers {
 
     val main = compile.expectCompilerOutputs().lookupFunction("main")
     Collector.only(main, {
-      case letTE @ LetAndLendTE(ReferenceLocalVariableT(FullNameT(_, Vector(FunctionNameT("main",Vector(),Vector())),TypingPassTemporaryVarNameT(_)),FinalT,_),refExpr,targetOwnership) => {
+      case letTE @ LetAndLendTE(ReferenceLocalVariableT(FullNameT(_, Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"), _),Vector(),Vector())),TypingPassTemporaryVarNameT(_)),FinalT,_),refExpr,targetOwnership) => {
         refExpr.result.reference match {
           case CoordT(OwnT, StructTT(simpleName("Muta"))) =>
         }
@@ -44,7 +43,7 @@ class OwnershipTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Muta { hp int; }
-        |func take(m Muta) {
+        |func take(m Muta) int {
         |  return m.hp;
         |}
         |exported func main() int {
@@ -176,7 +175,14 @@ class OwnershipTests extends FunSuite with Matchers {
     val coutputs = compile.expectCompilerOutputs()
 
     // Destructor should only be calling println, NOT the destructor (itself)
-    val destructor = coutputs.lookupUserFunction("drop")
+    val destructor =
+      vassertOne(
+        coutputs.functions.find(func => {
+          func.header.fullName.last match {
+            case FunctionNameT(FunctionTemplateNameT(StrI("drop"), _), _, Vector(CoordT(OwnT, StructTT(FullNameT(_, _, StructNameT(StructTemplateNameT(StrI("Muta")), _)))))) => true
+            case _ => false
+          }
+        }))
     // The only function lookup should be println
     Collector.only(destructor, { case FunctionCallTE(functionName("println"), _) => })
     // Only one call (the above println)

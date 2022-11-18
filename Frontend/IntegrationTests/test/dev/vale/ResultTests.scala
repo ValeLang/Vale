@@ -13,8 +13,8 @@ class ResultTests extends FunSuite with Matchers {
           |
           |exported func main() int {
           |  result Result<int, str> = Ok<int, str>(42);
-          |  return if (result.is_ok()) { result.expect() }
-          |    else { panic("wat") }
+          |  return if (result.is_ok()) { result.expect("eh") }
+          |    else { panic("wat") };
           |}
         """.stripMargin)
 
@@ -29,8 +29,8 @@ class ResultTests extends FunSuite with Matchers {
           |
           |exported func main() str {
           |  result Result<int, str> = Err<int, str>("file not found!");
-          |  return if (result.is_err()) { result.expect_err() }
-          |    else { panic("fail!") }
+          |  return if (result.is_err()) { result.expect_err("eh") }
+          |    else { panic("fail!") };
           |}
         """.stripMargin)
 
@@ -45,7 +45,7 @@ class ResultTests extends FunSuite with Matchers {
         |
         |exported func main() int {
         |  result Result<int, str> = Ok<int, str>(42);
-        |  return (result).expect();
+        |  return (result).expect("eh");
         |}
         """.stripMargin)
 
@@ -60,7 +60,7 @@ class ResultTests extends FunSuite with Matchers {
         |
         |exported func main() str {
         |  result Result<int, str> = Err<int, str>("file not found!");
-        |  return (result).expect_err();
+        |  return (result).expect_err("eh");
         |}
         """.stripMargin)
 
@@ -75,7 +75,7 @@ class ResultTests extends FunSuite with Matchers {
           |
           |exported func main() int {
           |  result Result<int, str> = Err<int, str>("file not found!");
-          |  return result.expect();
+          |  return result.expect("eh");
           |}
         """.stripMargin)
 
@@ -95,7 +95,7 @@ class ResultTests extends FunSuite with Matchers {
         |
         |exported func main() str {
         |  result Result<int, str> = Ok<int, str>(73);
-        |  return result.expect_err();
+        |  return result.expect_err("eh");
         |}
         """.stripMargin)
 

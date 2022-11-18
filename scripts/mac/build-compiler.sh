@@ -38,7 +38,32 @@ shift;
 LLVM_CMAKE_DIR=$1
 if [ "$LLVM_CMAKE_DIR" == "" ]
 then
-  LLVM_CMAKE_DIR="/usr/local/Cellar/llvm/`ls /usr/local/Cellar/llvm`/lib/cmake/llvm"
+  if [ -d "/usr/local/Cellar/llvm@13" ]
+  then
+    LLVM_OUTER_DIR="/usr/local/Cellar/llvm@13"
+  elif [ -d "/usr/local/Cellar/llvm" ]
+  then
+    LLVM_OUTER_DIR="/usr/local/Cellar/llvm"
+  else
+    echo "No LLVM override specified, and couldn't find /usr/local/Cellar/llvm@13 or /usr/local/Cellar/llvm!"
+    exit 1
+  fi
+
+  if [ ! -d "$LLVM_OUTER_DIR/13.0.1_1" ]
+  then
+    echo "$LLVM_OUTER_DIR doesn't contain 13.0.1_1. Has instead:"
+    ls $LLVM_OUTER_DIR
+    exit 1
+  fi
+
+  LLVM_CMAKE_DIR="$LLVM_OUTER_DIR/13.0.1_1/lib/cmake/llvm"
+  
+  if [ ! -d "$LLVM_CMAKE_DIR" ]
+  then
+    echo "$LLVM_OUTER_DIR/13.0.1_1 doesn't contain ./lib/cmake/llvm!"
+    exit 1
+  fi
+
   echo "No LLVM override, using one in $LLVM_CMAKE_DIR"
 else
   echo "Using LLVM dir $LLVM_CMAKE_DIR"
@@ -99,7 +124,7 @@ then
   ./build.sh $BOOTSTRAPPING_VALEC_DIR || { echo 'Tester build failed, aborting.' ; exit 1; }
 
   echo Running Tester...
-  ./build/testvalec --frontend_path ./BuiltValeCompiler/Frontend.jar --backend_path ./BuiltValeCompiler/backend --builtins_dir ./BuiltValeCompiler/builtins --valec_path ./BuiltValeCompiler/valec --backend_tests_dir ../Backend/test --frontend_tests_dir ../Frontend --concurrent 6 @resilient-v3 || { echo 'Tests failed, aborting.' ; exit 1; }
+  ./build/testvalec --frontend_path ./BuiltValeCompiler/Frontend.jar --backend_path ./BuiltValeCompiler/backend --builtins_dir ./BuiltValeCompiler/builtins --valec_path ./BuiltValeCompiler/valec --backend_tests_dir ../Backend/test --frontend_tests_dir ../Frontend --stdlib_dir ./BuiltValeCompiler/stdlib --concurrent 6 @resilient-v3 || { echo 'Tests failed, aborting.' ; exit 1; }
 fi
 
 cd ..

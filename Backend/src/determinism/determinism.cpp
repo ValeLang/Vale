@@ -437,10 +437,10 @@ LLVMValueRef Determinism::openFile(FunctionState* functionState, LLVMBuilderRef 
   LLVMValueRef modeStrLE = nullptr;
   switch (mode) {
     case FileOpenMode::READ:
-      modeStrLE = globalState->getOrMakeStringConstant("r");
+      modeStrLE = globalState->getOrMakeStringConstant("rb");
       break;
     case FileOpenMode::WRITE:
-      modeStrLE = globalState->getOrMakeStringConstant("w");
+      modeStrLE = globalState->getOrMakeStringConstant("wb");
       break;
     default:
       assert(false);

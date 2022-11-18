@@ -1,7 +1,8 @@
 package dev.vale.highlighter
 
+import dev.vale.lexing.RangeL
 import dev.vale.parsing.ast
-import dev.vale.parsing.ast.{AbstractAttributeP, AugmentPE, BinaryCallPE, BlockPE, BraceCallPE, CallPT, ConsecutorPE, ConstantBoolPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, ConstructingMemberNameDeclarationP, DestructPE, DestructureP, DotPE, EachPE, ExportAsP, ExportAttributeP, ExternAttributeP, FileP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IAttributeP, IExpressionPE, INameDeclarationP, IRulexPR, IStructContent, ITemplexPT, IdentifyingRunesP, IfPE, ImplP, ImportP, IndexPE, InlinePT, IntPT, InterfaceP, InterpretedPT, IterableNameDeclarationP, IterationOptionNameDeclarationP, IteratorNameDeclarationP, LambdaPE, LetPE, LocalNameDeclarationP, LookupNameP, LookupPE, MagicParamLookupPE, MethodCallPE, MutabilityPT, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, NotPE, PackPE, ParamsP, PatternPP, PureAttributeP, RangeP, RegionRunePT, ReturnPE, RuntimeSizedArrayPT, RuntimeSizedP, ShortcallPE, StaticSizedArrayPT, StaticSizedP, StrInterpolatePE, StructMembersP, StructMethodP, StructP, SubExpressionPE, TemplateArgsP, TemplateRulesP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, UnitP, VoidPE, WhilePE}
+import dev.vale.parsing.ast.{AbstractAttributeP, AugmentPE, BinaryCallPE, BlockPE, BraceCallPE, CallPT, ConsecutorPE, ConstantBoolPE, ConstantIntPE, ConstantStrPE, ConstructArrayPE, ConstructingMemberNameDeclarationP, DestructPE, DestructureP, DotPE, EachPE, ExportAsP, ExportAttributeP, ExternAttributeP, FileP, FunctionCallPE, FunctionHeaderP, FunctionP, FunctionReturnP, IAttributeP, IExpressionPE, INameDeclarationP, IRulexPR, IStructContent, ITemplexPT, GenericParametersP, IfPE, ImplP, ImportP, IndexPE, InlinePT, IntPT, InterfaceP, InterpretedPT, IterableNameDeclarationP, IterationOptionNameDeclarationP, IteratorNameDeclarationP, LambdaPE, LetPE, LocalNameDeclarationP, LookupNameP, LookupPE, MagicParamLookupPE, MethodCallPE, MutabilityPT, MutatePE, NameOrRunePT, NameP, NormalStructMemberP, NotPE, PackPE, ParamsP, PatternPP, PureAttributeP, RegionRunePT, ReturnPE, RuntimeSizedArrayPT, RuntimeSizedP, ShortcallPE, StaticSizedArrayPT, StaticSizedP, StrInterpolatePE, StructMembersP, StructMethodP, StructP, SubExpressionPE, TemplateArgsP, TemplateRulesP, TopLevelExportAsP, TopLevelFunctionP, TopLevelImplP, TopLevelImportP, TopLevelInterfaceP, TopLevelStructP, TuplePE, UnitP, VoidPE, WhilePE}
 import dev.vale.{vcurious, vimpl}
 import dev.vale.parsing.ast._
 import dev.vale.parsing.{ast, _}
@@ -73,25 +74,25 @@ case object TypedRule extends IClass
 case object CallRule extends IClass
 case object PackRule extends IClass
 
-case class Span(classs: IClass, range: RangeP, children: Vector[Span]) { override def hashCode(): Int = vcurious() }
+case class Span(classs: IClass, range: RangeL, children: Vector[Span]) { override def hashCode(): Int = vcurious() }
 
 object Spanner {
   def forProgram(program: FileP): Span = {
     makeSpan(
       Prog,
-      ast.RangeP(0, Int.MaxValue),
-      program.topLevelThings.map({
+      RangeL(0, Int.MaxValue),
+      program.denizens.map({
         case TopLevelFunctionP(f) => forFunction(f)
         case TopLevelInterfaceP(i) => forInterface(i)
         case TopLevelStructP(s) => forStruct(s)
         case TopLevelImplP(i) => forImpl(i)
         case TopLevelExportAsP(export) => forExport(export)
         case TopLevelImportP(impoort) => forImport(impoort)
-      }))
+      }).toVector)
   }
 
   def forInterface(i: InterfaceP): Span = {
-    val InterfaceP(range, name, attributes, mutability, maybeIdentifyingRunes, maybeTemplateRulesP, members) = i
+    val InterfaceP(range, name, attributes, mutability, maybeIdentifyingRunes, maybeTemplateRulesP, _, members) = i
 
     makeSpan(
       Interface,
@@ -127,7 +128,7 @@ object Spanner {
   }
 
   def forStruct(struct: StructP): Span = {
-    val StructP(range, NameP(nameRange, _), _, _, maybeIdentifyingRunesP, maybeTemplateRulesP, StructMembersP(membersRange, members)) = struct
+    val StructP(range, NameP(nameRange, _), _, _, maybeIdentifyingRunesP, maybeTemplateRulesP, _, StructMembersP(membersRange, members)) = struct
 
     makeSpan(
       Struct,
@@ -183,7 +184,7 @@ object Spanner {
     makeSpan(
       Ret,
       range,
-      maybeInferRet.toVector.map({ case UnitP(range) => makeSpan(Ret, range, Vector.empty) }) ++
+      maybeInferRet.toVector.map({ case r @ RangeL(_, _) => makeSpan(Ret, r, Vector.empty) }) ++
       maybeRetType.toVector.map(forTemplex))
   }
 
@@ -409,7 +410,7 @@ object Spanner {
     makeSpan(
       Pat,
       range,
-      maybePreBorrow.toVector.map(b => makeSpan(Point, b.range, Vector.empty)) ++
+      maybePreBorrow.toVector.map(b => makeSpan(Point, b, Vector.empty)) ++
       capture.toVector.map(forCapture) ++
       templex.toVector.map(forTemplex) ++
       maybeDestructure.toVector.map(forDestructure))
@@ -496,7 +497,7 @@ object Spanner {
           range,
           Vector())
       }
-      case PrototypePT(range, name, parameters, returnType) => {
+      case FuncPT(range, name, paramsRange, parameters, returnType) => {
         makeSpan(
           Prototype,
           range,
@@ -550,15 +551,15 @@ object Spanner {
     }
   }
 
-  def forIdentifyingRunes(r: IdentifyingRunesP): Span = {
-    val IdentifyingRunesP(range, runes) = r
+  def forIdentifyingRunes(r: GenericParametersP): Span = {
+    val GenericParametersP(range, runes) = r
     makeSpan(
       IdentRunes,
       range,
       runes.map(rune => makeSpan(IdentRune, rune.range)))
   }
 
-  def makeSpan(classs: IClass, range: RangeP, children: Vector[Span] = Vector.empty) = {
+  def makeSpan(classs: IClass, range: RangeL, children: Vector[Span] = Vector.empty) = {
     val filteredAndSortedChildren =
       children
         .filter(s => s.range.begin != s.range.end)

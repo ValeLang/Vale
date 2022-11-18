@@ -752,6 +752,8 @@ void compileValeCode(GlobalState* globalState, std::vector<std::string>& inputFi
   globalState->serializeThunkName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__vale_serialize_thunk");
   globalState->unserializeName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__vale_unserialize");
   globalState->unserializeThunkName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__vale_unserialize_thunk");
+  globalState->freeName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__vale_free");
+  globalState->freeThunkName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__vale_free_thunk");
 
   Externs externs(globalState->mod, globalState->context);
   globalState->externs = &externs;

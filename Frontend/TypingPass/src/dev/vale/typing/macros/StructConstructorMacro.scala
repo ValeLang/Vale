@@ -3,155 +3,181 @@ package dev.vale.typing.macros
 import dev.vale.highertyping.{FunctionA, StructA}
 import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
 import dev.vale.postparsing.rules.{CallSR, IRulexSR, LookupSR, RuneUsage}
-import dev.vale.postparsing.{CodeVarNameS, ConstructorNameS, CoordTemplataType, FunctionTemplataType, GeneratedBodyS, IRuneS, ITemplataType, KindTemplataType, NormalStructMemberS, ParameterS, ReturnRuneS, StructNameRuneS, TemplateTemplataType, VariadicStructMemberS}
-import dev.vale.typing.{TypingPassOptions, CompilerOutputs, ast}
+import dev.vale.postparsing._
+import dev.vale.typing.{ArrayCompiler, CompileErrorExceptionT, CompilerOutputs, CouldntFindFunctionToCallT, OverloadResolver, TemplataCompiler, InheritBoundsFromTypeItself, TypingPassOptions, UseBoundsFromContainer, ast}
 import dev.vale.typing.ast.{ArgLookupTE, BlockTE, ConstructTE, FunctionHeaderT, FunctionT, LocationInFunctionEnvironment, ParameterT, ReturnTE}
 import dev.vale.typing.citizen.StructCompiler
 import dev.vale.typing.env.{FunctionEnvEntry, FunctionEnvironment}
-import dev.vale.typing.names.{FullNameT, INameT, NameTranslator}
-import dev.vale.{Interner, Profiler, RangeS, vassert}
-import dev.vale.typing.types.{CoordT, MutabilityT, MutableT, OwnT, ReferenceMemberTypeT, ShareT, StructMemberT, StructTT}
-import dev.vale.{Interner, PackageCoordinate, Profiler, RangeS, vassert}
+import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, FullNameT, FunctionNameT, ICitizenNameT, ICitizenTemplateNameT, IFunctionNameT, IFunctionTemplateNameT, INameT, ITemplateNameT, NameTranslator, PlaceholderNameT}
+import dev.vale.{Err, Interner, Keywords, Ok, PackageCoordinate, Profiler, RangeS, StrI, vassert, vassertSome, vcurious, vimpl}
+import dev.vale.typing.types._
 import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing.ConstructorNameS
 import dev.vale.postparsing.patterns.AtomSP
 import dev.vale.postparsing.rules.CallSR
+import dev.vale.typing.OverloadResolver.FindFunctionFailure
 import dev.vale.typing.ast._
 import dev.vale.typing.env.PackageEnvironment
-import dev.vale.typing.function.FunctionCompilerCore
-import dev.vale.typing.names.CitizenTemplateNameT
-import dev.vale.typing.ArrayCompiler
+import dev.vale.typing.expression.CallCompiler
+import dev.vale.typing.function.FunctionCompiler.EvaluateFunctionSuccess
+import dev.vale.typing.function.{DestructorCompiler, FunctionCompilerCore}
+import dev.vale.typing.infer.CouldntFindFunction
+import dev.vale.typing.templata.ITemplata.expectMutability
+import dev.vale.typing.templata.{CoordTemplata, ITemplata, KindTemplata, MutabilityTemplata, PlaceholderTemplata}
 import dev.vale.typing.types.InterfaceTT
 
 import scala.collection.mutable
 
 class StructConstructorMacro(
   opts: TypingPassOptions,
-
   interner: Interner,
-  nameTranslator: NameTranslator
+  keywords: Keywords,
+  nameTranslator: NameTranslator,
+  destructorCompiler: DestructorCompiler,
 ) extends IOnStructDefinedMacro with IFunctionBodyMacro {
 
-  val macroName: String = "DeriveStructConstructor"
+  val generatorId: StrI = keywords.structConstructorGenerator
 
-  override def getStructChildEntries(macroName: String, structName: FullNameT[INameT], structA: StructA, mutability: MutabilityT):
+  val macroName: StrI = keywords.DeriveStructConstructor
+
+  override def getStructChildEntries(
+    macroName: StrI,
+    structName: FullNameT[INameT],
+    structA: StructA,
+    mutability: ITemplata[MutabilityTemplataType]):
   Vector[(FullNameT[INameT], FunctionEnvEntry)] = {
     Vector()
   }
 
-  override def getStructSiblingEntries(macroName: String, structName: FullNameT[INameT], structA: StructA):
+  override def getStructSiblingEntries(structName: FullNameT[INameT], structA: StructA):
   Vector[(FullNameT[INameT], FunctionEnvEntry)] = {
     if (structA.members.collect({ case VariadicStructMemberS(_, _, _) => }).nonEmpty) {
       // Dont generate constructors for variadic structs, not supported yet.
       // Only one we have right now is tuple, which has its own special syntax for constructing.
       return Vector()
     }
-    val functionA = defineConstructorFunction(structA)
+    val runeToType = mutable.HashMap[IRuneS, ITemplataType]()
+    runeToType ++= structA.headerRuneToType
+    runeToType ++= structA.membersRuneToType
+
+    val rules = mutable.ArrayBuffer[IRulexSR]()
+    rules ++= structA.headerRules
+    rules ++= structA.memberRules
+
+    val retRune = RuneUsage(structA.name.range, ReturnRuneS())
+    runeToType += (retRune.rune -> CoordTemplataType())
+    val structNameRange = structA.name.range
+    if (structA.isTemplate) {
+      val structNameRune = StructNameRuneS(structA.name)
+      runeToType += (structNameRune -> structA.tyype)
+      rules += LookupSR(structNameRange, RuneUsage(structNameRange, structNameRune), structA.name.getImpreciseName(interner))
+      rules += CallSR(structNameRange, retRune, RuneUsage(structNameRange, structNameRune), structA.genericParameters.map(_.rune).toVector)
+    } else {
+      rules += LookupSR(structNameRange, retRune, structA.name.getImpreciseName(interner))
+    }
+
+    val params =
+      structA.members.zipWithIndex.flatMap({
+        case (NormalStructMemberS(range, name, variability, typeRune), index) => {
+          val capture = CaptureS(interner.intern(CodeVarNameS(name)))
+          Vector(ParameterS(AtomSP(range, Some(capture), None, Some(typeRune), None)))
+        }
+        case (VariadicStructMemberS(range, variability, typeRune), index) => {
+          Vector()
+        }
+      })
+
+    val functionA =
+      FunctionA(
+        structA.range,
+        interner.intern(ConstructorNameS(structA.name)),
+        Vector(),
+        structA.tyype match {
+          case KindTemplataType() => FunctionTemplataType()
+          case TemplateTemplataType(params, KindTemplataType()) => TemplateTemplataType(params, FunctionTemplataType())
+        },
+        structA.genericParameters,
+        runeToType.toMap,
+        params,
+        Some(retRune),
+        rules.toVector,
+        GeneratedBodyS(generatorId))
+
     Vector(
       structName.copy(last = nameTranslator.translateNameStep(functionA.name)) ->
         FunctionEnvEntry(functionA))
   }
 
-  private def defineConstructorFunction(structA: StructA):
-  FunctionA = {
-    Profiler.frame(() => {
-      val runeToType = mutable.HashMap[IRuneS, ITemplataType]()
-      runeToType ++= structA.runeToType
-
-      val rules = mutable.ArrayBuffer[IRulexSR]()
-      rules ++= structA.rules
-
-      val retRune = RuneUsage(structA.name.range, ReturnRuneS())
-      runeToType += (retRune.rune -> CoordTemplataType)
-      val structNameRange = structA.name.range
-      if (structA.isTemplate) {
-        val structNameRune = StructNameRuneS(structA.name)
-        runeToType += (structNameRune -> structA.tyype)
-        rules += LookupSR(structNameRange, RuneUsage(structNameRange, structNameRune), structA.name.getImpreciseName(interner))
-        rules += CallSR(structNameRange, retRune, RuneUsage(structNameRange, structNameRune), structA.identifyingRunes.toArray)
-      } else {
-        rules += LookupSR(structNameRange, retRune, structA.name.getImpreciseName(interner))
-      }
-
-      val params =
-        structA.members.zipWithIndex.flatMap({
-          case (NormalStructMemberS(range, name, variability, typeRune), index) => {
-            val capture = CaptureS(interner.intern(CodeVarNameS(name)))
-            Vector(ParameterS(AtomSP(range, Some(capture), None, Some(typeRune), None)))
-          }
-          case (VariadicStructMemberS(range, variability, typeRune), index) => {
-            Vector()
-          }
-        })
-
-      val functionA =
-        FunctionA(
-          structA.range,
-          interner.intern(ConstructorNameS(structA.name)),
-          Vector(),
-          structA.tyype match {
-            case KindTemplataType => FunctionTemplataType
-            case TemplateTemplataType(params, KindTemplataType) => TemplateTemplataType(params, FunctionTemplataType)
-          },
-          structA.identifyingRunes,
-          runeToType.toMap,
-          params,
-          Some(retRune),
-          rules.toVector,
-          GeneratedBodyS(generatorId))
-      functionA
-    })
-  }
-
-  val generatorId: String = "structConstructorGenerator"
 
   override def generateFunctionBody(
     env: FunctionEnvironment,
     coutputs: CompilerOutputs,
-    generatorId: String,
+    generatorId: StrI,
     life: LocationInFunctionEnvironment,
-    callRange: RangeS,
+    callRange: List[RangeS],
     originFunction: Option[FunctionA],
     paramCoords: Vector[ParameterT],
     maybeRetCoord: Option[CoordT]):
-  FunctionHeaderT = {
+  (FunctionHeaderT, ReferenceExpressionTE) = {
     val Some(CoordT(_, structTT @ StructTT(_))) = maybeRetCoord
-    val structDef = coutputs.lookupStruct(structTT)
+    val definition = coutputs.lookupStruct(structTT)
+    val placeholderSubstituter =
+      TemplataCompiler.getPlaceholderSubstituter(
+        interner,
+        keywords,
+        structTT.fullName,
+        // We only know about this struct from the return type, we don't get to inherit any of its
+        // bounds or guarantees from. Satisfy them from our environment instead.
+        UseBoundsFromContainer(
+          definition.runeToFunctionBound,
+          definition.runeToImplBound,
+          vassertSome(coutputs.getInstantiationBounds(structTT.fullName))))
+    val members =
+      definition.members.map({
+        case NormalStructMemberT(name, _, ReferenceMemberTypeT(tyype)) => {
+          (name, placeholderSubstituter.substituteForCoord(coutputs, tyype))
+        }
+        case NormalStructMemberT(name, variability, AddressMemberTypeT(tyype)) => vcurious()
+        case VariadicStructMemberT(name, tyype) => vimpl()
+      })
 
     val constructorFullName = env.fullName
-    vassert(constructorFullName.last.parameters.size == structDef.members.size)
+    vassert(constructorFullName.last.parameters.size == members.size)
     val constructorParams =
-      structDef.members.map({
-        case StructMemberT(name, _, ReferenceMemberTypeT(reference)) => {
-          ParameterT(name, None, reference)
-        }
-      })
-    val constructorReturnOwnership = if (structDef.mutability == MutableT) OwnT else ShareT
-    val constructorReturnType = CoordT(constructorReturnOwnership, structDef.getRef)
+      members.map({ case (name, coord) => ParameterT(name, None, coord) })
+    val mutability =
+      StructCompiler.getMutability(
+        interner, keywords, coutputs, structTT,
+        // Not entirely sure if this is right, but it's consistent with using it for the return kind
+        // and its the more conservative option so we'll go with it for now.
+        UseBoundsFromContainer(
+          definition.runeToFunctionBound,
+          definition.runeToImplBound,
+          vassertSome(coutputs.getInstantiationBounds(structTT.fullName))))
+    val constructorReturnOwnership =
+      mutability match {
+        case MutabilityTemplata(MutableT) => OwnT
+        case MutabilityTemplata(ImmutableT) => ShareT
+        case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => OwnT
+      }
+    val constructorReturnType = CoordT(constructorReturnOwnership, structTT)
+
     // not virtual because how could a constructor be virtual
-    val constructor2 =
-      FunctionT(
-        ast.FunctionHeaderT(
-          constructorFullName,
-          Vector.empty,
-          constructorParams,
-          constructorReturnType,
-          originFunction),
-        BlockTE(
-          ReturnTE(
-            ConstructTE(
-              structDef.getRef,
-              constructorReturnType,
-              constructorParams.zipWithIndex.map({ case (p, index) => ArgLookupTE(index, p.tyype) })))))
+    val header =
+      ast.FunctionHeaderT(
+        constructorFullName,
+        Vector.empty,
+        constructorParams,
+        constructorReturnType,
+        Some(env.templata))
 
-    // we cant make the destructor here because they might have a user defined one somewhere
-    coutputs.declareFunctionReturnType(constructor2.header.toSignature, constructor2.header.returnType)
-    coutputs.addFunction(constructor2);
-
-    vassert(
-      coutputs.getDeclaredSignatureOrigin(
-        constructor2.header.fullName).nonEmpty)
-
-    (constructor2.header)
+    val body =
+      BlockTE(
+        ReturnTE(
+          ConstructTE(
+            structTT,
+            constructorReturnType,
+            constructorParams.zipWithIndex.map({ case (p, index) => ArgLookupTE(index, p.tyype) }))))
+    (header, body)
   }
 }

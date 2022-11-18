@@ -1,20 +1,38 @@
 package dev.vale.highlighter
 
 import Spanner._
-import dev.vale.{Err, Ok}
+import dev.vale.lexing.RangeL
+import dev.vale.{Err, FileCoordinateMap, IPackageResolver, Interner, Keywords, Ok, PackageCoordinate}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.Parser
 import dev.vale.parsing._
-import dev.vale.Err
 import org.scalatest.{FunSuite, Matchers}
+
+import scala.collection.immutable.Map
 
 class HighlighterTests extends FunSuite with Matchers {
   private def highlight(code: String): String = {
-    new Parser(GlobalOptions(true, true, true, true)).
-        runParserForProgramAndCommentRanges(code) match {
+    val interner = new Interner()
+    val keywords = new Keywords(interner)
+    val opts = GlobalOptions(true, true, true, true)
+    val codeMap = FileCoordinateMap.test(interner, Vector(code))
+    ParseAndExplore.parseAndExploreAndCollect(
+      interner,
+      keywords,
+      opts,
+      new Parser(interner, keywords, opts),
+      Vector(PackageCoordinate.TEST_TLD(interner, keywords)),
+      new IPackageResolver[Map[String, String]]() {
+        override def resolve(packageCoord: PackageCoordinate): Option[Map[String, String]] = {
+          // For testing the parser, we dont want it to fetch things with import statements
+          Some(codeMap.resolve(packageCoord).getOrElse(Map("" -> "")))
+        }
+      }) match {
       case Err(err) => fail(err.toString)
-      case Ok((program0, commentRanges)) => {
-        Highlighter.toHTML(code, Spanner.forProgram(program0), commentRanges)
+      case Ok(accumulator) => {
+        val file = accumulator.buildArray().head._2
+        val span = Spanner.forProgram(file)
+        Highlighter.toHTML(code, span, file.commentsRanges.map(x => RangeL(x.begin, x.end)).toVector)
       }
     }
   }

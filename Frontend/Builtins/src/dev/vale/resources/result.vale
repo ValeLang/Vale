@@ -6,12 +6,12 @@ sealed interface Result<OkType Ref, ErrType Ref> { }
 
 #!DeriveStructDrop
 struct Ok<OkType Ref, ErrType Ref> { value OkType; }
-#!DeriveImplDrop
+
 impl<OkType, ErrType> Result<OkType, ErrType> for Ok<OkType, ErrType>;
 
 #!DeriveStructDrop
 struct Err<OkType Ref, ErrType Ref> { value ErrType; }
-#!DeriveImplDrop
+
 impl<OkType, ErrType> Result<OkType, ErrType> for Err<OkType, ErrType>;
 
 

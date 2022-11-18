@@ -2,7 +2,7 @@ package dev.vale.typing.macros
 
 import dev.vale.{RangeS, StrI, vimpl}
 import dev.vale.typing.CompilerOutputs
-import dev.vale.typing.ast.{ArgLookupTE, ArrayLengthTE, BlockTE, FunctionHeaderT, FunctionT, LocationInFunctionEnvironment, ParameterT, ReturnTE}
+import dev.vale.typing.ast.{ArgLookupTE, ArrayLengthTE, BlockTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironment, ParameterT, ReturnTE}
 import dev.vale.typing.env.FunctionEnvironment
 import dev.vale.typing.types.CoordT
 import dev.vale.typing.ast._

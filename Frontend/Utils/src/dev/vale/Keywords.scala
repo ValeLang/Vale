@@ -104,7 +104,6 @@ class Keywords(interner: Interner) {
   val DeriveAnonymousSubstruct: StrI = interner.intern(StrI("DeriveAnonymousSubstruct"))
 //  val DeriveInterfaceFree: StrI = interner.intern(StrI("DeriveInterfaceFree"))
   val DeriveInterfaceDrop: StrI = interner.intern(StrI("DeriveInterfaceDrop"))
-  val DeriveImplDrop: StrI = interner.intern(StrI("DeriveImplDrop"))
 
   // Everything below here is for compiler internal use only, and aren't exposed to the user.
 

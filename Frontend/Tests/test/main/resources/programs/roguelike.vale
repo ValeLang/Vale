@@ -1,7 +1,5 @@
-import hashmap.*;
-import array.each.*;
-import string.*;
-import ioutils.*;
+import stdlib.collections.hashmap.*;
+import stdlib.stdin.*;
 
 // roguelike.vale - A simple Roguelike game, made in Vale.
 //
@@ -32,10 +30,10 @@ struct Goblin {
   location Vec<2, int>;
 }
 
-func makeBoard() Array<mut, []<mut>str> {
+func makeBoard() [][]str {
   return
-    MakeArray(10, (row) => {
-      MakeArray(10, (col) => {
+    Array<mut, []str>(10, (row) => {
+      Array<mut, str>(10, (col) => {
         if (row == 0) { "#" }
         else if (col == 0) { "#" }
         else if (row == 9) { "#" }
@@ -59,7 +57,7 @@ func display(
       if (rowI == playerRow and cellI == playerCol) {
         set charToPrint = "@";
       } else {
-        goblins.keys().each((key) => {
+        goblins.keys().each(&(key) => {
           maybeGoblin = goblins.get(key);
           goblin = (maybeGoblin).get(); // TODO try getting rid of this ^, doesnt wanna find the get function
 
@@ -79,7 +77,7 @@ func display(
 func inputKey() int {
   key = 0;
   while (true) {
-    set key = __getch();
+    set key = getch();
     if (key == 81) {
       return key;
     } else if (key == 119) {
@@ -164,7 +162,7 @@ exported func main() int {
     }
 
     killedGoblin = false;
-    goblins.keys().each((key) => {
+    goblins.keys().each(&(key) => {
       if (goblinAt(&goblins, key, newPlayerRow, newPlayerCol)) {
         goblins.remove(key);
         set killedGoblin = true;

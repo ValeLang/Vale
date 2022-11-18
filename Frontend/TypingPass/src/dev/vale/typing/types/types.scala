@@ -4,12 +4,11 @@ import dev.vale.{CodeLocationS, IInterning, Interner, Keywords, PackageCoordinat
 import dev.vale.postparsing.IImpreciseNameS
 import dev.vale.typing.ast.{AbstractT, FunctionHeaderT, ICitizenAttributeT}
 import dev.vale.typing.env.IEnvironment
-import dev.vale.typing.names.{CitizenNameT, FullNameT, ICitizenNameT, IVarNameT, RawArrayNameT, RuntimeSizedArrayNameT, StaticSizedArrayNameT}
+import dev.vale.typing.names.{AnonymousSubstructNameT, CitizenNameT, FullNameT, ICitizenNameT, IInterfaceNameT, IStructNameT, ISubKindNameT, ISuperKindNameT, IVarNameT, InterfaceNameT, InterfaceTemplateNameT, PlaceholderNameT, RawArrayNameT, RuntimeSizedArrayNameT, RuntimeSizedArrayTemplateNameT, StaticSizedArrayNameT, StructNameT, StructTemplateNameT}
 import dev.vale.highertyping._
 import dev.vale.postparsing._
 import dev.vale.typing._
 import dev.vale.typing.ast._
-import dev.vale.typing.names.AnonymousSubstructNameT
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 
@@ -60,6 +59,12 @@ case object YonderT extends LocationT {
 
 case class CoordT(ownership: OwnershipT, kind: KindT)  {
   vpass()
+  this match {
+    case CoordT(BorrowT,RuntimeSizedArrayTT(FullNameT(_,_,RuntimeSizedArrayNameT(_,RawArrayNameT(MutabilityTemplata(ImmutableT),CoordT(ShareT,IntT(32))))))) => {
+      vpass()
+    }
+    case _ =>
+  }
 
   kind match {
     case IntT(_) | BoolT() | StrT() | FloatT() | VoidT() | NeverT(_) => {
@@ -74,10 +79,30 @@ case class CoordT(ownership: OwnershipT, kind: KindT)  {
 }
 
 sealed trait KindT {
-
   // Note, we don't have a mutability: Mutability in here because this Kind
   // should be enough to uniquely identify a type, and no more.
   // We can always get the mutability for a struct from the coutputs.
+
+  def expectCitizen(): ICitizenTT = {
+    this match {
+      case c : ICitizenTT => c
+      case _ => vfail()
+    }
+  }
+
+  def expectInterface(): InterfaceTT = {
+    this match {
+      case c @ InterfaceTT(_) => c
+      case _ => vfail()
+    }
+  }
+
+  def expectStruct(): StructTT = {
+    this match {
+      case c @ StructTT(_) => c
+      case _ => vfail()
+    }
+  }
 }
 
 // like Scala's Nothing. No instance of this can ever happen.
@@ -115,121 +140,68 @@ case class FloatT() extends KindT {
 
 }
 
+object contentsStaticSizedArrayTT {
+  def unapply(ssa: StaticSizedArrayTT):
+  Option[(ITemplata[IntegerTemplataType], ITemplata[MutabilityTemplataType], ITemplata[VariabilityTemplataType], CoordT)] = {
+    val FullNameT(_, _, StaticSizedArrayNameT(_, size, variability, RawArrayNameT(mutability, coord))) = ssa.name
+    Some((size, mutability, variability, coord))
+  }
+}
 case class StaticSizedArrayTT(
-  size: Int,
-  mutability: MutabilityT,
-  variability: VariabilityT,
-  elementType: CoordT
-) extends KindT with IInterning  {
-  def getName(interner: Interner, keywords: Keywords): FullNameT[StaticSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN(interner, keywords), Vector.empty, interner.intern(StaticSizedArrayNameT(size, interner.intern(RawArrayNameT(mutability, elementType)))))
-}
-
-case class RuntimeSizedArrayTT(
-  mutability: MutabilityT,
-  elementType: CoordT
+  name: FullNameT[StaticSizedArrayNameT]
 ) extends KindT with IInterning {
-
-
-  def getName(interner: Interner, keywords: Keywords): FullNameT[RuntimeSizedArrayNameT] = FullNameT(PackageCoordinate.BUILTIN(interner, keywords), Vector.empty, interner.intern(RuntimeSizedArrayNameT(interner.intern(RawArrayNameT(mutability, elementType)))))
+  vassert(name.initSteps.isEmpty)
+  def mutability: ITemplata[MutabilityTemplataType] = name.last.arr.mutability
+  def elementType = name.last.arr.elementType
+  def size = name.last.size
+  def variability = name.last.variability
 }
 
-case class StructMemberT(
-  name: IVarNameT,
-  // In the case of address members, this refers to the variability of the pointee variable.
-  variability: VariabilityT,
-  tyype: IMemberTypeT
-)  {
-
-  vpass()
-}
-
-sealed trait IMemberTypeT  {
-  def reference: CoordT
-
-  def expectReferenceMember(): ReferenceMemberTypeT = {
-    this match {
-      case r @ ReferenceMemberTypeT(_) => r
-      case a @ AddressMemberTypeT(_) => vfail("Expected reference member, was address member!")
-    }
-  }
-  def expectAddressMember(): AddressMemberTypeT = {
-    this match {
-      case r @ ReferenceMemberTypeT(_) => vfail("Expected reference member, was address member!")
-      case a @ AddressMemberTypeT(_) => a
-    }
+object contentsRuntimeSizedArrayTT {
+  def unapply(rsa: RuntimeSizedArrayTT): Option[(ITemplata[MutabilityTemplataType], CoordT)] = {
+    val FullNameT(_, _, RuntimeSizedArrayNameT(_, RawArrayNameT(mutability, coord))) = rsa.name
+    Some((mutability, coord))
   }
 }
-case class AddressMemberTypeT(reference: CoordT) extends IMemberTypeT
-case class ReferenceMemberTypeT(reference: CoordT) extends IMemberTypeT
-
-trait CitizenDefinitionT {
-  def getRef: CitizenRefT;
+case class RuntimeSizedArrayTT(
+  name: FullNameT[RuntimeSizedArrayNameT]
+) extends KindT with IInterning {
+  def mutability = name.last.arr.mutability
+  def elementType = name.last.arr.elementType
 }
 
-
-// We include templateArgTypes to aid in looking this up... same reason we have name
-case class StructDefinitionT(
-  fullName: FullNameT[ICitizenNameT],
-  ref: StructTT,
-  attributes: Vector[ICitizenAttributeT],
-  weakable: Boolean,
-  mutability: MutabilityT,
-  members: Vector[StructMemberT],
-  isClosure: Boolean
-) extends CitizenDefinitionT {
-  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
-
-  override def getRef: StructTT = ref
-
-
-
-  def getMember(memberName: String): StructMemberT = {
-    members.find(p => p.name.equals(memberName)) match {
-      case None => vfail("Couldn't find member " + memberName)
-      case Some(member) => member
-    }
-  }
-
-  private def getIndex(memberName: IVarNameT): Int = {
-    members.zipWithIndex.find(p => p._1.name.equals(memberName)) match {
-      case None => vfail("wat")
-      case Some((member, index)) => index
-    }
-  }
-
-  def getMemberAndIndex(memberName: IVarNameT): Option[(StructMemberT, Int)] = {
-    members.zipWithIndex.find(p => p._1.name.equals(memberName))
+object ICitizenTT {
+  def unapply(self: ICitizenTT): Option[FullNameT[ICitizenNameT]] = {
+    Some(self.fullName)
   }
 }
 
-case class InterfaceDefinitionT(
-    fullName: FullNameT[CitizenNameT],
-    ref: InterfaceTT,
-    attributes: Vector[ICitizenAttributeT],
-    weakable: Boolean,
-    mutability: MutabilityT,
-    // This does not include abstract functions declared outside the interface.
-    // See IMRFDI for why we need to remember only the internal methods here.
-    internalMethods: Vector[FunctionHeaderT]
-) extends CitizenDefinitionT  {
-  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
-  override def getRef = ref
+// Structs, interfaces, and placeholders
+sealed trait ISubKindTT extends KindT {
+  def fullName: FullNameT[ISubKindNameT]
+}
+// Interfaces and placeholders
+sealed trait ISuperKindTT extends KindT {
+  def fullName: FullNameT[ISuperKindNameT]
 }
 
-trait CitizenRefT extends KindT with IInterning {
+sealed trait ICitizenTT extends ISubKindTT with IInterning {
   def fullName: FullNameT[ICitizenNameT]
 }
 
-// These should only be made by struct typingpass, which puts the definition into coutputs at the same time
-case class StructTT(fullName: FullNameT[ICitizenNameT]) extends CitizenRefT {
-
+// These should only be made by StructCompiler, which puts the definition and bounds into coutputs at the same time
+case class StructTT(fullName: FullNameT[IStructNameT]) extends ICitizenTT {
+  (fullName.initSteps.lastOption, fullName.last) match {
+    case (Some(StructTemplateNameT(_)), StructNameT(_, _)) => vfail()
+    case _ =>
+  }
 }
 
-case class InterfaceTT(
-  fullName: FullNameT[ICitizenNameT]
-) extends CitizenRefT  {
-
-
+case class InterfaceTT(fullName: FullNameT[IInterfaceNameT]) extends ICitizenTT with ISuperKindTT {
+  (fullName.initSteps.lastOption, fullName.last) match {
+    case (Some(InterfaceTemplateNameT(_)), InterfaceNameT(_, _)) => vfail()
+    case _ =>
+  }
 }
 
 // Represents a bunch of functions that have the same name.
@@ -240,17 +212,8 @@ case class OverloadSetT(
   // The name to look for in the environment.
   name: IImpreciseNameS
 ) extends KindT with IInterning {
-
+  vpass()
 
 }
 
-// This is what we use to search for overloads.
-case class ParamFilter(
-    tyype: CoordT,
-    virtuality: Option[AbstractT]) {
-   override def equals(obj: Any): Boolean = vcurious();
-
-  def debugString: String = {
-    tyype.toString + virtuality.map(x => " abstract").getOrElse("")
-  }
-}
+case class PlaceholderT(fullName: FullNameT[PlaceholderNameT]) extends ISubKindTT with ISuperKindTT

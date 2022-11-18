@@ -381,3 +381,5 @@ func replaceAll(remaining_source StrSlice, needle StrSlice, replacement StrSlice
 
   return builder.str();
 }
+
+func clone(s StrSlice) StrSlice { s }

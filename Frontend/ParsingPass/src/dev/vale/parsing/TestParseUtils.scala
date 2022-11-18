@@ -128,7 +128,7 @@ trait TestParseUtils {
       keywords,
       opts,
       p,
-      Array(PackageCoordinate.TEST_TLD(interner, keywords)),
+      Vector(PackageCoordinate.TEST_TLD(interner, keywords)),
       new IPackageResolver[Map[String, String]]() {
         override def resolve(packageCoord: PackageCoordinate): Option[Map[String, String]] = {
           // For testing the parser, we dont want it to fetch things with import statements
@@ -157,7 +157,7 @@ trait TestParseUtils {
     }
   }
 
-  def compileDenizens(code: String): Result[Array[IDenizenP], FailedParse] = {
+  def compileDenizens(code: String): Result[Vector[IDenizenP], FailedParse] = {
     compileFile(code) match {
       case Err(e) => Err(e)
       case Ok(x) => Ok(x.denizens)

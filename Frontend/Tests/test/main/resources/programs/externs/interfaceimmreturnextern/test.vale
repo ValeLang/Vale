@@ -8,6 +8,7 @@ func getFuel(ship Firefly) int { ship.fuel }
 extern func cMakeShip() IShip;
 
 exported func main() int {
+  x IShip = Firefly(7); // to force the above impl to happen
   res = cMakeShip();
   return getFuel(&res);
 }

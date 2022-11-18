@@ -1,6 +1,7 @@
 import panicutils.*;
 
-struct List<E> where E Ref {
+#!DeriveStructDrop
+struct List<E Ref> {
   array! []<mut>E;
 }
 func List<E>() List<E> {
@@ -8,6 +9,11 @@ func List<E>() List<E> {
     Array<mut, E>(
       0,
       &(i) => { __pretend<E>() }));
+}
+func drop<E>(self List<E>)
+where func drop(E)void {
+  [array] = self;
+  drop(array);
 }
 func void() {}
 func len<E>(list &List<E>) int { return len(&list.array); }
@@ -21,7 +27,7 @@ func add<E>(list &List<E>, newElement E) {
   }
   list.array.push(newElement);
 }
-// todo: make that return a &E
+
 func get<E>(list &List<E>, index int) &E {
   a &[]<mut>E = list.array;
   return a[index];
@@ -31,72 +37,13 @@ func set<E>(list &List<E>, index int, value E) E {
   return set list.array[index] = value;
 }
 
-//func toArray<E>(list &List<E>) []<mut>E {
-//  MakeArray(list.len(), *!(i) => { list.get(i) })
-//}
-func toVaryArray<E>(list &List<E>) []<mut>E {
-  return Array<mut, E>(list.len(), &(i) => { list.get(i) });
-}
-func toImmArray<E>(list &List<E>) []<imm>E {
-  return MakeImmArray(list.len(), &(i) => { list.get(i) });
-}
-//func toList<E>(arr *[]<_>E) List<E> {
-//  list = List<E>();
-//  arr each (elem) => {
-//    list.add(elem);
-//  };
-//  = list;
-//}
-//
-//func each<E, F>(list &List<E>, func F) void {
-//  i = 0;
-//  l = len(&list);
-//  while (i < l) {
-//    func(list.get(i));
-//    set i = i + 1;
-//  }
-//}
-//
-//func each<E, F>(list &List<E>, func F) void {
-//  i = 0;
-//  l = len(&list);
-//  while (i < l) {
-//    func(list.get(i));
-//    set i = i + 1;
-//  }
-//}
-//
-//func eachI<E, F>(list &List<E>, func F) void {
-//  i = 0;
-//  l = len(&list);
-//  while (i < l) {
-//    func(i, list.get(i));
-//    set i = i + 1;
-//  }
-//}
-//
-//func eachI<E, F>(list &List<E>, func F) void {
-//  i = 0;
-//  l = len(&list);
-//  while (i < l) {
-//    func(i, list.get(i));
-//    set i = i + 1;
-//  }
-//}
-//
-//func contains<E>(list &List<E>, element E) bool {
-//  i = 0;
-//  l = len(&list);
-//  while (i < l) {
-//    if (list.get(i) == element) {
-//      return true;
-//    }
-//    set i = i + 1;
-//  }
-//  return false;
-//}
-//
-//
+// func toVaryArray<E>(list &List<E>) []<mut>E {
+//   return Array<mut, E>(list.len(), &(i) => { list.get(i) });
+// }
+// func toImmArray<E>(list &List<E>) []<imm>E {
+//   return MakeImmArray(list.len(), &(i) => { list.get(i) });
+// }
+
 func remove<E>(list &List<E>, removeAtIndex int) E {
   if (removeAtIndex < 0) {
     panic("Can't remove at negative index!");
@@ -108,7 +55,7 @@ func remove<E>(list &List<E>, removeAtIndex int) E {
   temp Opt<E> = Some<E>(list.array.pop());
   i = list.len() - 1;
   while (i >= removeAtIndex) {
-    set temp = Some(set list.array[i] = (set temp = None<E>()).get());
+    (set temp = Some(set list.array[i] = (set temp = None<E>()).get())).expect_none();
     set i = i - 1;
   }
 

@@ -324,25 +324,6 @@ class StatementTests extends FunSuite with Collector with TestParseUtils {
   }
 
 
-  test("Forgetting set when changing") {
-    val error =
-      compileStatement(
-        """ship.x = 4;""".stripMargin).expectErr()
-    error match {
-      case ForgotSetKeyword(_) =>
-    }
-  }
-
-  test("Report leaving out semicolon or ending body after expression, for paren") {
-    compileBlockContents(
-      """
-        |  a = 3;
-        |  set x = 7 )
-        """.stripMargin).expectErr() match {
-      case BadExpressionEnd(_) =>
-    }
-  }
-
   test("Report leaving out semicolon or ending body after expression, for square") {
     compileStatement(
       """

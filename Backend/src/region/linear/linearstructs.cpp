@@ -66,8 +66,9 @@ void LinearStructs::declareStruct(StructKind* structM) {
 void LinearStructs::declareEdge(StructKind* structKind, InterfaceKind* interfaceKind) {
   // There aren't edges per se, just tag numbers. That's all we have to do here.
 
-  // Creates one if it doesnt already exist.
-  auto* os = &orderedStructsByInterface[interfaceKind];
+  auto iter = orderedStructsByInterface.find(interfaceKind);
+  assert(iter != orderedStructsByInterface.end()); // declareInterface should have made it
+  auto* os = &iter->second;
 
   assert(std::count(os->begin(), os->end(), structKind) == 0);
   os->push_back(structKind);
@@ -87,6 +88,8 @@ void LinearStructs::declareInterface(InterfaceKind* interface) {
   LLVMStructSetBody(interfaceRefStructL, memberTypesL.data(), memberTypesL.size(), false);
 
   interfaceRefStructsL.emplace(interface, interfaceRefStructL);
+
+  orderedStructsByInterface.emplace(interface, std::vector<StructKind*>{});
 
   // No need to make interface table structs, there are no itables for Linear.
 }

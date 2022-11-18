@@ -1,15 +1,15 @@
 
 
-struct HashSetIter<K> {
+struct HashSetIter<K Ref imm> {
   table &Array<mut, Opt<K>>;
   pos! int;
 }
 
-func begin<K, H, E>(map &HashSet<K, H, E>) HashSetIter<K> {
+func begin<K Ref imm, H, E>(map &HashSet<K, H, E>) HashSetIter<K> {
   HashSetIter<K>(&map.table, 0)
 }
 
-func next<K>(iter &HashSetIter<K>) Opt<&K> {
+func next<K Ref imm>(iter &HashSetIter<K>) Opt<&K> {
   while iter.pos < iter.table.len() {
     this_pos = set iter.pos = iter.pos + 1;
     if not iter.table[this_pos].isEmpty() {
@@ -22,10 +22,11 @@ func next<K>(iter &HashSetIter<K>) Opt<&K> {
 
 
 
-func each<K, H, E, F>(
+func each<K Ref imm, H, E, F>(
   self &HashSet<K, H, E>,
   func F)
-void {
+void
+where func drop(F)void, func(&F, &K)void {
   index = 0;
   while (index < self.table.len()) {
     maybeNode = self.table[index];

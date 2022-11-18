@@ -26,21 +26,21 @@ class SpannerTests extends FunSuite with Matchers {
   }
 
   test("Spanner simple function") {
-    val program1 = compile("func main() infer-return { 3 }")
+    val program1 = compile("func main() int { 3 }")
     val main = program1.lookupFunction("main")
     Spanner.forFunction(main) shouldEqual
-      Span(Fn,RangeL(0,30),Vector(
+      Span(Fn,RangeL(0,21),Vector(
         Span(FnName,RangeL(5,9),Vector.empty),
         Span(Params,RangeL(9,11),Vector.empty),
-        Span(Ret,RangeL(12,24),Vector(Span(Ret,RangeL(12,24),Vector.empty))),
-        Span(Block,RangeL(25,30),Vector(
-          Span(Num,RangeL(27,28),Vector.empty)))))
+        Span(Ret,RangeL(12,16),Vector(Span(Typ,RangeL(12,15),Vector.empty))),
+        Span(Block,RangeL(16,21),Vector(
+          Span(Num,RangeL(18,19),Vector.empty)))))
   }
 
 
   test("Spanner map call") {
     val program1 = compile(
-      """func main() infer-return {
+      """func main() int {
         |  this.abilities.getImpulse();
         |}
         |""".stripMargin)
@@ -51,7 +51,7 @@ class SpannerTests extends FunSuite with Matchers {
         Vector(
           Span(FnName,_,Vector()),
           Span(Params,_,Vector()),
-          Span(Ret,_,Vector(Span(Ret,_,Vector()))),
+          Span(Ret,RangeL(12,16),Vector(Span(Typ,RangeL(12,15),Vector()))),
           Span(Block,_,
             Vector(
               Span(Consecutor,_,

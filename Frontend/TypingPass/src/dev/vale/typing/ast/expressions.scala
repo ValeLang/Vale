@@ -2,13 +2,14 @@ package dev.vale.typing.ast
 
 //import dev.vale.astronomer.IVarNameA
 import dev.vale.typing.env.{ILocalVariableT, ReferenceLocalVariableT}
-import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, ExternFunctionNameT, FullNameT, IVarNameT}
+import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, ExternFunctionNameT, FullNameT, IImplNameT, IVarNameT, StructNameT, StructTemplateNameT}
 import dev.vale.{RangeS, vassert, vcurious, vfail, vpass, vwat}
-import dev.vale.typing.types.{BoolT, BorrowT, CoordT, FloatT, ImmutableT, IntT, InterfaceTT, KindT, MutableT, NeverT, OwnT, OwnershipT, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StrT, StructTT, VariabilityT, VoidT, WeakT}
+import dev.vale.typing.types._
 import dev.vale._
+import dev.vale.postparsing.{IRuneS, IntegerTemplataType, MutabilityTemplataType}
 import dev.vale.typing.env.ReferenceLocalVariableT
 import dev.vale.typing.types._
-import dev.vale.typing.names.CitizenTemplateNameT
+import dev.vale.typing.templata.{ITemplata, MutabilityTemplata, PlaceholderTemplata, PrototypeTemplata}
 
 trait IExpressionResultT  {
   def expectReference(): ReferenceResultT = {
@@ -92,6 +93,13 @@ case class LockWeakTE(
   someConstructor: PrototypeT,
   // Function to make a None of the right type
   noneConstructor: PrototypeT,
+
+  // This is the impl we use to allow/permit the upcast from the some to the none.
+  // It'll be useful for monomorphization and later on for locating the itable ptr to put in fat pointers.
+  someImplName: FullNameT[IImplNameT],
+  // This is the impl we use to allow/permit the upcast from the some to the none.
+  // It'll be useful for monomorphization and later on for locating the itable ptr to put in fat pointers.
+  noneImplName: FullNameT[IImplNameT],
 ) extends ReferenceExpressionTE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result: ReferenceResultT = {
@@ -354,9 +362,10 @@ case class TupleTE(
 //}
 
 case class StaticArrayFromValuesTE(
-    elements: Vector[ReferenceExpressionTE],
-    resultReference: CoordT,
-    arrayType: StaticSizedArrayTT) extends ReferenceExpressionTE {
+  elements: Vector[ReferenceExpressionTE],
+  resultReference: CoordT,
+  arrayType: StaticSizedArrayTT,
+) extends ReferenceExpressionTE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(resultReference)
 }
@@ -375,7 +384,7 @@ case class IsSameInstanceTE(left: ReferenceExpressionTE, right: ReferenceExpress
 
 case class AsSubtypeTE(
     sourceExpr: ReferenceExpressionTE,
-    targetSubtype: KindT,
+    targetType: CoordT,
 
     // We could just calculate this, but it feels better to let the StructCompiler
     // make it, so we're sure it's created.
@@ -384,6 +393,15 @@ case class AsSubtypeTE(
     okConstructor: PrototypeT,
     // Function to make a None of the right type
     errConstructor: PrototypeT,
+
+
+    // This is the impl we use to allow/permit the downcast. It'll be useful for monomorphization.
+    implName: FullNameT[IImplNameT],
+
+    // These are the impls that we conceptually use to upcast the created Ok/Err to Result.
+    // Really they're here so the monomorphizer can know what impls it needs to instantiate.
+    okImplName: FullNameT[IImplNameT],
+    errImplName: FullNameT[IImplNameT],
 ) extends ReferenceExpressionTE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(resultResultType)
@@ -394,7 +412,7 @@ case class VoidLiteralTE() extends ReferenceExpressionTE {
   override def result = ReferenceResultT(CoordT(ShareT, VoidT()))
 }
 
-case class ConstantIntTE(value: Long, bits: Int) extends ReferenceExpressionTE {
+case class ConstantIntTE(value: ITemplata[IntegerTemplataType], bits: Int) extends ReferenceExpressionTE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result = ReferenceResultT(CoordT(ShareT, IntT(bits)))
 }
@@ -494,7 +512,8 @@ case class AddressMemberLookupTE(
 }
 
 case class InterfaceFunctionCallTE(
-    superFunctionHeader: FunctionHeaderT,
+    superFunctionPrototype: PrototypeT,
+    virtualParamIndex: Int,
     resultReference: CoordT,
     args: Vector[ReferenceExpressionTE]) extends ReferenceExpressionTE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
@@ -522,8 +541,9 @@ case class ExternFunctionCallTE(
 }
 
 case class FunctionCallTE(
-    callable: PrototypeT,
-    args: Vector[ReferenceExpressionTE]) extends ReferenceExpressionTE {
+  callable: PrototypeT,
+  args: Vector[ReferenceExpressionTE]
+) extends ReferenceExpressionTE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 
   vassert(callable.paramTypes.size == args.size)
@@ -565,7 +585,8 @@ case class ReinterpretTE(
 case class ConstructTE(
     structTT: StructTT,
     resultReference: CoordT,
-    args: Vector[ExpressionT]) extends ReferenceExpressionTE {
+    args: Vector[ExpressionT],
+) extends ReferenceExpressionTE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()
 
@@ -576,13 +597,17 @@ case class ConstructTE(
 // it's up to later stages to replace that with an actual index
 case class NewMutRuntimeSizedArrayTE(
   arrayType: RuntimeSizedArrayTT,
-  capacityExpr: ReferenceExpressionTE
+  capacityExpr: ReferenceExpressionTE,
 ) extends ReferenceExpressionTE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result: ReferenceResultT = {
     ReferenceResultT(
       CoordT(
-        if (arrayType.mutability == MutableT) OwnT else ShareT,
+        arrayType.mutability match {
+          case MutabilityTemplata(MutableT) => OwnT
+          case MutabilityTemplata(ImmutableT) => ShareT
+          case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => vimpl()
+        },
         arrayType))
   }
 }
@@ -590,13 +615,17 @@ case class NewMutRuntimeSizedArrayTE(
 case class StaticArrayFromCallableTE(
   arrayType: StaticSizedArrayTT,
   generator: ReferenceExpressionTE,
-  generatorMethod: PrototypeT
+  generatorMethod: PrototypeT,
 ) extends ReferenceExpressionTE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result: ReferenceResultT = {
     ReferenceResultT(
       CoordT(
-        if (arrayType.mutability == MutableT) OwnT else ShareT,
+        arrayType.mutability match {
+          case MutabilityTemplata(MutableT) => OwnT
+          case MutabilityTemplata(ImmutableT) => ShareT
+          case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => vimpl()
+        },
         arrayType))
   }
 }
@@ -617,7 +646,7 @@ case class DestroyStaticSizedArrayIntoFunctionTE(
 
   // See https://github.com/ValeLang/Vale/issues/375
   consumerMethod.returnType.kind match {
-    case StructTT(FullNameT(_, _, CitizenNameT(CitizenTemplateNameT(name), _))) => {
+    case StructTT(FullNameT(_, _, StructNameT(StructTemplateNameT(name), _))) => {
       vassert(name.str == "Tup")
     }
     case VoidT() =>
@@ -645,7 +674,7 @@ case class DestroyStaticSizedArrayIntoLocalsTE(
 }
 
 case class DestroyMutRuntimeSizedArrayTE(
-  arrayExpr: ReferenceExpressionTE
+  arrayExpr: ReferenceExpressionTE,
 ) extends ReferenceExpressionTE {
   override def result: ReferenceResultT = ReferenceResultT(CoordT(ShareT, VoidT()))
 }
@@ -670,7 +699,7 @@ case class PopRuntimeSizedArrayTE(
 ) extends ReferenceExpressionTE {
   private val elementType =
     arrayExpr.result.reference.kind match {
-      case RuntimeSizedArrayTT(_, e) => e
+      case contentsRuntimeSizedArrayTT(_, e) => e
       case other => vwat(other)
     }
   override def result: ReferenceResultT = ReferenceResultT(elementType)
@@ -688,13 +717,24 @@ case class InterfaceToInterfaceUpcastTE(
   }
 }
 
-case class StructToInterfaceUpcastTE(innerExpr: ReferenceExpressionTE, targetInterfaceRef: InterfaceTT) extends ReferenceExpressionTE {
+// This used to be StructToInterfaceUpcastTE, and then we added generics.
+// Now, it could be that we're upcasting a placeholder to an interface, or a
+// placeholder to another placeholder. For all we know, this'll eventually be
+// upcasting an int to an int.
+// So, the target kind can be anything, not just an interface.
+case class UpcastTE(
+  innerExpr: ReferenceExpressionTE,
+  targetSuperKind: ISuperKindTT,
+  // This is the impl we use to allow/permit the upcast. It'll be useful for monomorphization
+  // and later on for locating the itable ptr to put in fat pointers.
+  implName: FullNameT[IImplNameT],
+) extends ReferenceExpressionTE {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   def result: ReferenceResultT = {
     ReferenceResultT(
       CoordT(
         innerExpr.result.reference.ownership,
-        targetInterfaceRef))
+        targetSuperKind))
   }
 }
 
@@ -741,9 +781,12 @@ case class DestroyImmRuntimeSizedArrayTE(
   arrayExpr: ReferenceExpressionTE,
   arrayType: RuntimeSizedArrayTT,
   consumer: ReferenceExpressionTE,
-  consumerMethod: PrototypeT
+  consumerMethod: PrototypeT,
 ) extends ReferenceExpressionTE {
-  vassert(arrayType.mutability == ImmutableT)
+  arrayType.mutability match {
+    case MutabilityTemplata(ImmutableT) =>
+    case _ => vwat()
+  }
 
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vassert(consumerMethod.paramTypes.size == 2)
@@ -765,15 +808,31 @@ case class NewImmRuntimeSizedArrayTE(
   arrayType: RuntimeSizedArrayTT,
   sizeExpr: ReferenceExpressionTE,
   generator: ReferenceExpressionTE,
-  generatorMethod: PrototypeT
+  generatorMethod: PrototypeT,
 ) extends ReferenceExpressionTE {
-  vassert(arrayType.mutability == ImmutableT)
+  arrayType.mutability match {
+    case MutabilityTemplata(ImmutableT) =>
+    case _ => vwat()
+  }
+  // We dont want to own the generator
+  generator.result.reference.ownership match {
+    case BorrowT | ShareT =>
+    case other => vwat(other)
+  }
+  generatorMethod.returnType.ownership match {
+    case ShareT =>
+    case other => vwat(other)
+  }
 
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def result: ReferenceResultT = {
     ReferenceResultT(
       CoordT(
-        if (arrayType.mutability == MutableT) OwnT else ShareT,
+        arrayType.mutability match {
+          case MutabilityTemplata(MutableT) => OwnT
+          case MutabilityTemplata(ImmutableT) => ShareT
+          case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => vimpl()
+        },
         arrayType))
   }
 }
@@ -781,7 +840,7 @@ case class NewImmRuntimeSizedArrayTE(
 object referenceExprResultStructName {
   def unapply(expr: ReferenceExpressionTE): Option[StrI] = {
     expr.result.reference.kind match {
-      case StructTT(FullNameT(_, _, CitizenNameT(CitizenTemplateNameT(name), _))) => Some(name)
+      case StructTT(FullNameT(_, _, StructNameT(StructTemplateNameT(name), _))) => Some(name)
       case _ => None
     }
   }

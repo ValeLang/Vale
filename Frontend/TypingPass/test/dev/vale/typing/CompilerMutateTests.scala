@@ -9,7 +9,7 @@ import dev.vale.postparsing.PostParser
 import OverloadResolver.{FindFunctionFailure, WrongNumberOfArguments}
 import dev.vale.postparsing._
 import dev.vale.typing.ast.{ConstantIntTE, LocalLookupTE, MutateTE, ReferenceMemberLookupTE, SignatureT}
-import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, CodeVarNameT, FullNameT, FunctionNameT, FunctionTemplateNameT, StructNameT, StructTemplateNameT}
+import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, CodeVarNameT, IdT, FunctionNameT, FunctionTemplateNameT, StructNameT, StructTemplateNameT}
 import dev.vale.typing.types._
 import dev.vale.typing.ast._
 import dev.vale.typing.templata._
@@ -36,10 +36,10 @@ class CompilerMutateTests extends FunSuite with Matchers {
         |""".stripMargin)
     val coutputs = compile.expectCompilerOutputs();
     val main = coutputs.lookupFunction("main")
-    Collector.only(main, { case MutateTE(LocalLookupTE(_,ReferenceLocalVariableT(FullNameT(_,_, CodeVarNameT(StrI("a"))), VaryingT, _)), ConstantIntTE(IntegerTemplata(4), _)) => })
+    Collector.only(main, { case MutateTE(LocalLookupTE(_,ReferenceLocalVariableT(IdT(_,_, CodeVarNameT(StrI("a"))), VaryingT, _)), ConstantIntTE(IntegerTemplata(4), _)) => })
 
     val lookup = Collector.only(main, { case l @ LocalLookupTE(range, localVariable) => l })
-    val resultCoord = lookup.result.reference
+    val resultCoord = lookup.result.coord
     resultCoord shouldEqual CoordT(ShareT, IntT.i32)
   }
 
@@ -59,7 +59,7 @@ class CompilerMutateTests extends FunSuite with Matchers {
     val main = coutputs.lookupFunction("main")
 
     val lookup = Collector.only(main, { case l @ ReferenceMemberLookupTE(_, _, _, _, _) => l })
-    val resultCoord = lookup.result.reference
+    val resultCoord = lookup.result.coord
     // See RMLRMO, it should result in the same type as the member.
     resultCoord match {
       case CoordT(OwnT, StructTT(_)) =>
@@ -131,9 +131,9 @@ class CompilerMutateTests extends FunSuite with Matchers {
     compile.getCompilerOutputs() match {
       case Err(CantMutateFinalMember(_, structTT, memberName)) => {
         structTT match {
-          case StructTT(FullNameT(_, _, StructNameT(StructTemplateNameT(StrI("Vec3")), Vector()))) =>
+          case StructTT(IdT(_, _, StructNameT(StructTemplateNameT(StrI("Vec3")), Vector()))) =>
         }
-        memberName.last match {
+        memberName.localName match {
           case CodeVarNameT(StrI("x")) =>
         }
       }
@@ -153,9 +153,9 @@ class CompilerMutateTests extends FunSuite with Matchers {
     compile.getCompilerOutputs() match {
       case Err(CantMutateFinalMember(_, structTT, memberName)) => {
         structTT match {
-          case StructTT(FullNameT(_, _, StructNameT(StructTemplateNameT(StrI("Vec3")), Vector()))) =>
+          case StructTT(IdT(_, _, StructNameT(StructTemplateNameT(StrI("Vec3")), Vector()))) =>
         }
-        memberName.last match {
+        memberName.localName match {
           case CodeVarNameT(StrI("x")) =>
         }
       }
@@ -237,9 +237,9 @@ class CompilerMutateTests extends FunSuite with Matchers {
   test("Humanize errors") {
     val interner = new Interner()
     val keywords = new Keywords(interner)
-    val fireflyKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(StructNameT(StructTemplateNameT(StrI("Firefly")), Vector.empty))))
+    val fireflyKind = StructTT(IdT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(StructNameT(StructTemplateNameT(StrI("Firefly")), Vector.empty))))
     val fireflyCoord = CoordT(OwnT,fireflyKind)
-    val serenityKind = StructTT(FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(StructNameT(StructTemplateNameT(StrI("Serenity")), Vector.empty))))
+    val serenityKind = StructTT(IdT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(StructNameT(StructTemplateNameT(StrI("Serenity")), Vector.empty))))
     val serenityCoord = CoordT(OwnT,serenityKind)
 
     val filenamesAndSources = FileCoordinateMap.test(interner, "blah blah blah\nblah blah blah")
@@ -307,13 +307,13 @@ class CompilerMutateTests extends FunSuite with Matchers {
       FunctionAlreadyExists(
         tz.head,
         tz.head,
-        FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(FunctionNameT(interner.intern(FunctionTemplateNameT(interner.intern(StrI("myFunc")), tz.head.begin)), Vector(), Vector())))))
+        IdT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(FunctionNameT(interner.intern(FunctionTemplateNameT(interner.intern(StrI("myFunc")), tz.head.begin)), Vector(), Vector())))))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       CantMutateFinalMember(
         tz,
         serenityKind,
-        FullNameT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(CodeVarNameT(StrI("bork"))))))
+        IdT(PackageCoordinate.TEST_TLD(interner, keywords), Vector.empty, interner.intern(CodeVarNameT(StrI("bork"))))))
       .nonEmpty)
     vassert(CompilerErrorHumanizer.humanize(false, filenamesAndSources,
       LambdaReturnDoesntMatchInterfaceConstructor(

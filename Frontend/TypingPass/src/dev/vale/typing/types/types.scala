@@ -4,7 +4,7 @@ import dev.vale.{CodeLocationS, IInterning, Interner, Keywords, PackageCoordinat
 import dev.vale.postparsing.IImpreciseNameS
 import dev.vale.typing.ast.{AbstractT, FunctionHeaderT, ICitizenAttributeT}
 import dev.vale.typing.env.IEnvironment
-import dev.vale.typing.names.{AnonymousSubstructNameT, CitizenNameT, FullNameT, ICitizenNameT, IInterfaceNameT, IStructNameT, ISubKindNameT, ISuperKindNameT, IVarNameT, InterfaceNameT, InterfaceTemplateNameT, PlaceholderNameT, RawArrayNameT, RuntimeSizedArrayNameT, RuntimeSizedArrayTemplateNameT, StaticSizedArrayNameT, StructNameT, StructTemplateNameT}
+import dev.vale.typing.names.{AnonymousSubstructNameT, CitizenNameT, IdT, ICitizenNameT, IInterfaceNameT, IStructNameT, ISubKindNameT, ISuperKindNameT, IVarNameT, InterfaceNameT, InterfaceTemplateNameT, PlaceholderNameT, RawArrayNameT, RuntimeSizedArrayNameT, RuntimeSizedArrayTemplateNameT, StaticSizedArrayNameT, StructNameT, StructTemplateNameT}
 import dev.vale.highertyping._
 import dev.vale.postparsing._
 import dev.vale.typing._
@@ -60,7 +60,7 @@ case object YonderT extends LocationT {
 case class CoordT(ownership: OwnershipT, kind: KindT)  {
   vpass()
   this match {
-    case CoordT(BorrowT,RuntimeSizedArrayTT(FullNameT(_,_,RuntimeSizedArrayNameT(_,RawArrayNameT(MutabilityTemplata(ImmutableT),CoordT(ShareT,IntT(32))))))) => {
+    case CoordT(BorrowT,RuntimeSizedArrayTT(IdT(_,_,RuntimeSizedArrayNameT(_,RawArrayNameT(MutabilityTemplata(ImmutableT),CoordT(ShareT,IntT(32))))))) => {
       vpass()
     }
     case _ =>
@@ -143,62 +143,62 @@ case class FloatT() extends KindT {
 object contentsStaticSizedArrayTT {
   def unapply(ssa: StaticSizedArrayTT):
   Option[(ITemplata[IntegerTemplataType], ITemplata[MutabilityTemplataType], ITemplata[VariabilityTemplataType], CoordT)] = {
-    val FullNameT(_, _, StaticSizedArrayNameT(_, size, variability, RawArrayNameT(mutability, coord))) = ssa.name
+    val IdT(_, _, StaticSizedArrayNameT(_, size, variability, RawArrayNameT(mutability, coord))) = ssa.name
     Some((size, mutability, variability, coord))
   }
 }
 case class StaticSizedArrayTT(
-  name: FullNameT[StaticSizedArrayNameT]
+  name: IdT[StaticSizedArrayNameT]
 ) extends KindT with IInterning {
   vassert(name.initSteps.isEmpty)
-  def mutability: ITemplata[MutabilityTemplataType] = name.last.arr.mutability
-  def elementType = name.last.arr.elementType
-  def size = name.last.size
-  def variability = name.last.variability
+  def mutability: ITemplata[MutabilityTemplataType] = name.localName.arr.mutability
+  def elementType = name.localName.arr.elementType
+  def size = name.localName.size
+  def variability = name.localName.variability
 }
 
 object contentsRuntimeSizedArrayTT {
   def unapply(rsa: RuntimeSizedArrayTT): Option[(ITemplata[MutabilityTemplataType], CoordT)] = {
-    val FullNameT(_, _, RuntimeSizedArrayNameT(_, RawArrayNameT(mutability, coord))) = rsa.name
+    val IdT(_, _, RuntimeSizedArrayNameT(_, RawArrayNameT(mutability, coord))) = rsa.name
     Some((mutability, coord))
   }
 }
 case class RuntimeSizedArrayTT(
-  name: FullNameT[RuntimeSizedArrayNameT]
+  name: IdT[RuntimeSizedArrayNameT]
 ) extends KindT with IInterning {
-  def mutability = name.last.arr.mutability
-  def elementType = name.last.arr.elementType
+  def mutability = name.localName.arr.mutability
+  def elementType = name.localName.arr.elementType
 }
 
 object ICitizenTT {
-  def unapply(self: ICitizenTT): Option[FullNameT[ICitizenNameT]] = {
+  def unapply(self: ICitizenTT): Option[IdT[ICitizenNameT]] = {
     Some(self.fullName)
   }
 }
 
 // Structs, interfaces, and placeholders
 sealed trait ISubKindTT extends KindT {
-  def fullName: FullNameT[ISubKindNameT]
+  def fullName: IdT[ISubKindNameT]
 }
 // Interfaces and placeholders
 sealed trait ISuperKindTT extends KindT {
-  def fullName: FullNameT[ISuperKindNameT]
+  def fullName: IdT[ISuperKindNameT]
 }
 
 sealed trait ICitizenTT extends ISubKindTT with IInterning {
-  def fullName: FullNameT[ICitizenNameT]
+  def fullName: IdT[ICitizenNameT]
 }
 
 // These should only be made by StructCompiler, which puts the definition and bounds into coutputs at the same time
-case class StructTT(fullName: FullNameT[IStructNameT]) extends ICitizenTT {
-  (fullName.initSteps.lastOption, fullName.last) match {
+case class StructTT(fullName: IdT[IStructNameT]) extends ICitizenTT {
+  (fullName.initSteps.lastOption, fullName.localName) match {
     case (Some(StructTemplateNameT(_)), StructNameT(_, _)) => vfail()
     case _ =>
   }
 }
 
-case class InterfaceTT(fullName: FullNameT[IInterfaceNameT]) extends ICitizenTT with ISuperKindTT {
-  (fullName.initSteps.lastOption, fullName.last) match {
+case class InterfaceTT(fullName: IdT[IInterfaceNameT]) extends ICitizenTT with ISuperKindTT {
+  (fullName.initSteps.lastOption, fullName.localName) match {
     case (Some(InterfaceTemplateNameT(_)), InterfaceNameT(_, _)) => vfail()
     case _ =>
   }
@@ -216,4 +216,4 @@ case class OverloadSetT(
 
 }
 
-case class PlaceholderT(fullName: FullNameT[PlaceholderNameT]) extends ISubKindTT with ISuperKindTT
+case class PlaceholderT(fullName: IdT[PlaceholderNameT]) extends ISubKindTT with ISuperKindTT

@@ -70,7 +70,7 @@ object FunctionCompiler {
   trait IEvaluateFunctionResult
 
   case class EvaluateFunctionSuccess(
-    function: PrototypeTemplata,
+    prototype: PrototypeTemplata,
     inferences: Map[IRuneS, ITemplata[ITemplataType]]
   ) extends IEvaluateFunctionResult
 
@@ -99,129 +99,6 @@ class FunctionCompiler(
     new FunctionCompilerClosureOrLightLayer(
       opts, interner, keywords, nameTranslator, templataCompiler, inferCompiler, convertHelper, structCompiler, delegate)
 
-  private def determineClosureVariableMember(
-      env: NodeEnvironment,
-      coutputs: CompilerOutputs,
-      name: IVarNameS) = {
-    val (variability2, memberType) =
-      env.getVariable(nameTranslator.translateVarNameStep(name)).get match {
-        case ReferenceLocalVariableT(_, variability, reference) => {
-          // See "Captured own is borrow" test for why we do this
-          val tyype =
-            reference.ownership match {
-              case OwnT => ReferenceMemberTypeT(CoordT(BorrowT, reference.kind))
-              case BorrowT | ShareT => ReferenceMemberTypeT(reference)
-            }
-          (variability, tyype)
-        }
-        case AddressibleLocalVariableT(_, variability, reference) => {
-          (variability, AddressMemberTypeT(reference))
-        }
-        case ReferenceClosureVariableT(_, _, variability, reference) => {
-          // See "Captured own is borrow" test for why we do this
-          val tyype =
-            reference.ownership match {
-              case OwnT => ReferenceMemberTypeT(CoordT(BorrowT, reference.kind))
-              case BorrowT | ShareT => ReferenceMemberTypeT(reference)
-            }
-          (variability, tyype)
-        }
-        case AddressibleClosureVariableT(_, _, variability, reference) => {
-          (variability, AddressMemberTypeT(reference))
-        }
-      }
-    NormalStructMemberT(nameTranslator.translateVarNameStep(name), variability2, memberType)
-  }
-
-  def evaluateClosureStruct(
-    coutputs: CompilerOutputs,
-    containingNodeEnv: NodeEnvironment,
-    callRange: List[RangeS],
-    name: IFunctionDeclarationNameS,
-    functionA: FunctionA,
-    verifyConclusions: Boolean):
-  (StructTT) = {
-    val CodeBodyS(body) = functionA.body
-    val closuredNames = body.closuredNames;
-
-    // Note, this is where the unordered closuredNames set becomes ordered.
-    val closuredVarNamesAndTypes =
-      closuredNames
-        .map(name => determineClosureVariableMember(containingNodeEnv, coutputs, name))
-        .toVector;
-
-    val (structTT, _, functionTemplata) =
-      structCompiler.makeClosureUnderstruct(
-        containingNodeEnv, coutputs, callRange, name, functionA, closuredVarNamesAndTypes)
-
-    // Never eagerly evaluate it
-//    // Eagerly evaluate the function if it's not a template.
-//    if (functionA.isTemplate) {
-//      // Do nothing
-//    } else {
-//      val _ =
-//        evaluateOrdinaryClosureFunctionFromNonCallForHeader(
-//          functionTemplata.outerEnv, coutputs, callRange, structTT, functionA, verifyConclusions)
-//    }
-
-    (structTT)
-  }
-
-
-
-//  def evaluateOrdinaryFunctionFromNonCallForHeader(
-//    coutputs: CompilerOutputs,
-//    parentRanges: List[RangeS],
-//    functionTemplata: FunctionTemplata,
-//    verifyConclusions: Boolean):
-//  FunctionHeaderT = {
-//    Profiler.frame(() => {
-//        val FunctionTemplata(env, function) = functionTemplata
-//        if (function.isLight) {
-//          evaluateOrdinaryLightFunctionFromNonCallForHeader(
-//            env, coutputs, parentRanges, function, verifyConclusions)
-//        } else {
-//          val List(KindTemplata(closureStructRef@StructTT(_))) =
-//            env.lookupNearestWithImpreciseName(
-//
-//              vimpl(), //FunctionScout.CLOSURE_STRUCT_ENV_ENTRY_NAME,
-//              Set(TemplataLookupContext)).toList
-//          val header =
-//            evaluateOrdinaryClosureFunctionFromNonCallForHeader(
-//              env, coutputs, parentRanges, closureStructRef, function, verifyConclusions)
-//          header
-//        }
-//      })
-//
-//  }
-
-//  def evaluateTemplatedFunctionFromNonCallForHeader(
-//    coutputs: CompilerOutputs,
-//    parentRanges: List[RangeS],
-//    functionTemplata: FunctionTemplata,
-//    verifyConclusions: Boolean):
-//  FunctionHeaderT = {
-//    Profiler.frame(() => {
-//      val FunctionTemplata(env, function) = functionTemplata
-////      if (function.isLight) {
-//      vassert(function.isLight())
-//        evaluateTemplatedLightFunctionFromNonCallForHeader(
-//          env, coutputs, parentRanges, function, verifyConclusions)
-////      } else {
-////        val List(KindTemplata(closureStructRef@StructTT(_))) =
-////          env.lookupNearestWithImpreciseName(
-////
-////            vimpl(), //FunctionScout.CLOSURE_STRUCT_ENV_ENTRY_NAME,
-////            Set(TemplataLookupContext)).toList
-////        val header =
-////          evaluateTemplatedClosureFunctionFromNonCallForHeader(
-////            env, coutputs, parentRanges, closureStructRef, function, verifyConclusions)
-////        header
-////      }
-//    })
-//
-//  }
-
   // We would want only the prototype instead of the entire header if, for example,
   // we were calling the function. This is necessary for a recursive function like
   // func main():Int{main()}
@@ -234,107 +111,16 @@ class FunctionCompiler(
     Profiler.frame(() => {
       val FunctionTemplata(env, function) = functionTemplata
       if (function.isLight) {
-        evaluateGenericLightFunctionFromNonCall(
+        closureOrLightLayer.evaluateGenericLightFunctionFromNonCall(
           env, coutputs, function.range :: parentRanges, function, verifyConclusions)
       } else {
         vfail() // I think we need a call to evaluate a lambda?
-//        val lambdaCitizenName2 =
-//          functionTemplata.function.name match {
-//            case LambdaDeclarationNameS(codeLocation) => interner.intern(LambdaCitizenNameT(interner.intern(LambdaCitizenTemplateNameT(nameTranslator.translateCodeLocation(codeLocation)))))
-//            case _ => vwat()
-//          }
-//
-//        val KindTemplata(closureStructRef@StructTT(_)) =
-//          vassertOne(
-//            env.lookupNearestWithName(
-//
-//              lambdaCitizenName2,
-//              Set(TemplataLookupContext)))
-//        val header =
-//          evaluateOrdinaryClosureFunctionFromNonCallForHeader(
-//            env, coutputs, closureStructRef, function)
-//        (header.toPrototype)
       }
     })
 
   }
 
-//  // We would want only the prototype instead of the entire header if, for example,
-//  // we were calling the function. This is necessary for a recursive function like
-//  // func main():Int{main()}
-//  def evaluateOrdinaryFunctionFromCallForPrototype(
-//    coutputs: CompilerOutputs,
-//    callingEnv: IEnvironment, // See CSSNCE
-//    callRange: List[RangeS],
-//    functionTemplata: FunctionTemplata):
-//  (PrototypeTemplata) = {
-//    Profiler.frame(() => {
-//        val FunctionTemplata(declaringEnv, function) = functionTemplata
-//        if (function.isLight) {
-//          evaluateOrdinaryLightFunctionFromCallForPrototype(
-//            declaringEnv, coutputs, callingEnv, callRange, function)
-//        } else {
-//          val lambdaCitizenName2 =
-//            functionTemplata.function.name match {
-//              case LambdaDeclarationNameS(codeLocation) => interner.intern(LambdaCitizenNameT(interner.intern(LambdaCitizenTemplateNameT(nameTranslator.translateCodeLocation(codeLocation)))))
-//              case _ => vwat()
-//            }
-//
-//          val KindTemplata(closureStructRef@StructTT(_)) =
-//            vassertOne(
-//              declaringEnv.lookupNearestWithName(
-//                lambdaCitizenName2,
-//                Set(TemplataLookupContext)))
-//          evaluateOrdinaryClosureFunctionFromCallForPrototype(
-//            declaringEnv, coutputs, callRange, callingEnv, closureStructRef, function)
-//        }
-//      })
-//
-//  }
-//
-//  def evaluateOrdinaryFunctionFromNonCallForBanner(
-//    coutputs: CompilerOutputs,
-//    callRange: List[RangeS],
-//    functionTemplata: FunctionTemplata,
-//    verifyConclusions: Boolean):
-//  (PrototypeTemplata) = {
-//    Profiler.frame(() => {
-//        val FunctionTemplata(env, function) = functionTemplata
-//        if (function.isLight()) {
-//          evaluateOrdinaryLightFunctionFromNonCallForBanner(
-//            env, coutputs, callRange, function, verifyConclusions)
-//        } else {
-//          val lambdaCitizenName2 =
-//            functionTemplata.function.name match {
-//              case LambdaDeclarationNameS(codeLocation) => interner.intern(LambdaCitizenNameT(interner.intern(LambdaCitizenTemplateNameT(nameTranslator.translateCodeLocation(codeLocation)))))
-//              case _ => vwat()
-//            }
-//
-//          val KindTemplata(closureStructRef@StructTT(_)) =
-//            vassertOne(
-//              env.lookupNearestWithName(
-//
-//                lambdaCitizenName2,
-//                Set(TemplataLookupContext)))
-//          evaluateOrdinaryClosureFunctionFromNonCallForBanner(
-//            env, coutputs, callRange, closureStructRef, function, verifyConclusions)
-//        }
-//      })
-//
-//  }
-//
-//  private def evaluateOrdinaryLightFunctionFromNonCallForBanner(
-//    env: IEnvironment,
-//    coutputs: CompilerOutputs,
-//    callRange: List[RangeS],
-//    function: FunctionA,
-//    verifyConclusions: Boolean):
-//  (PrototypeTemplata) = {
-//    closureOrLightLayer.evaluateOrdinaryLightFunctionFromNonCallForBanner(
-//      env, coutputs, callRange, function, verifyConclusions)
-//  }
-
-  def evaluateTemplatedFunctionFromCallForBanner(
+  def evaluateTemplatedLightFunctionFromCallForPrototype(
     coutputs: CompilerOutputs,
     callingEnv: IEnvironment, // See CSSNCE
     callRange: List[RangeS],
@@ -343,47 +129,16 @@ class FunctionCompiler(
     argTypes: Vector[CoordT]):
   (IEvaluateFunctionResult) = {
     Profiler.frame(() => {
-        val FunctionTemplata(declaringEnv, function) = functionTemplata
-        if (function.isLight()) {
-          evaluateTemplatedLightFunctionFromCallForBanner(
-            coutputs, callingEnv, callRange, functionTemplata, alreadySpecifiedTemplateArgs, argTypes)
-        } else {
-          val lambdaCitizenName2 =
-            functionTemplata.function.name match {
-              case LambdaDeclarationNameS(codeLocation) => interner.intern(LambdaCitizenNameT(interner.intern(LambdaCitizenTemplateNameT(nameTranslator.translateCodeLocation(codeLocation)))))
-              case _ => vwat()
-            }
-
-          val KindTemplata(closureStructRef@StructTT(_)) =
-            vassertOne(
-              declaringEnv.lookupNearestWithName(
-                lambdaCitizenName2,
-                Set(TemplataLookupContext)))
-          val banner =
-            evaluateTemplatedClosureFunctionFromCallForBanner(
-              declaringEnv, coutputs, callingEnv, callRange, closureStructRef, function, alreadySpecifiedTemplateArgs, argTypes)
-          (banner)
-        }
-      })
-
+      val FunctionTemplata(declaringEnv, function) = functionTemplata
+      closureOrLightLayer.evaluateTemplatedLightBannerFromCall(
+        declaringEnv,
+        coutputs,
+        callingEnv, // See CSSNCE
+        callRange, function, alreadySpecifiedTemplateArgs, argTypes)
+    })
   }
 
-  private def evaluateTemplatedClosureFunctionFromCallForBanner(
-      declaringEnv: IEnvironment,
-      coutputs: CompilerOutputs,
-      callingEnv: IEnvironment,
-      callRange: List[RangeS],
-      closureStructRef: StructTT,
-      function: FunctionA,
-      alreadySpecifiedTemplateArgs: Vector[ITemplata[ITemplataType]],
-      argTypes2: Vector[CoordT]):
-  (IEvaluateFunctionResult) = {
-    closureOrLightLayer.evaluateTemplatedClosureFunctionFromCallForBanner(
-      declaringEnv, coutputs, callingEnv, callRange, closureStructRef, function,
-      alreadySpecifiedTemplateArgs, argTypes2)
-  }
-
-  def evaluateTemplatedLightFunctionFromCallForBanner(
+  def evaluateTemplatedFunctionFromCallForPrototype(
     coutputs: CompilerOutputs,
     callingEnv: IEnvironment, // See CSSNCE
     callRange: List[RangeS],
@@ -392,124 +147,34 @@ class FunctionCompiler(
     argTypes: Vector[CoordT]):
   (IEvaluateFunctionResult) = {
     Profiler.frame(() => {
-        val FunctionTemplata(declaringEnv, function) = functionTemplata
+      val FunctionTemplata(declaringEnv, function) = functionTemplata
+      if (function.isLight()) {
         closureOrLightLayer.evaluateTemplatedLightBannerFromCall(
           declaringEnv,
           coutputs,
           callingEnv, // See CSSNCE
           callRange, function, alreadySpecifiedTemplateArgs, argTypes)
-      })
+      } else {
+        val lambdaCitizenName2 =
+          functionTemplata.function.name match {
+            case LambdaDeclarationNameS(codeLocation) => interner.intern(LambdaCitizenNameT(interner.intern(LambdaCitizenTemplateNameT(nameTranslator.translateCodeLocation(codeLocation)))))
+            case _ => vwat()
+          }
+
+        val KindTemplata(closureStructRef@StructTT(_)) =
+          vassertOne(
+            declaringEnv.lookupNearestWithName(
+              lambdaCitizenName2,
+              Set(TemplataLookupContext)))
+        val banner =
+          closureOrLightLayer.evaluateTemplatedClosureFunctionFromCallForBanner(
+            declaringEnv, coutputs, callingEnv, callRange, closureStructRef, function,
+            alreadySpecifiedTemplateArgs, argTypes)
+        (banner)
+      }
+    })
 
   }
-
-//  private def evaluateOrdinaryClosureFunctionFromNonCallForHeader(
-//    env: IEnvironment,
-//    coutputs: CompilerOutputs,
-//    parentRanges: List[RangeS],
-//    closureStructRef: StructTT,
-//    function: FunctionA,
-//    verifyConclusions: Boolean):
-//  (FunctionHeaderT) = {
-//    closureOrLightLayer.evaluateOrdinaryClosureFunctionFromNonCallForHeader(
-//      env, coutputs, parentRanges, closureStructRef, function, verifyConclusions)
-//  }
-//
-//  private def evaluateOrdinaryClosureFunctionFromCallForPrototype(
-//    env: IEnvironment,
-//    coutputs: CompilerOutputs,
-//    parentRanges: List[RangeS],
-//    callingEnv: IEnvironment, // See CSSNCE
-//    closureStructRef: StructTT,
-//    function: FunctionA):
-//  (PrototypeTemplata) = {
-//    closureOrLightLayer.evaluateOrdinaryClosureFunctionFromCallForPrototype(
-//      env, coutputs, parentRanges, callingEnv, closureStructRef, function)
-//  }
-//
-//  private def evaluateTemplatedClosureFunctionFromNonCallForHeader(
-//    env: IEnvironment,
-//    coutputs: CompilerOutputs,
-//    parentRanges: List[RangeS],
-//    closureStructRef: StructTT,
-//    function: FunctionA,
-//    verifyConclusions: Boolean):
-//  (FunctionHeaderT) = {
-//    closureOrLightLayer.evaluateTemplatedClosureFunctionFromNonCallForHeader(
-//      env, coutputs, parentRanges, closureStructRef, function, verifyConclusions)
-//  }
-
-//  private def evaluateOrdinaryClosureFunctionFromNonCallForBanner(
-//    env: IEnvironment,
-//    coutputs: CompilerOutputs,
-//    callRange: List[RangeS],
-//    closureStructRef: StructTT,
-//    function: FunctionA,
-//    verifyConclusions: Boolean):
-//  (PrototypeTemplata) = {
-//    closureOrLightLayer.evaluateOrdinaryClosureFunctionFromNonCallForBanner(
-//      env, coutputs, callRange, closureStructRef, function, verifyConclusions)
-//  }
-
-//  // We would want only the prototype instead of the entire header if, for example,
-//  // we were calling the function. This is necessary for a recursive function like
-//  // func main():Int{main()}
-//  private def evaluateOrdinaryLightFunctionFromCallForPrototype(
-//      env: IEnvironment,
-//      coutputs: CompilerOutputs,
-//      callingEnv: IEnvironment, // See CSSNCE
-//      callRange: List[RangeS],
-//      function: FunctionA):
-//  (PrototypeTemplata) = {
-//    closureOrLightLayer.evaluateOrdinaryLightFunctionFromCallForPrototype(
-//      env, coutputs, callingEnv, callRange, function)
-//  }
-
-
-//  private def evaluateOrdinaryLightFunctionFromNonCallForHeader(
-//    env: IEnvironment,
-//    coutputs: CompilerOutputs,
-//    parentRanges: List[RangeS],
-//    function: FunctionA,
-//    verifyConclusions: Boolean):
-//  (FunctionHeaderT) = {
-//    closureOrLightLayer.evaluateOrdinaryLightFunctionFromNonCallForHeader(
-//      env, coutputs, parentRanges, function, verifyConclusions)
-//  }
-
-  private def evaluateGenericLightFunctionFromNonCall(
-    env: IEnvironment,
-    coutputs: CompilerOutputs,
-    parentRanges: List[RangeS],
-    function: FunctionA,
-    verifyConclusions: Boolean):
-  (FunctionHeaderT) = {
-    closureOrLightLayer.evaluateGenericLightFunctionFromNonCall(
-      env, coutputs, parentRanges, function, verifyConclusions)
-  }
-
-//  private def evaluateTemplatedLightFunctionFromNonCallForHeader(
-//    env: IEnvironment,
-//    coutputs: CompilerOutputs,
-//    parentRanges: List[RangeS],
-//    function: FunctionA,
-//    verifyConclusions: Boolean):
-//  (FunctionHeaderT) = {
-//    closureOrLightLayer.evaluateTemplatedLightFunctionFromNonCallForHeader(
-//      env, coutputs, parentRanges, function, verifyConclusions)
-//  }
-
-//  def evaluateOrdinaryLightFunctionFromNonCallForCompilerOutputs(
-//      coutputs: CompilerOutputs,
-//      functionTemplata: FunctionTemplata):
-//  Unit = {
-//    Profiler.frame(() => {
-//        val FunctionTemplata(env, function) = functionTemplata
-//        val _ =
-//          evaluateOrdinaryLightFunctionFromNonCallForHeader(
-//            env, coutputs, function)
-//      })
-//
-//  }
 
   def evaluateTemplatedFunctionFromCallForPrototype(
     coutputs: CompilerOutputs,
@@ -521,15 +186,25 @@ class FunctionCompiler(
     verifyConclusions: Boolean):
   IEvaluateFunctionResult = {
     Profiler.frame(() => {
-        val FunctionTemplata(env, function) = functionTemplata
-        if (function.isLight()) {
-          evaluateTemplatedLightFunctionFromCallForPrototype(
-            env, coutputs, callingEnv, callRange, function, explicitTemplateArgs, argTypes, verifyConclusions)
-        } else {
-          evaluateTemplatedClosureFunctionFromCallForPrototype(
-            env, coutputs, callingEnv, callRange, function, explicitTemplateArgs, argTypes, verifyConclusions)
-        }
-      })
+      val FunctionTemplata(env, function) = functionTemplata
+      if (function.isLight()) {
+        closureOrLightLayer.evaluateTemplatedLightFunctionFromCallForPrototype2(
+          env, coutputs, callingEnv, callRange, function, explicitTemplateArgs, argTypes, verifyConclusions)
+      } else {
+        val lambdaCitizenName2 =
+          function.name match {
+            case LambdaDeclarationNameS(codeLocation) => interner.intern(LambdaCitizenNameT(interner.intern(LambdaCitizenTemplateNameT(nameTranslator.translateCodeLocation(codeLocation)))))
+            case _ => vwat()
+          }
+        val KindTemplata(closureStructRef @ StructTT(_)) =
+          vassertOne(
+            env.lookupNearestWithName(
+              lambdaCitizenName2,
+              Set(TemplataLookupContext)))
+        closureOrLightLayer.evaluateTemplatedClosureFunctionFromCallForPrototype(
+          env, coutputs, callingEnv, callRange, closureStructRef, function, explicitTemplateArgs, argTypes, verifyConclusions)
+      }
+    })
 
   }
 
@@ -562,42 +237,62 @@ class FunctionCompiler(
     })
   }
 
-  private def evaluateTemplatedLightFunctionFromCallForPrototype(
-    env: IEnvironment,
+  def evaluateClosureStruct(
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment, // See CSSNCE
+    containingNodeEnv: NodeEnvironment,
     callRange: List[RangeS],
-    function: FunctionA,
-    explicitTemplateArgs: Vector[ITemplata[ITemplataType]],
-    argTypes: Vector[CoordT],
+    name: IFunctionDeclarationNameS,
+    functionA: FunctionA,
     verifyConclusions: Boolean):
-  IEvaluateFunctionResult = {
-    closureOrLightLayer.evaluateTemplatedLightFunctionFromCallForPrototype2(
-        env, coutputs, callingEnv, callRange, function, explicitTemplateArgs, argTypes, verifyConclusions)
+  (StructTT) = {
+    val CodeBodyS(body) = functionA.body
+    val closuredNames = body.closuredNames;
+
+    // Note, this is where the unordered closuredNames set becomes ordered.
+    val closuredVarNamesAndTypes =
+      closuredNames
+        .map(name => determineClosureVariableMember(containingNodeEnv, coutputs, name))
+        .toVector;
+
+    val (structTT, _, functionTemplata) =
+      structCompiler.makeClosureUnderstruct(
+        containingNodeEnv, coutputs, callRange, name, functionA, closuredVarNamesAndTypes)
+
+    (structTT)
   }
 
-  private def evaluateTemplatedClosureFunctionFromCallForPrototype(
-    env: IEnvironment,
+  private def determineClosureVariableMember(
+    env: NodeEnvironment,
     coutputs: CompilerOutputs,
-    callingEnv: IEnvironment, // See CSSNCE
-    callRange: List[RangeS],
-    function: FunctionA,
-    explicitTemplateArgs: Vector[ITemplata[ITemplataType]],
-    argTypes: Vector[CoordT],
-    verifyConclusions: Boolean):
-  IEvaluateFunctionResult = {
-    val lambdaCitizenName2 =
-      function.name match {
-        case LambdaDeclarationNameS(codeLocation) => interner.intern(LambdaCitizenNameT(interner.intern(LambdaCitizenTemplateNameT(nameTranslator.translateCodeLocation(codeLocation)))))
-        case _ => vwat()
+    name: IVarNameS) = {
+    val (variability2, memberType) =
+      env.getVariable(nameTranslator.translateVarNameStep(name)).get match {
+        case ReferenceLocalVariableT(_, variability, reference) => {
+          // See "Captured own is borrow" test for why we do this
+          val tyype =
+            reference.ownership match {
+              case OwnT => ReferenceMemberTypeT(CoordT(BorrowT, reference.kind))
+              case BorrowT | ShareT => ReferenceMemberTypeT(reference)
+            }
+          (variability, tyype)
+        }
+        case AddressibleLocalVariableT(_, variability, reference) => {
+          (variability, AddressMemberTypeT(reference))
+        }
+        case ReferenceClosureVariableT(_, _, variability, reference) => {
+          // See "Captured own is borrow" test for why we do this
+          val tyype =
+            reference.ownership match {
+              case OwnT => ReferenceMemberTypeT(CoordT(BorrowT, reference.kind))
+              case BorrowT | ShareT => ReferenceMemberTypeT(reference)
+            }
+          (variability, tyype)
+        }
+        case AddressibleClosureVariableT(_, _, variability, reference) => {
+          (variability, AddressMemberTypeT(reference))
+        }
       }
-    val KindTemplata(closureStructRef @ StructTT(_)) =
-      vassertOne(
-        env.lookupNearestWithName(
-
-          lambdaCitizenName2,
-          Set(TemplataLookupContext)))
-    closureOrLightLayer.evaluateTemplatedClosureFunctionFromCallForPrototype(
-      env, coutputs, callingEnv, callRange, closureStructRef, function, explicitTemplateArgs, argTypes, verifyConclusions)
+    NormalStructMemberT(nameTranslator.translateVarNameStep(name), variability2, memberType)
   }
+
 }

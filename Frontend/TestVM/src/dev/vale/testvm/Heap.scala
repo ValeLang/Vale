@@ -1,6 +1,6 @@
 package dev.vale.testvm
 
-import dev.vale.finalast.{BoolH, BorrowH, FloatH, InlineH, IntH, InterfaceRefH, KindH, Local, LocationH, OwnH, OwnershipH, ProgramH, PrototypeH, ReferenceH, RuntimeSizedArrayDefinitionHT, RuntimeSizedArrayHT, ShareH, StaticSizedArrayDefinitionHT, StaticSizedArrayHT, StrH, StructDefinitionH, StructMemberH, StructRefH, VoidH, WeakH}
+import dev.vale.finalast.{BoolHT, BorrowH, FloatHT, InlineH, IntHT, InterfaceHT, KindHT, Local, LocationH, OwnH, OwnershipH, ProgramH, PrototypeH, CoordH, RuntimeSizedArrayDefinitionHT, RuntimeSizedArrayHT, ShareH, StaticSizedArrayDefinitionHT, StaticSizedArrayHT, StrHT, StructDefinitionH, StructMemberH, StructHT, VoidHT, WeakH}
 import dev.vale.{vassert, vassertSome, vfail, vimpl, von}
 
 import java.io.PrintStream
@@ -127,18 +127,18 @@ class Heap(in_vivemDout: PrintStream) {
 
   val void = objectsById.void
 
-  def addLocal(varAddr: VariableAddressV, reference: ReferenceV, expectedType: ReferenceH[KindH]) = {
+  def addLocal(varAddr: VariableAddressV, reference: ReferenceV, expectedType: CoordH[KindHT]) = {
     val call = getCurrentCall(varAddr.callId)
     checkReference(expectedType, reference)
     call.addLocal(varAddr, reference, expectedType)
     incrementReferenceRefCount(VariableToObjectReferrer(varAddr, expectedType.ownership), reference)
   }
 
-  def getReference(varAddr: VariableAddressV, expectedType: ReferenceH[KindH]) = {
+  def getReference(varAddr: VariableAddressV, expectedType: CoordH[KindHT]) = {
     callsById(varAddr.callId).getLocal(varAddr).reference
   }
 
-  def removeLocal(varAddr: VariableAddressV, expectedType: ReferenceH[KindH]) = {
+  def removeLocal(varAddr: VariableAddressV, expectedType: CoordH[KindHT]) = {
     val call = getCurrentCall(varAddr.callId)
     val variable = getLocal(varAddr)
     val actualReference = variable.reference
@@ -149,8 +149,8 @@ class Heap(in_vivemDout: PrintStream) {
 
   def getReferenceFromLocal(
       varAddr: VariableAddressV,
-      expectedType: ReferenceH[KindH],
-      targetType: ReferenceH[KindH]
+      expectedType: CoordH[KindHT],
+      targetType: CoordH[KindHT]
   ): ReferenceV = {
     val variable = getLocal(varAddr)
     if (variable.expectedType != expectedType) {
@@ -164,7 +164,7 @@ class Heap(in_vivemDout: PrintStream) {
     callsById(varAddr.callId).getLocal(varAddr)
   }
 
-  def mutateVariable(varAddress: VariableAddressV, reference: ReferenceV, expectedType: ReferenceH[KindH]): ReferenceV = {
+  def mutateVariable(varAddress: VariableAddressV, reference: ReferenceV, expectedType: CoordH[KindHT]): ReferenceV = {
     val variable = callsById(varAddress.callId).getLocal(varAddress)
     checkReference(expectedType, reference)
     checkReference(variable.expectedType, reference)
@@ -175,7 +175,7 @@ class Heap(in_vivemDout: PrintStream) {
     callsById(varAddress.callId).mutateLocal(varAddress, reference, expectedType)
     oldReference
   }
-  def mutateArray(elementAddress: ElementAddressV, reference: ReferenceV, expectedType: ReferenceH[KindH]): ReferenceV = {
+  def mutateArray(elementAddress: ElementAddressV, reference: ReferenceV, expectedType: CoordH[KindHT]): ReferenceV = {
     val ElementAddressV(arrayRef, elementIndex) = elementAddress
     objectsById.get(arrayRef).kind match {
       case ai @ ArrayInstanceV(_, _, _, _) => {
@@ -188,7 +188,7 @@ class Heap(in_vivemDout: PrintStream) {
       }
     }
   }
-  def mutateStruct(memberAddress: MemberAddressV, reference: ReferenceV, expectedType: ReferenceH[KindH]):
+  def mutateStruct(memberAddress: MemberAddressV, reference: ReferenceV, expectedType: CoordH[KindHT]):
   ReferenceV = {
     val MemberAddressV(objectId, fieldIndex) = memberAddress
     objectsById.get(objectId).kind match {
@@ -208,8 +208,8 @@ class Heap(in_vivemDout: PrintStream) {
 
   def getReferenceFromStruct(
     address: MemberAddressV,
-    expectedType: ReferenceH[KindH],
-    targetType: ReferenceH[KindH]
+    expectedType: CoordH[KindHT],
+    targetType: CoordH[KindHT]
   ): ReferenceV = {
     val MemberAddressV(objectId, fieldIndex) = address
     objectsById.get(objectId).kind match {
@@ -222,8 +222,8 @@ class Heap(in_vivemDout: PrintStream) {
   }
   def getReferenceFromArray(
     address: ElementAddressV,
-    expectedType: ReferenceH[KindH],
-    targetType: ReferenceH[KindH]
+    expectedType: CoordH[KindHT],
+    targetType: CoordH[KindHT]
   ): ReferenceV = {
     val ElementAddressV(objectId, elementIndex) = address
     objectsById.get(objectId).kind match {
@@ -383,7 +383,7 @@ class Heap(in_vivemDout: PrintStream) {
   }
 
   def getRefCount(reference: ReferenceV): Int = {
-    if (reference.actualKind.hamut == VoidH()) {
+    if (reference.actualKind.hamut == VoidHT()) {
       // Let's pretend Void permanently has 1 RC, so nobody tries to free it
       return 1
     }
@@ -418,8 +418,8 @@ class Heap(in_vivemDout: PrintStream) {
 
   def transmute(
     reference: ReferenceV,
-    expectedType: ReferenceH[KindH],
-    targetType: ReferenceH[KindH]):
+    expectedType: CoordH[KindHT],
+    targetType: CoordH[KindHT]):
   ReferenceV = {
     if (expectedType == targetType) {
       return reference
@@ -444,8 +444,8 @@ class Heap(in_vivemDout: PrintStream) {
   def cast(
     callId: CallId,
     reference: ReferenceV,
-    expectedType: ReferenceH[KindH],
-    targetType: ReferenceH[KindH]):
+    expectedType: CoordH[KindHT],
+    targetType: CoordH[KindHT]):
   ReferenceV = {
     if (expectedType == targetType) {
       return reference
@@ -531,7 +531,7 @@ class Heap(in_vivemDout: PrintStream) {
     callsById(expectedCallId)
   }
 
-  def takeArgument(callId: CallId, argumentIndex: Int, expectedType: ReferenceH[KindH]) = {
+  def takeArgument(callId: CallId, argumentIndex: Int, expectedType: CoordH[KindHT]) = {
     val reference = getCurrentCall(callId).takeArgument(argumentIndex)
     checkReference(expectedType, reference)
     decrementReferenceRefCount(
@@ -579,7 +579,7 @@ class Heap(in_vivemDout: PrintStream) {
 
   def newStruct(
       structDefH: StructDefinitionH,
-      structRefH: ReferenceH[StructRefH],
+      structRefH: CoordH[StructHT],
       memberReferences: Vector[ReferenceV]):
   ReferenceV = {
     val instance = StructInstanceV(structDefH, Some(memberReferences.toVector))
@@ -618,7 +618,7 @@ class Heap(in_vivemDout: PrintStream) {
 
   def addUninitializedArray(
       arrayDefinitionTH: RuntimeSizedArrayDefinitionHT,
-      arrayRefType: ReferenceH[RuntimeSizedArrayHT],
+      arrayRefType: CoordH[RuntimeSizedArrayHT],
       capacity: Int):
   (ReferenceV, ArrayInstanceV) = {
     val instance = ArrayInstanceV(arrayRefType, arrayDefinitionTH.elementType, capacity, Vector())
@@ -628,7 +628,7 @@ class Heap(in_vivemDout: PrintStream) {
 
   def addArray(
     arrayDefinitionTH: StaticSizedArrayDefinitionHT,
-    arrayRefType: ReferenceH[StaticSizedArrayHT],
+    arrayRefType: CoordH[StaticSizedArrayHT],
     memberRefs: Vector[ReferenceV]):
   (ReferenceV, ArrayInstanceV) = {
     val instance = ArrayInstanceV(arrayRefType, arrayDefinitionTH.elementType, memberRefs.size, memberRefs.toVector)
@@ -642,7 +642,7 @@ class Heap(in_vivemDout: PrintStream) {
   }
 
 
-  def checkReference(expectedType: ReferenceH[KindH], actualReference: ReferenceV): Unit = {
+  def checkReference(expectedType: CoordH[KindHT], actualReference: ReferenceV): Unit = {
     if (actualReference.ownership == WeakH) {
       vassert(containsLiveOrUndeadObject(actualReference.allocId))
     } else {
@@ -656,24 +656,24 @@ class Heap(in_vivemDout: PrintStream) {
   }
 
 
-  def checkReferenceRegister(tyype: ReferenceH[KindH], register: RegisterV): ReferenceRegisterV = {
+  def checkReferenceRegister(tyype: CoordH[KindHT], register: RegisterV): ReferenceRegisterV = {
     val reg = register.expectReferenceRegister()
     checkReference(tyype, reg.reference)
     reg
   }
 
-  def checkKind(expectedType: KindH, actualKind: KindV): Unit = {
+  def checkKind(expectedType: KindHT, actualKind: KindV): Unit = {
     (actualKind, expectedType) match {
-      case (IntV(_, actualBits), IntH(expectedBits)) => {
+      case (IntV(_, actualBits), IntHT(expectedBits)) => {
         if (actualBits != expectedBits) {
           vfail("Expected " + expectedType + " but was " + actualKind)
         }
       }
-      case (VoidV, VoidH()) =>
-      case (BoolV(_), BoolH()) =>
-      case (StrV(_), StrH()) =>
-      case (FloatV(_), FloatH()) =>
-      case (StructInstanceV(structDefH, _), structRefH @ StructRefH(_)) => {
+      case (VoidV, VoidHT()) =>
+      case (BoolV(_), BoolHT()) =>
+      case (StrV(_), StrHT()) =>
+      case (FloatV(_), FloatHT()) =>
+      case (StructInstanceV(structDefH, _), structRefH @ StructHT(_)) => {
         if (structDefH.getRef != structRefH) {
           vfail("Expected " + structRefH + " but was " + structDefH)
         }
@@ -688,7 +688,7 @@ class Heap(in_vivemDout: PrintStream) {
           vfail("Expected " + arrayH + " but was " + typeH)
         }
       }
-      case (StructInstanceV(structDefH, _), irH @ InterfaceRefH(_)) => {
+      case (StructInstanceV(structDefH, _), irH @ InterfaceHT(_)) => {
         val structImplementsInterface =
           structDefH.edges.exists(_.interface == irH)
         if (!structImplementsInterface) {
@@ -701,7 +701,7 @@ class Heap(in_vivemDout: PrintStream) {
     }
   }
 
-  def checkStructId(expectedStructType: StructRefH, expectedStructPointerType: ReferenceH[KindH], register: RegisterV): AllocationId = {
+  def checkStructId(expectedStructType: StructHT, expectedStructPointerType: CoordH[KindHT], register: RegisterV): AllocationId = {
     val reference = checkReferenceRegister(expectedStructPointerType, register).reference
     dereference(reference) match {
       case siv @ StructInstanceV(structDefH, _) => {
@@ -712,7 +712,7 @@ class Heap(in_vivemDout: PrintStream) {
     reference.allocId
   }
 
-  def checkStructReference(expectedStructType: StructRefH, expectedStructPointerType: ReferenceH[KindH], register: RegisterV): StructInstanceV = {
+  def checkStructCoord(expectedStructType: StructHT, expectedStructPointerType: CoordH[KindHT], register: RegisterV): StructInstanceV = {
     val reference = checkReferenceRegister(expectedStructPointerType, register).reference
     dereference(reference) match {
       case siv @ StructInstanceV(structDefH, _) => {
@@ -723,7 +723,7 @@ class Heap(in_vivemDout: PrintStream) {
     }
   }
 
-  def checkStructReference(expectedStructType: StructRefH, reference: ReferenceV): StructInstanceV = {
+  def checkStructCoord(expectedStructType: StructHT, reference: ReferenceV): StructInstanceV = {
     dereference(reference) match {
       case siv @ StructInstanceV(structDefH, _) => {
         vassert(structDefH.getRef == expectedStructType)

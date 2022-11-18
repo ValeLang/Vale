@@ -31,7 +31,7 @@ class AfterRegionsIntegrationTests extends FunSuite with Matchers {
 
     // every time we do a templatas substitute, we do a substitutions for any of their bounds in the
     // coutputs. that's likely really expensive.
-    // and it might be unnecessary? can the monomorphizer resolve those mappings themselves? perhaps
+    // and it might be unnecessary? can the instantiator resolve those mappings themselves? perhaps
     // there's some in-between where templar can track merely that a bound *was* satisfied, but not
     // what satisfied it.
     // would that be enough for e.g. cases, which bring in bounds from the kind they're matching?
@@ -111,7 +111,7 @@ class AfterRegionsIntegrationTests extends FunSuite with Matchers {
     //    fail as long as we still have CoordT(Ownership, ITemplata[KindTemplataType])
     //    because that ownership isn't a templata. The call site will correctly have that
     //    ownership as borrow, but the definition will think it's an own, *not* a placeholder
-    //    or variable-thing or anything like that. So, when it gets to the monomorphizer, it
+    //    or variable-thing or anything like that. So, when it gets to the instantiator, it
     //    will actually make the wrong return type. I think the solution will be to make CoordT
     //    contain a placeholder, and move O to be a generic param.
     val compile = RunCompilation.test(

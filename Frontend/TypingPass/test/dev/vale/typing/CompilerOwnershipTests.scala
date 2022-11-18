@@ -125,7 +125,7 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
         |
         |#!DeriveStructDrop
         |struct Some<T> where T Ref { value T; }
-        |#!DeriveImplDrop
+        |
         |impl<T> Opt<T> for Some<T>;
         |
         |abstract func drop<T>(virtual opt Opt<T>)
@@ -169,7 +169,7 @@ class CompilerOwnershipTests extends FunSuite with Matchers {
         |
         |#!DeriveStructDrop
         |struct Some<T Ref> { value T; }
-        |#!DeriveImplDrop
+        |
         |impl<T> Opt<T> for Some<T>;
         |
         |abstract func drop<T>(virtual opt Opt<T>)

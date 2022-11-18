@@ -1,7 +1,8 @@
+import v.builtins.drop.*;
 
-sealed interface MyOption<T> where T Ref { }
+sealed interface MyOption<T Ref> { }
 
-struct MySome<T> where T Ref {
+struct MySome<T Ref> where func drop(T)void {
   value T;
 }
 impl<T> MyOption<T> for MySome<T>;

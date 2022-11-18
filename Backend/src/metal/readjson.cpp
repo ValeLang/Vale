@@ -720,12 +720,12 @@ Package* readPackage(MetalCache* cache, const json& program) {
             auto f = readFunction(cache, j);
             return std::make_pair(f->prototype->name->name, f);
           }),
-      readArrayIntoMap<Kind*, Prototype*>(
-          cache,
-          AddressHasher<Kind*>(cache->addressNumberer),
-          std::equal_to<Kind*>(),
-          program["immDestructorsByKind"],
-          readKindAndPrototypeEntry),
+//      readArrayIntoMap<Kind*, Prototype*>(
+//          cache,
+//          AddressHasher<Kind*>(cache->addressNumberer),
+//          std::equal_to<Kind*>(),
+//          program["immDestructorsByKind"],
+//          readKindAndPrototypeEntry),
       readArrayIntoMap<std::string, Prototype*>(
           cache,
           std::hash<std::string>(),

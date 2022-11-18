@@ -7,6 +7,72 @@ import dev.vale.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 
 class HashMapTest extends FunSuite with Matchers {
+  test("Monomorphize problem") {
+    // See NBIFP, the monomorphizer has to grab bounds from its params too
+
+    val compile = RunCompilation.test(
+      """
+        |struct IntHasher { }
+        |func __call(this &IntHasher, x int) int { return x; }
+        |
+        |#!DeriveStructDrop
+        |struct HashMap<H> where func(&H, int)int {
+        |  hasher H;
+        |}
+        |
+        |func moo<H>(self &HashMap<H>) {
+        |  // Nothing needed in here, to cause the bug
+        |}
+        |
+        |exported func main() int {
+        |  m = HashMap(IntHasher());
+        |  moo(&m);
+        |  destruct m;
+        |  return 9;
+        |}
+        |""".stripMargin, false)
+
+    compile.evalForKind(Vector()) match { case VonInt(9) => }
+  }
+
+
+  test("Supply bounds to child functions") {
+    // We need to supply our bounds to our lambdas and drop functions, see LCCPGB and LCNBAFA.
+    // This test's `add` function will try to call
+    //   add:204<int, int, ^IntHasher>(&HashMap<int, int, ^IntHasher>)
+    //   .lam:281
+    //   .drop<>(@add:204<int, int, ^IntHasher>(&HashMap<int, int, ^IntHasher>).lam:281)
+    // and when instantiating that, `drop` needs to know bounds from `add` to understand that
+    // `&HashMap<int, int, ^IntHasher>` parameter.
+    val compile = RunCompilation.test(
+      """
+        |import v.builtins.arrays.*;
+        |
+        |struct IntHasher { }
+        |func __call(this &IntHasher, x int) int { return x; }
+        |
+        |#!DeriveStructDrop
+        |struct HashMap<K Ref imm, V Ref, H Ref>
+        |where func(&H, &K)int {
+        |  hasher H;
+        |}
+        |
+        |func add<K Ref imm, V, H>(map &HashMap<K, V, H>) void {
+        |  Array<mut, int>(2, {_});
+        |}
+        |
+        |exported func main() int {
+        |  m = HashMap<int, int>(IntHasher());
+        |  m.add();
+        |  [h] = m;
+        |  return 7;
+        |}
+        |""".stripMargin, false)
+
+    compile.evalForKind(Vector()) match { case VonInt(7) => }
+  }
+
+
   test("Hash map update") {
     val compile = RunCompilation.test(
         """
@@ -142,26 +208,90 @@ class HashMapTest extends FunSuite with Matchers {
     compile.evalForKind(Vector()) match { case VonInt(111) => }
   }
 
-  test("Hash map keys") {
+  test("Gathers/substitutes bounds for structs inside things accessed from dots") {
+    // See SBITAFD, we had a problem where we didn't register coutputs for new instantiations that
+    // come from substituting existing ones.
+
     val compile = RunCompilation.test(
         """
-          |import hashmap.*;
-          |import panicutils.*;
+          |import v.builtins.arith.*;
+          |
+          |extern func __vbi_panic() __Never;
+          |
+          |extern("vale_runtime_sized_array_len")
+          |func len<M, E>(arr &[]<M>E) int;
+          |
+          |extern("vale_runtime_sized_array_mut_new")
+          |func Array<M Mutability, E Ref>(size int) []<M>E
+          |where M = mut;
+          |
+          |func __pretend<T>() T { __vbi_panic() }
+          |
+          |#!DeriveStructDrop
+          |struct HashMapNode<K Ref imm> {
+          |  key K;
+          |}
+          |
+          |#!DeriveStructDrop
+          |struct HashMap<K Ref imm> {
+          |  table! Array<mut, HashMapNode<K>>;
+          |}
+          |
+          |func keys<K Ref imm>(self &HashMap<K>) {
+          |  self.table.len();
+          |}
+          |
           |exported func main() int {
-          |  m = HashMap<int, int>(IntHasher(), IntEquator());
-          |  m.add(0, 100);
-          |  m.add(4, 101);
-          |  m.add(8, 102);
-          |  m.add(12, 103);
-          |  k = m.keys();
-          |  vassertEq(k.len(), 4);
-          |  vassertEq(k[0], 0);
-          |  vassertEq(k[1], 4);
-          |  vassertEq(k[2], 8);
-          |  vassertEq(k[3], 12);
+          |  m = HashMap<int>([]HashMapNode<int>(0));
+          |  m.keys();
+          |  [arr] = m;
+          |  [] = arr;
           |  return 1337;
           |}
-        """.stripMargin)
+        """.stripMargin, false)
+
+    compile.evalForKind(Vector()) match { case VonInt(1337) => }
+  }
+
+  test("Gathers/substitutes bounds for interfaces inside things accessed from dots") {
+    // See SBITAFD, we had a problem where we didn't register coutputs for new instantiations that
+    // come from substituting existing ones.
+
+    val compile = RunCompilation.test(
+      """
+        |import v.builtins.arith.*;
+        |
+        |extern func __vbi_panic() __Never;
+        |
+        |extern("vale_runtime_sized_array_len")
+        |func len<M, E>(arr &[]<M>E) int;
+        |
+        |extern("vale_runtime_sized_array_mut_new")
+        |func Array<M Mutability, E Ref>(size int) []<M>E
+        |where M = mut;
+        |
+        |func __pretend<T>() T { __vbi_panic() }
+        |
+        |#!DeriveStructDrop
+        |interface HashMapNode<K Ref imm> { }
+        |
+        |#!DeriveStructDrop
+        |struct HashMap<K Ref imm> {
+        |  table! Array<mut, HashMapNode<K>>;
+        |}
+        |
+        |func keys<K Ref imm>(self &HashMap<K>) {
+        |  self.table.len();
+        |}
+        |
+        |exported func main() int {
+        |  m = HashMap<int>([]HashMapNode<int>(0));
+        |  m.keys();
+        |  [arr] = m;
+        |  [] = arr;
+        |  return 1337;
+        |}
+        """.stripMargin, false)
 
     compile.evalForKind(Vector()) match { case VonInt(1337) => }
   }

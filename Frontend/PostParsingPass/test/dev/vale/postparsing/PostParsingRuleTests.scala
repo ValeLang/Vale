@@ -33,7 +33,7 @@ class PostParsingRuleTests extends FunSuite with Matchers {
     val main = program.lookupFunction("main")
 
     vassertSome(main.runeToPredictedType.get(main.params.head.pattern.coordRune.get.rune)) shouldEqual
-      CoordTemplataType
+      CoordTemplataType()
   }
 
   test("Can know rune type from simple equals") {
@@ -47,9 +47,9 @@ class PostParsingRuleTests extends FunSuite with Matchers {
     val main = program.lookupFunction("main")
 
     vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("T"))))) shouldEqual
-      CoordTemplataType
+      CoordTemplataType()
     vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("Y"))))) shouldEqual
-      CoordTemplataType
+      CoordTemplataType()
   }
 
   test("Predict knows type from Or rule") {
@@ -63,7 +63,7 @@ class PostParsingRuleTests extends FunSuite with Matchers {
     val main = program.lookupFunction("main")
 
     vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("M"))))) shouldEqual
-      OwnershipTemplataType
+      OwnershipTemplataType()
   }
 
   test("Predict CoordComponent types") {
@@ -76,9 +76,9 @@ class PostParsingRuleTests extends FunSuite with Matchers {
           |""".stripMargin, interner)
     val main = program.lookupFunction("main")
 
-    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("T"))))) shouldEqual CoordTemplataType
-    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("O"))))) shouldEqual OwnershipTemplataType
-    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("K"))))) shouldEqual KindTemplataType
+    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("T"))))) shouldEqual CoordTemplataType()
+    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("O"))))) shouldEqual OwnershipTemplataType()
+    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("K"))))) shouldEqual KindTemplataType()
   }
 
   test("Predict Call types") {
@@ -91,8 +91,8 @@ class PostParsingRuleTests extends FunSuite with Matchers {
           |""".stripMargin, interner)
     val main = program.lookupFunction("main")
 
-    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("A"))))) shouldEqual CoordTemplataType
-    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("B"))))) shouldEqual CoordTemplataType
+    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("A"))))) shouldEqual CoordTemplataType()
+    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("B"))))) shouldEqual CoordTemplataType()
     // We can't know if T it's a Coord->Coord or a Coord->Kind type.
     main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("T")))) shouldEqual None
   }
@@ -107,11 +107,11 @@ class PostParsingRuleTests extends FunSuite with Matchers {
           |""".stripMargin, interner)
     val main = program.lookupFunction("main")
 
-    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("M"))))) shouldEqual MutabilityTemplataType
-    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("V"))))) shouldEqual VariabilityTemplataType
-    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("N"))))) shouldEqual IntegerTemplataType
-    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("E"))))) shouldEqual CoordTemplataType
-    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("T"))))) shouldEqual CoordTemplataType
+    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("M"))))) shouldEqual MutabilityTemplataType()
+    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("V"))))) shouldEqual VariabilityTemplataType()
+    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("N"))))) shouldEqual IntegerTemplataType()
+    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("E"))))) shouldEqual CoordTemplataType()
+    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("T"))))) shouldEqual CoordTemplataType()
   }
 
   test("Predict for isInterface") {
@@ -124,7 +124,7 @@ class PostParsingRuleTests extends FunSuite with Matchers {
           |""".stripMargin, interner)
     val main = program.lookupFunction("main")
 
-    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("A"))))) shouldEqual KindTemplataType
-    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("B"))))) shouldEqual KindTemplataType
+    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("A"))))) shouldEqual KindTemplataType()
+    vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("B"))))) shouldEqual KindTemplataType()
   }
 }

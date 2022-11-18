@@ -26,31 +26,23 @@ exported func main() {
 
   if (all_args_list.get(1) == "version" or
       all_args_list.get(1) == "--version") {
-    // with open(str(self.frontend_path / "backend-version.txt"), 'r') as f:
-    //     print(f.read())
+    println(readFileAsString(str(compiler_dir / "valec-version.txt")));
   } else if (all_args_list.get(1) == "help" or
       all_args_list.get(1) == "--help") {
-    // if len(args) < 2:
-    //     with open(str(self.frontend_path / "valec-version.txt"), 'r') as f:
-    //         print(f.read())
-    //     with open(str(self.frontend_path / "valec-help.txt"), 'r') as f:
-    //         print(f.read())
-    // elif args[1] == "build":
-    //     with open(str(self.frontend_path / "valec-help-build.txt"), 'r') as f:
-    //         print(f.read())
-    // elif args[1] == "run":
-    //     with open(str(self.frontend_path / "valec-help-run.txt"), 'r') as f:
-    //         print(f.read())
-    // elif args[1] == "paths":
-    //     print("Frontend path: " + str(self.frontend_path))
-    //     print("Builtins path: " + str(self.builtins_path))
-    //     print("backend path: " + str(self.backend_path))
-    // else:
-    //     print("Unknown subcommand: " + args[1])
-    // sys.exit(0)
+    if all_args_list.len() < 2 {
+      println(readFileAsString(str(compiler_dir / "valec-help.txt")));
+    } else if all_args_list.get(1) == "build" {
+      println(readFileAsString(str(compiler_dir / "valec-help-build.txt")));
+    } else {
+      println("Unknown subcommand: " + all_args_list.get(1));
+      println("");
+      println(readFileAsString(str(compiler_dir / "valec-help.txt")));
+    }
   } else if (all_args_list.get(1) == "build") {
     build_stuff(&compiler_dir, &all_args);
   } else {
-    println("Unknown subcommand, specify `build`, `run`, etc. Use `help` for more.")
+    println("Unknown command: {all_args_list.get(1)}.");
+    println("");
+    println(readFileAsString(str(compiler_dir / "valec-help.txt")));
   }
 }

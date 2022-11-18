@@ -39,6 +39,28 @@ exported func main() {
     sett.len() should_equal 3;
   });
 
+  suite.test("Hash set remove", {
+    sett = HashSet<int, IntHasher, IntEquator>(IntHasher(), IntEquator());
+    sett.add(39);
+    sett.add(42);
+    sett.add(51);
+    sett.remove(42);
+
+    sett.contains(39) should_equal true;
+    sett.contains(42) should_equal false;
+    sett.contains(51) should_equal true;
+    sett.len() should_equal 2;
+  });
+
+  //suite.test("Hash set remove something not there", {
+  //  sett = HashSet<int, IntHasher, IntEquator>(IntHasher(), IntEquator());
+  //  sett.add(39);
+  //  sett.add(42);
+  //  sett.add(51);
+  //  sett.remove(73);
+  //  sett.len() should_equal 3;
+  //});
+
   suite.test("hash set equal", {
     a = HashSet<int, IntHasher, IntEquator>(IntHasher(), IntEquator());
     a.add(39);

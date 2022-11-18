@@ -1,16 +1,18 @@
 import v.builtins.result.*;
 
 extern("vale_as_subtype")
-func as<TargetKind, SourceType>(left SourceType) Result<SuccessType, FailType>
-where
-  SourceType Ref = Ref[own, _],
-  FailType Ref = SourceType Ref,
-  SuccessType Ref = Ref[own, TargetKind];
+func as<SubType Ref, SuperType Ref>(left &SuperType) Result<&SubType, &SuperType>
+where implements(SubType, SuperType);
 
 extern("vale_as_subtype")
-func as<TargetKind, SourceType>(left SourceType) Result<SuccessType, FailType>
-where
-  SourceKind Kind,
-  SourceType Ref = Ref[borrow, SourceKind],
-  FailType Ref = Ref[borrow, SourceKind],
-  SuccessType Ref = Ref[borrow, TargetKind];
+func as<SubType Ref, SuperType Ref>(left SuperType) Result<SubType, SuperType>
+where implements(SubType, SuperType), SuperType = Ref[own, _];
+
+// extern("vale_as_subtype")
+// func as_own<SubKind Kind, SuperType Ref, O Ownership>(left SuperType) Result<SubType, SuperType>
+// where SuperKind Kind,
+//   O = own,
+//   SubType Ref = Ref[O, SubKind],
+//   SuperType Ref = Ref[O, SuperKind],
+//   implements(SubType, SuperType);
+//

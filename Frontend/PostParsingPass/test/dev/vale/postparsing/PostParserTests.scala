@@ -47,7 +47,7 @@ class PostParserTests extends FunSuite with Matchers with Collector {
         |func moo<K, V>(a Map<K, V, _>) { ... }
         |""".stripMargin)
     error match {
-      case IdentifyingRunesIncompleteS(_, IdentifiabilitySolveError(_, IncompleteSolve(_, _,runes))) => {
+      case IdentifyingRunesIncompleteS(_, IdentifiabilitySolveError(_, IncompleteSolve(_, _,runes, _))) => {
         // The param rune, and the _ rune are both unknown
         vassert(runes.size == 2)
       }
@@ -68,10 +68,10 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     val program1 = compile("struct Moo { x int; }")
     val imoo = program1.lookupStruct("Moo")
 
-    imoo.rules shouldHave {
+    imoo.headerRules shouldHave {
       case LiteralSR(_, r, MutabilityLiteralSL(MutableP)) => vassert(r == imoo.mutabilityRune)
     }
-    imoo.rules shouldHave {
+    imoo.memberRules shouldHave {
       case LookupSR(_, m, CodeNameS(StrI("int"))) => vassert(m == imoo.members(0).typeRune)
     }
     imoo.members match {
@@ -88,8 +88,10 @@ class PostParserTests extends FunSuite with Matchers with Collector {
         case ReturnSE(_, FunctionCallSE(_, OwnershippedSE(_, FunctionSE(lambda@FunctionS(_, _, _, _, _, _, _, _, _)), LoadAsBorrowP), _)) => lambda
       })
     // See: Lambdas Dont Need Explicit Identifying Runes (LDNEIR)
-    lambda.identifyingRunes match {
-      case Vector(RuneUsage(_, MagicParamRuneS(mp1)), RuneUsage(_, MagicParamRuneS(mp2))) => {
+    lambda.genericParams match {
+      case Vector(
+        GenericParameterS(_, RuneUsage(_, MagicParamRuneS(mp1)), _, None),
+        GenericParameterS(_, RuneUsage(_, MagicParamRuneS(mp2)), _, None)) => {
         vassert(mp1 != mp2)
       }
     }
@@ -115,13 +117,13 @@ class PostParserTests extends FunSuite with Matchers with Collector {
       case FunctionNameS(StrI("blork"), _) =>
     }
 
-    val imooRunes = imoo.identifyingRunes.map(_.rune)
+    val imooRunes = imoo.genericParams.map(_.rune)
     val t = CodeRuneS(interner.intern(StrI("T")))
-    vassert(imooRunes(0) == t)
-    vassert(imooRunes.contains(t))
+    vassert(imooRunes(0).rune == t)
+    vassert(imooRunes.exists(_.rune == t))
     // Interface methods of generic interfaces will have the same identifying runes of their
     // generic interfaces, see IMCBT.
-    vassert(blork.identifyingRunes.map(_.rune).contains(CodeRuneS(interner.intern(StrI("T")))))
+    vassert(blork.genericParams.map(_.rune.rune).contains(CodeRuneS(interner.intern(StrI("T")))))
   }
 
   test("Impl") {
@@ -157,7 +159,7 @@ class PostParserTests extends FunSuite with Matchers with Collector {
   test("Pure regioned function") {
     val program1 = compile("pure func main<'r>(ship 'r &Spaceship) 't { }")
     val main = program1.lookupFunction("main")
-    vassert(main.identifyingRunes.isEmpty)
+    vassert(main.genericParams.isEmpty)
 
     // We just want to make sure its not a region rune.
     // Implicit rune is fine, it does that when there's no return.
@@ -457,18 +459,6 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     }
   }
 
-  test("Reports when non-kind interface in impl") {
-    val err = compileForError(
-      """
-        |struct Moo {}
-        |interface IMoo {}
-        |impl &IMoo for Moo;
-        |""".stripMargin)
-    err match {
-      case CantOwnershipInterfaceInImpl(_) =>
-    }
-  }
-
   test("Reports when extern function has body") {
     val err = compileForError(
       """
@@ -478,18 +468,6 @@ class PostParserTests extends FunSuite with Matchers with Collector {
         |""".stripMargin)
     err match {
       case ExternHasBody(_) =>
-    }
-  }
-
-  test("Reports when non-kind struct in impl") {
-    val err = compileForError(
-      """
-        |struct Moo {}
-        |interface IMoo {}
-        |impl IMoo for &Moo;
-        |""".stripMargin)
-    err match {
-      case CantOwnershipStructInImpl(_) =>
     }
   }
 

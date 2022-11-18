@@ -19,7 +19,7 @@ object SolverErrorHumanizer {
   (String, Vector[CodeLocationS]) = {
     val errorBody =
       (result match {
-        case IncompleteSolve(_, _, unknownRunes) => {
+        case IncompleteSolve(_, _, unknownRunes, _) => {
           "Couldn't solve some runes: "  + unknownRunes.toVector.map(humanizeRune).mkString(", ")
         }
         case FailedSolve(_, _, error) => {

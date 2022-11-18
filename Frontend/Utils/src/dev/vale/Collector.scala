@@ -14,7 +14,7 @@ trait Collector {
       Vector()
     }) ++
     (a match {
-      case arr: Array[Any] => arr.flatMap(recursiveCollect(_, partialFunction))
+      case arr: Vector[Any] => arr.flatMap(recursiveCollect(_, partialFunction))
       case iterable: Iterable[Any] => iterable.flatMap(recursiveCollect(_, partialFunction))
       case p: Product => p.productIterator.toIterable.flatMap(recursiveCollect(_, partialFunction))
       case _ => Vector.empty
@@ -32,7 +32,7 @@ trait Collector {
       return Some(partialFunction.apply(a))
     }
     a match {
-      case arr: Array[Any] => {
+      case arr: Vector[Any] => {
         val opt: Option[R] = None
         arr.foldLeft(opt)({
           case (Some(x), _) => Some(x)

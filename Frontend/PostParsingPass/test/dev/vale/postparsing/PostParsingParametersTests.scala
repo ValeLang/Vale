@@ -1,6 +1,6 @@
 package dev.vale.postparsing
 
-import dev.vale.{Collector, Err, FileCoordinateMap, Interner, Ok, StrI, vassert, vfail}
+import dev.vale.{Collector, Err, FileCoordinateMap, Interner, Ok, StrI, vassert, vfail, vimpl}
 import dev.vale.options.GlobalOptions
 import dev.vale.parsing.ast.BorrowP
 import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
@@ -22,13 +22,14 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
   }
 
   test("Simple rune rule") {
-    val program1 = compile("""func main<T>(moo T) infer-return { }""")
+    val program1 = compile("""func main<T>(moo T) { }""")
     val main = program1.lookupFunction("main")
 
-    vassert(main.runeToPredictedType.size == 1)
+    // Should have T and the return rune
+    vassert(main.runeToPredictedType.size == 2)
 
-    main.identifyingRunes match {
-      case Vector(RuneUsage(_, CodeRuneS(StrI("T")))) =>
+    main.genericParams match {
+      case Vector(GenericParameterS(_, RuneUsage(_, CodeRuneS(StrI("T"))), _, None)) =>
     }
   }
 
@@ -37,12 +38,12 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
     val program1 = compile("""func main<T>(moo T) T { moo }""", interner)
     val main = program1.lookupFunction("main")
 
-    vassert(main.identifyingRunes.map(_.rune).contains(CodeRuneS(interner.intern(StrI("T")))))
+    vassert(main.genericParams.map(_.rune.rune).contains(CodeRuneS(interner.intern(StrI("T")))))
     main.maybeRetCoordRune match { case Some(RuneUsage(_, CodeRuneS(StrI("T")))) => }
   }
 
   test("Borrowed rune") {
-    val program1 = compile("""func main<T>(moo &T) infer-return { }""")
+    val program1 = compile("""func main<T>(moo &T) { }""")
     val main = program1.lookupFunction("main")
     val Vector(param) = main.params
 
@@ -65,7 +66,7 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
   }
 
   test("Anonymous, typed param") {
-    val program1 = compile("""func main(_ int) infer-return { }""")
+    val program1 = compile("""func main(_ int) { }""")
     val main = program1.lookupFunction("main")
     val Vector(param) = main.params
     val paramRune =
@@ -88,7 +89,7 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
 
     val main = bork.lookupFunction("main")
     // We dont support regions yet, so scout should filter them out.
-    main.identifyingRunes.size shouldEqual 0
+    main.genericParams.size shouldEqual 0
   }
 
   test("Test param-less lambda identifying runes") {
@@ -99,9 +100,9 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
 
     val main = bork.lookupFunction("main")
     // We dont support regions yet, so scout should filter them out.
-    main.identifyingRunes.size shouldEqual 0
+    main.genericParams.size shouldEqual 0
     val lambda = Collector.onlyOf(main.body, classOf[FunctionSE])
-    lambda.function.identifyingRunes.size shouldEqual 0
+    lambda.function.genericParams.size shouldEqual 0
   }
 
   test("Test one-param lambda identifying runes") {
@@ -112,22 +113,9 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
 
     val main = bork.lookupFunction("main")
     // We dont support regions yet, so scout should filter them out.
-    main.identifyingRunes.size shouldEqual 0
+    main.genericParams.size shouldEqual 0
     val lambda = Collector.onlyOf(main.body, classOf[FunctionSE])
-    lambda.function.identifyingRunes.size shouldEqual 1
-  }
-
-  test("Test one-anonymous-param lambda identifying runes") {
-    val bork = compile(
-      """
-        |exported func main() int {do((_) => { true })}
-        |""".stripMargin)
-
-    val main = bork.lookupFunction("main")
-    // We dont support regions yet, so scout should filter them out.
-    main.identifyingRunes.size shouldEqual 0
-    val lambda = Collector.onlyOf(main.body, classOf[FunctionSE])
-    lambda.function.identifyingRunes.size shouldEqual 1
+    lambda.function.genericParams.size shouldEqual 1
   }
 
 }

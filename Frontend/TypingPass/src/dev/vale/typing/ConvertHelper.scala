@@ -1,27 +1,31 @@
 package dev.vale.typing
 
-import dev.vale.typing.ast.{ReferenceExpressionTE, StructToInterfaceUpcastTE}
-import dev.vale.typing.env.IEnvironment
+import dev.vale.typing.ast.ReferenceExpressionTE
+import dev.vale.typing.env.{GlobalEnvironment, IEnvironment}
 import dev.vale.{RangeS, vcurious, vfail}
-import dev.vale.typing.types.{BorrowT, CitizenRefT, CoordT, InterfaceTT, NeverT, OwnT, ShareT, StructTT, WeakT}
+import dev.vale.typing.types._
 import dev.vale._
 import dev.vale.typing.ast._
+import dev.vale.typing.citizen.{IsParent, IsParentResult, IsntParent}
+import dev.vale.typing.function.FunctionCompiler.EvaluateFunctionSuccess
 //import dev.vale.astronomer.IRulexSR
-import dev.vale.typing.citizen.AncestorHelper
+import dev.vale.typing.citizen.ImplCompiler
 import dev.vale.typing.env.IEnvironmentBox
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 
 import scala.collection.immutable.List
 //import dev.vale.carpenter.CovarianceCarpenter
-import dev.vale.postparsing.{_}
+import dev.vale.postparsing._
 
 trait IConvertHelperDelegate {
-  def isAncestor(
+  def isParent(
     coutputs: CompilerOutputs,
-    descendantCitizenRef: CitizenRefT,
-    ancestorInterfaceRef: InterfaceTT):
-  Boolean
+    callingEnv: IEnvironment,
+    parentRanges: List[RangeS],
+    descendantCitizenRef: ISubKindTT,
+    ancestorInterfaceRef: ISuperKindTT):
+  IsParentResult
 }
 
 class ConvertHelper(
@@ -30,7 +34,7 @@ class ConvertHelper(
   def convertExprs(
       env: IEnvironment,
       coutputs: CompilerOutputs,
-      range: RangeS,
+      range: List[RangeS],
       sourceExprs: Vector[ReferenceExpressionTE],
       targetPointerTypes: Vector[CoordT]):
   (Vector[ReferenceExpressionTE]) = {
@@ -49,7 +53,7 @@ class ConvertHelper(
   def convert(
       env: IEnvironment,
       coutputs: CompilerOutputs,
-      range: RangeS,
+      range: List[RangeS],
       sourceExpr: ReferenceExpressionTE,
       targetPointerType: CoordT):
   (ReferenceExpressionTE) = {
@@ -96,7 +100,7 @@ class ConvertHelper(
         sourceExpr
       } else {
         (sourceType, targetType) match {
-          case (s @ StructTT(_), i : InterfaceTT) => {
+          case (s : ISubKindTT, i : ISuperKindTT) => {
             convert(env, coutputs, range, sourceExpr, s, i)
           }
           case _ => vfail()
@@ -107,17 +111,22 @@ class ConvertHelper(
   }
 
   def convert(
-    env: IEnvironment,
+    callingEnv: IEnvironment,
     coutputs: CompilerOutputs,
-    range: RangeS,
+    range: List[RangeS],
     sourceExpr: ReferenceExpressionTE,
-    sourceStructRef: StructTT,
-    targetInterfaceRef: InterfaceTT):
+    sourceSubKind: ISubKindTT,
+    targetSuperKind: ISuperKindTT):
   (ReferenceExpressionTE) = {
-    if (delegate.isAncestor(coutputs, sourceStructRef, targetInterfaceRef)) {
-      StructToInterfaceUpcastTE(sourceExpr, targetInterfaceRef)
-    } else {
-      throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't upcast a " + sourceStructRef + " to a " + targetInterfaceRef))
+    delegate.isParent(coutputs, callingEnv, range, sourceSubKind, targetSuperKind) match {
+      case IsParent(_, _, implFullName) => {
+        vassert(coutputs.getInstantiationBounds(implFullName).nonEmpty)
+        UpcastTE(
+          sourceExpr, targetSuperKind, implFullName)
+      }
+      case IsntParent(candidates) => {
+        throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't upcast a " + sourceSubKind + " to a " + targetSuperKind + ": " + candidates))
+      }
     }
   }
 }

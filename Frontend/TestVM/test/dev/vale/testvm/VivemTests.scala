@@ -23,7 +23,7 @@ class VivemTests extends FunSuite with Matchers {
         Vector(UserFunctionH),
         BlockH(ConstantIntH(7, 32)))
     val packages = new PackageCoordinateMap[PackageH]()
-    packages.put(PackageCoordinate.TEST_TLD(interner, keywords), PackageH(Vector.empty, Vector.empty, Vector(main), Vector.empty, Vector.empty, Map(), Map(interner.intern(StrI("main")) -> main.prototype), Map(), Map(), Map()))
+    packages.put(PackageCoordinate.TEST_TLD(interner, keywords), PackageH(Vector.empty, Vector.empty, Vector(main), Vector.empty, Vector.empty, Map(interner.intern(StrI("main")) -> main.prototype), Map(), Map(), Map()))
     val programH = ProgramH(packages)
     val result =
       Vivem.executeWithPrimitiveArgs(programH, Vector(), System.out, Vivem.emptyStdin, Vivem.nullStdout)
@@ -76,8 +76,8 @@ class VivemTests extends FunSuite with Matchers {
         BlockH(ConstantIntH(133337, 32)))
 
     val packages = new PackageCoordinateMap[PackageH]()
-    packages.put(PackageCoordinate.BUILTIN(interner, keywords), PackageH(Vector.empty, Vector.empty, Vector(addExtern), Vector.empty, Vector.empty, Map(), Map(), Map(), Map(interner.intern(StrI("__vbi_addI32")) -> addPrototype), Map()))
-    packages.put(PackageCoordinate.TEST_TLD(interner, keywords), PackageH(Vector.empty, Vector.empty, Vector(main), Vector.empty, Vector.empty, Map(), Map(interner.intern(StrI("main")) -> main.prototype), Map(), Map(), Map()))
+    packages.put(PackageCoordinate.BUILTIN(interner, keywords), PackageH(Vector.empty, Vector.empty, Vector(addExtern), Vector.empty, Vector.empty, Map(), Map(), Map(interner.intern(StrI("__vbi_addI32")) -> addPrototype), Map()))
+    packages.put(PackageCoordinate.TEST_TLD(interner, keywords), PackageH(Vector.empty, Vector.empty, Vector(main), Vector.empty, Vector.empty, Map(interner.intern(StrI("main")) -> main.prototype), Map(), Map(), Map()))
     val programH = ProgramH(packages)
 
     val result =

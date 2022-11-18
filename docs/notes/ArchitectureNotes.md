@@ -1,14 +1,3 @@
-Parser will take in a file and produce the first AST. Should be
-completely parseable without reading other files. Important for syntax
-highlighting in IDEs. This is the raw AST, suffix R.
-
-Will also figure out what closured variables there are, and whether
-theyre mutated from inside closures.
-
-Will also figure out if they're moved from inside closures.
-
-The only way we can figure that out is if we disallow
-move-method-calling.
 
 moo.blah() can't consume moo. The only real case for this though is
 destructors, and perhaps for those we should have a "dest moo;"
@@ -37,27 +26,6 @@ it'll combine it with parser's knowledge of whether it's been moved or
 mutated by self or closures, and figure out whether it should be an
 Addressible right there.
 
-A denizen is a thing at the top level of a file, like structs,
-functions, impls, exports, etc.
-
-A citizen is a struct or interface.
-
-if we didn't do this in parser, we'd have to have some sort of lookahead
-nonsense in the templar.
-
-use poisoning:
-[[https://www.reddit.com/r/Compilers/comments/9g2d4f/any_resources_or_best_practices_for_error/e62zrfa/]{.underline}](https://www.reddit.com/r/Compilers/comments/9g2d4f/any_resources_or_best_practices_for_error/e62zrfa/)
-
-should we contain the void type to only the boundary between us and the
-outside world?
-
-Astronomer:
-
--   Figures out the types of all template runes.
-
--   For each local variable, collects the results of scout\'s scouting
-    > to know whether the variable should be addressable, and combines
-    > that back into the original LocalVariable.
 
 For Templar, see [[this
 doc]{.underline}](https://docs.google.com/document/d/1vfK8DGPKjpvS3eb-sVtOL_3jjtvP1ZKCn0cQ-Yoe1QY/edit).

@@ -5,12 +5,12 @@ import dev.vale.{Err, Ok, RangeS, Result, vassert, vcurious, vpass, vwat}
 import dev.vale.highertyping.FunctionA
 import dev.vale.parsing.ast.INameDeclarationP
 import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
-import dev.vale.postparsing.{BlockSE, BodySE, CodeBodyS, ParameterS}
+import dev.vale.postparsing._
 import dev.vale.typing.{BodyResultDoesntMatch, CompileErrorExceptionT, ConvertHelper, CouldntConvertForReturnT, RangedInternalErrorT, Compiler, TypingPassOptions, TemplataCompiler, CompilerOutputs, ast}
 import dev.vale.typing.ast.{ArgLookupTE, BlockTE, LocationInFunctionEnvironment, ParameterT, ReferenceExpressionTE, ReturnTE}
 import dev.vale.typing.env.{FunctionEnvironmentBox, NodeEnvironment, NodeEnvironmentBox}
 import dev.vale.typing.names.NameTranslator
-import dev.vale.typing.types.{CoordT, NeverT, ShareT}
+import dev.vale.typing.types._
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
 import dev.vale._
@@ -28,6 +28,7 @@ trait IBodyCompilerDelegate {
     startingNenv: NodeEnvironment,
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironment,
+    parentRanges: List[RangeS],
     exprs: BlockSE):
   (ReferenceExpressionTE, Set[CoordT])
 
@@ -35,6 +36,7 @@ trait IBodyCompilerDelegate {
     coutputs: CompilerOutputs,
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironment,
+    parentRanges: List[RangeS],
     patterns1: Vector[AtomSP],
     patternInputExprs2: Vector[ReferenceExpressionTE]):
   ReferenceExpressionTE
@@ -56,6 +58,7 @@ class BodyCompiler(
     funcOuterEnv: FunctionEnvironmentBox,
     coutputs: CompilerOutputs,
     life: LocationInFunctionEnvironment,
+    parentRanges: List[RangeS],
     function1: FunctionA,
     maybeExplicitReturnCoord: Option[CoordT],
     params2: Vector[ParameterT],
@@ -71,9 +74,9 @@ class BodyCompiler(
         case None => {
           val (body2, returns) =
             evaluateFunctionBody(
-                funcOuterEnv, coutputs, life, function1.params, params2, bodyS, isDestructor, None) match {
+                funcOuterEnv, coutputs, life, parentRanges, function1.params, params2, bodyS, isDestructor, None) match {
               case Err(ResultTypeMismatchError(expectedType, actualType)) => {
-                throw CompileErrorExceptionT(BodyResultDoesntMatch(function1.range, function1.name, expectedType, actualType))
+                throw CompileErrorExceptionT(BodyResultDoesntMatch(function1.range :: parentRanges, function1.name, expectedType, actualType))
 
               }
               case Ok((body, returns)) => (body, returns)
@@ -87,7 +90,7 @@ class BodyCompiler(
             } else {
               vassert(returns.nonEmpty)
               if (returns.size > 1) {
-                throw CompileErrorExceptionT(RangedInternalErrorT(bodyS.range, "Can't infer return type because " + returns.size + " types are returned:" + returns.map("\n" + _)))
+                throw CompileErrorExceptionT(RangedInternalErrorT(bodyS.range :: parentRanges, "Can't infer return type because " + returns.size + " types are returned:" + returns.map("\n" + _)))
               }
               returns.head
             }
@@ -100,13 +103,14 @@ class BodyCompiler(
                 funcOuterEnv,
                 coutputs,
                 life,
+                parentRanges,
                 function1.params,
                 params2,
                 bodyS,
                 isDestructor,
                 Some(explicitRetCoord)) match {
               case Err(ResultTypeMismatchError(expectedType, actualType)) => {
-                throw CompileErrorExceptionT(BodyResultDoesntMatch(function1.range, function1.name, expectedType, actualType))
+                throw CompileErrorExceptionT(BodyResultDoesntMatch(function1.range :: parentRanges, function1.name, expectedType, actualType))
               }
               case Ok((body, returns)) => (body, returns)
             }
@@ -119,7 +123,7 @@ class BodyCompiler(
             // Let it through, it doesn't return anything yet it results in a never, which means
             // we called panic or something from inside.
           } else {
-            throw CompileErrorExceptionT(CouldntConvertForReturnT(bodyS.range, explicitRetCoord, returns.head))
+            throw CompileErrorExceptionT(CouldntConvertForReturnT(bodyS.range :: parentRanges, explicitRetCoord, returns.head))
           }
 
           (None, body2)
@@ -136,6 +140,7 @@ class BodyCompiler(
     funcOuterEnv: FunctionEnvironmentBox,
     coutputs: CompilerOutputs,
     life: LocationInFunctionEnvironment,
+    parentRanges: List[RangeS],
     params1: Vector[ParameterS],
     params2: Vector[ParameterT],
     body1: BodySE,
@@ -146,10 +151,10 @@ class BodyCompiler(
     val startingEnv = env.snapshot
 
     val patternsTE =
-      evaluateLets(env, coutputs, life + 0, body1.range, params1, params2);
+      evaluateLets(env, coutputs, life + 0, body1.range :: parentRanges, params1, params2);
 
     val (statementsFromBlock, returnsFromInsideMaybeWithNever) =
-      delegate.evaluateBlockStatements(coutputs, startingEnv, env, life + 1, body1.block);
+      delegate.evaluateBlockStatements(coutputs, startingEnv, env, life + 1, parentRanges, body1.block);
 
     val unconvertedBodyWithoutReturn = Compiler.consecutive(Vector(patternsTE, statementsFromBlock))
 
@@ -158,11 +163,11 @@ class BodyCompiler(
       maybeExpectedResultType match {
         case None => unconvertedBodyWithoutReturn
         case Some(expectedResultType) => {
-          if (templataCompiler.isTypeConvertible(coutputs, unconvertedBodyWithoutReturn.result.reference, expectedResultType)) {
+          if (templataCompiler.isTypeConvertible(coutputs, startingEnv, parentRanges, unconvertedBodyWithoutReturn.result.reference, expectedResultType)) {
             if (unconvertedBodyWithoutReturn.kind == NeverT(false)) {
               unconvertedBodyWithoutReturn
             } else {
-              convertHelper.convert(funcOuterEnv.snapshot, coutputs, body1.range, unconvertedBodyWithoutReturn, expectedResultType);
+              convertHelper.convert(funcOuterEnv.snapshot, coutputs, body1.range :: parentRanges, unconvertedBodyWithoutReturn, expectedResultType);
             }
           } else {
             return Err(ResultTypeMismatchError(expectedResultType, unconvertedBodyWithoutReturn.result.reference))
@@ -196,7 +201,7 @@ class BodyCompiler(
       // promise it gets destroyed.
       val destructeeName = params2.head.name
       if (!env.unstackifieds.exists(_.last == destructeeName)) {
-        throw CompileErrorExceptionT(RangedInternalErrorT(body1.range, "Destructee wasn't moved/destroyed!"))
+        throw CompileErrorExceptionT(RangedInternalErrorT(body1.range :: parentRanges, "Destructee wasn't moved/destroyed!"))
       }
     }
 
@@ -208,7 +213,7 @@ class BodyCompiler(
     nenv: NodeEnvironmentBox,
       coutputs: CompilerOutputs,
     life: LocationInFunctionEnvironment,
-    range: RangeS,
+    range: List[RangeS],
       params1: Vector[ParameterS],
       params2: Vector[ParameterT]):
   ReferenceExpressionTE = {
@@ -216,7 +221,7 @@ class BodyCompiler(
       params2.zipWithIndex.map({ case (p, index) => ArgLookupTE(index, p.tyype) })
     val letExprs2 =
       delegate.translatePatternList(
-        coutputs, nenv, life, params1.map(_.pattern), paramLookups2);
+        coutputs, nenv, life, range, params1.map(_.pattern), paramLookups2);
 
     // todo: at this point, to allow for recursive calls, add a callable type to the environment
     // for everything inside the body to use

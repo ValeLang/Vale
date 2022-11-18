@@ -1,5 +1,6 @@
 
-func !=<T>(a &T, b &T) bool {
+func !=<T>(a &T, b &T) bool
+where func ==(&T, &T)bool {
   not (a == b)
 }
 

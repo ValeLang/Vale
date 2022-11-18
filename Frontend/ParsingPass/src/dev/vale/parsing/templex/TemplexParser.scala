@@ -2,7 +2,7 @@ package dev.vale.parsing.templex
 
 import dev.vale.{Err, Interner, Keywords, Ok, Profiler, Result, StrI, U, vassert, vassertSome, vimpl, vwat}
 import dev.vale.parsing.{Parser, StopBeforeCloseSquare, StopBeforeComma, ast}
-import dev.vale.parsing.ast.{AnonymousRunePT, BoolPT, BorrowP, BuiltinCallPR, CallPT, ComponentsPR, EqualsPR, FinalP, IRulexPR, ITemplexPT, ImmutableP, InlineP, IntPT, InterpretedPT, LocationPT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnP, OwnershipPT, PrototypePT, RegionRunePT, RuntimeSizedArrayPT, ShareP, StaticSizedArrayPT, StringPT, TemplexPR, TuplePT, TypedPR, VariabilityPT, VaryingP, WeakP, YonderP}
+import dev.vale.parsing.ast.{AnonymousRunePT, BoolPT, BorrowP, BuiltinCallPR, CallPT, ComponentsPR, EqualsPR, FinalP, IRulexPR, ITemplexPT, ImmutableP, InlineP, IntPT, InterpretedPT, LocationPT, MutabilityPT, MutableP, NameOrRunePT, NameP, OwnP, OwnershipPT, FuncPT, RegionRunePT, RuntimeSizedArrayPT, ShareP, StaticSizedArrayPT, StringPT, TemplexPR, TuplePT, TypedPR, VariabilityPT, VaryingP, WeakP, YonderP}
 import dev.vale.lexing.{AngledLE, BadArraySizer, BadArraySizerEnd, BadPrototypeName, BadPrototypeParams, BadRegionName, BadRuleCallParam, BadRuneTypeError, BadStringChar, BadStringInTemplex, BadTemplateCallParam, BadTupleElement, BadTypeExpression, BadUnicodeChar, CurliedLE, FoundBothImmutableAndMutabilityInArray, INodeLE, IParseError, ParendLE, ParsedDoubleLE, ParsedIntegerLE, RangeL, RangedInternalErrorP, ScrambleLE, SquaredLE, StringLE, StringPartLiteral, SymbolLE, WordLE}
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
@@ -83,6 +83,82 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
     Ok(Some(result))
   }
 
+  def parseFunctionName(iter: ScrambleIterator): Option[NameP] = {
+    iter.peek() match {
+      case Some(WordLE(range, name)) => {
+        iter.advance()
+        Some(NameP(range, name))
+      }
+      case Some(SymbolLE(_, _)) => {
+        val begin = iter.getPos()
+        iter.peek3() match {
+          case (Some(SymbolLE(_, '=')), Some(SymbolLE(_, '=')), Some(SymbolLE(_, '='))) => {
+            iter.advance()
+            iter.advance()
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.tripleEquals))
+          }
+          case (Some(SymbolLE(_, '<')), Some(SymbolLE(_, '=')), Some(SymbolLE(_, '>'))) => {
+            iter.advance()
+            iter.advance()
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.spaceship))
+          }
+          case (Some(SymbolLE(_, '=')), Some(SymbolLE(_, '=')), _) => {
+            iter.advance()
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.doubleEquals))
+          }
+          case (Some(SymbolLE(_, '!')), Some(SymbolLE(_, '=')), _) => {
+            iter.advance()
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.notEquals))
+          }
+          case (Some(SymbolLE(_, '<')), Some(SymbolLE(_, '=')), _) => {
+            iter.advance()
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.lessEquals))
+          }
+          case (Some(SymbolLE(_, '>')), Some(SymbolLE(_, '=')), _) => {
+            iter.advance()
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.greaterEquals))
+          }
+          case (Some(SymbolLE(_, '<')), _, _) => {
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.less))
+          }
+          case (Some(SymbolLE(_, '>')), _, _) => {
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.greater))
+          }
+          case (Some(SymbolLE(_, '+')), _, _) => {
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.plus))
+          }
+          case (Some(SymbolLE(_, '-')), _, _) => {
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.minus))
+          }
+          case (Some(SymbolLE(_, '*')), _, _) => {
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.asterisk))
+          }
+          case (Some(SymbolLE(_, '/')), _, _) => {
+            iter.advance()
+            Some(NameP(RangeL(begin, iter.getPrevEndPos()), keywords.slash))
+          }
+          case _ => None
+        }
+      }
+      case Some(ParendLE(range, _)) => {
+        // Dont iter.advance(), we do that below.
+        Some(NameP(RangeL(range.begin, range.begin), keywords.underscoresCall))
+      }
+      case _ => None
+    }
+  }
+
   def parsePrototype(iter: ScrambleIterator): Result[Option[ITemplexPT], IParseError] = {
     val begin = iter.getPos()
 
@@ -91,90 +167,23 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
     }
 
     val name =
-      iter.peek() match {
-        case Some(WordLE(range, name)) => {
-          iter.advance()
-          NameP(range, name)
-        }
-        case Some(SymbolLE(_, _)) => {
-          val begin = iter.getPos()
-          iter.peek3() match {
-            case (Some(SymbolLE(_, '=')), Some(SymbolLE(_, '=')), Some(SymbolLE(_, '='))) => {
-              iter.advance()
-              iter.advance()
-              iter.advance()
-              NameP(RangeL(begin, iter.getPrevEndPos()), keywords.tripleEquals)
-            }
-            case (Some(SymbolLE(_, '<')), Some(SymbolLE(_, '=')), Some(SymbolLE(_, '>'))) => {
-              iter.advance()
-              iter.advance()
-              iter.advance()
-              NameP(RangeL(begin, iter.getPrevEndPos()), keywords.spaceship)
-            }
-            case (Some(SymbolLE(_, '=')), Some(SymbolLE(_, '=')), _) => {
-              iter.advance()
-              iter.advance()
-              NameP(RangeL(begin, iter.getPrevEndPos()), keywords.doubleEquals)
-            }
-            case (Some(SymbolLE(_, '!')), Some(SymbolLE(_, '=')), _) => {
-              iter.advance()
-              iter.advance()
-              NameP(RangeL(begin, iter.getPrevEndPos()), keywords.notEquals)
-            }
-            case (Some(SymbolLE(_, '<')), Some(SymbolLE(_, '=')), _) => {
-              iter.advance()
-              iter.advance()
-              NameP(RangeL(begin, iter.getPrevEndPos()), keywords.lessEquals)
-            }
-            case (Some(SymbolLE(_, '>')), Some(SymbolLE(_, '=')), _) => {
-              iter.advance()
-              iter.advance()
-              NameP(RangeL(begin, iter.getPrevEndPos()), keywords.greaterEquals)
-            }
-            case (Some(SymbolLE(_, '<')), _, _) => {
-              iter.advance()
-              NameP(RangeL(begin, iter.getPrevEndPos()), keywords.less)
-            }
-            case (Some(SymbolLE(_, '>')), _, _) => {
-              iter.advance()
-              NameP(RangeL(begin, iter.getPrevEndPos()), keywords.greater)
-            }
-            case (Some(SymbolLE(_, '+')), _, _) => {
-              iter.advance()
-              NameP(RangeL(begin, iter.getPrevEndPos()), keywords.plus)
-            }
-            case (Some(SymbolLE(_, '-')), _, _) => {
-              iter.advance()
-              NameP(RangeL(begin, iter.getPrevEndPos()), keywords.minus)
-            }
-            case (Some(SymbolLE(_, '*')), _, _) => {
-              iter.advance()
-              NameP(RangeL(begin, iter.getPrevEndPos()), keywords.asterisk)
-            }
-            case (Some(SymbolLE(_, '/')), _, _) => {
-              iter.advance()
-              NameP(RangeL(begin, iter.getPrevEndPos()), keywords.slash)
-            }
-            case _ => return Err(BadPrototypeName(iter.getPos()))
-          }
-        }
-        case Some(ParendLE(range, _)) => {
-          // Dont iter.advance(), we do that below.
-          NameP(RangeL(range.begin, range.begin), keywords.underscoresCall)
-        }
-        case _ => return Err(BadPrototypeName(iter.getPos()))
+      parseFunctionName(iter) match {
+        case Some(n) => n
+        case None => return Err(BadPrototypeName(iter.getPos()))
       }
 
+    val argsBegin = iter.getPos()
     val args =
       parseTuple(iter) match {
         case Err(e) => return Err(e)
         case Ok(None) => return Err(BadPrototypeParams(iter.getPos()))
         case Ok(Some(x)) => x.elements
       }
+    val argsEnd = iter.getPrevEndPos()
 
     val returnType = parseTemplex(iter) match { case Err(e) => return Err(e) case Ok(x) => x }
 
-    val result = PrototypePT(RangeL(begin, iter.getPrevEndPos()), name, args, returnType)
+    val result = FuncPT(RangeL(begin, iter.getPrevEndPos()), name, RangeL(argsBegin, argsEnd), args, returnType)
     Ok(Some(result))
   }
 
@@ -266,7 +275,7 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
     val ownership =
       if (iter.trySkipSymbol('^')) { OwnP }
       else if (iter.trySkipSymbol('@')) { ShareP }
-      else if (iter.trySkipSymbols(Array('&', '&'))) { WeakP }
+      else if (iter.trySkipSymbols(Vector('&', '&'))) { WeakP }
       else if (iter.trySkipSymbol('&')) { BorrowP }
       else { return Ok(None) }
 
@@ -381,7 +390,7 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
       case StringLE(range, parts) => {
         iter.advance()
         parts match {
-          case Array(StringPartLiteral(range, s)) => Ok(StringPT(range, s))
+          case Vector(StringPartLiteral(range, s)) => Ok(StringPT(range, s))
           case _ => return Err(BadStringInTemplex(range.begin))
         }
       }
@@ -673,7 +682,7 @@ class TemplexParser(interner: Interner, keywords: Keywords) {
     iter.peek() match {
       case None => Ok(None)
 
-      case Some(WordLE(_, w)) if w == keywords.int => {
+      case Some(WordLE(_, w)) if w == keywords.IntCapitalized => {
         iter.advance(); Ok(Some(IntTypePR))
       }
       case Some(WordLE(_, w)) if w == keywords.Ref => {

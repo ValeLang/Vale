@@ -2,7 +2,7 @@ package dev.vale
 
 import dev.vale.parsing.ast.FinalP
 import dev.vale.typing.env.ReferenceLocalVariableT
-import dev.vale.typing.types.{CoordT, IntT, ShareT}
+import dev.vale.typing.types._
 import dev.vale.typing._
 import dev.vale.typing.types.IntT
 import dev.vale.von.VonInt

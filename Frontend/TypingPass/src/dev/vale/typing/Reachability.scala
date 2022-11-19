@@ -2,7 +2,7 @@ package dev.vale.typing
 
 import dev.vale.typing.ast.{AsSubtypeTE, DestroyImmRuntimeSizedArrayTE, DestroyStaticSizedArrayIntoFunctionTE, EdgeT, FunctionCallTE, InterfaceEdgeBlueprint, LockWeakTE, NewImmRuntimeSizedArrayTE, PrototypeT, SignatureT, StaticArrayFromCallableTE}
 import dev.vale.typing.expression.CallCompiler
-import dev.vale.typing.names.{FullNameT, FunctionNameT}
+import dev.vale.typing.names.{IdT, FunctionNameT}
 import dev.vale.typing.templata.CoordTemplata
 import dev.vale.typing.types._
 import dev.vale.{Collector, StrI, vassertOne, vassertSome, vcurious, vpass}

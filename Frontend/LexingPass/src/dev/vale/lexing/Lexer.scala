@@ -71,22 +71,6 @@ class Lexer(interner: Interner, keywords: Keywords) {
             RangeL(attributeBegin, end),
             DontCallMacroL,
             WordLE(RangeL(attributeBegin, end), keywords.DeriveInterfaceDrop))))
-    } else if (iter.trySkipCompleteWord("#DeriveImplDrop")) {
-      val end = iter.getPos()
-      Ok(
-        Some(
-          MacroCallL(
-            RangeL(attributeBegin, end),
-            CallMacroL,
-            WordLE(RangeL(attributeBegin, end), keywords.DeriveImplDrop))))
-    } else if (iter.trySkipCompleteWord("#!DeriveImplDrop")) {
-      val end = iter.getPos()
-      Ok(
-        Some(
-          MacroCallL(
-            RangeL(attributeBegin, end),
-            DontCallMacroL,
-            WordLE(RangeL(attributeBegin, end), keywords.DeriveImplDrop))))
     } else if (iter.trySkipCompleteWord("abstract")) {
       val end = iter.getPos()
       Ok(Some(AbstractAttributeL(RangeL(attributeBegin, end))))

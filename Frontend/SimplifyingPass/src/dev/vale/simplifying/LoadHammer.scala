@@ -1,11 +1,11 @@
 package dev.vale.simplifying
 
 import dev.vale.{Keywords, finalast, vassert, vfail, vimpl}
-import dev.vale.finalast.{BorrowH, ExpressionH, KindH, LocalLoadH, MemberLoadH, OwnH, ReferenceH, RuntimeSizedArrayLoadH, ShareH, StaticSizedArrayLoadH, YonderH}
+import dev.vale.finalast.{BorrowH, ExpressionH, KindHT, LocalLoadH, MemberLoadH, OwnH, CoordH, RuntimeSizedArrayLoadH, ShareH, StaticSizedArrayLoadH, YonderH}
 import dev.vale.typing.Hinputs
 import dev.vale.typing.ast.{AddressMemberLookupTE, ExpressionT, FunctionHeaderT, LocalLookupTE, ReferenceExpressionTE, ReferenceMemberLookupTE, RuntimeSizedArrayLookupTE, SoftLoadTE, StaticSizedArrayLookupTE}
 import dev.vale.typing.env.{AddressibleLocalVariableT, ReferenceLocalVariableT}
-import dev.vale.typing.names.{FullNameT, IVarNameT}
+import dev.vale.typing.names.{IdT, IVarNameT}
 import dev.vale.typing.types._
 import dev.vale.finalast._
 import dev.vale.typing.{types => t, _}
@@ -27,7 +27,7 @@ class LoadHammer(
     currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
       load2: SoftLoadTE):
-  (ExpressionH[KindH], Vector[ExpressionT]) = {
+  (ExpressionH[KindHT], Vector[ExpressionT]) = {
     val SoftLoadTE(sourceExpr2, targetOwnership) = load2
 
     val (loadedAccessH, sourceDeferreds) =
@@ -65,7 +65,7 @@ class LoadHammer(
       arrayExpr2: ReferenceExpressionTE,
       indexExpr2: ReferenceExpressionTE,
       targetOwnershipT: OwnershipT,
-  ): (ExpressionH[KindH], Vector[ExpressionT]) = {
+  ): (ExpressionH[KindHT], Vector[ExpressionT]) = {
     val targetOwnership = Conversions.evaluateOwnership(targetOwnershipT)
 
     val (arrayResultLine, arrayDeferreds) =
@@ -89,7 +89,7 @@ class LoadHammer(
           case (OwnH, location) => location
           case (ShareH, location) => location
         }
-      ReferenceH(targetOwnership, location, expectedElementType.kind)
+      CoordH(targetOwnership, location, expectedElementType.kind)
     }
 
     // We're storing into a regular reference element of an array.
@@ -112,7 +112,7 @@ class LoadHammer(
     arrayExpr2: ReferenceExpressionTE,
     indexExpr2: ReferenceExpressionTE,
     targetOwnershipT: OwnershipT,
-  ): (ExpressionH[KindH], Vector[ExpressionT]) = {
+  ): (ExpressionH[KindHT], Vector[ExpressionT]) = {
     val targetOwnership = Conversions.evaluateOwnership(targetOwnershipT)
 
     val (arrayResultLine, arrayDeferreds) =
@@ -134,7 +134,7 @@ class LoadHammer(
           case (OwnH, location) => location
           case (ShareH, location) => location
         }
-      ReferenceH(targetOwnership, location, expectedElementType.kind)
+      CoordH(targetOwnership, location, expectedElementType.kind)
     }
 
     // We're storing into a regular reference element of an array.
@@ -156,15 +156,15 @@ class LoadHammer(
     currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
       structExpr2: ReferenceExpressionTE,
-      memberName: FullNameT[IVarNameT],
+      memberName: IdT[IVarNameT],
       expectedType2: CoordT,
       targetOwnershipT: OwnershipT,
-  ): (ExpressionH[KindH], Vector[ExpressionT]) = {
+  ): (ExpressionH[KindHT], Vector[ExpressionT]) = {
     val (structResultLine, structDeferreds) =
       expressionHammer.translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val structTT =
-      structExpr2.result.reference.kind match {
+      structExpr2.result.coord.kind match {
         case sr @ StructTT(_) => sr
 //        case TupleTT(_, sr) => sr
 //        case PackTT(_, sr) => sr
@@ -183,12 +183,12 @@ class LoadHammer(
     val boxedType2 = member2.tyype.expectAddressMember().reference
 
     val (boxedTypeH) =
-      typeHammer.translateReference(hinputs, hamuts, boxedType2);
+      typeHammer.translateCoord(hinputs, hamuts, boxedType2);
 
     val (boxStructRefH) =
       structHammer.makeBox(hinputs, hamuts, variability, boxedType2, boxedTypeH)
 
-    val boxInStructCoord = ReferenceH(BorrowH, YonderH, boxStructRefH)
+    val boxInStructCoord = CoordH(BorrowH, YonderH, boxStructRefH)
 
     // We're storing into a struct's member that is a box. The stack is also
     // pointing at this box. First, get the box, then mutate what's inside.
@@ -203,7 +203,7 @@ class LoadHammer(
 
     val targetOwnership = Conversions.evaluateOwnership(targetOwnershipT)
     val loadResultType =
-      ReferenceH(
+      CoordH(
         targetOwnership,
         boxedTypeH.location,
         boxedTypeH.kind)
@@ -224,30 +224,30 @@ class LoadHammer(
       locals: LocalsBox,
       structExpr2: ReferenceExpressionTE,
       expectedMemberCoord: CoordT,
-      memberName: FullNameT[IVarNameT],
+      memberName: IdT[IVarNameT],
 //      resultCoord: Coord,
       targetOwnershipT: OwnershipT,
-  ): (ExpressionH[KindH], Vector[ExpressionT]) = {
+  ): (ExpressionH[KindHT], Vector[ExpressionT]) = {
     val (structResultLine, structDeferreds) =
       expressionHammer.translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val (expectedMemberTypeH) =
-      typeHammer.translateReference(hinputs, hamuts, expectedMemberCoord);
+      typeHammer.translateCoord(hinputs, hamuts, expectedMemberCoord);
 //    val (resultTypeH) =
 //      typeHammer.translateReference(hinputs, hamuts, resultCoord);
 
     val structTT =
-      structExpr2.result.reference.kind match {
+      structExpr2.result.coord.kind match {
         case sr @ StructTT(_) => sr
 //        case TupleTT(_, sr) => sr
 //        case PackTT(_, sr) => sr
       }
     val structDefT = structHammer.lookupStruct(hinputs, hamuts, structTT)
-    val memberIndex = structDefT.members.indexWhere(_.name == memberName.last)
+    val memberIndex = structDefT.members.indexWhere(_.name == memberName.localName)
     vassert(memberIndex >= 0)
 
     val targetOwnership = Conversions.evaluateOwnership(targetOwnershipT)
-    val loadResultType = ReferenceH(targetOwnership, expectedMemberTypeH.location, expectedMemberTypeH.kind)
+    val loadResultType = CoordH(targetOwnership, expectedMemberTypeH.location, expectedMemberTypeH.kind)
 
     // We're loading from a regular reference member of a struct.
     val loadedNode =
@@ -265,16 +265,16 @@ class LoadHammer(
       hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      varId: FullNameT[IVarNameT],
+      varId: IdT[IVarNameT],
       variability: VariabilityT,
       localReference2: CoordT,
       targetOwnershipT: OwnershipT,
-  ): (ExpressionH[KindH], Vector[ExpressionT]) = {
+  ): (ExpressionH[KindHT], Vector[ExpressionT]) = {
     val local = locals.get(varId).get
     vassert(!locals.unstackifiedVars.contains(local.id))
 
     val (localTypeH) =
-      typeHammer.translateReference(hinputs, hamuts, localReference2);
+      typeHammer.translateCoord(hinputs, hamuts, localReference2);
     val (boxStructRefH) =
       structHammer.makeBox(hinputs, hamuts, variability, localReference2, localTypeH)
     vassert(local.typeH.kind == boxStructRefH)
@@ -289,7 +289,7 @@ class LoadHammer(
           varNameH)
 
     val targetOwnership = Conversions.evaluateOwnership(targetOwnershipT)
-    val loadResultType = ReferenceH(targetOwnership, localTypeH.location, localTypeH.kind)
+    val loadResultType = CoordH(targetOwnership, localTypeH.location, localTypeH.kind)
 
     val loadedNode =
         MemberLoadH(
@@ -306,10 +306,10 @@ class LoadHammer(
       hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      varId: FullNameT[IVarNameT],
+      varId: IdT[IVarNameT],
       expectedType2: CoordT,
       targetOwnershipT: OwnershipT,
-  ): (ExpressionH[KindH], Vector[ExpressionT]) = {
+  ): (ExpressionH[KindHT], Vector[ExpressionT]) = {
     val targetOwnership = Conversions.evaluateOwnership(targetOwnershipT)
 
     val local = locals.get(varId) match {
@@ -321,7 +321,7 @@ class LoadHammer(
     vassert(!locals.unstackifiedVars.contains(local.id))
 
     val (expectedTypeH) =
-      typeHammer.translateReference(hinputs, hamuts, expectedType2);
+      typeHammer.translateCoord(hinputs, hamuts, expectedType2);
     vassert(expectedTypeH == local.typeH)
 
     val loadedNode =
@@ -338,13 +338,13 @@ class LoadHammer(
     currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
       lookup2: LocalLookupTE):
-  (ExpressionH[KindH]) = {
+  (ExpressionH[KindHT]) = {
     val LocalLookupTE(_,localVar) = lookup2;
 
     val local = locals.get(localVar.id).get
     vassert(!locals.unstackifiedVars.contains(local.id))
     val (boxStructRefH) =
-      structHammer.makeBox(hinputs, hamuts, localVar.variability, localVar.reference, local.typeH)
+      structHammer.makeBox(hinputs, hamuts, localVar.variability, localVar.coord, local.typeH)
 
     // This means we're trying to load from a local variable that holds a box.
     // We need to load the box, then mutate its contents.
@@ -364,14 +364,14 @@ class LoadHammer(
     currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
       lookup2: AddressMemberLookupTE):
-  (ExpressionH[KindH], Vector[ExpressionT]) = {
+  (ExpressionH[KindHT], Vector[ExpressionT]) = {
     val AddressMemberLookupTE(_,structExpr2, memberName, resultType2, _) = lookup2;
 
     val (structResultLine, structDeferreds) =
       expressionHammer.translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val structTT =
-      structExpr2.result.reference.kind match {
+      structExpr2.result.coord.kind match {
         case sr @ StructTT(_) => sr
 //        case TupleTT(_, sr) => sr
 //        case PackTT(_, sr) => sr
@@ -391,16 +391,16 @@ class LoadHammer(
     val boxedType2 = member2.tyype.expectAddressMember().reference
 
     val (boxedTypeH) =
-      typeHammer.translateReference(hinputs, hamuts, boxedType2);
+      typeHammer.translateCoord(hinputs, hamuts, boxedType2);
 
     val (boxStructRefH) =
       structHammer.makeBox(hinputs, hamuts, variability, boxedType2, boxedTypeH)
 
     // We expect a borrow because structs never own boxes, they only borrow them
-    val expectedStructBoxMemberType = ReferenceH(finalast.BorrowH, YonderH, boxStructRefH)
+    val expectedStructBoxMemberType = CoordH(finalast.BorrowH, YonderH, boxStructRefH)
 
     val loadResultType =
-      ReferenceH(
+      CoordH(
         // Boxes are either owned or borrowed. We only own boxes from locals,
         // and we're loading from a struct here, so we're getting a borrow to the
         // box from the struct.
@@ -421,7 +421,7 @@ class LoadHammer(
     (loadBoxNode, structDeferreds)
   }
 
-  def getBorrowedLocation(memberType: ReferenceH[KindH]) = {
+  def getBorrowedLocation(memberType: CoordH[KindHT]) = {
     (memberType.ownership, memberType.location) match {
       case (OwnH, _) => YonderH
       case (BorrowH, _) => YonderH

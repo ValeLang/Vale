@@ -9,7 +9,7 @@ import dev.vale.typing.ast.PrototypeT
 import dev.vale.typing.env.{FunctionEnvEntry, IEnvEntry}
 import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.macros.IOnInterfaceDefinedMacro
-import dev.vale.typing.names.{FullNameT, INameT, NameTranslator}
+import dev.vale.typing.names.{IdT, INameT, NameTranslator}
 import dev.vale.typing.types.MutabilityT
 import dev.vale.highertyping.FunctionA
 import dev.vale.parsing.ast.MoveP
@@ -30,7 +30,7 @@ class InterfaceDropMacro(
 
   val macroName: StrI = keywords.DeriveInterfaceDrop
 
-  override def getInterfaceSiblingEntries(interfaceName: FullNameT[INameT], interfaceA: InterfaceA): Vector[(FullNameT[INameT], FunctionEnvEntry)] = {
+  override def getInterfaceSiblingEntries(interfaceName: IdT[INameT], interfaceA: InterfaceA): Vector[(IdT[INameT], FunctionEnvEntry)] = {
     def range(n: Int) = RangeS.internal(interner, n)
     def use(n: Int, rune: IRuneS) = RuneUsage(range(n), rune)
 
@@ -91,7 +91,7 @@ class InterfaceDropMacro(
         AbstractBodyS)
 
     Vector(
-      interfaceName.copy(last = nameTranslator.translateGenericFunctionName(dropFunctionA.name)) ->
+      interfaceName.copy(localName = nameTranslator.translateGenericFunctionName(dropFunctionA.name)) ->
         FunctionEnvEntry(dropFunctionA))
   }
 

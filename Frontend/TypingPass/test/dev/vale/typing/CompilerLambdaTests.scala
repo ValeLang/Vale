@@ -5,7 +5,7 @@ import dev.vale.postparsing._
 import dev.vale.postparsing.rules.IRulexSR
 import dev.vale.solver.{RuleError, Step}
 import dev.vale.typing.OverloadResolver.{FindFunctionFailure, InferFailure, WrongNumberOfArguments}
-import dev.vale.typing.ast.{ConstantIntTE, DestroyTE, DiscardTE, FunctionCallTE, FunctionHeaderT, FunctionT, KindExportT, LetAndLendTE, LetNormalTE, LocalLookupTE, ParameterT, PrototypeT, ReferenceMemberLookupTE, ReturnTE, SoftLoadTE, referenceExprResultKind, referenceExprResultStructName, _}
+import dev.vale.typing.ast.{ConstantIntTE, DestroyTE, DiscardTE, FunctionCallTE, FunctionHeaderT, FunctionDefinitionT, KindExportT, LetAndLendTE, LetNormalTE, LocalLookupTE, ParameterT, PrototypeT, ReferenceMemberLookupTE, ReturnTE, SoftLoadTE, referenceExprResultKind, referenceExprResultStructName, _}
 import dev.vale.typing.env.ReferenceLocalVariableT
 import dev.vale.typing.infer.{KindIsNotConcrete, OwnershipDidntMatch}
 import dev.vale.typing.names._

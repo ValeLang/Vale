@@ -998,12 +998,17 @@ Ref Linear::innerMallocStr(
       globalState->getRegion(boolMT)
           ->checkValidReference(FL(), functionState, builder, true, boolMT, dryRunBoolRef);
 
+  buildFlare(FL(), globalState, functionState, builder);
+
   buildIfV(
       globalState, functionState, builder, LLVMBuildNot(builder, dryRunBoolLE, "notDryRun"),
       [this, functionState, regionInstanceRef, strPtrLE, lenI32LE, lenI64LE, strRef, sourceCharsPtrLE](
           LLVMBuilderRef thenBuilder) mutable {
+        buildFlare(FL(), globalState, functionState, thenBuilder);
+
         auto strWithLenValLE =
-            LLVMBuildInsertValue(thenBuilder, LLVMGetUndef(structs.getStringStruct()), lenI32LE, 0, "strWithLen");
+            LLVMBuildInsertValue(
+                thenBuilder, LLVMGetUndef(structs.getStringStruct()), lenI32LE, 0, "strWithLen");
         LLVMBuildStore(thenBuilder, strWithLenValLE, strPtrLE);
 
         buildFlare(FL(), globalState, functionState, thenBuilder, "length for str: ", lenI64LE);
@@ -1029,7 +1034,11 @@ Ref Linear::innerMallocStr(
         return strRef;
       });
 
+  buildFlare(FL(), globalState, functionState, builder);
+
   bumpDestinationOffset(functionState, builder, regionInstanceRef, sizeLE); // moved
+
+  buildFlare(FL(), globalState, functionState, builder);
 
   return strRef;
 }

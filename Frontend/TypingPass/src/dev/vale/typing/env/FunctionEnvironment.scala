@@ -4,7 +4,7 @@ import dev.vale.highertyping.FunctionA
 import dev.vale.{Interner, vassert, vcurious, vfail, vpass}
 import dev.vale.postparsing._
 import dev.vale.typing.ast.{LocationInFunctionEnvironment, ParameterT}
-import dev.vale.typing.names.{BuildingFunctionNameWithClosuredsT, FullNameT, IFunctionNameT, IFunctionTemplateNameT, INameT, ITemplateNameT, IVarNameT}
+import dev.vale.typing.names.{BuildingFunctionNameWithClosuredsT, IdT, IFunctionNameT, IFunctionTemplateNameT, INameT, ITemplateNameT, IVarNameT}
 import dev.vale.typing.templata.{FunctionTemplata, ITemplata}
 import dev.vale.typing.types._
 import dev.vale.highertyping._
@@ -18,7 +18,7 @@ import scala.collection.immutable.{List, Map, Set}
 case class BuildingFunctionEnvironmentWithClosureds(
   globalEnv: GlobalEnvironment,
   parentEnv: IEnvironment,
-  fullName: FullNameT[IFunctionTemplateNameT],
+  fullName: IdT[IFunctionTemplateNameT],
   templatas: TemplatasStore,
   function: FunctionA,
   variables: Vector[IVariableT],
@@ -68,7 +68,7 @@ case class BuildingFunctionEnvironmentWithClosureds(
 case class BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs(
   globalEnv: GlobalEnvironment,
   parentEnv: IEnvironment,
-  fullName: FullNameT[IFunctionTemplateNameT],
+  fullName: IdT[IFunctionTemplateNameT],
   templateArgs: Vector[ITemplata[ITemplataType]],
   templatas: TemplatasStore,
   function: FunctionA,
@@ -128,7 +128,7 @@ case class NodeEnvironment(
   // This contains locals from parent blocks, see WTHPFE.
   declaredLocals: Vector[IVariableT],
   // This can refer to vars in parent blocks, see UCRTVPE.
-  unstackifiedLocals: Set[FullNameT[IVarNameT]]
+  unstackifiedLocals: Set[IdT[IVarNameT]]
 ) extends IEnvironment {
   vassert(declaredLocals.map(_.id) == declaredLocals.map(_.id).distinct)
 
@@ -149,7 +149,7 @@ case class NodeEnvironment(
     }
   }
 
-  override def fullName: FullNameT[IFunctionNameT] = parentFunctionEnv.fullName
+  override def fullName: IdT[IFunctionNameT] = parentFunctionEnv.fullName
   def function = parentFunctionEnv.function
 
   private[env] override def lookupWithNameInner(
@@ -179,13 +179,13 @@ case class NodeEnvironment(
   }
 
   def getVariable(name: IVarNameT): Option[IVariableT] = {
-    declaredLocals.find(_.id.last == name) match {
+    declaredLocals.find(_.id.localName == name) match {
       case Some(v) => Some(v)
       case None => {
         parentNodeEnv match {
           case Some(p) => p.getVariable(name)
           case None => {
-            parentFunctionEnv.closuredLocals.find(_.id.last == name)
+            parentFunctionEnv.closuredLocals.find(_.id.localName == name)
           }
         }
       }
@@ -200,7 +200,7 @@ case class NodeEnvironment(
     declaredLocals.collect({ case i : ILocalVariableT => i })
   }
 
-  def getAllUnstackifiedLocals(): Vector[FullNameT[IVarNameT]] = {
+  def getAllUnstackifiedLocals(): Vector[IdT[IVarNameT]] = {
     unstackifiedLocals.toVector
   }
 
@@ -210,7 +210,7 @@ case class NodeEnvironment(
   def addVariable(newVar: IVariableT): NodeEnvironment = {
     NodeEnvironment(parentFunctionEnv, parentNodeEnv, node, life, templatas, declaredLocals :+ newVar, unstackifiedLocals)
   }
-  def markLocalUnstackified(newUnstackified: FullNameT[IVarNameT]): NodeEnvironment = {
+  def markLocalUnstackified(newUnstackified: IdT[IVarNameT]): NodeEnvironment = {
     vassert(!getAllUnstackifiedLocals().contains(newUnstackified))
     vassert(getAllLocals().exists(_.id == newUnstackified))
     // Even if the local belongs to a parent env, we still mark it unstackified here, see UCRTVPE.
@@ -219,7 +219,7 @@ case class NodeEnvironment(
 
   // Gets the effects that this environment had on the outside world (on its parent
   // environments). In other words, parent locals that were unstackified.
-  def getEffectsSince(earlierNodeEnv: NodeEnvironment): Set[FullNameT[IVarNameT]] = {
+  def getEffectsSince(earlierNodeEnv: NodeEnvironment): Set[IdT[IVarNameT]] = {
     vassert(parentFunctionEnv == earlierNodeEnv.parentFunctionEnv)
 
     // We may have unstackified outside locals from inside the block, make sure
@@ -311,19 +311,19 @@ case class NodeEnvironmentBox(var nodeEnvironment: NodeEnvironment) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vfail() // Shouldnt hash, is mutable
 
   def snapshot: NodeEnvironment = nodeEnvironment
-  def fullName: FullNameT[IFunctionNameT] = nodeEnvironment.parentFunctionEnv.fullName
+  def fullName: IdT[IFunctionNameT] = nodeEnvironment.parentFunctionEnv.fullName
   def node: IExpressionSE = nodeEnvironment.node
   def maybeReturnType: Option[CoordT] = nodeEnvironment.parentFunctionEnv.maybeReturnType
   def globalEnv: GlobalEnvironment = nodeEnvironment.globalEnv
   def declaredLocals: Vector[IVariableT] = nodeEnvironment.declaredLocals
-  def unstackifieds: Set[FullNameT[IVarNameT]] = nodeEnvironment.unstackifiedLocals
+  def unstackifieds: Set[IdT[IVarNameT]] = nodeEnvironment.unstackifiedLocals
   def function = nodeEnvironment.function
   def functionEnvironment = nodeEnvironment.parentFunctionEnv
 
   def addVariable(newVar: IVariableT): Unit= {
     nodeEnvironment = nodeEnvironment.addVariable(newVar)
   }
-  def markLocalUnstackified(newMoved: FullNameT[IVarNameT]): Unit= {
+  def markLocalUnstackified(newMoved: IdT[IVarNameT]): Unit= {
     nodeEnvironment = nodeEnvironment.markLocalUnstackified(newMoved)
   }
 
@@ -335,7 +335,7 @@ case class NodeEnvironmentBox(var nodeEnvironment: NodeEnvironment) {
     nodeEnvironment.getAllLocals()
   }
 
-  def getAllUnstackifiedLocals(): Vector[FullNameT[IVarNameT]] = {
+  def getAllUnstackifiedLocals(): Vector[IdT[IVarNameT]] = {
     nodeEnvironment.getAllUnstackifiedLocals()
   }
 
@@ -395,7 +395,7 @@ case class FunctionEnvironment(
   globalEnv: GlobalEnvironment,
   // This points to the environment containing the function, not parent blocks, see WTHPFE.
   parentEnv: IEnvironment,
-  fullName: FullNameT[IFunctionNameT], // Includes the name of the function
+  fullName: IdT[IFunctionNameT], // Includes the name of the function
 
   templatas: TemplatasStore,
 
@@ -482,7 +482,7 @@ case class FunctionEnvironment(
         case NodeEnvironment(_, _, _, _, _, declaredLocals, unstackifiedLocals) => {
           (declaredLocals, unstackifiedLocals)
         }
-        case _ => (Vector(), Set[FullNameT[IVarNameT]]())
+        case _ => (Vector(), Set[IdT[IVarNameT]]())
       }
 
     NodeEnvironment(
@@ -518,7 +518,7 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vfail() // Shouldnt hash, is mutable
 
   override def snapshot: FunctionEnvironment = functionEnvironment
-  def fullName: FullNameT[IFunctionNameT] = functionEnvironment.fullName
+  def fullName: IdT[IFunctionNameT] = functionEnvironment.fullName
   def function: FunctionA = functionEnvironment.function
   def maybeReturnType: Option[CoordT] = functionEnvironment.maybeReturnType
   override def globalEnv: GlobalEnvironment = functionEnvironment.globalEnv
@@ -576,13 +576,13 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
 }
 
 sealed trait IVariableT  {
-  def id: FullNameT[IVarNameT]
+  def id: IdT[IVarNameT]
   def variability: VariabilityT
-  def reference: CoordT
+  def coord: CoordT
 }
 sealed trait ILocalVariableT extends IVariableT {
-  def reference: CoordT
-  def id: FullNameT[IVarNameT]
+  def coord: CoordT
+  def id: IdT[IVarNameT]
 }
 // Why the difference between reference and addressible:
 // If we mutate/move a variable from inside a closure, we need to put
@@ -591,34 +591,34 @@ sealed trait ILocalVariableT extends IVariableT {
 // Lucky for us, the parser figured out if any of our child closures did
 // any mutates/moves/borrows.
 case class AddressibleLocalVariableT(
-  id: FullNameT[IVarNameT],
+  id: IdT[IVarNameT],
   variability: VariabilityT,
-  reference: CoordT
+  coord: CoordT
 ) extends ILocalVariableT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
 
 }
 case class ReferenceLocalVariableT(
-  id: FullNameT[IVarNameT],
+  id: IdT[IVarNameT],
   variability: VariabilityT,
-  reference: CoordT
+  coord: CoordT
 ) extends ILocalVariableT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
   vpass()
 }
 case class AddressibleClosureVariableT(
-  id: FullNameT[IVarNameT],
+  id: IdT[IVarNameT],
   closuredVarsStructType: StructTT,
   variability: VariabilityT,
-  reference: CoordT
+  coord: CoordT
 ) extends IVariableT {
   vpass()
 }
 case class ReferenceClosureVariableT(
-  id: FullNameT[IVarNameT],
+  id: IdT[IVarNameT],
   closuredVarsStructType: StructTT,
   variability: VariabilityT,
-  reference: CoordT
+  coord: CoordT
 ) extends IVariableT {
   val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious();
 

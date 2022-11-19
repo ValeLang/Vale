@@ -1,7 +1,7 @@
 package dev.vale.typing
 
 import dev.vale.postparsing.{IRuneS, IntegerTemplataType, MutabilityTemplataType, VariabilityTemplataType}
-import dev.vale.typing.ast.{FunctionExportT, FunctionExternT, FunctionT, ImplT, KindExportT, KindExternT, PrototypeT, SignatureT, getFunctionLastName}
+import dev.vale.typing.ast.{FunctionExportT, FunctionExternT, FunctionDefinitionT, ImplT, KindExportT, KindExternT, PrototypeT, SignatureT, getFunctionLastName}
 import dev.vale.typing.env.{CitizenEnvironment, FunctionEnvironment, IEnvironment}
 import dev.vale.typing.expression.CallCompiler
 import dev.vale.typing.names._
@@ -20,7 +20,7 @@ case class DeferredEvaluatingFunctionBody(
   call: (CompilerOutputs) => Unit)
 
 case class DeferredEvaluatingFunction(
-  name: FullNameT[INameT],
+  name: IdT[INameT],
   call: (CompilerOutputs) => Unit)
 
 
@@ -36,7 +36,7 @@ case class CompilerOutputs() {
 
   // Not all signatures/banners or even return types will have a function here, it might not have
   // been processed yet.
-  private val signatureToFunction: mutable.HashMap[SignatureT, FunctionT] = mutable.HashMap()
+  private val signatureToFunction: mutable.HashMap[SignatureT, FunctionDefinitionT] = mutable.HashMap()
 //  private val functionsByPrototype: mutable.HashMap[PrototypeT, FunctionT] = mutable.HashMap()
   private val envByFunctionSignature: mutable.HashMap[SignatureT, FunctionEnvironment] = mutable.HashMap()
 
@@ -44,40 +44,40 @@ case class CompilerOutputs() {
   // Things will appear here before they appear in structTemplateNameToDefinition/interfaceTemplateNameToDefinition
   // This is to prevent infinite recursion / stack overflow when typingpassing recursive types
   // This will be the instantiated name, not just the template name, see UINIT.
-  private val functionDeclaredNames: mutable.HashMap[FullNameT[INameT], RangeS] = mutable.HashMap()
+  private val functionDeclaredNames: mutable.HashMap[IdT[INameT], RangeS] = mutable.HashMap()
   // Outer env is the env that contains the template.
   // This will be the instantiated name, not just the template name, see UINIT.
-  private val functionNameToOuterEnv: mutable.HashMap[FullNameT[IFunctionTemplateNameT], IEnvironment] = mutable.HashMap()
+  private val functionNameToOuterEnv: mutable.HashMap[IdT[IFunctionTemplateNameT], IEnvironment] = mutable.HashMap()
   // Inner env is the env that contains the solved rules for the declaration, given placeholders.
   // This will be the instantiated name, not just the template name, see UINIT.
-  private val functionNameToInnerEnv: mutable.HashMap[FullNameT[INameT], IEnvironment] = mutable.HashMap()
+  private val functionNameToInnerEnv: mutable.HashMap[IdT[INameT], IEnvironment] = mutable.HashMap()
 
 
   // declaredNames is the structs that we're currently in the process of defining
   // Things will appear here before they appear in structTemplateNameToDefinition/interfaceTemplateNameToDefinition
   // This is to prevent infinite recursion / stack overflow when typingpassing recursive types
-  private val typeDeclaredNames: mutable.HashSet[FullNameT[ITemplateNameT]] = mutable.HashSet()
+  private val typeDeclaredNames: mutable.HashSet[IdT[ITemplateNameT]] = mutable.HashSet()
   // Outer env is the env that contains the template.
-  private val typeNameToOuterEnv: mutable.HashMap[FullNameT[ITemplateNameT], IEnvironment] = mutable.HashMap()
+  private val typeNameToOuterEnv: mutable.HashMap[IdT[ITemplateNameT], IEnvironment] = mutable.HashMap()
   // Inner env is the env that contains the solved rules for the declaration, given placeholders.
   // We can key by template name here because there's only one inner env per template. This is the env
   // that has placeholders and stuff.
   // Also, if it's keyed by template name, we can access it earlier, before the definition is even made.
   // This is important for when we want to be compiling a struct/interface and one of its internal methods
   // wants to look in its inner env to get some bounds.
-  private val typeNameToInnerEnv: mutable.HashMap[FullNameT[ITemplateNameT], IEnvironment] = mutable.HashMap()
+  private val typeNameToInnerEnv: mutable.HashMap[IdT[ITemplateNameT], IEnvironment] = mutable.HashMap()
   // One must fill this in when putting things into declaredNames.
-  private val typeNameToMutability: mutable.HashMap[FullNameT[ITemplateNameT], ITemplata[MutabilityTemplataType]] = mutable.HashMap()
+  private val typeNameToMutability: mutable.HashMap[IdT[ITemplateNameT], ITemplata[MutabilityTemplataType]] = mutable.HashMap()
   // One must fill this in when putting things into declaredNames.
-  private val interfaceNameToSealed: mutable.HashMap[FullNameT[IInterfaceTemplateNameT], Boolean] = mutable.HashMap()
+  private val interfaceNameToSealed: mutable.HashMap[IdT[IInterfaceTemplateNameT], Boolean] = mutable.HashMap()
 
 
-  private val structTemplateNameToDefinition: mutable.HashMap[FullNameT[IStructTemplateNameT], StructDefinitionT] = mutable.HashMap()
-  private val interfaceTemplateNameToDefinition: mutable.HashMap[FullNameT[IInterfaceTemplateNameT], InterfaceDefinitionT] = mutable.HashMap()
+  private val structTemplateNameToDefinition: mutable.HashMap[IdT[IStructTemplateNameT], StructDefinitionT] = mutable.HashMap()
+  private val interfaceTemplateNameToDefinition: mutable.HashMap[IdT[IInterfaceTemplateNameT], InterfaceDefinitionT] = mutable.HashMap()
 
-  private val allImpls: mutable.HashMap[FullNameT[IImplTemplateNameT], ImplT] = mutable.HashMap()
-  private val subCitizenTemplateToImpls: mutable.HashMap[FullNameT[ICitizenTemplateNameT], Vector[ImplT]] = mutable.HashMap()
-  private val superInterfaceTemplateToImpls: mutable.HashMap[FullNameT[IInterfaceTemplateNameT], Vector[ImplT]] = mutable.HashMap()
+  private val allImpls: mutable.HashMap[IdT[IImplTemplateNameT], ImplT] = mutable.HashMap()
+  private val subCitizenTemplateToImpls: mutable.HashMap[IdT[ICitizenTemplateNameT], Vector[ImplT]] = mutable.HashMap()
+  private val superInterfaceTemplateToImpls: mutable.HashMap[IdT[IInterfaceTemplateNameT], Vector[ImplT]] = mutable.HashMap()
 
   private val kindExports: mutable.ArrayBuffer[KindExportT] = mutable.ArrayBuffer()
   private val functionExports: mutable.ArrayBuffer[FunctionExportT] = mutable.ArrayBuffer()
@@ -87,12 +87,12 @@ case class CompilerOutputs() {
   // When we call a function, for example this one:
   //   abstract func drop<T>(virtual opt Opt<T>) where func drop(T)void;
   // and we instantiate it, drop<int>(Opt<int>), we need to figure out the bounds, ensure that
-  // drop(int) exists. Then we have to remember it for the monomorphizer.
+  // drop(int) exists. Then we have to remember it for the instantiator.
   // This map is how we remember it.
   // Here, we'd remember: [drop<int>(Opt<int>), [Rune1337, drop(int)]].
   // We also do this for structs and interfaces too.
-  private val instantiationNameToInstantiationBounds: mutable.HashMap[FullNameT[IInstantiationNameT], InstantiationBoundArguments] =
-    mutable.HashMap[FullNameT[IInstantiationNameT], InstantiationBoundArguments]()
+  private val instantiationNameToInstantiationBounds: mutable.HashMap[IdT[IInstantiationNameT], InstantiationBoundArguments] =
+    mutable.HashMap[IdT[IInstantiationNameT], InstantiationBoundArguments]()
 
 //  // Only ArrayCompiler can make an RawArrayT2.
 //  private val staticSizedArrayTypes:
@@ -106,8 +106,8 @@ case class CompilerOutputs() {
   private val deferredFunctionBodyCompiles: mutable.LinkedHashMap[PrototypeT, DeferredEvaluatingFunctionBody] = mutable.LinkedHashMap()
   private val finishedDeferredFunctionBodyCompiles: mutable.LinkedHashSet[PrototypeT] = mutable.LinkedHashSet()
 
-  private val deferredFunctionCompiles: mutable.LinkedHashMap[FullNameT[INameT], DeferredEvaluatingFunction] = mutable.LinkedHashMap()
-  private val finishedDeferredFunctionCompiles: mutable.LinkedHashSet[FullNameT[INameT]] = mutable.LinkedHashSet()
+  private val deferredFunctionCompiles: mutable.LinkedHashMap[IdT[INameT], DeferredEvaluatingFunction] = mutable.LinkedHashMap()
+  private val finishedDeferredFunctionCompiles: mutable.LinkedHashSet[IdT[INameT]] = mutable.LinkedHashSet()
 
   def countDenizens(): Int = {
 //    staticSizedArrayTypes.size +
@@ -129,28 +129,28 @@ case class CompilerOutputs() {
   def peekNextDeferredFunctionCompile(): Option[DeferredEvaluatingFunction] = {
     deferredFunctionCompiles.headOption.map(_._2)
   }
-  def markDeferredFunctionCompiled(name: FullNameT[INameT]): Unit = {
+  def markDeferredFunctionCompiled(name: IdT[INameT]): Unit = {
     vassert(name == vassertSome(deferredFunctionCompiles.headOption)._1)
     finishedDeferredFunctionCompiles += name
     deferredFunctionCompiles -= name
   }
 
-  def getInstantiationNameToFunctionBoundToRune(): Map[FullNameT[IInstantiationNameT], InstantiationBoundArguments] = {
+  def getInstantiationNameToFunctionBoundToRune(): Map[IdT[IInstantiationNameT], InstantiationBoundArguments] = {
     instantiationNameToInstantiationBounds.toMap
   }
 
-  def lookupFunction(signature: SignatureT): Option[FunctionT] = {
+  def lookupFunction(signature: SignatureT): Option[FunctionDefinitionT] = {
     signatureToFunction.get(signature)
   }
 
   def getInstantiationBounds(
-    instantiationFullName: FullNameT[IInstantiationNameT]):
+    instantiationFullName: IdT[IInstantiationNameT]):
   Option[InstantiationBoundArguments] = {
     instantiationNameToInstantiationBounds.get(instantiationFullName)
   }
 
   def addInstantiationBounds(
-    instantiationFullName: FullNameT[IInstantiationNameT],
+    instantiationFullName: IdT[IInstantiationNameT],
     functionBoundToRune: InstantiationBoundArguments):
   Unit = {
     // We'll do this when we can cache instantiations from StructTemplar etc.
@@ -170,7 +170,7 @@ case class CompilerOutputs() {
       case None =>
     }
     instantiationFullName match {
-      case FullNameT(_,Vector(),StructNameT(StructTemplateNameT(StrI("MyList")),Vector(CoordTemplata(CoordT(OwnT,PlaceholderT(FullNameT(_,Vector(FunctionTemplateNameT(StrI("MyList"),_)),PlaceholderNameT(PlaceholderTemplateNameT(0))))))))) => {
+      case IdT(_,Vector(),StructNameT(StructTemplateNameT(StrI("MyList")),Vector(CoordTemplata(CoordT(OwnT,PlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("MyList"),_)),PlaceholderNameT(PlaceholderTemplateNameT(0))))))))) => {
         vpass()
       }
       case _ =>
@@ -205,11 +205,11 @@ case class CompilerOutputs() {
     returnTypesBySignature += (signature -> returnType2)
   }
 
-  def addFunction(function: FunctionT): Unit = {
+  def addFunction(function: FunctionDefinitionT): Unit = {
 //    vassert(declaredSignatures.contains(function.header.toSignature))
     vassert(
-      function.body.result.reference.kind == NeverT(false) ||
-      function.body.result.reference == function.header.returnType)
+      function.body.result.coord.kind == NeverT(false) ||
+      function.body.result.coord == function.header.returnType)
 
 //    if (!useOptimization) {
 //      Collector.all(function, {
@@ -232,7 +232,7 @@ case class CompilerOutputs() {
 //    functionsByPrototype.put(function.header.toPrototype, function)
   }
 
-  def declareFunction(callRanges: List[RangeS], name: FullNameT[IFunctionNameT]): Unit = {
+  def declareFunction(callRanges: List[RangeS], name: IdT[IFunctionNameT]): Unit = {
     functionDeclaredNames.get(name) match {
       case Some(oldFunctionRange) => {
         throw CompileErrorExceptionT(FunctionAlreadyExists(oldFunctionRange, callRanges.head, name))
@@ -244,9 +244,9 @@ case class CompilerOutputs() {
 
   // We can't declare the struct at the same time as we declare its mutability or environment,
   // see MFDBRE.
-  def declareType(templateName: FullNameT[ITemplateNameT]): Unit = {
+  def declareType(templateName: IdT[ITemplateNameT]): Unit = {
     templateName match {
-      case FullNameT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector()), LambdaCitizenTemplateNameT(_), LambdaCallFunctionNameT(LambdaCallFunctionTemplateNameT(_,Vector(CoordT(ShareT,StructTT(FullNameT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_))))))),Vector(),Vector(CoordT(ShareT,StructTT(FullNameT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_))))))), LambdaCitizenTemplateNameT(_)),LambdaCallFunctionTemplateNameT(_,Vector(CoordT(BorrowT,StructTT(FullNameT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector()), LambdaCitizenTemplateNameT(_), LambdaCallFunctionNameT(LambdaCallFunctionTemplateNameT(_,Vector(CoordT(ShareT,StructTT(FullNameT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_))))))),Vector(),Vector(CoordT(ShareT,StructTT(FullNameT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_)))))))),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_))))), CoordT(ShareT,IntT(32))))) => {
+      case IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector()), LambdaCitizenTemplateNameT(_), LambdaCallFunctionNameT(LambdaCallFunctionTemplateNameT(_,Vector(CoordT(ShareT,StructTT(IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_))))))),Vector(),Vector(CoordT(ShareT,StructTT(IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_))))))), LambdaCitizenTemplateNameT(_)),LambdaCallFunctionTemplateNameT(_,Vector(CoordT(BorrowT,StructTT(IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector()), LambdaCitizenTemplateNameT(_), LambdaCallFunctionNameT(LambdaCallFunctionTemplateNameT(_,Vector(CoordT(ShareT,StructTT(IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_))))))),Vector(),Vector(CoordT(ShareT,StructTT(IdT(_,Vector(FunctionNameT(FunctionTemplateNameT(StrI("main"),_),Vector(),Vector())),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_)))))))),LambdaCitizenNameT(LambdaCitizenTemplateNameT(_))))), CoordT(ShareT,IntT(32))))) => {
         vpass()
       }
       case _ =>
@@ -256,7 +256,7 @@ case class CompilerOutputs() {
   }
 
   def declareTypeMutability(
-    templateName: FullNameT[ITemplateNameT],
+    templateName: IdT[ITemplateNameT],
     mutability: ITemplata[MutabilityTemplataType]
   ): Unit = {
     vassert(typeDeclaredNames.contains(templateName))
@@ -265,7 +265,7 @@ case class CompilerOutputs() {
   }
 
   def declareTypeSealed(
-    templateName: FullNameT[IInterfaceTemplateNameT],
+    templateName: IdT[IInterfaceTemplateNameT],
     seealed: Boolean
   ): Unit = {
     vassert(typeDeclaredNames.contains(templateName))
@@ -274,7 +274,7 @@ case class CompilerOutputs() {
   }
 
   def declareFunctionInnerEnv(
-    nameT: FullNameT[IFunctionNameT],
+    nameT: IdT[IFunctionNameT],
     env: IEnvironment,
   ): Unit = {
     vassert(functionDeclaredNames.contains(nameT))
@@ -285,7 +285,7 @@ case class CompilerOutputs() {
   }
 
   def declareFunctionOuterEnv(
-    nameT: FullNameT[IFunctionTemplateNameT],
+    nameT: IdT[IFunctionTemplateNameT],
     env: IEnvironment,
   ): Unit = {
     vassert(!functionNameToOuterEnv.contains(nameT))
@@ -294,7 +294,7 @@ case class CompilerOutputs() {
   }
 
   def declareTypeOuterEnv(
-    nameT: FullNameT[ITemplateNameT],
+    nameT: IdT[ITemplateNameT],
     env: IEnvironment,
   ): Unit = {
     vassert(typeDeclaredNames.contains(nameT))
@@ -304,7 +304,7 @@ case class CompilerOutputs() {
   }
 
   def declareTypeInnerEnv(
-    templateFullName: FullNameT[ITemplateNameT],
+    templateFullName: IdT[ITemplateNameT],
     env: IEnvironment,
   ): Unit = {
 //    val templateFullName = TemplataCompiler.getTemplate(nameT)
@@ -365,10 +365,10 @@ case class CompilerOutputs() {
       superInterfaceTemplateToImpls.getOrElse(impl.superInterfaceTemplateName, Vector()) :+ impl)
   }
 
-  def getParentImplsForSubCitizenTemplate(subCitizenTemplate: FullNameT[ICitizenTemplateNameT]): Vector[ImplT] = {
+  def getParentImplsForSubCitizenTemplate(subCitizenTemplate: IdT[ICitizenTemplateNameT]): Vector[ImplT] = {
     subCitizenTemplateToImpls.getOrElse(subCitizenTemplate, Vector[ImplT]())
   }
-  def getChildImplsForSuperInterfaceTemplate(superInterfaceTemplate: FullNameT[IInterfaceTemplateNameT]): Vector[ImplT] = {
+  def getChildImplsForSuperInterfaceTemplate(superInterfaceTemplate: IdT[IInterfaceTemplateNameT]): Vector[ImplT] = {
     superInterfaceTemplateToImpls.getOrElse(superInterfaceTemplate, Vector[ImplT]())
   }
 
@@ -397,7 +397,7 @@ case class CompilerOutputs() {
     deferredFunctionCompiles.put(devf.name, devf)
   }
 
-  def structDeclared(templateName: FullNameT[IStructTemplateNameT]): Boolean = {
+  def structDeclared(templateName: IdT[IStructTemplateNameT]): Boolean = {
     // This is the only place besides StructDefinition2 and declareStruct thats allowed to make one of these
 //    val templateName = StructTT(fullName)
     typeDeclaredNames.contains(templateName)
@@ -415,7 +415,7 @@ case class CompilerOutputs() {
 //    }
 //  }
 
-  def lookupMutability(templateName: FullNameT[ITemplateNameT]): ITemplata[MutabilityTemplataType] = {
+  def lookupMutability(templateName: IdT[ITemplateNameT]): ITemplata[MutabilityTemplataType] = {
     // If it has a structTT, then we've at least started to evaluate this citizen
     typeNameToMutability.get(templateName) match {
       case None => vfail("Still figuring out mutability for struct: " + templateName) // See MFDBRE
@@ -423,7 +423,7 @@ case class CompilerOutputs() {
     }
   }
 
-  def lookupSealed(templateName: FullNameT[IInterfaceTemplateNameT]): Boolean = {
+  def lookupSealed(templateName: IdT[IInterfaceTemplateNameT]): Boolean = {
     // If it has a structTT, then we've at least started to evaluate this citizen
     interfaceNameToSealed.get(templateName) match {
       case None => vfail("Still figuring out sealed for struct: " + templateName) // See MFDBRE
@@ -438,7 +438,7 @@ case class CompilerOutputs() {
 //    }
 //  }
 
-  def interfaceDeclared(templateName: FullNameT[ITemplateNameT]): Boolean = {
+  def interfaceDeclared(templateName: IdT[ITemplateNameT]): Boolean = {
     // This is the only place besides InterfaceDefinition2 and declareInterface thats allowed to make one of these
     typeDeclaredNames.contains(templateName)
   }
@@ -446,21 +446,21 @@ case class CompilerOutputs() {
   def lookupStruct(structTT: StructTT): StructDefinitionT = {
     lookupStruct(TemplataCompiler.getStructTemplate(structTT.fullName))
   }
-  def lookupStruct(templateName: FullNameT[IStructTemplateNameT]): StructDefinitionT = {
+  def lookupStruct(templateName: IdT[IStructTemplateNameT]): StructDefinitionT = {
     vassertSome(structTemplateNameToDefinition.get(templateName))
   }
   def lookupInterface(interfaceTT: InterfaceTT): InterfaceDefinitionT = {
     lookupInterface(TemplataCompiler.getInterfaceTemplate(interfaceTT.fullName))
   }
-  def lookupInterface(templateName: FullNameT[IInterfaceTemplateNameT]): InterfaceDefinitionT = {
+  def lookupInterface(templateName: IdT[IInterfaceTemplateNameT]): InterfaceDefinitionT = {
     vassertSome(interfaceTemplateNameToDefinition.get(templateName))
   }
-  def lookupCitizen(templateName: FullNameT[ICitizenTemplateNameT]): CitizenDefinitionT = {
-    val FullNameT(packageCoord, initSteps, last) = templateName
+  def lookupCitizen(templateName: IdT[ICitizenTemplateNameT]): CitizenDefinitionT = {
+    val IdT(packageCoord, initSteps, last) = templateName
     last match {
-      case s @ AnonymousSubstructTemplateNameT(_) => lookupStruct(FullNameT(packageCoord, initSteps, s))
-      case s @ StructTemplateNameT(_) => lookupStruct(FullNameT(packageCoord, initSteps, s))
-      case s @ InterfaceTemplateNameT(_) => lookupInterface(FullNameT(packageCoord, initSteps, s))
+      case s @ AnonymousSubstructTemplateNameT(_) => lookupStruct(IdT(packageCoord, initSteps, s))
+      case s @ StructTemplateNameT(_) => lookupStruct(IdT(packageCoord, initSteps, s))
+      case s @ InterfaceTemplateNameT(_) => lookupInterface(IdT(packageCoord, initSteps, s))
     }
   }
   def lookupCitizen(citizenTT: ICitizenTT): CitizenDefinitionT = {
@@ -472,7 +472,7 @@ case class CompilerOutputs() {
 
   def getAllStructs(): Iterable[StructDefinitionT] = structTemplateNameToDefinition.values
   def getAllInterfaces(): Iterable[InterfaceDefinitionT] = interfaceTemplateNameToDefinition.values
-  def getAllFunctions(): Iterable[FunctionT] = signatureToFunction.values
+  def getAllFunctions(): Iterable[FunctionDefinitionT] = signatureToFunction.values
   def getAllImpls(): Iterable[ImplT] = allImpls.values
 //  def getAllStaticSizedArrays(): Iterable[StaticSizedArrayTT] = staticSizedArrayTypes.values
 //  def getAllRuntimeSizedArrays(): Iterable[RuntimeSizedArrayTT] = runtimeSizedArrayTypes.values
@@ -484,7 +484,7 @@ case class CompilerOutputs() {
   def getEnvForFunctionSignature(sig: SignatureT): FunctionEnvironment = {
     vassertSome(envByFunctionSignature.get(sig))
   }
-  def getOuterEnvForType(range: List[RangeS], name: FullNameT[ITemplateNameT]): IEnvironment = {
+  def getOuterEnvForType(range: List[RangeS], name: IdT[ITemplateNameT]): IEnvironment = {
     typeNameToOuterEnv.get(name) match {
       case None => {
         throw CompileErrorExceptionT(RangedInternalErrorT(range, "No outer env for type: " + name))
@@ -492,13 +492,13 @@ case class CompilerOutputs() {
       case Some(x) => x
     }
   }
-  def getInnerEnvForType(name: FullNameT[ITemplateNameT]): IEnvironment = {
+  def getInnerEnvForType(name: IdT[ITemplateNameT]): IEnvironment = {
     vassertSome(typeNameToInnerEnv.get(name))
   }
-  def getInnerEnvForFunction(name: FullNameT[INameT]): IEnvironment = {
+  def getInnerEnvForFunction(name: IdT[INameT]): IEnvironment = {
     vassertSome(functionNameToInnerEnv.get(name))
   }
-  def getOuterEnvForFunction(name: FullNameT[IFunctionTemplateNameT]): IEnvironment = {
+  def getOuterEnvForFunction(name: IdT[IFunctionTemplateNameT]): IEnvironment = {
     vassertSome(functionNameToOuterEnv.get(name))
   }
   def getReturnTypeForSignature(sig: SignatureT): Option[CoordT] = {

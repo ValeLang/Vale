@@ -34,4 +34,6 @@ unzip /tmp/BootstrappingValec.zip -d $BOOTSTRAPPING_VALEC_DIR
 
 # Install misc dependencies
 echo "Downloading and unzipping depdendencies and LLVM..."
-brew install llvm@13 sbt cmake
+brew install llvm@14 sbt cmake coreutils
+# coreutils is for greadlink which we use in build-compiler.sh
+

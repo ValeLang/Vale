@@ -64,7 +64,7 @@ jobs:
       - name: install prereqs
         run: ./scripts/mac/install-compiler-prereqs.sh ~/BootstrappingValeCompiler
       - name: build compiler
-        run: source ~/.zshrc && ./scripts/mac/build-compiler.sh ~/BootstrappingValeCompiler --test=all ./scripts/VERSION
+        run: ./scripts/mac/build-compiler.sh ~/BootstrappingValeCompiler --test=all ./scripts/VERSION
       - uses: actions/upload-artifact@v2
         with:
           name: Vale-Mac-0.zip

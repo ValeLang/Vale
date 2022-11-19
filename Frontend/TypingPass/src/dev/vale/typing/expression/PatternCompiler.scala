@@ -133,7 +133,7 @@ class PatternCompiler(
                   InitialSend(
                     RuneUsage(pattern.range, PatternInputRuneS(pattern.range.begin)),
                     receiverRune,
-                    CoordTemplata(unconvertedInputExpr.result.reference))),
+                    CoordTemplata(unconvertedInputExpr.result.coord))),
                 true,
                 true,
                 Vector())
@@ -188,7 +188,7 @@ class PatternCompiler(
         case None => (None, inputExpr)
         case Some(captureS) => {
           val localS = vassertSome(vassertSome(nenv.nearestBlockEnv())._2.locals.find(_.varName == captureS.name))
-          val localT = localHelper.makeUserLocalVariable(coutputs, nenv, range :: parentRanges, localS, inputExpr.result.reference)
+          val localT = localHelper.makeUserLocalVariable(coutputs, nenv, range :: parentRanges, localS, inputExpr.result.coord)
           currentInstructions = currentInstructions :+ LetNormalTE(localT, inputExpr)
           val capturedLocalAliasTE =
             localHelper.softLoad(nenv, range :: parentRanges, LocalLookupTE(range, localT), LoadAsBorrowP)
@@ -197,7 +197,7 @@ class PatternCompiler(
       }
     // If we captured it as a local, then the exprToDestructureOrDropOrPassTE should be a non-owning alias of it
     if (maybeCaptureLocalVarT.nonEmpty) {
-      vassert(exprToDestructureOrDropOrPassTE.result.reference.ownership != OwnT)
+      vassert(exprToDestructureOrDropOrPassTE.result.coord.ownership != OwnT)
     }
 
     val liveCaptureLocals = previousLiveCaptureLocals ++ maybeCaptureLocalVarT.toVector
@@ -211,7 +211,7 @@ class PatternCompiler(
             afterSubPatternSuccessContinuation(coutputs, nenv, life + 0, liveCaptureLocals)
           }
           case Some(listOfMaybeDestructureMemberPatterns) => {
-            exprToDestructureOrDropOrPassTE.result.reference.ownership match {
+            exprToDestructureOrDropOrPassTE.result.coord.ownership match {
               case OwnT => {
                 // We aren't capturing the var, so the destructuring should consume the incoming value.
                 destructureOwning(
@@ -238,7 +238,7 @@ class PatternCompiler(
   ): ReferenceExpressionTE = {
     vassert(initialLiveCaptureLocals.map(_.id) == initialLiveCaptureLocals.map(_.id).distinct)
 
-    val CoordT(OwnT, expectedContainerKind) = inputExpr.result.reference
+    val CoordT(OwnT, expectedContainerKind) = inputExpr.result.coord
     expectedContainerKind match {
       case StructTT(_) => {
         // Example:
@@ -300,7 +300,7 @@ class PatternCompiler(
   ): ReferenceExpressionTE = {
     vassert(liveCaptureLocals.map(_.id) == liveCaptureLocals.map(_.id).distinct)
 
-    val localT = localHelper.makeTemporaryLocal(nenv, life + 0, containerTE.result.reference)
+    val localT = localHelper.makeTemporaryLocal(nenv, life + 0, containerTE.result.coord)
     val letTE = LetNormalTE(localT, containerTE)
     val containerAliasingExprTE =
       localHelper.softLoad(nenv, range, LocalLookupTE(range.head, localT), LoadAsBorrowP)
@@ -309,7 +309,7 @@ class PatternCompiler(
       Vector(
         letTE,
         iterateDestructureNonOwningAndMaybeContinue(
-          coutputs, nenv, life + 1, range, liveCaptureLocals, containerTE.result.reference, containerAliasingExprTE, 0, listOfMaybeDestructureMemberPatterns.toList, afterDestructureSuccessContinuation)))
+          coutputs, nenv, life + 1, range, liveCaptureLocals, containerTE.result.coord, containerAliasingExprTE, 0, listOfMaybeDestructureMemberPatterns.toList, afterDestructureSuccessContinuation)))
   }
 
   private def iterateDestructureNonOwningAndMaybeContinue(
@@ -358,7 +358,7 @@ class PatternCompiler(
             }
           }
 
-        val memberOwnershipInStruct = memberAddrExprTE.result.reference.ownership
+        val memberOwnershipInStruct = memberAddrExprTE.result.coord.ownership
         val coerceToOwnership = loadResultOwnership(memberOwnershipInStruct)
 
         val loadExpr = SoftLoadTE(memberAddrExprTE, coerceToOwnership)
@@ -396,7 +396,7 @@ class PatternCompiler(
   ): ReferenceExpressionTE = {
     vassert(initialLiveCaptureLocals.map(_.id) == initialLiveCaptureLocals.map(_.id).distinct)
 
-    val CoordT(_, structTT @ StructTT(_)) = inputStructExpr.result.reference
+    val CoordT(_, structTT @ StructTT(_)) = inputStructExpr.result.coord
     val structDefT = coutputs.lookupStruct(structTT)
     // We don't pattern match against closure structs.
 

@@ -26,7 +26,7 @@ class CompilerVirtualTests extends FunSuite with Matchers {
     // Make sure there's two drop functions
     val dropFuncNames =
       coutputs.functions.map(_.header.fullName).collect({
-        case f @ FullNameT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("drop"), _), _, _)) => f
+        case f @ IdT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("drop"), _), _, _)) => f
       })
     vassert(dropFuncNames.size == 2)
 
@@ -49,7 +49,7 @@ class CompilerVirtualTests extends FunSuite with Matchers {
     // Make sure there's two drop functions
     val dropFuncNames =
       coutputs.functions.map(_.header.fullName).collect({
-        case f @ FullNameT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("drop"), _), _, _)) => f
+        case f @ IdT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("drop"), _), _, _)) => f
       })
     dropFuncNames.size shouldEqual 2
 
@@ -130,7 +130,7 @@ class CompilerVirtualTests extends FunSuite with Matchers {
     val coutputs = compile.expectCompilerOutputs()
     val dropFuncNames =
       coutputs.functions.map(_.header.fullName).collect({
-        case f @ FullNameT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("drop"), _), _, _)) => f
+        case f @ IdT(_, _, FunctionNameT(FunctionTemplateNameT(StrI("drop"), _), _, _)) => f
       })
     dropFuncNames.size shouldEqual 2
   }

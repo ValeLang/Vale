@@ -23,11 +23,11 @@ class AfterRegionsErrorTests extends FunSuite with Matchers {
         |sealed interface Opt<T> where T Ref { }
         |#!DeriveStructDrop
         |struct Some<T> where T Ref { value T; }
-        |#!DeriveImplDrop
+        |
         |impl<T> Opt<T> for Some<T>;
         |#!DeriveStructDrop
         |struct None<T> where T Ref { }
-        |#!DeriveImplDrop
+        |
         |impl<T> Opt<T> for None<T>;
         |
         |abstract func drop<T>(virtual opt Opt<T>)
@@ -128,7 +128,7 @@ class AfterRegionsErrorTests extends FunSuite with Matchers {
         |exported func moo() int { return 1448; }
         |""".stripMargin)
     compile.getCompilerOutputs() match {
-      case Err(FunctionAlreadyExists(_, _, FullNameT(_, Vector(), null))) =>
+      case Err(FunctionAlreadyExists(_, _, IdT(_, Vector(), null))) =>
 //      case Err(FunctionAlreadyExists(_, _, FullNameT(_, Vector(), FunctionTemplateNameT(StrI("moo"), _)))) =>
     }
   }

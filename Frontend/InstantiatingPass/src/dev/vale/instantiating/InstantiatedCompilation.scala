@@ -1,4 +1,4 @@
-package dev.vale.monomorphizing
+package dev.vale.instantiating
 
 import dev.vale.highertyping.{ICompileErrorA, ProgramA}
 import dev.vale.lexing.{FailedParse, RangeL}
@@ -8,19 +8,19 @@ import dev.vale.postparsing.{ICompileErrorS, ProgramS}
 import dev.vale.{FileCoordinateMap, IPackageResolver, Interner, Keywords, PackageCoordinate, PackageCoordinateMap, Result, vassertSome, vcurious}
 import dev.vale.typing.{Hinputs, ICompileErrorT, TypingPassCompilation, TypingPassOptions}
 
-case class MonomorphizedCompilationOptions(
+case class InstantiatorCompilationOptions(
   globalOptions: GlobalOptions = GlobalOptions(),
   debugOut: (=> String) => Unit = (x => {
     println("##: " + x)
   })
 ) { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
-class MonomorphizedCompilation(
+class InstantiatedCompilation(
   val interner: Interner,
   val keywords: Keywords,
   packagesToBuild: Vector[PackageCoordinate],
   packageToContentsResolver: IPackageResolver[Map[String, String]],
-  options: MonomorphizedCompilationOptions = MonomorphizedCompilationOptions()) {
+  options: InstantiatorCompilationOptions = InstantiatorCompilationOptions()) {
   var typingPassCompilation =
     new TypingPassCompilation(
       interner,
@@ -45,7 +45,7 @@ class MonomorphizedCompilation(
       case Some(monouts) => monouts
       case None => {
         val monouts =
-          Monomorphizer.translate(
+          Instantiator.translate(
             options.globalOptions, interner, keywords, typingPassCompilation.expectCompilerOutputs())
         monoutsCache = Some(monouts)
         monouts

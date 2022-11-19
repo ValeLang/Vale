@@ -23,7 +23,7 @@ logLevel := Level.Debug
     (baseDirectory.value / "HigherTypingPass" / "src"),
     (baseDirectory.value / "PassManager" / "src"),
     (baseDirectory.value / "SimplifyingPass" / "src"),
-    (baseDirectory.value / "Monomorphizing" / "src"),
+    (baseDirectory.value / "InstantiatingPass" / "src"),
     (baseDirectory.value / "Highlighter" / "src"),
     (baseDirectory.value / "CompileOptions" / "src"),
     (baseDirectory.value / "Builtins" / "src"),

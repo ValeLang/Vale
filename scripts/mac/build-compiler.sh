@@ -41,7 +41,7 @@ LLVM_OUTER_DIR=$1
 if [ "$LLVM_OUTER_DIR" == "" ]
 then
   LLVM_PREFIX=`brew --prefix llvm@$LLVM_MAJOR_VER`
-  LLVM_DIR=`readlink -f $LLVM_PREFIX`
+  LLVM_DIR=`greadlink -f $LLVM_PREFIX`
 
   if [ ! -d "$LLVM_DIR" ]
   then

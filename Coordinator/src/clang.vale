@@ -6,7 +6,8 @@ func invoke_clang(
   exe_name str,
   asan bool,
   debug_symbols bool,
-  output_dir &Path)
+  output_dir &Path,
+  pic bool)
 Subprocess {
   program =
     if (windows) {
@@ -50,6 +51,10 @@ Subprocess {
 
   if (debug_symbols) {
     args.add("-g");
+  }
+
+  if pic {
+    args.add("-fpic");
   }
 
   if (asan) {

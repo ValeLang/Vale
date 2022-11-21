@@ -54,7 +54,7 @@ Subprocess {
   }
 
   if pic {
-    args.add("--pic");
+    args.add("-fpic");
   }
 
   if (asan) {

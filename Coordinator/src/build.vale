@@ -512,7 +512,8 @@ func build_stuff(compiler_dir &Path, all_args &Array<imm, str>) {
           &executable_name,
           asan,
           debug_symbols,
-          &output_dir);
+          &output_dir,
+          pic);
   println("Running:\n" + clang_process.command);
   clang_return_code = (clang_process).print_and_join();
   if clang_return_code != 0 {

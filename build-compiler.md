@@ -22,7 +22,7 @@ cd Vale
 
 ```sh
 git clone --single-branch --branch master https://github.com/ValeLang/Vale
-Vale/install-compiler-prereqs-mac.sh ~/BootstrappingValeCompiler
+Vale/scripts/mac/install-compiler-prereqs.sh ~/BootstrappingValeCompiler
 source ~/.zshrc
 cd Vale
 ./scripts/mac/build-compiler.sh ~/BootstrappingValeCompiler --test=all ./scripts/VERSION

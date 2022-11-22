@@ -191,6 +191,8 @@ case class SelfNameS() extends IVarNameS with IImpreciseNameS {  }
 // A miscellaneous name, for when a name doesn't really make sense, like it's the only entry in the environment or something.
 case class ArbitraryNameS() extends INameS with IImpreciseNameS
 
+case class DispatcherRuneFromImplS(innerRune: IRuneS) extends IRuneS
+case class CaseRuneFromImplS(innerRune: IRuneS) extends IRuneS
 
 // Only made by typingpass, see if we can take these out
 case class ConstructorNameS(tlcd: ICitizenDeclarationNameS) extends IFunctionDeclarationNameS {

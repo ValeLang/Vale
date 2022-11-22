@@ -313,11 +313,13 @@ object TemplataCompiler {
                   expectMutability(substituteTemplatasInTemplata(coutputs, interner, keywords, substitutions, boundArgumentsSource, mutability)),
                   substituteTemplatasInCoord(coutputs, interner, keywords, substitutions, boundArgumentsSource, elementType)))))))))
       }
-      case PlaceholderT(hayName @ IdT(_, _, PlaceholderNameT(PlaceholderTemplateNameT(index))))
-          if index < substitutions.length && hayName == substitutions(index)._1 => {
-        substitutions(index)._2
+      case PlaceholderT(IdT(_, _, pn @ PlaceholderNameT(_))) => {
+        substitutions.filter(_._1 == pn).map(_._2) match {
+          case Vector(only) => only
+          case Vector() => vcurious(); KindTemplata(kind)
+          case _ => vwat()
+        }
       }
-      case PlaceholderT(_) => KindTemplata(kind)
       case s @ StructTT(_) => KindTemplata(substituteTemplatasInStruct(coutputs, interner, keywords, substitutions, boundArgumentsSource, s))
       case s @ InterfaceTT(_) => KindTemplata(substituteTemplatasInInterface(coutputs, interner, keywords, substitutions, boundArgumentsSource, s))
     }
@@ -512,11 +514,11 @@ object TemplataCompiler {
     templata match {
       case CoordTemplata(c) => CoordTemplata(substituteTemplatasInCoord(coutputs, interner, keywords, substitutions, boundArgumentsSource, c))
       case KindTemplata(k) => substituteTemplatasInKind(coutputs, interner, keywords, substitutions, boundArgumentsSource, k)
-      case p @ PlaceholderTemplata(IdT(_, _, PlaceholderNameT(PlaceholderTemplateNameT(index))), _) => {
-        if (index < substitutions.length && p.fullNameT == substitutions(index)._1) {
-          substitutions(index)._2
-        } else {
-          vwat()
+      case p @ PlaceholderTemplata(IdT(_, _, pn @ PlaceholderNameT(_)), _) => {
+        substitutions.filter(_._1 == pn).map(_._2) match {
+          case Vector(only) => only
+          case Vector() => vwat()
+          case _ => vwat()
         }
       }
       case MutabilityTemplata(_) => templata
@@ -625,7 +627,11 @@ object TemplataCompiler {
   IPlaceholderSubstituter = {
     val substitutions =
       templateArgs.zipWithIndex.map({ case (arg, index) =>
-        val placeholderFullName = templateName.addStep(interner.intern(PlaceholderNameT(interner.intern(PlaceholderTemplateNameT(index)))))
+        val rune = vimpl() // look up the original template, get the rune from it
+        val placeholderFullName =
+          templateName.addStep(
+            interner.intern(PlaceholderNameT(
+              interner.intern(PlaceholderTemplateNameT(rune)))))
         placeholderFullName -> arg
       }).toVector
     new IPlaceholderSubstituter {

@@ -4,7 +4,7 @@ package dev.vale.typing
 //import dev.vale.astronomer.VirtualFreeImpreciseNameS
 import dev.vale.postparsing.rules.RuneUsage
 import dev.vale.{Err, Interner, Keywords, Ok, RangeS, StrI, U, vassert, vassertOne, vassertSome, vcurious, vfail, vimpl, vpass, vwat}
-import dev.vale.postparsing.{CoordTemplataType, GlobalFunctionFamilyNameS, IImpreciseNameS, IRuneS, ITemplataType, KindTemplataType, ReachablePrototypeRuneS, RuneNameS}
+import dev.vale.postparsing._
 import dev.vale.typing.ast.{InterfaceEdgeBlueprint, PrototypeT}
 import dev.vale.typing.env.{GeneralEnvironment, IEnvironment, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
 import dev.vale.typing.types._
@@ -152,7 +152,7 @@ class EdgeCompiler(
     coutputs: CompilerOutputs,
     originalTemplataToMimic: ITemplata[ITemplataType],
     dispatcherOuterEnv: IEnvironment,
-    index: Int):
+    rune: IRuneS):
   ITemplata[ITemplataType] = {
     // Need New Special Placeholders for Abstract Function Override Case (NNSPAFOC)
     //
@@ -192,7 +192,7 @@ class EdgeCompiler(
 
     val placeholderName =
       interner.intern(PlaceholderNameT(
-        interner.intern(PlaceholderTemplateNameT(index))))
+        interner.intern(PlaceholderTemplateNameT(rune))))
     val placeholderFullName = dispatcherOuterEnv.fullName.addStep(placeholderName)
     // And, because it's new, we need to declare it and its environment.
     val placeholderTemplateFullName =
@@ -283,14 +283,21 @@ class EdgeCompiler(
         .zip(impl.runeIndexToIndependence)
         .filter({ case (templata, independent) => !independent }) // Only grab dependent runes
         .map({ case (templata, independent) => templata }),
-        { case (dispatcherPlaceholderIndex, implPlaceholder) =>
+        { case (implPlaceholderIndex, implPlaceholder) =>
           val implPlaceholderFullName = TemplataCompiler.getPlaceholderTemplataFullName(implPlaceholder)
           // Sanity check we're in an impl template, we're about to replace it with a function template
           implPlaceholderFullName.initSteps.last match { case _: IImplTemplateNameT => case _ => vwat() }
 
+          val implRune =
+            implPlaceholder match {
+              case PlaceholderTemplata(IdT(_, _, PlaceholderNameT(PlaceholderTemplateNameT(implRune))), _) => implRune
+              case _ => vwat()
+            }
+          val dispatcherRune = DispatcherRuneFromImplS(implRune)
+
           val dispatcherPlaceholder =
             createOverridePlaceholderMimicking(
-              coutputs, implPlaceholder, dispatcherOuterEnv, dispatcherPlaceholderIndex)
+              coutputs, implPlaceholder, dispatcherOuterEnv, dispatcherRune)
           (implPlaceholderFullName, dispatcherPlaceholder)
         })
     val dispatcherPlaceholders = implPlaceholderToDispatcherPlaceholder.map(_._2)
@@ -356,12 +363,17 @@ class EdgeCompiler(
         impl.templata.impl.genericParams.map(_.rune.rune).toVector
           .zip(impl.instantiatedFullName.localName.templateArgs.toIterable)
           .zip(impl.runeIndexToIndependence)
-          .filter({ case ((rune, templata), independent) => independent }) // Only grab independent runes for the case
-          .map({ case ((rune, templata), independent) => rune -> templata }),
-        { case (index, (rune, implPlaceholderTemplata)) =>
-          val implPlaceholderFullName = TemplataCompiler.getPlaceholderTemplataFullName(implPlaceholderTemplata)
-          val casePlaceholder = createOverridePlaceholderMimicking(coutputs, implPlaceholderTemplata, dispatcherInnerEnv, index)
-          (rune, implPlaceholderFullName, casePlaceholder)
+          .filter({ case ((implRune, templata), independent) => independent }) // Only grab independent runes for the case
+          .map({ case ((implRune, templata), independent) => implRune -> templata }),
+        { case (index, (implRune, implPlaceholderTemplata)) =>
+          val caseRune = CaseRuneFromImplS(implRune)
+
+          val implPlaceholderFullName =
+            TemplataCompiler.getPlaceholderTemplataFullName(implPlaceholderTemplata)
+          val casePlaceholder =
+            createOverridePlaceholderMimicking(
+              coutputs, implPlaceholderTemplata, dispatcherInnerEnv, caseRune)
+          (implRune, implPlaceholderFullName, casePlaceholder)
         })
     val implRuneToCasePlaceholder =
       implRuneToImplPlaceholderAndCasePlaceholder

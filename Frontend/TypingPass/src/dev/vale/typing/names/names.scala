@@ -232,7 +232,7 @@ case class RuntimeSizedArrayNameT(template: RuntimeSizedArrayTemplateNameT, arr:
 // This exists because PlaceholderT is a kind, and all kinds need environments to assist
 // in call/overload resolution. Environments are associated with templates, so it makes
 // some sense to have a "placeholder template" notion.
-case class PlaceholderTemplateNameT(index: Int) extends ISubKindTemplateNameT with ISuperKindTemplateNameT
+case class PlaceholderTemplateNameT(rune: IRuneS) extends ISubKindTemplateNameT with ISuperKindTemplateNameT
 case class PlaceholderNameT(template: PlaceholderTemplateNameT) extends ISubKindNameT with ISuperKindNameT {
   override def templateArgs: Vector[ITemplata[ITemplataType]] = Vector()
 }

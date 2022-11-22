@@ -169,12 +169,6 @@ case class CompilerOutputs() {
       }
       case None =>
     }
-    instantiationFullName match {
-      case IdT(_,Vector(),StructNameT(StructTemplateNameT(StrI("MyList")),Vector(CoordTemplata(CoordT(OwnT,PlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("MyList"),_)),PlaceholderNameT(PlaceholderTemplateNameT(0))))))))) => {
-        vpass()
-      }
-      case _ =>
-    }
 
     instantiationNameToInstantiationBounds.put(instantiationFullName, functionBoundToRune)
   }

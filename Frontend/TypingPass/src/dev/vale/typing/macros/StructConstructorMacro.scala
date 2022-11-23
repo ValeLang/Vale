@@ -120,7 +120,7 @@ class StructConstructorMacro(
     maybeRetCoord: Option[CoordT]):
   (FunctionHeaderT, ReferenceExpressionTE) = {
     val Some(CoordT(_, structTT @ StructTT(_))) = maybeRetCoord
-    val definition = coutputs.lookupStruct(structTT)
+    val definition = coutputs.lookupStruct(structTT.fullName)
     val placeholderSubstituter =
       TemplataCompiler.getPlaceholderSubstituter(
         interner,

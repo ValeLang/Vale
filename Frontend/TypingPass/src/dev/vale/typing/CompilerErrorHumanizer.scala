@@ -582,7 +582,7 @@ object CompilerErrorHumanizer {
           "(" + parameters.map(CoordTemplata).map(humanizeTemplata(codeMap, _)).mkString(", ") + ")"
       }
       case PlaceholderNameT(template) => humanizeName(codeMap, template)
-      case PlaceholderTemplateNameT(index) => "_" + index
+      case PlaceholderTemplateNameT(index, rune) => humanizeRune(rune)
       case CodeVarNameT(name) => name.str
       case LambdaCitizenNameT(template) => humanizeName(codeMap, template) + "<>"
       case FunctionTemplateNameT(humanName, codeLoc) => humanName.str

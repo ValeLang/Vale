@@ -64,7 +64,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
 
     // Only identifying template arg coord should be of PlaceholderT(0)
     bork.header.fullName.localName.templateArgs match {
-      case Vector(CoordTemplata(CoordT(OwnT,PlaceholderT(IdT(_, _, PlaceholderNameT(PlaceholderTemplateNameT(0)))))))
+      case Vector(CoordTemplata(CoordT(OwnT,PlaceholderT(IdT(_, _, PlaceholderNameT(PlaceholderTemplateNameT(0, _)))))))
       =>
     }
 
@@ -85,7 +85,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
                     IdT(
                       _,
                       Vector(FunctionTemplateNameT(StrI("bork"),_)),
-                      PlaceholderNameT(PlaceholderTemplateNameT(0)))))))),
+                      PlaceholderNameT(PlaceholderTemplateNameT(0, _)))))))),
           CoordT(ShareT,VoidT())),
         _) =>
     }
@@ -463,7 +463,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
     val coutputs = compile.expectCompilerOutputs()
     val moo = coutputs.lookupFunction("moo")
     moo.header.params.head.tyype match {
-      case CoordT(_, InterfaceTT(IdT(_, _, CitizenNameT(_, Vector(CoordTemplata(CoordT(_, PlaceholderT(IdT(_,_,PlaceholderNameT(PlaceholderTemplateNameT(0))))))))))) =>
+      case CoordT(_, InterfaceTT(IdT(_, _, CitizenNameT(_, Vector(CoordTemplata(CoordT(_, PlaceholderT(IdT(_,_,PlaceholderNameT(PlaceholderTemplateNameT(0, _))))))))))) =>
     }
     val main = coutputs.lookupFunction("main")
     main.body shouldHave {
@@ -598,7 +598,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
 
     val swap = coutputs.lookupFunction("swap")
     swap.header.fullName.localName.templateArgs.last match {
-      case CoordTemplata(CoordT(OwnT,PlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("swap"),_)),PlaceholderNameT(PlaceholderTemplateNameT(0)))))) =>
+      case CoordTemplata(CoordT(OwnT,PlaceholderT(IdT(_,Vector(FunctionTemplateNameT(StrI("swap"),_)),PlaceholderNameT(PlaceholderTemplateNameT(0, _)))))) =>
     }
 
     val main = coutputs.lookupFunction("main")

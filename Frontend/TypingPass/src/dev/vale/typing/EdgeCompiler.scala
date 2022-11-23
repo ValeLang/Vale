@@ -152,6 +152,7 @@ class EdgeCompiler(
     coutputs: CompilerOutputs,
     originalTemplataToMimic: ITemplata[ITemplataType],
     dispatcherOuterEnv: IEnvironment,
+    index: Int,
     rune: IRuneS):
   ITemplata[ITemplataType] = {
     // Need New Special Placeholders for Abstract Function Override Case (NNSPAFOC)
@@ -192,7 +193,7 @@ class EdgeCompiler(
 
     val placeholderName =
       interner.intern(PlaceholderNameT(
-        interner.intern(PlaceholderTemplateNameT(rune))))
+        interner.intern(PlaceholderTemplateNameT(index, rune))))
     val placeholderFullName = dispatcherOuterEnv.fullName.addStep(placeholderName)
     // And, because it's new, we need to declare it and its environment.
     val placeholderTemplateFullName =
@@ -288,19 +289,17 @@ class EdgeCompiler(
           // Sanity check we're in an impl template, we're about to replace it with a function template
           implPlaceholderFullName.initSteps.last match { case _: IImplTemplateNameT => case _ => vwat() }
 
-          val implRune =
-            implPlaceholder match {
-              case PlaceholderTemplata(IdT(_, _, PlaceholderNameT(PlaceholderTemplateNameT(implRune))), _) => implRune
-              case _ => vwat()
-            }
+          val implRune = implPlaceholderFullName.localName.template.rune
           val dispatcherRune = DispatcherRuneFromImplS(implRune)
 
           val dispatcherPlaceholder =
             createOverridePlaceholderMimicking(
-              coutputs, implPlaceholder, dispatcherOuterEnv, dispatcherRune)
+              coutputs, implPlaceholder, dispatcherOuterEnv, implPlaceholderIndex, dispatcherRune)
           (implPlaceholderFullName, dispatcherPlaceholder)
         })
     val dispatcherPlaceholders = implPlaceholderToDispatcherPlaceholder.map(_._2)
+
+    implPlaceholderToDispatcherPlaceholder.map(_._1).foreach(x => vassert(x.initFullName(interner) == impl.templateFullName))
 
     val dispatcherPlaceholderedInterface =
       expectKindTemplata(
@@ -308,7 +307,8 @@ class EdgeCompiler(
           coutputs,
           interner,
           keywords,
-          implPlaceholderToDispatcherPlaceholder,
+          impl.templateFullName,
+          implPlaceholderToDispatcherPlaceholder.map(_._2),
           // The dispatcher is receiving these types as parameters, so it can bring in bounds from
           // them.
           InheritBoundsFromTypeItself,
@@ -372,7 +372,7 @@ class EdgeCompiler(
             TemplataCompiler.getPlaceholderTemplataFullName(implPlaceholderTemplata)
           val casePlaceholder =
             createOverridePlaceholderMimicking(
-              coutputs, implPlaceholderTemplata, dispatcherInnerEnv, caseRune)
+              coutputs, implPlaceholderTemplata, dispatcherInnerEnv, index, caseRune)
           (implRune, implPlaceholderFullName, casePlaceholder)
         })
     val implRuneToCasePlaceholder =
@@ -397,7 +397,8 @@ class EdgeCompiler(
                 coutputs,
                 interner,
                 keywords,
-                implPlaceholderToDispatcherPlaceholder ++ implPlaceholderToCasePlaceholder,
+                impl.templateFullName,
+                (implPlaceholderToDispatcherPlaceholder ++ implPlaceholderToCasePlaceholder).map(_._2),
                 // These are bounds we're bringing in from the sub citizen.
                 InheritBoundsFromTypeItself,
                 funcBoundFullName)

@@ -437,10 +437,10 @@ case class CompilerOutputs() {
     typeDeclaredNames.contains(templateName)
   }
 
-  def lookupStruct(structTT: StructTT): StructDefinitionT = {
-    lookupStruct(TemplataCompiler.getStructTemplate(structTT.fullName))
+  def lookupStruct(structTT: IdT[IStructNameT]): StructDefinitionT = {
+    lookupStructTemplate(TemplataCompiler.getStructTemplate(structTT))
   }
-  def lookupStruct(templateName: IdT[IStructTemplateNameT]): StructDefinitionT = {
+  def lookupStructTemplate(templateName: IdT[IStructTemplateNameT]): StructDefinitionT = {
     vassertSome(structTemplateNameToDefinition.get(templateName))
   }
   def lookupInterface(interfaceTT: InterfaceTT): InterfaceDefinitionT = {
@@ -452,14 +452,14 @@ case class CompilerOutputs() {
   def lookupCitizen(templateName: IdT[ICitizenTemplateNameT]): CitizenDefinitionT = {
     val IdT(packageCoord, initSteps, last) = templateName
     last match {
-      case s @ AnonymousSubstructTemplateNameT(_) => lookupStruct(IdT(packageCoord, initSteps, s))
-      case s @ StructTemplateNameT(_) => lookupStruct(IdT(packageCoord, initSteps, s))
+      case s @ AnonymousSubstructTemplateNameT(_) => lookupStructTemplate(IdT(packageCoord, initSteps, s))
+      case s @ StructTemplateNameT(_) => lookupStructTemplate(IdT(packageCoord, initSteps, s))
       case s @ InterfaceTemplateNameT(_) => lookupInterface(IdT(packageCoord, initSteps, s))
     }
   }
   def lookupCitizen(citizenTT: ICitizenTT): CitizenDefinitionT = {
     citizenTT match {
-      case s @ StructTT(_) => lookupStruct(s)
+      case s @ StructTT(_) => lookupStruct(s.fullName)
       case s @ InterfaceTT(_) => lookupInterface(s)
     }
   }

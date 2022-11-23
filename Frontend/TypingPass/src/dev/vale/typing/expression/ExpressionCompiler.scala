@@ -172,7 +172,7 @@ class ExpressionCompiler(
               loadRange,
               ReferenceLocalVariableT(name2, FinalT, closuredVarsStructRefRef)))
 
-        val closuredVarsStructDef = coutputs.lookupStruct(closuredVarsStructRef)
+        val closuredVarsStructDef = coutputs.lookupStruct(closuredVarsStructRef.fullName)
         vassert(closuredVarsStructDef.members.exists(member => closuredVarsStructRef.fullName.addStep(member.name) == id))
 
         val index = closuredVarsStructDef.members.indexWhere(_.name == id.localName)
@@ -239,7 +239,7 @@ class ExpressionCompiler(
             LocalLookupTE(
               ranges.head,
               ReferenceLocalVariableT(closureParamVarName2, FinalT, closuredVarsStructRefRef)))
-        val closuredVarsStructDef = coutputs.lookupStruct(closuredVarsStructRef)
+        val closuredVarsStructDef = coutputs.lookupStruct(closuredVarsStructRef.fullName)
 
         vassert(closuredVarsStructRef.fullName.steps == id.steps.init)
 
@@ -259,7 +259,7 @@ class ExpressionCompiler(
             case PlaceholderTemplata(fullNameT, MutabilityTemplataType()) => vimpl()
           }
         val closuredVarsStructRefCoord = CoordT(ownership, closuredVarsStructRef)
-        val closuredVarsStructDef = coutputs.lookupStruct(closuredVarsStructRef)
+        val closuredVarsStructDef = coutputs.lookupStruct(closuredVarsStructRef.fullName)
 
         vassert(closuredVarsStructDef.members.map(_.name).contains(varName.localName))
 
@@ -284,10 +284,11 @@ class ExpressionCompiler(
       range: List[RangeS],
       closureStructRef: StructTT):
   (ReferenceExpressionTE) = {
-    val closureStructDef = coutputs.lookupStruct(closureStructRef);
+    val closureStructDef = coutputs.lookupStruct(closureStructRef.fullName);
     val substituter =
       TemplataCompiler.getPlaceholderSubstituter(
-        interner, keywords, closureStructRef.fullName,
+        interner, keywords,
+        closureStructRef.fullName,
         InheritBoundsFromTypeItself)
     // Note, this is where the unordered closuredNames set becomes ordered.
     val lookupExpressions2 =
@@ -670,7 +671,7 @@ class ExpressionCompiler(
           val expr2 =
             containerExpr2.result.coord.kind match {
               case structTT@StructTT(_) => {
-                val structDef = coutputs.lookupStruct(structTT)
+                val structDef = coutputs.lookupStruct(structTT.fullName)
                 val (structMember, memberIndex) =
                   structDef.getMemberAndIndex(memberName) match {
                     case None => throw CompileErrorExceptionT(CouldntFindMemberT(range :: parentRanges, memberName.name.str))
@@ -680,7 +681,8 @@ class ExpressionCompiler(
                 val unsubstitutedMemberType = structMember.tyype.expectReferenceMember().reference;
                 val memberType =
                   TemplataCompiler.getPlaceholderSubstituter(
-                    interner, keywords, structTT.fullName,
+                    interner, keywords,
+                    structTT.fullName,
                     // Use the bounds that we supplied to the struct
                     UseBoundsFromContainer(
                       structDef.runeToFunctionBound,
@@ -1068,10 +1070,11 @@ class ExpressionCompiler(
           val destroy2 =
             innerExpr2.kind match {
               case structTT@StructTT(_) => {
-                val structDef = coutputs.lookupStruct(structTT)
+                val structDef = coutputs.lookupStruct(structTT.fullName)
                 val substituter =
                   TemplataCompiler.getPlaceholderSubstituter(
-                    interner, keywords, structTT.fullName,
+                    interner, keywords,
+                    structTT.fullName,
                     // This type is already phrased in terms of our placeholders, so it can use the
                     // bounds it already has.
                     InheritBoundsFromTypeItself)
@@ -1313,7 +1316,7 @@ class ExpressionCompiler(
   def weakAlias(coutputs: CompilerOutputs, expr: ReferenceExpressionTE): ReferenceExpressionTE = {
     expr.kind match {
       case sr @ StructTT(_) => {
-        val structDef = coutputs.lookupStruct(sr)
+        val structDef = coutputs.lookupStruct(sr.fullName)
         vcheck(structDef.weakable, TookWeakRefOfNonWeakableError)
       }
       case ir @ InterfaceTT(_) => {

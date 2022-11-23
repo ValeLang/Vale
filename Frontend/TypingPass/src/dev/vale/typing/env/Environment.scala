@@ -208,7 +208,7 @@ object TemplatasStore {
         vwat()
       }
 //      case LambdaTemplateNameT(codeLocation) => Some(interner.intern(LambdaImpreciseNameS()))
-      case PlaceholderNameT(PlaceholderTemplateNameT(index)) => Some(interner.intern(PlaceholderImpreciseNameS(index)))
+      case PlaceholderNameT(PlaceholderTemplateNameT(index, rune)) => Some(interner.intern(PlaceholderImpreciseNameS(index)))
       case ReachablePrototypeNameT(num) => None
 //      case AbstractVirtualFreeTemplateNameT(codeLoc) => Some(interner.intern(VirtualFreeImpreciseNameS()))
       case ForwarderFunctionTemplateNameT(inner, index) => getImpreciseName(interner, inner)

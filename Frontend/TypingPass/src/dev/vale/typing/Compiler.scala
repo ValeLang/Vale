@@ -146,7 +146,7 @@ class Compiler(
         def getPlaceholdersInFullName(accum: Accumulator[IdT[INameT]], fullName: IdT[INameT]): Unit = {
           fullName.localName match {
             case PlaceholderNameT(_) => accum.add(fullName)
-            case PlaceholderTemplateNameT(_) => accum.add(fullName)
+            case PlaceholderTemplateNameT(_, _) => accum.add(fullName)
             case _ =>
           }
         }
@@ -361,7 +361,7 @@ class Compiler(
         }
 
         override def structIsClosure(state: CompilerOutputs, structTT: StructTT): Boolean = {
-            val structDef = state.lookupStruct(structTT)
+            val structDef = state.lookupStruct(structTT.fullName)
             structDef.isClosure
         }
 
@@ -1194,11 +1194,13 @@ class Compiler(
       exportedKindToExport.foreach({ case (exportedKind, (kind, export)) =>
         exportedKind match {
           case sr@StructTT(_) => {
-            val structDef = coutputs.lookupStruct(sr)
+            val structDef = coutputs.lookupStruct(sr.fullName)
 
             val substituter =
               TemplataCompiler.getPlaceholderSubstituter(
-                interner, keywords, sr.fullName,
+                interner,
+                keywords,
+                sr.fullName,
                 InheritBoundsFromTypeItself)
 
             structDef.members.foreach({

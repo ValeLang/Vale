@@ -431,10 +431,11 @@ class FunctionCompilerClosureOrLightLayer(
 
   private def makeClosureVariablesAndEntries(coutputs: CompilerOutputs, closureStructRef: StructTT):
   (Vector[IVariableT], Vector[(INameT, IEnvEntry)]) = {
-    val closureStructDef = coutputs.lookupStruct(closureStructRef);
+    val closureStructDef = coutputs.lookupStruct(closureStructRef.fullName);
     val substituter =
       TemplataCompiler.getPlaceholderSubstituter(
-        interner, keywords, closureStructRef.fullName,
+        interner, keywords,
+        closureStructRef.fullName,
         // This is a parameter, so we can grab bounds from it.
         InheritBoundsFromTypeItself)
     val variables =

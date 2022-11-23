@@ -397,12 +397,14 @@ class PatternCompiler(
     vassert(initialLiveCaptureLocals.map(_.id) == initialLiveCaptureLocals.map(_.id).distinct)
 
     val CoordT(_, structTT @ StructTT(_)) = inputStructExpr.result.coord
-    val structDefT = coutputs.lookupStruct(structTT)
+    val structDefT = coutputs.lookupStruct(structTT.fullName)
     // We don't pattern match against closure structs.
 
     val substituter =
       TemplataCompiler.getPlaceholderSubstituter(
-        interner, keywords, structTT.fullName,
+        interner,
+        keywords,
+        structTT.fullName,
         // We're receiving something of this type, so it should supply its own bounds.
         InheritBoundsFromTypeItself)
 
@@ -488,7 +490,7 @@ class PatternCompiler(
     structTT: StructTT,
     index: Int):
   ReferenceMemberLookupTE = {
-    val structDefT = coutputs.lookupStruct(structTT)
+    val structDefT = coutputs.lookupStruct(structTT.fullName)
 
     val member = structDefT.members(index)
 

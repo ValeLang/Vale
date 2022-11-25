@@ -411,7 +411,9 @@ class OverloadResolver(
         vcurious(prototype.fullName.localName.templateArgs.isEmpty)
         val substituter =
           TemplataCompiler.getPlaceholderSubstituter(
-            interner, keywords, prototype.fullName,
+            interner,
+            keywords,
+            prototype.fullName,
             // These types are phrased in terms of the calling denizen already, so we can grab their
             // bounds.
             InheritBoundsFromTypeItself)

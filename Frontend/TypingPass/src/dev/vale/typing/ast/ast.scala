@@ -365,7 +365,7 @@ case class FunctionHeaderT(
           } else {
             // make sure all the placeholders in the parameters exist as template args
             placeholdersOfThisFunction.foreach({
-              case placeholderName @ IdT(_, _, PlaceholderNameT(PlaceholderTemplateNameT(index))) => {
+              case placeholderName @ IdT(_, _, PlaceholderNameT(PlaceholderTemplateNameT(index, rune))) => {
                 fullName.localName.templateArgs(index) match {
                   case KindTemplata(PlaceholderT(placeholderNameAtIndex)) => {
                     vassert(placeholderName == placeholderNameAtIndex)

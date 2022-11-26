@@ -296,7 +296,13 @@ class PostParser(
         val implsS = parsed.denizens.collect({ case TopLevelImplP(i) => i }).map(scoutImpl(fileCoordinate, _))
         val functionsS =
           parsed.denizens
-            .collect({ case TopLevelFunctionP(f) => f }).map(functionScout.scoutFunction(fileCoordinate, _, None))
+            .collect({ case TopLevelFunctionP(f) => f })
+            .map(functionP => {
+              val (functionS, variableUses) =
+                functionScout.scoutFunction(fileCoordinate, functionP, FunctionNoParent())
+              vassert(variableUses.uses.isEmpty)
+              functionS
+            })
         val exportsS = parsed.denizens.collect({ case TopLevelExportAsP(e) => e }).map(scoutExportAs(fileCoordinate, _))
         val importsS = parsed.denizens.collect({ case TopLevelImportP(e) => e }).map(scoutImport(fileCoordinate, _))
         val programS = ProgramS(structsS.toVector, interfacesS.toVector, implsS.toVector, functionsS.toVector, exportsS.toVector, importsS.toVector)

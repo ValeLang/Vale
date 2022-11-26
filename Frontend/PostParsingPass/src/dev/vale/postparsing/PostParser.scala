@@ -296,7 +296,7 @@ class PostParser(
         val implsS = parsed.denizens.collect({ case TopLevelImplP(i) => i }).map(scoutImpl(fileCoordinate, _))
         val functionsS =
           parsed.denizens
-            .collect({ case TopLevelFunctionP(f) => f }).map(functionScout.scoutTopLevelFunction(fileCoordinate, _))
+            .collect({ case TopLevelFunctionP(f) => f }).map(functionScout.scoutFunction(fileCoordinate, _, None))
         val exportsS = parsed.denizens.collect({ case TopLevelExportAsP(e) => e }).map(scoutExportAs(fileCoordinate, _))
         val importsS = parsed.denizens.collect({ case TopLevelImportP(e) => e }).map(scoutImport(fileCoordinate, _))
         val programS = ProgramS(structsS.toVector, interfacesS.toVector, implsS.toVector, functionsS.toVector, exportsS.toVector, importsS.toVector)
@@ -676,9 +676,15 @@ class PostParser(
       }
 
     val internalMethodsS =
-      internalMethodsP.map(
+      internalMethodsP.map(method => {
         functionScout.scoutInterfaceMember(
-          interfaceEnv, genericParametersS.toVector, rulesS, runeToExplicitType.toMap, _))
+          ParentInterface(
+            interfaceEnv,
+            genericParametersS.toVector,
+            rulesS,
+            runeToExplicitType.toMap),
+          method)
+      })
 
     val weakable = attributesP.exists({ case w @ WeakableAttributeP(_) => true case _ => false })
     val attrsS = translateCitizenAttributes(file, attributesP.filter({ case WeakableAttributeP(_) => false case _ => true}))

@@ -19,6 +19,12 @@ import dev.vale._
 
 import scala.collection.immutable.{List, Range}
 
+case class ParentInterface(
+  interfaceEnv: EnvironmentS,
+  interfaceGenericParams: Vector[GenericParameterS],
+  interfaceRules: Vector[IRulexSR],
+  interfaceRuneToExplicitType: Map[IRuneS, ITemplataType])
+
 class FunctionScout(
     postParser: PostParser,
     interner: Interner,
@@ -40,36 +46,14 @@ class FunctionScout(
       keywords
     )
 
-  def scoutTopLevelFunction(file: FileCoordinate, functionP: FunctionP): FunctionS = {
-    val FunctionP(
-    range,
-    FunctionHeaderP(_,
-    Some(NameP(originalNameRange, originalCodeName)),
-    attributes,
-    maybeGenericParametersP,
-    templateRulesP,
-    paramsP,
-    FunctionReturnP(retRange, maybeInferRet, maybeRetType)),
-    maybeBody0
-    ) = functionP
+  def scoutFunction(file: FileCoordinate, functionP: FunctionP, maybeParentInterface: Option[ParentInterface]): FunctionS = {
 
-    val rangeS = PostParser.evalRange(file, retRange)
-    val codeLocation = PostParser.evalPos(file, range.begin)
-    val name =
-      (file, originalCodeName) match {
-//        case (FileCoordinate(PackageCoordinate(v, Vector(builtins, arrays)), "arrays.vale"), __free_replaced)
-//          if v == keywords.v && builtins == keywords.builtins && arrays == keywords.arrays && __free_replaced == keywords.__free_replaced => {
-//          interner.intern(postparsing.FreeDeclarationNameS(PostParser.evalPos(file, originalNameRange.begin)))
-//        }
-//        case (FileCoordinate(PackageCoordinate(emptyString, Vector()), "arrays.vale"), __free_replaced)
-//          if emptyString == keywords.emptyString && __free_replaced == keywords.__free_replaced => {
-//          interner.intern(FreeDeclarationNameS(PostParser.evalPos(file, originalNameRange.begin)))
-//        }
-        case (_, n) => interner.intern(postparsing.FunctionNameS(n, codeLocation))
-      }
+    val FunctionP(range, headerP, maybeBody0) = functionP;
+    val FunctionHeaderP(_, Some(NameP(_, codeName)), attrsP, maybeGenericParametersP, templateRulesP, maybeParamsP, returnP) = headerP
+    val FunctionReturnP(retRange, maybeInferRet, maybeRetType) = returnP
 
-
-    val lidb = new LocationInDenizenBuilder(Vector())
+    val rangeS = PostParser.evalRange(file, range)
+    val retRangeS = PostParser.evalRange(file, retRange)
 
     val genericParametersP =
       maybeGenericParametersP
@@ -87,6 +71,10 @@ class FunctionScout(
           rules.RuneUsage(PostParser.evalRange(file, range), CodeRuneS(identifyingRuneName))
         })
 
+    val codeLocation = PostParser.evalPos(file, range.begin)
+
+    val lidb = new LocationInDenizenBuilder(Vector())
+
     // See: Must Scan For Declared Runes First (MSFDRF)
     val userRunesFromRules =
       templateRulesP
@@ -95,81 +83,162 @@ class FunctionScout(
         .map({ case NameP(range, identifyingRuneName) => rules.RuneUsage(PostParser.evalRange(file, range), CodeRuneS(identifyingRuneName)) })
     val userDeclaredRunes = (userSpecifiedIdentifyingRunes ++ userRunesFromRules).distinct
 
-    val functionEnv = postparsing.FunctionEnvironmentS(file, name, None, userDeclaredRunes.map(_.rune).toSet, paramsP.size, false)
+    val funcName = interner.intern(FunctionNameS(codeName, codeLocation))
+
+    maybeParentInterface match {
+      case None =>
+      case Some(parentInterface) => {
+        maybeParamsP match {
+          case None =>
+          case Some(paramsP) => {
+            if (!paramsP.patterns.exists(_.virtuality match { case Some(AbstractP(_)) => true case _ => false })) {
+              throw CompileErrorExceptionS(InterfaceMethodNeedsSelf(PostParser.evalRange(file, range)))
+            }
+          }
+        }
+      }
+    }
 
     val ruleBuilder = ArrayBuffer[IRulexSR]()
 
     val runeToExplicitType = mutable.HashMap[IRuneS, ITemplataType]()
 
-    val genericParametersS =
+    val parentEnv =
+      maybeParentInterface match {
+        case None => None
+        case Some(parentInterface) => {
+          Some(parentInterface.interfaceEnv)
+        }
+      }
+    val isInterfaceInternalMethod =
+      maybeParentInterface match {
+        case None => false
+        case Some(_) => true
+      }
+
+    val functionEnv =
+      postparsing.FunctionEnvironmentS(
+        file, funcName, parentEnv, userDeclaredRunes.map(_.rune).toSet, maybeParamsP.size, isInterfaceInternalMethod)
+
+    maybeParentInterface match {
+      case None => {
+        ruleScout.translateRulexes(
+          functionEnv,
+          lidb.child(),
+          ruleBuilder,
+          runeToExplicitType,
+          templateRulesP.toVector.flatMap(_.rules))
+      }
+      case Some(parentInterface) => {
+        ruleBuilder ++= parentInterface.interfaceRules
+        runeToExplicitType ++= parentInterface.interfaceRuneToExplicitType
+        ruleScout.translateRulexes(
+          maybeParentInterface match {
+            case None => functionEnv
+            case Some(parentInterface) => parentInterface.interfaceEnv
+          },
+          lidb.child(),
+          ruleBuilder,
+          runeToExplicitType,
+          templateRulesP.toVector.flatMap(_.rules))
+      }
+    }
+
+    val functionUserSpecifiedGenericParametersS =
       genericParametersP.zip(userSpecifiedIdentifyingRunes)
         .map({ case (g, r) =>
           PostParser.scoutGenericParameter(
             templexScout, functionEnv, lidb.child(), runeToExplicitType, ruleBuilder, g, r)
         })
 
-    ruleScout.translateRulexes(
-      functionEnv,
-      lidb.child(),
-      ruleBuilder,
-      runeToExplicitType,
-      templateRulesP.toVector.flatMap(_.rules))
+    val genericParametersS =
+      functionUserSpecifiedGenericParametersS ++
+        (maybeParentInterface match {
+          case None => Vector()
+          case Some(parentInterface) => parentInterface.interfaceGenericParams
+        })
 
-    val myStackFrameWithoutParams = postparsing.StackFrame(file, name, functionEnv, None, noDeclarations)
+    val myStackFrameWithoutParams =
+      StackFrame(file, funcName, functionEnv, None, noDeclarations)
 
-    val patternsP =
-      paramsP.toVector.map(_.patterns).flatten.zipWithIndex.map({
+    val paramPatternsP =
+      maybeParamsP.toVector.flatMap(_.patterns).zipWithIndex.map({
         case (pattern, index) => {
           // Should have been caught by LightFunctionMustHaveParamTypes error in parser,
           vassert(pattern.templex.nonEmpty)
           pattern
         }
       })
+
     val explicitParamsPatterns1 =
       patternScout.scoutPatterns(
-        myStackFrameWithoutParams, lidb.child(), ruleBuilder, runeToExplicitType, patternsP)
+        myStackFrameWithoutParams, lidb.child(), ruleBuilder, runeToExplicitType, paramPatternsP)
 
     val explicitParams1 = explicitParamsPatterns1.map(ParameterS)
-    val captureDeclarations =
-      explicitParams1
-        .map(explicitParam1 => postparsing.VariableDeclarations(patternScout.getParameterCaptures(explicitParam1.pattern)))
-        .foldLeft(noDeclarations)(_ ++ _)
+
+    // Only if the function actually has a body
+    val maybeCaptureDeclarations =
+      maybeBody0 match {
+        case None => None
+        case Some(body0) => {
+          Some(
+            explicitParams1
+              .map(explicitParam1 => {
+                postparsing.VariableDeclarations(
+                  patternScout.getParameterCaptures(explicitParam1.pattern))
+              })
+              .foldLeft(noDeclarations)(_ ++ _))
+        }
+      }
+
+    // Theres no such thing as this anymore?
+    vassert(maybeInferRet.isEmpty)
 
     val maybeRetCoordRune =
-      (maybeInferRet, maybeRetType) match {
-        case (None, None | Some(RegionRunePT(_, _))) => {
+      maybeRetType match {
+        case None | Some(RegionRunePT(_, _)) => {
           // If nothing's present, assume void
           val rangeS = PostParser.evalRange(file, retRange)
           val rune = rules.RuneUsage(rangeS, ImplicitRuneS(lidb.child().consume()))
           ruleBuilder += LookupSR(rangeS, rune, interner.intern(CodeNameS(keywords.void)))
           Some(rune)
         }
-        case (Some(_), None) => None // Infer the return
-        case (None, Some(retTypePT)) => {
-          val rune =
-            templexScout.translateMaybeTypeIntoMaybeRune(
-              functionEnv,
-              lidb,
-              PostParser.evalRange(file, retRange),
-              ruleBuilder,
-              runeToExplicitType,
-              Some(retTypePT))
-          rune
+        case Some(retTypePT) => {
+          templexScout.translateMaybeTypeIntoMaybeRune(
+            maybeParentInterface match {
+              case None => functionEnv
+              case Some(parentInterface) => parentInterface.interfaceEnv
+            },
+            lidb.child(),
+            PostParser.evalRange(myStackFrameWithoutParams.file, retRange),
+            ruleBuilder,
+            runeToExplicitType,
+            Some(retTypePT))
         }
-        case (Some(_), Some(_)) => throw CompileErrorExceptionS(postparsing.RangedInternalErrorS(PostParser.evalRange(file, range), "Can't have return type and infer-return at the same time"))
       }
+
     maybeRetCoordRune.foreach(retCoordRune => runeToExplicitType.put(retCoordRune.rune, CoordTemplataType()))
 
-    val body1 =
-      if (attributes.collectFirst({ case AbstractAttributeP(_) => }).nonEmpty) {
+    maybeParentInterface match {
+      case None =>
+      case Some(parentInterface) => {
+        if (attrsP.collect({ case AbstractAttributeP(_) => true }).nonEmpty) {
+          throw CompileErrorExceptionS(
+            RangedInternalErrorS(PostParser.evalRange(file, range), "Dont need abstract here"))
+        }
+      }
+    }
+
+    val maybeBody1 =
+      if (maybeParentInterface.nonEmpty || attrsP.collectFirst({ case AbstractAttributeP(_) => }).nonEmpty) {
         AbstractBodyS
-      } else if (attributes.collectFirst({ case ExternAttributeP(_) => }).nonEmpty) {
+      } else if (attrsP.collectFirst({ case ExternAttributeP(_) => }).nonEmpty) {
         if (maybeBody0.nonEmpty) {
           throw CompileErrorExceptionS(ExternHasBody(PostParser.evalRange(file, range)))
         }
         ExternBodyS
-      } else if (attributes.collectFirst({ case BuiltinAttributeP(_, _) => }).nonEmpty) {
-        GeneratedBodyS(attributes.collectFirst({ case BuiltinAttributeP(_, generatorId) => generatorId }).head.str)
+      } else if (attrsP.collectFirst({ case BuiltinAttributeP(_, _) => }).nonEmpty) {
+        GeneratedBodyS(attrsP.collectFirst({ case BuiltinAttributeP(_, generatorId) => generatorId }).head.str)
       } else {
         val body =
           maybeBody0 match {
@@ -182,10 +251,10 @@ class FunctionScout(
             None,
             lidb.child(),
             body,
-            // We hand these into scoutBody instead of assembling a StackFrame on our own because we want
-            // StackFrame's to be made in one place, where we can centralize the logic for tracking variable
-            // uses and so on.
-            captureDeclarations)
+            // We hand these into scoutBody instead of assembling a StackFrame on our own
+            // because we want StackFrame's to be made in one place, where we can centralize the
+            // logic for tracking variable uses and so on.
+            vassertSome(maybeCaptureDeclarations))
         if (magicParams.nonEmpty) {
           throw CompileErrorExceptionS(postparsing.RangedInternalErrorS(rangeS, "Magic param (underscore) in a normal block!"))
         }
@@ -195,30 +264,62 @@ class FunctionScout(
         CodeBodyS(body1)
       }
 
-    val attrsS = translateFunctionAttributes(file, attributes.filter({ case AbstractAttributeP(_) => false case _ => true }))
+    val unfilteredRulesArray = ruleBuilder.toVector
+
+    val unfilteredAttrsP = attrsP
+
+    val filteredAttrs =
+      maybeParentInterface match {
+        case None => unfilteredAttrsP.filter({ case AbstractAttributeP(_) => false case _ => true })
+        case Some(parentInterface) => unfilteredAttrsP
+      }
+
+    val funcAttrsS = translateFunctionAttributes(file, filteredAttrs)
+
+    // Filter out any RuneParentEnvLookupSR rules, we don't want these methods to look up these runes
+    // from the environment. See MKRFA.
+    val rulesArray =
+      maybeParentInterface match {
+        case None => unfilteredRulesArray
+        case Some(parentInterface) => {
+          unfilteredRulesArray.filter({
+            case RuneParentEnvLookupSR(_, _) => false
+            case _ => true
+          })
+        }
+      }
 
     val runeToPredictedType =
       postParser.predictRuneTypes(
         rangeS,
         userSpecifiedIdentifyingRunes.map(_.rune),
         runeToExplicitType.toMap,
-        ruleBuilder.toVector)
+        rulesArray)
 
     postParser.checkIdentifiability(
       rangeS,
-      userSpecifiedIdentifyingRunes.map(_.rune),
-      ruleBuilder.toVector)
+      genericParametersS.map(_.rune.rune),
+      rulesArray)
 
     FunctionS(
       PostParser.evalRange(file, range),
-      name,
-      attrsS,
+      funcName,
+      funcAttrsS,
       genericParametersS,
       runeToPredictedType,
       explicitParams1,
       maybeRetCoordRune,
-      ruleBuilder.toVector,
-      body1)
+      rulesArray,
+      maybeBody1)
+  }
+
+  def scoutInterfaceMember(
+    parentInterface: ParentInterface,
+    functionP: FunctionP): FunctionS = {
+    val file = parentInterface.interfaceEnv.file
+    val maybeParentInterface: Option[ParentInterface] = Some(parentInterface)
+
+    scoutFunction(file, functionP, maybeParentInterface)
   }
 
   def translateFunctionAttributes(file: FileCoordinate, attrsP: Vector[IAttributeP]): Vector[IFunctionAttributeS] = {
@@ -518,140 +619,5 @@ class FunctionScout(
     (bodySE, VariableUses(usesOfParentVariables), magicParamNames)
   }
 
-  def scoutInterfaceMember(
-    interfaceEnv: EnvironmentS,
-    interfaceGenericParams: Vector[GenericParameterS],
-    interfaceRules: Vector[IRulexSR],
-    interfaceRuneToExplicitType: Map[IRuneS, ITemplataType],
-    functionP: FunctionP): FunctionS = {
-    val FunctionP(range, headerP, None) = functionP;
-    val FunctionHeaderP(_, Some(NameP(_, codeName)), attrsP, maybeGenericParametersP, templateRulesP, maybeParamsP, returnP) = headerP
-    val FunctionReturnP(retRange, maybeInferRet, maybeRetType) = returnP
-    val file = interfaceEnv.file
-    val rangeS = PostParser.evalRange(interfaceEnv.file, range)
-    val retRangeS = PostParser.evalRange(interfaceEnv.file, retRange)
-
-    maybeParamsP match {
-      case None =>
-      case Some(paramsP) => {
-        if (!paramsP.patterns.exists(_.virtuality match { case Some(AbstractP(_)) => true case _ => false })) {
-          throw CompileErrorExceptionS(InterfaceMethodNeedsSelf(PostParser.evalRange(interfaceEnv.file, range)))
-        }
-      }
-    }
-
-    val genericParametersP =
-      maybeGenericParametersP
-        .toVector
-        .flatMap(_.params)
-        // Filter out any regions, we dont do those yet
-        .filter({
-          case GenericParameterP(_, _, Some(GenericParameterTypeP(_, RegionTypePR)), _, _) => false
-          case _ => true
-        })
-
-    val userSpecifiedIdentifyingRunes =
-      genericParametersP
-        .map({ case GenericParameterP(_, NameP(range, identifyingRuneName), _, _, _) =>
-          rules.RuneUsage(PostParser.evalRange(file, range), CodeRuneS(identifyingRuneName))
-        })
-
-    val codeLocation = PostParser.evalPos(interfaceEnv.file, range.begin)
-    val funcName = interner.intern(FunctionNameS(codeName, codeLocation))
-
-    // See: Must Scan For Declared Runes First (MSFDRF)
-    val userRunesFromRules =
-      templateRulesP
-        .toVector
-        .flatMap(rules => RulePUtils.getOrderedRuneDeclarationsFromRulexesWithDuplicates(rules.rules))
-        .map({ case NameP(range, identifyingRuneName) => rules.RuneUsage(PostParser.evalRange(interfaceEnv.file, range), CodeRuneS(identifyingRuneName)) })
-
-    val userDeclaredRunes = (userSpecifiedIdentifyingRunes ++ userRunesFromRules).distinct
-
-    val lidb = new LocationInDenizenBuilder(Vector())
-
-    val ruleBuilder = ArrayBuffer[IRulexSR]()
-
-    ruleBuilder ++= interfaceRules
-    val runeToExplicitType = mutable.HashMap[IRuneS, ITemplataType]()
-    runeToExplicitType ++= interfaceRuneToExplicitType
-
-    ruleScout.translateRulexes(interfaceEnv, lidb.child(), ruleBuilder, runeToExplicitType, templateRulesP.toVector.flatMap(_.rules))
-
-    val functionEnv =
-      postparsing.FunctionEnvironmentS(
-        interfaceEnv.file, funcName, Some(interfaceEnv), userDeclaredRunes.map(_.rune).toSet, maybeParamsP.size, true)
-
-    val functionUserSpecifiedGenericParametersS =
-      genericParametersP.zip(userSpecifiedIdentifyingRunes)
-        .map({ case (g, r) =>
-          PostParser.scoutGenericParameter(
-            templexScout, functionEnv, lidb.child(), runeToExplicitType, ruleBuilder, g, r)
-        })
-    val genericParametersS = functionUserSpecifiedGenericParametersS ++ interfaceGenericParams
-
-    val myStackFrame = StackFrame(interfaceEnv.file, funcName, functionEnv, None, noDeclarations)
-    val patternsS =
-      patternScout.scoutPatterns(myStackFrame, lidb.child(), ruleBuilder, runeToExplicitType, maybeParamsP.toVector.flatMap(_.patterns))
-
-    val paramsS = patternsS.map(ParameterS)
-
-    val maybeReturnRune =
-      (maybeInferRet, maybeRetType) match {
-        case (None, None | Some(RegionRunePT(_, _))) => {
-          // If nothing's present, assume void
-          val rune = rules.RuneUsage(retRangeS, ImplicitRuneS(lidb.child().consume()))
-          ruleBuilder += rules.LookupSR(retRangeS, rune, interner.intern(CodeNameS(interner.intern(keywords.void))))
-          Some(rune)
-        }
-        case (Some(_), None) => {
-          throw CompileErrorExceptionS(postparsing.RangedInternalErrorS(rangeS, "Can't infer the return type of an interface method!"))
-        }
-        case (None, Some(retTypePT)) => {
-          templexScout.translateMaybeTypeIntoMaybeRune(
-            interfaceEnv,
-            lidb.child(),
-            PostParser.evalRange(myStackFrame.file, retRange),
-            ruleBuilder,
-            runeToExplicitType,
-            Some(retTypePT))
-        }
-        case (Some(_), Some(_)) => throw CompileErrorExceptionS(postparsing.RangedInternalErrorS(PostParser.evalRange(myStackFrame.file, range), "Can't have return type and infer-return at the same time"))
-      }
-    maybeReturnRune.foreach(retCoordRune => runeToExplicitType.put(retCoordRune.rune, CoordTemplataType()))
-
-    if (attrsP.collect({ case AbstractAttributeP(_) => true }).nonEmpty) {
-      throw CompileErrorExceptionS(RangedInternalErrorS(PostParser.evalRange(interfaceEnv.file, range), "Dont need abstract here"))
-    }
-
-    val unfilteredRulesArray = ruleBuilder.toVector
-    // Filter out any RuneParentEnvLookupSR rules, we don't want these methods to look up these runes
-    // from the environment. See MKRFA.
-    val rulesArray =
-      unfilteredRulesArray.filter({
-        case RuneParentEnvLookupSR(_, _) => false
-        case _ => true
-      })
-
-    postParser.checkIdentifiability(
-      rangeS,
-      genericParametersS.map(_.rune.rune),
-      rulesArray)
-
-    FunctionS(
-      PostParser.evalRange(functionEnv.file, range),
-      funcName,
-      translateFunctionAttributes(functionEnv.file, attrsP),
-      //      knowableValueRunes,
-      genericParametersS,
-      runeToExplicitType.toMap,
-      //      localRunes,
-      //      maybePredictedType,
-      paramsS,
-      maybeReturnRune,
-      //      isTemplate,
-      rulesArray,
-      AbstractBodyS)
-  }
 }
 

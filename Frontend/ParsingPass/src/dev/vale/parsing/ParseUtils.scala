@@ -71,6 +71,9 @@ object ParseUtils {
   // end of the statement.
   // It returns None if there wasn't one (which leaves self untouched) or a Some
   // containing everything we skipped past (minus the =).
+  //
+  // TODO: this is pretty confusing if youre not really deep into the "trySkipPast" mindset already.
+  // Let's replace it with a method that just splits an iterator into two.
   def trySkipPastKeywordWhile(
       iter: ScrambleIterator,
       keyword: StrI,

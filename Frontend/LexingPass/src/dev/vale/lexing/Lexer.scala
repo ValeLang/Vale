@@ -339,37 +339,10 @@ class Lexer(interner: Interner, keywords: Keywords) {
 
     iter.consumeCommentsAndWhitespace()
 
-    val returnBegin = iter.getPos()
-    val maybeReturn =
-      if (!iter.peekCompleteWord("where") && !iter.peekCompleteWord("region") && !iter.peekCompleteWord("extern") && iter.peek() != '{' && iter.peek() != ';') {
-//        if (iter.trySkipCompleteWord("infer-return")) {
-//          val range = RangeL(returnBegin, iter.getPos())
-//          FunctionReturnL(range, Some(range), None)
-//        } else {
-          val returnType =
-            lexScramble(iter, true, true, true) match {
-              case Err(e) => return Err(e)
-              case Ok(x) => x
-            }
-          val range = RangeL(returnBegin, iter.getPos())
-          FunctionReturnL(range, None, Some(returnType))
-//        }
-      } else {
-        val range = RangeL(returnBegin, iter.getPos())
-        FunctionReturnL(range, None, None)
-      }
-
-    iter.consumeCommentsAndWhitespace()
-
-    val maybeRules =
-      if (iter.trySkipCompleteWord("where")) {
-        Some(
-          lexScramble(iter, true, false, true) match {
-            case Err(e) => return Err(e)
-            case Ok(x) => x
-          })
-      } else {
-        None
+    val trailingDetails =
+      lexScramble(iter, true, false, true) match {
+        case Err(e) => return Err(e)
+        case Ok(x) => x
       }
 
     iter.consumeCommentsAndWhitespace()
@@ -380,17 +353,6 @@ class Lexer(interner: Interner, keywords: Keywords) {
       if (iter.trySkip(';')) {
         None
       } else {
-        val maybeDefaultRegion =
-          if (iter.trySkipCompleteWord("region")) {
-            Some(
-              lexNode(iter, true, false) match {
-                case Err(e) => return Err(e)
-                case Ok(x) => x
-              })
-          } else {
-            None
-          }
-
         val body =
           lexCurlied(iter, false) match {
             case Err(e) => return Err(e)
@@ -398,7 +360,7 @@ class Lexer(interner: Interner, keywords: Keywords) {
             case Ok(None) => return Err(BadFunctionBodyError(iter.getPos()))
           }
 
-        Some(FunctionBodyL(maybeDefaultRegion, body))
+        Some(FunctionBodyL(body))
       }
 
     val end = iter.getPos()
@@ -409,9 +371,8 @@ class Lexer(interner: Interner, keywords: Keywords) {
         name,
         attributes,
         maybeGenericArgs,
-        maybeRules,
         params,
-        maybeReturn)
+        trailingDetails)
     val func = FunctionL(RangeL(begin, end), header, maybeBody)
     Ok(Some(func))
   }

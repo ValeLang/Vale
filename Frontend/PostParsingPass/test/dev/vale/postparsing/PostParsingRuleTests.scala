@@ -11,8 +11,9 @@ import scala.collection.immutable.List
 
 class PostParsingRuleTests extends FunSuite with Matchers {
   private def compile(code: String, interner: Interner = new Interner()): ProgramS = {
-    PostParserTestCompilation.test(code, interner).getScoutput() match {
-      case Err(e) => vfail(PostParserErrorHumanizer.humanize(FileCoordinateMap.test(interner, code), e))
+    val compile = PostParserTestCompilation.test(code, interner)
+    compile.getScoutput() match {
+      case Err(e) => vfail(PostParserErrorHumanizer.humanize(compile.getCodeMap().getOrDie(), e))
       case Ok(t) => t.expectOne()
     }
   }
@@ -57,7 +58,7 @@ class PostParsingRuleTests extends FunSuite with Matchers {
     val program =
       compile(
         """
-          |func main<M>(a int)
+          |func main<M Ownership>(a int)
           |where M = any(own, borrow) {}
           |""".stripMargin, interner)
     val main = program.lookupFunction("main")
@@ -86,7 +87,7 @@ class PostParsingRuleTests extends FunSuite with Matchers {
     val program =
       compile(
         """
-          |func main<A, B, T>(p1 A, p2 B)
+          |func main<A, B>(p1 A, p2 B)
           |where A = T<B>, T = Option, A = int {}
           |""".stripMargin, interner)
     val main = program.lookupFunction("main")
@@ -97,12 +98,13 @@ class PostParsingRuleTests extends FunSuite with Matchers {
     main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("T")))) shouldEqual None
   }
 
+  // Not sure if this test is useful anymore, since we say M, V, N's types up-front now
   test("Predict array sequence types") {
     val interner = new Interner()
     val program =
       compile(
         """
-          |func main<M, V, N, E>(t T)
+          |func main<M Mutability, V Variability, N Int, E>(t T)
           |where T Ref = [#N]<M, V>E {}
           |""".stripMargin, interner)
     val main = program.lookupFunction("main")
@@ -114,12 +116,13 @@ class PostParsingRuleTests extends FunSuite with Matchers {
     vassertSome(main.runeToPredictedType.get(CodeRuneS(interner.intern(StrI("T"))))) shouldEqual CoordTemplataType()
   }
 
+  // Not sure if this test is useful anymore, since we say Kind up-front now
   test("Predict for isInterface") {
     val interner = new Interner()
     val program =
       compile(
         """
-          |func main<A, B>()
+          |func main<A Kind, B Kind>()
           |where A = isInterface(B) {}
           |""".stripMargin, interner)
     val main = program.lookupFunction("main")

@@ -242,10 +242,12 @@ object PostParser {
     val genericParamRangeS = PostParser.evalRange(env.file, genericParamRangeP)
     val runeS = paramRuneS
 
-    maybeType match {
-      case None =>
-      case Some(tyype) => runeToExplicitType.put(runeS.rune, RuleScout.translateType(tyype.tyype))
-    }
+    val typeS =
+      maybeType match {
+        case None => CoordTemplataType()
+        case Some(typeP) => RuleScout.translateType(typeP.tyype)
+      }
+    runeToExplicitType.put(runeS.rune, typeS)
 
     val attributesS =
       attributesP.flatMap({
@@ -253,10 +255,7 @@ object PostParser {
         case _ => None
       })
 
-    GenericParameterS(
-      genericParamRangeS,
-      runeS,
-      attributesS,
+    val defaultS =
       maybeDefault.map(defaultPT => {
         val uncategorizedRules = ArrayBuffer[IRulexSR]()
         val resultRune = templexScout.translateTemplex(env, lidb, uncategorizedRules, defaultPT)
@@ -276,7 +275,9 @@ object PostParser {
 
         GenericParameterDefaultS(
           resultRune.rune, rulesToLeaveInDefaultArgument.buildArray().toVector)
-      }))
+      })
+
+    GenericParameterS(genericParamRangeS, runeS, typeS, attributesS, defaultS)
   }
 }
 

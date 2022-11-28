@@ -183,7 +183,7 @@ class CompilerSolver(
           case IsConcreteSR(range, rune) => Vector(rune)
           case IsInterfaceSR(range, rune) => Vector(rune)
           case IsStructSR(range, rune) => Vector(rune)
-          case CoerceToCoordSR(range, coordRune, kindRune) => Vector(coordRune, kindRune)
+//          case CoerceToCoordSR(range, coordRune, kindRune) => Vector(coordRune, kindRune)
           case LiteralSR(range, rune, literal) => Vector(rune)
           case AugmentSR(range, resultRune, ownership, innerRune) => Vector(resultRune, innerRune)
           case CallSR(range, resultRune, templateRune, args) => Vector(resultRune, templateRune) ++ args
@@ -229,7 +229,7 @@ class CompilerSolver(
       case IsConcreteSR(range, rune) => Vector(Vector(rune.rune))
       case IsInterfaceSR(range, rune) => Vector(Vector(rune.rune))
       case IsStructSR(range, rune) => Vector(Vector(rune.rune))
-      case CoerceToCoordSR(range, coordRune, kindRune) => Vector(Vector(coordRune.rune), Vector(kindRune.rune))
+//      case CoerceToCoordSR(range, coordRune, kindRune) => Vector(Vector(coordRune.rune), Vector(kindRune.rune))
       case LiteralSR(range, rune, literal) => Vector(Vector())
       case AugmentSR(range, resultRune, ownership, innerRune) => Vector(Vector(innerRune.rune), Vector(resultRune.rune))
       case StaticSizedArraySR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Vector(Vector(resultRune.rune), Vector(mutabilityRune.rune, variabilityRune.rune, sizeRune.rune, elementRune.rune))
@@ -761,20 +761,20 @@ class CompilerRuleSolver(
           case _ => vwat() // Should be impossible, all template rules are type checked
         }
       }
-      case CoerceToCoordSR(range, coordRune, kindRune) => {
-        stepState.getConclusion(kindRune.rune) match {
-          case None => {
-            val CoordTemplata(coord) = vassertSome(stepState.getConclusion(coordRune.rune))
-            stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, kindRune.rune, KindTemplata(coord.kind))
-            Ok(())
-          }
-          case Some(kind) => {
-            val coerced = delegate.coerce(env, state, range :: env.parentRanges, CoordTemplataType(), kind)
-            stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, coordRune.rune, coerced)
-            Ok(())
-          }
-        }
-      }
+//      case CoerceToCoordSR(range, coordRune, kindRune) => {
+//        stepState.getConclusion(kindRune.rune) match {
+//          case None => {
+//            val CoordTemplata(coord) = vassertSome(stepState.getConclusion(coordRune.rune))
+//            stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, kindRune.rune, KindTemplata(coord.kind))
+//            Ok(())
+//          }
+//          case Some(kind) => {
+//            val coerced = delegate.coerce(env, state, range :: env.parentRanges, CoordTemplataType(), kind)
+//            stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, coordRune.rune, coerced)
+//            Ok(())
+//          }
+//        }
+//      }
       case LiteralSR(range, rune, literal) => {
         val templata = literalToTemplata(literal)
         stepState.concludeRune[ITypingPassSolverError](range :: env.parentRanges, rune.rune, templata)

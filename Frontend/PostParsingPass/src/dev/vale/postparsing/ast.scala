@@ -228,6 +228,7 @@ case class CodeBodyS(body: BodySE) extends IBodyS {
 case class GenericParameterS(
   range: RangeS,
   rune: RuneUsage,
+  tyype: ITemplataType,
   attributes: Vector[IRuneAttributeS],
   default: Option[GenericParameterDefaultS])
 

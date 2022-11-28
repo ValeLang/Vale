@@ -1,5 +1,5 @@
 
-func each<M, V, N, T, F>(arr &[#N]<M, V>T, func &F) void
+func each<M Mutability, V Variability, N Int, T, F>(arr &[#N]<M, V>T, func &F) void
 where func(&F,&T)void {
   i = 0;
   l = len(&arr);
@@ -9,7 +9,7 @@ where func(&F,&T)void {
   }
 }
 
-func eachI<M, V, N, T, F>(arr &[#N]<M, V>T, func F) void
+func eachI<M Mutability, V Variability, N Int, T, F>(arr &[#N]<M, V>T, func F) void
 where func drop(F)void, func(&F,int,&T)void {
   i = 0;
   l = len(&arr);
@@ -19,7 +19,7 @@ where func drop(F)void, func(&F,int,&T)void {
   }
 }
 
-func each<M, T, F>(arr &[]<M>T, func F) void
+func each<M Mutability, T, F>(arr &[]<M>T, func F) void
 where func drop(F)void, func(&F,&T)void {
   i = 0;
   l = len(&arr);
@@ -29,7 +29,7 @@ where func drop(F)void, func(&F,&T)void {
   }
 }
 
-func eachI<F, M, T>(arr &[]<M>T, func F) void
+func eachI<F, M Mutability, T>(arr &[]<M>T, func F) void
 where func drop(F)void, func(&F,int,&T)void {
   i = 0;
   l = len(&arr);

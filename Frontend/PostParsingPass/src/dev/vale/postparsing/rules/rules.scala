@@ -159,14 +159,14 @@ case class IsStructSR(
   override def runeUsages: Vector[RuneUsage] = Vector(rune)
 }
 
-case class CoerceToCoordSR(
-  range: RangeS,
-  coordRune: RuneUsage,
-  kindRune: RuneUsage
-) extends IRulexSR {
-  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
-  override def runeUsages: Vector[RuneUsage] = Vector(coordRune, kindRune)
-}
+//case class CoerceToCoordSR(
+//  range: RangeS,
+//  coordRune: RuneUsage,
+//  kindRune: RuneUsage
+//) extends IRulexSR {
+//  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
+//  override def runeUsages: Vector[RuneUsage] = Vector(coordRune, kindRune)
+//}
 
 case class RefListCompoundMutabilitySR(
   range: RangeS,

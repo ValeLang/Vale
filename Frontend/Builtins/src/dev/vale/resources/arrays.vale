@@ -2,19 +2,19 @@ import v.builtins.arith.*;
 import v.builtins.drop.*;
 import v.builtins.panic.*;
 
-func drop_into<V, S, E, F>(arr [#S]<imm, V>E, consumer &F) void
+func drop_into<V Variability, S Int, E, F>(arr [#S]<imm, V>E, consumer &F) void
 where func(&F, E)void
 {}
 
 extern("vale_static_sized_array_drop_into")
-func drop_into<V, S, E, F>(arr [#S]<mut, V>E, consumer &F) void
+func drop_into<V Variability, S Int, E, F>(arr [#S]<mut, V>E, consumer &F) void
 where func(&F, E)void;
 
-func drop<V, S, E>(arr [#S]<mut, V>E) void
+func drop<V Variability, S Int, E>(arr [#S]<mut, V>E) void
 where func drop(E)void {
   drop_into(arr, {_;});
 }
-func drop<V, S, E>(arr [#S]<imm, V>E) void {}
+func drop<V Variability, S Int, E>(arr [#S]<imm, V>E) void {}
 
 func drop_into<E, F>(arr []<mut>E, consumer &F) void
 where func(&F, E)void
@@ -45,13 +45,13 @@ where func drop(E)void {
 }
 
 extern("vale_static_sized_array_len")
-func len<M, V, S, E>(arr &[#S]<M, V>E) int;
+func len<M Mutability, V Variability, S Int, E>(arr &[#S]<M Mutability, V>E) int;
 
 extern("vale_runtime_sized_array_len")
-func len<M, E>(arr &[]<M>E) int;
+func len<M Mutability, E>(arr &[]<M>E) int;
 
 extern("vale_static_sized_array_free")
-func __free_replaced<V, S, E>(arr [#S]<imm, V>E)
+func __free_replaced<V Variability, S Int, E>(arr [#S]<imm, V>E)
 where D Prot = func drop(void, E)void;
 
 extern("vale_runtime_sized_array_free")
@@ -60,7 +60,7 @@ where D Prot = func drop(void, E)void;
 
 
 
-func __free_replaced<V, S, E>(arr [#S]<mut, V>E) {
+func __free_replaced<V Variability, S Int, E>(arr [#S]<mut, V>E) {
   __vbi_panic();
 }
 
@@ -83,7 +83,7 @@ extern("vale_runtime_sized_array_mut_new")
 func Array<M Mutability, E Ref>(size int) []<M>E
 where M = mut;
 
-func Array<M, E, G>(n int, generator G) []<M>E
+func Array<M Mutability, E, G>(n int, generator G) []<M>E
 where
   M Mutability = mut,
   func(&G, int)E,
@@ -99,7 +99,7 @@ where
 }
 
 extern("vale_runtime_sized_array_imm_new")
-func Array<M, E Ref imm, G>(n int, generator &G) []<M>E
+func Array<M Mutability, E Ref imm, G>(n int, generator &G) []<M>E
 where
   M Mutability = imm,
   func(&G, int)E;

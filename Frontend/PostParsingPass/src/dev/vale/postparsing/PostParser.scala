@@ -540,14 +540,7 @@ class PostParser(
     val headerRuneToPredictedType = runeToPredictedType.filter(x => runesFromHeader.contains(x._1))
     val membersRuneToPredictedType = runeToPredictedType.filter(x => !runesFromHeader.contains(x._1))
 
-    val maybePredictedType =
-      determineDenizenType(KindTemplataType(), userSpecifiedIdentifyingRunes.map(_.rune), runeToPredictedType) match {
-        case Ok(x) => Some(x)
-        case Err(e) => {
-          vassert(e.isInstanceOf[IRuneS])
-          None
-        }
-      }
+    val tyype = TemplateTemplataType(genericParametersS.map(_.tyype), KindTemplataType())
 
     val weakable = attributesP.exists({ case w @ WeakableAttributeP(_) => true case _ => false })
     val attrsS = translateCitizenAttributes(file, attributesP.filter({ case WeakableAttributeP(_) => false case _ => true}))
@@ -562,7 +555,7 @@ class PostParser(
       genericParametersS,
       mutabilityRuneS,
       predictedMutability,
-      maybePredictedType,
+      tyype,
       headerRuneToExplicitType.toMap,
       headerRuneToPredictedType,
       headerRulesS,
@@ -673,14 +666,7 @@ class PostParser(
 
     val predictedMutability = predictMutability(interfaceRangeS, mutabilityRuneS.rune, rulesS)
 
-    val maybePredictedType =
-      determineDenizenType(KindTemplataType(), userDeclaredRunes, runeToPredictedType) match {
-        case Ok(x) => Some(x)
-        case Err(e) => {
-          vassert(e.isInstanceOf[IRuneS])
-          None
-        }
-      }
+    val tyype = TemplateTemplataType(genericParametersS.map(_.tyype), KindTemplataType())
 
     val internalMethodsS =
       internalMethodsP.map(method => {
@@ -710,7 +696,7 @@ class PostParser(
         mutabilityRuneS,
         predictedMutability,
         runeToPredictedType,
-        maybePredictedType,
+        tyype,
 //        isTemplate,
         rulesS,
 //        runeSToCanonicalRune,

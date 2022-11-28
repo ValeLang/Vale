@@ -101,11 +101,11 @@ class HigherTypingPass(globalOptions: GlobalOptions, interner: Interner, keyword
     val nearStructTypes =
       env.structsS
         .filter(interface => impreciseNameMatchesAbsoluteName(needleImpreciseNameS, interface.name))
-        .map(getStructType(astrouts, env, _))
+        .map(_.tyype)
     val nearInterfaceTypes =
       env.interfacesS
         .filter(interface => impreciseNameMatchesAbsoluteName(needleImpreciseNameS, interface.name))
-        .map(getInterfaceType(astrouts, env, _))
+        .map(_.tyype)
     val result = nearStructTypes ++ nearInterfaceTypes
 
     if (result.nonEmpty) {
@@ -126,25 +126,6 @@ class HigherTypingPass(globalOptions: GlobalOptions, interner: Interner, keyword
         ErrorReporter.report(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + others.mkString(", ")))
       }
     }
-  }
-
-  def getStructType(
-    astrouts: Astrouts,
-    env: Environment,
-    structS: StructS):
-  ITemplataType = {
-    structS.maybePredictedType match {
-      case Some(value) => return value
-      case None =>
-    }
-
-    astrouts.codeLocationToMaybeType.get(structS.range.begin) match {
-      case Some(Some(value)) => return value
-      case _ =>
-    }
-
-    val struct = translateStruct(astrouts, env, structS)
-    struct.tyype
   }
 
   def translateStruct(
@@ -211,18 +192,7 @@ class HigherTypingPass(globalOptions: GlobalOptions, interner: Interner, keyword
     env: Environment,
     interfaceS: InterfaceS):
   ITemplataType = {
-    interfaceS.maybePredictedType match {
-      case Some(value) => return value
-      case None =>
-    }
-
-    astrouts.codeLocationToMaybeType.get(interfaceS.range.begin) match {
-      case Some(Some(value)) => return value
-      case _ =>
-    }
-
-    val struct = translateInterface(astrouts, env, interfaceS)
-    struct.tyype
+    interfaceS.tyype
   }
 
   def translateInterface(astrouts: Astrouts,  env: Environment, interfaceS: InterfaceS): InterfaceA = {

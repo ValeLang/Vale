@@ -77,7 +77,7 @@ case class StructS(
     //     tail ListNode<T>;
     //   }
     maybePredictedMutability: Option[MutabilityP],
-    maybePredictedType: Option[ITemplataType],
+    tyype: ITemplataType,
 
     // These are separated so that these alone can be run during resolving, see SMRASDR.
     headerRuneToExplicitType: Map[IRuneS, ITemplataType],
@@ -128,7 +128,7 @@ case class InterfaceS(
   //   }
   maybePredictedMutability: Option[MutabilityP],
   predictedRuneToType: Map[IRuneS, ITemplataType],
-  maybePredictedType: Option[ITemplataType],
+  tyype: ITemplataType,
 
   rules: Vector[IRulexSR],
   // See IMRFDI

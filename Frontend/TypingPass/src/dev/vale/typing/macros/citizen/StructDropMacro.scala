@@ -2,7 +2,7 @@ package dev.vale.typing.macros.citizen
 
 import dev.vale.highertyping._
 import dev.vale.postparsing.patterns.{AbstractSP, AtomSP, CaptureS}
-import dev.vale.postparsing.rules.{CallSR, CoerceToCoordSR, CoordComponentsSR, EqualsSR, IRulexSR, LookupSR, RuneUsage}
+import dev.vale.postparsing.rules._
 import dev.vale.{Accumulator, Interner, Keywords, RangeS, StrI, vimpl, vwat}
 import dev.vale.postparsing._
 import dev.vale.typing.ast.{ArgLookupTE, BlockTE, DestroyTE, DiscardTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironment, ParameterT, ReturnTE, UnletTE, VoidLiteralTE}

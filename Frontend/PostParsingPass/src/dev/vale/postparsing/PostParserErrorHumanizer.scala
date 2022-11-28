@@ -191,7 +191,7 @@ object PostParserErrorHumanizer {
       case DefinitionCoordIsaSR(range, resultRune, subRune, superRune) => humanizeRune(resultRune.rune) + " = " + humanizeRune(subRune.rune) + " def-isa " + humanizeRune(superRune.rune)
       case CallSiteCoordIsaSR(range, resultRune, subRune, superRune) => resultRune.map(r => humanizeRune(r.rune)).getOrElse("_") + " = " + humanizeRune(subRune.rune) + " call-isa " + humanizeRune(superRune.rune)
       case CoordSendSR(range, senderRune, receiverRune) => humanizeRune(senderRune.rune) + " -> " + humanizeRune(receiverRune.rune)
-      case CoerceToCoordSR(range, coordRune, kindRune) => "coerceToCoord(" + humanizeRune(coordRune.rune) + ", " + humanizeRune(kindRune.rune) + ")"
+//      case CoerceToCoordSR(range, coordRune, kindRune) => "coerceToCoord(" + humanizeRune(coordRune.rune) + ", " + humanizeRune(kindRune.rune) + ")"
       case CallSR(range, resultRune, templateRune, argRunes) => humanizeRune(resultRune.rune) + " = " + humanizeRune(templateRune.rune) + "<" + argRunes.map(_.rune).map(humanizeRune).mkString(", ") + ">"
       case LookupSR(range, rune, name) => humanizeRune(rune.rune) + " = " + humanizeImpreciseName(name)
       case LiteralSR(range, rune, literal) => humanizeRune(rune.rune) + " = " + humanizeLiteral(literal)

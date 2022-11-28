@@ -5,7 +5,7 @@ import dev.vale.{Accumulator, CodeLocationS, Interner, Keywords, PackageCoordina
 import dev.vale.parsing.ast.{BorrowP, FinalP, OwnP, UseP}
 import dev.vale.postparsing.patterns.{AbstractSP, AtomSP, CaptureS}
 import dev.vale.postparsing.{SealedS, _}
-import dev.vale.postparsing.rules.{AugmentSR, CallSR, CallSiteCoordIsaSR, CallSiteFuncSR, CoerceToCoordSR, CoordComponentsSR, DefinitionCoordIsaSR, DefinitionFuncSR, EqualsSR, Equivalencies, IRulexSR, IsConcreteSR, IsInterfaceSR, IsStructSR, KindComponentsSR, LiteralSR, LookupSR, OneOfSR, PackSR, PrototypeComponentsSR, RefListCompoundMutabilitySR, ResolveSR, RuleScout, RuneParentEnvLookupSR, RuneUsage, RuntimeSizedArraySR, StaticSizedArraySR}
+import dev.vale.postparsing.rules._
 import dev.vale.typing.{OverloadResolver, TypingPassOptions}
 import dev.vale.typing.citizen.StructCompiler
 import dev.vale.typing.env.{FunctionEnvEntry, IEnvEntry, ImplEnvEntry, StructEnvEntry}
@@ -162,7 +162,7 @@ class AnonymousInterfaceMacro(
       case IsConcreteSR(range, RuneUsage(a, rune)) => IsConcreteSR(range, RuneUsage(a, func(rune)))
       case IsInterfaceSR(range, RuneUsage(a, rune)) => IsInterfaceSR(range, RuneUsage(a, func(rune)))
       case IsStructSR(range, RuneUsage(a, rune)) => IsStructSR(range, RuneUsage(a, func(rune)))
-      case CoerceToCoordSR(range, RuneUsage(a, coordRune), RuneUsage(b, kindRune)) => CoerceToCoordSR(range, RuneUsage(a, func(coordRune)), RuneUsage(b, func(kindRune)))
+//      case CoerceToCoordSR(range, RuneUsage(a, coordRune), RuneUsage(b, kindRune)) => CoerceToCoordSR(range, RuneUsage(a, func(coordRune)), RuneUsage(b, func(kindRune)))
       case LiteralSR(range, RuneUsage(a, rune), literal) => LiteralSR(range, RuneUsage(a, func(rune)), literal)
       case AugmentSR(range, RuneUsage(a, resultRune), ownership, RuneUsage(b, innerRune)) => AugmentSR(range, RuneUsage(a, func(resultRune)), ownership, RuneUsage(b, func(innerRune)))
       case CallSR(range, RuneUsage(a, resultRune), RuneUsage(b, templateRune), args) => CallSR(range, RuneUsage(a, func(resultRune)), RuneUsage(b, func(templateRune)), args.map({ case RuneUsage(c, rune) => RuneUsage(c, func(rune)) }))
@@ -209,7 +209,8 @@ class AnonymousInterfaceMacro(
         interfaceA.range, RuneUsage(interfaceA.range, voidRune), interner.intern(CodeNameS(keywords.void))))
 
     val structGenericParams =
-      interfaceA.genericParameters ++ memberRunes.map(mr => GenericParameterS(mr.range, mr, Vector(), None))
+      interfaceA.genericParameters ++
+        memberRunes.map(mr => GenericParameterS(mr.range, mr, CoordTemplataType(), Vector(), None))
 
     interfaceA.internalMethods.zip(memberRunes).zipWithIndex.foreach({ case ((internalMethod, memberRune), methodIndex) =>
       val methodRuneToType =

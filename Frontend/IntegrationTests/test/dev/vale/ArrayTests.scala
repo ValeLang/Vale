@@ -585,7 +585,7 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """
           |import array.make.*;
-          |func toArray<N, E, SourceM>(seq &[#N]<SourceM>E) []E
+          |func toArray<N Int, E, SourceM Mutability>(seq &[#N]<SourceM>E) []E
           |where func clone(&E)E {
           |  return MakeArray<E>(N, &{ clone(seq[_]) });
           |}

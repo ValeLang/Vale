@@ -16,7 +16,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
       FunctionHeaderP(_,
       Some(NameP(_,StrI("main"))),
       Vector(),None,None,Some(ParamsP(_,Vector())),
-      FunctionReturnP(_,None,None)),
+      FunctionReturnP(_,None)),
       Some(BlockPE(_,VoidPE(_))))) =>
     }
   }
@@ -46,7 +46,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
     compileDenizen("func sum() int {3}").getOrDie() match {
       case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, StrI("sum"))), Vector(), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, Some(_))),
+          Some(NameP(_, StrI("sum"))), Vector(), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, Some(_))),
         Some(BlockPE(_, ConstantIntPE(_, 3, _))))) =>
     }
   }
@@ -55,7 +55,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
     compileDenizen("pure func sum() {3}").getOrDie() match {
       case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, StrI("sum"))), Vector(PureAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
+          Some(NameP(_, StrI("sum"))), Vector(PureAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None)),
         Some(BlockPE(_, ConstantIntPE(_, 3, _))))) =>
     }
   }
@@ -64,7 +64,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
     vassertOne(compileFile("extern func sum();").getOrDie().denizens) match {
       case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, StrI("sum"))), Vector(ExternAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
+          Some(NameP(_, StrI("sum"))), Vector(ExternAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None)),
         None)) =>
     }
   }
@@ -82,7 +82,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
     vassertOne(compileFile("extern(\"bork\") func sum();").getOrDie().denizens) match {
       case TopLevelFunctionP(FunctionP(_,
       FunctionHeaderP(_,
-      Some(NameP(_, StrI("sum"))), Vector(BuiltinAttributeP(_, NameP(_, StrI("bork")))), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
+      Some(NameP(_, StrI("sum"))), Vector(BuiltinAttributeP(_, NameP(_, StrI("bork")))), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None)),
       None)) =>
     }
   }
@@ -91,7 +91,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
     vassertOne(compileFile("extern func sum() int;").getOrDie().denizens) match {
       case TopLevelFunctionP(FunctionP(_,
       FunctionHeaderP(_,
-      Some(NameP(_, StrI("sum"))), Vector(ExternAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_, StrI("int")))))),
+      Some(NameP(_, StrI("sum"))), Vector(ExternAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, Some(NameOrRunePT(NameP(_, StrI("int")))))),
       None)) =>
     }
   }
@@ -100,7 +100,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
     compileDenizen("abstract func sum();").getOrDie() match {
       case TopLevelFunctionP(FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, StrI("sum"))), Vector(AbstractAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None, None)),
+          Some(NameP(_, StrI("sum"))), Vector(AbstractAttributeP(_)), None, None, Some(ParamsP(_,Vector())), FunctionReturnP(_, None)),
         None)) =>
     }
   }
@@ -113,7 +113,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
           Vector(PureAttributeP(_)),
           None,
           None, Some(ParamsP(_,Vector())),
-          FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_, StrI("int")))))),
+          FunctionReturnP(_, Some(NameOrRunePT(NameP(_, StrI("int")))))),
         Some(BlockPE(_,VoidPE(_))))) =>
     }
   }
@@ -126,7 +126,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
           Vector(AbstractAttributeP(_)),
           None,
           None, Some(ParamsP(_,Vector())),
-          FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_, StrI("Int")))))),
+          FunctionReturnP(_, Some(NameOrRunePT(NameP(_, StrI("Int")))))),
         None)) =>
     }
   }
@@ -139,7 +139,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
           Vector(AbstractAttributeP(_)),
           None,
           None, Some(ParamsP(_,Vector())),
-          FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_, StrI("Int")))))),
+          FunctionReturnP(_, Some(NameOrRunePT(NameP(_, StrI("Int")))))),
         None)) =>
     }
   }
@@ -239,7 +239,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
         FunctionHeaderP(_,
           Some(NameP(_, StrI("doCivicDance"))), Vector(), None,
           None, Some(ParamsP(_, Vector(PatternPP(_, _,Some(LocalNameDeclarationP(NameP(_, StrI("this")))), Some(NameOrRunePT(NameP(_, StrI("Car")))), None, Some(AbstractP(_)))))),
-          FunctionReturnP(_, None, Some(NameOrRunePT(NameP(_, StrI("int")))))),
+          FunctionReturnP(_, Some(NameOrRunePT(NameP(_, StrI("int")))))),
         None)) =>
     }
   }
@@ -261,7 +261,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
           FunctionHeaderP(_,
             Some(NameP(_,StrI("main"))),Vector(),None,None,
             Some(ParamsP(_,Vector(PatternPP(_,None,Some(LocalNameDeclarationP(NameP(_,StrI("moo")))),Some(NameOrRunePT(NameP(_,StrI("T")))),None,None)))),
-            FunctionReturnP(_,None,Some(NameOrRunePT(NameP(_,StrI("T")))))),
+            FunctionReturnP(_,Some(NameOrRunePT(NameP(_,StrI("T")))))),
           Some(BlockPE(_,VoidPE(_))))) =>
     }
   }
@@ -296,7 +296,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
                   Some(NameOrRunePT(NameP(_, StrI("Marine")))),
                   None,
                   Some(AbstractP(_)))))),
-          FunctionReturnP(_, None,None)),
+          FunctionReturnP(_,None)),
         Some(BlockPE(_, _))) =>
     }
   }
@@ -313,7 +313,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
       "func sum () where X Int {3}") shouldHave {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(NameP(_, StrI("sum"))), Vector(), None, Some(_), Some(_), FunctionReturnP(_, None, None)),
+          Some(NameP(_, StrI("sum"))), Vector(), None, Some(_), Some(_), FunctionReturnP(_, None)),
         Some(BlockPE(_, ConstantIntPE(_, 3, _)))) =>
     }
   }
@@ -352,7 +352,7 @@ class FunctionTests extends FunSuite with Collector with TestParseUtils {
               GenericParameterP(_, NameP(_, StrI("F")), None, Vector(), None)))),
           None,
           Some(ParamsP(_, Vector(Patterns.capturedWithTypeRune("a", "A")))),
-          FunctionReturnP(_, None, None)),
+          FunctionReturnP(_, None)),
         Some(BlockPE(_, VoidPE(_)))) =>
     }
   }

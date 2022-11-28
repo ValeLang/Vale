@@ -1542,12 +1542,12 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
     val headerP =
       iter.peek3() match {
         case (Some(CurliedLE(range, contents)), _, _) => {
-          val retuurn = FunctionReturnP(RangeL(iter.getPos(), iter.getPos()), None, None)
+          val retuurn = FunctionReturnP(RangeL(iter.getPos(), iter.getPos()), None)
           // Don't iter.advance() because we still need to parse this later
           FunctionHeaderP(range, None, Vector(), None, None, None, retuurn)
         }
         case (Some(CurliedLE(range, contents)), _, _) => {
-          val retuurn = FunctionReturnP(RangeL(iter.getPos(), iter.getPos()), None, None)
+          val retuurn = FunctionReturnP(RangeL(iter.getPos(), iter.getPos()), None)
           // Don't iter.advance() because we still need to parse this later
           FunctionHeaderP(range, None, Vector(), None, None, None, retuurn)
         }
@@ -1560,7 +1560,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
           iter.advance()
           val param = PatternPP(paramRange, None, Some(LocalNameDeclarationP(NameP(paramRange, paramName))), None, None, None)
           val params = ParamsP(paramRange, Vector(param))
-          val retuurn = FunctionReturnP(RangeL(iter.getPos(), iter.getPos()), None, None)
+          val retuurn = FunctionReturnP(RangeL(iter.getPos(), iter.getPos()), None)
           val range = RangeL(begin, iter.getPrevEndPos())
           FunctionHeaderP(range, None, Vector(), None, None, Some(params), retuurn)
         }
@@ -1582,7 +1582,7 @@ class ExpressionParser(interner: Interner, keywords: Keywords, opts: GlobalOptio
                     case Ok(x) => x
                   }
                 }).toVector)
-          val retuurn = FunctionReturnP(RangeL(iter.getPos(), iter.getPos()), None, None)
+          val retuurn = FunctionReturnP(RangeL(iter.getPos(), iter.getPos()), None)
           val range = RangeL(begin, iter.getPrevEndPos())
           FunctionHeaderP(range, None, Vector(), None, None, Some(paramsP), retuurn)
         }

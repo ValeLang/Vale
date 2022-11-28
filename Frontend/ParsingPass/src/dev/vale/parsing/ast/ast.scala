@@ -143,7 +143,6 @@ case class FunctionP(
 
 case class FunctionReturnP(
   range: RangeL,
-  inferRet: Option[RangeL],
   retType: Option[ITemplexPT]
 ) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 

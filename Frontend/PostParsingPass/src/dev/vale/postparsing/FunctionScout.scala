@@ -62,7 +62,7 @@ class FunctionScout(
   (FunctionS, VariableUses) = {
     val FunctionP(range, headerP, maybeBody0) = functionP;
     val FunctionHeaderP(_, maybeName, attrsP, maybeGenericParametersP, templateRulesP, maybeParamsP, returnP) = headerP
-    val FunctionReturnP(retRange, maybeInferRet, maybeRetType) = returnP
+    val FunctionReturnP(retRange, maybeRetType) = returnP
 
     val rangeS = PostParser.evalRange(file, range)
     val codeLocation = rangeS.begin
@@ -252,9 +252,6 @@ class FunctionScout(
               .foldLeft(firstParams)(_ ++ _))
         }
       }
-
-    // Theres no such thing as this anymore?
-    vassert(maybeInferRet.isEmpty)
 
     val maybeRetCoordRune =
       maybeRetType match {

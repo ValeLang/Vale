@@ -10,6 +10,7 @@ class Keywords(interner: Interner) {
   val borrow: StrI = interner.intern(StrI("borrow"))
   val weak: StrI = interner.intern(StrI("weak"))
   val share: StrI = interner.intern(StrI("share"))
+  val where: StrI = interner.intern(StrI("where"))
   val inl: StrI = interner.intern(StrI("inl"))
   val heap: StrI = interner.intern(StrI("heap"))
   val imm: StrI = interner.intern(StrI("imm"))

@@ -48,6 +48,7 @@ So, this doesn't work.
 
 Of course, this entire thing is silly, because whereas `X = int` is ambiguous, `X = Moo` is not, we already know Moo's type is a (Coord) -> Kind and that's never interpreted as anything else. Kinds can be interpreted as coords, but (Coord)->Kind is only ever interpreted as that.
 
+
 ## Approach C: Don't Assume Type For Kind Lookups
 
 So instead, let's say we can only not solve kind lookups' types.
@@ -56,12 +57,18 @@ We'll peek at the type beforehand. If it's not a kind lookup, then we add that t
 
 We could bake that behavior into the solver later if we want, but for now this preprocessing works nicely.
 
+
+## Conclusion
+
 **We'll go with C.**
 
 Possible future improvements:
 
  * If there's a type that we still can't figure out, perhaps try default assuming it's a Coord.
  * Maybe combine KindTemplataType and CoordTemplataType, or perhaps equivalently, only deal with CoordTemplataType in the solvers... and a coord might have a list of modifiers to it, possibly none.
+
+
+Note from later: What if, when we see a type from the outside, just assume it's a kind. Or rather, a kind generic, since everything's a generic. So if we have a `Moo<X Ref>` and we see a `Moo<Blah<int>>` still assume that Blah is a kind generic.
 
 
 # Must Forward Declare Before Rules Evaluated (MFDBRE)

@@ -12,13 +12,16 @@ import dev.vale.highertyping._
 import dev.vale.postparsing.PostParserErrorHumanizer
 import dev.vale.solver.FailedSolve
 import OverloadResolver.{Outscored, RuleTypeSolveFailure, SpecificParamDoesntMatchExactly, SpecificParamDoesntSend}
+import dev.vale.highertyping.HigherTypingPass.explicifyLookups
 import dev.vale.typing.ast.{AbstractT, FunctionBannerT, FunctionCalleeCandidate, HeaderCalleeCandidate, ICalleeCandidate, IValidCalleeCandidate, ParameterT, PrototypeT, ReferenceExpressionTE, ValidCalleeCandidate, ValidHeaderCalleeCandidate}
 import dev.vale.typing.env.{ExpressionLookupContext, FunctionEnvironmentBox, IEnvironment, IEnvironmentBox, TemplataLookupContext}
 import dev.vale.typing.templata._
 import dev.vale.typing.ast._
-import dev.vale.typing.names.{CallEnvNameT, CodeVarNameT, IdT, FunctionBoundNameT, FunctionBoundTemplateNameT, FunctionNameT, FunctionTemplateNameT}
+import dev.vale.typing.names.{CallEnvNameT, CodeVarNameT, FunctionBoundNameT, FunctionBoundTemplateNameT, FunctionNameT, FunctionTemplateNameT, IdT}
 
 import scala.collection.immutable.{Map, Set}
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 //import dev.vale.astronomer.ruletyper.{IRuleTyperEvaluatorDelegate, RuleTyperEvaluator, RuleTyperSolveFailure, RuleTyperSolveSuccess}
 //import dev.vale.postparsing.rules.{EqualsSR, TemplexSR, TypedSR}
 import dev.vale.typing.types._
@@ -263,13 +266,25 @@ class OverloadResolver(
                 case Err(e@RuneTypeSolveError(_, _)) => {
                   Err(RuleTypeSolveFailure(e))
                 }
-                case Ok(runeTypeConclusions) => {
+                case Ok(runeAToTypeWithImplicitlyCoercingLookupsS) => {
                   // rulesA is the equals rules, but rule typed. Now we'll run them through the solver to get
                   // some actual templatas.
 
+                  val runeAToType =
+                    mutable.HashMap[IRuneS, ITemplataType]((runeAToTypeWithImplicitlyCoercingLookupsS.toSeq): _*)
+                  // We've now calculated all the types of all the runes, but the LookupSR rules are still a bit
+                  // loose. We intentionally ignored the types of the things they're looking up, so we could know
+                  // what types we *expect* them to be, so we could coerce.
+                  // That coercion is good, but lets make it more explicit.
+                  val ruleBuilder = ArrayBuffer[IRulexSR]()
+                  explicifyLookups(
+                    (range, name) => vassertSome(callingEnv.lookupNearestWithImpreciseName(name, Set(TemplataLookupContext))).tyype,
+                    runeAToType, ruleBuilder, explicitTemplateArgRulesS)
+                  val rulesWithoutImplicitCoercionsA = ruleBuilder.toVector
+
                   // We preprocess out the rune parent env lookups, see MKRFA.
                   val (initialKnowns, rulesWithoutRuneParentEnvLookups) =
-                    explicitTemplateArgRulesS.foldLeft((Vector[InitialKnown](), Vector[IRulexSR]()))({
+                    rulesWithoutImplicitCoercionsA.foldLeft((Vector[InitialKnown](), Vector[IRulexSR]()))({
                       case ((previousConclusions, remainingRules), RuneParentEnvLookupSR(_, rune)) => {
                         val templata =
                           vassertSome(
@@ -292,7 +307,7 @@ class OverloadResolver(
                     InferEnv(callingEnv, callRange, declaringEnv),
                     coutputs,
                     rulesWithoutRuneParentEnvLookups,
-                    explicitTemplateArgRuneToType ++ runeTypeConclusions,
+                    explicitTemplateArgRuneToType ++ runeAToType,
                     callRange,
                     initialKnowns,
                     Vector(),
@@ -472,6 +487,12 @@ class OverloadResolver(
     exact: Boolean,
     verifyConclusions: Boolean):
   Result[IValidCalleeCandidate, FindFunctionFailure] = {
+    functionName match {
+      case CodeNameS(StrI("get")) => {
+        vpass()
+      }
+      case _ =>
+    }
     // This is here for debugging, so when we dont find something we can see what envs we searched
     val searchedEnvs = new Accumulator[SearchedEnvironment]()
     val undedupedCandidates = new Accumulator[ICalleeCandidate]()

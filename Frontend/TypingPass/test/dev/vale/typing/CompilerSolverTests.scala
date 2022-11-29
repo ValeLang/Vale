@@ -13,8 +13,8 @@ import dev.vale.Collector.ProgramWithExpect
 import dev.vale.postparsing._
 import dev.vale.solver.{FailedSolve, IncompleteSolve, RuleError, SolverConflict, Step}
 import dev.vale.typing.ast.{ConstantIntTE, FunctionCallTE, KindExportT, PrototypeT, SignatureT}
-import dev.vale.typing.infer.{ITypingPassSolverError, KindIsNotConcrete, SendingNonCitizen}
-import dev.vale.typing.names.{BuildingFunctionNameWithClosuredsT, CitizenNameT, CitizenTemplateNameT, IdT, FunctionBoundNameT, FunctionBoundTemplateNameT, FunctionNameT, FunctionTemplateNameT, InterfaceNameT, InterfaceTemplateNameT, PlaceholderNameT, PlaceholderTemplateNameT, StructNameT, StructTemplateNameT}
+import dev.vale.typing.infer.{CallResultWasntExpectedType, ITypingPassSolverError, KindIsNotConcrete, SendingNonCitizen}
+import dev.vale.typing.names.{BuildingFunctionNameWithClosuredsT, CitizenNameT, CitizenTemplateNameT, FunctionBoundNameT, FunctionBoundTemplateNameT, FunctionNameT, FunctionTemplateNameT, IdT, InterfaceNameT, InterfaceTemplateNameT, PlaceholderNameT, PlaceholderTemplateNameT, StructNameT, StructTemplateNameT}
 import dev.vale.typing.templata._
 import dev.vale.typing.ast._
 import dev.vale.typing.templata._
@@ -544,13 +544,15 @@ class CompilerSolverTests extends FunSuite with Matchers {
         |
         |struct ShipA {}
         |struct ShipB {}
-        |exported func main() where N Kind = ShipA, N Kind = ShipB {
+        |exported func main<N Kind>() where N Kind = ShipA, N Kind = ShipB {
         |}
         |""".stripMargin
     )
     compile.getCompilerOutputs() match {
       case Err(TypingPassSolverError(_, FailedCompilerSolve(_, _, SolverConflict(_, KindTemplata(StructTT(IdT(_,_,StructNameT(StructTemplateNameT(StrI("ShipA")),_)))), KindTemplata(StructTT(IdT(_,_,StructNameT(StructTemplateNameT(StrI("ShipB")),_)))))))) =>
       case Err(TypingPassSolverError(_, FailedCompilerSolve(_, _, SolverConflict(_, KindTemplata(StructTT(IdT(_,_,StructNameT(StructTemplateNameT(StrI("ShipB")),_)))), KindTemplata(StructTT(IdT(_,_,StructNameT(StructTemplateNameT(StrI("ShipA")),_)))))))) =>
+      case Err(TypingPassSolverError(_, FailedCompilerSolve(_, _, RuleError(CallResultWasntExpectedType(_,KindTemplata(StructTT(IdT(_,Vector(),StructNameT(StructTemplateNameT(StrI("ShipB")),Vector()))))))))) =>
+      case Err(TypingPassSolverError(_, FailedCompilerSolve(_, _, RuleError(CallResultWasntExpectedType(_,KindTemplata(StructTT(IdT(_,Vector(),StructNameT(StructTemplateNameT(StrI("ShipA")),Vector()))))))))) =>
       case other => vfail(other)
     }
   }

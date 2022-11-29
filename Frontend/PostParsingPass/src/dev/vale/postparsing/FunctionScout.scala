@@ -368,15 +368,23 @@ class FunctionScout(
               val closureParamName = interner.intern(ClosureParamNameS())
               val closureParamPos = PostParser.evalPos(parentStackFrame.file, range.begin)
               val closureParamRange = RangeS(closureParamPos, closureParamPos)
-              val closureStructRune = rules.RuneUsage(closureParamRange, ImplicitRuneS(lidb.child().consume()))
+
+              val closureStructKindRune = rules.RuneUsage(closureParamRange, ImplicitRuneS(lidb.child().consume()))
+              runeToExplicitType.put(closureStructKindRune.rune, KindTemplataType())
               val closureStructName =
                 interner.intern(LambdaStructDeclarationNameS(
                   funcName match { case x @ LambdaDeclarationNameS(_) => x }))
               ruleBuilder +=
-                LookupSR(closureParamRange, closureStructRune, closureStructName.getImpreciseName(interner))
+                LookupSR(closureParamRange, closureStructKindRune, closureStructName.getImpreciseName(interner))
+
+              val closureStructCoordRune = rules.RuneUsage(closureParamRange, ImplicitRuneS(lidb.child().consume()))
+              runeToExplicitType.put(closureStructCoordRune.rune, CoordTemplataType())
+              ruleBuilder +=
+                CoerceToCoordSR(closureParamRange, closureStructCoordRune, closureStructKindRune)
+
               val closureParamTypeRune =
                 rules.RuneUsage(closureParamRange, ImplicitRuneS(lidb.child().consume()))
-              ruleBuilder += AugmentSR(closureParamRange, closureParamTypeRune, BorrowP, closureStructRune)
+              ruleBuilder += AugmentSR(closureParamRange, closureParamTypeRune, BorrowP, closureStructCoordRune)
 
               val closureParamS =
                 ParameterS(

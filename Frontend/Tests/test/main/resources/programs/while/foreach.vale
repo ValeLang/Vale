@@ -2,6 +2,7 @@ import v.builtins.opt.*;
 import v.builtins.arith.*;
 import stdlib.collections.list.*;
 
+
 func range(begin int, end int) IntRange { return IntRange(begin, end); }
 struct IntRange { begin int; end int; }
 func begin(self &IntRange) IntRangeIter { return IntRangeIter(&self, self.begin); }

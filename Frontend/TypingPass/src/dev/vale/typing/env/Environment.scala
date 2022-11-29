@@ -150,6 +150,7 @@ object TemplatasStore {
           case StructDefinitionTemplata(_, _) => contexts.contains(TemplataLookupContext)
           case InterfaceDefinitionTemplata(_, _) => contexts.contains(TemplataLookupContext)
           case RuntimeSizedArrayTemplateTemplata() => contexts.contains(TemplataLookupContext)
+          case StaticSizedArrayTemplateTemplata() => contexts.contains(TemplataLookupContext)
           case BooleanTemplata(_) => true
           case FunctionTemplata(_, _) => contexts.contains(ExpressionLookupContext)
           case ImplDefinitionTemplata(_, _) => contexts.contains(ExpressionLookupContext)

@@ -165,6 +165,21 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
     main.runeToType(CodeRuneS(compilation.interner.intern(StrI("P")))) shouldEqual PackTemplataType(CoordTemplataType())
   }
 
+  test("Report type mismatch") {
+    strt here
+    // i think its happening in scout actually
+    val compilation = HigherTypingTestCompilation.test(
+      """
+        |struct Vec<N, T> where N Int
+        |{
+        |  values [#N]<imm>T;
+        |}
+        |
+      """.stripMargin)
+    val astrouts = compilation.getAstrouts().getOrDie()
+    vfail()
+  }
+
 //  test("Test cant solve empty Pack") {
 //    val compilation =
 //      AstronomerTestCompilation.test(

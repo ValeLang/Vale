@@ -25,6 +25,9 @@ case class CouldntNarrowDownCandidates(range: List[RangeS], candidates: Vector[R
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   vpass()
 }
+case class CouldntSolveRuneTypesT(range: List[RangeS], error: RuneTypeSolveError) extends ICompileErrorT {
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
+}
 case class NotEnoughGenericArgs(range: List[RangeS]) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class ImplSubCitizenNotFound(range: List[RangeS], name: IImpreciseNameS) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class ImplSuperInterfaceNotFound(range: List[RangeS], name: IImpreciseNameS) extends ICompileErrorT { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }

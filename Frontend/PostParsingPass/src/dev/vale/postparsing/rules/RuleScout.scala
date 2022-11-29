@@ -249,8 +249,8 @@ class Equivalencies(rules: IndexedSeq[IRulexSR]) {
     case LiteralSR(range, rune, literal) =>
     case LookupSR(range, rune, name) =>
     case CoerceToCoordSR(range, coordRune, kindRune) => markKindEquivalent(coordRune.rune, kindRune.rune)
-    case StaticSizedArraySR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) =>
-    case RuntimeSizedArraySR(range, resultRune, mutabilityRune, elementRune) =>
+//    case StaticSizedArraySR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) =>
+//    case RuntimeSizedArraySR(range, resultRune, mutabilityRune, elementRune) =>
     case OneOfSR(range, rune, literals) =>
     case CallSiteFuncSR(range, resultRune, nameRune, paramsListRune, returnRune) =>
     case DefinitionFuncSR(range, resultRune, name, paramsListRune, returnRune) =>

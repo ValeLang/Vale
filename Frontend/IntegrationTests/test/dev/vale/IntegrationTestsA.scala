@@ -467,7 +467,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |
-        |struct Vec<N, T> where N Int
+        |struct Vec<N Int, T>
         |{
         |  values [#N]<imm>T;
         |}

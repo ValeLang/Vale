@@ -186,30 +186,45 @@ class TemplexScout(
             }
             case StaticSizedArrayPT(range, mutability, variability, size, element) => {
               val resultRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
+              val templateRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
               ruleBuilder +=
-                StaticSizedArraySR(
+                rules.LookupSR(
+                  evalRange(range),
+                  templateRuneS,
+                  interner.intern(CodeNameS(keywords.StaticArray)))
+              ruleBuilder +=
+                CallSR(
                   evalRange(range),
                   resultRuneS,
-                  translateTemplex(env, lidb.child(), ruleBuilder, mutability),
-                  translateTemplex(env, lidb.child(), ruleBuilder, variability),
-                  translateTemplex(env, lidb.child(), ruleBuilder, size),
-                  translateTemplex(env, lidb.child(), ruleBuilder, element))
+                  templateRuneS,
+                  Vector(
+                    translateTemplex(env, lidb.child(), ruleBuilder, size),
+                    translateTemplex(env, lidb.child(), ruleBuilder, mutability),
+                    translateTemplex(env, lidb.child(), ruleBuilder, variability),
+                    translateTemplex(env, lidb.child(), ruleBuilder, element)))
               resultRuneS
             }
             case RuntimeSizedArrayPT(range, mutability, element) => {
               val resultRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
+              val templateRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
               ruleBuilder +=
-                RuntimeSizedArraySR(
+                rules.LookupSR(
+                  evalRange(range),
+                  templateRuneS,
+                  interner.intern(CodeNameS(keywords.Array)))
+              ruleBuilder +=
+                CallSR(
                   evalRange(range),
                   resultRuneS,
-                  translateTemplex(env, lidb.child(), ruleBuilder, mutability),
-                  translateTemplex(env, lidb.child(), ruleBuilder, element))
+                  templateRuneS,
+                  Vector(
+                    translateTemplex(env, lidb.child(), ruleBuilder, mutability),
+                    translateTemplex(env, lidb.child(), ruleBuilder, element)))
               resultRuneS
             }
             case TuplePT(range, elements) => {
               val resultRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
               val templateRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
-              val packRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
               ruleBuilder +=
                 rules.LookupSR(
                   evalRange(range),

@@ -85,7 +85,7 @@ class PostParserTests extends FunSuite with Matchers with Collector {
     val CodeBodyS(BodySE(_, _, BlockSE(_, _, expr))) = program1.lookupFunction("main").body
     val lambda =
       Collector.only(expr, {
-        case ReturnSE(_, FunctionCallSE(_, OwnershippedSE(_, FunctionSE(lambda@FunctionS(_, _, _, _, _, _, _, _, _)), LoadAsBorrowP), _)) => lambda
+        case ReturnSE(_, FunctionCallSE(_, OwnershippedSE(_, FunctionSE(lambda@FunctionS(_, _, _, _, _, _, _, _, _, _)), LoadAsBorrowP), _)) => lambda
       })
     // See: Lambdas Dont Need Explicit Identifying Runes (LDNEIR)
     lambda.genericParams match {
@@ -502,6 +502,19 @@ class PostParserTests extends FunSuite with Matchers with Collector {
         |}
         """.stripMargin) match {
       case StatementAfterReturnS(_) =>
+    }
+  }
+
+  test("Report type mismatch") {
+    compileForError(
+      """
+        |struct Vec<N, T> where N Int
+        |{
+        |  values [#N]<imm>T;
+        |}
+        |
+      """.stripMargin) match {
+      case RuneExplicitTypeConflictS(_, CodeRuneS(StrI("N")), _) =>
     }
   }
 }

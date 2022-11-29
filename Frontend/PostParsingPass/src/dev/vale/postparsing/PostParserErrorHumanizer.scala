@@ -16,6 +16,7 @@ object PostParserErrorHumanizer {
   String = {
     val errorStrBody =
       (err match {
+        case RuneExplicitTypeConflictS(range, rune, types) => "Too many explicit types for rune " + humanizeRune(rune) + ": " + types.map(humanizeTemplataType).mkString(", ")
         case RangedInternalErrorS(range, message) => " " + message
         case UnknownRuleFunctionS(range, name) => ": Unknown rule function name: "+ name
         case UnimplementedExpression(range, expressionName) => s": ${expressionName} not supported yet.\n"

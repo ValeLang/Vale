@@ -20,7 +20,7 @@ class RuleScout(interner: Interner, keywords: Keywords, templexScout: TemplexSco
     env: IEnvironmentS,
     lidb: LocationInDenizenBuilder,
     builder: ArrayBuffer[IRulexSR],
-    runeToExplicitType: mutable.HashMap[IRuneS, ITemplataType],
+    runeToExplicitType: mutable.ArrayBuffer[(IRuneS, ITemplataType)],
     rulesP: Vector[IRulexPR]):
   Vector[RuneUsage] = {
     rulesP.map(translateRulex(env, lidb.child(), builder, runeToExplicitType, _))
@@ -30,7 +30,7 @@ class RuleScout(interner: Interner, keywords: Keywords, templexScout: TemplexSco
     env: IEnvironmentS,
     lidb: LocationInDenizenBuilder,
     builder: ArrayBuffer[IRulexSR],
-    runeToExplicitType: mutable.HashMap[IRuneS, ITemplataType],
+    runeToExplicitType: mutable.ArrayBuffer[(IRuneS, ITemplataType)],
     rulex: IRulexPR):
   RuneUsage = {
     val evalRange = (range: RangeL) => PostParser.evalRange(env.file, range)
@@ -65,7 +65,7 @@ class RuleScout(interner: Interner, keywords: Keywords, templexScout: TemplexSco
       }
       case ComponentsPR(range, tyype, componentsP) => {
         val rune = RuneUsage(PostParser.evalRange(env.file, range), ImplicitRuneS(lidb.child().consume()))
-        runeToExplicitType.put(rune.rune, translateType(tyype))
+        runeToExplicitType += ((rune.rune, translateType(tyype)))
         tyype match {
           case CoordTypePR => {
             if (componentsP.size != 2) {
@@ -113,12 +113,12 @@ class RuleScout(interner: Interner, keywords: Keywords, templexScout: TemplexSco
       }
       case TypedPR(range, None, tyype) => {
         val rune = ImplicitRuneS(lidb.child().consume())
-        runeToExplicitType.put(rune, translateType(tyype))
+        runeToExplicitType += ((rune, translateType(tyype)))
         rules.RuneUsage(evalRange(range), rune)
       }
       case TypedPR(range, Some(NameP(_, runeName)), tyype) => {
         val rune = CodeRuneS(runeName)
-        runeToExplicitType.put(rune, translateType(tyype))
+        runeToExplicitType += ((rune, translateType(tyype)))
         rules.RuneUsage(evalRange(range), rune)
       }
       case TemplexPR(templex) => templexScout.translateTemplex(env, lidb.child(), builder, templex)
@@ -130,19 +130,19 @@ class RuleScout(interner: Interner, keywords: Keywords, templexScout: TemplexSco
   //        val resultRune = ImplicitRuneS(lidb.child().consume())
           builder += IsInterfaceSR(evalRange(range), argRune)
   //        runeToExplicitType.put(resultRune, KindTemplataType())
-          runeToExplicitType.put(argRune.rune, KindTemplataType())
+          runeToExplicitType += ((argRune.rune, KindTemplataType()))
 
           rules.RuneUsage(evalRange(range), argRune.rune)
         } else if (name.str == keywords.IMPLEMENTS) {
           vassert(args.length == 2)
           val Vector(structRule, interfaceRule) = args
           val structRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, structRule)
-          runeToExplicitType.put(structRune.rune, CoordTemplataType())
+          runeToExplicitType += ((structRune.rune, CoordTemplataType()))
           val interfaceRune = translateRulex(env, lidb.child(), builder, runeToExplicitType, interfaceRule)
-          runeToExplicitType.put(interfaceRune.rune, CoordTemplataType())
+          runeToExplicitType += ((interfaceRune.rune, CoordTemplataType()))
 
           val resultRuneS = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
-          runeToExplicitType.put(resultRuneS.rune, ImplTemplataType())
+          runeToExplicitType += ((resultRuneS.rune, ImplTemplataType()))
 
           // Only appears in definition; filtered out when solving call site
           builder += rules.DefinitionCoordIsaSR(evalRange(range), resultRuneS, structRune, interfaceRune)
@@ -156,8 +156,8 @@ class RuleScout(interner: Interner, keywords: Keywords, templexScout: TemplexSco
 
           val resultRune = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
           builder += RefListCompoundMutabilitySR(evalRange(range), resultRune, argRune)
-          runeToExplicitType.put(resultRune.rune, MutabilityTemplataType())
-          runeToExplicitType.put(argRune.rune, PackTemplataType(CoordTemplataType()))
+          runeToExplicitType += ((resultRune.rune, MutabilityTemplataType()))
+          runeToExplicitType += ((argRune.rune, PackTemplataType(CoordTemplataType())))
 
           rules.RuneUsage(evalRange(range), resultRune.rune)
         } else if (name.str == keywords.Refs) {
@@ -168,7 +168,7 @@ class RuleScout(interner: Interner, keywords: Keywords, templexScout: TemplexSco
 
           val resultRune = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
           builder += rules.PackSR(evalRange(range), resultRune, argRunes.toVector)
-          runeToExplicitType.put(resultRune.rune, PackTemplataType(CoordTemplataType()))
+          runeToExplicitType += ((resultRune.rune, PackTemplataType(CoordTemplataType())))
 
           rules.RuneUsage(evalRange(range), resultRune.rune)
         } else if (name.str == keywords.ANY) {
@@ -181,7 +181,7 @@ class RuleScout(interner: Interner, keywords: Keywords, templexScout: TemplexSco
 
           val resultRune = rules.RuneUsage(evalRange(range), ImplicitRuneS(lidb.child().consume()))
           builder += rules.OneOfSR(evalRange(range), resultRune, literals)
-          runeToExplicitType.put(resultRune.rune, vassertOne(literals.map(_.getType()).distinct))
+          runeToExplicitType += ((resultRune.rune, vassertOne(literals.map(_.getType()).distinct)))
 
           rules.RuneUsage(evalRange(range), resultRune.rune)
         } else {

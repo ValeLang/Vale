@@ -34,7 +34,7 @@ class PatternScout(
       stackFrame: StackFrame,
       lidb: LocationInDenizenBuilder,
       ruleBuilder: ArrayBuffer[IRulexSR],
-      runeToExplicitType: mutable.HashMap[IRuneS, ITemplataType],
+      runeToExplicitType: mutable.ArrayBuffer[(IRuneS, ITemplataType)],
       params: Vector[PatternPP]):
   Vector[AtomSP] = {
     params.map(
@@ -49,7 +49,7 @@ class PatternScout(
     stackFrame: StackFrame,
     lidb: LocationInDenizenBuilder,
     ruleBuilder: ArrayBuffer[IRulexSR],
-    runeToExplicitType: mutable.HashMap[IRuneS, ITemplataType],
+    runeToExplicitType: mutable.ArrayBuffer[(IRuneS, ITemplataType)],
     patternPP: PatternPP):
   AtomSP = {
     val PatternPP(range,_,maybeCaptureP, maybeTypeP, maybeDestructureP, maybeAbstractP) = patternPP
@@ -71,7 +71,7 @@ class PatternScout(
             PostParser.evalRange(stackFrame.file, range),
             ruleBuilder,
             maybeTypeP)
-        runeToExplicitType.put(runeS.rune, CoordTemplataType())
+        runeToExplicitType += ((runeS.rune, CoordTemplataType()))
         runeS
       })
 

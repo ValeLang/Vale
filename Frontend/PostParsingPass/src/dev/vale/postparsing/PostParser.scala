@@ -4,7 +4,7 @@ package dev.vale.postparsing
 import dev.vale.options.GlobalOptions
 import dev.vale.postparsing.patterns.PatternScout
 import dev.vale.postparsing.rules.{IRulexSR, LiteralSR, MutabilityLiteralSL, RuleScout, RuneUsage, TemplexScout}
-import dev.vale.{Accumulator, CodeLocationS, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Keywords, Ok, PackageCoordinate, Profiler, RangeS, Result, postparsing, vassert, vcurious, vfail, vimpl, vpass, vwat}
+import dev.vale.{Accumulator, CodeLocationS, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, Interner, Keywords, Ok, PackageCoordinate, Profiler, RangeS, Result, postparsing, vassert, vassertOne, vcurious, vfail, vimpl, vpass, vwat}
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
 import PostParser.determineDenizenType
@@ -43,6 +43,7 @@ case class InterfaceMethodNeedsSelf(range: RangeS) extends ICompileErrorS {
 }
 case class VirtualAndAbstractGoTogether(range: RangeS) extends ICompileErrorS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class CouldntSolveRulesS(range: RangeS, error: RuneTypeSolveError) extends ICompileErrorS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class RuneExplicitTypeConflictS(range: RangeS, rune: IRuneS, types: Vector[ITemplataType]) extends ICompileErrorS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class IdentifyingRunesIncompleteS(range: RangeS, error: IdentifiabilitySolveError) extends ICompileErrorS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 case class RangedInternalErrorS(range: RangeS, message: String) extends ICompileErrorS { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
@@ -233,7 +234,7 @@ object PostParser {
       templexScout: TemplexScout,
       env: IEnvironmentS,
       lidb: LocationInDenizenBuilder,
-      runeToExplicitType: mutable.HashMap[IRuneS, ITemplataType],
+      runeToExplicitType: mutable.ArrayBuffer[(IRuneS, ITemplataType)],
       ruleBuilder: ArrayBuffer[IRulexSR],
       genericParamP: GenericParameterP,
       paramRuneS: RuneUsage):
@@ -247,7 +248,7 @@ object PostParser {
         case None => CoordTemplataType()
         case Some(typeP) => RuleScout.translateType(typeP.tyype)
       }
-    runeToExplicitType.put(runeS.rune, typeS)
+    runeToExplicitType += ((runeS.rune, typeS))
 
     val attributesS =
       attributesP.flatMap({
@@ -351,7 +352,7 @@ class PostParser(
 
     val lidb = new LocationInDenizenBuilder(Vector())
     val ruleBuilder = ArrayBuffer[IRulexSR]()
-    val runeToExplicitType = mutable.HashMap[IRuneS, ITemplataType]()
+    val runeToExplicitType = mutable.ArrayBuffer[(IRuneS, ITemplataType)]()
 
     val genericParametersP =
       maybeGenericParametersP
@@ -493,7 +494,7 @@ class PostParser(
     val structEnv = postparsing.EnvironmentS(file, None, structName, userDeclaredRunes.map(_.rune).toSet)
 
     val headerRuleBuilder = ArrayBuffer[IRulexSR]()
-    val headerRuneToExplicitType = mutable.HashMap[IRuneS, ITemplataType]()
+    val headerRuneToExplicitType = mutable.ArrayBuffer[(IRuneS, ITemplataType)]()
 
     val genericParametersS =
       genericParametersP.zip(userSpecifiedIdentifyingRunes)
@@ -509,7 +510,7 @@ class PostParser(
     val mutability =
       mutabilityPT.getOrElse(MutabilityPT(RangeL(bodyRange.begin, bodyRange.begin), MutableP))
     val mutabilityRuneS = templexScout.translateTemplex(structEnv, lidb.child(), headerRuleBuilder, mutability)
-    headerRuneToExplicitType.put(mutabilityRuneS.rune, MutabilityTemplataType())
+    headerRuneToExplicitType += ((mutabilityRuneS.rune, MutabilityTemplataType()))
 
     val membersS =
       members.flatMap({
@@ -535,7 +536,7 @@ class PostParser(
     val allRulesS = headerRulesS ++ memberRulesS
     val allRuneToExplicitType = headerRuneToExplicitType ++ membersRuneToExplicitType
 
-    val runeToPredictedType = predictRuneTypes(structRangeS, userSpecifiedIdentifyingRunes.map(_.rune), allRuneToExplicitType.toMap, allRulesS)
+    val runeToPredictedType = predictRuneTypes(structRangeS, userSpecifiedIdentifyingRunes.map(_.rune), allRuneToExplicitType, allRulesS)
 
     val predictedMutability = predictMutability(structRangeS, mutabilityRuneS.rune, allRulesS)
 
@@ -581,10 +582,22 @@ class PostParser(
   def predictRuneTypes(
     rangeS: RangeS,
     identifyingRunesS: Vector[IRuneS],
-    runeToExplicitType: Map[IRuneS, ITemplataType],
+    runeToExplicitTypeArray: mutable.ArrayBuffer[(IRuneS, ITemplataType)],
     rulesS: Vector[IRulexSR]):
   Map[IRuneS, ITemplataType] = {
     Profiler.frame(() => {
+      val runeToExplicitType =
+        runeToExplicitTypeArray
+          .toVector
+          .groupBy(_._1)
+          .mapValues(_.map(_._2))
+          .mapValues(_.distinct)
+          .map({ case (rune, explicitTypes) =>
+            if (explicitTypes.size > 1) {
+              throw CompileErrorExceptionS(RuneExplicitTypeConflictS(rangeS, rune, explicitTypes))
+            }
+            (rune, vassertOne(explicitTypes))
+          })
       val runeSToLocallyPredictedTypes =
         new RuneTypeSolver(interner).solve(
           globalOptions.sanityCheck,
@@ -614,8 +627,6 @@ class PostParser(
     }
   }
 
-
-
   private def scoutInterface(
     file: FileCoordinate,
     containingInterfaceP: InterfaceP):
@@ -628,7 +639,8 @@ class PostParser(
     val lidb = new LocationInDenizenBuilder(Vector())
 
     val ruleBuilder = ArrayBuffer[IRulexSR]()
-    val runeToExplicitType = mutable.HashMap[IRuneS, ITemplataType]()
+    // This is an array instead of a map so we can detect conflicts afterward
+    val runeToExplicitType = mutable.ArrayBuffer[(IRuneS, ITemplataType)]()
 
     val genericParametersP =
       maybeGenericParametersP
@@ -667,7 +679,7 @@ class PostParser(
 
     val rulesS = ruleBuilder.toVector
 
-    val runeToPredictedType = predictRuneTypes(interfaceRangeS, userDeclaredRunes, Map(), rulesS)
+    val runeToPredictedType = predictRuneTypes(interfaceRangeS, userDeclaredRunes, mutable.ArrayBuffer(), rulesS)
 
     val predictedMutability = predictMutability(interfaceRangeS, mutabilityRuneS.rune, rulesS)
 

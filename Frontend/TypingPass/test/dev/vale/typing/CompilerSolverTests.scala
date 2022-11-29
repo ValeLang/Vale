@@ -565,7 +565,7 @@ class CompilerSolverTests extends FunSuite with Matchers {
         |struct SomeStruct<T>
         |{ x T; }
         |
-        |func bork<X, Z>() Z
+        |func bork<X Kind, Z>() Z
         |where X Kind = SomeStruct<int>, X = SomeStruct<Z> {
         |  return 9;
         |}

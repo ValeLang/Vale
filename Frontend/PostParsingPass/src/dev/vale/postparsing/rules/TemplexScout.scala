@@ -295,7 +295,7 @@ class TemplexScout(
     lidb: LocationInDenizenBuilder,
     range: RangeS,
     ruleBuilder: ArrayBuffer[IRulexSR],
-    runeToExplicitType: mutable.HashMap[IRuneS, ITemplataType],
+    runeToExplicitType: mutable.ArrayBuffer[(IRuneS, ITemplataType)],
     maybeTypeP: Option[ITemplexPT]):
   Option[RuneUsage] = {
     if (maybeTypeP.isEmpty) {

@@ -34,7 +34,7 @@ class RuneTypeSolver(interner: Interner) {
         case IsConcreteSR(range, rune) => Vector(rune)
         case IsInterfaceSR(range, rune) => Vector(rune)
         case IsStructSR(range, rune) => Vector(rune)
-//        case CoerceToCoordSR(range, coordRune, kindRune) => Vector(coordRune, kindRune)
+        case CoerceToCoordSR(range, coordRune, kindRune) => Vector(coordRune, kindRune)
         case LiteralSR(range, rune, literal) => Vector(rune)
         case AugmentSR(range, resultRune, ownership, innerRune) => Vector(resultRune, innerRune)
         case CallSR(range, resultRune, templateRune, args) => Vector(resultRune, templateRune) ++ args
@@ -96,7 +96,7 @@ class RuneTypeSolver(interner: Interner) {
       case IsConcreteSR(range, rune) => Vector(Vector(rune.rune))
       case IsInterfaceSR(range, rune) => Vector(Vector())
       case IsStructSR(range, rune) => Vector(Vector())
-//      case CoerceToCoordSR(range, coordRune, kindRune) => Vector(Vector())
+      case CoerceToCoordSR(range, coordRune, kindRune) => Vector(Vector())
       case LiteralSR(range, rune, literal) => Vector(Vector())
       case AugmentSR(range, resultRune, ownership, innerRune) => Vector(Vector())
       case StaticSizedArraySR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Vector(Vector(resultRune.rune))
@@ -214,11 +214,11 @@ class RuneTypeSolver(interner: Interner) {
         stepState.concludeRune(List(range), coordListRune.rune, PackTemplataType(CoordTemplataType()))
         Ok(())
       }
-//      case CoerceToCoordSR(range, coordRune, kindRune) => {
-//        stepState.concludeRune(List(range), kindRune.rune, KindTemplataType())
-//        stepState.concludeRune(List(range), coordRune.rune, CoordTemplataType())
-//        Ok(())
-//      }
+      case CoerceToCoordSR(range, coordRune, kindRune) => {
+        stepState.concludeRune(List(range), kindRune.rune, KindTemplataType())
+        stepState.concludeRune(List(range), coordRune.rune, CoordTemplataType())
+        Ok(())
+      }
       case LiteralSR(range, rune, literal) => {
         stepState.concludeRune(List(range), rune.rune, literal.getType())
         Ok(())

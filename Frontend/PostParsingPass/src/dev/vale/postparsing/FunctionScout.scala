@@ -469,6 +469,8 @@ class FunctionScout(
       genericParametersS.map(_.rune.rune),
       rulesArray)
 
+    val tyype = TemplateTemplataType(genericParametersS.map(_.tyype), FunctionTemplataType())
+
     val functionS =
       FunctionS(
         PostParser.evalRange(file, range),
@@ -476,6 +478,7 @@ class FunctionScout(
         funcAttrsS,
         genericParametersS,
         runeToPredictedType,
+        tyype,
         totalParamsS,
         maybeRetCoordRune,
         rulesArray,

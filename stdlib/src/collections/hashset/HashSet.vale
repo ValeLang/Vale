@@ -46,7 +46,7 @@ where func(&H, K)int, func(&E, K, K)bool, func drop(K)void {
       0)
 }
 
-func HashSet<K Ref imm, H, E, M, N>(
+func HashSet<K Ref imm, H, E, M Mutability, N Int>(
   valuesKSA &[#N]<M>K,
   hasher H,
   equator E)
@@ -61,7 +61,7 @@ where func(&H, K)int, func(&E, K, K)bool, func drop(K)void {
   return this;
 }
 
-func HashSet<K Ref imm, H, E, M>(
+func HashSet<K Ref imm, H, E, M Mutability>(
   valuesArray &[]<M>K,
   hasher H,
   equator E)

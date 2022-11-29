@@ -1508,6 +1508,7 @@ class CompilerTests extends FunSuite with Matchers {
     main.header.params.head.tyype.kind match { case contentsRuntimeSizedArrayTT(MutabilityTemplata(ImmutableT), _) => }
   }
 
+
   test("Tests calling an abstract function") {
     val compile = CompilerTestCompilation.test(
       Tests.loadExpected("programs/genericvirtuals/callingAbstract.vale"))

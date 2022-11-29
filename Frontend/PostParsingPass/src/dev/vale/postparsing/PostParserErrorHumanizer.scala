@@ -123,6 +123,7 @@ object PostParserErrorHumanizer {
       case SelfKindTemplateRuneS() => "(self kind template)"
       case PatternInputRuneS(codeLoc) => "(pattern input " + codeLoc + ")"
       case SelfRuneS() => "(self)"
+      case SelfCoordRuneS() => "(self ref)"
       case ReturnRuneS() => "(ret)"
       case AnonymousSubstructParentInterfaceTemplateRuneS() => "(anon sub parent interface)"
       case ImplDropVoidRuneS() => "(impl drop void)"

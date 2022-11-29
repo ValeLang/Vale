@@ -281,7 +281,6 @@ exported func main() int {
     suite.StartTest(42, "ifnevers", samples_path./("programs/if/ifnevers.vale"), &List<str>(), region, false);
     suite.StartTest(42, "mutlocal", samples_path./("programs/mutlocal.vale"), &List<str>(), region, false);
     suite.StartTest(42, "while", samples_path./("programs/while/while.vale"), &List<str>(), region, false);
-    suite.StartTest(10, "foreach", samples_path./("programs/while/foreach.vale"), &List<str>(), region, false);
     suite.StartTest(8, "constraintRef", samples_path./("programs/constraintRef.vale"), &List<str>(), region, false);
     suite.StartTest(42, "ssamutfromcallable", samples_path./("programs/arrays/ssamutfromcallable.vale"), &List<str>(), region, false);
     suite.StartTest(42, "ssamutfromvalues", samples_path./("programs/arrays/ssamutfromvalues.vale"), &List<str>(), region, false);
@@ -333,6 +332,7 @@ exported func main() int {
 
   if (include_regions.exists({ _ == "resilient-v3" })) {
     region = "resilient-v3";
+    suite.StartTest(10, "foreach", samples_path./("programs/while/foreach.vale"), &List<str>(), region, true);
     suite.StartTest(0, "stdlib_list", stdlib_dir./("src/collections/list/test"), &List<str>(), region, true);
     suite.StartTest(0, "stdlib_hashset", stdlib_dir./("src/collections/hashset/test"), &List<str>(), region, true);
     suite.StartTest(0, "stdlib_hashmap", stdlib_dir./("src/collections/hashmap/test"), &List<str>(), region, true);

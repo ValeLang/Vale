@@ -12,8 +12,8 @@ import dev.vale.typing.citizen.{IResolveOutcome, IsParent, IsParentResult, IsntP
 import dev.vale.typing.env.{CitizenEnvironment, EnvironmentHelper, GeneralEnvironment, GlobalEnvironment, IEnvEntry, IEnvironment, ILookupContext, IVariableT, TemplataEnvEntry, TemplataLookupContext, TemplatasStore}
 import dev.vale.typing.function.FunctionCompiler.EvaluateFunctionSuccess
 import dev.vale.typing.infer.{CompilerSolver, CouldntFindFunction, CouldntFindImpl, CouldntResolveKind, IInfererDelegate, ITypingPassSolverError, ReturnTypeConflict}
-import dev.vale.typing.names.{BuildingFunctionNameWithClosuredsT, IdT, IImplNameT, INameT, ITemplateNameT, ImplNameT, NameTranslator, ReachablePrototypeNameT, ResolvingEnvNameT, RuneNameT}
-import dev.vale.typing.templata.{CoordListTemplata, CoordTemplata, ITemplata, InterfaceDefinitionTemplata, KindTemplata, PrototypeTemplata, RuntimeSizedArrayTemplateTemplata, StructDefinitionTemplata}
+import dev.vale.typing.names.{BuildingFunctionNameWithClosuredsT, IImplNameT, INameT, ITemplateNameT, IdT, ImplNameT, NameTranslator, ReachablePrototypeNameT, ResolvingEnvNameT, RuneNameT}
+import dev.vale.typing.templata.{CoordListTemplata, CoordTemplata, ITemplata, InterfaceDefinitionTemplata, KindTemplata, PrototypeTemplata, RuntimeSizedArrayTemplateTemplata, StaticSizedArrayTemplateTemplata, StructDefinitionTemplata}
 import dev.vale.typing.types.{CoordT, ICitizenTT, ISubKindTT, ISuperKindTT, InterfaceTT, KindT, RuntimeSizedArrayTT, StaticSizedArrayTT, StructTT}
 
 import scala.collection.immutable.{List, Set}
@@ -477,6 +477,14 @@ class InferCompiler(
         val Vector(m, CoordTemplata(coord)) = args
         val mutability = ITemplata.expectMutability(m)
         delegate.resolveRuntimeSizedArrayKind(state, coord, mutability)
+        Ok(())
+      }
+      case StaticSizedArrayTemplateTemplata() => {
+        val Vector(s, m, v, CoordTemplata(coord)) = args
+        val size = ITemplata.expectInteger(s)
+        val mutability = ITemplata.expectMutability(m)
+        val variability = ITemplata.expectVariability(v)
+        delegate.resolveStaticSizedArrayKind(state, mutability, variability, size, coord)
         Ok(())
       }
       case it @ StructDefinitionTemplata(_, _) => {

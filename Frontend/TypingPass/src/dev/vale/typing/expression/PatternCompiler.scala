@@ -1,5 +1,6 @@
 package dev.vale.typing.expression
 
+import dev.vale.highertyping.HigherTypingPass.explicifyLookups
 import dev.vale.parsing.ast.LoadAsBorrowP
 import dev.vale.postparsing._
 import dev.vale.{Interner, Keywords, Profiler, RangeS, vassert, vassertSome, vfail, vimpl}
@@ -23,6 +24,8 @@ import dev.vale.typing._
 import dev.vale.typing.ast._
 
 import scala.collection.immutable.{List, Set}
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 class PatternCompiler(
     opts: TypingPassOptions,
@@ -100,8 +103,8 @@ class PatternCompiler(
     nenv: NodeEnvironmentBox,
     life: LocationInFunctionEnvironment,
     parentRanges: List[RangeS],
-    rules: Vector[IRulexSR],
-    runeToType: Map[IRuneS, ITemplataType],
+    rulesWithImplicitlyCoercingLookupsS: Vector[IRulexSR],
+    runeAToTypeWithImplicitlyCoercingLookupsS: Map[IRuneS, ITemplataType],
     pattern: AtomSP,
     unconvertedInputExpr: ReferenceExpressionTE,
     // This would be a continuation-ish lambda that evaluates:
@@ -121,12 +124,24 @@ class PatternCompiler(
             unconvertedInputExpr
           }
           case Some(receiverRune) => {
+            val runeAToType =
+              mutable.HashMap[IRuneS, ITemplataType]((runeAToTypeWithImplicitlyCoercingLookupsS.toSeq): _*)
+            // We've now calculated all the types of all the runes, but the LookupSR rules are still a bit
+            // loose. We intentionally ignored the types of the things they're looking up, so we could know
+            // what types we *expect* them to be, so we could coerce.
+            // That coercion is good, but lets make it more explicit.
+            val ruleBuilder = ArrayBuffer[IRulexSR]()
+            explicifyLookups(
+              (range, name) => vassertSome(nenv.lookupNearestWithImpreciseName(name, Set(TemplataLookupContext))).tyype,
+              runeAToType, ruleBuilder, rulesWithImplicitlyCoercingLookupsS)
+            val rulesA = ruleBuilder.toVector
+
             val CompleteCompilerSolve(_, templatasByRune, _, Vector()) =
               inferCompiler.solveExpectComplete(
                 InferEnv(nenv.snapshot, parentRanges, nenv.snapshot),
                 coutputs,
-                rules,
-                runeToType,
+                rulesA,
+                runeAToType.toMap,
                 pattern.range :: parentRanges,
                 Vector(),
                 Vector(
@@ -137,6 +152,7 @@ class PatternCompiler(
                 true,
                 true,
                 Vector())
+
             nenv.addEntries(
               interner,
               templatasByRune.toVector

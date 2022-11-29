@@ -6,7 +6,10 @@ import dev.vale.postparsing._
 import dev.vale.postparsing.RuneTypeSolveError
 import dev.vale.RangeS
 
-case class CompileErrorExceptionA(err: ICompileErrorA) extends RuntimeException { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
+case class CompileErrorExceptionA(err: ICompileErrorA) extends RuntimeException {
+  vpass()
+  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
+}
 
 sealed trait ICompileErrorA { def range: RangeS }
 case class CouldntFindTypeA(range: RangeS, name: IImpreciseNameS) extends ICompileErrorA {

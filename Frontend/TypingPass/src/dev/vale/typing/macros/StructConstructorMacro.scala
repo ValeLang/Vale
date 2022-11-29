@@ -2,19 +2,18 @@ package dev.vale.typing.macros
 
 import dev.vale.highertyping.{FunctionA, StructA}
 import dev.vale.postparsing.patterns.{AtomSP, CaptureS}
-import dev.vale.postparsing.rules.{CallSR, IRulexSR, LookupSR, RuneUsage}
+import dev.vale.postparsing.rules.{CallSR, CoerceToCoordSR, IRulexSR, LookupSR, RuneUsage}
 import dev.vale.postparsing._
-import dev.vale.typing.{ArrayCompiler, CompileErrorExceptionT, CompilerOutputs, CouldntFindFunctionToCallT, OverloadResolver, TemplataCompiler, InheritBoundsFromTypeItself, TypingPassOptions, UseBoundsFromContainer, ast}
-import dev.vale.typing.ast.{ArgLookupTE, BlockTE, ConstructTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironment, ParameterT, ReturnTE}
+import dev.vale.typing.{ArrayCompiler, CompileErrorExceptionT, CompilerOutputs, CouldntFindFunctionToCallT, InheritBoundsFromTypeItself, OverloadResolver, TemplataCompiler, TypingPassOptions, UseBoundsFromContainer, ast}
+import dev.vale.typing.ast.{ArgLookupTE, BlockTE, ConstructTE, FunctionDefinitionT, FunctionHeaderT, LocationInFunctionEnvironment, ParameterT, ReturnTE}
 import dev.vale.typing.citizen.StructCompiler
 import dev.vale.typing.env.{FunctionEnvEntry, FunctionEnvironment}
-import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, IdT, FunctionNameT, ICitizenNameT, ICitizenTemplateNameT, IFunctionNameT, IFunctionTemplateNameT, INameT, ITemplateNameT, NameTranslator, PlaceholderNameT}
+import dev.vale.typing.names.{CitizenNameT, CitizenTemplateNameT, FunctionNameT, ICitizenNameT, ICitizenTemplateNameT, IFunctionNameT, IFunctionTemplateNameT, INameT, ITemplateNameT, IdT, NameTranslator, PlaceholderNameT}
 import dev.vale.{Err, Interner, Keywords, Ok, PackageCoordinate, Profiler, RangeS, StrI, vassert, vassertSome, vcurious, vimpl}
 import dev.vale.typing.types._
 import dev.vale.highertyping.FunctionA
 import dev.vale.postparsing.ConstructorNameS
 import dev.vale.postparsing.patterns.AtomSP
-import dev.vale.postparsing.rules.CallSR
 import dev.vale.typing.OverloadResolver.FindFunctionFailure
 import dev.vale.typing.ast._
 import dev.vale.typing.env.PackageEnvironment
@@ -68,13 +67,17 @@ class StructConstructorMacro(
     runeToType += (retRune.rune -> CoordTemplataType())
     val structNameRange = structA.name.range
     if (structA.isTemplate) {
-      val structNameRune = StructNameRuneS(structA.name)
-      runeToType += (structNameRune -> structA.tyype)
-      rules += LookupSR(structNameRange, RuneUsage(structNameRange, structNameRune), structA.name.getImpreciseName(interner))
-      strt here
-      // add a coercetocoord.
-      rules += CallSR(structNameRange, retRune, RuneUsage(structNameRange, structNameRune), structA.genericParameters.map(_.rune).toVector)
+      val structGenericRune = StructNameRuneS(structA.name)
+      runeToType += (structGenericRune -> structA.tyype)
+      rules += LookupSR(structNameRange, RuneUsage(structNameRange, structGenericRune), structA.name.getImpreciseName(interner))
+
+      val structKindRune = RuneUsage(structNameRange, ImplicitCoercionKindRuneS(structNameRange, structGenericRune))
+      runeToType += (structKindRune.rune -> KindTemplataType())
+      rules += CallSR(structNameRange, structKindRune, RuneUsage(structNameRange, structGenericRune), structA.genericParameters.map(_.rune).toVector)
+
+      rules += CoerceToCoordSR(structNameRange, retRune, structKindRune)
     } else {
+      vcurious()
       rules += LookupSR(structNameRange, retRune, structA.name.getImpreciseName(interner))
     }
 

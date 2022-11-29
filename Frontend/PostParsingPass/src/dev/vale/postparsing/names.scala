@@ -156,8 +156,12 @@ case class SelfRuneS() extends IRuneS {  }
 case class SelfOwnershipRuneS() extends IRuneS {  }
 case class SelfKindRuneS() extends IRuneS {  }
 case class SelfKindTemplateRuneS() extends IRuneS {  }
-case class MacroVoidRuneS() extends IRuneS {  }
-case class MacroSelfRuneS() extends IRuneS {  }
+case class SelfCoordRuneS() extends IRuneS {  }
+case class MacroVoidKindRuneS() extends IRuneS {  }
+case class MacroVoidCoordRuneS() extends IRuneS {  }
+case class MacroSelfKindRuneS() extends IRuneS {  }
+case class MacroSelfKindTemplateRuneS() extends IRuneS {  }
+case class MacroSelfCoordRuneS() extends IRuneS {  }
 case class CodeNameS(name: StrI) extends IImpreciseNameS {
   vpass()
   vassert(name.str != "_")
@@ -171,11 +175,13 @@ case class ArgumentRuneS(argIndex: Int) extends IRuneS {  }
 case class PatternInputRuneS(codeLoc: CodeLocationS) extends IRuneS {  }
 case class ExplicitTemplateArgRuneS(index: Int) extends IRuneS {  }
 case class AnonymousSubstructParentInterfaceTemplateRuneS() extends IRuneS {  }
-case class AnonymousSubstructParentInterfaceRuneS() extends IRuneS {  }
+case class AnonymousSubstructParentInterfaceKindRuneS() extends IRuneS {  }
+case class AnonymousSubstructParentInterfaceCoordRuneS() extends IRuneS {  }
 case class AnonymousSubstructTemplateRuneS() extends IRuneS {  }
-case class AnonymousSubstructRuneS() extends IRuneS {  }
+case class AnonymousSubstructKindRuneS() extends IRuneS {  }
 case class AnonymousSubstructCoordRuneS() extends IRuneS {  }
-case class AnonymousSubstructVoidRuneS() extends IRuneS {  }
+case class AnonymousSubstructVoidKindRuneS() extends IRuneS {  }
+case class AnonymousSubstructVoidCoordRuneS() extends IRuneS {  }
 case class AnonymousSubstructMemberRuneS(interface: TopLevelInterfaceDeclarationNameS, method: IFunctionDeclarationNameS) extends IRuneS {  }
 case class AnonymousSubstructMethodSelfBorrowCoordRuneS(interface: TopLevelInterfaceDeclarationNameS, method: IFunctionDeclarationNameS) extends IRuneS { }
 case class AnonymousSubstructMethodSelfOwnCoordRuneS(interface: TopLevelInterfaceDeclarationNameS, method: IFunctionDeclarationNameS) extends IRuneS { }
@@ -186,7 +192,15 @@ case class AnonymousSubstructFunctionBoundParamsListRuneS(interface: TopLevelInt
 //case class AnonymousSubstructFunctionInterfaceKindRune(interface: TopLevelInterfaceDeclarationNameS, method: IFunctionDeclarationNameS) extends IRuneS { }
 //case class AnonymousSubstructFunctionInterfaceOwnershipRune(interface: TopLevelInterfaceDeclarationNameS, method: IFunctionDeclarationNameS) extends IRuneS { }
 case class AnonymousSubstructFunctionInterfaceTemplateRune(interface: TopLevelInterfaceDeclarationNameS, method: IFunctionDeclarationNameS) extends IRuneS { }
-case class AnonymousSubstructMethodInheritedRuneS(interface: TopLevelInterfaceDeclarationNameS, method: IFunctionDeclarationNameS, inner: IRuneS) extends IRuneS { }
+case class AnonymousSubstructFunctionInterfaceKindRune(interface: TopLevelInterfaceDeclarationNameS, method: IFunctionDeclarationNameS) extends IRuneS { }
+case class AnonymousSubstructMethodInheritedRuneS(interface: TopLevelInterfaceDeclarationNameS, method: IFunctionDeclarationNameS, inner: IRuneS) extends IRuneS {
+  this match {
+    case AnonymousSubstructMethodInheritedRuneS(TopLevelInterfaceDeclarationNameS(StrI("Bork"),_),FunctionNameS(StrI("bork"),_),ImplicitRuneS(LocationInDenizen(Vector(2, 1, 1, 2, 1, 1)))) => {
+      vpass()
+    }
+    case _ =>
+  }
+}
 case class FunctorPrototypeRuneNameS() extends IRuneS
 case class FunctorParamRuneNameS(index: Int) extends IRuneS
 case class FunctorReturnRuneNameS() extends IRuneS

@@ -290,8 +290,8 @@ class Compiler(
           }
         }
 
-        def coerce(envs: InferEnv, state: CompilerOutputs, range: List[RangeS], toType: ITemplataType, templata: ITemplata[ITemplataType]): ITemplata[ITemplataType] = {
-          templataCompiler.coerce(state, envs.originalCallingEnv, range, templata, toType)
+        def coerceToCoord(envs: InferEnv, state: CompilerOutputs, range: List[RangeS], templata: ITemplata[ITemplataType]): ITemplata[ITemplataType] = {
+          templataCompiler.coerceToCoord(state, envs.originalCallingEnv, range, templata)
         }
 
         override def lookupTemplataImprecise(envs: InferEnv, state: CompilerOutputs, range: List[RangeS], name: IImpreciseNameS): Option[ITemplata[ITemplataType]] = {
@@ -795,6 +795,7 @@ class Compiler(
                 interner.intern(PrimitiveNameT(keywords.int)) -> TemplataEnvEntry(KindTemplata(IntT.i32)),
                 interner.intern(PrimitiveNameT(keywords.i64)) -> TemplataEnvEntry(KindTemplata(IntT.i64)),
                 interner.intern(PrimitiveNameT(keywords.Array)) -> TemplataEnvEntry(RuntimeSizedArrayTemplateTemplata()),
+                interner.intern(PrimitiveNameT(keywords.StaticArray)) -> TemplataEnvEntry(StaticSizedArrayTemplateTemplata()),
                 interner.intern(PrimitiveNameT(keywords.bool)) -> TemplataEnvEntry(KindTemplata(BoolT())),
                 interner.intern(PrimitiveNameT(keywords.float)) -> TemplataEnvEntry(KindTemplata(FloatT())),
                 interner.intern(PrimitiveNameT(keywords.__Never)) -> TemplataEnvEntry(KindTemplata(NeverT(false))),

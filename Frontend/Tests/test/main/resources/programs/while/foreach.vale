@@ -1,3 +1,6 @@
+import v.builtins.opt.*;
+import v.builtins.arith.*;
+import stdlib.collections.list.*;
 
 func range(begin int, end int) IntRange { return IntRange(begin, end); }
 struct IntRange { begin int; end int; }
@@ -11,17 +14,10 @@ func next(self &IntRangeIter) Opt<int> {
   }
 }
 
-// A fake list that just adds incoming integers
-struct List {
-  sum! int;
-}
-func List() List { List(0) }
-func add(self &List, x int) { set self.sum = self.sum + x; }
-
 exported func main() int {
   results =
     foreach i in range(0, 10) {
       i
     };
-  return results.sum;
+  return results.len();
 }

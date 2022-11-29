@@ -408,12 +408,15 @@ class PostParser(
         case _ => throw CompileErrorExceptionS(RangedInternalErrorS(PostParser.evalRange(file, struct.range), "Can't determine name of struct!"))
       }
 
+    val tyype = TemplateTemplataType(genericParametersS.map(_.tyype), KindTemplataType())
+
     ImplS(
       PostParser.evalRange(file, range),
       implName,
       genericParametersS,
       ruleBuilder.toVector,
       runeToExplicitType.toMap,
+      tyype,
       structRune,
       subCitizenImpreciseName,
       interfaceRune,

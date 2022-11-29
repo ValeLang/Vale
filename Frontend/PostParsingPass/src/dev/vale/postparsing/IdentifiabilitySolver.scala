@@ -33,7 +33,7 @@ object IdentifiabilitySolver {
         case IsConcreteSR(range, rune) => Vector(rune)
         case IsInterfaceSR(range, rune) => Vector(rune)
         case IsStructSR(range, rune) => Vector(rune)
-//        case CoerceToCoordSR(range, coordRune, kindRune) => Vector(coordRune, kindRune)
+        case CoerceToCoordSR(range, coordRune, kindRune) => Vector(coordRune, kindRune)
         case LiteralSR(range, rune, literal) => Vector(rune)
         case AugmentSR(range, resultRune, ownership, innerRune) => Vector(resultRune, innerRune)
         case CallSR(range, resultRune, templateRune, args) => Vector(resultRune, templateRune) ++ args
@@ -81,7 +81,7 @@ object IdentifiabilitySolver {
       case IsConcreteSR(range, rune) => Vector(Vector(rune.rune))
       case IsInterfaceSR(range, rune) => Vector(Vector())
       case IsStructSR(range, rune) => Vector(Vector())
-//      case CoerceToCoordSR(range, coordRune, kindRune) => Vector(Vector())
+      case CoerceToCoordSR(range, coordRune, kindRune) => Vector(Vector())
       case LiteralSR(range, rune, literal) => Vector(Vector())
       case AugmentSR(range, resultRune, ownership, innerRune) => Vector(Vector())
       case StaticSizedArraySR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => Vector(Vector(resultRune.rune), Vector(mutabilityRune.rune, variabilityRune.rune, sizeRune.rune, elementRune.rune))
@@ -186,11 +186,11 @@ object IdentifiabilitySolver {
         stepState.concludeRune(range :: callRange, coordListRune.rune, true)
         Ok(())
       }
-//      case CoerceToCoordSR(range, coordRune, kindRune) => {
-//        stepState.concludeRune(range :: callRange, kindRune.rune, true)
-//        stepState.concludeRune(range :: callRange, coordRune.rune, true)
-//        Ok(())
-//      }
+      case CoerceToCoordSR(range, coordRune, kindRune) => {
+        stepState.concludeRune(range :: callRange, kindRune.rune, true)
+        stepState.concludeRune(range :: callRange, coordRune.rune, true)
+        Ok(())
+      }
       case LiteralSR(range, rune, literal) => {
         stepState.concludeRune(range :: callRange, rune.rune, true)
         Ok(())

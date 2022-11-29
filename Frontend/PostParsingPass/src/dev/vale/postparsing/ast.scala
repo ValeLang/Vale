@@ -148,6 +148,7 @@ case class ImplS(
     userSpecifiedIdentifyingRunes: Vector[GenericParameterS],
     rules: Vector[IRulexSR],
     runeToExplicitType: Map[IRuneS, ITemplataType],
+    tyype: ITemplataType,
     structKindRune: RuneUsage,
     subCitizenImpreciseName: IImpreciseNameS,
     interfaceKindRune: RuneUsage,
@@ -249,6 +250,7 @@ case class FunctionS(
 
     genericParams: Vector[GenericParameterS],
     runeToPredictedType: Map[IRuneS, ITemplataType],
+    tyype: ITemplataType,
 
     params: Vector[ParameterS],
 

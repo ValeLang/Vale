@@ -84,7 +84,6 @@ case class FunctionL(
   body: Option[FunctionBodyL]) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 case class FunctionBodyL(
-  defaultRegion: Option[INodeLE],
   body: CurliedLE
 ) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
@@ -94,19 +93,18 @@ case class FunctionHeaderL(
   attributes: Vector[IAttributeL],
 
   maybeUserSpecifiedIdentifyingRunes: Option[AngledLE],
-  templateRules: Option[ScrambleLE],
 
   params: ParendLE,
-  ret: FunctionReturnL
+
+  // Includes:
+  // - where clause
+  // - return type
+  // - default region for the body
+  // Basically, everything up until the body's { or a ;
+  trailingDetails: ScrambleLE
 ) {
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
 }
-
-case class FunctionReturnL(
-  range: RangeL,
-  inferRet: Option[RangeL],
-  retType: Option[ScrambleLE]
-) { override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious() }
 
 trait INodeLE {
   def range: RangeL
@@ -115,19 +113,6 @@ trait INodeLE {
 case class ScrambleLE(
   range: RangeL,
   elements: Vector[INodeLE],
-
-//  // This is redundant with the above, a cache/index for the parser to be able
-//  // to look ahead in constant time.
-//  // For example if we see a = before the next ; then we're in a let statement.
-//  sequencingSymbols: Vector[SymbolLE]
-
-//  // These are redundant with the above, a cache/index for the parser to be able
-//  // to look ahead in constant time.
-//  // For example if we see a = before the next ; then we're in a let statement.
-//  // In the eventual arena-based AST thing we might make these linked lists.
-//  commaPositions: Vector[Int],
-//  semicolonPositions: Vector[Int],
-//  equalsPositions: Vector[Int]
 ) extends INodeLE {
   vpass()
 

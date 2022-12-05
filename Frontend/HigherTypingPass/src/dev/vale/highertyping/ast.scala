@@ -96,6 +96,8 @@ case class StructA(
 //  vassert((knowableRunes -- runeToType.keySet).isEmpty)
 //  vassert((localRunes -- runeToType.keySet).isEmpty)
 
+  vassert(isTemplate)
+
   def isTemplate: Boolean = tyype match {
     case KindTemplataType() => false
     case TemplateTemplataType(_, _) => true

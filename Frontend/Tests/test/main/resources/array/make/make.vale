@@ -18,13 +18,13 @@ where F Prot = func(&G, int)T, func drop(T)void
   return Array<imm, T>(n, generator);
 }
 
-func toImmArray<N, E Ref imm, X, Y>(seq &[#N]<X, Y>E) []<imm>E
+func toImmArray<N Int, E Ref imm, X Mutability, Y Variability>(seq &[#N]<X, Y>E) []<imm>E
 where func drop(E)void
 {
   return MakeImmArray<E>(N, &{ seq[_] });
 }
 
-func toImmArray<T Ref imm, M>(source &[]<M>T) Array<imm, T>
+func toImmArray<T Ref imm, M Mutability>(source &[]<M>T) Array<imm, T>
 where func drop(T)void {
   return MakeImmArray<T>(source.len(), &{ source[_] });
 }

@@ -62,7 +62,7 @@ class FunctionScout(
   (FunctionS, VariableUses) = {
     val FunctionP(range, headerP, maybeBody0) = functionP;
     val FunctionHeaderP(_, maybeName, attrsP, maybeGenericParametersP, templateRulesP, maybeParamsP, returnP) = headerP
-    val FunctionReturnP(retRange, maybeInferRet, maybeRetType) = returnP
+    val FunctionReturnP(retRange, maybeRetType) = returnP
 
     val rangeS = PostParser.evalRange(file, range)
     val codeLocation = rangeS.begin
@@ -153,7 +153,7 @@ class FunctionScout(
 
 
     val ruleBuilder = ArrayBuffer[IRulexSR]()
-    val runeToExplicitType = mutable.HashMap[IRuneS, ITemplataType]()
+    val runeToExplicitType = mutable.ArrayBuffer[(IRuneS, ITemplataType)]()
 
     maybeParent match {
       case FunctionNoParent() => {
@@ -218,7 +218,7 @@ class FunctionScout(
         case a @ AtomSP(_, _, _, Some(_), _) => (a, None)
         case AtomSP(range, name, virtuality, None, destructure) => {
           val rune = rules.RuneUsage(range, ImplicitRuneS(lidb.child().consume()))
-          runeToExplicitType.put(rune.rune, CoordTemplataType())
+          runeToExplicitType += ((rune.rune, CoordTemplataType()))
           val newParam = patterns.AtomSP(range, name, virtuality, Some(rune), destructure)
           (newParam, Some(rune))
         }
@@ -253,9 +253,6 @@ class FunctionScout(
         }
       }
 
-    // Theres no such thing as this anymore?
-    vassert(maybeInferRet.isEmpty)
-
     val maybeRetCoordRune =
       maybeRetType match {
         case None | Some(RegionRunePT(_, _)) => {
@@ -287,7 +284,7 @@ class FunctionScout(
         }
       }
 
-    maybeRetCoordRune.foreach(retCoordRune => runeToExplicitType.put(retCoordRune.rune, CoordTemplataType()))
+    maybeRetCoordRune.foreach(retCoordRune => runeToExplicitType += ((retCoordRune.rune, CoordTemplataType())))
 
     maybeParent match {
       case FunctionNoParent() =>
@@ -371,15 +368,23 @@ class FunctionScout(
               val closureParamName = interner.intern(ClosureParamNameS())
               val closureParamPos = PostParser.evalPos(parentStackFrame.file, range.begin)
               val closureParamRange = RangeS(closureParamPos, closureParamPos)
-              val closureStructRune = rules.RuneUsage(closureParamRange, ImplicitRuneS(lidb.child().consume()))
+
+              val closureStructKindRune = rules.RuneUsage(closureParamRange, ImplicitRuneS(lidb.child().consume()))
+              runeToExplicitType += ((closureStructKindRune.rune, KindTemplataType()))
               val closureStructName =
                 interner.intern(LambdaStructDeclarationNameS(
                   funcName match { case x @ LambdaDeclarationNameS(_) => x }))
               ruleBuilder +=
-                LookupSR(closureParamRange, closureStructRune, closureStructName.getImpreciseName(interner))
+                LookupSR(closureParamRange, closureStructKindRune, closureStructName.getImpreciseName(interner))
+
+              val closureStructCoordRune = rules.RuneUsage(closureParamRange, ImplicitRuneS(lidb.child().consume()))
+              runeToExplicitType += ((closureStructCoordRune.rune, CoordTemplataType()))
+              ruleBuilder +=
+                CoerceToCoordSR(closureParamRange, closureStructCoordRune, closureStructKindRune)
+
               val closureParamTypeRune =
                 rules.RuneUsage(closureParamRange, ImplicitRuneS(lidb.child().consume()))
-              ruleBuilder += AugmentSR(closureParamRange, closureParamTypeRune, BorrowP, closureStructRune)
+              ruleBuilder += AugmentSR(closureParamRange, closureParamTypeRune, BorrowP, closureStructCoordRune)
 
               val closureParamS =
                 ParameterS(
@@ -396,7 +401,7 @@ class FunctionScout(
                     val magicParamRange = vale.RangeS(codeLocation, codeLocation)
                     val magicParamRune =
                       rules.RuneUsage(magicParamRange, MagicParamRuneS(lidb.child().consume()))
-                    runeToExplicitType.put(magicParamRune.rune, CoordTemplataType())
+                    runeToExplicitType += ((magicParamRune.rune, CoordTemplataType()))
                     val paramS =
                       ParameterS(
                         AtomSP(
@@ -410,7 +415,12 @@ class FunctionScout(
                 // Lambdas identifying runes are determined by their magic params.
                 // See: Lambdas Dont Need Explicit Identifying Runes (LDNEIR)
                 magicParams.map(param => {
-                  GenericParameterS(param.pattern.range, vassertSome(param.pattern.coordRune), Vector(), None)
+                  GenericParameterS(
+                    param.pattern.range,
+                    vassertSome(param.pattern.coordRune),
+                    CoordTemplataType(),
+                    Vector(),
+                    None)
                 })
 
               (extraGenericParamsFromBodyS, Some(closureParamS), magicParams)
@@ -459,13 +469,15 @@ class FunctionScout(
       postParser.predictRuneTypes(
         rangeS,
         userSpecifiedIdentifyingRunes.map(_.rune),
-        runeToExplicitType.toMap,
+        runeToExplicitType,
         rulesArray)
 
     postParser.checkIdentifiability(
       rangeS,
       genericParametersS.map(_.rune.rune),
       rulesArray)
+
+    val tyype = TemplateTemplataType(genericParametersS.map(_.tyype), FunctionTemplataType())
 
     val functionS =
       FunctionS(
@@ -474,6 +486,7 @@ class FunctionScout(
         funcAttrsS,
         genericParametersS,
         runeToPredictedType,
+        tyype,
         totalParamsS,
         maybeRetCoordRune,
         rulesArray,

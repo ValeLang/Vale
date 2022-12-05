@@ -29,23 +29,23 @@ class ErrorTests extends FunSuite with Matchers  {
     }
   }
 
-  test("Report couldnt solve rules") {
-    val compilation =
-      HigherTypingTestCompilation.test(
-        """
-          |func moo<A>(x int) {
-          |  42
-          |}
-          |exported func main() {
-          |  moo();
-          |}
-          |""".stripMargin)
-
-    compileProgramForError(compilation) match {
-      case e @ CouldntSolveRulesA(range, failure) => {
-        val errorText = HigherTypingErrorHumanizer.humanize(compilation.getCodeMap().getOrDie(), e)
-        vassert(errorText.contains("olve"))
-      }
-    }
-  }
+//  test("Report couldnt solve rules") {
+//    val compilation =
+//      HigherTypingTestCompilation.test(
+//        """
+//          |func moo<A>(x int) {
+//          |  42
+//          |}
+//          |exported func main() {
+//          |  moo();
+//          |}
+//          |""".stripMargin)
+//
+//    compileProgramForError(compilation) match {
+//      case e @ CouldntSolveRulesA(range, failure) => {
+//        val errorText = HigherTypingErrorHumanizer.humanize(compilation.getCodeMap().getOrDie(), e)
+//        vassert(errorText.contains("olve"))
+//      }
+//    }
+//  }
 }

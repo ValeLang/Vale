@@ -40,6 +40,10 @@ object CompilerErrorHumanizer {
         case NewImmRSANeedsCallable(range) => {
           "To make an immutable runtime-sized array, need two params: capacity int, plus lambda to populate that many elements."
         }
+        case CouldntSolveRuneTypesT(range, error) => {
+          "Couldn't solve rune types:\n" +
+            HigherTypingErrorHumanizer.humanizeRuneTypeSolveError(codeMap, error)
+        }
         case UnexpectedArrayElementType(range, expectedType, actualType) => {
           "Unexpected type for array element, tried to put a " + humanizeTemplata(codeMap, CoordTemplata(actualType)) + " into an array of " + humanizeTemplata(codeMap, CoordTemplata(expectedType))
         }

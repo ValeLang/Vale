@@ -6,7 +6,7 @@ func migrate<E>(from []<mut>E, to &[]<mut>E) {
   drop_into(intermediate, &{ to.push(_); });
 }
 
-func migrate<E, N, V>(from [#N]<mut, V>E, to &[]<mut>E) {
+func migrate<E, N Int, V Variability>(from [#N]<mut, V>E, to &[]<mut>E) {
   intermediate = Array<mut, E>(N);
   drop_into(from, &{ intermediate.push(_); });
   drop_into(intermediate, &{ to.push(_); });

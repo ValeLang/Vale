@@ -851,21 +851,6 @@ class TemplataCompiler(
 //    (templata)
 //  }
 
-  def evaluateInterfaceTemplata(
-    coutputs: CompilerOutputs,
-    callingEnv: IEnvironment, // See CSSNCE
-    callRange: List[RangeS],
-    template: InterfaceDefinitionTemplata,
-    templateArgs: Vector[ITemplata[ITemplataType]],
-    expectedType: ITemplataType):
-  (ITemplata[ITemplataType]) = {
-    val uncoercedTemplata =
-      delegate.resolveInterface(coutputs, callingEnv, callRange, template, templateArgs).expect().kind
-    val templata =
-      coerce(coutputs, callingEnv, callRange, KindTemplata(uncoercedTemplata), expectedType)
-    (templata)
-  }
-
 //  def evaluateBuiltinTemplateTemplata(
 //    env: IEnvironment,
 //    coutputs: CompilerOutputs,
@@ -939,37 +924,22 @@ class TemplataCompiler(
       kind)
   }
 
-  def coerce(
+  def coerceToCoord(
     coutputs: CompilerOutputs,
     env: IEnvironment,
     range: List[RangeS],
-    templata: ITemplata[ITemplataType],
-    tyype: ITemplataType):
+    templata: ITemplata[ITemplataType]):
   (ITemplata[ITemplataType]) = {
-    if (templata.tyype == tyype) {
+    if (templata.tyype == CoordTemplataType()) {
+      vcurious()
       templata
     } else {
-      (templata, tyype) match {
-        case (KindTemplata(kind), CoordTemplataType()) => {
+      templata match {
+        case KindTemplata(kind) => {
           CoordTemplata(coerceKindToCoord(coutputs, kind))
         }
-        case (st@StructDefinitionTemplata(declaringEnv, structA), KindTemplataType()) => {
-          if (structA.isTemplate) {
-            vfail("Can't coerce " + structA.name + " to be a kind, is a template!")
-          }
-          val kind =
-            delegate.resolveStruct(coutputs, env, range, st, Vector.empty).expect().kind
-          (KindTemplata(kind))
-        }
-        case (it@InterfaceDefinitionTemplata(declaringEnv, interfaceA), KindTemplataType()) => {
-          if (interfaceA.isTemplate) {
-            vfail("Can't coerce " + interfaceA.name + " to be a kind, is a template!")
-          }
-          val kind =
-            delegate.resolveInterface(coutputs, env, range, it, Vector.empty).expect().kind
-          (KindTemplata(kind))
-        }
-        case (st@StructDefinitionTemplata(declaringEnv, structA), CoordTemplataType()) => {
+        case st@StructDefinitionTemplata(declaringEnv, structA) => {
+          vcurious()
           if (structA.isTemplate) {
             vfail("Can't coerce " + structA.name + " to be a coord, is a template!")
           }
@@ -987,7 +957,7 @@ class TemplataCompiler(
           val coerced = CoordTemplata(CoordT(ownership, kind))
           (coerced)
         }
-        case (it@InterfaceDefinitionTemplata(declaringEnv, interfaceA), CoordTemplataType()) => {
+        case it@InterfaceDefinitionTemplata(declaringEnv, interfaceA) => {
           if (interfaceA.isTemplate) {
             vfail("Can't coerce " + interfaceA.name + " to be a coord, is a template!")
           }
@@ -1006,7 +976,7 @@ class TemplataCompiler(
           (coerced)
         }
         case _ => {
-          vfail("Can't coerce a " + templata.tyype + " to be a " + tyype)
+          vfail("Can't coerce a " + templata.tyype + " to be a coord!")
         }
       }
     }

@@ -1,11 +1,12 @@
 package dev.vale.typing.expression
 
 import dev.vale
+import dev.vale.highertyping.HigherTypingPass.explicifyLookups
 import dev.vale.highertyping.{CompileErrorExceptionA, CouldntSolveRulesA, FunctionA, PatternSUtils}
 import dev.vale.{Err, Interner, Keywords, Ok, Profiler, RangeS, vassert, vassertOne, vassertSome, vcheck, vcurious, vfail, vimpl, vwat, _}
 import dev.vale.parsing.ast.{LoadAsBorrowP, LoadAsP, LoadAsWeakP, MoveP, UseP}
 import dev.vale.postparsing.patterns.AtomSP
-import dev.vale.postparsing.rules.{RuneParentEnvLookupSR, RuneUsage}
+import dev.vale.postparsing.rules.{IRulexSR, RuneParentEnvLookupSR, RuneUsage}
 import dev.vale.postparsing._
 import dev.vale.typing.{ArrayCompiler, CannotSubscriptT, CantMoveFromGlobal, CantMutateFinalElement, CantMutateFinalMember, CantReconcileBranchesResults, CantUnstackifyOutsideLocalFromInsideWhile, CantUseUnstackifiedLocal, CompileErrorExceptionT, Compiler, CompilerOutputs, ConvertHelper, CouldntConvertForMutateT, CouldntConvertForReturnT, CouldntFindIdentifierToLoadT, CouldntFindMemberT, HigherTypingInferError, IfConditionIsntBoolean, InferCompiler, OverloadResolver, RangedInternalErrorT, SequenceCompiler, TemplataCompiler, TypingPassOptions, ast, templata}
 import dev.vale.typing.ast.{AddressExpressionTE, AddressMemberLookupTE, ArgLookupTE, BlockTE, BorrowToWeakTE, BreakTE, ConstantBoolTE, ConstantFloatTE, ConstantIntTE, ConstantStrTE, ConstructTE, DestroyTE, ExpressionT, IfTE, LetNormalTE, LocalLookupTE, LocationInFunctionEnvironment, MutateTE, PrototypeT, ReferenceExpressionTE, ReferenceMemberLookupTE, ReinterpretTE, ReturnTE, RuntimeSizedArrayLookupTE, StaticSizedArrayLookupTE, VoidLiteralTE, WhileTE}
@@ -15,20 +16,21 @@ import dev.vale.typing.function.DestructorCompiler
 import dev.vale.highertyping._
 import dev.vale.parsing._
 import dev.vale.parsing.ast._
-import dev.vale.postparsing.rules.RuneParentEnvLookupSR
 import dev.vale.postparsing.RuneTypeSolver
 import dev.vale.typing.OverloadResolver.FindFunctionFailure
 import dev.vale.typing.{ast, _}
 import dev.vale.typing.ast._
 import dev.vale.typing.env._
 import dev.vale.typing.function.FunctionCompiler.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
-import dev.vale.typing.names.{ArbitraryNameT, CitizenTemplateNameT, ClosureParamNameT, CodeVarNameT, IdT, IImplNameT, IVarNameT, NameTranslator, RuneNameT, TypingPassBlockResultVarNameT, TypingPassFunctionResultVarNameT}
+import dev.vale.typing.names.{ArbitraryNameT, CitizenTemplateNameT, ClosureParamNameT, CodeVarNameT, IImplNameT, IVarNameT, IdT, NameTranslator, RuneNameT, TypingPassBlockResultVarNameT, TypingPassFunctionResultVarNameT}
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 import dev.vale.typing.templata._
 import dev.vale.typing.types._
 
 import scala.collection.immutable.{List, Nil, Set}
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 case class TookWeakRefOfNonWeakableError() extends Throwable { val hash = runtime.ScalaRunTime._hashCode(this); override def hashCode(): Int = hash; override def equals(obj: Any): Boolean = vcurious(); }
 
@@ -722,7 +724,7 @@ class ExpressionCompiler(
 
           (expr2, returnsFromContainerExpr)
         }
-        case FunctionSE(functionS @ FunctionS(range, name, _, _, _, _, _, _, _)) => {
+        case FunctionSE(functionS @ FunctionS(range, name, _, _, _, _, _, _, _, _)) => {
           val callExpr2 = evaluateClosure(coutputs, nenv, range :: parentRanges, name, functionS)
           (callExpr2, Set())
         }
@@ -1435,38 +1437,45 @@ class ExpressionCompiler(
     parentRanges: List[RangeS],
     functionS: FunctionS):
   FunctionA = {
-    val FunctionS(rangeS, nameS, attributesS, identifyingRunesS, runeToExplicitType, paramsS, maybeRetCoordRune, rulesS, bodyS) = functionS
+    val FunctionS(rangeS, nameS, attributesS, identifyingRunesS, runeToExplicitType, tyype, paramsS, maybeRetCoordRune, rulesWithImplicitlyCoercingLookupsS, bodyS) = functionS
+
+    def lookupType(x: IImpreciseNameS) = {
+      x match {
+        // This is here because if we tried to look up this lambda struct, it wouldn't exist yet.
+        // It's not an insurmountable problem, it will exist slightly later when we're inside StructCompiler,
+        // but this workaround makes for a cleaner separation between FunctionCompiler and StructCompiler
+        // at least for now.
+        // If this proves irksome, consider rearranging FunctionCompiler and StructCompiler's steps in
+        // evaluating lambdas.
+        case LambdaStructImpreciseNameS(_) => KindTemplataType()
+        case n => {
+          vassertSome(nenv.lookupNearestWithImpreciseName(n, Set(TemplataLookupContext))).tyype
+        }
+      }
+    }
 
     val runeSToPreKnownTypeA =
       runeToExplicitType ++
         paramsS.map(_.pattern.coordRune.get.rune -> CoordTemplataType()).toMap
-    val runeSToType =
+    val runeAToTypeWithImplicitlyCoercingLookupsS =
       new RuneTypeSolver(interner).solve(
         opts.globalOptions.sanityCheck,
         opts.globalOptions.useOptimizedSolver,
-        {
-          // This is here because if we tried to look up this lambda struct, it wouldn't exist yet.
-          // It's not an insurmountable problem, it will exist slightly later when we're inside StructCompiler,
-          // but this workaround makes for a cleaner separation between FunctionCompiler and StructCompiler
-          // at least for now.
-          // If this proves irksome, consider rearranging FunctionCompiler and StructCompiler's steps in
-          // evaluating lambdas.
-          case LambdaStructImpreciseNameS(_) => CoordTemplataType()
-          case n => {
-            vassertSome(nenv.lookupNearestWithImpreciseName(n, Set(TemplataLookupContext))).tyype
-          }
-        },
+        lookupType,
         rangeS :: parentRanges,
-        false, rulesS, identifyingRunesS.map(_.rune.rune), true, runeSToPreKnownTypeA) match {
+        false, rulesWithImplicitlyCoercingLookupsS, identifyingRunesS.map(_.rune.rune), true, runeSToPreKnownTypeA) match {
         case Ok(t) => t
-        case Err(e) => throw CompileErrorExceptionA(CouldntSolveRulesA(rangeS, e))
+        case Err(e) => throw CompileErrorExceptionT(CouldntSolveRuneTypesT(rangeS :: parentRanges, e))
       }
 
-    // Shouldnt fail because we got a complete solve on the rules
-    val tyype =
-      PostParser.determineDenizenType(
-        FunctionTemplataType(), identifyingRunesS.map(_.rune.rune), runeSToType)
-        .getOrDie()
+    val runeAToType =
+      mutable.HashMap[IRuneS, ITemplataType]((runeAToTypeWithImplicitlyCoercingLookupsS.toSeq): _*)
+    // We've now calculated all the types of all the runes, but the LookupSR rules are still a bit
+    // loose. We intentionally ignored the types of the things they're looking up, so we could know
+    // what types we *expect* them to be, so we could coerce.
+    // That coercion is good, but lets make it more explicit.
+    val ruleBuilder = ArrayBuffer[IRulexSR]()
+    explicifyLookups((range, name) => lookupType(name), runeAToType, ruleBuilder, rulesWithImplicitlyCoercingLookupsS)
 
     vale.highertyping.FunctionA(
       rangeS,
@@ -1474,10 +1483,10 @@ class ExpressionCompiler(
       attributesS ++ Vector(UserFunctionS),
       tyype,
       identifyingRunesS,
-      runeSToType,
+      runeAToType.toMap,
       paramsS,
       maybeRetCoordRune,
-      rulesS.toVector,
+      ruleBuilder.toVector,
       bodyS)
   }
 

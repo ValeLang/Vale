@@ -694,7 +694,7 @@ class ExpressionScout(
             scoutExpressionAndCoerce(stackFrame0, lidb.child(), exprPE, UseP);
 
           val ruleBuilder = ArrayBuffer[IRulexSR]()
-          val runeToExplicitType = mutable.HashMap[IRuneS, ITemplataType]()
+          val runeToExplicitType = mutable.ArrayBuffer[(IRuneS, ITemplataType)]()
 
           ruleScout.translateRulexes(
             stackFrame0.parentEnv, lidb.child(), ruleBuilder, runeToExplicitType, Vector())

@@ -282,7 +282,6 @@ class ParsedLoader(interner: Interner) {
   def loadFunctionReturn(jobj: JObject): FunctionReturnP = {
     FunctionReturnP(
       loadRange(getObjectField(jobj, "range")),
-      loadOptionalObject(getObjectField(jobj, "inferRet"), loadRange),
       loadOptionalObject(getObjectField(jobj, "retType"), loadTemplex))
   }
 

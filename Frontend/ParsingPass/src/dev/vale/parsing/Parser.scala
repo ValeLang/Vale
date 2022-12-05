@@ -490,8 +490,6 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
     Ok(ImportP(range, moduleNameP, packageStepsP.toVector, importeeNameP))
   }
 
-  // Returns:
-  // - The infer-return range, if any
   def parseAttribute(attrL: IAttributeL):
   Result[IAttributeP, IParseError] = {
     attrL match {
@@ -528,8 +526,7 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
   Result[FunctionP, IParseError] = {
     Profiler.frame(() => {
       val FunctionL(funcRangeL, headerL, maybeBodyL) = functionL
-      val FunctionHeaderL(headerRangeL, nameL, attributesL, maybeIdentifyingRunesL, maybeTemplateRulesL, paramsL, returnL) = headerL
-      val FunctionReturnL(returnRangeL, maybeInferRetL, maybeReturnTypeL) = returnL
+      val FunctionHeaderL(headerRangeL, nameL, attributesL, maybeIdentifyingRunesL, paramsL, originalTrailingDetailsL) = headerL
 
       val maybeIdentifyingRunes =
         maybeIdentifyingRunesL.map(userSpecifiedIdentifyingRunes => {
@@ -551,18 +548,46 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
               }
             }).toVector)
 
-      val maybeTemplateRulesP =
-        maybeTemplateRulesL.map(templateRules => {
-          TemplateRulesP(
-            templateRules.range,
+      val trailingDetailsWithReturnAndWhereAndDefaultRegion = originalTrailingDetailsL
+      val (trailingDetailsWithReturnAndWhere, maybeDefaultRegion) =
+        parseBodyDefaultRegion(trailingDetailsWithReturnAndWhereAndDefaultRegion)
+
+      // TODO: simplify this. It's really just trying to split on "where".
+      val returnAndWhereIter = new ScrambleIterator(trailingDetailsWithReturnAndWhere)
+      val (maybeReturnIter, returnEndPos, maybeRulesIter) =
+        ParseUtils.trySkipPastKeywordWhile(
+          returnAndWhereIter, keywords.where, it => it.hasNext) match {
+          case None => (Some(returnAndWhereIter), returnAndWhereIter.scramble.range.end, None) // No "where" was found. Use everything remaining.
+          case Some((_, returnIter)) => (Some(returnIter), returnIter.scramble.range.end, Some(returnAndWhereIter))
+        }
+
+      val returnBeginPos = returnAndWhereIter.scramble.range.begin
+      val maybeReturnTypeP =
+        maybeReturnIter.flatMap(returnIter => {
+          if (returnIter.hasNext) {
+            templexParser.parseTemplex(returnIter) match {
+              case Err(e) => return Err(e)
+              case Ok(x) => Some(x)
+            }
+          } else {
+            None
+          }
+        })
+      val returnP = FunctionReturnP(RangeL(returnBeginPos, returnEndPos), maybeReturnTypeP)
+
+      val maybeRulesP =
+        maybeRulesIter.map(rulesIter => {
+          val begin = rulesIter.getPos()
+          val rules =
             U.map[ScrambleIterator, IRulexPR](
-              new ScrambleIterator(templateRules).splitOnSymbol(',', false),
-              templexL => {
-                templexParser.parseRule(templexL) match {
-                  case Err(e) => return Err(e)
-                  case Ok(x) => x
-                }
-              }).toVector)
+            rulesIter.splitOnSymbol(',', false),
+            templexL => {
+              templexParser.parseRule(templexL) match {
+                case Err(e) => return Err(e)
+                case Ok(x) => x
+              }
+            })
+          TemplateRulesP(rulesIter.scramble.range, rules)
         })
 
       val attributesP =
@@ -575,40 +600,19 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
             }
           })
 
-      val maybeReturnTypeP =
-        maybeReturnTypeL.map(returnTypeL => {
-          val scramble =
-            returnTypeL match {
-              case s @ ScrambleLE(_, _) => s
-              case other => ScrambleLE(other.range, Vector(other))
-            }
-          templexParser.parseTemplex(new ScrambleIterator(scramble, 0, scramble.elements.length)) match {
-            case Err(e) => return Err(e)
-            case Ok(x) => x
-          }
-        })
-
       val header =
         FunctionHeaderP(
           headerL.range,
           Some(toName(nameL)),
           attributesP.toVector,
           maybeIdentifyingRunes,
-          maybeTemplateRulesP,
+          maybeRulesP,
           Some(paramsP),
-          FunctionReturnP(
-            returnRangeL, maybeInferRetL, maybeReturnTypeP))
+          returnP)
 
       val bodyP =
         maybeBodyL.map(bodyL => {
-          val FunctionBodyL(maybeDefaultRegionL, blockL) = bodyL
-          val maybeDefaultRegionP =
-            maybeDefaultRegionL.map(defaultRegionL => {
-              templexParser.parseRegion(defaultRegionL) match {
-                case Err(cpe) => return Err(cpe)
-                case Ok(x) => x
-              }
-            })
+          val FunctionBodyL(blockL) = bodyL
           val statementsP =
             expressionParser.parseBlock(blockL) match {
               case Err(err) => return Err(err)
@@ -619,6 +623,40 @@ class Parser(interner: Interner, keywords: Keywords, opts: GlobalOptions) {
 
       Ok(FunctionP(funcRangeL, header, bodyP))
     })
+  }
+
+  // Returns:
+  // - A scramble of everything before the default region. If there's no default region, it's the
+  //   same as the input scramble.
+  // - The default region if it existed.
+  private def parseBodyDefaultRegion(inputScramble: ScrambleLE):
+  (ScrambleLE, Option[RegionRunePT]) = {
+    if (inputScramble.elements.size < 2) {
+      return (inputScramble, None)
+    }
+
+    val lastTwo =
+      inputScramble.elements.slice(inputScramble.elements.length - 2, inputScramble.elements.length)
+
+    val defaultRegion =
+      lastTwo match {
+        case Vector(WordLE(wordRange, regionName), SymbolLE(symbolRange, '\'')) => {
+          val range = RangeL(wordRange.begin, symbolRange.end)
+          RegionRunePT(range, NameP(wordRange, regionName))
+        }
+        case _ => return (inputScramble, None)
+      }
+
+    val precedingElements = inputScramble.elements.slice(0, inputScramble.elements.length - 2)
+    val precedingElementsRange =
+      if (precedingElements.isEmpty) {
+        RangeL(inputScramble.range.begin, inputScramble.range.begin)
+      } else {
+        RangeL(precedingElements.head.range.begin, precedingElements.last.range.end)
+      }
+    val precedingElementsScramble = ScrambleLE(precedingElementsRange, precedingElements)
+
+    (precedingElementsScramble, Some(defaultRegion))
   }
 
   def toName(wordL: WordLE): NameP = {

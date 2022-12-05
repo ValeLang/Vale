@@ -180,11 +180,10 @@ object Spanner {
   }
 
   def forFunctionReturn(p: FunctionReturnP): Span = {
-    val FunctionReturnP(range, maybeInferRet, maybeRetType) = p
+    val FunctionReturnP(range, maybeRetType) = p
     makeSpan(
       Ret,
       range,
-      maybeInferRet.toVector.map({ case r @ RangeL(_, _) => makeSpan(Ret, r, Vector.empty) }) ++
       maybeRetType.toVector.map(forTemplex))
   }
 

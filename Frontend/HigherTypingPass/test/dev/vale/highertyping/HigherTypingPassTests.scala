@@ -126,7 +126,7 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
   test("Test evaluate Pack") {
     val compilation =
       HigherTypingTestCompilation.test(
-        """func moo<T>()
+        """func moo<T RefList>()
           |where T = Refs(int, bool)
           |{
           |}
@@ -154,8 +154,8 @@ class HigherTypingPassTests extends FunSuite with Matchers  {
   test("Test infer Pack from empty result") {
     val compilation =
       HigherTypingTestCompilation.test(
-        """func moo<P>()
-          |where P RefList = Refs(), Prot[P, str]
+        """func moo<P RefList>()
+          |where P = Refs(), Prot[P, str]
           |{
           |}
           |""".stripMargin)

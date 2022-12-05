@@ -16,6 +16,7 @@ object PostParserErrorHumanizer {
   String = {
     val errorStrBody =
       (err match {
+        case RuneExplicitTypeConflictS(range, rune, types) => "Too many explicit types for rune " + humanizeRune(rune) + ": " + types.map(humanizeTemplataType).mkString(", ")
         case RangedInternalErrorS(range, message) => " " + message
         case UnknownRuleFunctionS(range, name) => ": Unknown rule function name: "+ name
         case UnimplementedExpression(range, expressionName) => s": ${expressionName} not supported yet.\n"
@@ -122,21 +123,26 @@ object PostParserErrorHumanizer {
       case SelfKindTemplateRuneS() => "(self kind template)"
       case PatternInputRuneS(codeLoc) => "(pattern input " + codeLoc + ")"
       case SelfRuneS() => "(self)"
+      case SelfCoordRuneS() => "(self ref)"
       case ReturnRuneS() => "(ret)"
       case AnonymousSubstructParentInterfaceTemplateRuneS() => "(anon sub parent interface)"
       case ImplDropVoidRuneS() => "(impl drop void)"
       case ImplDropCoordRuneS() => "(impl drop coord)"
       case FreeOverrideInterfaceRuneS() => "(freeing interface)"
       case FreeOverrideStructRuneS() => "(freeing struct)"
-      case AnonymousSubstructRuneS() => "(anon substruct)"
+      case AnonymousSubstructKindRuneS() => "(anon substruct kind)"
+      case AnonymousSubstructCoordRuneS() => "(anon substruct ref)"
       case AnonymousSubstructTemplateRuneS() => "(anon substruct template)"
       case AnonymousSubstructParentInterfaceTemplateRuneS() => "(anon sub parent template)"
-      case AnonymousSubstructParentInterfaceRuneS() => "(anon sub parent)"
+      case AnonymousSubstructParentInterfaceKindRuneS() => "(anon sub parent kind)"
+      case AnonymousSubstructParentInterfaceCoordRuneS() => "(anon sub parent ref)"
       case StructNameRuneS(inner) => humanizeName(inner)
       case FreeOverrideStructTemplateRuneS() => "(free override template)"
       case FunctorPrototypeRuneNameS() => "(functor prototype)"
-      case MacroSelfRuneS() => "_MSelf"
-      case MacroVoidRuneS() => "_MVoid"
+      case MacroSelfKindRuneS() => "_MSelfK"
+      case MacroSelfCoordRuneS() => "_MSelf"
+      case MacroVoidKindRuneS() => "_MVoidK"
+      case MacroVoidCoordRuneS() => "_MVoid"
       case AnonymousSubstructMemberRuneS(interface, method) => "$" + humanizeName(interface) + ".anon." + humanizeName(method) + ".functor"
       case AnonymousSubstructFunctionBoundParamsListRuneS(interface, method) => "$" + humanizeName(interface) + ".anon." + humanizeName(method) + ".params"
       case AnonymousSubstructFunctionBoundPrototypeRuneS(interface, method) => "$" + humanizeName(interface) + ".anon." + humanizeName(method) + ".proto"
@@ -148,7 +154,11 @@ object PostParserErrorHumanizer {
       case AnonymousSubstructMethodInheritedRuneS(interface, method, inner) => "$" + humanizeName(interface) + ".anon." + humanizeName(method) + ":" + humanizeRune(inner)
       case AnonymousSubstructMethodSelfOwnCoordRuneS(interface, method) => "$" + humanizeName(interface) + ".anon." + humanizeName(method) + ".ownself"
       case AnonymousSubstructMethodSelfBorrowCoordRuneS(interface, method) => "$" + humanizeName(interface) + ".anon." + humanizeName(method) + ".borrowself"
-      case AnonymousSubstructVoidRuneS() => "anon.void"
+      case AnonymousSubstructVoidKindRuneS() => "anon.void.kind"
+      case AnonymousSubstructVoidCoordRuneS() => "anon.void"
+      case ImplicitCoercionOwnershipRuneS(_, inner) => humanizeRune(inner) + ".own"
+      case ImplicitCoercionKindRuneS(_, inner) => humanizeRune(inner) + ".kind"
+      case ImplicitCoercionTemplateRuneS(_, inner) => humanizeRune(inner) + ".gen"
       case other => vimpl(other)
     }
   }
@@ -208,12 +218,12 @@ object PostParserErrorHumanizer {
       case DefinitionFuncSR(range, resultRune, name, paramsListRune, returnRune) => {
         humanizeRune(resultRune.rune) + " = definition-func " + name + "(" + humanizeRune(paramsListRune.rune) + ")" + humanizeRune(returnRune.rune)
       }
-      case StaticSizedArraySR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => {
-        humanizeRune(resultRune.rune) + " = " + "[#" + humanizeRune(sizeRune.rune) + "]<" + humanizeRune(mutabilityRune.rune) + ", " + humanizeRune(variabilityRune.rune) + ">" + humanizeRune(elementRune.rune)
-      }
-      case RuntimeSizedArraySR(range, resultRune, mutabilityRune, elementRune) => {
-        humanizeRune(resultRune.rune) + " = " + "[]<" + humanizeRune(mutabilityRune.rune) + ">" + humanizeRune(elementRune.rune)
-      }
+//      case StaticSizedArraySR(range, resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune) => {
+//        humanizeRune(resultRune.rune) + " = " + "[#" + humanizeRune(sizeRune.rune) + "]<" + humanizeRune(mutabilityRune.rune) + ", " + humanizeRune(variabilityRune.rune) + ">" + humanizeRune(elementRune.rune)
+//      }
+//      case RuntimeSizedArraySR(range, resultRune, mutabilityRune, elementRune) => {
+//        humanizeRune(resultRune.rune) + " = " + "[]<" + humanizeRune(mutabilityRune.rune) + ">" + humanizeRune(elementRune.rune)
+//      }
       case other => vimpl(other)
     }
   }

@@ -28,9 +28,12 @@ class PostParsingParametersTests extends FunSuite with Matchers with Collector {
     // Should have T and the return rune
     vassert(main.runeToPredictedType.size == 2)
 
-    main.genericParams match {
-      case Vector(GenericParameterS(_, RuneUsage(_, CodeRuneS(StrI("T"))), _, None)) =>
-    }
+    val tyype =
+      main.genericParams match {
+        case Vector(GenericParameterS(_, RuneUsage(_, CodeRuneS(StrI("T"))), tyype, _, None)) => tyype
+      }
+    // We default any rune to coord.
+    vassert(tyype == CoordTemplataType())
   }
 
   test("Returned rune") {

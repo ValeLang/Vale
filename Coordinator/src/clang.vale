@@ -53,8 +53,8 @@ Subprocess {
     args.add("-g");
   }
 
-  if pic {
-    args.add("-fpic");
+  if (pic) {
+    args.add("-fPIC");
   }
 
   if (asan) {

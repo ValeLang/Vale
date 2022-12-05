@@ -1,0 +1,14 @@
+
+// Remove this before next stdlib patch
+func or(self &Opt<str>, default str) str {
+  if self.isEmpty() {
+    [ ] = self.as<None<str>>().expect("zork g");
+    return default;
+  } else {
+    return self.get();
+  }
+}
+
+func Subprocess(command str, something i64) Subprocess {
+  return Subprocess(command, None<str>(), something);
+}

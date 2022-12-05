@@ -46,10 +46,10 @@ int64_t stdlib_launch_command(stdlib_StrArray* chain, ValeStr* cwd_str) {
   //   printf("arg %d: %s\n", i, args[i]);
   // }
 
-  const char* cwd_or_null = cwd_str.length ? cwd_str.chars : SUBPROCESS_NULL;
+  const char* cwd_or_null = cwd_str->length ? cwd_str->chars : SUBPROCESS_NULL;
 
   struct subprocess_s* subproc = malloc(sizeof(struct subprocess_s));
-  if(subprocess_create_ex((const char**)args, subprocess_option_inherit_environment, SUBPROCESS_NULL, SUBPROCESS_NULL, cwd_or_null, subproc) != 0){
+  if (subprocess_create_ex((const char**)args, subprocess_option_inherit_environment, SUBPROCESS_NULL, cwd_or_null, subproc) != 0){
     perror("command creation failed");
     return 0;
   }

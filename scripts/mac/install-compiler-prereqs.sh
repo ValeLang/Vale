@@ -29,7 +29,7 @@ echo Installing brew...
 
 # Install stable valec, for the .vale parts of the compiler
 echo "Downloading and unzipping stable bootstrapping valec to $BOOTSTRAPPING_VALEC_DIR..."
-curl -L https://github.com/ValeLang/Vale/releases/download/v0.2.0/Vale-Mac-0.2.0.21.zip --output /tmp/BootstrappingValec.zip
+curl -L https://github.com/ValeLang/Vale/releases/download/v0.2.0/Vale-Mac-0.2.0.23.zip --output /tmp/BootstrappingValec.zip
 unzip /tmp/BootstrappingValec.zip -d $BOOTSTRAPPING_VALEC_DIR
 
 # Install misc dependencies

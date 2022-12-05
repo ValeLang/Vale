@@ -29,6 +29,11 @@ func Subprocess(command str, args &List<str>) Result<Subprocess, str> {
   return Subprocess(command, &newlist, None<str>());
 }
 
+// TODO(0.2.1): Deprecated, remove.
+func Subprocess(command str, something i64) Subprocess {
+  return Subprocess(command, None<str>(), something);
+}
+
 func Subprocess(relative_program str, args &List<StrSlice>, maybe_cwd Opt<str>) Result<Subprocess, str> {
 
   paths = get_env_var("PATH").split(":");

@@ -92,9 +92,10 @@ subprocess_weak int subprocess_create(const char *const command_line[],
 /// If `options` contains `subprocess_option_inherit_environment`, then
 /// `environment` must be NULL.
 subprocess_weak int
-subprocess_create_ex(const char *const command_line[], int options,
-                     const char *const environment[],
-                     struct subprocess_s *const out_process);
+subprocess_create_ex(const char *const commandLine[], int options,
+                         const char *const environment[],
+                         const char* const workingDirectory,
+                         struct subprocess_s *const out_process);
 
 /// @brief Get the standard input file for a process.
 /// @param process The process to query.

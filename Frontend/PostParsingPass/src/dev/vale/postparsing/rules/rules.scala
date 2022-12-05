@@ -235,6 +235,12 @@ case class CallSR(
   templateRune: RuneUsage,
   args: Vector[RuneUsage]
 ) extends IRulexSR {
+  this match {
+    case CallSR(_,RuneUsage(_,ImplicitRuneS(LocationInDenizen(Vector(6, 1, 1, 2, 1)))),RuneUsage(_,ImplicitRuneS(LocationInDenizen(Vector(6, 1, 1, 2, 2)))),Vector(RuneUsage(_,CodeRuneS(StrI("S"))), RuneUsage(_,CodeRuneS(StrI("M"))), RuneUsage(_,CodeRuneS(StrI("V"))), RuneUsage(_,CodeRuneS(StrI("E"))))) => {
+      vpass()
+    }
+    case _ =>
+  }
   override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
   override def runeUsages: Vector[RuneUsage] = Vector(resultRune, templateRune) ++ args
 }
@@ -248,27 +254,27 @@ case class PackSR(
   override def runeUsages: Vector[RuneUsage] = Vector(resultRune) ++ members
 }
 
-case class StaticSizedArraySR(
-  range: RangeS,
-  resultRune: RuneUsage,
-  mutabilityRune: RuneUsage,
-  variabilityRune: RuneUsage,
-  sizeRune: RuneUsage,
-  elementRune: RuneUsage
-) extends IRulexSR {
-  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
-  override def runeUsages: Vector[RuneUsage] = Vector(resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune)
-}
-
-case class RuntimeSizedArraySR(
-  range: RangeS,
-  resultRune: RuneUsage,
-  mutabilityRune: RuneUsage,
-  elementRune: RuneUsage
-) extends IRulexSR {
-  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
-  override def runeUsages: Vector[RuneUsage] = Vector(resultRune, mutabilityRune, elementRune)
-}
+//case class StaticSizedArraySR(
+//  range: RangeS,
+//  resultRune: RuneUsage,
+//  mutabilityRune: RuneUsage,
+//  variabilityRune: RuneUsage,
+//  sizeRune: RuneUsage,
+//  elementRune: RuneUsage
+//) extends IRulexSR {
+//  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
+//  override def runeUsages: Vector[RuneUsage] = Vector(resultRune, mutabilityRune, variabilityRune, sizeRune, elementRune)
+//}
+//
+//case class RuntimeSizedArraySR(
+//  range: RangeS,
+//  resultRune: RuneUsage,
+//  mutabilityRune: RuneUsage,
+//  elementRune: RuneUsage
+//) extends IRulexSR {
+//  override def equals(obj: Any): Boolean = vcurious(); override def hashCode(): Int = vcurious()
+//  override def runeUsages: Vector[RuneUsage] = Vector(resultRune, mutabilityRune, elementRune)
+//}
 
 sealed trait ILiteralSL {
   def getType(): ITemplataType

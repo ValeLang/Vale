@@ -77,7 +77,7 @@ case class StructS(
     //     tail ListNode<T>;
     //   }
     maybePredictedMutability: Option[MutabilityP],
-    maybePredictedType: Option[ITemplataType],
+    tyype: ITemplataType,
 
     // These are separated so that these alone can be run during resolving, see SMRASDR.
     headerRuneToExplicitType: Map[IRuneS, ITemplataType],
@@ -128,7 +128,7 @@ case class InterfaceS(
   //   }
   maybePredictedMutability: Option[MutabilityP],
   predictedRuneToType: Map[IRuneS, ITemplataType],
-  maybePredictedType: Option[ITemplataType],
+  tyype: ITemplataType,
 
   rules: Vector[IRulexSR],
   // See IMRFDI
@@ -148,6 +148,7 @@ case class ImplS(
     userSpecifiedIdentifyingRunes: Vector[GenericParameterS],
     rules: Vector[IRulexSR],
     runeToExplicitType: Map[IRuneS, ITemplataType],
+    tyype: ITemplataType,
     structKindRune: RuneUsage,
     subCitizenImpreciseName: IImpreciseNameS,
     interfaceKindRune: RuneUsage,
@@ -228,6 +229,7 @@ case class CodeBodyS(body: BodySE) extends IBodyS {
 case class GenericParameterS(
   range: RangeS,
   rune: RuneUsage,
+  tyype: ITemplataType,
   attributes: Vector[IRuneAttributeS],
   default: Option[GenericParameterDefaultS])
 
@@ -248,6 +250,7 @@ case class FunctionS(
 
     genericParams: Vector[GenericParameterS],
     runeToPredictedType: Map[IRuneS, ITemplataType],
+    tyype: ITemplataType,
 
     params: Vector[ParameterS],
 

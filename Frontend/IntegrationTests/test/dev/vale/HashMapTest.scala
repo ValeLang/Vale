@@ -219,7 +219,7 @@ class HashMapTest extends FunSuite with Matchers {
           |extern func __vbi_panic() __Never;
           |
           |extern("vale_runtime_sized_array_len")
-          |func len<M, E>(arr &[]<M>E) int;
+          |func len<M Mutability, E>(arr &[]<M>E) int;
           |
           |extern("vale_runtime_sized_array_mut_new")
           |func Array<M Mutability, E Ref>(size int) []<M>E
@@ -264,7 +264,7 @@ class HashMapTest extends FunSuite with Matchers {
         |extern func __vbi_panic() __Never;
         |
         |extern("vale_runtime_sized_array_len")
-        |func len<M, E>(arr &[]<M>E) int;
+        |func len<M Mutability, E>(arr &[]<M>E) int;
         |
         |extern("vale_runtime_sized_array_mut_new")
         |func Array<M Mutability, E Ref>(size int) []<M>E

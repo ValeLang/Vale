@@ -5,7 +5,7 @@ import dev.vale.{Accumulator, CodeLocationS, Interner, Keywords, PackageCoordina
 import dev.vale.parsing.ast.{BorrowP, FinalP, OwnP, UseP}
 import dev.vale.postparsing.patterns.{AbstractSP, AtomSP, CaptureS}
 import dev.vale.postparsing.{SealedS, _}
-import dev.vale.postparsing.rules.{AugmentSR, CallSR, CallSiteCoordIsaSR, CallSiteFuncSR, CoerceToCoordSR, CoordComponentsSR, DefinitionCoordIsaSR, DefinitionFuncSR, EqualsSR, Equivalencies, IRulexSR, IsConcreteSR, IsInterfaceSR, IsStructSR, KindComponentsSR, LiteralSR, LookupSR, OneOfSR, PackSR, PrototypeComponentsSR, RefListCompoundMutabilitySR, ResolveSR, RuleScout, RuneParentEnvLookupSR, RuneUsage, RuntimeSizedArraySR, StaticSizedArraySR}
+import dev.vale.postparsing.rules._
 import dev.vale.typing.{OverloadResolver, TypingPassOptions}
 import dev.vale.typing.citizen.StructCompiler
 import dev.vale.typing.env.{FunctionEnvEntry, IEnvEntry, ImplEnvEntry, StructEnvEntry}
@@ -86,7 +86,7 @@ class AnonymousInterfaceMacro(
           structA.name.getImpreciseName(interner)),
         CallSR(
           structA.range,
-          RuneUsage(structA.range, AnonymousSubstructRuneS()),
+          RuneUsage(structA.range, AnonymousSubstructKindRuneS()),
           RuneUsage(structA.range, AnonymousSubstructTemplateRuneS()),
           structA.genericParameters.map(_.rune).toVector),
         LookupSR(
@@ -95,7 +95,7 @@ class AnonymousInterfaceMacro(
           interfaceA.name.getImpreciseName(interner)),
         CallSR(
           interfaceA.range,
-          RuneUsage(interfaceA.range, AnonymousSubstructParentInterfaceRuneS()),
+          RuneUsage(interfaceA.range, AnonymousSubstructParentInterfaceKindRuneS()),
           RuneUsage(interfaceA.range, AnonymousSubstructParentInterfaceTemplateRuneS()),
           interfaceA.genericParameters.map(_.rune).toVector))
     val runeToType =
@@ -105,12 +105,12 @@ class AnonymousInterfaceMacro(
 //      structA.headerRuneToType ++
       structA.membersRuneToType ++
       Vector(
-        (AnonymousSubstructRuneS() -> KindTemplataType()),
+        (AnonymousSubstructKindRuneS() -> KindTemplataType()),
         (AnonymousSubstructTemplateRuneS() -> structA.tyype),
-        (AnonymousSubstructParentInterfaceRuneS() -> KindTemplataType()),
+        (AnonymousSubstructParentInterfaceKindRuneS() -> KindTemplataType()),
         (AnonymousSubstructParentInterfaceTemplateRuneS() -> interfaceA.tyype))
-    val structKindRuneS = RuneUsage(interfaceA.range, AnonymousSubstructRuneS())
-    val interfaceKindRuneS = RuneUsage(interfaceA.range, AnonymousSubstructParentInterfaceRuneS())
+    val structKindRuneS = RuneUsage(interfaceA.range, AnonymousSubstructKindRuneS())
+    val interfaceKindRuneS = RuneUsage(interfaceA.range, AnonymousSubstructParentInterfaceKindRuneS())
 
     val implNameS = interner.intern(AnonymousSubstructImplDeclarationNameS(interfaceA.name))
 //    val implImpreciseNameS = interner.intern(ImplImpreciseNameS(RuleScout.getRuneKindTemplate(rules, structKindRuneS.rune)))
@@ -167,8 +167,8 @@ class AnonymousInterfaceMacro(
       case AugmentSR(range, RuneUsage(a, resultRune), ownership, RuneUsage(b, innerRune)) => AugmentSR(range, RuneUsage(a, func(resultRune)), ownership, RuneUsage(b, func(innerRune)))
       case CallSR(range, RuneUsage(a, resultRune), RuneUsage(b, templateRune), args) => CallSR(range, RuneUsage(a, func(resultRune)), RuneUsage(b, func(templateRune)), args.map({ case RuneUsage(c, rune) => RuneUsage(c, func(rune)) }))
       case PackSR(range, RuneUsage(a, resultRune), members) => PackSR(range, RuneUsage(a, resultRune), members.map({ case RuneUsage(c, rune) => RuneUsage(c, func(rune)) }))
-      case StaticSizedArraySR(range, RuneUsage(a, resultRune), RuneUsage(b, mutabilityRune), RuneUsage(c, variabilityRune), RuneUsage(d, sizeRune), RuneUsage(e, elementRune)) => StaticSizedArraySR(range, RuneUsage(a, func(resultRune)), RuneUsage(b, func(mutabilityRune)), RuneUsage(c, func(variabilityRune)), RuneUsage(d, func(sizeRune)), RuneUsage(e, func(elementRune)))
-      case RuntimeSizedArraySR(range, RuneUsage(a, resultRune), RuneUsage(b, mutabilityRune), RuneUsage(c, elementRune)) => RuntimeSizedArraySR(range, RuneUsage(a, func(resultRune)), RuneUsage(b, func(mutabilityRune)), RuneUsage(c, func(elementRune)))
+//      case StaticSizedArraySR(range, RuneUsage(a, resultRune), RuneUsage(b, mutabilityRune), RuneUsage(c, variabilityRune), RuneUsage(d, sizeRune), RuneUsage(e, elementRune)) => StaticSizedArraySR(range, RuneUsage(a, func(resultRune)), RuneUsage(b, func(mutabilityRune)), RuneUsage(c, func(variabilityRune)), RuneUsage(d, func(sizeRune)), RuneUsage(e, func(elementRune)))
+//      case RuntimeSizedArraySR(range, RuneUsage(a, resultRune), RuneUsage(b, mutabilityRune), RuneUsage(c, elementRune)) => RuntimeSizedArraySR(range, RuneUsage(a, func(resultRune)), RuneUsage(b, func(mutabilityRune)), RuneUsage(c, func(elementRune)))
       case RefListCompoundMutabilitySR(range, RuneUsage(a, resultRune), RuneUsage(b, coordListRune)) => RefListCompoundMutabilitySR(range, RuneUsage(a, func(resultRune)), RuneUsage(b, func(coordListRune)))
       case other => vimpl(other)
     }
@@ -179,6 +179,9 @@ class AnonymousInterfaceMacro(
   }
 
   private def makeStruct(interfaceA: InterfaceA, memberRunes: Vector[RuneUsage], members: Vector[NormalStructMemberS], structTemplateNameS: AnonymousSubstructTemplateNameS) = {
+    def range(n: Int) = RangeS.internal(interner, n)
+    def use(n: Int, rune: IRuneS) = RuneUsage(range(n), rune)
+
     // For this interface:
     //
     //   #!DeriveInterfaceDrop
@@ -202,14 +205,16 @@ class AnonymousInterfaceMacro(
     runeToType ++= interfaceA.runeToType
     runeToType ++= memberRunes.map(_.rune -> CoordTemplataType())
 
-    val voidRune = AnonymousSubstructVoidRuneS()
-    runeToType += voidRune -> CoordTemplataType()
-    rulesBuilder.add(
-      LookupSR(
-        interfaceA.range, RuneUsage(interfaceA.range, voidRune), interner.intern(CodeNameS(keywords.void))))
+    val voidKindRune = AnonymousSubstructVoidKindRuneS()
+    runeToType.put(voidKindRune, KindTemplataType())
+    rulesBuilder.add(LookupSR(range(-1672147),use(-64002, voidKindRune),interner.intern(CodeNameS(keywords.void))))
+    val voidCoordRune = AnonymousSubstructVoidCoordRuneS()
+    runeToType.put(voidCoordRune, CoordTemplataType())
+    rulesBuilder.add(CoerceToCoordSR(range(-1672147),use(-64002, voidCoordRune),use(-64002, voidKindRune)))
 
     val structGenericParams =
-      interfaceA.genericParameters ++ memberRunes.map(mr => GenericParameterS(mr.range, mr, Vector(), None))
+      interfaceA.genericParameters ++
+        memberRunes.map(mr => GenericParameterS(mr.range, mr, CoordTemplataType(), Vector(), None))
 
     interfaceA.internalMethods.zip(memberRunes).zipWithIndex.foreach({ case ((internalMethod, memberRune), methodIndex) =>
       val methodRuneToType =
@@ -273,7 +278,7 @@ class AnonymousInterfaceMacro(
           RuneUsage(interfaceParam.range, inheritedMethodRune(interfaceA, internalMethod, vassertSome(interfaceParam.coordRune).rune))
         runeToType.put(interfaceCoordRune.rune, CoordTemplataType())
 
-        val methodInterfaceKindRune =
+        val methodInterfaceCoordRune =
           RuneUsage(
             interfaceParam.range,
             inheritedMethodRune(interfaceA, internalMethod,
@@ -296,12 +301,18 @@ class AnonymousInterfaceMacro(
           RuneUsage(interfaceParam.range, AnonymousSubstructFunctionInterfaceTemplateRune(interfaceA.name, internalMethod.name))
         runeToType.put(methodInterfaceTemplateRune.rune, interfaceA.tyype)
 
+        val methodInterfaceKindRune =
+          RuneUsage(interfaceParam.range, AnonymousSubstructFunctionInterfaceKindRune(interfaceA.name, internalMethod.name))
+        runeToType.put(methodInterfaceKindRune.rune, KindTemplataType())
+
         rulesBuilder.add(
           LookupSR(interfaceParam.range, methodInterfaceTemplateRune, interfaceA.name.getImpreciseName(interner)))
 //        rulesBuilder.add(
 //          CoordComponentsSR(interfaceParam.range, interfaceCoordRune, methodInterfaceOwnershipRune, methodInterfaceKindRune))
         rulesBuilder.add(
           CallSR(interfaceParam.range, methodInterfaceKindRune, methodInterfaceTemplateRune, interfaceA.genericParameters.map(_.rune).toVector))
+        rulesBuilder.add(
+          CoerceToCoordSR(interfaceParam.range, methodInterfaceCoordRune, methodInterfaceKindRune))
 
         val methodPrototypeRune =
           RuneUsage(
@@ -343,13 +354,13 @@ class AnonymousInterfaceMacro(
             AnonymousSubstructDropBoundPrototypeRuneS(interfaceA.name, internalMethod.name))
         rulesBuilder.add(
           DefinitionFuncSR(
-            internalMethod.range, dropPrototypeRune, keywords.drop, dropParamsListRune, RuneUsage(internalMethod.range, voidRune)))
+            internalMethod.range, dropPrototypeRune, keywords.drop, dropParamsListRune, RuneUsage(internalMethod.range, voidCoordRune)))
         rulesBuilder.add(
           CallSiteFuncSR(
-            internalMethod.range, dropPrototypeRune, keywords.drop, dropParamsListRune, RuneUsage(internalMethod.range, voidRune)))
+            internalMethod.range, dropPrototypeRune, keywords.drop, dropParamsListRune, RuneUsage(internalMethod.range, voidCoordRune)))
         rulesBuilder.add(
           ResolveSR(
-            internalMethod.range, dropPrototypeRune, keywords.drop, dropParamsListRune, RuneUsage(internalMethod.range, voidRune)))
+            internalMethod.range, dropPrototypeRune, keywords.drop, dropParamsListRune, RuneUsage(internalMethod.range, voidCoordRune)))
         runeToType.put(dropPrototypeRune.rune, PrototypeTemplataType())
       }
     })

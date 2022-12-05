@@ -1,5 +1,5 @@
 
-func has<E, F, M>(arr &[]<M>E, elem &E, equator &F) bool
+func has<E, F, M Mutability>(arr &[]<M>E, elem &E, equator &F) bool
 where func(&F, &E, &E)bool {
   i = 0;
   while (i < arr.len()) {
@@ -11,12 +11,12 @@ where func(&F, &E, &E)bool {
   return false;
 }
 
-func has<E, M>(arr &[]<M>E, elem &E) bool
+func has<E, M Mutability>(arr &[]<M>E, elem &E) bool
 where func ==(&E, &E)bool {
   has(arr, elem, { _ == _ })
 }
 
-func has<E, F, N, M>(seq &[#N]<M>E, elem &E, equator &F) bool
+func has<E, F, N Int, M Mutability>(seq &[#N]<M>E, elem &E, equator &F) bool
 where func(&F, &E, &E)bool {
   i = 0;
   while (i < seq.len()) {
@@ -28,7 +28,7 @@ where func(&F, &E, &E)bool {
   return false;
 }
 
-func has<E, N, M>(seq &[#N]<M>E, elem &E) bool
+func has<E, N Int, M Mutability>(seq &[#N]<M>E, elem &E) bool
 where func ==(&E, &E)bool {
   return has(seq, elem, { _ == _ });
 }

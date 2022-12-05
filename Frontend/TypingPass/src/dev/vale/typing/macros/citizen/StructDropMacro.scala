@@ -2,7 +2,7 @@ package dev.vale.typing.macros.citizen
 
 import dev.vale.highertyping._
 import dev.vale.postparsing.patterns.{AbstractSP, AtomSP, CaptureS}
-import dev.vale.postparsing.rules.{CallSR, CoerceToCoordSR, CoordComponentsSR, EqualsSR, IRulexSR, LookupSR, RuneUsage}
+import dev.vale.postparsing.rules._
 import dev.vale.{Accumulator, Interner, Keywords, RangeS, StrI, vimpl, vwat}
 import dev.vale.postparsing._
 import dev.vale.typing.ast.{ArgLookupTE, BlockTE, DestroyTE, DiscardTE, FunctionHeaderT, FunctionDefinitionT, LocationInFunctionEnvironment, ParameterT, ReturnTE, UnletTE, VoidLiteralTE}
@@ -45,26 +45,38 @@ class StructDropMacro(
     // Use the same runes as the original struct, see MDSFONARFO.
     structA.headerRuneToType.foreach(runeToType += _)
 
-    val vooid = MacroVoidRuneS()
-    runeToType.put(vooid, CoordTemplataType())
-    rules.add(LookupSR(range(-1672147),use(-64002, vooid),interner.intern(CodeNameS(keywords.void))))
+    val voidKindRune = MacroVoidKindRuneS()
+    runeToType.put(voidKindRune, KindTemplataType())
+    rules.add(LookupSR(range(-1672147),use(-64002, voidKindRune),interner.intern(CodeNameS(keywords.void))))
+    val voidCoordRune = MacroVoidCoordRuneS()
+    runeToType.put(voidCoordRune, CoordTemplataType())
+    rules.add(CoerceToCoordSR(range(-1672147),use(-64002, voidCoordRune),use(-64002, voidKindRune)))
 
-    val structNameRune = StructNameRuneS(structA.name)
-    runeToType += (structNameRune -> structA.tyype)
-
-    val self = MacroSelfRuneS()
-    runeToType += (self -> CoordTemplataType())
+    val selfKindTemplateRune = SelfKindTemplateRuneS()
+    runeToType += (selfKindTemplateRune -> structA.tyype)
     rules.add(
       LookupSR(
         structA.name.range,
-        RuneUsage(structA.name.range, structNameRune),
+        RuneUsage(structA.name.range, selfKindTemplateRune),
         structA.name.getImpreciseName(interner)))
+
+    val selfKindRune = SelfKindRuneS()
+    runeToType += (selfKindRune -> KindTemplataType())
     rules.add(
       CallSR(
         structA.name.range,
-        use(-64002, self),
-        RuneUsage(structA.name.range, structNameRune),
+        use(-64002, selfKindRune),
+        RuneUsage(structA.name.range, selfKindTemplateRune),
         structA.genericParameters.map(_.rune).toVector))
+
+    val selfCoordRune = SelfCoordRuneS()
+    runeToType += (selfCoordRune -> CoordTemplataType())
+    rules.add(
+      CoerceToCoordSR(
+        structA.name.range,
+        RuneUsage(structA.name.range, selfCoordRune),
+        RuneUsage(structA.name.range, selfKindRune)))
+
 
     // Use the same generic parameters as the struct
     val functionGenericParameters = structA.genericParameters
@@ -89,8 +101,8 @@ class StructDropMacro(
               range(-1340),
               Some(CaptureS(interner.intern(CodeVarNameS(keywords.thiss)))),
               None,
-              Some(use(-64002, self)), None))),
-        Some(use(-64002, vooid)),
+              Some(use(-64002, selfCoordRune)), None))),
+        Some(use(-64002, voidCoordRune)),
         rules.buildArray().toVector,
         GeneratedBodyS(dropGeneratorId))
 
@@ -118,6 +130,8 @@ class StructDropMacro(
       Vector(),
       Map(
         CodeRuneS(keywords.DropP1) -> CoordTemplataType(),
+        CodeRuneS(keywords.DropP1K) -> KindTemplataType(),
+        CodeRuneS(keywords.DropVK) -> KindTemplataType(),
         CodeRuneS(keywords.DropV) -> CoordTemplataType()),
       Vector(
         ParameterS(AtomSP(RangeS.internal(interner, -1342), Some(CaptureS(interner.intern(CodeVarNameS(keywords.x)))), None, Some(RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropP1))), None))),
@@ -125,9 +139,11 @@ class StructDropMacro(
       Vector(
         LookupSR(
           RangeS.internal(interner, -1672161),
-          RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropP1)),
+          RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropP1K)),
           interner.intern(SelfNameS())),
-        LookupSR(RangeS.internal(interner, -1672162), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropV)), interner.intern(CodeNameS(keywords.void)))),
+        LookupSR(RangeS.internal(interner, -1672162), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropVK)), interner.intern(CodeNameS(keywords.void))),
+        CoerceToCoordSR(RangeS.internal(interner, -1672162), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropV)), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropVK))),
+        CoerceToCoordSR(RangeS.internal(interner, -1672162), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropP1)), RuneUsage(RangeS.internal(interner, -64002), CodeRuneS(keywords.DropP1K)))),
       GeneratedBodyS(dropGeneratorId))
   }
 

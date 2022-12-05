@@ -25,12 +25,6 @@ case class DeferredEvaluatingFunction(
 
 
 case class CompilerOutputs() {
-  // Removed this because generics and removing infer-ret solved it
-  //  // Signatures that have already started to be compiled.
-  //  // The value is a location for checking where a given function came from, which is useful
-  //  // for detecting when the user makes two functions with identical signatures.
-  //  private val declaredSignatures: mutable.HashMap[SignatureT, RangeS] = mutable.HashMap()
-
   // Not all signatures/banners will have a return type here, it might not have been processed yet.
   private val returnTypesBySignature: mutable.HashMap[SignatureT, CoordT] = mutable.HashMap()
 

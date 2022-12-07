@@ -34,15 +34,6 @@ trait IStructCompilerDelegate {
     functionTemplata: FunctionTemplata,
     verifyConclusions: Boolean):
   FunctionHeaderT
-//
-//  def evaluateGenericLightFunctionFromCallForPrototype(
-//    coutputs: CompilerOutputs,
-//    callRange: List[RangeS],
-//    callingEnv: IEnvironment, // See CSSNCE
-//    functionTemplata: FunctionTemplata,
-//    explicitTemplateArgs: Vector[ITemplata[ITemplataType]],
-//    args: Vector[Option[CoordT]]):
-//  IEvaluateFunctionResult
 
   def scoutExpectedFunctionForPrototype(
     env: IEnvironment,

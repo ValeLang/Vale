@@ -295,7 +295,7 @@ case class OptimizedSolverState[Rule, Rune, Conclusion](
 
   override def getConclusions(): Stream[(Int, Conclusion)] = vimpl()
 
-  override def getAllRules(): Vector[Rule] = vimpl()
+  override def getAllRules(): Vector[Rule] = rules.toVector
 
   override def addPuzzle(ruleIndex: Int, runesVec: Vector[Int]): Unit = {
     val runes = runesVec.toArray

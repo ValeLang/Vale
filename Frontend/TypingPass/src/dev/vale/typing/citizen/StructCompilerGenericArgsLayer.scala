@@ -55,18 +55,27 @@ class StructCompilerGenericArgsLayer(
           structA.headerRules.toVector, structA.genericParameters, templateArgs.size)
 
       // Check if its a valid use of this template
-      val CompleteCompilerSolve(_, inferences, runeToFunctionBound, Vector()) =
-        inferCompiler.solve(
-          InferEnv(originalCallingEnv, callRange, declaringEnv),
+      val envs = InferEnv(originalCallingEnv, callRange, declaringEnv)
+      val solver =
+        inferCompiler.makeSolver(
+          envs,
           coutputs,
           callSiteRules,
           structA.headerRuneToType,
           callRange,
           initialKnowns,
-          Vector(),
+          Vector())
+      val CompleteCompilerSolve(_, inferences, runeToFunctionBound, Vector()) =
+        inferCompiler.solve(
+          envs,
+          coutputs,
+          callRange,
+          structA.headerRuneToType,
+          callSiteRules,
           true,
           false,
-          Vector()) match {
+          Vector(),
+          solver) match {
           case ccs @ CompleteCompilerSolve(_, _, _, _) => ccs
           case x : IIncompleteOrFailedCompilerSolve => return ResolveFailure(callRange, x)
         }
@@ -237,18 +246,27 @@ class StructCompilerGenericArgsLayer(
           interfaceA.rules.toVector, interfaceA.genericParameters, templateArgs.size)
 
       // This checks to make sure it's a valid use of this template.
-      val CompleteCompilerSolve(_, inferences, runeToFunctionBound, Vector()) =
-        inferCompiler.solve(
-          InferEnv(originalCallingEnv, callRange, declaringEnv),
+      val envs = InferEnv(originalCallingEnv, callRange, declaringEnv)
+      val solver =
+        inferCompiler.makeSolver(
+          envs,
           coutputs,
           callSiteRules,
           interfaceA.runeToType,
           callRange,
           initialKnowns,
-          Vector(),
+          Vector())
+      val CompleteCompilerSolve(_, inferences, runeToFunctionBound, Vector()) =
+        inferCompiler.solve(
+          envs,
+          coutputs,
+          callRange,
+          interfaceA.runeToType,
+          callSiteRules,
           true,
           false,
-          Vector()) match {
+          Vector(),
+          solver) match {
           case ccs @ CompleteCompilerSolve(_, _, _, _) => ccs
           case x : IIncompleteOrFailedCompilerSolve => return ResolveFailure(callRange, x)
         }
@@ -291,10 +309,20 @@ class StructCompilerGenericArgsLayer(
       //   func Vector<M, E>(size int) []<M>E
       //   where M Mutability = mut, E Ref;
       // In the future we might need to outlaw specialization, unsure.
+      val preliminarySolveEnvs = InferEnv(outerEnv, List(structA.range), outerEnv)
+      val preliminarySolver =
+        inferCompiler.makeSolver(
+          preliminarySolveEnvs,
+          coutputs,
+          definitionRules.toVector,
+          allRuneToType,
+          structA.range :: parentRanges,
+          Vector(),
+          Vector())
       val preliminaryInferences =
         inferCompiler.solve(
-          InferEnv(outerEnv, List(structA.range), outerEnv),
-          coutputs, definitionRules.toVector, allRuneToType, structA.range :: parentRanges, Vector(), Vector(), true, true, Vector()) match {
+          preliminarySolveEnvs,
+          coutputs, structA.range :: parentRanges, allRuneToType, definitionRules, true, true, Vector(), preliminarySolver) match {
           case f @ FailedCompilerSolve(_, _, err) => {
             throw CompileErrorExceptionT(typing.TypingPassSolverError(structA.range :: parentRanges, f))
           }
@@ -388,10 +416,20 @@ class StructCompilerGenericArgsLayer(
       //   func Vector<M, E>(size int) []<M>E
       //   where M Mutability = mut, E Ref;
       // In the future we might need to outlaw specialization, unsure.
+      val preliminarySolveEnvs = InferEnv(outerEnv, List(interfaceA.range), outerEnv)
+      val preliminarySolver =
+        inferCompiler.makeSolver(
+          preliminarySolveEnvs,
+          coutputs,
+          definitionRules.toVector,
+          interfaceA.runeToType,
+          interfaceA.range :: parentRanges,
+          Vector(),
+          Vector())
       val preliminaryInferences =
         inferCompiler.solve(
-          InferEnv(outerEnv, List(interfaceA.range), outerEnv),
-          coutputs, definitionRules, interfaceA.runeToType, interfaceA.range :: parentRanges, Vector(), Vector(), true, true, Vector()) match {
+          preliminarySolveEnvs,
+          coutputs, interfaceA.range :: parentRanges, interfaceA.runeToType, definitionRules, true, true, Vector(), preliminarySolver) match {
           case f @ FailedCompilerSolve(_, _, err) => {
             throw CompileErrorExceptionT(typing.TypingPassSolverError(interfaceA.range :: parentRanges, f))
           }

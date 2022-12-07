@@ -507,17 +507,6 @@ class Compiler(
       templataCompiler,
       inferCompiler,
       new IStructCompilerDelegate {
-//
-//        override def evaluateOrdinaryFunctionFromNonCallForHeader(
-//          coutputs: CompilerOutputs,
-//          parentRanges: List[RangeS],
-//          functionTemplata: FunctionTemplata,
-//          verifyConclusions: Boolean):
-//        FunctionHeaderT = {
-//          functionCompiler.evaluateOrdinaryFunctionFromNonCallForHeader(
-//            coutputs, parentRanges, functionTemplata, verifyConclusions)
-//        }
-
         override def evaluateGenericFunctionFromNonCallForHeader(
           coutputs: CompilerOutputs,
           parentRanges: List[RangeS],
@@ -527,18 +516,6 @@ class Compiler(
           functionCompiler.evaluateGenericFunctionFromNonCall(
             coutputs, parentRanges, functionTemplata, verifyConclusions)
         }
-
-//        override def evaluateGenericLightFunctionFromCallForPrototype(
-//          coutputs: CompilerOutputs,
-//          callRange: List[RangeS],
-//          callingEnv: IEnvironment, // See CSSNCE
-//          functionTemplata: FunctionTemplata,
-//          explicitTemplateArgs: Vector[ITemplata[ITemplataType]],
-//          args: Vector[Option[CoordT]]):
-//        IEvaluateFunctionResult = {
-//          functionCompiler.evaluateGenericLightFunctionFromCallForPrototype(
-//            coutputs, callRange, callingEnv, functionTemplata, explicitTemplateArgs, args)
-//        }
 
         override def scoutExpectedFunctionForPrototype(
           env: IEnvironment, coutputs: CompilerOutputs, callRange: List[RangeS], functionName: IImpreciseNameS,

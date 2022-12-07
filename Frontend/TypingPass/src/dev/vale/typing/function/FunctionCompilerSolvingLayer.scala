@@ -333,18 +333,27 @@ class FunctionCompilerSolvingLayer(
     //   func map<T, F>(self Opt<T>, f F, t T) { ... }
     // into a:
     //   func map<F>(self Opt<$0>, f F, t $0) { ... }
+    val preliminaryEnvs = InferEnv(callingEnv, callRange, nearEnv)
+    val preliminarySolver =
+      inferCompiler.makeSolver(
+        preliminaryEnvs,
+        coutputs,
+        functionDefinitionRules,
+        function.runeToType,
+        function.range :: callRange,
+        Vector(),
+        initialSends)
     val preliminaryInferences =
       inferCompiler.solve(
-          InferEnv(callingEnv, callRange, nearEnv),
+          preliminaryEnvs,
           coutputs,
-          functionDefinitionRules,
-          function.runeToType,
           function.range :: callRange,
-          Vector(),
-          initialSends,
-        false,
+          function.runeToType,
+          functionDefinitionRules,
+          false,
           true,
-        Vector()) match {
+          Vector(),
+        preliminarySolver) match {
         case f @ FailedCompilerSolve(_, _, err) => {
           throw CompileErrorExceptionT(typing.TypingPassSolverError(function.range :: callRange, f))
         }
@@ -426,19 +435,28 @@ class FunctionCompilerSolvingLayer(
     //   func Vector<M, E>(size int) []<M>E
     //   where M Mutability = mut, E Ref;
     // In the future we might need to outlaw specialization, unsure.
-    val (preliminaryInferences, preliminaryReachableBoundsFromParamsAndReturn) =
-      inferCompiler.solve(
-        InferEnv(nearEnv, parentRanges, nearEnv),
+    val preliminaryEnvs = InferEnv(nearEnv, parentRanges, nearEnv)
+    val preliminarySolver =
+      inferCompiler.makeSolver(
+        preliminaryEnvs,
         coutputs,
         definitionRules,
         function.runeToType,
         function.range :: parentRanges,
         Vector(),
-        Vector(),
+        Vector())
+    val (preliminaryInferences, preliminaryReachableBoundsFromParamsAndReturn) =
+      inferCompiler.solve(
+        preliminaryEnvs,
+        coutputs,
+        function.range :: parentRanges,
+        function.runeToType,
+        definitionRules,
         true,
         true,
         // This is so we can automatically grab the bounds from parameters, see NBIFP.
-        paramRunes) match {
+        paramRunes,
+        preliminarySolver) match {
         case f @ FailedCompilerSolve(_, _, err) => {
           throw CompileErrorExceptionT(typing.TypingPassSolverError(function.range :: parentRanges, f))
         }
@@ -483,13 +501,6 @@ class FunctionCompilerSolvingLayer(
     // We don't add these here because we aren't instantiating anything here, we're compiling a function
     // not calling it.
     // coutputs.addInstantiationBounds(header.toPrototype.fullName, runeToFunctionBound)
-
-    header.fullName match {
-      case IdT(_,Vector(),FunctionNameT(FunctionTemplateNameT(StrI("keys"),_),Vector(_),Vector(CoordT(BorrowT,StructTT(IdT(_,Vector(),StructNameT(StructTemplateNameT(StrI("HashMap")),Vector(_)))))))) => {
-        vpass()
-      }
-      case _ =>
-    }
 
     header
   }

@@ -79,25 +79,29 @@ class ImplCompiler(
     // so we do need to filter them out when compiling.
     val definitionRules = rules.filter(InferCompiler.includeRuleInCallSiteSolve)
 
+    val envs =
+      InferEnv(
+        // This is callingEnv because we might be coming from an abstract function that's trying
+        // to evaluate an override.
+        callingEnv,
+        range :: parentRanges,
+        outerEnv)
+    val solver =
+      inferCompiler.makeSolver(
+        envs, coutputs, definitionRules, runeToType, range :: parentRanges, initialKnowns, Vector())
     val result =
       inferCompiler.solve(
-        InferEnv(
-          // This is callingEnv because we might be coming from an abstraction function that's trying
-          // to evaluate an override.
-          callingEnv,
-          range :: parentRanges,
-          outerEnv),
+        envs,
         coutputs,
-        definitionRules,
-        runeToType,
         range :: parentRanges,
-        initialKnowns,
-        Vector(),
+        runeToType,
+        definitionRules,
         verifyConclusions,
         isRootSolve,
         // We include the reachable bounds for the struct rune. Those are bounds that this impl will
         // have to satisfy when it calls the interface.
-        Vector(structKindRune.rune))
+        Vector(structKindRune.rune),
+        solver)
     result
   }
 

@@ -137,6 +137,8 @@ class InferCompiler(
     nameTranslator: NameTranslator,
     infererDelegate: IInfererDelegate,
     delegate: IInferCompilerDelegate) {
+  val compilerSolver = new CompilerSolver(opts.globalOptions, interner, infererDelegate)
+
   def solveComplete(
     envs: InferEnv, // See CSSNCE
     coutputs: CompilerOutputs,
@@ -149,7 +151,10 @@ class InferCompiler(
     isRootSolve: Boolean,
     includeReachableBoundsForRunes: Vector[IRuneS]):
   Result[CompleteCompilerSolve, IIncompleteOrFailedCompilerSolve] = {
-    solve(envs, coutputs, rules, runeToType, invocationRange, initialKnowns, initialSends, verifyConclusions, isRootSolve, includeReachableBoundsForRunes) match {
+    val solver =
+      makeSolver(envs, coutputs, rules, runeToType, invocationRange, initialKnowns, initialSends)
+
+    solve(envs, coutputs, invocationRange, runeToType, rules, verifyConclusions, isRootSolve, includeReachableBoundsForRunes, solver) match {
       case f @ FailedCompilerSolve(_, _, _) => Err(f)
       case i @ IncompleteCompilerSolve(_, _, _, _) => Err(i)
       case c @ CompleteCompilerSolve(_, _, _, _) => Ok(c)
@@ -168,7 +173,11 @@ class InferCompiler(
     isRootSolve: Boolean,
     includeReachableBoundsForRunes: Vector[IRuneS]):
   CompleteCompilerSolve = {
-    solve(envs, coutputs, rules, runeToType, invocationRange, initialKnowns, initialSends, verifyConclusions, isRootSolve, includeReachableBoundsForRunes) match {
+
+    val solver =
+      makeSolver(envs, coutputs, rules, runeToType, invocationRange, initialKnowns, initialSends)
+
+    solve(envs, coutputs, invocationRange, runeToType, rules, verifyConclusions, isRootSolve, includeReachableBoundsForRunes, solver) match {
       case f @ FailedCompilerSolve(_, _, err) => {
         throw CompileErrorExceptionT(typing.TypingPassSolverError(invocationRange, f))
       }
@@ -180,18 +189,15 @@ class InferCompiler(
   }
 
 
-  def solve(
+  def makeSolver(
     envs: InferEnv, // See CSSNCE
     state: CompilerOutputs,
     initialRules: Vector[IRulexSR],
     initialRuneToType: Map[IRuneS, ITemplataType],
     invocationRange: List[RangeS],
     initialKnowns: Vector[InitialKnown],
-    initialSends: Vector[InitialSend],
-    verifyConclusions: Boolean,
-    isRootSolve: Boolean,
-    includeReachableBoundsForRunes: Vector[IRuneS]):
-  ICompilerSolverOutcome = {
+    initialSends: Vector[InitialSend]):
+  Solver[IRulexSR, IRuneS, InferEnv, CompilerOutputs, ITemplata[ITemplataType], ITypingPassSolverError] = {
     Profiler.frame(() => {
       val runeToType =
         initialRuneToType ++
@@ -217,42 +223,57 @@ class InferCompiler(
             (senderRune.rune -> senderTemplata)
           })
 
-      new CompilerSolver(opts.globalOptions, interner, infererDelegate)
-        .solve(
-          invocationRange,
-          envs,
-          state,
-          rules,
-          runeToType,
-          alreadyKnown) match {
-        case CompleteSolve(steps, conclusions) => {
-          val reachableBounds =
-            includeReachableBoundsForRunes
-              .map(conclusions)
-              .flatMap(conc => TemplataCompiler.getReachableBounds(interner, keywords, state, conc))
-          val runeToFunctionBound =
-            if (verifyConclusions) {
-              checkTemplateInstantiations(envs, state, invocationRange, rules.toVector, conclusions, reachableBounds, isRootSolve) match {
-                case Ok(c) => vassertSome(c)
-                case Err(e) => return FailedCompilerSolve(steps, Vector(), e)
-              }
-            } else {
-              InstantiationBoundArguments(Map(), Map())
-            }
-          CompleteCompilerSolve(steps, conclusions, runeToFunctionBound, reachableBounds)
-        }
-        case IncompleteSolve(steps, unsolvedRules, unknownRunes, incompleteConclusions) => {
-          if (verifyConclusions) {
-            checkTemplateInstantiations(envs, state, invocationRange, rules.toVector, incompleteConclusions, Vector(), isRootSolve) match {
-              case Ok(c) =>
-              case Err(e) => return FailedCompilerSolve(steps, unsolvedRules, e)
-            }
-          }
-          IncompleteCompilerSolve(steps, unsolvedRules, unknownRunes, incompleteConclusions)
-        }
-        case FailedSolve(steps, unsolvedRules, error) => FailedCompilerSolve(steps, unsolvedRules, error)
-      }
+      val solver =
+        compilerSolver.makeSolver(invocationRange, envs, state, rules, runeToType, alreadyKnown)
+      solver
     })
+  }
+
+
+  def solve(
+    envs: InferEnv, // See CSSNCE
+    state: CompilerOutputs,
+    invocationRange: List[RangeS],
+    runeToType: Map[IRuneS, ITemplataType],
+    initialRules: Vector[IRulexSR],
+    verifyConclusions: Boolean,
+    isRootSolve: Boolean,
+    includeReachableBoundsForRunes: Vector[IRuneS],
+    solver: Solver[IRulexSR, IRuneS, InferEnv, CompilerOutputs, ITemplata[ITemplataType], ITypingPassSolverError]):
+  ICompilerSolverOutcome = {
+    compilerSolver.solve(envs, state, solver) match {
+      case Ok(()) =>
+      case Err(FailedSolve(steps, unsolvedRules, error)) => return FailedCompilerSolve(steps, unsolvedRules, error)
+    }
+
+    compilerSolver.finishSolving(runeToType, solver) match {
+      case CompleteSolve(steps, conclusions) => {
+        val reachableBounds =
+          includeReachableBoundsForRunes
+            .map(conclusions)
+            .flatMap(conc => TemplataCompiler.getReachableBounds(interner, keywords, state, conc))
+        val runeToFunctionBound =
+          if (verifyConclusions) {
+            checkTemplateInstantiations(envs, state, invocationRange, initialRules, conclusions, reachableBounds, isRootSolve) match {
+              case Ok(c) => vassertSome(c)
+              case Err(e) => return FailedCompilerSolve(steps, Vector(), e)
+            }
+          } else {
+            InstantiationBoundArguments(Map(), Map())
+          }
+        CompleteCompilerSolve(steps, conclusions, runeToFunctionBound, reachableBounds)
+      }
+      case IncompleteSolve(steps, unsolvedRules, unknownRunes, incompleteConclusions) => {
+        if (verifyConclusions) {
+          checkTemplateInstantiations(envs, state, invocationRange, solver.getAllRules(), incompleteConclusions, Vector(), isRootSolve) match {
+            case Ok(c) =>
+            case Err(e) => return FailedCompilerSolve(steps, unsolvedRules, e)
+          }
+        }
+        IncompleteCompilerSolve(steps, unsolvedRules, unknownRunes, incompleteConclusions)
+      }
+      case FailedSolve(steps, unsolvedRules, error) => FailedCompilerSolve(steps, unsolvedRules, error)
+    }
   }
 
   def checkTemplateInstantiations(
